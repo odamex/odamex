@@ -25,7 +25,16 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+
+#ifdef _XBOX
+#include "xbox_main.h"
+#else
 #include <sys/time.h>
+#endif
+
+#ifdef max
+	#undef max
+#endif
 
 #include <limits>
 
@@ -66,6 +75,44 @@ uint64_t GetMillisNow()
 	return _UnwrapTime(_Millis());
 }
 
+int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut, 
+                            uint16_t &PortOut)
+{
+	size_t colon;
+
+	if (HostPort.empty())
+        return 1;
+	
+	colon = HostPort.find(':');
+
+	if(colon != std::string::npos)
+    {
+        long tmp_port;
+
+        if(colon + 1 >= HostPort.length())
+            return 2;
+        
+        try
+        {
+            std::istringstream(HostPort.substr(colon + 1)) >> tmp_port;
+            PortOut = tmp_port;
+        }
+        catch (...)
+        {
+            return 3;
+        }
+    }
+    else
+    {
+        AddrOut = HostPort;
+        
+        return 0;
+    }
+    
+	AddrOut = HostPort.substr(0, colon);
+
+	return 0;
+}
 } // namespace
 
 // ???

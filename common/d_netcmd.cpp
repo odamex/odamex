@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.cpp 3174 2012-05-11 01:03:43Z dr_sean $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -158,5 +158,5 @@ int NetCommand::getSerializedFields()
 	return serialized_fields;
 }
 
-VERSION_CONTROL (d_netcmd_cpp, "$Id: d_netcmd.cpp 3174 2012-05-11 01:03:43Z dr_sean $")
+VERSION_CONTROL (d_netcmd_cpp, "$Id$")
 

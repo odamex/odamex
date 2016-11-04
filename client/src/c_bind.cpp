@@ -28,6 +28,8 @@
 
 #include "doomtype.h"
 #include "doomdef.h"
+#include "m_ostring.h"
+#include "hashtable.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
@@ -116,82 +118,6 @@ char DefBindings[] =
 	"bind m changeteams ";
 
 
-// SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
-// so I get to re-write the entire system. YES I RE-DID ALL OF THIS BY HAND
-// SoM: note: eat shit and die Randy Heit this uses SDL key codes now!
-const char *KeyNames[NUM_KEYS] = {
-// :: Begin ASCII mapped keycodes
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 00 - 07
-"backspace","tab",   NULL,    NULL,    NULL, "enter",    NULL,    NULL, // 08 - 0F
-   NULL,    NULL,    NULL, "pause",    NULL,    NULL,    NULL,    NULL, // 10 - 17
-   NULL,    NULL,    NULL,"escape",    NULL,    NULL,    NULL,    NULL, // 18 - 1F
-"space",     "!",    "\"",     "#",     "$",    NULL,     "&",     "'", // 20 - 27
-    "(",     ")",     "*",     "+",     ",",     "-",     ".",     "/", // 28 - 2F
-    "0",     "1",     "2",     "3",     "4",     "5",     "6",     "7", // 30 - 37
-    "8",     "9",     ":",     ";",     "<",     "=",     ">",     "?", // 38 - 3F
-    "@",    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 40 - 47
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 48 - 4F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 50 - 57
-   NULL,    NULL,    NULL,     "[",    "\\",     "]",     "^",     "_", // 58 - 5F
-"grave",     "a",     "b",     "c",     "d",     "e",     "f",     "g", // 60 - 67
-    "h",     "i",     "j",     "k",     "l",     "m",     "n",     "o", // 68 - 6F
-    "p",     "q",     "r",     "s",     "t",     "u",     "v",     "w", // 70 - 77
-    "x",     "y",     "z",    NULL,    NULL,    NULL,    NULL,   "del", // 78 - 7F
-// :: End ASCII mapped keycodes
-// :: Begin World keycodes
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 80 - 87
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 88 - 8F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 90 - 97
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 98 - 9F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A0 - A7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A8 - AF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B0 - B7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B8 - BF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C0 - C7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C8 - CF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D0 - D7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D8 - DF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E0 - E7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E8 - EF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F0 - F7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
-// :: End world keycodes
-  "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
-  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
-  "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
- "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
-   "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
-  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", "rightshift", // 0128 - 012F
-"leftshift", "rightctrl", "leftctrl", "rightalt", "leftalt",    NULL,    NULL,  "lwin", // 0130 - 0137
- "rwin",    NULL,    NULL,  "help", "print", "sysrq", "break",    NULL,  // 0138 - 013F
-   NULL,    NULL,    NULL,    // 0140 - 0142
-
-	// non-keyboard buttons that can be bound
-   // 0143 - 0146 & 0173
-	"mouse1",	"mouse2",	"mouse3",	"mouse4",			// 5 mouse buttons
-   // 0147 - 014A
-   "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
-   // 014B - 014E
-	"joy1",		"joy2",		"joy3",		"joy4",			// 32 joystick buttons
-   // 014F - 0152
-	"joy5",		"joy6",		"joy7",		"joy8",
-   // 0153 - 0156
-	"joy9",		"joy10",	"joy11",	"joy12",
-   // 0157 - 015A
-	"joy13",	"joy14",	"joy15",	"joy16",
-   // 015B - 015E
-	"joy17",	"joy18",	"joy19",	"joy20",
-   // 015F - 0162
-	"joy21",	"joy22",	"joy23",	"joy24",
-   // 0163 - 0166
-	"joy25",	"joy26",	"joy27",	"joy28",
-   // 0167 - 016A
-	"joy29",	"joy30",	"joy31",	"joy32",
-  // 016B - 016E
-	"hat1up",	"hat1right","hat1down",	"hat1left",
-  // 016F - 0172
-	"hat2up",	"hat2right","hat2down",	"hat2left", "mouse5"
-};
 
 static std::string Bindings[NUM_KEYS];
 static std::string DoubleBindings[NUM_KEYS];
@@ -200,31 +126,220 @@ static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 static bool KeysDown[NUM_KEYS];
 
-static int GetKeyFromName (const char *name)
+typedef OHashTable<OString, int> NameToKeyCodeTable;
+static NameToKeyCodeTable nameToKeyCode = NameToKeyCodeTable();
+
+typedef OHashTable<int, OString> KeyCodeToNameTable;
+static KeyCodeToNameTable keyCodeToName = KeyCodeToNameTable();
+
+static void buildKeyCodeTables()
 {
-	int i;
+	nameToKeyCode.clear();
+	nameToKeyCode.insert(std::make_pair("backspace", KEY_BACKSPACE));
+	nameToKeyCode.insert(std::make_pair("tab", KEY_TAB));
+	nameToKeyCode.insert(std::make_pair("enter", KEY_ENTER));
+	nameToKeyCode.insert(std::make_pair("pause", KEY_PAUSE));
+	nameToKeyCode.insert(std::make_pair("escape", KEY_ESCAPE));
+	nameToKeyCode.insert(std::make_pair("space", KEY_SPACE));
+	nameToKeyCode.insert(std::make_pair("!", '!'));
+	nameToKeyCode.insert(std::make_pair("\"", '\"'));
+	nameToKeyCode.insert(std::make_pair("#", '#'));
+	nameToKeyCode.insert(std::make_pair("$", '$'));
+	nameToKeyCode.insert(std::make_pair("&", '&'));
+	nameToKeyCode.insert(std::make_pair("\'", '\''));
+	nameToKeyCode.insert(std::make_pair("(", '('));
+	nameToKeyCode.insert(std::make_pair(")", ')'));
+	nameToKeyCode.insert(std::make_pair("*", '*'));
+	nameToKeyCode.insert(std::make_pair("+", '+'));
+	nameToKeyCode.insert(std::make_pair(",", ','));
+	nameToKeyCode.insert(std::make_pair("-", '-'));
+	nameToKeyCode.insert(std::make_pair(".", '.'));
+	nameToKeyCode.insert(std::make_pair("/", '/'));
+	nameToKeyCode.insert(std::make_pair("0", '0'));
+	nameToKeyCode.insert(std::make_pair("1", '1'));
+	nameToKeyCode.insert(std::make_pair("2", '2'));
+	nameToKeyCode.insert(std::make_pair("3", '3'));
+	nameToKeyCode.insert(std::make_pair("4", '4'));
+	nameToKeyCode.insert(std::make_pair("5", '5'));
+	nameToKeyCode.insert(std::make_pair("6", '6'));
+	nameToKeyCode.insert(std::make_pair("7", '7'));
+	nameToKeyCode.insert(std::make_pair("8", '8'));
+	nameToKeyCode.insert(std::make_pair("9", '9'));
+	nameToKeyCode.insert(std::make_pair(":", ':'));
+	nameToKeyCode.insert(std::make_pair(";", ';'));
+	nameToKeyCode.insert(std::make_pair("<", '<'));
+	nameToKeyCode.insert(std::make_pair("=", '='));
+	nameToKeyCode.insert(std::make_pair(">", '>'));
+	nameToKeyCode.insert(std::make_pair("?", '?'));
+	nameToKeyCode.insert(std::make_pair("@", '@'));
+	nameToKeyCode.insert(std::make_pair("[", '['));
+	nameToKeyCode.insert(std::make_pair("\\", '\\'));
+	nameToKeyCode.insert(std::make_pair("]", ']'));
+	nameToKeyCode.insert(std::make_pair("^", '^'));
+	nameToKeyCode.insert(std::make_pair("_", '_'));
+	nameToKeyCode.insert(std::make_pair("grave", '`'));
+	nameToKeyCode.insert(std::make_pair("a", 'a'));
+	nameToKeyCode.insert(std::make_pair("b", 'b'));
+	nameToKeyCode.insert(std::make_pair("c", 'c'));
+	nameToKeyCode.insert(std::make_pair("d", 'd'));
+	nameToKeyCode.insert(std::make_pair("e", 'e'));
+	nameToKeyCode.insert(std::make_pair("f", 'f'));
+	nameToKeyCode.insert(std::make_pair("g", 'g'));
+	nameToKeyCode.insert(std::make_pair("h", 'h'));
+	nameToKeyCode.insert(std::make_pair("i", 'i'));
+	nameToKeyCode.insert(std::make_pair("j", 'j'));
+	nameToKeyCode.insert(std::make_pair("k", 'k'));
+	nameToKeyCode.insert(std::make_pair("l", 'l'));
+	nameToKeyCode.insert(std::make_pair("m", 'm'));
+	nameToKeyCode.insert(std::make_pair("n", 'n'));
+	nameToKeyCode.insert(std::make_pair("o", 'o'));
+	nameToKeyCode.insert(std::make_pair("p", 'p'));
+	nameToKeyCode.insert(std::make_pair("q", 'q'));
+	nameToKeyCode.insert(std::make_pair("r", 'r'));
+	nameToKeyCode.insert(std::make_pair("s", 's'));
+	nameToKeyCode.insert(std::make_pair("t", 't'));
+	nameToKeyCode.insert(std::make_pair("u", 'u'));
+	nameToKeyCode.insert(std::make_pair("v", 'v'));
+	nameToKeyCode.insert(std::make_pair("w", 'w'));
+	nameToKeyCode.insert(std::make_pair("x", 'x'));
+	nameToKeyCode.insert(std::make_pair("y", 'y'));
+	nameToKeyCode.insert(std::make_pair("z", 'z'));
+	nameToKeyCode.insert(std::make_pair("kp0", KEYP_0));
+	nameToKeyCode.insert(std::make_pair("kp1", KEYP_1));
+	nameToKeyCode.insert(std::make_pair("kp2", KEYP_2));
+	nameToKeyCode.insert(std::make_pair("kp3", KEYP_3));
+	nameToKeyCode.insert(std::make_pair("kp4", KEYP_4));
+	nameToKeyCode.insert(std::make_pair("kp5", KEYP_5));
+	nameToKeyCode.insert(std::make_pair("kp6", KEYP_6));
+	nameToKeyCode.insert(std::make_pair("kp7", KEYP_7));
+	nameToKeyCode.insert(std::make_pair("kp8", KEYP_8));
+	nameToKeyCode.insert(std::make_pair("kp9", KEYP_9));
+	nameToKeyCode.insert(std::make_pair("kp.", KEYP_PERIOD));
+	nameToKeyCode.insert(std::make_pair("kp/", KEYP_DIVIDE));
+	nameToKeyCode.insert(std::make_pair("kp*", KEYP_MULTIPLY));
+	nameToKeyCode.insert(std::make_pair("kp-", KEYP_MINUS));
+	nameToKeyCode.insert(std::make_pair("kp+", KEYP_PLUS));
+	nameToKeyCode.insert(std::make_pair("kpenter", KEYP_ENTER));
+	nameToKeyCode.insert(std::make_pair("kp=", KEYP_EQUALS));
+	nameToKeyCode.insert(std::make_pair("uparrow", KEY_UPARROW));
+	nameToKeyCode.insert(std::make_pair("downarrow", KEY_DOWNARROW));
+	nameToKeyCode.insert(std::make_pair("rightarrow", KEY_RIGHTARROW));
+	nameToKeyCode.insert(std::make_pair("leftarrow", KEY_LEFTARROW));
+	nameToKeyCode.insert(std::make_pair("ins", KEY_INS));
+	nameToKeyCode.insert(std::make_pair("home", KEY_HOME));
+	nameToKeyCode.insert(std::make_pair("end", KEY_END));
+	nameToKeyCode.insert(std::make_pair("pgup", KEY_PGUP));
+	nameToKeyCode.insert(std::make_pair("pgdn", KEY_PGDN));
+	nameToKeyCode.insert(std::make_pair("f1", KEY_F1));
+	nameToKeyCode.insert(std::make_pair("f2", KEY_F2));
+	nameToKeyCode.insert(std::make_pair("f3", KEY_F3));
+	nameToKeyCode.insert(std::make_pair("f4", KEY_F4));
+	nameToKeyCode.insert(std::make_pair("f5", KEY_F5));
+	nameToKeyCode.insert(std::make_pair("f6", KEY_F6));
+	nameToKeyCode.insert(std::make_pair("f7", KEY_F7));
+	nameToKeyCode.insert(std::make_pair("f8", KEY_F8));
+	nameToKeyCode.insert(std::make_pair("f9", KEY_F9));
+	nameToKeyCode.insert(std::make_pair("f10", KEY_F10));
+	nameToKeyCode.insert(std::make_pair("f11", KEY_F11));
+	nameToKeyCode.insert(std::make_pair("f12", KEY_F12));
+	nameToKeyCode.insert(std::make_pair("f13", KEY_F13));
+	nameToKeyCode.insert(std::make_pair("f14", KEY_F14));
+	nameToKeyCode.insert(std::make_pair("f15", KEY_F15));
+	nameToKeyCode.insert(std::make_pair("capslock", KEY_CAPSLOCK));
+	nameToKeyCode.insert(std::make_pair("numlock", KEY_NUMLOCK));
+	nameToKeyCode.insert(std::make_pair("scroll", KEY_SCRLCK));
+	nameToKeyCode.insert(std::make_pair("rightshift", KEY_RSHIFT));
+	nameToKeyCode.insert(std::make_pair("leftshift", KEY_LSHIFT));
+	nameToKeyCode.insert(std::make_pair("rightctrl", KEY_RCTRL));
+	nameToKeyCode.insert(std::make_pair("leftctrl", KEY_LCTRL));
+	nameToKeyCode.insert(std::make_pair("rightalt", KEY_RALT));
+	nameToKeyCode.insert(std::make_pair("leftalt", KEY_LALT));
+	nameToKeyCode.insert(std::make_pair("lwin", KEY_LWIN));
+	nameToKeyCode.insert(std::make_pair("rwin", KEY_RWIN));
+	nameToKeyCode.insert(std::make_pair("help", KEY_HELP));
+	nameToKeyCode.insert(std::make_pair("print", KEY_PRINT));
+	nameToKeyCode.insert(std::make_pair("sysrq", KEY_SYSRQ));
+	nameToKeyCode.insert(std::make_pair("break", KEY_BREAK));
+	nameToKeyCode.insert(std::make_pair("mouse1", KEY_MOUSE1));
+	nameToKeyCode.insert(std::make_pair("mouse2", KEY_MOUSE2));
+	nameToKeyCode.insert(std::make_pair("mouse3", KEY_MOUSE3));
+	nameToKeyCode.insert(std::make_pair("mouse4", KEY_MOUSE4));
+	nameToKeyCode.insert(std::make_pair("mouse5", KEY_MOUSE5));
+	nameToKeyCode.insert(std::make_pair("mwheelup", KEY_MWHEELUP));
+	nameToKeyCode.insert(std::make_pair("mwheeldown", KEY_MWHEELDOWN));
+	nameToKeyCode.insert(std::make_pair("joy1", KEY_JOY1));
+	nameToKeyCode.insert(std::make_pair("joy2", KEY_JOY2));
+	nameToKeyCode.insert(std::make_pair("joy3", KEY_JOY3));
+	nameToKeyCode.insert(std::make_pair("joy4", KEY_JOY4));
+	nameToKeyCode.insert(std::make_pair("joy5", KEY_JOY5));
+	nameToKeyCode.insert(std::make_pair("joy6", KEY_JOY6));
+	nameToKeyCode.insert(std::make_pair("joy7", KEY_JOY7));
+	nameToKeyCode.insert(std::make_pair("joy8", KEY_JOY8));
+	nameToKeyCode.insert(std::make_pair("joy9", KEY_JOY9));
+	nameToKeyCode.insert(std::make_pair("joy10", KEY_JOY10));
+	nameToKeyCode.insert(std::make_pair("joy11", KEY_JOY11));
+	nameToKeyCode.insert(std::make_pair("joy12", KEY_JOY12));
+	nameToKeyCode.insert(std::make_pair("joy13", KEY_JOY13));
+	nameToKeyCode.insert(std::make_pair("joy14", KEY_JOY14));
+	nameToKeyCode.insert(std::make_pair("joy15", KEY_JOY15));
+	nameToKeyCode.insert(std::make_pair("joy16", KEY_JOY16));
+	nameToKeyCode.insert(std::make_pair("joy17", KEY_JOY17));
+	nameToKeyCode.insert(std::make_pair("joy18", KEY_JOY18));
+	nameToKeyCode.insert(std::make_pair("joy19", KEY_JOY19));
+	nameToKeyCode.insert(std::make_pair("joy20", KEY_JOY20));
+	nameToKeyCode.insert(std::make_pair("joy21", KEY_JOY21));
+	nameToKeyCode.insert(std::make_pair("joy22", KEY_JOY22));
+	nameToKeyCode.insert(std::make_pair("joy23", KEY_JOY23));
+	nameToKeyCode.insert(std::make_pair("joy24", KEY_JOY24));
+	nameToKeyCode.insert(std::make_pair("joy25", KEY_JOY25));
+	nameToKeyCode.insert(std::make_pair("joy26", KEY_JOY26));
+	nameToKeyCode.insert(std::make_pair("joy27", KEY_JOY27));
+	nameToKeyCode.insert(std::make_pair("joy28", KEY_JOY28));
+	nameToKeyCode.insert(std::make_pair("joy29", KEY_JOY29));
+	nameToKeyCode.insert(std::make_pair("joy30", KEY_JOY30));
+	nameToKeyCode.insert(std::make_pair("joy31", KEY_JOY31));
+	nameToKeyCode.insert(std::make_pair("joy32", KEY_JOY32));
+	nameToKeyCode.insert(std::make_pair("hat1up", KEY_HAT1));
+	nameToKeyCode.insert(std::make_pair("hat1right", KEY_HAT2));
+	nameToKeyCode.insert(std::make_pair("hat1down", KEY_HAT3));
+	nameToKeyCode.insert(std::make_pair("hat1left", KEY_HAT4));
+	nameToKeyCode.insert(std::make_pair("hat2up", KEY_HAT5));
+	nameToKeyCode.insert(std::make_pair("hat2right", KEY_HAT6));
+	nameToKeyCode.insert(std::make_pair("hat2down", KEY_HAT7));
+	nameToKeyCode.insert(std::make_pair("hat2left", KEY_HAT8));
+
+	keyCodeToName.clear();
+	for (NameToKeyCodeTable::const_iterator it = nameToKeyCode.begin(); it != nameToKeyCode.end(); ++it)
+		keyCodeToName.insert(std::make_pair(it->second, it->first));
+}
+
+static int GetKeyFromName(const char *name)
+{
+	if (nameToKeyCode.empty())
+		buildKeyCodeTables();
 
 	// Names of the form #xxx are translated to key xxx automatically
 	if (name[0] == '#' && name[1] != 0) {
 		return atoi (name + 1);
 	}
 
-	// Otherwise, we scan the KeyNames[] array for a matching name
-	for (i = 0; i < NUM_KEYS; i++) {
-		if (KeyNames[i] && !stricmp (KeyNames[i], name))
-			return i;
-	}
+	NameToKeyCodeTable::const_iterator it = nameToKeyCode.find(name);
+	if (it != nameToKeyCode.end())
+		return it->second;
 	return 0;
 }
 
-static const char *KeyName (int key)
+static const char* KeyName(int key)
 {
+	if (keyCodeToName.empty())
+		buildKeyCodeTables();
+
+	KeyCodeToNameTable::const_iterator it = keyCodeToName.find(key);
+	if (it != keyCodeToName.end())
+		return it->second.c_str();
+
 	static char name[5];
-
-	if (KeyNames[key])
-		return KeyNames[key];
-
-	sprintf (name, "#%d", key);
+	sprintf(name, "#%d", key);
 	return name;
 }
 
@@ -600,4 +715,3 @@ const char *C_GetBinding (int key)
 }
 
 VERSION_CONTROL (c_bind_cpp, "$Id$")
-

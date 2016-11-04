@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_musicsystem.h 1788 2010-08-24 04:42:57Z russellrice $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -23,7 +23,7 @@
 #ifndef __I_MUSICSYSTEM_H__
 #define __I_MUSICSYSTEM_H__
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 #include "i_music.h"
 #include "i_midi.h"
 

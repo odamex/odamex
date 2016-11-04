@@ -127,7 +127,9 @@ CVAR_FUNC_IMPL(vid_defwidth)
 {
 	if (var < 320 || var > MAXWIDTH)
 		var.RestoreDefault();
-	V_SetResolution(var, new_video_height);
+	
+	if (gamestate != GS_STARTUP)
+        V_SetResolution(var, new_video_height);
 }
 
 
@@ -135,55 +137,65 @@ CVAR_FUNC_IMPL(vid_defheight)
 {
 	if (var < 200 || var > MAXHEIGHT)
 		var.RestoreDefault();
-	V_SetResolution(new_video_width, var);
+	
+	if (gamestate != GS_STARTUP)
+        V_SetResolution(new_video_width, var);
 }
 
 
 CVAR_FUNC_IMPL(vid_fullscreen)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_32bpp)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_overscan)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_320x200)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_640x400)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	V_ForceVideoModeAdjustment();
+	if (gamestate != GS_STARTUP)
+        V_ForceVideoModeAdjustment();
 }
 
 
@@ -560,6 +572,33 @@ void V_DrawFPSWidget()
 }
 
 
+
+//
+// V_DrawTickerDot
+//
+// Templated helper function for V_DrawFPSTicker. It draws a single dot for
+// the vanilla Doom FPS ticker, scaled to make the dot roughly the same size
+// as it would be in 320x200 video modes.
+//
+template <typename PIXEL_T>
+static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
+{
+	const int dot_width = CleanXfac, dot_height = CleanYfac;
+	const int pitch_in_pixels = surface->getPitchInPixels();
+
+	PIXEL_T* dest = (PIXEL_T*)surface->getBuffer() +
+			(surface->getHeight() - 1 - dot_height) * pitch_in_pixels +
+			2 * n * dot_width; 
+
+	for (int y = 0; y < dot_height; y++)
+	{
+		for (int x = 0; x < dot_width; x++)
+			dest[x] = color;
+		dest += pitch_in_pixels;
+	}
+}
+
+
 //
 // V_DrawFPSTicker
 //
@@ -571,34 +610,27 @@ void V_DrawFPSTicker()
 	int tics = clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
-	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_height = surface->getHeight();
-	int surface_pitch = surface->getPitch();
-
-	if (surface->getBitsPerPixel() == 8)
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		const palindex_t oncolor = 255;
 		const palindex_t offcolor = 0;
-		palindex_t* dest = (palindex_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
 
-		int i = 0;
-		for (i = 0; i < tics*2; i += 2)
-			dest[i] = oncolor;
-		for ( ; i < 20*2; i += 2)
-			dest[i] = offcolor;
+		int n = 0;
+		for (n = 0; n < tics; n++)
+			V_DrawTickerDot<palindex_t>(I_GetPrimarySurface(), n, oncolor);
+		for ( ; n < 20; n++)
+			V_DrawTickerDot<palindex_t>(I_GetPrimarySurface(), n, offcolor);
 	}
 	else
 	{
 		const argb_t oncolor(255, 255, 255);
 		const argb_t offcolor(0, 0, 0);
 
-		argb_t* dest = (argb_t*)(surface->getBuffer() + (surface_height - 1) * surface_pitch);
-
-		int i = 0;
-		for (i = 0; i < tics*2; i += 2)
-			dest[i] = oncolor;
-		for ( ; i < 20*2; i += 2)
-			dest[i] = offcolor;
+		int n = 0;
+		for (n = 0; n < tics; n++)
+			V_DrawTickerDot<argb_t>(I_GetPrimarySurface(), n, oncolor);
+		for ( ; n < 20; n++)
+			V_DrawTickerDot<argb_t>(I_GetPrimarySurface(), n, offcolor);
 	}
 }
 

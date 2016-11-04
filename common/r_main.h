@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1856 2010-09-05 03:14:13Z ladna $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.

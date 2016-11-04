@@ -555,27 +555,19 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 
 	IWindow* window = I_GetWindow();
 
-	static bool initialized = false;
-
 	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
 		
-	if (!initialized)
-		initialized = true;
-
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
 
 	I_FreeSurface(converted_surface);
-	converted_surface = NULL;
 	I_FreeSurface(matted_surface);
-	matted_surface = NULL;
 	I_FreeSurface(emulated_surface);
-	emulated_surface = NULL;
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
 	if (surface_bpp != mode.getBitsPerPixel())
@@ -662,6 +654,12 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 		emulated_surface->setPalette(palette);
 	if (converted_surface)
 		converted_surface->setPalette(palette);
+
+	// handle the -noblit parameter when playing a LMP demo
+	if (noblit)
+		window->disableRefresh();
+	else
+		window->enableRefresh();
 }
 
 
@@ -683,9 +681,7 @@ bool I_VideoInitialized()
 //
 void STACK_ARGS I_ShutdownHardware()
 {
-	if (loading_icon_background_surface)
-		I_FreeSurface(loading_icon_background_surface);
-	loading_icon_background_surface = NULL;
+	I_FreeSurface(loading_icon_background_surface);
 
 	delete video_subsystem;
 	video_subsystem = NULL;
@@ -703,7 +699,12 @@ void I_InitHardware()
 	}
 	else
 	{
+		#if defined(SDL12)
 		video_subsystem = new ISDL12VideoSubsystem();
+		#elif defined(SDL20)
+		video_subsystem = new ISDL20VideoSubsystem();
+		#endif
+		assert(video_subsystem != NULL);
 
 		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
@@ -852,9 +853,10 @@ IWindowSurface* I_AllocateSurface(int width, int height, int bpp)
 //
 // I_FreeSurface
 //
-void I_FreeSurface(IWindowSurface* surface)
+void I_FreeSurface(IWindowSurface* &surface)
 {
 	delete surface;
+	surface = NULL;
 }
 
 
@@ -974,8 +976,7 @@ static void I_BlitLoadingIcon()
 		loading_icon_background_surface->getHeight() != h ||
 		loading_icon_background_surface->getBitsPerPixel() != bpp)
 	{
-		if (loading_icon_background_surface)
-			I_FreeSurface(loading_icon_background_surface);
+		I_FreeSurface(loading_icon_background_surface);
 
 		loading_icon_background_surface = I_AllocateSurface(w, h, bpp);
 	}
@@ -1024,7 +1025,11 @@ static void I_RestoreLoadingIcon()
 void I_BeginUpdate()
 {
 	if (I_VideoInitialized())
+	{
+		I_GetWindow()->startRefresh();
+
 		I_LockAllSurfaces();
+	}
 }
 
 
@@ -1061,8 +1066,7 @@ void I_FinishUpdate()
 
 		I_UnlockAllSurfaces();
 
-		if (noblit == false)
-			I_GetWindow()->refresh();
+		I_GetWindow()->finishRefresh();
 
 		// restores the background underneath the disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)

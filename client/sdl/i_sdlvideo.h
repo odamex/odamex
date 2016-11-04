@@ -25,10 +25,10 @@
 #ifndef __I_SDLVIDEO_H__
 #define __I_SDLVIDEO_H__
 
-#include <SDL.h>
+#include "i_sdl.h"
 #include "i_video.h"
 
-
+#ifdef SDL12
 // ============================================================================
 //
 // ISDL12VideoCapabilities class interface
@@ -67,6 +67,70 @@ private:
 
 // ============================================================================
 //
+// ISDL12DirectWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// This creates a IWindowSurface based on SDL's primary surface.
+//
+// ============================================================================
+
+class ISDL12DirectWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	ISDL12DirectWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format);
+
+	virtual ~ISDL12DirectWindowSurfaceManager();
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+private:
+	IWindowSurface*			mSurface;
+};
+
+
+// ============================================================================
+//
+// ISDL12SoftwareWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+//
+// ============================================================================
+
+class ISDL12SoftwareWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	ISDL12SoftwareWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format);
+
+	virtual ~ISDL12SoftwareWindowSurfaceManager();
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+private:
+	SDL_Surface*			mSDLSoftwareSurface;
+	IWindowSurface*			mSurface;
+};
+
+
+// ============================================================================
+//
 // ISDL12Window class interface
 //
 // ============================================================================
@@ -78,11 +142,17 @@ public:
 
 	virtual ~ISDL12Window();
 
-	virtual IWindowSurface* getPrimarySurface()
-	{	return mPrimarySurface;	}
-
 	virtual const IWindowSurface* getPrimarySurface() const
-	{	return mPrimarySurface;	}
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->getWindowSurface();
+		return NULL;
+	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const ISDL12Window&>(*this).getPrimarySurface());
+	}
 
 	virtual uint16_t getWidth() const
 	{	return mWidth;	}
@@ -99,15 +169,26 @@ public:
 	virtual const IVideoMode* getVideoMode() const
 	{	return &mVideoMode;	}
 
+	virtual const PixelFormat* getPixelFormat() const;
+
 	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
 
 	virtual bool isFullScreen() const
 	{	return mIsFullScreen;	}
 
+	virtual bool isFocused() const;
+
 	virtual bool usingVSync() const
 	{	return mUseVSync;	}
 
-	virtual void refresh();
+	virtual void enableRefresh()
+	{	mBlit = true;		}
+
+	virtual void disableRefresh()
+	{	mBlit = false;		}
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
 
 	virtual void lockSurface();
 	virtual void unlockSurface();
@@ -124,7 +205,9 @@ private:
 	ISDL12Window(const ISDL12Window&);
 	ISDL12Window& operator=(const ISDL12Window&);
 
-	IWindowSurface*		mPrimarySurface;
+	void getEvents();
+
+	IWindowSurfaceManager*	mSurfaceManager;
 
 	uint16_t			mWidth;
 	uint16_t			mHeight;
@@ -135,9 +218,10 @@ private:
 	bool				mIsFullScreen;
 	bool				mUseVSync;
 
-	SDL_Surface*		mSDLSoftwareSurface;
-
 	bool				mNeedPaletteRefresh;
+	bool				mBlit;
+
+	bool				mIgnoreResize;
 
 	int16_t				mLocks;
 };
@@ -163,8 +247,235 @@ public:
 	virtual const IVideoCapabilities* getVideoCapabilities() const
 	{	return mVideoCapabilities;	}
 
-	virtual IWindow* getWindow()
+	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
+
+private:
+	const IVideoCapabilities*		mVideoCapabilities;
+
+	IWindow*						mWindow;
+};
+#endif	// SDL12
+
+
+// ----------------------------------------------------------------------------
+
+
+#ifdef SDL20
+
+class ISDL20Window;
+
+// ============================================================================
+//
+// ISDL20VideoCapabilities class interface
+//
+// Defines an interface for querying video capabilities. This includes listing
+// availible video modes and supported operations.
+//
+// ============================================================================
+
+class ISDL20VideoCapabilities : public IVideoCapabilities
+{
+public:
+	ISDL20VideoCapabilities();
+	virtual ~ISDL20VideoCapabilities() { }
+
+	virtual const IVideoModeList* getSupportedVideoModes() const
+	{	return &mModeList;	}
+
+	virtual const EDisplayType getDisplayType() const
+	{
+		#ifdef GCONSOLE
+		return DISPLAY_FullscreenOnly;
+		#else
+		return DISPLAY_Both;
+		#endif
+	}
+
+	virtual const IVideoMode* getNativeMode() const
+	{	return &mNativeMode;	}
+
+private:
+	IVideoModeList		mModeList;
+	IVideoMode			mNativeMode;
+};
+
+
+// ============================================================================
+//
+// ISDL20TextureWindowSurfaceManager
+//
+// Helper class for IWindow to encapsulate the creation of a IWindowSurface
+// primary surface and to assist in using it to refresh the window.
+//
+// This creates a SDL_Renderer instance and a SDL_Texture. An IWindowSurface
+// using the SDL_Texture as a basis is created for direct rendering.
+//
+// ============================================================================
+
+class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
+{
+public:
+	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync);
+
+	virtual ~ISDL20TextureWindowSurfaceManager();
+
+	virtual IWindowSurface* getWindowSurface()
+	{	return mSurface;	}
+
+	virtual const IWindowSurface* getWindowSurface() const
+	{	return mSurface;	}
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+private:
+	ISDL20Window*			mWindow;
+	SDL_Renderer*			mSDLRenderer;
+	SDL_Texture*			mSDLTexture;
+
+	IWindowSurface*			mSurface;
+	IWindowSurface*			m8bppTo32BppSurface;
+
+	uint16_t				mWidth;
+	uint16_t				mHeight;
+
+	PixelFormat				mFormat;
+};
+
+
+// ============================================================================
+//
+// ISDL20Window class interface
+//
+// ============================================================================
+
+class ISDL20Window : public IWindow
+{
+public:
+	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+
+	virtual ~ISDL20Window();
+
+	virtual const IWindowSurface* getPrimarySurface() const
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->getWindowSurface();
+		return NULL;
+	}
+
+	virtual IWindowSurface* getPrimarySurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const ISDL20Window&>(*this).getPrimarySurface());
+	}
+
+	virtual uint16_t getWidth() const
+	{	return mWidth;	}
+
+	virtual uint16_t getHeight() const
+	{	return mHeight;	}
+
+	virtual uint8_t getBitsPerPixel() const
+	{	return mBitsPerPixel;	}
+
+	virtual int getBytesPerPixel() const
+	{	return mBitsPerPixel >> 3;	}
+
+	virtual const IVideoMode* getVideoMode() const
+	{	return &mVideoMode;	}
+
+	virtual const PixelFormat* getPixelFormat() const
+	{	return &mPixelFormat;	}
+
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+
+	virtual bool isFullScreen() const
+	{	return mIsFullScreen;	}
+
+	virtual bool isFocused() const;
+
+	virtual bool usingVSync() const
+	{	return mUseVSync;	}
+
+	virtual void enableRefresh()
+	{	mBlit = true;		}
+
+	virtual void disableRefresh()
+	{	mBlit = false;		}
+
+	virtual void startRefresh();
+	virtual void finishRefresh();
+
+
+	virtual void lockSurface();
+	virtual void unlockSurface();
+
+	virtual void setWindowTitle(const std::string& str = "");
+	virtual void setWindowIcon();
+
+	virtual std::string getVideoDriverName() const;
+
+	virtual void setPalette(const argb_t* palette);
+
+private:
+	// disable copy constructor and assignment operator
+	ISDL20Window(const ISDL20Window&);
+	ISDL20Window& operator=(const ISDL20Window&);
+
+	friend class ISDL20TextureWindowSurfaceManager;
+
+	void discoverNativePixelFormat();
+	PixelFormat buildSurfacePixelFormat(uint8_t bpp);
+	void setRendererDriver();
+	const char* getRendererDriver() const;
+	void getEvents();
+
+	SDL_Window*			mSDLWindow;
+
+	IWindowSurfaceManager* mSurfaceManager;
+
+	uint16_t			mWidth;
+	uint16_t			mHeight;
+	uint8_t				mBitsPerPixel;
+
+	IVideoMode			mVideoMode;
+	PixelFormat			mPixelFormat;
+
+	bool				mIsFullScreen;
+	bool				mUseVSync;
+
+	bool				mNeedPaletteRefresh;
+	bool				mBlit;
+
+	bool				mMouseFocus;
+	bool				mKeyboardFocus;
+
+	int16_t				mLocks;
+};
+
+// ****************************************************************************
+
+// ============================================================================
+//
+// ISDL20VideoSubsystem class interface
+//
+// Provides intialization and shutdown mechanics for the video subsystem.
+// This is really an abstract factory pattern as it instantiates a family
+// of concrete types.
+//
+// ============================================================================
+
+class ISDL20VideoSubsystem : public IVideoSubsystem
+{
+public:
+	ISDL20VideoSubsystem();
+	virtual ~ISDL20VideoSubsystem();
+
+	virtual const IVideoCapabilities* getVideoCapabilities() const
+	{	return mVideoCapabilities;	}
 
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
@@ -174,7 +485,6 @@ private:
 
 	IWindow*						mWindow;
 };
-
+#endif	// SDL20
 
 #endif	// __I_SDLVIDEO_H__
-

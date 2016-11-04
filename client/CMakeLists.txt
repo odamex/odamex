@@ -44,6 +44,9 @@ if(APPLE)
   set(CLIENT_MAC_OBJC_SOURCES sdl/SDLMain.m)
 endif()
 
+# git describe
+set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
+
 # Platform definitions
 define_platform()
 
@@ -66,19 +69,37 @@ if(WIN32)
 endif()
 
 # SDL configuration
-find_package(SDL)
-if(SDL_FOUND)
-  include_directories(${SDL_INCLUDE_DIR})
-else()
-  message(WARNING "SDL not found, client application can not be built.")
+# try to use SDL 2.0 first but fall back on SDL 1.2 if necessary
+# ignore SDL 2.0 if -DUSE_SDL12=1 is specified
+if(NOT USE_SDL12)
+  find_package(SDL2)
+  find_package(SDL2_mixer)
+  if(SDL2_FOUND AND SDL2_MIXER_FOUND)
+    set(SDL_VERSION "2")
+    message(STATUS "Using SDL library version 2.0.")
+    include_directories(${SDL2_INCLUDE_DIR})
+    include_directories(${SDL2_MIXER_INCLUDE_DIR})
+    set(SDL_LINK_LIBRARIES ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY})
+  endif()
 endif()
 
-# SDL_Mixer configuration
-find_package(SDL_mixer)
-if(SDLMIXER_FOUND)
-  include_directories(${SDLMIXER_INCLUDE_DIR})
-else()
-  message(WARNING "SDL_mixer not found, client application can not be built.")
+if(NOT SDL2_FOUND AND NOT SDL2_MIXER_FOUND)
+  find_package(SDL)
+  find_package(SDL_mixer)
+  if(SDL_FOUND AND SDLMIXER_FOUND)
+    set(SDL_VERSION "1")
+    message(STATUS "Using SDL library version 1.2.")
+    include_directories(${SDL_INCLUDE_DIR})
+    include_directories(${SDL_MIXER_INCLUDE_DIR})
+    set(SDL_LINK_LIBRARIES ${SDL_LIBRARY} ${SDL_MIXER_LIBRARY})
+  else()
+    if(NOT SDL_FOUND)
+      message(WARNING "SDL not found, client target not generated.")
+	endif()
+    if(NOT SDLMIXER_FOUND)
+      message(WARNING "SDL_mixer not found, client target not generated.")
+    endif()
+  endif()
 endif()
 
 # X11 configuration
@@ -193,14 +214,13 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 # Client target
-if(SDL_FOUND AND SDLMIXER_FOUND)
+if(SDL_VERSION)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex ${SDL_LIBRARY})
-  target_link_libraries(odamex ${SDLMIXER_LIBRARY})
+  target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
 
   target_link_libraries(odamex ${ZLIB_LIBRARY})
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})

@@ -130,6 +130,7 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
+EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (snd_musicsystem)
 
@@ -282,11 +283,7 @@ void S_Stop (void)
 	for (size_t i = 0; i < numChannels; i++)
 		S_StopChannel(i);
 
-	// start new music for the level
-	mus_paused = 0;
-
-	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music, 8), true);
+	S_StopMusic();
 }
 
 
@@ -350,6 +347,8 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 
 	// store priority and volume in a temp channel to use with S_CompareChannels
 	channel_t tempchan;
+	tempchan.clear();
+
 	tempchan.priority = priority;
 	tempchan.volume = volume;
 	tempchan.start_time = gametic;
@@ -793,7 +792,7 @@ void S_Sound (int channel, const char *name, float volume, int attenuation)
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	if(channel == CHAN_ITEM && ent != listenplayer().camera)
+	if(!co_globalsound && channel == CHAN_ITEM && ent != listenplayer().camera)
 		return;
 
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, false);
@@ -1259,13 +1258,18 @@ void S_ParseSndInfo()
 					{
 						ambient = Ambients + index;
 					}
+                    
+                    ambient->type = 0;
+                    ambient->periodmin = 0;
+                    ambient->periodmax = 0;
+                    ambient->volume = 0.0f;
 
 					memset(ambient, 0, sizeof(struct AmbientSound));
 
 					sndinfo = COM_Parse(sndinfo);
 					strncpy(ambient->sound, com_token, MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0;
+					ambient->attenuation = 0.0f;
 
 					sndinfo = COM_Parse(sndinfo);
 					if (stricmp(com_token, "point") == 0)

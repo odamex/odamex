@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1166 2008-10-07 22:42:10Z Nes $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -50,6 +50,9 @@
 #define KEY_F10 				0x123
 #define KEY_F11 				0x124
 #define KEY_F12 				0x125
+#define KEY_F13 				0x126
+#define KEY_F14 				0x127
+#define KEY_F15 				0x128
 
 #define KEY_BACKSPACE		0x08
 #define KEY_PAUSE				0x14
@@ -62,8 +65,14 @@
 #define KEY_LALT				0x134
 
 #define KEY_RSHIFT         0x12F
-#define KEY_RCTRL				0x131	
-#define KEY_RALT				0x133	
+#define KEY_RCTRL				0x131
+#define KEY_RALT				0x133
+#define KEY_LWIN				0x137
+#define KEY_RWIN				0x138
+#define KEY_HELP				0x13B
+#define KEY_PRINT				0x13C
+#define KEY_SYSRQ				0x13D	
+#define KEY_BREAK				0x13E
 
 #define KEY_INS 				0x115
 #define KEY_DEL 				0x7F
@@ -74,8 +83,9 @@
 
 // new keys:
 
-#define KEY_CAPSLOCK    (0x80+0x3a)
-#define KEY_SCRLCK      (0x80+0x46)
+#define KEY_CAPSLOCK    (0x80 | 0x3A)
+#define KEY_NUMLOCK     (0x80 | 0x45)
+#define KEY_SCRLCK      (0x80 | 0x46)
 
 #define KEYP_0          0x100
 #define KEYP_1          0x101

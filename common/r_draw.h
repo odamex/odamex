@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 1837 2010-09-02 04:21:09Z spleen $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -59,7 +59,7 @@ extern "C" drawcolumn_t dcol;
 
 typedef struct
 {
-	byte*				source;
+	const byte*			source;
 	byte*				destination;
 
 	int					pitch_in_pixels;

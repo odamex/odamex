@@ -39,6 +39,9 @@ if (USE_MINIUPNP)
   set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
 endif()
 
+# git describe
+set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
+
 # Platform definitions
 define_platform()
 

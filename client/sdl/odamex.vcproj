@@ -510,6 +510,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\i_sdlinput.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\i_sdlinput.h"
+				>
+			</File>
+			<File
 				RelativePath=".\i_sound.cpp"
 				>
 			</File>
@@ -527,6 +535,14 @@
 			</File>
 			<File
 				RelativePath=".\i_video.h"
+				>
+			</File>
+			<File
+				RelativePath=".\i_win32input.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\i_win32input.h"
 				>
 			</File>
 			<File

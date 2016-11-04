@@ -191,6 +191,9 @@ void Z_Free2(void* ptr, const char* file, int line)
 		return;
 	}
 
+	if (ptr == NULL)
+		return;
+
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
 	#endif

@@ -2,8 +2,8 @@ global_compile_options()
 
 # API
 set(API_DIR ../odalpapi)
-file(GLOB API_HEADERS ${API_DIR}/*.h)
-file(GLOB API_SOURCES ${API_DIR}/*.cpp)
+file(GLOB API_HEADERS ${API_DIR}/*.h ${API_DIR}/threads/*.h)
+file(GLOB API_SOURCES ${API_DIR}/*.cpp ${API_DIR}/threads/*.cpp)
 
 # Odalaunch
 set(LAUNCH_DIR res src)

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_pixelformat.h 4868 2014-05-14 21:04:24Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //

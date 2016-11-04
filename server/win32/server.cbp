@@ -28,7 +28,7 @@
 				<Linker>
 					<Add option="-s" />
 					<Add option="-m32" />
-					<Add library="..\..\lib\libminiupnpc.a" />
+					<Add library="../../lib/libminiupnpc.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -63,7 +63,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
-					<Add library="..\..\lib\libminiupnpc-dbg.a" />
+					<Add library="../../lib/libminiupnpc-dbg.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -129,7 +129,7 @@
 					<Add library="odbccp32.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="iphlpapi.lib" />
-					<Add library="..\..\lib\libminiupnpc.lib" />
+					<Add library="../../lib/libminiupnpc.lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
@@ -196,7 +196,7 @@
 					<Add library="odbccp32.lib" />
 					<Add library="ws2_32.lib" />
 					<Add library="iphlpapi.lib" />
-					<Add library="..\..\lib\libminiupnpc-dbg.lib" />
+					<Add library="../../lib/libminiupnpc-dbg.lib" />
 					<Add directory="../../lib" />
 				</Linker>
 				<ExtraCommands>
@@ -215,6 +215,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-m64" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -224,7 +225,8 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="..\..\lib\libminiupnpc64.a" />
+					<Add option="-m64" />
+					<Add library="../../lib/libminiupnpc64.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />
@@ -246,6 +248,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-m64" />
 					<Add option="-g" />
 					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
@@ -257,7 +260,8 @@
 					<Add directory="../../libraries/libminiupnpc" />
 				</Compiler>
 				<Linker>
-					<Add library="..\..\lib\libminiupnpc-dbg64.a" />
+					<Add option="-m64" />
+					<Add library="../../lib/libminiupnpc-dbg64.a" />
 					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="iphlpapi" />

@@ -25,6 +25,7 @@
 #include <stdarg.h>
 
 #include "m_alloc.h"
+#include "m_memio.h"
 #include "version.h"
 #include "gstrings.h"
 #include "g_game.h"
@@ -669,8 +670,7 @@ void C_InitConsoleBackground()
 //
 void STACK_ARGS C_ShutdownConsoleBackground()
 {
-	if (background_surface)
-		I_FreeSurface(background_surface);
+	I_FreeSurface(background_surface);
 }
 
 
@@ -906,19 +906,36 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	return strlen(outline);
 }
 
+// On Windows, vsnprintf() is _vsnprintf().
+#ifdef _WIN32
+#if _MSC_VER < 1400 /* not needed for Visual Studio 2008 */
+#define vsnprintf _vsnprintf
+#endif
+#endif
 
 static int VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
 {
-	char outline[MAX_LINE_LENGTH + 1], outlinelog[MAX_LINE_LENGTH + 1];
+	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
+    int outlinelen = STACKARRAY_LENGTH(outline);
+    int result;
 
 	extern BOOL gameisdead;
 	if (gameisdead)
 		return 0;
 
-	// [SL] security TODO: switch to vsnprintf to prevent overruns
-	// and ensure outline is null-terminated.
-	vsprintf(outline, format, parms);
+    // Windows (and other OSes?) has a vsnprintf() that doesn't always
+    // append a trailing \0. So we must do it, and write into a buffer
+    // that is one byte shorter; otherwise this function is unsafe.
+	result = vsnprintf(outline, outlinelen, format, parms);
 
+    // If truncated, change the final char in the buffer to a \0.
+    // A negative result indicates a truncated buffer on Windows.
+    if (result < 0 || result >= outlinelen)
+    {
+        outline[outlinelen - 1] = '\0';
+        result = outlinelen - 1;
+    }
+	
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	int len = strlen(outline);
 	for (int i = 0; i < len; i++)
@@ -1207,9 +1224,6 @@ void C_HideConsole()
 {
 	ConsoleState = c_up;
 	ConBottom = 0;
-	if (!menuactive)
-		I_DisableKeyRepeat();
-
 	CmdLine.clear();
 	History.resetPosition();
 }
@@ -1237,7 +1251,6 @@ void C_ToggleConsole()
 			ConsoleState = c_falling;
 
 		TabbedLast = false;
-		I_EnableKeyRepeat();
 	}
 	else
 	{
@@ -1247,7 +1260,6 @@ void C_ToggleConsole()
 			ConsoleState = c_rising;
 
 		C_FlushDisplay();
-		I_DisableKeyRepeat();
 	}
 
 	CmdLine.clear();
@@ -1305,7 +1317,7 @@ void C_DrawConsole()
 	{
 		// print the Odamex version in gold in the bottom right corner of console
 		char version_str[16];
-		sprintf(version_str, "%s.%u", DOTVERSIONSTR, GetRevision());
+		sprintf(version_str, "%s (%s)", DOTVERSIONSTR, GitDescribe());
 		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version_str),
 					ConBottom - 12, version_str, CR_ORANGE);
 
@@ -1455,12 +1467,15 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.deleteCharacter();
 		TabbedLast = false;
 		break;
+	case KEY_LALT:
 	case KEY_RALT:
 		// Do nothing
 		break;
 	case KEY_LCTRL:
+	case KEY_RCTRL:
 		KeysCtrl = true;
 		break;
+	case KEY_LSHIFT:
 	case KEY_RSHIFT:
 		// SHIFT was pressed
 		KeysShifted = true;
@@ -1510,18 +1525,18 @@ static bool C_HandleKey(const event_t* ev)
 
 			C_ToggleConsole();
 		}
-		else if (ev->data3 < 32 || ev->data3 > 126)
+		else if (KeysCtrl)		// handle key combinations
 		{
 			// Go to beginning of line
- 			if (KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
+ 			if (tolower(ev->data3) == 'a')
 				CmdLine.moveCursorHome();
 
 			// Go to end of line
- 			if (KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
+ 			if (tolower(ev->data3) == 'e')
 				CmdLine.moveCursorEnd();
 
 			// Paste from clipboard - add each character to command line
- 			if (KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
+ 			if (tolower(ev->data3) == 'v')
 			{
 				CmdLine.insertString(I_GetClipboardText());
 				TabbedLast = false;
@@ -1556,8 +1571,10 @@ BOOL C_Responder(event_t *ev)
 			ScrollState = SCROLLNO;
 			break;
 		case KEY_LCTRL:
+		case KEY_RCTRL:
 			KeysCtrl = false;
 			break;
+		case KEY_LSHIFT:
 		case KEY_RSHIFT:
 			KeysShifted = false;
 			break;

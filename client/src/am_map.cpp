@@ -503,7 +503,7 @@ void AM_changeWindowLoc(void)
 //
 void AM_initVariables(void)
 {
-	static event_t st_notify = { ev_keyup, AM_MSGENTERED, 0, 0 };
+	static event_t st_notify(ev_keyup, AM_MSGENTERED, 0, 0);
 
 	automapactive = true;
 
@@ -704,7 +704,7 @@ void AM_Stop()
 	AM_unloadPics ();
 	automapactive = false;
 
-	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
+	static event_t st_notify(ev_keyup, AM_MSGEXITED, 0, 0);
 	ST_Responder(&st_notify);
 
 	stopped = true;

@@ -298,6 +298,10 @@ CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the server" \
+											"(requires downloading enabled on server)",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
 											"to a server, even if the client already has that file " \
 											"(requires developer 1).",
@@ -378,10 +382,13 @@ static char *C_GetDefaultMouseDriver()
 
 	int driver_id = SDL_MOUSE_DRIVER;
 
+	// TODO: FIXME?
+	#if 0
 	#ifdef _WIN32
 	driver_id = RAW_WIN32_MOUSE_DRIVER;
 	#endif
-
+    #endif
+	
 	sprintf(str, "%i", driver_id);
 	return str;
 }

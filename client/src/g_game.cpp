@@ -443,9 +443,17 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
+	{
 		side += sidemove[speed];
+		if (strafe) // Two-key strafe50
+			side += sidemove[speed];
+	}
 	if (Actions[ACTION_MOVELEFT])
+	{
 		side -= sidemove[speed];
+		if (strafe) // Two-key strafe50
+			side -= sidemove[speed];
+	}
 
 	// buttons
 	// john - only add attack when console up
@@ -628,7 +636,16 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 
 	if (mouse_acceleration > 0.0f)
 	{
-		// apply mouse acceleration (from Chocolate Doom)
+		// denis - from chocolate doom
+		//
+		// Mouse acceleration
+		//
+		// This emulates some of the behavior of DOS mouse drivers by increasing
+		// the speed when the mouse is moved fast.
+		//
+		// The mouse input values are input directly to the game, but when
+		// the values exceed the value of mouse_threshold, they are multiplied
+		// by mouse_acceleration to increase the speed.
 		if (fmousex > mouse_threshold)
 			fmousex = (fmousex - mouse_threshold) * mouse_acceleration + mouse_threshold;
 		else if (fmousex < -mouse_threshold)
@@ -883,7 +900,6 @@ void G_Ticker (void)
 				S_Start();
 				SN_StopAllSequences();
 				R_ExitLevel();
-				I_EnableKeyRepeat();
 			}
 
 			gamestate = GS_FULLCONSOLE;
@@ -1513,6 +1529,8 @@ void G_DoLoadGame (void)
 
 	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
 
+	CL_QuitNetGame();
+
 	FArchive arc (savefile);
 
 	{
@@ -1528,8 +1546,6 @@ void G_DoLoadGame (void)
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
-
-	CL_QuitNetGame();
 
 	netgame = false;
 	multiplayer = false;

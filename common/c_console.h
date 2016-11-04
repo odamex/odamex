@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: c_console.h 1847 2010-09-04 05:16:08Z ladna $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2015 by The Odamex Team.

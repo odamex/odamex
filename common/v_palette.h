@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: v_palette.h 1788 2010-08-24 04:42:57Z russellrice $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2015 by The Odamex Team.

@@ -28,22 +28,17 @@
 
 #ifdef _XBOX
 
+#include <xtl.h>
 #include <fstream>
 #include <agar/core.h>
 #include <SDL/SDL.h>
 
 #include "typedefs.h"
 
-/**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within
- * the agOdalaunch namespace.
- */
-namespace agOdalaunch {
-
-#define inet_ntoa Xbox::InetNtoa
-#define gethostbyname Xbox::GetHostByName
+typedef int socklen_t;
+#define gettimeofday agOdalaunch::Xbox::gettimeofday
+#define inet_ntoa agOdalaunch::Xbox::InetNtoa
+#define gethostbyname agOdalaunch::Xbox::GetHostByName
 
 /**
  * Standard hostent structure.
@@ -61,6 +56,14 @@ struct hostent
 };
 
 /**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within
+ * the agOdalaunch namespace.
+ */
+namespace agOdalaunch {
+
+/**
  * Xbox Class.
  *
  * The Xbox class provides utilities and function overrides
@@ -69,6 +72,8 @@ struct hostent
 class Xbox
 {
 public:
+	static int gettimeofday(struct timeval *tp, ...);
+
 	/**
 	 * Network Byte Order address to ascii string.
 	 *

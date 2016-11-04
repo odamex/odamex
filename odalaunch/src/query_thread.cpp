@@ -24,6 +24,7 @@
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 #include <wx/fileconf.h>
+#include <wx/log.h> 
 
 #include "plat_utils.h"
 #include "query_thread.h"
@@ -34,52 +35,54 @@ int NUM_THREADS;
 QueryThread::QueryThread(wxEvtHandler* EventHandler) : wxThread(wxTHREAD_JOINABLE), m_EventHandler(EventHandler)
 {
 	if(Create() != wxTHREAD_NO_ERROR)
-	{
-		wxMessageBox("Could not create worker thread!",
-		             "Error",
-		             wxOK | wxICON_ERROR);
+		wxLogFatalError("Could not create worker thread!");
 
-		wxExit();
-	}
-
-	Run();
+	wxThread::Run();
 }
 
-void QueryThread::SetStatus(QueryThreadStatus_t Status)
+// Inter-thread communication
+// Message queue from main to worker thread
+void QueryThread::Post(const QueryThread::Message &Msg)
 {
-	wxMutexLocker MutexLocker(m_StatusMutex);
-
-	m_Status = Status;
+    m_Message.Post(Msg);
 }
 
-QueryThreadStatus_t QueryThread::GetStatus()
+void QueryThread::Receive(QueryThread::Message &Msg)
 {
-	QueryThreadStatus_t Status;
-
-	wxMutexLocker MutexLocker(m_StatusMutex);
-
-	Status = m_Status;
-
-	return Status;
+    m_Message.Receive(Msg);
 }
 
+// Status updates from worker to main thread
+void QueryThread::SetStatus(const QueryThread::Status &Sts)
+{
+    wxMutexLocker ML(m_StatusMutex);
+    
+    m_StatusMessage = Sts;   
+}
+
+QueryThread::Status QueryThread::GetStatus()
+{
+    wxMutexLocker ML(m_StatusMutex);
+
+    return m_StatusMessage;
+}
+
+// Closes the thread normally
 void QueryThread::GracefulExit()
 {
-	// Allow threads to acquire a wait state
-	while(GetStatus() != QueryThread_Waiting)
-		Sleep(5);
-
 	// Set the exit code and signal thread to exit
-	SetStatus(QueryThread_Exiting);
-
-	m_Semaphore.Post();
+	Post(QueryThread::Exit);
 
 	// Wait until the thread has closed completely
-	Wait();
+	wxThread::Wait();
 }
 
 void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Address, const wxUint16 Port, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries)
 {
+	// Allow threads to acquire a wait state
+	while(GetStatus() != QueryThread::Waiting)
+		wxThread::Sleep(5);
+
 	m_QueryServer = QueryServer;
 	m_ServerIndex = ServerIndex;
 	m_ServerTimeout = ServerTimeout;
@@ -87,35 +90,55 @@ void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Addre
 	m_Address = Address;
 	m_Port = Port;
 
-    m_Semaphore.Post();
+    Post(QueryThread::Run);
 }
 
 void* QueryThread::Entry()
 {
 	wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY);
 	odalpapi::BufferedSocket Socket;
-
+    int Index;
+    QueryThread::Message Msg;
+	
 	// Keeps the thread alive, it will wait for commands instead of the
 	// killing itself/creating itself overhead
 	while(1)
 	{
-		SetStatus(QueryThread_Waiting);
+        // Wait for work to be posted
+        SetStatus(QueryThread::Waiting);
+        Receive(Msg);
+        
+        // Translate the posted command to a status update
+        switch (Msg)
+        {
+            case QueryThread::Exit:
+            {
+                SetStatus(QueryThread::Exiting);
+                return NULL;
+            }
+            break;
 
-		// Put the thread to sleep and wait for a signal
-		m_Semaphore.Wait();
+            case QueryThread::Run:
+            {
+                SetStatus(QueryThread::Running);
+            }
+            break;
 
-        if(GetStatus() == QueryThread_Exiting)
-			break;
+            default:
+                return NULL;
+        }
 
-		// We got signaled to do some work, so lets do it
-		SetStatus(QueryThread_Running);
-
+        // Set the required data so we can query the server
 		m_QueryServer->SetSocket(&Socket);
 		m_QueryServer->SetAddress(m_Address, m_Port);
-
 		m_QueryServer->SetRetries(m_Retries);
 
-		newEvent.SetId(m_QueryServer->Query(m_ServerTimeout));
+		// Query the server using Odalpapi
+		Index = m_QueryServer->Query(m_ServerTimeout);
+
+        // Set the required fields that is needed, so the caller thread can
+        // process the server data
+        newEvent.SetId(Index);
 		newEvent.SetInt(m_ServerIndex);
 		wxPostEvent(m_EventHandler, newEvent);
 	}

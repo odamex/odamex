@@ -95,12 +95,3 @@ void OdaInfoBar::ShowMessage(const wxString& Message)
 {
 	ShowMessage(Message, wxID_ANY, NULL, "");
 }
-
-// Test code for dlg_main
-/*
-    InfoBar->ShowMessage("An update to Odamex is available"),
-            XRCID("Id_MnuItmVisitWebsite"),
-            wxCommandEventHandler(dlgMain::OnOpenWebsite),
-            "Visit Website"));
-
-*/

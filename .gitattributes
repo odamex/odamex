@@ -1,0 +1,4 @@
+*.cpp ident
+*.h ident
+*.rc ident
+libraries/** -ident

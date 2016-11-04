@@ -151,7 +151,7 @@ OString::~OString()
 	clear();
 
 	// Last string was removed so shutdown
-	if (mStrings->empty())
+	if (mStrings && mStrings->empty())
 		shutdown();
 }
 
@@ -823,5 +823,5 @@ OString OStringToLower(const OString& str)
 	return OStringConverter<LowerFunctor>(str.c_str(), str.length());
 }
 
-VERSION_CONTROL (m_ostring_cpp, "$Id:$")
+VERSION_CONTROL (m_ostring_cpp, "$Id$")
 

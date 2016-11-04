@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: version.cpp$
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -52,21 +52,15 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 	ss << id << " " << l << " " << t << " " << d << " " << p.substr(e == std::string::npos ? 0 : e + 1);
 
 	get_source_files()[file] = ss.str();
-
-	// file with latest revision indicates the revision of the distribution
-	std::string tmp;
-	unsigned int rev = 0;
-	rs >> tmp >> tmp;
-	if(!rs.eof())
-		rs >> rev;
-	if(last_revision < rev)
-		last_revision = rev;
 }
 
-
-unsigned int GetRevision()
+const char* GitDescribe()
 {
-	return last_revision;
+#ifdef GIT_DESCRIBE
+	return GIT_DESCRIBE;
+#else
+	return "unknown";
+#endif
 }
 
 BEGIN_COMMAND (version)
@@ -74,7 +68,7 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s r%d - %s\n", DOTVERSIONSTR, GetRevision(), COPYRIGHTSTR);
+		Printf(PRINT_HIGH, "Odamex v%s (%s) - %s\n", DOTVERSIONSTR, GitDescribe(), COPYRIGHTSTR);
 	}
 	else
 	{

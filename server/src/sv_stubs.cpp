@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sv_stubs.cpp $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
@@ -51,5 +51,5 @@ void V_RefreshColormaps() {}
 
 CVAR_FUNC_IMPL (sv_allowwidescreen) {}
 
-VERSION_CONTROL (sv_stubs_cpp, "$Id: sv_stubs.cpp $")
+VERSION_CONTROL (sv_stubs_cpp, "$Id$")
 

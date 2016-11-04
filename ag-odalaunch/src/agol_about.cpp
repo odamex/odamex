@@ -33,6 +33,7 @@
 #include "icons.h"
 
 using namespace std;
+using namespace odalpapi;
 
 namespace agOdalaunch {
 

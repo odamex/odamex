@@ -151,9 +151,7 @@ void F_StartFinale (char *music, char *flat, const char *text)
 //
 void STACK_ARGS F_ShutdownFinale()
 {
-	if (cast_surface)
-		I_FreeSurface(cast_surface);
-	cast_surface = NULL;
+	I_FreeSurface(cast_surface);
 }
 
 

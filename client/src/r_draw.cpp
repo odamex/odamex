@@ -27,10 +27,7 @@
 #include <assert.h>
 #include <algorithm>
 
-#include <SDL.h>
-#if (SDL_VERSION > SDL_VERSIONNUM(1, 2, 7))
-#include "SDL_cpuinfo.h"
-#endif
+#include "i_sdl.h"
 #include "r_intrin.h"
 
 #include "m_alloc.h"
@@ -505,7 +502,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 	}
 #endif
 
-	palindex_t* source = drawcolumn.source;
+	const palindex_t* source = drawcolumn.source;
 	int pitch = drawcolumn.pitch_in_pixels;
 	int count = drawcolumn.yh - drawcolumn.yl + 1;
 	if (count <= 0)
@@ -646,7 +643,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 	}
 #endif
 
-	palindex_t* source = drawspan.source;
+	const palindex_t* source = drawspan.source;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -707,7 +704,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 	}
 #endif
 
-	palindex_t* source = drawspan.source;
+	const palindex_t* source = drawspan.source;
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -1511,9 +1508,7 @@ static bool detect_optimizations()
 
 	// Detect CPU features in ascending order of preference:
 	#ifdef __MMX__
-	#ifndef _XBOX // Until SDLx is updated
 	if (SDL_HasMMX())
-	#endif
 		optimizations_available.push_back(OPTIMIZE_MMX);
 	#endif
 	#ifdef __SSE2__

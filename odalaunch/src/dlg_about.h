@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dlg_config.cpp 1648 2010-07-11 02:50:26Z russellrice $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -41,7 +41,6 @@ protected:
 	wxStaticText* m_StcTxtCopyright;
 	wxStaticText* m_StcTxtVersion;
 	wxStaticText* m_StcTxtWxVer;
-	wxTextCtrl* m_TxtCtrlDevelopers;
 
 private:
 

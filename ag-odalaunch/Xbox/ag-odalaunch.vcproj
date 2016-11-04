@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="../src;../Xbox"
+				AdditionalIncludeDirectories="../src;../../odalpapi;../Xbox"
 				PreprocessorDefinitions="GCONSOLE;_DEBUG;_XBOX"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -189,7 +189,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="../src;../Xbox"
+				AdditionalIncludeDirectories="../src;../../odalpapi;../Xbox"
 				PreprocessorDefinitions="GCONSOLE;NDEBUG;_XBOX"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -329,10 +329,19 @@
 				RelativePath="..\src\main.cpp">
 			</File>
 			<File
-				RelativePath="..\src\net_io.cpp">
+				RelativePath="..\..\odalpapi\threads\mutex_factory.cpp">
 			</File>
 			<File
-				RelativePath="..\src\net_packet.cpp">
+				RelativePath="..\..\odalpapi\net_error.cpp">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_io.cpp">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_packet.cpp">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_utils.cpp">
 			</File>
 			<File
 				RelativePath=".\xbox_main.cpp">
@@ -342,6 +351,9 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath="..\..\odalpapi\threads\abstract_mutex_factory.h">
+			</File>
 			<File
 				RelativePath="..\src\agol_about.h">
 			</File>
@@ -373,10 +385,22 @@
 				RelativePath="..\src\icons.h">
 			</File>
 			<File
-				RelativePath="..\src\net_io.h">
+				RelativePath="..\..\odalpapi\threads\mutex.h">
 			</File>
 			<File
-				RelativePath="..\src\net_packet.h">
+				RelativePath="..\..\odalpapi\threads\mutex_factory.h">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_error.h">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_io.h">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_packet.h">
+			</File>
+			<File
+				RelativePath="..\..\odalpapi\net_utils.h">
 			</File>
 			<File
 				RelativePath="..\src\oda_thread.h">

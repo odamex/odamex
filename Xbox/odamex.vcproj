@@ -351,6 +351,36 @@
 			</File>
 			<File
 				RelativePath="..\client\src\d_main.cpp">
+				<FileConfiguration
+					Name="Debug|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile_FastCap|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\client\src\d_net.cpp">
@@ -369,6 +399,36 @@
 			</File>
 			<File
 				RelativePath="..\client\src\g_level.cpp">
+				<FileConfiguration
+					Name="Debug|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile_FastCap|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\client\src\g_warmup.cpp">
@@ -452,6 +512,9 @@
 				RelativePath="..\client\src\v_palette.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\v_screenshot.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\v_text.cpp">
 			</File>
 			<File
@@ -517,7 +580,7 @@
 				RelativePath="..\client\src\st_lib.h">
 			</File>
 			<File
-				RelativePath="..\client\src\v_gamma.h">
+				RelativePath="..\client\src\v_screenshot.h">
 			</File>
 			<File
 				RelativePath="..\client\src\v_text.h">
@@ -557,12 +620,6 @@
 				RelativePath="..\common\c_effect.h">
 			</File>
 			<File
-				RelativePath="..\common\c_level.cpp">
-			</File>
-			<File
-				RelativePath="..\common\c_level.h">
-			</File>
-			<File
 				RelativePath="..\common\c_maplist.h">
 			</File>
 			<File
@@ -597,36 +654,6 @@
 			</File>
 			<File
 				RelativePath="..\common\d_main.cpp">
-				<FileConfiguration
-					Name="Debug|Xbox">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Profile|Xbox">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Profile_FastCap|Xbox">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Xbox">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_LTCG|Xbox">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\common\d_main.h">
@@ -696,6 +723,9 @@
 			</File>
 			<File
 				RelativePath="..\common\g_game.h">
+			</File>
+			<File
+				RelativePath="..\common\g_level.cpp">
 			</File>
 			<File
 				RelativePath="..\common\g_level.h">
@@ -986,6 +1016,12 @@
 				RelativePath="..\common\r_things.h">
 			</File>
 			<File
+				RelativePath="..\common\res_texture.cpp">
+			</File>
+			<File
+				RelativePath="..\common\res_texture.h">
+			</File>
+			<File
 				RelativePath="..\common\s_sndseq.cpp">
 			</File>
 			<File
@@ -1043,6 +1079,9 @@
 				RelativePath="..\common\v_palette.h">
 			</File>
 			<File
+				RelativePath="..\common\v_pixelformat.h">
+			</File>
+			<File
 				RelativePath="..\common\v_video.h">
 			</File>
 			<File
@@ -1050,6 +1089,12 @@
 			</File>
 			<File
 				RelativePath="..\common\version.h">
+			</File>
+			<File
+				RelativePath="..\common\w_ident.cpp">
+			</File>
+			<File
+				RelativePath="..\common\w_ident.h">
 			</File>
 			<File
 				RelativePath="..\common\w_wad.cpp">
@@ -1075,12 +1120,6 @@
 			Filter="">
 			<File
 				RelativePath="..\client\sdl\afxres.h">
-			</File>
-			<File
-				RelativePath="..\client\sdl\hardware.cpp">
-			</File>
-			<File
-				RelativePath="..\client\sdl\hardware.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_input.cpp">
@@ -1116,6 +1155,12 @@
 				RelativePath="..\client\sdl\i_sdlvideo.h">
 			</File>
 			<File
+				RelativePath="..\client\sdl\i_sdlinput.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_sdlinput.h">
+			</File>
+			<File
 				RelativePath="..\client\sdl\i_sound.cpp">
 			</File>
 			<File
@@ -1128,7 +1173,16 @@
 				RelativePath="..\client\sdl\i_system.h">
 			</File>
 			<File
+				RelativePath="..\client\sdl\i_video.cpp">
+			</File>
+			<File
 				RelativePath="..\client\sdl\i_video.h">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_win32input.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_win32input.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\mus2midi.cpp">

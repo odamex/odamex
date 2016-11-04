@@ -449,8 +449,10 @@ void P_MovePlayer (player_t *player)
 		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
 		{
 			player->mo->momz += 8*FRACUNIT;
-			if(!player->spectator)
-				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
+
+//			[SL] No jumping sound...
+//			if(!player->spectator)
+//				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player->mo->flags2 &= ~MF2_ONMOBJ;
             player->jumpTics = 18;
@@ -592,12 +594,25 @@ bool P_AreTeammates(player_t &a, player_t &b)
 		   (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF));
 }
 
-bool P_CanSpy(player_t &viewer, player_t &other)
+bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
-	if ((other.id != consoleplayer_id && other.spectator) || !other.mo)
+	// Viewers can always spy themselves.
+	if (viewer.id == other.id)
+		return true;
+
+	// You cannot view those without bodies or spectators.
+	if (!other.mo || other.spectator)
 		return false;
 
-	return (viewer.spectator || P_AreTeammates(viewer, other) || demoplayback);
+	// Demo-watchers and spectators can view anybody.
+	if (demo || viewer.spectator)
+		return true;
+
+	// A teammate can see their other teammates
+	if (P_AreTeammates(viewer, other))
+		return true;
+
+	return false;
 }
 
 void SV_SendPlayerInfo(player_t &);

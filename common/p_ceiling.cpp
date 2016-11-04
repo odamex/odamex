@@ -31,7 +31,7 @@
 #include "doomstat.h"
 #include "r_state.h"
 
-EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_boomphys)
 
 extern bool predicting;
 
@@ -267,7 +267,7 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 
 	// check if a manual trigger, if so do just the sector on the backside
 	//
-	if (co_zdoomphys && tag == 0)
+	if (co_boomphys && tag == 0)
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
@@ -295,7 +295,7 @@ manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (sec->ceilingdata)
 		{
-			if (co_zdoomphys && manual)
+			if (co_boomphys && manual)
 				return false;
 			else
 				continue;

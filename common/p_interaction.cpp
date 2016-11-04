@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_interaction.cpp 1920 2010-09-16 20:49:17Z ladna $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -1523,5 +1523,5 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	}
 }
 
-VERSION_CONTROL (p_interaction_cpp, "$Id: p_interaction.cpp 1920 2010-09-16 20:49:17Z ladna $")
+VERSION_CONTROL (p_interaction_cpp, "$Id$")
 

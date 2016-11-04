@@ -16,6 +16,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-Wno-deprecated-declarations" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -23,7 +24,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lws2_32" />
+					<Add option="-lshlwapi -lversion -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lws2_32" />
 				</Linker>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
@@ -44,6 +45,7 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-inline" />
+					<Add option="-Wno-deprecated-declarations" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -51,7 +53,7 @@
 					<Add option="-DODAMEX_DEBUG" />
 				</Compiler>
 				<Linker>
-					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lws2_32" />
+					<Add option="-lshlwapi -lversion -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lws2_32" />
 				</Linker>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
@@ -233,7 +235,7 @@
 			<Environment>
 				<Variable name="WX_CFG" value="u" />
 				<Variable name="WX_LIB" value="lib" />
-				<Variable name="WX_VER" value="30" />
+				<Variable name="WX_VER" value="31" />
 			</Environment>
 		</Build>
 		<VirtualTargets>
@@ -289,6 +291,18 @@
 			<Option virtualFolder="odalpapi/" />
 		</Unit>
 		<Unit filename="../odalpapi/net_utils.h">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/abstract_mutex_factory.h">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/mutex.h">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/mutex_factory.cpp">
+			<Option virtualFolder="odalpapi/" />
+		</Unit>
+		<Unit filename="../odalpapi/threads/mutex_factory.h">
 			<Option virtualFolder="odalpapi/" />
 		</Unit>
 		<Unit filename="../odalpapi/typedefs.h">

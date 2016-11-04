@@ -45,7 +45,8 @@
 #include <stack>
 #include <iostream>
 
-#include <SDL.h>
+#include "i_sdl.h" 
+#include "i_crash.h"
 // [Russell] - Don't need SDLmain library
 #ifdef _WIN32
 #undef main
@@ -79,6 +80,8 @@
 #    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
 #endif
 
+EXTERN_CVAR (r_centerwindow)
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -102,6 +105,9 @@ int I_Main(int argc, char *argv[])
 int main(int argc, char *argv[])
 #endif
 {
+	// [AM] Set crash callbacks, so we get something useful from crashes.
+	I_SetCrashCallbacks();
+
 	try
 	{
 #if defined(UNIX) && !defined(GEKKO)
@@ -134,14 +140,18 @@ int main(int argc, char *argv[])
 			}
 		}
 
+#if defined(SDL12)
         // [Russell] - No more double-tapping of capslock to enable autorun
         SDL_putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
 
 		// Set SDL video centering
 		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
 		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
+#endif
 
 #if defined _WIN32 && !defined _XBOX
+
+	#if defined(SDL12)
     	// From the SDL 1.2.10 release notes:
     	//
     	// > The "windib" video driver is the default now, to prevent
@@ -157,8 +167,20 @@ int main(int argc, char *argv[])
 		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
      	if (Args.CheckParm ("-gdi"))
         	putenv((char*)"SDL_VIDEODRIVER=windib");
-    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+    	else
         	putenv((char*)"SDL_VIDEODRIVER=directx");
+	#endif	// SDL12
+
+	
+	#if defined(SDL20)
+        // FIXME: Remove this when SDL gets it shit together, see 
+        // https://bugzilla.libsdl.org/show_bug.cgi?id=2089
+        // ...
+        // Disable thread naming on windows, with SDL 2.0.5 and GDB > 7.8.1
+        // RaiseException will be thrown and will crash under the debugger with symbols
+        // loaded or not
+        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
+	#endif // SDL20
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
@@ -178,13 +200,15 @@ int main(int argc, char *argv[])
                     LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
             }
         }
-#endif
+#endif	// _WIN32 && !_XBOX
 
 #ifdef X11
+	#if defined(SDL12)
 		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
 		// bypassing X11's mouse acceleration
 		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");
-#endif
+	#endif	// SDL12
+#endif	// X11
 
 		unsigned int sdl_flags = SDL_INIT_TIMER;
 

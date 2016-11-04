@@ -16,7 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SDL input handler
+//
+// Input event handler
 //
 //-----------------------------------------------------------------------------
 
@@ -27,12 +28,13 @@
 #include <list>
 #include <sstream>
 
-#include <SDL.h>
 #include "win32inc.h"
 
 #include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
+#include "i_sdlinput.h"
+#include "i_win32input.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
@@ -40,57 +42,24 @@
 #include "c_cvars.h"
 #include "i_system.h"
 #include "c_dispatch.h"
+#include "hu_stuff.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
 
 #ifdef _WIN32
-#include <SDL_syswm.h>
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
 #define JOY_DEADZONE 6000
 
-EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_defwidth)
-EXTERN_CVAR (vid_defheight)
-
-static int mouse_driver_id = -1;
-static MouseInput* mouse_input = NULL;
+static int prev_mouse_driver = -1;
+static IInputSubsystem* input_subsystem = NULL;
 
 static bool window_focused = false;
 static bool input_grabbed = false;
 static bool nomouse = false;
-extern bool configuring_controls;
-
-EXTERN_CVAR (use_joystick)
-EXTERN_CVAR (joy_active)
-
-typedef struct
-{
-	SDL_Event	Event;
-	unsigned int RegTick;
-	unsigned int LastTick;
-} JoystickEvent_t;
-
-static SDL_Joystick *openedjoy = NULL;
-static std::list<JoystickEvent_t*> JoyEventList;
-
-// denis - from chocolate doom
-//
-// Mouse acceleration
-//
-// This emulates some of the behavior of DOS mouse drivers by increasing
-// the speed when the mouse is moved fast.
-//
-// The mouse input values are input directly to the game, but when
-// the values exceed the value of mouse_threshold, they are multiplied
-// by mouse_acceleration to increase the speed.
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
-
-extern constate_e ConsoleState;
 
 //
 // I_FlushInput
@@ -99,52 +68,49 @@ extern constate_e ConsoleState;
 //
 void I_FlushInput()
 {
-	SDL_Event ev;
-
-	I_DisableKeyRepeat();
-
-	while (SDL_PollEvent(&ev)) {}
-
 	C_ReleaseKeys();
 
-	I_EnableKeyRepeat();
-
-	if (mouse_input)
-		mouse_input->flushEvents();
+	input_subsystem->flushInput();
 }
 
-void I_EnableKeyRepeat()
-{
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY / 2, SDL_DEFAULT_REPEAT_INTERVAL);
-}
-
-void I_DisableKeyRepeat()
-{
-	SDL_EnableKeyRepeat(0, 0);
-}
-
-void I_ResetKeyRepeat()
-{
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-}
 
 //
-// I_CheckFocusState
+// I_EnableKeyRepeat
 //
-// Determines if the Odamex window currently has the window manager focus.
-// We should have input (keyboard) focus and be visible (not minimized).
+// Enables key repeat for text entry (console, menu system, and chat).
 //
-static bool I_CheckFocusState()
+static void I_EnableKeyRepeat()
 {
-	SDL_PumpEvents();
-	Uint8 state = SDL_GetAppState();
-	return (state & SDL_APPACTIVE) && (state & SDL_APPINPUTFOCUS);
+	input_subsystem->enableKeyRepeat();
 }
+
+
+//
+// I_DisableKeyRepeat
+//
+// Disables key repeat for standard game control.
+//
+static void I_DisableKeyRepeat()
+{
+	input_subsystem->disableKeyRepeat();
+}
+
+
+//
+// I_CanRepeat
+//
+// Returns true if the input (joystick & keyboard) should have their buttons repeated.
+//
+static bool I_CanRepeat()
+{
+	return ConsoleState == c_down || HU_ChatMode() != CHAT_INACTIVE || menuactive;
+}
+
 
 //
 // I_UpdateFocus
 //
-// Update the value of window_focused each tic and in response to SDL
+// Update the value of window_focused each tic and in response to
 // window manager events.
 //
 // We try to make ourselves be well-behaved: the grab on the mouse
@@ -154,32 +120,13 @@ static bool I_CheckFocusState()
 //
 static void I_UpdateFocus()
 {
-	SDL_Event  ev;
-	bool new_window_focused = I_CheckFocusState();
+	bool new_window_focused = I_GetWindow()->isFocused();
 
 	// [CG][EE] Handle focus changes, this is all necessary to avoid repeat events.
 	if (window_focused != new_window_focused)
-	{
-		if(new_window_focused)
-		{
-			while(SDL_PollEvent(&ev)) {}
-			I_EnableKeyRepeat();
-		}
-		else
-		{
-			I_DisableKeyRepeat();
-		}
+		I_FlushInput();
 
-#ifdef _WIN32
-		tab_keydown = false;
-#endif
-		C_ReleaseKeys();
-
-		window_focused = new_window_focused;
-
-		if (mouse_input)
-			mouse_input->flushEvents();
-	}
+	window_focused = new_window_focused;
 }
 
 
@@ -195,7 +142,12 @@ static bool I_CanGrab()
 	return true;
 	#endif
 
-	if (!window_focused)
+	extern bool configuring_controls;
+	extern constate_e ConsoleState;
+
+	assert(I_GetWindow() != NULL);
+
+	if (!I_GetWindow()->isFocused())
 		return false;
 	else if (I_GetWindow()->isFullScreen())
 		return true;
@@ -217,7 +169,7 @@ static bool I_CanGrab()
 //
 static void I_GrabInput()
 {
-	SDL_WM_GrabInput(SDL_GRAB_ON);
+	input_subsystem->grabInput();
 	input_grabbed = true;
 	I_ResumeMouse();
 }
@@ -227,7 +179,7 @@ static void I_GrabInput()
 //
 static void I_UngrabInput()
 {
-	SDL_WM_GrabInput(SDL_GRAB_OFF);
+	input_subsystem->releaseInput();
 	input_grabbed = false;
 	I_PauseMouse();
 }
@@ -236,14 +188,14 @@ static void I_UngrabInput()
 //
 // I_ForceUpdateGrab
 //
-// Determines if SDL should grab the mouse based on the game window having
+// Determines if the input should be grabbed based on the game window having
 // focus and the status of the menu and console.
 //
 // Should be called whenever the video mode changes.
 //
 void I_ForceUpdateGrab()
 {
-	window_focused = I_CheckFocusState();
+	window_focused = I_GetWindow()->isFocused();
 
 	if (I_CanGrab())
 		I_GrabInput();
@@ -255,7 +207,7 @@ void I_ForceUpdateGrab()
 //
 // I_UpdateGrab
 //
-// Determines if SDL should grab the mouse based on the game window having
+// Determines if the input should be grabbed based on the game window having
 // focus and the status of the menu and console.
 //
 static void I_UpdateGrab()
@@ -277,225 +229,92 @@ static void I_UpdateGrab()
 }
 
 
-//
-// I_InitFocus
-//
-// Sets the initial value of window_focused.
-//
-static void I_InitFocus()
+CVAR_FUNC_IMPL(use_joystick)
 {
-	I_ForceUpdateGrab();
-}
-
-
-// Add any joystick event to a list if it will require manual polling
-// to detect release. This includes hat events (mostly due to d-pads not
-// triggering the centered event when released) and analog axis bound
-// as a key/button -- HyperEye
-//
-// RegisterJoystickEvent
-//
-static int RegisterJoystickEvent(SDL_Event *ev, int value)
-{
-	JoystickEvent_t *evc = NULL;
-	event_t		  event;
-
-	if(!ev)
-		return -1;
-
-	if(ev->type == SDL_JOYHATMOTION)
+	if (var == 0.0f)
 	{
-		if(!JoyEventList.empty())
-		{
-			std::list<JoystickEvent_t*>::iterator i;
-
-			for(i = JoyEventList.begin(); i != JoyEventList.end(); ++i)
-			{
-				if(((*i)->Event.type == ev->type) && ((*i)->Event.jhat.which == ev->jhat.which)
-							&& ((*i)->Event.jhat.hat == ev->jhat.hat) && ((*i)->Event.jhat.value == value))
-					return 0;
-			}
-		}
-
-		evc = new JoystickEvent_t;
-
-		memcpy(&evc->Event, ev, sizeof(SDL_Event));
-		evc->Event.jhat.value = value;
-		evc->LastTick = evc->RegTick = SDL_GetTicks();
-
-		event.data1 = event.data2 = event.data3 = 0;
-
-		event.type = ev_keydown;
-		if(value == SDL_HAT_UP)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT1;
-		else if(value == SDL_HAT_RIGHT)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT2;
-		else if(value == SDL_HAT_DOWN)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT3;
-		else if(value == SDL_HAT_LEFT)
-			event.data1 = (ev->jhat.hat * 4) + KEY_HAT4;
-
-		event.data2 = event.data1;
-	}
-
-	if(evc)
-	{
-		JoyEventList.push_back(evc);
-		D_PostEvent(&event);
-		return 1;
-	}
-
-	return 0;
-}
-
-void UpdateJoystickEvents()
-{
-	std::list<JoystickEvent_t*>::iterator i;
-	event_t	event;
-
-	if(JoyEventList.empty())
-		return;
-
-	i = JoyEventList.begin();
-	while(i != JoyEventList.end())
-	{
-		if((*i)->Event.type == SDL_JOYHATMOTION)
-		{
-			// Hat position released
-			if(!(SDL_JoystickGetHat(openedjoy, (*i)->Event.jhat.hat) & (*i)->Event.jhat.value))
-				event.type = ev_keyup;
-			// Hat button still held - Repeat at key repeat interval
-			else if((SDL_GetTicks() - (*i)->RegTick >= SDL_DEFAULT_REPEAT_DELAY) &&
-					(SDL_GetTicks() - (*i)->LastTick >= SDL_DEFAULT_REPEAT_INTERVAL*2))
-			{
-				(*i)->LastTick = SDL_GetTicks();
-				event.type = ev_keydown;
-			}
-			else
-			{
-				++i;
-				continue;
-			}
-
-			event.data1 = event.data2 = event.data3 = 0;
-
-			if((*i)->Event.jhat.value == SDL_HAT_UP)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT1;
-			else if((*i)->Event.jhat.value == SDL_HAT_RIGHT)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT2;
-			else if((*i)->Event.jhat.value == SDL_HAT_DOWN)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT3;
-			else if((*i)->Event.jhat.value == SDL_HAT_LEFT)
-				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT4;
-
-			D_PostEvent(&event);
-
-			if(event.type == ev_keyup)
-			{
-				// Delete the released event
-				delete *i;
-				i = JoyEventList.erase(i);
-				continue;
-			}
-		}
-		++i;
-	}
-}
-
-// This turns on automatic event polling for joysticks so that the state
-// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
-//
-// EnableJoystickPolling
-//
-static int EnableJoystickPolling()
-{
-	return SDL_JoystickEventState(SDL_ENABLE);
-}
-
-static int DisableJoystickPolling()
-{
-	return SDL_JoystickEventState(SDL_IGNORE);
-}
-
-CVAR_FUNC_IMPL (use_joystick)
-{
-	if(var <= 0.0)
-	{
+#ifdef GCONSOLE
 		// Don't let console users disable joystick support because
 		// they won't have any way to reenable through the menu.
-#ifdef GCONSOLE
-		use_joystick = 1.0;
+		var = 1.0f;
 #else
 		I_CloseJoystick();
-		DisableJoystickPolling();
 #endif
 	}
 	else
 	{
 		I_OpenJoystick();
-		EnableJoystickPolling();
 	}
 }
 
 
-CVAR_FUNC_IMPL (joy_active)
+CVAR_FUNC_IMPL(joy_active)
 {
-	if( (var < 0.0) || ((int)var > I_GetJoystickCount()) )
-		var = 0.0;
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == (int)var)
+		{
+			I_OpenJoystick();
+			return;
+		}
+	}
 
-	I_CloseJoystick();
-
-	I_OpenJoystick();
+#ifdef GCONSOLE	
+	// Don't let console users choose an invalid joystick because
+	// they won't have any way to reenable through the menu.
+	if (!devices.empty())
+		var = devices.front().mId;
+#endif
 }
+
 
 //
 // I_GetJoystickCount
 //
 int I_GetJoystickCount()
 {
-	return SDL_NumJoysticks();
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	return devices.size();
 }
 
 //
 // I_GetJoystickNameFromIndex
 //
-std::string I_GetJoystickNameFromIndex (int index)
+std::string I_GetJoystickNameFromIndex(int index)
 {
-	const char  *joyname = NULL;
-	std::string  ret;
-
-	joyname = SDL_JoystickName(index);
-
-	if(!joyname)
-		return "";
-
-	ret = joyname;
-
-	return ret;
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == index)
+			return it->mDeviceName;
+	}
+	return "";
 }
+
 
 //
 // I_OpenJoystick
 //
 bool I_OpenJoystick()
 {
-	int numjoy;
-
-	numjoy = I_GetJoystickCount();
-
-	if(!numjoy || !use_joystick)
-		return false;
-
-	if((int)joy_active > numjoy)
-		joy_active.Set(0.0);
-
-	if(!SDL_JoystickOpened(joy_active))
-		openedjoy = SDL_JoystickOpen(joy_active);
-
-	if(!SDL_JoystickOpened(joy_active))
-		return false;
-
-	return true;
+	I_CloseJoystick();		// just in case it was left open...
+	
+	if (use_joystick != 0)
+	{
+		// Verify that the joystick ID indicated by the joy_active CVAR
+		// is valid and if so, initialize that joystick
+		const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+		for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+		{
+			if (it->mId == joy_active.asInt())
+			{
+				input_subsystem->initJoystick(it->mId);
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 //
@@ -503,308 +322,21 @@ bool I_OpenJoystick()
 //
 void I_CloseJoystick()
 {
-	extern int joyforward, joystrafe, joyturn, joylook;
-	int		ndx;
-
-#ifndef _XBOX // This is to avoid a bug in SDLx
-	if(!I_GetJoystickCount() || !openedjoy)
-		return;
-
-	ndx = SDL_JoystickIndex(openedjoy);
-
-	if(SDL_JoystickOpened(ndx))
-		SDL_JoystickClose(openedjoy);
-
-	openedjoy = NULL;
-#endif
+	// Verify that the joystick ID indicated by the joy_active CVAR
+	// is valid and if so, shutdown that joystick
+	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
+	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	{
+		if (it->mId == joy_active.asInt())
+			input_subsystem->shutdownJoystick(it->mId);
+	}
 
 	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
+	extern int joyforward, joystrafe, joyturn, joylook;
 	joyforward = joystrafe = joyturn = joylook = 0;
 }
 
-//
-// I_InitInput
-//
-bool I_InitInput (void)
-{
-	if (Args.CheckParm("-nomouse"))
-		nomouse = true;
 
-	atterm(I_ShutdownInput);
-
-	SDL_EnableUNICODE(true);
-
-	I_DisableKeyRepeat();
-
-	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
-	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
-	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
-
-	if((int)use_joystick && I_GetJoystickCount())
-	{
-		I_OpenJoystick();
-		EnableJoystickPolling();
-	}
-
-#ifdef _WIN32
-	// denis - in fullscreen, prevent exit on accidental windows key press
-	// [Russell] - Disabled because it screws with the mouse
-	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
-#endif
-
-	I_InitFocus();
-
-	// [SL] do not intialize mouse driver here since it will be called from
-	// the mouse_driver CVAR callback
-
-	return true;
-}
-
-//
-// I_ShutdownInput
-//
-void STACK_ARGS I_ShutdownInput (void)
-{
-	I_PauseMouse();
-
-	I_ShutdownMouseDriver();
-
-	I_UngrabInput();
-	I_ResetKeyRepeat();
-}
-
-//
-// I_PauseMouse
-//
-// Enables the mouse cursor and prevents the game from processing mouse movement
-// or button events
-//
-void I_PauseMouse()
-{
-	SDL_ShowCursor(true);
-	if (mouse_input)
-		mouse_input->pause();
-}
-
-//
-// I_ResumeMouse
-//
-// Disables the mouse cursor and allows the game to process mouse movement
-// or button events
-//
-void I_ResumeMouse()
-{
-	SDL_ShowCursor(false);
-	if (mouse_input)
-		mouse_input->resume();
-}
-
-//
-// I_GetEvent
-//
-// Pumps SDL for new input events and posts them to the Doom event queue.
-// Keyboard and joystick events are retreived directly from SDL while mouse
-// movement and buttons are handled by the MouseInput class.
-//
-void I_GetEvent()
-{
-	const int MAX_EVENTS = 256;
-	static SDL_Event sdl_events[MAX_EVENTS];
-	event_t event;
-
-	I_UpdateFocus();
-	I_UpdateGrab();
-
-	// Process mouse movement and button events
-	if (mouse_input)
-		mouse_input->processEvents();
-
-	// Force SDL to gather events from input devices. This is called
-	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only non-mouse events, SDL_PumpEvents is necessary.
-	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(sdl_events, MAX_EVENTS, SDL_GETEVENT, SDL_ALLEVENTS & ~SDL_MOUSEEVENTMASK);
-
-	for (int i = 0; i < num_events; i++)
-	{
-		event.data1 = event.data2 = event.data3 = 0;
-
-		SDL_Event* sdl_ev = &sdl_events[i];
-		switch (sdl_ev->type)
-		{
-		case SDL_QUIT:
-			AddCommandString("quit");
-			break;
-
-		case SDL_VIDEORESIZE:
-		{
-			// Resizable window mode resolutions
-			if (!vid_fullscreen)
-			{
-				std::stringstream Command;
-				Command << "vid_setmode " << sdl_ev->resize.w << " " << sdl_ev->resize.h;
-				AddCommandString(Command.str());
-
-				vid_defwidth.Set((float)sdl_ev->resize.w);
-				vid_defheight.Set((float)sdl_ev->resize.h);
-			}
-			break;
-		}
-
-		case SDL_ACTIVEEVENT:
-			// need to update our focus state
-			I_UpdateFocus();
-			I_UpdateGrab();
-			// pause the mouse when the focus goes away (eg, alt-tab)
-			if (!window_focused)
-				I_PauseMouse();
-			break;
-
-		case SDL_KEYDOWN:
-			event.type = ev_keydown;
-			event.data1 = sdl_ev->key.keysym.sym;
-
-			if (event.data1 >= SDLK_KP0 && event.data1 <= SDLK_KP9)
-				event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP0);
-			else if (event.data1 == SDLK_KP_PERIOD)
-				event.data2 = event.data3 = '.';
-			else if (event.data1 == SDLK_KP_DIVIDE)
-				event.data2 = event.data3 = '/';
-			else if (event.data1 == SDLK_KP_ENTER)
-				event.data2 = event.data3 = '\r';
-			else if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
-				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
-			else
-				event.data2 = event.data3 = 0;
-
-#ifdef _XBOX
-			// Fix for ENTER key on Xbox
-			if (event.data1 == SDLK_RETURN)
-				event.data2 = event.data3 = '\r';
-#endif
-
-#ifdef _WIN32
-			//HeX9109: Alt+F4 for cheats! Thanks Spleen
-			if (event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
-				AddCommandString("quit");
-			// SoM: Ignore the tab portion of alt-tab presses
-			// [AM] Windows 7 seems to preempt this check.
-			if (event.data1 == SDLK_TAB)
-			{
-				if ((vid_fullscreen && num_events > 1) || (SDL_GetModState() & (KMOD_LALT | KMOD_RALT)))
-				{
-					event.data1 = event.data2 = event.data3 = 0;
-				} else {
-
-					tab_keydown = true;
-				}
-			}
-#endif
-			D_PostEvent(&event);
-			break;
-
-		case SDL_KEYUP:
-
-			event.type = ev_keyup;
-			event.data1 = sdl_ev->key.keysym.sym;
-
-			if ((sdl_ev->key.keysym.unicode & 0xFF80) == 0)
-				event.data2 = event.data3 = sdl_ev->key.keysym.unicode;
-			else
-				event.data2 = event.data3 = 0;
-			D_PostEvent(&event);
-
-#ifdef _WIN32
-			// [ML] SDL 1.2 directx dumbness - when returning from alt-tab, even with
-			// best practices from other ports, the tab key will get trapped for one key press,
-			// only registering an SDL_KEYUP event.  If this is the case, send down another keydown
-			// event.  This issue only occurs when the video driver is set to directx (the default in Odamex).
-			if ((ConsoleState == c_fallfull || ConsoleState == c_down) && event.data1 == SDLK_TAB && tab_keydown == false && I_CheckFocusState())
-			{
-				DPrintf("FOCUS STATUS: %u \n",I_CheckFocusState());
-				DPrintf("GOT IN THE KEYUP TRAP \n");
-				event.type = ev_keydown;
-				D_PostEvent(&event);
-			}
-
-			tab_keydown = false;
-#endif
-			break;
-
-		case SDL_JOYBUTTONDOWN:
-			if (sdl_ev->jbutton.which == joy_active)
-			{
-				event.type = ev_keydown;
-				event.data1 = sdl_ev->jbutton.button + KEY_JOY1;
-				event.data2 = event.data1;
-
-				D_PostEvent(&event);
-				break;
-			}
-
-		case SDL_JOYBUTTONUP:
-			if (sdl_ev->jbutton.which == joy_active)
-			{
-				event.type = ev_keyup;
-				event.data1 = sdl_ev->jbutton.button + KEY_JOY1;
-				event.data2 = event.data1;
-
-				D_PostEvent(&event);
-				break;
-			}
-
-		case SDL_JOYAXISMOTION:
-			if (sdl_ev->jaxis.which == joy_active)
-			{
-				event.type = ev_joystick;
-				event.data1 = 0;
-				event.data2 = sdl_ev->jaxis.axis;
-				if ((sdl_ev->jaxis.value < JOY_DEADZONE) && (sdl_ev->jaxis.value > -JOY_DEADZONE))
-					event.data3 = 0;
-				else
-					event.data3 = sdl_ev->jaxis.value;
-
-				D_PostEvent(&event);
-				break;
-			}
-
-		case SDL_JOYHATMOTION:
-			if (sdl_ev->jhat.which == joy_active)
-			{
-				// Each of these need to be tested because more than one can be pressed and a
-				// unique event is needed for each
-				if (sdl_ev->jhat.value & SDL_HAT_UP)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_UP);
-				if (sdl_ev->jhat.value & SDL_HAT_RIGHT)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_RIGHT);
-				if (sdl_ev->jhat.value & SDL_HAT_DOWN)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_DOWN);
-				if (sdl_ev->jhat.value & SDL_HAT_LEFT)
-					RegisterJoystickEvent(sdl_ev, SDL_HAT_LEFT);
-
-				break;
-			}
-		};
-	}
-
-	if (use_joystick)
-		UpdateJoystickEvents();
-}
-
-//
-// I_StartTic
-//
-void I_StartTic (void)
-{
-	I_GetEvent();
-}
-
-//
-// I_StartFrame
-//
-void I_StartFrame (void)
-{
-}
 
 // ============================================================================
 //
@@ -812,19 +344,12 @@ void I_StartFrame (void)
 //
 // ============================================================================
 
-static bool I_SDLMouseAvailible();
-static bool I_MouseUnavailible();
-#ifdef USE_RAW_WIN32_MOUSE
-static bool I_RawWin32MouseAvailible();
-#endif	// USE_RAW_WIN32_MOUSE
+bool I_OpenMouse();
+void I_CloseMouse();
 
 MouseDriverInfo_t MouseDriverInfo[] = {
-	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible,		&SDLMouse::create },
-#ifdef USE_RAW_WIN32_MOUSE
-	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible,	&RawWin32Mouse::create }
-#else
-	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_MouseUnavailible,	NULL }
-#endif	// USE_WIN32_MOUSE
+	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible },
+	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible }
 };
 
 
@@ -855,12 +380,13 @@ static bool I_IsMouseDriverValid(int id)
 
 CVAR_FUNC_IMPL(mouse_driver)
 {
-	if (!I_IsMouseDriverValid(var))
+	int new_mouse_driver = var.asInt();
+	if (!I_IsMouseDriverValid(new_mouse_driver))
 	{
-		if (var.asInt() == SDL_MOUSE_DRIVER)
+		if (new_mouse_driver == SDL_MOUSE_DRIVER)
 		{
 			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
-			I_ShutdownMouseDriver();
+			I_CloseMouse();
 			nomouse = true;
 		}
 		else
@@ -870,895 +396,394 @@ CVAR_FUNC_IMPL(mouse_driver)
 	}
 	else
 	{
-		if (var.asInt() != mouse_driver_id)
+		I_OpenMouse();
+	}
+}
+
+
+//
+// I_CloseMouse()
+//
+void I_CloseMouse()
+{
+	input_subsystem->shutdownMouse(0);
+	prev_mouse_driver = -1;
+}
+
+
+//
+// I_OpenMouse
+//
+bool I_OpenMouse()
+{
+	if (!nomouse)
+	{
+		int new_mouse_driver = mouse_driver.asInt();
+		if (new_mouse_driver != prev_mouse_driver)
 		{
-			mouse_driver_id = var.asInt();
-			I_InitMouseDriver();
+			I_CloseMouse();
+
+			// try to initialize the user's preferred mouse driver
+			if (I_IsMouseDriverValid(new_mouse_driver))
+			{
+				input_subsystem->initMouse(new_mouse_driver);
+				prev_mouse_driver = new_mouse_driver;
+				return true;
+			}
 		}
 	}
-}
-
-//
-// I_ShutdownMouseDriver
-//
-// Frees the memory used by mouse_input
-//
-void I_ShutdownMouseDriver()
-{
-	delete mouse_input;
-	mouse_input = NULL;
-}
-
-static void I_SetSDLIgnoreMouseEvents()
-{
-	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
-	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
-}
-
-static void I_UnsetSDLIgnoreMouseEvents()
-{
-	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
-	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
-	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
-}
-
-//
-// I_InitMouseDriver
-//
-// Instantiates the proper concrete MouseInput object based on the
-// mouse_driver cvar and stores a pointer to the object in mouse_input.
-//
-void I_InitMouseDriver()
-{
-	I_ShutdownMouseDriver();
-
-	// ignore SDL mouse input for now... The mouse driver will change this if needed
-	I_SetSDLIgnoreMouseEvents();
-
-	if (nomouse)
-		return;
-
-	// try to initialize the user's preferred mouse driver
-	MouseDriverInfo_t* info = I_FindMouseDriverInfo(mouse_driver_id);
-	if (info)
-	{
-		if (info->create != NULL)
-			mouse_input = info->create();
-		if (mouse_input != NULL)
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing %s input.\n", info->name);
-		else
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initalize %s input.\n", info->name);
-	}
-
-	// fall back on SDLMouse if the preferred driver failed to initialize
-	if (mouse_input == NULL)
-	{
-		mouse_input = SDLMouse::create();
-		if (mouse_input != NULL)
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Initializing SDL Mouse input as a fallback.\n");
-		else
-			Printf(PRINT_HIGH, "I_InitMouseDriver: Unable to initialize SDL Mouse input as a fallback.\n");
-	}
-
-	I_FlushInput();
-	I_ResumeMouse();
-}
-
-//
-// I_CheckForProc
-//
-// Checks if a function with the given name is in the given DLL file.
-// This is used to determine if the user's version of Windows has the necessary
-// functions availible.
-//
-#if defined(_WIN32) && !defined(_XBOX)
-static bool I_CheckForProc(const char* dllname, const char* procname)
-{
-	bool avail = false;
-	HMODULE dll = LoadLibrary(TEXT(dllname));
-	if (dll)
-	{
-		avail = (GetProcAddress(dll, procname) != NULL);
-		FreeLibrary(dll);
-	}
-	return avail;
-}
-#endif  // WIN32
-
-//
-// I_RawWin32MouseAvailible
-//
-// Checks if the raw input mouse functions that the RawWin32Mouse
-// class calls are availible on the current system. They require
-// Windows XP or higher.
-//
-#ifdef USE_RAW_WIN32_MOUSE
-static bool I_RawWin32MouseAvailible()
-{
-	return	I_CheckForProc("user32.dll", "RegisterRawInputDevices") &&
-			I_CheckForProc("user32.dll", "GetRegisteredRawInputDevices") &&
-			I_CheckForProc("user32.dll", "GetRawInputData");
-}
-#endif  // USE_RAW_WIN32_MOUSE
-
-//
-// I_SDLMouseAvailible
-//
-// Checks if SDLMouse can be used. Always true since SDL is used as the
-// primary backend for everything.
-//
-static bool I_SDLMouseAvailible()
-{
-	return true;
-}
-
-//
-// I_MouseUnavailible
-//
-// Generic function to indicate that a particular mouse driver is not availible
-// on this platform.
-//
-static bool I_MouseUnavailible()
-{
 	return false;
 }
 
-BEGIN_COMMAND(debugmouse)
+
+//
+// I_PauseMouse
+//
+// Enables the mouse cursor and prevents the game from processing mouse movement
+// or button events
+//
+void I_PauseMouse()
 {
-	if (mouse_input)
-		mouse_input->debug();
+	input_subsystem->pauseMouse();
 }
-END_COMMAND(debugmouse)
-
-
-// ============================================================================
-//
-// RawWin32Mouse
-//
-// ============================================================================
-
-#ifdef USE_RAW_WIN32_MOUSE
-
-#ifndef HID_USAGE_PAGE_GENERIC
-#define HID_USAGE_PAGE_GENERIC  ((USHORT) 0x01)
-#endif
-
-#ifndef HID_USAGE_GENERIC_MOUSE
-#define HID_USAGE_GENERIC_MOUSE  ((USHORT) 0x02)
-#endif
 
 
 //
-// processRawMouseMovement
+// I_ResumeMouse
 //
-// Helper function to aggregate mouse movement events from a RAWMOUSE struct
-// to a Doom event_t struct. Note that event->data2 and event->data3 need to
-// be zeroed before calling.
+// Disables the mouse cursor and allows the game to process mouse movement
+// or button events
 //
-bool processRawMouseMovement(const RAWMOUSE* mouse, event_t* event)
+void I_ResumeMouse()
 {
-	static int prevx, prevy;
-	static bool prev_valid = false;
+	input_subsystem->resumeMouse();
+}
 
-	event->type = ev_mouse;
-	event->data1 = 0;
 
-	if (mouse->usFlags & MOUSE_MOVE_ABSOLUTE)
+//
+// I_InitInput
+//
+bool I_InitInput()
+{
+	if (Args.CheckParm("-nomouse"))
+		nomouse = true;
+
+	atterm(I_ShutdownInput);
+
+	#if defined(SDL12)
+	input_subsystem = new ISDL12InputSubsystem();
+	#elif defined(SDL20)
+	input_subsystem = new ISDL20InputSubsystem();
+	#endif
+
+	input_subsystem->initKeyboard(0);
+
+	I_OpenMouse();
+
+	I_OpenJoystick();
+
+	I_DisableKeyRepeat();
+
+	I_ForceUpdateGrab();
+
+	return true;
+}
+
+
+//
+// I_ShutdownInput
+//
+void STACK_ARGS I_ShutdownInput()
+{
+	I_PauseMouse();
+
+	I_UngrabInput();
+
+	delete input_subsystem;
+	input_subsystem = NULL;
+}
+
+
+//
+// I_GetEvents
+//
+// Checks for new input events and posts them to the Doom event queue.
+//
+static void I_GetEvents()
+{
+	I_UpdateFocus();
+	I_UpdateGrab();
+	if (I_CanRepeat())
+		I_EnableKeyRepeat();
+	else
+		I_DisableKeyRepeat();
+
+	// Get all of the events from the keboard, mouse, and joystick
+	input_subsystem->gatherEvents();
+	while (input_subsystem->hasEvent())
 	{
-		// we're given absolute mouse coordinates and need to convert
-		// them to relative coordinates based on the previous x & y
-		if (prev_valid)
-		{
-			event->data2 += mouse->lLastX - prevx;
-			event->data3 -= mouse->lLastY - prevy;
-		}
+		event_t ev;
+		input_subsystem->getEvent(&ev);
+		D_PostEvent(&ev);
+	}
+}
 
-		prevx = mouse->lLastX;
-		prevy = mouse->lLastY;
-		prev_valid = true;
+//
+// I_StartTic
+//
+void I_StartTic (void)
+{
+	I_GetEvents();
+}
+
+
+
+// ============================================================================
+//
+// IInputSubsystem default implementation
+//
+// ============================================================================
+
+// Initialize member constants
+// Key repeat delay and interval times are the default values for SDL 1.2.15
+const uint64_t IInputSubsystem::mRepeatDelay = I_ConvertTimeFromMs(500);
+const uint64_t IInputSubsystem::mRepeatInterval = I_ConvertTimeFromMs(30);
+
+
+//
+// IInputSubsystem::IInputSubsystem
+//
+IInputSubsystem::IInputSubsystem() :
+	mKeyboardInputDevice(NULL), mMouseInputDevice(NULL), mJoystickInputDevice(NULL)
+{ }
+
+
+//
+// IInputSubsystem::~IInputSubsystem
+//
+IInputSubsystem::~IInputSubsystem()
+{
+
+}
+
+
+//
+// IInputSubsystem::registerInputDevice
+//
+void IInputSubsystem::registerInputDevice(IInputDevice* device)
+{
+	assert(device != NULL);
+	InputDeviceList::iterator it = std::find(mInputDevices.begin(), mInputDevices.end(), device);
+	assert(it == mInputDevices.end());
+	if (it == mInputDevices.end())
+		mInputDevices.push_back(device);
+}
+
+
+//
+// IInputSubsystem::unregisterInputDevice
+//
+void IInputSubsystem::unregisterInputDevice(IInputDevice* device)
+{
+	assert(device != NULL);
+	InputDeviceList::iterator it = std::find(mInputDevices.begin(), mInputDevices.end(), device);
+	assert(it != mInputDevices.end());
+	if (it != mInputDevices.end())
+		mInputDevices.erase(it);
+}
+
+
+//
+// IInputSubsystem::enableKeyRepeat
+//
+void IInputSubsystem::enableKeyRepeat()
+{
+	mRepeating = true;
+}
+
+
+//
+// IInputSubsystem::disableKeyRepeat
+//
+void IInputSubsystem::disableKeyRepeat()
+{
+	mRepeating = false;
+	mEventRepeaters.clear();
+}
+
+
+//
+// I_GetEventRepeaterKey
+//
+// Returns a value for use as a hash table key from a given key-press event.
+//
+// If the function returns 0, the event should not be repeated. This is the
+// case for non-key-press events and for special buttons on the keyboard such
+// as Ctrl or CapsLock.
+//
+// All other keyboard events should return a key value of 1. Typically
+// key-repeating only allows one key on the keyboard to be repeating at the
+// same time. This can be accomplished by all keyboard events returning
+// the same value.
+//
+// Joystick hat events also repeat but each directional trigger repeats
+// concurrently as long as they are held down. Thus a unique value is returned
+// for each of them.
+// 
+static int I_GetEventRepeaterKey(const event_t* ev)
+{
+	if (ev->type != ev_keydown && ev->type != ev_keyup)
+		return 0;
+
+	int button = ev->data1;
+	if (button < KEY_MOUSE1)
+	{
+		if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
+			button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
+			button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
+			return 0;
+		return 1;
+	}
+	else if (button >= KEY_HAT1 && button <= KEY_HAT8)
+	{
+		return button;
 	}
 	else
 	{
-		// we're given relative mouse coordinates
-		event->data2 += mouse->lLastX;
-		event->data3 -= mouse->lLastY;
-		prev_valid = false;
+		return 0;
 	}
-
-	return true;
 }
 
 
 //
-// processRawMouseButtons
+// IInputSubsystem::addToEventRepeaters
 //
-// Helper function to check if there is an event for the specified mouse
-// button number in the RAWMOUSE struct. Returns true and fills the fields
-// of event if there is a button event.
+// NOTE: the caller should check if key-repeating is enabled.
 //
-bool processRawMouseButtons(const RAWMOUSE* mouse, event_t* event, int button_num)
+void IInputSubsystem::addToEventRepeaters(event_t& ev)
 {
-	static const UINT ri_down_lookup[5] = {
-		RI_MOUSE_BUTTON_1_DOWN, RI_MOUSE_BUTTON_2_DOWN, RI_MOUSE_BUTTON_3_DOWN,
-		RI_MOUSE_BUTTON_4_DOWN,	RI_MOUSE_BUTTON_5_DOWN };
-
-	static const UINT ri_up_lookup[5] = {
-		RI_MOUSE_BUTTON_1_UP, RI_MOUSE_BUTTON_2_UP, RI_MOUSE_BUTTON_3_UP,
-		RI_MOUSE_BUTTON_4_UP, RI_MOUSE_BUTTON_5_UP };
-
-	static const int oda_button_lookup[5] = {
-		KEY_MOUSE1, KEY_MOUSE2, KEY_MOUSE3, KEY_MOUSE4, KEY_MOUSE5 };
-
-	event->data1 = event->data2 = event->data3 = 0;
-
-	if (mouse->usButtonFlags & ri_down_lookup[button_num])
-	{
-		event->type = ev_keydown;
-		event->data1 = oda_button_lookup[button_num];
-		return true;
-	}
-	else if (mouse->usButtonFlags & ri_up_lookup[button_num])
-	{
-		event->type = ev_keyup;
-		event->data1 = oda_button_lookup[button_num];
-		return true;
-	}
-	return false;
-}
-
-
-//
-// processRawMouseScrollWheel
-//
-// Helper function to check for scroll wheel events in the RAWMOUSE struct.
-// Returns true and fills in the fields in event if there is a scroll
-// wheel event.
-bool processRawMouseScrollWheel(const RAWMOUSE* mouse, event_t* event)
-{
-	event->type = ev_keydown;
-	event->data1 = event->data2 = event->data3 = 0;
-
-	if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
-	{
-		if ((SHORT)mouse->usButtonData < 0)
-		{
-			event->data1 = KEY_MWHEELDOWN;
-			return true;
-		}
-		else if ((SHORT)mouse->usButtonData > 0)
-		{
-			event->data1 = KEY_MWHEELUP;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-//
-// getMouseRawInputDevice
-//
-// Helper function that searches for a registered mouse raw input device. If
-// found, the device parameter is filled with the information for the device
-// and the function returns true.
-//
-bool getMouseRawInputDevice(RAWINPUTDEVICE& device)
-{
-	device.usUsagePage	= 0;
-	device.usUsage		= 0;
-	device.dwFlags		= 0;
-	device.hwndTarget	= 0;
-
-	// get the number of raw input devices
-	UINT num_devices;
-	GetRegisteredRawInputDevices(NULL, &num_devices, sizeof(RAWINPUTDEVICE));
-
-	// create a buffer to hold the raw input device info
-	RAWINPUTDEVICE* devices = new RAWINPUTDEVICE[num_devices];
-
-	// look at existing registered raw input devices
-	GetRegisteredRawInputDevices(devices, &num_devices, sizeof(RAWINPUTDEVICE));
-	for (UINT i = 0; i < num_devices; i++)
-	{
-		// is there already a mouse device registered?
-		if (devices[i].usUsagePage == HID_USAGE_PAGE_GENERIC &&
-			devices[i].usUsage == HID_USAGE_GENERIC_MOUSE)
-		{
-			device.usUsagePage	= devices[i].usUsagePage;
-			device.usUsage		= devices[i].usUsage;
-			device.dwFlags		= devices[i].dwFlags;
-			device.hwndTarget	= devices[i].hwndTarget;
-			break;
-		}
-	}
-
-    delete [] devices;
-
-	return device.usUsagePage == HID_USAGE_PAGE_GENERIC &&
-			device.usUsage == HID_USAGE_GENERIC_MOUSE;
-}
-
-
-// define the static member variables declared in the header
-RawWin32Mouse* RawWin32Mouse::mInstance = NULL;
-
-//
-// RawWin32Mouse::RawWin32Mouse
-//
-RawWin32Mouse::RawWin32Mouse() :
-	mActive(false), mInitialized(false),
-	mHasBackupDevice(false), mRegisteredMouseDevice(false),
-	mWindow(NULL), mBaseWindowProc(NULL), mRegisteredWindowProc(false)
-{
-	if (!I_RawWin32MouseAvailible())
+	// Check if the event needs to be added/removed from the list of repeatable events
+	int key = I_GetEventRepeaterKey(&ev);
+	if (key == 0)
 		return;
 
-	// get a handle to the window
-	SDL_SysWMinfo wminfo;
-	SDL_VERSION(&wminfo.version)
-	SDL_GetWMInfo(&wminfo);
-	mWindow = wminfo.window;
-
-	mInstance = this;
-
-	mInitialized = true;
-	registerMouseDevice();
-	registerWindowProc();
-}
-
-
-//
-// RawWin32Mouse::~RawWin32Mouse
-//
-// Remove the callback for retreiving input and unregister the RAWINPUTDEVICE
-//
-RawWin32Mouse::~RawWin32Mouse()
-{
-	pause();
-	mInstance = NULL;
-}
-
-
-//
-// RawWin32Mouse::create
-//
-// Instantiates a new RawWin32Mouse and returns a pointer to it if successful
-// or returns NULL if unable to instantiate it.
-//
-MouseInput* RawWin32Mouse::create()
-{
-	if (mInstance)
-		return mInstance;
-
-	RawWin32Mouse* obj = new RawWin32Mouse();
-
-	if (obj && obj->mInitialized)
-		return obj;
-
-	// could not properly initialize
-	delete obj;
-	return NULL;
-}
-
-
-//
-// RawWin32Mouse::flushEvents
-//
-// Clears the queued events
-//
-void RawWin32Mouse::flushEvents()
-{
-	clear();
-}
-
-
-//
-// RawWin32Mouse::processEvents
-//
-// Iterates our queue of RAWINPUT events and converts them to Doom event_t
-// and posts them for processing by the game internals.
-//
-void RawWin32Mouse::processEvents()
-{
-	if (!mActive)
-		return;
-
-	event_t movement_event;
-	movement_event.type = ev_mouse;
-	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
-
-	const RAWMOUSE* mouse;
-	while (mouse = front())
+	if (ev.type == ev_keydown)
 	{
-		popFront();
+					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+					if (it != mEventRepeaters.end())
+					{
+						// update existing repeater with this new event
+						EventRepeater& repeater = it->second;
+						memcpy(&repeater.event, &ev, sizeof(repeater.event));
+					}
+					else
+					{
+						// new repeatable event - add to mEventRepeaters
+						EventRepeater repeater;
+						memcpy(&repeater.event, &ev, sizeof(repeater.event));
+						repeater.last_time = I_GetTime();
+						repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
+						mEventRepeaters.insert(std::make_pair(key, repeater));
+					}
+				}
+	else if (ev.type == ev_keyup)
+				{
+					EventRepeaterTable::iterator it = mEventRepeaters.find(key);
+					if (it != mEventRepeaters.end())
+					{
+						// remove the repeatable event from mEventRepeaters
+						const EventRepeater& repeater = it->second;
+						if (repeater.event.data1 == ev.data1)
+							mEventRepeaters.erase(it);
+					}
+				}
+}
 
-		// process mouse movement and save it
-		processRawMouseMovement(mouse, &movement_event);
 
-		// process mouse button clicks and post the events
-		event_t button_event;
-		for (int i = 0; i < 5; i++)
+//
+// IInputSubsystem::repeatEvents
+//
+// NOTE: the caller should check if key-repeating is enabled.
+//
+void IInputSubsystem::repeatEvents()
+{
+	for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
+	{
+		EventRepeater& repeater = it->second;
+		uint64_t current_time = I_GetTime();
+
+		if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
 		{
-			if (processRawMouseButtons(mouse, &button_event, i))
-				D_PostEvent(&button_event);
-		}
+			repeater.last_time += mRepeatDelay;
+			repeater.repeating = true;
+			}
 
-		// process mouse scroll wheel action
-		if (processRawMouseScrollWheel(mouse, &button_event))
-			D_PostEvent(&button_event);
-	}
-
-	// post any mouse movement events
-	if (movement_event.data2 || movement_event.data3)
-		D_PostEvent(&movement_event);
-}
-
-
-//
-// RawWin32Mouse::center
-//
-void RawWin32Mouse::center()
-{
-	RECT rect;
-	GetWindowRect(mWindow, &rect);
-	SetCursorPos((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
-}
-
-
-//
-// RawWin32Mouse::paused
-//
-bool RawWin32Mouse::paused() const
-{
-	return mActive == false;
-}
-
-
-//
-// RawWin32Mouse::pause
-//
-void RawWin32Mouse::pause()
-{
-	mActive = false;
-
-	unregisterMouseDevice();
-	unregisterWindowProc();
-}
-
-
-//
-// RawWin32Mouse::resume
-//
-void RawWin32Mouse::resume()
-{
-	mActive = true;
-	flushEvents();
-
-	registerMouseDevice();
-	registerWindowProc();
-}
-
-
-//
-// RawWin32Mouse::registerWindowProc
-//
-// Saves the existing WNDPROC for the app window and installs our own.
-//
-void RawWin32Mouse::registerWindowProc()
-{
-	if (!mRegisteredWindowProc)
-	{
-		// install our own window message callback and save the previous
-		// callback as mBaseWindowProc
-		mBaseWindowProc = (WNDPROC)SetWindowLongPtr(mWindow, GWLP_WNDPROC, (LONG_PTR)RawWin32Mouse::windowProcWrapper);
-		mRegisteredWindowProc = true;
-	}
-}
-
-
-//
-// RawWin32Mouse::unregisterWindowProc
-//
-// Restore the saved WNDPROC for the app window.
-//
-void RawWin32Mouse::unregisterWindowProc()
-{
-	if (mRegisteredWindowProc)
-	{
-		SetWindowLongPtr(mWindow, GWLP_WNDPROC, (LONG_PTR)mBaseWindowProc);
-		mBaseWindowProc = NULL;
-		mRegisteredWindowProc = false;
-	}
-}
-
-
-//
-// RawWin32Mouse::windowProc
-//
-// A callback function that reads WM_Input messages and queues them for polling
-// in processEvents
-//
-LRESULT CALLBACK RawWin32Mouse::windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	if (message == WM_INPUT)
-	{
-		RAWINPUT raw;
-		UINT size = sizeof(raw);
-
-		GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER));
-
-		if (raw.header.dwType == RIM_TYPEMOUSE)
+		while (repeater.repeating && current_time - repeater.last_time >= mRepeatInterval)
 		{
-			pushBack(&raw.data.mouse);
-			return 0;
-		}
-	}
-
-	// hand the message off to mDefaultWindowProc since it's not a WM_INPUT mouse message
-	return CallWindowProc(mBaseWindowProc, hwnd, message, wParam, lParam);
-}
-
-
-//
-// RawWin32Mouse::windowProcWrapper
-//
-// A static member function that wraps calls to windowProc to allow member
-// functions to use Windows callbacks.
-//
-LRESULT CALLBACK RawWin32Mouse::windowProcWrapper(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	return mInstance->windowProc(hwnd, message, wParam, lParam);
-}
-
-
-//
-// RawWin32Mouse::backupMouseDevice
-//
-void RawWin32Mouse::backupMouseDevice(const RAWINPUTDEVICE& device)
-{
-	mBackupDevice.usUsagePage	= device.usUsagePage;
-	mBackupDevice.usUsage		= device.usUsage;
-	mBackupDevice.dwFlags		= device.dwFlags;
-	mBackupDevice.hwndTarget	= device.hwndTarget;
-}
-
-
-//
-// RawWin32Mouse::restoreMouseDevice
-//
-void RawWin32Mouse::restoreMouseDevice(RAWINPUTDEVICE& device) const
-{
-	device.usUsagePage	= mBackupDevice.usUsagePage;
-	device.usUsage		= mBackupDevice.usUsage;
-	device.dwFlags		= mBackupDevice.dwFlags;
-	device.hwndTarget	= mBackupDevice.hwndTarget;
-}
-
-
-//
-// RawWin32Mouse::registerRawInputDevice
-//
-// Registers the mouse as a raw input device, backing up the previous raw input
-// device for later restoration.
-//
-bool RawWin32Mouse::registerMouseDevice()
-{
-	if (mRegisteredMouseDevice)
-		return false;
-
-	RAWINPUTDEVICE device;
-
-	if (getMouseRawInputDevice(device))
-	{
-		// save a backup copy of this device
-		if (!mHasBackupDevice)
-		{
-			backupMouseDevice(device);
-			mHasBackupDevice = true;
-		}
-
-		// remove the existing device
-		device.dwFlags = RIDEV_REMOVE;
-		device.hwndTarget = NULL;
-		RegisterRawInputDevices(&device, 1, sizeof(device));
-	}
-
-	// register our raw input mouse device
-	device.usUsagePage	= HID_USAGE_PAGE_GENERIC;
-	device.usUsage		= HID_USAGE_GENERIC_MOUSE;
-	device.dwFlags		= RIDEV_NOLEGACY;
-	device.hwndTarget	= mWindow;
-
-	mRegisteredMouseDevice = RegisterRawInputDevices(&device, 1, sizeof(device));
-	return mRegisteredMouseDevice;
-}
-
-
-//
-// RawWin32Mouse::unregisterRawInputDevice
-//
-// Removes the mouse as a raw input device, restoring a previously backedup
-// mouse device if applicable.
-//
-bool RawWin32Mouse::unregisterMouseDevice()
-{
-	if (!mRegisteredMouseDevice)
-		return false;
-
-	RAWINPUTDEVICE device;
-
-	if (getMouseRawInputDevice(device))
-	{
-		// remove the device
-		device.dwFlags = RIDEV_REMOVE;
-		device.hwndTarget = NULL;
-		RegisterRawInputDevices(&device, 1, sizeof(device));
-		mRegisteredMouseDevice = false;
-	}
-
-	if (mHasBackupDevice)
-	{
-		restoreMouseDevice(device);
-		mHasBackupDevice = false;
-		RegisterRawInputDevices(&device, 1, sizeof(device));
-	}
-
-	return mRegisteredMouseDevice == false;
-}
-
-
-//
-// RawWin32Mouse::debug
-//
-void RawWin32Mouse::debug() const
-{
-	// get a handle to the window
-	SDL_SysWMinfo wminfo;
-	SDL_VERSION(&wminfo.version)
-	SDL_GetWMInfo(&wminfo);
-	HWND cur_window = wminfo.window;
-
-	// determine the hwndTarget parameter of the registered rawinput device
-	HWND hwndTarget = NULL;
-
-	RAWINPUTDEVICE device;
-	if (getMouseRawInputDevice(device))
-	{
-		hwndTarget = device.hwndTarget;
-	}
-
-	Printf(PRINT_HIGH, "RawWin32Mouse: Current Window Address: 0x%x, mWindow: 0x%x, RAWINPUTDEVICE Window: 0x%x\n",
-			cur_window, mWindow, hwndTarget);
-
-	WNDPROC wndproc = (WNDPROC)GetWindowLongPtr(cur_window, GWLP_WNDPROC);
-	Printf(PRINT_HIGH, "RawWin32Mouse: windowProcWrapper Address: 0x%x, Current Window WNDPROC Address: 0x%x\n",
-			RawWin32Mouse::windowProcWrapper, wndproc);
-}
-
-#endif	// USE_RAW_WIN32_MOUSE
-
-
-// ============================================================================
-//
-// SDLMouse
-//
-// ============================================================================
-
-//
-// SDLMouse::SDLMouse
-//
-SDLMouse::SDLMouse() :
-	mActive(false)
-{
-	I_ResumeMouse();
-}
-
-//
-// SDLMouse::~SDLMouse
-//
-SDLMouse::~SDLMouse()
-{
-	I_PauseMouse();
-}
-
-//
-// SDLMouse::create
-//
-// Instantiates a new SDLMouse and returns a pointer to it if successful
-// or returns NULL if unable to instantiate it. However, since SDL is
-// always availible, this never returns NULL
-//
-//
-MouseInput* SDLMouse::create()
-{
-	return new SDLMouse();
-}
-
-void SDLMouse::flushEvents()
-{
-	SDL_PumpEvents();
-	SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEEVENTMASK);
-}
-
-//
-// SDLMouse::processEvents
-//
-// Pumps SDL's event queue and processes only its mouse events. The events
-// are converted to Doom event_t and posted for processing by the game
-// internals.
-//
-void SDLMouse::processEvents()
-{
-	if (!mActive)
-		return;
-
-	// [SL] accumulate the total mouse movement over all events polled
-	// and post one aggregate mouse movement event after all are polled.
-	event_t movement_event;
-	movement_event.type = ev_mouse;
-	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
-
-	// Force SDL to gather events from input devices. This is called
-	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only mouse events, SDL_PumpEvents is necessary.
-	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEEVENTMASK);
-
-	for (int i = 0; i < num_events; i++)
-	{
-		SDL_Event* sdl_ev = &mEvents[i];
-		switch (sdl_ev->type)
-		{
-		case SDL_MOUSEMOTION:
-		{
-			movement_event.data2 += sdl_ev->motion.xrel;
-			movement_event.data3 -= sdl_ev->motion.yrel;
-			break;
-		}
-
-		case SDL_MOUSEBUTTONDOWN:
-		{
-			event_t button_event;
-			button_event.type = ev_keydown;
-			button_event.data1 = button_event.data2 = button_event.data3 = 0;
-
-			if (sdl_ev->button.button == SDL_BUTTON_LEFT)
-				button_event.data1 = KEY_MOUSE1;
-			else if (sdl_ev->button.button == SDL_BUTTON_RIGHT)
-				button_event.data1 = KEY_MOUSE2;
-			else if (sdl_ev->button.button == SDL_BUTTON_MIDDLE)
-				button_event.data1 = KEY_MOUSE3;
-			else if (sdl_ev->button.button == SDL_BUTTON_X1)
-				button_event.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-			else if (sdl_ev->button.button == SDL_BUTTON_X2)
-				button_event.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-			else if (sdl_ev->button.button == SDL_BUTTON_WHEELUP)
-				button_event.data1 = KEY_MWHEELUP;
-			else if (sdl_ev->button.button == SDL_BUTTON_WHEELDOWN)
-				button_event.data1 = KEY_MWHEELDOWN;
-
-			if (button_event.data1 != 0)
-				D_PostEvent(&button_event);
-			break;
-		}
-
-		case SDL_MOUSEBUTTONUP:
-		{
-			event_t button_event;
-			button_event.type = ev_keyup;
-			button_event.data1 = button_event.data2 = button_event.data3 = 0;
-
-			if (sdl_ev->button.button == SDL_BUTTON_LEFT)
-				button_event.data1 = KEY_MOUSE1;
-			else if (sdl_ev->button.button == SDL_BUTTON_RIGHT)
-				button_event.data1 = KEY_MOUSE2;
-			else if (sdl_ev->button.button == SDL_BUTTON_MIDDLE)
-				button_event.data1 = KEY_MOUSE3;
-			else if (sdl_ev->button.button == SDL_BUTTON_X1)
-				button_event.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-			else if (sdl_ev->button.button == SDL_BUTTON_X2)
-				button_event.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-
-			if (button_event.data1 != 0)
-				D_PostEvent(&button_event);
-			break;
-		}
-		default:
-			// do nothing
-			break;
-		}
-	}
-
-	if (movement_event.data2 || movement_event.data3)
-	{
-		D_PostEvent(&movement_event);
-		center();
-	}
-}
-
-//
-// SDLMouse::center
-//
-// Moves the mouse to the center of the screen to prevent absolute position
-// methods from causing problems when the mouse is near the screen edges.
-//
-void SDLMouse::center()
-{
-	// warp the mouse to the center of the screen
-	SDL_WarpMouse(I_GetVideoWidth() / 2, I_GetVideoHeight() / 2);
-
-	// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen
-	// we need to filter out this event
-	SDL_PumpEvents();
-	int num_events = SDL_PeepEvents(mEvents, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
-
-	for (int i = 0; i < num_events; i++)
-	{
-		SDL_Event* sdl_ev = &mEvents[i];
-		if (sdl_ev->type != SDL_MOUSEMOTION ||
-			sdl_ev->motion.x != I_GetVideoWidth() / 2 ||
-			sdl_ev->motion.y != I_GetVideoHeight() / 2)
-		{
-			// this event is not the event caused by SDL_WarpMouse so add it back
-			// to the event queue
-			SDL_PushEvent(sdl_ev);
+			// repeat the event by adding it  to the queue again
+			mEvents.push(repeater.event);
+			repeater.last_time += mRepeatInterval;
 		}
 	}
 }
 
 
-bool SDLMouse::paused() const
-{
-	return mActive == false;
-}
-
-
-void SDLMouse::pause()
-{
-	mActive = false;
-	I_SetSDLIgnoreMouseEvents();
-}
-
-
-void SDLMouse::resume()
-{
-	mActive = true;
-	I_UnsetSDLIgnoreMouseEvents();
-}
-
-
 //
-// SDLMouse::debug
+// IInputSubsystem::gatherEvents
 //
-void SDLMouse::debug() const
+void IInputSubsystem::gatherEvents()
 {
-#if defined(_WIN32) && !defined(_XBOX)
-	// get a handle to the window
-	SDL_SysWMinfo wminfo;
-	SDL_VERSION(&wminfo.version)
-	SDL_GetWMInfo(&wminfo);
-	HWND cur_window = wminfo.window;
+	event_t mouse_motion_event;
+	mouse_motion_event.type = ev_mouse;
+	mouse_motion_event.data1 = mouse_motion_event.data2 = mouse_motion_event.data3 = 0;
 
-	// determine the hwndTarget parameter of the registered rawinput device
-	HWND hwndTarget = NULL;
-
-	RAWINPUTDEVICE device;
-	if (getMouseRawInputDevice(device))
+	for (InputDeviceList::iterator it = mInputDevices.begin(); it != mInputDevices.end(); ++it)
 	{
-		hwndTarget = device.hwndTarget;
+		IInputDevice* device = *it;
+		device->gatherEvents();
+		while (device->hasEvent())
+		{
+			event_t ev;
+			device->getEvent(&ev);
+
+			if (mRepeating)
+				addToEventRepeaters(ev);
+
+			if (ev.type == ev_mouse)
+			{
+				// aggregate all mouse motion into a single event, which is enqueued later
+				mouse_motion_event.data2 += ev.data2;
+				mouse_motion_event.data3 += ev.data3;
+			}
+			else
+			{
+				// default behavior for events: just add it to the queue
+				mEvents.push(ev);
+			}
+		}
 	}
+	
+	// manually add the aggregated mouse motion event to the queue
+	if (mouse_motion_event.data2 || mouse_motion_event.data3)
+		mEvents.push(mouse_motion_event);
 
-	Printf(PRINT_HIGH, "SDLMouse: Current Window Address: 0x%x, RAWINPUTDEVICE Window: 0x%x\n",
-			cur_window, hwndTarget);
-
-	WNDPROC wndproc = (WNDPROC)GetWindowLongPtr(cur_window, GWLP_WNDPROC);
-	Printf(PRINT_HIGH, "SDLMouse: Current Window WNDPROC Address: 0x%x\n",
-			wndproc);
-#endif
+	// Handle repeatable events
+	if (mRepeating)
+		repeatEvents();
 }
+
+
+//
+// IInputSubsystem::getEvent
+//
+void IInputSubsystem::getEvent(event_t* ev)
+{
+	assert(hasEvent());
+
+	memcpy(ev, &mEvents.front(), sizeof(event_t));
+
+	mEvents.pop();
+}
+
 
 VERSION_CONTROL (i_input_cpp, "$Id$")
-
-

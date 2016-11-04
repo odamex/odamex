@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: dlg_config.cpp 1648 2010-07-11 02:50:26Z russellrice $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -26,6 +26,7 @@
 
 #include <wx/event.h>
 #include <wx/utils.h>
+#include <wx/sizer.h>
 #include <wx/version.h>
 #include <wx/xrc/xmlres.h>
 
@@ -49,15 +50,6 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 
 	m_StcTxtWxVer = XRCCTRL(*this, "Id_StcTxtWxVer", wxStaticText);
 
-	m_TxtCtrlDevelopers = XRCCTRL(*this, "Id_TxtCtrlDevelopers",
-	                              wxTextCtrl);
-
-	// wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been
-	// called, this causes urls to not get recognized (msw XRC handler problem?)
-	Text = m_TxtCtrlDevelopers->GetValue();
-	m_TxtCtrlDevelopers->SetValue("");
-	m_TxtCtrlDevelopers->WriteText(Text);
-
 	// Set (protocol) version info on desired text control
 	Version = wxString::Format(
 	              "Version %d.%d.%d - Protocol Version %d",
@@ -76,7 +68,6 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 	                       wxSUBRELEASE_NUMBER);
 
 	m_StcTxtWxVer->SetLabel(wxWidgetsVersion);
-
 }
 
 // wxTextCtrl doesn't provide a handler for urls, so we use an almost

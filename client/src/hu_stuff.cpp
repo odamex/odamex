@@ -222,6 +222,7 @@ void HU_Init()
 void STACK_ARGS HU_Shutdown()
 {
 	Z_Free(sbline);
+	sbline = NULL;
 }
 
 
@@ -277,7 +278,6 @@ BOOL HU_Responder(event_t *ev)
 			else
 				ShoveChatStr(chat_macros[ev->data2 - '0']->cstring(), HU_ChatMode() - 1);
 
-			I_DisableKeyRepeat();
 			HU_UnsetChatMode();
 			return true;
 		}
@@ -285,13 +285,11 @@ BOOL HU_Responder(event_t *ev)
 	if (ev->data3 == KEY_ENTER)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
-		I_DisableKeyRepeat();
 		HU_UnsetChatMode();
 		return true;
 	}
 	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
 	{
-		I_DisableKeyRepeat();
 		HU_UnsetChatMode();
 		return true;
 	}
@@ -574,7 +572,6 @@ BEGIN_COMMAND (messagemode)
 
 	HU_SetChatMode();
 	C_HideConsole ();
-	I_EnableKeyRepeat();
 	input_text.clear();
 	C_ReleaseKeys();
 }
@@ -597,7 +594,6 @@ BEGIN_COMMAND (messagemode2)
 
 	HU_SetTeamChatMode();
 	C_HideConsole ();
-	I_EnableKeyRepeat();
 	input_text.clear();
 	C_ReleaseKeys();
 }

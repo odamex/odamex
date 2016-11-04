@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_musicsystem.cpp 2541 2011-10-27 02:36:31Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -48,12 +48,13 @@ misrepresented as being the original software.
 #include "m_fileio.h"
 #include "cmdlib.h"
 
+#include "i_sdl.h"
 #include "i_music.h"
 #include "i_midi.h"
 #include "mus2midi.h"
 #include "i_musicsystem.h"
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 
 #ifdef OSX
 #include <AudioToolbox/AudioToolbox.h>
@@ -66,10 +67,7 @@ misrepresented as being the original software.
 
 // [Russell] - define a temporary midi file, for consistency
 // SDL < 1.2.7
-#ifdef _XBOX
-	// Use the cache partition
-	#define TEMP_MIDI "Z:\\temp_music"
-#elif MIX_MAJOR_VERSION < 1 || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION < 2) || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION == 2 && MIX_PATCHLEVEL < 7)
+#if MIX_MAJOR_VERSION < 1 || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION < 2) || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION == 2 && MIX_PATCHLEVEL < 7)
     #define TEMP_MIDI "temp_music"
 #endif
 
@@ -351,22 +349,28 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	mRegisteredSong.Track = Mix_LoadMUS(TEMP_MIDI);
 	unlink(TEMP_MIDI);	// remove the temporary file
 
+	if (!mRegisteredSong.Track)
+	{
+		Printf(PRINT_HIGH, "Mix_LoadMUSW: %s\n", Mix_GetError());
+		return;
+	}
+
 	#else
+
 	// We can read the midi data directly from memory
+	#ifdef SDL20
+	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data, 0);
+	#elif defined SDL12
 	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data);
-	
-	#endif	// TEMP_MIDI
+	#endif	// SDL12
 	
 	if (!mRegisteredSong.Track)
 	{
-		#ifdef TEMP_MIDI
-		Printf(PRINT_HIGH, "Mix_LoadMUS: %s\n", Mix_GetError());
-		#else
 		Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
-		#endif	// TEMP_MIDI
-
 		return;
 	}
+
+	#endif	// TEMP_MIDI
 }
 
 
@@ -1138,5 +1142,5 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 
 #endif	// PORTMIDI
 
-VERSION_CONTROL (i_musicsystem_cpp, "$Id: i_musicsystem.cpp 2671 2011-12-19 00:20:32Z dr_sean $")
+VERSION_CONTROL (i_musicsystem_cpp, "$Id$")
 	

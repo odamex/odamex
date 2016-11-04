@@ -103,11 +103,19 @@ macro(define_platform)
     find_package(X11)
     if(X11_FOUND)
       add_definitions(-DX11)
+      INCLUDE_DIRECTORIES ( ${X11_INCLUDE_DIR} )
+      LINK_LIBRARIES ( ${X11_LIBRARIES} )
+      MESSAGE ( STATUS " X11_INCLUDE_DIR: " ${X11_INCLUDE_DIR} )
+      MESSAGE ( STATUS " X11_LIBRARIES: " ${X11_LIBRARIES} )
     endif()
   endif()
 endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+
+# git describe
+include(GetGitRevisionDescription)
+git_describe(GIT_DESCRIBE --tags --always)
 
 # MiniUPnPc
 if (USE_MINIUPNP)

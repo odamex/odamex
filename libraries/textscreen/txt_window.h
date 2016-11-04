@@ -1,7 +1,5 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
 //
-// Copyright(C) 2006 Simon Howard
+// Copyright(C) 2005-2014 Simon Howard
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -12,11 +10,6 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
 //
 
 #ifndef TXT_WINDOW_H
@@ -92,6 +85,10 @@ struct txt_window_s
 
     int window_x, window_y;
     unsigned int window_w, window_h;
+
+    // URL of a webpage with help about this window. If set, a help key
+    // indicator is shown while this window is active.
+    char *help_url;
 };
 
 /**
@@ -200,6 +197,24 @@ void TXT_SetMouseListener(txt_window_t *window,
  */
 
 txt_window_t *TXT_MessageBox(char *title, char *message, ...);
+
+/**
+ * Set the help URL for the given window.
+ *
+ * @param window          The window.
+ * @param help_url        String containing URL of the help page for this
+ *                        window, or NULL to set no help for this window.
+ */
+
+void TXT_SetWindowHelpURL(txt_window_t *window, char *help_url);
+
+/**
+ * Open the help URL for the given window, if one is set.
+ *
+ * @param window          The window.
+ */
+
+void TXT_OpenWindowHelpURL(txt_window_t *window);
 
 #endif /* #ifndef TXT_WINDOW_H */
 

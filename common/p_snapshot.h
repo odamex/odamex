@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_snapshot.h 2785 2012-02-18 23:22:07Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2015 by The Odamex Team.

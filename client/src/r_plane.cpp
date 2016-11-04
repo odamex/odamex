@@ -656,7 +656,7 @@ void R_DrawPlanes()
 						for (int x = 63; x >= 0; x--)
 						{
 							int yt, yf = (finesine[(timebase + ((x+17) << 7))&FINEMASK]>>13) & 63;
-							byte *source = dspan.source + x;
+							const byte *source = dspan.source + x;
 							byte *dest = warped + x;
 							for (yt = 64; yt; yt--, yf = (yf+1)&63, dest += 64)
 								*dest = *(source + (yf << 6));
@@ -665,7 +665,7 @@ void R_DrawPlanes()
 						for (int y = 63; y >= 0; y--)
 						{
 							int xt, xf = (finesine[(timebase + (y << 7))&FINEMASK]>>13) & 63;
-							byte *source = warped + (y << 6);
+							const byte *source = warped + (y << 6);
 							byte *dest = buffer;
 							for (xt = 64; xt; xt--, xf = (xf+1) & 63)
 								*dest++ = *(source+xf);

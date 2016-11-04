@@ -45,6 +45,7 @@
 #include "d_main.h"
 #include "p_ctf.h"
 #include "m_random.h"
+#include "m_memio.h"
 #include "w_wad.h"
 #include "w_ident.h"
 #include "md5.h"
@@ -149,11 +150,12 @@ EXTERN_CVAR (cl_predictsectors)
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
 
-EXTERN_CVAR(cl_autoaim)
+EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR(cl_updaterate)
-EXTERN_CVAR(cl_interp)
-EXTERN_CVAR(cl_forcedownload)
+EXTERN_CVAR (cl_updaterate)
+EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_serverdownload)
+EXTERN_CVAR (cl_forcedownload)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
@@ -482,8 +484,7 @@ void CL_CheckDisplayPlayer()
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
 		newid = consoleplayer_id;
 
-	if (!(P_CanSpy(consoleplayer(), displayplayer()) ||
-		  netdemo.isPlaying() || netdemo.isPaused()))
+	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
 	if (displayplayer().spectator)
@@ -551,8 +552,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		player_t& player = *it;
 
 		// spectators only cycle between active players
-		if (P_CanSpy(self, player) ||
-			demoplayback || netdemo.isPlaying() || netdemo.isPaused())
+		if (P_CanSpy(self, player, demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		{
 			displayplayer_id = player.id;
 			CL_CheckDisplayPlayer();
@@ -925,12 +925,8 @@ BEGIN_COMMAND (rcon)
 	{
 		char  command[256];
 
-		if (argc == 2)
-			sprintf(command, "%s", argv[1]);
-		if (argc == 3)
-			sprintf(command, "%s %s", argv[1], argv[2]);
-		if (argc == 4)
-			sprintf(command, "%s %s %s", argv[1], argv[2], argv[3]);
+		strncpy(command, args, STACKARRAY_LENGTH(command) - 1);
+		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);
 		MSG_WriteString(&net_buffer, command);
@@ -3623,6 +3619,8 @@ void CL_ParseCommands(void)
 
 	while(connected)
 	{
+		int byteStart = net_message.BytesRead();
+
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
 
@@ -3656,6 +3654,11 @@ void CL_ParseCommands(void)
 				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
 
+		// Measure length of each message, so we can keep track of bandwidth.
+		if (net_message.BytesRead() < byteStart)
+			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n", net_message.BytesRead(), byteStart);
+
+		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
 	}
 }
 
@@ -3707,7 +3710,9 @@ void CL_SendCmd(void)
 		netcmd->write(&net_buffer);
 	}
 
-	NET_SendPacket(net_buffer, serveraddr);
+	int bytesWritten = NET_SendPacket(net_buffer, serveraddr);
+	netgraph.addTrafficOut(bytesWritten);
+
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
 }

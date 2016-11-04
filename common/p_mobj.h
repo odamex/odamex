@@ -117,7 +117,8 @@ void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'
 void P_NightmareRespawn(AActor *mo);
-void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown);
+void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
+void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);

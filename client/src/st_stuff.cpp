@@ -1783,17 +1783,8 @@ void ST_Init()
 
 void STACK_ARGS ST_Shutdown()
 {
-	if (stbar_surface)
-	{
-		I_FreeSurface(stbar_surface);
-		stbar_surface = NULL;
-	}
-
-	if (stnum_surface)
-	{
-		I_FreeSurface(stnum_surface);
-		stnum_surface = NULL;
-	}
+	I_FreeSurface(stbar_surface);
+	I_FreeSurface(stnum_surface);
 }
 
 

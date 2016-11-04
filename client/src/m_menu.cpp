@@ -1994,7 +1994,6 @@ void M_StartControlPanel (void)
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
-	I_EnableKeyRepeat();
 }
 
 
@@ -2067,19 +2066,11 @@ void M_Drawer()
 //
 void M_ClearMenus (void)
 {
-	if (fire_surface)
-	{
-		I_FreeSurface(fire_surface);
-		fire_surface = NULL;
-	}
+	I_FreeSurface(fire_surface);
 	MenuStackDepth = 0;
 	menuactive = false;
 	drawSkull = true;
 	M_DemoNoPlay = false;
-	if (gamestate != GS_FULLCONSOLE)
-	{
-		I_DisableKeyRepeat();
-	}
 }
 
 

@@ -60,6 +60,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlCheckForUpdates"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlLoadChatOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkFlashTaskbar"), dlgConfig::OnCheckedBox)
@@ -68,6 +69,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(XRCID("Id_ChkColorServerLine"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkColorCustomServers"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkAutoRefresh"), dlgConfig::OnCheckedBox)
+
+	EVT_NOTEBOOK_PAGE_CHANGED(XRCID("Id_Notebook"), dlgConfig::OnNotebookPageChanged)
 
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnSpinValChange)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnSpinValChange)
@@ -87,13 +90,15 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 END_EVENT_TABLE()
 
 // Window constructor
-dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id)
+dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
+	m_Notebook(NULL)
 {
 	// Set up the dialog and its widgets
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgConfig");
 
 	m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
 	m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
+	m_ChkCtrlCheckForUpdates = XRCCTRL(*this, "Id_ChkCtrlCheckForUpdates", wxCheckBox);
 	m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
 	m_ChkCtrlLoadChatOnLS = XRCCTRL(*this, "Id_ChkCtrlLoadChatOnStart", wxCheckBox);
 	m_ChkCtrlFlashTaskBar = XRCCTRL(*this, "Id_ChkFlashTaskbar", wxCheckBox);
@@ -149,6 +154,12 @@ void dlgConfig::Show()
 	LoadSettings();
 
 	UserChangedSetting = false;
+
+	// Queue notebook page changed event
+	m_Notebook = XRCCTRL(*this, "Id_Notebook", wxNotebook);
+	wxBookCtrlEvent* event = new wxBookCtrlEvent(wxEVT_NOTEBOOK_PAGE_CHANGED, m_Notebook->GetId());
+	event->SetSelection(m_Notebook->GetSelection());
+	QueueEvent(event);
 
 	ShowModal();
 }
@@ -384,12 +395,12 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 		// only add paths if the variable exists and path isn't blank
 		if(wxGetEnv(env_vars[i], &env_paths[i]))
 			if(!env_paths[i].IsEmpty())
-				doomwaddir += env_paths[i] + _T(PATH_DELIMITER);
+				doomwaddir += env_paths[i] + PATH_DELIMITER;
 	}
 
 	wxInt32 path_count = 0;
 
-	wxStringTokenizer wadlist(doomwaddir, _T(PATH_DELIMITER));
+	wxStringTokenizer wadlist(doomwaddir, PATH_DELIMITER);
 
 	while(wadlist.HasMoreTokens())
 	{
@@ -415,6 +426,25 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 
 }
 
+void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
+{
+	// This is a workaround for notebook layout issues on some platforms
+	if(NULL != m_Notebook)
+	{
+		wxWindowList pages = m_Notebook->GetChildren();
+
+		if(pages.size() > event.GetSelection())
+		{
+			wxPanel* page = dynamic_cast<wxPanel*>(pages[event.GetSelection()]);
+
+			if(NULL != page)
+			{
+				page->Layout();
+			}
+		}
+	}
+}
+
 // TODO: Design a cleaner system for loading/saving these settings
 
 // Load settings from configuration file
@@ -426,7 +456,7 @@ void dlgConfig::LoadSettings()
 	ConfigInfo.SetExpandEnvVars(false);
 
 	bool UseBroadcast;
-	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS;
+	bool GetListOnStart, ShowBlockedServers, LoadChatOnLS, CheckForUpdates;
 	bool FlashTaskBar, PlaySystemBell, PlaySoundFile, HighlightServers;
 	bool CustomServersHighlight;
 
@@ -441,6 +471,8 @@ void dlgConfig::LoadSettings()
 	ConfigInfo.Read(GETLISTONSTART, &GetListOnStart, ODA_UIGETLISTONSTART);
 	ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
 	                ODA_UISHOWBLOCKEDSERVERS);
+    ConfigInfo.Read(CHECKFORUPDATES, &CheckForUpdates,
+	                ODA_UIAUTOCHECKFORUPDATES);
 	ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 	ConfigInfo.Read(MASTERTIMEOUT, &MasterTimeout, ODA_QRYMASTERTIMEOUT);
@@ -468,6 +500,7 @@ void dlgConfig::LoadSettings()
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
 	m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);
+	m_ChkCtrlCheckForUpdates->SetValue(CheckForUpdates);
 	m_ChkCtrlLoadChatOnLS->SetValue(LoadChatOnLS);
 	m_ChkCtrlFlashTaskBar->SetValue(FlashTaskBar);
 	m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
@@ -484,7 +517,7 @@ void dlgConfig::LoadSettings()
 	// Load wad path list
 	m_LstCtrlWadDirectories->Clear();
 
-	wxStringTokenizer wadlist(DelimWadPaths, _T(PATH_DELIMITER));
+	wxStringTokenizer wadlist(DelimWadPaths, PATH_DELIMITER);
 
 	while(wadlist.HasMoreTokens())
 	{
@@ -534,6 +567,7 @@ void dlgConfig::SaveSettings()
 	ConfigInfo.Write(EXTRACMDLINEARGS, m_TxtCtrlExtraCmdLineArgs->GetValue());
 	ConfigInfo.Write(GETLISTONSTART, m_ChkCtrlGetListOnStart->GetValue());
 	ConfigInfo.Write(SHOWBLOCKEDSERVERS, m_ChkCtrlShowBlockedServers->GetValue());
+    ConfigInfo.Write(CHECKFORUPDATES, m_ChkCtrlCheckForUpdates->GetValue());
 	ConfigInfo.Write(DELIMWADPATHS, DelimWadPaths);
 	ConfigInfo.Write(ODAMEX_DIRECTORY, m_DirCtrlChooseOdamexPath->GetPath());
 	ConfigInfo.Write(ICONPINGQGOOD, m_SpnCtrlPQGood->GetValue());

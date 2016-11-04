@@ -24,7 +24,7 @@
 
 #include <limits>
 
-#include <SDL.h>
+#include "i_sdl.h" 
 #include <stdlib.h>
 
 #ifdef OSX
@@ -65,7 +65,10 @@
 
 #include <stdarg.h>
 #include <sys/types.h>
-#include <sys/timeb.h>
+
+#ifndef __OpenBSD__
+	#include <sys/timeb.h>
+#endif
 
 #include <sys/stat.h>
 
@@ -644,25 +647,28 @@ void I_Endoom(void)
 
 	screendata = TXT_GetScreenData();
 
-	indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
+    if(NULL != screendata)
+    {
+        indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
 
-	for (y=0; y<TXT_SCREEN_H; ++y)
-	{
-		memcpy(screendata + (y * TXT_SCREEN_W * 2),
-				endoom_data + (y * ENDOOM_W + indent) * 2,
-				TXT_SCREEN_W * 2);
-	}
+        for (y=0; y<TXT_SCREEN_H; ++y)
+        {
+            memcpy(screendata + (y * TXT_SCREEN_W * 2),
+                    endoom_data + (y * ENDOOM_W + indent) * 2,
+                    TXT_SCREEN_W * 2);
+        }
 
-	// Wait for a keypress
-	while (true)
-	{
-		TXT_UpdateScreen();
+        // Wait for a keypress
+        while (true)
+        {
+            TXT_UpdateScreen();
 
-		if (TXT_GetChar() > 0)
-            break;
+            if (TXT_GetChar() > 0)
+                break;
 
-        TXT_Sleep(0);
-	}
+            TXT_Sleep(0);
+        }
+    }
 
 	// Shut down text mode screen
 
@@ -711,6 +717,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
+		alreadyThrown = true;
 		char errortext[MAX_ERRORTEXT];
 		va_list argptr;
 		va_start (argptr, error);
@@ -907,8 +914,7 @@ std::string I_GetClipboardText()
 	return ret;
 #endif
 
-#ifdef OSX
-#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050 
+#if defined(OSX) && (MAC_OS_X_VERSION_MIN_REQUIRED < 1050)
 	ScrapRef scrap;
 	Size size;
 
@@ -946,14 +952,22 @@ std::string I_GetClipboardText()
 	delete [] data;
 
 	return ret;
+#endif	// OSX < 1050
 
-#elif MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+#ifdef SDL20
+    char* textp = SDL_GetClipboardText();
 
-	// TODO: Not currently supported
-	return "";
+    if(NULL == textp)
+    {
+        Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
+        return "";
+    }
 
-#endif
-#endif	// OSX
+    std::string clipText(textp);
+    SDL_free(textp);
+
+	return clipText;
+#endif  // SDL20
 
 	return "";
 }

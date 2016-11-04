@@ -27,11 +27,13 @@
 #include <SDL.h>
 #include "win32inc.h"
 
+#include "d_event.h"
+#include "hashtable.h"
+#include <queue>
+#include <list>
+
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
-
-void I_InitMouseDriver();
-void I_ShutdownMouseDriver();
 
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
@@ -45,19 +47,169 @@ std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
 
-void I_GetEvent (void);
-
-void I_EnableKeyRepeat();
-void I_DisableKeyRepeat();
 
 // ============================================================================
 //
-// Mouse Drivers
+// IInputDevice abstract base class interface
 //
 // ============================================================================
 
-class MouseInput;
+class IInputDevice
+{
+public:
+	virtual ~IInputDevice() { }
 
+	virtual bool active() const = 0;
+	virtual void pause() = 0; 
+	virtual void resume() = 0;
+	virtual void reset() = 0;
+
+	virtual void gatherEvents() = 0;
+	virtual bool hasEvent() const = 0;
+	virtual void getEvent(event_t* ev) = 0;
+
+	virtual void flushEvents()
+	{
+		event_t ev;
+		gatherEvents();
+		while (hasEvent())
+			getEvent(&ev);
+	}
+};
+
+
+struct IInputDeviceInfo
+{
+	std::string		mDeviceName;
+	int				mId;
+};
+
+
+// ============================================================================
+//
+// IInputSubsystem abstract base class interface
+//
+// ============================================================================
+
+class IInputSubsystem
+{
+public:
+	IInputSubsystem();
+	virtual ~IInputSubsystem();
+
+	virtual void grabInput() = 0;
+	virtual void releaseInput() = 0;
+
+	virtual void enableKeyRepeat();
+	virtual void disableKeyRepeat();
+
+	virtual void flushInput()
+	{
+		event_t dummy_event;
+		gatherEvents();
+		while (hasEvent())
+			getEvent(&dummy_event);
+	}
+
+	virtual bool hasEvent() const
+	{	return mEvents.empty() == false;	}
+
+	virtual void gatherEvents();
+	virtual void getEvent(event_t* ev);
+
+	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0; 
+	virtual void initKeyboard(int id) = 0;
+	virtual void shutdownKeyboard(int id) = 0;
+	virtual void pauseKeyboard() = 0;
+	virtual void resumeKeyboard() = 0;
+
+	virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0; 
+	virtual void initMouse(int id) = 0;
+	virtual void shutdownMouse(int id) = 0;
+	virtual void pauseMouse() = 0;
+	virtual void resumeMouse() = 0;
+
+	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0; 
+	virtual void initJoystick(int id) = 0;
+	virtual void shutdownJoystick(int id) = 0;
+	virtual void pauseJoystick() = 0;
+	virtual void resumeJoystick() = 0;
+
+protected:
+	void registerInputDevice(IInputDevice* device);
+	void unregisterInputDevice(IInputDevice* device);
+
+	void setKeyboardInputDevice(IInputDevice* device)
+	{
+		mKeyboardInputDevice = device;
+	}
+
+	IInputDevice* getKeyboardInputDevice()
+	{
+		return mKeyboardInputDevice;
+	}
+
+	void setMouseInputDevice(IInputDevice* device)
+	{
+		mMouseInputDevice = device;
+	}
+
+	IInputDevice* getMouseInputDevice()
+	{
+		return mMouseInputDevice;
+	}
+
+	void setJoystickInputDevice(IInputDevice* device)
+	{
+		mJoystickInputDevice = device;
+	}
+
+	IInputDevice* getJoystickInputDevice()
+	{
+		return mJoystickInputDevice;
+	}
+
+	static const uint64_t	mRepeatDelay;
+	static const uint64_t	mRepeatInterval;
+
+private:
+	void addToEventRepeaters(event_t& ev);
+	void repeatEvents();
+
+	// Data for key repeating
+	struct EventRepeater
+	{
+		uint64_t	last_time;
+		bool		repeating;
+		event_t		event;
+	};
+
+	// the EventRepeaterTable hashtable typedef uses
+	// event_t::data1 as its key as there should only be
+	// a single instance with that value in the table.
+	typedef OHashTable<int, EventRepeater> EventRepeaterTable;
+	EventRepeaterTable	mEventRepeaters;
+
+	bool				mRepeating;
+
+	typedef std::queue<event_t> EventQueue;
+	EventQueue			mEvents;
+
+	// Input device management
+	typedef std::list<IInputDevice*> InputDeviceList;
+	InputDeviceList		mInputDevices;
+
+	IInputDevice*		mKeyboardInputDevice;
+	IInputDevice*		mMouseInputDevice;
+	IInputDevice*		mJoystickInputDevice;
+};
+
+
+// ============================================================================
+//
+// Mouse Driver selection declarations
+//
+// ============================================================================
 enum
 {
 	SDL_MOUSE_DRIVER = 0,
@@ -68,146 +220,11 @@ enum
 typedef struct
 {
 	int				id;
-	const char*	name;
+	const char*		name;
 	bool 			(*avail_test)();
-	MouseInput*		(*create)();
 } MouseDriverInfo_t;
 
 MouseDriverInfo_t* I_FindMouseDriverInfo(int id);
 extern MouseDriverInfo_t MouseDriverInfo[];
-
-class MouseInput
-{
-public:
-	virtual ~MouseInput() { }
-
-	virtual void processEvents() = 0;
-	virtual void flushEvents() = 0;
-	virtual void center() = 0;
-
-	virtual bool paused() const = 0;
-	virtual void pause() = 0;
-	virtual void resume() = 0;
-
-	virtual void debug() const { }
-};
-
-#if defined _WIN32 && !defined _XBOX
-	#define USE_RAW_WIN32_MOUSE
-#else
-	#undef USE_RAW_WIN32_MOUSE
-#endif
-
-#ifdef USE_RAW_WIN32_MOUSE
-class RawWin32Mouse : public MouseInput
-{
-public:
-	static MouseInput* create();
-	virtual ~RawWin32Mouse();
-
-	void processEvents();
-	void flushEvents();
-	void center();
-
-	bool paused() const;
-	void pause();
-	void resume();
-
-	void debug() const;
-
-private:
-	RawWin32Mouse();
-	RawWin32Mouse(const RawWin32Mouse& other) { }
-	RawWin32Mouse& operator=(const RawWin32Mouse& other) { return *this; }
-
-	void registerWindowProc();
-	void unregisterWindowProc();
-	LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-	static LRESULT CALLBACK windowProcWrapper(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-	bool registerMouseDevice();
-	bool unregisterMouseDevice();
-
-	void backupMouseDevice(const RAWINPUTDEVICE& device);
-	void restoreMouseDevice(RAWINPUTDEVICE& device) const;
-
-	static RawWin32Mouse*	mInstance;
-
-	bool					mActive;
-	bool					mInitialized;
-
-	RAWINPUTDEVICE			mBackupDevice;
-	bool					mHasBackupDevice;
-	bool					mRegisteredMouseDevice;
-
-	HWND					mWindow;
-	WNDPROC					mBaseWindowProc;
-	bool					mRegisteredWindowProc;
-
-	static const size_t	QUEUE_CAPACITY = 256;
-	RAWMOUSE				mInputQueue[QUEUE_CAPACITY];
-	size_t					mQueueFront;
-	size_t					mQueueBack;
-
-	inline size_t queueSize() const
-	{
-		return (mQueueBack + QUEUE_CAPACITY - mQueueFront) % QUEUE_CAPACITY;
-	}
-
-	inline void pushBack(const RAWMOUSE* input)
-	{
-		if (queueSize() < QUEUE_CAPACITY)
-		{
-			memcpy(&mInputQueue[mQueueBack], input, sizeof(*input));
-			mQueueBack = (mQueueBack + 1) % QUEUE_CAPACITY;
-		}
-	}
-
-	inline void popFront()
-	{
-		if (queueSize() > 0)
-			mQueueFront = (mQueueFront + 1) % QUEUE_CAPACITY;
-	}
-
-	inline const RAWMOUSE* front() const
-	{
-		if (queueSize() > 0)
-			return &mInputQueue[mQueueFront];
-		return NULL;
-	}
-
-	inline void clear()
-	{
-		mQueueFront = mQueueBack = 0;
-	}
-};
-#endif  // USE_RAW_WIN32_MOUSE
-
-class SDLMouse : public MouseInput
-{
-public:
-	static MouseInput* create();
-	virtual ~SDLMouse();
-
-	void processEvents();
-	void flushEvents();
-	void center();
-
-	bool paused() const;
-	void pause();
-	void resume();
-
-	void debug() const;
-
-private:
-	SDLMouse();
-	SDLMouse(const SDLMouse& other) { }
-	SDLMouse& operator=(const SDLMouse& other) { return *this; }
-
-	bool	mActive;
-
-	static const int MAX_EVENTS = 256;
-	SDL_Event	mEvents[MAX_EVENTS];
-};
 
 #endif  // __I_INPUT_H__
