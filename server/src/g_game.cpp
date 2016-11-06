@@ -441,8 +441,11 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
+			if (&player == &*it)
+				continue;
+
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
