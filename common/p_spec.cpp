@@ -1359,7 +1359,7 @@ P_CrossSpecialLine
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1468,7 +1468,7 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1513,7 +1513,7 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1593,7 +1593,7 @@ P_PushSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
