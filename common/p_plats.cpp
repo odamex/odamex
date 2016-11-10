@@ -375,6 +375,18 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 	}
 }
 
+// Clones a DPlat and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DPlat* DPlat::Clone(sector_t* sec) const
+{
+	DPlat* plat = new DPlat(*this);
+
+	plat->Orphan();
+	plat->m_Sector = sec;
+
+	return plat;
+}
 
 //
 // Do Platforms
