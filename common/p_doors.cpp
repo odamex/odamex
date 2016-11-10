@@ -342,6 +342,19 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	}
 }
 
+// Clones a DDoor and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DDoor* DDoor::Clone(sector_t* sec) const
+{
+	DDoor* door = new DDoor(*this);
+
+	door->Orphan();
+	door->m_Sector = sec;
+
+	return door;
+}
+
 BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                 int tag, int speed, int delay, card_t lock)
 {

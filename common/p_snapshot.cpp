@@ -1142,9 +1142,22 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 
 			// clean up allocated memory
 			if (tempsector.ceilingdata)
+			{
 				tempsector.ceilingdata->Destroy();
+				delete tempsector.ceilingdata;
+			}
+				
 			if (tempsector.floordata)
+			{
 				tempsector.floordata->Destroy();
+				delete tempsector.floordata;
+			}
+
+			if (tempsector.lightingdata)
+			{
+				tempsector.lightingdata->Destroy();
+				delete tempsector.lightingdata;
+			}
 
 			// restore sector movement sounds
 			predicting = oldpredicting;

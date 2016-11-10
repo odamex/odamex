@@ -623,6 +623,7 @@ public:
 	DDoor (sector_t *sector);
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
+	DDoor* Clone(sector_t* sec) const;
 
 	friend void P_SetDoorDestroy(DDoor *door);
 	
