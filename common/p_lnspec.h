@@ -26,6 +26,7 @@
 #define __P_LNSPEC_H__
 
 #include "doomtype.h"
+#include "r_defs.h"
 
 typedef enum {
     // Removed 11/3/06 by ML - No more polyobjects! (1-9)
@@ -344,8 +345,8 @@ BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 
-bool P_LineSpecialMovesSector(line_s *line);
-bool P_CanActivateSpecials(line_s *line);
+bool P_LineSpecialMovesSector(line_t *line);
+bool P_CanActivateSpecials(line_t *line);
 
 extern int TeleportSide;
 
