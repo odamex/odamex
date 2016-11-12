@@ -51,6 +51,9 @@ bool S_MusicIsWave(byte* data, size_t length);
 //
 EXTERN_CVAR(snd_musicsystem)
 
+// [ML] Keep track of the currently loaded music lump name
+extern std::string currentmusic;
+
 void I_InitMusic(MusicSystemType musicsystem_type = (MusicSystemType)snd_musicsystem.asInt());
 void STACK_ARGS I_ShutdownMusic(void);
 // Volume.

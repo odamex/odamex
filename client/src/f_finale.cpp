@@ -121,11 +121,15 @@ void F_StartFinale (char *music, char *flat, const char *text)
 	//  determined in G_WorldDone() based on data in
 	//  a level_info_t and a cluster_info_t.
 
-	if (*music == 0)
-		S_ChangeMusic (std::string(gameinfo.finaleMusic, 8),
+	if (*music == 0) {
+		currentmusic = gameinfo.finaleMusic;
+		S_ChangeMusic (currentmusic.c_str(),
 			!(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
-	else
-		S_ChangeMusic (std::string(music, 8), !(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
+	}
+	else {
+		currentmusic = music;			
+		S_ChangeMusic (currentmusic.c_str(), !(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
+	}
 
 	if (*flat == 0)
 		finaleflat = gameinfo.finaleFlat;
