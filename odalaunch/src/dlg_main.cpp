@@ -582,8 +582,13 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		{
 		// Correct address
 		case 0:
+		case 3:
 		{
 			good = true;
+			
+			// Use the servers default port number if none was specified
+			if (!Port)
+                Port = ODA_NETDEFSERVERPORT;
 		}
 		break;
 
