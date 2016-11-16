@@ -1438,7 +1438,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteByte(netbuf, Elevator->m_Direction);
         MSG_WriteShort(netbuf, Elevator->m_FloorDestHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Elevator->m_CeilingDestHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Elevator->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Elevator->m_Speed);
 	}
 
 	if (ceiling_mover == SEC_PILLAR)
@@ -1461,9 +1461,9 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteByte(netbuf, Ceiling->m_Type);
         MSG_WriteShort(netbuf, Ceiling->m_BottomHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Ceiling->m_TopHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Ceiling->m_Speed >> FRACBITS);
-        MSG_WriteShort(netbuf, Ceiling->m_Speed1 >> FRACBITS);
-        MSG_WriteShort(netbuf, Ceiling->m_Speed2 >> FRACBITS);
+        MSG_WriteLong(netbuf, Ceiling->m_Speed);
+        MSG_WriteLong(netbuf, Ceiling->m_Speed1);
+        MSG_WriteLong(netbuf, Ceiling->m_Speed2);
         MSG_WriteBool(netbuf, Ceiling->m_Crush);
         MSG_WriteBool(netbuf, Ceiling->m_Silent);
         MSG_WriteByte(netbuf, Ceiling->m_Direction);
@@ -1479,7 +1479,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 
         MSG_WriteByte(netbuf, Door->m_Type);
         MSG_WriteShort(netbuf, Door->m_TopHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Door->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Door->m_Speed);
         MSG_WriteLong(netbuf, Door->m_TopWait);
         MSG_WriteLong(netbuf, Door->m_TopCountdown);
 		MSG_WriteByte(netbuf, Door->m_Status);
@@ -1498,7 +1498,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteShort(netbuf, Floor->m_NewSpecial);
         MSG_WriteShort(netbuf, Floor->m_Texture);
         MSG_WriteShort(netbuf, Floor->m_FloorDestHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Floor->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Floor->m_Speed);
         MSG_WriteLong(netbuf, Floor->m_ResetCount);
         MSG_WriteShort(netbuf, Floor->m_OrgHeight >> FRACBITS);
         MSG_WriteLong(netbuf, Floor->m_Delay);
@@ -1514,7 +1514,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 	{
 		DPlat *Plat = static_cast<DPlat *>(sector->floordata);
 
-        MSG_WriteShort(netbuf, Plat->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Plat->m_Speed);
         MSG_WriteShort(netbuf, Plat->m_Low >> FRACBITS);
         MSG_WriteShort(netbuf, Plat->m_High >> FRACBITS);
         MSG_WriteLong(netbuf, Plat->m_Wait);
