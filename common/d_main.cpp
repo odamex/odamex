@@ -83,6 +83,7 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
+
 #if defined(_WIN32) && !defined(_XBOX)
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
