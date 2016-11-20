@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "i_music.h"
 #include "i_system.h"
 #include "m_swap.h"
 #include "z_zone.h"
