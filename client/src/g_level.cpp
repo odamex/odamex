@@ -38,6 +38,7 @@
 #include "gi.h"
 #include "hu_stuff.h"
 #include "i_system.h"
+#include "i_music.h"
 #include "m_alloc.h"
 #include "m_fileio.h"
 #include "m_misc.h"
@@ -141,7 +142,9 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	D_StartTitle ();
 	CL_QuitNetGame();
 	S_StopMusic();
-	S_StartMusic(gameinfo.titleMusic);
+	currentmusic = gameinfo.titleMusic;
+	
+	S_StartMusic(currentmusic.c_str());
 }
 END_COMMAND (wad)
 

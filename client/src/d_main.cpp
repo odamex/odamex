@@ -65,6 +65,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "i_system.h"
+#include "i_music.h"
 #include "i_sound.h"
 #include "i_video.h"
 #include "i_input.h"
@@ -438,8 +439,10 @@ void D_DoAdvanceDemo (void)
 
             gamestate = GS_DEMOSCREEN;
             pagename = gameinfo.titlePage;
+            
+            currentmusic = gameinfo.titleMusic;
 
-            S_StartMusic(gameinfo.titleMusic);
+            S_StartMusic(currentmusic.c_str());
 
             break;
         case 1:
@@ -466,7 +469,9 @@ void D_DoAdvanceDemo (void)
 				else
 					pagetic = 170;
                 pagename = gameinfo.titlePage;
-                S_StartMusic(gameinfo.titleMusic);
+                currentmusic = gameinfo.titleMusic;
+                
+                S_StartMusic(currentmusic.c_str());
             }
             else
             {
