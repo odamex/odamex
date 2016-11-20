@@ -260,9 +260,7 @@ uint32_t Texture::calculateSize(int width, int height)
 	uint32_t size = sizeof(Texture);
 	#if CLIENT_APP
 	size += width * height						// mData
-		+ width * height						// mMask
-		// TODO: DELETE THIS!
-		+ width * height + width * 4;						// mCols
+		+ width * height;						// mMask
 	#endif
 	return size;
 }
@@ -291,9 +289,6 @@ void Texture::init(int width, int height)
 	mData = (byte*)((byte*)this + sizeof(*this));
 	// mMask follows mData
 	mMask = (byte*)(mData) + sizeof(byte) * width * height;
-
-	// TODO: DELETE THIS
-	mCols = (byte*)(mMask) + sizeof(byte) * width * height + 4 * width;
 	#endif
 }
 

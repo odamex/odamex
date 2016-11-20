@@ -1070,15 +1070,6 @@ static void P_LoadSideDefs2(const OString& mapname)
 			break;
 
 		  default:			// normal cases
-		  	//TODO: [SL] DO NOT HARD-CODE TEXTURE NAMES 
-			sd->mid_res_id = sd->top_res_id = sd->bottom_res_id = ResourceId::INVALID_ID;
-			if (msd->midtexture[0] != '-')
-				sd->mid_res_id = Res_GetResourceId("WLA128_1", "/PATCHES");
-			if (msd->toptexture[0] != '-')
-				sd->top_res_id = Res_GetResourceId("WLA128_1", "/PATCHES");
-			if (msd->bottomtexture[0] != '-')
-				sd->bottom_res_id = Res_GetResourceId("WLA128_1", "/PATCHES");
-
 			sd->midtexture = R_TextureNumForName(msd->midtexture);
 			sd->toptexture = R_TextureNumForName(msd->toptexture);
 			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);

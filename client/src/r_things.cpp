@@ -88,7 +88,7 @@ spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
 static const char*		spritename;
 
-static const tallpost_t* spriteposts[MAXWIDTH];
+static tallpost_t* spriteposts[MAXWIDTH];
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -347,7 +347,7 @@ fixed_t 		sprtopscreen;
 
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
-	const tallpost_t* post = dcol.post;
+	tallpost_t* post = dcol.post;
 
 	while (!post->end())
 	{

@@ -27,7 +27,6 @@
 
 #include "doomtype.h"
 #include "m_fixed.h"
-#include "r_defs.h"
 
 #include <vector>
 
@@ -109,9 +108,6 @@ public:
 	
 	static uint32_t calculateSize(int width, int height);
 
-	const tallpost_t* getColumn(unsigned short x) const
-	{	return (const tallpost_t*)(mCols + x * (mHeight + 4));	}
-
 private:
 	friend class TextureManager;
 
@@ -135,8 +131,6 @@ private:
 public:
 	byte*				mData;
 	byte*				mMask;
-
-	byte*				mCols;
 };
 
 
