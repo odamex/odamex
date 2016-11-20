@@ -434,7 +434,7 @@ void AGOL_MainWindow::ClearStatusbarTooltip()
 
 void AGOL_MainWindow::UpdateStatusbarMasterPing(uint64_t ping)
 {
-	AG_LabelText(MainStatusbar->mping, "Master Ping: %u", ping);
+	AG_LabelText(MainStatusbar->mping, "Master Ping: %lu", ping);
 }
 
 AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label, 
