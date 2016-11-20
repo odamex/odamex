@@ -38,6 +38,7 @@
 #include "gi.h"
 #include "hu_stuff.h"
 #include "i_system.h"
+#include "i_music.h"
 #include "m_alloc.h"
 #include "m_fileio.h"
 #include "m_misc.h"

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: res_container.cpp $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -363,5 +363,5 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 	return 0;
 }
 
-VERSION_CONTROL (res_container_cpp, "$Id: res_container.cpp $")
+VERSION_CONTROL (res_container_cpp, "$Id$")
 

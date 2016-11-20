@@ -3326,7 +3326,7 @@ void SV_WriteCommands(void)
 
 		// [SL] Send client info about player he is spying on
 		player_t *target = &idplayer(it->spying);
-		if (validplayer(*target) && P_CanSpy(*it, *target))
+		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
 		SV_UpdateHiddenMobj();

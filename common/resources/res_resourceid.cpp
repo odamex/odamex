@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: res_resourceid.cpp $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //

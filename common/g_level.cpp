@@ -918,6 +918,8 @@ extern dyncolormap_t NormalLight;
 
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
+EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_freelook)
 
 void G_InitLevelLocals()
 {
@@ -1006,6 +1008,15 @@ void G_InitLevelLocals()
 		level.flags = 0;
 		level.levelnum = 1;
 	}
+	
+	if (level.flags & LEVEL_JUMP_YES)
+		sv_allowjump = 1;
+	if (level.flags & LEVEL_JUMP_NO)
+		sv_allowjump = 0.0;
+	if (level.flags & LEVEL_FREELOOK_YES)
+		sv_freelook = 1;
+	if (level.flags & LEVEL_FREELOOK_NO)
+		sv_freelook = 0.0;
 
 //	memset (level.vars, 0, sizeof(level.vars));
 

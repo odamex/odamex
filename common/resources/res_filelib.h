@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: res_filelib.h 3426 2012-11-19 17:25:28Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //

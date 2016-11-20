@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: 04fe58223cfd13d0fbbe32d5b91930d0a694d0e6 $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
@@ -1356,4 +1356,4 @@ void R_DrawParticle(vissprite_t* vis)
 		R_FillTranslucentSpan();
 }
 
-VERSION_CONTROL (r_things_cpp, "$Id: 04fe58223cfd13d0fbbe32d5b91930d0a694d0e6 $")
+VERSION_CONTROL (r_things_cpp, "$Id$")

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: res_filelib.cpp 3426 2012-11-19 17:25:28Z dr_sean $
+// $Id$
 //
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -739,4 +739,4 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 	return new_resource_filenames;
 }
 
-VERSION_CONTROL (res_filelib_cpp, "$Id: res_filelib.cpp 3426 2012-11-19 17:25:28Z dr_sean $")
+VERSION_CONTROL (res_filelib_cpp, "$Id$")
