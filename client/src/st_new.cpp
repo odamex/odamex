@@ -881,6 +881,9 @@ void DoomHUD()
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, hud_targetcount);
+
+	// Draw CTF scoreboard
+	hud::drawCTF();
 }
 
 }
