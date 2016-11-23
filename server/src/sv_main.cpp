@@ -108,6 +108,8 @@ EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(sv_warmup_overtime_enable)
+EXTERN_CVAR(sv_warmup_overtime)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -4381,14 +4383,17 @@ void SV_TimelimitCheck()
 	if(!sv_timelimit)
 		return;
 
-	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
+	if (warmup.get_status() == warmup.INGAME && sv_warmup_overtime_enable)
+		level.timeleft = (int)(sv_timelimit * TICRATE * 60)+(warmup.get_overtime() *sv_warmup_overtime* TICRATE *60);
+	else
+		level.timeleft = (int)(sv_timelimit * TICRATE * 60);
 
 	// Don't substract the proper amount of time unless we're actually ingame.
 	if (warmup.checktimeleftadvance())
 		level.timeleft -= level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
-	if (P_AtInterval(1 * TICRATE))		// every second
+	if (P_AtInterval(TICRATE))
 	{
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
@@ -4422,14 +4427,32 @@ void SV_TimelimitCheck()
 			}
 
 			if (drawgame)
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			{
+				if (sv_warmup_overtime_enable && warmup.get_status() == warmup.INGAME)
+				{
+					warmup.add_overtime();
+					SV_BroadcastPrintf(PRINT_HIGH, "Overtime \#%d! Adding %d minute%s.\n", warmup.get_overtime(), sv_warmup_overtime.asInt(), (sv_warmup_overtime.asInt()>1 ? "s" : ""));
+					return;
+				}
+				else
+					SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			}
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname.c_str());
 		} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 			team_t winteam = SV_WinningTeam ();
 
-			if(winteam == TEAM_NONE)
-				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			if (winteam == TEAM_NONE)
+			{
+				if (sv_warmup_overtime_enable && warmup.get_status() == warmup.INGAME)
+				{
+					warmup.add_overtime();
+					SV_BroadcastPrintf(PRINT_HIGH, "Overtime \#%d! Adding %d minute%s.\n", warmup.get_overtime(), sv_warmup_overtime.asInt(), (sv_warmup_overtime.asInt()>1?"s":""));
+					return;
+				}
+				else
+					SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			}
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
 		}
@@ -4691,7 +4714,8 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " IP Address       - %s \n",		ip);
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);

@@ -84,6 +84,18 @@ Warmup::status_t Warmup::get_status()
 	return this->status;
 }
 
+// Get Overtime number
+short Warmup::get_overtime()
+{
+	return this->overtime_count;
+}
+
+// Add another Overtime
+void Warmup::add_overtime()
+{
+	this->overtime_count++;
+}
+
 // Warmup countdown getter
 short Warmup::get_countdown()
 {
@@ -97,6 +109,7 @@ void Warmup::reset()
 		this->set_status(Warmup::WARMUP);
 	else
 		this->set_status(Warmup::DISABLED);
+	this->overtime_count = 0;
 	this->time_begin = 0;
 }
 

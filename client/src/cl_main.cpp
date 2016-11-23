@@ -838,7 +838,8 @@ BEGIN_COMMAND (playerinfo)
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) 
+		Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);

@@ -51,9 +51,12 @@ public:
 	void forcestart();
 	void readytoggle();
 	void tic();
+	short get_overtime();
+	void add_overtime();
 	void set_client_status(status_t new_status); // Clientside only.
 private:
 	status_t status;
+	short overtime_count;
 	int time_begin;
 	void set_status(status_t new_status);
 };
