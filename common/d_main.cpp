@@ -229,7 +229,7 @@ static char *GetRegistryString(registry_value_t *reg_val)
 // denis - Check single paths for a given file with a possible extension
 // Case insensitive, but returns actual file name
 //
-static std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext, std::string hash = "")
+static std::string BaseFileSearchDir(std::string dir, const std::string &file, const std::string &ext, std::string hash = "")
 {
 	std::string found;
 
