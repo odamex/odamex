@@ -23,6 +23,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <limits.h>
+
 #include "cmdlib.h"
 #include "doomdef.h"
 #include "d_event.h"
