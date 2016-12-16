@@ -288,7 +288,7 @@ void P_PlayerLookUpDown (player_t *p)
 		// is used.
 		if (look)
 		{
-			if (look == -32768 << 16)
+			if (look == INT_MIN)
 			{ // center view
 				p->mo->pitch = 0;
 			}
