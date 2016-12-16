@@ -137,6 +137,38 @@ class DSectorEffect;
 
 struct sector_s
 {
+public:
+    sector_s() : floorheight(0), ceilingheight(0), floorpic(0), ceilingpic(0),
+        lightlevel(0), special(0), tag(0), nexttag(0), firsttag(0), 
+        soundtraversed(0), validcount(0), thinglist(NULL), seqType(-1), sky(0),
+        friction(ORIG_FRICTION), movefactor(ORIG_FRICTION_FACTOR), 
+        floordata(NULL), ceilingdata(NULL), lightingdata(NULL), moveable(false), 
+        stairlock(0), prevsec(-1), nextsec(-1), floor_xoffs(0), floor_yoffs(0), 
+        ceiling_xoffs(0), ceiling_yoffs(0), floor_xscale(FRACUNIT), 
+        floor_yscale(FRACUNIT), ceiling_xscale(FRACUNIT), 
+        ceiling_yscale(FRACUNIT), floor_angle(0), ceiling_angle(0), 
+        base_ceiling_angle(0), base_ceiling_yoffs(0), base_floor_angle(0), 
+        base_floor_yoffs(0), heightsec(NULL), floorlightsec(NULL), 
+        ceilinglightsec(NULL), touching_thinglist(NULL), linecount(0), 
+        lines(NULL), gravity(1.0f), damage(0), mod(0), colormap(NULL), 
+        alwaysfake(false), waterzone(0), MoreFlags(0)
+    { 
+        memset(blockbox, 0, sizeof(blockbox));
+        memset(soundorg, 0, sizeof(soundorg));
+        
+        floorplane.a = floorplane.b = 0;
+        floorplane.c = floorplane.invc = FRACUNIT;
+        floorplane.d = -floorheight;
+        floorplane.texx = floorplane.texy = 0;
+        floorplane.sector = this;
+        
+        ceilingplane.a = ceilingplane.b = 0;
+        ceilingplane.c = ceilingplane.invc = -FRACUNIT;
+        ceilingplane.d = ceilingheight;
+        ceilingplane.texx = ceilingplane.texy = 0;
+        ceilingplane.sector = this;
+    }
+	
 	fixed_t 	floorheight;
 	fixed_t 	ceilingheight;
 	short		floorpic;
