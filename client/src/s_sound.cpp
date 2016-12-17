@@ -1500,10 +1500,13 @@ END_COMMAND (changemus)
 
 //
 // UV_SoundAvoidCl
-// Sends a sound to clients, but doesn't send it to client 'player'.
+// Sends a sound to clients, but doesn't send it to client 'player' and spectators.
 //
 void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
 {
+	if (mo->player->spectator)
+		return;
+
 	S_Sound(mo, channel, name, 1, attenuation);
 }
 
