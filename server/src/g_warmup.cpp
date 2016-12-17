@@ -148,6 +148,18 @@ bool Warmup::checkreadytoggle()
 	return true;
 }
 
+// Add death penalty if there's an overtime only in CTF.
+short Warmup::get_ctf_overtime_penalty()
+{
+	if (sv_gametype == GM_CTF)
+		return 0;
+
+	if (this->status != Warmup::INGAME)
+		return 0;
+
+	return overtime_count ? overtime_count + 1 : 0;
+}
+
 extern size_t P_NumPlayersInGame();
 extern size_t P_NumReadyPlayersInGame();
 

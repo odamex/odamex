@@ -34,6 +34,7 @@
 #include "i_system.h"
 #include "i_net.h"
 #include "gi.h"
+#include "g_warmup.h"
 
 #include "p_snapshot.h"
 
@@ -573,8 +574,12 @@ void P_DeathThink (player_t *player)
 		bool force_respawn =	(!clientside && sv_forcerespawn &&
 								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
 
+		int respawn_time;
 		// [SL] Can we respawn yet?
-		int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
+		if (sv_gametype == GM_CTF && warmup.get_overtime())
+			respawn_time = player->death_time + warmup.get_ctf_overtime_penalty() * TICRATE;
+		else
+			respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN

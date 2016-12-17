@@ -55,3 +55,19 @@ void Warmup::set_client_status(Warmup::status_t new_status)
 {
 	this->status = new_status;
 }
+
+short Warmup::get_ctf_overtime_penalty()
+{
+	if (sv_gametype == GM_CTF)
+		return 0;
+
+	if (this->status != Warmup::INGAME)
+		return 0;
+
+	return overtime_count ? overtime_count + 1 : 0;
+}
+
+short Warmup::get_overtime()
+{
+	return this->overtime_count;
+}

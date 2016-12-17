@@ -54,6 +54,7 @@ public:
 	short get_overtime();
 	void add_overtime();
 	void set_client_status(status_t new_status); // Clientside only.
+	short get_ctf_overtime_penalty();
 private:
 	status_t status;
 	short overtime_count;
