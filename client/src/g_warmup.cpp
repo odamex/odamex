@@ -22,6 +22,8 @@
 
 #include "g_warmup.h"
 
+#define CTF_OVERTIME_RESPAWNTIME_CAP 5
+
 Warmup warmup;
 
 // Status getter
@@ -58,13 +60,13 @@ void Warmup::set_client_status(Warmup::status_t new_status)
 
 short Warmup::get_ctf_overtime_penalty()
 {
-	if (sv_gametype == GM_CTF)
+	if (sv_gametype != GM_CTF)
 		return 0;
 
 	if (this->status != Warmup::INGAME)
 		return 0;
 
-	return overtime_count ? overtime_count + 1 : 0;
+	return (this->overtime_count > CTF_OVERTIME_RESPAWNTIME_CAP) ? CTF_OVERTIME_RESPAWNTIME_CAP : this->overtime_count;
 }
 
 short Warmup::get_overtime()

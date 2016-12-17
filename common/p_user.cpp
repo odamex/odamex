@@ -571,19 +571,21 @@ void P_DeathThink (player_t *player)
 
 	if(serverside)
 	{
+		bool overtime_respawn = sv_gametype == GM_CTF && warmup.get_overtime();
+
 		bool force_respawn =	(!clientside && sv_forcerespawn &&
 								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
 
 		int respawn_time;
 		// [SL] Can we respawn yet?
-		if (sv_gametype == GM_CTF && warmup.get_overtime())
+		if (overtime_respawn)
 			respawn_time = player->death_time + warmup.get_ctf_overtime_penalty() * TICRATE;
 		else
 			respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
+		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || (!delay_respawn && overtime_respawn) || force_respawn))
 		{
 			player->playerstate = PST_REBORN;
 		}

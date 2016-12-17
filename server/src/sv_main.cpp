@@ -4448,6 +4448,10 @@ void SV_TimelimitCheck()
 				{
 					warmup.add_overtime();
 					SV_BroadcastPrintf(PRINT_HIGH, "Overtime \#%d! Adding %d minute%s.\n", warmup.get_overtime(), sv_warmup_overtime.asInt(), (sv_warmup_overtime.asInt()>1?"s":""));
+
+					if (sv_gametype == GM_CTF)
+						SV_BroadcastPrintf(PRINT_HIGH, "Respawning penalty time: %d seconds.\n", warmup.get_ctf_overtime_penalty());
+
 					return;
 				}
 				else
