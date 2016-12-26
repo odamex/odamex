@@ -3591,7 +3591,7 @@ void CL_ParseCommands(void)
 
 	while(connected)
 	{
-		int byteStart = net_message.BytesRead();
+		size_t byteStart = net_message.BytesRead();
 
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
