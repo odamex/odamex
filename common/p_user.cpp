@@ -62,6 +62,8 @@ extern bool predicting, step_mode;
 static player_t nullplayer;		// used to indicate 'player not found' when searching
 EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (cl_movebob)
+EXTERN_CVAR(cl_spectator_freelook_force)
+EXTERN_CVAR(cl_spectator_autofly)
 
 player_t &idplayer(byte id)
 {
@@ -277,7 +279,7 @@ void P_CalcHeight (player_t *player)
 void P_PlayerLookUpDown (player_t *p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook)
+	if (!sv_freelook && (p->spectator && !cl_spectator_freelook_force))
 	{
 		p->mo->pitch = 0;
 	}
@@ -656,10 +658,18 @@ void P_PlayerThink (player_t *player)
 	else
 		player->mo->flags &= ~MF_NOCLIP;
 
-	if (player->cheats & CF_FLY)
-		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+	if (player->spectator)
+	{
+		if (cl_spectator_autofly)
+			player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;	// Fly by default as a spectator
+	}
 	else
-		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
+	{
+		if (player->cheats & CF_FLY)
+			player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+		else
+			player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
+	}
 
 	// chain saw run forward
 	if (player->mo->flags & MF_JUSTATTACKED)
