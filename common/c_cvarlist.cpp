@@ -97,6 +97,9 @@ CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will r
 					"time (in seconds)",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
 
+CVAR(				sv_spawnmpthings, "1", "Spawn multiplayer things on the map",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR(				sv_monstersrespawn,  "0", "Monsters will respawn after a period of time",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
