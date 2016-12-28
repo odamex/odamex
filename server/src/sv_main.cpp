@@ -4190,7 +4190,7 @@ void SV_ParseCommands(player_t &player)
 		case clc_kill:
 			if(player.mo &&
                level.time > player.death_time + TICRATE*10 &&
-               (sv_allowcheats || sv_gametype == GM_COOP))
+               (sv_allowcheats || sv_gametype == GM_COOP || warmup.get_status() == warmup.WARMUP))
             {
 				SV_Suicide (player);
             }
