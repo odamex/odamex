@@ -28,9 +28,9 @@
 #define CONFIGVERSIONSTR "70"
 #define GAMEVER (0*256+70)
 
-#define DOTVERSIONSTR "0.7.0"
+#define DOTVERSIONSTR "0.7.X"
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2014 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2016 The Odamex Team"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)

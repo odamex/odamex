@@ -80,7 +80,7 @@ BEGIN
             VALUE "OriginalFilename", "odamex.exe\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Odamex Client\0"
-            VALUE "ProductVersion", "0.7.0\0"
+            VALUE "ProductVersion", "0.7.X\0"
             VALUE "SpecialBuild", "\0"
         END
     END

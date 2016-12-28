@@ -1109,7 +1109,7 @@ void I_SetWindowCaption(const std::string& caption)
 {
 	// [Russell] - A basic version string that will eventually get replaced
 
-	std::string title("Odamex ");
+	std::string title("Odamex TESTING ");
 	title += DOTVERSIONSTR;
 
 	if (!caption.empty())
