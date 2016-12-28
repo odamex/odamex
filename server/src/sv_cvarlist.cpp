@@ -234,6 +234,9 @@ CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the g
 				"warmup or restarting the game.",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
 
+CVAR(			sv_warmup_pugs, "0", "Enables PUGs optimisations for teamgames.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+
 // Experimental settings (all categories)
 // =======================================
 

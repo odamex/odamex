@@ -3823,6 +3823,10 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 
 void SV_Ready(player_t &player)
 {
+
+	if (warmup.get_status() != ::Warmup::WARMUP)
+		return;
+
 	// If the player is not ingame, he shouldn't be sending us ready packets.
 	if (!player.ingame()) {
 		return;

@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-bool Pickup_DistributePlayers(size_t num_players, std::string &error);
+bool Pickup_DistributePlayers(size_t num_players, std::string &error, bool isRandCap);
 bool CMD_RandpickupCheck(const std::vector<std::string> &args,
 						 std::string &error, size_t &num_players);
 
