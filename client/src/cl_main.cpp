@@ -995,7 +995,8 @@ BEGIN_COMMAND (spectate)
 END_COMMAND (spectate)
 
 BEGIN_COMMAND (ready) {
-	MSG_WriteMarker(&net_buffer, clc_ready);
+	if (warmup.get_status() != warmup.DISABLED)
+		MSG_WriteMarker(&net_buffer, clc_ready);
 } END_COMMAND (ready)
 
 BEGIN_COMMAND (join)
