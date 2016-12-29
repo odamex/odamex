@@ -328,7 +328,7 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
 	                -1);
 
 	if(WindowWidth >= 0 && WindowHeight >= 0)
-		SetClientSize(WindowWidth, WindowHeight);
+		SetSize(WindowWidth, WindowHeight);
 
 	// Set Window position
 	ConfigInfo.Read("MainWindowPosX",
@@ -379,8 +379,8 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	// Save GUI layout
 	wxFileConfig ConfigInfo;
 
-	ConfigInfo.Write("MainWindowWidth", GetClientSize().GetWidth());
-	ConfigInfo.Write("MainWindowHeight", GetClientSize().GetHeight());
+	ConfigInfo.Write("MainWindowWidth", GetSize().GetWidth());
+	ConfigInfo.Write("MainWindowHeight", GetSize().GetHeight());
 	ConfigInfo.Write("MainWindowPosX", GetPosition().x);
 	ConfigInfo.Write("MainWindowPosY", GetPosition().y);
 	ConfigInfo.Write("MainWindowMaximized", IsMaximized());
