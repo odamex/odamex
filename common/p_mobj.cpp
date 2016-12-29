@@ -68,6 +68,7 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
+EXTERN_CVAR(cl_spectator_flybob)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -1413,7 +1414,10 @@ static void P_PlayerFlyBob(AActor* mo)
 {
 	if ((mo->flags2 & MF2_FLY) && mo->z > mo->floorz)
 	{
-		mo->z += finesine[(FINEANGLES / 80 * level.time) & FINEMASK] / 8;
+		if (mo->player->spectator)
+			mo->z += cl_spectator_flybob * finesine[(FINEANGLES / 80 * level.time)&FINEMASK] / 8;
+		else
+			mo->z += finesine[(FINEANGLES / 80 * level.time) & FINEMASK] / 8;
 		mo->momz = FixedMul(mo->momz, FRICTION_FLY);
 	}
 }

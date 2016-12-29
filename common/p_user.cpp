@@ -34,6 +34,7 @@
 #include "i_system.h"
 #include "i_net.h"
 #include "gi.h"
+#include "g_warmup.h"
 
 #include "p_snapshot.h"
 
@@ -61,6 +62,8 @@ extern bool predicting, step_mode;
 static player_t nullplayer;		// used to indicate 'player not found' when searching
 EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (cl_movebob)
+EXTERN_CVAR(cl_spectator_freelook_force)
+EXTERN_CVAR(cl_spectator_autofly)
 
 player_t &idplayer(byte id)
 {
@@ -276,7 +279,7 @@ void P_CalcHeight (player_t *player)
 void P_PlayerLookUpDown (player_t *p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook)
+	if (!sv_freelook && (p->spectator && !cl_spectator_freelook_force))
 	{
 		p->mo->pitch = 0;
 	}
@@ -570,15 +573,21 @@ void P_DeathThink (player_t *player)
 
 	if(serverside)
 	{
+		bool overtime_respawn = sv_gametype == GM_CTF && warmup.get_overtime();
+
 		bool force_respawn =	(!clientside && sv_forcerespawn &&
 								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
 
+		int respawn_time;
 		// [SL] Can we respawn yet?
-		int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
+		if (overtime_respawn)
+			respawn_time = player->death_time + warmup.get_ctf_overtime_penalty() * TICRATE;
+		else
+			respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
+		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || (!delay_respawn && overtime_respawn) || force_respawn))
 		{
 			player->playerstate = PST_REBORN;
 		}
@@ -649,10 +658,18 @@ void P_PlayerThink (player_t *player)
 	else
 		player->mo->flags &= ~MF_NOCLIP;
 
-	if (player->cheats & CF_FLY)
-		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+	if (player->spectator)
+	{
+		if (cl_spectator_autofly)
+			player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;	// Fly by default as a spectator
+	}
 	else
-		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
+	{
+		if (player->cheats & CF_FLY)
+			player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+		else
+			player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
+	}
 
 	// chain saw run forward
 	if (player->mo->flags & MF_JUSTATTACKED)

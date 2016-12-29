@@ -224,6 +224,7 @@ EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (m_yaw)
 EXTERN_CVAR (m_forward)
 EXTERN_CVAR (m_side)
+EXTERN_CVAR (cl_spectator_freelook_force)
 
 int 			turnheld;								// for accelerative turning
 
@@ -505,7 +506,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || ((&consoleplayer())->spectator && !sv_freelook && cl_spectator_freelook_force))
 	{
 		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)

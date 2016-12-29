@@ -63,6 +63,8 @@ void P_InvertPlane(plane_t *plane);
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
 
+EXTERN_CVAR (sv_spawnmpthings)
+
 //
 // MAP related Lookup tables.
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
@@ -593,9 +595,15 @@ void P_LoadThings (int lump)
 		// [RH] Need to translate the spawn flags to Hexen format.
 		short flags = LESHORT(mt->options);
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
-		if (flags & BTF_NOTSINGLE)			mt2.flags &= ~MTF_SINGLE;
+		if (flags & BTF_NOTSINGLE)
+		{
+			if (!sv_spawnmpthings && sv_gametype == GM_COOP)
+				mt2.flags &= ~MTF_COOPERATIVE;
+			else
+				mt2.flags &= ~MTF_SINGLE;
+		}
 		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
-		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
+		if (flags & BTF_NOTCOOPERATIVE && sv_spawnmpthings)		mt2.flags &= ~MTF_COOPERATIVE;
 
 		mt2.x = LESHORT(mt->x);
 		mt2.y = LESHORT(mt->y);

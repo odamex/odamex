@@ -37,11 +37,18 @@
 #include "p_local.h"
 
 EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_warmup_pugs)
 
 // Distribute X number of players between teams.
-bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
+bool Pickup_DistributePlayers(size_t num_players, std::string &error, bool isRandCap) {
+
+	bool bIsMapPicker;
+	std::string FirstPicker, MapPicker;
+
+	bool bIsTeamGame = (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM);
+
 	// This function shouldn't do anything unless you're in a teamgame.
-	if (!(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)) {
+	if (!bIsTeamGame) {
 		error = "Server is not in a team game.";
 		return false;
 	}
@@ -71,6 +78,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		return false;
 	}
 
+	if (isRandCap && bIsTeamGame)
+		bIsMapPicker = (P_Random() % 2 == 0) ? true : false;
+
 	// Jumble up our eligible players and cut the number of
 	// eligible players to the passed number.
 	std::random_shuffle(eligible.begin(), eligible.end());
@@ -85,6 +95,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
+		SV_SetReady(player, false, false);	// Disable their Ready state for potential "instastart"
 
 		// Is the last player an odd-one-out?  Randomize
 		// the team he is put on.
@@ -111,14 +122,32 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		} else {
 			dest_team = TEAM_BLUE;
 		}
+
+		if (isRandCap && bIsTeamGame)
+		{
+			// ToDo: Select who's the First picker, and the Map picker.
+			if (!bIsMapPicker)
+				FirstPicker += player.userinfo.netname;
+			else
+				MapPicker += player.userinfo.netname;
+			
+			bIsMapPicker = !bIsMapPicker;
+		}
+
 	}
 
 	// Force-spectate everyone who is not eligible.
 	for (Players::iterator it = players.begin();it != players.end();++it) {
 		if (std::find(eligible.begin(), eligible.end(), &*it) == eligible.end()) {
 			SV_SetPlayerSpec(*it, true, true);
+
+			if (isRandCap)
+				SV_SetReady(*it, true, true);
 		}
 	}
+
+	if (isRandCap && bIsTeamGame) 
+		SV_BroadcastPrintf(PRINT_HIGH, "First Picker: %s\nMap Picker: %s\n", FirstPicker.c_str(), MapPicker.c_str());
 
 	return true;
 }
@@ -151,14 +180,14 @@ BEGIN_COMMAND (randpickup) {
 		return;
 	}
 
-	if (!Pickup_DistributePlayers(num_players, error)) {
+	if (!Pickup_DistributePlayers(num_players, error, false)) {
 		Printf(PRINT_HIGH, "%s\n", error.c_str());
 	}
 } END_COMMAND (randpickup)
 
 BEGIN_COMMAND (randcaps) {
 	std::string error;
-	if (!Pickup_DistributePlayers(2, error)) {
+	if (!Pickup_DistributePlayers(2, error, sv_warmup_pugs)) {
 		Printf(PRINT_HIGH, "%s\n", error.c_str());
 	}
 } END_COMMAND (randcaps)

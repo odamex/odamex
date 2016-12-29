@@ -234,6 +234,15 @@ CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the g
 				"warmup or restarting the game.",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
 
+CVAR(			sv_warmup_pugs, "0", "Enables PUGs optimisations for teamgames.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+
+CVAR(			sv_warmup_overtime_enable, "0", "Enables overtime whenever a draw occurs.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+
+CVAR_RANGE(		sv_warmup_overtime, "2", "Number of minutes added during an overtime.",
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+
 // Experimental settings (all categories)
 // =======================================
 

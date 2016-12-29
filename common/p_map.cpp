@@ -1481,6 +1481,7 @@ void P_HitSlideLine (line_t* ld)
 
 	// killough 10/98: only bounce if hit hard (prevents wobbling)
 	icyfloor =
+		!slidemo->player->spectator &&	// Ch0wW: disables bouncing as a flying spectator. (prevents grunt1 sound from playing)
 		(P_AproxDistance(tmxmove, tmymove) > 4*FRACUNIT) &&
 		slidemo->z <= slidemo->floorz &&		  // killough 8/28/98: calc friction on demand
 		P_GetFriction (slidemo, NULL) > ORIG_FRICTION;

@@ -39,6 +39,7 @@
 // State.
 #include "r_state.h"
 
+EXTERN_CVAR(cl_spectator_allow_teleport)
 
 extern void P_CalcHeight (player_t *player);
 
@@ -161,6 +162,10 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 	if (thing->flags & MF_MISSILE)
 		return false;
 
+	// Don't teleport if your client disallowed it through a CVAR.
+	if (thing->player && thing->player->spectator && !cl_spectator_allow_teleport)
+		return false;
+
 	// Don't teleport if hit back of line, so you can get out of teleporter.
 	if (side == 1)
 		return false;
@@ -230,6 +235,10 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 
     // don't teleport missiles
     if (thing->flags & MF_MISSILE)
+		return false;
+
+	// Don't teleport if your client disallowed it through a CVAR.
+	if (thing->player && thing->player->spectator && !cl_spectator_allow_teleport)
 		return false;
 
     // Don't teleport if hit back of line,
@@ -322,6 +331,10 @@ BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
 	if (thing->flags & MF_MISSILE || !line)
 		return false;
 
+	// Don't teleport if your client disallowed it through a CVAR.
+	if (thing->player && thing->player->spectator && !cl_spectator_allow_teleport)
+		return false;
+
 	// [AM] TODO: Change this to use SelectTeleDest.
 	if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN)))
 		if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN2)))
@@ -396,6 +409,10 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 	line_t *l;
 
 	if (thing->flags & MF_MISSILE || !line)
+		return false;
+
+	// Don't teleport if your client disallowed it through a CVAR.
+	if (thing->player && thing->player->spectator && !cl_spectator_allow_teleport)
 		return false;
 
 	for (i = -1; (i = P_FindLineFromID (id, i)) >= 0;)

@@ -42,6 +42,7 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_warmup_pugs)
 
 EXTERN_CVAR(sv_vote_countabs)
 EXTERN_CVAR(sv_vote_majority)
@@ -428,7 +429,7 @@ public:
 	}
 	bool exec(void)
 	{
-		return Pickup_DistributePlayers(2, this->error);
+		return Pickup_DistributePlayers(2, this->error, sv_warmup_pugs);
 	}
 };
 
@@ -506,7 +507,7 @@ public:
 	}
 	bool exec(void)
 	{
-		return Pickup_DistributePlayers(this->num_players, this->error);
+		return Pickup_DistributePlayers(this->num_players, this->error, false);
 	}
 };
 

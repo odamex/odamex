@@ -37,6 +37,8 @@ EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_timelimit)
 
+#define CTF_OVERTIME_RESPAWNTIME_CAP 5
+
 extern int mapchange;
 
 // Store Warmup state.
@@ -84,6 +86,18 @@ Warmup::status_t Warmup::get_status()
 	return this->status;
 }
 
+// Get Overtime number
+short Warmup::get_overtime()
+{
+	return this->overtime_count;
+}
+
+// Add another Overtime
+void Warmup::add_overtime()
+{
+	this->overtime_count++;
+}
+
 // Warmup countdown getter
 short Warmup::get_countdown()
 {
@@ -97,6 +111,7 @@ void Warmup::reset()
 		this->set_status(Warmup::WARMUP);
 	else
 		this->set_status(Warmup::DISABLED);
+	this->overtime_count = 0;
 	this->time_begin = 0;
 }
 
@@ -133,6 +148,18 @@ bool Warmup::checkreadytoggle()
 	if (this->status == Warmup::INGAME || this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
 	return true;
+}
+
+// Add death penalty if there's an overtime only in CTF.
+short Warmup::get_ctf_overtime_penalty()
+{
+	if (sv_gametype != GM_CTF)
+		return 0;
+
+	if (this->status != Warmup::INGAME)
+		return 0;
+
+	return (this->overtime_count > CTF_OVERTIME_RESPAWNTIME_CAP) ? CTF_OVERTIME_RESPAWNTIME_CAP : this->overtime_count;
 }
 
 extern size_t P_NumPlayersInGame();

@@ -73,14 +73,14 @@ BEGIN
             VALUE "Comments", "Thanks to id Software for Doom, Randy Heit for ZDoom, and Sergey A. Makovkin for csDoom.\0"
             VALUE "CompanyName", " \0"
             VALUE "FileDescription", "Odamex Server\0"
-            VALUE "FileVersion", "0.7.0\0"
+            VALUE "FileVersion", "0.7.X\0"
             VALUE "InternalName", "Odamex Server\0"
             VALUE "LegalCopyright", "Copyright Â© 2006-2014 The Odamex Team\0"
             VALUE "LegalTrademarks", "Doom® is a Registered Trademark of id Software, Inc.\0"
             VALUE "OriginalFilename", "odasrv.exe\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Odamex Server\0"
-            VALUE "ProductVersion", "0.7.0\0"
+            VALUE "ProductVersion", "0.7.X\0"
             VALUE "SpecialBuild", "\0"
         END
     END

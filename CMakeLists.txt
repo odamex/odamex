@@ -24,8 +24,8 @@ cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
 
-set(PROJECT_VERSION 0.7.0)
-set(PROJECT_COPYRIGHT "2006-2014")
+set(PROJECT_VERSION 0.7.X)
+set(PROJECT_COPYRIGHT "2006-2016")
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
@@ -115,7 +115,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --tags --always)
+git_describe(GIT_DESCRIBE --tags --always --abbrev=6)
 
 # MiniUPnPc
 if (USE_MINIUPNP)

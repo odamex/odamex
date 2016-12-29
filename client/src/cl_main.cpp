@@ -838,7 +838,8 @@ BEGIN_COMMAND (playerinfo)
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) 
+		Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
@@ -853,10 +854,10 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats || sv_gametype == GM_COOP)
+    if (sv_allowcheats || sv_gametype == GM_COOP || warmup.get_status() == warmup.WARMUP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -995,7 +996,8 @@ BEGIN_COMMAND (spectate)
 END_COMMAND (spectate)
 
 BEGIN_COMMAND (ready) {
-	MSG_WriteMarker(&net_buffer, clc_ready);
+	if (warmup.get_status() != warmup.DISABLED)
+		MSG_WriteMarker(&net_buffer, clc_ready);
 } END_COMMAND (ready)
 
 BEGIN_COMMAND (join)
