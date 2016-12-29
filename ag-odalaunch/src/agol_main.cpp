@@ -676,7 +676,7 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 		rowStream << "Version " << (int)QServer[serverNdx].Info.VersionMajor << "." <<
 		                           (int)QServer[serverNdx].Info.VersionMinor << "." <<
 		                           (int)QServer[serverNdx].Info.VersionPatch << "-r" <<
-		                           (int)QServer[serverNdx].Info.VersionRevision;
+		                           QServer[serverNdx].Info.VersionRevision;
 		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
 		rowStream.str("");
 
@@ -731,23 +731,79 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 
 		AG_TableAddRow(ServInfoList, "%s", "");
 
-		// Gameplay variables (Cvars, others)
-		AG_TableAddRow(ServInfoList, "%s", "Game Settings");
-
 		// Sort cvars ascending
 		sort(QServer[serverNdx].Info.Cvars.begin(), QServer[serverNdx].Info.Cvars.end(), AGOL_MainWindow::CvarCompare);
 
-		for(size_t i = 0; i < QServer[serverNdx].Info.Cvars.size(); ++i)
-		{
-			rowStream << QServer[serverNdx].Info.Cvars[i].Name << " " << QServer[serverNdx].Info.Cvars[i].Value;
-			AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
-			rowStream.str("");
-		}
-	}
-	
-	QServer[serverNdx].Unlock();
+		// Cvars that are enabled
+		AG_TableAddRow(ServInfoList, "%s", "Cvars Enabled");
 
-	AutoSizeTableColumn(ServInfoList, 0);
+		std::vector<Cvar_t>::iterator cvarIter = QServer[serverNdx].Info.Cvars.begin();
+		std::vector<Cvar_t>::iterator cvarEndIter = QServer[serverNdx].Info.Cvars.end();
+
+		while(cvarIter != cvarEndIter)
+		{
+			if(cvarIter->Type == CVARTYPE_BOOL)
+			{
+				AG_TableAddRow(ServInfoList, "%s", cvarIter->Name.c_str());
+			}
+			++cvarIter;
+		}
+		AG_TableAddRow(ServInfoList, "%s", "");
+
+		// Gameplay variables (Cvars, others)
+		AG_TableAddRow(ServInfoList, "%s", "Gameplay Variables");
+
+		cvarIter = QServer[serverNdx].Info.Cvars.begin();
+		while(cvarIter != cvarEndIter)
+		{
+			rowStream << cvarIter->Name << " ";
+
+			switch(cvarIter->Type)
+			{
+				case CVARTYPE_BYTE:
+				{
+					rowStream << (int)cvarIter->i8;
+				}
+				break;
+
+				case CVARTYPE_WORD:
+				{
+					rowStream << cvarIter->i16;
+				}
+				break;
+
+				case CVARTYPE_INT:
+				{
+					rowStream << cvarIter->i32;
+				}
+				break;
+
+				case CVARTYPE_FLOAT:
+				case CVARTYPE_STRING:
+				{
+					rowStream << cvarIter->Value;
+				}
+				break;
+
+				case CVARTYPE_NONE:
+				case CVARTYPE_MAX:
+				default:
+					rowStream.str("");
+					break;
+			}
+
+			if(!rowStream.str().empty())
+			{
+				AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
+				rowStream.str("");
+			}
+			++cvarIter;
+		}
+
+		QServer[serverNdx].Unlock();
+
+		AutoSizeTableColumn(ServInfoList, 0);
+	}
 }
 
 void AGOL_MainWindow::UpdateQueriedLabelTotal(int total)
