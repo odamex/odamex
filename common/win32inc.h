@@ -58,6 +58,11 @@
         #undef LoadMenu
     #endif  // LoadMenu
 
+    // Visual Studio 2015 has these functions.  Anything earlier does not.
+    #if defined(_MSC_VER) && _MSC_VER < 1900
+        int snprintf(char *s, size_t n, const char *fmt, ...);
+        int vsnprintf(char *s, size_t n, const char *fmt, va_list ap);
+    #endif
 #endif // WIN32
 
 #endif  // __WIN32INC_H__

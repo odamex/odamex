@@ -1316,7 +1316,7 @@ void C_DrawConsole()
 	if (ConBottom >= 12)
 	{
 		// print the Odamex version in gold in the bottom right corner of console
-		char version_str[16];
+		char version_str[32];
 		snprintf(version_str, sizeof(version_str), "%s (%s)", DOTVERSIONSTR, GitDescribe());
 		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version_str),
 					ConBottom - 12, version_str, CR_ORANGE);

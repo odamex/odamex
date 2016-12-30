@@ -115,7 +115,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --tags --always --abbrev=6)
+git_describe(GIT_DESCRIBE --tags --always)
 
 # MiniUPnPc
 if (USE_MINIUPNP)
