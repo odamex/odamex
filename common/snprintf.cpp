@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Visual Studio 2015 has these functions.  Anything earlier does not.
+// Missing from MSVC++ older than 2015
 #if defined(_MSC_VER) && _MSC_VER < 1900
 
 #include <stdio.h>

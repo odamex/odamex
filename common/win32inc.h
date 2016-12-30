@@ -58,7 +58,16 @@
         #undef LoadMenu
     #endif  // LoadMenu
 
-    // Visual Studio 2015 has these functions.  Anything earlier does not.
+    // POSIX functions
+    char * strptime(const char *buf, const char *fmt, struct tm *timeptr);
+    time_t timegm(struct tm *tm);
+
+    #if (defined _MSC_VER)
+        #define strncasecmp _strnicmp
+    #endif
+
+    // C99 functions
+    // Missing from MSVC++ older than 2015
     #if defined(_MSC_VER) && _MSC_VER < 1900
         int snprintf(char *s, size_t n, const char *fmt, ...);
         int vsnprintf(char *s, size_t n, const char *fmt, va_list ap);
