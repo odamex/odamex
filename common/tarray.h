@@ -48,6 +48,8 @@ public:
 	~TArray ()
 	{
 		M_Free (Array);
+		Most = 0;
+		Count = 0;
 	}
 	T &operator[] (size_t index) const
 	{
