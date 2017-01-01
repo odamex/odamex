@@ -1122,6 +1122,12 @@
 				RelativePath="..\client\sdl\afxres.h">
 			</File>
 			<File
+				RelativePath="..\client\sdl\i_crash.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_crash.h">
+			</File>
+			<File
 				RelativePath="..\client\sdl\i_input.cpp">
 			</File>
 			<File
@@ -1149,16 +1155,16 @@
 				RelativePath="..\client\sdl\i_musicsystem.h">
 			</File>
 			<File
-				RelativePath="..\client\sdl\i_sdlvideo.cpp">
-			</File>
-			<File
-				RelativePath="..\client\sdl\i_sdlvideo.h">
-			</File>
-			<File
 				RelativePath="..\client\sdl\i_sdlinput.cpp">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_sdlinput.h">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_sdlvideo.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_sdlvideo.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_sound.cpp">
