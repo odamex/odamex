@@ -26,22 +26,15 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <string.h>
+#include <errno.h>
 
-#if defined(__MINGW32__)
+#if defined(__MINGW32__) || (defined(_MSC_VER) && (_MSC_VER < 1600))
 #define EOVERFLOW EFBIG
 #endif
 
-int snprintf(char *s, size_t n, const char *fmt, ...)
-{
-    va_list ap;
-    int ret;
-
-    va_start(ap, fmt);
-    ret = vsnprintf(s, n, fmt, ap);
-    va_end(ap);
-
-    return ret;
-}
+#if defined(_MSC_VER) && _MSC_VER < 1800
+#define va_copy(d,s)((d) = (s))
+#endif
 
 int vsnprintf(char *s, size_t n, const char *fmt,
                      va_list ap)
@@ -66,6 +59,18 @@ int vsnprintf(char *s, size_t n, const char *fmt,
     va_end(ap_copy);
     if (ret == -1)
         ret = _vscprintf(fmt, ap);
+
+    return ret;
+}
+
+int snprintf(char *s, size_t n, const char *fmt, ...)
+{
+    va_list ap;
+    int ret;
+
+    va_start(ap, fmt);
+    ret = vsnprintf(s, n, fmt, ap);
+    va_end(ap);
 
     return ret;
 }
