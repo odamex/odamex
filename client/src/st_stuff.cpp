@@ -281,12 +281,6 @@ static bool			st_armson;
 // !deathmatch
 static bool			st_fragson;
 
-// show flagbox blue indicator
-static bool			st_flagboxbluon;
-
-// show flagbox red indicator
-static bool			st_flagboxredon;
-
 // main bar left
 static patch_t* 		sbar;
 
@@ -319,15 +313,6 @@ static patch_t* 		armsbg;
 // score/flags
 static patch_t* 		flagsbg;
 
-// flagbox
-static patch_t* 		flagbox;
-
-// flagbox blue indicator
-static patch_t* 		flagboxblu;
-
-// flagbox red indicator
-static patch_t* 		flagboxred;
-
 // weapon ownership patches
 static patch_t* 		arms[6][2];
 
@@ -357,12 +342,6 @@ static st_number_t		w_ammo[4];
 
 // max ammo widgets
 static st_number_t		w_maxammo[4];
-
-// flagbox blue indicator widget
-static st_binicon_t		w_flagboxblu;
-
-// flagbox red indicator widger
-static st_binicon_t		w_flagboxred;
 
 // number of frags so far in deathmatch
 static int		st_fragscount;
@@ -1183,54 +1162,6 @@ void ST_updateWidgets(void)
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 
-	if (sv_gametype == GM_CTF)
-	{
-		switch(CTFdata[it_blueflag].state)
-		{
-			case flag_home:
-				st_flagboxbluon = true;
-				break;
-			case flag_carried:
-				st_flagboxbluon = false;
-				break;
-			case flag_dropped:
-				CTFdata[it_blueflag].sb_tick++;
-
-				if (CTFdata[it_blueflag].sb_tick == 10)
-					CTFdata[it_blueflag].sb_tick = 0;
-
-				if (CTFdata[it_blueflag].sb_tick < 8)
-					st_flagboxbluon = false;
-				else
-					st_flagboxbluon = true;
-				break;
-			default:
-				break;
-		}
-		switch(CTFdata[it_redflag].state)
-		{
-			case flag_home:
-				st_flagboxredon = true;
-				break;
-			case flag_carried:
-				st_flagboxredon = false;
-				break;
-			case flag_dropped:
-				CTFdata[it_redflag].sb_tick++;
-
-				if (CTFdata[it_redflag].sb_tick == 10)
-					CTFdata[it_redflag].sb_tick = 0;
-
-				if (CTFdata[it_redflag].sb_tick < 8)
-					st_flagboxredon = false;
-				else
-					st_flagboxredon = true;
-				break;
-			default:
-				break;
-		}
-	}
-
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
 		st_chat = st_oldchat;
@@ -1269,17 +1200,10 @@ void ST_drawWidgets(bool force_refresh)
 
 	STlib_updateMultIcon(&w_faces, force_refresh);
 
-	if (sv_gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
-		for (int i = 0; i < 3; i++)
-			STlib_updateMultIcon(&w_keyboxes[i], force_refresh);
+	for (int i = 0; i < 3; i++)
+		STlib_updateMultIcon(&w_keyboxes[i], force_refresh);
 
 	STlib_updateNum(&w_frags, force_refresh);
-
-	if (sv_gametype == GM_CTF)
-	{
-		STlib_updateBinIcon(&w_flagboxblu, force_refresh);
-		STlib_updateBinIcon(&w_flagboxred, force_refresh);
-	}
 }
 
 
@@ -1308,7 +1232,6 @@ static void ST_refreshBackground()
 	if (sv_gametype == GM_CTF)
 	{
 		stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
-		stbar_canvas->DrawPatch(flagbox, ST_FLGBOXX, ST_FLGBOXY);
 	}
 	else if (sv_gametype == GM_COOP)
 	{
@@ -1448,15 +1371,6 @@ void ST_loadGraphics(void)
 	// flags background
 	flagsbg = W_CachePatch("STFLAGS", PU_STATIC);
 
-	// flagbox
-	flagbox = W_CachePatch("STFLGBOX", PU_STATIC);
-
-	// blue flag indicator
-	flagboxblu = W_CachePatch("STFLGBXB", PU_STATIC);
-
-	// red flag indicator
-	flagboxred = W_CachePatch("STFLGBXR", PU_STATIC);
-
 	// arms ownership widgets
 	for (i=0;i<6;i++)
 	{
@@ -1538,11 +1452,6 @@ void ST_unloadGraphics (void)
 
 	// unload flags background
 	Z_ChangeTag(flagsbg, PU_CACHE);
-
-	// unload flagbox
-	Z_ChangeTag(flagbox, PU_CACHE);
-	Z_ChangeTag(flagboxblu, PU_CACHE);
-	Z_ChangeTag(flagboxred, PU_CACHE);
 
 	// unload gray #'s
 	for (i=0;i<6;i++)
@@ -1648,21 +1557,6 @@ void ST_createWidgets(void)
 					   keys,
 					   &keyboxes[2],
 					   &st_statusbaron);
-
-	// flagbox indicator
-	STlib_initBinIcon(&w_flagboxblu,
-					  ST_FLGBOXBLUX,
-					  ST_FLGBOXBLUY,
-					  flagboxblu,
-					  &st_flagboxbluon,
-					  &st_statusbaron);
-
-	STlib_initBinIcon(&w_flagboxred,
-					  ST_FLGBOXREDX,
-					  ST_FLGBOXREDY,
-					  flagboxred,
-					  &st_flagboxredon,
-					  &st_statusbaron);
 
 	// ammo count (all four kinds)
 	STlib_initNum(&w_ammo[0],

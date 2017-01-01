@@ -323,7 +323,6 @@ void DPusher::Serialize (FArchive &arc)
 
 //
 // Animating textures and planes
-// There is another anim_t used in wi_stuff, unrelated.
 //
 // [RH] Expanded to work with a Hexen ANIMDEFS lump
 //

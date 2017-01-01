@@ -37,7 +37,7 @@
 #include <cstring>
 #include <ctime>
 
-#include "win32time.h"
+#include "win32inc.h"
 
 static const char *abb_weekdays[] = {
     "Sun",

@@ -65,7 +65,6 @@ public:
 
 private:
 	AG_Box       *CreateTopBox(void *parent);
-	AG_Box       *CreateDevBox(void *parent);
 	AG_Box       *CreateLicenseBox(void *parent);
 	AG_Button    *CreateOKButton(void *parent);
 

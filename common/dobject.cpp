@@ -154,7 +154,7 @@ void DObject::RemoveFromArray ()
 		DObject *dummy;
 		Objects.Pop (dummy);
 	}
-	else
+	else if (Objects.Size() > Index + 1)
 	{
 		Objects[Index] = NULL;
 		FreeIndices.Push (Index);

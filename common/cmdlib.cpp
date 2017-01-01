@@ -29,9 +29,6 @@
 #include <functional>
 
 #include "win32inc.h"
-#ifdef _WIN32
-    #include "win32time.h"
-#endif // WIN32
 
 #include "doomtype.h"
 #include "cmdlib.h"

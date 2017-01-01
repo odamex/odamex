@@ -122,8 +122,8 @@ void V_DoPaletteEffects();
 void V_ResetPalette();
 
 // Colorspace conversion RGB <-> HSV
-fahsv_t V_RGBtoHSV(const fargb_t color);
-fargb_t V_HSVtoRGB(const fahsv_t color);
+fahsv_t V_RGBtoHSV(const fargb_t &color);
+fargb_t V_HSVtoRGB(const fahsv_t &color);
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb);
 
