@@ -59,6 +59,7 @@
     #endif  // LoadMenu
 
     // POSIX functions
+	#include <ctime>
     char * strptime(const char *buf, const char *fmt, struct tm *timeptr);
     time_t timegm(struct tm *tm);
 
@@ -69,8 +70,8 @@
     // C99 functions
     // Missing from MSVC++ older than 2015
     #if defined(_MSC_VER) && _MSC_VER < 1900
-        int snprintf(char *s, size_t n, const char *fmt, ...);
-        int vsnprintf(char *s, size_t n, const char *fmt, va_list ap);
+		#define snprintf _snprintf
+		#define vsnprintf _vsnprintf
     #endif
 #endif // WIN32
 
