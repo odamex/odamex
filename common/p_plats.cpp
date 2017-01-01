@@ -35,6 +35,9 @@
 #include "r_state.h"
 #include "s_sound.h"
 
+// From sv_main.cpp
+void SV_BroadcastSector(int sectornum);
+
 EXTERN_CVAR(co_boomphys)
 
 extern bool predicting;
@@ -453,6 +456,8 @@ manual_plat:
 				sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
 			if (change == 1)
 				sec->special = 0;	// Stop damage and other stuff, if any
+			if (serverside)
+				SV_BroadcastSector(secnum);
 		}
 
 		if (manual)

@@ -1321,6 +1321,28 @@ void SV_UpdateHiddenMobj (void)
 	}
 }
 
+void SV_UpdateSector(client_t* cl, int sectornum)
+{
+	sector_t* sector = &sectors[sectornum];
+
+	if (sector->moveable)
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
+		MSG_WriteShort(&cl->reliablebuf, sectornum);
+		MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
+		MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
+		MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
+		MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
+		MSG_WriteShort(&cl->reliablebuf, sector->special);
+	}
+}
+
+void SV_BroadcastSector(int sectornum)
+{
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		SV_UpdateSector(&(it->client), sectornum);
+}
+
 //
 // SV_UpdateSectors
 // Update doors, floors, ceilings etc... that have at some point moved
@@ -1329,17 +1351,7 @@ void SV_UpdateSectors(client_t* cl)
 {
 	for (int sectornum = 0; sectornum < numsectors; sectornum++)
 	{
-		sector_t* sector = &sectors[sectornum];
-
-		if (sector->moveable)
-		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_sector);
-			MSG_WriteShort(&cl->reliablebuf, sectornum);
-			MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
-			MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
-			MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
-			MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
-		}
+		SV_UpdateSector(cl, sectornum);
 	}
 }
 

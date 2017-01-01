@@ -2769,6 +2769,7 @@ void CL_UpdateSector(void)
 
 	unsigned short fp = MSG_ReadShort();
 	unsigned short cp = MSG_ReadShort();
+	short special = MSG_ReadShort();
 
 	if (!sectors || sectornum >= numsectors)
 		return;
@@ -2786,6 +2787,7 @@ void CL_UpdateSector(void)
 		cp = numflats;
 
 	sector->ceilingpic = cp;
+	sector->special = special;
 	sector->moveable = true;
 
 	P_ChangeSector(sector, false);
