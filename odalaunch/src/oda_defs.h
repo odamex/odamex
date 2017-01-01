@@ -109,6 +109,8 @@ static const char* def_masterlist[] =
 // Network subsystem
 // -----------------
 
+// The default port number of a server if none was specified
+#define ODA_NETDEFSERVERPORT 10666
 
 // File system
 // -----------

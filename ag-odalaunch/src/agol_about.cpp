@@ -53,10 +53,9 @@ AGOL_About::AGOL_About()
 {
 	AboutDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
 	AG_WindowSetCaptionS(AboutDialog, "About The Odamex Launcher");
-	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 375, 415);
+	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 395, 415);
 
 	TopBox = CreateTopBox(AboutDialog);
-	DevBox = CreateDevBox(AboutDialog);
 	LicenseBox = CreateLicenseBox(AboutDialog);
 	OKButton = CreateOKButton(AboutDialog);
 
@@ -112,26 +111,6 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 
 	return tbox;
-}
-
-AG_Box *AGOL_About::CreateDevBox(void *parent)
-{
-	AG_Box   *dbox;
-	AG_Label *label;
-
-	dbox = AG_BoxNewVert(parent, AG_BOX_HFILL);
-	AG_LabelNewS(dbox, 0, "Developed by");
-	dbox = AG_BoxNewHoriz(dbox, AG_BOX_EXPAND);
-	AG_BoxSetPadding(dbox, 5);
-	AG_BoxSetSpacing(dbox, 5);
-	dbox = AG_BoxNewHoriz(dbox, AG_BOX_FRAME | AG_BOX_EXPAND);
-
-	label = AG_LabelNewS(dbox, AG_LABEL_EXPAND, 
-			"Michael Wood (mailto:mwoodj@huntsvegas.org)\n"
-			"Russell Rice (mailto:russell@odamex.net)");
-	AG_LabelJustify(label, AG_TEXT_CENTER);
-
-	return dbox;
 }
 
 AG_Box *AGOL_About::CreateLicenseBox(void *parent)

@@ -936,7 +936,7 @@ END_COMMAND (testfade)
 // RGB - 0: {    .46  1 .429 } 7: {    .254 .571 .206 } 15: {    .0317 .0794 .0159 }
 // HSV - 0: { 116.743 .571 1 } 7: { 112.110 .639 .571 } 15: { 105.071  .800 .0794 }
 //
-fahsv_t V_RGBtoHSV(const fargb_t color)
+fahsv_t V_RGBtoHSV(const fargb_t &color)
 {
 	float a = color.geta(), r = color.getr(), g = color.getg(), b = color.getb();
 
@@ -969,7 +969,7 @@ fahsv_t V_RGBtoHSV(const fargb_t color)
 //
 // Converts from the HSV color space to the RGB color space.
 //
-fargb_t V_HSVtoRGB(const fahsv_t color)
+fargb_t V_HSVtoRGB(const fahsv_t &color)
 {
 	float a = color.geta(), h = color.geth(), s = color.gets(), v = color.getv();
 

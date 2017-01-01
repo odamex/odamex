@@ -83,6 +83,7 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
+
 #if defined(_WIN32) && !defined(_XBOX)
 
 #define arrlen(array) (sizeof(array) / sizeof(*array))
@@ -228,7 +229,7 @@ static char *GetRegistryString(registry_value_t *reg_val)
 // denis - Check single paths for a given file with a possible extension
 // Case insensitive, but returns actual file name
 //
-static std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext, std::string hash = "")
+static std::string BaseFileSearchDir(std::string dir, const std::string &file, const std::string &ext, std::string hash = "")
 {
 	std::string found;
 
@@ -1106,7 +1107,7 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 
 	// Use linear interpolation for rendering entities if the display
 	// framerate is not synced with the simulation frequency.
-	if ((maxfps == TICRATE && capfps) || timingdemo || paused || menuactive || step_mode)
+	if ((maxfps == TICRATE && capfps) || timingdemo || paused || step_mode || (menuactive && !network_game))
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;
