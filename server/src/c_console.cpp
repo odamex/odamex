@@ -166,34 +166,14 @@ extern int PrintString (int printlevel, const char *outline);
 
 extern BOOL gameisdead;
 
-// On Windows, vsnprintf() is _vsnprintf().
-#ifdef _WIN32
-#if _MSC_VER < 1400 /* not needed for Visual Studio 2008 */
-#define vsnprintf _vsnprintf
-#endif
-#endif
-
 int VPrintf(int printlevel, const char* format, va_list parms)
 {
 	char outline[MAX_LINE_LENGTH];
-    int outlinelen = STACKARRAY_LENGTH(outline);
-    int result;
 
 	if (gameisdead)
 		return 0;
 
-    // Windows (and other OSes?) has a vsnprintf() that doesn't always
-    // append a trailing \0. So we must do it, and write into a buffer
-    // that is one byte shorter; otherwise this function is unsafe.
-	result = vsnprintf(outline, outlinelen, format, parms);
-
-    // If truncated, change the final char in the buffer to a \0.
-    // A negative result indicates a truncated buffer on Windows.
-    if (result < 0 || result >= outlinelen)
-    {
-        outline[outlinelen - 1] = '\0';
-        result = outlinelen - 1;
-    }
+	vsnprintf(outline, STACKARRAY_LENGTH(outline), format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	size_t len = strlen(outline);
