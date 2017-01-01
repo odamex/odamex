@@ -1040,6 +1040,9 @@
 				RelativePath="..\common\sc_man.h">
 			</File>
 			<File
+				RelativePath="..\common\snprintf.cpp">
+			</File>
+			<File
 				RelativePath="..\common\st_stuff.h">
 			</File>
 			<File
