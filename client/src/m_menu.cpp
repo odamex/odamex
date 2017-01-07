@@ -755,8 +755,12 @@ void M_SaveSelect (int choice)
 
 	// If on a game console, auto-fill with date and time to save name
 
+#ifndef GCONSOLE
 	if (!LoadMenu[choice].status)
+#endif
+	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
+	}
 
 	saveCharIndex = strlen(savegamestrings[choice]);
 }
