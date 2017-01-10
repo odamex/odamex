@@ -551,7 +551,7 @@
 							<object class="wxNotebook" name="Id_Notebook">
 								<object class="notebookpage">
 									<label>User Interface</label>
-									<selected>0</selected>
+									<selected>1</selected>
 									<object class="wxPanel" name="m_panel91">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -1025,7 +1025,7 @@
 																		<object class="wxBitmapButton" name="Id_BtnCtrlAddDir">
 																			<style>wxBU_AUTODRAW</style>
 																			<tooltip>Add path to list</tooltip>
-																			<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																			<bitmap stock_id="wxART_NEW" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																			<default>0</default>
 																		</object>
 																	</object>
@@ -1036,7 +1036,7 @@
 																		<object class="wxBitmapButton" name="Id_BtnCtrlReplaceDir">
 																			<style>wxBU_AUTODRAW</style>
 																			<tooltip>Replace selected path in list</tooltip>
-																			<bitmap stock_id="wxART_REDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																			<bitmap stock_id="wxART_EDIT" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																			<default>0</default>
 																		</object>
 																	</object>
@@ -1047,7 +1047,7 @@
 																		<object class="wxBitmapButton" name="Id_BtnCtrlDeleteDir">
 																			<style>wxBU_AUTODRAW</style>
 																			<tooltip>Delete path from list</tooltip>
-																			<bitmap stock_id="wxART_CROSS_MARK" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																			<bitmap stock_id="wxART_DELETE" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																			<default>0</default>
 																		</object>
 																	</object>
@@ -1092,7 +1092,7 @@
 								</object>
 								<object class="notebookpage">
 									<label>Advanced</label>
-									<selected>1</selected>
+									<selected>0</selected>
 									<object class="wxPanel" name="m_panel13">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">

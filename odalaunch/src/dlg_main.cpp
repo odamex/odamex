@@ -332,23 +332,34 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
 // Called when the window X button or Close(); function is called
 void dlgMain::OnClose(wxCloseEvent& event)
 {
+    // Stop any running timers and free their memory
+    delete m_TimerNewList;
+    m_TimerNewList = NULL;
+    delete m_TimerRefresh;
+    m_TimerRefresh = NULL;
+    
     /* Threading system shutdown */
     // Wait for the monitor thread to finish
 	if(GetThread() && GetThread()->IsRunning())
 		GetThread()->Wait();
 
-	// Gracefully terminate any running worker threads
-	for(size_t j = 0; j < threadVector.size(); ++j)
+	// Gracefully terminate any running worker threads and then deallocate
+	// their memory
 	{
-		QueryThread* OdaQT = threadVector[j];
+        std::vector<QueryThread*>::reverse_iterator it;
+        
+        for(it = threadVector.rbegin(); it != threadVector.rend(); it++)
+        {
+            if((*it)->IsRunning())
+            {
+                (*it)->GracefulExit();
+                delete *it;
+            }
 
-		if(OdaQT->IsRunning())
-		{
-			OdaQT->GracefulExit();
-			delete OdaQT;
-		}
+            threadVector.pop_back();
+        }
 	}
-
+    
 	// Save the UI layout and shut it all down
 	wxFileConfig ConfigInfo;
 
@@ -361,15 +372,14 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	ConfigInfo.Flush();
 
 	delete InfoBar;
-    delete m_TimerRefresh;
-    delete m_TimerNewList;
-
+	InfoBar = NULL;
+	
     if(config_dlg != NULL)
 		config_dlg->Destroy();
 
 	if(server_dlg != NULL)
 		server_dlg->Destroy();
-
+	
 	Destroy();
 }
 
