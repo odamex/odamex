@@ -1386,7 +1386,7 @@ void ISDL20Window::setWindowTitle(const std::string& str)
 //
 void ISDL20Window::setWindowIcon()
 {
-	#if WIN32 && !_XBOX
+	#if defined(WIN32) && !defined(_XBOX)
 	// [SL] Use Win32-specific code to make use of multiple-icon sizes
 	// stored in the executable resources. SDL 1.2 only allows a fixed
 	// 32x32 px icon.
