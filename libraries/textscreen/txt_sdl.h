@@ -23,6 +23,12 @@
 
 #include "SDL.h"
 
+#if (SDL_MAJOR_VERSION == 2 && SDL_MINOR_VERSION == 0)
+	#define SDL20
+#elif (SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION == 2)
+	#define SDL12
+#endif
+
 // Event callback function type: a function of this type can be used
 // to intercept events in the textscreen event processing loop.  
 // Returning 1 will cause the event to be eaten; the textscreen code

@@ -213,7 +213,7 @@ void Xbox::OutputDebugString(const char *str, ...)
 	AG_MutexLock(&XBLogMutex);
 
 	if(DebugConsole)
-		OutputDebugString(res);
+		::OutputDebugString(res);
 
 	XBLogFile << res;
 	XBLogFile.flush();
