@@ -181,7 +181,12 @@ void ActorSnapshot::toActor(AActor *mo) const
 			mo->UnlinkFromWorld();
 			mo->x = destx;
 			mo->y = desty;
-			mo->z = destz;
+
+			// [AM] If a mobj is standing on the ground, it almost certainly
+			//      already has the correct z position - trying to correct it
+			//      has the potential for mischef on moving platforms.
+			if (!mo->onground)
+				mo->z = destz;
 		
 			mo->ceilingz = tmceilingz;
 			mo->floorz = tmfloorz;
