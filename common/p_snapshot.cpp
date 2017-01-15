@@ -182,10 +182,9 @@ void ActorSnapshot::toActor(AActor *mo) const
 			mo->x = destx;
 			mo->y = desty;
 
-			// [AM] If a mobj is standing on the ground, it almost certainly
-			//      already has the correct z position - trying to correct it
-			//      has the potential for mischef on moving platforms.
-			if (!mo->onground)
+			// [AM] Sometimes it is best to ignore parts of snapshots,
+			//      for moving platforms and such.
+			if ((mo->oflags & MFO_NOSNAPZ) == 0)
 				mo->z = destz;
 		
 			mo->ceilingz = tmceilingz;

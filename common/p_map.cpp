@@ -1333,6 +1333,12 @@ BOOL P_ThingHeightClip (AActor* thing)
 
 	if (onfloor || onthing)
 	{
+		if (thing->player && thing->z != newz)
+		{
+			// [AM] The player's Z-axis was changed, do not try
+			//      and further correct it with snapshots.
+			thing->oflags |= MFO_NOSNAPZ;
+		}
 		thing->z = newz;
 	}
 	else
