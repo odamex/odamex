@@ -643,9 +643,6 @@ void P_PlayerThink (player_t *player)
 	player->mo->prevangle = player->mo->angle;
 	player->mo->prevpitch = player->mo->pitch;
 
-	// [AM] Start by assuming we can use all snapshot coordinates.
-	player->mo->oflags &= ~MFO_NOSNAPZ;
-
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
 		player->mo->flags |= MF_NOCLIP;

@@ -840,6 +840,18 @@ void G_Ticker (void)
 {
 	int 		buf;
 
+	// Turn off no-z-snapping for all players.
+	// [AM] Eventually, it would be nice to do this for all mobjs, but iterating
+	//      through every mobj every tic would be incredibly time-consuming.
+	if (!serverside)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->mo)
+				it->mo->oflags &= ~MFO_NOSNAPZ;
+		}
+	}
+
 	// do player reborns if needed
 	if(serverside)
 		for (Players::iterator it = players.begin();it != players.end();++it)

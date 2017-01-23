@@ -1639,9 +1639,12 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	else
 		displayplayer_id = cid;
 
-	// restore player colors
+	// setup psprites and restore player colors
 	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
+		P_SetupPsprites(&*it);
 		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
+	}
 
 	R_CopyTranslationRGB (0, consoleplayer_id);
 
