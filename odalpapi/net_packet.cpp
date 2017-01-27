@@ -192,6 +192,7 @@ void Server::ResetData()
 	Info.VersionMinor = 0;
 	Info.VersionPatch = 0;
 	Info.VersionRevision = 0;
+	Info.VersionRevStr = "";
 	Info.VersionProtocol = 0;
 	Info.VersionRealProtocol = 0;
 	Info.PTime = 0;
@@ -340,8 +341,15 @@ void Server::ReadInformation()
 	// bond - real protocol
 	Socket->Read32(Info.VersionRealProtocol);
 
-	Socket->Read32(Info.VersionRevision);
-
+	// Revision number of server
+    // TODO: Remove guard before next release
+	QRYNEWINFO(7)
+	{
+        Socket->ReadString(Info.VersionRevStr);
+	}
+	else
+        Socket->Read32(Info.VersionRevision);
+    
 	// Read cvar data
 	ReadCvars();
 

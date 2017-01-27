@@ -56,7 +56,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+70)
-#define PROTOCOL_VERSION 6
+#define PROTOCOL_VERSION 7
 
 #define TAG_ID 0xAD0
 
@@ -153,6 +153,7 @@ struct ServerInfo_t
 	std::string              Name; // Launcher specific: Server name
 	std::string              PasswordHash;
 	std::string              CurrentMap;
+	std::string              VersionRevStr;
 	GameType_t               GameType; // Launcher specific: Game type
 	uint32_t                 Response; // Launcher specific: Server response
 	uint32_t                 VersionRevision;

@@ -189,6 +189,8 @@ void LstOdaSrvDetails::ToggleGameStatusSection(const Server& In)
 
 void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 {
+	wxString Revision;
+	
 	DeleteAllItems();
 	DeleteAllColumns();
 
@@ -199,12 +201,20 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 	InsertColumn(srvdetails_field_name, "", wxLIST_FORMAT_LEFT, 150);
 	InsertColumn(srvdetails_field_value, "", wxLIST_FORMAT_LEFT, 150);
 
+	// TODO: Replace this before next release
+	if (In.Info.VersionRevStr.empty())
+    {
+        Revision = wxString::Format("%u", In.Info.VersionRevision);
+    }
+    else
+        Revision = wxString::Format("%s", In.Info.VersionRevStr);
+	
 	// Version
-	InsertLine("Version", wxString::Format("%u.%u.%u-r%u",
+	InsertLine("Version", wxString::Format("%u.%u.%u-r%s",
 	           In.Info.VersionMajor,
 	           In.Info.VersionMinor,
 	           In.Info.VersionPatch,
-	           In.Info.VersionRevision));
+	           Revision));
 
 	InsertLine("QP Version", wxString::Format("%u",
 	           In.Info.VersionProtocol));
