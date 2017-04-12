@@ -1206,8 +1206,8 @@ void WI_updateStats(void)
 
 	cnt_time += 3;
 
-	if (cnt_time >= level.time / TICRATE)
-	    cnt_time = level.time / TICRATE;
+	if (cnt_time >= plrs[me].stime / TICRATE)
+	    cnt_time = plrs[me].stime / TICRATE;
 
 	cnt_par += 3;
 
@@ -1215,7 +1215,7 @@ void WI_updateStats(void)
 	{
 	    cnt_par = wminfo.partime / TICRATE;
 
-	    if (cnt_time >= level.time / TICRATE)
+	    if (cnt_time >= plrs[me].stime / TICRATE)
 	    {
 		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 		sp_state++;
