@@ -3694,6 +3694,9 @@ fixed_t P_HighestHeightOfFloor(sector_t *sector)
 //
 // P_CopySector
 //
+// This function allocates ceilingdata, floordata and lightingdata.
+// Be sure to delete them once you're done with the copy.
+//
 void P_CopySector(sector_t *dest, sector_t *src)
 {
 	if (!dest || !src)
@@ -3759,9 +3762,20 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->thinglist				= src->thinglist;
 	dest->soundtarget			= src->soundtarget;
 
-	dest->ceilingdata			= src->ceilingdata;
-	dest->floordata				= src->floordata;
-	dest->lightingdata			= src->lightingdata;
+	if (src->ceilingdata != NULL)
+		dest->ceilingdata = src->ceilingdata->Clone(dest);
+	else
+		dest->ceilingdata = NULL;
+	
+	if (src->floordata != NULL)
+		dest->floordata = src->floordata->Clone(dest);
+	else
+		dest->floordata = NULL;
+	
+	if (src->lightingdata != NULL)
+		dest->lightingdata = src->lightingdata->Clone(dest);
+	else
+		dest->lightingdata = NULL;
 }
 
 

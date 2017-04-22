@@ -2769,6 +2769,7 @@ void CL_UpdateSector(void)
 
 	unsigned short fp = MSG_ReadShort();
 	unsigned short cp = MSG_ReadShort();
+	short special = MSG_ReadShort();
 
 	if (!sectors || sectornum >= numsectors)
 		return;
@@ -2786,6 +2787,7 @@ void CL_UpdateSector(void)
 		cp = numflats;
 
 	sector->ceilingpic = cp;
+	sector->special = special;
 	sector->moveable = true;
 
 	P_ChangeSector(sector, false);
@@ -2830,7 +2832,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorSpecial(MSG_ReadShort());
 		snap.setFloorTexture(MSG_ReadShort());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
 		snap.setResetCounter(MSG_ReadLong());
 		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
 		snap.setDelay(MSG_ReadLong());
@@ -2852,7 +2854,7 @@ void CL_UpdateMovingSector(void)
 	{
 		// Platforms/Lifts
 		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
 		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
 		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
 		snap.setFloorWait(MSG_ReadLong());
@@ -2873,9 +2875,9 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingType(MSG_ReadByte());
 		snap.setCeilingLow(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCrusherSpeed1(MSG_ReadShort() << FRACBITS);
-		snap.setCrusherSpeed2(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
+		snap.setCrusherSpeed1(MSG_ReadLong());
+		snap.setCrusherSpeed2(MSG_ReadLong());
 		snap.setCeilingCrush(MSG_ReadBool());
 		snap.setSilent(MSG_ReadBool());
 		snap.setCeilingDirection(char(MSG_ReadByte()));
@@ -2891,7 +2893,7 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingMoverType(SEC_DOOR);
 		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setCeilingWait(MSG_ReadLong());
 		snap.setCeilingCounter(MSG_ReadLong());
 		snap.setCeilingStatus(MSG_ReadByte());
@@ -2918,7 +2920,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorDirection(snap.getCeilingDirection());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setFloorSpeed(snap.getCeilingSpeed());
 	}
 
@@ -2931,8 +2933,8 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorType(snap.getCeilingType());
 		snap.setCeilingStatus(MSG_ReadByte());
 		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingCrush(MSG_ReadBool());

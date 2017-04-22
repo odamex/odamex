@@ -1321,6 +1321,28 @@ void SV_UpdateHiddenMobj (void)
 	}
 }
 
+void SV_UpdateSector(client_t* cl, int sectornum)
+{
+	sector_t* sector = &sectors[sectornum];
+
+	if (sector->moveable)
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
+		MSG_WriteShort(&cl->reliablebuf, sectornum);
+		MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
+		MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
+		MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
+		MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
+		MSG_WriteShort(&cl->reliablebuf, sector->special);
+	}
+}
+
+void SV_BroadcastSector(int sectornum)
+{
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		SV_UpdateSector(&(it->client), sectornum);
+}
+
 //
 // SV_UpdateSectors
 // Update doors, floors, ceilings etc... that have at some point moved
@@ -1329,17 +1351,7 @@ void SV_UpdateSectors(client_t* cl)
 {
 	for (int sectornum = 0; sectornum < numsectors; sectornum++)
 	{
-		sector_t* sector = &sectors[sectornum];
-
-		if (sector->moveable)
-		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_sector);
-			MSG_WriteShort(&cl->reliablebuf, sectornum);
-			MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
-			MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
-			MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
-			MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
-		}
+		SV_UpdateSector(cl, sectornum);
 	}
 }
 
@@ -1438,7 +1450,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteByte(netbuf, Elevator->m_Direction);
         MSG_WriteShort(netbuf, Elevator->m_FloorDestHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Elevator->m_CeilingDestHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Elevator->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Elevator->m_Speed);
 	}
 
 	if (ceiling_mover == SEC_PILLAR)
@@ -1461,9 +1473,9 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteByte(netbuf, Ceiling->m_Type);
         MSG_WriteShort(netbuf, Ceiling->m_BottomHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Ceiling->m_TopHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Ceiling->m_Speed >> FRACBITS);
-        MSG_WriteShort(netbuf, Ceiling->m_Speed1 >> FRACBITS);
-        MSG_WriteShort(netbuf, Ceiling->m_Speed2 >> FRACBITS);
+        MSG_WriteLong(netbuf, Ceiling->m_Speed);
+        MSG_WriteLong(netbuf, Ceiling->m_Speed1);
+        MSG_WriteLong(netbuf, Ceiling->m_Speed2);
         MSG_WriteBool(netbuf, Ceiling->m_Crush);
         MSG_WriteBool(netbuf, Ceiling->m_Silent);
         MSG_WriteByte(netbuf, Ceiling->m_Direction);
@@ -1479,7 +1491,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 
         MSG_WriteByte(netbuf, Door->m_Type);
         MSG_WriteShort(netbuf, Door->m_TopHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Door->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Door->m_Speed);
         MSG_WriteLong(netbuf, Door->m_TopWait);
         MSG_WriteLong(netbuf, Door->m_TopCountdown);
 		MSG_WriteByte(netbuf, Door->m_Status);
@@ -1498,7 +1510,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteShort(netbuf, Floor->m_NewSpecial);
         MSG_WriteShort(netbuf, Floor->m_Texture);
         MSG_WriteShort(netbuf, Floor->m_FloorDestHeight >> FRACBITS);
-        MSG_WriteShort(netbuf, Floor->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Floor->m_Speed);
         MSG_WriteLong(netbuf, Floor->m_ResetCount);
         MSG_WriteShort(netbuf, Floor->m_OrgHeight >> FRACBITS);
         MSG_WriteLong(netbuf, Floor->m_Delay);
@@ -1514,7 +1526,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 	{
 		DPlat *Plat = static_cast<DPlat *>(sector->floordata);
 
-        MSG_WriteShort(netbuf, Plat->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Plat->m_Speed);
         MSG_WriteShort(netbuf, Plat->m_Low >> FRACBITS);
         MSG_WriteShort(netbuf, Plat->m_High >> FRACBITS);
         MSG_WriteLong(netbuf, Plat->m_Wait);
