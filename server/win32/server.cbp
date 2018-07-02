@@ -345,6 +345,8 @@
 		<Unit filename="../../common/hashtable.h" />
 		<Unit filename="../../common/huffman.cpp" />
 		<Unit filename="../../common/huffman.h" />
+		<Unit filename="../../common/i_crash.cpp" />
+		<Unit filename="../../common/i_crash.h" />
 		<Unit filename="../../common/i_net.cpp" />
 		<Unit filename="../../common/i_net.h" />
 		<Unit filename="../../common/info.cpp" />

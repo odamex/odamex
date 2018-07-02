@@ -184,7 +184,11 @@ void init_upnp (void)
       //      " desc: %s\n st: %s\n",
         //    dev->descURL, dev->st);
 
+#if MINIUPNPC_API_VERSION < 16
     descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
+#else
+    descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
+#endif
 
     if (descXML)
     {

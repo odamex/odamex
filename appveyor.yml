@@ -1,0 +1,19 @@
+### env config ###
+
+image: Visual Studio 2015
+
+### build config ###
+
+configuration: RelWithDebInfo
+build:
+  project: build\Odamex.sln
+before_build:
+  - ps: .\appveyor_before_build.ps1
+after_build:
+  - ps: .\appveyor_after_build.ps1
+
+### artifacts config ###
+
+artifacts:
+  - path: odamex.zip
+  - path: odasrv.zip
