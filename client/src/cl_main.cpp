@@ -75,6 +75,8 @@
 #include <set>
 #include <sstream>
 
+#include <discord_rpc.h>
+
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
@@ -162,6 +164,40 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static byte enemycolor[4];
 static byte teamcolor[4];
+
+static const char* APPLICATION_ID = "378566834523209728";
+
+static void handleDiscordReady(const DiscordUser* connectedUser)
+{
+	Printf(PRINT_HIGH, "\nDiscord: connected to user %s#%s - %s\n",
+		connectedUser->username,
+		connectedUser->discriminator,
+		connectedUser->userId);
+}
+
+static void handleDiscordDisconnected(int errcode, const char* message)
+{
+	Printf(PRINT_HIGH, "\nDiscord: disconnected (%d: %s)\n", errcode, message);
+}
+
+static void handleDiscordError(int errcode, const char* message)
+{
+	Printf(PRINT_HIGH, "\nDiscord: error (%d: %s)\n", errcode, message);
+}
+
+BEGIN_COMMAND(test_discord)
+{
+	DiscordEventHandlers handlers;
+	memset(&handlers, 0, sizeof(handlers));
+	handlers.ready = handleDiscordReady;
+	handlers.disconnected = handleDiscordDisconnected;
+	handlers.errored = handleDiscordError;
+	/*handlers.joinGame = handleDiscordJoin;
+	handlers.spectateGame = handleDiscordSpectate;
+	handlers.joinRequest = handleDiscordJoinRequest;*/
+	Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
+}
+END_COMMAND(test_discord)
 
 argb_t CL_GetPlayerColor(player_t *player)
 {
