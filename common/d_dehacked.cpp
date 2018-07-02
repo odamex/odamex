@@ -1070,9 +1070,6 @@ static int PatchThing (int thingy)
 		} else if (!stricmp (Line1, "Height")) {
 			hadHeight = true;
 		}
-        // Ch0wW: Speed dehacked was added but not applied. Incomplete features a-hoy!
-		else if (!stricmp (Line1, "Speed"))
-            info->speed *= FRACUNIT;
 	}
 	
 	// [ML] Set a thing's "real world height" to what's being offered here,

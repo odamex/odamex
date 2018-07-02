@@ -414,6 +414,8 @@
 		<Unit filename="../../common/hashtable.h" />
 		<Unit filename="../../common/huffman.cpp" />
 		<Unit filename="../../common/huffman.h" />
+		<Unit filename="../../common/i_crash.cpp" />
+		<Unit filename="../../common/i_crash.h" />
 		<Unit filename="../../common/i_net.cpp" />
 		<Unit filename="../../common/i_net.h" />
 		<Unit filename="../../common/info.cpp" />
@@ -614,8 +616,6 @@
 			<Option compilerVar="WINDRES" />
 			<Option compiler="gcc" use="1" buildCommand="$rescomp $rcflags $res_includes -J rc -O coff -i $file -o $resource_output" />
 		</Unit>
-		<Unit filename="i_crash.cpp" />
-		<Unit filename="i_crash.h" />
 		<Unit filename="i_input.cpp" />
 		<Unit filename="i_input.h" />
 		<Unit filename="i_main.cpp" />

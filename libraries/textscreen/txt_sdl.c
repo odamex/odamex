@@ -15,7 +15,7 @@
 // Text mode emulation in SDL
 //
 
-#include "SDL.h"
+#include <SDL.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -49,10 +49,15 @@ typedef struct
 
 #define BLINK_PERIOD 250
 
+#ifdef SDL12
+static SDL_Surface *screenbuffer;
+#define SDL_Keysym SDL_keysym
+#else
 SDL_Window *TXT_SDLWindow;
 static SDL_Surface *screenbuffer;
-static unsigned char *screendata;
 static SDL_Renderer *renderer;
+#endif
+static unsigned char *screendata;
 static int key_mapping = 1;
 
 // Dimensions of the screen image in screen coordinates (not pixels); this
@@ -185,8 +190,13 @@ static const txt_font_t *FontForName(char *name)
 
 static void ChooseFont(void)
 {
+#ifdef SDL12
+	const SDL_VideoInfo *desktop_info;
+#else
     SDL_DisplayMode desktop_info;
+#endif
     char *env;
+	int w, h;
 
     // Allow normal selection to be overridden from an environment variable:
     env = getenv("TEXTSCREEN_FONT");
@@ -203,18 +213,31 @@ static void ChooseFont(void)
     // Get desktop resolution.
     // If in doubt and we can't get a list, always prefer to
     // fall back to the normal font:
+#ifdef SDL12
+	desktop_info = SDL_GetVideoInfo();
+	if(NULL == desktop_info)
+#else
     if (SDL_GetCurrentDisplayMode(0, &desktop_info))
+#endif
     {
         font = &highdpi_font;
         return;
     }
+
+#ifdef SDL12
+	w = desktop_info->current_w;
+	h = desktop_info->current_h;
+#else
+	w = desktop_info.w;
+	h = desktop_info.h;
+#endif
 
     // On tiny low-res screens (eg. palmtops) use the small font.
     // If the screen resolution is at least 1920x1080, this is
     // a modern high-resolution display, and we can use the
     // large font.
 
-    if (desktop_info.w < 640 || desktop_info.h < 480)
+    if (w < 640 || h < 480)
     {
         font = &small_font;
     }
@@ -247,6 +270,52 @@ static void ChooseFont(void)
 // Returns 1 if successful, 0 if an error occurred
 //
 
+#ifdef SDL12
+int TXT_Init(void)
+{
+    int flags;
+
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+    {
+        return 0;
+    }
+
+    flags = SDL_SWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF;
+
+    ChooseFont();
+
+	// There is no high dpi support in SDL12
+    if (font == &highdpi_font)
+    {
+        font = &normal_font;
+    }
+
+    screen_image_w = TXT_SCREEN_W * font->w;
+    screen_image_h = TXT_SCREEN_H * font->h;
+ 
+    screenbuffer = SDL_SetVideoMode(screen_image_w, screen_image_h, 8, flags);
+
+    if (screenbuffer == NULL)
+        return 0;
+
+    SDL_SetColors(screenbuffer, ega_colors, 0, 16);
+    SDL_EnableUNICODE(1);
+
+    screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
+    memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
+
+    // Ignore all mouse motion events
+
+//    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+
+    // Repeat key presses so we can hold down arrows to scroll down the
+    // menu, for example. This is what setup.exe does.
+
+    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
+    return 1;
+}
+#else
 int TXT_Init(void)
 {
     int flags = 0;
@@ -325,13 +394,16 @@ int TXT_Init(void)
 
     return 1;
 }
+#endif
 
 void TXT_Shutdown(void)
 {
     free(screendata);
     screendata = NULL;
+#ifdef SDL20
     SDL_FreeSurface(screenbuffer);
     screenbuffer = NULL;
+#endif
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
@@ -397,7 +469,6 @@ static inline void UpdateCharacter(int x, int y)
                 bit = 0;
             }
         }
-
         s += screenbuffer->pitch;
     }
 }
@@ -418,6 +489,7 @@ static int LimitToRange(int val, int min, int max)
     }
 }
 
+#ifdef SDL20
 static void GetDestRect(SDL_Rect *rect)
 {
     int w, h;
@@ -428,11 +500,14 @@ static void GetDestRect(SDL_Rect *rect)
     rect->w = screenbuffer->w;
     rect->h = screenbuffer->h;
 }
+#endif
 
 void TXT_UpdateScreenArea(int x, int y, int w, int h)
 {
+#ifdef SDL20
     SDL_Texture *screentx;
     SDL_Rect rect;
+#endif
     int x1, y1;
     int x_end;
     int y_end;
@@ -454,6 +529,11 @@ void TXT_UpdateScreenArea(int x, int y, int w, int h)
 
     SDL_UnlockSurface(screenbuffer);
 
+#ifdef SDL12
+    SDL_UpdateRect(screenbuffer,
+                   x * font->w, y * font->h,
+                   (x_end - x) * font->w, (y_end - y) * font->h);
+#else
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
     // TODO: This is currently creating a new texture every time we render
@@ -466,6 +546,7 @@ void TXT_UpdateScreenArea(int x, int y, int w, int h)
     SDL_RenderPresent(renderer);
 
     SDL_DestroyTexture(screentx);
+#endif
 }
 
 void TXT_UpdateScreen(void)
@@ -473,6 +554,19 @@ void TXT_UpdateScreen(void)
     TXT_UpdateScreenArea(0, 0, TXT_SCREEN_W, TXT_SCREEN_H);
 }
 
+#ifdef SDL12
+void TXT_GetMousePosition(int *x, int *y)
+{
+#if SDL_VERSION_ATLEAST(1, 3, 0)
+    SDL_GetMouseState(0, x, y);
+#else
+    SDL_GetMouseState(x, y);
+#endif
+
+    *x /= font->w;
+    *y /= font->h;
+}
+#else
 void TXT_GetMousePosition(int *x, int *y)
 {
     int window_w, window_h;
@@ -507,11 +601,133 @@ void TXT_GetMousePosition(int *x, int *y)
         *y = TXT_SCREEN_H - 1;
     }
 }
+#endif
 
 //
 // Translates the SDL key
 //
 
+#ifdef SDL12
+static int TranslateKey(SDL_Keysym *sym)
+{
+    switch(sym->sym)
+    {
+        case SDLK_LEFT:        return KEY_LEFTARROW;
+        case SDLK_RIGHT:       return KEY_RIGHTARROW;
+        case SDLK_DOWN:        return KEY_DOWNARROW;
+        case SDLK_UP:          return KEY_UPARROW;
+        case SDLK_ESCAPE:      return KEY_ESCAPE;
+        case SDLK_RETURN:      return KEY_ENTER;
+        case SDLK_TAB:         return KEY_TAB;
+        case SDLK_F1:          return KEY_F1;
+        case SDLK_F2:          return KEY_F2;
+        case SDLK_F3:          return KEY_F3;
+        case SDLK_F4:          return KEY_F4;
+        case SDLK_F5:          return KEY_F5;
+        case SDLK_F6:          return KEY_F6;
+        case SDLK_F7:          return KEY_F7;
+        case SDLK_F8:          return KEY_F8;
+        case SDLK_F9:          return KEY_F9;
+        case SDLK_F10:         return KEY_F10;
+        case SDLK_F11:         return KEY_F11;
+        case SDLK_F12:         return KEY_F12;
+
+        case SDLK_BACKSPACE:   return KEY_BACKSPACE;
+        case SDLK_DELETE:      return KEY_DEL;
+
+        case SDLK_PAUSE:       return KEY_PAUSE;
+
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+                               return KEY_RSHIFT;
+
+        case SDLK_LCTRL:
+        case SDLK_RCTRL:
+                               return KEY_RCTRL;
+
+        case SDLK_LALT:
+        case SDLK_RALT:
+#if !SDL_VERSION_ATLEAST(1, 3, 0)
+        case SDLK_LMETA:
+        case SDLK_RMETA:
+#endif
+                               return KEY_RALT;
+
+        case SDLK_CAPSLOCK:    return KEY_CAPSLOCK;
+        case SDLK_SCROLLOCK:   return KEY_SCRLCK;
+
+        case SDLK_HOME:        return KEY_HOME;
+        case SDLK_INSERT:      return KEY_INS;
+        case SDLK_END:         return KEY_END;
+        case SDLK_PAGEUP:      return KEY_PGUP;
+        case SDLK_PAGEDOWN:    return KEY_PGDN;
+
+#ifdef SDL_HAVE_APP_KEYS
+        case SDLK_APP1:        return KEY_F1;
+        case SDLK_APP2:        return KEY_F2;
+        case SDLK_APP3:        return KEY_F3;
+        case SDLK_APP4:        return KEY_F4;
+        case SDLK_APP5:        return KEY_F5;
+        case SDLK_APP6:        return KEY_F6;
+#endif
+
+        default:               break;
+    }
+
+    // Returned value is different, depending on whether key mapping is
+    // enabled.  Key mapping is preferable most of the time, for typing
+    // in text, etc.  However, when we want to read raw keyboard codes
+    // for the setup keyboard configuration dialog, we want the raw
+    // key code.
+
+    if (key_mapping)
+    {
+        // Unicode characters beyond the ASCII range need to be
+        // mapped up into textscreen's Unicode range.
+
+        if (sym->unicode < 128)
+        {
+            return sym->unicode;
+        }
+        else
+        {
+            return sym->unicode - 128 + TXT_UNICODE_BASE;
+        }
+    }
+    else
+    {
+        // Keypad mapping is only done when we want a raw value:
+        // most of the time, the keypad should behave as it normally
+        // does.
+
+        switch (sym->sym)
+        {
+            case SDLK_KP0:         return KEYP_0;
+            case SDLK_KP1:         return KEYP_1;
+            case SDLK_KP2:         return KEYP_2;
+            case SDLK_KP3:         return KEYP_3;
+            case SDLK_KP4:         return KEYP_4;
+            case SDLK_KP5:         return KEYP_5;
+            case SDLK_KP6:         return KEYP_6;
+            case SDLK_KP7:         return KEYP_7;
+            case SDLK_KP8:         return KEYP_8;
+            case SDLK_KP9:         return KEYP_9;
+
+            case SDLK_KP_PERIOD:   return KEYP_PERIOD;
+            case SDLK_KP_MULTIPLY: return KEYP_MULTIPLY;
+            case SDLK_KP_PLUS:     return KEYP_PLUS;
+            case SDLK_KP_MINUS:    return KEYP_MINUS;
+            case SDLK_KP_DIVIDE:   return KEYP_DIVIDE;
+            case SDLK_KP_EQUALS:   return KEYP_EQUALS;
+            case SDLK_KP_ENTER:    return KEYP_ENTER;
+
+            default:
+                return tolower(sym->sym);
+        }
+    }
+}
+
+#else
 // XXX: duplicate from doomtype.h
 #define arrlen(array) (sizeof(array) / sizeof(*array))
 
@@ -548,6 +764,7 @@ static int TranslateKey(SDL_Keysym *sym)
             }
     }
 }
+#endif
 
 // Convert an SDL button index to textscreen button index.
 //
@@ -569,7 +786,7 @@ static int SDLButtonToTXTButton(int button)
 }
 
 // Convert an SDL wheel motion to a textscreen button index.
-
+#ifdef SDL20
 static int SDLWheelToTXTButton(SDL_MouseWheelEvent *wheel)
 {
     if (wheel->y <= 0)
@@ -581,6 +798,7 @@ static int SDLWheelToTXTButton(SDL_MouseWheelEvent *wheel)
         return TXT_MOUSE_SCROLLUP;
     }
 }
+#endif
 
 static int MouseHasMoved(void)
 {
@@ -665,10 +883,10 @@ signed int TXT_GetChar(void)
                     return SDLButtonToTXTButton(ev.button.button);
                 }
                 break;
-
+#ifdef SDL20
             case SDL_MOUSEWHEEL:
                 return SDLWheelToTXTButton(&ev.wheel);
-
+#endif
             case SDL_KEYDOWN:
                 UpdateModifierState(&ev.key.keysym, 1);
 
@@ -882,7 +1100,11 @@ void TXT_EnableKeyMapping(int enable)
 
 void TXT_SetWindowTitle(char *title)
 {
+#ifdef SDL12
+	SDL_WM_SetCaption(title, NULL);
+#else
     SDL_SetWindowTitle(TXT_SDLWindow, title);
+#endif
 }
 
 void TXT_SDL_SetEventCallback(TxtSDLEventCallbackFunc callback, void *user_data)
@@ -961,3 +1183,4 @@ int TXT_snprintf(char *buf, size_t buf_len, const char *s, ...)
     return result;
 }
 
+//#endif // SDL20

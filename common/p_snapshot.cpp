@@ -181,7 +181,11 @@ void ActorSnapshot::toActor(AActor *mo) const
 			mo->UnlinkFromWorld();
 			mo->x = destx;
 			mo->y = desty;
-			mo->z = destz;
+
+			// [AM] Sometimes it is best to ignore parts of snapshots,
+			//      for moving platforms and such.
+			if ((mo->oflags & MFO_NOSNAPZ) == 0)
+				mo->z = destz;
 		
 			mo->ceilingz = tmceilingz;
 			mo->floorz = tmfloorz;

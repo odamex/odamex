@@ -128,7 +128,13 @@ void _ReportError(const char* file, int line, const char* func,
 	flockfile(stderr);
 #endif
 
-	char* syserrmsg = _GetStrError(_GetErrno());
+	char* syserrmsg = NULL;
+	int syserr = _GetErrno();
+
+	if(syserr)
+	{
+		syserrmsg = _GetStrError(syserr);
+	}
 
 	va_start(ap, fmt);
 
@@ -137,18 +143,28 @@ void _ReportError(const char* file, int line, const char* func,
 
 	agOdalaunch::Xbox::OutputDebugString("[%s:%d] BufferedSocket::%s(): ", file, line, func);
 	vsprintf(errorstr, fmt, ap);
-	agOdalaunch::Xbox::OutputDebugString("%s\n syserrmsg - %s\n", errorstr, syserrmsg);
+	agOdalaunch::Xbox::OutputDebugString("%s\n", errorstr);
+	if(NULL != syserrmsg)
+	{
+		agOdalaunch::Xbox::OutputDebugString("syserrmsg - %s\n", errorstr, syserrmsg);
+	}
 #else
 	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", file, line, func);
 	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, "\n syserrmsg - %s\n", syserrmsg);
+	if(NULL != syserrmsg)
+	{
+		fprintf(stderr, "\n syserrmsg - %s\n", syserrmsg);
+	}
 	fputs("\n", stderr);
 #endif // _XBOX
 
 	va_end(ap);
 
 #if _WIN32 || _XBOX
-	LocalFree(syserrmsg);
+	if(NULL != syserrmsg)
+	{
+		LocalFree(syserrmsg);
+	}
 	UnlockStderr();
 #else
 	funlockfile(stderr);

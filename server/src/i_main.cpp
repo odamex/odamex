@@ -44,6 +44,7 @@
 #include <math.h>
 #include <time.h>
 
+#include "i_crash.h"
 #include "m_argv.h"
 #include "d_main.h"
 #include "i_system.h"
@@ -106,6 +107,9 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 
 int __cdecl main(int argc, char *argv[])
 {
+	// [AM] Set crash callbacks, so we get something useful from crashes.
+	I_SetCrashCallbacks();
+
     try
     {
         // Handle ctrl-c, close box, shutdown and logoff events
@@ -230,6 +234,9 @@ void daemon_init(void)
 
 int main (int argc, char **argv)
 {
+	// [AM] Set crash callbacks, so we get something useful from crashes.
+	I_SetCrashCallbacks();
+
     try
     {
 		if(!getuid() || !geteuid())
