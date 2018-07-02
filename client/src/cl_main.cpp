@@ -185,6 +185,21 @@ static void handleDiscordError(int errcode, const char* message)
 	Printf(PRINT_HIGH, "\nDiscord: error (%d: %s)\n", errcode, message);
 }
 
+BEGIN_COMMAND(update_discord)
+{
+			char buffer[256];
+			DiscordRichPresence discordPresence;
+			memset(&discordPresence, 0, sizeof(discordPresence));
+			discordPresence.state = "On Solo";
+			sprintf(buffer, "Map : King1");
+			discordPresence.details = buffer;
+			discordPresence.largeImageKey = "canary-large";
+			discordPresence.smallImageKey = "ptb-small";
+			discordPresence.instance = 0;
+			Discord_UpdatePresence(&discordPresence);
+}
+END_COMMAND(update_discord)
+
 BEGIN_COMMAND(test_discord)
 {
 	DiscordEventHandlers handlers;
