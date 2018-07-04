@@ -76,8 +76,6 @@
 #include <set>
 #include <sstream>
 
-
-
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
@@ -165,16 +163,6 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static byte enemycolor[4];
 static byte teamcolor[4];
-
-
-
-
-
-BEGIN_COMMAND(update_discord)
-{
-
-}
-END_COMMAND(update_discord)
 
 argb_t CL_GetPlayerColor(player_t *player)
 {
