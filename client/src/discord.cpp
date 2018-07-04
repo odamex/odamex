@@ -3,6 +3,8 @@
 #include "discord.h"
 #include "cl_demo.h"
 
+CVAR (cl_discord_enable, "1", "Enables Discord Integration systems", CVARTYPE_BOOL, CVAR_ARCHIVE )
+
 static const char* APPLICATION_ID = "378566834523209728";
 extern NetDemo	netdemo;
 
@@ -43,11 +45,11 @@ static char* DISCORD_EventToString(discord_state_s state)
 		strValue = "Unknown info"; break;
 	}
 
-	Printf(PRINT_HIGH, "%s", strValue);
+	DPrintf("[DISCORD] Updating to this state => %s", strValue);
 	return strValue;
 }
 
-void DISCORD_UpdateState(std::string state, std::string details, discord_logotype_s logotype, std::string logoname = "")
+void DISCORD_UpdateState(std::string state, std::string details, discord_logotype_s logotype, std::string logoname)
 {
 	char buffer[256];
 	DiscordRichPresence discordPresence;
@@ -66,7 +68,7 @@ void DISCORD_UpdateState(std::string state, std::string details, discord_logotyp
 	Discord_UpdatePresence(&discordPresence);
 }
 
-void DISCORD_UpdateInGameState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname = "")
+void DISCORD_UpdateInGameState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname)
 {
 	if (democlassic || demoplayback || netdemo.isPlaying())
 		DISCORD_UpdateState(DISCORD_DEMOPLAYING, "", DLOGO_LARGEPIC, "odamex-demo");	// GROSS HACK BUT WORKS
@@ -74,8 +76,10 @@ void DISCORD_UpdateInGameState(discord_state_s state, std::string details, disco
 		DISCORD_UpdateState(state, details, logotype, logoname);
 }
 
-void DISCORD_UpdateState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname="")
+void DISCORD_UpdateState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname)
 {
+	if (!cl_discord_enable)
+		return;
 	DiscordRichPresence discordPresence;
 	memset(&discordPresence, 0, sizeof(discordPresence));
 	discordPresence.details = DISCORD_EventToString(state);

@@ -966,7 +966,7 @@ void D_DoomMain()
 		C_HideConsole();
 		D_StartTitle();		// start up intro loop
 
-		DISCORD_UpdateState(DISCORD_INMENU, "", DLOGO_LARGEPIC, "odamex-logo");
+		DISCORD_UpdateState(DISCORD_INMENU, "");
 
 		if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
 			AddCommandString("menu_main");

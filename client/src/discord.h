@@ -22,7 +22,7 @@ enum discord_logotype_s
 	DLOGO_LARGEPIC
 };
 
-void DISCORD_UpdateState(std::string text, std::string details, discord_logotype_s logotype, std::string logoname);
-void DISCORD_UpdateState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname);
-void DISCORD_UpdateInGameState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname);
+void DISCORD_UpdateState(std::string text, std::string details, discord_logotype_s logotype = DLOGO_LARGEPIC, std::string logoname = "odamex-logo");
+void DISCORD_UpdateState(discord_state_s state, std::string details, discord_logotype_s logotype = DLOGO_LARGEPIC, std::string logoname = "odamex-logo");
+void DISCORD_UpdateInGameState(discord_state_s state, std::string details, discord_logotype_s logotype = DLOGO_LARGEPIC, std::string logoname = "odamex-logo");
 void DISCORD_Init();
