@@ -145,6 +145,7 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_maxplayers)
 
 EXTERN_CVAR (cl_predictsectors)
 
@@ -163,6 +164,18 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static byte enemycolor[4];
 static byte teamcolor[4];
+
+char *CL_GetGamePlayName()
+{
+	if (sv_gametype == GM_DM)
+		return sv_maxplayers == 2 ? "Duel" : "DM";
+	else if (sv_gametype == GM_TEAMDM)
+		return "TDM";
+	else if (sv_gametype == GM_CTF)
+		return "CTF";
+	else if (sv_gametype == GM_COOP)
+		return "Coop";
+}
 
 argb_t CL_GetPlayerColor(player_t *player)
 {
@@ -3431,7 +3444,7 @@ void CL_Spectate()
 	if (&player == &consoleplayer())
 	{
 		std::ostringstream details;
-		details << "On " << level.level_name;
+		details << CL_GetGamePlayName() << " on " << level.level_name;
 
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
@@ -3447,6 +3460,7 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 
+			// Instantly updates Discord status according to game and game packets.
 			if (warmup.get_status() == Warmup::INGAME)
 				DISCORD_UpdateInGameState(DISCORD_INMATCH, details.str());
 			else if (warmup.get_status() == Warmup::WARMUP)
@@ -3481,11 +3495,12 @@ void CL_WarmupState()
 	{
 		// Read an extra countdown number off the wire
 		short count = MSG_ReadShort();
-		std::ostringstream buffer;
+		std::ostringstream buffer, details;
 		buffer << "Match begins in " << count << "...";
 		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
 
-		DISCORD_UpdateState(buffer.str(), level.level_name);	// ToDo: improve it with the gamemode.
+		details << CL_GetGamePlayName() << " on " << level.level_name;
+		DISCORD_UpdateState(buffer.str(), details.str());	// ToDo: improve it with the gamemode.
 	}
 	else
 	{
