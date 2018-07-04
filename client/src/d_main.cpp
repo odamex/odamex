@@ -89,6 +89,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "discord.h"
 
 #include "res_texture.h"
 #include "w_ident.h"
@@ -752,6 +753,8 @@ void D_DoomMain()
 		newwadfiles.push_back(iwad_filename);
 	}
 
+	DISCORD_Init();
+
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
@@ -962,6 +965,8 @@ void D_DoomMain()
 	{
 		C_HideConsole();
 		D_StartTitle();		// start up intro loop
+
+		DISCORD_UpdateState(DISCORD_INMENU, "", DLOGO_LARGEPIC, "odamex-logo");
 
 		if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
 			AddCommandString("menu_main");

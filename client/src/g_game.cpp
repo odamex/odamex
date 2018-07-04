@@ -66,6 +66,7 @@
 #include "cl_demo.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
+#include "discord.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"

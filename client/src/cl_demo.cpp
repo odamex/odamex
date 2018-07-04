@@ -38,6 +38,7 @@
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "g_level.h"
+#include "discord.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -546,7 +547,8 @@ bool NetDemo::startPlaying(const std::string &filename)
 	state = NetDemo::st_playing;
 
 	Printf(PRINT_HIGH, "Playing netdemo %s.\n", filename.c_str());
-	
+	DISCORD_UpdateState(DISCORD_DEMOPLAYING, "", DLOGO_LARGEPIC, "odamex-demo");
+
 	return true;
 }
 

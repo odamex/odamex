@@ -68,6 +68,7 @@
 #include "g_warmup.h"
 #include "v_text.h"
 #include "hu_stuff.h"
+#include "discord.h"
 
 #include <string>
 #include <vector>
@@ -75,7 +76,7 @@
 #include <set>
 #include <sstream>
 
-#include <discord_rpc.h>
+
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -165,54 +166,15 @@ EXTERN_CVAR (r_forceteamcolor)
 static byte enemycolor[4];
 static byte teamcolor[4];
 
-static const char* APPLICATION_ID = "378566834523209728";
 
-static void handleDiscordReady(const DiscordUser* connectedUser)
-{
-	Printf(PRINT_HIGH, "\nDiscord: connected to user %s#%s - %s\n",
-		connectedUser->username,
-		connectedUser->discriminator,
-		connectedUser->userId);
-}
 
-static void handleDiscordDisconnected(int errcode, const char* message)
-{
-	Printf(PRINT_HIGH, "\nDiscord: disconnected (%d: %s)\n", errcode, message);
-}
 
-static void handleDiscordError(int errcode, const char* message)
-{
-	Printf(PRINT_HIGH, "\nDiscord: error (%d: %s)\n", errcode, message);
-}
 
 BEGIN_COMMAND(update_discord)
 {
-			char buffer[256];
-			DiscordRichPresence discordPresence;
-			memset(&discordPresence, 0, sizeof(discordPresence));
-			discordPresence.state = "On Solo";
-			sprintf(buffer, "Map : King1");
-			discordPresence.details = buffer;
-			discordPresence.largeImageKey = "canary-large";
-			discordPresence.smallImageKey = "ptb-small";
-			discordPresence.instance = 0;
-			Discord_UpdatePresence(&discordPresence);
+
 }
 END_COMMAND(update_discord)
-
-BEGIN_COMMAND(test_discord)
-{
-	DiscordEventHandlers handlers;
-	memset(&handlers, 0, sizeof(handlers));
-	handlers.ready = handleDiscordReady;
-	handlers.disconnected = handleDiscordDisconnected;
-	handlers.errored = handleDiscordError;
-	/*handlers.joinGame = handleDiscordJoin;
-	handlers.spectateGame = handleDiscordSpectate;
-	handlers.joinRequest = handleDiscordJoinRequest;*/
-	Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
-}
-END_COMMAND(test_discord)
 
 argb_t CL_GetPlayerColor(player_t *player)
 {
@@ -3480,6 +3442,9 @@ void CL_Spectate()
 
 	if (&player == &consoleplayer())
 	{
+		std::ostringstream details;
+		details << "On " << level.level_name;
+
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
 		if (player.spectator)
@@ -3487,11 +3452,20 @@ void CL_Spectate()
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
+			DISCORD_UpdateInGameState(DISCORD_SPECTATING, details.str(), DLOGO_LARGEPIC, "odamex-logo");
 		}
 		else
 		{
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
+
+			if (warmup.get_status() == Warmup::INGAME)
+				DISCORD_UpdateInGameState(DISCORD_INMATCH, details.str(), DLOGO_LARGEPIC, "odamex-logo");
+			else if (warmup.get_status() == Warmup::WARMUP)
+				DISCORD_UpdateInGameState(DISCORD_WARMUP, details.str(), DLOGO_LARGEPIC, "odamex-logo");
+			else
+				DISCORD_UpdateInGameState(DISCORD_INGAME, details.str(), DLOGO_LARGEPIC, "odamex-logo");
+
 		}
 
 		CL_RebuildAllPlayerTranslations();
@@ -3522,6 +3496,8 @@ void CL_WarmupState()
 		std::ostringstream buffer;
 		buffer << "Match begins in " << count << "...";
 		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
+
+		DISCORD_UpdateState(buffer.str(), level.level_name, DLOGO_LARGEPIC, "odamex-logo");	// ToDo: improve it with the gamemode.
 	}
 	else
 	{

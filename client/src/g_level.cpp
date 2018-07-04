@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include <set>
+#include <sstream>
 
 #include "am_map.h"
 #include "c_console.h"
@@ -62,7 +63,7 @@
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
-
+#include "discord.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -279,6 +280,13 @@ void G_InitNew (const char *mapname)
 	
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	/*if (!demoplayback && !netdemo.isPlaying())
+	{
+		std::ostringstream details;
+		details << level.mapname << " - " << level.level_name;
+		DISCORD_UpdateInGameState(DISCORD_SOLOPLAY, details.str(), DLOGO_LARGEPIC, "odamex-logo");
+	}*/
 }
 
 //
@@ -449,6 +457,8 @@ void G_DoCompleted (void)
 	gamestate = GS_INTERMISSION;
 	viewactive = false;
 
+	DISCORD_UpdateState(DISCORD_INTERMISSION, "", DLOGO_LARGEPIC, "odamex-logo");		// ToDo: improve it with the intermission
+
 	WI_Start (&wminfo);
 }
 
@@ -615,6 +625,13 @@ void G_DoLoadLevel (int position)
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
 	C_FlushDisplay ();
+
+	if (!multiplayer)
+	{
+		std::ostringstream details;
+		details << level.mapname << " - " << level.level_name;
+		DISCORD_UpdateInGameState(DISCORD_SOLOPLAY, details.str(), DLOGO_LARGEPIC, "odamex-logo");
+	}
 }
 
 //
