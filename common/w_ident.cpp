@@ -623,6 +623,15 @@ void W_SetupFileIdentifiers()
 	// ------------------------------------------------------------------------
 
 	identtab.addFile(
+		"Ultimate Freedoom v0.11.3",		// mIdName
+		"FREEDOOM1.WAD",					// mFilename
+		"C06BC4BF5F13992D1CFA8263F7413FF4",	// mMd5Sum
+		"Ultimate Doom v1.9",				// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
 		"Ultimate Freedoom v0.9",			// mIdName
 		"FREEDOOM1.WAD",					// mFilename
 		"ACA90CF5AC36E996EDC58BD0329B979A",	// mMd5Sum
@@ -646,6 +655,15 @@ void W_SetupFileIdentifiers()
 	// ------------------------------------------------------------------------
 
 	identtab.addFile(
+		"Freedoom v0.11.3",					// mIdName
+		"FREEDOOM2.WAD",					// mFilename
+		"984F99AF08F085E38070F51095AB7C31",	// mMd5Sum
+		"Doom 2 v1.9",						// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
+
+	identtab.addFile(
 		"Freedoom v0.9",					// mIdName
 		"FREEDOOM2.WAD",					// mFilename
 		"8FA57DBC7687F84528EBA39DDE3A20E0",	// mMd5Sum
@@ -667,6 +685,15 @@ void W_SetupFileIdentifiers()
 	// ------------------------------------------------------------------------
 	// FREEDM.WAD
 	// ------------------------------------------------------------------------
+
+	identtab.addFile(
+		"FreeDM v0.11.3",					// mIdName
+		"FREEDM.WAD",						// mFilename
+		"87EE2494D921633420CE9BDB418127C4",	// mMd5Sum
+		"Doom 2 v1.9",						// mGroupName
+		false,								// mIsCommercial
+		true,								// mIsIWAD
+		false);								// mIsDeprecated
 
 	identtab.addFile(
 		"FreeDM v0.9",						// mIdName
