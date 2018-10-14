@@ -103,11 +103,14 @@ static void ExpandSoundData(byte *data,
                           AUDIO_U8, 1, samplerate,
                           mixer_format, mixer_channels, mixer_freq))
     {
-        convertor.buf = destination->abuf;
         convertor.len = length;
+        convertor.buf = new Uint8[convertor.len * convertor.len_mult];
         memcpy(convertor.buf, data, length);
 
         SDL_ConvertAudio(&convertor);
+
+        memcpy(destination->abuf, convertor.buf, destination->alen);
+        delete[] convertor.buf;
     }
     else
     {
