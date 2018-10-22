@@ -733,7 +733,7 @@ uint32_t CRC32(const uint8_t* buf, uint32_t len)
 uint32_t Log2(uint32_t n)
 {
 	#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
-	static const char LogTable256[256] = 
+	static const signed char LogTable256[256] = 
 	{
 		-1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
 		LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
