@@ -45,6 +45,10 @@
 #include <stack>
 #include <iostream>
 
+#ifdef OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #include "i_sdl.h" 
 #include "i_crash.h"
 // [Russell] - Don't need SDLmain library
@@ -69,10 +73,6 @@
 
 #ifdef _XBOX
 #include "i_xbox.h"
-#endif
-
-#ifdef OSX
-#include <CoreFoundation/CoreFoundation.h>
 #endif
 
 // Use main() on windows for msvc
