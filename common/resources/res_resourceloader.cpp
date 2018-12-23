@@ -6,6 +6,9 @@
 #include "m_memio.h"
 #include "v_palette.h"
 
+size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
+void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
+
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK
 	#include <setjmp.h>		// used for error handling by libpng
@@ -80,10 +83,10 @@ static void Res_DrawPatchIntoTexture(
 		int abstopdelta = 0;
 
 		int32_t offset = LELONG(colofs[x - xoffs]);
-		if (offset < 0 || lump_length < (uint32_t)offset + 1)		// long enough for this post's topdelta? 
+		if (offset < 0 || lump_length < (uint32_t)offset + 1)		// long enough for this post's topdelta?
 			return;
 
-		const byte* post = lump_data + offset; 
+		const byte* post = lump_data + offset;
 		while (*post != 0xFF)
 		{
 			if (lump_length < (uint32_t)(post - lump_data) + 2)		// long enough for this post's header?
@@ -115,9 +118,9 @@ static void Res_DrawPatchIntoTexture(
 
 				// set up the mask
 				byte* mask = texture->getMaskData() + texheight * x + y1;
-				memset(mask, 1, y2 - y1 + 1);	
+				memset(mask, 1, y2 - y1 + 1);
 			}
-			
+
 			post += postlength + 4;
 		}
 	}
@@ -183,9 +186,110 @@ uint32_t DefaultResourceLoader::size() const
 void DefaultResourceLoader::load(void* data) const
 {
 	uint32_t size =  mRawResourceAccessor->getResourceSize(mResourceId);
-	mRawResourceAccessor->loadResource(mResourceId, data, size); 
+	mRawResourceAccessor->loadResource(mResourceId, data, size);
 }
 
+
+// ----------------------------------------------------------------------------
+//
+// PatchResourceLoader class implementation
+//
+// ----------------------------------------------------------------------------
+
+PatchResourceLoader::PatchResourceLoader(
+		const RawResourceAccessor* accessor,
+		const ResourceId res_id) :
+	mRawResourceAccessor(accessor), mResId(res_id)
+{ }
+
+
+//
+// PatchResourceLoader::validate
+//
+bool PatchResourceLoader::validate() const
+{
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
+	uint8_t* raw_data = new uint8_t[raw_size];
+	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
+
+	bool valid = validateHelper(raw_data, raw_size);
+
+	delete [] raw_data;
+	return valid;
+}
+
+//
+// PatchResourceLoader::validateHelper
+//
+// Returns true if the raw patch_t data is valid.
+//
+bool PatchResourceLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_size) const
+{
+	if (raw_size > 8)
+	{
+		const int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
+		const int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
+
+		const uint32_t column_table_offset = 8;
+		const uint32_t column_table_length = sizeof(int32_t) * width;
+
+		if (width > 0 && height > 0 && raw_size >= column_table_offset + column_table_length)
+		{
+			const int32_t* column_offset = (const int32_t*)(raw_data + column_table_offset);
+			const int32_t min_column_offset = column_table_offset + column_table_length;
+			const int32_t max_column_offset = raw_size - 4;
+
+			for (int i = 0; i < width; i++, column_offset++)
+				if (*column_offset < min_column_offset || *column_offset > max_column_offset)
+					return false;
+			return true;
+		}
+	}
+	return false;
+}
+
+//
+// PatchResourceLoader::size
+//
+// Reads the patch_t header and calculates the size of the resulting
+// tallpost PATCH instance.
+//
+uint32_t PatchResourceLoader::size() const
+{
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
+	uint8_t* raw_data = new uint8_t[raw_size];
+	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
+	size_t resource_size = R_CalculateNewPatchSize((patch_t*)raw_data, raw_size);
+	delete [] raw_data;
+	return resource_size;
+}
+
+//
+// PatchResourceLoader::load
+//
+// Converts the PATCH format graphic lump to a PATCH using tallposts.
+//
+void PatchResourceLoader::load(void* data) const
+{
+	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
+	uint8_t* raw_data = new uint8_t[raw_size];
+	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
+
+	bool valid = validateHelper(raw_data, raw_size);
+
+	if (valid)
+	{
+		// valid patch
+		R_ConvertPatch((patch_t*)data, (patch_t*)raw_data);
+	}
+	else
+	{
+		// invalid patch - just create a header with width = 0, height = 0
+		memset(data, 0, sizeof(patch_t));
+	}
+
+	delete [] raw_data;
+}
 
 
 // ============================================================================
@@ -344,7 +448,7 @@ void FlatTextureLoader::load(void* data) const
 	Texture* texture = initTexture(data, width, height);
 
 	#if CLIENT_APP
-	uint8_t* raw_data = new uint8_t[width * height]; 
+	uint8_t* raw_data = new uint8_t[width * height];
 	mRawResourceAccessor->loadResource(mResId, raw_data, width * height);
 	// convert the row-major raw data to into column-major
 	Res_TransposeImage(texture->getData(), raw_data, width, height);
@@ -436,7 +540,7 @@ uint32_t PatchTextureLoader::size() const
 void PatchTextureLoader::load(void* data) const
 {
 	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
-	uint8_t* raw_data = new uint8_t[raw_size]; 
+	uint8_t* raw_data = new uint8_t[raw_size];
 	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
 	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
@@ -450,7 +554,7 @@ void PatchTextureLoader::load(void* data) const
 	// TODO: remove this once proper masking is in place
 	memset(texture->mData, 0, width * height);
 
-	// initialize the mask to entirely transparent 
+	// initialize the mask to entirely transparent
 	memset(texture->mMask, 0, width * height);
 
 	Res_DrawPatchIntoTexture(texture, raw_data, raw_size, 0, 0);
@@ -515,7 +619,7 @@ void CompositeTextureLoader::load(void* data) const
 	// TODO: remove this once proper masking is in place
 	memset(texture->mData, 0, mTextureDef->mWidth * mTextureDef->mHeight);
 
-	// initialize the mask to entirely transparent 
+	// initialize the mask to entirely transparent
 	memset(texture->mMask, 0, mTextureDef->mWidth * mTextureDef->mHeight);
 
 	// compose the texture out of a set of patches
@@ -529,7 +633,7 @@ void CompositeTextureLoader::load(void* data) const
 		{
 			// TODO: The patch data should probably be cached...
 			uint32_t raw_size = mRawResourceAccessor->getResourceSize(res_id);
-			uint8_t* raw_data = new uint8_t[raw_size]; 
+			uint8_t* raw_data = new uint8_t[raw_size];
 			mRawResourceAccessor->loadResource(res_id, raw_data, raw_size);
 
 			Res_DrawPatchIntoTexture(
@@ -591,7 +695,7 @@ void RawTextureLoader::load(void* data) const
 	Texture* texture = initTexture(data, width, height);
 
 	#if CLIENT_APP
-	uint8_t* raw_data = new uint8_t[width * height]; 
+	uint8_t* raw_data = new uint8_t[width * height];
 	mRawResourceAccessor->loadResource(mResId, raw_data, width * height);
 
 	// convert the row-major raw data to into column-major
@@ -694,7 +798,7 @@ void PngTextureLoader::load(void* data) const
 	png_info* info_ptr = NULL;
 	png_byte* row_data = NULL;
 	MEMFILE* mfp = NULL;
-	
+
 	if (!png_check_sig(raw_data, 8))
 	{
 		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", mResourceName.c_str());
@@ -707,9 +811,9 @@ void PngTextureLoader::load(void* data) const
 	{
 		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", mResourceName.c_str());
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
-		return;	
+		return;
 	}
-  
+
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr)
 	{
@@ -745,19 +849,19 @@ void PngTextureLoader::load(void* data) const
 	// convert transparency to full alpha
 	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
 		png_set_tRNS_to_alpha(png_ptr);
- 
+
 	// convert grayscale, if needed.
 	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
 		png_set_expand_gray_1_2_4_to_8(png_ptr);
- 
+
 	// convert paletted images to RGB
 	if (colortype == PNG_COLOR_TYPE_PALETTE)
 		png_set_palette_to_rgb(png_ptr);
- 
+
 	// convert from RGB to ARGB
 	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
 	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
- 
+
 	// process the above transformations
 	png_read_update_info(png_ptr, info_ptr);
 
@@ -773,7 +877,7 @@ void PngTextureLoader::load(void* data) const
 		png_read_row(png_ptr, row_data, NULL);
 		byte* dest = texture->mData + y;
 		byte* mask = texture->mMask + y;
-		
+
 		for (unsigned int x = 0; x < width; x++)
 		{
 			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
@@ -889,10 +993,10 @@ ResourceIdList CompositeTextureDefinitionParser::buildPNamesLookup()
 //
 // CompositeTextureDefinitionParser::addTexturesFromDefinitionLump
 //
-// Creates a CompositeTextureDefinition for each texture defined in the 
+// Creates a CompositeTextureDefinition for each texture defined in the
 // given TEXTURE lump.
 //
-void CompositeTextureDefinitionParser::addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup) 
+void CompositeTextureDefinitionParser::addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup)
 {
 	uint32_t lump_size = mRawResourceAccessor->getResourceSize(res_id);
 	if (lump_size < 4)		// not long enough to store definition_count
@@ -921,7 +1025,7 @@ void CompositeTextureDefinitionParser::addTexturesFromDefinitionLump(const Resou
 		// Vanilla Doom does a linear search of the texures array
 		// and stops at the first entry it finds.  If there are two
 		// entries with the same name, the first one in the array
-		// wins. 
+		// wins.
 		if (getByName(name) == NULL)
 		{
 			CompositeTextureDefinition texture_def;
@@ -938,8 +1042,8 @@ void CompositeTextureDefinitionParser::addTexturesFromDefinitionLump(const Resou
 				if (lump_size < (unsigned int)patch_offset + 6)
 					break;
 
-				texture_def.mPatches[j].mOriginX = LESHORT(*((int16_t*)(lump_data + patch_offset + 0))); 
-				texture_def.mPatches[j].mOriginY = LESHORT(*((int16_t*)(lump_data + patch_offset + 2))); 
+				texture_def.mPatches[j].mOriginX = LESHORT(*((int16_t*)(lump_data + patch_offset + 0)));
+				texture_def.mPatches[j].mOriginY = LESHORT(*((int16_t*)(lump_data + patch_offset + 2)));
 				int16_t patch_num = LESHORT(*((int16_t*)(lump_data + patch_offset + 4)));
 				if ((size_t)patch_num < pnames_lookup.size())
 					texture_def.mPatches[j].mResId = pnames_lookup[patch_num];
@@ -975,7 +1079,7 @@ const CompositeTextureDefinition* CompositeTextureDefinitionParser::getByName(co
 
 //
 // TextureLoaderFactory::TextureLoaderFactory
-// 
+//
 TextureLoaderFactory::TextureLoaderFactory(
 		const RawResourceAccessor* accessor,
 		const ResourceNameTranslator* translator,
@@ -1035,6 +1139,3 @@ TextureLoader* TextureLoaderFactory::createTextureLoader(
 
 	return NULL;
 }
-
-
-

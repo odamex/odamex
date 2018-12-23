@@ -589,7 +589,7 @@ struct spriteframe_s
 	bool	rotate;
 
     // Lump to use for view angles 0-7.
-    short	lump[8];
+	ResourceId resource[8];
 
     // Flip bit (1 = flip) to use for view angles 0-7.
     byte	flip[8];

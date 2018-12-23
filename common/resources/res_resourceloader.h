@@ -86,6 +86,30 @@ private:
 };
 
 
+// ----------------------------------------------------------------------------
+// PatchResourceLoader class interface
+//
+// Loads patch_t format graphic lumps.
+// ----------------------------------------------------------------------------
+
+class PatchResourceLoader : public ResourceLoader
+{
+public:
+	PatchResourceLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
+	virtual ~PatchResourceLoader() {}
+
+	virtual bool validate() const;
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+private:
+	const RawResourceAccessor* mRawResourceAccessor;
+	const ResourceId	mResId;
+
+	bool validateHelper(const uint8_t* raw_data, uint32_t raw_size) const;
+};
+
+
 // ============================================================================
 //
 // TextureLoader
@@ -154,7 +178,7 @@ private:
 // ----------------------------------------------------------------------------
 // PatchTextureLoader class interface
 //
-// Loads patch_t format graphic lumps. 
+// Loads patch_t format graphic lumps.
 // ----------------------------------------------------------------------------
 
 class PatchTextureLoader : public TextureLoader
@@ -178,7 +202,7 @@ private:
 // ----------------------------------------------------------------------------
 // SpriteTextureLoader class interface
 //
-// Loads patch_t format sprite graphic lumps. 
+// Loads patch_t format sprite graphic lumps.
 // ----------------------------------------------------------------------------
 
 class SpriteTextureLoader : public PatchTextureLoader
@@ -215,13 +239,13 @@ private:
 // ----------------------------------------------------------------------------
 // RawTextureLoader class interface
 //
-// Loads raw 320x200 graphic lumps. 
+// Loads raw 320x200 graphic lumps.
 // ----------------------------------------------------------------------------
 
 class RawTextureLoader : public TextureLoader
 {
 public:
-	RawTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id); 
+	RawTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
 	virtual ~RawTextureLoader() {}
 
 	virtual bool validate() const;
@@ -237,13 +261,13 @@ private:
 // ----------------------------------------------------------------------------
 // PngTextureLoader class interface
 //
-// Loads PNG format graphic lumps. 
+// Loads PNG format graphic lumps.
 // ----------------------------------------------------------------------------
 
 class PngTextureLoader : public TextureLoader
 {
 public:
-	PngTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const OString& name); 
+	PngTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const OString& name);
 	virtual ~PngTextureLoader() {}
 
 	virtual bool validate() const;

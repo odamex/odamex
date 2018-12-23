@@ -31,7 +31,7 @@
 #include "st_stuff.h"
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "v_palette.h"
 
 #include "m_cheat.h"
@@ -640,13 +640,12 @@ void AM_initColors (BOOL overlayed)
 //
 void AM_loadPics(void)
 {
-	int i;
-	char namebuf[9];
-
-	for (i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++)
 	{
+		char namebuf[9];
 		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatch (namebuf, PU_STATIC);
+		const ResourceId res_id = Res_GetResourceId(namebuf, patches_directory_name);
+		marknums[i] = (patch_t*)Res_LoadResource(res_id, PU_STATIC);
 	}
 }
 

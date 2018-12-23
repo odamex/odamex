@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -199,7 +199,7 @@ ResourceManager::~ResourceManager()
 // ResourceManager::openResourceContainer
 //
 // Opens a resource file and caches the directory of lump names for queries.
-// 
+//
 void ResourceManager::openResourceContainer(const OString& filename)
 {
 	if (!M_FileExists(filename))
@@ -239,12 +239,12 @@ void ResourceManager::openResourceContainer(const OString& filename)
 //
 // Opens a set of resource files and creates a directory of resource path names
 // for queries.
-// 
+//
 void ResourceManager::openResourceContainers(const std::vector<std::string>& filenames)
 {
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		openResourceContainer(*it);
-	
+
 	// TODO: Is this the best place to initialize the ResourceCache instance?
 	mCache = new ResourceCache(mResources.size());
 }
@@ -294,6 +294,10 @@ const ResourceId ResourceManager::addResource(
 	{
 		res_rec.mResourceLoader = new FlatTextureLoader(&mRawResourceAccessor, res_id);
 	}
+	else if (path.first() == "PATCHES")
+	{
+		res_rec.mResourceLoader = new PatchResourceLoader(&mRawResourceAccessor, res_id);
+	}
 	else
 	{
 		res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);
@@ -301,7 +305,7 @@ const ResourceId ResourceManager::addResource(
 	}
 
 	mNameTranslator.addTranslation(path, res_id);
-	
+
 	return res_id;
 }
 
@@ -393,7 +397,7 @@ void ResourceManager::dump() const
 		const ResourceRecord& res_rec = *it;
 		const ResourceId res_id = getResourceId(&res_rec);
 
-		const ResourcePath& path = res_rec.mPath; 
+		const ResourcePath& path = res_rec.mPath;
 		assert(!OString(path).empty());
 
 		const ResourceContainerId& container_id = res_rec.mResourceContainerId;
@@ -425,7 +429,7 @@ void ResourceManager::dump() const
 //
 // Opens a set of resource files and creates a directory of resource path names
 // for queries.
-// 
+//
 void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 {
 	resource_manager.openResourceContainers(filenames);
@@ -460,7 +464,7 @@ const std::vector<std::string>& Res_GetResourceFileNames()
 // Res_GetResourceFileHashes
 //
 // Returns a vector of string representations of the MD5SUM for each of the
-// currently open resource files. 
+// currently open resource files.
 //
 const std::vector<std::string>& Res_GetResourceFileHashes()
 {
@@ -536,7 +540,7 @@ bool Res_CheckResource(const ResourceId res_id)
 {
 	return resource_manager.validateResourceId(res_id);
 }
-	
+
 
 //
 // Res_GetResourceSize

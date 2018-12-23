@@ -29,7 +29,7 @@
 
 #include "i_system.h"
 #include "z_zone.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 
 #include "r_local.h"
 #include "p_local.h"
@@ -99,23 +99,24 @@ TArray<WORD>			ParticlesInSubsec;
 
 void R_CacheSprite (spritedef_t *sprite)
 {
-	int i, r;
-	patch_t *patch;
-
 	DPrintf ("cache sprite %s\n",
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
-	for (i = 0; i < sprite->numframes; i++)
+
+	for (int i = 0; i < sprite->numframes; i++)
 	{
-		for (r = 0; r < 8; r++)
+		for (int r = 0; r < 8; r++)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
-				if (sprite->spriteframes[i].lump[r] == -1)
+				if (sprite->spriteframes[i].resource[r] == ResourceId::INVALID_ID)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-				patch = W_CachePatch (sprite->spriteframes[i].lump[r]);
-				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
-				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
-				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
+
+				const ResourceId res_id = sprite->spriteframes[i].resource[r];
+				patch_t* patch = (patch*)Res_LoadResource(res_id, PU_CACHE);
+
+				sprite->spriteframes[i].width[r] = patch->width() << FRACBITS;
+				sprite->spriteframes[i].offset[r] = patch->leftoffset() << FRACBITS;
+				sprite->spriteframes[i].topoffset[r] = patch->topoffset() << FRACBITS;
 			}
 		}
 	}
@@ -128,34 +129,32 @@ void R_CacheSprite (spritedef_t *sprite)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-static void R_InstallSpriteLump (int lump, unsigned frame, unsigned rotation, BOOL flipped)
+static void R_InstallSpriteLump(const ResourceId res_id, unsigned frame, unsigned rotation, BOOL flipped)
 {
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 8)
-		I_FatalError ("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
+		I_FatalError ("R_InstallSpriteLump: Bad frame characters in resource ID %i", (int)res_id);
 
 	if ((int)frame > maxframe)
 		maxframe = frame;
 
 	if (rotation == 0)
 	{
-		// the lump should be used for all rotations
+		// the resource should be used for all rotations
         // false=0, true=1, but array initialised to -1
         // allows doom to have a "no value set yet" boolean value!
-		int r;
-
-		for (r = 7; r >= 0; r--)
-			if (sprtemp[frame].lump[r] == -1)
+		for (int r = 7; r >= 0; r--)
+			if (sprtemp[frame].resource[r] == ResourceId::INVALID_ID)
 			{
-				sprtemp[frame].lump[r] = (short)(lump);
+				sprtemp[frame].resource[r] = res_id;
 				sprtemp[frame].flip[r] = (byte)flipped;
 				sprtemp[frame].rotate = false;
 				sprtemp[frame].width[r] = SPRITE_NEEDS_INFO;
 			}
 	}
-	else if (sprtemp[frame].lump[--rotation] == -1)
+	else if (sprtemp[frame].resource[--rotation] == ResourceId::INVALID_ID)
 	{
 		// the lump is only used for one rotation
-		sprtemp[frame].lump[rotation] = (short)(lump);
+		sprtemp[frame].resource[rotation] = res_id;
 		sprtemp[frame].flip[rotation] = (byte)flipped;
 		sprtemp[frame].rotate = true;
 		sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
@@ -196,12 +195,11 @@ static void R_InstallSprite (const char *name, int num)
 		  case 1:
 			// must have all 8 frames
 			{
-				int rotation;
-
-				for (rotation = 0; rotation < 8; rotation++)
-					if (sprtemp[frame].lump[rotation] == -1)
-						I_FatalError ("R_InstallSprite: Sprite %s frame %c is missing rotations",
-									  sprname, frame+'A');
+				for (int rotation = 0; rotation < 8; rotation++)
+				{
+					if (sprtemp[frame].resource[rotation] == ResourceId::INVALID_ID)
+						I_FatalError ("R_InstallSprite: Sprite %s frame %c is missing rotations", sprname, frame+'A');
+				}
 			}
 			break;
 		}
@@ -209,9 +207,8 @@ static void R_InstallSprite (const char *name, int num)
 
 	// allocate space for the frames present and copy sprtemp to it
 	sprites[num].numframes = maxframe;
-	sprites[num].spriteframes = (spriteframe_t *)
-		Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
-	memcpy (sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
+	sprites[num].spriteframes = (spriteframe_t*)Z_Malloc(maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
+	memcpy(sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
 }
 
 
@@ -230,7 +227,7 @@ static void R_InstallSprite (const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-void R_InitSpriteDefs (const char **namelist)
+void R_InitSpriteDefs(const char **namelist)
 {
 	// count the number of sprite names
 	for (numsprites = 0; namelist[numsprites]; numsprites++)
@@ -241,13 +238,15 @@ void R_InitSpriteDefs (const char **namelist)
 
 	sprites = (spritedef_t *)Z_Malloc(numsprites * sizeof(*sprites), PU_STATIC, NULL);
 
+	
+
 	// scan all the lump names for each of the names,
 	//	noting the highest frame letter.
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
 		spritename = (const char *)namelist[i];
-		memset (sprtemp, -1, sizeof(sprtemp));
+		memset(sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
 		int intname = *(int *)namelist[i];
@@ -256,15 +255,18 @@ void R_InitSpriteDefs (const char **namelist)
 		//	filling in the frames for whatever is found
 		for (int l = lastspritelump; l >= firstspritelump; l--)
 		{
+			const OString res_name(namelist[l], 8);
+			const ResourceId res_id = Res_GetResourceId(res_name, patches_directory_name);
+
 			if (*(int *)lumpinfo[l].name == intname)
 			{
-				R_InstallSpriteLump (l,
+				R_InstallSpriteLump (res_id,
 									 lumpinfo[l].name[4] - 'A', // denis - fixme - security
 									 lumpinfo[l].name[5] - '0',
 									 false);
 
 				if (lumpinfo[l].name[6])
-					R_InstallSpriteLump (l,
+					R_InstallSpriteLump (res_id,
 									 lumpinfo[l].name[6] - 'A',
 									 lumpinfo[l].name[7] - '0',
 									 true);
@@ -274,6 +276,36 @@ void R_InitSpriteDefs (const char **namelist)
 		R_InstallSprite(namelist[i], i);
 	}
 }
+
+
+
+
+
+
+void R_InitSpriteFrame(spriteframe_t* spriteframe)
+{
+
+
+}
+
+
+void R_InitSpriteDefsNew(const char** namelist)
+{
+	const ResourceIdList sprite_res_ids = Res_GetAllResourceIds(sprites_directory_name);
+
+	for (ResourceIdList::const_iterator it = sprite_res_ids.begin(); it !+ sprite_res_ids.end(); ++it)
+	{
+		const ResourceId res_id = *it;
+		const OString res_name = Res_GetResourceName(res_id);
+
+	}
+}
+
+
+
+
+
+
 
 
 //
@@ -666,7 +698,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 {
 	spritedef_t*		sprdef;
 	spriteframe_t*		sprframe;
-	int 				lump;
+	ResourceId			res_id;
 	unsigned int		rot;
 	bool 				flip;
 
@@ -722,13 +754,13 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	{
 		// choose a different rotation based on player view
 		rot = (R_PointToAngle(thingx, thingy) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
-		lump = sprframe->lump[rot];
+		res_id = sprframe->resource[rot];
 		flip = (BOOL)sprframe->flip[rot];
 	}
 	else
 	{
 		// use single rotation for all views
-		lump = sprframe->lump[rot = 0];
+		res_id = sprframe->resource[rot = 0];
 		flip = (BOOL)sprframe->flip[0];
 	}
 
@@ -739,7 +771,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	fixed_t topoffs = sprframe->topoffset[rot];
 	fixed_t sideoffs = sprframe->offset[rot];
 
-	patch_t* patch = W_CachePatch(lump);
+	patch_t* patch = (patch_t*)Res_LoadResource(res_id, PU_CACHE);
+
 	fixed_t height = patch->height() << FRACBITS;
 	fixed_t width = patch->width() << FRACBITS;
 
@@ -751,7 +784,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	vis->mobjflags = thing->flags;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
-	vis->patch = lump;
+	vis->patch = res_id;
 	vis->mo = thing;
 
 	// get light level
@@ -833,7 +866,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	int 				x2;
 	spritedef_t*		sprdef;
 	spriteframe_t*		sprframe;
-	int 				lump;
+	ResourceId			res_id;
 	BOOL 				flip;
 	vissprite_t*		vis;
 	vissprite_t 		avis;
@@ -859,7 +892,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 #endif
 	sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
 
-	lump = sprframe->lump[0];
+	res_id = sprframe->resource[0];
 	flip = (BOOL)sprframe->flip[0];
 
 	if (sprframe->width[0] == SPRITE_NEEDS_INFO)
@@ -916,7 +949,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	if (vis->x1 > x1)
 		vis->startfrac += vis->xiscale*(vis->x1-x1);
 
-	vis->patch = lump;
+	vis->patch = res_id;
 
 	if (fixedlightlev)
 	{
