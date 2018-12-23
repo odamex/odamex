@@ -505,9 +505,10 @@ void CL_CheckDisplayPlayer()
 		if (idplayer(newid).spectator != idplayer(previd).spectator)
 			R_ForceViewWindowResize();
 		ST_ForceRefresh();
+
+		previd = newid;
 	}
 
-	previd = newid;
 }
 
 //
