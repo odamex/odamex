@@ -46,7 +46,7 @@ char SKYFLATNAME[8] = "F_SKY1";
 //
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 {
-	const ResourceId sky_res_id = Res_GetResourceId(SKYFLATNAME, "/FLATS");
+	const ResourceId sky_res_id = Res_GetResourceId(SKYFLATNAME, flats_directory_name);
 	return res_id == sky_res_id;
 }
 

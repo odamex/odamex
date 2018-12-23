@@ -517,7 +517,7 @@ void TextureManager::readAnimDefLump()
 void TextureManager::readAnimatedLump()
 {
 	/*
-	const ResourceId res_id = Res_GetResourceId("ANIMATED");
+	const ResourceId res_id = Res_GetResourceId("ANIMATED", global_directory_name);
 	if (!Res_CheckResource(res_id))
 		return;
 

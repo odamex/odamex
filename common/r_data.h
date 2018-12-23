@@ -28,6 +28,7 @@
 
 #include "r_defs.h"
 #include "r_state.h"
+#include "resources/res_main.h"
 
 
 // On the Alpha, accessing the shorts directly if they aren't aligned on a
@@ -86,8 +87,8 @@ extern fixed_t* texturescalex;
 extern fixed_t* texturescaley;
 
 // Retrieve column data for span blitting.
-tallpost_t* R_GetPatchColumn(int lumpnum, int colnum);
-byte* R_GetPatchColumnData(int lumpnum, int colnum);
+tallpost_t* R_GetPatchResourceColumn(ResourceId res_id, int colnum);
+byte* R_GetPatchColumnResourceData(ResourceId res_id, int colnum);
 tallpost_t* R_GetTextureColumn(int texnum, int colnum);
 byte* R_GetTextureColumnData(int texnum, int colnum);
 

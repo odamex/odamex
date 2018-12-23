@@ -549,7 +549,7 @@ struct vissprite_s
 
 	fixed_t			depth;
 	fixed_t			texturemid;
-	int				patch;
+	ResourceId		res_id;
 
     // for color translation and shadow draw,
     //  maxbright frames as well

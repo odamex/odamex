@@ -123,6 +123,8 @@ public:
 
 	const ResourceIdList getAllResourceIds() const;
 
+	const ResourcePathList listResourceDirectory(const ResourcePath& path) const;
+
 	const ResourcePath& getResourcePath(const ResourceId res_id) const
 	{
 		const ResourceRecord* res_rec = getResourceRecord(res_id);
@@ -249,7 +251,11 @@ const std::vector<std::string>& Res_GetResourceFileNames();
 const std::vector<std::string>& Res_GetResourceFileHashes();
 
 
-const ResourceId Res_GetResourceId(const OString& name, const OString& directory = global_directory_name);
+const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path);
+
+const ResourceId Res_GetResourceId(const ResourcePath& path);
+
+const ResourceId Res_GetResourceId(const OString& name, const OString& directory);
 
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 
@@ -266,7 +272,7 @@ const ResourcePath& Res_GetResourcePath(const ResourceId res_id);
 
 bool Res_CheckResource(const ResourceId res_id);
 
-static inline bool Res_CheckResource(const OString& name, const OString& directory = global_directory_name)
+static inline bool Res_CheckResource(const OString& name, const OString& directory)
 {
 	return Res_CheckResource(Res_GetResourceId(name, directory));
 }
@@ -278,7 +284,7 @@ static inline bool Res_CheckResource(const OString& name, const OString& directo
 
 uint32_t Res_GetResourceSize(const ResourceId res_id);
 
-static inline uint32_t Res_GetResourceSize(const OString& name, const OString& directory = global_directory_name)
+static inline uint32_t Res_GetResourceSize(const OString& name, const OString& directory)
 {
 	return Res_GetResourceSize(Res_GetResourceId(name, directory));
 }
@@ -292,7 +298,7 @@ void* Res_LoadResource(const ResourceId res_id, int tag = PU_CACHE);
 
 static inline void* Res_LoadResource(const OString& name, int tag = PU_CACHE)
 {
-	return Res_LoadResource(Res_GetResourceId(name), tag);
+	return Res_LoadResource(Res_GetResourceId(name, global_directory_name), tag);
 }
 
 
@@ -304,7 +310,7 @@ void Res_ReleaseResource(const ResourceId res_id);
 
 static inline void Res_ReleaseResource(const OString& name)
 {
-	Res_ReleaseResource(Res_GetResourceId(name));
+	Res_ReleaseResource(Res_GetResourceId(name, global_directory_name));
 }
 
 bool Res_CheckMap(const OString& mapname);

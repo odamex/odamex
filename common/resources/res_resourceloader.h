@@ -110,6 +110,20 @@ private:
 };
 
 
+// ----------------------------------------------------------------------------
+// SpriteResourceLoader class interface
+//
+// Loads patch_t format sprite graphic lumps.
+// ----------------------------------------------------------------------------
+
+class SpriteResourceLoader : public PatchResourceLoader
+{
+public:
+	SpriteResourceLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
+	virtual ~SpriteResourceLoader() {}
+};
+
+
 // ============================================================================
 //
 // TextureLoader

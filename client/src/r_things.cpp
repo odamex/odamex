@@ -86,7 +86,6 @@ int				numsprites;
 
 spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
-static const char*		spritename;
 
 static tallpost_t* spriteposts[MAXWIDTH];
 
@@ -112,7 +111,7 @@ void R_CacheSprite (spritedef_t *sprite)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
 
 				const ResourceId res_id = sprite->spriteframes[i].resource[r];
-				patch_t* patch = (patch*)Res_LoadResource(res_id, PU_CACHE);
+				const patch_t* patch = (const patch_t*)Res_LoadResource(res_id, PU_CACHE);
 
 				sprite->spriteframes[i].width[r] = patch->width() << FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset() << FRACBITS;
@@ -129,7 +128,7 @@ void R_CacheSprite (spritedef_t *sprite)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-static void R_InstallSpriteLump(const ResourceId res_id, unsigned frame, unsigned rotation, BOOL flipped)
+static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_t rotation, bool flipped)
 {
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 8)
 		I_FatalError ("R_InstallSpriteLump: Bad frame characters in resource ID %i", (int)res_id);
@@ -238,74 +237,49 @@ void R_InitSpriteDefs(const char **namelist)
 
 	sprites = (spritedef_t *)Z_Malloc(numsprites * sizeof(*sprites), PU_STATIC, NULL);
 
-	
+	const ResourcePathList sprite_paths = Res_ListResourceDirectory(sprites_directory_name);
 
 	// scan all the lump names for each of the names,
 	//	noting the highest frame letter.
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		spritename = (const char *)namelist[i];
 		memset(sprtemp, -1, sizeof(sprtemp));
-
 		maxframe = -1;
-		int intname = *(int *)namelist[i];
+
+		for (int frame = 0; frame < MAX_SPRITE_FRAMES; frame++)
+			for (int r = 0; r < 8; r++)
+				sprtemp[frame].resource[r] = ResourceId::INVALID_ID;
+
+		// convert the first 4 chars of sprite name to an int for fast comparisons
+		uint32_t actor_id = *(uint32_t*)namelist[i];
 
 		// scan the lumps,
 		//	filling in the frames for whatever is found
-		for (int l = lastspritelump; l >= firstspritelump; l--)
+		for (int l = sprite_paths.size() - 1; l >= 0; l--) 
 		{
-			const OString res_name(namelist[l], 8);
-			const ResourceId res_id = Res_GetResourceId(res_name, patches_directory_name);
-
-			if (*(int *)lumpinfo[l].name == intname)
+			const char* res_name = sprite_paths[l].last().c_str();
+			uint32_t frame_actor_id = *(uint32_t*)res_name;
+			if (frame_actor_id == actor_id)
 			{
-				R_InstallSpriteLump (res_id,
-									 lumpinfo[l].name[4] - 'A', // denis - fixme - security
-									 lumpinfo[l].name[5] - '0',
-									 false);
+				const ResourceId res_id = Res_GetResourceId(sprite_paths[l]);
+				uint32_t frame = res_name[4] - 'A';
+				uint32_t rotation = res_name[5] - '0';
+				R_InstallSpriteLump(res_id, frame, rotation, false);
 
-				if (lumpinfo[l].name[6])
-					R_InstallSpriteLump (res_id,
-									 lumpinfo[l].name[6] - 'A',
-									 lumpinfo[l].name[7] - '0',
-									 true);
+				// can frame can be flipped?
+				if (res_name[6] != '\0')
+				{
+			    	frame = res_name[6] - 'A';
+					rotation = res_name[7] - '0';
+					R_InstallSpriteLump(res_id, frame, rotation, true);
+				}
 			}
 		}
 
 		R_InstallSprite(namelist[i], i);
 	}
 }
-
-
-
-
-
-
-void R_InitSpriteFrame(spriteframe_t* spriteframe)
-{
-
-
-}
-
-
-void R_InitSpriteDefsNew(const char** namelist)
-{
-	const ResourceIdList sprite_res_ids = Res_GetAllResourceIds(sprites_directory_name);
-
-	for (ResourceIdList::const_iterator it = sprite_res_ids.begin(); it !+ sprite_res_ids.end(); ++it)
-	{
-		const ResourceId res_id = *it;
-		const OString res_name = Res_GetResourceName(res_id);
-
-	}
-}
-
-
-
-
-
-
 
 
 //
@@ -443,7 +417,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	if (vis->mobjflags & MF_SPECTATOR)
 		return;
 
-	if (vis->patch == NO_PARTICLE)
+	if (vis->res_id == NO_PARTICLE)
 	{
 		R_DrawParticle(vis);
 		return;
@@ -502,7 +476,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	fixed_t colfrac = vis->startfrac;
 	for (int x = vis->x1; x <= vis->x2; x++)
 	{
-		spriteposts[x] = R_GetPatchColumn(vis->patch, colfrac >> FRACBITS);
+		spriteposts[x] = R_GetPatchResourceColumn(vis->res_id, colfrac >> FRACBITS);
 		colfrac += vis->xiscale;
 	}
 
@@ -760,7 +734,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	else
 	{
 		// use single rotation for all views
-		res_id = sprframe->resource[rot = 0];
+		rot = 0;
+		res_id = sprframe->resource[0];
 		flip = (BOOL)sprframe->flip[0];
 	}
 
@@ -784,7 +759,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	vis->mobjflags = thing->flags;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
-	vis->patch = res_id;
+	vis->res_id = res_id;
 	vis->mo = thing;
 
 	// get light level
@@ -949,7 +924,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	if (vis->x1 > x1)
 		vis->startfrac += vis->xiscale*(vis->x1-x1);
 
-	vis->patch = res_id;
+	vis->res_id = res_id;
 
 	if (fixedlightlev)
 	{
@@ -1335,7 +1310,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 	vis->translation = translationref_t();
 	vis->startfrac = particle->color;
-	vis->patch = NO_PARTICLE;
+	vis->res_id = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
 	vis->mo = NULL;
 

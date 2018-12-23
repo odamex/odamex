@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 #include "m_ostring.h"
+#include <vector>
 #include <string>
 #include <sstream>
 
@@ -127,9 +128,14 @@ public:
 		return false;
 	}
 
+	size_t size() const
+	{
+		return mItemCount;
+	}
+
 	bool empty() const
 	{
-		return mItemCount == 0;
+		return size() == 0;
 	}
 
 	const OString& first() const
@@ -210,6 +216,8 @@ private:
 	friend struct hashfunc<ResourcePath>;
 };
 
+typedef std::vector<ResourcePath> ResourcePathList;
+
 // ----------------------------------------------------------------------------
 // hash function for OHashTable class
 // ----------------------------------------------------------------------------
@@ -227,6 +235,19 @@ template <> struct hashfunc<ResourcePath>
 static inline ResourcePath Res_MakeResourcePath(const OString& name, const OString& directory)
 {
 	return ResourcePath(directory) + ResourcePath(name);
+}
+
+//
+// Res_DoesPathStartWithBase
+//
+static inline bool Res_DoesPathStartWithBase(const ResourcePath& base, const ResourcePath& path)
+{
+	if (path.size() < base.size())
+		return false;
+	for (int i = 0; i < base.size(); i++)
+		if (path[i] != base[i])
+			return false;
+	return true;
 }
 
 #endif	// __RES_RESOURCEPATH_H__

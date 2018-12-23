@@ -437,22 +437,25 @@ void R_GenerateLookup(int texnum, int *const errors)
 	delete [] postcount;
 }
 
+
 //
-// R_GetPatchColumn
+// R_GetPatchResourceColumn
 //
-tallpost_t* R_GetPatchColumn(int lumpnum, int colnum)
+tallpost_t* R_GetPatchResourceColumn(ResourceId res_id, int colnum)
 {
-	patch_t* patch = W_CachePatch(lumpnum, PU_CACHE);
+	patch_t* patch = (patch_t*)Res_LoadResource(res_id, PU_CACHE);
 	return (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[colnum]));
 }
 
+
 //
-// R_GetPatchColumnData
+// R_GetPatchResourceColumnData
 //
-byte* R_GetPatchColumnData(int lumpnum, int colnum)
+byte* R_GetPatchResourceColumnData(ResourceId res_id, int colnum)
 {
-	return R_GetPatchColumn(lumpnum, colnum)->data();
+	return R_GetPatchResourceColumn(res_id, colnum)->data();
 }
+
 
 //
 // R_GetTextureColumn
@@ -517,7 +520,7 @@ void R_InitTextures (void)
 
 	// Load the patch names from pnames.lmp.
 	{
-		const ResourceId pnames_res_id = Res_GetResourceId("PNAMES");
+		const ResourceId pnames_res_id = Res_GetResourceId("PNAMES", global_directory_name);
 		char *names = (char*)Res_LoadResource(pnames_res_id, PU_STATIC);
 		char *name_p = names+4;
 
@@ -549,14 +552,14 @@ void R_InitTextures (void)
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
 	maptex = maptex1 = (int*)Res_LoadResource("TEXTURE1", PU_STATIC);
 	numtextures1 = LELONG(*maptex);
-	maxoff = Res_GetResourceSize("TEXTURE1");
+	maxoff = Res_GetResourceSize("TEXTURE1", global_directory_name);
 	directory = maptex+1;
 
-	if (Res_CheckResource("TEXTURE2"))
+	if (Res_CheckResource("TEXTURE2", global_directory_name))
 	{
 		maptex2 = (int*)Res_LoadResource("TEXTURE2", PU_STATIC);
 		numtextures2 = LELONG(*maptex2);
-		maxoff2 = Res_GetResourceSize("TEXTURE2");
+		maxoff2 = Res_GetResourceSize("TEXTURE2", global_directory_name);
 	}
 	else
 	{
@@ -661,7 +664,7 @@ void R_InitTextures (void)
 	delete[] patchlookup;
 
 	Res_ReleaseResource("TEXTURE1");
-	if (Res_CheckResource("TEXTURE2"))
+	if (Res_CheckResource("TEXTURE2", global_directory_name))
 		Res_ReleaseResource("TEXTURE2");
 
 	if (errors)

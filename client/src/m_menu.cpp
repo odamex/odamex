@@ -50,6 +50,7 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "g_level.h"
+#include "resources/res_main.h"
 #include "resources/res_filelib.h"
 
 #include "gi.h"
@@ -1428,8 +1429,8 @@ static void M_PlayerSetupDrawer (void)
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
 
-		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+		const patch_t* patch = (patch_t*)Res_LoadResource(sprframe->resource[0]);
+		screen->DrawTranslatedPatchClean(patch, 320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
 
 	// Draw box surrounding fire and player:

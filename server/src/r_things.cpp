@@ -72,27 +72,29 @@ static const char*			spritename;
 
 void R_CacheSprite (spritedef_t *sprite)
 {
-	int i, r;
-	patch_t *patch;
-
 	DPrintf ("cache sprite %s\n",
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
-	for (i = 0; i < sprite->numframes; i++)
+
+	for (int i = 0; i < sprite->numframes; i++)
 	{
-		for (r = 0; r < 8; r++)
+		for (int r = 0; r < 8; r++)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
-				if (sprite->spriteframes[i].lump[r] == -1)
+				if (sprite->spriteframes[i].resource[r] == ResourceId::INVALID_ID)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-				patch = W_CachePatch (sprite->spriteframes[i].lump[r]);
-				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
-				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
-				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
+
+				const ResourceId res_id = sprite->spriteframes[i].resource[r];
+				const patch_t* patch = (const patch_t*)Res_LoadResource(res_id, PU_CACHE);
+
+				sprite->spriteframes[i].width[r] = patch->width() << FRACBITS;
+				sprite->spriteframes[i].offset[r] = patch->leftoffset() << FRACBITS;
+				sprite->spriteframes[i].topoffset[r] = patch->topoffset() << FRACBITS;
 			}
 		}
 	}
 }
+
 
 //
 // R_InstallSpriteLump
@@ -101,34 +103,32 @@ void R_CacheSprite (spritedef_t *sprite)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-static void R_InstallSpriteLump (int lump, unsigned frame, unsigned rotation, BOOL flipped)
+static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_t rotation, bool flipped)
 {
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 8)
-		I_FatalError ("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
+		I_FatalError ("R_InstallSpriteLump: Bad frame characters in resource ID %i", (int)res_id);
 
 	if ((int)frame > maxframe)
 		maxframe = frame;
 
 	if (rotation == 0)
 	{
-		// the lump should be used for all rotations
+		// the resource should be used for all rotations
         // false=0, true=1, but array initialised to -1
         // allows doom to have a "no value set yet" boolean value!
-		int r;
-
-		for (r = 7; r >= 0; r--)
-			if (sprtemp[frame].lump[r] == -1)
+		for (int r = 7; r >= 0; r--)
+			if (sprtemp[frame].resource[r] == ResourceId::INVALID_ID)
 			{
-				sprtemp[frame].lump[r] = (short)(lump);
+				sprtemp[frame].resource[r] = res_id;
 				sprtemp[frame].flip[r] = (byte)flipped;
 				sprtemp[frame].rotate = false;
 				sprtemp[frame].width[r] = SPRITE_NEEDS_INFO;
 			}
 	}
-	else if (sprtemp[frame].lump[--rotation] == -1)
+	else if (sprtemp[frame].resource[--rotation] == ResourceId::INVALID_ID)
 	{
 		// the lump is only used for one rotation
-		sprtemp[frame].lump[rotation] = (short)(lump);
+		sprtemp[frame].resource[rotation] = res_id;
 		sprtemp[frame].flip[rotation] = (byte)flipped;
 		sprtemp[frame].rotate = true;
 		sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
@@ -169,12 +169,11 @@ static void R_InstallSprite (const char *name, int num)
 		  case 1:
 			// must have all 8 frames
 			{
-				int rotation;
-
-				for (rotation = 0; rotation < 8; rotation++)
-					if (sprtemp[frame].lump[rotation] == -1)
-						I_FatalError ("R_InstallSprite: Sprite %s frame %c is missing rotations",
-									  sprname, frame+'A');
+				for (int rotation = 0; rotation < 8; rotation++)
+				{
+					if (sprtemp[frame].resource[rotation] == ResourceId::INVALID_ID)
+						I_FatalError ("R_InstallSprite: Sprite %s frame %c is missing rotations", sprname, frame+'A');
+				}
 			}
 			break;
 		}
@@ -182,9 +181,8 @@ static void R_InstallSprite (const char *name, int num)
 
 	// allocate space for the frames present and copy sprtemp to it
 	sprites[num].numframes = maxframe;
-	sprites[num].spriteframes = (spriteframe_t *)
-		Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
-	memcpy (sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
+	sprites[num].spriteframes = (spriteframe_t*)Z_Malloc(maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
+	memcpy(sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
 }
 
 
@@ -203,7 +201,7 @@ static void R_InstallSprite (const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-void R_InitSpriteDefs (const char **namelist)
+void R_InitSpriteDefs(const char **namelist)
 {
 	// count the number of sprite names
 	for (numsprites = 0; namelist[numsprites]; numsprites++)
@@ -214,39 +212,51 @@ void R_InitSpriteDefs (const char **namelist)
 
 	sprites = (spritedef_t *)Z_Malloc(numsprites * sizeof(*sprites), PU_STATIC, NULL);
 
+	const ResourcePathList sprite_paths = Res_ListResourceDirectory(sprites_directory_name);
+
 	// scan all the lump names for each of the names,
 	//	noting the highest frame letter.
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		spritename = namelist[i];
-		memset (sprtemp, -1, sizeof(sprtemp));
-
+		memset(sprtemp, -1, sizeof(sprtemp));
 		maxframe = -1;
-		int intname = *(int *)namelist[i];
+
+		for (int frame = 0; frame < MAX_SPRITE_FRAMES; frame++)
+			for (int r = 0; r < 8; r++)
+				sprtemp[frame].resource[r] = ResourceId::INVALID_ID;
+
+		// convert the first 4 chars of sprite name to an int for fast comparisons
+		uint32_t actor_id = *(uint32_t*)namelist[i];
 
 		// scan the lumps,
 		//	filling in the frames for whatever is found
-		for (int l = lastspritelump; l >= firstspritelump; l--)
+		for (int l = sprite_paths.size() - 1; l >= 0; l--) 
 		{
-			if (*(int *)lumpinfo[l].name == intname)
+			const char* res_name = sprite_paths[l].last().c_str();
+			uint32_t frame_actor_id = *(uint32_t*)res_name;
+			if (frame_actor_id == actor_id)
 			{
-				R_InstallSpriteLump (l,
-									 lumpinfo[l].name[4] - 'A', // denis - fixme - security
-									 lumpinfo[l].name[5] - '0',
-									 false);
+				const ResourceId res_id = Res_GetResourceId(sprite_paths[l]);
+				uint32_t frame = res_name[4] - 'A';
+				uint32_t rotation = res_name[5] - '0';
+				R_InstallSpriteLump(res_id, frame, rotation, false);
 
-				if (lumpinfo[l].name[6])
-					R_InstallSpriteLump (l,
-									 lumpinfo[l].name[6] - 'A',
-									 lumpinfo[l].name[7] - '0',
-									 true);
+				// can frame can be flipped?
+				if (res_name[6] != '\0')
+				{
+			    	frame = res_name[6] - 'A';
+					rotation = res_name[7] - '0';
+					R_InstallSpriteLump(res_id, frame, rotation, true);
+				}
 			}
 		}
 
-		R_InstallSprite (namelist[i], i);
+		R_InstallSprite(namelist[i], i);
 	}
 }
+
+
 
 //
 // GAME FUNCTIONS

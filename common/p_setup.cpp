@@ -327,8 +327,8 @@ static void P_LoadSectors(const OString& mapname)
 		ss->floorheight = LESHORT(ms->floorheight) << FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight) << FRACBITS;
 
-		ss->floor_res_id = Res_GetResourceId(OString(ms->floorpic, 8), "/FLATS");
-		ss->ceiling_res_id = Res_GetResourceId(OString(ms->ceilingpic, 8), "/FLATS");
+		ss->floor_res_id = Res_GetResourceId(OString(ms->floorpic, 8), flats_directory_name);
+		ss->ceiling_res_id = Res_GetResourceId(OString(ms->ceilingpic, 8), flats_directory_name); 
 
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		if (HasBehavior)

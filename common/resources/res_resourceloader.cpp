@@ -292,6 +292,19 @@ void PatchResourceLoader::load(void* data) const
 }
 
 
+// ----------------------------------------------------------------------------
+//
+// SpriteResourceLoader class implementation
+//
+// ----------------------------------------------------------------------------
+
+SpriteResourceLoader::SpriteResourceLoader(
+		const RawResourceAccessor* accessor,
+		const ResourceId res_id) :
+	PatchResourceLoader(accessor, res_id)
+{ }
+
+
 // ============================================================================
 //
 // TextureLoader class implementations

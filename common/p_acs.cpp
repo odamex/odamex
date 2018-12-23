@@ -1357,7 +1357,7 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 	if (flatname == NULL)
 		return;
 
-	const ResourceId res_id = Res_GetResourceId(flatname, ResourcePath("/FLATS"));
+	const ResourceId res_id = Res_GetResourceId(flatname, flats_directory_name);
 
 	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{

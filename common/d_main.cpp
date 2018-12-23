@@ -204,7 +204,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE");
+	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE", global_directory_name);
 	byte* language_data = (byte*)Res_LoadResource(language_res_id, PU_CACHE);
 
 	GStrings.FreeData();

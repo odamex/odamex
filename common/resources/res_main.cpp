@@ -298,6 +298,10 @@ const ResourceId ResourceManager::addResource(
 	{
 		res_rec.mResourceLoader = new PatchResourceLoader(&mRawResourceAccessor, res_id);
 	}
+	else if (path.first() == "SPRITES")
+	{
+		res_rec.mResourceLoader = new SpriteResourceLoader(&mRawResourceAccessor, res_id);
+	}
 	else
 	{
 		res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);
@@ -319,6 +323,24 @@ const ResourceIdList ResourceManager::getAllResourceIds() const
 	for (size_t i = 0; i < mResources.size(); i++)
 		res_id_list.push_back(ResourceId(i));
 	return res_id_list;
+}
+
+
+//
+// ResourceManager::listResourceDirectory
+//
+// Lists the path of all resources which reside in the provided path.
+//
+const ResourcePathList ResourceManager::listResourceDirectory(const ResourcePath& path) const
+{
+	ResourcePathList path_list;
+	for (size_t i = 0; i < mResources.size(); i++)
+	{
+		const ResourcePath& this_path = mResources[i].mPath;
+		if (Res_DoesPathStartWithBase(path, this_path))
+			path_list.push_back(this_path);
+	}
+	return path_list;
 }
 
 
@@ -471,6 +493,25 @@ const std::vector<std::string>& Res_GetResourceFileHashes()
 	return resource_manager.getResourceFileHashes();
 }
 
+
+//
+// Res_ListResourceDirectory
+//
+// Returns a list of all resource names in the given resource directory.
+//
+const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path)
+{
+	return resource_manager.listResourceDirectory(path);
+}
+
+
+//
+// Res_GetResourceId
+//
+const ResourceId Res_GetResourceId(const ResourcePath& path)
+{
+	return resource_manager.getResourceId(path);
+}
 
 
 //

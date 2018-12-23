@@ -40,6 +40,7 @@
 #include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
+#include "resources/res_main.h"
 
 #include "gi.h"
 
@@ -246,9 +247,9 @@ void F_TextWrite (void)
 	int x = (primary_surface->getWidth() - width) / 2;
 	int y = (primary_surface->getHeight() - height) / 2;
 
-	int lump = W_CheckNumForName(finaleflat, ns_flats);
-	if (lump >= 0)
-		screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+    const ResourceId res_id = Res_GetResourceId(finaleflat, flats_directory_name);
+	const byte* flat_data = (byte*)Res_LoadResource(res_id, PU_CACHE);
+    screen->FlatFill(x, y, width + x, height + y, flat_data);
 
 	V_MarkRect(x, y, width, height);
 
@@ -531,7 +532,7 @@ void F_CastDrawer()
 	const spritedef_t* sprdef = &sprites[castsprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	const patch_t* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	const patch_t* sprite_patch = (patch_t*)Res_LoadResource(sprframe->resource[0]);	
 	if (sprframe->flip[0])
 		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160, 170);
 	else
