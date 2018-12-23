@@ -18,6 +18,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/vmg /vmv"
 				Optimization="0"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="../src;../../odalpapi;../Xbox"
@@ -34,7 +35,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libag_guid.lib libag_cored.lib libpngXd.lib libSDLxd.lib freetype-2.1.5.lib libpthreadXBd.lib xapilibd.lib d3d8d.lib d3dx8d.lib xgraphicsd.lib dsoundd.lib dmusicd.lib xactengd.lib xsndtrkd.lib xvoiced.lib xonlined.lib xboxkrnl.lib xbdm.lib"
+				AdditionalDependencies="libag_guid.lib libag_cored.lib libpngXd.lib libSDLxd.lib freetype.lib libpthreadXBd.lib xapilibd.lib d3d8d.lib d3dx8d.lib xgraphicsd.lib dsoundd.lib dmusicd.lib xactengd.lib xsndtrkd.lib xvoiced.lib xonlined.lib xboxkrnl.lib xbdm.lib"
 				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -71,6 +72,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/vmg /vmv"
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
@@ -128,6 +130,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/vmg /vmv"
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
@@ -186,6 +189,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/vmg /vmv"
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
@@ -204,7 +208,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libag_gui.lib libag_core.lib libpngX.lib libSDLx.lib freetype-2.1.5.lib libpthreadXB.lib xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib dmusic.lib xacteng.lib xsndtrk.lib xvoice.lib xonline.lib xboxkrnl.lib"
+				AdditionalDependencies="libag_gui.lib libag_core.lib libpngX.lib libSDLx.lib libpthreadXB.lib freetype.lib xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib dmusic.lib xacteng.lib xsndtrk.lib xvoice.lib xonline.lib xboxkrnl.lib"
 				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
@@ -243,6 +247,7 @@
 			WholeProgramOptimization="TRUE">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/vmg /vmv"
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"

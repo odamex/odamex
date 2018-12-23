@@ -24,9 +24,7 @@
 #include <sstream>
 #include <string>
 
-#ifdef _WIN32
-#include "win32time.h"
-#endif
+#include "win32inc.h"
 
 #include "i_system.h"
 

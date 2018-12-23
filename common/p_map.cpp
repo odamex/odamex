@@ -1334,6 +1334,14 @@ BOOL P_ThingHeightClip (AActor* thing)
 
 	if (onfloor || onthing)
 	{
+		if (!serverside && thing->player && thing->z != newz)
+		{
+			// [AM] The player's Z-axis was changed, do not try
+			//      and further correct it with snapshots.  Also,
+			//      do not remove the player check - we currently
+			//      only unset this flag for players.
+			thing->oflags |= MFO_NOSNAPZ;
+		}
 		thing->z = newz;
 	}
 	else
@@ -1482,6 +1490,7 @@ void P_HitSlideLine (line_t* ld)
 
 	// killough 10/98: only bounce if hit hard (prevents wobbling)
 	icyfloor =
+		slidemo->player && !slidemo->player->spectator &&	// Ch0wW: disables bouncing as a flying spectator. (prevents grunt1 sound from playing)
 		(P_AproxDistance(tmxmove, tmymove) > 4*FRACUNIT) &&
 		slidemo->z <= slidemo->floorz &&		  // killough 8/28/98: calc friction on demand
 		P_GetFriction (slidemo, NULL) > ORIG_FRICTION;

@@ -250,8 +250,11 @@ typedef enum
 	MF2_DORMANT			= 0x10000000,	// thing is dormant
 	MF2_ICEDAMAGE		= 0x20000000,	// does ice damage
 	MF2_SEEKERMISSILE	= 0x40000000,	// is a seeker (for reflection)
-	MF2_REFLECTIVE		= 0x80000000	// reflects missiles
+	MF2_REFLECTIVE		= 0x80000000,	// reflects missiles
 
+	// --- mobj.oflags ---
+	// Odamex-specific flags
+	MFO_NOSNAPZ			= 1 << 0		// ignore snapshot z this tic
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A
@@ -386,6 +389,7 @@ public:
 	int				damage;			// For missiles	
 	int				flags;
 	int				flags2;	// Heretic flags
+	int				oflags;			// Odamex flags
 	int				special1;		// Special info
 	int				special2;		// Special info
 	int 			health;

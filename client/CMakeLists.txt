@@ -83,7 +83,7 @@ if(NOT USE_SDL12)
   endif()
 endif()
 
-if(NOT SDL2_FOUND AND NOT SDL2_MIXER_FOUND)
+if(NOT SDL2_FOUND OR NOT SDL2_MIXER_FOUND)
   find_package(SDL)
   find_package(SDL_mixer)
   if(SDL_FOUND AND SDLMIXER_FOUND)

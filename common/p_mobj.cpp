@@ -112,7 +112,7 @@ AActor::AActor () :
     pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
-    damage(0), flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
+    damage(0), flags(0), flags2(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
@@ -132,7 +132,7 @@ AActor::AActor (const AActor &other) :
     floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
 	momy(other.momy), momz(other.momz), validcount(other.validcount),
 	type(other.type), info(other.info), tics(other.tics), state(other.state),
-	damage(other.damage), flags(other.flags), flags2(other.flags2), special1(other.special1),
+	damage(other.damage), flags(other.flags), flags2(other.flags2), oflags(other.oflags), special1(other.special1),
 	special2(other.special2), health(other.health), movedir(other.movedir),
 	movecount(other.movecount), visdir(other.visdir), reactiontime(other.reactiontime),
     threshold(other.threshold), player(other.player), lastlook(other.lastlook),
@@ -181,6 +181,7 @@ AActor &AActor::operator= (const AActor &other)
     damage = other.damage;
     flags = other.flags;
     flags2 = other.flags2;
+	oflags = other.oflags;
     special1 = other.special1;
     special2 = other.special2;
     health = other.health;
@@ -222,7 +223,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), oflags(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),

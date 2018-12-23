@@ -1,0 +1,13 @@
+dist: trusty
+sudo: required
+language: cpp
+
+addons:
+  apt:
+    packages:
+      - libasound2-dev
+      - libsdl2-dev
+      - libsdl2-mixer-dev
+      - libwxgtk3.0-dev
+
+script: mkdir build && cd build && cmake .. && make

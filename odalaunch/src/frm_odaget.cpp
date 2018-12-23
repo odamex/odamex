@@ -26,6 +26,7 @@
 #include <wx/wfstream.h>
 #include <wx/log.h>
 #include <wx/event.h>
+#include <wx/wxchar.h>
 
 DEFINE_EVENT_TYPE(EVENT_HTTP_THREAD)
 DEFINE_EVENT_TYPE(EVENT_FTP_THREAD)

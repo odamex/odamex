@@ -288,28 +288,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 // Window Destructor
 dlgMain::~dlgMain()
 {
-	// Cleanup
-	delete InfoBar;
-
 	delete[] QServer;
 
 	QServer = NULL;
-
-	if(config_dlg != NULL)
-		config_dlg->Destroy();
-
-	if(server_dlg != NULL)
-		server_dlg->Destroy();
-
-	delete m_TimerRefresh;
-	delete m_TimerNewList;
-
-	//wxFileConfig FileConfig;
-
-	//FileConfig.DeleteAll();
-
-	//    if (OdaGet != NULL)
-	//      OdaGet->Destroy();
 }
 
 void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
@@ -328,7 +309,7 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
 	                -1);
 
 	if(WindowWidth >= 0 && WindowHeight >= 0)
-		SetClientSize(WindowWidth, WindowHeight);
+		SetSize(WindowWidth, WindowHeight);
 
 	// Set Window position
 	ConfigInfo.Read("MainWindowPosX",
@@ -348,52 +329,70 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
 	Maximize(WindowMaximized);
 }
 
-// Called when the menu exit item or exit button is clicked
-void dlgMain::OnExit(wxCommandEvent& event)
-{
-	// Stop all timers
-	m_TimerNewList->Stop();
-	m_TimerRefresh->Stop();
-
-	Close();
-}
-
 // Called when the window X button or Close(); function is called
 void dlgMain::OnClose(wxCloseEvent& event)
 {
+    // Stop any running timers and free their memory
+    delete m_TimerNewList;
+    m_TimerNewList = NULL;
+    delete m_TimerRefresh;
+    m_TimerRefresh = NULL;
+    
+    /* Threading system shutdown */
+    // Wait for the monitor thread to finish
 	if(GetThread() && GetThread()->IsRunning())
 		GetThread()->Wait();
 
-	// Gracefully terminate all running threads
-	for(size_t j = 0; j < threadVector.size(); ++j)
+	// Gracefully terminate any running worker threads and then deallocate
+	// their memory
 	{
-		QueryThread* OdaQT = threadVector[j];
+        std::vector<QueryThread*>::reverse_iterator it;
+        
+        for(it = threadVector.rbegin(); it != threadVector.rend(); it++)
+        {
+            if((*it)->IsRunning())
+            {
+                (*it)->GracefulExit();
+                delete *it;
+            }
 
-		if(OdaQT->IsRunning())
-		{
-			OdaQT->GracefulExit();
-			delete OdaQT;
-		}
+            threadVector.pop_back();
+        }
 	}
-
-	// Save GUI layout
+    
+	// Save the UI layout and shut it all down
 	wxFileConfig ConfigInfo;
 
-	ConfigInfo.Write("MainWindowWidth", GetClientSize().GetWidth());
-	ConfigInfo.Write("MainWindowHeight", GetClientSize().GetHeight());
+	ConfigInfo.Write("MainWindowWidth", GetSize().GetWidth());
+	ConfigInfo.Write("MainWindowHeight", GetSize().GetHeight());
 	ConfigInfo.Write("MainWindowPosX", GetPosition().x);
 	ConfigInfo.Write("MainWindowPosY", GetPosition().y);
 	ConfigInfo.Write("MainWindowMaximized", IsMaximized());
 
 	ConfigInfo.Flush();
 
-	event.Skip();
+	delete InfoBar;
+	InfoBar = NULL;
+	
+    if(config_dlg != NULL)
+		config_dlg->Destroy();
+
+	if(server_dlg != NULL)
+		server_dlg->Destroy();
+	
+	Destroy();
 }
 
 // Called when the window is shown
 void dlgMain::OnShow(wxShowEvent& event)
 {
 
+}
+
+// Called when the menu exit item or exit button is clicked
+void dlgMain::OnExit(wxCommandEvent& event)
+{
+	Close();
 }
 
 void dlgMain::OnCheckVersion(wxCommandEvent &event)
@@ -582,8 +581,13 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		{
 		// Correct address
 		case 0:
+		case 3:
 		{
 			good = true;
+			
+			// Use the servers default port number if none was specified
+			if (!Port)
+                Port = ODA_NETDEFSERVERPORT;
 		}
 		break;
 

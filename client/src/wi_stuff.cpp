@@ -97,7 +97,6 @@ typedef struct
 
 //
 // Animation.
-// There is another anim_t used in p_spec.
 //
 typedef struct
 {
@@ -139,7 +138,7 @@ typedef struct
     // used by RANDOM and LEVEL when animating
     int		state;
 
-} anim_t;
+} animinfo_t;
 
 static point_t lnodes[NUMEPISODES][NUMMAPS] =
 {
@@ -189,7 +188,7 @@ static point_t lnodes[NUMEPISODES][NUMMAPS] =
 // Using patches saves a lot of space,
 //  as they replace 320x200 full screen frames.
 //
-static anim_t epsd0animinfo[] =
+static animinfo_t epsd0animinfo[] =
 {
     { ANIM_ALWAYS, TICRATE/3, 3, { 224, 104 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
     { ANIM_ALWAYS, TICRATE/3, 3, { 184, 160 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
@@ -203,7 +202,7 @@ static anim_t epsd0animinfo[] =
     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 24 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
 };
 
-static anim_t epsd1animinfo[] =
+static animinfo_t epsd1animinfo[] =
 {
     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 1, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 2, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
@@ -216,7 +215,7 @@ static anim_t epsd1animinfo[] =
     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  }
 };
 
-static anim_t epsd2animinfo[] =
+static animinfo_t epsd2animinfo[] =
 {
     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 168 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
     { ANIM_ALWAYS, TICRATE/3, 3, { 40, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
@@ -228,12 +227,12 @@ static anim_t epsd2animinfo[] =
 
 static int NUMANIMS[NUMEPISODES] =
 {
-	sizeof(epsd0animinfo)/sizeof(anim_t),
-	sizeof(epsd1animinfo)/sizeof(anim_t),
-	sizeof(epsd2animinfo)/sizeof(anim_t)
+	sizeof(epsd0animinfo)/sizeof(animinfo_t),
+	sizeof(epsd1animinfo)/sizeof(animinfo_t),
+	sizeof(epsd2animinfo)/sizeof(animinfo_t)
 };
 
-static anim_t *anims[NUMEPISODES] =
+static animinfo_t *anims[NUMEPISODES] =
 {
 	epsd0animinfo,
 	epsd1animinfo,
@@ -587,7 +586,7 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 void WI_initAnimatedBack (void)
 {
 	int i;
-	anim_t *a;
+	animinfo_t *a;
 
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
@@ -611,7 +610,7 @@ void WI_initAnimatedBack (void)
 void WI_updateAnimatedBack (void)
 {
 	int i;
-	anim_t *a;
+	animinfo_t *a;
 
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
@@ -670,7 +669,7 @@ void WI_drawAnimatedBack()
 
 		for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
 		{
-			anim_t* a = &anims[wbs->epsd][i];
+			animinfo_t* a = &anims[wbs->epsd][i];
 			if (a->ctr >= 0)
 				canvas->DrawPatch(a->p[a->ctr], a->loc.x, a->loc.y);
 		}
@@ -1207,8 +1206,8 @@ void WI_updateStats(void)
 
 	cnt_time += 3;
 
-	if (cnt_time >= level.time / TICRATE)
-	    cnt_time = level.time / TICRATE;
+	if (cnt_time >= plrs[me].stime / TICRATE)
+	    cnt_time = plrs[me].stime / TICRATE;
 
 	cnt_par += 3;
 
@@ -1216,7 +1215,7 @@ void WI_updateStats(void)
 	{
 	    cnt_par = wminfo.partime / TICRATE;
 
-	    if (cnt_time >= level.time / TICRATE)
+	    if (cnt_time >= plrs[me].stime / TICRATE)
 	    {
 		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 		sp_state++;
@@ -1386,7 +1385,7 @@ void WI_loadData (void)
 {
 	int i, j;
 	char name[9];
-	anim_t *a;
+	animinfo_t *a;
 
 	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");

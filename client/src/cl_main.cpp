@@ -505,9 +505,10 @@ void CL_CheckDisplayPlayer()
 		if (idplayer(newid).spectator != idplayer(previd).spectator)
 			R_ForceViewWindowResize();
 		ST_ForceRefresh();
+
+		previd = newid;
 	}
 
-	previd = newid;
 }
 
 //
@@ -3619,7 +3620,7 @@ void CL_ParseCommands(void)
 
 	while(connected)
 	{
-		int byteStart = net_message.BytesRead();
+		size_t byteStart = net_message.BytesRead();
 
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);

@@ -40,7 +40,11 @@ namespace agOdalaunch {
 
 const size_t NUM_THREADS = 5;
 
-class ODA_ThreadBase {};
+class ODA_ThreadBase
+{
+public:
+	virtual ~ODA_ThreadBase() {}
+};
 
 typedef void *(ODA_ThreadBase::*THREAD_FUNC_PTR)(void *);
 

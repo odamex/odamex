@@ -167,7 +167,7 @@ std::string W_MD5(std::string filename)
 	for(int i = 0; i < 16; i++)
 		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
 
-	return hash.str().c_str();
+	return hash.str();
 }
 
 

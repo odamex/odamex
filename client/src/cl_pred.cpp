@@ -346,11 +346,6 @@ void CL_PredictWorld(void)
 				// Lerp from the our previous position to the correct position
 				PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
 				lerpedsnap.toPlayer(p);
-			
-				// [SL] 2012-04-26 - Snap directly to the corrected position in
-				// the z direction.  This prevents players from floating above
-				// lifts when the lift height is mispredicted.
-				p->mo->z = correctedprevsnap.getZ();
 			}
 		}
 	}
