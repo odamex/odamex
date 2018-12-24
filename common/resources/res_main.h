@@ -317,4 +317,18 @@ bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 
 
+//
+// Res_CachePatch
+//
+// Place-holder function for resolving a patch name to a resource ID and
+// caching and returning that resource's data.
+//
+struct patch_s;
+typedef patch_s patch_t;
+static inline const patch_t* Res_CachePatch(const OString& name, int tag = PU_CACHE)
+{
+	ResourceId res_id = Res_GetResourceId(name, patches_directory_name);
+	return (patch_t*)Res_LoadResource(res_id, tag);
+}
+
 #endif	// __RES_MAIN_H__

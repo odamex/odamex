@@ -521,7 +521,7 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const patch_t* background_patch = W_CachePatch("BOSSBACK");
+	const patch_t* background_patch = Res_CachePatch("BOSSBACK");
 
 	// draw the background to the surface
 	cast_surface->lock();
@@ -755,14 +755,12 @@ void F_BunnyScroll (void)
 {
 	int 		scrolled;
 	int 		x;
-	patch_t*	p1;
-	patch_t*	p2;
 	char		name[10];
 	int 		stage;
 	static int	laststage;
 
-	p1 = W_CachePatch ("PFUB2");
-	p2 = W_CachePatch ("PFUB1");
+	const patch_t* p1 = Res_CachePatch("PFUB2");
+	const patch_t* p2 = Res_CachePatch("PFUB1");
 
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
@@ -797,7 +795,7 @@ void F_BunnyScroll (void)
 		return;
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect(W_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
+		screen->DrawPatchIndirect(Res_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
 	}
@@ -812,7 +810,7 @@ void F_BunnyScroll (void)
 	}
 
 	sprintf (name,"END%i",stage);
-	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
+	screen->DrawPatchIndirect(Res_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
 
@@ -832,16 +830,16 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage1), 0, 0);
+					screen->DrawPatchIndirect(Res_CachePatch(gameinfo.finalePage1), 0, 0);
 					break;
 				case '2':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
+					screen->DrawPatchIndirect(Res_CachePatch(gameinfo.finalePage2), 0, 0);
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage3), 0, 0);
+					screen->DrawPatchIndirect(Res_CachePatch(gameinfo.finalePage3), 0, 0);
 					break;
 			}
 			break;

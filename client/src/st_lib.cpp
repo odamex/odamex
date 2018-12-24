@@ -51,11 +51,11 @@
 // Hack display negative frags.
 //	Loads and store the stminus lump.
 //
-patch_t*				sttminus;
+const patch_t*			sttminus;
 
 void STlib_init(void)
 {
-	sttminus = W_CachePatch("STTMINUS", PU_STATIC);
+	sttminus = Res_CachePatch("STTMINUS", PU_STATIC);
 }
 
 
@@ -91,7 +91,7 @@ static void STlib_ClearRect(int x, int y, int w, int h)
 // Draws a patch onto the drawing surface. STlib_ClearRect should be used to
 // draw a fresh copy of the background prior to drawing the patch.
 //
-static void STlib_DrawPatch(int x, int y, patch_t* p)
+static void STlib_DrawPatch(int x, int y, const patch_t* p)
 {
 	if (st_scale)
 	{
@@ -108,7 +108,7 @@ static void STlib_DrawPatch(int x, int y, patch_t* p)
 	}
 }
 
-void STlib_initNum(st_number_t* n, int x, int y, patch_t** pl, int* num, bool* on, int maxdigits)
+void STlib_initNum(st_number_t* n, int x, int y, const patch_t** pl, int* num, bool* on, int maxdigits)
 {
 	n->x			= x;
 	n->y			= y;
@@ -186,7 +186,7 @@ void STlib_updateNum(st_number_t* n, bool force_refresh)
 }
 
 
-void STlib_initPercent(st_percent_t* p, int x, int y, patch_t** pl, int* num, bool* on, patch_t* percent_patch)
+void STlib_initPercent(st_percent_t* p, int x, int y, const patch_t** pl, int* num, bool* on, const patch_t* percent_patch)
 {
 	STlib_initNum(&p->n, x, y, pl, num, on, 3);
 	p->p = percent_patch;
@@ -203,7 +203,7 @@ void STlib_updatePercent(st_percent_t* percent, bool force_refresh)
 
 
 
-void STlib_initMultIcon(st_multicon_t* icon, int x, int y, patch_t** il, int* inum, bool* on)
+void STlib_initMultIcon(st_multicon_t* icon, int x, int y, const patch_t** il, int* inum, bool* on)
 {
 	icon->x			= x;
 	icon->y			= y;
@@ -238,7 +238,7 @@ void STlib_updateMultIcon(st_multicon_t* icon, bool force_refresh)
 
 
 
-void STlib_initBinIcon(st_binicon_t* icon, int x, int y, patch_t* patch, bool* val, bool* on)
+void STlib_initBinIcon(st_binicon_t* icon, int x, int y, const patch_t* patch, bool* val, bool* on)
 {
 	icon->x			= x;
 	icon->y			= y;

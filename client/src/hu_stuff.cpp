@@ -83,7 +83,7 @@ EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 
 
-static int crosshair_lump;
+static ResourceId crosshair_res_id = ResourceId::INVALID_ID;
 
 static void HU_InitCrosshair();
 static byte crosshair_trans[256];
@@ -112,8 +112,8 @@ void HU_Init();
 void HU_Drawer();
 BOOL HU_Responder(event_t *ev);
 
-patch_t *hu_font[HU_FONTSIZE];
-patch_t* sbline;
+const patch_t *hu_font[HU_FONTSIZE];
+const patch_t* sbline;
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
@@ -204,11 +204,11 @@ void HU_Init()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		sprintf(buffer, tplate, j++ - sub);
-		hu_font[i] = W_CachePatch(buffer, PU_STATIC);
+		hu_font[i] = Res_CachePatch(buffer, PU_STATIC);
 	}
 
 	// Load the status bar line
-	sbline = W_CachePatch("SBLINE", PU_STATIC);
+	sbline = Res_CachePatch("SBLINE", PU_STATIC);
 
 	HU_InitCrosshair();
 }
@@ -221,7 +221,8 @@ void HU_Init()
 //
 void STACK_ARGS HU_Shutdown()
 {
-	Z_Free(sbline);
+	ResourceId res_id = Res_GetResourceId("SBLINE", patches_directory_name);
+	Res_ReleaseResource(res_id);
 	sbline = NULL;
 }
 
@@ -318,19 +319,14 @@ BOOL HU_Responder(event_t *ev)
 static void HU_InitCrosshair()
 {
 	int xhairnum = hud_crosshair.asInt();
-
 	if (xhairnum)
 	{
 		char xhairname[16];
-		int xhair;
-
 		sprintf(xhairname, "XHAIR%d", xhairnum);
 
-		if ((xhair = W_CheckNumForName(xhairname)) == -1)
-			xhair = W_CheckNumForName("XHAIR1");
-
-		if (xhair != -1)
-			crosshair_lump = xhair;
+		crosshair_res_id = Res_GetResourceId(xhairname, patches_directory_name);
+		if (crosshair_res_id == ResourceId::INVALID_ID)
+			crosshair_res_id = Res_GetResourceId("XHAIR1", patches_directory_name);
 	}
 
 	// set up translation table for the crosshair's color
@@ -363,7 +359,7 @@ static void HU_DrawCrosshair()
 	if (camera->player && camera->player->spectator)
 		return;
 
-	if (hud_crosshair && crosshair_lump)
+	if (hud_crosshair && crosshair_res_id != ResourceId::INVALID_ID)
 	{
 		static const byte crosshair_color = 0xB0;
 		if (hud_crosshairhealth)
@@ -390,14 +386,15 @@ static void HU_DrawCrosshair()
 		if (R_StatusBarVisible())
 			y = ST_StatusBarY(I_GetSurfaceWidth(), I_GetSurfaceHeight()) / 2;
 
+		const patch_t* patch = (patch_t*)Res_LoadResource(crosshair_res_id, PU_CACHE);
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawTranslatedLucentPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedLucentPatchCleanNoMove(patch, x, y);
         else if (hud_crosshairscale)
-			screen->DrawTranslatedPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedPatchCleanNoMove(patch, x, y);
         else if (hud_crosshairdim)
-			screen->DrawTranslatedLucentPatch(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedLucentPatch(patch, x, y);
 		else
-			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump), x, y);
+			screen->DrawTranslatedPatch(patch, x, y);
 	}
 }
 
@@ -502,7 +499,7 @@ void HU_Drawer()
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
-		screen->DrawPatchCleanNoMove(W_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
+		screen->DrawPatchCleanNoMove(Res_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
 
 	if (cl_netgraph)
 		netgraph.draw();

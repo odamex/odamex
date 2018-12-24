@@ -58,9 +58,6 @@ static bool st_needrefresh = true;
 static bool st_stopped = true;
 
 
-// lump number for PLAYPAL
-static int		lu_palette;
-
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 
@@ -282,39 +279,39 @@ static bool			st_armson;
 static bool			st_fragson;
 
 // main bar left
-static patch_t* 		sbar;
+static const patch_t* 		sbar;
 
 // 0-9, tall numbers
 // [RH] no longer static
-patch_t*		 		tallnum[10];
+const patch_t*			tallnum[10];
 
 // tall % sign
 // [RH] no longer static
-patch_t*		 		tallpercent;
+const patch_t*			tallpercent;
 
 // 0-9, short, yellow (,different!) numbers
-static patch_t* 		shortnum[10];
+static const patch_t* 		shortnum[10];
 
 // 3 key-cards, 3 skulls, [RH] 3 combined
-patch_t* 				keys[NUMCARDS+NUMCARDS/2];
+const patch_t* 			keys[NUMCARDS+NUMCARDS/2];
 
 // face status patches [RH] no longer static
-patch_t* 				faces[ST_NUMFACES];
+const patch_t* 				faces[ST_NUMFACES];
 
 // face background
-static patch_t* 		faceback;
+static const patch_t* 		faceback;
 
 // classic face background
-static patch_t*			faceclassic[4];
+static const patch_t*			faceclassic[4];
 
  // main bar right
-static patch_t* 		armsbg;
+static const patch_t* 		armsbg;
 
 // score/flags
-static patch_t* 		flagsbg;
+static const patch_t* 		flagsbg;
 
 // weapon ownership patches
-static patch_t* 		arms[6][2];
+static const patch_t* 		arms[6][2];
 
 // ready-weapon widget
 static st_number_t		w_ready;
@@ -1320,25 +1317,20 @@ void ST_Drawer()
 }
 
 
-static patch_t *LoadFaceGraphic (char *name, int namespc)
+static const patch_t* LoadFaceGraphic(const char* name)
 {
-	char othername[9];
-	int lump;
+	if (Res_CheckResource(name, patches_directory_name))
+		return Res_CachePatch(name, PU_STATIC);
 
-	lump = W_CheckNumForName (name, namespc);
-	if (lump == -1)
-	{
-		strcpy (othername, name);
-		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName (othername);
-	}
-	return W_CachePatch (lump, PU_STATIC);
+	char othername[9];
+	strcpy(othername, name);
+	othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
+	return Res_CachePatch(othername, PU_STATIC);
 }
 
 void ST_loadGraphics(void)
 {
 	int i, j;
-	int namespc;
 	int facenum;
 	char namebuf[9];
 
@@ -1348,28 +1340,28 @@ void ST_loadGraphics(void)
 	for (i=0;i<10;i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		tallnum[i] = Res_CachePatch(namebuf, PU_STATIC);
 
 		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		shortnum[i] = Res_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
-	tallpercent = W_CachePatch("STTPRCNT", PU_STATIC);
+	tallpercent = Res_CachePatch("STTPRCNT", PU_STATIC);
 
 	// key cards
 	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = W_CachePatch(namebuf, PU_STATIC);
+		keys[i] = Res_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// arms background
-	armsbg = W_CachePatch("STARMS", PU_STATIC);
+	armsbg = Res_CachePatch("STARMS", PU_STATIC);
 
 	// flags background
-	flagsbg = W_CachePatch("STFLAGS", PU_STATIC);
+	flagsbg = Res_CachePatch("STFLAGS", PU_STATIC);
 
 	// arms ownership widgets
 	for (i=0;i<6;i++)
@@ -1377,7 +1369,7 @@ void ST_loadGraphics(void)
 		sprintf(namebuf, "STGNUM%d", i+2);
 
 		// gray #
-		arms[i][0] = W_CachePatch(namebuf, PU_STATIC);
+		arms[i][0] = Res_CachePatch(namebuf, PU_STATIC);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1386,50 +1378,48 @@ void ST_loadGraphics(void)
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = W_CachePatch("STFBANY", PU_STATIC);
+	faceback = Res_CachePatch("STFBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(namebuf, "STFB%d", i);
-		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
+		faceclassic[i] = Res_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = W_CachePatch("STBAR", PU_STATIC);
+	sbar = Res_CachePatch("STBAR", PU_STATIC);
 
 	// face states
 	facenum = 0;
 
 	namebuf[0] = 'S'; namebuf[1] = 'T'; namebuf[2] = 'F';
-	namespc = ns_global;
 
 	for (i = 0; i < ST_NUMPAINFACES; i++)
 	{
 		for (j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
 			sprintf(namebuf+3, "ST%d%d", i, j);
-			faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf);
 		}
 		sprintf(namebuf+3, "TR%d0", i);		// turn right
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "TL%d0", i);		// turn left
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "OUCH%d", i);		// ouch!
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "EVL%d", i);		// evil grin ;)
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "KILL%d", i);		// pissed off
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 	}
 	strcpy (namebuf+3, "GOD0");
-	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+	faces[facenum++] = LoadFaceGraphic(namebuf);
 	strcpy (namebuf+3, "DEAD0");
-	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+	faces[facenum++] = LoadFaceGraphic(namebuf);
 }
 
 void ST_loadData()
 {
-    lu_palette = W_GetNumForName("PLAYPAL");
 	ST_loadGraphics();
 }
 

@@ -1374,12 +1374,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchClean(Res_CachePatch("LSLIDE"), x, y);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+		screen->DrawPatchClean(Res_CachePatch("MSLIDE"), x + i*8, y);
+	screen->DrawPatchClean(Res_CachePatch("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean(Res_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1391,18 +1391,18 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchClean(Res_CachePatch("LSLIDE"), x, y);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+		screen->DrawPatchClean(Res_CachePatch("MSLIDE"), x + i*8, y);
 
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+	screen->DrawPatchClean(Res_CachePatch("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean(Res_CachePatch("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawColoredPatchClean(Res_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1423,7 +1423,6 @@ void M_OptDrawer (void)
 	int x1,y1,x2,y2;
 	int theight = 0;
 	menuitem_t *item;
-	patch_t *title;
 
 	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
 	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
@@ -1434,7 +1433,7 @@ void M_OptDrawer (void)
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	title = W_CachePatch (CurrentMenu->title);
+	const patch_t* title = Res_CachePatch(CurrentMenu->title);
 	screen->DrawPatchClean (title, 160-title->width()/2, 10);
 
 	y = 15 + title->height();
@@ -1478,7 +1477,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
+				screen->DrawPatchClean(Res_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y);
 		}
 		else
 		{
@@ -1631,7 +1630,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
+				screen->DrawPatchClean(Res_CachePatch("LITLCURS"), CurrentMenu->indent + 3, y);
 			}
 		}
 	}
@@ -1641,10 +1640,10 @@ void M_OptDrawer (void)
 	CanScrollDown = (i < CurrentMenu->numitems);
 
 	if (CanScrollUp)
-		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
+		screen->DrawPatchClean(Res_CachePatch("LITLUP"), 3, ytop);
 
 	if (CanScrollDown)
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
+		screen->DrawPatchClean(Res_CachePatch("LITLDN"), 3, 190);
 }
 
 void M_OptResponder (event_t *ev)

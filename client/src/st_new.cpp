@@ -79,11 +79,11 @@ static const char ammopatches[4][8] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
 static const char bigammopatches[4][8] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
 static int		NameUp = -1;
 
-extern patch_t	*sttminus;
-extern patch_t	*tallnum[10];
-extern patch_t	*faces[];
+extern const patch_t*	sttminus;
+extern const patch_t*	tallnum[10];
+extern const patch_t*	faces[];
 extern int		st_faceindex;
-extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
+extern const patch_t*	keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
 extern flagdata CTFdata[NUMFLAGS];
 
@@ -146,32 +146,33 @@ void ST_initNew (void)
 			widest = tallnum[i]->width();
 	}
 
+	ResourceId res_id = ResourceId::INVALID_ID;
 	strcpy (name, "ARM1A0");
 	for (i = 0; i < 2; i++) {
 		name[3] = i + '1';
-		if ((lump = W_CheckNumForName (name, ns_sprites)) != -1)
-			armors[i] = W_CachePatch (lump, PU_STATIC);
+		if (Res_CheckResource(name, sprites_directory_name))
+			armors[i] = Res_CachePatch(name, PU_STATIC);
 	}
 
 	for (i = 0; i < 4; i++) {
-		if ((lump = W_CheckNumForName (ammopatches[i], ns_sprites)) != -1)
-			ammos[i] = W_CachePatch (lump, PU_STATIC);
-		if ((lump = W_CheckNumForName (bigammopatches[i], ns_sprites)) != -1)
-			bigammos[i] = W_CachePatch (lump, PU_STATIC);
+		if (Res_CheckResource(ammopatches[i], sprites_directory_name))
+			ammos[i] = Res_CachePatch(ammopatches[i], PU_STATIC);
+		if (Res_CheckResource(bigammopatches[i], sprites_directory_name))
+			bigammos[i] = Res_CachePatch(bigammopatches[i], PU_STATIC);
 	}
 
-	if ((lump = W_CheckNumForName ("MEDIA0", ns_sprites)) != -1)
-		medi = W_CachePatch (lump, PU_STATIC);
+	if (Res_CheckResource("MEDIAO", sprites_directory_name))
+		medi = Res_CachePatch("MEDIAO", PU_STATIC);
 
-	flagiconteam = W_CachePatch ("FLAGIT", PU_STATIC);
-	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
-	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
-	flagiconbtakenbyb = W_CachePatch ("FLAGI3BB", PU_STATIC);
-	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
-	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
-	flagiconrtakenbyr = W_CachePatch ("FLAGI3RR", PU_STATIC);
-	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
-	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
+	flagiconteam = Res_CachePatch("FLAGIT", PU_STATIC);
+	flagiconbhome = Res_CachePatch("FLAGIC2B", PU_STATIC);
+	flagiconrhome = Res_CachePatch("FLAGIC2R", PU_STATIC);
+	flagiconbtakenbyb = Res_CachePatch("FLAGI3BB", PU_STATIC);
+	flagiconbtakenbyr = Res_CachePatch("FLAGI3BR", PU_STATIC);
+	flagiconrtakenbyb = Res_CachePatch("FLAGI3RB", PU_STATIC);
+	flagiconrtakenbyr = Res_CachePatch("FLAGI3RR", PU_STATIC);
+	flagiconbdropped = Res_CachePatch("FLAGIC4B", PU_STATIC);
+	flagiconrdropped = Res_CachePatch("FLAGIC4R", PU_STATIC);
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();
@@ -179,14 +180,14 @@ void ST_initNew (void)
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback || !netgame) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
-	line_leftempty = W_CachePatch ("ODABARLE", PU_STATIC);
-	line_leftfull = W_CachePatch ("ODABARLF", PU_STATIC);
-	line_centerempty = W_CachePatch ("ODABARCE", PU_STATIC);
-	line_centerleft = W_CachePatch ("ODABARCL", PU_STATIC);
-	line_centerright = W_CachePatch ("ODABARCR", PU_STATIC);
-	line_centerfull = W_CachePatch ("ODABARCF", PU_STATIC);
-	line_rightempty = W_CachePatch ("ODABARRE", PU_STATIC);
-	line_rightfull = W_CachePatch ("ODABARRF", PU_STATIC);
+	line_leftempty = Res_CachePatch("ODABARLE", PU_STATIC);
+	line_leftfull = Res_CachePatch("ODABARLF", PU_STATIC);
+	line_centerempty = Res_CachePatch("ODABARCE", PU_STATIC);
+	line_centerleft = Res_CachePatch("ODABARCL", PU_STATIC);
+	line_centerright = Res_CachePatch("ODABARCR", PU_STATIC);
+	line_centerfull = Res_CachePatch("ODABARCF", PU_STATIC);
+	line_rightempty = Res_CachePatch("ODABARRE", PU_STATIC);
+	line_rightfull = Res_CachePatch("ODABARRF", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)

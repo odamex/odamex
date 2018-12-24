@@ -122,7 +122,7 @@ typedef struct
     int		data2;
 
     // actual graphics for frames of animations
-    patch_t*	p[3];
+    const patch_t*	p[3];
 
     // following must be initialized to zero before use!
 
@@ -276,7 +276,7 @@ static std::vector<int> cnt_kills_c;	// = cnt_kills
 static std::vector<int> cnt_items_c;	// = cnt_items
 static std::vector<int> cnt_secret_c;	// = cnt_secret
 static std::vector<int> cnt_frags_c;	// = cnt_frags
-static patch_t*			faceclassic[4];
+static const patch_t*	faceclassic[4];
 static int dofrags;
 static int ng_state;
 
@@ -308,52 +308,52 @@ static int			cnt_pause;
 //
 
 // Scoreboard Border - Dan
-//static patch_t* 		sbborder;
+//static const patch_t* 		sbborder;
 
 // You Are Here graphic
-static patch_t* 		yah[2];
+static const patch_t* 	yah[2];
 
 // splat
-static patch_t* 		splat;
+static const patch_t* 	splat;
 
 // %, : graphics
-static patch_t*			percent;
-static patch_t*			colon;
+static const patch_t*	percent;
+static const patch_t*	colon;
 
 // 0-9 graphic
-static patch_t* 		num[10];
+static const patch_t* 	num[10];
 
 // minus sign
-static patch_t* 		wiminus;
+static const patch_t* 	wiminus;
 
 // "Finished!" graphics
-static patch_t* 		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
+static const patch_t* 	finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
 // [Nes] Re-added for singleplayer
 
 // "Entering" graphic
-static patch_t* 		entering;
+static const patch_t* 	entering;
 
  // "Kills", "Items", "Secrets"
-static patch_t*			kills;
-static patch_t*			secret;
-static patch_t*			items;
-static patch_t* 		frags;
-static patch_t*			scrt;
+static const patch_t*	kills;
+static const patch_t*	secret;
+static const patch_t*	items;
+static const patch_t*	frags;
+static const patch_t*	scrt;
 
 // Time sucks.
-static patch_t*			timepatch;
-static patch_t*			par;
-static patch_t*			sucks;
+static const patch_t*	timepatch;
+static const patch_t*	par;
+static const patch_t*	sucks;
 
 // "Total", your face, your dead face
-static patch_t* 		total;
-static patch_t* 		star;
-static patch_t* 		bstar;
+static const patch_t* 	total;
+static const patch_t* 	star;
+static const patch_t* 	bstar;
 
-static patch_t* 		p;		// [RH] Only one
+static const patch_t* 	p;		// [RH] Only one
 
  // Name graphics of each level (centered)
-static patch_t*			lnames[2];
+static const patch_t*	lnames[2];
 
 // [RH] Info to dynamically generate the level name graphics
 static int				lnamewidths[2];
@@ -432,17 +432,15 @@ void WI_slamBackground (void)
 
 static int WI_DrawName (const char *str, int x, int y)
 {
-	int lump;
-	patch_t *p = NULL;
+	const patch_t *p = NULL;
 	char charname[9];
 
 	while (*str)
 	{
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		lump = W_CheckNumForName (charname);
-		if (lump != -1)
+		if (Res_CheckResource(charname, patches_directory_name))
 		{
-			p = W_CachePatch (lump);
+			p = Res_CachePatch(charname, PU_CACHE);
 			screen->DrawPatchClean (p, x, y);
 			x += p->width() - 1;
 		}
@@ -453,7 +451,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	p = W_CachePatch ("FONTB39");
+	p = Res_CachePatch("FONTB39");
 	return (5*(p->height()-p->topoffset()))/4;
 }
 
@@ -541,7 +539,7 @@ int WI_MapToIndex (char *map)
 //
 // [Russell] - Modified for odamex, fixes a crash with certain pwads at
 // intermission change
-void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
+void WI_drawOnLnode (int n, const patch_t *c[], int numpatches)
 {
 
 	int 	i;
@@ -731,7 +729,7 @@ int WI_drawNum(int n, int x, int y, int digits)
 }
 
 #include "hu_stuff.h"
-extern patch_t *hu_font[HU_FONTSIZE];
+extern const patch_t *hu_font[HU_FONTSIZE];
 
 void WI_drawPercent (int p, int x, int y, int b = 0)
 {
@@ -1359,8 +1357,7 @@ void WI_Ticker (void)
 static int WI_CalcWidth (const char *str)
 {
 	int w = 0;
-	int lump;
-	patch_t *p;
+	const patch_t *p;
 	char charname[9];
 
 	if (!str)
@@ -1368,9 +1365,9 @@ static int WI_CalcWidth (const char *str)
 
 	while (*str) {
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		lump = W_CheckNumForName (charname);
-		if (lump != -1) {
-			p = W_CachePatch (lump);
+		if (Res_CheckResource(charname, patches_directory_name))
+		{
+			p = Res_CachePatch(charname);
 			w += p->width() - 1;
 		} else {
 			w += 12;
@@ -1393,7 +1390,7 @@ void WI_loadData (void)
 		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
-	const patch_t* bg_patch = W_CachePatch(name);
+	const patch_t* bg_patch = Res_CachePatch(name);
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -1405,14 +1402,9 @@ void WI_loadData (void)
 	{
 		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
-		if (lname)
-			j = W_CheckNumForName (lname);
-		else
-			j = -1;
-
-		if (j >= 0)
+		if (lname && Res_CheckResource(lname, patches_directory_name))
 		{
-			lnames[i] = W_CachePatch (j, PU_STATIC);
+			lnames[i] = Res_CachePatch(lname, PU_STATIC);
 		}
 		else
 		{
@@ -1425,13 +1417,13 @@ void WI_loadData (void)
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		// you are here
-		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
+		yah[0] = Res_CachePatch("WIURH0", PU_STATIC);
 
 		// you are here (alt.)
-		yah[1] = W_CachePatch ("WIURH1", PU_STATIC);
+		yah[1] = Res_CachePatch("WIURH1", PU_STATIC);
 
 		// splat
-		splat = W_CachePatch ("WISPLAT", PU_STATIC);
+		splat = Res_CachePatch("WISPLAT", PU_STATIC);
 
 		if (wbs->epsd < 3)
 		{
@@ -1445,7 +1437,7 @@ void WI_loadData (void)
 					{
 						// animations
 						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-						a->p[i] = W_CachePatch (name, PU_STATIC);
+						a->p[i] = Res_CachePatch(name, PU_STATIC);
 					}
 					else
 					{
@@ -1461,62 +1453,62 @@ void WI_loadData (void)
     {
 		 // numbers 0-9
 		sprintf(name, "WINUM%d", i);
-		num[i] = W_CachePatch (name, PU_STATIC);
+		num[i] = Res_CachePatch(name, PU_STATIC);
     }
 
-    wiminus = W_CachePatch ("WIMINUS", PU_STATIC);
+    wiminus = Res_CachePatch("WIMINUS", PU_STATIC);
 
 	// percent sign
-    percent = W_CachePatch ("WIPCNT", PU_STATIC);
+    percent = Res_CachePatch("WIPCNT", PU_STATIC);
 
 	// ":"
-    colon = W_CachePatch ("WICOLON", PU_STATIC);
+    colon = Res_CachePatch("WICOLON", PU_STATIC);
 
 	// "finished"
-	finished = W_CachePatch ("WIF", PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
+	finished = Res_CachePatch("WIF", PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 	// "entering"
-	entering = W_CachePatch ("WIENTER", PU_STATIC);
+	entering = Res_CachePatch("WIENTER", PU_STATIC);
 
 	// "kills"
-    kills = W_CachePatch ("WIOSTK", PU_STATIC);
+    kills = Res_CachePatch("WIOSTK", PU_STATIC);
 
 	// "items"
-    items = W_CachePatch ("WIOSTI", PU_STATIC);
+    items = Res_CachePatch("WIOSTI", PU_STATIC);
 
     // "scrt"
-    scrt = W_CachePatch ("WIOSTS", PU_STATIC);
+    scrt = Res_CachePatch("WIOSTS", PU_STATIC);
 
 	// "secret"
-    secret = W_CachePatch ("WISCRT2", PU_STATIC);
+    secret = Res_CachePatch("WISCRT2", PU_STATIC);
 
 	// "frgs"
-	frags = (patch_t *)W_CachePatch ("WIFRGS", PU_STATIC);
+	frags = Res_CachePatch("WIFRGS", PU_STATIC);
 
 	// "time"
-    timepatch = W_CachePatch ("WITIME", PU_STATIC);
+    timepatch = Res_CachePatch("WITIME", PU_STATIC);
 
     // "sucks"
-    sucks =W_CachePatch ("WISUCKS", PU_STATIC);
+    sucks = Res_CachePatch("WISUCKS", PU_STATIC);
 
     // "par"
-    par = W_CachePatch ("WIPAR", PU_STATIC);
+    par = Res_CachePatch("WIPAR", PU_STATIC);
 
 	// "total"
-	total = (patch_t *)W_CachePatch ("WIMSTT", PU_STATIC);
+	total = Res_CachePatch("WIMSTT", PU_STATIC);
 
 	// your face
-	star = (patch_t *)W_CachePatch ("STFST01", PU_STATIC);
+	star = Res_CachePatch("STFST01", PU_STATIC);
 
 	// dead face
-	bstar = (patch_t *)W_CachePatch("STFDEAD0", PU_STATIC);
+	bstar = Res_CachePatch("STFDEAD0", PU_STATIC);
 
-	p = W_CachePatch ("STPBANY", PU_STATIC);
+	p = Res_CachePatch("STPBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(name, "STPB%d", i);
-		faceclassic[i] = W_CachePatch(name, PU_STATIC);
+		faceclassic[i] = Res_CachePatch(name, PU_STATIC);
 	}
 }
 

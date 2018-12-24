@@ -87,7 +87,8 @@ static int  numswitches;
 //		MAXSWITCHES limit.
 void P_InitSwitchList(void)
 {
-	byte *alphSwitchList = (byte *)W_CacheLumpName ("SWITCHES", PU_STATIC);
+	ResourceId res_id = Res_GetResourceId("SWITCHES", global_directory_name);
+	byte *alphSwitchList = (byte*)Res_LoadResource(res_id, PU_STATIC);
 	byte *list_p;
 	int i;
 

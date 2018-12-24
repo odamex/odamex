@@ -301,24 +301,22 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = W_CachePatch ("M_PAUSE");
+		const patch_t* pause = Res_CachePatch("M_PAUSE");
 		int y;
 
 		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
+		screen->DrawPatchCleanNoMove(pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		int lump = W_CheckNumForName (D_DrawIcon);
-
+		ResourceId res_id = Res_GetResourceId(D_DrawIcon);
 		D_DrawIcon = NULL;
-		if (lump >= 0)
+		if (res_id != ResourceId::INVALID_ID)
 		{
-			patch_t *p = W_CachePatch (lump);
-
-			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
+			const patch_t* p = (patch_t*)Res_LoadResource(res_id, PU_CACHE);
+			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
 		}
 		NoWipe = 10;
 	}
@@ -427,7 +425,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
+	if (Res_CheckResource("DEMO4", global_directory_name) && gamemode != retail_chex)
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
@@ -505,7 +503,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const patch_t* patch = W_CachePatch(pagename);
+		const patch_t* patch = Res_CachePatch(pagename);
 
 		I_FreeSurface(page_surface);
 
