@@ -255,7 +255,9 @@ const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path);
 
 const ResourceId Res_GetResourceId(const ResourcePath& path);
 
-const ResourceId Res_GetResourceId(const OString& name, const OString& directory);
+const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory);
+
+const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePath& directory);
 
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 
@@ -272,7 +274,7 @@ const ResourcePath& Res_GetResourcePath(const ResourceId res_id);
 
 bool Res_CheckResource(const ResourceId res_id);
 
-static inline bool Res_CheckResource(const OString& name, const OString& directory)
+static inline bool Res_CheckResource(const OString& name, const ResourcePath& directory)
 {
 	return Res_CheckResource(Res_GetResourceId(name, directory));
 }
@@ -284,7 +286,7 @@ static inline bool Res_CheckResource(const OString& name, const OString& directo
 
 uint32_t Res_GetResourceSize(const ResourceId res_id);
 
-static inline uint32_t Res_GetResourceSize(const OString& name, const OString& directory)
+static inline uint32_t Res_GetResourceSize(const OString& name, const ResourcePath& directory)
 {
 	return Res_GetResourceSize(Res_GetResourceId(name, directory));
 }
@@ -330,5 +332,29 @@ static inline const patch_t* Res_CachePatch(const OString& name, int tag = PU_CA
 	ResourceId res_id = Res_GetResourceId(name, patches_directory_name);
 	return (patch_t*)Res_LoadResource(res_id, tag);
 }
+
+// ----------------------------------------------------------------------------
+// Res_CacheTexture
+// ----------------------------------------------------------------------------
+class Texture;
+
+static inline const Texture* Res_CacheTexture(ResourceId res_id, int tag = PU_CACHE)
+{
+	if (res_id != ResourceId::INVALID_ID)
+	{
+		return static_cast<Texture*>(Res_LoadResource(res_id, tag));
+	}
+	else
+	{
+		// TODO: return invalid texture
+		return static_cast<Texture*>(NULL);
+	}
+}
+
+static inline const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag = PU_CACHE)
+{
+	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, directory), tag);
+}
+
 
 #endif	// __RES_MAIN_H__

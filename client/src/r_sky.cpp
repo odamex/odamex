@@ -232,7 +232,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t front_offset = 0;
 	angle_t skyflip = 0;
 
-	if (R_ResourceIdIsSkyFlat(pl->resourceId))
+	if (R_ResourceIdIsSkyFlat(pl->res_id))
 	{
 		if ((pl->sky & PL_SKYFLAT) == 0)
 		{

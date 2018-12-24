@@ -503,7 +503,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const patch_t* patch = Res_CachePatch(pagename);
+		const patch_t* patch = Res_CachePatch(OString(pagename, 8));
 
 		I_FreeSurface(page_surface);
 

@@ -146,7 +146,6 @@ void ST_initNew (void)
 			widest = tallnum[i]->width();
 	}
 
-	ResourceId res_id = ResourceId::INVALID_ID;
 	strcpy (name, "ARM1A0");
 	for (i = 0; i < 2; i++) {
 		name[3] = i + '1';
@@ -161,8 +160,8 @@ void ST_initNew (void)
 			bigammos[i] = Res_CachePatch(bigammopatches[i], PU_STATIC);
 	}
 
-	if (Res_CheckResource("MEDIAO", sprites_directory_name))
-		medi = Res_CachePatch("MEDIAO", PU_STATIC);
+	if (Res_CheckResource("MEDIA0", sprites_directory_name))
+		medi = Res_CachePatch("MEDIA0", PU_STATIC);
 
 	flagiconteam = Res_CachePatch("FLAGIT", PU_STATIC);
 	flagiconbhome = Res_CachePatch("FLAGIC2B", PU_STATIC);

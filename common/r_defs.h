@@ -622,7 +622,7 @@ struct visplane_s
 
 	plane_t		secplane;
 
-	ResourceId	resourceId;
+	ResourceId	res_id;
 	short		sky;
 
 	int			lightlevel;

@@ -521,6 +521,8 @@ const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path)
 //
 const ResourceId Res_GetResourceId(const ResourcePath& path)
 {
+	if (path.last().length() > 8)
+		Printf(PRINT_HIGH, "Warning: Res_GetResourceId searching for resource with name longer than 8 chars: %s", path.last().c_str());
 	return resource_manager.getResourceId(path);
 }
 
@@ -534,7 +536,7 @@ const ResourceId Res_GetResourceId(const ResourcePath& path)
 // is returned. A special token of ResourceFile::LUMP_NOT_FOUND is returned if
 // there are no matching lumps.
 //
-const ResourceId Res_GetResourceId(const OString& name, const OString& directory)
+const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory)
 {
 	const ResourcePath path = Res_MakeResourcePath(name, directory);
 	return resource_manager.getResourceId(path);
@@ -668,6 +670,53 @@ void* Res_LoadResource(const ResourceId res_id, int tag)
 void Res_ReleaseResource(const ResourceId res_id)
 {
 	resource_manager.releaseResourceData(res_id);
+}
+
+
+//
+// Res_GetTextureResourceId
+// 
+// Searches a prioritized list of directories for a given texture lump and
+// returns the resource ID of the texture even if it's found in an
+// alternative directory.
+//
+const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePath& directory)
+{
+	ResourcePathList search_priority;
+	if (directory == flats_directory_name)
+	{
+		search_priority.push_back(flats_directory_name);
+		search_priority.push_back(textures_directory_name);
+		search_priority.push_back(patches_directory_name);
+		search_priority.push_back(sprites_directory_name);
+	}
+	if (directory == textures_directory_name)
+	{
+		search_priority.push_back(textures_directory_name);
+		search_priority.push_back(flats_directory_name);
+		search_priority.push_back(patches_directory_name);
+		search_priority.push_back(sprites_directory_name);
+	}
+	if (directory == patches_directory_name)
+	{
+		search_priority.push_back(patches_directory_name);
+		search_priority.push_back(textures_directory_name);
+		search_priority.push_back(flats_directory_name);
+		search_priority.push_back(sprites_directory_name);
+	}
+	if (directory == sprites_directory_name)
+	{
+		search_priority.push_back(sprites_directory_name);
+		search_priority.push_back(patches_directory_name);
+		search_priority.push_back(textures_directory_name);
+		search_priority.push_back(flats_directory_name);
+	}
+
+	ResourceId res_id = ResourceId::INVALID_ID;
+	for (size_t i = 0; i < search_priority.size() && res_id == ResourceId::INVALID_ID; i++)
+		res_id = Res_GetResourceId(name, search_priority[i]);
+
+	return res_id;
 }
 
 

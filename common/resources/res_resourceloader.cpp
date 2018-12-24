@@ -431,6 +431,11 @@ int16_t FlatTextureLoader::getWidth() const
 	return 0;
 }
 
+//
+// FlatTextureLoader::getHeight
+//
+// Flats are assumed to be square so the height will always match the width.
+//
 int16_t FlatTextureLoader::getHeight() const
 {
 	return getWidth();

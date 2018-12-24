@@ -319,7 +319,7 @@ visplane_t* R_FindPlane(
 
 	for (check = visplanes[hash]; check; check = check->next)	// killough
 		if (P_IdenticalPlanes(&secplane, &check->secplane) &&
-			res_id == check->resourceId &&
+			res_id == check->res_id &&
 			sky == check->sky &&
 			lightlevel == check->lightlevel &&
 			xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
@@ -334,7 +334,7 @@ visplane_t* R_FindPlane(
 	check = new_visplane (hash);		// killough
 
 	memcpy(&check->secplane, &secplane, sizeof(secplane));
-	check->resourceId = res_id;
+	check->res_id = res_id;
 	check->sky = sky;
 	check->lightlevel = lightlevel;
 	check->xoffs = xoffs;				// killough 2/28/98: Save offsets
@@ -396,11 +396,11 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 	else
 	{
 		// make a new visplane
-		unsigned hash = visplane_hash (pl->resourceId, pl->lightlevel, pl->secplane);
-		visplane_t *new_pl = new_visplane (hash);
+		unsigned hash = visplane_hash(pl->res_id, pl->lightlevel, pl->secplane);
+		visplane_t *new_pl = new_visplane(hash);
 
 		new_pl->secplane = pl->secplane;
-		new_pl->resourceId = pl->resourceId;
+		new_pl->res_id = pl->res_id;
 		new_pl->sky = pl->sky;
 		new_pl->lightlevel = pl->lightlevel;
 		new_pl->xoffs = pl->xoffs;			// killough 2/28/98
@@ -615,18 +615,17 @@ void R_DrawPlanes()
 			if (pl->minx > pl->maxx)
 				continue;
 
-			if (R_ResourceIdIsSkyFlat(pl->resourceId))
+			if (R_ResourceIdIsSkyFlat(pl->res_id))
 			{
 				R_RenderSkyRange(pl);
 			}
 			else
 			{
 				// regular flat
-
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 
 				//int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
-				const Texture* texture = static_cast<const Texture*>(Res_LoadResource(pl->resourceId, PU_STATIC));
+				const Texture* texture = Res_CacheTexture(pl->res_id, PU_STATIC);
 				dspan.source = texture->getData(); 
 				dspan.texture_width_bits = texture->getWidthBits();
 				dspan.texture_height_bits = texture->getHeightBits();
