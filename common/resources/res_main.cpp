@@ -247,6 +247,17 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 
 	// TODO: Is this the best place to initialize the ResourceCache instance?
 	mCache = new ResourceCache(mResources.size());
+
+	// Add composite textures
+	ResourceContainerId container_id = mContainers.size();
+	ResourceContainer* container = new CompositeTextureResourceContainer(container_id, this);
+	mContainers.push_back(container);
+
+
+	// [SL] NOTE: rework this code so that ResourceCache does not need to
+	// be initialized twice.
+	delete mCache;
+	mCache = new ResourceCache(mResources.size());
 }
 
 

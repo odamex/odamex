@@ -27,6 +27,7 @@
 
 #include "m_ostring.h"
 #include "w_ident.h"
+#include "r_data.h"
 
 //
 // Res_IsMapLumpName
@@ -297,6 +298,8 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 				path = textures_directory_name;
 			else if (mDirectory->between(lump_id, "HI_START", "HI_END"))
 				path = hires_directory_name;
+			else if (name == "CONCHARS" || name == "CONBACK")
+				path = patches_directory_name;
 			else
 			{
 				// Examine the lump to identify its type
@@ -362,6 +365,141 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 	}
 	return 0;
 }
+
+
+// ============================================================================
+//
+// CompositeTextureResourceContainer class implementation
+//
+// ============================================================================
+
+//
+// CompositeTextureResourceContainer::CompositeTextureResourceContainer
+//
+// Reads the lump directory from the WAD file and registers all of the lumps
+// with the ResourceManager. If the WAD file has an invalid directory, no lumps
+// will be registered and getResourceCount() will return 0.
+//
+CompositeTextureResourceContainer::CompositeTextureResourceContainer(
+	const ResourceContainerId& container_id,
+	ResourceManager* manager) :
+		mResourceContainerId(container_id),
+		mResourceManager(manager),
+		mDirectory(NULL)
+{
+
+	// Load the map texture definitions from textures.lmp.
+	// The data is contained in one or two lumps,
+	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
+	size_t num_textures = 0;
+	ResourceId res_id1 = Res_GetResourceId("TEXTURE1", global_directory_name);
+	num_textures += countTexturesInDefinition(res_id1);
+	ResourceId res_id2 = Res_GetResourceId("TEXTURE2", global_directory_name);
+	num_textures += countTexturesInDefinition(res_id2);
+	mDirectory = new ContainerDirectory(num_textures);
+
+	addTexturesFromDefinition(res_id1);
+	addTexturesFromDefinition(res_id2);
+}
+
+//
+// CompositeTextureResourceContainer::countTexturesInDefinition
+//
+size_t CompositeTextureResourceContainer::countTexturesInDefinition(ResourceId res_id)
+{
+	if (res_id != ResourceId::INVALID_ID)
+	{
+		int* maptex = (int*)Res_LoadResource(res_id, PU_STATIC);
+		size_t num_textures = (size_t)LELONG(*maptex);
+		Res_ReleaseResource(res_id);
+		return num_textures;
+	}
+	return 0;
+}
+
+void CompositeTextureResourceContainer::addTexturesFromDefinition(ResourceId res_id)
+{
+    if (res_id == ResourceId::INVALID_ID)
+		return;
+
+	int* maptex = (int*)Res_LoadResource(res_id, PU_STATIC);
+    size_t numtextures = (size_t)LELONG(*maptex);
+	size_t maxoff = Res_GetResourceSize(res_id);
+	int* directory = maptex+1;
+
+	for (size_t i = 0; i < numtextures; i++, directory++)
+	{
+		// TODO: validate patches used in texture
+		// validate offset, etc
+		int offset = LELONG(*directory);
+		const maptexture_t* mtexture = (maptexture_t*)((byte*)maptex + offset);
+		size_t resource_size = sizeof(texture_t) + sizeof(texpatch_t)*(SAFESHORT(mtexture->patchcount)-1);
+		
+		const OString texture_name(mtexture->name, 8);
+		ResourcePath path = Res_MakeResourcePath(texture_name, textures_directory_name);
+
+		const ResourceId res_id = mResourceManager->addResource(path, this);
+		mDirectory->addEntryInfo(texture_name, resource_size, offset);
+	}
+
+	Res_ReleaseResource(res_id);
+}
+
+
+//
+// CompositeTextureResourceContainer::~CompositeTextureResourceContainer
+//
+CompositeTextureResourceContainer::~CompositeTextureResourceContainer()
+{
+	cleanup();
+}
+
+
+//
+// CompositeTextureResourceContainer::cleanup
+//
+void CompositeTextureResourceContainer::cleanup()
+{
+	if (mDirectory)
+		delete mDirectory;
+	mDirectory = NULL;
+}
+
+//
+// CompositeTextureResourceContainer::getResourceCount
+//
+// Returns the number of lumps in the WAD file or returns 0 if
+// the WAD file is invalid.
+//
+uint32_t CompositeTextureResourceContainer::getResourceCount() const
+{
+	if (mDirectory)
+		return mDirectory->size();
+	return 0;
+}
+
+
+//
+// CompositeTextureResourceContainer::getResourceSize
+//
+uint32_t CompositeTextureResourceContainer::getResourceSize(const ResourceId res_id) const
+{
+	return 0;
+}
+
+
+//
+// CompositeTextureResourceContainer::loadResource
+//
+uint32_t CompositeTextureResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+{
+	size = std::min(size, getResourceSize(res_id));
+	if (size > 0)
+	{
+	}
+	return 0;
+}
+
 
 VERSION_CONTROL (res_container_cpp, "$Id$")
 

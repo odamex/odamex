@@ -244,7 +244,7 @@ static inline bool Res_DoesPathStartWithBase(const ResourcePath& base, const Res
 {
 	if (path.size() < base.size())
 		return false;
-	for (int i = 0; i < base.size(); i++)
+	for (size_t i = 0; i < base.size(); i++)
 		if (path[i] != base[i])
 			return false;
 	return true;
