@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -25,7 +25,7 @@
 #ifndef __M_SWAP_H__
 #define __M_SWAP_H__
 
-#ifdef TARGET_CPU_X86
+#if TARGET_CPU_X86 || TARGET_CPU_X86_64
 #ifdef __BIG_ENDIAN__
 	#undef __BIG_ENDIAN__
 #endif
@@ -34,7 +34,7 @@
 #endif
 #endif
 
-#ifdef TARGET_CPU_PPC
+#if TARGET_CPU_PPC
 #ifndef __BIG_ENDIAN__
 	#define __BIG_ENDIAN__
 #endif
@@ -48,7 +48,7 @@
 #ifdef __BIG_ENDIAN__
 
 // Swap 16bit, that is, MSB and LSB byte.
-// No masking with 0xFF should be necessary. 
+// No masking with 0xFF should be necessary.
 
 unsigned short LESHORT(unsigned short x);
 short LESHORT(short x);
