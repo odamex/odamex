@@ -463,9 +463,11 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_USE])
 		cmd->buttons |= BT_USE;
 
-	if (Actions[ACTION_JUMP])
-		cmd->buttons |= BT_JUMP;
-
+	// Ch0wW : don't accept ACTION_JUMP if using a classic demo.
+	if (!demorecording && !democlassic) {
+		if (Actions[ACTION_JUMP])
+			cmd->buttons |= BT_JUMP;
+	}
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
 	if (Impulse >= 1 && Impulse <= 8)
@@ -573,7 +575,8 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (!longtics)
-		cmd->yaw &= 0xFF00;
+		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
+
 }
 
 
@@ -1737,7 +1740,7 @@ void G_WriteDemoTiccmd ()
 		*demo_p++ = it->cmd.sidemove >> 8;
 
 		// If this is a longtics demo, record in higher resolution
-        if (LMP_DOOM_1_9_1 == demoversion)
+        if (demoversion == LMP_DOOM_1_9_1)
 		{
 			*demo_p++ = (it->cmd.yaw & 0xff);
 			*demo_p++ = (it->cmd.yaw >> 8) & 0xff;
