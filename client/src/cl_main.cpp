@@ -418,6 +418,10 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
+	// Don't forget to clean a vanilla demo !
+	if (demorecording && democlassic)
+		G_CleanupDemo();
+
 	// Reset the palette to default
 	V_ResetPalette();
 

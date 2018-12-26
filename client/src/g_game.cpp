@@ -1767,7 +1767,7 @@ void G_WriteDemoTiccmd ()
 //
 bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 {
-	std::string demoname = basedemoname + ".lmp";
+	std::string demname = basedemoname + ".lmp";
 
     if (recorddemo_fp)
     {
@@ -1775,13 +1775,16 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
         recorddemo_fp = NULL;
     }
 
-    recorddemo_fp = fopen(demoname.c_str(), "wb");
+    recorddemo_fp = fopen(demname.c_str(), "wb");
 
     if (!recorddemo_fp)
     {
-        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname.c_str());
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demname.c_str());
         return false;
     }
+
+	// Copy the buffered demoname.
+	sprintf(demoname, "%s", demname.c_str());
 
 	CL_QuitNetGame();
 

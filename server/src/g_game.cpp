@@ -134,7 +134,6 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_monstersrespawn)
 
-char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
