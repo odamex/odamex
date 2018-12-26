@@ -463,7 +463,8 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_USE])
 		cmd->buttons |= BT_USE;
 
-	if (Actions[ACTION_JUMP])
+	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
+	if (Actions[ACTION_JUMP] && !demorecording && !democlassic)
 		cmd->buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
