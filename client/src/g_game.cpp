@@ -1891,7 +1891,12 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 
 		if (gamestate != GS_STARTUP)
 		{
-			//G_CheckDemoStatus();
+			// Ch0wW : don't crash the engine if the mapname isn't found.
+			if (W_CheckNumForName(argv[1]) == -1)
+			{
+				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
+				return;
+			}
 			G_RecordDemo(argv[1], argv[2]);
 		}
 		else
