@@ -180,7 +180,6 @@ char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 
 extern bool		simulated_connection;
 

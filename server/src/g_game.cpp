@@ -139,7 +139,6 @@ BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
 BOOL 			netdemo;
-BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				demover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
