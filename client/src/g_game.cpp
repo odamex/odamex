@@ -573,7 +573,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (!longtics)
-		cmd->yaw &= 0xFF00;
+		cmd->yaw = (cmd->yaw +128) & 0xFF00;
 }
 
 
