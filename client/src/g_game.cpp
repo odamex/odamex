@@ -340,6 +340,10 @@ END_COMMAND (turn180)
 weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
+	// FIXME : Find a way to properly write this to the vanilla demo file.
+	if (democlassic && demorecording)
+		return;
+
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -348,6 +352,10 @@ END_COMMAND (weapnext)
 
 BEGIN_COMMAND (weapprev)
 {
+	// FIXME : Find a way to properly write this to the vanilla demo file.
+	if (democlassic && demorecording)
+		return;
+
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -469,6 +477,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
+	// FIXME : "weapnext/weapprev" doesn't handle this properly, desyncing the demos.
 	if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->buttons |= BT_CHANGE;
