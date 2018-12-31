@@ -4587,8 +4587,6 @@ void SV_RunTics()
 	SV_BanlistTics();
 	SV_UpdateMaster();
 
-	C_Ticker();
-
 	// only run game-related tickers if the server isn't frozen
 	// (sv_emptyfreeze enabled and no clients)
 	if (!step_mode && !SV_Frozen())

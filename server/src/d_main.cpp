@@ -351,10 +351,6 @@ void D_DoomMain()
 
 	gamestate = GS_STARTUP;
 
-	// init console so it can capture all of the startup messages
-	C_InitConsole();
-	atterm(C_ShutdownConsole);
-
 	W_SetupFileIdentifiers();
 
 	// [RH] Initialize items. Still only used for the give command. :-(

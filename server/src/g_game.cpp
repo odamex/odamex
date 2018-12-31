@@ -320,7 +320,6 @@ void G_Ticker (void)
 		case ga_nothing:
 			break;
 		}
-		C_AdjustBottom ();
 	}
 
 	if(demorecording)
