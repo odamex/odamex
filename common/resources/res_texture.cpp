@@ -364,7 +364,7 @@ void TextureManager::clear()
 void TextureManager::readAnimDefLump()
 {
 	/*
-	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("GLOBAL/ANIMDEFS"));
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		SC_OpenResourceLump(res_ids[i]);

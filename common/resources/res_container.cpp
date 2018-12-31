@@ -24,6 +24,7 @@
 #include "resources/res_container.h"
 #include "resources/res_main.h"
 #include "resources/res_fileaccessor.h"
+#include "resources/res_identifier.h"
 
 #include "m_ostring.h"
 #include "w_ident.h"
@@ -55,6 +56,12 @@ static bool Res_IsMapLumpName(const OString& name)
 		uname == nodes_lump_name || uname == sectors_lump_name || uname == reject_lump_name ||
 		uname == blockmap_lump_name || uname == behavior_lump_name;
 }
+
+static bool Res_IsMapLumpName(const ResourcePath& path)
+{
+	return Res_IsMapLumpName(path.last());
+}
+
 
 
 // ============================================================================
@@ -156,6 +163,8 @@ WadResourceContainer::WadResourceContainer(
 		return;
 	}
 
+	buildMarkerRecords();
+
 	// Examine each lump and decide which path it belongs in
 	// and then register it with the resource manager.
 	addResourcesToManager(manager);
@@ -251,6 +260,74 @@ void WadResourceContainer::cleanup()
 
 
 //
+// WadResourceContainer::buildMarkerRecords
+//
+void WadResourceContainer::buildMarkerRecords()
+{
+	MarkerType last_marker_type = END_MARKER;
+	OString last_marker_prefix;
+	LumpId last_lump_id = ContainerDirectory::INVALID_LUMP_ID;
+
+	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
+	{
+		const ResourcePath& path = it->path;
+		if (isMarker(path))
+		{
+			const OString current_marker_prefix(getMarkerPrefix(path));
+			LumpId current_lump_id = mDirectory->getLumpId(it);
+
+			// TODO: attempt to repair broken WADs that have missing markers
+
+			if (getMarkerType(path) == END_MARKER)
+			{
+				MarkerRange range;
+				range.start = last_lump_id;
+				range.end = current_lump_id;
+				mMarkers[current_marker_prefix] = range;
+				DPrintf("Added markers %s_START (%d) and %s_END (%d)\n",
+						current_marker_prefix.c_str(), range.start,
+						current_marker_prefix.c_str(), range.end);
+			}
+			last_marker_prefix = current_marker_prefix;
+			last_lump_id = current_lump_id;
+		}
+	}
+}
+
+
+//
+// WadResourceContainer::assignPathBasedOnMarkers
+//
+// Determines which markers a lump is between (if any) and assigns a
+// path for the resource.
+//
+const ResourcePath& WadResourceContainer::assignPathBasedOnMarkers(LumpId lump_id) const
+{
+	for (MarkerRangeLookupTable::const_iterator it = mMarkers.begin(); it != mMarkers.end(); ++it)
+	{
+		const MarkerRange& range = it->second;
+		if (lump_id > range.start && lump_id < range.end)
+		{
+			const OString& prefix = it->first;
+			if (prefix == "F" || prefix == "FF")
+				return flats_directory_name;
+			if (prefix == "S" || prefix == "SS")
+				return sprites_directory_name;
+			if (prefix == "P" || prefix == "PP")
+				return patches_directory_name;
+			if (prefix == "C")
+				return colormaps_directory_name;
+			if (prefix == "TX")
+				return textures_directory_name;
+			if (prefix == "HI")
+				return hires_directory_name;
+		}
+	}
+	return global_directory_name;
+}
+
+
+//
 // WadResourceContainer::addResourcesToManager
 //
 void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
@@ -263,61 +340,47 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 
 		uint32_t offset = mDirectory->getOffset(lump_id);
 		uint32_t length = mDirectory->getLength(lump_id);
-		const OString& name = mDirectory->getName(lump_id);
-		ResourcePath path = global_directory_name;
+		const ResourcePath& path = mDirectory->getPath(lump_id); 
+		ResourcePath base_path = global_directory_name;
 
 		// check that the lump doesn't extend past the end of the file
 		if (offset + length <= mFile->size())
 		{
 			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
 			// SEGS follows this one). If so, move all of the subsequent map lumps into
-			// this map's directory.
-			bool is_map_lump = Res_IsMapLumpName(name);
+			// this map's directory
+			const OString& lump_name = path.last();
+			bool is_map_lump = Res_IsMapLumpName(path);
 			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->next(lump_id));
 
 			if (is_map_marker)
-				map_name = name;
+				map_name = lump_name;
 			else if (!is_map_lump)
 				map_name.clear();
 
 			// add the lump to the appropriate namespace
 			if (!map_name.empty())
-				path = Res_MakeResourcePath(map_name, maps_directory_name);
-			else if (mDirectory->between(lump_id, "F_START", "F_END") ||
-					mDirectory->between(lump_id, "FF_START", "FF_END"))
-				path = flats_directory_name;
-			else if (mDirectory->between(lump_id, "S_START", "S_END") ||
-					mDirectory->between(lump_id, "SS_START", "SS_END"))
-				path = sprites_directory_name;
-			else if (mDirectory->between(lump_id, "P_START", "P_END") ||
-					mDirectory->between(lump_id, "PP_START", "PP_END"))
-				path = patches_directory_name;
-			else if (mDirectory->between(lump_id, "C_START", "C_END"))
-				path = colormaps_directory_name;
-			else if (mDirectory->between(lump_id, "TX_START", "TX_END"))
-				path = textures_directory_name;
-			else if (mDirectory->between(lump_id, "HI_START", "HI_END"))
-				path = hires_directory_name;
-			else if (name == "CONCHARS" || name == "CONBACK")
-				path = patches_directory_name;
+				base_path = Res_MakeResourcePath(map_name, maps_directory_name);
 			else
+				base_path = assignPathBasedOnMarkers(lump_id);
+
+			if (base_path == global_directory_name)
 			{
 				// Examine the lump to identify its type
 				uint8_t* data = new uint8_t[length];
 				mFile->seek(offset);
 				if (mFile->read(data, length) == length)
 				{
-					if (name.compare(0, 2, "DP") == 0 && Res_ValidatePCSpeakerSoundData(data, length))
-						path = sounds_directory_name;
-					else if (name.compare(0, 2, "DS") == 0 && Res_ValidateSoundData(data, length))
-						path = sounds_directory_name;
+					WadResourceIdentifier identifier;
+					base_path = identifier.identifyByContents(path, data, length);
 				}
 
 				delete [] data;
 			}
 			
-			path += name;
-			const ResourceId res_id = manager->addResource(path, this);
+			const ResourcePath full_path = base_path + path;
+			DPrintf("Adding lump %05d %s\n", lump_id, full_path.c_str());
+			const ResourceId res_id = manager->addResource(full_path, this);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 		}
 	}

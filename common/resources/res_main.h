@@ -66,11 +66,6 @@ static const ResourcePath acs_directory_name("/ACS/");
 static const ResourcePath voices_directory_name("/VOICES/");
 static const ResourcePath voxels_directory_name("/VOXELS/");
 
-bool Res_ValidateWadData(const void* data, uint32_t length);
-bool Res_ValidateDehackedData(const void* data, uint32_t length);
-bool Res_ValidatePCSpeakerSoundData(const void* data, uint32_t length);
-bool Res_ValidateSoundData(const void* data, uint32_t length);
-
 bool Res_IsWadFile(const OString& filename);
 bool Res_IsDehackedFile(const OString& filename);
 
@@ -329,7 +324,8 @@ struct patch_s;
 typedef patch_s patch_t;
 static inline const patch_t* Res_CachePatch(const OString& name, int tag = PU_CACHE)
 {
-	ResourceId res_id = Res_GetResourceId(name, patches_directory_name);
+	// ResourceId res_id = Res_GetResourceId(name, patches_directory_name);
+	ResourceId res_id = Res_GetTextureResourceId(name, patches_directory_name);
 	return (patch_t*)Res_LoadResource(res_id, tag);
 }
 

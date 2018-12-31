@@ -134,6 +134,29 @@ public:
 };
 
 
+
+// ============================================================================
+//
+// AnimatedTexture
+//
+// ============================================================================
+//
+class AnimatedTexture : public Texture
+{
+public:
+	byte* getData() const
+	{	return mFrameData[mCurrentFrame];	}
+
+	byte* getMaskData() const
+	{	return mFrameMask[mCurrentFrame];	}
+
+private:
+	uint16_t			mCurrentFrame;
+	byte**				mFrameData;
+	byte**				mFrameMask;
+};
+
+
 // ============================================================================
 //
 // CompositeTextureDefinition

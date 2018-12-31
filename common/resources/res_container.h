@@ -33,6 +33,7 @@
 #include "hashtable.h"
 
 #include "resources/res_resourceid.h"
+#include "resources/res_resourcepath.h"
 
 typedef uint32_t ResourceContainerId;
 typedef uint32_t LumpId;
@@ -58,9 +59,9 @@ class ContainerDirectory
 private:
 	struct EntryInfo
 	{
-		OString		name;
-		uint32_t	length;
-		uint32_t	offset;
+		ResourcePath	path;
+		uint32_t		length;
+		uint32_t		offset;
 	};
 
 	typedef std::vector<EntryInfo> EntryInfoList;
@@ -72,7 +73,7 @@ public:
 	static const LumpId INVALID_LUMP_ID = static_cast<LumpId>(-1);
 
 	ContainerDirectory(const size_t initial_size = 4096) :
-		mNameLookup(2 * initial_size)
+		mPathLookup(2 * initial_size)
 	{
 		mEntries.reserve(initial_size);
 	}
@@ -107,10 +108,10 @@ public:
 		return it - begin();
 	}
 
-	LumpId getLumpId(const OString& name) const
+	LumpId getLumpId(const ResourcePath& path) const
 	{
-		NameLookupTable::const_iterator it = mNameLookup.find(name);
-		if (it != mNameLookup.end())
+		PathLookupTable::const_iterator it = mPathLookup.find(path);
+		if (it != mPathLookup.end())
 			return getLumpId(&mEntries[it->second]);
 		return INVALID_LUMP_ID;
 	}
@@ -132,17 +133,17 @@ public:
 		return lump_id < mEntries.size();
 	}
 
-	void addEntryInfo(const OString& name, uint32_t length, uint32_t offset = 0)
+	void addEntryInfo(const ResourcePath& path, uint32_t length, uint32_t offset = 0)
 	{
 		mEntries.push_back(EntryInfo());
 		EntryInfo* entry = &mEntries.back();
-		entry->name = name;
+		entry->path = path;
 		entry->length = length;
 		entry->offset = offset;
 
 		const LumpId lump_id = getLumpId(entry);
 		assert(lump_id != INVALID_LUMP_ID);
-		mNameLookup.insert(std::make_pair(name, lump_id));
+		mPathLookup.insert(std::make_pair(path, lump_id));
 	}
 
 	uint32_t getLength(const LumpId lump_id) const
@@ -155,12 +156,12 @@ public:
 		return mEntries[lump_id].offset;
 	}
 
-	const OString& getName(const LumpId lump_id) const
+	const ResourcePath& getPath(const LumpId lump_id) const
 	{
-		return mEntries[lump_id].name;
+		return mEntries[lump_id].path;
 	}
 
-	bool between(const LumpId lump_id, const OString& start, const OString& end) const
+	bool between(const LumpId lump_id, const ResourcePath& start, const ResourcePath& end) const
 	{
 		LumpId start_lump_id = getLumpId(start);
 		LumpId end_lump_id = getLumpId(end);
@@ -170,28 +171,29 @@ public:
 		return start_lump_id < lump_id && lump_id < end_lump_id;
 	}
 
-	bool between(const OString& name, const OString& start, const OString& end) const
+	bool between(const ResourcePath& path, const ResourcePath& start, const ResourcePath& end) const
 	{
-		return between(getLumpId(name), start, end);
+		return between(getLumpId(path), start, end);
 	}
 
-	const OString& next(const LumpId lump_id) const
+	const ResourcePath& next(const LumpId lump_id) const
 	{
 		if (lump_id != INVALID_LUMP_ID && lump_id + 1 < mEntries.size())
-			return mEntries[lump_id + 1].name;
-		return OString::getEmptyString();
+			return mEntries[lump_id + 1].path;
+		static ResourcePath empty_path;
+		return empty_path;
 	}
 
-	const OString& next(const OString& name) const
+	const ResourcePath& next(const ResourcePath& path) const
 	{
-		return next(getLumpId(name));
+		return next(getLumpId(path));
 	}
 
 private:
 	EntryInfoList		mEntries;
 
-	typedef OHashTable<OString, LumpId> NameLookupTable;
-	NameLookupTable		mNameLookup;
+	typedef OHashTable<ResourcePath, LumpId> PathLookupTable;
+	PathLookupTable		mPathLookup;
 };
 
 
@@ -307,6 +309,68 @@ private:
 	}
 
 	ContainerDirectory* readWadDirectory();
+
+    typedef enum {START_MARKER, END_MARKER} MarkerType;
+	struct MarkerRecord
+	{
+		OString name;
+		MarkerType type;
+		LumpId lump_id;
+	};
+
+	typedef std::vector<MarkerRecord> MarkerList;
+
+	bool isMarker(const ResourcePath& path) const
+	{
+		const OString& name = path.last();
+		return name == "F_START" || name == "FF_START" ||
+				name == "F_END" || name == "FF_END" ||
+				name == "S_START" || name == "SS_START" ||
+				name == "S_END" || name == "SS_END" ||
+				name == "P_START" || name == "PP_START" ||
+				name == "P_END" || name == "PP_END" ||
+				name == "C_START" || name == "C_END" ||
+				name == "TX_START" || name == "TX_END" ||
+				name == "HI_START" || name == "HI_END";
+	}
+
+    OString getMarkerPrefix(const ResourcePath& path) const
+	{
+		const OString& name = path.last();
+		return name.substr(0, name.find("_"));
+	}
+
+	MarkerType getMarkerType(const ResourcePath& path) const
+	{
+		const OString& name = path.last();
+		if (name.find("_START") != std::string::npos)
+			return START_MARKER;
+		else
+			return END_MARKER;
+	}
+
+	MarkerRecord buildMarkerRecord(const ResourcePath& path) const
+	{
+		const OString& name = path.last();
+		MarkerRecord marker_record;
+		marker_record.name = name;
+		marker_record.lump_id = mDirectory->getLumpId(path);
+		marker_record.type = getMarkerType(path);
+		return marker_record;
+	}
+
+	void buildMarkerRecords();
+
+	struct MarkerRange
+	{
+		LumpId start;
+		LumpId end;
+	};
+
+	typedef OHashTable<OString, MarkerRange> MarkerRangeLookupTable;
+	MarkerRangeLookupTable mMarkers;
+
+	const ResourcePath& assignPathBasedOnMarkers(LumpId lump_id) const;
 };
 
 

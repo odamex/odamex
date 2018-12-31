@@ -265,7 +265,7 @@ void G_ParseMapInfo()
 	int clusterindex;
 	DWORD levelflags;
 
-	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("GLOBAL/MAPINFO"));
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/MAPINFO"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		SetLevelDefaults(&defaultinfo);

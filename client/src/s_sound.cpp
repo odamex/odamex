@@ -1222,7 +1222,7 @@ void S_ParseSndInfo()
 
 	S_ClearSoundLumps ();
 
-	const ResourceIdList res_ids = Res_GetAllResourceIds("SNDINFO");
+	const ResourceIdList res_ids = Res_GetAllResourceIds("/GLOBAL/SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
 		sndinfo = (char*)Res_LoadResource(res_ids[i], PU_CACHE);

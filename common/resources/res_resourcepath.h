@@ -116,6 +116,11 @@ public:
 		return toString();
 	}
 
+	const char* c_str() const
+	{
+		return mAsString.c_str();
+	}
+
 	bool operator==(const ResourcePath& other) const
 	{
 		if (mItemCount == other.mItemCount)
@@ -184,6 +189,7 @@ private:
 		{
 			mItems[mItemCount++] = OStringToUpper(token);
 		}
+		mAsString = toString();
 	}
 
 	//
@@ -203,11 +209,12 @@ private:
 	}
 
 	static const char DELIMINATOR = '/';
-	static const size_t MAX_ITEMS = 16;
+	static const size_t MAX_ITEMS = 8;
 
 	OString mItems[MAX_ITEMS];
 	unsigned char mItemCount;
 	bool mAbsolute;
+	OString mAsString;
 
 	// ------------------------------------------------------------------------
 	// non-member friend functions

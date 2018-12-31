@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include "resources/res_main.h"
 #include "resources/res_fileaccessor.h"
+#include "resources/res_identifier.h"
 #include "resources/res_container.h"
 #include "resources/res_texture.h"
 #include "resources/res_cache.h"
@@ -52,85 +53,20 @@
 static ResourceManager resource_manager;
 
 //
-// Res_ValidateWadData
-//
-// Returns true if the given lump data appears to be a valid WAD file.
-// TODO: test more than just identifying string.
-//
-bool Res_ValidateWadData(const void* data, uint32_t length)
-{
-	if (length >= 4)
-	{
-		uint32_t magic = LELONG(*(uint32_t*)((uint8_t*)data + 0));
-		return magic == ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) ||
-				magic == ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24));
-	}
-	return false;
-}
-
-
-//
-// Res_ValidateDehackedData
-//
-// Returns true if the given lump data appears to be a valid DeHackEd file.
-//
-bool Res_ValidateDehackedData(const void* data, uint32_t length)
-{
-	const char magic_str[] = "Patch File for DeHackEd v";
-	uint32_t magic_len = strlen(magic_str);
-
-	return length >= magic_len && strnicmp((const char*)data, magic_str, magic_len) == 0;
-}
-
-
-//
-// Res_ValidatePCSpeakerSoundData
-//
-// Returns true if the given lump data appears to be a valid PC speaker
-// sound effect. The lump starts with a 4 byte header indicating the length
-// of the sound effect in bytes and then is followed by that number of bytes
-// of sound data.
-//
-bool Res_ValidatePCSpeakerSoundData(const void* data, uint32_t length)
-{
-	int16_t* magic = (int16_t*)((uint8_t*)data + 0);
-	int16_t* sample_length = (int16_t*)((uint8_t*)data + 2);
-	return length >= 4 && LESHORT(*magic) == 0 && LESHORT(*sample_length) + 4 == (int16_t)length;
-}
-
-
-//
-// Res_ValidateSoundData
-//
-// Returns true if the given lump data appears to be a valid DMX sound effect.
-// The lump starts with a two byte version number (0x0003).
-//
-// User-created tools to convert to the DMX sound effect format typically
-// do not use the correct number of padding bytes in the header and as such
-// cannot be used to validate a sound lump.
-//
-bool Res_ValidateSoundData(const void* data, uint32_t length)
-{
-	uint16_t* magic = (uint16_t*)((uint8_t*)data + 0);
-	return length >= 2 && LESHORT(*magic) == 3;
-}
-
-
-//
 // Res_CheckFileHelper
 //
 // Helper function that opens a file and reads the first length bytes of
 // the file and then passes the data to the function func and returns the
 // result.
 //
-static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const void*, uint32_t), uint32_t length)
+static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint8_t*, size_t), size_t length)
 {
 	FILE* fp = fopen(filename.c_str(), "rb");
 	if (fp == NULL)
 		return false;
 
-	char* data = new char[length];
-	uint32_t read_cnt = fread(data, 1, length, fp);
+	uint8_t* data = new uint8_t[length];
+	size_t read_cnt = fread(data, 1, length, fp);
 	bool valid = read_cnt == length && func(data, length);
 	delete [] data;
 	fclose(fp);
@@ -146,7 +82,7 @@ static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const void
 //
 bool Res_IsWadFile(const OString& filename)
 {
-	const uint32_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
+	const size_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
 	return Res_CheckFileHelper(filename, &Res_ValidateWadData, length);
 }
 
@@ -158,7 +94,7 @@ bool Res_IsWadFile(const OString& filename)
 //
 bool Res_IsDehackedFile(const OString& filename)
 {
-	const uint32_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
+	const size_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
 	return Res_CheckFileHelper(filename, &Res_ValidateDehackedData, length);
 }
 
@@ -689,6 +625,7 @@ const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePat
 		search_priority.push_back(textures_directory_name);
 		search_priority.push_back(patches_directory_name);
 		search_priority.push_back(sprites_directory_name);
+		search_priority.push_back(global_directory_name);
 	}
 	if (directory == textures_directory_name)
 	{
@@ -696,10 +633,12 @@ const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePat
 		search_priority.push_back(flats_directory_name);
 		search_priority.push_back(patches_directory_name);
 		search_priority.push_back(sprites_directory_name);
+		search_priority.push_back(global_directory_name);
 	}
 	if (directory == patches_directory_name)
 	{
 		search_priority.push_back(patches_directory_name);
+		search_priority.push_back(global_directory_name);
 		search_priority.push_back(textures_directory_name);
 		search_priority.push_back(flats_directory_name);
 		search_priority.push_back(sprites_directory_name);
@@ -710,6 +649,7 @@ const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePat
 		search_priority.push_back(patches_directory_name);
 		search_priority.push_back(textures_directory_name);
 		search_priority.push_back(flats_directory_name);
+		search_priority.push_back(global_directory_name);
 	}
 
 	ResourceId res_id = ResourceId::INVALID_ID;
