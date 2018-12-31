@@ -702,9 +702,6 @@ void G_DoLoadLevel (int position)
 
 	gamestate = GS_LEVEL;
 
-//	if (demoplayback || oldgs == GS_STARTUP)
-//		C_HideConsole ();
-
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
 	//	a flat. The data is in the WAD only because

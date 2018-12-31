@@ -84,12 +84,7 @@ EXTERN_CVAR (sv_fastmonsters)
 
 extern size_t got_heapsize;
 
-extern void M_RestoreMode (void);
 void C_DoCommand (const char *cmd);
-
-void D_ProcessEvents (void);
-void G_BuildTiccmd (ticcmd_t* cmd);
-void D_DoAdvanceDemo (void);
 
 #ifdef UNIX
 void daemon_init();
@@ -104,58 +99,17 @@ extern gameinfo_t CommercialGameInfo;
 extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
-extern int testingmode;
-extern int NewWidth, NewHeight, NewBits, DisplayBits;
-EXTERN_CVAR (st_scale) // removeme
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
 BOOL devparm;				// started game with -devparm
-const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
-int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
-BOOL autostart;
-BOOL advancedemo;
 event_t events[MAXEVENTS];
-int eventhead;
-int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-DCanvas *page;
-
-static int demosequence;
-static int pagetic;
 
 const char *LOG_FILE;
-
-//
-// D_ProcessEvents
-// Send all the events of the given timestamp down the responder chain
-//
-void D_ProcessEvents (void)
-{
-}
-
-//
-// D_PostEvent
-// Called by the I/O functions when input is detected
-//
-void D_PostEvent (const event_t* ev)
-{
-	events[eventhead] = *ev;
-
-	if(++eventhead >= MAXEVENTS)
-		eventhead = 0;
-}
-
-//
-// D_Display
-//  draw current display, possibly wiping it from the previous
-//
-void D_Display (void)
-{
-}
 
 //
 // D_DoomLoop
@@ -188,50 +142,6 @@ void D_DoomLoop (void)
 }
 
 //
-// D_PageTicker
-// Handles timing for warped projection
-//
-void D_PageTicker (void)
-{
-	if (--pagetic < 0)
-		D_AdvanceDemo ();
-}
-
-//
-// D_PageDrawer
-//
-void D_PageDrawer (void)
-{
-}
-
-//
-// D_AdvanceDemo
-// Called after each demo or intro demosequence finishes
-//
-void D_AdvanceDemo (void)
-{
-	advancedemo = true;
-}
-
-//
-// D_DoAdvanceDemo
-//
-void D_DoAdvanceDemo (void)
-{
-}
-
-//
-// D_StartTitle
-//
-void D_StartTitle (void)
-{
-	gameaction = ga_nothing;
-	demosequence = -1;
-	D_AdvanceDemo ();
-}
-
-
-//
 // D_Init
 //
 // Called to initialize subsystems when loading a new set of WAD resource
@@ -259,10 +169,6 @@ void D_Init()
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-//	Res_InitTextureManager();
-
 	// [RH] Initialize localizable strings.
 	GStrings.FreeData();
 	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
@@ -280,7 +186,6 @@ void D_Init()
 
 	if (first_time)
 		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
-//	P_InitEffects();
 	P_Init();
 
 	first_time = false;
@@ -322,8 +227,6 @@ void STACK_ARGS D_Shutdown()
 
 	// close all open WAD files
 	W_Close();
-
-//	Res_ShutdownTextureManager();
 
 	R_ShutdownColormaps();
 
@@ -407,7 +310,7 @@ void D_DoomMain()
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
+		DPrintf ("%s", GStrings(D_DEVSTR));        // D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))
@@ -477,7 +380,6 @@ void D_DoomMain()
 		}
 
 		strncpy(startmap, CalcMapName(ep, map), 8);
-		autostart = true;
 	}
 
 	// [RH] Hack to handle +map
@@ -486,7 +388,6 @@ void D_DoomMain()
 	{
 		strncpy(startmap, Args.GetArg(p + 1), 8);
 		((char*)Args.GetArg(p))[0] = '-';
-		autostart = true;
 	}
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));

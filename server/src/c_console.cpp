@@ -185,7 +185,7 @@ int STACK_ARGS DPrintf (const char *format, ...)
 	va_list argptr;
 	int count;
 
-	if (developer)
+	if (developer || devparm)
 	{
 		va_start (argptr, format);
 		count = VPrintf (PRINT_HIGH, format, argptr);

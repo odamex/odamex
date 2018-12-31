@@ -115,19 +115,9 @@ BEGIN_COMMAND (pause)
 END_COMMAND (pause)
 
 //
-// G_Responder
-// Get info needed to make ticcmd_ts for the players.
-//
-BOOL G_Responder (event_t *ev)
-{
-	return false;
-}
-
-//
 // G_Ticker
 // Make ticcmd_ts for the players.
 //
-extern DCanvas *page;
 int mapchange;
 
 void G_Ticker (void)
@@ -149,6 +139,9 @@ void G_Ticker (void)
 		case ga_loadgame:
 		case ga_savegame:
 		case ga_playdemo:
+		case ga_screenshot:
+		case ga_fullconsole:
+		case ga_victory:
 			gameaction = ga_nothing;
 			break;
 
@@ -167,18 +160,7 @@ void G_Ticker (void)
 		case ga_completed:
 			G_DoCompleted ();
 			break;
-		case ga_victory:
-		    gameaction = ga_nothing;
-			break;
 		case ga_worlddone:
-			//G_DoWorldDone ();
-			break;
-		case ga_screenshot:
-			gameaction = ga_nothing;
-			break;
-		case ga_fullconsole:
-//			C_FullConsole ();
-			gameaction = ga_nothing;
 			break;
 		case ga_nothing:
 			break;
