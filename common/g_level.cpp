@@ -562,8 +562,11 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 		// [SL] Stop any playing/recording demos before D_DoomWadReboot wipes out
 		// the zone memory heap and takes the demo data with it.
-		G_CheckDemoStatus();
-
+#ifdef CLIENT_APP
+		{
+			G_CheckDemoStatus();
+		}
+#endif
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 		{

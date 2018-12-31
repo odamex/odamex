@@ -2056,8 +2056,6 @@ void SV_ConnectClient()
 	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
 
-extern bool singleplayerjustdied;
-
 //
 // SV_DisconnectClient
 //

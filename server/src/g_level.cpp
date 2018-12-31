@@ -74,7 +74,6 @@
 
 extern int nextupdate;
 
-
 EXTERN_CVAR (sv_endmapscript)
 EXTERN_CVAR (sv_startmapscript)
 EXTERN_CVAR (sv_curmap)
@@ -87,9 +86,6 @@ EXTERN_CVAR (sv_timelimit)
 extern int mapchange;
 extern int shotclock;
 
-// Start time for timing demos
-dtime_t starttime;
-
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
 
@@ -101,11 +97,9 @@ FLZOMemFile	*reset_snapshot = NULL;
 
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
-extern BOOL netdemo;
 BOOL savegamerestore;
 
-extern int mousex, mousey, joyxmove, joyymove, Impulse;
-extern BOOL sendpause, sendsave, sendcenterview;
+extern BOOL sendpause;
 
 
 bool isFast = false;
@@ -448,7 +442,6 @@ void G_InitNew (const char *mapname)
 	// [SL] 2012-12-08 - Multiplayer is always true for servers
 	multiplayer = true;
 
-	usergame = true;				// will be set false if a demo
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
@@ -688,7 +681,6 @@ extern float BaseBlendA;
 void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
-	size_t i;
 
 	if (position != -1)
 		firstmapinit = true;
@@ -829,26 +821,7 @@ void G_DoLoadLevel (int position)
 	gameaction = ga_nothing;
 	Z_CheckHeap ();
 
-	// clear cmd building stuff // denis - todo - could we get rid of this?
-	Impulse = 0;
-	for (i = 0; i < NUM_ACTIONS; i++)
-		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
-			Actions[i] = 0;
-
-	joyxmove = joyymove = 0;
-	mousex = mousey = 0;
-	sendpause = sendsave = paused = sendcenterview = false;
-
-	if (timingdemo)
-	{
-		static BOOL firstTime = true;
-
-		if (firstTime)
-		{
-			starttime = I_MSTime();
-			firstTime = false;
-		}
-	}
+	paused = false;
 
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	// [RH] Restore the state of the level.

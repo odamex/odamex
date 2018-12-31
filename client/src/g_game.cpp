@@ -87,7 +87,6 @@ void	G_PlayerReborn (player_t &player);
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
 void	G_DoCompleted (void);
-void	G_DoVictory (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
@@ -134,7 +133,6 @@ Players			players;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
-bool			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
 
 enum demoversion_t
 {
@@ -185,7 +183,6 @@ extern bool		simulated_connection;
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
-size_t			maxdemosize;
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
 int				demostartgametic;
 FILE*			recorddemo_fp;
@@ -193,9 +190,6 @@ FILE*			recorddemo_fp;
 BOOL 			precache = true;		// if true, load all graphics at start
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission
-
-byte*			savebuffer;
-
 
 #define MAXPLMOVE				(forwardmove[1])
 

@@ -85,7 +85,6 @@ EXTERN_CVAR (sv_fastmonsters)
 extern size_t got_heapsize;
 
 extern void M_RestoreMode (void);
-extern void R_ExecuteSetViewSize (void);
 void C_DoCommand (const char *cmd);
 
 void D_ProcessEvents (void);
@@ -106,7 +105,6 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern int testingmode;
-extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 EXTERN_CVAR (st_scale) // removeme
 extern BOOL gameisdead;
