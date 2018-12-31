@@ -447,9 +447,7 @@ END_COMMAND (exit)
 //
 void SV_InitNetwork (void)
 {
-	netgame = false;  // for old network code
     network_game = true;
-
 
 	const char *v = Args.CheckValue ("-port");
     if (v)

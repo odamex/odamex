@@ -94,8 +94,6 @@ BOOL	 		viewactive;
 
 // Describes if a network game is being played
 BOOL			network_game;
-// Use only for demos, it is a old variable for the old network code
-BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information

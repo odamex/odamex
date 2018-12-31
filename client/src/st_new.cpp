@@ -176,7 +176,7 @@ void ST_initNew (void)
 	widestnum = widest;
 	numheight = tallnum[0]->height();
 
-	if (multiplayer && (sv_gametype == GM_COOP || demoplayback || !netgame) && level.time)
+	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
 	line_leftempty = W_CachePatch ("ODABARLE", PU_STATIC);

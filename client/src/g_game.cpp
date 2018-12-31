@@ -126,8 +126,6 @@ BOOL	 		viewactive;
 
 // Describes if a network game is being played
 BOOL			network_game;
-// Use only for demos, it is a old variable for the old network code
-BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
@@ -1553,7 +1551,6 @@ void G_DoLoadGame (void)
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
 
-	netgame = false;
 	multiplayer = false;
 
 	// load a base level
@@ -2055,16 +2052,10 @@ void G_DoPlayDemo(bool justStreamInput)
 			consoleplayer_id = displayplayer_id = con.id;
 
 			if (players.size() > 1)
-			{
-				netgame = true;
 				multiplayer = true;
-			}
 			else
-			{
-				netgame = false;
 				multiplayer = false;
-			}
-
+	
 			serverside = true;
 
 			// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
@@ -2171,7 +2162,6 @@ void G_CleanupDemo()
 		Z_Free(demobuffer);
 
 		demoplayback = false;
-		netgame = false;
 		multiplayer = false;
 		serverside = false;
 
