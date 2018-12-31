@@ -640,12 +640,13 @@ BEGIN_COMMAND (map)
 {
 	if (argc > 1)
 	{
+		char mapname[32];
+
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
 		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
-			char mapname[32];
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
             // [Russell] - gamemode is always the better option compared to above
@@ -679,7 +680,8 @@ BEGIN_COMMAND (map)
 			else
 			{
 				unnatural_level_progression = true;
-				G_DeferedInitNew (argv[1]);
+				uppercopy(mapname, argv[1]); // uppercase the mapname
+				G_DeferedInitNew (mapname);
 			}
 		}
 	}
