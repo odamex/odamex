@@ -23,6 +23,7 @@
 
 #include "resources/res_container.h"
 #include "resources/res_main.h"
+#include "resources/res_resourcepath.h"
 #include "resources/res_fileaccessor.h"
 #include "resources/res_identifier.h"
 
@@ -270,7 +271,7 @@ void WadResourceContainer::buildMarkerRecords()
 
 	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
 	{
-		const ResourcePath& path = it->path;
+		const OString& path = it->path;
 		if (isMarker(path))
 		{
 			const OString current_marker_prefix(getMarkerPrefix(path));
@@ -340,7 +341,7 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 
 		uint32_t offset = mDirectory->getOffset(lump_id);
 		uint32_t length = mDirectory->getLength(lump_id);
-		const ResourcePath& path = mDirectory->getPath(lump_id); 
+		const OString& lump_name = mDirectory->getPath(lump_id); 
 		ResourcePath base_path = global_directory_name;
 
 		// check that the lump doesn't extend past the end of the file
@@ -349,9 +350,8 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
 			// SEGS follows this one). If so, move all of the subsequent map lumps into
 			// this map's directory
-			const OString& lump_name = path.last();
-			bool is_map_lump = Res_IsMapLumpName(path);
-			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->next(lump_id));
+			bool is_map_lump = Res_IsMapLumpName(lump_name);
+			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->getPath(lump_id + 1));
 
 			if (is_map_marker)
 				map_name = lump_name;
@@ -372,13 +372,13 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 				if (mFile->read(data, length) == length)
 				{
 					WadResourceIdentifier identifier;
-					base_path = identifier.identifyByContents(path, data, length);
+					base_path = identifier.identifyByContents(lump_name, data, length);
 				}
 
 				delete [] data;
 			}
 			
-			const ResourcePath full_path = base_path + path;
+			const ResourcePath full_path = base_path + lump_name;
 			DPrintf("Adding lump %05d %s\n", lump_id, full_path.c_str());
 			const ResourceId res_id = manager->addResource(full_path, this);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
@@ -427,6 +427,151 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 		return mFile->read(data, size); 
 	}
 	return 0;
+}
+
+
+// ============================================================================
+//
+// DirectoryResourceContainer class implementation
+//
+// ============================================================================
+
+//
+// DirectoryResourceContainer::DirectoryResourceContainer
+//
+//
+DirectoryResourceContainer::DirectoryResourceContainer(
+	const OString& path,
+	const ResourceContainerId& container_id,
+	ResourceManager* manager) :
+		mResourceContainerId(container_id),
+		mPath(path),
+		mDirectory(NULL),
+		mLumpIdLookup(256)
+{
+	mDirectory = new ContainerDirectory();
+
+	// Examine each lump and decide which path it belongs in
+	// and then register it with the resource manager.
+	addResourcesToManager(manager);
+}
+
+
+//
+// DirectoryResourceContainer::~DirectoryResourceContainer
+//
+DirectoryResourceContainer::~DirectoryResourceContainer()
+{
+	cleanup();
+}
+
+
+//
+// DirectoryResourceContainer::cleanup
+//
+// Frees the memory used by the container.
+//
+void DirectoryResourceContainer::cleanup()
+{
+	delete mDirectory;
+	mDirectory = NULL;
+	mLumpIdLookup.clear();
+}
+
+
+//
+// DirectoryResourceContainer::getResourceCount
+//
+// Returns the number of lumps in the WAD file or returns 0 if
+// the WAD file is invalid.
+//
+uint32_t DirectoryResourceContainer::getResourceCount() const
+{
+	if (mDirectory)
+		return mDirectory->size();
+	return 0;
+}
+
+
+//
+// DirectoryResourceContainer::getResourceSize
+//
+uint32_t DirectoryResourceContainer::getResourceSize(const ResourceId res_id) const
+{
+	LumpId lump_id = getLumpId(res_id);
+	if (mDirectory && mDirectory->validate(lump_id))
+		return mDirectory->getLength(lump_id);
+	return 0;
+}
+
+
+//
+// DirectoryResourceContainer::loadResource
+//
+uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+{
+	LumpId lump_id = getLumpId(res_id);
+	if (mDirectory && mDirectory->validate(lump_id))
+	{
+		const OString& path = mDirectory->getPath(lump_id);
+		size = std::min(size, getResourceSize(res_id));
+		if (size > 0)
+		{
+			DiskFileAccessor file_accessor(path);
+			return file_accessor.read(data, size);
+		}
+	}
+	return 0;
+}
+
+
+//
+// DirectoryResourceContainer::addResourcesToManager
+//
+void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
+{
+	std::vector<std::string> files = M_ListDirectoryContents(mPath, 16);
+	for (size_t i = 0 ; i < files.size(); i++)
+	{
+		const OString filepath = files[i];
+		mDirectory->addEntryInfo(filepath, M_FileLength(filepath));
+		const LumpId lump_id = mDirectory->getLumpId(filepath);
+
+		std::string new_path(filepath);
+		// Replace native filesystem path separator with the in-game path separator
+		const char new_deliminator = ResourcePath::DELIMINATOR;
+		std::replace(new_path.begin(), new_path.end(), PATHSEPCHAR, new_deliminator);
+		// Remove the base path to produce the in-game resource path
+		new_path.replace(0, mPath.length(), "");
+
+		// Transform the filename portion of the path into a well-formed lump name.
+		// eg, 8 chars, no filename extension, all caps.
+		//
+		// Note that the "/SCRIPTS/" directory will need the full filename preserved,
+		// including extension and > 8 chars
+		if (new_path.find("/SCRIPTS/") != 0)
+		{
+			size_t last_deliminator = new_path.find_last_of(new_deliminator);
+			if (last_deliminator != std::string::npos)
+			{
+				size_t start_of_lump_name = last_deliminator + 1;
+				// Trim the filename extension
+				new_path.replace(new_path.find_first_of(".", start_of_lump_name), std::string::npos, "");
+				// Is the new lump name empty?
+				if (start_of_lump_name == new_path.size() - 1)
+					continue;
+				// Capitalize the lump name
+				std::transform(new_path.begin() + start_of_lump_name, new_path.end(),
+								new_path.begin() + start_of_lump_name, toupper);
+				// Truncate the lump name to 8 chars
+				new_path = new_path.substr(0, start_of_lump_name + 8);
+			}
+		}
+
+		DPrintf("Adding lump %05d %s\n", lump_id, new_path.c_str());
+		const ResourceId res_id = manager->addResource(new_path, this);
+		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+	}
 }
 
 

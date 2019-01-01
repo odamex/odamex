@@ -38,6 +38,9 @@
 class ResourcePath
 {
 public:
+	static const size_t MAX_ITEMS = 8;
+	static const char DELIMINATOR = '/';
+
 	ResourcePath() :
 		mItemCount(0), mAbsolute(false)
 	{ }
@@ -207,9 +210,6 @@ private:
 		while (std::getline(ss, token, ResourcePath::DELIMINATOR) && mItemCount < ResourcePath::MAX_ITEMS)
 			addItem(token);
 	}
-
-	static const char DELIMINATOR = '/';
-	static const size_t MAX_ITEMS = 8;
 
 	OString mItems[MAX_ITEMS];
 	unsigned char mItemCount;

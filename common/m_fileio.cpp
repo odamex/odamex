@@ -28,6 +28,9 @@
 // unfortunately, we still need you
 #include "cmdlib.h"
 
+#include <sys/stat.h>
+#include <dirent.h>
+
 // Simple logging
 std::ofstream LOG;
 
@@ -53,6 +56,13 @@ SDWORD M_FileLength (FILE *f)
 
 	return FileSize;
 }
+
+SDWORD M_FileLength(const std::string& filename)
+{
+	FILE *f = fopen(filename.c_str(), "r");
+	return M_FileLength(f);
+}
+
 
 //
 // M_FileExists
@@ -264,6 +274,59 @@ std::string M_ExtractFileName(const std::string &filename) {
 	std::string result;
 	M_ExtractFileName(filename, result);
 	return result;
+}
+
+
+//
+// M_IsDirectory
+//
+bool M_IsDirectory(const std::string& path)
+{
+	struct stat sb;
+	return (stat(path.c_str(), &sb) == 0) && S_ISDIR(sb.st_mode);
+}
+
+
+//
+// M_IsFile
+//
+bool M_IsFile(const std::string& path)
+{
+	struct stat sb;
+	return (stat(path.c_str(), &sb) == 0) && S_ISREG(sb.st_mode);
+}
+
+
+//
+// M_ListDirectoryContents
+//
+std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
+{
+	std::vector<std::string> files;
+	if (max_depth > 0)
+	{
+		DIR *dir = opendir(base_path.c_str());
+		if (dir != NULL)
+		{
+			struct dirent* ent;
+			while ((ent = readdir(dir)) != NULL)
+			{
+				std::string name(ent->d_name);
+				std::string path = base_path + PATHSEPCHAR + name;
+				if (M_IsDirectory(path) && name != "." && name != "..")
+				{
+					std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
+					files.insert(files.end(), child_files.begin(), child_files.end());
+				}
+				else if (M_IsFile(path))
+				{
+					files.push_back(path);
+				}
+			}
+			closedir(dir);
+		}
+	}
+	return files;
 }
 
 VERSION_CONTROL (m_fileio_cpp, "$Id$")

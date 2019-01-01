@@ -136,20 +136,26 @@ ResourceManager::~ResourceManager()
 //
 // Opens a resource file and caches the directory of lump names for queries.
 //
-void ResourceManager::openResourceContainer(const OString& filename)
+void ResourceManager::openResourceContainer(const OString& path)
 {
-	if (!M_FileExists(filename))
-		return;
-
 	ResourceContainerId container_id = mContainers.size();
-
-	FileAccessor* file = new DiskFileAccessor(filename);
 	ResourceContainer* container = NULL;
+	FileAccessor* file = NULL;
 
-	if (Res_IsWadFile(filename))
-		container = new WadResourceContainer(file, container_id, this);
-	else
-		container = new SingleLumpResourceContainer(file, container_id, this);
+	if (M_IsFile(path))
+	{
+		// TODO: where is "file" free'd?
+		file = new DiskFileAccessor(path);
+
+		if (Res_IsWadFile(path))
+			container = new WadResourceContainer(file, container_id, this);
+		else
+			container = new SingleLumpResourceContainer(file, container_id, this);
+	}
+	else if (M_IsDirectory(path))
+	{
+		container = new DirectoryResourceContainer(path, container_id, this);
+	}
 
 	// check that the resource container has valid lumps
 	if (container && container->getResourceCount() == 0)
@@ -164,8 +170,8 @@ void ResourceManager::openResourceContainer(const OString& filename)
 	{
 		mContainers.push_back(container);
 		mAccessors.push_back(file);
-		mResourceFileNames.push_back(filename);
-		mResourceFileHashes.push_back(W_MD5(filename));
+		mResourceFileNames.push_back(path);
+		mResourceFileHashes.push_back(W_MD5(path));
 	}
 }
 

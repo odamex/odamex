@@ -611,13 +611,20 @@ std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& st
 	for (size_t argv = 0; (data = ParseString2(data)); argv++)
 	{
 		std::string filename(com_token);
-		std::string full_filename(Res_FindResourceFile(filename, ALL_EXTLIST));
 
-		// [SL] TODO: properly handle missing files
-		if (!full_filename.empty())
-			resource_filenames.push_back(full_filename);
-//		else
-//			missing_files.push_back(filename);
+		if (M_IsDirectory(filename))
+		{
+			resource_filenames.push_back(filename);
+		}
+		else
+		{
+			std::string full_filename(Res_FindResourceFile(filename, ALL_EXTLIST));
+			if (!full_filename.empty())
+				resource_filenames.push_back(full_filename);
+			// [SL] TODO: properly handle missing files
+			// else
+				// missing_files.push_back(filename);
+		}
 	}
 
 	return resource_filenames;
@@ -641,11 +648,11 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 		std::string filename(Args.GetArg(i + 1));
 		std::string full_filename(Res_FindResourceFile(filename, IWAD_EXTLIST));
 
-		// [SL] TODO: properly handle missing files
 		if (!full_filename.empty())
 			resource_filenames.push_back(full_filename);
-//		else
-//			missing_files.push_back(filename);
+		// [SL] TODO: properly handle missing files
+		// else
+			// missing_files.push_back(filename);
 	}
 
 	// [SL] the first parameter should be treated as a file name and
@@ -668,13 +675,19 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 		else if (is_filename)
 		{
 			std::string filename(arg_value);
-			std::string full_filename(Res_FindResourceFile(filename, extlist));
-
-			// [SL] TODO: properly handle missing files
-			if (!full_filename.empty())
-				resource_filenames.push_back(full_filename);
-//			else
-//				missing_files.push_back(filename);
+			if (M_IsDirectory(filename))
+			{
+				resource_filenames.push_back(filename);
+			}
+			else
+			{
+				std::string full_filename(Res_FindResourceFile(filename, extlist));
+				if (!full_filename.empty())
+					resource_filenames.push_back(full_filename);
+				// [SL] TODO: properly handle missing files
+				// else
+					// missing_files.push_back(filename);
+			}
 		}
 	}
 

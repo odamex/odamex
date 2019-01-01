@@ -33,6 +33,7 @@
 #include "d_main.h"
 
 SDWORD M_FileLength (FILE *f);
+SDWORD M_FileLength(const std::string& filename);
 bool M_FileExists(const std::string& filename);
 
 BOOL M_WriteFile(std::string filename, void *source, QWORD length);
@@ -45,5 +46,9 @@ bool M_ExtractFileExtension(const std::string& filename, std::string &dest);
 void M_ExtractFileBase (std::string filename, std::string &dest);
 void M_ExtractFileName (std::string filename, std::string &dest);
 std::string M_ExtractFileName(const std::string &filename);
+
+bool M_IsDirectory(const std::string& path);
+bool M_IsFile(const std::string& path);
+std::vector<std::string> M_ListDirectoryContents(const std::string& path, size_t max_depth = 1);
 
 #endif
