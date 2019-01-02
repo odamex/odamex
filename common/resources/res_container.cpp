@@ -78,12 +78,13 @@ static bool Res_IsMapLumpName(const ResourcePath& path)
 // directory to insert the lump into.
 //
 SingleLumpResourceContainer::SingleLumpResourceContainer(
-	FileAccessor* file,
+	const OString& path,
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		mResourceContainerId(container_id), mFile(file),
+		mResourceContainerId(container_id), mFile(NULL),
 		mResourceId(ResourceId::INVALID_ID)
 {
+	mFile = new DiskFileAccessor(path);
 	if (mFile->valid())
 	{
 		const OString& filename = mFile->getFileName();
@@ -98,6 +99,15 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 		ResourcePath path = Res_MakeResourcePath(lump_name, global_directory_name);
 		mResourceId = manager->addResource(path, this);
 	}
+}
+
+
+//
+// SingleLumpResourceContainer::~SingleLumpResourceContainer
+//
+SingleLumpResourceContainer::~SingleLumpResourceContainer()
+{
+	delete mFile;
 }
 
 
@@ -148,29 +158,26 @@ uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId 
 // will be registered and getResourceCount() will return 0.
 //
 WadResourceContainer::WadResourceContainer(
-	FileAccessor* file,
+	const OString& path,
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
 		mResourceContainerId(container_id),
-		mFile(file),
-		mDirectory(NULL),
+		mFile(NULL),
 		mLumpIdLookup(256),
+		mDirectory(256),
 		mIsIWad(false)
 {
-	mDirectory = readWadDirectory();
-	if (!mDirectory)
-	{
-		cleanup();
-		return;
-	}
+	mIsIWad = W_IsIWAD(path);
+	mFile = new DiskFileAccessor(path);
+
+	if (!readWadDirectory())
+		mDirectory.clear();
 
 	buildMarkerRecords();
 
 	// Examine each lump and decide which path it belongs in
 	// and then register it with the resource manager.
 	addResourcesToManager(manager);
-
-	mIsIWad = W_IsIWAD(file->getFileName());
 }
 
 
@@ -179,7 +186,7 @@ WadResourceContainer::WadResourceContainer(
 //
 WadResourceContainer::~WadResourceContainer()
 {
-	cleanup();
+	delete mFile;
 }
 
 
@@ -189,28 +196,28 @@ WadResourceContainer::~WadResourceContainer()
 // Reads the directory of a WAD file and returns a new instance of
 // ContainerDirectory if successful or NULL otherwise.
 //
-ContainerDirectory* WadResourceContainer::readWadDirectory()
+bool WadResourceContainer::readWadDirectory()
 {
 	uint32_t magic;
 	if (!mFile->read(&magic))
-		return NULL;
+		return false;
 
 	magic = LELONG(magic);
 	if (magic != ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) && 
 		magic != ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24)))
-		return NULL;
+		return false;
 
 	int32_t wad_lump_count;
 	if (!mFile->read(&wad_lump_count))
-		return NULL;
+		return false;
 
 	wad_lump_count = LELONG(wad_lump_count);
 	if (wad_lump_count < 1)
-		return NULL;
+		return false;
 
 	int32_t wad_table_offset;
 	if (!mFile->read(&wad_table_offset) || wad_table_offset < 0)
-		return NULL;
+		return false;
 
 	wad_table_offset = LELONG(wad_table_offset);
 
@@ -222,11 +229,9 @@ ContainerDirectory* WadResourceContainer::readWadDirectory()
 
 	uint32_t wad_table_length = wad_lump_count * wad_lump_record_length;
 	if (wad_table_offset < 12 || wad_table_length + wad_table_offset > mFile->size())
-		return NULL;
+		return false;
 
 	// read the WAD lump directory
-	ContainerDirectory* directory = new ContainerDirectory(wad_lump_count);
-
 	mFile->seek(wad_table_offset);
 	for (uint32_t wad_lump_num = 0; wad_lump_num < (uint32_t)wad_lump_count; wad_lump_num++)
 	{
@@ -239,24 +244,10 @@ ContainerDirectory* WadResourceContainer::readWadDirectory()
 		char name[8];
 		mFile->read(name, 8);
 
-		directory->addEntryInfo(OStringToUpper(name, 8), length, offset);
+		mDirectory.addEntryInfo(OStringToUpper(name, 8), length, offset);
 	}
 
-	return directory;
-}
-
-
-//
-// WadResourceContainer::cleanup
-//
-// Frees the memory used by the container.
-//
-void WadResourceContainer::cleanup()
-{
-	delete mDirectory;
-	mDirectory = NULL;
-	mLumpIdLookup.clear();
-	mIsIWad = false;
+	return true;
 }
 
 
@@ -269,13 +260,13 @@ void WadResourceContainer::buildMarkerRecords()
 	OString last_marker_prefix;
 	LumpId last_lump_id = ContainerDirectory::INVALID_LUMP_ID;
 
-	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
+	for (ContainerDirectory::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
 	{
 		const OString& path = it->path;
 		if (isMarker(path))
 		{
 			const OString current_marker_prefix(getMarkerPrefix(path));
-			LumpId current_lump_id = mDirectory->getLumpId(it);
+			LumpId current_lump_id = mDirectory.getLumpId(it);
 
 			// TODO: attempt to repair broken WADs that have missing markers
 
@@ -335,13 +326,13 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 {
 	OString map_name;
 
-	for (ContainerDirectory::const_iterator it = mDirectory->begin(); it != mDirectory->end(); ++it)
+	for (ContainerDirectory::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
 	{
-		const LumpId lump_id = mDirectory->getLumpId(it);
+		const LumpId lump_id = mDirectory.getLumpId(it);
 
-		uint32_t offset = mDirectory->getOffset(lump_id);
-		uint32_t length = mDirectory->getLength(lump_id);
-		const OString& lump_name = mDirectory->getPath(lump_id); 
+		uint32_t offset = mDirectory.getOffset(lump_id);
+		uint32_t length = mDirectory.getLength(lump_id);
+		const OString& lump_name = mDirectory.getPath(lump_id); 
 		ResourcePath base_path = global_directory_name;
 
 		// check that the lump doesn't extend past the end of the file
@@ -351,7 +342,7 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 			// SEGS follows this one). If so, move all of the subsequent map lumps into
 			// this map's directory
 			bool is_map_lump = Res_IsMapLumpName(lump_name);
-			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory->getPath(lump_id + 1));
+			bool is_map_marker = !is_map_lump && Res_IsMapLumpName(mDirectory.getPath(lump_id + 1));
 
 			if (is_map_marker)
 				map_name = lump_name;
@@ -395,9 +386,7 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 //
 uint32_t WadResourceContainer::getResourceCount() const
 {
-	if (mDirectory)
-		return mDirectory->size();
-	return 0;
+	return mDirectory.size();
 }
 
 
@@ -407,8 +396,8 @@ uint32_t WadResourceContainer::getResourceCount() const
 uint32_t WadResourceContainer::getResourceSize(const ResourceId res_id) const
 {
 	LumpId lump_id = getLumpId(res_id);
-	if (mDirectory && mDirectory->validate(lump_id))
-		return mDirectory->getLength(lump_id);
+	if (mDirectory.validate(lump_id))
+		return mDirectory.getLength(lump_id);
 	return 0;
 }
 
@@ -422,7 +411,7 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 	if (size > 0)
 	{
 		LumpId lump_id = getLumpId(res_id);
-		uint32_t offset = mDirectory->getOffset(lump_id);
+		uint32_t offset = mDirectory.getOffset(lump_id);
 		mFile->seek(offset);
 		return mFile->read(data, size); 
 	}
@@ -446,11 +435,9 @@ DirectoryResourceContainer::DirectoryResourceContainer(
 	ResourceManager* manager) :
 		mResourceContainerId(container_id),
 		mPath(path),
-		mDirectory(NULL),
-		mLumpIdLookup(256)
+		mLumpIdLookup(256),
+		mDirectory(256)
 {
-	mDirectory = new ContainerDirectory();
-
 	// Examine each lump and decide which path it belongs in
 	// and then register it with the resource manager.
 	addResourcesToManager(manager);
@@ -462,20 +449,6 @@ DirectoryResourceContainer::DirectoryResourceContainer(
 //
 DirectoryResourceContainer::~DirectoryResourceContainer()
 {
-	cleanup();
-}
-
-
-//
-// DirectoryResourceContainer::cleanup
-//
-// Frees the memory used by the container.
-//
-void DirectoryResourceContainer::cleanup()
-{
-	delete mDirectory;
-	mDirectory = NULL;
-	mLumpIdLookup.clear();
 }
 
 
@@ -487,9 +460,7 @@ void DirectoryResourceContainer::cleanup()
 //
 uint32_t DirectoryResourceContainer::getResourceCount() const
 {
-	if (mDirectory)
-		return mDirectory->size();
-	return 0;
+	return mDirectory.size();
 }
 
 
@@ -499,8 +470,8 @@ uint32_t DirectoryResourceContainer::getResourceCount() const
 uint32_t DirectoryResourceContainer::getResourceSize(const ResourceId res_id) const
 {
 	LumpId lump_id = getLumpId(res_id);
-	if (mDirectory && mDirectory->validate(lump_id))
-		return mDirectory->getLength(lump_id);
+	if (mDirectory.validate(lump_id))
+		return mDirectory.getLength(lump_id);
 	return 0;
 }
 
@@ -511,9 +482,9 @@ uint32_t DirectoryResourceContainer::getResourceSize(const ResourceId res_id) co
 uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
 {
 	LumpId lump_id = getLumpId(res_id);
-	if (mDirectory && mDirectory->validate(lump_id))
+	if (mDirectory.validate(lump_id))
 	{
-		const OString& path = mDirectory->getPath(lump_id);
+		const OString& path = mDirectory.getPath(lump_id);
 		size = std::min(size, getResourceSize(res_id));
 		if (size > 0)
 		{
@@ -534,8 +505,8 @@ void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
 	for (size_t i = 0 ; i < files.size(); i++)
 	{
 		const OString filepath = files[i];
-		mDirectory->addEntryInfo(filepath, M_FileLength(filepath));
-		const LumpId lump_id = mDirectory->getLumpId(filepath);
+		mDirectory.addEntryInfo(filepath, M_FileLength(filepath));
+		const LumpId lump_id = mDirectory.getLumpId(filepath);
 
 		std::string new_path(filepath);
 		// Replace native filesystem path separator with the in-game path separator

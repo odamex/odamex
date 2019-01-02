@@ -140,17 +140,13 @@ void ResourceManager::openResourceContainer(const OString& path)
 {
 	ResourceContainerId container_id = mContainers.size();
 	ResourceContainer* container = NULL;
-	FileAccessor* file = NULL;
 
 	if (M_IsFile(path))
 	{
-		// TODO: where is "file" free'd?
-		file = new DiskFileAccessor(path);
-
 		if (Res_IsWadFile(path))
-			container = new WadResourceContainer(file, container_id, this);
+			container = new WadResourceContainer(path, container_id, this);
 		else
-			container = new SingleLumpResourceContainer(file, container_id, this);
+			container = new SingleLumpResourceContainer(path, container_id, this);
 	}
 	else if (M_IsDirectory(path))
 	{
@@ -162,14 +158,11 @@ void ResourceManager::openResourceContainer(const OString& path)
 	{
 		delete container;
 		container = NULL;
-		delete file;
-		file = NULL;
 	}
 
 	if (container)
 	{
 		mContainers.push_back(container);
-		mAccessors.push_back(file);
 		mResourceFileNames.push_back(path);
 		mResourceFileHashes.push_back(W_MD5(path));
 	}
@@ -218,10 +211,6 @@ void ResourceManager::closeAllResourceContainers()
 	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
 		delete *it;
 	mContainers.clear();
-
-	for (std::vector<FileAccessor*>::iterator it = mAccessors.begin(); it != mAccessors.end(); ++it)
-		delete *it;
-	mAccessors.clear();
 
 	mResourceFileNames.clear();
 	mResourceFileHashes.clear();

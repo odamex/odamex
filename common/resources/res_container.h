@@ -78,6 +78,12 @@ public:
 		mEntries.reserve(initial_size);
 	}
 
+	void clear()
+	{
+		mPathLookup.clear();
+		mEntries.clear();
+	}
+
 	iterator begin()
 	{
 		return mEntries.begin();
@@ -218,11 +224,11 @@ class SingleLumpResourceContainer : public ResourceContainer
 {
 public:
 	SingleLumpResourceContainer(
-			FileAccessor* file,
+			const OString& path,
 			const ResourceContainerId& container_id,
 			ResourceManager* manager);
 
-	virtual ~SingleLumpResourceContainer() {}
+	virtual ~SingleLumpResourceContainer();
 
 	virtual const ResourceContainerId& getResourceContainerId() const
 	{
@@ -252,7 +258,7 @@ class WadResourceContainer : public ResourceContainer
 {
 public:
 	WadResourceContainer(
-			FileAccessor* file,
+			const OString& path,
 			const ResourceContainerId& container_id,
 			ResourceManager* manager);
 	
@@ -275,13 +281,12 @@ public:
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
 private:
-	void cleanup();
 	void addResourcesToManager(ResourceManager* manager);
 
 	ResourceContainerId		mResourceContainerId;
 	FileAccessor*			mFile;
 
-	ContainerDirectory*		mDirectory;
+	ContainerDirectory		mDirectory;
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable		mLumpIdLookup;
@@ -296,7 +301,7 @@ private:
 		return ContainerDirectory::INVALID_LUMP_ID;
 	}
 
-	ContainerDirectory* readWadDirectory();
+	bool readWadDirectory();
 
     typedef enum {START_MARKER, END_MARKER} MarkerType;
 
@@ -375,7 +380,7 @@ private:
 	ResourceContainerId		mResourceContainerId;
 	OString					mPath;
 
-	ContainerDirectory*		mDirectory;
+	ContainerDirectory		mDirectory;
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable		mLumpIdLookup;

@@ -200,7 +200,6 @@ private:
 private:
 	std::vector<ResourceContainer*>	mContainers;
 
-	std::vector<FileAccessor*>		mAccessors;
 	std::vector<std::string>		mResourceFileNames;
 	std::vector<std::string>		mResourceFileHashes;
 
