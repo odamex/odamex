@@ -1684,19 +1684,10 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 			else if (sdl_ev.type == SDL_TEXTINPUT)
 			{
 				// Text input event (console or chat)
+				// Attache the text representation of the last key press to the
+				// last_keydown_event.
 				if (last_keydown_event)
-				{
-					last_keydown_event->data2 = convUTF8ToUTF32(sdl_ev.text.text);
-					last_keydown_event->data3 = last_keydown_event->data2;
-				}
-
-				/*
-				for (const char* text = sdl_ev.text.text; *text; text++)
-				{
-					mEvents.push(event_t(ev_keydown, 0, *text, *text));
-					mEvents.push(event_t(ev_keyup, 0, *text, *text));
-				}
-				*/
+					last_keydown_event->data2 = last_keydown_event->data3 = convUTF8ToUTF32(sdl_ev.text.text);
 			}
 		}
 	}

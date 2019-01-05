@@ -268,9 +268,9 @@ BOOL HU_Responder(event_t *ev)
 
 	unsigned char textkey = ev->data2;	// [RH] Use localized keymap
 
-	// send a macro
 	if (altdown)
 	{
+		// send a macro
 		if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
 		{
 			ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
@@ -299,24 +299,14 @@ BOOL HU_Responder(event_t *ev)
 	{
 		if (!input_text.empty())
 			input_text.erase(input_text.end() - 1);
-
 		return true;
 	}
 
-	if (textkey)
-	{
-		if (textkey < ' ' || textkey > '~')		// ASCII only please
-			return false;
-
-		if (input_text.length() < MAX_CHATSTR_LEN)
-			input_text += textkey;
-
-		return true;
-	}
-
-	// ensure buttons are eaten properly
-	if (ev->data1 < ' ' || ev->data1 > '~')		// ASCII only please
+	if (textkey < ' ' || textkey > '~')		// ASCII only please
 		return false;
+
+	if (input_text.length() < MAX_CHATSTR_LEN)
+		input_text += textkey;
 
 	return true;
 }
