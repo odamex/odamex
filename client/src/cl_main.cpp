@@ -738,6 +738,7 @@ BEGIN_COMMAND (connect)
 	    return;
 	}
 
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
