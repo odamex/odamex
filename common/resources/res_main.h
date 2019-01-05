@@ -63,6 +63,7 @@ static const ResourcePath textures_directory_name("/TEXTURES/");
 static const ResourcePath hires_directory_name("/HIRES/");
 static const ResourcePath colormaps_directory_name("/COLORMAPS/");
 static const ResourcePath acs_directory_name("/ACS/");
+static const ResourcePath scripts_directory_name("/SCRIPTS/");
 static const ResourcePath voices_directory_name("/VOICES/");
 static const ResourcePath voxels_directory_name("/VOXELS/");
 
