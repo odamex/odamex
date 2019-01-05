@@ -1509,30 +1509,35 @@ static bool C_HandleKey(const event_t* ev)
 
 	const char keytext = ev->data2;
 
-	if (keytext)
+	if (KeysCtrl)
 	{
-		if (KeysCtrl)		// handle key combinations
-		{
-			// Go to beginning of line
- 			if (tolower(keytext) == 'a')
-				CmdLine.moveCursorHome();
+		// handle key combinations
+		// NOTE: we have to use ev->data1 here instead of the
+		// localization-aware ev->data2 since SDL2 does not send a SDL_TEXTINPUT
+		// event when Ctrl is held down.
 
-			// Go to end of line
- 			if (tolower(keytext) == 'e')
-				CmdLine.moveCursorEnd();
+		// Go to beginning of line
+ 		if (tolower(ev->data1) == 'a')
+			CmdLine.moveCursorHome();
 
-			// Paste from clipboard - add each character to command line
- 			if (tolower(keytext) == 'v')
-			{
-				CmdLine.insertString(I_GetClipboardText());
-				TabbedLast = false;
-			}
-		}
-		else
+		// Go to end of line
+ 		if (tolower(ev->data1) == 'e')
+			CmdLine.moveCursorEnd();
+
+		// Paste from clipboard - add each character to command line
+ 		if (tolower(ev->data1) == 'v')
 		{
-			CmdLine.insertCharacter(keytext);		// Add keypress to command line
+			CmdLine.insertString(I_GetClipboardText());
 			TabbedLast = false;
 		}
+		return true;
+	}
+
+	if (keytext)
+	{	
+		// Add keypress to command line
+		CmdLine.insertCharacter(keytext);
+		TabbedLast = false;
 	}
 	return true;
 }
