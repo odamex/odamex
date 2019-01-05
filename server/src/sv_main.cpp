@@ -4650,11 +4650,17 @@ BEGIN_COMMAND (playerinfo)
 
 		if (!validplayer(p))
 		{
-			Printf (PRINT_HIGH, "Bad player number\n");
+			Printf (PRINT_HIGH, "Bad player number.\n");
 			return;
 		}
 		else
 			player = &p;
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Usage : playerinfo <#playerid>\n");
+		Printf(PRINT_HIGH, "Gives additional infos about the selected player (use \"playerlist\" to display player IDs).\n");
+		return;
 	}
 
 	if (!validplayer(*player))
@@ -4699,14 +4705,14 @@ BEGIN_COMMAND (playerlist)
 
 	for (Players::reverse_iterator it = players.rbegin();it != players.rend();++it)
 	{
-		Printf(PRINT_HIGH, "(%02d): %s - %s - frags:%d ping:%d\n",
-		       it->id, it->userinfo.netname.c_str(), NET_AdrToString(it->client.address), it->fragcount, it->ping);
+		Printf(PRINT_HIGH, "(%02d): %s - %s - frags:%d - time:%d - ping:%d\n",
+		       it->id, it->userinfo.netname.c_str(), NET_AdrToString(it->client.address), it->fragcount, it->GameTime, it->ping);
 		anybody = true;
 	}
 
 	if (!anybody)
 	{
-		Printf(PRINT_HIGH, "There are no players on the server\n");
+		Printf(PRINT_HIGH, "There are no players on the server.\n");
 		return;
 	}
 }
