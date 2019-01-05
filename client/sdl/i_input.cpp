@@ -674,6 +674,7 @@ void IInputSubsystem::addToEventRepeaters(event_t& ev)
 					{
 						// update existing repeater with this new event
 						EventRepeater& repeater = it->second;
+						repeater.repeating = false;
 						memcpy(&repeater.event, &ev, sizeof(repeater.event));
 					}
 					else

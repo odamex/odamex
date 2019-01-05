@@ -1849,9 +1849,11 @@ void P_SetupLevel(const OString& mapname, int position)
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
 
+#ifdef CLIENT_APP
 	// preload graphics
-	if (clientside && precache)
+	if (precache)
 		R_PrecacheLevel ();
+#endif
 }
 
 //

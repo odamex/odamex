@@ -42,8 +42,6 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 
-extern BOOL demonew;
-
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
 EXTERN_CVAR(chasedemo)
@@ -133,7 +131,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	}
 
 	// [RH] Allow chasecam for demo watching
-	if ((demoplayback || demonew) && chasedemo)
+	if (demoplayback && chasedemo)
 		player.cheats = CF_CHASECAM;
 
 	// setup gun psprite

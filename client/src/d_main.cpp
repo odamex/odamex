@@ -923,7 +923,7 @@ void D_DoomMain()
 	{
 		G_DoPlayDemo();
 	}
-	else if (autostart || netgame)
+	else if (autostart)
 	{
 		if (autostart)
 		{

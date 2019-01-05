@@ -52,7 +52,7 @@
 #include "cl_vote.h"
 
 static int		widestnum, numheight;
-static const patch_t	*medi;
+static const patch_t	*medi[2];
 static const patch_t	*armors[2];
 static const patch_t	*ammos[4];
 static const patch_t	*bigammos[4];
@@ -75,8 +75,11 @@ static const patch_t *line_centerright;
 static const patch_t *line_centerfull;
 static const patch_t *line_rightempty;
 static const patch_t *line_rightfull;
+
+static const char medipatches[2][8] = { "MEDIA0", "PSTRA0" };
 static const char ammopatches[4][8] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
 static const char bigammopatches[4][8] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
+
 static int		NameUp = -1;
 
 extern const patch_t*	sttminus;
@@ -101,8 +104,6 @@ void ST_unloadNew (void)
 {
 	int i;
 
-	Z_ChangeTag (medi, PU_CACHE);
-
 	Z_ChangeTag (flagiconteam, PU_CACHE);
 	Z_ChangeTag (flagiconbhome, PU_CACHE);
 	Z_ChangeTag (flagiconrhome, PU_CACHE);
@@ -124,7 +125,10 @@ void ST_unloadNew (void)
 	Z_ChangeTag (line_rightfull, PU_CACHE);
 
 	for (i = 0; i < 2; i++)
-		Z_ChangeTag (armors[i], PU_CACHE);
+	{
+		Z_ChangeTag(medi[i], PU_CACHE);
+		Z_ChangeTag(armors[i], PU_CACHE);
+	}
 
 	for (i = 0; i < 4; i++)
 		Z_ChangeTag (ammos[i], PU_CACHE);
@@ -160,8 +164,11 @@ void ST_initNew (void)
 			bigammos[i] = Res_CachePatch(bigammopatches[i], PU_STATIC);
 	}
 
-	if (Res_CheckResource("MEDIA0", sprites_directory_name))
-		medi = Res_CachePatch("MEDIA0", PU_STATIC);
+	for (i = 0; i < 2; i++)
+	{
+		if (Res_CheckResource(medipatches[i], sprites_directory_name))
+			medi[i] = Res_CachePatch(medipatches[i], PU_STATIC);
+	}
 
 	flagiconteam = Res_CachePatch("FLAGIT", PU_STATIC);
 	flagiconbhome = Res_CachePatch("FLAGIC2B", PU_STATIC);
@@ -176,7 +183,7 @@ void ST_initNew (void)
 	widestnum = widest;
 	numheight = tallnum[0]->height();
 
-	if (multiplayer && (sv_gametype == GM_COOP || demoplayback || !netgame) && level.time)
+	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
 	line_leftempty = Res_CachePatch("ODABARLE", PU_STATIC);
@@ -738,12 +745,25 @@ void ZDoomHUD() {
 	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
 
 	// Draw health
-	if (hud_scale)
-		screen->DrawLucentPatchCleanNoMove (medi, 20 * CleanXfac,
-									  I_GetSurfaceHeight() - 2*CleanYfac);
-	else
-		screen->DrawLucentPatch (medi, 20, I_GetSurfaceHeight() - 2);
-	ST_DrawNum (40 * xscale, y, screen, plyr->health);
+	{
+		const patch_t *curr_powerup = medi[0];
+		int xPos = 20;
+		int yPos = 2;
+
+		if (plyr->powers[pw_strength])
+		{
+			curr_powerup = medi[1];
+			xPos -= 1;	// the x position of the Berzerk is 1 pixel to the right compared to the Medikit.
+			yPos += 4;	// the y position of the Berzerk is slightly lowered by 4. So make it the same y position as the medikit.
+		}
+
+		if (hud_scale)
+			screen->DrawLucentPatchCleanNoMove(curr_powerup, xPos * CleanXfac,
+				I_GetSurfaceHeight() - yPos * CleanYfac);
+		else
+			screen->DrawLucentPatch(curr_powerup, xPos, I_GetSurfaceHeight() - yPos);
+		ST_DrawNum(40 * xscale, y, screen, plyr->health);
+	}
 
 	// Draw armor
 	if (plyr->armortype && plyr->armorpoints)

@@ -1781,8 +1781,11 @@ void P_PlayerInSpecialSector (player_t *player)
 			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
+
+#ifdef CLIENT_APP
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();
+#endif
 		}
 	}
 }

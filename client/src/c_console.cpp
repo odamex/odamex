@@ -986,7 +986,7 @@ int STACK_ARGS Printf_Bold(const char *format, ...)
 
 int STACK_ARGS DPrintf(const char *format, ...)
 {
-	if (developer)
+	if (developer || devparm)
 	{
 		va_list argptr;
 

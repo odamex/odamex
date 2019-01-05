@@ -18,7 +18,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	G_GAME
+//	G_GAME, serverside.
 //
 //-----------------------------------------------------------------------------
 
@@ -54,26 +54,20 @@
 #include "p_ctf.h"
 #include "gi.h"
 
-#define SAVESTRINGSIZE	24
-
-#define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
-
-BOOL	G_CheckDemoStatus (void);
-void	G_ReadDemoTiccmd (ticcmd_t* cmd, int player);
-void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf);
 void	G_PlayerReborn (player_t &player);
 
 void	G_DoNewGame (void);
-void	G_DoLoadGame (void);
-void	G_DoPlayDemo (void);
 void	G_DoCompleted (void);
-void	G_DoVictory (void);
 void	G_DoWorldDone (void);
-void	G_DoSaveGame (void);
 
+EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (sv_monstersrespawn)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -81,110 +75,28 @@ BOOL 			respawnmonsters;
 
 BOOL 			paused;
 BOOL 			sendpause;				// send a pause event next tic
-BOOL			sendsave;				// send a save event next tic
-BOOL 			usergame;				// ok to save / end game
-BOOL			sendcenterview;			// send a center view event next tic
-BOOL			menuactive;				// only to make sure p_tick doesn't bitch
 
-bool			timingdemo; 			// if true, exit with report on completion
-bool 			nodrawers;				// for comparative timing purposes
-bool 			noblit; 				// for comparative timing purposes
-
+bool			timingdemo; 			// FIXME : delete this variable for odasrv ?
 BOOL	 		viewactive;
 
-// Describes if a network game is being played
-BOOL			network_game;
-// Use only for demos, it is a old variable for the old network code
-BOOL			netgame;
-// Describes if this is a multiplayer game or not
-BOOL			multiplayer;
-// The player vector, contains all player information
-Players			players;
-// The null player
-player_t		nullplayer;
+BOOL			network_game;			// Describes if a network game is being played
+BOOL			multiplayer;			// Describes if this is a multiplayer game or not
 
-byte			consoleplayer_id;			// player taking events and displaying
-byte			displayplayer_id;			// view being displayed
+Players			players;				// The player vector, contains all player information
+player_t		nullplayer;				// The null player
+
+byte			consoleplayer_id;		// player taking events and displaying
+byte			displayplayer_id;		// view being displayed
 int 			gametic;
-bool			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
 
-enum demoversion_t
-{
-	LMP_DOOM_1_9,
-	LMP_DOOM_1_9_1, // longtics hack
-	ZDOOM_FORM
-}demoversion;
 
-#define DOOM_1_4_DEMO		0x68
-#define DOOM_1_5_DEMO		0x69
-#define DOOM_1_6_DEMO		0x6A
-#define DOOM_1_7_DEMO		0x6B
-#define DOOM_1_8_DEMO		0x6C
-#define DOOM_1_9_DEMO		0x6D
-#define DOOM_1_9p_DEMO		0x6E
-#define DOOM_1_9_1_DEMO		0x6F
-
-#define DOOM_BOOM_DEMO_START	0xC8
-#define DOOM_BOOM_DEMO_END	0xD6
-
-FILE *recorddemo_fp;
-
-EXTERN_CVAR(sv_nomonsters)
-EXTERN_CVAR(sv_fastmonsters)
-EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_monstersrespawn)
-
-char			demoname[256];
-BOOL 			demorecording;
-BOOL 			demoplayback;
-BOOL			democlassic;
-BOOL 			netdemo;
-BOOL			demonew;				// [RH] Only used around G_InitNew for demos
-int				demover;
-byte*			demobuffer;
-byte			*demo_p, *demo_e;
-size_t			maxdemosize;
-byte*			zdemformend;			// end of FORM ZDEM chunk
-byte*			zdembodyend;			// end of ZDEM BODY chunk
-BOOL 			singledemo; 			// quit after playing a demo from cmdline
-int			demostartgametic;
-
-BOOL 			precache = true;		// if true, load all graphics at start
+FILE			*recorddemo_fp;			// Ch0wW : Keeping this for future serverside demo-recording.
+BOOL 			demorecording;			// Ch0wW : Keeping this for future serverside demo-recording.
+BOOL 			demoplayback;			// FIXME : remove this serverside !
+BOOL			democlassic;			// FIXME : remove this serverside !
+int				demostartgametic;		// FIXME : remove this serverside !
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission
-
-byte*			savebuffer;
-
-
-#define MAXPLMOVE				(forwardmove[1])
-
-#define TURBOTHRESHOLD	12800
-
-float	 		normforwardmove[2] = {0x19, 0x32};		// [RH] For setting turbo from console
-float	 		normsidemove[2] = {0x18, 0x28};			// [RH] Ditto
-
-fixed_t			forwardmove[2], sidemove[2];
-fixed_t 		angleturn[3] = {640, 1280, 320};		// + slow turn
-fixed_t			flyspeed[2] = {1*256, 3*256};
-int				lookspeed[2] = {450, 512};
-
-#define SLOWTURNTICS	6
-
-int 			turnheld;								// for accelerative turning
-
-// mouse values are used once
-int 			mousex;
-int 			mousey;
-
-// joystick values are repeated
-// [RH] now, if the joystick is enabled, it will generate an event every tick
-//		so the values here are reset to zero after each tic build (in case
-//		use_joystick gets set to 0 when the joystick is off center)
-int 			joyxmove;
-int 			joyymove;
-
-int 			savegameslot;
-char			savedescription[32];
 
 player_t		&consoleplayer()
 {
@@ -196,28 +108,6 @@ player_t		&displayplayer()
 	return idplayer(displayplayer_id);
 }
 
-/* [RH] Impulses: Temporary hack to get weapon changing
- * working with keybindings until I can get the
- * inventory system working.
- *
- *	So this turned out to not be so temporary. It *will*
- * change, though.
- */
-int Impulse;
-
-BEGIN_COMMAND (impulse)
-{
-	if (argc > 1)
-		Impulse = atoi (argv[1]);
-}
-END_COMMAND (impulse)
-
-BEGIN_COMMAND (centerview)
-{
-	sendcenterview = true;
-}
-END_COMMAND (centerview)
-
 BEGIN_COMMAND (pause)
 {
 	sendpause = true;
@@ -225,46 +115,9 @@ BEGIN_COMMAND (pause)
 END_COMMAND (pause)
 
 //
-// G_BuildTiccmd
-// Builds a ticcmd from all of the available inputs
-// or reads it from the demo buffer.
-// If recording a demo, write it out
-//
-void G_BuildTiccmd (ticcmd_t *cmd)
-{
-}
-
-//
-// G_WriteDemoTiccmd
-//
-void G_WriteDemoTiccmd()
-{
-}
-
-//
-// G_RecordDemo
-//
-bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
-{
-	return false;
-}
-
-EXTERN_CVAR(sv_maxplayers)
-
-//
-// G_Responder
-// Get info needed to make ticcmd_ts for the players.
-//
-BOOL G_Responder (event_t *ev)
-{
-	return false;
-}
-
-//
 // G_Ticker
 // Make ticcmd_ts for the players.
 //
-extern DCanvas *page;
 int mapchange;
 
 void G_Ticker (void)
@@ -282,6 +135,16 @@ void G_Ticker (void)
 	{
 		switch (gameaction)
 		{
+		// Useless ones from client ? Kick them out.
+		case ga_loadgame:
+		case ga_savegame:
+		case ga_playdemo:
+		case ga_screenshot:
+		case ga_fullconsole:
+		case ga_victory:
+			gameaction = ga_nothing;
+			break;
+
 		case ga_loadlevel:
 			G_DoLoadLevel (-1);
 			break;
@@ -294,39 +157,15 @@ void G_Ticker (void)
 		case ga_newgame:
 			G_DoNewGame ();
 			break;
-		case ga_loadgame:
-			gameaction = ga_nothing;
-			break;
-		case ga_savegame:
-			gameaction = ga_nothing;
-			break;
-		case ga_playdemo:
-			gameaction = ga_nothing;
-			break;
 		case ga_completed:
 			G_DoCompleted ();
 			break;
-		case ga_victory:
-		    gameaction = ga_nothing;
-			break;
 		case ga_worlddone:
-			//G_DoWorldDone ();
-			break;
-		case ga_screenshot:
-			gameaction = ga_nothing;
-			break;
-		case ga_fullconsole:
-//			C_FullConsole ();
-			gameaction = ga_nothing;
 			break;
 		case ga_nothing:
 			break;
 		}
-		C_AdjustBottom ();
 	}
-
-	if(demorecording)
-		G_WriteDemoTiccmd();
 
 	// do main actions
 	switch (gamestate)
@@ -786,91 +625,6 @@ void G_DoReborn (player_t &player)
 	// he's going to be inside something.  Too bad.
 	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
 }
-
-
-void G_ScreenShot(const char *filename)
-{
-}
-
-
-
-//
-// G_InitFromSavegame
-// Can be called by the startup code or the menu task.
-//
-void R_ExecuteSetViewSize(void);
-
-char savename[256];
-
-void G_LoadGame (char* name)
-{
-	strcpy (savename, name);
-	gameaction = ga_loadgame;
-}
-
-
-void G_DoLoadGame (void)
-{
-}
-
-
-//
-// G_SaveGame
-// Called by the menu task.
-// Description is a 24 byte text string
-//
-void G_SaveGame (int slot, char *description)
-{
-}
-
-void G_BuildSaveName (std::string &name, int slot)
-{
-}
-
-void G_DoSaveGame (void)
-{
-}
-
-//
-// G_PlayDemo
-//
-
-void G_DeferedPlayDemo (char *name)
-{
-}
-
-
-// [RH] Process all the information in a FORM ZDEM
-//		until a BODY chunk is entered.
-BOOL G_ProcessIFFDemo (char *mapname)
-{
-	return false;
-}
-
-void G_DoPlayDemo (void)
-{
-}
-
-//
-// G_TimeDemo
-//
-void G_TimeDemo (char* name)
-{
-}
-
-
-//
-// G_CheckDemoStatus
-//
-// Called after a death or level completion to allow demos to be cleaned up
-// Returns true if a new demo loop action will take place
-//
-
-BOOL G_CheckDemoStatus (void)
-{
-	return false;
-}
-
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
 

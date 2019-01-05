@@ -126,10 +126,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	if (player.spectator)
 		P_SetSpectatorFlags(player);
 
-	// [RH] Allow chasecam for demo watching
-	//if ((demoplayback || demonew) && chasedemo)
-	//	player.cheats = CF_CHASECAM;
-
 	// setup gun psprite
 	P_SetupPsprites(&player);
 
