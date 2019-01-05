@@ -87,7 +87,6 @@ void	G_PlayerReborn (player_t &player);
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
 void	G_DoCompleted (void);
-void	G_DoVictory (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
@@ -126,8 +125,6 @@ BOOL	 		viewactive;
 
 // Describes if a network game is being played
 BOOL			network_game;
-// Use only for demos, it is a old variable for the old network code
-BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
@@ -136,7 +133,6 @@ Players			players;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
-bool			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
 
 enum demoversion_t
 {
@@ -186,7 +182,6 @@ extern bool		simulated_connection;
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
-size_t			maxdemosize;
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
 int				demostartgametic;
 FILE*			recorddemo_fp;
@@ -194,9 +189,6 @@ FILE*			recorddemo_fp;
 BOOL 			precache = true;		// if true, load all graphics at start
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission
-
-byte*			savebuffer;
-
 
 #define MAXPLMOVE				(forwardmove[1])
 
@@ -1562,7 +1554,6 @@ void G_DoLoadGame (void)
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
 
-	netgame = false;
 	multiplayer = false;
 
 	// load a base level
@@ -2072,16 +2063,10 @@ void G_DoPlayDemo(bool justStreamInput)
 			consoleplayer_id = displayplayer_id = con.id;
 
 			if (players.size() > 1)
-			{
-				netgame = true;
 				multiplayer = true;
-			}
 			else
-			{
-				netgame = false;
 				multiplayer = false;
-			}
-
+	
 			serverside = true;
 
 			// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
@@ -2188,7 +2173,6 @@ void G_CleanupDemo()
 		Z_Free(demobuffer);
 
 		demoplayback = false;
-		netgame = false;
 		multiplayer = false;
 		serverside = false;
 

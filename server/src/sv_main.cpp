@@ -447,9 +447,7 @@ END_COMMAND (exit)
 //
 void SV_InitNetwork (void)
 {
-	netgame = false;  // for old network code
     network_game = true;
-
 
 	const char *v = Args.CheckValue ("-port");
     if (v)
@@ -2057,8 +2055,6 @@ void SV_ConnectClient()
 
 	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
-
-extern bool singleplayerjustdied;
 
 //
 // SV_DisconnectClient
@@ -4588,8 +4584,6 @@ void SV_RunTics()
 
 	SV_BanlistTics();
 	SV_UpdateMaster();
-
-	C_Ticker();
 
 	// only run game-related tickers if the server isn't frozen
 	// (sv_emptyfreeze enabled and no clients)

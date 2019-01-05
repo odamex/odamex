@@ -158,8 +158,6 @@ int __cdecl main(int argc, char *argv[])
 		progdir = I_GetBinaryDir();
 		startdir = I_GetCWD();
 
-		C_InitConsole();
-
 		D_DoomMain();
     }
     catch (CDoomError &error)
@@ -280,8 +278,6 @@ int main (int argc, char **argv)
 		signal(SIGABRT, handler);
 
 		progdir = I_GetBinaryDir();
-
-		C_InitConsole();
 
 		D_DoomMain();
     }

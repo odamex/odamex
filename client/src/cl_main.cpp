@@ -1735,8 +1735,6 @@ bool CL_Connect(void)
 //
 void CL_InitNetwork (void)
 {
-    netgame = false;  // for old network code
-
     const char *v = Args.CheckValue ("-port");
     if (v)
     {
