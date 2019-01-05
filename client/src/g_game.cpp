@@ -176,7 +176,6 @@ char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 
 extern bool		simulated_connection;
 
@@ -332,6 +331,10 @@ END_COMMAND (turn180)
 weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
+	// FIXME : Find a way to properly write this to the vanilla demo file.
+	if (democlassic && demorecording)
+		return;
+
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -340,6 +343,10 @@ END_COMMAND (weapnext)
 
 BEGIN_COMMAND (weapprev)
 {
+	// FIXME : Find a way to properly write this to the vanilla demo file.
+	if (democlassic && demorecording)
+		return;
+
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -455,11 +462,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_USE])
 		cmd->buttons |= BT_USE;
 
-	if (Actions[ACTION_JUMP])
+	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
+	if (Actions[ACTION_JUMP] && !demorecording && !democlassic)
 		cmd->buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
+	// FIXME : "weapnext/weapprev" doesn't handle this properly, desyncing the demos.
 	if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->buttons |= BT_CHANGE;
@@ -565,7 +574,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (!longtics)
-		cmd->yaw &= 0xFF00;
+		cmd->yaw = (cmd->yaw +128) & 0xFF00;
 }
 
 
@@ -1749,7 +1758,7 @@ void G_WriteDemoTiccmd ()
 //
 bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 {
-	std::string demoname = basedemoname + ".lmp";
+	std::string demname = basedemoname + ".lmp";
 
     if (recorddemo_fp)
     {
@@ -1757,13 +1766,16 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
         recorddemo_fp = NULL;
     }
 
-    recorddemo_fp = fopen(demoname.c_str(), "wb");
+    recorddemo_fp = fopen(demname.c_str(), "wb");
 
     if (!recorddemo_fp)
     {
-        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname.c_str());
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demname.c_str());
         return false;
     }
+
+	// Copy the buffered demoname.
+	sprintf(demoname, "%s", demname.c_str());
 
 	CL_QuitNetGame();
 
@@ -1870,7 +1882,12 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 
 		if (gamestate != GS_STARTUP)
 		{
-			//G_CheckDemoStatus();
+			// Ch0wW : don't crash the engine if the mapname isn't found.
+			if (W_CheckNumForName(argv[1]) == -1)
+			{
+				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
+				return;
+			}
 			G_RecordDemo(argv[1], argv[2]);
 		}
 		else

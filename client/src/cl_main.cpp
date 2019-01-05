@@ -418,6 +418,10 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
+	// Don't forget to clean a vanilla demo !
+	if (demorecording && democlassic)
+		G_CleanupDemo();
+
 	// Reset the palette to default
 	V_ResetPalette();
 
@@ -1517,7 +1521,7 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
-	G_CleanupDemo();	// stop dmeos from playing before D_DoomWadReboot wipes out Zone memory
+	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
