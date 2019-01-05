@@ -538,8 +538,8 @@ CVAR(			snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		snd_samplerate, "22050", "Audio samplerate",
-				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 11025.0f, 192000.0f)
+CVAR_RANGE(		snd_samplerate, "44100", "Audio samplerate",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 44100.0f, 192000.0f)
 
 CVAR_RANGE_FUNC_DECL(snd_channels, "12", "Number of channels for sound effects",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f, 32.0f)
