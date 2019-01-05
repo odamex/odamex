@@ -42,7 +42,7 @@ bool I_SDLMouseAvailible();
 //
 // ============================================================================
 
-class ISDL12KeyboardInputDevice : public IInputDevice
+class ISDL12KeyboardInputDevice : public IKeyboardInputDevice
 {
 public:
 	ISDL12KeyboardInputDevice(int id);
@@ -209,7 +209,7 @@ private:
 //
 // ============================================================================
 
-class ISDL20KeyboardInputDevice : public IInputDevice
+class ISDL20KeyboardInputDevice : public IKeyboardInputDevice
 {
 public:
 	ISDL20KeyboardInputDevice(int id);
@@ -230,22 +230,22 @@ public:
 
 	virtual void flushEvents();
 
+	virtual void enableTextEntry();
+	virtual void disableTextEntry();
+
 private:
 	void initKeyTranslation();
-	void initKeyTextTranslation();
 	int translateKey(int sym);
-	int translateKeyText(int sym, int mod);
 	void center();
 
 	bool					mActive;
+	bool					mTextEntry;
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
 
 	typedef OHashTable<int, int> KeyTranslationTable;
 	KeyTranslationTable		mSDLKeyTransTable;
-	KeyTranslationTable		mSDLKeyTextTransTable;
-	KeyTranslationTable		mShiftTransTable;
 };
 
 

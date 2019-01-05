@@ -486,6 +486,8 @@ bool I_InitInput()
 
 	I_ForceUpdateGrab();
 
+	input_subsystem->enableTextEntry();
+
 	return true;
 }
 
@@ -495,6 +497,8 @@ bool I_InitInput()
 //
 void STACK_ARGS I_ShutdownInput()
 {
+	input_subsystem->disableTextEntry();
+
 	I_PauseMouse();
 
 	I_UngrabInput();
@@ -609,6 +613,28 @@ void IInputSubsystem::disableKeyRepeat()
 {
 	mRepeating = false;
 	mEventRepeaters.clear();
+}
+
+
+//
+// IInputSubsystem::enableTextEntry
+//
+void IInputSubsystem::enableTextEntry()
+{
+	IKeyboardInputDevice* device = static_cast<IKeyboardInputDevice*>(getKeyboardInputDevice());
+	if (device)
+		device->enableTextEntry();
+}
+
+
+//
+// IInputSubsystem::disableTextEntry
+//
+void IInputSubsystem::disableTextEntry()
+{
+	IKeyboardInputDevice* device = static_cast<IKeyboardInputDevice*>(getKeyboardInputDevice());
+	if (device)
+		device->disableTextEntry();
 }
 
 

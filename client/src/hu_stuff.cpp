@@ -266,23 +266,25 @@ BOOL HU_Responder(event_t *ev)
 	if (HU_ChatMode() == CHAT_INACTIVE)
 		return false;
 
-	unsigned char c = ev->data3;	// [RH] Use localized keymap
+	unsigned char textkey = ev->data2;	// [RH] Use localized keymap
 
 	// send a macro
 	if (altdown)
 	{
-		if ((ev->data2 >= '0' && ev->data2 <= '9') || (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10))
+		if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
 		{
-			if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
-				ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
-			else
-				ShoveChatStr(chat_macros[ev->data2 - '0']->cstring(), HU_ChatMode() - 1);
-
+			ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
+			HU_UnsetChatMode();
+			return true;
+		}
+		else if (textkey >= '0' && textkey <= '9')
+		{
+			ShoveChatStr(chat_macros[textkey - '0']->cstring(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
 	}
-	if (ev->data3 == KEY_ENTER)
+	if (ev->data1 == KEY_ENTER)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();
@@ -300,18 +302,23 @@ BOOL HU_Responder(event_t *ev)
 
 		return true;
 	}
-	else
+
+	if (textkey)
 	{
-		if (c < ' ' || c > '~') // ASCII only please
+		if (textkey < ' ' || textkey > '~')		// ASCII only please
 			return false;
 
 		if (input_text.length() < MAX_CHATSTR_LEN)
-			input_text += c;
+			input_text += textkey;
 
 		return true;
 	}
 
-	return false;
+	// ensure buttons are eaten properly
+	if (ev->data1 < ' ' || ev->data1 > '~')		// ASCII only please
+		return false;
+
+	return true;
 }
 
 

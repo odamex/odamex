@@ -33,6 +33,51 @@
 #include <queue>
 #include <cassert>
 
+
+//
+// convUTF8ToUTF32
+// 
+// [SL] Based on GPL v2 code from ScummVM
+//
+/* ScummVM - Graphic Adventure Engine
+*
+* ScummVM is the legal property of its developers, whose names
+* are too numerous to list here. Please refer to the COPYRIGHT
+* file distributed with this source distribution.
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+*
+*/
+static uint32_t convUTF8ToUTF32(const char *src)
+{
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+	const char output_type[] = "UTF-32BE";
+#else
+	const char output_type[] = "UTF-32LE";
+#endif 
+
+	uint32_t utf32 = 0;
+	char *dst = SDL_iconv_string(output_type, "UTF-8", src, SDL_strlen(src) + 1);
+	if (dst) {
+		utf32 = *((uint32_t *)dst);
+		SDL_free(dst);
+	}
+	return utf32;
+}
+
+
 //
 // I_SDLMouseAvailible
 //
@@ -1340,11 +1385,10 @@ void ISDL12InputSubsystem::releaseInput()
 // ISDL20KeyboardInputDevice::ISDL20KeyboardInputDevice
 //
 ISDL20KeyboardInputDevice::ISDL20KeyboardInputDevice(int id) :
-	mActive(false),
-	mSDLKeyTransTable(128), mShiftTransTable(128)
+	mActive(false), mTextEntry(false),
+	mSDLKeyTransTable(128)
 {
 	initKeyTranslation();
-	initKeyTextTranslation();
 
 	// enable keyboard input
 	resume();
@@ -1471,175 +1515,6 @@ void ISDL20KeyboardInputDevice::initKeyTranslation()
 
 
 //
-// ISDL20KeyboardInputDevice::initKeyTranslation
-//
-// Initializes the SDL key to text translation table.
-//
-void ISDL20KeyboardInputDevice::initKeyTextTranslation()
-{
-	mSDLKeyTextTransTable[SDLK_BACKSPACE] = '\b';
-	mSDLKeyTextTransTable[SDLK_TAB] = '\t'; 
-	mSDLKeyTextTransTable[SDLK_RETURN] = '\r'; 
-	mSDLKeyTextTransTable[SDLK_SPACE] = ' ';
-	mSDLKeyTextTransTable[SDLK_EXCLAIM]  = '!';
-	mSDLKeyTextTransTable[SDLK_QUOTEDBL]  = '\"';
-	mSDLKeyTextTransTable[SDLK_HASH]  = '#';
-	mSDLKeyTextTransTable[SDLK_DOLLAR]  = '$';
-	mSDLKeyTextTransTable[SDLK_AMPERSAND]  = '&';
-	mSDLKeyTextTransTable[SDLK_QUOTE] = '\'';
-	mSDLKeyTextTransTable[SDLK_LEFTPAREN] = '(';
-	mSDLKeyTextTransTable[SDLK_RIGHTPAREN] = ')';
-	mSDLKeyTextTransTable[SDLK_ASTERISK] = '*';
-	mSDLKeyTextTransTable[SDLK_PLUS] = '+';
-	mSDLKeyTextTransTable[SDLK_COMMA] = ',';
-	mSDLKeyTextTransTable[SDLK_MINUS] = '-';
-	mSDLKeyTextTransTable[SDLK_PERIOD] = '.';
-	mSDLKeyTextTransTable[SDLK_SLASH] = '/';
-	mSDLKeyTextTransTable[SDLK_0] = '0';
-	mSDLKeyTextTransTable[SDLK_1] = '1';
-	mSDLKeyTextTransTable[SDLK_2] = '2';
-	mSDLKeyTextTransTable[SDLK_3] = '3';
-	mSDLKeyTextTransTable[SDLK_4] = '4';
-	mSDLKeyTextTransTable[SDLK_5] = '5';
-	mSDLKeyTextTransTable[SDLK_6] = '6';
-	mSDLKeyTextTransTable[SDLK_7] = '7';
-	mSDLKeyTextTransTable[SDLK_8] = '8';
-	mSDLKeyTextTransTable[SDLK_9] = '9';
-	mSDLKeyTextTransTable[SDLK_COLON] = ':';
-	mSDLKeyTextTransTable[SDLK_SEMICOLON] = ';';
-	mSDLKeyTextTransTable[SDLK_LESS] = '<';
-	mSDLKeyTextTransTable[SDLK_EQUALS] = '=';
-	mSDLKeyTextTransTable[SDLK_GREATER] = '>';
-	mSDLKeyTextTransTable[SDLK_QUESTION] = '?';
-	mSDLKeyTextTransTable[SDLK_AT] = '@';
-	mSDLKeyTextTransTable[SDLK_LEFTBRACKET] = '[';
-	mSDLKeyTextTransTable[SDLK_BACKSLASH] = '\\';
-	mSDLKeyTextTransTable[SDLK_RIGHTBRACKET] = ']';
-	mSDLKeyTextTransTable[SDLK_CARET] = '^';
-	mSDLKeyTextTransTable[SDLK_UNDERSCORE] = '_';
-	mSDLKeyTextTransTable[SDLK_BACKQUOTE] = '`';
-	mSDLKeyTextTransTable[SDLK_a] = 'a';
-	mSDLKeyTextTransTable[SDLK_b] = 'b';
-	mSDLKeyTextTransTable[SDLK_c] = 'c';
-	mSDLKeyTextTransTable[SDLK_d] = 'd';
-	mSDLKeyTextTransTable[SDLK_e] = 'e';
-	mSDLKeyTextTransTable[SDLK_f] = 'f';
-	mSDLKeyTextTransTable[SDLK_g] = 'g';
-	mSDLKeyTextTransTable[SDLK_h] = 'h';
-	mSDLKeyTextTransTable[SDLK_i] = 'i';
-	mSDLKeyTextTransTable[SDLK_j] = 'j';
-	mSDLKeyTextTransTable[SDLK_k] = 'k';
-	mSDLKeyTextTransTable[SDLK_l] = 'l';
-	mSDLKeyTextTransTable[SDLK_m] = 'm';
-	mSDLKeyTextTransTable[SDLK_n] = 'n';
-	mSDLKeyTextTransTable[SDLK_o] = 'o';
-	mSDLKeyTextTransTable[SDLK_p] = 'p';
-	mSDLKeyTextTransTable[SDLK_q] = 'q';
-	mSDLKeyTextTransTable[SDLK_r] = 'r';
-	mSDLKeyTextTransTable[SDLK_s] = 's';
-	mSDLKeyTextTransTable[SDLK_t] = 't';
-	mSDLKeyTextTransTable[SDLK_u] = 'u';
-	mSDLKeyTextTransTable[SDLK_v] = 'v';
-	mSDLKeyTextTransTable[SDLK_w] = 'w';
-	mSDLKeyTextTransTable[SDLK_x] = 'x';
-	mSDLKeyTextTransTable[SDLK_y] = 'y';
-	mSDLKeyTextTransTable[SDLK_z] = 'z';
-	mSDLKeyTextTransTable[SDLK_KP_0] = '0';
-	mSDLKeyTextTransTable[SDLK_KP_1] = '1';
-	mSDLKeyTextTransTable[SDLK_KP_2] = '2';
-	mSDLKeyTextTransTable[SDLK_KP_3] = '3';
-	mSDLKeyTextTransTable[SDLK_KP_4] = '4';
-	mSDLKeyTextTransTable[SDLK_KP_5] = '5';
-	mSDLKeyTextTransTable[SDLK_KP_6] = '6';
-	mSDLKeyTextTransTable[SDLK_KP_7] = '7';
-	mSDLKeyTextTransTable[SDLK_KP_8] = '8';
-	mSDLKeyTextTransTable[SDLK_KP_9] = '9';
-	mSDLKeyTextTransTable[SDLK_KP_PERIOD] = '.';
-	mSDLKeyTextTransTable[SDLK_KP_DIVIDE] = '/';
-	mSDLKeyTextTransTable[SDLK_KP_MULTIPLY] = '*';
-	mSDLKeyTextTransTable[SDLK_KP_MINUS] = '-';
-	mSDLKeyTextTransTable[SDLK_KP_PLUS] = '+';
-	mSDLKeyTextTransTable[SDLK_KP_ENTER] = '\r';
-	mSDLKeyTextTransTable[SDLK_KP_EQUALS] = '=';
-
-	// initialize the shift key translation table
-	mShiftTransTable['a'] = 'A';
-	mShiftTransTable['b'] = 'B';
-	mShiftTransTable['c'] = 'C';
-	mShiftTransTable['d'] = 'D';
-	mShiftTransTable['e'] = 'E';
-	mShiftTransTable['f'] = 'F';
-	mShiftTransTable['g'] = 'G';
-	mShiftTransTable['h'] = 'H';
-	mShiftTransTable['i'] = 'I';
-	mShiftTransTable['j'] = 'J';
-	mShiftTransTable['k'] = 'K';
-	mShiftTransTable['l'] = 'L';
-	mShiftTransTable['m'] = 'M';
-	mShiftTransTable['n'] = 'N';
-	mShiftTransTable['o'] = 'O';
-	mShiftTransTable['p'] = 'P';
-	mShiftTransTable['q'] = 'Q';
-	mShiftTransTable['r'] = 'R';
-	mShiftTransTable['s'] = 'S';
-	mShiftTransTable['t'] = 'T';
-	mShiftTransTable['u'] = 'U';
-	mShiftTransTable['v'] = 'V';
-	mShiftTransTable['w'] = 'W';
-	mShiftTransTable['x'] = 'X';
-	mShiftTransTable['y'] = 'Y';
-	mShiftTransTable['z'] = 'Z';
-	mShiftTransTable['A'] = 'a';
-	mShiftTransTable['B'] = 'b';
-	mShiftTransTable['C'] = 'c';
-	mShiftTransTable['D'] = 'd';
-	mShiftTransTable['E'] = 'e';
-	mShiftTransTable['F'] = 'f';
-	mShiftTransTable['G'] = 'g';
-	mShiftTransTable['H'] = 'h';
-	mShiftTransTable['I'] = 'i';
-	mShiftTransTable['J'] = 'j';
-	mShiftTransTable['K'] = 'k';
-	mShiftTransTable['L'] = 'l';
-	mShiftTransTable['M'] = 'm';
-	mShiftTransTable['N'] = 'n';
-	mShiftTransTable['O'] = 'o';
-	mShiftTransTable['P'] = 'p';
-	mShiftTransTable['Q'] = 'q';
-	mShiftTransTable['R'] = 'r';
-	mShiftTransTable['S'] = 's';
-	mShiftTransTable['T'] = 't';
-	mShiftTransTable['U'] = 'u';
-	mShiftTransTable['V'] = 'v';
-	mShiftTransTable['W'] = 'w';
-	mShiftTransTable['X'] = 'x';
-	mShiftTransTable['Y'] = 'y';
-	mShiftTransTable['Z'] = 'z';
-	mShiftTransTable['1'] = '!';
-	mShiftTransTable['2'] = '@';
-	mShiftTransTable['3'] = '#';
-	mShiftTransTable['4'] = '$';
-	mShiftTransTable['5'] = '%';
-	mShiftTransTable['6'] = '^';
-	mShiftTransTable['7'] = '&';
-	mShiftTransTable['8'] = '*';
-	mShiftTransTable['9'] = '(';
-	mShiftTransTable['0'] = ')';
-	mShiftTransTable['`'] = '~';
-	mShiftTransTable['-'] = '_';
-	mShiftTransTable['='] = '+';
-	mShiftTransTable['['] = '{';
-	mShiftTransTable[']'] = '}';
-	mShiftTransTable['\\'] = '|';
-	mShiftTransTable[';'] = ':';
-	mShiftTransTable['\''] = '\"';
-	mShiftTransTable[','] = '<';
-	mShiftTransTable['.'] = '>';
-	mShiftTransTable['/'] = '?';
-}
-
-
-//
 // ISDL20KeyboardInputDevice::translateKey
 //	
 // Convert the SDL KeySym to an Odamex key using the mSDLKeyTransTable mapping.
@@ -1650,38 +1525,6 @@ int ISDL20KeyboardInputDevice::translateKey(int sym)
 	KeyTranslationTable::const_iterator key_it = mSDLKeyTransTable.find(sym);
 	if (key_it != mSDLKeyTransTable.end())
 		return key_it->second;
-	return 0;
-}
-
-
-//
-// ISDL20KeyboardInputDevice::translateKeyText
-//	
-// Convert the SDL KeySym to a text character using the mSDLKeyTextTransTable
-// mapping and the mShiftTransTable mapping to handle shift keys.
-// Returns 0 if the KeySym is unknown or if it is non-printable.
-//
-int ISDL20KeyboardInputDevice::translateKeyText(int sym, int mod)
-{
-	KeyTranslationTable::const_iterator text_it = mSDLKeyTextTransTable.find(sym);	
-	if (text_it != mSDLKeyTextTransTable.end())
-	{
-		int c = text_it->second;
-
-		// handle CAPS LOCK and translate 'a'-'z' to 'A'-'Z'
-		if (c >= 'a' && c <= 'z' && (mod & KMOD_CAPS))
-			c = mShiftTransTable[c];
-
-		// Handle SHIFT keys
-		if (mod & (KMOD_LSHIFT | KMOD_RSHIFT))
-		{
-			KeyTranslationTable::const_iterator shift_key_it = mShiftTransTable.find(c);
-			if (shift_key_it != mShiftTransTable.end())
-				c = shift_key_it->second;
-		}
-
-		return c;
-	}
 	return 0;
 }
 
@@ -1749,6 +1592,32 @@ void ISDL20KeyboardInputDevice::resume()
 
 
 //
+// ISDL20KeyboardInputDevice::enableTextEntry
+//
+// Enables text entry for this device.
+//
+//
+void ISDL20KeyboardInputDevice::enableTextEntry()
+{
+	mTextEntry = true;
+	SDL_StartTextInput();
+}
+
+
+//
+// ISDL20KeyboardInputDevice::disableTextEntry
+//
+// Disables text entry for this device.
+//
+//
+void ISDL20KeyboardInputDevice::disableTextEntry()
+{
+	mTextEntry = false;
+	SDL_StopTextInput();
+}
+
+
+//
 // ISDL20KeyboardInputDevice::gatherEvents
 //
 // Pumps the SDL Event queue and retrieves any mouse events and puts them into
@@ -1761,46 +1630,73 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 
 	// Force SDL to gather events from input devices. This is called
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-	// process only mouse events, SDL_PumpEvents is necessary.
+	// process only keyboard events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
 
 	// Retrieve chunks of up to 1024 events from SDL
 	int num_events = 0;
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
+	event_t* last_keydown_event = NULL;
 
 	bool quit_event = false;
 
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYDOWN, SDL_KEYUP)))
+	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYDOWN, SDL_TEXTINPUT)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
-			assert(sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP);
-
-			if (sdl_ev.key.repeat == 1)	// Ch0wW : Fixes a problem of ultra-fast repeats.
-				continue;
-
-			if (sdl_ev.key.keysym.sym == SDLK_F4 && sdl_ev.key.keysym.mod & (KMOD_LALT | KMOD_RALT))
+			if (sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP)
 			{
-				// HeX9109: Alt+F4 for cheats! Thanks Spleen
-				// [SL] Don't handle it here but make sure we indicate there was an ALT+F4 event.
-				quit_event = true;
+				const int sym = sdl_ev.key.keysym.sym;
+				const int mod = sdl_ev.key.keysym.mod;
+
+				// Ch0wW : Fixes a problem of ultra-fast repeats.
+				if (sdl_ev.key.repeat == 1)
+					continue;
+
+				// drop ALT-TAB events - they're handled elsewhere
+				if (sym == SDLK_TAB && mod & (KMOD_LALT | KMOD_RALT))
+					continue;
+
+				if (sym == SDLK_F4 && mod & (KMOD_LALT | KMOD_RALT))
+				{
+					// HeX9109: Alt+F4 for cheats! Thanks Spleen
+					// [SL] Don't handle it here but make sure we indicate there was an ALT+F4 event.
+					quit_event = true;
+				}
+				else
+				{
+					// Normal game keyboard event - insert it into our internal queue
+					event_t ev;
+					ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
+					ev.data1 = translateKey(sym);
+					ev.data2 = ev.data3 = 0;		// [SL] don't save the text representation
+
+					if (ev.data1)
+					{
+						mEvents.push(ev);
+						if (ev.type == ev_keydown)
+							last_keydown_event = &mEvents.back();
+					}
+				}
 			}
-			else if (sdl_ev.key.keysym.sym == SDLK_TAB && sdl_ev.key.keysym.mod & (KMOD_LALT | KMOD_RALT))
+			else if (sdl_ev.type == SDL_TEXTINPUT)
 			{
-				// do nothing - the event is dropped
-			}
-			else
-			{
-				// Normal game keyboard event - insert it into our internal queue
-				event_t ev;
-				ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
-				ev.data1 = translateKey(sdl_ev.key.keysym.sym);
-				ev.data2 = ev.data3 = translateKeyText(sdl_ev.key.keysym.sym, sdl_ev.key.keysym.mod);
+				// Text input event (console or chat)
+				if (last_keydown_event)
+				{
+					last_keydown_event->data2 = convUTF8ToUTF32(sdl_ev.text.text);
+					last_keydown_event->data3 = last_keydown_event->data2;
+				}
 
-				if (ev.data1)
-					mEvents.push(ev);
+				/*
+				for (const char* text = sdl_ev.text.text; *text; text++)
+				{
+					mEvents.push(event_t(ev_keydown, 0, *text, *text));
+					mEvents.push(event_t(ev_keyup, 0, *text, *text));
+				}
+				*/
 			}
 		}
 	}
