@@ -3226,6 +3226,11 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 		else
 			MSG_WriteByte(buf, 0xFF);
 	}
+
+	if (sv_gametype == GM_COOP) {
+		for (int i = 0; i < NUMCARDS; i++)
+			MSG_WriteByte(buf, player->cards[i]);
+	}
 }
 
 void SV_SpyPlayer(player_t &viewer)
