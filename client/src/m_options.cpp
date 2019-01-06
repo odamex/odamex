@@ -387,8 +387,6 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t MouseDrivers[NUM_MOUSE_DRIVERS];
-
 static value_t MouseType[] = {
 	{ MOUSE_DOOM,		"Doom"},
 	{ MOUSE_ZDOOM_DI,	"ZDoom"}

@@ -370,32 +370,6 @@ CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
 // Mouse settings
 // --------------
 
-//
-// C_GetDefaultMouseDriver()
-//
-// Allows the default value for music_driver to change depending on
-// compile-time factors (eg, OS)
-//
-static char *C_GetDefaultMouseDriver()
-{
-	static char str[4];
-
-	int driver_id = SDL_MOUSE_DRIVER;
-
-	// TODO: FIXME?
-	#if 0
-	#ifdef _WIN32
-	driver_id = RAW_WIN32_MOUSE_DRIVER;
-	#endif
-    #endif
-	
-	sprintf(str, "%i", driver_id);
-	return str;
-}
-
-CVAR_FUNC_DECL(	mouse_driver, C_GetDefaultMouseDriver(), "Mouse driver backend",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-
 CVAR_RANGE(		mouse_type, "0", "Use vanilla Doom mouse sensitivity or ZDoom mouse sensitivity",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
@@ -538,8 +512,8 @@ CVAR(			snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		snd_samplerate, "22050", "Audio samplerate",
-				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 11025.0f, 192000.0f)
+CVAR_RANGE(		snd_samplerate, "44100", "Audio samplerate",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 44100.0f, 192000.0f)
 
 CVAR_RANGE_FUNC_DECL(snd_channels, "12", "Number of channels for sound effects",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f, 32.0f)

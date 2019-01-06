@@ -123,12 +123,49 @@ void V_AdjustVideoMode()
 }
 
 
+EXTERN_CVAR(vid_defwidth)
+EXTERN_CVAR(vid_defheight)
+EXTERN_CVAR(vid_32bpp)
+EXTERN_CVAR(vid_fullscreen)
+EXTERN_CVAR(vid_widescreen)
+EXTERN_CVAR(sv_allowwidescreen)
+EXTERN_CVAR(vid_vsync)
+
+bool V_CheckModeAdjustment()
+{
+	const IWindow* window = I_GetWindow();
+
+	if (vid_defwidth.asInt() != window->getWidth())
+		return true;
+
+	if (vid_defheight.asInt() != window->getHeight())
+		return true;
+
+	if (vid_32bpp != (window->getPrimarySurface()->getBitsPerPixel() == 32))
+		return true;
+
+	if (vid_fullscreen != window->isFullScreen())
+		return true;
+
+	if (vid_vsync != window->usingVSync())
+		return true;
+
+	bool using_widescreen = I_IsWideResolution();
+	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
+		return true;
+
+	if (vid_widescreen != using_widescreen)
+		return true;
+
+	return false;
+}
+
 CVAR_FUNC_IMPL(vid_defwidth)
 {
 	if (var < 320 || var > MAXWIDTH)
 		var.RestoreDefault();
 	
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_SetResolution(var, new_video_height);
 }
 
@@ -138,28 +175,28 @@ CVAR_FUNC_IMPL(vid_defheight)
 	if (var < 200 || var > MAXHEIGHT)
 		var.RestoreDefault();
 	
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_SetResolution(new_video_width, var);
 }
 
 
 CVAR_FUNC_IMPL(vid_fullscreen)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_32bpp)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
@@ -187,14 +224,14 @@ CVAR_FUNC_IMPL(vid_640x400)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 

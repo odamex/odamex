@@ -75,6 +75,8 @@ int I_GetSurfaceHeight();
 
 bool I_IsProtectedResolution(const IWindowSurface* surface = I_GetPrimarySurface());
 bool I_IsProtectedResolution(int width, int height);
+bool I_IsWideResolution(int width, int height);
+bool I_IsWideResolution(const IWindowSurface* surface = I_GetPrimarySurface());
 
 void I_SetPalette(const argb_t* palette);
 
@@ -176,12 +178,7 @@ public:
 
 	bool isWideScreen() const
 	{
-		if ((mWidth == 320 && mHeight == 200) || (mWidth == 640 && mHeight == 400))
-			return false;
-
-		// consider the mode widescreen if it's width-to-height ratio is
-		// closer to 16:10 than it is to 4:3
-		return abs(15 * (int)mWidth - 20 * (int)mHeight) > abs(15 * (int)mWidth - 24 * (int)mHeight);
+		return I_IsWideResolution(mWidth, mHeight);
 	}
 
 	float getAspectRatio() const

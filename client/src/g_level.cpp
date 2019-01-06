@@ -164,7 +164,6 @@ void G_DoNewGame (void)
 
 	CL_QuitNetGame();
 
-	netgame = false;
 	multiplayer = false;
 
 	// denis - single player warp (like in d_main)
