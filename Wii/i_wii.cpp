@@ -38,6 +38,7 @@
 #endif
 
 #include "i_wii.h"
+#include "doomtype.h"
 
 // External function declarations
 extern "C" { extern void __exception_setreload(int t); }
@@ -52,6 +53,17 @@ int wii_getsockname(int socket, struct sockaddr *address, socklen_t *address_len
 int wii_gethostname(char *name, size_t namelen)
 {
 	return 0;
+}
+
+bool wii_pathisrelative(const char *path)
+{
+	if (path &&
+	   (path[0] == PATHSEPCHAR || // /path/to/file
+	   (path[0] == '.' && path[1] == PATHSEPCHAR) || // ./file
+	   (path[0] == '.' && path[1] == '.' && path[2] == PATHSEPCHAR))) // ../file
+		return true;
+
+	return false;
 }
 
 // scandir() and alphasort() originally obtained from the viewmol project. They have been slightly modified.
