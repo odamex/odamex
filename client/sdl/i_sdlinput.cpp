@@ -134,7 +134,7 @@ void ISDL12KeyboardInputDevice::initKeyTranslation()
 	mSDLKeyTransTable[SDLK_RIGHTBRACKET]	= ']'; 
 	mSDLKeyTransTable[SDLK_BACKSLASH]		= '\\'; 
 	mSDLKeyTransTable[SDLK_BACKQUOTE]		= '`'; 
-	mSDLKeyTransTable[SDLK_WORLD_18]		= '`';		// "~" for AZERTY keyboards
+	mSDLKeyTransTable[178]				= '`';		// "~" for AZERTY keyboards
 	mSDLKeyTransTable[SDLK_0]				= '0'; 
 	mSDLKeyTransTable[SDLK_1]				= '1'; 
 	mSDLKeyTransTable[SDLK_2]				= '2'; 
@@ -1408,7 +1408,7 @@ void ISDL20KeyboardInputDevice::initKeyTranslation()
 	mSDLKeyTransTable[SDLK_RIGHTBRACKET]	= ']'; 
 	mSDLKeyTransTable[SDLK_BACKSLASH]		= '\\'; 
 	mSDLKeyTransTable[SDLK_BACKQUOTE]		= '`'; 
-	mSDLKeyTransTable[SDLK_WORLD_18]		= '`';		// "~" for AZERTY keyboards
+	mSDLKeyTransTable[178]				= '`';		// "~" for AZERTY keyboards
 	mSDLKeyTransTable[SDLK_0]				= '0'; 
 	mSDLKeyTransTable[SDLK_1]				= '1'; 
 	mSDLKeyTransTable[SDLK_2]				= '2'; 
