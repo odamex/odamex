@@ -76,6 +76,162 @@ static uint32_t convUTF8ToUTF32(const char *src)
 }
 
 
+//
+// I_BuildSDLKeyTranslationTable
+//
+// Creates a translation table to convert from SDL Key Codes
+// to Odamex's internal key representation.
+//
+static KeyTranslationTable I_BuildSDLKeyTranslationTable()
+{
+	KeyTranslationTable key_table(128);
+
+	key_table[SDLK_BACKSPACE]		= KEY_BACKSPACE;
+	key_table[SDLK_TAB]				= KEY_TAB;
+	key_table[SDLK_RETURN]			= KEY_ENTER;
+	key_table[SDLK_PAUSE]			= KEY_PAUSE;
+	key_table[SDLK_ESCAPE]			= KEY_ESCAPE;
+	key_table[SDLK_SPACE]			= KEY_SPACE;
+	key_table[SDLK_QUOTE]			= '\'';
+	key_table[SDLK_MINUS]			= '-';
+	key_table[SDLK_COMMA]			= ',';
+	key_table[SDLK_PERIOD]			= '.';
+	key_table[SDLK_SLASH]			= '/';
+	key_table[SDLK_SEMICOLON]		= ';'; 
+	key_table[SDLK_COLON]			= ':';
+	key_table[SDLK_EXCLAIM]			= '!';
+	key_table[SDLK_EQUALS]			= '='; 
+	key_table[SDLK_DOLLAR]			= '$'; 
+	key_table[SDLK_CARET]			= '^'; 
+	key_table[SDLK_ASTERISK]		= '*'; 
+	key_table[SDLK_LEFTBRACKET]		= '['; 
+	key_table[SDLK_RIGHTBRACKET]	= ']'; 
+	key_table[SDLK_RIGHTPAREN]		= '-'; 
+	key_table[SDLK_BACKSLASH]		= '\\'; 
+	key_table[SDLK_BACKQUOTE]		= '`'; 
+	key_table[178]					= '`';		// "~" for AZERTY keyboards
+	key_table[249]					= '[';		// AZERTY only, untranslatable for now.
+	key_table[SDLK_0]				= '0'; 
+	key_table[SDLK_1]				= '1'; 
+	key_table[SDLK_2]				= '2'; 
+	key_table[SDLK_3]				= '3'; 
+	key_table[SDLK_4]				= '4';
+	key_table[SDLK_5]				= '5'; 
+	key_table[SDLK_6]				= '6'; 
+	key_table[SDLK_7]				= '7'; 
+	key_table[SDLK_8]				= '8'; 
+	key_table[SDLK_9]				= '9'; 
+	key_table[SDLK_a]				= 'a'; 
+	key_table[SDLK_b]				= 'b'; 
+	key_table[SDLK_c]				= 'c'; 
+	key_table[SDLK_d]				= 'd'; 
+	key_table[SDLK_e]				= 'e'; 
+	key_table[SDLK_f]				= 'f'; 
+	key_table[SDLK_g]				= 'g'; 
+	key_table[SDLK_h]				= 'h'; 
+	key_table[SDLK_i]				= 'i'; 
+	key_table[SDLK_j]				= 'j'; 
+	key_table[SDLK_k]				= 'k'; 
+	key_table[SDLK_l]				= 'l'; 
+	key_table[SDLK_m]				= 'm'; 
+	key_table[SDLK_n]				= 'n'; 
+	key_table[SDLK_o]				= 'o'; 
+	key_table[SDLK_p]				= 'p'; 
+	key_table[SDLK_q]				= 'q'; 
+	key_table[SDLK_r]				= 'r'; 
+	key_table[SDLK_s]				= 's'; 
+	key_table[SDLK_t]				= 't'; 
+	key_table[SDLK_u]				= 'u'; 
+	key_table[SDLK_v]				= 'v'; 
+	key_table[SDLK_w]				= 'w'; 
+	key_table[SDLK_x]				= 'x'; 
+	key_table[SDLK_y]				= 'y'; 
+	key_table[SDLK_z]				= 'z'; 
+#ifdef SDL12
+	key_table[SDLK_KP0]				= KEYP_0; 
+	key_table[SDLK_KP1]				= KEYP_1; 
+	key_table[SDLK_KP2]				= KEYP_2; 
+	key_table[SDLK_KP3]				= KEYP_3; 
+	key_table[SDLK_KP4]				= KEYP_4; 
+	key_table[SDLK_KP5]				= KEYP_5; 
+	key_table[SDLK_KP6]				= KEYP_6; 
+	key_table[SDLK_KP7]				= KEYP_7; 
+	key_table[SDLK_KP8]				= KEYP_8; 
+	key_table[SDLK_KP9]				= KEYP_9; 
+#endif
+#ifdef SDL20
+	key_table[SDLK_KP_0]			= KEYP_0; 
+	key_table[SDLK_KP_1]			= KEYP_1; 
+	key_table[SDLK_KP_2]			= KEYP_2; 
+	key_table[SDLK_KP_3]			= KEYP_3; 
+	key_table[SDLK_KP_4]			= KEYP_4; 
+	key_table[SDLK_KP_5]			= KEYP_5; 
+	key_table[SDLK_KP_6]			= KEYP_6; 
+	key_table[SDLK_KP_7]			= KEYP_7; 
+	key_table[SDLK_KP_8]			= KEYP_8; 
+	key_table[SDLK_KP_9]			= KEYP_9; 
+#endif
+	key_table[SDLK_KP_PERIOD]		= KEYP_PERIOD; 
+	key_table[SDLK_KP_DIVIDE]		= KEYP_DIVIDE; 
+	key_table[SDLK_KP_MULTIPLY]		= KEYP_MULTIPLY; 
+	key_table[SDLK_KP_MINUS]		= KEYP_MINUS; 
+	key_table[SDLK_KP_PLUS]			= KEYP_PLUS; 
+	key_table[SDLK_KP_ENTER]		= KEYP_ENTER; 
+	key_table[SDLK_KP_EQUALS]		= KEYP_EQUALS; 
+	key_table[SDLK_UP]				= KEY_UPARROW; 
+	key_table[SDLK_DOWN]			= KEY_DOWNARROW; 
+	key_table[SDLK_RIGHT]			= KEY_RIGHTARROW; 
+	key_table[SDLK_LEFT]			= KEY_LEFTARROW; 
+	key_table[SDLK_INSERT]			= KEY_INS; 
+	key_table[SDLK_DELETE]			= KEY_DEL; 
+	key_table[SDLK_HOME]			= KEY_HOME; 
+	key_table[SDLK_END]				= KEY_END; 
+	key_table[SDLK_PAGEUP]			= KEY_PGUP; 
+	key_table[SDLK_PAGEDOWN]		= KEY_PGDN; 
+	key_table[SDLK_F1]				= KEY_F1; 
+	key_table[SDLK_F2]				= KEY_F2; 
+	key_table[SDLK_F3]				= KEY_F3; 
+	key_table[SDLK_F4]				= KEY_F4; 
+	key_table[SDLK_F5]				= KEY_F5; 
+	key_table[SDLK_F6]				= KEY_F6; 
+	key_table[SDLK_F7]				= KEY_F7; 
+	key_table[SDLK_F8]				= KEY_F8; 
+	key_table[SDLK_F9]				= KEY_F9; 
+	key_table[SDLK_F10]				= KEY_F10; 
+	key_table[SDLK_F11]				= KEY_F11; 
+	key_table[SDLK_F12]				= KEY_F12;
+	key_table[SDLK_F13]				= KEY_F13;
+	key_table[SDLK_F14]				= KEY_F14;
+	key_table[SDLK_F15]				= KEY_F15;
+	key_table[SDLK_CAPSLOCK]		= KEY_CAPSLOCK; 
+	key_table[SDLK_RSHIFT]			= KEY_RSHIFT; 
+	key_table[SDLK_LSHIFT]			= KEY_LSHIFT; 
+	key_table[SDLK_RCTRL]			= KEY_RCTRL; 
+	key_table[SDLK_LCTRL]			= KEY_LCTRL; 
+	key_table[SDLK_RALT]			= KEY_RALT; 
+	key_table[SDLK_LALT]			= KEY_LALT;
+	key_table[SDLK_HELP]			= KEY_HELP;
+	key_table[SDLK_SYSREQ]			= KEY_SYSRQ;
+#ifdef SDL12
+	key_table[SDLK_SCROLLOCK]		= KEY_SCRLCK;
+	key_table[SDLK_NUMLOCK] 		= KEY_NUMLOCK; 
+	key_table[SDLK_LSUPER]			= KEY_LWIN;
+	key_table[SDLK_RSUPER]			= KEY_RWIN;
+	key_table[SDLK_PRINT]			= KEY_PRINT;
+	key_table[SDLK_BREAK]			= KEY_BREAK;
+#endif
+#ifdef SDL20
+	key_table[SDLK_SCROLLLOCK]		= KEY_SCRLCK;
+	key_table[SDLK_NUMLOCKCLEAR] 	= KEY_NUMLOCK; 
+	key_table[SDLK_LGUI]			= KEY_LWIN;
+	key_table[SDLK_RGUI]			= KEY_RWIN;
+	key_table[SDLK_PRINTSCREEN]		= KEY_PRINT;
+#endif
+
+	return key_table;
+}
+
+
 #ifdef SDL12
 
 // ============================================================================
@@ -89,9 +245,9 @@ static uint32_t convUTF8ToUTF32(const char *src)
 //
 ISDL12KeyboardInputDevice::ISDL12KeyboardInputDevice(int id) :
 	mActive(false),
-	mSDLKeyTransTable(128), mSDLKeyTextTransTable(128), mShiftTransTable(128)
+	mSDLKeyTransTable(I_BuildSDLKeyTranslationTable()),
+	mSDLKeyTextTransTable(128), mShiftTransTable(128)
 {
-	initKeyTranslation();
 	initKeyTextTranslation();
 
 	// enable keyboard input
@@ -109,130 +265,7 @@ ISDL12KeyboardInputDevice::~ISDL12KeyboardInputDevice()
 
 
 //
-// ISDL12KeyboardInputDevice::initKeyTranslation
-//
-// Initializes the SDL key to Odamex key translation table.
-//
-void ISDL12KeyboardInputDevice::initKeyTranslation()
-{
-	mSDLKeyTransTable[SDLK_BACKSPACE]		= KEY_BACKSPACE;
-	mSDLKeyTransTable[SDLK_TAB]				= KEY_TAB;
-	mSDLKeyTransTable[SDLK_RETURN]			= KEY_ENTER;
-	mSDLKeyTransTable[SDLK_PAUSE]			= KEY_PAUSE;
-	mSDLKeyTransTable[SDLK_ESCAPE]			= KEY_ESCAPE;
-	mSDLKeyTransTable[SDLK_SPACE]			= KEY_SPACE;
-	mSDLKeyTransTable[SDLK_QUOTE]			= '\'';
-	mSDLKeyTransTable[SDLK_MINUS]			= '-';
-	mSDLKeyTransTable[SDLK_COMMA]			= ',';
-	mSDLKeyTransTable[SDLK_PERIOD]			= '.';
-	mSDLKeyTransTable[SDLK_SLASH]			= '/';
-	mSDLKeyTransTable[SDLK_SEMICOLON]		= ';'; 
-	mSDLKeyTransTable[SDLK_COLON]			= ':';
-	mSDLKeyTransTable[SDLK_EXCLAIM]			= '!';
-	mSDLKeyTransTable[SDLK_EQUALS]			= '='; 
-	mSDLKeyTransTable[SDLK_LEFTBRACKET]		= '['; 
-	mSDLKeyTransTable[SDLK_RIGHTBRACKET]	= ']'; 
-	mSDLKeyTransTable[SDLK_BACKSLASH]		= '\\'; 
-	mSDLKeyTransTable[SDLK_BACKQUOTE]		= '`'; 
-	mSDLKeyTransTable[178]				= '`';		// "~" for AZERTY keyboards
-	mSDLKeyTransTable[SDLK_0]				= '0'; 
-	mSDLKeyTransTable[SDLK_1]				= '1'; 
-	mSDLKeyTransTable[SDLK_2]				= '2'; 
-	mSDLKeyTransTable[SDLK_3]				= '3'; 
-	mSDLKeyTransTable[SDLK_4]				= '4';
-	mSDLKeyTransTable[SDLK_5]				= '5'; 
-	mSDLKeyTransTable[SDLK_6]				= '6'; 
-	mSDLKeyTransTable[SDLK_7]				= '7'; 
-	mSDLKeyTransTable[SDLK_8]				= '8'; 
-	mSDLKeyTransTable[SDLK_9]				= '9'; 
-	mSDLKeyTransTable[SDLK_a]				= 'a'; 
-	mSDLKeyTransTable[SDLK_b]				= 'b'; 
-	mSDLKeyTransTable[SDLK_c]				= 'c'; 
-	mSDLKeyTransTable[SDLK_d]				= 'd'; 
-	mSDLKeyTransTable[SDLK_e]				= 'e'; 
-	mSDLKeyTransTable[SDLK_f]				= 'f'; 
-	mSDLKeyTransTable[SDLK_g]				= 'g'; 
-	mSDLKeyTransTable[SDLK_h]				= 'h'; 
-	mSDLKeyTransTable[SDLK_i]				= 'i'; 
-	mSDLKeyTransTable[SDLK_j]				= 'j'; 
-	mSDLKeyTransTable[SDLK_k]				= 'k'; 
-	mSDLKeyTransTable[SDLK_l]				= 'l'; 
-	mSDLKeyTransTable[SDLK_m]				= 'm'; 
-	mSDLKeyTransTable[SDLK_n]				= 'n'; 
-	mSDLKeyTransTable[SDLK_o]				= 'o'; 
-	mSDLKeyTransTable[SDLK_p]				= 'p'; 
-	mSDLKeyTransTable[SDLK_q]				= 'q'; 
-	mSDLKeyTransTable[SDLK_r]				= 'r'; 
-	mSDLKeyTransTable[SDLK_s]				= 's'; 
-	mSDLKeyTransTable[SDLK_t]				= 't'; 
-	mSDLKeyTransTable[SDLK_u]				= 'u'; 
-	mSDLKeyTransTable[SDLK_v]				= 'v'; 
-	mSDLKeyTransTable[SDLK_w]				= 'w'; 
-	mSDLKeyTransTable[SDLK_x]				= 'x'; 
-	mSDLKeyTransTable[SDLK_y]				= 'y'; 
-	mSDLKeyTransTable[SDLK_z]				= 'z'; 
-	mSDLKeyTransTable[SDLK_KP0]				= KEYP_0; 
-	mSDLKeyTransTable[SDLK_KP1]				= KEYP_1; 
-	mSDLKeyTransTable[SDLK_KP2]				= KEYP_2; 
-	mSDLKeyTransTable[SDLK_KP3]				= KEYP_3; 
-	mSDLKeyTransTable[SDLK_KP4]				= KEYP_4; 
-	mSDLKeyTransTable[SDLK_KP5]				= KEYP_5; 
-	mSDLKeyTransTable[SDLK_KP6]				= KEYP_6; 
-	mSDLKeyTransTable[SDLK_KP7]				= KEYP_7; 
-	mSDLKeyTransTable[SDLK_KP8]				= KEYP_8; 
-	mSDLKeyTransTable[SDLK_KP9]				= KEYP_9; 
-	mSDLKeyTransTable[SDLK_KP_PERIOD]		= KEYP_PERIOD; 
-	mSDLKeyTransTable[SDLK_KP_DIVIDE]		= KEYP_DIVIDE; 
-	mSDLKeyTransTable[SDLK_KP_MULTIPLY]		= KEYP_MULTIPLY; 
-	mSDLKeyTransTable[SDLK_KP_MINUS]		= KEYP_MINUS; 
-	mSDLKeyTransTable[SDLK_KP_PLUS]			= KEYP_PLUS; 
-	mSDLKeyTransTable[SDLK_KP_ENTER]		= KEYP_ENTER; 
-	mSDLKeyTransTable[SDLK_KP_EQUALS]		= KEYP_EQUALS; 
-	mSDLKeyTransTable[SDLK_UP]				= KEY_UPARROW; 
-	mSDLKeyTransTable[SDLK_DOWN]			= KEY_DOWNARROW; 
-	mSDLKeyTransTable[SDLK_RIGHT]			= KEY_RIGHTARROW; 
-	mSDLKeyTransTable[SDLK_LEFT]			= KEY_LEFTARROW; 
-	mSDLKeyTransTable[SDLK_INSERT]			= KEY_INS; 
-	mSDLKeyTransTable[SDLK_DELETE]			= KEY_DEL; 
-	mSDLKeyTransTable[SDLK_HOME]			= KEY_HOME; 
-	mSDLKeyTransTable[SDLK_END]				= KEY_END; 
-	mSDLKeyTransTable[SDLK_PAGEUP]			= KEY_PGUP; 
-	mSDLKeyTransTable[SDLK_PAGEDOWN]		= KEY_PGDN; 
-	mSDLKeyTransTable[SDLK_F1]				= KEY_F1; 
-	mSDLKeyTransTable[SDLK_F2]				= KEY_F2; 
-	mSDLKeyTransTable[SDLK_F3]				= KEY_F3; 
-	mSDLKeyTransTable[SDLK_F4]				= KEY_F4; 
-	mSDLKeyTransTable[SDLK_F5]				= KEY_F5; 
-	mSDLKeyTransTable[SDLK_F6]				= KEY_F6; 
-	mSDLKeyTransTable[SDLK_F7]				= KEY_F7; 
-	mSDLKeyTransTable[SDLK_F8]				= KEY_F8; 
-	mSDLKeyTransTable[SDLK_F9]				= KEY_F9; 
-	mSDLKeyTransTable[SDLK_F10]				= KEY_F10; 
-	mSDLKeyTransTable[SDLK_F11]				= KEY_F11; 
-	mSDLKeyTransTable[SDLK_F12]				= KEY_F12;
-	mSDLKeyTransTable[SDLK_F13]				= KEY_F13;
-	mSDLKeyTransTable[SDLK_F14]				= KEY_F14;
-	mSDLKeyTransTable[SDLK_F15]				= KEY_F15;
-	mSDLKeyTransTable[SDLK_CAPSLOCK]		= KEY_CAPSLOCK; 
-	mSDLKeyTransTable[SDLK_SCROLLOCK]		= KEY_SCRLCK;
-	mSDLKeyTransTable[SDLK_NUMLOCK] 		= KEY_NUMLOCK; 
-	mSDLKeyTransTable[SDLK_RSHIFT]			= KEY_RSHIFT; 
-	mSDLKeyTransTable[SDLK_LSHIFT]			= KEY_LSHIFT; 
-	mSDLKeyTransTable[SDLK_RCTRL]			= KEY_RCTRL; 
-	mSDLKeyTransTable[SDLK_LCTRL]			= KEY_LCTRL; 
-	mSDLKeyTransTable[SDLK_RALT]			= KEY_RALT; 
-	mSDLKeyTransTable[SDLK_LALT]			= KEY_LALT;
-	mSDLKeyTransTable[SDLK_LSUPER]			= KEY_LWIN;
-	mSDLKeyTransTable[SDLK_RSUPER]			= KEY_RWIN;
-	mSDLKeyTransTable[SDLK_HELP]			= KEY_HELP;
-	mSDLKeyTransTable[SDLK_PRINT]			= KEY_PRINT;
-	mSDLKeyTransTable[SDLK_SYSREQ]			= KEY_SYSRQ;
-	mSDLKeyTransTable[SDLK_BREAK]			= KEY_BREAK;
-}
-
-
-//
-// ISDL12KeyboardInputDevice::initKeyTranslation
+// ISDL12KeyboardInputDevice::initKeyTextTranslation
 //
 // Initializes the SDL key to text translation table.
 //
@@ -1364,10 +1397,8 @@ void ISDL12InputSubsystem::releaseInput()
 //
 ISDL20KeyboardInputDevice::ISDL20KeyboardInputDevice(int id) :
 	mActive(false), mTextEntry(false),
-	mSDLKeyTransTable(128)
+	mSDLKeyTransTable(I_BuildSDLKeyTranslationTable())
 {
-	initKeyTranslation();
-
 	// enable keyboard input
 	resume();
 }
@@ -1379,119 +1410,6 @@ ISDL20KeyboardInputDevice::ISDL20KeyboardInputDevice(int id) :
 ISDL20KeyboardInputDevice::~ISDL20KeyboardInputDevice()
 {
 	pause();
-}
-
-
-//
-// ISDL20KeyboardInputDevice::initKeyTranslation
-//
-// Initializes the SDL key to Odamex key translation table.
-//
-void ISDL20KeyboardInputDevice::initKeyTranslation()
-{
-	mSDLKeyTransTable[SDLK_BACKSPACE]		= KEY_BACKSPACE;
-	mSDLKeyTransTable[SDLK_TAB]				= KEY_TAB;
-	mSDLKeyTransTable[SDLK_RETURN]			= KEY_ENTER;
-	mSDLKeyTransTable[SDLK_PAUSE]			= KEY_PAUSE;
-	mSDLKeyTransTable[SDLK_ESCAPE]			= KEY_ESCAPE;
-	mSDLKeyTransTable[SDLK_SPACE]			= KEY_SPACE;
-	mSDLKeyTransTable[SDLK_QUOTE]			= '\'';
-	mSDLKeyTransTable[SDLK_MINUS]			= '-';
-	mSDLKeyTransTable[SDLK_COMMA]			= ',';
-	mSDLKeyTransTable[SDLK_PERIOD]			= '.';
-	mSDLKeyTransTable[SDLK_SLASH]			= '/';
-	mSDLKeyTransTable[SDLK_SEMICOLON]		= ';'; 
-	mSDLKeyTransTable[SDLK_COLON]			= ':';
-	mSDLKeyTransTable[SDLK_EXCLAIM]			= '!';
-	mSDLKeyTransTable[SDLK_EQUALS]			= '='; 
-	mSDLKeyTransTable[SDLK_LEFTBRACKET]		= '['; 
-	mSDLKeyTransTable[SDLK_RIGHTBRACKET]	= ']'; 
-	mSDLKeyTransTable[SDLK_BACKSLASH]		= '\\'; 
-	mSDLKeyTransTable[SDLK_BACKQUOTE]		= '`'; 
-	mSDLKeyTransTable[178]				= '`';		// "~" for AZERTY keyboards
-	mSDLKeyTransTable[SDLK_0]				= '0'; 
-	mSDLKeyTransTable[SDLK_1]				= '1'; 
-	mSDLKeyTransTable[SDLK_2]				= '2'; 
-	mSDLKeyTransTable[SDLK_3]				= '3'; 
-	mSDLKeyTransTable[SDLK_4]				= '4';
-	mSDLKeyTransTable[SDLK_5]				= '5'; 
-	mSDLKeyTransTable[SDLK_6]				= '6'; 
-	mSDLKeyTransTable[SDLK_7]				= '7'; 
-	mSDLKeyTransTable[SDLK_8]				= '8'; 
-	mSDLKeyTransTable[SDLK_9]				= '9'; 
-	mSDLKeyTransTable[SDLK_a]				= 'a'; 
-	mSDLKeyTransTable[SDLK_b]				= 'b'; 
-	mSDLKeyTransTable[SDLK_c]				= 'c'; 
-	mSDLKeyTransTable[SDLK_d]				= 'd'; 
-	mSDLKeyTransTable[SDLK_e]				= 'e'; 
-	mSDLKeyTransTable[SDLK_f]				= 'f'; 
-	mSDLKeyTransTable[SDLK_g]				= 'g'; 
-	mSDLKeyTransTable[SDLK_h]				= 'h'; 
-	mSDLKeyTransTable[SDLK_i]				= 'i'; 
-	mSDLKeyTransTable[SDLK_j]				= 'j'; 
-	mSDLKeyTransTable[SDLK_k]				= 'k'; 
-	mSDLKeyTransTable[SDLK_l]				= 'l'; 
-	mSDLKeyTransTable[SDLK_m]				= 'm'; 
-	mSDLKeyTransTable[SDLK_n]				= 'n'; 
-	mSDLKeyTransTable[SDLK_o]				= 'o'; 
-	mSDLKeyTransTable[SDLK_p]				= 'p'; 
-	mSDLKeyTransTable[SDLK_q]				= 'q'; 
-	mSDLKeyTransTable[SDLK_r]				= 'r'; 
-	mSDLKeyTransTable[SDLK_s]				= 's'; 
-	mSDLKeyTransTable[SDLK_t]				= 't'; 
-	mSDLKeyTransTable[SDLK_u]				= 'u'; 
-	mSDLKeyTransTable[SDLK_v]				= 'v'; 
-	mSDLKeyTransTable[SDLK_w]				= 'w'; 
-	mSDLKeyTransTable[SDLK_x]				= 'x'; 
-	mSDLKeyTransTable[SDLK_y]				= 'y'; 
-	mSDLKeyTransTable[SDLK_z]				= 'z'; 
-	mSDLKeyTransTable[SDLK_KP_0]			= KEYP_0; 
-	mSDLKeyTransTable[SDLK_KP_1]			= KEYP_1; 
-	mSDLKeyTransTable[SDLK_KP_2]			= KEYP_2; 
-	mSDLKeyTransTable[SDLK_KP_3]			= KEYP_3; 
-	mSDLKeyTransTable[SDLK_KP_4]			= KEYP_4; 
-	mSDLKeyTransTable[SDLK_KP_5]			= KEYP_5; 
-	mSDLKeyTransTable[SDLK_KP_6]			= KEYP_6; 
-	mSDLKeyTransTable[SDLK_KP_7]			= KEYP_7; 
-	mSDLKeyTransTable[SDLK_KP_8]			= KEYP_8; 
-	mSDLKeyTransTable[SDLK_KP_9]			= KEYP_9; 
-	mSDLKeyTransTable[SDLK_KP_PERIOD]		= KEYP_PERIOD; 
-	mSDLKeyTransTable[SDLK_KP_DIVIDE]		= KEYP_DIVIDE; 
-	mSDLKeyTransTable[SDLK_KP_MULTIPLY]		= KEYP_MULTIPLY; 
-	mSDLKeyTransTable[SDLK_KP_MINUS]		= KEYP_MINUS; 
-	mSDLKeyTransTable[SDLK_KP_PLUS]			= KEYP_PLUS; 
-	mSDLKeyTransTable[SDLK_KP_ENTER]		= KEYP_ENTER; 
-	mSDLKeyTransTable[SDLK_KP_EQUALS]		= KEYP_EQUALS; 
-	mSDLKeyTransTable[SDLK_UP]				= KEY_UPARROW; 
-	mSDLKeyTransTable[SDLK_DOWN]			= KEY_DOWNARROW; 
-	mSDLKeyTransTable[SDLK_RIGHT]			= KEY_RIGHTARROW; 
-	mSDLKeyTransTable[SDLK_LEFT]			= KEY_LEFTARROW; 
-	mSDLKeyTransTable[SDLK_INSERT]			= KEY_INS; 
-	mSDLKeyTransTable[SDLK_DELETE]			= KEY_DEL; 
-	mSDLKeyTransTable[SDLK_HOME]			= KEY_HOME; 
-	mSDLKeyTransTable[SDLK_END]				= KEY_END; 
-	mSDLKeyTransTable[SDLK_PAGEUP]			= KEY_PGUP; 
-	mSDLKeyTransTable[SDLK_PAGEDOWN]		= KEY_PGDN; 
-	mSDLKeyTransTable[SDLK_F1]				= KEY_F1; 
-	mSDLKeyTransTable[SDLK_F2]				= KEY_F2; 
-	mSDLKeyTransTable[SDLK_F3]				= KEY_F3; 
-	mSDLKeyTransTable[SDLK_F4]				= KEY_F4; 
-	mSDLKeyTransTable[SDLK_F5]				= KEY_F5; 
-	mSDLKeyTransTable[SDLK_F6]				= KEY_F6; 
-	mSDLKeyTransTable[SDLK_F7]				= KEY_F7; 
-	mSDLKeyTransTable[SDLK_F8]				= KEY_F8; 
-	mSDLKeyTransTable[SDLK_F9]				= KEY_F9; 
-	mSDLKeyTransTable[SDLK_F10]				= KEY_F10; 
-	mSDLKeyTransTable[SDLK_F11]				= KEY_F11; 
-	mSDLKeyTransTable[SDLK_F12]				= KEY_F12; 
-	mSDLKeyTransTable[SDLK_CAPSLOCK]		= KEY_CAPSLOCK; 
-	mSDLKeyTransTable[SDLK_SCROLLLOCK]		= KEY_SCRLCK; 
-	mSDLKeyTransTable[SDLK_RSHIFT]			= KEY_RSHIFT; 
-	mSDLKeyTransTable[SDLK_LSHIFT]			= KEY_LSHIFT; 
-	mSDLKeyTransTable[SDLK_RCTRL]			= KEY_RCTRL; 
-	mSDLKeyTransTable[SDLK_LCTRL]			= KEY_LCTRL; 
-	mSDLKeyTransTable[SDLK_RALT]			= KEY_RALT; 
-	mSDLKeyTransTable[SDLK_LALT]			= KEY_LALT; 
 }
 
 

@@ -32,7 +32,7 @@
 #include <list>
 #include "hashtable.h"
 
-bool I_SDLMouseAvailible();
+typedef OHashTable<int, int> KeyTranslationTable;
 
 #ifdef SDL12
 
@@ -64,18 +64,15 @@ public:
 	virtual void flushEvents();
 
 private:
-	void initKeyTranslation();
 	void initKeyTextTranslation();
 	int translateKey(int sym);
 	int translateKeyText(int sym, int mod);
-	void center();
 
 	bool					mActive;
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
 
-	typedef OHashTable<int, int> KeyTranslationTable;
 	KeyTranslationTable		mSDLKeyTransTable;
 	KeyTranslationTable		mSDLKeyTextTransTable;
 	KeyTranslationTable		mShiftTransTable;
@@ -234,9 +231,7 @@ public:
 	virtual void disableTextEntry();
 
 private:
-	void initKeyTranslation();
 	int translateKey(int sym);
-	void center();
 
 	bool					mActive;
 	bool					mTextEntry;
@@ -244,7 +239,6 @@ private:
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
 
-	typedef OHashTable<int, int> KeyTranslationTable;
 	KeyTranslationTable		mSDLKeyTransTable;
 };
 
