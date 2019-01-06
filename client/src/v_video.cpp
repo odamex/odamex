@@ -134,12 +134,8 @@ EXTERN_CVAR(vid_vsync)
 bool V_CheckModeAdjustment()
 {
 	const IWindow* window = I_GetWindow();
-
-	if (vid_defwidth.asInt() != window->getWidth())
-		return true;
-
-	if (vid_defheight.asInt() != window->getHeight())
-		return true;
+	if (!window)
+		return false;
 
 	if (vid_32bpp != (window->getPrimarySurface()->getBitsPerPixel() == 32))
 		return true;
