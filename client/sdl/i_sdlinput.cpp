@@ -617,9 +617,7 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 void ISDL12KeyboardInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 
@@ -843,9 +841,7 @@ void ISDL12MouseInputDevice::gatherEvents()
 void ISDL12MouseInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 
@@ -1068,9 +1064,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 void ISDL12JoystickInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 
@@ -1470,6 +1464,7 @@ void ISDL20KeyboardInputDevice::pause()
 	mActive = false;
 	SDL_EventState(SDL_KEYDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_KEYUP, SDL_IGNORE);
+	SDL_EventState(SDL_TEXTINPUT, SDL_IGNORE);
 }
 
 
@@ -1487,6 +1482,7 @@ void ISDL20KeyboardInputDevice::resume()
 	reset();
 	SDL_EventState(SDL_KEYDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_KEYUP, SDL_ENABLE);
+	SDL_EventState(SDL_TEXTINPUT, SDL_ENABLE);
 }
 
 
@@ -1606,9 +1602,7 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 void ISDL20KeyboardInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 
@@ -1842,9 +1836,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 void ISDL20MouseInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 
@@ -2065,9 +2057,7 @@ void ISDL20JoystickInputDevice::gatherEvents()
 void ISDL20JoystickInputDevice::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 
@@ -2091,6 +2081,7 @@ ISDL20InputSubsystem::ISDL20InputSubsystem() :
 	// IInputDevice constructors will enable these events when they're initialized.
 	SDL_EventState(SDL_KEYDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_KEYUP, SDL_IGNORE);
+	SDL_EventState(SDL_TEXTINPUT, SDL_IGNORE);
 
 	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
