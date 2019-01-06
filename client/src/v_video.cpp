@@ -135,13 +135,13 @@ bool V_CheckModeAdjustment()
 {
 	const IWindow* window = I_GetWindow();
 
-	if (vid_defwidth.asInt() != window->getWidth())
+	if (vid_defwidth != window->getWidth())
 		return true;
 
-	if (vid_defheight.asInt() != window->getHeight())
+	if (vid_defheight != window->getHeight())
 		return true;
 
-	if (vid_32bpp != (window->getBitsPerPixel() == 32))
+	if (vid_32bpp != (window->getPrimarySurface()->getBitsPerPixel() == 32))
 		return true;
 
 	if (vid_fullscreen != window->isFullScreen())
