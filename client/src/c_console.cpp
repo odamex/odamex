@@ -1491,6 +1491,7 @@ static bool C_HandleKey(const event_t* ev)
 		TabbedLast = false;
 		return true;
 	case KEY_ENTER:
+	case KEYP_ENTER:
 		// Execute command line (ENTER)
 		if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
 			RowAdjust = 0;   // con_scrlock = 0 does it automatically.

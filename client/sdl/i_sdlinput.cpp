@@ -1637,9 +1637,8 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 	int num_events = 0;
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
-	event_t* last_keydown_event = NULL;
 
-	bool quit_event = false;
+	event_t* last_keydown_event = NULL;
 
 	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYDOWN, SDL_TEXTINPUT)))
 	{
@@ -1652,53 +1651,48 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 				const int mod = sdl_ev.key.keysym.mod;
 
 				// Ch0wW : Fixes a problem of ultra-fast repeats.
-				if (sdl_ev.key.repeat == 1)
+				if (sdl_ev.key.repeat != 0)
 					continue;
 
 				// drop ALT-TAB events - they're handled elsewhere
 				if (sym == SDLK_TAB && mod & (KMOD_LALT | KMOD_RALT))
 					continue;
 
+				// HeX9109: Alt+F4 for cheats! Thanks Spleen
+				// Translate the ALT+F4 key combo event into a SDL_QUIT event and push
+				// it back into SDL's event queue so that it can be handled elsewhere.
 				if (sym == SDLK_F4 && mod & (KMOD_LALT | KMOD_RALT))
 				{
-					// HeX9109: Alt+F4 for cheats! Thanks Spleen
-					// [SL] Don't handle it here but make sure we indicate there was an ALT+F4 event.
-					quit_event = true;
+					SDL_Event sdl_quit_ev;
+					sdl_quit_ev.type = SDL_QUIT;
+					SDL_PushEvent(&sdl_quit_ev);
+					continue;
 				}
-				else
-				{
-					// Normal game keyboard event - insert it into our internal queue
-					event_t ev;
-					ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
-					ev.data1 = translateKey(sym);
-					ev.data2 = ev.data3 = 0;		// [SL] don't save the text representation
 
-					if (ev.data1)
-					{
-						mEvents.push(ev);
-						if (ev.type == ev_keydown)
-							last_keydown_event = &mEvents.back();
-					}
+				// Normal game keyboard event - insert it into our internal queue
+				event_t ev;
+				ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
+				ev.data1 = translateKey(sym);
+
+				if (ev.data1)
+				{
+					mEvents.push(ev);
+					if (ev.type == ev_keydown)
+						last_keydown_event = &mEvents.back();
 				}
 			}
 			else if (sdl_ev.type == SDL_TEXTINPUT)
 			{
 				// Text input event (console or chat)
-				// Attache the text representation of the last key press to the
+				// Attach the text representation of the last key press to the
 				// last_keydown_event.
 				if (last_keydown_event)
-					last_keydown_event->data2 = last_keydown_event->data3 = convUTF8ToUTF32(sdl_ev.text.text);
+				{
+					int keytext = convUTF8ToUTF32(sdl_ev.text.text);
+					last_keydown_event->data2 = last_keydown_event->data3 = keytext;
+				}
 			}
 		}
-	}
-
-	// Translate the ALT+F4 key combo event into a SDL_QUIT event and push
-	// it back into SDL's event queue so that it can be handled elsewhere.
-	if (quit_event)
-	{
-		SDL_Event sdl_ev;
-		sdl_ev.type = SDL_QUIT;
-		SDL_PushEvent(&sdl_ev);
 	}
 }
 
