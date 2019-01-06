@@ -25,7 +25,7 @@ INCLUDES	:=	../common ../client/src ../client/sdl ./
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -O2 -Wall -DUNIX -DNOASM -DGCONSOLE $(MACHDEP) $(INCLUDE)
+CFLAGS	= -O2 -Wall -DUNIX -DNOASM -DGCONSOLE -DCLIENT_APP -DUSE_PNG $(MACHDEP) $(INCLUDE)
 #CFLAGS	= -g -Wall -DDEBUG -D_WII -DUNIX -DNOASM -DGCONSOLE $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
@@ -36,7 +36,7 @@ LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lSDL_mixer -lsmpeg -lvorbisidec -lSDL -lz \
+LIBS	:=	-lpng -lSDL_mixer -lsmpeg -lvorbisidec -lSDL -lz \
 			-lfat -lwiiuse -lbte -logc -lm -lwiikeyboard \
 #			-ldb
 
@@ -56,18 +56,21 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-					$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+					$(foreach dir,$(DATA),$(CURDIR)/$(dir))\
+					$(CURDIR)/..
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
+
+BUILDDIRS	:= 	$(subst ../,$(BUILD)/,$(SOURCES))
 
 #---------------------------------------------------------------------------------
 # automatically build a list of object files for our project
 #---------------------------------------------------------------------------------
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-sFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.S)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+CFILES		:=	$(foreach dir,$(SOURCES),$(subst ../,,$(wildcard $(dir)/*.c)))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(subst ../,,$(wildcard $(dir)/*.cpp)))
+sFILES		:=	$(foreach dir,$(SOURCES),$(subst ../,,$(wildcard $(dir)/*.s)))
+SFILES		:=	$(foreach dir,$(SOURCES),$(subst ../,,$(wildcard $(dir)/*.S)))
+BINFILES	:=	$(foreach dir,$(DATA),$(wildcard $(dir)/*.*))
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -78,9 +81,9 @@ else
 	export LD	:=	$(CXX)
 endif
 
-export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
+export OFILES	:=	$(subst ../,build/,$(addsuffix .o,$(BINFILES)) \
 					$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) \
-					$(sFILES:.s=.o) $(SFILES:.S=.o)
+					$(sFILES:.s=.o) $(SFILES:.S=.o))
 
 #---------------------------------------------------------------------------------
 # build a list of include paths
@@ -103,6 +106,10 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 #---------------------------------------------------------------------------------
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
+	@for dir in $(BUILDDIRS); \
+	do \
+	[ -d $$dir ] || mkdir -p $$dir ;\
+	done
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------

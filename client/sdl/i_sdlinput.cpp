@@ -1208,7 +1208,7 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
 	std::vector<IInputDeviceInfo> devices;
 	devices.push_back(IInputDeviceInfo());
 	IInputDeviceInfo& sdl_device_info = devices.back();
-	sdl_device_info.mId = SDL_MOUSE_DRIVER;
+	sdl_device_info.mId = 0;
 	sdl_device_info.mDeviceName = "SDL 1.2 mouse";
 
 	return devices;
