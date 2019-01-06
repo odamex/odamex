@@ -38,7 +38,6 @@
 #include "g_warmup.h"
 
 extern bool predicting;
-extern bool singleplayerjustdied;
 
 EXTERN_CVAR(sv_doubleammo)
 EXTERN_CVAR(sv_weaponstay)
@@ -1182,11 +1181,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
 		P_DropWeapon(target->player);
-
-		if (!multiplayer)
-		{
-			singleplayerjustdied = true;
-		}
 
 		tplayer->death_time = level.time;
 

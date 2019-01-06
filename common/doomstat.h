@@ -69,9 +69,6 @@ EXTERN_CVAR (sv_skill)
 // Nightmare mode flag, single player.
 extern	BOOL 			respawnmonsters;
 
-// Netgame? Only true if >1 player.
-extern	BOOL			netgame;
-
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
@@ -139,7 +136,6 @@ extern	BOOL			usergame;
 
 extern	BOOL			demoplayback;
 extern	BOOL			demorecording;
-extern	int				demover;
 extern	BOOL			democlassic;
 extern	BOOL			autorecord;
 extern	std::string		demorecordfile;

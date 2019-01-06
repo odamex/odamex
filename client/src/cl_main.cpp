@@ -160,56 +160,62 @@ EXTERN_CVAR (cl_forcedownload)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
-static byte enemycolor[4];
-static byte teamcolor[4];
+static argb_t enemycolor, teamcolor;
 
+//
+// CL_ShadePlayerColor
+//
+// Shades base_color darker using the intensity of shade_color.
+//
+argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
+{
+	if (base_color == shade_color)
+		return base_color;
+
+	float hue = V_RGBtoHSV(base_color).geth();
+	float intensity = std::min(0.6f + 0.4f * V_RGBtoHSV(shade_color).getv(), 1.0f);
+	return V_HSVtoRGB(fahsv_t(hue, 1.0f, intensity));
+}
+
+
+//
+// CL_GetPlayerColor
+//
+// Returns the color for the player after applying game logic (teammate, enemy)
+// and applying CVARs like r_forceteamcolor and r_forceenemycolor.
+//
 argb_t CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
 
-	argb_t color(player->userinfo.color[0], player->userinfo.color[1],
-				player->userinfo.color[2], player->userinfo.color[3]);
-
-	// Adjust the shade of color for team games
+	argb_t base_color(255, player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	argb_t shade_color = base_color;
+	
+	bool teammate = false;
+	if (sv_gametype == GM_COOP)
+		teammate = true;
+	if (sv_gametype == GM_DM)
+		teammate = false;
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		const float blue_hue = 240.0f, red_hue = 0.0f;
-		float intensity = 0.6f + 0.4f * V_RGBtoHSV(color).getv();
-		intensity = std::min(intensity, 1.0f);
-
+		teammate = P_AreTeammates(consoleplayer(), *player);
 		if (player->userinfo.team == TEAM_BLUE)
-			color = V_HSVtoRGB(fahsv_t(blue_hue, 1.0f, intensity));
+			base_color = argb_t(255, 0, 0, 255);
 		else if (player->userinfo.team == TEAM_RED)
-			color = V_HSVtoRGB(fahsv_t(red_hue, 1.0f, intensity));
+			base_color = argb_t(255, 255, 0, 0);
 	}
-
-	// apply r_teamcolor & r_enemycolor overrides
-	if (!consoleplayer().spectator)
+	if (player->id != consoleplayer_id && !consoleplayer().spectator)
 	{
-		if (sv_gametype == GM_COOP)
-		{
-			if (r_forceteamcolor && player->id != consoleplayer_id)
-				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
-		}
-		else if (sv_gametype == GM_DM)
-		{
-			if (r_forceenemycolor && player->id != consoleplayer_id)
-				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
-		}
-		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		{
-			if (r_forceteamcolor &&
-					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
-			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
-					player->id != consoleplayer_id)
-				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
-		}
+		if (r_forceteamcolor && teammate)
+			base_color = teamcolor;
+		else if (r_forceenemycolor && !teammate)
+			base_color = enemycolor;
 	}
 
-	return color;
+	return CL_ShadePlayerColor(base_color, shade_color);
 }
+
 
 static void CL_RebuildAllPlayerTranslations()
 {
@@ -224,22 +230,14 @@ static void CL_RebuildAllPlayerTranslations()
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	argb_t color(V_GetColorFromString(var));
-	enemycolor[0] = color.geta();
-	enemycolor[1] = color.getr();
-	enemycolor[2] = color.getg();
-	enemycolor[3] = color.getb();
+	enemycolor = argb_t(V_GetColorFromString(var));
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	argb_t color(V_GetColorFromString(var));
-	teamcolor[0] = color.geta();
-	teamcolor[1] = color.getr();
-	teamcolor[2] = color.getg();
-	teamcolor[3] = color.getb();
+	teamcolor = argb_t(V_GetColorFromString(var));
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -417,6 +415,10 @@ void CL_QuitNetGame(void)
 
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
+
+	// Don't forget to clean a vanilla demo !
+	if (demorecording && democlassic)
+		G_CleanupDemo();
 
 	// Reset the palette to default
 	V_ResetPalette();
@@ -734,6 +736,7 @@ BEGIN_COMMAND (connect)
 	    return;
 	}
 
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
@@ -977,6 +980,7 @@ BEGIN_COMMAND (changeteams)
 		cl_team.Set("RED");
 	else if (consoleplayer().userinfo.team == TEAM_RED)
 		cl_team.Set("BLUE");
+	CL_RebuildAllPlayerTranslations();
 }
 END_COMMAND (changeteams)
 
@@ -1517,7 +1521,7 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
-	G_CleanupDemo();	// stop dmeos from playing before D_DoomWadReboot wipes out Zone memory
+	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
@@ -1731,8 +1735,6 @@ bool CL_Connect(void)
 //
 void CL_InitNetwork (void)
 {
-    netgame = false;  // for old network code
-
     const char *v = Args.CheckValue ("-port");
     if (v)
     {

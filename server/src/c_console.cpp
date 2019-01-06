@@ -49,33 +49,6 @@
 
 static const int MAX_LINE_LENGTH = 8192;
 
-//static void C_TabComplete (void);
-//static BOOL TabbedLast;		// Last key pressed was tab
-
-extern int KeyRepeatDelay;
-
-int			ConRows, ConCols, PhysRows;
-char		*Lines, *Last = NULL;
-BOOL		vidactive = false, gotconback = false;
-BOOL		cursoron = false;
-int			SkipRows, ConBottom, ConScroll, RowAdjust;
-int			CursorTicker, ScrollState = 0;
-constate_e	ConsoleState = c_up;
-char		VersionString[8];
-
-event_t		RepeatEvent;		// always type ev_keydown
-int			RepeatCountdown;
-BOOL		KeysShifted;
-
-
-#define SCROLLUP 1
-#define SCROLLDN 2
-#define SCROLLNO 0
-
-
-static unsigned int TickerAt, TickerMax;
-static const char *TickerLabel;
-
 struct History
 {
 	struct History *Older;
@@ -91,36 +64,9 @@ struct History
 
 static byte printxormask;
 
-#define MAXHISTSIZE 50
 static struct History *HistTail = NULL;
 
-#define NUMNOTIFIES 4
-
-
-static struct NotifyText
-{
-	int timeout;
-	int printlevel;
-	byte text[256];
-} NotifyStrings[NUMNOTIFIES];
-
 #define PRINTLEVELS 5
-
-BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
-
-
-static void maybedrawnow (void)
-{
-}
-
-
-void C_ShutdownConsole()
-{
-}
-
-void C_InitConsole()
-{
-}
 
 EXTERN_CVAR (log_fulltimestamps)
 
@@ -239,7 +185,7 @@ int STACK_ARGS DPrintf (const char *format, ...)
 	va_list argptr;
 	int count;
 
-	if (developer)
+	if (developer || devparm)
 	{
 		va_start (argptr, format);
 		count = VPrintf (PRINT_HIGH, format, argptr);
@@ -250,51 +196,6 @@ int STACK_ARGS DPrintf (const char *format, ...)
 	{
 		return 0;
 	}
-}
-
-void C_FlushDisplay (void)
-{
-	int i;
-
-	for (i = 0; i < NUMNOTIFIES; i++)
-		NotifyStrings[i].timeout = 0;
-}
-
-void C_AdjustBottom (void)
-{
-}
-
-void C_Ticker (void)
-{
-	if (--CursorTicker <= 0)
-	{
-		cursoron ^= 1;
-		CursorTicker = C_BLINKRATE;
-	}
-}
-
-void C_InitTicker (const char *label, unsigned int max)
-{
-	TickerMax = max;
-	TickerLabel = label;
-	TickerAt = 0;
-	maybedrawnow ();
-}
-
-void C_SetTicker (unsigned int at)
-{
-	TickerAt = at > TickerMax ? TickerMax : at;
-	maybedrawnow ();
-}
-
-BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
-{
-	return true;
-}
-
-BOOL C_Responder (event_t *ev)
-{
-	return false;
 }
 
 BEGIN_COMMAND (history)
@@ -308,18 +209,6 @@ BEGIN_COMMAND (history)
 	}
 }
 END_COMMAND (history)
-
-BEGIN_COMMAND (clear)
-{
-	int i;
-	char *row = Lines;
-
-	RowAdjust = 0;
-	C_FlushDisplay ();
-	for (i = 0; i < ConRows; i++, row += ConCols + 2)
-		row[1] = 0;
-}
-END_COMMAND (clear)
 
 BEGIN_COMMAND (echo)
 {
@@ -337,10 +226,6 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
         return;
 
     SV_MidPrint(msg, p, msgtime);
-}
-
-void C_RevealSecret ()
-{
 }
 
 /****** Tab completion code ******/
@@ -370,43 +255,6 @@ void C_RemoveTabCommand (const char *name)
 		if(!--i->second)
 			TabCommands().erase(i);
 }
-/*
-static void C_TabComplete (void)
-{
-	static unsigned int	TabStart;			// First char in CmdLine to use for tab completion
-	static unsigned int	TabSize;			// Size of tab string
-
-	if (!TabbedLast)
-	{
-		// Skip any spaces at beginning of command line
-		for (TabStart = 2; TabStart < CmdLine[0]; TabStart++)
-			if (CmdLine[TabStart] != ' ')
-				break;
-
-		TabSize = CmdLine[0] - TabStart + 2;
-		TabbedLast = true;
-	}
-
-	// Find next near match
-	std::string TabPos = std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2);
-	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
-
-	// Does this near match fail to actually match what the user typed in?
-	if(i == TabCommands().end() || strnicmp((char *)(CmdLine + TabStart), i->first.c_str(), TabSize) != 0)
-	{
-		TabbedLast = false;
-		CmdLine[0] = CmdLine[1] = TabSize + TabStart - 2;
-		return;
-	}
-
-	// Found a valid replacement
-	strcpy ((char *)(CmdLine + TabStart), i->first.c_str());
-	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
-	CmdLine[CmdLine[0] + 1] = ' ';
-
-	makestartposgood ();
-}
-*/
 
 VERSION_CONTROL (c_console_cpp, "$Id$")
 

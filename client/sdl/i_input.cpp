@@ -34,7 +34,6 @@
 #include "m_argv.h"
 #include "i_input.h"
 #include "i_sdlinput.h"
-#include "i_win32input.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
@@ -54,7 +53,6 @@ bool tab_keydown = false;	// [ML] Actual status of tab key
 
 #define JOY_DEADZONE 6000
 
-static int prev_mouse_driver = -1;
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool window_focused = false;
@@ -347,67 +345,12 @@ void I_CloseJoystick()
 bool I_OpenMouse();
 void I_CloseMouse();
 
-MouseDriverInfo_t MouseDriverInfo[] = {
-	{ SDL_MOUSE_DRIVER,			"SDL Mouse",	&I_SDLMouseAvailible },
-	{ RAW_WIN32_MOUSE_DRIVER,	"Raw Input",	&I_RawWin32MouseAvailible }
-};
-
-
-//
-// I_FindMouseDriverInfo
-//
-MouseDriverInfo_t* I_FindMouseDriverInfo(int id)
-{
-	for (int i = 0; i < NUM_MOUSE_DRIVERS; i++)
-	{
-		if (MouseDriverInfo[i].id == id)
-			return &MouseDriverInfo[i];
-	}
-
-	return NULL;
-}
-
-//
-// I_IsMouseDriverValid
-//
-// Returns whether a mouse driver with the given ID is availible to use.
-//
-static bool I_IsMouseDriverValid(int id)
-{
-	MouseDriverInfo_t* info = I_FindMouseDriverInfo(id);
-	return (info && info->avail_test() == true);
-}
-
-CVAR_FUNC_IMPL(mouse_driver)
-{
-	int new_mouse_driver = var.asInt();
-	if (!I_IsMouseDriverValid(new_mouse_driver))
-	{
-		if (new_mouse_driver == SDL_MOUSE_DRIVER)
-		{
-			// can't initialize SDL_MOUSE_DRIVER so don't use a mouse
-			I_CloseMouse();
-			nomouse = true;
-		}
-		else
-		{
-			var.Set(SDL_MOUSE_DRIVER);
-		}
-	}
-	else
-	{
-		I_OpenMouse();
-	}
-}
-
-
 //
 // I_CloseMouse()
 //
 void I_CloseMouse()
 {
 	input_subsystem->shutdownMouse(0);
-	prev_mouse_driver = -1;
 }
 
 
@@ -418,19 +361,9 @@ bool I_OpenMouse()
 {
 	if (!nomouse)
 	{
-		int new_mouse_driver = mouse_driver.asInt();
-		if (new_mouse_driver != prev_mouse_driver)
-		{
-			I_CloseMouse();
-
-			// try to initialize the user's preferred mouse driver
-			if (I_IsMouseDriverValid(new_mouse_driver))
-			{
-				input_subsystem->initMouse(new_mouse_driver);
-				prev_mouse_driver = new_mouse_driver;
-				return true;
-			}
-		}
+		I_CloseMouse();
+		input_subsystem->initMouse(0);
+		return true;
 	}
 	return false;
 }
@@ -674,6 +607,7 @@ void IInputSubsystem::addToEventRepeaters(event_t& ev)
 					{
 						// update existing repeater with this new event
 						EventRepeater& repeater = it->second;
+						repeater.repeating = false;
 						memcpy(&repeater.event, &ev, sizeof(repeater.event));
 					}
 					else
