@@ -24,7 +24,6 @@
 #include "i_sdl.h" 
 #include "i_input.h"
 #include "i_sdlinput.h"
-#include "i_win32input.h"	// needed to initialize IRawWin32MouseDevice
 
 #include "i_video.h"
 #include "d_event.h"
@@ -32,17 +31,6 @@
 #include "doomkeys.h"
 #include <queue>
 #include <cassert>
-
-//
-// I_SDLMouseAvailible
-//
-// Checks if SDLMouse can be used. Always true since SDL is used as the
-// primary backend for everything.
-//
-bool I_SDLMouseAvailible()
-{
-	return true;
-}
 
 #ifdef SDL12
 
@@ -1149,13 +1137,6 @@ std::vector<IInputDeviceInfo> ISDL12InputSubsystem::getMouseDevices() const
 	sdl_device_info.mId = SDL_MOUSE_DRIVER;
 	sdl_device_info.mDeviceName = "SDL 1.2 mouse";
 
-	#ifdef USE_RAW_WIN32_MOUSE
-	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& raw_device_info = devices.back();
-	raw_device_info.mId = RAW_WIN32_MOUSE_DRIVER;
-	raw_device_info.mDeviceName = "RawInput mouse";
-	#endif
-
 	return devices;
 }
 
@@ -1177,12 +1158,7 @@ void ISDL12InputSubsystem::initMouse(int id)
 
 	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
 
-	if (id == SDL_MOUSE_DRIVER)
-		setMouseInputDevice(new ISDL12MouseInputDevice(id));
-	#ifdef USE_RAW_WIN32_MOUSE
-	else if (id == RAW_WIN32_MOUSE_DRIVER)
-		setMouseInputDevice(new IRawWin32MouseInputDevice(id));
-	#endif
+	setMouseInputDevice(new ISDL12MouseInputDevice(id));
 	assert(getMouseInputDevice() != NULL);
 	registerInputDevice(getMouseInputDevice());
 	getMouseInputDevice()->resume();
@@ -2431,16 +2407,8 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getMouseDevices() const
 	std::vector<IInputDeviceInfo> devices;
 	devices.push_back(IInputDeviceInfo());
 	IInputDeviceInfo& sdl_device_info = devices.back();
-	sdl_device_info.mId = SDL_MOUSE_DRIVER;
+	sdl_device_info.mId = 0;
 	sdl_device_info.mDeviceName = "SDL 2.0 mouse";
-
-	#ifdef USE_RAW_WIN32_MOUSE
-	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& raw_device_info = devices.back();
-	raw_device_info.mId = RAW_WIN32_MOUSE_DRIVER;
-	raw_device_info.mDeviceName = "RawInput mouse";
-	#endif
-
 	return devices;
 }
 
@@ -2462,12 +2430,7 @@ void ISDL20InputSubsystem::initMouse(int id)
 
 	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
 
-	if (id == SDL_MOUSE_DRIVER)
-		setMouseInputDevice(new ISDL20MouseInputDevice(id));
-	#ifdef USE_RAW_WIN32_MOUSE
-	else if (id == RAW_WIN32_MOUSE_DRIVER)
-		setMouseInputDevice(new IRawWin32MouseInputDevice(id));
-	#endif
+	setMouseInputDevice(new ISDL20MouseInputDevice(id));
 	assert(getMouseInputDevice() != NULL);
 	registerInputDevice(getMouseInputDevice());
 	getMouseInputDevice()->resume();
