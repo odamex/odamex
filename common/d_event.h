@@ -49,6 +49,18 @@ struct event_t
 		type(t), data1(d1), data2(d2), data3(d3)
 	{ }
 
+	event_t(const event_t& other)
+	{
+		this->operator=(other);
+	}
+
+	event_t& operator=(const event_t& other)
+	{
+		type = other.type;
+		data1 = other.data1; data2 = other.data2; data3 = other.data3;
+		return *this;
+	}
+
 	evtype_t	type;
 	int 		data1;			// keys / mouse/joystick buttons
 	int 		data2;			// mouse/joystick x move

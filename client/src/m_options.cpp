@@ -1028,7 +1028,7 @@ static value_t VidFPSCaps[] = {
 };
 
 static menuitem_t ModesItems[] = {
-#ifdef _XBOX
+#ifdef GCONSOLE
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
