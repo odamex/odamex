@@ -87,6 +87,20 @@ struct IInputDeviceInfo
 
 // ============================================================================
 //
+// IKeyboardInputDevice abstract base class interface
+//
+// ============================================================================
+
+class IKeyboardInputDevice : public IInputDevice
+{
+public:
+	virtual void enableTextEntry() {}
+	virtual void disableTextEntry() {}
+};
+
+
+// ============================================================================
+//
 // IInputSubsystem abstract base class interface
 //
 // ============================================================================
@@ -102,6 +116,8 @@ public:
 
 	virtual void enableKeyRepeat();
 	virtual void disableKeyRepeat();
+	virtual void enableTextEntry();
+	virtual void disableTextEntry();
 
 	virtual void flushInput()
 	{
