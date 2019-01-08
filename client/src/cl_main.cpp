@@ -526,6 +526,12 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	if (players.empty())
 		return;
 
+	if (gamestate == GS_INTERMISSION)
+	{
+		displayplayer_id = consoleplayer_id;
+		return;
+	}
+
 	if (!validplayer(displayplayer()))
 	{
 		CL_CheckDisplayPlayer();
