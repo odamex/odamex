@@ -1533,60 +1533,51 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 	const int max_events = 1024;
 	SDL_Event sdl_events[max_events];
 
-	event_t* last_keydown_event = NULL;
-
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYDOWN, SDL_TEXTINPUT)))
+	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYDOWN, SDL_KEYUP)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
-			if (sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP)
+			const int sym = sdl_ev.key.keysym.sym;
+			const int mod = sdl_ev.key.keysym.mod;
+
+			event_t ev;
+			ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
+			ev.data1 = translateKey(sym);
+
+			// Retrieve text representation of the key event using SDL_TEXTINPUT
+			// event types.
+			bool has_text_value = sym != SDLK_BACKSPACE && sym != SDLK_ESCAPE && \
+							sym != SDLK_TAB && sym != SDLK_RETURN;
+			if (sdl_ev.type == SDL_KEYDOWN && has_text_value)
 			{
-				const int sym = sdl_ev.key.keysym.sym;
-				const int mod = sdl_ev.key.keysym.mod;
-
-				// Ch0wW : Fixes a problem of ultra-fast repeats.
-				if (sdl_ev.key.repeat != 0)
-					continue;
-
-				// drop ALT-TAB events - they're handled elsewhere
-				if (sym == SDLK_TAB && mod & (KMOD_LALT | KMOD_RALT))
-					continue;
-
-				// HeX9109: Alt+F4 for cheats! Thanks Spleen
-				// Translate the ALT+F4 key combo event into a SDL_QUIT event and push
-				// it back into SDL's event queue so that it can be handled elsewhere.
-				if (sym == SDLK_F4 && mod & (KMOD_LALT | KMOD_RALT))
-				{
-					SDL_Event sdl_quit_ev;
-					sdl_quit_ev.type = SDL_QUIT;
-					SDL_PushEvent(&sdl_quit_ev);
-					continue;
-				}
-
-				// Normal game keyboard event - insert it into our internal queue
-				event_t ev;
-				ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
-				ev.data1 = translateKey(sym);
-
-				if (ev.data1)
-				{
-					mEvents.push(ev);
-					if (ev.type == ev_keydown)
-						last_keydown_event = &mEvents.back();
-				}
+				SDL_Event sdl_text_ev;
+				if (SDL_PeepEvents(&sdl_text_ev, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
+					ev.data2 = ev.data3 = convUTF8ToUTF32(sdl_text_ev.text.text);
 			}
-			else if (sdl_ev.type == SDL_TEXTINPUT)
+
+			// Ch0wW : Fixes a problem of ultra-fast repeats.
+			if (sdl_ev.key.repeat != 0)
+				continue;
+
+			// drop ALT-TAB events - they're handled elsewhere
+			if (sym == SDLK_TAB && mod & (KMOD_LALT | KMOD_RALT))
+				continue;
+
+			// HeX9109: Alt+F4 for cheats! Thanks Spleen
+			// Translate the ALT+F4 key combo event into a SDL_QUIT event and push
+			// it back into SDL's event queue so that it can be handled elsewhere.
+			if (sym == SDLK_F4 && mod & (KMOD_LALT | KMOD_RALT))
 			{
-				// Text input event (console or chat)
-				// Attach the text representation of the last key press to the
-				// last_keydown_event.
-				if (last_keydown_event)
-				{
-					int keytext = convUTF8ToUTF32(sdl_ev.text.text);
-					last_keydown_event->data2 = last_keydown_event->data3 = keytext;
-				}
+				SDL_Event sdl_quit_ev;
+				sdl_quit_ev.type = SDL_QUIT;
+				SDL_PushEvent(&sdl_quit_ev);
+				continue;
 			}
+
+			// Normal game keyboard event - insert it into our internal queue
+			if (ev.data1)
+				mEvents.push(ev);
 		}
 	}
 }
