@@ -394,21 +394,34 @@ AuMusicSystem::AuMusicSystem() :
 {
 	NewAUGraph(&mGraph);
 
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	ComponentDescription d;
+	#else
+	AudioComponentDescription d;
+	#endif
 
 	d.componentType = kAudioUnitType_MusicDevice;
 	d.componentSubType = kAudioUnitSubType_DLSSynth;
 	d.componentManufacturer = kAudioUnitManufacturer_Apple;
 	d.componentFlags = 0;
 	d.componentFlagsMask = 0;
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	AUGraphNewNode(mGraph, &d, 0, NULL, &mSynth);
+	#else
+	AUGraphAddNode(mGraph, &d, &mSynth);
+	#endif
+
 
 	d.componentType = kAudioUnitType_Output;
 	d.componentSubType = kAudioUnitSubType_DefaultOutput;
 	d.componentManufacturer = kAudioUnitManufacturer_Apple;
 	d.componentFlags = 0;
 	d.componentFlagsMask = 0;
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	AUGraphNewNode(mGraph, &d, 0, NULL, &mOutput);
+	#else
+	AUGraphAddNode(mGraph, &d, &mOutput);
+	#endif
 
 	if (AUGraphConnectNodeInput(mGraph, mSynth, 0, mOutput, 0) != noErr)
 	{
