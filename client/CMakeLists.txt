@@ -273,8 +273,13 @@ if(SDL_VERSION)
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
-    string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
-    string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
+    if(SDL2_FOUND AND SDL2_MIXER_FOUND)
+        string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL2_LIBRARY})
+        string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDL2_MIXER_LIBRARY})
+    else(SDL2_FOUND AND SDL2_MIXER_FOUND)
+        string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
+        string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
+    endif()
 
     # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})

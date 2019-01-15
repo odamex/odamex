@@ -232,6 +232,7 @@ public:
 
 private:
 	int translateKey(int sym);
+	int getTextEventValue();
 
 	bool					mActive;
 	bool					mTextEntry;
