@@ -260,7 +260,7 @@ CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR_RANGE_FUNC_DECL(language, "0", "",
-					CVARTYPE_INT, CVAR_ARCHIVE, 0.0f, 256.0f)
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0f)
 
 CVAR(				port, "0", "Display currently used network port number",
 					CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)
