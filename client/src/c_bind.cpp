@@ -727,14 +727,18 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 	C_GetKeysForCommand(cmd, &first, &second);
 
 	if (!first && !second)
-		return "<UNKNOWN>";
+		return "<???>";
 
 	if (bTwoEntries)
 		return C_NameKeys(first, second);
 	else
-		return KeyName(first);
-
-	return "<UNKNOWN>";
+	{
+		if (!first && second)
+			return KeyName(second);
+		else
+			return KeyName(first);
+	}
+	return "<???>";
 }
 
 
