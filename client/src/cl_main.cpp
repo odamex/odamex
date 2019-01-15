@@ -172,9 +172,9 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 	if (base_color == shade_color)
 		return base_color;
 
-	float hue = V_RGBtoHSV(base_color).geth();
-	float intensity = std::min(0.6f + 0.4f * V_RGBtoHSV(shade_color).getv(), 1.0f);
-	return V_HSVtoRGB(fahsv_t(hue, 1.0f, intensity));
+	fahsv_t color = V_RGBtoHSV(base_color);
+	color.setv(0.7f * color.getv() + 0.3f * V_RGBtoHSV(shade_color).getv());
+	return V_HSVtoRGB(color);
 }
 
 

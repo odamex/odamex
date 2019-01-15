@@ -1513,6 +1513,49 @@ void ISDL20KeyboardInputDevice::disableTextEntry()
 
 
 //
+// ISDL20KeyboardInputDevice::getTextEventValue
+//
+// Look for an SDL_TEXTINPUT event following this SDL_KEYDOWN event.
+//
+// On Windows platforms, SDL receives the translation from a key scancode
+// to a localized text representation as a separate event. SDL 1.2 used to
+// combine these separate events into a single SDL_Event however SDL 2.0
+// creates two separate SDL_Events for this.
+//
+// When SDL2 receives a Windows event message for a key press from the
+// Windows message queue, it calls "TranslateMessage" to generate
+// a WM_CHAR event message that contains the localized text representation
+// of the keypress. The WM_CHAR event ends up as the next event in the
+// Windows message queue in practice (though there is no guarantee of this).
+//
+// Thus SDL2 inserts the key press event into its own queue as SDL_KEYDOWN
+// and follows it with the text event SDL_TEXTINPUT.
+//
+int ISDL20KeyboardInputDevice::getTextEventValue()
+{
+	const size_t max_events = 32;
+	SDL_Event sdl_events[max_events];
+	
+	SDL_PumpEvents();
+	const size_t num_events = SDL_PeepEvents(sdl_events, max_events, SDL_PEEKEVENT, SDL_KEYDOWN, SDL_TEXTINPUT);
+	for (size_t i = 0; i < num_events; i++)
+	{
+		// If we found another SDL_KEYDOWN event prior to SDL_TEXTINPUT event,
+		// we must assume the next SDL_TEXTINPUT event does not correspond to
+		// our original SDL_KEYDOWN event.
+		if (sdl_events[i].type == SDL_KEYDOWN)
+			return 0;
+
+		// Looks like we found a corresponding SDL_TEXTINPUT event
+		if (sdl_events[i].type == SDL_TEXTINPUT)
+			return convUTF8ToUTF32(sdl_events[i].text.text);
+	}
+
+	return 0;
+}
+
+
+//
 // ISDL20KeyboardInputDevice::gatherEvents
 //
 // Pumps the SDL Event queue and retrieves any mouse events and puts them into
@@ -1528,33 +1571,23 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 	// process only keyboard events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
 
-	// Retrieve chunks of up to 1024 events from SDL
-	int num_events = 0;
-	const int max_events = 1024;
-	SDL_Event sdl_events[max_events];
-
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYDOWN, SDL_KEYUP)))
+	SDL_Event sdl_ev;
+	while (SDL_PeepEvents(&sdl_ev, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_TEXTINPUT))
 	{
-		for (int i = 0; i < num_events; i++)
+		event_t ev;
+
+		// Process SDL_KEYDOWN / SDL_KEYUP events. SDL_TEXTINPUT events will
+		// be implicitly ignored unless handled below.
+		if (sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP)
 		{
-			const SDL_Event& sdl_ev = sdl_events[i];
 			const int sym = sdl_ev.key.keysym.sym;
 			const int mod = sdl_ev.key.keysym.mod;
 
-			event_t ev;
 			ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
 			ev.data1 = translateKey(sym);
 
-			// Retrieve text representation of the key event using SDL_TEXTINPUT
-			// event types.
-			bool has_text_value = sym != SDLK_BACKSPACE && sym != SDLK_ESCAPE && \
-							sym != SDLK_TAB && sym != SDLK_RETURN;
-			if (sdl_ev.type == SDL_KEYDOWN && has_text_value)
-			{
-				SDL_Event sdl_text_ev;
-				if (SDL_PeepEvents(&sdl_text_ev, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
-					ev.data2 = ev.data3 = convUTF8ToUTF32(sdl_text_ev.text.text);
-			}
+			if (sdl_ev.type == SDL_KEYDOWN)
+				ev.data2 = ev.data3 = getTextEventValue();
 
 			// Ch0wW : Fixes a problem of ultra-fast repeats.
 			if (sdl_ev.key.repeat != 0)
