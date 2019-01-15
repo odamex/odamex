@@ -1513,6 +1513,49 @@ void ISDL20KeyboardInputDevice::disableTextEntry()
 
 
 //
+// ISDL20KeyboardInputDevice::getTextEventValue
+//
+// Look for an SDL_TEXTINPUT event following this SDL_KEYDOWN event.
+//
+// On Windows platforms, SDL receives the translation from a key scancode
+// to a localized text representation as a separate event. SDL 1.2 used to
+// combine these separate events into a single SDL_Event however SDL 2.0
+// creates two separate SDL_Events for this.
+//
+// When SDL2 receives a Windows event message for a key press from the
+// Windows message queue, it calls "TranslateMessage" to generate
+// a WM_CHAR event message that contains the localized text representation
+// of the keypress. The WM_CHAR event ends up as the next event in the
+// Windows message queue in practice (though there is no guarantee of this).
+//
+// Thus SDL2 inserts the key press event into its own queue as SDL_KEYDOWN
+// and follows it with the text event SDL_TEXTINPUT.
+//
+int ISDL20KeyboardInputDevice::getTextEventValue()
+{
+	const size_t max_events = 32;
+	SDL_Event sdl_events[max_events];
+	
+	SDL_PumpEvents();
+	const size_t num_events = SDL_PeepEvents(sdl_events, max_events, SDL_PEEKEVENT, SDL_KEYDOWN, SDL_TEXTINPUT);
+	for (size_t i = 0; i < num_events; i++)
+	{
+		// If we found another SDL_KEYDOWN event prior to SDL_TEXTINPUT event,
+		// we must assume the next SDL_TEXTINPUT event does not correspond to
+		// our original SDL_KEYDOWN event.
+		if (sdl_events[i].type == SDL_KEYDOWN)
+			return 0;
+
+		// Looks like we found a corresponding SDL_TEXTINPUT event
+		if (sdl_events[i].type == SDL_TEXTINPUT)
+			return convUTF8ToUTF32(sdl_events[i].text.text);
+	}
+
+	return 0;
+}
+
+
+//
 // ISDL20KeyboardInputDevice::gatherEvents
 //
 // Pumps the SDL Event queue and retrieves any mouse events and puts them into
@@ -1544,28 +1587,7 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 			ev.data1 = translateKey(sym);
 
 			if (sdl_ev.type == SDL_KEYDOWN)
-			{
-				// Look for an SDL_TEXTINPUT event following this SDL_KEYDOWN event.
-				//
-				// On Windows platforms, SDL receives the translation from a key scancode
-				// to a localized text representation as a separate event. SDL 1.2 used to
-				// combine these separate events into a single SDL_Event however SDL 2.0
-				// creates two separate SDL_Events for this.
-				//
-				// When SDL2 receives a Windows event message for a key press from the
-				// Windows message queue, it calls "TranslateMessage" to generate
-				// a WM_CHAR event message that contains the localized text representation
-				// of the keypress. The WM_CHAR event ends up as the next event in the
-				// Windows message queue in practice (though there is no guarantee of this).
-				//
-				// Thus SDL2 inserts the key press event into its own queue as SDL_KEYDOWN
-				// and follows it with the text event SDL_TEXTINPUT.
-				//
-				SDL_Event next_sdl_ev;
-				if (SDL_PeepEvents(&next_sdl_ev, 1, SDL_PEEKEVENT, SDL_KEYDOWN, SDL_TEXTINPUT)
-				    && next_sdl_ev.type == SDL_TEXTINPUT)
-					ev.data2 = ev.data3 = convUTF8ToUTF32(next_sdl_ev.text.text);
-			}
+				ev.data2 = ev.data3 = getTextEventValue();
 
 			// Ch0wW : Fixes a problem of ultra-fast repeats.
 			if (sdl_ev.key.repeat != 0)
