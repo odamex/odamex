@@ -361,6 +361,22 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(				cl_autorecord_filter_coop, "0", "Filters cooperative netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_filter_deathmatch, "0", "Filters deathmatch netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_filter_duel, "0", "Filters duel netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_filter_teamdm, "0", "Filters team deathmatch netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_filter_ctf, "0", "Filters CTF netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+
 CVAR(				cl_autoscreenshot, "0", "Automatically capture a screenshot at the end of a match.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
