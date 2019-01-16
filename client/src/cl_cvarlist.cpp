@@ -468,6 +468,9 @@ CVAR_RANGE(		hud_transparency, "0.5", "HUD transparency",
 CVAR(			hud_heldflag, "1", "Show the held flag border",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			hud_scoreboard_hide, "1", "Hides the scoreboard on death.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
