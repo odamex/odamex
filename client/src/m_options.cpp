@@ -821,7 +821,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "Show Warmup/Timeleft",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete, "Display Time Left",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
 	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
 	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
