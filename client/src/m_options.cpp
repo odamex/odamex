@@ -742,6 +742,7 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_scoreboard_hide)
+EXTERN_CVAR (hud_fullhudtype)
 
 static value_t Crosshairs[] =
 {
@@ -754,6 +755,11 @@ static value_t Crosshairs[] =
 	{ 6.0, "Box" },
 	{ 7.0, "Angle" },
 	{ 8.0, "Big Thing" }
+};
+
+static value_t HUDStyles[] = {
+	{ 0.0, "ZDoom" },
+	{ 1.0, "Odamex" },
 };
 
 static value_t Wipes[] = {
@@ -804,6 +810,7 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
 	{ discrete, "Display HUD Timer",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
