@@ -1867,9 +1867,13 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 
 std::string defdemoname;
 
-void G_DeferedPlayDemo (const char *name)
+void G_DeferedPlayDemo (const char *name, bool bIsSingleDemo)
 {
 	defdemoname = name;
+
+	if (bIsSingleDemo)
+		singledemo = true;
+
 	gameaction = ga_playdemo;
 }
 
@@ -1930,7 +1934,7 @@ BEGIN_COMMAND(playdemo)
 		extern bool lastWadRebootSuccess;
 		if(lastWadRebootSuccess)
 		{
-			G_DeferedPlayDemo(argv[1]);
+			G_DeferedPlayDemo(argv[1], true);
 		}
 		else
 		{
@@ -2251,10 +2255,13 @@ BOOL G_CheckDemoStatus (void)
 			else
 				Printf (PRINT_HIGH, "Demo ended.\n");
 
+			demoplayback = false;
+			democlassic = false;
 			gameaction = ga_fullconsole;
 			timingdemo = false;
 			return false;
 		}
+
 
 		D_AdvanceDemo ();
 		return true;
