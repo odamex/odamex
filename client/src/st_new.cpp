@@ -98,6 +98,7 @@ int V_TextScaleYAmount();
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_targetcount)
+EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR (sv_fraglimit)
 
 void ST_unloadNew (void)
@@ -533,6 +534,9 @@ void drawNetdemo() {
 	if (!(netdemo.isPlaying() || netdemo.isPaused())) {
 		return;
 	}
+
+	if (!hud_demobar)
+		return;
 
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;

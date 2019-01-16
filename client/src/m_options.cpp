@@ -743,6 +743,7 @@ EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_scoreboard_hide)
 EXTERN_CVAR (hud_fullhudtype)
+EXTERN_CVAR (hud_demobar)
 
 static value_t Crosshairs[] =
 {
@@ -840,12 +841,15 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Show Scores on Death",		{&hud_scoreboard_hide},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
+
+
 };
 
 static void M_UpdateDisplayOptions()
