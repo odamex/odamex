@@ -1764,6 +1764,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     {
         fclose(recorddemo_fp);
         recorddemo_fp = NULL;
+		G_CleanupDemo();
     }
 
     recorddemo_fp = fopen(demname.c_str(), "wb");
