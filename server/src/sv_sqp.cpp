@@ -56,7 +56,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 6
+#define PROTOCOL_VERSION 7
 
 /*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -91,7 +91,13 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
 	// Built revision of server
-	MSG_WriteLong(&ml_message, -1);
+	// TODO: Remove guard before next release
+	QRYNEWINFO(7)
+	{
+	    MSG_WriteString(&ml_message, GitDescribe());
+	}
+	else
+        MSG_WriteLong(&ml_message, -1);
 
 	cvar_t* var = GetFirstCvar();
 
