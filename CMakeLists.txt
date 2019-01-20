@@ -17,7 +17,7 @@ add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
 option(BUILD_MASTER "Build master server target" 1)
-cmake_dependent_option( BUILD_ODALAUNCH "Build odalaunch target" 1 BUILD_CLIENT 0 )
+option(BUILD_ODALAUNCH "Build odalaunch target" 1)
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
@@ -25,7 +25,7 @@ project(Odamex)
 cmake_minimum_required(VERSION 2.8)
 
 set(PROJECT_VERSION 0.7.0)
-set(PROJECT_COPYRIGHT "2006-2014")
+set(PROJECT_COPYRIGHT "2006-2019")
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
@@ -201,12 +201,12 @@ if(NOT APPLE)
     endif()
 
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A free, cross-platform modification of the Doom engine that allows players to easily join servers dedicated to playing Doom online.")
-    set(CPACK_PACKAGE_VENDOR "Odamex Team")
+    set(CPACK_PACKAGE_VENDOR "Odamex Development Team")
     set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
     set(CPACK_RPM_PACKAGE_LICENSE "GPLv2+")
 
-    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://odamex.net")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://odamex.net")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alex Mayfield <alexmax2742@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_SECTION Games)
   endif()
