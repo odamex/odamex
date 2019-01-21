@@ -86,9 +86,9 @@ protected:
 
 	wxCheckBox* m_ChkCtrlGetListOnStart;
 	wxCheckBox* m_ChkCtrlShowBlockedServers;
-	wxCheckBox* m_ChkCtrlCheckForUpdates;
+	//wxCheckBox* m_ChkCtrlCheckForUpdates;
 	wxCheckBox* m_ChkCtrlEnableBroadcasts;
-	wxCheckBox* m_ChkCtrlLoadChatOnLS;
+	//wxCheckBox* m_ChkCtrlLoadChatOnLS;
 	wxCheckBox* m_ChkCtrlFlashTaskBar;
 	wxCheckBox* m_ChkCtrlPlaySystemBeep;
 	wxCheckBox* m_ChkCtrlPlaySoundFile;
