@@ -4,16 +4,16 @@
 [Setup]
 AppName=Odamex
 AppVerName=Odamex 0.7.0
-AppPublisher=Odamex Dev Team
-AppPublisherURL=http://odamex.net
-AppSupportURL=http://odamex.net
-AppUpdatesURL=http://odamex.net
+AppPublisher=Odamex Development Team
+AppPublisherURL=https://odamex.net
+AppSupportURL=https://odamex.net
+AppUpdatesURL=https://odamex.net
 DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win32-0.7.0
+OutputBaseFilename=odamex-win-0.7.0
 Compression=lzma2
 SolidCompression=true
 VersionInfoProductName=Odamex Windows Installer
@@ -63,7 +63,7 @@ Name: base; Description: Base data; Types: full compact custom; Flags: fixed
 Name: client; Description: Odamex Client; Types: full compact custom; Flags: DisableNoUninstallWarning
 Name: server; Description: Odamex Server; Types: full; Flags: DisableNoUninstallWarning
 Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact custom; Flags: DisableNoUninstallWarning
-Name: libs; Description: Libraries (SDL 1.2.15, SDL_Mixer 1.2.12); Types: full compact; Flags: DisableNoUninstallWarning
+Name: libs; Description: Libraries (SDL 2.0.5, SDL_Mixer 2.0.1); Types: full compact; Flags: DisableNoUninstallWarning
 
 
 [Files]
@@ -110,8 +110,8 @@ Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: bas
 ;Name: "{localappdata}\odamex"; Flags: uninsalwaysuninstall
 
 [INI]
-Filename: {app}\Odamex Website.url; Section: InternetShortcut; Key: URL; String: http://odamex.net
-Filename: {app}\Releases Changelog.url; Section: InternetShortcut; Key: URL; String: http://odamex.net/wiki/Releases
+Filename: {app}\Odamex Website.url; Section: InternetShortcut; Key: URL; String: https://odamex.net
+Filename: {app}\Releases Changelog.url; Section: InternetShortcut; Key: URL; String: https://odamex.net/wiki/Releases
 
 [Icons]
 Name: {group}\Odamex Client; Filename: {app}\odamex.exe; WorkingDir: {app}
