@@ -3,21 +3,23 @@
 
 [Setup]
 AppName=Odamex
-AppVerName=Odamex 0.7.0
+AppVersion=0.8.0
+AppVerName=Odamex 0.8.0
 AppPublisher=Odamex Development Team
 AppPublisherURL=https://odamex.net
 AppSupportURL=https://odamex.net
 AppUpdatesURL=https://odamex.net
+VersionInfoVersion=0.8.0 
+VersionInfoProductVersion=0.8.0
+VersionInfoProductName=Odamex Windows Installer
 DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win-0.7.0
+OutputBaseFilename=odamex-win-0.8.0
 Compression=lzma2
 SolidCompression=true
-VersionInfoProductName=Odamex Windows Installer
-VersionInfoProductVersion=0.7.0
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
@@ -26,16 +28,16 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
-AppVersion=0.7.0
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
-VersionInfoVersion=0.7.0
 MinVersion=0,5.0
 AllowRootDirectory=True
 ChangesAssociations=Yes
 ArchitecturesInstallIn64BitMode=x64
 UninstallDisplaySize=23068672
-UsePreviousAppDir =yes
+UsePreviousAppDir=yes
+;DisableDirPage=auto
+;DisableProgramGroupPage=auto
 ;AppModifyPath={app}\UninsHs.exe /m0=Odamex
 WizardImageFile=..\..\media\wininstall_largeback.bmp
 WizardSmallImageFile=..\..\media\wininstall_wizardicon.bmp
@@ -74,10 +76,10 @@ Name: libs; Description: Libraries (SDL 2.0.5, SDL_Mixer 2.0.1); Types: full com
 Source: ..\..\m64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: ..\..\m64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
 ;Source: ..\..\m64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: ..\..\m64\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
+Source: ..\..\m64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
+Source: ..\..\m64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
+Source: ..\..\m64\smpeg2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
@@ -87,22 +89,24 @@ Source: ..\..\m64\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Compone
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Source: ..\..\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
-;Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
+Source: ..\..\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
+Source: ..\..\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
+Source: ..\..\smpeg2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-;Source: ..\..\libwinpthread-1.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 
 Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
 Source: ..\..\config-samples\*; DestDir: {app}\config-samples; Flags: ignoreversion; Components: server
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
-;Source: ..\..\COPYING.winpthreads.txt; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
+Source: ..\..\LICENSE.FLAC.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
+Source: ..\..\LICENSE.mikmod.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
+Source: ..\..\LICENSE.modplug.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
+Source: ..\..\LICENSE.ogg-vorbis.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
+Source: ..\..\LICENSE.smpeg.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
 ; Source: "UninsHs.exe"; DestDir: "{app}"; Flags: restartreplace
 
@@ -159,6 +163,14 @@ begin
       wpSelectDir, wpSelectProgramGroup, wpInfoAfter:
         Result := True;
     end;
+end;
+
+function IsUpgrade(): Boolean;
+var
+   sPrevPath: String;
+begin
+  sPrevPath := WizardForm.PrevAppDir;
+  Result := (sPrevPath <> '');
 end;
 
 const
