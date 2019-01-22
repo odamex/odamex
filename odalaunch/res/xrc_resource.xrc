@@ -151,8 +151,8 @@
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmOpenChat">
 				<label>tool</label>
-				<tooltip>Chat with other players on IRC</tooltip>
-				<longhelp>Chat with other players on IRC</longhelp>
+				<tooltip>Chat with other players on Discord</tooltip>
+				<longhelp>Chat with other players on Discord</longhelp>
 				<bitmap>./icons/btnchat.png</bitmap>
 			</object>
 			<object class="separator" />
