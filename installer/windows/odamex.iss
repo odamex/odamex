@@ -23,7 +23,6 @@ SolidCompression=true
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
 AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
-;PrivilegesRequired=none
 PrivilegesRequired=none
 ShowLanguageDialog=auto
 UninstallDisplayIcon={app}\odamex.exe
@@ -34,7 +33,7 @@ MinVersion=0,5.0
 AllowRootDirectory=True
 ChangesAssociations=Yes
 ArchitecturesInstallIn64BitMode=x64
-UninstallDisplaySize=23068672
+UninstallDisplaySize=21197782
 UsePreviousAppDir=yes
 ;DisableDirPage=auto
 ;DisableProgramGroupPage=auto
@@ -74,8 +73,8 @@ Name: libs; Description: Libraries (SDL 2.0.5, SDL_Mixer 2.0.1); Types: full com
 ;; 64-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Source: ..\..\m64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: ..\..\m64\odamex.pdb; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: ..\..\m64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
-;Source: ..\..\m64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: ..\..\m64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
 Source: ..\..\m64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
@@ -88,6 +87,7 @@ Source: ..\..\m64\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Compone
 ;; 32-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Source: ..\..\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: ..\..\odamex.pdb; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
 Source: ..\..\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
 Source: ..\..\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
