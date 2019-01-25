@@ -1306,11 +1306,6 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		C_MidPrint (GStrings(msg), p);
 	}
 
-	if (serverside && network_game && msg)
-	{
-		C_MidPrint (GStrings(msg), p);
-	}
-
 	return false;
 }
 
