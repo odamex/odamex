@@ -714,4 +714,32 @@ const char *C_GetBinding (int key)
 	return Bindings[key].c_str();
 }
 
+/*
+C_GetKeyStringsFromCommand
+Finds binds from a command and returns it into a std::string .
+- If TRUE, second arg returns up to 2 keys. ("x OR y")
+*/
+std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
+{
+	int first = -1;
+	int second = -1;
+
+	C_GetKeysForCommand(cmd, &first, &second);
+
+	if (!first && !second)
+		return "<???>";
+
+	if (bTwoEntries)
+		return C_NameKeys(first, second);
+	else
+	{
+		if (!first && second)
+			return KeyName(second);
+		else
+			return KeyName(first);
+	}
+	return "<???>";
+}
+
+
 VERSION_CONTROL (c_bind_cpp, "$Id$")

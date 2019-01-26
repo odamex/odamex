@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include "c_bind.h"
 #include "c_cvars.h"
 #include "cl_demo.h"
 #include "m_fixed.h" // This should probably go into d_netinf.h
@@ -216,7 +217,11 @@ std::string Warmup(int& color)
 		{
 			color = CR_RED;
 			if (dp == cp)
-				return "Warmup: You are not ready";
+			{
+				char strReady[64];
+				sprintf(strReady, "Warmup: Press %s to ready up", C_GetKeyStringsFromCommand("ready").c_str());
+				return strReady;
+			}
 			else
 				return "Warmup: This player is not ready";
 		}
