@@ -158,9 +158,26 @@ bool P_LineSpecialMovesSector(line_t *line)
 
 EXTERN_CVAR (cl_predictsectors)
 
-bool P_CanActivateSpecials(line_t *line)
+bool P_CanActivateSpecials(AActor* mo, line_t* line)
 {
-	return serverside || cl_predictsectors || !P_LineSpecialMovesSector(line);
+	// Server can always activate specials
+	if (serverside)
+		return true;
+
+	if (cl_predictsectors)
+	{
+		// Always predict sectors if set to 1, only predict sectors activated
+		// by the local player if set to 2.
+		if (cl_predictsectors == 1.0f ||
+		    (mo->player == &consoleplayer() && cl_predictsectors == 2.0f))
+			return true;
+	}
+
+	// Predict sectors that don't actually create floor or ceiling thinkers.
+	if (!P_LineSpecialMovesSector(line))
+		return true;
+
+	return false;
 }
 
 FUNC(LS_NOP)

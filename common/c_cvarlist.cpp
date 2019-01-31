@@ -225,8 +225,11 @@ CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "",
 CVAR(				cl_deathcam, "1", "Dead player's view follows the actor who killed them",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_predictsectors, "1", "Move floors and ceilings immediately instead of waiting for confirmation",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_RANGE(			cl_predictsectors, "1", "Move floors and ceilings immediately instead of waiting for confirmation, values are:\n"
+					"// 0 - Don't predict any sectors\n" \
+					"// 1 - Predict all sectors based only on actor movements\n" \
+					"// 2 - Predict only sectors activated by you\n",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR(				cl_predictpickup, "1", "Predict weapon pickups",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -260,7 +263,7 @@ CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR_RANGE_FUNC_DECL(language, "0", "",
-					CVARTYPE_INT, CVAR_ARCHIVE, 0.0f, 256.0f)
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0f)
 
 CVAR(				port, "0", "Display currently used network port number",
 					CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)

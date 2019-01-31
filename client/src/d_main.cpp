@@ -283,7 +283,7 @@ void D_Display()
 			WI_Drawer();
 			HU_Drawer();
 			C_DrawMid();
-			V_DoPaletteEffects();	// [HACK] Ch0WW : refresh the palette for original colors.
+			V_ResetPalette();
 			break;
 
 		case GS_FINALE:
