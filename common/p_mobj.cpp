@@ -57,7 +57,8 @@ void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_itemsrespawn)
+EXTERN_CVAR(sv_itemsrespawn) 
+EXTERN_CVAR(sv_itemsrespawn_powerups)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_realactorheight)
@@ -386,8 +387,7 @@ void AActor::Destroy ()
     // Add special to item respawn queue if it is destined to be respawned
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED))
 	{
-		if (type != MT_INV && type != MT_INS &&
-            (type < MT_BSOK || type > MT_RDWN))
+		if (type < MT_BSOK || type > MT_RDWN)
 		{
 			itemrespawnque[iquehead] = spawnpoint;
 			itemrespawntime[iquehead] = level.time;
@@ -2165,7 +2165,16 @@ void P_RespawnSpecials (void)
 	for (i=0 ; i< NUMMOBJTYPES ; i++)
 	{
 		if (mthing->type == mobjinfo[i].doomednum)
-			break;
+		{
+			// Disallow Partial Invisibility & Invulnerability from respawning
+			if (!sv_itemsrespawn_powerups && (mthing->type == 2022 || mthing->type == 2024))
+			{
+				iquetail = (iquetail + 1)&(ITEMQUESIZE - 1);
+				return;
+			} else {
+				break;
+			}
+		}
 	}
 
 	// [Fly] crashes sometimes without it

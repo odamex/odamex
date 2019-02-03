@@ -93,6 +93,9 @@ CVAR(				sv_infiniteammo, "0", "Infinite ammo for all players",
 CVAR(				sv_itemsrespawn, "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+CVAR(				sv_itemsrespawn_powerups, "0", "Allows Invisibility/Invulnerability spheres from respawning (need sv_itemsrespawn set to 1)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will respawn after this " \
 					"time (in seconds)",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
@@ -142,7 +145,7 @@ CVAR(				sv_allowmovebob, "0", "Allow weapon & view bob changing",
 CVAR(				sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
-CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon swithching",
+CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon switching",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 CVAR_FUNC_DECL(		sv_allowwidescreen, "1", "Allow clients to use true widescreen",
