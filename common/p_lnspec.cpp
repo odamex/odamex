@@ -1951,11 +1951,14 @@ EXTERN_CVAR (sv_fragexitswitch)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
-	if (self == NULL)
+	if (self == NULL || !serverside)
 		return false;
 
-	// [Toke - dmflags] Old location of DF_NO_EXIT
+	// Bypass the exit restrictions if we're on a lobby.
+	if (level.flags & LEVEL_LOBBYSPECIAL)
+		return true;	
 
+	// [Toke - dmflags] Old location of DF_NO_EXIT
 	if (sv_gametype != GM_COOP && self)
 	{
         if (!sv_allowexit)

@@ -196,27 +196,36 @@ std::string G_NextMap(void) {
 void G_ChangeMap() {
 	unnatural_level_progression = false;
 
-	size_t next_index;
-	if (!Maplist::instance().get_next_index(next_index)) {
-		// We don't have a maplist, so grab the next 'natural' map lump.
-		std::string next = G_NextMap();
-		G_DeferedInitNew((char *)next.c_str());
-	} else {
-		maplist_entry_t maplist_entry;
-		Maplist::instance().get_map_by_index(next_index, maplist_entry);
-
-		G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
-
-		// Set the new map as the current map
-		Maplist::instance().set_index(next_index);
+	// Skip the maplist to go to the desired level in case of a lobby map.
+	if (level.flags & LEVEL_LOBBYSPECIAL && level.nextmap[0])
+	{
+		G_DeferedInitNew(level.nextmap);
 	}
+	else
+	{
+		size_t next_index;
+		if (!Maplist::instance().get_next_index(next_index)) {
+			// We don't have a maplist, so grab the next 'natural' map lump.
+			std::string next = G_NextMap();
+			G_DeferedInitNew((char *)next.c_str());
+		}
+		else {
+			maplist_entry_t maplist_entry;
+			Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+			G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+
+			// Set the new map as the current map
+			Maplist::instance().set_index(next_index);
+		}
+
+		// run script at the end of each map
+		// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+		// when onlcvars (addcommandstring's second param) is true.  Is there a
+		// reason why the mapscripts ahve to be safe mode?
+		if (strlen(sv_endmapscript.cstring()))
+			AddCommandString(sv_endmapscript.cstring()/*, true*/);
+	}
 }
 
 // Change to a map based on a maplist index.

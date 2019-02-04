@@ -80,7 +80,7 @@ enum
 {
 	MITL_MAP,
 	MITL_DEFAULTMAP,
-	MITL_CLUSTERDEF
+	MITL_CLUSTERDEF,
 };
 
 static const char *MapInfoMapLevel[] =
@@ -126,6 +126,7 @@ static const char *MapInfoMapLevel[] =
 	"warptrans",
 	"gravity",
 	"aircontrol",
+	"lobby",					// Support for lobbies
 	NULL
 };
 
@@ -143,7 +144,7 @@ enum EMIType
 	MITYPE_SCFLAGS,
 	MITYPE_CLUSTER,
 	MITYPE_STRING,
-	MITYPE_CSTRING
+	MITYPE_CSTRING,
 };
 
 struct MapInfoHandler
@@ -193,7 +194,8 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 }
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
