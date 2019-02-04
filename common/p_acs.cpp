@@ -848,7 +848,7 @@ void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int a
 		if (ptr->Type == type)
 		{
 			P_GetScriptGoing (activator, NULL, ptr->Number,
-				(int *)(ptr->Address + Data), arg0, arg1, arg2, 0, 0, true);
+				(int *)(ptr->Address + Data), 0, arg0, arg1, arg2, 0, true);
 		}
 	}
 }
@@ -2450,7 +2450,7 @@ void DLevelScript::RunScript ()
 			if (pcd != PCD_MOREHUDMESSAGE)
 			{
 				if (pcd == PCD_ENDPRINTBOLD || activator == NULL ||
-					(activator->player->mo == consoleplayer().camera))
+					(activator->player && activator->player->mo == consoleplayer().camera))
 				{
 					strbin (work);
 					C_MidPrint (work);

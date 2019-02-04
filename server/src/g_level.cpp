@@ -837,7 +837,7 @@ void G_DoLoadLevel (int position)
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
 	// [AM] Handle warmup init.
-	warmup.reset();
+	warmup.reset(level);
 	//	C_FlushDisplay ();
 }
 

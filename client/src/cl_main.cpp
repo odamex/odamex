@@ -68,6 +68,7 @@
 #include "g_warmup.h"
 #include "v_text.h"
 #include "hu_stuff.h"
+#include "p_acs.h"
 
 #include <string>
 #include <vector>
@@ -161,6 +162,8 @@ EXTERN_CVAR (cl_forcedownload)
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static argb_t enemycolor, teamcolor;
+
+void P_PlayerLeavesGame(player_s* player);
 
 //
 // CL_ShadePlayerColor
@@ -596,6 +599,8 @@ void CL_DisconnectClient(void)
 		{
 			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+			if (!it->spectator)
+				P_PlayerLeavesGame(&(*it));
 			players.erase(it);
 			break;
 		}
@@ -2371,6 +2376,14 @@ void CL_SpawnPlayer()
 		CL_ResyncWorldIndex();
 	}
 
+	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	{
+		if (p->deathcount)
+			level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		else
+			level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
+	}
+
 	int snaptime = last_svgametic;
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
@@ -3414,10 +3427,13 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
 	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
 
 	// [tm512 2014/04/11] Do as the server does when unspectating a player.
 	// If the player has a "valid" mo upon going to PST_LIVE, any enemies

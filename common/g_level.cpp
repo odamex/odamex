@@ -126,7 +126,8 @@ static const char *MapInfoMapLevel[] =
 	"warptrans",
 	"gravity",
 	"aircontrol",
-	"lobby",					// Support for lobbies
+	"islobby",					// Support for lobbies
+	"lobby",					// Alias for "islobby"
 	NULL
 };
 
@@ -195,6 +196,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 };
 

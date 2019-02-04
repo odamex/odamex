@@ -112,6 +112,7 @@ EXTERN_CVAR(sv_warmup)
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
+void P_PlayerLeavesGame(player_s* player);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -478,8 +479,7 @@ void SV_InitNetwork (void)
 	SV_InitMasters();
 }
 
-// [AM] TODO: Turn this into Players::push_back().
-// HoboMaster22: This now reuses emptied IDs.
+//Get next free player. Will use the lowest available player id.
 Players::iterator SV_GetFreeClient(void)
 {
 	if (players.size() >= sv_maxclients)
@@ -495,8 +495,9 @@ Players::iterator SV_GetFreeClient(void)
 	players.push_back(player_t());
 
 	// generate player id
-	players.back().id = *free_player_ids.begin();
-	free_player_ids.erase(players.back().id);
+	auto id = free_player_ids.begin();
+	players.back().id = *id;
+	free_player_ids.erase(id);
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
@@ -531,7 +532,6 @@ void SV_CheckTimeouts()
 	}
 }
 
-
 //
 // SV_RemoveDisconnectedPlayer
 //
@@ -545,6 +545,9 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 		return players.end();
 
 	int player_id = it->id;
+
+	if (!it->spectator)
+		P_PlayerLeavesGame(&(*it));
 
 	// remove player awareness from all actors
 	AActor* mo;
@@ -848,6 +851,10 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 	MSG_WriteShort	(&cl->reliablebuf, time(NULL) - p->JoinTime);
 }
 
+/**
+Spreads a player's userinfo to every client.
+@param player Player to parse info for.
+ */
 void SV_BroadcastUserInfo(player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -1848,7 +1855,13 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 	return AllowConnect;
 }
 
-
+void SV_InitPlayerEnterState(player_s* player)
+{
+	player->fragcount = 0;
+	player->killcount = 0;
+	player->points = 0;
+	player->playerstate = PST_ENTER;
+}
 
 //
 //	SV_ConnectClient
@@ -1897,7 +1910,7 @@ void SV_ConnectClient()
 	player_t* player = &(*it);
 	client_t* cl = &(player->client);
 
-	// clear client network info
+	// clear and reinitialize client network info
 	cl->address = net_from;
 	cl->last_received = gametic;
 	cl->reliable_bps = 0;
@@ -1906,14 +1919,6 @@ void SV_ConnectClient()
 	cl->lastclientcmdtic = 0;
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
-
-	// generate a random string
-	std::stringstream ss;
-	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
-	cl->digest = MD5SUM(ss.str());
-
-	// Set player time
-	player->JoinTime = time(NULL);
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
@@ -1925,7 +1930,15 @@ void SV_ConnectClient()
 
 	cl->sequence = 0;
 	cl->last_sequence = -1;
-	cl->packetnum =  0;
+	cl->packetnum = 0;
+	
+	// generate a random string
+	std::stringstream ss;
+	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
+	cl->digest = MD5SUM(ss.str());
+
+	// Set player time
+	player->JoinTime = time(NULL);
 
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
@@ -1934,13 +1947,14 @@ void SV_ConnectClient()
 	// for unlagging
 	Unlag::getInstance().registerPlayer(player->id);
 
+	// Check if the client uses the same version as the server.
 	if (!SV_CheckClientVersion(cl, it))
 	{
 		SV_DropClient(*player);
 		return;
 	}
 
-	// get client userinfo
+	// Get the userinfo from the client.
 	clc_t userinfo = (clc_t)MSG_ReadByte();
 	if (userinfo != clc_userinfo)
 	{
@@ -1951,9 +1965,10 @@ void SV_ConnectClient()
 	if (!SV_SetupUserInfo(*player))
 		return;
 
-	// get rate value
+	// Get the rate value of the client.
 	SV_SetClientRate(*cl, MSG_ReadLong());
 
+	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
 	{
 		cl->displaydisconnect = false;
@@ -1961,6 +1976,7 @@ void SV_ConnectClient()
 		return;
 	}
 
+	// Check if the user entered a good password (if any)
 	std::string passhash = MSG_ReadString();
 	if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
 	{
@@ -1968,7 +1984,7 @@ void SV_ConnectClient()
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
 		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password\n");
+		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password.\n");
 
 		SV_SendPacket(*player);
 		SV_DropClient(*player);
@@ -2027,11 +2043,7 @@ void SV_ConnectClient()
 	}
 
 	SV_BroadcastUserInfo(*player);
-	player->playerstate = PST_REBORN;
-
-	player->fragcount = 0;
-	player->killcount = 0;
-	player->points = 0;
+	SV_InitPlayerEnterState(player);
 
 	if (!step_mode)
 	{
@@ -2040,11 +2052,11 @@ void SV_ConnectClient()
 		{
 			MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
 			MSG_WriteByte(&pit->client.reliablebuf, player->id);
-			MSG_WriteByte(&pit->client.reliablebuf, true);
+			MSG_WriteByte(&pit->client.reliablebuf, player->spectator);
 		}
 	}
 
-	// send a map name
+	// Send a map name
 	SV_SendLoadMap(wadfiles, patchfiles, level.mapname, player);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
@@ -2063,6 +2075,7 @@ void SV_ConnectClient()
 		MSG_WriteByte(&pit->client.reliablebuf, player->id);
 	}
 
+	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
 
@@ -3616,10 +3629,8 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	if (!setting && player.spectator)
 	{
 		// We want to unspectate the player.
-		if ((level.time > player.joinafterspectatortime + TICRATE * 3) ||
-			level.time > player.joinafterspectatortime + TICRATE * 5)
+		if (level.time > player.joinafterspectatortime + TICRATE * 5)
 		{
-
 			// Check to see if there is an empty spot on the server
 			int NumPlayers = 0;
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -3646,32 +3657,19 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 			// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
 			SV_MidPrint("", &player, 0);
 
+			// Warn everyone we're not a spectator anymore.
 			player.spectator = false;
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
 				MSG_WriteMarker(&it->client.reliablebuf, svc_spectate);
 				MSG_WriteByte(&it->client.reliablebuf, player.id);
-				MSG_WriteByte(&it->client.reliablebuf, false);
+				MSG_WriteByte(&it->client.reliablebuf, player.spectator);
 			}
 
 			if (player.mo)
 				P_KillMobj(NULL, player.mo, NULL, true);
 
-			player.playerstate = PST_REBORN;
-
-			if (!silent)
-			{
-				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
-				else
-					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-									   player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
-			}
-
-			// GhostlyDeath -- Reset Frags, Deaths and Kills
-			player.fragcount = 0;
-			player.deathcount = 0;
-			player.killcount = 0;
+			SV_InitPlayerEnterState(&player);
 			SV_UpdateFrags(player);
 
 			// [AM] Set player unready if we're in warmup mode.
@@ -3680,10 +3678,24 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 				SV_SetReady(player, false, true);
 				player.timeout_ready = 0;
 			}
+			
+			// Everything is set, now warn everyone the player joined.
+			if (!silent)
+			{
+				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
+				else
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
+						player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
+			}
+
 		}
 	}
 	else if (setting && !player.spectator)
 	{
+		// Call the DISCONNECT parameter
+		P_PlayerLeavesGame(&player);
+
 		// We want to spectate the player
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -4380,7 +4392,7 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!sv_timelimit)
+	if(!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) //no time limit in lobby
 		return;
 
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60);

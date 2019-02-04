@@ -1517,5 +1517,14 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	}
 }
 
+//The player has left the game (in-game to spectator, or in-game disconnect)
+void P_PlayerLeavesGame(player_s* player)
+{
+	if (level.behavior)
+	{
+		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());
+	}
+}
+
 VERSION_CONTROL (p_interaction_cpp, "$Id$")
 
