@@ -837,7 +837,7 @@ DWORD FBehavior::FindLanguage (DWORD langid, bool ignoreregion) const
 	return 0;
 }
 
-void FBehavior::StartTypedScripts (WORD type, AActor *activator) const
+void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int arg1, int arg2) const
 {
 	ScriptPtr *ptr;
 	int i;
@@ -848,7 +848,7 @@ void FBehavior::StartTypedScripts (WORD type, AActor *activator) const
 		if (ptr->Type == type)
 		{
 			P_GetScriptGoing (activator, NULL, ptr->Number,
-				(int *)(ptr->Address + Data), 0, 0, 0, 0, 0, true);
+				(int *)(ptr->Address + Data), arg0, arg1, arg2, 0, 0, true);
 		}
 	}
 }
@@ -3050,6 +3050,20 @@ void DLevelScript::RunScript ()
 		case PCD_VECTORANGLE:
 			STACK(2) = R_PointToAngle2 (0, 0, STACK(2), STACK(1)) >> 16;
 			sp--;
+			break;
+
+		case PCD_PLAYERNUMBER:
+			if (activator == NULL || activator->player == NULL)
+				PushToStack(-1);
+			else
+				PushToStack(activator->player->GetPlayerNumber());
+			break;
+
+		case PCD_ACTIVATORTID:
+			if (activator == NULL)
+				PushToStack(0);
+			else
+				PushToStack(activator->tid);
 			break;
 
 		/*case PCD_CHECKWEAPON:
