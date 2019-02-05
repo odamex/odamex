@@ -99,7 +99,7 @@ EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
-EXTERN_CVAR (sv_itemsrespawn_powerups)
+EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
@@ -2108,7 +2108,7 @@ void G_DoPlayDemo(bool justStreamInput)
 				sv_itemsrespawn.Set(0.0f);
 			}
 
-			sv_itemsrespawn_powerups.Set(0.0f);
+			sv_respawnsuper.Set(0.0f);
 			G_InitNew(mapname);
 
 			usergame = false;

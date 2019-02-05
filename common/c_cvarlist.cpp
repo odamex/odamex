@@ -93,7 +93,7 @@ CVAR(				sv_infiniteammo, "0", "Infinite ammo for all players",
 CVAR(				sv_itemsrespawn, "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR(				sv_itemsrespawn_powerups, "0", "Allows Invisibility/Invulnerability spheres from respawning (need sv_itemsrespawn set to 1)",
+CVAR(				sv_respawnsuper, "0", "Allows Invisibility/Invulnerability spheres from respawning (need sv_itemsrespawn set to 1)",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will respawn after this " \

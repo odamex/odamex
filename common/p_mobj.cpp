@@ -58,7 +58,7 @@ void SV_ExplodeMissile(AActor *);
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
-EXTERN_CVAR(sv_itemsrespawn_powerups)
+EXTERN_CVAR(sv_respawnsuper)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_realactorheight)
@@ -2166,8 +2166,8 @@ void P_RespawnSpecials (void)
 	{
 		if (mthing->type == mobjinfo[i].doomednum)
 		{
-			// Disallow Partial Invisibility & Invulnerability from respawning
-			if (!sv_itemsrespawn_powerups && (mthing->type == 2022 || mthing->type == 2024))
+			// Allow or not Partial Invisibility & Invulnerability from respawning 
+			if (!sv_respawnsuper && (mthing->type == 2022 || mthing->type == 2024))
 			{
 				iquetail = (iquetail + 1)&(ITEMQUESIZE - 1);
 				return;
