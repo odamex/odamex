@@ -4541,11 +4541,7 @@ void SV_StepTics(QWORD count)
 		SV_SendPackets();
 		SV_ClearClientsBPS();
 		SV_CheckTimeouts();
-
-		// Since clients are only sent sector updates every 3rd tic, don't destroy
-		// the finished moving sectors until we've sent the clients the update
-		if (P_AtInterval(3))
-			SV_DestroyFinishedMovingSectors();
+		SV_DestroyFinishedMovingSectors();
 
 		// increment player_t::GameTime for all players once a second
 		static int TicCount = 0;
