@@ -63,7 +63,6 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_unlag)
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
 EXTERN_CVAR (cl_weaponpref_csw)
@@ -166,7 +165,7 @@ void D_SetupUserInfo(void)
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);
-	coninfo->update_rate		= cl_updaterate;
+	coninfo->update_rate		= 1; //Update every tic
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice

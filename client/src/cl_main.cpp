@@ -152,7 +152,6 @@ EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)

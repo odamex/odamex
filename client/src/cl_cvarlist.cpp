@@ -280,9 +280,6 @@ CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode",
 CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
 					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			cl_updaterate, "1",	"Update players every N tics",
-					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 3.0f)
-
 CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
