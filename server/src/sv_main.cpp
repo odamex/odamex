@@ -900,7 +900,6 @@ bool SV_SetupUserInfo(player_t &player)
 	fixed_t aimdist = MSG_ReadLong();
 	bool unlag = MSG_ReadBool();
 	bool predict_weapons = MSG_ReadBool();
-	byte update_rate = MSG_ReadByte();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
 
@@ -920,7 +919,6 @@ bool SV_SetupUserInfo(player_t &player)
 		gender = GENDER_NEUTER;
 
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
-	update_rate = clamp((int)update_rate, 1, 3);
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
 		switchweapon = WPSW_ALWAYS;
@@ -928,7 +926,6 @@ bool SV_SetupUserInfo(player_t &player)
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
 	player.userinfo.unlag			= unlag;
 	player.userinfo.predict_weapons	= predict_weapons;
-	player.userinfo.update_rate		= update_rate;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
 	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
@@ -3266,74 +3263,66 @@ void SV_WriteCommands(void)
 	{
 		client_t *cl = &(it->client);
 
-		// Don't need to update origin every tic.
-		// The server sends origin and velocity of a
-		// player and the client always knows origin on
-		// on the next tic.
-		// HOWEVER, update as often as the player requests
-		if (P_AtInterval(it->userinfo.update_rate))
+		// [SL] 2011-05-11 - Send the client the server's gametic
+		// this gametic is returned to the server with the client's
+		// next cmd
+		if (it->ingame())
+			SV_SendGametic(cl);
+
+		for (Players::iterator pit = players.begin();pit != players.end();++pit)
 		{
-			// [SL] 2011-05-11 - Send the client the server's gametic
-			// this gametic is returned to the server with the client's
-			// next cmd
-			if (it->ingame())
-				SV_SendGametic(cl);
+			if (!(pit->ingame()) || !(pit->mo))
+				continue;
 
-			for (Players::iterator pit = players.begin();pit != players.end();++pit)
+			// a player is updated about their own position elsewhere
+			if (&*it == &*pit)
+				continue;
+
+			// GhostlyDeath -- Screw spectators
+			if (pit->spectator)
+				continue;
+
+			if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
+				continue;
+
+			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
+			MSG_WriteByte(&cl->netbuf, pit->id); // player number
+
+			// [SL] 2011-09-14 - the most recently processed ticcmd from the
+			// client we're sending this message to.
+			MSG_WriteLong(&cl->netbuf, it->tic);
+
+			MSG_WriteLong(&cl->netbuf, pit->mo->x);
+			MSG_WriteLong(&cl->netbuf, pit->mo->y);
+			MSG_WriteLong(&cl->netbuf, pit->mo->z);
+
+			if (GAMEVER > 60)
 			{
-				if (!(pit->ingame()) || !(pit->mo))
-					continue;
-
-				// a player is updated about their own position elsewhere
-				if (&*it == &*pit)
-					continue;
-
-				// GhostlyDeath -- Screw spectators
-				if (pit->spectator)
-					continue;
-
-				if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
-					continue;
-
-				MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
-				MSG_WriteByte(&cl->netbuf, pit->id); // player number
-
-				// [SL] 2011-09-14 - the most recently processed ticcmd from the
-				// client we're sending this message to.
-				MSG_WriteLong(&cl->netbuf, it->tic);
-
-				MSG_WriteLong(&cl->netbuf, pit->mo->x);
-				MSG_WriteLong(&cl->netbuf, pit->mo->y);
-				MSG_WriteLong(&cl->netbuf, pit->mo->z);
-
-				if (GAMEVER > 60)
-				{
-					MSG_WriteShort(&cl->netbuf, pit->mo->angle >> FRACBITS);
-					MSG_WriteShort(&cl->netbuf, pit->mo->pitch >> FRACBITS);
-				}
-				else
-				{
-					MSG_WriteLong(&cl->netbuf, pit->mo->angle);
-				}
-
-				if (pit->mo->frame == 32773)
-					MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
-				else
-					MSG_WriteByte(&cl->netbuf, pit->mo->frame);
-
-				// write velocity
-				MSG_WriteLong(&cl->netbuf, pit->mo->momx);
-				MSG_WriteLong(&cl->netbuf, pit->mo->momy);
-				MSG_WriteLong(&cl->netbuf, pit->mo->momz);
-
-				// [Russell] - hack, tell the client about the partial
-				// invisibility power of another player.. (cheaters can disable
-				// this but its all we have for now)
-				if (GAMEVER > 60)
-					MSG_WriteByte(&cl->netbuf, pit->powers[pw_invisibility]);
-				else
-					MSG_WriteLong(&cl->netbuf, pit->powers[pw_invisibility]);
+				MSG_WriteShort(&cl->netbuf, pit->mo->angle >> FRACBITS);
+				MSG_WriteShort(&cl->netbuf, pit->mo->pitch >> FRACBITS);
 			}
+			else
+			{
+				MSG_WriteLong(&cl->netbuf, pit->mo->angle);
+			}
+
+			if (pit->mo->frame == 32773)
+				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
+			else
+				MSG_WriteByte(&cl->netbuf, pit->mo->frame);
+
+			// write velocity
+			MSG_WriteLong(&cl->netbuf, pit->mo->momx);
+			MSG_WriteLong(&cl->netbuf, pit->mo->momy);
+			MSG_WriteLong(&cl->netbuf, pit->mo->momz);
+
+			// [Russell] - hack, tell the client about the partial
+			// invisibility power of another player.. (cheaters can disable
+			// this but its all we have for now)
+			if (GAMEVER > 60)
+				MSG_WriteByte(&cl->netbuf, pit->powers[pw_invisibility]);
+			else
+				MSG_WriteLong(&cl->netbuf, pit->powers[pw_invisibility]);
 		}
 
 		// [SL] Send client info about player he is spying on
@@ -3510,8 +3499,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	AActor *mo = player.mo;
 	client_t *cl = &player.client;
 
-	// Send updates about a player's position as often as the player wishes
-	if (!mo || !P_AtInterval(player.userinfo.update_rate))
+	if (!mo)
 		return;
 
 	// GhostlyDeath -- Spectators are on their own really

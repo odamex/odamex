@@ -165,7 +165,6 @@ void D_SetupUserInfo(void)
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);
-	coninfo->update_rate		= 1; //Update every tic
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
@@ -213,8 +212,7 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
 	arc << skin;
-
-	arc << info.unlag << info.update_rate;
+	arc << info.unlag;
 
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
@@ -240,8 +238,7 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 	// [SL] place holder for deprecated skins
 	unsigned int skin;
 	arc >> skin;
-
-	arc >> info.unlag >> info.update_rate;
+	arc >> info.unlag;
 
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
