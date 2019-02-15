@@ -238,6 +238,10 @@ void HU_Ticker()
 		HU_UnsetChatMode();
 }
 
+void HU_ReleaseKeyStates()
+{
+	altdown = false;
+}
 
 //
 // HU_Responder

@@ -611,6 +611,8 @@ void C_ReleaseKeys()
 			(*binding)[achar] = '+';
 		}
 	}
+
+	HU_ReleaseKeyStates();
 }
 
 void C_ArchiveBindings (FILE *f)
