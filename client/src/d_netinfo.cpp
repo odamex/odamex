@@ -211,8 +211,10 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
+	byte update_rate = 0;
 	arc << skin;
 	arc << info.unlag;
+	arc << update_rate; //update_rate was removed, still read/write so that old saves continue to function
 
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
@@ -237,8 +239,10 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;
+	byte update_rate;
 	arc >> skin;
 	arc >> info.unlag;
+	arc >> update_rate; //update_rate was removed, still read/write so that old saves continue to function
 
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
