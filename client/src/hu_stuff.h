@@ -55,7 +55,7 @@ chatmode_t HU_ChatMode();
 void HU_SetChatMode();
 void HU_SetTeamChatMode();
 void HU_UnsetChatMode();
-
+void HU_ReleaseKeyStates();
 
 void OdamexEffect (int xa, int ya, int xb, int yb);
 
