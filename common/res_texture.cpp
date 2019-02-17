@@ -556,60 +556,60 @@ void TextureManager::readAnimDefLump()
 	
 	while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 	{
-		SC_OpenLumpNum(lump, "ANIMDEFS");
+		sc.OpenLumpNum(lump, "ANIMDEFS");
 
-		while (SC_GetString())
+		while (sc.GetString())
 		{
-			if (SC_Compare("flat") || SC_Compare("texture"))
+			if (sc.Compare("flat") || sc.Compare("texture"))
 			{
 				anim_t anim;
 
 				Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-				if (SC_Compare("flat"))
+				if (sc.Compare("flat"))
 					texture_type = Texture::TEX_FLAT;
 
-				SC_MustGetString();
-				anim.basepic = texturemanager.getHandle(sc_String, texture_type);
+				sc.MustGetString();
+				anim.basepic = texturemanager.getHandle(sc.String, texture_type);
 
 				anim.curframe = 0;
 				anim.numframes = 0;
 				memset(anim.speedmin, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
 				memset(anim.speedmax, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
 
-				while (SC_GetString())
+				while (sc.GetString())
 				{
-					if (!SC_Compare("pic"))
+					if (!sc.Compare("pic"))
 					{
-						SC_UnGet();
+						sc.UnGet();
 						break;
 					}
 
 					if ((unsigned)anim.numframes == anim_t::MAX_ANIM_FRAMES)
-						SC_ScriptError ("Animation has too many frames");
+						sc.ScriptError ("Animation has too many frames");
 
 					byte min = 1, max = 1;
 					
-					SC_MustGetNumber();
-					int frame = sc_Number;
-					SC_MustGetString();
-					if (SC_Compare("tics"))
+					sc.MustGetNumber();
+					int frame = sc.Number;
+					sc.MustGetString();
+					if (sc.Compare("tics"))
 					{
-						SC_MustGetNumber();
-						sc_Number = clamp(sc_Number, 0, 255);
-						min = max = sc_Number;
+						sc.MustGetNumber();
+						sc.Number = clamp(sc.Number, 0, 255);
+						min = max = sc.Number;
 					}
-					else if (SC_Compare("rand"))
+					else if (sc.Compare("rand"))
 					{
-						SC_MustGetNumber();
-						min = MAX(sc_Number, 0);
-						SC_MustGetNumber();
-						max = MIN(sc_Number, 255);
+						sc.MustGetNumber();
+						min = MAX(sc.Number, 0);
+						sc.MustGetNumber();
+						max = MIN(sc.Number, 255);
 						if (min > max)
 							min = max = 1;
 					}
 					else
 					{
-						SC_ScriptError ("Must specify a duration for animation frame");
+						sc.ScriptError ("Must specify a duration for animation frame");
 					}
 
 					anim.speedmin[anim.numframes] = min;
@@ -624,24 +624,24 @@ void TextureManager::readAnimDefLump()
 					anim.basepic != TextureManager::NO_TEXTURE_HANDLE)
 					mAnimDefs.push_back(anim);
 			}
-			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			else if (sc.Compare ("switch"))   // Don't support switchdef yet...
 			{
 				//P_ProcessSwitchDef ();
 //				SC_ScriptError("switchdef not supported.");
 			}
-			else if (SC_Compare("warp"))
+			else if (sc.Compare("warp"))
 			{
-				SC_MustGetString();
-				if (SC_Compare("flat") || SC_Compare("texture"))
+				sc.MustGetString();
+				if (sc.Compare("flat") || sc.Compare("texture"))
 				{
 
 					Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-					if (SC_Compare("flat"))
+					if (sc.Compare("flat"))
 						texture_type = Texture::TEX_FLAT;
 
-					SC_MustGetString();
+					sc.MustGetString();
 
-					texhandle_t texhandle = texturemanager.getHandle(sc_String, texture_type);
+					texhandle_t texhandle = texturemanager.getHandle(sc.String, texture_type);
 					if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
 						texhandle == TextureManager::NO_TEXTURE_HANDLE)
 						continue;
@@ -661,11 +661,11 @@ void TextureManager::readAnimDefLump()
 				}
 				else
 				{
-					SC_ScriptError(NULL, NULL);
+					sc.ScriptError(NULL, NULL);
 				}
 			}
 		}
-		SC_Close ();
+		sc.Close ();
 	}
 }
 

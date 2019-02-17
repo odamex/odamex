@@ -25,35 +25,69 @@
 #ifndef __SC_MAN_H__
 #define __SC_MAN_H__
 
-void SC_Open (const char *name);
-void SC_OpenFile (const char *name);
-void SC_OpenMem (const char *name, char *buffer, int size);
-void SC_OpenLumpNum (int lump, const char *name);
-void SC_Close (void);
-void SC_SavePos (void);
-void SC_RestorePos (void);
-BOOL SC_GetString (void);
-void SC_MustGetString (void);
-void SC_MustGetStringName (const char *name);
-BOOL SC_GetNumber (void);
-void SC_MustGetNumber (void);
-BOOL SC_GetFloat (void);
-void SC_MustGetFloat (void);
-void SC_UnGet (void);
-//boolean SC_Check(void);
-BOOL SC_Compare (const char *text);
-int SC_MatchString (const char **strings);
-int SC_MustMatchString (const char **strings);
-void SC_ScriptError (const char *message, const char **args = NULL);
+#define MAX_STRING_SIZE 4096
 
-extern char *sc_String;
-extern int sc_Number;
-extern float sc_Float;
-extern int sc_Line;
-extern BOOL sc_End;
-extern BOOL sc_Crossed;
-extern BOOL sc_FileScripts;
-extern char *sc_ScriptsDir;
+class FScriptParser
+{
+public:
+	FScriptParser();
+	~FScriptParser();
+
+	int Number;
+	char *String;
+	float Float;
+	bool Crossed;
+
+	void Open(const char *lumpname);
+	void OpenFile(const char *filename);
+	void OpenMem(const char *name, char *buffer, int size);
+	void OpenLumpNum(int lump, const char *name);
+	void Close(void);
+
+	void SavePos(void);
+	void RestorePos(void);
+
+	bool GetString(void);
+	void MustGetString(void);
+	void MustGetStringName(const char *name);
+
+	bool Compare(const char *text);
+	int MatchString(const char **strings);
+	int MustMatchString(const char **strings);
+
+	bool GetNumber(void);
+	bool CheckNumber(void);
+	void MustGetNumber(void);
+
+	bool GetFloat(void);
+	void MustGetFloat(void);
+
+	void UnGet(void);
+
+	void ScriptError(const char *message, const char **args = NULL);
+
+protected:
+
+	void PrepareScript(void);
+	void CheckOpen(void);
+
+	bool End;
+	int Line;
+
+	std::string ScriptName;
+	char *ScriptBuffer;
+	char *ScriptPtr;
+	char *ScriptEndPtr;
+	char StringBuffer[MAX_STRING_SIZE];
+	bool ScriptOpen;
+	int ScriptSize;
+	bool AlreadyGot;
+	bool FreeScript;
+	char *SavedScriptPtr;
+	int SavedScriptLine;
+};
+
+extern FScriptParser sc;
 
 #endif //__SC_MAN_H__
 
