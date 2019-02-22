@@ -301,7 +301,7 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = W_CachePatch ("M_PAUSE");
+		patch_t *pause = wads.CachePatch ("M_PAUSE");
 		int y;
 
 		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
@@ -311,12 +311,12 @@ void D_Display()
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		int lump = W_CheckNumForName (D_DrawIcon);
+		int lump = wads.CheckNumForName (D_DrawIcon);
 
 		D_DrawIcon = NULL;
 		if (lump >= 0)
 		{
-			patch_t *p = W_CachePatch (lump);
+			patch_t *p = wads.CachePatch (lump);
 
 			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
 		}
@@ -425,7 +425,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
+    if (wads.CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
@@ -503,7 +503,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const patch_t* patch = W_CachePatch(pagename);
+		const patch_t* patch = wads.CachePatch(pagename);
 
 		I_FreeSurface(page_surface);
 
@@ -592,7 +592,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.LoadStrings(wads.GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
 
 	// init the renderer
@@ -684,7 +684,7 @@ void STACK_ARGS D_Shutdown()
 	UndoDehPatch();
 
 	// close all open WAD files
-	W_Close();
+	wads.Close();
 
 //	V_UnloadFonts();
 

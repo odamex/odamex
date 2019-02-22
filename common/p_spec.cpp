@@ -379,7 +379,7 @@ static void P_InitAnimDefs ()
 {
 	int lump = -1;
 
-	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
+	while ((lump = wads.FindLump ("ANIMDEFS", lump)) != -1)
 	{
 		sc.OpenLumpNum (lump, "ANIMDEFS");
 
@@ -432,7 +432,7 @@ static void ParseAnim (byte istex)
 
 	sc.MustGetString ();
 	picnum = istex ? R_CheckTextureNumForName (sc.String)
-		: W_CheckNumForName (sc.String, ns_flats) - firstflat;
+		: wads.CheckNumForName (sc.String, ns_flats) - firstflat;
 
 	if (picnum == -1)
 	{ // Base pic is not present, so skip this definition
@@ -575,10 +575,10 @@ void P_InitPicAnims (void)
 	// [RH] Load an ANIMDEFS lump first
 	P_InitAnimDefs ();
 
-	if (W_CheckNumForName ("ANIMATED") == -1)
+	if (wads.CheckNumForName ("ANIMATED") == -1)
 		return;
 
-	animdefs = (byte *)W_CacheLumpName ("ANIMATED", PU_STATIC);
+	animdefs = (byte *)wads.CacheLumpName ("ANIMATED", PU_STATIC);
 
 	// Init animation
 
@@ -614,8 +614,8 @@ void P_InitPicAnims (void)
 			}
 			else
 			{
-				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
+				if (wads.CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
+					wads.CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
 					continue;
 
 				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);

@@ -205,10 +205,10 @@ static void getsfx (struct sfxinfo_struct *sfx)
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
-    data = (Uint8 *)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+    data = (Uint8 *)wads.CacheLumpNum(sfx->lumpnum, PU_STATIC);
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
     // get the lump size, shouldn't this be filled in elsewhere?
-    sfx->length = W_LumpLength(sfx->lumpnum);
+    sfx->length = wads.LumpLength(sfx->lumpnum);
 
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)

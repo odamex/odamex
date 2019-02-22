@@ -204,11 +204,11 @@ void HU_Init()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		sprintf(buffer, tplate, j++ - sub);
-		hu_font[i] = W_CachePatch(buffer, PU_STATIC);
+		hu_font[i] = wads.CachePatch(buffer, PU_STATIC);
 	}
 
 	// Load the status bar line
-	sbline = W_CachePatch("SBLINE", PU_STATIC);
+	sbline = wads.CachePatch("SBLINE", PU_STATIC);
 
 	HU_InitCrosshair();
 }
@@ -326,8 +326,8 @@ static void HU_InitCrosshair()
 
 		sprintf(xhairname, "XHAIR%d", xhairnum);
 
-		if ((xhair = W_CheckNumForName(xhairname)) == -1)
-			xhair = W_CheckNumForName("XHAIR1");
+		if ((xhair = wads.CheckNumForName(xhairname)) == -1)
+			xhair = wads.CheckNumForName("XHAIR1");
 
 		if (xhair != -1)
 			crosshair_lump = xhair;
@@ -391,13 +391,13 @@ static void HU_DrawCrosshair()
 			y = ST_StatusBarY(I_GetSurfaceWidth(), I_GetSurfaceHeight()) / 2;
 
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawTranslatedLucentPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedLucentPatchCleanNoMove(wads.CachePatch(crosshair_lump), x, y);
         else if (hud_crosshairscale)
-			screen->DrawTranslatedPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedPatchCleanNoMove(wads.CachePatch(crosshair_lump), x, y);
         else if (hud_crosshairdim)
-			screen->DrawTranslatedLucentPatch(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedLucentPatch(wads.CachePatch(crosshair_lump), x, y);
 		else
-			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump), x, y);
+			screen->DrawTranslatedPatch (wads.CachePatch (crosshair_lump), x, y);
 	}
 }
 
@@ -502,7 +502,7 @@ void HU_Drawer()
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
-		screen->DrawPatchCleanNoMove(W_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
+		screen->DrawPatchCleanNoMove(wads.CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
 
 	if (cl_netgraph)
 		netgraph.draw();

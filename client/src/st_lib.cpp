@@ -55,7 +55,7 @@ patch_t*				sttminus;
 
 void STlib_init(void)
 {
-	sttminus = W_CachePatch("STTMINUS", PU_STATIC);
+	sttminus = wads.CachePatch("STTMINUS", PU_STATIC);
 }
 
 

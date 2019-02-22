@@ -1707,13 +1707,13 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 	BackupData ();
 	PatchFile = NULL;
 
-	lump = W_CheckNumForName ("DEHACKED");
+	lump = wads.CheckNumForName("DEHACKED");
 
 	if (lump >= 0 && autoloading) {
 		// Execute the DEHACKED lump as a patch.
-		filelen = W_LumpLength (lump);
+		filelen = wads.LumpLength (lump);
 		if ( (PatchFile = new char[filelen + 1]) ) {
-			W_ReadLump (lump, PatchFile);
+			wads.ReadLump (lump, PatchFile);
 		} else {
 			DPrintf ("Not enough memory to apply patch\n");
 			return false;
@@ -1747,11 +1747,11 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 			FixPathSeparator (file);
 			M_ExtractFileBase (file, file);
 			file[8] = 0;
-			lump = W_CheckNumForName (file.c_str());
+			lump = wads.CheckNumForName (file.c_str());
 			if (lump >= 0) {
-				filelen = W_LumpLength (lump);
+				filelen = wads.LumpLength (lump);
 				if ( (PatchFile = new char[filelen + 1]) ) {
-					W_ReadLump (lump, PatchFile);
+					wads.ReadLump (lump, PatchFile);
 				} else {
 					DPrintf ("Not enough memory to apply patch\n");
 					return false;

@@ -160,7 +160,7 @@ public:
 
 	bool isIWAD(const OString& filename) const
 	{
-		const OString md5sum = W_MD5(filename);
+		const OString md5sum = wads.GetMD5Hash(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 		if (file)
 			return file->mIsIWAD;
@@ -196,7 +196,7 @@ public:
 
 	const OString identify(const OString& filename)
 	{
-		const OString md5sum = W_MD5(filename);
+		const OString md5sum = wads.GetMD5Hash(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 
 		if (file != NULL)
@@ -1017,7 +1017,7 @@ bool W_IsIWAD(const std::string& filename)
 //
 bool W_IsIWADCommercial(const std::string& filename)
 {
-	const OString md5sum = W_MD5(filename);
+	const OString md5sum = wads.GetMD5Hash(filename);
 	return identtab.isCommercial(md5sum);
 }
 
@@ -1029,7 +1029,7 @@ bool W_IsIWADCommercial(const std::string& filename)
 //
 bool W_IsIWADDeprecated(const std::string& filename)
 {
-	const OString md5sum = W_MD5(filename);
+	const OString md5sum = wads.GetMD5Hash(filename);
 	return identtab.isDeprecated(md5sum);
 }
 

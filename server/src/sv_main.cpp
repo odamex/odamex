@@ -4316,7 +4316,7 @@ void SV_WadDownloads (void)
 			// read next bit of wad
 			unsigned int read;
 			unsigned int filelen = 0;
-			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, chunk_size, buff, filelen);
+			read = wads.ReadChunk(cl->download.name.c_str(), cl->download.next_offset, chunk_size, buff, filelen);
 
 			if (!read)
 				break;

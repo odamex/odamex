@@ -261,7 +261,7 @@ void R_GenerateComposite (int texnum)
 
 	for (int i = texture->patchcount; --i >=0; texpatch++)
 	{
-		patch_t *patch = W_CachePatch(texpatch->patch);
+		patch_t *patch = wads.CachePatch(texpatch->patch);
 		int x1 = texpatch->originx, x2 = x1 + patch->width();
 		const int *cofs = patch->columnofs-x1;
 		if (x1<0)
@@ -358,7 +358,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 	for (int i = 0; i < texture->patchcount; i++)
 	{
 		const int patchnum = texpatch->patch;
-		const patch_t *patch = W_CachePatch(patchnum);
+		const patch_t *patch = wads.CachePatch(patchnum);
 		int x1 = texpatch++->originx, x2 = x1 + patch->width(), x = x1;
 		const int *cofs = patch->columnofs-x1;
 
@@ -441,7 +441,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 //
 tallpost_t* R_GetPatchColumn(int lumpnum, int colnum)
 {
-	patch_t* patch = W_CachePatch(lumpnum, PU_CACHE);
+	patch_t* patch = wads.CachePatch(lumpnum, PU_CACHE);
 	return (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[colnum]));
 }
 
@@ -463,7 +463,7 @@ tallpost_t* R_GetTextureColumn(int texnum, int colnum)
 	int ofs = texturecolumnofs[texnum][colnum];
 
 	if (lump > 0)
-		return (tallpost_t*)((byte *)W_CachePatch(lump, PU_CACHE) + ofs);
+		return (tallpost_t*)((byte *)wads.CachePatch(lump, PU_CACHE) + ofs);
 
 	if (!texturecomposite[texnum])
 		R_GenerateComposite(texnum);
@@ -516,7 +516,7 @@ void R_InitTextures (void)
 
 	// Load the patch names from pnames.lmp.
 	{
-		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
+		char *names = (char *)wads.CacheLumpName ("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
 		nummappatches = LELONG ( *((int *)names) );
@@ -524,7 +524,7 @@ void R_InitTextures (void)
 
 		for (i = 0; i < nummappatches; i++)
 		{
-			patchlookup[i] = W_CheckNumForName (name_p + i*8);
+			patchlookup[i] = wads.CheckNumForName (name_p + i*8);
 			if (patchlookup[i] == -1)
 			{
 				// killough 4/17/98:
@@ -535,7 +535,7 @@ void R_InitTextures (void)
 				// appear first in a wad. This is a kludgy solution to the wad
 				// lump namespace problem.
 
-				patchlookup[i] = W_CheckNumForName (name_p + i*8, ns_sprites);
+				patchlookup[i] = wads.CheckNumForName (name_p + i*8, ns_sprites);
 			}
 		}
 		Z_Free (names);
@@ -544,16 +544,16 @@ void R_InitTextures (void)
 	// Load the map texture definitions from textures.lmp.
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-	maptex = maptex1 = (int *)W_CacheLumpName ("TEXTURE1", PU_STATIC);
+	maptex = maptex1 = (int *)wads.CacheLumpName ("TEXTURE1", PU_STATIC);
 	numtextures1 = LELONG(*maptex);
-	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
+	maxoff = wads.LumpLength (wads.GetNumForName ("TEXTURE1"));
 	directory = maptex+1;
 
-	if (W_CheckNumForName ("TEXTURE2") != -1)
+	if (wads.CheckNumForName ("TEXTURE2") != -1)
 	{
-		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
+		maptex2 = (int *)wads.CacheLumpName ("TEXTURE2", PU_STATIC);
 		numtextures2 = LELONG(*maptex2);
-		maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
+		maxoff2 = wads.LumpLength (wads.GetNumForName ("TEXTURE2"));
 	}
 	else
 	{
@@ -707,8 +707,8 @@ void R_InitFlats (void)
 {
 	int i;
 
-	firstflat = W_GetNumForName ("F_START") + 1;
-	lastflat = W_GetNumForName ("F_END") - 1;
+	firstflat = wads.GetNumForName ("F_START") + 1;
+	lastflat = wads.GetNumForName ("F_END") - 1;
 
 	if(firstflat >= lastflat)
 		I_Error("no flats");
@@ -748,8 +748,8 @@ void R_InitFlats (void)
 //
 void R_InitSpriteLumps (void)
 {
-	firstspritelump = W_GetNumForName ("S_START") + 1;
-	lastspritelump = W_GetNumForName ("S_END") - 1;
+	firstspritelump = wads.GetNumForName ("S_START") + 1;
+	lastspritelump = wads.GetNumForName ("S_END") - 1;
 
 	numspritelumps = lastspritelump - firstspritelump + 1;
 
@@ -778,7 +778,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)W_CacheLumpName(name, PU_CACHE);
+	const byte* data = (byte*)wads.CacheLumpName(name, PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0
@@ -848,8 +848,8 @@ void R_InitColormaps()
 	// [RH] Try and convert BOOM colormaps into blending values.
 	//		This is a really rough hack, but it's better than
 	//		not doing anything with them at all (right?)
-	int lastfakecmap = W_CheckNumForName("C_END");
-	firstfakecmap = W_CheckNumForName("C_START");
+	int lastfakecmap = wads.CheckNumForName("C_END");
+	firstfakecmap = wads.CheckNumForName("C_START");
 
 	if (firstfakecmap == -1 || lastfakecmap == -1)
 		numfakecmaps = 1;
@@ -875,9 +875,9 @@ void R_InitColormaps()
 
 		for (unsigned i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
 		{
-			if (W_LumpLength(i) >= (NUMCOLORMAPS+1)*256)
+			if (wads.LumpLength(i) >= (NUMCOLORMAPS+1)*256)
 			{
-				byte* map = (byte*)W_CacheLumpNum(i, PU_CACHE);
+				byte* map = (byte*)wads.CacheLumpNum(i, PU_CACHE);
 				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
 				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 
@@ -889,7 +889,7 @@ void R_InitColormaps()
 				int b = pal->basecolors[*map].getb();
 
 				char name[9];
-				W_GetLumpName(name, i);
+				wads.GetLumpName(name, i);
 				fakecmaps[j].name = StdStringToUpper(name, 8);
 
 				for (int k = 1; k < 256; k++)
@@ -922,7 +922,7 @@ int R_ColormapNumForName(const char* name)
 {
 	if (strnicmp(name, "COLORMAP", 8) != 0)
 	{
-		int lump = W_CheckNumForName(name, ns_colormaps);
+		int lump = wads.CheckNumForName(name, ns_colormaps);
 		
 		if (lump != -1)
 			return lump - firstfakecmap + 1;
@@ -984,10 +984,10 @@ void R_InitData()
 //
 int R_FlatNumForName (const char* name)
 {
-	int i = W_CheckNumForName (name, ns_flats);
+	int i = wads.CheckNumForName (name, ns_flats);
 
 	if (i == -1)	// [RH] Default flat for not found ones
-		i = W_CheckNumForName ("-NOFLAT-", ns_flats);
+		i = wads.CheckNumForName ("-NOFLAT-", ns_flats);
 
 	if (i == -1) {
 		char namet[9];
@@ -1090,7 +1090,7 @@ void R_PrecacheLevel (void)
 
 	for (i = numflats - 1; i >= 0; i--)
 		if (hitlist[i])
-			W_CacheLumpNum (firstflat + i, PU_CACHE);
+			wads.CacheLumpNum (firstflat + i, PU_CACHE);
 
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
@@ -1123,7 +1123,7 @@ void R_PrecacheLevel (void)
 			texture_t *texture = textures[i];
 
 			for (j = texture->patchcount - 1; j > 0; j--)
-				W_CachePatch(texture->patches[j].patch, PU_CACHE);
+				wads.CachePatch(texture->patches[j].patch, PU_CACHE);
 		}
 	}
 

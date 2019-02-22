@@ -634,7 +634,7 @@ void I_Endoom(void)
     // Hack to stop crash with disk icon
     in_endoom = true;
 
-	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
+	endoom_data = (unsigned char *)wads.CacheLumpName("ENDOOM", PU_STATIC);
 
 	// Set up text mode screen
 

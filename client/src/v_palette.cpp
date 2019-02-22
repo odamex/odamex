@@ -500,7 +500,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 	char *rgbNames, *data, descr[5*3];
 	int c[3], step;
 
-	if (!(rgbNames = (char*)W_CacheLumpName("X11R6RGB", PU_CACHE)))
+	if (!(rgbNames = (char*)wads.CacheLumpName("X11R6RGB", PU_CACHE)))
 	{
 		Printf(PRINT_HIGH, "X11R6RGB lump not found\n");
 		return "";
@@ -611,7 +611,7 @@ void V_InitPalette(const char* lumpname)
 	strncpy(palette_lumpname, lumpname, 8);
 	palette_lumpname[8] = '\0';
 
-	int lumpnum = W_GetNumForName(palette_lumpname);
+	int lumpnum = wads.GetNumForName(palette_lumpname);
 	if (lumpnum < 0)
 		I_FatalError("Could not initialize %s palette", palette_lumpname);
 
@@ -625,7 +625,7 @@ void V_InitPalette(const char* lumpname)
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
-	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+	const byte* data = (byte*)wads.CacheLumpNum(lumpnum, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
@@ -1149,7 +1149,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
+			const byte* data = (byte*)wads.CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{

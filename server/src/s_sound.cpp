@@ -306,7 +306,7 @@ int S_AddSound (char *logicalname, char *lumpname)
 		if (0 == stricmp (logicalname, S_sfx[sfxid].name))
 			break;
 
-	int lump = W_CheckNumForName (lumpname);
+	int lump = wads.CheckNumForName (lumpname);
 
 	// Otherwise, prepare a new one.
 	if (sfxid == numsfx)
@@ -327,9 +327,9 @@ void S_ParseSndInfo (void)
 	S_ClearSoundLumps();
 
 	int lump = -1;
-	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
+	while ((lump = wads.FindLump ("SNDINFO", lump)) != -1)
 	{
-		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
+		sndinfo = (char *)wads.CacheLumpNum (lump, PU_CACHE);
 
 		while ( (data = COM_Parse (sndinfo)) ) {
 			if (com_token[0] == ';') {

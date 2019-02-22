@@ -87,7 +87,7 @@ static int  numswitches;
 //		MAXSWITCHES limit.
 void P_InitSwitchList(void)
 {
-	byte *alphSwitchList = (byte *)W_CacheLumpName ("SWITCHES", PU_STATIC);
+	byte *alphSwitchList = (byte *)wads.CacheLumpName ("SWITCHES", PU_STATIC);
 	byte *list_p;
 	int i;
 

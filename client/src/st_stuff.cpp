@@ -1329,14 +1329,14 @@ static patch_t *LoadFaceGraphic (char *name, int namespc)
 	char othername[9];
 	int lump;
 
-	lump = W_CheckNumForName (name, namespc);
+	lump = wads.CheckNumForName (name, namespc);
 	if (lump == -1)
 	{
 		strcpy (othername, name);
 		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName (othername);
+		lump = wads.GetNumForName (othername);
 	}
-	return W_CachePatch (lump, PU_STATIC);
+	return wads.CachePatch (lump, PU_STATIC);
 }
 
 void ST_loadGraphics(void)
@@ -1352,28 +1352,28 @@ void ST_loadGraphics(void)
 	for (i=0;i<10;i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		tallnum[i] = wads.CachePatch(namebuf, PU_STATIC);
 
 		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		shortnum[i] = wads.CachePatch(namebuf, PU_STATIC);
 	}
 
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
-	tallpercent = W_CachePatch("STTPRCNT", PU_STATIC);
+	tallpercent = wads.CachePatch("STTPRCNT", PU_STATIC);
 
 	// key cards
 	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = W_CachePatch(namebuf, PU_STATIC);
+		keys[i] = wads.CachePatch(namebuf, PU_STATIC);
 	}
 
 	// arms background
-	armsbg = W_CachePatch("STARMS", PU_STATIC);
+	armsbg = wads.CachePatch("STARMS", PU_STATIC);
 
 	// flags background
-	flagsbg = W_CachePatch("STFLAGS", PU_STATIC);
+	flagsbg = wads.CachePatch("STFLAGS", PU_STATIC);
 
 	// arms ownership widgets
 	for (i=0;i<6;i++)
@@ -1381,7 +1381,7 @@ void ST_loadGraphics(void)
 		sprintf(namebuf, "STGNUM%d", i+2);
 
 		// gray #
-		arms[i][0] = W_CachePatch(namebuf, PU_STATIC);
+		arms[i][0] = wads.CachePatch(namebuf, PU_STATIC);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1390,16 +1390,16 @@ void ST_loadGraphics(void)
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = W_CachePatch("STFBANY", PU_STATIC);
+	faceback = wads.CachePatch("STFBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(namebuf, "STFB%d", i);
-		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
+		faceclassic[i] = wads.CachePatch(namebuf, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = W_CachePatch("STBAR", PU_STATIC);
+	sbar = wads.CachePatch("STBAR", PU_STATIC);
 
 	// face states
 	facenum = 0;
@@ -1433,7 +1433,7 @@ void ST_loadGraphics(void)
 
 void ST_loadData()
 {
-    lu_palette = W_GetNumForName("PLAYPAL");
+    lu_palette = wads.GetNumForName("PLAYPAL");
 	ST_loadGraphics();
 }
 

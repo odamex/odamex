@@ -1889,7 +1889,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 		if (gamestate != GS_STARTUP)
 		{
 			// Ch0wW : don't crash the engine if the mapname isn't found.
-			if (W_CheckNumForName(argv[1]) == -1)
+			if (wads.CheckNumForName(argv[1]) == -1)
 			{
 				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
 				return;
@@ -1982,11 +1982,11 @@ void G_DoPlayDemo(bool justStreamInput)
 	gameaction = ga_nothing;
 	int bytelen;
 
-	int demolump = W_CheckNumForName(defdemoname.c_str());
+	int demolump = wads.CheckNumForName(defdemoname.c_str());
 	if (demolump != -1)
 	{
-		demobuffer = demo_p = (byte*)W_CacheLumpNum(demolump, PU_STATIC);
-		bytelen = W_LumpLength(demolump);
+		demobuffer = demo_p = (byte*)wads.CacheLumpNum(demolump, PU_STATIC);
+		bytelen = wads.LumpLength(demolump);
 	}
 	else
 	{

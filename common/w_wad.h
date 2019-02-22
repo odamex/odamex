@@ -36,6 +36,9 @@
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
 #define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))
 
+// [RH] Copy an 8-char string and uppercase it.
+void uppercopy(char *to, const char *from);
+
 // [RH] Remove limit on number of WAD files
 extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
 
@@ -85,48 +88,62 @@ typedef enum {
 	ns_colormaps,
 } namespace_t;
 
-extern	void**		lumpcache;
 extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
-std::string W_MD5(std::string filename);
-std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filenames);
+//
+// WadCollection
+// Structure made for simplier lookout of W_ functions
+//
+struct WadCollection {
 
-int		W_CheckNumForName (const char *name, int ns = ns_global);
-int		W_GetNumForName (const char *name);
+public:
 
-unsigned	W_LumpLength (unsigned lump);
-void		W_ReadLump (unsigned lump, void *dest);
-unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
+	std::vector<std::string> InitMultipleFiles(std::vector<std::string> &filenames);
+	std::string GetMD5Hash(std::string filename);
 
-void *W_CacheLumpNum (unsigned lump, int tag);
-void *W_CacheLumpName (const char *name, int tag);
-patch_t* W_CachePatch (unsigned lump, int tag = PU_CACHE);
-patch_t* W_CachePatch (const char *name, int tag = PU_CACHE);
+	void	Close();
 
-void	W_Profile (const char *fname);
+	void			HashLumps(void);
+	unsigned int	LumpNameHash(const char *s);
 
-void	W_Close ();
+	int				CheckNumForName(const char *name, int namespc);
+	int				GetNumForName(const char *name);
 
-int		W_FindLump (const char *name, int lastlump);	// [RH]	Find lumps with duplication
-bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>
+	inline int CheckNumForName(const byte *name) { return CheckNumForName((const char *)name, ns_global); }
+	inline int CheckNumForName(const char *name) { return CheckNumForName(name, ns_global); }
 
-//unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 
-// [RH] Combine multiple marked ranges of lumps into one.
-void	W_MergeLumps (const char *start, const char *end, int);
+	void ReadLump(unsigned lump, void *dest);
 
-// [RH] Copy an 8-char string and uppercase it.
-void uppercopy (char *to, const char *from);
+	unsigned ReadChunk(const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
 
-// [RH] Copies the lump name to to using uppercopy
-void W_GetLumpName (char *to, unsigned lump);
+	unsigned LumpLength(unsigned lump);
 
-// [RH] Returns file handle for specified lump
-int W_GetLumpFile (unsigned lump);
+	bool CheckLumpName(unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>
 
-// [RH] Put a lump in a certain namespace
-//void W_SetLumpNamespace (unsigned lump, int nmspace);
+	void GetLumpName(char *to, unsigned lump);			// [RH] Copies the lump name to to using uppercopy
+
+	void *CacheLumpNum(unsigned lump, int tag);
+	void *CacheLumpName(const char *name, int tag);
+
+	patch_t *CachePatch(unsigned lump, int tag = PU_CACHE);
+	patch_t *CachePatch(const char *name, int tag = PU_CACHE);
+
+	int	FindLump(const char *name, int lastlump);	// [RH]	Find lumps with duplication
+
+protected:
+	void	MergeLumps(const char *start, const char *end, int);	// [RH] Combine multiple marked ranges of lumps into one.
+
+private:
+	void**			lumpcache;
+	unsigned	stdisk_lumpnum;
+
+	std::string AddFile(std::string filename);
+	bool IsMarker(const lumpinfo_t *lump, const char *marker);
+};
+
+extern WadCollection wads;
 
 #endif
 

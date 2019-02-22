@@ -414,7 +414,7 @@ void S_ParseSndSeq (void)
 	ScriptTempSize = MAX_SEQSIZE;
 
 	int lump = -1;
-	while ((lump = W_FindLump("SNDSEQ", lump)) != -1)
+	while ((lump = wads.FindLump("SNDSEQ", lump)) != -1)
 	{
 		sc.OpenLumpNum (lump, "SNDSEQ");
 		while (sc.GetString ())

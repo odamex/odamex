@@ -265,7 +265,7 @@ void G_ParseMapInfo (void)
 	DWORD levelflags;
 
 	int lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	while ((lump = wads.FindLump("MAPINFO", lump)) != -1)
 	{
 		SetLevelDefaults (&defaultinfo);
 		sc.OpenLumpNum (lump, "MAPINFO");
@@ -577,7 +577,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 	if (mapname.length())
 	{
-		if (W_CheckNumForName(mapname.c_str()) != -1)
+		if (wads.CheckNumForName(mapname.c_str()) != -1)
             G_DeferedInitNew((char *)mapname.c_str());
         else
         {
@@ -645,7 +645,7 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
+		if (wads.CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
@@ -659,7 +659,7 @@ BEGIN_COMMAND (map)
 
 			}
 
-			if (W_CheckNumForName (mapname) == -1)
+			if (wads.CheckNumForName (mapname) == -1)
 			{ // Still no luck, oh well.
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
 			}
@@ -673,7 +673,7 @@ BEGIN_COMMAND (map)
 		else
 		{
 			// Ch0wW - Map was still not found, so don't bother trying loading the map.
-			if (W_CheckNumForName (argv[1]) == -1)
+			if (wads.CheckNumForName (argv[1]) == -1)
 			{
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
 			}
@@ -744,7 +744,7 @@ level_info_t *FindLevelByNum (int num)
 	{
 		level_info_t *i = LevelInfos;
 		while (i->level_name) {
-			if (i->levelnum == num && W_CheckNumForName (i->mapname) != -1)
+			if (i->levelnum == num && wads.CheckNumForName (i->mapname) != -1)
 				return i;
 			i++;
 		}

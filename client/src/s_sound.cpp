@@ -247,7 +247,7 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
+	SoundCurve = (byte *)wads.CacheLumpNum(wads.GetNumForName("SNDCURVE"), PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -1068,14 +1068,14 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
-		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
+		if ((lumpnum = wads.CheckNumForName (musicname.c_str())) == -1)
 		{
 			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
 			return;
 		}
 
-		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
-		length = W_LumpLength(lumpnum);
+		data = static_cast<byte*>(wads.CacheLumpNum(lumpnum, PU_CACHE));
+		length = wads.LumpLength(lumpnum);
 		I_PlaySong(data, length, (looping != 0));
     }
     else
@@ -1202,7 +1202,7 @@ int S_AddSound (char *logicalname, char *lumpname)
 		if (0 == stricmp (logicalname, S_sfx[sfxid].name))
 			break;
 
-	int lump = W_CheckNumForName (lumpname);
+	int lump = wads.CheckNumForName (lumpname);
 
 	// Otherwise, prepare a new one.
 	if (sfxid == numsfx)
@@ -1223,9 +1223,9 @@ void S_ParseSndInfo (void)
 	S_ClearSoundLumps ();
 
 	int lump = -1;
-	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
+	while ((lump = wads.FindLump ("SNDINFO", lump)) != -1)
 	{
-		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
+		sndinfo = (char *)wads.CacheLumpNum (lump, PU_CACHE);
 
 		while ( (data = COM_Parse (sndinfo)) ) {
 			if (com_token[0] == ';') {
@@ -1339,9 +1339,9 @@ void S_ParseSndInfo (void)
 	}
 	S_HashSounds ();
 
-	sfx_empty = W_CheckNumForName ("dsempty");
-	sfx_noway = S_FindSoundByLump (W_CheckNumForName ("dsnoway"));
-	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
+	sfx_empty = wads.CheckNumForName ("dsempty");
+	sfx_noway = S_FindSoundByLump (wads.CheckNumForName ("dsnoway"));
+	sfx_oof = S_FindSoundByLump (wads.CheckNumForName ("dsoof"));
 }
 
 

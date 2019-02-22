@@ -72,7 +72,7 @@ FScriptParser::~FScriptParser()
 //
 void FScriptParser::Open(const char *lumpname)
 {
-	OpenLumpNum(W_GetNumForName(lumpname), lumpname);
+	OpenLumpNum(wads.GetNumForName(lumpname), lumpname);
 }
 
 
@@ -117,8 +117,8 @@ void FScriptParser::OpenMem(const char *name, char *buffer, int size)
 void FScriptParser::OpenLumpNum(int lump, const char *name)
 {
 	Close();
-	ScriptBuffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
-	ScriptSize = W_LumpLength(lump);
+	ScriptBuffer = (char *)wads.CacheLumpNum(lump, PU_STATIC);
+	ScriptSize = wads.LumpLength(lump);
 	ScriptName = name;
 	FreeScript = true;
 	PrepareScript();
