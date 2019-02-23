@@ -174,7 +174,7 @@ enum clc_t
 	clc_wantwad,			// denis - string:name, string:hash
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
-    clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
+    clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc) -- Ch0wW - Rename to clc_cheatgive
 	clc_callvote,			// [AM] - Calling a vote
 	clc_vote,				// [AM] - Casting a vote
 	clc_maplist,			// [AM] - Maplist status request.
