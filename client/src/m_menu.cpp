@@ -1714,7 +1714,7 @@ bool M_Responder (event_t* ev)
 		ch2 = ev->data2;		// ASCII
 	}
 
-	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
+	if (ch == -1 || chat.GetStatus() != HUDChat::INACTIVE)
 		return false;
 
 	if (menuactive && OptionsActive) {

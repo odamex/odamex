@@ -80,7 +80,7 @@ public:
 
 extern CheatManager cht;
 
-
+#ifdef CLIENT_APP
 // keycheat handlers
 bool CHEAT_AutoMap(cheatseq_t *cheat);
 bool CHEAT_ChangeLevel(cheatseq_t *cheat);
@@ -88,6 +88,7 @@ bool CHEAT_IdMyPos(cheatseq_t *cheat);
 bool CHEAT_BeholdMenu(cheatseq_t *cheat);
 bool CHEAT_ChangeMusic(cheatseq_t *cheat);
 bool CHEAT_SetGeneric(cheatseq_t *cheat);
+#endif
 
 #endif
 

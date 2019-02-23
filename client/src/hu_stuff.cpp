@@ -95,7 +95,6 @@ CVAR_FUNC_IMPL (hud_crosshaircolor)
 	crosshair_color_custom = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 }
 
-
 EXTERN_CVAR (hud_crosshairhealth)
 EXTERN_CVAR (hud_crosshairdim)
 EXTERN_CVAR (hud_crosshairscale)
@@ -118,12 +117,6 @@ patch_t* sbline;
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
 
-// [Toke - Scores]
-void HU_DMScores1 (player_t *player);
-void HU_DMScores2 (player_t *player);
-void HU_TeamScores1 (player_t *player);
-void HU_TeamScores2 (player_t *player);
-
 extern bool HasBehavior;
 extern inline int V_StringWidth(const char *str);
 size_t P_NumPlayersInGame();
@@ -131,29 +124,92 @@ static void ShoveChatStr(std::string str, byte who);
 
 static std::string input_text;
 
+HUDChat chat;
 
-static chatmode_t chatmode;
-
-chatmode_t HU_ChatMode()
+HUDChat::EChatMode HUDChat::GetStatus()
 {
-	return chatmode;
+	return status;
 }
 
-void HU_SetChatMode()
+void HUDChat::SetStatus(EChatMode newstatus)
 {
-	chatmode = CHAT_NORMAL;
+	status = newstatus;
 }
 
-void HU_SetTeamChatMode()
+void HUDChat::Unset()
 {
-	chatmode = CHAT_TEAM;
+	status = INACTIVE;
 }
 
-void HU_UnsetChatMode()
+//
+// Draws the "CHAT:" on the screen, making you able to type text,
+// and chat with other players.
+//
+void HUDChat::DrawPrompt() 
 {
-	chatmode = CHAT_INACTIVE;
-}
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
+	// Set up text scaling
+	int scaledxfac = hud_scaletext ? V_TextScaleXAmount() : CleanXfac;
+	int scaledyfac = hud_scaletext ? V_TextScaleYAmount() : CleanYfac;
+
+	// Determine what Y height to display the chat prompt at.
+	// * I_GetSurfaceHeight() is the "actual" screen height.
+	// * viewactive is false if you have a fullscreen automap or
+	//   intermission on-screen.
+	// * ST_Y is the current Y height of the status bar.
+
+	int y;
+	if (!viewactive && gamestate != GS_INTERMISSION)
+	{
+		// Fullscreen automap is visible
+		y = ST_StatusBarY(surface_width, surface_height) - (20 * scaledyfac);
+	}
+	else if (viewactive && R_StatusBarVisible())
+	{
+		// Status bar is visible
+		y = ST_StatusBarY(surface_width, surface_height) - (10 * scaledyfac);
+	}
+	else
+	{
+		// Must be fullscreen HUD or intermission
+		y = surface_height - (10 * scaledyfac);
+	}
+
+	static const char* prompt;
+	if (chat.GetStatus() == HUDChat::TEAM)
+		prompt = "Say (TEAM): ";
+	else if (chat.GetStatus() == HUDChat::NORMAL)
+		prompt = "Say: ";
+
+	int promptwidth = V_StringWidth(prompt) * scaledxfac;
+	int x = hu_font['_' - HU_FONTSTART]->width() * scaledxfac * 2 + promptwidth;
+
+	// figure out if the text is wider than the screen->
+	// if so, only draw the right-most portion of it.
+	int i;
+	for (i = input_text.length() - 1; i >= 0 && x < I_GetSurfaceWidth(); i--)
+	{
+		int c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
+		if (c < 0 || c >= HU_FONTSIZE)
+			x += 4 * scaledxfac;
+		else
+			x += hu_font[c]->width() * scaledxfac;
+	}
+
+	if (i >= 0)
+		i++;
+	else
+		i = 0;
+
+	// draw the prompt, text, and cursor
+	std::string show_text = input_text;
+	show_text += '_';
+	screen->DrawTextStretched(CR_RED, 0, y, prompt,
+		scaledxfac, scaledyfac);
+	screen->DrawTextStretched(CR_GREY, promptwidth, y, show_text.c_str() + i,
+		scaledxfac, scaledyfac);
+}
 
 BOOL altdown;
 
@@ -194,7 +250,7 @@ void HU_Init()
 	const char *tplate = "STCFN%.3d";
 	char buffer[12];
 
-	HU_UnsetChatMode();
+	chat.Unset();
 	input_text.clear();
 
 	// load the heads-up font
@@ -235,7 +291,7 @@ void HU_Ticker()
 {
 	// verify the chat mode status is valid
 	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
-		HU_UnsetChatMode();
+		chat.Unset();
 }
 
 void HU_ReleaseKeyStates()
@@ -261,13 +317,13 @@ BOOL HU_Responder(event_t *ev)
 	}
 	else if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
 	{
-		if (HU_ChatMode() != CHAT_INACTIVE)
+		if (chat.GetStatus() != HUDChat::INACTIVE)
             return true;
 
 		return false;
 	}
 
-	if (HU_ChatMode() == CHAT_INACTIVE)
+	if (chat.GetStatus() == HUDChat::INACTIVE)
 		return false;
 
 	if (altdown)
@@ -275,26 +331,26 @@ BOOL HU_Responder(event_t *ev)
 		// send a macro
 		if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
-			HU_UnsetChatMode();
+			ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), chat.GetStatus()- 1);
+			chat.Unset();
 			return true;
 		}
 		else if (ev->data1 >= '0' && ev->data1 <= '9')
 		{
-			ShoveChatStr(chat_macros[ev->data1 - '0']->cstring(), HU_ChatMode() - 1);
-			HU_UnsetChatMode();
+			ShoveChatStr(chat_macros[ev->data1 - '0']->cstring(), chat.GetStatus() - 1);
+			chat.Unset();
 			return true;
 		}
 	}
 	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER)
 	{
-		ShoveChatStr(input_text, HU_ChatMode() - 1);
-		HU_UnsetChatMode();
+		ShoveChatStr(input_text, chat.GetStatus() - 1);
+		chat.Unset();
 		return true;
 	}
 	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
 	{
-		HU_UnsetChatMode();
+		chat.Unset();
 		return true;
 	}
 	else if (ev->data1 == KEY_BACKSPACE)
@@ -402,72 +458,6 @@ static void HU_DrawCrosshair()
 }
 
 
-static void HU_DrawChatPrompt()
-{
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-	// Set up text scaling
-	int scaledxfac = hud_scaletext ? V_TextScaleXAmount() : CleanXfac;
-	int scaledyfac = hud_scaletext ? V_TextScaleYAmount() : CleanYfac;
-
-	// Determine what Y height to display the chat prompt at.
-	// * I_GetSurfaceHeight() is the "actual" screen height.
-	// * viewactive is false if you have a fullscreen automap or
-	//   intermission on-screen.
-	// * ST_Y is the current Y height of the status bar.
-
-	int y;
-	if (!viewactive && gamestate != GS_INTERMISSION)
-	{
-		// Fullscreen automap is visible
-		y = ST_StatusBarY(surface_width, surface_height) - (20 * scaledyfac);
-	}
-	else if (viewactive && R_StatusBarVisible())
-	{
-		// Status bar is visible
-		y = ST_StatusBarY(surface_width, surface_height) - (10 * scaledyfac);
-	}
-	else
-	{
-		// Must be fullscreen HUD or intermission
-		y = surface_height - (10 * scaledyfac);
-	}
-
-	static const char* prompt;
-	if (HU_ChatMode() == CHAT_TEAM)
-		prompt = "Say (TEAM): ";
-	else if (HU_ChatMode() == CHAT_NORMAL)
-		prompt = "Say: ";
-
-	int promptwidth = V_StringWidth(prompt) * scaledxfac;
-	int x = hu_font['_' - HU_FONTSTART]->width() * scaledxfac * 2 + promptwidth;
-
-	// figure out if the text is wider than the screen->
-	// if so, only draw the right-most portion of it.
-	int i;
-	for (i = input_text.length() - 1; i >= 0 && x < I_GetSurfaceWidth(); i--)
-	{
-		int c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE)
-			x += 4 * scaledxfac;
-		else
-			x += hu_font[c]->width() * scaledxfac;
-	}
-
-	if (i >= 0)
-		i++;
-	else
-		i = 0;
-
-	// draw the prompt, text, and cursor
-	std::string show_text = input_text;
-	show_text += '_';
-	screen->DrawTextStretched(CR_RED, 0, y, prompt,
-							scaledxfac, scaledyfac);
-	screen->DrawTextStretched(CR_GREY, promptwidth, y, show_text.c_str() + i,
-							scaledxfac, scaledyfac);
-}
-
 
 //
 // HU_Drawer
@@ -533,8 +523,8 @@ void HU_Drawer()
 	if (gamestate == GS_LEVEL)
 		HU_DrawCrosshair();
 
-	if (HU_ChatMode() != CHAT_INACTIVE)
-		HU_DrawChatPrompt();
+	if (chat.GetStatus() != HUDChat::INACTIVE)
+		chat.DrawPrompt();
 }
 
 static void ShoveChatStr (std::string str, byte who)
@@ -570,7 +560,7 @@ BEGIN_COMMAND (messagemode)
 	if(!connected)
 		return;
 
-	HU_SetChatMode();
+	chat.SetStatus(HUDChat::NORMAL);
 	C_HideConsole ();
 	input_text.clear();
 	C_ReleaseKeys();
@@ -592,7 +582,7 @@ BEGIN_COMMAND (messagemode2)
 	if(!connected || (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 
-	HU_SetTeamChatMode();
+	chat.SetStatus(HUDChat::TEAM);
 	C_HideConsole ();
 	input_text.clear();
 	C_ReleaseKeys();

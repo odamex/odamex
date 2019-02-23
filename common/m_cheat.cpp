@@ -34,7 +34,7 @@
 #include "p_local.h"
 
 #ifdef CLIENT_APP
-#include "c_dispatch.h"
+void C_DoCommand(const char *cmd);
 
 extern bool	automapactive;
 extern buf_t     net_buffer;

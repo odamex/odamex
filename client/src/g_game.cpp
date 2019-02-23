@@ -457,7 +457,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	// buttons
 	// john - only add attack when console up
-	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
+	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && chat.GetStatus() == HUDChat::INACTIVE)
 		cmd->buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
