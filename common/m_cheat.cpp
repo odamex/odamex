@@ -25,12 +25,13 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "m_cheat.h"
+#include "c_dispatch.h"
+#include "d_items.h"
 #include "d_player.h"
 #include "doomstat.h"
 #include "gstrings.h"
+#include "m_cheat.h"
 #include "p_inter.h"
-#include "d_items.h"
 #include "p_local.h"
 
 #ifdef CLIENT_APP
