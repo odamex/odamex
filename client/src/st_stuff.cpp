@@ -524,7 +524,7 @@ bool ST_Responder (event_t *ev)
 		cheats = DoomCheats;
 		for (i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
 		{
-			if (cht.AddKey(cheats, (byte)ev->data2, &eat))
+			if (cht.AddKey(cheats, (byte)ev->data1, &eat))
 			{
 				if (cheats->DontCheck || cht.AreCheatsEnabled())
 				{
