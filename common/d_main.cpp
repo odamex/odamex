@@ -263,7 +263,7 @@ static std::string BaseFileSearchDir(std::string dir, const std::string &file, c
 			if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
 				std::string local_file(dir + d_name);
-				std::string local_hash(W_MD5(local_file));
+				std::string local_hash(wads.GetMD5Hash(local_file));
 
 				if (hash.empty() || hash == local_hash)
 				{
