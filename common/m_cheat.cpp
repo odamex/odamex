@@ -50,94 +50,6 @@ CheatManager cht;
 //
 extern void A_PainDie(AActor *);
 
-
-//-------------
-// THESE ARE MAINLY FOR THE CLIENT
-// Smashing Pumpkins Into Small Piles Of Putrid Debris. 
-bool CHEAT_AutoMap(cheatseq_t *cheat)
-{
-#ifdef CLIENT_APP
-	if (automapactive)
-	{
-		if (!multiplayer || sv_gametype == GM_COOP)
-			cht.AutoMapCheat = (cht.AutoMapCheat + 1) % 3;
-		return true;
-	}
-#endif
-	return false;
-
-}
-
-bool CHEAT_ChangeLevel(cheatseq_t *cheat)
-{
-#ifdef CLIENT_APP
-	char buf[16];
-
-	// [ML] Chex mode: always set the episode number to 1.
-	// FIXME: This is probably a horrible hack, it sure looks like one at least
-	if (gamemode == retail_chex)
-		sprintf(buf, "1%c", cheat->Args[1]);
-
-	snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
-	AddCommandString(buf);
-#endif
-	return true;
-}
-
-bool CHEAT_IdMyPos(cheatseq_t *cheat)
-{
-#ifdef CLIENT_APP
-	C_DoCommand("toggle idmypos");
-#endif
-	return true;
-}
-
-bool CHEAT_BeholdMenu(cheatseq_t *cheat)
-{
-#ifdef CLIENT_APP
-	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
-#endif
-	return false;
-}
-
-bool CHEAT_ChangeMusic(cheatseq_t *cheat)
-{
-#ifdef CLIENT_APP
-	char buf[9] = "idmus xx";
-
-	buf[6] = cheat->Args[0];
-	buf[7] = cheat->Args[1];
-	C_DoCommand(buf);
-#endif
-	return true;
-}
-
-//
-// Sets clientside the new cheat flag
-// and also requests its new status serverside
-//
-bool CHEAT_SetGeneric(cheatseq_t *cheat)
-{
-	if (!cht.AreCheatsEnabled())
-		return true;
-
-	if (multiplayer)
-		return true;
-
-	if (cheat->Args[0] == CHT_NOCLIP)
-	{
-		if (cheat->Args[1] == 0 && gamemode != shareware && gamemode != registered &&
-			gamemode != retail && gamemode != retail_bfg)
-			return true;
-		else if (cheat->Args[1] == 1 && gamemode != commercial && gamemode != commercial_bfg)
-			return true;
-	}
-
-	cht.DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
-
-	return true;
-}
-
 // Checks if all the conditions to enable cheats are set.
 bool CheatManager::AreCheatsEnabled(void)
 {
@@ -476,6 +388,90 @@ void CheatManager::SendGiveCheatToServer(const char *item)
 	MSG_WriteString(&net_buffer, item);
 #endif
 }
+
+//-------------
+// THESE ARE MAINLY FOR THE CLIENT
+// Smashing Pumpkins Into Small Piles Of Putrid Debris. 
+bool CHEAT_AutoMap(cheatseq_t *cheat)
+{
+
+	if (automapactive)
+	{
+		if (!multiplayer || sv_gametype == GM_COOP)
+			cht.AutoMapCheat = (cht.AutoMapCheat + 1) % 3;
+		return true;
+	}
+	return false;
+
+}
+
+bool CHEAT_ChangeLevel(cheatseq_t *cheat)
+{
+	char buf[16];
+
+	// [ML] Chex mode: always set the episode number to 1.
+	// FIXME: This is probably a horrible hack, it sure looks like one at least
+	if (gamemode == retail_chex)
+		sprintf(buf, "1%c", cheat->Args[1]);
+
+	snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
+	AddCommandString(buf);
+
+	return true;
+}
+
+bool CHEAT_IdMyPos(cheatseq_t *cheat)
+{
+	C_DoCommand("toggle idmypos");
+
+	return true;
+}
+
+bool CHEAT_BeholdMenu(cheatseq_t *cheat)
+{
+	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
+
+	return false;
+}
+
+bool CHEAT_ChangeMusic(cheatseq_t *cheat)
+{
+
+	char buf[9] = "idmus xx";
+
+	buf[6] = cheat->Args[0];
+	buf[7] = cheat->Args[1];
+	C_DoCommand(buf);
+
+	return true;
+}
+
+//
+// Sets clientside the new cheat flag
+// and also requests its new status serverside
+//
+bool CHEAT_SetGeneric(cheatseq_t *cheat)
+{
+	if (!cht.AreCheatsEnabled())
+		return true;
+
+	if (multiplayer)
+		return true;
+
+	if (cheat->Args[0] == CHT_NOCLIP)
+	{
+		if (cheat->Args[1] == 0 && gamemode != shareware && gamemode != registered &&
+			gamemode != retail && gamemode != retail_bfg)
+			return true;
+		else if (cheat->Args[1] == 1 && gamemode != commercial && gamemode != commercial_bfg)
+			return true;
+	}
+
+	cht.DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
+
+	return true;
+}
+
 #endif
 
 VERSION_CONTROL (m_cheat_cpp, "$Id$")
