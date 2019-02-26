@@ -165,10 +165,7 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 			break;
 
 		case CHT_IDKFA:
-			GiveTo (player, "backpack");
-			GiveTo (player, "weapons");
-			GiveTo (player, "ammo");
-			GiveTo (player, "keys");
+			GiveTo (player, "all");
 			player->armorpoints = deh.KFAArmor;
 			player->armortype = deh.KFAAC;
 			msg = GStrings(STSTR_KFAADDED);
