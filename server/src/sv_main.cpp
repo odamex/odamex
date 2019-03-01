@@ -3946,8 +3946,8 @@ void SV_Cheat(player_t &player)
 	player.cheats = cheats;
 }
 
-BOOL P_GiveWeapon(player_s*, weapontype_t, BOOL);
-BOOL P_GivePower(player_s*, int);
+ItemEquipVal P_GiveWeapon(player_s*, weapontype_t, BOOL);
+ItemEquipVal P_GivePower(player_s*, int);
 
 void SV_CheatPulse(player_t &player)
 {
