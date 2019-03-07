@@ -3444,10 +3444,11 @@ void CL_Spectate()
 
 		if (player.spectator)
 		{
-			player.playerstate = PST_LIVE; // resurrect dead spectators
-			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-			player.deltaviewheight = 1000 << FRACBITS;
-			movingsectors.clear(); //clear all moving sectors, otherwise client side prediction will not move active sectors
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
 		{

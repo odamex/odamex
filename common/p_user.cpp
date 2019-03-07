@@ -276,7 +276,7 @@ void P_CalcHeight (player_t *player)
 void P_PlayerLookUpDown (player_t *p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook)
+	if (!sv_freelook && (!p->spectator))
 	{
 		p->mo->pitch = 0;
 	}
