@@ -133,7 +133,7 @@ bool BufferedSocket::CreateSocket()
 		m_LocalAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 		memset(m_LocalAddress.sin_zero, '\0', sizeof m_LocalAddress.sin_zero);
 
-		result = bind(m_Socket, (sockaddr*)&m_LocalAddress,
+		result = ::bind(m_Socket, (sockaddr*)&m_LocalAddress,
 		              sizeof(m_LocalAddress));
 
 		if(result != 0)

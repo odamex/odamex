@@ -40,9 +40,6 @@ file(GLOB CLIENT_SOURCES sdl/*.cpp src/*.cpp)
 if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
-if(APPLE)
-  set(CLIENT_MAC_OBJC_SOURCES sdl/SDLMain.m)
-endif()
 
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
@@ -217,8 +214,7 @@ endif()
 if(SDL_VERSION)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
-    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
-    ${CLIENT_MAC_OBJC_SOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
 

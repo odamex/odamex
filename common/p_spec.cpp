@@ -1306,11 +1306,6 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		C_MidPrint (GStrings(msg), p);
 	}
 
-	if (serverside && network_game && msg)
-	{
-		C_MidPrint (GStrings(msg), p);
-	}
-
 	return false;
 }
 
@@ -1358,7 +1353,7 @@ P_CrossSpecialLine
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1467,7 +1462,7 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1512,7 +1507,7 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1592,7 +1587,7 @@ P_PushSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
