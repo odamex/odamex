@@ -24,7 +24,7 @@
 
 #ifndef __C_CVARS_H__
 #define __C_CVARS_H__
-
+//#define SIMULATE_LATENCY //uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 #include "doomtype.h"
 #include "tarray.h"
 
