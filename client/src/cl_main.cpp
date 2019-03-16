@@ -152,7 +152,6 @@ EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
@@ -1337,7 +1336,6 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
