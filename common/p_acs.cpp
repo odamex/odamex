@@ -124,10 +124,10 @@ static const char* DoomPowerNames[7] =
 	"RadSuit", "Allmap", "Infrared"
 };
 
-extern BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
-extern BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
-extern void P_GiveCard(player_t *player, card_t card);
-extern BOOL P_GivePower(player_t *player, int  power);
+extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
+extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
+extern ItemEquipVal P_GivePower(player_t *player, int  power);
 
 static void GiveBackpack(player_t* player)
 {

@@ -914,7 +914,7 @@ FUNC(LS_DamageThing)
 	return true;
 }
 
-BOOL P_GiveBody (player_t *, int);
+ItemEquipVal P_GiveBody (player_t *, int);
 
 FUNC(LS_HealThing)
 // HealThing (amount)
