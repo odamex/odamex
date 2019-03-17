@@ -419,6 +419,9 @@ void CL_QuitNetGame(void)
 	if (demorecording && democlassic)
 		G_CleanupDemo();
 
+	democlassic = false;
+	demoplayback = false;
+
 	// Reset the palette to default
 	V_ResetPalette();
 
@@ -736,6 +739,7 @@ BEGIN_COMMAND (connect)
 	}
 
 	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
+
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 

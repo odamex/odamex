@@ -164,9 +164,15 @@ std::vector<AActor*> spawnfountains;
 
 /**
  * Show spawn points as particle fountains
+ * ToDo: Make an independant spawning loop to handle these.
  */
 void P_ShowSpawns(mapthing2_t* mthing)
 {
+	// Ch0wW: DO NOT add new spawns to a DOOM2 demo !
+	// It'll immediately desync in DM!
+	if (democlassic)
+		return;
+
 	if (clientside && cl_showspawns)
 	{
 		AActor* spawn = 0;
