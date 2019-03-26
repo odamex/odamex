@@ -495,7 +495,7 @@ Players::iterator SV_GetFreeClient(void)
 	players.push_back(player_t());
 
 	// generate player id
-	auto id = free_player_ids.begin();
+	std::set<byte>::iterator id = free_player_ids.begin();
 	players.back().id = *id;
 	free_player_ids.erase(id);
 
