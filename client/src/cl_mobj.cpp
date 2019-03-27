@@ -70,6 +70,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	if (!player.ingame())
 		return;
 
+	byte playerstate = player.playerstate;
+
 	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
 		G_PlayerReborn(player);
 
@@ -153,9 +155,9 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	// [BC] Do script stuff
 	if (serverside && level.behavior)
 	{
-		if (player.playerstate == PST_ENTER)
+		if (playerstate == PST_ENTER)
 			level.behavior->StartTypedScripts(SCRIPT_Enter, player.mo);
-		else if (player.playerstate == PST_REBORN)
+		else if (playerstate == PST_REBORN)
 			level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 	}
 }
