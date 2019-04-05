@@ -617,6 +617,10 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
+	//reset switch activation
+	for (int i = 0; i < numlines; i++)
+		lines[i].switchactive = false;
+
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	iquehead = iquetail = 0;
