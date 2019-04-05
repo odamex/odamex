@@ -3193,27 +3193,29 @@ void CL_MobjTranslation()
 		mo->translation = translationref_t(translationtables + 256 * table);
 }
 
-
+void P_SetButtonTexture(line_t* line, short texture);
 //
 // CL_Switch
 // denis - switch state and timing
-//
+// Note: this will also be called for doors
 void CL_Switch()
 {
 	unsigned l = MSG_ReadLong();
-	byte wastoggled = MSG_ReadByte();
-	byte state = MSG_ReadByte();
+	byte switchactive = MSG_ReadByte();
+	byte special = MSG_ReadByte();
+	byte state = MSG_ReadByte(); //DActiveButton::EWhere
+	short texture = MSG_ReadShort();
 	unsigned time = MSG_ReadLong();
 
 	if (!lines || l >= (unsigned)numlines || state >= 3)
 		return;
 
-	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
-		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
+	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
+		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
-		lines[l].special = 0;
+	if (texture)
+		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	lines[l].special = special;
 }
 
 void CL_ActivateLine(void)
@@ -3374,6 +3376,8 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 }
 
+void P_ResetSwitch(line_t* line);
+
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -3385,6 +3389,22 @@ void CL_ResetMap()
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
 			mo->Destroy();
+		}
+	}
+
+	//destroy all moving sector effects and sounds
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].floordata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].floordata->Destroy();
+		}
+
+		if (sectors[i].ceilingdata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].ceilingdata->Destroy();
 		}
 	}
 

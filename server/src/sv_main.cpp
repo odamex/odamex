@@ -1569,7 +1569,7 @@ void SV_SendGametic(client_t* cl)
 	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
 }
 
-
+short P_GetButtonTexture(line_t* line);
 //
 // SV_ClientFullUpdate
 //
@@ -1640,11 +1640,13 @@ void SV_ClientFullUpdate(player_t &pl)
 		unsigned state = 0, time = 0;
 		if(P_GetButtonInfo(&lines[l], state, time) || lines[l].wastoggled)
 		{
-			MSG_WriteMarker (&cl->reliablebuf, svc_switch);
-			MSG_WriteLong (&cl->reliablebuf, l);
-			MSG_WriteByte (&cl->reliablebuf, lines[l].wastoggled);
-			MSG_WriteByte (&cl->reliablebuf, state);
-			MSG_WriteLong (&cl->reliablebuf, time);
+			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
+			MSG_WriteLong(&cl->reliablebuf, l);
+			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
+			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
+			MSG_WriteByte(&cl->reliablebuf, state);
+			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
+			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
 
@@ -4732,16 +4734,7 @@ END_COMMAND (players)
 
 void OnChangedSwitchTexture (line_t *line, int useAgain)
 {
-	int l;
-
-	for (l=0; l<numlines; l++)
-	{
-		if (line == &lines[l])
-			break;
-	}
-
-	line->wastoggled = 1;
-
+	int l = line - lines;
 	unsigned state = 0, time = 0;
 	P_GetButtonInfo(line, state, time);
 
@@ -4749,22 +4742,19 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_switch);
-		MSG_WriteLong (&cl->reliablebuf, l);
-		MSG_WriteByte (&cl->reliablebuf, line->wastoggled);
-		MSG_WriteByte (&cl->reliablebuf, state);
-		MSG_WriteLong (&cl->reliablebuf, time);
+		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
+		MSG_WriteLong(&cl->reliablebuf, l);
+		MSG_WriteByte(&cl->reliablebuf, line->switchactive);
+		MSG_WriteByte(&cl->reliablebuf, line->special);
+		MSG_WriteByte(&cl->reliablebuf, state);
+		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(line));
+		MSG_WriteLong(&cl->reliablebuf, time);
 	}
 }
 
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 {
-	int l = 0;
-	for (l = 0; l < numlines; l++)
-		if(&lines[l] == line)
-			break;
-
-	line->wastoggled = 1;
+	int l = line - lines;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

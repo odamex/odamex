@@ -426,7 +426,7 @@ typedef struct
 // 1 second, in ticks.
 #define BUTTONTIME		TICRATE
 
-void	P_ChangeSwitchTexture (line_t *line, int useAgain);
+void	P_ChangeSwitchTexture (line_t *line, int useAgain, bool playsound);
 
 void	P_InitSwitchList ();
 
