@@ -359,6 +359,9 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		}
 
 		int entry = SC_MustMatchString(strings);
+		if (entry == -1)
+			continue;
+
 		handler = handlers + entry;
 
 		switch (handler->type)
