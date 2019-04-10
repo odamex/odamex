@@ -872,7 +872,7 @@ public:
 private:
 	void calculate_alpha(fixed_t translevel)
 	{
-		fga = (translevel & 0xFC00) >> 8;
+		fga = (translevel & ~0x03FF) >> 8;
 		bga = 255 - fga;
 	}
 
