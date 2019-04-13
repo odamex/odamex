@@ -69,8 +69,8 @@
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
 
-#define lioffset(x)		myoffsetof(level_pwad_info_t,x)
-#define cioffset(x)		myoffsetof(cluster_info_t,x)
+#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define cioffset(x)		offsetof(cluster_info_t,x)
 
 extern int nextupdate;
 

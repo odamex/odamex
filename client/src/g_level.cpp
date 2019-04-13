@@ -64,8 +64,8 @@
 #include "z_zone.h"
 
 
-#define lioffset(x)		myoffsetof(level_pwad_info_t,x)
-#define cioffset(x)		myoffsetof(cluster_info_t,x)
+#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define cioffset(x)		offsetof(cluster_info_t,x)
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
