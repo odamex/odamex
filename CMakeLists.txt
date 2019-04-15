@@ -22,10 +22,13 @@ cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
 set(PROJECT_VERSION 0.8.0)
 set(PROJECT_COPYRIGHT "2006-2019")
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
