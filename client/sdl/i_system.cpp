@@ -123,7 +123,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef GCONSOLE
+#if defined GCONSOLE && !defined __SWITCH__
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
@@ -440,7 +440,7 @@ std::string I_GetCWD ()
 	return ret;
 }
 
-#if defined(UNIX) && !defined(GEKKO)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -468,7 +468,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
 	// return absolute or explicitly relative pathnames unmodified,
 	// so launchers or CLI/console users have control over netdemo placement
 	if (file &&
@@ -508,6 +508,8 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
+#elif defined(__SWITCH__)
+	std::string path = file;
 #else
 	if (!PathIsRelative(file))
 		return std::string (file);
@@ -527,7 +529,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
 	if(!path.length())
 		return;
 
@@ -565,6 +567,8 @@ std::string I_GetBinaryDir()
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
+#elif defined __SWITCH__
+	return "./";
 #else
 	if(!Args[0])
 		return "./";
@@ -622,7 +626,7 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
-#ifndef GCONSOLE // I will return to this -- Hyper_Eye
+#if !defined GCONSOLE // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;
@@ -1065,6 +1069,7 @@ std::string I_ConsoleInput (void)
 
 std::string I_ConsoleInput (void)
 {
+#ifndef __SWITCH__
 	std::string ret;
     static char     text[1024] = {0};
     int             len;
@@ -1104,7 +1109,7 @@ std::string I_ConsoleInput (void)
 		memset(text, 0, sizeof(text));
 		return ret;
 	}
-
+#endif
     return "";
 }
 #endif

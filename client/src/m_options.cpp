@@ -1079,7 +1079,9 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
+#ifndef __SWITCH__ // ehh
 		if (it->isFullScreen() == fullscreen)
+#endif
 			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
@@ -1260,19 +1262,21 @@ void M_OptInit (void)
 		Depths[i].name = NULL;
 	}
 
+#ifndef GCONSOLE // overscan is there instead
 	switch (I_GetVideoCapabilities()->getDisplayType())
 	{
 	case DISPLAY_FullscreenOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 1.f;
+		ModesItems[0].type = nochoice;
+		ModesItems[0].b.leftval = 1.f;
 		break;
 	case DISPLAY_WindowOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 0.f;
+		ModesItems[0].type = nochoice;
+		ModesItems[0].b.leftval = 0.f;
 		break;
 	default:
 		break;
 	}
+#endif
 }
 
 
@@ -1666,6 +1670,8 @@ void M_OptResponder (event_t *ev)
 		{
 #ifdef _XBOX
 			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
+#elif defined(__SWITCH__)
+			if (ch != KEY_ESCAPE && ch != KEY_JOY12)
 #else
 			if (ch != KEY_ESCAPE)
 #endif
@@ -1751,6 +1757,9 @@ void M_OptResponder (event_t *ev)
 	{
 		case KEY_HAT3:
 		case KEY_DOWNARROW:
+#ifdef __SWITCH__
+		case KEY_JOY16:
+#endif
 			{
 				int modecol;
 
@@ -1792,6 +1801,9 @@ void M_OptResponder (event_t *ev)
 
 		case KEY_HAT1:
 		case KEY_UPARROW:
+#ifdef __SWITCH__
+		case KEY_JOY14:
+#endif
 			{
 				int modecol;
 
@@ -1834,6 +1846,9 @@ void M_OptResponder (event_t *ev)
 			break;
 
 		case KEY_PGUP:
+#ifdef __SWITCH__
+		case KEY_JOY7:
+#endif
 			{
 				if (CanScrollUp)
 				{
@@ -1857,6 +1872,9 @@ void M_OptResponder (event_t *ev)
 			break;
 
 		case KEY_PGDN:
+#ifdef __SWITCH__
+		case KEY_JOY8:
+#endif
 			{
 				if (CanScrollDown)
 				{
@@ -1882,6 +1900,9 @@ void M_OptResponder (event_t *ev)
 
 		case KEY_HAT4:
 		case KEY_LEFTARROW:
+#ifdef __SWITCH__
+		case KEY_JOY13:
+#endif
 			switch (item->type)
 			{
 				case slider:
@@ -2006,6 +2027,9 @@ void M_OptResponder (event_t *ev)
 
 		case KEY_HAT2:
 		case KEY_RIGHTARROW:
+#ifdef __SWITCH__
+		case KEY_JOY15:
+#endif
 			switch (item->type)
 			{
 				case slider:
@@ -2134,6 +2158,9 @@ void M_OptResponder (event_t *ev)
 
 #ifdef _XBOX
 		case KEY_JOY9: // Start button
+#endif
+#ifdef __SWITCH__
+		case KEY_JOY3: // X button
 #endif
 		case KEY_BACKSPACE:
 			if (item->type == control)

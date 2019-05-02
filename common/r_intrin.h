@@ -56,6 +56,9 @@
 	#ifdef __SSE2__
 		#include <emmintrin.h>
 	#endif
+	#ifdef __ARM_NEON__
+		#include <arm_neon.h>
+	#endif
 #endif
 
 #endif

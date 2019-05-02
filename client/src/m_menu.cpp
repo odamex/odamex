@@ -1851,6 +1851,9 @@ bool M_Responder (event_t* ev)
 	  case KEY_HAT3:
 	  case KEY_DOWNARROW:
 	  case KEYP_2:
+#ifdef __SWITCH__
+	  case KEY_JOY16:
+#endif
 		do
 		{
 			if (itemOn+1 > currentMenu->numitems-1)
@@ -1864,6 +1867,9 @@ bool M_Responder (event_t* ev)
 	  case KEY_HAT1:
 	  case KEY_UPARROW:
 	  case KEYP_8:
+#ifdef __SWITCH__
+	  case KEY_JOY14:
+#endif
 		do
 		{
 			if (!itemOn)
@@ -1877,6 +1883,9 @@ bool M_Responder (event_t* ev)
 	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
 	  case KEYP_4:
+#ifdef __SWITCH__
+	  case KEY_JOY13:
+#endif
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
@@ -1888,6 +1897,9 @@ bool M_Responder (event_t* ev)
 	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
 	  case KEYP_6:
+#ifdef __SWITCH__
+	  case KEY_JOY15:
+#endif
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{

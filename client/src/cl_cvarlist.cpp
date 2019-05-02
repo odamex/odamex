@@ -656,8 +656,13 @@ CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 #endif
 
+#ifdef __SWITCH__
+CVAR_FUNC_DECL(	vid_32bpp, "1", "Enable 32-bit color rendering",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+#else
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+#endif
 
 CVAR_FUNC_DECL(	vid_320x200, "0", "Enable 320x200 video emulation",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -666,7 +671,7 @@ CVAR_FUNC_DECL(	vid_640x400, "0", "Enable 640x400 video emulation",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Optimize rendering functions based on CPU vectorization support
-// Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
+// Can be of "detect" or "none" or "mmx","sse2","altivec","neon" depending on availability; case-insensitive.
 CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 

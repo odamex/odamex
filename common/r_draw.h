@@ -180,6 +180,12 @@ void R_DrawSlopeSpanD_ALTIVEC(void);
 void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
+#ifdef __ARM_NEON__
+void R_DrawSpanD_NEON(void);
+void R_DrawSlopeSpanD_NEON(void);
+void r_dimpatchD_NEON(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
+#endif
+
 // Vectorizable function pointers:
 extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
