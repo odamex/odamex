@@ -44,6 +44,18 @@ extern NetDemo netdemo;
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
  */
+#ifdef __SWITCH__
+// Ch0wW : Since I want binds to have better names on consoles, 
+// I took the decision to rewrite them.
+char DefBindings[] =
+	"bind LTRIGGER +use; "
+	"bind RTRIGGER +attack; "
+	"bind RSHOULDER togglemap;"
+	"bind A +jump; "				// <- So is this <- change to jump
+	"bind B +use;"
+	"bind X weapnext;"
+	"bind Y weapprev;";
+#else
 char DefBindings[] =
 	"bind grave toggleconsole; "			// <- This is new
 	"bind 1 \"impulse 1\"; "
@@ -116,8 +128,7 @@ char DefBindings[] =
 	"bind home ready; "
 	"bind end spectate; "
 	"bind m changeteams ";
-
-
+#endif
 
 static std::string Bindings[NUM_KEYS];
 static std::string DoubleBindings[NUM_KEYS];
@@ -267,6 +278,25 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("mouse5", KEY_MOUSE5));
 	nameToKeyCode.insert(std::make_pair("mwheelup", KEY_MWHEELUP));
 	nameToKeyCode.insert(std::make_pair("mwheeldown", KEY_MWHEELDOWN));
+
+#ifdef __SWITCH__
+	nameToKeyCode.insert(std::make_pair("A", KEY_JOY1));
+	nameToKeyCode.insert(std::make_pair("B", KEY_JOY2));
+	nameToKeyCode.insert(std::make_pair("X", KEY_JOY3));
+	nameToKeyCode.insert(std::make_pair("Y", KEY_JOY4));
+	nameToKeyCode.insert(std::make_pair("LNUB", KEY_JOY5));
+	nameToKeyCode.insert(std::make_pair("RNUB", KEY_JOY6));
+	nameToKeyCode.insert(std::make_pair("LSHOULDER", KEY_JOY7));
+	nameToKeyCode.insert(std::make_pair("RSHOULDER", KEY_JOY8));
+	nameToKeyCode.insert(std::make_pair("LTRIGGER", KEY_JOY9));
+	nameToKeyCode.insert(std::make_pair("RTRIGGER", KEY_JOY10));
+	nameToKeyCode.insert(std::make_pair("+", KEY_JOY11));
+	nameToKeyCode.insert(std::make_pair("-", KEY_JOY12));
+	nameToKeyCode.insert(std::make_pair("LEFT", KEY_JOY13));
+	nameToKeyCode.insert(std::make_pair("UP", KEY_JOY14));
+	nameToKeyCode.insert(std::make_pair("RIGHT", KEY_JOY15));
+	nameToKeyCode.insert(std::make_pair("DOWN", KEY_JOY16));
+#else
 	nameToKeyCode.insert(std::make_pair("joy1", KEY_JOY1));
 	nameToKeyCode.insert(std::make_pair("joy2", KEY_JOY2));
 	nameToKeyCode.insert(std::make_pair("joy3", KEY_JOY3));
@@ -283,6 +313,7 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("joy14", KEY_JOY14));
 	nameToKeyCode.insert(std::make_pair("joy15", KEY_JOY15));
 	nameToKeyCode.insert(std::make_pair("joy16", KEY_JOY16));
+#endif
 	nameToKeyCode.insert(std::make_pair("joy17", KEY_JOY17));
 	nameToKeyCode.insert(std::make_pair("joy18", KEY_JOY18));
 	nameToKeyCode.insert(std::make_pair("joy19", KEY_JOY19));

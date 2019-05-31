@@ -1390,7 +1390,12 @@ static bool C_HandleKey(const event_t* ev)
 {
 	const char* cmd = C_GetBinding(ev->data1);
 
-	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
+	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0) 
+#ifdef __SWITCH__
+		|| ev->data1 == KEY_JOY11
+#endif
+	)
+
 	{
 		// don't eat the Esc key if we're in full console
 		// let it be processed elsewhere (to bring up the menu)

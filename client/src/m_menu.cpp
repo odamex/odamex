@@ -1823,11 +1823,15 @@ bool M_Responder (event_t* ev)
 	if (!menuactive)
 	{
 		// [ML] This is a regular binding now too!
+		// ToDo : rewrite this with a "platform" value to clean this up
+		if (ch == KEY_ESCAPE
 #ifdef _XBOX
-		if (ch == KEY_ESCAPE || ch == KEY_JOY9)
-#else
-		if (ch == KEY_ESCAPE)
+		|| ch == KEY_JOY9
+#elif __SWITCH__
+		|| ch == KEY_JOY11
 #endif
+		)
+
 		{
 			AddCommandString("menu_main");
 			return true;

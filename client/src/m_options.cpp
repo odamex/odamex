@@ -295,6 +295,8 @@ menu_t OptionMenu = {
 static menuitem_t ControlsItems[] = {
 #ifdef _XBOX
 	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+#elif __SWITCH__
+	{ whitetext,"A to change, X to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #else
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #endif
@@ -1022,9 +1024,11 @@ static const char VMTestBlankText[] = " ";
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
+#ifndef GCONSOLE
 	{ 70.0,		"70fps" },
 	{ 120.0,	"120fps" },
 	{ 0.0,		"Unlimited" }
+#endif
 };
 
 static menuitem_t ModesItems[] = {
@@ -1035,7 +1039,11 @@ static menuitem_t ModesItems[] = {
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+#ifdef GCONSOLE
+	{ discrete, "Framerate",			{&vid_maxfps},			{2.0}, {0.0},	{0.0}, {VidFPSCaps} },
+#else
 	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+#endif
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1671,7 +1679,7 @@ void M_OptResponder (event_t *ev)
 #ifdef _XBOX
 			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
 #elif defined(__SWITCH__)
-			if (ch != KEY_ESCAPE && ch != KEY_JOY12)
+			if (ch != KEY_ESCAPE && ch != KEY_JOY11)		// (+) cancels the responder request
 #else
 			if (ch != KEY_ESCAPE)
 #endif
@@ -2219,7 +2227,11 @@ void M_OptResponder (event_t *ev)
 				WaitingForKey = true;
 				OldContMessage = CurrentMenu->items[0].label;
 				OldContType = CurrentMenu->items[0].type;
+				#ifdef __SWITCH__
+				CurrentMenu->items[0].label = "Press new key for control or (+) to cancel";
+				#else
 				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+				#endif
 				CurrentMenu->items[0].type = redtext;
 			}
 			else if (item->type == listelement)
