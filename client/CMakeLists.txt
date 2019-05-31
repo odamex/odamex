@@ -10,7 +10,7 @@ if(NOT MSVC)
       if(target_arch STREQUAL "i386" OR target_arch STREQUAL "amd64")        
         set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
       else()
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math")
       endif()
     else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
       if(APPLE)
@@ -20,6 +20,9 @@ if(NOT MSVC)
   endif()
 else()
   set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
+endif()
+
+if(SWITCH_LIBNX)
 endif()
 
 
@@ -229,11 +232,13 @@ if(SDL_VERSION)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  elseif(SWITCH_LIBNX)
+    target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis ogg EGL glapi drm_nouveau nx m)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
 
-  if(UNIX AND NOT APPLE)
+  if(UNIX AND NOT APPLE AND NOT SWITCH_LIBNX)
     target_link_libraries(odamex rt)
     if(X11_FOUND)
       target_link_libraries(odamex X11)
@@ -301,7 +306,10 @@ if(SDL_VERSION)
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
-
+  elseif(SWITCH_LIBNX)
+   add_custom_command( TARGET odamex POST_BUILD
+      COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
+      COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/Switch/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/Switch/odamex.nacp )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

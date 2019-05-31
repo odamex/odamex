@@ -39,6 +39,12 @@
 
 #include "m_alloc.h"
 
+#ifdef __SWITCH__
+// HACK: for some reason we're missing the prototype for strptime(), even though
+//       it is in libc
+extern "C" char *strptime (const char *__restrict, const char *__restrict, struct tm *__restrict);
+#endif
+
 char		com_token[8192];
 BOOL		com_eof;
 
