@@ -257,7 +257,9 @@ static menuitem_t OptionItems[] =
     { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
 	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
  	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
+#if !defined(GCONSOLE) or defined(_XBOX)
 	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
+#endif
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
@@ -302,12 +304,14 @@ static menuitem_t ControlsItems[] = {
 #endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+#ifndef GCONSOLE
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
 	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
 	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
 	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
 	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
 	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
+#endif
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
@@ -337,8 +341,10 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
 	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
 	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
+#ifndef GCONSOLE
 	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
 	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
+#endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
@@ -350,6 +356,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
 	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
 	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
+#ifndef GCONSOLE
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
@@ -370,6 +377,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
 	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
 	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+#endif
 };
 
 menu_t ControlsMenu = {
@@ -507,10 +515,12 @@ menu_t MouseMenu = {
 
 static menuitem_t JoystickItems[] =
 {
+#ifndef GCONSOLE
 	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+#endif
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
@@ -844,7 +854,9 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
+#ifndef GCONSOLE
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
+#endif
 };
 
 static void M_UpdateDisplayOptions()

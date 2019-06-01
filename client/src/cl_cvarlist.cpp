@@ -235,7 +235,7 @@ CVAR_RANGE(			cl_weaponpref_bfg, "2", "Weapon preference level for BFG9000",
 
 #ifdef GCONSOLE
 CVAR_FUNC_DECL(		use_joystick, "1", "",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+					CVARTYPE_BOOL, CVAR_NOSET)	// Ch0wW: Forced CVAR
 #else
 CVAR_FUNC_DECL(		use_joystick, "0", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -614,8 +614,13 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
+#ifdef GCONSOLE
+CVAR(			r_showendoom, "0", "[Unsupported] : Display the ENDDOOM text after quitting",
+				CVARTYPE_BOOL, CVAR_NOSET)   // [ML] 1/5/10: Add endoom support
+#else
 CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
+#endif 
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
