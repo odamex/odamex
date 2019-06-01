@@ -294,9 +294,9 @@ menu_t OptionMenu = {
 
 static menuitem_t ControlsItems[] = {
 #ifdef _XBOX
-	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ whitetext,"Press A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #elif __SWITCH__
-	{ whitetext,"A to change, X to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ whitetext,"Press A to change, X to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #else
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #endif
@@ -1013,6 +1013,9 @@ static value_t Depths[22];
 #ifdef _XBOX
 static const char VMEnterText[] = "Press A to set mode";
 static const char VMTestText[] = "Press X to test mode for 5 seconds";
+#elif __SWITCH__
+static const char VMEnterText[] = "Press A to change res.";
+static const char VMTestText[] = "";
 #else
 static const char VMEnterText[] = "Press ENTER to set mode";
 static const char VMTestText[] = "Press T to test mode for 5 seconds";

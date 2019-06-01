@@ -58,7 +58,7 @@
 #define KEY_PAUSE				0x14
 
 #define KEY_EQUALS			0x3D
-#define KEY_MINUS				0x2D
+#define KEY_MIN				0x2D
 
 #define KEY_LSHIFT			0x130
 #define KEY_LCTRL				0x132

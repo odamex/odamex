@@ -312,11 +312,13 @@ CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file
 
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
-					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+#elif __SWITCH__
+CVAR_FUNC_DECL(		cl_name, "Switch Player", "",
 #else
 CVAR_FUNC_DECL(		cl_name, "Player", "",
-					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
 
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)

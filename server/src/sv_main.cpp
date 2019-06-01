@@ -81,6 +81,7 @@ bool unnatural_level_progression;
 bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
+gameplatform_t platform = PF_PC;	// Ch0wW: Make it know it's a PC - useless ATM ???
 
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 // really only used clientside

@@ -951,7 +951,7 @@ static const char *SpecialKeyName(int key)
         case KEY_BACKSPACE:   return "BKSP";
         case KEY_PAUSE:       return "PAUSE";
         case KEY_EQUALS:      return "EQUALS";
-        case KEY_MINUS:       return "MINUS";
+        case KEY_MIN:         return "MINUS";
         case KEY_RSHIFT:      return "SHIFT";
         case KEY_RCTRL:       return "CTRL";
         case KEY_RALT:        return "ALT";

@@ -87,6 +87,18 @@
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
 
+#ifdef GCONSOLE
+	#ifdef __SWITCH__
+		gameplatform_t platform = PF_SWITCH;
+	#elif _XBOX
+		gameplatform_t platform = PF_XBOX;
+	#else
+		gameplatform_t platform = PF_UNKNOWN;
+	#endif
+#else
+gameplatform_t platform = PF_PC;
+#endif
+
 extern bool step_mode;
 
 // denis - client version (VERSION or other supported)

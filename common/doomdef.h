@@ -69,6 +69,16 @@ enum baseapp_t
 
 extern baseapp_t baseapp;
 
+enum gameplatform_t 
+{
+	PF_PC,
+	PF_XBOX,
+	PF_SWITCH,
+	PF_UNKNOWN,		//	Unknown platform yet
+};
+
+extern gameplatform_t platform;
+
 //
 // Global parameters/defines.
 //
