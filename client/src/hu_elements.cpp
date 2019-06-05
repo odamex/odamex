@@ -244,6 +244,10 @@ std::string Timer(int& color)
 	if (!multiplayer || !(sv_timelimit > 0.0f))
 		return "";
 
+	// Do NOT display if in a lobby
+	if (level.flags & LEVEL_LOBBYSPECIAL)
+		return "";
+
 	int timeleft = level.timeleft;
 
 	if (timeleft < 0)

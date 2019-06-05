@@ -42,7 +42,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker) {}
 
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor *special, player_t *player) {}
-bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab) { return false; }
+ItemEquipVal SV_FlagTouch (player_t &player, flag_t f, bool firstgrab) { return IEV_NotEquipped; }
 void SV_SocketTouch (player_t &player, flag_t f) {}
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill) {}
 void SV_SendDamagePlayer(player_t *player, int pain) {}

@@ -92,7 +92,7 @@ extern int mapchange;
 
 bool step_mode = false;
 
-std::queue<byte> free_player_ids;
+std::set<byte> free_player_ids;
 
 // General server settings
 EXTERN_CVAR(sv_motd)
@@ -113,6 +113,7 @@ EXTERN_CVAR(sv_warmup)
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
+void P_PlayerLeavesGame(player_s* player);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -479,27 +480,25 @@ void SV_InitNetwork (void)
 	SV_InitMasters();
 }
 
-// [AM] TODO: Turn this into Players::push_back().
+//Get next free player. Will use the lowest available player id.
 Players::iterator SV_GetFreeClient(void)
 {
 	if (players.size() >= sv_maxclients)
 		return players.end();
 
-	if (players.empty())
+	if (free_player_ids.empty())
 	{
-		while (!free_player_ids.empty())
-			free_player_ids.pop();
-
 		// list of free ids needs to be initialized
 		for (int i = 1; i < MAXPLAYERS; i++)
-			free_player_ids.push(i);
+			free_player_ids.insert(i);
 	}
 
 	players.push_back(player_t());
 
 	// generate player id
-	players.back().id = free_player_ids.front();
-	free_player_ids.pop();
+	std::set<byte>::iterator id = free_player_ids.begin();
+	players.back().id = *id;
+	free_player_ids.erase(id);
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
@@ -534,7 +533,6 @@ void SV_CheckTimeouts()
 	}
 }
 
-
 //
 // SV_RemoveDisconnectedPlayer
 //
@@ -548,6 +546,9 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 		return players.end();
 
 	int player_id = it->id;
+
+	if (!it->spectator)
+		P_PlayerLeavesGame(&(*it));
 
 	// remove player awareness from all actors
 	AActor* mo;
@@ -574,7 +575,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	// remove this player from the global players vector
 	Players::iterator next;
 	next = players.erase(it);
-	free_player_ids.push(player_id);
+	free_player_ids.insert(player_id);
 
 	Unlag::getInstance().unregisterPlayer(player_id);
 
@@ -851,6 +852,10 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 	MSG_WriteShort	(&cl->reliablebuf, time(NULL) - p->JoinTime);
 }
 
+/**
+Spreads a player's userinfo to every client.
+@param player Player to parse info for.
+ */
 void SV_BroadcastUserInfo(player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -901,7 +906,6 @@ bool SV_SetupUserInfo(player_t &player)
 	fixed_t aimdist = MSG_ReadLong();
 	bool unlag = MSG_ReadBool();
 	bool predict_weapons = MSG_ReadBool();
-	byte update_rate = MSG_ReadByte();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
 
@@ -921,7 +925,6 @@ bool SV_SetupUserInfo(player_t &player)
 		gender = GENDER_NEUTER;
 
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
-	update_rate = clamp((int)update_rate, 1, 3);
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
 		switchweapon = WPSW_ALWAYS;
@@ -929,7 +932,6 @@ bool SV_SetupUserInfo(player_t &player)
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
 	player.userinfo.unlag			= unlag;
 	player.userinfo.predict_weapons	= predict_weapons;
-	player.userinfo.update_rate		= update_rate;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
 	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
@@ -1568,7 +1570,7 @@ void SV_SendGametic(client_t* cl)
 	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
 }
 
-
+short P_GetButtonTexture(line_t* line);
 //
 // SV_ClientFullUpdate
 //
@@ -1639,11 +1641,13 @@ void SV_ClientFullUpdate(player_t &pl)
 		unsigned state = 0, time = 0;
 		if(P_GetButtonInfo(&lines[l], state, time) || lines[l].wastoggled)
 		{
-			MSG_WriteMarker (&cl->reliablebuf, svc_switch);
-			MSG_WriteLong (&cl->reliablebuf, l);
-			MSG_WriteByte (&cl->reliablebuf, lines[l].wastoggled);
-			MSG_WriteByte (&cl->reliablebuf, state);
-			MSG_WriteLong (&cl->reliablebuf, time);
+			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
+			MSG_WriteLong(&cl->reliablebuf, l);
+			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
+			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
+			MSG_WriteByte(&cl->reliablebuf, state);
+			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
+			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
 
@@ -1851,7 +1855,13 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 	return AllowConnect;
 }
 
-
+void SV_InitPlayerEnterState(player_s* player)
+{
+	player->fragcount = 0;
+	player->killcount = 0;
+	player->points = 0;
+	player->playerstate = PST_ENTER;
+}
 
 //
 //	SV_ConnectClient
@@ -1900,7 +1910,7 @@ void SV_ConnectClient()
 	player_t* player = &(*it);
 	client_t* cl = &(player->client);
 
-	// clear client network info
+	// clear and reinitialize client network info
 	cl->address = net_from;
 	cl->last_received = gametic;
 	cl->reliable_bps = 0;
@@ -1909,14 +1919,6 @@ void SV_ConnectClient()
 	cl->lastclientcmdtic = 0;
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
-
-	// generate a random string
-	std::stringstream ss;
-	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
-	cl->digest = MD5SUM(ss.str());
-
-	// Set player time
-	player->JoinTime = time(NULL);
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
@@ -1928,7 +1930,15 @@ void SV_ConnectClient()
 
 	cl->sequence = 0;
 	cl->last_sequence = -1;
-	cl->packetnum =  0;
+	cl->packetnum = 0;
+	
+	// generate a random string
+	std::stringstream ss;
+	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
+	cl->digest = MD5SUM(ss.str());
+
+	// Set player time
+	player->JoinTime = time(NULL);
 
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
@@ -1937,13 +1947,14 @@ void SV_ConnectClient()
 	// for unlagging
 	Unlag::getInstance().registerPlayer(player->id);
 
+	// Check if the client uses the same version as the server.
 	if (!SV_CheckClientVersion(cl, it))
 	{
 		SV_DropClient(*player);
 		return;
 	}
 
-	// get client userinfo
+	// Get the userinfo from the client.
 	clc_t userinfo = (clc_t)MSG_ReadByte();
 	if (userinfo != clc_userinfo)
 	{
@@ -1954,9 +1965,10 @@ void SV_ConnectClient()
 	if (!SV_SetupUserInfo(*player))
 		return;
 
-	// get rate value
+	// Get the rate value of the client.
 	SV_SetClientRate(*cl, MSG_ReadLong());
 
+	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
 	{
 		cl->displaydisconnect = false;
@@ -1964,6 +1976,7 @@ void SV_ConnectClient()
 		return;
 	}
 
+	// Check if the user entered a good password (if any)
 	std::string passhash = MSG_ReadString();
 	if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
 	{
@@ -1971,7 +1984,7 @@ void SV_ConnectClient()
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
 		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password\n");
+		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password.\n");
 
 		SV_SendPacket(*player);
 		SV_DropClient(*player);
@@ -2030,11 +2043,7 @@ void SV_ConnectClient()
 	}
 
 	SV_BroadcastUserInfo(*player);
-	player->playerstate = PST_REBORN;
-
-	player->fragcount = 0;
-	player->killcount = 0;
-	player->points = 0;
+	SV_InitPlayerEnterState(player);
 
 	if (!step_mode)
 	{
@@ -2043,11 +2052,11 @@ void SV_ConnectClient()
 		{
 			MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
 			MSG_WriteByte(&pit->client.reliablebuf, player->id);
-			MSG_WriteByte(&pit->client.reliablebuf, true);
+			MSG_WriteByte(&pit->client.reliablebuf, player->spectator);
 		}
 	}
 
-	// send a map name
+	// Send a map name
 	SV_SendLoadMap(wadfiles, patchfiles, level.mapname, player);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
@@ -2066,6 +2075,7 @@ void SV_ConnectClient()
 		MSG_WriteByte(&pit->client.reliablebuf, player->id);
 	}
 
+	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
 
@@ -3267,74 +3277,66 @@ void SV_WriteCommands(void)
 	{
 		client_t *cl = &(it->client);
 
-		// Don't need to update origin every tic.
-		// The server sends origin and velocity of a
-		// player and the client always knows origin on
-		// on the next tic.
-		// HOWEVER, update as often as the player requests
-		if (P_AtInterval(it->userinfo.update_rate))
+		// [SL] 2011-05-11 - Send the client the server's gametic
+		// this gametic is returned to the server with the client's
+		// next cmd
+		if (it->ingame())
+			SV_SendGametic(cl);
+
+		for (Players::iterator pit = players.begin();pit != players.end();++pit)
 		{
-			// [SL] 2011-05-11 - Send the client the server's gametic
-			// this gametic is returned to the server with the client's
-			// next cmd
-			if (it->ingame())
-				SV_SendGametic(cl);
+			if (!(pit->ingame()) || !(pit->mo))
+				continue;
 
-			for (Players::iterator pit = players.begin();pit != players.end();++pit)
+			// a player is updated about their own position elsewhere
+			if (&*it == &*pit)
+				continue;
+
+			// GhostlyDeath -- Screw spectators
+			if (pit->spectator)
+				continue;
+
+			if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
+				continue;
+
+			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
+			MSG_WriteByte(&cl->netbuf, pit->id); // player number
+
+			// [SL] 2011-09-14 - the most recently processed ticcmd from the
+			// client we're sending this message to.
+			MSG_WriteLong(&cl->netbuf, it->tic);
+
+			MSG_WriteLong(&cl->netbuf, pit->mo->x);
+			MSG_WriteLong(&cl->netbuf, pit->mo->y);
+			MSG_WriteLong(&cl->netbuf, pit->mo->z);
+
+			if (GAMEVER > 60)
 			{
-				if (!(pit->ingame()) || !(pit->mo))
-					continue;
-
-				// a player is updated about their own position elsewhere
-				if (&*it == &*pit)
-					continue;
-
-				// GhostlyDeath -- Screw spectators
-				if (pit->spectator)
-					continue;
-
-				if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
-					continue;
-
-				MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
-				MSG_WriteByte(&cl->netbuf, pit->id); // player number
-
-				// [SL] 2011-09-14 - the most recently processed ticcmd from the
-				// client we're sending this message to.
-				MSG_WriteLong(&cl->netbuf, it->tic);
-
-				MSG_WriteLong(&cl->netbuf, pit->mo->x);
-				MSG_WriteLong(&cl->netbuf, pit->mo->y);
-				MSG_WriteLong(&cl->netbuf, pit->mo->z);
-
-				if (GAMEVER > 60)
-				{
-					MSG_WriteShort(&cl->netbuf, pit->mo->angle >> FRACBITS);
-					MSG_WriteShort(&cl->netbuf, pit->mo->pitch >> FRACBITS);
-				}
-				else
-				{
-					MSG_WriteLong(&cl->netbuf, pit->mo->angle);
-				}
-
-				if (pit->mo->frame == 32773)
-					MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
-				else
-					MSG_WriteByte(&cl->netbuf, pit->mo->frame);
-
-				// write velocity
-				MSG_WriteLong(&cl->netbuf, pit->mo->momx);
-				MSG_WriteLong(&cl->netbuf, pit->mo->momy);
-				MSG_WriteLong(&cl->netbuf, pit->mo->momz);
-
-				// [Russell] - hack, tell the client about the partial
-				// invisibility power of another player.. (cheaters can disable
-				// this but its all we have for now)
-				if (GAMEVER > 60)
-					MSG_WriteByte(&cl->netbuf, pit->powers[pw_invisibility]);
-				else
-					MSG_WriteLong(&cl->netbuf, pit->powers[pw_invisibility]);
+				MSG_WriteShort(&cl->netbuf, pit->mo->angle >> FRACBITS);
+				MSG_WriteShort(&cl->netbuf, pit->mo->pitch >> FRACBITS);
 			}
+			else
+			{
+				MSG_WriteLong(&cl->netbuf, pit->mo->angle);
+			}
+
+			if (pit->mo->frame == 32773)
+				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
+			else
+				MSG_WriteByte(&cl->netbuf, pit->mo->frame);
+
+			// write velocity
+			MSG_WriteLong(&cl->netbuf, pit->mo->momx);
+			MSG_WriteLong(&cl->netbuf, pit->mo->momy);
+			MSG_WriteLong(&cl->netbuf, pit->mo->momz);
+
+			// [Russell] - hack, tell the client about the partial
+			// invisibility power of another player.. (cheaters can disable
+			// this but its all we have for now)
+			if (GAMEVER > 60)
+				MSG_WriteByte(&cl->netbuf, pit->powers[pw_invisibility]);
+			else
+				MSG_WriteLong(&cl->netbuf, pit->powers[pw_invisibility]);
 		}
 
 		// [SL] Send client info about player he is spying on
@@ -3511,8 +3513,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	AActor *mo = player.mo;
 	client_t *cl = &player.client;
 
-	// Send updates about a player's position as often as the player wishes
-	if (!mo || !P_AtInterval(player.userinfo.update_rate))
+	if (!mo)
 		return;
 
 	// GhostlyDeath -- Spectators are on their own really
@@ -3619,10 +3620,8 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	if (!setting && player.spectator)
 	{
 		// We want to unspectate the player.
-		if ((level.time > player.joinafterspectatortime + TICRATE * 3) ||
-			level.time > player.joinafterspectatortime + TICRATE * 5)
+		if (level.time > player.joinafterspectatortime + TICRATE * 5)
 		{
-
 			// Check to see if there is an empty spot on the server
 			int NumPlayers = 0;
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -3649,32 +3648,19 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 			// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
 			SV_MidPrint("", &player, 0);
 
+			// Warn everyone we're not a spectator anymore.
 			player.spectator = false;
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
 				MSG_WriteMarker(&it->client.reliablebuf, svc_spectate);
 				MSG_WriteByte(&it->client.reliablebuf, player.id);
-				MSG_WriteByte(&it->client.reliablebuf, false);
+				MSG_WriteByte(&it->client.reliablebuf, player.spectator);
 			}
 
 			if (player.mo)
 				P_KillMobj(NULL, player.mo, NULL, true);
 
-			player.playerstate = PST_REBORN;
-
-			if (!silent)
-			{
-				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
-				else
-					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-									   player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
-			}
-
-			// GhostlyDeath -- Reset Frags, Deaths and Kills
-			player.fragcount = 0;
-			player.deathcount = 0;
-			player.killcount = 0;
+			SV_InitPlayerEnterState(&player);
 			SV_UpdateFrags(player);
 
 			// [AM] Set player unready if we're in warmup mode.
@@ -3683,10 +3669,24 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 				SV_SetReady(player, false, true);
 				player.timeout_ready = 0;
 			}
+			
+			// Everything is set, now warn everyone the player joined.
+			if (!silent)
+			{
+				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
+				else
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
+						player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
+			}
+
 		}
 	}
 	else if (setting && !player.spectator)
 	{
+		// Call the DISCONNECT parameter
+		P_PlayerLeavesGame(&player);
+
 		// We want to spectate the player
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -3947,8 +3947,8 @@ void SV_Cheat(player_t &player)
 	player.cheats = cheats;
 }
 
-BOOL P_GiveWeapon(player_s*, weapontype_t, BOOL);
-BOOL P_GivePower(player_s*, int);
+ItemEquipVal P_GiveWeapon(player_s*, weapontype_t, BOOL);
+ItemEquipVal P_GivePower(player_s*, int);
 
 void SV_CheatPulse(player_t &player)
 {
@@ -4383,7 +4383,7 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!sv_timelimit)
+	if(!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) //no time limit in lobby
 		return;
 
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
@@ -4542,11 +4542,7 @@ void SV_StepTics(QWORD count)
 		SV_SendPackets();
 		SV_ClearClientsBPS();
 		SV_CheckTimeouts();
-
-		// Since clients are only sent sector updates every 3rd tic, don't destroy
-		// the finished moving sectors until we've sent the clients the update
-		if (P_AtInterval(3))
-			SV_DestroyFinishedMovingSectors();
+		SV_DestroyFinishedMovingSectors();
 
 		// increment player_t::GameTime for all players once a second
 		static int TicCount = 0;
@@ -4739,16 +4735,7 @@ END_COMMAND (players)
 
 void OnChangedSwitchTexture (line_t *line, int useAgain)
 {
-	int l;
-
-	for (l=0; l<numlines; l++)
-	{
-		if (line == &lines[l])
-			break;
-	}
-
-	line->wastoggled = 1;
-
+	int l = line - lines;
 	unsigned state = 0, time = 0;
 	P_GetButtonInfo(line, state, time);
 
@@ -4756,22 +4743,19 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_switch);
-		MSG_WriteLong (&cl->reliablebuf, l);
-		MSG_WriteByte (&cl->reliablebuf, line->wastoggled);
-		MSG_WriteByte (&cl->reliablebuf, state);
-		MSG_WriteLong (&cl->reliablebuf, time);
+		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
+		MSG_WriteLong(&cl->reliablebuf, l);
+		MSG_WriteByte(&cl->reliablebuf, line->switchactive);
+		MSG_WriteByte(&cl->reliablebuf, line->special);
+		MSG_WriteByte(&cl->reliablebuf, state);
+		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(line));
+		MSG_WriteLong(&cl->reliablebuf, time);
 	}
 }
 
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 {
-	int l = 0;
-	for (l = 0; l < numlines; l++)
-		if(&lines[l] == line)
-			break;
-
-	line->wastoggled = 1;
+	int l = line - lines;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

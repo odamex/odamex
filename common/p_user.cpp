@@ -786,7 +786,7 @@ void P_PlayerThink (player_t *player)
 		player->fixedcolormap = 0;
 
 	// Handle air supply
-	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet])
+	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet] || player->cheats & CF_GODMODE)
 	{
 		player->air_finished = level.time + 10*TICRATE;
 	}
