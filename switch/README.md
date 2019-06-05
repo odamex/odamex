@@ -21,6 +21,7 @@ sed 's|\$(objects)/play.*mus\$(EXE)||' -i Makefile.in
     --disable-music-cmd \
     --enable-music-ogg-tremor \
 	--enable-music-mod-modplug \
+	--enable-music-midi \
 	--enable-music-midi-timidity
 	
 make 
