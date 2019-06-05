@@ -59,6 +59,7 @@
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
+EXTERN_CVAR (vid_widescreen)
 
 
 // ****************************************************************************
@@ -1036,6 +1037,10 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
+
+	const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
+	if (!vid_widescreen && (3 * native_mode->getWidth() > 4 * native_mode->getHeight()))
+		SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
 
 	// Ensure the game window is clear, even if using -noblit
 	SDL_SetRenderDrawColor(mSDLRenderer, 0, 0, 0, 255);
