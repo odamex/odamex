@@ -56,6 +56,7 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_heldflag)
+EXTERN_CVAR (hud_heldflag_flash)
 
 //
 // CTF_Connect
@@ -278,18 +279,19 @@ static void TintScreen(argb_t color)
 	// NOTE: status bar is not currently drawn when spectating
 	if (R_StatusBarVisible())
 	{
-			screen->Clear (0, 0,
-						   I_GetSurfaceWidth() / 100, I_GetSurfaceHeight() - ST_HEIGHT,
-						   color);
+		if (hud_heldflag == 1) {
+			screen->Clear(0, 0,
+				I_GetSurfaceWidth() / 100, I_GetSurfaceHeight() - ST_HEIGHT,
+				color);
 
-			screen->Clear (0, 0,
-						   I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
-						   color);
+			screen->Clear(0, 0,
+				I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
+				color);
 
-			screen->Clear (I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
-						   I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
-						   color);
-
+			screen->Clear(I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
+				I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
+				color);
+		}
 			screen->Clear (0, (I_GetSurfaceHeight() - ST_HEIGHT) - (I_GetSurfaceHeight() / 100),
 						   I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
 						   color);
@@ -298,18 +300,21 @@ static void TintScreen(argb_t color)
 	// if there's no status bar, draw border around the full screen
 	else
 	{
-			screen->Clear (0, 0,
-						   I_GetSurfaceWidth() / 100, I_GetSurfaceHeight(),
-						   color);
+		if (hud_heldflag == 1)
+		{
+			screen->Clear(0, 0,
+				I_GetSurfaceWidth() / 100, I_GetSurfaceHeight(),
+				color);
 
-			screen->Clear (0, 0,
-						   I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
-						   color);
+			screen->Clear(0, 0,
+				I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
+				color);
 
-			screen->Clear (I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
-						   I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-						   color);
+			screen->Clear(I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
+				I_GetSurfaceWidth(), I_GetSurfaceHeight(),
+				color);
 
+		}
 			screen->Clear (0, (I_GetSurfaceHeight()) - (I_GetSurfaceHeight() / 100),
 						   I_GetSurfaceWidth(), I_GetSurfaceHeight(),
 						   color);
@@ -356,7 +361,7 @@ void CTF_RunTics (void)
 //
 void CTF_DrawHud (void)
 {
-    int tintglowtype;
+    int tintglowtype = 0;
     bool hasflag = false, hasflags[NUMFLAGS];
 
 	if(sv_gametype != GM_CTF)
@@ -378,16 +383,19 @@ void CTF_DrawHud (void)
 
 	if (hasflag)
 	{
-		if (tintglow < 15)
-			tintglowtype = tintglow;
-		else if (tintglow < 30)
-			tintglowtype = 30 - tintglow;
-		else if (tintglow > 45 && tintglow < 60)
-			tintglowtype = tintglow - 45;
-		else if (tintglow >= 60 && tintglow < 75)
-			tintglowtype = 75 - tintglow;
-		else
-			tintglowtype = 0;
+		if (hud_heldflag_flash == 1)
+		{
+			if (tintglow < 15)
+				tintglowtype = tintglow;
+			else if (tintglow < 30)
+				tintglowtype = 30 - tintglow;
+			else if (tintglow > 45 && tintglow < 60)
+				tintglowtype = tintglow - 45;
+			else if (tintglow >= 60 && tintglow < 75)
+				tintglowtype = 75 - tintglow;
+			else
+				tintglowtype = 0;
+		}
 
 		argb_t tintColor = 0;
 		if (hasflags[0] && hasflags[1])

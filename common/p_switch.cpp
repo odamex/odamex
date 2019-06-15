@@ -38,6 +38,7 @@
 #include "gi.h"
 
 EXTERN_CVAR(co_zdoomsound)
+extern int numtextures;
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
@@ -144,6 +145,64 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 	new DActiveButton (line, w, texture, time, x, y);
 }
 
+short* P_GetButtonTexturePtr(line_t* line, short*& altTexture, DActiveButton::EWhere& where)
+{
+	int texTop = sides[line->sidenum[0]].toptexture;
+	int texMid = sides[line->sidenum[0]].midtexture;
+	int texBot = sides[line->sidenum[0]].bottomtexture;
+	where = (DActiveButton::EWhere)0;
+	altTexture = NULL;
+
+	for (int i = 0; i < numswitches * 2; i++)
+	{
+		if (switchlist[i] == texTop)
+		{
+			altTexture = (short*)&switchlist[i ^ 1];
+			where = DActiveButton::BUTTON_Top;
+			return &sides[line->sidenum[0]].toptexture;
+		}
+		else if (switchlist[i] == texBot)
+		{
+			altTexture = (short*)&switchlist[i ^ 1];
+			where = DActiveButton::BUTTON_Bottom;
+			return &sides[line->sidenum[0]].bottomtexture;
+		}
+		else if (switchlist[i] == texMid)
+		{
+			altTexture = (short*)&switchlist[i ^ 1];
+			where = DActiveButton::BUTTON_Middle;
+			return &sides[line->sidenum[0]].midtexture;
+		}
+	}
+
+	return NULL;
+}
+
+short P_GetButtonTexture(line_t* line)
+{
+	DActiveButton::EWhere twhere;
+	short* alt;
+	short* texture = P_GetButtonTexturePtr(line, alt, twhere);
+
+	if (texture)
+		return *texture;
+
+	return 0;
+}
+
+void P_SetButtonTexture(line_t* line, short texture)
+{
+	if (texture > 0 && texture < numtextures)
+	{
+		DActiveButton::EWhere twhere;
+		short* alt;
+		short* findTexture = P_GetButtonTexturePtr(line, alt, twhere);
+
+		if (findTexture)
+			*findTexture = texture;
+	}
+}
+
 // denis - query button
 bool P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time)
 {
@@ -187,23 +246,12 @@ bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
 // Function that changes wall texture.
 // Tell it if switch is ok to use again (1=yes, it's a button).
 //
-void
-P_ChangeSwitchTexture
-( line_t*	line,
-  int 		useAgain )
+void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 {
-	int texTop;
-	int texMid;
-	int texBot;
-	int i;
 	const char *sound;
 
 	if (!useAgain)
 		line->special = 0;
-
-	texTop = sides[line->sidenum[0]].toptexture;
-	texMid = sides[line->sidenum[0]].midtexture;
-	texBot = sides[line->sidenum[0]].bottomtexture;
 
 	// EXIT SWITCH?
 	if (line->special == Exit_Normal ||
@@ -214,54 +262,41 @@ P_ChangeSwitchTexture
 	else
 		sound = "switches/normbutn";
 
-	for (i = 0; i < numswitches*2; i++)
+	DActiveButton::EWhere twhere;
+	short* altTexture;
+	short* texture = P_GetButtonTexturePtr(line, altTexture, twhere);
+
+	if (texture)
 	{
-		short *texture = NULL;
-		DActiveButton::EWhere where = (DActiveButton::EWhere)0;
+		// [RH] The original code played the sound at buttonlist->soundorg,
+		//		which wasn't necessarily anywhere near the switch if
+		//		it was facing a big sector.
+		fixed_t x = line->v1->x + (line->dx >> 1);
+		fixed_t y = line->v1->y + (line->dy >> 1);
 
-		if (switchlist[i] == texTop)
+		if (playsound)
 		{
-			texture = &sides[line->sidenum[0]].toptexture;
-			where = DActiveButton::BUTTON_Top;
-		}
-		else if (switchlist[i] == texBot)
-		{
-			texture = &sides[line->sidenum[0]].bottomtexture;
-			where = DActiveButton::BUTTON_Bottom;
-		}
-		else if (switchlist[i] == texMid)
-		{
-			texture = &sides[line->sidenum[0]].midtexture;
-			where = DActiveButton::BUTTON_Middle;
-		}
-
-		if (texture)
-		{
-			// [RH] The original code played the sound at buttonlist->soundorg,
-			//		which wasn't necessarily anywhere near the switch if
-			//		it was facing a big sector.
-			fixed_t x = line->v1->x + (line->dx >> 1);
-			fixed_t y = line->v1->y + (line->dy >> 1);
-
 			if (co_zdoomsound)
 			{
 				// [SL] 2011-05-27 - Play at a normal volume in the center
 				// of the switch's linedef
-				S_Sound (x, y, CHAN_BODY, sound, 1, ATTN_NORM);
+				S_Sound(x, y, CHAN_BODY, sound, 1, ATTN_NORM);
 			}
 			else
 			{
 				// [SL] 2011-05-16 - Reverted the code to play the sound at full
 				// volume anywhere on the map to emulate vanilla doom behavior
-				S_Sound (CHAN_BODY, sound, 1, ATTN_NONE);
+				S_Sound(CHAN_BODY, sound, 1, ATTN_NONE);
 			}
-
-			*texture = (short)switchlist[i^1];
-			if (useAgain)
-				P_StartButton (line, where, switchlist[i], BUTTONTIME, x, y);
-			break;
 		}
+
+		if (useAgain)
+			P_StartButton(line, twhere, *texture, BUTTONTIME, x, y);
+		*texture = *altTexture;
+		line->switchactive = true;
 	}
+
+	line->wastoggled = true;
 }
 
 IMPLEMENT_SERIAL (DActiveButton, DThinker)
@@ -337,6 +372,7 @@ void DActiveButton::RunThink ()
 			S_Sound (0, 0, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
 		}
 		Destroy ();
+		m_Line->switchactive = false;
 	}
 }
 

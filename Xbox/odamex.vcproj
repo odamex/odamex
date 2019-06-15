@@ -23,7 +23,7 @@
 				OmitFramePointers="FALSE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
-				PreprocessorDefinitions="_DEBUG;WIN32;_XBOX;NOASM;GCONSOLE;__MMX__"
+				PreprocessorDefinitions="CLIENT_APP;_DEBUG;WIN32;_XBOX;NOASM;GCONSOLE;__MMX__"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="3"
@@ -38,7 +38,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libSDLxd.lib libSmpegXd.lib xapilibd.lib d3d8d.lib d3dx8d.lib xgraphicsd.lib dsoundd.lib dmusicd.lib xactengd.lib xsndtrkd.lib xvoiced.lib xonlined.lib xboxkrnl.lib xbdm.lib"
+				AdditionalDependencies="libSDLxd.lib libSmpegXd.lib libpngX.lib xapilibd.lib d3d8d.lib d3dx8d.lib xgraphicsd.lib dsoundd.lib dmusicd.lib xactengd.lib xsndtrkd.lib xvoiced.lib xonlined.lib xboxkrnl.lib xbdm.lib"
 				OutputFile="$(OutDir)/$(ProjectName).exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -195,7 +195,7 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
-				PreprocessorDefinitions="NDEBUG;WIN32;_XBOX;NOASM;GCONSOLE;__MMX__"
+				PreprocessorDefinitions="CLIENT_APP;USE_PNG;NDEBUG;WIN32;_XBOX;NOASM;GCONSOLE;__MMX__"
 				StringPooling="TRUE"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="TRUE"
@@ -212,7 +212,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libSDLx.lib  libSmpegX.lib xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib dmusic.lib xacteng.lib xsndtrk.lib xvoice.lib xonline.lib xboxkrnl.lib"
+				AdditionalDependencies="libSDLx.lib  libSmpegX.lib libpngX.lib xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib dmusic.lib xacteng.lib xsndtrk.lib xvoice.lib xonline.lib xboxkrnl.lib"
 				OutputFile="$(OutDir)/$(ProjectName).exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
@@ -752,6 +752,12 @@
 				RelativePath="..\common\huffman.h">
 			</File>
 			<File
+				RelativePath="..\common\i_crash.cpp">
+			</File>
+			<File
+				RelativePath="..\common\i_crash.h">
+			</File>
+			<File
 				RelativePath="..\common\i_net.cpp">
 			</File>
 			<File
@@ -1125,12 +1131,6 @@
 				RelativePath="..\client\sdl\afxres.h">
 			</File>
 			<File
-				RelativePath="..\client\sdl\i_crash.cpp">
-			</File>
-			<File
-				RelativePath="..\client\sdl\i_crash.h">
-			</File>
-			<File
 				RelativePath="..\client\sdl\i_input.cpp">
 			</File>
 			<File
@@ -1186,12 +1186,6 @@
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_video.h">
-			</File>
-			<File
-				RelativePath="..\client\sdl\i_win32input.cpp">
-			</File>
-			<File
-				RelativePath="..\client\sdl\i_win32input.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\mus2midi.cpp">

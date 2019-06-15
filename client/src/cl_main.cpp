@@ -68,6 +68,7 @@
 #include "g_warmup.h"
 #include "v_text.h"
 #include "hu_stuff.h"
+#include "p_acs.h"
 
 #include <string>
 #include <vector>
@@ -152,7 +153,6 @@ EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
@@ -161,6 +161,8 @@ EXTERN_CVAR (cl_forcedownload)
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static argb_t enemycolor, teamcolor;
+
+void P_PlayerLeavesGame(player_s* player);
 
 //
 // CL_ShadePlayerColor
@@ -425,6 +427,9 @@ void CL_QuitNetGame(void)
 	if (demorecording && democlassic)
 		G_CleanupDemo();
 
+	democlassic = false;
+	demoplayback = false;
+
 	// Reset the palette to default
 	V_ResetPalette();
 
@@ -531,6 +536,12 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	if (players.empty())
 		return;
 
+	if (gamestate == GS_INTERMISSION)
+	{
+		displayplayer_id = consoleplayer_id;
+		return;
+	}
+
 	if (!validplayer(displayplayer()))
 	{
 		CL_CheckDisplayPlayer();
@@ -601,6 +612,8 @@ void CL_DisconnectClient(void)
 		{
 			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+			if (!it->spectator)
+				P_PlayerLeavesGame(&(*it));
 			players.erase(it);
 			break;
 		}
@@ -742,6 +755,7 @@ BEGIN_COMMAND (connect)
 	}
 
 	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
+
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
@@ -1342,7 +1356,6 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
@@ -2009,7 +2022,7 @@ void CL_UpdatePlayer()
 	p->snapshots.addSnapshot(newsnap);
 }
 
-BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
 void CL_UpdatePlayerState(void)
 {
@@ -2374,6 +2387,14 @@ void CL_SpawnPlayer()
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
+	}
+
+	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	{
+		if (p->deathcount)
+			level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		else
+			level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
 	}
 
 	int snaptime = last_svgametic;
@@ -2777,6 +2798,7 @@ void CL_UpdateSector(void)
 
 	unsigned short fp = MSG_ReadShort();
 	unsigned short cp = MSG_ReadShort();
+	short special = MSG_ReadShort();
 
 	if (!sectors || sectornum >= numsectors)
 		return;
@@ -2794,6 +2816,7 @@ void CL_UpdateSector(void)
 		cp = numflats;
 
 	sector->ceilingpic = cp;
+	sector->special = special;
 	sector->moveable = true;
 
 	P_ChangeSector(sector, false);
@@ -2838,7 +2861,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorSpecial(MSG_ReadShort());
 		snap.setFloorTexture(MSG_ReadShort());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
 		snap.setResetCounter(MSG_ReadLong());
 		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
 		snap.setDelay(MSG_ReadLong());
@@ -2860,7 +2883,7 @@ void CL_UpdateMovingSector(void)
 	{
 		// Platforms/Lifts
 		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
 		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
 		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
 		snap.setFloorWait(MSG_ReadLong());
@@ -2881,9 +2904,9 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingType(MSG_ReadByte());
 		snap.setCeilingLow(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCrusherSpeed1(MSG_ReadShort() << FRACBITS);
-		snap.setCrusherSpeed2(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
+		snap.setCrusherSpeed1(MSG_ReadLong());
+		snap.setCrusherSpeed2(MSG_ReadLong());
 		snap.setCeilingCrush(MSG_ReadBool());
 		snap.setSilent(MSG_ReadBool());
 		snap.setCeilingDirection(char(MSG_ReadByte()));
@@ -2899,7 +2922,7 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingMoverType(SEC_DOOR);
 		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setCeilingWait(MSG_ReadLong());
 		snap.setCeilingCounter(MSG_ReadLong());
 		snap.setCeilingStatus(MSG_ReadByte());
@@ -2926,7 +2949,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorDirection(snap.getCeilingDirection());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setFloorSpeed(snap.getCeilingSpeed());
 	}
 
@@ -2939,8 +2962,8 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorType(snap.getCeilingType());
 		snap.setCeilingStatus(MSG_ReadByte());
 		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingCrush(MSG_ReadBool());
@@ -3181,27 +3204,29 @@ void CL_MobjTranslation()
 		mo->translation = translationref_t(translationtables + 256 * table);
 }
 
-
+void P_SetButtonTexture(line_t* line, short texture);
 //
 // CL_Switch
 // denis - switch state and timing
-//
+// Note: this will also be called for doors
 void CL_Switch()
 {
 	unsigned l = MSG_ReadLong();
-	byte wastoggled = MSG_ReadByte();
-	byte state = MSG_ReadByte();
+	byte switchactive = MSG_ReadByte();
+	byte special = MSG_ReadByte();
+	byte state = MSG_ReadByte(); //DActiveButton::EWhere
+	short texture = MSG_ReadShort();
 	unsigned time = MSG_ReadLong();
 
 	if (!lines || l >= (unsigned)numlines || state >= 3)
 		return;
 
-	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
-		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
+	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
+		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
-		lines[l].special = 0;
+	if (texture)
+		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	lines[l].special = special;
 }
 
 void CL_ActivateLine(void)
@@ -3368,6 +3393,8 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 }
 
+void P_ResetSwitch(line_t* line);
+
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -3379,6 +3406,22 @@ void CL_ResetMap()
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
 			mo->Destroy();
+		}
+	}
+
+	//destroy all moving sector effects and sounds
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].floordata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].floordata->Destroy();
+		}
+
+		if (sectors[i].ceilingdata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].ceilingdata->Destroy();
 		}
 	}
 
@@ -3423,10 +3466,13 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
 	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
 
 	// [tm512 2014/04/11] Do as the server does when unspectating a player.
 	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
@@ -3447,9 +3493,11 @@ void CL_Spectate()
 
 		if (player.spectator)
 		{
-			player.playerstate = PST_LIVE; // resurrect dead spectators
-			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-			player.deltaviewheight = 1000 << FRACBITS;
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
 		{
