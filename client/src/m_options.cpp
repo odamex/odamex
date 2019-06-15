@@ -681,7 +681,7 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Netdemo filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ bricktext,	"Autorecord filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
