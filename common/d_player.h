@@ -245,6 +245,7 @@ public:
     byte		prefcolor[4];			// Nes - Preferred color. Server only.
 
 	argb_t		blend_color;			// blend color for the sector the player is in
+	bool		doreborn;
 
 	// For flood protection
 	struct LastMessage_s

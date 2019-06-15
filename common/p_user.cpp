@@ -984,6 +984,7 @@ player_s::player_s()
 	blend_color = argb_t(0, 0, 0, 0);
 
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
+	doreborn = false;
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1093,6 +1094,8 @@ player_s &player_s::operator =(const player_s &other)
 	snapshots = other.snapshots;
 
 	to_spawn = other.to_spawn;
+
+	doreborn = other.doreborn;
 
 	return *this;
 }

@@ -171,6 +171,7 @@ void G_DoNewGame (void)
 
 	players.clear();
 	players.push_back(player_t());
+	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
 	G_InitNew (d_mapname);
@@ -509,7 +510,11 @@ void G_DoLoadLevel (int position)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame())
+		{
+			if (it->playerstate == PST_REBORN)
+				it->doreborn = true;
 			it->playerstate = PST_ENTER;
+		}
 
 		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
