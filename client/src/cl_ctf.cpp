@@ -361,7 +361,7 @@ void CTF_RunTics (void)
 //
 void CTF_DrawHud (void)
 {
-    int tintglowtype;
+    int tintglowtype = 0;
     bool hasflag = false, hasflags[NUMFLAGS];
 
 	if(sv_gametype != GM_CTF)
@@ -395,10 +395,6 @@ void CTF_DrawHud (void)
 				tintglowtype = 75 - tintglow;
 			else
 				tintglowtype = 0;
-		}
-		else
-		{
-			tintglowtype = 0;
 		}
 
 		argb_t tintColor = 0;
