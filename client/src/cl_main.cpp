@@ -3441,6 +3441,7 @@ void CL_Spectate()
 			player.playerstate = PST_LIVE; // resurrect dead spectators
 			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 			player.deltaviewheight = 1000 << FRACBITS;
+			movingsectors.clear(); //clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
 		{
