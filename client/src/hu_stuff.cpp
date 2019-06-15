@@ -1037,6 +1037,10 @@ void Scoreboard(player_t *player) {
 	byte extra_spec_rows = 0;
 	byte extra_player_rows = 0;
 
+	// Reset playerID to self if ever happening to spy.
+	if (gamestate == GS_INTERMISSION)
+		displayplayer_id = consoleplayer_id;
+
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 		height = 99;
 
