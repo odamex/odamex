@@ -20,8 +20,6 @@
 //	SV_RPROTO
 //
 //-----------------------------------------------------------------------------
-
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -32,9 +30,17 @@
 #include "huffman.h"
 #include "i_net.h"
 
+#ifdef SIMULATE_LATENCY
+#include <thread>
+#include <chrono>
+#endif
+
 QWORD I_MSTime (void);
 
 EXTERN_CVAR (log_packetdebug)
+#ifdef SIMULATE_LATENCY
+EXTERN_CVAR (sv_latency)
+#endif
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
@@ -86,6 +92,55 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 	DPrintf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
 
 }
+
+#ifdef SIMULATE_LATENCY
+struct DelaySend
+{
+public:
+	DelaySend(buf_t& data, player_t* pl)
+	{
+		m_data = data;
+		m_pl = pl;
+		m_tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(sv_latency);
+	}
+	std::chrono::time_point<std::chrono::steady_clock> m_tp;
+	buf_t m_data;
+	player_t* m_pl;
+};
+
+std::queue<DelaySend> m_delayQueue;
+bool m_delayThreadCreated = false;
+void SV_DelayLoop()
+{
+	for (;;)
+	{
+		while (m_delayQueue.size())
+		{
+			int sendgametic = gametic;
+			auto item = &m_delayQueue.front();
+
+			while (std::chrono::steady_clock::now() < item->m_tp)
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+			NET_SendPacket(item->m_data, item->m_pl->client.address);
+			m_delayQueue.pop();
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+}
+
+void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
+{
+	if (!m_delayThreadCreated)
+	{
+		std::thread tr(SV_DelayLoop);
+		tr.detach();
+		m_delayThreadCreated = true;
+	}
+	m_delayQueue.push(DelaySend(packet, &pl));
+}
+#endif
 
 //
 // SV_SendPacket
@@ -168,8 +223,12 @@ bool SV_SendPacket(player_t &pl)
 			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
 	}
 
-	NET_SendPacket(sendd, cl->address);
+#ifdef SIMULATE_LATENCY
+	SV_SendPacketDelayed(sendd, pl);
+#else
 
+	NET_SendPacket(sendd, cl->address);
+#endif
 	return true;
 }
 

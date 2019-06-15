@@ -320,9 +320,8 @@ struct line_s
 							//		note that these are shorts in order to support
 							//		the tag parameter from DOOM.
 	int			firstid, nextid;
-
-	// denis - has this switch ever been pressed?
 	bool wastoggled;
+	bool switchactive;
 };
 typedef struct line_s line_t;
 

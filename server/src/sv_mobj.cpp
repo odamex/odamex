@@ -78,6 +78,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	if (!player.ingame())
 		return;
 
+	byte playerstate = player.playerstate; //save playerstate to check enter/respawn script execution later...
+
 	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
 		G_PlayerReborn(player);
 
@@ -142,11 +144,11 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		P_TeleportMove(mobj, mobj->x, mobj->y, mobj->z, true);
 
 		// [BC] Do script stuff
-		if (level.behavior)
+		if (level.behavior && !player.spectator)
 		{
-			if (player.playerstate == PST_ENTER)
+			if (playerstate == PST_ENTER)
 				level.behavior->StartTypedScripts(SCRIPT_Enter, player.mo);
-			else if (player.playerstate == PST_REBORN)
+			else if (playerstate == PST_REBORN)
 				level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 		}
 

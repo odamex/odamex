@@ -177,7 +177,7 @@ void G_Ticker (void)
 	case GS_INTERMISSION:
 	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
-		if (!mapchange)
+		if (!mapchange || level.flags & LEVEL_NOINTERMISSION)
         {
 			G_ChangeMap ();
             //intcd_oldtime = 0;

@@ -976,6 +976,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_Line				= mFloorLine;
 		floor->m_Height				= mFloorOffset;
 		floor->m_Change				= mFloorChange;
+		floor->m_Texture			= mFloorTexture;
 	}
 		
 	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)
