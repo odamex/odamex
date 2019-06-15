@@ -34,6 +34,7 @@
 #include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"
+#include "g_warmup.h"
 #include "gstrings.h"
 #include "gi.h"
 #include "hu_stuff.h"
@@ -171,7 +172,10 @@ void G_DoNewGame (void)
 
 	players.clear();
 	players.push_back(player_t());
+	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
+
+	warmup.set_client_status(Warmup::DISABLED);		// Ch0wW: disable warmup
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
@@ -509,7 +513,11 @@ void G_DoLoadLevel (int position)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame())
+		{
+			if (it->playerstate == PST_REBORN)
+				it->doreborn = true;
 			it->playerstate = PST_ENTER;
+		}
 
 		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
 		//      make sure they're gone.

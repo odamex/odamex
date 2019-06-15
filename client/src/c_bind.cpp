@@ -69,15 +69,17 @@ char DefBindings[] =
 	"bind - sizedown; "
 	"bind = sizeup; "
 	"bind leftctrl +attack; "
-	"bind leftalt +strafe; "
+	"bind leftalt +strafe; "	
 	"bind leftshift +speed; "
+	"bind rightshift +speed; "
 	"bind space +use; "
+	"bind e +use; "
 	"bind rightarrow +right; "
 	"bind leftarrow +left; "
-	"bind uparrow +forward; "
-	"bind downarrow +back; "
-	"bind , +moveleft; "
-	"bind . +moveright; "
+	"bind w +forward; "
+	"bind s +back; "
+	"bind a +moveleft; "
+	"bind d +moveright; "
 #ifdef _XBOX // Alternative defaults for Xbox
 	"bind hat1right messagemode2; "
 	"bind hat1left spynext; "
@@ -103,8 +105,9 @@ char DefBindings[] =
 	"bind joy2 +strafe; "
 	"bind joy3 +speed; "
 	"bind joy4 +use; "
+	"bind mwheelup  weapprev; "
+	"bind mwheeldown weapnext; "
 #endif
-	"bind capslock \"toggle cl_run\"; "	// <- This too
 	"bind f1 menu_help; "
 	"bind f2 menu_save; "
 	"bind f3 menu_load; "
@@ -119,6 +122,7 @@ char DefBindings[] =
 	"bind pause pause; "
 	"bind sysrq screenshot; "			// <- Also known as the Print Screen key
 	"bind t messagemode; "
+	"bind enter messagemode; "
 	"bind y messagemode2; "
 	"bind \\\\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "

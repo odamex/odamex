@@ -108,6 +108,7 @@ EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_heldflag)
+EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
@@ -213,6 +214,13 @@ value_t OnOffAuto[3] = {
 	{ 0.0, "Off" },
 	{ 1.0, "On" },
 	{ 2.0, "Auto" }
+};
+
+static value_t FlagHelds[] =
+{
+	{ 0.0, "Off" },
+	{ 1.0, "Complete" },
+	{ 2.0, "Simple" }
 };
 
 static value_t DoomOrOdamex[2] =
@@ -751,6 +759,9 @@ EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
+EXTERN_CVAR (hud_show_scoreboard_ondeath)
+EXTERN_CVAR (hud_fullhudtype)
+EXTERN_CVAR (hud_demobar)
 
 static value_t Crosshairs[] =
 {
@@ -763,6 +774,11 @@ static value_t Crosshairs[] =
 	{ 6.0, "Box" },
 	{ 7.0, "Angle" },
 	{ 8.0, "Big Thing" }
+};
+
+static value_t HUDStyles[] = {
+	{ 0.0, "ZDoom" },
+	{ 1.0, "Odamex" },
 };
 
 static value_t Wipes[] = {
@@ -813,11 +829,13 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete, "Display Time Left",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
-	{ discrete, "Held Flag Border",         {&hud_heldflag},        {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
+	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
+	{ discrete, "Held Flag Flashes",        {&hud_heldflag_flash}, {2.0}, {0.0},   {0.0},   {OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -841,6 +859,8 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },

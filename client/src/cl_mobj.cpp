@@ -72,8 +72,11 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 
 	byte playerstate = player.playerstate;
 
-	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
+	if (player.doreborn)
+	{
 		G_PlayerReborn(player);
+		player.doreborn = false;
+	}
 
 	AActor* mobj;
 //	if (player.deadspectator && player.mo)
