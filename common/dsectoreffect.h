@@ -47,6 +47,7 @@ class DSectorEffect : public DThinker
 public:
 	DSectorEffect (sector_t *sector);
 	~DSectorEffect ();
+	virtual DSectorEffect* Clone(sector_t *sector) const;
 	virtual void Destroy();
 protected:
 	DSectorEffect ();

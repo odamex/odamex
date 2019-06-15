@@ -55,8 +55,16 @@ static bool sound_initialized = false;
 static bool channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
+EXTERN_CVAR (snd_sfxvolume)
+EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_crossover)
-EXTERN_CVAR (snd_samplerate)
+
+CVAR_FUNC_IMPL(snd_samplerate)
+{
+	S_Stop();
+	S_Init(snd_sfxvolume, snd_musicvolume);
+}
+
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)

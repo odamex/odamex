@@ -63,6 +63,7 @@ static int		lu_palette;
 
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
+EXTERN_CVAR(screenblocks)
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
@@ -478,6 +479,7 @@ void ST_ForceRefresh()
 
 CVAR_FUNC_IMPL (st_scale)
 {
+	R_SetViewSize((int)screenblocks);
 	ST_ForceRefresh();
 }
 

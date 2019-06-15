@@ -92,7 +92,7 @@ enum flag_score_t
 //      do more work on CTF and team-related things later.
 void CL_CTFEvent(void);
 void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
-bool SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
+ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, flag_t f);
 void CTF_Connect(player_t &player);
 

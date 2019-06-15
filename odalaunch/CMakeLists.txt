@@ -43,7 +43,7 @@ if(wxWidgets_FOUND)
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
   if(WIN32)
-    target_link_libraries(odamex ws2_32)
+    target_link_libraries(odalaunch ws2_32)
   endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)

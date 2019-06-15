@@ -263,7 +263,7 @@
                         <property name="bitmap"></property>
                         <property name="checked">0</property>
                         <property name="enabled">1</property>
-                        <property name="help">Chat with other players on IRC</property>
+                        <property name="help">Chat with other players on Discord</property>
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Open Chat</property>
@@ -668,8 +668,8 @@
                     <property name="label">tool</property>
                     <property name="name">Id_MnuItmOpenChat</property>
                     <property name="permission">protected</property>
-                    <property name="statusbar">Chat with other players on IRC</property>
-                    <property name="tooltip">Chat with other players on IRC</property>
+                    <property name="statusbar">Chat with other players on Discord</property>
+                    <property name="tooltip">Chat with other players on Discord</property>
                     <event name="OnAuiToolBarBeginDrag"></event>
                     <event name="OnAuiToolBarMiddleClick"></event>
                     <event name="OnAuiToolBarOverflowClick"></event>
@@ -10315,7 +10315,7 @@
                                                     <property name="gripper">0</property>
                                                     <property name="hidden">0</property>
                                                     <property name="id">wxID_ANY</property>
-                                                    <property name="label">Copyright (C) 2006-2016 The Odamex Team</property>
+                                                    <property name="label">Copyright (C) 2006-2019 The Odamex Team</property>
                                                     <property name="max_size"></property>
                                                     <property name="maximize_button">0</property>
                                                     <property name="maximum_size"></property>
