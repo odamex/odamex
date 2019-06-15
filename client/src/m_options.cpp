@@ -170,11 +170,11 @@ EXTERN_CVAR (cl_serverdownload)
 // Demo Options
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_autorecord)
-EXTERN_CVAR(cl_autorecord_filter_coop)
-EXTERN_CVAR(cl_autorecord_filter_deathmatch)
-EXTERN_CVAR(cl_autorecord_filter_duel)
-EXTERN_CVAR(cl_autorecord_filter_teamdm)
-EXTERN_CVAR(cl_autorecord_filter_ctf)
+EXTERN_CVAR(cl_autorecord_coop)
+EXTERN_CVAR(cl_autorecord_deathmatch)
+EXTERN_CVAR(cl_autorecord_duel)
+EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_autorecord_ctf)
 
 
 // Weapon Preferences
@@ -227,8 +227,8 @@ value_t OnOffAuto[3] = {
 };
 
 value_t DemoRestrictions[2] = {
-	{ 0.0, "Allow" },
-	{ 1.0, "Restrict" }
+	{ 0.0, "Restrict" },
+	{ 1.0, "Allow" }
 };
 
 static value_t DoomOrOdamex[2] =
@@ -676,11 +676,11 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,	"Netdemo filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Cooperation",					{&cl_autorecord_filter_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Deathmatch",					{&cl_autorecord_filter_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Duel",							{&cl_autorecord_filter_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Team Deathmatch",				{&cl_autorecord_filter_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Capture the Flag",				{&cl_autorecord_filter_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 };
 
 menu_t NetworkMenu = {

@@ -276,11 +276,11 @@ EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
-EXTERN_CVAR (cl_autorecord_filter_coop)
-EXTERN_CVAR (cl_autorecord_filter_deathmatch)
-EXTERN_CVAR (cl_autorecord_filter_duel)
-EXTERN_CVAR (cl_autorecord_filter_teamdm)
-EXTERN_CVAR (cl_autorecord_filter_ctf)
+EXTERN_CVAR (cl_autorecord_coop)
+EXTERN_CVAR (cl_autorecord_deathmatch)
+EXTERN_CVAR (cl_autorecord_duel)
+EXTERN_CVAR (cl_autorecord_teamdm)
+EXTERN_CVAR (cl_autorecord_ctf)
 EXTERN_CVAR (cl_splitnetdemos)
 
 void CL_PlayerTimes (void);
@@ -3335,11 +3335,11 @@ void CL_LoadMap(void)
 	{
 		std::string filename;
 
-		bool bCanAutorecord = (sv_gametype == GM_COOP && !cl_autorecord_filter_coop) 
-		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && !cl_autorecord_filter_deathmatch)
-		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && !cl_autorecord_filter_duel)
-		|| (sv_gametype == GM_TEAMDM && !cl_autorecord_filter_teamdm)
-		|| (sv_gametype == GM_CTF && !cl_autorecord_filter_ctf);
+		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
+		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && cl_autorecord_deathmatch)
+		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && cl_autorecord_duel)
+		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
+		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
 
 		size_t param = Args.CheckParm("-netrecord");
 		if (param && Args.GetArg(param + 1))

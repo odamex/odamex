@@ -361,19 +361,19 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_autorecord_filter_coop, "0", "Filters cooperative netdemos from cl_autorecord CVAR.",
+CVAR(				cl_autorecord_coop, "1", "Allows cooperative netdemos from cl_autorecord CVAR.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_autorecord_filter_deathmatch, "0", "Filters deathmatch netdemos from cl_autorecord CVAR.",
+CVAR(				cl_autorecord_deathmatch, "1", "Allows deathmatch netdemos from cl_autorecord CVAR.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_autorecord_filter_duel, "0", "Filters duel netdemos from cl_autorecord CVAR.",
+CVAR(				cl_autorecord_duel, "1", "Allows duel netdemos from cl_autorecord CVAR.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_autorecord_filter_teamdm, "0", "Filters team deathmatch netdemos from cl_autorecord CVAR.",
+CVAR(				cl_autorecord_teamdm, "1", "Allows team deathmatch netdemos from cl_autorecord CVAR.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_autorecord_filter_ctf, "0", "Filters CTF netdemos from cl_autorecord CVAR.",
+CVAR(				cl_autorecord_ctf, "1", "Allows CTF netdemos from cl_autorecord CVAR.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 
