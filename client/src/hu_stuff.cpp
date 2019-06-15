@@ -76,7 +76,7 @@ EXTERN_CVAR(sv_timelimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(cl_netgraph)
 EXTERN_CVAR(hud_mousegraph)
-EXTERN_CVAR(hud_scoreboard_hide)
+EXTERN_CVAR(hud_show_scoreboard_ondeath)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(noisedebug)
@@ -522,10 +522,10 @@ void HU_Drawer()
 
 	if (multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
 	{
-		if (gamestate != GS_INTERMISSION)
+		if (gamestate != GS_INTERMISSION && 
+			(Actions[ACTION_SHOWSCORES]) 
+			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator) )
 		{
-			if (Actions[ACTION_SHOWSCORES]
-			|| (!hud_scoreboard_hide && displayplayer().health <= 0 && !displayplayer().spectator))
 			HU_DrawScores(&displayplayer());
 		}
 	}

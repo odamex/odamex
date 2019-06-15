@@ -471,7 +471,7 @@ CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
 CVAR(			hud_heldflag_flash, "1", "Enables the flashes around the flag border.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_scoreboard_hide, "1", "Hides the scoreboard on death.",
+CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.",
