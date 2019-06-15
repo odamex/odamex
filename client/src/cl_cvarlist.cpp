@@ -462,7 +462,16 @@ CVAR(			hud_timer, "1", "Show the HUD timer",
 CVAR_RANGE(		hud_transparency, "0.5", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(			hud_heldflag, "1", "Show the held flag border",
+CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR(			hud_heldflag_flash, "1", "Enables the flashes around the flag border.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
