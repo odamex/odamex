@@ -25,8 +25,8 @@
 #define __VERSION_H__
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "80"
-#define GAMEVER (0*256+80)
+#define CONFIGVERSIONSTR "81"
+#define GAMEVER (0*256+81)
 
 #define DOTVERSIONSTR "0.8.1"
 
