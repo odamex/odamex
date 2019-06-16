@@ -167,6 +167,16 @@ EXTERN_CVAR (cl_predictsectors)
 EXTERN_CVAR (cl_predictweapons)
 EXTERN_CVAR (cl_serverdownload)
 
+// Demo Options
+EXTERN_CVAR(cl_splitnetdemos)
+EXTERN_CVAR(cl_autorecord)
+EXTERN_CVAR(cl_autorecord_coop)
+EXTERN_CVAR(cl_autorecord_deathmatch)
+EXTERN_CVAR(cl_autorecord_duel)
+EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_autorecord_ctf)
+
+
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
@@ -214,6 +224,11 @@ value_t OnOffAuto[3] = {
 	{ 0.0, "Off" },
 	{ 1.0, "On" },
 	{ 2.0, "Auto" }
+};
+
+value_t DemoRestrictions[2] = {
+	{ 0.0, "Restrict" },
+	{ 1.0, "Allow" }
 };
 
 static value_t FlagHelds[] =
@@ -659,7 +674,19 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Predict sector actions",		{&cl_predictsectors},{3.0},		{0.0},		{0.0},		{PredictSectors} },
 	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
-	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} }
+	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
+
+	 { redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Autorecord filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 };
 
 menu_t NetworkMenu = {
@@ -668,7 +695,7 @@ menu_t NetworkMenu = {
 	STACKARRAY_LENGTH(NetworkItems),
 	177,
 	NetworkItems,
-	0,
+	1,
 	0,
 	NULL
 };
