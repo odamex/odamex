@@ -239,8 +239,10 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastturn_sensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
+
 
 int 			savegameslot;
 char			savedescription[32];
@@ -434,7 +436,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(sv_freelook || (consoleplayer().spectator && cl_mouselook))
+	if( joy_freelook && sv_freelook || (consoleplayer().spectator && cl_mouselook))
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -493,7 +495,12 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
 	else
-		cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+	{
+		if (Actions[ACTION_FASTTURN])
+			cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_fastturn_sensitivity / 10));
+		else
+			cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+	}
 
 	if (Actions[ACTION_MLOOK])
 	{

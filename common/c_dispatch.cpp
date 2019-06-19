@@ -65,6 +65,7 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x021fe, ACTION_MOVEUP,	  "moveup" },
 	{ 0x02315, ACTION_STRAFE,	  "strafe" },
 	{ 0x041c4, ACTION_FORWARD,	  "forward" },
+	{ 0x08126, ACTION_FASTTURN,   "fastturn"},
 	{ 0x08788, ACTION_LOOKDOWN,	  "lookdown" },
 	{ 0x088c4, ACTION_MOVELEFT,	  "moveleft" },
 	{ 0x088c8, ACTION_MOVEDOWN,	  "movedown" },
