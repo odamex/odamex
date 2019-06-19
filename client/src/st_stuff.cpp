@@ -544,17 +544,30 @@ BEGIN_COMMAND (god)
 		return;
 
 	cht.DoCheat(&consoleplayer(), CHT_GOD);
-	cht.SendCheatToServer(consoleplayer().cheats);
+	cht.SendCheatToServer(CHT_GOD);
 }
 END_COMMAND (god)
 
+BEGIN_COMMAND(mdk)
+{
+	if (!cht.AreCheatsEnabled())
+		return;
+
+	if (multiplayer && sv_gametype != GM_COOP)
+		return;
+
+	cht.DoCheat(&consoleplayer(), CHT_MASSACRE);
+	cht.SendCheatToServer(CHT_MASSACRE);
+}
+END_COMMAND(mdk)
+
 BEGIN_COMMAND (notarget)
 {
-	if (!cht.AreCheatsEnabled() || connected)
+	if (!cht.AreCheatsEnabled())
 		return;
 
 	cht.DoCheat(&consoleplayer(), CHT_NOTARGET);
-	cht.SendCheatToServer(consoleplayer().cheats);
+	cht.SendCheatToServer(CHT_NOTARGET);
 }
 END_COMMAND (notarget)
 
@@ -566,7 +579,7 @@ BEGIN_COMMAND (fly)
 	cht.DoCheat(&consoleplayer(), CHT_FLY);
 
 	if (!consoleplayer().spectator)
-		cht.SendCheatToServer(consoleplayer().cheats);
+		cht.SendCheatToServer(CHT_FLY);
 }
 END_COMMAND (fly)
 
@@ -576,7 +589,7 @@ BEGIN_COMMAND (noclip)
 		return;
 
 	cht.DoCheat(&consoleplayer(), CHT_NOCLIP);
-	cht.SendCheatToServer(consoleplayer().cheats);
+	cht.SendCheatToServer(CHT_NOCLIP);
 }
 END_COMMAND (noclip)
 

@@ -39,6 +39,8 @@ void C_DoCommand(const char *cmd);
 
 extern bool	automapactive;
 extern buf_t     net_buffer;
+#elif SERVER_APP
+#include "../server/src/sv_main.h"
 #endif
 extern bool simulated_connection;
 
@@ -108,13 +110,17 @@ bool CheatManager::AddKey(cheatseq_t *cheat, unsigned char key, bool *eat)
 }
 
 // Sets a cheat given to the player.
-void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
+void CheatManager::DoCheat (player_s *player, ECheatFlags cheat, bool silent)
 {
 	const char *msg = "";
-	char msgbuild[32];
+	char msgbuild[64];
+	bool bGlobalMSG = false;
 
 	switch (cheat) {
 		case CHT_IDDQD:
+			if (player->health <= 0 || !player || player->spectator)
+				return;
+
 			if (!(player->cheats & CF_GODMODE)) {
 				if (player->mo)
 					player->mo->health = deh.GodHealth;
@@ -122,16 +128,29 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 				player->health = deh.GodHealth;
 			}
 		case CHT_GOD:
+			if (player->health <= 0 || !player || player->spectator)
+				return;
+
 			player->cheats ^= CF_GODMODE;
 			msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON) : GStrings(STSTR_DQDOFF);
 			break;
 
 		case CHT_NOCLIP:
+			
+			if (player->health <= 0 || !player || player->spectator)
+				return;
+
 			player->cheats ^= CF_NOCLIP;
 			msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON) : GStrings(STSTR_NCOFF);
 			break;
 
 		case CHT_FLY:
+			if (player->health <= 0 || !player)
+				return;
+
+			if (player->spectator)
+				silent = true;
+
 			player->cheats ^= CF_FLY;
 			if (player->cheats & CF_FLY)
 				msg = "You feel lighter";
@@ -140,17 +159,22 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 			break;
 
 		case CHT_NOTARGET:
-			if (!multiplayer)
-			{
+			if (player->health <= 0 || !player || player->spectator)
+				return;
+
 				player->cheats ^= CF_NOTARGET;
 				if (player->cheats & CF_NOTARGET)
 					msg = "notarget ON";
 				else
 					msg = "notarget OFF";
-			}
+			
 			break;
 
 		case CHT_CHASECAM:
+
+			if (player->spectator)	
+				silent = true;	// Unlike players, spectators are allowed to do it so...
+
 			player->cheats ^= CF_CHASECAM;
 			if (player->cheats & CF_CHASECAM)
 				msg = "chasecam ON";
@@ -159,12 +183,18 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 			break;
 
 		case CHT_CHAINSAW:
+			if (player->spectator)
+				return;
+
 			player->weaponowned[wp_chainsaw] = true;
 			player->powers[pw_invulnerability] = true;
 			msg = GStrings(STSTR_CHOPPERS);
 			break;
 
 		case CHT_IDKFA:
+			if (player->spectator)
+				return;
+
 			GiveTo (player, "all");
 			player->armorpoints = deh.KFAArmor;
 			player->armortype = deh.KFAAC;
@@ -172,6 +202,9 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 			break;
 
 		case CHT_IDFA:
+			if (player->spectator)
+				return;
+
 			GiveTo (player, "backpack");
 			GiveTo (player, "weapons");
 			GiveTo (player, "ammo");
@@ -187,6 +220,9 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 		case CHT_BEHOLDA:
 		case CHT_BEHOLDL:
 			{
+				if (player->spectator)
+					return;
+
 				int i = cheat - CHT_BEHOLDV;
 
 				if (!player->powers[i])
@@ -206,6 +242,10 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 				//
 				// killough 2/7/98: cleaned up code and changed to use dprintf;
 				// fixed lost soul bug (LSs left behind when PEs are killed)
+
+				// This cheat should only be usable by admins.
+				if (multiplayer && !player->client.allow_rcon)	
+					return;
 
 				int killcount = 0;
 				AActor *actor;
@@ -230,15 +270,25 @@ void CheatManager::DoCheat (player_s *player, ECheatFlags cheat)
 				}
 				// killough 3/22/98: make more intelligent about plural
 				// Ty 03/27/98 - string(s) *not* externalized
-				sprintf (msgbuild, "%d Monster%s Killed", killcount, killcount==1 ? "" : "s");
+				sprintf (msgbuild, "NUCLEAR MASSACRE (%d Monster%s Killed)", killcount, killcount==1 ? "" : "s");
 				msg = msgbuild;
+
+				bGlobalMSG = true;	// Notify everyone, user included
 			}
 			break;
 	}
-	if (player == &consoleplayer())
+
+#ifdef CLIENT_APP
 		Printf (PRINT_HIGH, "%s\n", msg);
-	else
-		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
+#else
+	if (!silent) {
+		if (bGlobalMSG) {
+			SV_BroadcastPrintf(PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
+		} else {
+			SV_BroadcastButPlayerPrintf(PRINT_HIGH, player->id, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
+		}
+	}
+#endif
 }
 
 // ! UNUSED !
@@ -381,10 +431,8 @@ void CheatManager::SendCheatToServer(int cheats)
 // Sends the cheat to the server (to keep everyone in sync)
 void CheatManager::SendGiveCheatToServer(const char *item)
 {
-#ifdef CH0WW_WHEN_PULLREQUEST_IS_DONE
-	MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+	MSG_WriteMarker(&net_buffer, clc_cheatgive);
 	MSG_WriteString(&net_buffer, item);
-#endif
 }
 
 //-------------

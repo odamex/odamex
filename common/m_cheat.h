@@ -67,7 +67,7 @@ public:
 	int AutoMapCheat;
 
 	bool AddKey(cheatseq_t *cheat, unsigned char key, bool *eat);
-	void DoCheat(player_s *player, ECheatFlags cheat);
+	void DoCheat(player_s *player, ECheatFlags cheat, bool silent=false);
 	void GiveTo(player_s *player, const char *item);
 	bool AreCheatsEnabled(void);
 	void SuicidePlayer(player_s *player);

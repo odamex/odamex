@@ -53,6 +53,7 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
+#include "m_cheat.h"
 #include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
@@ -1610,6 +1611,13 @@ void SV_ClientFullUpdate(player_t &pl)
 		MSG_WriteMarker (&cl->reliablebuf, svc_readystate);
 		MSG_WriteByte (&cl->reliablebuf, it->id);
 		MSG_WriteByte (&cl->reliablebuf, it->ready);
+
+		if (it->cheats)	// Don't waste netbytes if the player hasn't any cheat enabled.
+		{
+			MSG_WriteMarker(&cl->reliablebuf, svc_playercheatstate);
+			MSG_WriteByte(&cl->reliablebuf, it->id);
+			MSG_WriteByte(&cl->reliablebuf, it->cheats);
+		}
 	}
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
@@ -2034,6 +2042,7 @@ void SV_ConnectClient()
 	player->fragcount = 0;
 	player->killcount = 0;
 	player->points = 0;
+	player->cheats = 0;
 
 	if (!step_mode)
 	{
@@ -2537,6 +2546,40 @@ void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
 		MSG_WriteString (&cl->reliablebuf, string);
+	}
+}
+
+//
+// SV_BroadcastPrintf
+// Sends text to all active clients.
+//
+void STACK_ARGS SV_BroadcastButPlayerPrintf(int level, int player_id, const char *fmt, ...)
+{
+	va_list argptr;
+	char string[2048];
+	client_t *cl;
+
+	va_start(argptr, fmt);
+	vsprintf(string, fmt, argptr);
+	va_end(argptr);
+
+	Printf(level, "%s", string);  // print to the console
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		cl = &(it->client);
+
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
+
+		client_t* badcl = &idplayer(player_id).client;
+
+		if (cl == badcl)
+			continue;
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_print);
+		MSG_WriteByte(&cl->reliablebuf, level);
+		MSG_WriteString(&cl->reliablebuf, string);
 	}
 }
 
@@ -3940,87 +3983,37 @@ void SV_Cheat(player_t &player)
 {
 	byte cheats = MSG_ReadByte();
 
-	if(!sv_allowcheats)
+	if (!cht.AreCheatsEnabled())
 		return;
 
-	player.cheats = cheats;
+	int oCheats = player.cheats;
+	cht.DoCheat(&player, (ECheatFlags)cheats);
+
+	// if cheats have been really modified, make everyone alert of it.
+	if (player.cheats != oCheats)
+	{
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t *cl = &(it->client);
+
+			MSG_WriteMarker(&cl->reliablebuf, svc_playercheatstate);
+			MSG_WriteByte(&cl->reliablebuf, player.id);
+			MSG_WriteByte(&cl->reliablebuf, player.cheats);
+		}
+	}
 }
 
 BOOL P_GiveWeapon(player_s*, weapontype_t, BOOL);
 BOOL P_GivePower(player_s*, int);
 
-void SV_CheatPulse(player_t &player)
+void SV_CheatGive(player_t &player)
 {
-    byte cheats = MSG_ReadByte();
-    int i;
+	const char *wantcmd = MSG_ReadString();
 
-    if (!sv_allowcheats)
-    {
-        if (cheats == 3)
-            MSG_ReadByte();
+	if (!sv_allowcheats)
+		return;
 
-        return;
-    }
-
-    if (cheats == 1)
-    {
-        player.armorpoints = deh.FAArmor;
-        player.armortype = deh.FAAC;
-
-        weapontype_t pendweap = player.pendingweapon;
-
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        return;
-    }
-
-    if (cheats == 2)
-    {
-        player.armorpoints = deh.KFAArmor;
-        player.armortype = deh.KFAAC;
-
-        weapontype_t pendweap = player.pendingweapon;
-
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        for (i=0; i<NUMCARDS; i++)
-            player.cards[i] = true;
-
-        return;
-    }
-
-    if (cheats == 3)
-    {
-        byte power = MSG_ReadByte();
-
-        if (!player.powers[power])
-            P_GivePower(&player, power);
-        else if (power != pw_strength)
-            player.powers[power] = 1;
-        else
-            player.powers[power] = 0;
-
-        return;
-    }
-
-    if (cheats == 4)
-    {
-        player.weaponowned[wp_chainsaw] = true;
-
-        return;
-    }
+	cht.GiveTo(&player, wantcmd);
 }
 
 void SV_WantWad(player_t &player)
@@ -4222,8 +4215,8 @@ void SV_ParseCommands(player_t &player)
 			SV_Cheat(player);
 			break;
 
-        case clc_cheatpulse:
-            SV_CheatPulse(player);
+        case clc_cheatgive:
+            SV_CheatGive(player);
             break;
 
 		case clc_abort:
