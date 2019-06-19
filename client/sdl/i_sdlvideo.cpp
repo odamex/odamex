@@ -1040,7 +1040,24 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 	if (!vid_widescreen && (3 * native_mode->getWidth() > 4 * native_mode->getHeight()))
-		SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
+	{
+		int windowWidth, windowHeight;
+		SDL_GetWindowSize(mWindow->mSDLWindow, &windowWidth, &windowHeight);
+
+		float ratio = (mWidth* windowHeight) / (float)(windowWidth * mHeight);
+		int logicalWidth = windowWidth * ratio;
+
+		mLogicalRect.h = windowHeight;
+		mLogicalRect.w = logicalWidth;
+		mLogicalRect.x = (windowWidth - logicalWidth) / 2;
+		mLogicalRect.y = 0;
+
+		mDrawLogicalRect = true;
+	}
+	else
+	{
+		mDrawLogicalRect = false;
+	}
 
 	// Ensure the game window is clear, even if using -noblit
 	SDL_SetRenderDrawColor(mSDLRenderer, 0, 0, 0, 255);
@@ -1118,7 +1135,12 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
     {
 	   SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
     }
-	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+
+	if (mDrawLogicalRect)
+		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, &mLogicalRect);
+	else
+		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+
 	SDL_RenderPresent(mSDLRenderer);
 }
 
