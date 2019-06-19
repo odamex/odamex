@@ -276,7 +276,7 @@ void P_CalcHeight (player_t *player)
 void P_PlayerLookUpDown (player_t *p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook)
+	if (!sv_freelook && (!p->spectator))
 	{
 		p->mo->pitch = 0;
 	}
@@ -786,7 +786,7 @@ void P_PlayerThink (player_t *player)
 		player->fixedcolormap = 0;
 
 	// Handle air supply
-	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet])
+	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet] || player->cheats & CF_GODMODE)
 	{
 		player->air_finished = level.time + 10*TICRATE;
 	}
@@ -984,6 +984,7 @@ player_s::player_s()
 	blend_color = argb_t(0, 0, 0, 0);
 
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
+	doreborn = false;
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1093,6 +1094,8 @@ player_s &player_s::operator =(const player_s &other)
 	snapshots = other.snapshots;
 
 	to_spawn = other.to_spawn;
+
+	doreborn = other.doreborn;
 
 	return *this;
 }

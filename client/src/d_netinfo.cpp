@@ -63,7 +63,6 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_unlag)
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
 EXTERN_CVAR (cl_weaponpref_csw)
@@ -166,7 +165,6 @@ void D_SetupUserInfo(void)
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag				= (cl_unlag != 0);
-	coninfo->update_rate		= cl_updaterate;
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
@@ -213,9 +211,10 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin = 0;
+	byte update_rate = 0;
 	arc << skin;
-
-	arc << info.unlag << info.update_rate;
+	arc << info.unlag;
+	arc << update_rate; //update_rate was removed, still read/write so that old saves continue to function
 
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
@@ -240,9 +239,10 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	// [SL] place holder for deprecated skins
 	unsigned int skin;
+	byte update_rate;
 	arc >> skin;
-
-	arc >> info.unlag >> info.update_rate;
+	arc >> info.unlag;
+	arc >> update_rate; //update_rate was removed, still read/write so that old saves continue to function
 
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));

@@ -159,7 +159,6 @@ EXTERN_CVAR (joy_freelook)
 // Network Options
 EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictpickup)
@@ -635,12 +634,6 @@ static value_t BandwidthLevels[] = {
 	{ 750.0,		"6.0Mbps" }
 };
 
-static value_t UpdateRate[] = {
-	{ 1.0,			"Every tic" },
-	{ 2.0,			"Every 2nd tic" },
-	{ 3.0,			"Every 3rd tic" }
-};
-
 static value_t PredictSectors[] = {
 	{ 0.0, "None" },
 	{ 1.0, "All" },
@@ -651,7 +644,6 @@ static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
-	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },

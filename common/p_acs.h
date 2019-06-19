@@ -52,7 +52,8 @@ enum
 	SCRIPT_Pickup		= 5,
 	SCRIPT_T1Return		= 6,
 	SCRIPT_T2Return		= 7,
-	SCRIPT_Lightning	= 12
+	SCRIPT_Lightning	= 12,
+	SCRIPT_Disconnect	= 14,
 };
 
 enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
@@ -71,7 +72,7 @@ public:
 	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
 	const char *LookupString (DWORD index, DWORD ofs=0) const;
 	const char *LocalizeString (DWORD index) const;
-	void StartTypedScripts (WORD type, AActor *activator) const;
+	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0) const;
 	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
 	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
@@ -333,8 +334,36 @@ public:
 /*220*/ PCD_SIN,
 		PCD_COS,
 		PCD_VECTORANGLE,
+			
+// v THESE ARE UNUSED YET
 		PCD_CHECKWEAPON,
 		PCD_SETWEAPON,
+		PCD_TAGSTRING,
+		PCD_PUSHWORLDARRAY,
+		PCD_ASSIGNWORLDARRAY,
+		PCD_ADDWORLDARRAY,
+		PCD_SUBWORLDARRAY,
+/*230*/	PCD_MULWORLDARRAY,
+		PCD_DIVWORLDARRAY,
+		PCD_MODWORLDARRAY,
+		PCD_INCWORLDARRAY,
+		PCD_DECWORLDARRAY,
+		PCD_PUSHGLOBALARRAY,
+		PCD_ASSIGNGLOBALARRAY,
+		PCD_ADDGLOBALARRAY,
+		PCD_SUBGLOBALARRAY,
+		PCD_MULGLOBALARRAY,
+/*240*/	PCD_DIVGLOBALARRAY,
+		PCD_MODGLOBALARRAY,
+		PCD_INCGLOBALARRAY,
+		PCD_DECGLOBALARRAY,
+		PCD_SETMARINEWEAPON,
+		PCD_SETACTORPROPERTY,
+		PCD_GETACTORPROPERTY,
+// ^ THESE ARE UNUSED YET
+
+		PCD_PLAYERNUMBER,
+		PCD_ACTIVATORTID,
 
 		PCODE_COMMAND_COUNT
 	};

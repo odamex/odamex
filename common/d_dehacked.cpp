@@ -800,24 +800,24 @@ static int PatchThing (int thingy)
     size_t thingNum = (size_t)thingy;
 
 	static const struct Key keys[] = {
-		{ "ID #",				myoffsetof(mobjinfo_t,doomednum) },
-		{ "Initial frame",		myoffsetof(mobjinfo_t,spawnstate) },
-		{ "Hit points",			myoffsetof(mobjinfo_t,spawnhealth) },
-		{ "First moving frame",	myoffsetof(mobjinfo_t,seestate) },
-		{ "Reaction time",		myoffsetof(mobjinfo_t,reactiontime) },
-		{ "Injury frame",		myoffsetof(mobjinfo_t,painstate) },
-		{ "Pain chance",		myoffsetof(mobjinfo_t,painchance) },
-		{ "Close attack frame",	myoffsetof(mobjinfo_t,meleestate) },
-		{ "Far attack frame",	myoffsetof(mobjinfo_t,missilestate) },
-		{ "Death frame",		myoffsetof(mobjinfo_t,deathstate) },
-		{ "Exploding frame",	myoffsetof(mobjinfo_t,xdeathstate) },
-		{ "Speed",				myoffsetof(mobjinfo_t,speed) },
-		{ "Width",				myoffsetof(mobjinfo_t,radius) },
-		{ "Height",				myoffsetof(mobjinfo_t,height) },
-		{ "Mass",				myoffsetof(mobjinfo_t,mass) },
-		{ "Missile damage",		myoffsetof(mobjinfo_t,damage) },
-		{ "Respawn frame",		myoffsetof(mobjinfo_t,raisestate) },
-		{ "Translucency",		myoffsetof(mobjinfo_t,translucency) },
+		{ "ID #",				offsetof(mobjinfo_t,doomednum) },
+		{ "Initial frame",		offsetof(mobjinfo_t,spawnstate) },
+		{ "Hit points",			offsetof(mobjinfo_t,spawnhealth) },
+		{ "First moving frame",	offsetof(mobjinfo_t,seestate) },
+		{ "Reaction time",		offsetof(mobjinfo_t,reactiontime) },
+		{ "Injury frame",		offsetof(mobjinfo_t,painstate) },
+		{ "Pain chance",		offsetof(mobjinfo_t,painchance) },
+		{ "Close attack frame",	offsetof(mobjinfo_t,meleestate) },
+		{ "Far attack frame",	offsetof(mobjinfo_t,missilestate) },
+		{ "Death frame",		offsetof(mobjinfo_t,deathstate) },
+		{ "Exploding frame",	offsetof(mobjinfo_t,xdeathstate) },
+		{ "Speed",				offsetof(mobjinfo_t,speed) },
+		{ "Width",				offsetof(mobjinfo_t,radius) },
+		{ "Height",				offsetof(mobjinfo_t,height) },
+		{ "Mass",				offsetof(mobjinfo_t,mass) },
+		{ "Missile damage",		offsetof(mobjinfo_t,damage) },
+		{ "Respawn frame",		offsetof(mobjinfo_t,raisestate) },
+		{ "Translucency",		offsetof(mobjinfo_t,translucency) },
 		{ NULL, 0}
 	};
 
@@ -1057,12 +1057,12 @@ static int PatchSound (int soundNum)
 static int PatchFrame (int frameNum)
 {
 	static const struct Key keys[] = {
-		{ "Sprite number",		myoffsetof(state_t,sprite) },
-		{ "Sprite subnumber",	myoffsetof(state_t,frame) },
-		{ "Duration",			myoffsetof(state_t,tics) },
-		{ "Next frame",			myoffsetof(state_t,nextstate) },
-		{ "Unknown 1",			myoffsetof(state_t,misc1) },
-		{ "Unknown 2",			myoffsetof(state_t,misc2) },
+		{ "Sprite number",		offsetof(state_t,sprite) },
+		{ "Sprite subnumber",	offsetof(state_t,frame) },
+		{ "Duration",			offsetof(state_t,tics) },
+		{ "Next frame",			offsetof(state_t,nextstate) },
+		{ "Unknown 1",			offsetof(state_t,misc1) },
+		{ "Unknown 2",			offsetof(state_t,misc2) },
 		{ NULL, 0 }
 	};
 	int result;
@@ -1145,15 +1145,15 @@ static int PatchAmmo (int ammoNum)
 static int PatchWeapon (int weapNum)
 {
 	static const struct Key keys[] = {
-		{ "Ammo type",			myoffsetof(weaponinfo_t,ammotype) },
-		{ "Deselect frame",		myoffsetof(weaponinfo_t,upstate) },
-		{ "Select frame",		myoffsetof(weaponinfo_t,downstate) },
-		{ "Bobbing frame",		myoffsetof(weaponinfo_t,readystate) },
-		{ "Shooting frame",		myoffsetof(weaponinfo_t,atkstate) },
-		{ "Firing frame",		myoffsetof(weaponinfo_t,flashstate) },
-		{ "Ammo use",			myoffsetof(weaponinfo_t,ammouse) },		// ZDoom 1.23b33
-		{ "Ammo per shot",		myoffsetof(weaponinfo_t,ammouse) },		// Eternity
-		{ "Min ammo",			myoffsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
+		{ "Ammo type",			offsetof(weaponinfo_t,ammotype) },
+		{ "Deselect frame",		offsetof(weaponinfo_t,upstate) },
+		{ "Select frame",		offsetof(weaponinfo_t,downstate) },
+		{ "Bobbing frame",		offsetof(weaponinfo_t,readystate) },
+		{ "Shooting frame",		offsetof(weaponinfo_t,atkstate) },
+		{ "Firing frame",		offsetof(weaponinfo_t,flashstate) },
+		{ "Ammo use",			offsetof(weaponinfo_t,ammouse) },		// ZDoom 1.23b33
+		{ "Ammo per shot",		offsetof(weaponinfo_t,ammouse) },		// Eternity
+		{ "Min ammo",			offsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
 		{ NULL, 0}
 	};
 	int result;
@@ -1220,22 +1220,22 @@ static int PatchCheats(int dummy)
 static int PatchMisc (int dummy)
 {
 	static const struct Key keys[] = {
-		{ "Initial Health",			myoffsetof(struct DehInfo,StartHealth) },
-		{ "Initial Bullets",		myoffsetof(struct DehInfo,StartBullets) },
-		{ "Max Health",				myoffsetof(struct DehInfo,MaxHealth) },
-		{ "Max Armor",				myoffsetof(struct DehInfo,MaxArmor) },
-		{ "Green Armor Class",		myoffsetof(struct DehInfo,GreenAC) },
-		{ "Blue Armor Class",		myoffsetof(struct DehInfo,BlueAC) },
-		{ "Max Soulsphere",			myoffsetof(struct DehInfo,MaxSoulsphere) },
-		{ "Soulsphere Health",		myoffsetof(struct DehInfo,SoulsphereHealth) },
-		{ "Megasphere Health",		myoffsetof(struct DehInfo,MegasphereHealth) },
-		{ "God Mode Health",		myoffsetof(struct DehInfo,GodHealth) },
-		{ "IDFA Armor",				myoffsetof(struct DehInfo,FAArmor) },
-		{ "IDFA Armor Class",		myoffsetof(struct DehInfo,FAAC) },
-		{ "IDKFA Armor",			myoffsetof(struct DehInfo,KFAArmor) },
-		{ "IDKFA Armor Class",		myoffsetof(struct DehInfo,KFAAC) },
-		{ "BFG Cells/Shot",			myoffsetof(struct DehInfo,BFGCells) },
-		{ "Monsters Infight",		myoffsetof(struct DehInfo,Infight) },
+		{ "Initial Health",			offsetof(struct DehInfo,StartHealth) },
+		{ "Initial Bullets",		offsetof(struct DehInfo,StartBullets) },
+		{ "Max Health",				offsetof(struct DehInfo,MaxHealth) },
+		{ "Max Armor",				offsetof(struct DehInfo,MaxArmor) },
+		{ "Green Armor Class",		offsetof(struct DehInfo,GreenAC) },
+		{ "Blue Armor Class",		offsetof(struct DehInfo,BlueAC) },
+		{ "Max Soulsphere",			offsetof(struct DehInfo,MaxSoulsphere) },
+		{ "Soulsphere Health",		offsetof(struct DehInfo,SoulsphereHealth) },
+		{ "Megasphere Health",		offsetof(struct DehInfo,MegasphereHealth) },
+		{ "God Mode Health",		offsetof(struct DehInfo,GodHealth) },
+		{ "IDFA Armor",				offsetof(struct DehInfo,FAArmor) },
+		{ "IDFA Armor Class",		offsetof(struct DehInfo,FAAC) },
+		{ "IDKFA Armor",			offsetof(struct DehInfo,KFAArmor) },
+		{ "IDKFA Armor Class",		offsetof(struct DehInfo,KFAAC) },
+		{ "BFG Cells/Shot",			offsetof(struct DehInfo,BFGCells) },
+		{ "Monsters Infight",		offsetof(struct DehInfo,Infight) },
 		{ NULL, 0 }
 	};
 	int result;

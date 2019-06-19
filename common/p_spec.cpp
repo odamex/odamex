@@ -1489,7 +1489,7 @@ P_ShootSpecialLine
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 }
@@ -1566,7 +1566,7 @@ P_UseSpecialLine
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
@@ -1632,7 +1632,7 @@ P_PushSpecialLine
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}

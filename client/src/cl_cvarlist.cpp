@@ -280,9 +280,6 @@ CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode",
 CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
 					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			cl_updaterate, "1",	"Update players every N tics",
-					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 3.0f)
-
 CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
@@ -333,7 +330,7 @@ CVAR_RANGE(			cl_autoaim,	"5000", "",
 CVAR(				chasedemo, "0", "",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(				cl_run, "0", "Always run",
+CVAR(				cl_run, "1", "Always run",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)		// Always run? // [Toke - Defaults]
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
@@ -391,7 +388,7 @@ CVAR_RANGE(		m_forward, "1.0", "",
 CVAR_RANGE(		m_side, "2.0", "",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
-CVAR(			novert, "0", "Disable vertical mouse movement",
+CVAR(			novert, "1", "Disable vertical mouse movement",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			invertmouse, "0", "Invert vertical mouse movement",
@@ -618,7 +615,7 @@ CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		r_painintensity, "1", "Intensity of red pain effect",
+CVAR_RANGE(		r_painintensity, "0.5", "Intensity of red pain effect",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(			r_viewsize, "0", "Set to the current video resolution",

@@ -203,6 +203,14 @@ enum flag_t
 	NUMFLAGS
 };
 
+enum ItemEquipVal
+{
+	IEV_NotEquipped, //was not equipped, item should stay
+	IEV_EquipStay, //equipped, item should stay
+	IEV_EquipRemove //equipped, item should be removed
+};
+
+
 inline FArchive &operator<< (FArchive &arc, card_t i)
 {
 	return arc << (BYTE)i;
