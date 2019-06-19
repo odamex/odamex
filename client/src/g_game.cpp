@@ -173,6 +173,15 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	R_InitSkyMap ();
 }
 
+CVAR_FUNC_IMPL(joy_freelook)
+{
+	// Nes - center the view
+	AddCommandString("centerview");
+
+	// Nes - update skies
+	R_InitSkyMap();
+}
+
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
