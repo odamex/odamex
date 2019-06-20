@@ -60,6 +60,7 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_widescreen)
+EXTERN_CVAR (vid_pillarbox)
 
 
 // ****************************************************************************
@@ -1039,7 +1040,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
 
 	const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
-	if (!vid_widescreen && (3 * native_mode->getWidth() > 4 * native_mode->getHeight()))
+	if (!vid_widescreen && vid_pillarbox && (3 * native_mode->getWidth() > 4 * native_mode->getHeight()))
 	{
 		int windowWidth, windowHeight;
 		SDL_GetWindowSize(mWindow->mSDLWindow, &windowWidth, &windowHeight);

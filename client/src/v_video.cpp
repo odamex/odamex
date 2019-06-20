@@ -224,6 +224,12 @@ CVAR_FUNC_IMPL (vid_widescreen)
         V_ForceVideoModeAdjustment();
 }
 
+CVAR_FUNC_IMPL(vid_pillarbox)
+{
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
+		V_ForceVideoModeAdjustment();
+}
+
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
