@@ -130,6 +130,9 @@ EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_pillarbox)
+
+int vid_pillarbox_old = -1;
 
 bool V_CheckModeAdjustment()
 {
@@ -152,6 +155,12 @@ bool V_CheckModeAdjustment()
 
 	if (vid_widescreen != using_widescreen)
 		return true;
+
+	if (vid_pillarbox_old != vid_pillarbox)
+	{
+		vid_pillarbox_old = vid_pillarbox;
+		return true;
+	}
 
 	return false;
 }
@@ -559,6 +568,8 @@ void V_Init()
 	C_NewModeAdjust();
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
+
+	vid_pillarbox_old = vid_pillarbox;
 }
 
 
