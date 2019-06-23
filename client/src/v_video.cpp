@@ -133,6 +133,7 @@ EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
 
 int vid_pillarbox_old = -1;
+int vid_32bpp_old = -1;
 
 bool V_CheckModeAdjustment()
 {
@@ -140,8 +141,11 @@ bool V_CheckModeAdjustment()
 	if (!window)
 		return false;
 
-	if (vid_32bpp != (window->getPrimarySurface()->getBitsPerPixel() == 32))
+	if (vid_32bpp != vid_32bpp_old)
+	{
+		vid_32bpp_old = vid_32bpp;
 		return true;
+	}
 
 	if (vid_fullscreen != window->isFullScreen())
 		return true;
@@ -570,6 +574,7 @@ void V_Init()
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
 	vid_pillarbox_old = vid_pillarbox;
+	vid_32bpp_old = vid_32bpp;
 }
 
 
