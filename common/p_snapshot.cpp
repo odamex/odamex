@@ -848,6 +848,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 			sector->floordata = NULL;
 		}
 		
+		if (status == DDoor::finished)
+			return;
+
 		if (!sector->ceilingdata)
 		{
 			sector->ceilingdata = new DPillar();
@@ -927,9 +930,6 @@ void SectorSnapshot::toSector(sector_t *sector) const
 			sector->ceilingdata->Destroy();
 			sector->ceilingdata = NULL;
 		}
-		
-		if (status == DDoor::finished)
-			return;
 
 		if (!sector->ceilingdata)
 		{
