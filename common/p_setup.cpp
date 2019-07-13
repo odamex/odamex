@@ -63,7 +63,7 @@ void P_InvertPlane(plane_t *plane);
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
 
-EXTERN_CVAR(sv_spawnmpthings)
+EXTERN_CVAR(sv_nompthings)
 
 //
 // MAP related Lookup tables.
@@ -597,7 +597,7 @@ void P_LoadThings (int lump)
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
-			if (!sv_spawnmpthings && sv_gametype == GM_COOP)
+			if (sv_nompthings && sv_gametype == GM_COOP)
 				mt2.flags &= ~MTF_COOPERATIVE;
 			else
 				mt2.flags &= ~MTF_SINGLE;

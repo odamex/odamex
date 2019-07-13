@@ -169,7 +169,7 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
-CVAR(				sv_spawnmpthings, "1", "Spawn multiplayer-only entities in cooperative mode",
+CVAR(				sv_nompthings, "0", "Removes multiplayer-only entities in cooperative mode",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
