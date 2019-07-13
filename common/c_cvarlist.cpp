@@ -169,6 +169,9 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
+CVAR(				sv_instantswitch, "0", "Enables weapon insta-switching", 
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
 					
 CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
