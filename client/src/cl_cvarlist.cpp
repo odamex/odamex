@@ -280,9 +280,6 @@ CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode",
 CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
 					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			cl_updaterate, "1",	"Update players every N tics",
-					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 3.0f)
-
 CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
@@ -333,7 +330,7 @@ CVAR_RANGE(			cl_autoaim,	"5000", "",
 CVAR(				chasedemo, "0", "",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(				cl_run, "0", "Always run",
+CVAR(				cl_run, "1", "Always run",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)		// Always run? // [Toke - Defaults]
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
@@ -360,6 +357,22 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_coop, "1", "Allows cooperative netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_deathmatch, "1", "Allows deathmatch netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_duel, "1", "Allows duel netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_teamdm, "1", "Allows team deathmatch netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_ctf, "1", "Allows CTF netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 
 CVAR(				cl_autoscreenshot, "0", "Automatically capture a screenshot at the end of a match.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -391,7 +404,7 @@ CVAR_RANGE(		m_forward, "1.0", "",
 CVAR_RANGE(		m_side, "2.0", "",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
-CVAR(			novert, "0", "Disable vertical mouse movement",
+CVAR(			novert, "1", "Disable vertical mouse movement",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			invertmouse, "0", "Invert vertical mouse movement",
@@ -465,7 +478,16 @@ CVAR(			hud_timer, "1", "Show the HUD timer",
 CVAR_RANGE(		hud_transparency, "0.5", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(			hud_heldflag, "1", "Show the held flag border",
+CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR(			hud_heldflag_flash, "1", "Enables the flashes around the flag border.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
@@ -618,7 +640,7 @@ CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		r_painintensity, "1", "Intensity of red pain effect",
+CVAR_RANGE(		r_painintensity, "0.5", "Intensity of red pain effect",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(			r_viewsize, "0", "Set to the current video resolution",
@@ -631,6 +653,9 @@ CVAR_FUNC_DECL(	vid_defheight, "480", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest availible video mode.",

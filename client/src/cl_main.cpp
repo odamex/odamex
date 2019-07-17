@@ -68,6 +68,7 @@
 #include "g_warmup.h"
 #include "v_text.h"
 #include "hu_stuff.h"
+#include "p_acs.h"
 
 #include <string>
 #include <vector>
@@ -152,7 +153,6 @@ EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
@@ -161,6 +161,8 @@ EXTERN_CVAR (cl_forcedownload)
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 static argb_t enemycolor, teamcolor;
+
+void P_PlayerLeavesGame(player_s* player);
 
 //
 // CL_ShadePlayerColor
@@ -276,6 +278,11 @@ EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
+EXTERN_CVAR (cl_autorecord_coop)
+EXTERN_CVAR (cl_autorecord_deathmatch)
+EXTERN_CVAR (cl_autorecord_duel)
+EXTERN_CVAR (cl_autorecord_teamdm)
+EXTERN_CVAR (cl_autorecord_ctf)
 EXTERN_CVAR (cl_splitnetdemos)
 
 void CL_PlayerTimes (void);
@@ -420,6 +427,9 @@ void CL_QuitNetGame(void)
 	if (demorecording && democlassic)
 		G_CleanupDemo();
 
+	democlassic = false;
+	demoplayback = false;
+
 	// Reset the palette to default
 	V_ResetPalette();
 
@@ -526,6 +536,12 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	if (players.empty())
 		return;
 
+	if (gamestate == GS_INTERMISSION)
+	{
+		displayplayer_id = consoleplayer_id;
+		return;
+	}
+
 	if (!validplayer(displayplayer()))
 	{
 		CL_CheckDisplayPlayer();
@@ -596,6 +612,8 @@ void CL_DisconnectClient(void)
 		{
 			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+			if (!it->spectator)
+				P_PlayerLeavesGame(&(*it));
 			players.erase(it);
 			break;
 		}
@@ -737,6 +755,7 @@ BEGIN_COMMAND (connect)
 	}
 
 	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
+
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
@@ -1337,7 +1356,6 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
@@ -2004,7 +2022,7 @@ void CL_UpdatePlayer()
 	p->snapshots.addSnapshot(newsnap);
 }
 
-BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
 void CL_UpdatePlayerState(void)
 {
@@ -2369,6 +2387,14 @@ void CL_SpawnPlayer()
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
+	}
+
+	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	{
+		if (p->deathcount)
+			level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		else
+			level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
 	}
 
 	int snaptime = last_svgametic;
@@ -3178,27 +3204,29 @@ void CL_MobjTranslation()
 		mo->translation = translationref_t(translationtables + 256 * table);
 }
 
-
+void P_SetButtonTexture(line_t* line, short texture);
 //
 // CL_Switch
 // denis - switch state and timing
-//
+// Note: this will also be called for doors
 void CL_Switch()
 {
 	unsigned l = MSG_ReadLong();
-	byte wastoggled = MSG_ReadByte();
-	byte state = MSG_ReadByte();
+	byte switchactive = MSG_ReadByte();
+	byte special = MSG_ReadByte();
+	byte state = MSG_ReadByte(); //DActiveButton::EWhere
+	short texture = MSG_ReadShort();
 	unsigned time = MSG_ReadLong();
 
 	if (!lines || l >= (unsigned)numlines || state >= 3)
 		return;
 
-	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
-		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
+	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
+		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
-		lines[l].special = 0;
+	if (texture)
+		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	lines[l].special = special;
 }
 
 void CL_ActivateLine(void)
@@ -3332,11 +3360,17 @@ void CL_LoadMap(void)
 	{
 		std::string filename;
 
+		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
+		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && cl_autorecord_deathmatch)
+		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && cl_autorecord_duel)
+		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
+		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
+
 		size_t param = Args.CheckParm("-netrecord");
 		if (param && Args.GetArg(param + 1))
 			filename = Args.GetArg(param + 1);
 
-		if (splitnetdemo || cl_autorecord || param)
+		if (((splitnetdemo || cl_autorecord) && bCanAutorecord) || param)
 		{
 			if (filename.empty())
 				filename = CL_GenerateNetDemoFileName();
@@ -3359,6 +3393,8 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 }
 
+void P_ResetSwitch(line_t* line);
+
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -3370,6 +3406,22 @@ void CL_ResetMap()
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
 			mo->Destroy();
+		}
+	}
+
+	//destroy all moving sector effects and sounds
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].floordata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].floordata->Destroy();
+		}
+
+		if (sectors[i].ceilingdata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].ceilingdata->Destroy();
 		}
 	}
 
@@ -3414,10 +3466,13 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
 	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
 
 	// [tm512 2014/04/11] Do as the server does when unspectating a player.
 	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
@@ -3438,10 +3493,11 @@ void CL_Spectate()
 
 		if (player.spectator)
 		{
-			player.playerstate = PST_LIVE; // resurrect dead spectators
-			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-			player.deltaviewheight = 1000 << FRACBITS;
-			movingsectors.clear(); //clear all moving sectors, otherwise client side prediction will not move active sectors
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
 		{

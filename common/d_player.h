@@ -245,6 +245,7 @@ public:
     byte		prefcolor[4];			// Nes - Preferred color. Server only.
 
 	argb_t		blend_color;			// blend color for the sector the player is in
+	bool		doreborn;
 
 	// For flood protection
 	struct LastMessage_s
@@ -367,6 +368,11 @@ public:
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
+	int GetPlayerNumber() const
+	{
+		return id - 1;
+	}
+
 	player_s();
 	player_s &operator =(const player_s &other);
 	
@@ -394,6 +400,7 @@ extern byte consoleplayer_id;
 extern byte displayplayer_id;
 
 //
+
 // INTERMISSION
 // Structure passed e.g. to WI_Start(wb)
 //

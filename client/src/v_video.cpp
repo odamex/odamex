@@ -130,6 +130,10 @@ EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_pillarbox)
+
+int vid_pillarbox_old = -1;
+int vid_32bpp_old = -1;
 
 bool V_CheckModeAdjustment()
 {
@@ -137,8 +141,11 @@ bool V_CheckModeAdjustment()
 	if (!window)
 		return false;
 
-	if (vid_32bpp != (window->getPrimarySurface()->getBitsPerPixel() == 32))
+	if (vid_32bpp != vid_32bpp_old)
+	{
+		vid_32bpp_old = vid_32bpp;
 		return true;
+	}
 
 	if (vid_fullscreen != window->isFullScreen())
 		return true;
@@ -152,6 +159,12 @@ bool V_CheckModeAdjustment()
 
 	if (vid_widescreen != using_widescreen)
 		return true;
+
+	if (vid_pillarbox_old != vid_pillarbox)
+	{
+		vid_pillarbox_old = vid_pillarbox;
+		return true;
+	}
 
 	return false;
 }
@@ -222,6 +235,12 @@ CVAR_FUNC_IMPL (vid_widescreen)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
+}
+
+CVAR_FUNC_IMPL(vid_pillarbox)
+{
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
+		V_ForceVideoModeAdjustment();
 }
 
 
@@ -553,6 +572,9 @@ void V_Init()
 	C_NewModeAdjust();
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
+
+	vid_pillarbox_old = vid_pillarbox;
+	vid_32bpp_old = vid_32bpp;
 }
 
 

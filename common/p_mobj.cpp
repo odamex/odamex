@@ -1414,7 +1414,8 @@ static void P_PlayerFlyBob(AActor* mo)
 {
 	if ((mo->flags2 & MF2_FLY) && mo->z > mo->floorz)
 	{
-		mo->z += finesine[(FINEANGLES / 80 * level.time) & FINEMASK] / 8;
+		if (!mo->player->spectator)
+			mo->z += finesine[(FINEANGLES / 80 * level.time) & FINEMASK] / 8;
 		mo->momz = FixedMul(mo->momz, FRICTION_FLY);
 	}
 }

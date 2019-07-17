@@ -219,10 +219,10 @@ void SV_FlagScore (player_t &player, flag_t f)
 // SV_FlagTouch
 // Event of a player touching a flag, called from P_TouchSpecial
 //
-bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
+ItemEquipVal SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 {
 	if (shotclock)
-		return false;
+		return IEV_NotEquipped;
 
 	if(player.userinfo.team == (team_t)f)
 	{
@@ -233,7 +233,7 @@ bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 			//	if(player.userinfo.team != (team_t)i && player.flags[i] && ctf_flagathometoscore)
 			//		SV_FlagScore(player, (flag_t)i);
 
-			return false;
+			return IEV_NotEquipped;
 		}
 		else // Returning team flag.
 		{
@@ -248,8 +248,8 @@ bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 		SV_FlagGrab(player, f, firstgrab);
 	}
 
-	// returning true should make P_TouchSpecial destroy the touched flag
-	return true;
+	// returning IEV_EquipRemove should make P_TouchSpecial destroy the touched flag
+	return IEV_EquipRemove;
 }
 
 //
