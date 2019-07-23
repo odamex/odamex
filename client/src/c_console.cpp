@@ -1393,8 +1393,7 @@ void C_DrawConsole()
 
 
 #ifdef __SWITCH__
-void
-IN_SwitchKeyboard(char *out, int out_len)
+void IN_SwitchKeyboard(char *out, int out_len)
 {
 	SwkbdConfig kbd;
 	char tmp_out[out_len + 1];

@@ -84,6 +84,10 @@ void C_RemoveTabCommand (const char *name);
 
 void C_RevealSecret ();
 
+#ifdef __SWITCH__
+void IN_SwitchKeyboard(char *out, int out_len);
+#endif
+
 #endif
 
 

@@ -96,7 +96,6 @@ CVAR_FUNC_IMPL (hud_crosshaircolor)
 	crosshair_color_custom = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 }
 
-
 EXTERN_CVAR (hud_crosshairhealth)
 EXTERN_CVAR (hud_crosshairdim)
 EXTERN_CVAR (hud_crosshairscale)
@@ -249,9 +248,11 @@ void HU_ReleaseKeyStates()
 //
 // Chat mode text entry
 //
+
 BOOL HU_Responder(event_t *ev)
 {
-	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT || ev->data1 == KEY_HAT1)
+	// Know what button enables the macros
+	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT || ev->data1 == KEY_HAT1 || (platform == PF_SWITCH && ev->data1 == KEY_JOY12))
 	{
 		altdown = (ev->type == ev_keydown);
 		return false;
@@ -273,6 +274,34 @@ BOOL HU_Responder(event_t *ev)
 
 	if (altdown)
 	{
+		// SPECIAL CASE FOR NINTENDO SWITCH
+		// Since Buttons are disorganized... Let's create into an array and reorganize them.
+		if (platform == PF_SWITCH)
+		{
+			int table[10][2]{
+				{KEY_JOY2, 0},		// B : HI
+				{KEY_JOY1, 1},		// A : KICK BUTT
+				{KEY_JOY3, 2},		// X : HELP
+				{KEY_JOY4, 3},		// Y : GG
+				{KEY_JOY13, 4},		// LEFT : NO
+				{KEY_JOY15, 5},		// RIGHT : YES
+				{KEY_JOY14, 6},		// UP : Take care of it
+				{KEY_JOY16, 7},		// DOWN : COME HERE
+				{KEY_JOY9, 8},		// L SHOULDER : Thanks, see ya
+				{KEY_JOY10, 9},		// R Shoulder : I'm using Switch
+			};
+
+			for (int i = 0; i < 10; i++) {
+				if (ev->data2 == table[i][0]) {
+					ShoveChatStr(chat_macros[table[i][1]]->cstring(), HU_ChatMode() - 1);
+					HU_UnsetChatMode();
+					return true;
+				}
+			}
+
+			return true;
+		}
+
 		// send a macro
 		if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
 		{
@@ -287,7 +316,24 @@ BOOL HU_Responder(event_t *ev)
 			return true;
 		}
 	}
-	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER)
+
+#ifdef __SWITCH__
+	if (ev->data1 == KEY_JOY3) {
+		char text[64];
+		
+		// Initiate the console
+		IN_SwitchKeyboard(text, 64);
+
+		// No action if no text or same as earlier
+		if (!strlen(text))
+			return true;
+
+		input_text = std::string(text);
+		return true;
+	}
+#endif
+
+	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER || (platform == PF_SWITCH && ev->data1 == KEY_JOY1) )
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();

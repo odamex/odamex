@@ -93,6 +93,8 @@ baseapp_t baseapp = client;
 		gameplatform_t platform = PF_SWITCH;
 	#elif _XBOX
 		gameplatform_t platform = PF_XBOX;
+	#elif GEKKO
+		gameplatform_t platform = PF_WII;
 	#else
 		gameplatform_t platform = PF_UNKNOWN;
 	#endif

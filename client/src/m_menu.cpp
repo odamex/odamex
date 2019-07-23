@@ -1579,7 +1579,13 @@ static void SendNewColor(int red, int green, int blue)
 static void M_SlidePlayerRed(int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	int accel;
+
+	// TEMP. MODIFICATION UNLESS WE FIND OUT HOW TO REPEAT KEYS ON THE SWITCH
+	if (platform == PF_SWITCH)
+		accel = 10;
+	else 
+		accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setr(std::max(0, int(color.getr()) - 1 - accel));
@@ -1592,7 +1598,13 @@ static void M_SlidePlayerRed(int choice)
 static void M_SlidePlayerGreen (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	int accel;
+
+	// TEMP. MODIFICATION UNLESS WE FIND OUT HOW TO REPEAT KEYS ON THE SWITCH
+	if (platform == PF_SWITCH)
+		accel = 10;
+	else
+		accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setg(std::max(0, int(color.getg()) - 1 - accel));
@@ -1605,7 +1617,13 @@ static void M_SlidePlayerGreen (int choice)
 static void M_SlidePlayerBlue (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	int accel;
+
+	// TEMP. MODIFICATION UNLESS WE FIND OUT HOW TO REPEAT KEYS ON THE SWITCH
+	if (platform == PF_SWITCH)
+		accel = 10;
+	else
+		accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setb(std::max(0, int(color.getb()) - 1 - accel));
@@ -1725,6 +1743,10 @@ bool M_Responder (event_t* ev)
 	// Handle Repeat
 	switch(ch)
 	{
+#ifdef __SWITCH__
+	case KEY_JOY13:
+	case KEY_JOY15:
+#endif
 	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
 	  case KEY_HAT2:
@@ -1795,7 +1817,8 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			(!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 ||
+			(!(ch2 == ' ' || ch == KEY_ESCAPE || 
+			(platform == PF_SWITCH && (ch == KEY_JOY2 || ch == KEY_JOY4)) ||
 			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
 

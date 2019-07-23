@@ -1733,13 +1733,9 @@ void M_OptResponder (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-#ifdef _XBOX
-			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
-#elif defined(__SWITCH__)
-			if (ch != KEY_ESCAPE && ch != KEY_JOY11)		// (+) cancels the responder request
-#else
-			if (ch != KEY_ESCAPE)
-#endif
+			if (ch != KEY_ESCAPE || 
+				(platform == PF_SWITCH && ch != KEY_JOY11) || 
+				(platform == PF_XBOX && ch != KEY_JOY9) )
 			{
 				C_ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);

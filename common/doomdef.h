@@ -74,6 +74,7 @@ enum gameplatform_t
 	PF_PC,
 	PF_XBOX,
 	PF_SWITCH,
+	PF_WII,			//	Yet SUPER INCOMPLETE
 	PF_UNKNOWN,		//	Unknown platform yet
 };
 
