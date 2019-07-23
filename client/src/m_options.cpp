@@ -269,9 +269,12 @@ static void CompatOptions (void);
 static void NetworkOptions (void);
 static void WeaponOptions (void);
 static void GoToConsole (void);
-static void GoToConsole (void);
 void Reset2Defaults (void);
 void Reset2Saved (void);
+
+#ifdef GCONSOLE
+static void MultiplayerOptions(void);
+#endif
 
 static void SetVidMode (void);
 
@@ -297,7 +300,11 @@ static menuitem_t OptionItems[] =
  	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
- 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
+ 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} },
+#ifdef GCONSOLE
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,		"Multiplayer options",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MultiplayerOptions} },
+#endif
 };
 
 menu_t OptionMenu = {
@@ -310,6 +317,81 @@ menu_t OptionMenu = {
 	0,
 	NULL
 };
+
+#ifdef GCONSOLE
+
+void VoteYes(void);
+void VoteNo(void);
+void SwitchToSpectator(void);
+void SwitchToOppositeTeam(void);
+void SayToAll(void);
+void SayToTeam(void);
+
+static menuitem_t MultiplayerItems[] =
+{
+	{ redtext,	"Voting options",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,		"Vote Yes",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VoteYes} },
+	{ more,		"Vote No",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VoteNo} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,	"Become a spectator",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SwitchToSpectator}  },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,	"Team-games controls",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,	"Switch to opposite team",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SwitchToOppositeTeam}  },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,	"Discussions",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,	"Say to All",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SayToAll}  },
+	{ more,	"Say to Team",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SayToTeam}  },
+};
+
+menu_t MultiplayerMenu = {
+	"M_OPTTTL",
+	1,
+	STACKARRAY_LENGTH(MultiplayerItems),
+	177,
+	MultiplayerItems,
+	0,
+	0,
+	NULL
+};
+
+void MultiplayerOptions(void) // [Ralphis] for compatibility menu
+{
+	M_SwitchMenu(&MultiplayerMenu);
+}
+
+void VoteYes(void) {
+	AddCommandString("vote_yes");
+	M_ClearMenus();
+}
+
+void VoteNo(void) {
+	AddCommandString("vote_no"); 	
+	M_ClearMenus();
+}
+
+void SwitchToSpectator(void)
+{
+	AddCommandString("spectate");
+	M_ClearMenus();
+}
+
+void SwitchToOppositeTeam(void)
+{
+	AddCommandString("changeteams");
+	M_ClearMenus();
+}
+
+void SayToAll(void) {
+	AddCommandString("messagemode");
+	M_ClearMenus();
+}
+
+void SayToTeam(void) {
+	AddCommandString("messagemode2");
+	M_ClearMenus();
+}
+
+#endif
 
 /*=======================================
  *
