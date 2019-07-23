@@ -88,9 +88,9 @@ BOOL		KeysCtrl;
 
 static bool midprinting;
 
-#define SCROLLUP 1
-#define SCROLLDN 2
-#define SCROLLNO 0
+#define SCROLLUP 1	// Scroll Up
+#define SCROLLDN 2	// Scroll Down
+#define SCROLLNO 0	// Stop scrolling
 
 EXTERN_CVAR (con_buffersize)
 EXTERN_CVAR(show_messages)
@@ -1626,7 +1626,7 @@ BOOL C_Responder(event_t *ev)
 	{
 		switch (ev->data1)
 		{
-#ifdef _XBOX
+#if defined( _XBOX) || defined(__SWITCH__)
 		case KEY_JOY7: // Left Trigger
 		case KEY_JOY8: // Right Trigger
 #endif

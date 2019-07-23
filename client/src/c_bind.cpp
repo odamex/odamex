@@ -535,18 +535,41 @@ bool C_DoNetDemoKey (event_t *ev)
 // [SL] 2012-09-14 - Handles the hard-coded key bindings used while spectating
 // or during NetDemo playback.  Returns false if the key pressed is not
 // bound to any spectating command such as spynext.
+// 
+// Ch0wW : Added support for Nintendo Switch
+// ToDo : Add support keys for OG XBOX
 //
 bool C_DoSpectatorKey (event_t *ev)
 {
+	int keyprev = -1, keynext = -1;
+
 	if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELUP)
+// Set the hardcoded keys for spy, according to the platform
+	switch (platform)
+	{
+		case PF_SWITCH:
+			keyprev = KEY_JOY13;	// DPAD-LEFT
+			keynext = KEY_JOY15;	// DPAD-RIGHT
+
+			break;
+		case PF_XBOX:		// Ch0wW : ADD THE RIGHT INPUTS FOR XBOX!
+			keyprev = KEY_MWHEELUP;			// TODO: ADD RIGHT INPUTS
+			keynext = KEY_MWHEELDOWN;		// TODO: ADD RIGHT INPUTS
+			break;
+		default:
+			keyprev = KEY_MWHEELUP;
+			keynext = KEY_MWHEELDOWN;
+			break;
+	}
+
+	if (ev->type == ev_keydown && ev->data1 == keyprev)
 	{
 		AddCommandString("spyprev");
 		return true;
 	}
-	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELDOWN)
+	if (ev->type == ev_keydown && ev->data1 == keynext)
 	{
 		AddCommandString("spynext");
 		return true;
