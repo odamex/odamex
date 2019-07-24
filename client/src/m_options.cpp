@@ -619,6 +619,8 @@ menu_t MouseMenu = {
  *
  *=======================================*/
 
+EXTERN_CVAR(joy_experimental_movement)
+
 static menuitem_t JoystickItems[] =
 {
 #ifndef GCONSOLE
@@ -630,7 +632,9 @@ static menuitem_t JoystickItems[] =
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
-	{ slider	,	"Fast Turn Sensitivity"					, {&joy_fastturn_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Fast Turn Sensitivity"					, {&joy_fastturn_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}				},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ discrete	,	"Experimental movements"				, {&joy_experimental_movement},		{2.0},		{0.0},		{0.0},		{OnOff}			},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},

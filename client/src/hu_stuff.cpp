@@ -278,22 +278,22 @@ BOOL HU_Responder(event_t *ev)
 		// Since Buttons are disorganized... Let's create into an array and reorganize them.
 		if (platform == PF_SWITCH)
 		{
-			int table[10][2]{
-				{KEY_JOY2, 0},		// B : HI
-				{KEY_JOY1, 1},		// A : KICK BUTT
-				{KEY_JOY3, 2},		// X : HELP
-				{KEY_JOY4, 3},		// Y : GG
-				{KEY_JOY13, 4},		// LEFT : NO
-				{KEY_JOY15, 5},		// RIGHT : YES
-				{KEY_JOY14, 6},		// UP : Take care of it
-				{KEY_JOY16, 7},		// DOWN : COME HERE
-				{KEY_JOY9, 8},		// L SHOULDER : Thanks, see ya
-				{KEY_JOY10, 9},		// R Shoulder : I'm using Switch
+			int table[10]{
+				KEY_JOY2,		// B : HI
+				KEY_JOY1, 		// A : KICK BUTT
+				KEY_JOY3, 		// X : HELP
+				KEY_JOY4, 		// Y : GG
+				KEY_JOY7,		// LEFT : NO
+				KEY_JOY8,		// RIGHT : YES
+				KEY_JOY11,		// UP : Take care of it
+				KEY_JOY6,		// DOWN : COME HERE
+				KEY_JOY9, 		// L SHOULDER : Thanks, see ya
+				KEY_JOY10,		// R Shoulder : I'm using Switch
 			};
 
 			for (int i = 0; i < 10; i++) {
-				if (ev->data2 == table[i][0]) {
-					ShoveChatStr(chat_macros[table[i][1]]->cstring(), HU_ChatMode() - 1);
+				if (ev->data2 == table[i]) {
+					ShoveChatStr(chat_macros[i]->cstring(), HU_ChatMode() - 1);
 					HU_UnsetChatMode();
 					return true;
 				}

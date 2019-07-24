@@ -253,6 +253,8 @@ CVAR (joy_fastturn_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE |
 CVAR_FUNC_DECL (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
+CVAR(joy_experimental_movement, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
+
 
 CVAR(				show_messages, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -517,7 +519,7 @@ CVAR(chatmacro5, "Yes", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLED
 CVAR(chatmacro6, "I'll take care of it.", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
 CVAR(chatmacro7, "Come here!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
 CVAR(chatmacro8, "Thanks for the game. See you!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Start
-CVAR(chatmacro9, "I am a Nintendo Switch and can only use chat macros.", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
+CVAR(chatmacro9, "I'm on Switch and can only use chat macros.", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
 #else
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
