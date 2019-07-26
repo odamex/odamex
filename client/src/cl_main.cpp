@@ -1361,7 +1361,7 @@ void CL_SendUserInfo(void)
 		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
 
-	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the client.
+	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
 }
 
 //
