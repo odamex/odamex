@@ -999,7 +999,6 @@ BEGIN_COMMAND (changeteams)
 		cl_team.Set("RED");
 	else if (consoleplayer().userinfo.team == TEAM_RED)
 		cl_team.Set("BLUE");
-	CL_RebuildAllPlayerTranslations();
 }
 END_COMMAND (changeteams)
 
@@ -1361,6 +1360,8 @@ void CL_SendUserInfo(void)
 	{
 		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
+
+	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the client.
 }
 
 //
