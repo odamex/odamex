@@ -679,6 +679,7 @@ BEGIN_COMMAND (maplist) {
 BEGIN_COMMAND (addmap) {
 	if (argc < 2) {
 		Printf(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
+		Printf(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default !\n");
 		return;
 	}
 
