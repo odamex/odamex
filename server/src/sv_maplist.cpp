@@ -732,6 +732,7 @@ BEGIN_COMMAND(insertmap) {
 
 	if (!Maplist::instance().insert(maplist_position - 1, maplist_entry)) {
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		return;
 	}
 
 	// Successfully warn the server a map has been added.
