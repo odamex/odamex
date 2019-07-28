@@ -289,7 +289,7 @@ static byte *fb;				// pseudo-frame buffer
 static int	amclock;
 
 static mpoint_t	m_paninc;		// how far the window pans each tic (map coords)
-static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
+
 static fixed_t	ftom_zoommul;	// how far the window zooms in each tic (fb coords)
 
 static fixed_t	m_x, m_y;		// LL x,y where the window is on the map (map coords)
@@ -528,10 +528,6 @@ void AM_initVariables(void)
 	f_oldloc.x = MAXINT;
 	amclock = 0;
 
-	m_paninc.x = m_paninc.y = 0;
-	ftom_zoommul = FRACUNIT;
-	mtof_zoommul = FRACUNIT;
-
 	m_w = FTOM(I_GetSurfaceWidth());
 	m_h = FTOM(I_GetSurfaceHeight());
 
@@ -708,9 +704,6 @@ void AM_LevelInit(void)
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
-
-
-
 //
 //
 //
@@ -810,40 +803,6 @@ BOOL AM_Responder (event_t *ev)
 		rc = true;
 		switch(ev->data1)
 		{
-		case AM_PANRIGHTKEY: // pan right
-			if (!followplayer)
-				m_paninc.x = FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANLEFTKEY: // pan left
-			if (!followplayer)
-				m_paninc.x = -FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANUPKEY: // pan up
-			if (!followplayer)
-				m_paninc.y = FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANDOWNKEY: // pan down
-			if (!followplayer)
-				m_paninc.y = -FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_ZOOMOUTKEY: // zoom out
-		case AM_ZOOMOUTKEY2:
-			mtof_zoommul = M_ZOOMOUT;
-			ftom_zoommul = M_ZOOMIN;
-			break;
-		case AM_ZOOMINKEY: // zoom in
-		case AM_ZOOMINKEY2:
-			mtof_zoommul = M_ZOOMIN;
-			ftom_zoommul = M_ZOOMOUT;
-			break;
 		case AM_GOBIGKEY:
 			bigstate = !bigstate;
 			if (bigstate)
@@ -872,32 +831,6 @@ BOOL AM_Responder (event_t *ev)
 			cheating = (cheating+1) % 3;
 		}
 	}
-	else if (ev->type == ev_keyup)
-	{
-		rc = false;
-		switch (ev->data1)
-		{
-		case AM_PANRIGHTKEY:
-			if (!followplayer) m_paninc.x = 0;
-			break;
-		case AM_PANLEFTKEY:
-			if (!followplayer) m_paninc.x = 0;
-			break;
-		case AM_PANUPKEY:
-			if (!followplayer) m_paninc.y = 0;
-			break;
-		case AM_PANDOWNKEY:
-			if (!followplayer) m_paninc.y = 0;
-			break;
-		case AM_ZOOMOUTKEY:
-		case AM_ZOOMOUTKEY2:
-		case AM_ZOOMINKEY:
-		case AM_ZOOMINKEY2:
-			mtof_zoommul = FRACUNIT;
-			ftom_zoommul = FRACUNIT;
-			break;
-		}
-	}
 
 	return rc;
 }
@@ -908,6 +841,21 @@ BOOL AM_Responder (event_t *ev)
 //
 void AM_changeWindowScale (void)
 {
+	static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
+
+	if (Actions[ACTION_AUTOMAP_ZOOMIN]) {
+		mtof_zoommul = M_ZOOMOUT;
+		ftom_zoommul = M_ZOOMIN;
+	}
+	else if (Actions[ACTION_AUTOMAP_ZOOMOUT]) {
+		mtof_zoommul = M_ZOOMIN;
+		ftom_zoommul = M_ZOOMOUT;
+	}
+	else {
+		mtof_zoommul = FRACUNIT;
+		ftom_zoommul = FRACUNIT;
+	}
+
 	// Change the scaling multipliers
 	scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -954,15 +902,21 @@ void AM_Ticker (void)
 	else {
 		m_paninc.x = 0;
 		m_paninc.y = 0;
+
+		// pan according to the direction
+		if (Actions[ACTION_AUTOMAP_PANLEFT])m_paninc.x = -FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANRIGHT])m_paninc.x = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANUP])m_paninc.y = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANDOWN])m_paninc.y = -FTOM(F_PANINC);
 	}
 
+
 	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT)
+	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] || Actions[ACTION_AUTOMAP_ZOOMOUT])
 		AM_changeWindowScale();
 
 	// Change x,y location
-	if (m_paninc.x || m_paninc.y)
-		AM_changeWindowLoc();
+	AM_changeWindowLoc();
 
     // NES - Glowing effect on locked doors.
     if (lockglow < 90)

@@ -149,6 +149,14 @@ FBinding DefaultAutomapBindings[] =
 	{ "g", "am_grid" },
 	{ "m", "am_setmark" },
 	{ "c", "am_clearmarks" },
+	{ "+", "+am_zoomin" },
+	{ "kp+", "+am_zoomin" },
+	{ "-", "+am_zoomout" },
+	{ "kp-", "+am_zoomout" },
+	{ "uparrow", "+am_panup"},
+	{ "downarrow", "+am_pandown"},
+	{ "leftarrow", "+am_panleft"},
+	{ "rightarrow", "+am_panright"},
 	{ NULL, NULL }
 };
 

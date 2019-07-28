@@ -102,25 +102,32 @@ protected:
 };
 
 // Actions
-#define ACTION_MLOOK		0
-#define ACTION_KLOOK		1
-#define ACTION_USE			2
-#define ACTION_ATTACK		3
-#define ACTION_SPEED		4
-#define ACTION_MOVERIGHT	5
-#define ACTION_MOVELEFT		6
-#define ACTION_STRAFE		7
-#define ACTION_LOOKDOWN		8
-#define ACTION_LOOKUP		9
-#define ACTION_BACK			10
-#define ACTION_FORWARD		11
-#define ACTION_RIGHT		12
-#define ACTION_LEFT			13
-#define ACTION_MOVEDOWN		14
-#define ACTION_MOVEUP		15
-#define ACTION_JUMP			16
-#define ACTION_SHOWSCORES	17
-#define NUM_ACTIONS			18
+#define ACTION_MLOOK			0
+#define ACTION_KLOOK			1
+#define ACTION_USE				2
+#define ACTION_ATTACK			3
+#define ACTION_SPEED			4
+#define ACTION_MOVERIGHT		5
+#define ACTION_MOVELEFT			6
+#define ACTION_STRAFE			7
+#define ACTION_LOOKDOWN			8
+#define ACTION_LOOKUP			9
+#define ACTION_BACK				10
+#define ACTION_FORWARD			11
+#define ACTION_RIGHT			12
+#define ACTION_LEFT				13
+#define ACTION_MOVEDOWN			14
+#define ACTION_MOVEUP			15
+#define ACTION_JUMP				16
+#define ACTION_SHOWSCORES		17
+#define ACTION_AUTOMAP_PANUP	18
+#define ACTION_AUTOMAP_PANLEFT	19
+#define ACTION_AUTOMAP_PANDOWN	20
+#define ACTION_AUTOMAP_PANRIGHT 21
+#define ACTION_AUTOMAP_ZOOMIN   22
+#define ACTION_AUTOMAP_ZOOMOUT	23
+
+#define NUM_ACTIONS				24
 
 extern byte Actions[NUM_ACTIONS];
 
