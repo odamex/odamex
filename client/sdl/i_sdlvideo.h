@@ -344,6 +344,9 @@ private:
 	uint16_t				mHeight;
 
 	PixelFormat				mFormat;
+
+	bool mDrawLogicalRect;
+	SDL_Rect mLogicalRect;
 };
 
 

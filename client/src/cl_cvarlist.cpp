@@ -129,6 +129,7 @@ CVAR(					am_ovexitcolor, "ff ff 00", "",
 CVAR(					am_ovteleportcolor, "ff a3 00", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(am_followplayer, "1", "", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Console
 // -------
@@ -358,6 +359,22 @@ CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(				cl_autorecord_coop, "1", "Allows cooperative netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_deathmatch, "1", "Allows deathmatch netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_duel, "1", "Allows duel netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_teamdm, "1", "Allows team deathmatch netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_autorecord_ctf, "1", "Allows CTF netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+
 CVAR(				cl_autoscreenshot, "0", "Automatically capture a screenshot at the end of a match.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -462,7 +479,16 @@ CVAR(			hud_timer, "1", "Show the HUD timer",
 CVAR_RANGE(		hud_transparency, "0.5", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(			hud_heldflag, "1", "Show the held flag border",
+CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR(			hud_heldflag_flash, "1", "Enables the flashes around the flag border.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
@@ -628,6 +654,9 @@ CVAR_FUNC_DECL(	vid_defheight, "480", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest availible video mode.",

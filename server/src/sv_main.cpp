@@ -66,6 +66,7 @@
 #include "g_warmup.h"
 #include "sv_banlist.h"
 #include "d_main.h"
+#include "m_fileio.h"
 
 #include <algorithm>
 #include <sstream>
@@ -4276,33 +4277,112 @@ void SV_WinCheck (void)
 }
 
 EXTERN_CVAR (sv_waddownloadcap)
+EXTERN_CVAR (sv_download_test)
 
-//
-// SV_WadDownloads
-//
-void SV_WadDownloads (void)
+void SV_OptimizedDownloadTest()
 {
 	// nobody around?
-	if(players.empty())
+	if (players.empty())
 		return;
 
+	FILE* file = NULL;
+	std::string lastDownloadName;
+
 	// wad downloading
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (it->playerstate != PST_DOWNLOAD)
 			continue;
 
 		client_t *cl = &(it->client);
 
-		if(!cl->download.name.length())
+		if (!cl->download.name.length())
 			continue;
 
 		static char buff[1024];
 		// Smaller buffer for slower clients
-		int chunk_size = (sizeof(buff) > (unsigned)cl->rate*1000/TICRATE) ? cl->rate*1000/TICRATE : sizeof(buff);
+		int chunk_size = (sizeof(buff) > (unsigned)cl->rate * 1000 / TICRATE) ? cl->rate * 1000 / TICRATE : sizeof(buff);
 
 		// maximum rate client can download at (in bytes per second)
-		int download_rate = (sv_waddownloadcap > cl->rate) ? cl->rate*1000 : sv_waddownloadcap*1000;
+		int download_rate = (sv_waddownloadcap > cl->rate) ? cl->rate * 1000 : sv_waddownloadcap * 1000;
+
+		//Try to open/close the download file as little as possible.
+		//Too many fopen/fclose calls is inefficient and can choke out the game loop causing the server to be choppy with multiple clients downloading
+		if (lastDownloadName != cl->download.name)
+		{
+			if (file)
+				fclose(file);
+			file = fopen(cl->download.name.c_str(), "rb");
+			lastDownloadName = cl->download.name;
+		}
+
+		if (!file)
+			return;
+
+		do
+		{
+			// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
+			// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
+			// This prevents packets from getting dropped due to size on some networks.
+			if (cl->netbuf.size() + cl->reliablebuf.size())
+				SV_SendPacket(*it);
+
+			if (!cl->download.next_offset)
+			{
+				MSG_WriteMarker(&cl->netbuf, svc_wadinfo);
+				MSG_WriteLong(&cl->netbuf, M_FileLength(file));
+			}
+
+			fseek(file, cl->download.next_offset, SEEK_SET);
+			size_t read = fread(buff, 1, chunk_size, file);
+
+			if (!read)
+				break;
+
+			MSG_WriteMarker(&cl->netbuf, svc_wadchunk);
+			MSG_WriteLong(&cl->netbuf, cl->download.next_offset);
+			MSG_WriteShort(&cl->netbuf, read);
+			MSG_WriteChunk(&cl->netbuf, buff, read);
+
+			// Make double-sure the wadchunk is sent in its own packet
+			if (cl->netbuf.size() + cl->reliablebuf.size())
+				SV_SendPacket(*it);
+
+			cl->download.next_offset += read;
+		} while (
+			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE
+			/ (double)(gametic % TICRATE)	// bps already used
+			+ (double)chunk_size / TICRATE 	// bps this chunk will use
+			< (double)download_rate);
+	}
+
+	if (file)
+		fclose(file);
+}
+
+void SV_DownloadOriginal()
+{
+	// nobody around?
+	if (players.empty())
+		return;
+
+	// wad downloading
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (it->playerstate != PST_DOWNLOAD)
+			continue;
+
+		client_t *cl = &(it->client);
+
+		if (!cl->download.name.length())
+			continue;
+
+		static char buff[1024];
+		// Smaller buffer for slower clients
+		int chunk_size = (sizeof(buff) > (unsigned)cl->rate * 1000 / TICRATE) ? cl->rate * 1000 / TICRATE : sizeof(buff);
+
+		// maximum rate client can download at (in bytes per second)
+		int download_rate = (sv_waddownloadcap > cl->rate) ? cl->rate * 1000 : sv_waddownloadcap * 1000;
 
 		do
 		{
@@ -4320,16 +4400,16 @@ void SV_WadDownloads (void)
 			if (cl->netbuf.size() + cl->reliablebuf.size())
 				SV_SendPacket(*it);
 
-			if(!cl->download.next_offset)
+			if (!cl->download.next_offset)
 			{
-				MSG_WriteMarker (&cl->netbuf, svc_wadinfo);
-				MSG_WriteLong (&cl->netbuf, filelen);
+				MSG_WriteMarker(&cl->netbuf, svc_wadinfo);
+				MSG_WriteLong(&cl->netbuf, filelen);
 			}
 
-			MSG_WriteMarker (&cl->netbuf, svc_wadchunk);
-			MSG_WriteLong (&cl->netbuf, cl->download.next_offset);
-			MSG_WriteShort (&cl->netbuf, read);
-			MSG_WriteChunk (&cl->netbuf, buff, read);
+			MSG_WriteMarker(&cl->netbuf, svc_wadchunk);
+			MSG_WriteLong(&cl->netbuf, cl->download.next_offset);
+			MSG_WriteShort(&cl->netbuf, read);
+			MSG_WriteChunk(&cl->netbuf, buff, read);
 
 			// Make double-sure the wadchunk is sent in its own packet
 			if (cl->netbuf.size() + cl->reliablebuf.size())
@@ -4338,10 +4418,21 @@ void SV_WadDownloads (void)
 			cl->download.next_offset += read;
 		} while (
 			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE
-				/ (double)(gametic % TICRATE)	// bps already used
-				+ (double)chunk_size / TICRATE 	// bps this chunk will use
+			/ (double)(gametic % TICRATE)	// bps already used
+			+ (double)chunk_size / TICRATE 	// bps this chunk will use
 			< (double)download_rate);
 	}
+}
+
+//
+// SV_WadDownloads
+//
+void SV_WadDownloads (void)
+{
+	if (sv_download_test)
+		SV_OptimizedDownloadTest();
+	else
+		SV_DownloadOriginal();
 }
 
 //
