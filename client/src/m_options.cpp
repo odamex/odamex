@@ -108,6 +108,7 @@ EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_heldflag)
+EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
@@ -166,6 +167,16 @@ EXTERN_CVAR (cl_predictsectors)
 EXTERN_CVAR (cl_predictweapons)
 EXTERN_CVAR (cl_serverdownload)
 
+// Demo Options
+EXTERN_CVAR(cl_splitnetdemos)
+EXTERN_CVAR(cl_autorecord)
+EXTERN_CVAR(cl_autorecord_coop)
+EXTERN_CVAR(cl_autorecord_deathmatch)
+EXTERN_CVAR(cl_autorecord_duel)
+EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_autorecord_ctf)
+
+
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
@@ -213,6 +224,18 @@ value_t OnOffAuto[3] = {
 	{ 0.0, "Off" },
 	{ 1.0, "On" },
 	{ 2.0, "Auto" }
+};
+
+value_t DemoRestrictions[2] = {
+	{ 0.0, "Restrict" },
+	{ 1.0, "Allow" }
+};
+
+static value_t FlagHelds[] =
+{
+	{ 0.0, "Off" },
+	{ 1.0, "Complete" },
+	{ 2.0, "Simple" }
 };
 
 static value_t DoomOrOdamex[2] =
@@ -651,7 +674,19 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Predict sector actions",		{&cl_predictsectors},{3.0},		{0.0},		{0.0},		{PredictSectors} },
 	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
-	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} }
+	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
+
+	 { redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Autorecord filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 };
 
 menu_t NetworkMenu = {
@@ -660,7 +695,7 @@ menu_t NetworkMenu = {
 	STACKARRAY_LENGTH(NetworkItems),
 	177,
 	NetworkItems,
-	0,
+	1,
 	0,
 	NULL
 };
@@ -739,6 +774,9 @@ EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
+EXTERN_CVAR (hud_show_scoreboard_ondeath)
+EXTERN_CVAR (hud_fullhudtype)
+EXTERN_CVAR (hud_demobar)
 
 static value_t Crosshairs[] =
 {
@@ -751,6 +789,11 @@ static value_t Crosshairs[] =
 	{ 6.0, "Box" },
 	{ 7.0, "Angle" },
 	{ 8.0, "Big Thing" }
+};
+
+static value_t HUDStyles[] = {
+	{ 0.0, "ZDoom" },
+	{ 1.0, "Odamex" },
 };
 
 static value_t Wipes[] = {
@@ -801,11 +844,13 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete, "Display Time Left",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
-	{ discrete, "Held Flag Border",         {&hud_heldflag},        {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
+	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
+	{ discrete, "Held Flag Flashes",        {&hud_heldflag_flash}, {2.0}, {0.0},   {0.0},   {OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -829,12 +874,16 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
+
+
 };
 
 static void M_UpdateDisplayOptions()
