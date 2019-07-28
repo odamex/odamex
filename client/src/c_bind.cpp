@@ -41,7 +41,7 @@
 
 extern NetDemo netdemo;
 
-FKeyBindings Bindings, DoubleBindings, NetDemoBindings;
+FKeyBindings Bindings, DoubleBindings, NetDemoBindings, AutomapBindings;
 
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
@@ -144,13 +144,14 @@ FBinding DefaultNetDemoBindings[]  =
 /* Special bindings when it comes
  * to Odamex's demo playbacking.
  */
-FBinding DefaultDoubleBindings[] =
+FBinding DefaultAutomapBindings[] =
 {
-	{"a", "lol"},
+	{ "g", "am_grid" },
+	{ "m", "am_setmark" },
+	{ "c", "am_clearmarks" },
 	{ NULL, NULL }
 };
 
-static std::string AutoMapBindings[NUM_KEYS];	// Ch0wW : Addition of automap rebindings
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 static bool KeysDown[NUM_KEYS];
@@ -160,6 +161,23 @@ static NameToKeyCodeTable nameToKeyCode = NameToKeyCodeTable();
 
 typedef OHashTable<int, OString> KeyCodeToNameTable;
 static KeyCodeToNameTable keyCodeToName = KeyCodeToNameTable();
+
+void BIND_Init(void)
+{
+	Bindings.SetBindingType("bind");
+	DoubleBindings.SetBindingType("doublebind");
+	NetDemoBindings.SetBindingType("netdemobind");
+	AutomapBindings.SetBindingType("mapbind");
+}
+
+// Bind default bindings
+void C_BindDefaults(void)
+{
+	Bindings.SetBinds(DefaultBindings);
+	AutomapBindings.SetBinds(DefaultAutomapBindings);
+	NetDemoBindings.SetBinds(DefaultNetDemoBindings);
+}
+
 
 static void buildKeyCodeTables()
 {
@@ -621,31 +639,30 @@ END_COMMAND(unnetdemobind)
 
 BEGIN_COMMAND(netdemobind)
 {
-	NetDemoBindings.BindAKey(argc, argv, "Current netdemokey bindings");
+	NetDemoBindings.BindAKey(argc, argv, "Current netdemo key bindings");
 }
 END_COMMAND(netdemobind)
+
+BEGIN_COMMAND(unmapbind)
+{
+	if (argc > 1)
+	{
+		AutomapBindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(unmapbind)
+
+BEGIN_COMMAND(mapbind)
+{
+	AutomapBindings.BindAKey(argc, argv, "Current automap key bindings");
+}
+END_COMMAND(mapbind)
 
 BEGIN_COMMAND (binddefaults)
 {
 	C_BindDefaults();
 }
 END_COMMAND (binddefaults)
-
-
-void BIND_Init(void)
-{
-	Bindings.SetBindingType("bind");
-	DoubleBindings.SetBindingType("doublebind");
-	NetDemoBindings.SetBindingType("netdemobind");
-}
-
-// Bind default bindings
-void C_BindDefaults(void)
-{
-	NetDemoBindings.SetBinds(DefaultNetDemoBindings);
-	Bindings.SetBinds(DefaultBindings);
-	DoubleBindings.SetBinds(DefaultDoubleBindings);
-}
 
 //
 // C_DoNetDemoKey

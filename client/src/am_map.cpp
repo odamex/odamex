@@ -159,8 +159,6 @@ EXTERN_CVAR		(screenblocks)
 #define AM_ZOOMOUTKEY2	0x4a	// DIK_SUBTRACT
 #define AM_GOBIGKEY		0x0b	// DIK_0
 #define AM_FOLLOWKEY	'f'
-#define AM_GRIDKEY		'g'
-#define AM_MARKKEY		'm'
 #define AM_CLEARMARKKEY	'c'
 
 #define AM_NUMMARKPOINTS 10
@@ -346,6 +344,9 @@ static BOOL stopped = true;
 
 extern NetDemo netdemo;
 
+void AM_clearMarks();
+void AM_addMark();
+
 #define NUMALIASES		3
 #define WALLCOLORS		-1
 #define FDWALLCOLORS	-2
@@ -356,6 +357,24 @@ extern NetDemo netdemo;
 #define NUMWEIGHTS		(1<<WEIGHTBITS)
 #define WEIGHTMASK		(NUMWEIGHTS-1)
 
+BEGIN_COMMAND(am_grid)
+{
+	grid = !grid;
+	Printf(PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
+} END_COMMAND(am_grid)
+
+
+BEGIN_COMMAND(am_setmark)
+{
+	AM_addMark();
+	Printf(PRINT_HIGH, "%s %d\n", GStrings(AMSTR_MARKEDSPOT), markpointnum);
+} END_COMMAND(am_setmark)
+
+BEGIN_COMMAND(am_clearmarks)
+{
+	AM_clearMarks();
+	Printf(PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
+} END_COMMAND(am_clearmarks)
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
 
@@ -368,7 +387,6 @@ bool AM_OverlayAutomapVisible()
 {
 	return automapactive && viewactive;
 }
-
 
 //
 //
@@ -844,18 +862,6 @@ BOOL AM_Responder (event_t *ev)
 				f_oldloc.x = MAXINT;
 				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 				break;
-			case AM_GRIDKEY:
-				grid = !grid;
-				Printf (PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
-				break;
-			case AM_MARKKEY:
-				Printf (PRINT_HIGH, "%s %d\n",  GStrings(AMSTR_MARKEDSPOT), markpointnum);
-				AM_addMark();
-				break;
-			case AM_CLEARMARKKEY:
-				AM_clearMarks();
-				Printf (PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
-				break;
 			default:
 				rc = false;
 			}
@@ -942,8 +948,13 @@ void AM_Ticker (void)
 
 	amclock++;
 
-	if (followplayer)
+	if (followplayer) {
 		AM_doFollowPlayer();
+	}
+	else {
+		m_paninc.x = 0;
+		m_paninc.y = 0;
+	}
 
 	// Change the zoom if necessary
 	if (ftom_zoommul != FRACUNIT)

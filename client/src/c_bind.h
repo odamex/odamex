@@ -83,6 +83,7 @@ void C_BindDefaults(void);
 extern FKeyBindings Bindings;
 extern FKeyBindings DoubleBindings;
 extern FKeyBindings NetDemoBindings;
+extern FKeyBindings AutomapBindings;
 
 #endif //__C_BINDINGS_H__
 

@@ -113,6 +113,7 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 		Bindings.ArchiveBindings(f);
 		DoubleBindings.ArchiveBindings(f);
 		NetDemoBindings.ArchiveBindings(f);
+		AutomapBindings.ArchiveBindings(f);
 
 		// Archive all aliases
 		fprintf(f, "\n// --- Aliases ---\n\n");
