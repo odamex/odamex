@@ -33,6 +33,9 @@ Warmup::status_t Warmup::get_status()
 // Always allow score changes on the client
 bool Warmup::checkscorechange()
 {
+	if (this->status != Warmup::INGAME)
+		return false;
+
 	return true;
 }
 
