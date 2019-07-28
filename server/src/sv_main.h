@@ -59,6 +59,7 @@ bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 byte SV_PlayerHearingLoss(player_t &cl, fixed_t &x, fixed_t &y);
 
 void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
+void STACK_ARGS SV_BroadcastButPlayerPrintf(int level, int player_id, const char *fmt, ...);
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);

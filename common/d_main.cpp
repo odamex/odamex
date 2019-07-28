@@ -263,7 +263,7 @@ static std::string BaseFileSearchDir(std::string dir, const std::string &file, c
 			if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
 				std::string local_file(dir + d_name);
-				std::string local_hash(W_MD5(local_file));
+				std::string local_hash(wads.GetMD5Hash(local_file));
 
 				if (hash.empty() || hash == local_hash)
 				{
@@ -300,7 +300,7 @@ static std::string BaseFileSearchDir(std::string dir, const std::string &file, c
 		if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
 			std::string local_file(dir + FindFileData.cFileName);
-			std::string local_hash(W_MD5(local_file));
+			std::string local_hash(wads.GetMD5Hash(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -620,7 +620,7 @@ void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
         DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
 
 	for (size_t i = 0; i < patchfiles.size(); i++)
-		patchhashes.push_back(W_MD5(patchfiles[i]));
+		patchhashes.push_back(wads.GetMD5Hash(patchfiles[i]));
 
 	// check for ChexQuest
 	bool chexLoaded = false;
@@ -828,13 +828,13 @@ void D_LoadResourceFiles(
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError("\nYou cannot load additional WADs with the shareware version. Register!");
 
-	wadhashes = W_InitMultipleFiles(wadfiles);
+	wadhashes = wads.InitMultipleFiles(wadfiles);
 
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
 	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.LoadStrings(wads.GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
 
 	D_DoDefDehackedPatch(newpatchfiles);

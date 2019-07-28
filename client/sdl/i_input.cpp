@@ -101,7 +101,7 @@ static void I_DisableKeyRepeat()
 //
 static bool I_CanRepeat()
 {
-	return ConsoleState == c_down || HU_ChatMode() != CHAT_INACTIVE || menuactive;
+	return ConsoleState == c_down || chat.GetStatus() != HUDChat::INACTIVE || menuactive;
 }
 
 

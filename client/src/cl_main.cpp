@@ -2024,6 +2024,7 @@ void CL_UpdatePlayer()
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
+// ToDo : Maybe merge with svc_playercheatstate ?
 void CL_UpdatePlayerState(void)
 {
 	byte id				= MSG_ReadByte();
@@ -2066,6 +2067,15 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+}
+
+// ToDo : Maybe merge with svc_playercheatstate ?
+void CL_UpdatePlayerCheatState(void)
+{
+	player_t *p;
+
+	p = &idplayer(MSG_ReadByte());
+	p->cheats = MSG_ReadByte();
 }
 
 //
@@ -2355,6 +2365,7 @@ void CL_SpawnPlayer()
 	p->bonuscount = 0;
 	p->extralight = 0;
 	p->fixedcolormap = 0;
+	p->cheats = 0;
 
 	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;
@@ -3562,6 +3573,7 @@ void CL_InitCommands(void)
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
+	cmds[svc_playercheatstate]	= &CL_UpdatePlayerCheatState;
 
 	cmds[svc_updateping]		= &CL_UpdatePing;
 	cmds[svc_spawnmobj]			= &CL_SpawnMobj;

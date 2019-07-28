@@ -379,46 +379,46 @@ static void P_InitAnimDefs ()
 {
 	int lump = -1;
 
-	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
+	while ((lump = wads.FindLump ("ANIMDEFS", lump)) != -1)
 	{
-		SC_OpenLumpNum (lump, "ANIMDEFS");
+		sc.OpenLumpNum (lump, "ANIMDEFS");
 
-		while (SC_GetString ())
+		while (sc.GetString ())
 		{
-			if (SC_Compare ("flat"))
+			if (sc.Compare ("flat"))
 			{
 				ParseAnim (false);
 			}
-			else if (SC_Compare ("texture"))
+			else if (sc.Compare ("texture"))
 			{
 				ParseAnim (true);
 			}
-			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			else if (sc.Compare ("switch"))   // Don't support switchdef yet...
 			{
 				//P_ProcessSwitchDef ();
 //				SC_ScriptError("switchdef not supported.");
 			}
-			else if (SC_Compare ("warp"))
+			else if (sc.Compare ("warp"))
 			{
-				SC_MustGetString ();
-				if (SC_Compare ("flat"))
+				sc.MustGetString ();
+				if (sc.Compare ("flat"))
 				{
-					SC_MustGetString ();
-					flatwarp[R_FlatNumForName (sc_String)] = true;
+					sc.MustGetString ();
+					flatwarp[R_FlatNumForName (sc.String)] = true;
 				}
-				else if (SC_Compare ("texture"))
+				else if (sc.Compare ("texture"))
 				{
 					// TODO: Make texture warping work with wall textures
-					SC_MustGetString ();
-					R_TextureNumForName (sc_String);
+					sc.MustGetString ();
+					R_TextureNumForName (sc.String);
 				}
 				else
 				{
-					SC_ScriptError (NULL, NULL);
+					sc.ScriptError (NULL, NULL);
 				}
 			}
 		}
-		SC_Close ();
+		sc.Close ();
 	}
 }
 
@@ -430,9 +430,9 @@ static void ParseAnim (byte istex)
 	byte min, max;
 	int frame;
 
-	SC_MustGetString ();
-	picnum = istex ? R_CheckTextureNumForName (sc_String)
-		: W_CheckNumForName (sc_String, ns_flats) - firstflat;
+	sc.MustGetString ();
+	picnum = istex ? R_CheckTextureNumForName (sc.String)
+		: wads.CheckNumForName (sc.String, ns_flats) - firstflat;
 
 	if (picnum == -1)
 	{ // Base pic is not present, so skip this definition
@@ -474,7 +474,7 @@ static void ParseAnim (byte istex)
 	memset (place->speedmin, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmin));
 	memset (place->speedmax, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmax));
 
-	while (SC_GetString ())
+	while (sc.GetString ())
 	{
 		/*if (SC_Compare ("allowdecals"))
 		{
@@ -484,41 +484,41 @@ static void ParseAnim (byte istex)
 			}
 			continue;
 		}
-		else*/ if (!SC_Compare ("pic"))
+		else*/ if (!sc.Compare ("pic"))
 		{
-			SC_UnGet ();
+			sc.UnGet ();
 			break;
 		}
 
 		if (place->numframes == MAX_ANIM_FRAMES)
 		{
-			SC_ScriptError ("Animation has too many frames");
+			sc.ScriptError ("Animation has too many frames");
 		}
 
 		min = max = 1;	// Shut up, GCC
 
-		SC_MustGetNumber ();
-		frame = sc_Number;
-		SC_MustGetString ();
-		if (SC_Compare ("tics"))
+		sc.MustGetNumber ();
+		frame = sc.Number;
+		sc.MustGetString ();
+		if (sc.Compare ("tics"))
 		{
-			SC_MustGetNumber ();
-			if (sc_Number < 0)
-				sc_Number = 0;
-			else if (sc_Number > 255)
-				sc_Number = 255;
-			min = max = sc_Number;
+			sc.MustGetNumber ();
+			if (sc.Number < 0)
+				sc.Number = 0;
+			else if (sc.Number > 255)
+				sc.Number = 255;
+			min = max = sc.Number;
 		}
-		else if (SC_Compare ("rand"))
+		else if (sc.Compare ("rand"))
 		{
-			SC_MustGetNumber ();
-			min = sc_Number >= 0 ? sc_Number : 0;
-			SC_MustGetNumber ();
-			max = sc_Number <= 255 ? sc_Number : 255;
+			sc.MustGetNumber ();
+			min = sc.Number >= 0 ? sc.Number : 0;
+			sc.MustGetNumber ();
+			max = sc.Number <= 255 ? sc.Number : 255;
 		}
 		else
 		{
-			SC_ScriptError ("Must specify a duration for animation frame");
+			sc.ScriptError ("Must specify a duration for animation frame");
 		}
 
 		place->speedmin[place->numframes] = min;
@@ -529,7 +529,7 @@ static void ParseAnim (byte istex)
 
 	if (place->numframes < 2)
 	{
-		SC_ScriptError ("Animation needs at least 2 frames");
+		sc.ScriptError ("Animation needs at least 2 frames");
 	}
 
 	place->countdown = place->speedmin[0];
@@ -575,10 +575,10 @@ void P_InitPicAnims (void)
 	// [RH] Load an ANIMDEFS lump first
 	P_InitAnimDefs ();
 
-	if (W_CheckNumForName ("ANIMATED") == -1)
+	if (wads.CheckNumForName ("ANIMATED") == -1)
 		return;
 
-	animdefs = (byte *)W_CacheLumpName ("ANIMATED", PU_STATIC);
+	animdefs = (byte *)wads.CacheLumpName ("ANIMATED", PU_STATIC);
 
 	// Init animation
 
@@ -614,8 +614,8 @@ void P_InitPicAnims (void)
 			}
 			else
 			{
-				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
+				if (wads.CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
+					wads.CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
 					continue;
 
 				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);

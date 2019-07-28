@@ -439,10 +439,10 @@ static int WI_DrawName (const char *str, int x, int y)
 	while (*str)
 	{
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		lump = W_CheckNumForName (charname);
+		lump = wads.CheckNumForName (charname);
 		if (lump != -1)
 		{
-			p = W_CachePatch (lump);
+			p = wads.CachePatch (lump);
 			screen->DrawPatchClean (p, x, y);
 			x += p->width() - 1;
 		}
@@ -453,7 +453,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	p = W_CachePatch ("FONTB39");
+	p = wads.CachePatch ("FONTB39");
 	return (5*(p->height()-p->topoffset()))/4;
 }
 
@@ -1368,9 +1368,9 @@ static int WI_CalcWidth (const char *str)
 
 	while (*str) {
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		lump = W_CheckNumForName (charname);
+		lump = wads.CheckNumForName (charname);
 		if (lump != -1) {
-			p = W_CachePatch (lump);
+			p = wads.CachePatch (lump);
 			w += p->width() - 1;
 		} else {
 			w += 12;
@@ -1393,7 +1393,7 @@ void WI_loadData (void)
 		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
-	const patch_t* bg_patch = W_CachePatch(name);
+	const patch_t* bg_patch = wads.CachePatch(name);
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -1406,13 +1406,13 @@ void WI_loadData (void)
 		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
 		if (lname)
-			j = W_CheckNumForName (lname);
+			j = wads.CheckNumForName (lname);
 		else
 			j = -1;
 
 		if (j >= 0)
 		{
-			lnames[i] = W_CachePatch (j, PU_STATIC);
+			lnames[i] = wads.CachePatch (j, PU_STATIC);
 		}
 		else
 		{
@@ -1425,13 +1425,13 @@ void WI_loadData (void)
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		// you are here
-		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
+		yah[0] = wads.CachePatch ("WIURH0", PU_STATIC);
 
 		// you are here (alt.)
-		yah[1] = W_CachePatch ("WIURH1", PU_STATIC);
+		yah[1] = wads.CachePatch ("WIURH1", PU_STATIC);
 
 		// splat
-		splat = W_CachePatch ("WISPLAT", PU_STATIC);
+		splat = wads.CachePatch ("WISPLAT", PU_STATIC);
 
 		if (wbs->epsd < 3)
 		{
@@ -1445,7 +1445,7 @@ void WI_loadData (void)
 					{
 						// animations
 						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-						a->p[i] = W_CachePatch (name, PU_STATIC);
+						a->p[i] = wads.CachePatch (name, PU_STATIC);
 					}
 					else
 					{
@@ -1461,62 +1461,62 @@ void WI_loadData (void)
     {
 		 // numbers 0-9
 		sprintf(name, "WINUM%d", i);
-		num[i] = W_CachePatch (name, PU_STATIC);
+		num[i] = wads.CachePatch (name, PU_STATIC);
     }
 
-    wiminus = W_CachePatch ("WIMINUS", PU_STATIC);
+    wiminus = wads.CachePatch ("WIMINUS", PU_STATIC);
 
 	// percent sign
-    percent = W_CachePatch ("WIPCNT", PU_STATIC);
+    percent = wads.CachePatch ("WIPCNT", PU_STATIC);
 
 	// ":"
-    colon = W_CachePatch ("WICOLON", PU_STATIC);
+    colon = wads.CachePatch ("WICOLON", PU_STATIC);
 
 	// "finished"
-	finished = W_CachePatch ("WIF", PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
+	finished = wads.CachePatch ("WIF", PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 	// "entering"
-	entering = W_CachePatch ("WIENTER", PU_STATIC);
+	entering = wads.CachePatch ("WIENTER", PU_STATIC);
 
 	// "kills"
-    kills = W_CachePatch ("WIOSTK", PU_STATIC);
+    kills = wads.CachePatch ("WIOSTK", PU_STATIC);
 
 	// "items"
-    items = W_CachePatch ("WIOSTI", PU_STATIC);
+    items = wads.CachePatch ("WIOSTI", PU_STATIC);
 
     // "scrt"
-    scrt = W_CachePatch ("WIOSTS", PU_STATIC);
+    scrt = wads.CachePatch ("WIOSTS", PU_STATIC);
 
 	// "secret"
-    secret = W_CachePatch ("WISCRT2", PU_STATIC);
+    secret = wads.CachePatch ("WISCRT2", PU_STATIC);
 
 	// "frgs"
-	frags = (patch_t *)W_CachePatch ("WIFRGS", PU_STATIC);
+	frags = (patch_t *)wads.CachePatch ("WIFRGS", PU_STATIC);
 
 	// "time"
-    timepatch = W_CachePatch ("WITIME", PU_STATIC);
+    timepatch = wads.CachePatch ("WITIME", PU_STATIC);
 
     // "sucks"
-    sucks =W_CachePatch ("WISUCKS", PU_STATIC);
+    sucks = wads.CachePatch ("WISUCKS", PU_STATIC);
 
     // "par"
-    par = W_CachePatch ("WIPAR", PU_STATIC);
+    par = wads.CachePatch ("WIPAR", PU_STATIC);
 
 	// "total"
-	total = (patch_t *)W_CachePatch ("WIMSTT", PU_STATIC);
+	total = (patch_t *)wads.CachePatch ("WIMSTT", PU_STATIC);
 
 	// your face
-	star = (patch_t *)W_CachePatch ("STFST01", PU_STATIC);
+	star = (patch_t *)wads.CachePatch ("STFST01", PU_STATIC);
 
 	// dead face
-	bstar = (patch_t *)W_CachePatch("STFDEAD0", PU_STATIC);
+	bstar = (patch_t *)wads.CachePatch("STFDEAD0", PU_STATIC);
 
-	p = W_CachePatch ("STPBANY", PU_STATIC);
+	p = wads.CachePatch ("STPBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(name, "STPB%d", i);
-		faceclassic[i] = W_CachePatch(name, PU_STATIC);
+		faceclassic[i] = wads.CachePatch(name, PU_STATIC);
 	}
 }
 

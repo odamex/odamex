@@ -269,14 +269,14 @@ void G_ParseMapInfo (void)
 	DWORD levelflags;
 
 	int lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	while ((lump = wads.FindLump("MAPINFO", lump)) != -1)
 	{
 		SetLevelDefaults (&defaultinfo);
-		SC_OpenLumpNum (lump, "MAPINFO");
+		sc.OpenLumpNum (lump, "MAPINFO");
 
-		while (SC_GetString ())
+		while (sc.GetString ())
 		{
-			switch (SC_MustMatchString (MapInfoTopLevel))
+			switch (sc.MustMatchString (MapInfoTopLevel))
 			{
 			case MITL_DEFAULTMAP:
 				SetLevelDefaults (&defaultinfo);
@@ -285,11 +285,11 @@ void G_ParseMapInfo (void)
 
 			case MITL_MAP:		// map <MAPNAME> <Nice Name>
 				levelflags = defaultinfo.flags;
-				SC_MustGetString ();
-				if (IsNum (sc_String))
+				sc.MustGetString ();
+				if (IsNum (sc.String))
 				{	// MAPNAME is a number, assume a Hexen wad
-					int map = atoi (sc_String);
-					sprintf (sc_String, "MAP%02d", map);
+					int map = atoi (sc.String);
+					sprintf (sc.String, "MAP%02d", map);
 					SKYFLATNAME[5] = 0;
 					HexenHack = true;
 					// Hexen levels are automatically nointermission
@@ -298,7 +298,7 @@ void G_ParseMapInfo (void)
 								| LEVEL_EVENLIGHTING
 								| LEVEL_SNDSEQTOTALCTRL;
 				}
-				levelindex = FindWadLevelInfo (sc_String);
+				levelindex = FindWadLevelInfo (sc.String);
 				if (levelindex == -1)
 				{
 					wadlevelinfos.push_back(level_pwad_info_t());
@@ -306,9 +306,9 @@ void G_ParseMapInfo (void)
 				}
 				levelinfo = &wadlevelinfos[levelindex];
 				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
-				uppercopy (levelinfo->mapname, sc_String);
-				SC_MustGetString ();
-				ReplaceString (&levelinfo->level_name, sc_String);
+				uppercopy (levelinfo->mapname, sc.String);
+				sc.MustGetString ();
+				ReplaceString (&levelinfo->level_name, sc.String);
 				// Set up levelnum now so that the Teleport_NewMap specials
 				// in hexen.wad work without modification.
 				if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
@@ -322,8 +322,8 @@ void G_ParseMapInfo (void)
 				break;
 
 			case MITL_CLUSTERDEF:	// clusterdef <clusternum>
-				SC_MustGetNumber ();
-				clusterindex = FindWadClusterInfo (sc_Number);
+				sc.MustGetNumber ();
+				clusterindex = FindWadClusterInfo (sc.Number);
 				if (clusterindex == -1)
 				{
 					wadclusterinfos.push_back(cluster_info_t());
@@ -331,12 +331,12 @@ void G_ParseMapInfo (void)
 					memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
 				}
 				clusterinfo = &wadclusterinfos[clusterindex];
-				clusterinfo->cluster = sc_Number;
+				clusterinfo->cluster = sc.Number;
 				ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, NULL, clusterinfo, 0);
 				break;
 			}
 		}
-		SC_Close ();
+		sc.Close ();
 	}
 }
 
@@ -350,18 +350,18 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 
 	byte* info = levelinfo ? (byte*)levelinfo : (byte*)clusterinfo;
 
-	while (SC_GetString())
+	while (sc.GetString())
 	{
-		if (SC_MatchString(MapInfoTopLevel) != -1)
+		if (sc.MatchString(MapInfoTopLevel) != -1)
 		{
-			SC_UnGet();
+			sc.UnGet();
 			break;
 		}
 
-		int entry = SC_MustMatchString(strings);
+		int entry = sc.MustMatchString(strings);
 		if (entry == -1)
 			continue;
-
+    
 		handler = handlers + entry;
 
 		switch (handler->type)
@@ -370,48 +370,48 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_EATNEXT:
-			SC_MustGetString();
+			sc.MustGetString();
 			break;
 
 		case MITYPE_INT:
-			SC_MustGetNumber();
-			*((int*)(info + handler->data1)) = sc_Number;
+			sc.MustGetNumber();
+			*((int*)(info + handler->data1)) = sc.Number;
 			break;
 
 		case MITYPE_FLOAT:
-			SC_MustGetFloat();
-			*((float*)(info + handler->data1)) = sc_Float;
+			sc.MustGetFloat();
+			*((float*)(info + handler->data1)) = sc.Float;
 			break;
 
 		case MITYPE_COLOR:
 			{
-				SC_MustGetString();
+			sc.MustGetString();
 
-				argb_t color(V_GetColorFromString(sc_String));
+				argb_t color(V_GetColorFromString(sc.String));
 				uint8_t* ptr = (uint8_t*)(info + handler->data1);
 				ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
 			}
 			break;
 
 		case MITYPE_MAPNAME:
-			SC_MustGetString();
-			if (IsNum(sc_String))
+			sc.MustGetString();
+			if (IsNum(sc.String))
 			{
-				int map = atoi(sc_String);
-				sprintf(sc_String, "MAP%02d", map);
+				int map = atoi(sc.String);
+				sprintf(sc.String, "MAP%02d", map);
 			}
-			strncpy((char*)(info + handler->data1), sc_String, 8);
+			strncpy((char*)(info + handler->data1), sc.String, 8);
 			break;
 
 		case MITYPE_LUMPNAME:
-			SC_MustGetString();
-			uppercopy((char*)(info + handler->data1), sc_String);
+			sc.MustGetString();
+			uppercopy((char*)(info + handler->data1), sc.String);
 			break;
 
 		case MITYPE_SKY:
-			SC_MustGetString();	// get texture name;
-			uppercopy((char*)(info + handler->data1), sc_String);
-			SC_MustGetFloat();		// get scroll speed
+			sc.MustGetString();	// get texture name;
+			uppercopy((char*)(info + handler->data1), sc.String);
+			sc.MustGetFloat();		// get scroll speed
 			//if (HexenHack)
 			//{
 			//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
@@ -431,24 +431,24 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_CLUSTER:
-			SC_MustGetNumber();
-			*((int*)(info + handler->data1)) = sc_Number;
+			sc.MustGetNumber();
+			*((int*)(info + handler->data1)) = sc.Number;
 			if (HexenHack)
 			{
-				cluster_info_t* clusterH = FindClusterInfo(sc_Number);
+				cluster_info_t* clusterH = FindClusterInfo(sc.Number);
 				if (clusterH)
 					clusterH->flags |= CLUSTER_HUB;
 			}
 			break;
 
 		case MITYPE_STRING:
-			SC_MustGetString();
-			ReplaceString((const char**)(info + handler->data1), sc_String);
+			sc.MustGetString();
+			ReplaceString((const char**)(info + handler->data1), sc.String);
 			break;
 
 		case MITYPE_CSTRING:
-			SC_MustGetString();
-			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
+			sc.MustGetString();
+			strncpy((char*)(info + handler->data1), sc.String, handler->data2);
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
 			break;
 		}
@@ -584,7 +584,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 	if (mapname.length())
 	{
-		if (W_CheckNumForName(mapname.c_str()) != -1)
+		if (wads.CheckNumForName(mapname.c_str()) != -1)
             G_DeferedInitNew((char *)mapname.c_str());
         else
         {
@@ -652,7 +652,7 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
+		if (wads.CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
@@ -666,7 +666,7 @@ BEGIN_COMMAND (map)
 
 			}
 
-			if (W_CheckNumForName (mapname) == -1)
+			if (wads.CheckNumForName (mapname) == -1)
 			{ // Still no luck, oh well.
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
 			}
@@ -680,7 +680,7 @@ BEGIN_COMMAND (map)
 		else
 		{
 			// Ch0wW - Map was still not found, so don't bother trying loading the map.
-			if (W_CheckNumForName (argv[1]) == -1)
+			if (wads.CheckNumForName (argv[1]) == -1)
 			{
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
 			}
@@ -751,7 +751,7 @@ level_info_t *FindLevelByNum (int num)
 	{
 		level_info_t *i = LevelInfos;
 		while (i->level_name) {
-			if (i->levelnum == num && W_CheckNumForName (i->mapname) != -1)
+			if (i->levelnum == num && wads.CheckNumForName (i->mapname) != -1)
 				return i;
 			i++;
 		}

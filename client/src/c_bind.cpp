@@ -773,7 +773,7 @@ bool C_DoKey (event_t *ev, FKeyBindings *binds, FKeyBindings *doublebinds)
 	if (!binding->length())
 		binding = &binds->Binds[ev->data1];
 
-	if (binding->length() && (HU_ChatMode() == CHAT_INACTIVE || ev->data1 < 256))
+	if (binding->length() && (chat.GetStatus() == HUDChat::INACTIVE || ev->data1 < 256))
 	{
 		if (ev->type == ev_keydown)
 		{

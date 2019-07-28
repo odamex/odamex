@@ -246,9 +246,9 @@ void F_TextWrite (void)
 	int x = (primary_surface->getWidth() - width) / 2;
 	int y = (primary_surface->getHeight() - height) / 2;
 
-	int lump = W_CheckNumForName(finaleflat, ns_flats);
+	int lump = wads.CheckNumForName(finaleflat, ns_flats);
 	if (lump >= 0)
-		screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+		screen->FlatFill(x, y, width + x, height + y, (byte*)wads.CacheLumpNum(lump, PU_CACHE));
 
 	V_MarkRect(x, y, width, height);
 
@@ -520,7 +520,7 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const patch_t* background_patch = W_CachePatch("BOSSBACK");
+	const patch_t* background_patch = wads.CachePatch("BOSSBACK");
 
 	// draw the background to the surface
 	cast_surface->lock();
@@ -531,7 +531,7 @@ void F_CastDrawer()
 	const spritedef_t* sprdef = &sprites[castsprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	const patch_t* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	const patch_t* sprite_patch = wads.CachePatch(sprframe->lump[0]);
 	if (sprframe->flip[0])
 		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160, 170);
 	else
@@ -760,8 +760,8 @@ void F_BunnyScroll (void)
 	int 		stage;
 	static int	laststage;
 
-	p1 = W_CachePatch ("PFUB2");
-	p2 = W_CachePatch ("PFUB1");
+	p1 = wads.CachePatch ("PFUB2");
+	p2 = wads.CachePatch ("PFUB1");
 
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
@@ -796,7 +796,7 @@ void F_BunnyScroll (void)
 		return;
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect(W_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
+		screen->DrawPatchIndirect(wads.CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
 	}
@@ -811,7 +811,7 @@ void F_BunnyScroll (void)
 	}
 
 	sprintf (name,"END%i",stage);
-	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
+	screen->DrawPatchIndirect(wads.CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
 
@@ -831,16 +831,16 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage1), 0, 0);
+					screen->DrawPatchIndirect (wads.CachePatch (gameinfo.finalePage1), 0, 0);
 					break;
 				case '2':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
+					screen->DrawPatchIndirect (wads.CachePatch (gameinfo.finalePage2), 0, 0);
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage3), 0, 0);
+					screen->DrawPatchIndirect (wads.CachePatch (gameinfo.finalePage3), 0, 0);
 					break;
 			}
 			break;

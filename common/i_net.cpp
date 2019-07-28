@@ -946,7 +946,7 @@ void InitNetMessageFormats()
       MSG(clc_wantwad,            "ssN"),
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
-      MSG(clc_cheatpulse,         "x"),
+      MSG(clc_cheatgive,         "x"),
       MSG(clc_callvote,           "x"),
       MSG(clc_vote,               "x"),
       MSG(clc_maplist,            "x"),

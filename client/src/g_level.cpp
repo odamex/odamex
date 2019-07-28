@@ -223,7 +223,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
+	if (wads.CheckNumForName (mapname) == -1)
 	{
 		I_Error ("Could not find map %s\n", mapname);
 	}
@@ -320,7 +320,7 @@ void G_SecretExitLevel (int position, int drawscores)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+		 && (wads.CheckNumForName("map31")<0))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -368,7 +368,7 @@ void G_DoCompleted (void)
 	} else {
 		wminfo.next[0] = 0;
 		if (secretexit) {
-			if (W_CheckNumForName (level.secretmap) != -1) {
+			if (wads.CheckNumForName (level.secretmap) != -1) {
 				strncpy (wminfo.next, level.secretmap, 8);
 				strncpy (wminfo.lname1, FindLevelInfo (level.secretmap)->pname, 8);
 			} else {

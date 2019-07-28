@@ -154,32 +154,32 @@ void ST_initNew (void)
 	strcpy (name, "ARM1A0");
 	for (i = 0; i < 2; i++) {
 		name[3] = i + '1';
-		if ((lump = W_CheckNumForName (name, ns_sprites)) != -1)
-			armors[i] = W_CachePatch (lump, PU_STATIC);
+		if ((lump = wads.CheckNumForName (name, ns_sprites)) != -1)
+			armors[i] = wads.CachePatch (lump, PU_STATIC);
 	}
 
 	for (i = 0; i < 4; i++) {
-		if ((lump = W_CheckNumForName (ammopatches[i], ns_sprites)) != -1)
-			ammos[i] = W_CachePatch (lump, PU_STATIC);
-		if ((lump = W_CheckNumForName (bigammopatches[i], ns_sprites)) != -1)
-			bigammos[i] = W_CachePatch (lump, PU_STATIC);
+		if ((lump = wads.CheckNumForName (ammopatches[i], ns_sprites)) != -1)
+			ammos[i] = wads.CachePatch (lump, PU_STATIC);
+		if ((lump = wads.CheckNumForName (bigammopatches[i], ns_sprites)) != -1)
+			bigammos[i] = wads.CachePatch (lump, PU_STATIC);
 	}
 
 	for (i = 0; i < 2; i++)
 	{
-		if ((lump = W_CheckNumForName(medipatches[i], ns_sprites)) != -1)
-			medi[i] = W_CachePatch(lump, PU_STATIC);
+		if ((lump = wads.CheckNumForName(medipatches[i], ns_sprites)) != -1)
+			medi[i] = wads.CachePatch(lump, PU_STATIC);
 	}
 
-	flagiconteam = W_CachePatch ("FLAGIT", PU_STATIC);
-	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
-	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
-	flagiconbtakenbyb = W_CachePatch ("FLAGI3BB", PU_STATIC);
-	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
-	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
-	flagiconrtakenbyr = W_CachePatch ("FLAGI3RR", PU_STATIC);
-	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
-	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
+	flagiconteam = wads.CachePatch ("FLAGIT", PU_STATIC);
+	flagiconbhome = wads.CachePatch ("FLAGIC2B", PU_STATIC);
+	flagiconrhome = wads.CachePatch ("FLAGIC2R", PU_STATIC);
+	flagiconbtakenbyb = wads.CachePatch ("FLAGI3BB", PU_STATIC);
+	flagiconbtakenbyr = wads.CachePatch ("FLAGI3BR", PU_STATIC);
+	flagiconrtakenbyb = wads.CachePatch ("FLAGI3RB", PU_STATIC);
+	flagiconrtakenbyr = wads.CachePatch ("FLAGI3RR", PU_STATIC);
+	flagiconbdropped = wads.CachePatch ("FLAGIC4B", PU_STATIC);
+	flagiconrdropped = wads.CachePatch ("FLAGIC4R", PU_STATIC);
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();
@@ -187,14 +187,14 @@ void ST_initNew (void)
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
-	line_leftempty = W_CachePatch ("ODABARLE", PU_STATIC);
-	line_leftfull = W_CachePatch ("ODABARLF", PU_STATIC);
-	line_centerempty = W_CachePatch ("ODABARCE", PU_STATIC);
-	line_centerleft = W_CachePatch ("ODABARCL", PU_STATIC);
-	line_centerright = W_CachePatch ("ODABARCR", PU_STATIC);
-	line_centerfull = W_CachePatch ("ODABARCF", PU_STATIC);
-	line_rightempty = W_CachePatch ("ODABARRE", PU_STATIC);
-	line_rightfull = W_CachePatch ("ODABARRF", PU_STATIC);
+	line_leftempty = wads.CachePatch ("ODABARLE", PU_STATIC);
+	line_leftfull = wads.CachePatch ("ODABARLF", PU_STATIC);
+	line_centerempty = wads.CachePatch ("ODABARCE", PU_STATIC);
+	line_centerleft = wads.CachePatch ("ODABARCL", PU_STATIC);
+	line_centerright = wads.CachePatch ("ODABARCR", PU_STATIC);
+	line_centerfull = wads.CachePatch ("ODABARCF", PU_STATIC);
+	line_rightempty = wads.CachePatch ("ODABARRE", PU_STATIC);
+	line_rightfull = wads.CachePatch ("ODABARRF", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)

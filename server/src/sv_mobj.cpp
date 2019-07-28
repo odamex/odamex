@@ -116,6 +116,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	player.mo = player.camera = mobj->ptr();
 	player.playerstate = PST_LIVE;
 	player.refire = 0;
+	player.cheats = 0;
 	player.damagecount = 0;
 	player.bonuscount = 0;
 	player.extralight = 0;

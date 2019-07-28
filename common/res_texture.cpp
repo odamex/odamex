@@ -451,8 +451,8 @@ void TextureManager::startup()
 	clear();
 
 	// initialize the FLATS data
-	mFirstFlatLumpNum = W_GetNumForName("F_START") + 1;
-	mLastFlatLumpNum = W_GetNumForName("F_END") - 1;
+	mFirstFlatLumpNum = wads.GetNumForName("F_START") + 1;
+	mLastFlatLumpNum = wads.GetNumForName("F_END") - 1;
 	
 	// initialize the PNAMES mapping to map an index in PNAMES to a WAD lump number
 	readPNamesDirectory();
@@ -515,11 +515,11 @@ void TextureManager::precache()
 //
 void TextureManager::readPNamesDirectory()
 {
-	int lumpnum = W_GetNumForName("PNAMES");
-	size_t lumplen = W_LumpLength(lumpnum);
+	int lumpnum = wads.GetNumForName("PNAMES");
+	size_t lumplen = wads.LumpLength(lumpnum);
 
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	wads.ReadLump(lumpnum, lumpdata);
 
 	int num_pname_mappings = LELONG(*((int*)(lumpdata + 0)));
 	mPNameLookup = new int[num_pname_mappings];
@@ -527,7 +527,7 @@ void TextureManager::readPNamesDirectory()
 	for (int i = 0; i < num_pname_mappings; i++)
 	{
 		const char* lumpname = (const char*)(lumpdata + 4 + 8 * i);
-		mPNameLookup[i] = W_CheckNumForName(lumpname);
+		mPNameLookup[i] = wads.CheckNumForName(lumpname);
 
 		// killough 4/17/98:
 		// Some wads use sprites as wall patches, so repeat check and
@@ -538,7 +538,7 @@ void TextureManager::readPNamesDirectory()
 		// lump namespace problem.
 
 		if (mPNameLookup[i] == -1)
-			mPNameLookup[i] = W_CheckNumForName(lumpname, ns_sprites);
+			mPNameLookup[i] = wads.CheckNumForName(lumpname, ns_sprites);
 	}
 
 	delete [] lumpdata;
@@ -554,62 +554,62 @@ void TextureManager::readAnimDefLump()
 {
 	int lump = -1;
 	
-	while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
+	while ((lump = wads.FindLump("ANIMDEFS", lump)) != -1)
 	{
-		SC_OpenLumpNum(lump, "ANIMDEFS");
+		sc.OpenLumpNum(lump, "ANIMDEFS");
 
-		while (SC_GetString())
+		while (sc.GetString())
 		{
-			if (SC_Compare("flat") || SC_Compare("texture"))
+			if (sc.Compare("flat") || sc.Compare("texture"))
 			{
 				anim_t anim;
 
 				Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-				if (SC_Compare("flat"))
+				if (sc.Compare("flat"))
 					texture_type = Texture::TEX_FLAT;
 
-				SC_MustGetString();
-				anim.basepic = texturemanager.getHandle(sc_String, texture_type);
+				sc.MustGetString();
+				anim.basepic = texturemanager.getHandle(sc.String, texture_type);
 
 				anim.curframe = 0;
 				anim.numframes = 0;
 				memset(anim.speedmin, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
 				memset(anim.speedmax, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
 
-				while (SC_GetString())
+				while (sc.GetString())
 				{
-					if (!SC_Compare("pic"))
+					if (!sc.Compare("pic"))
 					{
-						SC_UnGet();
+						sc.UnGet();
 						break;
 					}
 
 					if ((unsigned)anim.numframes == anim_t::MAX_ANIM_FRAMES)
-						SC_ScriptError ("Animation has too many frames");
+						sc.ScriptError ("Animation has too many frames");
 
 					byte min = 1, max = 1;
 					
-					SC_MustGetNumber();
-					int frame = sc_Number;
-					SC_MustGetString();
-					if (SC_Compare("tics"))
+					sc.MustGetNumber();
+					int frame = sc.Number;
+					sc.MustGetString();
+					if (sc.Compare("tics"))
 					{
-						SC_MustGetNumber();
-						sc_Number = clamp(sc_Number, 0, 255);
-						min = max = sc_Number;
+						sc.MustGetNumber();
+						sc.Number = clamp(sc.Number, 0, 255);
+						min = max = sc.Number;
 					}
-					else if (SC_Compare("rand"))
+					else if (sc.Compare("rand"))
 					{
-						SC_MustGetNumber();
-						min = MAX(sc_Number, 0);
-						SC_MustGetNumber();
-						max = MIN(sc_Number, 255);
+						sc.MustGetNumber();
+						min = MAX(sc.Number, 0);
+						sc.MustGetNumber();
+						max = MIN(sc.Number, 255);
 						if (min > max)
 							min = max = 1;
 					}
 					else
 					{
-						SC_ScriptError ("Must specify a duration for animation frame");
+						sc.ScriptError ("Must specify a duration for animation frame");
 					}
 
 					anim.speedmin[anim.numframes] = min;
@@ -624,24 +624,24 @@ void TextureManager::readAnimDefLump()
 					anim.basepic != TextureManager::NO_TEXTURE_HANDLE)
 					mAnimDefs.push_back(anim);
 			}
-			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			else if (sc.Compare ("switch"))   // Don't support switchdef yet...
 			{
 				//P_ProcessSwitchDef ();
 //				SC_ScriptError("switchdef not supported.");
 			}
-			else if (SC_Compare("warp"))
+			else if (sc.Compare("warp"))
 			{
-				SC_MustGetString();
-				if (SC_Compare("flat") || SC_Compare("texture"))
+				sc.MustGetString();
+				if (sc.Compare("flat") || sc.Compare("texture"))
 				{
 
 					Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-					if (SC_Compare("flat"))
+					if (sc.Compare("flat"))
 						texture_type = Texture::TEX_FLAT;
 
-					SC_MustGetString();
+					sc.MustGetString();
 
-					texhandle_t texhandle = texturemanager.getHandle(sc_String, texture_type);
+					texhandle_t texhandle = texturemanager.getHandle(sc.String, texture_type);
 					if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
 						texhandle == TextureManager::NO_TEXTURE_HANDLE)
 						continue;
@@ -661,11 +661,11 @@ void TextureManager::readAnimDefLump()
 				}
 				else
 				{
-					SC_ScriptError(NULL, NULL);
+					sc.ScriptError(NULL, NULL);
 				}
 			}
 		}
-		SC_Close ();
+		sc.Close ();
 	}
 }
 
@@ -698,16 +698,16 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
-	int lumpnum = W_CheckNumForName("ANIMATED");
+	int lumpnum = wads.CheckNumForName("ANIMATED");
 	if (lumpnum == -1)
 		return;
 
-	size_t lumplen = W_LumpLength(lumpnum);
+	size_t lumplen = wads.LumpLength(lumpnum);
 	if (lumplen == 0)
 		return;
 
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	wads.ReadLump(lumpnum, lumpdata);
 
 	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
 	{
@@ -880,7 +880,7 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		mappatch_t	patches[1];
 	};
 
-	int lumpnum = W_CheckNumForName(lumpname);
+	int lumpnum = wads.CheckNumForName(lumpname);
 	if (lumpnum == -1)
 	{
 		if (iequals("TEXTURE1", lumpname))
@@ -888,12 +888,12 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		return;
 	}
 
-	size_t lumplen = W_LumpLength(lumpnum);
+	size_t lumplen = wads.LumpLength(lumpnum);
 	if (lumplen == 0)
 		return;
 
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	wads.ReadLump(lumpnum, lumpdata);
 
 	int* texoffs = (int*)(lumpdata + 4);
 
@@ -1025,7 +1025,7 @@ texhandle_t TextureManager::getPatchHandle(unsigned int lumpnum)
 	if (lumpnum >= numlumps)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
-	if (W_LumpLength(lumpnum) == 0)
+	if (wads.LumpLength(lumpnum) == 0)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	return (texhandle_t)lumpnum | PATCH_HANDLE_MASK;
@@ -1034,7 +1034,7 @@ texhandle_t TextureManager::getPatchHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getPatchHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str());
+	int lumpnum = wads.CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getPatchHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1048,9 +1048,9 @@ void TextureManager::cachePatch(texhandle_t handle)
 {
 	unsigned int lumpnum = handle & ~(PATCH_HANDLE_MASK | SPRITE_HANDLE_MASK);
 
-	unsigned int lumplen = W_LumpLength(lumpnum);
+	unsigned int lumplen = wads.LumpLength(lumpnum);
 	byte* lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	wads.ReadLump(lumpnum, lumpdata);
 
 	int width = LESHORT(*(short*)(lumpdata + 0));
 	int height = LESHORT(*(short*)(lumpdata + 2));
@@ -1088,7 +1088,7 @@ texhandle_t TextureManager::getSpriteHandle(unsigned int lumpnum)
 	if (lumpnum >= numlumps)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
-	if (W_LumpLength(lumpnum) == 0)
+	if (wads.LumpLength(lumpnum) == 0)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	return (texhandle_t)lumpnum | SPRITE_HANDLE_MASK;
@@ -1097,10 +1097,10 @@ texhandle_t TextureManager::getSpriteHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getSpriteHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str(), ns_sprites);
+	int lumpnum = wads.CheckNumForName(name.c_str(), ns_sprites);
 	if (lumpnum >= 0)
 		return getSpriteHandle(lumpnum);
-	lumpnum = W_CheckNumForName(name.c_str());
+	lumpnum = wads.CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getSpriteHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1130,7 +1130,7 @@ texhandle_t TextureManager::getFlatHandle(unsigned int lumpnum)
 	if (flatnum >= flatcount)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
-	if (W_LumpLength(lumpnum) == 0)
+	if (wads.LumpLength(lumpnum) == 0)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	return (texhandle_t)flatnum | FLAT_HANDLE_MASK;
@@ -1139,7 +1139,7 @@ texhandle_t TextureManager::getFlatHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getFlatHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str(), ns_flats);
+	int lumpnum = wads.CheckNumForName(name.c_str(), ns_flats);
 	if (lumpnum >= 0)
 		return getFlatHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1157,7 +1157,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	// should we check that the handle is valid for a flat?
 
 	unsigned int lumpnum = (handle & ~FLAT_HANDLE_MASK) + mFirstFlatLumpNum;
-	unsigned int lumplen = W_LumpLength(lumpnum);
+	unsigned int lumplen = wads.LumpLength(lumpnum);
 
 	int width, height;	
 
@@ -1175,7 +1175,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	if (clientside)
 	{
 		byte *lumpdata = new byte[lumplen];
-		W_ReadLump(lumpnum, lumpdata);
+		wads.ReadLump(lumpnum, lumpdata);
 
 		// convert the row-major flat lump to into column-major
 		Res_TransposeImage(texture->mData, lumpdata, width, height);
@@ -1245,9 +1245,9 @@ void TextureManager::cacheWallTexture(texhandle_t handle)
 			if (texdefpatch->patch == -1)		// not found ?
 				continue;
 
-			unsigned int lumplen = W_LumpLength(texdefpatch->patch);
+			unsigned int lumplen = wads.LumpLength(texdefpatch->patch);
 			byte* lumpdata = new byte[lumplen];
-			W_ReadLump(texdefpatch->patch, lumpdata);
+			wads.ReadLump(texdefpatch->patch, lumpdata);
 			Res_DrawPatchIntoTexture(texture, lumpdata, texdefpatch->originx, texdefpatch->originy);
 
 			delete [] lumpdata;
@@ -1268,7 +1268,7 @@ texhandle_t TextureManager::getRawTextureHandle(unsigned int lumpnum)
 	if (lumpnum >= numlumps)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
-	if (W_LumpLength(lumpnum) == 0)
+	if (wads.LumpLength(lumpnum) == 0)
 		return NOT_FOUND_TEXTURE_HANDLE;
 	return (texhandle_t)lumpnum | RAW_HANDLE_MASK;
 }
@@ -1276,7 +1276,7 @@ texhandle_t TextureManager::getRawTextureHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getRawTextureHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str());
+	int lumpnum = wads.CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getRawTextureHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1298,10 +1298,10 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 	if (clientside)
 	{
 		unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
-		unsigned int lumplen = W_LumpLength(lumpnum);
+		unsigned int lumplen = wads.LumpLength(lumpnum);
 
 		byte* lumpdata = new byte[lumplen];
-		W_ReadLump(lumpnum, lumpdata);
+		wads.ReadLump(lumpnum, lumpdata);
 
 		// convert the row-major flat lump to into column-major
 		Res_TransposeImage(texture->mData, lumpdata, width, height);
@@ -1321,7 +1321,7 @@ texhandle_t TextureManager::getPNGTextureHandle(unsigned int lumpnum)
 	if (lumpnum >= numlumps)
 		return NOT_FOUND_TEXTURE_HANDLE;
 
-	if (W_LumpLength(lumpnum) == 0)
+	if (wads.LumpLength(lumpnum) == 0)
 		return NOT_FOUND_TEXTURE_HANDLE;
 	return (texhandle_t)lumpnum | PNG_HANDLE_MASK;
 }
@@ -1329,7 +1329,7 @@ texhandle_t TextureManager::getPNGTextureHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getPNGTextureHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str());
+	int lumpnum = wads.CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getPNGTextureHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1393,13 +1393,13 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	MEMFILE* mfp = NULL;
 	
 	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
-	unsigned int lumplen = W_LumpLength(lumpnum);
+	unsigned int lumplen = wads.LumpLength(lumpnum);
 
 	char lumpname[9];
-	W_GetLumpName(lumpname, lumpnum);
+	wads.GetLumpName(lumpname, lumpnum);
 
 	lumpdata = new byte[lumplen];
-	W_ReadLump(lumpnum, lumpdata);
+	wads.ReadLump(lumpnum, lumpdata);
 
 	if (!png_check_sig(lumpdata, 8))
 	{

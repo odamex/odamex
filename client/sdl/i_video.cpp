@@ -971,7 +971,7 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
-	const patch_t* diskpatch = W_CachePatch("STDISK");
+	const patch_t* diskpatch = wads.CachePatch("STDISK");
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();

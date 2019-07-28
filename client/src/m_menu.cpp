@@ -655,7 +655,7 @@ void M_DrawLoad (void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
+	screen->DrawPatchClean ((patch_t *)wads.CachePatch("M_LOADG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -700,7 +700,7 @@ void M_DrawSave(void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
+	screen->DrawPatchClean ((patch_t *)wads.CachePatch("M_SAVEG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
@@ -910,15 +910,15 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	int i;
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
+	screen->DrawPatchClean (wads.CachePatch ("M_LSLEFT"), x-8, y+7);
 
 	for (i = 0; i < len; i++)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
+		screen->DrawPatchClean (wads.CachePatch ("M_LSCNTR"), x, y+7);
 		x += 8;
 	}
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+	screen->DrawPatchClean (wads.CachePatch ("M_LSRGHT"), x, y+7);
 }
 
 //
@@ -926,13 +926,13 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
+	screen->DrawPatchClean (wads.CachePatch("M_DOOM"), 94, 2);
 }
 
 void M_DrawNewGame(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_NEWG"), 96, 14);
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SKILL"), 54, 38);
+	screen->DrawPatchClean ((patch_t *)wads.CachePatch("M_NEWG"), 96, 14);
+	screen->DrawPatchClean ((patch_t *)wads.CachePatch("M_SKILL"), 54, 38);
 }
 
 void M_NewGame(int choice)
@@ -973,7 +973,7 @@ int 	epi;
 
 void M_DrawEpisode(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, 38);
+	screen->DrawPatchClean ((patch_t *)wads.CachePatch("M_EPISOD"), 54, 38);
 }
 
 void M_VerifyNightmare(int ch)
@@ -1061,7 +1061,7 @@ void M_Expansion (int choice)
 //
 void M_DrawReadThis1 (void)
 {
-	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
+	patch_t *p = wads.CachePatch(gameinfo.info.infoPage[0]);
 	screen->DrawPatchFullScreen(p);
 }
 
@@ -1070,7 +1070,7 @@ void M_DrawReadThis1 (void)
 //
 void M_DrawReadThis2 (void)
 {
-	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
+	patch_t *p = wads.CachePatch(gameinfo.info.infoPage[1]);
 	screen->DrawPatchFullScreen(p);
 }
 
@@ -1079,7 +1079,7 @@ void M_DrawReadThis2 (void)
 //
 void M_DrawReadThis3 (void)
 {
-	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
+	patch_t *p = wads.CachePatch(gameinfo.info.infoPage[2]);
 	screen->DrawPatchFullScreen(p);
 }
 
@@ -1088,7 +1088,7 @@ void M_DrawReadThis3 (void)
 //
 void M_DrawOptions(void)
 {
-	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
+	screen->DrawPatchClean (wads.CachePatch("M_OPTTTL"), 108, 15);
 }
 
 void M_Options(int choice)
@@ -1272,7 +1272,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw title
 	{
-		patch_t *patch = W_CachePatch ("M_PSTTL");
+		patch_t *patch = wads.CachePatch ("M_PSTTL");
         screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
 
 		/*screen->DrawPatchClean (patch,
@@ -1400,12 +1400,12 @@ static void M_PlayerSetupDrawer (void)
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
 
-		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
+		screen->DrawTranslatedPatchClean (wads.CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
 
 	// Draw box surrounding fire and player:
-	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
+	screen->DrawPatchClean (wads.CachePatch ("M_PBOX"),
 		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 
 	// Draw player color sliders
@@ -1621,13 +1621,13 @@ static void M_SlidePlayerBlue (int choice)
 //
 void M_DrawEmptyCell (oldmenu_t *menu, int item)
 {
-	screen->DrawPatchClean (W_CachePatch("M_CELL1"),
+	screen->DrawPatchClean (wads.CachePatch("M_CELL1"),
 		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
 void M_DrawSelCell (oldmenu_t *menu, int item)
 {
-	screen->DrawPatchClean (W_CachePatch("M_CELL2"),
+	screen->DrawPatchClean (wads.CachePatch("M_CELL2"),
 		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
@@ -1714,7 +1714,7 @@ bool M_Responder (event_t* ev)
 		ch2 = ev->data2;		// ASCII
 	}
 
-	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
+	if (ch == -1 || chat.GetStatus() != HUDChat::INACTIVE)
 		return false;
 
 	if (menuactive && OptionsActive) {
@@ -2016,7 +2016,7 @@ void M_Drawer()
 			for (int i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
-					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
+					screen->DrawPatchClean (wads.CachePatch(currentMenu->menuitems[i].name), x, y);
 				y += LINEHEIGHT;
 			}
 
@@ -2024,7 +2024,7 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
+				screen->DrawPatchClean(wads.CachePatch(skullName[whichSkull]),
 					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}
