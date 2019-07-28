@@ -157,6 +157,7 @@ FBinding DefaultAutomapBindings[] =
 	{ "downarrow", "+am_pandown"},
 	{ "leftarrow", "+am_panleft"},
 	{ "rightarrow", "+am_panright"},
+	{ "0", "am_big"},
 	{ NULL, NULL }
 };
 

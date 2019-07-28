@@ -25,6 +25,8 @@
 #include <stdio.h>
 
 #include "doomdef.h"
+#include "cmdlib.h"
+#include "c_bind.h"
 #include "g_level.h"
 #include "z_zone.h"
 #include "doomdef.h"
@@ -271,6 +273,7 @@ mline_t thintriangle_guy[] = {
 
 static int 	cheating = 0;
 static int 	grid = 0;
+static int	bigstate = 0;
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
@@ -346,6 +349,9 @@ extern NetDemo netdemo;
 
 void AM_clearMarks();
 void AM_addMark();
+void AM_saveScaleAndLoc(void);
+void AM_restoreScaleAndLoc(void);
+void AM_minOutWindowScale(void);
 
 #define NUMALIASES		3
 #define WALLCOLORS		-1
@@ -375,6 +381,25 @@ BEGIN_COMMAND(am_clearmarks)
 	AM_clearMarks();
 	Printf(PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
 } END_COMMAND(am_clearmarks)
+
+BEGIN_COMMAND(am_big)
+{
+	bigstate = !bigstate;
+	if (bigstate)
+	{
+		AM_saveScaleAndLoc();
+		AM_minOutWindowScale();
+	}
+	else
+		AM_restoreScaleAndLoc();
+} END_COMMAND(am_big)
+
+BEGIN_COMMAND(am_togglefollow)
+{
+	followplayer = !followplayer;
+	f_oldloc.x = MAXINT;
+	Printf(PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
+} END_COMMAND(am_togglefollow)
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
 
@@ -794,47 +819,43 @@ END_COMMAND (togglemap)
 BOOL AM_Responder (event_t *ev)
 {
 	int rc;
-	static int bigstate = 0;
 
 	rc = false;
 
-	if (automapactive && ev->type == ev_keydown)
+	if (automapactive && ev->type == ev_keydown || ev->type == ev_keyup)
 	{
-		rc = true;
-		switch(ev->data1)
+		if (followplayer)
 		{
-		case AM_GOBIGKEY:
-			bigstate = !bigstate;
-			if (bigstate)
+			std::string *binding;
+			binding = &AutomapBindings.Binds[ev->data1];
+
+			// hardcode the pause key to also control netpause
+			if (!strnicmp(binding->c_str(), "+am_pan", 7))
+				return false;
+
+		/*	bool res = C_DoKey(ev, &AutomapBindings, NULL);
+			if (res && ev->type == EV_KeyUp && !last)
 			{
-				AM_saveScaleAndLoc();
-				AM_minOutWindowScale();
+				// If this is a release event we also need to check if it released a button in the main Bindings
+				// so that that button does not get stuck.
+				const char *defbind = Bindings.GetBind(ev->data1);
+				return (defbind[0] != '+'); // Let G_Responder handle button releases
 			}
-			else
-				AM_restoreScaleAndLoc();
-			break;
-		default:
-			switch (ev->data2)
-			{
-			case AM_FOLLOWKEY:
-				followplayer = !followplayer;
-				f_oldloc.x = MAXINT;
-				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
-				break;
-			default:
-				rc = false;
-			}
+			return res;*/
+
 		}
-		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
+	}
+
+	return false;
+}
+
+/*
+if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
 		{
 			rc = true;	// [RH] Eat last keypress of cheat sequence
 			cheating = (cheating+1) % 3;
 		}
-	}
-
-	return rc;
-}
-
+*/
 
 //
 // Zooming
