@@ -32,21 +32,6 @@
 #include "d_event.h"
 #include <stdio.h>
 
-BOOL C_DoKey (event_t *ev);
-void C_ArchiveBindings (FILE *f);
-
-void BIND_Init(void);
-
-// Stuff used by the customize controls menu
-
-std::string C_NameKeys (int first, int second);
-void C_ChangeBinding (const char *str, int newone);
-
-// Returns string bound to given key (NULL if none)
-const char *C_GetBinding (int key);
-
-void C_ReleaseKeys();
-
 struct FBinding
 {
 	const char *Key;
@@ -75,9 +60,23 @@ public:
 	int  GetKeysForCommand(const char *cmd, int *first, int *second);
 	void ChangeBinding(const char *str, int newone);
 	std::string GetBind(int key);
-	std::string GetKeyStringsFromCommand(char *cmd, bool bTwoEntries=false);
+	std::string GetKeyStringsFromCommand(char *cmd, bool bTwoEntries = false);
 };
 
+bool C_DoKey(event_t *ev, FKeyBindings *binds, FKeyBindings *doublebinds);
+void C_ArchiveBindings (FILE *f);
+
+void BIND_Init(void);
+
+// Stuff used by the customize controls menu
+
+std::string C_NameKeys (int first, int second);
+void C_ChangeBinding (const char *str, int newone);
+
+// Returns string bound to given key (NULL if none)
+const char *C_GetBinding (int key);
+
+void C_ReleaseKeys();
 void C_BindDefaults(void);
 
 extern FKeyBindings Bindings;

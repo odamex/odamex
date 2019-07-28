@@ -149,6 +149,7 @@ FBinding DefaultAutomapBindings[] =
 	{ "g", "am_grid" },
 	{ "m", "am_setmark" },
 	{ "c", "am_clearmarks" },
+	{ "f", "am_togglefollow" }, 
 	{ "+", "+am_zoomin" },
 	{ "kp+", "+am_zoomin" },
 	{ "-", "+am_zoomout" },
@@ -732,7 +733,7 @@ bool C_DoSpectatorKey (event_t *ev)
 	return false;
 }
 
-BOOL C_DoKey (event_t *ev)
+bool C_DoKey (event_t *ev, FKeyBindings *binds, FKeyBindings *doublebinds)
 {
 	std::string *binding;
 	int dclickspot;
@@ -741,31 +742,36 @@ BOOL C_DoKey (event_t *ev)
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
+	if ((unsigned int)ev->data1 >= NUM_KEYS)
+		return false;
+
 	dclickspot = ev->data1 >> 3;
 	dclickmask = 1 << (ev->data1 & 7);
 
-	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
+	if (doublebinds != NULL && DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
 		// Key pressed for a double click
 		binding = &DoubleBindings.Binds[ev->data1];
 		DClicked[dclickspot] |= dclickmask;
-	} else {
+	} 
+	else 
+	{
 		if (ev->type == ev_keydown) {
 			// Key pressed for a normal press
-			binding = &Bindings.Binds[ev->data1];
+			binding = &binds->Binds[ev->data1];
 			DClickTime[ev->data1] = level.time + 20;
-		} else if (DClicked[dclickspot] & dclickmask) {
+		} else if (doublebinds != NULL && DClicked[dclickspot] & dclickmask) {
 			// Key released from a double click
-			binding = &DoubleBindings.Binds[ev->data1];
+			binding = &doublebinds->Binds[ev->data1];
 			DClicked[dclickspot] &= ~dclickmask;
 			DClickTime[ev->data1] = 0;
 		} else {
 			// Key released from a normal press
-			binding = &Bindings.Binds[ev->data1];
+			binding = &binds->Binds[ev->data1];
 		}
 	}
 
 	if (!binding->length())
-		binding = &Bindings.Binds[ev->data1];
+		binding = &binds->Binds[ev->data1];
 
 	if (binding->length() && (HU_ChatMode() == CHAT_INACTIVE || ev->data1 < 256))
 	{

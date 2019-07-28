@@ -61,6 +61,8 @@ extern patch_t *hu_font[];
 
 argb_t CL_GetPlayerColor(player_t*);
 
+EXTERN_CVAR(am_followplayer)
+
 // Group palette index and RGB value together:
 typedef struct am_color_s {
 	palindex_t  index;
@@ -337,8 +339,6 @@ static patch_t *marknums[10]; // numbers used for marking by the automap
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0; // next point to be assigned
 
-static bool followplayer = true; // specifies whether to follow the player around
-
 // [RH] Not static so that the DeHackEd code can reach it.
 extern byte cheat_amap_seq[5];
 cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
@@ -396,9 +396,9 @@ BEGIN_COMMAND(am_big)
 
 BEGIN_COMMAND(am_togglefollow)
 {
-	followplayer = !followplayer;
+	am_followplayer = !am_followplayer;
 	f_oldloc.x = MAXINT;
-	Printf(PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
+	Printf(PRINT_HIGH, "%s\n", am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 } END_COMMAND(am_togglefollow)
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
@@ -446,7 +446,7 @@ void AM_restoreScaleAndLoc(void)
 {
 	m_w = old_m_w;
 	m_h = old_m_h;
-	if (!followplayer)
+	if (!am_followplayer)
 	{
 		m_x = old_m_x;
 		m_y = old_m_y;
@@ -518,8 +518,8 @@ void AM_findMinMaxBoundaries(void)
 //
 void AM_changeWindowLoc(void)
 {
-	if (m_paninc.x || m_paninc.y) {
-		followplayer = 0;
+	if (0 != (m_paninc.x | m_paninc.y)) {
+		am_followplayer = "0";
 		f_oldloc.x = MAXINT;
 	}
 
@@ -818,34 +818,25 @@ END_COMMAND (togglemap)
 //
 BOOL AM_Responder (event_t *ev)
 {
-	int rc;
-
-	rc = false;
-
-	if (automapactive && ev->type == ev_keydown || ev->type == ev_keyup)
+	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
-		if (followplayer)
+		if (am_followplayer)
 		{
-			std::string *binding;
-			binding = &AutomapBindings.Binds[ev->data1];
-
-			// hardcode the pause key to also control netpause
-			if (!strnicmp(binding->c_str(), "+am_pan", 7))
+			// check for am_pan* and ignore in follow mode
+			const char *defbind = AutomapBindings.Binds[ev->data1].c_str();
+			if (!strnicmp(defbind, "+am_pan", 7))
 				return false;
-
-		/*	bool res = C_DoKey(ev, &AutomapBindings, NULL);
-			if (res && ev->type == EV_KeyUp && !last)
+		}
+			bool res = C_DoKey(ev, &AutomapBindings, NULL);
+			if (res && ev->type == ev_keyup)
 			{
 				// If this is a release event we also need to check if it released a button in the main Bindings
 				// so that that button does not get stuck.
-				const char *defbind = Bindings.GetBind(ev->data1);
+				const char *defbind = Bindings.Binds[ev->data1].c_str();
 				return (defbind[0] != '+'); // Let G_Responder handle button releases
 			}
-			return res;*/
-
-		}
+			return res;
 	}
-
 	return false;
 }
 
@@ -917,7 +908,7 @@ void AM_Ticker (void)
 
 	amclock++;
 
-	if (followplayer) {
+	if (am_followplayer) {
 		AM_doFollowPlayer();
 	}
 	else {
