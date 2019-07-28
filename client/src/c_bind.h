@@ -28,11 +28,14 @@
 #include <string>
 
 #include "doomtype.h"
+#include "doomkeys.h"
 #include "d_event.h"
 #include <stdio.h>
 
 BOOL C_DoKey (event_t *ev);
 void C_ArchiveBindings (FILE *f);
+
+void BIND_Init(void);
 
 // Stuff used by the customize controls menu
 int  C_GetKeysForCommand (const char *cmd, int *first, int *second);
@@ -46,6 +49,30 @@ const char *C_GetBinding (int key);
 void C_ReleaseKeys();
 
 std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries = false);
+
+
+class FKeyBindings
+{
+
+	//char DefaultBinds[];
+	std::string command;
+
+public:
+	std::string Binds[NUM_KEYS];
+	int  GetKeysForCommand(const char *cmd, int *first, int *second);
+	const char *GetBinding(int key);
+	std::string NameKeys(int first, int second);
+
+	void SetBindingType(std::string cmd);
+
+	void UnbindKey(const char *key);
+	void UnbindAll(void);
+	size_t GetLength(void);
+	void ArchiveBindings(FILE *f);
+
+};
+
+extern FKeyBindings DoubleBindings;
 
 #endif //__C_BINDINGS_H__
 

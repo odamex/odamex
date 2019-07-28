@@ -41,6 +41,8 @@
 
 extern NetDemo netdemo;
 
+FKeyBindings DoubleBindings;
+
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
  */
@@ -124,7 +126,7 @@ char DefBindings[] =
 
 
 static std::string Bindings[NUM_KEYS];
-static std::string DoubleBindings[NUM_KEYS];
+static std::string AutoMapBindings[NUM_KEYS];	// Ch0wW : Addition of automap rebindings
 static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
@@ -347,15 +349,70 @@ static const char* KeyName(int key)
 	return name;
 }
 
-BEGIN_COMMAND (unbindall)
+void BIND_Init(void)
+{
+	DoubleBindings.SetBindingType("doublebind");
+}
+
+void FKeyBindings::SetBindingType(std::string cmd)
+{
+	command = cmd;
+}
+
+void FKeyBindings::UnbindAll()
+{
+	for (int i = 0; i < NUM_KEYS; i++)
+	{
+		this->Binds[i] = "";
+	}
+}
+
+void FKeyBindings::UnbindKey(const char *key)
+{
+	int i;
+
+	if ((i = GetKeyFromName(key)))
+	{
+		Binds[i] = "";
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(key).c_str());
+		return;
+	}
+}
+
+size_t FKeyBindings::GetLength() {
+
+	return Binds->length();
+}
+
+void FKeyBindings::ArchiveBindings(FILE *f)
 {
 	int i;
 
 	for (i = 0; i < NUM_KEYS; i++)
-		Bindings[i] = "";
+	{
+		if (Binds[i].length())
+			fprintf(f, "%s %s %s\n",
+				command.c_str(),
+				C_QuoteString(KeyName(i)).c_str(),
+				C_QuoteString(Binds[i]).c_str());
+	}
+}
+
+BEGIN_COMMAND (unbindall)
+{
+	DoubleBindings.UnbindAll();
+
+	int i;
 
 	for (i = 0; i < NUM_KEYS; i++)
-		DoubleBindings[i] = "";
+	{
+		Bindings[i] = "";
+		AutoMapBindings[i] = "";
+	}
+		
 }
 END_COMMAND (unbindall)
 
@@ -401,14 +458,9 @@ END_COMMAND (bind)
 
 BEGIN_COMMAND (undoublebind)
 {
-	int i;
-
 	if (argc > 1)
 	{
-		if ( (i = GetKeyFromName (argv[1])) )
-			DoubleBindings[i] = "";
-		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+		DoubleBindings.UnbindKey(argv[1]);
 	}
 }
 END_COMMAND (undoublebind)
@@ -427,11 +479,11 @@ BEGIN_COMMAND (doublebind)
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings[i]).c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings.Binds[i]).c_str());
 		}
 		else
 		{
-			DoubleBindings[i] = argv[2];
+			DoubleBindings.Binds[i] = argv[2];
 		}
 	}
 	else
@@ -440,8 +492,8 @@ BEGIN_COMMAND (doublebind)
 
 		for (i = 0; i < NUM_KEYS; i++)
 		{
-			if (DoubleBindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings[i]).c_str());
+			if (DoubleBindings.Binds[i].length())
+				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings.Binds[i]).c_str());
 		}
 	}
 }
@@ -538,7 +590,7 @@ BOOL C_DoKey (event_t *ev)
 
 	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
 		// Key pressed for a double click
-		binding = &DoubleBindings[ev->data1];
+		binding = &DoubleBindings.Binds[ev->data1];
 		DClicked[dclickspot] |= dclickmask;
 	} else {
 		if (ev->type == ev_keydown) {
@@ -547,7 +599,7 @@ BOOL C_DoKey (event_t *ev)
 			DClickTime[ev->data1] = level.time + 20;
 		} else if (DClicked[dclickspot] & dclickmask) {
 			// Key released from a double click
-			binding = &DoubleBindings[ev->data1];
+			binding = &DoubleBindings.Binds[ev->data1];
 			DClicked[dclickspot] &= ~dclickmask;
 			DClickTime[ev->data1] = 0;
 		} else {
@@ -623,20 +675,12 @@ void C_ArchiveBindings (FILE *f)
 {
 	int i;
 
-	fprintf (f, "unbindall\n");
 	for (i = 0; i < NUM_KEYS; i++)
 	{
 		if (Bindings[i].length())
 			fprintf (f, "bind %s %s\n",
 					C_QuoteString(KeyName(i)).c_str(),
 					C_QuoteString(Bindings[i]).c_str());
-	}
-	for (i = 0; i < NUM_KEYS; i++)
-	{
-		if (DoubleBindings[i].length())
-			fprintf (f, "doublebind %s %s\n",
-					C_QuoteString(KeyName(i)).c_str(),
-					C_QuoteString(DoubleBindings[i]).c_str());
 	}
 }
 

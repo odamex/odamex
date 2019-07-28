@@ -46,6 +46,7 @@
 
 #include "errors.h"
 
+#include "c_bind.h"
 #include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
@@ -741,6 +742,8 @@ void D_DoomMain()
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	M_LoadDefaults();					// load before initing other systems
+	BIND_Init();
+
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::vector<std::string> newwadfiles, newpatchfiles;

@@ -109,7 +109,9 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 
 		// Archive all active key bindings
 		fprintf(f, "// --- Key Bindings ---\n\n");
+		fprintf(f, "unbindall\n");
 		C_ArchiveBindings(f);
+		DoubleBindings.ArchiveBindings(f);
 
 		// Archive all aliases
 		fprintf(f, "\n// --- Aliases ---\n\n");
