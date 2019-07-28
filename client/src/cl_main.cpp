@@ -2066,6 +2066,12 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+
+	// Receive the keys from a spied player
+	if (sv_gametype == GM_COOP) {
+		for (int i = 0; i < NUMCARDS; i++)
+			player.cards[i] = MSG_ReadByte();
+	}
 }
 
 //
