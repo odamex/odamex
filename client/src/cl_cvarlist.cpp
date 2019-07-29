@@ -129,6 +129,7 @@ CVAR(					am_ovexitcolor, "ff ff 00", "",
 CVAR(					am_ovteleportcolor, "ff a3 00", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(am_followplayer, "1", "", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Console
 // -------
