@@ -692,6 +692,16 @@ BEGIN_COMMAND (fov)
 }
 END_COMMAND (fov)
 
+//--------------------
+// Do you know these cheats ? These are telling me something...
+BEGIN_COMMAND(iddqd) {
+	AddCommandString("god");
+} END_COMMAND(iddqd)
+
+BEGIN_COMMAND(idkfa) {
+	AddCommandString("give all");
+} END_COMMAND(idkfa)
+
 
 int ST_calcPainOffset(void)
 {

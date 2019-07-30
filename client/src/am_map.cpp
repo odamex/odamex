@@ -153,17 +153,6 @@ EXTERN_CVAR		(screenblocks)
 // drawing stuff
 #define	FB		(screen)
 
-#define AM_PANDOWNKEY	KEY_DOWNARROW
-#define AM_PANUPKEY		KEY_UPARROW
-#define AM_PANRIGHTKEY	KEY_RIGHTARROW
-#define AM_PANLEFTKEY	KEY_LEFTARROW
-#define AM_ZOOMINKEY	KEY_EQUALS
-#define AM_ZOOMINKEY2	0x4e	// DIK_ADD
-#define AM_ZOOMOUTKEY	KEY_MINUS
-#define AM_ZOOMOUTKEY2	0x4a	// DIK_SUBTRACT
-#define AM_GOBIGKEY		0x0b	// DIK_0
-#define AM_FOLLOWKEY	'f'
-#define AM_CLEARMARKKEY	'c'
 
 #define AM_NUMMARKPOINTS 10
 
@@ -542,6 +531,13 @@ void AM_initVariables(void)
 	static event_t st_notify(ev_keyup, AM_MSGENTERED, 0, 0);
 
 	automapactive = true;
+
+	Actions[ACTION_AUTOMAP_PANLEFT] = 0;
+	Actions[ACTION_AUTOMAP_PANRIGHT] = 0;
+	Actions[ACTION_AUTOMAP_PANUP] = 0;
+	Actions[ACTION_AUTOMAP_PANDOWN] = 0;
+	Actions[ACTION_AUTOMAP_ZOOMIN] = 0;
+	Actions[ACTION_AUTOMAP_ZOOMOUT] = 0;
 
 	f_oldloc.x = MAXINT;
 	amclock = 0;

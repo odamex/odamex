@@ -69,6 +69,7 @@
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
+#include "m_cheat.h"
 
 #include <string>
 #include <vector>
@@ -3305,6 +3306,8 @@ void CL_LoadMap(void)
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
+
+	cht.AutoMapCheat = 0;		// Ch0wW : force-reset IDDT after loading a map
 
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
