@@ -1,2 +1,4 @@
 /build
+/Wii/build
+/Wii/Odamex.*
 *.vscode
