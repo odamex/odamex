@@ -124,7 +124,7 @@ void wii_InitNet()
 	char gateway[16] = {0};
 	char netmask[16] = {0};
 	
-	if(if_config(localip, gateway, netmask, TRUE) >= 0)
+	if(if_config(localip, gateway, netmask, TRUE, 20) >= 0)
 	{
 #if DEBUG
 		// Connect to the remote debug console

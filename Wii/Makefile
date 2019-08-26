@@ -19,7 +19,7 @@ TARGET		:=	odamex
 BUILD		:=	build
 SOURCES		:=	../common ../client/src ../client/sdl ./
 DATA		:=	data
-INCLUDES	:=	../common ../client/src ../client/sdl ./
+INCLUDES	:=	../common ../client/src ../client/sdl ./ 
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -37,14 +37,14 @@ LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
 LIBS	:=	-lpng -lSDL_mixer -lsmpeg -lvorbisidec -lSDL -lz \
-			-lfat -lwiiuse -lbte -logc -lm -lwiikeyboard \
+			-lfat -lwiiuse -lbte -logc -logg -lm -lwiikeyboard \
 #			-ldb
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS	:= $(DEVKITPRO)/libogc $(DEVKITPRO)/portlibs/ppc
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

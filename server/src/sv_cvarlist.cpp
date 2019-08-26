@@ -244,6 +244,9 @@ CVAR(			sv_dmfarspawn, "0", "EXPERIMENTAL: When enabled in DM, players will spaw
                 "from each other.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
+CVAR(sv_download_test, "0", "Experimental download optimization testing",
+	CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================
 

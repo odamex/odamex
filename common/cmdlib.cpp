@@ -373,10 +373,15 @@ bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
 
 // [AM] Parse an ISO8601-formatted string time into a tm* struct.
 bool StrParseISOTime(const std::string& s, tm* utc_tm) {
+
+#ifdef GEKKO
+	return false;
+#else
 	if (!strptime(s.c_str(), "%Y-%m-%dT%H:%M:%SZ", utc_tm)) {
 		return false;
 	}
 	return true;
+#endif
 }
 
 // [AM] Turn a string representation of a length of time into a time_t
