@@ -491,13 +491,7 @@ int NET_GetPacket (void)
 
 #ifdef GEKKO
 	if ((ret == -EWOULDBLOCK) || (ret == -ECONNREFUSED))
-	{
-		Printf(PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
-		// <<< FIX
 		return false;
-	}
-
-	Printf(PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
 #else
 
     if (ret == -1)

@@ -1,4 +1,4 @@
 /build
 /Wii/build
-/Wii/Odamex.*
+/Wii/boot.*
 *.vscode

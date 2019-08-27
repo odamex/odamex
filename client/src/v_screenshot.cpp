@@ -34,11 +34,6 @@
 #include "m_misc.h"
 #include "g_game.h"
 
-
-#if defined(GEKKO)
-#undef USE_PNG		// Ch0wW : the Wii port can't link libPNG properly, and seriously, who uses screenshots here ?
-#endif
-
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK
 	#include <setjmp.h>		// used for error handling by libpng
