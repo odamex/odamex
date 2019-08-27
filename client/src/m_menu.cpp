@@ -1782,6 +1782,9 @@ bool M_Responder (event_t* ev)
 			}
 			break;
 
+#ifdef GEKKO
+		  case KEY_JOY11:	// (b) on Pro Controller
+#endif
 		  case KEY_JOY2:
 		  case KEY_ESCAPE:
 			genStringEnter = 0;
@@ -1789,6 +1792,9 @@ bool M_Responder (event_t* ev)
 			strcpy(&savegamestrings[saveSlot][0],saveOldString);
 			break;
 
+#ifdef GEKKO
+		  case KEY_JOY10:		// (a) on Pro Controller
+#endif
 		  case KEY_JOY1:
 		  case KEY_ENTER:
 		  case KEYP_ENTER:
@@ -1937,6 +1943,9 @@ bool M_Responder (event_t* ev)
 		}
 		return true;
 
+#ifdef GEKKO
+	  case KEY_JOY10:		// (a) on Pro Controller
+#endif
 	  case KEY_JOY1:
 	  case KEY_ENTER:
 	  case KEYP_ENTER:
@@ -1960,6 +1969,9 @@ bool M_Responder (event_t* ev)
 	  // [RH] Escape now moves back one menu instead of
 	  //	  quitting the menu system. Thus, backspace
 	  //	  is now ignored.
+#ifdef GEKKO
+	  case KEY_JOY11:		// (b) on Pro Controller
+#endif
 	  case KEY_JOY2:
 	  case KEY_ESCAPE:
 		currentMenu->lastOn = itemOn;

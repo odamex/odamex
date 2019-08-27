@@ -283,7 +283,7 @@ static menuitem_t OptionItems[] =
     { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
 	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
  	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
-#if !defined(GCONSOLE) or defined(_XBOX)
+#if !defined(GCONSOLE) or defined(_XBOX) or defined(GEKKO)
 	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
 #endif
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
@@ -409,7 +409,7 @@ static menuitem_t ControlsItems[] = {
 #endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-#ifndef GCONSOLE
+#if !defined(GCONSOLE) || defined(GEKKO) || defined(_XBOX)
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
 	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
 	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
@@ -627,7 +627,7 @@ static menuitem_t JoystickItems[] =
 	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 #endif
-#if (!defined(GCONSOLE)) || (defined(GEKKO))	//
+#if !defined(GCONSOLE) || defined(GEKKO)
 	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 #endif
@@ -2306,11 +2306,11 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
-#ifdef _XBOX
+#if defined(_XBOX)
 		case KEY_JOY9: // Start button
-#endif
-#ifdef __SWITCH__
+#elif defined(__SWITCH__)
 		case KEY_JOY3: // X button
+#elif defined (GEKKO)
 #endif
 		case KEY_BACKSPACE:
 			if (item->type == control)
@@ -2320,6 +2320,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+#ifdef GEKKO
+		case KEY_JOY10:		// (a) on Pro Controller
+#endif
 		case KEY_JOY1:
 		case KEY_ENTER:
 			if (CurrentMenu == &ModesMenu)
@@ -2369,11 +2372,20 @@ void M_OptResponder (event_t *ev)
 				WaitingForKey = true;
 				OldContMessage = CurrentMenu->items[0].label;
 				OldContType = CurrentMenu->items[0].type;
-				#ifdef __SWITCH__
-				CurrentMenu->items[0].label = "Press new key for control or (+) to cancel";
-				#else
-				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
-				#endif
+
+				// Ch0wW - Modify the text according to your platform
+				if (platform == PF_SWITCH) {
+					CurrentMenu->items[0].label = "Press new key for control or (+) to cancel";
+				}
+				else if (platform == PF_WII) {
+					if (I_WhatWiiController() == WIICTRL_WIIMOTE)
+						CurrentMenu->items[0].label = "Press new key for control or HOME to cancel";
+					else
+						CurrentMenu->items[0].label = "Press new key for control or START/PAUSE to cancel";
+				}
+				else
+					CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+
 				CurrentMenu->items[0].type = redtext;
 			}
 			else if (item->type == listelement)
@@ -2395,6 +2407,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+#ifdef GEKKO
+		case KEY_JOY11:		// (b) on Pro Controller
+#endif
 		case KEY_JOY2:
 		case KEY_ESCAPE:
 			CurrentMenu->lastOn = CurrentItem;
