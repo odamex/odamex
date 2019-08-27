@@ -329,10 +329,10 @@ void CTF_RunTics (void)
 {
 
     // NES - Glowing effect on screen tint.
-    if (tintglow < 90)
-        tintglow++;
-    else
-        tintglow = 0;
+	if (tintglow < 90)
+		tintglow++;
+	else
+		tintglow = 0;
 
 	// Move the physical clientside flag sprites
 	CTF_MoveFlags();

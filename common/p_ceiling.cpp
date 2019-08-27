@@ -203,7 +203,7 @@ void DCeiling::RunThink ()
 				case ceilLowerAndCrush:
 					if (m_Speed1 == FRACUNIT && m_Speed2 == FRACUNIT)
 						m_Speed = FRACUNIT / 8;
-						break;
+					break;
 
 				default:
 					break;
