@@ -290,6 +290,21 @@ std::string I_GetJoystickNameFromIndex(int index)
 	return "";
 }
 
+//
+// I_WhatWiiController
+//
+wiicontroller_type I_WhatWiiController() {
+	std::string name = I_GetJoystickNameFromIndex(use_joystick);
+
+	Printf(PRINT_HIGH, "SEEN: %s\n", name);
+
+	if (name.substr(0, 7) == "Wiimote")
+		return WIICTRL_WIIMOTE;
+	else if (name.substr(0, 8) == "Gamecube")
+		return WIICTRL_GAMECUBE;
+
+	return WIICTRL_UNKNOWN;
+}
 
 //
 // I_OpenJoystick

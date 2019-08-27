@@ -235,7 +235,7 @@ CVAR_RANGE(			cl_weaponpref_bfg, "2", "Weapon preference level for BFG9000",
 
 #ifdef GCONSOLE
 CVAR_FUNC_DECL(		use_joystick, "1", "",
-					CVARTYPE_BOOL, CVAR_NOSET)	// Ch0wW: Forced CVAR
+					CVARTYPE_BOOL, CVAR_NOSET)	// This CVAR shouldn't even move for consoles... Duh.
 #else
 CVAR_FUNC_DECL(		use_joystick, "0", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

@@ -1848,7 +1848,9 @@ bool M_Responder (event_t* ev)
 		// [ML] This is a regular binding now too!
 		if ( ch == KEY_ESCAPE 
 			|| (platform == PF_XBOX && ch == KEY_JOY9)
-			|| (platform == PF_SWITCH && ch == KEY_JOY11) )
+			|| (platform == PF_SWITCH && ch == KEY_JOY11)
+			|| (platform == PF_WII && ((I_WhatWiiController() == WIICTRL_WIIMOTE && ch == KEY_JOY6) || (I_WhatWiiController() == WIICTRL_GAMECUBE && ch == KEY_JOY7)) )
+			)
 		{
 			AddCommandString("menu_main");
 			return true;

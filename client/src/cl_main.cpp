@@ -80,6 +80,10 @@
 #include "i_xbox.h"
 #endif
 
+#ifdef GEKKO
+#include "../Wii/i_wii.h"
+#endif
+
 #if _MSC_VER == 1310
 #pragma optimize("",off)
 #endif
@@ -1763,6 +1767,10 @@ bool CL_Connect(void)
 }
 
 
+#ifdef GEKKO
+bool wii_InitNet();
+#endif
+
 //
 // CL_InitNetwork
 //
@@ -1777,8 +1785,18 @@ void CL_InitNetwork (void)
     else
 		localport = CLIENTPORT;
 
+#ifdef GEKKO
+	Printf(PRINT_HIGH, "Trying to connect the Wii to online...\n");
+	if (wii_InitNet() == true) {
+		Printf(PRINT_HIGH, "System fully connected.\n");
+	} else {
+		Printf(PRINT_HIGH, "There seem to be an error connecting the Wii online...\n");
+	}
+#endif
+
     // set up a socket and net_message buffer
     InitNetCommon();
+
 
     SZ_Clear(&net_buffer);
 

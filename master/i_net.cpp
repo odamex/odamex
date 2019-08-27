@@ -88,9 +88,16 @@ void BindToLocalPort(SOCKET s, u_short port)
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(port);
 
+#ifdef GEKKO
+	v = net_bind(s, (sockaddr *)&address, sizeof(address));
+	if (v < 0)
+		printf("BindToPort: error\n");
+#else
 	v = bind(s, (sockaddr *)&address, sizeof(address));
 	if (v == SOCKET_ERROR)
-    	   printf("BindToPort: error\n");
+		printf("BindToPort: error\n");
+#endif
+
 }
 
 
