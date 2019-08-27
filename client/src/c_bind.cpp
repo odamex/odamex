@@ -790,7 +790,7 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 	C_GetKeysForCommand(cmd, &first, &second);
 
 	if (!first && !second)
-		return "<???>";
+		return "<\?\?\?>";
 
 	if (bTwoEntries)
 		return C_NameKeys(first, second);
@@ -801,7 +801,7 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 		else
 			return KeyName(first);
 	}
-	return "<???>";
+	return "<\?\?\?>";
 }
 
 
