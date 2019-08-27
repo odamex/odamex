@@ -562,7 +562,7 @@ std::string I_GetBinaryDir()
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
 	ret = "D:\\";
 #elif defined GEKKO
-	ret = "sd:/odx_data/";
+	ret = WII_DATAPATH;
 #elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));

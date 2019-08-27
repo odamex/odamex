@@ -616,8 +616,8 @@ void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
 	}
 
     // try default patches
-    if (use_default)
-        DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
+	if (use_default)
+		DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
 
 	for (size_t i = 0; i < patchfiles.size(); i++)
 		patchhashes.push_back(W_MD5(patchfiles[i]));

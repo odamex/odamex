@@ -333,7 +333,9 @@ BOOL HU_Responder(event_t *ev)
 	}
 #endif
 
-	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER || (platform == PF_SWITCH && ev->data1 == KEY_JOY1) )
+	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER || 
+		(platform == PF_SWITCH && ev->data1 == KEY_JOY1)	// (A)
+		)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();

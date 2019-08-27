@@ -549,19 +549,22 @@ bool C_DoSpectatorKey (event_t *ev)
 // Set the hardcoded keys for spy, according to the platform
 	switch (platform)
 	{
+		case PF_XBOX:		// !! Ch0wW - ToDo !! ADD THE RIGHT INPUTS FOR XBOX!
+			keyprev = KEY_MWHEELUP;			// Need to find out the right button !
+			keynext = KEY_MWHEELDOWN;		// Need to find out the right button !
+		break;
 		case PF_SWITCH:
 			keyprev = KEY_JOY13;	// DPAD-LEFT
 			keynext = KEY_JOY15;	// DPAD-RIGHT
-
-			break;
-		case PF_XBOX:		// Ch0wW : ADD THE RIGHT INPUTS FOR XBOX!
-			keyprev = KEY_MWHEELUP;			// TODO: ADD RIGHT INPUTS
-			keynext = KEY_MWHEELDOWN;		// TODO: ADD RIGHT INPUTS
-			break;
+		break;
+		case PF_WII:		// !! Ch0wW - ToDo !!
+			//	Add the correct inputs 
+			//	according to the controller type !
+		break;
 		default:
 			keyprev = KEY_MWHEELUP;
 			keynext = KEY_MWHEELDOWN;
-			break;
+		break;
 	}
 
 	if (ev->type == ev_keydown && ev->data1 == keyprev)

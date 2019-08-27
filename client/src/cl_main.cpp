@@ -1786,11 +1786,11 @@ void CL_InitNetwork (void)
 		localport = CLIENTPORT;
 
 #ifdef GEKKO
-	Printf(PRINT_HIGH, "Trying to connect the Wii to online...\n");
-	if (wii_InitNet() == true) {
-		Printf(PRINT_HIGH, "System fully connected.\n");
-	} else {
-		Printf(PRINT_HIGH, "There seem to be an error connecting the Wii online...\n");
+	{	// Trying to connect the Wii to internet...
+		if (wii_InitNet())
+			Printf(PRINT_HIGH, "Your Wii is connected to your network.\n");
+		else
+			Printf(PRINT_HIGH, "Unable to connect the Wii to your network.\n");
 	}
 #endif
 
@@ -2016,10 +2016,10 @@ void CL_UpdatePlayer()
 
     // [Russell] - hack, read and set invisibility flag
     p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -3234,8 +3234,8 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);

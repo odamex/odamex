@@ -1818,8 +1818,10 @@ bool M_Responder (event_t* ev)
 	{
 		if (messageNeedsInput &&
 			(!(ch2 == ' ' || ch == KEY_ESCAPE || 
-			(platform == PF_SWITCH && (ch == KEY_JOY2 || ch == KEY_JOY4)) ||
-			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
+			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')) ||
+			(platform == PF_SWITCH && (ch == KEY_JOY2 || ch == KEY_JOY4) ) 
+				// Ch0wW - ToDo : WII & XBOX inputs
+			 )))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -1837,19 +1839,23 @@ bool M_Responder (event_t* ev)
 
 	// If devparm is set, pressing F1 always takes a screenshot no matter
 	// what it's bound to. (for those who don't bother to read the docs)
+#ifndef GCONSOLE
 	if (devparm && ch == KEY_F1) {
 		G_ScreenShot (NULL);
 		return true;
 	}
+#endif
 
 	// Pop-up menu?
 	if (!menuactive)
 	{
 		// [ML] This is a regular binding now too!
 		if ( ch == KEY_ESCAPE 
-			|| (platform == PF_XBOX && ch == KEY_JOY9)
-			|| (platform == PF_SWITCH && ch == KEY_JOY11)
-			|| (platform == PF_WII && ((I_WhatWiiController() == WIICTRL_WIIMOTE && ch == KEY_JOY6) || (I_WhatWiiController() == WIICTRL_GAMECUBE && ch == KEY_JOY7)) )
+			|| (platform == PF_XBOX && ch == KEY_JOY9)	// START
+			|| (platform == PF_SWITCH && ch == KEY_JOY11) // (+)
+			|| (platform == PF_WII && 
+					(I_WhatWiiController() == WIICTRL_WIIMOTE && (ch == KEY_JOY7 || ch == KEY_JOY19) ) // (HOME on Wiimote | START - Pro Controller)
+				||	(I_WhatWiiController() == WIICTRL_GAMECUBE && ch == KEY_JOY7)) // Start
 			)
 		{
 			AddCommandString("menu_main");

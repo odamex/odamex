@@ -226,21 +226,12 @@ static void I_UpdateGrab()
 #endif
 }
 
-
 CVAR_FUNC_IMPL(use_joystick)
 {
-	if (var == 0.0f)
-	{
-#ifdef GCONSOLE
-		// Don't let console users disable joystick support because
-		// they won't have any way to reenable through the menu.
-		var = 1.0f;
-#else
+	if (var == 0.0f) {
 		I_CloseJoystick();
-#endif
 	}
-	else
-	{
+	else {
 		I_OpenJoystick();
 	}
 }
@@ -292,22 +283,15 @@ std::string I_GetJoystickNameFromIndex(int index)
 
 //
 // I_WhatWiiController
+// Find out what kind of Controller the Wii port is using.
 //
 wiicontroller_type I_WhatWiiController() {
 	std::string name = I_GetJoystickNameFromIndex(use_joystick);
 
-	//Printf(PRINT_HIGH, "SEEN: %s\n", name.c_str());
-
-	//SDL 1.2 joystick (Wiimote 1)
-
-	if (name.substr(18, 18 + 7) == "Wiimote")
-	{
-	//	Printf(PRINT_HIGH, "WIIMOTE\n", name.c_str());
+	if (name.substr(18, 7) == "Wiimote"){
 		return WIICTRL_WIIMOTE;
 	}
-	else if (name.substr(18, 18 + 8) == "Gamecube")
-	{
-	//	Printf(PRINT_HIGH, "GAMECUBE\n", name.c_str());
+	else if (name.substr(18, 8) == "Gamecube"){
 		return WIICTRL_GAMECUBE;
 	}
 
