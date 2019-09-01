@@ -25,6 +25,7 @@
 #include <sstream>
 #include <iomanip>
 
+#include "cl_download.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "cl_main.h"
@@ -280,9 +281,9 @@ void CL_DownloadStart()
 	}
 
 	// don't go for more than 100 megs
-	if(file_len > 100*1024*1024)
+	if(file_len > (100 * MBYTE))
 	{
-		Printf(PRINT_HIGH, "Download is over 100MiB, aborting!\n");
+		Printf(PRINT_HIGH, "Download is over 100MB, aborting!\n");
 		CL_QuitNetGame();
 		return;
 	}
@@ -375,7 +376,10 @@ void CL_DownloadTicker()
 
 //
 // CL_Download
-// denis - get a little chunk of the file and store it, much like a hampster. Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn. But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
+// denis - get a little chunk of the file and store it, much like a hampster. 
+// Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. 
+// Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn.
+// But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
 //
 void CL_Download()
 {
