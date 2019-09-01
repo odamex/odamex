@@ -286,6 +286,8 @@ std::string I_GetJoystickNameFromIndex(int index)
 // Find out what kind of Controller the Wii port is using.
 //
 wiicontroller_type I_WhatWiiController() {
+
+#ifdef GEKKO
 	std::string name = I_GetJoystickNameFromIndex(use_joystick);
 
 	if (name.substr(18, 7) == "Wiimote"){
@@ -294,7 +296,7 @@ wiicontroller_type I_WhatWiiController() {
 	else if (name.substr(18, 8) == "Gamecube"){
 		return WIICTRL_GAMECUBE;
 	}
-
+#endif
 	return WIICTRL_UNKNOWN;
 }
 

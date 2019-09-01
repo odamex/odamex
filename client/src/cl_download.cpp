@@ -289,19 +289,19 @@ void CL_DownloadStart()
 
     // [Russell] - Allow resumeable downloads
 	if (download.got_bytes == 0)
-    {
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
+	{
+		if (download.buf != NULL)
+		{
+			delete download.buf;
+			download.buf = NULL;
+		}
 
-        download.buf = new buf_t ((size_t)file_len);
+		download.buf = new buf_t ((size_t)file_len);
 
-        memset(download.buf->ptr(), 0, file_len);
-    }
-    else
-        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
+		memset(download.buf->ptr(), 0, file_len);
+	}
+	else
+		Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
 
 
 

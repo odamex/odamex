@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
 #if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
 		if(!getuid() || !geteuid())
-			I_FatalError("root user detected, quitting odamex immediately");
+			I_FatalError("root user detected, quitting Odamex immediately.");
 #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!

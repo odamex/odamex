@@ -1699,8 +1699,8 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-    if (!msgtime)
-        msgtime = con_midtime.asInt();
+	if (!msgtime)
+		msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);

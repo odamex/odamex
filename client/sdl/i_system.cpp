@@ -195,8 +195,8 @@ void *I_ZoneBase (size_t *size)
     got_heapsize = I_BytesToMegabytes(*size);
 
     // Die if the system has insufficient memory
-    if (got_heapsize < min_heapsize)
-        I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
+	if (got_heapsize < min_heapsize)
+		I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
                      "is %lu MB but got %lu MB instead",
                      min_heapsize,
                      got_heapsize);
@@ -1081,13 +1081,13 @@ std::string I_ConsoleInput (void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
-        return "";
+	if (select(1, &fdr, NULL, NULL, &tv) <= 0)
+		return "";
 
-    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
+	len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
-    if (len < 1)
-        return "";
+	if (len < 1)
+		return "";
 
 	len = strlen(text);
 
