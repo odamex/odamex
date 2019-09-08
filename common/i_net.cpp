@@ -45,6 +45,8 @@
 #else
 #ifdef GEKKO // Wii/GC
 #	include <network.h>
+#elif __WIIU__
+#	include <nsysnet/socket.h>
 #else
 #	include <sys/socket.h>
 #	include <netinet/in.h>
@@ -95,6 +97,10 @@ typedef int SOCKET;
 
 #ifdef GEKKO
 #include "i_wii.h"
+#endif
+
+#ifdef __WIIU__
+#include "i_wiiu.h"
 #endif
 
 #include "minilzo.h"

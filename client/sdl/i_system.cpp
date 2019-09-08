@@ -102,6 +102,10 @@
 	#include "i_wii.h"
 #endif
 
+#ifdef __WIIU__
+	#include "i_wiiu.h"
+#endif
+
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
 	// For libtextscreen to link properly
 	extern "C"
@@ -440,7 +444,7 @@ std::string I_GetCWD ()
 	return ret;
 }
 
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -468,7 +472,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 	// return absolute or explicitly relative pathnames unmodified,
 	// so launchers or CLI/console users have control over netdemo placement
 	if (file &&
@@ -508,7 +512,7 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
-#elif defined(__SWITCH__)
+#elif defined(__SWITCH__) || defined(__WIIU__)
 	std::string path = file;
 #else
 	if (!PathIsRelative(file))
@@ -529,7 +533,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 	if(!path.length())
 		return;
 
@@ -561,13 +565,13 @@ std::string I_GetBinaryDir()
 #ifdef _XBOX
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
 	ret = "D:\\";
-#elif defined GEKKO
+#elif defined GEKKO || defined(__WIIU__)
 	ret = WII_DATAPATH;
 #elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
-#elif defined __SWITCH__
+#elif defined __SWITCH__ 
 	return "./";
 #else
 	if(!Args[0])
@@ -1069,7 +1073,7 @@ std::string I_ConsoleInput (void)
 
 std::string I_ConsoleInput (void)
 {
-#ifndef __SWITCH__
+#if !defined __SWITCH__ || !defined(__WIIU__)
 	std::string ret;
     static char     text[1024] = {0};
     int             len;

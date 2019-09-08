@@ -116,7 +116,7 @@ void STACK_ARGS nx_early_deinit (void)
 }
 #endif
 
-#if defined GCONSOLE && !defined __SWITCH__
+#if defined GCONSOLE && !defined __SWITCH__ 
 int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 		atterm(nx_early_deinit);
 #endif
 
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting Odamex immediately.");
 #endif

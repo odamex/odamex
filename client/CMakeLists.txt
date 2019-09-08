@@ -22,10 +22,6 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
 endif()
 
-if(SWITCH_LIBNX)
-endif()
-
-
 global_compile_options()
 
 # #define CLIENT_APP for use in the source code
@@ -234,11 +230,13 @@ if(SDL_VERSION)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SWITCH_LIBNX)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis ogg EGL glapi drm_nouveau nx m)
+  elseif(WIIU)
+    target_link_libraries(odamex whb coreinit proc_ui sysapp nn_ac)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
 
-  if(UNIX AND NOT APPLE AND NOT SWITCH_LIBNX)
+  if(UNIX AND NOT APPLE AND NOT SWITCH_LIBNX AND NOT WIIU)
     target_link_libraries(odamex rt)
     if(X11_FOUND)
       target_link_libraries(odamex X11)
@@ -310,6 +308,9 @@ if(SDL_VERSION)
    add_custom_command( TARGET odamex POST_BUILD
       COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
       COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/Switch/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/Switch/odamex.nacp )
+  elseif(WIIU)
+	add_custom_command( TARGET odamex POST_BUILD 
+	COMMAND wut_create_rpx(odamex.rpx odamex) )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .
