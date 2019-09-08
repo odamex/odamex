@@ -26,6 +26,12 @@
 
 #include "i_wiiu.h"
 
+#include <SDL.h>
+
+#include "doomtype.h"
+
+extern int I_Main(int argc, char *argv[]); // i_main.cpp
+
 // Those functions are stubs, so that we don't really care for now...
 int wiiu_getsockname(int socket, struct sockaddr *address, socklen_t *address_len)
 {
@@ -43,6 +49,13 @@ hostent *wiiu_gethostbyname(const char *addrString)
 }
 
 int32_t wiiu_ioctl(int32_t s, uint32_t cmd, void *argp) {
+	return 0;
+}
+
+
+int main(int argc, char *argv[])
+{
+	I_Main(argc, argv); // Does not return
 	return 0;
 }
 

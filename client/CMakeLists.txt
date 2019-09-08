@@ -231,7 +231,9 @@ if(SDL_VERSION)
   elseif(SWITCH_LIBNX)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis ogg EGL glapi drm_nouveau nx m)
   elseif(WIIU)
-    target_link_libraries(odamex whb coreinit proc_ui sysapp nn_ac)
+    # Ch0wW : this is UGLY, please fix it ASAP !!
+	target_link_libraries(odamex -L/opt/devkitpro/portlibs/ppc/lib -L/opt/devkitpro/portlibs/wiiu/lib)
+    target_link_libraries(odamex SDL2 vorbisidec ogg mpg123 whb coreinit proc_ui sysapp nn_ac m)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
@@ -309,8 +311,8 @@ if(SDL_VERSION)
       COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
       COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/Switch/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/Switch/odamex.nacp )
   elseif(WIIU)
-	add_custom_command( TARGET odamex POST_BUILD 
-	COMMAND wut_create_rpx(odamex.rpx odamex) )
+    include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
+	wut_create_rpx (odamex.rpx odamex)
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

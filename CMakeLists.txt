@@ -5,10 +5,6 @@ endif(COMMAND cmake_policy)
 
 include(CMakeDependentOption)
 
-if(WIIU)
-	include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
-endif()
-
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
