@@ -1062,6 +1062,10 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
+#ifdef __WIIU__
+	renderer_flags = SDL_RENDERER_SOFTWARE;	// Just to make sure...
+#endif
+
 	mSDLRenderer = SDL_CreateRenderer(mWindow->mSDLWindow, -1, renderer_flags);
 
 	if (mSDLRenderer == NULL)
@@ -1204,6 +1208,10 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
+#ifdef __WIIU__
+	window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;	// Always include it for WiiU
+#endif
+
 	// Reduce the flickering on start up for the opengl driver on Windows
 	#ifdef _WIN32
 	if (strncmp(driver_name, "opengl", strlen(driver_name)) == 0)
@@ -1211,7 +1219,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	#endif
 
 	// don't need this on the Switch, we're always fullscreen
-	#ifndef __SWITCH__
+	#if !defined(__SWITCH__) || !defined(__WIIU__)
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
@@ -1654,7 +1662,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	I_PauseMouse();
 
 	uint32_t fullscreen_flags = 0;
-#ifndef __SWITCH__
+#if !defined(__SWITCH__) || !defined(__WIIU__)
 	if (video_fullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);

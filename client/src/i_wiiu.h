@@ -5,7 +5,7 @@
 
 #include <nsysnet/socket.h>
 
-#define WII_DATAPATH "sd:/odx_data/"
+#define WII_DATAPATH "/vol/external01/wiiu/apps/odamex/"
 
 #define FIONBIO SO_BIO
 

@@ -61,6 +61,11 @@
 #include <switch.h>
 #endif
 
+#ifdef __WIIU__
+#include <whb/log.h>
+#include <whb/log_console.h>
+#endif
+
 static const int MAX_LINE_LENGTH = 8192;
 
 std::string DownloadStr;
@@ -927,6 +932,10 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		if (outline[i] == 0x07)
 			outline[i] = '.';
 
+#ifdef __WIIU__
+	WHBLogPrint(outline);
+#endif
+
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)
 	{
@@ -956,10 +965,13 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 
 		if (ConRows < (unsigned int)con_buffersize.asInt())
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
+
 	}
 
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
+
+
 
 	C_PrintString(printlevel, color_code, outline);
 

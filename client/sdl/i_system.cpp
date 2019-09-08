@@ -235,7 +235,7 @@ dtime_t I_GetTime()
 	mach_port_deallocate(mach_task_self(), cclock);
 	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
 
-#elif defined UNIX && !defined GEKKO
+#elif defined UNIX && !defined GEKKO && !defined (__WIIU__)
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
@@ -565,8 +565,10 @@ std::string I_GetBinaryDir()
 #ifdef _XBOX
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
 	ret = "D:\\";
-#elif defined GEKKO || defined(__WIIU__)
+#elif defined GEKKO
 	ret = WII_DATAPATH;
+#elif __WIIU__
+	return WII_DATAPATH;
 #elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
