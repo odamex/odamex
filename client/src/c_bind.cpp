@@ -241,7 +241,7 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("rightarrow", KEY_RIGHTARROW));
 	nameToKeyCode.insert(std::make_pair("leftarrow", KEY_LEFTARROW));
 	nameToKeyCode.insert(std::make_pair("ins", KEY_INS));
-	nameToKeyCode.insert(std::make_pair("home", KEY_HOME));
+	nameToKeyCode.insert(std::make_pair("home", KEY_KBHOME));
 	nameToKeyCode.insert(std::make_pair("end", KEY_END));
 	nameToKeyCode.insert(std::make_pair("pgup", KEY_PGUP));
 	nameToKeyCode.insert(std::make_pair("pgdn", KEY_PGDN));

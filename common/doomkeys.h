@@ -77,9 +77,9 @@
 #define KEY_INS 				0x115
 #define KEY_DEL 				0x7F
 #define KEY_END 				0x117
-#define KEY_HOME				0x116
+#define KEY_KBHOME				0x116		// Ch0wW : needs to be changed for Wii/WiiU/Switch
 #define KEY_PGUP				0x118
-#define KEY_PGDN			0x119
+#define KEY_PGDN				0x119
 
 // new keys:
 

@@ -5,11 +5,16 @@ endif(COMMAND cmake_policy)
 
 include(CMakeDependentOption)
 
+# For Nintendo Switch
+if (SWITCH_LIBNX)
+	include("switch.cmake" REQUIRED)
+endif()
+
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
 include(GNUInstallDirs OPTIONAL)
-
+	
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 

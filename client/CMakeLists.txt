@@ -229,7 +229,7 @@ if(SDL_VERSION)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SWITCH_LIBNX)
-    target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis ogg EGL glapi drm_nouveau nx m)
+    target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   elseif(WIIU)
     # Ch0wW : this is UGLY, please fix it ASAP !!
 	target_link_libraries(odamex -L/opt/devkitpro/portlibs/ppc/lib -L/opt/devkitpro/portlibs/wiiu/lib)
@@ -309,7 +309,7 @@ if(SDL_VERSION)
   elseif(SWITCH_LIBNX)
    add_custom_command( TARGET odamex POST_BUILD
       COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
-      COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/Switch/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/Switch/odamex.nacp )
+      COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switchnx/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switchnx/odamex.nacp )
   elseif(WIIU)
     include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
 	wut_create_rpx (odamex.rpx odamex)

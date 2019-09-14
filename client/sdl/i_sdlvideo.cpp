@@ -1262,7 +1262,12 @@ ISDL20Window::~ISDL20Window()
 //
 void ISDL20Window::setRendererDriver()
 {
+#ifdef __WIIU__
+	const char* drivers[] = {"wiiu", ""};
+#else
 	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
+#endif
+
 	for (int i = 0; drivers[i][0] != '\0'; i++)
 	{
 		if (SDL_SetHint(SDL_HINT_RENDER_DRIVER, drivers[i]))

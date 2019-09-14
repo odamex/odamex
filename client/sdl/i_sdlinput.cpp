@@ -184,7 +184,7 @@ static KeyTranslationTable I_BuildSDLKeyTranslationTable()
 	key_table[SDLK_LEFT]			= KEY_LEFTARROW; 
 	key_table[SDLK_INSERT]			= KEY_INS; 
 	key_table[SDLK_DELETE]			= KEY_DEL; 
-	key_table[SDLK_HOME]			= KEY_HOME; 
+	key_table[SDLK_HOME]			= KEY_KBHOME;
 	key_table[SDLK_END]				= KEY_END; 
 	key_table[SDLK_PAGEUP]			= KEY_PGUP; 
 	key_table[SDLK_PAGEDOWN]		= KEY_PGDN; 

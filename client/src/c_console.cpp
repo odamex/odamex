@@ -1497,7 +1497,7 @@ static bool C_HandleKey(const event_t* ev)
 			// Start scrolling console buffer down
 			ScrollState = SCROLLDN;
 		return true;
-	case KEY_HOME:
+	case KEY_KBHOME:
 		CmdLine.moveCursorHome();
 		return true;
 	case KEY_END:
