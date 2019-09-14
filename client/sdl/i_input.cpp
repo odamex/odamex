@@ -407,7 +407,8 @@ void I_ResumeMouse()
 //
 bool I_InitInput()
 {
-	if (Args.CheckParm("-nomouse"))
+	// Ch0wW : Unless the mouse is fixed from Switch-SDL2, force the mouse off.
+	if (Args.CheckParm("-nomouse") || platform == PF_SWITCH)
 		nomouse = true;
 
 	atterm(I_ShutdownInput);

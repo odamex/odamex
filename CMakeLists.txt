@@ -5,11 +5,6 @@ endif(COMMAND cmake_policy)
 
 include(CMakeDependentOption)
 
-# For Nintendo Switch
-if (SWITCH_LIBNX)
-	include("switch.cmake" REQUIRED)
-endif()
-
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
@@ -31,6 +26,13 @@ cmake_minimum_required(VERSION 2.8)
 
 set(PROJECT_VERSION 0.8.1)
 set(PROJECT_COPYRIGHT "2006-2019")
+
+# Include early required commands for specific systems
+if (SWITCH_LIBNX)
+	include("switch.cmake" REQUIRED)
+elseif(WIIU)
+	include("wiiu.cmake" REQUIRED)		# Wii U - ToDo
+endif()
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
@@ -111,6 +113,7 @@ macro(define_platform)
     add_definitions(-D__WIIU__ -DUNIX -DGCONSOLE)
     include_directories("$ENV{WUT_ROOT}/include")
     include_directories("$ENV{PORTLIBS_PREFIX}/include")
+	
   elseif(UNIX)
     add_definitions(-DUNIX)
     find_package(X11)
@@ -141,9 +144,9 @@ if (USE_MINIUPNP)
 endif()
 
 if(SWITCH_LIBNX)
-   add_definitions(-D__SWITCH__)
+   add_definitions(-D__SWITCH__ -DUNIX -D__ARM_NEON__ -DGCONSOLE)
    include_directories("$ENV{DEVKITPRO}/libnx/include")
- #  include_directories("$ENV{PORTLIBS_PREFIX}/include")
+   include_directories("$ENV{PORTLIBS_PREFIX}/include")
    include_directories("libraries/sse2neon")
 endif()
 

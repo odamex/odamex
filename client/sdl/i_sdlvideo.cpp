@@ -1208,8 +1208,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
-#ifdef __WIIU__
-	window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;	// Always include it for WiiU
+#if defined(__WIIU__) || defined(__SWITCH__)
+	window_flags |= SDL_WINDOW_FULLSCREEN;	// Always include it for consoles
 #endif
 
 	// Reduce the flickering on start up for the opengl driver on Windows

@@ -238,7 +238,7 @@ if(SDL_VERSION)
     target_link_libraries(odamex socket nsl)
   endif()
 
-  if(UNIX AND NOT APPLE AND NOT SWITCH_LIBNX AND NOT WIIU)
+  if(UNIX AND NOT APPLE AND NOT GCONSOLE)
     target_link_libraries(odamex rt)
     if(X11_FOUND)
       target_link_libraries(odamex X11)
