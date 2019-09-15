@@ -179,10 +179,15 @@ void IntDownloadComplete(void)
 
     // Try to save to the wad paths in this order -- Hyper_Eye
     D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
-    D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-    D_AddSearchDir(dirs, waddirs.cstring(), separator);
+
+#ifndef GCONSOLE
+	{
+		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+		D_AddSearchDir(dirs, waddirs.cstring(), separator);
+	}
+#endif
     dirs.push_back(startdir);
     dirs.push_back(progdir);
 

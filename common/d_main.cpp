@@ -265,8 +265,7 @@ static std::string BaseFileSearchDir(std::string dir, const std::string &file, c
 				std::string local_file(dir + d_name);
 				std::string local_hash(W_MD5(local_file));
 
-				if (hash.empty() || hash == local_hash)
-				{
+				if (hash.empty() || hash == local_hash) {
 					found = d_name;
 				}
 				else if (!hash.empty())
@@ -352,7 +351,7 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 	}
 }
 
-// [AM] Add platform-sepcific search directories
+// [AM] Add platform-specific search directories
 static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
 	#if defined(_WIN32) && !defined(_XBOX)
@@ -450,7 +449,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, "\\dooms", separator);    // Shareware versions
 	D_AddSearchDir(dirs, "\\doomsw", separator);
 
-	#elif defined(UNIX)
+	#elif defined(UNIX) && !defined(GCONSOLE)
 
 	const char separator = ':';
 
@@ -498,18 +497,22 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
 
-	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-	D_AddSearchDir(dirs, getenv("HOME"), separator);
+#ifndef GCONSOLE
+	{
+		// Ch0wW : only limit these folders to computers.
+		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+		D_AddSearchDir(dirs, getenv("HOME"), separator);
+		D_AddSearchDir(dirs, waddirs.cstring(), separator);
+	}
+#endif
 
 	//[cSc] Add cl_waddownloaddir as default path
 	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
 
 	// [AM] Search additional paths based on platform
 	D_AddPlatformSearchDirs(dirs);
-
-	D_AddSearchDir(dirs, waddirs.cstring(), separator);
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
