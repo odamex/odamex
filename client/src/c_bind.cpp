@@ -50,7 +50,7 @@ extern NetDemo netdemo;
 char DefBindings[] =
 	"bind LTRIGGER +use; "
 	"bind RTRIGGER +attack; "
-	"bind RSHOULDER togglemap;"
+	"bind - togglemap;"
 	"bind A +jump; "				// <- So is this <- change to jump
 	"bind B +use;"
 	"bind X weapnext;"
