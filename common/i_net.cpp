@@ -309,15 +309,14 @@ SOCKET UDPsocket (void)
 
 	// allocate a socket
 #ifdef GEKKO
-	s = net_socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-	if (s < 0)
-		I_FatalError("can't create socket");
-#else 
-	s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (s == INVALID_SOCKET)
-		I_FatalError("can't create socket");
+	#define IPPROTOCOL IPPROTO_IP
+#else
+	#define IPPROTOCOL IPPROTO_UDP
 #endif
 
+	s = socket(PF_INET, SOCK_DGRAM, IPPROTOCOL);
+	if (s == INVALID_SOCKET)
+		I_FatalError("Cannot create a socket");
 
 	return s;
 }
@@ -339,18 +338,6 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	do
 	{
 		address.sin_port = htons(next++);
-
-#ifdef GEKKO
-		v = net_bind(s, (sockaddr *)&address, sizeof(address));
-
-		if (next > wanted + 16)
-		{
-			I_FatalError("BindToPort: error");
-			return;
-		}
-
-	} while (v < 0);
-#else
 		v = bind(s, (sockaddr *)&address, sizeof(address));
 		
 		if (next > wanted + 16)
@@ -360,7 +347,6 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 		}
 
 	} while (v == SOCKET_ERROR);
-#endif
 
 	char tmp[32] = "";
 	sprintf(tmp, "%d", next - 1);
@@ -453,11 +439,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
             sadr.sin_port = htons(atoi(colon+1));
         }
 
-#ifdef GEKKO
-    if (! (h = net_gethostbyname(copy)) )
-#else
 	 if (!(h = gethostbyname(copy)))
-#endif
         return 0;
 
     *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
@@ -488,12 +470,7 @@ int NET_GetPacket (void)
     fromlen = sizeof(from);
 	net_message.clear();
 
-#ifdef GEKKO
-	ret = net_recvfrom(inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
-#else
 	ret = recvfrom(inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
-#endif
-
 
 #ifdef GEKKO
 	if ((ret == -EWOULDBLOCK) || (ret == -ECONNREFUSED))
@@ -554,9 +531,9 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
     NetadrToSockadr (&to, &addr);
 
 #ifdef GEKKO
-	ret = net_sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// 8 is important
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// Ch0wW : 8 is important since it's a bad port of the GC Ethernet port.
 #else
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, (platform == PF_WII) ? 8 : sizeof(addr));
 #endif
 
 	buf.clear();
@@ -599,13 +576,7 @@ std::string NET_GetLocalAddress (void)
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
-
-#ifdef GEKKO
-	ent = net_gethostbyname(buff);
-#else
 	ent = gethostbyname(buff);
-#endif
-
 
     // Return the first, IPv4 address
     if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
@@ -1129,11 +1100,7 @@ void InitNetCommon(void)
 
    BindToLocalPort (inet_socket, localport);
 
-#ifdef GEKKO
-   if (ioctlsocket (inet_socket, FIONBIO, (char *)&_true) < 0)
-#else
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
-#endif
 	   I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs
