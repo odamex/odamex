@@ -171,23 +171,19 @@ void IntDownloadComplete(void)
     std::vector<std::string> dirs;
     std::string filename;
     size_t i;
-#ifdef _WIN32
-    const char separator = ';';
-#else
-    const char separator = ':';
-#endif
 
     // Try to save to the wad paths in this order -- Hyper_Eye
-    D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
+    D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), CHAR_SEPARATOR);
 
-#ifndef GCONSOLE
-	{
-		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-		D_AddSearchDir(dirs, waddirs.cstring(), separator);
+	if (platform == PF_PC) {
+		// For PC users, add these folders in the ones we are looking
+		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, getenv("HOME"), CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, waddirs.cstring(), CHAR_SEPARATOR);
 	}
-#endif
+
     dirs.push_back(startdir);
     dirs.push_back(progdir);
 

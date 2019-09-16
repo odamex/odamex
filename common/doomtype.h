@@ -610,4 +610,10 @@ forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translatio
 	return pal.tlate(translation, c);
 }
 
+#ifdef _WIN32
+	#define CHAR_SEPARATOR ';'
+#else
+	#define CHAR_SEPARATOR ':'
+#endif
+
 #endif
