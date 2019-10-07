@@ -280,10 +280,8 @@ CVAR_RANGE(			chase_dist, "90", "Chase camera distance",
 CVAR(				lookspring, "1", "Generate centerview when mlook encountered",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-#ifndef GCONSOLE
 CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-#endif
 
 // Experimental settings (all categories)
 // =======================================

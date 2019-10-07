@@ -175,13 +175,16 @@ void IntDownloadComplete(void)
     // Try to save to the wad paths in this order -- Hyper_Eye
     D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), CHAR_SEPARATOR);
 
-	if (platform == PF_PC) {
-		// For PC users, add these folders in the ones we are looking
+	if (platform == PF_PC || platform == PF_XBOX) {
+		// First, lookup for the cmdline parameters, and then do globally
 		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), CHAR_SEPARATOR);
-		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), CHAR_SEPARATOR);
-		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), CHAR_SEPARATOR);
-		D_AddSearchDir(dirs, getenv("HOME"), CHAR_SEPARATOR);
 		D_AddSearchDir(dirs, waddirs.cstring(), CHAR_SEPARATOR);
+
+		if (platform == PF_PC) {
+			D_AddSearchDir(dirs, getenv("DOOMWADDIR"), CHAR_SEPARATOR);
+			D_AddSearchDir(dirs, getenv("DOOMWADPATH"), CHAR_SEPARATOR);
+			D_AddSearchDir(dirs, getenv("HOME"), CHAR_SEPARATOR);
+		}
 	}
 
     dirs.push_back(startdir);
