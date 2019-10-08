@@ -159,9 +159,8 @@ typedef struct value_s {
 
 typedef struct
 {
-	// -1 = no cursor here, 1 = ok, 2 = arrows ok
-	short		status;
-
+	
+	short		status;	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	char		name[10];
 
 	// choice = menu item #.
@@ -171,16 +170,18 @@ typedef struct
 
 	// hotkey in menu
 	char		alphaKey;
+
+	bool		isOnUltimateDoom;	// Ch0wW : draw if this is on Doom
+
 } oldmenuitem_t;
 
 typedef struct oldmenu_s
 {
-	short				numitems;		// # of menu items
-	oldmenuitem_t		*menuitems;		// menu items
+	short				numitems;			// # of menu items
+	oldmenuitem_t		*menuitems;			// menu items
 	void				(*routine)(void);	// draw routine
-	short				x;
-	short				y;				// x,y of menu
-	short				lastOn; 		// last item user was on in menu
+	short				x, y;				// x,y of menu
+	short				lastOn; 			// last item user was on in menu
 } oldmenu_t;
 
 typedef struct

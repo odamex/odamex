@@ -75,17 +75,6 @@ EXTERN_CVAR (cl_weaponpref_pls)
 EXTERN_CVAR (cl_weaponpref_bfg)
 EXTERN_CVAR (cl_predictweapons)
 
-enum
-{
-	INFO_Name,
-	INFO_Autoaim,
-	INFO_Color,
-	INFO_Team,
-	INFO_Gender,
-    INFO_Unlag
-};
-
-
 CVAR_FUNC_IMPL(cl_name)
 {
 	std::string newname(var.str());
@@ -94,7 +83,6 @@ CVAR_FUNC_IMPL(cl_name)
 	if (var.str().compare(newname) != 0)
 		var.Set(newname.c_str());
 }
-
 
 
 gender_t D_GenderByName (const char *gender)

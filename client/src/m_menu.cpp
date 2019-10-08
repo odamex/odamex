@@ -188,64 +188,31 @@ static const int fire_surface_width = 72;
 static const int fire_surface_height = 77;
 
 //
-// DOOM MENU
+// DOOM MAIN MENU
+// These are references, since DOOM2 doesn't have a "READ THIS!" yet.
 //
-enum d1_main_t
-{
-	d1_newgame = 0,
-	d1_options,					// [RH] Moved
-	d1_loadgame,
-	d1_savegame,
-	d1_readthis,
-	d1_quitdoom,
-	d1_main_end
-}d1_main_e;
-
-oldmenuitem_t DoomMainMenu[]=
+#define MAXITEMS_MAINMENU 6
+static oldmenuitem_t MainMenuReference[MAXITEMS_MAINMENU]=
 {
 	{1,"M_NGAME",M_NewGame,'N'},
 	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
     {1,"M_LOADG",M_LoadGame,'L'},
     {1,"M_SAVEG",M_SaveGame,'S'},
-    {1,"M_RDTHIS",M_ReadThis,'R'},
+	{1,"M_RDTHIS",M_ReadThis,'R'},	// Only used in Doom/UDoom !
 	{1,"M_QUITG",M_QuitDOOM,'Q'}
 };
 
-//
-// DOOM 2 MENU
-//
-
-enum d2_main_t
+static oldmenu_t MainDefReference =
 {
-	d2_newgame = 0,
-	d2_options,					// [RH] Moved
-	d2_loadgame,
-	d2_savegame,
-	d2_quitdoom,
-	d2_main_end
-}d2_main_e;
-
-oldmenuitem_t Doom2MainMenu[]=
-{
-	{1,"M_NGAME",M_NewGame,'N'},
-	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG",M_LoadGame,'L'},
-    {1,"M_SAVEG",M_SaveGame,'S'},
-	{1,"M_QUITG",M_QuitDOOM,'Q'}
-};
-
-
-// Default used is the Doom Menu
-oldmenu_t MainDef =
-{
-	d1_main_end,
-	DoomMainMenu,
+	MAXITEMS_MAINMENU,	
+	MainMenuReference,			// Ch0wW : This is just a reference, this will be modified in M_Init.
 	M_DrawMainMenu,
 	97,64,
 	0
 };
 
-
+static oldmenuitem_t MainMenu[MAXITEMS_MAINMENU];
+static oldmenu_t MainDef;
 
 //
 // EPISODE SELECT
@@ -261,10 +228,10 @@ enum episodes_t
 
 oldmenuitem_t EpisodeMenu[]=
 {
-	{1,"M_EPI1", M_Episode,'k'},
-	{1,"M_EPI2", M_Episode,'t'},
-	{1,"M_EPI3", M_Episode,'i'},
-	{1,"M_EPI4", M_Episode,'t'}
+	{1,"M_EPI1", M_Episode, 'k'},
+	{1,"M_EPI2", M_Episode, 't'},
+	{1,"M_EPI3", M_Episode, 'i'},
+	{1,"M_EPI4", M_Episode, 't'}
 };
 
 oldmenu_t EpiDef =
@@ -288,8 +255,8 @@ enum expansions_t
 
 oldmenuitem_t ExpansionMenu[]=
 {
-	{1,"M_EPI1", M_Expansion,'h'},
-	{1,"M_EPI2", M_Expansion,'n'},
+	{1,"M_EPI1", M_Expansion, 'h'},
+	{1,"M_EPI2", M_Expansion, 'n'},
 };
 
 oldmenu_t ExpDef =
@@ -521,47 +488,46 @@ BEGIN_COMMAND (menu_main)
 }
 END_COMMAND (menu_main)
 
+// F1
 BEGIN_COMMAND (menu_help)
 {
-    // F1
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_ReadThis(0);
 }
 END_COMMAND (menu_help)
 
+// F2
 BEGIN_COMMAND (menu_save)
 {
-    // F2
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
+// F3
 BEGIN_COMMAND (menu_load)
 {
-    // F3
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
+// F4
 BEGIN_COMMAND (menu_options)
 {
-    // F4
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
 }
 END_COMMAND (menu_options)
 
+// F6
 BEGIN_COMMAND (quicksave)
 {
-    // F6
+
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
@@ -569,17 +535,19 @@ BEGIN_COMMAND (quicksave)
 }
 END_COMMAND (quicksave)
 
+// F7
 BEGIN_COMMAND (menu_endgame)
-{	// F7
+{	
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_EndGame(0);
 }
 END_COMMAND (menu_endgame)
 
+// F9
 BEGIN_COMMAND (quickload)
 {
-    // F9
+    
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
@@ -587,8 +555,9 @@ BEGIN_COMMAND (quickload)
 }
 END_COMMAND (quickload)
 
+// F10
 BEGIN_COMMAND (menu_quit)
-{	// F10
+{	
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuitDOOM(0);
@@ -602,20 +571,6 @@ BEGIN_COMMAND (menu_player)
 	M_PlayerSetup(0);
 }
 END_COMMAND (menu_player)
-
-/*
-void M_LoadSaveResponse(int choice)
-{
-    // dummy
-}
-
-
-void M_LoadGame (int choice)
-{
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
-}
-*/
 
 //
 // M_ReadSaveStrings
@@ -1141,12 +1096,9 @@ void M_QuitResponse(int ch)
 	// Stop the music so we do not get stuck notes
 	I_StopSong();
 	
-	if (!multiplayer)
-	{
-		if (gameinfo.quitSounds)
-		{
-			S_Sound(CHAN_INTERFACE,
-					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
+	if (!multiplayer) {
+		if (gameinfo.quitSounds) {
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1165,9 +1117,6 @@ void M_QuitDOOM (int choice)
 
 	M_StartMessage(endstring,M_QuitResponse,true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1281,9 +1230,11 @@ static void M_PlayerSetupDrawer (void)
 	}
 
 	// Draw player name box
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
-	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	{
+		screen->DrawTextCleanMove(CR_RED, PSetupDef.x, PSetupDef.y, "Name");
+		M_DrawSaveLoadBorder(PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME + 1);
+		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	}
 
 	// Draw cursor for either of the above
 	if (genStringEnter)
@@ -1296,6 +1247,7 @@ static void M_PlayerSetupDrawer (void)
 
 		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
+
 		if (!fire_surface)
 		{
 			argb_t color = V_GetDefaultPalette()->basecolors[34];
@@ -1390,6 +1342,7 @@ static void M_PlayerSetupDrawer (void)
 			fire_surface->unlock();
 		}
 	}
+
 	{
 		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
 		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
@@ -1981,14 +1934,14 @@ bool M_Responder (event_t* ev)
 	  default:
 		if (ch2 && (ch < KEY_JOY1)) {
 			for (i = itemOn+1;i < currentMenu->numitems;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
+				if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 				{
 					itemOn = i;
 					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					return true;
 				}
 			for (i = 0;i <= itemOn;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
+				if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 				{
 					itemOn = i;
 					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
@@ -2169,37 +2122,32 @@ void M_Init (void)
 {
 	int i;
 
-    // [Russell] - Set this beforehand, because when you switch wads
-    // (ie from doom to doom2 back to doom), you will have less menu items
-    {
-        MainDef.numitems = d1_main_end;
-        MainDef.menuitems = DoomMainMenu;
-        MainDef.routine = M_DrawMainMenu,
-        MainDef.lastOn = 0;
-        MainDef.x = 97;
-        MainDef.y = 64;
-    }
+	// [Russell] - Set this beforehand, because when you switch wads
+	// (ie from doom to doom2 back to doom), you will have less menu items
+	{
+		memcpy(&MainMenu, MainMenuReference, sizeof(MainMenuReference));
+		MainDef = MainDefReference;	// Keep a reference for IWAD changes
+		MainDef.menuitems = MainMenu;
+	}
 
-	currentMenu = &MainDef;
-	OptionsActive = false;
-	menuactive = 0;
-	itemOn = currentMenu->lastOn;
-	whichSkull = 0;
+	currentMenu		= &MainDef;
+	OptionsActive	= false;
+	menuactive		= 0;
+	itemOn			= 0;
+	whichSkull		= 0;
 	skullAnimCounter = 10;
-	drawSkull = true;
-	screenSize = (int)screenblocks - 3;
-	messageToPrint = 0;
-	messageString = NULL;
+	drawSkull		= true;
+	screenSize		= (int)screenblocks - 3;
+	messageToPrint	= 0;
+	messageString	= NULL;
 	messageLastMenuActive = menuactive;
 
-    if (gameinfo.flags & GI_MAPxx)
-    {
-        // Commercial has no "read this" entry.
-        MainDef.numitems = d2_main_end;
-        MainDef.menuitems = Doom2MainMenu;
-
-        MainDef.y += 8;
-    }
+	// Make a hack in order to remove "READ THIS!" from DOOM2/Final Doom.
+    if (gameinfo.flags & GI_MAPxx) {
+		MainMenu[MainDef.numitems - 2] = MainMenu[MainDef.numitems - 1];
+		MainDef.numitems--;
+		MainDef.y += 8;
+	}
 
 	M_OptInit ();
 

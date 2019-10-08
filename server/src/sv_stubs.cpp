@@ -29,7 +29,6 @@
 #include "v_video.h"
 
 void R_ExitLevel() {}
-void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 
 void D_DoServerInfoChange (byte **stream) {} 
 void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {} 
