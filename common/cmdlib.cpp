@@ -193,22 +193,21 @@ int ParseNum(const char* str)
 }
 
 
+//
+// IsNum
+//
 // [RH] Returns true if the specified string is a valid decimal number
-
+// 
 bool IsNum(const char* str)
 {
-	bool result = true;
-
-	while (*str)
-	{
+	while (*str) {
 		if (((*str < '0') || (*str > '9')) && (*str != '-'))
-		{
-			result = false;
-			break;
-		}
+			return false;
+
 		str++;
 	}
-	return result;
+
+	return true;
 }
 
 
