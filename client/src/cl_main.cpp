@@ -416,6 +416,7 @@ void CL_QuitNetGame(void)
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
+	multiplayer = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
