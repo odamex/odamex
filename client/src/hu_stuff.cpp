@@ -278,7 +278,7 @@ BOOL HU_Responder(event_t *ev)
 		// Since Buttons are disorganized... Let's create into an array and reorganize them.
 		if (platform == PF_SWITCH)
 		{
-			int table[10]{
+			int table[10] = {
 				KEY_JOY2,		// B : HI
 				KEY_JOY1, 		// A : KICK BUTT
 				KEY_JOY3, 		// X : HELP

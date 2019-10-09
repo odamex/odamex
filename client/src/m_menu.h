@@ -171,7 +171,7 @@ typedef struct
 	// hotkey in menu
 	char		alphaKey;
 
-	bool		hidden = false;	// Hide item from being seen
+	bool		isTranslucent;	// Render half
 
 } oldmenuitem_t;
 

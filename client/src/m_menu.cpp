@@ -191,8 +191,16 @@ static const int fire_surface_height = 77;
 // DOOM MAIN MENU
 // These are references, since DOOM2 doesn't have a "READ THIS!" yet.
 //
+
+enum menuinfo_t
+{
+	main_load = 2,
+	main_save = 3,
+} menuinfo_e;
+
 #define MAXITEMS_MAINMENU 6
-static oldmenuitem_t MainMenuReference[MAXITEMS_MAINMENU]=
+
+oldmenuitem_t MainMenuReference[] =
 {
 	{1,"M_NGAME",M_NewGame,'N'},
 	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
@@ -202,7 +210,7 @@ static oldmenuitem_t MainMenuReference[MAXITEMS_MAINMENU]=
 	{1,"M_QUITG",M_QuitDOOM,'Q'}
 };
 
-static oldmenu_t MainDefReference =
+oldmenu_t MainDefReference =
 {
 	MAXITEMS_MAINMENU,	
 	MainMenuReference,			// Ch0wW : This is just a reference, this will be modified in M_Init.
@@ -211,8 +219,8 @@ static oldmenu_t MainDefReference =
 	0
 };
 
-static oldmenuitem_t MainMenu[MAXITEMS_MAINMENU];
-static oldmenu_t MainDef;
+oldmenuitem_t MainMenu[MAXITEMS_MAINMENU];
+oldmenu_t MainDef;
 
 //
 // EPISODE SELECT
@@ -232,7 +240,7 @@ oldmenuitem_t EpisodeMenu[]=
 	{1,"M_EPI2", M_Episode, 't'},
 	{1,"M_EPI3", M_Episode, 'i'},
 	{1,"M_EPI4", M_Episode, 't'},
-	{1,"M_EPI5", M_Episode, 's', true}		// Ch0wW: Sigil support
+//	{1,"M_EPI5", M_Episode, 's'},		// Ch0WW : ToDo : SIGIL support 
 };
 
 oldmenu_t EpiDef =
@@ -1847,7 +1855,7 @@ bool M_Responder (event_t* ev)
 			else
 				itemOn++;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1 || currentMenu->menuitems[itemOn].hidden);
+		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
 	  case KEY_HAT1:
@@ -1863,7 +1871,7 @@ bool M_Responder (event_t* ev)
 			else
 				itemOn--;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1 || currentMenu->menuitems[itemOn].hidden);
+		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
 	  case KEY_HAT4:
@@ -1901,7 +1909,8 @@ bool M_Responder (event_t* ev)
 	  case KEY_ENTER:
 	  case KEYP_ENTER:
 		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status)
+			currentMenu->menuitems[itemOn].status &&
+			!currentMenu->menuitems[itemOn].isTranslucent)	// Ch0wW : translucent parts mean that they can't be entered.
 		{
 			currentMenu->lastOn = itemOn;
 			if (currentMenu->menuitems[itemOn].status == 2)
@@ -1984,6 +1993,24 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
+
+	// Ch0wW : make them unselectable to avoid warning messages.
+	// ToDo : Change it, and...
+	// - Disable "SAVE" in the menu or when reading a demo
+	// - Disable "LOAD/SAVE" when reading an Odamex demo and when connecting
+	if (multiplayer || demorecording){
+		MainDef.menuitems[main_load].isTranslucent = true;
+		MainDef.menuitems[main_save].isTranslucent = true;
+	}
+	else if (gamestate != GS_LEVEL || demoplayback ) {
+		MainDef.menuitems[main_load].isTranslucent = false;
+		MainDef.menuitems[main_save].isTranslucent = true;
+	}
+	else {
+		MainDef.menuitems[main_load].isTranslucent = false;
+		MainDef.menuitems[main_save].isTranslucent = false;
+	}
+
 	if (messageToPrint)
 	{
 		// Horiz. & Vertically center string and print it.
@@ -2019,16 +2046,19 @@ void M_Drawer()
 
 			for (int i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].name[0] && !currentMenu->menuitems[i].hidden)	// Don't draw the ones that are hidden
+				if (currentMenu->menuitems[i].name[0])	// Don't draw the ones that are hidden
 				{
-					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
-					y += LINEHEIGHT;
+						if (currentMenu->menuitems[i].isTranslucent)
+							screen->DrawLucentPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+						else
+							screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+
+						y += LINEHEIGHT;
 				}
 			}
 
 
 			// DRAW SKULL
-			// ToDo : make sure it get sync'ed with the "hidden" boolean
 			if (drawSkull)
 			{
 				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
