@@ -2049,7 +2049,7 @@ void M_Drawer()
 				if (currentMenu->menuitems[i].name[0])	// Don't draw the ones that are hidden
 				{
 						if (currentMenu->menuitems[i].isTranslucent)
-							screen->DrawLucentPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+							screen->DrawLucentPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y, true);
 						else
 							screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
 
