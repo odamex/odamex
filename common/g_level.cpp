@@ -128,6 +128,7 @@ static const char *MapInfoMapLevel[] =
 	"aircontrol",
 	"islobby",					// Support for lobbies
 	"lobby",					// Alias for "islobby"
+	"nocrouch",					// Ch0wW : Ignore this, Odamex doesn't have crouch !
 	NULL
 };
 
@@ -198,6 +199,7 @@ MapHandlers[] =
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	{ MITYPE_IGNORE,	0, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
