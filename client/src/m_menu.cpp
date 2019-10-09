@@ -231,7 +231,8 @@ oldmenuitem_t EpisodeMenu[]=
 	{1,"M_EPI1", M_Episode, 'k'},
 	{1,"M_EPI2", M_Episode, 't'},
 	{1,"M_EPI3", M_Episode, 'i'},
-	{1,"M_EPI4", M_Episode, 't'}
+	{1,"M_EPI4", M_Episode, 't'},
+	{1,"M_EPI5", M_Episode, 's', true}		// Ch0wW: Sigil support
 };
 
 oldmenu_t EpiDef =
@@ -892,16 +893,13 @@ void M_DrawNewGame(void)
 
 void M_NewGame(int choice)
 {
+	// DOOM 2
 	if (gameinfo.flags & GI_MAPxx)
     {
         if (gamemode == commercial_bfg)
-        {
             M_SetupNextMenu(&ExpDef);
-        }
         else
-        {
             M_SetupNextMenu(&NewDef);
-        }
     }
 	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
     {
@@ -1849,7 +1847,7 @@ bool M_Responder (event_t* ev)
 			else
 				itemOn++;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
+		} while(currentMenu->menuitems[itemOn].status==-1 || currentMenu->menuitems[itemOn].hidden);
 		return true;
 
 	  case KEY_HAT1:
@@ -1865,7 +1863,7 @@ bool M_Responder (event_t* ev)
 			else
 				itemOn--;
 			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
+		} while(currentMenu->menuitems[itemOn].status==-1 || currentMenu->menuitems[itemOn].hidden);
 		return true;
 
 	  case KEY_HAT4:
@@ -2021,13 +2019,16 @@ void M_Drawer()
 
 			for (int i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].name[0])
-					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
-				y += LINEHEIGHT;
+				if (currentMenu->menuitems[i].name[0] && !currentMenu->menuitems[i].hidden)	// Don't draw the ones that are hidden
+				{
+					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+					y += LINEHEIGHT;
+				}
 			}
 
 
 			// DRAW SKULL
+			// ToDo : make sure it get sync'ed with the "hidden" boolean
 			if (drawSkull)
 			{
 				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),

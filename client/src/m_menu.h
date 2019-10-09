@@ -171,7 +171,7 @@ typedef struct
 	// hotkey in menu
 	char		alphaKey;
 
-	bool		isOnUltimateDoom;	// Ch0wW : draw if this is on Doom
+	bool		hidden = false;	// Hide item from being seen
 
 } oldmenuitem_t;
 
