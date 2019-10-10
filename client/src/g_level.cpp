@@ -18,7 +18,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	G_LEVEL
+//	G_LEVEL - CLIENT ROUTINE
 //
 //-----------------------------------------------------------------------------
 
@@ -151,7 +151,6 @@ END_COMMAND (wad)
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
-EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
 
 void G_DoNewGame (void)

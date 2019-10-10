@@ -66,7 +66,6 @@ EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_monstersrespawn)
 
 gameaction_t	gameaction;

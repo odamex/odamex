@@ -143,6 +143,7 @@ enum EMIType
 	MITYPE_SKY,
 	MITYPE_SETFLAG,
 	MITYPE_SCFLAGS,
+	MITYPE_CLRFLAG,		// Clear flag
 	MITYPE_CLUSTER,
 	MITYPE_STRING,
 	MITYPE_CSTRING,
@@ -184,8 +185,8 @@ MapHandlers[] =
 	{ MITYPE_SETFLAG,	LEVEL_FORCENOSKYSTRETCH, 0 },
 	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
 	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
-	{ MITYPE_SCFLAGS,	LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-	{ MITYPE_SCFLAGS,	LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+	{ MITYPE_CLRFLAG,	LEVEL_JUMP_NO,0},
+	{ MITYPE_SETFLAG,	LEVEL_JUMP_NO,0},
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
@@ -1173,15 +1174,6 @@ void G_InitLevelLocals()
 		level.flags = 0;
 		level.levelnum = 1;
 	}
-	
-	if (level.flags & LEVEL_JUMP_YES)
-		sv_allowjump = 1;
-	if (level.flags & LEVEL_JUMP_NO)
-		sv_allowjump = 0.0;
-	if (level.flags & LEVEL_FREELOOK_YES)
-		sv_freelook = 1;
-	if (level.flags & LEVEL_FREELOOK_NO)
-		sv_freelook = 0.0;
 
 //	memset (level.vars, 0, sizeof(level.vars));
 
@@ -2299,5 +2291,32 @@ cluster_info_t ClusterInfos[] = {
 	}
 };
 
+//
+// FLevelLocals::IsJumpingAllowed
+// Checks the Mapinfo Flags to see if jumping is allowed or not.
+//
+bool FLevelLocals::IsJumpingAllowed() const
+{
+	if (!sv_allowjump)
+		return false;
+
+	return !(flags & LEVEL_JUMP_NO);
+}
+
+//
+// FLevelLocals::IsFreelookAllowed
+// Checks the Mapinfo Flags to see if freelook is allowed or not.
+//
+bool FLevelLocals::IsFreelookAllowed() const
+{
+	if (flags & LEVEL_FREELOOK_NO)
+		return false;
+	if (flags & LEVEL_FREELOOK_YES)
+	{
+		if (!sv_freelook)
+			return false;
+	}
+	return (sv_freelook == true);
+}
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -57,9 +57,8 @@ enum ELevelFlags
 	LEVEL_FORCENOSKYSTRETCH	= 0x00002000u,
 
 	LEVEL_JUMP_NO			= 0x00004000u,
-	LEVEL_JUMP_YES			= 0x00008000u,
-	LEVEL_FREELOOK_NO		= 0x00010000u,
-	LEVEL_FREELOOK_YES		= 0x00020000u,
+	LEVEL_FREELOOK_NO		= 0x00008000u,
+	LEVEL_FREELOOK_YES		= 0x00010000u,
 
 	LEVEL_STARTLIGHTNING	= 0x01000000u,	// Automatically start lightning
 	LEVEL_FILTERSTARTS		= 0x02000000u,	// Apply mapthing filtering to player starts
@@ -151,6 +150,9 @@ struct FLevelLocals {
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
+
+	bool IsJumpingAllowed() const;
+	bool IsFreelookAllowed() const;
 };
 
 struct cluster_info_t {

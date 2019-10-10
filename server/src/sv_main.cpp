@@ -213,8 +213,6 @@ EXTERN_CVAR (sv_nomonsters)
 // Action rules
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
-EXTERN_CVAR (sv_allowjump)
-EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_infiniteammo)
 EXTERN_CVAR (sv_keepkeys)
 
@@ -3503,7 +3501,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 		netcmd->toPlayer(&player);
 
-		if (!sv_freelook)
+		if (!level.IsFreelookAllowed())
 			player.mo->pitch = 0;
 
 		// Apply this ticcmd using the game logic
