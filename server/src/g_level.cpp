@@ -69,7 +69,7 @@
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 extern int nextupdate;
@@ -724,7 +724,7 @@ void G_DoLoadLevel (int position)
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
-	// [RH] Fetch sky parameters from level_locals_t.
+	// [RH] Fetch sky parameters from FLevelLocals.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
 	sky1texture = R_TextureNumForName (level.skypic);

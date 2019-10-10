@@ -48,7 +48,7 @@ FKeyBindings Bindings, DoubleBindings, NetDemoBindings, AutomapBindings;
  */
 FBinding DefaultBindings[] =
 {
-	{"grave", "toggleconsole"},		// <- This is new
+	{"grave", "toggleconsole"},		// <- This is new, AZERTY equivalent to tilde
 	{"1", "impulse 1"},
 	{"2", "impulse 2"},
 	{"3", "impulse 3"},
@@ -65,6 +65,8 @@ FBinding DefaultBindings[] =
 	{"rightshift", "+speed"},
 	{"space", "+use"},
 	{"e", "+use"},
+	{"uparrow", "+forward"},
+	{"downarrow", "+back"},
 	{"rightarrow", "+right"},
 	{"leftarrow", "+left"},
 	{"w", "+forward"},
@@ -141,8 +143,7 @@ FBinding DefaultNetDemoBindings[]  =
 	{ NULL, NULL }
 };
 
-/* Special bindings when it comes
- * to Odamex's demo playbacking.
+/* Special bindings for Automap.
  */
 FBinding DefaultAutomapBindings[] =
 {
@@ -151,8 +152,8 @@ FBinding DefaultAutomapBindings[] =
 	{ "c", "am_clearmarks" },
 	{ "f", "am_togglefollow" }, 
 	{ "+", "+am_zoomin" },
-	{ "kp+", "+am_zoomin" },
 	{ "-", "+am_zoomout" },
+	{ "kp+", "+am_zoomin" },
 	{ "kp-", "+am_zoomout" },
 	{ "uparrow", "+am_panup"},
 	{ "downarrow", "+am_pandown"},

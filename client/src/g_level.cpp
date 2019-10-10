@@ -65,7 +65,7 @@
 #include "z_zone.h"
 
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
@@ -498,7 +498,7 @@ void G_DoLoadLevel (int position)
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
-	// [RH] Fetch sky parameters from level_locals_t.
+	// [RH] Fetch sky parameters from FLevelLocals.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
 	sky1texture = R_TextureNumForName (level.skypic);
@@ -664,7 +664,11 @@ void G_WorldDone (void)
 	}
 }
 
-
+void level_info_t::Reset() {
+	memset(mapname, 0, sizeof(mapname));
+	levelnum = 0;
+	level_name = NULL;
+}
 
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

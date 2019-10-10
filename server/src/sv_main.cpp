@@ -73,7 +73,7 @@
 #include <vector>
 
 extern void G_DeferedInitNew (char *mapname);
-extern level_locals_t level;
+extern FLevelLocals level;
 
 // Unnatural Level Progression.  True if we've used 'map' or another command
 // to switch to a specific map out of order, otherwise false.

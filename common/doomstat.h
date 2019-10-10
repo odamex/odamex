@@ -125,7 +125,7 @@ extern	"C" int 		viewwidth;
 // ANG90 = left side, ANG270 = right
 extern	int				viewangleoffset;
 
-extern level_locals_t level;
+extern FLevelLocals level;
 
 
 // --------------------------------------

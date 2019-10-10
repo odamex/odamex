@@ -58,12 +58,12 @@
 #include "w_ident.h"
 #include "z_zone.h"
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
-level_locals_t level;			// info about current level
+FLevelLocals level;			// info about current level
 
-std::vector<level_pwad_info_t> wadlevelinfos;
+std::vector<level_info_t> wadlevelinfos;
 std::vector<cluster_info_t> wadclusterinfos;
 
 BOOL HexenHack;
@@ -221,7 +221,7 @@ MapInfoHandler ClusterHandlers[] =
 
 static void ParseMapInfoLower (MapInfoHandler *handlers,
 							   const char *strings[],
-							   level_pwad_info_t *levelinfo,
+							   level_info_t *levelinfo,
 							   cluster_info_t *clusterinfo,
 							   DWORD levelflags);
 
@@ -243,7 +243,7 @@ int FindWadClusterInfo (int cluster)
 	return -1;
 }
 
-static void SetLevelDefaults (level_pwad_info_t *levelinfo)
+static void SetLevelDefaults (level_info_t *levelinfo)
 {
 	memset (levelinfo, 0, sizeof(*levelinfo));
 	levelinfo->snapshot = NULL;
@@ -261,8 +261,8 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 //
 void G_ParseMapInfo (void)
 {
-	level_pwad_info_t defaultinfo;
-	level_pwad_info_t *levelinfo;
+	level_info_t defaultinfo;
+	level_info_t *levelinfo;
 	int levelindex;
 	cluster_info_t *clusterinfo;
 	int clusterindex;
@@ -301,11 +301,11 @@ void G_ParseMapInfo (void)
 				levelindex = FindWadLevelInfo (sc.String);
 				if (levelindex == -1)
 				{
-					wadlevelinfos.push_back(level_pwad_info_t());
+					wadlevelinfos.push_back(level_info_t());
 					levelindex = wadlevelinfos.size() - 1;
 				}
 				levelinfo = &wadlevelinfos[levelindex];
-				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
+				memcpy (levelinfo, &defaultinfo, sizeof(level_info_t));
 				uppercopy (levelinfo->mapname, sc.String);
 				sc.MustGetString ();
 				ReplaceString (&levelinfo->level_name, sc.String);
@@ -342,7 +342,7 @@ void G_ParseMapInfo (void)
 
 static void ParseMapInfoLower (MapInfoHandler *handlers,
 							   const char *strings[],
-							   level_pwad_info_t *levelinfo,
+							   level_info_t *levelinfo,
 							   cluster_info_t *clusterinfo,
 							   DWORD flags)
 {
@@ -1108,7 +1108,7 @@ void G_InitLevelLocals()
 
 	if ((i = FindWadLevelInfo(level.mapname)) > -1)
 	{
-		level_pwad_info_t* pinfo = &wadlevelinfos[i];
+		level_info_t* pinfo = &wadlevelinfos[i];
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
 		// [SL] 2012-03-19 - Add sky2 back
