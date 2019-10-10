@@ -4464,7 +4464,7 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) //no time limit in lobby
+	if(!sv_timelimit || level.IsLobbyMap() ) // No time limit in lobby
 		return;
 
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60);

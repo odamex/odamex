@@ -149,7 +149,7 @@ enum EMIType
 	MITYPE_CSTRING,
 };
 
-struct MapInfoHandler
+struct MapInfoFlagHandler
 {
 	EMIType type;
 	DWORD data1, data2;
@@ -197,8 +197,8 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
-	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	{ MITYPE_SETFLAG,	LEVEL_ISLOBBY, 0},
+	{ MITYPE_SETFLAG,	LEVEL_ISLOBBY, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -211,7 +211,7 @@ static const char *MapInfoClusterLevel[] =
 	NULL
 };
 
-MapInfoHandler ClusterHandlers[] =
+MapInfoFlagHandler ClusterHandlers[] =
 {
 	{ MITYPE_STRING,	cioffset(entertext), 0 },
 	{ MITYPE_STRING,	cioffset(exittext), 0 },
@@ -220,7 +220,7 @@ MapInfoHandler ClusterHandlers[] =
 	{ MITYPE_SETFLAG,	CLUSTER_HUB, 0 }
 };
 
-static void ParseMapInfoLower (MapInfoHandler *handlers,
+static void ParseMapInfoLower (MapInfoFlagHandler *handlers,
 							   const char *strings[],
 							   level_info_t *levelinfo,
 							   cluster_info_t *clusterinfo,
@@ -341,14 +341,13 @@ void G_ParseMapInfo (void)
 	}
 }
 
-static void ParseMapInfoLower (MapInfoHandler *handlers,
+static void ParseMapInfoLower (MapInfoFlagHandler *handlers,
 							   const char *strings[],
 							   level_info_t *levelinfo,
 							   cluster_info_t *clusterinfo,
 							   DWORD flags)
 {
-	MapInfoHandler *handler;
-
+	
 	byte* info = levelinfo ? (byte*)levelinfo : (byte*)clusterinfo;
 
 	while (sc.GetString())
@@ -360,10 +359,11 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		}
 
 		int entry = sc.MustMatchString(strings);
+
 		if (entry == -1)
 			continue;
     
-		handler = handlers + entry;
+		MapInfoFlagHandler *handler = &MapHandlers[entry];
 
 		switch (handler->type)
 		{
@@ -2317,6 +2317,11 @@ bool FLevelLocals::IsFreelookAllowed() const
 			return false;
 	}
 	return (sv_freelook == true);
+}
+
+bool FLevelLocals::IsLobbyMap() const 
+{
+	return (flags & LEVEL_ISLOBBY) || (stricmp(mapname, "lobby") == 0);
 }
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -62,7 +62,7 @@ enum ELevelFlags
 
 	LEVEL_STARTLIGHTNING	= 0x01000000u,	// Automatically start lightning
 	LEVEL_FILTERSTARTS		= 0x02000000u,	// Apply mapthing filtering to player starts
-	LEVEL_LOBBYSPECIAL		= 0x04000000u,	// That level is a lobby, and has a few priorities
+	LEVEL_ISLOBBY			= 0x04000000u,	// That level is a lobby, and has a few priorities
 
 	LEVEL_DEFINEDINMAPINFO	= 0x20000000u,	// Level was defined in a MAPINFO lump
 	LEVEL_CHANGEMAPCHEAT	= 0x40000000u,	// Don't display cluster messages
@@ -153,6 +153,8 @@ struct FLevelLocals {
 
 	bool IsJumpingAllowed() const;
 	bool IsFreelookAllowed() const;
+
+	bool IsLobbyMap() const;
 };
 
 struct cluster_info_t {
