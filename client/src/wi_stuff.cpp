@@ -1123,7 +1123,8 @@ void WI_drawNetgameStats(void)
 		x = NG_STATSX;
 
 		// [RH] Only use one graphic for the face backgrounds
-		V_ColorMap = translationref_t(translationtables + i * 256, i+1);
+		// FIXME : If you're the GREEN PLAYER, it'll translate as your OWN CUSTOM COLOR
+		V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
         screen->DrawTranslatedPatchClean (p, x - p->width(), y);
 
 		if (i == me)
