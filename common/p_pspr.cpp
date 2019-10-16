@@ -846,7 +846,7 @@ fixed_t P_BulletSlope(AActor* mo)
 
 	// If a target was not found, or one was found, but outside the
 	// player's autoaim range, use the actor's pitch for the slope.
-	if (level.IsFreelookAllowed() &&
+	if (level.isFreelookAllowed() &&
 		(!linetarget || // target not found, or:
 		 (mo->player && // target found but outside of player's autoaim range
 		  abs(bulletslope - pitchslope) >= mo->player->userinfo.aimdist)))

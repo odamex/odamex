@@ -2292,10 +2292,10 @@ cluster_info_t ClusterInfos[] = {
 };
 
 //
-// FLevelLocals::IsJumpingAllowed
+// FLevelLocals::isJumpingAllowed
 // Checks the Mapinfo Flags to see if jumping is allowed or not.
 //
-bool FLevelLocals::IsJumpingAllowed() const
+bool FLevelLocals::isJumpingAllowed() const
 {
 	if (!sv_allowjump)
 		return false;
@@ -2304,10 +2304,10 @@ bool FLevelLocals::IsJumpingAllowed() const
 }
 
 //
-// FLevelLocals::IsFreelookAllowed
+// FLevelLocals::isFreelookAllowed
 // Checks the Mapinfo Flags to see if freelook is allowed or not.
 //
-bool FLevelLocals::IsFreelookAllowed() const
+bool FLevelLocals::isFreelookAllowed() const
 {
 	if (flags & LEVEL_FREELOOK_NO)
 		return false;
@@ -2319,7 +2319,11 @@ bool FLevelLocals::IsFreelookAllowed() const
 	return (sv_freelook == true);
 }
 
-bool FLevelLocals::IsLobbyMap() const 
+//
+// FLevelLocals::isLobbyMap
+// Checks the map or the mapinfo flag to see if it's a lobby map.
+//
+bool FLevelLocals::isLobbyMap() const 
 {
 	return (flags & LEVEL_ISLOBBY) || (stricmp(mapname, "lobby") == 0);
 }

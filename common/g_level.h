@@ -151,10 +151,10 @@ struct FLevelLocals {
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
 
-	bool IsJumpingAllowed() const;
-	bool IsFreelookAllowed() const;
-
-	bool IsLobbyMap() const;
+	// functions to check if the level has specific conditions
+	bool isJumpingAllowed() const;
+	bool isFreelookAllowed() const;
+	bool isLobbyMap() const;
 };
 
 struct cluster_info_t {

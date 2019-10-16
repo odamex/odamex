@@ -1955,7 +1955,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 		return false;
 
 	// Bypass the exit restrictions if we're on a lobby.
-	if (level.IsLobbyMap())
+	if (level.isLobbyMap())
 		return true;	
 
 	// [Toke - dmflags] Old location of DF_NO_EXIT

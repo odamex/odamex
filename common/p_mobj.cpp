@@ -2081,7 +2081,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	// If a target was not found, or one was found, but outside the
 	// player's autoaim range, use the actor's pitch for the slope.
-	if (level.IsFreelookAllowed() &&
+	if (level.isFreelookAllowed() &&
 		(!linetarget || // target not found, or:
 		 (source->player && // target found but outside of player's autoaim range
 		  abs(slope - pitchslope) >= source->player->userinfo.aimdist)))

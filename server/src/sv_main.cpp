@@ -3501,7 +3501,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 		netcmd->toPlayer(&player);
 
-		if (!level.IsFreelookAllowed())
+		if (!level.isFreelookAllowed())
 			player.mo->pitch = 0;
 
 		// Apply this ticcmd using the game logic
@@ -4464,7 +4464,7 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!sv_timelimit || level.IsLobbyMap() ) // No time limit in lobby
+	if(!sv_timelimit || level.isLobbyMap() ) // No time limit in lobby
 		return;
 
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60);

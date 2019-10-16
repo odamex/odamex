@@ -197,7 +197,7 @@ void G_ChangeMap() {
 	unnatural_level_progression = false;
 
 	// Skip the maplist to go to the desired level in case of a lobby map.
-	if (level.IsLobbyMap() && level.nextmap[0])
+	if (level.isLobbyMap() && level.nextmap[0])
 	{
 		G_DeferedInitNew(level.nextmap);
 	}

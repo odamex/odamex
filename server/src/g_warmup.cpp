@@ -93,7 +93,7 @@ short Warmup::get_countdown()
 // Reset warmup to "factory defaults".
 void Warmup::reset(FLevelLocals& level)
 {
-	if ( sv_warmup && sv_gametype != GM_COOP && !level.IsLobbyMap() ) // Do not allow warmup in lobby or on coop!
+	if ( sv_warmup && sv_gametype != GM_COOP && !level.isLobbyMap() ) // Do not allow warmup in lobby or on coop!
 		this->set_status(Warmup::WARMUP);
 	else
 		this->set_status(Warmup::DISABLED);

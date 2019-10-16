@@ -432,7 +432,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(joy_freelook && (level.IsFreelookAllowed() || consoleplayer().spectator))
+	if(joy_freelook && (level.isFreelookAllowed() || consoleplayer().spectator))
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -505,7 +505,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && level.IsFreelookAllowed()) || consoleplayer().spectator)
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && level.isFreelookAllowed()) || consoleplayer().spectator)
 	{
 		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)
