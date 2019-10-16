@@ -155,7 +155,7 @@ void R_InitSkyMap()
 		skystretch = ( (r_stretchsky == 1) 
 					|| consoleplayer().spectator 
 					|| (r_stretchsky == 2 && level.isFreelookAllowed() && cl_mouselook) )
-					&& !level.flags & LEVEL_FORCENOSKYSTRETCH;
+					&& !(level.flags & LEVEL_FORCENOSKYSTRETCH);
 	}
 	else
 	{

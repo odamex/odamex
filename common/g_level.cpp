@@ -112,6 +112,7 @@ static const char *MapInfoMapLevel[] =
 	"evenlighting",
 	"noautosequences",
 	"forcenoskystretch",
+	"skystretch",
 	"allowfreelook",
 	"nofreelook",
 	"allowjump",
@@ -183,6 +184,7 @@ MapHandlers[] =
 	{ MITYPE_SETFLAG,	LEVEL_EVENLIGHTING, 0 },
 	{ MITYPE_SETFLAG,	LEVEL_SNDSEQTOTALCTRL, 0 },
 	{ MITYPE_SETFLAG,	LEVEL_FORCENOSKYSTRETCH, 0 },
+	{ MITYPE_CLRFLAG, 	LEVEL_FORCENOSKYSTRETCH, 0 },
 	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
 	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
 	{ MITYPE_CLRFLAG,	LEVEL_JUMP_NO,0},
@@ -2316,7 +2318,7 @@ bool FLevelLocals::isFreelookAllowed() const
 		if (!sv_freelook)
 			return false;
 	}
-	return (sv_freelook == true);
+	return sv_freelook;
 }
 
 //
