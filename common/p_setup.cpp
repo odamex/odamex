@@ -1655,8 +1655,7 @@ void P_SetupLevel (char *lumpname, int position)
 	size_t lumpnum;
 
 	level.total_monsters = level.total_items = level.total_secrets =
-		level.killed_monsters = level.found_items = level.found_secrets =
-		wminfo.maxfrags = 0;
+		level.killed_monsters = level.found_items = level.found_secrets = 0;
 	wminfo.partime = 180;
 
 	if (!savegamerestore)

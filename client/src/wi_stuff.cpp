@@ -272,11 +272,14 @@ static stateenum_t		state;
 static wbstartstruct_t* wbs;
 
 static std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
+
+// Counting parameters
 static std::vector<int> cnt_kills_c;	// = cnt_kills
 static std::vector<int> cnt_items_c;	// = cnt_items
 static std::vector<int> cnt_secret_c;	// = cnt_secret
 static std::vector<int> cnt_frags_c;	// = cnt_frags
 static patch_t*			faceclassic[4];
+
 static int dofrags;
 static int ng_state;
 
@@ -522,7 +525,7 @@ int WI_MapToIndex (char *map)
 
 	for (i = 0; i < NUMMAPS; i++)
 	{
-		if (!strnicmp (names[wbs->epsd][i], map, 8))
+		if (!strnicmp (names[wbs->episode][i], map, 8))
 			break;
 	}
 	return i;
@@ -554,8 +557,8 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 	i = 0;
 	do
 	{
-		left = lnodes[wbs->epsd][n].x - c[i]->leftoffset();
-		top = lnodes[wbs->epsd][n].y - c[i]->topoffset();
+		left = lnodes[wbs->episode][n].x - c[i]->leftoffset();
+		top = lnodes[wbs->episode][n].y - c[i]->topoffset();
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
@@ -572,7 +575,7 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 
 	if (fits && i < numpatches) // haleyjd: bug fix
 	{
-		screen->DrawPatchIndirect(c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
+		screen->DrawPatchIndirect(c[i], lnodes[wbs->episode][n].x, lnodes[wbs->episode][n].y);
 	}
 	else
 	{
@@ -588,12 +591,12 @@ void WI_initAnimatedBack (void)
 	int i;
 	animinfo_t *a;
 
-	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->episode > 2)
 		return;
 
-	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
+	for (i = 0; i < NUMANIMS[wbs->episode]; i++)
 	{
-		a = &anims[wbs->epsd][i];
+		a = &anims[wbs->episode][i];
 
 		// init variables
 		a->ctr = -1;
@@ -612,12 +615,12 @@ void WI_updateAnimatedBack (void)
 	int i;
 	animinfo_t *a;
 
-	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->episode > 2)
 		return;
 
-	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
+	for (i = 0; i < NUMANIMS[wbs->episode]; i++)
 	{
-		a = &anims[wbs->epsd][i];
+		a = &anims[wbs->episode][i];
 
 		if (bcnt == a->nexttic)
 		{
@@ -661,15 +664,15 @@ void WI_updateAnimatedBack (void)
 
 void WI_drawAnimatedBack()
 {
-	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->episode <= 2 && NUMANIMS[wbs->episode] > 0)
 	{
 		DCanvas* canvas = background_surface->getDefaultCanvas();
 
 		background_surface->lock();
 
-		for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
+		for (int i = 0; i < NUMANIMS[wbs->episode]; i++)
 		{
-			animinfo_t* a = &anims[wbs->epsd][i];
+			animinfo_t* a = &anims[wbs->episode][i];
 			if (a->ctr >= 0)
 				canvas->DrawPatch(a->p[a->ctr], a->loc.x, a->loc.y);
 		}
@@ -839,7 +842,7 @@ void WI_drawShowNextLoc (void)
 
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
-		if (wbs->epsd > 2)
+		if (wbs->episode > 2)
 		{
 			WI_drawEL();
 			return;
@@ -847,7 +850,7 @@ void WI_drawShowNextLoc (void)
 
 		// draw a splat on taken cities.
 		for (i=0; i < NUMMAPS; i++) {
-			if (FindLevelInfo (names[wbs->epsd][i])->flags & LEVEL_VISITED)
+			if (FindLevelInfo (names[wbs->episode][i])->flags & LEVEL_VISITED)
 				WI_drawOnLnode(i, &splat, 1);
 		}
 
@@ -937,6 +940,14 @@ void WI_updateNetgameStats()
 
 			if (dofrags)
 				cnt_frags_c[i] = WI_fragSum(*it);
+
+
+					/*Printf_Bold("%d | %d | %d | %d | %d\n", wminfo.plyr[i].skills,
+											 wminfo.plyr[i].sitems,
+											 wminfo.plyr[i].ssecret,
+											 wminfo.plyr[i].stime,
+											 wminfo.plyr[i].fragcount
+											);*/
 		}
 		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 		ng_state = 10;
@@ -1072,6 +1083,7 @@ void WI_updateNetgameStats()
 void WI_drawNetgameStats(void)
 {
 	unsigned int x, y;
+	int nbPlayers;
 	short pwidth = percent->width();
 
 	// draw animated background
@@ -1092,14 +1104,17 @@ void WI_drawNetgameStats(void)
 	// draw stats
 	y = NG_STATSY + kills->height();
 
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		// [RH] Quick hack: Only show the first four players.
+		// [RH] Only display up to 4 players at once
 		if (it->id > 4)
 			break;
 
+		// Get the player ID
 		byte i = (it->id) - 1;
 
+		// Get out of the loop if the player didn't play
 		if (!it->ingame())
 			continue;
 
@@ -1122,6 +1137,7 @@ void WI_drawNetgameStats(void)
 			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
 
 		y += WI_SPACINGY;
+		nbPlayers++;
 	}
 }
 
@@ -1266,7 +1282,7 @@ void WI_drawStats (void)
     screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
     WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
 
-	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
+	if ((gameinfo.flags & GI_MAPxx) || wbs->episode < 3)
     {
     	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
     	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
@@ -1328,9 +1344,9 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
+				if (sv_gametype == 0 && !wi_newintermission && ( (democlassic && multiplayer) || sv_maxplayers < 5) )
 					WI_updateNetgameStats();
 				else
 					WI_updateNoState();
@@ -1387,10 +1403,10 @@ void WI_loadData (void)
 	char name[9];
 	animinfo_t *a;
 
-	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->episode >= 3))
 		strcpy(name, "INTERPIC");
 	else
-		sprintf(name, "WIMAP%d", wbs->epsd);
+		sprintf(name, "WIMAP%d", wbs->episode);
 
 	// background
 	const patch_t* bg_patch = W_CachePatch(name);
@@ -1433,18 +1449,18 @@ void WI_loadData (void)
 		// splat
 		splat = W_CachePatch ("WISPLAT", PU_STATIC);
 
-		if (wbs->epsd < 3)
+		if (wbs->episode < 3)
 		{
-			for (j=0;j<NUMANIMS[wbs->epsd];j++)
+			for (j=0;j<NUMANIMS[wbs->episode];j++)
 			{
-				a = &anims[wbs->epsd][j];
+				a = &anims[wbs->episode][j];
 				for (i=0;i<a->nanims;i++)
 				{
 					// MONDO HACK!
-					if (wbs->epsd != 1 || j != 8)
+					if (wbs->episode != 1 || j != 8)
 					{
 						// animations
-						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+						sprintf (name, "WIA%d%.2d%.2d", wbs->episode, j, i);
 						a->p[i] = W_CachePatch (name, PU_STATIC);
 					}
 					else
@@ -1543,13 +1559,13 @@ void WI_unloadData (void)
 
 		Z_ChangeTag (splat, PU_CACHE);
 
-		if (wbs->epsd < 3)
+		if (wbs->episode < 3)
 		{
-			for (j=0;j<NUMANIMS[wbs->epsd];j++)
+			for (j=0;j<NUMANIMS[wbs->episode];j++)
 			{
-				if (wbs->epsd != 1 || j != 8)
-					for (i=0;i<anims[wbs->epsd][j].nanims;i++)
-						Z_ChangeTag (anims[wbs->epsd][j].p[i], PU_CACHE);
+				if (wbs->episode != 1 || j != 8)
+					for (i=0;i<anims[wbs->episode][j].nanims;i++)
+						Z_ChangeTag (anims[wbs->episode][j].p[i], PU_CACHE);
 			}
 		}
 	}
@@ -1594,12 +1610,11 @@ void WI_Drawer (void)
 		switch (state)
 		{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				// TODO: Fix classic coop scoreboard
-				//if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					//WI_drawNetgameStats();
-				//else
+				if (sv_gametype == 0 && !wi_newintermission && ( (democlassic && multiplayer) || sv_maxplayers < 5) )
+					WI_drawNetgameStats();
+				else
 					WI_drawDeathmatchStats();
 			}
 			else

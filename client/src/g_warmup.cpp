@@ -33,6 +33,10 @@ Warmup::status_t Warmup::get_status()
 // Always allow score changes on the client
 bool Warmup::checkscorechange()
 {
+	// Always return score changes if we're doing vanilla stuff
+	if (democlassic || demorecording || !multiplayer)
+		return true;
+
 	if (this->status != Warmup::INGAME)
 		return false;
 
@@ -49,6 +53,7 @@ bool Warmup::checkfireweapon()
 
 	if (this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
+		
 	return true;
 }
 

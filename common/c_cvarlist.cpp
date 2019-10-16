@@ -81,9 +81,6 @@ CVAR_RANGE(			sv_monsterdamage, "1.0", "Amount to multiply monster weapon damage
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
 					0.0f, 100.0f)
 
-// OLD: Allow exit switch at maxfrags, must click to exit
-// NEW: When enabled, exit switch will kill the player who flips it
-// [ML] NOTE: Behavior was changed October 2012, see bug
 CVAR(				sv_fragexitswitch, "0", "When enabled, exit switch will kill the player who flips it",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
