@@ -47,9 +47,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-// the dec offsetof macro doesnt work very well...
-#define myoffsetof(type,identifier) ((uintptr_t)&((type *)0)->identifier)
-
 extern std::string progdir, startdir;
 
 void	FixPathSeparator (std::string &path);

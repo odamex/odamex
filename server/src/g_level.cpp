@@ -69,11 +69,10 @@
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
 
-#define lioffset(x)		myoffsetof(level_pwad_info_t,x)
-#define cioffset(x)		myoffsetof(cluster_info_t,x)
+#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define cioffset(x)		offsetof(cluster_info_t,x)
 
 extern int nextupdate;
-
 
 EXTERN_CVAR (sv_endmapscript)
 EXTERN_CVAR (sv_startmapscript)
@@ -87,9 +86,6 @@ EXTERN_CVAR (sv_timelimit)
 extern int mapchange;
 extern int shotclock;
 
-// Start time for timing demos
-dtime_t starttime;
-
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
 
@@ -101,11 +97,9 @@ FLZOMemFile	*reset_snapshot = NULL;
 
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
-extern BOOL netdemo;
 BOOL savegamerestore;
 
-extern int mousex, mousey, joyxmove, joyymove, Impulse;
-extern BOOL sendpause, sendsave, sendcenterview;
+extern BOOL sendpause;
 
 
 bool isFast = false;
@@ -202,27 +196,36 @@ std::string G_NextMap(void) {
 void G_ChangeMap() {
 	unnatural_level_progression = false;
 
-	size_t next_index;
-	if (!Maplist::instance().get_next_index(next_index)) {
-		// We don't have a maplist, so grab the next 'natural' map lump.
-		std::string next = G_NextMap();
-		G_DeferedInitNew((char *)next.c_str());
-	} else {
-		maplist_entry_t maplist_entry;
-		Maplist::instance().get_map_by_index(next_index, maplist_entry);
-
-		G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
-
-		// Set the new map as the current map
-		Maplist::instance().set_index(next_index);
+	// Skip the maplist to go to the desired level in case of a lobby map.
+	if (level.flags & LEVEL_LOBBYSPECIAL && level.nextmap[0])
+	{
+		G_DeferedInitNew(level.nextmap);
 	}
+	else
+	{
+		size_t next_index;
+		if (!Maplist::instance().get_next_index(next_index)) {
+			// We don't have a maplist, so grab the next 'natural' map lump.
+			std::string next = G_NextMap();
+			G_DeferedInitNew((char *)next.c_str());
+		}
+		else {
+			maplist_entry_t maplist_entry;
+			Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+			G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+
+			// Set the new map as the current map
+			Maplist::instance().set_index(next_index);
+		}
+
+		// run script at the end of each map
+		// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+		// when onlcvars (addcommandstring's second param) is true.  Is there a
+		// reason why the mapscripts ahve to be safe mode?
+		if (strlen(sv_endmapscript.cstring()))
+			AddCommandString(sv_endmapscript.cstring()/*, true*/);
+	}
 }
 
 // Change to a map based on a maplist index.
@@ -448,7 +451,6 @@ void G_InitNew (const char *mapname)
 	// [SL] 2012-12-08 - Multiplayer is always true for servers
 	multiplayer = true;
 
-	usergame = true;				// will be set false if a demo
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
@@ -615,6 +617,10 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
+	//reset switch activation
+	for (int i = 0; i < numlines; i++)
+		lines[i].switchactive = false;
+
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	iquehead = iquetail = 0;
@@ -688,7 +694,6 @@ extern float BaseBlendA;
 void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
-	size_t i;
 
 	if (position != -1)
 		firstmapinit = true;
@@ -709,9 +714,6 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
-
-//	if (demoplayback || oldgs == GS_STARTUP)
-//		C_HideConsole ();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -829,26 +831,7 @@ void G_DoLoadLevel (int position)
 	gameaction = ga_nothing;
 	Z_CheckHeap ();
 
-	// clear cmd building stuff // denis - todo - could we get rid of this?
-	Impulse = 0;
-	for (i = 0; i < NUM_ACTIONS; i++)
-		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
-			Actions[i] = 0;
-
-	joyxmove = joyymove = 0;
-	mousex = mousey = 0;
-	sendpause = sendsave = paused = sendcenterview = false;
-
-	if (timingdemo)
-	{
-		static BOOL firstTime = true;
-
-		if (firstTime)
-		{
-			starttime = I_MSTime();
-			firstTime = false;
-		}
-	}
+	paused = false;
 
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	// [RH] Restore the state of the level.
@@ -858,7 +841,7 @@ void G_DoLoadLevel (int position)
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
 	// [AM] Handle warmup init.
-	warmup.reset();
+	warmup.reset(level);
 	//	C_FlushDisplay ();
 }
 

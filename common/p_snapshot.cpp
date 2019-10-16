@@ -976,6 +976,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_Line				= mFloorLine;
 		floor->m_Height				= mFloorOffset;
 		floor->m_Change				= mFloorChange;
+		floor->m_Texture			= mFloorTexture;
 	}
 		
 	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)
@@ -1146,9 +1147,22 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 
 			// clean up allocated memory
 			if (tempsector.ceilingdata)
+			{
 				tempsector.ceilingdata->Destroy();
+				delete tempsector.ceilingdata;
+			}
+				
 			if (tempsector.floordata)
+			{
 				tempsector.floordata->Destroy();
+				delete tempsector.floordata;
+			}
+
+			if (tempsector.lightingdata)
+			{
+				tempsector.lightingdata->Destroy();
+				delete tempsector.lightingdata;
+			}
 
 			// restore sector movement sounds
 			predicting = oldpredicting;

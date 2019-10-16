@@ -62,6 +62,17 @@ DSectorEffect::DSectorEffect (sector_t *sector)
 	m_Sector = sector;
 }
 
+// Base Clone method, for cloning sector actions.
+//
+// This class must not be called directly.  Subclass it if you need it.
+//
+// All subclasses should allocate a subclass with `new`, orphan it,
+// then set the sector of the subclass to the passed sector.
+DSectorEffect* DSectorEffect::Clone(sector_t *sector) const
+{
+	throw CFatalError("DSectorEffect::Clone() called as a base class.");
+}
+
 void DSectorEffect::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);

@@ -87,7 +87,6 @@ void	G_PlayerReborn (player_t &player);
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
 void	G_DoCompleted (void);
-void	G_DoVictory (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
@@ -100,6 +99,7 @@ EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
@@ -126,8 +126,6 @@ BOOL	 		viewactive;
 
 // Describes if a network game is being played
 BOOL			network_game;
-// Use only for demos, it is a old variable for the old network code
-BOOL			netgame;
 // Describes if this is a multiplayer game or not
 BOOL			multiplayer;
 // The player vector, contains all player information
@@ -136,7 +134,6 @@ Players			players;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
-bool			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
 
 enum demoversion_t
 {
@@ -180,14 +177,12 @@ char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 
 extern bool		simulated_connection;
 
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
-size_t			maxdemosize;
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
 int				demostartgametic;
 FILE*			recorddemo_fp;
@@ -195,9 +190,6 @@ FILE*			recorddemo_fp;
 BOOL 			precache = true;		// if true, load all graphics at start
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission
-
-byte*			savebuffer;
-
 
 #define MAXPLMOVE				(forwardmove[1])
 
@@ -340,6 +332,10 @@ END_COMMAND (turn180)
 weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
+	// FIXME : Find a way to properly write this to the vanilla demo file.
+	if (democlassic && demorecording)
+		return;
+
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -348,6 +344,10 @@ END_COMMAND (weapnext)
 
 BEGIN_COMMAND (weapprev)
 {
+	// FIXME : Find a way to properly write this to the vanilla demo file.
+	if (democlassic && demorecording)
+		return;
+
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -434,7 +434,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(joy_freelook && sv_freelook)
+	if(joy_freelook && sv_freelook || consoleplayer().spectator)
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -463,13 +463,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_USE])
 		cmd->buttons |= BT_USE;
 
-	// Ch0wW : don't accept ACTION_JUMP if using a classic demo.
-	if (!demorecording && !democlassic) {
-		if (Actions[ACTION_JUMP])
-			cmd->buttons |= BT_JUMP;
-	}
+	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
+	if (Actions[ACTION_JUMP] && !demorecording && !democlassic)
+		cmd->buttons |= BT_JUMP;
+
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
+	// FIXME : "weapnext/weapprev" doesn't handle this properly, desyncing the demos.
 	if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->buttons |= BT_CHANGE;
@@ -507,7 +507,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
 	{
 		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)
@@ -575,8 +575,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (!longtics)
-		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
-
+		cmd->yaw = (cmd->yaw +128) & 0xFF00;
 }
 
 
@@ -1157,6 +1156,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+	p.cheats = 0;						// Reset cheat flags
 
 	p.death_time = 0;
 	p.tic = 0;
@@ -1556,7 +1556,6 @@ void G_DoLoadGame (void)
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
 
-	netgame = false;
 	multiplayer = false;
 
 	// load a base level
@@ -1761,21 +1760,25 @@ void G_WriteDemoTiccmd ()
 //
 bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 {
-	std::string demoname = basedemoname + ".lmp";
+	std::string demname = basedemoname + ".lmp";
 
     if (recorddemo_fp)
     {
         fclose(recorddemo_fp);
         recorddemo_fp = NULL;
+		G_CleanupDemo();
     }
 
-    recorddemo_fp = fopen(demoname.c_str(), "wb");
+    recorddemo_fp = fopen(demname.c_str(), "wb");
 
     if (!recorddemo_fp)
     {
-        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname.c_str());
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demname.c_str());
         return false;
     }
+
+	// Copy the buffered demoname.
+	sprintf(demoname, "%s", demname.c_str());
 
 	CL_QuitNetGame();
 
@@ -1867,9 +1870,13 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 
 std::string defdemoname;
 
-void G_DeferedPlayDemo (const char *name)
+void G_DeferedPlayDemo (const char *name, bool bIsSingleDemo)
 {
 	defdemoname = name;
+
+	if (bIsSingleDemo)
+		singledemo = true;
+
 	gameaction = ga_playdemo;
 }
 
@@ -1882,7 +1889,12 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 
 		if (gamestate != GS_STARTUP)
 		{
-			//G_CheckDemoStatus();
+			// Ch0wW : don't crash the engine if the mapname isn't found.
+			if (W_CheckNumForName(argv[1]) == -1)
+			{
+				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
+				return;
+			}
 			G_RecordDemo(argv[1], argv[2]);
 		}
 		else
@@ -1925,7 +1937,7 @@ BEGIN_COMMAND(playdemo)
 		extern bool lastWadRebootSuccess;
 		if(lastWadRebootSuccess)
 		{
-			G_DeferedPlayDemo(argv[1]);
+			G_DeferedPlayDemo(argv[1], true);
 		}
 		else
 		{
@@ -2058,16 +2070,10 @@ void G_DoPlayDemo(bool justStreamInput)
 			consoleplayer_id = displayplayer_id = con.id;
 
 			if (players.size() > 1)
-			{
-				netgame = true;
 				multiplayer = true;
-			}
 			else
-			{
-				netgame = false;
 				multiplayer = false;
-			}
-
+	
 			serverside = true;
 
 			// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
@@ -2103,6 +2109,7 @@ void G_DoPlayDemo(bool justStreamInput)
 				sv_itemsrespawn.Set(0.0f);
 			}
 
+			sv_respawnsuper.Set(0.0f);
 			G_InitNew(mapname);
 
 			usergame = false;
@@ -2174,7 +2181,6 @@ void G_CleanupDemo()
 		Z_Free(demobuffer);
 
 		demoplayback = false;
-		netgame = false;
 		multiplayer = false;
 		serverside = false;
 
@@ -2253,10 +2259,13 @@ BOOL G_CheckDemoStatus (void)
 			else
 				Printf (PRINT_HIGH, "Demo ended.\n");
 
+			demoplayback = false;
+			democlassic = false;
 			gameaction = ga_fullconsole;
 			timingdemo = false;
 			return false;
 		}
+
 
 		D_AdvanceDemo ();
 		return true;

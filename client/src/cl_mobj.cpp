@@ -42,8 +42,6 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 
-extern BOOL demonew;
-
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
 EXTERN_CVAR(chasedemo)
@@ -72,8 +70,13 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	if (!player.ingame())
 		return;
 
-	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
+	byte playerstate = player.playerstate;
+
+	if (player.doreborn)
+	{
 		G_PlayerReborn(player);
+		player.doreborn = false;
+	}
 
 	AActor* mobj;
 //	if (player.deadspectator && player.mo)
@@ -133,7 +136,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	}
 
 	// [RH] Allow chasecam for demo watching
-	if ((demoplayback || demonew) && chasedemo)
+	if (demoplayback && chasedemo)
 		player.cheats = CF_CHASECAM;
 
 	// setup gun psprite
@@ -155,9 +158,9 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	// [BC] Do script stuff
 	if (serverside && level.behavior)
 	{
-		if (player.playerstate == PST_ENTER)
+		if (playerstate == PST_ENTER)
 			level.behavior->StartTypedScripts(SCRIPT_Enter, player.mo);
-		else if (player.playerstate == PST_REBORN)
+		else if (playerstate == PST_REBORN)
 			level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 	}
 }
@@ -166,9 +169,15 @@ std::vector<AActor*> spawnfountains;
 
 /**
  * Show spawn points as particle fountains
+ * ToDo: Make an independant spawning loop to handle these.
  */
 void P_ShowSpawns(mapthing2_t* mthing)
 {
+	// Ch0wW: DO NOT add new spawns to a DOOM2 demo !
+	// It'll immediately desync in DM!
+	if (democlassic)
+		return;
+
 	if (clientside && cl_showspawns)
 	{
 		AActor* spawn = 0;

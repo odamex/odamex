@@ -130,7 +130,7 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 // Translucent patch drawers (always 50%) [ML] 3/2/10: Not anymore!
 void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	argb_t *fg2rgb, *bg2rgb;
@@ -160,7 +160,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 
 void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	argb_t *fg2rgb, *bg2rgb;
@@ -223,7 +223,7 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 // Translated, translucent patch drawers
 void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	argb_t *fg2rgb, *bg2rgb;
@@ -253,7 +253,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 
 void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	int c = 0;
@@ -309,7 +309,7 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 // care about the patch's actual contents, just it's outline.
 void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	argb_t *bg2rgb;
@@ -372,7 +372,7 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 // Translucent patch drawers (always 50%)
 void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	int alpha = (int)(hud_transparency * 255);
@@ -389,7 +389,7 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 
 void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	int alpha = (int)(hud_transparency * 255);
@@ -440,7 +440,7 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 // Translated, translucent patch drawers
 void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	int alpha = (int)(hud_transparency * 255);
@@ -457,7 +457,7 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 
 void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	int alpha = (int)(hud_transparency * 255);
@@ -500,7 +500,7 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 // care about the patch's actual contents, just it's outline.
 void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
-	if (count <= 0)
+	if (count <= 0 || !hud_transparency)
 		return;
 
 	int alpha = (int)(hud_transparency * 255);

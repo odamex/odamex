@@ -38,7 +38,6 @@
 #include "g_warmup.h"
 
 extern bool predicting;
-extern bool singleplayerjustdied;
 
 EXTERN_CVAR(sv_doubleammo)
 EXTERN_CVAR(sv_weaponstay)
@@ -51,7 +50,9 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
 EXTERN_CVAR(co_zdoomphys)
-EXTERN_CVAR (cl_predictpickup)
+EXTERN_CVAR(cl_predictpickup)
+EXTERN_CVAR(co_zdoomsound)
+EXTERN_CVAR(co_globalsound)
 
 int shotclock = 0;
 int MeansOfDeath;
@@ -68,7 +69,7 @@ void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor *special, player_t *player);
-bool SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
+ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, flag_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, int pain);
@@ -120,13 +121,13 @@ void P_GiveTeamPoints(player_t* player, int num)
 // Returns false if the ammo can't be picked up at all
 //
 
-BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
+ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 {
 	int oldammotype;
 
 	if (ammotype == am_noammo)
     {
-		return false;
+		return IEV_NotEquipped;
     }
 
 	if (ammotype < 0 || ammotype > NUMAMMO)
@@ -136,7 +137,7 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 
 	if (player->ammo[ammotype] == player->maxammo[ammotype])
     {
-		return false;
+		return IEV_NotEquipped;
     }
 
 	if (num)
@@ -168,7 +169,7 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// player was lower on purpose.
 	if (oldammotype)
     {
-		return true;
+		return IEV_EquipRemove;
     }
 
 	// We were down to zero,
@@ -224,7 +225,7 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
             break;
 	}
 
-	return true;
+	return IEV_EquipRemove;
 }
 
 //
@@ -232,8 +233,11 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 // The weapon name may have a MF_DROPPED flag ored in.
 //
 bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon);
-
-BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
+//
+// P_GiveWeapon
+// The weapon name may have a MF_DROPPED flag ored in.
+//
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 {
 	bool gaveammo;
 	bool gaveweapon;
@@ -241,39 +245,37 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 	// [RH] Don't get the weapon if no graphics for it
 	state_t *state = states + weaponinfo[weapon].readystate;
 	if ((state->frame & FF_FRAMEMASK) >= sprites[state->sprite].numframes)
-    {
-		return false;
-    }
+	{
+		return IEV_NotEquipped;
+	}
 
 	// [Toke - dmflags] old location of DF_WEAPONS_STAY
 	if (multiplayer && sv_weaponstay && !dropped)
 	{
 		// leave placed weapons forever on net games
 		if (player->weaponowned[weapon])
-        {
-			return false;
-        }
+		{
+			return IEV_NotEquipped;
+		}
 
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
 		if (sv_gametype != GM_COOP)
-        {
+		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
-        }
+		}
 		else
-        {
+		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2);
-        }
+		}
 
 		if (P_CheckSwitchWeapon(player, weapon))
 			player->pendingweapon = weapon;
 
-		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
+		WeaponPickupMessage(player->mo, weapon);
 
-        WeaponPickupMessage(player->mo, weapon);
-
-		return false;
+		return IEV_EquipStay;
 	}
 
 	if (weaponinfo[weapon].ammotype != am_noammo)
@@ -281,23 +283,23 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
 		if (dropped)
-        {
+		{
 			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 1)) != 0);
-        }
+		}
 		else
-        {
+		{
 			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2)) != 0);
-        }
+		}
 	}
 	else
-    {
+	{
 		gaveammo = false;
-    }
+	}
 
 	if (player->weaponowned[weapon])
-    {
+	{
 		gaveweapon = false;
-    }
+	}
 	else
 	{
 		gaveweapon = true;
@@ -306,28 +308,31 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 			player->pendingweapon = weapon;
 	}
 
-	return (gaveweapon || gaveammo);
+	if (gaveweapon || gaveammo)
+		return IEV_EquipRemove;
+
+	return IEV_NotEquipped;
 }
 
 //
 // P_GiveBody
 // Returns false if the body isn't needed at all
 //
-BOOL P_GiveBody(player_t *player, int num)
+ItemEquipVal P_GiveBody(player_t *player, int num)
 {
 	if (player->health >= MAXHEALTH)
-    {
-		return false;
-    }
+	{
+		return IEV_NotEquipped;
+	}
 
 	player->health += num;
 	if (player->health > MAXHEALTH)
-    {
+	{
 		player->health = MAXHEALTH;
-    }
+	}
 	player->mo->health = player->health;
 
-	return true;
+	return IEV_EquipRemove;
 }
 
 //
@@ -335,82 +340,88 @@ BOOL P_GiveBody(player_t *player, int num)
 // Returns false if the armor is worse
 // than the current armor.
 //
-BOOL P_GiveArmor(player_t *player, int armortype)
+ItemEquipVal P_GiveArmor(player_t *player, int armortype)
 {
 	int hits;
 
 	hits = armortype * 100;
 	if (player->armorpoints >= hits)
-    {
-		return false;	// don't pick up
-    }
+	{
+		return IEV_NotEquipped;	// don't pick up
+	}
 
 	player->armortype = armortype;
 	player->armorpoints = hits;
 
-	return true;
+	return IEV_EquipRemove;
 }
 
 //
 // P_GiveCard
 //
-void P_GiveCard(player_t *player, card_t card)
+ItemEquipVal P_GiveCard(player_t *player, card_t card)
 {
 	if (player->cards[card])
-    {
-		return;
-    }
+	{
+		return IEV_NotEquipped;
+	}
 
 	player->bonuscount = BONUSADD;
 	player->cards[card] = 1;
+
+	if (multiplayer)
+	{
+		return IEV_EquipStay;
+	}
+
+	return IEV_EquipRemove;
 }
 
 //
 // P_GivePower
 //
-BOOL P_GivePower(player_t *player, int /*powertype_t*/ power)
+ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 {
 	if (power == pw_invulnerability)
 	{
 		player->powers[power] = INVULNTICS;
-		return true;
+		return IEV_EquipRemove;
 	}
 
 	if (power == pw_invisibility)
 	{
 		player->powers[power] = INVISTICS;
 		player->mo->flags |= MF_SHADOW;
-		return true;
+		return IEV_EquipRemove;
 	}
 
 	if (power == pw_infrared)
 	{
 		player->powers[power] = INFRATICS;
-		return true;
+		return IEV_EquipRemove;
 	}
 
 	if (power == pw_ironfeet)
 	{
 		player->powers[power] = IRONTICS;
-		return true;
+		return IEV_EquipRemove;
 	}
 
 	if (power == pw_strength)
 	{
 		P_GiveBody(player, 100);
 		player->powers[power] = 1;
-		return true;
+		return IEV_EquipRemove;
 	}
 
 	if (player->powers[power])
-    {
-		return false;	// already got it
-    }
+	{
+		return IEV_NotEquipped;	// already got it
+	}
 
 	player->powers[power] = 1;
-	return true;
+	return IEV_EquipRemove;
 }
-
 static bool P_SpecialIsWeapon(AActor *special)
 {
 	if (!special)
@@ -425,35 +436,36 @@ static bool P_SpecialIsWeapon(AActor *special)
 			special->type == MT_MISC28);
 }
 
+void P_PickupSound(AActor *ent, int channel, const char *name)
+{
+	if (serverside && co_globalsound) //Send pickup sound to all other players
+		UV_SoundAvoidPlayer(ent, channel, name, co_zdoomsound ? ATTN_NORM : ATTN_NONE);
+	else if (clientside && ent == consoleplayer().mo) //Only play our own pickup sounds, the server will send other players pickup sounds if needed
+		S_Sound(ent, channel, name, 1, ATTN_NONE);
+}
+
 void P_GiveSpecial(player_t *player, AActor *special)
 {
 	if (!player || !player->mo || !special)
 		return;
 
 	AActor *toucher = player->mo;
-	int sound = 0;
+	int sound = 0, msg = 0;
 	bool firstgrab = false;
+	ItemEquipVal val = IEV_EquipRemove;
 
 	// Identify by sprite.
 	switch (special->sprite)
 	{
 		// armor
 	    case SPR_ARM1:
-            if (!P_GiveArmor(player, deh.GreenAC))
-            {
-                return;
-            }
-            SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GStrings(GOTARMOR));
+			val = P_GiveArmor(player, deh.GreenAC);
+			msg = GOTARMOR;
             break;
 
 	    case SPR_ARM2:
-            if (!P_GiveArmor(player, deh.BlueAC))
-            {
-                return;
-            }
-            SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GStrings(GOTMEGA));
+			val = P_GiveArmor(player, deh.BlueAC);
+			msg = GOTMEGA;
             break;
 
 		// bonus items
@@ -464,8 +476,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-            SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GStrings(GOTHTHBONUS));
+			msg = GOTHTHBONUS;
             break;
 
 	    case SPR_BON2:
@@ -478,8 +489,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
                 player->armortype = deh.GreenAC;
             }
-            SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GStrings(GOTARMBONUS));
+			msg = GOTARMBONUS;
             break;
 
 	    case SPR_SOUL:
@@ -489,278 +499,160 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-            PickupMessage(toucher, GStrings(GOTSUPER));
+			msg = GOTSUPER;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_MEGA:
             player->health = deh.MegasphereHealth;
             player->mo->health = player->health;
             P_GiveArmor(player,deh.BlueAC);
-            PickupMessage(toucher, GStrings(GOTMSPHERE));
+			msg = GOTMSPHERE;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 		// cards
-		// leave cards for everyone
 	    case SPR_BKEY:
-            if (!player->cards[it_bluecard])
-            {
-                PickupMessage(toucher, GStrings(GOTBLUECARD));
-            }
-            P_GiveCard(player, it_bluecard);
+			val = P_GiveCard(player, it_bluecard);
+			msg = GOTBLUECARD;
             sound = 3;
-            if (!multiplayer)
-            {
-                break;
-            }
-            SV_TouchSpecial(special, player);
-            return;
+            break;
 
 	    case SPR_YKEY:
-            if (!player->cards[it_yellowcard])
-            {
-                PickupMessage(toucher, GStrings(GOTYELWCARD));
-            }
-            P_GiveCard(player, it_yellowcard);
+            val = P_GiveCard(player, it_yellowcard);
+			msg = GOTYELWCARD;
             sound = 3;
-            if (!multiplayer)
-            {
-                break;
-            }
-            SV_TouchSpecial(special, player);
-            return;
+            break;
 
 	    case SPR_RKEY:
-            if (!player->cards[it_redcard])
-            {
-                PickupMessage(toucher, GStrings(GOTREDCARD));
-            }
-            P_GiveCard(player, it_redcard);
+            val = P_GiveCard(player, it_redcard);
+			msg = GOTREDCARD;
             sound = 3;
-            if (!multiplayer)
-            {
-                break;
-            }
-            SV_TouchSpecial(special, player);
-            return;
+            break;
 
 	    case SPR_BSKU:
-            if (!player->cards[it_blueskull])
-            {
-                PickupMessage(toucher, GStrings(GOTBLUESKUL));
-            }
-            P_GiveCard(player, it_blueskull);
+            val = P_GiveCard(player, it_blueskull);
+			msg = GOTBLUESKUL;
             sound = 3;
-            if (!multiplayer)
-            {
-                break;
-            }
-            SV_TouchSpecial(special, player);
-            return;
+            break;
 
 	    case SPR_YSKU:
-            if (!player->cards[it_yellowskull])
-            {
-                PickupMessage(toucher, GStrings(GOTYELWSKUL));
-            }
-            P_GiveCard(player, it_yellowskull);
+            val = P_GiveCard(player, it_yellowskull);
+			msg = GOTYELWSKUL;
             sound = 3;
-            if (!multiplayer)
-            {
-                break;
-            }
-            SV_TouchSpecial(special, player);
-            return;
+            break;
 
 	    case SPR_RSKU:
-            if (!player->cards[it_redskull])
-            {
-                PickupMessage(toucher, GStrings(GOTREDSKUL));
-            }
-            P_GiveCard(player, it_redskull);
+            val = P_GiveCard(player, it_redskull);
+			msg = GOTREDSKUL;
             sound = 3;
-            if (!multiplayer)
-            {
-                break;
-            }
-            SV_TouchSpecial(special, player);
-            return;
+            break;
 
 		// medikits, heals
 	    case SPR_STIM:
-            if (!P_GiveBody(player, 10))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTSTIM));
-            SV_TouchSpecial(special, player);
+			val = P_GiveBody(player, 10);
+			msg = GOTSTIM;
             break;
 
 	    case SPR_MEDI:
             if (player->health < 25)
             {
-                PickupMessage(toucher, GStrings(GOTMEDINEED));
+				msg = GOTMEDINEED;
             }
             else if (player->health < 100)
             {
-                PickupMessage(toucher, GStrings(GOTMEDIKIT));
+                msg = GOTMEDIKIT;
             }
-            if (!P_GiveBody(player, 25))
-            {
-                return;
-            }
-            SV_TouchSpecial(special, player);
+			val = P_GiveBody(player, 25);
             break;
 
 		// power ups
 	    case SPR_PINV:
-            if (!P_GivePower(player, pw_invulnerability))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTINVUL));
+            val = P_GivePower(player, pw_invulnerability);
+			msg = GOTINVUL;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_PSTR:
-            if (!P_GivePower(player, pw_strength))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTBERSERK));
+			val = P_GivePower(player, pw_strength);
+			msg = GOTBERSERK;
             if (player->readyweapon != wp_fist)
             {
                 player->pendingweapon = wp_fist;
             }
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_PINS:
-            if (!P_GivePower(player, pw_invisibility))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTINVIS));
+            val = P_GivePower(player, pw_invisibility);
+			msg = GOTINVIS;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_SUIT:
-            if (!P_GivePower(player, pw_ironfeet))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTSUIT));
+            val = P_GivePower(player, pw_ironfeet);
+			msg = GOTSUIT;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_PMAP:
-            if (!P_GivePower(player, pw_allmap))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTMAP));
+			val = P_GivePower(player, pw_allmap);
+			msg = GOTMAP;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_PVIS:
-            if (!P_GivePower(player, pw_infrared))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTVISOR));
+            val = P_GivePower(player, pw_infrared);
+			msg = GOTVISOR;
             sound = 1;
-            SV_TouchSpecial(special, player);
             break;
 
 		// ammo
 	    case SPR_CLIP:
             if (special->flags & MF_DROPPED)
             {
-                if (!P_GiveAmmo(player, am_clip, 0))
-                {
-                    return;
-                }
+				val = P_GiveAmmo(player, am_clip, 0);
             }
             else
             {
-                if (!P_GiveAmmo(player, am_clip, 1))
-                {
-                    return;
-                }
+				val = P_GiveAmmo(player, am_clip, 1);
             }
-            PickupMessage(toucher, GStrings(GOTCLIP));
-            SV_TouchSpecial(special, player);
+			msg = GOTCLIP;
             break;
 
 	    case SPR_AMMO:
-            if (!P_GiveAmmo(player, am_clip, 5))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTCLIPBOX));
-            SV_TouchSpecial(special, player);
+			val = P_GiveAmmo(player, am_clip, 5);
+			msg = GOTCLIPBOX;
             break;
 
 	    case SPR_ROCK:
-            if (!P_GiveAmmo(player, am_misl, 1))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTROCKET));
-            SV_TouchSpecial(special, player);
+            val = P_GiveAmmo(player, am_misl, 1);
+			msg = GOTROCKET;
             break;
 
 	    case SPR_BROK:
-            if (!P_GiveAmmo(player, am_misl, 5))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTROCKBOX));
-            SV_TouchSpecial(special, player);
+            val = P_GiveAmmo(player, am_misl, 5);
+			msg = GOTROCKBOX;
             break;
 
 	    case SPR_CELL:
-            if (!P_GiveAmmo(player, am_cell, 1))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTCELL));
-            SV_TouchSpecial(special, player);
+            val = P_GiveAmmo(player, am_cell, 1);
+			msg = GOTCELL;
             break;
 
 	    case SPR_CELP:
-            if (!P_GiveAmmo(player, am_cell, 5))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTCELLBOX));
-            SV_TouchSpecial(special, player);
+            val = P_GiveAmmo(player, am_cell, 5);
+			msg = GOTCELLBOX;
             break;
 
 	    case SPR_SHEL:
-            if (!P_GiveAmmo(player, am_shell, 1))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTSHELLS));
-            SV_TouchSpecial(special, player);
+            val = P_GiveAmmo(player, am_shell, 1);
+			msg = GOTSHELLS;
             break;
 
 	    case SPR_SBOX:
-            if (!P_GiveAmmo(player, am_shell, 5))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTSHELLBOX));
-            SV_TouchSpecial(special, player);
+			val = P_GiveAmmo(player, am_shell, 5);
+			msg = GOTSHELLBOX;
             break;
 
 	    case SPR_BPAK:
@@ -776,91 +668,59 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
                 P_GiveAmmo(player, (ammotype_t)i, 1);
             }
-            PickupMessage(toucher, GStrings(GOTBACKPACK));
-            SV_TouchSpecial(special, player);
+			msg = GOTBACKPACK;
             break;
 
 		// weapons
 	    case SPR_BFUG:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTBFG9000));
+            val = P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED);
+			msg = GOTBFG9000;
             sound = 2;
             break;
 
 	    case SPR_MGUN:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_chaingun, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTCHAINGUN));
+            val = P_GiveWeapon(player, wp_chaingun, special->flags & MF_DROPPED);
+			msg = GOTCHAINGUN;
             sound = 2;
             break;
 
 	    case SPR_CSAW:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_chainsaw, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTCHAINSAW));
+			val = P_GiveWeapon(player, wp_chainsaw, special->flags & MF_DROPPED);
+			msg = GOTCHAINSAW;
             sound = 2;
             break;
 
 	    case SPR_LAUN:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_missile, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTLAUNCHER));
+            val = P_GiveWeapon(player, wp_missile, special->flags & MF_DROPPED);
+			msg = GOTLAUNCHER;
             sound = 2;
             break;
 
 	    case SPR_PLAS:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_plasma, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTPLASMA));
+			val = P_GiveWeapon(player, wp_plasma, special->flags & MF_DROPPED);
+			msg = GOTPLASMA;
             sound = 2;
             break;
 
 	    case SPR_SHOT:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_shotgun, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTSHOTGUN));
+            val = P_GiveWeapon(player, wp_shotgun, special->flags & MF_DROPPED);
+			msg = GOTSHOTGUN;
             sound = 2;
             break;
 
 	    case SPR_SGN2:
-            SV_TouchSpecial(special, player);
-            if (!P_GiveWeapon(player, wp_supershotgun, special->flags & MF_DROPPED))
-            {
-                return;
-            }
-            PickupMessage(toucher, GStrings(GOTSHOTGUN2));
+			val = P_GiveWeapon(player, wp_supershotgun, special->flags & MF_DROPPED);
+			msg = GOTSHOTGUN2;
             sound = 2;
             break;
 
 	// [Toke - CTF - Core]
         case SPR_BFLG: // Player touches the blue flag at its base
             firstgrab = true;
-
+			//Fall through to flag touch
         case SPR_BDWN: // Player touches the blue flag after it's been dropped
-            if (!SV_FlagTouch(*player, it_blueflag, firstgrab))
-            {
-                return;
-            }
-            sound = 3;
+			val = SV_FlagTouch(*player, it_blueflag, firstgrab);
+			sound = -1;
             break;
 
         case SPR_BSOK:
@@ -869,13 +729,10 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
         case SPR_RFLG: // Player touches the red flag at its base
             firstgrab = true;
-
+			//Fall through to flag touch
         case SPR_RDWN: // Player touches the red flag after its been dropped
-            if (!SV_FlagTouch(*player, it_redflag, firstgrab))
-            {
-                return;
-            }
-            sound = 3;
+			val = SV_FlagTouch(*player, it_redflag, firstgrab);
+			sound = -1;
             break;
 
         case SPR_RSOK:
@@ -883,7 +740,6 @@ void P_GiveSpecial(player_t *player, AActor *special)
             return;
 
         default:
-            // I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
             Printf(
                 PRINT_HIGH,
                 "P_SpecialThing: Unknown gettable thing %d: %s\n",
@@ -900,28 +756,32 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			level.found_items++;
 	}
 
-	special->Destroy();
+	if (val == IEV_NotEquipped)
+		return;
 
+	//the player equipped/picked up an item
 	player->bonuscount = BONUSADD;
+	SV_TouchSpecial(special, player);
 
-    if (clientside)
+	if (msg)
+		PickupMessage(toucher, GStrings(msg));
+
+	if (val == IEV_EquipRemove)
+		special->Destroy();
+
+	AActor *ent = player->mo;
+	switch (sound)
 	{
-		AActor *ent = player->mo;
-
-		// denis - only play own pickup sounds
-		switch (sound)
-        {
-			case 0:
-			case 3:
-				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NONE);
-				break;
-			case 1:
-				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1, ATTN_NONE);
-				break;
-			case 2:
-				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
-				break;
-		}
+	case 0:
+	case 3:
+		P_PickupSound(ent, CHAN_ITEM, "misc/i_pkup");
+		break;
+	case 1:
+		P_PickupSound(ent, CHAN_ITEM, "misc/p_pkup");
+		break;
+	case 2:
+		P_PickupSound(ent, CHAN_ITEM, "misc/w_pkup");
+		break;
 	}
 }
 
@@ -1182,11 +1042,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
 		P_DropWeapon(target->player);
-
-		if (!multiplayer)
-		{
-			singleplayerjustdied = true;
-		}
 
 		tplayer->death_time = level.time;
 
@@ -1520,6 +1375,15 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
             }
             SV_ActorTarget(target);
 		}
+	}
+}
+
+//The player has left the game (in-game to spectator, or in-game disconnect)
+void P_PlayerLeavesGame(player_s* player)
+{
+	if (level.behavior)
+	{
+		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());
 	}
 }
 

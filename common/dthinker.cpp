@@ -117,6 +117,16 @@ DThinker::~DThinker ()
 {
 }
 
+// This method is necessary if you construct the Thinker in an unconventional way,
+// like via a copy ctor.  Otherwise, DThinker::Destroy() runs the risk of stomping
+// all over the thinker list.
+void DThinker::Orphan()
+{
+	m_Next = NULL;
+	m_Prev = NULL;
+	refCount = 0;
+}
+
 void DThinker::Destroy ()
 {
 	// denis - allow this function to be safely called multiple times

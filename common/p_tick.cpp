@@ -50,8 +50,14 @@ void P_Ticker (void)
 	if(paused)
 		return;
 
-	if (!multiplayer && !demoplayback && menuactive && players.begin()->viewz != 1)
+#ifdef CLIENT_APP
+	// Game pauses when in the menu and not online/demo
+	if (!multiplayer
+		&& !demoplayback 
+		&& (menuactive || ConsoleState == c_down || ConsoleState == c_falling)
+		&& players.begin()->viewz != 1)
 		return;
+#endif
 
 	if (clientside)
 		P_ThinkParticles ();	// [RH] make the particles think

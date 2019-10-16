@@ -68,24 +68,6 @@ dtime_t I_ConvertTimeToMs(dtime_t value);
 dtime_t I_ConvertTimeFromMs(dtime_t value);
 void I_Sleep(dtime_t sleep_time);
 
-//
-// Called by D_DoomLoop,
-// called before processing any tics in a frame
-// (just after displaying a frame).
-// Time consuming syncronous operations
-// are performed here (joystick reading).
-// Can call D_PostEvent.
-//
-void I_StartFrame (void);
-
-
-//
-// Called by D_DoomLoop,
-// called before processing each tic in a frame.
-// Quick syncronous operations are performed here.
-// Can call D_PostEvent.
-void I_StartTic (void);
-
 // Asynchronous interrupt functions should maintain private queues
 // that are read by the synchronous functions
 // to be converted into events.
@@ -106,9 +88,6 @@ void STACK_ARGS I_FatalError (const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
-
-// Repaint the pre-game console
-void I_PaintConsole (void);
 
 // Print a console string
 void I_PrintStr (int x, const char *str, int count, BOOL scroll);

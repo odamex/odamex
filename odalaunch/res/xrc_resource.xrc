@@ -9,6 +9,15 @@
 			<label>8</label>
 			<object class="wxMenu" name="1">
 				<label>File</label>
+				<object class="wxMenuItem" name="Id_MnuItmManualConnect">
+					<label>Manually Connect to Server...</label>
+					<help>Manually connect to a server by specifying Address:Port</help>
+				</object>
+				<object class="wxMenuItem" name="Id_MnuItmRunOffline">
+					<label>Start Odamex (Single Player)</label>
+					<help>Runs the Odamex Client without connecting to a server</help>
+				</object>				
+				<object class="separator" />
 				<object class="wxMenuItem" name="wxID_PREFERENCES">
 					<label>Settings</label>
 					<help>Configure the launcher</help>
@@ -22,12 +31,8 @@
 			<object class="wxMenu" name="6">
 				<label>Action</label>
 				<object class="wxMenuItem" name="Id_MnuItmLaunch">
-					<label>Connect</label>
+					<label>Connect to Selected Server</label>
 					<help>Connect to the selected server</help>
-				</object>
-				<object class="wxMenuItem" name="Id_MnuItmRunOffline">
-					<label>Run Odamex</label>
-					<help>Runs the Odamex Client without connecting to a server</help>
 				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="Id_MnuItmRefreshServer">
@@ -39,42 +44,36 @@
 					<help>Refresh all servers currently displayed</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmGetList">
-					<label>Get List</label>
+					<label>Get New List</label>
 					<help>Get a new list of servers</help>
-				</object>
-				<object class="separator" />
-				<object class="wxMenuItem" name="Id_MnuItmOpenChat">
-					<label>Open Chat</label>
-					<help>Chat with other players on IRC</help>
 				</object>
 			</object>
 			<object class="wxMenu" name="2">
 				<label>Tools</label>
-				<object class="wxMenu">
+				<object class="wxMenuItem" name="Id_MnuItmCustomServers">
+					<label>Custom Servers</label>
+					<help>Set-up Custom Servers</help>
+				</object>
+				<object class="separator" />
+				<object class="wxMenuItem" name="Id_MnuItmOpenChat">
+					<label>Open Chat</label>
+					<help>Chat with other players</help>
+				</object>
+				<!--<object class="wxMenu">
 					<label>OdaGet</label>
 					<object class="wxMenuItem" name="Id_MnuItmDownloadWad">
 						<label>Download WAD</label>
 						<help>Download a WAD file</help>
+						<enabled>0</enabled>
 					</object>
 					<object class="wxMenuItem" name="Id_MnuItmSetupOdaget">
 						<label>Setup</label>
 						<help>Setup Odaget</help>
 						<enabled>0</enabled>
 					</object>
-				</object>
+				</object>-->
 			</object>
 			<object class="wxMenu" name="3">
-				<label>Advanced</label>
-				<object class="wxMenuItem" name="Id_MnuItmManualConnect">
-					<label>Manual Connect</label>
-					<help>Manually connect to a server by specifying Address:Port</help>
-				</object>
-				<object class="wxMenuItem" name="Id_MnuItmCustomServers">
-					<label>Custom Servers</label>
-					<help>Set-up Custom Servers</help>
-				</object>
-			</object>
-			<object class="wxMenu" name="4">
 				<label>Help</label>
 				<object class="wxMenuItem" name="Id_MnuItmVisitWebsite">
 					<label>Website</label>
@@ -152,8 +151,8 @@
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmOpenChat">
 				<label>tool</label>
-				<tooltip>Chat with other players on IRC</tooltip>
-				<longhelp>Chat with other players on IRC</longhelp>
+				<tooltip>Chat with other players on Discord</tooltip>
+				<longhelp>Chat with other players on Discord</longhelp>
 				<bitmap>./icons/btnchat.png</bitmap>
 			</object>
 			<object class="separator" />
@@ -883,7 +882,7 @@
 															</object>
 														</object>
 													</object>
-													<object class="sizeritem">
+													<!--<object class="sizeritem">
 														<option>0</option>
 														<flag>wxALL|wxEXPAND</flag>
 														<border>5</border>
@@ -901,8 +900,8 @@
 																</object>
 															</object>
 														</object>
-													</object>
-													<object class="sizeritem">
+													</object>-->
+													<!--<object class="sizeritem">
 														<option>0</option>
 														<flag>wxALL|wxEXPAND</flag>
 														<border>5</border>
@@ -920,7 +919,7 @@
 																</object>
 															</object>
 														</object>
-													</object>
+													</object>-->
 												</object>
 											</object>
 										</object>

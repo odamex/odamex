@@ -1233,6 +1233,8 @@ void V_ResetPalette()
 	{
 		game_palette = default_palette;
 		I_SetPalette(game_palette.colors);
+		fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
+		V_SetBlend(blend);
 	}
 }
 

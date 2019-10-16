@@ -59,6 +59,7 @@ class DThinker : public DObject
 
 public:
 	DThinker ();
+	void Orphan();
 	virtual void Destroy ();
 	virtual ~DThinker ();
 	virtual void RunThink () {}
