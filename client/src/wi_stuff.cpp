@@ -46,6 +46,7 @@
 #include "gi.h"
 
 void WI_unloadData(void);
+size_t P_NumPlayersInGame();
 
 //
 // Data needed to add patches to full screen intermission pics.
@@ -1083,7 +1084,7 @@ void WI_updateNetgameStats()
 void WI_drawNetgameStats(void)
 {
 	unsigned int x, y;
-	int nbPlayers;
+	unsigned short nbPlayers = 0;
 	short pwidth = percent->width();
 
 	// draw animated background
@@ -1091,39 +1092,39 @@ void WI_drawNetgameStats(void)
 
 	WI_drawLF();
 
-	// draw stat titles (top line)
-	screen->DrawPatchClean (kills, NG_STATSX+NG_SPACINGX-kills->width(), NG_STATSY);
-
-	screen->DrawPatchClean (items, NG_STATSX+2*NG_SPACINGX-items->width(), NG_STATSY);
-
-	screen->DrawPatchClean (scrt, NG_STATSX+3*NG_SPACINGX-scrt->width(), NG_STATSY);
+	// draw stat titles references (top line)
+	screen->DrawPatchClean (kills,	NG_STATSX+NG_SPACINGX-kills->width(),	NG_STATSY);
+	screen->DrawPatchClean (items,	NG_STATSX+2*NG_SPACINGX-items->width(), NG_STATSY);
+	screen->DrawPatchClean (scrt,	NG_STATSX+3*NG_SPACINGX-scrt->width(),	NG_STATSY);
 
 	if (dofrags)
 		screen->DrawPatchClean (frags, NG_STATSX+4*NG_SPACINGX-frags->width(), NG_STATSY);
 
-	// draw stats
+	// Draw individual stats
 	y = NG_STATSY + kills->height();
-
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		// [RH] Only display up to 4 players at once
-		if (it->id > 4)
+		// While replaying a vanilla demo, we KNOW that the hardlimit is set to 4.
+		if (democlassic && it->id > 4)
 			break;
 
-		// Get the player ID
+		// Otherwise, we're going to break it as soon as the 4th VALID player has been seen.
+		if (!democlassic && nbPlayers > 4)
+			break;
+
 		byte i = (it->id) - 1;
 
-		// Get out of the loop if the player didn't play
-		if (!it->ingame())
+		// Get out of the loop if the player is downloading
+		// OR is a spectator
+		if ( !it->ingame() || it->spectator )
 			continue;
-
+		
 		x = NG_STATSX;
+
 		// [RH] Only use one graphic for the face backgrounds
-		V_ColorMap = translationref_t(translationtables + i * 256, i);
+		V_ColorMap = translationref_t(translationtables + i * 256, i+1);
         screen->DrawTranslatedPatchClean (p, x - p->width(), y);
-		// classic face background colour
-		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
 			screen->DrawPatchClean (star, x-p->width(), y);
@@ -1137,6 +1138,7 @@ void WI_drawNetgameStats(void)
 			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
 
 		y += WI_SPACINGY;
+
 		nbPlayers++;
 	}
 }
@@ -1162,101 +1164,101 @@ void WI_updateStats(void)
 
     if (acceleratestage && sp_state != 10)
     {
-	acceleratestage = 0;
-	cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
-	cnt_par = wminfo.partime / TICRATE;
-	S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	sp_state = 10;
+		acceleratestage = 0;
+		cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+		cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+		cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+		cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
+		cnt_par = wminfo.partime / TICRATE;
+		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		sp_state = 10;
     }
 
     if (sp_state == 2)
     {
-	cnt_kills += 2;
+		cnt_kills += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
-	{
-	    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
+		{
+			cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
+		}
     }
     else if (sp_state == 4)
     {
-	cnt_items += 2;
+		cnt_items += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
-	{
-	    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
+		{
+			cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
+		}
     }
     else if (sp_state == 6)
     {
-	cnt_secret += 2;
+		cnt_secret += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
-	{
-	    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
+		{
+			cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
+		}
     }
 
     else if (sp_state == 8)
     {
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	cnt_time += 3;
+		cnt_time += 3;
 
-	if (cnt_time >= plrs[me].stime / TICRATE)
-	    cnt_time = plrs[me].stime / TICRATE;
+		if (cnt_time >= plrs[me].stime / TICRATE)
+			cnt_time = plrs[me].stime / TICRATE;
 
-	cnt_par += 3;
+		cnt_par += 3;
 
-	if (cnt_par >= wminfo.partime / TICRATE)
-	{
-	    cnt_par = wminfo.partime / TICRATE;
+		if (cnt_par >= wminfo.partime / TICRATE)
+		{
+			cnt_par = wminfo.partime / TICRATE;
 
-	    if (cnt_time >= plrs[me].stime / TICRATE)
-	    {
-		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-		sp_state++;
-	    }
-	}
-    }
-    else if (sp_state == 10)
-    {
-	if (acceleratestage)
-	{
-	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			if (cnt_time >= plrs[me].stime / TICRATE)
+			{
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
+			}
+		}
+		}
+		else if (sp_state == 10)
+		{
+		if (acceleratestage)
+		{
+			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
-	    if ((gameinfo.flags & GI_MAPxx))
-		WI_initNoState();
-	    else
-		WI_initShowNextLoc();
-	}
-    }
-    else if (sp_state & 1)
-    {
-	if (!--cnt_pause)
-	{
-	    sp_state++;
-	    cnt_pause = TICRATE;
-	}
+			if ((gameinfo.flags & GI_MAPxx))
+			WI_initNoState();
+			else
+			WI_initShowNextLoc();
+		}
+		}
+		else if (sp_state & 1)
+		{
+		if (!--cnt_pause)
+		{
+			sp_state++;
+			cnt_pause = TICRATE;
+		}
     }
 
 }
@@ -1346,10 +1348,15 @@ void WI_Ticker (void)
 		case StatCount:
 			if (multiplayer)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && ( (democlassic && multiplayer) || sv_maxplayers < 5) )
-					WI_updateNetgameStats();
+				if (democlassic)
+					WI_updateNetgameStats();	// Force having the classic intermission screen while playing multiplayer classic demos
 				else
-					WI_updateNoState();
+				{
+					if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
+						WI_updateNetgameStats();
+					else
+						WI_updateNoState();
+				}
 			}
 			else
 				WI_updateStats();
@@ -1612,10 +1619,15 @@ void WI_Drawer (void)
 		case StatCount:
 			if (multiplayer)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && ( (democlassic && multiplayer) || sv_maxplayers < 5) )
-					WI_drawNetgameStats();
+				if (democlassic)
+					WI_drawNetgameStats();	// Force having the classic intermission screen while playing multiplayer classic demos
 				else
-					WI_drawDeathmatchStats();
+				{
+					if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
+						WI_drawNetgameStats();
+					else
+						WI_drawDeathmatchStats();
+				}
 			}
 			else
 				WI_drawStats();
