@@ -245,7 +245,7 @@ std::string Timer(int& color)
 		return "";
 
 	// Do NOT display if in a lobby
-	if (level.IsLobbyMap())
+	if (level.isLobbyMap())
 		return "";
 
 	int timeleft = level.timeleft;
