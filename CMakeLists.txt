@@ -31,7 +31,9 @@ set(PROJECT_COPYRIGHT "2006-2019")
 if (SWITCH_LIBNX)
 	include("switch.cmake" REQUIRED)
 elseif(WIIU)
-	include("wiiu.cmake" REQUIRED)		# Wii U - ToDo
+  include("wiiu.cmake" REQUIRED)		# Wii U
+elseif(VWII)
+  include("wii.cmake" REQUIRED)     # Wii/vWii
 endif()
 
 # identify the target CPU
@@ -113,7 +115,8 @@ macro(define_platform)
     add_definitions(-D__WIIU__ -DUNIX -DGCONSOLE)
     include_directories("$ENV{WUT_ROOT}/include")
     include_directories("$ENV{PORTLIBS_PREFIX}/include")
-	
+  elseif(VWII)
+    add_definitions(-DGEKKO -DUNIX -DNOASM -DGCONSOLE -DCLIENT_APP -DUSE_PNG)
   elseif(UNIX)
     add_definitions(-DUNIX)
     find_package(X11)

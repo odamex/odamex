@@ -1,4 +1,4 @@
-MAKING ODAMEX ON WII
+COMPILING ODAMEX ON WII
 
 - Requirements :
 - The latest release of DevKitPRO with the wii-development ticked.

@@ -234,6 +234,8 @@ if(SDL_VERSION)
     # Ch0wW : this is UGLY, please fix it ASAP !!
 	target_link_libraries(odamex -L/opt/devkitpro/portlibs/ppc/lib -L/opt/devkitpro/portlibs/wiiu/lib)
     target_link_libraries(odamex SDL2 vorbisidec ogg mpg123 whb coreinit proc_ui sysapp nn_ac m)
+  else(VWII)
+    target_link_libraries(odamex  SDL_mixer smpeg SDL png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
@@ -312,7 +314,9 @@ if(SDL_VERSION)
       COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switchnx/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switchnx/odamex.nacp )
   elseif(WIIU)
     include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
-	wut_create_rpx (odamex.rpx odamex)
+  wut_create_rpx (odamex.rpx odamex)
+  elseif(VWII)
+
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .
