@@ -1,13 +1,16 @@
 #==========================================
 #
-#	ODAMEX FOR NINTENDO WII (GEKKO) CMAKE FILE
+#	ODAMEX FOR NINTENDO WII/vWII CMAKE FILE
 #	
 #	Do not forget to run this before even 
 #	trying to do ANYTHING (CMake/Compile)!
 #
 #   Required
-#   pacman -S ppc-pkg-config devkitpro-pkgbuild-helpers
-#
+#   -> pacman -S ppc-pkg-config devkitpro-pkgbuild-helpers
+#   -> SDL1.2 & SDL_Mixer
+#   -> You need SDL_Mixer.h added into SDL folder to be recognized by CMake
+#   
+#   source $DEVKITPRO/ppcvars.sh
 #	export PATH=/opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 #
 #	Then, when starting the CMAKE presentation...
