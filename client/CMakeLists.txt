@@ -248,7 +248,7 @@ if(SDL_VERSION)
     target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
-  endif()w
+  endif()
 
   if(UNIX AND NOT APPLE AND NOT GCONSOLE)
     target_link_libraries(odamex rt)

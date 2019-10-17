@@ -275,7 +275,7 @@ BOOL HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// SPECIAL CASE FOR NINTENDO SWITCH
-		// Since Buttons are disorganized... Let's create into an array and reorganize them.
+		// Since Buttons are disorganized... Let's create an array and reorganize them.
 		if (platform == PF_SWITCH)
 		{
 			int table[10] = {

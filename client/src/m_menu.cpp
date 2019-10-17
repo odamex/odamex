@@ -50,6 +50,7 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "g_level.h"
+#include "c_platformkeys.h"
 
 #include "gi.h"
 #include "m_memio.h"
@@ -1840,123 +1841,100 @@ bool M_Responder (event_t* ev)
 	}
 
 	// Keys usable within menu
-	switch (ch)
+	// Now, they are all defined in c_platform.cpp !
 	{
-	  case KEY_HAT3:
-	  case KEY_DOWNARROW:
-	  case KEYP_2:
-#ifdef __SWITCH__
-	  case KEY_JOY16:
-#endif
-		do
+		if (keypress.IsDownKey(ch))
 		{
-			if (itemOn+1 > currentMenu->numitems-1)
-				itemOn = 0;
-			else
-				itemOn++;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT1:
-	  case KEY_UPARROW:
-	  case KEYP_8:
-#ifdef __SWITCH__
-	  case KEY_JOY14:
-#endif
-		do
-		{
-			if (!itemOn)
-				itemOn = currentMenu->numitems-1;
-			else
-				itemOn--;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT4:
-	  case KEY_LEFTARROW:
-	  case KEYP_4:
-#ifdef __SWITCH__
-	  case KEY_JOY13:
-#endif
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
-		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(0);
-		}
-		return true;
-
-	  case KEY_HAT2:
-	  case KEY_RIGHTARROW:
-	  case KEYP_6:
-#ifdef __SWITCH__
-	  case KEY_JOY15:
-#endif
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
-		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(1);
-		}
-		return true;
-
-#ifdef GEKKO
-	  case KEY_JOY10:		// (a) on Pro Controller
-#endif
-	  case KEY_JOY1:
-	  case KEY_ENTER:
-	  case KEYP_ENTER:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status &&
-			!currentMenu->menuitems[itemOn].isTranslucent)	// Ch0wW : translucent parts mean that they can't be entered.
-		{
-			currentMenu->lastOn = itemOn;
-			if (currentMenu->menuitems[itemOn].status == 2)
+			do
 			{
-				currentMenu->menuitems[itemOn].routine(1);		// right arrow
+				if (itemOn+1 > currentMenu->numitems-1)
+					itemOn = 0;
+				else
+					itemOn++;
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while(currentMenu->menuitems[itemOn].status==-1);
+			return true;
+		}
+		else if (keypress.IsUpKey(ch))
+		{
+			do
+			{
+				if (!itemOn)
+					itemOn = currentMenu->numitems-1;
+				else
+					itemOn--;
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while(currentMenu->menuitems[itemOn].status==-1);
+			return true;
+		} 
+		else if (keypress.IsLeftKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
+			{
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(0);
 			}
-			else
+			return true;
+		} 
+		else if (keypress.IsRightKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
 			{
-				currentMenu->menuitems[itemOn].routine(itemOn);
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(1);
+			}
+			return true;
+		}
+		else if (keypress.IsEnterKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status &&
+				!currentMenu->menuitems[itemOn].isTranslucent)	// Ch0wW : translucent parts mean that they can't be entered.
+			{
+				currentMenu->lastOn = itemOn;
+				if (currentMenu->menuitems[itemOn].status == 2)
+				{
+					currentMenu->menuitems[itemOn].routine(1);		// right arrow
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				}
+				else
+				{
+					currentMenu->menuitems[itemOn].routine(itemOn);
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				}
+			}
+			return true;
+		}
+		else if (keypress.IsReturnKey(ch))
+		{
+			// [RH] Escaping now moves back one menu instead of
+			//	  quitting the menu system. Thus, backspace
+			//	  is now ignored.
+			currentMenu->lastOn = itemOn;
+			M_PopMenuStack ();
+			return true;
+		}
+		else 
+		{
+			if (ch2 && (ch < KEY_JOY1)) {
+				for (i = itemOn+1;i < currentMenu->numitems;i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
+				for (i = 0;i <= itemOn;i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
 			}
 		}
-		return true;
-
-	  // [RH] Escape now moves back one menu instead of
-	  //	  quitting the menu system. Thus, backspace
-	  //	  is now ignored.
-#ifdef GEKKO
-	  case KEY_JOY11:		// (b) on Pro Controller
-#endif
-	  case KEY_JOY2:
-	  case KEY_ESCAPE:
-		currentMenu->lastOn = itemOn;
-		M_PopMenuStack ();
-		return true;
-
-	  default:
-		if (ch2 && (ch < KEY_JOY1)) {
-			for (i = itemOn+1;i < currentMenu->numitems;i++)
-				if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-			for (i = 0;i <= itemOn;i++)
-				if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-		}
-		break;
-
 	}
 
 	// [RH] Menu now eats all keydown events while active
