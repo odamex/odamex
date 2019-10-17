@@ -81,7 +81,7 @@
 #endif
 
 #ifdef GEKKO
-#include "../Wii/i_wii.h"
+#include "i_wii.h"
 #endif
 
 #if _MSC_VER == 1310

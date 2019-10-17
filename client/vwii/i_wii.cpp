@@ -38,8 +38,6 @@
 #include <debug.h>
 #endif
 
-#include "../common/doomtype.h"
-
 #include "i_wii.h"
 #include "doomtype.h"
 

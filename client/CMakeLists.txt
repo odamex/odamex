@@ -40,6 +40,14 @@ if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
 
+# Include console folders if compiling homebrews
+if (VWII)
+  set(CLIENT_DIR ${CLIENT_DIR} vwii)
+  file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
+  file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
+endif()
+
+
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
 
@@ -232,13 +240,15 @@ if(SDL_VERSION)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   elseif(WIIU)
     # Ch0wW : this is UGLY, please fix it ASAP !!
-	target_link_libraries(odamex -L/opt/devkitpro/portlibs/ppc/lib -L/opt/devkitpro/portlibs/wiiu/lib)
+	  target_link_libraries(odamex -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wiiu/lib)
     target_link_libraries(odamex SDL2 vorbisidec ogg mpg123 whb coreinit proc_ui sysapp nn_ac m)
-  else(VWII)
-    target_link_libraries(odamex  SDL_mixer smpeg SDL png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
+  elseif(VWII)
+    # Ch0wW : this is UGLY, please fix it ASAP !!
+    target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
+    target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
-  endif()
+  endif()w
 
   if(UNIX AND NOT APPLE AND NOT GCONSOLE)
     target_link_libraries(odamex rt)
@@ -316,7 +326,9 @@ if(SDL_VERSION)
     include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
   wut_create_rpx (odamex.rpx odamex)
   elseif(VWII)
-
+  message(${CMAKE_BINARY_DIR})
+  add_custom_command( TARGET odamex POST_BUILD
+  COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

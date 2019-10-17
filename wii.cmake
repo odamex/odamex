@@ -8,7 +8,6 @@
 #   Required
 #   pacman -S ppc-pkg-config devkitpro-pkgbuild-helpers
 #
-#	export WUT_ROOT=$DEVKITPRO/wut
 #	export PATH=/opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 #
 #	Then, when starting the CMAKE presentation...
@@ -34,6 +33,9 @@ set (BUILD_MASTER 0)
 set (BUILD_ODALAUNCH 0)
 set (USE_MINIUPNP 0)
 set (ENABLE_PORTMIDI 0)
+
+# Since we use SDL1.2 only, force this option
+set (USE_SDL12 1)
 
 # This is a flag meaning we're compiling for a console
 set (GCONSOLE 1)
