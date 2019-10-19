@@ -88,14 +88,6 @@ FBinding DefaultBindings[] =
 	{"joy8", "+attack"},
 	{"joy10", "toggleconsole"},
 	{"joy12", "centerview"},
-#elif __SWITCH
-	{"LTRIGGER", "+use"},
-	{"RTRIGGER", "+attack"},
-	{"-", "togglemap"},
-	{"A", "+jump"},
-	{"B", "+use"},
-	{"X", "weapnext"},
-	{"Y", "weapprev"},
 #else
 	{"mouse1", "+attack"},
 	{"mouse2", "+strafe"},
@@ -581,7 +573,7 @@ std::string FKeyBindings::GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 	GetKeysForCommand(cmd, &first, &second);
 
 	if (!first && !second)
-		return "<???>";
+		return "<\?\?\?>";
 
 	if (bTwoEntries)
 		return C_NameKeys(first, second);
@@ -592,10 +584,10 @@ std::string FKeyBindings::GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 		else
 			return KeyName(first);
 	}
-	return "<???>";
+	return "<\?\?\?>";
 }
 
-void FKeyBindings::BindAKey(size_t argc, char **argv, char *msg)
+void FKeyBindings::BindAKey(size_t argc, char **argv, const char *msg)
 {
 	int i;
 
@@ -908,74 +900,5 @@ std::string C_NameKeys(int first, int second)
 
 	return out;
 }
-
-void C_UnbindACommand (const char *str)
-{
-	int i;
-
-	for (i = 0; i < NUM_KEYS; i++) {
-		if (Bindings[i].length() && !stricmp (str, Bindings[i].c_str())) {
-			Bindings[i] = "";
-		}
-	}
-}
-
-void C_ChangeBinding (const char *str, int newone)
-{
-	// Check which bindings that are already set. If both binding slots are taken,
-	// erase all bindings and reassign the new one and the secondary binding to the key instead.
-	int first = -1;
-	int second = -1;
-
-	C_GetKeysForCommand(str, &first, &second);
-
-	if (newone == first || newone == second)
-	{
-		return;
-	}
-	else if (first > -1 && second > -1)
-	{
-		C_UnbindACommand(str);
-		Bindings[newone] = str;
-		Bindings[second] = str;
-	}
-	else
-	{
-		Bindings[newone] = str;
-	}
-}
-
-const char *C_GetBinding (int key)
-{
-	return Bindings[key].c_str();
-}
-
-/*
-C_GetKeyStringsFromCommand
-Finds binds from a command and returns it into a std::string .
-- If TRUE, second arg returns up to 2 keys. ("x OR y")
-*/
-std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
-{
-	int first = -1;
-	int second = -1;
-
-	C_GetKeysForCommand(cmd, &first, &second);
-
-	if (!first && !second)
-		return "<\?\?\?>";
-
-	if (bTwoEntries)
-		return C_NameKeys(first, second);
-	else
-	{
-		if (!first && second)
-			return KeyName(second);
-		else
-			return KeyName(first);
-	}
-	return "<\?\?\?>";
-}
-
 
 VERSION_CONTROL (c_bind_cpp, "$Id$")

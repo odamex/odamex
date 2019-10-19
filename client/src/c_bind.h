@@ -48,7 +48,7 @@ public:
 	void SetBinds(const FBinding *binds);
 	void SetBind(int key, char *value);
 	void DoBind(const char *key, const char *bind);
-	void BindAKey(size_t argc, char **argv, char *msg);
+	void BindAKey(size_t argc, char **argv, const char *msg);
 
 	void UnbindKey(const char *key);
 	void UnbindACommand(const char *str);

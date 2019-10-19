@@ -126,8 +126,9 @@ protected:
 #define ACTION_AUTOMAP_PANRIGHT 21
 #define ACTION_AUTOMAP_ZOOMIN   22
 #define ACTION_AUTOMAP_ZOOMOUT	23
+#define ACTION_FASTTURN			24
 
-#define NUM_ACTIONS				24
+#define NUM_ACTIONS				25
 
 extern byte Actions[NUM_ACTIONS];
 

@@ -350,8 +350,8 @@ BOOL HU_Responder(event_t *ev)
 
 			for (int i = 0; i < 10; i++) {
 				if (ev->data2 == table[i]) {
-					ShoveChatStr(chat_macros[i]->cstring(), HU_ChatMode() - 1);
-					HU_UnsetChatMode();
+					ShoveChatStr(chat_macros[i]->cstring(), chat.GetStatus() - 1);
+					chat.Unset();
 					return true;
 				}
 			}
