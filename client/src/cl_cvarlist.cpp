@@ -236,7 +236,7 @@ CVAR_RANGE(			cl_weaponpref_bfg, "2", "Weapon preference level for BFG9000",
 
 #ifdef GCONSOLE
 CVAR_FUNC_DECL(		use_joystick, "1", "",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+					CVARTYPE_BOOL, CVAR_NOSET)	// This CVAR shouldn't even move for consoles... Duh.
 #else
 CVAR_FUNC_DECL(		use_joystick, "0", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -250,8 +250,11 @@ CVAR (joy_forwardaxis, "1", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENAB
 CVAR (joy_turnaxis, "2", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_lookaxis, "3", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
+CVAR (joy_fastturn_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
+
+CVAR(joy_experimental_movement, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
 
 CVAR(				show_messages, "1", "",
@@ -311,10 +314,15 @@ CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+#elif __SWITCH__
+CVAR_FUNC_DECL(		cl_name, "Switch Player", "",
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
 CVAR_FUNC_DECL(		cl_name, "Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
+
+
 
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -502,6 +510,17 @@ CVAR (chatmacro6, "I'll take care of it.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHI
 CVAR (chatmacro7, "Come here!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
 CVAR (chatmacro8, "Thanks for the game. Bye.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Start
 CVAR (chatmacro9, "I am on Xbox and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
+#elif __SWITCH__
+CVAR(chatmacro0, "Hello!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
+CVAR(chatmacro1, "I'm ready to kick butt!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
+CVAR(chatmacro2, "Help!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                     // X
+CVAR(chatmacro3, "Good game!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                        // Y
+CVAR(chatmacro4, "No", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // Black
+CVAR(chatmacro5, "Yes", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                        // White
+CVAR(chatmacro6, "I'll take care of it.", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
+CVAR(chatmacro7, "Come here!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
+CVAR(chatmacro8, "Thanks for the game. See you!", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Start
+CVAR(chatmacro9, "I'm on Switch and can only use chat macros.", "", CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
 #else
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -635,8 +654,13 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
+#ifdef GCONSOLE
+CVAR(			r_showendoom, "0", "[Unsupported] : Display the ENDDOOM text after quitting",
+				CVARTYPE_BOOL, CVAR_NOSET)   // [ML] 1/5/10: Add endoom support
+#else
 CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
+#endif 
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -682,8 +706,13 @@ CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 #endif
 
+#ifdef __SWITCH__
+CVAR_FUNC_DECL(	vid_32bpp, "1", "Enable 32-bit color rendering",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+#else
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+#endif
 
 CVAR_FUNC_DECL(	vid_320x200, "0", "Enable 320x200 video emulation",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -692,7 +721,7 @@ CVAR_FUNC_DECL(	vid_640x400, "0", "Enable 640x400 video emulation",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Optimize rendering functions based on CPU vectorization support
-// Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
+// Can be of "detect" or "none" or "mmx","sse2","altivec","neon" depending on availability; case-insensitive.
 CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 

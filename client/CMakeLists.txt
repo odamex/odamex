@@ -22,7 +22,6 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
 endif()
 
-
 global_compile_options()
 
 # #define CLIENT_APP for use in the source code
@@ -40,6 +39,14 @@ file(GLOB CLIENT_SOURCES sdl/*.cpp src/*.cpp)
 if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
+
+# Include console folders if compiling homebrews
+if (VWII)
+  set(CLIENT_DIR ${CLIENT_DIR} vwii)
+  file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
+  file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
+endif()
+
 
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
@@ -229,11 +236,21 @@ if(SDL_VERSION)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  elseif(SWITCH_LIBNX)
+    target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
+  elseif(WIIU)
+    # Ch0wW : this is UGLY, please fix it ASAP !!
+	  target_link_libraries(odamex -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wiiu/lib)
+    target_link_libraries(odamex SDL2 vorbisidec ogg mpg123 whb coreinit proc_ui sysapp nn_ac m)
+  elseif(VWII)
+    # Ch0wW : this is UGLY, please fix it ASAP !!
+    target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
+    target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
 
-  if(UNIX AND NOT APPLE)
+  if(UNIX AND NOT APPLE AND NOT GCONSOLE)
     target_link_libraries(odamex rt)
     if(X11_FOUND)
       target_link_libraries(odamex X11)
@@ -301,7 +318,17 @@ if(SDL_VERSION)
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
-
+  elseif(SWITCH_LIBNX)
+   add_custom_command( TARGET odamex POST_BUILD
+      COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
+      COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switchnx/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switchnx/odamex.nacp )
+  elseif(WIIU)
+    include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
+  wut_create_rpx (odamex.rpx odamex)
+  elseif(VWII)
+  message(${CMAKE_BINARY_DIR})
+  add_custom_command( TARGET odamex POST_BUILD
+  COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

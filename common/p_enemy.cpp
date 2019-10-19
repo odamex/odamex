@@ -46,6 +46,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (co_fixarchvileflame)
 
 enum dirtype_t
 {
@@ -1474,6 +1475,12 @@ void A_Fire (AActor *actor)
 	actor->SetOrigin (dest->x + FixedMul (24*FRACUNIT, finecosine[an]),
 					  dest->y + FixedMul (24*FRACUNIT, finesine[an]),
 					  dest->z);
+
+	// Fix the archvile flame going incorrectly placed at rare occasions...
+	if (co_fixarchvileflame) {
+		actor->floorz = actor->subsector->sector->floorheight;
+		actor->ceilingz = actor->subsector->sector->ceilingheight;
+	}
 }
 
 

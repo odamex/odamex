@@ -171,6 +171,15 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	R_InitSkyMap ();
 }
 
+CVAR_FUNC_IMPL(joy_freelook)
+{
+	// Nes - center the view
+	AddCommandString("centerview");
+
+	// Nes - update skies
+	R_InitSkyMap();
+}
+
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
@@ -215,6 +224,8 @@ EXTERN_CVAR (m_yaw)
 EXTERN_CVAR (m_forward)
 EXTERN_CVAR (m_side)
 
+EXTERN_CVAR(joy_experimental_movement)
+
 int 			turnheld;								// for accelerative turning
 
 // mouse values are used once
@@ -237,8 +248,10 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastturn_sensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
+
 
 int 			savegameslot;
 char			savedescription[32];
@@ -404,7 +417,10 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog strafing -- Hyper_Eye
-	side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
+	if (joy_experimental_movement)
+		side += (int)(((float)joystrafe / (float)SHRT_MAX / 0.7071067811865476) * forwardmove[speed]);
+	else
+		side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
 
 	if (Actions[ACTION_LOOKUP])
 		look += lookspeed[speed];
@@ -491,7 +507,12 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
 	else
-		cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+	{
+		if (Actions[ACTION_FASTTURN])
+			cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_fastturn_sensitivity / 10));
+		else
+			cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+	}
 
 	if (Actions[ACTION_MLOOK])
 	{
@@ -502,7 +523,10 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 	else
 	{
-		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
+		if (joy_experimental_movement)
+			forward -= (int)(((float)joyforward / (float)SHRT_MAX / 0.7071067811865476) * forwardmove[speed]);
+		else
+			forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && level.isFreelookAllowed()) || consoleplayer().spectator)

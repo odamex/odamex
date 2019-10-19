@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <wiiuse/wpad.h>
 #include <gccore.h>
 #include <fat.h>
 #include <dirent.h>
@@ -118,14 +119,13 @@ int wii_alphasort(const struct dirent **a, const struct dirent **b)
 	return(strcmp((*a)->d_name, (*b)->d_name));
 }
 
-void wii_InitNet()
+bool wii_InitNet()
 {
 	char localip[16] = {0};
-	char gateway[16] = {0};
-	char netmask[16] = {0};
 	
-	if(if_config(localip, gateway, netmask, TRUE) >= 0)
+	if(if_config(localip, NULL, NULL, true, 20) >= 0)
 	{
+		Printf(PRINT_HIGH, "Local IP received: %s\n", localip);
 #if DEBUG
 		// Connect to the remote debug console
 		if(net_print_init(NULL,0) >= 0)
@@ -138,17 +138,18 @@ void wii_InitNet()
 		// Wait for the debugger
 		_break();
 #endif
+		
 #endif
+		return true;
 	}
+	return false;
 }
 
 
 int main(int argc, char *argv[])
 {
 	__exception_setreload(8);
-	
-	wii_InitNet();
-	
+		
 	if(!fatInitDefault()) 
 	{
 #if DEBUG
@@ -156,7 +157,7 @@ int main(int argc, char *argv[])
 #endif
 		exit(0);
 	}
-	if(chdir("sd:/"))
+	if(chdir(WII_DATAPATH))
 	{
 #if DEBUG
 		net_print_string( __FILE__, __LINE__, "Could not change to root directory, exiting.\n");

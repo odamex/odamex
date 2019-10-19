@@ -1422,8 +1422,8 @@ static int PatchText (int oldSize)
         }
     }
 
-    if (good)
-        goto donewithtext;
+	if (good)
+		goto donewithtext;
 
 	// Search through music names.
 	if (oldSize < 7)

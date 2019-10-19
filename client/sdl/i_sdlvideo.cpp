@@ -38,6 +38,14 @@
     #include "resource.h"
 #endif // WIN32
 
+#ifdef __SWITCH__
+// just including switch.h mangles KEY_ defines
+extern "C"
+{
+#include <switch/services/applet.h>
+}
+#endif
+
 #include "i_video.h"
 #include "v_video.h"
 
@@ -953,6 +961,26 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	// a 24bpp mode when it is actually 32bpp, this function clears that up
 	SDL_PixelFormatEnumToMasks(sdl_display_mode.format,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
 
+#ifdef __SWITCH__
+	// defaults to display size, which is always reported as 1080p, so we force it to 720p when needed
+	if (appletGetOperationMode() == AppletOperationMode_Handheld)
+	{
+		sdl_display_mode.w = 1280;
+		sdl_display_mode.h = 720;
+	}
+
+	// add some lower res fullscreen modes for scaling
+	mModeList.push_back(IVideoMode(640, 360, 32, true));
+	mModeList.push_back(IVideoMode(640, 400, 32, true));
+	mModeList.push_back(IVideoMode(640, 480, 32, true));
+	mModeList.push_back(IVideoMode(960, 540, 32, true));
+
+	mModeList.push_back(IVideoMode(640, 360, 8, true));
+	mModeList.push_back(IVideoMode(640, 400, 8, true));
+	mModeList.push_back(IVideoMode(640, 480, 8, true));
+	mModeList.push_back(IVideoMode(960, 540, 8, true));
+#endif
+
 	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, true);
 
 	I_AddSDL20VideoModes(&mModeList, 8);
@@ -1015,29 +1043,34 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		mWindow(window),
 		mSDLRenderer(NULL), mSDLTexture(NULL),
 		mSurface(NULL), m8bppTo32BppSurface(NULL),
-        mWidth(width), mHeight(height)
+		mWidth(width), mHeight(height)
 {
 	assert(mWindow != NULL);
-    assert(mWindow->mSDLWindow != NULL);
+	assert(mWindow->mSDLWindow != NULL);
 
 	memcpy(&mFormat, format, sizeof(mFormat));
 
-    // Select the best RENDER_SCALE_QUALITY that is supported
-    const char* scale_hints[] = {"best", "linear", "nearest", ""};
-    for (int i = 0; scale_hints[i][0] != '\0'; i++)
-    {
-        if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
-            break;
-    }
+	// Select the best RENDER_SCALE_QUALITY that is supported
+	const char* scale_hints[] = {"best", "linear", "nearest", ""};
+	for (int i = 0; scale_hints[i][0] != '\0'; i++)
+	{
+		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
+			break;
+	}
 
 	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED;
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
+#ifdef __WIIU__
+	renderer_flags = SDL_RENDERER_SOFTWARE;	// Just to make sure...
+#endif
+
 	mSDLRenderer = SDL_CreateRenderer(mWindow->mSDLWindow, -1, renderer_flags);
 
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
+
 
 	const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
 	if (!vid_widescreen && vid_pillarbox && (3 * native_mode->getWidth() > 4 * native_mode->getHeight()))
@@ -1067,8 +1100,8 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	uint32_t texture_flags = SDL_TEXTUREACCESS_STREAMING;
 
-    SDL_DisplayMode sdl_mode;
-    SDL_GetWindowDisplayMode(mWindow->mSDLWindow, &sdl_mode);
+	SDL_DisplayMode sdl_mode;
+	SDL_GetWindowDisplayMode(mWindow->mSDLWindow, &sdl_mode);
 
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
@@ -1080,8 +1113,8 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
 
 	mSurface = new IWindowSurface(width, height, &mFormat);
-    if (mSurface->getBitsPerPixel() ==8)
-        m8bppTo32BppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
+	if (mSurface->getBitsPerPixel() ==8)
+		m8bppTo32BppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
 }
 
 
@@ -1154,7 +1187,6 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 //
 // ============================================================================
 
-
 //
 // ISDL20Window::ISDL20Window (if windowed modes are supported)
 //
@@ -1176,16 +1208,23 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
+#if defined(__WIIU__) || defined(__SWITCH__)
+	window_flags |= SDL_WINDOW_FULLSCREEN;	// Always include it for consoles
+#endif
+
 	// Reduce the flickering on start up for the opengl driver on Windows
 	#ifdef _WIN32
 	if (strncmp(driver_name, "opengl", strlen(driver_name)) == 0)
 		window_flags |= SDL_WINDOW_OPENGL;
 	#endif
 
+	// don't need this on the Switch, we're always fullscreen
+	#if !defined(__SWITCH__) || !defined(__WIIU__)
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		window_flags |= SDL_WINDOW_RESIZABLE;
+	#endif
 
 	mSDLWindow = SDL_CreateWindow(
 			"",			// Empty title for now - it will be set later
@@ -1196,11 +1235,11 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
 
-    discoverNativePixelFormat();
+	discoverNativePixelFormat();
 
 	mWidth = width;
 	mHeight = height;
-    mBitsPerPixel = bpp;
+	mBitsPerPixel = bpp;
 
 	mMouseFocus = mKeyboardFocus = true;
 }
@@ -1223,12 +1262,17 @@ ISDL20Window::~ISDL20Window()
 //
 void ISDL20Window::setRendererDriver()
 {
-    const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
-    for (int i = 0; drivers[i][0] != '\0'; i++)
-    {
-        if (SDL_SetHint(SDL_HINT_RENDER_DRIVER, drivers[i]))
-            break;
-    }
+#ifdef __WIIU__
+	const char* drivers[] = {"wiiu", ""};
+#else
+	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
+#endif
+
+	for (int i = 0; drivers[i][0] != '\0'; i++)
+	{
+		if (SDL_SetHint(SDL_HINT_RENDER_DRIVER, drivers[i]))
+			break;
+	}
 }
 
 
@@ -1623,16 +1667,18 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	I_PauseMouse();
 
 	uint32_t fullscreen_flags = 0;
+#if !defined(__SWITCH__) || !defined(__WIIU__)
 	if (video_fullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
+#endif
 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
-    SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
 	delete mSurfaceManager;
 
-    PixelFormat format = buildSurfacePixelFormat(video_bpp);
+	PixelFormat format = buildSurfacePixelFormat(video_bpp);
 	mSurfaceManager = new ISDL20TextureWindowSurfaceManager(
 			video_width, video_height,
 			&format,
@@ -1641,7 +1687,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 
 	mWidth = video_width;
 	mHeight = video_height;
-    mBitsPerPixel = video_bpp;
+	mBitsPerPixel = video_bpp;
 
 	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
 	mUseVSync = vsync;
@@ -1656,7 +1702,11 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (format.getBitsPerPixel() == 32)
 		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
+#ifdef __SWITCH__
+		argb_t::setChannels(0, 3, 2, 1);
+#else
 		argb_t::setChannels(3, 2, 1, 0);
+#endif
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.

@@ -9,7 +9,7 @@ include(CMakeDependentOption)
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
 include(GNUInstallDirs OPTIONAL)
-
+	
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
@@ -26,6 +26,15 @@ cmake_minimum_required(VERSION 2.8)
 
 set(PROJECT_VERSION 0.8.1)
 set(PROJECT_COPYRIGHT "2006-2019")
+
+# Include early required commands for specific systems
+if (SWITCH_LIBNX)
+	include("switch.cmake" REQUIRED)
+elseif(WIIU)
+  include("wiiu.cmake" REQUIRED)		# Wii U
+elseif(VWII)
+  include("wii.cmake" REQUIRED)     # Wii/vWii
+endif()
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
@@ -98,6 +107,19 @@ macro(define_platform)
     add_definitions(-DOSX -DUNIX )
   elseif(SOLARIS)
     add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
+  elseif(SWITCH_LIBNX)
+    add_definitions(-D__SWITCH__ -DUNIX -D__ARM_NEON__ -DGCONSOLE)
+    include_directories("$ENV{DEVKITPRO}/libnx/include")
+    include_directories("$ENV{PORTLIBS_PREFIX}/include")
+  elseif(WIIU)
+    add_definitions(-D__WIIU__ -DUNIX -DGCONSOLE)
+    include_directories("$ENV{WUT_ROOT}/include")
+    include_directories("$ENV{PORTLIBS_PREFIX}/include")
+  elseif(VWII)
+    add_definitions(-DGEKKO -DUNIX -DNOASM -DGCONSOLE -DCLIENT_APP -DUSE_PNG)
+    include_directories("$ENV{DEVKITPRO}/libogc/include")
+    include_directories("$ENV{DEVKITPRO}/libogc/include/ogc")
+    include_directories("$ENV{PORTLIBS_PREFIX}/include")
   elseif(UNIX)
     add_definitions(-DUNIX)
     find_package(X11)
@@ -125,6 +147,13 @@ if (USE_MINIUPNP)
   set(UPNPC_INSTALL OFF CACHE INTERNAL "" FORCE)
   mark_as_advanced(FORCE UPNPC_INSTALL)
   add_subdirectory(libraries/libminiupnpc)
+endif()
+
+if(SWITCH_LIBNX)
+   add_definitions(-D__SWITCH__ -DUNIX -D__ARM_NEON__ -DGCONSOLE)
+   include_directories("$ENV{DEVKITPRO}/libnx/include")
+   include_directories("$ENV{PORTLIBS_PREFIX}/include")
+   include_directories("libraries/sse2neon")
 endif()
 
 # Subdirectories for Odamex projects

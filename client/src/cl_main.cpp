@@ -81,6 +81,10 @@
 #include "i_xbox.h"
 #endif
 
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
 #if _MSC_VER == 1310
 #pragma optimize("",off)
 #endif
@@ -88,6 +92,22 @@
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
+
+#ifdef GCONSOLE
+	#ifdef __SWITCH__
+		gameplatform_t platform = PF_SWITCH;
+	#elif _XBOX
+		gameplatform_t platform = PF_XBOX;
+	#elif GEKKO
+		gameplatform_t platform = PF_WII;
+	#elif __WIIU__
+		gameplatform_t platform = PF_WIIU;
+	#else
+		gameplatform_t platform = PF_UNKNOWN;
+	#endif
+#else
+gameplatform_t platform = PF_PC;
+#endif
 
 extern bool step_mode;
 
@@ -322,7 +342,6 @@ void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
-gender_t D_GenderByName (const char *gender);
 void AM_Stop();
 
 //
@@ -398,6 +417,7 @@ void CL_QuitNetGame(void)
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
+	multiplayer = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
@@ -1000,7 +1020,6 @@ BEGIN_COMMAND (changeteams)
 		cl_team.Set("RED");
 	else if (consoleplayer().userinfo.team == TEAM_RED)
 		cl_team.Set("BLUE");
-	CL_RebuildAllPlayerTranslations();
 }
 END_COMMAND (changeteams)
 
@@ -1362,6 +1381,8 @@ void CL_SendUserInfo(void)
 	{
 		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
+
+	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
 }
 
 //
@@ -1749,6 +1770,10 @@ bool CL_Connect(void)
 }
 
 
+#ifdef GEKKO
+bool wii_InitNet();
+#endif
+
 //
 // CL_InitNetwork
 //
@@ -1763,8 +1788,18 @@ void CL_InitNetwork (void)
     else
 		localport = CLIENTPORT;
 
+#ifdef GEKKO
+	{	// Trying to connect the Wii to internet...
+		if (wii_InitNet())
+			Printf(PRINT_HIGH, "Your Wii is connected to your network.\n");
+		else
+			Printf(PRINT_HIGH, "Unable to connect the Wii to your network.\n");
+	}
+#endif
+
     // set up a socket and net_message buffer
     InitNetCommon();
+
 
     SZ_Clear(&net_buffer);
 
@@ -1984,10 +2019,10 @@ void CL_UpdatePlayer()
 
     // [Russell] - hack, read and set invisibility flag
     p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -2068,6 +2103,12 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+
+	// Receive the keys from a spied player
+	if (sv_gametype == GM_COOP) {
+		for (int i = 0; i < NUMCARDS; i++)
+			player.cards[i] = MSG_ReadByte();
+	}
 }
 
 // ToDo : Maybe merge with svc_playercheatstate ?
@@ -3207,8 +3248,8 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);

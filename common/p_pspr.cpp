@@ -265,8 +265,8 @@ bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 
     // Some do not need ammunition anyway.
     // Return if current ammunition sufficient.
-    if (ammotype == am_noammo || player->ammo[ammotype] >= count)
-        return true;
+	if (ammotype == am_noammo || player->ammo[ammotype] >= count)
+		return true;
 
 	return false;
 }

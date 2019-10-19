@@ -154,6 +154,7 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastturn_sensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
@@ -268,9 +269,12 @@ static void CompatOptions (void);
 static void NetworkOptions (void);
 static void WeaponOptions (void);
 static void GoToConsole (void);
-static void GoToConsole (void);
 void Reset2Defaults (void);
 void Reset2Saved (void);
+
+#ifdef GCONSOLE
+static void MultiplayerOptions(void);
+#endif
 
 static void SetVidMode (void);
 
@@ -279,7 +283,9 @@ static menuitem_t OptionItems[] =
     { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
 	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
  	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
+#if !defined(GCONSOLE) or defined(_XBOX) or defined(GEKKO)
 	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
+#endif
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
@@ -294,7 +300,11 @@ static menuitem_t OptionItems[] =
  	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
- 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
+ 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} },
+#ifdef GCONSOLE
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,		"Multiplayer options",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MultiplayerOptions} },
+#endif
 };
 
 menu_t OptionMenu = {
@@ -308,6 +318,81 @@ menu_t OptionMenu = {
 	NULL
 };
 
+#ifdef GCONSOLE
+
+void VoteYes(void);
+void VoteNo(void);
+void SwitchToSpectator(void);
+void SwitchToOppositeTeam(void);
+void SayToAll(void);
+void SayToTeam(void);
+
+static menuitem_t MultiplayerItems[] =
+{
+	{ redtext,	"Voting options",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,		"Vote Yes",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VoteYes} },
+	{ more,		"Vote No",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VoteNo} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,	"Become a spectator",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SwitchToSpectator}  },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,	"Team-games controls",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,	"Switch to opposite team",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SwitchToOppositeTeam}  },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ redtext,	"Discussions",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,	"Say to All",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SayToAll}  },
+	{ more,	"Say to Team",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SayToTeam}  },
+};
+
+menu_t MultiplayerMenu = {
+	"M_OPTTTL",
+	1,
+	STACKARRAY_LENGTH(MultiplayerItems),
+	177,
+	MultiplayerItems,
+	0,
+	0,
+	NULL
+};
+
+void MultiplayerOptions(void) // [Ralphis] for compatibility menu
+{
+	M_SwitchMenu(&MultiplayerMenu);
+}
+
+void VoteYes(void) {
+	AddCommandString("vote_yes");
+	M_ClearMenus();
+}
+
+void VoteNo(void) {
+	AddCommandString("vote_no"); 	
+	M_ClearMenus();
+}
+
+void SwitchToSpectator(void)
+{
+	AddCommandString("spectate");
+	M_ClearMenus();
+}
+
+void SwitchToOppositeTeam(void)
+{
+	AddCommandString("changeteams");
+	M_ClearMenus();
+}
+
+void SayToAll(void) {
+	AddCommandString("messagemode");
+	M_ClearMenus();
+}
+
+void SayToTeam(void) {
+	AddCommandString("messagemode2");
+	M_ClearMenus();
+}
+
+#endif
+
 /*=======================================
  *
  * Controls Menu
@@ -316,22 +401,27 @@ menu_t OptionMenu = {
 
 static menuitem_t ControlsItems[] = {
 #ifdef _XBOX
-	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ whitetext,"Press A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+#elif __SWITCH__
+	{ whitetext,"Press A to change, X to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #else
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+#if !defined(GCONSOLE) || defined(GEKKO) || defined(_XBOX)
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
 	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
 	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
 	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
 	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
 	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
+#endif
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
+	{ control,	"Fast Joystick turn",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
@@ -357,8 +447,10 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
 	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
 	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
+#ifndef GCONSOLE
 	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
 	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
+#endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
@@ -370,6 +462,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
 	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
 	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
+#ifndef GCONSOLE
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
@@ -390,6 +483,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
 	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
 	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+#endif
 };
 
 menu_t ControlsMenu = {
@@ -525,15 +619,25 @@ menu_t MouseMenu = {
  *
  *=======================================*/
 
+EXTERN_CVAR(joy_experimental_movement)
+
 static menuitem_t JoystickItems[] =
 {
+#ifndef GCONSOLE
 	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+#endif
+#if !defined(GCONSOLE) || defined(GEKKO)
 	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+#endif
+
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Fast Turn Sensitivity"					, {&joy_fastturn_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}				},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ discrete	,	"Experimental movements"				, {&joy_experimental_movement},		{2.0},		{0.0},		{0.0},		{OnOff}			},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
@@ -881,9 +985,9 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
+#ifndef GCONSOLE
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
-
-
+#endif
 };
 
 static void M_UpdateDisplayOptions()
@@ -1052,6 +1156,9 @@ static value_t Depths[22];
 #ifdef _XBOX
 static const char VMEnterText[] = "Press A to set mode";
 static const char VMTestText[] = "Press X to test mode for 5 seconds";
+#elif __SWITCH__
+static const char VMEnterText[] = "Press A to change res.";
+static const char VMTestText[] = "";
 #else
 static const char VMEnterText[] = "Press ENTER to set mode";
 static const char VMTestText[] = "Press T to test mode for 5 seconds";
@@ -1063,9 +1170,11 @@ static const char VMTestBlankText[] = " ";
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
+#ifndef GCONSOLE
 	{ 70.0,		"70fps" },
 	{ 120.0,	"120fps" },
 	{ 0.0,		"Unlimited" }
+#endif
 };
 
 static menuitem_t ModesItems[] = {
@@ -1076,7 +1185,11 @@ static menuitem_t ModesItems[] = {
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+#ifdef GCONSOLE
+	{ discrete, "Framerate",			{&vid_maxfps},			{2.0}, {0.0},	{0.0}, {VidFPSCaps} },
+#else
 	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+#endif
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1120,7 +1233,9 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
+#if !defined (__SWITCH__) || !defined(__WIIU__) // ehh
 		if (it->isFullScreen() == fullscreen)
+#endif
 			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
@@ -1301,19 +1416,21 @@ void M_OptInit (void)
 		Depths[i].name = NULL;
 	}
 
+#ifndef GCONSOLE // overscan is there instead
 	switch (I_GetVideoCapabilities()->getDisplayType())
 	{
 	case DISPLAY_FullscreenOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 1.f;
+		ModesItems[0].type = nochoice;
+		ModesItems[0].b.leftval = 1.f;
 		break;
 	case DISPLAY_WindowOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 0.f;
+		ModesItems[0].type = nochoice;
+		ModesItems[0].b.leftval = 0.f;
 		break;
 	default:
 		break;
 	}
+#endif
 }
 
 
@@ -1705,11 +1822,9 @@ void M_OptResponder (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-#ifdef _XBOX
-			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
-#else
-			if (ch != KEY_ESCAPE)
-#endif
+			if (ch != KEY_ESCAPE || 
+				(platform == PF_SWITCH && ch != KEY_JOY11) || 
+				(platform == PF_XBOX && ch != KEY_JOY9) )
 			{
 				Bindings.ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
@@ -1792,6 +1907,9 @@ void M_OptResponder (event_t *ev)
 	{
 		case KEY_HAT3:
 		case KEY_DOWNARROW:
+#ifdef __SWITCH__
+		case KEY_JOY16:
+#endif
 			{
 				int modecol;
 
@@ -1833,6 +1951,9 @@ void M_OptResponder (event_t *ev)
 
 		case KEY_HAT1:
 		case KEY_UPARROW:
+#ifdef __SWITCH__
+		case KEY_JOY14:
+#endif
 			{
 				int modecol;
 
@@ -1875,6 +1996,9 @@ void M_OptResponder (event_t *ev)
 			break;
 
 		case KEY_PGUP:
+#ifdef __SWITCH__
+		case KEY_JOY7:
+#endif
 			{
 				if (CanScrollUp)
 				{
@@ -1898,6 +2022,9 @@ void M_OptResponder (event_t *ev)
 			break;
 
 		case KEY_PGDN:
+#ifdef __SWITCH__
+		case KEY_JOY8:
+#endif
 			{
 				if (CanScrollDown)
 				{
@@ -1923,6 +2050,9 @@ void M_OptResponder (event_t *ev)
 
 		case KEY_HAT4:
 		case KEY_LEFTARROW:
+#ifdef __SWITCH__
+		case KEY_JOY13:
+#endif
 			switch (item->type)
 			{
 				case slider:
@@ -2047,6 +2177,9 @@ void M_OptResponder (event_t *ev)
 
 		case KEY_HAT2:
 		case KEY_RIGHTARROW:
+#ifdef __SWITCH__
+		case KEY_JOY15:
+#endif
 			switch (item->type)
 			{
 				case slider:
@@ -2173,8 +2306,11 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
-#ifdef _XBOX
+#if defined(_XBOX)
 		case KEY_JOY9: // Start button
+#elif defined(__SWITCH__)
+		case KEY_JOY3: // X button
+#elif defined (GEKKO)
 #endif
 		case KEY_BACKSPACE:
 			if (item->type == control)
@@ -2184,6 +2320,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+#ifdef GEKKO
+		case KEY_JOY10:		// (a) on Pro Controller
+#endif
 		case KEY_JOY1:
 		case KEY_ENTER:
 			if (CurrentMenu == &ModesMenu)
@@ -2233,7 +2372,20 @@ void M_OptResponder (event_t *ev)
 				WaitingForKey = true;
 				OldContMessage = CurrentMenu->items[0].label;
 				OldContType = CurrentMenu->items[0].type;
-				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+
+				// Ch0wW - Modify the text according to your platform
+				if (platform == PF_SWITCH) {
+					CurrentMenu->items[0].label = "Press new key for control or (+) to cancel";
+				}
+				else if (platform == PF_WII) {
+					if (I_WhatWiiController() == WIICTRL_WIIMOTE)
+						CurrentMenu->items[0].label = "Press new key for control or HOME to cancel";
+					else
+						CurrentMenu->items[0].label = "Press new key for control or START/PAUSE to cancel";
+				}
+				else
+					CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+
 				CurrentMenu->items[0].type = redtext;
 			}
 			else if (item->type == listelement)
@@ -2255,6 +2407,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+#ifdef GEKKO
+		case KEY_JOY11:		// (b) on Pro Controller
+#endif
 		case KEY_JOY2:
 		case KEY_ESCAPE:
 			CurrentMenu->lastOn = CurrentItem;

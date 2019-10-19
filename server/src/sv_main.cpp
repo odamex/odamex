@@ -83,6 +83,7 @@ bool unnatural_level_progression;
 bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
+gameplatform_t platform = PF_PC;	// Ch0wW: Make it know it's a PC - useless ATM ???
 
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 // really only used clientside
@@ -3289,6 +3290,11 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 			MSG_WriteByte(buf, psp->state - states);
 		else
 			MSG_WriteByte(buf, 0xFF);
+	}
+
+	if (sv_gametype == GM_COOP) {
+		for (int i = 0; i < NUMCARDS; i++)
+			MSG_WriteByte(buf, player->cards[i]);
 	}
 }
 

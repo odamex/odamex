@@ -153,7 +153,6 @@ EXTERN_CVAR		(screenblocks)
 // drawing stuff
 #define	FB		(screen)
 
-
 #define AM_NUMMARKPOINTS 10
 
 // scale on entry

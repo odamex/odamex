@@ -232,8 +232,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	state_t *st;
 
 	// Fly!!! fix it in P_RespawnSpecial
-	if ((unsigned int)itype >= NUMMOBJTYPES)
-	{
+	if ((unsigned int)itype >= NUMMOBJTYPES) {
 		I_Error ("Tried to spawn actor type %d\n", itype);
 	}
 
@@ -250,16 +249,16 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	translucency = info->translucency;
 	rndindex = M_Random();
 
-    if (multiplayer && serverside)
-        netid = ServerNetID.ObtainNetID();
+	if (multiplayer && serverside)
+		netid = ServerNetID.ObtainNetID();
 
 	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
 
-    if (clientside)
-        lastlook = P_Random() % MAXPLAYERS_VANILLA;
-    else
-        lastlook = P_Random() % MAXPLAYERS;
+	if (clientside)
+		lastlook = P_Random() % MAXPLAYERS_VANILLA;
+	else
+		lastlook = P_Random() % MAXPLAYERS;
 
     // do not set the state with P_SetMobjState,
     // because action routines can not be called yet
@@ -281,20 +280,16 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	dropoffz = floorz;
 	floorsector = subsector->sector;
 
-	if (iz == ONFLOORZ)
-	{
+	if (iz == ONFLOORZ) {
 		z = floorz;
 	}
-	else if (iz == ONCEILINGZ)
-	{
+	else if (iz == ONCEILINGZ) {
 		z = ceilingz - height;
 	}
-	else if (flags2 & MF2_FLOATBOB)
-	{
+	else if (flags2 & MF2_FLOATBOB) {
 		z = floorz + iz;		// artifact z passed in as height
 	}
-	else
-	{
+	else {
 		z = iz;
 	}
 
@@ -1862,12 +1857,12 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
     puff->momz = FRACUNIT;
     puff->tics -= P_Random(puff) & 3;
 
-    if (puff->tics < 1)
-        puff->tics = 1;
+	if (puff->tics < 1)
+		puff->tics = 1;
 
 	// don't make punches spark on the wall
 	if (attackrange == MELEERANGE)
-        P_SetMobjState(puff, S_PUFF3);
+		P_SetMobjState(puff, S_PUFF3);
 
     if (serverside)
 	{
@@ -2193,8 +2188,8 @@ void P_RespawnSpecials (void)
 	// spawn a teleport fog at the new spot
 	mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
-    if (clientside)
-        S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+	if (clientside)
+		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// spawn it
 	mo = new AActor (x, y, z, (mobjtype_t)i);

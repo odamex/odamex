@@ -121,14 +121,14 @@ public:
 	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Patch drawing functions
-	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
+	void DrawPatchFlipped (const patch_t *patch, int x, int y, bool bypassHUD=false) const;
 
-	inline void DrawPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	inline void DrawPatch (const patch_t *patch, int x, int y, bool bypassHUD = false) const;
+	inline void DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh, bool bypassHUD = false) const;
+	inline void DrawPatchDirect (const patch_t *patch, int x, int y, bool bypassHUD = false) const;
+	inline void DrawPatchIndirect (const patch_t *patch, int x, int y, bool bypassHUD = false) const;
+	inline void DrawPatchClean (const patch_t *patch, int x, int y, bool bypassHUD = false) const;
+	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y, bool bypassHUD = false) const;
 
 	void DrawPatchFullScreen(const patch_t* patch) const;
 
@@ -136,7 +136,7 @@ public:
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
 	inline void DrawLucentPatchDirect (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawLucentPatchClean (const patch_t *patch, int x, int y) const;
+	inline void DrawLucentPatchClean (const patch_t *patch, int x, int y, bool bypassHUD=false) const;
 	inline void DrawLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
 	inline void DrawTranslatedPatch (const patch_t *patch, int x, int y) const;
@@ -172,38 +172,38 @@ protected:
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
-	void DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight) const;
+	void DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, bool bypassHUD=false) const;
+	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight, bool bypassHUD=false) const;
 	void DrawIWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
+	void DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, bool bypassHUD=false) const;
 	void DrawCNMWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
 
-	static void DrawPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch);
+	static void DrawPatchP (const byte *source, byte *dest, int count, int pitch, bool unused);
+	static void DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
+	static void DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch, bool unused);
+	static void DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
+	static void DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch, bool unused);
+	static void DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
 
-	static void DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused);
+	static void DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD);
+	static void DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused);
+	static void DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD);
 
-	static void DrawPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch);
+	static void DrawPatchD (const byte *source, byte *dest, int count, int pitch, bool unused);
+	static void DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
+	static void DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch, bool unused);
+	static void DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
+	static void DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch, bool unused);
+	static void DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
 
-	static void DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused);
+	static void DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD);
+	static void DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused);
+	static void DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD);
 
-	typedef void (*vdrawfunc) (const byte *source, byte *dest, int count, int pitch);
-	typedef void (*vdrawsfunc) (const byte *source, byte *dest, int count, int pitch, int yinc);
+	typedef void (*vdrawfunc) (const byte *source, byte *dest, int count, int pitch, bool bypassHUD);
+	typedef void (*vdrawsfunc) (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD);
 
 	// Palettized versions of the column drawers
 	static vdrawfunc Pfuncs[6];
@@ -283,27 +283,27 @@ inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const 
 	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string, scalex, scaley);
 }
 
-inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y, bool unused) const
 {
 	DrawWrapper (EWrapper_Normal, patch, x, y);
 }
-inline void DCanvas::DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
+inline void DCanvas::DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh, bool unused) const
 {
 	DrawSWrapper (EWrapper_Normal, patch, x, y, dw, dh);
 }
-inline void DCanvas::DrawPatchDirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawPatchDirect (const patch_t *patch, int x, int y, bool unused) const
 {
 	DrawWrapper (EWrapper_Normal, patch, x, y);
 }
-inline void DCanvas::DrawPatchIndirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawPatchIndirect (const patch_t *patch, int x, int y, bool unused) const
 {
 	DrawIWrapper (EWrapper_Normal, patch, x, y);
 }
-inline void DCanvas::DrawPatchClean (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawPatchClean (const patch_t *patch, int x, int y, bool unused) const
 {
 	DrawCWrapper (EWrapper_Normal, patch, x, y);
 }
-inline void DCanvas::DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawPatchCleanNoMove (const patch_t *patch, int x, int y, bool unused) const
 {
 	DrawCNMWrapper (EWrapper_Normal, patch, x, y);
 }
@@ -324,9 +324,9 @@ inline void DCanvas::DrawLucentPatchIndirect (const patch_t *patch, int x, int y
 {
 	DrawIWrapper (EWrapper_Lucent, patch, x, y);
 }
-inline void DCanvas::DrawLucentPatchClean (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawLucentPatchClean (const patch_t *patch, int x, int y, bool bypassHUD) const
 {
-	DrawCWrapper (EWrapper_Lucent, patch, x, y);
+	DrawCWrapper (EWrapper_Lucent, patch, x, y, bypassHUD);
 }
 inline void DCanvas::DrawLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const
 {

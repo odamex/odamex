@@ -196,6 +196,8 @@ CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "",
 	CVAR(			co_blockmapfix, "0", "Fix the blockmap collision bug",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(			co_fixarchvileflame, "1", "Corrects the archvile's flame on rare occasions",
+					CVARTYPE_BOOL, CVAR_SERVERINFO)
 
 	// Boom-compatibility changes
 	//------------------------------

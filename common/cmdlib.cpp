@@ -39,6 +39,12 @@
 
 #include "m_alloc.h"
 
+#ifdef __SWITCH__
+// HACK: for some reason we're missing the prototype for strptime(), even though
+//       it is in libc
+extern "C" char *strptime (const char *__restrict, const char *__restrict, struct tm *__restrict);
+#endif
+
 char		com_token[8192];
 BOOL		com_eof;
 
@@ -187,22 +193,21 @@ int ParseNum(const char* str)
 }
 
 
+//
+// IsNum
+//
 // [RH] Returns true if the specified string is a valid decimal number
-
+// 
 bool IsNum(const char* str)
 {
-	bool result = true;
-
-	while (*str)
-	{
+	while (*str) {
 		if (((*str < '0') || (*str > '9')) && (*str != '-'))
-		{
-			result = false;
-			break;
-		}
+			return false;
+
 		str++;
 	}
-	return result;
+
+	return true;
 }
 
 
@@ -367,10 +372,15 @@ bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
 
 // [AM] Parse an ISO8601-formatted string time into a tm* struct.
 bool StrParseISOTime(const std::string& s, tm* utc_tm) {
+
+#if defined(GEKKO) || defined(__WIIU__)
+	return false;
+#else
 	if (!strptime(s.c_str(), "%Y-%m-%dT%H:%M:%SZ", utc_tm)) {
 		return false;
 	}
 	return true;
+#endif
 }
 
 // [AM] Turn a string representation of a length of time into a time_t

@@ -48,6 +48,14 @@ bool I_OpenJoystick();
 void I_CloseJoystick();
 
 
+enum wiicontroller_type {
+	WIICTRL_UNKNOWN = 0,
+	WIICTRL_WIIMOTE = 1,
+	WIICTRL_GAMECUBE = 2,
+};
+
+wiicontroller_type I_WhatWiiController();
+
 // ============================================================================
 //
 // IInputDevice abstract base class interface

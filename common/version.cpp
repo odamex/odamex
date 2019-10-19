@@ -30,8 +30,6 @@
 
 #include "c_dispatch.h"
 
-static unsigned int last_revision = 0;
-
 typedef std::map<std::string, std::string> source_files_t;
 
 source_files_t &get_source_files()

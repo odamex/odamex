@@ -30,13 +30,13 @@
 // Most key data are simple ascii (uppercased).
 //
 // SoM: YES I RE-DID ALL OF THIS BY HAND
-#define KEY_RIGHTARROW     0x113
-#define KEY_LEFTARROW      0x114
-#define KEY_UPARROW        0x111
-#define KEY_DOWNARROW      0x112
-#define KEY_ESCAPE         0x1B
-#define KEY_ENTER          0x0D
-#define KEY_SPACE          0x20
+#define KEY_RIGHTARROW			0x113
+#define KEY_LEFTARROW			0x114
+#define KEY_UPARROW				0x111
+#define KEY_DOWNARROW			0x112
+#define KEY_ESCAPE				0x1B
+#define KEY_ENTER				0x0D
+#define KEY_SPACE				0x20
 #define KEY_TAB 				0x09
 #define KEY_F1					0x11A
 #define KEY_F2					0x11B
@@ -54,17 +54,17 @@
 #define KEY_F14 				0x127
 #define KEY_F15 				0x128
 
-#define KEY_BACKSPACE		0x08
+#define KEY_BACKSPACE			0x08
 #define KEY_PAUSE				0x14
 
-#define KEY_EQUALS			0x3D
-#define KEY_MINUS				0x2D
+#define KEY_EQUALS				0x3D
+#define KEY_MIN					0x2D
 
-#define KEY_LSHIFT			0x130
+#define KEY_LSHIFT				0x130
 #define KEY_LCTRL				0x132
 #define KEY_LALT				0x134
 
-#define KEY_RSHIFT         0x12F
+#define KEY_RSHIFT				0x12F
 #define KEY_RCTRL				0x131
 #define KEY_RALT				0x133
 #define KEY_LWIN				0x137
@@ -77,9 +77,9 @@
 #define KEY_INS 				0x115
 #define KEY_DEL 				0x7F
 #define KEY_END 				0x117
-#define KEY_HOME				0x116
+#define KEY_KBHOME				0x116		// Ch0wW : needs to be changed for Wii/WiiU/Switch
 #define KEY_PGUP				0x118
-#define KEY_PGDN			0x119
+#define KEY_PGDN				0x119
 
 // new keys:
 

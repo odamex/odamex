@@ -15,11 +15,12 @@ include $(DEVKITPPC)/wii_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
-TARGET		:=	odamex
+#TARGET		:=	odamex
+TARGET		:=	boot
 BUILD		:=	build
 SOURCES		:=	../common ../client/src ../client/sdl ./
 DATA		:=	data
-INCLUDES	:=	../common ../client/src ../client/sdl ./
+INCLUDES	:=	../common ../client/src ../client/sdl ./ 
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -36,15 +37,15 @@ LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lpng -lSDL_mixer -lsmpeg -lvorbisidec -lSDL -lz \
-			-lfat -lwiiuse -lbte -logc -lm -lwiikeyboard \
+LIBS	:=	 -lpng -lSDL_mixer -lsmpeg -lSDL  -lpng16 -lvorbisidec \
+			 -lz -lfat -lwiiuse -lbte -logc -logg -lm -lwiikeyboard \
 #			-ldb
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS	:= $(DEVKITPRO)/libogc $(PORTLIBS)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

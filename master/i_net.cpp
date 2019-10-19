@@ -90,7 +90,7 @@ void BindToLocalPort(SOCKET s, u_short port)
 
 	v = bind(s, (sockaddr *)&address, sizeof(address));
 	if (v == SOCKET_ERROR)
-    	   printf("BindToPort: error\n");
+		printf("BindToPort: error\n");
 }
 
 

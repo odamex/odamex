@@ -45,6 +45,8 @@
 #else
 #ifdef GEKKO // Wii/GC
 #	include <network.h>
+#elif __WIIU__
+#	include <nsysnet/socket.h>
 #else
 #	include <sys/socket.h>
 #	include <netinet/in.h>
@@ -65,7 +67,13 @@ typedef int SOCKET;
 #define INVALID_SOCKET -1
 #endif
 #define closesocket close
+
+#ifdef GEKKO
+#define ioctlsocket net_ioctl
+#else
 #define ioctlsocket ioctl
+#endif
+
 #define Sleep(x)	usleep (x * 1000)
 #endif
 
@@ -89,6 +97,10 @@ typedef int SOCKET;
 
 #ifdef GEKKO
 #include "i_wii.h"
+#endif
+
+#ifdef __WIIU__
+#include "i_wiiu.h"
 #endif
 
 #include "minilzo.h"
@@ -296,9 +308,15 @@ SOCKET UDPsocket (void)
 	SOCKET s;
 
 	// allocate a socket
-	s = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#ifdef GEKKO
+	#define IPPROTOCOL IPPROTO_IP
+#else
+	#define IPPROTOCOL IPPROTO_UDP
+#endif
+
+	s = socket(PF_INET, SOCK_DGRAM, IPPROTOCOL);
 	if (s == INVALID_SOCKET)
-     	I_FatalError ("can't create socket");
+		I_FatalError("Cannot create a socket");
 
 	return s;
 }
@@ -320,15 +338,15 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	do
 	{
 		address.sin_port = htons(next++);
-
-		v = bind (s, (sockaddr *)&address, sizeof(address));
-
-		if(next > wanted + 16)
+		v = bind(s, (sockaddr *)&address, sizeof(address));
+		
+		if (next > wanted + 16)
 		{
-			I_FatalError ("BindToPort: error");
+			I_FatalError("BindToPort: error");
 			return;
 		}
-	}while (v == SOCKET_ERROR);
+
+	} while (v == SOCKET_ERROR);
 
 	char tmp[32] = "";
 	sprintf(tmp, "%d", next - 1);
@@ -421,7 +439,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
             sadr.sin_port = htons(atoi(colon+1));
         }
 
-    if (! (h = gethostbyname(copy)) )
+	 if (!(h = gethostbyname(copy)))
         return 0;
 
     *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
@@ -433,9 +451,9 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 
 bool NET_CompareAdr (netadr_t a, netadr_t b)
 {
-    if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
-        return true;
-
+	if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port) {
+		return true;
+	}
 	return false;
 }
 
@@ -451,7 +469,13 @@ int NET_GetPacket (void)
 
     fromlen = sizeof(from);
 	net_message.clear();
-    ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+
+	ret = recvfrom(inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+
+#ifdef GEKKO
+	if ((ret == -EWOULDBLOCK) || (ret == -ECONNREFUSED))
+		return false;
+#else
 
     if (ret == -1)
     {
@@ -482,7 +506,9 @@ int NET_GetPacket (void)
         Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
         return false;
 #endif
+
     }
+#endif
     net_message.setcursize(ret);
     SockadrToNetadr (&from, &net_from);
 
@@ -504,9 +530,18 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 
     NetadrToSockadr (&to, &addr);
 
-	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+#ifdef GEKKO
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// Ch0wW : 8 is important since it's a bad port of the GC Ethernet port.
+#else
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, (platform == PF_WII) ? 8 : sizeof(addr));
+#endif
 
 	buf.clear();
+
+#ifdef GEKKO
+	if (ret == -EWOULDBLOCK)
+		return 0;
+#else
 
     if (ret == -1)
     {
@@ -524,7 +559,7 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
           Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
 #endif
     }
-
+#endif
 	return ret;
 }
 
@@ -541,8 +576,7 @@ std::string NET_GetLocalAddress (void)
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
-
-    ent = gethostbyname(buff);
+	ent = gethostbyname(buff);
 
     // Return the first, IPv4 address
     if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
@@ -594,8 +628,9 @@ void SV_SendPackets(void);
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
     //[Spleen] final check to prevent huge packets from being sent to players
-    if (b->cursize > 600)
-        SV_SendPackets();
+	if (b->cursize > 600) {
+		SV_SendPackets();
+	}
 
 	b->WriteByte((byte)c);
 }
@@ -730,7 +765,7 @@ int MSG_BytesLeft(void)
 
 int MSG_ReadByte (void)
 {
-    return net_message.ReadByte();
+	return net_message.ReadByte();
 }
 
 int MSG_NextByte (void)
@@ -1050,7 +1085,7 @@ void InitNetMessageFormats()
 //
 void InitNetCommon(void)
 {
-   unsigned long _true = true;
+	unsigned long _true = true;
 
 #ifdef _WIN32
    WSADATA   wsad;
@@ -1059,13 +1094,14 @@ void InitNetCommon(void)
 
    inet_socket = UDPsocket ();
 
-    #ifdef ODA_HAVE_MINIUPNP
+	#ifdef ODA_HAVE_MINIUPNP
     init_upnp();
     #endif
 
    BindToLocalPort (inet_socket, localport);
-   if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
-       I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+
+   if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
+	   I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs
 	InitNetMessageFormats();

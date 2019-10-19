@@ -45,6 +45,8 @@
 #define scandir wii_scandir
 #define alphasort wii_alphasort
 
+#define WII_DATAPATH "sd:/odx_data/"
+
 bool wii_pathisrelative(const char *path);
 
 int wii_getsockname(int socket, struct sockaddr *address, socklen_t *address_len);

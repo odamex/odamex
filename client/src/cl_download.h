@@ -29,4 +29,7 @@ void CL_DownloadStart();
 void CL_DownloadTicker();
 void CL_Download();
 
+#define KBYTE 1024
+#define MBYTE (1024 * 1024)
+
 #endif // __CL_DOWNLOAD__

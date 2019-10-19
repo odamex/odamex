@@ -25,6 +25,7 @@
 #include <sstream>
 #include <iomanip>
 
+#include "cl_download.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "cl_main.h"
@@ -170,18 +171,23 @@ void IntDownloadComplete(void)
     std::vector<std::string> dirs;
     std::string filename;
     size_t i;
-#ifdef _WIN32
-    const char separator = ';';
-#else
-    const char separator = ':';
-#endif
 
     // Try to save to the wad paths in this order -- Hyper_Eye
-    D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
-    D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-    D_AddSearchDir(dirs, waddirs.cstring(), separator);
+    D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), CHAR_SEPARATOR);
+
+	// -waddir may be used for XBOX, according to Hyper_Eye. Add it.
+	if (platform == PF_PC || platform == PF_XBOX) 
+		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), CHAR_SEPARATOR);
+		
+	// For PC users, add these folders in the ones we are looking
+	if (platform == PF_PC) {
+		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, getenv("HOME"), CHAR_SEPARATOR);
+	}
+
+	D_AddSearchDir(dirs, waddirs.cstring(), CHAR_SEPARATOR);
+
     dirs.push_back(startdir);
     dirs.push_back(progdir);
 
@@ -280,28 +286,28 @@ void CL_DownloadStart()
 	}
 
 	// don't go for more than 100 megs
-	if(file_len > 100*1024*1024)
+	if(file_len > (100 * MBYTE))
 	{
-		Printf(PRINT_HIGH, "Download is over 100MiB, aborting!\n");
+		Printf(PRINT_HIGH, "Download is over 100MB, aborting!\n");
 		CL_QuitNetGame();
 		return;
 	}
 
     // [Russell] - Allow resumeable downloads
 	if (download.got_bytes == 0)
-    {
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
+	{
+		if (download.buf != NULL)
+		{
+			delete download.buf;
+			download.buf = NULL;
+		}
 
-        download.buf = new buf_t ((size_t)file_len);
+		download.buf = new buf_t ((size_t)file_len);
 
-        memset(download.buf->ptr(), 0, file_len);
-    }
-    else
-        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
+		memset(download.buf->ptr(), 0, file_len);
+	}
+	else
+		Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
 
 
 
@@ -375,7 +381,10 @@ void CL_DownloadTicker()
 
 //
 // CL_Download
-// denis - get a little chunk of the file and store it, much like a hampster. Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn. But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
+// denis - get a little chunk of the file and store it, much like a hampster. 
+// Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. 
+// Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn.
+// But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
 //
 void CL_Download()
 {

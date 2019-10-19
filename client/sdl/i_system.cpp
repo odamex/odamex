@@ -102,6 +102,10 @@
 	#include "i_wii.h"
 #endif
 
+#ifdef __WIIU__
+	#include "i_wiiu.h"
+#endif
+
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
 	// For libtextscreen to link properly
 	extern "C"
@@ -123,7 +127,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef GCONSOLE
+#if defined GCONSOLE && !defined __SWITCH__
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
@@ -195,8 +199,8 @@ void *I_ZoneBase (size_t *size)
     got_heapsize = I_BytesToMegabytes(*size);
 
     // Die if the system has insufficient memory
-    if (got_heapsize < min_heapsize)
-        I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
+	if (got_heapsize < min_heapsize)
+		I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
                      "is %lu MB but got %lu MB instead",
                      min_heapsize,
                      got_heapsize);
@@ -231,7 +235,7 @@ dtime_t I_GetTime()
 	mach_port_deallocate(mach_task_self(), cclock);
 	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
 
-#elif defined UNIX && !defined GEKKO
+#elif defined UNIX && !defined GEKKO && !defined (__WIIU__)
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
@@ -440,7 +444,7 @@ std::string I_GetCWD ()
 	return ret;
 }
 
-#if defined(UNIX) && !defined(GEKKO)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -468,7 +472,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 	// return absolute or explicitly relative pathnames unmodified,
 	// so launchers or CLI/console users have control over netdemo placement
 	if (file &&
@@ -508,6 +512,8 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
+#elif defined(__SWITCH__) || defined(__WIIU__)
+	std::string path = file;
 #else
 	if (!PathIsRelative(file))
 		return std::string (file);
@@ -527,7 +533,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO)
+#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
 	if(!path.length())
 		return;
 
@@ -560,11 +566,15 @@ std::string I_GetBinaryDir()
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
 	ret = "D:\\";
 #elif defined GEKKO
-	ret = "sd:/";
+	ret = WII_DATAPATH;
+#elif __WIIU__
+	return WII_DATAPATH;
 #elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
+#elif defined __SWITCH__ 
+	return "./";
 #else
 	if(!Args[0])
 		return "./";
@@ -622,7 +632,7 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
-#ifndef GCONSOLE // I will return to this -- Hyper_Eye
+#if !defined GCONSOLE // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;
@@ -1065,6 +1075,7 @@ std::string I_ConsoleInput (void)
 
 std::string I_ConsoleInput (void)
 {
+#if !defined __SWITCH__ || !defined(__WIIU__)
 	std::string ret;
     static char     text[1024] = {0};
     int             len;
@@ -1076,13 +1087,13 @@ std::string I_ConsoleInput (void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
-        return "";
+	if (select(1, &fdr, NULL, NULL, &tv) <= 0)
+		return "";
 
-    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
+	len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
-    if (len < 1)
-        return "";
+	if (len < 1)
+		return "";
 
 	len = strlen(text);
 
@@ -1104,7 +1115,7 @@ std::string I_ConsoleInput (void)
 		memset(text, 0, sizeof(text));
 		return ret;
 	}
-
+#endif
     return "";
 }
 #endif

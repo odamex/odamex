@@ -56,6 +56,16 @@
 #include <vector>
 #include <algorithm>
 
+// for sixaxis stuff
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
+#ifdef __WIIU__
+#include <whb/log.h>
+#include <whb/log_console.h>
+#endif
+
 static const int MAX_LINE_LENGTH = 8192;
 
 std::string DownloadStr;
@@ -83,9 +93,9 @@ BOOL		KeysCtrl;
 
 static bool midprinting;
 
-#define SCROLLUP 1
-#define SCROLLDN 2
-#define SCROLLNO 0
+#define SCROLLUP 1	// Scroll Up
+#define SCROLLDN 2	// Scroll Down
+#define SCROLLNO 0	// Stop scrolling
 
 EXTERN_CVAR (con_buffersize)
 EXTERN_CVAR(show_messages)
@@ -922,6 +932,10 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		if (outline[i] == 0x07)
 			outline[i] = '.';
 
+#ifdef __WIIU__
+	WHBLogPrint(outline);
+#endif
+
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)
 	{
@@ -951,10 +965,13 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 
 		if (ConRows < (unsigned int)con_buffersize.asInt())
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
+
 	}
 
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
+
+
 
 	C_PrintString(printlevel, color_code, outline);
 
@@ -1386,11 +1403,34 @@ void C_DrawConsole()
 }
 
 
+
+#ifdef __SWITCH__
+void IN_SwitchKeyboard(char *out, int out_len)
+{
+	SwkbdConfig kbd;
+	char tmp_out[out_len + 1];
+	Result rc;
+	tmp_out[0] = 0;
+	rc = swkbdCreate(&kbd, 0);
+	if (R_SUCCEEDED(rc)) {
+		swkbdConfigMakePresetDefault(&kbd);
+		swkbdConfigSetInitialText(&kbd, out);
+		rc = swkbdShow(&kbd, tmp_out, out_len);
+		if (R_SUCCEEDED(rc))
+			strncpy(out, tmp_out, out_len); 
+		swkbdClose(&kbd);
+	}
+}
+#endif
+
 static bool C_HandleKey(const event_t* ev)
 {
 	const char* cmd = Bindings.GetBinding(ev->data1);
 
-	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
+	if ( ev->data1 == KEY_ESCAPE 
+		|| (cmd && stricmp(cmd, "toggleconsole") == 0) 
+		|| (platform == PF_SWITCH && ev->data1 == KEY_JOY11) )
+
 	{
 		// don't eat the Esc key if we're in full console
 		// let it be processed elsewhere (to bring up the menu)
@@ -1403,11 +1443,36 @@ static bool C_HandleKey(const event_t* ev)
 
 	switch (ev->data1)
 	{
+
+#ifdef __SWITCH__
+	case KEY_JOY3:
+
+	char oldtext[64], text[64], fulltext[65];		
+
+		strcpy (text, CmdLine.text.c_str());
+
+		// Initiate the console
+		IN_SwitchKeyboard(text, 64);
+
+		// No action if no text or same as earlier
+		if (!strlen(text) || !strcmp(oldtext, text))
+			return true;
+
+				// add command line text to history
+		History.addString(text);
+		History.resetPosition();
+	
+		Printf(127, "]%s\n", text);
+		AddCommandString(text);
+		CmdLine.clear();
+
+#endif
+
 	case KEY_TAB:
 		// Try to do tab-completion
 		C_TabComplete();
 		return true;
-#ifdef _XBOX
+#if defined _XBOX || __SWITCH__
 	case KEY_JOY7: // Left Trigger
 #endif
 	case KEY_PGUP:
@@ -1421,7 +1486,7 @@ static bool C_HandleKey(const event_t* ev)
 				ScrollState = SCROLLUP;
 		}
 		return true;
-#ifdef _XBOX
+#if defined _XBOX || __SWITCH__
 	case KEY_JOY8: // Right Trigger
 #endif
 	case KEY_PGDN:
@@ -1432,18 +1497,26 @@ static bool C_HandleKey(const event_t* ev)
 			// Start scrolling console buffer down
 			ScrollState = SCROLLDN;
 		return true;
-	case KEY_HOME:
+	case KEY_KBHOME:
 		CmdLine.moveCursorHome();
 		return true;
 	case KEY_END:
 		CmdLine.moveCursorEnd();
 		return true;
+	
+	#ifdef __SWITCH__
+	case KEY_JOY13:
+	#endif
 	case KEY_LEFTARROW:
 		if (KeysCtrl)
 			CmdLine.moveCursorLeftWord();
 		else
 			CmdLine.moveCursorLeft();
 		return true;
+
+	#ifdef __SWITCH__
+	case KEY_JOY15:
+	#endif
 	case KEY_RIGHTARROW:
 		if (KeysCtrl)
 			CmdLine.moveCursorRightWord();
@@ -1471,6 +1544,10 @@ static bool C_HandleKey(const event_t* ev)
 		// SHIFT was pressed
 		KeysShifted = true;
 		return true;
+
+	#ifdef __SWITCH__
+	case KEY_JOY14:
+	#endif
 	case KEY_UPARROW:
 		// Move to previous entry in the command history
 		History.movePositionUp();
@@ -1478,6 +1555,10 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.insertString(History.getString());
 		TabbedLast = false;
 		return true;
+	
+	#ifdef __SWITCH__
+	case KEY_JOY16:
+	#endif
 	case KEY_DOWNARROW:
 		// Move to next entry in the command history
 		History.movePositionDown();
@@ -1490,6 +1571,10 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.insertString(I_GetClipboardText());
 		TabbedLast = false;
 		return true;
+
+#ifdef __SWITCH__
+	case KEY_JOY1:
+#endif
 	case KEY_ENTER:
 	case KEYP_ENTER:
 		// Execute command line (ENTER)
@@ -1552,7 +1637,7 @@ BOOL C_Responder(event_t *ev)
 	{
 		switch (ev->data1)
 		{
-#ifdef _XBOX
+#if defined( _XBOX) || defined(__SWITCH__)
 		case KEY_JOY7: // Left Trigger
 		case KEY_JOY8: // Right Trigger
 #endif
@@ -1626,8 +1711,8 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-    if (!msgtime)
-        msgtime = con_midtime.asInt();
+	if (!msgtime)
+		msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);

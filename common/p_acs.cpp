@@ -94,7 +94,7 @@ static void ClearInventory(AActor* activator)
 		{
 			if (it->ingame() && !it->spectator)
 				DoClearInv(&(*it));
-				SV_SendPlayerInfo(*it);
+			SV_SendPlayerInfo(*it);
 		}
 	}
 	else if (activator->player != NULL)

@@ -50,6 +50,7 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "g_level.h"
+#include "c_platformkeys.h"
 
 #include "gi.h"
 #include "m_memio.h"
@@ -188,64 +189,39 @@ static const int fire_surface_width = 72;
 static const int fire_surface_height = 77;
 
 //
-// DOOM MENU
+// DOOM MAIN MENU
+// These are references, since DOOM2 doesn't have a "READ THIS!" yet.
 //
-enum d1_main_t
-{
-	d1_newgame = 0,
-	d1_options,					// [RH] Moved
-	d1_loadgame,
-	d1_savegame,
-	d1_readthis,
-	d1_quitdoom,
-	d1_main_end
-}d1_main_e;
 
-oldmenuitem_t DoomMainMenu[]=
+enum menuinfo_t
+{
+	main_load = 2,
+	main_save = 3,
+} menuinfo_e;
+
+#define MAXITEMS_MAINMENU 6
+
+oldmenuitem_t MainMenuReference[] =
 {
 	{1,"M_NGAME",M_NewGame,'N'},
 	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
     {1,"M_LOADG",M_LoadGame,'L'},
     {1,"M_SAVEG",M_SaveGame,'S'},
-    {1,"M_RDTHIS",M_ReadThis,'R'},
+	{1,"M_RDTHIS",M_ReadThis,'R'},	// Only used in Doom/UDoom !
 	{1,"M_QUITG",M_QuitDOOM,'Q'}
 };
 
-//
-// DOOM 2 MENU
-//
-
-enum d2_main_t
+oldmenu_t MainDefReference =
 {
-	d2_newgame = 0,
-	d2_options,					// [RH] Moved
-	d2_loadgame,
-	d2_savegame,
-	d2_quitdoom,
-	d2_main_end
-}d2_main_e;
-
-oldmenuitem_t Doom2MainMenu[]=
-{
-	{1,"M_NGAME",M_NewGame,'N'},
-	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG",M_LoadGame,'L'},
-    {1,"M_SAVEG",M_SaveGame,'S'},
-	{1,"M_QUITG",M_QuitDOOM,'Q'}
-};
-
-
-// Default used is the Doom Menu
-oldmenu_t MainDef =
-{
-	d1_main_end,
-	DoomMainMenu,
+	MAXITEMS_MAINMENU,	
+	MainMenuReference,			// Ch0wW : This is just a reference, this will be modified in M_Init.
 	M_DrawMainMenu,
 	97,64,
 	0
 };
 
-
+oldmenuitem_t MainMenu[MAXITEMS_MAINMENU];
+oldmenu_t MainDef;
 
 //
 // EPISODE SELECT
@@ -261,10 +237,11 @@ enum episodes_t
 
 oldmenuitem_t EpisodeMenu[]=
 {
-	{1,"M_EPI1", M_Episode,'k'},
-	{1,"M_EPI2", M_Episode,'t'},
-	{1,"M_EPI3", M_Episode,'i'},
-	{1,"M_EPI4", M_Episode,'t'}
+	{1,"M_EPI1", M_Episode, 'k'},
+	{1,"M_EPI2", M_Episode, 't'},
+	{1,"M_EPI3", M_Episode, 'i'},
+	{1,"M_EPI4", M_Episode, 't'},
+//	{1,"M_EPI5", M_Episode, 's'},		// Ch0WW : ToDo : SIGIL support 
 };
 
 oldmenu_t EpiDef =
@@ -288,8 +265,8 @@ enum expansions_t
 
 oldmenuitem_t ExpansionMenu[]=
 {
-	{1,"M_EPI1", M_Expansion,'h'},
-	{1,"M_EPI2", M_Expansion,'n'},
+	{1,"M_EPI1", M_Expansion, 'h'},
+	{1,"M_EPI2", M_Expansion, 'n'},
 };
 
 oldmenu_t ExpDef =
@@ -521,47 +498,46 @@ BEGIN_COMMAND (menu_main)
 }
 END_COMMAND (menu_main)
 
+// F1
 BEGIN_COMMAND (menu_help)
 {
-    // F1
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_ReadThis(0);
 }
 END_COMMAND (menu_help)
 
+// F2
 BEGIN_COMMAND (menu_save)
 {
-    // F2
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
+// F3
 BEGIN_COMMAND (menu_load)
 {
-    // F3
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
+// F4
 BEGIN_COMMAND (menu_options)
 {
-    // F4
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
 }
 END_COMMAND (menu_options)
 
+// F6
 BEGIN_COMMAND (quicksave)
 {
-    // F6
+
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
@@ -569,17 +545,19 @@ BEGIN_COMMAND (quicksave)
 }
 END_COMMAND (quicksave)
 
+// F7
 BEGIN_COMMAND (menu_endgame)
-{	// F7
+{	
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_EndGame(0);
 }
 END_COMMAND (menu_endgame)
 
+// F9
 BEGIN_COMMAND (quickload)
 {
-    // F9
+    
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
@@ -587,8 +565,9 @@ BEGIN_COMMAND (quickload)
 }
 END_COMMAND (quickload)
 
+// F10
 BEGIN_COMMAND (menu_quit)
-{	// F10
+{	
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuitDOOM(0);
@@ -602,20 +581,6 @@ BEGIN_COMMAND (menu_player)
 	M_PlayerSetup(0);
 }
 END_COMMAND (menu_player)
-
-/*
-void M_LoadSaveResponse(int choice)
-{
-    // dummy
-}
-
-
-void M_LoadGame (int choice)
-{
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
-}
-*/
 
 //
 // M_ReadSaveStrings
@@ -937,16 +902,13 @@ void M_DrawNewGame(void)
 
 void M_NewGame(int choice)
 {
+	// DOOM 2
 	if (gameinfo.flags & GI_MAPxx)
     {
         if (gamemode == commercial_bfg)
-        {
             M_SetupNextMenu(&ExpDef);
-        }
         else
-        {
             M_SetupNextMenu(&NewDef);
-        }
     }
 	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
     {
@@ -1141,12 +1103,9 @@ void M_QuitResponse(int ch)
 	// Stop the music so we do not get stuck notes
 	I_StopSong();
 	
-	if (!multiplayer)
-	{
-		if (gameinfo.quitSounds)
-		{
-			S_Sound(CHAN_INTERFACE,
-					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
+	if (!multiplayer) {
+		if (gameinfo.quitSounds) {
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1165,9 +1124,6 @@ void M_QuitDOOM (int choice)
 
 	M_StartMessage(endstring,M_QuitResponse,true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1281,9 +1237,11 @@ static void M_PlayerSetupDrawer (void)
 	}
 
 	// Draw player name box
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
-	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	{
+		screen->DrawTextCleanMove(CR_RED, PSetupDef.x, PSetupDef.y, "Name");
+		M_DrawSaveLoadBorder(PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME + 1);
+		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	}
 
 	// Draw cursor for either of the above
 	if (genStringEnter)
@@ -1296,6 +1254,7 @@ static void M_PlayerSetupDrawer (void)
 
 		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
+
 		if (!fire_surface)
 		{
 			argb_t color = V_GetDefaultPalette()->basecolors[34];
@@ -1390,6 +1349,7 @@ static void M_PlayerSetupDrawer (void)
 			fire_surface->unlock();
 		}
 	}
+
 	{
 		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
 		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
@@ -1579,7 +1539,13 @@ static void SendNewColor(int red, int green, int blue)
 static void M_SlidePlayerRed(int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	int accel;
+
+	// TEMP. MODIFICATION UNLESS WE FIND OUT HOW TO REPEAT KEYS ON THE SWITCH
+	if (platform == PF_SWITCH)
+		accel = 10;
+	else 
+		accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setr(std::max(0, int(color.getr()) - 1 - accel));
@@ -1592,7 +1558,13 @@ static void M_SlidePlayerRed(int choice)
 static void M_SlidePlayerGreen (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	int accel;
+
+	// TEMP. MODIFICATION UNLESS WE FIND OUT HOW TO REPEAT KEYS ON THE SWITCH
+	if (platform == PF_SWITCH)
+		accel = 10;
+	else
+		accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setg(std::max(0, int(color.getg()) - 1 - accel));
@@ -1605,7 +1577,13 @@ static void M_SlidePlayerGreen (int choice)
 static void M_SlidePlayerBlue (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	int accel;
+
+	// TEMP. MODIFICATION UNLESS WE FIND OUT HOW TO REPEAT KEYS ON THE SWITCH
+	if (platform == PF_SWITCH)
+		accel = 10;
+	else
+		accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setb(std::max(0, int(color.getb()) - 1 - accel));
@@ -1725,6 +1703,10 @@ bool M_Responder (event_t* ev)
 	// Handle Repeat
 	switch(ch)
 	{
+#ifdef __SWITCH__
+	case KEY_JOY13:
+	case KEY_JOY15:
+#endif
 	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
 	  case KEY_HAT2:
@@ -1760,6 +1742,9 @@ bool M_Responder (event_t* ev)
 			}
 			break;
 
+#ifdef GEKKO
+		  case KEY_JOY11:	// (b) on Pro Controller
+#endif
 		  case KEY_JOY2:
 		  case KEY_ESCAPE:
 			genStringEnter = 0;
@@ -1767,6 +1752,9 @@ bool M_Responder (event_t* ev)
 			strcpy(&savegamestrings[saveSlot][0],saveOldString);
 			break;
 
+#ifdef GEKKO
+		  case KEY_JOY10:		// (a) on Pro Controller
+#endif
 		  case KEY_JOY1:
 		  case KEY_ENTER:
 		  case KEYP_ENTER:
@@ -1795,8 +1783,11 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			(!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 ||
-			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
+			(!(ch2 == ' ' || ch == KEY_ESCAPE || 
+			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')) ||
+			(platform == PF_SWITCH && (ch == KEY_JOY2 || ch == KEY_JOY4) ) 
+				// Ch0wW - ToDo : WII & XBOX inputs
+			 )))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -1814,20 +1805,24 @@ bool M_Responder (event_t* ev)
 
 	// If devparm is set, pressing F1 always takes a screenshot no matter
 	// what it's bound to. (for those who don't bother to read the docs)
+#ifndef GCONSOLE
 	if (devparm && ch == KEY_F1) {
 		G_ScreenShot (NULL);
 		return true;
 	}
+#endif
 
 	// Pop-up menu?
 	if (!menuactive)
 	{
 		// [ML] This is a regular binding now too!
-#ifdef _XBOX
-		if (ch == KEY_ESCAPE || ch == KEY_JOY9)
-#else
-		if (ch == KEY_ESCAPE)
-#endif
+		if ( ch == KEY_ESCAPE 
+			|| (platform == PF_XBOX && ch == KEY_JOY9)	// START
+			|| (platform == PF_SWITCH && ch == KEY_JOY11) // (+)
+			|| (platform == PF_WII && 
+					(I_WhatWiiController() == WIICTRL_WIIMOTE && (ch == KEY_JOY7 || ch == KEY_JOY19) ) // (HOME on Wiimote | START - Pro Controller)
+				||	(I_WhatWiiController() == WIICTRL_GAMECUBE && ch == KEY_JOY7)) // Start
+			)
 		{
 			AddCommandString("menu_main");
 			return true;
@@ -1846,104 +1841,100 @@ bool M_Responder (event_t* ev)
 	}
 
 	// Keys usable within menu
-	switch (ch)
+	// Now, they are all defined in c_platform.cpp !
 	{
-	  case KEY_HAT3:
-	  case KEY_DOWNARROW:
-	  case KEYP_2:
-		do
+		if (keypress.IsDownKey(ch))
 		{
-			if (itemOn+1 > currentMenu->numitems-1)
-				itemOn = 0;
-			else
-				itemOn++;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT1:
-	  case KEY_UPARROW:
-	  case KEYP_8:
-		do
-		{
-			if (!itemOn)
-				itemOn = currentMenu->numitems-1;
-			else
-				itemOn--;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT4:
-	  case KEY_LEFTARROW:
-	  case KEYP_4:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
-		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(0);
-		}
-		return true;
-
-	  case KEY_HAT2:
-	  case KEY_RIGHTARROW:
-	  case KEYP_6:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
-		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(1);
-		}
-		return true;
-
-	  case KEY_JOY1:
-	  case KEY_ENTER:
-	  case KEYP_ENTER:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status)
-		{
-			currentMenu->lastOn = itemOn;
-			if (currentMenu->menuitems[itemOn].status == 2)
+			do
 			{
-				currentMenu->menuitems[itemOn].routine(1);		// right arrow
+				if (itemOn+1 > currentMenu->numitems-1)
+					itemOn = 0;
+				else
+					itemOn++;
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while(currentMenu->menuitems[itemOn].status==-1);
+			return true;
+		}
+		else if (keypress.IsUpKey(ch))
+		{
+			do
+			{
+				if (!itemOn)
+					itemOn = currentMenu->numitems-1;
+				else
+					itemOn--;
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while(currentMenu->menuitems[itemOn].status==-1);
+			return true;
+		} 
+		else if (keypress.IsLeftKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
+			{
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(0);
 			}
-			else
+			return true;
+		} 
+		else if (keypress.IsRightKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
 			{
-				currentMenu->menuitems[itemOn].routine(itemOn);
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(1);
+			}
+			return true;
+		}
+		else if (keypress.IsEnterKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status &&
+				!currentMenu->menuitems[itemOn].isTranslucent)	// Ch0wW : translucent parts mean that they can't be entered.
+			{
+				currentMenu->lastOn = itemOn;
+				if (currentMenu->menuitems[itemOn].status == 2)
+				{
+					currentMenu->menuitems[itemOn].routine(1);		// right arrow
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				}
+				else
+				{
+					currentMenu->menuitems[itemOn].routine(itemOn);
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				}
+			}
+			return true;
+		}
+		else if (keypress.IsReturnKey(ch))
+		{
+			// [RH] Escaping now moves back one menu instead of
+			//	  quitting the menu system. Thus, backspace
+			//	  is now ignored.
+			currentMenu->lastOn = itemOn;
+			M_PopMenuStack ();
+			return true;
+		}
+		else 
+		{
+			if (ch2 && (ch < KEY_JOY1)) {
+				for (i = itemOn+1;i < currentMenu->numitems;i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
+				for (i = 0;i <= itemOn;i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
 			}
 		}
-		return true;
-
-	  // [RH] Escape now moves back one menu instead of
-	  //	  quitting the menu system. Thus, backspace
-	  //	  is now ignored.
-	  case KEY_JOY2:
-	  case KEY_ESCAPE:
-		currentMenu->lastOn = itemOn;
-		M_PopMenuStack ();
-		return true;
-
-	  default:
-		if (ch2 && (ch < KEY_JOY1)) {
-			for (i = itemOn+1;i < currentMenu->numitems;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-			for (i = 0;i <= itemOn;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-		}
-		break;
-
 	}
 
 	// [RH] Menu now eats all keydown events while active
@@ -1980,6 +1971,24 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
+
+	// Ch0wW : make them unselectable to avoid warning messages.
+	// ToDo : Change it, and...
+	// - Disable "SAVE" in the menu or when reading a demo
+	// - Disable "LOAD/SAVE" when reading an Odamex demo and when connecting
+	if (multiplayer || demorecording){
+		MainDef.menuitems[main_load].isTranslucent = true;
+		MainDef.menuitems[main_save].isTranslucent = true;
+	}
+	else if (gamestate != GS_LEVEL || demoplayback ) {
+		MainDef.menuitems[main_load].isTranslucent = false;
+		MainDef.menuitems[main_save].isTranslucent = true;
+	}
+	else {
+		MainDef.menuitems[main_load].isTranslucent = false;
+		MainDef.menuitems[main_save].isTranslucent = false;
+	}
+
 	if (messageToPrint)
 	{
 		// Horiz. & Vertically center string and print it.
@@ -2015,9 +2024,15 @@ void M_Drawer()
 
 			for (int i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].name[0])
-					screen->DrawPatchClean (wads.CachePatch(currentMenu->menuitems[i].name), x, y);
-				y += LINEHEIGHT;
+				if (currentMenu->menuitems[i].name[0])	// Don't draw the ones that are hidden
+				{
+						if (currentMenu->menuitems[i].isTranslucent)
+							screen->DrawLucentPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y, true);
+						else
+							screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+
+						y += LINEHEIGHT;
+				}
 			}
 
 
@@ -2116,37 +2131,32 @@ void M_Init (void)
 {
 	int i;
 
-    // [Russell] - Set this beforehand, because when you switch wads
-    // (ie from doom to doom2 back to doom), you will have less menu items
-    {
-        MainDef.numitems = d1_main_end;
-        MainDef.menuitems = DoomMainMenu;
-        MainDef.routine = M_DrawMainMenu,
-        MainDef.lastOn = 0;
-        MainDef.x = 97;
-        MainDef.y = 64;
-    }
+	// [Russell] - Set this beforehand, because when you switch wads
+	// (ie from doom to doom2 back to doom), you will have less menu items
+	{
+		memcpy(&MainMenu, MainMenuReference, sizeof(MainMenuReference));
+		MainDef = MainDefReference;	// Keep a reference for IWAD changes
+		MainDef.menuitems = MainMenu;
+	}
 
-	currentMenu = &MainDef;
-	OptionsActive = false;
-	menuactive = 0;
-	itemOn = currentMenu->lastOn;
-	whichSkull = 0;
+	currentMenu		= &MainDef;
+	OptionsActive	= false;
+	menuactive		= 0;
+	itemOn			= 0;
+	whichSkull		= 0;
 	skullAnimCounter = 10;
-	drawSkull = true;
-	screenSize = (int)screenblocks - 3;
-	messageToPrint = 0;
-	messageString = NULL;
+	drawSkull		= true;
+	screenSize		= (int)screenblocks - 3;
+	messageToPrint	= 0;
+	messageString	= NULL;
 	messageLastMenuActive = menuactive;
 
-    if (gameinfo.flags & GI_MAPxx)
-    {
-        // Commercial has no "read this" entry.
-        MainDef.numitems = d2_main_end;
-        MainDef.menuitems = Doom2MainMenu;
-
-        MainDef.y += 8;
-    }
+	// Make a hack in order to remove "READ THIS!" from DOOM2/Final Doom.
+    if (gameinfo.flags & GI_MAPxx) {
+		MainMenu[MainDef.numitems - 2] = MainMenu[MainDef.numitems - 1];
+		MainDef.numitems--;
+		MainDef.y += 8;
+	}
 
 	M_OptInit ();
 

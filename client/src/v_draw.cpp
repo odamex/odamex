@@ -99,7 +99,7 @@ shaderef_t V_Palette;
 /*********************************/
 
 // Normal patch drawers
-void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -111,7 +111,7 @@ void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
 	} while (--count);
 }
 
-void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -128,9 +128,12 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 
 
 // Translucent patch drawers (always 50%) [ML] 3/2/10: Not anymore!
-void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
+		return;
+
+	if (!bypassHUD && !hud_transparency)
 		return;
 
 	argb_t *fg2rgb, *bg2rgb;
@@ -138,7 +141,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = (fixed_t)(0xFFFF * (bypassHUD ? 0.5 : hud_transparency));
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -158,9 +161,12 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	} while (--count);
 }
 
-void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
+		return;
+
+	if (!bypassHUD && !hud_transparency)
 		return;
 
 	argb_t *fg2rgb, *bg2rgb;
@@ -169,7 +175,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = (fixed_t)(0xFFFF * (bypassHUD ? 0.5 : hud_transparency));
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -192,7 +198,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 
 
 // Translated patch drawers
-void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -204,7 +210,7 @@ void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, i
 	} while (--count);
 }
 
-void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -221,9 +227,12 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 
 
 // Translated, translucent patch drawers
-void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
+		return;
+
+	if (!bypassHUD && !hud_transparency)
 		return;
 
 	argb_t *fg2rgb, *bg2rgb;
@@ -231,7 +240,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = (fixed_t)(0xFFFF * (bypassHUD ? 0.5 : hud_transparency));
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -251,9 +260,12 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	} while (--count);
 }
 
-void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
+		return;
+
+	if (!bypassHUD && !hud_transparency)
 		return;
 
 	int c = 0;
@@ -262,7 +274,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = (fixed_t)(0xFFFF * (bypassHUD ? 0.5 : hud_transparency));
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -288,7 +300,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 //
 // This routine is the same for the stretched version since we don't
 // care about the patch's actual contents, just it's outline.
-void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -307,9 +319,12 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 //
 // This routine is the same for the stretched version since we don't
 // care about the patch's actual contents, just it's outline.
-void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
+		return;
+
+	if (!bypassHUD && !hud_transparency)
 		return;
 
 	argb_t *bg2rgb;
@@ -317,7 +332,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = (fixed_t)(0xFFFF * (bypassHUD ? 0.5 : hud_transparency));
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -341,7 +356,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 /**************************/
 
 // Normal patch drawers
-void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -353,7 +368,7 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 	} while (--count);
 }
 
-void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -370,12 +385,15 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 
 
 // Translucent patch drawers (always 50%)
-void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
 		return;
 
-	int alpha = (int)(hud_transparency * 255);
+	if (!bypassHUD && !hud_transparency)
+		return;
+
+	int alpha = (bypassHUD ? 127 : (int)(hud_transparency * 255));
 	int invAlpha = 255 - alpha;
 
 	do
@@ -387,12 +405,15 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	} while (--count);
 }
 
-void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
 		return;
 
-	int alpha = (int)(hud_transparency * 255);
+	if (!bypassHUD && !hud_transparency)
+		return;
+
+	int alpha = (bypassHUD ? 127 : (int)(hud_transparency * 255));
 	int invAlpha = 255 - alpha;
 
 	int c = 0;
@@ -409,7 +430,7 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 
 
 // Translated patch drawers
-void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -421,7 +442,7 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 	} while (--count);
 }
 
-void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -438,12 +459,15 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 
 
 // Translated, translucent patch drawers
-void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
 		return;
 
-	int alpha = (int)(hud_transparency * 255);
+	if (!bypassHUD && !hud_transparency)
+		return;
+
+	int alpha = (bypassHUD ? 127 : (int)(hud_transparency * 255));
 	int invAlpha = 255 - alpha;
 
 	do
@@ -455,12 +479,15 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 	} while (--count);
 }
 
-void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
 		return;
 
-	int alpha = (int)(hud_transparency * 255);
+	if (!bypassHUD && !hud_transparency)
+		return;
+
+	int alpha = (bypassHUD ? 127 : (int)(hud_transparency * 255));
 	int invAlpha = 255 - alpha;
 
 	int c = 0;
@@ -480,7 +507,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 //
 // This routine is the same for the stretched version since we don't
 // care about the patch's actual contents, just it's outline.
-void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch, bool unused)
 {
 	if (count <= 0)
 		return;
@@ -498,12 +525,15 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 //
 // This routine is the same for the stretched version since we don't
 // care about the patch's actual contents, just it's outline.
-void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch, bool bypassHUD)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0)
 		return;
 
-	int alpha = (int)(hud_transparency * 255);
+	if (!bypassHUD && !hud_transparency)
+		return;
+
+	int alpha = (bypassHUD ? 127 : (int)(hud_transparency * 255));
 	int invAlpha = 255 - alpha;
 
 	argb_t fg = V_Palette.shade(V_ColorFill);
@@ -528,7 +558,7 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 // V_DrawWrapper
 // Masks a column based masked pic to the screen.
 //
-void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int y) const
+void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int y, bool bypassHUD) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
@@ -569,7 +599,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 		// step through the posts in a column
 		while (!post->end())
 		{
-			drawfunc(post->data(), desttop + post->topdelta * surface_pitch, post->length, surface_pitch);
+			drawfunc(post->data(), desttop + post->topdelta * surface_pitch, post->length, surface_pitch, bypassHUD);
 			post = post->next();
 		}
 	}
@@ -581,7 +611,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 // stretching it to fit the given dimensions.
 //
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
-                           const int destwidth, const int destheight) const
+                           const int destwidth, const int destheight, bool bypassHUD) const
 {
 	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
 	    destwidth <= 0 || destheight <= 0)
@@ -639,9 +669,9 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 		while (!post->end())
 		{
 			drawfunc(post->data(),
-			         desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch,
-			         (post->length * ymul) >> FRACBITS,
-			         surface_pitch, yinc);
+				desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch,
+				(post->length * ymul) >> FRACBITS,
+				surface_pitch, yinc, bypassHUD);
 
 			post = post->next();
 		}
@@ -669,16 +699,16 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 // V_DrawCWrapper
 // Like V_DrawIWrapper, except it only uses integral multipliers.
 //
-void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0, bool bypassHUD) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
-		DrawWrapper(drawer, patch, (x0-160) + (surface_width/2), (y0-100) + (surface_height/2));
+		DrawWrapper(drawer, patch, (x0-160) + (surface_width/2), (y0-100) + (surface_height/2), bypassHUD);
 	else
 		DrawSWrapper(drawer, patch,
 			(x0-160)*CleanXfac+(surface_width/2), (y0-100)*CleanYfac+(surface_height/2),
-			patch->width() * CleanXfac, patch->height() * CleanYfac);
+			patch->width() * CleanXfac, patch->height() * CleanYfac, bypassHUD);
 }
 
 //
@@ -711,7 +741,7 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 // Like V_DrawIWrapper except it only uses one drawing function and draws
 // the patch flipped horizontally.
 //
-void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0, bool bypassHUD) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
@@ -764,7 +794,7 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 		while (!post->end())
 		{
 			drawfunc (post->data(), desttop + (((post->topdelta * ymul)) >> 16) * surface_pitch,
-					  (post->length * ymul) >> 16, surface_pitch, yinc);
+					  (post->length * ymul) >> 16, surface_pitch, yinc, bypassHUD);
 
 			post = post->next();
 		}

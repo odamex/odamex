@@ -88,6 +88,14 @@ FBinding DefaultBindings[] =
 	{"joy8", "+attack"},
 	{"joy10", "toggleconsole"},
 	{"joy12", "centerview"},
+#elif __SWITCH
+	{"LTRIGGER", "+use"},
+	{"RTRIGGER", "+attack"},
+	{"-", "togglemap"},
+	{"A", "+jump"},
+	{"B", "+use"},
+	{"X", "weapnext"},
+	{"Y", "weapprev"},
 #else
 	{"mouse1", "+attack"},
 	{"mouse2", "+strafe"},
@@ -284,7 +292,7 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("rightarrow", KEY_RIGHTARROW));
 	nameToKeyCode.insert(std::make_pair("leftarrow", KEY_LEFTARROW));
 	nameToKeyCode.insert(std::make_pair("ins", KEY_INS));
-	nameToKeyCode.insert(std::make_pair("home", KEY_HOME));
+	nameToKeyCode.insert(std::make_pair("home", KEY_KBHOME));
 	nameToKeyCode.insert(std::make_pair("end", KEY_END));
 	nameToKeyCode.insert(std::make_pair("pgup", KEY_PGUP));
 	nameToKeyCode.insert(std::make_pair("pgdn", KEY_PGDN));
@@ -325,6 +333,25 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("mouse5", KEY_MOUSE5));
 	nameToKeyCode.insert(std::make_pair("mwheelup", KEY_MWHEELUP));
 	nameToKeyCode.insert(std::make_pair("mwheeldown", KEY_MWHEELDOWN));
+
+#ifdef __SWITCH__
+	nameToKeyCode.insert(std::make_pair("A", KEY_JOY1));
+	nameToKeyCode.insert(std::make_pair("B", KEY_JOY2));
+	nameToKeyCode.insert(std::make_pair("X", KEY_JOY3));
+	nameToKeyCode.insert(std::make_pair("Y", KEY_JOY4));
+	nameToKeyCode.insert(std::make_pair("LNUB", KEY_JOY5));
+	nameToKeyCode.insert(std::make_pair("RNUB", KEY_JOY6));
+	nameToKeyCode.insert(std::make_pair("LSHOULDER", KEY_JOY7));
+	nameToKeyCode.insert(std::make_pair("RSHOULDER", KEY_JOY8));
+	nameToKeyCode.insert(std::make_pair("LTRIGGER", KEY_JOY9));
+	nameToKeyCode.insert(std::make_pair("RTRIGGER", KEY_JOY10));
+	nameToKeyCode.insert(std::make_pair("+", KEY_JOY11));
+	nameToKeyCode.insert(std::make_pair("-", KEY_JOY12));
+	nameToKeyCode.insert(std::make_pair("LEFT", KEY_JOY13));
+	nameToKeyCode.insert(std::make_pair("UP", KEY_JOY14));
+	nameToKeyCode.insert(std::make_pair("RIGHT", KEY_JOY15));
+	nameToKeyCode.insert(std::make_pair("DOWN", KEY_JOY16));
+#else
 	nameToKeyCode.insert(std::make_pair("joy1", KEY_JOY1));
 	nameToKeyCode.insert(std::make_pair("joy2", KEY_JOY2));
 	nameToKeyCode.insert(std::make_pair("joy3", KEY_JOY3));
@@ -341,6 +368,7 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("joy14", KEY_JOY14));
 	nameToKeyCode.insert(std::make_pair("joy15", KEY_JOY15));
 	nameToKeyCode.insert(std::make_pair("joy16", KEY_JOY16));
+#endif
 	nameToKeyCode.insert(std::make_pair("joy17", KEY_JOY17));
 	nameToKeyCode.insert(std::make_pair("joy18", KEY_JOY18));
 	nameToKeyCode.insert(std::make_pair("joy19", KEY_JOY19));
@@ -714,18 +742,44 @@ bool C_DoNetDemoKey (event_t *ev)
 // [SL] 2012-09-14 - Handles the hard-coded key bindings used while spectating
 // or during NetDemo playback.  Returns false if the key pressed is not
 // bound to any spectating command such as spynext.
+// 
+// Ch0wW : Added support for Nintendo Switch
+// ToDo : Add support keys for OG XBOX
 //
 bool C_DoSpectatorKey (event_t *ev)
 {
+	int keyprev = -1, keynext = -1;
+
 	if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELUP)
+// Set the hardcoded keys for spy, according to the platform
+	switch (platform)
+	{
+		case PF_XBOX:		// !! Ch0wW - ToDo !! ADD THE RIGHT INPUTS FOR XBOX!
+			keyprev = KEY_MWHEELUP;			// Need to find out the right button !
+			keynext = KEY_MWHEELDOWN;		// Need to find out the right button !
+		break;
+		case PF_SWITCH:
+			keyprev = KEY_JOY13;	// DPAD-LEFT
+			keynext = KEY_JOY15;	// DPAD-RIGHT
+		break;
+		case PF_WII:		// !! Ch0wW - ToDo !!
+			//	Add the correct inputs 
+			//	according to the controller type !
+		break;
+		default:
+			keyprev = KEY_MWHEELUP;
+			keynext = KEY_MWHEELDOWN;
+		break;
+	}
+
+	if (ev->type == ev_keydown && ev->data1 == keyprev)
 	{
 		AddCommandString("spyprev");
 		return true;
 	}
-	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELDOWN)
+	if (ev->type == ev_keydown && ev->data1 == keynext)
 	{
 		AddCommandString("spynext");
 		return true;
@@ -854,5 +908,74 @@ std::string C_NameKeys(int first, int second)
 
 	return out;
 }
+
+void C_UnbindACommand (const char *str)
+{
+	int i;
+
+	for (i = 0; i < NUM_KEYS; i++) {
+		if (Bindings[i].length() && !stricmp (str, Bindings[i].c_str())) {
+			Bindings[i] = "";
+		}
+	}
+}
+
+void C_ChangeBinding (const char *str, int newone)
+{
+	// Check which bindings that are already set. If both binding slots are taken,
+	// erase all bindings and reassign the new one and the secondary binding to the key instead.
+	int first = -1;
+	int second = -1;
+
+	C_GetKeysForCommand(str, &first, &second);
+
+	if (newone == first || newone == second)
+	{
+		return;
+	}
+	else if (first > -1 && second > -1)
+	{
+		C_UnbindACommand(str);
+		Bindings[newone] = str;
+		Bindings[second] = str;
+	}
+	else
+	{
+		Bindings[newone] = str;
+	}
+}
+
+const char *C_GetBinding (int key)
+{
+	return Bindings[key].c_str();
+}
+
+/*
+C_GetKeyStringsFromCommand
+Finds binds from a command and returns it into a std::string .
+- If TRUE, second arg returns up to 2 keys. ("x OR y")
+*/
+std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
+{
+	int first = -1;
+	int second = -1;
+
+	C_GetKeysForCommand(cmd, &first, &second);
+
+	if (!first && !second)
+		return "<\?\?\?>";
+
+	if (bTwoEntries)
+		return C_NameKeys(first, second);
+	else
+	{
+		if (!first && second)
+			return KeyName(second);
+		else
+			return KeyName(first);
+	}
+	return "<\?\?\?>";
+}
+
 
 VERSION_CONTROL (c_bind_cpp, "$Id$")

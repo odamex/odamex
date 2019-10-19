@@ -510,8 +510,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 		(tmthing->player && tmthing->player->spectator))
 		return true;
 
-    if (tmthing->player && thing->player && sv_unblockplayers)
-        return true;
+	if (tmthing->player && thing->player && sv_unblockplayers)
+		return true;
 
 	fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
