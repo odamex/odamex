@@ -94,11 +94,11 @@ void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 		return;
 
 	char lumpname[9];
-	W_GetLumpName(lumpname, lumpnum);
+	wads.GetLumpName(lumpname, lumpnum);
 	lumpname[8] = 0;
 
 	// lump is not long enough for the expected header
-	if (W_LumpLength(lumpnum) < 8)
+	if (wads.LumpLength(lumpnum) < 8)
 	{
 		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
 		return;
@@ -106,15 +106,15 @@ void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 
 	// [SL] read and store the lump data into LumpData
 	delete[] LumpData;
-	LumpData = new byte[W_LumpLength(lumpnum)];
-	W_ReadLump(lumpnum, LumpData);
+	LumpData = new byte[wads.LumpLength(lumpnum)];
+	wads.ReadLump(lumpnum, LumpData);
 
 	int lumpLen = LELONG(*(uint32_t*)(LumpData + 0));
 	int nameCount = LESHORT(*(uint16_t*)(LumpData + 4));
 	int nameLen = LESHORT(*(uint16_t*)(LumpData + 6));
 
 	// invalid language lump
-	if (W_LumpLength(lumpnum) != (unsigned)lumpLen)
+	if (wads.LumpLength(lumpnum) != (unsigned)lumpLen)
 	{
 		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
 		return;
@@ -291,8 +291,8 @@ void FStringTable::LoadNames() const
 {
 	if (LumpNum >= 0)
 	{
-		byte* lumpdata = new byte[W_LumpLength(LumpNum)];
-		W_ReadLump(LumpNum, lumpdata);
+		byte* lumpdata = new byte[wads.LumpLength(LumpNum)];
+		wads.ReadLump(LumpNum, lumpdata);
 
 		int nameLen = LESHORT(*(uint16_t*)(lumpdata + 6));
 

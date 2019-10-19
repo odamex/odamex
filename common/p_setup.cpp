@@ -151,13 +151,13 @@ void P_LoadVertexes (int lump)
 
 	// Determine number of vertices:
 	//	total lump length / vertex record length.
-	numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
+	numvertexes = wads.LumpLength (lump) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
 	vertexes = (vertex_t *)Z_Malloc (numvertexes*sizeof(vertex_t), PU_LEVEL, 0);
 
 	// Load data into cache.
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
@@ -183,10 +183,10 @@ void P_LoadSegs (int lump)
 	int  i;
 	byte *data;
 
-	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
+	numsegs = wads.LumpLength (lump) / sizeof(mapseg_t);
 	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
 	memset (segs, 0, numsegs*sizeof(seg_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 
 	for (i = 0; i < numsegs; i++)
 	{
@@ -265,9 +265,9 @@ void P_LoadSubsectors (int lump)
 	byte *data;
 	int i;
 
-	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
+	numsubsectors = wads.LumpLength (lump) / sizeof(mapsubsector_t);
 	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-	data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump,PU_STATIC);
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
@@ -296,13 +296,13 @@ void P_LoadSectors (int lump)
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
 
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+	numsectors = wads.LumpLength (lump) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
 
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 
 	if (level.flags & LEVEL_SNDSEQTOTALCTRL)
 		defSeqType = 0;
@@ -396,9 +396,9 @@ void P_LoadNodes (int lump)
 	mapnode_t*	mn;
 	node_t* 	no;
 
-	numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
+	numnodes = wads.LumpLength (lump) / sizeof(mapnode_t);
 	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 
 	mn = (mapnode_t *)data;
 	no = nodes;
@@ -435,8 +435,8 @@ void P_LoadNodes (int lump)
 //
 bool P_LoadXNOD(int lump)
 {
-	size_t len = W_LumpLength(lump);
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	size_t len = wads.LumpLength(lump);
+	byte *data = (byte *)wads.CacheLumpNum(lump, PU_STATIC);
 
 	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
 	{
@@ -571,9 +571,9 @@ bool P_LoadXNOD(int lump)
 void P_LoadThings (int lump)
 {
 	mapthing2_t mt2;		// [RH] for translation
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte *data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 	mapthing_t *mt = (mapthing_t *)data;
-	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
+	mapthing_t *lastmt = (mapthing_t *)(data + wads.LumpLength (lump));
 
 	playerstarts.clear();
 	voodoostarts.clear();
@@ -618,9 +618,9 @@ void P_LoadThings (int lump)
 //
 void P_LoadThings2 (int lump, int position)
 {
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte *data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 	mapthing2_t *mt = (mapthing2_t *)data;
-	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
+	mapthing2_t *lastmt = (mapthing2_t *)(data + wads.LumpLength (lump));
 
 	playerstarts.clear();
 	voodoostarts.clear();
@@ -765,10 +765,10 @@ void P_LoadLineDefs (int lump)
 	int i;
 	line_t *ld;
 
-	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
+	numlines = wads.LumpLength (lump) / sizeof(maplinedef_t);
 	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
 	memset (lines, 0, numlines*sizeof(line_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
@@ -815,10 +815,10 @@ void P_LoadLineDefs2 (int lump)
 	maplinedef2_t*		mld;
 	line_t* 			ld;
 
-	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
+	numlines = wads.LumpLength (lump) / sizeof(maplinedef2_t);
 	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL,0 );
 	memset (lines, 0, numlines*sizeof(line_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte *)wads.CacheLumpNum (lump, PU_STATIC);
 
 	mld = (maplinedef2_t *)data;
 	ld = lines;
@@ -866,7 +866,7 @@ void P_LoadLineDefs2 (int lump)
 // killough 4/4/98: split into two functions
 void P_LoadSideDefs (int lump)
 {
-	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
+	numsides = wads.LumpLength (lump) / sizeof(mapsidedef_t);
 	sides = (side_t *)Z_Malloc (numsides*sizeof(side_t), PU_LEVEL, 0);
 	memset (sides, 0, numsides*sizeof(side_t));
 }
@@ -979,7 +979,7 @@ static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 
 void P_LoadSideDefs2 (int lump)
 {
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	byte* data = (byte*)wads.CacheLumpNum(lump, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
@@ -1384,11 +1384,11 @@ void P_LoadBlockMap (int lump)
 {
 	int count;
 
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4)
+	if (Args.CheckParm("-blockmap") || (count = wads.LumpLength(lump)/2) >= 0x10000 || count < 4)
 		P_CreateBlockMap();
 	else
 	{
-		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
+		short *wadblockmaplump = (short *)wads.CacheLumpNum (lump, PU_LEVEL);
 		int i;
 		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
 
@@ -1605,7 +1605,7 @@ static void P_RemoveSlimeTrails()
 //
 void P_LoadBehavior (int lumpnum)
 {
-	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
+	byte *behavior = (byte *)wads.CacheLumpNum (lumpnum, PU_LEVEL);
 
 	level.behavior = new FBehavior (behavior, lumpinfo[lumpnum].size);
 
@@ -1691,12 +1691,12 @@ void P_SetupLevel (char *lumpname, int position)
 	// UNUSED W_Profile ();
 
 	// find map num
-	lumpnum = W_GetNumForName (lumpname);
+	lumpnum = wads.GetNumForName (lumpname);
 
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
 	//		If it is, we also need to distinguish between projectile cross and hit
-	HasBehavior = W_CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
+	HasBehavior = wads.CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
 	//oldshootactivation = !HasBehavior;
 
 	// note: most of this ordering is important
@@ -1732,12 +1732,12 @@ void P_SetupLevel (char *lumpname, int position)
 		P_LoadSegs (lumpnum+ML_SEGS);
 	}
 
-	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
+	rejectmatrix = (byte *)wads.CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
 	{
 		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
 		// If it's too short, the reject table should be ignored when
 		// calling P_CheckSight
-		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
+		if (wads.LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
 			DPrintf("Reject matrix is not valid and will be ignored.\n");
 			rejectempty = true;

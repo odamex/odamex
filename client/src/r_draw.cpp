@@ -1379,10 +1379,10 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
 
-	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	int lumpnum = wads.CheckNumForName(gameinfo.borderFlat, ns_flats);
 	if (lumpnum >= 0)
 	{
-		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		const byte* patch_data = (byte*)wads.CacheLumpNum(lumpnum, PU_CACHE);
 		canvas->FlatFill(x1, y1, x2, y2, patch_data);
 	}
 	else
@@ -1424,22 +1424,22 @@ void R_DrawViewBorder()
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		canvas->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
-		canvas->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
+		canvas->DrawPatch(wads.CachePatch(border->t), x, viewwindowy - offset);
+		canvas->DrawPatch(wads.CachePatch(border->b), x, viewwindowy + viewheight);
 	}
 
 	// draw beveled edge for the viewing window's left and right edges
 	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
 	{
-		canvas->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
-		canvas->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
+		canvas->DrawPatch(wads.CachePatch(border->l), viewwindowx - offset, y);
+		canvas->DrawPatch(wads.CachePatch(border->r), viewwindowx + viewwidth, y);
 	}
 
 	// draw beveled edge for the viewing window's corners
-	canvas->DrawPatch(W_CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
-	canvas->DrawPatch(W_CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
-	canvas->DrawPatch(W_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
-	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
+	canvas->DrawPatch(wads.CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawPatch(wads.CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawPatch(wads.CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawPatch(wads.CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
 
 	V_MarkRect(0, 0, surface_width, ST_Y);
 }

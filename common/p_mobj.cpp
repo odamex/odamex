@@ -56,7 +56,6 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 
-EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
 EXTERN_CVAR(sv_respawnsuper)
 EXTERN_CVAR(sv_itemrespawntime)
@@ -2082,7 +2081,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	// If a target was not found, or one was found, but outside the
 	// player's autoaim range, use the actor's pitch for the slope.
-	if (sv_freelook &&
+	if (level.isFreelookAllowed() &&
 		(!linetarget || // target not found, or:
 		 (source->player && // target found but outside of player's autoaim range
 		  abs(slope - pitchslope) >= source->player->userinfo.aimdist)))

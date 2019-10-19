@@ -47,9 +47,7 @@
 // 16 pixels of bob
 #define MAXBOB			0x100000
 
-EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
-EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
@@ -276,7 +274,7 @@ void P_CalcHeight (player_t *player)
 void P_PlayerLookUpDown (player_t *p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook && (!p->spectator))
+	if (!level.isFreelookAllowed() && (!p->spectator))
 	{
 		p->mo->pitch = 0;
 	}
@@ -438,7 +436,7 @@ void P_MovePlayer (player_t *player)
 	if (player->jumpTics)
 		player->jumpTics--;
 
-	if ((player->cmd.buttons & BT_JUMP) == BT_JUMP)
+	if ((player->cmd.buttons & BT_JUMP) == BT_JUMP )
 	{
 		if (player->mo->waterlevel >= 2)
 		{
@@ -448,7 +446,7 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz = 3*FRACUNIT;
 		}
-		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
+		else if (level.isJumpingAllowed() && player->mo->onground && !player->jumpTics)
 		{
 			player->mo->momz += 8*FRACUNIT;
 

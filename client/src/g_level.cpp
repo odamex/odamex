@@ -18,7 +18,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	G_LEVEL
+//	G_LEVEL - CLIENT ROUTINE
 //
 //-----------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@
 #include "z_zone.h"
 
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
@@ -151,7 +151,6 @@ END_COMMAND (wad)
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
-EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
 
 void G_DoNewGame (void)
@@ -223,7 +222,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
+	if (wads.CheckNumForName (mapname) == -1)
 	{
 		I_Error ("Could not find map %s\n", mapname);
 	}
@@ -320,7 +319,7 @@ void G_SecretExitLevel (int position, int drawscores)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+		 && (wads.CheckNumForName("map31")<0))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -368,7 +367,7 @@ void G_DoCompleted (void)
 	} else {
 		wminfo.next[0] = 0;
 		if (secretexit) {
-			if (W_CheckNumForName (level.secretmap) != -1) {
+			if (wads.CheckNumForName (level.secretmap) != -1) {
 				strncpy (wminfo.next, level.secretmap, 8);
 				strncpy (wminfo.lname1, FindLevelInfo (level.secretmap)->pname, 8);
 			} else {
@@ -498,7 +497,7 @@ void G_DoLoadLevel (int position)
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
-	// [RH] Fetch sky parameters from level_locals_t.
+	// [RH] Fetch sky parameters from FLevelLocals.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
 	sky1texture = R_TextureNumForName (level.skypic);
@@ -664,7 +663,11 @@ void G_WorldDone (void)
 	}
 }
 
-
+void level_info_t::Reset() {
+	memset(mapname, 0, sizeof(mapname));
+	levelnum = 0;
+	level_name = NULL;
+}
 
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -574,7 +574,7 @@ void C_InitConCharsFont()
 
 	// paste the patch into the linear byte bufer
 	DCanvas* canvas = temp_surface->getDefaultCanvas();
-	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
+	canvas->DrawPatch(wads.CachePatch("CONCHARS"), 0, 0);
 
 	ConChars = new byte[256*8*8*2];
 	byte* dest = ConChars;	
@@ -654,7 +654,7 @@ static int C_StringWidth(const char* str)
 //
 void C_InitConsoleBackground()
 {
-	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+	const patch_t* bg_patch = wads.CachePatch(wads.GetNumForName("CONBACK"));
 
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	background_surface->lock();
@@ -1388,7 +1388,7 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
-	const char* cmd = C_GetBinding(ev->data1);
+	const char* cmd = Bindings.GetBinding(ev->data1);
 
 	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{

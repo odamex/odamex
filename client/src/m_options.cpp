@@ -1367,7 +1367,7 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	for (i = 0; i < numitems; i++, item++)
 	{
 		if (item->type == control)
-			C_GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
@@ -1419,12 +1419,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchClean (wads.CachePatch ("LSLIDE"), x, y);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+		screen->DrawPatchClean (wads.CachePatch ("MSLIDE"), x + i*8, y);
+	screen->DrawPatchClean (wads.CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean (wads.CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1436,18 +1436,18 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchClean(wads.CachePatch ("LSLIDE"), x, y);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+		screen->DrawPatchClean (wads.CachePatch ("MSLIDE"), x + i*8, y);
 
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+	screen->DrawPatchClean (wads.CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean (wads.CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawColoredPatchClean(wads.CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1479,7 +1479,7 @@ void M_OptDrawer (void)
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	title = W_CachePatch (CurrentMenu->title);
+	title = wads.CachePatch (CurrentMenu->title);
 	screen->DrawPatchClean (title, 160-title->width()/2, 10);
 
 	y = 15 + title->height();
@@ -1523,7 +1523,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
+				screen->DrawPatchClean (wads.CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
 		}
 		else
 		{
@@ -1676,7 +1676,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
+				screen->DrawPatchClean (wads.CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
 			}
 		}
 	}
@@ -1686,17 +1686,17 @@ void M_OptDrawer (void)
 	CanScrollDown = (i < CurrentMenu->numitems);
 
 	if (CanScrollUp)
-		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
+		screen->DrawPatchClean (wads.CachePatch ("LITLUP"), 3, ytop);
 
 	if (CanScrollDown)
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
+		screen->DrawPatchClean (wads.CachePatch ("LITLDN"), 3, 190);
 }
 
 void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
-	const char *cmd = C_GetBinding(ch);
+	const char *cmd = Bindings.GetBinding(ch);
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1711,7 +1711,7 @@ void M_OptResponder (event_t *ev)
 			if (ch != KEY_ESCAPE)
 #endif
 			{
-				C_ChangeBinding (item->e.command, ch);
+				Bindings.ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -2179,7 +2179,7 @@ void M_OptResponder (event_t *ev)
 		case KEY_BACKSPACE:
 			if (item->type == control)
 			{
-				C_UnbindACommand (item->e.command);
+				Bindings.UnbindACommand(item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
 			break;

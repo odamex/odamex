@@ -171,7 +171,7 @@ void D_Init()
 
 	// [RH] Initialize localizable strings.
 	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.LoadStrings(wads.GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
 	GStrings.Compact();
 
 	// init the renderer
@@ -226,7 +226,7 @@ void STACK_ARGS D_Shutdown()
 	GStrings.FreeData();
 
 	// close all open WAD files
-	W_Close();
+	wads.Close();
 
 	R_ShutdownColormaps();
 

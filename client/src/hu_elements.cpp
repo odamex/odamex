@@ -219,7 +219,7 @@ std::string Warmup(int& color)
 			if (dp == cp)
 			{
 				char strReady[64];
-				sprintf(strReady, "Warmup: Press %s to ready up", C_GetKeyStringsFromCommand("ready").c_str());
+				sprintf(strReady, "Warmup: Press %s to ready up", Bindings.GetKeyStringsFromCommand("ready").c_str());
 				return strReady;
 			}
 			else
@@ -245,7 +245,7 @@ std::string Timer(int& color)
 		return "";
 
 	// Do NOT display if in a lobby
-	if (level.flags & LEVEL_LOBBYSPECIAL)
+	if (level.isLobbyMap())
 		return "";
 
 	int timeleft = level.timeleft;

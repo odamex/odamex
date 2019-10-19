@@ -121,8 +121,10 @@ enum svc_t
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
 	svc_readystate,			// [AM] Broadcast ready state to client
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
+	svc_playercheatstate,	// Ch0wW : Give the player cheat status
 	svc_warmupstate,		// [AM] Broadcast warmup state to client
 	svc_resetmap,			// [AM] Server is resetting the map
+
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -174,7 +176,7 @@ enum clc_t
 	clc_wantwad,			// denis - string:name, string:hash
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
-    clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
+    clc_cheatgive,          // Ch0wW - "give" cheat
 	clc_callvote,			// [AM] - Calling a vote
 	clc_vote,				// [AM] - Casting a vote
 	clc_maplist,			// [AM] - Maplist status request.

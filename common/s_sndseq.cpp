@@ -334,17 +334,17 @@ static void VerifySeqPtr (int pos, int need)
 
 static void AssignTranslations (int seq, seqtype_t type)
 {
-	sc_Crossed = false;
+	sc.Crossed = false;
 
-	while (SC_GetString () && !sc_Crossed)
+	while (sc.GetString () && !sc.Crossed)
 	{
-		if (IsNum (sc_String))
+		if (IsNum (sc.String))
 		{
-			SeqTrans[(atoi(sc_String) & 63) + type * 64] = seq;
+			SeqTrans[(atoi(sc.String) & 63) + type * 64] = seq;
 		}
 	}
 
-	SC_UnGet ();
+	sc.UnGet ();
 }
 
 //==========================================================================
@@ -414,18 +414,18 @@ void S_ParseSndSeq (void)
 	ScriptTempSize = MAX_SEQSIZE;
 
 	int lump = -1;
-	while ((lump = W_FindLump("SNDSEQ", lump)) != -1)
+	while ((lump = wads.FindLump("SNDSEQ", lump)) != -1)
 	{
-		SC_OpenLumpNum (lump, "SNDSEQ");
-		while (SC_GetString ())
+		sc.OpenLumpNum (lump, "SNDSEQ");
+		while (sc.GetString ())
 		{
-			if (*sc_String == ':')
+			if (*sc.String == ':')
 			{
 				if (curseq != -1)
 				{
-					SC_ScriptError ("S_ParseSndSeq: Nested Script Error");
+					sc.ScriptError ("S_ParseSndSeq: Nested Script Error");
 				}
-				strncpy (name, sc_String + 1, MAX_SNDNAME);
+				strncpy (name, sc.String + 1, MAX_SNDNAME);
 				for (curseq = 0; curseq < NumSequences; curseq++)
 				{
 					if (stricmp (Sequences[curseq]->name, name) == 0)
@@ -451,67 +451,67 @@ void S_ParseSndSeq (void)
 			{
 				continue;
 			}
-			switch (SC_MustMatchString (SSStrings))
+			switch (sc.MustMatchString (SSStrings))
 			{
 				case SS_STRING_PLAYUNTILDONE:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc_String));
+					sc.MustGetString ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc.String));
 					ScriptTemp[cursize++] = SS_CMD_WAITUNTILDONE << 24;
 					break;
 
 				case SS_STRING_PLAY:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc_String));
+					sc.MustGetString ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc.String));
 					break;
 
 				case SS_STRING_PLAYTIME:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc_String));
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, sc_Number);
+					sc.MustGetString ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc.String));
+					sc.MustGetNumber ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, sc.Number);
 					break;
 
 				case SS_STRING_PLAYREPEAT:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYREPEAT, S_FindSound (sc_String));
+					sc.MustGetString ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYREPEAT, S_FindSound (sc.String));
 					break;
 
 				case SS_STRING_PLAYLOOP:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYLOOP, S_FindSound (sc_String));
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = sc_Number;
+					sc.MustGetString ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYLOOP, S_FindSound (sc.String));
+					sc.MustGetNumber ();
+					ScriptTemp[cursize++] = sc.Number;
 					break;
 
 				case SS_STRING_DELAY:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, sc_Number);
+					sc.MustGetNumber ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, sc.Number);
 					break;
 
 				case SS_STRING_DELAYRAND:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAYRAND, sc_Number);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = sc_Number;
+					sc.MustGetNumber ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAYRAND, sc.Number);
+					sc.MustGetNumber ();
+					ScriptTemp[cursize++] = sc.Number;
 					break;
 
 				case SS_STRING_VOLUME:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_VOLUME, sc_Number);
+					sc.MustGetNumber ();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_VOLUME, sc.Number);
 					break;
 
 				case SS_STRING_STOPSOUND:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					stopsound = S_FindSound (sc_String);
+					sc.MustGetString ();
+					stopsound = S_FindSound (sc.String);
 					ScriptTemp[cursize++] = SS_CMD_STOPSOUND << 24;
 					break;
 
@@ -523,9 +523,9 @@ void S_ParseSndSeq (void)
 
 				case SS_STRING_ATTENUATION:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
+					sc.MustGetString ();
 					ScriptTemp[cursize++] = MakeCommand (SS_CMD_ATTENUATION,
-											SC_MustMatchString (Attenuations));
+						sc.MustMatchString (Attenuations));
 					break;
 
 				case SS_STRING_END:
@@ -550,7 +550,7 @@ void S_ParseSndSeq (void)
 					break;
 			}
 		}
-		SC_Close ();
+		sc.Close ();
 	}
 
 	free (ScriptTemp);

@@ -36,36 +36,38 @@
 #define NUM_WORLDVARS			256
 #define NUM_GLOBALVARS			64
 
-#define LEVEL_NOINTERMISSION	0x00000001u
-#define	LEVEL_DOUBLESKY			0x00000004u
-#define LEVEL_NOSOUNDCLIPPING	0x00000008u
+enum ELevelFlags
+{
+	LEVEL_NOINTERMISSION 	= 0x00000001u,
+	LEVEL_DOUBLESKY			= 0x00000004u,
+	LEVEL_NOSOUNDCLIPPING	= 0x00000008u,
 
-#define LEVEL_MAP07SPECIAL		0x00000010u
-#define LEVEL_BRUISERSPECIAL	0x00000020u
-#define LEVEL_CYBORGSPECIAL		0x00000040u
-#define LEVEL_SPIDERSPECIAL		0x00000080u
+	LEVEL_MAP07SPECIAL		= 0x00000010u,
+	LEVEL_BRUISERSPECIAL	= 0x00000020u,
+	LEVEL_CYBORGSPECIAL		= 0x00000040u,
+	LEVEL_SPIDERSPECIAL		= 0x00000080u,
 
-#define LEVEL_SPECLOWERFLOOR	0x00000100u
-#define LEVEL_SPECOPENDOOR		0x00000200u
-#define LEVEL_SPECACTIONSMASK	0x00000300u
+	LEVEL_SPECLOWERFLOOR	= 0x00000100u,
+	LEVEL_SPECOPENDOOR		= 0x00000200u,
+	LEVEL_SPECACTIONSMASK	= 0x00000300u,
 
-#define LEVEL_MONSTERSTELEFRAG	0x00000400u
-#define LEVEL_EVENLIGHTING		0x00000800u
-#define LEVEL_SNDSEQTOTALCTRL	0x00001000u
-#define LEVEL_FORCENOSKYSTRETCH	0x00002000u
+	LEVEL_MONSTERSTELEFRAG	= 0x00000400u,
+	LEVEL_EVENLIGHTING		= 0x00000800u,
+	LEVEL_SNDSEQTOTALCTRL	= 0x00001000u,
+	LEVEL_FORCENOSKYSTRETCH	= 0x00002000u,
 
-#define LEVEL_JUMP_NO			0x00004000u
-#define LEVEL_JUMP_YES			0x00008000u
-#define LEVEL_FREELOOK_NO		0x00010000u
-#define LEVEL_FREELOOK_YES		0x00020000u
+	LEVEL_JUMP_NO			= 0x00004000u,
+	LEVEL_FREELOOK_NO		= 0x00008000u,
+	LEVEL_FREELOOK_YES		= 0x00010000u,
 
-#define LEVEL_STARTLIGHTNING	0x01000000u	// Automatically start lightning
-#define LEVEL_FILTERSTARTS		0x02000000u	// Apply mapthing filtering to player starts
-#define LEVEL_LOBBYSPECIAL		0x04000000u	// That level is a lobby, and has a few priorities
+	LEVEL_STARTLIGHTNING	= 0x01000000u,	// Automatically start lightning
+	LEVEL_FILTERSTARTS		= 0x02000000u,	// Apply mapthing filtering to player starts
+	LEVEL_ISLOBBY			= 0x04000000u,	// That level is a lobby, and has a few priorities
 
-#define LEVEL_DEFINEDINMAPINFO	0x20000000u	// Level was defined in a MAPINFO lump
-#define LEVEL_CHANGEMAPCHEAT	0x40000000u	// Don't display cluster messages
-#define LEVEL_VISITED			0x80000000u	// Used for intermission map
+	LEVEL_DEFINEDINMAPINFO	= 0x20000000u,	// Level was defined in a MAPINFO lump
+	LEVEL_CHANGEMAPCHEAT	= 0x40000000u,	// Don't display cluster messages
+	LEVEL_VISITED			= 0x80000000u,	// Used for intermission map
+};
 
 
 struct acsdefered_s;
@@ -85,26 +87,6 @@ struct level_info_t {
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
-};
-
-struct level_pwad_info_t
-{
-	// level_info_t
-	char			mapname[9];
-	int				levelnum;
-	const char*		level_name;
-	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
-	int				partime;
-	char			skypic[9];
-	char			music[9];
-	DWORD			flags;
-	int				cluster;
-	FLZOMemFile*	snapshot;
-	acsdefered_s*	defered;
-
-	// level_pwad_info_t
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct
 	// can consist of only plain-old-data types. It is also important to have
@@ -118,22 +100,23 @@ struct level_pwad_info_t
 	char			skypic2[9];
 	float			gravity;
 	float			aircontrol;
+
+	void Reset();
 };
 
-
-struct level_locals_t {
-	int				time;
-	int				starttime;
-	int				partime;
-	int				timeleft;
-	unsigned int	inttimeleft;
+struct FLevelLocals {
+	int				time;				// time on the map
+	int				starttime;			// timestamp when the level started
+	int				partime;			// Par time (in seconds)
+	int				timeleft;			// Time left (if sv_timelimit set)
+ 	unsigned int	inttimeleft;		// Intermission time
 
 	level_info_t*	info;
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	char			mapname[8];				// the server name (base1, etc)
-	char			nextmap[8];				// go here when sv_fraglimit is hit
+	char			mapname[8];				// the server name (E1M1, MAP01, etc)
+	char			nextmap[8];				// go here when using the regular exit
 	char			secretmap[8];			// map to go to when used secret exit
 
 	DWORD			flags;
@@ -147,6 +130,7 @@ struct level_locals_t {
 	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
 
 	char			music[8];
+
 	char			skypic[8];
 	char			skypic2[8];
 
@@ -166,6 +150,11 @@ struct level_locals_t {
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
+
+	// functions to check if the level has specific conditions
+	bool isJumpingAllowed() const;
+	bool isFreelookAllowed() const;
+	bool isLobbyMap() const;
 };
 
 struct cluster_info_t {
@@ -180,7 +169,7 @@ struct cluster_info_t {
 // Only one cluster flag right now
 #define CLUSTER_HUB		0x00000001
 
-extern level_locals_t level;
+extern FLevelLocals level;
 extern level_info_t LevelInfos[];
 extern cluster_info_t ClusterInfos[];
 

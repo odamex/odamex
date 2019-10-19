@@ -41,91 +41,128 @@
 
 extern NetDemo netdemo;
 
+FKeyBindings Bindings, DoubleBindings, NetDemoBindings, AutomapBindings;
+
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
  */
-char DefBindings[] =
-	"bind grave toggleconsole; "			// <- This is new
-	"bind 1 \"impulse 1\"; "
-	"bind 2 \"impulse 2\"; "
-	"bind 3 \"impulse 3\"; "
-	"bind 4 \"impulse 4\"; "
-	"bind 5 \"impulse 5\"; "
-	"bind 6 \"impulse 6\"; "
-	"bind 7 \"impulse 7\"; "
-	"bind 8 \"impulse 8\"; "
-	"bind - sizedown; "
-	"bind = sizeup; "
-	"bind leftctrl +attack; "
-	"bind leftalt +strafe; "	
-	"bind leftshift +speed; "
-	"bind rightshift +speed; "
-	"bind space +use; "
-	"bind e +use; "
-	"bind rightarrow +right; "
-	"bind leftarrow +left; "
-	"bind w +forward; "
-	"bind s +back; "
-	"bind a +moveleft; "
-	"bind d +moveright; "
-#ifdef _XBOX // Alternative defaults for Xbox
-	"bind hat1right messagemode2; "
-	"bind hat1left spynext; "
-	"bind hat1up messagemode; "
-	"bind hat1down \"impulse 3\"; "
-	"bind joy1 +use; "
-	"bind joy2 weapnext; "
-	"bind joy3 +jump; "
-	"bind joy4 weapprev; "
-	"bind joy5 togglemap; "
-	"bind joy6 +showscores; "
-	"bind joy7 +speed; "
-	"bind joy8 +attack; "
-	"bind joy10 toggleconsole; "
-	"bind joy12 centerview; "
+FBinding DefaultBindings[] =
+{
+	{"grave", "toggleconsole"},		// <- This is new, AZERTY equivalent to tilde
+	{"1", "impulse 1"},
+	{"2", "impulse 2"},
+	{"3", "impulse 3"},
+	{"4", "impulse 4"},
+	{"5", "impulse 5"},
+	{"6", "impulse 6"},
+	{"7", "impulse 7"},
+	{"8", "impulse 8"},
+	{"-", "sizedown"},
+	{"+", "sizeup"},
+	{"leftctrl", "+attack"},
+	{"leftalt", "+strafe"},
+	{"leftshift", "+speed"},
+	{"rightshift", "+speed"},
+	{"space", "+use"},
+	{"e", "+use"},
+	{"uparrow", "+forward"},
+	{"downarrow", "+back"},
+	{"rightarrow", "+right"},
+	{"leftarrow", "+left"},
+	{"w", "+forward"},
+	{"s", "+back"},
+	{"a", "+moveleft"},
+	{"d", "+moveright"},
+#ifdef _XBOX
+	{"hat1right", "messagemode2"},
+	{"hat1left", "spynext"},
+	{"hat1up", "messagemode"},
+	{"hat1down", "impulse 3"},
+	{"joy1", "+use"},
+	{"joy2", "weapnext"},
+	{"joy3", "+jump"},
+	{"joy4", "weapprev"},
+	{"joy5", "togglemap"},
+	{"joy6", "+showscores"},
+	{"joy7", "+speed"},
+	{"joy8", "+attack"},
+	{"joy10", "toggleconsole"},
+	{"joy12", "centerview"},
 #else
-	"bind mouse1 +attack; "
-	"bind mouse2 +strafe; "
-	"bind mouse3 +forward; "
-	"bind mouse4 +jump; "				// <- So is this <- change to jump
-	"bind mouse5 +speed; "				// <- new for +speed
-	"bind joy1 +attack; "
-	"bind joy2 +strafe; "
-	"bind joy3 +speed; "
-	"bind joy4 +use; "
-	"bind mwheelup  weapprev; "
-	"bind mwheeldown weapnext; "
+	{"mouse1", "+attack"},
+	{"mouse2", "+strafe"},
+	{"mouse3", "+forward"},
+	{"mouse4", "+jump"},		// <- So is this <- change to jump
+	{"mouse5", "+speed"},		// <- new for +speed
+	{"joy1", "+attack"},
+	{"joy2", "+strafe"},
+	{"joy3", "+speed"},
+	{"joy4", "+use"},
+	{"mwheelup", "weapprev"},
+	{"mwheeldown", "weapnext"},
 #endif
-	"bind f1 menu_help; "
-	"bind f2 menu_save; "
-	"bind f3 menu_load; "
-	"bind f4 menu_options; "			// <- Since we don't have a separate sound menu anymore
-	"bind f5 menu_display; "			// <- More useful than just changing the detail level
-	"bind f6 quicksave; "
-	"bind f7 menu_endgame; "
-	"bind f8 togglemessages; "
-	"bind f9 quickload; "
-	"bind f10 menu_quit; "
-	"bind tab togglemap; "
-	"bind pause pause; "
-	"bind sysrq screenshot; "			// <- Also known as the Print Screen key
-	"bind t messagemode; "
-	"bind enter messagemode; "
-	"bind y messagemode2; "
-	"bind \\\\ +showscores; "				// <- Another new command
-	"bind f11 bumpgamma; "
-	"bind f12 spynext; "
-	"bind pgup vote_yes; "				// <- New for voting
-	"bind pgdn vote_no; "				// <- New for voting
-	"bind home ready; "
-	"bind end spectate; "
-	"bind m changeteams ";
+	{"f1", "menu_help"},	
+	{"f2", "menu_save"},
+	{"f3", "menu_load"},
+	{"f4", "menu_options"},		// <- Since we don't have a separate sound menu anymore
+	{"f5", "menu_display"},		// <- More useful than just changing the detail level
+	{"f6", "quicksave"},	
+	{"f7", "menu_endgame"},	
+	{"f8", "togglemessages"},
+	{"f9", "quickload"},
+	{"f10", "menu_quit"},
+	{"tab", "togglemap"},
+	{"pause", "pause"},
+	{"sysrq", "screenshot"},	// <- Also known as the Print Screen key
+	{"print", "screenshot"},	// <- AZERTY equivalent
+	{"t", "messagemode"},
+	{"enter", "messagemode"},
+	{"y", "messagemode2"},	
+	{"\\", "+showscores"},		// <- Another new command
+	{"f11", "bumpgamma"},
+	{"f12", "spynext"},
+	{"pgup", "vote_yes"},		// <- New for voting
+	{"pgdn", "vote_no"},		// <- New for voting
+	{"home", "ready"},
+	{"end", "spectate"},
+	{"m", "changeteams"},
+	{ NULL, NULL }
+	//{"", ""},
+};	
 
+/* Special bindings when it comes 
+ * to Odamex's demo playbacking.
+ */
+FBinding DefaultNetDemoBindings[]  =
+{
+	{"leftarrow", "netrew"},
+	{"rightarrow", "netff"},
+	{"uparrow", "netprevmap"},
+	{"downarrow", "netnextmap"},
+	{"space", "netpause"},
+	{ NULL, NULL }
+};
 
+/* Special bindings for Automap.
+ */
+FBinding DefaultAutomapBindings[] =
+{
+	{ "g", "am_grid" },
+	{ "m", "am_setmark" },
+	{ "c", "am_clearmarks" },
+	{ "f", "am_togglefollow" }, 
+	{ "+", "+am_zoomin" },
+	{ "-", "+am_zoomout" },
+	{ "kp+", "+am_zoomin" },
+	{ "kp-", "+am_zoomout" },
+	{ "uparrow", "+am_panup"},
+	{ "downarrow", "+am_pandown"},
+	{ "leftarrow", "+am_panleft"},
+	{ "rightarrow", "+am_panright"},
+	{ "0", "am_big"},
+	{ NULL, NULL }
+};
 
-static std::string Bindings[NUM_KEYS];
-static std::string DoubleBindings[NUM_KEYS];
-static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 static bool KeysDown[NUM_KEYS];
@@ -135,6 +172,23 @@ static NameToKeyCodeTable nameToKeyCode = NameToKeyCodeTable();
 
 typedef OHashTable<int, OString> KeyCodeToNameTable;
 static KeyCodeToNameTable keyCodeToName = KeyCodeToNameTable();
+
+void BIND_Init(void)
+{
+	Bindings.SetBindingType("bind");
+	DoubleBindings.SetBindingType("doublebind");
+	NetDemoBindings.SetBindingType("netdemobind");
+	AutomapBindings.SetBindingType("mapbind");
+}
+
+// Bind default bindings
+void C_BindDefaults(void)
+{
+	Bindings.SetBinds(DefaultBindings);
+	AutomapBindings.SetBinds(DefaultAutomapBindings);
+	NetDemoBindings.SetBinds(DefaultNetDemoBindings);
+}
+
 
 static void buildKeyCodeTables()
 {
@@ -347,109 +401,277 @@ static const char* KeyName(int key)
 	return name;
 }
 
-BEGIN_COMMAND (unbindall)
+void FKeyBindings::SetBindingType(std::string cmd)
 {
-	int i;
-
-	for (i = 0; i < NUM_KEYS; i++)
-		Bindings[i] = "";
-
-	for (i = 0; i < NUM_KEYS; i++)
-		DoubleBindings[i] = "";
+	command = cmd;
 }
-END_COMMAND (unbindall)
 
-BEGIN_COMMAND (unbind)
+void FKeyBindings::DoBind(const char *key, const char *bind)
 {
-	int i;
-
-	if (argc > 1)
+	int keynum = GetKeyFromName(key);
+	if (keynum != 0)
 	{
-		if ( (i = GetKeyFromName (argv[1])) )
-			Bindings[i] = "";
-		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+		this->Binds[keynum] = bind;
 	}
 }
-END_COMMAND (unbind)
 
-BEGIN_COMMAND (bind)
+void FKeyBindings::UnbindAll()
+{
+	for (int i = 0; i < NUM_KEYS; i++)
+	{
+		this->Binds[i] = "";
+	}
+}
+
+void FKeyBindings::UnbindKey(const char *key)
 {
 	int i;
 
-	if (argc > 1) {
-		i = GetKeyFromName (argv[1]);
-		if (!i) {
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
-			return;
-		}
-		if (argc == 2) {
-			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Bindings[i]).c_str());
-		} else {
-			Bindings[i] = argv[2];
-		}
-	} else {
-		Printf (PRINT_HIGH, "Current key bindings:\n");
+	if ((i = GetKeyFromName(key)))
+	{
+		this->Binds[i] = "";
 
 		for (i = 0; i < NUM_KEYS; i++) {
-			if (Bindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings[i]).c_str());
+			if (Bindings.Binds[i].length())
+				Printf(PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings.Binds[i]).c_str());
+		}
+
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(key).c_str());
+		return;
+	}
+}
+
+size_t FKeyBindings::GetLength() {
+
+	return Binds->length();
+}
+
+void FKeyBindings::ArchiveBindings(FILE *f)
+{
+	int i;
+
+	for (i = 0; i < NUM_KEYS; i++)
+	{
+		if (Binds[i].length())
+			fprintf(f, "%s %s %s\n",
+				command.c_str(),
+				C_QuoteString(KeyName(i)).c_str(),
+				C_QuoteString(Binds[i]).c_str());
+	}
+}
+
+void FKeyBindings::SetBinds(const FBinding *binds)
+{
+	while (binds->Key)
+	{
+		DoBind(binds->Key, binds->Bind);
+		binds++;
+	}
+}
+
+int FKeyBindings::GetKeysForCommand(const char *cmd, int *first, int *second)
+{
+	int c, i;
+
+	*first = *second = c = i = 0;
+
+	while (i < NUM_KEYS && c < 2) {
+		if (Binds[i].length() && !stricmp(cmd, Binds[i].c_str())) {
+			if (c++ == 0)
+				*first = i;
+			else
+				*second = i;
+		}
+		i++;
+	}
+	return c;
+}
+
+void FKeyBindings::ChangeBinding(const char *str, int newone)
+{
+	// Check which bindings that are already set. If both binding slots are taken,
+	// erase all bindings and reassign the new one and the secondary binding to the key instead.
+	int first = -1;
+	int second = -1;
+
+	GetKeysForCommand(str, &first, &second);
+
+	if (newone == first || newone == second)
+	{
+		return;
+	}
+	else if (first > -1 && second > -1)
+	{
+		UnbindACommand(str);
+		Binds[newone] = str;
+		Binds[second] = str;
+	}
+	else
+	{
+		Binds[newone] = str;
+	}
+}
+
+const char* FKeyBindings::GetBinding(int key)
+{
+	return Binds[key].c_str();
+}
+
+std::string FKeyBindings::GetBind(int key)
+{
+	return Binds[key];
+}
+
+void FKeyBindings::SetBind(int key, char *value) {
+	this->Binds[key] = value;
+}
+
+void FKeyBindings::UnbindACommand(const char *str)
+{
+	int i;
+	
+		for (i = 0; i < NUM_KEYS; i++) {
+		if (Binds[i].length() && !stricmp(str, Binds[i].c_str())) {
+			Binds[i] = "";	
 		}
 	}
 }
-END_COMMAND (bind)
 
-BEGIN_COMMAND (undoublebind)
+/*
+GetKeyStringsFromCommand
+Finds binds from a command and returns it into a std::string .
+- If TRUE, second arg returns up to 2 keys. ("x OR y")
+*/
+std::string FKeyBindings::GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 {
-	int i;
+	int first = -1;
+	int second = -1;
 
-	if (argc > 1)
+	GetKeysForCommand(cmd, &first, &second);
+
+	if (!first && !second)
+		return "<???>";
+
+	if (bTwoEntries)
+		return C_NameKeys(first, second);
+	else
 	{
-		if ( (i = GetKeyFromName (argv[1])) )
-			DoubleBindings[i] = "";
+		if (!first && second)
+			return KeyName(second);
 		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			return KeyName(first);
 	}
+	return "<???>";
 }
-END_COMMAND (undoublebind)
 
-BEGIN_COMMAND (doublebind)
+void FKeyBindings::BindAKey(size_t argc, char **argv, char *msg)
 {
 	int i;
 
 	if (argc > 1)
 	{
-		i = GetKeyFromName (argv[1]);
+		i = GetKeyFromName(argv[1]);
 		if (!i)
 		{
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings[i]).c_str());
+			Printf(PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Binds[i]).c_str());
 		}
 		else
 		{
-			DoubleBindings[i] = argv[2];
+			Binds[i] = argv[2];
 		}
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "Current key doublebindings:\n");
+
+		Printf(PRINT_HIGH, "%s\n", msg);
 
 		for (i = 0; i < NUM_KEYS; i++)
 		{
-			if (DoubleBindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings[i]).c_str());
+			if (Binds[i].length())
+				Printf(PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Binds[i]).c_str());
 		}
 	}
 }
-END_COMMAND (doublebind)
+
+BEGIN_COMMAND(unbindall)
+{
+	Bindings.UnbindAll();
+	DoubleBindings.UnbindAll();
+	NetDemoBindings.UnbindAll();
+}
+END_COMMAND(unbindall)
+
+BEGIN_COMMAND(unbind)
+{
+	if (argc > 1)
+	{
+		Bindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(unbind)
+
+BEGIN_COMMAND(bind)
+{
+	Bindings.BindAKey(argc, argv, "Current key bindings");
+}
+END_COMMAND(bind)
+
+BEGIN_COMMAND(undoublebind)
+{
+	if (argc > 1)
+	{
+		DoubleBindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(undoublebind)
+
+BEGIN_COMMAND(doublebind)
+{
+	DoubleBindings.BindAKey(argc, argv, "Current key doublebindings");
+}
+END_COMMAND(doublebind)
+
+BEGIN_COMMAND(unnetdemobind)
+{
+	if (argc > 1)
+	{
+		NetDemoBindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(unnetdemobind)
+
+BEGIN_COMMAND(netdemobind)
+{
+	NetDemoBindings.BindAKey(argc, argv, "Current netdemo key bindings");
+}
+END_COMMAND(netdemobind)
+
+BEGIN_COMMAND(unmapbind)
+{
+	if (argc > 1)
+	{
+		AutomapBindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(unmapbind)
+
+BEGIN_COMMAND(mapbind)
+{
+	AutomapBindings.BindAKey(argc, argv, "Current automap key bindings");
+}
+END_COMMAND(mapbind)
 
 BEGIN_COMMAND (binddefaults)
 {
-	AddCommandString (DefBindings);
+	C_BindDefaults();
 }
 END_COMMAND (binddefaults)
 
@@ -465,28 +687,16 @@ bool C_DoNetDemoKey (event_t *ev)
 	if (!netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	static bool initialized = false;
 	std::string *binding;
-
-	if (!initialized)
-	{
-		NetDemoBindings[GetKeyFromName("leftarrow")]	= "netrew";
-		NetDemoBindings[GetKeyFromName("rightarrow")]	= "netff";
-		NetDemoBindings[GetKeyFromName("uparrow")]		= "netprevmap";
-		NetDemoBindings[GetKeyFromName("downarrow")]	= "netnextmap";
-		NetDemoBindings[GetKeyFromName("space")]		= "netpause";
-
-		initialized = true;
-	}
 
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
-	binding = &NetDemoBindings[ev->data1];
+	binding = &NetDemoBindings.Binds[ev->data1];
 
 	// hardcode the pause key to also control netpause
-	if (iequals(Bindings[ev->data1], "pause"))
-		binding = &NetDemoBindings[GetKeyFromName("space")];
+	if (iequals(binding->c_str(), "pause"))
+		binding = &NetDemoBindings.Binds[GetKeyFromName("space")];
 
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
@@ -524,7 +734,7 @@ bool C_DoSpectatorKey (event_t *ev)
 	return false;
 }
 
-BOOL C_DoKey (event_t *ev)
+bool C_DoKey (event_t *ev, FKeyBindings *binds, FKeyBindings *doublebinds)
 {
 	std::string *binding;
 	int dclickspot;
@@ -533,33 +743,38 @@ BOOL C_DoKey (event_t *ev)
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
+	if ((unsigned int)ev->data1 >= NUM_KEYS)
+		return false;
+
 	dclickspot = ev->data1 >> 3;
 	dclickmask = 1 << (ev->data1 & 7);
 
-	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
+	if (doublebinds != NULL && DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
 		// Key pressed for a double click
-		binding = &DoubleBindings[ev->data1];
+		binding = &DoubleBindings.Binds[ev->data1];
 		DClicked[dclickspot] |= dclickmask;
-	} else {
+	} 
+	else 
+	{
 		if (ev->type == ev_keydown) {
 			// Key pressed for a normal press
-			binding = &Bindings[ev->data1];
+			binding = &binds->Binds[ev->data1];
 			DClickTime[ev->data1] = level.time + 20;
-		} else if (DClicked[dclickspot] & dclickmask) {
+		} else if (doublebinds != NULL && DClicked[dclickspot] & dclickmask) {
 			// Key released from a double click
-			binding = &DoubleBindings[ev->data1];
+			binding = &doublebinds->Binds[ev->data1];
 			DClicked[dclickspot] &= ~dclickmask;
 			DClickTime[ev->data1] = 0;
 		} else {
 			// Key released from a normal press
-			binding = &Bindings[ev->data1];
+			binding = &binds->Binds[ev->data1];
 		}
 	}
 
 	if (!binding->length())
-		binding = &Bindings[ev->data1];
+		binding = &binds->Binds[ev->data1];
 
-	if (binding->length() && (HU_ChatMode() == CHAT_INACTIVE || ev->data1 < 256))
+	if (binding->length() && (chat.GetStatus() == HUDChat::INACTIVE || ev->data1 < 256))
 	{
 		if (ev->type == ev_keydown)
 		{
@@ -601,7 +816,7 @@ void C_ReleaseKeys()
 			continue;
 
 		KeysDown[i] = false;
-		std::string *binding = &Bindings[i];
+		std::string *binding = &Bindings.Binds[i];
 		if (binding->empty())
 			continue;
 
@@ -619,133 +834,25 @@ void C_ReleaseKeys()
 	HU_ReleaseKeyStates();
 }
 
-void C_ArchiveBindings (FILE *f)
+std::string C_NameKeys(int first, int second)
 {
-	int i;
-
-	fprintf (f, "unbindall\n");
-	for (i = 0; i < NUM_KEYS; i++)
-	{
-		if (Bindings[i].length())
-			fprintf (f, "bind %s %s\n",
-					C_QuoteString(KeyName(i)).c_str(),
-					C_QuoteString(Bindings[i]).c_str());
-	}
-	for (i = 0; i < NUM_KEYS; i++)
-	{
-		if (DoubleBindings[i].length())
-			fprintf (f, "doublebind %s %s\n",
-					C_QuoteString(KeyName(i)).c_str(),
-					C_QuoteString(DoubleBindings[i]).c_str());
-	}
-}
-
-int C_GetKeysForCommand (const char *cmd, int *first, int *second)
-{
-	int c, i;
-
-	*first = *second = c = i = 0;
-
-	while (i < NUM_KEYS && c < 2) {
-		if (Bindings[i].length() && !stricmp (cmd, Bindings[i].c_str())) {
-			if (c++ == 0)
-				*first = i;
-			else
-				*second = i;
-		}
-		i++;
-	}
-	return c;
-}
-
-std::string C_NameKeys (int first, int second)
-{
-	if(!first && !second)
+	if (!first && !second)
 		return "???";
 
 	std::string out;
 
-	if(first)
+	if (first)
 	{
 		out += KeyName(first);
-		if(second)out += " or ";
+		if (second)out += " or ";
 	}
 
-	if(second)
+	if (second)
 	{
 		out += KeyName(second);
 	}
 
 	return out;
 }
-
-void C_UnbindACommand (const char *str)
-{
-	int i;
-
-	for (i = 0; i < NUM_KEYS; i++) {
-		if (Bindings[i].length() && !stricmp (str, Bindings[i].c_str())) {
-			Bindings[i] = "";
-		}
-	}
-}
-
-void C_ChangeBinding (const char *str, int newone)
-{
-	// Check which bindings that are already set. If both binding slots are taken,
-	// erase all bindings and reassign the new one and the secondary binding to the key instead.
-	int first = -1;
-	int second = -1;
-
-	C_GetKeysForCommand(str, &first, &second);
-
-	if (newone == first || newone == second)
-	{
-		return;
-	}
-	else if (first > -1 && second > -1)
-	{
-		C_UnbindACommand(str);
-		Bindings[newone] = str;
-		Bindings[second] = str;
-	}
-	else
-	{
-		Bindings[newone] = str;
-	}
-}
-
-const char *C_GetBinding (int key)
-{
-	return Bindings[key].c_str();
-}
-
-/*
-C_GetKeyStringsFromCommand
-Finds binds from a command and returns it into a std::string .
-- If TRUE, second arg returns up to 2 keys. ("x OR y")
-*/
-std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
-{
-	int first = -1;
-	int second = -1;
-
-	C_GetKeysForCommand(cmd, &first, &second);
-
-	if (!first && !second)
-		return "<???>";
-
-	if (bTwoEntries)
-		return C_NameKeys(first, second);
-	else
-	{
-		if (!first && second)
-			return KeyName(second);
-		else
-			return KeyName(first);
-	}
-	return "<???>";
-}
-
 
 VERSION_CONTROL (c_bind_cpp, "$Id$")

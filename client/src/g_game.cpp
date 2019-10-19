@@ -152,8 +152,6 @@ enum demoversion_t
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_fastmonsters)
-EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
@@ -434,7 +432,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(joy_freelook && sv_freelook || consoleplayer().spectator)
+	if(joy_freelook && (level.isFreelookAllowed() || consoleplayer().spectator))
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -457,7 +455,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	// buttons
 	// john - only add attack when console up
-	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
+	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && chat.GetStatus() == HUDChat::INACTIVE)
 		cmd->buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
@@ -507,7 +505,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && level.isFreelookAllowed()) || consoleplayer().spectator)
 	{
 		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)
@@ -708,7 +706,7 @@ BOOL G_Responder (event_t *ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = C_GetBinding (ev->data1);
+		const char *cmd = Bindings.GetBinding (ev->data1);
 
 		if (ev->type == ev_keydown)
 		{
@@ -733,11 +731,11 @@ BOOL G_Responder (event_t *ev)
 			}
 			else
 			{
-				return C_DoKey (ev);
+				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
 		if (cmd && cmd[0] == '+')
-			return C_DoKey (ev);
+			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
@@ -766,12 +764,12 @@ BOOL G_Responder (event_t *ev)
 	switch (ev->type)
 	{
 	  case ev_keydown:
-		if (C_DoKey (ev))
+		if (C_DoKey (ev, &Bindings, &DoubleBindings))
 			return true;
 		break;
 
 	  case ev_keyup:
-		C_DoKey (ev);
+		C_DoKey(ev, &Bindings, &DoubleBindings);
 		break;
 
 	  // [Toke - Mouse] New mouse code
@@ -1890,7 +1888,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 		if (gamestate != GS_STARTUP)
 		{
 			// Ch0wW : don't crash the engine if the mapname isn't found.
-			if (W_CheckNumForName(argv[1]) == -1)
+			if (wads.CheckNumForName(argv[1]) == -1)
 			{
 				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
 				return;
@@ -1983,11 +1981,11 @@ void G_DoPlayDemo(bool justStreamInput)
 	gameaction = ga_nothing;
 	int bytelen;
 
-	int demolump = W_CheckNumForName(defdemoname.c_str());
+	int demolump = wads.CheckNumForName(defdemoname.c_str());
 	if (demolump != -1)
 	{
-		demobuffer = demo_p = (byte*)W_CacheLumpNum(demolump, PU_STATIC);
-		bytelen = W_LumpLength(demolump);
+		demobuffer = demo_p = (byte*)wads.CacheLumpNum(demolump, PU_STATIC);
+		bytelen = wads.LumpLength(demolump);
 	}
 	else
 	{

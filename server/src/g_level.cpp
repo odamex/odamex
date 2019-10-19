@@ -69,7 +69,7 @@
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 extern int nextupdate;
@@ -171,7 +171,7 @@ std::string G_NextMap(void) {
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname;
-	} else if (secretexit && W_CheckNumForName(level.secretmap) != -1) {
+	} else if (secretexit && wads.CheckNumForName(level.secretmap) != -1) {
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap;
 	}
@@ -197,7 +197,7 @@ void G_ChangeMap() {
 	unnatural_level_progression = false;
 
 	// Skip the maplist to go to the desired level in case of a lobby map.
-	if (level.flags & LEVEL_LOBBYSPECIAL && level.nextmap[0])
+	if (level.isLobbyMap() && level.nextmap[0])
 	{
 		G_DeferedInitNew(level.nextmap);
 	}
@@ -384,7 +384,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
+	if (wads.CheckNumForName (mapname) == -1)
 	{
 		I_Error ("Could not find map %s\n", mapname);
 	}
@@ -505,7 +505,7 @@ void G_SecretExitLevel (int position, int drawscores)
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+		 && (wads.CheckNumForName("map31")<0))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -724,7 +724,7 @@ void G_DoLoadLevel (int position)
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
-	// [RH] Fetch sky parameters from level_locals_t.
+	// [RH] Fetch sky parameters from FLevelLocals.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
 	sky1texture = R_TextureNumForName (level.skypic);

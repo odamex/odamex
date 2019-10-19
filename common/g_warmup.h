@@ -42,7 +42,7 @@ public:
 	Warmup() : status(Warmup::DISABLED), time_begin(0) { }
 	Warmup::status_t get_status();
 	short get_countdown();
-	void reset(level_locals_t& level);
+	void reset(FLevelLocals& level);
 	bool checkscorechange();
 	bool checktimeleftadvance();
 	bool checkfireweapon();

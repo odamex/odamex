@@ -43,19 +43,31 @@ void STACK_ARGS HU_Shutdown();
 void HU_Ticker();
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
+void HU_ReleaseKeyStates();
 
-enum chatmode_t
-{
-	CHAT_INACTIVE,
-	CHAT_NORMAL,
-	CHAT_TEAM
+//==========================
+// HUD Chat Module management 
+//==========================
+class HUDChat {
+public:
+	enum EChatMode
+	{
+		INACTIVE,
+		NORMAL,
+		TEAM
+	};
+	HUDChat() : status(HUDChat::INACTIVE) { }
+
+	EChatMode GetStatus();
+	void SetStatus(EChatMode newstatus);		// Sets the new Chat Status
+	void Unset();								// Reverts the status to INACTIVE
+	void DrawPrompt();
+
+private:
+	EChatMode status;
 };
 
-chatmode_t HU_ChatMode();
-void HU_SetChatMode();
-void HU_SetTeamChatMode();
-void HU_UnsetChatMode();
-void HU_ReleaseKeyStates();
+extern HUDChat chat;
 
 void OdamexEffect (int xa, int ya, int xb, int yb);
 

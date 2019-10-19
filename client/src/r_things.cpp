@@ -112,7 +112,7 @@ void R_CacheSprite (spritedef_t *sprite)
 			{
 				if (sprite->spriteframes[i].lump[r] == -1)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-				patch = W_CachePatch (sprite->spriteframes[i].lump[r]);
+				patch = wads.CachePatch (sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
 				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
@@ -739,7 +739,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	fixed_t topoffs = sprframe->topoffset[rot];
 	fixed_t sideoffs = sprframe->offset[rot];
 
-	patch_t* patch = W_CachePatch(lump);
+	patch_t* patch = wads.CachePatch(lump);
 	fixed_t height = patch->height() << FRACBITS;
 	fixed_t width = patch->width() << FRACBITS;
 

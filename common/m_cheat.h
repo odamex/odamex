@@ -21,51 +21,74 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef __M_CHEAT_H__
 #define __M_CHEAT_H__
 
-//
-// CHEAT SEQUENCE PACKAGE
-//
-
-#define SCRAMBLE(a) \
-((((a)&1)<<7) + (((a)&2)<<5) + ((a)&4) + (((a)&8)<<1) \
- + (((a)&16)>>1) + ((a)&32) + (((a)&64)>>5) + (((a)&128)>>7))
-
-#define CHT_GOD				0
-#define CHT_NOCLIP			1
-#define CHT_NOTARGET		2
-#define CHT_CHAINSAW		3
-#define CHT_IDKFA			4
-#define CHT_IDFA			5
-#define CHT_BEHOLDV			6
-#define CHT_BEHOLDS			7
-#define CHT_BEHOLDI			8
-#define CHT_BEHOLDR			9
-#define CHT_BEHOLDA			10
-#define CHT_BEHOLDL			11
-#define CHT_IDDQD			12	// Same as CHT_GOD but sets health
-#define CHT_MASSACRE		13
-#define CHT_CHASECAM		14
-#define CHT_FLY				15
-
-typedef struct
-{
-	unsigned char *sequence;
-	unsigned char *p;
-	
-} cheatseq_t;
-
-int cht_CheckCheat (cheatseq_t *cht, char key);
-
-void cht_GetParam (cheatseq_t *cht, char *buffer);
-
 // [RH] Functions that actually perform the cheating
 class player_s;
-void cht_DoCheat (player_s *player, int cheat);
-void cht_Give (player_s *player, const char *item);
-void cht_Suicide (player_s *player);
+
+#define COUNT_CHEATS(l) (sizeof(l)/sizeof(l[0]))
+
+enum ECheatFlags {
+	CHT_GOD = 0,
+	CHT_NOCLIP,
+	CHT_NOTARGET,
+	CHT_CHAINSAW,
+	CHT_IDKFA,
+	CHT_IDFA,
+	CHT_BEHOLDV,
+	CHT_BEHOLDS,
+	CHT_BEHOLDI,
+	CHT_BEHOLDR,
+	CHT_BEHOLDA,
+	CHT_BEHOLDL,
+	CHT_IDDQD,		// Same as CHT_GOD but sets health
+	CHT_MASSACRE,
+	CHT_CHASECAM,
+	CHT_FLY,
+};
+
+struct cheatseq_t
+{
+	unsigned char *Sequence;
+	unsigned char *Pos;
+	unsigned char DontCheck;
+	unsigned char CurrentArg;
+	unsigned char Args[2];
+	bool(*Handler)(cheatseq_t *);
+};
+
+struct CheatManager {
+public:
+
+	int AutoMapCheat;
+
+	bool AddKey(cheatseq_t *cheat, unsigned char key, bool *eat);
+	void DoCheat(player_s *player, ECheatFlags cheat, bool silent=false);
+	void GiveTo(player_s *player, const char *item);
+	bool AreCheatsEnabled(void);
+	void SuicidePlayer(player_s *player);
+
+#ifdef CLIENT_APP
+	void SendCheatToServer(int cheats);
+	void SendGiveCheatToServer(const char *item);
+#endif
+};
+
+extern CheatManager cht;
+
+#ifdef CLIENT_APP
+// keycheat handlers
+bool CHEAT_AutoMap(cheatseq_t *cheat);
+bool CHEAT_ChangeLevel(cheatseq_t *cheat);
+bool CHEAT_IdMyPos(cheatseq_t *cheat);
+bool CHEAT_BeholdMenu(cheatseq_t *cheat);
+bool CHEAT_ChangeMusic(cheatseq_t *cheat);
+bool CHEAT_SetGeneric(cheatseq_t *cheat);
+#endif
 
 #endif
 
