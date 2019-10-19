@@ -26,8 +26,6 @@
 #include "doomkeys.h"
 #include "c_platformkeys.h"
 
-#ifndef GCONSOLE
-
 Platform_Responder keypress;
 
 //
@@ -117,5 +115,3 @@ bool Platform_Responder::IsReturnKey(int key)
     
     return (key == KEY_JOY2 || key == KEY_ESCAPE );
 }
-
-#endif
