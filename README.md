@@ -1,4 +1,11 @@
+PLEASE NOTE THAT THE MASTER BRANCH IS A COMBINATION OF ALL BRANCHES I CREATED, ALONG WITH CONSOLE-EXCLUSIVE MODIFICATIONS (that are soon merged) ! AS A RESULT, IT IS NETWORK-INCOMPATIBLE WITH ODAMEX 0.8.1 SERVERS AND BELOW !!
+
+Please look at the official Odamex github if you want the original source compatible with 0.8.1.
+
+=====================================
+
 ![](https://github.com/odamex/odamex/blob/master/media/icon_odamex_128.png?raw=true) [![Build Status](https://travis-ci.org/odamex/odamex.svg?branch=master)](https://travis-ci.org/odamex/odamex)
+
 
 Odamex is a modification of DOOM to allow players to compete with each other over the Internet using the client/server architecture. Thanks to the source code release of DOOM by id Software in December 1997, there have been many modifications that enhanced DOOM in various ways. These modifications are known as "source ports", as early modifications mainly ported DOOM to other platforms and operating systems such as Windows and Macintosh.
 
