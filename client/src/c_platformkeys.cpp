@@ -117,6 +117,9 @@ bool Platform_Responder::IsReturnKey(int key)
     return (key == KEY_JOY2 || key == KEY_ESCAPE );
 }
 
+//
+// Platform_Responder::IsYesKey
+//
 bool Platform_Responder::IsYesKey(int key)
 {
     switch (platform) 
@@ -124,13 +127,16 @@ bool Platform_Responder::IsYesKey(int key)
         case PF_SWITCH:
             return (key == KEY_JOY4);     
         case PF_WII:
-            return (key == KEY_JOY10 || key == KEY_JOY1);
+            return (key == KEY_JOY10 || key == KEY_JOY1);		// A | (a)
     }
     
-    return (key == KEY_JOY1 || key == KEY_ESCAPE /*|| toupper(key2) == 'Y'*/ );
+    return (key == KEY_JOY1 || key == KEY_ESCAPE );
 
 }
 
+//
+// Platform_Responder::IsNoKey
+//
 bool Platform_Responder::IsNoKey(int key)
 {
     switch (platform) 
@@ -138,13 +144,16 @@ bool Platform_Responder::IsNoKey(int key)
         case PF_SWITCH:
             return (key == KEY_JOY2);     
         case PF_WII:
-            return (key == KEY_JOY11 || key == KEY_JOY2 || key == KEY_ESCAPE || toupper(key2) == 'N');
+            return (key == KEY_JOY11 || key == KEY_JOY2 || key == KEY_ESCAPE);
     }
     
-    return (key == KEY_JOY2 || key == KEY_ESCAPE /*|| toupper(key2) == 'N'*/ );
+    return (key == KEY_JOY2 || key == KEY_ESCAPE);
 
 }
 
+//
+// Platform_Responder::IsMenuKey
+//
 bool Platform_Responder::IsMenuKey(int key)
 {
     switch (platform) 
