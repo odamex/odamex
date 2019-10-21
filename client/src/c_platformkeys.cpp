@@ -25,6 +25,7 @@
 #include "doomdef.h"
 #include "doomkeys.h"
 #include "c_platformkeys.h"
+#include "i_input.h"
 
 Platform_Responder keypress;
 
@@ -114,4 +115,51 @@ bool Platform_Responder::IsReturnKey(int key)
     }
     
     return (key == KEY_JOY2 || key == KEY_ESCAPE );
+}
+
+bool Platform_Responder::IsYesKey(int key)
+{
+    switch (platform) 
+    {
+        case PF_SWITCH:
+            return (key == KEY_JOY4);     
+        case PF_WII:
+            return (key == KEY_JOY10 || key == KEY_JOY1);
+    }
+    
+    return (key == KEY_JOY1 || key == KEY_ESCAPE /*|| toupper(key2) == 'Y'*/ );
+
+}
+
+bool Platform_Responder::IsNoKey(int key)
+{
+    switch (platform) 
+    {
+        case PF_SWITCH:
+            return (key == KEY_JOY2);     
+        case PF_WII:
+            return (key == KEY_JOY11 || key == KEY_JOY2 || key == KEY_ESCAPE || toupper(key2) == 'N');
+    }
+    
+    return (key == KEY_JOY2 || key == KEY_ESCAPE /*|| toupper(key2) == 'N'*/ );
+
+}
+
+bool Platform_Responder::IsMenuKey(int key)
+{
+    switch (platform) 
+    {
+        case PF_SWITCH:
+            return (key == KEY_JOY11);    // (+)
+        case PF_WII:
+            if (I_WhatWiiController() == WIICTRL_WIIMOTE)
+                return (key == KEY_ESCAPE || key == KEY_JOY7 || key == KEY_JOY19 ); // (HOME on Wiimote | START - Pro Controller)
+            else if (I_WhatWiiController() == WIICTRL_GAMECUBE)
+                return (key == KEY_ESCAPE || key == KEY_JOY7);                      // Start
+        break;
+        case PF_XBOX:
+            return (key == KEY_ESCAPE || key == KEY_JOY9);
+    }
+    
+    return (key == KEY_ESCAPE);
 }
