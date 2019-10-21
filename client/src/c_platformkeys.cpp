@@ -117,6 +117,9 @@ bool Platform_Responder::IsReturnKey(int key)
     return (key == KEY_JOY2 || key == KEY_ESCAPE );
 }
 
+//
+// Platform_Responder::IsYesKey
+//
 bool Platform_Responder::IsYesKey(int key)
 {
     switch (platform) 
@@ -131,6 +134,9 @@ bool Platform_Responder::IsYesKey(int key)
 
 }
 
+//
+// Platform_Responder::IsNoKey
+//
 bool Platform_Responder::IsNoKey(int key)
 {
     switch (platform) 
@@ -145,6 +151,9 @@ bool Platform_Responder::IsNoKey(int key)
 
 }
 
+//
+// Platform_Responder::IsMenuKey
+//
 bool Platform_Responder::IsMenuKey(int key)
 {
     switch (platform) 
