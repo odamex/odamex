@@ -36,6 +36,7 @@ class Platform_Responder
 
         bool IsEnterKey (int key);
         bool IsReturnKey (int key);
+        bool IsMenuKey  (int key);
         bool IsYesKey (int key);
         bool IsNoKey (int key);
 };

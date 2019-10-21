@@ -57,15 +57,17 @@ define_platform()
 # Client definitions
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
 
-# Textscreen
-set(TEXTSCREEN_LIBRARY "textscreen")
-set(TEXTSCREEN_DIR ../libraries/textscreen)
-set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
+# Textscreen - Allow this library to be only compilable on PC systems.
+if (NOT GCONSOLE)
+  set(TEXTSCREEN_LIBRARY "textscreen")
+  set(TEXTSCREEN_DIR ../libraries/textscreen)
+  set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
+  set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 
-include_directories(${TEXTSCREEN_DIR})
-add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
-message(STATUS "Textscreen will be statically linked.")
+  include_directories(${TEXTSCREEN_DIR})
+  add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+  message(STATUS "Textscreen will be statically linked.")
+endif()
 
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)

@@ -763,7 +763,7 @@ char	tempstring[80];
 
 void M_QuickSaveResponse(int ch)
 {
-	if (ch == 'y' || ch == KEY_JOY4)
+	if (ch == 'y' || keypress.IsYesKey(ch))
 	{
 		M_DoSave (quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -810,7 +810,7 @@ void M_QuickSave(void)
 //
 void M_QuickLoadResponse(int ch)
 {
-	if (ch == 'y' || ch == KEY_JOY4)
+	if (ch == 'y' || keypress.IsYesKey(ch))
 	{
 		M_LoadSelect(quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -940,7 +940,7 @@ void M_DrawEpisode(void)
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y' && ch != KEY_JOY4) {
+	if (ch != 'y' && !keypress.IsYesKey(ch)) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -951,7 +951,7 @@ void M_VerifyNightmare(int ch)
 void M_StartGame(int choice)
 {
 	sv_skill.Set ((float)(choice+1));
-	sv_gametype = GM_COOP;
+	sv_gametype.Set(GM_COOP);
 
     if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
     {
@@ -1064,7 +1064,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !keypress.IsYesKey(ch) ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1095,7 +1095,7 @@ void STACK_ARGS call_terms (void);
 
 void M_QuitResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !keypress.IsYesKey(ch) ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1783,11 +1783,9 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			(!(ch2 == ' ' || ch == KEY_ESCAPE || 
-			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')) ||
-			(platform == PF_SWITCH && (ch == KEY_JOY2 || ch == KEY_JOY4) ) 
-				// Ch0wW - ToDo : WII & XBOX inputs
-			 )))
+			( !(ch2 == ' ' 
+			|| (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')) 
+			|| keypress.IsYesKey(ch) || keypress.IsNoKey(ch)) ))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -1816,14 +1814,7 @@ bool M_Responder (event_t* ev)
 	if (!menuactive)
 	{
 		// [ML] This is a regular binding now too!
-		if ( ch == KEY_ESCAPE 
-			|| (platform == PF_XBOX && ch == KEY_JOY9)	// START
-			|| (platform == PF_SWITCH && ch == KEY_JOY11) // (+)
-			|| (platform == PF_WII && 
-					(I_WhatWiiController() == WIICTRL_WIIMOTE && (ch == KEY_JOY7 || ch == KEY_JOY19) ) // (HOME on Wiimote | START - Pro Controller)
-				||	(I_WhatWiiController() == WIICTRL_GAMECUBE && ch == KEY_JOY7)) // Start
-			)
-		{
+		if (keypress.IsMenuKey(ch)) {
 			AddCommandString("menu_main");
 			return true;
 		}
@@ -1841,12 +1832,10 @@ bool M_Responder (event_t* ev)
 	}
 
 	// Keys usable within menu
-	// Now, they are all defined in c_platform.cpp !
 	{
 		if (keypress.IsDownKey(ch))
 		{
-			do
-			{
+			do {
 				if (itemOn+1 > currentMenu->numitems-1)
 					itemOn = 0;
 				else
@@ -1857,8 +1846,7 @@ bool M_Responder (event_t* ev)
 		}
 		else if (keypress.IsUpKey(ch))
 		{
-			do
-			{
+			do {
 				if (!itemOn)
 					itemOn = currentMenu->numitems-1;
 				else
