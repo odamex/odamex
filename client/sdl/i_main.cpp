@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 		atterm(nx_early_deinit);
 #endif
 
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting Odamex immediately.");
 #endif

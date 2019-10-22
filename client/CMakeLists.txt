@@ -256,7 +256,7 @@ if(SDL_VERSION)
   elseif(PSVITA)
     target_link_libraries(odamex vita2d SDL2 vorbisfile vorbis ogg FLAC mikmod mpg123 SceDisplay_stub SceGxm_stub SceSysmodule_stub
     SceCtrl_stub ScePgf_stub ScePower_stub SceCommonDialog_stub
-    SceAudio_stub SceTouch_stub SceHid_stub )
+    SceAudio_stub SceTouch_stub SceHid_stub c )
     elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
@@ -340,6 +340,18 @@ if(SDL_VERSION)
   message(${CMAKE_BINARY_DIR})
   add_custom_command( TARGET odamex POST_BUILD
   COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
+  elseif(PSVITA)
+  include("${VITASDK}/share/vita.cmake" REQUIRED)
+
+  vita_create_self(eboot.bin odamex UNSAFE)
+  vita_create_vpk(odamex.vpk ODAV01992 eboot.bin
+    VERSION 00.82
+    NAME Odamex for PSVita
+    FILE  psvita/sce_sys/icon0.png sce_sys/icon0.png
+    FILE  psvita/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
+    FILE  psvita/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
+    FILE  psvita/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
+  )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

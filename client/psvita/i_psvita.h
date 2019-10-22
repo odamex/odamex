@@ -118,7 +118,10 @@ int vita_select(short maxfdp1,fd_set *readset,fd_set *writeset,fd_set *exceptset
 
 //---------------------
 
-unsigned int sleep(unsigned int seconds);
-int usleep(useconds_t usec);
+unsigned int vita_sleep(unsigned int seconds);
+int vita_usleep(useconds_t usec);
+
+#define sleep vita_sleep
+#define usleep vita_usleep
 
 #endif

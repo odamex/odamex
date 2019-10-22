@@ -20,6 +20,8 @@
 //	Playstation Vita Support. It includes an unix-like recreation
 //	of the network interface.
 //
+// 	It also has non-basic functions recreation/replacements.
+//
 //	Credits to Rinnegatamante !
 //
 //-----------------------------------------------------------------------------
@@ -31,6 +33,9 @@
 
 #include <SDL.h>
 #include <vitasdk.h>
+
+#include <dirent.h>
+#include <unistd.h>
 
 #include "i_psvita.h"
 #include "doomtype.h"
@@ -57,12 +62,11 @@ bool vita_pathisrelative(const char *path)
 //
 // vita_scandir - Custom implementation of scandir()
 //
-
 int vita_scandir(const char *dir, struct  dirent ***namelist,
 									int (*select)(const struct dirent *),
 									int (*compar)(const struct dirent **, const struct dirent **))
 {
-/*	DIR *d;
+	DIR *d;
 	struct dirent *entry;
 	register int i=0;
 	size_t entrysize;
@@ -90,7 +94,7 @@ int vita_scandir(const char *dir, struct  dirent ***namelist,
 	if (compar != NULL)
 		qsort((void *)(*namelist), (size_t)i, sizeof(struct dirent *), (int (*)(const void*,const void*))compar);
                
-	return(i);*/
+	return(i);
 	return 0;
 }
 
@@ -280,6 +284,21 @@ int vita_ioctl(int32_t s, uint32_t cmd, void *argp) {
 int vita_select(short maxfdp1,fd_set *readset,fd_set *writeset,fd_set *exceptset,struct timeval *timeout)
 {
 	return -1;
+}
+
+
+//-------------------------------
+
+unsigned int vita_sleep(unsigned int seconds)
+{
+        sceKernelDelayThread(seconds*1000*1000);
+        return 0;
+}
+
+int vita_usleep(useconds_t usec)
+{
+        sceKernelDelayThread(usec);
+        return 0;
 }
 
 #endif

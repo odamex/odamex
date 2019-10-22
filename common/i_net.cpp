@@ -71,15 +71,12 @@ typedef int SOCKET;
 
 #define closesocket close
 
-
 // ToDo : simplify it
 #ifdef GEKKO
 	#define ioctlsocket net_ioctl
 #else
 	#define ioctlsocket ioctl
 #endif
-
-#define Sleep(x)	usleep (x * 1000)
 #endif
 
 #include "doomtype.h"
@@ -104,6 +101,10 @@ typedef int SOCKET;
 	#include "i_wiiu.h"
 #elif __PSVITA__
 	#include "i_psvita.h"
+#endif
+
+#ifndef _WIN32
+#define Sleep(x)	usleep (x * 1000)
 #endif
 
 #include "minilzo.h"

@@ -432,10 +432,13 @@ std::string I_GetCWD ()
 	char tmp[4096] = {0};
 	std::string ret = "./";
 
+	// PSVita doesn't have getcwd command
+	#ifndef __PSVITA__
 	const char *cwd = getcwd(tmp, sizeof(tmp));
 
 	if(cwd)
 		ret = cwd;
+	#endif
 
 	FixPathSeparator(ret);
 
