@@ -52,7 +52,16 @@
 extern	const fixed_t 		finesine[5*FINEANGLES/4];
 
 // Re-use data, is just PI/2 phase shift.
-extern const fixed_t*		finecosine;
+// [RH] Instead of using a pointer, use some inline code
+// (encapsulated in a struct so that we can still use array accesses).
+struct cosine_inline
+{
+	fixed_t operator[] (unsigned int x)
+	{
+		return finesine[x + FINEANGLES / 4];
+	}
+};
+extern cosine_inline finecosine;
 
 
 // Effective size is 4096.
@@ -63,16 +72,14 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 #define ANG90			0x40000000
 #define ANG180			0x80000000
 #define ANG270			0xc0000000
+#define ANG360			0xffffffff
 #define ANG(n)			((ANG45/45)*(n))
-
-#define ANG360  0xffffffff
 
 #define SLOPERANGE		2048
 #define SLOPEBITS		11
 #define DBITS			(FRACBITS-SLOPEBITS)
 
 typedef DWORD			angle_t;
-
 
 // Effective size is 2049;
 // The +1 size is to handle the case when x==y without additional checking.
@@ -84,8 +91,6 @@ extern const angle_t *p_tantoangle;
 
 void Table_InitTanToAngle(void);
 void Table_SetTanToAngle(int version);
-
-
 
 #endif // __TABLES_H__
 

@@ -111,8 +111,7 @@ AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 //
 // precalculated math tables
 //
-
-const fixed_t	*finecosine = &finesine[FINEANGLES/4];
+cosine_inline finecosine;	// in case this is actually needed
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
