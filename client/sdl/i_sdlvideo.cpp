@@ -898,10 +898,12 @@ ISDL12VideoSubsystem::~ISDL12VideoSubsystem()
 //
 static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 {
+	#ifndef __PSVITA__
 	int display_index = 0;
 	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
 
 	int display_mode_count = SDL_GetNumDisplayModes(display_index);
+	Printf(PRINT_HIGH, "display_mode_count: %d\n", display_mode_count);
 	if (display_mode_count < 1)
 	{
 		I_FatalError("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
@@ -921,6 +923,7 @@ static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 		modelist->push_back(IVideoMode(width, height, bpp, false));
 		modelist->push_back(IVideoMode(width, height, bpp, true));
 	}
+	#endif
 }
 
 #ifdef _WIN32
@@ -979,6 +982,9 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	mModeList.push_back(IVideoMode(640, 400, 8, true));
 	mModeList.push_back(IVideoMode(640, 480, 8, true));
 	mModeList.push_back(IVideoMode(960, 540, 8, true));
+#elif __PSVITA__
+	sdl_display_mode.w = 940;
+	sdl_display_mode.h = 544;
 #endif
 
 	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, true);
@@ -1210,6 +1216,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 #if defined(__WIIU__) || defined(__SWITCH__)
 	window_flags |= SDL_WINDOW_FULLSCREEN;	// Always include it for consoles
+#elif defined(__PSVITA__)
+	window_flags = SDL_WINDOW_FULLSCREEN|SDL_SWSURFACE;
 #endif
 
 	// Reduce the flickering on start up for the opengl driver on Windows
@@ -1219,11 +1227,13 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	#endif
 
 	// don't need this on the Switch, we're always fullscreen
+	#if 0
 	#if !defined(__SWITCH__) || !defined(__WIIU__)
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		window_flags |= SDL_WINDOW_RESIZABLE;
+	#endif
 	#endif
 
 	mSDLWindow = SDL_CreateWindow(
@@ -1264,6 +1274,8 @@ void ISDL20Window::setRendererDriver()
 {
 #ifdef __WIIU__
 	const char* drivers[] = {"wiiu", ""};
+#elif __PSVITA__
+	const char* drivers[] = {"software", ""};
 #else
 	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
 #endif
@@ -1759,7 +1771,11 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
-	mWindow = new ISDL20Window(640, 480, 8, false, false);
+	#ifdef __PSVITA__
+		mWindow = new ISDL20Window(940, 544, 8, true, false);
+	#else
+		mWindow = new ISDL20Window(640, 480, 8, false, false);
+	#endif
 }
 
 

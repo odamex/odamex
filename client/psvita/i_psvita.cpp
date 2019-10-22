@@ -40,6 +40,13 @@
 #include "i_psvita.h"
 #include "doomtype.h"
 
+#include "debugScreen.h"
+
+#include <psp2/kernel/threadmgr.h>
+#include <psp2/kernel/processmgr.h>
+
+#define printf psvDebugScreenPrintf
+
 // External function declarations
 extern int I_Main(int argc, char *argv[]); // i_main.cpp
 
@@ -133,35 +140,6 @@ int vita_alphasort(const struct dirent **a, const struct dirent **b)
 	return false;
 }
 */
-
-int main(int argc, char *argv[])
-{
-	/*__exception_setreload(8);
-		
-	if(!fatInitDefault()) 
-	{
-#if DEBUG
-		net_print_string( __FILE__, __LINE__, "Unable to initialise FAT subsystem, exiting.\n");
-#endif
-		exit(0);
-	}
-	if(chdir(WII_DATAPATH))
-	{
-#if DEBUG
-		net_print_string( __FILE__, __LINE__, "Could not change to root directory, exiting.\n");
-#endif
-		exit(0);
-	}
-
-#if DEBUG
-	net_print_string(__FILE__, __LINE__, "Calling I_Main\n");
-#endif*/
-
-	I_Main(argc, argv); // Does not return
-	
-	return 0;
-}
-
 
 //--------------------------------
 //
@@ -301,4 +279,55 @@ int vita_usleep(useconds_t usec)
         return 0;
 }
 
+
+int odamex_main (int argc, char *argv[]){
+	
+
+
+	/*sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, 1);
+	sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, 1);
+	sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
+	SceCommonDialogConfigParam cmnDlgCfgParam;
+	sceCommonDialogConfigParamInit(&cmnDlgCfgParam);
+	sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, (int *)&cmnDlgCfgParam.language);
+	sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_ENTER_BUTTON, (int *)&cmnDlgCfgParam.enterButtonAssign);
+	sceCommonDialogSetConfigParam(&cmnDlgCfgParam);*/
+
+	
+
+}
+
+int main(int argc, char *argv[])
+{
+
+	//psvDebugScreenInit();
+	FILE *f = fopen("ux0:/data/odamex/odamex.wad", "rb");
+	if (f) {
+		//printf("-> Found odamex.wad in ux0:/data/odamex.");
+		fclose(f);
+	} else
+	{
+		//printf("Error : cannot find odamex.wad in ux0:/data/odamex !!");
+		sleep (5);
+		return 0;
+	}
+
+	// Initializing stuffs
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
+	sceSysmoduleLoadModule(SCE_SYSMODULE_NET); 
+	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG_WIDE);
+
+	I_Main(argc, argv); // Does not return
+
+	sleep(3);
+
+	sceKernelExitProcess(0);
+	return 0;
+}
+
 #endif
+
+

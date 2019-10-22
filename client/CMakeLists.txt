@@ -254,7 +254,7 @@ if(SDL_VERSION)
     target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
     target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(PSVITA)
-    target_link_libraries(odamex vita2d SDL2 vorbisfile vorbis ogg FLAC mikmod mpg123 SceDisplay_stub SceGxm_stub SceSysmodule_stub
+    target_link_libraries(odamex SDL2_mixer vita2d SDL2 vorbisfile vorbis ogg FLAC mikmod mpg123 SceDisplay_stub SceGxm_stub SceSysmodule_stub
     SceCtrl_stub ScePgf_stub ScePower_stub SceCommonDialog_stub
     SceAudio_stub SceTouch_stub SceHid_stub c )
     elseif(SOLARIS)
