@@ -442,7 +442,7 @@ std::string I_GetCWD ()
 	return ret;
 }
 
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -470,7 +470,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 	// return absolute or explicitly relative pathnames unmodified,
 	// so launchers or CLI/console users have control over netdemo placement
 	if (file &&
@@ -510,7 +510,7 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
-#elif defined(__SWITCH__) || defined(__WIIU__)
+#elif defined(__SWITCH__) || defined(__WIIU__) || defined(__PSVITA__)
 	std::string path = file;
 #else
 	if (!PathIsRelative(file))
@@ -531,7 +531,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 	if(!path.length())
 		return;
 

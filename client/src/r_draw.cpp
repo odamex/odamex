@@ -1625,7 +1625,7 @@ void R_InitVectorizedDrawers()
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 	}
 	#endif
-	#ifdef __ARM_NEON__
+	#if defined(__ARM_NEON__) && !defined (__PSVITA__)
 	else if (optimize_kind == OPTIMIZE_NEON)
 	{
 		R_DrawSpanD				= R_DrawSpanD_NEON;

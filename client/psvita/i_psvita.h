@@ -40,6 +40,8 @@ int vita_scandir(const char *dir, struct  dirent ***namelist,
 							int (*compar)(const struct dirent **, const struct dirent **));
 int vita_alphasort(const struct dirent **a, const struct dirent **b);
 
+#define mkdir sceIoMkdir
+
 //--------------------------------------
 // NETWORK-RELATED DEFINES
 //--------------------------------------
@@ -112,4 +114,11 @@ int vita_gethostname(char *name, size_t namelen);
 char *vita_inet_ntoa(struct in_addr in);
 int vita_ioctl(int32_t s, uint32_t cmd, void *argp);
 int vita_select(short maxfdp1,fd_set *readset,fd_set *writeset,fd_set *exceptset,struct timeval *timeout);
+
+
+//---------------------
+
+unsigned int sleep(unsigned int seconds);
+int usleep(useconds_t usec);
+
 #endif
