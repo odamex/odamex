@@ -41,12 +41,17 @@ if(WIN32)
 endif()
 
 # Include console folders if compiling homebrews
-if (VWII)
-  set(CLIENT_DIR ${CLIENT_DIR} vwii)
-  file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
-  file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
+if (GCONSOLE)
+  if (VWII)
+    set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
+  elseif(PSVITA)
+    set(CLIENT_DIR ${CLIENT_DIR} psvita)   # Playstation Vita
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} psvita/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} psvita/*.cpp)
+  endif()
 endif()
-
 
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")

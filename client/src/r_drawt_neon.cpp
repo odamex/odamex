@@ -23,7 +23,7 @@
 #include "i_sdl.h"
 #include "r_intrin.h"
 
-#ifdef __ARM_NEON__
+#if defined(__ARM_NEON__) && !defined(__PSVITA__)
 
 #include <assert.h>
 #include <stdio.h>
