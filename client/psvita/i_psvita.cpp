@@ -299,15 +299,14 @@ int odamex_main (int argc, char *argv[]){
 
 int main(int argc, char *argv[])
 {
-
-	//psvDebugScreenInit();
+	psvDebugScreenInit();
 	FILE *f = fopen("ux0:/data/odamex/odamex.wad", "rb");
 	if (f) {
-		//printf("-> Found odamex.wad in ux0:/data/odamex.");
+		printf("-> Found odamex.wad in ux0:/data/odamex.\n");
 		fclose(f);
 	} else
 	{
-		//printf("Error : cannot find odamex.wad in ux0:/data/odamex !!");
+		printf("Error : cannot find odamex.wad in ux0:/data/odamex !!\n");
 		sleep (5);
 		return 0;
 	}

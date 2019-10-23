@@ -66,6 +66,11 @@
 #include <whb/log_console.h>
 #endif
 
+#ifdef __PSVITA__
+#include "debugScreen.h"
+#define printf psvDebugScreenPrintf
+#endif
+
 static const int MAX_LINE_LENGTH = 8192;
 
 std::string DownloadStr;
@@ -935,6 +940,8 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 #ifdef __WIIU__
 	WHBLogPrint(outline);
 #endif
+
+	printf(outline);
 
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)

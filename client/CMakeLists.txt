@@ -343,10 +343,10 @@ if(SDL_VERSION)
   elseif(PSVITA)
   include("${VITASDK}/share/vita.cmake" REQUIRED)
 
-  vita_create_self(eboot.bin odamex UNSAFE)
-  vita_create_vpk(odamex.vpk ODAV01992 eboot.bin
+  vita_create_self(odamex.self odamex)
+  vita_create_vpk(odamex.vpk ODAV01992 odamex.self
     VERSION 00.82
-    NAME Odamex for PSVita
+    NAME Odamex
     FILE  psvita/sce_sys/icon0.png sce_sys/icon0.png
     FILE  psvita/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
     FILE  psvita/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png

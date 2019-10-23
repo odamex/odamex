@@ -41,6 +41,9 @@
 #ifdef __SWITCH__
 #include <switch.h>
 #endif
+#ifdef __PSVITA__
+#include "i_psvita.h"
+#endif
 #endif
 
 #include <new>
@@ -291,6 +294,10 @@ int main(int argc, char *argv[])
 		CFRelease(macErrorMessage);
 #elif !defined(WIN32)
             fprintf(stderr, "%s\n", error.GetMsg().c_str());
+
+			printf("FATAL ERROR : %s\n", error.GetMsg().c_str());
+			sleep(3);
+
 #elif _XBOX
 		// Use future Xbox error message handling.    -- Hyper_Eye
 #else

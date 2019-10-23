@@ -46,6 +46,19 @@ extern "C"
 }
 #endif
 
+#if defined(__PSVITA__)
+#include "vita2d.h"
+
+typedef struct VITA_TextureData
+{
+  vita2d_texture	*tex;
+  unsigned int	pitch;
+  unsigned int	w;
+  unsigned int	h;
+} VITA_TextureData;
+
+#endif
+
 #include "i_video.h"
 #include "v_video.h"
 
@@ -983,7 +996,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	mModeList.push_back(IVideoMode(640, 480, 8, true));
 	mModeList.push_back(IVideoMode(960, 540, 8, true));
 #elif __PSVITA__
-	sdl_display_mode.w = 940;
+	sdl_display_mode.w = 960;
 	sdl_display_mode.h = 544;
 #endif
 
@@ -1068,7 +1081,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
-#ifdef __WIIU__
+#if defined(__WIIU__)
 	renderer_flags = SDL_RENDERER_SOFTWARE;	// Just to make sure...
 #endif
 
@@ -1106,14 +1119,25 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	uint32_t texture_flags = SDL_TEXTUREACCESS_STREAMING;
 
+	#ifdef __PSVITA__
+	#endif
+
 	SDL_DisplayMode sdl_mode;
 	SDL_GetWindowDisplayMode(mWindow->mSDLWindow, &sdl_mode);
 
+#ifdef __PSVITA__
+	mSDLTexture = SDL_CreateTexture(
+				mSDLRenderer,
+				SDL_PIXELFORMAT_ABGR8888,
+				texture_flags,
+				mWidth, mHeight);
+#else
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
 				sdl_mode.format,
 				texture_flags,
 				mWidth, mHeight);
+#endif
 
 	if (mSDLTexture == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
@@ -1217,8 +1241,10 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 #if defined(__WIIU__) || defined(__SWITCH__)
 	window_flags |= SDL_WINDOW_FULLSCREEN;	// Always include it for consoles
 #elif defined(__PSVITA__)
-	window_flags = SDL_WINDOW_FULLSCREEN|SDL_SWSURFACE;
+	window_flags |= SDL_WINDOW_FULLSCREEN|SDL_SWSURFACE;
 #endif
+
+	Printf_Bold("OOOOOOOOOOOOOOOOH\n");
 
 	// Reduce the flickering on start up for the opengl driver on Windows
 	#ifdef _WIN32
@@ -1227,13 +1253,11 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	#endif
 
 	// don't need this on the Switch, we're always fullscreen
-	#if 0
-	#if !defined(__SWITCH__) || !defined(__WIIU__)
+	#if !defined(GCONSOLE)
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		window_flags |= SDL_WINDOW_RESIZABLE;
-	#endif
 	#endif
 
 	mSDLWindow = SDL_CreateWindow(
@@ -1242,8 +1266,13 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 			width, height,
 			window_flags);
 
+	Printf_Bold("AAAAAAAAAAAAAAAAAAAAH\n");
+
+
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
+
+	Printf_Bold("CHECK IT\n");
 
 	discoverNativePixelFormat();
 
@@ -1252,6 +1281,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mBitsPerPixel = bpp;
 
 	mMouseFocus = mKeyboardFocus = true;
+
+	Printf_Bold("OUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUT\n");
 }
 
 
@@ -1275,7 +1306,7 @@ void ISDL20Window::setRendererDriver()
 #ifdef __WIIU__
 	const char* drivers[] = {"wiiu", ""};
 #elif __PSVITA__
-	const char* drivers[] = {"software", ""};
+	const char* drivers[] = {"opengl", ""};
 #else
 	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
 #endif
@@ -1772,7 +1803,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
 	#ifdef __PSVITA__
-		mWindow = new ISDL20Window(940, 544, 8, true, false);
+		mWindow = new ISDL20Window(960, 544, 8, true, false);
 	#else
 		mWindow = new ISDL20Window(640, 480, 8, false, false);
 	#endif
