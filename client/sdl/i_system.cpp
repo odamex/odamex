@@ -102,6 +102,8 @@
 	#include "i_wiiu.h"
 #elif __PSVITA__
 	#include "i_psvita.h"
+	#include "debugScreen.h"
+	#define printf psvDebugScreenPrintf
 #endif
 
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
@@ -736,6 +738,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
 		va_end (argptr);
 
+		printf("[[FATAL ERROR]]: %s\n", errortext);
+		sleep(3);
+
 		throw CFatalError (errortext);
 	}
 
@@ -757,6 +762,9 @@ void STACK_ARGS I_Error (const char *error, ...)
 	va_start (argptr, error);
 	vsprintf (errortext, error, argptr);
 	va_end (argptr);
+
+	printf("[ERROR]: %s\n", errortext);
+	sleep(3);
 
 	throw CRecoverableError (errortext);
 }
