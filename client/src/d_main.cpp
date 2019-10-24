@@ -107,6 +107,8 @@ void D_CheckNetGame (void);
 void D_ProcessEvents (void);
 void D_DoAdvanceDemo (void);
 
+void C_DoCommand (const char *cmd);
+
 void D_DoomLoop (void);
 
 extern QWORD testingmode;
@@ -742,6 +744,12 @@ void D_DoomMain()
 
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
+
+	// For better debugging, always log by default for consoles
+#ifdef GCONSOLE
+	if (!LOG.is_open())
+    	C_DoCommand("logfile");
+#endif
 
 	std::vector<std::string> newwadfiles, newpatchfiles;
 

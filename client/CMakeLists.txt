@@ -342,9 +342,8 @@ if(SDL_VERSION)
   COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
   elseif(PSVITA)
   include("${VITASDK}/share/vita.cmake" REQUIRED)
-
-  vita_create_self(odamex.self odamex)
-  vita_create_vpk(odamex.vpk ODAV01992 odamex.self
+  vita_create_self(eboot.bin odamex)
+  vita_create_vpk(odamex.vpk ODA000093 eboot.bin
     VERSION 00.82
     NAME Odamex
     FILE  psvita/sce_sys/icon0.png sce_sys/icon0.png
@@ -352,6 +351,11 @@ if(SDL_VERSION)
     FILE  psvita/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
     FILE  psvita/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
   )
+
+  #Copy the elf in case of debugging
+  add_custom_command( TARGET odamex POST_BUILD
+      COMMAND cp ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/client/odamex.elf )
+
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

@@ -48,15 +48,6 @@ extern "C"
 
 #if defined(__PSVITA__)
 #include "vita2d.h"
-
-typedef struct VITA_TextureData
-{
-  vita2d_texture	*tex;
-  unsigned int	pitch;
-  unsigned int	w;
-  unsigned int	h;
-} VITA_TextureData;
-
 #endif
 
 #include "i_video.h"
@@ -827,8 +818,13 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (format->getBitsPerPixel() == 32)
 		argb_t::setChannels(format->getAPos(), format->getRPos(), format->getGPos(), format->getBPos());
 	else
+	{
+#if defined(__SWITCH__)
+		argb_t::setChannels(0, 3, 2, 1);
+#else
 		argb_t::setChannels(3, 2, 1, 0);
-
+#endif
+	}
 	// [SL] SDL can create SDL_VIDEORESIZE events in response to SDL_SetVideoMode
 	// and we need to filter those out.
 	mIgnoreResize = true;
@@ -1119,25 +1115,14 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	uint32_t texture_flags = SDL_TEXTUREACCESS_STREAMING;
 
-	#ifdef __PSVITA__
-	#endif
-
 	SDL_DisplayMode sdl_mode;
 	SDL_GetWindowDisplayMode(mWindow->mSDLWindow, &sdl_mode);
 
-#ifdef __PSVITA__
-	mSDLTexture = SDL_CreateTexture(
-				mSDLRenderer,
-				SDL_PIXELFORMAT_ABGR8888,
-				texture_flags,
-				mWidth, mHeight);
-#else
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
 				sdl_mode.format,
 				texture_flags,
 				mWidth, mHeight);
-#endif
 
 	if (mSDLTexture == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
@@ -1238,13 +1223,9 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
-#if defined(__WIIU__) || defined(__SWITCH__)
-	window_flags |= SDL_WINDOW_FULLSCREEN;	// Always include it for consoles
-#elif defined(__PSVITA__)
-	window_flags |= SDL_WINDOW_FULLSCREEN|SDL_SWSURFACE;
+#if defined(GCONSOLE)
+	window_flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP;	// Always include it for consoles
 #endif
-
-	Printf_Bold("OOOOOOOOOOOOOOOOH\n");
 
 	// Reduce the flickering on start up for the opengl driver on Windows
 	#ifdef _WIN32
@@ -1266,13 +1247,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 			width, height,
 			window_flags);
 
-	Printf_Bold("AAAAAAAAAAAAAAAAAAAAH\n");
-
-
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
-
-	Printf_Bold("CHECK IT\n");
 
 	discoverNativePixelFormat();
 
@@ -1281,8 +1257,6 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	mBitsPerPixel = bpp;
 
 	mMouseFocus = mKeyboardFocus = true;
-
-	Printf_Bold("OUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUT\n");
 }
 
 
@@ -1663,6 +1637,7 @@ static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelForm
 //
 void ISDL20Window::discoverNativePixelFormat()
 {
+
     SDL_DisplayMode sdl_mode;
     SDL_GetWindowDisplayMode(mSDLWindow, &sdl_mode);
     I_BuildPixelFormatFromSDLPixelFormatEnum(sdl_mode.format, &mPixelFormat);
@@ -1677,8 +1652,8 @@ void ISDL20Window::discoverNativePixelFormat()
 //
 PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
 {
-    uint8_t native_bpp = getPixelFormat()->getBitsPerPixel();
-    if (bpp == 8)
+	uint8_t native_bpp = getPixelFormat()->getBitsPerPixel();
+	if (bpp == 8)
         return PixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0);
     else if (bpp == 32 && native_bpp == 32)
         return *getPixelFormat();
@@ -1710,7 +1685,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	I_PauseMouse();
 
 	uint32_t fullscreen_flags = 0;
-#if !defined(__SWITCH__) || !defined(__WIIU__)
+#if !defined(GCONSOLE)
 	if (video_fullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
@@ -1745,7 +1720,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (format.getBitsPerPixel() == 32)
 		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
-#ifdef __SWITCH__
+#if defined(__SWITCH__)
 		argb_t::setChannels(0, 3, 2, 1);
 #else
 		argb_t::setChannels(3, 2, 1, 0);

@@ -738,18 +738,13 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
 		va_end (argptr);
 
-		printf("[[FATAL ERROR]]: %s\n", errortext);
-		sleep(3);
-
 		throw CFatalError (errortext);
 	}
 
 	if (!has_exited)	// If it hasn't exited yet, exit now -- killough
 	{
 		has_exited = 1;	// Prevent infinitely recursive exits -- killough
-
 		call_terms();
-
 		exit(EXIT_FAILURE);
 	}
 }
@@ -762,9 +757,6 @@ void STACK_ARGS I_Error (const char *error, ...)
 	va_start (argptr, error);
 	vsprintf (errortext, error, argptr);
 	va_end (argptr);
-
-	printf("[ERROR]: %s\n", errortext);
-	sleep(3);
 
 	throw CRecoverableError (errortext);
 }
