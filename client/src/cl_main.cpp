@@ -101,6 +101,8 @@ baseapp_t baseapp = client;
 		gameplatform_t platform = PF_WII;
 	#elif __WIIU__
 		gameplatform_t platform = PF_WIIU;
+	#elif __PSVITA__
+		gameplatform_t platform = PF_PSVITA;
 	#else
 		gameplatform_t platform = PF_UNKNOWN;
 	#endif

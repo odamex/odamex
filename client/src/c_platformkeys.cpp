@@ -37,7 +37,9 @@ bool Platform_Responder::IsUpKey(int key)
     switch (platform) 
     {
         case PF_SWITCH:
-            return (key == KEY_JOY14);            
+            return (key == KEY_JOY14);       
+        default:
+            break;     
     }
 
     return (key == KEY_HAT1 || key == KEY_UPARROW || key == KEYP_8 );
@@ -52,6 +54,8 @@ bool Platform_Responder::IsDownKey(int key)
     {
         case PF_SWITCH:
             return (key == KEY_JOY16);            
+        default:
+            break;   
     }
 
     return (key == KEY_HAT3 || key == KEY_DOWNARROW || key == KEYP_2 );
@@ -65,7 +69,9 @@ bool Platform_Responder::IsLeftKey(int key)
     switch (platform) 
     {
         case PF_SWITCH:
-            return (key == KEY_JOY13);            
+            return (key == KEY_JOY13);     
+        default:
+            break;          
     }
     
     return (key == KEY_HAT4 || key == KEY_LEFTARROW || key == KEYP_4 );
@@ -79,7 +85,9 @@ bool Platform_Responder::IsRightKey(int key)
     switch (platform) 
     {
         case PF_SWITCH:
-            return (key == KEY_JOY15);            
+            return (key == KEY_JOY15);  
+        default:
+            break;            
     }
     
     return (key == KEY_HAT2 || key == KEY_RIGHTARROW || key == KEYP_6 );
@@ -96,6 +104,8 @@ bool Platform_Responder::IsEnterKey(int key)
             return (key == KEY_JOY1);     
         case PF_WII:
             return (key == KEY_JOY10 || key == KEY_JOY1 || key == KEY_ENTER || key == KEYP_ENTER);
+        default:
+            break;   
     }
     
     return (key == KEY_JOY1 || key == KEY_ENTER || key == KEYP_ENTER );
@@ -112,6 +122,8 @@ bool Platform_Responder::IsReturnKey(int key)
             return (key == KEY_JOY2);     
         case PF_WII:
             return (key == KEY_JOY11 || key == KEY_JOY1 || key == KEY_ESCAPE);
+        default:
+            break;   
     }
     
     return (key == KEY_JOY2 || key == KEY_ESCAPE );
@@ -128,6 +140,8 @@ bool Platform_Responder::IsYesKey(int key)
             return (key == KEY_JOY4);     
         case PF_WII:
             return (key == KEY_JOY10 || key == KEY_JOY1);		// A | (a)
+        default:
+            break;   
     }
     
     return (key == KEY_JOY1 || key == KEY_ESCAPE );
@@ -145,6 +159,8 @@ bool Platform_Responder::IsNoKey(int key)
             return (key == KEY_JOY2);     
         case PF_WII:
             return (key == KEY_JOY11 || key == KEY_JOY2 || key == KEY_ESCAPE);
+        default:
+            break;   
     }
     
     return (key == KEY_JOY2 || key == KEY_ESCAPE);
@@ -168,6 +184,8 @@ bool Platform_Responder::IsMenuKey(int key)
         break;
         case PF_XBOX:
             return (key == KEY_ESCAPE || key == KEY_JOY9);
+        default:
+            break;   
     }
     
     return (key == KEY_ESCAPE);

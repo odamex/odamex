@@ -1539,7 +1539,7 @@ static bool detect_optimizations()
 //
 static bool R_IsOptimizationAvailable(r_optimize_kind kind)
 { 
-	return std::find(<optimizations_available>.begin(), optimizations_available.end(), kind)
+	return std::find(optimizations_available.begin(), optimizations_available.end(), kind)
 			!= optimizations_available.end();
 }
 

@@ -556,7 +556,7 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	IWindow* window = I_GetWindow();
 	
 #ifdef __PSVITA__
-	window->setMode(960, 544, 32, true, vsync);	// Have to force it for now... :/
+	window->setMode(480, 272, 32, true, vsync);	// Have to scale down for now... :/
 #else
 	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
 #endif

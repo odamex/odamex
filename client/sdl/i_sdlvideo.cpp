@@ -975,8 +975,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 
 #ifdef __SWITCH__
 	// defaults to display size, which is always reported as 1080p, so we force it to 720p when needed
-	if (appletGetOperationMode() == AppletOperationMode_Handheld)
-	{
+	if (appletGetOperationMode() == AppletOperationMode_Handheld) {
 		sdl_display_mode.w = 1280;
 		sdl_display_mode.h = 720;
 	}
@@ -991,9 +990,15 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	mModeList.push_back(IVideoMode(640, 400, 8, true));
 	mModeList.push_back(IVideoMode(640, 480, 8, true));
 	mModeList.push_back(IVideoMode(960, 540, 8, true));
+
 #elif __PSVITA__
 	sdl_display_mode.w = 960;
 	sdl_display_mode.h = 544;
+
+	mModeList.push_back(IVideoMode(960, 544, 8, true));
+	mModeList.push_back(IVideoMode(960, 544, 32, true));
+	mModeList.push_back(IVideoMode(480, 272, 8, true));
+	mModeList.push_back(IVideoMode(480, 272, 32, true));
 #endif
 
 	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, true);
@@ -1120,7 +1125,11 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
+				#ifdef __PSVITA__
+				SDL_PIXELFORMAT_ABGR8888,
+				#else
 				sdl_mode.format,
+				#endif
 				texture_flags,
 				mWidth, mHeight);
 
@@ -1280,7 +1289,7 @@ void ISDL20Window::setRendererDriver()
 #ifdef __WIIU__
 	const char* drivers[] = {"wiiu", ""};
 #elif __PSVITA__
-	const char* drivers[] = {"opengl", ""};
+	const char* drivers[] = {"vita", "opengl", ""};
 #else
 	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
 #endif
