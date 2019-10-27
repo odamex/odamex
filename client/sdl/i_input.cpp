@@ -407,8 +407,8 @@ void I_ResumeMouse()
 //
 bool I_InitInput()
 {
-	// Ch0wW : Unless the mouse is fixed from Switch-SDL2, force the mouse off.
-	if (Args.CheckParm("-nomouse") || platform == PF_SWITCH)
+	// Ch0wW : Unless the mouse is fixed from SDL2 ports, force the mouse off on consoles. (otherwise, it's going to <<spin>> )
+	if (Args.CheckParm("-nomouse") || platform == PF_SWITCH || platform == PF_PSVITA)
 		nomouse = true;
 
 	atterm(I_ShutdownInput);

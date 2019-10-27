@@ -182,7 +182,7 @@ void I_SetCrashCallbacks()
 	std::signal(SIGSEGV, signalCallback);
 }
 
-#elif defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#elif defined(UNIX) && !defined(GCONSOLE)
 
 #include <cstdio>
 #include <csignal>

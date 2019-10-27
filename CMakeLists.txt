@@ -34,6 +34,8 @@ elseif(WIIU)
   include("wiiu.cmake" REQUIRED)		# Wii U
 elseif(VWII)
   include("wii.cmake" REQUIRED)     # Wii/vWii
+elseif(PSVITA)
+  include("psvita.cmake" REQUIRED)  # PS Vita
 endif()
 
 # identify the target CPU
@@ -116,10 +118,12 @@ macro(define_platform)
     include_directories("$ENV{WUT_ROOT}/include")
     include_directories("$ENV{PORTLIBS_PREFIX}/include")
   elseif(VWII)
-    add_definitions(-DGEKKO -DUNIX -DNOASM -DGCONSOLE -DCLIENT_APP -DUSE_PNG)
+    add_definitions(-DGEKKO -DUNIX -DNOASM -DGCONSOLE -DUSE_PNG)
     include_directories("$ENV{DEVKITPRO}/libogc/include")
     include_directories("$ENV{DEVKITPRO}/libogc/include/ogc")
     include_directories("$ENV{PORTLIBS_PREFIX}/include")
+  elseif(PSVITA)
+    add_definitions(-D__PSVITA__ -DUNIX -DGCONSOLE)
   elseif(UNIX)
     add_definitions(-DUNIX)
     find_package(X11)

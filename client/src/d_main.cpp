@@ -95,11 +95,11 @@
 #include "w_ident.h"
 
 #ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_wii.h"
+#elif defined(_XBOX)
+	#include "i_xbox.h"
+#elif defined(__PSVITA__)
+	#include "i_psvita.h"
 #endif
 
 extern size_t got_heapsize;
@@ -107,6 +107,8 @@ extern size_t got_heapsize;
 void D_CheckNetGame (void);
 void D_ProcessEvents (void);
 void D_DoAdvanceDemo (void);
+
+void C_DoCommand (const char *cmd);
 
 void D_DoomLoop (void);
 
@@ -745,6 +747,12 @@ void D_DoomMain()
 	BIND_Init();
 
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
+
+	// For better debugging, always log by default for consoles
+#ifdef GCONSOLE
+	if (!LOG.is_open())
+    	C_DoCommand("logfile");
+#endif
 
 	std::vector<std::string> newwadfiles, newpatchfiles;
 

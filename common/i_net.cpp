@@ -44,37 +44,39 @@
     #endif // !_XBOX
 #else
 #ifdef GEKKO // Wii/GC
-#	include <network.h>
+	#include <network.h>
 #elif __WIIU__
-#	include <nsysnet/socket.h>
+	#include <nsysnet/socket.h>
+#elif __PSVITA__
+	#include <vitasdk.h>
 #else
-#	include <sys/socket.h>
-#	include <netinet/in.h>
-#	include <arpa/inet.h>
-#	include <netdb.h>
-#	include <sys/ioctl.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <arpa/inet.h>
+	#include <netdb.h>
+	#include <sys/ioctl.h>
 #endif // GEKKO
-#	include <sys/types.h>
-#	include <errno.h>
-#	include <unistd.h>
-#	include <sys/time.h>
+	#include <sys/types.h>
+	#include <errno.h>
+	#include <unistd.h>
+	#include <sys/time.h>
 #endif // WIN32
 
 #ifndef _WIN32
 typedef int SOCKET;
 #ifndef GEKKO
-#define SOCKET_ERROR -1
-#define INVALID_SOCKET -1
+	#define SOCKET_ERROR -1
+	#define INVALID_SOCKET -1
 #endif
+
 #define closesocket close
 
+// ToDo : simplify it
 #ifdef GEKKO
-#define ioctlsocket net_ioctl
+	#define ioctlsocket net_ioctl
 #else
-#define ioctlsocket ioctl
+	#define ioctlsocket ioctl
 #endif
-
-#define Sleep(x)	usleep (x * 1000)
 #endif
 
 #include "doomtype.h"
@@ -92,15 +94,17 @@ typedef int SOCKET;
 #include "i_net.h"
 
 #ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_xbox.h"
+#elif GEKKO
+	#include "i_wii.h"
+#elif __WIIU__
+	#include "i_wiiu.h"
+#elif __PSVITA__
+	#include "i_psvita.h"
 #endif
 
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef __WIIU__
-#include "i_wiiu.h"
+#ifndef _WIN32
+#define Sleep(x)	usleep (x * 1000)
 #endif
 
 #include "minilzo.h"

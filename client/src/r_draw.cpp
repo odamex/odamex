@@ -1451,7 +1451,9 @@ enum r_optimize_kind {
 	OPTIMIZE_SSE2,
 	OPTIMIZE_MMX,
 	OPTIMIZE_ALTIVEC,
+	#ifdef __SWITCH__
 	OPTIMIZE_NEON,
+	#endif
 };
 
 static r_optimize_kind optimize_kind = OPTIMIZE_NONE;
@@ -1464,7 +1466,9 @@ static const char *get_optimization_name(r_optimize_kind kind)
 		case OPTIMIZE_SSE2:    return "sse2";
 		case OPTIMIZE_MMX:     return "mmx";
 		case OPTIMIZE_ALTIVEC: return "altivec";
+		#ifdef __SWITCH__
 		case OPTIMIZE_NEON:    return "neon";
+		#endif
 		case OPTIMIZE_NONE:
 		default:
 			return "none";
@@ -1515,11 +1519,13 @@ static bool detect_optimizations()
 	if (SDL_HasAltiVec())
 		optimizations_available.push_back(OPTIMIZE_ALTIVEC);
 	#endif
-	#ifdef __ARM_NEON__
-	# ifndef __SWITCH__ // we know for sure that the Switch has NEON
-	if (SDL_HasNEON())
-	# endif
-		optimizations_available.push_back(OPTIMIZE_NEON);
+	#if !defined(__PSVITA__)
+		#ifdef __ARM_NEON__
+			# ifndef __SWITCH__ // we know for sure that the Switch has NEON
+				if (SDL_HasNEON())
+			# endif
+			optimizations_available.push_back(OPTIMIZE_NEON);
+		#endif
 	#endif
 
 	return true;
@@ -1555,8 +1561,10 @@ CVAR_FUNC_IMPL(r_optimize)
 		optimize_kind = OPTIMIZE_MMX;
 	else if (stricmp(val, "altivec") == 0 && R_IsOptimizationAvailable(OPTIMIZE_ALTIVEC))
 		optimize_kind = OPTIMIZE_ALTIVEC;
+	#ifdef __SWITCH__
 	else if (stricmp(val, "neon") == 0 && R_IsOptimizationAvailable(OPTIMIZE_NEON))
 		optimize_kind = OPTIMIZE_NEON;
+	#endif
 	else if (stricmp(val, "detect") == 0)
 		// Default to the most preferred:
 		optimize_kind = optimizations_available.back();
@@ -1625,7 +1633,7 @@ void R_InitVectorizedDrawers()
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 	}
 	#endif
-	#ifdef __ARM_NEON__
+	#if defined(__ARM_NEON__) && !defined (__PSVITA__)
 	else if (optimize_kind == OPTIMIZE_NEON)
 	{
 		R_DrawSpanD				= R_DrawSpanD_NEON;

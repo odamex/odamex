@@ -96,14 +96,14 @@
 
 #ifdef _XBOX
 	#include "i_xbox.h"
-#endif
-
-#ifdef GEKKO
+#elif GEKKO
 	#include "i_wii.h"
-#endif
-
-#ifdef __WIIU__
+#elif __WIIU__
 	#include "i_wiiu.h"
+#elif __PSVITA__
+	#include "i_psvita.h"
+	#include "debugScreen.h"
+	#define printf psvDebugScreenPrintf
 #endif
 
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
@@ -235,7 +235,7 @@ dtime_t I_GetTime()
 	mach_port_deallocate(mach_task_self(), cclock);
 	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
 
-#elif defined UNIX && !defined GEKKO && !defined (__WIIU__)
+#elif defined UNIX && !defined GEKKO && !defined (__WIIU__) && !defined(__PSVITA__)
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
@@ -434,17 +434,20 @@ std::string I_GetCWD ()
 	char tmp[4096] = {0};
 	std::string ret = "./";
 
+	// PSVita doesn't have getcwd command
+	#ifndef __PSVITA__
 	const char *cwd = getcwd(tmp, sizeof(tmp));
 
 	if(cwd)
 		ret = cwd;
+	#endif
 
 	FixPathSeparator(ret);
 
 	return ret;
 }
 
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -472,7 +475,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 	// return absolute or explicitly relative pathnames unmodified,
 	// so launchers or CLI/console users have control over netdemo placement
 	if (file &&
@@ -512,7 +515,7 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
-#elif defined(__SWITCH__) || defined(__WIIU__)
+#elif defined(__SWITCH__) || defined(__WIIU__) || defined(__PSVITA__)
 	std::string path = file;
 #else
 	if (!PathIsRelative(file))
@@ -533,7 +536,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO) && !defined(__SWITCH__) && !defined(__WIIU__)
+#if defined(UNIX) && !defined(GCONSOLE)
 	if(!path.length())
 		return;
 
@@ -565,10 +568,10 @@ std::string I_GetBinaryDir()
 #ifdef _XBOX
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
 	ret = "D:\\";
-#elif defined GEKKO
+#elif defined GEKKO || defined(__WIIU__)
 	ret = WII_DATAPATH;
-#elif __WIIU__
-	return WII_DATAPATH;
+#elif defined(__PSVITA__)
+	return VITA_DATAPATH;
 #elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
@@ -741,9 +744,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 	if (!has_exited)	// If it hasn't exited yet, exit now -- killough
 	{
 		has_exited = 1;	// Prevent infinitely recursive exits -- killough
-
 		call_terms();
-
 		exit(EXIT_FAILURE);
 	}
 }
@@ -1075,7 +1076,7 @@ std::string I_ConsoleInput (void)
 
 std::string I_ConsoleInput (void)
 {
-#if !defined __SWITCH__ || !defined(__WIIU__)
+#ifndef GCONSOLE
 	std::string ret;
     static char     text[1024] = {0};
     int             len;

@@ -46,6 +46,10 @@ extern "C"
 }
 #endif
 
+#if defined(__PSVITA__)
+#include "vita2d.h"
+#endif
+
 #include "i_video.h"
 #include "v_video.h"
 
@@ -814,8 +818,13 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (format->getBitsPerPixel() == 32)
 		argb_t::setChannels(format->getAPos(), format->getRPos(), format->getGPos(), format->getBPos());
 	else
+	{
+#if defined(__SWITCH__)
+		argb_t::setChannels(0, 3, 2, 1);
+#else
 		argb_t::setChannels(3, 2, 1, 0);
-
+#endif
+	}
 	// [SL] SDL can create SDL_VIDEORESIZE events in response to SDL_SetVideoMode
 	// and we need to filter those out.
 	mIgnoreResize = true;
@@ -898,10 +907,12 @@ ISDL12VideoSubsystem::~ISDL12VideoSubsystem()
 //
 static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 {
+	#ifndef __PSVITA__
 	int display_index = 0;
 	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
 
 	int display_mode_count = SDL_GetNumDisplayModes(display_index);
+	Printf(PRINT_HIGH, "display_mode_count: %d\n", display_mode_count);
 	if (display_mode_count < 1)
 	{
 		I_FatalError("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
@@ -921,6 +932,7 @@ static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 		modelist->push_back(IVideoMode(width, height, bpp, false));
 		modelist->push_back(IVideoMode(width, height, bpp, true));
 	}
+	#endif
 }
 
 #ifdef _WIN32
@@ -963,8 +975,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 
 #ifdef __SWITCH__
 	// defaults to display size, which is always reported as 1080p, so we force it to 720p when needed
-	if (appletGetOperationMode() == AppletOperationMode_Handheld)
-	{
+	if (appletGetOperationMode() == AppletOperationMode_Handheld) {
 		sdl_display_mode.w = 1280;
 		sdl_display_mode.h = 720;
 	}
@@ -979,6 +990,15 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	mModeList.push_back(IVideoMode(640, 400, 8, true));
 	mModeList.push_back(IVideoMode(640, 480, 8, true));
 	mModeList.push_back(IVideoMode(960, 540, 8, true));
+
+#elif __PSVITA__
+	sdl_display_mode.w = 960;
+	sdl_display_mode.h = 544;
+
+	mModeList.push_back(IVideoMode(960, 544, 8, true));
+	mModeList.push_back(IVideoMode(960, 544, 32, true));
+	mModeList.push_back(IVideoMode(480, 272, 8, true));
+	mModeList.push_back(IVideoMode(480, 272, 32, true));
 #endif
 
 	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, true);
@@ -1062,7 +1082,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	if (vsync)
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 
-#ifdef __WIIU__
+#if defined(__WIIU__)
 	renderer_flags = SDL_RENDERER_SOFTWARE;	// Just to make sure...
 #endif
 
@@ -1105,7 +1125,11 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
+				#ifdef __PSVITA__
+				SDL_PIXELFORMAT_ABGR8888,
+				#else
 				sdl_mode.format,
+				#endif
 				texture_flags,
 				mWidth, mHeight);
 
@@ -1208,8 +1232,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
-#if defined(__WIIU__) || defined(__SWITCH__)
-	window_flags |= SDL_WINDOW_FULLSCREEN;	// Always include it for consoles
+#if defined(GCONSOLE)
+	window_flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP;	// Always include it for consoles
 #endif
 
 	// Reduce the flickering on start up for the opengl driver on Windows
@@ -1219,7 +1243,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	#endif
 
 	// don't need this on the Switch, we're always fullscreen
-	#if !defined(__SWITCH__) || !defined(__WIIU__)
+	#if !defined(GCONSOLE)
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
@@ -1264,6 +1288,8 @@ void ISDL20Window::setRendererDriver()
 {
 #ifdef __WIIU__
 	const char* drivers[] = {"wiiu", ""};
+#elif __PSVITA__
+	const char* drivers[] = {"vita", "opengl", ""};
 #else
 	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
 #endif
@@ -1620,6 +1646,7 @@ static void I_BuildPixelFormatFromSDLPixelFormatEnum(uint32_t sdl_fmt, PixelForm
 //
 void ISDL20Window::discoverNativePixelFormat()
 {
+
     SDL_DisplayMode sdl_mode;
     SDL_GetWindowDisplayMode(mSDLWindow, &sdl_mode);
     I_BuildPixelFormatFromSDLPixelFormatEnum(sdl_mode.format, &mPixelFormat);
@@ -1634,8 +1661,8 @@ void ISDL20Window::discoverNativePixelFormat()
 //
 PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
 {
-    uint8_t native_bpp = getPixelFormat()->getBitsPerPixel();
-    if (bpp == 8)
+	uint8_t native_bpp = getPixelFormat()->getBitsPerPixel();
+	if (bpp == 8)
         return PixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0);
     else if (bpp == 32 && native_bpp == 32)
         return *getPixelFormat();
@@ -1667,7 +1694,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	I_PauseMouse();
 
 	uint32_t fullscreen_flags = 0;
-#if !defined(__SWITCH__) || !defined(__WIIU__)
+#if !defined(GCONSOLE)
 	if (video_fullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
@@ -1702,7 +1729,7 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (format.getBitsPerPixel() == 32)
 		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
 	else
-#ifdef __SWITCH__
+#if defined(__SWITCH__)
 		argb_t::setChannels(0, 3, 2, 1);
 #else
 		argb_t::setChannels(3, 2, 1, 0);
@@ -1759,7 +1786,11 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
-	mWindow = new ISDL20Window(640, 480, 8, false, false);
+	#ifdef __PSVITA__
+		mWindow = new ISDL20Window(960, 544, 8, true, false);
+	#else
+		mWindow = new ISDL20Window(640, 480, 8, false, false);
+	#endif
 }
 
 

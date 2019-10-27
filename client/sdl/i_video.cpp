@@ -554,8 +554,12 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	assert(mode.isValid());
 
 	IWindow* window = I_GetWindow();
-
+	
+#ifdef __PSVITA__
+	window->setMode(480, 272, 32, true, vsync);	// Have to scale down for now... :/
+#else
 	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+#endif
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving

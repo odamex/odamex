@@ -63,11 +63,11 @@
 #include "w_ident.h"
 
 #ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_wii.h"
+#elif defined(_XBOX)
+	#include "i_xbox.h"
+#elif defined(__PSVITA__)
+	#include "i_psvita.h"
 #endif
 
 EXTERN_CVAR (waddirs)
