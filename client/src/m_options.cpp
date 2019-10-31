@@ -34,7 +34,6 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
-#include "c_platformkeys.h"
 #include "cmdlib.h"
 
 #include "d_main.h"
@@ -1904,323 +1903,104 @@ void M_OptResponder (event_t *ev)
 		}
 	}
 
-	// Keys usable within menu
-	if (keypress.IsDownKey(ch)) 
+	switch (ch)
 	{
-		int modecol;
-		if (item->type == screenres) {
-			modecol = item->a.selmode;
-			item->a.selmode = -1;
-		}
-		else {
-			modecol = 0;
-		}
-		do {
-			CurrentItem++;
-			if (CanScrollDown && CurrentItem == VisBottom) {
-				CurrentMenu->scrollpos++;
-				VisBottom++;
-			}
-
-			if (CurrentItem == CurrentMenu->numitems) {
-				CurrentMenu->scrollpos = 0;
-				CurrentItem = 0;
-			}
-
-		} while (CurrentMenu->items[CurrentItem].type == redtext ||
-				 CurrentMenu->items[CurrentItem].type == whitetext ||
-				 CurrentMenu->items[CurrentItem].type == bricktext ||
-				 (CurrentMenu->items[CurrentItem].type == screenres &&
-				  !CurrentMenu->items[CurrentItem].b.res1));
-
-		if (CurrentMenu->items[CurrentItem].type == screenres)
-			CurrentMenu->items[CurrentItem].a.selmode = modecol;
-
-		S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-	} else if (keypress.IsUpKey(ch)) 
-	{
-		int modecol;
-		if (item->type == screenres) {
-			modecol = item->a.selmode;
-			item->a.selmode = -1;
-		}
-		else {
-			modecol = 0;
-		}
-
-		do {
-			CurrentItem--;
-			if (CanScrollUp &&
-				CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
+		case KEY_HAT3:
+		case KEY_DOWNARROW:
+#ifdef __SWITCH__
+		case KEY_JOY16:
+#endif
 			{
-				CurrentMenu->scrollpos--;
-				if (CurrentMenu->scrollpos < 0)
-					 CurrentMenu->scrollpos = 0;
-			}
-			if (CurrentItem < 0) {
-				CurrentMenu->scrollpos = MAX (0,CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
-				CurrentItem = CurrentMenu->numitems - 1;
-			}
-		} while (CurrentMenu->items[CurrentItem].type == redtext ||
+				int modecol;
+
+				if (item->type == screenres)
+				{
+					modecol = item->a.selmode;
+					item->a.selmode = -1;
+				}
+				else
+				{
+					modecol = 0;
+				}
+
+				do
+				{
+					CurrentItem++;
+					if (CanScrollDown && CurrentItem == VisBottom)
+					{
+						CurrentMenu->scrollpos++;
+						VisBottom++;
+					}
+					if (CurrentItem == CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = 0;
+						CurrentItem = 0;
+					}
+				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
 						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
-		if (CurrentMenu->items[CurrentItem].type == screenres)
-			CurrentMenu->items[CurrentItem].a.selmode = modecol;
+				if (CurrentMenu->items[CurrentItem].type == screenres)
+					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-		S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-	} else if (keypress.IsLeftKey(ch)) 
-	{
-		switch (item->type)
-		{
-		case slider:
-			{
-				float newval = item->a.cvar->value() - item->d.step;
-				if (item->b.leftval < item->c.rightval)
-					newval = MAX(newval, item->b.leftval);
-				else
-					newval = MIN(newval, item->b.leftval);
-
-				if (item->e.cfunc)
-					item->e.cfunc (item->a.cvar, newval);
-				else
-					item->a.cvar->Set (newval);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-		case redslider:
-		case greenslider:
-		case blueslider:
-			{
-				const char* oldcolor = item->a.cvar->cstring();
-				char newcolor[9];
-
-				if (strlen(oldcolor) == 8)
-					memcpy(newcolor, oldcolor, 9);
-				else
-					memcpy(newcolor, "00 00 00", 9);
-
-				argb_t color = V_GetColorFromString(oldcolor);
-				int part = 0;
-
-				if (item->type == redslider)
-					part = color.getr();
-				else if (item->type == greenslider)
-					part = color.getg();
-				else if (item->type == blueslider)
-					part = color.getb();
-
-				if (part > 0x00)
-					part -= 0x11;
-				if (part < 0x00)
-					part = 0x00;
-
-				char singlecolor[3];
-				sprintf(singlecolor, "%02x", part);
-
-				if (item->type == redslider)
-					memcpy(newcolor, singlecolor, 2);
-				else if (item->type == greenslider)
-					memcpy(newcolor + 3, singlecolor, 2);
-				else if (item->type == blueslider)
-					memcpy(newcolor + 6, singlecolor, 2);
-
-				item->a.cvar->Set(newcolor);
-			}
-			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			break;
 
-			case discrete:
-			case cdiscrete:
+		case KEY_HAT1:
+		case KEY_UPARROW:
+#ifdef __SWITCH__
+		case KEY_JOY14:
+#endif
 			{
-				int cur;
-				int numvals;
+				int modecol;
 
-				numvals = (int)item->b.leftval;
-				cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-				if (--cur < 0)
-					cur = numvals - 1;
-
-				item->a.cvar->Set (item->e.values[cur].value);
-
-				// Hack hack. Rebuild list of resolutions
-				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-
-		case screenres:
-			{
-				int col;
-				col = item->a.selmode - 1;
-				if (col < 0)
+				if (item->type == screenres)
 				{
-					if (CurrentItem > 0)
+					modecol = item->a.selmode;
+					item->a.selmode = -1;
+				}
+				else
+				{
+					modecol = 0;
+				}
+
+				do
+				{
+					CurrentItem--;
+					if (CanScrollUp &&
+						CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
 					{
-						if (CurrentMenu->items[CurrentItem - 1].type == screenres)
-						{
-							item->a.selmode = -1;
-							CurrentMenu->items[--CurrentItem].a.selmode = 2;
-						}
+						CurrentMenu->scrollpos--;
+                        if (CurrentMenu->scrollpos < 0)
+                            CurrentMenu->scrollpos = 0;
 					}
-				}
-				else
-				{
-					item->a.selmode = col;
-				}
-			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-			break;
-
-		case joyactive:
-			{
-				int         numjoy;
-				numjoy = I_GetJoystickCount();
-				if((int)item->a.cvar->value() > numjoy)
-					item->a.cvar->Set(0.0);
-				else if((int)item->a.cvar->value() > 0)
-					item->a.cvar->Set(item->a.cvar->value() - 1);
-			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-
-		default:
-			break;
-		}
-	} else if (keypress.IsRightKey(ch)) 
-	{
-		switch (item->type)
-		{
-			case slider:
-			{
-				float newval = item->a.cvar->value() + item->d.step;
-
-				if (item->b.leftval < item->c.rightval)
-					newval = MIN(newval, item->c.rightval);
-				else
-					newval = MAX(newval, item->c.rightval);
-
-				if (item->e.cfunc)
-					item->e.cfunc (item->a.cvar, newval);
-				else
-					item->a.cvar->Set (newval);
-			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-			
-			case redslider:
-			case greenslider:
-			case blueslider:
-			{
-				const char* oldcolor = item->a.cvar->cstring();
-				char newcolor[9];
-
-				if (strlen(oldcolor) == 8)
-					memcpy(newcolor, oldcolor, 9);
-				else
-					memcpy(newcolor, "00 00 00", 9);
-
-				argb_t color = V_GetColorFromString(oldcolor);
-				int part = 0;
-
-				if (item->type == redslider)
-					part = color.getr();
-				else if (item->type == greenslider)
-					part = color.getg();
-				else if (item->type == blueslider)
-					part = color.getb();
-
-				if (part < 0xff)
-					part += 0x11;
-				if (part > 0xff)
-					part = 0xff;
-
-				char singlecolor[3];
-				sprintf(singlecolor, "%02x", part);
-
-				if (item->type == redslider)
-					memcpy(newcolor, singlecolor, 2);
-				else if (item->type == greenslider)
-					memcpy(newcolor + 3, singlecolor, 2);
-				else if (item->type == blueslider)
-					memcpy(newcolor + 6, singlecolor, 2);
-
-				item->a.cvar->Set(newcolor);
-			}
-			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-		case discrete:
-		case cdiscrete:
-			{
-				int cur;
-				int numvals;
-
-				numvals = (int)item->b.leftval;
-				cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-				if (++cur >= numvals)
-					cur = 0;
-
-				item->a.cvar->Set (item->e.values[cur].value);
-
-				// Hack hack. Rebuild list of resolutions
-				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-
-		case screenres:
-			{
-				int col;
-
-				col = item->a.selmode + 1;
-				if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
-				{
-					if (CurrentMenu->numitems - 1 > CurrentItem)
+					if (CurrentItem < 0)
 					{
-						if (CurrentMenu->items[CurrentItem + 1].type == screenres)
-						{
-							if (CurrentMenu->items[CurrentItem + 1].b.res1)
-							{
-								item->a.selmode = -1;
-								CurrentMenu->items[++CurrentItem].a.selmode = 0;
-							}
-						}
+						CurrentMenu->scrollpos = MAX (0,CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
+						CurrentItem = CurrentMenu->numitems - 1;
 					}
-				}
-				else
-				{
-					item->a.selmode = col;
-				}
+				} while (CurrentMenu->items[CurrentItem].type == redtext ||
+						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
+						 (CurrentMenu->items[CurrentItem].type == screenres &&
+						  !CurrentMenu->items[CurrentItem].b.res1));
+
+				if (CurrentMenu->items[CurrentItem].type == screenres)
+					CurrentMenu->items[CurrentItem].a.selmode = modecol;
+
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			break;
 
-		case joyactive:
+		case KEY_PGUP:
+#ifdef __SWITCH__
+		case KEY_JOY7:
+#endif
 			{
-				int         numjoy;
-
-				numjoy = I_GetJoystickCount();
-
-				if((int)item->a.cvar->value() >= numjoy)
-					item->a.cvar->Set(0.0);
-				else if((int)item->a.cvar->value() < (numjoy - 1))
-					item->a.cvar->Set(item->a.cvar->value() + 1);
-
-			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			break;
-
-		default:
-			break;
-		}
-	} 
-	else if (keypress.IsPageUpKey(ch))
-	{
-		if (CanScrollUp)
+				if (CanScrollUp)
 				{
 					CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 					if (CurrentMenu->scrollpos < 0)
@@ -2238,29 +2018,314 @@ void M_OptResponder (event_t *ev)
 					}
 					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
-	} else if (keypress.IsPageDownKey(ch))
-	{
-		if (CanScrollDown) {
-			int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-			CurrentMenu->scrollpos += pagesize;
-			if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
-			{
-				CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
 			}
-			CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-			while (CurrentMenu->items[CurrentItem].type == redtext ||
-				   CurrentMenu->items[CurrentItem].type == whitetext ||
-				   CurrentMenu->items[CurrentItem].type == bricktext ||
-				   (CurrentMenu->items[CurrentItem].type == screenres &&
-					!CurrentMenu->items[CurrentItem].b.res1))
+			break;
+
+		case KEY_PGDN:
+#ifdef __SWITCH__
+		case KEY_JOY8:
+#endif
 			{
-				++CurrentItem;
+				if (CanScrollDown)
+				{
+					int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					CurrentMenu->scrollpos += pagesize;
+					if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
 			}
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		}
-	}else if (keypress.IsEnterKey(ch)) 
-	{
-		if (CurrentMenu == &ModesMenu)
+			break;
+
+		case KEY_HAT4:
+		case KEY_LEFTARROW:
+#ifdef __SWITCH__
+		case KEY_JOY13:
+#endif
+			switch (item->type)
+			{
+				case slider:
+					{
+						float newval = item->a.cvar->value() - item->d.step;
+
+						if (item->b.leftval < item->c.rightval)
+							newval = MAX(newval, item->b.leftval);
+						else
+							newval = MIN(newval, item->b.leftval);
+
+						if (item->e.cfunc)
+							item->e.cfunc (item->a.cvar, newval);
+						else
+							item->a.cvar->Set (newval);
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+				case redslider:
+				case greenslider:
+				case blueslider:
+					{
+						const char* oldcolor = item->a.cvar->cstring();
+						char newcolor[9];
+
+						if (strlen(oldcolor) == 8)
+							memcpy(newcolor, oldcolor, 9);
+						else
+							memcpy(newcolor, "00 00 00", 9);
+
+						argb_t color = V_GetColorFromString(oldcolor);
+						int part = 0;
+
+						if (item->type == redslider)
+							part = color.getr();
+						else if (item->type == greenslider)
+							part = color.getg();
+						else if (item->type == blueslider)
+							part = color.getb();
+
+						if (part > 0x00)
+							part -= 0x11;
+						if (part < 0x00)
+							part = 0x00;
+
+						char singlecolor[3];
+						sprintf(singlecolor, "%02x", part);
+
+						if (item->type == redslider)
+							memcpy(newcolor, singlecolor, 2);
+						else if (item->type == greenslider)
+							memcpy(newcolor + 3, singlecolor, 2);
+						else if (item->type == blueslider)
+							memcpy(newcolor + 6, singlecolor, 2);
+
+						item->a.cvar->Set(newcolor);
+					}
+					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+				case discrete:
+				case cdiscrete:
+					{
+						int cur;
+						int numvals;
+
+						numvals = (int)item->b.leftval;
+						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
+						if (--cur < 0)
+							cur = numvals - 1;
+
+						item->a.cvar->Set (item->e.values[cur].value);
+
+						// Hack hack. Rebuild list of resolutions
+						if (item->e.values == Depths)
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+
+				case screenres:
+					{
+						int col;
+
+						col = item->a.selmode - 1;
+						if (col < 0)
+						{
+							if (CurrentItem > 0)
+							{
+								if (CurrentMenu->items[CurrentItem - 1].type == screenres)
+								{
+									item->a.selmode = -1;
+									CurrentMenu->items[--CurrentItem].a.selmode = 2;
+								}
+							}
+						}
+						else
+						{
+							item->a.selmode = col;
+						}
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+					break;
+
+				case joyactive:
+					{
+						int         numjoy;
+
+						numjoy = I_GetJoystickCount();
+
+						if((int)item->a.cvar->value() > numjoy)
+							item->a.cvar->Set(0.0);
+						else if((int)item->a.cvar->value() > 0)
+							item->a.cvar->Set(item->a.cvar->value() - 1);
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+		case KEY_HAT2:
+		case KEY_RIGHTARROW:
+#ifdef __SWITCH__
+		case KEY_JOY15:
+#endif
+			switch (item->type)
+			{
+				case slider:
+					{
+						float newval = item->a.cvar->value() + item->d.step;
+
+						if (item->b.leftval < item->c.rightval)
+							newval = MIN(newval, item->c.rightval);
+						else
+							newval = MAX(newval, item->c.rightval);
+
+						if (item->e.cfunc)
+							item->e.cfunc (item->a.cvar, newval);
+						else
+							item->a.cvar->Set (newval);
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+				case redslider:
+				case greenslider:
+				case blueslider:
+					{
+						const char* oldcolor = item->a.cvar->cstring();
+						char newcolor[9];
+
+						if (strlen(oldcolor) == 8)
+							memcpy(newcolor, oldcolor, 9);
+						else
+							memcpy(newcolor, "00 00 00", 9);
+
+						argb_t color = V_GetColorFromString(oldcolor);
+						int part = 0;
+
+						if (item->type == redslider)
+							part = color.getr();
+						else if (item->type == greenslider)
+							part = color.getg();
+						else if (item->type == blueslider)
+							part = color.getb();
+
+						if (part < 0xff)
+							part += 0x11;
+						if (part > 0xff)
+							part = 0xff;
+
+						char singlecolor[3];
+						sprintf(singlecolor, "%02x", part);
+
+						if (item->type == redslider)
+							memcpy(newcolor, singlecolor, 2);
+						else if (item->type == greenslider)
+							memcpy(newcolor + 3, singlecolor, 2);
+						else if (item->type == blueslider)
+							memcpy(newcolor + 6, singlecolor, 2);
+
+						item->a.cvar->Set(newcolor);
+					}
+					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+				case discrete:
+				case cdiscrete:
+					{
+						int cur;
+						int numvals;
+
+						numvals = (int)item->b.leftval;
+						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
+						if (++cur >= numvals)
+							cur = 0;
+
+						item->a.cvar->Set (item->e.values[cur].value);
+
+						// Hack hack. Rebuild list of resolutions
+						if (item->e.values == Depths)
+							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+
+				case screenres:
+					{
+						int col;
+
+						col = item->a.selmode + 1;
+						if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
+						{
+							if (CurrentMenu->numitems - 1 > CurrentItem)
+							{
+								if (CurrentMenu->items[CurrentItem + 1].type == screenres)
+								{
+									if (CurrentMenu->items[CurrentItem + 1].b.res1)
+									{
+										item->a.selmode = -1;
+										CurrentMenu->items[++CurrentItem].a.selmode = 0;
+									}
+								}
+							}
+						}
+						else
+						{
+							item->a.selmode = col;
+						}
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+					break;
+
+				case joyactive:
+					{
+						int         numjoy;
+
+						numjoy = I_GetJoystickCount();
+
+						if((int)item->a.cvar->value() >= numjoy)
+							item->a.cvar->Set(0.0);
+						else if((int)item->a.cvar->value() < (numjoy - 1))
+							item->a.cvar->Set(item->a.cvar->value() + 1);
+
+					}
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+#if defined(_XBOX)
+		case KEY_JOY9: // Start button
+#elif defined(__SWITCH__)
+		case KEY_JOY3: // X button
+#elif defined (GEKKO)
+#endif
+		case KEY_BACKSPACE:
+			if (item->type == control)
+			{
+				Bindings.UnbindACommand(item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
+			break;
+
+#ifdef GEKKO
+		case KEY_JOY10:		// (a) on Pro Controller
+#endif
+		case KEY_JOY1:
+		case KEY_ENTER:
+			if (CurrentMenu == &ModesMenu)
 			{
 				int width, height;
 
@@ -2340,20 +2405,17 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == screenres)
 			{
 			}
-	} else if (keypress.IsReturnKey(ch)) 
-	{
-		CurrentMenu->lastOn = CurrentItem;
-		M_PopMenuStack ();
-	} else if (keypress.IsUnbindKey(ch)) 
-	{
-		if (item->type == control) {
-			Bindings.UnbindACommand(item->e.command);
-			item->b.key1 = item->c.key2 = 0;
-		}
-	} 
+			break;
 
-	switch (ch)
-	{
+#ifdef GEKKO
+		case KEY_JOY11:		// (b) on Pro Controller
+#endif
+		case KEY_JOY2:
+		case KEY_ESCAPE:
+			CurrentMenu->lastOn = CurrentItem;
+			M_PopMenuStack ();
+			break;
+
 		default:
 #ifdef _XBOX
 			if (ev->data2 == 't' || ev->data2 == KEY_JOY3)

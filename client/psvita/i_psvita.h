@@ -124,21 +124,4 @@ int vita_usleep(useconds_t usec);
 #define sleep vita_sleep
 #define usleep vita_usleep
 
-/*
-ADDITIONNAL KEY INFO :
-
-KEY_JOY1 = TRIANGLE
-KEY_JOY2 = CIRCLE
-KEY_JOY3 = CROSS
-KEY_JOY4 = SQUARE
-KEY_JOY5 = LTRIGGER
-KEY_JOY6 = RTRIGGER
-KEY_JOY7 = DOWN
-KEY_JOY8 = LEFT
-KEY_JOY9 = UP
-KEY_JOY10 = RIGHT
-KEY_JOY11 = SELECT
-KEY_JOY12 = START
-*/
-
 #endif
