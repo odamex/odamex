@@ -37,7 +37,9 @@ bool Platform_Responder::IsUpKey(int key)
     switch (platform) 
     {
         case PF_SWITCH:
-            return (key == KEY_JOY14);       
+            return (key == KEY_JOY14);      
+        case PF_PSVITA:
+            return (key == KEY_JOY9);
         default:
             break;     
     }
@@ -53,7 +55,9 @@ bool Platform_Responder::IsDownKey(int key)
     switch (platform) 
     {
         case PF_SWITCH:
-            return (key == KEY_JOY16);            
+            return (key == KEY_JOY16);      
+        case PF_PSVITA:
+            return (key == KEY_JOY7);   
         default:
             break;   
     }
@@ -69,7 +73,9 @@ bool Platform_Responder::IsLeftKey(int key)
     switch (platform) 
     {
         case PF_SWITCH:
-            return (key == KEY_JOY13);     
+            return (key == KEY_JOY13);  
+        case PF_PSVITA:
+            return (key == KEY_JOY8);   
         default:
             break;          
     }
@@ -86,11 +92,43 @@ bool Platform_Responder::IsRightKey(int key)
     {
         case PF_SWITCH:
             return (key == KEY_JOY15);  
+        case PF_PSVITA:
+            return (key == KEY_JOY10);
         default:
             break;            
     }
     
     return (key == KEY_HAT2 || key == KEY_RIGHTARROW || key == KEYP_6 );
+}
+
+bool Platform_Responder::IsPageUpKey(int key) 
+{
+    switch (platform) 
+    {
+        case PF_SWITCH:
+            return (key == KEY_JOY7);  
+        case PF_PSVITA:
+            return (key == KEY_JOY5);
+        default:
+            break;            
+    }
+    
+    return (key == KEY_PGUP);
+}
+
+bool Platform_Responder::IsPageDownKey(int key) 
+{
+        switch (platform) 
+    {
+        case PF_SWITCH:
+            return (key == KEY_JOY8);  
+        case PF_PSVITA:
+            return (key == KEY_JOY6);
+        default:
+            break;            
+    }
+    
+    return (key == KEY_PGDN);
 }
 
 //
@@ -104,6 +142,8 @@ bool Platform_Responder::IsEnterKey(int key)
             return (key == KEY_JOY1);     
         case PF_WII:
             return (key == KEY_JOY10 || key == KEY_JOY1 || key == KEY_ENTER || key == KEYP_ENTER);
+        case PF_PSVITA:
+            return (key == KEY_JOY3);   // CROSS (soon Circle for JPN users)
         default:
             break;   
     }
@@ -122,6 +162,8 @@ bool Platform_Responder::IsReturnKey(int key)
             return (key == KEY_JOY2);     
         case PF_WII:
             return (key == KEY_JOY11 || key == KEY_JOY1 || key == KEY_ESCAPE);
+        case PF_PSVITA:
+            return (key == KEY_JOY2);   // CIRCLE (soon CROSS for JPN users)
         default:
             break;   
     }
@@ -140,6 +182,8 @@ bool Platform_Responder::IsYesKey(int key)
             return (key == KEY_JOY4);     
         case PF_WII:
             return (key == KEY_JOY10 || key == KEY_JOY1);		// A | (a)
+        case PF_PSVITA:
+            return (key == KEY_JOY3);   // CROSS/ CIRCLE TO DO
         default:
             break;   
     }
@@ -159,6 +203,8 @@ bool Platform_Responder::IsNoKey(int key)
             return (key == KEY_JOY2);     
         case PF_WII:
             return (key == KEY_JOY11 || key == KEY_JOY2 || key == KEY_ESCAPE);
+        case PF_PSVITA:
+            return (key == KEY_JOY2);   // CROSS/ CIRCLE TO DO
         default:
             break;   
     }
@@ -182,6 +228,8 @@ bool Platform_Responder::IsMenuKey(int key)
             else if (I_WhatWiiController() == WIICTRL_GAMECUBE)
                 return (key == KEY_ESCAPE || key == KEY_JOY7);                      // Start
         break;
+        case PF_PSVITA:
+            return (key == KEY_JOY12);  // START
         case PF_XBOX:
             return (key == KEY_ESCAPE || key == KEY_JOY9);
         default:
@@ -189,4 +237,21 @@ bool Platform_Responder::IsMenuKey(int key)
     }
     
     return (key == KEY_ESCAPE);
+}
+
+bool Platform_Responder::IsUnbindKey(int key)
+{
+    switch (platform) 
+    {
+        case PF_SWITCH:
+            return (key == KEY_JOY3); // X
+        case PF_XBOX:
+            return (key == KEY_JOY9 || key == KEY_BACKSPACE); // START
+        case PF_PSVITA:
+            return (key == KEY_JOY11);   // SELECT TO REMOVE
+        default:
+            break;   
+    }
+    
+    return (key == KEY_BACKSPACE);
 }
