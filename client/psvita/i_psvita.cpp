@@ -157,17 +157,6 @@ int main(int argc, char *argv[])
 {
 	psvDebugScreenInit();
 
-	// Check if Odamex.wad is found, otherwise we kill the program immediately
-	FILE *f = fopen("ux0:/data/odamex/odamex.wad", "rb");
-	if (f) {
-		printf("-> Found odamex.wad in ux0:/data/odamex.\n");
-		fclose(f);
-	} else {
-		printf("Error : cannot find odamex.wad in ux0:/data/odamex !!\n");
-		sleep (5);
-		return 0;
-	}
-
 // We need a bigger stack to run Quake 3, so we create a new thread with a proper stack size
 	SceUID main_thread = sceKernelCreateThread("odamex", odamex_main, 0x40, 0x200000, 0, 0, NULL);
 	if (main_thread >= 0){

@@ -186,6 +186,14 @@ void IntDownloadComplete(void)
 		D_AddSearchDir(dirs, getenv("HOME"), CHAR_SEPARATOR);
 	}
 
+	// For PSVita users, check if the user already has added WADs through
+	// ChocolateDoom-Vita.
+	if (platform == PF_PSVITA) {
+		D_AddSearchDir(dirs, "ux0:/data/odamex/wads", CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, "ux0:/data/chocolate/pwads", CHAR_SEPARATOR);
+		D_AddSearchDir(dirs, "ux0:/data/odamex", CHAR_SEPARATOR);
+	}
+
 	D_AddSearchDir(dirs, waddirs.cstring(), CHAR_SEPARATOR);
 
     dirs.push_back(startdir);

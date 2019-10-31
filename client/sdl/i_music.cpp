@@ -189,7 +189,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 	I_ShutdownMusic();
 	I_ResetMidiVolume();
 
-	if (I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
+	if (platform == PF_PSVITA || I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
 	{
 		// User has chosen to disable music
 		musicsystem = new SilentMusicSystem();
