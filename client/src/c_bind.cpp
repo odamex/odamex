@@ -343,6 +343,19 @@ static void buildKeyCodeTables()
 	nameToKeyCode.insert(std::make_pair("UP", KEY_JOY14));
 	nameToKeyCode.insert(std::make_pair("RIGHT", KEY_JOY15));
 	nameToKeyCode.insert(std::make_pair("DOWN", KEY_JOY16));
+#elif __PSVITA__
+	nameToKeyCode.insert(std::make_pair("TRIANGE", KEY_JOY1));
+	nameToKeyCode.insert(std::make_pair("CIRCLE", KEY_JOY2));
+	nameToKeyCode.insert(std::make_pair("CROSS", KEY_JOY3));
+	nameToKeyCode.insert(std::make_pair("SQUARE", KEY_JOY4));
+	nameToKeyCode.insert(std::make_pair("LTRIGGER", KEY_JOY5));
+	nameToKeyCode.insert(std::make_pair("RTRIGGER", KEY_JOY6));
+	nameToKeyCode.insert(std::make_pair("DOWN", KEY_JOY7));
+	nameToKeyCode.insert(std::make_pair("LEFT", KEY_JOY8));
+	nameToKeyCode.insert(std::make_pair("UP", KEY_JOY9));
+	nameToKeyCode.insert(std::make_pair("RIGHT", KEY_JOY10));
+	nameToKeyCode.insert(std::make_pair("SELECT", KEY_JOY11));
+	nameToKeyCode.insert(std::make_pair("START", KEY_JOY12));
 #else
 	nameToKeyCode.insert(std::make_pair("joy1", KEY_JOY1));
 	nameToKeyCode.insert(std::make_pair("joy2", KEY_JOY2));

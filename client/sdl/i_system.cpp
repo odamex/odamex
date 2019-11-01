@@ -515,7 +515,10 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
-#elif defined(__SWITCH__) || defined(__WIIU__) || defined(__PSVITA__)
+#elif defined(__PSVITA__)
+	std::string path = "ux0:/data/odamex/";
+	path += file;
+#elif defined(__SWITCH__) || defined(__WIIU__)
 	std::string path = file;
 #else
 	if (!PathIsRelative(file))

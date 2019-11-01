@@ -34,11 +34,15 @@ class Platform_Responder
         bool IsLeftKey (int key);
         bool IsRightKey (int key);
 
+        bool IsPageUpKey (int key);
+        bool IsPageDownKey (int key);
+
         bool IsEnterKey (int key);
         bool IsReturnKey (int key);
         bool IsMenuKey  (int key);
         bool IsYesKey (int key);
         bool IsNoKey (int key);
+        bool IsUnbindKey (int key);
 };
 
 extern Platform_Responder keypress;
