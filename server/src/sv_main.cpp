@@ -3374,8 +3374,13 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 void SV_FlushPlayerCmds(player_t &player)
 {
+#if 0
 	while (!player.cmdqueue.empty())
 		player.cmdqueue.pop();
+#else
+	std::queue<NetCommand> empty;
+	std::swap( player.cmdqueue, empty );
+#endif
 }
 
 //
