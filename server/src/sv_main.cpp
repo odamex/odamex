@@ -3345,8 +3345,6 @@ void SV_WriteCommands(void)
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
-		SV_UpdateHiddenMobj();
-
 		SV_UpdateConsolePlayer(*it);
 
 		SV_UpdateMissiles(*it);
@@ -3357,6 +3355,8 @@ void SV_WriteCommands(void)
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 	}
+
+	SV_UpdateHiddenMobj();
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
