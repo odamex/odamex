@@ -678,6 +678,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
+	// Don't clip against a player
+	if (tmthing->player && thing->player && sv_unblockplayers)
+		return true;
+
 	// over / under thing
 	if (tmthing->z > thing->z + thing->height)
 		return true;
