@@ -1132,19 +1132,11 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
 	dtime_t display_wake_time = display_scheduler->getNextTime();
 
-#if SERVER_APP
-	// make more efficient use of server CPU by sleeping the required amount instead of spin waiting:
 	dtime_t now = I_GetTime();
 	dtime_t waketime = MIN(simulation_wake_time, display_wake_time);
 	if (waketime > now) {
 		I_Sleep(waketime - now);
 	}
-#else
-	do
-	{
-		I_Yield();
-	} while (I_GetTime() < MIN(simulation_wake_time, display_wake_time));
-#endif
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
