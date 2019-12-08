@@ -144,6 +144,9 @@ EXTERN_CVAR (snd_gamesfx)
 EXTERN_CVAR (snd_voxtype)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
+EXTERN_CVAR (cl_chatsound)
+EXTERN_CVAR (cl_teamchatsound)
+
 
 // Joystick menu -- Hyper_Eye
 void JoystickSetup (void);
@@ -592,7 +595,9 @@ static menuitem_t SoundItems[] = {
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
 	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
 	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Enable Chat Sounds"				, {&cl_chatsound},		{2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Enable Teamchat Sounds"			, {&cl_teamchatsound},	{2.0},			{0.0},		{0.0},		{OnOff} }
  };
 
 menu_t SoundMenu = {

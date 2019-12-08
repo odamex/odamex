@@ -515,6 +515,9 @@ CVAR (chatmacro9, "Yes", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLE
 CVAR (chatmacro0, "No", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 
+CVAR  (cl_chatsound, "1", "Enables chat beeps", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR  (cl_teamchatsound, "1", "Enables teamchat beeps", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Sound and music
 // ---------------
 

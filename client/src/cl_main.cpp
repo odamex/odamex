@@ -157,6 +157,9 @@ EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
 
+EXTERN_CVAR (cl_chatsound)
+EXTERN_CVAR (cl_teamchatsound)
+
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
@@ -1841,27 +1844,22 @@ EXTERN_CVAR (show_messages)
 
 //
 // CL_Print
+// Used only for print & serverchat
 //
 void CL_Print (void)
 {
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
-	if (level == PRINT_CHAT)
-		Printf(level, "\\c*%s", str);
-	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "\\c!%s", str);
-	else if (level == PRINT_SERVERCHAT)
+	if (level == PRINT_SERVERCHAT)
 		Printf(level, "\\ck%s", str);
 	else
 		Printf(level, "%s", str);
 
 	if (show_messages)
 	{
-		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-		else if (level == PRINT_TEAMCHAT)
-			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+		if (level == PRINT_SERVERCHAT)
+			S_Sound(CHAN_INTERFACE, "misc/chat2", 1, ATTN_NONE);	// Server "say" cmd uses Print instead of SAY.
 	}
 }
 
@@ -1912,7 +1910,7 @@ void CL_Say()
 		else
 			Printf(PRINT_CHAT, "%s: %s\n", name, message);
 
-		if (show_messages)
+		if (show_messages && cl_chatsound)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 	}
 	else if (message_visibility == 1)
@@ -1922,7 +1920,7 @@ void CL_Say()
 		else
 			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
 
-		if (show_messages)
+		if (show_messages && cl_teamchatsound)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
