@@ -382,7 +382,7 @@ void I_LoadSound (struct sfxinfo_struct *sfx)
 
 void I_InitSound()
 {
-	if (I_IsHeadless() || Args.CheckParm("-nosound"))
+	if (platform == PF_PSVITA || I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
 		
     #if defined(SDL12)
