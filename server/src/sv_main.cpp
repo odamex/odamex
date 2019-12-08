@@ -590,7 +590,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 //
 void SV_GetPackets()
 {
-	while (NET_GetPacket())
+	int count = 256;
+	while (NET_GetPacket() && --count >= 0)
 	{
 		player_t &player = SV_FindPlayerByAddr();
 
@@ -3391,8 +3392,6 @@ void SV_WriteCommands(void)
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
-		SV_UpdateHiddenMobj();
-
 		SV_UpdateConsolePlayer(*it);
 
 		SV_UpdateMissiles(*it);
@@ -3403,6 +3402,8 @@ void SV_WriteCommands(void)
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 	}
+
+	SV_UpdateHiddenMobj();
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
@@ -3420,8 +3421,13 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 void SV_FlushPlayerCmds(player_t &player)
 {
+#if 0
 	while (!player.cmdqueue.empty())
 		player.cmdqueue.pop();
+#else
+	std::queue<NetCommand> empty;
+	std::swap( player.cmdqueue, empty );
+#endif
 }
 
 //
