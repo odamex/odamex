@@ -2201,6 +2201,8 @@ void G_CleanupDemo()
 		demoplayback = false;
 		multiplayer = false;
 		serverside = false;
+
+		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 	}
 
 	if (demorecording)
@@ -2211,14 +2213,14 @@ void G_CleanupDemo()
 			recorddemo_fp = NULL;
 		}
 
+		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
+
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
 
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
 	}
-
-	cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 }
 
 
