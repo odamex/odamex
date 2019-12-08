@@ -175,7 +175,7 @@ void P_ShowSpawns(mapthing2_t* mthing)
 {
 	// Ch0wW: DO NOT add new spawns to a DOOM2 demo !
 	// It'll immediately desync in DM!
-	if (democlassic)
+	if (demoplayback)
 		return;
 
 	if (clientside && cl_showspawns)

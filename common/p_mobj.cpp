@@ -2310,7 +2310,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
-		if (deathmatch_p >= &deathmatchstarts[10] && democlassic)
+		if (deathmatch_p >= &deathmatchstarts[10] && demoplayback)
 			return;
 
 		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])

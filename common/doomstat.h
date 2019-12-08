@@ -136,7 +136,6 @@ extern	BOOL			usergame;
 
 extern	BOOL			demoplayback;
 extern	BOOL			demorecording;
-extern	BOOL			democlassic;
 extern	BOOL			autorecord;
 extern	std::string		demorecordfile;
 
