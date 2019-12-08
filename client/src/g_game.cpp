@@ -183,6 +183,7 @@ CVAR_FUNC_IMPL(joy_freelook)
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
+BOOL			democlassic;
 
 extern bool		simulated_connection;
 
@@ -343,7 +344,7 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
 	// FIXME : Find a way to properly write this to the vanilla demo file.
-	if (demorecording)
+	if (democlassic && demorecording)
 		return;
 
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
@@ -355,7 +356,7 @@ END_COMMAND (weapnext)
 BEGIN_COMMAND (weapprev)
 {
 	// FIXME : Find a way to properly write this to the vanilla demo file.
-	if (demorecording)
+	if (democlassic && demorecording)
 		return;
 
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
@@ -477,7 +478,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		cmd->buttons |= BT_USE;
 
 	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
-	if (Actions[ACTION_JUMP] && !demorecording)
+	if (Actions[ACTION_JUMP] && !demorecording && !democlassic)
 		cmd->buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
@@ -1851,6 +1852,8 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     else
         *demo_p++ = DOOM_1_9_DEMO;
 
+    democlassic = true;
+
     int episode, mapid;
     if (gameinfo.flags & GI_MAPxx)
 	{
@@ -2041,6 +2044,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	{
 		Printf(PRINT_HIGH, "Playing DOOM demo %s\n", defdemoname.c_str());
 
+		democlassic = true;
 		demostartgametic = gametic;
 		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
 
@@ -2154,6 +2158,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	}
 	else
 	{
+		democlassic = false;
 		Printf(PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
 		gameaction = ga_nothing;
@@ -2201,15 +2206,20 @@ void G_CleanupDemo()
 		demoplayback = false;
 		multiplayer = false;
 		serverside = false;
+
+		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 	}
 
 	if (demorecording)
 	{
-		if (recorddemo_fp) {
+		if (recorddemo_fp)
+		{
 			fputc(DEMOSTOP, recorddemo_fp);
 			fclose(recorddemo_fp);
 			recorddemo_fp = NULL;
 		}
+
+		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
@@ -2217,8 +2227,6 @@ void G_CleanupDemo()
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
 	}
-
-	cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 }
 
 
@@ -2275,6 +2283,7 @@ BOOL G_CheckDemoStatus (void)
 				Printf (PRINT_HIGH, "Demo ended.\n");
 
 			demoplayback = false;
+			democlassic = false;
 			gameaction = ga_fullconsole;
 			timingdemo = false;
 			return false;

@@ -563,7 +563,7 @@ void HU_Drawer()
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
 
-	if (multiplayer && consoleplayer().camera && !(demoplayback))
+	if (multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
 	{
 		if (gamestate != GS_INTERMISSION && 
 			(Actions[ACTION_SHOWSCORES]) 

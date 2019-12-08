@@ -1511,7 +1511,7 @@ void AM_drawPlayers(void)
 		{
 			color = AlmostBackground;
 		}
-		else if (demoplayback)
+		else if (demoplayback && democlassic)
 		{
 			switch (it->id) {
 				case 1: color = AM_GetColorFromString (palette, "00 FF 00"); break;

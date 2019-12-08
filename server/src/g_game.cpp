@@ -92,6 +92,7 @@ int 			gametic;
 FILE			*recorddemo_fp;			// Ch0wW : Keeping this for future serverside demo-recording.
 BOOL 			demorecording;			// Ch0wW : Keeping this for future serverside demo-recording.
 BOOL 			demoplayback;			// FIXME : remove this serverside !
+BOOL			democlassic;			// FIXME : remove this serverside !
 int				demostartgametic;		// FIXME : remove this serverside !
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission

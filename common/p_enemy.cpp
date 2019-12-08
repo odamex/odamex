@@ -1408,7 +1408,7 @@ void A_VileChase (AActor *actor)
 					P_SetMobjState (corpsehit,info->raisestate, true);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
-					if ((demoplayback || demorecording)) {
+					if ((demoplayback || demorecording) && democlassic) {
 						corpsehit->height <<= 2;
 					} else {
 						corpsehit->height = P_ThingInfoHeight(info);	// [RH] Use real mobj height
