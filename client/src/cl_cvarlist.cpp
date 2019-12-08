@@ -149,6 +149,9 @@ CVAR_RANGE(			con_scrlock, "1", "",
 CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 512.0f, 65536.0f)
 
+CVAR(				con_autohide, "1", "Automatically hides the console after loading a new map.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_RANGE_FUNC_DECL(msg0color, "6", "",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 

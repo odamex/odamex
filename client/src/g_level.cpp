@@ -149,6 +149,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 }
 END_COMMAND (wad)
 
+EXTERN_CVAR(con_autohide)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_allowjump)
@@ -480,10 +481,13 @@ void G_DoLoadLevel (int position)
 
 	gamestate = GS_LEVEL;
 
-	// [SL] Hide the console unless this is just part of the demo loop
-	// It's annoying to have the console close every time a new demo starts...
-	if (!demoscreen)
+	// Hide the console unless this is just part of the demo loop
+	// or, if there's con_autohide enabled.
+	if (!demoscreen && (gamestate == GS_LEVEL && con_autohide))
 		C_HideConsole();
+
+	// Ch0wW : Readjust the console so that when connecting, it doesn't go fullscreen
+	C_AdjustBottom();
 
 	// [SL] clear the saved sector data from the last level
 	R_ResetInterpolation();
