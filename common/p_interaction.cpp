@@ -1078,7 +1078,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// Nes - Server now broadcasts obituaries.
 	// [CG] Since this is a stub, no worries anymore.
 	if (target->player && level.time && multiplayer &&
-        !(demoplayback && democlassic) && !joinkill)
+        !demoplayback && !joinkill)
 	{
 		ClientObituary(target, inflictor, source);
 	}
