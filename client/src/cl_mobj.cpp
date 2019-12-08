@@ -72,8 +72,10 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 
 	byte playerstate = player.playerstate;
 
+	// Ch0wW : IDK why, but this feels horribly wrong.
 	if (player.doreborn)
 	{
+		Printf_Bold("CALLED ?\n");
 		G_PlayerReborn(player);
 		player.doreborn = false;
 	}

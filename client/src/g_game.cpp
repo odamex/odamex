@@ -859,6 +859,7 @@ void G_Ticker (void)
 		{
 			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
 				G_DoReborn(*it);
+			it->doreborn = true;
 		}
 
 	// do things to change the game state
