@@ -2963,7 +2963,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		P_SetMobjState (thing, S_GIBS);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
-		if ((demoplayback || demorecording) && democlassic) {
+		if ((demoplayback || demorecording)) {
 			thing->height = 0;
 			thing->radius = 0;
 		}
