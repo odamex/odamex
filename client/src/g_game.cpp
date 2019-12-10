@@ -2172,6 +2172,9 @@ void G_TestDemo(const char* name)
 //
 void G_CleanupDemo()
 {
+	if (!demoplayback || !demorecording)
+		return;
+
 	if (demoplayback)
 	{
 		Z_Free(demobuffer);
@@ -2179,8 +2182,6 @@ void G_CleanupDemo()
 		demoplayback = false;
 		multiplayer = false;
 		serverside = false;
-
-		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 	}
 
 	if (demorecording)
@@ -2191,14 +2192,14 @@ void G_CleanupDemo()
 			recorddemo_fp = NULL;
 		}
 
-		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
-
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
 
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
 	}
+
+	cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 }
 
 
@@ -2214,10 +2215,10 @@ void G_CleanupDemo()
 
 BOOL G_CheckDemoStatus (void)
 {
+	G_CleanupDemo();
+
 	if (demoplayback)
 	{
-		G_CleanupDemo();
-
 		extern bool demotest;
 		if (demotest)
 		{
@@ -2263,11 +2264,6 @@ BOOL G_CheckDemoStatus (void)
 
 		D_AdvanceDemo ();
 		return true;
-	}
-
-	if (demorecording)
-	{
-		G_CleanupDemo();
 	}
 
 	return false;
