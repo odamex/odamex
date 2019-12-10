@@ -1637,6 +1637,7 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 
 	// update switches
+#if 0
 	for (int l=0; l<numlines; l++)
 	{
 		unsigned state = 0, time = 0;
@@ -1651,6 +1652,9 @@ void SV_ClientFullUpdate(player_t &pl)
 			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
+#else
+	P_UpdateButtons(cl);
+#endif
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
