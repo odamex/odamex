@@ -154,7 +154,6 @@ CVAR(			sv_ticbuffer, "1", "Buffer controller input from players experiencing su
 				"latency spikes for smoother movement",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-
 // Ban settings
 // ============
 

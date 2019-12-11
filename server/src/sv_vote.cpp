@@ -50,6 +50,10 @@ EXTERN_CVAR(sv_vote_specvote)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
+EXTERN_CVAR(sv_coop_completionist)
+EXTERN_CVAR(sv_coop_completionist_kills)
+EXTERN_CVAR(sv_coop_completionist_secrets)
+
 EXTERN_CVAR(sv_callvote_coinflip)
 EXTERN_CVAR(sv_callvote_forcespec)
 EXTERN_CVAR(sv_callvote_forcestart)
@@ -63,6 +67,9 @@ EXTERN_CVAR(sv_callvote_restart)
 EXTERN_CVAR(sv_callvote_fraglimit)
 EXTERN_CVAR(sv_callvote_scorelimit)
 EXTERN_CVAR(sv_callvote_timelimit)
+
+EXTERN_CVAR(sv_callvote_kills)
+EXTERN_CVAR(sv_callvote_secrets)
 
 // Vote class goes here
 Vote *vote = 0;
@@ -650,6 +657,92 @@ public:
 	}
 };
 
+class CoopCompletionistKillsVote : public Vote
+{
+private:
+	float count;
+public:
+	CoopCompletionistKillsVote() : Vote("kills", NULL) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		float count;
+
+		if (!sv_coop_completionist)
+			return false;
+
+		// Do we have at least one argument?
+		if (args.size() < 1)
+		{
+			this->error = "kills needs a second argument.";
+			return false;
+		}
+
+		// Is the count a numeric value?
+		std::istringstream buffer(args[0].c_str());
+		buffer >> count;
+		if (!buffer)
+		{
+			this->error = "kills must be a number.";
+			return false;
+		}
+
+		std::ostringstream vote_string;
+		vote_string << "kills " << count;
+		this->votestring = vote_string.str();
+
+		this->count = count;
+		return true;
+	}
+	bool exec(void)
+	{
+		sv_coop_completionist_kills.Set(count);
+		return true;
+	}
+};
+
+class CoopCompletionistSecretsVote : public Vote
+{
+private:
+	float count;
+public:
+	CoopCompletionistSecretsVote() : Vote("secrets", NULL) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		float count;
+
+		if (!sv_coop_completionist)
+			return false;
+
+		// Do we have at least one argument?
+		if (args.size() < 1)
+		{
+			this->error = "secrets needs a second argument.";
+			return false;
+		}
+
+		// Is the count a numeric value?
+		std::istringstream buffer(args[0].c_str());
+		buffer >> count;
+		if (!buffer)
+		{
+			this->error = "secrets must be a number.";
+			return false;
+		}
+
+		std::ostringstream vote_string;
+		vote_string << "secrets " << count;
+		this->votestring = vote_string.str();
+
+		this->count = count;
+		return true;
+	}
+	bool exec(void)
+	{
+		sv_coop_completionist_secrets.Set(count);
+		return true;
+	}
+};
+
 //////// VOTING FUNCTIONS ////////
 
 // Returns if the result of a vote is a forgone conclusion.
@@ -1128,6 +1221,12 @@ void SV_Callvote(player_t &player)
 		break;
 	case VOTE_COINFLIP:
 		vote = new CoinflipVote;
+		break;
+	case VOTE_COOPCOMPLETIONISTKILLS:
+		vote = new CoopCompletionistKillsVote;
+		break;
+	case VOTE_COOPCOMPLETIONISTSECRETS:
+		vote = new CoopCompletionistSecretsVote;
 		break;
 	default:
 		return;

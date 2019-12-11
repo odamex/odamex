@@ -20,10 +20,12 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "c_vote.h"
+
 /**
  * A string array used to associate vote types with command names.
  */
-const char* vote_type_cmd[] = {
+const char* vote_type_cmd[VOTE_MAX+1] = {
 	"???",
 	"kick",
 	"forcespec",
@@ -38,5 +40,7 @@ const char* vote_type_cmd[] = {
 	"scorelimit",
 	"timelimit",
 	"coinflip",
+	"kills",
+	"secrets",
 	"???"
 };
