@@ -435,6 +435,7 @@ void	P_ProcessSwitchDef ();
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
+void	P_UpdateButtons (client_t *cl);
 
 //
 // P_PLATS

@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unordered_map>
 
 #include "i_system.h"
 #include "doomdef.h"
@@ -240,6 +241,51 @@ bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
 	}
 
 	return false;
+}
+
+void P_UpdateButtons(client_t *cl)
+{
+	DActiveButton *button;
+	TThinkerIterator<DActiveButton> iterator;
+	std::unordered_map<unsigned, bool> actedlines;
+
+	// See if button is already pressed
+	while ( (button = iterator.Next ()) )
+	{
+		if (button->m_Line == NULL) continue;
+
+		unsigned l = button->m_Line - lines;
+		unsigned state = 0, timer = 0;
+
+		state = button->m_Where;
+		timer = button->m_Timer;
+
+		// record that we acted on this line:
+		actedlines[l] = true;
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
+		MSG_WriteLong(&cl->reliablebuf, l);
+		MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
+		MSG_WriteByte(&cl->reliablebuf, lines[l].special);
+		MSG_WriteByte(&cl->reliablebuf, state);
+		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
+		MSG_WriteLong(&cl->reliablebuf, timer);
+	}
+
+	for (int l=0; l<numlines; l++)
+	{
+		// update all button state except those that have actors assigned:
+		if (!actedlines[l] && lines[l].wastoggled)
+		{
+			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
+			MSG_WriteLong(&cl->reliablebuf, l);
+			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
+			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
+			MSG_WriteByte(&cl->reliablebuf, 0);
+			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
+			MSG_WriteLong(&cl->reliablebuf, 0);
+		}
+	}
 }
 
 //
