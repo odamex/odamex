@@ -187,6 +187,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->lightlevel
 				>> sec->special
 				>> sec->tag
+				>> sec->secretsector
 				>> sec->soundtraversed
 				/*>> sec->soundtarget->netid*/
 				>> sec->friction
