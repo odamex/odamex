@@ -39,6 +39,12 @@ CVAR(				sv_coop_completionist, "0", "EXPERIMENTAL: When enabled in COOP, all mo
                     "and secrets found to exit the map.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
+CVAR(				sv_skipkills, "0", "Skip verification of killable monsters for coop completionist mode",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_skipsecrets, "0", "Skip verification of findable secrets for coop completionist mode",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

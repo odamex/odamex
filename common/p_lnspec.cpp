@@ -35,6 +35,9 @@
 #include "i_system.h"
 #include "c_console.h"
 
+EXTERN_CVAR(sv_skipkills)
+EXTERN_CVAR(sv_skipsecrets)
+
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
 
@@ -1963,9 +1966,13 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 	if (sv_gametype == GM_COOP) {
 		// COOP completionist mode:
-		if (sv_coop_completionist && self->player && multiplayer) {
+		if (sv_coop_completionist && self->player) {
 			int unkilled_monsters = level.total_monsters - level.killed_monsters;
 			int unfound_secrets = level.total_secrets - level.found_secrets;
+
+			// allow bypassing checks:
+			if (sv_skipkills) unkilled_monsters = 0;
+			if (sv_skipsecrets) unfound_secrets = 0;
 
 			if (unkilled_monsters > 0 || unfound_secrets > 0) {
 				// 200 should be more than enough for all chars here:

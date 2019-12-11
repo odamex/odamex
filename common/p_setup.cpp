@@ -48,6 +48,9 @@
 
 #include "p_setup.h"
 
+EXTERN_CVAR(sv_skipkills)
+EXTERN_CVAR(sv_skipsecrets)
+
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 
@@ -1658,6 +1661,9 @@ void P_SetupLevel (char *lumpname, int position)
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
 	wminfo.partime = 180;
+
+	sv_skipkills = 0.f;
+	sv_skipsecrets = 0.f;
 
 	if (!savegamerestore)
 	{

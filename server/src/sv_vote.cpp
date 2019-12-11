@@ -50,6 +50,9 @@ EXTERN_CVAR(sv_vote_specvote)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
+EXTERN_CVAR(sv_skipkills)
+EXTERN_CVAR(sv_skipsecrets)
+
 EXTERN_CVAR(sv_callvote_coinflip)
 EXTERN_CVAR(sv_callvote_forcespec)
 EXTERN_CVAR(sv_callvote_forcestart)
@@ -63,6 +66,10 @@ EXTERN_CVAR(sv_callvote_restart)
 EXTERN_CVAR(sv_callvote_fraglimit)
 EXTERN_CVAR(sv_callvote_scorelimit)
 EXTERN_CVAR(sv_callvote_timelimit)
+
+EXTERN_CVAR(sv_callvote_skipkills)
+EXTERN_CVAR(sv_callvote_skipsecrets)
+EXTERN_CVAR(sv_callvote_skipall)
 
 // Vote class goes here
 Vote *vote = 0;
@@ -650,6 +657,70 @@ public:
 	}
 };
 
+class SkipKillsVote : public Vote
+{
+public:
+	SkipKillsVote() : Vote("skipkills", &sv_callvote_skipkills) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
+			return false;
+
+		// We don't need to keep any state, since "skipkills" takes no arguments
+		// and has no failure condition.
+		this->votestring = "skipkills";
+		return true;
+	}
+	bool exec(void)
+	{
+		sv_skipkills = true;
+		return true;
+	}
+};
+
+class SkipSecretsVote : public Vote
+{
+public:
+	SkipSecretsVote() : Vote("skipsecrets", &sv_callvote_skipkills) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
+			return false;
+
+		// We don't need to keep any state, since "skipsecrets" takes no arguments
+		// and has no failure condition.
+		this->votestring = "skipsecrets";
+		return true;
+	}
+	bool exec(void)
+	{
+		sv_skipsecrets = true;
+		return true;
+	}
+};
+
+class SkipAllVote : public Vote
+{
+public:
+	SkipAllVote() : Vote("skipall", &sv_callvote_skipall) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player)
+	{
+		if (!Vote::setup_check_cvar())
+			return false;
+
+		// We don't need to keep any state, since "skipall" takes no arguments
+		// and has no failure condition.
+		this->votestring = "skipall";
+		return true;
+	}
+	bool exec(void)
+	{
+		sv_skipkills = true;
+		sv_skipsecrets = true;
+		return true;
+	}
+};
+
 //////// VOTING FUNCTIONS ////////
 
 // Returns if the result of a vote is a forgone conclusion.
@@ -1128,6 +1199,15 @@ void SV_Callvote(player_t &player)
 		break;
 	case VOTE_COINFLIP:
 		vote = new CoinflipVote;
+		break;
+	case VOTE_SKIPKILLS:
+		vote = new SkipKillsVote;
+		break;
+	case VOTE_SKIPSECRETS:
+		vote = new SkipSecretsVote;
+		break;
+	case VOTE_SKIPALL:
+		vote = new SkipAllVote;
 		break;
 	default:
 		return;
