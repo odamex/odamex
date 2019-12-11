@@ -1667,22 +1667,14 @@ void SV_ClientFullUpdate(player_t &pl)
 	SV_SendPacket(pl);
 }
 
-void SV_UpdateSecret(int sectornum)
+//===========================
+// SV_UpdateSecret
+// Updates a sector to a client and the number of secrets found.
+//===========================
+void SV_UpdateSecret(int sectornum, player_t &player)
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		sector_t* sector = &sectors[sectornum];
-		client_t *cl = &it->client;
-
-		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
-		MSG_WriteShort(&cl->reliablebuf, sectornum);
-		MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
-		MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
-		MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
-		MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
-		MSG_WriteShort(&cl->reliablebuf, sector->special);
-	}
-
+	SV_BroadcastSector(sectornum);
+	SV_UpdateFrags(player);			// I don't like syncing back all the frags aswell, but whatever.
 	SV_UpdateSecretCount();
 }
 
