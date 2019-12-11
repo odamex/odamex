@@ -154,7 +154,6 @@ CVAR(			sv_ticbuffer, "1", "Buffer controller input from players experiencing su
 				"latency spikes for smoother movement",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-
 // Ban settings
 // ============
 
@@ -224,6 +223,13 @@ CVAR(			sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+CVAR(			sv_callvote_skipkills, "0", "Clients can vote to bypass kill count for completionist mode.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR(			sv_callvote_skipsecrets, "0", "Clients can vote to bypass secret count for completionist mode.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR(			sv_callvote_skipall, "0", "Clients can vote to bypass kill and secret counts for completionist mode.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Warmup mode
