@@ -880,8 +880,11 @@ void G_Ticker (void)
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+			{
+				if (it->playerstate == PST_REBORN)	
+					it->doreborn = true;			// State only our will to lose the whole inventory in case of a reborn.
 				G_DoReborn(*it);
-			it->doreborn = true;
+			}
 		}
 
 	// do things to change the game state
@@ -2194,6 +2197,9 @@ void G_TestDemo(const char* name)
 //
 void G_CleanupDemo()
 {
+	if (!demoplayback || !demorecording)
+		return;
+
 	if (demoplayback)
 	{
 		Z_Free(demobuffer);
@@ -2201,8 +2207,6 @@ void G_CleanupDemo()
 		demoplayback = false;
 		multiplayer = false;
 		serverside = false;
-
-		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 	}
 
 	if (demorecording)
@@ -2213,14 +2217,14 @@ void G_CleanupDemo()
 			recorddemo_fp = NULL;
 		}
 
-		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
-
 		demorecording = false;
 		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
 
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
 	}
+
+	cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 }
 
 
@@ -2236,10 +2240,10 @@ void G_CleanupDemo()
 
 BOOL G_CheckDemoStatus (void)
 {
+	G_CleanupDemo();
+
 	if (demoplayback)
 	{
-		G_CleanupDemo();
-
 		extern bool demotest;
 		if (demotest)
 		{
@@ -2285,11 +2289,6 @@ BOOL G_CheckDemoStatus (void)
 
 		D_AdvanceDemo ();
 		return true;
-	}
-
-	if (demorecording)
-	{
-		G_CleanupDemo();
 	}
 
 	return false;

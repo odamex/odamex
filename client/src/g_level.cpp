@@ -154,6 +154,11 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_allowjump)
 
+
+//
+// G_DoNewGame
+// Is called whenever a new Singleplayer game will be started. 
+//
 void G_DoNewGame (void)
 {
 	if (demoplayback)
