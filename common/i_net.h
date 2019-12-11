@@ -65,6 +65,7 @@ enum svc_t
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
+	svc_updatesecrets,		// [byte] - secrets discovered to a client
 	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
 	svc_updateping,			// [byte] [byte]
 	svc_spawnmobj,			//

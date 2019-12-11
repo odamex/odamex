@@ -1642,6 +1642,10 @@ P_PushSpecialLine
 
 
 
+#ifdef SERVER_APP
+void SV_UpdateSecret(int sectornum);
+#endif
+
 //
 // P_PlayerInSpecialSector
 // Called every tic frame
@@ -1777,10 +1781,13 @@ void P_PlayerInSpecialSector (player_t *player)
 			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
-
-#ifdef CLIENT_APP
+	
+#ifdef SERVER_APP
+			int sectornum = sector - sectors;
+			SV_UpdateSecret(sectornum);	// Update the sector to all clients so that they don't discover an already found secret.
+#else
 			if (player->mo == consoleplayer().camera)
-				C_RevealSecret();
+				C_RevealSecret();		// Display the secret revealed message
 #endif
 		}
 	}
@@ -1889,7 +1896,10 @@ void P_SpawnSpecials (void)
 
 		// [RH] All secret sectors are marked with a BOOM-ish bitfield
 		if (sector->special & SECRET_MASK)
+		{
+			sector->secretsector = true;
 			level.total_secrets++;
+		}
 
 		switch (sector->special & 0xff)
 		{
