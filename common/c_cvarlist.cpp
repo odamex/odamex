@@ -35,6 +35,10 @@ CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
 					0.0f, 3.0f)
 
+CVAR(				sv_coop_completionist, "0", "EXPERIMENTAL: When enabled in COOP, all monsters must be killed " \
+                    "and secrets found to exit the map.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

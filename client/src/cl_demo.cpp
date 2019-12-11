@@ -1074,6 +1074,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteBool	(netbuffer, false);	// sv_emptyreset
 	MSG_WriteBool	(netbuffer, false);	// sv_cleanmaps
 	MSG_WriteBool	(netbuffer, false);	// sv_fragexitswitch
+	// TODO(jsd): sync sv_coop_completionist
 	
 	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{

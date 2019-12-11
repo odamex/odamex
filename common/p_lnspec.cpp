@@ -33,6 +33,7 @@
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
+#include "c_console.h"
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -1952,6 +1953,7 @@ EXTERN_CVAR (sv_coop_completionist)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
+	// must be server side:
 	if (self == NULL || !serverside)
 		return false;
 
@@ -1959,22 +1961,31 @@ BOOL CheckIfExitIsGood (AActor *self)
 	if (level.flags & LEVEL_LOBBYSPECIAL)
 		return true;
 
-	// COOP completionist mode
 	if (sv_gametype == GM_COOP) {
-		if (sv_coop_completionist) {
-			if (level.killed_monsters < level.total_monsters) {
-				if (self->player && multiplayer)
-					Printf (PRINT_HIGH, "%s attempted to exit the level with %d unkilled monsters (sv_coop_completionist).\n",
-							self->player->userinfo.netname.c_str(),
-							level.total_monsters - level.killed_monsters);
-				return false;
-			}
+		// COOP completionist mode
+		if (sv_coop_completionist && self->player && multiplayer) {
+			int unkilled_monsters = level.total_monsters - level.killed_monsters;
+			int unfound_secrets = level.total_secrets - level.found_secrets;
 
-			if (level.found_secrets < level.total_secrets) {
-				if (self->player && multiplayer)
-					Printf (PRINT_HIGH, "%s attempted to exit the level with %d unfound secrets (sv_coop_completionist).\n",
-							self->player->userinfo.netname.c_str(),
-							level.total_secrets - level.found_secrets);
+			if (unkilled_monsters > 0 || unfound_secrets > 0) {
+				// 400 should be more than enough for all static chars here plus 256 for netname
+				char msg[400], *m;
+
+				m = msg;
+				m += sprintf(m, "%s attempted to exit the level with", self->player->userinfo.netname.c_str());
+
+				if (unkilled_monsters > 0) {
+					m += sprintf(m, " %d unkilled monsters", unkilled_monsters);
+				}
+				if (unfound_secrets > 0) {
+					if (unkilled_monsters > 0) m += sprintf(m, " and");
+					m += sprintf(m, " %d unfound secrets", unfound_secrets);
+				}
+				m += sprintf(m, ".\n");
+
+				C_MidPrint (msg, self->player, 6);
+
+				// don't allow exit:
 				return false;
 			}
 		}

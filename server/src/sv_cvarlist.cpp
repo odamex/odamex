@@ -247,10 +247,6 @@ CVAR(			sv_dmfarspawn, "0", "EXPERIMENTAL: When enabled in DM, players will spaw
 CVAR(sv_download_test, "0", "Experimental download optimization testing",
 	CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-CVAR(			sv_coop_completionist, "0", "EXPERIMENTAL: When enabled in COOP, all monsters must be killed " \
-                "and secrets found to exit the map.",
-				 CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
-
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================
 
