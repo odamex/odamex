@@ -1948,6 +1948,7 @@ lnSpecFunc LineSpecials[256] =
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
+EXTERN_CVAR (sv_coop_completionist)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
@@ -1956,10 +1957,30 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 	// Bypass the exit restrictions if we're on a lobby.
 	if (level.flags & LEVEL_LOBBYSPECIAL)
-		return true;	
+		return true;
 
+	// COOP completionist mode
+	if (sv_gametype == GM_COOP) {
+		if (sv_coop_completionist) {
+			if (level.killed_monsters < level.total_monsters) {
+				if (self->player && multiplayer)
+					Printf (PRINT_HIGH, "%s attempted to exit the level with %d unkilled monsters (sv_coop_completionist).\n",
+							self->player->userinfo.netname.c_str(),
+							level.total_monsters - level.killed_monsters);
+				return false;
+			}
+
+			if (level.found_secrets < level.total_secrets) {
+				if (self->player && multiplayer)
+					Printf (PRINT_HIGH, "%s attempted to exit the level with %d unfound secrets (sv_coop_completionist).\n",
+							self->player->userinfo.netname.c_str(),
+							level.total_secrets - level.found_secrets);
+				return false;
+			}
+		}
+	}
 	// [Toke - dmflags] Old location of DF_NO_EXIT
-	if (sv_gametype != GM_COOP && self)
+	else if (sv_gametype != GM_COOP)
 	{
         if (!sv_allowexit)
         {
