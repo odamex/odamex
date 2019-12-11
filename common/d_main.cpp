@@ -793,6 +793,9 @@ void D_LoadResourceFiles(
 		std::string full_filename = D_FindResourceFile(newwadfiles[0], hash);
 		if (W_IsIWAD(full_filename))
 		{
+			if (W_IsIWADDeprecated(full_filename))
+					Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", full_filename.c_str());
+
 			iwad_provided = true;
 			iwad_filename = full_filename;
 			iwad_hash = hash;
