@@ -198,9 +198,9 @@ void    P_PlayerInSpecialSector (player_t *player);
 //	given the number of the current sector,
 //	the line number, and the side (0/1) that you want.
 //
-inline side_t *getSide (int currentSector, int line, int side)
+inline side_t *getSide (sector_t *sec, int line, int side)
 {
-	return &sides[ (sectors[currentSector].lines[line])->sidenum[side] ];
+	return &sides[ (sec->lines[line])->sidenum[side] ];
 }
 
 //
@@ -220,9 +220,9 @@ inline sector_t *getSector (int currentSector, int line, int side)
 // Given the sector number and the line number,
 //	it will tell you whether the line is two-sided or not.
 //
-inline int twoSided (int sector, int line)
+inline int twoSided (sector_t *sec, int line)
 {
-	return (sectors[sector].lines[line])->flags & ML_TWOSIDED;
+	return (sec->lines[line])->flags & ML_TWOSIDED;
 }
 
 //
@@ -253,11 +253,11 @@ fixed_t	P_FindHighestCeilingSurrounding (sector_t *sec);	// jff 2/04/98
 fixed_t P_FindNextLowestCeiling (sector_t *sec);		// jff 2/04/98
 fixed_t P_FindNextHighestCeiling (sector_t *sec);	// jff 2/04/98
 
-fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
-fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98
+fixed_t P_FindShortestTextureAround (sector_t *sec);	// jff 2/04/98
+fixed_t P_FindShortestUpperAround (sector_t *sec);		// jff 2/04/98
 
-sector_t* P_FindModelFloorSector (fixed_t floordestheight, int secnum);	//jff 02/04/98
-sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98
+sector_t* P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec);	//jff 02/04/98
+sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec);	//jff 02/04/98
 
 int		P_FindSectorFromTag (int tag, int start);
 int		P_FindLineFromID (int id, int start);
