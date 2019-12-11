@@ -429,6 +429,7 @@ void CL_QuitNetGame(void)
 
 	serverside = clientside = true;
 	network_game = false;
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 
 	sv_freelook = 1;
 	sv_allowjump = 1;
@@ -484,6 +485,7 @@ void CL_Reconnect(void)
 		serveraddr = lastconaddr;
 	}
 
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 	connecttimeout = 0;
 }
 
@@ -1453,9 +1455,17 @@ void CL_UpdateFrags(void)
 	if(sv_gametype != GM_COOP)
 		p.fragcount = MSG_ReadShort();
 	else
+	{
 		p.killcount = MSG_ReadShort();
+		p.secretcount = MSG_ReadByte();
+	}
 	p.deathcount = MSG_ReadShort();
 	p.points = MSG_ReadShort();
+}
+
+void CL_UpdateSecrets(void)
+{
+	level.found_secrets = MSG_ReadByte();
 }
 
 //
@@ -3613,6 +3623,7 @@ void CL_InitCommands(void)
 	cmds[svc_updatefrags]		= &CL_UpdateFrags;
 	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
+	cmds[svc_updatesecrets]		= &CL_UpdateSecrets;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 	cmds[svc_playerstate]		= &CL_UpdatePlayerState;

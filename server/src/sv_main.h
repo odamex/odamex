@@ -124,6 +124,7 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
                     const std::string &mapname, player_t *player);
 
 
+void SV_UpdateSecretCount(void);
 
 
 extern bool unnatural_level_progression;

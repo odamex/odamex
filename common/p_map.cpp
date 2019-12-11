@@ -3713,6 +3713,7 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->tag					= src->tag;
 	dest->nexttag				= src->nexttag;
 	dest->firsttag				= src->firsttag;
+	dest->secretsector			= src->secretsector;
 	dest->soundtraversed		= src->soundtraversed;
 	dest->validcount			= src->validcount;
 	dest->seqType				= src->seqType;
