@@ -241,8 +241,6 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			   fixed_t speed, fixed_t height, bool crush, int change)
 	: DMovingFloor (sec), m_Status(init)
 {
-	int secnum = sec - sectors;
-
 	fixed_t floorheight = P_FloorHeight(sec);
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 
@@ -339,7 +337,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	case DFloor::floorLowerByTexture:
 		m_Direction = -1;
 		m_FloorDestHeight = floorheight -
-			P_FindShortestTextureAround (secnum);
+			P_FindShortestTextureAround (sec);
 		break;
 
 	case DFloor::floorLowerToCeiling:
@@ -355,7 +353,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		//		enough, BOOM preserved the code here even though it
 		//		also had this function.)
 		m_FloorDestHeight = floorheight +
-			P_FindShortestTextureAround (secnum);
+			P_FindShortestTextureAround (sec);
 		break;
 
 	case DFloor::floorRaiseAndChange:
@@ -379,7 +377,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		m_NewSpecial = sec->special;
 
 		//jff 5/23/98 use model subroutine to unify fixes and handling
-		sec = P_FindModelFloorSector (m_FloorDestHeight,sec-sectors);
+		sec = P_FindModelFloorSector (m_FloorDestHeight,sec);
 		if (sec)
 		{
 			m_Texture = sec->floorpic;
@@ -402,24 +400,24 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		if (change & 4)
 		{
 			// Numeric model change
-			sector_t *sec;
+			sector_t *tmpsec;
 
-			sec = (floortype == DFloor::floorRaiseToLowestCeiling ||
+			tmpsec = (floortype == DFloor::floorRaiseToLowestCeiling ||
 				   floortype == DFloor::floorLowerToLowestCeiling ||
 				   floortype == DFloor::floorRaiseToCeiling ||
 				   floortype == DFloor::floorLowerToCeiling) ?
-				  P_FindModelCeilingSector (m_FloorDestHeight, secnum) :
-				  P_FindModelFloorSector (m_FloorDestHeight, secnum);
+					 P_FindModelCeilingSector (m_FloorDestHeight, sec) :
+					 P_FindModelFloorSector (m_FloorDestHeight, sec);
 
-			if (sec) {
-				m_Texture = sec->floorpic;
+			if (tmpsec) {
+				m_Texture = tmpsec->floorpic;
 				switch (change & 3) {
 					case 1:
 						m_NewSpecial = 0;
 						m_Type = DFloor::genFloorChg0;
 						break;
 					case 2:
-						m_NewSpecial = sec->special;
+						m_NewSpecial = tmpsec->special;
 						m_Type = DFloor::genFloorChgT;
 						break;
 					case 3:
@@ -547,7 +545,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 			}
 			break;
 		case numChangeOnly:
-			secm = P_FindModelFloorSector(P_FloorHeight(sec), secnum);
+			secm = P_FindModelFloorSector(P_FloorHeight(sec), sec);
 			if (secm) // if no model, no change
 			{
 				sec->floorpic = secm->floorpic;

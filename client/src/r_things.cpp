@@ -349,7 +349,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dcol.post;
 
-	while (!post->end())
+	while (post && !post->end())
 	{
 		// calculate unclipped screen coordinates for post
 		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
