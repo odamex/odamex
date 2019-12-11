@@ -1962,24 +1962,28 @@ BOOL CheckIfExitIsGood (AActor *self)
 		return true;
 
 	if (sv_gametype == GM_COOP) {
-		// COOP completionist mode
+		// COOP completionist mode:
 		if (sv_coop_completionist && self->player && multiplayer) {
 			int unkilled_monsters = level.total_monsters - level.killed_monsters;
 			int unfound_secrets = level.total_secrets - level.found_secrets;
 
 			if (unkilled_monsters > 0 || unfound_secrets > 0) {
-				// 400 should be more than enough for all static chars here plus 256 for netname
-				char msg[400], *m;
+				// 200 should be more than enough for all chars here:
+				char msg[200], *m;
 
 				m = msg;
-				m += sprintf(m, "%s attempted to exit the level with", self->player->userinfo.netname.c_str());
+				m += sprintf(m, "Cannot exit the level with");
 
 				if (unkilled_monsters > 0) {
-					m += sprintf(m, " %d unkilled monsters", unkilled_monsters);
+					m += sprintf(m, " %d unkilled %s",
+							unkilled_monsters,
+							unkilled_monsters == 1 ? "monster" : "monsters");
 				}
 				if (unfound_secrets > 0) {
 					if (unkilled_monsters > 0) m += sprintf(m, " and");
-					m += sprintf(m, " %d unfound secrets", unfound_secrets);
+					m += sprintf(m, " %d unfound %s",
+							unfound_secrets,
+							unfound_secrets == 1 ? "secret" : "secrets");
 				}
 				m += sprintf(m, ".\n");
 
