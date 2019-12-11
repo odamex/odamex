@@ -858,8 +858,11 @@ void G_Ticker (void)
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+			{
+				if (it->playerstate == PST_REBORN)	
+					it->doreborn = true;			// State only our will to lose the whole inventory in case of a reborn.
 				G_DoReborn(*it);
-			it->doreborn = true;
+			}
 		}
 
 	// do things to change the game state
