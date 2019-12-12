@@ -96,7 +96,7 @@ int 			viewangletox[FINEANGLES/2];
 // from clipangle to -clipangle.
 angle_t 		*xtoviewangle;
 
-const fixed_t	*finecosine = &finesine[FINEANGLES/4];
+cosine_inline finecosine;	// in case this is actually needed
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
