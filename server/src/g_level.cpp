@@ -369,6 +369,8 @@ void G_InitNew (const char *mapname)
 			}
 			it->spectator = true;
 			it->playerstate = PST_LIVE;
+
+			it->suicide_time = 0;				// Ch0wW : Disallow suicide
 			it->joinafterspectatortime = -(TICRATE * 5);
 		}
 	}
@@ -444,6 +446,7 @@ void G_InitNew (const char *mapname)
 
 			it->playerstate = PST_ENTER; // [BC]
 
+			it->suicide_time = 0;				// Ch0wW : Disallow suicide
 			it->joinafterspectatortime = -(TICRATE * 5);
 		}
 	}

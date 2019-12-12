@@ -4012,6 +4012,10 @@ void SV_Suicide(player_t &player)
 	if (!player.mo)
 		return;
 
+	// WHY do you want to commit suicide in the intermission screen ?!?!
+	if (gamestate != GS_LEVEL)
+		return;
+
 	// merry suicide!
 	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
 	//player.mo->player = NULL;
@@ -4228,7 +4232,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_kill:
 			if(player.mo &&
-               level.time > player.death_time + TICRATE*10 &&
+               level.time > player.suicide_time + TICRATE*10 &&
                (sv_allowcheats || sv_gametype == GM_COOP))
             {
 				SV_Suicide (player);
