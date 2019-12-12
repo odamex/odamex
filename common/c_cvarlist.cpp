@@ -169,7 +169,9 @@ CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on master
 CVAR(				sv_instantswitch, "0", "Enables weapon insta-switching", 
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
-					
+CVAR(				sv_nompthings, "0", "Removes multiplayer-only entities in cooperative mode",
+					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
 					
