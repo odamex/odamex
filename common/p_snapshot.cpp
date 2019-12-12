@@ -833,18 +833,24 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_PILLAR && mCeilingStatus != DPillar::destroy)
 	{
+		int status = mCeilingStatus;
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
 		{
 			sector->ceilingdata->Destroy();
 			sector->ceilingdata = NULL;
 
 		}
+
 		if (sector->floordata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
 		{
 			sector->floordata->Destroy();
 			sector->floordata = NULL;
 		}
 		
+		if (status == DDoor::finished)
+			return;
+
 		if (!sector->ceilingdata)
 		{
 			sector->ceilingdata = new DPillar();
@@ -924,7 +930,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 			sector->ceilingdata->Destroy();
 			sector->ceilingdata = NULL;
 		}
-		
+
 		if (!sector->ceilingdata)
 		{
 			sector->ceilingdata =
