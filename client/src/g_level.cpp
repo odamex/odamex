@@ -486,13 +486,15 @@ void G_DoLoadLevel (int position)
 
 	gamestate = GS_LEVEL;
 
+	// Ch0wW : Readjust the console so that when connecting, it doesn't go fullscreen
+	C_AdjustBottom();
+
 	// Hide the console unless this is just part of the demo loop
 	// or, if there's con_autohide enabled.
 	if (!demoscreen && (gamestate == GS_LEVEL && con_autohide))
 		C_HideConsole();
 
-	// Ch0wW : Readjust the console so that when connecting, it doesn't go fullscreen
-	C_AdjustBottom();
+
 
 	// [SL] clear the saved sector data from the last level
 	R_ResetInterpolation();

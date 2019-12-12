@@ -1174,7 +1174,13 @@ void C_AdjustBottom()
 	else if (ConsoleState == c_up)
 		ConBottom = 0;
 	else if (ConsoleState == c_down || ConBottom > surface_height / 2)
+	{
+		if (ConBottom > surface_height / 2)
+			C_HideConsole();
+
 		ConBottom = surface_height / 2;
+		
+	}
 
 	// don't adjust if the console is raising or lowering because C_Ticker
 	// handles that already
