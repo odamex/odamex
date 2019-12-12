@@ -174,7 +174,7 @@ CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "",
 // ------------
 
 // Determines whether to draw the scores on intermission.
-CVAR(				wi_newintermission, "0", "Draw the scores on intermission",
+CVAR(				wi_newintermission, "0", "Use the classic intermission screen if there are 4 players or less on cooperative gamemodes.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 

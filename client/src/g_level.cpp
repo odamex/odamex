@@ -362,7 +362,7 @@ void G_DoCompleted (void)
 		return;
 	}
 
-	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
+	wminfo.episode = level.cluster - 1;		// Only used for DOOM I.
 	strncpy (wminfo.lname0, level.info->pname, 8);
 	strncpy (wminfo.current, level.mapname, 8);
 
@@ -386,10 +386,10 @@ void G_DoCompleted (void)
 		}
 	}
 
+	// Copy maximum possible values from FLevelLocals.
 	wminfo.maxkills = level.total_monsters;
 	wminfo.maxitems = level.total_items;
 	wminfo.maxsecret = level.total_secrets;
-	wminfo.maxfrags = 0;
 	wminfo.partime = TICRATE * level.partime;
 
 	wminfo.plyr.resize(players.size());
@@ -397,13 +397,10 @@ void G_DoCompleted (void)
 	i = 0;
 	for (Players::iterator it = players.begin();it != players.end();++it,++i)
 	{
-		wminfo.plyr[i].in = it->ingame();
 		wminfo.plyr[i].skills = it->killcount;
 		wminfo.plyr[i].sitems = it->itemcount;
 		wminfo.plyr[i].ssecret = it->secretcount;
 		wminfo.plyr[i].stime = level.time;
-		//memcpy (wminfo.plyr[i].frags, players[i].frags
-		//		, sizeof(wminfo.plyr[i].frags));
 		wminfo.plyr[i].fragcount = it->fragcount;
 
 		if(&*it == &consoleplayer())

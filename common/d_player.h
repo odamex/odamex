@@ -399,7 +399,7 @@ extern byte displayplayer_id;
 //
 typedef struct wbplayerstruct_s
 {
-	BOOL		in;			// whether the player is in game
+	BOOL		ingame;			// whether the player is in game
 
 	// Player stats, kills, collected items etc.
 	int			skills;
@@ -413,7 +413,7 @@ typedef struct wbplayerstruct_s
 
 typedef struct wbstartstruct_s
 {
-	int			epsd;	// episode # (0-2)
+	int			episode;		// episode # (0-2)
 
 	char		current[9];	// [RH] Name of map just finished
 	char		next[9];	// next level, [RH] actual map name
@@ -424,7 +424,6 @@ typedef struct wbstartstruct_s
 	int			maxkills;
 	int			maxitems;
 	int			maxsecret;
-	int			maxfrags;
 
 	// the par time
 	int			partime;

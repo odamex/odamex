@@ -33,11 +33,14 @@ Warmup::status_t Warmup::get_status()
 // Always allow score changes on the client
 bool Warmup::checkscorechange()
 {
+	// Always return score changes if we're doing vanilla stuff
+	if (demoplayback)
+		return true;
+
 	// We should be able to refresh the scores if we're not on a warmup game.
 	if (this->status == Warmup::DISABLED)
 		return true;
 
-	// Disallow score changes if the warmup status is not in a match.
 	if (this->status != Warmup::INGAME)
 		return false;
 
@@ -54,6 +57,7 @@ bool Warmup::checkfireweapon()
 
 	if (this->status == Warmup::COUNTDOWN || this->status == Warmup::FORCE_COUNTDOWN)
 		return false;
+		
 	return true;
 }
 
