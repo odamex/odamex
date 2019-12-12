@@ -3929,7 +3929,7 @@ void SV_Suicide(player_t &player)
 		return;
 
 	// WHY do you want to commit suicide in the intermission screen ?!?!
-	if (gamestate == GS_INTERMISSION)
+	if (gamestate != GS_LEVEL)
 		return;
 
 	// merry suicide!
