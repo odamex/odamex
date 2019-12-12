@@ -52,6 +52,7 @@ void A_FireRailgun(AActor* mo);
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_fineautoaim)
+EXTERN_CVAR(sv_instantswitch)
 
 const char *weaponnames[] =
 {
@@ -230,16 +231,26 @@ void A_FireSound (player_t *player, const char *sound)
 //
 void P_BringUpWeapon(player_t *player)
 {
+	statenum_t newstate;
+
 	if (player->pendingweapon == wp_nochange)
 		player->pendingweapon = player->readyweapon;
 
 	if (player->pendingweapon == wp_chainsaw)
 		A_FireSound(player, "weapons/sawup");
 
-	statenum_t newstate = weaponinfo[player->pendingweapon].upstate;
+	if (!sv_instantswitch)
+	{
+		newstate = weaponinfo[player->pendingweapon].upstate;
+		player->psprites[ps_weapon].sy = WEAPONBOTTOM;
+	}
+	else
+	{
+		newstate = weaponinfo[player->pendingweapon].readystate;
+		player->psprites[ps_weapon].sy = WEAPONTOP;
+	}
 
 	player->pendingweapon = wp_nochange;
-	player->psprites[ps_weapon].sy = WEAPONBOTTOM;
 	P_SetPsprite(player, ps_weapon, newstate);
 }
 
@@ -553,11 +564,13 @@ void A_Lower(AActor* mo)
     player_t* player = mo->player;
     struct pspdef_s* psp = &player->psprites[player->psprnum];
 
-	psp->sy += LOWERSPEED;
+	if (!sv_instantswitch) {
+		psp->sy += LOWERSPEED;
 
-	// Not yet lowered to the bottom
-	if (psp->sy < WEAPONBOTTOM)
-		return;
+		// Not yet lowered to the bottom
+		if (psp->sy < WEAPONBOTTOM)
+			return;
+	} 
 
 	// Player is dead.
 	if (player->playerstate == PST_DEAD)
