@@ -53,9 +53,12 @@ typedef enum {
 	VOTE_SCORELIMIT,
 	VOTE_TIMELIMIT,
 	VOTE_COINFLIP,
+	VOTE_SKIPKILLS,
+	VOTE_SKIPSECRETS,
+	VOTE_SKIPALL,
 	VOTE_MAX // Reserved
 } vote_type_t;
 
-extern const char* vote_type_cmd[];
+extern const char* vote_type_cmd[VOTE_MAX+1];
 
 #endif

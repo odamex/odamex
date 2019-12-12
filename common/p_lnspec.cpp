@@ -33,6 +33,10 @@
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
+#include "c_console.h"
+
+EXTERN_CVAR(sv_skipkills)
+EXTERN_CVAR(sv_skipsecrets)
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -1948,9 +1952,11 @@ lnSpecFunc LineSpecials[256] =
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
+EXTERN_CVAR (sv_coop_completionist)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
+	// must be server side:
 	if (self == NULL || !serverside)
 		return false;
 
@@ -1958,8 +1964,45 @@ BOOL CheckIfExitIsGood (AActor *self)
 	if (level.isLobbyMap())
 		return true;	
 
+	if (sv_gametype == GM_COOP) {
+		// COOP completionist mode:
+		if (sv_coop_completionist && self->player) {
+			int unkilled_monsters = level.total_monsters - level.killed_monsters;
+			int unfound_secrets = level.total_secrets - level.found_secrets;
+
+			// allow bypassing checks:
+			if (sv_skipkills) unkilled_monsters = 0;
+			if (sv_skipsecrets) unfound_secrets = 0;
+
+			if (unkilled_monsters > 0 || unfound_secrets > 0) {
+				// 200 should be more than enough for all chars here:
+				char msg[200], *m;
+
+				m = msg;
+				m += sprintf(m, "Cannot exit the level with");
+
+				if (unkilled_monsters > 0) {
+					m += sprintf(m, " %d unkilled %s",
+							unkilled_monsters,
+							unkilled_monsters == 1 ? "monster" : "monsters");
+				}
+				if (unfound_secrets > 0) {
+					if (unkilled_monsters > 0) m += sprintf(m, " and");
+					m += sprintf(m, " %d unfound %s",
+							unfound_secrets,
+							unfound_secrets == 1 ? "secret" : "secrets");
+				}
+				m += sprintf(m, ".\n");
+
+				C_MidPrint (msg, self->player, 6);
+
+				// don't allow exit:
+				return false;
+			}
+		}
+	}
 	// [Toke - dmflags] Old location of DF_NO_EXIT
-	if (sv_gametype != GM_COOP && self)
+	else if (sv_gametype != GM_COOP)
 	{
         if (!sv_allowexit)
         {
