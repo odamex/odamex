@@ -28,6 +28,7 @@
 #include <SDL_mixer.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "z_zone.h"
 
@@ -59,12 +60,34 @@ EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_crossover)
 
+void I_ClearSoundCache(void)
+{
+	// clear cached sfx:
+	for (int id = 0; id < numsfx; id++)
+	{
+		sfxinfo_t *sfx = &S_sfx[id];
+		if (!sfx->data) continue;
+
+		// free Mix_Chunk memory:
+		Mix_Chunk *chunk = (Mix_Chunk *) sfx->data;
+		Z_Free(chunk->abuf);
+		Z_Free(sfx->data);
+		sfx->data = NULL;
+	}
+}
+
 CVAR_FUNC_IMPL(snd_samplerate)
 {
 	S_Stop();
 	S_Init(snd_sfxvolume, snd_musicvolume);
 }
 
+CVAR_FUNC_IMPL(snd_cubic)
+{
+	// only need to stop sfx, not music:
+	S_StopAllChannels();
+	I_ClearSoundCache();
+}
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)
@@ -98,13 +121,24 @@ static bool ConvertibleRatio(int freq1, int freq2)
 
 // Generic sound expansion function for any sample rate
 
-static void ExpandSoundData(byte *data,
-                            int samplerate,
-                            int length,
-                            Mix_Chunk *destination)
+static Mix_Chunk *ExpandSoundData(byte *data, int samplerate, int length)
 {
+	Mix_Chunk *chunk;
+	Uint32 expanded_length;
+	Uint32 expanded_samples;
+
+	expanded_samples = (uint32_t) ((((uint64_t) length) * mixer_freq) / samplerate);
+
+	// Double up twice: 8 -> 16 bit and mono -> stereo
+	expanded_length = expanded_samples * 4;
+
+	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+	chunk->allocated = 1;
+	chunk->alen = expanded_length;
+	chunk->abuf = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, &chunk->abuf);
+	chunk->volume = MIX_MAX_VOLUME;
+
     SDL_AudioCVT convertor;
-    
     if (samplerate <= mixer_freq
      && ConvertibleRatio(samplerate, mixer_freq)
      && SDL_BuildAudioCVT(&convertor,
@@ -117,13 +151,12 @@ static void ExpandSoundData(byte *data,
 
         SDL_ConvertAudio(&convertor);
 
-        memcpy(destination->abuf, convertor.buf, destination->alen);
+        memcpy(chunk->abuf, convertor.buf, chunk->alen);
         delete[] convertor.buf;
     }
     else
     {
-        Sint16 *expanded = (Sint16 *) destination->abuf;
-        size_t expanded_length;
+        Sint16 *expanded = (Sint16 *) chunk->abuf;
         int expand_ratio;
 
         // Generic expansion if conversion does not work:
@@ -134,10 +167,9 @@ static void ExpandSoundData(byte *data,
 
         // number of samples in the converted sound
 
-        expanded_length = (size_t)((int64_t(length) * mixer_freq) / samplerate);
-        expand_ratio = (length << 8) / expanded_length;
+        expand_ratio = (length << 8) / expanded_samples;
 
-        for (size_t i = 0; i < expanded_length; ++i)
+        for (size_t i = 0; i < expanded_samples; ++i)
         {
             Sint16 sample;
             int src;
@@ -152,6 +184,8 @@ static void ExpandSoundData(byte *data,
             expanded[i * 2] = expanded[i * 2 + 1] = sample;
         }
     }
+
+    return chunk;
 }
 
 static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
@@ -197,10 +231,115 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     return ret_data;
 }
 
+static double butterworth_q(int order, int phase) {
+	return -0.5 / cos(M_PI * (phase + order + 0.5) / order);
+}
+
+static Mix_Chunk *CubicResample(byte *data, int samplerate, int length)
+{
+	//static double highest = 0.0;
+
+	double inputFrequency = samplerate;
+	double outputFrequency = mixer_freq;
+
+	double ratio = inputFrequency / outputFrequency;
+	double mu = 0.0;
+	double s[4] = {0, 0, 0, 0};
+
+	const Uint32 extra_samples = 16;
+
+	Mix_Chunk *chunk;
+	Uint32 expanded_length = (Uint32)((((uint64_t) length) * mixer_freq) / samplerate + extra_samples);
+
+	// Double up twice: 8 -> 16 bit and mono -> stereo
+	expanded_length *= 4;
+
+	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+	chunk->allocated = 1;
+	chunk->alen = expanded_length;
+	chunk->abuf = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, &chunk->abuf);
+	chunk->volume = MIX_MAX_VOLUME;
+
+	Sint16 *abuf = (Sint16 *)chunk->abuf;
+
+	// setup lowpass filters:
+	const int passes = 3;
+	double a0[passes], a1[passes], a2[passes], b1[passes], b2[passes];
+	double z1[passes], z2[passes];
+
+	double cutoff = inputFrequency / 2.0 - 2000.0;
+	for (int pass = 0; pass < passes; pass++) {
+		double q = butterworth_q(passes * 2, pass);
+		double k = tan(M_PI * cutoff / inputFrequency);
+
+		double n = 1.0 / (1.0 + k / q + k * k);
+		a0[pass] = k * k * n;
+		a1[pass] = 2.0 * a0[pass];
+		a2[pass] = a0[pass];
+		b1[pass] = 2.0 * (k * k - 1.0) * n;
+		b2[pass] = (1.0 - k / q + k * k) * n;
+
+		z1[pass] = 0.0;
+		z2[pass] = 0.0;
+	}
+
+	// for all samples in sfx: lowpass, resample, and convert to 16-bit:
+	for (Uint32 i = 0; i < length + extra_samples; i++) {
+		double sample;
+		if (i < length) {
+			sample = (data[i] - 128) / 128.0;
+		} else {
+			sample = 0;
+		}
+
+		// cubic resampler:
+		s[0] = s[1];
+		s[1] = s[2];
+		s[2] = s[3];
+		s[3] = sample;
+
+		while (mu <= 1.0 && ((Uint8*)abuf - chunk->abuf < chunk->alen)) {
+			double a = s[3] - s[2] - s[0] + s[1];
+			double b = s[0] - s[1] - a;
+			double c = s[2] - s[0];
+			double d = s[1];
+
+			// cubic resample:
+			double n = a * mu * mu * mu + b * mu * mu + c * mu + d;
+
+			// run nyquist lowpass filters:
+			for (int p = 0; p < passes; p++) {
+				double out = n * a0[p] + z1[p];
+				z1[p] = n * a1[p] + z2[p] - b1[p] * out;
+				z2[p] = n * a2[p] - b2[p] * out;
+				n = out;
+			}
+
+			// [jsd]: when using a 32767.0 multiplier to convert to 16-bit, the max sample will be 46740 which is out
+			// of range, so we use 22970.0 multiplier instead to come in just shy of 32753 as our max 16-bit sample.
+
+			// convert to signed 16-bit sample:
+			//highest = MAX(highest, abs(n * 22970.0));
+			Sint16 newsample = (Sint16)(n * 22970.0);
+
+			// expand mono to stereo:
+			abuf[0] = abuf[1] = newsample;
+			abuf += 2;
+
+			mu += ratio;
+		}
+
+		mu -= 1.0;
+	}
+
+	//Printf(PRINT_LOW, "max 16-bit sample: %d\n", Uint32(highest));
+	return chunk;
+}
+
 static void getsfx (struct sfxinfo_struct *sfx)
 {
     Uint32 samplerate;
-	Uint32 length ,expanded_length;
+	Uint32 length, expanded_length;
 	Uint8 *data;
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
@@ -242,24 +381,14 @@ static void getsfx (struct sfxinfo_struct *sfx)
     // if the lump is longer than the value, fixes exec.wad's ssg
     length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
 
-    expanded_length = (uint32_t) ((((uint64_t) length) * mixer_freq) / samplerate);
+	if (snd_cubic) {
+		DPrintf("getsfx('%s'): cubic resample\n", sfx->name);
+		chunk = CubicResample((unsigned char *) data + 8, samplerate, length);
+	} else {
+		DPrintf("getsfx('%s'): naive resample\n", sfx->name);
+		chunk = ExpandSoundData((unsigned char *) data + 8, samplerate, length);
+	}
 
-    // Double up twice: 8 -> 16 bit and mono -> stereo
-
-    expanded_length *= 4;
-	
-	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
-    chunk->allocated = 1;
-    chunk->alen = expanded_length;
-    chunk->abuf 
-        = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, &chunk->abuf);
-    chunk->volume = MIX_MAX_VOLUME;
-
-    ExpandSoundData((unsigned char *)data + 8, 
-                    samplerate, 
-                    length, 
-                    chunk);
-                    
     sfx->data = chunk;
     
     Z_ChangeTag(data, PU_CACHE);

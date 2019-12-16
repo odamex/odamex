@@ -140,6 +140,7 @@ EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
+EXTERN_CVAR (snd_cubic)
 EXTERN_CVAR (snd_gamesfx)
 EXTERN_CVAR (snd_voxtype)
 EXTERN_CVAR (cl_connectalert)
@@ -576,6 +577,11 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
+static value_t SndInterp[] = {
+	{ 0.0,					"Off" },
+	{ 1.0,					"Cubic" },
+};
+
 static float num_mussys = static_cast<float>(STACKARRAY_LENGTH(MusSys));
 
 static menuitem_t SoundItems[] = {
@@ -585,6 +591,7 @@ static menuitem_t SoundItems[] = {
 	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.1},      {NULL} },
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Interpolation"                     , {&snd_cubic},	    	{2.0},			{1.0},		{0.0},		{SndInterp} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
