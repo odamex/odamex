@@ -247,6 +247,8 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
+	I_ClearSoundCache();
+
 	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
 
 	// [RH] Read in sound sequences

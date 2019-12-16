@@ -543,6 +543,8 @@ CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
 CVAR_RANGE_FUNC_DECL(snd_channels, "12", "Number of channels for sound effects",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f, 32.0f)
 
+CVAR_FUNC_DECL(	snd_cubic, "0", "Cubic resampling",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 //
 // C_GetDefaultMuiscSystem()
 //
