@@ -40,7 +40,7 @@ const char* vote_type_cmd[VOTE_MAX+1] = {
 	"scorelimit",
 	"timelimit",
 	"coinflip",
-	"coop_completionist_kills",
-	"coop_completionist_secrets",
+	"kills",
+	"secrets",
 	"???"
 };

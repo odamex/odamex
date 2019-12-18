@@ -50,6 +50,7 @@ EXTERN_CVAR(sv_vote_specvote)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
+EXTERN_CVAR(sv_coop_completionist)
 EXTERN_CVAR(sv_coop_completionist_kills)
 EXTERN_CVAR(sv_coop_completionist_secrets)
 
@@ -67,8 +68,8 @@ EXTERN_CVAR(sv_callvote_fraglimit)
 EXTERN_CVAR(sv_callvote_scorelimit)
 EXTERN_CVAR(sv_callvote_timelimit)
 
-EXTERN_CVAR(sv_callvote_coop_completionist_kills)
-EXTERN_CVAR(sv_callvote_coop_completionist_secrets)
+EXTERN_CVAR(sv_callvote_kills)
+EXTERN_CVAR(sv_callvote_secrets)
 
 // Vote class goes here
 Vote *vote = 0;
@@ -661,18 +662,18 @@ class CoopCompletionistKillsVote : public Vote
 private:
 	float count;
 public:
-	CoopCompletionistKillsVote() : Vote("coop_completionist_kills", &sv_callvote_coop_completionist_kills) { };
+	CoopCompletionistKillsVote() : Vote("kills", NULL) { };
 	bool setup(const std::vector<std::string> &args, const player_t &player)
 	{
 		float count;
 
-		if (!Vote::setup_check_cvar())
+		if (!sv_coop_completionist)
 			return false;
 
 		// Do we have at least one argument?
 		if (args.size() < 1)
 		{
-			this->error = "coop_completionist_kills needs a second argument.";
+			this->error = "kills needs a second argument.";
 			return false;
 		}
 
@@ -681,17 +682,17 @@ public:
 		buffer >> count;
 		if (!buffer)
 		{
-			this->error = "coop_completionist_kills must be a number.";
+			this->error = "kills must be a number.";
 			return false;
 		}
 
 		this->count = count;
-		this->votestring = "coop_completionist_kills";
+		this->votestring = "kills";
 		return true;
 	}
 	bool exec(void)
 	{
-		sv_coop_completionist_kills = count;
+		sv_coop_completionist_kills.Set(count);
 		return true;
 	}
 };
@@ -701,18 +702,18 @@ class CoopCompletionistSecretsVote : public Vote
 private:
 	float count;
 public:
-	CoopCompletionistSecretsVote() : Vote("coop_completionist_secrets", &sv_callvote_coop_completionist_secrets) { };
+	CoopCompletionistSecretsVote() : Vote("secrets", NULL) { };
 	bool setup(const std::vector<std::string> &args, const player_t &player)
 	{
 		float count;
 
-		if (!Vote::setup_check_cvar())
+		if (!sv_coop_completionist)
 			return false;
 
 		// Do we have at least one argument?
 		if (args.size() < 1)
 		{
-			this->error = "coop_completionist_secrets needs a second argument.";
+			this->error = "secrets needs a second argument.";
 			return false;
 		}
 
@@ -721,17 +722,17 @@ public:
 		buffer >> count;
 		if (!buffer)
 		{
-			this->error = "coop_completionist_secrets must be a number.";
+			this->error = "secrets must be a number.";
 			return false;
 		}
 
 		this->count = count;
-		this->votestring = "coop_completionist_secrets";
+		this->votestring = "secrets";
 		return true;
 	}
 	bool exec(void)
 	{
-		sv_coop_completionist_secrets = count;
+		sv_coop_completionist_secrets.Set(count);
 		return true;
 	}
 };

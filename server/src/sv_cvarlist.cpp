@@ -225,14 +225,6 @@ CVAR(			sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-CVAR(			sv_callvote_coop_completionist_kills, "0", "Clients can vote to set killable monster " \
-				"count for COOP completionist mode for the current map.",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
-CVAR(			sv_callvote_coop_completionist_secrets, "0", "Clients can vote to set secret count " \
-				"for COOP completionist mode for the current map.",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
 // Warmup mode
 CVAR(			sv_warmup, "0", "Enable a 'warmup mode' before the match starts.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
