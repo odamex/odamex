@@ -225,11 +225,12 @@ CVAR(			sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-CVAR(			sv_callvote_skipkills, "0", "Clients can vote to bypass kill count for completionist mode.",
+CVAR(			sv_callvote_coop_completionist_kills, "0", "Clients can vote to set killable monster " \
+				"count for COOP completionist mode for the current map.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR(			sv_callvote_skipsecrets, "0", "Clients can vote to bypass secret count for completionist mode.",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR(			sv_callvote_skipall, "0", "Clients can vote to bypass kill and secret counts for completionist mode.",
+
+CVAR(			sv_callvote_coop_completionist_secrets, "0", "Clients can vote to set secret count " \
+				"for COOP completionist mode for the current map.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Warmup mode

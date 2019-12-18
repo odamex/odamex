@@ -1642,6 +1642,7 @@ P_PushSpecialLine
 
 #ifdef SERVER_APP
 EXTERN_CVAR(sv_coop_completionist)
+EXTERN_CVAR(sv_coop_completionist_secrets)
 #endif
 
 //
@@ -1788,10 +1789,14 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (serverside && sv_gametype == GM_COOP && sv_coop_completionist)
 			{
 				char msg[256 + 32];
+
+				// determine total number of killable monsters and findable secrets for the current level:
+				int findable_secrets = (sv_coop_completionist_secrets < 0.0) ? level.total_secrets : (int)sv_coop_completionist_secrets;
+
 				sprintf(msg, "%s revealed a secret!  %d/%d\n",
 						player->userinfo.netname.c_str(),
 						level.found_secrets,
-						level.total_secrets);
+						findable_secrets);
 
 				for (Players::iterator itr = players.begin();itr != players.end();++itr)
 				{

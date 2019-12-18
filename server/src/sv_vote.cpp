@@ -50,8 +50,8 @@ EXTERN_CVAR(sv_vote_specvote)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
-EXTERN_CVAR(sv_skipkills)
-EXTERN_CVAR(sv_skipsecrets)
+EXTERN_CVAR(sv_coop_completionist_kills)
+EXTERN_CVAR(sv_coop_completionist_secrets)
 
 EXTERN_CVAR(sv_callvote_coinflip)
 EXTERN_CVAR(sv_callvote_forcespec)
@@ -67,9 +67,8 @@ EXTERN_CVAR(sv_callvote_fraglimit)
 EXTERN_CVAR(sv_callvote_scorelimit)
 EXTERN_CVAR(sv_callvote_timelimit)
 
-EXTERN_CVAR(sv_callvote_skipkills)
-EXTERN_CVAR(sv_callvote_skipsecrets)
-EXTERN_CVAR(sv_callvote_skipall)
+EXTERN_CVAR(sv_callvote_coop_completionist_kills)
+EXTERN_CVAR(sv_callvote_coop_completionist_secrets)
 
 // Vote class goes here
 Vote *vote = 0;
@@ -657,66 +656,82 @@ public:
 	}
 };
 
-class SkipKillsVote : public Vote
+class CoopCompletionistKillsVote : public Vote
 {
+private:
+	float count;
 public:
-	SkipKillsVote() : Vote("skipkills", &sv_callvote_skipkills) { };
+	CoopCompletionistKillsVote() : Vote("coop_completionist_kills", &sv_callvote_coop_completionist_kills) { };
 	bool setup(const std::vector<std::string> &args, const player_t &player)
 	{
+		float count;
+
 		if (!Vote::setup_check_cvar())
 			return false;
 
-		// We don't need to keep any state, since "skipkills" takes no arguments
-		// and has no failure condition.
-		this->votestring = "skipkills";
+		// Do we have at least one argument?
+		if (args.size() < 1)
+		{
+			this->error = "coop_completionist_kills needs a second argument.";
+			return false;
+		}
+
+		// Is the count a numeric value?
+		std::istringstream buffer(args[0].c_str());
+		buffer >> count;
+		if (!buffer)
+		{
+			this->error = "coop_completionist_kills must be a number.";
+			return false;
+		}
+
+		this->count = count;
+		this->votestring = "coop_completionist_kills";
 		return true;
 	}
 	bool exec(void)
 	{
-		sv_skipkills = true;
+		sv_coop_completionist_kills = count;
 		return true;
 	}
 };
 
-class SkipSecretsVote : public Vote
+class CoopCompletionistSecretsVote : public Vote
 {
+private:
+	float count;
 public:
-	SkipSecretsVote() : Vote("skipsecrets", &sv_callvote_skipkills) { };
+	CoopCompletionistSecretsVote() : Vote("coop_completionist_secrets", &sv_callvote_coop_completionist_secrets) { };
 	bool setup(const std::vector<std::string> &args, const player_t &player)
 	{
+		float count;
+
 		if (!Vote::setup_check_cvar())
 			return false;
 
-		// We don't need to keep any state, since "skipsecrets" takes no arguments
-		// and has no failure condition.
-		this->votestring = "skipsecrets";
+		// Do we have at least one argument?
+		if (args.size() < 1)
+		{
+			this->error = "coop_completionist_secrets needs a second argument.";
+			return false;
+		}
+
+		// Is the count a numeric value?
+		std::istringstream buffer(args[0].c_str());
+		buffer >> count;
+		if (!buffer)
+		{
+			this->error = "coop_completionist_secrets must be a number.";
+			return false;
+		}
+
+		this->count = count;
+		this->votestring = "coop_completionist_secrets";
 		return true;
 	}
 	bool exec(void)
 	{
-		sv_skipsecrets = true;
-		return true;
-	}
-};
-
-class SkipAllVote : public Vote
-{
-public:
-	SkipAllVote() : Vote("skipall", &sv_callvote_skipall) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
-	{
-		if (!Vote::setup_check_cvar())
-			return false;
-
-		// We don't need to keep any state, since "skipall" takes no arguments
-		// and has no failure condition.
-		this->votestring = "skipall";
-		return true;
-	}
-	bool exec(void)
-	{
-		sv_skipkills = true;
-		sv_skipsecrets = true;
+		sv_coop_completionist_secrets = count;
 		return true;
 	}
 };
@@ -1200,14 +1215,11 @@ void SV_Callvote(player_t &player)
 	case VOTE_COINFLIP:
 		vote = new CoinflipVote;
 		break;
-	case VOTE_SKIPKILLS:
-		vote = new SkipKillsVote;
+	case VOTE_COOPCOMPLETIONISTKILLS:
+		vote = new CoopCompletionistKillsVote;
 		break;
-	case VOTE_SKIPSECRETS:
-		vote = new SkipSecretsVote;
-		break;
-	case VOTE_SKIPALL:
-		vote = new SkipAllVote;
+	case VOTE_COOPCOMPLETIONISTSECRETS:
+		vote = new CoopCompletionistSecretsVote;
 		break;
 	default:
 		return;

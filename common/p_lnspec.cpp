@@ -35,9 +35,6 @@
 #include "i_system.h"
 #include "c_console.h"
 
-EXTERN_CVAR(sv_skipkills)
-EXTERN_CVAR(sv_skipsecrets)
-
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
 
@@ -1952,7 +1949,10 @@ lnSpecFunc LineSpecials[256] =
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
+
 EXTERN_CVAR (sv_coop_completionist)
+EXTERN_CVAR (sv_coop_completionist_kills)
+EXTERN_CVAR (sv_coop_completionist_secrets)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
@@ -1967,12 +1967,12 @@ BOOL CheckIfExitIsGood (AActor *self)
 	if (sv_gametype == GM_COOP) {
 		// COOP completionist mode:
 		if (sv_coop_completionist && self->player) {
-			int unkilled_monsters = level.total_monsters - level.killed_monsters;
-			int unfound_secrets = level.total_secrets - level.found_secrets;
+			// determine total number of killable monsters and findable secrets for the current level:
+			int killable_monsters = (sv_coop_completionist_kills < 0.0) ? level.total_monsters : (int)sv_coop_completionist_kills;
+			int findable_secrets = (sv_coop_completionist_secrets < 0.0) ? level.total_secrets : (int)sv_coop_completionist_secrets;
 
-			// allow bypassing checks:
-			if (sv_skipkills) unkilled_monsters = 0;
-			if (sv_skipsecrets) unfound_secrets = 0;
+			int unkilled_monsters = killable_monsters - level.killed_monsters;
+			int unfound_secrets = findable_secrets - level.found_secrets;
 
 			if (unkilled_monsters > 0 || unfound_secrets > 0) {
 				char reuse[100], *m;
@@ -1984,7 +1984,9 @@ BOOL CheckIfExitIsGood (AActor *self)
 							unkilled_monsters == 1 ? "monster" : "monsters");
 				}
 				if (unfound_secrets > 0) {
-					if (unkilled_monsters > 0) m += sprintf(m, " and");
+					if (unkilled_monsters > 0) {
+						m += sprintf(m, " and");
+					}
 					m += sprintf(m, " %d unfound %s",
 							unfound_secrets,
 							unfound_secrets == 1 ? "secret" : "secrets");

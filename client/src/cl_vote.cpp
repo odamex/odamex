@@ -179,9 +179,6 @@ BEGIN_COMMAND(callvote) {
 	case VOTE_NEXTMAP:
 	case VOTE_RESTART:
 	case VOTE_COINFLIP:
-	case VOTE_SKIPKILLS:
-	case VOTE_SKIPSECRETS:
-	case VOTE_SKIPALL:
 		// No arguments are necessary.
 		arguments.resize(0);
 		break;
@@ -190,6 +187,8 @@ BEGIN_COMMAND(callvote) {
 	case VOTE_FRAGLIMIT:
 	case VOTE_SCORELIMIT:
 	case VOTE_TIMELIMIT:
+	case VOTE_COOPCOMPLETIONISTKILLS:
+	case VOTE_COOPCOMPLETIONISTSECRETS:
 		// Only one argument is necessary.
 		arguments.resize(1);
 		break;
