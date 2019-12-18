@@ -64,6 +64,7 @@ size_t P_NumPlayersInGame();
 #define NUMEPISODES 	4
 #define NUMMAPS 		9
 
+extern	BOOL			demoplayback;
 
 // GLOBAL LOCATIONS
 #define WI_TITLEY				2
@@ -1106,11 +1107,11 @@ void WI_drawNetgameStats(void)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		// While replaying a vanilla demo, we KNOW that the hardlimit is set to 4.
-		if (democlassic && it->id > 4)
+		if (demoplayback && it->id > 4)
 			break;
 
 		// Otherwise, we're going to break it as soon as the 4th VALID player has been seen.
-		if (!democlassic && nbPlayers > 4)
+		if (!demoplayback && nbPlayers > 4)
 			break;
 
 		byte i = (it->id) - 1;
@@ -1349,7 +1350,7 @@ void WI_Ticker (void)
 		case StatCount:
 			if (multiplayer)
 			{
-				if (democlassic)
+				if (demoplayback)
 					WI_updateNetgameStats();	// Force having the classic intermission screen while playing multiplayer classic demos
 				else
 				{
@@ -1620,7 +1621,7 @@ void WI_Drawer (void)
 		case StatCount:
 			if (multiplayer)
 			{
-				if (democlassic)
+				if (demoplayback)
 					WI_drawNetgameStats();	// Force having the classic intermission screen while playing multiplayer classic demos
 				else
 				{
