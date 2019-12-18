@@ -1747,12 +1747,21 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 			minorver = (GameVer % 256) / 10;
 			releasever = (GameVer % 256) % 10;
 
-			if ((majorver == MAJORVER) &&
-				(minorver == MINORVER) &&
-				(releasever >= RELEASEVER))
-				AllowConnect = true;
-			else
-				AllowConnect = false;
+			if (MAJORVER == 0 && MINORVER == 8 && RELEASEVER >= 1) {
+				// If our server version >= 0.8.1, then allow clients >= 0.8.1 up to 0.9:
+				AllowConnect = (majorver == MAJORVER) &&
+							   (minorver == MINORVER) &&
+							   (releasever >= 1);
+			} else if (MAJORVER == 0 && MINORVER >= 9) {
+				// If our server version >= 0.9, then match only major and minor version:
+				AllowConnect = (majorver == MAJORVER) &&
+							   (minorver == MINORVER);
+			} else {
+				// If our server version < 0.8.1, then only allow clients >= exact server version:
+				AllowConnect = (majorver == MAJORVER) &&
+							   (minorver == MINORVER) &&
+							   (releasever >= RELEASEVER);
+			}
 			break;
 		case 64:
 			sprintf(VersionStr, "0.2a or 0.3");
