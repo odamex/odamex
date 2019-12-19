@@ -686,8 +686,11 @@ public:
 			return false;
 		}
 
+		std::ostringstream vote_string;
+		vote_string << "kills " << count;
+		this->votestring = vote_string.str();
+
 		this->count = count;
-		this->votestring = "kills";
 		return true;
 	}
 	bool exec(void)
@@ -726,8 +729,11 @@ public:
 			return false;
 		}
 
+		std::ostringstream vote_string;
+		vote_string << "secrets " << count;
+		this->votestring = vote_string.str();
+
 		this->count = count;
-		this->votestring = "secrets";
 		return true;
 	}
 	bool exec(void)
