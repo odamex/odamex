@@ -248,6 +248,8 @@ public:
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
 
+	bool 		is_vip;					// if player is a VIP and should not be kicked
+
 	// For flood protection
 	struct LastMessage_s
 	{

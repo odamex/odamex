@@ -277,6 +277,28 @@ CVAR_FUNC_IMPL (sv_waddownloadcap)
 		var.Set(sv_maxrate);
 }
 
+// list of VIP player IP addresses:
+std::vector<netadr_t> vipAddrs;
+
+CVAR_FUNC_IMPL (sv_vips)
+{
+	vipAddrs.clear();
+
+	std::string addrstr;
+	std::istringstream tokenStream(var.str());
+	while (std::getline(tokenStream, addrstr, ','))
+	{
+		// Parse the string into an address:
+		netadr_t addr;
+		if (!NET_StringToAdr(addrstr.c_str(), &addr)) {
+			continue;
+		}
+
+		// Add the address to our VIP list:
+		vipAddrs.push_back(addr);
+	}
+}
+
 client_c clients;
 
 
@@ -480,12 +502,8 @@ void SV_InitNetwork (void)
 	SV_InitMasters();
 }
 
-//Get next free player. Will use the lowest available player id.
-Players::iterator SV_GetFreeClient(void)
+Players::iterator SV_MakePlayerClient(void)
 {
-	if (players.size() >= sv_maxclients)
-		return players.end();
-
 	if (free_player_ids.empty())
 	{
 		// list of free ids needs to be initialized
@@ -506,6 +524,15 @@ Players::iterator SV_GetFreeClient(void)
 	// Return iterator pointing to the just-inserted player
 	Players::iterator it = players.end();
 	return --it;
+}
+
+//Get next free player. Will use the lowest available player id.
+Players::iterator SV_GetFreeClient(void)
+{
+	if (players.size() >= sv_maxclients)
+		return players.end();
+
+	return SV_MakePlayerClient();
 }
 
 player_t &SV_FindPlayerByAddr(void)
@@ -1884,6 +1911,7 @@ void SV_InitPlayerEnterState(player_s* player)
 //
 void G_DoReborn (player_t &playernum);
 
+
 void SV_ConnectClient()
 {
 	int challenge = MSG_ReadLong();
@@ -1906,23 +1934,73 @@ void SV_ConnectClient()
 
 	Printf(PRINT_HIGH, "%s is trying to connect...\n", NET_AdrToString (net_from));
 
+	// determine if player is a VIP:
+	bool is_vip = false;
+	for (std::vector<netadr_t>::iterator nit = vipAddrs.begin(); nit != vipAddrs.end(); ++nit) {
+		// compare ip address, ignore port:
+		if (nit->ip[0] == net_from.ip[0] &&
+			nit->ip[1] == net_from.ip[1] &&
+			nit->ip[2] == net_from.ip[2] &&
+			nit->ip[3] == net_from.ip[3])
+		{
+			is_vip = true;
+			break;
+		}
+	}
+
 	// find an open slot
 	Players::iterator it = SV_GetFreeClient();
 
 	if (it == players.end()) // a server is full
 	{
-		Printf(PRINT_HIGH, "%s disconnected (server full).\n", NET_AdrToString (net_from));
+		if (!is_vip)
+		{
+		drop_client:
+			Printf(PRINT_HIGH, "%s disconnected (server full).\n", NET_AdrToString(net_from));
 
-		static buf_t smallbuf(16);
-		MSG_WriteLong(&smallbuf, 0);
-		MSG_WriteMarker(&smallbuf, svc_full);
-		NET_SendPacket(smallbuf, net_from);
+			static buf_t smallbuf(16);
+			MSG_WriteLong(&smallbuf, 0);
+			MSG_WriteMarker(&smallbuf, svc_full);
+			NET_SendPacket(smallbuf, net_from);
 
-		return;
+			return;
+		}
+
+		// find a random non-VIP player to drop to allow the VIP in:
+		it = players.begin();
+		while (it != players.end())
+		{
+			// don't drop a VIP or rcon login:
+			if (it->playerstate != PST_DISCONNECT && !it->is_vip && !it->client.allow_rcon)
+			{
+				break;
+			}
+
+			++it;
+		}
+
+		// still no room left?
+		if (it == players.end())
+		{
+			goto drop_client;
+		}
+
+		// tell the kicked player why they are disconnected:
+		MSG_WriteMarker(&(it->client.reliablebuf), svc_print);
+		MSG_WriteByte(&(it->client.reliablebuf), PRINT_CHAT);
+		MSG_WriteString(&(it->client.reliablebuf),
+						"A VIP player needed to reconnect.\n");
+		// drop the client:
+		SV_DropClient(*it);
+
+		// make the connecting client a real player:
+		it = SV_MakePlayerClient();
 	}
 
 	player_t* player = &(*it);
 	client_t* cl = &(player->client);
+
+	player->is_vip = is_vip;
 
 	// clear and reinitialize client network info
 	cl->address = net_from;
