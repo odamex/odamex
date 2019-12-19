@@ -84,7 +84,8 @@ CVAR_FUNC_IMPL(snd_samplerate)
 
 CVAR_FUNC_IMPL(snd_cubic)
 {
-	S_Stop();
+	// only need to stop sfx, not music:
+	S_StopAllChannels();
 	I_ClearSoundCache();
 }
 
