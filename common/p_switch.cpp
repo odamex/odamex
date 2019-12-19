@@ -24,7 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unordered_map>
+#include <map>
 
 #include "i_system.h"
 #include "doomdef.h"
@@ -247,7 +247,7 @@ void P_UpdateButtons(client_t *cl)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
-	std::unordered_map<unsigned, bool> actedlines;
+	std::map<unsigned, bool> actedlines;
 
 	// See if button is already pressed
 	while ( (button = iterator.Next ()) )
