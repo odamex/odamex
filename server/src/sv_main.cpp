@@ -297,6 +297,28 @@ CVAR_FUNC_IMPL (sv_vips)
 		// Add the address to our VIP list:
 		vipAddrs.push_back(addr);
 	}
+
+	// reset all players to non-VIP status:
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		it->is_vip = false;
+	}
+
+	// discover who is now VIP status:
+	bool is_vip = false;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+		for (std::vector<netadr_t>::iterator nit = vipAddrs.begin(); nit != vipAddrs.end(); ++nit) {
+			// compare ip address, ignore port:
+			if (nit->ip[0] == it->client.address.ip[0] &&
+				nit->ip[1] == it->client.address.ip[1] &&
+				nit->ip[2] == it->client.address.ip[2] &&
+				nit->ip[3] == it->client.address.ip[3])
+			{
+				it->is_vip = true;
+				break;
+			}
+		}
+	}
 }
 
 client_c clients;
