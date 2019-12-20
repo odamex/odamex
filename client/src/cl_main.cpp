@@ -1084,6 +1084,31 @@ BEGIN_COMMAND (spy)
 }
 END_COMMAND (spy)
 
+BEGIN_COMMAND (spyname)
+{
+	byte id = consoleplayer_id;
+
+	if (argc < 1) {
+		Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		return;
+	}
+
+	player_t &player = nameplayer(argv[1]);
+	if (!validplayer(player)) {
+		Printf(PRINT_HIGH, "Could not find player named '%s'.  Try 'players' to list all player names.\n");
+		return;
+	}
+
+	id = player.id;
+
+	displayplayer_id = id;
+	CL_CheckDisplayPlayer();
+
+	if (displayplayer_id != id)
+		Printf(PRINT_HIGH, "Unable to spy player named '%s'!\n", argv[1]);
+}
+END_COMMAND (spyname)
+
 void STACK_ARGS call_terms (void);
 
 void CL_QuitCommand()
