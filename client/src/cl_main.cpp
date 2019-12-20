@@ -461,6 +461,8 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+std::string spyplayername;
+
 //
 // CL_ConnectClient
 //
@@ -1086,26 +1088,29 @@ END_COMMAND (spy)
 
 BEGIN_COMMAND (spyname)
 {
-	byte id = consoleplayer_id;
+	if (argc <= 1) {
+		if (spyplayername.length() > 0) {
+			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
+		} else {
+			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		}
 
-	if (argc < 1) {
-		Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		// clear last player name:
+		spyplayername = "";
 		return;
 	}
 
-	player_t &player = nameplayer(argv[1]);
-	if (!validplayer(player)) {
-		Printf(PRINT_HIGH, "Could not find player named '%s'.  Try 'players' to list all player names.\n");
-		return;
+	// remember player name in case of disconnect/reconnect e.g. level change:
+	spyplayername = argv[1];
+
+	// try to switch to player:
+	player_t &player = nameplayer(spyplayername);
+	if (validplayer(player)) {
+		displayplayer_id = player.id;
+		CL_CheckDisplayPlayer();
 	}
 
-	id = player.id;
-
-	displayplayer_id = id;
-	CL_CheckDisplayPlayer();
-
-	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player named '%s'!\n", argv[1]);
+	Printf(PRINT_HIGH, "Following player '%s'. Use 'spyname' with no player name to unfollow.\n", spyplayername.c_str());
 }
 END_COMMAND (spyname)
 
@@ -1434,6 +1439,13 @@ void CL_SetupUserInfo(void)
 		p->userinfo.gender = GENDER_NEUTER;
 
 	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+
+	// [jsd]: try to spy on player by name when connected if spyplayername is set:
+	if (spyplayername.length() > 0) {
+		if (iequals(p->userinfo.netname, spyplayername)) {
+			displayplayer_id = p->id;
+		}
+	}
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
