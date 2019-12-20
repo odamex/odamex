@@ -50,6 +50,8 @@
 
 EXTERN_CVAR(sv_coop_completionist_kills)
 EXTERN_CVAR(sv_coop_completionist_secrets)
+EXTERN_CVAR(sv_coop_completionist_killed)
+EXTERN_CVAR(sv_coop_completionist_found)
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -1663,8 +1665,11 @@ void P_SetupLevel (char *lumpname, int position)
 	wminfo.partime = 180;
 
 	// reset completionist counts to -1 which is translated to level.total_monsters and level.total_secrets in p_lnspec.cpp:
-	sv_coop_completionist_kills = -1.0f;
-	sv_coop_completionist_secrets = -1.0f;
+	sv_coop_completionist_kills.ForceSet(-1.0f);
+	sv_coop_completionist_secrets.ForceSet(-1.0f);
+	// reset completionist counters to 0:
+	sv_coop_completionist_killed.ForceSet(0.0f);
+	sv_coop_completionist_found.ForceSet(0.0f);
 
 	if (!savegamerestore)
 	{

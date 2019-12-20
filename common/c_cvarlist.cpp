@@ -47,6 +47,14 @@ CVAR(				sv_coop_completionist_secrets, "-1", "Count of findable secrets for coo
 					"for the current map.",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+CVAR(				sv_coop_completionist_killed, "0", "Count of killed monsters for coop completionist mode " \
+					"for the current map.",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
+
+CVAR(				sv_coop_completionist_found, "0", "Count of found secrets for coop completionist mode " \
+					"for the current map.",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
+
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

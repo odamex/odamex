@@ -1953,6 +1953,8 @@ EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_coop_completionist)
 EXTERN_CVAR (sv_coop_completionist_kills)
 EXTERN_CVAR (sv_coop_completionist_secrets)
+EXTERN_CVAR (sv_coop_completionist_killed)
+EXTERN_CVAR (sv_coop_completionist_found)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
@@ -1971,7 +1973,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 			int killable_monsters = (sv_coop_completionist_kills < 0.0) ? level.total_monsters : (int)sv_coop_completionist_kills;
 			int findable_secrets = (sv_coop_completionist_secrets < 0.0) ? level.total_secrets : (int)sv_coop_completionist_secrets;
 
-			int unkilled_monsters = killable_monsters - level.killed_monsters;
+			int unkilled_monsters = killable_monsters - sv_coop_completionist_killed.asInt();
 			int unfound_secrets = findable_secrets - level.found_secrets;
 
 			if (unkilled_monsters > 0 || unfound_secrets > 0) {

@@ -1643,6 +1643,7 @@ P_PushSpecialLine
 #ifdef SERVER_APP
 EXTERN_CVAR(sv_coop_completionist)
 EXTERN_CVAR(sv_coop_completionist_secrets)
+EXTERN_CVAR(sv_coop_completionist_found)
 #endif
 
 //
@@ -1789,6 +1790,11 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (serverside && sv_gametype == GM_COOP && sv_coop_completionist)
 			{
 				char msg[256 + 32];
+
+				// increase found secret count:
+				int found = sv_coop_completionist_found.asInt();
+				found++;
+				sv_coop_completionist_found.ForceSet(found);
 
 				// determine total number of killable monsters and findable secrets for the current level:
 				int findable_secrets = (sv_coop_completionist_secrets < 0.0) ? level.total_secrets : (int)sv_coop_completionist_secrets;
