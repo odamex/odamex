@@ -462,6 +462,7 @@ void CL_Reconnect(void)
 }
 
 std::string spyplayername;
+void CL_CheckDisplayPlayer(void);
 
 //
 // CL_ConnectClient
@@ -469,6 +470,8 @@ std::string spyplayername;
 void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
+
+	CL_CheckDisplayPlayer();
 
 	if (!cl_connectalert)
 		return;
@@ -486,10 +489,18 @@ void CL_ConnectClient(void)
 // Perfoms validation on the value of displayplayer_id based on the current
 // game state and status of the consoleplayer.
 //
-void CL_CheckDisplayPlayer()
+void CL_CheckDisplayPlayer(void)
 {
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
+
+	// [jsd]: try to spy on player by name when connected if spyplayername is set:
+	if (spyplayername.length() > 0) {
+		player_t &spyplayer = nameplayer(spyplayername);
+		if (validplayer(spyplayer)) {
+			displayplayer_id = spyplayer.id;
+		}
+	}
 
 	if (displayplayer_id != previd)
 		newid = displayplayer_id;
@@ -1097,20 +1108,15 @@ BEGIN_COMMAND (spyname)
 
 		// clear last player name:
 		spyplayername = "";
-		return;
+	} else {
+		// remember player name in case of disconnect/reconnect e.g. level change:
+		spyplayername = argv[1];
+
+		Printf(PRINT_HIGH, "Following player '%s'. Use 'spyname' with no player name to unfollow.\n",
+			   spyplayername.c_str());
 	}
 
-	// remember player name in case of disconnect/reconnect e.g. level change:
-	spyplayername = argv[1];
-
-	// try to switch to player:
-	player_t &player = nameplayer(spyplayername);
-	if (validplayer(player)) {
-		displayplayer_id = player.id;
-		CL_CheckDisplayPlayer();
-	}
-
-	Printf(PRINT_HIGH, "Following player '%s'. Use 'spyname' with no player name to unfollow.\n", spyplayername.c_str());
+	CL_CheckDisplayPlayer();
 }
 END_COMMAND (spyname)
 
@@ -1439,13 +1445,6 @@ void CL_SetupUserInfo(void)
 		p->userinfo.gender = GENDER_NEUTER;
 
 	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
-
-	// [jsd]: try to spy on player by name when connected if spyplayername is set:
-	if (spyplayername.length() > 0) {
-		if (iequals(p->userinfo.netname, spyplayername)) {
-			displayplayer_id = p->id;
-		}
-	}
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
