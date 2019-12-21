@@ -664,6 +664,9 @@ void P_AdjustLine (line_t *ld)
 
 	ld->lucency = 255;	// [RH] Opaque by default
 
+	// [jsd] rate limiting activation
+	ld->lastactivationtic = -TICRATE;
+
 	v1 = ld->v1;
 	v2 = ld->v2;
 
