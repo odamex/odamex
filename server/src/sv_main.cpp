@@ -1635,10 +1635,11 @@ void SV_ClientFullUpdate(player_t &pl)
 			SV_AwarenessUpdate(pl, it->mo);
 
 		SV_SendUserInfo(*it, cl);
-
-		if (cl->reliablebuf.cursize >= 600)
+#if 0
+		if (cl->reliablebuf.cursize >= NET_PACKET_ROLLOVER)
 			if (!SV_SendPacket(pl))
 				return;
+#endif
 	}
 
 	// update warmup state
@@ -1681,9 +1682,11 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	// update sectors
 	SV_UpdateSectors(cl);
-	if (cl->reliablebuf.cursize >= 600)
+#if 0
+	if (cl->reliablebuf.cursize >= NET_PACKET_ROLLOVER)
 		if(!SV_SendPacket(pl))
 			return;
+#endif
 
 	// update switches
 #if 0
@@ -3048,9 +3051,11 @@ void SV_UpdateMissiles(player_t &pl)
 				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
 			}
 
-            if (cl->netbuf.cursize >= 1024)
+#if 0
+            if (cl->netbuf.cursize >= NET_PACKET_ROLLOVER)
                 if(!SV_SendPacket(pl))
                     return;
+#endif
 		}
     }
 }
@@ -3122,11 +3127,13 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteShort(&cl->netbuf, mo->target->netid);
 
-			if (cl->netbuf.cursize >= 1024)
+#if 0
+			if (cl->netbuf.cursize >= NET_PACKET_ROLLOVER)
 			{
 				if (!SV_SendPacket(pl))
 					return;
 			}
+#endif
 		}
 	}
 }

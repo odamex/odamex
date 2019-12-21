@@ -661,7 +661,13 @@ static value_t BandwidthLevels[] = {
 	{ 7.0,			"56kbps" },
 	{ 200.0,		"1.5Mbps" },
 	{ 375.0,		"3.0Mbps" },
-	{ 750.0,		"6.0Mbps" }
+	{ 750.0,		"6.0Mbps" },
+	{ 1500.0,		"12.0Mbps" },
+	{ 2000.0,		"16.0Mbps" },
+	{ 3000.0,		"24.0Mbps" },
+	{ 6000.0,		"48.0Mbps" },
+	{ 12000.0,		"96.0Mbps" },
+	{ 131072.0,		"1.0Gbps" }
 };
 
 static value_t PredictSectors[] = {
@@ -673,7 +679,7 @@ static value_t PredictSectors[] = {
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
+	{ discrete,		"Bandwidth",					{&rate},			{10.0},		{0.0},		{0.0},		{BandwidthLevels} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },

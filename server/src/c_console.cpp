@@ -134,16 +134,19 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	if (str[str.length() - 1] != '\n')
 		str += '\n';
 
-	// send to any rcon players
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	if ((printlevel & PRINT_RCON_MUTE) == 0)
 	{
-		client_t* cl = &(it->client);
-
-		if (cl->allow_rcon)
+		// send to any rcon players
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_print);
-			MSG_WriteByte(&cl->reliablebuf, PRINT_MEDIUM);
-			MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
+			client_t* cl = &(it->client);
+
+			if (cl->allow_rcon)
+			{
+				MSG_WriteMarker(&cl->reliablebuf, svc_print);
+				MSG_WriteByte(&cl->reliablebuf, PRINT_MEDIUM);
+				MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
+			}
 		}
 	}
 
@@ -152,7 +155,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		LOG.flush();
 	}
 
-	return PrintString(printlevel, str.c_str());
+	return PrintString(printlevel & 127, str.c_str());
 }
 
 int STACK_ARGS Printf (int printlevel, const char *format, ...)
@@ -188,7 +191,7 @@ int STACK_ARGS DPrintf (const char *format, ...)
 	if (developer || devparm)
 	{
 		va_start (argptr, format);
-		count = VPrintf (PRINT_HIGH, format, argptr);
+		count = VPrintf (PRINT_HIGH | PRINT_RCON_MUTE, format, argptr);
 		va_end (argptr);
 		return count;
 	}

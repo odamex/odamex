@@ -29,6 +29,7 @@
 #include "huffman.h"
 
 #include <string>
+#include <vector>
 
 // Max packet size to send and receive, in bytes
 #define	MAX_UDP_PACKET 8192
@@ -41,6 +42,8 @@
 #define CHALLENGE 5560020  // challenge
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
+
+#define NET_PACKET_MAX 1440
 
 extern int   localport;
 extern int   msg_badread;
@@ -226,7 +229,75 @@ public:
         ,BT_SEND // From end
     } seek_loc_t;
 
+    // offsets of message markers:
+    std::vector<size_t> markers;
+
 public:
+	void SetMarker()
+	{
+		markers.push_back(cursize);
+	}
+
+	// find the highest marker <= maxsize:
+	size_t FloorMarker(size_t maxsize) const
+	{
+		if (maxsize >= cursize) {
+			return cursize;
+		}
+
+		size_t m = 0;
+		std::vector<size_t>::const_iterator it = markers.cbegin();
+		while (it != markers.cend()) {
+			if (*it > maxsize) {
+				return m;
+			}
+			m = *(it++);
+		}
+		return cursize;
+	}
+
+	void TrimLeft(size_t amount)
+	{
+		if (amount >= cursize) {
+			clear();
+			return;
+		}
+
+		// subtract marker offsets and trim those no longer needed:
+		{
+			std::vector<size_t>::const_iterator it = markers.cbegin(), last = markers.cbegin();
+			while (it != markers.cend()) {
+				int m = *it;
+				m -= amount;
+				if (m >= 0) {
+					last = it;
+					break;
+				}
+				it++;
+			}
+			markers.erase(markers.cbegin(), last);
+		}
+
+		// mutate marker offsets remaining and subtract offset amount:
+		{
+			std::vector<size_t>::iterator it = markers.begin();
+			while (it != markers.end()) {
+				int m = *it;
+				m -= amount;
+				*it = m;
+				it++;
+			}
+		}
+
+		// move all data at the trim point to the beginning:
+		cursize -= amount;
+		if (readpos >= amount) {
+			readpos = readpos - amount;
+		} else {
+			readpos = 0;
+		}
+		memcpy(data, data+amount, cursize);
+	}
 
 	void WriteByte(byte b)
 	{
@@ -439,6 +510,7 @@ public:
 		cursize = 0;
 		readpos = 0;
 		overflowed = false;
+		markers.clear();
 	}
 
 	void resize(size_t len, bool clearbuf = true)
@@ -472,9 +544,9 @@ public:
 	{
 		if (cursize + length >= allocsize)
 		{
+			Printf (PRINT_HIGH, "SZ_GetSpace: overflow %d >= %d\n", cursize + length, allocsize);
 			clear();
 			overflowed = true;
-			Printf (PRINT_HIGH, "SZ_GetSpace: overflow\n");
 		}
 
 		byte *ret = data + cursize;
@@ -496,6 +568,7 @@ public:
 		cursize = other.cursize;
 		overflowed = other.overflowed;
 		readpos = other.readpos;
+		markers = other.markers;
 
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)

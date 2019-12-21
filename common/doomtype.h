@@ -188,6 +188,7 @@ extern std::ifstream CON;
 #define	PRINT_CHAT			3		// chat messages
 #define PRINT_TEAMCHAT		4		// chat messages from a teammate
 #define PRINT_SERVERCHAT	5		// chat messages from the server
+#define PRINT_RCON_MUTE		128
 
 #ifdef __forceinline
 	#define forceinline __forceinline

@@ -106,7 +106,7 @@ unsigned int	inet_socket;
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
 
-buf_t       net_message(MAX_UDP_PACKET);
+buf_t       net_message(1048576);
 extern bool	simulated_connection;
 
 // buffer for compression/decompression
@@ -593,10 +593,13 @@ void SV_SendPackets(void);
 
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
+#if 0
     //[Spleen] final check to prevent huge packets from being sent to players
-    if (b->cursize > 600)
+    if (b->cursize >= NET_PACKET_ROLLOVER)
         SV_SendPackets();
+#endif
 
+    b->SetMarker();
 	b->WriteByte((byte)c);
 }
 
