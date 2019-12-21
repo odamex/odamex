@@ -1244,7 +1244,7 @@ static void ST_refreshBackground()
 
 	if (multiplayer)
 	{
-		if (!demoplayback || !democlassic)
+		if (!demoplayback)
 		{
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.

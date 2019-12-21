@@ -403,6 +403,7 @@ void CL_QuitNetGame(void)
 
 	serverside = clientside = true;
 	network_game = false;
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 
 	sv_freelook = 1;
 	sv_allowjump = 1;
@@ -424,10 +425,9 @@ void CL_QuitNetGame(void)
 		netdemo.stopPlaying();
 
 	// Don't forget to clean a vanilla demo !
-	if (demorecording && democlassic)
+	if (demorecording)
 		G_CleanupDemo();
 
-	democlassic = false;
 	demoplayback = false;
 
 	// Reset the palette to default
@@ -459,6 +459,7 @@ void CL_Reconnect(void)
 		serveraddr = lastconaddr;
 	}
 
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 	connecttimeout = 0;
 }
 
