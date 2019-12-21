@@ -166,10 +166,11 @@ if(NOT APPLE)
   set(CPACK_COMPONENT_ODALAUNCH_DISPLAY_NAME "Odalaunch Odamex Server Browser and Launcher")
   set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
 
-  # TODO: If deutex is available, use that to build the wad.
+  add_subdirectory(wad)
+
   file(GLOB CONFIG_SAMPLES config-samples/*.cfg)
   if(WIN32)
-    install(FILES odamex.wad LICENSE README
+    install(FILES LICENSE README
       DESTINATION .
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
@@ -179,7 +180,7 @@ if(NOT APPLE)
     # Windows ZIP packages are "tarbombs" by default.
     set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
   else()
-    install(FILES odamex.wad LICENSE README
+    install(FILES LICENSE README
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
