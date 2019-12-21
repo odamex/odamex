@@ -162,8 +162,14 @@ EXTERN_CVAR (cl_predictsectors)
 bool P_CanActivateSpecials(AActor* mo, line_t* line)
 {
 	// Server can always activate specials
-	if (serverside)
-		return true;
+	if (serverside) {
+		// [jsd] apply rate limit:
+		if (gametic - line->lastactivationtic >= 35) {
+			line->lastactivationtic = gametic;
+			return true;
+		}
+		return false;
+	}
 
 	if (cl_predictsectors)
 	{
