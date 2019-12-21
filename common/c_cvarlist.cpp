@@ -35,6 +35,9 @@ CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
 					0.0f, 3.0f)
 
+CVAR(				sv_activation_rate, "0", "Door/lift activation rate limit in tics; 0 disables.",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

@@ -37,6 +37,8 @@
 
 EXTERN_CVAR(co_zdoomsound)
 
+EXTERN_CVAR(sv_activation_rate)
+
 extern bool predicting;
 
 void P_SetDoorDestroy(DDoor *door)
@@ -45,12 +47,41 @@ void P_SetDoorDestroy(DDoor *door)
 		return;
 
 	door->m_Status = DDoor::destroy;
-	
+
 	if (clientside && door->m_Sector)
 	{
 		door->m_Sector->ceilingdata = NULL;
 		door->Destroy();
 	}
+}
+
+bool P_CheckSectorRateLimit(sector_t *sec, AActor *thing) {
+	if (!serverside || clientside) {
+		return false;
+	}
+
+	int ratelimit = sv_activation_rate.asInt();
+	if (ratelimit < 0) ratelimit = 0;
+
+	int netid = -1;
+	if (thing) {
+		netid = thing->netid;
+	}
+
+#if 0
+	DPrintf("rate check sec %05d for netid %05d: %5d - %5d = %d >= %d",
+			sec - sectors, netid, gametic, sec->last_activation_tic,
+			gametic - sec->last_activation_tic,
+			ratelimit);
+#endif
+
+	if (gametic - sec->last_activation_tic < ratelimit) {
+		return true;
+	}
+
+	sec->last_activation_tic = gametic;
+
+	return false;
 }
 
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
@@ -369,7 +400,8 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		return false;
 
 	if (tag == 0)
-	{		// [RH] manual door
+	{
+		// [RH] manual door
 		if (!line)
 			return false;
 
@@ -382,7 +414,10 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 
 		// get the sector on the second side of activating linedef
 		sec = sides[line->sidenum[1]].sector;
-		secnum = sec-sectors;
+
+		// rate limit sector activation:
+		if (P_CheckSectorRateLimit(sec, thing))
+			return false;
 
 		if (sec->ceilingdata && P_MovingCeilingCompleted(sec))
 		{
