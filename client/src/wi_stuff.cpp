@@ -1266,8 +1266,7 @@ void WI_drawStats (void)
     screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
     WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
 
-	// Only draw PAR times if we're sure the mapinfo includes one.
-	if (wbs->partime > 0)	
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
     {
     	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
     	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
