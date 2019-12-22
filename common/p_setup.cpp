@@ -1649,6 +1649,32 @@ void P_AllocStarts(void)
 //
 extern polyblock_t **PolyBlockMap;
 
+// Hash the sector tags across the sectors and linedefs.
+static void P_InitTagLists(void)
+{
+	register int i;
+
+	for (i = numsectors; --i >= 0; )		// Initially make all slots empty.
+		sectors[i].firsttag = -1;
+	for (i = numsectors; --i >= 0; )		// Proceed from last to first sector
+	{									// so that lower sectors appear first
+		int j = (unsigned)sectors[i].tag % (unsigned)numsectors;	// Hash func
+		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
+		sectors[j].firsttag = i;
+	}
+
+	// killough 4/17/98: same thing, only for linedefs
+
+	for (i = numlines; --i >= 0; )			// Initially make all slots empty.
+		lines[i].firstid = -1;
+	for (i = numlines; --i >= 0; )        // Proceed from last to first linedef
+	{									// so that lower linedefs appear first
+		int j = (unsigned)lines[i].id % (unsigned)numlines;	// Hash func
+		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
+		lines[j].firstid = i;
+	}
+}
+
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (char *lumpname, int position)
 {
@@ -1754,6 +1780,8 @@ void P_SetupLevel (char *lumpname, int position)
     po_NumPolyobjs = 0;
 
 	P_AllocStarts();
+
+	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
 	if (!HasBehavior)
 		P_LoadThings (lumpnum+ML_THINGS);
