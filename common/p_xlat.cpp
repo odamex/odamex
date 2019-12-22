@@ -736,7 +736,6 @@ void P_TranslateTeleportThings (void)
 
 int P_TranslateSectorSpecial (int special)
 {
-
 	int high;
 
 	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps

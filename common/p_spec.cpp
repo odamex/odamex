@@ -1639,35 +1639,33 @@ void P_PlayerInSpecialSector (player_t *player)
 	{
 		switch (special)
 		{
-		  case Damage_InstantDeath:
+		
+		// Strife's Instant Death Sector
+		case Damage_InstantDeath:
 			P_DamageMobj (player->mo, NULL, NULL, 999, MOD_UNKNOWN);
 			break;
 
-		  case dDamage_Hellslime:
+		case dDamage_Hellslime:
 			// HELLSLIME DAMAGE
-			if (!player->powers[pw_ironfeet])
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
+			if (!player->powers[pw_ironfeet] && !(level.time&0x1f) )
+				P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
 			break;
 
-		  case dDamage_Nukage:
+		case dDamage_Nukage:
+		case sLight_Strobe_Hurt:
 			// NUKAGE DAMAGE
-			if (!player->powers[pw_ironfeet])
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
+			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				P_DamageMobj (player->mo, NULL, NULL, 5, MOD_SLIME);
 			break;
 
-		  case hDamage_Sludge:
-			if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
+		case hDamage_Sludge:
+			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 4, MOD_SLIME);
 			break;
 
-		  case dDamage_SuperHellslime:
-			// SUPER HELLSLIME DAMAGE
-		  case dLight_Strobe_Hurt:
-			// STROBE HURT
-			if (!player->powers[pw_ironfeet]
-				|| (P_Random ()<5) )
+		case dDamage_SuperHellslime:	// SUPER HELLSLIME DAMAGE
+		case dLight_Strobe_Hurt:		// STROBE HURT
+			if (!player->powers[pw_ironfeet] || (P_Random() < 5) )
 			{
 				if (!(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
@@ -1681,7 +1679,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(sv_gametype == GM_COOP || sv_allowexit)
+			if( sv_gametype == GM_COOP || sv_allowexit )
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);
@@ -1691,14 +1689,18 @@ void P_PlayerInSpecialSector (player_t *player)
 		  case dDamage_LavaWimpy:
 		  case dScroll_EastLavaDamage:
 			if (!(level.time & 15))
+			{
 				P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
-
+				P_HitFloor(player->mo);
+			}
 			break;
 
 		  case dDamage_LavaHefty:
-			if(!(level.time & 15))
+			if (!(level.time & 15))
+			{
 				P_DamageMobj(player->mo, NULL, NULL, 8, MOD_LAVA);
-
+				P_HitFloor(player->mo);
+			}
 			break;
 
 		  default:
@@ -1713,18 +1715,15 @@ void P_PlayerInSpecialSector (player_t *player)
 			case 0x000: // no damage
 				break;
 			case 0x100: // 2/5 damage per 31 ticks
-				if (!player->powers[pw_ironfeet])
-					if (!(level.time&0x1f))
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
 				break;
 			case 0x200: // 5/10 damage per 31 ticks
-				if (!player->powers[pw_ironfeet])
-					if (!(level.time&0x1f))
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
 				break;
 			case 0x300: // 10/20 damage per 31 ticks
-				if (!player->powers[pw_ironfeet]
-					|| (P_Random(player->mo)<5))	// take damage even with suit
+				if (!player->powers[pw_ironfeet] || (P_Random(player->mo)<5))	// take damage even with suit
 				{
 					if (!(level.time&0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
@@ -1733,7 +1732,8 @@ void P_PlayerInSpecialSector (player_t *player)
 		}
 
 		// [RH] Apply any customizable damage
-		if (sector->damage) {
+		if (sector->damage) 
+		{
 			if (sector->damage < 20) {
 				if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, sector->damage, sector->mod);
