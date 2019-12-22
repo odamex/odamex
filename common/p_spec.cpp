@@ -2141,28 +2141,24 @@ void DScroller::RunThink ()
 
 	switch (m_Type)
 	{
-		side_t *side;
 		sector_t *sec;
 		fixed_t height, waterheight;	// killough 4/4/98: add waterheight
 		msecnode_t *node;
 		AActor *thing;
 
 		case sc_side:				// killough 3/7/98: Scroll wall texture
-			side = sides + m_Affectee;
-			side->textureoffset += dx;
-			side->rowoffset += dy;
+			sides[m_Affectee].textureoffset += dx;
+			sides[m_Affectee].rowoffset += dy;
 			break;
 
 		case sc_floor:				// killough 3/7/98: Scroll floor texture
-			sec = sectors + m_Affectee;
-			sec->floor_xoffs += dx;
-			sec->floor_yoffs += dy;
+			sectors[m_Affectee].floor_xoffs += dx;
+			sectors[m_Affectee].floor_yoffs += dy;
 			break;
 
 		case sc_ceiling:			// killough 3/7/98: Scroll ceiling texture
-			sec = sectors + m_Affectee;
-			sec->ceiling_xoffs += dx;
-			sec->ceiling_yoffs += dy;
+			sectors[m_Affectee].ceiling_xoffs += dx;
+			sectors[m_Affectee].ceiling_yoffs += dy;
 			break;
 
 		case sc_carry:
