@@ -2150,10 +2150,8 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t centerfloor = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		fixed_t height = centerfloor + centerceiling;
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
 		dx = FixedMul(dx, delta);
@@ -2256,12 +2254,9 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t centerfloor =
-			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling =
-			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		m_LastHeight = centerfloor + centerceiling;
+		m_LastHeight = height;
 	}
 	m_Affectee = affectee;
 }
@@ -2293,12 +2288,9 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t centerfloor =
-			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling =
-			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		m_LastHeight = centerfloor + centerceiling;
+		m_LastHeight = height;
 	}
 	m_Affectee = *l->sidenum;
 }
@@ -2422,6 +2414,7 @@ static void P_SpawnScrollers(void)
 				break;
 
 			default:
+				l->special = special;
 				break;
 		}
 	}
