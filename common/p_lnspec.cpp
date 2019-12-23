@@ -1383,9 +1383,64 @@ FUNC(LS_Scroll_Texture_Both)
 	return true;
 }
 
+static void SetScroller(int tag, DScroller::EScrollType type, fixed_t dx, fixed_t dy)
+{
+	TThinkerIterator<DScroller> iterator;
+	DScroller *scroller;
+	int i;
+
+	// Check if there is already a scroller for this tag
+	// If at least one sector with this tag is scrolling, then they all are.
+	// If the deltas are both 0, we don't remove the scroller, because a
+	// displacement/accelerative scroller might have been set up, and there's
+	// no way to create one after the level is fully loaded.
+	i = 0;
+	while ((scroller = iterator.Next()))
+	{
+		if (scroller->IsType(type))
+		{
+			if (sectors[scroller->GetAffectee()].tag == tag)
+			{
+				i++;
+				scroller->SetRate(dx, dy);
+			}
+		}
+	}
+
+	if (i > 0 || (dx | dy) == 0)
+	{
+		return;
+	}
+
+	// Need to create scrollers for the sector(s)
+	for (i = -1; (i = P_FindSectorFromTag(tag, i)) >= 0; )
+	{
+		new DScroller(type, dx, dy, -1, i, 0);
+	}
+}
+
 FUNC(LS_Scroll_Floor)
 {
-	return false;
+	fixed_t dx = arg1 * FRACUNIT / 32;
+	fixed_t dy = arg2 * FRACUNIT / 32;
+
+	if (arg3 == 0 || arg3 == 2)
+	{
+		SetScroller(arg0, DScroller::sc_floor, -dx, dy);
+	}
+	else
+	{
+		SetScroller(arg0, DScroller::sc_floor, 0, 0);
+	}
+	if (arg3 > 0)
+	{
+		SetScroller(arg0, DScroller::sc_carry, dx, dy);
+	}
+	else
+	{
+		SetScroller(arg0, DScroller::sc_carry, 0, 0);
+	}
+	return true;
 }
 
 FUNC(LS_Scroll_Ceiling)
