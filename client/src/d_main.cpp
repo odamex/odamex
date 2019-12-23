@@ -53,7 +53,6 @@
 #include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "s_sound.h"
 #include "v_video.h"
 #include "f_finale.h"
@@ -92,7 +91,6 @@
 
 #include "resources/res_texture.h"
 #include "resources/res_filelib.h"
-#include "w_ident.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -681,9 +679,6 @@ void STACK_ARGS D_Shutdown()
 
 	UndoDehPatch();
 
-	// close all open WAD files
-	W_Close();
-
 //	V_UnloadFonts();
 
 	HU_Shutdown();
@@ -700,7 +695,7 @@ void STACK_ARGS D_Shutdown()
 
 	V_Close();
 
-	Res_CloseAllResourceFiles();
+	D_UnloadResourceFiles();
 
 	// reset the Zone memory manager
 	Z_Close();
@@ -743,8 +738,6 @@ void D_DoomMain()
 	atterm(I_ShutdownHardware);
 	I_Init();
 	I_InitInput();
-
-	W_SetupFileIdentifiers();
 
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
 	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
@@ -958,8 +951,3 @@ void D_DoomMain()
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
-
-
-
-
-

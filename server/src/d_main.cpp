@@ -53,7 +53,6 @@
 #include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "v_video.h"
 #include "m_argv.h"
 #include "m_fileio.h"
@@ -76,7 +75,6 @@
 
 #include "resources/res_filelib.h"
 #include "resources/res_texture.h"
-#include "w_ident.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
@@ -223,12 +221,9 @@ void STACK_ARGS D_Shutdown()
 
 	GStrings.FreeData();
 
-	// close all open WAD files
-	W_Close();
-
 	R_ShutdownColormaps();
 
-	Res_CloseAllResourceFiles();
+	D_UnloadResourceFiles();
 
 	// reset the Zone memory manager
 	Z_Close();
@@ -256,8 +251,6 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
-	W_SetupFileIdentifiers();
-
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 
@@ -277,8 +270,6 @@ void D_DoomMain()
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
-
-	W_SetupFileIdentifiers();
 
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
 	resource_filenames = Res_ValidateResourceFiles(resource_filenames);

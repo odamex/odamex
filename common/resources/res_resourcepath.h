@@ -74,8 +74,9 @@ public:
 	ResourcePath& operator=(const ResourcePath& other)
 	{
 		mAbsolute = other.mAbsolute;
-		for (mItemCount = 0; mItemCount < other.mItemCount; mItemCount++)
-			mItems[mItemCount] = other.mItems[mItemCount];
+		mItemCount = 0;
+		for (size_t i = 0; i < other.mItemCount && mItemCount < ResourcePath::MAX_ITEMS; i++)
+			addItem(other.mItems[i]);
 		return *this;
 	}
 
@@ -83,10 +84,8 @@ public:
 	{
 		if (other.mAbsolute)
 			return operator=(other);
-
 		for (size_t i = 0; i < other.mItemCount && mItemCount < ResourcePath::MAX_ITEMS; i++)
 			addItem(other.mItems[i]);
-
 		return *this;
 	}
 

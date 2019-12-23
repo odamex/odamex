@@ -139,6 +139,10 @@ public:
 
 	void dump() const;
 
+	const RawResourceAccessor* getRawResourceAccessor() const
+	{
+		return &mRawResourceAccessor;
+	}
 
 private:
 	struct ResourceRecord
@@ -196,7 +200,6 @@ private:
 			return res_rec->mResourceContainerId;
 		return static_cast<ResourceContainerId>(-1);		// an invalid ResourceContainerId
 	}
-
 
 private:
 	std::vector<ResourceContainer*>	mContainers;

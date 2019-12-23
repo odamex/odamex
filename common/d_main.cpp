@@ -132,7 +132,6 @@ static void D_PrintIWADIdentity()
 }
 
 
-
 //
 // D_CleanseFileName
 //
@@ -264,6 +263,18 @@ void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_filename
 		D_Shutdown();
 		D_Init(new_resource_filenames);
 	}
+}
+
+
+//
+// D_UnloadResourceFiles
+//
+void D_UnloadResourceFiles()
+{
+	// TODO: delete this once we're fully migrated to the ResourceFile system
+	W_Close();
+
+	Res_CloseAllResourceFiles();
 }
 
 

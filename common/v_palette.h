@@ -70,6 +70,7 @@ static inline argb_t V_GammaCorrect(const argb_t value)
 
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b);
 palindex_t V_BestColor(const argb_t *palette_colors, argb_t color);
+void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2);
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256

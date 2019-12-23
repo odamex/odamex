@@ -52,7 +52,7 @@
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "v_video.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
@@ -1884,7 +1884,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 		if (gamestate != GS_STARTUP)
 		{
 			// Ch0wW : don't crash the engine if the mapname isn't found.
-			if (W_CheckNumForName(argv[1]) == -1)
+			if (!Res_CheckMap(argv[1]))
 			{
 				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
 				return;

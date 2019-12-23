@@ -38,7 +38,10 @@
 
 #include "resources/res_texture.h"
 #include "resources/res_main.h"
+#include "resources/res_resourceloader.h"
+
 #include "v_video.h"
+#include "v_palette.h"
 
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK
@@ -107,25 +110,21 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 
 	int dest_offset = dx1 * dest_texture->getHeight() + dy1;
 	byte* dest = dest_texture->getData() + dest_offset; 
-	byte* dest_mask = dest_texture->getMaskData() + dest_offset; 
 
 	fixed_t xfrac = 0;
 	for (int xcount = destwidth; xcount > 0; xcount--)
 	{
 		int source_offset = (sx1 + (xfrac >> FRACBITS)) * source_texture->getHeight() + sy1;
 		const byte* source = source_texture->getData() + source_offset;
-		const byte* source_mask = source_texture->getMaskData() + source_offset;
 
 		fixed_t yfrac = 0;
 		for (int ycount = destheight; ycount > 0; ycount--)
 		{
 			*dest++ = source[yfrac >> FRACBITS];	
-			*dest_mask++ = source_mask[yfrac >> FRACBITS];	
 			yfrac += ystep;
 		}
 
 		dest += dest_texture->getHeight() - destheight;
-		dest_mask += dest_texture->getHeight() - destheight; 
 
 		xfrac += xstep;
 	}
@@ -138,10 +137,12 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 }
 
 
+
 //
 // Res_TransposeImage
 //
 // Converts an image buffer from row-major format to column-major format.
+// TODO: Use cache-blocking to optimize
 //
 void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 {
@@ -257,14 +258,12 @@ Texture::Texture()
 
 uint32_t Texture::calculateSize(int width, int height)
 {
-	uint32_t size = sizeof(Texture);
+	uint32_t size = calculateHeaderSize(width, height);
 	#if CLIENT_APP
-	size += width * height						// mData
-		+ width * height;						// mMask
+	size += calculateDataSize(width, height);
 	#endif
 	return size;
 }
-
 
 //
 // Texture::init
@@ -281,17 +280,16 @@ void Texture::init(int width, int height)
 	mOffsetY = 0;
 	mScaleX = FRACUNIT;
 	mScaleY = FRACUNIT;
-	mHasMask = false;
-	mData = mMask = NULL;
+	mMasked = false;
+	mMaskColor = 0;
+	mData = NULL;
 
 	#if CLIENT_APP
 	// mData follows the header in memory
-	mData = (byte*)((byte*)this + sizeof(*this));
-	// mMask follows mData
-	mMask = (byte*)(mData) + sizeof(byte) * width * height;
+	mData = (uint8_t*)((uint8_t*)this + calculateHeaderSize(width, height));
+	memset(mData, mMaskColor, calculateDataSize(width, height));
 	#endif
 }
-
 
 
 // ============================================================================
@@ -301,10 +299,22 @@ void Texture::init(int width, int height)
 // ============================================================================
 
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
-	mResourceContainerId(container_id),
-	mFreeCustomTextureIdsHead(0),
-	mFreeCustomTextureIdsTail(TextureManager::MAX_CUSTOM_TEXTURE_IDS)
+	ResourceContainer(container_id, manager),
+	mResourceManager(manager),
+	mFlatTextureLoader(NULL),
+	mPatchTextureLoader(NULL),
+	mSpriteTextureLoader(NULL),
+	mResourceIdLookup(512),
+	mTextureLoaderLookup(512),
+	mMaskColor(0),
+	mMaskColorMap(NULL)
 {
+	const RawResourceAccessor* accessor = mResourceManager->getRawResourceAccessor();
+	mFlatTextureLoader = new FlatTextureLoader(accessor);
+	mPatchTextureLoader = new PatchTextureLoader(accessor);
+	mSpriteTextureLoader = new SpriteTextureLoader(accessor);
+
+	addResourcesToManager(manager);
 	registerTextureResources(manager);
 	// initialize the TEXTURE1 & TEXTURE2 data
 	addTextureDirectories(manager);
@@ -331,13 +341,6 @@ TextureManager::~TextureManager()
 //
 void TextureManager::clear()
 {
-	// free all custom texture tex_ids
-	mFreeCustomTextureIdsHead = 0;
-	mFreeCustomTextureIdsTail = TextureManager::MAX_CUSTOM_TEXTURE_IDS - 1;
-	for (unsigned int i = mFreeCustomTextureIdsHead; i <= mFreeCustomTextureIdsTail; i++)
-		mFreeCustomTextureIds[i] = CUSTOM_TEXTURE_ID_MASK | i;
-
-
 	// Free all of the Texture instances
 	for (TextureList::iterator it = mTextures.begin(); it != mTextures.end(); ++it)
 		if (*it)
@@ -353,6 +356,121 @@ void TextureManager::clear()
 //			Z_Free((void*)mWarpDefs[i].original_texture);
 
 	mWarpDefs.clear();
+
+	delete mFlatTextureLoader;
+	delete mPatchTextureLoader;
+	delete mSpriteTextureLoader;
+	mFlatTextureLoader = NULL;
+	mPatchTextureLoader = NULL;
+	mSpriteTextureLoader = NULL;
+
+	delete [] mMaskColorMap;
+	mMaskColorMap = NULL;
+}
+
+
+//
+// TextureManager::addResourcesToManager
+//
+// Discovers all raw texture resources and notifies ResourceManager
+// 
+void TextureManager::addResourcesToManager(ResourceManager* manager)
+{
+	addResourceToManagerByDir(manager, flats_directory_name, mFlatTextureLoader);
+	addResourceToManagerByDir(manager, patches_directory_name, mPatchTextureLoader);
+	addResourceToManagerByDir(manager, sprites_directory_name, mSpriteTextureLoader);
+}
+
+
+void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir, const TextureLoader* loader)
+{
+	const ResourcePathList paths = manager->listResourceDirectory(dir);
+
+	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
+	{
+		const ResourcePath& path = *it;
+		const ResourceId raw_res_id = manager->getResourceId(path);
+		const ResourceId res_id = manager->addResource(path, this);
+		mResourceIdLookup.insert(std::make_pair(res_id, raw_res_id));
+		mTextureLoaderLookup.insert(std::make_pair(res_id, loader));
+	}
+}
+
+
+uint32_t TextureManager::getResourceSize(const ResourceId res_id) const
+{
+	const ResourceId raw_res_id = getRawResourceId(res_id);
+	if (raw_res_id != ResourceId::INVALID_ID)
+	{
+		const ResourceLoader* loader = getTextureLoader(res_id);
+		assert(loader != NULL);
+		return loader->size(raw_res_id);
+	}
+	return 0;
+}
+
+
+uint32_t TextureManager::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+{
+	if (!mMaskColorMap)
+	{
+		mMaskColorMap = new palindex_t[256];
+		analyzePalette(mMaskColorMap, &mMaskColor);
+	}
+
+	const ResourceId raw_res_id = getRawResourceId(res_id);
+	if (raw_res_id != ResourceId::INVALID_ID)
+	{
+		const TextureLoader* loader = getTextureLoader(res_id);
+		assert(loader != NULL);
+		loader->load(raw_res_id, data, mMaskColor, mMaskColorMap);
+		return size;
+	}
+	return 0;
+}
+
+
+const ResourceId TextureManager::getRawResourceId(const ResourceId res_id) const
+{
+	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(res_id);
+	if (it != mResourceIdLookup.end())
+		return it->second;
+	else
+		return ResourceId::INVALID_ID;
+}
+
+
+const TextureLoader* TextureManager::getTextureLoader(const ResourceId res_id) const
+{
+	TextureLoaderLookupTable::const_iterator it = mTextureLoaderLookup.find(res_id);
+	if (it != mTextureLoaderLookup.end())
+		return it->second;
+	else
+		return NULL;
+}
+
+
+
+
+//
+// TextureManager::analyzePalette
+//
+// Examines all of the colors of the palette and determines the two closest colors.
+// One of those two colors are selected to be used to represent transparency.
+//
+// A palette map is generated to remap the transparent color to the next closest color.
+///
+void TextureManager::analyzePalette(palindex_t* colormap, palindex_t* maskcolor) const
+{
+	const argb_t* palette_colors = V_GetGamePalette()->basecolors;
+	palindex_t color1, color2;
+
+	V_ClosestColors(palette_colors, color1, color2);
+	*maskcolor = color1;
+
+	for (int i = 0; i < 256; i++)
+		colormap[i] = i;
+	colormap[color1] = color2;
 }
 
 
@@ -516,7 +634,6 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
-	/*
 	const ResourceId res_id = Res_GetResourceId("ANIMATED", global_directory_name);
 	if (!Res_CheckResource(res_id))
 		return;
@@ -525,31 +642,24 @@ void TextureManager::readAnimatedLump()
 	if (lumplen == 0)
 		return;
 
-	const uint8_t* lumpdata = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
+	const uint8_t* data = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
 
-	for (byte* ptr = lumpdata; *ptr != 255; ptr += 23)
+	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
 	{
-		anim_t anim;
+		bool is_flat = (*(ptr + 0) == 0);
+		const ResourcePath& path = is_flat ? flats_directory_name : textures_directory_name;
+		const OString start_name((char*)(ptr + 10), 8);
+		const OString end_name((char*)(ptr + 1), 8);
 
-		const ResourcePath& path = *(ptr + 0) == 1 ?
-				textures_directory_name : flats_directory_name;
+		const ResourceId start_res_id = Res_GetResourceId(start_name, path);
+		const ResourceId end_res_id = Res_GetResourceId(end_name, path);
 
-		const char* startname = (const char*)(ptr + 10);
-		const char* endname = (const char*)(ptr + 1);
-
-		TextureId start_tex_id =
-				texturemanager.getTextureId(startname, texture_type);
-		TextureId end_tex_id =
-				texturemanager.getTextureId(endname, texture_type);
-
-		if (start_tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
-			start_tex_id == TextureManager::NO_TEXTURE_ID ||
-			end_tex_id == TextureManager::NOT_FOUND_TEXTURE_ID ||
-			end_tex_id == TextureManager::NO_TEXTURE_ID)
+		if (!Res_CheckResource(start_res_id) || !Res_CheckResource(end_res_id))
 			continue;
 
-		anim.basepic = start_tex_id;
-		anim.numframes = end_tex_id - start_tex_id + 1;
+		anim_t anim;
+		anim.basepic = start_res_id;
+		anim.numframes = end_res_id - start_res_id + 1;
 
 		if (anim.numframes <= 0)
 			continue;
@@ -568,7 +678,6 @@ void TextureManager::readAnimatedLump()
 	}
 
 	Res_ReleaseResource(res_id);
-	*/
 }
 
 
@@ -580,10 +689,10 @@ void TextureManager::readAnimatedLump()
 //
 void TextureManager::updateAnimatedTextures()
 {
-	/*
 	if (!clientside)
 		return;
 
+	/*
 	// cycle the animdef textures
 	for (size_t i = 0; i < mAnimDefs.size(); i++)
 	{
@@ -675,62 +784,6 @@ void TextureManager::registerTextureResources(ResourceManager* manager)
 }
 
 
-//
-// TextureManager::createCustomTextureId
-//
-// Generates a valid tex_id that can be used by the engine to denote certain
-// properties for a wall or ceiling or floor. For instance, a special use
-// tex_id can be used to denote that a ceiling should be rendered with SKY2.
-//
-TextureId TextureManager::createCustomTextureId()
-{
-	if (mFreeCustomTextureIdsTail <= mFreeCustomTextureIdsHead)
-		return TextureManager::NOT_FOUND_TEXTURE_ID;
-	return mFreeCustomTextureIds[mFreeCustomTextureIdsHead++ % MAX_CUSTOM_TEXTURE_IDS];
-}
-
-
-//
-// TextureManager::freeCustomTextureId
-//
-void TextureManager::freeCustomTextureId(const TextureId tex_id)
-{
-	mFreeCustomTextureIds[mFreeCustomTextureIdsTail++ % MAX_CUSTOM_TEXTURE_IDS] = tex_id;
-}
-
-
-//
-// TextureManager::getTexture
-//
-// Returns the Texture for the appropriate tex_id. If the Texture is not
-// currently cached, it will be loaded from the disk and cached.
-//
-/*
-const Texture* TextureManager::getTexture(const TextureId tex_id) 
-{
-	Texture* texture = mTextureIdMap[tex_id];
-	if (!texture)
-	{
-		if (tex_id & FLAT_TEXTURE_ID_MASK)
-			cacheFlat(tex_id);
-		else if (tex_id & WALLTEXTURE_ID_MASK)
-			cacheWallTexture(tex_id);
-		else if (tex_id & PATCH_TEXTURE_ID_MASK)
-			cachePatch(tex_id);
-		else if (tex_id & SPRITE_TEXTURE_ID_MASK)
-			cacheSprite(tex_id);
-		else if (tex_id & RAW_TEXTURE_ID_MASK)
-			cacheRawTexture(tex_id);
-		else if (tex_id & PNG_TEXTURE_ID_MASK)
-			cachePNGTexture(tex_id);
-
-		texture = mTextureIdMap[tex_id];
-	}
-
-	return texture;
-}
-*/
-
 
 //
 // TextureManager::getTexture
@@ -782,32 +835,9 @@ const ResourceId Res_GetTextureResourceId(const ResourcePath& res_path)
 	ResourceId res_id = ResourceId::INVALID_ID;
 	//ResourceId res_id = ResourceManager::NOT_FOUND_TEXTURE_RESOURCE_ID;
 
-/*
-	// check for the texture in the default location specified by type
-	if (type == Texture::TEX_FLAT)
-		tex_id = getFlatTextureId(uname);
-	else if (type == Texture::TEX_WALLTEXTURE)
-		tex_id = getWallTextureTextureId(uname);
-	else if (type == Texture::TEX_PATCH)
-		tex_id = getPatchTextureId(uname);
-	else if (type == Texture::TEX_SPRITE)
-		tex_id = getSpriteTextureId(uname);
-	else if (type == Texture::TEX_RAW)
-		tex_id = getRawTextureTextureId(uname);
-	else if (type == Texture::TEX_PNG)
-		tex_id = getPNGTextureTextureId(uname);
-
-	// not found? check elsewhere
-	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_FLAT)
-		tex_id = getFlatTextureId(uname);
-	if (tex_id == NOT_FOUND_TEXTURE_ID && type != Texture::TEX_WALLTEXTURE)
-		tex_id = getWallTextureTextureId(uname);
-*/
 
 	return res_id;
 }
-
-
 
 
 VERSION_CONTROL (res_texture_cpp, "$Id$")

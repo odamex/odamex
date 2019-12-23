@@ -64,7 +64,6 @@ static bool Res_IsMapLumpName(const ResourcePath& path)
 }
 
 
-
 // ============================================================================
 //
 // SingleLumpResourceContainer class implementation
@@ -81,7 +80,8 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 	const OString& path,
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		mResourceContainerId(container_id), mFile(NULL),
+		ResourceContainer(container_id, manager),
+		mFile(NULL),
 		mResourceId(ResourceId::INVALID_ID)
 {
 	mFile = new DiskFileAccessor(path);
@@ -161,7 +161,7 @@ WadResourceContainer::WadResourceContainer(
 	const OString& path,
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		mResourceContainerId(container_id),
+		ResourceContainer(container_id, manager),
 		mFile(NULL),
 		mLumpIdLookup(256),
 		mDirectory(256),
@@ -193,8 +193,9 @@ WadResourceContainer::~WadResourceContainer()
 //
 // WadResourceContainer::readWadDirectory
 //
-// Reads the directory of a WAD file and returns a new instance of
-// ContainerDirectory if successful or NULL otherwise.
+// Reads the directory of a WAD file and returns false if there
+// are errors parsing the WAD directory or populates the instance's
+// ContainerDirectory if successful.
 //
 bool WadResourceContainer::readWadDirectory()
 {
@@ -370,7 +371,7 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 			}
 			
 			const ResourcePath full_path = base_path + lump_name;
-			DPrintf("Adding lump %05d %s\n", lump_id, full_path.c_str());
+			DPrintf("Adding WAD lump %05d %s\n", lump_id, full_path.c_str());
 			const ResourceId res_id = manager->addResource(full_path, this);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 		}
@@ -433,7 +434,7 @@ DirectoryResourceContainer::DirectoryResourceContainer(
 	const OString& path,
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		mResourceContainerId(container_id),
+		ResourceContainer(container_id, manager),
 		mPath(path),
 		mLumpIdLookup(256),
 		mDirectory(256)
@@ -562,8 +563,7 @@ void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
 CompositeTextureResourceContainer::CompositeTextureResourceContainer(
 	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		mResourceContainerId(container_id),
-		mResourceManager(manager),
+		ResourceContainer(container_id, manager),
 		mDirectory(NULL)
 {
 
@@ -617,7 +617,7 @@ void CompositeTextureResourceContainer::addTexturesFromDefinition(ResourceId res
 		const OString texture_name(mtexture->name, 8);
 		ResourcePath path = Res_MakeResourcePath(texture_name, textures_directory_name);
 
-		const ResourceId res_id = mResourceManager->addResource(path, this);
+		const ResourceId res_id = getResourceManager()->addResource(path, this);
 		mDirectory->addEntryInfo(texture_name, resource_size, offset);
 	}
 
@@ -681,4 +681,3 @@ uint32_t CompositeTextureResourceContainer::loadResource(void* data, const Resou
 
 
 VERSION_CONTROL (res_container_cpp, "$Id$")
-

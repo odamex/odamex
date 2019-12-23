@@ -561,10 +561,8 @@ static void ParseAnim (byte istex)
  */
 void P_InitPicAnims (void)
 {
-	byte *animdefs, *anim_p;
-
 	// denis - allow reinitialisation
-	if(anims)
+	if (anims)
 	{
 		M_Free(anims);
 		lastanim = 0;
@@ -574,75 +572,86 @@ void P_InitPicAnims (void)
 	// [RH] Load an ANIMDEFS lump first
 	P_InitAnimDefs ();
 
-	if (W_CheckNumForName ("ANIMATED") == -1)
+	const ResourceId res_id = Res_GetResourceId("ANIMATED", global_directory_name);
+	if (res_id == ResourceId::INVALID_ID)
 		return;
-
-	animdefs = (byte *)W_CacheLumpName ("ANIMATED", PU_STATIC);
+	const uint8_t* animdefs = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
 
 	// Init animation
-
-		for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
+	for (const uint8_t* anim_p = animdefs; *anim_p != 255; anim_p += 23)
+	{
+		// 1/11/98 killough -- removed limit by array-doubling
+		if (lastanim >= anims + maxanims)
 		{
-			// 1/11/98 killough -- removed limit by array-doubling
-			if (lastanim >= anims + maxanims)
-			{
-				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
-				lastanim = anims + maxanims;
-				maxanims = newmax;
-			}
+			size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+			anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
+			lastanim = anims + maxanims;
+			maxanims = newmax;
+		}
 
-			if (*anim_p /* .istexture */ & 1)
-			{
-				// different episode ?
-				if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
-					R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
-					continue;
+		if (*anim_p /* .istexture */ & 1)
+		{
+			// different episode ?
+			if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
+				R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
+				continue;
 
-				lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-				/*if (*anim_p & 2)
-				{ // [RH] Bit 1 set means allow decals on walls with this texture
-					texturenodecals[lastanim->basepic] = 0;
-				}
-				else
-				{
-					texturenodecals[lastanim->basepic] = 1;
-				}*/
+			lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
+			lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
+								  - lastanim->basepic + 1;
+			/*if (*anim_p & 2)
+			{ // [RH] Bit 1 set means allow decals on walls with this texture
+				texturenodecals[lastanim->basepic] = 0;
 			}
 			else
 			{
-				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
-					continue;
-
-				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-			}
-
-			lastanim->istexture = *anim_p /* .istexture */;
-			lastanim->uniqueframes = false;
-			lastanim->curframe = 0;
-
-			if (lastanim->numframes < 2)
-				Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
-						 anim_p + 10 /* .startname */,
-						 anim_p + 1 /* .endname */);
-
-			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
-						/* .speed */
-						(anim_p[19] << 0) |
-						(anim_p[20] << 8) |
-						(anim_p[21] << 16) |
-						(anim_p[22] << 24);
-
-			lastanim->countdown--;
-
-			lastanim++;
+				texturenodecals[lastanim->basepic] = 1;
+			}*/
 		}
-	Z_Free (animdefs);
+		else
+		{
+			const OString start_name((char*)anim_p + 10, 8);
+			const OString end_name((char*)anim_p + 1, 8);
+
+			const ResourceId start_res_id = Res_GetTextureResourceId(start_name, flats_directory_name);
+			const ResourceId end_res_id = Res_GetTextureResourceId(end_name, flats_directory_name);
+
+			if (start_res_id == ResourceId::INVALID_ID || end_res_id == ResourceId::INVALID_ID)
+				continue;
+
+			/*
+			if (W_CheckNumForName ((char *)anim_p + 10, ns_flats) == -1 ||
+				W_CheckNumForName ((char *)anim_p + 1, ns_flats) == -1)
+				continue;
+			*/
+
+			lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
+			lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
+								  - lastanim->basepic + 1;
+		}
+
+		lastanim->istexture = *anim_p /* .istexture */;
+		lastanim->uniqueframes = false;
+		lastanim->curframe = 0;
+
+		if (lastanim->numframes < 2)
+			Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
+					 anim_p + 10 /* .startname */,
+					 anim_p + 1 /* .endname */);
+
+		lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
+					/* .speed */
+					(anim_p[19] << 0) |
+					(anim_p[20] << 8) |
+					(anim_p[21] << 16) |
+					(anim_p[22] << 24);
+
+		lastanim->countdown--;
+
+		lastanim++;
+	}
+
+	Res_ReleaseResource(res_id);
 }
 
 

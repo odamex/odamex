@@ -72,7 +72,7 @@ size_t			numlumps;
 
 void**			lumpcache;
 
-static unsigned	stdisk_lumpnum;
+std::string Res_MD5(const std::string& filename);
 
 //
 // W_LumpNameHash
@@ -120,54 +120,6 @@ void W_HashLumps(void)
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
-}
-
-
-//
-// uppercoppy
-//
-// [RH] Copy up to 8 chars, upper-casing them in the process
-//
-void uppercopy (char *to, const char *from)
-{
-	int i;
-
-	for (i = 0; i < 8 && from[i]; i++)
-		to[i] = toupper (from[i]);
-	for (; i < 8; i++)
-		to[i] = 0;
-}
-
-
-// denis - Standard MD5SUM
-std::string W_MD5(std::string filename)
-{
-	const int file_chunk_size = 8192;
-	FILE *fp = fopen(filename.c_str(), "rb");
-
-	if(!fp)
-		return "";
-
-	md5_state_t state;
-	md5_init(&state);
-
-	unsigned n = 0;
-	unsigned char buf[file_chunk_size];
-
-	while((n = fread(buf, 1, sizeof(buf), fp)))
-		md5_append(&state, (unsigned char *)buf, n);
-
-	md5_byte_t digest[16];
-	md5_finish(&state, digest);
-
-	fclose(fp);
-
-	std::stringstream hash;
-
-	for(int i = 0; i < 16; i++)
-		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
-
-	return hash.str();
 }
 
 
@@ -283,7 +235,7 @@ std::string W_AddFile(std::string filename)
 
 	delete [] fileinfo;
 
-	return W_MD5(filename);
+	return Res_MD5(filename);
 }
 
 
@@ -507,8 +459,6 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 	// killough 1/31/98: initialize lump hash table
 	W_HashLumps();
 
-	stdisk_lumpnum = W_GetNumForName("STDISK");
-
 	return hashes;
 }
 
@@ -597,17 +547,11 @@ void W_ReadLump(unsigned int lump, void* dest)
 
 	l = lumpinfo + lump;
 
-	if (lump != stdisk_lumpnum)
-    	I_BeginRead();
-
 	fseek (l->handle, l->position, SEEK_SET);
 	c = fread (dest, l->size, 1, l->handle);
 
 	if (feof(l->handle))
 		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
-
-	if (lump != stdisk_lumpnum)
-    	I_EndRead();
 }
 
 //

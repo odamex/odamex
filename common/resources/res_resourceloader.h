@@ -56,11 +56,11 @@ class ResourceLoader
 public:
 	virtual ~ResourceLoader() {}
 
-	virtual bool validate() const
+	virtual bool validate(const ResourceId res_id) const
 	{	return true;	}
 
-	virtual uint32_t size() const = 0;
-	virtual void load(void* data) const = 0;
+	virtual uint32_t size(const ResourceId res_id) const = 0;
+	virtual void load(const ResourceId res_id, void* data) const = 0;
 };
 
 
@@ -74,54 +74,18 @@ public:
 class DefaultResourceLoader : public ResourceLoader
 {
 public:
-	DefaultResourceLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
+	DefaultResourceLoader(const RawResourceAccessor* accessor);
 	virtual ~DefaultResourceLoader() { }
 
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	virtual uint32_t size(const ResourceId res_id) const;
+	virtual void load(const ResourceId res_id, void* data) const;
 
 private:
 	const RawResourceAccessor*	mRawResourceAccessor;
-	const ResourceId			mResourceId;
 };
 
 
-// ----------------------------------------------------------------------------
-// PatchResourceLoader class interface
-//
-// Loads patch_t format graphic lumps.
-// ----------------------------------------------------------------------------
 
-class PatchResourceLoader : public ResourceLoader
-{
-public:
-	PatchResourceLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
-	virtual ~PatchResourceLoader() {}
-
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
-
-private:
-	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
-
-	bool validateHelper(const uint8_t* raw_data, uint32_t raw_size) const;
-};
-
-
-// ----------------------------------------------------------------------------
-// SpriteResourceLoader class interface
-//
-// Loads patch_t format sprite graphic lumps.
-// ----------------------------------------------------------------------------
-
-class SpriteResourceLoader : public PatchResourceLoader
-{
-public:
-	SpriteResourceLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
-	virtual ~SpriteResourceLoader() {}
-};
 
 
 // ============================================================================
@@ -137,8 +101,10 @@ public:
 class TextureLoader : public ResourceLoader
 {
 public:
-	virtual uint32_t getTextureSize(uint16_t width, uint16_t height) const;
-	virtual Texture* initTexture(void* data, uint16_t width, uint16_t height) const;
+	virtual void load(const ResourceId res_id, void* data) const {}		// TODO: remove this
+	virtual void load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const = 0;
+	virtual Texture* initTexture(void* data, uint16_t width, uint16_t height, palindex_t maskcolor=0) const;
+	uint32_t calculateTextureSize(uint16_t width, uint16_t height) const;
 };
 
 
@@ -174,18 +140,18 @@ private:
 class FlatTextureLoader : public TextureLoader
 {
 public:
-	FlatTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
+	FlatTextureLoader(const RawResourceAccessor* accessor);
 	virtual ~FlatTextureLoader() {}
 
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	virtual uint32_t size(const ResourceId res_id) const;
+	virtual void load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const;
 
 private:
-	int16_t getWidth() const;
-	int16_t getHeight() const;
+	int16_t getWidth(uint32_t size) const;
+	int16_t getHeight(uint32_t size) const;
 
 	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
+	const palindex_t* mColorMap;
 };
 
 
@@ -198,18 +164,17 @@ private:
 class PatchTextureLoader : public TextureLoader
 {
 public:
-	PatchTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
+	PatchTextureLoader(const RawResourceAccessor* accessor);
 	virtual ~PatchTextureLoader() {}
 
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	virtual bool validate(const ResourceId res_id) const;
+	virtual uint32_t size(const ResourceId res_id) const;
+	virtual void load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const;
 
 private:
-	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
-
 	bool validateHelper(const uint8_t* raw_data, uint32_t raw_size) const;
+
+	const RawResourceAccessor* mRawResourceAccessor;
 };
 
 
@@ -221,6 +186,9 @@ private:
 
 class SpriteTextureLoader : public PatchTextureLoader
 {
+public:
+	SpriteTextureLoader(const RawResourceAccessor* accessor);
+	virtual ~SpriteTextureLoader() {}
 };
 
 
@@ -240,9 +208,9 @@ public:
 			const CompositeTextureDefinition* texture_def);
 	virtual ~CompositeTextureLoader() {}
 
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	virtual bool validate(const ResourceId res_id) const;
+	virtual uint32_t size(const ResourceId res_id) const;
+	virtual void load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const;
 
 private:
 	const RawResourceAccessor* mRawResourceAccessor;
@@ -259,16 +227,15 @@ private:
 class RawTextureLoader : public TextureLoader
 {
 public:
-	RawTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id);
+	RawTextureLoader(const RawResourceAccessor* accessor);
 	virtual ~RawTextureLoader() {}
 
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	virtual bool validate(const ResourceId res_id) const;
+	virtual uint32_t size(const ResourceId res_id) const;
+	virtual void load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const;
 
 private:
 	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
 };
 
 
@@ -281,16 +248,15 @@ private:
 class PngTextureLoader : public TextureLoader
 {
 public:
-	PngTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const OString& name);
+	PngTextureLoader(const RawResourceAccessor* accessor, const OString& name);
 	virtual ~PngTextureLoader() {}
 
-	virtual bool validate() const;
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	virtual bool validate(const ResourceId res_id) const;
+	virtual uint32_t size(const ResourceId res_id) const;
+	virtual void load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const;
 
 private:
 	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceId	mResId;
 	const OString&		mResourceName;
 };
 

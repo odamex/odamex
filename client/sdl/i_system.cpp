@@ -76,7 +76,7 @@
 #include <math.h>
 
 #include "doomtype.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "version.h"
 #include "doomdef.h"
 #include "cmdlib.h"
@@ -623,7 +623,6 @@ void I_FinishClockCalibration ()
 void I_Endoom(void)
 {
 #ifndef GCONSOLE // I will return to this -- Hyper_Eye
-	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;
 	int indent;
@@ -634,7 +633,7 @@ void I_Endoom(void)
     // Hack to stop crash with disk icon
     in_endoom = true;
 
-	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
+	uint8_t* endoom_data = (uint8_t*)Res_LoadResource("ENDOOM", PU_STATIC);
 
 	// Set up text mode screen
 

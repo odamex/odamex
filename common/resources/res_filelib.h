@@ -26,6 +26,8 @@
 
 #include <string>
 
+std::string Res_MD5(const std::string& filename);
+
 std::string Res_CleanseFilename(const std::string& filename);
 
 std::string Res_FindResourceFile(const std::string& filename, const std::string& hash = "");

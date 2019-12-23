@@ -54,8 +54,6 @@
 #include "s_sndseq.h"
 #include "sc_man.h"
 #include "v_video.h"
-#include "w_wad.h"
-#include "w_ident.h"
 #include "z_zone.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
@@ -249,6 +247,22 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 	levelinfo->outsidefog_color[3] = 0; 
 	strncpy(levelinfo->fadetable, "COLORMAP", 8);
 }
+
+
+//
+// uppercoppy
+//
+// [RH] Copy up to 8 chars, upper-casing them in the process
+//
+void uppercopy(char* to, const char* from)
+{
+	int i;
+	for (i = 0; i < 8 && from[i]; i++)
+		to[i] = toupper(from[i]);
+	for (; i < 8; i++)
+		to[i] = 0;
+}
+
 
 //
 // G_ParseMapInfo

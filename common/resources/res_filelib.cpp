@@ -25,16 +25,17 @@
 #include "cmdlib.h"
 #include "m_fileio.h"
 #include "i_system.h"
-#include "w_wad.h"
-#include "w_ident.h"
+#include "md5.h"
 #include "m_argv.h"
 #include "c_cvars.h"
 #include "resources/res_main.h"
+#include "w_ident.h"
 
 #include <string>
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 
 #ifdef UNIX
 	#include <unistd.h>
@@ -66,6 +67,36 @@ static const char* const ALL_EXTLIST[] = { ".WAD", ".ZIP", ".PK3", ".DEH", ".BEX
 
 // extern functions
 const char* ParseString2(const char* data);
+
+
+// denis - Standard MD5SUM
+std::string Res_MD5(const std::string& filename)
+{
+	const int file_chunk_size = 8192;
+	FILE *fp = fopen(filename.c_str(), "rb");
+	if (!fp)
+		return "";
+
+	md5_state_t state;
+	md5_init(&state);
+
+	unsigned n = 0;
+	unsigned char buf[file_chunk_size];
+
+	while ((n = fread(buf, 1, sizeof(buf), fp)))
+		md5_append(&state, (unsigned char *)buf, n);
+
+	md5_byte_t digest[16];
+	md5_finish(&state, digest);
+
+	fclose(fp);
+
+	std::stringstream hash;
+	for (int i = 0; i < 16; i++)
+		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
+
+	return hash.str();
+}
 
 
 //
@@ -273,8 +304,6 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 			else
 			{
 				char* path = unstr + strlen(uninstaller_string);
-//				const char* cpath = path;
-//				Res_AddSearchDir(search_dirs, cpath, SEARCHPATHSEPCHAR);
 				Res_AddSearchDir(search_dirs, path, SEARCHPATHSEPCHAR);
 			}
 		}
@@ -291,11 +320,7 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 				                             + strlen(collectors_edition_subdirs[i])
 				                             + 5));
 				sprintf(subpath, "%s\\%s", install_path, collectors_edition_subdirs[i]);
-
-//				const char* csubpath = subpath;
-//				Res_AddSearchDir(search_dirs, csubpath, SEARCHPATHSEPCHAR);
 				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
-
 				free(subpath);
 			}
 
@@ -313,11 +338,7 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 				char* subpath = static_cast<char*>(malloc(strlen(install_path)
 				                             + strlen(steam_install_subdirs[i]) + 5));
 				sprintf(subpath, "%s\\%s", install_path, steam_install_subdirs[i]);
-
-//				const char* csubpath = subpath;
-//				Res_AddSearchDir(search_dirs, csubpath, SEARCHPATHSEPCHAR);
 				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
-
 				free(subpath);
 			}
 
@@ -398,7 +419,7 @@ static std::string Res_BaseFileSearchDir(
 
 		if (iequals(filename, local_base_filename))
 		{
-			std::string local_hash(W_MD5(local_filename));
+			std::string local_hash(Res_MD5(local_filename));
 
 			if (hash.empty() || iequals(hash, local_hash))
 			{
@@ -436,7 +457,7 @@ static std::string Res_BaseFileSearchDir(
 
 		if (iequals(filename, local_base_filename))
 		{
-			std::string local_hash(W_MD5(local_filename));
+			std::string local_hash(Res_MD5(local_filename));
 
 			if (hash.empty() || iequals(hash, local_hash))
 			{
@@ -729,7 +750,7 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 		odamex_wad_filename = resource_filenames[odamex_wad_position];
 	full_filename = Res_FindResourceFile(odamex_wad_filename);
 	if (full_filename.empty())
-		I_FatalError("Unable to locate %s resource file.", engine_resource_filename.c_str());
+		I_FatalError("Unable to locate \"%s\" resource file.", engine_resource_filename.c_str());
 	else
 		new_resource_filenames.push_back(full_filename);
 

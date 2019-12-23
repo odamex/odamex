@@ -200,10 +200,22 @@ private:
 class ResourceContainer
 {
 public:
-	ResourceContainer() { }
+	ResourceContainer(const ResourceContainerId& container_id, ResourceManager* manager) :
+							mResourceContainerId(container_id),
+							mResourceManager(manager)
+	{ }
+
 	virtual ~ResourceContainer() { }
 
-	virtual const ResourceContainerId& getResourceContainerId() const = 0;
+	const ResourceContainerId& getResourceContainerId() const
+	{
+		return mResourceContainerId;
+	}
+
+	ResourceManager* getResourceManager() const
+	{
+		return mResourceManager;
+	}
 
 	virtual bool isIWad() const { return false; }
 
@@ -212,6 +224,10 @@ public:
 	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
 
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const = 0;
+
+private:
+	ResourceContainerId		mResourceContainerId;
+	ResourceManager*		mResourceManager;
 };
 
 // ============================================================================
@@ -230,11 +246,6 @@ public:
 
 	virtual ~SingleLumpResourceContainer();
 
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
 	virtual uint32_t getResourceCount() const;
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
@@ -242,7 +253,6 @@ public:
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
 private:
-	ResourceContainerId		mResourceContainerId;
 	FileAccessor*			mFile;
 	ResourceId				mResourceId;
 };
@@ -264,11 +274,6 @@ public:
 	
 	virtual ~WadResourceContainer();
 
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
 	virtual bool isIWad() const
 	{
 		return mIsIWad;
@@ -283,7 +288,6 @@ public:
 private:
 	void addResourcesToManager(ResourceManager* manager);
 
-	ResourceContainerId		mResourceContainerId;
 	FileAccessor*			mFile;
 
 	ContainerDirectory		mDirectory;
@@ -362,11 +366,6 @@ public:
 	
 	virtual ~DirectoryResourceContainer();
 
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
 	virtual uint32_t getResourceCount() const;
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
@@ -377,7 +376,6 @@ private:
 	void cleanup();
 	void addResourcesToManager(ResourceManager* manager);
 
-	ResourceContainerId		mResourceContainerId;
 	OString					mPath;
 
 	ContainerDirectory		mDirectory;
@@ -412,11 +410,6 @@ public:
 	
 	virtual ~CompositeTextureResourceContainer();
 
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
 	virtual uint32_t getResourceCount() const;
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
@@ -428,10 +421,7 @@ private:
 	size_t countTexturesInDefinition(ResourceId res_id);
 	void addTexturesFromDefinition(ResourceId res_id);
 
-	ResourceContainerId		mResourceContainerId;
-	ResourceManager*		mResourceManager;
 	ContainerDirectory*		mDirectory;
 };
-
 
 #endif	// __RES_CONTAINER_H__

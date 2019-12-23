@@ -41,6 +41,7 @@ void D_DoomMain(void);
 
 void D_LoadResourceFiles(const std::vector<std::string>& resource_file_names);
 void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_file_names);
+void D_UnloadResourceFiles();
 
 // Called by IO functions when input is detected.
 void D_PostEvent(const event_t* ev);

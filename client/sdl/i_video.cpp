@@ -39,7 +39,7 @@
 #include "i_input.h"
 #include "m_fileio.h"
 
-#include "w_wad.h"
+#include "resources/res_main.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -953,7 +953,7 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
-	const patch_t* diskpatch = W_CachePatch("STDISK");
+	const patch_t* diskpatch = Res_CachePatch("STDISK");
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();

@@ -38,6 +38,10 @@
 #include <vector>
 #include <stdio.h>
 
+std::string Res_MD5(const std::string& filename);
+class FileIdentificationManager;
+static void W_SetupFileIdentifiers(FileIdentificationManager& identtab);
+
 
 // ============================================================================
 //
@@ -112,7 +116,9 @@ class FileIdentificationManager
 {
 public:
 	FileIdentificationManager() : mIdentifiers(64)
-	{ }
+	{
+		W_SetupFileIdentifiers(*this);
+	}
 
 	//
 	// FileIdentificationManager::addFile
@@ -160,7 +166,7 @@ public:
 
 	bool isIWAD(const OString& filename) const
 	{
-		const OString md5sum = W_MD5(filename);
+		const OString md5sum = Res_MD5(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 		if (file)
 			return file->mIsIWAD;
@@ -196,7 +202,7 @@ public:
 
 	const OString identify(const OString& filename)
 	{
-		const OString md5sum = W_MD5(filename);
+		const OString md5sum = Res_MD5(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 
 		if (file != NULL)
@@ -330,16 +336,13 @@ private:
 };
 
 
-static FileIdentificationManager identtab;
-
-
 //
 // W_SetupFileIdentifiers
 //
 // Initializes the list of file identifiers with a set of known IWAD files.
 // Based on information from http://doomwiki.org/wiki/Doom_files
 //
-void W_SetupFileIdentifiers()
+static void W_SetupFileIdentifiers(FileIdentificationManager& identtab)
 {
 	// ------------------------------------------------------------------------
 	// DOOM2.WAD
@@ -717,6 +720,9 @@ void W_SetupFileIdentifiers()
 }
 
 
+static FileIdentificationManager identtab;
+
+
 //
 // W_ConfigureGameInfo
 //
@@ -851,7 +857,7 @@ bool W_IsIWAD(const std::string& filename)
 //
 bool W_IsIWADCommercial(const std::string& filename)
 {
-	const OString md5sum = W_MD5(filename);
+	const OString md5sum = Res_MD5(filename);
 	return identtab.isCommercial(md5sum);
 }
 
@@ -863,7 +869,7 @@ bool W_IsIWADCommercial(const std::string& filename)
 //
 bool W_IsIWADDeprecated(const std::string& filename)
 {
-	const OString md5sum = W_MD5(filename);
+	const OString md5sum = Res_MD5(filename);
 	return identtab.isDeprecated(md5sum);
 }
 

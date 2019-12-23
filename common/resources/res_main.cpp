@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include "resources/res_main.h"
 #include "resources/res_fileaccessor.h"
+#include "resources/res_filelib.h"
 #include "resources/res_identifier.h"
 #include "resources/res_container.h"
 #include "resources/res_texture.h"
@@ -44,8 +45,6 @@
 #include "m_fileio.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
-#include "w_wad.h"
-#include "w_ident.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -59,11 +58,17 @@ static ResourceManager resource_manager;
 // the file and then passes the data to the function func and returns the
 // result.
 //
-static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint8_t*, size_t), size_t length)
+static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint8_t*, size_t), size_t length=0)
 {
 	FILE* fp = fopen(filename.c_str(), "rb");
 	if (fp == NULL)
 		return false;
+
+	const size_t file_size = M_FileLength(filename);
+	if (length == 0)
+		length = file_size;
+	else
+		length = std::min(length, file_size);
 
 	uint8_t* data = new uint8_t[length];
 	size_t read_cnt = fread(data, 1, length, fp);
@@ -94,7 +99,7 @@ bool Res_IsWadFile(const OString& filename)
 //
 bool Res_IsDehackedFile(const OString& filename)
 {
-	const size_t length = strlen("Patch File for DeHackEd v");	// length of DeHackEd identifier
+	const size_t length = 32; 	// long enough for DeHackEd identifier
 	return Res_CheckFileHelper(filename, &Res_ValidateDehackedData, length);
 }
 
@@ -164,7 +169,7 @@ void ResourceManager::openResourceContainer(const OString& path)
 	{
 		mContainers.push_back(container);
 		mResourceFileNames.push_back(path);
-		mResourceFileHashes.push_back(W_MD5(path));
+		mResourceFileHashes.push_back(Res_MD5(path));
 	}
 }
 
@@ -183,11 +188,9 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 	// TODO: Is this the best place to initialize the ResourceCache instance?
 	mCache = new ResourceCache(mResources.size());
 
-	// Add composite textures
 	ResourceContainerId container_id = mContainers.size();
-	ResourceContainer* container = new CompositeTextureResourceContainer(container_id, this);
+	ResourceContainer* container = new TextureManager(container_id, this);
 	mContainers.push_back(container);
-
 
 	// [SL] NOTE: rework this code so that ResourceCache does not need to
 	// be initialized twice.
@@ -232,23 +235,8 @@ const ResourceId ResourceManager::addResource(
 
 	res_rec.mPath = path;
 	res_rec.mResourceContainerId = container->getResourceContainerId();
-	if (path.first() == "FLATS")
-	{
-		res_rec.mResourceLoader = new FlatTextureLoader(&mRawResourceAccessor, res_id);
-	}
-	else if (path.first() == "PATCHES")
-	{
-		res_rec.mResourceLoader = new PatchResourceLoader(&mRawResourceAccessor, res_id);
-	}
-	else if (path.first() == "SPRITES")
-	{
-		res_rec.mResourceLoader = new SpriteResourceLoader(&mRawResourceAccessor, res_id);
-	}
-	else
-	{
-		res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor, res_id);
-		// TODO: delete mResourceLoader at some point
-	}
+	// TODO: delete mResourceLoader at some point
+	res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor);
 
 	mNameTranslator.addTranslation(path, res_id);
 
@@ -306,7 +294,7 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 {
 	const ResourceRecord* res_rec = getResourceRecord(res_id);
 	if (res_rec)
-		return res_rec->mResourceLoader->size();
+		return res_rec->mResourceLoader->size(res_id);
 	return 0;
 }
 

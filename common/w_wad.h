@@ -88,7 +88,6 @@ extern	void**		lumpcache;
 extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
-std::string W_MD5(std::string filename);
 std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filenames);
 
 int		W_CheckNumForName (const char *name, int ns = ns_global);
@@ -114,9 +113,6 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 
 // [RH] Combine multiple marked ranges of lumps into one.
 void	W_MergeLumps (const char *start, const char *end, int);
-
-// [RH] Copy an 8-char string and uppercase it.
-void uppercopy (char *to, const char *from);
 
 // [RH] Copies the lump name to to using uppercopy
 void W_GetLumpName (char *to, unsigned lump);

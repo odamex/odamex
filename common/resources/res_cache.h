@@ -55,8 +55,8 @@ public:
 	{
 		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
 		assert(loader != NULL);
-		mData[res_id] = allocMemory(loader->size(), tag, &(mData[res_id]));
-		loader->load(mData[res_id]);
+		mData[res_id] = allocMemory(loader->size(res_id), tag, &(mData[res_id]));
+		loader->load(res_id, mData[res_id]);
 	}
 
 	const void* getData(const ResourceId res_id) const
@@ -93,10 +93,10 @@ private:
 		//		lump and set the extra byte to zero so that
 		//		various text parsing routines can just call
 		//		Res_LoadResource() and not choke.
-		
+		//	
 		// [SL]: 2016-01-24 Additionally, D_LoadDehLump() also relies on an extra
 		// byte being allocated.
-
+		//	
 		// TODO: [SL] 2015-04-22 This hack should be removed when the text parsing
 		// routines are fixed.
 		size += 1;

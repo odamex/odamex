@@ -60,7 +60,9 @@ SDWORD M_FileLength (FILE *f)
 SDWORD M_FileLength(const std::string& filename)
 {
 	FILE *f = fopen(filename.c_str(), "r");
-	return M_FileLength(f);
+	SDWORD length = M_FileLength(f);
+	fclose(f);
+	return length;
 }
 
 
