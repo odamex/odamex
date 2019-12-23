@@ -474,6 +474,7 @@ BOOL PO_Busy (int polyobj);
 //
 #include "p_spec.h"
 
+bool P_CheckSectorRateLimit(sector_t *sec, AActor *thing);
 
 #endif	// __P_LOCAL__
 

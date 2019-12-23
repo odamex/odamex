@@ -364,6 +364,9 @@ void P_LoadSectors (int lump)
 		P_SetupLevelFloorPlane(ss);
 		P_SetupLevelCeilingPlane(ss);
 
+		// [jsd] reset last_activation_tic for rate limiting:
+		ss->last_activation_tic = -TICRATE;
+
 		ss->gravity = 1.0f;	// [RH] Default sector gravity of 1.0
 
 		// [RH] Sectors default to white light with the default fade.
@@ -663,9 +666,6 @@ void P_AdjustLine (line_t *ld)
 	vertex_t *v1, *v2;
 
 	ld->lucency = 255;	// [RH] Opaque by default
-
-	// [jsd] rate limiting activation
-	ld->lastactivationtic = -TICRATE;
 
 	v1 = ld->v1;
 	v2 = ld->v2;

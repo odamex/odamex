@@ -476,6 +476,11 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 	{
 		if (!line || !(sec = line->backsector))
 			return rtn;
+
+		// rate limit sector activation:
+		if (P_CheckSectorRateLimit(sec, NULL))
+			return false;
+
 		secnum = sec-sectors;
 		manual = true;
 		goto manual_floor;

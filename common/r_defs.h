@@ -234,6 +234,9 @@ struct sector_s
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane, ceilingplane;
+
+	// [jsd] record last gametic sector was activated to rate limit on serverside for doors, lifts, etc.
+	int last_activation_tic;
 };
 typedef struct sector_s sector_t;
 
@@ -322,9 +325,6 @@ struct line_s
 	int			firstid, nextid;
 	bool wastoggled;
 	bool switchactive;
-
-	// [jsd]: rate limit line activations serverside for sturdier DOORs
-	int lastactivationtic;
 };
 typedef struct line_s line_t;
 

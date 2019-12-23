@@ -67,8 +67,6 @@
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
-EXTERN_CVAR(sv_activation_rate)
-
 std::list<movingsector_t> movingsectors;
 
 //
@@ -1318,29 +1316,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
 // or shooting special lines, or by timed thinkers.
 //
 
-bool P_CheckActivationRateLimitExceeded(AActor* thing, line_t* line)
-{
-	if (!serverside)
-		return true;
-
-	int ratelimit = sv_activation_rate.asInt();
-	if (ratelimit < 0) ratelimit = 0;
-
-	DPrintf("rate check line %05d for netid %05d: %5d - %5d = %d >= %d",
-			line - lines, thing->netid, gametic, line->lastactivationtic,
-			gametic - line->lastactivationtic,
-			ratelimit);
-
-	if (gametic - line->lastactivationtic < ratelimit) {
-		return false;
-	}
-
-	// [jsd] consider applying lastactivationtic to the tagged sector instead of the line
-	line->lastactivationtic = gametic;
-
-	return true;
-}
-
 //
 // P_HandleSpecialRepeat
 //
@@ -1464,10 +1439,6 @@ P_CrossSpecialLine
 		}
 	}
 
-	// [jsd] apply activation rate limit serverside:
-	if (!P_CheckActivationRateLimitExceeded(thing, line))
-		return;
-
 	TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1583,10 +1554,6 @@ P_UseSpecialLine
 		}
 	}
 
-	// [jsd] apply activation rate limit serverside:
-	if (!P_CheckActivationRateLimitExceeded(thing, line))
-		return false;
-
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1652,10 +1619,6 @@ P_PushSpecialLine
 				return false;
 		}
 	}
-
-	// [jsd] apply activation rate limit serverside:
-	if (!P_CheckActivationRateLimitExceeded(thing, line))
-		return false;
 
     TeleportSide = side;
 
