@@ -297,6 +297,7 @@ static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
 	return MIN(maxheight, viewheight - 1);
 }
 
+
 //
 // R_RenderColumnRange
 //

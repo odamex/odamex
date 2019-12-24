@@ -53,6 +53,7 @@ typedef struct
 	translationref_t	translation;
 
 	palindex_t			color;				// for r_drawflat
+	palindex_t			maskcolor;
 } drawcolumn_t;
 
 extern "C" drawcolumn_t dcol;

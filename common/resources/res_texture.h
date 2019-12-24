@@ -105,6 +105,11 @@ public:
 	
 	static uint32_t calculateSize(int width, int height);
 
+	const palindex_t* getColumn(int col) const
+	{	
+		return mData + mHeight * col;
+	}
+
 public:
 	Texture();
 

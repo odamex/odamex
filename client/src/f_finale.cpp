@@ -41,6 +41,7 @@
 #include "r_state.h"
 #include "hu_stuff.h"
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #include "gi.h"
 
@@ -233,7 +234,7 @@ void F_Ticker (void)
 //
 // F_TextWrite
 //
-extern patch_t *hu_font[HU_FONTSIZE];
+extern Texture* hu_font[HU_FONTSIZE];
 
 
 void F_TextWrite (void)
@@ -247,9 +248,8 @@ void F_TextWrite (void)
 	int x = (primary_surface->getWidth() - width) / 2;
 	int y = (primary_surface->getHeight() - height) / 2;
 
-    const ResourceId res_id = Res_GetResourceId(finaleflat, flats_directory_name);
-	const byte* flat_data = (byte*)Res_LoadResource(res_id, PU_CACHE);
-    screen->FlatFill(x, y, width + x, height + y, flat_data);
+	const Texture* background_texture = Res_CacheTexture(finaleflat, flats_directory_name);
+    screen->FlatFill(background_texture, x, y, width + x, height + y);
 
 	V_MarkRect(x, y, width, height);
 
@@ -280,10 +280,10 @@ void F_TextWrite (void)
 			continue;
 		}
 
-		int w = hu_font[c]->width();
+		int w = hu_font[c]->mWidth;
 		if (cx + w > width)
 			break;
-		screen->DrawPatchClean(hu_font[c], cx, cy);
+		screen->DrawTextureClean(hu_font[c], cx, cy);
 		cx += w;
 	}
 
@@ -521,22 +521,22 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const patch_t* background_patch = Res_CachePatch("BOSSBACK");
+	const Texture* background_texture = Res_CacheTexture("BOSSBACK", global_directory_name);
 
 	// draw the background to the surface
 	cast_surface->lock();
 
-	cast_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
+	cast_surface->getDefaultCanvas()->DrawTexture(background_texture, 0, 0);
 
 	// draw the current frame in the middle of the screen
 	const spritedef_t* sprdef = &sprites[castsprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	const patch_t* sprite_patch = (patch_t*)Res_LoadResource(sprframe->resource[0]);	
+	const Texture* sprite_texture = Res_CacheTexture(sprframe->resource[0]);
 	if (sprframe->flip[0])
-		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160, 170);
+		cast_surface->getDefaultCanvas()->DrawTextureFlipped(sprite_texture, 160, 170);
 	else
-		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160, 170);
+		cast_surface->getDefaultCanvas()->DrawTexture(sprite_texture, 160, 170);
 
 	int width = F_GetWidth();
 	int height = F_GetHeight();
@@ -560,7 +560,7 @@ void F_CastDrawer()
 
 // Palettized version 8bpp
 
-void F_DrawPatchColP(int x, const patch_t *patch, int col)
+void F_DrawTextureColP(int x, const Texture* texture, int col)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
@@ -580,81 +580,76 @@ void F_DrawPatchColP(int x, const patch_t *patch, int col)
 	unsigned int step = (200<<16) / surface_height;
 	unsigned int invstep = (surface_height<<16) / 200;
 
-	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	
 	byte* desttop = surface->getBuffer() + x;
 	int pitch = surface->getPitchInPixels();
 
 	// step through the posts in a column
-	while (!post->end())
-	{
-		const byte* source = post->data();
-		byte* dest = desttop + ((post->topdelta * invstep)>>16) * pitch;
-		unsigned int count = (post->length * invstep) >> 16;
-		int c = 0;
-		palindex_t p;
 
-		switch (repeat) {
-			case 1:
-				do {
-					*dest = source[c>>16];
-					dest += pitch;
-					c += step;
-				} while (--count);
-				break;
-			case 2:
+	const byte* source = texture->getColumn(col);
+	byte* dest = desttop;
+	unsigned int count = (texture->mHeight * invstep) >> 16;
+	int c = 0;
+	palindex_t p;
+
+	switch (repeat) {
+		case 1:
+			do {
+				*dest = source[c>>16];
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		case 2:
+			do {
+				p = source[c>>16];
+				dest[0] = p;
+				dest[1] = p;
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		case 3:
+			do {
+				p = source[c>>16];
+				dest[0] = p;
+				dest[1] = p;
+				dest[2] = p;
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		case 4:
+			do {
+				p = source[c>>16];
+				dest[0] = p;
+				dest[1] = p;
+				dest[2] = p;
+				dest[3] = p;
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		default:
+			{
+				int count2;
+
 				do {
 					p = source[c>>16];
-					dest[0] = p;
-					dest[1] = p;
+					for (count2 = repeat; count2; count2--) {
+						dest[count2] = p;
+					}
 					dest += pitch;
 					c += step;
 				} while (--count);
-				break;
-			case 3:
-				do {
-					p = source[c>>16];
-					dest[0] = p;
-					dest[1] = p;
-					dest[2] = p;
-					dest += pitch;
-					c += step;
-				} while (--count);
-				break;
-			case 4:
-				do {
-					p = source[c>>16];
-					dest[0] = p;
-					dest[1] = p;
-					dest[2] = p;
-					dest[3] = p;
-					dest += pitch;
-					c += step;
-				} while (--count);
-				break;
-			default:
-				{
-					int count2;
-
-					do {
-						p = source[c>>16];
-						for (count2 = repeat; count2; count2--) {
-							dest[count2] = p;
-						}
-						dest += pitch;
-						c += step;
-					} while (--count);
-				}
-				break;
-		}
-
-		post = post->next();
+			}
+			break;
 	}
 }
 
 // Direct version 32bpp:
 
-void F_DrawPatchColD(int x, const patch_t *patch, int col)
+void F_DrawTextureColD(int x, const Texture* texture, int col)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
@@ -674,76 +669,69 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 	unsigned step = (200<<16) / surface_height;
 	unsigned invstep = (surface_height<<16) / 200;
 
-	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
 	int pitch = surface->getPitchInPixels();
 
 	shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
-	// step through the posts in a column
-	while (!post->end())
-	{
-		const byte* source = post->data();
-		argb_t* dest = desttop + ((post->topdelta*invstep)>>16)*pitch;
-		unsigned count = (post->length * invstep) >> 16;
-		int c = 0;
-		argb_t p;
+	const byte* source = texture->getColumn(col);
+	argb_t* dest = desttop;
+	unsigned count = (texture->mHeight * invstep) >> 16;
+	int c = 0;
+	argb_t p;
 
-		switch (repeat) {
-			case 1:
-				do {
-					*dest = pal.shade(source[c>>16]);
-					dest += pitch;
-					c += step;
-				} while (--count);
-				break;
-			case 2:
+	switch (repeat) {
+		case 1:
+			do {
+				*dest = pal.shade(source[c>>16]);
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		case 2:
+			do {
+				p = pal.shade(source[c>>16]);
+				dest[0] = p;
+				dest[1] = p;
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		case 3:
+			do {
+				p = pal.shade(source[c>>16]);
+				dest[0] = p;
+				dest[1] = p;
+				dest[2] = p;
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		case 4:
+			do {
+				p = pal.shade(source[c>>16]);
+				dest[0] = p;
+				dest[1] = p;
+				dest[2] = p;
+				dest[3] = p;
+				dest += pitch;
+				c += step;
+			} while (--count);
+			break;
+		default:
+			{
+				int count2;
+
 				do {
 					p = pal.shade(source[c>>16]);
-					dest[0] = p;
-					dest[1] = p;
+					for (count2 = repeat; count2; count2--) {
+						dest[count2] = p;
+					}
 					dest += pitch;
 					c += step;
 				} while (--count);
-				break;
-			case 3:
-				do {
-					p = pal.shade(source[c>>16]);
-					dest[0] = p;
-					dest[1] = p;
-					dest[2] = p;
-					dest += pitch;
-					c += step;
-				} while (--count);
-				break;
-			case 4:
-				do {
-					p = pal.shade(source[c>>16]);
-					dest[0] = p;
-					dest[1] = p;
-					dest[2] = p;
-					dest[3] = p;
-					dest += pitch;
-					c += step;
-				} while (--count);
-				break;
-			default:
-				{
-					int count2;
-
-					do {
-						p = pal.shade(source[c>>16]);
-						for (count2 = repeat; count2; count2--) {
-							dest[count2] = p;
-						}
-						dest += pitch;
-						c += step;
-					} while (--count);
-				}
-				break;
-		}
-
-		post = post->next();
+			}
+			break;
 	}
 }
 
@@ -759,8 +747,8 @@ void F_BunnyScroll (void)
 	int 		stage;
 	static int	laststage;
 
-	const patch_t* p1 = Res_CachePatch("PFUB2");
-	const patch_t* p2 = Res_CachePatch("PFUB1");
+	const Texture* texture1 = Res_CacheTexture("PFUB2", patches_directory_name);
+	const Texture* texture2 = Res_CacheTexture("PFUB1", patches_directory_name);
 
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
@@ -775,27 +763,29 @@ void F_BunnyScroll (void)
 		for ( x=0 ; x<320 ; x++)
 		{
 			if (x+scrolled < 320)
-				F_DrawPatchColP(x, p1, x+scrolled);
+				F_DrawTextureColP(x, texture1, x+scrolled);
 			else
-				F_DrawPatchColP(x, p2, x+scrolled - 320);
+				F_DrawTextureColP(x, texture2, x+scrolled - 320);
 		}
 	}
 	else
 	{
-	for ( x=0 ; x<320 ; x++)
-	{
-		if (x+scrolled < 320)
-			F_DrawPatchColD(x, p1, x+scrolled);
-		else
-			F_DrawPatchColD(x, p2, x+scrolled - 320);
+		for ( x=0 ; x<320 ; x++)
+		{
+			if (x+scrolled < 320)
+				F_DrawTextureColD(x, texture1, x+scrolled);
+			else
+				F_DrawTextureColD(x, texture2, x+scrolled - 320);
 		}
 	}
 
 	if (finalecount < 1130)
 		return;
+
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect(Res_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
+		const Texture* end_texture = Res_CacheTexture("END0", patches_directory_name);
+		screen->DrawTextureIndirect(end_texture, (320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
 	}
@@ -805,12 +795,13 @@ void F_BunnyScroll (void)
 		stage = 6;
 	if (stage > laststage)
 	{
-		S_Sound (CHAN_WEAPON, "weapons/pistol", 1, ATTN_NONE);
+		S_Sound(CHAN_WEAPON, "weapons/pistol", 1, ATTN_NONE);
 		laststage = stage;
 	}
 
 	sprintf (name,"END%i",stage);
-	screen->DrawPatchIndirect(Res_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
+	const Texture* end_texture = Res_CacheTexture(name, patches_directory_name);
+	screen->DrawTextureIndirect(end_texture, (320-13*8)/2, (200-8*8)/2);
 }
 
 
@@ -830,17 +821,28 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect(Res_CachePatch(gameinfo.finalePage1), 0, 0);
+				{
+					const Texture* texture = Res_CacheTexture(gameinfo.finalePage1, patches_directory_name);
+					screen->DrawTextureIndirect(texture, 0, 0);
 					break;
+				}
 				case '2':
-					screen->DrawPatchIndirect(Res_CachePatch(gameinfo.finalePage2), 0, 0);
+				{
+					const Texture* texture = Res_CacheTexture(gameinfo.finalePage2, patches_directory_name);
+					screen->DrawTextureIndirect(texture, 0, 0);
 					break;
+				}
 				case '3':
+				{
 					F_BunnyScroll ();
 					break;
+				}
 				case '4':
-					screen->DrawPatchIndirect(Res_CachePatch(gameinfo.finalePage3), 0, 0);
+				{
+					const Texture* texture = Res_CacheTexture(gameinfo.finalePage3, patches_directory_name);
+					screen->DrawTextureIndirect(texture, 0, 0);
 					break;
+				}
 			}
 			break;
 

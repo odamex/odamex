@@ -38,6 +38,7 @@
 extern IWindowSurface* stbar_surface;
 extern IWindowSurface* stnum_surface;
 
+class Texture;
 
 //
 // Typedefs of widgets
@@ -65,7 +66,7 @@ struct st_number_s
 	bool*	on;
 
 	// list of patches for 0-9
-	const patch_t**	p;
+	const Texture** p;
 
 	// user data
 	int data;
@@ -83,8 +84,7 @@ struct st_percent_s
 	st_number_t 		n;
 
 	// percent sign graphic
-	const patch_t*			p;
-
+	const Texture*		p;
 };
 typedef struct st_percent_s st_percent_t;
 
@@ -107,11 +107,10 @@ struct st_multicon_s
 	bool*				on;
 
 	// list of icons
-	const patch_t**			p;
+	const Texture**		p;
 
 	// user data
 	int 				data;
-
 };
 typedef struct st_multicon_s st_multicon_t;
 
@@ -122,8 +121,8 @@ typedef struct st_multicon_s st_multicon_t;
 struct st_binicon_s
 {
 	// center-justified location of icon
-	int 				x;
-	int 				y;
+	int 			x;
+	int 			y;
 
 	// last icon value
 	bool			oldval;
@@ -135,10 +134,8 @@ struct st_binicon_s
 	//	stating whether to update icon
 	bool*			on;
 
-
-	const patch_t*			p;		// icon
-	int 				data;	// user data
-
+	const Texture*	p;
+	int 			data;	// user data
 };
 typedef struct st_binicon_s st_binicon_t;
 
@@ -161,7 +158,7 @@ STlib_initNum
 ( st_number_t*			n,
   int					x,
   int					y,
-  const patch_t** 		pl,
+  const Texture**		pl,
   int*					num,
   bool*				on,
   int					maxdigits );
@@ -178,10 +175,10 @@ STlib_initPercent
 ( st_percent_t* 		p,
   int					x,
   int					y,
-  const patch_t** 		pl,
+  const Texture**		pl,
   int*					num,
   bool*					on,
-  const patch_t*		percent );
+  const Texture*		percent );
 
 
 void
@@ -196,7 +193,7 @@ STlib_initMultIcon
 ( st_multicon_t*		mi,
   int					x,
   int					y,
-  const patch_t** 		il,
+  const Texture**		il,
   int*					inum,
   bool*				on );
 
@@ -212,7 +209,7 @@ STlib_initBinIcon
 ( st_binicon_t* 		b,
   int					x,
   int					y,
-  const patch_t*		i,
+  const Texture*		i,
   bool*				val,
   bool*				on );
 
@@ -225,4 +222,3 @@ void STlib_drawNum(st_number_t *n, bool refresh);
 void ST_DrawNum(int x, int y, DCanvas *scrn, int num);
 
 #endif
-

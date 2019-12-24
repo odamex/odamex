@@ -299,23 +299,17 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		const patch_t* pause = Res_CachePatch("M_PAUSE");
-		int y;
-
-		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove(pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
+		const Texture* texture = Res_CacheTexture("M_PAUSE", patches_directory_name);
+		int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+		screen->DrawTextureCleanNoMove(texture, (I_GetSurfaceWidth() - texture->mWidth * CleanXfac) / 2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		ResourceId res_id = Res_GetResourceId(D_DrawIcon);
 		D_DrawIcon = NULL;
-		if (res_id != ResourceId::INVALID_ID)
-		{
-			const patch_t* p = (patch_t*)Res_LoadResource(res_id, PU_CACHE);
-			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
-		}
+		const Texture* texture = Res_CacheTexture(D_DrawIcon, patches_directory_name);
+		screen->DrawTextureIndirect(texture, 160 - texture->mWidth / 2, 100 - texture->mHeight / 2);
 		NoWipe = 10;
 	}
 
@@ -501,9 +495,9 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const patch_t* patch = Res_CachePatch(OString(pagename, 8));
-
 		I_FreeSurface(page_surface);
+
+		const Texture* texture = Res_CacheTexture(OString(pagename, 8), patches_directory_name);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
@@ -511,16 +505,16 @@ void D_DoAdvanceDemo (void)
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			canvas->DrawTexture(texture, 0, 0);
 			page_surface->unlock();
 		}
 		else
 		{
-			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
+			page_surface = I_AllocateSurface(texture->mWidth, texture->mHeight, 8);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawPatch(patch, 0, 0);
+			canvas->DrawTexture(texture, 0, 0);
 			page_surface->unlock();
 		}
 	}

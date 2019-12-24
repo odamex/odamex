@@ -49,6 +49,7 @@
 #include "s_sound.h"
 #include "doomstat.h"
 #include "gi.h"
+#include "resources/res_texture.h"
 
 #include <string>
 #include "m_ostring.h"
@@ -575,8 +576,8 @@ void C_InitConCharsFont()
 	// paste the patch into the linear byte bufer
 	DCanvas* canvas = temp_surface->getDefaultCanvas();
 
-	const patch_t* patch = Res_CachePatch("CONCHARS");
-	canvas->DrawPatch(patch, 0, 0);
+	const Texture* texture = Res_CacheTexture("CONCHARS", patches_directory_name);
+	canvas->DrawTexture(texture, 0, 0);
 
 	ConChars = new byte[256*8*8*2];
 	byte* dest = ConChars;	
@@ -656,10 +657,10 @@ static int C_StringWidth(const char* str)
 //
 void C_InitConsoleBackground()
 {
-	const patch_t* bg_patch = Res_CachePatch("CONBACK");
-	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	const Texture* texture = Res_CacheTexture("CONBACK", patches_directory_name);
+	background_surface = I_AllocateSurface(texture->mWidth, texture->mHeight, 8);
 	background_surface->lock();
-	background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	background_surface->getDefaultCanvas()->DrawTexture(texture, 0, 0);
 	background_surface->unlock();
 }
 

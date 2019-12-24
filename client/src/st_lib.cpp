@@ -23,8 +23,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-
 #include <ctype.h>
 
 #include "doomdef.h"
@@ -45,17 +43,18 @@
 
 #include "c_cvars.h"
 #include "m_swap.h"
+#include "resources/res_texture.h"
 
 
 //
 // Hack display negative frags.
 //	Loads and store the stminus lump.
 //
-const patch_t*			sttminus;
+const Texture* sttminus;
 
 void STlib_init(void)
 {
-	sttminus = Res_CachePatch("STTMINUS", PU_STATIC);
+	sttminus = Res_CacheTexture("STTMINUS", patches_directory_name, PU_STATIC);
 }
 
 
@@ -86,29 +85,29 @@ static void STlib_ClearRect(int x, int y, int w, int h)
 
 
 //
-// STlib_DrawPatch
+// STlib_DrawTexture
 //
 // Draws a patch onto the drawing surface. STlib_ClearRect should be used to
 // draw a fresh copy of the background prior to drawing the patch.
 //
-static void STlib_DrawPatch(int x, int y, const patch_t* p)
+static void STlib_DrawTexture(int x, int y, const Texture* texture)
 {
 	if (st_scale)
 	{
 		// draw onto stnum_surface, which will be stretched and blitted
 		// onto the rendering surface at the end of the frame.
 		DCanvas* canvas = stnum_surface->getDefaultCanvas();
-		canvas->DrawPatch(p, x, y);
+		canvas->DrawTexture(texture, x, y);
 	}
 	else
 	{
 		// draw directly onto the rendering surface since stretching isn't being used.
 		DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
-		canvas->DrawPatch(p, x + ST_X, y + ST_Y);
+		canvas->DrawTexture(texture, x + ST_X, y + ST_Y);
 	}
 }
 
-void STlib_initNum(st_number_t* n, int x, int y, const patch_t** pl, int* num, bool* on, int maxdigits)
+void STlib_initNum(st_number_t* n, int x, int y, const Texture** pl, int* num, bool* on, int maxdigits)
 {
 	n->x			= x;
 	n->y			= y;
@@ -133,8 +132,8 @@ void STlib_drawNum(st_number_t* n, bool force_refresh)
 	{
 		int 		num = *n->num;
 
-		int 		w = n->p[0]->width();
-		int 		h = n->p[0]->height();
+		int 		w = n->p[0]->mWidth;
+		int 		h = n->p[0]->mHeight;
 		int 		x = n->x;
 
 		n->oldnum = *n->num;
@@ -162,19 +161,19 @@ void STlib_drawNum(st_number_t* n, bool force_refresh)
 
 		// in the special case of 0, you draw 0
 		if (num == 0)
-			STlib_DrawPatch(x - w, n->y, n->p[0]);
+			STlib_DrawTexture(x - w, n->y, n->p[0]);
 
 		// draw the new number
 		for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
 		{
 			x -= w;
-			STlib_DrawPatch(x, n->y, n->p[num % 10]);
+			STlib_DrawTexture(x, n->y, n->p[num % 10]);
 			num /= 10;
 		}
 
 		// draw a minus sign if necessary
 		if (negative)
-			STlib_DrawPatch(x - 8, n->y, sttminus);
+			STlib_DrawTexture(x - 8, n->y, sttminus);
 	}
 }
 
@@ -186,24 +185,24 @@ void STlib_updateNum(st_number_t* n, bool force_refresh)
 }
 
 
-void STlib_initPercent(st_percent_t* p, int x, int y, const patch_t** pl, int* num, bool* on, const patch_t* percent_patch)
+void STlib_initPercent(st_percent_t* p, int x, int y, const Texture** pl, int* num, bool* on, const Texture* percent_texture)
 {
 	STlib_initNum(&p->n, x, y, pl, num, on, 3);
-	p->p = percent_patch;
+	p->p = percent_texture;
 }
 
 
 void STlib_updatePercent(st_percent_t* percent, bool force_refresh)
 {
 	if (force_refresh && *percent->n.on)
-		STlib_DrawPatch(percent->n.x, percent->n.y, percent->p);
+		STlib_DrawTexture(percent->n.x, percent->n.y, percent->p);
 
 	STlib_updateNum(&percent->n, force_refresh);
 }
 
 
 
-void STlib_initMultIcon(st_multicon_t* icon, int x, int y, const patch_t** il, int* inum, bool* on)
+void STlib_initMultIcon(st_multicon_t* icon, int x, int y, const Texture** il, int* inum, bool* on)
 {
 	icon->x			= x;
 	icon->y			= y;
@@ -223,29 +222,29 @@ void STlib_updateMultIcon(st_multicon_t* icon, bool force_refresh)
 		// clear the background area
 		if (icon->oldinum != -1)
 		{
-			int x = icon->x - icon->p[icon->oldinum]->leftoffset();
-			int y = icon->y - icon->p[icon->oldinum]->topoffset();
-			int w = icon->p[icon->oldinum]->width();
-			int h = icon->p[icon->oldinum]->height();
+			int x = icon->x - icon->p[icon->oldinum]->mOffsetX;
+			int y = icon->y - icon->p[icon->oldinum]->mOffsetY;
+			int w = icon->p[icon->oldinum]->mWidth;
+			int h = icon->p[icon->oldinum]->mHeight;
 
 			STlib_ClearRect(x, y, w, h);
 		}
 
-		STlib_DrawPatch(icon->x, icon->y, icon->p[*icon->inum]);
+		STlib_DrawTexture(icon->x, icon->y, icon->p[*icon->inum]);
 		icon->oldinum = *icon->inum;
 	}
 }
 
 
 
-void STlib_initBinIcon(st_binicon_t* icon, int x, int y, const patch_t* patch, bool* val, bool* on)
+void STlib_initBinIcon(st_binicon_t* icon, int x, int y, const Texture* texture, bool* val, bool* on)
 {
 	icon->x			= x;
 	icon->y			= y;
 	icon->oldval	= 0;
 	icon->val		= val;
 	icon->on		= on;
-	icon->p			= patch;
+	icon->p			= texture;
 }
 
 
@@ -254,13 +253,13 @@ void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
 {
 	if (*icon->on && (force_refresh || icon->oldval != *icon->val))
 	{
-		int x = icon->x - icon->p->leftoffset();
-		int y = icon->y - icon->p->topoffset();
-		int w = icon->p->width();
-		int h = icon->p->height();
+		int x = icon->x - icon->p->mOffsetX;
+		int y = icon->y - icon->p->mOffsetY;
+		int w = icon->p->mWidth;
+		int h = icon->p->mHeight;
 
 		if (*icon->val)
-			STlib_DrawPatch(icon->x, icon->y, icon->p);
+			STlib_DrawTexture(icon->x, icon->y, icon->p);
 		else
 			STlib_ClearRect(x, y, w, h);
 
@@ -269,4 +268,3 @@ void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
 }
 
 VERSION_CONTROL (st_lib_cpp, "$Id$")
-

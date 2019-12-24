@@ -32,6 +32,7 @@
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 #include "v_palette.h"
 
 #include "m_cheat.h"
@@ -332,7 +333,7 @@ static fixed_t scale_mtof = (fixed_t)INITSCALEMTOF;
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 static fixed_t scale_ftom;
 
-static patch_t *marknums[10]; // numbers used for marking by the automap
+static const Texture* marknums[10]; // numbers used for marking by the automap
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0; // next point to be assigned
 
@@ -645,7 +646,7 @@ void AM_loadPics(void)
 		char namebuf[9];
 		sprintf(namebuf, "AMMNUM%d", i);
 		const ResourceId res_id = Res_GetResourceId(namebuf, patches_directory_name);
-		marknums[i] = (patch_t*)Res_LoadResource(res_id, PU_STATIC);
+		marknums[i] = Res_CacheTexture(res_id, PU_STATIC);
 	}
 }
 
@@ -1637,7 +1638,7 @@ void AM_drawMarks (void)
 			fy = CYMTOF(pt.y) - 3;
 
 			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-				FB->DrawPatchCleanNoMove (marknums[i], fx, fy);
+				FB->DrawTextureCleanNoMove(marknums[i], fx, fy);
 		}
 	}
 }

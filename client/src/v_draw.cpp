@@ -35,6 +35,8 @@
 
 #include "cmdlib.h"
 
+#include "resources/res_texture.h"
+
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
 
@@ -528,22 +530,22 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 // V_DrawWrapper
 // Masks a column based masked pic to the screen.
 //
-void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int y) const
+void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, int y) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
 	vdrawfunc	drawfunc;
 
-	y -= patch->topoffset();
-	x -= patch->leftoffset();
+	y -= texture->mOffsetY;
+	x -= texture->mOffsetX;
 
 #ifdef RANGECHECK
-	if (x < 0 ||x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
+	if (x < 0 ||x + texture->mWidth > surface_width || y < 0 || y + texture->mHeight > surface_height)
 	{
 	  // Printf (PRINT_HIGH, "Patch at %d,%d exceeds LFB\n", x,y );
 	  // No I_Error abort - what is up with TNT.WAD?
-	  DPrintf ("DCanvas::DrawWrapper: bad patch (ignored)\n");
+	  DPrintf ("DCanvas::DrawWrapper: bad texture (ignored)\n");
 	  return;
 	}
 #endif
@@ -555,23 +557,14 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 
 	// mark if this is the primary drawing surface
 	if (mSurface == I_GetPrimarySurface())
-		V_MarkRect(x, y, patch->width(), patch->height());
+		V_MarkRect(x, y, texture->mWidth, texture->mHeight);
 
 	byte* desttop = mSurface->getBuffer() + y * surface_pitch + x * colstep;
 
-	int patchwidth = patch->width();
-
-	for (int col = 0; col < patchwidth; x++, col++, desttop += colstep)
+	for (int col = 0; col < texture->mWidth; x++, col++, desttop += colstep)
 	{
-		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
-
-		// step through the posts in a column
-		while (!post->end())
-		{
-			drawfunc(post->data(), desttop + post->topdelta * surface_pitch, post->length, surface_pitch);
-			post = post->next();
-		}
+		const palindex_t* col_data = texture->getColumn(col);
+		drawfunc(col_data, desttop, texture->mHeight, surface_pitch);
 	}
 }
 
@@ -580,17 +573,16 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 // Masks a column based masked pic to the screen
 // stretching it to fit the given dimensions.
 //
-void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
+void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
-	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
-	    destwidth <= 0 || destheight <= 0)
+	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
 		return;
 
-	if (destwidth == patch->width() && destheight == patch->height())
+	if (destwidth == texture->mWidth && destheight == texture->mHeight)
 	{
 		// Perfect 1:1 mapping, so we use the unscaled draw wrapper.
-		DrawWrapper(drawer, patch, x0, y0);
+		DrawWrapper(drawer, texture, x0, y0);
 		return;
 	}
 
@@ -602,13 +594,13 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
 	//      artifacts since it forces col to roll over to the next real number
 	//      a column-of-real-pixels sooner.
-	int xinc = (patch->width() << FRACBITS) / destwidth + 1;
-	int yinc = (patch->height() << FRACBITS) / destheight + 1;
-	int xmul = (destwidth << FRACBITS) / patch->width();
-	int ymul = (destheight << FRACBITS) / patch->height();
+	int xinc = (texture->mWidth << FRACBITS) / destwidth + 1;
+	int yinc = (texture->mHeight << FRACBITS) / destheight + 1;
+	int xmul = (destwidth << FRACBITS) / texture->mWidth;
+	int ymul = (destheight << FRACBITS) / texture->mHeight;
 
-	y0 -= (patch->topoffset() * ymul) >> FRACBITS;
-	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
+	y0 -= (texture->mOffsetY * ymul) >> FRACBITS;
+	x0 -= (texture->mOffsetX * xmul) >> FRACBITS;
 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
@@ -628,23 +620,12 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 		V_MarkRect(x0, y0, destwidth, destheight);
 
 	byte* desttop = mSurface->getBuffer()+ (y0 * surface_pitch) + (x0 * colstep);
-	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
+	int w = MIN(destwidth * xinc, texture->mWidth << FRACBITS);
 
 	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{
-		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));
-
-		// step through the posts in a column
-		while (!post->end())
-		{
-			drawfunc(post->data(),
-			         desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch,
-			         (post->length * ymul) >> FRACBITS,
-			         surface_pitch, yinc);
-
-			post = post->next();
-		}
+		const palindex_t* col_data = texture->getColumn(col >> FRACBITS);
+		drawfunc(col_data, desttop, (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
 	}
 }
 
@@ -653,46 +634,46 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 // Like V_DrawWrapper except it will stretch the patches as
 // needed for non-320x200 screens.
 //
-void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawIWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (surface_width == 320 && surface_height == 200)
-		DrawWrapper(drawer, patch, x0, y0);
+		DrawWrapper(drawer, texture, x0, y0);
 	else
-		DrawSWrapper(drawer, patch,
+		DrawSWrapper(drawer, texture,
 			 (surface_width * x0) / 320, (surface_height * y0) / 200,
-			 (surface_width * patch->width()) / 320, (surface_height * patch->height()) / 200);
+			 (surface_width * texture->mWidth) / 320, (surface_height * texture->mHeight) / 200);
 }
 
 //
 // V_DrawCWrapper
 // Like V_DrawIWrapper, except it only uses integral multipliers.
 //
-void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawCWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
-		DrawWrapper(drawer, patch, (x0-160) + (surface_width/2), (y0-100) + (surface_height/2));
+		DrawWrapper(drawer, texture, (x0-160) + (surface_width/2), (y0-100) + (surface_height/2));
 	else
-		DrawSWrapper(drawer, patch,
+		DrawSWrapper(drawer, texture,
 			(x0-160)*CleanXfac+(surface_width/2), (y0-100)*CleanYfac+(surface_height/2),
-			patch->width() * CleanXfac, patch->height() * CleanYfac);
+			texture->mWidth * CleanXfac, texture->mHeight * CleanYfac);
 }
 
 //
 // V_DrawCNMWrapper
 // Like V_DrawCWrapper, except it doesn't adjust the x and y coordinates.
 //
-void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
 	if (CleanXfac == 1 && CleanYfac == 1)
-		DrawWrapper(drawer, patch, x0, y0);
+		DrawWrapper(drawer, texture, x0, y0);
 	else
-		DrawSWrapper(drawer, patch, x0, y0,
-						patch->width() * CleanXfac,
-						patch->height() * CleanYfac);
+		DrawSWrapper(drawer, texture, x0, y0,
+						texture->mWidth * CleanXfac,
+						texture->mHeight * CleanYfac);
 }
 
 
@@ -711,7 +692,7 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 // Like V_DrawIWrapper except it only uses one drawing function and draws
 // the patch flipped horizontally.
 //
-void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
@@ -722,19 +703,19 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 
 	x0 = (surface_width * x0) / 320;
 	y0 = (surface_height * y0) / 200;
-	destwidth = (surface_width * patch->width()) / 320;
-	destheight = (surface_height * patch->height()) / 200;
+	destwidth = (surface_width * texture->mWidth) / 320;
+	destheight = (surface_height * texture->mHeight) / 200;
 
-	if (!patch || patch->width() <= 0 || patch->height() <= 0 || destwidth <= 0 || destheight <= 0)
+	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
 		return;
 
-	int xinc = (patch->width() << 16) / destwidth + 1;
-	int yinc = (patch->height() << 16) / destheight + 1;
-	int xmul = (destwidth << 16) / patch->width();
-	int ymul = (destheight << 16) / patch->height();
+	int xinc = (texture->mWidth << 16) / destwidth + 1;
+	int yinc = (texture->mHeight << 16) / destheight + 1;
+	int xmul = (destwidth << 16) / texture->mWidth;
+	int ymul = (destheight << 16) / texture->mHeight;
 
-	y0 -= (patch->topoffset() * ymul) >> 16;
-	x0 -= (patch->leftoffset() * xmul) >> 16;
+	y0 -= (texture->mOffsetY * ymul) >> 16;
+	x0 -= (texture->mOffsetX * xmul) >> 16;
 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
@@ -757,17 +738,8 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 
 	for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
 	{
-		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> 16]));
-
-		// step through the posts in a column
-		while (!post->end())
-		{
-			drawfunc (post->data(), desttop + (((post->topdelta * ymul)) >> 16) * surface_pitch,
-					  (post->length * ymul) >> 16, surface_pitch, yinc);
-
-			post = post->next();
-		}
+		const palindex_t* col_data = texture->getColumn(col >> FRACBITS);
+		drawfunc(col_data, desttop, (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
 	}
 }
 

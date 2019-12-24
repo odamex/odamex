@@ -390,17 +390,11 @@ void FlatTextureLoader::load(const ResourceId res_id, void* data, palindex_t mas
 	Texture* texture = initTexture(data, width, height, maskcolor);
 
 	#if CLIENT_APP
-	uint8_t* raw_data = new uint8_t[width * height];
+	palindex_t* raw_data = new palindex_t[width * height];
 	mRawResourceAccessor->loadResource(res_id, raw_data, width * height);
 
 	// convert the row-major raw data to into column-major
 	Res_TransposeImage(texture->getData(), raw_data, width, height);
-
-	/*
-	palindex_t* _data = texture->getData();
-	for (int i = 0; i < width * height; i++)
-		_data[i] = colormap[_data[i]];
-	*/
 
 	delete [] raw_data;
 	#endif
@@ -464,6 +458,7 @@ bool PatchTextureLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_si
 	return false;
 }
 
+#define USE_TEXTURES 1
 
 //
 // PatchTextureLoader::size
@@ -474,6 +469,7 @@ bool PatchTextureLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_si
 uint32_t PatchTextureLoader::size(const ResourceId res_id) const
 {
 	#ifdef USE_TEXTURES
+	// read the patch_t header to extract width & height
 	uint8_t raw_data[4];
 	mRawResourceAccessor->loadResource(res_id, raw_data, 4);
 	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));

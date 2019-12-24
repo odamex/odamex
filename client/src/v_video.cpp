@@ -58,6 +58,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "resources/res_texture.h"
 
 #include "f_wipe.h"
 
@@ -572,7 +573,6 @@ void V_DrawFPSWidget()
 }
 
 
-
 //
 // V_DrawTickerDot
 //
@@ -636,6 +636,27 @@ void V_DrawFPSTicker()
 
 
 //
+// V_TransposeTextureData
+//
+// Transposes column-major data to row-major and vice-versa
+//
+static void V_TransposeTextureData(byte* dest, const byte* source, int width, int height, int pitch)
+{
+	for (int x = 0; x < width; x++)
+	{
+		const byte* ptr = source + x;
+		
+		for (int y = 0; y < height; y++)
+		{
+			*dest = *ptr;
+			ptr += pitch;
+			dest++;
+		}
+	}
+}
+
+
+//
 // DCanvas::getCleanX
 //
 // Returns the real screen x coordinate given the virtual 320x200 x coordinate.
@@ -659,8 +680,20 @@ int DCanvas::getCleanY(int y) const
 
 // [RH] Fill an area with a 64x64 flat texture
 //		right and bottom are one pixel *past* the boundaries they describe.
-void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
+void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int bottom) const
 {
+	int tex_width_bits = std::min<int>(texture->mWidthBits, 8);
+	int tex_height_bits = std::min<int>(texture->mHeightBits, 8);
+	int tex_width = 1 << tex_width_bits;
+	int tex_height = 1 << tex_height_bits;
+	int tex_width_mask = tex_width - 1;
+	int tex_height_mask = tex_height - 1;
+
+	// [SL] Now that flats are stored column major instead of row-major,
+	// transpose the texture so that we can use row-major blitting (faster)
+	palindex_t source[256 * 256];
+	V_TransposeTextureData(source, texture->mData, tex_width, tex_height, texture->mWidth);
+
 	int surface_advance = mSurface->getPitchInPixels() - right + left;
 
 	if (mSurface->getBitsPerPixel() == 8)
@@ -672,8 +705,8 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 			int x = left;
 			while (x < right)
 			{
-				int amount = std::min(64 - (x & 63), right - x);
-				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
+				int amount = std::min(tex_width - (x & tex_width_mask), right - x);
+				memcpy(dest, source + ((y & tex_height_mask) << tex_height_bits) + (x & tex_width_mask), amount);
 				dest += amount;
 				x += amount;
 			}
@@ -687,9 +720,9 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 		for (int y = top; y < bottom; y++)
 		{
-			const byte* src_line = src + ((y & 63) << 6);
+			const palindex_t* src_line = source + ((y & tex_height_mask) << tex_height_bits);
 			for (int x = left; x < right; x++)
-				*dest++ = V_Palette.shade(src_line[x & 63]);
+				*dest++ = V_Palette.shade(src_line[x & tex_width_mask]);
 
 			dest += surface_advance;
 		}
@@ -699,7 +732,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 // [SL] Stretches a patch to fill the full-screen while maintaining a 4:3
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
-void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
+void DCanvas::DrawTextureFullScreen(const Texture* texture) const
 {
 	mSurface->clear();
 
@@ -726,7 +759,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 	int x = (surface_width - destw) / 2;
 	int y = (surface_height - desth) / 2;
 
-	DrawPatchStretched(patch, x, y, destw, desth);
+	DrawTextureStretched(texture, x, y, destw, desth);
 }
 
 

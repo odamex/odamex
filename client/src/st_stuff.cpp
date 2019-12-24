@@ -49,6 +49,7 @@
 #include "cl_main.h"
 #include "gi.h"
 #include "cl_demo.h"
+#include "resources/res_texture.h"
 
 #include "p_ctf.h"
 
@@ -279,39 +280,39 @@ static bool			st_armson;
 static bool			st_fragson;
 
 // main bar left
-static const patch_t* 		sbar;
+static const Texture*	sbar;
 
 // 0-9, tall numbers
 // [RH] no longer static
-const patch_t*			tallnum[10];
+const Texture*			tallnum[10];
 
 // tall % sign
 // [RH] no longer static
-const patch_t*			tallpercent;
+const Texture*			tallpercent;
 
 // 0-9, short, yellow (,different!) numbers
-static const patch_t* 		shortnum[10];
+static const Texture* 		shortnum[10];
 
 // 3 key-cards, 3 skulls, [RH] 3 combined
-const patch_t* 			keys[NUMCARDS+NUMCARDS/2];
+const Texture* 			keys[NUMCARDS+NUMCARDS/2];
 
 // face status patches [RH] no longer static
-const patch_t* 				faces[ST_NUMFACES];
+const Texture* 				faces[ST_NUMFACES];
 
 // face background
-static const patch_t* 		faceback;
+static const Texture* 		faceback;
 
 // classic face background
-static const patch_t*			faceclassic[4];
+static const Texture*			faceclassic[4];
 
  // main bar right
-static const patch_t* 		armsbg;
+static const Texture* 		armsbg;
 
 // score/flags
-static const patch_t* 		flagsbg;
+static const Texture* 		flagsbg;
 
 // weapon ownership patches
-static const patch_t* 		arms[6][2];
+static const Texture* 		arms[6][2];
 
 // ready-weapon widget
 static st_number_t		w_ready;
@@ -1224,15 +1225,15 @@ static void ST_refreshBackground()
 	stbar_surface->lock();
 
 	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-	stbar_canvas->DrawPatch(sbar, 0, 0);
+	stbar_canvas->DrawTexture(sbar, 0, 0);
 
 	if (sv_gametype == GM_CTF)
 	{
-		stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+		stbar_canvas->DrawTexture(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 	}
 	else if (sv_gametype == GM_COOP)
 	{
-		stbar_canvas->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
+		stbar_canvas->DrawTexture(armsbg, ST_ARMSBGX, ST_ARMSBGY);
 	}
 
 	if (multiplayer)
@@ -1242,11 +1243,11 @@ static void ST_refreshBackground()
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
 			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-			stbar_canvas->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
+			stbar_canvas->DrawTranslatedTexture(faceback, ST_FX, ST_FY);
 		}
 		else
 		{
-			stbar_canvas->DrawPatch(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
+			stbar_canvas->DrawTexture(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
 		}
 	}
 
@@ -1317,15 +1318,15 @@ void ST_Drawer()
 }
 
 
-static const patch_t* LoadFaceGraphic(const char* name)
+static const Texture* LoadFaceGraphic(const char* name)
 {
 	if (Res_CheckResource(name, patches_directory_name))
-		return Res_CachePatch(name, PU_STATIC);
+		return Res_CacheTexture(name, sprites_directory_name, PU_STATIC);
 
 	char othername[9];
 	strcpy(othername, name);
 	othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-	return Res_CachePatch(othername, PU_STATIC);
+	return Res_CacheTexture(othername, sprites_directory_name, PU_STATIC);
 }
 
 void ST_loadGraphics(void)
@@ -1340,28 +1341,28 @@ void ST_loadGraphics(void)
 	for (i=0;i<10;i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = Res_CachePatch(namebuf, PU_STATIC);
+		tallnum[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
 
 		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = Res_CachePatch(namebuf, PU_STATIC);
+		shortnum[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
 	}
 
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
-	tallpercent = Res_CachePatch("STTPRCNT", PU_STATIC);
+	tallpercent = Res_CacheTexture("STTPRCNT", sprites_directory_name, PU_STATIC);
 
 	// key cards
 	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = Res_CachePatch(namebuf, PU_STATIC);
+		keys[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
 	}
 
 	// arms background
-	armsbg = Res_CachePatch("STARMS", PU_STATIC);
+	armsbg = Res_CacheTexture("STARMS", sprites_directory_name, PU_STATIC);
 
 	// flags background
-	flagsbg = Res_CachePatch("STFLAGS", PU_STATIC);
+	flagsbg = Res_CacheTexture("STFLAGS", sprites_directory_name, PU_STATIC);
 
 	// arms ownership widgets
 	for (i=0;i<6;i++)
@@ -1369,7 +1370,7 @@ void ST_loadGraphics(void)
 		sprintf(namebuf, "STGNUM%d", i+2);
 
 		// gray #
-		arms[i][0] = Res_CachePatch(namebuf, PU_STATIC);
+		arms[i][0] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1378,16 +1379,16 @@ void ST_loadGraphics(void)
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = Res_CachePatch("STFBANY", PU_STATIC);
+	faceback = Res_CacheTexture("STFBANY", sprites_directory_name, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(namebuf, "STFB%d", i);
-		faceclassic[i] = Res_CachePatch(namebuf, PU_STATIC);
+		faceclassic[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = Res_CachePatch("STBAR", PU_STATIC);
+	sbar = Res_CacheTexture("STBAR", sprites_directory_name, PU_STATIC);
 
 	// face states
 	facenum = 0;

@@ -1385,16 +1385,8 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
 
-	ResourceId res_id = Res_GetResourceId(gameinfo.borderFlat, flats_directory_name);
-	if (res_id != ResourceId::INVALID_ID) 
-	{
-		const byte* data = (byte*)Res_LoadResource(res_id, PU_CACHE);
-		canvas->FlatFill(x1, y1, x2, y2, data);
-	}
-	else
-	{
-		canvas->Clear(x1, y1, x2, y2, argb_t(0, 0, 0));
-	}
+	const Texture* texture = Res_CacheTexture(gameinfo.borderFlat, flats_directory_name);
+	canvas->FlatFill(texture, x1, y1, x2, y2);
 }
 
 
@@ -1427,25 +1419,34 @@ void R_DrawViewBorder()
 	// draw right border
 	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
 
+	const Texture* t_texture = Res_CacheTexture(border->t, patches_directory_name);
+	const Texture* b_texture = Res_CacheTexture(border->b, patches_directory_name);
+	const Texture* l_texture = Res_CacheTexture(border->l, patches_directory_name);
+	const Texture* r_texture = Res_CacheTexture(border->r, patches_directory_name);
+	const Texture* tl_texture = Res_CacheTexture(border->tl, patches_directory_name);
+	const Texture* tr_texture = Res_CacheTexture(border->tr, patches_directory_name);
+	const Texture* bl_texture = Res_CacheTexture(border->bl, patches_directory_name);
+	const Texture* br_texture = Res_CacheTexture(border->br, patches_directory_name);
+
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		canvas->DrawPatch(Res_CachePatch(border->t), x, viewwindowy - offset);
-		canvas->DrawPatch(Res_CachePatch(border->b), x, viewwindowy + viewheight);
+		canvas->DrawTexture(t_texture, x, viewwindowy - offset);
+		canvas->DrawTexture(b_texture, x, viewwindowy + viewheight);
 	}
 
 	// draw beveled edge for the viewing window's left and right edges
 	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
 	{
-		canvas->DrawPatch(Res_CachePatch(border->l), viewwindowx - offset, y);
-		canvas->DrawPatch(Res_CachePatch(border->r), viewwindowx + viewwidth, y);
+		canvas->DrawTexture(l_texture, viewwindowx - offset, y);
+		canvas->DrawTexture(r_texture, viewwindowx + viewwidth, y);
 	}
 
 	// draw beveled edge for the viewing window's corners
-	canvas->DrawPatch(Res_CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
-	canvas->DrawPatch(Res_CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
-	canvas->DrawPatch(Res_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
-	canvas->DrawPatch(Res_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
+	canvas->DrawTexture(tl_texture, viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawTexture(tr_texture, viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawTexture(bl_texture, viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawTexture(br_texture, viewwindowx + viewwidth, viewwindowy + viewheight);
 
 	V_MarkRect(0, 0, surface_width, ST_Y);
 }
@@ -1662,4 +1663,3 @@ void R_InitColumnDrawers ()
 }
 
 VERSION_CONTROL (r_draw_cpp, "$Id$")
-

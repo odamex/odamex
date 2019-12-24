@@ -50,31 +50,32 @@
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"
+#include "resources/res_texture.h"
 
 static int		widestnum, numheight;
-static const patch_t	*medi[2];
-static const patch_t	*armors[2];
-static const patch_t	*ammos[4];
-static const patch_t	*bigammos[4];
-static const patch_t	*flagiconteam;
-static const patch_t	*flagiconbhome;
-static const patch_t	*flagiconrhome;
-static const patch_t	*flagiconbtakenbyb;
-static const patch_t	*flagiconbtakenbyr;
-static const patch_t	*flagiconrtakenbyb;
-static const patch_t	*flagiconrtakenbyr;
-static const patch_t	*flagicongtakenbyb;
-static const patch_t	*flagicongtakenbyr;
-static const patch_t	*flagiconbdropped;
-static const patch_t	*flagiconrdropped;
-static const patch_t *line_leftempty;
-static const patch_t *line_leftfull;
-static const patch_t *line_centerempty;
-static const patch_t *line_centerleft;
-static const patch_t *line_centerright;
-static const patch_t *line_centerfull;
-static const patch_t *line_rightempty;
-static const patch_t *line_rightfull;
+static const Texture* medi[2];
+static const Texture* armors[2];
+static const Texture* ammos[4];
+static const Texture* bigammos[4];
+static const Texture* flagiconteam;
+static const Texture* flagiconbhome;
+static const Texture* flagiconrhome;
+static const Texture* flagiconbtakenbyb;
+static const Texture* flagiconbtakenbyr;
+static const Texture* flagiconrtakenbyb;
+static const Texture* flagiconrtakenbyr;
+static const Texture* flagicongtakenbyb;
+static const Texture* flagicongtakenbyr;
+static const Texture* flagiconbdropped;
+static const Texture* flagiconrdropped;
+static const Texture* line_leftempty;
+static const Texture* line_leftfull;
+static const Texture* line_centerempty;
+static const Texture* line_centerleft;
+static const Texture* line_centerright;
+static const Texture* line_centerfull;
+static const Texture* line_rightempty;
+static const Texture* line_rightfull;
 
 static const char medipatches[2][8] = { "MEDIA0", "PSTRA0" };
 static const char ammopatches[4][8] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
@@ -82,11 +83,11 @@ static const char bigammopatches[4][8] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"
 
 static int		NameUp = -1;
 
-extern const patch_t*	sttminus;
-extern const patch_t*	tallnum[10];
-extern const patch_t*	faces[];
+extern const Texture*	sttminus;
+extern const Texture*	tallnum[10];
+extern const Texture*	faces[];
 extern int		st_faceindex;
-extern const patch_t*	keys[NUMCARDS+NUMCARDS/2];
+extern const Texture*	keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
 extern flagdata CTFdata[NUMFLAGS];
 
@@ -146,54 +147,54 @@ void ST_initNew (void)
 	// somewhere else in the code. we download wads, so this is an issue!
 
 	for (i = 0; i < 10; i++) {
-		if (tallnum[i]->width() > widest)
-			widest = tallnum[i]->width();
+		if (tallnum[i]->mWidth > widest)
+			widest = tallnum[i]->mWidth;
 	}
 
 	strcpy (name, "ARM1A0");
 	for (i = 0; i < 2; i++) {
 		name[3] = i + '1';
 		if (Res_CheckResource(name, sprites_directory_name))
-			armors[i] = Res_CachePatch(name, PU_STATIC);
+			armors[i] = Res_CacheTexture(name, sprites_directory_name, PU_STATIC);
 	}
 
 	for (i = 0; i < 4; i++) {
 		if (Res_CheckResource(ammopatches[i], sprites_directory_name))
-			ammos[i] = Res_CachePatch(ammopatches[i], PU_STATIC);
+			ammos[i] = Res_CacheTexture(ammopatches[i], sprites_directory_name, PU_STATIC);
 		if (Res_CheckResource(bigammopatches[i], sprites_directory_name))
-			bigammos[i] = Res_CachePatch(bigammopatches[i], PU_STATIC);
+			bigammos[i] = Res_CacheTexture(bigammopatches[i], sprites_directory_name, PU_STATIC);
 	}
 
 	for (i = 0; i < 2; i++)
 	{
 		if (Res_CheckResource(medipatches[i], sprites_directory_name))
-			medi[i] = Res_CachePatch(medipatches[i], PU_STATIC);
+			medi[i] = Res_CacheTexture(medipatches[i], sprites_directory_name, PU_STATIC);
 	}
 
-	flagiconteam = Res_CachePatch("FLAGIT", PU_STATIC);
-	flagiconbhome = Res_CachePatch("FLAGIC2B", PU_STATIC);
-	flagiconrhome = Res_CachePatch("FLAGIC2R", PU_STATIC);
-	flagiconbtakenbyb = Res_CachePatch("FLAGI3BB", PU_STATIC);
-	flagiconbtakenbyr = Res_CachePatch("FLAGI3BR", PU_STATIC);
-	flagiconrtakenbyb = Res_CachePatch("FLAGI3RB", PU_STATIC);
-	flagiconrtakenbyr = Res_CachePatch("FLAGI3RR", PU_STATIC);
-	flagiconbdropped = Res_CachePatch("FLAGIC4B", PU_STATIC);
-	flagiconrdropped = Res_CachePatch("FLAGIC4R", PU_STATIC);
+	flagiconteam = Res_CacheTexture("FLAGIT", sprites_directory_name, PU_STATIC);
+	flagiconbhome = Res_CacheTexture("FLAGIC2B", sprites_directory_name, PU_STATIC);
+	flagiconrhome = Res_CacheTexture("FLAGIC2R", sprites_directory_name, PU_STATIC);
+	flagiconbtakenbyb = Res_CacheTexture("FLAGI3BB", sprites_directory_name, PU_STATIC);
+	flagiconbtakenbyr = Res_CacheTexture("FLAGI3BR", sprites_directory_name, PU_STATIC);
+	flagiconrtakenbyb = Res_CacheTexture("FLAGI3RB", sprites_directory_name, PU_STATIC);
+	flagiconrtakenbyr = Res_CacheTexture("FLAGI3RR", sprites_directory_name, PU_STATIC);
+	flagiconbdropped = Res_CacheTexture("FLAGIC4B", sprites_directory_name, PU_STATIC);
+	flagiconrdropped = Res_CacheTexture("FLAGIC4R", sprites_directory_name, PU_STATIC);
 
 	widestnum = widest;
-	numheight = tallnum[0]->height();
+	numheight = tallnum[0]->mHeight;
 
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
-	line_leftempty = Res_CachePatch("ODABARLE", PU_STATIC);
-	line_leftfull = Res_CachePatch("ODABARLF", PU_STATIC);
-	line_centerempty = Res_CachePatch("ODABARCE", PU_STATIC);
-	line_centerleft = Res_CachePatch("ODABARCL", PU_STATIC);
-	line_centerright = Res_CachePatch("ODABARCR", PU_STATIC);
-	line_centerfull = Res_CachePatch("ODABARCF", PU_STATIC);
-	line_rightempty = Res_CachePatch("ODABARRE", PU_STATIC);
-	line_rightfull = Res_CachePatch("ODABARRF", PU_STATIC);
+	line_leftempty = Res_CacheTexture("ODABARLE", sprites_directory_name, PU_STATIC);
+	line_leftfull = Res_CacheTexture("ODABARLF", sprites_directory_name, PU_STATIC);
+	line_centerempty = Res_CacheTexture("ODABARCE", sprites_directory_name, PU_STATIC);
+	line_centerleft = Res_CacheTexture("ODABARCL", sprites_directory_name, PU_STATIC);
+	line_centerright = Res_CacheTexture("ODABARCR", sprites_directory_name, PU_STATIC);
+	line_centerfull = Res_CacheTexture("ODABARCF", sprites_directory_name, PU_STATIC);
+	line_rightempty = Res_CacheTexture("ODABARRE", sprites_directory_name, PU_STATIC);
+	line_rightfull = Res_CacheTexture("ODABARRF", sprites_directory_name, PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -204,13 +205,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentPatchCleanNoMove (sttminus, x, y);
-			x += CleanXfac * sttminus->width();
+			scrn->DrawLucentTextureCleanNoMove(sttminus, x, y);
+			x += CleanXfac * sttminus->mWidth;
 		}
 		else
 		{
-			scrn->DrawLucentPatch (sttminus, x, y);
-			x += sttminus->width();
+			scrn->DrawLucentTexture(sttminus, x, y);
+			x += sttminus->mWidth;
 		}
 		num = -num;
 	}
@@ -224,13 +225,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 		{
 			if (hud_scale)
 			{
-				scrn->DrawLucentPatchCleanNoMove (tallnum[*d - '0'], x, y);
-				x += CleanXfac * tallnum[*d - '0']->width();
+				scrn->DrawLucentTextureCleanNoMove(tallnum[*d - '0'], x, y);
+				x += CleanXfac * tallnum[*d - '0']->mWidth;
 			}
 			else
 			{
-				scrn->DrawLucentPatch (tallnum[*d - '0'], x, y);
-				x += tallnum[*d - '0']->width();
+				scrn->DrawLucentTexture(tallnum[*d - '0'], x, y);
+				x += tallnum[*d - '0']->mWidth;
 			}
 		}
 		d++;
@@ -243,11 +244,11 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	int xscale = hud_scale ? CleanXfac : 1;
 
 	do {
-		x -= tallnum[d%10]->width() * xscale;
+		x -= tallnum[d%10]->mWidth * xscale;
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= sttminus->width() * xscale;
+		x -= sttminus->mWidth * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -301,58 +302,58 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 	for (int i = 0;i < bar_width;i++) {
-		const patch_t* linepatch;
+		const Texture* texture = NULL;
 		if (!reverse) {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == 0) {
-					linepatch = line_leftempty;
+					texture = line_leftempty;
 				} else {
-					linepatch = line_leftfull;
+					texture = line_leftfull;
 				}
 			} else if (i == bar_width - 1 && !cutright) {
 				if (bar_filled == bar_width) {
-					linepatch = line_rightfull;
+					texture = line_rightfull;
 				} else {
-					linepatch = line_rightempty;
+					texture = line_rightempty;
 				}
 			} else {
 				if (i == bar_filled - 1) {
-					linepatch = line_centerleft;
+					texture = line_centerleft;
 				} else if (i < bar_filled) {
-					linepatch = line_centerfull;
+					texture = line_centerfull;
 				} else {
-					linepatch = line_centerempty;
+					texture = line_centerempty;
 				}
 			}
 		} else {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == bar_width) {
-					linepatch = line_leftfull;
+					texture = line_leftfull;
 				} else {
-					linepatch = line_leftempty;
+					texture = line_leftempty;
 				}
 			} else if (i == bar_width - 1 && !cutright) {
 				if (bar_filled == 0) {
-					linepatch = line_rightempty;
+					texture = line_rightempty;
 				} else {
-					linepatch = line_rightfull;
+					texture = line_rightfull;
 				}
 			} else {
 				if (i == (bar_width - bar_filled)) {
-					linepatch = line_centerright;
+					texture = line_centerright;
 				} else if (i >= (bar_width - bar_filled)) {
-					linepatch = line_centerfull;
+					texture = line_centerfull;
 				} else {
-					linepatch = line_centerempty;
+					texture = line_centerempty;
 				}
 			}
 		}
 
 		int xi = x + (i * xscale * 2);
 		if (hud_scale) {
-			screen->DrawTranslatedPatchCleanNoMove(linepatch, xi, y);
+			screen->DrawTranslatedTextureCleanNoMove(texture, xi, y);
 		} else {
-			screen->DrawTranslatedPatch(linepatch, xi, y);
+			screen->DrawTranslatedTexture(texture, xi, y);
 		}
 	}
 }
@@ -453,8 +454,8 @@ void drawCTF() {
 	player_t *plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	const patch_t *flagbluepatch = flagiconbhome;
-	const patch_t *flagredpatch = flagiconrhome;
+	const Texture* flagbluepatch = flagiconbhome;
+	const Texture* flagredpatch = flagiconrhome;
 
 	switch (CTFdata[it_blueflag].state) {
 		case flag_carried:
@@ -493,11 +494,11 @@ void drawCTF() {
 	}
 
 	// Draw base flag patches
-	hud::DrawPatch(4, 61, hud_scale,
+	hud::DrawTexture(4, 61, hud_scale,
 	               hud::X_RIGHT, hud::Y_BOTTOM,
 	               hud::X_RIGHT, hud::Y_BOTTOM,
 	               flagbluepatch);
-	hud::DrawPatch(4, 43, hud_scale,
+	hud::DrawTexture(4, 43, hud_scale,
 	               hud::X_RIGHT, hud::Y_BOTTOM,
 	               hud::X_RIGHT, hud::Y_BOTTOM,
 	               flagredpatch);
@@ -505,13 +506,13 @@ void drawCTF() {
 	// Draw team border
 	switch (plyr->userinfo.team) {
 		case TEAM_BLUE:
-			hud::DrawPatch(4, 61, hud_scale,
+			hud::DrawTexture(4, 61, hud_scale,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               flagiconteam);
 			break;
 		case TEAM_RED:
-			hud::DrawPatch(4, 43, hud_scale,
+			hud::DrawTexture(4, 43, hud_scale,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               flagiconteam);
@@ -573,14 +574,14 @@ void OdamexHUD() {
 
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
-		const patch_t *current_armor = armors[1];
+		const Texture* current_armor = armors[1];
 		if (plyr->armortype == 1) {
 			current_armor = armors[0];
 		}
 
 		if (current_armor) {
 			// Draw Armor type.  Vertically centered against armor number.
-			hud::DrawPatchScaled(48 + 2 + 10, 32, 20, 20, hud_scale,
+			hud::DrawTextureScaled(48 + 2 + 10, 32, 20, 20, hud_scale,
 			                     hud::X_LEFT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     current_armor);
@@ -590,7 +591,7 @@ void OdamexHUD() {
 
 	// Draw Doomguy.  Vertically scaled to an area two pixels above and
 	// below the health number, and horizontally centered below the armor.
-	hud::DrawPatchScaled(48 + 2 + 10, 2, 20, 20, hud_scale,
+	hud::DrawTextureScaled(48 + 2 + 10, 2, 20, 20, hud_scale,
 	                     hud::X_LEFT, hud::Y_BOTTOM,
 	                     hud::X_CENTER, hud::Y_BOTTOM,
 	                     faces[st_faceindex]);
@@ -599,7 +600,7 @@ void OdamexHUD() {
 	// Draw Ammo
 	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
 	if (ammotype < NUMAMMO) {
-		const patch_t *ammopatch;
+		const Texture* ammopatch;
 		// Use big ammo if the player has a backpack.
 		if (plyr->backpack) {
 			ammopatch = bigammos[ammotype];
@@ -612,13 +613,13 @@ void OdamexHUD() {
 		// TODO: This "scale only if bigger than bounding box" can
 		//       probably be commonized, along with "scale only if
 		//       smaller than bounding box".
-		if (ammopatch->width() > 16 || ammopatch->height() > 16) {
-			hud::DrawPatchScaled(12, 12, 16, 16, hud_scale,
+		if (ammopatch->mWidth > 16 || ammopatch->mHeight > 16) {
+			hud::DrawTextureScaled(12, 12, 16, 16, hud_scale,
 			                     hud::X_RIGHT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     ammopatch);
 		} else {
-			hud::DrawPatch(12, 12, hud_scale,
+			hud::DrawTexture(12, 12, hud_scale,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               hud::X_CENTER, hud::Y_MIDDLE,
 			               ammopatch);
@@ -677,7 +678,7 @@ void OdamexHUD() {
 	if (sv_gametype == GM_COOP) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(4 + (i * 10), 24, hud_scale,
+				hud::DrawTexture(4 + (i * 10), 24, hud_scale,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               keys[i]);
@@ -746,7 +747,7 @@ void ZDoomHUD() {
 
 	// Draw health
 	{
-		const patch_t *curr_powerup = medi[0];
+		const Texture* curr_powerup = medi[0];
 		int xPos = 20;
 		int yPos = 2;
 
@@ -758,41 +759,38 @@ void ZDoomHUD() {
 		}
 
 		if (hud_scale)
-			screen->DrawLucentPatchCleanNoMove(curr_powerup, xPos * CleanXfac,
-				I_GetSurfaceHeight() - yPos * CleanYfac);
+			screen->DrawLucentTextureCleanNoMove(curr_powerup, xPos * CleanXfac, I_GetSurfaceHeight() - yPos * CleanYfac);
 		else
-			screen->DrawLucentPatch(curr_powerup, xPos, I_GetSurfaceHeight() - yPos);
+			screen->DrawLucentTexture(curr_powerup, xPos, I_GetSurfaceHeight() - yPos);
 		ST_DrawNum(40 * xscale, y, screen, plyr->health);
 	}
 
 	// Draw armor
 	if (plyr->armortype && plyr->armorpoints)
 	{
-		const patch_t *current_armor = armors[1];
-		if(plyr->armortype == 1)
+		const Texture* current_armor = armors[1];
+		if (plyr->armortype == 1)
 			current_armor = armors[0];
 
 		if (current_armor)
 		{
 			if (hud_scale)
-				screen->DrawLucentPatchCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
+				screen->DrawLucentTextureCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
 			else
-				screen->DrawLucentPatch (current_armor, 20, y - 4);
+				screen->DrawLucentTexture (current_armor, 20, y - 4);
 		}
-		ST_DrawNum (40*xscale, y - (armors[0]->height()+3)*yscale,
-					 screen, plyr->armorpoints);
+		ST_DrawNum (40*xscale, y - (armors[0]->mHeight + 3) * yscale, screen, plyr->armorpoints);
 	}
 
 	// Draw ammo
 	if (ammotype < NUMAMMO)
 	{
-		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammotype];
+		const Texture* ammopatch = ammos[weaponinfo[plyr->readyweapon].ammotype];
 
 		if (hud_scale)
-			screen->DrawLucentPatchCleanNoMove(ammopatch,
-							I_GetSurfaceWidth() - 14 * CleanXfac, I_GetSurfaceHeight() - 4 * CleanYfac);
+			screen->DrawLucentTextureCleanNoMove(ammopatch, I_GetSurfaceWidth() - 14 * CleanXfac, I_GetSurfaceHeight() - 4 * CleanYfac);
 		else
-			screen->DrawLucentPatch(ammopatch, I_GetSurfaceWidth() - 14, I_GetSurfaceHeight() - 4);
+			screen->DrawLucentTexture(ammopatch, I_GetSurfaceWidth() - 14, I_GetSurfaceHeight() - 4);
 
 		ST_DrawNumRight(I_GetSurfaceWidth() - 25 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
@@ -816,9 +814,9 @@ void ZDoomHUD() {
 			if (plyr->cards[i])
 			{
 				if (hud_scale)
-					screen->DrawLucentPatchCleanNoMove(keys[i], I_GetSurfaceWidth() - 10*CleanXfac, y);
+					screen->DrawLucentTextureCleanNoMove(keys[i], I_GetSurfaceWidth() - 10*CleanXfac, y);
 				else
-					screen->DrawLucentPatch(keys[i], I_GetSurfaceWidth() - 10, y);
+					screen->DrawLucentTexture(keys[i], I_GetSurfaceWidth() - 10, y);
 
 				y += (8 + (i < 3 ? 0 : 2)) * yscale;
 			}

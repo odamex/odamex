@@ -35,6 +35,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "m_swap.h"
+#include "resources/res_texture.h"
 
 #include "doomstat.h"
 
@@ -46,7 +47,7 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-extern patch_t *hu_font[HU_FONTSIZE];
+extern Texture* hu_font[HU_FONTSIZE];
 
 
 byte *ConChars;
@@ -279,13 +280,11 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			continue;
 		}
 
-		int w = hu_font[c]->width() * scalex;
+		int w = hu_font[c]->mWidth * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
-        DrawSWrapper(drawer, hu_font[c], cx, cy,
-                        hu_font[c]->width() * scalex,
-                        hu_font[c]->height() * scaley);
+        DrawSWrapper(drawer, hu_font[c], cx, cy, hu_font[c]->mWidth * scalex, hu_font[c]->mHeight * scaley);
 
 		cx += w;
 	}
@@ -311,7 +310,7 @@ int V_StringWidth(const byte* str)
 		if (c < 0 || c >= HU_FONTSIZE)
 			width += 4;
 		else
-			width += hu_font[c]->width();
+			width += hu_font[c]->mWidth;
 	}
 
 	return width;
@@ -378,7 +377,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		if (c < HU_FONTSTART || c >= HU_FONTSTART + HU_FONTSIZE)
 			nw = 4;
 		else
-			nw = hu_font[c - HU_FONTSTART]->width();
+			nw = hu_font[c - HU_FONTSTART]->mWidth;
 
 		if (w + nw > maxwidth || c == '\n')
 		{

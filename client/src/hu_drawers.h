@@ -25,6 +25,8 @@
 
 #include "r_defs.h"
 
+class Texture;
+
 namespace hud {
 
 enum x_align_t {
@@ -53,30 +55,30 @@ void DrawText(int x, int y, const float scale,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
               const bool force_opaque = false);
-void DrawPatch(int x, int y, const float scale,
+void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,
-               const patch_t* patch, const bool force_opaque = false,
+               const Texture* texture, const bool force_opaque = false,
                const bool use_patch_offsets = false);
-void DrawTranslatedPatch(int x, int y, const float scale,
+void DrawTranslatedTexture(int x, int y, const float scale,
                          const x_align_t x_align, const y_align_t y_align,
                          const x_align_t x_origin, const y_align_t y_origin,
-                         const patch_t* patch, byte* translation,
+                         const Texture* texture, byte* translation,
                          const bool force_opaque = false,
                          const bool use_patch_offsets = false);
-void DrawPatchStretched(int x, int y,
+void DrawTextureStretched(int x, int y,
                         const unsigned short w, const unsigned short h,
                         const float scale,
                         const x_align_t x_align, const y_align_t y_align,
                         const x_align_t x_origin, const y_align_t y_origin,
-                        const patch_t* patch, const bool force_opaque = false,
+                        const Texture* texture, const bool force_opaque = false,
                         const bool use_patch_offsets = false);
-void DrawPatchScaled(const int x, const int y,
+void DrawTextureScaled(const int x, const int y,
                      unsigned short w, unsigned short h,
                      const float scale,
                      const x_align_t x_align, const y_align_t y_align,
                      const x_align_t x_origin, const y_align_t y_origin,
-                     const patch_t* patch, const bool force_opaque = false,
+                     const Texture* texture, const bool force_opaque = false,
                      const bool use_patch_offsets = false);
 }
 

@@ -46,6 +46,7 @@
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
+#include "resources/res_texture.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -112,8 +113,8 @@ void HU_Init();
 void HU_Drawer();
 BOOL HU_Responder(event_t *ev);
 
-const patch_t *hu_font[HU_FONTSIZE];
-const patch_t* sbline;
+const Texture* hu_font[HU_FONTSIZE];
+const Texture* sbline;
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
@@ -204,11 +205,11 @@ void HU_Init()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		sprintf(buffer, tplate, j++ - sub);
-		hu_font[i] = Res_CachePatch(buffer, PU_STATIC);
+		hu_font[i] = Res_CacheTexture(buffer, patches_directory_name, PU_STATIC);
 	}
 
 	// Load the status bar line
-	sbline = Res_CachePatch("SBLINE", PU_STATIC);
+	sbline = Res_CacheTexture("SBLINE", patches_directory_name, PU_STATIC);
 
 	HU_InitCrosshair();
 }
@@ -386,15 +387,15 @@ static void HU_DrawCrosshair()
 		if (R_StatusBarVisible())
 			y = ST_StatusBarY(I_GetSurfaceWidth(), I_GetSurfaceHeight()) / 2;
 
-		const patch_t* patch = (patch_t*)Res_LoadResource(crosshair_res_id, PU_CACHE);
+		const Texture* texture = Res_CacheTexture(crosshair_res_id);
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawTranslatedLucentPatchCleanNoMove(patch, x, y);
+			screen->DrawTranslatedLucentTextureCleanNoMove(texture, x, y);
         else if (hud_crosshairscale)
-			screen->DrawTranslatedPatchCleanNoMove(patch, x, y);
+			screen->DrawTranslatedTextureCleanNoMove(texture, x, y);
         else if (hud_crosshairdim)
-			screen->DrawTranslatedLucentPatch(patch, x, y);
+			screen->DrawTranslatedLucentTexture(texture, x, y);
 		else
-			screen->DrawTranslatedPatch(patch, x, y);
+			screen->DrawTranslatedTexture(texture, x, y);
 	}
 }
 
@@ -437,7 +438,7 @@ static void HU_DrawChatPrompt()
 		prompt = "Say: ";
 
 	int promptwidth = V_StringWidth(prompt) * scaledxfac;
-	int x = hu_font['_' - HU_FONTSTART]->width() * scaledxfac * 2 + promptwidth;
+	int x = hu_font['_' - HU_FONTSTART]->mWidth * scaledxfac * 2 + promptwidth;
 
 	// figure out if the text is wider than the screen->
 	// if so, only draw the right-most portion of it.
@@ -448,7 +449,7 @@ static void HU_DrawChatPrompt()
 		if (c < 0 || c >= HU_FONTSIZE)
 			x += 4 * scaledxfac;
 		else
-			x += hu_font[c]->width() * scaledxfac;
+			x += hu_font[c]->mWidth * scaledxfac;
 	}
 
 	if (i >= 0)
@@ -499,7 +500,10 @@ void HU_Drawer()
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
-		screen->DrawPatchCleanNoMove(Res_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
+	{
+		const Texture* texture = Res_CacheTexture("NET", patches_directory_name);
+		screen->DrawTextureCleanNoMove(texture, 50 * CleanXfac, 1 * CleanYfac);
+	}
 
 	if (cl_netgraph)
 		netgraph.draw();
@@ -772,7 +776,7 @@ void drawHeader(player_t *player, int y) {
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 24, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, y + 24, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
@@ -822,7 +826,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
@@ -916,11 +920,11 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 		}
 
 		for (short xi = tx[i];xi < tx[i] + 232;xi += 2) {
-			hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+			hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_LEFT, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
-			hud::DrawTranslatedPatch(xi, y + 19, hud_scalescoreboard,
+			hud::DrawTranslatedTexture(xi, y + 19, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_LEFT, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
@@ -1001,7 +1005,7 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, y, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
@@ -1132,7 +1136,7 @@ void drawLowHeader(player_t *player, int y) {
 
 	// Line
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
@@ -1182,7 +1186,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
@@ -1300,11 +1304,11 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		}
 
 		for (short xi = -146 + 1;xi < 146;xi += 2) {
-			hud::DrawTranslatedPatch(xi, y + ty[i], hud_scalescoreboard,
+			hud::DrawTranslatedTexture(xi, y + ty[i], hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
-			hud::DrawTranslatedPatch(xi, y + ty[i] + 11, hud_scalescoreboard,
+			hud::DrawTranslatedTexture(xi, y + ty[i] + 11, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
@@ -1397,7 +1401,7 @@ void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, y, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);

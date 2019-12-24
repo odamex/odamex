@@ -24,6 +24,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
+#include "resources/res_texture.h"
 
 namespace hud {
 
@@ -188,15 +189,15 @@ void DrawText(int x, int y, const float scale,
 
 
 // Draw a patch.
-void DrawPatch(int x, int y, const float scale,
+void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,
-               const patch_t* patch, const bool force_opaque,
+               const Texture* texture, const bool force_opaque,
                const bool use_patch_offsets)
 {
 	// Calculate width and height of patch
-	unsigned short w = patch->width();
-	unsigned short h = patch->height();
+	unsigned short w = texture->mWidth;
+	unsigned short h = texture->mHeight;
 
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
@@ -205,26 +206,26 @@ void DrawPatch(int x, int y, const float scale,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += patch->leftoffset() * x_scale;
-		y += patch->topoffset() * y_scale;
+		x += texture->mOffsetX * x_scale;
+		y += texture->mOffsetY * y_scale;
 	}
 
 	if (force_opaque)
-		screen->DrawPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 	else
-		screen->DrawLucentPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawLucentTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 }
 
 // Draw a color-translated patch.
-void DrawTranslatedPatch(int x, int y, const float scale,
+void DrawTranslatedTexture(int x, int y, const float scale,
                          const x_align_t x_align, const y_align_t y_align,
                          const x_align_t x_origin, const y_align_t y_origin,
-                         const patch_t* patch, byte* translation,
+                         const Texture* texture, byte* translation,
                          const bool force_opaque, const bool use_patch_offsets)
 {
 	// Calculate width and height of patch
-	unsigned short w = patch->width();
-	unsigned short h = patch->height();
+	unsigned short w = texture->mWidth;
+	unsigned short h = texture->mHeight;
 
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
@@ -233,26 +234,26 @@ void DrawTranslatedPatch(int x, int y, const float scale,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += patch->leftoffset() * x_scale;
-		y += patch->topoffset() * y_scale;
+		x += texture->mOffsetX * x_scale;
+		y += texture->mOffsetY * y_scale;
 	}
 
 	V_ColorMap = translationref_t(translation);
 
 	if (force_opaque)
-		screen->DrawTranslatedPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTranslatedTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 	else
-		screen->DrawTranslatedLucentPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTranslatedLucentTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 }
 
 
 // Draw a patch stretched to a specific width and height.
-void DrawPatchStretched(int x, int y,
+void DrawTextureStretched(int x, int y,
                         const unsigned short w, const unsigned short h,
                         const float scale,
                         const x_align_t x_align, const y_align_t y_align,
                         const x_align_t x_origin, const y_align_t y_origin,
-                        const patch_t* patch, const bool force_opaque,
+                        const Texture* texture, const bool force_opaque,
                         const bool use_patch_offsets)
 {
 	// Turn our scaled coordinates into real coordinates.
@@ -262,40 +263,40 @@ void DrawPatchStretched(int x, int y,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += (roundToShort(patch->leftoffset() * ((float)w / patch->width()))) * x_scale;
-		y += (roundToShort(patch->topoffset() * ((float)h / patch->height()))) * y_scale;
+		x += (roundToShort(texture->mOffsetX * ((float)w / texture->mWidth))) * x_scale;
+		y += (roundToShort(texture->mOffsetY * ((float)h / texture->mHeight))) * y_scale;
 	}
 
 	if (force_opaque)
-		screen->DrawPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 	else
-		screen->DrawLucentPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawLucentTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 }
 
 // Draw a patch scaled to a specific width and height, preserving aspect ratio.
-void DrawPatchScaled(const int x, const int y,
+void DrawTextureScaled(const int x, const int y,
                      unsigned short w, unsigned short h,
                      const float scale,
                      const x_align_t x_align, const y_align_t y_align,
                      const x_align_t x_origin, const y_align_t y_origin,
-                     const patch_t* patch, const bool force_opaque,
+                     const Texture* texture, const bool force_opaque,
                      const bool use_patch_offsets)
 {
 	// Calculate aspect ratios of patch and destination.
-	float patch_aspect = patch->width() / (float)patch->height();
+	float patch_aspect = float(texture->mWidth) / float(texture->mHeight);
 	float dest_aspect = w / (float)h;
 
 	if (patch_aspect < dest_aspect) {
 		// Destination is wider than patch.  Keep height, calculate width.
-		w = (patch->width() * h) / patch->height();
+		w = (texture->mWidth * h) / texture->mHeight;
 	} else if (patch_aspect > dest_aspect) {
 		// Destination is taller than patch.  Keep width, calculate height.
-		h = (patch->height() * w) / patch->width();
+		h = (texture->mHeight * w) / texture->mWidth;
 	}
 
 	// Call the 'stretched' drawer with our new dest. width and height.
-	DrawPatchStretched(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
-	                   patch, force_opaque, use_patch_offsets);
+	DrawTextureStretched(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
+	                   texture, force_opaque, use_patch_offsets);
 }
 
 

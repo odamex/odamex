@@ -40,6 +40,7 @@
 #include "m_fileio.h"
 
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -953,21 +954,21 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
-	const patch_t* diskpatch = Res_CachePatch("STDISK");
+	const Texture* texture = Res_CacheTexture("STDISK", patches_directory_name, PU_STATIC);
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();
 
 	int bpp = surface->getBitsPerPixel();
 	int scale = std::min(CleanXfac, CleanYfac);
-	int w = diskpatch->width() * scale;
-	int h = diskpatch->height() * scale;
+	int w = texture->mWidth * scale;
+	int h = texture->mHeight * scale;
 	int x = surface->getWidth() - w;
 	int y = surface->getHeight() - h;
 
 	// offset x and y for the lower right corner of the screen
-	int ofsx = x + (scale * diskpatch->leftoffset());
-	int ofsy = y + (scale * diskpatch->topoffset());
+	int ofsx = x + (scale * texture->mOffsetX);
+	int ofsy = y + (scale * texture->mOffsetY);
 
 	// save the area where the icon will be drawn to an off-screen surface
 	// so that it can be restored after the frame is blitted
@@ -984,7 +985,7 @@ static void I_BlitLoadingIcon()
 	loading_icon_background_surface->lock();
 
 	loading_icon_background_surface->blit(surface, x, y, w, h, 0, 0, w, h);
-	surface->getDefaultCanvas()->DrawPatchStretched(diskpatch, ofsx, ofsy, w, h);
+	surface->getDefaultCanvas()->DrawTextureStretched(texture, ofsx, ofsy, w, h);
 
 	loading_icon_background_surface->unlock();
 	surface->unlock();
