@@ -28,13 +28,13 @@
 #include "c_cvars.h"
 #include "resources/res_resourceid.h"
 
+class Texture;
+
 // SKY, store the number for name.
 extern char SKYFLATNAME[8];
 
 extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
 
-extern int 		sky1texture;				//		""
-extern int 		sky2texture;				//		""
 extern fixed_t	skypos;					//		""
 extern fixed_t	skytexturemid;
 extern int		skystretch;
@@ -45,12 +45,11 @@ extern fixed_t	skyheight;
 EXTERN_CVAR (r_stretchsky)
 
 // Called whenever the sky changes.
-void R_InitSkyMap		();
+void R_InitSkyMap();
+void R_SetSkyTextures(const char* sky1_name, const char* sky2_name);
 
 void R_RenderSkyRange(visplane_t* pl);
 
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id);
 
-
 #endif //__R_SKY_H__
-

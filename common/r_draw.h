@@ -30,7 +30,7 @@
 
 typedef struct 
 {
-	byte*				source;
+	const byte*			source;
 	byte*				destination;
 
 	int					pitch_in_pixels;
@@ -71,13 +71,15 @@ typedef struct
 	int					x1;
 	int					x2;
 
-	int					texture_width_bits;
-	int					texture_height_bits;
-
 	dsfixed_t			ufrac;
 	dsfixed_t			vfrac;
 	dsfixed_t			ustep;
 	dsfixed_t			vstep;
+
+	int					umask;
+	int					vmask;
+	int					ushift;
+	int					vshift;
 
 	float				iu;
 	float				iv;
@@ -99,7 +101,7 @@ extern "C" drawspan_t dspan;
 // [RH] Temporary buffer for column drawing
 
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		tallpost_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
+		const palindex_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
 
 // [RH] Pointers to the different column and span drawers...
 

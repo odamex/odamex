@@ -106,6 +106,26 @@ bool Res_IsDehackedFile(const OString& filename)
 
 // ****************************************************************************
 
+// ============================================================================
+//
+// RawResourceAccessor class implementations
+//
+// ============================================================================
+
+uint32_t RawResourceAccessor::getResourceSize(const ResourceId res_id) const
+{
+	const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
+	const ResourceContainer* container = mResourceManager->mContainers[container_id];
+	return container->getResourceSize(res_id);
+}
+
+void RawResourceAccessor::loadResource(const ResourceId res_id, void* data, uint32_t size) const
+{
+	const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
+	const ResourceContainer* container = mResourceManager->mContainers[container_id];
+	container->loadResource(data, res_id, size);
+}
+
 
 // ============================================================================
 //
@@ -227,7 +247,8 @@ void ResourceManager::closeAllResourceContainers()
 //
 const ResourceId ResourceManager::addResource(
 		const ResourcePath& path,
-		const ResourceContainer* container)
+		const ResourceContainer* container,
+		const ResourceLoader* loader)
 {
 	mResources.push_back(ResourceRecord());
 	ResourceRecord& res_rec = mResources.back();
@@ -235,8 +256,7 @@ const ResourceId ResourceManager::addResource(
 
 	res_rec.mPath = path;
 	res_rec.mResourceContainerId = container->getResourceContainerId();
-	// TODO: delete mResourceLoader at some point
-	res_rec.mResourceLoader = new DefaultResourceLoader(&mRawResourceAccessor);
+	res_rec.mResourceLoader = loader;
 
 	mNameTranslator.addTranslation(path, res_id);
 
@@ -294,7 +314,14 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 {
 	const ResourceRecord* res_rec = getResourceRecord(res_id);
 	if (res_rec)
-		return res_rec->mResourceLoader->size(res_id);
+	{
+		if (res_rec->mResourceLoader)
+			return res_rec->mResourceLoader->size();
+
+		// default implementation
+		const ResourceContainer* container = mContainers[res_rec->mResourceContainerId];
+		return container->getResourceSize(res_id);
+	}
 	return 0;
 }
 
@@ -318,7 +345,23 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, int tag)
 			// Read the data if it's not already in the cache
 			DPrintf("Resource cache miss for %s\n", OString(getResourcePath(res_id)).c_str());
 			const ResourceRecord* res_rec = getResourceRecord(res_id);
-			mCache->cacheData(res_id, res_rec->mResourceLoader, tag);
+
+			void* dest = NULL;		// memory location allocated by the cache where the data should be copied to when loaded
+			if (res_rec->mResourceLoader)
+			{
+				// Special loading strategy
+				uint32_t size = res_rec->mResourceLoader->size();
+				mCache->cacheData(res_id, &dest, size, tag);
+				res_rec->mResourceLoader->load(dest);
+			}
+			else
+			{
+				// Default loading strategy
+				const ResourceContainer* container = mContainers[res_rec->mResourceContainerId];
+				uint32_t size = container->getResourceSize(res_id);
+				mCache->cacheData(res_id, &dest, size, tag);
+				container->loadResource(dest, res_id, size);
+			}
 			data = mCache->getData(res_id);
 		}
 	}
@@ -589,57 +632,6 @@ void* Res_LoadResource(const ResourceId res_id, int tag)
 void Res_ReleaseResource(const ResourceId res_id)
 {
 	resource_manager.releaseResourceData(res_id);
-}
-
-
-//
-// Res_GetTextureResourceId
-// 
-// Searches a prioritized list of directories for a given texture lump and
-// returns the resource ID of the texture even if it's found in an
-// alternative directory.
-//
-const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePath& directory)
-{
-	ResourcePathList search_priority;
-	if (directory == flats_directory_name)
-	{
-		search_priority.push_back(flats_directory_name);
-		search_priority.push_back(textures_directory_name);
-		search_priority.push_back(patches_directory_name);
-		search_priority.push_back(sprites_directory_name);
-		search_priority.push_back(global_directory_name);
-	}
-	if (directory == textures_directory_name)
-	{
-		search_priority.push_back(textures_directory_name);
-		search_priority.push_back(flats_directory_name);
-		search_priority.push_back(patches_directory_name);
-		search_priority.push_back(sprites_directory_name);
-		search_priority.push_back(global_directory_name);
-	}
-	if (directory == patches_directory_name)
-	{
-		search_priority.push_back(patches_directory_name);
-		search_priority.push_back(global_directory_name);
-		search_priority.push_back(textures_directory_name);
-		search_priority.push_back(flats_directory_name);
-		search_priority.push_back(sprites_directory_name);
-	}
-	if (directory == sprites_directory_name)
-	{
-		search_priority.push_back(sprites_directory_name);
-		search_priority.push_back(patches_directory_name);
-		search_priority.push_back(textures_directory_name);
-		search_priority.push_back(flats_directory_name);
-		search_priority.push_back(global_directory_name);
-	}
-
-	ResourceId res_id = ResourceId::INVALID_ID;
-	for (size_t i = 0; i < search_priority.size() && res_id == ResourceId::INVALID_ID; i++)
-		res_id = Res_GetResourceId(name, search_priority[i]);
-
-	return res_id;
 }
 
 

@@ -69,24 +69,15 @@ void R_DrawSpanD_SSE2 (void)
 
 	const int width = dspan.x2 - dspan.x1 + 1;
 
-	dsfixed_t ufrac = dspan.ufrac;
-	dsfixed_t vfrac = dspan.vfrac;
-	dsfixed_t ustep = dspan.ustep;
-	dsfixed_t vstep = dspan.vstep;
+	dsfixed_t ufrac = dspan.ufrac, vfrac = dspan.vfrac;
+	dsfixed_t ustep = dspan.ustep, vstep = dspan.vstep;
+	const int umask = dspan.umask, vmask = dspan.vmask;
+	const int ushift = dspan.ushift, vshift = dspan.vshift;
 
 	const byte* source = dspan.source;
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 
 	shaderef_t colormap = dspan.colormap;
-	
-	const int texture_width_bits = dspan.texture_width_bits;
-	const int texture_height_bits = dspan.texture_height_bits;
-
-	const unsigned int umask = ((1 << texture_width_bits) - 1) << texture_height_bits;
-	const unsigned int vmask = (1 << texture_height_bits) - 1;
-	// TODO: don't shift the values of ufrac and vfrac by 10 in R_MapLevelPlane
-	const int ushift = FRACBITS - texture_height_bits + 10;
-	const int vshift = FRACBITS + 10;
 
 	int align = R_GetBytesUntilAligned(dest, 16) / sizeof(argb_t);
 	if (align > width)
@@ -194,6 +185,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	float iu = dspan.iu, iv = dspan.iv;
 	float ius = dspan.iustep, ivs = dspan.ivstep;
 	float id = dspan.id, ids = dspan.idstep;
+	const int umask = dspan.umask, vmask = dspan.vmask;
+	const int ushift = dspan.ushift, vshift = dspan.vshift;
 	
 	// framebuffer	
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
@@ -231,7 +224,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		while ((((size_t)dest) & 15) && (incount > 0))
 		{
 			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
-			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+			const int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
+			*dest = colormap.shade(src[spot]);
 			dest++;
 			ufrac += ustep;
 			vfrac += vstep;
@@ -245,10 +239,10 @@ void R_DrawSlopeSpanD_SSE2 (void)
 			{
 				for (int i = 0; i < rounds; ++i, incount -= 4)
 				{
-					const int spot0 = (((vfrac+vstep*0) >> 10) & 0xFC0) | (((ufrac+ustep*0) >> 16) & 63);
-					const int spot1 = (((vfrac+vstep*1) >> 10) & 0xFC0) | (((ufrac+ustep*1) >> 16) & 63);
-					const int spot2 = (((vfrac+vstep*2) >> 10) & 0xFC0) | (((ufrac+ustep*2) >> 16) & 63);
-					const int spot3 = (((vfrac+vstep*3) >> 10) & 0xFC0) | (((ufrac+ustep*3) >> 16) & 63);
+					const int spot0 = (((ufrac + ustep * 0) >> ushift) & umask) | (((vfrac + vstep * 0)>> vshift) & vmask); 
+					const int spot1 = (((ufrac + ustep * 1) >> ushift) & umask) | (((vfrac + vstep * 1)>> vshift) & vmask); 
+					const int spot2 = (((ufrac + ustep * 2) >> ushift) & umask) | (((vfrac + vstep * 2)>> vshift) & vmask); 
+					const int spot3 = (((ufrac + ustep * 3) >> ushift) & umask) | (((vfrac + vstep * 3)>> vshift) & vmask); 
 
 					const __m128i finalColors = _mm_setr_epi32(
 						dspan.slopelighting[ltindex+0].shade(src[spot0]),
@@ -272,7 +266,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 			while(incount--)
 			{
 				const shaderef_t &colormap = dspan.slopelighting[ltindex++];
-				const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
+				const int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
 				*dest = colormap.shade(src[spot]);
 				dest++;
 
@@ -311,7 +305,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		while (incount--)
 		{
 			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
-			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+			const int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
+			*dest = colormap.shade(src[spot]);
 			dest++;
 			ufrac += ustep;
 			vfrac += vstep;

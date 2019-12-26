@@ -516,8 +516,8 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	M_SubVec3f(&t, &t, &p);
 	M_SubVec3f(&s, &s, &p);
 	
-	M_CrossProductVec3f(&a, &t, &p);
-	M_CrossProductVec3f(&b, &p, &s);
+	M_CrossProductVec3f(&a, &p, &s);
+	M_CrossProductVec3f(&b, &t, &p);
 	M_CrossProductVec3f(&c, &t, &s);
 
 	M_ScaleVec3f(&a, &a, 0.5f);
@@ -547,14 +547,18 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	R_MakeSpans(pl, R_MapSlopedPlane);
 }
 
+
+//
+// R_DrawLevelPlane
+//
 void R_DrawLevelPlane(visplane_t *pl)
 {
 	// viewx/viewy rotated by the texture rotation angle
 	fixed_t pl_viewx, pl_viewy;
 
 	// texture scaling factor
-	pl_xscale = pl->xscale << 10;
-	pl_yscale = pl->yscale << 10;
+	pl_xscale = pl->xscale;
+	pl_yscale = pl->yscale;
 
 	// viewsin/viewcos rotated by the texture rotation angle
 	pl_viewsin = finesine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
@@ -578,12 +582,12 @@ void R_DrawLevelPlane(visplane_t *pl)
 	}
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale) << 10;
-	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale) << 10;
+	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale);
+	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale);
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale) << 10;
-	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale) << 10;
+	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale);
+	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale);
 	
 	basecolormap = pl->colormap;	// [RH] set basecolormap
 
@@ -624,11 +628,16 @@ void R_DrawPlanes()
 				// regular flat
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 
-				//int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 				const Texture* texture = Res_CacheTexture(pl->res_id, PU_STATIC);
 				dspan.source = texture->getData(); 
-				dspan.texture_width_bits = texture->getWidthBits();
-				dspan.texture_height_bits = texture->getHeightBits();
+
+				// [SL] Note that the texture orientation differs from typical Doom span
+				// drawers since flats are stored in column major format now. The roles
+				// of ufrac and vfrac have been reversed to accomodate this.
+				dspan.umask = ((1 << texture->mWidthBits) - 1) << texture->mHeightBits;
+				dspan.vmask = (1 << texture->mHeightBits) - 1;
+				dspan.ushift = FRACBITS - texture->mHeightBits;
+				dspan.vshift = FRACBITS;
 										   
 				// TODO: Remove "useflatnum" and implement warped flats
 				int useflatnum = 0;

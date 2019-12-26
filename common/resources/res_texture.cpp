@@ -301,23 +301,13 @@ void Texture::init(int width, int height)
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
 	ResourceContainer(container_id, manager),
 	mResourceManager(manager),
-	mFlatTextureLoader(NULL),
-	mPatchTextureLoader(NULL),
-	mSpriteTextureLoader(NULL),
-	mResourceIdLookup(512),
-	mTextureLoaderLookup(512),
+	mResourceLoaderLookup(1024),
 	mMaskColor(0),
 	mMaskColorMap(NULL)
 {
-	const RawResourceAccessor* accessor = mResourceManager->getRawResourceAccessor();
-	mFlatTextureLoader = new FlatTextureLoader(accessor);
-	mPatchTextureLoader = new PatchTextureLoader(accessor);
-	mSpriteTextureLoader = new SpriteTextureLoader(accessor);
+	addCompositeTextureResources(manager);
 
 	addResourcesToManager(manager);
-	registerTextureResources(manager);
-	// initialize the TEXTURE1 & TEXTURE2 data
-	addTextureDirectories(manager);
 
 	if (clientside)
 	{	
@@ -357,15 +347,12 @@ void TextureManager::clear()
 
 	mWarpDefs.clear();
 
-	delete mFlatTextureLoader;
-	delete mPatchTextureLoader;
-	delete mSpriteTextureLoader;
-	mFlatTextureLoader = NULL;
-	mPatchTextureLoader = NULL;
-	mSpriteTextureLoader = NULL;
-
 	delete [] mMaskColorMap;
 	mMaskColorMap = NULL;
+
+	for (ResourceLoaderLookupTable::iterator it = mResourceLoaderLookup.begin(); it != mResourceLoaderLookup.end(); ++it)
+		delete it->second;
+	mResourceLoaderLookup.clear();
 }
 
 
@@ -376,40 +363,57 @@ void TextureManager::clear()
 // 
 void TextureManager::addResourcesToManager(ResourceManager* manager)
 {
-	addResourceToManagerByDir(manager, flats_directory_name, mFlatTextureLoader);
-	addResourceToManagerByDir(manager, patches_directory_name, mPatchTextureLoader);
-	addResourceToManagerByDir(manager, sprites_directory_name, mSpriteTextureLoader);
+	addResourceToManagerByDir(manager, flats_directory_name);
+	addResourceToManagerByDir(manager, patches_directory_name);
+	addResourceToManagerByDir(manager, sprites_directory_name);
 }
 
 
-void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir, const TextureLoader* loader)
+void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir)
 {
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+
 	const ResourcePathList paths = manager->listResourceDirectory(dir);
 
 	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
 	{
 		const ResourcePath& path = *it;
 		const ResourceId raw_res_id = manager->getResourceId(path);
-		const ResourceId res_id = manager->addResource(path, this);
-		mResourceIdLookup.insert(std::make_pair(res_id, raw_res_id));
-		mTextureLoaderLookup.insert(std::make_pair(res_id, loader));
+
+		ResourceLoader* loader = NULL;
+		if (dir == flats_directory_name)
+			loader = new FlatTextureLoader(accessor, raw_res_id);
+		else if (dir == patches_directory_name)
+			loader = new BasePatchTextureLoader(accessor, raw_res_id);
+		else if (dir == sprites_directory_name)
+			loader = new BasePatchTextureLoader(accessor, raw_res_id);
+
+		const ResourceId res_id = manager->addResource(path, this, loader);
+
+		// save the ResourceLoader pointers so they can be freed later
+		mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
 	}
 }
 
 
+//
+// TextureManager::getResourceSize
+//
+// Returns the size of the specified Texture resource.
+//
 uint32_t TextureManager::getResourceSize(const ResourceId res_id) const
 {
-	const ResourceId raw_res_id = getRawResourceId(res_id);
-	if (raw_res_id != ResourceId::INVALID_ID)
-	{
-		const ResourceLoader* loader = getTextureLoader(res_id);
-		assert(loader != NULL);
-		return loader->size(raw_res_id);
-	}
-	return 0;
+	const ResourceLoader* loader = getResourceLoader(res_id);
+	assert(loader != NULL);
+	return loader->size();
 }
 
 
+//
+// TextureManager::getResourceSize
+//
+// Loads the specified Texture resource.
+//
 uint32_t TextureManager::loadResource(void* data, const ResourceId res_id, uint32_t size) const
 {
 	if (!mMaskColorMap)
@@ -418,38 +422,177 @@ uint32_t TextureManager::loadResource(void* data, const ResourceId res_id, uint3
 		analyzePalette(mMaskColorMap, &mMaskColor);
 	}
 
-	const ResourceId raw_res_id = getRawResourceId(res_id);
-	if (raw_res_id != ResourceId::INVALID_ID)
+	const ResourceLoader* loader = getResourceLoader(res_id);
+	assert(loader != NULL);
+	loader->load(data);
+	return size;
+}
+
+
+//
+// TextureManager::getResourceLoader
+//
+const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id) const
+{
+	ResourceLoaderLookupTable::const_iterator it = mResourceLoaderLookup.find(res_id);
+	if (it != mResourceLoaderLookup.end())
+		return it->second;
+	return NULL;
+}
+
+
+
+//
+// TextureManager::addCompositeTextureResources
+//
+// Parses the TEXTURE1 & TEXTURE2 lumps and adds the composite textures
+// to ResourceManager as stand-alone resources.
+//
+void TextureManager::addCompositeTextureResources(ResourceManager* manager)
+{
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+
+	// TODO: the lump name "PNAMES" can be modified with DeHacked
+	const ResourceIdList pnames_lookup = buildPNamesLookup("PNAMES");
+
+	ResourceId res_ids[2];
+	res_ids[0] = Res_GetResourceId("TEXTURE1", global_directory_name);
+	res_ids[1] = Res_GetResourceId("TEXTURE2", global_directory_name);
+	if (!Res_CheckResource(res_ids[0]))
+		I_Error("\"TEXTURE1\" resource not found!");
+
+	for (int n = 0; n < sizeof(res_ids) / sizeof(*res_ids); n++)	
 	{
-		const TextureLoader* loader = getTextureLoader(res_id);
-		assert(loader != NULL);
-		loader->load(raw_res_id, data, mMaskColor, mMaskColorMap);
-		return size;
+		if (res_ids[n] == ResourceId::INVALID_ID)
+			continue;
+
+		uint32_t res_size = Res_GetResourceSize(res_ids[n]);
+		if (res_size < 4)		// not long enough to store definition_count
+			return;
+
+		const uint8_t* raw_def_data = (uint8_t*)Res_LoadResource(res_ids[n], PU_STATIC);
+
+		int32_t definition_count = LELONG(*((int32_t*)(raw_def_data + 0)));
+		for (int32_t i = 0; i < definition_count; i++)
+		{
+			int32_t def_offset = 4 * i + 4;
+			if (res_size < (unsigned int)def_offset)
+				break;
+
+			// Read a texture definition, create a CompositeTextureDefinition,
+			// and add a new CompositeTextureLoader to the list.
+			int32_t tex_offset = LELONG(*((int32_t*)(raw_def_data + def_offset)));
+			if (res_size < (uint32_t)tex_offset + 22)
+				break;
+
+			const char* str = (const char*)(raw_def_data + tex_offset + 0);
+			const OString lump_name = OStringToUpper(str, 8);
+
+			// From ChocolateDoom r_data.c:
+			// Vanilla Doom does a linear search of the texures array
+			// and stops at the first entry it finds.  If there are two
+			// entries with the same name, the first one in the array
+			// wins.
+			//if (getByName(name) != NULL)
+			//	continue;
+
+			CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
+
+			ResourcePath path = textures_directory_name + lump_name;
+			ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
+			const ResourceId res_id = manager->addResource(path, this, loader);
+
+			// save the ResourceLoader pointers so they can be freed later
+			mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+		}
+
+		Res_ReleaseResource(res_ids[n]);
 	}
-	return 0;
 }
 
 
-const ResourceId TextureManager::getRawResourceId(const ResourceId res_id) const
+CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const
 {
-	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(res_id);
-	if (it != mResourceIdLookup.end())
-		return it->second;
-	else
-		return ResourceId::INVALID_ID;
+	CompositeTextureDefinition tex_def;
+
+	tex_def.mScaleX = *(uint8_t*)(data + 10);
+	tex_def.mScaleY = *(uint8_t*)(data + 11);
+	tex_def.mWidth = LESHORT(*((int16_t*)(data + 12)));
+	tex_def.mHeight = LESHORT(*((int16_t*)(data + 14)));
+
+	int16_t patch_count = LESHORT(*((int16_t*)(data + 20)));
+	for (int16_t j = 0; j < patch_count; j++)
+	{
+		const uint8_t* patch_data = data + 22 + 10 * j;
+
+		tex_def.mPatchDefs.push_back(CompositeTextureDefinition::PatchDef());
+		CompositeTextureDefinition::PatchDef& patch_def = tex_def.mPatchDefs.back();
+
+		patch_def.mOriginX = LESHORT(*((int16_t*)(patch_data + 0)));
+		patch_def.mOriginY = LESHORT(*((int16_t*)(patch_data + 2)));
+
+		// TODO: handle invalid pnames indices
+		int16_t patch_num = LESHORT(*((int16_t*)(patch_data + 4)));
+		if ((size_t)patch_num < pnames_lookup.size())
+			patch_def.mResId = pnames_lookup[patch_num];
+	}
+
+	return tex_def;
 }
 
 
-const TextureLoader* TextureManager::getTextureLoader(const ResourceId res_id) const
+//
+// TextureManager::buildPNamesLookup
+//
+// Parses the PNAMES resource and creates a lookup table mapping entries in
+// the PNAMES resource lump to ResourceIds.
+//
+const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name) const
 {
-	TextureLoaderLookupTable::const_iterator it = mTextureLoaderLookup.find(res_id);
-	if (it != mTextureLoaderLookup.end())
-		return it->second;
-	else
-		return NULL;
+	// Read the PNAMES lump and store the ResourceId of each patch
+	// listed in the lump in the pnames_lookup array.
+	const ResourceId pnames_res_id = Res_GetResourceId(lump_name, global_directory_name);
+	if (pnames_res_id == ResourceId::INVALID_ID)
+		I_Error("Res_InitTextures: PNAMES lump not found");
+
+	uint32_t pnames_size = Res_GetResourceSize(pnames_res_id);
+	if (pnames_size < 4)			// not long enough to store pnames_count
+		I_Error("Res_InitTextures: invalid PNAMES lump");
+
+	const uint8_t* pnames_raw_data = (uint8_t*)Res_LoadResource(pnames_res_id, PU_STATIC);
+
+	int32_t pnames_count = LELONG(*((int32_t*)(pnames_raw_data + 0)));
+	if ((uint32_t)pnames_count * 8 + 4 != pnames_size)
+		I_Error("Res_InitTextures: invalid PNAMES lump");
+
+	ResourceIdList pnames_lookup;
+	pnames_lookup.reserve(pnames_count);
+
+	for (int32_t i = 0; i < pnames_count; i++)
+	{
+		const char* str = (const char*)(pnames_raw_data + 4 + 8 * i);
+		const OString lump_name = OStringToUpper(str, 8);
+
+		ResourceId res_id = Res_GetResourceId(lump_name, patches_directory_name);
+
+		// killough 4/17/98:
+		// Some wads use sprites as wall patches, so repeat check and
+		// look for sprites this time, but only if there were no wall
+		// patches found. This is the same as allowing for both, except
+		// that wall patches always win over sprites, even when they
+		// appear first in a wad. This is a kludgy solution to the wad
+		// lump namespace problem.
+
+		if (res_id == ResourceId::INVALID_ID)
+			res_id = Res_GetResourceId(lump_name, sprites_directory_name);
+
+		pnames_lookup.push_back(res_id);
+	}
+
+	Res_ReleaseResource(pnames_res_id);
+
+	return pnames_lookup;
 }
-
-
 
 
 //
@@ -734,84 +877,6 @@ void TextureManager::updateAnimatedTextures()
 }
 
 
-//
-// TextureManager::addTextureDirectory
-//
-// Reads the PNAMES, TEXTURE1 and TEXTURE2 lumps and adds a
-// CompositeTextureLoader instance to the TextureLoader list to handle
-// composing the texture for each definition in the TEXTURE1 and TEXTURE2
-// lumps.
-//
-void TextureManager::addTextureDirectories(ResourceManager* manager)
-{
-}
-
-
-//
-// TextureManager::registerTextureResources
-//
-// Creates a TextureLoader instance for each texture resource in the provided
-// list of ResourceIds.
-//
-void TextureManager::registerTextureResources(ResourceManager* manager)
-{
-	/*
-	std::vector<ResourceId> res_id_list = manager->getAllResourceIds();
-
-	for (std::vector<ResourceId>::const_iterator it = res_id_list.begin(); it != res_id_list.end(); ++it)
-	{
-		const ResourceId res_id = *it;
-		assert(Res_CheckResource(res_id));
-
-		const ResourcePath& path = Res_GetResourcePath(res_id);
-		const ResourcePath& directory(path.first());
-		ResourceLoader* loader = NULL;
-
-		if (directory == flats_directory_name)
-			loader = new FlatTextureLoader(manager, res_id);
-		else if (directory == patches_directory_name)
-			loader = new PatchTextureLoader(manager, res_id);
-
-		if (loader)
-		{
-			mTextures.push_back(NULL);
-			// mTextureLoaders.push_back(loader);
-			// TODO: save this ResourceId somewhere
-			const ResourceId res_id = manager->addResource(path, this); 
-		}
-	}
-	*/
-}
-
-
-
-//
-// TextureManager::getTexture
-//
-// Returns the Texture for the supplied ResourceId. If the Texture is not
-// currently cached, it will be loaded from the disk and cached.
-//
-const Texture* TextureManager::getTexture(const ResourceId res_id)
-{
-	/*
-	const Texture* texture = NULL;
-	if (lump_id < mTextures.size())
-	{
-		texture = mTextures[lump_id];
-		if (texture)
-			mTextures[lump_id] = texture;
-
-		// TODO: set mTextureIdMap[lump_id] to not found texture if null
-	}
-	return texture;
-	*/
-	return NULL;
-}
-
-
-
-
-
 
 
 
@@ -824,19 +889,109 @@ const Texture* TextureManager::getTexture(const ResourceId res_id)
 //
 // TODO: USE THIS LOGIC TO INSTANTIATE A ResourceLoader INSTANCE
 //
-const ResourceId Res_GetTextureResourceId(const ResourcePath& res_path)
+// NOTE: Vanilla Doom considered any sidedef whose texture starts with "-"
+// (such as "-FLAT-") to imply no texture. ZDoom changes this behavior to 
+// allow texture names that start with "-" if they contain more than 1 character.
+//
+const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering)
 {
-	const OString& directory = res_path.first();
-	const OString& name = res_path.last();
-	if (directory == textures_directory_name && name.size() > 0 && name.c_str()[0] == '-')
-		//return ResourceManager::NO_TEXTURE_RESOURCE_ID;
+	if (ordering == WALL && name.size() == 1 && name.c_str()[0] == '-')
 		return ResourceId::INVALID_ID;
 
-	ResourceId res_id = ResourceId::INVALID_ID;
-	//ResourceId res_id = ResourceManager::NOT_FOUND_TEXTURE_RESOURCE_ID;
+	ResourcePathList paths;
+	if (ordering == WALL)
+	{
+		paths.push_back(textures_directory_name);
+		paths.push_back(flats_directory_name);
+		paths.push_back(patches_directory_name);
+		paths.push_back(sprites_directory_name);
+		paths.push_back(global_directory_name);
+	}
+	else if (ordering == FLOOR)
+	{
+		paths.push_back(flats_directory_name);
+		paths.push_back(textures_directory_name);
+		paths.push_back(patches_directory_name);
+		paths.push_back(sprites_directory_name);
+		paths.push_back(global_directory_name);
+	}
+	else if (ordering == PATCH)
+	{
+		paths.push_back(patches_directory_name);
+		paths.push_back(global_directory_name);
+		paths.push_back(textures_directory_name);
+		paths.push_back(flats_directory_name);
+		paths.push_back(sprites_directory_name);
+	}
+	else if (ordering == SPRITE)
+	{
+		paths.push_back(sprites_directory_name);
+		paths.push_back(patches_directory_name);
+		paths.push_back(textures_directory_name);
+		paths.push_back(flats_directory_name);
+		paths.push_back(global_directory_name);
+	}
+
+	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
+	{
+		const ResourcePath& path = *it;
+		const ResourceId res_id = Res_GetResourceId(name, path);
+		if (res_id != ResourceId::INVALID_ID)
+			return res_id;
+	}
+
+	return ResourceId::INVALID_ID;
+}
 
 
-	return res_id;
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(ResourceId res_id, int tag)
+{
+	if (res_id != ResourceId::INVALID_ID)
+	{
+		return static_cast<Texture*>(Res_LoadResource(res_id, tag));
+	}
+	else
+	{
+		// TODO: return invalid texture
+		return static_cast<Texture*>(NULL);
+	}
+}
+
+
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag)
+{
+	if (directory == textures_directory_name)
+		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, WALL), tag);
+	if (directory == flats_directory_name)
+		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, FLOOR), tag);
+	if (directory == patches_directory_name)
+		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, PATCH), tag);
+	if (directory == sprites_directory_name)
+		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, SPRITE), tag);
+	Printf(PRINT_HIGH, "Res_CacheTexture of unknown type %s", directory.c_str());
+	return NULL;
+}
+
+
+//
+// Res_CachePatch
+//
+// Place-holder function for resolving a patch name to a resource ID and
+// caching and returning that resource's data.
+//
+struct patch_s;
+typedef patch_s patch_t;
+
+const patch_t* Res_CachePatch(const OString& name, int tag)
+{
+	ResourceId res_id = Res_GetTextureResourceId(name, PATCH);
+	return (patch_t*)Res_LoadResource(res_id, tag);
 }
 
 

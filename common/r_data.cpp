@@ -1103,12 +1103,14 @@ void R_PrecacheLevel (void)
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
 
+	/*
 	for (i = numsides - 1; i >= 0; i--)
 	{
 		hitlist[sides[i].toptexture] =
 			hitlist[sides[i].midtexture] =
 			hitlist[sides[i].bottomtexture] = 1;
 	}
+	*/
 
 	// Sky texture is always present.
 	// Note that F_SKY1 is the name used to
@@ -1120,8 +1122,10 @@ void R_PrecacheLevel (void)
 	// [RH] Possibly two sky textures now.
 	// [ML] 5/11/06 - Not anymore!
 
+	/*
 	hitlist[sky1texture] = 1;
 	hitlist[sky2texture] = 1;
+	*/
 
 	for (i = numtextures - 1; i >= 0; i--)
 	{

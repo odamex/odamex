@@ -135,25 +135,311 @@ static void Res_DrawPatchIntoTexture(
 }
 
 
-// ============================================================================
 //
-// RawResourceAccessor class implementations
+// Res_ValidatePatchData
 //
-// ============================================================================
-
-uint32_t RawResourceAccessor::getResourceSize(const ResourceId res_id) const
+// Returns true if the raw patch_t data is valid.
+//
+bool Res_ValidatePatchData(const uint8_t* patch_data, uint32_t patch_size)
 {
-	const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
-	const ResourceContainer* container = mResourceManager->mContainers[container_id];
-	return container->getResourceSize(res_id);
+	if (patch_size > 8)
+	{
+		const int16_t width = LESHORT(*(int16_t*)(patch_data + 0));
+		const int16_t height = LESHORT(*(int16_t*)(patch_data + 2));
+
+		const uint32_t column_table_offset = 8;
+		const uint32_t column_table_length = sizeof(int32_t) * width;
+
+		if (width > 0 && height > 0 && patch_size >= column_table_offset + column_table_length)
+		{
+			const int32_t* column_offset = (const int32_t*)(patch_data + column_table_offset);
+			const int32_t min_column_offset = column_table_offset + column_table_length;
+			const int32_t max_column_offset = patch_size - 4;
+
+			for (int i = 0; i < width; i++, column_offset++)
+				if (*column_offset < min_column_offset || *column_offset > max_column_offset)
+					return false;
+			return true;
+		}
+	}
+	return false;
 }
 
-void RawResourceAccessor::loadResource(const ResourceId res_id, void* data, uint32_t size) const
+
+uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height) const
 {
-	const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
-	const ResourceContainer* container = mResourceManager->mContainers[container_id];
-	container->loadResource(data, res_id, size);
+	uint32_t size = sizeof(Texture);
+	#if CLIENT_APP
+	size += sizeof(palindex_t) * width * height;
+	#endif
+	return size;
 }
+
+
+Texture* BaseTextureLoader::createTexture(void* data, uint16_t width, uint16_t height) const
+{
+	Texture* texture = static_cast<Texture*>(data);
+
+	texture->mWidth = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
+	texture->mHeight = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
+	texture->mWidthBits = Log2(texture->mWidth);
+	texture->mHeightBits = Log2(texture->mHeight);
+	texture->mOffsetX = 0;
+	texture->mOffsetY = 0;
+	texture->mScaleX = FRACUNIT;
+	texture->mScaleY = FRACUNIT;
+	texture->mMasked = false;
+	texture->mMaskColor = 0;
+	texture->mData = NULL;
+
+	#if CLIENT_APP
+	if (width > 0 && height > 0)
+	{
+		// mData follows the header in memory
+		texture->mData = (palindex_t*)(data + sizeof(Texture));
+		memset(texture->mData, texture->mMaskColor, sizeof(palindex_t) * width * height);
+	}
+	#endif
+
+	return texture;
+}
+
+
+//
+// RowMajorTextureLoader::size
+//
+uint32_t RowMajorTextureLoader::size() const
+{
+	return calculateTextureSize(getWidth(), getHeight());
+}
+
+
+//
+// RowMajorTextureLoader::load
+//
+// Loads a raw image resource in row-major format and transposes it to
+// column-major format.
+//
+void RowMajorTextureLoader::load(void* data) const
+{
+	uint16_t width = getWidth();
+	uint16_t height = getHeight();
+	Texture* texture = createTexture(data, width, height);
+
+	#if CLIENT_APP
+	if (width > 0 && height > 0)
+	{
+		uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
+		uint8_t* raw_data = new uint8_t[raw_size];
+		mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
+
+		// convert the row-major raw data to into column-major
+		Res_TransposeImage(texture->mData, raw_data, width, height);
+
+		delete [] raw_data;
+	}
+	#endif
+}
+
+
+//
+// FlatTextureLoader::getWidth
+//
+// Returns the width of the FLAT texture. There is no header and the texture is
+// assumed to be a square.
+//
+// From http://zdoom.org/wiki/Flat:
+// Heretic features a few 64x65 flats, and Hexen a few 64x128 flats. Those
+// were used to "cheat" with the implementation of scrolling effects. ZDoom
+// does not need the same hacks to make flats scroll properly, and therefore
+// ignores the excess pixels in these flats.
+//
+uint16_t FlatTextureLoader::getWidth() const
+{
+	uint32_t size = mRawResourceAccessor->getResourceSize(mResId);
+
+	if (size == sizeof(palindex_t) * 64 * 64)
+		return 64;
+	else if (size == sizeof(palindex_t) * 128 * 128)
+		return 128;
+	else if (size == sizeof(palindex_t) * 256 * 256)
+		return 256;
+	else if (size == sizeof(palindex_t) * 8 * 8)
+		return 8;
+	else if (size == sizeof(palindex_t) * 16 * 16)
+		return 16;
+	else if (size == sizeof(palindex_t) * 32 * 32)
+		return 32;
+	else if (size == sizeof(palindex_t) * 64 * 65)		// Hexen scrolling flat
+		return 64;
+	else if (size == sizeof(palindex_t) * 64 * 128)		// Hexen scrolling flat
+		return 64;
+	else if (size > 0)
+		return (uint16_t)(sqrt(double(size)) / sizeof(palindex_t));
+	return 0;
+}
+
+
+//
+// FlatTextureLoader::getHeight
+//
+// See the comment for FlatTextureLoader::getWidth
+//
+uint16_t FlatTextureLoader::getHeight() const
+{
+	return getWidth();
+}
+
+
+//
+// RawTextureLoader::getWidth
+//
+// All raw image resources should be 320x200. If the resource appears
+// to be non-conformant, return 0.
+//
+uint16_t RawTextureLoader::getWidth() const
+{
+	uint32_t size = mRawResourceAccessor->getResourceSize(mResId);
+	if (size == sizeof(palindex_t) * 320 * 200)
+		return 320;
+	return 0;
+}
+
+
+//
+// RawTextureLoader::getHeight
+//
+// All raw image resources should be 320x200. If the resource appears
+// to be non-conformant, return 0.
+//
+uint16_t RawTextureLoader::getHeight() const
+{
+	uint32_t size = mRawResourceAccessor->getResourceSize(mResId);
+	if (size == sizeof(palindex_t) * 320 * 200)
+		return 200;
+	return 0;
+}
+
+
+//
+// BasePatchTextureLoader::size
+//
+uint32_t BasePatchTextureLoader::size() const
+{
+	// read the patch_t header to extract width & height
+	uint8_t raw_data[4];
+	mRawResourceAccessor->loadResource(mResId, raw_data, 4);
+	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
+	int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
+	return calculateTextureSize(width, height);
+}
+
+
+//
+// BasePatchTextureLoader::load
+//
+void BasePatchTextureLoader::load(void* data) const
+{
+	uint32_t patch_size = mRawResourceAccessor->getResourceSize(mResId);
+	uint8_t* patch_data = new uint8_t[patch_size];
+	mRawResourceAccessor->loadResource(mResId, patch_data, patch_size);
+
+	int16_t width = 0, height = 0, offsetx = 0, offsety = 0;
+	if (Res_ValidatePatchData(patch_data, patch_size))
+	{
+		width = LESHORT(*(int16_t*)(patch_data + 0));
+		height = LESHORT(*(int16_t*)(patch_data + 2));
+		offsetx = LESHORT(*(int16_t*)(patch_data + 4));
+		offsety = LESHORT(*(int16_t*)(patch_data + 6));
+	}
+
+	Texture* texture = createTexture(data, width, height);
+	texture->setOffsetX(offsetx);
+	texture->setOffsetY(offsety);
+
+	#if CLIENT_APP
+	if (width > 0 && height > 0)
+	{
+		Res_DrawPatchIntoTexture(texture, patch_data, patch_size, 0, 0);
+	}
+	#endif
+
+	delete [] patch_data;
+}
+
+
+//
+// CompositeTextureLoader::size
+//
+uint32_t CompositeTextureLoader::size() const
+{
+	return calculateTextureSize(mTexDef.mWidth, mTexDef.mHeight);
+}
+
+
+//
+// CompositeTextureLoader::load
+//
+// Composes a texture from one or more patch image resources.
+//
+void CompositeTextureLoader::load(void* data) const
+{
+	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight);
+
+	// Handle ZDoom scaling extensions
+	if (mTexDef.mScaleX != 0)
+		texture->mScaleX = mTexDef.mScaleX << (FRACBITS - 3);
+	if (mTexDef.mScaleY != 0)
+		texture->mScaleY = mTexDef.mScaleY << (FRACBITS - 3);
+
+	#if CLIENT_APP
+	for (CompositeTextureDefinition::PatchDefList::const_iterator it = mTexDef.mPatchDefs.begin(); it != mTexDef.mPatchDefs.end(); ++it)
+	{
+		const CompositeTextureDefinition::PatchDef& patch_def = *it;
+
+		if (patch_def.mResId != ResourceId::INVALID_ID)
+		{
+
+			uint32_t patch_size = mRawResourceAccessor->getResourceSize(patch_def.mResId);
+			uint8_t* patch_data = new uint8_t[patch_size];
+			mRawResourceAccessor->loadResource(patch_def.mResId, patch_data, patch_size);
+
+			if (Res_ValidatePatchData(patch_data, patch_size))
+			{
+				Res_DrawPatchIntoTexture(texture, patch_data, patch_size, patch_def.mOriginX, patch_def.mOriginY);
+			}
+
+			delete [] patch_data;
+		}
+	}
+	#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if 0
 
 
 // ============================================================================
@@ -458,7 +744,6 @@ bool PatchTextureLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_si
 	return false;
 }
 
-#define USE_TEXTURES 1
 
 //
 // PatchTextureLoader::size
@@ -468,22 +753,12 @@ bool PatchTextureLoader::validateHelper(const uint8_t* raw_data, uint32_t raw_si
 //
 uint32_t PatchTextureLoader::size(const ResourceId res_id) const
 {
-	#ifdef USE_TEXTURES
 	// read the patch_t header to extract width & height
 	uint8_t raw_data[4];
 	mRawResourceAccessor->loadResource(res_id, raw_data, 4);
 	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
 	int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
 	return calculateTextureSize(width, height);
-
-	#else
-	uint32_t raw_size = mRawResourceAccessor->getResourceSize(res_id);
-	uint8_t* raw_data = new uint8_t[raw_size];
-	mRawResourceAccessor->loadResource(res_id, raw_data, raw_size);
-	size_t resource_size = R_CalculateNewPatchSize((patch_t*)raw_data, raw_size);
-	delete [] raw_data;
-	return resource_size;
-	#endif
 }
 
 
@@ -494,7 +769,6 @@ uint32_t PatchTextureLoader::size(const ResourceId res_id) const
 //
 void PatchTextureLoader::load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const
 {
-	#ifdef USE_TEXTURES
 	uint32_t raw_size = mRawResourceAccessor->getResourceSize(res_id);
 	uint8_t* raw_data = new uint8_t[raw_size]; 
 	mRawResourceAccessor->loadResource(res_id, raw_data, raw_size);
@@ -515,28 +789,6 @@ void PatchTextureLoader::load(const ResourceId res_id, void* data, palindex_t ma
 	#endif	// CLIENT_APP
 
 	delete [] raw_data;
-	
-	
-	#else
-	uint32_t raw_size = mRawResourceAccessor->getResourceSize(res_id);
-	uint8_t* raw_data = new uint8_t[raw_size];
-	mRawResourceAccessor->loadResource(res_id, raw_data, raw_size);
-
-	bool valid = validateHelper(raw_data, raw_size);
-
-	if (valid)
-	{
-		// valid patch
-		R_ConvertPatch((patch_t*)data, (patch_t*)raw_data);
-	}
-	else
-	{
-		// invalid patch - just create a header with width = 0, height = 0
-		memset(data, 0, sizeof(patch_t));
-	}
-
-	delete [] raw_data;
-	#endif
 } 
 
 
@@ -1123,3 +1375,5 @@ TextureLoader* TextureLoaderFactory::createTextureLoader(
 
 	return NULL;
 }
+
+#endif // if 0

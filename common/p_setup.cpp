@@ -327,8 +327,8 @@ static void P_LoadSectors(const OString& mapname)
 		ss->floorheight = LESHORT(ms->floorheight) << FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight) << FRACBITS;
 
-		ss->floor_res_id = Res_GetTextureResourceId(OString(ms->floorpic, 8), flats_directory_name);
-		ss->ceiling_res_id = Res_GetTextureResourceId(OString(ms->ceilingpic, 8), flats_directory_name); 
+		ss->floor_res_id = Res_GetTextureResourceId(OString(ms->floorpic, 8), FLOOR);
+		ss->ceiling_res_id = Res_GetTextureResourceId(OString(ms->ceilingpic, 8), FLOOR); 
 
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		if (HasBehavior)
@@ -944,31 +944,31 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	// for each of the texture tiers (bottom, middle, and top)
 	for (int i = 0; i < 3; i++)
 	{
-		short* texture_num;
+		ResourceId* res_id_ptr = NULL;
 		argb_t* blend_color;
 		const char* texture_name;
 
 		if (i == 0)				// bottom textures
 		{
-			texture_num = &sd->bottomtexture;
+			res_id_ptr = &sd->bottomtexture;
 			blend_color = &sec->bottommap;
 			texture_name = msd->bottomtexture;
 		}
 		else if (i == 1)		// mid textures
 		{
-			texture_num = &sd->midtexture;
+			res_id_ptr = &sd->midtexture;
 			blend_color = &sec->midmap;
 			texture_name = msd->midtexture;
 		}
 		else					// top textures
 		{
-			texture_num = &sd->toptexture;
+			res_id_ptr = &sd->toptexture;
 			blend_color = &sec->topmap;
 			texture_name = msd->toptexture;
 		}
 
 		*blend_color = argb_t(0, 255, 255, 255);
-		*texture_num = 0;
+		*res_id_ptr = ResourceId::INVALID_ID;
 
 		int colormap_index = R_ColormapNumForName(texture_name);
 		if (colormap_index != 0)
@@ -977,10 +977,9 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 		}
 		else
 		{
-			*texture_num = R_CheckTextureNumForName(texture_name);
-			if (*texture_num == -1)
+			*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(texture_name, 8), WALL);
+			if (*res_id_ptr == ResourceId::INVALID_ID)
 			{
-				*texture_num = 0;
 				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
 					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
 				else
@@ -991,15 +990,16 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 }
 
 
-static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
+static void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
 {
-	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
+	*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(name, 8), WALL);
+	if (*res_id_ptr == ResourceId::INVALID_ID)
+	{
 		char name2[9];
 		char *stop;
-		strncpy (name2, name, 8);
+		strncpy(name2, name, 8);
 		name2[8] = 0;
-		*color = strtoul (name2, &stop, 16);
-		*texture = 0;
+		*color = strtoul(name2, &stop, 16);
 	}
 }
 
@@ -1035,19 +1035,19 @@ static void P_LoadSideDefs2(const OString& mapname)
 
 		switch (sd->special)
 		{
-		  case Transfer_Heights:	// variable colormap via 242 linedef
-			  // [RH] The colormap num we get here isn't really a colormap,
-			  //	  but a packed ARGB word for blending, so we also allow
-			  //	  the blend to be specified directly by the texture names
-			  //	  instead of figuring something out from the colormap.
-			P_SetTransferHeightBlends(sd, msd);
-			break;
+			case Transfer_Heights:	// variable colormap via 242 linedef
+				// [RH] The colormap num we get here isn't really a colormap,
+				//	  but a packed ARGB word for blending, so we also allow
+				//	  the blend to be specified directly by the texture names
+				//	  instead of figuring something out from the colormap.
+				P_SetTransferHeightBlends(sd, msd);
+				break;
 
-		  case Static_Init:
-			// [RH] Set sector color and fog
-			// upper "texture" is light color
-			// lower "texture" is fog color
+		  	case Static_Init:
 			{
+				// [RH] Set sector color and fog
+				// upper "texture" is light color
+				// lower "texture" is fog color
 				unsigned int color = 0xffffff, fog = 0x000000;
 
 				SetTextureNoErr (&sd->bottomtexture, &fog, msd->bottomtexture);
@@ -1066,14 +1066,16 @@ static void P_LoadSideDefs2(const OString& mapname)
 							sectors[s].colormap = colormap;
 					}
 				}
+				break;
 			}
-			break;
 
-		  default:			// normal cases
-			sd->midtexture = R_TextureNumForName(msd->midtexture);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
+			default:			// normal cases
+			{
+				sd->midtexture = Res_GetTextureResourceId(OStringToUpper(msd->midtexture, 8), WALL);
+				sd->toptexture = Res_GetTextureResourceId(OStringToUpper(msd->toptexture, 8), WALL);
+				sd->bottomtexture = Res_GetTextureResourceId(OStringToUpper(msd->bottomtexture, 8), WALL);
+				break;
+			}
 		}
 	}
 

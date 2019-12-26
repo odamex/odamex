@@ -27,6 +27,7 @@
 
 #include "doomtype.h"
 #include "m_fixed.h"
+#include "z_zone.h"
 
 #include <vector>
 
@@ -38,6 +39,7 @@
 
 class Texture;
 class TextureManager;
+class ResourceLoader;
 class ResourceManager;
 class RawResourceAccessor;
 
@@ -47,6 +49,13 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 
 void Res_TransposeImage(byte* dest, const byte* source, int width, int height);
 
+
+enum TextureSearchOrdering {
+	WALL,
+	FLOOR,
+	SPRITE,
+	PATCH,
+};
 
 // ============================================================================
 //
@@ -102,7 +111,13 @@ public:
 
 	void setOffsetY(int value)
 	{	mOffsetY = value;	}
+
+	fixed_t getScaledHeight() const
+	{	return FixedMul(mHeight << FRACBITS, mScaleY);	}
 	
+	fixed_t getScaledWidth() const
+	{	return FixedMul(mWidth << FRACBITS, mScaleX);	}
+
 	static uint32_t calculateSize(int width, int height);
 
 	const palindex_t* getColumn(int col) const
@@ -179,28 +194,24 @@ struct CompositeTextureDefinition
 	uint8_t			mScaleX;
 	uint8_t			mScaleY;
 
-	struct texdefpatch_t
+	struct PatchDef
 	{
 		int 		mOriginX;
 		int 		mOriginY;
 		ResourceId	mResId;
 	};
 
-	int16_t			mPatchCount;
-	texdefpatch_t*	mPatches;
+	typedef std::vector<PatchDef> PatchDefList;
+	PatchDefList mPatchDefs;
 
 	CompositeTextureDefinition() :
-		mWidth(0), mHeight(0), mScaleX(0), mScaleY(0),
-		mPatchCount(0), mPatches(NULL)
+		mWidth(0), mHeight(0), mScaleX(0), mScaleY(0)
 	{ }
 
 	~CompositeTextureDefinition()
-	{
-		delete [] mPatches;
-	}
+	{ }
 
-	CompositeTextureDefinition(const CompositeTextureDefinition& other) :
-		mPatches(NULL)
+	CompositeTextureDefinition(const CompositeTextureDefinition& other) 
 	{
 		operator=(other);
 	}
@@ -214,121 +225,11 @@ struct CompositeTextureDefinition
 			mScaleX = other.mScaleX;
 			mScaleY = other.mScaleY;
 
-			delete [] mPatches;
-			mPatchCount = other.mPatchCount;
-			mPatches = new texdefpatch_t[mPatchCount];
-			for (int i = 0; i < mPatchCount; i++)
-			{
-				mPatches[i].mOriginX = other.mPatches[i].mOriginX;
-				mPatches[i].mOriginY = other.mPatches[i].mOriginY;
-				mPatches[i].mResId = other.mPatches[i].mResId;
-			}
+			mPatchDefs = other.mPatchDefs;
 		}
 		return *this;
 	}
 };
-
-
-// ============================================================================
-//
-// CompositeTextureDefinitionParser
-//
-// ============================================================================
-
-class CompositeTextureDefinitionParser
-{
-public:
-	CompositeTextureDefinitionParser(
-			const RawResourceAccessor* accessor,
-			const ResourceNameTranslator* translator);
-
-	const CompositeTextureDefinition* getByName(const OString& name) const;
-
-private:
-	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceNameTranslator* mNameTranslator;
-
-	typedef OHashTable<OString, CompositeTextureDefinition> TextureDefinitionTable;
-	TextureDefinitionTable mTextureDefinitionLookup;
-
-	ResourceIdList buildPNamesLookup();
-	void addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup);
-
-public:
-	typedef TextureDefinitionTable::iterator iterator;
-	typedef TextureDefinitionTable::const_iterator const_iterator;
-};
-
-
-
-
-class CompositeTextureContainer : public ResourceContainer
-{
-public:
-	virtual ~CompositeTextureContainer() {}
-
-	virtual const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
-
-	virtual uint32_t getResourceCount() const
-	{
-		return mTextureDefinitionLookup.size();
-	}
-
-	virtual uint32_t getResourceSize(const ResourceId res_id) const
-	{
-		return sizeof(CompositeTextureDefinition);
-	}
-
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const
-	{
-		const CompositeTextureDefinition* texture_def = getByResourceId(res_id);
-		if (texture_def)
-		{
-			size = std::min<uint32_t>(size, sizeof(*texture_def));
-			memcpy(data, (void*)texture_def, size);
-			return size;
-		}
-		return 0;
-	}
-
-private:
-	ResourceContainerId			mResourceContainerId;
-
-	const RawResourceAccessor* mRawResourceAccessor;
-	const ResourceNameTranslator* mNameTranslator;
-
-	typedef OHashTable<OString, CompositeTextureDefinition> TextureDefinitionTable;
-	TextureDefinitionTable mTextureDefinitionLookup;
-
-	typedef OHashTable<ResourceId, OString> TextureNameTable;
-	TextureNameTable mTextureNameLookup;
-
-	ResourceIdList buildPNamesLookup();
-	void addTexturesFromDefinitionLump(const ResourceId res_id, const ResourceIdList& pnames_lookup);
-
-	const CompositeTextureDefinition* getByName(const OString& name) const
-	{
-		TextureDefinitionTable::const_iterator it = mTextureDefinitionLookup.find(name);
-		if (it != mTextureDefinitionLookup.end())
-			return &(it->second);
-		return NULL;
-	}
-
-	const CompositeTextureDefinition* getByResourceId(const ResourceId res_id) const
-	{
-		TextureNameTable::const_iterator it = mTextureNameLookup.find(res_id);
-		if (it != mTextureNameLookup.end())
-			return getByName(it->second);
-		return NULL;
-	}
-};
-
-
-
-
 
 
 // ============================================================================
@@ -363,7 +264,7 @@ public:
 
 	virtual uint32_t getResourceCount() const
 	{
-		return mResourceIdLookup.size();
+		return mResourceLoaderLookup.size();
 	}
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
@@ -371,42 +272,37 @@ public:
 
 	void updateAnimatedTextures();
 
-	const Texture* getTexture(const ResourceId res_id);
-
 
 private:
 	// initialization routines
 	void clear();
-	void addTextureDirectories(ResourceManager* manager); 
 	void readAnimDefLump();
 	void readAnimatedLump();
 
 	void analyzePalette(palindex_t* colormap, palindex_t* maskcolor) const;
 
-	void registerTextureResources(ResourceManager* manager);
+
+	void addCompositeTextureResources(ResourceManager* manager);
+
 	void addResourcesToManager(ResourceManager* manager);
-	void addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir, const TextureLoader* loader);
+	void addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir);
 	const ResourceId getRawResourceId(const ResourceId res_id) const;
-	const TextureLoader* getTextureLoader(const ResourceId res_id) const;
+
+	const ResourceIdList buildPNamesLookup(const OString& lump_name) const;
+	CompositeTextureDefinition buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const;
+
+
+
+	typedef OHashTable<ResourceId, ResourceLoader*> ResourceLoaderLookupTable;
+	ResourceLoaderLookupTable		mResourceLoaderLookup;
+
+	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
 
 
 	typedef std::vector<const Texture*> TextureList;
 	TextureList				mTextures;
 
 	ResourceManager*				mResourceManager;
-	mutable TextureLoader*			mFlatTextureLoader;
-	mutable TextureLoader*			mPatchTextureLoader;
-	mutable TextureLoader*			mSpriteTextureLoader;
-
-
-	// Hash table for resolving a Texture resource ID to a raw resource ID
-	typedef OHashTable<ResourceId, ResourceId> ResourceIdLookupTable;
-	ResourceIdLookupTable		mResourceIdLookup;
-
-
-	// Hash table for resolving a Texture resource ID to a ResourceLoader instance
-	typedef OHashTable<ResourceId, const TextureLoader*> TextureLoaderLookupTable;
-	TextureLoaderLookupTable	mTextureLoaderLookup;
 
 	// animated textures
 	struct anim_t
@@ -435,5 +331,26 @@ private:
 	mutable palindex_t			mMaskColor;
 	mutable palindex_t*			mMaskColorMap;
 };
+
+
+
+
+const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering);
+
+//
+// Res_CachePatch
+//
+// Place-holder function for resolving a patch name to a resource ID and
+// caching and returning that resource's data.
+//
+const patch_t* Res_CachePatch(const OString& name, int tag = PU_CACHE);
+
+
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(ResourceId res_id, int tag = PU_CACHE);
+const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag = PU_CACHE);
+
 
 #endif // __RES_TEXTURE_H__

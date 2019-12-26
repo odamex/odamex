@@ -481,8 +481,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	}
 
 	// TODO: change from negonearray to actual top of sprite
-	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,
-			spriteposts, SpriteColumnBlaster, false, 0);
+	//R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
 
 	R_ResetDrawFuncs();
 }

@@ -51,12 +51,12 @@ public:
 			releaseData(ResourceId(i));
 	}
 
-	void cacheData(const ResourceId res_id, const ResourceLoader* loader, int tag = PU_STATIC)
+	void cacheData(const ResourceId res_id, void** data, uint32_t size, int tag = PU_STATIC)
 	{
 		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
-		assert(loader != NULL);
-		mData[res_id] = allocMemory(loader->size(res_id), tag, &(mData[res_id]));
-		loader->load(res_id, mData[res_id]);
+		assert(data != NULL);
+		mData[res_id] = allocMemory(size, tag, &(mData[res_id]));
+		*data = mData[res_id];
 	}
 
 	const void* getData(const ResourceId res_id) const

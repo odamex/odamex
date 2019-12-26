@@ -9,36 +9,10 @@
 #include "doomtype.h"
 #include "m_ostring.h"
 #include "resources/res_resourceid.h"
+#include "resources/res_texture.h"
 
 class ResourcePath;
-class Texture;
-class CompositeTextureDefinition;
-class CompositeTextureDefinitionParser;
-class ResourceManager;
-class ResourceNameTranslator;
-
-//
-// RawResourceAccessor class
-//
-// Provides access to the resources without post-processing. Instances of
-// this class are typically used by the ResourceLoader hierarchy to read the
-// raw resource data and then perform their own post-processign.
-//
-class RawResourceAccessor
-{
-public:
-	RawResourceAccessor(const ResourceManager* manager) :
-		mResourceManager(manager)
-	{ }
-
-	uint32_t getResourceSize(const ResourceId res_id) const;
-
-	void loadResource(const ResourceId res_id, void* data, uint32_t size) const;
-
-private:
-	const ResourceManager*		mResourceManager;
-};
-
+class RawResourceAccessor;
 
 // ============================================================================
 //
@@ -54,37 +28,195 @@ private:
 class ResourceLoader
 {
 public:
+	ResourceLoader(const RawResourceAccessor* accessor) :
+		mRawResourceAccessor(accessor)
+	{}
+
 	virtual ~ResourceLoader() {}
 
-	virtual bool validate(const ResourceId res_id) const
-	{	return true;	}
+	virtual bool validate() const
+	{
+		return true;
+	}
 
-	virtual uint32_t size(const ResourceId res_id) const = 0;
-	virtual void load(const ResourceId res_id, void* data) const = 0;
+	virtual uint32_t size() const = 0;
+	virtual void load(void* data) const = 0;
+
+protected:
+	const RawResourceAccessor*		mRawResourceAccessor;
 };
 
 
 // ---------------------------------------------------------------------------
-// DefaultResourceLoader class interface
+// GenericResourceLoader class interface
 //
 // Generic resource loading functionality. Simply reads raw data and returns
 // a pointer to the cached data.
 // ---------------------------------------------------------------------------
 
-class DefaultResourceLoader : public ResourceLoader
+class GenericResourceLoader : public ResourceLoader
 {
 public:
-	DefaultResourceLoader(const RawResourceAccessor* accessor);
-	virtual ~DefaultResourceLoader() { }
+	GenericResourceLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
+		ResourceLoader(accessor),
+		mResId(res_id)
+	{}
 
-	virtual uint32_t size(const ResourceId res_id) const;
-	virtual void load(const ResourceId res_id, void* data) const;
+	virtual ~GenericResourceLoader() {}
 
-private:
-	const RawResourceAccessor*	mRawResourceAccessor;
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+protected:
+	const ResourceId			mResId;
 };
 
 
+
+class BaseTextureLoader : public ResourceLoader
+{
+public:
+	BaseTextureLoader(const RawResourceAccessor* accessor) :
+		ResourceLoader(accessor)
+	{}
+
+	virtual ~BaseTextureLoader() {}
+	
+protected:
+	uint32_t calculateTextureSize(uint16_t width, uint16_t height) const;
+	Texture* createTexture(void* data, uint16_t width, uint16_t height) const;
+};
+
+
+//
+// RowMajorTextureLoader
+//
+// Abstract base class for loading an image from a headerless row-major
+// image resource and converting it to a Texture.
+//
+class RowMajorTextureLoader : public BaseTextureLoader
+{
+public:
+	RowMajorTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
+		BaseTextureLoader(accessor),
+		mResId(res_id)
+	{}
+
+	virtual ~RowMajorTextureLoader() {}
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+protected:
+	virtual uint16_t getWidth() const = 0;
+	virtual uint16_t getHeight() const = 0;
+
+	const ResourceId	mResId;
+};
+
+
+//
+// FlatTextureLoader
+//
+// Loads a Flat image resource and converts it to a Texture.
+// Flat image resources are expected to be square in dimensions and each
+// dimension should be a power-of-two. Certain exceptions to this are
+// also handled.
+//
+class FlatTextureLoader : public RowMajorTextureLoader
+{
+public:
+	FlatTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
+		RowMajorTextureLoader(accessor, res_id)
+	{}
+
+	virtual ~FlatTextureLoader() {}
+
+protected:
+	virtual uint16_t getWidth() const;
+	virtual uint16_t getHeight() const;
+};
+
+
+//
+// RawTextureLoader
+//
+// Loads a raw full-screen (320x200) image resource and converts it to a Texture.
+//
+class RawTextureLoader : public RowMajorTextureLoader
+{
+public:
+	RawTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
+		RowMajorTextureLoader(accessor, res_id)
+	{}
+
+	virtual ~RawTextureLoader() {}
+
+protected:
+	virtual uint16_t getWidth() const;
+	virtual uint16_t getHeight() const;
+};
+
+
+//
+// BasePatchTextureLoader
+//
+class BasePatchTextureLoader : public BaseTextureLoader
+{
+public:
+	BasePatchTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
+		BaseTextureLoader(accessor),
+		mResId(res_id)
+	{}
+
+	virtual ~BasePatchTextureLoader() {}
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+protected:
+	const ResourceId	mResId;
+};
+
+
+//
+// CompositeTextureLoader
+//
+//
+class CompositeTextureLoader : public BaseTextureLoader
+{
+public:
+	CompositeTextureLoader(const RawResourceAccessor* accessor, const CompositeTextureDefinition& texdef) :
+		BaseTextureLoader(accessor),
+		mTexDef(texdef)
+	{}
+
+	virtual ~CompositeTextureLoader() {}
+
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+protected:
+	const CompositeTextureDefinition	mTexDef;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if 0
 
 
 
@@ -289,5 +421,6 @@ private:
 	const CompositeTextureDefinitionParser* mCompositeTextureDefinitions;
 };
 
+#endif // if 0
 
 #endif	// __RES_RESOURCELOADER_H__

@@ -613,8 +613,8 @@ void P_InitPicAnims (void)
 			const OString start_name((char*)anim_p + 10, 8);
 			const OString end_name((char*)anim_p + 1, 8);
 
-			const ResourceId start_res_id = Res_GetTextureResourceId(start_name, flats_directory_name);
-			const ResourceId end_res_id = Res_GetTextureResourceId(end_name, flats_directory_name);
+			const ResourceId start_res_id = Res_GetTextureResourceId(start_name, FLOOR);
+			const ResourceId end_res_id = Res_GetTextureResourceId(end_name, FLOOR);
 
 			if (start_res_id == ResourceId::INVALID_ID || end_res_id == ResourceId::INVALID_ID)
 				continue;

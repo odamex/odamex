@@ -394,34 +394,4 @@ private:
 	ContainerDirectory* readWadDirectory();
 };
 
-
-// ============================================================================
-//
-// CompositeTextureResourceContainer abstract base class interface
-//
-// ============================================================================
-
-class CompositeTextureResourceContainer : public ResourceContainer
-{
-public:
-	CompositeTextureResourceContainer(
-			const ResourceContainerId& container_id,
-			ResourceManager* manager);
-	
-	virtual ~CompositeTextureResourceContainer();
-
-	virtual uint32_t getResourceCount() const;
-
-	virtual uint32_t getResourceSize(const ResourceId res_id) const;
-		
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
-
-private:
-	void cleanup();
-	size_t countTexturesInDefinition(ResourceId res_id);
-	void addTexturesFromDefinition(ResourceId res_id);
-
-	ContainerDirectory*		mDirectory;
-};
-
 #endif	// __RES_CONTAINER_H__

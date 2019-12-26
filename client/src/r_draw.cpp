@@ -648,32 +648,17 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 	if (count <= 0)
 		return;
 	
-	const int texture_width_bits = dspan.texture_width_bits;
-	const int texture_height_bits = dspan.texture_height_bits;
-
-	const unsigned int umask = ((1 << texture_width_bits) - 1) << texture_height_bits;
-	const unsigned int vmask = (1 << texture_height_bits) - 1;
-	// TODO: don't shift the values of ufrac and vfrac by 10 in R_MapLevelPlane
-	const int ushift = FRACBITS - texture_height_bits + 10;
-	const int vshift = FRACBITS + 10;
-
-	dsfixed_t ufrac = dspan.ufrac;
-	dsfixed_t vfrac = dspan.vfrac;
-	dsfixed_t ustep = dspan.ustep;
-	dsfixed_t vstep = dspan.vstep;
+	dsfixed_t ufrac = dspan.ufrac, vfrac = dspan.vfrac;
+	dsfixed_t ustep = dspan.ustep, vstep = dspan.vstep;
+	const int umask = dspan.umask, vmask = dspan.vmask;
+	const int ushift = dspan.ushift, vshift = dspan.vshift;
 
 	COLORFUNC colorfunc(drawspan);
 
 	do {
-		// Current texture index in u,v.
-		const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
-
-		// Lookup pixel from flat texture tile,
-		//  re-index using light/colormap.
+		const unsigned int spot = ((vfrac >> vshift) & vmask) | ((ufrac >> ushift) & umask); 
 		colorfunc(source[spot], dest);
 		dest++;
-
-		// Next step in u,v.
 		ufrac += ustep;
 		vfrac += vstep;
 	} while (--count);
@@ -718,6 +703,9 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 	shaderef_t colormap;
 	COLORFUNC colorfunc(drawspan);
 
+	const int umask = dspan.umask, vmask = dspan.vmask;
+	const int ushift = dspan.ushift, vshift = dspan.vshift;
+
 	while (count >= SPANJUMP)
 	{
 		const float mulstart = 65536.0f / id;
@@ -744,7 +732,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		{
 			colormap = drawspan.slopelighting[ltindex++];
 
-			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
+			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
 			colorfunc(source[spot], dest);
 			dest++;
 			ufrac += ustep;
@@ -780,7 +768,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		{
 			colormap = drawspan.slopelighting[ltindex++];
 
-			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
+			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
 			colorfunc(source[spot], dest);
 			dest++;
 			ufrac += ustep;

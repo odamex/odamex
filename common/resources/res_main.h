@@ -46,6 +46,7 @@ class FileAccessor;
 class ContainerDirectory;
 class ResourceCache;
 class ResourceLoader;
+class RawResourceAccessor;
 
 
 // Default directory names for ZDoom zipped resource files.
@@ -69,6 +70,34 @@ static const ResourcePath voxels_directory_name("/VOXELS/");
 
 bool Res_IsWadFile(const OString& filename);
 bool Res_IsDehackedFile(const OString& filename);
+
+
+// ============================================================================
+//
+// RawResourceAccessor class interface
+//
+// ============================================================================
+//
+// Provides access to the resources without post-processing. Instances of
+// this class are typically used by the ResourceLoader hierarchy to read the
+// raw resource data and then perform their own post-processign.
+//
+
+class RawResourceAccessor
+{
+public:
+	RawResourceAccessor(const ResourceManager* manager) :
+		mResourceManager(manager)
+	{ }
+
+	uint32_t getResourceSize(const ResourceId res_id) const;
+
+	void loadResource(const ResourceId res_id, void* data, uint32_t size) const;
+
+private:
+	const ResourceManager*		mResourceManager;
+};
+
 
 
 // ============================================================================
@@ -100,7 +129,7 @@ public:
 
 	void closeAllResourceContainers();
 
-	const ResourceId addResource(const ResourcePath& path, const ResourceContainer* container);
+	const ResourceId addResource(const ResourcePath& path, const ResourceContainer* container, const ResourceLoader* loader=NULL);
 
 	bool validateResourceId(const ResourceId res_id) const
 	{
@@ -255,8 +284,6 @@ const ResourceId Res_GetResourceId(const ResourcePath& path);
 
 const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory);
 
-const ResourceId Res_GetTextureResourceId(const OString& name, const ResourcePath& directory);
-
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 
 const OString& Res_GetResourceName(const ResourceId res_id);
@@ -316,44 +343,6 @@ static inline void Res_ReleaseResource(const OString& name)
 bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 
-
-//
-// Res_CachePatch
-//
-// Place-holder function for resolving a patch name to a resource ID and
-// caching and returning that resource's data.
-//
-struct patch_s;
-typedef patch_s patch_t;
-static inline const patch_t* Res_CachePatch(const OString& name, int tag = PU_CACHE)
-{
-	// ResourceId res_id = Res_GetResourceId(name, patches_directory_name);
-	ResourceId res_id = Res_GetTextureResourceId(name, patches_directory_name);
-	return (patch_t*)Res_LoadResource(res_id, tag);
-}
-
-// ----------------------------------------------------------------------------
-// Res_CacheTexture
-// ----------------------------------------------------------------------------
-class Texture;
-
-static inline const Texture* Res_CacheTexture(ResourceId res_id, int tag = PU_CACHE)
-{
-	if (res_id != ResourceId::INVALID_ID)
-	{
-		return static_cast<Texture*>(Res_LoadResource(res_id, tag));
-	}
-	else
-	{
-		// TODO: return invalid texture
-		return static_cast<Texture*>(NULL);
-	}
-}
-
-static inline const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag = PU_CACHE)
-{
-	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, directory), tag);
-}
 
 
 #endif	// __RES_MAIN_H__

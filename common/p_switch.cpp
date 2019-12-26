@@ -36,6 +36,7 @@
 #include "z_zone.h"
 #include "w_wad.h"
 #include "gi.h"
+#include "resources/res_main.h"
 
 EXTERN_CVAR(co_zdoomsound)
 
@@ -217,26 +218,26 @@ P_ChangeSwitchTexture
 
 	for (i = 0; i < numswitches*2; i++)
 	{
-		short *texture = NULL;
+		ResourceId* res_id_ptr = NULL;
 		DActiveButton::EWhere where = (DActiveButton::EWhere)0;
 
 		if (switchlist[i] == texTop)
 		{
-			texture = &sides[line->sidenum[0]].toptexture;
+			res_id_ptr = &sides[line->sidenum[0]].toptexture;
 			where = DActiveButton::BUTTON_Top;
 		}
 		else if (switchlist[i] == texBot)
 		{
-			texture = &sides[line->sidenum[0]].bottomtexture;
+			res_id_ptr = &sides[line->sidenum[0]].bottomtexture;
 			where = DActiveButton::BUTTON_Bottom;
 		}
 		else if (switchlist[i] == texMid)
 		{
-			texture = &sides[line->sidenum[0]].midtexture;
+			res_id_ptr = &sides[line->sidenum[0]].midtexture;
 			where = DActiveButton::BUTTON_Middle;
 		}
 
-		if (texture)
+		if (res_id_ptr)
 		{
 			// [RH] The original code played the sound at buttonlist->soundorg,
 			//		which wasn't necessarily anywhere near the switch if
@@ -257,7 +258,7 @@ P_ChangeSwitchTexture
 				S_Sound (CHAN_BODY, sound, 1, ATTN_NONE);
 			}
 
-			*texture = (short)switchlist[i^1];
+			*res_id_ptr = switchlist[i^1];
 			if (useAgain)
 				P_StartButton (line, where, switchlist[i], BUTTONTIME, x, y);
 			break;

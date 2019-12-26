@@ -257,9 +257,9 @@ struct side_s
 
     // Texture indices.
     // We do not maintain names here.
-    short	toptexture;
-    short	bottomtexture;
-    short	midtexture;
+    ResourceId	toptexture;
+    ResourceId	bottomtexture;
+    ResourceId	midtexture;
 
     // Sector the SideDef is facing.
     sector_t*	sector;
