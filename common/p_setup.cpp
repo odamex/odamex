@@ -1847,7 +1847,13 @@ CVAR_FUNC_IMPL(sv_timelimit)
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
+	if (sv_gametype == GM_COOP && var < 10) {
+		var.Set(10.0);	// Force to 10 seconds minimum
+	} else if (var < 1) {
+		var.RestoreDefault();
+	}
+
+	level.inttimeleft = var;
 }
 
 
