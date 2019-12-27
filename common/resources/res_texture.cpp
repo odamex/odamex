@@ -384,9 +384,9 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 		if (dir == flats_directory_name)
 			loader = new FlatTextureLoader(accessor, raw_res_id);
 		else if (dir == patches_directory_name)
-			loader = new BasePatchTextureLoader(accessor, raw_res_id);
+			loader = new PatchTextureLoader(accessor, raw_res_id);
 		else if (dir == sprites_directory_name)
-			loader = new BasePatchTextureLoader(accessor, raw_res_id);
+			loader = new PatchTextureLoader(accessor, raw_res_id);
 
 		const ResourceId res_id = manager->addResource(path, this, loader);
 
@@ -886,8 +886,6 @@ void TextureManager::updateAnimatedTextures()
 // Res_GetTextureResourceId
 //
 // Returns the ResourceId for the texture that matches the supplied name.
-//
-// TODO: USE THIS LOGIC TO INSTANTIATE A ResourceLoader INSTANCE
 //
 // NOTE: Vanilla Doom considered any sidedef whose texture starts with "-"
 // (such as "-FLAT-") to imply no texture. ZDoom changes this behavior to 
