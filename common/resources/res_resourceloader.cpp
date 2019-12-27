@@ -66,8 +66,8 @@ static void Res_DrawPatchIntoTexture(
 	if (lump_length < 8)		// long enough for header data?
 		return;
 
-	int texwidth = texture->getWidth();
-	int texheight = texture->getHeight();
+	int texwidth = texture->mWidth;
+	int texheight = texture->mHeight;
 	int16_t patchwidth = LESHORT(*(int16_t*)(lump_data + 0));
 	int16_t patchheight = LESHORT(*(int16_t*)(lump_data + 2));
 
@@ -114,7 +114,7 @@ static void Res_DrawPatchIntoTexture(
 
 			if (y1 <= y2)
 			{
-				palindex_t* dest = texture->getData() + texheight * x + y1;
+				palindex_t* dest = texture->mData + texheight * x + y1;
 				const palindex_t* source = post + 3;
 				memcpy(dest, source, y2 - y1 + 1);
 			}
@@ -158,11 +158,7 @@ bool Res_ValidatePatchData(const uint8_t* patch_data, uint32_t patch_size)
 
 uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height) const
 {
-	uint32_t size = sizeof(Texture);
-	#if CLIENT_APP
-	size += sizeof(palindex_t) * width * height;
-	#endif
-	return size;
+	return Texture::calculateSize(width, height);
 }
 
 
@@ -178,7 +174,6 @@ Texture* BaseTextureLoader::createTexture(void* data, uint16_t width, uint16_t h
 	texture->mOffsetY = 0;
 	texture->mScaleX = FRACUNIT;
 	texture->mScaleY = FRACUNIT;
-	texture->mMasked = false;
 	texture->mMaskColor = 0;
 	texture->mData = NULL;
 
@@ -344,8 +339,8 @@ void PatchTextureLoader::load(void* data) const
 	}
 
 	Texture* texture = createTexture(data, width, height);
-	texture->setOffsetX(offsetx);
-	texture->setOffsetY(offsety);
+	texture->mOffsetX = offsetx;
+	texture->mOffsetY = offsety;
 
 	#if CLIENT_APP
 	if (width > 0 && height > 0)

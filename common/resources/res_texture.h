@@ -77,62 +77,28 @@ public:
 	static const unsigned int MAX_TEXTURE_WIDTH		= 2048;
 	static const unsigned int MAX_TEXTURE_HEIGHT	= 2048;
 
+	Texture()
+	{
+		init(0, 0);
+	}
+
 	void init(int width, int height);
-
-	byte* getData() const
-	{	return mData;	}
-
-	int getWidth() const
-	{	return mWidth;	}
-
-	int getHeight() const
-	{	return mHeight;	}
-
-	int getWidthBits() const
-	{	return mWidthBits;	}
-
-	int getHeightBits() const
-	{	return mHeightBits;	}
-
-	int getOffsetX() const
-	{	return mOffsetX;	}
-
-	int getOffsetY() const
-	{	return mOffsetY;	}
-
-	fixed_t getScaleX() const
-	{	return mScaleX;	}
-
-	fixed_t getScaleY() const
-	{	return mScaleY;	}
-
-	void setOffsetX(int value)
-	{	mOffsetX = value;	}
-
-	void setOffsetY(int value)
-	{	mOffsetY = value;	}
+	static uint32_t calculateSize(int width, int height);
 
 	fixed_t getScaledHeight() const
-	{	return FixedMul(mHeight << FRACBITS, mScaleY);	}
+	{
+		return FixedMul(mHeight << FRACBITS, mScaleY);
+	}
 	
 	fixed_t getScaledWidth() const
-	{	return FixedMul(mWidth << FRACBITS, mScaleX);	}
-
-	static uint32_t calculateSize(int width, int height);
+	{
+		return FixedMul(mWidth << FRACBITS, mScaleX);
+	}
 
 	const palindex_t* getColumn(int col) const
 	{	
 		return mData + mHeight * col;
 	}
-
-public:
-	Texture();
-
-	static uint32_t calculateHeaderSize(int width, int height)
-	{	return sizeof(Texture);	}
-
-	static uint32_t calculateDataSize(int width, int height)
-	{	return sizeof(uint8_t) * width * height;	}
 
 	fixed_t				mScaleX;
 	fixed_t				mScaleY;
@@ -146,11 +112,20 @@ public:
 	byte				mWidthBits;
 	byte				mHeightBits;
 
-	byte				mMasked;
 	byte				mMaskColor;
 
-
 	palindex_t*			mData;
+
+private:
+	static uint32_t calculateHeaderSize(int width, int height)
+	{
+		return sizeof(Texture);
+	}
+
+	static uint32_t calculateDataSize(int width, int height)
+	{
+		return sizeof(uint8_t) * width * height;
+	}
 };
 
 

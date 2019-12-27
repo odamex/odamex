@@ -86,59 +86,6 @@
 
 
 //
-// Res_CopySubimage
-//
-// Copies a portion of source_texture and draws it into dest_texture.
-// The source subimage is scaled to fit the dimensions of the destination
-// texture.
-//
-// Note: no clipping is performed so it is possible to read past the
-// end of the source texture.
-//
-void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
-	int dx1, int dy1, int dx2, int dy2,
-	int sx1, int sy1, int sx2, int sy2)
-{
-	const int destwidth = dx2 - dx1 + 1; 
-	const int destheight = dy2 - dy1 + 1;
-
-	const int sourcewidth = sx2 - sx1 + 1;
-	const int sourceheight = sy2 - sy1 + 1;
-
-	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
-	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
-
-	int dest_offset = dx1 * dest_texture->getHeight() + dy1;
-	byte* dest = dest_texture->getData() + dest_offset; 
-
-	fixed_t xfrac = 0;
-	for (int xcount = destwidth; xcount > 0; xcount--)
-	{
-		int source_offset = (sx1 + (xfrac >> FRACBITS)) * source_texture->getHeight() + sy1;
-		const byte* source = source_texture->getData() + source_offset;
-
-		fixed_t yfrac = 0;
-		for (int ycount = destheight; ycount > 0; ycount--)
-		{
-			*dest++ = source[yfrac >> FRACBITS];	
-			yfrac += ystep;
-		}
-
-		dest += dest_texture->getHeight() - destheight;
-
-		xfrac += xstep;
-	}
-
-	// copy the source texture's offset info
-	int xoffs = FixedDiv(source_texture->getOffsetX() << FRACBITS, xstep) >> FRACBITS;
-	int yoffs = FixedDiv(source_texture->getOffsetY() << FRACBITS, ystep) >> FRACBITS;
-	dest_texture->setOffsetX(xoffs);
-	dest_texture->setOffsetY(yoffs);
-}
-
-
-
-//
 // Res_TransposeImage
 //
 // Converts an image buffer from row-major format to column-major format.
@@ -171,9 +118,9 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 #if 0
 	// [SL] Odamex experimental warping
 
-	const palindex_t* source_buffer = source_texture->getData();
+	const palindex_t* source_buffer = source_texture->mData;
 
-	int widthbits = source_texture->getWidthBits();
+	int widthbits = source_texture->mWidthBits;
 	int width = (1 << widthbits);
 	int widthmask = width - 1; 
 	int heightbits = source_texture->getHeightBits();
@@ -184,7 +131,7 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 
 	for (int x = 0; x < width; x++)
 	{
-		palindex_t* dest = dest_texture->getData() + (x << heightbits);
+		palindex_t* dest = dest_texture->mData + (x << heightbits);
 
 		for (int y = 0; y < height; y++)
 		{
@@ -208,8 +155,8 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 #if 0
 	// [SL] ZDoom 1.22 warping
 
-	const palindex_t* source_buffer = source_texture->getData();
-	palindex_t* warped_buffer = dest_texture->getData();
+	const palindex_t* source_buffer = source_texture->mData;
+	palindex_t* warped_buffer = dest_texture->mData;
 	palindex_t temp_buffer[Texture::MAX_TEXTURE_HEIGHT];
 
 	int step = level.time * 32;
@@ -244,26 +191,12 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 #endif
 }
 
+
 // ============================================================================
 //
 // Texture
 //
 // ============================================================================
-
-Texture::Texture()
-{
-	init(0, 0);
-}
-
-
-uint32_t Texture::calculateSize(int width, int height)
-{
-	uint32_t size = calculateHeaderSize(width, height);
-	#if CLIENT_APP
-	size += calculateDataSize(width, height);
-	#endif
-	return size;
-}
 
 //
 // Texture::init
@@ -280,7 +213,6 @@ void Texture::init(int width, int height)
 	mOffsetY = 0;
 	mScaleX = FRACUNIT;
 	mScaleY = FRACUNIT;
-	mMasked = false;
 	mMaskColor = 0;
 	mData = NULL;
 
@@ -290,6 +222,20 @@ void Texture::init(int width, int height)
 	memset(mData, mMaskColor, calculateDataSize(width, height));
 	#endif
 }
+
+
+//
+// Texture::calculateSize
+//
+uint32_t Texture::calculateSize(int width, int height)
+{
+	uint32_t size = calculateHeaderSize(width, height);
+	#if CLIENT_APP
+	size += calculateDataSize(width, height);
+	#endif
+	return size;
+}
+
 
 
 // ============================================================================
@@ -728,8 +674,8 @@ void TextureManager::readAnimDefLump()
 					// backup the original texture
 					warp.original_texture = getTexture(tex_id);
 
-					int width = 1 << warp.original_texture->getWidthBits();
-					int height = 1 << warp.original_texture->getHeightBits();
+					int width = 1 << warp.original_texture->mWidthBits;
+					int height = 1 << warp.original_texture->mHeightBits;
 
 					// create a new texture of the same size for the warped image
 					//warp.warped_texture = initTexture(data, width, height);

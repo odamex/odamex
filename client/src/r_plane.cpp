@@ -629,7 +629,7 @@ void R_DrawPlanes()
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 
 				const Texture* texture = Res_CacheTexture(pl->res_id, PU_STATIC);
-				dspan.source = texture->getData(); 
+				dspan.source = texture->mData; 
 
 				// [SL] Note that the texture orientation differs from typical Doom span
 				// drawers since flats are stored in column major format now. The roles
