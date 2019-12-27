@@ -42,8 +42,8 @@ EXTERN_CVAR (log_packetdebug)
 EXTERN_CVAR (sv_latency)
 #endif
 
-buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
-buf_t sendd(MAX_UDP_PACKET);
+thread_local buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
+thread_local buf_t sendd(MAX_UDP_PACKET);
 
 //
 // SV_CompressPacket

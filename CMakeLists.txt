@@ -27,6 +27,9 @@ cmake_minimum_required(VERSION 2.8)
 set(PROJECT_VERSION 0.8.2)
 set(PROJECT_COPYRIGHT "2006-2019")
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")

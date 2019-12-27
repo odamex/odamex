@@ -112,8 +112,8 @@ extern bool	simulated_connection;
 // buffer for compression/decompression
 // can't be static to a function because some
 // of the functions
-buf_t compressed, decompressed;
-lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
+buf_t decompressed;
+thread_local buf_t compressed;
 
 EXTERN_CVAR(port)
 
@@ -791,6 +791,8 @@ bool MSG_DecompressMinilzo ()
 //
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 {
+	lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
+
 	if(buf.size() < MINILZO_COMPRESS_MINPACKETSIZE)
 		return false;
 

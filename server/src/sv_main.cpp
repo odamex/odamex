@@ -71,6 +71,11 @@
 #include <sstream>
 #include <vector>
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+
 extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
 
@@ -488,6 +493,54 @@ BEGIN_COMMAND (exit)
 END_COMMAND (exit)
 
 
+
+bool ready_send = false;
+std::atomic_int thr_count, thr_ready;
+std::mutex cv_start_m, cv_stop_m;
+std::condition_variable cv_start, cv_stop;
+volatile bool thr_done = false;
+
+// [jsd] thread function to send packets to clients:
+void PacketSenderThread(std::vector<player_s*> &q)
+{
+	while (!thr_done) {
+		// Wait until main thread sends data:
+		//printf("thread wait\n");
+		{
+			std::unique_lock<std::mutex> lk(cv_start_m);
+			cv_start.wait(lk, [] { return ready_send; });
+			thr_ready++;
+			//printf("thread thr_ready = %d\n", (int) thr_ready);
+			cv_start.notify_all();
+		}
+
+		//printf("thread sending %ld players\n", q.size());
+		for (auto it = q.begin(); it != q.end(); it++) {
+			SV_SendPacket(*(*it));
+		}
+
+		// empty:
+		q.resize(0);
+
+		// wait until all other threads are started:
+		{
+			std::unique_lock<std::mutex> lk(cv_start_m);
+			cv_start.wait(lk, [] { return !ready_send; });
+		}
+
+		// Signal main thread our task is done:
+		{
+			std::unique_lock<std::mutex> lk(cv_stop_m);
+			thr_count--;
+			//printf("thread thr_count-- = %d\n", (int) thr_count);
+			cv_stop.notify_all();
+		}
+	}
+}
+
+std::vector<std::vector<player_s*> > senders;
+std::vector<std::thread> threads;
+
 //
 // SV_InitNetwork
 //
@@ -522,6 +575,16 @@ void SV_InitNetwork (void)
 
 	// Nes - Connect with the master servers. (If valid)
 	SV_InitMasters();
+
+	// [jsd] spawn threads to distribute sending client updates:
+	unsigned count = std::thread::hardware_concurrency();
+	for (int i = 0; i < count; i++) {
+		senders.emplace_back();
+		senders.back().resize(0);
+	}
+	for (int i = 0; i < count; i++) {
+		threads.emplace_back(PacketSenderThread, std::ref(senders[i]));
+	}
 }
 
 Players::iterator SV_MakePlayerClient(void)
@@ -3316,6 +3379,47 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
+#if 1
+	{
+		// signal PacketSenderThreads to start:
+		std::unique_lock<std::mutex> lk(cv_start_m);
+
+		// distribute players across worker threads:
+		thr_count = threads.size();
+		thr_ready = 0;
+
+		size_t k = 0;
+		for (Players::iterator it = players.begin(); it != players.end(); it++)
+		{
+			senders[k].push_back(&*it);
+
+			k = (k + 1) % thr_count;
+		}
+
+		ready_send = true;
+		//printf("main   ready_send = true\n");
+		cv_start.notify_all();
+	}
+
+	// wait until all threads acknowledge start:
+	{
+		std::unique_lock<std::mutex> lk(cv_start_m);
+		cv_start.wait(lk, []{return thr_ready >= threads.size();});
+		//printf("main   ready_send = false\n");
+		ready_send = false;
+		cv_start.notify_all();
+	}
+
+	// wait until all threads done sending:
+	{
+		std::unique_lock<std::mutex> lk(cv_stop_m);
+		cv_stop.wait(lk, []{
+			int c = thr_count;
+			//printf("main   thr_count = %d\n", c);
+			return c <= 0;
+		});
+	}
+#else
 	static size_t fair_send = 0;
 	size_t num_players = players.size();
 
@@ -3342,6 +3446,7 @@ void SV_SendPackets()
 
 	// Advance the send index.
 	fair_send++;
+#endif
 }
 
 void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
