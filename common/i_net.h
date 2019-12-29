@@ -43,7 +43,8 @@
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
-#define NET_PACKET_MAX 1440
+// [jsd] 1500 MTU minus UDP header and our packet header
+#define NET_PACKET_MAX (1500 - (64 + 4))
 
 extern int   localport;
 extern int   msg_badread;
