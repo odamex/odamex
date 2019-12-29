@@ -56,8 +56,8 @@
 #include "v_video.h"
 #include "z_zone.h"
 
-#define lioffset(x)		myoffsetof(level_pwad_info_t,x)
-#define cioffset(x)		myoffsetof(cluster_info_t,x)
+#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define cioffset(x)		offsetof(cluster_info_t,x)
 
 level_locals_t level;			// info about current level
 
@@ -78,7 +78,7 @@ enum
 {
 	MITL_MAP,
 	MITL_DEFAULTMAP,
-	MITL_CLUSTERDEF
+	MITL_CLUSTERDEF,
 };
 
 static const char *MapInfoMapLevel[] =
@@ -124,6 +124,8 @@ static const char *MapInfoMapLevel[] =
 	"warptrans",
 	"gravity",
 	"aircontrol",
+	"islobby",					// Support for lobbies
+	"lobby",					// Alias for "islobby"
 	NULL
 };
 
@@ -141,7 +143,7 @@ enum EMIType
 	MITYPE_SCFLAGS,
 	MITYPE_CLUSTER,
 	MITYPE_STRING,
-	MITYPE_CSTRING
+	MITYPE_CSTRING,
 };
 
 struct MapInfoHandler
@@ -191,7 +193,9 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 }
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -374,6 +378,9 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		}
 
 		int entry = SC_MustMatchString(strings);
+		if (entry == -1)
+			continue;
+
 		handler = handlers + entry;
 
 		switch (handler->type)

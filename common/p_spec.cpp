@@ -1314,11 +1314,6 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		C_MidPrint (GStrings(msg), p);
 	}
 
-	if (serverside && network_game && msg)
-	{
-		C_MidPrint (GStrings(msg), p);
-	}
-
 	return false;
 }
 
@@ -1366,7 +1361,7 @@ P_CrossSpecialLine
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1475,7 +1470,7 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1502,7 +1497,7 @@ P_ShootSpecialLine
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 }
@@ -1520,7 +1515,7 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1579,7 +1574,7 @@ P_UseSpecialLine
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
@@ -1600,7 +1595,7 @@ P_PushSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1645,7 +1640,7 @@ P_PushSpecialLine
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}

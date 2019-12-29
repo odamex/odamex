@@ -329,35 +329,19 @@ static const char *langids[] = {
 
 EXTERN_CVAR (language)
 
+// Force the language to English (default)
 void SetLanguageIDs ()
 {
-	unsigned int langid = language.asInt();
+	DWORD lang = 0;
+	const char *langtag = langids[1];	// Forces ENGLISH as language.
 
-	if (langid == 0 || langid > 3)
-	{
-    #ifdef _WIN32
-		memset (LanguageIDs, 0, sizeof(LanguageIDs));
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
-    #else
-        langid = 1;     // Default to US English on non-windows systems
-    #endif
-	}
-	else
-	{
-		DWORD lang = 0;
-		const char *langtag = langids[langid];
-
-		((BYTE *)&lang)[0] = (langtag)[0];
-		((BYTE *)&lang)[1] = (langtag)[1];
-		((BYTE *)&lang)[2] = (langtag)[2];
-		LanguageIDs[0] = lang;
-		LanguageIDs[1] = lang;
-		LanguageIDs[2] = lang;
-		LanguageIDs[3] = lang;
-	}
+	((BYTE *)&lang)[0] = (langtag)[0];
+	((BYTE *)&lang)[1] = (langtag)[1];
+	((BYTE *)&lang)[2] = (langtag)[2];
+	LanguageIDs[0] = lang;
+	LanguageIDs[1] = lang;
+	LanguageIDs[2] = lang;
+	LanguageIDs[3] = lang;
 }
 
 //

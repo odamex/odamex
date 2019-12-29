@@ -448,6 +448,19 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	}
 }
 
+// Clones a DFloor and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DFloor* DFloor::Clone(sector_t* sec) const
+{
+	DFloor* dfloor = new DFloor(*this);
+
+	dfloor->Orphan();
+	dfloor->m_Sector = sec;
+
+	return dfloor;
+}
+
 //
 // HANDLE FLOOR TYPES
 // [RH] Added tag, speed, height, crush, change params.
@@ -923,6 +936,19 @@ void DElevator::RunThink ()
 DElevator::DElevator (sector_t *sec)
 	: Super (sec)
 {
+}
+
+// Clones a DElevator and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DElevator* DElevator::Clone(sector_t* sec) const
+{
+	DElevator* ele = new DElevator(*this);
+
+	ele->Orphan();
+	ele->m_Sector = sec;
+
+	return ele;
 }
 
 //

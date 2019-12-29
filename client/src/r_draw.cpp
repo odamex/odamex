@@ -869,6 +869,7 @@ private:
 	void calculate_alpha(fixed_t translevel)
 	{
 		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
 		bga = 255 - fga;
 	}
 
@@ -1166,6 +1167,7 @@ private:
 	void calculate_alpha(fixed_t translevel)
 	{
 		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
 		bga = 255 - fga;
 	}
 

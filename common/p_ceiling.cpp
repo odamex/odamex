@@ -228,6 +228,19 @@ DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
 	m_Silent = silent;
 }
 
+// Clones a DCeiling and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DCeiling* DCeiling::Clone(sector_t* sec) const
+{
+	DCeiling* ceiling = new DCeiling(*this);
+
+	ceiling->Orphan();
+	ceiling->m_Sector = sec;
+
+	return ceiling;
+}
+
 //
 // Restart a ceiling that's in-stasis
 // [RH] Passed a tag instead of a line and rewritten to use list

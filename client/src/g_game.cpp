@@ -99,6 +99,7 @@ EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (co_nosilentspawns)
@@ -433,7 +434,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(joy_freelook && sv_freelook)
+	if(joy_freelook && sv_freelook || consoleplayer().spectator)
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -506,7 +507,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
 	{
 		int val = (int)(float(mousey) * 16.0f * m_pitch);
 		if (invertmouse)
@@ -1155,6 +1156,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+	p.cheats = 0;						// Reset cheat flags
 
 	p.death_time = 0;
 	p.tic = 0;
@@ -1764,6 +1766,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     {
         fclose(recorddemo_fp);
         recorddemo_fp = NULL;
+		G_CleanupDemo();
     }
 
     recorddemo_fp = fopen(demname.c_str(), "wb");
@@ -1868,9 +1871,13 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 std::string defdemoname;
 ResourceId demo_res_id = ResourceId::INVALID_ID;
 
-void G_DeferedPlayDemo (const char *name)
+void G_DeferedPlayDemo (const char *name, bool bIsSingleDemo)
 {
 	defdemoname = name;
+
+	if (bIsSingleDemo)
+		singledemo = true;
+
 	gameaction = ga_playdemo;
 }
 
@@ -1931,7 +1938,7 @@ BEGIN_COMMAND(playdemo)
 		extern bool lastWadRebootSuccess;
 		if(lastWadRebootSuccess)
 		{
-			G_DeferedPlayDemo(argv[1]);
+			G_DeferedPlayDemo(argv[1], true);
 		}
 		else
 		{
@@ -2103,6 +2110,7 @@ void G_DoPlayDemo(bool justStreamInput)
 				sv_itemsrespawn.Set(0.0f);
 			}
 
+			sv_respawnsuper.Set(0.0f);
 			G_InitNew(mapname);
 
 			usergame = false;
@@ -2253,10 +2261,13 @@ BOOL G_CheckDemoStatus (void)
 			else
 				Printf (PRINT_HIGH, "Demo ended.\n");
 
+			demoplayback = false;
+			democlassic = false;
 			gameaction = ga_fullconsole;
 			timingdemo = false;
 			return false;
 		}
+
 
 		D_AdvanceDemo ();
 		return true;

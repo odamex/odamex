@@ -450,7 +450,11 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 #ifdef CLIENT_APP
 	// Use linear interpolation for rendering entities if the display
 	// framerate is not synced with the simulation frequency.
-	if ((maxfps == TICRATE && capfps) || timingdemo || paused || step_mode || (menuactive && !network_game))
+	// Ch0wW : if you experience a spinning effect while trying to pause the frame, 
+	// don't forget to add your condition here.
+	if ((maxfps == TICRATE && capfps)
+		|| timingdemo || paused || step_mode
+		|| ((menuactive || ConsoleState == c_down || ConsoleState == c_falling) && !network_game && !demoplayback))
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;

@@ -75,8 +75,6 @@ extern int NUM_THREADS;
 
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
-static wxInt32 Id_MnuItmOpenChat = XRCID("Id_MnuItmOpenChat");
-static wxInt32 Id_MnuItmCheckVersion = XRCID("Id_MnuItmCheckVersion");
 
 // Timer id definitions
 #define TIMER_ID_REFRESH 1
@@ -107,18 +105,18 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 	EVT_MENU(XRCID("Id_MnuItmRefreshServer"), dlgMain::OnRefreshServer)
 	EVT_MENU(XRCID("Id_MnuItmRefreshAll"), dlgMain::OnRefreshAll)
 
-	EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
+	//EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
 
 	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
-	EVT_MENU(Id_MnuItmCheckVersion, dlgMain::OnCheckVersion)
+	EVT_MENU(XRCID("Id_MnuItmCheckVersion"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
 	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
 	EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
 	EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
-	EVT_MENU(Id_MnuItmOpenChat, dlgMain::OnConnectToIRC)
+	EVT_MENU(XRCID("Id_MnuItmOpenChat"), dlgMain::OnOpenChat)
 
 	EVT_MENU(XRCID("Id_MnuItmServerFilter"), dlgMain::OnShowServerFilter)
 	EVT_TEXT(XRCID("Id_SrchCtrlGlobal"), dlgMain::OnTextSearch)
@@ -259,14 +257,19 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	}
 
 	// load chat client when launcher starts
+	// [ML] 1/21/2019: Disable this shenanigans...
+	/*
 	if(LoadChatOnLS)
 	{
 		wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmOpenChat);
 
 		wxPostEvent(this, event);
 	}
+	*/
 
 	// Check for a new version
+	// [ML] 1/21/2019: Disabled for now.  This doesn't work over https.
+	/*
     if(CheckForUpdates)
 	{
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmCheckVersion);
@@ -276,6 +279,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
         wxPostEvent(this, event);
 	}
+	*/
 
 	// Enable the auto refresh timer
 	if(m_UseRefreshTimer)
@@ -404,7 +408,8 @@ void dlgMain::OnCheckVersion(wxCommandEvent &event)
 
     if (SiteSrc.IsEmpty())
     {
-        InfoBar->ShowMessage("Unable to check for updates");
+    	// [ML] 1/21/19: Disable this for now since this doesn't work over https
+        // InfoBar->ShowMessage("Unable to check for updates.");
         return;
     }
 
@@ -498,11 +503,11 @@ void dlgMain::OnShowServerFilter(wxCommandEvent& event)
 // This could have other uses, what those are? we do not know yet..
 void dlgMain::GetWebsitePageSource(wxString &SiteSrc)
 {
-    wxURL Http("http://odamex.net/api/app-version");
+    wxURL Https("https://odamex.net/api/app-version");
     wxInputStream *inStream;
 
     // Get the websites source
-    inStream = Http.GetInputStream();
+    inStream = Https.GetInputStream();
 
     if (inStream)
     {
@@ -1558,63 +1563,31 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 
 void dlgMain::OnOpenWebsite(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("http://odamex.net");
+	wxLaunchDefaultBrowser("https://odamex.net");
 }
 
 void dlgMain::OnOpenForum(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("http://odamex.net/boards");
+	wxLaunchDefaultBrowser("https://odamex.net/boards");
 }
 
 void dlgMain::OnOpenWiki(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("http://odamex.net/wiki");
+	wxLaunchDefaultBrowser("https://odamex.net/wiki");
 }
 
 void dlgMain::OnOpenChangeLog(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("http://odamex.net/changelog");
+	wxLaunchDefaultBrowser("https://odamex.net/changelog");
 }
 
 void dlgMain::OnOpenReportBug(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("http://odamex.net/bugs/enter_bug.cgi");
+	wxLaunchDefaultBrowser("https://odamex.net/bugs/enter_bug.cgi");
 }
 
-void dlgMain::OnConnectToIRC(wxCommandEvent& event)
+void dlgMain::OnOpenChat(wxCommandEvent& event)
 {
-	bool ok;
-	// Used to disable annoying message under MSW if url cannot be opened
-	wxLogNull NoLog;
-
-	ok = wxLaunchDefaultBrowser("irc://irc.quakenet.org/odaplayers");
-
-	// Ask user if they would like to get an irc client
-	if(!ok)
-	{
-		wxFileConfig ConfigInfo;
-		int ret;
-		wxRichMessageDialog Message(this, "", "IRC client not found",
-		                            wxYES_NO | wxICON_INFORMATION | wxCANCEL);
-
-		Message.ShowCheckBox("Load chat client when launcher starts", true);
-
-		Message.SetMessage("No IRC client found! HexChat is recommend\n\n"
-		                       "Would you like to visit the HexChat website?");
-
-		ret = Message.ShowModal();
-
-		if(ret == wxID_CANCEL)
-			return;
-
-		if(ret == wxID_YES)
-			wxLaunchDefaultBrowser("http://hexchat.github.io/");
-
-		// Write out selection if user wants to load client when the
-		// launcher is run
-		ConfigInfo.Write(LOADCHATONLS, Message.IsCheckBoxChecked());
-
-		// Ensures setting is reflected in configuration dialog
-		ConfigInfo.Flush();
-	}
+	wxLaunchDefaultBrowser("https://discord.gg/bvvMJMS");
 }
+

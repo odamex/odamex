@@ -761,6 +761,9 @@ BEGIN_COMMAND(clearmaplist) {
 	if (!Maplist::instance().clear()) {
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
 	}
+	else {
+		Printf(PRINT_HIGH, "Maplist cleared.\n");
+	}
 } END_COMMAND(clearmaplist)
 
 CVAR_FUNC_IMPL(sv_shufflemaplist)

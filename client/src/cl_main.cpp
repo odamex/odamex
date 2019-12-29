@@ -68,6 +68,7 @@
 #include "g_warmup.h"
 #include "v_text.h"
 #include "hu_stuff.h"
+#include "p_acs.h"
 
 #include <string>
 #include <vector>
@@ -152,7 +153,6 @@ EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
 
-EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
@@ -160,56 +160,64 @@ EXTERN_CVAR (cl_forcedownload)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
-static byte enemycolor[4];
-static byte teamcolor[4];
+static argb_t enemycolor, teamcolor;
 
+void P_PlayerLeavesGame(player_s* player);
+
+//
+// CL_ShadePlayerColor
+//
+// Shades base_color darker using the intensity of shade_color.
+//
+argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
+{
+	if (base_color == shade_color)
+		return base_color;
+
+	fahsv_t color = V_RGBtoHSV(base_color);
+	color.setv(0.7f * color.getv() + 0.3f * V_RGBtoHSV(shade_color).getv());
+	return V_HSVtoRGB(color);
+}
+
+
+//
+// CL_GetPlayerColor
+//
+// Returns the color for the player after applying game logic (teammate, enemy)
+// and applying CVARs like r_forceteamcolor and r_forceenemycolor.
+//
 argb_t CL_GetPlayerColor(player_t *player)
 {
 	if (!player)
 		return 0;
 
-	argb_t color(player->userinfo.color[0], player->userinfo.color[1],
-				player->userinfo.color[2], player->userinfo.color[3]);
-
-	// Adjust the shade of color for team games
+	argb_t base_color(255, player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	argb_t shade_color = base_color;
+	
+	bool teammate = false;
+	if (sv_gametype == GM_COOP)
+		teammate = true;
+	if (sv_gametype == GM_DM)
+		teammate = false;
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		const float blue_hue = 240.0f, red_hue = 0.0f;
-		float intensity = 0.6f + 0.4f * V_RGBtoHSV(color).getv();
-		intensity = std::min(intensity, 1.0f);
-
+		teammate = P_AreTeammates(consoleplayer(), *player);
 		if (player->userinfo.team == TEAM_BLUE)
-			color = V_HSVtoRGB(fahsv_t(blue_hue, 1.0f, intensity));
+			base_color = argb_t(255, 0, 0, 255);
 		else if (player->userinfo.team == TEAM_RED)
-			color = V_HSVtoRGB(fahsv_t(red_hue, 1.0f, intensity));
+			base_color = argb_t(255, 255, 0, 0);
 	}
-
-	// apply r_teamcolor & r_enemycolor overrides
-	if (!consoleplayer().spectator)
+	if (player->id != consoleplayer_id && !consoleplayer().spectator)
 	{
-		if (sv_gametype == GM_COOP)
-		{
-			if (r_forceteamcolor && player->id != consoleplayer_id)
-				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
-		}
-		else if (sv_gametype == GM_DM)
-		{
-			if (r_forceenemycolor && player->id != consoleplayer_id)
-				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
-		}
-		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		{
-			if (r_forceteamcolor &&
-					(P_AreTeammates(consoleplayer(), *player) || player->id == consoleplayer_id))
-				color = argb_t(teamcolor[0], teamcolor[1], teamcolor[2], teamcolor[3]);
-			if (r_forceenemycolor && !P_AreTeammates(consoleplayer(), *player) &&
-					player->id != consoleplayer_id)
-				color = argb_t(enemycolor[0], enemycolor[1], enemycolor[2], enemycolor[3]);
-		}
+		if (r_forceteamcolor && teammate)
+			base_color = teamcolor;
+		else if (r_forceenemycolor && !teammate)
+			base_color = enemycolor;
 	}
 
-	return color;
+	return CL_ShadePlayerColor(base_color, shade_color);
 }
+
 
 static void CL_RebuildAllPlayerTranslations()
 {
@@ -224,22 +232,14 @@ static void CL_RebuildAllPlayerTranslations()
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	argb_t color(V_GetColorFromString(var));
-	enemycolor[0] = color.geta();
-	enemycolor[1] = color.getr();
-	enemycolor[2] = color.getg();
-	enemycolor[3] = color.getb();
+	enemycolor = argb_t(V_GetColorFromString(var));
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	argb_t color(V_GetColorFromString(var));
-	teamcolor[0] = color.geta();
-	teamcolor[1] = color.getr();
-	teamcolor[2] = color.getg();
-	teamcolor[3] = color.getb();
+	teamcolor = argb_t(V_GetColorFromString(var));
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -278,6 +278,11 @@ EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_autorecord)
+EXTERN_CVAR (cl_autorecord_coop)
+EXTERN_CVAR (cl_autorecord_deathmatch)
+EXTERN_CVAR (cl_autorecord_duel)
+EXTERN_CVAR (cl_autorecord_teamdm)
+EXTERN_CVAR (cl_autorecord_ctf)
 EXTERN_CVAR (cl_splitnetdemos)
 
 void CL_PlayerTimes (void);
@@ -422,6 +427,9 @@ void CL_QuitNetGame(void)
 	if (demorecording && democlassic)
 		G_CleanupDemo();
 
+	democlassic = false;
+	demoplayback = false;
+
 	// Reset the palette to default
 	V_ResetPalette();
 
@@ -528,6 +536,12 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	if (players.empty())
 		return;
 
+	if (gamestate == GS_INTERMISSION)
+	{
+		displayplayer_id = consoleplayer_id;
+		return;
+	}
+
 	if (!validplayer(displayplayer()))
 	{
 		CL_CheckDisplayPlayer();
@@ -598,6 +612,8 @@ void CL_DisconnectClient(void)
 		{
 			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+			if (!it->spectator)
+				P_PlayerLeavesGame(&(*it));
 			players.erase(it);
 			break;
 		}
@@ -737,6 +753,8 @@ BEGIN_COMMAND (connect)
 
 	    return;
 	}
+
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
@@ -981,6 +999,7 @@ BEGIN_COMMAND (changeteams)
 		cl_team.Set("RED");
 	else if (consoleplayer().userinfo.team == TEAM_RED)
 		cl_team.Set("BLUE");
+	CL_RebuildAllPlayerTranslations();
 }
 END_COMMAND (changeteams)
 
@@ -1337,7 +1356,6 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
@@ -2030,7 +2048,7 @@ void CL_UpdatePlayer()
 	p->snapshots.addSnapshot(newsnap);
 }
 
-BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
 void CL_UpdatePlayerState(void)
 {
@@ -2395,6 +2413,14 @@ void CL_SpawnPlayer()
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
+	}
+
+	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	{
+		if (p->deathcount)
+			level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		else
+			level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
 	}
 
 	int snaptime = last_svgametic;
@@ -2798,6 +2824,7 @@ void CL_UpdateSector(void)
 
 	const ResourceId floor_res_id = MSG_ReadShort();
 	const ResourceId ceiling_res_id = MSG_ReadShort();
+	short special = MSG_ReadShort();
 
 	if (!sectors || sectornum >= numsectors)
 		return;
@@ -2809,6 +2836,7 @@ void CL_UpdateSector(void)
 	sector->floor_res_id = floor_res_id;
 
 	sector->ceiling_res_id = ceiling_res_id;
+	sector->special = special;
 	sector->moveable = true;
 
 	P_ChangeSector(sector, false);
@@ -2853,7 +2881,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorSpecial(MSG_ReadShort());
 		snap.setFloorTexture(MSG_ReadShort());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
 		snap.setResetCounter(MSG_ReadLong());
 		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
 		snap.setDelay(MSG_ReadLong());
@@ -2875,7 +2903,7 @@ void CL_UpdateMovingSector(void)
 	{
 		// Platforms/Lifts
 		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
 		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
 		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
 		snap.setFloorWait(MSG_ReadLong());
@@ -2896,9 +2924,9 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingType(MSG_ReadByte());
 		snap.setCeilingLow(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCrusherSpeed1(MSG_ReadShort() << FRACBITS);
-		snap.setCrusherSpeed2(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
+		snap.setCrusherSpeed1(MSG_ReadLong());
+		snap.setCrusherSpeed2(MSG_ReadLong());
 		snap.setCeilingCrush(MSG_ReadBool());
 		snap.setSilent(MSG_ReadBool());
 		snap.setCeilingDirection(char(MSG_ReadByte()));
@@ -2914,7 +2942,7 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingMoverType(SEC_DOOR);
 		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setCeilingWait(MSG_ReadLong());
 		snap.setCeilingCounter(MSG_ReadLong());
 		snap.setCeilingStatus(MSG_ReadByte());
@@ -2941,7 +2969,7 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorDirection(snap.getCeilingDirection());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setFloorSpeed(snap.getCeilingSpeed());
 	}
 
@@ -2954,8 +2982,8 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorType(snap.getCeilingType());
 		snap.setCeilingStatus(MSG_ReadByte());
 		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadLong());
+		snap.setCeilingSpeed(MSG_ReadLong());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingCrush(MSG_ReadBool());
@@ -3196,27 +3224,32 @@ void CL_MobjTranslation()
 		mo->translation = translationref_t(translationtables + 256 * table);
 }
 
+void P_SetButtonTexture(line_t* line, const ResourceId res_id);
 
 //
 // CL_Switch
 // denis - switch state and timing
-//
+// Note: this will also be called for doors
 void CL_Switch()
 {
 	unsigned l = MSG_ReadLong();
-	byte wastoggled = MSG_ReadByte();
-	byte state = MSG_ReadByte();
+	byte switchactive = MSG_ReadByte();
+	byte special = MSG_ReadByte();
+	byte state = MSG_ReadByte(); //DActiveButton::EWhere
+	ResourceId res_id = (ResourceId)MSG_ReadShort();
+	if (res_id == 0xFFFF)
+		res_id = ResourceId::INVALID_ID;
 	unsigned time = MSG_ReadLong();
 
 	if (!lines || l >= (unsigned)numlines || state >= 3)
 		return;
 
-	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
-		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
+	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
+		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
-		lines[l].special = 0;
+	if (res_id != ResourceId::INVALID_ID)
+		P_SetButtonTexture(&lines[l], res_id); //accept the texture from the server, this is mostly to fix warmup desyncs
+	lines[l].special = special;
 }
 
 void CL_ActivateLine(void)
@@ -3358,11 +3391,17 @@ void CL_LoadMap()
 	{
 		std::string filename;
 
+		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
+		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && cl_autorecord_deathmatch)
+		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && cl_autorecord_duel)
+		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
+		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
+
 		size_t param = Args.CheckParm("-netrecord");
 		if (param && Args.GetArg(param + 1))
 			filename = Args.GetArg(param + 1);
 
-		if (splitnetdemo || cl_autorecord || param)
+		if (((splitnetdemo || cl_autorecord) && bCanAutorecord) || param)
 		{
 			if (filename.empty())
 				filename = CL_GenerateNetDemoFileName();
@@ -3385,6 +3424,8 @@ void CL_LoadMap()
 		netdemo.writeMapChange();
 }
 
+void P_ResetSwitch(line_t* line);
+
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -3396,6 +3437,22 @@ void CL_ResetMap()
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
 			mo->Destroy();
+		}
+	}
+
+	//destroy all moving sector effects and sounds
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].floordata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].floordata->Destroy();
+		}
+
+		if (sectors[i].ceilingdata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].ceilingdata->Destroy();
 		}
 	}
 
@@ -3440,10 +3497,13 @@ void CL_Spectate()
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
 	player.spectator = ((MSG_ReadByte()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
 
 	// [tm512 2014/04/11] Do as the server does when unspectating a player.
 	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
@@ -3464,9 +3524,11 @@ void CL_Spectate()
 
 		if (player.spectator)
 		{
-			player.playerstate = PST_LIVE; // resurrect dead spectators
-			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-			player.deltaviewheight = 1000 << FRACBITS;
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
 		{

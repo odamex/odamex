@@ -7,9 +7,6 @@
 #   $savesig = "ODAMEXSAVE053   ";
 #   $release_date = "June 18th, 2011";
 
-[ag-odalaunch/src/net_packet.h]
-s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
-
 [odalpapi/net_packet.h]
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
 

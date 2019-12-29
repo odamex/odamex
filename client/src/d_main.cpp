@@ -282,6 +282,7 @@ void D_Display()
 			WI_Drawer();
 			HU_Drawer();
 			C_DrawMid();
+			V_ResetPalette();
 			break;
 
 		case GS_FINALE:

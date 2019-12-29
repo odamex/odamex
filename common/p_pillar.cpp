@@ -185,6 +185,19 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 	PlayPillarSound();
 }
 
+// Clones a DPillar and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DPillar* DPillar::Clone(sector_t* sec) const
+{
+	DPillar* pillar = new DPillar(*this);
+
+	pillar->Orphan();
+	pillar->m_Sector = sec;
+
+	return pillar;
+}
+
 BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 				  fixed_t height2, bool crush)
 {

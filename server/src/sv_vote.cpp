@@ -528,7 +528,7 @@ public:
 	bool exec(void)
 	{
 		// When in warmup mode, we would rather not catch players off guard.
-		warmup.reset();
+		warmup.reset(level);
 
 		// Do a countdown-led restart.
 		warmup.restart();

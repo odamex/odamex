@@ -35,6 +35,8 @@
 
 #include "p_spec.h"
 
+EXTERN_CVAR(co_zdoomsound)
+
 extern bool predicting;
 
 void P_SetDoorDestroy(DDoor *door)
@@ -283,7 +285,7 @@ void DDoor::PlayDoorSound ()
 		// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
 		// blazing-door sound twice: when the door begins to close
 		// and when the door finishes closing.
-		if (!IsBlazingDoor(this))
+		if (!IsBlazingDoor(this) || co_zdoomsound)
 			return;
 		snd = "doors/dr2_clos";
 		break;
@@ -340,6 +342,19 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	case doorRaiseIn5Mins: // denis - fixme - does this need code?
 		break;
 	}
+}
+
+// Clones a DDoor and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DDoor* DDoor::Clone(sector_t* sec) const
+{
+	DDoor* door = new DDoor(*this);
+
+	door->Orphan();
+	door->m_Sector = sec;
+
+	return door;
 }
 
 BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,

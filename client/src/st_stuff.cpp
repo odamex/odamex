@@ -61,6 +61,7 @@ static bool st_stopped = true;
 
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
+EXTERN_CVAR(screenblocks)
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
@@ -476,6 +477,7 @@ void ST_ForceRefresh()
 
 CVAR_FUNC_IMPL (st_scale)
 {
+	R_SetViewSize((int)screenblocks);
 	ST_ForceRefresh();
 }
 
@@ -511,13 +513,13 @@ BOOL CheckCheatmode (void)
 // [RH] Cheats eatkey the last keypress used to trigger them
 bool ST_Responder (event_t *ev)
 {
-	  player_t *plyr = &consoleplayer();
-	  bool eatkey = false;
-	  int i;
+	player_t *plyr = &consoleplayer();
+	bool eatkey = false;
+	int i;
 
-	  // Filter automap on/off.
-	  if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
-	  {
+	// Filter automap on/off.
+	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	{
 		switch(ev->data1)
 		{
 		case AM_MSGENTERED:
@@ -532,10 +534,12 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-    else if (ev->type == ev_keydown)
+    else if (ev->type == ev_keydown && ev->data2)
     {
+		char key = ev->data2;
+
         // 'dqd' cheat for toggleable god mode
-        if (cht_CheckCheat(&cheat_god, (char)ev->data2))
+        if (cht_CheckCheat(&cheat_god, key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -552,7 +556,7 @@ bool ST_Responder (event_t *ev)
         }
 
         // 'fa' cheat for killer fucking arsenal
-        else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_ammonokey, key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -577,7 +581,7 @@ bool ST_Responder (event_t *ev)
         }
 
         // 'kfa' cheat for key full ammo
-        else if (cht_CheckCheat(&cheat_ammo, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_ammo, key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -605,7 +609,7 @@ bool ST_Responder (event_t *ev)
         }
         // [Russell] - Only doom 1/registered can have idspispopd and
         // doom 2/final can have idclip
-        else if (cht_CheckCheat(&cheat_noclip, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_noclip, key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -620,7 +624,7 @@ bool ST_Responder (event_t *ev)
             // Net_WriteByte (CHT_NOCLIP);
             eatkey = true;
         }
-        else if (cht_CheckCheat(&cheat_commercial_noclip, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_commercial_noclip, key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -637,7 +641,7 @@ bool ST_Responder (event_t *ev)
         // 'behold?' power-up cheats
         for (i=0; i<6; i++)
         {
-            if (cht_CheckCheat(&cheat_powerup[i], (char)ev->data2))
+            if (cht_CheckCheat(&cheat_powerup[i], key))
             {
                 if (CheckCheatmode ())
                     return false;
@@ -659,7 +663,7 @@ bool ST_Responder (event_t *ev)
         }
 
         // 'behold' power-up menu
-        if (cht_CheckCheat(&cheat_powerup[6], (char)ev->data2))
+        if (cht_CheckCheat(&cheat_powerup[6], key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -669,7 +673,7 @@ bool ST_Responder (event_t *ev)
         }
 
         // 'choppers' invulnerability & chainsaw
-        else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_choppers, key))
         {
             if (CheckCheatmode ())
                 return false;
@@ -684,7 +688,7 @@ bool ST_Responder (event_t *ev)
         }
 
         // 'clev' change-level cheat
-        else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_clev, key))
         {
             char buf[16];
 			//char *bb;
@@ -703,14 +707,14 @@ bool ST_Responder (event_t *ev)
         }
 
         // 'mypos' for player position
-        else if (cht_CheckCheat(&cheat_mypos, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_mypos, key))
         {
             AddCommandString ("toggle idmypos");
             eatkey = true;
         }
 
         // 'idmus' change-music cheat
-        else if (cht_CheckCheat(&cheat_mus, (char)ev->data2))
+        else if (cht_CheckCheat(&cheat_mus, key))
         {
             char buf[16];
 

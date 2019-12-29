@@ -36,7 +36,7 @@
 void G_DeathMatchSpawnPlayer(player_t &player);
 void G_DoReborn(player_t &player);
 
-void G_DeferedPlayDemo(const char* demo);
+void G_DeferedPlayDemo(const char* demo, bool bIsSingleDemo = false);
 
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.

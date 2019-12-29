@@ -152,7 +152,7 @@ void R_InitSkyMap()
 	if (fskyheight <= (128 << FRACBITS))
 	{
 		skytexturemid = 200/2*FRACUNIT;
-		skystretch = (r_stretchsky == 1) || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
+		skystretch = (r_stretchsky == 1) || consoleplayer().spectator || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
 	}
 	else
 	{

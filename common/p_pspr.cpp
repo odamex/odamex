@@ -199,7 +199,7 @@ void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 		// Modified handling.
 		if (psp->state->action)
 		{
-			if (!player->spectator)
+			if (!player->spectator && player->mo != NULL)
 				psp->state->action(player->mo);
 
 			if (!psp->state)
@@ -369,7 +369,7 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	// Always switch - vanilla Doom behavior
 	if ((multiplayer && !sv_allowpwo) ||
 		player->userinfo.switchweapon == WPSW_ALWAYS ||
-		demoplayback || demorecording)
+		democlassic || demoplayback || demorecording)
 	{
 		return true;
 	}
