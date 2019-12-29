@@ -148,6 +148,8 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 }
 #endif
 
+EXTERN_CVAR(sv_waddownloadcap)
+
 //
 // SV_SendPacket
 //
@@ -174,17 +176,31 @@ bool SV_SendPacket(player_t &pl)
 	}
 
 	// send several packets while we have data to send:
+	const int cl_rate = cl->rate * 1000;
+	const int max_iters = (cl_rate / NET_PACKET_MAX);
 	while (cl->reliablebuf.cursize + cl->netbuf.cursize > 0) {
 		// put a cap on this so we don't get stuck building enormous chains of packets:
-		if (++iters >= (cl->rate * 1000 / NET_PACKET_MAX)) {
+		if (++iters >= max_iters) {
 			cl->netbuf.clear();
 			break;
 		}
 
+		// determine our current bandwidth:
+		int bps = (int) ((double) ((cl->unreliable_bps + cl->reliable_bps) * TICRATE) / (double) ((gametic % 35) + 1));
+		if (bps > cl_rate) {
+			cl->netbuf.clear();
+			break;
+		}
+
+		// find the max message size we could send that keeps us at or below the rate limit:
+		size_t remaining_budget = cl_rate - bps;
+		size_t pkt_remaining = MIN((size_t)NET_PACKET_MAX, remaining_budget);
+
 		// start building the packet:
 
 		// 1. fill up packet with as much reliable-channel data as possible:
-		size_t reliablesize = MIN(cl->reliablebuf.cursize, (size_t)NET_PACKET_MAX);
+		size_t reliablesize = MIN(cl->reliablebuf.cursize, (size_t)pkt_remaining);
+		// trim off to the message boundary within the byte stream:
 		size_t reliabletrim = cl->reliablebuf.FloorMarker(reliablesize);
 
 		// save the reliable message
@@ -222,14 +238,14 @@ bool SV_SendPacket(player_t &pl)
 		}
 
 		// check if any space left for unreliable messages:
-		int pkt_remaining = ((int)NET_PACKET_MAX - (int)sendd->cursize);
+		pkt_remaining -= (int)sendd->cursize;
 		size_t unreliabletrim = 0;
 		if (pkt_remaining > 0 && cl->netbuf.cursize > 0) {
 			// find the max message size we could send that keeps us at or below the rate limit:
 			size_t bps = (size_t) ((double) ((cl->unreliable_bps + cl->reliable_bps) * TICRATE) /
 								   (double) ((gametic % 35) + 1));
 
-			size_t remaining_budget = ((size_t) cl->rate * 1000) - bps;
+			size_t remaining_budget = cl_rate - bps;
 			size_t unreliablesize = MIN((size_t) pkt_remaining, remaining_budget);
 
 			// find the highest message marker before the remaining byte count offset:
