@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 #include <stdio.h>
 #include <stdlib.h>
+#include <boost/thread.hpp>
 
 #include "doomtype.h"
 #include "doomstat.h"
@@ -42,8 +43,8 @@ EXTERN_CVAR (log_packetdebug)
 EXTERN_CVAR (sv_latency)
 #endif
 
-thread_local buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
-thread_local buf_t sendd(MAX_UDP_PACKET);
+boost::thread_specific_ptr<buf_t> plain; // denis - todo - call_terms destroys these statics on quit
+boost::thread_specific_ptr<buf_t> sendd;
 
 //
 // SV_CompressPacket
@@ -55,12 +56,15 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 {
 	size_t orig_size = send.size();
 
-	if(plain.maxsize() < send.maxsize())
-		plain.resize(send.maxsize());
+	if (plain.get() == nullptr) {
+		plain.reset(new buf_t(MAX_UDP_PACKET));
+	}
+	if(plain->maxsize() < send.maxsize())
+		plain->resize(send.maxsize());
 	
-	plain.setcursize(send.size());
+	plain->setcursize(send.size());
 	
-	memcpy(plain.ptr(), send.ptr(), send.size());
+	memcpy(plain->ptr(), send.ptr(), send.size());
 
 	byte method = 0;
 
@@ -85,7 +89,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 	if((method & adaptive_mask) || (method & minilzo_mask))
 	{
 #if 0
-		if(cl->compressor.packet_sent(cl->sequence - 1, plain.ptr() + sizeof(int), plain.size() - sizeof(int)))
+		if(cl->compressor.packet_sent(cl->sequence - 1, plain->ptr() + sizeof(int), plain->size() - sizeof(int)))
 			method |= adaptive_record_mask;
 #endif
 		send.ptr()[sizeof(int)] = svc_compressed;
@@ -165,6 +169,10 @@ bool SV_SendPacket(player_t &pl)
 	size_t rel = cl->reliablebuf.cursize, unr = cl->netbuf.cursize;
 	int iters = 0;
 
+	if (sendd.get() == nullptr) {
+		sendd.reset(new buf_t(MAX_UDP_PACKET));
+	}
+
 	// send several packets while we have data to send:
 	while (cl->reliablebuf.cursize + cl->netbuf.cursize > 0) {
 		// put a cap on this so we don't get stuck building enormous chains of packets:
@@ -195,18 +203,18 @@ bool SV_SendPacket(player_t &pl)
 			SZ_Write(&cl->relpackets, cl->reliablebuf.data, reliabletrim);
 
 		// compose the packet's data:
-		sendd.clear();
+		sendd->clear();
 
 		cl->packetnum++; // packetnum will never be more than 255
 		// because sizeof(packetnum) == 1. Don't need
 		// to use &0xff. Cool, eh? ;-)
 
 		// copy sequence
-		MSG_WriteLong(&sendd, cl->sequence++);
+		MSG_WriteLong(sendd.get(), cl->sequence++);
 
 		// copy the reliable message to the packet first:
 		if (reliabletrim) {
-			SZ_Write(&sendd, cl->reliablebuf.data, reliabletrim);
+			SZ_Write(sendd.get(), cl->reliablebuf.data, reliabletrim);
 			// trim out the messages we wrote from the reliablebuf:
 			cl->reliablebuf.TrimLeft(reliabletrim);
 			// record for rate limiting:
@@ -214,7 +222,7 @@ bool SV_SendPacket(player_t &pl)
 		}
 
 		// check if any space left for unreliable messages:
-		int pkt_remaining = ((int)NET_PACKET_MAX - (int)sendd.cursize);
+		int pkt_remaining = ((int)NET_PACKET_MAX - (int)sendd->cursize);
 		size_t unreliabletrim = 0;
 		if (pkt_remaining > 0 && cl->netbuf.cursize > 0) {
 			// find the max message size we could send that keeps us at or below the rate limit:
@@ -229,7 +237,7 @@ bool SV_SendPacket(player_t &pl)
 
 			// add the unreliable part:
 			if (unreliabletrim) {
-				SZ_Write(&sendd, cl->netbuf.data, unreliabletrim);
+				SZ_Write(sendd.get(), cl->netbuf.data, unreliabletrim);
 				// trim out the messages we wrote from the unreliablebuf:
 				cl->netbuf.TrimLeft(unreliabletrim);
 				// record for rate limiting:
@@ -239,8 +247,8 @@ bool SV_SendPacket(player_t &pl)
 
 #if 1
 		// compress the packet, but not the sequence id
-		if (sendd.size() > sizeof(int))
-			SV_CompressPacket(sendd, sizeof(int), cl);
+		if (sendd->size() > sizeof(int))
+			SV_CompressPacket(*sendd.get(), sizeof(int), cl);
 #endif
 
 		if (log_packetdebug) {
@@ -251,7 +259,7 @@ bool SV_SendPacket(player_t &pl)
 #ifdef SIMULATE_LATENCY
 		SV_SendPacketDelayed(sendd, pl);
 #else
-		NET_SendPacket(sendd, cl->address);
+		NET_SendPacket(*sendd.get(), cl->address);
 #endif
 	}
 

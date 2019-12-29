@@ -35,6 +35,8 @@
 
 #include <sstream>
 
+#include <boost/thread.hpp>
+
 /* [Petteri] Use Winsock for Win32: */
 #include "win32inc.h"
 #ifdef _WIN32
@@ -56,6 +58,8 @@
 #	include <errno.h>
 #	include <unistd.h>
 #	include <sys/time.h>
+#include <boost/thread.hpp>
+
 #endif // WIN32
 
 #ifndef _WIN32
@@ -113,7 +117,7 @@ extern bool	simulated_connection;
 // can't be static to a function because some
 // of the functions
 buf_t decompressed;
-thread_local buf_t compressed;
+boost::thread_specific_ptr<buf_t> compressed;
 
 EXTERN_CVAR(port)
 
@@ -799,12 +803,15 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 	lzo_uint outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
 	size_t total_len = outlen + start_offset + write_gap;
 
-	if(compressed.maxsize() < total_len)
-		compressed.resize(total_len);
+	if (compressed.get() == nullptr) {
+		compressed.reset(new buf_t(MAX_UDP_PACKET));
+	}
+	if(compressed->maxsize() < total_len)
+		compressed->resize(total_len);
 
 	int r = lzo1x_1_compress (buf.ptr() + start_offset,
 							  buf.size() - start_offset,
-							  compressed.ptr() + start_offset + write_gap,
+							  compressed->ptr() + start_offset + write_gap,
 							  &outlen,
 							  wrkmem);
 
@@ -812,10 +819,10 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 	if(r != LZO_E_OK || outlen >= (buf.size() - start_offset - write_gap))
 		return false;
 
-	memcpy(compressed.ptr(), buf.ptr(), start_offset);
+	memcpy(compressed->ptr(), buf.ptr(), start_offset);
 
 	SZ_Clear(&buf);
-	MSG_WriteChunk(&buf, compressed.ptr(), outlen + start_offset + write_gap);
+	MSG_WriteChunk(&buf, compressed->ptr(), outlen + start_offset + write_gap);
 
 	return true;
 }
@@ -854,22 +861,25 @@ bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_
 	size_t outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
 	size_t total_len = outlen + start_offset + write_gap;
 
-	if(compressed.maxsize() < total_len)
-		compressed.resize(total_len);
+	if (compressed.get() == nullptr) {
+		compressed.reset(new buf_t(MAX_UDP_PACKET));
+	}
+	if(compressed->maxsize() < total_len)
+		compressed->resize(total_len);
 
 	bool r = huff.compress (buf.ptr() + start_offset,
 							  buf.size() - start_offset,
-							  compressed.ptr() + start_offset + write_gap,
+							  compressed->ptr() + start_offset + write_gap,
 							  outlen);
 
 	// worth the effort?
 	if(!r || outlen >= (buf.size() - start_offset - write_gap))
 		return false;
 
-	memcpy(compressed.ptr(), buf.ptr(), start_offset);
+	memcpy(compressed->ptr(), buf.ptr(), start_offset);
 
 	SZ_Clear(&buf);
-	MSG_WriteChunk(&buf, compressed.ptr(), outlen + start_offset + write_gap);
+	MSG_WriteChunk(&buf, compressed->ptr(), outlen + start_offset + write_gap);
 
 	return true;
 }

@@ -77,6 +77,10 @@ if (USE_MINIUPNP)
   target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
 endif()
 
+if(Boost_FOUND)
+  target_link_libraries(odasrv ${Boost_LIBRARIES})
+endif()
+
 if(WIN32)
   target_link_libraries(odasrv winmm wsock32)
 elseif(SOLARIS)

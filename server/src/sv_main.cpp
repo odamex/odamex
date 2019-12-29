@@ -71,10 +71,8 @@
 #include <sstream>
 #include <vector>
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <atomic>
+#include <boost/thread.hpp>
+#include <boost/atomic.hpp>
 
 extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
@@ -494,10 +492,10 @@ END_COMMAND (exit)
 
 
 
-bool ready_send = false;
-std::atomic_int thr_count, thr_ready;
-std::mutex cv_start_m, cv_stop_m;
-std::condition_variable cv_start, cv_stop;
+volatile bool ready_send = false;
+boost::atomic_int thr_count, thr_ready;
+boost::mutex cv_start_m, cv_stop_m;
+boost::condition_variable cv_start, cv_stop;
 volatile bool thr_done = false;
 
 // [jsd] thread function to send packets to clients:
@@ -507,15 +505,16 @@ void PacketSenderThread(std::vector<player_s*> &q)
 		// Wait until main thread sends data:
 		//printf("thread wait\n");
 		{
-			std::unique_lock<std::mutex> lk(cv_start_m);
-			cv_start.wait(lk, [] { return ready_send; });
+			boost::unique_lock<boost::mutex> lk(cv_start_m);
+			while (!ready_send)
+				cv_start.wait(lk);
 			thr_ready++;
 			//printf("thread thr_ready = %d\n", (int) thr_ready);
 			cv_start.notify_all();
 		}
 
 		//printf("thread sending %ld players\n", q.size());
-		for (auto it = q.begin(); it != q.end(); it++) {
+		for (std::vector<player_s*>::iterator it = q.begin(); it != q.end(); it++) {
 			SV_SendPacket(*(*it));
 		}
 
@@ -524,13 +523,14 @@ void PacketSenderThread(std::vector<player_s*> &q)
 
 		// wait until all other threads are started:
 		{
-			std::unique_lock<std::mutex> lk(cv_start_m);
-			cv_start.wait(lk, [] { return !ready_send; });
+			boost::unique_lock<boost::mutex> lk(cv_start_m);
+			while (ready_send)
+				cv_start.wait(lk);
 		}
 
 		// Signal main thread our task is done:
 		{
-			std::unique_lock<std::mutex> lk(cv_stop_m);
+			boost::unique_lock<boost::mutex> lk(cv_stop_m);
 			thr_count--;
 			//printf("thread thr_count-- = %d\n", (int) thr_count);
 			cv_stop.notify_all();
@@ -539,7 +539,7 @@ void PacketSenderThread(std::vector<player_s*> &q)
 }
 
 std::vector<std::vector<player_s*> > senders;
-std::vector<std::thread> threads;
+boost::thread_group threads;
 
 //
 // SV_InitNetwork
@@ -577,13 +577,13 @@ void SV_InitNetwork (void)
 	SV_InitMasters();
 
 	// [jsd] spawn threads to distribute sending client updates:
-	unsigned count = std::thread::hardware_concurrency();
+	unsigned count = boost::thread::hardware_concurrency();
 	for (int i = 0; i < count; i++) {
-		senders.emplace_back();
+		senders.push_back(std::vector<player_s*>());
 		senders.back().resize(0);
 	}
 	for (int i = 0; i < count; i++) {
-		threads.emplace_back(PacketSenderThread, std::ref(senders[i]));
+		threads.add_thread(new boost::thread(PacketSenderThread, boost::ref(senders[i])));
 	}
 }
 
@@ -3382,7 +3382,7 @@ void SV_SendPackets()
 #if 1
 	{
 		// signal PacketSenderThreads to start:
-		std::unique_lock<std::mutex> lk(cv_start_m);
+		boost::unique_lock<boost::mutex> lk(cv_start_m);
 
 		// distribute players across worker threads:
 		thr_count = threads.size();
@@ -3403,8 +3403,9 @@ void SV_SendPackets()
 
 	// wait until all threads acknowledge start:
 	{
-		std::unique_lock<std::mutex> lk(cv_start_m);
-		cv_start.wait(lk, []{return thr_ready >= threads.size();});
+		boost::unique_lock<boost::mutex> lk(cv_start_m);
+		while (thr_ready < threads.size())
+			cv_start.wait(lk);
 		//printf("main   ready_send = false\n");
 		ready_send = false;
 		cv_start.notify_all();
@@ -3412,12 +3413,9 @@ void SV_SendPackets()
 
 	// wait until all threads done sending:
 	{
-		std::unique_lock<std::mutex> lk(cv_stop_m);
-		cv_stop.wait(lk, []{
-			int c = thr_count;
-			//printf("main   thr_count = %d\n", c);
-			return c <= 0;
-		});
+		boost::unique_lock<boost::mutex> lk(cv_stop_m);
+		while (thr_count > 0)
+			cv_stop.wait(lk);
 	}
 #else
 	static size_t fair_send = 0;
