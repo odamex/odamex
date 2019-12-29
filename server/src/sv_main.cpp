@@ -4612,28 +4612,29 @@ void SV_DownloadOriginal()
 		if (!cl->download.name.length())
 			continue;
 
-		static char buff[1024];
+		// create multiple smaller wadchunk messages so that we can fit reliablebuf + netbuf + wadchunks
+		// into a single packet if need be:
+		static char buff[(NET_PACKET_MAX / 4) - (7 + 5)];
+
+		// maximum rate client can download at (in bytes per tic)
+		const int download_rate = (int) (MIN((float) sv_waddownloadcap, (float) cl->rate) * 1000.0 / TICRATE);
+
 		// Smaller buffer for slower clients
-		int chunk_size = (sizeof(buff) > (unsigned)cl->rate * 1000 / TICRATE) ? cl->rate * 1000 / TICRATE : sizeof(buff);
+		const int chunk_size = MIN((int) sizeof(buff), download_rate);
 
-		// maximum rate client can download at (in bytes per second)
-		int download_rate = (sv_waddownloadcap > cl->rate) ? cl->rate * 1000 : sv_waddownloadcap * 1000;
+		// determine how many wadchunk messages to send:
+		const int chunk_count = download_rate / chunk_size;
 
-		do
+		for (int i = 0; i < chunk_count; i++)
 		{
 			// read next bit of wad
 			unsigned int read;
 			unsigned int filelen = 0;
+
 			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, chunk_size, buff, filelen);
 
 			if (!read)
 				break;
-
-			// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
-			// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
-			// This prevents packets from getting dropped due to size on some networks.
-			if (cl->netbuf.size() + cl->reliablebuf.size())
-				SV_SendPacket(*it);
 
 			if (!cl->download.next_offset)
 			{
@@ -4646,16 +4647,8 @@ void SV_DownloadOriginal()
 			MSG_WriteShort(&cl->netbuf, read);
 			MSG_WriteChunk(&cl->netbuf, buff, read);
 
-			// Make double-sure the wadchunk is sent in its own packet
-			if (cl->netbuf.size() + cl->reliablebuf.size())
-				SV_SendPacket(*it);
-
 			cl->download.next_offset += read;
-		} while (
-			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE
-			/ (double)(gametic % TICRATE)	// bps already used
-			+ (double)chunk_size / TICRATE 	// bps this chunk will use
-			< (double)download_rate);
+		};
 	}
 }
 
