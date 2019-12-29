@@ -170,6 +170,7 @@ bool SV_SendPacket(player_t &pl)
 
 	size_t rel = cl->reliablebuf.cursize, unr = cl->netbuf.cursize;
 	int iters = 0;
+	int sentrel = 0, sentunr = 0;
 
 	if (sendd.get() == nullptr) {
 		sendd.reset(new buf_t(MAX_UDP_PACKET));
@@ -179,12 +180,6 @@ bool SV_SendPacket(player_t &pl)
 	const int cl_rate = cl->rate * 1000;
 	const int max_iters = (cl_rate / NET_PACKET_MAX);
 	while (cl->reliablebuf.cursize + cl->netbuf.cursize > 0) {
-		// put a cap on this so we don't get stuck building enormous chains of packets:
-		if (++iters >= max_iters) {
-			cl->netbuf.clear();
-			break;
-		}
-
 		// determine our current bandwidth:
 		int bps = (int) ((double) ((cl->unreliable_bps + cl->reliable_bps) * TICRATE) / (double) ((gametic % 35) + 1));
 		if (bps > cl_rate) {
@@ -235,6 +230,7 @@ bool SV_SendPacket(player_t &pl)
 			cl->reliablebuf.TrimLeft(reliabletrim);
 			// record for rate limiting:
 			cl->reliable_bps += reliabletrim;
+			sentrel += reliabletrim;
 		}
 
 		// check if any space left for unreliable messages:
@@ -258,6 +254,7 @@ bool SV_SendPacket(player_t &pl)
 				cl->netbuf.TrimLeft(unreliabletrim);
 				// record for rate limiting:
 				cl->unreliable_bps += unreliabletrim;
+				sentunr += unreliabletrim;
 			}
 		}
 
@@ -277,7 +274,18 @@ bool SV_SendPacket(player_t &pl)
 #else
 		NET_SendPacket(*sendd.get(), cl->address);
 #endif
+
+		// put a cap on this so we don't get stuck building enormous chains of packets:
+		if (++iters >= max_iters) {
+			cl->netbuf.clear();
+			break;
+		}
 	}
+
+	Printf(PRINT_LOW | PRINT_RCON_MUTE,
+			"SV_SendPacket: sent %d packets, %d reliable bytes, %d unreliable bytes\n",
+			iters, sentrel, sentunr
+	);
 
 	return true;
 }

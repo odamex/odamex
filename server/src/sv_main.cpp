@@ -4280,11 +4280,16 @@ void SV_WantWad(player_t &player)
 
 	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
 
+	Printf(PRINT_LOW, "client requesting {name: \"%s\", hash: \"%s\"}\n", request.c_str(), md5.c_str());
+
 	size_t i;
 	std::string filename;
 	for (i = 0; i < wadfiles.size(); i++)
 	{
 		filename = D_CleanseFileName(wadfiles[i]);
+		Printf(PRINT_LOW, "wads[%d] = {name: \"%s\", hash: \"%s\"}\n", i,
+				filename.c_str(), wadhashes[i].c_str()
+		);
 		if (filename == request && (md5.empty() || wadhashes[i] == md5))
 			break;
 	}
