@@ -62,39 +62,41 @@ void CL_Reconnect(void);
 // this works though!
 struct download_s
 {
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		size_t got_bytes;
-        dtime_t timeout;
-		int retrycount;
-		
-		download_s()
+	std::string filename;
+	std::string md5;
+	buf_t *buf;
+	size_t got_bytes;
+	dtime_t timeout;
+	int retrycount;
+	int missed;
+
+	download_s()
+	{
+		buf = NULL;
+		this->clear();
+		timeout = 0;
+		missed = 0;
+	}
+
+	~download_s()
+	{
+	}
+
+	void clear()
+	{
+		filename = "";
+		md5 = "";
+		got_bytes = 0;
+		timeout = 0;
+		retrycount = 0;
+		missed = 0;
+
+		if (buf != NULL)
 		{
+			delete buf;
 			buf = NULL;
-			this->clear();
-			timeout = 0;
 		}
-
-		~download_s()
-		{
-		}
-
-		void clear()
-		{
-			filename = "";
-			md5 = "";
-			got_bytes = 0;
-            timeout = 0;
-            retrycount = 0;
-            
-			if (buf != NULL)
-			{
-				delete buf;
-				buf = NULL;
-			}
-		}
+	}
 } download;
 
 
@@ -408,13 +410,20 @@ void CL_Download()
 
 	// Reset retransmission timer
 	CL_DownloadTick();
-	
+
 	if (offset < download.got_bytes)
         return;
-	
+
 	// check for missing packet, re-request
 	if(offset > download.got_bytes)
 	{
+		// [jsd] don't flood the server with clc_wantwad responses:
+		if (download.missed == 0) {
+			download.missed = TICRATE;
+		} else {
+			download.missed--;
+			return;
+		}
 		DPrintf("Missed a packet after %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
 		MSG_WriteString(&net_buffer, download.filename.c_str());
@@ -423,6 +432,8 @@ void CL_Download()
 		NET_SendPacket(net_buffer, serveraddr);
 		return;
 	}
+
+	download.missed = 0;
 
 	// send keepalive
 	NET_SendPacket(net_buffer, serveraddr);
