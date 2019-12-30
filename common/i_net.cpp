@@ -1065,27 +1065,35 @@ void InitNetMessageFormats()
 //
 void InitNetCommon(void)
 {
-   unsigned long _true = true;
+	unsigned long _true = true;
 
 #ifdef _WIN32
    WSADATA   wsad;
    WSAStartup( MAKEWORD(2,2), &wsad );
 #endif
 
-   inet_socket = UDPsocket ();
+	inet_socket = UDPsocket ();
 
-    #ifdef ODA_HAVE_MINIUPNP
-    init_upnp();
-    #endif
+#ifdef ODA_HAVE_MINIUPNP
+	init_upnp();
+#endif
 
-   BindToLocalPort (inet_socket, localport);
-   if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
-       I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+	BindToLocalPort (inet_socket, localport);
+	if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
+		I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+
+	int n = 131072;
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, (const void *)&n, (int) sizeof(n)) == -1) {
+		I_FatalError ("UDPsocket: setsockopt SO_RCVBUF: %s", strerror(errno));
+	}
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, (const void *)&n, (int) sizeof(n)) == -1) {
+		I_FatalError ("UDPsocket: setsockopt SO_SNDBUF: %s", strerror(errno));
+	}
 
 	// enter message information into message info structs
 	InitNetMessageFormats();
 
-   SZ_Clear(&net_message);
+	SZ_Clear(&net_message);
 }
 
 //
