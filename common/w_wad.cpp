@@ -142,6 +142,11 @@ void uppercopy (char *to, const char *from)
 // denis - Standard MD5SUM
 std::string W_MD5(std::string filename)
 {
+	static std::map<std::string, std::string> md5cache;
+
+	std::string hashstr = md5cache[filename];
+	if (!hashstr.empty()) return hashstr;
+
 	const int file_chunk_size = 8192;
 	FILE *fp = fopen(filename.c_str(), "rb");
 
@@ -167,7 +172,10 @@ std::string W_MD5(std::string filename)
 	for(int i = 0; i < 16; i++)
 		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
 
-	return hash.str();
+	hashstr = hash.str();
+	md5cache[filename] = hashstr;
+
+	return hashstr;
 }
 
 
