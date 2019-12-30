@@ -69,6 +69,12 @@ typedef int SOCKET;
 #define Sleep(x)	usleep (x * 1000)
 #endif
 
+#ifdef _WIN32
+#define SETSOCKOPTCAST(x) ((const char *)(x))
+#else
+#define SETSOCKOPTCAST(x) ((const void *)(x))
+#endif
+
 #include "doomtype.h"
 
 #include "i_system.h"
@@ -1044,6 +1050,28 @@ void InitNetMessageFormats()
       svc_info[svc_messages[i].id] = svc_messages[i];
    }
 }
+
+
+CVAR_FUNC_IMPL(net_rcvbuf)
+{
+	int n = var.asInt();
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
+		Printf(PRINT_HIGH, "setsockopt SO_RCVBUF: %s", strerror(errno));
+	} else {
+		Printf(PRINT_HIGH, "net_rcvbuf set to %d\n", n);
+	}
+}
+
+CVAR_FUNC_IMPL(net_sndbuf)
+{
+	int n = var.asInt();
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
+		Printf (PRINT_HIGH, "setsockopt SO_SNDBUF: %s", strerror(errno));
+	} else {
+		Printf(PRINT_HIGH, "net_sndbuf set to %d\n", n);
+	}
+}
+
 
 //
 // InitNetCommon
