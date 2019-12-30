@@ -300,11 +300,12 @@ public:
 		{
 		public:
 			std::string name;
+			std::string md5;
 			unsigned int next_offset;
 
-			download_t() : name(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), next_offset(other.next_offset) {}
-		}download;
+			download_t() : name(""), md5(""), next_offset(0) {}
+			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
+		} download;
 
 		client_t()
 		{
