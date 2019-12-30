@@ -282,11 +282,6 @@ bool SV_SendPacket(player_t &pl)
 		}
 	}
 
-	Printf(PRINT_LOW | PRINT_RCON_MUTE,
-			"SV_SendPacket: sent %d packets, %d reliable bytes, %d unreliable bytes\n",
-			iters, sentrel, sentunr
-	);
-
 	return true;
 }
 
