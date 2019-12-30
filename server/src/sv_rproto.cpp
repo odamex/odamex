@@ -22,7 +22,9 @@
 //-----------------------------------------------------------------------------
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef USE_BOOST
 #include <boost/thread.hpp>
+#endif
 
 #include "doomtype.h"
 #include "doomstat.h"
@@ -43,8 +45,13 @@ EXTERN_CVAR (log_packetdebug)
 EXTERN_CVAR (sv_latency)
 #endif
 
+#ifdef USE_BOOST
 boost::thread_specific_ptr<buf_t> plain; // denis - todo - call_terms destroys these statics on quit
 boost::thread_specific_ptr<buf_t> sendd;
+#else
+buf_t plain(MAX_UDP_PACKET);
+buf_t sendd(MAX_UDP_PACKET);
+#endif
 
 //
 // SV_CompressPacket
@@ -56,9 +63,14 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 {
 	size_t orig_size = send.size();
 
+#ifdef USE_BOOST
 	if (plain.get() == nullptr) {
 		plain.reset(new buf_t(MAX_UDP_PACKET));
 	}
+#else
+	buf_t *plain = &::plain;
+#endif
+
 	if(plain->maxsize() < send.maxsize())
 		plain->resize(send.maxsize());
 	
@@ -172,9 +184,15 @@ bool SV_SendPacket(player_t &pl)
 	int iters = 0;
 	int sentrel = 0, sentunr = 0;
 
+#ifdef USE_BOOST
 	if (sendd.get() == nullptr) {
 		sendd.reset(new buf_t(MAX_UDP_PACKET));
 	}
+#define BUFREF(x) (x.get())
+#else
+	buf_t *sendd = &::sendd;
+#define BUFREF(x) (x)
+#endif
 
 	// send several packets while we have data to send:
 	const int cl_rate = cl->rate * 1000;
@@ -221,11 +239,11 @@ bool SV_SendPacket(player_t &pl)
 		// to use &0xff. Cool, eh? ;-)
 
 		// copy sequence
-		MSG_WriteLong(sendd.get(), cl->sequence++);
+		MSG_WriteLong(BUFREF(sendd), cl->sequence++);
 
 		// copy the reliable message to the packet first:
 		if (reliabletrim) {
-			SZ_Write(sendd.get(), cl->reliablebuf.data, reliabletrim);
+			SZ_Write(BUFREF(sendd), cl->reliablebuf.data, reliabletrim);
 			// trim out the messages we wrote from the reliablebuf:
 			cl->reliablebuf.TrimLeft(reliabletrim);
 			// record for rate limiting:
@@ -249,7 +267,7 @@ bool SV_SendPacket(player_t &pl)
 
 			// add the unreliable part:
 			if (unreliabletrim) {
-				SZ_Write(sendd.get(), cl->netbuf.data, unreliabletrim);
+				SZ_Write(BUFREF(sendd), cl->netbuf.data, unreliabletrim);
 				// trim out the messages we wrote from the unreliablebuf:
 				cl->netbuf.TrimLeft(unreliabletrim);
 				// record for rate limiting:
@@ -261,7 +279,7 @@ bool SV_SendPacket(player_t &pl)
 #if 1
 		// compress the packet, but not the sequence id
 		if (sendd->size() > sizeof(int))
-			SV_CompressPacket(*sendd.get(), sizeof(int), cl);
+			SV_CompressPacket(*BUFREF(sendd), sizeof(int), cl);
 #endif
 
 		if (log_packetdebug) {
@@ -270,9 +288,9 @@ bool SV_SendPacket(player_t &pl)
 		}
 
 #ifdef SIMULATE_LATENCY
-		SV_SendPacketDelayed(sendd, pl);
+		SV_SendPacketDelayed(BUFREF(sendd), pl);
 #else
-		NET_SendPacket(*sendd.get(), cl->address);
+		NET_SendPacket(*BUFREF(sendd), cl->address);
 #endif
 
 		// put a cap on this so we don't get stuck building enormous chains of packets:

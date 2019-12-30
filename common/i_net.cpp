@@ -35,7 +35,9 @@
 
 #include <sstream>
 
+#ifdef USE_BOOST
 #include <boost/thread.hpp>
+#endif
 
 /* [Petteri] Use Winsock for Win32: */
 #include "win32inc.h"
@@ -58,7 +60,6 @@
 #	include <errno.h>
 #	include <unistd.h>
 #	include <sys/time.h>
-#include <boost/thread.hpp>
 #endif // WIN32
 
 #ifndef _WIN32
@@ -121,8 +122,13 @@ extern bool	simulated_connection;
 // buffer for compression/decompression
 // can't be static to a function because some
 // of the functions
-buf_t decompressed;
+buf_t decompressed(MAX_UDP_PACKET);
+
+#ifdef USE_BOOST
 boost::thread_specific_ptr<buf_t> compressed;
+#else
+buf_t compressed(MAX_UDP_PACKET);
+#endif
 
 EXTERN_CVAR(port)
 
@@ -808,9 +814,14 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 	lzo_uint outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
 	size_t total_len = outlen + start_offset + write_gap;
 
+#ifdef USE_BOOST
 	if (compressed.get() == nullptr) {
 		compressed.reset(new buf_t(MAX_UDP_PACKET));
 	}
+#else
+	buf_t *compressed = &::compressed;
+#endif
+
 	if(compressed->maxsize() < total_len)
 		compressed->resize(total_len);
 
@@ -866,9 +877,14 @@ bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_
 	size_t outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
 	size_t total_len = outlen + start_offset + write_gap;
 
+#ifdef USE_BOOST
 	if (compressed.get() == nullptr) {
 		compressed.reset(new buf_t(MAX_UDP_PACKET));
 	}
+#else
+	buf_t *compressed = &::compressed;
+#endif
+
 	if(compressed->maxsize() < total_len)
 		compressed->resize(total_len);
 

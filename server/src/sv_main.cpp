@@ -71,8 +71,10 @@
 #include <sstream>
 #include <vector>
 
+#ifdef USE_BOOST
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
+#endif
 
 extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
@@ -491,7 +493,7 @@ BEGIN_COMMAND (exit)
 END_COMMAND (exit)
 
 
-
+#ifdef USE_BOOST
 volatile bool ready_send = false;
 boost::atomic_int thr_count, thr_ready;
 boost::mutex cv_start_m, cv_stop_m;
@@ -544,6 +546,7 @@ void PacketSenderThread(std::vector<player_s*> &q)
 
 std::vector<std::vector<player_s*> > senders;
 boost::thread_group threads;
+#endif
 
 //
 // SV_InitNetwork
@@ -580,6 +583,7 @@ void SV_InitNetwork (void)
 	// Nes - Connect with the master servers. (If valid)
 	SV_InitMasters();
 
+#ifdef USE_BOOST
 	// [jsd] spawn threads to distribute sending client updates:
 	unsigned count = MAX(1u, boost::thread::hardware_concurrency() - 1u);
 	for (int i = 0; i < count; i++) {
@@ -590,10 +594,12 @@ void SV_InitNetwork (void)
 	for (int i = 0; i < count; i++) {
 		threads.add_thread(new boost::thread(PacketSenderThread, boost::ref(senders[i])));
 	}
+#endif
 }
 
 void SV_ShutdownNetwork(void)
 {
+#ifdef USE_BOOST
 	// notify threads to stop:
 	Printf(PRINT_HIGH, "SV_ShutdownNetwork: Notifying network threads\n");
 	{
@@ -609,6 +615,7 @@ void SV_ShutdownNetwork(void)
 
 	Printf(PRINT_HIGH, "SV_ShutdownNetwork: Waiting on network threads\n");
 	threads.join_all();
+#endif
 
 	Printf(PRINT_HIGH, "SV_ShutdownNetwork complete\n");
 }
@@ -3405,7 +3412,7 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
-#if 1
+#ifdef USE_BOOST
 	{
 		// signal PacketSenderThreads to start:
 		boost::unique_lock<boost::mutex> lk(cv_start_m);
