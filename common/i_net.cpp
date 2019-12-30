@@ -59,7 +59,6 @@
 #	include <unistd.h>
 #	include <sys/time.h>
 #include <boost/thread.hpp>
-
 #endif // WIN32
 
 #ifndef _WIN32
@@ -71,6 +70,12 @@ typedef int SOCKET;
 #define closesocket close
 #define ioctlsocket ioctl
 #define Sleep(x)	usleep (x * 1000)
+#endif
+
+#ifdef _WIN32
+#define SETSOCKOPTCAST(x) ((const char *)(x))
+#else
+#define SETSOCKOPTCAST(x) ((const void *)(x))
 #endif
 
 #include "doomtype.h"
@@ -1083,10 +1088,10 @@ void InitNetCommon(void)
 		I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	int n = 131072;
-	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, (const void *)&n, (int) sizeof(n)) == -1) {
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
 		I_FatalError ("UDPsocket: setsockopt SO_RCVBUF: %s", strerror(errno));
 	}
-	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, (const void *)&n, (int) sizeof(n)) == -1) {
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
 		I_FatalError ("UDPsocket: setsockopt SO_SNDBUF: %s", strerror(errno));
 	}
 
