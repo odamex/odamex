@@ -411,6 +411,12 @@ void CL_Download()
 	// Reset retransmission timer
 	CL_DownloadTick();
 
+	download.missed = (download.missed + 1) & 63;
+	if (download.missed == 63) {
+		// send keepalive
+		NET_SendPacket(net_buffer, serveraddr);
+	}
+
 	if (offset < download.got_bytes)
         return;
 
@@ -418,12 +424,10 @@ void CL_Download()
 	if(offset > download.got_bytes)
 	{
 		// [jsd] don't flood the server with clc_wantwad responses:
-		if (download.missed == 0) {
-			download.missed = TICRATE;
-		} else {
-			download.missed--;
+		if (download.missed < 63) {
 			return;
 		}
+
 		DPrintf("Missed a packet after %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
 		MSG_WriteString(&net_buffer, download.filename.c_str());
@@ -434,9 +438,6 @@ void CL_Download()
 	}
 
 	download.missed = 0;
-
-	// send keepalive
-	NET_SendPacket(net_buffer, serveraddr);
 
 	// copy into downloaded buffer
 	memcpy(download.buf->ptr() + offset, p, len);
