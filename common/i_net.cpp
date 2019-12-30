@@ -1081,6 +1081,28 @@ void InitNetMessageFormats()
    }
 }
 
+
+CVAR_FUNC_IMPL(net_rcvbuf)
+{
+	int n = var.asInt();
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
+		Printf(PRINT_HIGH, "setsockopt SO_RCVBUF: %s", strerror(errno));
+	} else {
+		Printf(PRINT_HIGH, "net_rcvbuf set to %d\n", n);
+	}
+}
+
+CVAR_FUNC_IMPL(net_sndbuf)
+{
+	int n = var.asInt();
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
+		Printf (PRINT_HIGH, "setsockopt SO_SNDBUF: %s", strerror(errno));
+	} else {
+		Printf(PRINT_HIGH, "net_sndbuf set to %d\n", n);
+	}
+}
+
+
 //
 // InitNetCommon
 //
@@ -1102,14 +1124,6 @@ void InitNetCommon(void)
 	BindToLocalPort (inet_socket, localport);
 	if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
 		I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
-
-	int n = 131072;
-	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
-		I_FatalError ("UDPsocket: setsockopt SO_RCVBUF: %s", strerror(errno));
-	}
-	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
-		I_FatalError ("UDPsocket: setsockopt SO_SNDBUF: %s", strerror(errno));
-	}
 
 	// enter message information into message info structs
 	InitNetMessageFormats();
