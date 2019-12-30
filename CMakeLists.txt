@@ -130,7 +130,9 @@ if (USE_MINIUPNP)
   add_subdirectory(libraries/libminiupnpc)
 endif()
 
-# Boost; 1.65.1 is offered by Ubuntu 18.04 LTS
+# Boost; 1.65.1 is offered by Ubuntu 18.04 LTS and also appveyor
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
 find_package(Boost 1.65.1 COMPONENTS thread REQUIRED)
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
