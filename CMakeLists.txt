@@ -130,8 +130,8 @@ if (USE_MINIUPNP)
   add_subdirectory(libraries/libminiupnpc)
 endif()
 
-# Boost
-find_package(Boost 1.70.0 COMPONENTS thread REQUIRED)
+# Boost; 1.65.1 is offered by Ubuntu 18.04 LTS
+find_package(Boost 1.65.1 COMPONENTS thread REQUIRED)
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
 endif()
