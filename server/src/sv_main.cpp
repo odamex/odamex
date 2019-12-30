@@ -506,12 +506,14 @@ void PacketSenderThread(std::vector<player_s*> &q)
 		//printf("thread wait\n");
 		{
 			boost::unique_lock<boost::mutex> lk(cv_start_m);
-			while (!ready_send)
+			while (!thr_done && !ready_send)
 				cv_start.wait(lk);
 			thr_ready++;
 			//printf("thread thr_ready = %d\n", (int) thr_ready);
 			cv_start.notify_all();
 		}
+
+		if (thr_done) break;
 
 		//printf("thread sending %ld players\n", q.size());
 		for (std::vector<player_s*>::iterator it = q.begin(); it != q.end(); it++) {
@@ -524,9 +526,11 @@ void PacketSenderThread(std::vector<player_s*> &q)
 		// wait until all other threads are started:
 		{
 			boost::unique_lock<boost::mutex> lk(cv_start_m);
-			while (ready_send)
+			while (!thr_done && ready_send)
 				cv_start.wait(lk);
 		}
+
+		if (thr_done) break;
 
 		// Signal main thread our task is done:
 		{
@@ -582,9 +586,31 @@ void SV_InitNetwork (void)
 		senders.push_back(std::vector<player_s*>());
 		senders.back().resize(0);
 	}
+
 	for (int i = 0; i < count; i++) {
 		threads.add_thread(new boost::thread(PacketSenderThread, boost::ref(senders[i])));
 	}
+}
+
+void SV_ShutdownNetwork(void)
+{
+	// notify threads to stop:
+	Printf(PRINT_HIGH, "SV_ShutdownNetwork: Notifying network threads\n");
+	{
+		boost::unique_lock<boost::mutex> lk(cv_start_m);
+		thr_done = true;
+		cv_start.notify_all();
+	}
+
+	{
+		boost::unique_lock<boost::mutex> lk(cv_stop_m);
+		cv_stop.notify_all();
+	}
+
+	Printf(PRINT_HIGH, "SV_ShutdownNetwork: Waiting on network threads\n");
+	threads.join_all();
+
+	Printf(PRINT_HIGH, "SV_ShutdownNetwork complete\n");
 }
 
 Players::iterator SV_MakePlayerClient(void)

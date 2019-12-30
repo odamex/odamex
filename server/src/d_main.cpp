@@ -296,6 +296,7 @@ void D_DoomMain()
 
 	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
 	SV_InitNetwork();
+	atterm(SV_ShutdownNetwork);
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();

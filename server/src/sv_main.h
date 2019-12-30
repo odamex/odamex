@@ -50,6 +50,7 @@ public:
 extern client_c clients;
 
 void SV_InitNetwork (void);
+void SV_ShutdownNetwork (void);
 void SV_SendDisconnectSignal();
 void SV_SendReconnectSignal();
 void SV_ExitLevel();
