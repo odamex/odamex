@@ -581,7 +581,7 @@ void SV_InitNetwork (void)
 	SV_InitMasters();
 
 	// [jsd] spawn threads to distribute sending client updates:
-	unsigned count = boost::thread::hardware_concurrency();
+	unsigned count = MAX(1u, boost::thread::hardware_concurrency() - 1u);
 	for (int i = 0; i < count; i++) {
 		senders.push_back(std::vector<player_s*>());
 		senders.back().resize(0);
