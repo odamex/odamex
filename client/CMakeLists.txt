@@ -225,6 +225,10 @@ if(SDL_VERSION)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
+  if(Boost_FOUND)
+    target_link_libraries(odamex ${Boost_LIBRARIES})
+  endif()
+
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
