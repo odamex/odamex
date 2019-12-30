@@ -37,6 +37,7 @@
 #include "d_player.h"
 #include "r_defs.h"
 #include "i_system.h"
+#include "c_pch.h"
 
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
@@ -985,6 +986,52 @@ BEGIN_COMMAND (error)
 	I_Error (text.c_str());
 }
 END_COMMAND (error)
+
+void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
+
+BEGIN_COMMAND (trigger_special)
+	{
+		if (argc < 3) {
+			Printf (PRINT_HIGH, "trigger_special <special> <tag> [flags]\n");
+			return;
+		}
+
+		int special = atoi(argv[1]);
+		if (special < 0 || special > 255) {
+			Printf (PRINT_HIGH, "special must be between 0 and 255\n");
+			return;
+		}
+
+		int tag = atoi(argv[2]);
+
+		maplinedef_t mld;
+		mld.special = special;
+		mld.tag = tag;
+		mld.flags = 0;
+
+		if (argc >= 4) {
+			mld.flags = atoi(argv[3]);
+		}
+
+		try {
+			line_t ld;
+			P_TranslateLineDef(&ld, &mld);
+
+			DPrintf("specials[%d](null, null, %d, %d, %d, %d, %d)\n",
+					ld.special,
+					ld.args[0], ld.args[1], ld.args[2], ld.args[3], ld.args[4]
+			);
+
+			BOOL result = LineSpecials[ld.special](NULL, NULL, ld.args[0], ld.args[1], ld.args[2], ld.args[3], ld.args[4]);
+			if (!result) {
+				DPrintf("lnspecfunc returned false\n");
+			}
+		} catch (CRecoverableError &e) {
+			// catches CRecoverableError thrown from I_Error()
+			Printf(PRINT_HIGH, "special threw an exception: %s\n", e.GetMsg().c_str());
+		}
+	}
+END_COMMAND (trigger_special)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
 
