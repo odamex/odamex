@@ -52,7 +52,7 @@
 #include "cl_vote.h"
 
 static int		widestnum, numheight;
-static const patch_t	*medi;
+static const patch_t	*medi[2];
 static const patch_t	*armors[2];
 static const patch_t	*ammos[4];
 static const patch_t	*bigammos[4];
@@ -75,8 +75,11 @@ static const patch_t *line_centerright;
 static const patch_t *line_centerfull;
 static const patch_t *line_rightempty;
 static const patch_t *line_rightfull;
+
+static const char medipatches[2][8] = { "MEDIA0", "PSTRA0" };
 static const char ammopatches[4][8] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
 static const char bigammopatches[4][8] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
+
 static int		NameUp = -1;
 
 extern patch_t	*sttminus;
@@ -95,13 +98,12 @@ int V_TextScaleYAmount();
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_targetcount)
+EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR (sv_fraglimit)
 
 void ST_unloadNew (void)
 {
 	int i;
-
-	Z_ChangeTag (medi, PU_CACHE);
 
 	Z_ChangeTag (flagiconteam, PU_CACHE);
 	Z_ChangeTag (flagiconbhome, PU_CACHE);
@@ -124,7 +126,10 @@ void ST_unloadNew (void)
 	Z_ChangeTag (line_rightfull, PU_CACHE);
 
 	for (i = 0; i < 2; i++)
-		Z_ChangeTag (armors[i], PU_CACHE);
+	{
+		Z_ChangeTag(medi[i], PU_CACHE);
+		Z_ChangeTag(armors[i], PU_CACHE);
+	}
 
 	for (i = 0; i < 4; i++)
 		Z_ChangeTag (ammos[i], PU_CACHE);
@@ -160,8 +165,11 @@ void ST_initNew (void)
 			bigammos[i] = W_CachePatch (lump, PU_STATIC);
 	}
 
-	if ((lump = W_CheckNumForName ("MEDIA0", ns_sprites)) != -1)
-		medi = W_CachePatch (lump, PU_STATIC);
+	for (i = 0; i < 2; i++)
+	{
+		if ((lump = W_CheckNumForName(medipatches[i], ns_sprites)) != -1)
+			medi[i] = W_CachePatch(lump, PU_STATIC);
+	}
 
 	flagiconteam = W_CachePatch ("FLAGIT", PU_STATIC);
 	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
@@ -176,7 +184,7 @@ void ST_initNew (void)
 	widestnum = widest;
 	numheight = tallnum[0]->height();
 
-	if (multiplayer && (sv_gametype == GM_COOP || demoplayback || !netgame) && level.time)
+	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
 	line_leftempty = W_CachePatch ("ODABARLE", PU_STATIC);
@@ -527,6 +535,9 @@ void drawNetdemo() {
 		return;
 	}
 
+	if (!hud_demobar)
+		return;
+
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
@@ -738,12 +749,25 @@ void ZDoomHUD() {
 	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
 
 	// Draw health
-	if (hud_scale)
-		screen->DrawLucentPatchCleanNoMove (medi, 20 * CleanXfac,
-									  I_GetSurfaceHeight() - 2*CleanYfac);
-	else
-		screen->DrawLucentPatch (medi, 20, I_GetSurfaceHeight() - 2);
-	ST_DrawNum (40 * xscale, y, screen, plyr->health);
+	{
+		const patch_t *curr_powerup = medi[0];
+		int xPos = 20;
+		int yPos = 2;
+
+		if (plyr->powers[pw_strength])
+		{
+			curr_powerup = medi[1];
+			xPos -= 1;	// the x position of the Berzerk is 1 pixel to the right compared to the Medikit.
+			yPos += 4;	// the y position of the Berzerk is slightly lowered by 4. So make it the same y position as the medikit.
+		}
+
+		if (hud_scale)
+			screen->DrawLucentPatchCleanNoMove(curr_powerup, xPos * CleanXfac,
+				I_GetSurfaceHeight() - yPos * CleanYfac);
+		else
+			screen->DrawLucentPatch(curr_powerup, xPos, I_GetSurfaceHeight() - yPos);
+		ST_DrawNum(40 * xscale, y, screen, plyr->health);
+	}
 
 	// Draw armor
 	if (plyr->armortype && plyr->armorpoints)

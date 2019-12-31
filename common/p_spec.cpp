@@ -996,22 +996,21 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (int secnum)
+fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	sector_t *sec = &sectors[secnum];
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum, i, 0);
+			side = getSide (sec, i, 0);
 			if (side->bottomtexture >= 0)
 				if (textureheight[side->bottomtexture] < minsize)
 					minsize = textureheight[side->bottomtexture];
-			side = getSide (secnum, i, 1);
+			side = getSide (sec, i, 1);
 			if (side->bottomtexture >= 0)
 				if (textureheight[side->bottomtexture] < minsize)
 					minsize = textureheight[side->bottomtexture];
@@ -1032,22 +1031,21 @@ fixed_t P_FindShortestTextureAround (int secnum)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (int secnum)
+fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	sector_t *sec = &sectors[secnum];
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum,i,0);
+			side = getSide (sec,i,0);
 			if (side->toptexture >= 0)
 				if (textureheight[side->toptexture] < minsize)
 					minsize = textureheight[side->toptexture];
-			side = getSide (secnum,i,1);
+			side = getSide (sec,i,1);
 			if (side->toptexture >= 0)
 				if (textureheight[side->toptexture] < minsize)
 					minsize = textureheight[side->toptexture];
@@ -1073,9 +1071,9 @@ fixed_t P_FindShortestUpperAround (int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
+sector_t *P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -1110,9 +1108,9 @@ sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, int secnum)
+sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -1306,11 +1304,6 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		C_MidPrint (GStrings(msg), p);
 	}
 
-	if (serverside && network_game && msg)
-	{
-		C_MidPrint (GStrings(msg), p);
-	}
-
 	return false;
 }
 
@@ -1358,7 +1351,7 @@ P_CrossSpecialLine
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1467,7 +1460,7 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return;
 
 	if(thing)
@@ -1494,7 +1487,7 @@ P_ShootSpecialLine
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 }
@@ -1512,7 +1505,7 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1571,7 +1564,7 @@ P_UseSpecialLine
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
@@ -1592,7 +1585,7 @@ P_PushSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials(line))
+	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1637,7 +1630,7 @@ P_PushSpecialLine
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
@@ -1782,8 +1775,11 @@ void P_PlayerInSpecialSector (player_t *player)
 			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
+
+#ifdef CLIENT_APP
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();
+#endif
 		}
 	}
 }

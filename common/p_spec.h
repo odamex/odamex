@@ -198,9 +198,9 @@ void    P_PlayerInSpecialSector (player_t *player);
 //	given the number of the current sector,
 //	the line number, and the side (0/1) that you want.
 //
-inline side_t *getSide (int currentSector, int line, int side)
+inline side_t *getSide (sector_t *sec, int line, int side)
 {
-	return &sides[ (sectors[currentSector].lines[line])->sidenum[side] ];
+	return &sides[ (sec->lines[line])->sidenum[side] ];
 }
 
 //
@@ -220,9 +220,9 @@ inline sector_t *getSector (int currentSector, int line, int side)
 // Given the sector number and the line number,
 //	it will tell you whether the line is two-sided or not.
 //
-inline int twoSided (int sector, int line)
+inline int twoSided (sector_t *sec, int line)
 {
-	return (sectors[sector].lines[line])->flags & ML_TWOSIDED;
+	return (sec->lines[line])->flags & ML_TWOSIDED;
 }
 
 //
@@ -253,11 +253,11 @@ fixed_t	P_FindHighestCeilingSurrounding (sector_t *sec);	// jff 2/04/98
 fixed_t P_FindNextLowestCeiling (sector_t *sec);		// jff 2/04/98
 fixed_t P_FindNextHighestCeiling (sector_t *sec);	// jff 2/04/98
 
-fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
-fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98
+fixed_t P_FindShortestTextureAround (sector_t *sec);	// jff 2/04/98
+fixed_t P_FindShortestUpperAround (sector_t *sec);		// jff 2/04/98
 
-sector_t* P_FindModelFloorSector (fixed_t floordestheight, int secnum);	//jff 02/04/98
-sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98
+sector_t* P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec);	//jff 02/04/98
+sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec);	//jff 02/04/98
 
 int		P_FindSectorFromTag (int tag, int start);
 int		P_FindLineFromID (int id, int start);
@@ -426,7 +426,7 @@ typedef struct
 // 1 second, in ticks.
 #define BUTTONTIME		TICRATE
 
-void	P_ChangeSwitchTexture (line_t *line, int useAgain);
+void	P_ChangeSwitchTexture (line_t *line, int useAgain, bool playsound);
 
 void	P_InitSwitchList ();
 
@@ -478,6 +478,7 @@ public:
 
 	DPlat(sector_t *sector);
 	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
+	DPlat* Clone(sector_t* sec) const;
 	friend void P_SetPlatDestroy(DPlat *plat);
 	
 	void PlayPlatSound ();
@@ -554,6 +555,7 @@ public:
 
 	DPillar (sector_t *sector, EPillar type, fixed_t speed, fixed_t height,
 			 fixed_t height2, bool crush);
+	DPillar* Clone(sector_t* sec) const;
 	friend void P_SetPillarDestroy(DPillar *pillar);	
 	
 	void RunThink ();
@@ -623,6 +625,7 @@ public:
 	DDoor (sector_t *sector);
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
+	DDoor* Clone(sector_t* sec) const;
 
 	friend void P_SetDoorDestroy(DDoor *door);
 	
@@ -723,6 +726,7 @@ public:
 
 	DCeiling (sector_t *sec);
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
+	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
 	
 	void RunThink ();
@@ -846,6 +850,7 @@ public:
 	DFloor(sector_t *sec);
 	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
 		   fixed_t height, bool crush, int change);
+	DFloor* Clone(sector_t* sec) const;
 	friend void P_SetFloorDestroy(DFloor *floor);
 		
 	void RunThink ();
@@ -923,6 +928,7 @@ public:
 	};
 
 	DElevator (sector_t *sec);
+	DElevator* Clone(sector_t* sec) const;
 	friend void P_SetElevatorDestroy(DElevator *elevator);	
 
 	void RunThink ();

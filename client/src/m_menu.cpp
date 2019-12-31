@@ -687,12 +687,6 @@ void M_LoadSelect (int choice)
 //
 void M_LoadGame (int choice)
 {
-	/*if (netgame)
-	{
-		M_StartMessage (LOADNET,NULL,false);
-		return;
-	}*/
-
 	M_SetupNextMenu (&LoadDef);
 	M_ReadSaveStrings ();
 }
@@ -861,12 +855,6 @@ void M_QuickLoadResponse(int ch)
 
 void M_QuickLoad(void)
 {
-	/*if (netgame)
-	{
-		M_StartMessage(QLOADNET,NULL,false);
-		return;
-	}*/
-
 	if (quickSaveSlot < 0)
 	{
 		M_StartControlPanel();
@@ -949,12 +937,6 @@ void M_DrawNewGame(void)
 
 void M_NewGame(int choice)
 {
-/*	if (netgame && !demoplayback)
-	{
-		M_StartMessage(NEWGAME,NULL,false);
-		return;
-	}
-*/
 	if (gameinfo.flags & GI_MAPxx)
     {
         if (gamemode == commercial_bfg)
@@ -1795,7 +1777,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = ev->data3;	// [RH] Use user keymap
+			ch = ev->data2;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <

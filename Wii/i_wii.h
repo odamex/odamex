@@ -41,8 +41,11 @@
 #define select net_select
 #define ioctl net_ioctl
 
+#define PathIsRelative wii_pathisrelative
 #define scandir wii_scandir
 #define alphasort wii_alphasort
+
+bool wii_pathisrelative(const char *path);
 
 int wii_getsockname(int socket, struct sockaddr *address, socklen_t *address_len);
 int wii_gethostname(char *name, size_t namelen);

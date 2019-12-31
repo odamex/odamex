@@ -1357,7 +1357,11 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 	MServer.SetSocket(&socket);
 
 	// Get a list of servers
+#ifdef _XBOX
+	MServer.QueryMasters(masterTimeout, 0, 2); // TODO: Make broadcast and retry configurable
+#else
 	MServer.QueryMasters(masterTimeout, 1, 2); // TODO: Make broadcast and retry configurable
+#endif
 
 	serverCount = MServer.GetServerCount();
 

@@ -80,7 +80,7 @@ protected:
 	void OnOpenChangeLog(wxCommandEvent& event);
 	void OnOpenReportBug(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);
-	void OnConnectToIRC(wxCommandEvent& event);
+	void OnOpenChat(wxCommandEvent& event);
 
 	void OnTextSearch(wxCommandEvent& event);
 

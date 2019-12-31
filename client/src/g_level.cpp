@@ -35,6 +35,7 @@
 #include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"
+#include "g_warmup.h"
 #include "gstrings.h"
 #include "gi.h"
 #include "hu_stuff.h"
@@ -65,8 +66,8 @@
 #include "z_zone.h"
 #include "discord.h"
 
-#define lioffset(x)		myoffsetof(level_pwad_info_t,x)
-#define cioffset(x)		myoffsetof(cluster_info_t,x)
+#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define cioffset(x)		offsetof(cluster_info_t,x)
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
@@ -165,7 +166,6 @@ void G_DoNewGame (void)
 
 	CL_QuitNetGame();
 
-	netgame = false;
 	multiplayer = false;
 
 	// denis - single player warp (like in d_main)
@@ -173,8 +173,10 @@ void G_DoNewGame (void)
 
 	players.clear();
 	players.push_back(player_t());
-	players.back().playerstate = PST_REBORN;
+	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
+
+	warmup.set_client_status(Warmup::DISABLED);		// Ch0wW: disable warmup
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
@@ -262,10 +264,6 @@ void G_InitNew (const char *mapname)
 		level.time = 0;
 		level.timeleft = 0;
 		level.inttimeleft = 0;
-
-		// force players to be initialized upon first level load
-		for (Players::iterator it = players.begin();it != players.end();++it)
-			it->playerstate = PST_ENTER; // [BC]
 	}
 
 	AM_Stop();
@@ -517,8 +515,12 @@ void G_DoLoadLevel (int position)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (it->ingame() && it->playerstate == PST_DEAD)
-			it->playerstate = PST_REBORN;
+		if (it->ingame())
+		{
+			if (it->playerstate == PST_REBORN)
+				it->doreborn = true;
+			it->playerstate = PST_ENTER;
+		}
 
 		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
 		//      make sure they're gone.

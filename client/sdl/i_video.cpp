@@ -898,6 +898,24 @@ bool I_IsProtectedResolution(const IWindowSurface* surface)
 	return I_IsProtectedResolution(surface->getWidth(), surface->getHeight());
 }
 
+//
+// I_IsWideResolution
+//
+bool I_IsWideResolution(int width, int height)
+{
+	if (I_IsProtectedResolution(width, height))
+		return false;
+
+	// consider the mode widescreen if it's width-to-height ratio is
+	// closer to 16:10 than it is to 4:3
+	return abs(15 * width - 20 * height) > abs(15 * width - 24 * height);
+}
+
+bool I_IsWideResolution(const IWindowSurface* surface)
+{
+	return I_IsWideResolution(surface->getWidth(), surface->getHeight());
+}
+
 
 //
 // I_LockAllSurfaces

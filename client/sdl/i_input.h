@@ -87,6 +87,20 @@ struct IInputDeviceInfo
 
 // ============================================================================
 //
+// IKeyboardInputDevice abstract base class interface
+//
+// ============================================================================
+
+class IKeyboardInputDevice : public IInputDevice
+{
+public:
+	virtual void enableTextEntry() {}
+	virtual void disableTextEntry() {}
+};
+
+
+// ============================================================================
+//
 // IInputSubsystem abstract base class interface
 //
 // ============================================================================
@@ -102,6 +116,8 @@ public:
 
 	virtual void enableKeyRepeat();
 	virtual void disableKeyRepeat();
+	virtual void enableTextEntry();
+	virtual void disableTextEntry();
 
 	virtual void flushInput()
 	{
@@ -204,27 +220,5 @@ private:
 	IInputDevice*		mJoystickInputDevice;
 };
 
-
-// ============================================================================
-//
-// Mouse Driver selection declarations
-//
-// ============================================================================
-enum
-{
-	SDL_MOUSE_DRIVER = 0,
-	RAW_WIN32_MOUSE_DRIVER = 1,
-	NUM_MOUSE_DRIVERS = 2
-};
-
-typedef struct
-{
-	int				id;
-	const char*		name;
-	bool 			(*avail_test)();
-} MouseDriverInfo_t;
-
-MouseDriverInfo_t* I_FindMouseDriverInfo(int id);
-extern MouseDriverInfo_t MouseDriverInfo[];
 
 #endif  // __I_INPUT_H__

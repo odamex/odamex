@@ -1611,7 +1611,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	for (int i = 0; i < NUM_GLOBALVARS; i++)
 		arc >> ACS_GlobalVars[i];
 
-	netgame = multiplayer = true;
+	multiplayer = true;
 
 	// load a base level
 	savegamerestore = true;     // Use the player actors in the savegame

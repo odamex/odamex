@@ -678,6 +678,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
+	// Don't clip against a player
+	if (tmthing->player && thing->player && sv_unblockplayers)
+		return true;
+
 	// over / under thing
 	if (tmthing->z > thing->z + thing->height)
 		return true;
@@ -2959,7 +2963,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		P_SetMobjState (thing, S_GIBS);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
-		if ((demoplayback || demorecording) && democlassic) {
+		if ((demoplayback || demorecording)) {
 			thing->height = 0;
 			thing->radius = 0;
 		}
@@ -3694,6 +3698,9 @@ fixed_t P_HighestHeightOfFloor(sector_t *sector)
 //
 // P_CopySector
 //
+// This function allocates ceilingdata, floordata and lightingdata.
+// Be sure to delete them once you're done with the copy.
+//
 void P_CopySector(sector_t *dest, sector_t *src)
 {
 	if (!dest || !src)
@@ -3759,9 +3766,20 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->thinglist				= src->thinglist;
 	dest->soundtarget			= src->soundtarget;
 
-	dest->ceilingdata			= src->ceilingdata;
-	dest->floordata				= src->floordata;
-	dest->lightingdata			= src->lightingdata;
+	if (src->ceilingdata != NULL)
+		dest->ceilingdata = src->ceilingdata->Clone(dest);
+	else
+		dest->ceilingdata = NULL;
+	
+	if (src->floordata != NULL)
+		dest->floordata = src->floordata->Clone(dest);
+	else
+		dest->floordata = NULL;
+	
+	if (src->lightingdata != NULL)
+		dest->lightingdata = src->lightingdata->Clone(dest);
+	else
+		dest->lightingdata = NULL;
 }
 
 

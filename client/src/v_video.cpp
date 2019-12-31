@@ -123,12 +123,58 @@ void V_AdjustVideoMode()
 }
 
 
+EXTERN_CVAR(vid_defwidth)
+EXTERN_CVAR(vid_defheight)
+EXTERN_CVAR(vid_32bpp)
+EXTERN_CVAR(vid_fullscreen)
+EXTERN_CVAR(vid_widescreen)
+EXTERN_CVAR(sv_allowwidescreen)
+EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_pillarbox)
+
+int vid_pillarbox_old = -1;
+int vid_32bpp_old = -1;
+
+bool V_CheckModeAdjustment()
+{
+	const IWindow* window = I_GetWindow();
+	if (!window)
+		return false;
+
+	if (vid_32bpp != vid_32bpp_old)
+	{
+		vid_32bpp_old = vid_32bpp;
+		return true;
+	}
+
+	if (vid_fullscreen != window->isFullScreen())
+		return true;
+
+	if (vid_vsync != window->usingVSync())
+		return true;
+
+	bool using_widescreen = I_IsWideResolution();
+	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
+		return true;
+
+	if (vid_widescreen != using_widescreen)
+		return true;
+
+	if (vid_pillarbox_old != vid_pillarbox)
+	{
+		vid_pillarbox_old = vid_pillarbox;
+		return true;
+	}
+
+	return false;
+}
+
 CVAR_FUNC_IMPL(vid_defwidth)
 {
 	if (var < 320 || var > MAXWIDTH)
 		var.RestoreDefault();
 	
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_SetResolution(var, new_video_height);
 }
 
@@ -138,28 +184,28 @@ CVAR_FUNC_IMPL(vid_defheight)
 	if (var < 200 || var > MAXHEIGHT)
 		var.RestoreDefault();
 	
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_SetResolution(new_video_width, var);
 }
 
 
 CVAR_FUNC_IMPL(vid_fullscreen)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_32bpp)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
@@ -187,14 +233,20 @@ CVAR_FUNC_IMPL(vid_640x400)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
+}
+
+CVAR_FUNC_IMPL(vid_pillarbox)
+{
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	if (gamestate != GS_STARTUP)
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
 
@@ -520,6 +572,9 @@ void V_Init()
 	C_NewModeAdjust();
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
+
+	vid_pillarbox_old = vid_pillarbox;
+	vid_32bpp_old = vid_32bpp;
 }
 
 

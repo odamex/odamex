@@ -58,8 +58,8 @@
 #include "w_ident.h"
 #include "z_zone.h"
 
-#define lioffset(x)		myoffsetof(level_pwad_info_t,x)
-#define cioffset(x)		myoffsetof(cluster_info_t,x)
+#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define cioffset(x)		offsetof(cluster_info_t,x)
 
 level_locals_t level;			// info about current level
 
@@ -80,7 +80,7 @@ enum
 {
 	MITL_MAP,
 	MITL_DEFAULTMAP,
-	MITL_CLUSTERDEF
+	MITL_CLUSTERDEF,
 };
 
 static const char *MapInfoMapLevel[] =
@@ -126,6 +126,8 @@ static const char *MapInfoMapLevel[] =
 	"warptrans",
 	"gravity",
 	"aircontrol",
+	"islobby",					// Support for lobbies
+	"lobby",					// Alias for "islobby"
 	NULL
 };
 
@@ -143,7 +145,7 @@ enum EMIType
 	MITYPE_SCFLAGS,
 	MITYPE_CLUSTER,
 	MITYPE_STRING,
-	MITYPE_CSTRING
+	MITYPE_CSTRING,
 };
 
 struct MapInfoHandler
@@ -193,7 +195,9 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 }
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
+	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -355,6 +359,9 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		}
 
 		int entry = SC_MustMatchString(strings);
+		if (entry == -1)
+			continue;
+
 		handler = handlers + entry;
 
 		switch (handler->type)
@@ -562,8 +569,11 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 
 		// [SL] Stop any playing/recording demos before D_DoomWadReboot wipes out
 		// the zone memory heap and takes the demo data with it.
-		G_CheckDemoStatus();
-
+#ifdef CLIENT_APP
+		{
+			G_CheckDemoStatus();
+		}
+#endif
 		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 		if (!missingfiles.empty())
 		{
@@ -637,12 +647,13 @@ BEGIN_COMMAND (map)
 {
 	if (argc > 1)
 	{
+		char mapname[32];
+
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
 		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
-			char mapname[32];
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
             // [Russell] - gamemode is always the better option compared to above
@@ -676,7 +687,8 @@ BEGIN_COMMAND (map)
 			else
 			{
 				unnatural_level_progression = true;
-				G_DeferedInitNew (argv[1]);
+				uppercopy(mapname, argv[1]); // uppercase the mapname
+				G_DeferedInitNew (mapname);
 			}
 		}
 	}
