@@ -347,6 +347,8 @@ private:
 
 	bool mDrawLogicalRect;
 	SDL_Rect mLogicalRect;
+
+	SDL_Renderer* createRenderer(bool vsync) const;
 };
 
 
@@ -433,6 +435,7 @@ private:
 	void discoverNativePixelFormat();
 	PixelFormat buildSurfacePixelFormat(uint8_t bpp);
 	void setRendererDriver();
+	bool isRendererDriverAvailable(const char* driver) const;
 	const char* getRendererDriver() const;
 	void getEvents();
 
