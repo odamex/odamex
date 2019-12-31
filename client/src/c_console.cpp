@@ -1473,12 +1473,6 @@ static bool C_HandleKey(const event_t* ev)
 	case KEY_RCTRL:
 		KeysCtrl = true;
 		return true;
-#ifdef __APPLE__
-	case KEY_LWIN:
-	case KEY_RWIN:
-		KeysCmd = true;
-		return true;
-#endif
 	case KEY_LSHIFT:
 	case KEY_RSHIFT:
 		// SHIFT was pressed
@@ -1547,18 +1541,6 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	}
 
-#if __APPLE__
-	if (KeysCmd)
-	{
-		// CMD+V = Paste from clipboard - add each character to command line
-		if (tolower(ev->data1) == 'v')
-		{
-			CmdLine.insertString(I_GetClipboardText());
-			TabbedLast = false;
-		}
-	}
-#endif
-
 	if (keytext)
 	{	
 		// Add keypress to command line
@@ -1589,12 +1571,6 @@ BOOL C_Responder(event_t *ev)
 		case KEY_RCTRL:
 			KeysCtrl = false;
 			break;
-#ifdef __APPLE__
-		case KEY_LWIN:
-		case KEY_RWIN:
-			KeysCmd = false;
-			break;
-#endif
 		case KEY_LSHIFT:
 		case KEY_RSHIFT:
 			KeysShifted = false;
