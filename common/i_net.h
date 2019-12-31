@@ -32,7 +32,7 @@
 #include <vector>
 
 // Max packet size to send and receive, in bytes
-#define	MAX_UDP_PACKET 8192
+#define	MAX_UDP_PACKET 65536
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
@@ -44,7 +44,7 @@
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
 // [jsd] 1500 MTU minus UDP header and our packet header
-#define NET_PACKET_MAX (1500 - (64 + 4))
+#define NET_PACKET_MAX (1500 - (64 + 12))
 
 extern int   localport;
 extern int   msg_badread;

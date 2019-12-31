@@ -306,11 +306,11 @@ CVAR(				lookspring, "1", "Generate centerview when mlook encountered",
 CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE_FUNC_DECL(net_rcvbuf, "1500", "Net receive buffer size in bytes",
+CVAR_RANGE_FUNC_DECL(net_rcvbuf, "6000", "Net receive buffer size in bytes",
 					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
 					0.0f, 131072.0f)
 
-CVAR_RANGE_FUNC_DECL(net_sndbuf, "1500", "Net send buffer size in bytes",
+CVAR_RANGE_FUNC_DECL(net_sndbuf, "6000", "Net send buffer size in bytes",
 					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
 					 0.0f, 131072.0f)
 

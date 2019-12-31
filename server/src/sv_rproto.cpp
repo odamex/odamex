@@ -206,8 +206,8 @@ bool SV_SendPacket(player_t &pl)
 		}
 
 		// find the max message size we could send that keeps us at or below the rate limit:
-		size_t remaining_budget = cl_rate - bps;
-		size_t pkt_remaining = MIN((size_t)NET_PACKET_MAX, remaining_budget);
+		int remaining_budget = cl_rate - bps;
+		int pkt_remaining = MIN((int)NET_PACKET_MAX, remaining_budget);
 
 		// start building the packet:
 
@@ -283,8 +283,8 @@ bool SV_SendPacket(player_t &pl)
 #endif
 
 		if (log_packetdebug) {
-			Printf(PRINT_LOW | PRINT_RCON_MUTE, "SV_SendPacket: ply %3u, tic %07u, rel %4u/%4u, unr %4u/%4u\n",
-					pl.id, gametic, reliabletrim, rel, unreliabletrim, unr);
+			Printf(PRINT_LOW | PRINT_RCON_MUTE, "SV_SendPacket: ply %3u, tic %07u, rel %4u/%4u, unr %4u/%4u, size %d\n",
+					pl.id, gametic, reliabletrim, rel, unreliabletrim, unr, sendd->size());
 		}
 
 #ifdef SIMULATE_LATENCY
