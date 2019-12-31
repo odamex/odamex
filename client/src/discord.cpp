@@ -51,7 +51,7 @@ const char* DiscordRPCStatus::EventToString(discord_state_s state)
 		case DISCORD_INMATCH:		strValue = "In a match"; break;
 		case DISCORD_INGAME:	
 		{
-			buffer << "In-game [" << P_NumPlayersInGame() << "/" << sv_maxplayers <<" players]";
+			buffer << "In-game [" << P_NumPlayersInGame() << "/" << sv_maxplayers <<"]";
 			strValue = buffer.str(); break;
 		}
 		default:
