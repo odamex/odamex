@@ -183,6 +183,9 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 
 	// Set the window title based on which IWAD we're using.
 	I_SetTitleString(D_GetTitleString().c_str());
+	
+	if (W_IsIWADDeprecated(iwad_filename))
+		Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", iwad_filename.c_str());
 
 	// Don't load PWADS with the shareware IWAD.
 	if (gameinfo.flags & GI_SHAREWARE && resource_file_count > 2)

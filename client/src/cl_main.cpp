@@ -403,6 +403,7 @@ void CL_QuitNetGame(void)
 
 	serverside = clientside = true;
 	network_game = false;
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 
 	sv_freelook = 1;
 	sv_allowjump = 1;
@@ -423,11 +424,8 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	// Don't forget to clean a vanilla demo !
-	if (demorecording && democlassic)
-		G_CleanupDemo();
+	G_CleanupDemo();	// Cleanup in case of a vanilla demo
 
-	democlassic = false;
 	demoplayback = false;
 
 	// Reset the palette to default
@@ -459,6 +457,7 @@ void CL_Reconnect(void)
 		serveraddr = lastconaddr;
 	}
 
+	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 	connecttimeout = 0;
 }
 
@@ -999,7 +998,6 @@ BEGIN_COMMAND (changeteams)
 		cl_team.Set("RED");
 	else if (consoleplayer().userinfo.team == TEAM_RED)
 		cl_team.Set("BLUE");
-	CL_RebuildAllPlayerTranslations();
 }
 END_COMMAND (changeteams)
 
@@ -1361,6 +1359,8 @@ void CL_SendUserInfo(void)
 	{
 		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
+
+	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
 }
 
 //
@@ -2092,6 +2092,12 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+
+	// Receive the keys from a spied player
+	if (sv_gametype == GM_COOP) {
+		for (int i = 0; i < NUMCARDS; i++)
+			player.cards[i] = MSG_ReadByte();
+	}
 }
 
 //

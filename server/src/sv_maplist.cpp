@@ -684,6 +684,7 @@ BEGIN_COMMAND (maplist) {
 BEGIN_COMMAND (addmap) {
 	if (argc < 2) {
 		Printf(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
+		Printf(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
 		return;
 	}
 
@@ -701,7 +702,11 @@ BEGIN_COMMAND (addmap) {
 
 	if (!Maplist::instance().add(maplist_entry)) {
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		return;
 	}
+
+	// Successfully warn the server a map has been added.
+	Printf(PRINT_HIGH, "Adding %s to maplist (WAD%s : %s)", arguments[0].c_str(), (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " ").c_str());
 } END_COMMAND(addmap)
 
 BEGIN_COMMAND(insertmap) {
@@ -732,7 +737,11 @@ BEGIN_COMMAND(insertmap) {
 
 	if (!Maplist::instance().insert(maplist_position - 1, maplist_entry)) {
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		return;
 	}
+
+	// Successfully warn the server a map has been added.
+	Printf(PRINT_HIGH, "Successfully inserting %s to position #%s (WAD%s : %s)", arguments[1].c_str(), arguments[0].c_str(), (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " ").c_str());
 } END_COMMAND(insertmap)
 
 BEGIN_COMMAND(delmap) {
