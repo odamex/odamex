@@ -1,4 +1,4 @@
-#include <discord_rpc.h>
+#include "../discord-rpc/include/discord_rpc.h"
 
 enum discord_state_s
 {

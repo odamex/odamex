@@ -8,9 +8,11 @@ CVAR (cl_discord_enable, "1", "Enables Discord Integration systems", CVARTYPE_BO
 static const char* APPLICATION_ID = "378566834523209728";
 extern NetDemo	netdemo;
 
+
+
 static void handleDiscordReady(const DiscordUser* connectedUser)
 {
-	Printf(PRINT_HIGH, "\nDiscord: connected to user %s#%s - %s\n",
+	DPrintf("\nDiscord: connected to user %s#%s - %s\n",
 		connectedUser->username,
 		connectedUser->discriminator,
 		connectedUser->userId);
@@ -18,12 +20,12 @@ static void handleDiscordReady(const DiscordUser* connectedUser)
 
 static void handleDiscordDisconnected(int errcode, const char* message)
 {
-	Printf(PRINT_HIGH, "\nDiscord: disconnected (%d: %s)\n", errcode, message);
+	DPrintf("\nDiscord: disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handleDiscordError(int errcode, const char* message)
 {
-	Printf(PRINT_HIGH, "\nDiscord: error (%d: %s)\n", errcode, message);
+	DPrintf("\nDiscord: error (%d: %s)\n", errcode, message);
 }
 
 static char* DISCORD_EventToString(discord_state_s state)
@@ -70,7 +72,7 @@ void DISCORD_UpdateState(std::string state, std::string details, discord_logotyp
 
 void DISCORD_UpdateInGameState(discord_state_s state, std::string details, discord_logotype_s logotype, std::string logoname)
 {
-	if (democlassic || demoplayback || netdemo.isPlaying())
+	if (demoplayback || netdemo.isPlaying())
 		DISCORD_UpdateState(DISCORD_DEMOPLAYING, "", DLOGO_LARGEPIC, "odamex-demo");	// GROSS HACK BUT WORKS
 	else
 		DISCORD_UpdateState(state, details, logotype, logoname);
@@ -98,7 +100,7 @@ void DISCORD_UpdateState(discord_state_s state, std::string details, discord_log
 
 void DISCORD_Init()
 {
-		DiscordEventHandlers handlers;
+	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
 	handlers.ready = handleDiscordReady;
 	handlers.disconnected = handleDiscordDisconnected;
@@ -108,5 +110,5 @@ void DISCORD_Init()
 	handlers.joinRequest = handleDiscordJoinRequest;*/
 	Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
 
-	DPrintf("Initializing Discord");
+	DPrintf("Initializing Discord-RPC...\n");
 }
