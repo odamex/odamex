@@ -332,8 +332,8 @@ public:
 
 
 			// GhostlyDeath -- done with the {}
-			netbuf = 1048576;
-			reliablebuf = 1048576;
+			netbuf = 8 * 1024 * 1024;
+			reliablebuf = 8 * 1024 * 1024;
 			relpackets = MAX_UDP_PACKET*50;
 			digest = "";
 			allow_rcon = false;
