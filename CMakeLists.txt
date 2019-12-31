@@ -20,7 +20,7 @@ option(BUILD_MASTER "Build master server target" 1)
 option(BUILD_ODALAUNCH "Build odalaunch target" 1)
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
-option(USE_BOOST "Use Boost library (if found) for server-side threading" 1)
+option(USE_BOOST "Use Boost library (if found) for server-side threading" 0)
 
 project(Odamex)
 cmake_minimum_required(VERSION 2.8)
