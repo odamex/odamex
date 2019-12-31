@@ -577,6 +577,10 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	if (first_time)
 		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
 
+	// Temporarily set the ARGB memory layout so that palette manipulations can
+	// be done before the video mode is initialized.
+	argb_t::setChannels(3, 2, 1, 0);
+
 	// Load the resource files
 	D_LoadResourceFiles(resource_file_names);
 

@@ -1385,7 +1385,7 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 
 	side = (side) ? 1 : 0;
 
-	texture = R_TextureNumForName (texname);
+	const ResourceId res_id = Res_GetTextureResourceId(texname, WALL);
 
 	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0) {
 		side_t *sidedef;
@@ -1396,13 +1396,13 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 
 		switch (position) {
 			case TEXTURE_TOP:
-				sidedef->toptexture = texture;
+				sidedef->toptexture = res_id;
 				break;
 			case TEXTURE_MIDDLE:
-				sidedef->midtexture = texture;
+				sidedef->midtexture = res_id;
 				break;
 			case TEXTURE_BOTTOM:
-				sidedef->bottomtexture = texture;
+				sidedef->bottomtexture = res_id;
 				break;
 			default:
 				break;

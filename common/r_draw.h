@@ -30,12 +30,10 @@
 
 typedef struct 
 {
-	const byte*			source;
-	byte*				destination;
+	const palindex_t*	source;
+	uint8_t*			destination;
 
 	int					pitch_in_pixels;
-
-	tallpost_t*			post;
 
 	shaderef_t			colormap;
 
@@ -53,15 +51,15 @@ typedef struct
 	translationref_t	translation;
 
 	palindex_t			color;				// for r_drawflat
-	palindex_t			maskcolor;
+	bool				masked;
 } drawcolumn_t;
 
 extern "C" drawcolumn_t dcol;
 
 typedef struct
 {
-	const byte*			source;
-	byte*				destination;
+	const palindex_t*	source;
+	uint8_t*			destination;
 
 	int					pitch_in_pixels;
 
@@ -101,7 +99,7 @@ extern "C" drawspan_t dspan;
 // [RH] Temporary buffer for column drawing
 
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		const palindex_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
+		const palindex_t** posts, void (*colblast)(), bool calc_light);
 
 // [RH] Pointers to the different column and span drawers...
 
@@ -230,5 +228,3 @@ void R_DrawBorder (int x1, int y1, int x2, int y2);
 
 
 #endif
-
-

@@ -87,7 +87,7 @@ int				numsprites;
 spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
 
-static tallpost_t* spriteposts[MAXWIDTH];
+static const palindex_t* spriteposts[MAXWIDTH];
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -98,6 +98,7 @@ TArray<WORD>			ParticlesInSubsec;
 
 void R_CacheSprite (spritedef_t *sprite)
 {
+	#if 0
 	DPrintf ("cache sprite %s\n",
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 
@@ -119,6 +120,7 @@ void R_CacheSprite (spritedef_t *sprite)
 			}
 		}
 	}
+	#endif	// if 0
 }
 
 //
@@ -353,51 +355,28 @@ fixed_t 		sprtopscreen;
 
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
-	tallpost_t* post = dcol.post;
+	// calculate unclipped screen coordinates for post
+	int topscreen = sprtopscreen + 1;
 
-	while (!post->end())
-	{
-		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+	dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+	dcol.yh = (topscreen + spryscale * (dcol.textureheight >> FRACBITS)) >> FRACBITS;
 
-		dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
-		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
+	dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+	dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
-		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+	// TODO: dcol.texturefrac should take y-scaling of textures into account
+	dcol.texturefrac = dcol.texturemid + FixedMul((dcol.yl - centery + 1) << FRACBITS, dcol.iscale);
 
-		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-			+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
-
-		if (dcol.texturefrac < 0)
-		{
-			int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-			dcol.yl += cnt;
-			dcol.texturefrac += cnt * dcol.iscale;
-		}
-
-		const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
-		const fixed_t maxfrac = post->length << FRACBITS;
-
-		if (endfrac >= maxfrac)
-		{
-			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-			dcol.yh -= cnt;
-		}
-
-		dcol.source = post->data();
-
-		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
-			drawfunc();
-
-		post = post->next();
-	}
+	if (dcol.yl <= dcol.yh)
+		drawfunc();
 }
+
 
 void SpriteColumnBlaster()
 {
 	R_BlastSpriteColumn(colfunc);
 }
+
 
 //
 // R_DrawVisSprite
@@ -411,8 +390,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	if (vis->yscale <= 0)
 		return;
-
-	dcol.textureheight = 256 << FRACBITS;
 
 	if (vis->mobjflags & MF_SPECTATOR)
 		return;
@@ -467,6 +444,10 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
+	const Texture* texture = Res_CacheTexture(vis->res_id);
+	dcol.textureheight = texture->mHeight << FRACBITS;
+
+	dcol.masked = true;
 	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
@@ -476,12 +457,12 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	fixed_t colfrac = vis->startfrac;
 	for (int x = vis->x1; x <= vis->x2; x++)
 	{
-		spriteposts[x] = R_GetPatchResourceColumn(vis->res_id, colfrac >> FRACBITS);
+		spriteposts[x] = texture->getColumn(colfrac >> FRACBITS);
 		colfrac += vis->xiscale;
 	}
 
 	// TODO: change from negonearray to actual top of sprite
-	//R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
+	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false);
 
 	R_ResetDrawFuncs();
 }
@@ -569,6 +550,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 
 	vis->xscale = FixedDiv(FocalLengthX, ty);
 	vis->yscale = FixedDiv(FocalLengthY, ty);
+	vis->xiscale = FixedDiv(ty, FocalLengthX);
+	vis->startfrac = clipped_offset;
 	vis->gx = x;
 	vis->gy = y;
 	vis->gzb = gzb;
@@ -582,16 +565,10 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
 
-	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
 	{
-		vis->startfrac = width - 1 - clipped_offset;
-		vis->xiscale = -iscale;
-	}
-	else
-	{
-		vis->startfrac = clipped_offset;
-		vis->xiscale = iscale;
+		vis->startfrac = width - 1 - vis->startfrac;
+		vis->xiscale *= -1;
 	}
 
 	return vis;
@@ -669,12 +646,6 @@ void R_DrawHitBox(AActor* thing)
 //
 void R_ProjectSprite(AActor *thing, int fakeside)
 {
-	spritedef_t*		sprdef;
-	spriteframe_t*		sprframe;
-	ResourceId			res_id;
-	unsigned int		rot;
-	bool 				flip;
-
 	if (!thing || !thing->subsector || !thing->subsector->sector)
 		return;
 
@@ -710,7 +681,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	}
 #endif
 
-	sprdef = &sprites[thing->sprite];
+	const spritedef_t* sprdef = &sprites[thing->sprite];
 
 #ifdef RANGECHECK
 	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
@@ -720,35 +691,22 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	}
 #endif
 
-	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
-	// decide which patch to use for sprite relative to player
+	int frame_index = 0;
+	// choose a different rotation based on player view (if supported by the sprite)
 	if (sprframe->rotate)
-	{
-		// choose a different rotation based on player view
-		rot = (R_PointToAngle(thingx, thingy) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
-		res_id = sprframe->resource[rot];
-		flip = (BOOL)sprframe->flip[rot];
-	}
-	else
-	{
-		// use single rotation for all views
-		rot = 0;
-		res_id = sprframe->resource[0];
-		flip = (BOOL)sprframe->flip[0];
-	}
+		frame_index = (R_PointToAngle(thingx, thingy) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
 
-	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
-		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
+	const ResourceId res_id = sprframe->resource[frame_index];
+	const Texture* texture = Res_CacheTexture(res_id);
 
+	bool flip = sprframe->flip[frame_index];
 	sector_t* sector = thing->subsector->sector;
-	fixed_t topoffs = sprframe->topoffset[rot];
-	fixed_t sideoffs = sprframe->offset[rot];
-
-	patch_t* patch = (patch_t*)Res_LoadResource(res_id, PU_CACHE);
-
-	fixed_t height = patch->height() << FRACBITS;
-	fixed_t width = patch->width() << FRACBITS;
+	fixed_t topoffs = texture->mOffsetY << FRACBITS;
+	fixed_t sideoffs = texture->mOffsetX << FRACBITS;
+	fixed_t height = texture->mHeight << FRACBITS;
+	fixed_t width = texture->mWidth << FRACBITS;
 
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
 
@@ -835,21 +793,6 @@ fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);
 //
 void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 {
-	fixed_t 			tx;
-	int 				x1;
-	int 				x2;
-	spritedef_t*		sprdef;
-	spriteframe_t*		sprframe;
-	ResourceId			res_id;
-	BOOL 				flip;
-	vissprite_t*		vis;
-	vissprite_t 		avis;
-
-
-	float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
-
 	// decide which patch to use
 #ifdef RANGECHECK
 	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
@@ -857,108 +800,99 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		return;
 	}
 #endif
-	sprdef = &sprites[psp->state->sprite];
+	const spritedef_t* sprdef = &sprites[psp->state->sprite];
 #ifdef RANGECHECK
 	if ( (psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
 		DPrintf ("R_DrawPSprite: invalid sprite frame %i : %i\n", psp->state->sprite, psp->state->frame);
 		return;
 	}
 #endif
-	sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
 
-	res_id = sprframe->resource[0];
-	flip = (BOOL)sprframe->flip[0];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[psp->state->frame & FF_FRAMEMASK];
+	const ResourceId res_id = sprframe->resource[0];
+	const Texture* texture = Res_CacheTexture(res_id);
 
-	if (sprframe->width[0] == SPRITE_NEEDS_INFO)
-		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
+	int frame_index = 0;
+	bool flip = sprframe->flip[frame_index];
+	fixed_t topoffs = texture->mOffsetY << FRACBITS;
+	fixed_t sideoffs = texture->mOffsetX << FRACBITS;
+	fixed_t width = texture->mWidth << FRACBITS;
+
+	// calculate the positional offset due to weapon bobbing
+	float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
+	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 	// calculate edges of the shape
-	tx = sx - ((320 / 2) << FRACBITS);
+	fixed_t tx = sx - ((320 / 2) << FRACBITS) - sideoffs;
+	int x1 = (centerxfrac + FixedMul(tx, pspritexscale)) >> FRACBITS;
 
-	tx -= sprframe->offset[0];	// [RH] Moved out of spriteoffset[]
-	x1 = (centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS;
-
-	// off the right side
-	if (x1 > viewwidth)
+	if (x1 > viewwidth)		// off the right side
 		return;
 
-	tx += sprframe->width[0];	// [RH] Moved out of spritewidth[]
-	x2 = ((centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS) - 1;
+	tx += width;
+	int x2 = ((centerxfrac + FixedMul(tx, pspritexscale)) >> FRACBITS) - 1;
 
-	// off the left side
-	if (x2 < 0)
+	if (x2 < 0)		// off the left side
 		return;
 
 	// store information in a vissprite
-	vis = &avis;
-	vis->mobjflags = flags;
+	vissprite_t vis;
+	vis.res_id = res_id;
+	vis.mobjflags = flags;
+	vis.texturemid = (BASEYCENTER << FRACBITS) + topoffs - sy;
+	vis.x1 = x1 < 0 ? 0 : x1;
+	vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis.xscale = pspritexscale;
+	vis.yscale = pspriteyscale;
+	vis.xiscale = pspritexiscale;
+	vis.startfrac = 0;
+	vis.translation = translationref_t();		// [RH] Use default colors
+	vis.translucency = r_drawplayersprites * FRACUNIT;
+	vis.mo = NULL;
 
-// [RH] +0x6000 helps it meet the screen bottom
-//		at higher resolutions while still being in
-//		the right spot at 320x200.
-// denis - bump to 0x9000
-#define WEAPONTWEAK				(0x9000)
-
-	vis->texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2 -
-		(sy + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
-	vis->x1 = x1 < 0 ? 0 : x1;
-	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-	vis->xscale = pspritexscale;
-	vis->yscale = pspriteyscale;
-	vis->translation = translationref_t();		// [RH] Use default colors
-	vis->translucency = r_drawplayersprites * FRACUNIT;
-	vis->mo = NULL;
-
-	if (flip)
+	if (sprframe->flip[0])
 	{
-		vis->xiscale = -pspritexiscale;
-		vis->startfrac = sprframe->width[0]-1;	// [RH] Moved out of spritewidth[]
-	}
-	else
-	{
-		vis->xiscale = pspritexiscale;
-		vis->startfrac = 0;
+		vis.startfrac = width - 1;
+		vis.xiscale *= -1;
 	}
 
-	if (vis->x1 > x1)
-		vis->startfrac += vis->xiscale*(vis->x1-x1);
-
-	vis->res_id = res_id;
+	if (vis.x1 > x1)
+		vis.startfrac += vis.xiscale * (vis.x1-x1);
 
 	if (fixedlightlev)
 	{
-		vis->colormap = basecolormap.with(fixedlightlev);
+		vis.colormap = basecolormap.with(fixedlightlev);
 	}
 	else if (fixedcolormap.isValid())
 	{
 		// fixed color
-		vis->colormap = fixedcolormap;
+		vis.colormap = fixedcolormap;
 	}
 	else if (psp->state->frame & FF_FULLBRIGHT)
 	{
 		// full bright
-		vis->colormap = basecolormap;	// [RH] use basecolormap
+		vis.colormap = basecolormap;	// [RH] use basecolormap
 	}
 	else
 	{
 		// local light
-		vis->colormap = basecolormap.with(spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
+		vis.colormap = basecolormap.with(spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
 	}
 	if (camera->player &&
 		(camera->player->powers[pw_invisibility] > 4*32
 		 || camera->player->powers[pw_invisibility] & 8))
 	{
 		// shadow draw
-		vis->mobjflags = MF_SHADOW;
+		vis.mobjflags = MF_SHADOW;
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
 	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return;
 
-	R_DrawVisSprite (vis, vis->x1, vis->x2);
+	R_DrawVisSprite(&vis, vis.x1, vis.x2);
 }
-
 
 
 //
@@ -1153,12 +1087,8 @@ void R_DrawSprite (vissprite_t *spr)
 	for (ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
-		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
-			(!(ds->silhouette & SIL_BOTH) && !ds->midposts) )
-		{
-			// does not cover sprite
-			continue;
-		}
+		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 || (!(ds->silhouette & SIL_BOTH) && !ds->midposts))
+			continue; // does not cover sprite
 
 		r1 = MAX<int>(ds->x1, spr->x1);
 		r2 = MIN<int>(ds->x2, spr->x2);
@@ -1167,8 +1097,7 @@ void R_DrawSprite (vissprite_t *spr)
 		segscale2 = MIN<int>(ds->scale1, ds->scale2);
 
 		// check if the seg is in front of the sprite
-		if (segscale1 < spr->yscale ||
-			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
+		if (segscale1 < spr->yscale || (segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
 		{
 			// masked mid texture?
 			if (ds->midposts)
@@ -1200,7 +1129,6 @@ void R_DrawSprite (vissprite_t *spr)
 		R_DrawHitBox(spr->mo);
 	#endif
 }
-
 
 
 

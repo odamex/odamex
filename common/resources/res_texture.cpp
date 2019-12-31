@@ -86,28 +86,6 @@
 
 
 //
-// Res_TransposeImage
-//
-// Converts an image buffer from row-major format to column-major format.
-// TODO: Use cache-blocking to optimize
-//
-void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
-{
-	for (int x = 0; x < width; x++)
-	{
-		const byte* source_column = source + x;
-		
-		for (int y = 0; y < height; y++)
-		{
-			*dest = *source_column;
-			source_column += width;
-			dest++;
-		}
-	}
-}
-
-
-//
 // Res_WarpTexture
 //
 // Alters the image in source_texture with a warping effect and saves the
@@ -248,9 +226,11 @@ TextureManager::TextureManager(const ResourceContainerId& container_id, Resource
 	ResourceContainer(container_id, manager),
 	mResourceManager(manager),
 	mResourceLoaderLookup(1024),
-	mMaskColor(0),
-	mMaskColorMap(NULL)
+	mMaskColor(0)
 {
+	if (clientside)
+		analyzePalette(mTranslation, &mMaskColor);
+
 	addCompositeTextureResources(manager);
 
 	addResourcesToManager(manager);
@@ -293,9 +273,6 @@ void TextureManager::clear()
 
 	mWarpDefs.clear();
 
-	delete [] mMaskColorMap;
-	mMaskColorMap = NULL;
-
 	for (ResourceLoaderLookupTable::iterator it = mResourceLoaderLookup.begin(); it != mResourceLoaderLookup.end(); ++it)
 		delete it->second;
 	mResourceLoaderLookup.clear();
@@ -328,11 +305,11 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 
 		ResourceLoader* loader = NULL;
 		if (dir == flats_directory_name)
-			loader = new FlatTextureLoader(accessor, raw_res_id);
+			loader = new FlatTextureLoader(accessor, raw_res_id, mTranslation);
 		else if (dir == patches_directory_name)
-			loader = new PatchTextureLoader(accessor, raw_res_id);
+			loader = new PatchTextureLoader(accessor, raw_res_id, mTranslation);
 		else if (dir == sprites_directory_name)
-			loader = new PatchTextureLoader(accessor, raw_res_id);
+			loader = new PatchTextureLoader(accessor, raw_res_id, mTranslation);
 
 		const ResourceId res_id = manager->addResource(path, this, loader);
 
@@ -362,12 +339,6 @@ uint32_t TextureManager::getResourceSize(const ResourceId res_id) const
 //
 uint32_t TextureManager::loadResource(void* data, const ResourceId res_id, uint32_t size) const
 {
-	if (!mMaskColorMap)
-	{
-		mMaskColorMap = new palindex_t[256];
-		analyzePalette(mMaskColorMap, &mMaskColor);
-	}
-
 	const ResourceLoader* loader = getResourceLoader(res_id);
 	assert(loader != NULL);
 	loader->load(data);
@@ -547,19 +518,29 @@ const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name)
 // Examines all of the colors of the palette and determines the two closest colors.
 // One of those two colors are selected to be used to represent transparency.
 //
-// A palette map is generated to remap the transparent color to the next closest color.
-///
-void TextureManager::analyzePalette(palindex_t* colormap, palindex_t* maskcolor) const
+// Builds a color translation table that attempts to reduce the palette to 255 colors
+// by locating the two most similar colors and mapping those to a single color. The free color
+// will be used to indicate transparency.
+void TextureManager::analyzePalette(palindex_t* translation, palindex_t* maskcolor) const
 {
-	const argb_t* palette_colors = V_GetGamePalette()->basecolors;
+	argb_t palette_colors[256];
+	const OString palette_lumpname("PLAYPAL", 8);
+	const ResourceId palette_res_id = Res_GetResourceId(palette_lumpname, global_directory_name);
+	if (!Res_CheckResource(palette_res_id))
+		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
+	const byte* data = (byte*)Res_LoadResource(palette_res_id, PU_CACHE);
+	for (int i = 0; i < 256; i++)
+		palette_colors[i] = argb_t(255, data[3*i+0], data[3*i+1], data[3*i+2]);
+
+	//const argb_t* palette_colors = V_GetGamePalette()->basecolors;
 	palindex_t color1, color2;
 
 	V_ClosestColors(palette_colors, color1, color2);
 	*maskcolor = color1;
 
 	for (int i = 0; i < 256; i++)
-		colormap[i] = i;
-	colormap[color1] = color2;
+		translation[i] = i;
+	translation[color1] = color2;
 }
 
 
@@ -839,7 +820,7 @@ void TextureManager::updateAnimatedTextures()
 //
 const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering)
 {
-	if (ordering == WALL && name.size() == 1 && name.c_str()[0] == '-')
+	if (ordering == WALL && name.c_str()[0] == '-' && name.size() == 1)
 		return ResourceId::INVALID_ID;
 
 	ResourcePathList paths;
@@ -893,15 +874,18 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 //
 const Texture* Res_CacheTexture(ResourceId res_id, int tag)
 {
-	if (res_id != ResourceId::INVALID_ID)
-	{
-		return static_cast<Texture*>(Res_LoadResource(res_id, tag));
-	}
-	else
-	{
-		// TODO: return invalid texture
+	if (res_id == ResourceId::INVALID_ID)
 		return static_cast<Texture*>(NULL);
-	}
+	return static_cast<Texture*>(Res_LoadResource(res_id, tag));
+}
+
+
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, int tag)
+{
+	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, ordering), tag);
 }
 
 
@@ -918,24 +902,7 @@ const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& di
 		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, PATCH), tag);
 	if (directory == sprites_directory_name)
 		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, SPRITE), tag);
-	Printf(PRINT_HIGH, "Res_CacheTexture of unknown type %s", directory.c_str());
 	return NULL;
-}
-
-
-//
-// Res_CachePatch
-//
-// Place-holder function for resolving a patch name to a resource ID and
-// caching and returning that resource's data.
-//
-struct patch_s;
-typedef patch_s patch_t;
-
-const patch_t* Res_CachePatch(const OString& name, int tag)
-{
-	ResourceId res_id = Res_GetTextureResourceId(name, PATCH);
-	return (patch_t*)Res_LoadResource(res_id, tag);
 }
 
 

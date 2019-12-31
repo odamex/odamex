@@ -62,7 +62,7 @@
 #include "i_xbox.h"
 #endif
 
-extern patch_t* 	hu_font[HU_FONTSIZE];
+extern const Texture* 	hu_font[HU_FONTSIZE];
 
 // temp for screenblocks (0-9)
 int 				screenSize;
@@ -1674,7 +1674,7 @@ void M_StopMessage (void)
 int M_StringHeight(char* string)
 {
 	int h;
-	int height = hu_font[0]->height();
+	int height = hu_font[0]->mHeight;
 
 	h = height;
 	while (*string)
@@ -2003,12 +2003,12 @@ void M_Drawer()
 		int y = 100;
 
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= hu_font[0]->height() / 2;
+			y -= hu_font[0]->mHeight / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
 			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += hu_font[0]->height();
+			y += hu_font[0]->mHeight;
 		}
 
 		V_FreeBrokenLines (lines);

@@ -37,18 +37,10 @@
 #include "r_defs.h"
 #include "resources/res_main.h"
 
-class Texture;
-class TextureManager;
 class ResourceLoader;
 class ResourceManager;
 class RawResourceAccessor;
-
-void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
-	int dx1, int dy1, int dx2, int dy2,
-	int sx1, int sy1, int sx2, int sy2);
-
-void Res_TransposeImage(byte* dest, const byte* source, int width, int height);
-
+class Texture;
 
 enum TextureSearchOrdering {
 	WALL,
@@ -56,6 +48,20 @@ enum TextureSearchOrdering {
 	SPRITE,
 	PATCH,
 };
+
+
+//
+// Res_GetTextureResourceId
+//
+const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering);
+
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(ResourceId res_id, int tag = PU_CACHE);
+const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, int tag = PU_CACHE);
+const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag = PU_CACHE);
+
 
 // ============================================================================
 //
@@ -112,6 +118,9 @@ public:
 	byte				mWidthBits;
 	byte				mHeightBits;
 
+	unsigned short		mWidthMask;
+	unsigned short		mHeightMask;
+
 	byte				mMaskColor;
 
 	palindex_t*			mData;
@@ -127,7 +136,6 @@ private:
 		return sizeof(uint8_t) * width * height;
 	}
 };
-
 
 
 // ============================================================================
@@ -303,29 +311,8 @@ private:
 
 	std::vector<warp_t>			mWarpDefs;
 
-	mutable palindex_t			mMaskColor;
-	mutable palindex_t*			mMaskColorMap;
+	palindex_t			mMaskColor;
+	palindex_t			mTranslation[256];
 };
-
-
-
-
-const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering);
-
-//
-// Res_CachePatch
-//
-// Place-holder function for resolving a patch name to a resource ID and
-// caching and returning that resource's data.
-//
-const patch_t* Res_CachePatch(const OString& name, int tag = PU_CACHE);
-
-
-//
-// Res_CacheTexture
-//
-const Texture* Res_CacheTexture(ResourceId res_id, int tag = PU_CACHE);
-const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag = PU_CACHE);
-
 
 #endif // __RES_TEXTURE_H__

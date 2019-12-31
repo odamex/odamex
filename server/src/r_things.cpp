@@ -72,27 +72,6 @@ static const char*			spritename;
 
 void R_CacheSprite (spritedef_t *sprite)
 {
-	DPrintf ("cache sprite %s\n",
-		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
-
-	for (int i = 0; i < sprite->numframes; i++)
-	{
-		for (int r = 0; r < 8; r++)
-		{
-			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
-			{
-				if (sprite->spriteframes[i].resource[r] == ResourceId::INVALID_ID)
-					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-
-				const ResourceId res_id = sprite->spriteframes[i].resource[r];
-				const patch_t* patch = (const patch_t*)Res_LoadResource(res_id, PU_CACHE);
-
-				sprite->spriteframes[i].width[r] = patch->width() << FRACBITS;
-				sprite->spriteframes[i].offset[r] = patch->leftoffset() << FRACBITS;
-				sprite->spriteframes[i].topoffset[r] = patch->topoffset() << FRACBITS;
-			}
-		}
-	}
 }
 
 

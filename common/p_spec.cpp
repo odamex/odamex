@@ -409,7 +409,6 @@ static void P_InitAnimDefs ()
 				{
 					// TODO: Make texture warping work with wall textures
 					SC_MustGetString ();
-					R_TextureNumForName (sc_String);
 				}
 				else
 				{
@@ -423,6 +422,7 @@ static void P_InitAnimDefs ()
 
 static void ParseAnim (byte istex)
 {
+	#if 0
 	anim_t sink;
 	short picnum;
 	anim_t *place;
@@ -532,6 +532,7 @@ static void ParseAnim (byte istex)
 	}
 
 	place->countdown = place->speedmin[0];
+	#endif		// if 0
 }
 
 /*
@@ -561,6 +562,7 @@ static void ParseAnim (byte istex)
  */
 void P_InitPicAnims (void)
 {
+	#if 0
 	// denis - allow reinitialisation
 	if (anims)
 	{
@@ -652,6 +654,7 @@ void P_InitPicAnims (void)
 	}
 
 	Res_ReleaseResource(res_id);
+	#endif	// if 0
 }
 
 

@@ -1052,7 +1052,7 @@ static void P_LoadSideDefs2(const OString& mapname)
 
 				SetTextureNoErr (&sd->bottomtexture, &fog, msd->bottomtexture);
 				SetTextureNoErr (&sd->toptexture, &color, msd->toptexture);
-				sd->midtexture = R_TextureNumForName (msd->midtexture);
+				sd->midtexture = Res_GetTextureResourceId(msd->midtexture, WALL);
 
 				if (fog != 0x000000 || color != 0xffffff)
 				{

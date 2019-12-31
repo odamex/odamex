@@ -727,7 +727,6 @@ int WI_drawNum(int n, int x, int y, int digits)
 }
 
 #include "hu_stuff.h"
-extern const patch_t *hu_font[HU_FONTSIZE];
 
 void WI_drawPercent (int p, int x, int y, int b = 0)
 {
@@ -1351,24 +1350,22 @@ void WI_Ticker (void)
 	}
 }
 
-static int WI_CalcWidth (const char *str)
+static int WI_CalcWidth(const char *str)
 {
 	int w = 0;
-	const patch_t *p;
-	char charname[9];
+	char lump_name[9];
 
 	if (!str)
 		return 0;
 
-	while (*str) {
-		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		if (Res_CheckResource(charname, patches_directory_name))
-		{
-			p = Res_CachePatch(charname);
-			w += p->width() - 1;
-		} else {
+	while (*str)
+	{
+		sprintf(lump_name, "FONTB%02u", toupper(*str) - 32);
+		const Texture* texture = Res_CacheTexture(lump_name, patches_directory_name);
+		if (texture)
+			w += texture->mWidth - 1;
+		else
 			w += 12;
-		}
 		str++;
 	}
 

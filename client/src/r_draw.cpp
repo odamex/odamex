@@ -516,13 +516,25 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 	COLORFUNC colorfunc(drawcolumn);
 
-	// [SL] Properly tile textures whose heights are not a power-of-2,
-	// avoiding a tutti-frutti effect.  From Eternity Engine.
-	if (texheight & (texheight - 1))
+	if (drawcolumn.masked)
 	{
+		// handle masked (partially transparent) textures
+		do
+		{
+			palindex_t pixel = source[frac >> FRACBITS];
+			if (pixel != 0)
+				colorfunc(pixel, dest);
+			dest += pitch;
+			frac += fracstep;
+		} while (--count);
+	}
+	else if (texheight & (texheight - 1))
+	{
+		// [SL] Properly tile textures whose heights are not a power-of-2,
+		// avoiding a tutti-frutti effect.  From Eternity Engine.
+
 		// texture height is NOT a power-of-2
 		// just do a simple blit to the dest buffer (I'm lazy)
-
 		if (frac < 0)
 			while ((frac += texheight) < 0);
 		else
@@ -562,20 +574,6 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 			count -= 8;
 		}
 
-		if (count & 1)
-		{
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-		}
-
-		if (count & 2)
-		{
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
-		}
-
 		if (count & 4)
 		{
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
@@ -584,6 +582,20 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 			dest += pitch; frac += fracstep;
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
 			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+		
+		if (count & 2)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch; frac += fracstep;
+		}
+
+		if (count & 1)
+		{
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
 			dest += pitch; frac += fracstep;
 		}

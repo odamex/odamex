@@ -241,7 +241,6 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	const Texture* texture = NULL;
 
-	int columnmethod = 2;
 	fixed_t front_offset = 0;
 	angle_t skyflip = 0;
 
@@ -293,6 +292,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	if (texture)
 	{
+		dcol.masked = false;
 		dcol.iscale = skyiscale >> skystretch;
 		dcol.texturemid = skytexturemid;
 		dcol.textureheight = texture->mHeight << FRACBITS;
@@ -322,7 +322,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			skyposts[x] = texture->getColumn(colnum);
 		}
 
-		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom, skyposts, SkyColumnBlaster, false, columnmethod);
+		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom, skyposts, SkyColumnBlaster, false);
 	}
 				
 	R_ResetDrawFuncs();

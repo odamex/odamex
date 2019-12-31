@@ -643,65 +643,6 @@ void* W_CacheLumpName(const char* name, int tag)
 	return W_CacheLumpNum (W_GetNumForName(name), tag);
 }
 
-size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
-void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
-
-//
-// W_CachePatch
-//
-// [SL] Reads and caches a patch from disk. This takes care of converting the
-// patch from the standard Doom format of posts with 1-byte lengths and offsets
-// to a new format for posts that uses 2-byte lengths and offsets.
-//
-patch_t* W_CachePatch(unsigned lumpnum, int tag)
-{
-	if (lumpnum >= numlumps)
-		I_Error ("W_CachePatch: %u >= numlumps", lumpnum);
-
-	if (!lumpcache[lumpnum])
-	{
-		// temporary storage of the raw patch in the old format
-		byte *rawlumpdata = new byte[W_LumpLength(lumpnum)];
-
-		W_ReadLump(lumpnum, rawlumpdata);
-		patch_t *rawpatch = (patch_t*)(rawlumpdata);
-
-		size_t newlumplen = R_CalculateNewPatchSize(rawpatch, W_LumpLength(lumpnum));
-
-		if (newlumplen > 0)
-		{
-			// valid patch
-			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
-			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
-			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
-
-			R_ConvertPatch(newpatch, rawpatch);
-		}
-		else
-		{
-			// invalid patch - just create a header with width = 0, height = 0
-			lumpcache[lumpnum] = Z_Malloc(sizeof(patch_t), tag, &lumpcache[lumpnum]);
-			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
-		}
-
-		delete [] rawlumpdata;
-	}
-	else
-	{
-		Z_ChangeTag(lumpcache[lumpnum], tag);
-	}
-
-	// denis - todo - would be good to check whether the patch violates W_LumpLength here
-	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch
-
-	return (patch_t*)lumpcache[lumpnum];
-}
-
-patch_t* W_CachePatch(const char* name, int tag)
-{
-	return W_CachePatch(W_GetNumForName(name), tag);
-	// denis - todo - would be good to replace non-existant patches with a default '404' patch
-}
 
 //
 // W_FindLump

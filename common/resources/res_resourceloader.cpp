@@ -8,9 +8,6 @@
 
 #include "cmdlib.h"
 
-size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
-void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
-
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK
 	#include <setjmp.h>		// used for error handling by libpng
@@ -54,6 +51,33 @@ void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
 
 
 //
+// Res_TransposeImage
+//
+// Converts an image buffer from row-major format to column-major format.
+// TODO: Use cache-blocking to optimize
+//
+static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int width, int height, const palindex_t* translation)
+{
+	for (int x = 0; x < width; x++)
+	{
+		const palindex_t* source_column = source + x;
+		
+		for (int y = 0; y < height; y++)
+		{
+			if (*source_column < 0 || *source_column > 255)
+				Printf(PRINT_HIGH, "here\n");
+			if (translation)
+				*dest = translation[*source_column];
+			else
+				*dest = *source_column;
+			source_column += width;
+			dest++;
+		}
+	}
+}
+
+
+//
 // Res_DrawPatchIntoTexture
 //
 // Draws a lump in patch_t format into a Texture at the given offset.
@@ -61,7 +85,7 @@ void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
 static void Res_DrawPatchIntoTexture(
 		Texture* texture,
 		const uint8_t* lump_data, uint32_t lump_length,
-		int xoffs, int yoffs)
+		int xoffs, int yoffs, const palindex_t* translation=NULL)
 {
 	if (lump_length < 8)		// long enough for header data?
 		return;
@@ -116,7 +140,15 @@ static void Res_DrawPatchIntoTexture(
 			{
 				palindex_t* dest = texture->mData + texheight * x + y1;
 				const palindex_t* source = post + 3;
-				memcpy(dest, source, y2 - y1 + 1);
+				if (translation)
+				{
+					for (int i = 0; i < y2 - y1 + 1; i++)
+						dest[i]	= translation[source[i]];
+				}
+				else
+				{
+					memcpy(dest, source, y2 - y1 + 1);
+				}
 			}
 			
 			post += postlength + 4;
@@ -170,6 +202,8 @@ Texture* BaseTextureLoader::createTexture(void* data, uint16_t width, uint16_t h
 	texture->mHeight = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
 	texture->mWidthBits = Log2(texture->mWidth);
 	texture->mHeightBits = Log2(texture->mHeight);
+	texture->mWidthMask = (1 << texture->mWidthBits) - 1;
+	texture->mHeightMask = (1 << texture->mHeightBits) - 1;
 	texture->mOffsetX = 0;
 	texture->mOffsetY = 0;
 	texture->mScaleX = FRACUNIT;
@@ -219,7 +253,7 @@ void RowMajorTextureLoader::load(void* data) const
 		mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
 		// convert the row-major raw data to into column-major
-		Res_TransposeImage(texture->mData, raw_data, width, height);
+		Res_TransposeImage(texture->mData, raw_data, width, height, mTranslation);
 
 		delete [] raw_data;
 	}
@@ -345,7 +379,7 @@ void PatchTextureLoader::load(void* data) const
 	#if CLIENT_APP
 	if (width > 0 && height > 0)
 	{
-		Res_DrawPatchIntoTexture(texture, patch_data, patch_size, 0, 0);
+		Res_DrawPatchIntoTexture(texture, patch_data, patch_size, 0, 0, mTranslation);
 	}
 	#endif
 
@@ -372,9 +406,9 @@ void CompositeTextureLoader::load(void* data) const
 	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight);
 
 	// Handle ZDoom scaling extensions
-	if (mTexDef.mScaleX != 0)
+	if (mTexDef.mScaleX > 0)
 		texture->mScaleX = mTexDef.mScaleX << (FRACBITS - 3);
-	if (mTexDef.mScaleY != 0)
+	if (mTexDef.mScaleY > 0)
 		texture->mScaleY = mTexDef.mScaleY << (FRACBITS - 3);
 
 	#if CLIENT_APP
@@ -391,7 +425,7 @@ void CompositeTextureLoader::load(void* data) const
 
 			if (Res_ValidatePatchData(patch_data, patch_size))
 			{
-				Res_DrawPatchIntoTexture(texture, patch_data, patch_size, patch_def.mOriginX, patch_def.mOriginY);
+				Res_DrawPatchIntoTexture(texture, patch_data, patch_size, patch_def.mOriginX, patch_def.mOriginY, mTranslation);
 			}
 
 			delete [] patch_data;

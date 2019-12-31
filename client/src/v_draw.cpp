@@ -108,7 +108,12 @@ void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
 
 	do
 	{
-		*dest = *source++;
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			*dest = pixel;
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -122,7 +127,11 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 
 	do
 	{
-		*dest = source[c >> 16];
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			*dest = pixel;
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -149,13 +158,18 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 
 	do
 	{
-		unsigned int fg = *source++;
-		unsigned int bg = *dest;
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			unsigned int fg = pixel;
+			unsigned int bg = *dest;
 
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][fg & (fg>>15)];
+			fg = fg2rgb[fg];
+			bg = bg2rgb[bg];
+			fg = (fg+bg) | 0x1f07c1f;
+			*dest = RGB32k[0][0][fg & (fg>>15)];
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -180,13 +194,17 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		unsigned int fg = source[c >> 16];
-		unsigned int bg = *dest;
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			unsigned int fg = pixel;
+			unsigned int bg = *dest;
 
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][fg & (fg>>15)];
+			fg = fg2rgb[fg];
+			bg = bg2rgb[bg];
+			fg = (fg+bg) | 0x1f07c1f;
+			*dest = RGB32k[0][0][fg & (fg>>15)];
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -201,7 +219,12 @@ void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, i
 
 	do
 	{
-		*dest = V_ColorMap.tlate(*source++);
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			*dest = V_ColorMap.tlate(pixel);
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -215,7 +238,11 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		*dest = V_ColorMap.tlate(source[c >> 16]);
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			*dest = V_ColorMap.tlate(pixel);
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -242,13 +269,18 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 
 	do
 	{
-		unsigned int fg = V_ColorMap.tlate(*source++);
-		unsigned int bg = *dest;
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			unsigned int fg = V_ColorMap.tlate(pixel);
+			unsigned int bg = *dest;
 
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][fg & (fg>>15)];
+			fg = fg2rgb[fg];
+			bg = bg2rgb[bg];
+			fg = (fg+bg) | 0x1f07c1f;
+			*dest = RGB32k[0][0][fg & (fg>>15)];
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -273,13 +305,17 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 
 	do
 	{
-		unsigned int fg = V_ColorMap.tlate(source[c >> 16]);
-		unsigned int bg = *dest;
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			unsigned int fg = V_ColorMap.tlate(pixel);
+			unsigned int bg = *dest;
 
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][fg & (fg>>15)];
+			fg = fg2rgb[fg];
+			bg = bg2rgb[bg];
+			fg = (fg+bg) | 0x1f07c1f;
+			*dest = RGB32k[0][0][fg & (fg>>15)];
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -350,7 +386,12 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.shade(*source++);
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			*((argb_t *)dest) = V_Palette.shade(pixel);
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -364,7 +405,11 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.shade(source[c >> 16]);
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			*((argb_t *)dest) = V_Palette.shade(pixel);
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -382,9 +427,14 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 
 	do
 	{
-		argb_t fg = V_Palette.shade(*source++);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			argb_t fg = V_Palette.shade(pixel);
+			argb_t bg = *((argb_t *)dest);
+			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -401,9 +451,13 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		argb_t fg = V_Palette.shade(source[c >> 16]);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			argb_t fg = V_Palette.shade(pixel);
+			argb_t bg = *((argb_t *)dest);
+			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -418,7 +472,12 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, *source++);
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, pixel);
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -432,7 +491,11 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, source[c >> 16]);
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, pixel);
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -450,9 +513,14 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 
 	do
 	{
-		argb_t fg = V_Palette.tlate(V_ColorMap, *source++);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		palindex_t pixel = *source;
+		if (pixel != 0)
+		{
+			argb_t fg = V_Palette.tlate(V_ColorMap, pixel);
+			argb_t bg = *((argb_t *)dest);
+			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
@@ -469,9 +537,13 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 
 	do
 	{
-		argb_t fg = V_Palette.tlate(V_ColorMap, source[c >> 16]);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		palindex_t pixel = source[c >> 16];
+		if (pixel != 0)
+		{
+			argb_t fg = V_Palette.tlate(V_ColorMap, pixel);
+			argb_t bg = *((argb_t *)dest);
+			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		}
 		dest += pitch;
 		c += yinc;
 	} while (--count);

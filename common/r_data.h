@@ -86,13 +86,6 @@ extern byte* textureheightmask;
 extern fixed_t* texturescalex;
 extern fixed_t* texturescaley;
 
-// Retrieve column data for span blitting.
-tallpost_t* R_GetPatchResourceColumn(ResourceId res_id, int colnum);
-byte* R_GetPatchColumnResourceData(ResourceId res_id, int colnum);
-tallpost_t* R_GetTextureColumn(int texnum, int colnum);
-byte* R_GetTextureColumnData(int texnum, int colnum);
-
-
 // I/O, setting up the stuff.
 void R_InitData (void);
 void R_PrecacheLevel (void);
@@ -104,14 +97,6 @@ void R_PrecacheLevel (void);
 int R_FlatNumForName (const char *name);
 inline int R_FlatNumForName (const byte *name) { return R_FlatNumForName ((const char *)name); }
 
-
-// Called by P_Ticker for switches and animations,
-// returns the texture number for the texture name.
-int R_TextureNumForName (const char *name);
-int R_CheckTextureNumForName (const char *name);
-
-inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName ((const char *)name); }
-inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName ((const char *)name); }
 
 void R_InitColormaps();
 void R_ShutdownColormaps();

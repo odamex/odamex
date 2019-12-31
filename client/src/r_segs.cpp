@@ -46,7 +46,7 @@
 #include "resources/res_texture.h"
 
 // a pool of bytes allocated for sprite clipping arrays
-Pool<tallpost_t*> masked_midposts_pool(4096);
+Pool<const palindex_t*> masked_midposts_pool(4096);
 Pool<int> sprclip_pool(4096);
 
 // OPTIMIZE: closed two sided lines as single sided
@@ -56,13 +56,13 @@ Pool<int> sprclip_pool(4096);
 static BOOL		segtextured;	// True if any of the segs textures might be visible.
 static BOOL		markfloor;		// False if the back side is the same plane.
 static BOOL		markceiling;
-static BOOL		maskedtexture;
 static bool		didsolidcol;
 
 
 static const Texture*	toptexture;
 static const Texture*	bottomtexture;
 static const Texture*	midtexture;
+static const Texture*	maskedtexture;
 
 int*			walllights;
 
@@ -93,13 +93,13 @@ static const palindex_t* topposts[MAXWIDTH];
 static const palindex_t* midposts[MAXWIDTH];
 static const palindex_t* bottomposts[MAXWIDTH];
 
+static const palindex_t** masked_midposts;
+
 static fixed_t wallscalex[MAXWIDTH];
 static int texoffs[MAXWIDTH];
 
 extern fixed_t FocalLengthY;
 extern float yfoc;
-
-static const palindex_t** masked_midposts;
 
 
 //
@@ -151,52 +151,41 @@ static void R_FillWallHeightArray(
 //
 static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
-	return;
-	tallpost_t* post = dcol.post;
-
-	if (post != NULL && spryscale > 0)
+	if (spryscale > 0)
 	{
 		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
 		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
 
-		while (!post->end())
+		// calculate unclipped screen coordinates for post
+		int topscreen = sprtopscreen + 1;
+
+		dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+		dcol.yh = (topscreen + spryscale * (dcol.textureheight >> FRACBITS)) >> FRACBITS;
+
+		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+
+		dcol.texturefrac = dcol.texturemid + (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+
+		if (dcol.texturefrac < 0)
 		{
-			// calculate unclipped screen coordinates for post
-			int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
-
-			dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
-			dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
-
-			dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
-			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
-
-			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-				+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
-
-			if (dcol.texturefrac < 0)
-			{
-				int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-				dcol.yl += cnt;
-				dcol.texturefrac += cnt * dcol.iscale;
-			}
-
-			const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
-			const fixed_t maxfrac = post->length << FRACBITS;
-			
-			if (endfrac >= maxfrac)
-			{
-				int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-				dcol.yh -= cnt;
-			}
-
-			dcol.source = post->data();
-
-			if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
-				drawfunc();
-			
-			post = post->next();
+			int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			dcol.yl += cnt;
+			dcol.texturefrac += cnt * dcol.iscale;
 		}
 
+		const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
+		const fixed_t maxfrac = dcol.textureheight;
+		
+		if (endfrac >= maxfrac)
+		{
+			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			dcol.yh -= cnt;
+		}
+
+		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
+			drawfunc();
+		
 		masked_midposts[dcol.x] = NULL;
 	}
 
@@ -212,7 +201,6 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 		return;
 
 	dcol.iscale = 0xffffffffu / unsigned(wallscalex[dcol.x]);
-	//dcol.source = dcol.post->data();
 	// TODO: dcol.texturefrac should take y-scaling of textures into account
 	dcol.texturefrac = dcol.texturemid + FixedMul((dcol.yl - centery + 1) << FRACBITS, dcol.iscale);
 
@@ -240,7 +228,6 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, const palindex_t** posts
 
 	dcol.yl = MAX(top[x], 0);
 	dcol.yh = MIN(bottom[x], viewheight - 1);
-	//dcol.post = posts[x];
 	dcol.source = posts[x];
 }
 
@@ -284,7 +271,7 @@ static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
 //		assembly rendering function.
 //
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
-		const palindex_t** posts, void (*colblast)(), bool calc_light, int columnmethod)
+		const palindex_t** posts, void (*colblast)(), bool calc_light)
 {
 	if (start > stop)
 		return;
@@ -308,60 +295,47 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		}
 	}
 
-	if (columnmethod == 0)
+	#define BLOCKBITS 6
+	#define BLOCKSIZE (1 << BLOCKBITS)
+	#define BLOCKMASK (BLOCKSIZE - 1)
+
+	// pre-calculate the color map number for lighting for each screen column 
+	static int light_lookup[MAXWIDTH];
+	if (calc_light)
 	{
-		for (dcol.x = start; dcol.x <= stop; dcol.x++)
+		for (int x = start; x <= stop; x++)
 		{
-			R_ColumnSetup(dcol.x, top, bottom, posts, calc_light);
-			colblast();
+			int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+			light_lookup[x] = walllights[index];
 			rw_light += rw_lightstep;
 		}
 	}
-	else if (columnmethod == 2)
+		
+	// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
+	// on the screen. This is to make better use of spatial locality in the cache.
+	for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
 	{
-		#define BLOCKBITS 6
-		#define BLOCKSIZE (1 << BLOCKBITS)
-		#define BLOCKMASK (BLOCKSIZE - 1)
+		int blockstartx = bx;
+		int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
 
-		// pre-calculate the color map number for lighting for each screen column 
-		static int light_lookup[MAXWIDTH];
-		if (calc_light)
+		int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
+		int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
+
+		for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
 		{
-			for (int x = start; x <= stop; x++)
+			int blockstarty = by;
+			int blockstopy = (by & ~BLOCKMASK) + BLOCKSIZE - 1;
+
+			for (int x = blockstartx; x <= blockstopx; x++)
 			{
-				int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
-				light_lookup[x] = walllights[index];
-				rw_light += rw_lightstep;
-			}
-		}
-			
-		// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
-		// on the screen. This is to make better use of spatial locality in the cache.
-		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
-		{
-			int blockstartx = bx;
-			int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+				if (calc_light)
+					dcol.colormap = basecolormap.with(light_lookup[x]);
 
-			int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
-			int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
-
-			for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
-			{
-				int blockstarty = by;
-				int blockstopy = (by & ~BLOCKMASK) + BLOCKSIZE - 1;
-
-				for (int x = blockstartx; x <= blockstopx; x++)
-				{
-					if (calc_light)
-						dcol.colormap = basecolormap.with(light_lookup[x]);
-
-					dcol.x = x;
-					dcol.yl = MAX(top[x], blockstarty);
-					dcol.yh = MIN(bottom[x], blockstopy);
-					//dcol.post = posts[x];
-					dcol.source = posts[x];
-					colblast();
-				}
+				dcol.x = x;
+				dcol.yl = MAX(top[x], blockstarty);
+				dcol.yh = MIN(bottom[x], blockstopy);
+				dcol.source = posts[x];
+				colblast();
 			}
 		}
 	}
@@ -387,7 +361,7 @@ void R_RenderSolidSegRange(int start, int stop)
 	if (start > stop)
 		return;
 
-	int columnmethod = 2;
+	dcol.masked = false;
 
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
@@ -439,8 +413,7 @@ void R_RenderSolidSegRange(int start, int stop)
 		dcol.textureheight = midtexture->mHeight << FRACBITS;
 		dcol.texturemid = rw_midtexturemid;
 
-		R_RenderColumnRange(start, stop, walltopf, lower, midposts,
-					SolidColumnBlaster, true, columnmethod);
+		R_RenderColumnRange(start, stop, walltopf, lower, midposts, SolidColumnBlaster, true);
 
 		// indicate that no further drawing can be done in this column
 		memcpy(ceilingclip + start, floorclipinitial + start, count * sizeof(*ceilingclip));
@@ -462,7 +435,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dcol.textureheight = toptexture->mHeight << FRACBITS;
 			dcol.texturemid = rw_toptexturemid;
 
-			R_RenderColumnRange(start, stop, walltopf, lower, topposts, SolidColumnBlaster, true, columnmethod);
+			R_RenderColumnRange(start, stop, walltopf, lower, topposts, SolidColumnBlaster, true);
 
 			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
 		}
@@ -486,8 +459,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dcol.textureheight = bottomtexture->mHeight << FRACBITS;
 			dcol.texturemid = rw_bottomtexturemid;
 
-			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts,
-						SolidColumnBlaster, true, columnmethod);
+			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts, SolidColumnBlaster, true);
 
 			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
 		}
@@ -502,8 +474,8 @@ void R_RenderSolidSegRange(int start, int stop)
 			// save texturecol for backdrawing of masked mid texture
 			for (int x = start; x <= stop; x++)
 			{
-				//int colnum = R_TexScaleX(texoffs[x], maskedtexture) >> FRACBITS;
-				//masked_midposts[x] = R_GetTextureColumn(maskedtexture, colnum);
+				int colnum = (FixedMul(texoffs[x], maskedtexture->mScaleX) >> FRACBITS) & maskedtexture->mWidthMask;
+				masked_midposts[x] = maskedtexture->getColumn(colnum);
 			}
 		}
 	}
@@ -528,7 +500,6 @@ void R_RenderSolidSegRange(int start, int stop)
 //
 void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 {
-	#if 0
 	int 		lightnum;
 	sector_t	tempsec;		// killough 4/13/98
 
@@ -556,8 +527,8 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	frontsector = curline->frontsector;
 	backsector = curline->backsector;
 
-	int texnum = texturetranslation[curline->sidedef->midtexture];
-	fixed_t texheight = R_TexScaleY(textureheight[texnum], texnum);
+	const Texture* texture = Res_CacheTexture(curline->sidedef->midtexture);
+	fixed_t texheight = FixedMul(texture->mHeight << FRACBITS, texture->mScaleY);
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
@@ -565,7 +536,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	else
 		dcol.texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
-	dcol.texturemid = R_TexScaleY(dcol.texturemid - viewz + curline->sidedef->rowoffset, texnum);
+	dcol.texturemid = FixedMul(dcol.texturemid - viewz + curline->sidedef->rowoffset, texture->mScaleY);
 	
 	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
 	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
@@ -583,9 +554,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	basecolormap = frontsector->colormap->maps;	// [RH] Set basecolormap
 
 	// killough 4/13/98: get correct lightlevel for 2s normal textures
-	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
-			->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
-
+	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 	lightnum += R_OrthogonalLightnumAdjustment();
 
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
@@ -593,8 +562,8 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	masked_midposts = ds->midposts;
 
-	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
-	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
+	rw_scalestep = FixedDiv(ds->scalestep, texture->mScaleY);
+	spryscale = FixedDiv(ds->scale1, texture->mScaleY) + (x1 - ds->x1) * rw_scalestep;
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
@@ -602,12 +571,11 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-	dcol.textureheight = 256*FRACUNIT;
+	dcol.textureheight = texture->mHeight << FRACBITS;
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom
-	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true, 0);
-	#endif	// if 0
+	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true);
 }
 
 
@@ -708,7 +676,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	}
 
 	// Cache the wall textures
-	toptexture = midtexture = bottomtexture = NULL;
+	toptexture = midtexture = bottomtexture = maskedtexture = NULL;
 
 	if (!backsector && curline->sidedef->midtexture != ResourceId::INVALID_ID)
 		midtexture = Res_CacheTexture(curline->sidedef->midtexture);
@@ -733,20 +701,17 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		
 		if (toptexture)
 		{
-			int mask = (1 << toptexture->mWidthBits) - 1;
-			int colnum = (FixedMul(colfrac, toptexture->mScaleX) >> FRACBITS) & mask;
+			int colnum = (FixedMul(colfrac, toptexture->mScaleX) >> FRACBITS) & toptexture->mWidthMask;
 			topposts[i] = toptexture->getColumn(colnum);
 		}
 		if (midtexture)
 		{
-			int mask = (1 << midtexture->mWidthBits) - 1;
-			int colnum = (FixedMul(colfrac, midtexture->mScaleX) >> FRACBITS) & mask;
+			int colnum = (FixedMul(colfrac, midtexture->mScaleX) >> FRACBITS) & midtexture->mWidthMask;
 			midposts[i] = midtexture->getColumn(colnum);
 		}
 		if (bottomtexture)
 		{
-			int mask = (1 << bottomtexture->mWidthBits) - 1;
-			int colnum = (FixedMul(colfrac, bottomtexture->mScaleX) >> FRACBITS) & mask;
+			int colnum = (FixedMul(colfrac, bottomtexture->mScaleX) >> FRACBITS) & bottomtexture->mWidthMask;
 			bottomposts[i] = bottomtexture->getColumn(colnum);
 		}
 
@@ -796,7 +761,7 @@ void R_StoreWallRange(int start, int stop)
 
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
-	maskedtexture = 0;
+	maskedtexture = NULL;
 	ds_p->midposts = NULL;
 
 	if (!backsector)
@@ -932,17 +897,13 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGTOP)
 			{
 				// top of texture at top
-				fixed_t fc = P_CeilingHeight(frontsector);
-				rw_toptexturemid = fc - viewz;
+				rw_toptexturemid = P_CeilingHeight(frontsector) - viewz;
 			}
-			else
+			else if (toptexture)
 			{
 				// bottom of texture
-				if (toptexture)
-				{
-					fixed_t texheight = toptexture->getScaledHeight();
-					rw_toptexturemid = P_CeilingHeight(backsector) - viewz + texheight;
-				}
+				fixed_t texheight = toptexture->getScaledHeight();
+				rw_toptexturemid = P_CeilingHeight(backsector) - viewz + texheight;
 			}
 		}
 
@@ -953,14 +914,12 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGBOTTOM)
 			{
 				// bottom of texture at bottom, top of texture at top
-				fixed_t fc = P_CeilingHeight(frontsector);
-				rw_bottomtexturemid = fc - viewz;
+				rw_bottomtexturemid = P_CeilingHeight(frontsector) - viewz;
 			}
 			else
 			{
 				// top of texture at top
-				fixed_t bf = P_FloorHeight(backsector);
-				rw_bottomtexturemid = bf - viewz;
+				rw_bottomtexturemid = P_FloorHeight(backsector) - viewz;
 			}
 		}
 
@@ -968,16 +927,16 @@ void R_StoreWallRange(int start, int stop)
 		rw_bottomtexturemid += sidedef->rowoffset;
 
 		// allocate space for masked texture tables
-		if (sidedef->midtexture)
+		if (sidedef->midtexture != ResourceId::INVALID_ID)
 		{
 			// masked midtexture
-			//maskedtexture = texturetranslation[sidedef->midtexture];
-			//ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
+			maskedtexture = Res_CacheTexture(sidedef->midtexture);
+			ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
 		}
 
 		// [SL] additional fix for sky hack
 		if (R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) && R_ResourceIdIsSkyFlat(backsector->ceiling_res_id))
-			toptexture = 0;
+			toptexture = NULL;
 	}
 
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
@@ -985,14 +944,13 @@ void R_StoreWallRange(int start, int stop)
 	if (curline->linedef->special == Line_Horizon)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
-		midtexture = toptexture = bottomtexture = NULL;
-		maskedtexture = 0;
+		midtexture = toptexture = bottomtexture = maskedtexture = NULL;
 
 		for (int n = start; n <= stop; n++)
 			walltopf[n] = wallbottomf[n] = centery;
 	}
 
-	segtextured = ((bool)midtexture | (bool)toptexture) | ((bool)bottomtexture | maskedtexture);
+	segtextured = ((bool)midtexture | (bool)toptexture) | ((bool)bottomtexture | (bool)maskedtexture);
 
 	if (segtextured)
 	{

@@ -62,8 +62,7 @@ public:
 		mResId(res_id)
 	{}
 
-	virtual ~GenericResourceLoader() {}
-
+	virtual ~GenericResourceLoader() {} 
 	virtual uint32_t size() const;
 	virtual void load(void* data) const;
 
@@ -76,8 +75,9 @@ protected:
 class BaseTextureLoader : public ResourceLoader
 {
 public:
-	BaseTextureLoader(const RawResourceAccessor* accessor) :
-		ResourceLoader(accessor)
+	BaseTextureLoader(const RawResourceAccessor* accessor, const palindex_t* translation = NULL) :
+		ResourceLoader(accessor),
+		mTranslation(translation)
 	{}
 
 	virtual ~BaseTextureLoader() {}
@@ -85,6 +85,7 @@ public:
 protected:
 	uint32_t calculateTextureSize(uint16_t width, uint16_t height) const;
 	Texture* createTexture(void* data, uint16_t width, uint16_t height) const;
+	const palindex_t*	mTranslation;
 };
 
 
@@ -97,8 +98,8 @@ protected:
 class RowMajorTextureLoader : public BaseTextureLoader
 {
 public:
-	RowMajorTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
-		BaseTextureLoader(accessor),
+	RowMajorTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const palindex_t* translation = NULL) :
+		BaseTextureLoader(accessor, translation),
 		mResId(res_id)
 	{}
 
@@ -125,8 +126,8 @@ protected:
 class FlatTextureLoader : public RowMajorTextureLoader
 {
 public:
-	FlatTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
-		RowMajorTextureLoader(accessor, res_id)
+	FlatTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const palindex_t* translation = NULL) :
+		RowMajorTextureLoader(accessor, res_id, translation)
 	{}
 
 	virtual ~FlatTextureLoader() {}
@@ -145,8 +146,8 @@ protected:
 class RawTextureLoader : public RowMajorTextureLoader
 {
 public:
-	RawTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
-		RowMajorTextureLoader(accessor, res_id)
+	RawTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const palindex_t* translation = NULL) :
+		RowMajorTextureLoader(accessor, res_id, translation)
 	{}
 
 	virtual ~RawTextureLoader() {}
@@ -163,8 +164,8 @@ protected:
 class PatchTextureLoader : public BaseTextureLoader
 {
 public:
-	PatchTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
-		BaseTextureLoader(accessor),
+	PatchTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id, const palindex_t* translation = NULL) :
+		BaseTextureLoader(accessor, translation),
 		mResId(res_id)
 	{}
 
@@ -184,8 +185,8 @@ protected:
 class CompositeTextureLoader : public BaseTextureLoader
 {
 public:
-	CompositeTextureLoader(const RawResourceAccessor* accessor, const CompositeTextureDefinition& texdef) :
-		BaseTextureLoader(accessor),
+	CompositeTextureLoader(const RawResourceAccessor* accessor, const CompositeTextureDefinition& texdef, const palindex_t* translation = NULL) :
+		BaseTextureLoader(accessor, translation),
 		mTexDef(texdef)
 	{}
 

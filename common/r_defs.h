@@ -440,30 +440,6 @@ struct node_s
 typedef struct node_s node_t;
 
 
-
-// posts are runs of non masked source pixels
-struct post_s
-{
-	byte		topdelta;		// -1 is the last post in a column
-	byte		length; 		// length data bytes follows
-};
-typedef struct post_s post_t;
-
-// column_t is a list of 0 or more post_t, (byte)-1 terminated
-typedef post_t	column_t;
-
-struct tallpost_s
-{
-	unsigned short		topdelta;
-	unsigned short		length;
-	
-	byte *data() const { return (byte*)(this) + 4; }
-	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
-	bool end() const { return topdelta == 0xFFFF; }
-	void writeend() { topdelta = 0xFFFF; }
-};
-typedef struct tallpost_s tallpost_t;
-
 //
 // OTHER TYPES
 //
@@ -488,36 +464,9 @@ struct drawseg_s
     //  all three adjusted so [x1] is first value.
     int*			sprtopclip;
     int*			sprbottomclip;
-	tallpost_t**	midposts;
+	const palindex_t**	midposts;
 };
 typedef struct drawseg_s drawseg_t;
-
-
-// Patches.
-// A patch holds one or more columns.
-// Patches are used for sprites and all masked pictures, and we compose
-// textures from the TEXTURE1/2 lists of patches.
-struct patch_s
-{
-private:
-	short			_width;			// bounding box size
-	short			_height;
-	short			_leftoffset; 	// pixels to the left of origin
-	short			_topoffset;		// pixels below the origin
-
-public:
-
-	short width() const { return LESHORT(_width); }
-	short height() const { return LESHORT(_height); }
-	short leftoffset() const { return LESHORT(_leftoffset); }
-	short topoffset() const { return LESHORT(_topoffset); }
-
-	int columnofs[8]; // only [width] used
-	// the [0] is &columnofs[width]
-};
-typedef struct patch_s patch_t;
-
-
 
 
 // A vissprite_t is a thing
