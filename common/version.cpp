@@ -56,9 +56,10 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 
 const char* GitDescribe()
 {
-	#define STR(tok) #tok
 #ifdef GIT_DESCRIBE
-	return STR(GIT_DESCRIBE);
+#define STRINGIZE2(s) #s
+#define STRINGIZE(s) STRINGIZE2(s)
+	return STRINGIZE(GIT_DESCRIBE);
 #else
 	return "unknown";
 #endif
