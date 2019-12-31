@@ -448,7 +448,7 @@ void G_DoCompleted (void)
 	gamestate = GS_INTERMISSION;
 	viewactive = false;
 
-	DISCORD_UpdateState(DISCORD_INTERMISSION, "");		// ToDo: improve it with the intermission
+	discord.SetState(DiscordRPCStatus::DISCORD_INTERMISSION, "");		// ToDo: improve it with the intermission
 
 	WI_Start (&wminfo);
 }
@@ -625,7 +625,9 @@ void G_DoLoadLevel (int position)
 	{
 		std::ostringstream details;
 		details << level.mapname << " - " << level.level_name;
-		DISCORD_UpdateInGameState(DISCORD_SOLOPLAY, details.str());
+
+		if (!demoplayback && gamestate != GS_DEMOSCREEN)
+			discord.SetIngameState(DiscordRPCStatus::DISCORD_SOLOPLAY, details.str());
 	}
 }
 

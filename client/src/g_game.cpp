@@ -919,7 +919,7 @@ void G_Ticker (void)
 
 			gamestate = GS_FULLCONSOLE;
 			C_FullConsole();
-			DISCORD_UpdateState(DISCORD_INMENU, "");
+			discord.SetState(DiscordRPCStatus::DISCORD_INMENU, "");
 
 			gameaction = ga_nothing;
 			break;

@@ -547,7 +547,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 	state = NetDemo::st_playing;
 
 	Printf(PRINT_HIGH, "Playing netdemo %s.\n", filename.c_str());
-	DISCORD_UpdateState(DISCORD_DEMOPLAYING, "", DLOGO_LARGEPIC, "odamex-demo");
+	discord.SetState(DiscordRPCStatus::DISCORD_DEMOPLAYING, "", DiscordRPCStatus::DLOGO_LARGEPIC, "odamex-demo");
 
 	return true;
 }

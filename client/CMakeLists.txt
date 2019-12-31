@@ -41,7 +41,7 @@ if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
 
-#discordRPC
+#DiscordRPC Library
 if (USE_DISCORDRPC)
   set(DISCORDRPC_DIR ../libraries/discord-rpc)
   set(DISCORDRPC_STATIC_LIBRARIES discord-rpc)
@@ -56,14 +56,11 @@ define_platform()
 # Client definitions
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
 
+if (USE_DISCORDRPC)
+  add_definitions(-DUSE_DISCORDRPC)
+endif()
+
 # Textscreen
-set(TEXTSCREEN_LIBRARY "textscreen")
-set(TEXTSCREEN_DIR ../libraries/textscreen)
-set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
-
-# DiscordRPC - Only for Win32 builds (for now)
-
 set(TEXTSCREEN_LIBRARY "textscreen")
 set(TEXTSCREEN_DIR ../libraries/textscreen)
 set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)

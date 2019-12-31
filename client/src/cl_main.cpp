@@ -147,6 +147,7 @@ std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (sv_hostname)
 
 EXTERN_CVAR (cl_predictsectors)
 
@@ -3514,7 +3515,7 @@ void CL_Spectate()
 	if (&player == &consoleplayer())
 	{
 		std::ostringstream details;
-		details << CL_GetGamePlayName() << " on " << level.level_name;
+		details << "Playing " << CL_GetGamePlayName();
 
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
@@ -3523,7 +3524,7 @@ void CL_Spectate()
 			player.playerstate = PST_LIVE;				// Resurrect dead spectators
 			player.cheats |= CF_FLY;					// Make players fly by default
 			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-			DISCORD_UpdateInGameState(DISCORD_SPECTATING, details.str());
+			discord.SetIngameState(DiscordRPCStatus::DISCORD_SPECTATING, details.str());
 			
 			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
@@ -3532,14 +3533,7 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 
-			// Instantly updates Discord status according to game and game packets.
-			if (warmup.get_status() == Warmup::INGAME)
-				DISCORD_UpdateInGameState(DISCORD_INMATCH, details.str());
-			else if (warmup.get_status() == Warmup::WARMUP)
-				DISCORD_UpdateInGameState(DISCORD_WARMUP, details.str());
-			else
-				DISCORD_UpdateInGameState(DISCORD_INGAME, details.str());
-
+			discord.SetWarmupState(warmup.get_status(), details.str());	// Instantly updates Discord status according to game and game packets.
 		}
 
 		CL_RebuildAllPlayerTranslations();
@@ -3572,7 +3566,7 @@ void CL_WarmupState()
 		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
 
 		details << CL_GetGamePlayName() << " on " << level.level_name;
-		DISCORD_UpdateState(buffer.str(), details.str());	// ToDo: improve it with the gamemode.
+		discord.SetState(buffer.str(), details.str());	// ToDo: improve it with the gamemode.
 	}
 	else
 	{
