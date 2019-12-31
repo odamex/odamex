@@ -1097,9 +1097,25 @@ bool W_IsIWADDeprecated(const std::string& filename)
 }
 
 
+//
+// W_GetIWADFilename
+//
 std::vector<OString> W_GetIWADFilenames()
 {
 	return identtab.getFilenames();
 }
+
+
+//
+// W_IsIWADShareware
+//
+// Checks to see whether a given file is a shareware IWAD
+//
+bool W_IsIWADShareware(const std::string& filename)
+{
+	const OString idname = identtab.identify(filename);
+	return idname.find("DOOM SHAREWARE") == 0;
+}
+
 
 VERSION_CONTROL (w_ident_cpp, "$Id$")

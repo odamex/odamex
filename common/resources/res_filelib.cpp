@@ -766,8 +766,15 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 		new_resource_filenames.push_back(full_filename);
 
 	size_t start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
+	size_t end_position = resource_filenames.size() - 1;
 
-	for (size_t i = start_position; i < resource_filenames.size(); i++)
+	if (W_IsIWADShareware(iwad_filename))
+	{
+		Printf(PRINT_HIGH, "You cannot load additional resource files with the shareware version. Register!\n");
+		end_position = start_position;
+	}
+
+	for (size_t i = start_position; i < end_position; i++)
 		new_resource_filenames.push_back(resource_filenames[i]);
 
 	return new_resource_filenames;

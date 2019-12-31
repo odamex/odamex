@@ -171,8 +171,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	if (resource_filenames == Res_GetResourceFileNames())
 		return;
 
-	size_t resource_file_count = resource_filenames.size();
-	assert(resource_file_count >= 2);	// Require ODAMEX.WAD and an IWAD
+	assert(resource_filenames.size() >= 2);	// Require ODAMEX.WAD and an IWAD
 
 	// Now scan the contents of the IWAD to determine which one it is.
 	const std::string& iwad_filename = resource_filenames[1];
@@ -186,13 +185,6 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	
 	if (W_IsIWADDeprecated(iwad_filename))
 		Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", iwad_filename.c_str());
-
-	// Don't load PWADS with the shareware IWAD.
-	if (gameinfo.flags & GI_SHAREWARE && resource_file_count > 2)
-	{
-		Printf(PRINT_HIGH, "You cannot load additional resource files with the shareware version. Register!\n");
-		resource_file_count = 2;
-	}
 
 	// Load the resource files
 	Res_OpenResourceFiles(resource_filenames);
@@ -222,7 +214,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	if (gamemode == retail_chex)
 	{
 		bool chex_deh_loaded = false;
-		for (size_t i = 0; i < resource_file_count; i++)
+		for (size_t i = 0; i < resource_filenames.size(); i++)
 			if (iequals(Res_CleanseFilename(resource_filenames[i]), "CHEX.DEH"))
 				chex_deh_loaded = true;
 	
