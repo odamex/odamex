@@ -1,7 +1,6 @@
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 option(ENABLE_IO_THREAD "Start up a separate I/O thread, otherwise I'd need to call an update function" ON)
-option(USE_STATIC_CRT "Use /MT[d] for dynamic library" OFF)
 option(WARNINGS_AS_ERRORS "When enabled, compiles with `-Werror` (on *nix platforms)." OFF)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -30,17 +29,6 @@ if(WIN32)
     set(BASE_RPC_SRC ${BASE_RPC_SRC} connection_win.cpp discord_register_win.cpp)
     add_library(discord-rpc ${BASE_RPC_SRC})
     if (MSVC)
-        if(USE_STATIC_CRT)
-            foreach(CompilerFlag
-                    CMAKE_CXX_FLAGS
-                    CMAKE_CXX_FLAGS_DEBUG
-                    CMAKE_CXX_FLAGS_RELEASE
-                    CMAKE_C_FLAGS
-                    CMAKE_C_FLAGS_DEBUG
-                    CMAKE_C_FLAGS_RELEASE)
-                string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-            endforeach()
-        endif(USE_STATIC_CRT)
         target_compile_options(discord-rpc PRIVATE /EHsc
             /Wall
             /wd4100 # unreferenced formal parameter

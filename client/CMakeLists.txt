@@ -45,6 +45,7 @@ endif()
 if (USE_DISCORDRPC)
   set(DISCORDRPC_DIR ../libraries/discord-rpc)
   set(DISCORDRPC_STATIC_LIBRARIES discord-rpc)
+  message(STATUS "Discord-RPC will be statically linked.")
 endif()
 
 # git describe

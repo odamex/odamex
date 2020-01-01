@@ -266,7 +266,7 @@ def libs(clean, static, shared, skip_formatter, just_release):
     static_options = {}
     dynamic_options = {
         'BUILD_SHARED_LIBS': True,
-        'USE_STATIC_CRT': True,
+        'USE_STATIC_CRT': False,
     }
 
     if skip_formatter or IS_BUILD_MACHINE:
