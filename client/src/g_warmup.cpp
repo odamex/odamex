@@ -34,7 +34,7 @@ Warmup::status_t Warmup::get_status()
 bool Warmup::checkscorechange()
 {
 	// Always return score changes if we're doing vanilla stuff
-	if (democlassic || demorecording || !multiplayer)
+	if (demoplayback || demorecording || !multiplayer)
 		return true;
 
 	if (this->status != Warmup::INGAME)
