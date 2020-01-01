@@ -334,7 +334,7 @@ public:
 			// GhostlyDeath -- done with the {}
 			netbuf = 8 * 1024 * 1024;
 			reliablebuf = 8 * 1024 * 1024;
-			relpackets = MAX_UDP_PACKET*50;
+			relpackets = 2 * reliablebuf.maxsize();
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;

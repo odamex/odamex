@@ -284,7 +284,7 @@ void FLZOFile::Implode()
 		}
 		else
 		{
-			DPrintf("LZOFile shrunk from %u to %u bytes\n", input_len, compressed_len);
+			//DPrintf("LZOFile shrunk from %u to %u bytes\n", input_len, compressed_len);
 		}
 	}
 

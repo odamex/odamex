@@ -330,10 +330,10 @@ void SV_AcknowledgePacket(player_t &player)
 					break;
 				}
 
-			if  (needfullupdate)
+			if (needfullupdate)
 			{
 				// do full update
-				DPrintf("need full update\n");
+				DPrintf("player %3d needs full update\n", player.id);
 				cl->last_sequence = sequence;
 				return;
 			}
@@ -348,13 +348,15 @@ void SV_AcknowledgePacket(player_t &player)
 			if (cl->reliablebuf.overflowed)
 			{
 				// do full update
-				DPrintf("reliablebuf overflowed, need full update\n");
+				DPrintf("player %3d reliablebuf overflowed, need full update\n", player.id);
 				cl->last_sequence = sequence;
 				return;
 			}
 
-			//if (cl->reliablebuf.cursize >= NET_PACKET_ROLLOVER)
+			//if (cl->reliablebuf.cursize >= NET_PACKET_ROLLOVER) {
 				SV_SendPacket(player);
+				DPrintf("player %d retransmit sequence %d\n", player.id, sequence);
+			//}
 		}
 	}
 
