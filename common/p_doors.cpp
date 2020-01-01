@@ -68,10 +68,12 @@ bool P_CheckSectorRateLimit(sector_t *sec, AActor *thing) {
 		netid = thing->netid;
 	}
 
+#if 0
 	DPrintf("rate check sec %05d for netid %05d: %5d - %5d = %d >= %d",
 			sec - sectors, netid, gametic, sec->last_activation_tic,
 			gametic - sec->last_activation_tic,
 			ratelimit);
+#endif
 
 	if (gametic - sec->last_activation_tic < ratelimit) {
 		return true;
