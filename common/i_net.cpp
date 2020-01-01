@@ -504,7 +504,7 @@ int NET_GetPacket (void)
     return ret;
 }
 
-int NET_SendPacket (buf_t &buf, netadr_t &to)
+int NET_SendPacketImpl (buf_t &buf, netadr_t &to, const char *code_caller)
 {
     int                   ret;
     struct sockaddr_in    addr;
@@ -536,7 +536,7 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
               return 0;
           if (errno == ECONNREFUSED)
               return 0;
-          Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
+          Printf(PRINT_HIGH | PRINT_RCON_MUTE, "(%s) NET_SendPacket: %s\n", code_caller, strerror(errno));
 #endif
     }
 
