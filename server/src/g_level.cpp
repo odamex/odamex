@@ -594,6 +594,9 @@ void G_DoSaveResetState()
 	arc << level.time;
 }
 
+EXTERN_CVAR(sv_coop_completionist_killed)
+EXTERN_CVAR(sv_coop_completionist_found)
+
 // [AM] - Reset the state of the level.  Second parameter is true if you want
 //        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
 void G_DoResetLevel(bool full_reset)
@@ -650,6 +653,9 @@ void G_DoResetLevel(bool full_reset)
 	reset_snapshot->Reopen();
 	FArchive arc(*reset_snapshot);
 	G_SerializeLevel(arc, false, true);
+	sv_coop_completionist_killed.ForceSet(0.0f);
+	sv_coop_completionist_found.ForceSet(0.0f);
+
 	int level_time;
 	arc >> level_time;
 	reset_snapshot->Seek(0, FFile::ESeekSet);
