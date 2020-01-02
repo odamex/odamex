@@ -353,10 +353,10 @@ void SV_AcknowledgePacket(player_t &player)
 				return;
 			}
 
-			//if (cl->reliablebuf.cursize >= NET_PACKET_ROLLOVER) {
+			if (cl->reliablebuf.cursize > 600) {
 				SV_SendPacket(player);
-				DPrintf("player %d retransmit sequence %d\n", player.id, sequence);
-			//}
+				//DPrintf("player %d retransmit sequence %d\n", player.id, sequence);
+			}
 		}
 	}
 
