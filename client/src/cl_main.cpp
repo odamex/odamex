@@ -95,7 +95,7 @@ short version = 0;
 int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
 int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
 
-buf_t     net_buffer(8192);
+buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
