@@ -390,6 +390,39 @@ BEGIN_COMMAND (m_stop)
 }
 END_COMMAND (m_stop)
 
+BEGIN_COMMAND (m_tagspecials)
+{
+	if (argc < 2) {
+		Printf (PRINT_HIGH, "m_tagspecials <tag>\n");
+		return;
+	}
+
+	int tag = atoi(argv[1]);
+
+	// find all lines that use this tag and track their map_specials:
+	std::set<byte> specials;
+	for (int i = 0; i < numlines; i++) {
+		if (tag != lines[i].map_tag) continue;
+
+		specials.insert(lines[i].map_special);
+	}
+
+	// build comma-delimited list of specials:
+	std::ostringstream msg;
+	msg << "tag " << tag << " has specials [";
+
+	std::string separator;
+	for (std::set<byte>::const_iterator it = specials.cbegin(); it != specials.cend(); it++) {
+		msg << separator << (int) *it;
+		separator = ",";
+	}
+	msg << "]\n";
+
+	// print message:
+	Printf(PRINT_HIGH, msg.str().c_str());
+}
+END_COMMAND (m_tagspecials)
+
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
 

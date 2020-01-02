@@ -411,7 +411,12 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	short flags = LESHORT(mld->flags);
 	bool passthrough = (flags & ML_PASSUSE_BOOM);
 	int i;
-	
+
+	// [jsd] retain original values:
+	ld->map_special = special;
+	ld->map_tag = tag;
+	ld->map_flags = flags;
+
 	flags &= 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)

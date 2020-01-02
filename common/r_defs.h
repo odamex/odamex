@@ -325,6 +325,11 @@ struct line_s
 	int			firstid, nextid;
 	bool wastoggled;
 	bool switchactive;
+
+	// [jsd] untranslated original values:
+	short	map_special;
+	short	map_tag;
+	short	map_flags;
 };
 typedef struct line_s line_t;
 
