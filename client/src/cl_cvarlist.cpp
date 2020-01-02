@@ -45,6 +45,9 @@ CVAR(					am_showmonsters, "1", "",
 CVAR(					am_showtime, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(					am_showtag, "0", "",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_classicmapstring, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

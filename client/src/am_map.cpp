@@ -81,6 +81,7 @@ EXTERN_CVAR (am_overlay)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showmonsters)
 EXTERN_CVAR (am_showtime)
+EXTERN_CVAR (am_showtag)
 EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (am_ovshare)
@@ -1815,6 +1816,29 @@ void AM_Drawer()
 				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 
 			FB->DrawTextClean(CR_GREY, x, y, line);
+		}
+
+		if (cheating && am_showtag.asInt())
+		{
+			// check what sector the center point is in:
+			subsector_s *sub = P_PointInSubsector(m_x+m_w/2, m_y+m_h/2);
+			if (sub && sub->sector) {
+				char *c = line;
+				short tag = sub->sector->tag;
+
+				c += sprintf(c, TEXTCOLOR_RED "tag: ");
+				c += sprintf(c, TEXTCOLOR_GRAY "%5d", tag);
+
+				int x, y;
+				int text_width = V_StringWidth(line) * CleanXfac;
+
+				if (AM_OverlayAutomapVisible())
+					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
+				else
+					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
+
+				FB->DrawTextClean(CR_GREY, x, y, line);
+			}
 		}
 	}
 }
