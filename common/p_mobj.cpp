@@ -922,7 +922,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 
 	// denis - prevent harmful state cycles
 	static unsigned int callstack;
-	if(callstack++ > 16)
+	if(callstack++ > 32)
 	{
 		callstack = 0;
 		I_Error("P_SetMobjState: callstack depth exceeded bounds");
