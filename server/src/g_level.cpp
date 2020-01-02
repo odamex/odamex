@@ -279,20 +279,20 @@ BEGIN_COMMAND (restart) {
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 
-BEGIN_COMMAND (trigger_special)
+BEGIN_COMMAND (m_tag)
 {
 	if (argc < 3) {
-		Printf (PRINT_HIGH, "trigger_special <special> <tag> [flags]\n");
+		Printf (PRINT_HIGH, "m_tag <tag> <special> [flags]\n");
 		return;
 	}
 
-	int special = atoi(argv[1]);
+	int tag = atoi(argv[1]);
+
+	int special = atoi(argv[2]);
 	if (special < 0 || special > 255) {
 		Printf (PRINT_HIGH, "special must be between 0 and 255\n");
 		return;
 	}
-
-	int tag = atoi(argv[2]);
 
 	maplinedef_t mld;
 	mld.special = special;
@@ -321,7 +321,74 @@ BEGIN_COMMAND (trigger_special)
 		Printf(PRINT_HIGH, "special threw an exception: %s\n", e.GetMsg().c_str());
 	}
 }
-END_COMMAND (trigger_special)
+END_COMMAND (m_tag)
+
+BEGIN_COMMAND (m_stop)
+{
+	if (argc < 2) {
+		Printf (PRINT_HIGH, "m_stop <tag>\n");
+		return;
+	}
+
+	int tag = atoi(argv[1]);
+
+	int secnum = -1;
+	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
+	{
+		bool stopped_floor = false;
+		bool stopped_ceiling = false;
+		bool stopped_lighting = false;
+
+		std::ostringstream msg;
+		msg << "stopped sector " << secnum << " ";
+
+		sector_t* sec = &sectors[secnum];
+		if (sec->floordata) {
+			// destroy floor actor:
+			try {
+				sec->floordata->Destroy();
+				sec->floordata = NULL;
+				stopped_floor = true;
+				msg << "floor";
+			} catch (CRecoverableError &e) {
+				// catches CRecoverableError thrown from I_Error()
+				Printf(PRINT_HIGH, "sector floor thinker Destroy() threw an exception: %s\n", e.GetMsg().c_str());
+			}
+		}
+		if (sec->ceilingdata) {
+			// destroy ceiling actor:
+			try {
+				sec->ceilingdata->Destroy();
+				sec->ceilingdata = NULL;
+				stopped_ceiling = true;
+				if (stopped_floor) msg << ", ";
+				msg << "ceiling";
+			} catch (CRecoverableError &e) {
+				// catches CRecoverableError thrown from I_Error()
+				Printf(PRINT_HIGH, "sector ceiling thinker Destroy() threw an exception: %s\n", e.GetMsg().c_str());
+			}
+		}
+		if (sec->lightingdata) {
+			// destroy lighting actor:
+			try {
+				sec->lightingdata->Destroy();
+				sec->lightingdata = NULL;
+				stopped_lighting = true;
+				if (stopped_floor || stopped_ceiling) msg << ", ";
+				msg << "lighting";
+			} catch (CRecoverableError &e) {
+				// catches CRecoverableError thrown from I_Error()
+				Printf(PRINT_HIGH, "sector lighting thinker Destroy() threw an exception: %s\n", e.GetMsg().c_str());
+			}
+		}
+
+		if (stopped_floor || stopped_ceiling || stopped_lighting) {
+			msg << ".\n";
+			Printf(PRINT_HIGH, msg.str().c_str());
+		}
+	}
+}
+END_COMMAND (m_stop)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
