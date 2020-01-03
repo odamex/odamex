@@ -116,7 +116,7 @@ unsigned int	inet_socket;
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
 
-buf_t       net_message(1048576);
+buf_t       net_message(MAX_UDP_PACKET);
 extern bool	simulated_connection;
 
 // buffer for compression/decompression

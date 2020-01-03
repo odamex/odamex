@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include <sstream>
+#include <iomanip>
 
 #include "math.h"
 #include "g_game.h"
