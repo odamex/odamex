@@ -3067,6 +3067,8 @@ void CL_ReadPacketHeader(void)
 
 	packetseq[packetnum] = sequence;
 	packetnum++;
+
+	netgraph.addPacketIn();
 }
 
 void CL_GetServerSettings(void)
