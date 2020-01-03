@@ -332,9 +332,15 @@ public:
 
 
 			// GhostlyDeath -- done with the {}
-			netbuf = 8 * 1024 * 1024;
-			reliablebuf = 8 * 1024 * 1024;
-			relpackets = 2 * reliablebuf.maxsize();
+			if (serverside) {
+				netbuf = 8 * 1024 * 1024;
+				reliablebuf = 8 * 1024 * 1024;
+				relpackets = 2 * 1024 * 1024;
+			} else {
+				netbuf = 16 * 1024;
+				reliablebuf = 16 * 1024;
+				relpackets = 16 * 1024;
+			}
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
