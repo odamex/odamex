@@ -1533,13 +1533,6 @@ void LowScoreboard(player_t *player) {
 }
 
 void HU_DrawScores(player_t *player) {
-
-	// Don't draw the scoreboard while in chat mode, or it'll stay unless pressing it again !
-	if (HU_ChatMode() != CHAT_INACTIVE) {
-		Actions[ACTION_SHOWSCORES] = 0;
-		return;
-	}
-
 	// We need at least 480 scaled horizontal units for our "high resolution"
 	// scoreboard to fit.
 	if (hud::XSize(hud_scalescoreboard) >= 480) {
