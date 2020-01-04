@@ -98,7 +98,7 @@ extern "C" drawspan_t dspan;
 
 // [RH] Temporary buffer for column drawing
 
-void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
+void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		const palindex_t** posts, void (*colblast)(), bool calc_light);
 
 // [RH] Pointers to the different column and span drawers...

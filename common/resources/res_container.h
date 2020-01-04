@@ -286,7 +286,7 @@ public:
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
 private:
-	void addResourcesToManager(ResourceManager* manager);
+	virtual void addResourcesToManager(ResourceManager* manager);
 
 	FileAccessor*			mFile;
 
@@ -347,6 +347,29 @@ private:
 	MarkerRangeLookupTable mMarkers;
 
 	const ResourcePath& assignPathBasedOnMarkers(LumpId lump_id) const;
+};
+
+
+// ============================================================================
+//
+// SingleMapWadResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class SingleMapWadResourceContainer : public WadResourceContainer
+{
+public:
+	SingleMapWadResourceContainer(
+			const OString& path,
+			const ResourceContainerId& container_id,
+			ResourceManager* manager);
+	
+	virtual ~SingleMapWadResourceContainer();
+
+private:
+	virtual void addResourcesToManager(ResourceManager* manager);
+
+	OString		mMapName;
 };
 
 

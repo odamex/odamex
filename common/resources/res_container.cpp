@@ -90,7 +90,9 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(
 		const OString& filename = mFile->getFileName();
 
 		// the filename serves as the lump_name
-		OString lump_name = M_ExtractFileName(OStringToUpper(filename));
+		std::string base_filename;
+		M_ExtractFileBase(filename, base_filename);
+		OString lump_name = OStringToUpper(base_filename.c_str(), 8);
 
 		// rename lump_name to DEHACKED if it's a DeHackEd file
 		if (Res_IsDehackedFile(filename))
@@ -417,6 +419,48 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 		return mFile->read(data, size); 
 	}
 	return 0;
+}
+
+
+// ============================================================================
+//
+// SingleMapWadResourceContainer class implementation
+//
+// ============================================================================
+
+//
+// SingleMapWadResourceContainer::SingleMapWadResourceContainer
+//
+// Reads the lump directory from the WAD file and registers all of the lumps
+// with the ResourceManager. If the WAD file has an invalid directory, no lumps
+// will be registered and getResourceCount() will return 0.
+//
+SingleMapWadResourceContainer::SingleMapWadResourceContainer(
+	const OString& path,
+	const ResourceContainerId& container_id,
+	ResourceManager* manager) :
+		WadResourceContainer(path, container_id, manager)
+{
+	// the filename serves as the name of the map (we ignore the map name in the WAD file)
+	std::string base_filename;
+	M_ExtractFileBase(path, base_filename);
+	mMapName = OStringToUpper(base_filename.c_str(), 8);
+}
+
+
+//
+// SingleMapWadResourceContainer::~SingleMapWadResourceContainer
+//
+SingleMapWadResourceContainer::~SingleMapWadResourceContainer()
+{
+}
+
+
+//
+// SingleMapWadResourceContainer::~SingleMapWadResourceContainer
+//
+void SingleMapWadResourceContainer::addResourcesToManager(ResourceManager* manager)
+{
 }
 
 

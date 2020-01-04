@@ -64,8 +64,6 @@ static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int w
 		
 		for (int y = 0; y < height; y++)
 		{
-			if (*source_column < 0 || *source_column > 255)
-				Printf(PRINT_HIGH, "here\n");
 			if (translation)
 				*dest = translation[*source_column];
 			else
@@ -176,7 +174,7 @@ bool Res_ValidatePatchData(const uint8_t* patch_data, uint32_t patch_size)
 		{
 			const int32_t* column_offset = (const int32_t*)(patch_data + column_table_offset);
 			const int32_t min_column_offset = column_table_offset + column_table_length;
-			const int32_t max_column_offset = patch_size - 4;
+			const int32_t max_column_offset = patch_size - 1;
 
 			for (int i = 0; i < width; i++, column_offset++)
 				if (*column_offset < min_column_offset || *column_offset > max_column_offset)
@@ -215,8 +213,9 @@ Texture* BaseTextureLoader::createTexture(void* data, uint16_t width, uint16_t h
 	if (width > 0 && height > 0)
 	{
 		// mData follows the header in memory
-		texture->mData = (palindex_t*)(data + sizeof(Texture));
-		memset(texture->mData, texture->mMaskColor, sizeof(palindex_t) * width * height);
+		texture->mData = (palindex_t*)((uint8_t*)data + sizeof(Texture));
+		// Make the image transparent to start with
+		memset(texture->mData, texture->mMaskColor, sizeof(palindex_t) * texture->mWidth * texture->mHeight);
 	}
 	#endif
 
@@ -406,6 +405,10 @@ void CompositeTextureLoader::load(void* data) const
 	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight);
 
 	// Handle ZDoom scaling extensions
+	// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
+	// to determine scaling instead of defaulting to 8. I will likely
+	// remove this once I finish the betas, because by then, users
+	// should be able to actually create scaled textures.
 	if (mTexDef.mScaleX > 0)
 		texture->mScaleX = mTexDef.mScaleX << (FRACBITS - 3);
 	if (mTexDef.mScaleY > 0)

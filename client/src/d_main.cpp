@@ -643,9 +643,6 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 //
 void STACK_ARGS D_Shutdown()
 {
-	// [SL] stop any LMP demos that are currently playing
-	G_CheckDemoStatus();
-
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 

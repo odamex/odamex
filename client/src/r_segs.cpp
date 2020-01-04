@@ -119,6 +119,7 @@ int R_OrthogonalLightnumAdjustment()
 	return 0;	// no adjustment for diagonal lines
 }
 
+
 //
 // R_FillWallHeightArray
 //
@@ -151,56 +152,48 @@ static void R_FillWallHeightArray(
 //
 static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
-	if (spryscale > 0)
-	{
-		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
-		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
+	fixed_t scale = wallscalex[dcol.x];
+	if (scale <= 0)
+		return;
 
-		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + 1;
+	spryscale = scale;
+	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+	dcol.iscale = 0xffffffffu / unsigned(scale);
 
-		dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
-		dcol.yh = (topscreen + spryscale * (dcol.textureheight >> FRACBITS)) >> FRACBITS;
+	// calculate unclipped screen coordinates for post
+	int64_t topscreen = sprtopscreen;
+	int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
 
-		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
-		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+	dcol.yl = (int)((topscreen + FRACUNIT - 1) >> FRACBITS);
+	dcol.yh = (int)((bottomscreen - 1) >> FRACBITS);
 
-		dcol.texturefrac = dcol.texturemid + (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+	if (mceilingclip[dcol.x] + 1 > dcol.yl)
+		// TODO: dcol.texturefrac should take y-scaling of textures into account
+		dcol.texturefrac = (mceilingclip[dcol.x] + 1 - dcol.yl) * dcol.iscale;
+	else
+		dcol.texturefrac = 0;
 
-		if (dcol.texturefrac < 0)
-		{
-			int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-			dcol.yl += cnt;
-			dcol.texturefrac += cnt * dcol.iscale;
-		}
+	dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+	dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
-		const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
-		const fixed_t maxfrac = dcol.textureheight;
-		
-		if (endfrac >= maxfrac)
-		{
-			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-			dcol.yh -= cnt;
-		}
+	if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
+		drawfunc();
 
-		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
-			drawfunc();
-		
-		masked_midposts[dcol.x] = NULL;
-	}
-
-	spryscale += rw_scalestep;
+	//masked_midposts[dcol.x] = NULL;
 }
+
 
 //
 // R_BlastSolidSegColumn
 //
 static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 {
-	if (wallscalex[dcol.x] <= 0)
+	fixed_t scale = wallscalex[dcol.x];
+	if (scale <= 0)
 		return;
 
-	dcol.iscale = 0xffffffffu / unsigned(wallscalex[dcol.x]);
+	// TODO: move iscale calculation outside this function
+	dcol.iscale = 0xffffffffu / unsigned(scale);
 	// TODO: dcol.texturefrac should take y-scaling of textures into account
 	dcol.texturefrac = dcol.texturemid + FixedMul((dcol.yl - centery + 1) << FRACBITS, dcol.iscale);
 
@@ -218,7 +211,7 @@ inline void MaskedColumnBlaster()
 	R_BlastMaskedSegColumn(colfunc);
 }
 
-inline void R_ColumnSetup(int x, int* top, int* bottom, const palindex_t** posts, bool calc_light)
+inline void R_ColumnSetup(int x, const int* top, const int* bottom, const palindex_t** posts, bool calc_light)
 {
 	if (calc_light)
 	{
@@ -232,7 +225,7 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, const palindex_t** posts
 }
 
 
-static inline int R_ColumnRangeMinimumHeight(int start, int stop, int* top)
+static inline int R_ColumnRangeMinimumHeight(int start, int stop, const int* top)
 {
 	int minheight = viewheight - 1;
 	for (int x = start; x <= stop; x++)
@@ -241,7 +234,7 @@ static inline int R_ColumnRangeMinimumHeight(int start, int stop, int* top)
 	return MAX(minheight, 0);
 }
 
-static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
+static inline int R_ColumnRangeMaximumHeight(int start, int stop, const int* bottom)
 {
 	int maxheight = 0;
 	for (int x = start; x <= stop; x++)
@@ -254,23 +247,8 @@ static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
 //
 // R_RenderColumnRange
 //
-// Renders a range of columns to the screen.
-// If r_columnmethod is enabled, the columns are renderd using a temporary
-// buffer to write the columns horizontally and then blit to the screen.
-// Writing columns horizontally utilizes the cache much better than writing
-// columns vertically to the screen buffer.
 //
-// [RH] This is a cache optimized version of R_RenderSegLoop(). It first
-//		draws columns into a temporary buffer with a pitch of 4 and then
-//		copies them to the framebuffer using a bunch of byte, word, and
-//		longword moves. This may seem like a lot of extra work just to
-//		draw columns to the screen (and it is), but it's actually faster
-//		than drawing them directly to the screen like R_RenderSegLoop1().
-//		On a Pentium II 300, using this code with rendering functions in
-//		C is about twice as fast as using R_RenderSegLoop1() with an
-//		assembly rendering function.
-//
-void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
+void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		const palindex_t** posts, void (*colblast)(), bool calc_light)
 {
 	if (start > stop)
@@ -310,7 +288,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 			rw_light += rw_lightstep;
 		}
 	}
-		
+
 	// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
 	// on the screen. This is to make better use of spatial locality in the cache.
 	for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
@@ -338,6 +316,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 				colblast();
 			}
 		}
+
 	}
 }
 
@@ -573,8 +552,15 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	dcol.textureheight = texture->mHeight << FRACBITS;
 
+	// [SL] pre-calculate scaling for each column
+	fixed_t scale = spryscale;
+	for (int x = x1; x <= x2; x++)
+	{
+		wallscalex[x] = scale;
+		scale += rw_scalestep;
+	}
+
 	// draw the columns
-	// TODO: change negonearray to the actual top/bottom
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true);
 }
 
@@ -1009,14 +995,16 @@ void R_StoreWallRange(int start, int stop)
     // save sprite clipping info
 	if ((ds_p->silhouette & SIL_TOP) && ds_p->sprtopclip == NULL)
 	{
-		ds_p->sprtopclip = sprclip_pool.alloc(count) - start;
-		memcpy(ds_p->sprtopclip + start, ceilingclip + start, count * sizeof(*ds_p->sprtopclip));
+		int* topclip = sprclip_pool.alloc(count) - start;
+		memcpy(topclip + start, ceilingclip + start, count * sizeof(*topclip));
+		ds_p->sprtopclip = topclip;
 	}
 
 	if ((ds_p->silhouette & SIL_BOTTOM) && ds_p->sprbottomclip == NULL)
 	{
-		ds_p->sprbottomclip = sprclip_pool.alloc(count) - start;
-		memcpy(ds_p->sprbottomclip + start, floorclip + start, count * sizeof(*ds_p->sprbottomclip));
+		int* bottomclip = sprclip_pool.alloc(count) - start;
+		memcpy(bottomclip + start, floorclip + start, count * sizeof(*bottomclip));
+		ds_p->sprbottomclip = bottomclip;
 	}
 
 	ds_p++;

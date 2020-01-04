@@ -50,5 +50,16 @@ bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 	return res_id == sky_res_id;
 }
 
+
+//
+// R_SetSkyTextures
+//
+// Loads the sky textures and re-initializes the sky map lookup tables.
+//
+void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
+{
+}
+
+
 VERSION_CONTROL (r_sky_cpp, "$Id$")
 

@@ -40,12 +40,6 @@ typedef enum
 	MS_PORTMIDI		= 3
 } MusicSystemType;
 
-bool S_MusicIsMus(byte* data, size_t length);
-bool S_MusicIsMidi(byte* data, size_t length);
-bool S_MusicIsOgg(byte* data, size_t length);
-bool S_MusicIsMp3(byte* data, size_t length);
-bool S_MusicIsWave(byte* data, size_t length);
-
 //
 //	MUSIC I/O
 //

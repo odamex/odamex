@@ -125,6 +125,7 @@ public:
 		return mResourceFileHashes;
 	}
 
+	void openResourceContainer(const OString& filename);
 	void openResourceContainers(const std::vector<std::string>& filenames);
 
 	void closeAllResourceContainers();
@@ -230,7 +231,6 @@ private:
 		return static_cast<ResourceContainerId>(-1);		// an invalid ResourceContainerId
 	}
 
-private:
 	std::vector<ResourceContainer*>	mContainers;
 
 	std::vector<std::string>		mResourceFileNames;
@@ -243,11 +243,6 @@ private:
 
 	ResourceCache*					mCache;
 
-	// ---------------------------------------------------------------------------
-	// Private helper functions
-	// ---------------------------------------------------------------------------
-
-	void openResourceContainer(const OString& filename);
 };
 
 

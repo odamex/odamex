@@ -76,8 +76,8 @@ extern vissprite_t* 	vissprite_p;
 extern vissprite_t		vsprsortedhead;
 
 // vars for R_DrawMaskedColumn
-extern int*			mfloorclip;
-extern int*			mceilingclip;
+extern const int*	mfloorclip;
+extern const int*	mceilingclip;
 extern fixed_t		spryscale;
 extern fixed_t		sprtopscreen;
 

@@ -53,6 +53,7 @@ misrepresented as being the original software.
 #include "i_midi.h"
 #include "mus2midi.h"
 #include "i_musicsystem.h"
+#include "resources/res_identifier.h"
 
 #include <SDL_mixer.h>
 
@@ -296,7 +297,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 {
 	_UnregisterSong();
 	
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		MEMFILE *mus = mem_fopen_read(data, length);
 		MEMFILE *midi = mem_fopen_write();
@@ -637,7 +638,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 	size_t reglength = length;
 	MEMFILE *mus = NULL, *midi = NULL;
 	
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
@@ -655,7 +656,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!S_MusicIsMidi(data, length))
+	else if (!Res_MusicIsMidi(data, length))
 	{
 		Printf(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
 		return;
@@ -723,7 +724,7 @@ static MidiSong* I_RegisterMidiSong(byte *data, size_t length)
 	MEMFILE *mus = NULL, *midi = NULL;
 	
 	// Convert from MUS format to MIDI format
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
@@ -741,7 +742,7 @@ static MidiSong* I_RegisterMidiSong(byte *data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!S_MusicIsMidi(data, length))
+	else if (!Res_MusicIsMidi(data, length))
 	{
 		Printf(PRINT_HIGH, "I_RegisterMidiSong: Only midi music formats are supported with the selected music system.\n");
 		return NULL;

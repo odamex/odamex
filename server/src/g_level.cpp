@@ -223,7 +223,12 @@ void G_ChangeMap()
 			maplist_entry_t maplist_entry;
 			Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+			std::string maplist_str = JoinStrings(maplist_entry.wads, " ");
+			std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(maplist_str);
+			resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+			D_ReloadResourceFiles(resource_filenames);
+
+			G_DeferedInitNew(maplist_entry.map);
 
 			// Set the new map as the current map
 			Maplist::instance().set_index(next_index);
@@ -730,11 +735,7 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic);
-	if (strlen(level.skypic2))
-		sky2texture = R_TextureNumForName (level.skypic2);
-	else
-		sky2texture = 0;
+	R_SetSkyTextures(level.skypic, level.skypic2);
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

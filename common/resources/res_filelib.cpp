@@ -741,40 +741,41 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 	if (odamex_wad_position == 0 && resource_filenames.size() >= 2 && W_IsIWAD(resource_filenames[1]))
 		iwad_position = 1;
 
-	std::string full_filename;
-
+	// locate ODAMEX.WAD and add its full path to the validated filename array
 	std::string odamex_wad_filename;
 	if (odamex_wad_position == invalid_position)
 		odamex_wad_filename = engine_resource_filename;
 	else
 		odamex_wad_filename = resource_filenames[odamex_wad_position];
-	full_filename = Res_FindResourceFile(odamex_wad_filename);
-	if (full_filename.empty())
+	std::string odamex_wad_full_filename = Res_FindResourceFile(odamex_wad_filename);
+	if (odamex_wad_full_filename.empty())
 		I_FatalError("Unable to locate \"%s\" resource file.", engine_resource_filename.c_str());
 	else
-		new_resource_filenames.push_back(full_filename);
+		new_resource_filenames.push_back(odamex_wad_full_filename);
 
+	// locate the IWAD and add its full path to the validated filename array
 	std::string iwad_filename;
 	if (iwad_position == invalid_position)
 		iwad_filename = Res_FindIWAD();
 	else
 		iwad_filename = resource_filenames[iwad_position];
-	full_filename = Res_FindResourceFile(iwad_filename);
-	if (full_filename.empty())
+	std::string iwad_full_filename = Res_FindResourceFile(iwad_filename);
+	if (iwad_full_filename.empty())
 		I_FatalError("Unable to locate any IWAD resource files.");
 	else
-		new_resource_filenames.push_back(full_filename);
+		new_resource_filenames.push_back(iwad_full_filename);
 
-	size_t start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
-	size_t end_position = resource_filenames.size() - 1;
+	// add any PWADs to the validated filename array
+	size_t pwad_start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
+	size_t pwad_end_position = resource_filenames.size();
 
-	if (W_IsIWADShareware(iwad_filename))
+	if (W_IsIWADShareware(iwad_filename) && pwad_end_position > pwad_start_position)
 	{
 		Printf(PRINT_HIGH, "You cannot load additional resource files with the shareware version. Register!\n");
-		end_position = start_position;
+		pwad_end_position = pwad_start_position;
 	}
 
-	for (size_t i = start_position; i < end_position; i++)
+	for (size_t i = pwad_start_position; i < pwad_end_position; i++)
 		new_resource_filenames.push_back(resource_filenames[i]);
 
 	return new_resource_filenames;

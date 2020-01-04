@@ -302,6 +302,9 @@ bool M_IsFile(const std::string& path)
 //
 // M_ListDirectoryContents
 //
+// Returns a vector of strings containing the recursive contents
+// of a directory, in alphabetical order.
+//
 std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
 {
 	std::vector<std::string> files;
@@ -328,6 +331,7 @@ std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, s
 			closedir(dir);
 		}
 	}
+	std::sort(files.begin(), files.end());
 	return files;
 }
 

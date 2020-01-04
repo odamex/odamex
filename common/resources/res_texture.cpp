@@ -210,6 +210,7 @@ uint32_t Texture::calculateSize(int width, int height)
 	uint32_t size = calculateHeaderSize(width, height);
 	#if CLIENT_APP
 	size += calculateDataSize(width, height);
+	size += 16;
 	#endif
 	return size;
 }
@@ -257,13 +258,6 @@ TextureManager::~TextureManager()
 //
 void TextureManager::clear()
 {
-	// Free all of the Texture instances
-	for (TextureList::iterator it = mTextures.begin(); it != mTextures.end(); ++it)
-		if (*it)
-			Z_Free((void*)*it);
-	mTextures.clear();
-
-
 	mAnimDefs.clear();
 
 	// free warping original texture (not stored in mTextureIdMap)
@@ -292,16 +286,25 @@ void TextureManager::addResourcesToManager(ResourceManager* manager)
 }
 
 
+//
+// TextureManager::addResourceToManagerByDir
+//
+// Iterates over a list of resource names in a given resource directory
+// and creates a TextureLoader instance to handle loading the resource.
+//
 void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir)
 {
 	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
-
 	const ResourcePathList paths = manager->listResourceDirectory(dir);
 
 	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
 	{
 		const ResourcePath& path = *it;
 		const ResourceId raw_res_id = manager->getResourceId(path);
+
+		// skip if we're adding a duplicate
+		if (mResourceLoaderLookup.find(raw_res_id) != mResourceLoaderLookup.end())
+			continue;
 
 		ResourceLoader* loader = NULL;
 		if (dir == flats_directory_name)
@@ -358,7 +361,6 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 }
 
 
-
 //
 // TextureManager::addCompositeTextureResources
 //
@@ -404,18 +406,17 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager)
 
 			const char* str = (const char*)(raw_def_data + tex_offset + 0);
 			const OString lump_name = OStringToUpper(str, 8);
+			ResourcePath path = textures_directory_name + lump_name;
 
 			// From ChocolateDoom r_data.c:
 			// Vanilla Doom does a linear search of the texures array
 			// and stops at the first entry it finds.  If there are two
 			// entries with the same name, the first one in the array
 			// wins.
-			//if (getByName(name) != NULL)
-			//	continue;
+			if (manager->getResourceId(path) != ResourceId::INVALID_ID)
+				continue;
 
 			CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
-
-			ResourcePath path = textures_directory_name + lump_name;
 			ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
 			const ResourceId res_id = manager->addResource(path, this, loader);
 
@@ -521,8 +522,16 @@ const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name)
 // Builds a color translation table that attempts to reduce the palette to 255 colors
 // by locating the two most similar colors and mapping those to a single color. The free color
 // will be used to indicate transparency.
+//
+// TODO: Defer this until V_InitPalette has run instead of loading PLAYPAL here...
+//
 void TextureManager::analyzePalette(palindex_t* translation, palindex_t* maskcolor) const
 {
+	*maskcolor = 0;
+	for (int i = 0; i < 256; i++)
+		translation[i] = i;
+
+	#if CLIENT_APP
 	argb_t palette_colors[256];
 	const OString palette_lumpname("PLAYPAL", 8);
 	const ResourceId palette_res_id = Res_GetResourceId(palette_lumpname, global_directory_name);
@@ -532,15 +541,13 @@ void TextureManager::analyzePalette(palindex_t* translation, palindex_t* maskcol
 	for (int i = 0; i < 256; i++)
 		palette_colors[i] = argb_t(255, data[3*i+0], data[3*i+1], data[3*i+2]);
 
-	//const argb_t* palette_colors = V_GetGamePalette()->basecolors;
 	palindex_t color1, color2;
 
 	V_ClosestColors(palette_colors, color1, color2);
 	*maskcolor = color1;
 
-	for (int i = 0; i < 256; i++)
-		translation[i] = i;
 	translation[color1] = color2;
+	#endif	// CLIENTAPP
 }
 
 

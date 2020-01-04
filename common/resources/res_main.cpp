@@ -65,10 +65,11 @@ static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint
 		return false;
 
 	const size_t file_size = M_FileLength(filename);
+	if (length > file_size)
+		return false;
+
 	if (length == 0)
 		length = file_size;
-	else
-		length = std::min(length, file_size);
 
 	uint8_t* data = new uint8_t[length];
 	size_t read_cnt = fread(data, 1, length, fp);
@@ -187,6 +188,10 @@ void ResourceManager::openResourceContainer(const OString& path)
 
 	if (container)
 	{
+		if (container->getResourceCount() > 1)
+			Printf(PRINT_HIGH, "adding %s (%d lumps)\n", path.c_str(), container->getResourceCount());
+		else
+			Printf(PRINT_HIGH, "adding %s (single lump)\n", path.c_str());
 		mContainers.push_back(container);
 		mResourceFileNames.push_back(path);
 		mResourceFileHashes.push_back(Res_MD5(path));
@@ -211,6 +216,8 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 	ResourceContainerId container_id = mContainers.size();
 	ResourceContainer* container = new TextureManager(container_id, this);
 	mContainers.push_back(container);
+	mResourceFileNames.push_back("TextureManager");
+	mResourceFileHashes.push_back("TextureManager");
 
 	// [SL] NOTE: rework this code so that ResourceCache does not need to
 	// be initialized twice.

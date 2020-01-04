@@ -462,8 +462,8 @@ struct drawseg_s
 
     // Pointers to lists for sprite clipping,
     //  all three adjusted so [x1] is first value.
-    int*			sprtopclip;
-    int*			sprbottomclip;
+    const int*		sprtopclip;
+    const int*		sprbottomclip;
 	const palindex_t**	midposts;
 };
 typedef struct drawseg_s drawseg_t;

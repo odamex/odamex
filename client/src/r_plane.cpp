@@ -634,11 +634,12 @@ void R_DrawPlanes()
 				// [SL] Note that the texture orientation differs from typical Doom span
 				// drawers since flats are stored in column major format now. The roles
 				// of ufrac and vfrac have been reversed to accomodate this.
-				dspan.umask = ((1 << texture->mWidthBits) - 1) << texture->mHeightBits;
-				dspan.vmask = (1 << texture->mHeightBits) - 1;
+				dspan.umask = texture->mWidthMask << texture->mHeightBits;
+				dspan.vmask = texture->mHeightMask;
 				dspan.ushift = FRACBITS - texture->mHeightBits;
 				dspan.vshift = FRACBITS;
 										   
+				#if 0
 				// TODO: Remove "useflatnum" and implement warped flats
 				int useflatnum = 0;
 				// [RH] warp a flat if desired
@@ -683,6 +684,7 @@ void R_DrawPlanes()
 						dspan.source = warped;
 					}
 				}
+				#endif	// if 0
 				
 				pl->top[pl->maxx+1] = viewheight;
 				pl->top[pl->minx-1] = viewheight;

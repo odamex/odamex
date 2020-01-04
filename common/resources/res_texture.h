@@ -133,7 +133,7 @@ private:
 
 	static uint32_t calculateDataSize(int width, int height)
 	{
-		return sizeof(uint8_t) * width * height;
+		return sizeof(palindex_t) * width * height;
 	}
 };
 
@@ -274,16 +274,10 @@ private:
 	const ResourceIdList buildPNamesLookup(const OString& lump_name) const;
 	CompositeTextureDefinition buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const;
 
-
-
 	typedef OHashTable<ResourceId, ResourceLoader*> ResourceLoaderLookupTable;
 	ResourceLoaderLookupTable		mResourceLoaderLookup;
 
 	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
-
-
-	typedef std::vector<const Texture*> TextureList;
-	TextureList				mTextures;
 
 	ResourceManager*				mResourceManager;
 
@@ -311,8 +305,8 @@ private:
 
 	std::vector<warp_t>			mWarpDefs;
 
-	palindex_t			mMaskColor;
-	palindex_t			mTranslation[256];
+	palindex_t					mMaskColor;
+	palindex_t					mTranslation[256];
 };
 
 #endif // __RES_TEXTURE_H__

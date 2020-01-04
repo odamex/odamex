@@ -347,8 +347,8 @@ vissprite_t *R_NewVisSprite (void)
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
-int*			mfloorclip;
-int*			mceilingclip;
+const int*		mfloorclip;
+const int*		mceilingclip;
 
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
@@ -356,16 +356,20 @@ fixed_t 		sprtopscreen;
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
 	// calculate unclipped screen coordinates for post
-	int topscreen = sprtopscreen + 1;
+	int64_t topscreen = sprtopscreen;
+	int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
 
-	dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
-	dcol.yh = (topscreen + spryscale * (dcol.textureheight >> FRACBITS)) >> FRACBITS;
+	dcol.yl = (int)((topscreen + FRACUNIT - 1) >> FRACBITS);
+	dcol.yh = (int)((bottomscreen - 1) >> FRACBITS);
+
+	if (mceilingclip[dcol.x] + 1 > dcol.yl)
+		// TODO: dcol.texturefrac should take y-scaling of textures into account
+		dcol.texturefrac = (mceilingclip[dcol.x] + 1 - dcol.yl) * dcol.iscale;
+	else
+		dcol.texturefrac = 0;
 
 	dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
 	dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
-
-	// TODO: dcol.texturefrac should take y-scaling of textures into account
-	dcol.texturefrac = dcol.texturemid + FixedMul((dcol.yl - centery + 1) << FRACBITS, dcol.iscale);
 
 	if (dcol.yl <= dcol.yh)
 		drawfunc();
@@ -382,7 +386,7 @@ void SpriteColumnBlaster()
 // R_DrawVisSprite
 //	mfloorclip and mceilingclip should also be set.
 //
-void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
+void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 {
 	bool				fuzz_effect = false;
 	bool				translated = false;
@@ -461,7 +465,6 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		colfrac += vis->xiscale;
 	}
 
-	// TODO: change from negonearray to actual top of sprite
 	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false);
 
 	R_ResetDrawFuncs();
@@ -900,7 +903,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 //
 void R_DrawPlayerSprites (void)
 {
-	int 		i;
 	int 		lightnum;
 	pspdef_t*	psp;
 	sector_t*	sec;
@@ -947,12 +949,11 @@ void R_DrawPlayerSprites (void)
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites
-		for (i=0, psp=camera->player->psprites;
-			 i<NUMPSPRITES;
-			 i++,psp++)
+		int i;
+		for (i=0, psp=camera->player->psprites; i<NUMPSPRITES; i++,psp++)
 		{
 			if (psp->state)
-				R_DrawPSprite (psp, 0);
+				R_DrawPSprite(psp, 0);
 		}
 
 		centery = centerhack;
