@@ -414,7 +414,18 @@ void CL_QuitNetGame(void)
 	mute_enemies = 0.f;
 
 	P_ClearAllNetIds();
-	players.clear();
+
+	{
+		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
+		for (Players::iterator it = players.begin(); it != players.end(); it++) {
+			player_s &player = *it;
+			if (player.mo) {
+				player.mo->player = NULL;
+			}
+		}
+
+		players.clear();
+	}
 
 	recv_full_update = false;
 
