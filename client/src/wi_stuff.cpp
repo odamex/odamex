@@ -1573,6 +1573,8 @@ void WI_unloadData (void)
 
 void WI_Drawer (void)
 {
+	C_MidPrint(NULL);	// Don't midprint anything during intermission
+
 	// If the background screen has been freed, then we really shouldn't
 	// be in here. (But it happens anyway.)
 	if (background_surface)
