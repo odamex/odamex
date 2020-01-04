@@ -330,16 +330,10 @@ public:
 			lastcmdtic = 0;
 			lastclientcmdtic = 0;
 
-
-			// GhostlyDeath -- done with the {}
 			if (serverside) {
 				netbuf = 8 * 1024 * 1024;
 				reliablebuf = 8 * 1024 * 1024;
 				relpackets = 2 * 1024 * 1024;
-			} else {
-				netbuf = 16 * 1024;
-				reliablebuf = 16 * 1024;
-				relpackets = 16 * 1024;
 			}
 			digest = "";
 			allow_rcon = false;
