@@ -512,7 +512,7 @@ static ConsoleHistory History;
 static void setmsgcolor(int index, const char *color);
 
 
-cvar_t msglevel("msg", "0", "", CVARTYPE_STRING, CVAR_ARCHIVE);
+cvar_t msglevel("msg", "0", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE);
 
 CVAR_FUNC_IMPL(msg0color)
 {
