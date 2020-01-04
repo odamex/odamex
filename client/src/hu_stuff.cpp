@@ -256,9 +256,9 @@ BOOL HU_Responder(event_t *ev)
 		altdown = (ev->type == ev_keydown);
 		return false;
 	}
-	else if (ev->data1 == KEY_LSHIFT || ev->data1 == KEY_RSHIFT)
+	else if (ev->data1 == KEY_LSHIFT || ev->data1 == KEY_RSHIFT || ev->data1 == KEY_TAB)
 	{
-		return false;
+		return false;	// Disable unwanted keys that interfere with the chat
 	}
 	else if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
 	{
