@@ -99,6 +99,9 @@ void NetGraph::setInterpolation(int val)
 
 static void NetGraphDrawBar(int startx, int starty, int width, int height, int color)
 {
+	if (starty + height >= viewheight)
+		height = viewheight - starty - 1;
+
 	dspan.color = color;
 	dspan.x1 = startx;
 	dspan.x2 = startx + width - 1;
