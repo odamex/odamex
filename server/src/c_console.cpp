@@ -136,6 +136,12 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 
 	if ((printlevel & PRINT_RCON_MUTE) == 0)
 	{
+		// Prepend "rcon: " so client can filter out if desired:
+		std::string rconmsg;
+		rconmsg.append("rcon: ");
+		rconmsg.append(str);
+		const char *s = rconmsg.c_str();
+
 		// send to any rcon players
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -145,7 +151,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 			{
 				MSG_WriteMarker(&cl->reliablebuf, svc_print);
 				MSG_WriteByte(&cl->reliablebuf, PRINT_MEDIUM);
-				MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
+				MSG_WriteString(&cl->reliablebuf, s);
 			}
 		}
 	}

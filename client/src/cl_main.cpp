@@ -1886,24 +1886,8 @@ void CL_Print (void)
 
 	if (cl_rcon_hide) {
 		// hide rcon messages from server:
-		const char *p = str;
-		while (*p != 0) {
-			if (*p == '\\') {
-				p += 2;
-			} else if (*p == '[') {
-				int len = strlen(p);
-				if (len >= 10) {
-					// check for leading timestamp to ignore server prints:
-					if (p[0] == '[' && p[3] == ':' && p[6] == ':' && p[9] == ']') {
-						return;
-					}
-				}
-				break;
-			} else {
-				break;
-			}
-
-			p++;
+		if (strlen(str) >= 6 && strncmp(str, "rcon: ", 6) == 0) {
+			return;
 		}
 	}
 
