@@ -583,7 +583,10 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
-	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
+	if (!patch)
+		return;
+
+	if (patch->width() <= 0 || patch->height() <= 0 ||
 	    destwidth <= 0 || destheight <= 0)
 		return;
 
