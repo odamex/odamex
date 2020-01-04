@@ -1427,6 +1427,8 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 
 #define HARDWARE_CAPABILITY 1000
 
+EXTERN_CVAR(sv_mobjupdatespertic)
+
 //
 // SV_UpdateHiddenMobj
 //
@@ -1435,6 +1437,7 @@ void SV_UpdateHiddenMobj (void)
 	// denis - todo - throttle this
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
+	const int max_updated = sv_mobjupdatespertic.asInt();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1454,7 +1457,7 @@ void SV_UpdateHiddenMobj (void)
 			if(mo && !mo->WasDestroyed())
 				updated += SV_AwarenessUpdate(pl, mo);
 
-			if(updated > 16)
+			if(max_updated >= 16 && updated > max_updated)
 				break;
 		}
 
@@ -1462,7 +1465,7 @@ void SV_UpdateHiddenMobj (void)
 		{
 			updated += SV_AwarenessUpdate(pl, mo);
 
-			if(updated > 16)
+			if(max_updated >= 16 && updated > max_updated)
 				break;
 		}
 	}
@@ -1731,7 +1734,8 @@ void SV_ClientFullUpdate(player_t &pl)
 			SV_AwarenessUpdate(pl, it->mo);
 
 		SV_SendUserInfo(*it, cl);
-#if 1
+
+#if 0
 		if (cl->reliablebuf.cursize >= 600)
 			if (!SV_SendPacket(pl))
 				return;
@@ -1778,31 +1782,15 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	// update sectors
 	SV_UpdateSectors(cl);
-#if 1
+
+#if 0
 	if (cl->reliablebuf.cursize >= 600)
 		if(!SV_SendPacket(pl))
 			return;
 #endif
 
 	// update switches
-#if 0
-	for (int l=0; l<numlines; l++)
-	{
-		unsigned state = 0, time = 0;
-		if(P_GetButtonInfo(&lines[l], state, time) || lines[l].wastoggled)
-		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-			MSG_WriteLong(&cl->reliablebuf, l);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
-			MSG_WriteByte(&cl->reliablebuf, state);
-			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
-			MSG_WriteLong(&cl->reliablebuf, time);
-		}
-	}
-#else
 	P_UpdateButtons(cl);
-#endif
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
@@ -3148,7 +3136,7 @@ void SV_UpdateMissiles(player_t &pl)
 				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
 			}
 
-#if 1
+#if 0
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
                     return;
@@ -3177,10 +3165,13 @@ void SV_UpdateMobjState(AActor *mo)
 	}
 }
 
+EXTERN_CVAR(sv_monsterupdateticrate)
+
 // Keep tabs on monster positions and angles.
 void SV_UpdateMonsters(player_t &pl)
 {
 	AActor *mo;
+	const int ticrate = sv_monsterupdateticrate.asInt();
 
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
@@ -3193,8 +3184,8 @@ void SV_UpdateMonsters(player_t &pl)
 		if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
 			continue;
 
-		// update monster position every 7 tics
-		if ((gametic+mo->netid) % 7)
+		// update monster position every `ticrate` tics
+		if ((gametic+mo->netid) % ticrate)
 			continue;
 
 		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
@@ -3224,7 +3215,7 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteShort(&cl->netbuf, mo->target->netid);
 
-#if 1
+#if 0
 			if (cl->netbuf.cursize >= 1024)
 			{
 				if (!SV_SendPacket(pl))
@@ -3531,6 +3522,7 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
+	// [jsd] this loop is a great candidate for multithreading
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);

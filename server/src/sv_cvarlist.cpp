@@ -138,6 +138,13 @@ CVAR(			sv_upnp_externalip, "", "Set to the router IP address",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 #endif
 
+CVAR_RANGE(		sv_mobjupdatespertic, "16", "Max number of mobj updates to send per gametic",
+				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 16.0f, 65536.0f)
+
+CVAR_RANGE(		sv_monsterupdateticrate, "7", "Number of tics between monster updates",
+				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 350.0f)
+
+
 // Gameplay settings
 // =================
 
