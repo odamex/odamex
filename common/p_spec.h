@@ -433,8 +433,9 @@ void	P_InitSwitchList ();
 
 void	P_ProcessSwitchDef ();
 
-bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
+bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
+const ResourceId P_GetButtonTexture(const line_t* line);
 
 
 //

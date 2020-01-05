@@ -26,6 +26,7 @@
 #define __I_NET_H__
 
 #include "doomtype.h"
+#include "resources/res_resourceid.h"
 #include "huffman.h"
 
 #include <string>
@@ -550,6 +551,7 @@ void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
+void MSG_WriteResourceId(buf_t *b, const ResourceId res_id);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
@@ -563,6 +565,7 @@ int MSG_ReadByte (void);
 void *MSG_ReadChunk (const size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
+const ResourceId MSG_ReadResourceId();
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);

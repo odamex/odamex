@@ -644,6 +644,17 @@ void MSG_WriteLong (buf_t *b, int c)
 	b->WriteLong(c);
 }
 
+
+void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
+{
+	if (simulated_connection)
+		return;
+	if (res_id == ResourceId::INVALID_ID)
+		b->WriteShort(0xFFFF);
+	else
+		b->WriteShort((uint32_t)res_id & 0xFFFF);
+}
+
 //
 // MSG_WriteBool
 //
@@ -877,6 +888,14 @@ int MSG_ReadShort (void)
 int MSG_ReadLong (void)
 {
 	return net_message.ReadLong();
+}
+
+const ResourceId MSG_ReadResourceId()
+{
+	uint16_t value = net_message.ReadShort();
+	if (value == 0xFFFF)
+		return ResourceId::INVALID_ID;
+	return ResourceId(value);
 }
 
 //

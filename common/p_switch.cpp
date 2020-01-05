@@ -90,9 +90,9 @@ static int  numswitches;
 //		MAXSWITCHES limit.
 void P_InitSwitchList(void)
 {
-	ResourceId res_id = Res_GetResourceId("SWITCHES", global_directory_name);
-	byte *alphSwitchList = (byte*)Res_LoadResource(res_id, PU_STATIC);
-	byte *list_p;
+	const ResourceId res_id = Res_GetResourceId("SWITCHES", global_directory_name);
+	const byte *alphSwitchList = (byte*)Res_LoadResource(res_id, PU_STATIC);
+	const byte *list_p;
 	int i;
 
 	for (i = 0, list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20, i++)
@@ -128,7 +128,7 @@ void P_InitSwitchList(void)
 		switchlist[i] = -1;
 	}
 
-	Z_Free (alphSwitchList);
+	Res_ReleaseResource(res_id);
 }
 
 //
@@ -182,11 +182,19 @@ ResourceId* P_GetButtonTexturePtr(line_t* line, ResourceId* alt_texture, DActive
 	return NULL;
 }
 
-const ResourceId P_GetButtonTexture(line_t* line)
+const ResourceId* P_GetButtonTexturePtr(const line_t* line, ResourceId* alt_texture, DActiveButton::EWhere& where)
+{
+	return const_cast<ResourceId*>(P_GetButtonTexturePtr(const_cast<line_t*>(line), alt_texture, where));
+}
+
+const ResourceId P_GetButtonTexture(const line_t* line)
 {
 	DActiveButton::EWhere twhere;
 	ResourceId alt_res_id;
-	return *P_GetButtonTexturePtr(line, &alt_res_id, twhere);
+	const ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
+	if (res_id_ptr != NULL)
+		return *res_id_ptr;
+	return ResourceId::INVALID_ID;
 }
 
 void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
@@ -195,15 +203,15 @@ void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
 	{
 		DActiveButton::EWhere twhere;
 		ResourceId alt_res_id;
-		ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
+		ResourceId* res_id_ptr = (ResourceId*)P_GetButtonTexturePtr(line, &alt_res_id, twhere);
 
-		if (*res_id_ptr != ResourceId::INVALID_ID)
+		if (res_id_ptr != NULL && *res_id_ptr != ResourceId::INVALID_ID)
 			*res_id_ptr = new_res_id;
 	}
 }
 
 // denis - query button
-bool P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time)
+bool P_GetButtonInfo(const line_t *line, unsigned &state, unsigned &time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
@@ -222,7 +230,7 @@ bool P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time)
 	return false;
 }
 
-bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
+bool P_SetButtonInfo(line_t *line, unsigned state, unsigned time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;

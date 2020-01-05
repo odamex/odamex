@@ -69,6 +69,7 @@
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
+#include "resources/res_filelib.h"
 
 #include <string>
 #include <vector>
@@ -1608,11 +1609,9 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
 	// store the resource file name list
-	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
-	std::vector<std::string> resource_file_names;
-	resource_file_names.push_back(engine_resource_filename);		// server omits ODAMEX.WAD
+	std::vector<std::string> resource_filenames;
 	for (size_t i = 0; i < resource_file_count; i++)
-		resource_file_names.push_back(MSG_ReadString());
+		resource_filenames.push_back(MSG_ReadString());
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
@@ -1628,14 +1627,13 @@ bool CL_PrepareConnect(void)
 	}
 
 	// store the MD5SUMS for the resource file name list
-	std::vector<std::string> resource_file_hashes;
-	resource_file_hashes.push_back(std::string());		// empty hash for ODAMEX.WAD
+	std::vector<std::string> resource_filehashes;
 	for (size_t i = 0; i < resource_file_count; i++)
 	{
-		resource_file_hashes.push_back(MSG_ReadString());
+		resource_filehashes.push_back(MSG_ReadString());
 		Printf(PRINT_HIGH, "> %s\n   %s\n",
-					resource_file_names[i + 1].c_str(),
-					resource_file_hashes[i + 1].c_str());
+					resource_filenames[i].c_str(),
+					resource_filehashes[i].c_str());
 	}
 
 	MSG_ReadString();
@@ -1708,7 +1706,7 @@ bool CL_PrepareConnect(void)
 		MSG_ReadString();
 
 	// load the resource files
-	CL_VerifyResourceFiles(resource_file_names, resource_file_hashes);
+	CL_VerifyResourceFiles(resource_filenames, resource_filehashes);
 
 	if (!missing_file.empty())
 	{
@@ -1717,7 +1715,8 @@ bool CL_PrepareConnect(void)
 	}
 	else
 	{
-		D_ReloadResourceFiles(resource_file_names);
+		resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+		D_ReloadResourceFiles(resource_filenames);
 	}
 
 	recv_full_update = false;
@@ -2828,8 +2827,8 @@ void CL_UpdateSector(void)
 	unsigned short floorheight = MSG_ReadShort();
 	unsigned short ceilingheight = MSG_ReadShort();
 
-	const ResourceId floor_res_id = MSG_ReadShort();
-	const ResourceId ceiling_res_id = MSG_ReadShort();
+	const ResourceId floor_res_id = MSG_ReadResourceId();
+	const ResourceId ceiling_res_id = MSG_ReadResourceId();
 	short special = MSG_ReadShort();
 
 	if (!sectors || sectornum >= numsectors)
@@ -3242,9 +3241,7 @@ void CL_Switch()
 	byte switchactive = MSG_ReadByte();
 	byte special = MSG_ReadByte();
 	byte state = MSG_ReadByte(); //DActiveButton::EWhere
-	ResourceId res_id = (ResourceId)MSG_ReadShort();
-	if (res_id == 0xFFFF)
-		res_id = ResourceId::INVALID_ID;
+	ResourceId res_id = MSG_ReadResourceId();;
 	unsigned time = MSG_ReadLong();
 
 	if (!lines || l >= (unsigned)numlines || state >= 3)
@@ -3255,6 +3252,7 @@ void CL_Switch()
 
 	if (res_id != ResourceId::INVALID_ID)
 		P_SetButtonTexture(&lines[l], res_id); //accept the texture from the server, this is mostly to fix warmup desyncs
+
 	lines[l].special = special;
 }
 
@@ -3327,16 +3325,12 @@ void CL_LoadMap()
 
 	size_t resource_file_count = MSG_ReadByte();
 
-	std::vector<std::string> resource_file_names, resource_file_hashes;
-
-	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
-	resource_file_names.push_back(engine_resource_filename);		// server omits ODAMEX.WAD
-	resource_file_hashes.push_back(std::string());		// empty hash for ODAMEX.WAD
+	std::vector<std::string> resource_filenames, resource_filehashes;
 
 	while (resource_file_count--)
 	{
-		resource_file_names.push_back(MSG_ReadString());
-		resource_file_hashes.push_back(MSG_ReadString());
+		resource_filenames.push_back(MSG_ReadString());
+		resource_filehashes.push_back(MSG_ReadString());
 	}
 
 	// [SL] DEH/BEX patch file names used to be sent separately.
@@ -3357,7 +3351,7 @@ void CL_LoadMap()
 	}
 
 	// load the resource files
-	CL_VerifyResourceFiles(resource_file_names, resource_file_hashes);
+	CL_VerifyResourceFiles(resource_filenames, resource_filehashes);
 
 	// If any resource files are missing, reconnect to begin downloading.
 	if (!missing_file.empty())
@@ -3368,7 +3362,8 @@ void CL_LoadMap()
 		return;
 	}
 
-	D_ReloadResourceFiles(resource_file_names);
+	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	D_ReloadResourceFiles(resource_filenames);
 
 	// [SL] 2012-12-02 - Force the music to stop when the new map uses
 	// the same music lump name that is currently playing. Otherwise,

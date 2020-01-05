@@ -97,9 +97,13 @@ bool Res_ValidatePatchData(const uint8_t* data, size_t length)
 //
 bool Res_ValidatePCSpeakerSoundData(const uint8_t* data, size_t length)
 {
-	int16_t* magic = (int16_t*)((uint8_t*)data + 0);
-	int16_t* sample_length = (int16_t*)((uint8_t*)data + 2);
-	return length > 4 && LESHORT(*magic) == 0 && LESHORT(*sample_length) + 4 == (int16_t)length;
+	if (length > 4)
+	{
+		int16_t magic = LESHORT(*(int16_t*)((uint8_t*)data + 0));
+		int16_t sample_length = LESHORT(*(int16_t*)((uint8_t*)data + 2));
+		return magic == 0x0000 && (size_t)sample_length + 4 == length;
+	}
+	return false;
 }
 
 
@@ -115,8 +119,12 @@ bool Res_ValidatePCSpeakerSoundData(const uint8_t* data, size_t length)
 //
 bool Res_ValidateSoundData(const uint8_t* data, size_t length)
 {
-	uint16_t magic = LESHORT(*(uint16_t*)((uint8_t*)data + 0));
-	return length > 8 && magic == 0x0003;
+	if (length > 8)
+	{
+		uint16_t magic = LESHORT(*(uint16_t*)((uint8_t*)data + 0));
+		return magic == 0x0003;
+	}
+	return false;
 }
 
 

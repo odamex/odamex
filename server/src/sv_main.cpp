@@ -1332,8 +1332,8 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
 		MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
 		MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
-		MSG_WriteShort(&cl->reliablebuf, sector->floor_res_id);
-		MSG_WriteShort(&cl->reliablebuf, sector->ceiling_res_id);
+		MSG_WriteResourceId(&cl->reliablebuf, sector->floor_res_id);
+		MSG_WriteResourceId(&cl->reliablebuf, sector->ceiling_res_id);
 		MSG_WriteShort(&cl->reliablebuf, sector->special);
 	}
 }
@@ -1570,7 +1570,6 @@ void SV_SendGametic(client_t* cl)
 	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
 }
 
-short P_GetButtonTexture(line_t* line);
 //
 // SV_ClientFullUpdate
 //
@@ -1636,17 +1635,20 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 
 	// update switches
-	for (int l=0; l<numlines; l++)
+	for (int linenum = 0; linenum < numlines; linenum++)
 	{
+		const line_t* line = &lines[linenum];
+		const ResourceId res_id = P_GetButtonTexture(line);
+
 		unsigned state = 0, time = 0;
-		if(P_GetButtonInfo(&lines[l], state, time) || lines[l].wastoggled)
+		if (P_GetButtonInfo(line, state, time) || line->wastoggled)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-			MSG_WriteLong(&cl->reliablebuf, l);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
+			MSG_WriteLong(&cl->reliablebuf, linenum);
+			MSG_WriteByte(&cl->reliablebuf, line->switchactive);
+			MSG_WriteByte(&cl->reliablebuf, line->special);
 			MSG_WriteByte(&cl->reliablebuf, state);
-			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
+			MSG_WriteResourceId(&cl->reliablebuf, res_id);
 			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
@@ -4831,22 +4833,24 @@ BEGIN_COMMAND (players)
 }
 END_COMMAND (players)
 
-void OnChangedSwitchTexture (line_t *line, int useAgain)
+void OnChangedSwitchTexture(line_t *line, int useAgain)
 {
-	int l = line - lines;
+	int linenum = line - lines;
 	unsigned state = 0, time = 0;
 	P_GetButtonInfo(line, state, time);
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	const ResourceId res_id = P_GetButtonTexture(line);
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-		MSG_WriteLong(&cl->reliablebuf, l);
+		MSG_WriteLong(&cl->reliablebuf, linenum);
 		MSG_WriteByte(&cl->reliablebuf, line->switchactive);
 		MSG_WriteByte(&cl->reliablebuf, line->special);
 		MSG_WriteByte(&cl->reliablebuf, state);
-		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(line));
+		MSG_WriteResourceId(&cl->reliablebuf, res_id);
 		MSG_WriteLong(&cl->reliablebuf, time);
 	}
 }

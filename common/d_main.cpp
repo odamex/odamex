@@ -159,9 +159,8 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 //
 // D_LoadResourceFiles
 //
-// Loads the given set of resource file names. If the file names do not
-// include full paths, the default search paths will be used to find the
-// files.
+// Loads the given set of resource file names.
+//
 // It is expected that resource_filenames[0] be ODAMEX.WAD and
 // resource_filenames[1] be an IWAD.
 //

@@ -151,8 +151,6 @@ ResourceManager::ResourceManager() :
 //
 ResourceManager::~ResourceManager()
 {
-	delete mCache;
-	mCache = NULL;
 	closeAllResourceContainers();
 }
 
@@ -216,8 +214,6 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 	ResourceContainerId container_id = mContainers.size();
 	ResourceContainer* container = new TextureManager(container_id, this);
 	mContainers.push_back(container);
-	mResourceFileNames.push_back("TextureManager");
-	mResourceFileHashes.push_back("TextureManager");
 
 	// [SL] NOTE: rework this code so that ResourceCache does not need to
 	// be initialized twice.
@@ -244,6 +240,11 @@ void ResourceManager::closeAllResourceContainers()
 
 	mResourceFileNames.clear();
 	mResourceFileHashes.clear();
+
+	delete mCache;
+	mCache = NULL;
+
+	mNameTranslator.clear();
 }
 
 

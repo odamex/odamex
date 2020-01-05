@@ -20,6 +20,11 @@ public:
 	ResourceNameTranslator();
 	virtual ~ResourceNameTranslator() { }
 
+	virtual void clear()
+	{
+		mResourceIdLookup.clear();
+	}
+
 	virtual void addTranslation(const ResourcePath& path, const ResourceId res_id);
 
 	virtual const ResourceId translate(const ResourcePath& path) const;
