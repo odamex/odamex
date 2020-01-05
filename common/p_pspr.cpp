@@ -624,6 +624,10 @@ void A_GunFlash(AActor* mo)
 // WEAPON ATTACKS
 //
 
+EXTERN_CVAR(sv_berserk)
+EXTERN_CVAR(sv_berserk_radius)
+EXTERN_CVAR(sv_berserk_damage_mult)
+
 //
 // A_Punch
 //
@@ -632,13 +636,24 @@ void A_Punch(AActor* mo)
 	angle_t 	angle;
 	int 		damage;
 	int 		slope;
+	fixed_t		distance;
+	int 		mult;
 
     player_t *player = mo->player;
 
 	damage = (P_Random (player->mo)%10+1)<<1;
 
-	if (player->powers[pw_strength])
-		damage *= 10;
+	if (sv_berserk) {
+		distance = sv_berserk_radius.asInt() << FRACBITS;
+		mult = sv_berserk_damage_mult.asInt();
+	} else {
+		distance = MELEERANGE;
+		mult = 10;
+	}
+
+	if (player->powers[pw_strength]) {
+		damage *= mult;
+	}
 
 	angle = player->mo->angle;
 	angle += P_RandomDiff(player->mo) << 18;
@@ -647,8 +662,8 @@ void A_Punch(AActor* mo)
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
 
-	slope = P_AimLineAttack (player->mo, angle, MELEERANGE);
-	P_LineAttack (player->mo, angle, MELEERANGE, slope, damage);
+	slope = P_AimLineAttack (player->mo, angle, distance);
+	P_LineAttack (player->mo, angle, distance, slope, damage);
 
 	// [SL] 2011-07-12 - Restore players and sectors to their current position
 	// according to the server.

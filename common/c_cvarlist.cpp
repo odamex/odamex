@@ -35,6 +35,26 @@ CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
 					0.0f, 3.0f)
 
+CVAR(				sv_berserk, "0", "Berserk fists only mode",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR_FUNC_DECL(		sv_berserk_pickups, "health", "Berserk mode weapons,ammo,backpacks pickup transformation mode: " \
+					"'health' -> pickups replaced with health bonuses, " \
+					"'remove' -> pickups removed",
+					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH)
+
+CVAR_RANGE_FUNC_DECL(sv_berserk_radius, "64", "Berserk mode - fist punch radius in map units; normal is 64",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+					32.0f, 32768.0f)
+
+CVAR_RANGE_FUNC_DECL(sv_berserk_damage_mult, "10", "Berserk mode - fist damage multiplier; normal is 10",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+					0.0625f, 10000.0f)
+
+CVAR_RANGE_FUNC_DECL(sv_berserk_pistol_ammo, "1", "Berserk mode - pistol start ammo",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+					0.0f, 255.0f)
+
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
@@ -178,7 +198,7 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
-	
+
 
 // Compatibility options
 // ---------------------------------

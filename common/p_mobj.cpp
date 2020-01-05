@@ -2126,6 +2126,104 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	P_CheckMissileSpawn (th);
 }
 
+EXTERN_CVAR(sv_berserk)
+EXTERN_CVAR(sv_berserk_pickups)
+
+bool P_TranslateMapThing (int &i)
+{
+	if (!sv_berserk) {
+		return true;
+	}
+
+	if (sv_berserk_pickups.str() == "health") {
+		// change weapons to berserk powerups
+		// change small ammo to stimpacks
+		// change large ammo to medikits
+		// change backpacks to soul spheres
+		switch (i) {
+			// small ammo:
+			case MT_CLIP:            // Clip
+			case MT_MISC17:          // Box of ammo
+			case MT_MISC20:          // Energy cell
+			case MT_MISC22:          // Shells
+				i = MT_MISC10;	// stimpack
+				break;
+
+				// big ammo:
+			case MT_MISC21:          // Battery pack
+			case MT_MISC23:          // Box of shells
+				i = MT_MISC11;	// medikit
+				break;
+
+			case MT_MISC24:          // Backpack
+				i = MT_MISC12;	// soulsphere
+				break;
+
+				// weapons:
+			case MT_CHAINGUN:        // Chaingun
+			case MT_SHOTGUN:         // Shotgun
+			case MT_SUPERSHOTGUN:    // SSG
+			case MT_MISC25:          // BFG
+			case MT_MISC26:          // Chainsaw
+			case MT_MISC28:          // Plasma Gun
+				i = MT_MISC13;	// berserk powerup
+				break;
+
+			case MT_MISC18:          // Rocket
+			case MT_MISC19:          // Box of rockets
+				// only allow rocket launcher and rockets in map30 to kill Icon of Sin
+				if (level.levelnum != 30) {
+					i = MT_MISC11;	// medikit
+				}
+				break;
+
+			case MT_MISC27:          // Rocket Launcher
+				// only allow rocket launcher and rockets in map30 to kill Icon of Sin
+				if (level.levelnum != 30) {
+					i = MT_MISC13;	// berserk powerup
+				}
+				break;
+			default:
+				break;
+		}
+
+		return true;
+	}
+
+	// remove pickups in berserk mode:
+	switch (i) {
+		// ammo:
+		case MT_CLIP:            // Clip
+		case MT_MISC17:            // Box of ammo
+		case MT_MISC20:            // Energy cell
+		case MT_MISC21:            // Battery pack
+		case MT_MISC22:            // Shells
+		case MT_MISC23:            // Box of shells
+		case MT_MISC24:            // Backpack
+
+			// weapons:
+		case MT_CHAINGUN:        // Chaingun
+		case MT_SHOTGUN:        // Shotgun
+		case MT_SUPERSHOTGUN:    // SSG
+		case MT_MISC25:        // BFG
+		case MT_MISC26:        // Chainsaw
+		case MT_MISC28:        // Plasma Gun
+			return false;
+
+		case MT_MISC18:            // Rocket
+		case MT_MISC19:            // Box of rockets
+		case MT_MISC27:            // Rocket Launcher
+			// only allow rocket launcher and rockets in map30 to kill Icon of Sin
+			if (level.levelnum != 30) {
+				return false;
+			}
+			break;
+		default:
+			break;
+	}
+
+	return true;
+}
 
 //
 // P_RespawnSpecials
@@ -2181,7 +2279,13 @@ void P_RespawnSpecials (void)
 	// [Fly] crashes sometimes without it
 	if (i >= NUMMOBJTYPES)
 	{
-		// pull it from the que
+		// pull it from the queue
+		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		return;
+	}
+
+	if (!P_TranslateMapThing(i)) {
+		// pull it from the queue
 		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 		return;
 	}
@@ -2531,6 +2635,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				mthing->type, mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
+
+	// [jsd] translate types for sv_berserk mode:
+	if (!P_TranslateMapThing(i))
+		return;
 
 	// don't spawn keycards and players in deathmatch
 	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)

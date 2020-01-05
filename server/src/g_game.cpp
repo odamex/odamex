@@ -196,6 +196,63 @@ void G_Ticker (void)
 // also see P_SpawnPlayer in P_Mobj
 //
 
+CVAR_FUNC_IMPL(sv_berserk)
+{
+	SV_BroadcastPrintf(PRINT_HIGH, "Berserk fists mode %s!\n", var ? "enabled" : "disabled");
+}
+
+CVAR_FUNC_IMPL(sv_berserk_pickups)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	SV_BroadcastPrintf(PRINT_HIGH, "Weapons,ammo,backpack pickups are now '%s'!\n", var.cstring());
+}
+
+CVAR_FUNC_IMPL(sv_berserk_radius)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	SV_BroadcastPrintf(PRINT_HIGH, "Punch radius set to %d map units, a %.1fx multiplier\n", var.asInt(),
+					   (var / 64.0f));
+}
+
+CVAR_FUNC_IMPL(sv_berserk_damage_mult)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	SV_BroadcastPrintf(PRINT_HIGH, "Punch damage set to %dx multiplier\n", var.asInt());
+}
+
+void SV_SendPlayerInfo(player_t &player);
+
+CVAR_FUNC_IMPL(sv_berserk_pistol_ammo)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	const int bullets = var.asInt();
+	for (Players::iterator it = players.begin(); it != players.end(); it++) {
+		// Broadcast notification of change of pistol ammo to all players:
+		SV_ClientPrintf(&it->client, PRINT_HIGH, "Pistol ammo reset to %d bullets\n", bullets);
+
+		// If player has less ammo than allowed then no change:
+		if (it->ammo[am_clip] <= bullets) {
+			continue;
+		}
+
+		// Take away ammo if more than allowed:
+		it->ammo[am_clip] = bullets;
+		SV_SendPlayerInfo(*it);
+	}
+}
+
 //
 // G_PlayerFinishLevel
 // Call when a player completes a level.
@@ -216,8 +273,20 @@ void G_PlayerFinishLevel (player_t &player)
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
 	p->bonuscount = 0;
-}
 
+	if (sv_berserk) {
+		// [jsd] berserk mode
+		for (int i = 0; i < NUMAMMO; i++)
+		{
+			p->ammo[i] = 0;
+		}
+		p->ammo[am_clip] = sv_berserk_pistol_ammo.asInt();
+		p->powers[pw_strength] = 1;
+
+		// force client to realize the reset:
+		SV_SendPlayerInfo(player);
+	}
+}
 
 //
 // G_PlayerReborn
@@ -250,14 +319,28 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
 	p.armortype = 0;
 	p.armorpoints = 0;
-	p.readyweapon = p.pendingweapon = wp_pistol;
-	p.weaponowned[wp_fist] = true;
-	p.weaponowned[wp_pistol] = true;
-	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+	if (sv_berserk) {
+		// [jsd] berserk mode
+		p.readyweapon = p.pendingweapon = wp_fist;
+		p.weaponowned[wp_fist] = true;
+		p.weaponowned[wp_pistol] = true;
+		p.ammo[am_clip] = sv_berserk_pistol_ammo.asInt();
+		p.powers[pw_strength] = 1;
+	} else {
+		p.readyweapon = p.pendingweapon = wp_pistol;
+		p.weaponowned[wp_fist] = true;
+		p.weaponowned[wp_pistol] = true;
+		p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+	}
 	p.cheats = 0;						// Reset cheat flags
 
 	p.death_time = 0;
 	p.tic = 0;
+
+	if (sv_berserk) {
+		// force client to realize the reset:
+		SV_SendPlayerInfo(p);
+	}
 }
 
 //
