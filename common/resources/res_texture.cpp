@@ -225,14 +225,15 @@ uint32_t Texture::calculateSize(int width, int height)
 
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
 	ResourceContainer(container_id, manager),
-	mResourceManager(manager),
 	mResourceLoaderLookup(1024),
 	mMaskColor(0)
 {
 	if (clientside)
-		analyzePalette(mTranslation, &mMaskColor);
+		analyzePalette(manager, mTranslation, &mMaskColor);
 
-	addCompositeTextureResources(manager);
+	const ResourceIdList pnames_lookup = buildPNamesLookup(manager, "PNAMES");
+	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE1");
+	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE2");
 
 	addResourcesToManager(manager);
 
@@ -367,68 +368,64 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 // Parses the TEXTURE1 & TEXTURE2 lumps and adds the composite textures
 // to ResourceManager as stand-alone resources.
 //
-void TextureManager::addCompositeTextureResources(ResourceManager* manager)
+void TextureManager::addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name)
 {
-	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
-
-	// TODO: the lump name "PNAMES" can be modified with DeHacked
-	const ResourceIdList pnames_lookup = buildPNamesLookup("PNAMES");
-
-	ResourceId res_ids[2];
-	res_ids[0] = Res_GetResourceId("TEXTURE1", global_directory_name);
-	res_ids[1] = Res_GetResourceId("TEXTURE2", global_directory_name);
-	if (!Res_CheckResource(res_ids[0]))
-		I_Error("\"TEXTURE1\" resource not found!");
-
-	for (int n = 0; n < sizeof(res_ids) / sizeof(*res_ids); n++)	
+	const ResourceId res_id = Res_GetResourceId(lump_name, global_directory_name);
+	if (res_id == ResourceId::INVALID_ID)
 	{
-		if (res_ids[n] == ResourceId::INVALID_ID)
+		if (lump_name == "TEXTURE1")
+			I_Error("Res_InitTextures: TEXTURE1 lump not found");
+		return;
+	}
+
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+	uint32_t res_size = accessor->getResourceSize(res_id);
+	uint8_t* raw_def_data = new uint8_t[res_size];
+	accessor->loadResource(res_id, raw_def_data, res_size);
+
+	if (res_size < 4)		// not long enough to store definition_count
+		return;
+
+	int32_t definition_count = LELONG(*((int32_t*)(raw_def_data + 0)));
+	for (int32_t i = 0; i < definition_count; i++)
+	{
+		int32_t def_offset = 4 * i + 4;
+		if (res_size < (unsigned int)def_offset)
+			break;
+
+		// Read a texture definition, create a CompositeTextureDefinition,
+		// and add a new CompositeTextureLoader to the list.
+		int32_t tex_offset = LELONG(*((int32_t*)(raw_def_data + def_offset)));
+		if (res_size < (uint32_t)tex_offset + 22)
+			break;
+
+		const char* str = (const char*)(raw_def_data + tex_offset + 0);
+		const OString texture_lump_name = OStringToUpper(str, 8);
+		ResourcePath path = textures_directory_name + texture_lump_name;
+
+		// From ChocolateDoom r_data.c:
+		// Vanilla Doom does a linear search of the texures array
+		// and stops at the first entry it finds.  If there are two
+		// entries with the same name, the first one in the array
+		// wins.
+		if (manager->getResourceId(path) != ResourceId::INVALID_ID)
 			continue;
 
-		uint32_t res_size = Res_GetResourceSize(res_ids[n]);
-		if (res_size < 4)		// not long enough to store definition_count
-			return;
+		CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
+		ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
+		const ResourceId res_id = manager->addResource(path, this, loader);
 
-		const uint8_t* raw_def_data = (uint8_t*)Res_LoadResource(res_ids[n], PU_STATIC);
-
-		int32_t definition_count = LELONG(*((int32_t*)(raw_def_data + 0)));
-		for (int32_t i = 0; i < definition_count; i++)
-		{
-			int32_t def_offset = 4 * i + 4;
-			if (res_size < (unsigned int)def_offset)
-				break;
-
-			// Read a texture definition, create a CompositeTextureDefinition,
-			// and add a new CompositeTextureLoader to the list.
-			int32_t tex_offset = LELONG(*((int32_t*)(raw_def_data + def_offset)));
-			if (res_size < (uint32_t)tex_offset + 22)
-				break;
-
-			const char* str = (const char*)(raw_def_data + tex_offset + 0);
-			const OString lump_name = OStringToUpper(str, 8);
-			ResourcePath path = textures_directory_name + lump_name;
-
-			// From ChocolateDoom r_data.c:
-			// Vanilla Doom does a linear search of the texures array
-			// and stops at the first entry it finds.  If there are two
-			// entries with the same name, the first one in the array
-			// wins.
-			if (manager->getResourceId(path) != ResourceId::INVALID_ID)
-				continue;
-
-			CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
-			ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
-			const ResourceId res_id = manager->addResource(path, this, loader);
-
-			// save the ResourceLoader pointers so they can be freed later
-			mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
-		}
-
-		Res_ReleaseResource(res_ids[n]);
+		// save the ResourceLoader pointers so they can be freed later
+		mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
 	}
+
+	delete [] raw_def_data;
 }
 
 
+//
+// TextureManager::buildCompositeTextureDefinition
+//
 CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const
 {
 	CompositeTextureDefinition tex_def;
@@ -465,7 +462,7 @@ CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const
 // Parses the PNAMES resource and creates a lookup table mapping entries in
 // the PNAMES resource lump to ResourceIds.
 //
-const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name) const
+const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager, const OString& lump_name) const
 {
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
@@ -477,7 +474,9 @@ const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name)
 	if (pnames_size < 4)			// not long enough to store pnames_count
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
-	const uint8_t* pnames_raw_data = (uint8_t*)Res_LoadResource(pnames_res_id, PU_STATIC);
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+	uint8_t* pnames_raw_data = new uint8_t[pnames_size];
+	accessor->loadResource(pnames_res_id, pnames_raw_data, pnames_size);
 
 	int32_t pnames_count = LELONG(*((int32_t*)(pnames_raw_data + 0)));
 	if ((uint32_t)pnames_count * 8 + 4 != pnames_size)
@@ -507,7 +506,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name)
 		pnames_lookup.push_back(res_id);
 	}
 
-	Res_ReleaseResource(pnames_res_id);
+	delete [] pnames_raw_data;
 
 	return pnames_lookup;
 }
@@ -525,21 +524,27 @@ const ResourceIdList TextureManager::buildPNamesLookup(const OString& lump_name)
 //
 // TODO: Defer this until V_InitPalette has run instead of loading PLAYPAL here...
 //
-void TextureManager::analyzePalette(palindex_t* translation, palindex_t* maskcolor) const
+void TextureManager::analyzePalette(ResourceManager* manager, palindex_t* translation, palindex_t* maskcolor) const
 {
 	*maskcolor = 0;
 	for (int i = 0; i < 256; i++)
 		translation[i] = i;
 
 	#if CLIENT_APP
-	argb_t palette_colors[256];
-	const OString palette_lumpname("PLAYPAL", 8);
-	const ResourceId palette_res_id = Res_GetResourceId(palette_lumpname, global_directory_name);
+	const ResourceId palette_res_id = Res_GetResourceId("/GLOBAL/PLAYPAL");
 	if (!Res_CheckResource(palette_res_id))
-		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
-	const byte* data = (byte*)Res_LoadResource(palette_res_id, PU_CACHE);
+		I_FatalError("Could not initialize PLAYPAL palette");
+
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+	uint32_t size = accessor->getResourceSize(palette_res_id);
+	uint8_t* data = new uint8_t[size];
+	accessor->loadResource(palette_res_id, data, size);
+
+	argb_t palette_colors[256];
 	for (int i = 0; i < 256; i++)
 		palette_colors[i] = argb_t(255, data[3*i+0], data[3*i+1], data[3*i+2]);
+
+	delete [] data;
 
 	palindex_t color1, color2;
 
@@ -711,6 +716,7 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
+	#if 0
 	const ResourceId res_id = Res_GetResourceId("ANIMATED", global_directory_name);
 	if (!Res_CheckResource(res_id))
 		return;
@@ -755,6 +761,7 @@ void TextureManager::readAnimatedLump()
 	}
 
 	Res_ReleaseResource(res_id);
+	#endif	// if 0
 }
 
 
@@ -882,8 +889,8 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 const Texture* Res_CacheTexture(ResourceId res_id, int tag)
 {
 	if (res_id == ResourceId::INVALID_ID)
-		return static_cast<Texture*>(NULL);
-	return static_cast<Texture*>(Res_LoadResource(res_id, tag));
+		return static_cast<const Texture*>(NULL);
+	return static_cast<const Texture*>(Res_LoadResource(res_id, tag));
 }
 
 

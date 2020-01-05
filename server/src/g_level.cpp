@@ -154,9 +154,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	std::vector<std::string> resource_filenames =
-		Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
-	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
 	D_ReloadResourceFiles(resource_filenames);
 
 	G_DeferedInitNew(startmap);
@@ -225,7 +223,6 @@ void G_ChangeMap()
 
 			std::string maplist_str = JoinStrings(maplist_entry.wads, " ");
 			std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(maplist_str);
-			resource_filenames = Res_ValidateResourceFiles(resource_filenames);
 			D_ReloadResourceFiles(resource_filenames);
 
 			G_DeferedInitNew(maplist_entry.map);
@@ -254,9 +251,7 @@ void G_ChangeMap(size_t index)
 		return;
 	}
 
-	std::vector<std::string> resource_filenames =
-		Res_GatherResourceFilesFromString(JoinStrings(maplist_entry.wads, " "));
-	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(maplist_entry.wads, " "));
 	D_ReloadResourceFiles(resource_filenames);
 
 	G_DeferedInitNew(maplist_entry.map);

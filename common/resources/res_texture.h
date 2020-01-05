@@ -169,7 +169,6 @@ private:
 // A structure to contain the data for a composite texture definition, which
 // are defined in the TEXTURE1 and TEXTURE2 lumps.
 //
-
 struct CompositeTextureDefinition
 {
 	int16_t			mWidth;
@@ -262,24 +261,19 @@ private:
 	void readAnimDefLump();
 	void readAnimatedLump();
 
-	void analyzePalette(palindex_t* colormap, palindex_t* maskcolor) const;
-
-
-	void addCompositeTextureResources(ResourceManager* manager);
+	void analyzePalette(ResourceManager* manager, palindex_t* colormap, palindex_t* maskcolor) const;
 
 	void addResourcesToManager(ResourceManager* manager);
 	void addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir);
-	const ResourceId getRawResourceId(const ResourceId res_id) const;
 
-	const ResourceIdList buildPNamesLookup(const OString& lump_name) const;
+	const ResourceIdList buildPNamesLookup(ResourceManager* manager, const OString& lump_name) const;
+	void addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name);
 	CompositeTextureDefinition buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const;
 
 	typedef OHashTable<ResourceId, ResourceLoader*> ResourceLoaderLookupTable;
 	ResourceLoaderLookupTable		mResourceLoaderLookup;
 
 	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
-
-	ResourceManager*				mResourceManager;
 
 	// animated textures
 	struct anim_t

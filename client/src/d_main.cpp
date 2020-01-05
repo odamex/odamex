@@ -736,7 +736,6 @@ void D_DoomMain()
 	I_InitInput();
 
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
-	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);

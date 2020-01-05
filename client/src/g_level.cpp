@@ -140,9 +140,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	C_HideConsole();
 	CL_QuitNetGame();
 
-	std::vector<std::string> resource_filenames =
-		Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
-	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
+	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
 	D_ReloadResourceFiles(resource_filenames);
 
 	G_DeferedInitNew(startmap);

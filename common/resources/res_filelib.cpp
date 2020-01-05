@@ -60,10 +60,10 @@ struct HashMismatch
 static std::vector<HashMismatch> hash_mismatches;
 
 // global list of filename extensions for use when an extension isn't supplied to Res_FindResourceFile
-static const char* const IWAD_EXTLIST[] = { ".WAD" };
-static const char* const WAD_EXTLIST[] = { ".WAD", ".ZIP", ".PK3" };
-static const char* const DEH_EXTLIST[] = { ".DEH", ".BEX" };
-static const char* const ALL_EXTLIST[] = { ".WAD", ".ZIP", ".PK3", ".DEH", ".BEX" };
+static const char* const IWAD_EXTLIST[] = { ".WAD", 0 };
+static const char* const WAD_EXTLIST[] = { ".WAD", ".ZIP", ".PK3", 0 };
+static const char* const DEH_EXTLIST[] = { ".DEH", ".BEX", 0 };
+static const char* const ALL_EXTLIST[] = { ".WAD", ".ZIP", ".PK3", ".DEH", ".BEX", 0 };
 
 // extern functions
 const char* ParseString2(const char* data);
@@ -566,15 +566,13 @@ std::string Res_FindResourceFile(
 		const char* const extlist[], 
 		const std::string& hash = "")
 {
-	const size_t extlist_size = sizeof(extlist) / sizeof(*extlist);
-
 	// Check for the filename without adding any extensions
 	std::string full_filename = Res_FindResourceFile(filename, hash);
 	if (!full_filename.empty())
 		return full_filename;
 
 	// Try adding each extension in the list until a match is found
-	for (size_t i = 0; i < extlist_size; i++)
+	for (size_t i = 0; extlist[i] != 0; i++)
 	{
 		std::string ext(extlist[i]);
 		if (!ext.empty() && ext[0] != '.')
@@ -618,6 +616,21 @@ std::string Res_FindIWAD(const std::string& suggestion = "")
 
 
 //
+// Res_GetFullPath
+//
+static std::string Res_GetFullPath(const std::string& filename, const char* const* extlist = NULL)
+{
+	if (M_IsDirectory(filename))
+		return filename;
+
+	if (extlist == NULL)
+		extlist = ALL_EXTLIST;
+
+	return Res_FindResourceFile(filename, extlist);
+}
+
+
+//
 // Res_GatherResourceFilesFromString
 //
 // Adds the full path of all of the resource filenames in a given string
@@ -631,35 +644,13 @@ std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& st
 
 	for (size_t argv = 0; (data = ParseString2(data)); argv++)
 	{
-		std::string filename(com_token);
-
-		if (M_IsDirectory(filename))
-		{
-			resource_filenames.push_back(filename);
-		}
-		else
-		{
-			std::string full_filename(Res_FindResourceFile(filename, ALL_EXTLIST));
-			if (!full_filename.empty())
-				resource_filenames.push_back(full_filename);
-			// [SL] TODO: properly handle missing files
-			// else
-				// missing_files.push_back(filename);
-		}
+		std::string full_filename = Res_GetFullPath(com_token);
+		if (!full_filename.empty())
+			resource_filenames.push_back(full_filename);
+		// [SL] TODO: properly handle missing files
 	}
 
 	return resource_filenames;
-}
-
-
-//
-// Res_GetFullPath
-static std::string Res_GetFullPath(const std::string& filename)
-{
-	if (M_IsDirectory(filename))
-		return filename;
-
-	return Res_FindResourceFile(filename, ALL_EXTLIST);
 }
 
 
@@ -706,7 +697,7 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 		}
 		else if (is_filename)
 		{
-			std::string full_filename = Res_GetFullPath(arg_value);
+			std::string full_filename = Res_GetFullPath(arg_value, extlist);
 			if (!full_filename.empty())
 				resource_filenames.push_back(full_filename);
 		}
@@ -726,9 +717,13 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 // If the file names do not include full paths, the default search paths will be
 // used to find the files.
 //
-std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string>& resource_filenames)
+void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
+								const std::vector<std::string>& resource_hashes,
+								std::vector<std::string>& missing_resource_filenames)
 {
-	std::vector<std::string> new_resource_filenames;
+	std::vector<std::string> old_resource_filenames = resource_filenames;
+	resource_filenames.clear();
+	missing_resource_filenames.clear();
 
 	const size_t invalid_position = (size_t)-1;
 	size_t odamex_wad_position = invalid_position;
@@ -736,13 +731,13 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 
 	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
 
-	if (resource_filenames.size() >= 1 && iequals(Res_CleanseFilename(resource_filenames[0]), engine_resource_filename))
+	if (old_resource_filenames.size() >= 1 && iequals(Res_CleanseFilename(old_resource_filenames[0]), engine_resource_filename))
 		odamex_wad_position = 0;
 	
-	if (odamex_wad_position == invalid_position && resource_filenames.size() >= 1 && W_IsIWAD(Res_GetFullPath(resource_filenames[0])))
+	if (odamex_wad_position == invalid_position && old_resource_filenames.size() >= 1 && W_IsIWAD(Res_GetFullPath(old_resource_filenames[0])))
 		iwad_position = 0;
 
-	if (odamex_wad_position == 0 && resource_filenames.size() >= 2 && W_IsIWAD(Res_GetFullPath(resource_filenames[1])))
+	if (odamex_wad_position == 0 && old_resource_filenames.size() >= 2 && W_IsIWAD(Res_GetFullPath(old_resource_filenames[1])))
 		iwad_position = 1;
 
 	// locate ODAMEX.WAD and add its full path to the validated filename array
@@ -750,28 +745,28 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 	if (odamex_wad_position == invalid_position)
 		odamex_wad_filename = engine_resource_filename;
 	else
-		odamex_wad_filename = resource_filenames[odamex_wad_position];
+		odamex_wad_filename = old_resource_filenames[odamex_wad_position];
 	std::string odamex_wad_full_filename = Res_GetFullPath(odamex_wad_filename);
 	if (odamex_wad_full_filename.empty())
 		I_FatalError("Unable to locate \"%s\" resource file.", engine_resource_filename.c_str());
 	else
-		new_resource_filenames.push_back(odamex_wad_full_filename);
+		resource_filenames.push_back(odamex_wad_full_filename);
 
 	// locate the IWAD and add its full path to the validated filename array
 	std::string iwad_filename;
 	if (iwad_position == invalid_position)
 		iwad_filename = Res_FindIWAD();
 	else
-		iwad_filename = resource_filenames[iwad_position];
+		iwad_filename = old_resource_filenames[iwad_position];
 	std::string iwad_full_filename = Res_GetFullPath(iwad_filename);
 	if (iwad_full_filename.empty())
 		I_FatalError("Unable to locate any IWAD resource files.");
 	else
-		new_resource_filenames.push_back(iwad_full_filename);
+		resource_filenames.push_back(iwad_full_filename);
 
 	// add any PWADs to the validated filename array
 	size_t pwad_start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
-	size_t pwad_end_position = resource_filenames.size();
+	size_t pwad_end_position = old_resource_filenames.size();
 
 	if (W_IsIWADShareware(iwad_filename) && pwad_end_position > pwad_start_position)
 	{
@@ -781,13 +776,24 @@ std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string
 
 	for (size_t i = pwad_start_position; i < pwad_end_position; i++)
 	{
-		std::string full_filename = Res_GetFullPath(resource_filenames[i]);
-		if (!full_filename.empty())
-			new_resource_filenames.push_back(full_filename);
-		// [SL] TODO: properly handle missing files
+		std::string full_filename = Res_GetFullPath(old_resource_filenames[i]);
+		if (full_filename.empty() || (i < resource_hashes.size() && Res_MD5(full_filename) != resource_hashes[i]))
+			missing_resource_filenames.push_back(Res_CleanseFilename(old_resource_filenames[i]));
+		else if (!full_filename.empty())
+			resource_filenames.push_back(full_filename);
 	}
-
-	return new_resource_filenames;
 }
+
+
+//
+// Res_ValidateResourceFiles
+//
+void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
+								std::vector<std::string>& missing_resource_filenames)
+{
+	std::vector<std::string> blank_resource_hashes;
+	Res_ValidateResourceFiles(resource_filenames, blank_resource_hashes, missing_resource_filenames);
+}
+
 
 VERSION_CONTROL (res_filelib_cpp, "$Id$")

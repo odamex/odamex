@@ -58,11 +58,6 @@ static bool Res_IsMapLumpName(const OString& name)
 		uname == blockmap_lump_name || uname == behavior_lump_name;
 }
 
-static bool Res_IsMapLumpName(const ResourcePath& path)
-{
-	return Res_IsMapLumpName(path.last());
-}
-
 
 // ============================================================================
 //
@@ -165,8 +160,8 @@ WadResourceContainer::WadResourceContainer(
 	ResourceManager* manager) :
 		ResourceContainer(container_id, manager),
 		mFile(NULL),
-		mLumpIdLookup(256),
 		mDirectory(256),
+		mLumpIdLookup(256),
 		mIsIWad(false)
 {
 	mIsIWad = W_IsIWAD(path);
@@ -259,7 +254,6 @@ bool WadResourceContainer::readWadDirectory()
 //
 void WadResourceContainer::buildMarkerRecords()
 {
-	MarkerType last_marker_type = END_MARKER;
 	OString last_marker_prefix;
 	LumpId last_lump_id = ContainerDirectory::INVALID_LUMP_ID;
 
@@ -480,8 +474,8 @@ DirectoryResourceContainer::DirectoryResourceContainer(
 	ResourceManager* manager) :
 		ResourceContainer(container_id, manager),
 		mPath(path),
-		mLumpIdLookup(256),
-		mDirectory(256)
+		mDirectory(256),
+		mLumpIdLookup(256)
 {
 	// Examine each lump and decide which path it belongs in
 	// and then register it with the resource manager.

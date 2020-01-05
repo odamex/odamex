@@ -1008,7 +1008,6 @@ void M_StartGame(int choice)
 			epi = 0;
 
 			std::vector<std::string> new_resource_filenames = Res_GatherResourceFilesFromString(str);
-			new_resource_filenames = Res_ValidateResourceFiles(new_resource_filenames);
 			D_LoadResourceFiles(new_resource_filenames);
 
 			G_DeferedInitNew(startmap);
@@ -1022,9 +1021,7 @@ void M_StartGame(int choice)
             {
 				if (iequals(str, M_ExtractFileName(resource_file_names[i])))
 				{
-					std::vector<std::string> new_resource_filenames =
-							Res_GatherResourceFilesFromString(resource_file_names[1]);
-					new_resource_filenames = Res_ValidateResourceFiles(new_resource_filenames);
+					std::vector<std::string> new_resource_filenames = Res_GatherResourceFilesFromString(resource_file_names[1]);
 					D_LoadResourceFiles(new_resource_filenames);
 				}
             }

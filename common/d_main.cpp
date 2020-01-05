@@ -118,14 +118,14 @@ static void D_PrintIWADIdentity()
     	                   "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 
 		if (gamemode == undetermined)
-			Printf_Bold("Game mode indeterminate, no standard wad found.\n\n");
+			Printf_Bold("Game mode indeterminate, no standard WAD found.\n\n");
 		else
 			Printf_Bold("%s\n\n", D_GetTitleString().c_str());
 	}
 	else
 	{
 		if (gamemode == undetermined)
-			Printf(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
+			Printf(PRINT_HIGH, "Game mode indeterminate, no standard WAD found.\n");
 		else 
 			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str()); 
 	}
@@ -161,19 +161,23 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 //
 // Loads the given set of resource file names.
 //
-// It is expected that resource_filenames[0] be ODAMEX.WAD and
-// resource_filenames[1] be an IWAD.
-//
 void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 {
+	std::vector<std::string> new_resource_filenames = resource_filenames;
+	std::vector<std::string> missing_resource_filenames;
+
+	// Ensure the list of resource filenames include ODAMEX.WAD, an IWAD, and
+	// the full path for every file.
+	Res_ValidateResourceFiles(new_resource_filenames, missing_resource_filenames);
+
 	// If the given files are already loaded, bail out early.
-	if (resource_filenames == Res_GetResourceFileNames())
+	if (new_resource_filenames == Res_GetResourceFileNames())
 		return;
 
-	assert(resource_filenames.size() >= 2);	// Require ODAMEX.WAD and an IWAD
+	assert(new_resource_filenames.size() >= 2);	// Require ODAMEX.WAD and an IWAD
 
 	// Now scan the contents of the IWAD to determine which one it is.
-	const std::string& iwad_filename = resource_filenames[1];
+	const std::string& iwad_filename = new_resource_filenames[1];
 	W_ConfigureGameInfo(iwad_filename);
 
 	// Print info about the IWAD to the console.
@@ -186,13 +190,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 		Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", iwad_filename.c_str());
 
 	// Load the resource files
-	Res_OpenResourceFiles(resource_filenames);
-
-
-	// TODO: delete this once we're fully migrated to the ResourceFile system
-	std::vector<std::string> temp_resource_filenames(resource_filenames);
-	W_InitMultipleFiles(temp_resource_filenames);
-
+	Res_OpenResourceFiles(new_resource_filenames);
 
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
@@ -213,8 +211,8 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	if (gamemode == retail_chex)
 	{
 		bool chex_deh_loaded = false;
-		for (size_t i = 0; i < resource_filenames.size(); i++)
-			if (iequals(Res_CleanseFilename(resource_filenames[i]), "CHEX.DEH"))
+		for (size_t i = 0; i < new_resource_filenames.size(); i++)
+			if (iequals(Res_CleanseFilename(new_resource_filenames[i]), "CHEX.DEH"))
 				chex_deh_loaded = true;
 	
 		if (!chex_deh_loaded)
@@ -265,9 +263,6 @@ void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_filename
 //
 void D_UnloadResourceFiles()
 {
-	// TODO: delete this once we're fully migrated to the ResourceFile system
-	W_Close();
-
 	Res_CloseAllResourceFiles();
 }
 

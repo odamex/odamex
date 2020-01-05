@@ -39,7 +39,12 @@ std::string Res_FindResourceFile(
 
 std::vector<std::string> Res_GatherResourceFilesFromArgs();
 std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& str);
-std::vector<std::string> Res_ValidateResourceFiles(const std::vector<std::string>& resource_filenames);
+
+void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
+								const std::vector<std::string>& resource_hashes,
+								std::vector<std::string>& missing_resource_filenames);
+void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
+								std::vector<std::string>& missing_resource_filenames);
 
 void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator);
 

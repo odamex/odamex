@@ -816,7 +816,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	const Texture* texture = Res_CacheTexture(res_id);
 
 	int frame_index = 0;
-	bool flip = sprframe->flip[frame_index];
 	fixed_t topoffs = texture->mOffsetY << FRACBITS;
 	fixed_t sideoffs = texture->mOffsetX << FRACBITS;
 	fixed_t width = texture->mWidth << FRACBITS;

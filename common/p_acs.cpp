@@ -1377,8 +1377,8 @@ int DLevelScript::CountPlayers()
 
 void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 {
-	int texture, linenum = -1;
-	const char *texname = level.behavior->LookupString (name);
+	int linenum = -1;
+	const char* texname = level.behavior->LookupString(name);
 
 	if (texname == NULL)
 		return;

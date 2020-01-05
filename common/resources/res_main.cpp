@@ -208,16 +208,10 @@ void ResourceManager::openResourceContainers(const std::vector<std::string>& fil
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		openResourceContainer(*it);
 
-	// TODO: Is this the best place to initialize the ResourceCache instance?
-	mCache = new ResourceCache(mResources.size());
-
 	ResourceContainerId container_id = mContainers.size();
 	ResourceContainer* container = new TextureManager(container_id, this);
 	mContainers.push_back(container);
 
-	// [SL] NOTE: rework this code so that ResourceCache does not need to
-	// be initialized twice.
-	delete mCache;
 	mCache = new ResourceCache(mResources.size());
 }
 
@@ -609,7 +603,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 	if (resource_manager.validateResourceId(map_lump_res_id) &&
 		resource_manager.validateResourceId(map_marker_res_id) &&
 		resource_manager.getResourceContainerFileName(map_lump_res_id) ==
-		resource_manager.getResourceContainerFileName(map_marker_res_id));
+		resource_manager.getResourceContainerFileName(map_marker_res_id))
 		return map_lump_res_id;
 	return ResourceId::INVALID_ID;
 }
@@ -626,9 +620,9 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 // The tag parameter is used to specify the allocation tag type to pass
 // to Z_Malloc.
 //
-void* Res_LoadResource(const ResourceId res_id, int tag)
+const void* Res_LoadResource(const ResourceId res_id, int tag)
 {
-	return (void*)resource_manager.loadResourceData(res_id, tag);
+	return resource_manager.loadResourceData(res_id, tag);
 }
 
 

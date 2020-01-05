@@ -141,7 +141,6 @@ void ST_initNew (void)
 	int i;
 	int widest = 0;
 	char name[8];
-	int lump;
 
 	// denis - todo - security - these patches have unchecked dimensions
 	// ie, if a patch has a 0 width/height, it may cause a divide by zero
@@ -156,31 +155,31 @@ void ST_initNew (void)
 	for (i = 0; i < 2; i++) {
 		name[3] = i + '1';
 		if (Res_CheckResource(name, sprites_directory_name))
-			armors[i] = Res_CacheTexture(name, sprites_directory_name, PU_STATIC);
+			armors[i] = Res_CacheTexture(name, SPRITE, PU_STATIC);
 	}
 
 	for (i = 0; i < 4; i++) {
 		if (Res_CheckResource(ammopatches[i], sprites_directory_name))
 			ammos[i] = Res_CacheTexture(ammopatches[i], sprites_directory_name, PU_STATIC);
 		if (Res_CheckResource(bigammopatches[i], sprites_directory_name))
-			bigammos[i] = Res_CacheTexture(bigammopatches[i], sprites_directory_name, PU_STATIC);
+			bigammos[i] = Res_CacheTexture(bigammopatches[i], SPRITE, PU_STATIC);
 	}
 
 	for (i = 0; i < 2; i++)
 	{
 		if (Res_CheckResource(medipatches[i], sprites_directory_name))
-			medi[i] = Res_CacheTexture(medipatches[i], sprites_directory_name, PU_STATIC);
+			medi[i] = Res_CacheTexture(medipatches[i], SPRITE, PU_STATIC);
 	}
 
-	flagiconteam = Res_CacheTexture("FLAGIT", sprites_directory_name, PU_STATIC);
-	flagiconbhome = Res_CacheTexture("FLAGIC2B", sprites_directory_name, PU_STATIC);
-	flagiconrhome = Res_CacheTexture("FLAGIC2R", sprites_directory_name, PU_STATIC);
-	flagiconbtakenbyb = Res_CacheTexture("FLAGI3BB", sprites_directory_name, PU_STATIC);
-	flagiconbtakenbyr = Res_CacheTexture("FLAGI3BR", sprites_directory_name, PU_STATIC);
-	flagiconrtakenbyb = Res_CacheTexture("FLAGI3RB", sprites_directory_name, PU_STATIC);
-	flagiconrtakenbyr = Res_CacheTexture("FLAGI3RR", sprites_directory_name, PU_STATIC);
-	flagiconbdropped = Res_CacheTexture("FLAGIC4B", sprites_directory_name, PU_STATIC);
-	flagiconrdropped = Res_CacheTexture("FLAGIC4R", sprites_directory_name, PU_STATIC);
+	flagiconteam = Res_CacheTexture("FLAGIT", SPRITE, PU_STATIC);
+	flagiconbhome = Res_CacheTexture("FLAGIC2B", SPRITE, PU_STATIC);
+	flagiconrhome = Res_CacheTexture("FLAGIC2R", SPRITE, PU_STATIC);
+	flagiconbtakenbyb = Res_CacheTexture("FLAGI3BB", SPRITE, PU_STATIC);
+	flagiconbtakenbyr = Res_CacheTexture("FLAGI3BR", SPRITE, PU_STATIC);
+	flagiconrtakenbyb = Res_CacheTexture("FLAGI3RB", SPRITE, PU_STATIC);
+	flagiconrtakenbyr = Res_CacheTexture("FLAGI3RR", SPRITE, PU_STATIC);
+	flagiconbdropped = Res_CacheTexture("FLAGIC4B", SPRITE, PU_STATIC);
+	flagiconrdropped = Res_CacheTexture("FLAGIC4R", SPRITE, PU_STATIC);
 
 	widestnum = widest;
 	numheight = tallnum[0]->mHeight;
@@ -188,14 +187,14 @@ void ST_initNew (void)
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2*TICRATE;
 
-	line_leftempty = Res_CacheTexture("ODABARLE", sprites_directory_name, PU_STATIC);
-	line_leftfull = Res_CacheTexture("ODABARLF", sprites_directory_name, PU_STATIC);
-	line_centerempty = Res_CacheTexture("ODABARCE", sprites_directory_name, PU_STATIC);
-	line_centerleft = Res_CacheTexture("ODABARCL", sprites_directory_name, PU_STATIC);
-	line_centerright = Res_CacheTexture("ODABARCR", sprites_directory_name, PU_STATIC);
-	line_centerfull = Res_CacheTexture("ODABARCF", sprites_directory_name, PU_STATIC);
-	line_rightempty = Res_CacheTexture("ODABARRE", sprites_directory_name, PU_STATIC);
-	line_rightfull = Res_CacheTexture("ODABARRF", sprites_directory_name, PU_STATIC);
+	line_leftempty = Res_CacheTexture("ODABARLE", SPRITE, PU_STATIC);
+	line_leftfull = Res_CacheTexture("ODABARLF", SPRITE, PU_STATIC);
+	line_centerempty = Res_CacheTexture("ODABARCE", SPRITE, PU_STATIC);
+	line_centerleft = Res_CacheTexture("ODABARCL", SPRITE, PU_STATIC);
+	line_centerright = Res_CacheTexture("ODABARCR", SPRITE, PU_STATIC);
+	line_centerfull = Res_CacheTexture("ODABARCF", SPRITE, PU_STATIC);
+	line_rightempty = Res_CacheTexture("ODABARRE", SPRITE, PU_STATIC);
+	line_rightfull = Res_CacheTexture("ODABARRF", SPRITE, PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)

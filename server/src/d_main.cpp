@@ -268,7 +268,6 @@ void D_DoomMain()
 	I_Init();
 
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
-	resource_filenames = Res_ValidateResourceFiles(resource_filenames);
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	D_Init(resource_filenames);

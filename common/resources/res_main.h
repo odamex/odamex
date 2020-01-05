@@ -80,7 +80,7 @@ bool Res_IsDehackedFile(const OString& filename);
 //
 // Provides access to the resources without post-processing. Instances of
 // this class are typically used by the ResourceLoader hierarchy to read the
-// raw resource data and then perform their own post-processign.
+// raw resource data and then perform their own post-processing.
 //
 
 class RawResourceAccessor
@@ -316,9 +316,9 @@ static inline uint32_t Res_GetResourceSize(const OString& name, const ResourcePa
 // Res_LoadResource
 // ----------------------------------------------------------------------------
 
-void* Res_LoadResource(const ResourceId res_id, int tag = PU_CACHE);
+const void* Res_LoadResource(const ResourceId res_id, int tag = PU_CACHE);
 
-static inline void* Res_LoadResource(const OString& name, int tag = PU_CACHE)
+static inline const void* Res_LoadResource(const OString& name, int tag = PU_CACHE)
 {
 	return Res_LoadResource(Res_GetResourceId(name, global_directory_name), tag);
 }
