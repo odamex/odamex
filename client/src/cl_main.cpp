@@ -1534,52 +1534,71 @@ void CL_RequestConnectInfo(void)
 }
 
 
-static std::string missing_file, missing_hash;
-
 //
-// CL_VerifyResourceFiles
+// CL_LoadResourceFiles
 //
 // Checks for the existence of each file in a list of resource file names.
-// The globals missing_file and missing_hash are set to the file name and
-// MD5SUM of the missing file.
+// The globals missing_resource_filename and missing_resource_filehash
+// are set to the file name and MD5SUM of the missing file.
 //
-bool CL_VerifyResourceFiles(
+// Returns false if any of the required resource files are missing.
+//
+
+// Globals to store the filename and hash to download
+static std::string missing_resource_filename, missing_resource_filehash;
+
+static bool CL_LoadResourceFiles(
 			const std::vector<std::string>& resource_filenames,
 			const std::vector<std::string>& resource_filehashes)
 {
-	// load the resource files
-	std::vector<std::string> new_resource_filenames = resource_filenames;
-	std::vector<std::string> missing_filenames;
-	Res_ValidateResourceFiles(new_resource_filenames, resource_filehashes, missing_filenames);
+	missing_resource_filename.clear();
+	missing_resource_filehash.clear();
+
+	std::vector<std::string> new_resource_filenames(resource_filenames);
+	std::vector<std::string> missing_resource_filenames, missing_resource_filehashes;
+	Res_ValidateResourceFiles(new_resource_filenames, resource_filehashes,
+								missing_resource_filenames, missing_resource_filehashes);
 
 	// not really missing a file but force the client to download anyways
-	if (developer && cl_forcedownload && missing_filenames.empty())
-		missing_filenames.push_back(resource_filenames.back());
-
-	// If any resource files are missing, reconnect to begin downloading.
-	if (!missing_filenames.empty())
+	if (developer && cl_forcedownload && missing_resource_filenames.empty())
 	{
-		const std::string& missing_file = missing_filenames[0];
-		std::string missing_hash;
+		missing_resource_filenames.push_back(resource_filenames.back());
+		missing_resource_filehashes.push_back(resource_filehashes.back());
+	}
 
-		// find the md5 hash for the missing file
-		std::vector<std::string>::const_iterator it = std::find(resource_filenames.begin(), resource_filenames.end(), missing_file);
-		if (it != resource_filenames.end())
-			missing_hash = resource_filehashes[it - resource_filenames.begin()];
-
+	// Are all of the resource files present?
+	if (missing_resource_filenames.empty())
+	{
+		D_ReloadResourceFiles(resource_filenames);
+		return true;
+	}
+	else
+	{
+		missing_resource_filename = missing_resource_filenames[0];
+		missing_resource_filehash = missing_resource_filehashes[0];
 		if (netdemo.isPlaying())
 		{
 			// Playing a netdemo and unable to download from the server
 			Printf(PRINT_HIGH, "Unable to find resource file \"%s\".  Cannot download while playing a netdemo.\n",
-								missing_file.c_str());
+								missing_resource_filename.c_str());
 			CL_QuitNetGame();
 		}
+		else if (!cl_serverdownload)
+		{
+			// Playing a netdemo and unable to download from the server
+			Printf(PRINT_HIGH, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
+								missing_resource_filename.c_str());
+			CL_QuitNetGame();
+		}
+		else
+		{
+			gamestate = GS_DOWNLOAD;
+			Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n",
+								missing_resource_filename.c_str());
+		}
 
-		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n", missing_file.c_str());
 		return false;
 	}
-	return true;
 }
 
 
@@ -1708,15 +1727,8 @@ bool CL_PrepareConnect(void)
 		MSG_ReadString();
 
 	// load the resource files
-	if (CL_VerifyResourceFiles(resource_filenames, resource_filehashes))
-	{
-		D_ReloadResourceFiles(resource_filenames);
-	}
-	else
-	{
-		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n", missing_file.c_str());
-	}
+	if (!CL_LoadResourceFiles(resource_filenames, resource_filehashes) && gamestate != GS_DOWNLOAD)
+		return false;
 
 	recv_full_update = false;
 
@@ -1739,8 +1751,8 @@ bool CL_Connect(void)
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
-	if (gamestate == GS_DOWNLOAD && !missing_file.empty())
-		CL_RequestDownload(missing_file, missing_hash);
+	if (gamestate == GS_DOWNLOAD && !missing_resource_filename.empty())
+		CL_RequestDownload(missing_resource_filename, missing_resource_filehash);
 
 	compressor.reset();
 
@@ -3343,20 +3355,13 @@ void CL_LoadMap()
 
 	const char* mapname = MSG_ReadString();
 
-	if (gamestate == GS_DOWNLOAD)
-	{
-		CL_Reconnect();
-		return;
-	}
-
 	// load the resource files
-	if (!CL_VerifyResourceFiles(resource_filenames, resource_filehashes))
+	if (gamestate == GS_DOWNLOAD || !CL_LoadResourceFiles(resource_filenames, resource_filehashes))
 	{
+		// reconnect to re-initiate download sequence
 		CL_Reconnect();
 		return;
 	}
-
-	D_ReloadResourceFiles(resource_filenames);
 
 	// [SL] 2012-12-02 - Force the music to stop when the new map uses
 	// the same music lump name that is currently playing. Otherwise,

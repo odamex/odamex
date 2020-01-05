@@ -1235,7 +1235,7 @@ ISDL20Window::~ISDL20Window()
 void ISDL20Window::setRendererDriver()
 {
 	// Preferred ordering of drivers
-	const char* drivers[] = {"software","direct3d", "opengl", "opengles2", "opengles", "software", ""};
+	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
 
 	for (int i = 0; drivers[i][0] != '\0'; i++)
 	{

@@ -718,10 +718,11 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 // used to find the files.
 //
 void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
-								const std::vector<std::string>& resource_hashes,
-								std::vector<std::string>& missing_resource_filenames)
+								const std::vector<std::string>& resource_filehashes,
+								std::vector<std::string>& missing_resource_filenames,
+								std::vector<std::string>& missing_resource_filehashes)
 {
-	std::vector<std::string> old_resource_filenames = resource_filenames;
+	std::vector<std::string> old_resource_filenames(resource_filenames);
 	resource_filenames.clear();
 	missing_resource_filenames.clear();
 
@@ -760,7 +761,7 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 		iwad_filename = old_resource_filenames[iwad_position];
 	std::string iwad_full_filename = Res_GetFullPath(iwad_filename);
 	if (iwad_full_filename.empty())
-		I_FatalError("Unable to locate any IWAD resource files.");
+		I_FatalError("Unable to locate IWAD resource file.");
 	else
 		resource_filenames.push_back(iwad_full_filename);
 
@@ -777,10 +778,19 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 	for (size_t i = pwad_start_position; i < pwad_end_position; i++)
 	{
 		std::string full_filename = Res_GetFullPath(old_resource_filenames[i]);
-		if (full_filename.empty() || (i < resource_hashes.size() && Res_MD5(full_filename) != resource_hashes[i]))
-			missing_resource_filenames.push_back(Res_CleanseFilename(old_resource_filenames[i]));
-		else if (!full_filename.empty())
+		bool hash_provided = (i < resource_filehashes.size());
+		bool hash_matches = (!full_filename.empty() && (!hash_provided || Res_MD5(full_filename) == resource_filehashes[i]));
+
+		if (hash_matches)
+		{
 			resource_filenames.push_back(full_filename);
+		}
+		else
+		{
+			missing_resource_filenames.push_back(Res_CleanseFilename(old_resource_filenames[i]));
+			if (hash_provided)
+				missing_resource_filehashes.push_back(resource_filehashes[i]);
+		}
 	}
 }
 
@@ -791,8 +801,9 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 								std::vector<std::string>& missing_resource_filenames)
 {
-	std::vector<std::string> blank_resource_hashes;
-	Res_ValidateResourceFiles(resource_filenames, blank_resource_hashes, missing_resource_filenames);
+	std::vector<std::string> dummy_resource_filehashes, dummy_missing_resource_filehashes;
+	Res_ValidateResourceFiles(resource_filenames, dummy_resource_filehashes,
+								missing_resource_filenames, dummy_missing_resource_filehashes);
 }
 
 

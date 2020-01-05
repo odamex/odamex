@@ -41,8 +41,9 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs();
 std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& str);
 
 void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
-								const std::vector<std::string>& resource_hashes,
-								std::vector<std::string>& missing_resource_filenames);
+								const std::vector<std::string>& resource_filehashes,
+								std::vector<std::string>& missing_resource_filenames,
+								std::vector<std::string>& missing_resource_filehashes);
 void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 								std::vector<std::string>& missing_resource_filenames);
 
