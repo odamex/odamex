@@ -427,19 +427,14 @@ void FKeyBindings::UnbindKey(const char *key)
 {
 	int i;
 
-	if ((i = GetKeyFromName(key)))
+	std::string strArg = StdStringToLower(key);
+	if ((i = GetKeyFromName(strArg.c_str())))
 	{
 		this->Binds[i] = "";
-
-		for (i = 0; i < NUM_KEYS; i++) {
-			if (Bindings.Binds[i].length())
-				Printf(PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings.Binds[i]).c_str());
-		}
-
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(key).c_str());
+		Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(strArg.c_str()).c_str());
 		return;
 	}
 }
@@ -573,15 +568,17 @@ void FKeyBindings::BindAKey(size_t argc, char **argv, char *msg)
 
 	if (argc > 1)
 	{
-		i = GetKeyFromName(argv[1]);
+		std::string strArg = StdStringToLower(argv[1]);
+
+		i = GetKeyFromName(strArg.c_str());
 		if (!i)
 		{
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(strArg.c_str()).c_str());
 			return;
 		}
 		if (argc == 2)
 		{
-			Printf(PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Binds[i]).c_str());
+			Printf(PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(Binds[i]).c_str());
 		}
 		else
 		{
