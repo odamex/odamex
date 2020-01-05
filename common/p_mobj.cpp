@@ -2285,6 +2285,8 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 			(mthing->type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
+EXTERN_CVAR(sv_berserk)
+
 //
 // P_SpawnMapThing
 // The fields of the mapthing should
@@ -2555,6 +2557,42 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			case MT_MISC28: 		// plasma gun
 				if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
 					return;
+				break;
+			default:
+				break;
+		}
+	}
+
+	// [jsd] don't spawn weapons or ammo in berserk mode
+	if (sv_berserk)
+	{
+		switch (i)
+		{
+			// ammo:
+			case MT_CLIP:			// Clip
+			case MT_MISC17:			// Box of ammo
+			case MT_MISC20:			// Energy cell
+			case MT_MISC21:			// Battery pack
+			case MT_MISC22:			// Shells
+			case MT_MISC23:			// Box of shells
+			case MT_MISC24:			// Backpack
+
+			// weapons:
+			case MT_CHAINGUN:		// Chaingun
+			case MT_SHOTGUN:		// Shotgun
+			case MT_SUPERSHOTGUN:	// SSG
+			case MT_MISC25: 		// BFG
+			case MT_MISC26: 		// Chainsaw
+			case MT_MISC28: 		// Plasma Gun
+				return;
+
+			case MT_MISC18:			// Rocket
+			case MT_MISC19:			// Box of rockets
+			case MT_MISC27:			// Rocket Launcher
+				// only allow rocket launcher and rockets in map30 to kill Icon of Sin
+				if (level.levelnum != 30) {
+					return;
+				}
 				break;
 			default:
 				break;

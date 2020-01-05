@@ -55,6 +55,9 @@ CVAR(				sv_coop_completionist_found, "0", "Count of found secrets for coop comp
 					"for the current map.",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
 
+CVAR(				sv_berserk, "0", "Berserk fists only mode",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR(				sv_activation_rate, "35", "Linedef activation rate limit in tics.",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 

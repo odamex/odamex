@@ -885,6 +885,8 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 	} while (*from++);
 }
 
+EXTERN_CVAR(sv_berserk)
+
 //
 // P_KillMobj
 //
@@ -1131,6 +1133,12 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
     {
 		return;
     }
+
+	// [jsd] in berserk mode, monsters don't drop ammo or weapons.
+	if (sv_berserk)
+	{
+		return;
+	}
 
 	// Drop stuff.
 	// This determines the kind of object spawned

@@ -195,6 +195,8 @@ void G_Ticker (void)
 // also see P_SpawnPlayer in P_Mobj
 //
 
+EXTERN_CVAR(sv_berserk)
+
 //
 // G_PlayerFinishLevel
 // Call when a player completes a level.
@@ -215,8 +217,17 @@ void G_PlayerFinishLevel (player_t &player)
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
 	p->bonuscount = 0;
-}
 
+	if (sv_berserk) {
+		// [jsd] berserk mode
+		for (int i = 0; i < NUMAMMO; i++)
+		{
+			p->ammo[i] = 0;
+		}
+		p->ammo[am_clip] = 1;
+		p->powers[pw_strength] = 1;
+	}
+}
 
 //
 // G_PlayerReborn
@@ -249,10 +260,19 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
 	p.armortype = 0;
 	p.armorpoints = 0;
-	p.readyweapon = p.pendingweapon = wp_pistol;
-	p.weaponowned[wp_fist] = true;
-	p.weaponowned[wp_pistol] = true;
-	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+	if (sv_berserk) {
+		// [jsd] berserk mode
+		p.readyweapon = p.pendingweapon = wp_fist;
+		p.weaponowned[wp_fist] = true;
+		p.weaponowned[wp_pistol] = true;
+		p.ammo[am_clip] = 1;
+		p.powers[pw_strength] = 1;
+	} else {
+		p.readyweapon = p.pendingweapon = wp_pistol;
+		p.weaponowned[wp_fist] = true;
+		p.weaponowned[wp_pistol] = true;
+		p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
+	}
 	p.cheats = 0;						// Reset cheat flags
 
 	p.death_time = 0;
