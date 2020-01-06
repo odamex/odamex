@@ -55,10 +55,22 @@ CVAR(				sv_coop_completionist_found, "0", "Count of found secrets for coop comp
 					"for the current map.",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
 
-CVAR(				sv_berserk, "0", "Berserk fists only mode",
+CVAR(				sv_berserk, "0", "Berserk mode",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR(				sv_activation_rate, "35", "Linedef activation rate limit in tics.",
+CVAR_RANGE(			sv_berserk_radius, "72", "Berserk mode - fist punch radius in map units; normal is 64",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+					32.0f, 32768.0f)
+
+CVAR_RANGE(			sv_berserk_damage_mult, "10", "Berserk mode - fist damage multiplier; normal is 10",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+					0.0625f, 1000.0f)
+
+CVAR_RANGE(			sv_berserk_pistol_ammo, "1", "Berserk mode - pistol start ammo",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+					0.0f, 255.0f)
+
+CVAR(				sv_activation_rate, "35", "Linedef activation rate limit in tics for manual doors and lifts.",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \

@@ -1108,6 +1108,7 @@ void G_Ticker (void)
 //
 
 EXTERN_CVAR(sv_berserk)
+EXTERN_CVAR(sv_berserk_pistol_ammo)
 
 //
 // G_PlayerFinishLevel
@@ -1136,7 +1137,7 @@ void G_PlayerFinishLevel (player_t &player)
 		{
 			p->ammo[i] = 0;
 		}
-		p->ammo[am_clip] = 1;
+		p->ammo[am_clip] = sv_berserk_pistol_ammo.asInt();
 		p->powers[pw_strength] = 1;
 	}
 }
@@ -1177,7 +1178,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.readyweapon = p.pendingweapon = wp_fist;
 		p.weaponowned[wp_fist] = true;
 		p.weaponowned[wp_pistol] = true;
-		p.ammo[am_clip] = 1;
+		p.ammo[am_clip] = sv_berserk_pistol_ammo.asInt();
 		p.powers[pw_strength] = true;
 	} else {
 		p.readyweapon = p.pendingweapon = wp_pistol;
