@@ -206,7 +206,7 @@ void cvar_t::ForceSet(const char* valstr)
 
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged(this);
-		if (m_Flags & CVAR_SERVERINFO)
+		if (m_Flags & CVAR_SERVERINFO && !serverside)
 			D_SendServerInfoChange(this, m_String.c_str());
 	}
 
