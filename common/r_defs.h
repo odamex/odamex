@@ -322,6 +322,9 @@ struct line_s
 	int			firstid, nextid;
 	bool wastoggled;
 	bool switchactive;
+
+	// [jsd]: rate limit line activations serverside for sturdier DOORs
+	int lastactivationtic;
 };
 typedef struct line_s line_t;
 

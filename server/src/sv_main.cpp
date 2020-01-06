@@ -277,6 +277,50 @@ CVAR_FUNC_IMPL (sv_waddownloadcap)
 		var.Set(sv_maxrate);
 }
 
+// list of VIP player IP addresses:
+std::vector<netadr_t> vipAddrs;
+
+CVAR_FUNC_IMPL (sv_vips)
+{
+	vipAddrs.clear();
+
+	std::string addrstr;
+	std::istringstream tokenStream(var.str());
+	while (std::getline(tokenStream, addrstr, ','))
+	{
+		// Parse the string into an address:
+		netadr_t addr;
+		if (!NET_StringToAdr(addrstr.c_str(), &addr)) {
+			continue;
+		}
+
+		// Add the address to our VIP list:
+		vipAddrs.push_back(addr);
+	}
+
+	// reset all players to non-VIP status:
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		it->is_vip = false;
+	}
+
+	// discover who is now VIP status:
+	bool is_vip = false;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+		for (std::vector<netadr_t>::iterator nit = vipAddrs.begin(); nit != vipAddrs.end(); ++nit) {
+			// compare ip address, ignore port:
+			if (nit->ip[0] == it->client.address.ip[0] &&
+				nit->ip[1] == it->client.address.ip[1] &&
+				nit->ip[2] == it->client.address.ip[2] &&
+				nit->ip[3] == it->client.address.ip[3])
+			{
+				it->is_vip = true;
+				break;
+			}
+		}
+	}
+}
+
 client_c clients;
 
 
@@ -480,12 +524,8 @@ void SV_InitNetwork (void)
 	SV_InitMasters();
 }
 
-//Get next free player. Will use the lowest available player id.
-Players::iterator SV_GetFreeClient(void)
+Players::iterator SV_MakePlayerClient(void)
 {
-	if (players.size() >= sv_maxclients)
-		return players.end();
-
 	if (free_player_ids.empty())
 	{
 		// list of free ids needs to be initialized
@@ -506,6 +546,15 @@ Players::iterator SV_GetFreeClient(void)
 	// Return iterator pointing to the just-inserted player
 	Players::iterator it = players.end();
 	return --it;
+}
+
+//Get next free player. Will use the lowest available player id.
+Players::iterator SV_GetFreeClient(void)
+{
+	if (players.size() >= sv_maxclients)
+		return players.end();
+
+	return SV_MakePlayerClient();
 }
 
 player_t &SV_FindPlayerByAddr(void)
@@ -590,7 +639,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 //
 void SV_GetPackets()
 {
-	while (NET_GetPacket())
+	int count = 256;
+	while (NET_GetPacket() && --count >= 0)
 	{
 		player_t &player = SV_FindPlayerByAddr();
 
@@ -1636,6 +1686,7 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 
 	// update switches
+#if 0
 	for (int l=0; l<numlines; l++)
 	{
 		unsigned state = 0, time = 0;
@@ -1650,6 +1701,9 @@ void SV_ClientFullUpdate(player_t &pl)
 			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
+#else
+	P_UpdateButtons(cl);
+#endif
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
@@ -1742,12 +1796,21 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 			minorver = (GameVer % 256) / 10;
 			releasever = (GameVer % 256) % 10;
 
-			if ((majorver == MAJORVER) &&
-				(minorver == MINORVER) &&
-				(releasever >= RELEASEVER))
-				AllowConnect = true;
-			else
-				AllowConnect = false;
+			if (MAJORVER == 0 && MINORVER == 8 && RELEASEVER >= 1) {
+				// If our server version >= 0.8.1, then allow clients >= 0.8.1 up to 0.9:
+				AllowConnect = (majorver == MAJORVER) &&
+							   (minorver == MINORVER) &&
+							   (releasever >= 1);
+			} else if (MAJORVER == 0 && MINORVER >= 9) {
+				// If our server version >= 0.9, then match only major and minor version:
+				AllowConnect = (majorver == MAJORVER) &&
+							   (minorver == MINORVER);
+			} else {
+				// If our server version < 0.8.1, then only allow clients >= exact server version:
+				AllowConnect = (majorver == MAJORVER) &&
+							   (minorver == MINORVER) &&
+							   (releasever >= RELEASEVER);
+			}
 			break;
 		case 64:
 			sprintf(VersionStr, "0.2a or 0.3");
@@ -1870,6 +1933,7 @@ void SV_InitPlayerEnterState(player_s* player)
 //
 void G_DoReborn (player_t &playernum);
 
+
 void SV_ConnectClient()
 {
 	int challenge = MSG_ReadLong();
@@ -1892,23 +1956,73 @@ void SV_ConnectClient()
 
 	Printf(PRINT_HIGH, "%s is trying to connect...\n", NET_AdrToString (net_from));
 
+	// determine if player is a VIP:
+	bool is_vip = false;
+	for (std::vector<netadr_t>::iterator nit = vipAddrs.begin(); nit != vipAddrs.end(); ++nit) {
+		// compare ip address, ignore port:
+		if (nit->ip[0] == net_from.ip[0] &&
+			nit->ip[1] == net_from.ip[1] &&
+			nit->ip[2] == net_from.ip[2] &&
+			nit->ip[3] == net_from.ip[3])
+		{
+			is_vip = true;
+			break;
+		}
+	}
+
 	// find an open slot
 	Players::iterator it = SV_GetFreeClient();
 
 	if (it == players.end()) // a server is full
 	{
-		Printf(PRINT_HIGH, "%s disconnected (server full).\n", NET_AdrToString (net_from));
+		if (!is_vip)
+		{
+		drop_client:
+			Printf(PRINT_HIGH, "%s disconnected (server full).\n", NET_AdrToString(net_from));
 
-		static buf_t smallbuf(16);
-		MSG_WriteLong(&smallbuf, 0);
-		MSG_WriteMarker(&smallbuf, svc_full);
-		NET_SendPacket(smallbuf, net_from);
+			static buf_t smallbuf(16);
+			MSG_WriteLong(&smallbuf, 0);
+			MSG_WriteMarker(&smallbuf, svc_full);
+			NET_SendPacket(smallbuf, net_from);
 
-		return;
+			return;
+		}
+
+		// find a random non-VIP player to drop to allow the VIP in:
+		it = players.begin();
+		while (it != players.end())
+		{
+			// don't drop a VIP or rcon login:
+			if (it->playerstate != PST_DISCONNECT && !it->is_vip && !it->client.allow_rcon)
+			{
+				break;
+			}
+
+			++it;
+		}
+
+		// still no room left?
+		if (it == players.end())
+		{
+			goto drop_client;
+		}
+
+		// tell the kicked player why they are disconnected:
+		MSG_WriteMarker(&(it->client.reliablebuf), svc_print);
+		MSG_WriteByte(&(it->client.reliablebuf), PRINT_CHAT);
+		MSG_WriteString(&(it->client.reliablebuf),
+						"A VIP player needed to reconnect.\n");
+		// drop the client:
+		SV_DropClient(*it);
+
+		// make the connecting client a real player:
+		it = SV_MakePlayerClient();
 	}
 
 	player_t* player = &(*it);
 	client_t* cl = &(player->client);
+
+	player->is_vip = is_vip;
 
 	// clear and reinitialize client network info
 	cl->address = net_from;
@@ -3349,8 +3463,6 @@ void SV_WriteCommands(void)
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
-		SV_UpdateHiddenMobj();
-
 		SV_UpdateConsolePlayer(*it);
 
 		SV_UpdateMissiles(*it);
@@ -3361,6 +3473,8 @@ void SV_WriteCommands(void)
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 	}
+
+	SV_UpdateHiddenMobj();
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
@@ -3378,8 +3492,8 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 void SV_FlushPlayerCmds(player_t &player)
 {
-	while (!player.cmdqueue.empty())
-		player.cmdqueue.pop();
+	std::queue<NetCommand> empty;
+	std::swap(player.cmdqueue, empty);
 }
 
 //

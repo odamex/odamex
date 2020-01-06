@@ -187,6 +187,8 @@ BEGIN_COMMAND(callvote) {
 	case VOTE_FRAGLIMIT:
 	case VOTE_SCORELIMIT:
 	case VOTE_TIMELIMIT:
+	case VOTE_COOPCOMPLETIONISTKILLS:
+	case VOTE_COOPCOMPLETIONISTSECRETS:
 		// Only one argument is necessary.
 		arguments.resize(1);
 		break;

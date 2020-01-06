@@ -461,12 +461,17 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+std::string spyplayername;
+void CL_CheckDisplayPlayer(void);
+
 //
 // CL_ConnectClient
 //
 void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
+
+	CL_CheckDisplayPlayer();
 
 	if (!cl_connectalert)
 		return;
@@ -484,10 +489,18 @@ void CL_ConnectClient(void)
 // Perfoms validation on the value of displayplayer_id based on the current
 // game state and status of the consoleplayer.
 //
-void CL_CheckDisplayPlayer()
+void CL_CheckDisplayPlayer(void)
 {
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
+
+	// [jsd]: try to spy on player by name when connected if spyplayername is set:
+	if (spyplayername.length() > 0) {
+		player_t &spyplayer = nameplayer(spyplayername);
+		if (validplayer(spyplayer)) {
+			displayplayer_id = spyplayer.id;
+		}
+	}
 
 	if (displayplayer_id != previd)
 		newid = displayplayer_id;
@@ -1083,6 +1096,29 @@ BEGIN_COMMAND (spy)
 		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
 }
 END_COMMAND (spy)
+
+BEGIN_COMMAND (spyname)
+{
+	if (argc <= 1) {
+		if (spyplayername.length() > 0) {
+			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
+		} else {
+			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		}
+
+		// clear last player name:
+		spyplayername = "";
+	} else {
+		// remember player name in case of disconnect/reconnect e.g. level change:
+		spyplayername = argv[1];
+
+		Printf(PRINT_HIGH, "Following player '%s'. Use 'spyname' with no player name to unfollow.\n",
+			   spyplayername.c_str());
+	}
+
+	CL_CheckDisplayPlayer();
+}
+END_COMMAND (spyname)
 
 void STACK_ARGS call_terms (void);
 
@@ -1838,6 +1874,7 @@ void CL_TryToConnect(DWORD server_token)
 }
 
 EXTERN_CVAR (show_messages)
+EXTERN_CVAR (cl_rcon_hide)
 
 //
 // CL_Print
@@ -1846,6 +1883,29 @@ void CL_Print (void)
 {
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
+
+	if (cl_rcon_hide) {
+		// hide rcon messages from server:
+		const char *p = str;
+		while (*p != 0) {
+			if (*p == '\\') {
+				p += 2;
+			} else if (*p == '[') {
+				int len = strlen(p);
+				if (len >= 10) {
+					// check for leading timestamp to ignore server prints:
+					if (p[0] == '[' && p[3] == ':' && p[6] == ':' && p[9] == ']') {
+						return;
+					}
+				}
+				break;
+			} else {
+				break;
+			}
+
+			p++;
+		}
+	}
 
 	if (level == PRINT_CHAT)
 		Printf(level, "\\c*%s", str);

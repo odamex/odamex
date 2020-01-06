@@ -25,10 +25,10 @@
 #define __VERSION_H__
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "81"
-#define GAMEVER (0*256+81)
+#define CONFIGVERSIONSTR "82"
+#define GAMEVER (0*256+82)
 
-#define DOTVERSIONSTR "0.8.1"
+#define DOTVERSIONSTR "0.8.2"
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2019 The Odamex Team"
 

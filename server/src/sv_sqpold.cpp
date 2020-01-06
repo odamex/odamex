@@ -245,6 +245,7 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_emptyreset ? true : false));
 	MSG_WriteBool(&ml_message, false);		// used to be sv_cleanmaps
 	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
+	// TODO(jsd): sync sv_coop_completionist
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

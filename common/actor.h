@@ -461,6 +461,9 @@ public:
 	int             netid;          // every object has its own netid
 	short			tid;			// thing identifier
 
+	bool 			completionist_killable;
+	bool 			completionist_killed;
+
 private:
 	static const size_t TIDHashSize = 256;
 	static const size_t TIDHashMask = TIDHashSize - 1;

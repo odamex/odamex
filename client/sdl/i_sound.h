@@ -73,4 +73,7 @@ int I_SoundIsPlaying(int handle);
 //	and pitch of a sound channel.
 void I_UpdateSoundParams(int handle, float vol, int sep, int pitch);
 
+// Clears all cached sound samples
+void I_ClearSoundCache(void);
+
 #endif

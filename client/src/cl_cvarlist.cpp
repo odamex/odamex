@@ -148,6 +148,9 @@ CVAR_RANGE(			con_scrlock, "1", "",
 CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 512.0f, 65536.0f)
 
+CVAR(				con_autohide, "1", "Automatically hides the console after loading a new map.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_RANGE_FUNC_DECL(msg0color, "6", "",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
@@ -335,6 +338,9 @@ CVAR(				cl_run, "1", "Always run",
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
+
+CVAR(				cl_rcon_hide, "0", "Hide rcon messages from server",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------
@@ -539,6 +545,8 @@ CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
 
 CVAR_RANGE_FUNC_DECL(snd_channels, "12", "Number of channels for sound effects",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f, 32.0f)
+
+CVAR_FUNC_DECL(	snd_cubic, "0", "Cubic resampling",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 //
 // C_GetDefaultMuiscSystem()

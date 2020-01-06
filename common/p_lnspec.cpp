@@ -33,6 +33,7 @@
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
+#include "c_console.h"
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -161,8 +162,14 @@ EXTERN_CVAR (cl_predictsectors)
 bool P_CanActivateSpecials(AActor* mo, line_t* line)
 {
 	// Server can always activate specials
-	if (serverside)
-		return true;
+	if (serverside) {
+		// [jsd] apply rate limit:
+		if (gametic - line->lastactivationtic >= 35) {
+			line->lastactivationtic = gametic;
+			return true;
+		}
+		return false;
+	}
 
 	if (cl_predictsectors)
 	{
@@ -1949,17 +1956,69 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 
+EXTERN_CVAR (sv_coop_completionist)
+EXTERN_CVAR (sv_coop_completionist_kills)
+EXTERN_CVAR (sv_coop_completionist_secrets)
+EXTERN_CVAR (sv_coop_completionist_killed)
+EXTERN_CVAR (sv_coop_completionist_found)
+
 BOOL CheckIfExitIsGood (AActor *self)
 {
+	// must be server side:
 	if (self == NULL || !serverside)
 		return false;
 
 	// Bypass the exit restrictions if we're on a lobby.
 	if (level.flags & LEVEL_LOBBYSPECIAL)
-		return true;	
+		return true;
 
+	if (sv_gametype == GM_COOP) {
+		// COOP completionist mode:
+		if (sv_coop_completionist && self->player) {
+			// determine total number of killable monsters and findable secrets for the current level:
+			int killable_monsters = (sv_coop_completionist_kills < 0.0) ? level.total_monsters : (int)sv_coop_completionist_kills;
+			int findable_secrets = (sv_coop_completionist_secrets < 0.0) ? level.total_secrets : (int)sv_coop_completionist_secrets;
+
+			int unkilled_monsters = killable_monsters - sv_coop_completionist_killed.asInt();
+			int unfound_secrets = findable_secrets - level.found_secrets;
+
+			if (unkilled_monsters > 0 || unfound_secrets > 0) {
+				char reuse[100], *m;
+
+				m = reuse;
+				if (unkilled_monsters > 0) {
+					m += sprintf(m, " %d unkilled %s",
+							unkilled_monsters,
+							unkilled_monsters == 1 ? "monster" : "monsters");
+				}
+				if (unfound_secrets > 0) {
+					if (unkilled_monsters > 0) {
+						m += sprintf(m, " and");
+					}
+					m += sprintf(m, " %d unfound %s",
+							unfound_secrets,
+							unfound_secrets == 1 ? "secret" : "secrets");
+				}
+				m += sprintf(m, ".\n");
+
+				char plyrmsg[200];
+				strcpy(plyrmsg, "Cannot exit the level with");
+				strcat(plyrmsg, reuse);
+				C_MidPrint (plyrmsg, self->player, 5);
+
+				// write message to server:
+				char srvmsg[256 + 100];
+				sprintf(srvmsg, "%s attempted to exit the level with", self->player->userinfo.netname.c_str());
+				strcat(srvmsg, reuse);
+				Printf (PRINT_HIGH, srvmsg);
+
+				// don't allow exit:
+				return false;
+			}
+		}
+	}
 	// [Toke - dmflags] Old location of DF_NO_EXIT
-	if (sv_gametype != GM_COOP && self)
+	else if (sv_gametype != GM_COOP)
 	{
         if (!sv_allowexit)
         {

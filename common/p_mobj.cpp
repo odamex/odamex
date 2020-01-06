@@ -116,7 +116,8 @@ AActor::AActor () :
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
-    tid(0), bmapnode(this)
+    tid(0), bmapnode(this),
+	completionist_killed(false), completionist_killable(false)
 {
 	memset(args, 0, sizeof(args));
 	self.init(this);
@@ -140,7 +141,8 @@ AActor::AActor (const AActor &other) :
     translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
     onground(other.onground), touching_sectorlist(other.touching_sectorlist),
     deadtic(other.deadtic), oldframe(other.oldframe),
-    rndindex(other.rndindex), netid(other.netid), tid(other.tid), bmapnode(other.bmapnode)
+    rndindex(other.rndindex), netid(other.netid), tid(other.tid), bmapnode(other.bmapnode),
+	completionist_killed(other.completionist_killed), completionist_killable(other.completionist_killable)
 {
 	memcpy(args, other.args, sizeof(args));
 	self.init(this);
@@ -208,6 +210,8 @@ AActor &AActor::operator= (const AActor &other)
     special = other.special;
     memcpy(args, other.args, sizeof(args));
 	bmapnode = other.bmapnode;
+	completionist_killed = other.completionist_killed;
+	completionist_killable = other.completionist_killable;
 
 	return *this;
 }
@@ -228,7 +232,8 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
-    tid(0), bmapnode(this)
+    tid(0), bmapnode(this),
+	completionist_killed(false), completionist_killable(false)
 {
 	state_t *st;
 
@@ -1703,7 +1708,7 @@ void P_NightmareRespawn (AActor *mobj)
 			mo->flags |= MF_AMBUSH;
 
         if (serverside)
-            SV_SpawnMobj(mo);
+			SV_SpawnMobj(mo);
 
 		mo->reactiontime = 18;
 	}
@@ -2640,6 +2645,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] Add ThingID to mobj and link it in with the others
 	mobj->tid = mthing->thingid;
 	mobj->AddToHash ();
+
+	// [jsd] only original map enemies are counted towards completionist kills:
+	if (mobj->flags & MF_COUNTKILL) {
+		mobj->completionist_killable = true;
+		mobj->completionist_killed = false;
+	}
 
 	SV_SpawnMobj(mobj);
 

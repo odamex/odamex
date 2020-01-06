@@ -54,6 +54,8 @@ EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
 
+EXTERN_CVAR(sv_coop_completionist_killed)
+
 int shotclock = 0;
 int MeansOfDeath;
 
@@ -923,8 +925,15 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
-	if (serverside && target->flags & MF_COUNTKILL)
+	if (serverside && target->flags & MF_COUNTKILL) {
 		level.killed_monsters++;
+		if (target->completionist_killable && !target->completionist_killed) {
+			int killed = sv_coop_completionist_killed.asInt();
+			killed++;
+			sv_coop_completionist_killed.ForceSet(killed);
+			target->completionist_killed = true;
+		}
+	}
 
 	if (source)
 	{

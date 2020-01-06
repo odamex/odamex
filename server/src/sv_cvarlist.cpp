@@ -102,6 +102,10 @@ CVAR(			sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR_FUNC_DECL(	sv_vips, "", "VIP list of IP addresses, comma delimited",
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+
 // Network settings
 // ----------------
 
@@ -153,7 +157,6 @@ CVAR_RANGE(		ctf_flagtimeout, "10",  "Time for a dropped flag to be returned aut
 CVAR(			sv_ticbuffer, "1", "Buffer controller input from players experiencing sudden " \
 				"latency spikes for smoother movement",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-
 
 // Ban settings
 // ============

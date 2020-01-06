@@ -996,22 +996,21 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (int secnum)
+fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	sector_t *sec = &sectors[secnum];
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum, i, 0);
+			side = getSide (sec, i, 0);
 			if (side->bottomtexture >= 0)
 				if (textureheight[side->bottomtexture] < minsize)
 					minsize = textureheight[side->bottomtexture];
-			side = getSide (secnum, i, 1);
+			side = getSide (sec, i, 1);
 			if (side->bottomtexture >= 0)
 				if (textureheight[side->bottomtexture] < minsize)
 					minsize = textureheight[side->bottomtexture];
@@ -1032,22 +1031,21 @@ fixed_t P_FindShortestTextureAround (int secnum)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (int secnum)
+fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	sector_t *sec = &sectors[secnum];
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum,i,0);
+			side = getSide (sec,i,0);
 			if (side->toptexture >= 0)
 				if (textureheight[side->toptexture] < minsize)
 					minsize = textureheight[side->toptexture];
-			side = getSide (secnum,i,1);
+			side = getSide (sec,i,1);
 			if (side->toptexture >= 0)
 				if (textureheight[side->toptexture] < minsize)
 					minsize = textureheight[side->toptexture];
@@ -1073,9 +1071,9 @@ fixed_t P_FindShortestUpperAround (int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
+sector_t *P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -1110,9 +1108,9 @@ sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, int secnum)
+sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -1443,13 +1441,14 @@ P_CrossSpecialLine
 
 	TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing, line->args[0],
+	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
+					line->args[3], line->args[4]))
+	{
+		P_HandleSpecialRepeat(line);
 
-	P_HandleSpecialRepeat(line);
-
-	OnActivatedLine(line, thing, side, 0);
+		OnActivatedLine(line, thing, side, 0);
+	}
 }
 
 //
@@ -1479,18 +1478,19 @@ P_ShootSpecialLine
 
 	//TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing, line->args[0],
+	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
-
-	P_HandleSpecialRepeat(line);
-
-	OnActivatedLine(line, thing, 0, 2);
-
-	if(serverside)
+					line->args[3], line->args[4]))
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
-		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		P_HandleSpecialRepeat(line);
+
+		OnActivatedLine(line, thing, 0, 2);
+
+		if(serverside)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		}
 	}
 }
 
@@ -1640,7 +1640,11 @@ P_PushSpecialLine
     return true;
 }
 
-
+#ifdef SERVER_APP
+EXTERN_CVAR(sv_coop_completionist)
+EXTERN_CVAR(sv_coop_completionist_secrets)
+EXTERN_CVAR(sv_coop_completionist_found)
+#endif
 
 //
 // P_PlayerInSpecialSector
@@ -1781,6 +1785,35 @@ void P_PlayerInSpecialSector (player_t *player)
 #ifdef CLIENT_APP
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();
+#endif
+#ifdef SERVER_APP
+			if (serverside && sv_gametype == GM_COOP && sv_coop_completionist)
+			{
+				char msg[256 + 32];
+
+				// increase found secret count:
+				int found = sv_coop_completionist_found.asInt();
+				found++;
+				sv_coop_completionist_found.ForceSet(found);
+
+				// determine total number of killable monsters and findable secrets for the current level:
+				int findable_secrets = (sv_coop_completionist_secrets < 0.0) ? level.total_secrets : (int)sv_coop_completionist_secrets;
+
+				sprintf(msg, "%s revealed a secret!  %d/%d\n",
+						player->userinfo.netname.c_str(),
+						level.found_secrets,
+						findable_secrets);
+
+				for (Players::iterator itr = players.begin();itr != players.end();++itr)
+				{
+					if (!(itr->ingame()))
+						continue;
+
+					C_MidPrint(msg, &*itr, 5);
+				}
+
+				Printf(PRINT_HIGH, msg);
+			}
 #endif
 		}
 	}
