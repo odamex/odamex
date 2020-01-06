@@ -195,8 +195,53 @@ void G_Ticker (void)
 // also see P_SpawnPlayer in P_Mobj
 //
 
-EXTERN_CVAR(sv_berserk)
-EXTERN_CVAR(sv_berserk_pistol_ammo)
+CVAR_FUNC_IMPL(sv_berserk)
+{
+	SV_BroadcastPrintf(PRINT_HIGH, "Berserk fists mode %s!\n", var ? "enabled" : "disabled");
+}
+
+CVAR_FUNC_IMPL(sv_berserk_radius)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	SV_BroadcastPrintf(PRINT_HIGH, "Punch radius set to %d map units, a %.1fx multiplier\n", var.asInt(),
+					   (var / 64.0f));
+}
+
+CVAR_FUNC_IMPL(sv_berserk_damage_mult)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	SV_BroadcastPrintf(PRINT_HIGH, "Punch damage set to %dx multiplier\n", var.asInt());
+}
+
+void SV_SendPlayerInfo(player_t &player);
+
+CVAR_FUNC_IMPL(sv_berserk_pistol_ammo)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	const int bullets = var.asInt();
+	for (Players::iterator it = players.begin(); it != players.end(); it++) {
+		// Broadcast notification of change of pistol ammo to all players:
+		SV_ClientPrintf(&it->client, PRINT_HIGH, "Pistol ammo reset to %d bullets\n", bullets);
+
+		// If player has less ammo than allowed then no change:
+		if (it->ammo[am_clip] <= bullets) {
+			continue;
+		}
+
+		// Take away ammo if more than allowed:
+		it->ammo[am_clip] = bullets;
+		SV_SendPlayerInfo(*it);
+	}
+}
 
 //
 // G_PlayerFinishLevel
@@ -227,6 +272,9 @@ void G_PlayerFinishLevel (player_t &player)
 		}
 		p->ammo[am_clip] = sv_berserk_pistol_ammo.asInt();
 		p->powers[pw_strength] = 1;
+
+		// force client to realize the reset:
+		SV_SendPlayerInfo(player);
 	}
 }
 
@@ -278,6 +326,11 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	p.death_time = 0;
 	p.tic = 0;
+
+	if (sv_berserk) {
+		// force client to realize the reset:
+		SV_SendPlayerInfo(p);
+	}
 }
 
 //

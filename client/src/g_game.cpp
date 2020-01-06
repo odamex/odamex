@@ -1107,8 +1107,21 @@ void G_Ticker (void)
 // also see P_SpawnPlayer in P_Mobj
 //
 
-EXTERN_CVAR(sv_berserk)
-EXTERN_CVAR(sv_berserk_pistol_ammo)
+CVAR_FUNC_IMPL(sv_berserk)
+{
+}
+
+CVAR_FUNC_IMPL(sv_berserk_radius)
+{
+}
+
+CVAR_FUNC_IMPL(sv_berserk_damage_mult)
+{
+}
+
+CVAR_FUNC_IMPL(sv_berserk_pistol_ammo)
+{
+}
 
 //
 // G_PlayerFinishLevel
