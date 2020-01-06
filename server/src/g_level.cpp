@@ -24,6 +24,7 @@
 
 
 #include <sstream>
+#include <iomanip>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -287,6 +288,9 @@ BEGIN_COMMAND (m_tag)
 	}
 
 	int tag = atoi(argv[1]);
+	if (tag <= 0) {
+		return;
+	}
 
 	int special = atoi(argv[2]);
 	if (special < 0 || special > 255) {
@@ -331,6 +335,9 @@ BEGIN_COMMAND (m_stop)
 	}
 
 	int tag = atoi(argv[1]);
+	if (tag <= 0) {
+		return;
+	}
 
 	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
@@ -398,9 +405,12 @@ BEGIN_COMMAND (m_tagspecials)
 	}
 
 	int tag = atoi(argv[1]);
+	if (tag <= 0) {
+		return;
+	}
 
 	// find all lines that use this tag and track their map_specials:
-	std::set<byte> specials;
+	std::set<short> specials;
 	for (int i = 0; i < numlines; i++) {
 		if (tag != lines[i].map_tag) continue;
 
@@ -409,19 +419,36 @@ BEGIN_COMMAND (m_tagspecials)
 
 	// build comma-delimited list of specials:
 	std::ostringstream msg;
-	msg << "tag " << tag << " has specials [";
+	msg << "tag " << tag << " has " << specials.size() << " specials";
 
-	std::string separator;
-	for (std::set<byte>::const_iterator it = specials.cbegin(); it != specials.cend(); it++) {
-		msg << separator << (int) *it;
-		separator = ",";
+	for (std::set<short>::const_iterator it = specials.cbegin(); it != specials.cend(); it++) {
+		short special = *it;
+		std::string P_LineSpecialName(short special);
+
+		msg << "\n  " << std::setw(3) << (int) special;
+		msg << ": " << P_LineSpecialName(special);
 	}
-	msg << "]\n";
+	msg << "\n";
 
 	// print message:
 	Printf(PRINT_HIGH, msg.str().c_str());
 }
 END_COMMAND (m_tagspecials)
+
+std::string P_LineSpecialName(short special);
+
+BEGIN_COMMAND (m_specials)
+{
+	// build comma-delimited list of specials:
+	for (short special = 1; special <= 141; special++) {
+		std::ostringstream msg;
+		msg << std::setw(3) << (int) special;
+		msg << ": " << P_LineSpecialName(special) << "\n";
+
+		Printf(PRINT_HIGH, msg.str().c_str());
+	}
+}
+END_COMMAND (m_specials)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);

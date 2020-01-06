@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <map>
 
 #include "doomtype.h"
 #include "g_level.h"
@@ -745,6 +746,191 @@ int P_TranslateSectorSpecial (int special)
 	return (special == 9) ? SECRET_MASK :
 			((special & 0xfe0) << 3) |
 			((special & 0x01f) + (((special & 0x1f) < 21) ? 64 : -20));
+}
+
+static std::map< short, std::string > create_special_names() {
+	std::map< short, std::string > m;
+
+	// Doom 1 action specials
+
+	m[1] =   "DR Door";
+	m[28] =  "DR Door Red Key";
+	m[26] =  "DR Door Blue Key";
+	m[27] =  "DR Door Yellow Key";
+	m[31] =  "D1 Door Stay Open";
+	m[33] =  "D1 Door Red Key";
+	m[32] =  "D1 Door Blue Key";
+	m[34] =  "D1 Door Yellow Key";
+
+	m[29] =  "S1 Door";
+	m[63] =  "SR Door";
+	m[4] =   "W1 Door";
+	m[90] =  "WR Door";
+	m[103] = "S1 Door Stay Open";
+	m[61] =  "SR Door Stay Open";
+	m[2] =   "W1 Door Stay Open";
+	m[86] =  "WR Door Stay Open";
+	m[50] =  "S1 Door Close";
+	m[42] =  "SR Door Close";
+	m[3] =   "W1 Door Close";
+	m[75] =  "WR Door Close";
+	m[16] =  "W1 Door Close + Open";
+	m[76] =  "WR Door Close + Open";
+	m[46] =  "GR Door Also Monsters";
+
+	m[40] =  "W1 Ceil To Highest Ceil";
+	m[41] =  "S1 Ceil To Floor";
+	m[43] =  "SR Ceil To Floor";
+	m[44] =  "W1 Ceil To 8 Above Floor";
+	m[72] =  "WR Ceil To 8 Above Floor";
+
+	m[21] =  "S1 Lift";
+	m[62] =  "SR Lift";
+	m[10] =  "W1 Lift Also Monsters";
+	m[88] =  "WR Lift Also Monsters";
+
+	m[18] =  "S1 Floor To Higher Adjacent Floor";
+	m[69] =  "SR Floor To Higher Adjacent Floor";
+	m[5] =   "W1 Floor To Lowest Adjacent Ceil";
+	m[91] =  "WR Floor To Lowest Adjacent Ceil";
+	m[101] = "S1 Floor To Lowest Adjacent Ceil";
+	m[64] =  "SR Floor To Lowest Adjacent Ceil";
+	m[24] =  "G1 Floor To Lowest Adjacent Ceil";
+	m[55] =  "S1 Floor To 8 Below LAC + Crush";
+	m[65] =  "SR Floor To 8 Below LAC + Crush";
+	m[56] =  "W1 Floor To 8 Below LAC + Crush";
+	m[94] =  "WR Floor To 8 Below LAC + Crush";
+	m[58] =  "W1 Floor Up 24";
+	m[92] =  "WR Floor Up 24";
+	m[30] =  "W1 Floor Up Shortest Lo Tex";
+	m[96] =  "WR Floor Up Shortest Lo Tex";
+	m[20] =  "S1 Floor To Higher Floor Change Tex";
+	m[68] =  "SR Floor To Higher Floor Change Tex";
+	m[22] =  "W1 Floor To Higher Floor Change Tex";
+	m[95] =  "WR Floor To Higher Floor Change Tex";
+	m[47] =  "G1 Floor To Higher Floor Change Tex";
+	m[15] =  "S1 Floor Up 24 Change Tex";
+	m[66] =  "SR Floor Up 24 Change Tex";
+	m[59] =  "W1 Floor Up 24 Change Tex + Type";
+	m[93] =  "WR Floor Up 24 Change Tex + Type";
+	m[14] =  "S1 Floor Up 32 Change Tex";
+	m[67] =  "SR Floor Up 32 Change Tex";
+
+	m[38] =  "W1 Floor To Lowest Adjacent Floor";
+	m[23] =  "S1 Floor To Lowest Adjacent Floor";
+	m[82] =  "WR Floor To Lowest Adjacent Floor";
+	m[60] =  "SR Floor To Lowest Adjacent Floor";
+	m[19] =  "W1 Floor To Highest Adjacent Floor";
+	m[102] = "S1 Floor To Highest Adjacent Floor";
+	m[83] =  "WR Floor To Highest Adjacent Floor";
+	m[45] =  "SR Floor To Highest Adjacent Floor";
+	m[36] =  "W1 Floor To 8 Above HAF Fast";
+	m[71] =  "S1 Floor To 8 Above HAF Fast";
+	m[98] =  "WR Floor To 8 Above HAF Fast";
+	m[70] =  "SR Floor To 8 Above HAF Fast";
+	m[37] =  "W1 Floor To LAF Change Tex + Type";
+	m[84] =  "WR Floor To LAF Change Tex + Type";
+	m[9] =   "S1 Floor Donut";
+
+	m[7] =   "S1 Build Stairs 8";
+	m[8] =   "W1 Build Stairs 8";
+
+	m[53] =  "W1 Start Moving Floor";
+	m[87] =  "WR Start Moving Floor";
+	m[54] =  "W1 Stop Moving Floor";
+	m[89] =  "WR Stop Moving Floor";
+
+	m[49] =  "S1 Start Crusher, Slow Damage";
+	m[25] =  "W1 Start Crusher, Slow Damage";
+	m[73] =  "WR Start Crusher, Slow Damage";
+	m[6] =   "W1 Start Crusher, Fast Damage";
+	m[77] =  "WR Start Crusher, Fast Damage";
+	m[57] =  "W1 Stop Crusher";
+	m[74] =  "WR Stop Crusher";
+
+	m[11] =  "S1 Exit (Normal)";
+	m[52] =  "W1 Exit (Normal)";
+	m[51] =  "S1 Exit (Secret)";
+
+	m[97] =  "WR Teleport";
+	m[39] =  "W1 Teleport";
+
+	m[35] =  "W1 Light To 35";
+	m[79] =  "WR Light To 35";
+	m[13] =  "W1 Light To 255";
+	m[81] =  "WR Light To 255";
+	m[12] =  "W1 Light To Highest Adjacent Level";
+	m[80] =  "WR Light To Highest Adjacent Level";
+	m[104] = "W1 Light To Lowest Adjacent Level";
+	m[17] =  "W1 Light Blink 1.0 Sec";
+
+	// Doom 2/Ultimate Doom action specials
+
+	m[117] = "DR Door Fast";
+	m[118] = "D1 Door Stay Open Fast";
+
+	m[111] = "S1 Door Fast";
+	m[114] = "SR Door Fast";
+	m[108] = "W1 Door Fast";
+	m[105] = "WR Door Fast";
+	m[112] = "S1 Door Stay Open Fast";
+	m[115] = "SR Door Stay Open Fast";
+	m[109] = "W1 Door Stay Open Fast";
+	m[106] = "WR Door Stay Open Fast";
+	m[113] = "S1 Door Close Fast";
+	m[116] = "SR Door Close Fast";
+	m[110] = "W1 Door Close Fast";
+	m[107] = "WR Door Close Fast";
+	m[135] = "S1 Door Red Key Fast";
+	m[134] = "SR Door Red Key Fast";
+	m[133] = "S1 Door Blue Key Fast";
+	m[99] =  "SR Door Blue Key Fast";
+	m[137] = "S1 Door Yellow Key Fast";
+	m[136] = "SR Door Yellow Key Fast";
+
+	m[122] = "S1 Lift Fast";
+	m[123] = "SR Lift Fast";
+	m[121] = "W1 Lift Fast";
+	m[120] = "WR Lift Fast";
+
+	m[119] = "W1 Floor To Higher Adjacent Floor";
+	m[128] = "WR Floor To Higher Adjacent Floor";
+	m[131] = "S1 Floor To Higher Floor Fast";
+	m[132] = "SR Floor To Higher Floor Fast";
+	m[130] = "W1 Floor To Higher Floor Fast";
+	m[129] = "WR Floor To Higher Floor Fast";
+	m[140] = "S1 Floor Up 512";
+
+	m[127] = "S1 Build Stairs 16 + Crush";
+	m[100] = "W1 Build Stairs 16 + Crush";
+
+	m[141] = "W1 Start Crusher, Silent";
+
+	m[124] = "W1 Exit (Secret)";
+
+	m[126] = "WR Teleport Monsters Only";
+	m[125] = "W1 Teleport Monsters Only";
+
+	m[139] = "SR Light To 35";
+	m[138] = "SR Light To 255";
+
+	return m;
+};
+
+std::map< short, std::string > special_names = create_special_names();
+
+std::string P_LineSpecialName(short special)
+{
+	if (special == 0) {
+		return "---";
+	}
+
+	if (special > 141) {
+		return "???";
+	}
+
+	std::string name = special_names[special];
+	return name;
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")
