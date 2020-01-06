@@ -379,6 +379,8 @@ ItemEquipVal P_GiveCard(player_t *player, card_t card)
 	return IEV_EquipRemove;
 }
 
+EXTERN_CVAR(sv_berserk)
+
 //
 // P_GivePower
 //
@@ -411,9 +413,14 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 
 	if (power == pw_strength)
 	{
-		P_GiveBody(player, 100);
 		player->powers[power] = 1;
-		return IEV_EquipRemove;
+		if (sv_berserk) {
+			// [jsd] don't destroy the pickup in berserk mode if we already have >= 100% health:
+			return P_GiveBody(player, 100);
+		} else {
+			P_GiveBody(player, 100);
+			return IEV_EquipRemove;
+		}
 	}
 
 	if (player->powers[power])
