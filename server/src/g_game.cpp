@@ -200,6 +200,15 @@ CVAR_FUNC_IMPL(sv_berserk)
 	SV_BroadcastPrintf(PRINT_HIGH, "Berserk fists mode %s!\n", var ? "enabled" : "disabled");
 }
 
+CVAR_FUNC_IMPL(sv_berserk_pickups)
+{
+	if (!sv_berserk) {
+		return;
+	}
+
+	SV_BroadcastPrintf(PRINT_HIGH, "Weapons,ammo,backpack pickups are now '%s'!\n", var.cstring());
+}
+
 CVAR_FUNC_IMPL(sv_berserk_radius)
 {
 	if (!sv_berserk) {

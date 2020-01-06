@@ -1111,6 +1111,10 @@ CVAR_FUNC_IMPL(sv_berserk)
 {
 }
 
+CVAR_FUNC_IMPL(sv_berserk_pickups)
+{
+}
+
 CVAR_FUNC_IMPL(sv_berserk_radius)
 {
 }

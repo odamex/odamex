@@ -58,6 +58,11 @@ CVAR(				sv_coop_completionist_found, "0", "Count of found secrets for coop comp
 CVAR_FUNC_DECL(		sv_berserk, "0", "Berserk mode",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+CVAR_FUNC_DECL(		sv_berserk_pickups, "health", "Berserk mode weapons,ammo,backpacks pickup transformation mode: " \
+					"'health' -> pickups replaced with health bonuses, " \
+					"'remove' -> pickups removed",
+					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH)
+
 CVAR_RANGE_FUNC_DECL(sv_berserk_radius, "64", "Berserk mode - fist punch radius in map units; normal is 64",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
 					32.0f, 32768.0f)
