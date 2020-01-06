@@ -618,7 +618,7 @@ std::string Res_FindIWAD(const std::string& suggestion = "")
 //
 // Res_GetFullPath
 //
-static std::string Res_GetFullPath(const std::string& filename, const char* const* extlist = NULL)
+static std::string Res_GetFullPath(const std::string& filename, const char* const* extlist = NULL, const std::string& hash = "")
 {
 	if (M_IsDirectory(filename))
 		return filename;
@@ -626,7 +626,7 @@ static std::string Res_GetFullPath(const std::string& filename, const char* cons
 	if (extlist == NULL)
 		extlist = ALL_EXTLIST;
 
-	return Res_FindResourceFile(filename, extlist);
+	return Res_FindResourceFile(filename, extlist, hash);
 }
 
 
@@ -647,7 +647,6 @@ std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& st
 		std::string full_filename = Res_GetFullPath(com_token);
 		if (!full_filename.empty())
 			resource_filenames.push_back(full_filename);
-		// [SL] TODO: properly handle missing files
 	}
 
 	return resource_filenames;
@@ -673,9 +672,6 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 
 		if (!full_filename.empty())
 			resource_filenames.push_back(full_filename);
-		// [SL] TODO: properly handle missing files
-		// else
-			// missing_files.push_back(filename);
 	}
 
 	// [SL] the first parameter should be treated as a file name and
@@ -765,7 +761,7 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 	else
 		resource_filenames.push_back(iwad_full_filename);
 
-	// add any PWADs to the validated filename array
+	// find where the PWADs are in the input array
 	size_t pwad_start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
 	size_t pwad_end_position = old_resource_filenames.size();
 
@@ -775,21 +771,21 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 		pwad_end_position = pwad_start_position;
 	}
 
+	// add any PWADs to the validated filename array, or add them to the missing filename array
 	for (size_t i = pwad_start_position; i < pwad_end_position; i++)
 	{
-		std::string full_filename = Res_GetFullPath(old_resource_filenames[i]);
-		bool hash_provided = (i < resource_filehashes.size());
-		bool hash_matches = (!full_filename.empty() && (!hash_provided || Res_MD5(full_filename) == resource_filehashes[i]));
+		const std::string hash = (i < resource_filehashes.size()) ? resource_filehashes[i] : "";
+		const std::string full_filename = Res_GetFullPath(old_resource_filenames[i], ALL_EXTLIST, hash);
 
-		if (hash_matches)
+		if (!full_filename.empty())
 		{
 			resource_filenames.push_back(full_filename);
 		}
 		else
 		{
 			missing_resource_filenames.push_back(Res_CleanseFilename(old_resource_filenames[i]));
-			if (hash_provided)
-				missing_resource_filehashes.push_back(resource_filehashes[i]);
+			if (!hash.empty())
+				missing_resource_filehashes.push_back(hash);
 		}
 	}
 }
