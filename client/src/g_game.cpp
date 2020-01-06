@@ -1179,7 +1179,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.weaponowned[wp_fist] = true;
 		p.weaponowned[wp_pistol] = true;
 		p.ammo[am_clip] = sv_berserk_pistol_ammo.asInt();
-		p.powers[pw_strength] = true;
+		p.powers[pw_strength] = 1;
 	} else {
 		p.readyweapon = p.pendingweapon = wp_pistol;
 		p.weaponowned[wp_fist] = true;

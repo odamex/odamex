@@ -1092,6 +1092,8 @@ BEGIN_COMMAND (testcolor)
 }
 END_COMMAND (testcolor)
 
+EXTERN_CVAR(sv_berserk)
+
 //
 // V_DoPaletteEffects
 //
@@ -1112,9 +1114,11 @@ void V_DoPaletteEffects()
 		if (!multiplayer || sv_allowredscreen)
 			red_count *= r_painintensity;
 
-		// slowly fade the berzerk out
-		if (plyr->powers[pw_strength])
-			red_count = MAX(red_count, 12.0f - float(plyr->powers[pw_strength] >> 6));
+		if (!sv_berserk) {
+			// slowly fade the berzerk out
+			if (plyr->powers[pw_strength])
+				red_count = MAX(red_count, 12.0f - float(plyr->powers[pw_strength] >> 6));
+		}
 
 		if (red_count > 0.0f)
 		{
@@ -1175,9 +1179,11 @@ void V_DoPaletteEffects()
 			if (!multiplayer || sv_allowredscreen)
 				red_amount *= r_painintensity;
 
-			// slowly fade the berzerk out
-			if (plyr->powers[pw_strength])
-				red_amount = MAX(red_amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+			if (!sv_berserk) {
+				// slowly fade the berzerk out
+				if (plyr->powers[pw_strength])
+					red_amount = MAX(red_amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+			}
 
 			if (red_amount > 0.0f)
 			{
