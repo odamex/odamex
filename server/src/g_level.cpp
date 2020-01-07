@@ -724,6 +724,8 @@ void G_DoSaveResetState()
 EXTERN_CVAR(sv_coop_completionist_killed)
 EXTERN_CVAR(sv_coop_completionist_found)
 
+EXTERN_CVAR(sv_survival)
+
 // [AM] - Reset the state of the level.  Second parameter is true if you want
 //        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
 void G_DoResetLevel(bool full_reset)
@@ -748,6 +750,13 @@ void G_DoResetLevel(bool full_reset)
 			}
 			CTFdata[i].flagger = 0;
 			CTFdata[i].state = flag_home;
+		}
+	}
+
+	if (sv_survival) {
+		for (it = players.begin(); it != players.end(); ++it)
+		{
+			it->survival_lives = 1;
 		}
 	}
 
@@ -947,6 +956,10 @@ void G_DoLoadLevel (int position)
 				MSG_WriteByte(&(pit->client.reliablebuf), it->id);
 				MSG_WriteBool(&(pit->client.reliablebuf), false);
 			}
+		}
+
+		if (sv_survival) {
+			it->survival_lives = 1;
 		}
 	}
 

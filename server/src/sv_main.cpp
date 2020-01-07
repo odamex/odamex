@@ -664,6 +664,40 @@ player_t &SV_FindPlayerByAddr(void)
 	return idplayer(0);
 }
 
+EXTERN_CVAR(sv_survival)
+
+int survival_restarttimer = 0;
+
+void SV_SurvivalAllDead(void)
+{
+	// restart the level in 5 seconds:
+	survival_restarttimer = 3*TICRATE;
+	DPrintf("SV_SurvivalAllDead()\n", survival_restarttimer);
+}
+
+void SV_SurvivalCheck(void)
+{
+	bool alldead = true;
+	for (Players::iterator it = players.begin(); it != players.end(); it++) {
+		// don't count players not in the game or spectating:
+		if (!it->ingame() || it->spectator) {
+			continue;
+		}
+
+		// if any player has a life left, keep going:
+		if (it->survival_lives > 0) {
+			DPrintf("player %d is still alive\n", it->id);
+			alldead = false;
+			break;
+		}
+	}
+
+	if (alldead) {
+		// restart the level when all players are dead:
+		SV_SurvivalAllDead();
+	}
+}
+
 //
 // SV_CheckTimeouts
 // If a packet has not been received from a client in CLIENT_TIMEOUT
@@ -706,6 +740,10 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	{
 		if (sv_gametype == GM_CTF) //  [Toke - CTF]
 			CTF_CheckFlags(*it);
+
+		if (sv_survival) {
+			SV_SurvivalCheck();
+		}
 
 		// [AM] AActor->Destroy() does not destroy the AActor for good, and also
 		//      does not null the player reference.  We have to do it here to
@@ -4819,6 +4857,18 @@ void SV_IntermissionTimeCheck()
 	}
 }
 
+void Survival_RunTics(void)
+{
+	if (survival_restarttimer) {
+		if (--survival_restarttimer <= 0) {
+			// restart the level after all players are dead:
+			DPrintf("G_DoResetLevel()\n", survival_restarttimer);
+			G_DoResetLevel(false);
+			survival_restarttimer = 0;
+		}
+	}
+}
+
 //
 // SV_GameTics
 //
@@ -4828,6 +4878,10 @@ void SV_GameTics (void)
 {
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
+
+	if (sv_survival) {
+		Survival_RunTics();
+	}
 
 	switch (gamestate)
 	{

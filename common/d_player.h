@@ -250,6 +250,8 @@ public:
 
 	bool 		is_vip;					// if player is a VIP and should not be kicked
 
+	int			survival_lives;			// number of remaining lives for sv_survival mode
+
 	// For flood protection
 	struct LastMessage_s
 	{
@@ -382,8 +384,6 @@ public:
 	player_s &operator =(const player_s &other);
 	
 	~player_s();
-
-
 };
 
 typedef player_s player_t;
