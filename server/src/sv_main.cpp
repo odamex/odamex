@@ -728,9 +728,9 @@ void SV_SurvivalCheck(void)
 			char msg[256 + 32];
 
 			// Tell the last man he won!
-			SV_MidPrint("You are the last man standing!\n", last_man, 5);
+			SV_MidPrint("You are the last person standing!\n", last_man, 5);
 
-			sprintf(msg, "%s is the last man standing!\n", last_man->userinfo.netname.c_str());
+			sprintf(msg, "%s is the last person standing!\n", last_man->userinfo.netname.c_str());
 			Printf(PRINT_MEDIUM, msg);
 
 			// Broadcast the message to all other players:
@@ -749,7 +749,7 @@ void SV_SurvivalCheck(void)
 			// reset the map:
 			SV_SurvivalAllDead();
 		} else if (alive == 0) {
-			Printf(PRINT_MEDIUM, "No man left standing!\n");
+			Printf(PRINT_MEDIUM, "No person left standing!\n");
 
 			// Broadcast a message to all players:
 			for (Players::iterator it = players.begin(); it != players.end(); it++) {
@@ -757,7 +757,7 @@ void SV_SurvivalCheck(void)
 					continue;
 				}
 
-				SV_MidPrint("No man left standing!\n", &*it, 5);
+				SV_MidPrint("No person left standing!\n", &*it, 5);
 			}
 
 			// reset the map:
