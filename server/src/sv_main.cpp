@@ -667,16 +667,25 @@ player_t &SV_FindPlayerByAddr(void)
 EXTERN_CVAR(sv_survival)
 
 int survival_restarttimer = 0;
+int survival_join_timer = 0;
 
 void SV_SurvivalAllDead(void)
 {
+	if (!sv_survival) {
+		return;
+	}
+
 	// restart the level in 5 seconds:
 	survival_restarttimer = 3*TICRATE;
-	DPrintf("SV_SurvivalAllDead()\n", survival_restarttimer);
+	DPrintf("survival: SV_SurvivalAllDead()\n", survival_restarttimer);
 }
 
 void SV_SurvivalCheck(void)
 {
+	if (!sv_survival) {
+		return;
+	}
+
 	bool alldead = true;
 	for (Players::iterator it = players.begin(); it != players.end(); it++) {
 		// don't count players not in the game or spectating:
@@ -686,7 +695,7 @@ void SV_SurvivalCheck(void)
 
 		// if any player has a life left, keep going:
 		if (it->survival_lives > 0) {
-			DPrintf("player %d is still alive\n", it->id);
+			DPrintf("survival: player %d is still alive\n", it->id);
 			alldead = false;
 			break;
 		}
@@ -695,6 +704,52 @@ void SV_SurvivalCheck(void)
 	if (alldead) {
 		// restart the level when all players are dead:
 		SV_SurvivalAllDead();
+	}
+}
+
+size_t P_NumPlayersInGame();
+
+bool SV_SurvivalJoin(player_t &player)
+{
+	if (!sv_survival) {
+		return true;
+	}
+
+	// [jsd] prevent joining a game in progress if coming out of spectate
+	if (P_NumPlayersInGame() > 0) {
+		// not the first player joining, we must join before the survival_join_timer expires:
+		if (survival_join_timer == 0) {
+			DPrintf("survival: player %d cannot join because survival_join_timer expired\n", player.id);
+			return false;
+		}
+	} else {
+		// no players in game; we're the first:
+		survival_join_timer = (15*TICRATE);
+		DPrintf("survival: first player joined; survival_join_timer reset\n");
+	}
+
+	return true;
+}
+
+void SV_SurvivalStart(void)
+{
+	if (!sv_survival) {
+		return;
+	}
+
+	int count = 0;
+	for (Players::iterator it = players.begin();it != players.end();++it) {
+		if (!it->ingame() || it->playerstate == PST_SPECTATE) {
+			continue;
+		}
+
+		it->survival_lives = 1;
+		count++;
+	}
+
+	if (count > 0) {
+		// reset the join timer:
+		survival_join_timer = (15*TICRATE);
 	}
 }
 
@@ -3908,6 +3963,13 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	if (!setting && player.spectator)
 	{
 		// We want to unspectate the player.
+
+		if (sv_survival) {
+			if (!SV_SurvivalJoin(player)) {
+				return;
+			}
+		}
+
 		if (level.time > player.joinafterspectatortime + TICRATE * 5)
 		{
 			// Check to see if there is an empty spot on the server
@@ -4862,9 +4924,16 @@ void Survival_RunTics(void)
 	if (survival_restarttimer) {
 		if (--survival_restarttimer <= 0) {
 			// restart the level after all players are dead:
-			DPrintf("G_DoResetLevel()\n", survival_restarttimer);
+			DPrintf("survival: G_DoResetLevel()\n", survival_restarttimer);
 			G_DoResetLevel(false);
 			survival_restarttimer = 0;
+		}
+	}
+
+	if (survival_join_timer) {
+		if (--survival_join_timer <= 0) {
+			survival_join_timer = 0;
+			DPrintf("survival: survival_join_timer expired\n");
 		}
 	}
 }

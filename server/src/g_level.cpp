@@ -725,6 +725,7 @@ EXTERN_CVAR(sv_coop_completionist_killed)
 EXTERN_CVAR(sv_coop_completionist_found)
 
 EXTERN_CVAR(sv_survival)
+void SV_SurvivalStart(void);
 
 // [AM] - Reset the state of the level.  Second parameter is true if you want
 //        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
@@ -753,12 +754,7 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
-	if (sv_survival) {
-		for (it = players.begin(); it != players.end(); ++it)
-		{
-			it->survival_lives = 1;
-		}
-	}
+	SV_SurvivalStart();
 
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
@@ -957,11 +953,9 @@ void G_DoLoadLevel (int position)
 				MSG_WriteBool(&(pit->client.reliablebuf), false);
 			}
 		}
-
-		if (sv_survival) {
-			it->survival_lives = 1;
-		}
 	}
+
+	SV_SurvivalStart();
 
 	// [deathz0r] It's a smart idea to reset the team points
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
