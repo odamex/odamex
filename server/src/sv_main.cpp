@@ -778,17 +778,37 @@ bool SV_SurvivalJoin(player_t &player)
 		return true;
 	}
 
-	// [jsd] prevent joining a game in progress if coming out of spectate
-	if (P_NumPlayersInGame() > 0) {
-		// not the first player joining, we must join before the survival_join_timer expires:
-		if (survival_join_timer == 0) {
-			DPrintf("survival: player %d cannot join because survival_join_timer expired\n", player.id);
-			return false;
+	if (sv_gametype == GM_COOP) {
+		// [jsd] prevent joining a game in progress if coming out of spectate
+		size_t count = P_NumPlayersInGame();
+		if (count > 0) {
+			// not the first player joining, we must join before the survival_join_timer expires:
+			if (survival_join_timer == 0) {
+				DPrintf("survival: player %d cannot join because survival_join_timer expired\n", player.id);
+				return false;
+			}
+		} else {
+			// no players in game; we're the first:
+			survival_join_timer = (15 * TICRATE);
+			DPrintf("survival: first player joined; survival_join_timer reset\n");
 		}
-	} else {
-		// no players in game; we're the first:
-		survival_join_timer = (15*TICRATE);
-		DPrintf("survival: first player joined; survival_join_timer reset\n");
+	} else if (sv_gametype == GM_DM) {
+		// [jsd] prevent joining a game in progress if coming out of spectate
+		size_t count = P_NumPlayersInGame();
+		if (count >= 2) {
+			// not the first player joining, we must join before the survival_join_timer expires:
+			if (survival_join_timer == 0) {
+				DPrintf("survival: player %d cannot join because survival_join_timer expired\n", player.id);
+				return false;
+			}
+		} else if (count == 1) {
+			// one player in the game already; time to start the join timer:
+			survival_join_timer = (15 * TICRATE);
+			DPrintf("survival: second player joined; survival_join_timer started\n");
+		} else {
+			// no players in game; we're the first:
+			DPrintf("survival: first player joined; waiting for more players\n");
+		}
 	}
 
 	return true;
@@ -800,21 +820,40 @@ void SV_SurvivalStart(void)
 		return;
 	}
 
-	int count = 0;
-	for (Players::iterator it = players.begin();it != players.end();++it) {
-		if (!it->ingame() || it->playerstate == PST_SPECTATE) {
-			continue;
+	if (sv_gametype == GM_COOP) {
+		int count = 0;
+		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+			if (!it->ingame() || it->playerstate == PST_SPECTATE) {
+				continue;
+			}
+
+			it->joinafterspectatortime = -(TICRATE * 5);
+			it->survival_lives = 1;
+			count++;
 		}
 
-		it->joinafterspectatortime = -(TICRATE * 5);
-		it->survival_lives = 1;
-		count++;
-	}
+		if (count > 0) {
+			// reset the join timer:
+			DPrintf("survival: map loaded or restarted; survival_join_timer reset\n");
+			survival_join_timer = (15 * TICRATE);
+		}
+	} else if (sv_gametype == GM_DM) {
+		int count = 0;
+		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+			if (!it->ingame() || it->playerstate == PST_SPECTATE) {
+				continue;
+			}
 
-	if (count > 0) {
-		// reset the join timer:
-		DPrintf("survival: map loaded or restarted; survival_join_timer reset\n");
-		survival_join_timer = (15*TICRATE);
+			it->joinafterspectatortime = -(TICRATE * 5);
+			it->survival_lives = 1;
+			count++;
+		}
+
+		if (count >= 2) {
+			// reset the join timer:
+			DPrintf("survival: map loaded or restarted; survival_join_timer reset\n");
+			survival_join_timer = (15 * TICRATE);
+		}
 	}
 }
 
