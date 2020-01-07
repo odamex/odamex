@@ -743,6 +743,7 @@ void SV_SurvivalStart(void)
 			continue;
 		}
 
+		it->joinafterspectatortime = -(TICRATE * 5);
 		it->survival_lives = 1;
 		count++;
 	}

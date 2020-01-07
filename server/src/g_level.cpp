@@ -845,6 +845,8 @@ void G_DoResetLevel(bool full_reset)
 	level.timeleft = sv_timelimit * TICRATE * 60;
 	level.inttimeleft = mapchange / TICRATE;
 
+	SV_SurvivalStart();
+
 	// Send information about the newly reset map.
 	for (it = players.begin();it != players.end();++it)
 	{
