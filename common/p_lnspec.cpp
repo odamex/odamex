@@ -1956,6 +1956,8 @@ EXTERN_CVAR (sv_coop_completionist_secrets)
 EXTERN_CVAR (sv_coop_completionist_killed)
 EXTERN_CVAR (sv_coop_completionist_found)
 
+EXTERN_CVAR (sv_survival)
+
 BOOL CheckIfExitIsGood (AActor *self)
 {
 	// must be server side:
@@ -2020,7 +2022,11 @@ BOOL CheckIfExitIsGood (AActor *self)
 				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
 
 			return false;
-		}
+		} else {
+			if (sv_survival) {
+				return false;
+			}
+        }
 	}
 
 	if (self->player && multiplayer)
