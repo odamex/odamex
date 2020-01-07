@@ -523,6 +523,8 @@ void P_FallingDamage (AActor *ent)
 //
 #define ANG5	(ANG90/18)
 
+EXTERN_CVAR(sv_survival)
+
 void P_DeathThink (player_t *player)
 {
 	bool reduce_redness = true;
@@ -570,17 +572,23 @@ void P_DeathThink (player_t *player)
 
 	if(serverside)
 	{
-		bool force_respawn =	(!clientside && sv_forcerespawn &&
-								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
+		if (sv_survival) {
+			// [jsd] survival mode controls respawning players.
+			if (player->ingame() && (player->survival_lives > 0) && (player->cmd.buttons & BT_USE)) {
+				player->playerstate = PST_REBORN;
+			}
+		} else {
+			bool force_respawn = (!clientside && sv_forcerespawn &&
+								  level.time >= player->death_time + sv_forcerespawntime * TICRATE);
 
-		// [SL] Can we respawn yet?
-		int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
-		bool delay_respawn =	(!clientside && level.time < respawn_time);
+			// [SL] Can we respawn yet?
+			int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
+			bool delay_respawn = (!clientside && level.time < respawn_time);
 
-		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
-		{
-			player->playerstate = PST_REBORN;
+			// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
+			if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn)) {
+				player->playerstate = PST_REBORN;
+			}
 		}
 	}
 }
@@ -985,6 +993,8 @@ player_s::player_s()
 
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 	doreborn = false;
+
+	survival_lives = 0;
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1096,6 +1106,8 @@ player_s &player_s::operator =(const player_s &other)
 	to_spawn = other.to_spawn;
 
 	doreborn = other.doreborn;
+
+	survival_lives = other.survival_lives;
 
 	return *this;
 }

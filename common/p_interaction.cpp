@@ -78,6 +78,9 @@ void SV_ActorTarget(AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 
+void SV_SurvivalRestartLevel(void);
+void SV_SurvivalCheck(void);
+
 //
 // GET STUFF
 //
@@ -883,6 +886,8 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 	} while (*from++);
 }
 
+EXTERN_CVAR(sv_survival)
+
 //
 // P_KillMobj
 //
@@ -1014,6 +1019,16 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		// [Toke - CTF]
 		if (sv_gametype == GM_CTF)
 			CTF_CheckFlags(*target->player);
+
+		// [jsd] survival mode
+		if (!joinkill && sv_survival) {
+			if (tplayer->ingame() && !tplayer->spectator) {
+				tplayer->survival_lives--;
+				DPrintf("%s was killed; now has %d lives left\n", tplayer->userinfo.netname.c_str(), tplayer->survival_lives);
+
+				SV_SurvivalCheck();
+			}
+		}
 
 		if (!joinkill && !shotclock)
 		{

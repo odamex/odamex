@@ -248,6 +248,8 @@ public:
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
 
+	int			survival_lives;			// number of remaining lives for sv_survival mode
+
 	// For flood protection
 	struct LastMessage_s
 	{

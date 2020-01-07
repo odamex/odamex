@@ -2004,6 +2004,8 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 
+EXTERN_CVAR (sv_survival)
+
 BOOL CheckIfExitIsGood (AActor *self)
 {
 	if (self == NULL || !serverside)
@@ -2011,7 +2013,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 	// Bypass the exit restrictions if we're on a lobby.
 	if (level.flags & LEVEL_LOBBYSPECIAL)
-		return true;	
+		return true;
 
 	// [Toke - dmflags] Old location of DF_NO_EXIT
 	if (sv_gametype != GM_COOP && self)
@@ -2022,7 +2024,11 @@ BOOL CheckIfExitIsGood (AActor *self)
 				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
 
 			return false;
-		}
+		} else {
+			if (sv_survival) {
+				return false;
+			}
+        }
 	}
 
 	if (self->player && multiplayer)

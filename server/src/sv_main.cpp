@@ -519,6 +519,214 @@ player_t &SV_FindPlayerByAddr(void)
 	return idplayer(0);
 }
 
+EXTERN_CVAR(sv_survival)
+EXTERN_CVAR(sv_survival_join_timer)
+EXTERN_CVAR(sv_maxlives)
+
+int survival_restart_timer = 0;
+int survival_join_timer = 0;
+
+void SV_SurvivalResetJoinTimer(void)
+{
+	survival_join_timer = (int) ((float)sv_survival_join_timer * TICRATE);
+	DPrintf("survival: SV_SurvivalResetJoinTimer()\n");
+}
+
+BEGIN_COMMAND(sv_survival_reset_timer)
+{
+	SV_SurvivalResetJoinTimer();
+}
+END_COMMAND(sv_survival_reset_timer)
+
+void SV_SurvivalRestartLevel(void)
+{
+	if (!sv_survival) {
+		return;
+	}
+
+	// restart the level in 3 seconds:
+	survival_restart_timer = 3 * TICRATE;
+	DPrintf("survival: SV_SurvivalRestartLevel()\n", survival_restart_timer);
+}
+
+void SV_SurvivalCheck(void)
+{
+	if (!sv_survival) {
+		return;
+	}
+
+	if (sv_gametype == GM_COOP) {
+		// survival coop mode
+		int alive = 0;
+		for (Players::iterator it = players.begin(); it != players.end(); it++) {
+			// don't count players not in the game or spectating:
+			if (!it->ingame() || it->spectator) {
+				continue;
+			}
+
+			// if any player has a life left, keep going:
+			if (it->survival_lives > 0) {
+				alive++;
+			}
+		}
+
+		SV_BroadcastPrintf(PRINT_HIGH, "survival: %d %s left\n", alive, alive == 1 ? "player" : "players");
+		if (alive == 0) {
+			// restart the level when all players are dead:
+			SV_SurvivalRestartLevel();
+		}
+	} else if (sv_gametype == GM_DM) {
+		// last man standing
+		int alive = 0;
+		player_t *last_man = nullptr;
+		for (Players::iterator it = players.begin(); it != players.end(); it++) {
+			// don't count players not in the game or spectating:
+			if (!it->ingame() || it->spectator) {
+				continue;
+			}
+
+			// if any player has a life left, keep going:
+			if (it->survival_lives > 0) {
+				alive++;
+				last_man = &*it;
+			}
+		}
+
+		SV_BroadcastPrintf(PRINT_HIGH, "survival: %d %s left\n", alive, alive == 1 ? "player" : "players");
+		if (alive == 1) {
+			char msg[256 + 32];
+
+			// Tell the last man he won!
+			SV_MidPrint("You are the last one standing!\n", last_man, 5);
+
+			sprintf(msg, "%s is the last one standing!\n", last_man->userinfo.netname.c_str());
+			Printf(PRINT_MEDIUM, msg);
+
+			// Broadcast the message to all other players:
+			for (Players::iterator it = players.begin(); it != players.end(); it++) {
+				if (!it->ingame()) {
+					continue;
+				}
+				// Don't broadcast to the last one; he got his message already:
+				if (&*it == last_man) {
+					continue;
+				}
+
+				SV_MidPrint(msg, &*it, 5);
+			}
+
+			// reset the map:
+			SV_SurvivalRestartLevel();
+		} else if (alive == 0) {
+			Printf(PRINT_MEDIUM, "No one left standing!\n");
+
+			// Broadcast a message to all players:
+			for (Players::iterator it = players.begin(); it != players.end(); it++) {
+				if (!it->ingame()) {
+					continue;
+				}
+
+				SV_MidPrint("No one left standing!\n", &*it, 5);
+			}
+
+			// reset the map:
+			SV_SurvivalRestartLevel();
+		}
+	} else if (sv_gametype == GM_TEAMDM) {
+		// TODO
+	} else if (sv_gametype == GM_CTF) {
+		// TODO
+	}
+}
+
+size_t P_NumPlayersInGame();
+
+bool SV_SurvivalJoin(player_t &player)
+{
+	if (!sv_survival) {
+		return true;
+	}
+
+	if (sv_gametype == GM_COOP) {
+		// [jsd] prevent joining a game in progress if coming out of spectate
+		size_t count = P_NumPlayersInGame();
+		if (count > 0) {
+			// not the first player joining, we must join before the survival_join_timer expires:
+			if (survival_join_timer == 0) {
+				DPrintf("survival: player %d cannot join because survival_join_timer expired\n", player.id);
+				return false;
+			}
+		} else {
+			// no players in game; we're the first:
+			DPrintf("survival: first player joined\n");
+			SV_SurvivalResetJoinTimer();
+		}
+	} else if (sv_gametype == GM_DM) {
+		// [jsd] prevent joining a game in progress if coming out of spectate
+		size_t count = P_NumPlayersInGame();
+		if (count >= 2) {
+			// not the first player joining, we must join before the survival_join_timer expires:
+			if (survival_join_timer == 0) {
+				DPrintf("survival: player %d cannot join because survival_join_timer expired\n", player.id);
+				return false;
+			}
+		} else if (count == 1) {
+			// one player in the game already; time to start the join timer:
+			DPrintf("survival: second player joined\n");
+			SV_SurvivalResetJoinTimer();
+		} else {
+			// no players in game; we're the first:
+			DPrintf("survival: first player joined; waiting for more players\n");
+		}
+	}
+
+	player.survival_lives = sv_maxlives.asInt();
+	return true;
+}
+
+void SV_SurvivalStart(void)
+{
+	if (!sv_survival) {
+		return;
+	}
+
+	if (sv_gametype == GM_COOP) {
+		int count = 0;
+		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+			if (!it->ingame() || it->playerstate == PST_SPECTATE) {
+				continue;
+			}
+
+			it->joinafterspectatortime = -(TICRATE * 5);
+			it->survival_lives = sv_maxlives.asInt();
+			count++;
+		}
+
+		if (count > 0) {
+			// reset the join timer:
+			DPrintf("survival: map loaded or restarted\n");
+			SV_SurvivalResetJoinTimer();
+		}
+	} else if (sv_gametype == GM_DM) {
+		int count = 0;
+		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+			if (!it->ingame() || it->playerstate == PST_SPECTATE) {
+				continue;
+			}
+
+			it->joinafterspectatortime = -(TICRATE * 5);
+			it->survival_lives = sv_maxlives.asInt();
+			count++;
+		}
+
+		if (count >= 2) {
+			// reset the join timer:
+			DPrintf("survival: map loaded or restarted\n");
+			SV_SurvivalResetJoinTimer();
+		}
+	}
+}
+
 //
 // SV_CheckTimeouts
 // If a packet has not been received from a client in CLIENT_TIMEOUT
@@ -561,6 +769,10 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	{
 		if (sv_gametype == GM_CTF) //  [Toke - CTF]
 			CTF_CheckFlags(*it);
+
+		if (sv_survival) {
+			SV_SurvivalCheck();
+		}
 
 		// [AM] AActor->Destroy() does not destroy the AActor for good, and also
 		//      does not null the player reference.  We have to do it here to
@@ -3651,6 +3863,12 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 				}
 			}
 
+			if (sv_survival) {
+				if (!SV_SurvivalJoin(player)) {
+					return;
+				}
+			}
+
 			// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
 			SV_MidPrint("", &player, 0);
 
@@ -4582,6 +4800,25 @@ void SV_IntermissionTimeCheck()
 	}
 }
 
+void Survival_RunTics(void)
+{
+	if (survival_restart_timer) {
+		if (--survival_restart_timer <= 0) {
+			// restart the level after all players are dead:
+			DPrintf("survival: G_DoResetLevel()\n", survival_restart_timer);
+			G_DoResetLevel(false);
+			survival_restart_timer = 0;
+		}
+	}
+
+	if (survival_join_timer) {
+		if (--survival_join_timer <= 0) {
+			survival_join_timer = 0;
+			DPrintf("survival: survival_join_timer expired\n");
+		}
+	}
+}
+
 //
 // SV_GameTics
 //
@@ -4591,6 +4828,10 @@ void SV_GameTics (void)
 {
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
+
+	if (sv_survival) {
+		Survival_RunTics();
+	}
 
 	switch (gamestate)
 	{

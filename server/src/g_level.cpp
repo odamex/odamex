@@ -477,7 +477,7 @@ void G_ExitLevel (int position, int drawscores)
 
 	if (drawscores)
         SV_DrawScores();
-	
+
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
@@ -497,7 +497,7 @@ void G_SecretExitLevel (int position, int drawscores)
 
     if (drawscores)
         SV_DrawScores();
-        
+
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
@@ -542,6 +542,9 @@ void G_DoSaveResetState()
 	arc << level.time;
 }
 
+EXTERN_CVAR(sv_survival)
+void SV_SurvivalStart(void);
+
 // [AM] - Reset the state of the level.  Second parameter is true if you want
 //        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
 void G_DoResetLevel(bool full_reset)
@@ -568,6 +571,8 @@ void G_DoResetLevel(bool full_reset)
 			CTFdata[i].state = flag_home;
 		}
 	}
+
+	SV_SurvivalStart();
 
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
@@ -654,6 +659,8 @@ void G_DoResetLevel(bool full_reset)
 	level.time = 0;
 	level.timeleft = sv_timelimit * TICRATE * 60;
 	level.inttimeleft = mapchange / TICRATE;
+
+	SV_SurvivalStart();
 
 	// Send information about the newly reset map.
 	for (it = players.begin();it != players.end();++it)
@@ -764,6 +771,8 @@ void G_DoLoadLevel (int position)
 			}
 		}
 	}
+
+	SV_SurvivalStart();
 
 	// [deathz0r] It's a smart idea to reset the team points
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)

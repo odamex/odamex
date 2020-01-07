@@ -35,6 +35,15 @@ CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
 					0.0f, 3.0f)
 
+CVAR(				sv_survival, "0", "Survival mode",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(				sv_survival_join_timer, "15", "Survival mode join timer",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(				sv_maxlives, "1", "Survival mode number of lives",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
@@ -178,7 +187,7 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
-	
+
 
 // Compatibility options
 // ---------------------------------
