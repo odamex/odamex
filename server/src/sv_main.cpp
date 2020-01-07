@@ -675,7 +675,7 @@ void SV_SurvivalAllDead(void)
 		return;
 	}
 
-	// restart the level in 5 seconds:
+	// restart the level in 3 seconds:
 	survival_restarttimer = 3*TICRATE;
 	DPrintf("survival: SV_SurvivalAllDead()\n", survival_restarttimer);
 }
@@ -686,24 +686,87 @@ void SV_SurvivalCheck(void)
 		return;
 	}
 
-	bool alldead = true;
-	for (Players::iterator it = players.begin(); it != players.end(); it++) {
-		// don't count players not in the game or spectating:
-		if (!it->ingame() || it->spectator) {
-			continue;
+	if (sv_gametype == GM_COOP) {
+		// survival coop mode
+		bool alldead = true;
+		for (Players::iterator it = players.begin(); it != players.end(); it++) {
+			// don't count players not in the game or spectating:
+			if (!it->ingame() || it->spectator) {
+				continue;
+			}
+
+			// if any player has a life left, keep going:
+			if (it->survival_lives > 0) {
+				DPrintf("survival: player %d is still alive\n", it->id);
+				alldead = false;
+				break;
+			}
 		}
 
-		// if any player has a life left, keep going:
-		if (it->survival_lives > 0) {
-			DPrintf("survival: player %d is still alive\n", it->id);
-			alldead = false;
-			break;
+		if (alldead) {
+			// restart the level when all players are dead:
+			SV_SurvivalAllDead();
 		}
-	}
+	} else if (sv_gametype == GM_DM) {
+		// last man standing
+		int alive = 0;
+		player_t *last_man = nullptr;
+		for (Players::iterator it = players.begin(); it != players.end(); it++) {
+			// don't count players not in the game or spectating:
+			if (!it->ingame() || it->spectator) {
+				continue;
+			}
 
-	if (alldead) {
-		// restart the level when all players are dead:
-		SV_SurvivalAllDead();
+			// if any player has a life left, keep going:
+			if (it->survival_lives > 0) {
+				alive++;
+				last_man = &*it;
+			}
+		}
+
+		if (alive == 1) {
+			char msg[256 + 32];
+
+			// Tell the last man he won!
+			SV_MidPrint("You are the last man standing!\n", last_man, 5);
+
+			sprintf(msg, "%s is the last man standing!\n", last_man->userinfo.netname.c_str());
+			Printf(PRINT_MEDIUM, msg);
+
+			// Broadcast the message to all other players:
+			for (Players::iterator it = players.begin(); it != players.end(); it++) {
+				if (!it->ingame()) {
+					continue;
+				}
+				// Don't broadcast to the last man; he got his message already:
+				if (&*it == last_man) {
+					continue;
+				}
+
+				SV_MidPrint(msg, &*it, 5);
+			}
+
+			// reset the map:
+			SV_SurvivalAllDead();
+		} else if (alive == 0) {
+			Printf(PRINT_MEDIUM, "No man left standing!\n");
+
+			// Broadcast a message to all players:
+			for (Players::iterator it = players.begin(); it != players.end(); it++) {
+				if (!it->ingame()) {
+					continue;
+				}
+
+				SV_MidPrint("No man left standing!\n", &*it, 5);
+			}
+
+			// reset the map:
+			SV_SurvivalAllDead();
+		}
+	} else if (sv_gametype == GM_TEAMDM) {
+		// TODO
+	} else if (sv_gametype == GM_CTF) {
+		// TODO
 	}
 }
 
