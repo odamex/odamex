@@ -750,6 +750,7 @@ void SV_SurvivalStart(void)
 
 	if (count > 0) {
 		// reset the join timer:
+		DPrintf("survival: map loaded or restarted; survival_join_timer reset\n");
 		survival_join_timer = (15*TICRATE);
 	}
 }

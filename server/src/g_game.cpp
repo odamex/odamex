@@ -287,6 +287,8 @@ void G_PlayerFinishLevel (player_t &player)
 	}
 }
 
+EXTERN_CVAR(sv_survival)
+
 //
 // G_PlayerReborn
 // Called after a player dies
@@ -302,7 +304,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	if (!sv_keepkeys)
+	if (sv_survival || !sv_keepkeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;
