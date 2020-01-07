@@ -3964,13 +3964,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	if (!setting && player.spectator)
 	{
 		// We want to unspectate the player.
-
-		if (sv_survival) {
-			if (!SV_SurvivalJoin(player)) {
-				return;
-			}
-		}
-
 		if (level.time > player.joinafterspectatortime + TICRATE * 5)
 		{
 			// Check to see if there is an empty spot on the server
@@ -3993,6 +3986,12 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 
 					SV_ForceSetTeam(player, SV_GoodTeam());
 					SV_CheckTeam(player);
+				}
+			}
+
+			if (sv_survival) {
+				if (!SV_SurvivalJoin(player)) {
+					return;
 				}
 			}
 
