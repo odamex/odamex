@@ -2229,14 +2229,22 @@ void SV_ConnectClient()
 	if (challenge == LAUNCHER_CHALLENGE)  // for Launcher
 	{
 		SV_SendServerInfo();
+
+		DPrintf("%s requested server info\n", NET_AdrToString (net_from));
 		return;
 	}
 
 	if (challenge != CHALLENGE)
+	{
+		DPrintf("%s supplied an invalid challenge value\n", NET_AdrToString (net_from));
 		return;
+	}
 
 	if (!SV_IsValidToken(MSG_ReadLong()))
+	{
+		DPrintf("%s supplied an invalid token\n", NET_AdrToString (net_from));
 		return;
+	}
 
 	Printf(PRINT_HIGH, "%s is trying to connect...\n", NET_AdrToString (net_from));
 
@@ -2329,7 +2337,7 @@ void SV_ConnectClient()
 	cl->sequence = 0;
 	cl->last_sequence = -1;
 	cl->packetnum = 0;
-	
+
 	// generate a random string
 	std::stringstream ss;
 	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
@@ -2348,6 +2356,7 @@ void SV_ConnectClient()
 	// Check if the client uses the same version as the server.
 	if (!SV_CheckClientVersion(cl, it))
 	{
+		Printf(PRINT_LOW, "%s has an incompatible client version\n", NET_AdrToString(net_from));
 		SV_DropClient(*player);
 		return;
 	}
