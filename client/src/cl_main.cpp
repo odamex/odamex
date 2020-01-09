@@ -84,6 +84,9 @@
 #pragma optimize("",off)
 #endif
 
+// [jsd] prior to 0.8.2-rc5, this was 140 tics = 4 seconds
+const int connectretrytics = 5;
+
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
@@ -1567,7 +1570,7 @@ void CL_RequestConnectInfo(void)
 
 	if(!connecttimeout)
 	{
-		connecttimeout = 140;
+		connecttimeout = connectretrytics;
 
 		Printf(PRINT_HIGH, "connecting to %s\n", NET_AdrToString(serveraddr));
 
@@ -1851,7 +1854,7 @@ void CL_TryToConnect(DWORD server_token)
 
 	if (!connecttimeout)
 	{
-		connecttimeout = 140; // 140 tics = 4 seconds
+		connecttimeout = connectretrytics;
 
 		Printf(PRINT_HIGH, "challenging %s\n", NET_AdrToString(serveraddr));
 

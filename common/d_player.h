@@ -296,6 +296,8 @@ public:
 		bool        allow_rcon;     // allow remote admin
 		bool		displaydisconnect; // display disconnect message when disconnecting
 
+		DWORD		tokenid;	// tokenid sent to player for initial connection
+
 		huffman_server	compressor;	// denis - adaptive huffman compression
 
 		class download_t

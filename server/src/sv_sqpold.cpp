@@ -135,7 +135,7 @@ bool SV_IsValidToken(DWORD token)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -149,7 +149,7 @@ void SV_SendServerInfo()
 	size_t i;
 
 	SZ_Clear(&ml_message);
-	
+
 	MSG_WriteLong(&ml_message, CHALLENGE);
 	MSG_WriteLong(&ml_message, SV_NewToken());
 
