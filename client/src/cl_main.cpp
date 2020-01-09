@@ -1116,6 +1116,9 @@ BEGIN_COMMAND (spyname)
 	if (argc <= 1) {
 		if (spyplayername.length() > 0) {
 			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
+
+			// revert to not spying:
+			displayplayer_id = consoleplayer_id;
 		} else {
 			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
 		}
