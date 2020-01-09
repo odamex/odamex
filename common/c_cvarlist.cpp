@@ -79,6 +79,12 @@ CVAR_RANGE_FUNC_DECL(sv_berserk_pistol_ammo, "1", "Berserk mode - pistol start a
 CVAR(				sv_survival, "0", "Survival mode",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+CVAR(				sv_survival_join_timer, "15", "Survival mode join timer",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(				sv_maxlives, "1", "Survival mode number of lives",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 
 CVAR(				sv_activation_rate, "35", "Linedef activation rate limit in tics for manual doors and lifts.",
 					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)

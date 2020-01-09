@@ -80,7 +80,7 @@ void SV_ActorTarget(AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 
-void SV_SurvivalAllDead(void);
+void SV_SurvivalRestartLevel(void);
 void SV_SurvivalCheck(void);
 
 //
@@ -1041,7 +1041,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (!joinkill && sv_survival) {
 			if (tplayer->ingame() && !tplayer->spectator) {
 				tplayer->survival_lives--;
-				DPrintf("player %d was killed; now has %d lives left\n", tplayer->id, tplayer->survival_lives);
+				DPrintf("%s was killed; now has %d lives left\n", tplayer->userinfo.netname.c_str(), tplayer->survival_lives);
 
 				SV_SurvivalCheck();
 			}

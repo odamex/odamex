@@ -994,7 +994,7 @@ player_s::player_s()
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 	doreborn = false;
 
-	survival_lives = 1;
+	survival_lives = 0;
 }
 
 player_s &player_s::operator =(const player_s &other)

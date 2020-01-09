@@ -62,7 +62,7 @@ void CTF_SpawnFlag(flag_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
 
-void SV_SurvivalAllDead(void) {}
+void SV_SurvivalRestartLevel(void) {}
 void SV_SurvivalCheck(void) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")

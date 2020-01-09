@@ -329,7 +329,7 @@ CVAR_FUNC_IMPL (sv_vips)
 client_c clients;
 
 
-#define CLIENT_TIMEOUT 65 // 65 seconds
+#define CLIENT_TIMEOUT 15 // seconds
 
 void SV_UpdateConsolePlayer(player_t &player);
 
@@ -665,19 +665,33 @@ player_t &SV_FindPlayerByAddr(void)
 }
 
 EXTERN_CVAR(sv_survival)
+EXTERN_CVAR(sv_survival_join_timer)
+EXTERN_CVAR(sv_maxlives)
 
-int survival_restarttimer = 0;
+int survival_restart_timer = 0;
 int survival_join_timer = 0;
 
-void SV_SurvivalAllDead(void)
+void SV_SurvivalResetJoinTimer(void)
+{
+	survival_join_timer = (int) ((float)sv_survival_join_timer * TICRATE);
+	DPrintf("survival: SV_SurvivalResetJoinTimer()\n");
+}
+
+BEGIN_COMMAND(sv_survival_reset_timer)
+{
+	SV_SurvivalResetJoinTimer();
+}
+END_COMMAND(sv_survival_reset_timer)
+
+void SV_SurvivalRestartLevel(void)
 {
 	if (!sv_survival) {
 		return;
 	}
 
 	// restart the level in 3 seconds:
-	survival_restarttimer = 3*TICRATE;
-	DPrintf("survival: SV_SurvivalAllDead()\n", survival_restarttimer);
+	survival_restart_timer = 3 * TICRATE;
+	DPrintf("survival: SV_SurvivalRestartLevel()\n", survival_restart_timer);
 }
 
 void SV_SurvivalCheck(void)
@@ -688,7 +702,7 @@ void SV_SurvivalCheck(void)
 
 	if (sv_gametype == GM_COOP) {
 		// survival coop mode
-		bool alldead = true;
+		int alive = 0;
 		for (Players::iterator it = players.begin(); it != players.end(); it++) {
 			// don't count players not in the game or spectating:
 			if (!it->ingame() || it->spectator) {
@@ -697,15 +711,14 @@ void SV_SurvivalCheck(void)
 
 			// if any player has a life left, keep going:
 			if (it->survival_lives > 0) {
-				DPrintf("survival: player %d is still alive\n", it->id);
-				alldead = false;
-				break;
+				alive++;
 			}
 		}
 
-		if (alldead) {
+		SV_BroadcastPrintf(PRINT_HIGH, "survival: %d %s left\n", alive, alive == 1 ? "player" : "players");
+		if (alive == 0) {
 			// restart the level when all players are dead:
-			SV_SurvivalAllDead();
+			SV_SurvivalRestartLevel();
 		}
 	} else if (sv_gametype == GM_DM) {
 		// last man standing
@@ -724,13 +737,14 @@ void SV_SurvivalCheck(void)
 			}
 		}
 
+		SV_BroadcastPrintf(PRINT_HIGH, "survival: %d %s left\n", alive, alive == 1 ? "player" : "players");
 		if (alive == 1) {
 			char msg[256 + 32];
 
 			// Tell the last man he won!
-			SV_MidPrint("You are the last person standing!\n", last_man, 5);
+			SV_MidPrint("You are the last one standing!\n", last_man, 5);
 
-			sprintf(msg, "%s is the last person standing!\n", last_man->userinfo.netname.c_str());
+			sprintf(msg, "%s is the last one standing!\n", last_man->userinfo.netname.c_str());
 			Printf(PRINT_MEDIUM, msg);
 
 			// Broadcast the message to all other players:
@@ -738,7 +752,7 @@ void SV_SurvivalCheck(void)
 				if (!it->ingame()) {
 					continue;
 				}
-				// Don't broadcast to the last man; he got his message already:
+				// Don't broadcast to the last one; he got his message already:
 				if (&*it == last_man) {
 					continue;
 				}
@@ -747,9 +761,9 @@ void SV_SurvivalCheck(void)
 			}
 
 			// reset the map:
-			SV_SurvivalAllDead();
+			SV_SurvivalRestartLevel();
 		} else if (alive == 0) {
-			Printf(PRINT_MEDIUM, "No person left standing!\n");
+			Printf(PRINT_MEDIUM, "No one left standing!\n");
 
 			// Broadcast a message to all players:
 			for (Players::iterator it = players.begin(); it != players.end(); it++) {
@@ -757,11 +771,11 @@ void SV_SurvivalCheck(void)
 					continue;
 				}
 
-				SV_MidPrint("No person left standing!\n", &*it, 5);
+				SV_MidPrint("No one left standing!\n", &*it, 5);
 			}
 
 			// reset the map:
-			SV_SurvivalAllDead();
+			SV_SurvivalRestartLevel();
 		}
 	} else if (sv_gametype == GM_TEAMDM) {
 		// TODO
@@ -789,8 +803,8 @@ bool SV_SurvivalJoin(player_t &player)
 			}
 		} else {
 			// no players in game; we're the first:
-			survival_join_timer = (15 * TICRATE);
-			DPrintf("survival: first player joined; survival_join_timer reset\n");
+			DPrintf("survival: first player joined\n");
+			SV_SurvivalResetJoinTimer();
 		}
 	} else if (sv_gametype == GM_DM) {
 		// [jsd] prevent joining a game in progress if coming out of spectate
@@ -803,14 +817,15 @@ bool SV_SurvivalJoin(player_t &player)
 			}
 		} else if (count == 1) {
 			// one player in the game already; time to start the join timer:
-			survival_join_timer = (15 * TICRATE);
-			DPrintf("survival: second player joined; survival_join_timer started\n");
+			DPrintf("survival: second player joined\n");
+			SV_SurvivalResetJoinTimer();
 		} else {
 			// no players in game; we're the first:
 			DPrintf("survival: first player joined; waiting for more players\n");
 		}
 	}
 
+	player.survival_lives = sv_maxlives.asInt();
 	return true;
 }
 
@@ -828,14 +843,14 @@ void SV_SurvivalStart(void)
 			}
 
 			it->joinafterspectatortime = -(TICRATE * 5);
-			it->survival_lives = 1;
+			it->survival_lives = sv_maxlives.asInt();
 			count++;
 		}
 
 		if (count > 0) {
 			// reset the join timer:
-			DPrintf("survival: map loaded or restarted; survival_join_timer reset\n");
-			survival_join_timer = (15 * TICRATE);
+			DPrintf("survival: map loaded or restarted\n");
+			SV_SurvivalResetJoinTimer();
 		}
 	} else if (sv_gametype == GM_DM) {
 		int count = 0;
@@ -845,14 +860,14 @@ void SV_SurvivalStart(void)
 			}
 
 			it->joinafterspectatortime = -(TICRATE * 5);
-			it->survival_lives = 1;
+			it->survival_lives = sv_maxlives.asInt();
 			count++;
 		}
 
 		if (count >= 2) {
 			// reset the join timer:
-			DPrintf("survival: map loaded or restarted; survival_join_timer reset\n");
-			survival_join_timer = (15 * TICRATE);
+			DPrintf("survival: map loaded or restarted\n");
+			SV_SurvivalResetJoinTimer();
 		}
 	}
 }
@@ -5064,12 +5079,12 @@ void SV_IntermissionTimeCheck()
 
 void Survival_RunTics(void)
 {
-	if (survival_restarttimer) {
-		if (--survival_restarttimer <= 0) {
+	if (survival_restart_timer) {
+		if (--survival_restart_timer <= 0) {
 			// restart the level after all players are dead:
-			DPrintf("survival: G_DoResetLevel()\n", survival_restarttimer);
+			DPrintf("survival: G_DoResetLevel()\n", survival_restart_timer);
 			G_DoResetLevel(false);
-			survival_restarttimer = 0;
+			survival_restart_timer = 0;
 		}
 	}
 
