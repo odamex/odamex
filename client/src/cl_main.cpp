@@ -85,7 +85,7 @@
 #endif
 
 // [jsd] prior to 0.8.2-rc5, this was 140 tics = 4 seconds
-const int connectretrytics = 5;
+const int connectretrytics = 70;
 
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
