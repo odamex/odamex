@@ -736,11 +736,12 @@ void A_Look (AActor *actor)
 		{
 			if (P_CheckSight(actor, actor->target))
 				goto seeyou;
+			else
+				actor->target = AActor::AActorPtr();
 		}
 		else
 			goto seeyou;
 	}
-
 
 	if (!P_LookForPlayers (actor, false))
 		return;
