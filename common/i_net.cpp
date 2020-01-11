@@ -606,6 +606,10 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void SV_SendPackets(void);
 
+#if SERVER_APP && SERVER_HISTOGRAM
+int sv_messages[256] = {0};
+#endif
+
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
 #if 0
@@ -616,6 +620,11 @@ void MSG_WriteMarker (buf_t *b, svc_t c)
 
     b->SetMarker();
 	b->WriteByte((byte)c);
+
+#if SERVER_APP && SERVER_HISTOGRAM
+	// record count of messages of this type:
+	sv_messages[c] += 1;
+#endif
 }
 
 //
