@@ -244,15 +244,15 @@ public:
 	}
 
 	// find the highest marker <= maxsize:
-	size_t FloorMarker(size_t maxsize) const
+	size_t FloorMarker(size_t maxsize)
 	{
 		if (maxsize >= cursize) {
 			return cursize;
 		}
 
 		size_t m = 0;
-		std::vector<size_t>::const_iterator it = markers.cbegin();
-		while (it != markers.cend()) {
+		std::vector<size_t>::iterator it = markers.begin();
+		while (it != markers.end()) {
 			if (*it > maxsize) {
 				return m;
 			}
@@ -270,8 +270,8 @@ public:
 
 		// subtract marker offsets and trim those no longer needed:
 		{
-			std::vector<size_t>::const_iterator it = markers.cbegin(), last = markers.cbegin();
-			while (it != markers.cend()) {
+			std::vector<size_t>::iterator it = markers.begin(), last = markers.begin();
+			while (it != markers.end()) {
 				int m = *it;
 				m -= amount;
 				if (m >= 0) {
@@ -280,7 +280,7 @@ public:
 				}
 				it++;
 			}
-			markers.erase(markers.cbegin(), last);
+			markers.erase(markers.begin(), last);
 		}
 
 		// mutate marker offsets remaining and subtract offset amount:
