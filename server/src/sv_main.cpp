@@ -2233,8 +2233,10 @@ void SV_SendLoadMap(const std::vector<std::string>& resource_files,
 	MSG_WriteMarker(buf, svc_loadmap);
 
 	// send list of wads (skip over resource_files[0] == odamex.wad)
-	MSG_WriteByte(buf, std::min<size_t>(resource_files.size() - 1, 255));
-	for (size_t i = 1; i < std::min<size_t>(resource_files.size(), 256); i++)
+	MSG_WriteByte(buf, resource_files.size() - 1);
+
+	// start from resource_files[1], skipping odamex.wad (resource_files[0])
+	for (size_t i = 1; i < resource_files.size(); i++)
 	{
 		MSG_WriteString(buf, Res_CleanseFilename(resource_files[i]).c_str());
 		MSG_WriteString(buf, resource_hashes[i].c_str());

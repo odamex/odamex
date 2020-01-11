@@ -1004,7 +1004,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
 
-	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
+	size_t resource_file_count = resource_file_names.size();
 	MSG_WriteByte	(netbuffer, resource_file_count - 1);
 
 	for (size_t i = 1; i < resource_file_count; i++)
@@ -1158,7 +1158,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
 
-	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
+	size_t resource_file_count = resource_file_names.size();
 	MSG_WriteByte(netbuffer, resource_file_count - 1);
 
 	for (size_t i = 1; i < resource_file_count; i++)
@@ -1477,7 +1477,7 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	// write resource file info
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 
-	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
+	size_t resource_file_count = resource_file_names.size();
 	arc << (byte)(resource_file_count - 1);
 	for (size_t i = 1; i < resource_file_count; i++)
 		arc << Res_CleanseFilename(resource_file_names[i]).c_str();

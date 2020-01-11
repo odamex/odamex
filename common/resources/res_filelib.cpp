@@ -762,13 +762,26 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 		resource_filenames.push_back(iwad_full_filename);
 
 	// find where the PWADs are in the input array
-	size_t pwad_start_position = std::max<int>(odamex_wad_position, iwad_position) + 1;
 	size_t pwad_end_position = old_resource_filenames.size();
+	size_t pwad_start_position = 0;
+	if (odamex_wad_position != invalid_position)
+		pwad_start_position = std::max<size_t>(pwad_start_position, odamex_wad_position + 1);
+	if (iwad_position != invalid_position)
+		pwad_start_position = std::max<size_t>(pwad_start_position, iwad_position + 1);
 
 	if (W_IsIWADShareware(iwad_filename) && pwad_end_position > pwad_start_position)
 	{
 		Printf(PRINT_HIGH, "You cannot load additional resource files with the shareware version. Register!\n");
 		pwad_end_position = pwad_start_position;
+	}
+
+	// [SL] Cap the number of resource files to 255. The server sends the count
+	// the count of resource files to clients as a uint8_t.
+	static const size_t max_resource_files = 255;
+	if (pwad_end_position - pwad_start_position + 1 > max_resource_files)
+	{
+		Printf(PRINT_HIGH, "A maximum of %d resource files can be loaded!\n", max_resource_files);
+		pwad_end_position = max_resource_files + pwad_start_position - 1;
 	}
 
 	// add any PWADs to the validated filename array, or add them to the missing filename array
