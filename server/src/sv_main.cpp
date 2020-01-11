@@ -1649,7 +1649,8 @@ void SV_UpdateHiddenMobj (void)
 	// denis - todo - throttle this
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
-	const int max_updated = sv_mobjupdatespertic.asInt();
+	int max_updated = sv_mobjupdatespertic.asInt();
+	if (max_updated < 16) max_updated = 16;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1669,7 +1670,7 @@ void SV_UpdateHiddenMobj (void)
 			if(mo && !mo->WasDestroyed())
 				updated += SV_AwarenessUpdate(pl, mo);
 
-			if(max_updated >= 16 && updated > max_updated)
+			if(updated > max_updated)
 				break;
 		}
 
@@ -1677,7 +1678,7 @@ void SV_UpdateHiddenMobj (void)
 		{
 			updated += SV_AwarenessUpdate(pl, mo);
 
-			if(max_updated >= 16 && updated > max_updated)
+			if(updated > max_updated)
 				break;
 		}
 	}
