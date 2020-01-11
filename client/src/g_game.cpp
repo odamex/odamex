@@ -950,13 +950,7 @@ void G_Ticker (void)
 
 	if (connected && !simulated_connection)
 	{
-		// [jsd] there is a practical upper limit to the number of packets we can ack in one UDP response packet.
-		// 1420 bytes / 5 bytes per ack = 284 max acks per packet, but we shave that down quite a bit to make
-		// room for other client updates. Using nuts.wad as a test case, during steady state under high load server
-		// will send about 30-40 packets per gametic with occasional very high peaks above 300 sometimes up to 600.
-		int packets = 0;
-		const int max_packets = 200;
-		while ((packet_size = NET_GetPacket()) && packets++ <= max_packets)
+		while (packet_size = NET_GetPacket())
 		{
 			// denis - don't accept candy from strangers
 			if(!NET_CompareAdr(serveraddr, net_from))
