@@ -280,8 +280,8 @@ CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a tea
 // Netcode Settings
 // --------------
 
-CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode in KiB/s",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 131072.0f)
+CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode",
+					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 2000.0f)
 
 CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
 					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)

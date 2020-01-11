@@ -160,13 +160,13 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 }
 #endif
 
-EXTERN_CVAR(sv_waddownloadcap)
-
 //
 // SV_SendPacket
 //
 bool SV_SendPacket(player_t &pl)
 {
+	int				bps = 0; // bytes per second, not bits per second
+
 	client_t *cl = &pl.client;
 
 	if (cl->reliablebuf.overflowed)
@@ -180,9 +180,9 @@ bool SV_SendPacket(player_t &pl)
 		if (cl->netbuf.overflowed)
 			SZ_Clear(&cl->netbuf);
 
-	size_t rel = cl->reliablebuf.cursize, unr = cl->netbuf.cursize;
-	int iters = 0;
-	int sentrel = 0, sentunr = 0;
+	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
+	if (cl->reliablebuf.cursize + cl->netbuf.cursize == 0)
+		return true;
 
 #ifdef USE_BOOST
 	if (sendd.get() == nullptr) {
@@ -194,112 +194,69 @@ bool SV_SendPacket(player_t &pl)
 #define BUFREF(x) (x)
 #endif
 
-	// send several packets while we have data to send:
-	const int cl_rate = cl->rate * 1000;
-	const int max_iters = (cl_rate / NET_PACKET_MAX);
-	while (cl->reliablebuf.cursize + cl->netbuf.cursize > 0) {
-		// determine our current bandwidth:
-		int bps = (int) ((double) ((cl->unreliable_bps + cl->reliable_bps) * TICRATE) / (double) ((gametic % 35) + 1));
-		if (bps > cl_rate) {
-			cl->netbuf.clear();
-			break;
-		}
+	sendd->clear();
 
-		// find the max message size we could send that keeps us at or below the rate limit:
-		int remaining_budget = cl_rate - bps;
-		int pkt_remaining = MIN((int)NET_PACKET_MAX, remaining_budget);
+	// save the reliable message
+	// it will be retransmited, if it's missed
 
-		// start building the packet:
+	// the end of the buffer is reached
+	if (cl->relpackets.cursize + cl->reliablebuf.cursize >= cl->relpackets.maxsize())
+		cl->relpackets.cursize = 0;
 
-		// 1. fill up packet with as much reliable-channel data as possible:
-		size_t reliablesize = MIN(cl->reliablebuf.cursize, (size_t)pkt_remaining);
-		// trim off to the message boundary within the byte stream:
-		size_t reliabletrim = cl->reliablebuf.FloorMarker(reliablesize);
+	// copy the beginning and the size of a packet to the buffer
+	cl->packetbegin[cl->packetnum] = cl->relpackets.cursize;
+	cl->packetsize[cl->packetnum] = cl->reliablebuf.cursize;
+	cl->packetseq[cl->packetnum] = cl->sequence;
 
-		// save the reliable message
-		// it will be retransmitted, if it's missed
+	if (cl->reliablebuf.cursize)
+		SZ_Write (&cl->relpackets, cl->reliablebuf.data, cl->reliablebuf.cursize);
 
-		// the end of the buffer is reached
-		if (cl->relpackets.cursize + reliabletrim >= cl->relpackets.maxsize())
-			cl->relpackets.cursize = 0;
 
-		// copy the beginning and the size of a packet to the buffer
-		cl->packetbegin[cl->packetnum] = cl->relpackets.cursize;
-		cl->packetsize[cl->packetnum] = reliabletrim;
-		cl->packetseq[cl->packetnum] = cl->sequence;
+	cl->packetnum++; // packetnum will never be more than 255
+	                 // because sizeof(packetnum) == 1. Don't need
+	                 // to use &0xff. Cool, eh? ;-)
+	// copy sequence
+	MSG_WriteLong(BUFREF(sendd), cl->sequence++);
 
-		if (reliabletrim)
-			SZ_Write(&cl->relpackets, cl->reliablebuf.data, reliabletrim);
+	// copy the reliable message to the packet first
+    if (cl->reliablebuf.cursize)
+    {
+		SZ_Write (BUFREF(sendd), cl->reliablebuf.data, cl->reliablebuf.cursize);
+		cl->reliable_bps += cl->reliablebuf.cursize;
+    }
 
-		// compose the packet's data:
-		sendd->clear();
+	// add the unreliable part if space is available and rate value
+	// allows it
+	if (gametic % 35)
+	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
 
-		cl->packetnum++; // packetnum will never be more than 255
-		// because sizeof(packetnum) == 1. Don't need
-		// to use &0xff. Cool, eh? ;-)
+    if (bps < cl->rate*1000)
 
-		// copy sequence
-		MSG_WriteLong(BUFREF(sendd), cl->sequence++);
+	  if (cl->netbuf.cursize && (sendd->maxsize() - sendd->cursize > cl->netbuf.cursize) )
+	  {
+         SZ_Write (BUFREF(sendd), cl->netbuf.data, cl->netbuf.cursize);
+	     cl->unreliable_bps += cl->netbuf.cursize;
+	  }
 
-		// copy the reliable message to the packet first:
-		if (reliabletrim) {
-			SZ_Write(BUFREF(sendd), cl->reliablebuf.data, reliabletrim);
-			// trim out the messages we wrote from the reliablebuf:
-			cl->reliablebuf.TrimLeft(reliabletrim);
-			// record for rate limiting:
-			cl->reliable_bps += reliabletrim;
-			sentrel += reliabletrim;
-		}
+	SZ_Clear(&cl->netbuf);
+	SZ_Clear(&cl->reliablebuf);
 
-		// check if any space left for unreliable messages:
-		pkt_remaining -= (int)sendd->cursize;
-		size_t unreliabletrim = 0;
-		if (pkt_remaining > 0 && cl->netbuf.cursize > 0) {
-			// find the max message size we could send that keeps us at or below the rate limit:
-			size_t bps = (size_t) ((double) ((cl->unreliable_bps + cl->reliable_bps) * TICRATE) /
-								   (double) ((gametic % 35) + 1));
+	// compress the packet, but not the sequence id
+	if (sendd->size() > sizeof(int))
+		SV_CompressPacket(*BUFREF(sendd), sizeof(int), cl);
 
-			size_t remaining_budget = cl_rate - bps;
-			size_t unreliablesize = MIN((size_t) pkt_remaining, remaining_budget);
-
-			// find the highest message marker before the remaining byte count offset:
-			unreliabletrim = cl->netbuf.FloorMarker(unreliablesize);
-
-			// add the unreliable part:
-			if (unreliabletrim) {
-				SZ_Write(BUFREF(sendd), cl->netbuf.data, unreliabletrim);
-				// trim out the messages we wrote from the unreliablebuf:
-				cl->netbuf.TrimLeft(unreliabletrim);
-				// record for rate limiting:
-				cl->unreliable_bps += unreliabletrim;
-				sentunr += unreliabletrim;
-			}
-		}
-
-#if 1
-		// compress the packet, but not the sequence id
-		if (sendd->size() > sizeof(int))
-			SV_CompressPacket(*BUFREF(sendd), sizeof(int), cl);
-#endif
-
-		if (log_packetdebug) {
-			Printf(PRINT_LOW | PRINT_RCON_MUTE, "SV_SendPacket: ply %3u, tic %07u, rel %4u/%4u, unr %4u/%4u, size %d\n",
-					pl.id, gametic, reliabletrim, rel, unreliabletrim, unr, sendd->size());
-		}
-
-#ifdef SIMULATE_LATENCY
-		SV_SendPacketDelayed(BUFREF(sendd), pl);
-#else
-		NET_SendPacket(*BUFREF(sendd), cl->address);
-#endif
-
-		// put a cap on this so we don't get stuck building enormous chains of packets:
-		if (++iters >= max_iters) {
-			cl->netbuf.clear();
-			break;
-		}
+	if (log_packetdebug)
+	{
+		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04u, tic %07u, time %011u\n",
+			   pl.id, cl->sequence - 1, sendd->cursize, gametic, I_MSTime());
 	}
 
+#ifdef SIMULATE_LATENCY
+	SV_SendPacketDelayed(BUFREF(sendd), pl);
+#else
+
+	NET_SendPacket(*BUFREF(sendd), cl->address);
+#endif
 	return true;
 }
 
@@ -353,10 +310,9 @@ void SV_AcknowledgePacket(player_t &player)
 				return;
 			}
 
-			if (cl->reliablebuf.cursize > 600) {
+			if (cl->reliablebuf.cursize > 600)
 				SV_SendPacket(player);
-				//DPrintf("player %d retransmit sequence %d\n", player.id, sequence);
-			}
+
 		}
 	}
 

@@ -334,11 +334,11 @@ public:
 			lastcmdtic = 0;
 			lastclientcmdtic = 0;
 
+
 			if (serverside) {
-				netbuf = 10 * 1024 * 1024;
-				reliablebuf = 10 * 1024 * 1024;
-				// [jsd] this is enough space for a 256 packet backlog, where a packet is 1500 bytes:
-				relpackets = 375 * 1024;
+				netbuf = MAX_UDP_PACKET;
+				reliablebuf = MAX_UDP_PACKET;
+				relpackets = MAX_UDP_PACKET * 50;
 			}
 			digest = "";
 			allow_rcon = false;

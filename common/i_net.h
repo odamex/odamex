@@ -29,10 +29,9 @@
 #include "huffman.h"
 
 #include <string>
-#include <vector>
 
 // Max packet size to send and receive, in bytes
-#define	MAX_UDP_PACKET 65536
+#define	MAX_UDP_PACKET 8192
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
@@ -42,9 +41,6 @@
 #define CHALLENGE 5560020  // challenge
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
-
-// [jsd] 1500 MTU minus UDP header and our packet header
-#define NET_PACKET_MAX (1500 - (64 + 12))
 
 extern int   localport;
 extern int   msg_badread;
@@ -234,75 +230,7 @@ public:
         ,BT_SEND // From end
     } seek_loc_t;
 
-    // offsets of message markers:
-    std::vector<size_t> markers;
-
 public:
-	void SetMarker()
-	{
-		markers.push_back(cursize);
-	}
-
-	// find the highest marker <= maxsize:
-	size_t FloorMarker(size_t maxsize)
-	{
-		if (maxsize >= cursize) {
-			return cursize;
-		}
-
-		size_t m = 0;
-		std::vector<size_t>::iterator it = markers.begin();
-		while (it != markers.end()) {
-			if (*it > maxsize) {
-				return m;
-			}
-			m = *(it++);
-		}
-		return cursize;
-	}
-
-	void TrimLeft(size_t amount)
-	{
-		if (amount >= cursize) {
-			clear();
-			return;
-		}
-
-		// subtract marker offsets and trim those no longer needed:
-		{
-			std::vector<size_t>::iterator it = markers.begin(), last = markers.begin();
-			while (it != markers.end()) {
-				int m = *it;
-				m -= amount;
-				if (m >= 0) {
-					last = it;
-					break;
-				}
-				it++;
-			}
-			markers.erase(markers.begin(), last);
-		}
-
-		// mutate marker offsets remaining and subtract offset amount:
-		{
-			std::vector<size_t>::iterator it = markers.begin();
-			while (it != markers.end()) {
-				int m = *it;
-				m -= amount;
-				*it = m;
-				it++;
-			}
-		}
-
-		// move all data at the trim point to the beginning:
-		cursize -= amount;
-		if (readpos >= amount) {
-			readpos = readpos - amount;
-		} else {
-			readpos = 0;
-		}
-		memcpy(data, data+amount, cursize);
-	}
 
 	void WriteByte(byte b)
 	{
@@ -515,7 +443,6 @@ public:
 		cursize = 0;
 		readpos = 0;
 		overflowed = false;
-		markers.clear();
 	}
 
 	void resize(size_t len, bool clearbuf = true)
@@ -573,7 +500,6 @@ public:
 		cursize = other.cursize;
 		overflowed = other.overflowed;
 		readpos = other.readpos;
-		markers = other.markers;
 
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)

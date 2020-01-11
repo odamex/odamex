@@ -550,7 +550,7 @@ void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
 
 		// This message could get huge, so send it
 		// when it grows to a specific size.
-		if (cl->reliablebuf.cursize >= NET_PACKET_MAX)
+		if (cl->reliablebuf.cursize >= 1024)
 		{
 			MSG_WriteBool(&cl->reliablebuf, false); // end packet
 			SV_SendPacket(player);

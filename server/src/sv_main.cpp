@@ -329,7 +329,7 @@ CVAR_FUNC_IMPL (sv_vips)
 client_c clients;
 
 
-#define CLIENT_TIMEOUT 15 // seconds
+#define CLIENT_TIMEOUT 65 // 65 seconds
 
 void SV_UpdateConsolePlayer(player_t &player);
 
@@ -1947,11 +1947,9 @@ void SV_ClientFullUpdate(player_t &pl)
 
 		SV_SendUserInfo(*it, cl);
 
-#if 0
 		if (cl->reliablebuf.cursize >= 600)
 			if (!SV_SendPacket(pl))
 				return;
-#endif
 	}
 
 	// update warmup state
@@ -1994,12 +1992,9 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	// update sectors
 	SV_UpdateSectors(cl);
-
-#if 0
 	if (cl->reliablebuf.cursize >= 600)
 		if(!SV_SendPacket(pl))
 			return;
-#endif
 
 	// update switches
 	P_UpdateButtons(cl);
@@ -2341,7 +2336,6 @@ void SV_ConnectClient()
 	cl->lastclientcmdtic = 0;
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
-	cl->tokenid = tokenid;
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
@@ -3359,11 +3353,9 @@ void SV_UpdateMissiles(player_t &pl)
 				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
 			}
 
-#if 0
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
                     return;
-#endif
 		}
     }
 }
@@ -3438,13 +3430,11 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteShort(&cl->netbuf, mo->target->netid);
 
-#if 0
 			if (cl->netbuf.cursize >= 1024)
 			{
 				if (!SV_SendPacket(pl))
 					return;
 			}
-#endif
 		}
 	}
 }
@@ -4606,37 +4596,8 @@ void SV_SendPlayerInfo(player_t &player);
 
 void SV_ParseCommands(player_t &player)
 {
-	// [jsd]: detect connection attempts from players we think are live but they think are not:
-	if (net_message.size() >= 4) {
-		// record our read position:
-		int readpos = net_message.readpos;
-
-		int sequence = MSG_ReadLong();
-		if (sequence == CHALLENGE) {
-			// double check the server_token to verify it is indeed a CHALLENGE packet and not a regular cmd packet
-			// that just happened to have a sequence number of (CHALLENGE = 5,560,020):
-			if (net_message.size() > readpos + 4) {
-				DWORD tokenid = MSG_ReadLong();
-				if (tokenid == player.client.tokenid) {
-					// we got back the same tokenid so drop this client:
-					SV_DropClient(player);
-					return;
-				}
-			}
-		} else if (sequence == LAUNCHER_CHALLENGE) {
-			if (net_message.size() == 4) {
-				// LAUNCHER_CHALLENGE packet is always exactly 4 bytes:
-				SV_DropClient(player);
-				return;
-			}
-		}
-
-		// rewind back to where we were:
-		net_message.readpos = readpos;
-	}
-
-	while(validplayer(player))
-	{
+	 while(validplayer(player))
+	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
 		if(cmd == (clc_t)-1)
@@ -4921,7 +4882,7 @@ void SV_DownloadOriginal()
 
 		// create multiple smaller wadchunk messages so that we can fit reliablebuf + netbuf + wadchunks
 		// into a single packet if need be:
-		static char buff[(NET_PACKET_MAX / 4) - (7 + 5)];
+		static char buff[MAX_UDP_PACKET];
 
 		// maximum rate client can download at (in bytes per tic)
 		const int download_rate = (int) (MIN((float) sv_waddownloadcap, (float) cl->rate) * 1000.0 / TICRATE);

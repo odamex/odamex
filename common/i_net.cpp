@@ -612,13 +612,10 @@ int sv_messages[256] = {0};
 
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
-#if 0
     //[Spleen] final check to prevent huge packets from being sent to players
-    if (b->cursize >= NET_PACKET_ROLLOVER)
+    if (b->cursize > 600)
         SV_SendPackets();
-#endif
 
-    b->SetMarker();
 	b->WriteByte((byte)c);
 
 #if SERVER_APP && SERVER_HISTOGRAM
