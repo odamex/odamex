@@ -37,7 +37,6 @@ bool Res_MusicIsMus(const uint8_t* data, size_t length);
 bool Res_MusicIsMidi(const uint8_t* data, size_t length);
 bool Res_MusicIsOgg(const uint8_t* data, size_t length);
 bool Res_MusicIsMp3(const uint8_t* data, size_t length);
-bool Res_MusicIsWave(const uint8_t* data, size_t length);
 
 
 // ============================================================================

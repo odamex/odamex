@@ -121,8 +121,10 @@ bool Res_ValidateSoundData(const uint8_t* data, size_t length)
 {
 	if (length > 8)
 	{
-		uint16_t magic = LESHORT(*(uint16_t*)((uint8_t*)data + 0));
-		return magic == 0x0003;
+		if (LESHORT(*(uint16_t*)((uint8_t*)data + 0)) == 0x0003)
+			return true;		// DMX sound effect
+		if (data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F')
+			return true;		// WAVE sound effect
 	}
 	return false;
 }
@@ -187,21 +189,6 @@ bool Res_MusicIsMp3(const uint8_t* data, size_t length)
 
 	// MP3 frame sync starts the file
 	if (length > 2 && data[0] == 0xFF && (data[1] & 0xE0))
-		return true;
-
-	return false;
-}
-
-
-//
-// Res_MusicIsWave()
-//
-// Determines if a music lump is in the WAVE/RIFF format based on its header.
-//
-bool Res_MusicIsWave(const uint8_t* data, size_t length)
-{
-	if (length > 4 && data[0] == 'R' && data[1] == 'I' &&
-		data[2] == 'F' && data[3] == 'F')
 		return true;
 
 	return false;
