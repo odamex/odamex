@@ -607,6 +607,13 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	//      a column-of-real-pixels sooner.
 	int xinc = (patch->width() << FRACBITS) / destwidth;
 	int yinc = (patch->height() << FRACBITS) / destheight;
+	// [jsd] only adding 1 in cases where scaling is non-integral:
+	if (xinc & (FRACUNIT-1)) {
+		xinc++;
+	}
+	if (yinc & (FRACUNIT-1)) {
+		yinc++;
+	}
 	int xmul = (destwidth << FRACBITS) / patch->width();
 	int ymul = (destheight << FRACBITS) / patch->height();
 
