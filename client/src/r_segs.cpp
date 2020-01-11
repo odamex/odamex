@@ -272,6 +272,26 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 	}
 
+#if 1
+	for (int x = start; x <= stop; x++)
+	{
+		if (calc_light)
+		{
+			int light_index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+			dcol.colormap = basecolormap.with(walllights[light_index]);
+			rw_light += rw_lightstep;
+		}
+
+		dcol.x = x;
+		dcol.yl = top[x];
+		dcol.yh = bottom[x];
+		dcol.source = posts[x];
+		colblast();
+	}
+
+#else
+	// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
+	// on the screen. This is to make better use of spatial locality in the cache.
 	#define BLOCKBITS 6 
 	#define BLOCKSIZE (1 << BLOCKBITS)
 	#define BLOCKMASK (BLOCKSIZE - 1)
@@ -288,8 +308,6 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 	}
 
-	// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
-	// on the screen. This is to make better use of spatial locality in the cache.
 	for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
 	{
 		int blockstartx = bx;
@@ -315,8 +333,8 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 				colblast();
 			}
 		}
-
 	}
+#endif	// if 0
 }
 
 
@@ -563,8 +581,8 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	// draw the columns
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true);
 
-	for (int x = x1; x <= x2; x++)
-		ds->midposts[x] = NULL;
+	// Mark these columns as having been drawn by setting the midpost ptr to NULL for each column
+	memset(ds->midposts + x1, 0, (x2 - x1 + 1) * sizeof(ds->midposts));
 }
 
 
@@ -575,6 +593,7 @@ static fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2)
 
 	return FLOAT2FIXED(sqrt(dx*dx + dy*dy));
 }
+
 
 //
 // R_PrepWall

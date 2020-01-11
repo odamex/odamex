@@ -645,8 +645,7 @@ void AM_loadPics(void)
 	{
 		char namebuf[9];
 		sprintf(namebuf, "AMMNUM%d", i);
-		const ResourceId res_id = Res_GetResourceId(namebuf, patches_directory_name);
-		marknums[i] = Res_CacheTexture(res_id, PU_STATIC);
+		marknums[i] = Res_CacheTexture(namebuf, PATCH, PU_STATIC);
 	}
 }
 

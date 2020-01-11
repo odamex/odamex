@@ -1421,10 +1421,10 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	const Texture* l_texture = Res_CacheTexture("LSLIDE", patches_directory_name);
-	const Texture* m_texture = Res_CacheTexture("MSLIDE", patches_directory_name);
-	const Texture* r_texture = Res_CacheTexture("RSLIDE", patches_directory_name);
-	const Texture* c_texture = Res_CacheTexture("CSLIDE", patches_directory_name);
+	const Texture* l_texture = Res_CacheTexture("LSLIDE", PATCH);
+	const Texture* m_texture = Res_CacheTexture("MSLIDE", PATCH);
+	const Texture* r_texture = Res_CacheTexture("RSLIDE", PATCH);
+	const Texture* c_texture = Res_CacheTexture("CSLIDE", PATCH);
 	
 	screen->DrawTextureClean(l_texture, x, y);
 	for (int i = 1; i < 11; i++)
@@ -1443,11 +1443,11 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	const Texture* l_texture = Res_CacheTexture("LSLIDE", patches_directory_name);
-	const Texture* m_texture = Res_CacheTexture("MSLIDE", patches_directory_name);
-	const Texture* r_texture = Res_CacheTexture("RSLIDE", patches_directory_name);
-	const Texture* g_texture = Res_CacheTexture("GSLIDE", patches_directory_name);
-	const Texture* o_texture = Res_CacheTexture("OSLIDE", patches_directory_name);
+	const Texture* l_texture = Res_CacheTexture("LSLIDE", PATCH);
+	const Texture* m_texture = Res_CacheTexture("MSLIDE", PATCH);
+	const Texture* r_texture = Res_CacheTexture("RSLIDE", PATCH);
+	const Texture* g_texture = Res_CacheTexture("GSLIDE", PATCH);
+	const Texture* o_texture = Res_CacheTexture("OSLIDE", PATCH);
 
 	screen->DrawTextureClean(l_texture, x, y);
 
@@ -1491,7 +1491,7 @@ void M_OptDrawer (void)
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	const Texture* title_texture = Res_CacheTexture(CurrentMenu->title, patches_directory_name);
+	const Texture* title_texture = Res_CacheTexture(CurrentMenu->title, PATCH);
 	screen->DrawTextureClean(title_texture, 160 - title_texture->mWidth / 2, 10);
 
 	y = 15 + title_texture->mHeight;
@@ -1536,7 +1536,7 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 			{
-				const Texture* texture = Res_CacheTexture("LITLCURS", patches_directory_name);
+				const Texture* texture = Res_CacheTexture("LITLCURS", PATCH);
 				screen->DrawTextureClean(texture, item->a.selmode * 104 + 8, y);
 			}
 		}
@@ -1691,7 +1691,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				const Texture* texture = Res_CacheTexture("LITLCURS", patches_directory_name);
+				const Texture* texture = Res_CacheTexture("LITLCURS", PATCH);
 				screen->DrawTextureClean(texture, CurrentMenu->indent + 3, y);
 			}
 		}
@@ -1703,13 +1703,13 @@ void M_OptDrawer (void)
 
 	if (CanScrollUp)
 	{
-		const Texture* texture = Res_CacheTexture("LITLUP", patches_directory_name);
+		const Texture* texture = Res_CacheTexture("LITLUP", PATCH);
 		screen->DrawTextureClean(texture, 3, ytop);
 	}
 
 	if (CanScrollDown)
 	{
-		const Texture* texture = Res_CacheTexture("LITLDN", patches_directory_name);
+		const Texture* texture = Res_CacheTexture("LITLDN", PATCH);
 		screen->DrawTextureClean(texture, 3, 190);
 	}
 }

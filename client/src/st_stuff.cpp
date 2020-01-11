@@ -1324,13 +1324,14 @@ void ST_Drawer()
 
 static const Texture* LoadFaceGraphic(const char* name)
 {
-	if (Res_CheckResource(name, patches_directory_name))
-		return Res_CacheTexture(name, sprites_directory_name, PU_STATIC);
+	const ResourceId res_id = Res_GetTextureResourceId(name, SPRITE);
+	if (res_id != ResourceId::INVALID_ID)
+		return Res_CacheTexture(res_id, PU_STATIC);
 
 	char othername[9];
 	strcpy(othername, name);
 	othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-	return Res_CacheTexture(othername, sprites_directory_name, PU_STATIC);
+	return Res_CacheTexture(othername, SPRITE, PU_STATIC);
 }
 
 void ST_loadGraphics(void)
@@ -1345,10 +1346,10 @@ void ST_loadGraphics(void)
 	for (i=0;i<10;i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
+		tallnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
 
 		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
+		shortnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
 	}
 
 	// Load percent key.

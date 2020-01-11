@@ -1351,14 +1351,13 @@ int DLevelScript::ThingCount (int type, int tid)
 
 void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 {
-	int secnum = -1;
 	const char* flatname = level.behavior->LookupString(name);
-
 	if (flatname == NULL)
 		return;
 
-	const ResourceId res_id = Res_GetResourceId(flatname, flats_directory_name);
+	const ResourceId res_id = Res_GetTextureResourceId(flatname, FLOOR);
 
+	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
 		if (floorOrCeiling == false)

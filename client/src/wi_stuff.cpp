@@ -430,15 +430,15 @@ void WI_slamBackground (void)
 
 static int WI_DrawName (const char *str, int x, int y)
 {
-	const Texture* texture = NULL;
 	char charname[9];
 
 	while (*str)
 	{
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		if (Res_CheckResource(charname, patches_directory_name))
+		const ResourceId res_id = Res_GetTextureResourceId(charname, PATCH);
+		if (res_id != ResourceId::INVALID_ID)
 		{
-			texture = Res_CacheTexture(charname, patches_directory_name, PU_CACHE);
+			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
 			screen->DrawTextureClean(texture, x, y);
 			x += texture->mWidth - 1;
 		}
@@ -449,7 +449,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	texture = Res_CacheTexture("FONTB39", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("FONTB39", PATCH);
 	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
 }
 
@@ -1361,7 +1361,7 @@ static int WI_CalcWidth(const char *str)
 	while (*str)
 	{
 		sprintf(lump_name, "FONTB%02u", toupper(*str) - 32);
-		const Texture* texture = Res_CacheTexture(lump_name, patches_directory_name);
+		const Texture* texture = Res_CacheTexture(lump_name, PATCH);
 		if (texture)
 			w += texture->mWidth - 1;
 		else
@@ -1384,7 +1384,7 @@ void WI_loadData (void)
 		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
-	const Texture* texture = Res_CacheTexture(name, patches_directory_name);
+	const Texture* texture = Res_CacheTexture(name, PATCH);
 	background_surface = I_AllocateSurface(texture->mWidth, texture->mHeight, 8);
 	DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -1395,10 +1395,10 @@ void WI_loadData (void)
 	for (i = 0; i < 2; i++)
 	{
 		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
-
-		if (lname && Res_CheckResource(lname, patches_directory_name))
+		const ResourceId res_id = lname ? Res_GetTextureResourceId(lname, PATCH) : ResourceId::INVALID_ID;
+		if (res_id != ResourceId::INVALID_ID)
 		{
-			lnames[i] = Res_CacheTexture(lname, patches_directory_name, PU_STATIC);
+			lnames[i] = Res_CacheTexture(res_id, PU_STATIC);
 		}
 		else
 		{
@@ -1411,13 +1411,13 @@ void WI_loadData (void)
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		// you are here
-		yah[0] = Res_CacheTexture("WIURH0", patches_directory_name, PU_STATIC);
+		yah[0] = Res_CacheTexture("WIURH0", PATCH, PU_STATIC);
 
 		// you are here (alt.)
-		yah[1] = Res_CacheTexture("WIURH1", patches_directory_name, PU_STATIC);
+		yah[1] = Res_CacheTexture("WIURH1", PATCH, PU_STATIC);
 
 		// splat
-		splat = Res_CacheTexture("WISPLAT", patches_directory_name, PU_STATIC);
+		splat = Res_CacheTexture("WISPLAT", PATCH, PU_STATIC);
 
 		if (wbs->epsd < 3)
 		{
@@ -1431,7 +1431,7 @@ void WI_loadData (void)
 					{
 						// animations
 						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-						a->p[i] = Res_CacheTexture(name, patches_directory_name, PU_STATIC);
+						a->p[i] = Res_CacheTexture(name, PATCH, PU_STATIC);
 					}
 					else
 					{
@@ -1447,62 +1447,62 @@ void WI_loadData (void)
     {
 		 // numbers 0-9
 		sprintf(name, "WINUM%d", i);
-		num[i] = Res_CacheTexture(name, patches_directory_name, PU_STATIC);
+		num[i] = Res_CacheTexture(name, PATCH, PU_STATIC);
     }
 
-    wiminus = Res_CacheTexture("WIMINUS", patches_directory_name, PU_STATIC);
+    wiminus = Res_CacheTexture("WIMINUS", PATCH, PU_STATIC);
 
 	// percent sign
-    percent = Res_CacheTexture("WIPCNT", patches_directory_name, PU_STATIC);
+    percent = Res_CacheTexture("WIPCNT", PATCH, PU_STATIC);
 
 	// ":"
-    colon = Res_CacheTexture("WICOLON", patches_directory_name, PU_STATIC);
+    colon = Res_CacheTexture("WICOLON", PATCH, PU_STATIC);
 
 	// "finished"
-	finished = Res_CacheTexture("WIF", patches_directory_name, PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
+	finished = Res_CacheTexture("WIF", PATCH, PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 	// "entering"
-	entering = Res_CacheTexture("WIENTER", patches_directory_name, PU_STATIC);
+	entering = Res_CacheTexture("WIENTER", PATCH, PU_STATIC);
 
 	// "kills"
-    kills = Res_CacheTexture("WIOSTK", patches_directory_name, PU_STATIC);
+    kills = Res_CacheTexture("WIOSTK", PATCH, PU_STATIC);
 
 	// "items"
-    items = Res_CacheTexture("WIOSTI", patches_directory_name, PU_STATIC);
+    items = Res_CacheTexture("WIOSTI", PATCH, PU_STATIC);
 
     // "scrt"
-    scrt = Res_CacheTexture("WIOSTS", patches_directory_name, PU_STATIC);
+    scrt = Res_CacheTexture("WIOSTS", PATCH, PU_STATIC);
 
 	// "secret"
-    secret = Res_CacheTexture("WISCRT2", patches_directory_name, PU_STATIC);
+    secret = Res_CacheTexture("WISCRT2", PATCH, PU_STATIC);
 
 	// "frgs"
-	frags = Res_CacheTexture("WIFRGS", patches_directory_name, PU_STATIC);
+	frags = Res_CacheTexture("WIFRGS", PATCH, PU_STATIC);
 
 	// "time"
-    timepatch = Res_CacheTexture("WITIME", patches_directory_name, PU_STATIC);
+    timepatch = Res_CacheTexture("WITIME", PATCH, PU_STATIC);
 
     // "sucks"
-    sucks = Res_CacheTexture("WISUCKS", patches_directory_name, PU_STATIC);
+    sucks = Res_CacheTexture("WISUCKS", PATCH, PU_STATIC);
 
     // "par"
-    par = Res_CacheTexture("WIPAR", patches_directory_name, PU_STATIC);
+    par = Res_CacheTexture("WIPAR", PATCH, PU_STATIC);
 
 	// "total"
-	total = Res_CacheTexture("WIMSTT", patches_directory_name, PU_STATIC);
+	total = Res_CacheTexture("WIMSTT", PATCH, PU_STATIC);
 
 	// your face
-	star = Res_CacheTexture("STFST01", patches_directory_name, PU_STATIC);
+	star = Res_CacheTexture("STFST01", PATCH, PU_STATIC);
 
 	// dead face
-	bstar = Res_CacheTexture("STFDEAD0", patches_directory_name, PU_STATIC);
+	bstar = Res_CacheTexture("STFDEAD0", PATCH, PU_STATIC);
 
-	p = Res_CacheTexture("STPBANY", patches_directory_name, PU_STATIC);
+	p = Res_CacheTexture("STPBANY", PATCH, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(name, "STPB%d", i);
-		faceclassic[i] = Res_CacheTexture(name, patches_directory_name, PU_STATIC);
+		faceclassic[i] = Res_CacheTexture(name, PATCH, PU_STATIC);
 	}
 }
 

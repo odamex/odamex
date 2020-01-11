@@ -264,7 +264,7 @@ void R_InitSpriteDefs(const char **namelist)
 			uint32_t frame_actor_id = *(uint32_t*)res_name;
 			if (frame_actor_id == actor_id)
 			{
-				const ResourceId res_id = Res_GetResourceId(sprite_paths[l]);
+				const ResourceId res_id = Res_GetTextureResourceId(sprite_paths[l], SPRITE);
 				uint32_t frame = res_name[4] - 'A';
 				uint32_t rotation = res_name[5] - '0';
 				R_InstallSpriteLump(res_id, frame, rotation, false);
@@ -427,7 +427,6 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 		//		a NULL colormap. This allow proper substition of
 		//		translucency with light levels if desired. The original
 		//		code used colormap == NULL to indicate shadows.
-		dcol.translevel = FRACUNIT/5;
 		fuzz_effect = true;
 	}
 	else if (vis->translucency < FRACUNIT)
@@ -448,7 +447,8 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
-	const Texture* texture = Res_CacheTexture(vis->res_id);
+
+	const Texture* texture = vis->texture;
 	dcol.textureheight = texture->mHeight << FRACBITS;
 
 	dcol.masked = true;
@@ -567,6 +567,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->depth = ty;
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
+	vis->res_id = ResourceId::INVALID_ID;
+	vis->texture = NULL;
 
 	if (flip)
 	{
@@ -720,6 +722,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->res_id = res_id;
+	vis->texture = texture;
 	vis->mo = thing;
 
 	// get light level
@@ -841,6 +844,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	// store information in a vissprite
 	vissprite_t vis;
 	vis.res_id = res_id;
+	vis.texture = texture;
 	vis.mobjflags = flags;
 	vis.texturemid = (BASEYCENTER << FRACBITS) + topoffs - sy;
 	vis.x1 = x1 < 0 ? 0 : x1;

@@ -300,7 +300,7 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		const Texture* texture = Res_CacheTexture("M_PAUSE", patches_directory_name);
+		const Texture* texture = Res_CacheTexture("M_PAUSE", PATCH);
 		int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
 		screen->DrawTextureCleanNoMove(texture, (I_GetSurfaceWidth() - texture->mWidth * CleanXfac) / 2, y);
 	}
@@ -309,7 +309,7 @@ void D_Display()
 	if (D_DrawIcon)
 	{
 		D_DrawIcon = NULL;
-		const Texture* texture = Res_CacheTexture(D_DrawIcon, patches_directory_name);
+		const Texture* texture = Res_CacheTexture(D_DrawIcon, PATCH);
 		screen->DrawTextureIndirect(texture, 160 - texture->mWidth / 2, 100 - texture->mHeight / 2);
 		NoWipe = 10;
 	}
@@ -498,7 +498,7 @@ void D_DoAdvanceDemo (void)
 	{
 		I_FreeSurface(page_surface);
 
-		const Texture* texture = Res_CacheTexture(OString(pagename, 8), patches_directory_name);
+		const Texture* texture = Res_CacheTexture(OString(pagename, 8), PATCH);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{

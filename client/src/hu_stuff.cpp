@@ -206,11 +206,11 @@ void HU_Init()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		sprintf(buffer, tplate, j++ - sub);
-		hu_font[i] = Res_CacheTexture(buffer, patches_directory_name, PU_STATIC);
+		hu_font[i] = Res_CacheTexture(buffer, PATCH, PU_STATIC);
 	}
 
 	// Load the status bar line
-	sbline = Res_CacheTexture("SBLINE", patches_directory_name, PU_STATIC);
+	sbline = Res_CacheTexture("SBLINE", PATCH, PU_STATIC);
 
 	HU_InitCrosshair();
 }
@@ -223,7 +223,7 @@ void HU_Init()
 //
 void STACK_ARGS HU_Shutdown()
 {
-	ResourceId res_id = Res_GetResourceId("SBLINE", patches_directory_name);
+	ResourceId res_id = Res_GetTextureResourceId("SBLINE", PATCH);
 	Res_ReleaseResource(res_id);
 	sbline = NULL;
 }
@@ -326,9 +326,9 @@ static void HU_InitCrosshair()
 		char xhairname[16];
 		sprintf(xhairname, "XHAIR%d", xhairnum);
 
-		crosshair_res_id = Res_GetResourceId(xhairname, patches_directory_name);
+		crosshair_res_id = Res_GetTextureResourceId(xhairname, PATCH);
 		if (crosshair_res_id == ResourceId::INVALID_ID)
-			crosshair_res_id = Res_GetResourceId("XHAIR1", patches_directory_name);
+			crosshair_res_id = Res_GetTextureResourceId("XHAIR1", PATCH);
 	}
 
 	// set up translation table for the crosshair's color
@@ -502,7 +502,7 @@ void HU_Drawer()
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
 	{
-		const Texture* texture = Res_CacheTexture("NET", patches_directory_name);
+		const Texture* texture = Res_CacheTexture("NET", PATCH);
 		screen->DrawTextureCleanNoMove(texture, 50 * CleanXfac, 1 * CleanYfac);
 	}
 

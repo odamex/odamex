@@ -633,7 +633,7 @@ void I_Endoom(void)
     // Hack to stop crash with disk icon
     in_endoom = true;
 
-	uint8_t* endoom_data = (uint8_t*)Res_LoadResource("ENDOOM", PU_STATIC);
+	const uint8_t* endoom_data = (uint8_t*)Res_LoadResource("ENDOOM", PU_STATIC);
 
 	// Set up text mode screen
 

@@ -248,7 +248,7 @@ void F_TextWrite (void)
 	int x = (primary_surface->getWidth() - width) / 2;
 	int y = (primary_surface->getHeight() - height) / 2;
 
-	const Texture* background_texture = Res_CacheTexture(finaleflat, flats_directory_name);
+	const Texture* background_texture = Res_CacheTexture(finaleflat, FLOOR);
     screen->FlatFill(background_texture, x, y, width + x, height + y);
 
 	V_MarkRect(x, y, width, height);
@@ -747,8 +747,8 @@ void F_BunnyScroll (void)
 	int 		stage;
 	static int	laststage;
 
-	const Texture* texture1 = Res_CacheTexture("PFUB2", patches_directory_name);
-	const Texture* texture2 = Res_CacheTexture("PFUB1", patches_directory_name);
+	const Texture* texture1 = Res_CacheTexture("PFUB2", PATCH);
+	const Texture* texture2 = Res_CacheTexture("PFUB1", PATCH);
 
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
@@ -784,7 +784,7 @@ void F_BunnyScroll (void)
 
 	if (finalecount < 1180)
 	{
-		const Texture* end_texture = Res_CacheTexture("END0", patches_directory_name);
+		const Texture* end_texture = Res_CacheTexture("END0", PATCH);
 		screen->DrawTextureIndirect(end_texture, (320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
@@ -800,7 +800,7 @@ void F_BunnyScroll (void)
 	}
 
 	sprintf (name,"END%i",stage);
-	const Texture* end_texture = Res_CacheTexture(name, patches_directory_name);
+	const Texture* end_texture = Res_CacheTexture(name, PATCH);
 	screen->DrawTextureIndirect(end_texture, (320-13*8)/2, (200-8*8)/2);
 }
 
@@ -822,13 +822,13 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					const Texture* texture = Res_CacheTexture(gameinfo.finalePage1, patches_directory_name);
+					const Texture* texture = Res_CacheTexture(gameinfo.finalePage1, PATCH);
 					screen->DrawTextureIndirect(texture, 0, 0);
 					break;
 				}
 				case '2':
 				{
-					const Texture* texture = Res_CacheTexture(gameinfo.finalePage2, patches_directory_name);
+					const Texture* texture = Res_CacheTexture(gameinfo.finalePage2, PATCH);
 					screen->DrawTextureIndirect(texture, 0, 0);
 					break;
 				}
@@ -839,7 +839,7 @@ void F_Drawer (void)
 				}
 				case '4':
 				{
-					const Texture* texture = Res_CacheTexture(gameinfo.finalePage3, patches_directory_name);
+					const Texture* texture = Res_CacheTexture(gameinfo.finalePage3, PATCH);
 					screen->DrawTextureIndirect(texture, 0, 0);
 					break;
 				}

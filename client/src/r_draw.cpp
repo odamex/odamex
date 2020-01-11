@@ -471,10 +471,27 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 	COLORFUNC colorfunc(drawcolumn);
 
-	do {
-		colorfunc(color, dest);
-		dest += pitch;
-	} while (--count);
+	if (drawcolumn.masked && drawcolumn.source != NULL)
+	{
+		// preserve the silhouette of the masked texture
+		const palindex_t* source = drawcolumn.source;
+		const fixed_t fracstep = drawcolumn.iscale; 
+		fixed_t frac = drawcolumn.texturefrac;
+		do {
+			palindex_t pixel = source[frac >> FRACBITS];
+			if (pixel != 0)
+				colorfunc(color, dest);
+			dest += pitch;
+			frac += fracstep;
+		} while (--count);
+	}
+	else
+	{
+		do {
+			colorfunc(color, dest);
+			dest += pitch;
+		} while (--count);
+	}
 } 
 
 
@@ -1387,7 +1404,7 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
 
-	const Texture* texture = Res_CacheTexture(gameinfo.borderFlat, flats_directory_name);
+	const Texture* texture = Res_CacheTexture(gameinfo.borderFlat, FLOOR);
 	canvas->FlatFill(texture, x1, y1, x2, y2);
 }
 
@@ -1421,14 +1438,14 @@ void R_DrawViewBorder()
 	// draw right border
 	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
 
-	const Texture* t_texture = Res_CacheTexture(border->t, patches_directory_name);
-	const Texture* b_texture = Res_CacheTexture(border->b, patches_directory_name);
-	const Texture* l_texture = Res_CacheTexture(border->l, patches_directory_name);
-	const Texture* r_texture = Res_CacheTexture(border->r, patches_directory_name);
-	const Texture* tl_texture = Res_CacheTexture(border->tl, patches_directory_name);
-	const Texture* tr_texture = Res_CacheTexture(border->tr, patches_directory_name);
-	const Texture* bl_texture = Res_CacheTexture(border->bl, patches_directory_name);
-	const Texture* br_texture = Res_CacheTexture(border->br, patches_directory_name);
+	const Texture* t_texture = Res_CacheTexture(border->t, PATCH);
+	const Texture* b_texture = Res_CacheTexture(border->b, PATCH);
+	const Texture* l_texture = Res_CacheTexture(border->l, PATCH);
+	const Texture* r_texture = Res_CacheTexture(border->r, PATCH);
+	const Texture* tl_texture = Res_CacheTexture(border->tl, PATCH);
+	const Texture* tr_texture = Res_CacheTexture(border->tr, PATCH);
+	const Texture* bl_texture = Res_CacheTexture(border->bl, PATCH);
+	const Texture* br_texture = Res_CacheTexture(border->br, PATCH);
 
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)

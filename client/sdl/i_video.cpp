@@ -972,7 +972,7 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
-	const Texture* texture = Res_CacheTexture("STDISK", patches_directory_name, PU_STATIC);
+	const Texture* texture = Res_CacheTexture("STDISK", PATCH, PU_STATIC);
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();

@@ -54,7 +54,7 @@ const Texture* sttminus;
 
 void STlib_init(void)
 {
-	sttminus = Res_CacheTexture("STTMINUS", patches_directory_name, PU_STATIC);
+	sttminus = Res_CacheTexture("STTMINUS", PATCH, PU_STATIC);
 }
 
 

@@ -656,7 +656,7 @@ void M_ReadSaveStrings(void)
 //
 void M_DrawLoad (void)
 {
-	const Texture* texture = Res_CacheTexture("M_LOADG", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_LOADG", PATCH);
 	screen->DrawTextureClean(texture, 72, 28);
 
 	for (int i = 0; i < load_end; i++)
@@ -702,7 +702,7 @@ void M_LoadGame (int choice)
 void M_DrawSave(void)
 {
 	int i = 0;
-	const Texture* texture = Res_CacheTexture("M_SAVEG", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_SAVEG", PATCH);
 	screen->DrawTextureClean(texture, 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
@@ -911,17 +911,17 @@ void M_FinishReadThis(int choice)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	const Texture* left_texture = Res_CacheTexture("M_LSLEFT", patches_directory_name);
+	const Texture* left_texture = Res_CacheTexture("M_LSLEFT", PATCH);
 	screen->DrawTextureClean(left_texture, x-8, y+7);
 
 	for (int i = 0; i < len; i++)
 	{
-		const Texture* center_texture = Res_CacheTexture("M_LSCNTR", patches_directory_name);
+		const Texture* center_texture = Res_CacheTexture("M_LSCNTR", PATCH);
 		screen->DrawTextureClean(center_texture, x, y+7);
 		x += 8;
 	}
 
-	const Texture* right_texture = Res_CacheTexture("M_LSRGHT", patches_directory_name);
+	const Texture* right_texture = Res_CacheTexture("M_LSRGHT", PATCH);
 	screen->DrawTextureClean(right_texture, x, y+7);
 }
 
@@ -930,14 +930,14 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	const Texture* texture = Res_CacheTexture("M_DOOM", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_DOOM", PATCH);
 	screen->DrawTextureClean(texture, 94, 2);
 }
 
 void M_DrawNewGame(void)
 {
-	const Texture* new_texture = Res_CacheTexture("M_NEWG", patches_directory_name);
-	const Texture* skill_texture = Res_CacheTexture("M_SKILL", patches_directory_name);
+	const Texture* new_texture = Res_CacheTexture("M_NEWG", PATCH);
+	const Texture* skill_texture = Res_CacheTexture("M_SKILL", PATCH);
 	screen->DrawTextureClean(new_texture, 96, 14);
 	screen->DrawTextureClean(skill_texture, 54, 38);
 }
@@ -980,7 +980,7 @@ int 	epi;
 
 void M_DrawEpisode(void)
 {
-	const Texture* texture = Res_CacheTexture("M_EIPSOD", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_EPISOD", PATCH);
 	screen->DrawTextureClean(texture, 54, 38);
 }
 
@@ -1075,7 +1075,7 @@ void M_Expansion (int choice)
 //
 void M_DrawReadThis1 (void)
 {
-	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[0], patches_directory_name);
+	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[0], PATCH);
 	screen->DrawTextureFullScreen(texture);
 }
 
@@ -1084,7 +1084,7 @@ void M_DrawReadThis1 (void)
 //
 void M_DrawReadThis2 (void)
 {
-	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[1], patches_directory_name);
+	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[1], PATCH);
 	screen->DrawTextureFullScreen(texture);
 }
 
@@ -1093,7 +1093,7 @@ void M_DrawReadThis2 (void)
 //
 void M_DrawReadThis3 (void)
 {
-	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[2], patches_directory_name);
+	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[2], PATCH);
 	screen->DrawTextureFullScreen(texture);
 }
 
@@ -1102,7 +1102,7 @@ void M_DrawReadThis3 (void)
 //
 void M_DrawOptions(void)
 {
-	const Texture* texture = Res_CacheTexture("M_OPTTL", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_OPTTL", PATCH);
 	screen->DrawTextureClean(texture, 108, 15);
 }
 
@@ -1287,7 +1287,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw title
 	{
-		const Texture* texture = Res_CacheTexture("M_PSTTL", patches_directory_name);
+		const Texture* texture = Res_CacheTexture("M_PSTTL", PATCH);
         screen->DrawTextureClean(texture, 160 - texture->mWidth / 2, 10);
 	}
 
@@ -1417,7 +1417,7 @@ static void M_PlayerSetupDrawer (void)
 
 	{
 		// Draw box surrounding fire and player:
-		const Texture* texture = Res_CacheTexture("M_PBOX", patches_directory_name);
+		const Texture* texture = Res_CacheTexture("M_PBOX", PATCH);
 		screen->DrawTextureClean(texture, 320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 	}
 
@@ -1634,13 +1634,13 @@ static void M_SlidePlayerBlue (int choice)
 //
 void M_DrawEmptyCell(oldmenu_t *menu, int item)
 {
-	const Texture* texture = Res_CacheTexture("M_CELL1", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_CELL1", PATCH);
 	screen->DrawTextureClean(texture, menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
 void M_DrawSelCell(oldmenu_t *menu, int item)
 {
-	const Texture* texture = Res_CacheTexture("M_CELL2", patches_directory_name);
+	const Texture* texture = Res_CacheTexture("M_CELL2", PATCH);
 	screen->DrawTextureClean(texture, menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
@@ -2030,7 +2030,7 @@ void M_Drawer()
 			{
 				if (currentMenu->menuitems[i].name[0])
 				{
-					const Texture* texture = Res_CacheTexture(currentMenu->menuitems[i].name, patches_directory_name);
+					const Texture* texture = Res_CacheTexture(currentMenu->menuitems[i].name, PATCH);
 					screen->DrawTextureClean(texture, x, y);
 				}
 				y += LINEHEIGHT;
@@ -2039,7 +2039,7 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				const Texture* texture = Res_CacheTexture(skullName[whichSkull], patches_directory_name);
+				const Texture* texture = Res_CacheTexture(skullName[whichSkull], PATCH);
 				screen->DrawTextureClean(texture, x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}

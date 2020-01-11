@@ -76,6 +76,7 @@ struct line_s;
 struct sector_s;
 
 class player_s;
+class Texture;
 
 //
 // The SECTORS record, at runtime.
@@ -498,6 +499,7 @@ struct vissprite_s
 	fixed_t			depth;
 	fixed_t			texturemid;
 	ResourceId		res_id;
+	const Texture*	texture;
 
     // for color translation and shadow draw,
     //  maxbright frames as well
