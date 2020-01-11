@@ -147,13 +147,14 @@ static void R_FillWallHeightArray(
 	}
 }
 
+
 //
 // R_BlastMaskedSegColumn
 //
 static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
 	fixed_t scale = wallscalex[dcol.x];
-	if (scale <= 0)
+	if (dcol.source == NULL || scale <= 0)
 		return;
 
 	spryscale = scale;
@@ -178,8 +179,6 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 	if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
 		drawfunc();
-
-	//masked_midposts[dcol.x] = NULL;
 }
 
 
@@ -273,7 +272,7 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 	}
 
-	#define BLOCKBITS 6
+	#define BLOCKBITS 6 
 	#define BLOCKSIZE (1 << BLOCKBITS)
 	#define BLOCKMASK (BLOCKSIZE - 1)
 
@@ -483,6 +482,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	sector_t	tempsec;		// killough 4/13/98
 
 	dcol.color = (dcol.color + 4) & 0xFF;	// color if using r_drawflat
+	dcol.masked = true;
 
 	// Calculate light table.
 	// Use different light tables
@@ -562,6 +562,9 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// draw the columns
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true);
+
+	for (int x = x1; x <= x2; x++)
+		ds->midposts[x] = NULL;
 }
 
 
