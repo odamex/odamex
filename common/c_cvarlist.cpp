@@ -339,11 +339,11 @@ CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 
 CVAR_RANGE_FUNC_DECL(net_rcvbuf, "9000", "Net receive buffer size in bytes",
 					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					0.0f, 16777216.0f)
+					1500.0f, 60000.0f)
 
 CVAR_RANGE_FUNC_DECL(net_sndbuf, "9000", "Net send buffer size in bytes",
 					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					 0.0f, 16777216.0f)
+					1500.0f, 60000.0f)
 
 // Experimental settings (all categories)
 // =======================================
