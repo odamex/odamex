@@ -632,12 +632,32 @@ void V_InitPalette(const char* lumpname)
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
 
+	// Examine all of the colors of the palette and determines the two closest colors.
+	// One of those two colors are selected to be used to represent transparency.
+	//
+	// Builds a color translation table that attempts to reduce the palette to 255 colors
+	// by locating the two most similar colors and mapping those to a single color. The free color
+	// will be used to indicate transparency.
+	//
+	// Then swap the unused color in the palette with mask_color (always 0).
+
+	palindex_t color1, color2;
+	V_ClosestColors(default_palette.basecolors, color1, color2);
+
+	// swap color1 and mask_color
+	default_palette.basecolors[color1] = default_palette.basecolors[default_palette.mask_color];
+
+	// Generate the translation table that's used when loading textures
+	// to ensure textures don't accidentally use the mask color unintentionally.
+	for (int i = 0; i < 256; i++)
+		default_palette.mask_translation[i] = i;
+
+	default_palette.mask_translation[default_palette.mask_color] = color1;
+	default_palette.mask_translation[color1] = color2;
+
 	V_GammaAdjustPalette(&default_palette);
-
 	V_ForceBlend(argb_t(0, 255, 255, 255));
-
 	V_RefreshColormaps();
-
 	V_ResetPalette();
 
 	assert(default_palette.maps.colormap != NULL);

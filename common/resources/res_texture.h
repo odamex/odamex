@@ -261,8 +261,6 @@ private:
 	void readAnimDefLump();
 	void readAnimatedLump();
 
-	void analyzePalette(ResourceManager* manager, palindex_t* colormap, palindex_t* maskcolor) const;
-
 	void addResourcesToManager(ResourceManager* manager);
 	void addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir);
 
@@ -298,9 +296,6 @@ private:
 	};
 
 	std::vector<warp_t>			mWarpDefs;
-
-	palindex_t					mMaskColor;
-	palindex_t					mTranslation[256];
 };
 
 #endif // __RES_TEXTURE_H__

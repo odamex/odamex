@@ -56,8 +56,10 @@
 // Converts an image buffer from row-major format to column-major format.
 // TODO: Use cache-blocking to optimize
 //
-static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int width, int height, const palindex_t* translation)
+static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int width, int height)
 {
+	const palindex_t* translation = V_GetDefaultPalette()->mask_translation;
+
 	for (int x = 0; x < width; x++)
 	{
 		const palindex_t* source_column = source + x;
@@ -83,10 +85,12 @@ static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int w
 static void Res_DrawPatchIntoTexture(
 		Texture* texture,
 		const uint8_t* lump_data, uint32_t lump_length,
-		int xoffs, int yoffs, const palindex_t* translation=NULL)
+		int xoffs, int yoffs)
 {
 	if (lump_length < 8)		// long enough for header data?
 		return;
+
+	const palindex_t* translation = V_GetDefaultPalette()->mask_translation;
 
 	int texwidth = texture->mWidth;
 	int texheight = texture->mHeight;
@@ -252,7 +256,7 @@ void RowMajorTextureLoader::load(void* data) const
 		mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
 		// convert the row-major raw data to into column-major
-		Res_TransposeImage(texture->mData, raw_data, width, height, mTranslation);
+		Res_TransposeImage(texture->mData, raw_data, width, height);
 
 		delete [] raw_data;
 	}
@@ -378,7 +382,7 @@ void PatchTextureLoader::load(void* data) const
 	#if CLIENT_APP
 	if (width > 0 && height > 0)
 	{
-		Res_DrawPatchIntoTexture(texture, patch_data, patch_size, 0, 0, mTranslation);
+		Res_DrawPatchIntoTexture(texture, patch_data, patch_size, 0, 0);
 	}
 	#endif
 
@@ -428,7 +432,7 @@ void CompositeTextureLoader::load(void* data) const
 
 			if (Res_ValidatePatchData(patch_data, patch_size))
 			{
-				Res_DrawPatchIntoTexture(texture, patch_data, patch_size, patch_def.mOriginX, patch_def.mOriginY, mTranslation);
+				Res_DrawPatchIntoTexture(texture, patch_data, patch_size, patch_def.mOriginX, patch_def.mOriginY);
 			}
 
 			delete [] patch_data;

@@ -225,12 +225,8 @@ uint32_t Texture::calculateSize(int width, int height)
 
 TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
 	ResourceContainer(container_id, manager),
-	mResourceLoaderLookup(1024),
-	mMaskColor(0)
+	mResourceLoaderLookup(1024)
 {
-	if (clientside)
-		analyzePalette(manager, mTranslation, &mMaskColor);
-
 	const ResourceIdList pnames_lookup = buildPNamesLookup(manager, "PNAMES");
 	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE1");
 	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE2");
@@ -309,11 +305,11 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 
 		ResourceLoader* loader = NULL;
 		if (dir == flats_directory_name)
-			loader = new FlatTextureLoader(accessor, raw_res_id, mTranslation);
+			loader = new FlatTextureLoader(accessor, raw_res_id);
 		else if (dir == patches_directory_name)
-			loader = new PatchTextureLoader(accessor, raw_res_id, mTranslation);
+			loader = new PatchTextureLoader(accessor, raw_res_id);
 		else if (dir == sprites_directory_name)
-			loader = new PatchTextureLoader(accessor, raw_res_id, mTranslation);
+			loader = new PatchTextureLoader(accessor, raw_res_id);
 
 		const ResourceId res_id = manager->addResource(path, this, loader);
 
@@ -509,50 +505,6 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 	delete [] pnames_raw_data;
 
 	return pnames_lookup;
-}
-
-
-//
-// TextureManager::analyzePalette
-//
-// Examines all of the colors of the palette and determines the two closest colors.
-// One of those two colors are selected to be used to represent transparency.
-//
-// Builds a color translation table that attempts to reduce the palette to 255 colors
-// by locating the two most similar colors and mapping those to a single color. The free color
-// will be used to indicate transparency.
-//
-// TODO: Defer this until V_InitPalette has run instead of loading PLAYPAL here...
-//
-void TextureManager::analyzePalette(ResourceManager* manager, palindex_t* translation, palindex_t* maskcolor) const
-{
-	*maskcolor = 0;
-	for (int i = 0; i < 256; i++)
-		translation[i] = i;
-
-	#if CLIENT_APP
-	const ResourceId palette_res_id = Res_GetResourceId("/GLOBAL/PLAYPAL");
-	if (!Res_CheckResource(palette_res_id))
-		I_FatalError("Could not initialize PLAYPAL palette");
-
-	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
-	uint32_t size = accessor->getResourceSize(palette_res_id);
-	uint8_t* data = new uint8_t[size];
-	accessor->loadResource(palette_res_id, data, size);
-
-	argb_t palette_colors[256];
-	for (int i = 0; i < 256; i++)
-		palette_colors[i] = argb_t(255, data[3*i+0], data[3*i+1], data[3*i+2]);
-
-	delete [] data;
-
-	palindex_t color1, color2;
-
-	V_ClosestColors(palette_colors, color1, color2);
-	*maskcolor = color1;
-
-	translation[color1] = color2;
-	#endif	// CLIENTAPP
 }
 
 
