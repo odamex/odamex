@@ -431,6 +431,10 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	if (!length)	// line is 0 length, so nothing to do
 		return;
 
+	// [jsd] fix null reference bug:
+	if (!clientside)
+		return;
+
 	// The railgun's sound is a special case. It gets played from the
 	// point on the slug's trail that is closest to the hearing player.
 	AActor *mo = consoleplayer().camera;
@@ -456,9 +460,6 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 		S_Sound (FLOAT2FIXED(point.x), FLOAT2FIXED(point.y),
 			CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
 	}
-
-	if (!clientside)
-		return;
 
 	M_ScaleVec3(&dir, &dir, ilength);
 	M_PerpendicularVec3(&extend, &dir);
