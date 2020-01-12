@@ -45,7 +45,7 @@
 extern int   localport;
 extern int   msg_badread;
 
-#if SERVER_APP && SERVER_HISTOGRAM
+#if SERVER_APP
 extern int sv_messages[256];
 #endif
 
