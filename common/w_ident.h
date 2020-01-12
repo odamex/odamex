@@ -27,6 +27,30 @@
 #include "m_ostring.h"
 #include <string>
 
+// [RH] Compare wad header as ints instead of chars
+#define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
+#define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))
+
+//
+// WADFILE I/O related stuff.
+//
+typedef struct
+{
+    // Should be "IWAD" or "PWAD".
+    unsigned    identification;
+    int         numlumps;
+    int         infotableofs;
+} wadinfo_t;
+
+
+typedef struct
+{
+    int         filepos;
+    int         size;
+    char        name[8]; // denis - todo - string
+} filelump_t;
+
+
 void W_ConfigureGameInfo(const std::string& iwad_filename);
 bool W_IsIWAD(const std::string& filename);
 bool W_IsIWADCommercial(const std::string& filename);

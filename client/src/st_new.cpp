@@ -50,6 +50,7 @@
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"
+#include "resources/res_main.h"
 #include "resources/res_texture.h"
 
 static int		widestnum, numheight;

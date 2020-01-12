@@ -31,6 +31,7 @@
 
 #include "w_wad.h"
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #include "doomdef.h"
 #include "r_local.h"
@@ -170,18 +171,9 @@ void R_InitColormaps()
 	// [RH] Try and convert BOOM colormaps into blending values.
 	//		This is a really rough hack, but it's better than
 	//		not doing anything with them at all (right?)
-	int lastfakecmap = W_CheckNumForName("C_END");
-	firstfakecmap = W_CheckNumForName("C_START");
 
-	if (firstfakecmap == -1 || lastfakecmap == -1)
-		numfakecmaps = 1;
-	else
-	{
-		if (firstfakecmap > lastfakecmap)
-			I_Error("no fake cmaps");
-
-		numfakecmaps = lastfakecmap - firstfakecmap;
-	}
+	ResourcePathList paths = Res_ListResourceDirectory(colormaps_directory_name);
+	numfakecmaps = std::max<int>(paths.size(), 1);
 
 	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
 	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
@@ -195,13 +187,15 @@ void R_InitColormaps()
 	{
 		const palette_t* pal = V_GetDefaultPalette();
 
-		for (unsigned i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
+		for (size_t i = 1; i < paths.size(); i++)
 		{
-			if (W_LumpLength(i) >= (NUMCOLORMAPS+1)*256)
+			const ResourcePath& path = paths[i];
+			const ResourceId res_id = Res_GetResourceId(path);
+			if (Res_GetResourceSize(res_id) >= (NUMCOLORMAPS+1)*256)
 			{
-				byte* map = (byte*)W_CacheLumpNum(i, PU_CACHE);
-				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
-				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
+				const uint8_t* map = (uint8_t*)Res_LoadResource(res_id, PU_CACHE);
+				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*i;
+				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*i;
 
 				// Copy colormap data:
 				memcpy(colormap, map, (NUMCOLORMAPS+1)*256);
@@ -210,9 +204,7 @@ void R_InitColormaps()
 				int g = pal->basecolors[*map].getg();
 				int b = pal->basecolors[*map].getb();
 
-				char name[9];
-				W_GetLumpName(name, i);
-				fakecmaps[j].name = StdStringToUpper(name, 8);
+				fakecmaps[i].name = StdStringToUpper(path.last());
 
 				for (int k = 1; k < 256; k++)
 				{
@@ -222,15 +214,16 @@ void R_InitColormaps()
 				}
 				// NOTE(jsd): This alpha value is used for 32bpp in water areas.
 				argb_t color = argb_t(64, r, g, b);
-				fakecmaps[j].blend_color = color;
+				fakecmaps[i].blend_color = color;
 
 				// Set up shademap for the colormap:
 				for (int k = 0; k < 256; ++k)
-					shademap[k] = alphablend1a(pal->basecolors[map[0]], color, j * (256 / numfakecmaps));
+					shademap[k] = alphablend1a(pal->basecolors[map[0]], color, i * (256 / numfakecmaps));
 			}
 		}
 	}
 }
+
 
 //
 // R_ColormapNumForname
@@ -244,12 +237,10 @@ int R_ColormapNumForName(const char* name)
 {
 	if (strnicmp(name, "COLORMAP", 8) != 0)
 	{
-		int lump = W_CheckNumForName(name, ns_colormaps);
-		
-		if (lump != -1)
-			return lump - firstfakecmap + 1;
+		for (size_t i = 0; i < numfakecmaps; i++)
+			if (strnicmp(name, fakecmaps[i].name.c_str(), 8) == 0)
+				return i;
 	}
-
 	return 0;
 }
 
@@ -301,15 +292,35 @@ void R_InitData()
 //
 // [RH] Rewrote this using Lee Killough's code in BOOM as an example.
 
-void R_PrecacheLevel (void)
+void R_PrecacheLevel()
 {
-	byte *hitlist;
-	int i;
-
 	if (demoplayback)
 		return;
 
+	// Cache floor & ceiling textures
+	for (int i = numsectors - 1; i >= 0; i--)
+	{
+		Res_CacheTexture(sectors[i].floor_res_id);
+		Res_CacheTexture(sectors[i].ceiling_res_id);
+	}
+
+	// Cache wall textures
+	for (int i = numsides - 1; i >= 0; i--)
+	{
+		Res_CacheTexture(sides[i].toptexture);
+		Res_CacheTexture(sides[i].midtexture);
+		Res_CacheTexture(sides[i].bottomtexture);
+	}
+
+	// TODO: Cache sky textures
+
+	// TODO: Cache sprites
+
+
 	/*
+	byte *hitlist;
+	int i;
+
 	{
 		int size = (numflats > numsprites) ? numflats : numsprites;
 
