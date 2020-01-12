@@ -41,7 +41,6 @@
 #include "v_palette.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
 #include "r_draw.h"

@@ -34,7 +34,6 @@
 #include "doomdef.h"
 #include "i_system.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "r_local.h"
 #include "i_video.h"
 #include "v_video.h"

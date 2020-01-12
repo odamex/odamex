@@ -44,10 +44,8 @@
 #include "z_zone.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "w_wad.h"
 
 #include "r_local.h"
-
 
 #include "hu_stuff.h"
 

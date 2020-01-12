@@ -34,7 +34,6 @@
 #include "doomstat.h"
 #include "r_state.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "gi.h"
 #include "m_ostring.h"
 #include "resources/res_main.h"

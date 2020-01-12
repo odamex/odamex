@@ -52,7 +52,6 @@
 #include "v_video.h"
 #include "v_text.h"
 
-#include "w_wad.h"
 #include "z_zone.h"
 
 #include "c_cvars.h"

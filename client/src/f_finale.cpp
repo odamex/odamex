@@ -34,7 +34,6 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "w_wad.h"
 #include "s_sound.h"
 #include "gstrings.h"
 #include "doomstat.h"

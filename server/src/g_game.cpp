@@ -41,7 +41,6 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "gstrings.h"

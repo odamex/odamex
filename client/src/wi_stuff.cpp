@@ -30,7 +30,6 @@
 #include "m_swap.h"
 #include "i_system.h"
 #include "i_video.h"
-#include "w_wad.h"
 #include "g_game.h"
 #include "g_level.h"
 #include "r_local.h"

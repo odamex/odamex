@@ -32,7 +32,6 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "hu_stuff.h"
-#include "w_wad.h"
 #include "z_zone.h"
 #include "m_swap.h"
 #include "resources/res_texture.h"

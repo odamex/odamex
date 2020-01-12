@@ -37,7 +37,6 @@
 #include "g_level.h"
 #include "r_sky.h"
 #include "gi.h"
-#include "w_wad.h"
 
 #include "resources/res_main.h"
 #include "resources/res_texture.h"

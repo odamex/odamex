@@ -28,7 +28,6 @@
 #include "z_zone.h"
 #include "m_swap.h"
 #include "hu_stuff.h"
-#include "w_wad.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "st_stuff.h"

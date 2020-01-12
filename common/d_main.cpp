@@ -47,7 +47,6 @@
 #include "doomdef.h"
 #include "gstrings.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"

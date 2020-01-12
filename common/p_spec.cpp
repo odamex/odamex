@@ -42,7 +42,6 @@
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_bbox.h"
-#include "w_wad.h"
 
 #include "r_local.h"
 #include "p_local.h"

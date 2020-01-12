@@ -61,7 +61,6 @@
 #include "sv_maplist.h"
 #include "sv_vote.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
 #include "resources/res_filelib.h"

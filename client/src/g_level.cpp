@@ -60,7 +60,6 @@
 #include "st_stuff.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
 #include "resources/res_filelib.h"

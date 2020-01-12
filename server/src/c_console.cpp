@@ -36,7 +36,6 @@
 #include "m_swap.h"
 #include "v_palette.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
 #include "s_sound.h"

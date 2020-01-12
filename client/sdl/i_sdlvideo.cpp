@@ -47,7 +47,6 @@
 #include "i_input.h"
 
 #include "m_argv.h"
-#include "w_wad.h"
 #include "c_dispatch.h"
 
 #include "resources/res_texture.h"

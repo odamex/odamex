@@ -21,45 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifdef UNIX
-#include <ctype.h>
-#include <cstring>
-#include <unistd.h>
-#ifndef O_BINARY
-#define O_BINARY		0
-#endif
-#endif
-
-#ifdef _WIN32
-#include <io.h>
-#else
-#define strcmpi	strcasecmp
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <ctype.h>
-
 #include "doomtype.h"
-#include "m_swap.h"
 #include "m_fileio.h"
-#include "i_system.h"
-#include "z_zone.h"
-#include "cmdlib.h"
-#include "m_argv.h"
-#include "md5.h"
-
-#include "w_wad.h"
-
-
-#include <string>
-#include <sstream>
-#include <algorithm>
-#include <vector>
-#include <iostream>
-#include <iomanip>
 
 
 //
@@ -67,12 +30,12 @@
 //
 // denis - for wad downloading
 //
-unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen)
+unsigned W_ReadChunk(const char* file, unsigned offs, unsigned len, void* dest, unsigned& filelen)
 {
-	FILE *fp = fopen(file, "rb");
+	FILE* fp = fopen(file, "rb");
 	unsigned read = 0;
 
-	if(fp)
+	if (fp)
 	{
 		filelen = M_FileLength(fp);
 

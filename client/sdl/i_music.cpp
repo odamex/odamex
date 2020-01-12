@@ -37,7 +37,6 @@
 #include "doomtype.h"
 #include "m_argv.h"
 #include "i_music.h"
-#include "w_wad.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "z_zone.h"

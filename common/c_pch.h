@@ -86,7 +86,6 @@
 #include "version.h"
 #include "v_palette.h"       
 #include "v_video.h"         
-#include "w_wad.h"           
 #include "z_zone.h"
 
 #endif // __C_PCH__

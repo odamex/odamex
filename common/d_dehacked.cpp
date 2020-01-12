@@ -39,7 +39,6 @@
 #include "gstrings.h"
 #include "m_alloc.h"
 #include "m_misc.h"
-#include "w_wad.h"
 #include "d_player.h"
 #include "m_fileio.h"
 #include "p_local.h"

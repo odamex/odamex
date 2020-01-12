@@ -28,7 +28,6 @@
 #include "i_video.h"
 #include "z_zone.h"
 #include "m_random.h"
-#include "w_wad.h"
 #include "doomdef.h"
 #include "g_game.h"
 #include "st_stuff.h"
