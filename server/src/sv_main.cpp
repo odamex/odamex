@@ -4597,8 +4597,41 @@ void SV_SendPlayerInfo(player_t &player);
 
 void SV_ParseCommands(player_t &player)
 {
-	 while(validplayer(player))
-	 {
+	// [jsd]: detect connection attempts from players we think are live but they think are not:
+	if (net_message.size() >= 4) {
+		// record our read position:
+		int readpos = net_message.readpos;
+
+		int sequence = MSG_ReadLong();
+		if (sequence == CHALLENGE) {
+			// double check the server_token to verify it is indeed a CHALLENGE packet and not a regular cmd packet
+			// that just happened to have a sequence number of (CHALLENGE = 5,560,020):
+			if (net_message.size() > readpos + 4) {
+				DWORD tokenid = MSG_ReadLong();
+				if (tokenid == player.client.tokenid) {
+					// we got back the same tokenid so drop this client:
+					DPrintf("%s sent CHALLENGE with expected tokenid when thought to be in game; dropping client.\n", NET_AdrToString (net_from));
+					SV_DropClient(player);
+					return;
+				} else {
+					DPrintf("%s sent CHALLENGE with unexpected tokenid when thought to be in game; doing nothing.\n", NET_AdrToString (net_from));
+				}
+			}
+		} else if (sequence == LAUNCHER_CHALLENGE) {
+			if (net_message.size() == 4) {
+				// LAUNCHER_CHALLENGE packet is always exactly 4 bytes:
+				DPrintf("%s sent LAUNCHER_CHALLENGE when thought to be in game; dropping client.\n", NET_AdrToString (net_from));
+				SV_DropClient(player);
+				return;
+			}
+		}
+
+		// rewind back to where we were:
+		net_message.readpos = readpos;
+	}
+
+	while(validplayer(player))
+	{
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
 		if(cmd == (clc_t)-1)
