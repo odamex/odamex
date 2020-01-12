@@ -644,8 +644,10 @@ void V_InitPalette(const char* lumpname)
 	palindex_t color1, color2;
 	V_ClosestColors(default_palette.basecolors, color1, color2);
 
-	// swap color1 and mask_color
+	// move the color that was in "mask_color" position to "color1" position
+	// and make "mask_color" cyan
 	default_palette.basecolors[color1] = default_palette.basecolors[default_palette.mask_color];
+	default_palette.basecolors[default_palette.mask_color] = argb_t(255, 0, 255, 255);
 
 	// Generate the translation table that's used when loading textures
 	// to ensure textures don't accidentally use the mask color unintentionally.
