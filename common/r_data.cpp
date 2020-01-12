@@ -85,48 +85,14 @@ fixed_t*		texturescaley;
 bool*			flatwarp;
 byte**			warpedflats;
 int*			flatwarpedwhen;
-int*			flattranslation;
 
-int*			texturetranslation;
-			
+
 
 //
 // R_InitFlats
 //
 void R_InitFlats (void)
 {
-	int i;
-
-	firstflat = W_GetNumForName ("F_START") + 1;
-	lastflat = W_GetNumForName ("F_END") - 1;
-
-	if(firstflat >= lastflat)
-		I_Error("no flats");
-
-	numflats = lastflat - firstflat + 1;
-
-	delete[] flattranslation;
-
-	// Create translation table for global animation.
-	flattranslation = new int[numflats+1];
-
-	for (i = 0; i < numflats; i++)
-		flattranslation[i] = i;
-
-	delete[] flatwarp;
-
-	flatwarp = new bool[numflats+1];
-	memset (flatwarp, 0, sizeof(bool) * (numflats+1));
-
-	delete[] warpedflats;
-
-	warpedflats = new byte *[numflats+1];
-	memset (warpedflats, 0, sizeof(byte *) * (numflats+1));
-
-	delete[] flatwarpedwhen;
-
-	flatwarpedwhen = new int[numflats+1];
-	memset (flatwarpedwhen, 0xff, sizeof(int) * (numflats+1));
 }
 
 

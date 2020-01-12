@@ -7,12 +7,11 @@
 #define __RES_RESOURCELOADER_H__
 
 #include "doomtype.h"
-#include "m_ostring.h"
 #include "resources/res_resourceid.h"
 #include "resources/res_texture.h"
 
-class ResourcePath;
 class RawResourceAccessor;
+
 
 // ============================================================================
 //

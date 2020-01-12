@@ -55,6 +55,15 @@ enum TextureSearchOrdering {
 //
 const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering);
 
+
+//
+// Texture Animations
+//
+void Res_ReadAnimationDefinitions();
+void Res_UpdateTextureAnimations();
+const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id);
+
+
 //
 // Res_CacheTexture
 //
@@ -273,12 +282,46 @@ private:
 
 	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
 
+};
+
+
+
+//
+// AnimatedTextureManager
+//
+// Handles animation frames for animated flat and wall textures, translating
+// between ResourceIds based on the current animation frame.
+//
+class AnimatedTextureManager
+{
+public:
+	AnimatedTextureManager();
+	
+	~AnimatedTextureManager() { }
+
+	void readAnimationDefinitions();
+
+	void updateAnimatedTextures();
+
+	const ResourceId getResourceId(const ResourceId res_id) const;
+
+private:
+
+	void loadAnimationsFromAnimatedLump();
+	void loadAnimationsFromAnimDefLump();
+
+	typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
+	ResourceIdMap		mTextureTranslation;
+
+
 	// animated textures
 	struct anim_t
 	{
 		static const unsigned int MAX_ANIM_FRAMES = 32;
 		ResourceId		basepic;
 		short			numframes;
+		byte			istexture;		// TODO: Remove this
+		byte			uniqueframes;
 		byte			countdown;
 		byte			curframe;
 		byte 			speedmin[MAX_ANIM_FRAMES];

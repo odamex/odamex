@@ -1864,7 +1864,7 @@ void P_SetupLevel(const OString& mapname, int position)
 void P_Init (void)
 {
 	P_InitSwitchList ();
-	P_InitPicAnims ();
+	Res_ReadAnimationDefinitions();
 	R_InitSprites (sprnames);
 }
 

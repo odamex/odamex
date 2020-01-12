@@ -321,34 +321,6 @@ void DPusher::Serialize (FArchive &arc)
 	}
 }
 
-//
-// Animating textures and planes
-//
-// [RH] Expanded to work with a Hexen ANIMDEFS lump
-//
-#define MAX_ANIM_FRAMES	32
-
-typedef struct
-{
-	short 	basepic;
-	short	numframes;
-	byte 	istexture;
-	byte	uniqueframes;
-	byte	countdown;
-	byte	curframe;
-	byte 	speedmin[MAX_ANIM_FRAMES];
-	byte	speedmax[MAX_ANIM_FRAMES];
-	short	framepic[MAX_ANIM_FRAMES];
-} anim_t;
-
-
-
-#define MAXANIMS	32		// Really just a starting point
-
-static anim_t*  lastanim;
-static anim_t*  anims;
-static size_t	maxanims;
-
 
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)
@@ -361,14 +333,6 @@ static void P_SpawnFriction(void);		// phares 3/16/98
 static void P_SpawnPushers(void);		// phares 3/20/98
 
 static void ParseAnim (byte istex);
-
-//
-//		Animating line specials
-//
-//#define MAXLINEANIMS			64
-
-//extern	short	numlinespecials;
-//extern	line_t* linespeciallist[MAXLINEANIMS];
 
 //
 // [RH] P_InitAnimDefs
@@ -533,128 +497,6 @@ static void ParseAnim (byte istex)
 
 	place->countdown = place->speedmin[0];
 	#endif		// if 0
-}
-
-/*
- *P_InitPicAnims
- *
- *Load the table of animation definitions, checking for existence of
- *the start and end of each frame. If the start doesn't exist the sequence
- *is skipped, if the last doesn't exist, BOOM exits.
- *
- *Wall/Flat animation sequences, defined by name of first and last frame,
- *The full animation sequence is given using all lumps between the start
- *and end entry, in the order found in the WAD file.
- *
- *This routine modified to read its data from a predefined lump or
- *PWAD lump called ANIMATED rather than a static table in this module to
- *allow wad designers to insert or modify animation sequences.
- *
- *Lump format is an array of byte packed animdef_t structures, terminated
- *by a structure with istexture == -1. The lump can be generated from a
- *text source file using SWANTBLS.EXE, distributed with the BOOM utils.
- *The standard list of switches and animations is contained in the example
- *source text file DEFSWANI.DAT also in the BOOM util distribution.
- *
- *[RH] Rewritten to support BOOM ANIMATED lump but also make absolutely
- *no assumptions about how the compiler packs the animdefs array.
- *
- */
-void P_InitPicAnims (void)
-{
-	#if 0
-	// denis - allow reinitialisation
-	if (anims)
-	{
-		M_Free(anims);
-		lastanim = 0;
-		maxanims = 0;
-	}
-
-	// [RH] Load an ANIMDEFS lump first
-	P_InitAnimDefs ();
-
-	const ResourceId res_id = Res_GetResourceId("ANIMATED", global_directory_name);
-	if (res_id == ResourceId::INVALID_ID)
-		return;
-	const uint8_t* animdefs = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
-
-	// Init animation
-	for (const uint8_t* anim_p = animdefs; *anim_p != 255; anim_p += 23)
-	{
-		// 1/11/98 killough -- removed limit by array-doubling
-		if (lastanim >= anims + maxanims)
-		{
-			size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-			anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
-			lastanim = anims + maxanims;
-			maxanims = newmax;
-		}
-
-		if (*anim_p /* .istexture */ & 1)
-		{
-			// different episode ?
-			if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
-				R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
-				continue;
-
-			lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-			lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-								  - lastanim->basepic + 1;
-			/*if (*anim_p & 2)
-			{ // [RH] Bit 1 set means allow decals on walls with this texture
-				texturenodecals[lastanim->basepic] = 0;
-			}
-			else
-			{
-				texturenodecals[lastanim->basepic] = 1;
-			}*/
-		}
-		else
-		{
-			const OString start_name((char*)anim_p + 10, 8);
-			const OString end_name((char*)anim_p + 1, 8);
-
-			const ResourceId start_res_id = Res_GetTextureResourceId(start_name, FLOOR);
-			const ResourceId end_res_id = Res_GetTextureResourceId(end_name, FLOOR);
-
-			if (start_res_id == ResourceId::INVALID_ID || end_res_id == ResourceId::INVALID_ID)
-				continue;
-
-			/*
-			if (W_CheckNumForName ((char *)anim_p + 10, ns_flats) == -1 ||
-				W_CheckNumForName ((char *)anim_p + 1, ns_flats) == -1)
-				continue;
-			*/
-
-			lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
-			lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
-								  - lastanim->basepic + 1;
-		}
-
-		lastanim->istexture = *anim_p /* .istexture */;
-		lastanim->uniqueframes = false;
-		lastanim->curframe = 0;
-
-		if (lastanim->numframes < 2)
-			Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
-					 anim_p + 10 /* .startname */,
-					 anim_p + 1 /* .endname */);
-
-		lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
-					/* .speed */
-					(anim_p[19] << 0) |
-					(anim_p[20] << 8) |
-					(anim_p[21] << 16) |
-					(anim_p[22] << 24);
-
-		lastanim->countdown--;
-
-		lastanim++;
-	}
-
-	Res_ReleaseResource(res_id);
-	#endif	// if 0
 }
 
 
@@ -1802,58 +1644,9 @@ void P_PlayerInSpecialSector (player_t *player)
 // Animate planes, scroll walls, etc.
 //
 
-void P_UpdateSpecials (void)
+void P_UpdateSpecials()
 {
-	anim_t *anim;
-	int i;
-
-	// ANIMATE FLATS AND TEXTURES GLOBALLY
-	// [RH] Changed significantly to work with ANIMDEFS lumps
-	for (anim = anims; anim < lastanim; anim++)
-	{
-		if (--anim->countdown == 0)
-		{
-			int speedframe;
-
-			anim->curframe = (anim->numframes) ?
-					(anim->curframe + 1) % anim->numframes : 0;
-
-			speedframe = (anim->uniqueframes) ? anim->curframe : 0;
-
-			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
-				anim->countdown = anim->speedmin[speedframe];
-			else
-				anim->countdown = M_Random() %
-					(anim->speedmax[speedframe] - anim->speedmin[speedframe]) +
-					anim->speedmin[speedframe];
-		}
-
-		if (anim->uniqueframes)
-		{
-			int pic = anim->framepic[anim->curframe];
-
-			if (anim->istexture)
-				for (i = 0; i < anim->numframes; i++)
-					texturetranslation[anim->framepic[i]] = pic;
-			else
-				for (i = 0; i < anim->numframes; i++)
-					flattranslation[anim->framepic[i]] = pic;
-		}
-		else
-		{
-			for (i = anim->basepic; i < anim->basepic + anim->numframes; i++)
-			{
-				int pic = anim->basepic + (anim->curframe + i) % anim->numframes;
-
-				if (anim->istexture)
-					texturetranslation[i] = pic;
-				else
-					flattranslation[i] = pic;
-			}
-		}
-	}
-
-	// [ML] 5/11/06 - Remove sky scrolling ability
+	Res_UpdateTextureAnimations();
 }
 
 

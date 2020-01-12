@@ -272,7 +272,7 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 	}
 
-#if 1
+#if 0
 	for (int x = start; x <= stop; x++)
 	{
 		if (calc_light)
@@ -524,7 +524,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	frontsector = curline->frontsector;
 	backsector = curline->backsector;
 
-	const Texture* texture = Res_CacheTexture(curline->sidedef->midtexture);
+	const Texture* texture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(curline->sidedef->midtexture));
 	fixed_t texheight = FixedMul(texture->mHeight << FRACBITS, texture->mScaleY);
 
 	// find texture positioning
@@ -686,14 +686,14 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	// Cache the wall textures
 	toptexture = midtexture = bottomtexture = maskedtexture = NULL;
 
-	if (!backsector && curline->sidedef->midtexture != ResourceId::INVALID_ID)
-		midtexture = Res_CacheTexture(curline->sidedef->midtexture);
+	if (!backsector)
+		midtexture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(curline->sidedef->midtexture));
 
-	if (rw_hashigh && curline->sidedef->toptexture != ResourceId::INVALID_ID)
-		toptexture = Res_CacheTexture(curline->sidedef->toptexture);
+	if (rw_hashigh)
+		toptexture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(curline->sidedef->toptexture));
 
-	if (rw_haslow && curline->sidedef->bottomtexture != ResourceId::INVALID_ID)
-		bottomtexture = Res_CacheTexture(curline->sidedef->bottomtexture);
+	if (rw_haslow)
+		bottomtexture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(curline->sidedef->bottomtexture));
 
 	// determine which texture posts will be used for each screen
 	// column in this range and calculate the scaling factor for
@@ -935,12 +935,9 @@ void R_StoreWallRange(int start, int stop)
 		rw_bottomtexturemid += sidedef->rowoffset;
 
 		// allocate space for masked texture tables
-		if (sidedef->midtexture != ResourceId::INVALID_ID)
-		{
-			// masked midtexture
-			maskedtexture = Res_CacheTexture(sidedef->midtexture);
+		maskedtexture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(sidedef->midtexture));
+		if (maskedtexture)
 			ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
-		}
 
 		// [SL] additional fix for sky hack
 		if (R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) && R_ResourceIdIsSkyFlat(backsector->ceiling_res_id))

@@ -51,9 +51,6 @@ extern int				numflats;
 extern bool*			flatwarp;
 extern byte**			warpedflats;
 extern int*				flatwarpedwhen;
-extern int*				flattranslation;
-		
-extern int* 			texturetranslation; 	
 
 // Sprite....
 extern int				firstspritelump;

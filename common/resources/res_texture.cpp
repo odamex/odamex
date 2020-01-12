@@ -43,46 +43,10 @@
 #include "v_video.h"
 #include "v_palette.h"
 
-#ifdef USE_PNG
-	#define PNG_SKIP_SETJMP_CHECK
-	#include <setjmp.h>		// used for error handling by libpng
 
-	#include <zlib.h>
-	#include <png.h>
+typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
+static ResourceIdMap animated_texture_map;
 
-	#if (PNG_LIBPNG_VER < 10400)
-		// [SL] add data types to support versions of libpng prior to 1.4.0
-
-		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
-		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
-		 * to png_alloc_size_t are not necessary; in fact, it is recommended
-		 * not to use them at all so that the compiler can complain when something
-		 * turns out to be problematic.
-		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
-		 * png_uint_32) should be explicitly applied; however, we do not expect
-		 * to encounter practical situations that require such conversions.
-		 */
-
-		#if defined(__TURBOC__) && !defined(__FLAT__)
-		   typedef unsigned long png_alloc_size_t;
-		#else
-		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
-			 typedef unsigned long    png_alloc_size_t;
-		#  else
-			 /* This is an attempt to detect an old Windows system where (int) is
-			  * actually 16 bits, in that case png_malloc must have an argument with a
-			  * bigger size to accomodate the requirements of the library.
-			  */
-		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
-				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
-			   typedef DWORD         png_alloc_size_t;
-		#    else
-			   typedef png_size_t    png_alloc_size_t;
-		#    endif
-		#  endif
-		#endif
-	#endif	// PNG_LIBPNG_VER < 10400
-#endif	// USE_PNG
 
 
 //
@@ -232,12 +196,6 @@ TextureManager::TextureManager(const ResourceContainerId& container_id, Resource
 	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE2");
 
 	addResourcesToManager(manager);
-
-	if (clientside)
-	{	
-		readAnimDefLump();
-		readAnimatedLump();
-	}
 }
 
 
@@ -255,15 +213,6 @@ TextureManager::~TextureManager()
 //
 void TextureManager::clear()
 {
-	mAnimDefs.clear();
-
-	// free warping original texture (not stored in mTextureIdMap)
-//	for (size_t i = 0; i < mWarpDefs.size(); i++)
-//		if (mWarpDefs[i].original_texture)
-//			Z_Free((void*)mWarpDefs[i].original_texture);
-
-	mWarpDefs.clear();
-
 	for (ResourceLoaderLookupTable::iterator it = mResourceLoaderLookup.begin(); it != mResourceLoaderLookup.end(); ++it)
 		delete it->second;
 	mResourceLoaderLookup.clear();
@@ -404,6 +353,7 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 		// and stops at the first entry it finds.  If there are two
 		// entries with the same name, the first one in the array
 		// wins.
+		// [SL] Only add the first instance of a texture name
 		if (manager->getResourceId(path) != ResourceId::INVALID_ID)
 			continue;
 
@@ -508,14 +458,128 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 }
 
 
+
+
+// ============================================================================
 //
-// TextureManager::readAnimDefLump
+// AnimatedTextureManager
+//
+// ============================================================================
+
+AnimatedTextureManager::AnimatedTextureManager()
+{
+}
+
+
+//
+// AnimatedTextureManager::readAnimatedDefinitions
+//
+void AnimatedTextureManager::readAnimationDefinitions()
+{
+	#if CLIENT_APP
+	mTextureTranslation.clear();
+	loadAnimationsFromAnimatedLump();
+	#endif
+}
+
+
+//
+// AnimatedTextureManager::getResourceId
+//
+// Returns a resource ID for the current animation frame
+//
+const ResourceId AnimatedTextureManager::getResourceId(const ResourceId res_id) const
+{
+	ResourceIdMap::const_iterator it = mTextureTranslation.find(res_id);
+	if (it != mTextureTranslation.end())
+		return it->second;
+	return res_id;
+}
+
+
+//
+// AnimatedTextureManager::loadAnimationsFromAnimatedLump
+//
+// Reads animation definitions from the ANIMATED lump.
+//
+// Load the table of animation definitions, checking for existence of
+// the start and end of each frame. If the start doesn't exist the sequence
+// is skipped, if the last doesn't exist, BOOM exits.
+//
+// Wall/Flat animation sequences, defined by name of first and last frame,
+// The full animation sequence is given using all lumps between the start
+// and end entry, in the order found in the WAD file.
+//
+// This routine modified to read its data from a predefined lump or
+// PWAD lump called ANIMATED rather than a static table in this module to
+// allow wad designers to insert or modify animation sequences.
+//
+// Lump format is an array of byte packed animdef_t structures, terminated
+// by a structure with istexture == -1. The lump can be generated from a
+// text source file using SWANTBLS.EXE, distributed with the BOOM utils.
+// The standard list of switches and animations is contained in the example
+// source text file DEFSWANI.DAT also in the BOOM util distribution.
+//
+// [RH] Rewritten to support BOOM ANIMATED lump but also make absolutely
+// no assumptions about how the compiler packs the animdefs array.
+//
+void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
+{
+	const ResourceId res_id = Res_GetResourceId("/GLOBAL/ANIMATED");
+	if (!Res_CheckResource(res_id))
+		return;
+
+	uint32_t lumplen = Res_GetResourceSize(res_id);
+	if (lumplen == 0)
+		return;
+
+	const uint8_t* data = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
+
+	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
+	{
+		bool is_flat = (*(ptr + 0) == 0);
+		const OString start_name((char*)(ptr + 10), 8);
+		const OString end_name((char*)(ptr + 1), 8);
+		TextureSearchOrdering search_ordering = is_flat ? FLOOR : WALL;
+
+		const ResourceId start_res_id = Res_GetTextureResourceId(start_name, search_ordering);
+		const ResourceId end_res_id = Res_GetTextureResourceId(end_name, search_ordering);
+
+		if (!Res_CheckResource(start_res_id) || !Res_CheckResource(end_res_id))
+			continue;
+
+		AnimatedTextureManager::anim_t anim;
+		anim.basepic = start_res_id;
+		anim.numframes = end_res_id - start_res_id + 1;
+
+		if (anim.numframes <= 0)
+			continue;
+		anim.curframe = 0;
+			
+		int speed = LELONG(*(int*)(ptr + 19));
+		anim.countdown = speed - 1;
+
+		for (int i = 0; i < anim.numframes; i++)
+		{
+			anim.framepic[i] = anim.basepic + i;
+			anim.speedmin[i] = anim.speedmax[i] = speed;
+		}
+
+		mAnimDefs.push_back(anim);
+	}
+
+	Res_ReleaseResource(res_id);
+}
+
+
+//
+// AnimatedTextureManager::loadAnimationsFromAnimDefLump
 //
 // [RH] This uses a Hexen ANIMDEFS lump to define the animation sequences.
 //
-void TextureManager::readAnimDefLump()
+void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 {
-	/*
+	#if 0
 	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
@@ -636,129 +700,53 @@ void TextureManager::readAnimDefLump()
 		}
 		SC_Close ();
 	}
-	*/
-}
-
-
-//
-// TextureManager::readAnimatedLump
-//
-// Reads animation definitions from the ANIMATED lump.
-//
-// Load the table of animation definitions, checking for existence of
-// the start and end of each frame. If the start doesn't exist the sequence
-// is skipped, if the last doesn't exist, BOOM exits.
-//
-// Wall/Flat animation sequences, defined by name of first and last frame,
-// The full animation sequence is given using all lumps between the start
-// and end entry, in the order found in the WAD file.
-//
-// This routine modified to read its data from a predefined lump or
-// PWAD lump called ANIMATED rather than a static table in this module to
-// allow wad designers to insert or modify animation sequences.
-//
-// Lump format is an array of byte packed animdef_t structures, terminated
-// by a structure with istexture == -1. The lump can be generated from a
-// text source file using SWANTBLS.EXE, distributed with the BOOM utils.
-// The standard list of switches and animations is contained in the example
-// source text file DEFSWANI.DAT also in the BOOM util distribution.
-//
-// [RH] Rewritten to support BOOM ANIMATED lump but also make absolutely
-// no assumptions about how the compiler packs the animdefs array.
-//
-void TextureManager::readAnimatedLump()
-{
-	#if 0
-	const ResourceId res_id = Res_GetResourceId("ANIMATED", global_directory_name);
-	if (!Res_CheckResource(res_id))
-		return;
-
-	uint32_t lumplen = Res_GetResourceSize(res_id);
-	if (lumplen == 0)
-		return;
-
-	const uint8_t* data = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
-
-	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
-	{
-		bool is_flat = (*(ptr + 0) == 0);
-		const ResourcePath& path = is_flat ? flats_directory_name : textures_directory_name;
-		const OString start_name((char*)(ptr + 10), 8);
-		const OString end_name((char*)(ptr + 1), 8);
-
-		const ResourceId start_res_id = Res_GetResourceId(start_name, path);
-		const ResourceId end_res_id = Res_GetResourceId(end_name, path);
-
-		if (!Res_CheckResource(start_res_id) || !Res_CheckResource(end_res_id))
-			continue;
-
-		anim_t anim;
-		anim.basepic = start_res_id;
-		anim.numframes = end_res_id - start_res_id + 1;
-
-		if (anim.numframes <= 0)
-			continue;
-		anim.curframe = 0;
-			
-		int speed = LELONG(*(int*)(ptr + 19));
-		anim.countdown = speed - 1;
-
-		for (int i = 0; i < anim.numframes; i++)
-		{
-			anim.framepic[i] = anim.basepic + i;
-			anim.speedmin[i] = anim.speedmax[i] = speed;
-		}
-
-		mAnimDefs.push_back(anim);
-	}
-
-	Res_ReleaseResource(res_id);
 	#endif	// if 0
 }
 
 
+
 //
-// TextureManager::updateAnimatedTextures
+// AnimatedTextureManager::updateAnimatedTextures
 //
 // TextureIds ticking the animated textures and cyles the Textures within an
 // animation definition.
 //
-void TextureManager::updateAnimatedTextures()
+void AnimatedTextureManager::updateAnimatedTextures()
 {
 	if (!clientside)
 		return;
 
-	/*
 	// cycle the animdef textures
 	for (size_t i = 0; i < mAnimDefs.size(); i++)
 	{
-		anim_t* anim = &mAnimDefs[i];
+		AnimatedTextureManager::anim_t* anim = &mAnimDefs[i];
 		if (--anim->countdown == 0)
 		{
-			anim->curframe = (anim->curframe + 1) % anim->numframes;
+			anim->curframe = (anim->numframes) ? (anim->curframe + 1) % anim->numframes : 0;
+			int speedframe = (anim->uniqueframes) ? anim->curframe : 0;
 
-			if (anim->speedmin[anim->curframe] == anim->speedmax[anim->curframe])
-				anim->countdown = anim->speedmin[anim->curframe];
+			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
+				anim->countdown = anim->speedmin[speedframe];
 			else
-				anim->countdown = M_Random() %
-					(anim->speedmax[anim->curframe] - anim->speedmin[anim->curframe]) +
-					anim->speedmin[anim->curframe];
+				anim->countdown = M_Random() % (anim->speedmax[speedframe] - anim->speedmin[speedframe]) + anim->speedmin[speedframe];
+		}
 
-			// cycle the Textures
-			getTexture(anim->framepic[0]);	// ensure Texture is still cached
-			Texture* first_texture = mTextureIdMap[anim->framepic[0]];
-
-			for (int frame1 = 0; frame1 < anim->numframes - 1; frame1++)
+		if (anim->uniqueframes)
+		{
+			const ResourceId res_id = anim->framepic[anim->curframe];
+			for (int j = 0; j < anim->numframes; j++)
+				mTextureTranslation[anim->framepic[j]] = res_id;
+		}
+		else
+		{
+			for (uint32_t j = (uint32_t)anim->basepic; j < (uint32_t)anim->basepic + anim->numframes; j++)
 			{
-				int frame2 = (frame1 + 1) % anim->numframes;
-				getTexture(anim->framepic[frame2]);	// ensure Texture is still cached
-				mTextureIdMap[anim->framepic[frame1]] = mTextureIdMap[anim->framepic[frame2]]; 
+				mTextureTranslation[j] = (ResourceId)(anim->basepic + (anim->curframe + j) % anim->numframes);
 			}
-			
-			mTextureIdMap[anim->framepic[anim->numframes - 1]] = first_texture;
 		}
 	}
 
+	/*
 	// warp textures
 	for (size_t i = 0; i < mWarpDefs.size(); i++)
 	{
@@ -768,10 +756,6 @@ void TextureManager::updateAnimatedTextures()
 	}
 	*/
 }
-
-
-
-
 
 
 
@@ -832,6 +816,35 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 	}
 
 	return ResourceId::INVALID_ID;
+}
+
+
+static AnimatedTextureManager animated_texture_manager;
+
+//
+// Res_ReadAnimationDefinition
+//
+void Res_ReadAnimationDefinitions()
+{
+	animated_texture_manager.readAnimationDefinitions();
+}
+
+
+//
+// Res_UpdateTextureAnimations
+//
+void Res_UpdateTextureAnimations()
+{
+	animated_texture_manager.updateAnimatedTextures();
+}
+
+
+//
+// Res_GetAnimatedTextureResourceId
+//
+const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id)
+{
+	return animated_texture_manager.getResourceId(res_id);
 }
 
 

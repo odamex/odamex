@@ -176,9 +176,6 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote);
 //		it returns true, and the player is allowed to live.
 BOOL	CheckIfExitIsGood (AActor *self);
 
-// at game start
-void	P_InitPicAnims (void);
-
 // at map load
 void	P_SpawnSpecials (void);
 

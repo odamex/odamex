@@ -619,7 +619,8 @@ void R_DrawPlanes()
 			if (pl->minx > pl->maxx)
 				continue;
 
-			if (R_ResourceIdIsSkyFlat(pl->res_id))
+			const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
+			if (R_ResourceIdIsSkyFlat(res_id))
 			{
 				R_RenderSkyRange(pl);
 			}
@@ -628,7 +629,7 @@ void R_DrawPlanes()
 				// regular flat
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 
-				const Texture* texture = Res_CacheTexture(pl->res_id, PU_STATIC);
+				const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
 				dspan.source = texture->mData; 
 
 				// [SL] Note that the texture orientation differs from typical Doom span
