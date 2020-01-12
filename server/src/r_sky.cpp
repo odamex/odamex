@@ -30,6 +30,7 @@
 #include "r_data.h"
 #include "resources/res_resourceid.h"
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
