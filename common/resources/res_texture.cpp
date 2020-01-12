@@ -44,11 +44,6 @@
 #include "v_palette.h"
 
 
-typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
-static ResourceIdMap animated_texture_map;
-
-
-
 //
 // Res_WarpTexture
 //
@@ -57,80 +52,40 @@ static ResourceIdMap animated_texture_map;
 //
 static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture)
 {
-#if 0
-	// [SL] Odamex experimental warping
+	int width = source_texture->mWidth, height = source_texture->mHeight;
+	int width_bits = source_texture->mWidthBits, height_bits = source_texture->mHeightBits;
+	int width_mask = source_texture->mWidthMask, height_mask = source_texture->mHeightMask;
 
-	const palindex_t* source_buffer = source_texture->mData;
-
-	int widthbits = source_texture->mWidthBits;
-	int width = (1 << widthbits);
-	int widthmask = width - 1; 
-	int heightbits = source_texture->getHeightBits();
-	int height = (1 << heightbits);
-	int heightmask = height - 1;
-
-	const int time_offset = level.time * 50;
-
-	for (int x = 0; x < width; x++)
-	{
-		palindex_t* dest = dest_texture->mData + (x << heightbits);
-
-		for (int y = 0; y < height; y++)
-		{
-			// calculate angle such that one sinusoidal period is 64 pixels.
-			// add an offset based on the current time to create movement.
-			int angle_index = ((x << 7) + time_offset) & FINEMASK;
-
-			// row and column offsets have the effect of stretching or
-			// compressing the image according to a sine wave
-			int row_offset = (finesine[angle_index] << 2) >> FRACBITS;
-			int col_offset = (finesine[angle_index] << 1) >> FRACBITS;
-
-			int xindex = (((x + row_offset) & widthmask) << heightbits) + y;
-			int yindex = (x << heightbits) + ((y + col_offset) & heightmask);
-
-			*dest++ = rt_blend2(source_buffer[xindex], 128, source_buffer[yindex], 127);
-		}
-	}
-#endif 
-
-#if 0
 	// [SL] ZDoom 1.22 warping
-
-	const palindex_t* source_buffer = source_texture->mData;
-	palindex_t* warped_buffer = dest_texture->mData;
 	palindex_t temp_buffer[Texture::MAX_TEXTURE_HEIGHT];
+	palindex_t* warped = dest_texture->mData;
 
-	int step = level.time * 32;
-	for (int y = height - 1; y >= 0; y--)
-	{
-		const byte* source = source_buffer + y;
-		byte* dest = warped_buffer + y;
-
-		int xf = (finesine[(step + y * 128) & FINEMASK] >> 13) & widthmask;
-		for (int x = 0; x < width; x++)
-		{
-			*dest = source[xf << heightbits];
-			dest += height;
-			xf = (xf + 1) & widthmask;
-		}
-	}
-
-	step = level.time * 23;
+	int timebase = level.time * 23;
 	for (int x = width - 1; x >= 0; x--)
 	{
-		const byte *source = warped_buffer + (x << heightbits);
-		byte *dest = temp_buffer;
-
-		int yf = (finesine[(step + 128 * (x + 17)) & FINEMASK] >> 13) & heightmask;
-		for (int y = 0; y < height; y++)
+		int yf = (finesine[(timebase + ((x + 17) << 7)) & FINEMASK] >> 13) & height_mask;
+		const palindex_t* source = source_texture->mData + x;
+		palindex_t* dest = warped + x;
+		for (int yt = height; yt; yt--)
 		{
-			*dest++ = source[yf];
-			yf = (yf + 1) & heightmask;
+			*dest = *(source + (yf << height_bits));
+			dest += width;
+			yf = (yf + 1) & height_mask;
 		}
-		memcpy(warped_buffer + (x << heightbits), temp_buffer, height);
 	}
-#endif
+	timebase = level.time * 32;
+	for (int y = height - 1; y >= 0; y--)
+	{
+		int xf = (finesine[(timebase + (y << 7)) & FINEMASK] >> 13) & width_mask;
+		const palindex_t* source = warped + (y << height_bits);
+		palindex_t* dest = temp_buffer;
+		for (int xt = width; xt; xt--)
+		{
+			*dest++ = *(source + xf);
+			xf = (xf + 1) & width_mask;
+		}
+		memcpy(warped + (y << height_bits), temp_buffer, width);
+	}
 }
 
 
@@ -151,6 +106,8 @@ void Texture::init(int width, int height)
 	mHeight = height;
 	mWidthBits = Log2(width);
 	mHeightBits = Log2(height);
+	mWidthMask = (1 << mWidthBits) - 1;
+	mHeightMask = (1 << mHeightBits) - 1;
 	mOffsetX = 0;
 	mOffsetY = 0;
 	mScaleX = FRACUNIT;
@@ -466,13 +423,36 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 //
 // ============================================================================
 
+
+void AnimatedTextureManager::clear()
+{
+	#if CLIENT_APP
+	mTextureTranslation.clear();
+	for (size_t i = 0; i < mWarpedTextures.size(); i++)
+		delete [] (uint8_t*)mWarpedTextures[i].original_texture;
+	mWarpedTextures.clear();
+	#endif
+}
+
+
+//
+// AnimatedTextureManager::copyTexture
+//
+void AnimatedTextureManager::copyTexture(Texture* destination_texture, const Texture* source_texture) const
+{
+	uint16_t width = source_texture->mWidth, height = source_texture->mHeight;
+	destination_texture->init(width, height);
+	memcpy(destination_texture->mData, source_texture->mData, sizeof(palindex_t) * width * height);
+}
+
+
 //
 // AnimatedTextureManager::readAnimatedDefinitions
 //
 void AnimatedTextureManager::readAnimationDefinitions()
 {
 	#if CLIENT_APP
-	mTextureTranslation.clear();
+	clear();
 	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
 	loadAnimationsFromAnimatedLump();		// Boom ANIMATED lump
 	#endif
@@ -659,26 +639,8 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 				if (is_wall || is_floor)
 				{
 					SC_MustGetString();
-
 					const ResourceId res_id = Res_GetTextureResourceId(OString(sc_String), is_wall ? WALL : FLOOR);
-					if (res_id == ResourceId::INVALID_ID)
-						continue;
-
-					/*
-					warp_t warp;
-
-					// backup the original texture
-					warp.original_texture = getTexture(tex_id);
-
-					int width = 1 << warp.original_texture->mWidthBits;
-					int height = 1 << warp.original_texture->mHeightBits;
-
-					// create a new texture of the same size for the warped image
-					//warp.warped_texture = initTexture(data, width, height);
-					//warp.warped_texture = Texture::createTexture(width, height);
-
-					mWarpDefs.push_back(warp);
-					*/
+					addWarpedTexture(res_id);
 				}
 				else
 				{
@@ -688,6 +650,23 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 		}
 		SC_Close();
 	}
+}
+
+
+//
+// AnimatedTextureManager::addWarpedTexture
+//
+void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
+{
+	if (res_id == ResourceId::INVALID_ID)
+		return;
+
+	AnimatedTextureManager::warp_t warp;
+	warp.working_texture = (Texture*)Res_CacheTexture(res_id, PU_STATIC);
+	size_t size = Texture::calculateSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
+	warp.original_texture = (Texture*)(new uint8_t[size]);
+	copyTexture(warp.original_texture, warp.working_texture);
+	mWarpedTextures.push_back(warp);
 }
 
 
@@ -732,17 +711,12 @@ void AnimatedTextureManager::updateAnimatedTextures()
 		}
 	}
 
-	/*
 	// warp textures
-	for (size_t i = 0; i < mWarpDefs.size(); i++)
+	for (size_t i = 0; i < mWarpedTextures.size(); i++)
 	{
-		const Texture* original_texture = mWarpDefs[i].original_texture;
-		Texture* warped_texture = mWarpDefs[i].warped_texture;
-		Res_WarpTexture(warped_texture, original_texture);
+		Res_WarpTexture(mWarpedTextures[i].working_texture, mWarpedTextures[i].original_texture);
 	}
-	*/
 }
-
 
 
 //

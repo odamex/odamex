@@ -149,28 +149,6 @@ private:
 
 // ============================================================================
 //
-// AnimatedTexture
-//
-// ============================================================================
-//
-class AnimatedTexture : public Texture
-{
-public:
-	byte* getData() const
-	{	return mFrameData[mCurrentFrame];	}
-
-	byte* getMaskData() const
-	{	return mFrameMask[mCurrentFrame];	}
-
-private:
-	uint16_t			mCurrentFrame;
-	byte**				mFrameData;
-	byte**				mFrameMask;
-};
-
-
-// ============================================================================
-//
 // CompositeTextureDefinition
 //
 // ============================================================================
@@ -267,8 +245,8 @@ public:
 private:
 	// initialization routines
 	void clear();
-	void readAnimDefLump();
-	void readAnimatedLump();
+
+	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
 
 	void addResourcesToManager(ResourceManager* manager);
 	void addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir);
@@ -279,11 +257,7 @@ private:
 
 	typedef OHashTable<ResourceId, ResourceLoader*> ResourceLoaderLookupTable;
 	ResourceLoaderLookupTable		mResourceLoaderLookup;
-
-	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
-
 };
-
 
 
 //
@@ -297,7 +271,10 @@ class AnimatedTextureManager
 public:
 	AnimatedTextureManager() { }
 	
-	~AnimatedTextureManager() { }
+	~AnimatedTextureManager()
+	{
+		clear();
+	}
 
 	void readAnimationDefinitions();
 
@@ -306,8 +283,12 @@ public:
 	const ResourceId getResourceId(const ResourceId res_id) const;
 
 private:
+	void clear();
 	void loadAnimationsFromAnimatedLump();
 	void loadAnimationsFromAnimDefLump();
+
+	void addWarpedTexture(const ResourceId res_id);
+	void copyTexture(Texture* destination_texture, const Texture* source_texture) const;
 
 	typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
 	ResourceIdMap		mTextureTranslation;
@@ -326,16 +307,14 @@ private:
 		ResourceId		framepic[MAX_ANIM_FRAMES];
 	};
 
-	std::vector<AnimatedTextureManager::anim_t>	 mAnimDefs;
+	std::vector<AnimatedTextureManager::anim_t> mAnimDefs;
 
-	// warped textures
 	struct warp_t
 	{
-		const Texture*	original_texture;
-		Texture*		warped_texture;
+		Texture* original_texture;
+		Texture* working_texture;
 	};
-
-	std::vector<warp_t>			mWarpDefs;
+	std::vector<AnimatedTextureManager::warp_t> mWarpedTextures;
 };
 
 #endif // __RES_TEXTURE_H__

@@ -8,47 +8,6 @@
 
 #include "cmdlib.h"
 
-#ifdef USE_PNG
-	#define PNG_SKIP_SETJMP_CHECK
-	#include <setjmp.h>		// used for error handling by libpng
-
-	#include <zlib.h>
-	#include <png.h>
-
-	#if (PNG_LIBPNG_VER < 10400)
-		// [SL] add data types to support versions of libpng prior to 1.4.0
-
-		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
-		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
-		 * to png_alloc_size_t are not necessary; in fact, it is recommended
-		 * not to use them at all so that the compiler can complain when something
-		 * turns out to be problematic.
-		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
-		 * png_uint_32) should be explicitly applied; however, we do not expect
-		 * to encounter practical situations that require such conversions.
-		 */
-
-		#if defined(__TURBOC__) && !defined(__FLAT__)
-		   typedef unsigned long png_alloc_size_t;
-		#else
-		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
-			 typedef unsigned long    png_alloc_size_t;
-		#  else
-			 /* This is an attempt to detect an old Windows system where (int) is
-			  * actually 16 bits, in that case png_malloc must have an argument with a
-			  * bigger size to accomodate the requirements of the library.
-			  */
-		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
-				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
-			   typedef DWORD         png_alloc_size_t;
-		#    else
-			   typedef png_size_t    png_alloc_size_t;
-		#    endif
-		#  endif
-		#endif
-	#endif	// PNG_LIBPNG_VER < 10400
-#endif	// USE_PNG
-
 
 //
 // Res_TransposeImage
@@ -66,10 +25,7 @@ static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int w
 		
 		for (int y = 0; y < height; y++)
 		{
-			if (translation)
-				*dest = translation[*source_column];
-			else
-				*dest = *source_column;
+			*dest = translation[*source_column];
 			source_column += width;
 			dest++;
 		}
@@ -190,6 +146,9 @@ bool Res_ValidatePatchData(const uint8_t* patch_data, uint32_t patch_size)
 }
 
 
+//
+// BaseTextureLoader::calculateTextureSize
+//
 uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height) const
 {
 	return Texture::calculateSize(width, height);
@@ -199,30 +158,7 @@ uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height
 Texture* BaseTextureLoader::createTexture(void* data, uint16_t width, uint16_t height) const
 {
 	Texture* texture = static_cast<Texture*>(data);
-
-	texture->mWidth = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
-	texture->mHeight = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
-	texture->mWidthBits = Log2(texture->mWidth);
-	texture->mHeightBits = Log2(texture->mHeight);
-	texture->mWidthMask = (1 << texture->mWidthBits) - 1;
-	texture->mHeightMask = (1 << texture->mHeightBits) - 1;
-	texture->mOffsetX = 0;
-	texture->mOffsetY = 0;
-	texture->mScaleX = FRACUNIT;
-	texture->mScaleY = FRACUNIT;
-	texture->mMaskColor = 0;
-	texture->mData = NULL;
-
-	#if CLIENT_APP
-	if (width > 0 && height > 0)
-	{
-		// mData follows the header in memory
-		texture->mData = (palindex_t*)((uint8_t*)data + sizeof(Texture));
-		// Make the image transparent to start with
-		memset(texture->mData, texture->mMaskColor, sizeof(palindex_t) * texture->mWidth * texture->mHeight);
-	}
-	#endif
-
+	texture->init(width, height);
 	return texture;
 }
 
@@ -440,199 +376,3 @@ void CompositeTextureLoader::load(void* data) const
 	}
 	#endif
 }
-
-
-
-
-
-#if 0
-// ----------------------------------------------------------------------------
-// PngTextureLoader class implementation
-//
-// ----------------------------------------------------------------------------
-
-//
-// Res_ReadPNGCallback
-//
-// Callback function required for reading PNG format images stored in
-// a memory buffer.
-//
-#ifdef CLIENT_APP
-static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t length)
-{
-	MEMFILE* mfp = (MEMFILE*)png_get_io_ptr(png_ptr);
-	mem_fread(dest, sizeof(byte), length, mfp);
-}
-#endif
-
-
-//
-// Res_PNGCleanup
-//
-// Helper function for TextureManager::cachePNGTexture which takes care of
-// freeing the memory allocated for reading a PNG image using libpng. This
-// can be called in the event of success or failure when reading the image.
-//
-#ifdef CLIENT_APP
-static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lump_data,
-							png_byte** row_data, MEMFILE** mfp)
-{
-	png_destroy_read_struct(png_ptr, info_ptr, NULL);
-	*png_ptr = NULL;
-	*info_ptr = NULL;
-
-	delete [] *lump_data;
-	*lump_data = NULL;
-	delete [] *row_data;
-	*row_data = NULL;
-
-	if (*mfp)
-		mem_fclose(*mfp);
-	*mfp = NULL;
-}
-#endif
-
-
-PngTextureLoader::PngTextureLoader(
-		const RawResourceAccessor* accessor,
-		const OString& name) :
-	mRawResourceAccessor(accessor), mResourceName(name)
-{ }
-
-
-//
-// PngTextureLoader::validate
-//
-bool PngTextureLoader::validate(const ResourceId res_id) const
-{
-	// TODO: implement this correctly
-	return true;
-}
-
-
-//
-// PngTextureLoader::size
-//
-uint32_t PngTextureLoader::size(const ResourceId res_id) const
-{
-	// TODO: implement this correctly
-	return sizeof(Texture);
-}
-
-
-//
-// PngTextureLoader::load
-//
-// Convert the given graphic lump in PNG format to a Texture instance,
-// converting from 32bpp to 8bpp using the default game palette.
-//
-void PngTextureLoader::load(const ResourceId res_id, void* data, palindex_t maskcolor, const palindex_t* colormap) const
-{
-#ifdef CLIENT_APP
-	uint32_t raw_size = mRawResourceAccessor->getResourceSize(res_id);
-	uint8_t* raw_data = new uint8_t[raw_size];
-
-	mRawResourceAccessor->loadResource(res_id, raw_data, raw_size);
-
-	png_struct* png_ptr = NULL;
-	png_info* info_ptr = NULL;
-	png_byte* row_data = NULL;
-	MEMFILE* mfp = NULL;
-
-	if (!png_check_sig(raw_data, 8))
-	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", mResourceName.c_str());
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
-		return;
-	}
-
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", mResourceName.c_str());
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
-		return;
-	}
-
-	info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", mResourceName.c_str());
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
-		return;
-	}
-
-	// tell libpng to retrieve image data from memory buffer instead of a disk file
-	mfp = mem_fopen_read(raw_data, raw_size);
-	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
-
-	png_read_info(png_ptr, info_ptr);
-
-	// read the png header
-	png_uint_32 width = 0, height = 0;
-	int bitsperpixel = 0, colortype = -1;
-	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
-
-	if (ret != 1)
-	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", mResourceName.c_str());
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
-		return;
-	}
-
-	Texture* texture = initTexture(data, width, height);
-	memset(texture->mData, 0, width * height);
-
-	// convert the PNG image to a convenient format
-
-	// convert transparency to full alpha
-	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-		png_set_tRNS_to_alpha(png_ptr);
-
-	// convert grayscale, if needed.
-	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
-		png_set_expand_gray_1_2_4_to_8(png_ptr);
-
-	// convert paletted images to RGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE)
-		png_set_palette_to_rgb(png_ptr);
-
-	// convert from RGB to ARGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
-	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
-
-	// process the above transformations
-	png_read_update_info(png_ptr, info_ptr);
-
-	// Read the new color type after updates have been made.
-	colortype = png_get_color_type(png_ptr, info_ptr);
-
-	// read the image and store in temp_image
-	const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
-
-	row_data = new png_byte[row_size];
-	for (unsigned int y = 0; y < height; y++)
-	{
-		png_read_row(png_ptr, row_data, NULL);
-		byte* dest = texture->mData + y;
-		//byte* mask = texture->mMask + y;
-
-		for (unsigned int x = 0; x < width; x++)
-		{
-			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
-						row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
-
-			//*mask = color.geta() != 0;
-			//if (*mask)
-			//	*dest = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-
-			dest += height;
-			//mask += height;
-		}
-	}
-
-	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
-#endif	// CLIENT_APP
-}
-
-#endif // if 0
