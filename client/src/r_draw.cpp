@@ -487,6 +487,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 	}
 	else
 	{
+		// non-masked so just fill it all in
 		do {
 			colorfunc(color, dest);
 			dest += pitch;

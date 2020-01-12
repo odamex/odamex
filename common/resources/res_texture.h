@@ -295,7 +295,7 @@ private:
 class AnimatedTextureManager
 {
 public:
-	AnimatedTextureManager();
+	AnimatedTextureManager() { }
 	
 	~AnimatedTextureManager() { }
 
@@ -306,13 +306,11 @@ public:
 	const ResourceId getResourceId(const ResourceId res_id) const;
 
 private:
-
 	void loadAnimationsFromAnimatedLump();
 	void loadAnimationsFromAnimDefLump();
 
 	typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
 	ResourceIdMap		mTextureTranslation;
-
 
 	// animated textures
 	struct anim_t
@@ -320,8 +318,7 @@ private:
 		static const unsigned int MAX_ANIM_FRAMES = 32;
 		ResourceId		basepic;
 		short			numframes;
-		byte			istexture;		// TODO: Remove this
-		byte			uniqueframes;
+		bool			uniqueframes;
 		byte			countdown;
 		byte			curframe;
 		byte 			speedmin[MAX_ANIM_FRAMES];
@@ -329,7 +326,7 @@ private:
 		ResourceId		framepic[MAX_ANIM_FRAMES];
 	};
 
-	std::vector<anim_t>			mAnimDefs;
+	std::vector<AnimatedTextureManager::anim_t>	 mAnimDefs;
 
 	// warped textures
 	struct warp_t

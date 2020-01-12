@@ -466,11 +466,6 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 //
 // ============================================================================
 
-AnimatedTextureManager::AnimatedTextureManager()
-{
-}
-
-
 //
 // AnimatedTextureManager::readAnimatedDefinitions
 //
@@ -478,7 +473,8 @@ void AnimatedTextureManager::readAnimationDefinitions()
 {
 	#if CLIENT_APP
 	mTextureTranslation.clear();
-	loadAnimationsFromAnimatedLump();
+	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
+	loadAnimationsFromAnimatedLump();		// Boom ANIMATED lump
 	#endif
 }
 
@@ -551,6 +547,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 		AnimatedTextureManager::anim_t anim;
 		anim.basepic = start_res_id;
 		anim.numframes = end_res_id - start_res_id + 1;
+		anim.uniqueframes = false;
 
 		if (anim.numframes <= 0)
 			continue;
@@ -579,7 +576,6 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 //
 void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 {
-	#if 0
 	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
@@ -587,24 +583,19 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 
 		while (SC_GetString())
 		{
-			ResourcePath path;
-			if (SC_Compare("flat"))
-				path = flats_directory_name;
-			else if (SC_Compare("texture"))
-				path = textures_directory_name;
-
-			if (!path.empty())
+			bool is_wall = SC_Compare("texture");
+			bool is_floor = SC_Compare("flat");
+			if (is_wall || is_floor)
 			{
 				SC_MustGetString();
-				const OString lump_name(sc_String);
 
-				anim_t anim;
-				anim.basepic = Res_GetResourceId(lump_name, path);
-
+				AnimatedTextureManager::anim_t anim;
+				anim.basepic = Res_GetTextureResourceId(OString(sc_String), is_wall ? WALL : FLOOR);
 				anim.curframe = 0;
 				anim.numframes = 0;
-				memset(anim.speedmin, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
-				memset(anim.speedmax, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
+				anim.uniqueframes = true;
+				memset(anim.speedmin, 1, AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
+				memset(anim.speedmax, 1, AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
 
 				while (SC_GetString())
 				{
@@ -614,8 +605,8 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 						break;
 					}
 
-					if ((unsigned)anim.numframes == anim_t::MAX_ANIM_FRAMES)
-						SC_ScriptError ("Animation has too many frames");
+					if ((unsigned)anim.numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+						SC_ScriptError("Animation has too many frames");
 
 					byte min = 1, max = 1;
 					
@@ -634,50 +625,46 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 						min = MAX(sc_Number, 0);
 						SC_MustGetNumber();
 						max = MIN(sc_Number, 255);
-						if (min > max)
-							min = max = 1;
 					}
 					else
 					{
-						SC_ScriptError ("Must specify a duration for animation frame");
+						SC_ScriptError("Must specify a duration for animation frame");
 					}
 
 					anim.speedmin[anim.numframes] = min;
 					anim.speedmax[anim.numframes] = max;
-					anim.framepic[anim.numframes] = frame + anim.basepic - 1;
+					anim.framepic[anim.numframes] = anim.basepic + frame - 1;
 					anim.numframes++;
 				}
 
 				anim.countdown = anim.speedmin[0];
 
-				if (anim.basepic != TextureManager::NOT_FOUND_TEXTURE_ID &&
-					anim.basepic != TextureManager::NO_TEXTURE_ID)
+				if (anim.numframes < 2)
+					SC_ScriptError("Animation needs at least 2 frames");
+				else if (anim.basepic != ResourceId::INVALID_ID)
+					// TODO: check for duplicate anim_t definitions
 					mAnimDefs.push_back(anim);
 			}
-			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			else if (SC_Compare("switch"))
 			{
-				//P_ProcessSwitchDef ();
-//				SC_ScriptError("switchdef not supported.");
+				// Switchdef not supported.
 			}
 			else if (SC_Compare("warp"))
 			{
 				SC_MustGetString();
 
-				ResourcePath path;
-				if (SC_Compare("flat"))
-					path = flats_directory_name;
-				else if (SC_Compare("texture"))
-					path = textures_directory_name;
+				bool is_wall = SC_Compare("texture");
+				bool is_floor = SC_Compare("flat");
 
-				if (!path.empty())
+				if (is_wall || is_floor)
 				{
 					SC_MustGetString();
-					const OString lump_name(sc_String);
 
-					const ResourceId res_id = Res_GetResourceId(lump_name, path);
-					if (!res_id.valid())
+					const ResourceId res_id = Res_GetTextureResourceId(OString(sc_String), is_wall ? WALL : FLOOR);
+					if (res_id == ResourceId::INVALID_ID)
 						continue;
 
+					/*
 					warp_t warp;
 
 					// backup the original texture
@@ -691,6 +678,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 					//warp.warped_texture = Texture::createTexture(width, height);
 
 					mWarpDefs.push_back(warp);
+					*/
 				}
 				else
 				{
@@ -698,11 +686,9 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 				}
 			}
 		}
-		SC_Close ();
+		SC_Close();
 	}
-	#endif	// if 0
 }
-
 
 
 //
