@@ -1562,13 +1562,13 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	cvar_t::C_ReadCVars(&vars_p);
 
 	// read resource file info
-	std::vector<std::string> resource_file_names;
+	std::vector<std::string> resource_filenames;
 	byte resource_file_count;
 	arc >> resource_file_count;
 	for (size_t i = 0; i < resource_file_count; i++)
 	{
 		arc >> filename;
-		resource_file_names.push_back(filename);	
+		resource_filenames.push_back(filename);	
 	}
 
 	// [SL] DEH/BEX patch file names used to be saved separately.
@@ -1613,13 +1613,18 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	serverside = false;
 
 	// load the resource files
-	std::vector<std::string> empty_resource_file_hashes, missing_file_names;
-//	D_VerifyResourceFiles(resource_file_names, empty_resource_file_hashes, missing_file_names); 
+	std::vector<std::string> new_resource_filenames(resource_filenames);
+	std::vector<std::string> empty_resource_filehashes;
+	std::vector<std::string> missing_resource_filenames;
+	std::vector<std::string> missing_resource_filehashes;
 
-	if (!missing_file_names.empty())
-		I_Error("Unable to locate resource files %s\n",  JoinStrings(resource_file_names, ", ").c_str());
+	Res_ValidateResourceFiles(new_resource_filenames, empty_resource_filehashes,
+								missing_resource_filenames, missing_resource_filehashes);
 
-	D_LoadResourceFiles(resource_file_names);
+	if (!missing_resource_filenames.empty())
+		I_Error("Unable to locate resource files %s\n",  JoinStrings(missing_resource_filenames, ", ").c_str());
+
+	D_ReloadResourceFiles(resource_filenames);
 
 	// load the map
 	G_InitNew(mapname.c_str());
