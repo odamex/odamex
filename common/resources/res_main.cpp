@@ -345,6 +345,8 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, int tag)
 			DPrintf("Resource cache miss for %s\n", OString(getResourcePath(res_id)).c_str());
 			const ResourceRecord* res_rec = getResourceRecord(res_id);
 
+			I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)
+
 			void* dest = NULL;		// memory location allocated by the cache where the data should be copied to when loaded
 			if (res_rec->mResourceLoader)
 			{
@@ -361,6 +363,9 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, int tag)
 				mCache->cacheData(res_id, &dest, size, tag);
 				container->loadResource(dest, res_id, size);
 			}
+
+			I_EndRead();			// indicate to the HUD to stop drawing the loading icon (STDISK)
+
 			data = mCache->getData(res_id);
 		}
 	}
