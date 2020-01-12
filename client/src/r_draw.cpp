@@ -43,6 +43,7 @@
 
 #include "gi.h"
 #include "v_text.h"
+#include "resources/res_texture.h"
 
 #undef RANGECHECK
 

@@ -24,24 +24,14 @@
 
 #include "i_system.h"
 #include "tables.h"
-#include "r_defs.h"
-#include "r_state.h"
 #include "g_level.h"
 #include "m_random.h"
 #include "sc_man.h"
-#include "m_memio.h"
 #include "cmdlib.h"
-
-#include <cstring>
-#include <algorithm>
-#include <math.h>
 
 #include "resources/res_texture.h"
 #include "resources/res_main.h"
 #include "resources/res_resourceloader.h"
-
-#include "v_video.h"
-#include "v_palette.h"
 
 
 //
@@ -135,7 +125,6 @@ uint32_t Texture::calculateSize(int width, int height)
 	#endif
 	return size;
 }
-
 
 
 // ============================================================================
@@ -415,14 +404,11 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 }
 
 
-
-
 // ============================================================================
 //
 // AnimatedTextureManager
 //
 // ============================================================================
-
 
 void AnimatedTextureManager::clear()
 {

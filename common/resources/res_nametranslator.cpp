@@ -1,3 +1,26 @@
+// Emacs style mode select   -*- C++ -*- 
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+// Mapping of resource paths to resource IDs
+//
+//-----------------------------------------------------------------------------
+
 #include <assert.h>
 #include "resources/res_nametranslator.h"
 
@@ -32,7 +55,7 @@ const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) con
 		const ResourceIdList& res_id_list = it->second;
 		assert(!res_id_list.empty());
 		const ResourceId res_id = res_id_list.back();
-		// assert(validateResourceId(res_id));
+		assert(res_id != ResourceId::INVALID_ID);
 		return res_id;
 	}
 	
@@ -95,5 +118,3 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 
 	assert(translate(path) == res_id);
 }
-
-

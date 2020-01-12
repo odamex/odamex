@@ -22,20 +22,16 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __R_DATA__
 #define __R_DATA__
 
 #include "r_defs.h"
 #include "r_state.h"
-#include "resources/res_main.h"
 
 
 // On the Alpha, accessing the shorts directly if they aren't aligned on a
 // 4-byte boundary causes unaligned access warnings. Why it does this it at
 // all and only while initing the textures is beyond me.
-
-
 #ifdef ALPHA
 #define SAFESHORT(s)	((short)(((byte *)&(s))[0] + ((byte *)&(s))[1] * 256))
 #else
@@ -43,60 +39,9 @@
 #endif
 
 
-// A single patch from a texture definition,
-//	basically a rectangular area within
-//	the texture rectangle.
-typedef struct
-{
-	// Block origin (always UL),
-	// which has already accounted
-	// for the internal origin of the patch.
-	int 		originx;
-	int 		originy;
-	int 		patch;
-} texpatch_t;
-
-
-// A maptexturedef_t describes a rectangular texture,
-//	which is composed of one or more mappatch_t structures
-//	that arrange graphic patches.
-typedef struct
-{
-	// Keep name for switch changing, etc.
-	char		name[9];
-	short		width;
-	short		height;
-
-	// [RH] Use a hash table similar to the one now used
-	//		in w_wad.c, thus speeding up level loads.
-	//		(possibly quite considerably for larger levels)
-	int			index;
-	int			next;
-
-	// All the patches[patchcount]
-	//	are drawn back to front into the cached texture.
-	short		patchcount;
-	texpatch_t	patches[1];
-
-} texture_t;
-
-
-extern texture_t **textures;
-extern byte* textureheightmask;
-extern fixed_t* texturescalex;
-extern fixed_t* texturescaley;
-
 // I/O, setting up the stuff.
 void R_InitData (void);
 void R_PrecacheLevel (void);
-
-
-// Retrieval.
-// Floor/ceiling opaque texture tiles,
-// lookup by name. For animation?
-int R_FlatNumForName (const char *name);
-inline int R_FlatNumForName (const byte *name) { return R_FlatNumForName ((const char *)name); }
-
 
 void R_InitColormaps();
 void R_ShutdownColormaps();
@@ -115,5 +60,3 @@ extern size_t numfakecmaps;
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
 
 #endif
-
-

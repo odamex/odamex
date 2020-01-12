@@ -272,7 +272,7 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 	}
 
-#if 0
+#if 1
 	for (int x = start; x <= stop; x++)
 	{
 		if (calc_light)
@@ -283,8 +283,8 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 
 		dcol.x = x;
-		dcol.yl = top[x];
-		dcol.yh = bottom[x];
+		dcol.yl = MAX(0, top[x]);
+		dcol.yh = MIN(viewheight -1, bottom[x]);
 		dcol.source = posts[x];
 		colblast();
 	}

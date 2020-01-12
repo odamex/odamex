@@ -1,12 +1,11 @@
 #include <cmath>
-
-#include "resources/res_resourceloader.h"
-#include "resources/res_texture.h"
+#include "cmdlib.h"
 #include "i_system.h"
-#include "m_memio.h"
 #include "v_palette.h"
 
-#include "cmdlib.h"
+#include "resources/res_resourceloader.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 
 //

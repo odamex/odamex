@@ -29,7 +29,6 @@
 
 #include "m_ostring.h"
 #include "w_ident.h"
-#include "r_data.h"
 
 //
 // Res_IsMapLumpName

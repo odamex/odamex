@@ -105,8 +105,6 @@ bool Res_IsDehackedFile(const OString& filename)
 }
 
 
-// ****************************************************************************
-
 // ============================================================================
 //
 // RawResourceAccessor class implementations
@@ -139,7 +137,6 @@ void RawResourceAccessor::loadResource(const ResourceId res_id, void* data, uint
 //
 // Set up the resource lookup tables.
 //
-
 ResourceManager::ResourceManager() :
 	mRawResourceAccessor(this),
 	mCache(NULL)

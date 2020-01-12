@@ -38,6 +38,7 @@
 #include "s_sndseq.h"
 #include "i_system.h"
 #include "m_vectors.h"
+#include "resources/res_texture.h"
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
 #define LANGREGIONMASK	MAKE_ID(0,0,0xff,0xff)

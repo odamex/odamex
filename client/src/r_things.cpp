@@ -30,6 +30,7 @@
 #include "i_system.h"
 #include "z_zone.h"
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #include "r_local.h"
 #include "p_local.h"

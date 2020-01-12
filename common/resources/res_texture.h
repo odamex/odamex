@@ -35,7 +35,8 @@
 #include "hashtable.h"
 
 #include "r_defs.h"
-#include "resources/res_main.h"
+#include "resources/res_resourcepath.h"
+#include "resources/res_container.h"
 
 class ResourceLoader;
 class ResourceManager;

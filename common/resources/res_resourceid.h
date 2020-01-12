@@ -24,8 +24,8 @@
 #ifndef __RES_RESOURCEID_H__
 #define __RES_RESOURCEID_H__
 
-#include <vector>
 #include "doomtype.h"
+#include <vector>
 #include "hashtable.h"
 
 class ResourceId
@@ -48,22 +48,6 @@ public:
 	operator uint32_t() const
 	{
 		return mValue;
-	}
-
-	uint16_t serialize() const
-	{
-		if (mValue == ResourceId::INVALID_ID)
-			return 0xFFFF;
-		// NOTE: this assumes that there is a maximum of 65535 resource IDs assigned
-		return static_cast<uint16_t>(mValue & 0xFFFF);
-	}
-
-	void deserialize(uint16_t value)
-	{
-		if (value == 0xFFFF)
-			mValue = ResourceId::INVALID_ID;
-		else
-			mValue = static_cast<uint32_t>(value);
 	}
 
 	static const ResourceId INVALID_ID;

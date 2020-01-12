@@ -243,8 +243,6 @@ struct sector_s
 typedef struct sector_s sector_t;
 
 
-
-
 //
 // The SideDef.
 //
@@ -592,5 +590,3 @@ struct visplane_s
 typedef struct visplane_s visplane_t;
 
 #endif
-
-

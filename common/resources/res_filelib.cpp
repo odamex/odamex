@@ -49,16 +49,6 @@
 
 EXTERN_CVAR(waddirs)
 
-struct HashMismatch
-{
-	std::string		filename;
-	std::string		required_hash;
-	std::string		actual_hash;
-};
-
-// global list of which filenames failed hash checking
-static std::vector<HashMismatch> hash_mismatches;
-
 // global list of filename extensions for use when an extension isn't supplied to Res_FindResourceFile
 static const char* const IWAD_EXTLIST[] = { ".WAD", 0 };
 static const char* const WAD_EXTLIST[] = { ".WAD", ".ZIP", ".PK3", 0 };
@@ -374,8 +364,7 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 //
 // [SL] Searches the given directory for a case-insensitive match of filename.
 // If a hash is supplied, any matches will have their MD5Sum verified against
-// the supplied hash and an entry in hash_mismatches will be added if
-// verification fails. Upon successful matching, the full path to the file
+// the supplied hash and verified. Upon successful matching, the full path to the file
 // will be returned (case-sensitive).
 //
 static std::string Res_BaseFileSearchDir(
@@ -426,13 +415,6 @@ static std::string Res_BaseFileSearchDir(
 				found = local_filename;
 				break;
 			}
-			else
-			{
-				hash_mismatches.push_back(HashMismatch());
-				hash_mismatches.back().filename = local_filename;
-				hash_mismatches.back().required_hash = StdStringToUpper(hash);
-				hash_mismatches.back().actual_hash = StdStringToUpper(local_hash);
-			}
 		}
 	}
 
@@ -463,13 +445,6 @@ static std::string Res_BaseFileSearchDir(
 			{
 				found = local_filename; 
 				break;
-			}
-			else
-			{
-				hash_mismatches.push_back(HashMismatch());
-				hash_mismatches.back().filename = local_filename;
-				hash_mismatches.back().required_hash = StdStringToUpper(hash);
-				hash_mismatches.back().actual_hash = StdStringToUpper(local_hash);
 			}
 		}
 	} while (FindNextFile(hFind, &FindFileData));

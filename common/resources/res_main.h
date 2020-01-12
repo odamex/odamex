@@ -24,20 +24,19 @@
 #ifndef __RES_MAIN_H__
 #define __RES_MAIN_H__
 
+#include "doomtype.h"
 #include <stdlib.h>
 #include "m_ostring.h"
 #include "hashtable.h"
 #include <vector>
 #include <string>
 
+#include "resources/res_resourceid.h"
 #include "resources/res_resourcepath.h"
 #include "resources/res_nametranslator.h"
 #include "resources/res_container.h"
-#include "resources/res_resourceloader.h"
 
 #include "z_zone.h"
-
-#include "resources/res_resourceid.h"
 
 // Forward class declarations
 class ResourceManager;
@@ -244,8 +243,6 @@ private:
 	ResourceCache*					mCache;
 
 };
-
-
 
 
 // ============================================================================

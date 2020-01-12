@@ -63,6 +63,7 @@
 
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
+#include "resources/res_texture.h"
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
@@ -676,25 +677,28 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (int secnum)
+fixed_t P_FindShortestTextureAround(int secnum)
 {
 	int minsize = MAXINT;
 	side_t *side;
-	int i;
 	sector_t *sec = &sectors[secnum];
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided(secnum, i))
 		{
-			side = getSide (secnum, i, 0);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
+			side = getSide(secnum, i, 0);
+			if (side->bottomtexture != ResourceId::INVALID_ID)
+			{
+				const Texture* texture = Res_CacheTexture(side->bottomtexture);
+				minsize = std::min<int>(minsize, texture->mHeight);
+			}
 			side = getSide (secnum, i, 1);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
+			if (side->bottomtexture != ResourceId::INVALID_ID)
+			{
+				const Texture* texture = Res_CacheTexture(side->bottomtexture);
+				minsize = std::min<int>(minsize, texture->mHeight);
+			}
 		}
 	}
 	return minsize;
@@ -712,25 +716,28 @@ fixed_t P_FindShortestTextureAround (int secnum)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (int secnum)
+fixed_t P_FindShortestUpperAround(int secnum)
 {
 	int minsize = MAXINT;
 	side_t *side;
-	int i;
 	sector_t *sec = &sectors[secnum];
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
 		if (twoSided (secnum, i))
 		{
 			side = getSide (secnum,i,0);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
+			if (side->toptexture != ResourceId::INVALID_ID)
+			{
+				const Texture* texture = Res_CacheTexture(side->toptexture);
+				minsize = std::min<int>(minsize, texture->mHeight);
+			}
 			side = getSide (secnum,i,1);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
+			if (side->toptexture != ResourceId::INVALID_ID)
+			{
+				const Texture* texture = Res_CacheTexture(side->toptexture);
+				minsize = std::min<int>(minsize, texture->mHeight);
+			}
 		}
 	}
 	return minsize;

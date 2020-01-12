@@ -59,42 +59,6 @@
 // a patch or sprite is composed of zero or more columns.
 //
 
-int 			firstflat;
-int 			lastflat;
-int				numflats;
-
-int 			firstspritelump;
-int 			lastspritelump;
-int				numspritelumps;
-
-int				numtextures;
-texture_t** 	textures;
-
-int*			texturewidthmask;
-
-// needed for texture pegging
-fixed_t*		textureheight;
-static int*		texturecompositesize;
-static short** 	texturecolumnlump;
-static unsigned **texturecolumnofs;
-static byte**	texturecomposite;
-fixed_t*		texturescalex;
-fixed_t*		texturescaley;
-
-// for global animation
-bool*			flatwarp;
-byte**			warpedflats;
-int*			flatwarpedwhen;
-
-
-
-//
-// R_InitFlats
-//
-void R_InitFlats (void)
-{
-}
-
 
 //
 // R_InitSpriteLumps
@@ -104,6 +68,7 @@ void R_InitFlats (void)
 //
 void R_InitSpriteLumps (void)
 {
+	/*
 	firstspritelump = W_GetNumForName ("S_START") + 1;
 	lastspritelump = W_GetNumForName ("S_END") - 1;
 
@@ -116,6 +81,7 @@ void R_InitSpriteLumps (void)
 	//		and spritetopoffset arrays, this data has now been moved into
 	//		the sprite frame definition and gets initialized by
 	//		R_InstallSpriteLump(), so there really isn't anything to do here.
+	*/
 }
 
 
@@ -329,31 +295,6 @@ void R_InitData()
 }
 
 
-
-//
-// R_FlatNumForName
-// Retrieval, get a flat number for a flat name.
-//
-int R_FlatNumForName (const char* name)
-{
-	int i = W_CheckNumForName (name, ns_flats);
-
-	if (i == -1)	// [RH] Default flat for not found ones
-		i = W_CheckNumForName ("-NOFLAT-", ns_flats);
-
-	if (i == -1) {
-		char namet[9];
-
-		strncpy (namet, name, 8);
-		namet[8] = 0;
-
-		I_Error ("R_FlatNumForName: %s not found", namet);
-	}
-
-	return i - firstflat;
-}
-
-
 //
 // R_PrecacheLevel
 // Preloads all relevant graphics for the level.
@@ -368,6 +309,7 @@ void R_PrecacheLevel (void)
 	if (demoplayback)
 		return;
 
+	/*
 	{
 		int size = (numflats > numsprites) ? numflats : numsprites;
 
@@ -375,7 +317,6 @@ void R_PrecacheLevel (void)
 	}
 
 	// Precache flats.
-	/*
 	memset (hitlist, 0, numflats);
 
 	for (i = numsectors - 1; i >= 0; i--)
@@ -384,19 +325,16 @@ void R_PrecacheLevel (void)
 	for (i = numflats - 1; i >= 0; i--)
 		if (hitlist[i])
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
-	*/
 
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
 
-	/*
 	for (i = numsides - 1; i >= 0; i--)
 	{
 		hitlist[sides[i].toptexture] =
 			hitlist[sides[i].midtexture] =
 			hitlist[sides[i].bottomtexture] = 1;
 	}
-	*/
 
 	// Sky texture is always present.
 	// Note that F_SKY1 is the name used to
@@ -408,12 +346,9 @@ void R_PrecacheLevel (void)
 	// [RH] Possibly two sky textures now.
 	// [ML] 5/11/06 - Not anymore!
 
-	/*
 	hitlist[sky1texture] = 1;
 	hitlist[sky2texture] = 1;
-	*/
 
-	/*
 	for (i = numtextures - 1; i >= 0; i--)
 	{
 		if (hitlist[i])
@@ -425,7 +360,6 @@ void R_PrecacheLevel (void)
 				W_CachePatch(texture->patches[j].patch, PU_CACHE);
 		}
 	}
-	*/
 
 	// Precache sprites.
 	memset (hitlist, 0, numsprites);
@@ -445,6 +379,7 @@ void R_PrecacheLevel (void)
 	}
 
 	delete[] hitlist;
+	*/
 }
 
 // Utility function,

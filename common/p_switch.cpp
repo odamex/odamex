@@ -38,6 +38,7 @@
 #include "gi.h"
 #include "m_ostring.h"
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 EXTERN_CVAR(co_zdoomsound)
 extern int numtextures;
