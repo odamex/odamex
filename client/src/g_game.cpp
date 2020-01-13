@@ -2152,6 +2152,12 @@ void G_TimeDemo(const char* name)
 
 	defdemoname = name;
 	gameaction = ga_playdemo;
+
+	IWindow* window = I_GetWindow();	
+	if (noblit)
+		window->disableRefresh();
+	else
+		window->enableRefresh();
 }
 
 
