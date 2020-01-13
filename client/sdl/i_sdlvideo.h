@@ -185,7 +185,13 @@ public:
 	{	mBlit = true;		}
 
 	virtual void disableRefresh()
-	{	mBlit = false;		}
+	{
+		mBlit = false;
+		mSurfaceManager->lockSurface();
+		mSurfaceManager->getWindowSurface()->clear();
+		mSurfaceManager->finishRefresh();
+		mSurfaceManager->unlockSurface();
+	}
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
@@ -409,7 +415,13 @@ public:
 	{	mBlit = true;		}
 
 	virtual void disableRefresh()
-	{	mBlit = false;		}
+	{
+		mBlit = false;
+		mSurfaceManager->lockSurface();
+		mSurfaceManager->getWindowSurface()->clear();
+		mSurfaceManager->finishRefresh();
+		mSurfaceManager->unlockSurface();
+	}
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
