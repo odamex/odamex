@@ -947,8 +947,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 //
 void SV_GetPackets()
 {
-	int count = 256;
-	while (NET_GetPacket() && --count >= 0)
+	while (NET_GetPacket())
 	{
 		player_t &player = SV_FindPlayerByAddr();
 
