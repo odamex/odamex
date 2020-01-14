@@ -2003,6 +2003,7 @@ void SV_ConnectClient()
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
+	cl->download.md5 = "";
 	if (connection_type == 1)
 	{
 		if (sv_waddownload)
@@ -4059,13 +4060,35 @@ void SV_WantWad(player_t &player)
 	std::string md5 = MSG_ReadString();
 	size_t next_offset = MSG_ReadLong();
 
+	std::string curr_request = D_CleanseFileName(cl->download.name);
+
+	//DPrintf("pre-check client requesting {name: \"%s\", hash: \"%s\"} against {name: \"%s\", hash: \"%s\"}\n",
+	//		request.c_str(), md5.c_str(),
+	//		curr_request.c_str(), cl->download.md5.c_str()
+	//);
+
+	// [jsd] quick check for continuation of download:
+	if (curr_request == request &&
+		cl->download.md5 == md5)
+	{
+		cl->download.next_offset = next_offset;
+		player.playerstate = PST_DOWNLOAD;
+
+		return;
+	}
+
 	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
+
+	//DPrintf("client requesting {name: \"%s\", hash: \"%s\"}\n", request.c_str(), md5.c_str());
 
 	size_t i;
 	std::string filename;
 	for (i = 0; i < wadfiles.size(); i++)
 	{
 		filename = D_CleanseFileName(wadfiles[i]);
+		//DPrintf("wads[%d] = {name: \"%s\", hash: \"%s\"}\n", i,
+		//		filename.c_str(), wadhashes[i].c_str()
+		//);
 		if (filename == request && (md5.empty() || wadhashes[i] == md5))
 			break;
 	}
@@ -4097,6 +4120,7 @@ void SV_WantWad(player_t &player)
 		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, filename.c_str());
 
 	cl->download.name = wadfiles[i];
+	cl->download.md5 = md5;
 	cl->download.next_offset = next_offset;
 	player.playerstate = PST_DOWNLOAD;
 }
