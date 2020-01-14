@@ -97,11 +97,9 @@ extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
 
-void R_CacheSprite (spritedef_t *sprite)
+void R_CacheSprite(spritedef_t* sprite)
 {
-	#if 0
-	DPrintf ("cache sprite %s\n",
-		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
+	DPrintf ("cache sprite %s\n", sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 
 	for (int i = 0; i < sprite->numframes; i++)
 	{
@@ -113,16 +111,16 @@ void R_CacheSprite (spritedef_t *sprite)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
 
 				const ResourceId res_id = sprite->spriteframes[i].resource[r];
-				const patch_t* patch = (const patch_t*)Res_LoadResource(res_id, PU_CACHE);
+				const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
 
-				sprite->spriteframes[i].width[r] = patch->width() << FRACBITS;
-				sprite->spriteframes[i].offset[r] = patch->leftoffset() << FRACBITS;
-				sprite->spriteframes[i].topoffset[r] = patch->topoffset() << FRACBITS;
+				sprite->spriteframes[i].width[r] = texture->mWidth << FRACBITS;
+				sprite->spriteframes[i].offset[r] = texture->mOffsetX << FRACBITS;
+				sprite->spriteframes[i].topoffset[r] = texture->mOffsetY << FRACBITS;
 			}
 		}
 	}
-	#endif	// if 0
 }
+
 
 //
 // R_InstallSpriteLump

@@ -296,6 +296,8 @@ void R_PrecacheLevel()
 	if (demoplayback)
 		return;
 
+	DPrintf("Level Pre-Cache start\n");
+
 	// Cache floor & ceiling textures
 	for (int i = numsectors - 1; i >= 0; i--)
 	{
@@ -313,84 +315,15 @@ void R_PrecacheLevel()
 
 	// TODO: Cache sky textures
 
-	// TODO: Cache sprites
+	// Cache sprites
+	AActor* actor;
+	TThinkerIterator<AActor> iterator;
+	while ( (actor = iterator.Next ()) )
+		R_CacheSprite(sprites + actor->sprite);
 
-
-	/*
-	byte *hitlist;
-	int i;
-
-	{
-		int size = (numflats > numsprites) ? numflats : numsprites;
-
-		hitlist = new byte[(numtextures > size) ? numtextures : size];
-	}
-
-	// Precache flats.
-	memset (hitlist, 0, numflats);
-
-	for (i = numsectors - 1; i >= 0; i--)
-		hitlist[sectors[i].floor_res_id] = hitlist[sectors[i].ceiling_res_id] = 1;
-
-	for (i = numflats - 1; i >= 0; i--)
-		if (hitlist[i])
-			W_CacheLumpNum (firstflat + i, PU_CACHE);
-
-	// Precache textures.
-	memset (hitlist, 0, numtextures);
-
-	for (i = numsides - 1; i >= 0; i--)
-	{
-		hitlist[sides[i].toptexture] =
-			hitlist[sides[i].midtexture] =
-			hitlist[sides[i].bottomtexture] = 1;
-	}
-
-	// Sky texture is always present.
-	// Note that F_SKY1 is the name used to
-	//	indicate a sky floor/ceiling as a flat,
-	//	while the sky texture is stored like
-	//	a wall texture, with an episode dependend
-	//	name.
-	//
-	// [RH] Possibly two sky textures now.
-	// [ML] 5/11/06 - Not anymore!
-
-	hitlist[sky1texture] = 1;
-	hitlist[sky2texture] = 1;
-
-	for (i = numtextures - 1; i >= 0; i--)
-	{
-		if (hitlist[i])
-		{
-			int j;
-			texture_t *texture = textures[i];
-
-			for (j = texture->patchcount - 1; j > 0; j--)
-				W_CachePatch(texture->patches[j].patch, PU_CACHE);
-		}
-	}
-
-	// Precache sprites.
-	memset (hitlist, 0, numsprites);
-
-	{
-		AActor *actor;
-		TThinkerIterator<AActor> iterator;
-
-		while ( (actor = iterator.Next ()) )
-			hitlist[actor->sprite] = 1;
-	}
-
-	for (i = numsprites - 1; i >= 0; i--)
-	{
-		if (hitlist[i])
-			R_CacheSprite (sprites + i);
-	}
-
-	delete[] hitlist;
-	*/
+	DPrintf("Level Pre-Cache end\n");
 }
+
 
 // Utility function,
 //	called by R_PointToAngle.
