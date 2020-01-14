@@ -408,9 +408,7 @@ static std::string Res_BaseFileSearchDir(
 
 		if (iequals(filename, local_base_filename))
 		{
-			std::string local_hash(Res_MD5(local_filename));
-
-			if (hash.empty() || iequals(hash, local_hash))
+			if (hash.empty() || iequals(hash, Res_MD5(local_filename))) 
 			{
 				found = local_filename;
 				break;
@@ -439,9 +437,7 @@ static std::string Res_BaseFileSearchDir(
 
 		if (iequals(filename, local_base_filename))
 		{
-			std::string local_hash(Res_MD5(local_filename));
-
-			if (hash.empty() || iequals(hash, local_hash))
+			if (hash.empty() || iequals(hash, Res_MD5(local_filename))) 
 			{
 				found = local_filename; 
 				break;

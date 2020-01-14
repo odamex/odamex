@@ -122,6 +122,11 @@ public:
 		W_SetupFileIdentifiers(*this);
 	}
 
+	void clear()
+	{
+		mFileMd5SumCache.clear();
+	}
+
 	//
 	// FileIdentificationManager::addFile
 	//
@@ -168,7 +173,7 @@ public:
 
 	bool isIWAD(const OString& filename) const
 	{
-		const OString md5sum = Res_MD5(filename);
+		const OString md5sum = getMd5Sum(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 		if (file)
 			return file->mIsIWAD;
@@ -202,9 +207,24 @@ public:
 		return file1->mGroupName == file2->mGroupName;
 	}
 
+	const OString getMd5Sum(const OString& filename) const
+	{
+		FileMd5SumCache::const_iterator it = mFileMd5SumCache.find(filename);
+		if (it == mFileMd5SumCache.end())
+		{
+			const OString md5sum = Res_MD5(filename);
+			mFileMd5SumCache.insert(std::make_pair(filename, md5sum));
+			return md5sum;
+		}
+		else
+		{
+			return it->second;
+		}
+	}
+
 	const OString identify(const OString& filename)
 	{
-		const OString md5sum = Res_MD5(filename);
+		const OString md5sum = getMd5Sum(filename);
 		const FileIdentifier* file = lookupByMd5Sum(md5sum);
 
 		if (file != NULL)
@@ -335,6 +355,9 @@ private:
 
 	typedef std::vector<OString> FilenameArray;
 	FilenameArray			mIWADSearchOrder;
+
+	typedef OHashTable<OString, OString> FileMd5SumCache;
+	mutable FileMd5SumCache		mFileMd5SumCache;
 };
 
 
