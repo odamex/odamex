@@ -655,11 +655,7 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	if (converted_surface)
 		converted_surface->setPalette(palette);
 
-	// handle the -noblit parameter when playing a LMP demo
-	if (noblit)
-		window->disableRefresh();
-	else
-		window->enableRefresh();
+	window->enableRefresh();
 }
 
 
