@@ -23,66 +23,18 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "i_system.h"
 #include "z_zone.h"
-#include "m_alloc.h"
-
-#include "m_swap.h"
 
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 
 #include "doomdef.h"
 #include "r_local.h"
-#include "p_local.h"
-
-#include "doomstat.h"
-#include "r_sky.h"
 
 #include "cmdlib.h"
 
-#include "r_data.h"
-
 #include "v_palette.h"
 #include "v_video.h"
-
-#include <ctype.h>
-#include <cstddef>
-
-#include <algorithm>
-
-//
-// Graphics.
-// DOOM graphics for walls and sprites
-// is stored in vertical runs of opaque pixels (posts).
-// A column is composed of zero or more posts,
-// a patch or sprite is composed of zero or more columns.
-//
-
-
-//
-// R_InitSpriteLumps
-// Finds the width and hoffset of all sprites in the wad,
-//	so the sprite does not need to be cached completely
-//	just for having the header info ready during rendering.
-//
-void R_InitSpriteLumps (void)
-{
-	/*
-	firstspritelump = W_GetNumForName ("S_START") + 1;
-	lastspritelump = W_GetNumForName ("S_END") - 1;
-
-	numspritelumps = lastspritelump - firstspritelump + 1;
-
-	if(firstspritelump > lastspritelump)
-		I_Error("no sprite lumps");
-
-	// [RH] Rather than maintaining separate spritewidth, spriteoffset,
-	//		and spritetopoffset arrays, this data has now been moved into
-	//		the sprite frame definition and gets initialized by
-	//		R_InstallSpriteLump(), so there really isn't anything to do here.
-	*/
-}
 
 
 struct FakeCmap
@@ -293,9 +245,6 @@ void R_InitData()
 
 void R_PrecacheLevel()
 {
-	if (demoplayback)
-		return;
-
 	DPrintf("Level Pre-Cache start\n");
 
 	// Cache floor & ceiling textures
