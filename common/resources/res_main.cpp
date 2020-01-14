@@ -189,7 +189,6 @@ void ResourceManager::openResourceContainer(const OString& path)
 			Printf(PRINT_HIGH, "adding %s (single lump)\n", path.c_str());
 		mContainers.push_back(container);
 		mResourceFileNames.push_back(path);
-		mResourceFileHashes.push_back(Res_MD5(path));
 	}
 }
 
@@ -380,6 +379,21 @@ void ResourceManager::releaseResourceData(const ResourceId res_id)
 {
 	if (validateResourceId(res_id))
 		mCache->releaseData(res_id);
+}
+
+
+//
+// ResourceManager::releaseResourceData
+//
+const std::vector<std::string>& ResourceManager::getResourceFileHashes() const
+{
+	if (mResourceFileHashes.size() != mResourceFileNames.size())
+	{
+		mResourceFileHashes.clear();
+		for (size_t i = 0; i < mResourceFileNames.size(); i++)
+			mResourceFileHashes.push_back(Res_MD5(mResourceFileNames[i]));
+	}
+	return mResourceFileHashes;
 }
 
 

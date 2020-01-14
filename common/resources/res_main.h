@@ -119,10 +119,7 @@ public:
 		return mResourceFileNames;
 	}
 
-	const std::vector<std::string>& getResourceFileHashes() const
-	{
-		return mResourceFileHashes;
-	}
+	const std::vector<std::string>& getResourceFileHashes() const;
 
 	void openResourceContainer(const OString& filename);
 	void openResourceContainers(const std::vector<std::string>& filenames);
@@ -232,8 +229,8 @@ private:
 
 	std::vector<ResourceContainer*>	mContainers;
 
-	std::vector<std::string>		mResourceFileNames;
-	std::vector<std::string>		mResourceFileHashes;
+	std::vector<std::string>			mResourceFileNames;
+	mutable std::vector<std::string>	mResourceFileHashes;
 
 	ResourceNameTranslator			mNameTranslator;
 
