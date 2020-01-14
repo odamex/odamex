@@ -37,6 +37,7 @@
 #include "g_level.h"
 #include "r_sky.h"
 #include "gi.h"
+#include "i_system.h"
 
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
@@ -146,11 +147,6 @@ void R_InitSkyMap()
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (HexenHack)
-		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
-	else
-		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY1", FLOOR);
-
 	fixed_t fskyheight = sky1texture ? sky1texture->getScaledHeight() : 0;
 	if (fskyheight <= (128 << FRACBITS))
 	{
@@ -194,19 +190,22 @@ void R_InitSkyMap()
 //
 void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 {
-	sky1texture = sky2texture = NULL;
-	const ResourceId sky1_res_id = Res_GetTextureResourceId(sky1_name, WALL);
-	if (sky1_res_id != ResourceId::INVALID_ID)
-		sky1texture = Res_CacheTexture(sky1_res_id);
-	const ResourceId sky2_res_id = Res_GetTextureResourceId(sky2_name, WALL);
-	if (sky2_res_id != ResourceId::INVALID_ID)
-		sky2texture = Res_CacheTexture(sky2_res_id);
+	sky1texture = Res_CacheTexture(OStringToUpper(sky1_name, 8), WALL);
+	sky2texture = Res_CacheTexture(OStringToUpper(sky2_name, 8), WALL);
+
+	if (!sky1texture)
+		I_Error("Invalid sky1 texture \"%s\"", OStringToUpper(sky1_name, 8).c_str());
 
 	if (sky2texture && sky1texture->mHeight != sky2texture->mHeight)
 	{
 		Printf(PRINT_HIGH,"Both sky textures must be the same height.\n");
 		sky2texture = sky1texture;
 	}
+
+	if (HexenHack)
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
+	else
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY1", FLOOR);
 
 	R_InitSkyMap();
 }
