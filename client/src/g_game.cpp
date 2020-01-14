@@ -1788,7 +1788,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     usergame = false;
     demorecording = true;
     demostartgametic = gametic;
-
+	multiplayer = false;
 	
 	if (longtics)
 		demoversion = LMP_DOOM_1_9_1;
@@ -2181,7 +2181,7 @@ void G_TestDemo(const char* name)
 //
 void G_CleanupDemo()
 {
-	if (!demoplayback || !demorecording)
+	if (!demoplayback && !demorecording)
 		return;
 
 	if (demoplayback)
