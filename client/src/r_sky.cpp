@@ -66,7 +66,7 @@ int			sky1shift,		sky2shift;
 fixed_t		sky1pos=0,		sky1speed=0;
 fixed_t		sky2pos=0,		sky2speed=0;
 
-char SKYFLATNAME[8] = "F_SKY1";
+static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -86,8 +86,7 @@ CVAR_FUNC_IMPL(r_stretchsky)
 //
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 {
-	const ResourceId sky_res_id = Res_GetTextureResourceId(SKYFLATNAME, FLOOR);
-	return res_id == sky_res_id;
+	return res_id == sky_flat_resource_id;
 }
 
 
@@ -146,6 +145,11 @@ void R_InitSkyMap()
 	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
 	if (gamestate != GS_LEVEL)
 		return;
+
+	if (HexenHack)
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
+	else
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY1", FLOOR);
 
 	fixed_t fskyheight = sky1texture ? sky1texture->getScaledHeight() : 0;
 	if (fskyheight <= (128 << FRACBITS))

@@ -306,7 +306,6 @@ void G_ParseMapInfo()
 					// MAPNAME is a number, assume a Hexen wad
 					int map = atoi(sc_String);
 					sprintf(sc_String, "MAP%02d", map);
-					SKYFLATNAME[5] = 0;
 					HexenHack = true;
 					// Hexen levels are automatically nointermission
 					// and even lighting and no auto sound sequences

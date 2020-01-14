@@ -26,12 +26,10 @@
 #define __R_SKY_H__
 
 #include "c_cvars.h"
+#include "r_defs.h"
 #include "resources/res_resourceid.h"
 
 class Texture;
-
-// SKY, store the number for name.
-extern char SKYFLATNAME[8];
 
 extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
 

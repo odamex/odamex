@@ -24,21 +24,15 @@
 //  
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-
-#include "r_data.h"
+#include "g_level.h"
+#include "doomstat.h"
 #include "resources/res_resourceid.h"
-#include "resources/res_main.h"
 #include "resources/res_texture.h"
 
 // [ML] 5/11/06 - Remove sky2
-int 		skyflatnum;
-int 		sky1texture, sky2texture;
-
 fixed_t		sky1pos=0,		sky1speed=0;
 
-char SKYFLATNAME[8] = "F_SKY1";
+static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 
 //
 // R_ResourceIdIsSkyFlat
@@ -47,8 +41,7 @@ char SKYFLATNAME[8] = "F_SKY1";
 //
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 {
-	const ResourceId sky_res_id = Res_GetTextureResourceId(SKYFLATNAME, FLOOR);
-	return res_id == sky_res_id;
+	return res_id == sky_flat_resource_id;
 }
 
 
@@ -59,8 +52,23 @@ bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 //
 void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 {
+	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (HexenHack)
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
+	else
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY1", FLOOR);
+}
+
+
+//
+// R_InitSkyMap
+//
+void R_InitSkyMap()
+{
 }
 
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
-
