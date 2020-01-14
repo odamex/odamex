@@ -95,6 +95,7 @@ typedef enum {
 	greenslider,
 	discrete,
 	cdiscrete,
+	svdiscrete,
 	control,
 	screenres,
 	bitflag,

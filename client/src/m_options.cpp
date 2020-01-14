@@ -63,6 +63,7 @@
 #include "doomstat.h"
 
 #include "m_misc.h"
+#include "cl_demo.h"
 
 // Data.
 #include "m_menu.h"
@@ -84,6 +85,8 @@ extern bool				OptionsActive;
 
 extern int				screenSize;
 extern short			skullAnimCounter;
+
+extern NetDemo netdemo;
 
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
@@ -615,21 +618,21 @@ menu_t SoundMenu = {
 static menuitem_t CompatItems[] ={
 	{bricktext, "Gameplay",                        {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{discrete,  "Camera follows killer on death",  {&cl_deathcam},          {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can be walked over/under",  {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can drop off ledges",       {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Items can be walked over/under",  {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Items can drop off ledges",       {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Engine Compatibility",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "BOOM actor/sector/line checks",   {&co_boomphys},		    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "BOOM actor/sector/line checks",   {&co_boomphys},		    {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
 };
 
 menu_t CompatMenu = {
@@ -1566,6 +1569,7 @@ void M_OptDrawer (void)
 			{
 			case discrete:
 			case cdiscrete:
+			case svdiscrete:
 			{
 				int v, vals;
 
@@ -1984,12 +1988,17 @@ void M_OptResponder (event_t *ev)
 					break;
 				case discrete:
 				case cdiscrete:
+				case svdiscrete:
 					{
 						int cur;
 						int numvals;
 
+						if (item->type == svdiscrete && (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+							break;
+
 						numvals = (int)item->b.leftval;
 						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
+
 						if (--cur < 0)
 							cur = numvals - 1;
 
@@ -2108,14 +2117,19 @@ void M_OptResponder (event_t *ev)
 					break;
 				case discrete:
 				case cdiscrete:
+				case svdiscrete:
 					{
 						int cur;
 						int numvals;
 
 						numvals = (int)item->b.leftval;
 						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
+
 						if (++cur >= numvals)
 							cur = 0;
+
+						if (item->type == svdiscrete && (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+							break;
 
 						item->a.cvar->Set (item->e.values[cur].value);
 
@@ -2209,10 +2223,13 @@ void M_OptResponder (event_t *ev)
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
-			else if (item->type == discrete || item->type == cdiscrete)
+			else if (item->type == discrete || item->type == cdiscrete || item->type == svdiscrete)
 			{
 				int cur;
 				int numvals;
+
+				if (item->type == svdiscrete && (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+					break;
 
 				numvals = (int)item->b.leftval;
 				cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
