@@ -1078,27 +1078,6 @@ END_COMMAND (spyprev)
 
 BEGIN_COMMAND (spy)
 {
-	byte id = consoleplayer_id;
-
-	if (argc > 1)
-		id = atoi(argv[1]);
-
-	if (id == 0)
-	{
-		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
-		return;
-	}
-
-	displayplayer_id = id;
-	CL_CheckDisplayPlayer();
-
-	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
-}
-END_COMMAND (spy)
-
-BEGIN_COMMAND (spyname)
-{
 	if (argc <= 1) {
 		if (spyplayername.length() > 0) {
 			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
@@ -1115,13 +1094,13 @@ BEGIN_COMMAND (spyname)
 		// remember player name in case of disconnect/reconnect e.g. level change:
 		spyplayername = argv[1];
 
-		Printf(PRINT_HIGH, "Following player '%s'. Use 'spyname' with no player name to unfollow.\n",
+		Printf(PRINT_HIGH, "Following player '%s'. Use 'spy' with no player name to unfollow.\n",
 			   spyplayername.c_str());
 	}
 
 	CL_CheckDisplayPlayer();
 }
-END_COMMAND (spyname)
+END_COMMAND (spy)
 
 void STACK_ARGS call_terms (void);
 
