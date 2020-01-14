@@ -24,6 +24,7 @@
 //  
 //-----------------------------------------------------------------------------
 
+#include "i_system.h"
 #include "g_level.h"
 #include "doomstat.h"
 #include "resources/res_resourceid.h"
@@ -46,6 +47,14 @@ bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 
 
 //
+// R_InitSkyMap
+//
+void R_InitSkyMap()
+{
+}
+
+
+//
 // R_SetSkyTextures
 //
 // Loads the sky textures and re-initializes the sky map lookup tables.
@@ -56,18 +65,16 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 	if (gamestate != GS_LEVEL)
 		return;
 
+	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name, 8), WALL);
+	if (res_id == ResourceId::INVALID_ID)
+		I_Error("Invalid sky1 texture \"%s\"", OStringToUpper(sky1_name, 8).c_str());
+
 	if (HexenHack)
 		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
 	else
 		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY1", FLOOR);
-}
 
-
-//
-// R_InitSkyMap
-//
-void R_InitSkyMap()
-{
+	R_InitSkyMap();
 }
 
 
