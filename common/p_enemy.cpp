@@ -2168,6 +2168,11 @@ void A_SpawnFly (AActor *mo)
 		return;
 
 	targ = mo->target;
+	// When loading a save game, any in-flight cube will have lost its pointer to its target.
+	if (!targ) {
+		mo->Destroy ();
+		return;
+	}
 
 	// First spawn teleport fog.
 	fog = new AActor (targ->x, targ->y, targ->z, MT_SPAWNFIRE);
