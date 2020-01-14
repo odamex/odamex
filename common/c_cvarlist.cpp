@@ -196,6 +196,9 @@ CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "",
 	CVAR(			co_blockmapfix, "0", "Fix the blockmap collision bug",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(			co_lostsoulsfix, "0", "Allows/Disallows the Pain Elemental spawning lost souls if there are already 21 on the map.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
 
 	// Boom-compatibility changes
 	//------------------------------

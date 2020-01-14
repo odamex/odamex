@@ -46,6 +46,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (co_lostsoulsfix)
 
 enum dirtype_t
 {
@@ -1720,7 +1721,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// if there are already 20 skulls on the level,
 	// don't spit another one
-	if (count > 20)
+	if (count > 20 && !co_lostsoulsfix)
 		return;
 
 	// okay, there's room for another one

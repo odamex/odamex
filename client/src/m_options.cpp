@@ -126,6 +126,7 @@ EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
+EXTERN_CVAR (co_lostsoulsfix)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -620,6 +621,7 @@ static menuitem_t CompatItems[] ={
 	{bricktext, "Gameplay",                        {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete,  "Bypass Pain Elemental spawn limit",	 {&co_lostsoulsfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
