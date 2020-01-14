@@ -1667,8 +1667,6 @@ static void P_LoadReject(const OString& mapname)
 static void P_LoadBehavior(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("BEHAVIOR", mapname);
-	if (!Res_CheckResource(res_id))
-		I_Error("P_LoadBehavior: unable to find BEHAVIOR lump for map %s\n", mapname.c_str());
 
 	size_t length = Res_GetResourceSize(res_id);
 	byte* data = (byte*)Res_LoadResource(res_id, PU_LEVEL);
@@ -1754,15 +1752,18 @@ void P_SetupLevel(const OString& mapname, int position)
 
     level.time = 0;
 
-	delete level.behavior;
-	level.behavior = NULL;
-
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
 	//		If it is, we also need to distinguish between projectile cross and hit
 	HasBehavior = Res_CheckResource(Res_GetMapResourceId("BEHAVIOR", mapname));
 
 	// note: most of this ordering is important
+	// [RH] Load in the BEHAVIOR lump
+	if (level.behavior != NULL)
+	{
+		delete level.behavior;
+		level.behavior = NULL;
+	}
 
 	if (HasBehavior)
 		P_LoadBehavior(mapname);
@@ -1864,7 +1865,7 @@ void P_Init (void)
 {
 	P_InitSwitchList ();
 	Res_ReadAnimationDefinitions();
-	R_InitSprites (sprnames);
+	R_InitSprites(sprnames);
 }
 
 

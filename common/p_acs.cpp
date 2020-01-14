@@ -422,11 +422,9 @@ FBehavior::FBehavior (BYTE *object, int len)
 	Arrays = NULL;
 	Chunks = NULL;
 
-	if (object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
-	{
-		Format = ACS_Unknown;
+	Format = ACS_Unknown;
+	if (len < 4 || object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
 		return;
-	}
 
 	switch (object[3])
 	{
