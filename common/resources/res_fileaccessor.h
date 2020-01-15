@@ -53,7 +53,7 @@ public:
 
 	virtual size_t size() const = 0;
 
-	virtual void seek(size_t pos) = 0;
+	virtual bool seek(size_t pos) = 0;
 
 	virtual size_t getSeekPosition() const = 0;
 
@@ -134,10 +134,11 @@ public:
 		return 0;
 	}
 
-	virtual void seek(size_t pos)
+	virtual bool seek(size_t pos)
 	{
 		if (mFileHandle)
-			fseek(mFileHandle, pos, SEEK_SET);
+			return fseek(mFileHandle, pos, SEEK_SET) == 0;
+		return false;
 	}
 
 	virtual size_t getSeekPosition() const
@@ -199,9 +200,10 @@ public:
 		return mLength;
 	}
 
-	virtual void seek(size_t pos)
+	virtual bool seek(size_t pos)
 	{
 		mSeekPos = pos;
+		return mSeekPos < mLength;
 	}
 
 	virtual size_t getSeekPosition() const

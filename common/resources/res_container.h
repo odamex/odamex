@@ -84,6 +84,15 @@ public:
 		mEntries.clear();
 	}
 
+	void reserve(const size_t new_size)
+	{
+		if (new_size > mEntries.size())
+		{
+			mEntries.reserve(new_size);
+			mPathLookup.reserve(new_size);
+		}
+	}
+
 	iterator begin()
 	{
 		return mEntries.begin();
@@ -229,6 +238,7 @@ private:
 	ResourceContainerId		mResourceContainerId;
 	ResourceManager*		mResourceManager;
 };
+
 
 // ============================================================================
 //

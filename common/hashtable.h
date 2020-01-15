@@ -313,6 +313,12 @@ public:
 		delete [] mElements;
 	}
 
+	void reserve(unsigned int new_size)
+	{
+		if (new_size > mSize)
+			resize(new_size);
+	}
+
 	OHashTable& operator= (const HashTableType& other)
 	{
 		copyFromOther(other);

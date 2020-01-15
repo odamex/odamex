@@ -230,21 +230,28 @@ bool WadResourceContainer::readWadDirectory()
 
 	// read the WAD lump directory
 	mFile->seek(wad_table_offset);
-	for (uint32_t wad_lump_num = 0; wad_lump_num < (uint32_t)wad_lump_count; wad_lump_num++)
+
+	uint8_t* wad_directory = new uint8_t[wad_table_length];
+
+	if (mFile->read(wad_directory, wad_table_length) == wad_table_length)
 	{
-		int32_t offset, length;
-		mFile->read(&offset);
-		offset = LELONG(offset);
-		mFile->read(&length);
-		length = LELONG(length);
+		mDirectory.reserve(wad_lump_count);
 
-		char name[8];
-		mFile->read(name, 8);
+		const uint8_t* ptr = wad_directory;
+		for (uint32_t wad_lump_num = 0; wad_lump_num < (uint32_t)wad_lump_count; wad_lump_num++, ptr += wad_lump_record_length)
+		{
+			int32_t offset = LELONG(*(int32_t*)(ptr + 0));
+			int32_t length = LELONG(*(int32_t*)(ptr + 4));
+			const char* name = (char*)(ptr + 8);
+			mDirectory.addEntryInfo(OStringToUpper(name, 8), length, offset);
+		}
 
-		mDirectory.addEntryInfo(OStringToUpper(name, 8), length, offset);
+		delete [] wad_directory;
+		return true;
 	}
 
-	return true;
+	delete [] wad_directory;
+	return false;
 }
 
 
