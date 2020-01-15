@@ -125,54 +125,64 @@ void STlib_initNum(st_number_t* n, int x, int y, const Texture** pl, int* num, b
 //
 void STlib_drawNum(st_number_t* n, bool force_refresh)
 {
+	// [jsd]: prevent null references as hard as possible
+	if (n == NULL)
+		return;
+	if (n->num == NULL)
+		return;
+	if (n->on == NULL)
+		return;
+	if (n->p == NULL)
+		return;
+
 	// only draw if the number is different or refresh is forced
-	if ((force_refresh || n->oldnum != *n->num) && *n->on)
+	if (!(force_refresh || n->oldnum != *n->num) || !*n->on)
+		return;
+
+	int 		num = *n->num;
+
+	int 		w = n->p[0]->mWidth;
+	int 		h = n->p[0]->mHeight;
+	int 		x = n->x;
+
+	n->oldnum = *n->num;
+
+	bool negative = num < 0;
+
+	if (negative)
 	{
-		int 		num = *n->num;
+		if (n->maxdigits == 2 && num < -9)
+			num = -9;
+		else if (n->maxdigits == 3 && num < -99)
+			num = -99;
 
-		int 		w = n->p[0]->mWidth;
-		int 		h = n->p[0]->mHeight;
-		int 		x = n->x;
-
-		n->oldnum = *n->num;
-
-		bool negative = num < 0;
-
-		if (negative)
-		{
-			if (n->maxdigits == 2 && num < -9)
-				num = -9;
-			else if (n->maxdigits == 3 && num < -99)
-				num = -99;
-
-			num = -num;
-		}
-
-		// clear the area
-		STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
-
-		// if non-number, do not draw it
-		if (num == 1994)
-			return;
-
-		x = n->x;
-
-		// in the special case of 0, you draw 0
-		if (num == 0)
-			STlib_DrawTexture(x - w, n->y, n->p[0]);
-
-		// draw the new number
-		for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
-		{
-			x -= w;
-			STlib_DrawTexture(x, n->y, n->p[num % 10]);
-			num /= 10;
-		}
-
-		// draw a minus sign if necessary
-		if (negative)
-			STlib_DrawTexture(x - 8, n->y, sttminus);
+		num = -num;
 	}
+
+	// clear the area
+	STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
+
+	// if non-number, do not draw it
+	if (num == 1994)
+		return;
+
+	x = n->x;
+
+	// in the special case of 0, you draw 0
+	if (num == 0)
+		STlib_DrawTexture(x - w, n->y, n->p[0]);
+
+	// draw the new number
+	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
+	{
+		x -= w;
+		STlib_DrawTexture(x, n->y, n->p[num % 10]);
+		num /= 10;
+	}
+
+	// draw a minus sign if necessary
+	if (negative)
+		STlib_DrawTexture(x - 8, n->y, sttminus);
 }
 
 

@@ -676,23 +676,23 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround(int secnum)
+fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
-	sector_t *sec = &sectors[secnum];
+	int i;
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided(secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide(secnum, i, 0);
+			side = getSide (sec, i, 0);
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight);
 			}
-			side = getSide (secnum, i, 1);
+			side = getSide (sec, i, 1);
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
@@ -715,23 +715,23 @@ fixed_t P_FindShortestTextureAround(int secnum)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround(int secnum)
+fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
-	sector_t *sec = &sectors[secnum];
+	int i;
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum,i,0);
+			side = getSide (sec,i,0);
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight);
 			}
-			side = getSide (secnum,i,1);
+			side = getSide (sec,i,1);
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);
@@ -759,9 +759,9 @@ fixed_t P_FindShortestUpperAround(int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
+sector_t *P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -796,9 +796,9 @@ sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, int secnum)
+sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
