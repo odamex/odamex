@@ -195,28 +195,11 @@ WadResourceContainer::~WadResourceContainer()
 //
 bool WadResourceContainer::readWadDirectory()
 {
-	uint32_t magic;
-	if (!mFile->read(&magic))
-		return false;
-
-	magic = LELONG(magic);
-	if (magic != ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) && 
-		magic != ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24)))
-		return false;
-
-	int32_t wad_lump_count;
-	if (!mFile->read(&wad_lump_count))
-		return false;
-
-	wad_lump_count = LELONG(wad_lump_count);
-	if (wad_lump_count < 1)
-		return false;
-
-	int32_t wad_table_offset;
-	if (!mFile->read(&wad_table_offset) || wad_table_offset < 0)
-		return false;
-
-	wad_table_offset = LELONG(wad_table_offset);
+	// The layout for a WAD header is:
+	//    uint32_t magic (IWAD/PWAD)
+	//    int32_t  wad_lump_count
+	//    int32_t  wad_table_offset
+	const uint32_t wad_header_length = 4 + 4 + 4;
 
 	// The layout for a lump entry is:
 	//    int32_t offset
@@ -224,14 +207,28 @@ bool WadResourceContainer::readWadDirectory()
 	//    char    name[8]
 	const uint32_t wad_lump_record_length = 4 + 4 + 8;
 
+	uint8_t header[wad_header_length];
+	if (mFile->read(header, wad_header_length) != wad_header_length)
+		return false;
+
+	uint32_t magic = LELONG(*(uint32_t*)(header + 0));
+	if (magic != ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) && 
+		magic != ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24)))
+		return false;
+
+	int32_t wad_lump_count = LELONG(*(int32_t*)(header + 4));
 	uint32_t wad_table_length = wad_lump_count * wad_lump_record_length;
-	if (wad_table_offset < 12 || wad_table_length + wad_table_offset > mFile->size())
+	if (wad_lump_count < 1)
+		return false;
+
+	int32_t wad_table_offset = LELONG(*(int32_t*)(header + 8));
+	if (wad_table_offset < (int32_t)wad_header_length || wad_table_length + wad_table_offset > mFile->size())
 		return false;
 
 	// read the WAD lump directory
-	mFile->seek(wad_table_offset);
-
 	uint8_t* wad_directory = new uint8_t[wad_table_length];
+
+	mFile->seek(wad_table_offset);
 
 	if (mFile->read(wad_directory, wad_table_length) == wad_table_length)
 	{
