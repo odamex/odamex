@@ -670,7 +670,13 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	unsigned int		rot;
 	bool 				flip;
 
-	if (!thing || !thing->subsector || !thing->subsector->sector)
+	if (!thing)
+		return;
+
+	if (!thing->subsector)
+		return;
+
+	if (!thing->subsector->sector)
 		return;
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
