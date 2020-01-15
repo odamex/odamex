@@ -2005,6 +2005,7 @@ void SV_ConnectClient()
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
+	cl->download.md5 = "";
 	if (connection_type == 1)
 	{
 		if (sv_waddownload)
@@ -4042,6 +4043,7 @@ void SV_WantWad(player_t &player)
 		// read and ignore the rest of the wad request
 		MSG_ReadString();
 		MSG_ReadString();
+		e
 		MSG_ReadLong();
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
@@ -4058,6 +4060,16 @@ void SV_WantWad(player_t &player)
 	std::string request = MSG_ReadString();
 	std::string md5 = MSG_ReadString();
 	size_t next_offset = MSG_ReadLong();
+
+	std::string curr_request = D_CleanseFileName(cl->download.name);
+
+	// [jsd] quick check for continuation of download:
+	if (curr_request == request && cl->download.md5 == md5)
+	{
+		cl->download.next_offset = next_offset;
+		player.playerstate = PST_DOWNLOAD;
+		return;
+	}
 
 	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
 
@@ -4100,6 +4112,7 @@ void SV_WantWad(player_t &player)
 		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, filename.c_str());
 
 	cl->download.name = resource_file_names[i];
+	cl->download.md5 = md5;
 	cl->download.next_offset = next_offset;
 	player.playerstate = PST_DOWNLOAD;
 }

@@ -124,8 +124,8 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 CVAR_RANGE_FUNC_DECL(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 32768.0f)
 
-CVAR_RANGE_FUNC_DECL(sv_intermissionlimit, "10", "Sets the time limit for the intermission to end (in seconds)",
-					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 32768.0f)
+CVAR_RANGE_FUNC_DECL(sv_intermissionlimit, "10", "Sets the time limit for the intermission to end (in seconds).",
+					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
 
 CVAR(				sv_weaponstay,    "1", "Weapons stay after pickup",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
@@ -178,6 +178,7 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
+	
 
 // Compatibility options
 // ---------------------------------
@@ -282,6 +283,14 @@ CVAR(				lookspring, "1", "Generate centerview when mlook encountered",
 
 CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE_FUNC_DECL(net_rcvbuf, "131072", "Net receive buffer size in bytes",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
+					1500.0f, 256.0f * 1024.0f * 1024.0f)
+
+CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
+					1500.0f, 256.0f * 1024.0f * 1024.0f)
 
 // Experimental settings (all categories)
 // =======================================

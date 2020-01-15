@@ -439,9 +439,9 @@ void G_DoCompleted (void)
 			//level.inttimeleft = 0;
 		}
 
-		if (!(sv_gametype == GM_DM) &&
-			((level.flags & LEVEL_NOINTERMISSION) ||
-			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB)))) {
+		if ((sv_gametype != GM_DM &&
+			( (level.flags & LEVEL_NOINTERMISSION && ( level.flags & LEVEL_EPISODEENDHACK && (!multiplayer || (demoplayback || demorecording))))) ||
+			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB)) )) {
 			G_WorldDone ();
 			return;
 		}

@@ -947,7 +947,7 @@ void R_DrawPlayerSprites (void)
 	{
 		int centerhack = centery;
 
-		centery = viewheight >> 1;
+		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites
