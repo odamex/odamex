@@ -201,6 +201,9 @@ void ResourceManager::openResourceContainer(const OString& path)
 //
 void ResourceManager::openResourceContainers(const std::vector<std::string>& filenames)
 {
+	assert(mContainers.empty());
+	mContainers.reserve(filenames.size() + 1);
+
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		openResourceContainer(*it);
 
@@ -268,6 +271,7 @@ const ResourceId ResourceManager::addResource(
 const ResourceIdList ResourceManager::getAllResourceIds() const
 {
 	ResourceIdList res_id_list;
+	res_id_list.reserve(mResources.size());
 	for (size_t i = 0; i < mResources.size(); i++)
 		res_id_list.push_back(ResourceId(i));
 	return res_id_list;
@@ -390,6 +394,7 @@ const std::vector<std::string>& ResourceManager::getResourceFileHashes() const
 	if (mResourceFileHashes.size() != mResourceFileNames.size())
 	{
 		mResourceFileHashes.clear();
+		mResourceFileHashes.reserve(mResourceFileNames.size());
 		for (size_t i = 0; i < mResourceFileNames.size(); i++)
 			mResourceFileHashes.push_back(Res_MD5(mResourceFileNames[i]));
 	}

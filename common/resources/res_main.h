@@ -42,7 +42,6 @@
 class ResourceManager;
 class ResourceContainer;
 class FileAccessor;
-class ContainerDirectory;
 class ResourceCache;
 class ResourceLoader;
 class RawResourceAccessor;

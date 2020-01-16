@@ -53,22 +53,16 @@ class ResourceManager;
 // A generic resource container directory for querying information about
 // game resource lumps.
 //
-
+template <typename T>
 class ContainerDirectory
 {
 private:
-	struct EntryInfo
-	{
-		OString			path;
-		uint32_t		length;
-		uint32_t		offset;
-	};
 
-	typedef std::vector<EntryInfo> EntryInfoList;
+	typedef std::vector<T> EntryList;
 
 public:
-	typedef EntryInfoList::iterator iterator;
-	typedef EntryInfoList::const_iterator const_iterator;
+	typedef typename EntryList::iterator iterator;
+	typedef typename EntryList::const_iterator const_iterator;
 
 	static const LumpId INVALID_LUMP_ID = static_cast<LumpId>(-1);
 
@@ -131,7 +125,7 @@ public:
 		return INVALID_LUMP_ID;
 	}
 
-	LumpId getLumpId(const EntryInfo* entry) const
+	LumpId getLumpId(const T* entry) const
 	{
 		if (!mEntries.empty() && static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
 			return static_cast<LumpId>(entry - &mEntries.front());
@@ -148,55 +142,27 @@ public:
 		return lump_id < mEntries.size();
 	}
 
-	void addEntryInfo(const OString& path, uint32_t length, uint32_t offset = 0)
+	void addEntryInfo(const T& entry)
 	{
-		mEntries.push_back(EntryInfo());
-		EntryInfo* entry = &mEntries.back();
-		entry->path = path;
-		entry->length = length;
-		entry->offset = offset;
+		mEntries.push_back(entry);
 
-		const LumpId lump_id = getLumpId(entry);
+		const LumpId lump_id = getLumpId(&mEntries.back());
 		assert(lump_id != INVALID_LUMP_ID);
-		mPathLookup.insert(std::make_pair(path, lump_id));
+		mPathLookup.insert(std::make_pair(entry.path, lump_id));
 	}
 
-	uint32_t getLength(const LumpId lump_id) const
-	{
-		const EntryInfo* entry = getEntry(lump_id);
-		if (entry)
-			return entry->length;
-		return 0;
-	}
-
-	uint32_t getOffset(const LumpId lump_id) const
-	{
-		const EntryInfo* entry = getEntry(lump_id);
-		if (entry)
-			return entry->offset;
-		return 0;
-	}
-
-	const OString& getPath(const LumpId lump_id) const
-	{
-		const EntryInfo* entry = getEntry(lump_id);
-		if (entry)
-			return entry->path;
-		return OString::getEmptyString();
-	}
-
-private:
-	EntryInfoList		mEntries;
-
-	typedef OHashTable<OString, LumpId> PathLookupTable;
-	PathLookupTable		mPathLookup;
-
-	const EntryInfo* getEntry(const LumpId lump_id) const
+	const T* getEntry(const LumpId lump_id) const
 	{
 		if (lump_id != INVALID_LUMP_ID && lump_id < mEntries.size())
 			return &mEntries[lump_id];
 		return NULL;
 	}
+
+private:
+	EntryList mEntries;
+
+	typedef OHashTable<OString, LumpId> PathLookupTable;
+	PathLookupTable mPathLookup;
 };
 
 
@@ -274,6 +240,14 @@ private:
 //
 // ============================================================================
 
+struct WadDirectoryEntry
+{
+	OString			path;
+	uint32_t		length;
+	uint32_t		offset;
+};
+
+
 class WadResourceContainer : public ResourceContainer
 {
 public:
@@ -298,24 +272,26 @@ public:
 private:
 	virtual void addResourcesToManager(ResourceManager* manager);
 
-	FileAccessor*			mFile;
+	FileAccessor* mFile;
 
-	ContainerDirectory		mDirectory;
+	ContainerDirectory<WadDirectoryEntry> mDirectory;
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
-	LumpIdLookupTable		mLumpIdLookup;
+	LumpIdLookupTable mLumpIdLookup;
 
-	bool					mIsIWad;
+	bool mIsIWad;
 
 	const LumpId getLumpId(const ResourceId res_id) const
 	{
 		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
 		if (it != mLumpIdLookup.end())
 			return it->second;
-		return ContainerDirectory::INVALID_LUMP_ID;
+		return mDirectory.INVALID_LUMP_ID;
 	}
 
 	bool readWadDirectory();
+
+	bool isLumpMapMarker(LumpId lump_id) const;
 
     typedef enum {START_MARKER, END_MARKER} MarkerType;
 
@@ -389,6 +365,13 @@ private:
 //
 // ============================================================================
 
+struct FileSystemDirectoryEntry
+{
+	OString			path;
+	uint32_t		length;
+};
+
+
 class DirectoryResourceContainer : public ResourceContainer
 {
 public:
@@ -409,22 +392,20 @@ private:
 	void cleanup();
 	void addResourcesToManager(ResourceManager* manager);
 
-	OString					mPath;
+	OString mPath;
 
-	ContainerDirectory		mDirectory;
+	ContainerDirectory<FileSystemDirectoryEntry> mDirectory;
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
-	LumpIdLookupTable		mLumpIdLookup;
+	LumpIdLookupTable mLumpIdLookup;
 
 	const LumpId getLumpId(const ResourceId res_id) const
 	{
 		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
 		if (it != mLumpIdLookup.end())
 			return it->second;
-		return ContainerDirectory::INVALID_LUMP_ID;
+		return mDirectory.INVALID_LUMP_ID;
 	}
-
-	ContainerDirectory* readWadDirectory();
 };
 
 #endif	// __RES_CONTAINER_H__
