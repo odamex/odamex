@@ -462,12 +462,8 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 
 	for (int x = 0; x < 256; x++)
 	{
-		for (int y = 0; y < 256 - x; y++)
+		for (int y = x + 1; y < 256; y++)
 		{
-			// don't compare a color with itself
-			if (x == y)
-				continue;
-
 			int dr = (int)palette_colors[y].getr() - (int)palette_colors[x].getr();
 			int dg = (int)palette_colors[y].getg() - (int)palette_colors[x].getg();
 			int db = (int)palette_colors[y].getb() - (int)palette_colors[x].getb();
