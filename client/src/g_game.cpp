@@ -2181,7 +2181,7 @@ void G_TestDemo(const char* name)
 //
 void G_CleanupDemo()
 {
-	if (!demoplayback && !demorecording)
+	if (!demoplayback || !demorecording)
 		return;
 
 	if (demoplayback)
