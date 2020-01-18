@@ -841,10 +841,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf(PRINT_HIGH, " PLAYERS IN GAME:\n");
+	Printf(PRINT_HIGH, "PLAYERS IN GAME:\n");
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf(PRINT_HIGH, "%d. %s\n", (*it).first, (*it).second.c_str());
+		Printf(PRINT_HIGH, "%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
+	Printf(PRINT_HIGH, "%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
