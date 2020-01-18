@@ -472,12 +472,17 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+std::string spyplayername;
+void CL_CheckDisplayPlayer(void);
+
 //
 // CL_ConnectClient
 //
 void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
+
+	CL_CheckDisplayPlayer();
 
 	if (!cl_connectalert)
 		return;
@@ -495,10 +500,18 @@ void CL_ConnectClient(void)
 // Perfoms validation on the value of displayplayer_id based on the current
 // game state and status of the consoleplayer.
 //
-void CL_CheckDisplayPlayer()
+void CL_CheckDisplayPlayer(void)
 {
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
+
+	// [jsd]: try to spy on player by name when connected if spyplayername is set:
+	if (spyplayername.length() > 0) {
+		player_t &spyplayer = nameplayer(spyplayername);
+		if (validplayer(spyplayer)) {
+			displayplayer_id = spyplayer.id;
+		}
+	}
 
 	if (displayplayer_id != previd)
 		newid = displayplayer_id;
@@ -1076,22 +1089,27 @@ END_COMMAND (spyprev)
 
 BEGIN_COMMAND (spy)
 {
-	byte id = consoleplayer_id;
+	if (argc <= 1) {
+		if (spyplayername.length() > 0) {
+			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
 
-	if (argc > 1)
-		id = atoi(argv[1]);
+			// revert to not spying:
+			displayplayer_id = consoleplayer_id;
+		} else {
+			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		}
 
-	if (id == 0)
-	{
-		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
-		return;
+		// clear last player name:
+		spyplayername = "";
+	} else {
+		// remember player name in case of disconnect/reconnect e.g. level change:
+		spyplayername = argv[1];
+
+		Printf(PRINT_HIGH, "Following player '%s'. Use 'spy' with no player name to unfollow.\n",
+			   spyplayername.c_str());
 	}
 
-	displayplayer_id = id;
 	CL_CheckDisplayPlayer();
-
-	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
 }
 END_COMMAND (spy)
 
