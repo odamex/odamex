@@ -520,7 +520,7 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const Texture* background_texture = Res_CacheTexture("BOSSBACK", global_directory_name);
+	const Texture* background_texture = Res_CacheTexture("BOSSBACK", PATCH);
 
 	// draw the background to the surface
 	cast_surface->lock();
