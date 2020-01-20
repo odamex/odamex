@@ -190,7 +190,7 @@ void ResourceManager::openResourceFile(const OString& path)
 
 		if (Res_IsWadFile(path))
 			container = new WadResourceContainer(path, this);
-		else if (iequals(ext, "ZIP"))
+		else if (iequals(ext, "ZIP") || iequals(ext, "PK3") || iequals(ext, "PKE"))
 			container = new ZipResourceContainer(path, this);
 		else
 			container = new SingleLumpResourceContainer(path, this);

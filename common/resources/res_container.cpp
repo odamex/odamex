@@ -63,6 +63,56 @@ static bool Res_IsMapLumpName(const OString& name)
 }
 
 
+//
+// Res_TransformResourcePath
+//
+// Modifies a file path from a filesystem directory or an archive to meet
+// the criteria used by ResourceManager. This includes normalizing
+// path separators & truncating the lump name to 8 upper-case characters.
+//
+static std::string Res_TransformResourcePath(const std::string& path)
+{
+	std::string new_path(path);
+
+	// Replace native filesystem path separator with the in-game path separator
+	for (size_t i = 0; i < new_path.length(); i++)
+		if (new_path[i] == '/' || new_path[i] == '\\')
+			new_path[i] = ResourcePath::DELIMINATOR;
+	// Add leading '/'
+	if (new_path[0] != ResourcePath::DELIMINATOR)
+		new_path = ResourcePath::DELIMINATOR + new_path;
+
+	// Transform the filename portion of the path into a well-formed lump name.
+	// eg, 8 chars, no filename extension, all caps.
+	//
+	// Note that the "/SCRIPTS/" directory will need the full filename preserved,
+	// including extension and > 8 chars
+	if (new_path.find("/SCRIPTS/") != 0)
+	{
+		size_t last_deliminator = new_path.find_last_of(ResourcePath::DELIMINATOR);
+		if (last_deliminator != std::string::npos)
+		{
+			size_t start_of_lump_name = last_deliminator + 1;
+			// Trim the filename extension
+			new_path.replace(new_path.find_first_of(".", start_of_lump_name), std::string::npos, "");
+			// Capitalize the lump name
+			std::transform(new_path.begin() + start_of_lump_name, new_path.end(),
+							new_path.begin() + start_of_lump_name, toupper);
+			// Truncate the lump name to 8 chars
+			new_path = new_path.substr(0, start_of_lump_name + 8);
+
+			// Handle a specific use-case where a sprite lump name should contain a backslash
+			// character. See https://zdoom.org/wiki/Using_ZIPs_as_WAD_replacement.
+			if (new_path.find("/SPRITES/") == 0)
+				for (size_t i = start_of_lump_name; i < new_path.length(); i++)
+					if (new_path[i] == '^')
+						new_path[i] = '\\';
+		}
+	}
+	return new_path;
+}
+
+
 // ============================================================================
 //
 // SingleLumpResourceContainer class implementation
@@ -258,7 +308,7 @@ bool WadResourceContainer::readWadDirectory()
 			entry.offset = LELONG(*(int32_t*)(ptr + 0));
 			entry.length = LELONG(*(int32_t*)(ptr + 4));
 			entry.path = OStringToUpper((char*)(ptr + 8), 8);
-			mDirectory.addEntryInfo(entry);
+			mDirectory.addEntry(entry);
 		}
 
 		delete [] wad_directory;
@@ -294,9 +344,6 @@ void WadResourceContainer::buildMarkerRecords()
 				range.start = last_lump_id;
 				range.end = current_lump_id;
 				mMarkers[current_marker_prefix] = range;
-				DPrintf("Added markers %s_START (%d) and %s_END (%d)\n",
-						current_marker_prefix.c_str(), range.start,
-						current_marker_prefix.c_str(), range.end);
 			}
 			last_marker_prefix = current_marker_prefix;
 			last_lump_id = current_lump_id;
@@ -410,7 +457,6 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 			}
 			
 			const ResourcePath full_path = base_path + entry.path;
-			DPrintf("Adding WAD lump %05d %s\n", lump_id, full_path.c_str());
 			const ResourceId res_id = manager->addResource(full_path, this);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 		}
@@ -467,6 +513,11 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 // DirectoryResourceContainer class implementation
 //
 // ============================================================================
+
+bool compare_filesystem_directory_entries(const FileSystemDirectoryEntry& entry1, const FileSystemDirectoryEntry& entry2)
+{
+	return entry1.path < entry2.path;
+}
 
 //
 // DirectoryResourceContainer::DirectoryResourceContainer
@@ -543,49 +594,37 @@ uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId r
 //
 void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
 {
+	std::vector<FileSystemDirectoryEntry> tmp_entries;
+
 	std::vector<std::string> files = M_ListDirectoryContents(mPath, 16);
 	for (size_t i = 0 ; i < files.size(); i++)
 	{
-		FileSystemDirectoryEntry entry;
+		tmp_entries.push_back(FileSystemDirectoryEntry());
+		FileSystemDirectoryEntry& entry = tmp_entries.back();
 		entry.path = files[i];
 		entry.length = M_FileLength(files[i]);
-		mDirectory.addEntryInfo(entry);
 
-		const LumpId lump_id = mDirectory.getLumpId(entry.path);
+	}
 
-		std::string new_path(entry.path);
-		// Replace native filesystem path separator with the in-game path separator
-		const char new_deliminator = ResourcePath::DELIMINATOR;
-		std::replace(new_path.begin(), new_path.end(), PATHSEPCHAR, new_deliminator);
+	// sort the directory entries by filename
+	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_filesystem_directory_entries);
+
+	// add the directory entries to ResourceManager
+	for (std::vector<FileSystemDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
+	{
+		const FileSystemDirectoryEntry& entry = *it;
+
 		// Remove the base path to produce the in-game resource path
-		new_path.replace(0, mPath.length(), "");
+		// Transform the file path to fit with ResourceManager semantics
+		std::string path = Res_TransformResourcePath(entry.path.substr(mPath.length()));
 
-		// Transform the filename portion of the path into a well-formed lump name.
-		// eg, 8 chars, no filename extension, all caps.
-		//
-		// Note that the "/SCRIPTS/" directory will need the full filename preserved,
-		// including extension and > 8 chars
-		if (new_path.find("/SCRIPTS/") != 0)
-		{
-			size_t last_deliminator = new_path.find_last_of(new_deliminator);
-			if (last_deliminator != std::string::npos)
-			{
-				size_t start_of_lump_name = last_deliminator + 1;
-				// Trim the filename extension
-				new_path.replace(new_path.find_first_of(".", start_of_lump_name), std::string::npos, "");
-				// Is the new lump name empty?
-				if (start_of_lump_name == new_path.size() - 1)
-					continue;
-				// Capitalize the lump name
-				std::transform(new_path.begin() + start_of_lump_name, new_path.end(),
-								new_path.begin() + start_of_lump_name, toupper);
-				// Truncate the lump name to 8 chars
-				new_path = new_path.substr(0, start_of_lump_name + 8);
-			}
-		}
+		if (path.length() == 0)
+			continue;
 
-		DPrintf("Adding lump %05d %s\n", lump_id, new_path.c_str());
-		const ResourceId res_id = manager->addResource(new_path, this);
+		mDirectory.addEntry(entry);
+
+		const ResourceId res_id = manager->addResource(path, this);
+		const LumpId lump_id = mDirectory.getLumpId(entry.path);
 		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 	}
 }
@@ -672,7 +711,7 @@ ZipResourceContainer::~ZipResourceContainer()
 //
 size_t ZipResourceContainer::findEndOfCentralDirectory() const
 {
-	static const uint32_t BUFREADCOMMENT = 0x400;
+	const uint32_t BUFREADCOMMENT = 0x400;
     uint8_t buf[BUFREADCOMMENT + 4];
     size_t position_found = 0;
     size_t file_size = mFile->size();
@@ -717,7 +756,8 @@ size_t ZipResourceContainer::findEndOfCentralDirectory() const
 //
 // ZipResourceContainer::readCentralDirectory
 //
-// Read the end-of-central-directory data structure.
+// Read the end-of-central-directory data structure, which indicates where
+// the central directory starts and how many entries it contains.
 //
 bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
 {
@@ -729,11 +769,9 @@ bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
 	uint8_t* buffer = new uint8_t[ZIP_END_OF_DIR_SIZE];
 
     // Read the central directory contents
-    if (!mFile->seek(central_dir_end) || mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
-        return false;
+	if (!mFile->seek(central_dir_end) || mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
+		return false;
 
-    // Basic sanity checks
-    // Multi-disk zips aren't supported
 	uint16_t disk_num = LESHORT(*(uint16_t*)(buffer + 4));
 	uint16_t central_directory_disk_num = LESHORT(*(uint16_t*)(buffer + 6));
 	uint16_t num_entries_on_disk = LESHORT(*(uint16_t*)(buffer + 8));
@@ -741,6 +779,10 @@ bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
 	uint32_t dir_size = LELONG(*(uint32_t*)(buffer + 12));
 	uint32_t dir_offset = LELONG(*(uint32_t*)(buffer + 16));
 
+	delete [] buffer;
+
+    // Basic sanity checks
+    // Multi-disk zips aren't supported
 	if (num_entries_on_disk != num_entries_total || disk_num != 0 || central_directory_disk_num != 0)
         return false;
 
@@ -752,6 +794,8 @@ bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
 
 //
 // ZipResourceContainer::addEntries
+//
+// Reads the entries in the central directory and addes them to ResourceManager.
 //
 void ZipResourceContainer::addDirectoryEntries(ResourceManager* manager, uint32_t offset, uint32_t length, uint16_t num_entries)
 {
@@ -788,13 +832,16 @@ void ZipResourceContainer::addDirectoryEntries(ResourceManager* manager, uint32_
 			break;
 
 		std::string name((char*)(ptr + ZIP_CENTRAL_DIR_SIZE + 0), name_length);
+
 		// Convert path separators to '/'
-		std::replace(name.begin(), name.end(), '\\', '/');
+		for (size_t j = 0; j < name.length(); j++)
+			if (name[j] == '\\' || name[j] == '/')
+				name[j] = ResourcePath::DELIMINATOR;
 
 		ptr += ZIP_CENTRAL_DIR_SIZE + name_length + extra_length + comment_length;
 
 		// skip directories
-		if (name[name_length - 1] == '/' && uncompressed_length == 0)
+		if (name[name_length - 1] == ResourcePath::DELIMINATOR && uncompressed_length == 0)
 			continue;
 
 		// skip unsupported compression methods
@@ -816,12 +863,22 @@ void ZipResourceContainer::addDirectoryEntries(ResourceManager* manager, uint32_
 	}
     delete [] buffer;
 
+	// sort the central directory entries by filename
 	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_zip_directory_entries);
 
 	for (std::vector<ZipDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
 	{
-		mDirectory.addEntryInfo(*it);
-		manager->addResource(it->path, this);
+		const ZipDirectoryEntry& entry = *it;
+
+		std::string path = Res_TransformResourcePath(entry.path);
+		if (path.length() == 0)
+			continue;
+
+		mDirectory.addEntry(entry);
+
+		const ResourceId res_id = manager->addResource(path, this);
+		const LumpId lump_id = mDirectory.getLumpId(entry.path);
+		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 	}
 }
 
@@ -860,10 +917,7 @@ void ZipResourceContainer::addEmbeddedResourceContainers(ResourceManager* manage
 	for (ContainerDirectory<ZipDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
 	{
 		const ZipDirectoryEntry& entry = *it;
-
-		std::string ext;
-		M_ExtractFileExtension(entry.path, ext);
-		if (iequals(ext, "WAD"))
+		if (isEmbeddedWadFile(&entry))
 		{
 			uint8_t* data = new uint8_t[entry.length];
 			loadEntryData(&entry, data, entry.length);
@@ -874,6 +928,32 @@ void ZipResourceContainer::addEmbeddedResourceContainers(ResourceManager* manage
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
 		}
 	}
+}
+
+
+//
+// ZipResourceContainer::isEmbeddedWadFile
+//
+bool ZipResourceContainer::isEmbeddedWadFile(const ZipDirectoryEntry* entry)
+{
+	std::string ext;
+	M_ExtractFileExtension(entry->path, ext);
+	if (iequals(ext, "WAD"))
+	{
+		// will not consider any lump less than 28 in size 
+		// (valid wad header, plus at least one lump in the directory)
+		if (entry->length < 28)
+			return false;
+
+		// only allow embedded WAD files in the root directory
+		size_t last_path_separator = entry->path.find_last_of(ResourcePath::DELIMINATOR);
+		if (last_path_separator != 0 && last_path_separator != std::string::npos)
+			return false;
+
+		return true;
+	}
+
+	return false;
 }
 
 

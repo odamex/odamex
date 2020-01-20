@@ -141,7 +141,7 @@ public:
 		return lump_id < mEntries.size();
 	}
 
-	void addEntryInfo(const T& entry)
+	void addEntry(const T& entry)
 	{
 		mEntries.push_back(entry);
 
@@ -441,8 +441,9 @@ private:
     size_t findEndOfCentralDirectory() const;
 	void addDirectoryEntries(ResourceManager* manager, uint32_t offset, uint32_t length, uint16_t num_entries);
 	void addEmbeddedResourceContainers(ResourceManager* manager);
-	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
+	bool isEmbeddedWadFile(const ZipDirectoryEntry* entry);
 
+	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
