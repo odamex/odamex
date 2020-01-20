@@ -668,6 +668,28 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 }
 
 
+
+static fixed_t P_GetDefaultTextureHeight()
+{
+	// [SL] This emulates the behavior of vanilla Doom where if a texture
+	// is not supplied for a wall tier, texture 0 (AASTINKY/AASHITTY) is used.
+	// This is not the fastest code in the world but hopefully it's a rarely used function...
+	//
+	// See https://doomwiki.org/wiki/AASTINKY
+	//
+	const ResourcePathList paths = Res_ListResourceDirectory(textures_directory_name);
+	if (paths.empty())
+		return MAXINT;
+
+	const OString& texture_name = paths[0].last();
+	const Texture* texture = Res_CacheTexture(texture_name, WALL);
+	if (texture)
+		return texture->mHeight << FRACBITS;
+	else
+		return MAXINT;
+}
+
+
 //
 // P_FindShortestTextureAround()
 //
@@ -676,15 +698,10 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (sector_t *sec)
+fixed_t P_FindShortestTextureAround(sector_t *sec)
 {
-	// [SL] This emulates the behavior of vanilla Doom where if a texture
-	// is not supplied for a wall tier, texture 0 (AASTINKY/AASHITTY) is used.
-	// This is not the fastest code in the world but hopefully it's a rarely used function...
-	const OString& default_texture_name = Res_ListResourceDirectory(textures_directory_name)[0].first();
-	const Texture* default_texture = Res_CacheTexture(default_texture_name, WALL);
-
 	int minsize = MAXINT;
+	fixed_t default_texture_height = P_GetDefaultTextureHeight();
 	side_t *side;
 
 	for (int i = 0; i < sec->linecount; i++)
@@ -695,25 +712,25 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
-				minsize = std::min<int>(minsize, texture->mHeight);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
 			else
 			{
-				minsize = std::min<int>(minsize, default_texture->mHeight);
+				minsize = std::min<int>(minsize, default_texture_height);
 			}
 			side = getSide (sec, i, 1);
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
-				minsize = std::min<int>(minsize, texture->mHeight);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
 			else
 			{
-				minsize = std::min<int>(minsize, default_texture->mHeight);
+				minsize = std::min<int>(minsize, default_texture_height);
 			}
 		}
 	}
-	return minsize << FRACBITS;
+	return minsize;
 }
 
 
@@ -728,44 +745,39 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (sector_t *sec)
+fixed_t P_FindShortestUpperAround(sector_t *sec)
 {
-	// [SL] This emulates the behavior of vanilla Doom where if a texture
-	// is not supplied for a wall tier, texture 0 (AASTINKY/AASHITTY) is used.
-	// This is not the fastest code in the world but hopefully it's a rarely used function...
-	const ResourcePath& default_texture_name = Res_ListResourceDirectory(textures_directory_name)[0].first();
-	const Texture* default_texture = Res_CacheTexture(default_texture_name, WALL);
-
 	int minsize = MAXINT;
+	fixed_t default_texture_height = P_GetDefaultTextureHeight();
 	side_t *side;
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
 		if (twoSided (sec, i))
 		{
-			side = getSide (sec,i,0);
+			side = getSide (sec, i, 0);
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);
-				minsize = std::min<int>(minsize, texture->mHeight);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
 			else
 			{
-				minsize = std::min<int>(minsize, default_texture->mHeight);
+				minsize = std::min<int>(minsize, default_texture_height);
 			}
-			side = getSide (sec,i,1);
+			side = getSide (sec, i, 1);
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);
-				minsize = std::min<int>(minsize, texture->mHeight);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
 			else
 			{
-				minsize = std::min<int>(minsize, default_texture->mHeight);
+				minsize = std::min<int>(minsize, default_texture_height);
 			}
 		}
 	}
-	return minsize << FRACBITS;
+	return minsize;
 }
 
 
