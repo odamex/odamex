@@ -125,31 +125,21 @@ static std::string Res_TransformResourcePath(const std::string& path)
 // Use the filename as the name of the lump and attempt to determine which
 // directory to insert the lump into.
 //
-SingleLumpResourceContainer::SingleLumpResourceContainer(
-	const OString& path,
-	ResourceManager* manager) :
-		ResourceContainer(manager),
-		mFile(NULL),
+SingleLumpResourceContainer::SingleLumpResourceContainer(FileAccessor* file) :
+		mFile(file),
 		mResourceId(ResourceId::INVALID_ID)
-{
-	mFile = new DiskFileAccessor(path);
-	if (mFile->valid())
-	{
-		const OString& filename = mFile->getFileName();
+{ }
 
-		// the filename serves as the lump_name
-		std::string base_filename;
-		M_ExtractFileBase(filename, base_filename);
-		OString lump_name = OStringToUpper(base_filename.c_str(), 8);
 
-		// rename lump_name to DEHACKED if it's a DeHackEd file
-		if (Res_IsDehackedFile(filename))
-			lump_name = "DEHACKED";
-
-		ResourcePath path = Res_MakeResourcePath(lump_name, global_directory_name);
-		mResourceId = manager->addResource(path, this);
-	}
-}
+//
+// SingleLumpResourceContainer::SingleLumpResourceContainer
+//
+// Use the filename as the name of the lump and attempt to determine which
+// directory to insert the lump into.
+//
+SingleLumpResourceContainer::SingleLumpResourceContainer(const OString& path) :
+		SingleLumpResourceContainer(new DiskFileAccessor(path))
+{ }
 
 
 //
@@ -167,6 +157,30 @@ SingleLumpResourceContainer::~SingleLumpResourceContainer()
 uint32_t SingleLumpResourceContainer::getResourceCount() const
 {
 	return mFile->valid() ? 1 : 0;
+}
+
+
+//
+// SingleLumpResourceContainer::addResources
+//
+void SingleLumpResourceContainer::addResources(ResourceManager* manager)
+{
+	if (mFile->valid())
+	{
+		const OString& filename = mFile->getFileName();
+
+		// the filename serves as the lump_name
+		std::string base_filename;
+		M_ExtractFileBase(filename, base_filename);
+		OString lump_name = OStringToUpper(base_filename.c_str(), 8);
+
+		// rename lump_name to DEHACKED if it's a DeHackEd file
+		if (Res_IsDehackedFile(filename))
+			lump_name = "DEHACKED";
+
+		ResourcePath path = Res_MakeResourcePath(lump_name, global_directory_name);
+		mResourceId = manager->addResource(path, this);
+	}
 }
 
 
@@ -206,10 +220,8 @@ uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId 
 // with the ResourceManager. If the WAD file has an invalid directory, no lumps
 // will be registered and getResourceCount() will return 0.
 //
-WadResourceContainer::WadResourceContainer(
-	const OString& path,
-	ResourceManager* manager) :
-		WadResourceContainer(new DiskFileAccessor(path), manager)
+WadResourceContainer::WadResourceContainer(const OString& path) :
+		WadResourceContainer(new DiskFileAccessor(path))
 {
 }
 
@@ -225,10 +237,7 @@ WadResourceContainer::WadResourceContainer(
 // memory or from disk. The WadResourceContainer will own the FileAccessor
 // pointer and is responsible for de-allocating it.
 //
-WadResourceContainer::WadResourceContainer(
-	FileAccessor* file,
-	ResourceManager* manager) :
-		ResourceContainer(manager),
+WadResourceContainer::WadResourceContainer(FileAccessor* file) :
 		mFile(file),
 		mDirectory(256),
 		mLumpIdLookup(256)
@@ -237,10 +246,6 @@ WadResourceContainer::WadResourceContainer(
 		mDirectory.clear();
 
 	buildMarkerRecords();
-
-	// Examine each lump and decide which path it belongs in
-	// and then register it with the resource manager.
-	addResourcesToManager(manager);
 }
 
 
@@ -409,9 +414,21 @@ bool WadResourceContainer::isLumpMapMarker(LumpId lump_id) const
 
 
 //
-// WadResourceContainer::addResourcesToManager
+// WadResourceContainer::getResourceCount
 //
-void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
+// Returns the number of lumps in the WAD file or returns 0 if
+// the WAD file is invalid.
+//
+uint32_t WadResourceContainer::getResourceCount() const
+{
+	return mDirectory.size();
+}
+
+
+//
+// WadResourceContainer::addResources
+//
+void WadResourceContainer::addResources(ResourceManager* manager)
 {
 	OString map_name;
 
@@ -465,18 +482,6 @@ void WadResourceContainer::addResourcesToManager(ResourceManager* manager)
 
 
 //
-// WadResourceContainer::getResourceCount
-//
-// Returns the number of lumps in the WAD file or returns 0 if
-// the WAD file is invalid.
-//
-uint32_t WadResourceContainer::getResourceCount() const
-{
-	return mDirectory.size();
-}
-
-
-//
 // WadResourceContainer::getResourceSize
 //
 uint32_t WadResourceContainer::getResourceSize(const ResourceId res_id) const
@@ -523,17 +528,12 @@ bool compare_filesystem_directory_entries(const FileSystemDirectoryEntry& entry1
 // DirectoryResourceContainer::DirectoryResourceContainer
 //
 //
-DirectoryResourceContainer::DirectoryResourceContainer(
-	const OString& path,
-	ResourceManager* manager) :
-		ResourceContainer(manager),
+DirectoryResourceContainer::DirectoryResourceContainer(const OString& path) :
 		mPath(path),
 		mDirectory(256),
 		mLumpIdLookup(256)
 {
-	// Examine each lump and decide which path it belongs in
-	// and then register it with the resource manager.
-	addResourcesToManager(manager);
+	addEntries();
 }
 
 
@@ -554,6 +554,28 @@ DirectoryResourceContainer::~DirectoryResourceContainer()
 uint32_t DirectoryResourceContainer::getResourceCount() const
 {
 	return mDirectory.size();
+}
+
+
+//
+// DirectoryResourceContainer::addResources
+//
+void DirectoryResourceContainer::addResources(ResourceManager* manager)
+{
+	for (ContainerDirectory<FileSystemDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
+	{
+		const FileSystemDirectoryEntry& entry = *it;
+
+		// Remove the base path to produce the in-game resource path
+		// Transform the file path to fit with ResourceManager semantics
+		const ResourcePath resource_path = Res_TransformResourcePath(entry.path.substr(mPath.length()));
+		if (resource_path.last().empty())
+			continue;
+
+		const ResourceId res_id = manager->addResource(resource_path, this);
+		const LumpId lump_id = mDirectory.getLumpId(entry.path);
+		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+	}
 }
 
 
@@ -590,9 +612,9 @@ uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId r
 
 
 //
-// DirectoryResourceContainer::addResourcesToManager
+// DirectoryResourceContainer::readEntries
 //
-void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
+void DirectoryResourceContainer::addEntries()
 {
 	std::vector<FileSystemDirectoryEntry> tmp_entries;
 
@@ -603,30 +625,14 @@ void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
 		FileSystemDirectoryEntry& entry = tmp_entries.back();
 		entry.path = files[i];
 		entry.length = M_FileLength(files[i]);
-
 	}
 
 	// sort the directory entries by filename
 	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_filesystem_directory_entries);
 
-	// add the directory entries to ResourceManager
+	// add the directory entries to this container
 	for (std::vector<FileSystemDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
-	{
-		const FileSystemDirectoryEntry& entry = *it;
-
-		// Remove the base path to produce the in-game resource path
-		// Transform the file path to fit with ResourceManager semantics
-		std::string path = Res_TransformResourcePath(entry.path.substr(mPath.length()));
-
-		if (path.length() == 0)
-			continue;
-
-		mDirectory.addEntry(entry);
-
-		const ResourceId res_id = manager->addResource(path, this);
-		const LumpId lump_id = mDirectory.getLumpId(entry.path);
-		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
-	}
+		mDirectory.addEntry(*it);
 }
 
 
@@ -645,26 +651,21 @@ bool compare_zip_directory_entries(const ZipDirectoryEntry& entry1, const ZipDir
 //
 // ZipResourceContainer::ZipResourceContainer
 //
-ZipResourceContainer::ZipResourceContainer(
-	const OString& path,
-	ResourceManager* manager) :
-		ZipResourceContainer(new DiskFileAccessor(path), manager)
+ZipResourceContainer::ZipResourceContainer(const OString& path) :
+		ZipResourceContainer(new DiskFileAccessor(path))
 { }
 
 
 //
 // ZipResourceContainer::ZipResourceContainer
 //
-ZipResourceContainer::ZipResourceContainer(
-	FileAccessor* file,
-	ResourceManager* manager) :
-		ResourceContainer(manager),
+ZipResourceContainer::ZipResourceContainer(FileAccessor* file) :
 		mFile(file),
 		mDirectory(256),
 		mLumpIdLookup(256)
 {
-    readCentralDirectory(manager);
-	addEmbeddedResourceContainers(manager);
+    readCentralDirectory();
+	//addEmbeddedResourceContainers(manager);
 }
 
 
@@ -759,7 +760,7 @@ size_t ZipResourceContainer::findEndOfCentralDirectory() const
 // Read the end-of-central-directory data structure, which indicates where
 // the central directory starts and how many entries it contains.
 //
-bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
+bool ZipResourceContainer::readCentralDirectory()
 {
     // Locate the central directory
     size_t central_dir_end = findEndOfCentralDirectory();
@@ -786,7 +787,7 @@ bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
 	if (num_entries_on_disk != num_entries_total || disk_num != 0 || central_directory_disk_num != 0)
         return false;
 
-	addDirectoryEntries(manager, dir_offset, dir_size, num_entries_total);
+	addDirectoryEntries(dir_offset, dir_size, num_entries_total);
 
     return true;
 }
@@ -797,7 +798,7 @@ bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
 //
 // Reads the entries in the central directory and addes them to ResourceManager.
 //
-void ZipResourceContainer::addDirectoryEntries(ResourceManager* manager, uint32_t offset, uint32_t length, uint16_t num_entries)
+void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length, uint16_t num_entries)
 {
 	static const uint32_t ZF_ENCRYPTED = 0x01;
 
@@ -867,19 +868,7 @@ void ZipResourceContainer::addDirectoryEntries(ResourceManager* manager, uint32_
 	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_zip_directory_entries);
 
 	for (std::vector<ZipDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
-	{
-		const ZipDirectoryEntry& entry = *it;
-
-		std::string path = Res_TransformResourcePath(entry.path);
-		if (path.length() == 0)
-			continue;
-
-		mDirectory.addEntry(entry);
-
-		const ResourceId res_id = manager->addResource(path, this);
-		const LumpId lump_id = mDirectory.getLumpId(entry.path);
-		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
-	}
+		mDirectory.addEntry(*it);
 }
 
 
@@ -910,22 +899,32 @@ uint32_t ZipResourceContainer::calculateEntryOffset(const ZipDirectoryEntry* ent
 
 
 //
-// ZipResourceContainer::addEmbeddedResourceContainers
+// ZipResourceContainer::addResources
 //
-void ZipResourceContainer::addEmbeddedResourceContainers(ResourceManager* manager)
+void ZipResourceContainer::addResources(ResourceManager* manager)
 {
 	for (ContainerDirectory<ZipDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
 	{
 		const ZipDirectoryEntry& entry = *it;
-		if (isEmbeddedWadFile(&entry))
+
+		if (isEmbeddedWadFile(entry))
 		{
+			// Load the WAD into memory and add it as a separate container
 			uint8_t* data = new uint8_t[entry.length];
 			loadEntryData(&entry, data, entry.length);
 
 			FileAccessor* memfile = new MemoryFileAccessor(entry.path, data, entry.length);
 
-			ResourceContainer* container = new WadResourceContainer(memfile, manager);
+			ResourceContainer* container = new WadResourceContainer(memfile);
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
+		}
+		else
+		{
+			const ResourcePath resource_path = Res_TransformResourcePath(entry.path);
+
+			const ResourceId res_id = manager->addResource(resource_path, this);
+			const LumpId lump_id = mDirectory.getLumpId(entry.path);
+			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 		}
 	}
 }
@@ -934,19 +933,19 @@ void ZipResourceContainer::addEmbeddedResourceContainers(ResourceManager* manage
 //
 // ZipResourceContainer::isEmbeddedWadFile
 //
-bool ZipResourceContainer::isEmbeddedWadFile(const ZipDirectoryEntry* entry)
+bool ZipResourceContainer::isEmbeddedWadFile(const ZipDirectoryEntry& entry)
 {
 	std::string ext;
-	M_ExtractFileExtension(entry->path, ext);
+	M_ExtractFileExtension(entry.path, ext);
 	if (iequals(ext, "WAD"))
 	{
 		// will not consider any lump less than 28 in size 
 		// (valid wad header, plus at least one lump in the directory)
-		if (entry->length < 28)
+		if (entry.length < 28)
 			return false;
 
 		// only allow embedded WAD files in the root directory
-		size_t last_path_separator = entry->path.find_last_of(ResourcePath::DELIMINATOR);
+		size_t last_path_separator = entry.path.find_last_of(ResourcePath::DELIMINATOR);
 		if (last_path_separator != 0 && last_path_separator != std::string::npos)
 			return false;
 

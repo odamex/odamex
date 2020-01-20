@@ -238,6 +238,8 @@ public:
 		return mResourceLoaderLookup.size();
 	}
 
+	void addResources(ResourceManager* manager);
+
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
@@ -250,7 +252,6 @@ private:
 
 	const ResourceLoader* getResourceLoader(const ResourceId res_id) const;
 
-	void addResourcesToManager(ResourceManager* manager);
 	void addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir);
 
 	const ResourceIdList buildPNamesLookup(ResourceManager* manager, const OString& lump_name) const;

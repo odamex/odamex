@@ -258,6 +258,14 @@ private:
 	typedef std::vector<ResourceContainerRecord> ResourceContainerRecordTable;
 	ResourceContainerRecordTable		mResourceContainers;
 
+	const ResourceContainerRecord* getResourceContainerRecord(const ResourceContainer* container) const
+	{
+		for (ResourceContainerRecordTable::const_iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
+			if (it->mResourceContainer == container)
+				return &(*it);
+		return NULL;
+	}
+
 	void openResourceFile(const OString& filename);
 
 	std::vector<std::string>			mResourceFileNames;

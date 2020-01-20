@@ -165,12 +165,17 @@ void ResourceManager::addResourceContainer(
 	record.mResourceContainer = container;
 	record.mParent = parent;
 	record.mBasePath = base_path;
-	record.mFileName = filename;
+	if (parent)
+		record.mFileName = getResourceContainerRecord(parent)->mFileName + ":" + filename;
+	else
+		record.mFileName = filename;
 
 	Printf(PRINT_HIGH, "adding %s (%d %s)\n",
-					filename.c_str(),
+					record.mFileName.c_str(),
 					container->getResourceCount(),
 					container->getResourceCount() == 1 ? "lump" : "lumps");
+
+	container->addResources(this);
 }
 
 
@@ -189,15 +194,15 @@ void ResourceManager::openResourceFile(const OString& path)
 		M_ExtractFileExtension(path, ext);
 
 		if (Res_IsWadFile(path))
-			container = new WadResourceContainer(path, this);
+			container = new WadResourceContainer(path);
 		else if (iequals(ext, "ZIP") || iequals(ext, "PK3") || iequals(ext, "PKE"))
-			container = new ZipResourceContainer(path, this);
+			container = new ZipResourceContainer(path);
 		else
-			container = new SingleLumpResourceContainer(path, this);
+			container = new SingleLumpResourceContainer(path);
 	}
 	else if (M_IsDirectory(path))
 	{
-		container = new DirectoryResourceContainer(path, this);
+		container = new DirectoryResourceContainer(path);
 	}
 
 	if (!container)
@@ -321,10 +326,8 @@ const ResourcePathList ResourceManager::listResourceDirectory(const ResourcePath
 const std::string& ResourceManager::getResourceContainerFileName(const ResourceId res_id) const
 {
 	const ResourceContainer* container = getResourceContainer(res_id);
-
-	for (ResourceContainerRecordTable::const_iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
-		if (it->mResourceContainer == container)
-			return it->mFileName;
+	if (container)
+		return getResourceContainerRecord(container)->mFileName;
 	static std::string empty_string;
 	return empty_string;
 }

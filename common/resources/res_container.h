@@ -56,7 +56,6 @@ template <typename T>
 class ContainerDirectory
 {
 private:
-
 	typedef std::vector<T> EntryList;
 
 public:
@@ -174,24 +173,18 @@ private:
 class ResourceContainer
 {
 public:
-	ResourceContainer(ResourceManager* manager) : mResourceManager(manager)
+	ResourceContainer()
 	{ }
 
 	virtual ~ResourceContainer() { }
 
-	ResourceManager* getResourceManager() const
-	{
-		return mResourceManager;
-	}
-
 	virtual uint32_t getResourceCount() const = 0;
+
+	virtual void addResources(ResourceManager* manager) = 0;
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
 
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const = 0;
-
-private:
-	ResourceManager*		mResourceManager;
 };
 
 
@@ -204,17 +197,15 @@ private:
 class SingleLumpResourceContainer : public ResourceContainer
 {
 public:
-	SingleLumpResourceContainer(
-			FileAccessor* file,
-			ResourceManager* manager);
+	SingleLumpResourceContainer(FileAccessor* file);
 
-	SingleLumpResourceContainer(
-			const OString& path,
-			ResourceManager* manager);
+	SingleLumpResourceContainer(const OString& path);
 
 	virtual ~SingleLumpResourceContainer();
 
 	virtual uint32_t getResourceCount() const;
+
+	virtual void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 
@@ -243,25 +234,21 @@ struct WadDirectoryEntry
 class WadResourceContainer : public ResourceContainer
 {
 public:
-	WadResourceContainer(
-			FileAccessor* file,
-			ResourceManager* manager);
+	WadResourceContainer(FileAccessor* file);
 
-	WadResourceContainer(
-			const OString& path,
-			ResourceManager* manager);
+	WadResourceContainer(const OString& path);
 	
 	virtual ~WadResourceContainer();
 
 	virtual uint32_t getResourceCount() const;
+
+	virtual void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 		
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
 private:
-	virtual void addResourcesToManager(ResourceManager* manager);
-
 	FileAccessor* mFile;
 
 	ContainerDirectory<WadDirectoryEntry> mDirectory;
@@ -340,13 +327,13 @@ struct FileSystemDirectoryEntry
 class DirectoryResourceContainer : public ResourceContainer
 {
 public:
-	DirectoryResourceContainer(
-			const OString& path,
-			ResourceManager* manager);
+	DirectoryResourceContainer(const OString& path);
 	
 	virtual ~DirectoryResourceContainer();
 
 	virtual uint32_t getResourceCount() const;
+
+	virtual void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 		
@@ -354,7 +341,7 @@ public:
 
 private:
 	void cleanup();
-	void addResourcesToManager(ResourceManager* manager);
+	void addEntries();
 
 	OString mPath;
 
@@ -379,6 +366,7 @@ private:
 // ZipResourceContainer class interface
 //
 // ============================================================================
+
 struct ZipDirectoryEntry
 {
 	OString			path;
@@ -388,20 +376,19 @@ struct ZipDirectoryEntry
 	uint16_t		compression_method;
 };
 
+
 class ZipResourceContainer : public ResourceContainer
 {
 public:
-	ZipResourceContainer(
-			FileAccessor* file,
-			ResourceManager* manager);
+	ZipResourceContainer(FileAccessor* file);
 
-    ZipResourceContainer(
-			const OString& path,
-			ResourceManager* manager);
+    ZipResourceContainer(const OString& path);
 	
     virtual ~ZipResourceContainer();
 
 	virtual uint32_t getResourceCount() const;
+
+	virtual void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 		
@@ -437,11 +424,10 @@ private:
 		return mDirectory.INVALID_LUMP_ID;
 	}
 
-    bool readCentralDirectory(ResourceManager* manager);
+    bool readCentralDirectory();
     size_t findEndOfCentralDirectory() const;
-	void addDirectoryEntries(ResourceManager* manager, uint32_t offset, uint32_t length, uint16_t num_entries);
-	void addEmbeddedResourceContainers(ResourceManager* manager);
-	bool isEmbeddedWadFile(const ZipDirectoryEntry* entry);
+	void addDirectoryEntries(uint32_t offset, uint32_t length, uint16_t num_entries);
+	bool isEmbeddedWadFile(const ZipDirectoryEntry& entry);
 
 	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;

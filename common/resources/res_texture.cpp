@@ -134,17 +134,17 @@ uint32_t Texture::calculateSize(int width, int height)
 // ============================================================================
 
 TextureManager::TextureManager(ResourceManager* manager) :
-	ResourceContainer(manager),
 	mResourceLoaderLookup(1024)
 {
 	const ResourceIdList pnames_lookup = buildPNamesLookup(manager, "PNAMES");
 	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE1");
 	addCompositeTextureResources(manager, pnames_lookup, "TEXTURE2");
-
-	addResourcesToManager(manager);
 }
 
 
+//
+// TextureManager::~TextureManager
+//
 TextureManager::~TextureManager()
 {
 	clear();
@@ -166,11 +166,11 @@ void TextureManager::clear()
 
 
 //
-// TextureManager::addResourcesToManager
+// TextureManager::addResources
 //
 // Discovers all raw texture resources and notifies ResourceManager
 // 
-void TextureManager::addResourcesToManager(ResourceManager* manager)
+void TextureManager::addResources(ResourceManager* manager)
 {
 	addResourceToManagerByDir(manager, flats_directory_name);
 	addResourceToManagerByDir(manager, patches_directory_name);
