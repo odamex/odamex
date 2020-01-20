@@ -243,7 +243,7 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 		openResourceFile(*it);
 
 	ResourceContainer* container = new TextureManager(this);
-	addResourceContainer(container, NULL, global_directory_name, "");
+	addResourceContainer(container, NULL, global_directory_name, "Unified Texture System");
 
 	mCache = new ResourceCache(mResources.size());
 }
@@ -484,6 +484,7 @@ void ResourceManager::dump() const
 //
 void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 {
+	Printf(PRINT_HIGH, "Res_OpenResourceFiles: Init resource data.\n");
 	resource_manager.openResourceFiles(filenames);
 }
 

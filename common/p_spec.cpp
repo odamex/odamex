@@ -678,9 +678,14 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
+	// [SL] This emulates the behavior of vanilla Doom where if a texture
+	// is not supplied for a wall tier, texture 0 (AASTINKY/AASHITTY) is used.
+	// This is not the fastest code in the world but hopefully it's a rarely used function...
+	const OString& default_texture_name = Res_ListResourceDirectory(textures_directory_name)[0].first();
+	const Texture* default_texture = Res_CacheTexture(default_texture_name, WALL);
+
 	int minsize = MAXINT;
 	side_t *side;
-	int i;
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
@@ -692,15 +697,23 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight);
 			}
+			else
+			{
+				minsize = std::min<int>(minsize, default_texture->mHeight);
+			}
 			side = getSide (sec, i, 1);
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight);
 			}
+			else
+			{
+				minsize = std::min<int>(minsize, default_texture->mHeight);
+			}
 		}
 	}
-	return minsize;
+	return minsize << FRACBITS;
 }
 
 
@@ -717,9 +730,14 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 //
 fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
+	// [SL] This emulates the behavior of vanilla Doom where if a texture
+	// is not supplied for a wall tier, texture 0 (AASTINKY/AASHITTY) is used.
+	// This is not the fastest code in the world but hopefully it's a rarely used function...
+	const ResourcePath& default_texture_name = Res_ListResourceDirectory(textures_directory_name)[0].first();
+	const Texture* default_texture = Res_CacheTexture(default_texture_name, WALL);
+
 	int minsize = MAXINT;
 	side_t *side;
-	int i;
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
@@ -731,15 +749,23 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight);
 			}
+			else
+			{
+				minsize = std::min<int>(minsize, default_texture->mHeight);
+			}
 			side = getSide (sec,i,1);
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight);
 			}
+			else
+			{
+				minsize = std::min<int>(minsize, default_texture->mHeight);
+			}
 		}
 	}
-	return minsize;
+	return minsize << FRACBITS;
 }
 
 
