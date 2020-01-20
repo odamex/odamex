@@ -28,6 +28,7 @@
 #include "resources/res_resourcepath.h"
 
 bool Res_ValidateWadData(const uint8_t* data, size_t length);
+bool Res_ValidateZipData(const uint8_t* data, size_t length);
 bool Res_ValidateDehackedData(const uint8_t* data, size_t length);
 bool Res_ValidatePCSpeakerSoundData(const uint8_t* data, size_t length);
 bool Res_ValidateSoundData(const uint8_t* data, size_t length);

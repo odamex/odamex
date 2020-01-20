@@ -43,6 +43,19 @@ bool Res_ValidateWadData(const uint8_t* data, size_t length)
 
 
 //
+// Res_ValidateZipData
+//
+// Returns true if the given lump data appears to be a valid zip file.
+//
+bool Res_ValidateZipData(const uint8_t* data, size_t length)
+{
+	if (length >= 4)
+        return data[0] == 'P' && data[1] == 'K' && data[2] == 3 && data[3] == 4;
+	return false;
+}
+
+
+//
 // Res_ValidateDehackedData
 //
 // Returns true if the given lump data appears to be a valid DeHackEd file.

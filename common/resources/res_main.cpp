@@ -94,6 +94,18 @@ bool Res_IsWadFile(const OString& filename)
 
 
 //
+// Res_IsZipFile
+//
+// Checks that the first four bytes of a file matches a zip file signature
+//
+bool Res_IsZipFile(const OString& filename)
+{
+	const size_t length = 4;	// length of zip identifier
+	return Res_CheckFileHelper(filename, &Res_ValidateZipData, length);
+}
+
+
+//
 // Res_IsDehackedFile
 //
 // Checks that the first line of the file contains a DeHackEd header.
@@ -195,7 +207,7 @@ void ResourceManager::openResourceFile(const OString& path)
 
 		if (Res_IsWadFile(path))
 			container = new WadResourceContainer(path);
-		else if (iequals(ext, "ZIP") || iequals(ext, "PK3") || iequals(ext, "PKE"))
+		else if (Res_IsZipFile(path))
 			container = new ZipResourceContainer(path);
 		else
 			container = new SingleLumpResourceContainer(path);

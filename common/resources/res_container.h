@@ -357,8 +357,9 @@ private:
 			return it->second;
 		return mDirectory.INVALID_LUMP_ID;
 	}
-};
 
+	bool isEmbeddedWadFile(const FileSystemDirectoryEntry& entry);
+};
 
 
 // ============================================================================
@@ -413,8 +414,10 @@ private:
     };
 
     FileAccessor*  mFile;
-    const std::string mFileName;
 	ContainerDirectory<ZipDirectoryEntry> mDirectory;
+
+	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
+	LumpIdLookupTable mLumpIdLookup;
 
 	const LumpId getLumpId(const ResourceId res_id) const
 	{
@@ -431,9 +434,6 @@ private:
 
 	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
-
-	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
-	LumpIdLookupTable mLumpIdLookup;
 };
 
 

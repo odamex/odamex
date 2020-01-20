@@ -529,10 +529,16 @@ bool compare_filesystem_directory_entries(const FileSystemDirectoryEntry& entry1
 //
 //
 DirectoryResourceContainer::DirectoryResourceContainer(const OString& path) :
-		mPath(path),
+		mPath(),
 		mDirectory(256),
 		mLumpIdLookup(256)
 {
+	// trim trailing path separators from the path
+	size_t len = path.length();
+	while (len != 0 && path[len - 1] == PATHSEPCHAR)
+		--len;
+	mPath = path.substr(0, len);
+
 	addEntries();
 }
 
@@ -566,16 +572,50 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 	{
 		const FileSystemDirectoryEntry& entry = *it;
 
-		// Remove the base path to produce the in-game resource path
-		// Transform the file path to fit with ResourceManager semantics
-		const ResourcePath resource_path = Res_TransformResourcePath(entry.path.substr(mPath.length()));
-		if (resource_path.last().empty())
-			continue;
+		if (isEmbeddedWadFile(entry))
+		{
+			// Add the WAD as a separate container
+			std::string full_path = std::string(mPath) + std::string(entry.path);
+			FileAccessor* diskfile = new DiskFileAccessor(full_path);
+			ResourceContainer* container = new WadResourceContainer(diskfile);
+			manager->addResourceContainer(container, this, global_directory_name, entry.path);
+		}
+		else
+		{
+			// Transform the file path to fit with ResourceManager semantics
+			const ResourcePath resource_path = Res_TransformResourcePath(entry.path);
 
-		const ResourceId res_id = manager->addResource(resource_path, this);
-		const LumpId lump_id = mDirectory.getLumpId(entry.path);
-		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+			const ResourceId res_id = manager->addResource(resource_path, this);
+			const LumpId lump_id = mDirectory.getLumpId(entry.path);
+			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+		}
 	}
+}
+
+
+//
+// DirectoryResourceContainer::isEmbeddedWadFile
+//
+bool DirectoryResourceContainer::isEmbeddedWadFile(const FileSystemDirectoryEntry& entry)
+{
+	std::string ext;
+	M_ExtractFileExtension(entry.path, ext);
+	if (iequals(ext, "WAD"))
+	{
+		// will not consider any lump less than 28 in size 
+		// (valid wad header, plus at least one lump in the directory)
+		if (entry.length < 28)
+			return false;
+
+		// only allow embedded WAD files in the root directory
+		size_t last_path_separator = entry.path.find_last_of(ResourcePath::DELIMINATOR);
+		if (last_path_separator != 0 && last_path_separator != std::string::npos)
+			return false;
+
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -599,11 +639,12 @@ uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId r
 	LumpId lump_id = getLumpId(res_id);
 	if (mDirectory.validate(lump_id))
 	{
-		const OString& path = mDirectory.getEntry(lump_id)->path;
 		size = std::min(size, getResourceSize(res_id));
 		if (size > 0)
 		{
-			DiskFileAccessor file_accessor(path);
+			const FileSystemDirectoryEntry* entry = mDirectory.getEntry(lump_id);
+			std::string full_path = std::string(mPath) + std::string(entry->path);
+			DiskFileAccessor file_accessor(full_path);
 			return file_accessor.read(data, size);
 		}
 	}
@@ -623,7 +664,7 @@ void DirectoryResourceContainer::addEntries()
 	{
 		tmp_entries.push_back(FileSystemDirectoryEntry());
 		FileSystemDirectoryEntry& entry = tmp_entries.back();
-		entry.path = files[i];
+		entry.path = files[i].substr(mPath.length());
 		entry.length = M_FileLength(files[i]);
 	}
 
@@ -1015,7 +1056,7 @@ uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, voi
 
 			status_code = inflateInit2(&mStream, -MAX_WBITS);
 			if (status_code != Z_OK)
-				I_Error("ZIPDeflateReader: inflateInit2 failed with code %d\n", status_code); 
+				I_Error("ZIPDeflateReader: inflateInit2 failed with code %d", status_code); 
 
 			mStream.next_out  = static_cast<Bytef*>(data);
 			mStream.avail_out = static_cast<uInt>(size);
@@ -1030,7 +1071,7 @@ uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, voi
 				mStream.avail_in = bytes_read;
 				status_code = inflate(&mStream, Z_SYNC_FLUSH);
 				if (status_code != Z_OK && status_code != Z_STREAM_END)
-					I_Error("ZIPDeflateReader::read: invalid deflate stream\n");
+					I_Error("ZIPDeflateReader::read: invalid deflate stream");
 				total_bytes_read += bytes_read;
 			}
 

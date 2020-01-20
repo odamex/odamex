@@ -260,6 +260,7 @@ private:
 
 	const ResourceContainerRecord* getResourceContainerRecord(const ResourceContainer* container) const
 	{
+		// Linear search for now
 		for (ResourceContainerRecordTable::const_iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
 			if (it->mResourceContainer == container)
 				return &(*it);
