@@ -29,6 +29,11 @@
 
 #include "m_ostring.h"
 #include "w_ident.h"
+#include "cmdlib.h"
+#include "i_system.h"
+
+#include "zlib.h"
+
 
 //
 // Res_IsMapLumpName
@@ -72,9 +77,8 @@ static bool Res_IsMapLumpName(const OString& name)
 //
 SingleLumpResourceContainer::SingleLumpResourceContainer(
 	const OString& path,
-	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		ResourceContainer(container_id, manager),
+		ResourceContainer(manager),
 		mFile(NULL),
 		mResourceId(ResourceId::INVALID_ID)
 {
@@ -139,7 +143,6 @@ uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId 
 }
 
 
-
 // ============================================================================
 //
 // WadResourceContainer class implementation
@@ -155,17 +158,31 @@ uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId 
 //
 WadResourceContainer::WadResourceContainer(
 	const OString& path,
-	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		ResourceContainer(container_id, manager),
-		mFile(NULL),
-		mDirectory(256),
-		mLumpIdLookup(256),
-		mIsIWad(false)
+		WadResourceContainer(new DiskFileAccessor(path), manager)
 {
-	mIsIWad = W_IsIWAD(path);
-	mFile = new DiskFileAccessor(path);
+}
 
+
+//
+// WadResourceContainer::WadResourceContainer
+//
+// Reads the lump directory from the WAD file and registers all of the lumps
+// with the ResourceManager. If the WAD file has an invalid directory, no lumps
+// will be registered and getResourceCount() will return 0.
+//
+// This constructor uses a FileAccessor, allowing the WAD to be read from
+// memory or from disk. The WadResourceContainer will own the FileAccessor
+// pointer and is responsible for de-allocating it.
+//
+WadResourceContainer::WadResourceContainer(
+	FileAccessor* file,
+	ResourceManager* manager) :
+		ResourceContainer(manager),
+		mFile(file),
+		mDirectory(256),
+		mLumpIdLookup(256)
+{
 	if (!readWadDirectory())
 		mDirectory.clear();
 
@@ -447,48 +464,6 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 
 // ============================================================================
 //
-// SingleMapWadResourceContainer class implementation
-//
-// ============================================================================
-
-//
-// SingleMapWadResourceContainer::SingleMapWadResourceContainer
-//
-// Reads the lump directory from the WAD file and registers all of the lumps
-// with the ResourceManager. If the WAD file has an invalid directory, no lumps
-// will be registered and getResourceCount() will return 0.
-//
-SingleMapWadResourceContainer::SingleMapWadResourceContainer(
-	const OString& path,
-	const ResourceContainerId& container_id,
-	ResourceManager* manager) :
-		WadResourceContainer(path, container_id, manager)
-{
-	// the filename serves as the name of the map (we ignore the map name in the WAD file)
-	std::string base_filename;
-	M_ExtractFileBase(path, base_filename);
-	mMapName = OStringToUpper(base_filename.c_str(), 8);
-}
-
-
-//
-// SingleMapWadResourceContainer::~SingleMapWadResourceContainer
-//
-SingleMapWadResourceContainer::~SingleMapWadResourceContainer()
-{
-}
-
-
-//
-// SingleMapWadResourceContainer::~SingleMapWadResourceContainer
-//
-void SingleMapWadResourceContainer::addResourcesToManager(ResourceManager* manager)
-{
-}
-
-
-// ============================================================================
-//
 // DirectoryResourceContainer class implementation
 //
 // ============================================================================
@@ -499,9 +474,8 @@ void SingleMapWadResourceContainer::addResourcesToManager(ResourceManager* manag
 //
 DirectoryResourceContainer::DirectoryResourceContainer(
 	const OString& path,
-	const ResourceContainerId& container_id,
 	ResourceManager* manager) :
-		ResourceContainer(container_id, manager),
+		ResourceContainer(manager),
 		mPath(path),
 		mDirectory(256),
 		mLumpIdLookup(256)
@@ -614,6 +588,377 @@ void DirectoryResourceContainer::addResourcesToManager(ResourceManager* manager)
 		const ResourceId res_id = manager->addResource(new_path, this);
 		mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 	}
+}
+
+
+// ============================================================================
+//
+// ZipResourceContainer class implementation
+//
+// ============================================================================
+
+bool compare_zip_directory_entries(const ZipDirectoryEntry& entry1, const ZipDirectoryEntry& entry2)
+{
+	return entry1.path < entry2.path;
+}
+
+
+//
+// ZipResourceContainer::ZipResourceContainer
+//
+ZipResourceContainer::ZipResourceContainer(
+	const OString& path,
+	ResourceManager* manager) :
+		ZipResourceContainer(new DiskFileAccessor(path), manager)
+{ }
+
+
+//
+// ZipResourceContainer::ZipResourceContainer
+//
+ZipResourceContainer::ZipResourceContainer(
+	FileAccessor* file,
+	ResourceManager* manager) :
+		ResourceContainer(manager),
+		mFile(file),
+		mDirectory(256),
+		mLumpIdLookup(256)
+{
+    readCentralDirectory(manager);
+	addEmbeddedResourceContainers(manager);
+}
+
+
+//
+// ZipResourceContainer::~ZipResourceContainer
+//
+ZipResourceContainer::~ZipResourceContainer()
+{
+	delete mFile;
+}
+
+
+//
+// ZipResourceContainer::findEndOfCentralDirectory
+//
+// Derived from ZDoom, which derived it from Quake 3 unzip.c, where it is
+// named unzlocal_SearchCentralDir and is derived from unzip.c by Gilles 
+// Vollant, under the following BSD-style license (which ZDoom does NOT 
+// properly preserve in its own code):
+//
+// unzip.h -- IO for uncompress .zip files using zlib
+// Version 0.15 beta, Mar 19th, 1998,
+//
+// Copyright (C) 1998 Gilles Vollant
+//
+// I WAIT FEEDBACK at mail info@winimage.com
+// Visit also http://www.winimage.com/zLibDll/unzip.htm for evolution
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the authors be held liable for any damages
+// arising from the use of this software.
+// 
+// Permission is granted to anyone to use this software for any purpose,
+// including commercial applications, and to alter it and redistribute it
+// freely, subject to the following restrictions:
+// 
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
+size_t ZipResourceContainer::findEndOfCentralDirectory() const
+{
+	static const uint32_t BUFREADCOMMENT = 0x400;
+    uint8_t buf[BUFREADCOMMENT + 4];
+    size_t position_found = 0;
+    size_t file_size = mFile->size();
+    size_t max_back = std::min<uint32_t>(0xFFFF, file_size);
+    size_t back_read = 4;
+
+    mFile->seek(0);
+
+    while (back_read < max_back)
+    {
+        if (back_read + BUFREADCOMMENT > max_back)
+            back_read = max_back;
+        else
+            back_read += BUFREADCOMMENT;
+
+        size_t read_position = file_size - back_read;
+        size_t read_size = std::min<size_t>(BUFREADCOMMENT + 4, file_size - read_position);
+
+        if (!mFile->seek(read_position))
+            break;
+
+        if (mFile->read(buf, read_size) != read_size)
+            break;
+
+        for (size_t i = read_size - 3; (i--) > 0; )
+        {
+            if (buf[i] == 'P' && buf[i+1] == 'K' && buf[i+2] == 5 && buf[i+3] == 6)
+            {
+                position_found = read_position + i;
+                break;
+            }
+        }
+
+        if (position_found != 0)
+            break;
+    }
+
+    return position_found;
+}
+
+
+//
+// ZipResourceContainer::readCentralDirectory
+//
+// Read the end-of-central-directory data structure.
+//
+bool ZipResourceContainer::readCentralDirectory(ResourceManager* manager)
+{
+    // Locate the central directory
+    size_t central_dir_end = findEndOfCentralDirectory();
+    if (central_dir_end == 0)
+		return false; 
+
+	uint8_t* buffer = new uint8_t[ZIP_END_OF_DIR_SIZE];
+
+    // Read the central directory contents
+    if (!mFile->seek(central_dir_end) || mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
+        return false;
+
+    // Basic sanity checks
+    // Multi-disk zips aren't supported
+	uint16_t disk_num = LESHORT(*(uint16_t*)(buffer + 4));
+	uint16_t central_directory_disk_num = LESHORT(*(uint16_t*)(buffer + 6));
+	uint16_t num_entries_on_disk = LESHORT(*(uint16_t*)(buffer + 8));
+	uint16_t num_entries_total = LESHORT(*(uint16_t*)(buffer + 10));
+	uint32_t dir_size = LELONG(*(uint32_t*)(buffer + 12));
+	uint32_t dir_offset = LELONG(*(uint32_t*)(buffer + 16));
+
+	if (num_entries_on_disk != num_entries_total || disk_num != 0 || central_directory_disk_num != 0)
+        return false;
+
+	addDirectoryEntries(manager, dir_offset, dir_size, num_entries_total);
+
+    return true;
+}
+
+
+//
+// ZipResourceContainer::addEntries
+//
+void ZipResourceContainer::addDirectoryEntries(ResourceManager* manager, uint32_t offset, uint32_t length, uint16_t num_entries)
+{
+	static const uint32_t ZF_ENCRYPTED = 0x01;
+
+	std::vector<ZipDirectoryEntry> tmp_entries;
+	tmp_entries.reserve(num_entries);
+	mDirectory.reserve(num_entries);
+
+    uint8_t* buffer = new uint8_t[length];
+	if (!mFile->seek(offset) || mFile->read(buffer, length) != length)
+		return;
+
+	const uint8_t* ptr = buffer;
+	for (uint16_t i = 0; i < num_entries; i++)
+	{
+		if (ptr + ZIP_CENTRAL_DIR_SIZE - buffer > length)
+			break;
+
+		// check for valid entry header
+		if (ptr[0] != 'P' || ptr[1] != 'K' || ptr[2] != 1 || ptr[3] != 2)
+			break;
+
+		uint16_t flags = LESHORT(*(uint16_t*)(ptr + 8));
+		uint16_t method = LESHORT(*(uint16_t*)(ptr + 10));
+		uint32_t compressed_length = LELONG(*(uint32_t*)(ptr + 20));
+		uint32_t uncompressed_length = LELONG(*(uint32_t*)(ptr + 24));
+		uint16_t name_length = LESHORT(*(uint16_t*)(ptr + 28));
+		uint16_t extra_length = LESHORT(*(uint16_t*)(ptr + 30));
+		uint16_t comment_length = LESHORT(*(uint16_t*)(ptr + 32));
+		uint32_t local_offset = LELONG(*(uint32_t*)(ptr + 42));
+	
+		if (ptr + ZIP_CENTRAL_DIR_SIZE + name_length - buffer > length)
+			break;
+
+		std::string name((char*)(ptr + ZIP_CENTRAL_DIR_SIZE + 0), name_length);
+		// Convert path separators to '/'
+		std::replace(name.begin(), name.end(), '\\', '/');
+
+		ptr += ZIP_CENTRAL_DIR_SIZE + name_length + extra_length + comment_length;
+
+		// skip directories
+		if (name[name_length - 1] == '/' && uncompressed_length == 0)
+			continue;
+
+		// skip unsupported compression methods
+		if (method != METHOD_DEFLATE && method != METHOD_STORED)
+			continue;
+
+		// skip encrypted entries
+		if (flags & ZF_ENCRYPTED)
+			continue;
+
+		ZipDirectoryEntry entry;
+		entry.path = name;
+		entry.length = uncompressed_length;
+		entry.compression_method = method;
+		entry.compressed_length = compressed_length;
+		entry.local_offset = local_offset;
+
+		tmp_entries.push_back(entry);
+	}
+    delete [] buffer;
+
+	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_zip_directory_entries);
+
+	for (std::vector<ZipDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
+	{
+		mDirectory.addEntryInfo(*it);
+		manager->addResource(it->path, this);
+	}
+}
+
+
+//
+// ZipResourceContainer::calculateEntryOffset
+//
+// Determines the offset into the zipfile for the start of the
+// compressed data for the given entry.
+//
+uint32_t ZipResourceContainer::calculateEntryOffset(const ZipDirectoryEntry* entry) const
+{
+    uint32_t offset = INVALID_OFFSET;
+    uint8_t* buffer = new uint8_t[ZIP_LOCAL_FILE_SIZE];
+
+    if (mFile->seek(entry->local_offset) && mFile->read(buffer, ZIP_LOCAL_FILE_SIZE) == ZIP_LOCAL_FILE_SIZE)
+    {
+        if (buffer[0] == 'P' && buffer[1] == 'K' && buffer[2] == 3 && buffer[3] == 4)
+        {
+            uint16_t name_length = LESHORT(*(uint16_t*)(buffer + 26));
+            uint16_t extra_length = LESHORT(*(uint16_t*)(buffer + 28));
+            offset = entry->local_offset + ZIP_LOCAL_FILE_SIZE + name_length + extra_length;
+        }
+    }
+
+    delete [] buffer;
+    return offset;
+}
+
+
+//
+// ZipResourceContainer::addEmbeddedResourceContainers
+//
+void ZipResourceContainer::addEmbeddedResourceContainers(ResourceManager* manager)
+{
+	for (ContainerDirectory<ZipDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
+	{
+		const ZipDirectoryEntry& entry = *it;
+
+		std::string ext;
+		M_ExtractFileExtension(entry.path, ext);
+		if (iequals(ext, "WAD"))
+		{
+			uint8_t* data = new uint8_t[entry.length];
+			loadEntryData(&entry, data, entry.length);
+
+			FileAccessor* memfile = new MemoryFileAccessor(entry.path, data, entry.length);
+
+			ResourceContainer* container = new WadResourceContainer(memfile, manager);
+			manager->addResourceContainer(container, this, global_directory_name, entry.path);
+		}
+	}
+}
+
+
+//
+// ZipResourceContainer::getResourceCount
+//
+uint32_t ZipResourceContainer::getResourceCount() const
+{
+	return mDirectory.size();
+}
+
+
+//
+// ZipResourceContainer::getResourceSize
+//
+uint32_t ZipResourceContainer::getResourceSize(const ResourceId res_id) const
+{
+	LumpId lump_id = getLumpId(res_id);
+	if (mDirectory.validate(lump_id))
+		return mDirectory.getEntry(lump_id)->length;
+	return 0;
+}
+
+
+//
+// ZipResourceContainer::loadResource
+//
+uint32_t ZipResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+{
+	LumpId lump_id = getLumpId(res_id);
+	if (mDirectory.validate(lump_id))
+	{
+		const ZipDirectoryEntry* entry = mDirectory.getEntry(lump_id);
+		size = std::min(size, entry->length);
+		if (size > 0)
+			return loadEntryData(entry, data, size);
+	}
+	return 0;
+}
+
+
+//
+// ZipResourceContainer::loadEntryData
+//
+uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const
+{
+	uint32_t offset = calculateEntryOffset(entry);
+	if (mFile->seek(offset))
+	{
+		if (entry->compression_method == METHOD_STORED)
+			return mFile->read(data, size);
+
+		if (entry->compression_method == METHOD_DEFLATE)
+		{
+			size_t total_bytes_read = 0;
+			int status_code;
+			z_stream mStream;
+			mStream.zalloc = NULL;
+			mStream.zfree  = NULL;
+
+			status_code = inflateInit2(&mStream, -MAX_WBITS);
+			if (status_code != Z_OK)
+				I_Error("ZIPDeflateReader: inflateInit2 failed with code %d\n", status_code); 
+
+			mStream.next_out  = static_cast<Bytef*>(data);
+			mStream.avail_out = static_cast<uInt>(size);
+
+			const size_t BUFF_SIZE = 4096;
+			uint8_t buf[BUFF_SIZE];
+
+			while (mStream.avail_out && !mFile->eof())
+			{
+				size_t bytes_read = mFile->read(buf, BUFF_SIZE);
+				mStream.next_in  = buf;
+				mStream.avail_in = bytes_read;
+				status_code = inflate(&mStream, Z_SYNC_FLUSH);
+				if (status_code != Z_OK && status_code != Z_STREAM_END)
+					I_Error("ZIPDeflateReader::read: invalid deflate stream\n");
+				total_bytes_read += bytes_read;
+			}
+
+			return total_bytes_read;
+		}
+	}
+	return 0;
 }
 
 

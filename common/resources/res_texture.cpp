@@ -133,8 +133,8 @@ uint32_t Texture::calculateSize(int width, int height)
 //
 // ============================================================================
 
-TextureManager::TextureManager(const ResourceContainerId& container_id, ResourceManager* manager) :
-	ResourceContainer(container_id, manager),
+TextureManager::TextureManager(ResourceManager* manager) :
+	ResourceContainer(manager),
 	mResourceLoaderLookup(1024)
 {
 	const ResourceIdList pnames_lookup = buildPNamesLookup(manager, "PNAMES");

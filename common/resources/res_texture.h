@@ -229,7 +229,8 @@ struct CompositeTextureDefinition
 class TextureManager : public ResourceContainer
 {
 public:
-	TextureManager(const ResourceContainerId& container_id, ResourceManager* manager);
+	TextureManager(ResourceManager* manager);
+
 	~TextureManager();
 
 	virtual uint32_t getResourceCount() const

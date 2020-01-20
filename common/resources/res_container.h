@@ -35,7 +35,6 @@
 #include "resources/res_resourceid.h"
 #include "resources/res_resourcepath.h"
 
-typedef uint32_t ResourceContainerId;
 typedef uint32_t LumpId;
 
 
@@ -175,24 +174,15 @@ private:
 class ResourceContainer
 {
 public:
-	ResourceContainer(const ResourceContainerId& container_id, ResourceManager* manager) :
-							mResourceContainerId(container_id),
-							mResourceManager(manager)
+	ResourceContainer(ResourceManager* manager) : mResourceManager(manager)
 	{ }
 
 	virtual ~ResourceContainer() { }
-
-	const ResourceContainerId& getResourceContainerId() const
-	{
-		return mResourceContainerId;
-	}
 
 	ResourceManager* getResourceManager() const
 	{
 		return mResourceManager;
 	}
-
-	virtual bool isIWad() const { return false; }
 
 	virtual uint32_t getResourceCount() const = 0;
 
@@ -201,7 +191,6 @@ public:
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const = 0;
 
 private:
-	ResourceContainerId		mResourceContainerId;
 	ResourceManager*		mResourceManager;
 };
 
@@ -216,8 +205,11 @@ class SingleLumpResourceContainer : public ResourceContainer
 {
 public:
 	SingleLumpResourceContainer(
+			FileAccessor* file,
+			ResourceManager* manager);
+
+	SingleLumpResourceContainer(
 			const OString& path,
-			const ResourceContainerId& container_id,
 			ResourceManager* manager);
 
 	virtual ~SingleLumpResourceContainer();
@@ -252,16 +244,14 @@ class WadResourceContainer : public ResourceContainer
 {
 public:
 	WadResourceContainer(
+			FileAccessor* file,
+			ResourceManager* manager);
+
+	WadResourceContainer(
 			const OString& path,
-			const ResourceContainerId& container_id,
 			ResourceManager* manager);
 	
 	virtual ~WadResourceContainer();
-
-	virtual bool isIWad() const
-	{
-		return mIsIWad;
-	}
 
 	virtual uint32_t getResourceCount() const;
 
@@ -278,8 +268,6 @@ private:
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable mLumpIdLookup;
-
-	bool mIsIWad;
 
 	const LumpId getLumpId(const ResourceId res_id) const
 	{
@@ -338,29 +326,6 @@ private:
 
 // ============================================================================
 //
-// SingleMapWadResourceContainer abstract base class interface
-//
-// ============================================================================
-
-class SingleMapWadResourceContainer : public WadResourceContainer
-{
-public:
-	SingleMapWadResourceContainer(
-			const OString& path,
-			const ResourceContainerId& container_id,
-			ResourceManager* manager);
-	
-	virtual ~SingleMapWadResourceContainer();
-
-private:
-	virtual void addResourcesToManager(ResourceManager* manager);
-
-	OString		mMapName;
-};
-
-
-// ============================================================================
-//
 // DirectoryResourceContainer abstract base class interface
 //
 // ============================================================================
@@ -377,7 +342,6 @@ class DirectoryResourceContainer : public ResourceContainer
 public:
 	DirectoryResourceContainer(
 			const OString& path,
-			const ResourceContainerId& container_id,
 			ResourceManager* manager);
 	
 	virtual ~DirectoryResourceContainer();
@@ -407,5 +371,83 @@ private:
 		return mDirectory.INVALID_LUMP_ID;
 	}
 };
+
+
+
+// ============================================================================
+//
+// ZipResourceContainer class interface
+//
+// ============================================================================
+struct ZipDirectoryEntry
+{
+	OString			path;
+	uint32_t		length;
+    uint32_t        local_offset;
+    uint32_t        compressed_length;
+	uint16_t		compression_method;
+};
+
+class ZipResourceContainer : public ResourceContainer
+{
+public:
+	ZipResourceContainer(
+			FileAccessor* file,
+			ResourceManager* manager);
+
+    ZipResourceContainer(
+			const OString& path,
+			ResourceManager* manager);
+	
+    virtual ~ZipResourceContainer();
+
+	virtual uint32_t getResourceCount() const;
+
+	virtual uint32_t getResourceSize(const ResourceId res_id) const;
+		
+	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+
+private:
+    static const size_t ZIP_END_OF_DIR_SIZE = 22;
+    static const size_t ZIP_CENTRAL_DIR_SIZE = 46;
+    static const size_t ZIP_LOCAL_FILE_SIZE = 30;
+    static const uint32_t INVALID_OFFSET = uint32_t(-1);
+
+    // Compression methods (definition does not imply support)
+    enum 
+    {
+        METHOD_STORED  = 0,
+        METHOD_SHRINK  = 1,
+        METHOD_IMPLODE = 6,
+        METHOD_DEFLATE = 8,
+        METHOD_BZIP2   = 12,
+        METHOD_LZMA    = 14,
+        METHOD_PPMD    = 98
+    };
+
+    FileAccessor*  mFile;
+    const std::string mFileName;
+	ContainerDirectory<ZipDirectoryEntry> mDirectory;
+
+	const LumpId getLumpId(const ResourceId res_id) const
+	{
+		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
+		if (it != mLumpIdLookup.end())
+			return it->second;
+		return mDirectory.INVALID_LUMP_ID;
+	}
+
+    bool readCentralDirectory(ResourceManager* manager);
+    size_t findEndOfCentralDirectory() const;
+	void addDirectoryEntries(ResourceManager* manager, uint32_t offset, uint32_t length, uint16_t num_entries);
+	void addEmbeddedResourceContainers(ResourceManager* manager);
+	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
+
+    uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
+
+	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
+	LumpIdLookupTable mLumpIdLookup;
+};
+
 
 #endif	// __RES_CONTAINER_H__

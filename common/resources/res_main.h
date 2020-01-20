@@ -120,8 +120,13 @@ public:
 
 	const std::vector<std::string>& getResourceFileHashes() const;
 
-	void openResourceContainer(const OString& filename);
-	void openResourceContainers(const std::vector<std::string>& filenames);
+	void addResourceContainer(
+				ResourceContainer* container,
+				ResourceContainer* parent,
+				const ResourcePath& base_path,
+				const std::string& filename);
+
+	void openResourceFiles(const std::vector<std::string>& filenames);
 
 	void closeAllResourceContainers();
 
@@ -169,6 +174,12 @@ public:
 		return &mRawResourceAccessor;
 	}
 
+	bool checkForSameContainer(const ResourceId res_id1, const ResourceId res_id2) const
+	{
+		return validateResourceId(res_id1) && validateResourceId(res_id2) &&
+				getResourceContainer(res_id1) == getResourceContainer(res_id2);
+	}
+
 private:
 	struct ResourceRecord
 	{
@@ -177,15 +188,15 @@ private:
 			if (&other != this)
 			{
 				mPath = other.mPath;
-				mResourceContainerId = other.mResourceContainerId;
+				mResourceContainer = other.mResourceContainer;
 				mResourceLoader = other.mResourceLoader;
 			}
 			return *this;
 		}
 
-		ResourcePath			mPath;
-		ResourceContainerId		mResourceContainerId;
-		const ResourceLoader*	mResourceLoader;
+		ResourcePath				mPath;
+		const ResourceContainer*	mResourceContainer;
+		const ResourceLoader*		mResourceLoader;
 	};
 
 	typedef std::vector<ResourceRecord> ResourceRecordTable;
@@ -201,8 +212,7 @@ private:
 		{
 			const ResourceRecord* res_rec = &mResources[res_id];
 			assert(res_rec != NULL);
-			assert(res_rec->mResourceContainerId < mContainers.size());
-			assert(mContainers[res_rec->mResourceContainerId] != NULL);
+			assert(res_rec->mResourceContainer != NULL);
 			return res_rec;
 		}
 		return NULL;
@@ -218,18 +228,43 @@ private:
 		return res_rec - &mResources[0];
 	}
 
-	const ResourceContainerId getResourceContainerId(const ResourceId res_id) const
+	const ResourceContainer* getResourceContainer(const ResourceId res_id) const
 	{
 		const ResourceRecord* res_rec = getResourceRecord(res_id);
 		if (res_rec)
-			return res_rec->mResourceContainerId;
-		return static_cast<ResourceContainerId>(-1);		// an invalid ResourceContainerId
+			return res_rec->mResourceContainer;
+		return NULL;
 	}
 
-	std::vector<ResourceContainer*>	mContainers;
+	struct ResourceContainerRecord
+	{
+		ResourceContainerRecord& operator=(const ResourceContainerRecord& other)
+		{
+			if (&other != this)
+			{
+				mResourceContainer = other.mResourceContainer;
+				mParent = other.mParent;
+				mBasePath = other.mBasePath;
+				mFileName = other.mFileName;
+			}
+			return *this;
+		}
+
+		ResourceContainer*		mResourceContainer;
+		ResourceContainer*		mParent;
+		ResourcePath			mBasePath;
+		std::string				mFileName;
+	};
+	typedef std::vector<ResourceContainerRecord> ResourceContainerRecordTable;
+	ResourceContainerRecordTable		mResourceContainers;
+
+	void openResourceFile(const OString& filename);
 
 	std::vector<std::string>			mResourceFileNames;
 	mutable std::vector<std::string>	mResourceFileHashes;
+
+	typedef OHashTable<size_t, OString> ResourceContainerFileNameLookup;
+	ResourceContainerFileNameLookup		mResourceContainerFileNames;
 
 	ResourceNameTranslator			mNameTranslator;
 
@@ -255,7 +290,7 @@ private:
 //
 static inline const OString& Res_GetEngineResourceFileName()
 {
-	static const OString& filename("ODAMEX.WAD");
+	static const OString filename("ODAMEX.WAD");
 	return filename;
 }
 
@@ -275,9 +310,6 @@ const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& dire
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 
 const OString& Res_GetResourceName(const ResourceId res_id);
-
-const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
-
 
 const ResourcePath& Res_GetResourcePath(const ResourceId res_id);
 
@@ -328,9 +360,16 @@ static inline void Res_ReleaseResource(const OString& name)
 	Res_ReleaseResource(Res_GetResourceId(name, global_directory_name));
 }
 
+
+// ----------------------------------------------------------------------------
+// Res_GetResourceContainerFileName
+// ----------------------------------------------------------------------------
+
+const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
+
+
 bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
-
 
 
 #endif	// __RES_MAIN_H__

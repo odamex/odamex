@@ -113,15 +113,13 @@ bool Res_IsDehackedFile(const OString& filename)
 
 uint32_t RawResourceAccessor::getResourceSize(const ResourceId res_id) const
 {
-	const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
-	const ResourceContainer* container = mResourceManager->mContainers[container_id];
+	const ResourceContainer* container = mResourceManager->getResourceContainer(res_id);
 	return container->getResourceSize(res_id);
 }
 
 void RawResourceAccessor::loadResource(const ResourceId res_id, void* data, uint32_t size) const
 {
-	const ResourceContainerId container_id = mResourceManager->getResourceContainerId(res_id);
-	const ResourceContainer* container = mResourceManager->mContainers[container_id];
+	const ResourceContainer* container = mResourceManager->getResourceContainer(res_id);
 	container->loadResource(data, res_id, size);
 }
 
@@ -153,63 +151,82 @@ ResourceManager::~ResourceManager()
 
 
 //
-// ResourceManager::openResourceContainer
+// ResourceManager::addResourceContainer
 //
-// Opens a resource file and caches the directory of lump names for queries.
-//
-void ResourceManager::openResourceContainer(const OString& path)
+void ResourceManager::addResourceContainer(
+				ResourceContainer* container,
+				ResourceContainer* parent,
+				const ResourcePath& base_path,
+				const std::string& filename)
 {
-	ResourceContainerId container_id = mContainers.size();
-	ResourceContainer* container = NULL;
+	mResourceContainers.push_back(ResourceContainerRecord());
+	ResourceContainerRecord& record = mResourceContainers.back();
 
-	if (M_IsFile(path))
-	{
-		if (Res_IsWadFile(path))
-			container = new WadResourceContainer(path, container_id, this);
-		else
-			container = new SingleLumpResourceContainer(path, container_id, this);
-	}
-	else if (M_IsDirectory(path))
-	{
-		container = new DirectoryResourceContainer(path, container_id, this);
-	}
+	record.mResourceContainer = container;
+	record.mParent = parent;
+	record.mBasePath = base_path;
+	record.mFileName = filename;
 
-	// check that the resource container has valid lumps
-	if (container && container->getResourceCount() == 0)
-	{
-		delete container;
-		container = NULL;
-	}
-
-	if (container)
-	{
-		if (container->getResourceCount() > 1)
-			Printf(PRINT_HIGH, "adding %s (%d lumps)\n", path.c_str(), container->getResourceCount());
-		else
-			Printf(PRINT_HIGH, "adding %s (single lump)\n", path.c_str());
-		mContainers.push_back(container);
-		mResourceFileNames.push_back(path);
-	}
+	Printf(PRINT_HIGH, "adding %s (%d %s)\n",
+					filename.c_str(),
+					container->getResourceCount(),
+					container->getResourceCount() == 1 ? "lump" : "lumps");
 }
 
 
 //
-// ResourceManager::openResourceContainers
+// ResourceManager::openResourceFile
+//
+// Opens a resource file and caches the directory of lump names for queries.
+//
+void ResourceManager::openResourceFile(const OString& path)
+{
+	ResourceContainer* container = NULL;
+
+	if (M_IsFile(path))
+	{
+		std::string ext;
+		M_ExtractFileExtension(path, ext);
+
+		if (Res_IsWadFile(path))
+			container = new WadResourceContainer(path, this);
+		else if (iequals(ext, "ZIP"))
+			container = new ZipResourceContainer(path, this);
+		else
+			container = new SingleLumpResourceContainer(path, this);
+	}
+	else if (M_IsDirectory(path))
+	{
+		container = new DirectoryResourceContainer(path, this);
+	}
+
+	if (!container)
+		return;
+
+	addResourceContainer(container, NULL, global_directory_name, path);
+
+	mResourceContainerFileNames.insert(std::make_pair(size_t(container), path));
+	mResourceFileNames.push_back(path);
+
+}
+
+
+//
+// ResourceManager::openResourceFiles
 //
 // Opens a set of resource files and creates a directory of resource path names
 // for queries.
 //
-void ResourceManager::openResourceContainers(const std::vector<std::string>& filenames)
+void ResourceManager::openResourceFiles(const std::vector<std::string>& filenames)
 {
-	assert(mContainers.empty());
-	mContainers.reserve(filenames.size() + 1);
+	assert(mResourceContainers.empty());
+	mResourceContainers.reserve(filenames.size() + 1);
 
 	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
-		openResourceContainer(*it);
+		openResourceFile(*it);
 
-	ResourceContainerId container_id = mContainers.size();
-	ResourceContainer* container = new TextureManager(container_id, this);
-	mContainers.push_back(container);
+	ResourceContainer* container = new TextureManager(this);
+	addResourceContainer(container, NULL, global_directory_name, "");
 
 	mCache = new ResourceCache(mResources.size());
 }
@@ -227,9 +244,11 @@ void ResourceManager::closeAllResourceContainers()
 		releaseResourceData(getResourceId(&(*it)));
 	mResources.clear();
 
-	for (std::vector<ResourceContainer*>::iterator it = mContainers.begin(); it != mContainers.end(); ++it)
-		delete *it;
-	mContainers.clear();
+	for (ResourceContainerRecordTable::iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
+		delete it->mResourceContainer;
+	mResourceContainers.clear();
+
+	mResourceContainerFileNames.clear();
 
 	mResourceFileNames.clear();
 	mResourceFileHashes.clear();
@@ -256,7 +275,7 @@ const ResourceId ResourceManager::addResource(
 	const ResourceId res_id = getResourceId(&res_rec);
 
 	res_rec.mPath = path;
-	res_rec.mResourceContainerId = container->getResourceContainerId();
+	res_rec.mResourceContainer = container;
 	res_rec.mResourceLoader = loader;
 
 	mNameTranslator.addTranslation(path, res_id);
@@ -301,9 +320,11 @@ const ResourcePathList ResourceManager::listResourceDirectory(const ResourcePath
 //
 const std::string& ResourceManager::getResourceContainerFileName(const ResourceId res_id) const
 {
-	const ResourceContainerId& container_id = getResourceContainerId(res_id);
-	if (container_id < mResourceFileNames.size())
-		return mResourceFileNames[container_id];
+	const ResourceContainer* container = getResourceContainer(res_id);
+
+	for (ResourceContainerRecordTable::const_iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
+		if (it->mResourceContainer == container)
+			return it->mFileName;
 	static std::string empty_string;
 	return empty_string;
 }
@@ -321,7 +342,7 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 			return res_rec->mResourceLoader->size();
 
 		// default implementation
-		const ResourceContainer* container = mContainers[res_rec->mResourceContainerId];
+		const ResourceContainer* container = getResourceContainer(res_id);
 		return container->getResourceSize(res_id);
 	}
 	return 0;
@@ -361,7 +382,7 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, int tag)
 			else
 			{
 				// Default loading strategy
-				const ResourceContainer* container = mContainers[res_rec->mResourceContainerId];
+				const ResourceContainer* container = res_rec->mResourceContainer;
 				uint32_t size = container->getResourceSize(res_id);
 				mCache->cacheData(res_id, &dest, size, tag);
 				container->loadResource(dest, res_id, size);
@@ -418,9 +439,7 @@ void ResourceManager::dump() const
 		const ResourcePath& path = res_rec.mPath;
 		assert(!OString(path).empty());
 
-		const ResourceContainerId& container_id = res_rec.mResourceContainerId;
-		assert(container_id < mContainers.size());
-		const ResourceContainer* container = mContainers[container_id];
+		const ResourceContainer* container = res_rec.mResourceContainer;
 		assert(container);
 
 		bool cached = mCache->getData(res_id) != NULL;
@@ -450,7 +469,7 @@ void ResourceManager::dump() const
 //
 void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 {
-	resource_manager.openResourceContainers(filenames);
+	resource_manager.openResourceFiles(filenames);
 }
 
 
@@ -621,10 +640,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 	const ResourceId map_marker_res_id = Res_GetResourceId(mapname, directory);
 	const ResourceId map_lump_res_id = Res_GetResourceId(lump_name, directory);
 
-	if (resource_manager.validateResourceId(map_lump_res_id) &&
-		resource_manager.validateResourceId(map_marker_res_id) &&
-		resource_manager.getResourceContainerFileName(map_lump_res_id) ==
-		resource_manager.getResourceContainerFileName(map_marker_res_id))
+	if (resource_manager.checkForSameContainer(map_marker_res_id, map_lump_res_id))
 		return map_lump_res_id;
 	return ResourceId::INVALID_ID;
 }
