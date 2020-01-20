@@ -436,6 +436,7 @@ bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 const ResourceId P_GetButtonTexture(const line_t* line);
 
+void	P_UpdateButtons (client_t *cl);
 
 //
 // P_PLATS

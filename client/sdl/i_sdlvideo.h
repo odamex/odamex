@@ -322,7 +322,8 @@ private:
 class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
-	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync);
+	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window,
+			bool vsync, const char *render_scale_quality = nullptr);
 
 	virtual ~ISDL20TextureWindowSurfaceManager();
 

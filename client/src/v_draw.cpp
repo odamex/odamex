@@ -666,8 +666,15 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
 	//      artifacts since it forces col to roll over to the next real number
 	//      a column-of-real-pixels sooner.
-	int xinc = (texture->mWidth << FRACBITS) / destwidth + 1;
-	int yinc = (texture->mHeight << FRACBITS) / destheight + 1;
+	int xinc = (texture->mWidth << FRACBITS) / destwidth;
+	int yinc = (texture->mHeight << FRACBITS) / destheight;
+	// [jsd] only adding 1 in cases where scaling is non-integral:
+	if (xinc & (FRACUNIT-1)) {
+		xinc++;
+	}
+	if (yinc & (FRACUNIT-1)) {
+		yinc++;
+	}
 	int xmul = (destwidth << FRACBITS) / texture->mWidth;
 	int ymul = (destheight << FRACBITS) / texture->mHeight;
 

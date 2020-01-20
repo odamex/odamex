@@ -658,7 +658,7 @@ CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen vid
 CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest availible video mode.",
+CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_displayfps, "0", "Display frames per second",
@@ -689,6 +689,9 @@ CVAR_FUNC_DECL(	vid_320x200, "0", "Enable 320x200 video emulation",
 
 CVAR_FUNC_DECL(	vid_640x400, "0", "Enable 640x400 video emulation",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(	vid_filter, "", "Set render scale quality setting for SDL 2.0, one of \"nearest\",\"linear\",\"best\"",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Optimize rendering functions based on CPU vectorization support
 // Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.

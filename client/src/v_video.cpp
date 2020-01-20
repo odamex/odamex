@@ -127,6 +127,7 @@ EXTERN_CVAR(vid_defwidth)
 EXTERN_CVAR(vid_defheight)
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
+EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
@@ -134,6 +135,7 @@ EXTERN_CVAR(vid_pillarbox)
 
 int vid_pillarbox_old = -1;
 int vid_32bpp_old = -1;
+std::string vid_filter_old = "";
 
 bool V_CheckModeAdjustment()
 {
@@ -149,6 +151,11 @@ bool V_CheckModeAdjustment()
 
 	if (vid_fullscreen != window->isFullScreen())
 		return true;
+
+	if (vid_filter.str() != vid_filter_old) {
+		vid_filter_old = vid_filter.str();
+		return true;
+	}
 
 	if (vid_vsync != window->usingVSync())
 		return true;
@@ -193,6 +200,12 @@ CVAR_FUNC_IMPL(vid_fullscreen)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
+}
+
+CVAR_FUNC_IMPL(vid_filter)
+{
+	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
+		V_ForceVideoModeAdjustment();
 }
 
 

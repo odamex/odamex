@@ -1010,7 +1010,9 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 // ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager
 //
 ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
-	uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync) :
+	uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window,
+	bool vsync, const char *render_scale_quality
+) :
 		mWindow(window),
 		mSDLRenderer(NULL), mSDLTexture(NULL),
 		mSurface(NULL), m8bppTo32BppSurface(NULL),
@@ -1021,13 +1023,23 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	memcpy(&mFormat, format, sizeof(mFormat));
 
-    // Select the best RENDER_SCALE_QUALITY that is supported
-    const char* scale_hints[] = {"best", "linear", "nearest", ""};
-    for (int i = 0; scale_hints[i][0] != '\0'; i++)
-    {
-        if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
-            break;
-    }
+	// [jsd] set the user's preferred render scaling hint if non-empty:
+	// acceptable values are [("0" or "nearest"), ("1" or "linear"), ("2" or "best")].
+	bool quality_set = false;
+	if (render_scale_quality != nullptr && render_scale_quality[0] != '\0') {
+		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, render_scale_quality) == SDL_TRUE) {
+			quality_set = true;
+		}
+	}
+
+	if (!quality_set) {
+		// Select the best RENDER_SCALE_QUALITY that is supported
+		const char *scale_hints[] = {"best", "linear", "nearest", ""};
+		for (int i = 0; scale_hints[i][0] != '\0'; i++) {
+			if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
+				break;
+		}
+	}
 
 	mSDLRenderer = createRenderer(vsync);
 	if (mSDLRenderer == NULL)
@@ -1634,6 +1646,11 @@ PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
     return PixelFormat();   // shush warnings regarding no return value
 }
 
+// allows users to set their preferred render scale quality setting; acceptable values are:
+// "0" or "nearest"
+// "1" or "linear"
+// "2" or "best"
+EXTERN_CVAR(vid_filter)
 
 //
 // ISDL20Window::setMode
@@ -1671,7 +1688,8 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 			video_width, video_height,
 			&format,
 			this,
-			vsync);
+			vsync,
+			vid_filter.cstring());
 
 	mWidth = video_width;
 	mHeight = video_height;
