@@ -87,6 +87,11 @@ macro(global_compile_options)
   endif()
 endmacro(global_compile_options)
 
+# jsd: hide warnings about using insecure crt functions:
+if(MSVC)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()

@@ -332,7 +332,7 @@ public:
 	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
 
 	inline operator argb_t () const
-	{	return argb_t(a * 255.0f, r * 255.0f, g * 255.0f, b * 255.0f);	}
+	{	return argb_t((uint8_t)(a * 255.0f), (uint8_t)(r * 255.0f), (uint8_t)(g * 255.0f), (uint8_t)(b * 255.0f));	}
 
 	inline float geta() const
 	{	return a;	}
