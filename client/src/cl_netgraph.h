@@ -35,6 +35,7 @@ public:
 	void setInterpolation(int val);
 	void addTrafficIn(int val);
 	void addTrafficOut(int val);
+	void addPacketIn();
 	void draw();
 
 private:
@@ -42,6 +43,7 @@ private:
 	void drawMispredictions(int x, int y);
 	void drawTrafficIn(int x, int y);
 	void drawTrafficOut(int x, int y);
+	void drawPackets(int x, int y);
 
 	static const int BAR_HEIGHT_WORLD_INDEX = 4;
 	static const int BAR_WIDTH_WORLD_INDEX = 2;
@@ -62,6 +64,7 @@ private:
 	int		mInterpolation;
 	int		mTrafficIn[NetGraph::MAX_HISTORY_TICS];
 	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
+	int		mPacketsIn[NetGraph::MAX_HISTORY_TICS];
 };
 
 #endif // __CL_NETGRAPH_H__

@@ -46,7 +46,6 @@ extern NetDemo	netdemo;
 
 extern bool predicting;
 
-
 void CL_QuitNetGame(void);
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);

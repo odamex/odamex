@@ -383,6 +383,7 @@ void CL_QuitNetGame(void)
 {
 	if(connected)
 	{
+		SZ_Clear(&net_buffer);
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
@@ -3115,6 +3116,8 @@ void CL_ReadPacketHeader(void)
 
 	packetseq[packetnum] = sequence;
 	packetnum++;
+
+	netgraph.addPacketIn();
 }
 
 void CL_GetServerSettings(void)
