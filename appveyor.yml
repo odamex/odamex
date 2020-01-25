@@ -10,6 +10,7 @@ configuration: RelWithDebInfo
 build:
   project: build\Odamex.sln
   verbosity: minimal
+  parallel: true
 before_build:
   - ps: .\appveyor_before_build.ps1
 after_build:
