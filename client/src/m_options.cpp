@@ -36,8 +36,6 @@
 #include "c_bind.h"
 #include "cmdlib.h"
 
-#include "d_main.h"
-
 #include "i_system.h"
 #include "i_video.h"
 #include "i_input.h"
@@ -46,15 +44,8 @@
 #include "v_text.h"
 #include "w_wad.h"
 
-#include "r_local.h"
-
-
 #include "hu_stuff.h"
 
-#include "g_game.h"
-
-#include "m_argv.h"
-#include "m_swap.h"
 #include "m_memio.h"
 
 #include "s_sound.h"

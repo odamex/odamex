@@ -24,8 +24,6 @@
 #include "c_cvars.h"
 #include "s_sound.h"
 #include "i_music.h"
-#include "i_input.h"
-#include "d_netinf.h"
 
 // Automap
 // -------

@@ -28,7 +28,6 @@
 // NOTE(jsd): Do not consider MMX deprecated so lightly. The XBOX and other older systems still make use of it.
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <mmintrin.h>
 
 #ifdef _MSC_VER
@@ -38,10 +37,6 @@
 #endif
 
 #include "doomtype.h"
-#include "doomdef.h"
-#include "i_system.h"
-#include "r_defs.h"
-#include "r_draw.h"
 #include "r_main.h"
 #include "i_video.h"
 

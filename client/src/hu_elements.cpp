@@ -33,11 +33,9 @@
 #include "doomstat.h"
 #include "g_warmup.h"
 #include "hu_drawers.h"
-#include "hu_elements.h"
 #include "p_ctf.h"
 #include "v_text.h"
 #include "i_video.h"
-#include "v_video.h"
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(player_t*);

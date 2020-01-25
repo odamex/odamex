@@ -30,10 +30,7 @@
 #include "v_video.h"
 
 #include "i_system.h"
-#include "c_console.h"
 #include "c_cvars.h"
-#include "c_dispatch.h"
-#include "m_argv.h"
 #include "m_misc.h"
 #include "i_sdlvideo.h"
 #include "i_input.h"

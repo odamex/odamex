@@ -27,7 +27,6 @@
 
 #include "i_video.h"
 #include "d_event.h"
-#include "i_system.h"
 #include "doomkeys.h"
 #include <queue>
 #include <cassert>
