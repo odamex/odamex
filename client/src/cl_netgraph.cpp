@@ -80,6 +80,17 @@ void NetGraph::addTrafficOut(int val)
 	lastgametic = gametic;
 }
 
+void NetGraph::addPacketIn()
+{
+	static int lastgametic = -1;
+	if (gametic == lastgametic)
+		mPacketsIn[gametic % NetGraph::MAX_HISTORY_TICS] += 1;
+	else
+		mPacketsIn[gametic % NetGraph::MAX_HISTORY_TICS] = 1;
+
+	lastgametic = gametic;
+}
+
 void NetGraph::setInterpolation(int val)
 {
 	mInterpolation = val;
@@ -87,6 +98,9 @@ void NetGraph::setInterpolation(int val)
 
 static void NetGraphDrawBar(int startx, int starty, int width, int height, int color)
 {
+	if (starty + height >= viewheight)
+		height = viewheight - starty - 1;
+
 	dspan.color = color;
 	dspan.x1 = startx;
 	dspan.x2 = startx + width - 1;
@@ -197,6 +211,30 @@ void NetGraph::drawTrafficOut(int x, int y)
 	screen->DrawText(textcolor, x, y, buf.str().c_str());
 }
 
+void NetGraph::drawPackets(int x, int y)
+{
+	static const int textcolor = CR_GREY;
+
+	int maxPackets = 0;
+
+	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
+	{
+		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
+		int packets = mPacketsIn[index];
+		if (packets > maxPackets) {
+			maxPackets = packets;
+		}
+
+		int height = packets;
+		if (height > 200) height = 200;
+		NetGraphDrawBar(x + i * 2, y + 8, 2, height, 0xB0);
+	}
+
+	std::ostringstream buf;
+	buf << "Packets In: " << std::setw(5) << maxPackets;
+	screen->DrawText(textcolor, x, y, buf.str().c_str());
+}
+
 void NetGraph::draw()
 {
 	static const int textcolor = CR_GREY;
@@ -210,6 +248,7 @@ void NetGraph::draw()
 
 	drawTrafficIn(mX, mY + 128 + fontheight);
 	drawTrafficOut(mX, mY + 128 + fontheight * 3);
+	drawPackets(mX, mY + 128 + fontheight * 6);
 }
 
 VERSION_CONTROL (cl_netgraph_cpp, "$Id$")
