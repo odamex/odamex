@@ -27,7 +27,6 @@
 #include "cmdlib.h"
 #include "m_fileio.h"
 #include "m_argv.h"
-#include "i_system.h"
 
 IMPLEMENT_CLASS (DArgs, DObject)
 

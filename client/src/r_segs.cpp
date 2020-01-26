@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stddef.h>
+#include <math.h>
 
-#include "m_alloc.h"
 #include "m_mempool.h"
 
 #include "i_system.h"
@@ -35,11 +34,9 @@
 
 #include "p_local.h"
 #include "r_local.h"
-#include "r_sky.h"
 #include "v_video.h"
 
 #include "m_vectors.h"
-#include <math.h>
 
 #include "p_lnspec.h"
 

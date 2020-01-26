@@ -24,11 +24,9 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomdef.h"
 #include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"

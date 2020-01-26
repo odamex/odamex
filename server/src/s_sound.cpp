@@ -30,11 +30,9 @@
 #include "m_random.h"
 #include "w_wad.h"
 #include "doomdef.h"
-#include "p_local.h"
 #include "doomstat.h"
 #include "cmdlib.h"
 #include "v_video.h"
-#include "m_vectors.h"
 
 #include <algorithm>
 

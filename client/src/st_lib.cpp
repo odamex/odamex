@@ -23,19 +23,9 @@
 //
 //-----------------------------------------------------------------------------
 
-
-
-#include <ctype.h>
-
-#include "doomdef.h"
-
 #include "z_zone.h"
 #include "v_video.h"
 #include "i_video.h"
-
-#include "m_swap.h"
-
-#include "i_system.h"
 
 #include "w_wad.h"
 
@@ -44,7 +34,6 @@
 #include "r_local.h"
 
 #include "c_cvars.h"
-#include "m_swap.h"
 
 
 //

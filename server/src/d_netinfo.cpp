@@ -23,21 +23,12 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include <cstring>
 
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
-#include "d_net.h"
-#include "v_palette.h"
-#include "v_video.h"
-#include "i_system.h"
-#include "r_draw.h"
-#include "r_state.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.

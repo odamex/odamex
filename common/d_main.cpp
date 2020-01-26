@@ -41,8 +41,6 @@
 
 #include <stdlib.h>
 
-#include "errors.h"
-
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "gstrings.h"
@@ -53,8 +51,6 @@
 #include "c_console.h"
 #include "i_system.h"
 #include "g_game.h"
-#include "p_setup.h"
-#include "r_local.h"
 #include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"

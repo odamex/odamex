@@ -37,9 +37,6 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "w_wad.h"
-#include "v_palette.h"
-
-#include "doomdef.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"

@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "win32inc.h"
 #if defined(_WIN32) && !defined(_XBOX)
@@ -37,10 +36,6 @@
 #include "doomtype.h"
 #include "m_argv.h"
 #include "i_music.h"
-#include "w_wad.h"
-#include "c_console.h"
-#include "c_dispatch.h"
-#include "z_zone.h"
 #include "i_system.h"
 
 #include <SDL_mixer.h>

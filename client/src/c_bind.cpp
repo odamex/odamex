@@ -24,7 +24,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "doomtype.h"
 #include "doomdef.h"
@@ -34,7 +33,6 @@
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "g_level.h"
-#include "gstrings.h"
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"

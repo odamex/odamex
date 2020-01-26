@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <string>
 #include "doomstat.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
@@ -46,8 +45,6 @@
 #include "i_system.h"
 #include "i_input.h"
 
-#include "m_argv.h"
-#include "w_wad.h"
 #include "c_dispatch.h"
 
 #include "res_texture.h"

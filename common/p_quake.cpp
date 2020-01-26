@@ -4,7 +4,6 @@
 #include "actor.h"
 #include "m_bbox.h"
 #include "m_random.h"
-#include "z_zone.h"
 #include "s_sound.h"
 
 class DEarthquake : public DThinker

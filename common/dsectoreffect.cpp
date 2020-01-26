@@ -22,8 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "p_local.h"
 #include "dsectoreffect.h"
 

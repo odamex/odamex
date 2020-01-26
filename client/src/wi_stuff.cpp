@@ -27,8 +27,6 @@
 
 #include "z_zone.h"
 #include "m_random.h"
-#include "m_swap.h"
-#include "i_system.h"
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
