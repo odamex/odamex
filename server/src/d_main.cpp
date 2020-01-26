@@ -26,8 +26,6 @@
 
 #include "version.h"
 
-#include <sstream>
-#include <string>
 #include <vector>
 #include <algorithm>
 
@@ -46,7 +44,6 @@
 
 #include "errors.h"
 
-#include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
 #include "doomdef.h"
@@ -58,7 +55,6 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
-#include "c_console.h"
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "g_game.h"
@@ -67,14 +63,11 @@
 #include "r_sky.h"
 #include "d_main.h"
 #include "d_dehacked.h"
-#include "cmdlib.h"
 #include "s_sound.h"
-#include "m_swap.h"
 #include "gi.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
 
-#include "res_texture.h"
 #include "w_ident.h"
 
 EXTERN_CVAR (sv_timelimit)

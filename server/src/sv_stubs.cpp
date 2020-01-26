@@ -26,7 +26,6 @@
 #include "d_player.h"
 #include "doomdef.h"
 #include "v_palette.h"
-#include "v_video.h"
 
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
