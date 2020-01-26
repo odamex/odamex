@@ -217,4 +217,34 @@ protected:
 };
 
 
+//
+// PngTextureLoader
+//
+class PngTextureLoader : public BaseTextureLoader
+{
+public:
+	PngTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
+		BaseTextureLoader(accessor),
+		mResId(res_id),
+		mWidth(0), mHeight(0),
+		mBitsPerPixel(0), mColorType(0)
+	{
+		readHeader();
+	}
+
+	virtual ~PngTextureLoader() {}
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+protected:
+	void readHeader();
+
+	const ResourceId	mResId;
+	uint16_t			mWidth;
+	uint16_t			mHeight;
+	uint8_t				mBitsPerPixel;
+	uint8_t				mColorType;
+};
+
+
 #endif	// __RES_RESOURCELOADER_H__

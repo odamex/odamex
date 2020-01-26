@@ -123,6 +123,12 @@ bool Res_IsDehackedFile(const OString& filename)
 //
 // ============================================================================
 
+
+const ResourcePath& RawResourceAccessor::getResourcePath(const ResourceId res_id) const
+{
+	return mResourceManager->getResourcePath(res_id);
+}
+
 uint32_t RawResourceAccessor::getResourceSize(const ResourceId res_id) const
 {
 	const ResourceContainer* container = mResourceManager->getResourceContainer(res_id);

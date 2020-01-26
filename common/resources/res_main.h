@@ -88,6 +88,8 @@ public:
 		mResourceManager(manager)
 	{ }
 
+	const ResourcePath& getResourcePath(const ResourceId res_id) const;
+
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
 	void loadResource(const ResourceId res_id, void* data, uint32_t size) const;
