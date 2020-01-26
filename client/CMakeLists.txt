@@ -121,7 +121,6 @@ if(NOT ZLIB_FOUND)
   add_library(${ZLIB_LIBRARY} STATIC ${ZLIB_SOURCES} ${ZLIB_HEADERS})
   message(STATUS "zlib will be built and staticaly linked when compiling the client application.")
 endif()
-
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 # libpng configuration
@@ -140,7 +139,6 @@ if(NOT PNG_FOUND)
   message(STATUS "libpng will be built and staticaly linked when compiling the client application.")
   add_definitions(-DUSE_PNG)
 endif()
-
 include_directories(${PNG_INCLUDE_DIRS})
 add_definitions(-DUSE_PNG)
 

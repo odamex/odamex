@@ -33,12 +33,6 @@ set(JSONCPP_DIR ../libraries/jsoncpp)
 file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
 set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
 
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(MINIUPNPC_DIR ../libraries/libminiupnpc)
-  set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
-endif()
-
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
 
@@ -57,10 +51,29 @@ if(WIN32 AND NOT MSVC)
 endif()
 include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
-# Include miniupnpc if we want it
+# MiniUPnPc
 if (USE_MINIUPNP)
+  set(MINIUPNPC_DIR ../libraries/libminiupnpc)
+  set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
   include_directories(${MINIUPNPC_DIR})
 endif()
+
+# zlib configuration
+find_package(ZLIB)
+if(NOT ZLIB_FOUND)
+  set(USE_INTREE_ZLIB)
+  set(ZLIB_LIBRARY "z")
+  set(ZLIB_LIBRARIES ${ZLIB_LIBRARY})
+  set(ZLIB_DIR ../libraries/zlib/)
+  set(ZLIB_INCLUDE_DIR ${ZLIB_DIR})
+  set(ZLIB_INCLUDE_DIRS ${ZLIB_DIR})
+  file(GLOB ZLIB_HEADERS ${ZLIB_DIR}/*.h)
+  file(GLOB ZLIB_SOURCES ${ZLIB_DIR}/*.c)
+  include_directories(${ZLIB_DIR})
+  add_library(${ZLIB_LIBRARY} STATIC ${ZLIB_SOURCES} ${ZLIB_HEADERS})
+  message(STATUS "zlib will be built and staticaly linked when compiling the client application.")
+endif()
+include_directories(${ZLIB_INCLUDE_DIRS})
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
@@ -75,6 +88,7 @@ add_executable(odasrv
 
 if (USE_MINIUPNP)
   target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
+  target_link_libraries(odasrv ${ZLIB_LIBRARY})
 endif()
 
 if(WIN32)
