@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <cstring>
+#include <algorithm>
 
 #include "doomtype.h"
 #include "farchive.h"

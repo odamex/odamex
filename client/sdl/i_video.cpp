@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <climits>
 #include <string>
+#include <algorithm>
 
 #include "i_video.h"
 #include "v_video.h"
