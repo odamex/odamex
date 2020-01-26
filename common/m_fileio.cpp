@@ -21,8 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "m_fileio.h"
-#include "c_dispatch.h"
 #include "z_zone.h"
 
 // unfortunately, we still need you

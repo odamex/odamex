@@ -29,7 +29,6 @@
 #include "i_system.h"
 #include "p_local.h"
 #include "m_random.h"
-#include "m_bbox.h"
 #include "m_vectors.h"
 
 // State.

@@ -27,7 +27,6 @@
 #include "doomdef.h"
 #include "d_event.h"
 
-#include "cmdlib.h"
 #include "c_cvars.h"
 
 #include "m_random.h"

@@ -24,9 +24,6 @@
 //    
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-
 #include "m_bbox.h"
 
 IMPLEMENT_CLASS (DBoundingBox, DObject)
@@ -55,10 +52,4 @@ void DBoundingBox::AddToBox (fixed_t x, fixed_t y)
 		m_Box[BOXTOP] = y;
 }
 
-
-
-
-
-
 VERSION_CONTROL (m_bbox_cpp, "$Id$")
-

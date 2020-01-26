@@ -32,7 +32,6 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
-#include "i_net.h"
 #include "gi.h"
 
 #include "p_snapshot.h"

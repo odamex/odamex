@@ -37,9 +37,7 @@
 #include "doomstat.h"
 #include "gstrings.h"
 
-#include "i_system.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_random.h"
 #include "m_bbox.h"
 #include "w_wad.h"

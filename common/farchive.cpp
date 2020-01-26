@@ -23,7 +23,6 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stddef.h>
 #include <cstring>
 
@@ -32,10 +31,7 @@
 #include "m_alloc.h"
 #include "m_swap.h"
 #include "minilzo.h"
-#include "cmdlib.h"
-#include "gstrings.h"
 #include "i_system.h"
-#include "c_cvars.h"
 #include "d_player.h"
 #include "dobject.h"
 

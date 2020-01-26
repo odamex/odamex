@@ -31,7 +31,6 @@
 #include "g_level.h"
 #include "v_video.h"
 #include "m_random.h"
-#include "r_defs.h"
 #include "r_things.h"
 #include "s_sound.h"
 
