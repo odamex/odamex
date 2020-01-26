@@ -41,8 +41,6 @@
 
 #include <stdlib.h>
 
-#include "errors.h"
-
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "gstrings.h"
@@ -52,8 +50,6 @@
 #include "c_console.h"
 #include "i_system.h"
 #include "g_game.h"
-#include "p_setup.h"
-#include "r_local.h"
 #include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"
@@ -128,30 +124,6 @@ static void D_PrintIWADIdentity()
 		else 
 			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str()); 
 	}
-}
-
-
-//
-// D_CleanseFileName
-//
-// Strips a file name of path information and transforms it into uppercase
-//
-std::string D_CleanseFileName(const std::string &filename, const std::string &ext)
-{
-	std::string newname(filename);
-
-	FixPathSeparator(newname);
-	if (ext.length())
-		newname = M_AppendExtension(newname, "." + ext);
-
-	size_t slash = newname.find_last_of(PATHSEPCHAR);
-
-	if (slash != std::string::npos)
-		newname = newname.substr(slash + 1, newname.length() - slash);
-
-	std::transform(newname.begin(), newname.end(), newname.begin(), toupper);
-
-	return newname;
 }
 
 

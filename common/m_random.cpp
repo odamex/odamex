@@ -27,9 +27,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <time.h>
-
 #include "doomstat.h"
 #include "m_random.h"
 #include "farchive.h"

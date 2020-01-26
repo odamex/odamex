@@ -37,7 +37,6 @@
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "gi.h"
 #include "d_net.h"
 #include "g_game.h"
 #include "g_level.h"
@@ -53,7 +52,6 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "w_ident.h"
@@ -4047,7 +4045,6 @@ void SV_WantWad(player_t &player)
 		// read and ignore the rest of the wad request
 		MSG_ReadString();
 		MSG_ReadString();
-		e
 		MSG_ReadLong();
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
@@ -4065,7 +4062,7 @@ void SV_WantWad(player_t &player)
 	std::string md5 = MSG_ReadString();
 	size_t next_offset = MSG_ReadLong();
 
-	std::string curr_request = D_CleanseFileName(cl->download.name);
+	std::string curr_request = Res_CleanseFilename(cl->download.name);
 
 	// [jsd] quick check for continuation of download:
 	if (curr_request == request && cl->download.md5 == md5)

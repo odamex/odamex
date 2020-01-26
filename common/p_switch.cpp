@@ -22,15 +22,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <map>
 
-#include "i_system.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "g_game.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "r_state.h"

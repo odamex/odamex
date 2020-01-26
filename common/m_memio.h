@@ -26,6 +26,8 @@
 #ifndef MEMIO_H
 #define MEMIO_H
 
+#include <stdio.h>
+
 // returns the length of an "c array" on the stack.
 #define STACKARRAY_LENGTH(a) ((sizeof(a) / sizeof(a[0])))
 

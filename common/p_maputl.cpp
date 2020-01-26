@@ -27,7 +27,6 @@
 
 #include "m_bbox.h"
 
-#include "doomdef.h"
 #include "doomstat.h"
 #include "p_local.h"
 #include "r_data.h"

@@ -22,27 +22,16 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <sstream>
-#include <string>
 #include <algorithm>
-#include <vector>
-#include <set>
 
-#include "c_console.h"
 #include "c_dispatch.h"
 #include "d_event.h"
-#include "d_main.h"
 #include "doomstat.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "gstrings.h"
 #include "gi.h"
 
 #include "i_system.h"
-#include "m_alloc.h"
-#include "m_fileio.h"
-#include "m_misc.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
@@ -55,14 +44,11 @@
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
-#include "s_sndseq.h"
-#include "sc_man.h"
 #include "sv_main.h"
 #include "sv_maplist.h"
-#include "sv_vote.h"
-#include "v_video.h"
 #include "z_zone.h"
 #include "g_warmup.h"
+#include "d_main.h"
 #include "resources/res_filelib.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()

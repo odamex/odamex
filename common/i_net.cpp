@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <cstring>
 #include <stdio.h>
-#include <stdarg.h>
 
 #include <sstream>
 
@@ -79,14 +78,7 @@ typedef int SOCKET;
 
 #include "i_system.h"
 
-#include "d_event.h"
-#include "d_net.h"
-#include "m_argv.h"
-#include "m_alloc.h"
-#include "m_swap.h"
 #include "doomstat.h"
-#include "d_player.h"
-#include "g_game.h"
 #include "i_net.h"
 
 #ifdef _XBOX

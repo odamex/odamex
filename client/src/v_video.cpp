@@ -27,27 +27,20 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "m_alloc.h"
-
 #include "i_system.h"
 #include "i_video.h"
 #include "r_local.h"
 #include "r_draw.h"
-#include "r_plane.h"
 #include "r_state.h"
 
 #include "doomdef.h"
-#include "doomdata.h"
 #include "doomstat.h"
 #include "d_main.h"
 
 #include "c_console.h"
-#include "hu_stuff.h"
 
 #include "m_argv.h"
 #include "m_bbox.h"
-#include "m_swap.h"
-#include "m_menu.h"
 
 #include "v_video.h"
 #include "v_text.h"

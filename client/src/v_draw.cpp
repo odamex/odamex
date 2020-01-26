@@ -21,10 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomtype.h"
 #include "v_video.h"
 #include "i_video.h"
@@ -33,9 +29,8 @@
 
 #include "i_system.h"
 
-#include "cmdlib.h"
-
 #include "resources/res_texture.h"
+
 
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;

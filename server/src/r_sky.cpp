@@ -24,9 +24,9 @@
 //  
 //-----------------------------------------------------------------------------
 
-#include "i_system.h"
-#include "g_level.h"
 #include "doomstat.h"
+#include "g_level.h"
+#include "i_system.h"
 #include "resources/res_resourceid.h"
 #include "resources/res_texture.h"
 

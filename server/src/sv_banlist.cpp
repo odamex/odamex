@@ -34,7 +34,6 @@
 #include "cmdlib.h"
 #include "d_player.h"
 #include "m_fileio.h"
-#include "p_tick.h"
 #include "sv_banlist.h"
 #include "sv_main.h"
 

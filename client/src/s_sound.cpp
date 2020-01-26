@@ -27,7 +27,6 @@
 #include "cl_main.h"
 
 #include "m_alloc.h"
-#include "i_system.h"
 #include "i_sound.h"
 #include "i_music.h"
 #include "s_sound.h"

@@ -27,9 +27,7 @@
 #include <stdlib.h>
 
 #include <algorithm>
-#include <cmath>
 #include <sstream>
-#include <string>
 
 #include "doomtype.h"
 #include "doomdef.h"
@@ -41,11 +39,9 @@
 #include "v_text.h"
 #include "z_zone.h"
 #include "i_system.h"
-#include "m_swap.h"
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "hu_stuff.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"

@@ -23,7 +23,6 @@
 
 
 #include <cstdio>
-#include <cstdlib>
 #include <ctime>
 #include <string>
 #include <sstream>
@@ -32,13 +31,11 @@
 #include "c_bind.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomdef.h"
 #include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
-#include "m_fileio.h"
 #include "version.h"
 
 #include "resources/res_main.h"

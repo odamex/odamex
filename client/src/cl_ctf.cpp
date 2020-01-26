@@ -30,7 +30,6 @@
 #include "p_local.h"
 #include "p_inter.h"
 #include "p_ctf.h"
-#include "p_mobj.h"
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "v_text.h"

@@ -30,7 +30,6 @@
 
 #include "doomdef.h"
 #include "r_local.h"
-
 #include "cmdlib.h"
 
 #include "v_palette.h"

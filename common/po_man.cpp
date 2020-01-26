@@ -28,7 +28,6 @@
 #include "r_local.h"
 #include "i_system.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "m_bbox.h"
 #include "tables.h"
 #include "s_sndseq.h"

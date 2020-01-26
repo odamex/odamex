@@ -22,11 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_spec.h"
-#include "g_level.h"
 #include "s_sound.h"
 
 extern bool predicting;

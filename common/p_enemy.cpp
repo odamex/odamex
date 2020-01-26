@@ -31,7 +31,6 @@
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "g_game.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "c_cvars.h"

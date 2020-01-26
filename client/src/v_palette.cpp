@@ -38,7 +38,6 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "g_level.h"
-#include "st_stuff.h"
 
 #include "v_palette.h"
 

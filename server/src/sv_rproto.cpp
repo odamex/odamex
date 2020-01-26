@@ -20,8 +20,6 @@
 //	SV_RPROTO
 //
 //-----------------------------------------------------------------------------
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "doomtype.h"
 #include "doomstat.h"

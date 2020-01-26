@@ -21,13 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "m_alloc.h"
-#include "i_system.h"
-#include "z_zone.h"
 #include "m_random.h"
 #include "doomdef.h"
 #include "p_local.h"
-#include "p_lnspec.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "doomtype.h"
@@ -36,10 +32,7 @@
 #include "c_effect.h"
 #include "m_vectors.h"
 #include "p_mobj.h"
-#include "cl_main.h"
-#include "p_ctf.h"
 #include "st_stuff.h"
-#include "hu_stuff.h"
 #include "p_acs.h"
 
 EXTERN_CVAR(sv_nomonsters)

@@ -25,9 +25,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomstat.h"
 #include "m_fixed.h"
 #include "r_data.h"
@@ -36,7 +33,6 @@
 #include "c_cvars.h"
 #include "g_level.h"
 #include "r_sky.h"
-#include "gi.h"
 #include "i_system.h"
 
 #include "resources/res_main.h"

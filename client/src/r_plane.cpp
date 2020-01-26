@@ -31,13 +31,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-#include "i_system.h"
 #include "z_zone.h"
 
-#include "doomdef.h"
 #include "doomstat.h"
 
 #include "p_local.h"
@@ -49,7 +47,6 @@
 #include "v_video.h"
 
 #include "m_vectors.h"
-#include <math.h>
 
 #include "resources/res_texture.h"
 

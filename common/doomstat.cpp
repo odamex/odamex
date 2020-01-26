@@ -22,8 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "stringtable.h"
 #include "stringenums.h"
 

@@ -37,7 +37,6 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "m_vectors.h"
-#include "r_main.h"
 #include "p_unlag.h"
 #include "p_local.h"
 

@@ -33,7 +33,6 @@
 #include "i_system.h"
 #include "m_fileio.h"
 #include "sv_main.h"
-#include "sv_vote.h"
 #include "resources/res_main.h"
 #include "resources/res_filelib.h"
 

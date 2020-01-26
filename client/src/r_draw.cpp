@@ -30,15 +30,12 @@
 #include "i_sdl.h"
 #include "r_intrin.h"
 
-#include "m_alloc.h"
 #include "doomdef.h"
-#include "i_system.h"
 #include "z_zone.h"
 #include "r_local.h"
 #include "i_video.h"
 #include "v_video.h"
 #include "doomstat.h"
-#include "st_stuff.h"
 
 #include "gi.h"
 #include "v_text.h"

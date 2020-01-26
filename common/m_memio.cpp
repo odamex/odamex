@@ -31,8 +31,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <cstring>
 
 #include "m_memio.h"

@@ -33,9 +33,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <sstream>
-#include <string>
 #include <vector>
 
 EXTERN_CVAR(sv_gametype)

@@ -73,12 +73,10 @@
 #include <sys/stat.h>
 
 #include "errors.h"
-#include <math.h>
 
 #include "doomtype.h"
 #include "resources/res_main.h"
 #include "version.h"
-#include "doomdef.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 #include "m_misc.h"
@@ -87,9 +85,7 @@
 #include "i_sound.h"
 
 #include "d_main.h"
-#include "d_net.h"
 #include "g_game.h"
-#include "i_input.h"
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"

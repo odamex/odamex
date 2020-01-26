@@ -25,7 +25,6 @@
 #include <sstream>
 #include <iomanip>
 
-#include "c_dispatch.h"
 #include "cmdlib.h"
 #include "cl_main.h"
 #include "d_main.h"

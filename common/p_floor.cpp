@@ -22,12 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "tables.h"
