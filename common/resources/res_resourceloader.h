@@ -226,8 +226,7 @@ public:
 	PngTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
 		BaseTextureLoader(accessor),
 		mResId(res_id),
-		mWidth(0), mHeight(0),
-		mBitsPerPixel(0), mColorType(0)
+		mWidth(0), mHeight(0)
 	{
 		readHeader();
 	}
@@ -242,8 +241,6 @@ protected:
 	const ResourceId	mResId;
 	uint16_t			mWidth;
 	uint16_t			mHeight;
-	uint8_t				mBitsPerPixel;
-	uint8_t				mColorType;
 };
 
 

@@ -384,8 +384,7 @@ static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t 
 // can be called in the event of success or failure when reading the image.
 //
 #ifdef USE_PNG
-static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lump_data,
-							png_byte** row_data, MEMFILE** mfp)
+static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lump_data, MEMFILE** mfp)
 {
 	png_destroy_read_struct(png_ptr, info_ptr, NULL);
 	*png_ptr = NULL;
@@ -393,8 +392,6 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 
 	delete [] *lump_data;
 	*lump_data = NULL;
-	delete [] *row_data;
-	*row_data = NULL;
 
 	if (*mfp)
 		mem_fclose(*mfp);
@@ -419,13 +416,12 @@ void PngTextureLoader::readHeader()
 
 	png_struct* png_ptr = NULL;
 	png_info* info_ptr = NULL;
-	png_byte* row_data = NULL;
 	MEMFILE* mfp = NULL;
 
 	if (png_sig_cmp(raw_data, 0, 8) != 0)
 	{
 		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
 
@@ -433,7 +429,7 @@ void PngTextureLoader::readHeader()
 	if (!png_ptr)
 	{
 		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
 
@@ -441,7 +437,7 @@ void PngTextureLoader::readHeader()
 	if (!info_ptr)
 	{
 		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
 
@@ -459,16 +455,14 @@ void PngTextureLoader::readHeader()
 	if (ret != 1)
 	{
 		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
 
 	mWidth = width;
 	mHeight = height;
-	mBitsPerPixel = bitsperpixel;
-	mColorType = colortype;
 
-	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 	#endif	// USE_PNG
 }
 
@@ -494,24 +488,67 @@ void PngTextureLoader::load(void* data) const
 	Texture* texture = createTexture(data, mWidth, mHeight);
 	const palette_t* palette = V_GetDefaultPalette();
 
+	const char* resource_name = mRawResourceAccessor->getResourcePath(mResId).c_str();
 	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
 	uint8_t* raw_data = new uint8_t[raw_size];
 
 	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
-	// convert the PNG image to a convenient format
 	png_struct* png_ptr = NULL;
 	png_info* info_ptr = NULL;
-	png_byte* row_data = NULL;
 	MEMFILE* mfp = NULL;
-	uint8_t colortype = mColorType;
+
+	if (png_sig_cmp(raw_data, 0, 8) != 0)
+	{
+		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
+		return;
+	}
+
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr)
+	{
+		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
+		return;
+	}
+
+	info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr)
+	{
+		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
+		return;
+	}
+
+	// tell libpng to retrieve image data from memory buffer instead of a disk file
+	mfp = mem_fopen_read(raw_data, raw_size);
+	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
+
+	png_read_info(png_ptr, info_ptr);
+
+	// read the png header
+	png_uint_32 width = 0, height = 0;
+	int bitsperpixel = 0, colortype = -1;
+	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
+
+	if (ret != 1)
+	{
+		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
+		return;
+	}
+
+	// handle 16 bpp images
+	if (bitsperpixel == 16)
+		png_set_strip_16(png_ptr);
 
 	// convert transparency to full alpha
 	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
 		png_set_tRNS_to_alpha(png_ptr);
 
 	// convert grayscale, if needed.
-	if (colortype == PNG_COLOR_TYPE_GRAY && mBitsPerPixel < 8)
+	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
 		png_set_expand_gray_1_2_4_to_8(png_ptr);
 
 	// convert paletted images to RGB
@@ -519,38 +556,42 @@ void PngTextureLoader::load(void* data) const
 		png_set_palette_to_rgb(png_ptr);
 
 	// convert from RGB to ARGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
+	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB || colortype == PNG_COLOR_TYPE_GRAY)
 	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
 
 	// process the above transformations
 	png_read_update_info(png_ptr, info_ptr);
 
-	// Read the new color type after updates have been made.
-	colortype = png_get_color_type(png_ptr, info_ptr);
+	// create row pointers for reading the image
+	png_bytep* row_pointers = new png_bytep[mHeight];
+	for (uint16_t y = 0; y < mHeight; y++)
+		row_pointers[y] = new png_byte[png_get_rowbytes(png_ptr, info_ptr)];
 
-	// read the image and store in temp_image
-	const png_size_t row_size = png_get_rowbytes(png_ptr, info_ptr);
+	png_read_image(png_ptr, row_pointers);
 
-	row_data = new png_byte[row_size];
-	for (unsigned int y = 0; y < mHeight; y++)
+	// write the image in the Texture, converting to column-major form
+	// and converting pixels to 8bpp palettized using nearest-color matching.
+	for (uint16_t y = 0; y < mHeight; y++)
 	{
-		png_read_row(png_ptr, row_data, NULL);
-		byte* dest = texture->mData + y;
+		const png_byte* row = row_pointers[y];
+		uint8_t* dest = texture->mData + y;
 
-		for (unsigned int x = 0; x < mWidth; x++)
+		for (int x = 0; x < mWidth; x++)
 		{
-			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
-						row_data[(x << 2) + 1], row_data[(x << 2) + 2]);
-
+			const png_byte* ptr = &(row[x << 2]);
+			argb_t color(ptr[3], ptr[0], ptr[1], ptr[2]);
 			if (color.geta() < 255)
 				*dest = palette->mask_color;
 			else
 				*dest = V_BestColor(palette->basecolors, color);
-
 			dest += mHeight;
 		}
 	}
 
-	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &row_data, &mfp);
+	for (int y = 0; y < mHeight; y++)
+		delete [] row_pointers[y];
+	delete [] row_pointers;
+
+	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 #endif	// USE_PNG && CLIENT_APP
 }
