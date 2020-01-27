@@ -248,7 +248,7 @@ public:
 		
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
-private:
+protected:
 	FileAccessor* mFile;
 
 	ContainerDirectory<WadDirectoryEntry> mDirectory;
@@ -311,6 +311,28 @@ private:
 };
 
 
+
+// ============================================================================
+//
+// SingleMapWadResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class SingleMapWadResourceContainer : public WadResourceContainer
+{
+public:
+	SingleMapWadResourceContainer(FileAccessor* file);
+
+	SingleMapWadResourceContainer(const OString& path);
+
+	void addResources(ResourceManager* manager);
+	
+
+private:
+
+};
+
+
 // ============================================================================
 //
 // DirectoryResourceContainer abstract base class interface
@@ -358,7 +380,7 @@ private:
 		return mDirectory.INVALID_LUMP_ID;
 	}
 
-	bool isEmbeddedWadFile(const FileSystemDirectoryEntry& entry);
+	bool isEmbeddedWadFile(const FileSystemDirectoryEntry& entry) const;
 };
 
 
@@ -430,7 +452,8 @@ private:
     bool readCentralDirectory();
     size_t findEndOfCentralDirectory() const;
 	void addDirectoryEntries(uint32_t offset, uint32_t length, uint16_t num_entries);
-	bool isEmbeddedWadFile(const ZipDirectoryEntry& entry);
+	bool isEmbeddedWadFile(const ZipDirectoryEntry& entry) const;
+	bool isEmbeddedSingleMapWadFile(const ZipDirectoryEntry& entry) const;
 
 	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;

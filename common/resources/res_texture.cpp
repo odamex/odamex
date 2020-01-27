@@ -32,6 +32,7 @@
 #include "resources/res_texture.h"
 #include "resources/res_main.h"
 #include "resources/res_resourceloader.h"
+#include "resources/res_identifier.h"
 
 
 //
@@ -175,6 +176,7 @@ void TextureManager::addResources(ResourceManager* manager)
 	addResourceToManagerByDir(manager, flats_directory_name);
 	addResourceToManagerByDir(manager, patches_directory_name);
 	addResourceToManagerByDir(manager, sprites_directory_name);
+	addResourceToManagerByDir(manager, textures_directory_name);
 }
 
 
@@ -205,6 +207,8 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 			loader = new PatchTextureLoader(accessor, raw_res_id);
 		else if (dir == sprites_directory_name)
 			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (dir == textures_directory_name)
+			loader = new PngTextureLoader(accessor, raw_res_id);
 
 		const ResourceId res_id = manager->addResource(path, this, loader);
 
