@@ -122,7 +122,6 @@ uint32_t Texture::calculateSize(int width, int height)
 	uint32_t size = calculateHeaderSize(width, height);
 	#if CLIENT_APP
 	size += calculateDataSize(width, height);
-	size += 16;
 	#endif
 	return size;
 }
@@ -201,19 +200,29 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 			continue;
 
 		ResourceLoader* loader = NULL;
-		if (dir == flats_directory_name)
-			loader = new FlatTextureLoader(accessor, raw_res_id);
-		else if (dir == patches_directory_name)
-			loader = new PatchTextureLoader(accessor, raw_res_id);
-		else if (dir == sprites_directory_name)
-			loader = new PatchTextureLoader(accessor, raw_res_id);
-		else if (dir == textures_directory_name)
-			loader = new PngTextureLoader(accessor, raw_res_id);
 
-		const ResourceId res_id = manager->addResource(path, this, loader);
+		const uint32_t header_data_size = 32;
+		uint8_t header_data[header_data_size];
+		if (accessor->getResourceSize(raw_res_id) >= header_data_size)
+		{
+			accessor->loadResource(raw_res_id, header_data, header_data_size);
+			if (Res_ValidatePngData(header_data, header_data_size))
+				loader = new PngTextureLoader(accessor, raw_res_id);
+			else if (dir == flats_directory_name)
+				loader = new FlatTextureLoader(accessor, raw_res_id);
+			else if (dir == patches_directory_name)
+				loader = new PatchTextureLoader(accessor, raw_res_id);
+			else if (dir == sprites_directory_name)
+				loader = new PatchTextureLoader(accessor, raw_res_id);
+		}
 
-		// save the ResourceLoader pointers so they can be freed later
-		mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+		if (loader != NULL)
+		{
+			const ResourceId res_id = manager->addResource(path, this, loader);
+
+			// save the ResourceLoader pointers so they can be freed later
+			mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+		}
 	}
 }
 
