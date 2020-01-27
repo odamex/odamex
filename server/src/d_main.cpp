@@ -98,7 +98,7 @@ extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
 BOOL devparm;				// started game with -devparm
-char startmap[8];
+char startmap[9];
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 

@@ -59,7 +59,7 @@ extern	BOOL			modifiedgame;
 // Selected skill type, map etc.
 //
 
-extern	char			startmap[8];		// [RH] Actual map name now
+extern	char			startmap[9];		// [RH] Actual map name now
 
 extern	BOOL 			autostart;
 

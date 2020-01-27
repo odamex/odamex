@@ -112,7 +112,7 @@ BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-char startmap[8];
+char startmap[9];
 BOOL autostart;
 BOOL autorecord;
 std::string demorecordfile;
