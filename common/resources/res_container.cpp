@@ -83,6 +83,8 @@ static std::string Res_TransformResourcePath(const std::string& path)
 		new_path = ResourcePath::DELIMINATOR + new_path;
 
 	size_t end_of_directory = new_path.find(ResourcePath::DELIMINATOR, 1);
+	if (end_of_directory == std::string::npos)
+		end_of_directory = 0;
 
 	// Transform the filename portion of the path into a well-formed lump name.
 	// eg, 8 chars, no filename extension, all caps.
@@ -101,10 +103,7 @@ static std::string Res_TransformResourcePath(const std::string& path)
 			std::transform(new_path.begin(), new_path.end(), new_path.begin(), toupper);
 
 			// Transform the name: truncate the lump name to 8 chars and move the lump to the first-level directory
-			if (end_of_directory != std::string::npos)
-				new_path = new_path.substr(0, end_of_directory) + ResourcePath::DELIMINATOR + new_path.substr(start_of_lump_name, start_of_lump_name + 8);
-			else
-				new_path = new_path.substr(0, start_of_lump_name + 8);
+			new_path = new_path.substr(0, end_of_directory) + ResourcePath::DELIMINATOR + new_path.substr(start_of_lump_name, 8);
 
 			// Handle a specific use-case where a sprite lump name should contain a backslash
 			// character. See https://zdoom.org/wiki/Using_ZIPs_as_WAD_replacement.
