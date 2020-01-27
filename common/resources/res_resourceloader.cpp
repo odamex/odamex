@@ -408,61 +408,14 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 void PngTextureLoader::readHeader()
 {
 	#ifdef USE_PNG
-	const char* resource_name = mRawResourceAccessor->getResourcePath(mResId).c_str();
-	uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
-	uint8_t* raw_data = new uint8_t[raw_size];
-
-	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
-
-	png_struct* png_ptr = NULL;
-	png_info* info_ptr = NULL;
-	MEMFILE* mfp = NULL;
-
-	if (png_sig_cmp(raw_data, 0, 8) != 0)
+	const uint32_t data_size = 24;
+	if (mRawResourceAccessor->getResourceSize(mResId) >= data_size)
 	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
-		return;
+		uint8_t data[data_size];
+		mRawResourceAccessor->loadResource(mResId, data, data_size);
+		mWidth = BELONG(*(uint32_t*)(data + 16));
+		mHeight = BELONG(*(uint32_t*)(data + 20));
 	}
-
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
-		return;
-	}
-
-	info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr)
-	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
-		return;
-	}
-
-	// tell libpng to retrieve image data from memory buffer instead of a disk file
-	mfp = mem_fopen_read(raw_data, raw_size);
-	png_set_read_fn(png_ptr, mfp, Res_ReadPNGCallback);
-
-	png_read_info(png_ptr, info_ptr);
-
-	// read the png header
-	png_uint_32 width = 0, height = 0;
-	int bitsperpixel = 0, colortype = -1;
-	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
-
-	if (ret != 1)
-	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
-		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
-		return;
-	}
-
-	mWidth = width;
-	mHeight = height;
-
-	Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 	#endif	// USE_PNG
 }
 
@@ -561,6 +514,13 @@ void PngTextureLoader::load(void* data) const
 
 	// process the above transformations
 	png_read_update_info(png_ptr, info_ptr);
+
+	if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA)
+	{
+		Printf(PRINT_HIGH, "Invalid PNG color type in %s.\n", resource_name);
+		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
+		return;
+	}
 
 	// create row pointers for reading the image
 	png_bytep* row_pointers = new png_bytep[mHeight];

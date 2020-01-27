@@ -33,6 +33,8 @@ bool Res_ValidateDehackedData(const uint8_t* data, size_t length);
 bool Res_ValidatePCSpeakerSoundData(const uint8_t* data, size_t length);
 bool Res_ValidateSoundData(const uint8_t* data, size_t length);
 bool Res_ValidatePatchData(const uint8_t* data, size_t length);
+bool Res_ValidateFlatData(const uint8_t* data, size_t length);
+bool Res_ValidatePngData(const uint8_t* data, size_t length);
 
 bool Res_MusicIsMus(const uint8_t* data, size_t length);
 bool Res_MusicIsMidi(const uint8_t* data, size_t length);

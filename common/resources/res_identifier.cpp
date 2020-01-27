@@ -33,11 +33,7 @@
 bool Res_ValidateWadData(const uint8_t* data, size_t length)
 {
 	if (length >= 4)
-	{
-		uint32_t magic = LELONG(*(uint32_t*)((uint8_t*)data + 0));
-		return magic == ('I' | ('W' << 8) | ('A' << 16) | ('D' << 24)) ||
-				magic == ('P' | ('W' << 8) | ('A' << 16) | ('D' << 24));
-	}
+		return memcmp(data, "IWAD", 4) == 0 || memcmp(data, "PWAD", 4) == 0;
 	return false;
 }
 
@@ -50,7 +46,7 @@ bool Res_ValidateWadData(const uint8_t* data, size_t length)
 bool Res_ValidateZipData(const uint8_t* data, size_t length)
 {
 	if (length >= 4)
-        return data[0] == 'P' && data[1] == 'K' && data[2] == 3 && data[3] == 4;
+		return memcmp(data, "PK\x03\x04", 4) == 0;
 	return false;
 }
 
@@ -96,6 +92,30 @@ bool Res_ValidatePatchData(const uint8_t* data, size_t length)
 			return true;
 		}
 	}
+	return false;
+}
+
+
+//
+// Res_ValidateFlatData
+//
+// Returns true if the given lump data appears to be a valid flat graphic.
+//
+bool Res_ValidateFlatData(const uint8_t* data, size_t length)
+{
+	return (length == 64 * 64 || length == 128 * 128 || length == 256 * 256);
+}
+
+
+//
+// Res_ValidatePngData
+//
+// Returns true if the given lump data appears to be a valid PNG graphic.
+//
+bool Res_ValidatePngData(const uint8_t* data, size_t length)
+{
+	if (length >= 16)
+		return memcmp(data, "\x89PNG\x0D\x0A\x1A\x0A\x00\x00\x00\x0DIHDR", 16) == 0;
 	return false;
 }
 
