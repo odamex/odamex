@@ -1002,7 +1002,7 @@ void G_Ticker (void)
 
 			if(type == CHALLENGE)
 			{
-				CL_PrepareConnect();
+				//CL_PrepareConnect();
 			}
 			else if(type == 0)
 			{

@@ -886,7 +886,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		int type = MSG_ReadLong();
 		if (type == CHALLENGE)
 		{
-			CL_PrepareConnect();
+			//CL_PrepareConnect();
 		}
 		else if (type == 0)
 		{

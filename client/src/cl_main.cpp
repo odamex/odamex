@@ -76,6 +76,9 @@
 #include <set>
 #include <sstream>
 
+#include "network/net_main.h"
+#include "network/net_packet.h"
+
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
@@ -288,7 +291,6 @@ EXTERN_CVAR (cl_splitnetdemos)
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
-void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 
 void CL_LocalDemoTic(void);
@@ -471,6 +473,8 @@ void CL_Reconnect(void)
 
 	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 	connecttimeout = 0;
+
+	Net_ReOpenConnection();
 }
 
 std::string spyplayername;
@@ -661,6 +665,7 @@ void CL_StepTics(unsigned int count)
 		if (canceltics && canceltics--)
 			continue;
 
+		Net_ServiceConnections();
 		NetUpdate();
 
 		if (advancedemo)
@@ -718,7 +723,11 @@ void CL_RunTics()
 
 	if (step_mode)
 	{
+		Net_ServiceConnections();
+
+		#if 0
 		NetUpdate();
+		#endif
 
 		if (nextstep)
 		{
@@ -787,19 +796,18 @@ BEGIN_COMMAND (connect)
 
 	if (argc > 1)
 	{
-		std::string target = argv[1];
+		std::string host = argv[1];
 
         // [Russell] - Passworded servers
-        if(argc > 2)
-        {
+        if (argc > 2)
             connectpasshash = MD5SUM(argv[2]);
-        }
         else
-        {
             connectpasshash = "";
-        }
 
-		if(NET_StringToAdr (target.c_str(), &serveraddr))
+		Net_OpenConnection(host);
+
+		#if 0
+		if (NET_StringToAdr(host.c_str(), &serveraddr))
 		{
 			if (!serveraddr.port)
 				I_SetPort(serveraddr, SERVERPORT);
@@ -808,9 +816,10 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Could not resolve host %s\n", target.c_str());
+			Printf(PRINT_HIGH, "Could not resolve host %s\n", host.c_str());
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
+		#endif
 	}
 
 	connecttimeout = 0;
@@ -1366,30 +1375,30 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 // CL_SendUserInfo
 //
-void CL_SendUserInfo(void)
+void CL_SendUserInfo(Packet& packet)
 {
+	BitStream& stream = packet.getPayload();
+
 	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
-	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
-	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
-	MSG_WriteLong	(&net_buffer, coninfo->gender);
+	stream.writeU8(clc_userinfo);
+	stream.writeString(coninfo->netname.c_str());
+	stream.writeU8(coninfo->team); // [Toke]
+	stream.writeU32(coninfo->gender);
 
 	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&net_buffer, coninfo->color[i]);
+		stream.writeU8(coninfo->color[i]);
 
 	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&net_buffer, "");
+	stream.writeString("");
 
-	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
-	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
+	stream.writeU32(coninfo->aimdist);
+	stream.writeU8(coninfo->unlag);  // [SL] 2011-05-11
+	stream.writeU8(coninfo->predict_weapons);
+	stream.writeU8((uint8_t)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
-	{
-		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
-	}
+		stream.writeU8(coninfo->weapon_prefs[i]);
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
 }
@@ -1568,24 +1577,26 @@ void CL_RequestConnectInfo(void)
 // Process server info and switch to the right wads...
 //
 std::string missing_file, missing_hash;
-bool CL_PrepareConnect(void)
+bool CL_PrepareConnect(Packet& packet)
 {
+	BitStream& stream = packet.getPayload();
+
 	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
 	size_t i;
-	DWORD server_token = MSG_ReadLong();
-	server_host = MSG_ReadString();
+
+	server_host = stream.readString();
 
 	bool recv_teamplay_stats = 0;
 	gameversiontosend = 0;
 
-	byte playercount = MSG_ReadByte(); // players
-	MSG_ReadByte(); // max_players
+	byte playercount = stream.readU8();
+	stream.readU8();	// read and ignore max_players
 
-	std::string server_map = MSG_ReadString();
-	byte server_wads = MSG_ReadByte();
+	std::string server_map = stream.readString();
+	byte server_wads = stream.readU8(); 
 
 	Printf(PRINT_HIGH, "\n");
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
@@ -1593,45 +1604,44 @@ bool CL_PrepareConnect(void)
 
 	std::vector<std::string> newwadfiles(server_wads);
 	for(i = 0; i < server_wads; i++)
-		newwadfiles[i] = MSG_ReadString();
+		newwadfiles[i] = stream.readString();
 
-	MSG_ReadBool();							// deathmatch
-	MSG_ReadByte();							// skill
-	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
-	recv_teamplay_stats |= MSG_ReadBool();	// ctf
+	stream.readU8();						// ignore deathmatch
+	stream.readU8();						// ignore skill
+	recv_teamplay_stats |= stream.readU8();	// teamplay
+	recv_teamplay_stats |= stream.readU8();	// ctf
 
 	for(i = 0; i < playercount; i++)
 	{
-		MSG_ReadString();
-		MSG_ReadShort();
-		MSG_ReadLong();
-		MSG_ReadByte();
+		stream.readString();
+		stream.readU16();
+		stream.readU32();
+		stream.readU8();
 	}
 
 	std::vector<std::string> newwadhashes(server_wads);
 	for(i = 0; i < server_wads; i++)
 	{
-		newwadhashes[i] = MSG_ReadString();
+		newwadhashes[i] = stream.readString();
 		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
 	}
 
-	MSG_ReadString();
+	stream.readString();
 
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
 	{
-		MSG_ReadLong();
+		stream.readU32();
 
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			bool enabled = MSG_ReadBool();
-
+			bool enabled = stream.readU8();
 			if (enabled)
-				MSG_ReadLong();
+				stream.readU32();
 		}
 	}
 
-	version = MSG_ReadShort();
+	version = stream.readU16();
 
 	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
 
@@ -1644,29 +1654,29 @@ bool CL_PrepareConnect(void)
 	if (version == 65)
 	{
 		size_t l;
-		MSG_ReadString();
+		stream.readString();
 
 		for (l = 0; l < 3; l++)
-			MSG_ReadShort();
+			stream.readU16();
 		for (l = 0; l < 14; l++)
-			MSG_ReadBool();
+			stream.readU8();
 		for (l = 0; l < playercount; l++)
 		{
-			MSG_ReadShort();
-			MSG_ReadShort();
-			MSG_ReadShort();
+			stream.readU16();
+			stream.readU16();
+			stream.readU16();
 		}
 
-		MSG_ReadLong();
-		MSG_ReadShort();
+		stream.readU32();
+		stream.readU16();
 
 		for (l = 0; l < playercount; l++)
-			MSG_ReadBool();
+			stream.readU8();
 
-		MSG_ReadLong();
-		MSG_ReadShort();
+		stream.readU32();
+		stream.readU16();
 
-		gameversion = MSG_ReadLong();
+		gameversion = stream.readU32();
 
 		// GhostlyDeath -- Assume 40 for compatibility and fake it
 		if (((gameversion % 256) % 10) == -1)
@@ -1681,11 +1691,11 @@ bool CL_PrepareConnect(void)
     Printf(PRINT_HIGH, "\n");
 
     // DEH/BEX Patch files
-    size_t patch_count = MSG_ReadByte();
+    size_t patch_count = stream.readU8();
 	std::vector<std::string> newpatchfiles(patch_count);
 
     for (i = 0; i < patch_count; ++i)
-        newpatchfiles[i] = MSG_ReadString();
+        newpatchfiles[i] = stream.readString();
 
     // TODO: Allow deh/bex file downloads
 	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
@@ -1728,7 +1738,6 @@ bool CL_PrepareConnect(void)
 	recv_full_update = false;
 
 	connecttimeout = 0;
-	CL_TryToConnect(server_token);
 
 	return true;
 }
@@ -1784,10 +1793,10 @@ bool CL_Connect(void)
 //
 void CL_InitNetwork (void)
 {
-    const char *v = Args.CheckValue ("-port");
-    if (v)
+    const char* port_str = Args.CheckValue("-port");
+    if (port_str)
     {
-		localport = atoi (v);
+		localport = atoi(port_str);
 		Printf (PRINT_HIGH, "using alternate port %i\n", localport);
     }
     else
@@ -1796,27 +1805,34 @@ void CL_InitNetwork (void)
     // set up a socket and net_message buffer
     InitNetCommon();
 
+	Net_InitNetworkInterface(localport);
+
     SZ_Clear(&net_buffer);
 
-    size_t ParamIndex = Args.CheckParm ("-connect");
-
+    size_t ParamIndex = Args.CheckParm("-connect");
     if (ParamIndex)
     {
-		const char *ipaddress = Args.GetArg(ParamIndex + 1);
+		const char* host = Args.GetArg(ParamIndex + 1);
 
-		if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+		if (host && host[0] != '-' && host[0] != '+')
 		{
-			NET_StringToAdr (ipaddress, &serveraddr);
+			SocketAddress remote_address(host);
+			if (remote_address.getPort() == 0)
+				remote_address.setPort(SERVERPORT);		// select default server port if the user did not supply one
 
-			const char *passhash = Args.GetArg(ParamIndex + 2);
-
+			const char* passhash = Args.GetArg(ParamIndex + 2);
 			if (passhash && passhash[0] != '-' && passhash[0] != '+')
-			{
 				connectpasshash = MD5SUM(passhash);
-			}
 
-			if (!serveraddr.port)
-				I_SetPort(serveraddr, SERVERPORT);
+			// convert remote_address to netadr_t
+			// TODO: remove this conversion and netadr_t
+			serveraddr.ip[0] = (remote_address.getIPAddress() >> 24) & 0xFF;
+			serveraddr.ip[1] = (remote_address.getIPAddress() >> 16) & 0xFF;
+			serveraddr.ip[2] = (remote_address.getIPAddress() >> 8) & 0xFF;
+			serveraddr.ip[3] = (remote_address.getIPAddress() >> 0) & 0xFF;
+			serveraddr.port = htons(remote_address.getPort());
+
+			Net_OpenConnection(host);
 
 			lastconaddr = serveraddr;
 			gamestate = GS_CONNECTING;
@@ -1828,44 +1844,30 @@ void CL_InitNetwork (void)
     connected = false;
 }
 
-void CL_TryToConnect(DWORD server_token)
+bool CL_TryToConnect(Packet& packet)
 {
-	if (!serveraddr.ip[0])
-		return;
+	BitStream& stream = packet.getPayload();
 
-	if (!connecttimeout)
-	{
-		connecttimeout = 140; // 140 tics = 4 seconds
+	stream.writeU16(version);		// send client version
 
-		Printf(PRINT_HIGH, "challenging %s\n", NET_AdrToString(serveraddr));
+	if (gamestate == GS_DOWNLOAD)
+		stream.writeU8(1);			// send type of connection (play/spectate/rcon/download)
+	else
+		stream.writeU8(0);			// send type of connection (play/spectate/rcon/download)
 
-		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
-		MSG_WriteLong(&net_buffer, server_token); // confirm server token
-		MSG_WriteShort(&net_buffer, version); // send client version
+	// GhostlyDeath -- Send more version info
+	if (gameversiontosend)
+		stream.writeU32(gameversiontosend);
+	else
+		stream.writeU32(GAMEVER);
 
-		if(gamestate == GS_DOWNLOAD)
-			MSG_WriteByte(&net_buffer, 1); // send type of connection (play/spectate/rcon/download)
-		else
-			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
+	CL_SendUserInfo(packet); // send userinfo
 
-		// GhostlyDeath -- Send more version info
-		if (gameversiontosend)
-			MSG_WriteLong(&net_buffer, gameversiontosend);
-		else
-			MSG_WriteLong(&net_buffer, GAMEVER);
+	stream.writeU32((uint32_t)rate);
 
-		CL_SendUserInfo(); // send userinfo
+	stream.writeString(connectpasshash.c_str());
 
-		MSG_WriteLong(&net_buffer, (int)rate);
-
-        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
-
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
-	}
-
-	connecttimeout--;
+	return true;
 }
 
 EXTERN_CVAR (show_messages)

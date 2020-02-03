@@ -76,6 +76,7 @@
 #include "i_net.h"
 #include "c_dispatch.h"
 #include "sv_main.h"
+#include "network/net_main.h"
 
 #ifdef _WIN32
 UINT TimerPeriod;
@@ -536,6 +537,7 @@ void STACK_ARGS I_Quit (void)
     G_ClearSnapshots ();
     SV_SendDisconnectSignal();
 
+	Net_CloseNetworkInterface();
     CloseNetwork ();
 
 	DConsoleAlias::DestroyAll();

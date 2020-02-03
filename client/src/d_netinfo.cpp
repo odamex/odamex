@@ -192,8 +192,11 @@ void D_UserInfoChanged (cvar_t *cvar)
 	if (gamestate != GS_STARTUP && !connected)
 		D_SetupUserInfo();
 
+	/*
+	TODO: implement this
 	if (connected)
 		CL_SendUserInfo();
+	*/
 }
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)

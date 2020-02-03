@@ -15,8 +15,8 @@ add_definitions(-DSERVER_APP)
 
 # Common
 set(COMMON_DIR ../common)
-file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
-file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
+file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h ${COMMON_DIR}/network/*.h)
+file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp ${COMMON_DIR}/network/*.cpp)
 
 # Server
 set(SERVER_DIR src)

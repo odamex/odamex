@@ -46,10 +46,13 @@ extern NetDemo	netdemo;
 
 extern bool predicting;
 
+class Packet;
+
 void CL_QuitNetGame(void);
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
-bool CL_PrepareConnect(void);
+bool CL_PrepareConnect(Packet& packet);
+bool CL_TryToConnect(Packet& packet);
 void CL_ParseCommands(void);
 void CL_ReadPacketHeader(void);
 void CL_SendCmd(void);

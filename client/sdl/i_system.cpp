@@ -93,6 +93,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+#include "network/net_main.h"
 
 #ifdef _XBOX
 	#include "i_xbox.h"
@@ -695,6 +696,7 @@ void STACK_ARGS I_Quit (void)
 
 	//I_ShutdownHardware();
 
+	Net_CloseNetworkInterface();
     CloseNetwork();
 
 	DConsoleAlias::DestroyAll();
