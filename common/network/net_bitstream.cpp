@@ -27,6 +27,19 @@
 
 #include "network/net_bitstream.h"
 
+static uint32_t mask[] = {
+	0x00000000, 0x00000001, 0x00000003, 0x00000007,
+	0x0000000F, 0x0000001F, 0x0000003F, 0x0000007F,
+	0x000000FF, 0x000001FF, 0x000003FF, 0x000007FF,
+	0x00000FFF, 0x00001FFF, 0x00003FFF, 0x00007FFF,
+	0x0000FFFF, 0x0001FFFF, 0x0003FFFF, 0x0007FFFF,
+	0x000FFFFF, 0x001FFFFF, 0x003FFFFF, 0x007FFFFF,
+	0x00FFFFFF, 0x01FFFFFF, 0x03FFFFFF, 0x07FFFFFF,
+	0x0FFFFFFF, 0x1FFFFFFF, 0x3FFFFFFF, 0x7FFFFFFF,
+	0xFFFFFFFF
+};
+
+
 // ============================================================================
 //
 // BitStream class Implementation
@@ -39,7 +52,12 @@
 
 BitStream::BitStream() :
 	mWritten(0), mRead(0), mWriteOverflow(false), mReadOverflow(false)
-{ }
+{
+	#if 0
+	testWriteBits();
+	testReadBits();
+	#endif
+}
 
 
 BitStream::BitStream(const BitStream &other) :
@@ -158,41 +176,120 @@ uint16_t BitStream::writeSize() const
 }
 
 
+//
+// BitStream::testWriteBits
+//
+// Unit test for writing an arbitrary number of bits to the buffer.
+//
+void BitStream::testWriteBits()
+{
+	clear();
+
+	uint32_t val = 0x04030201;
+	writeBits(val, 32);
+	assert(mBuffer[0] == 0x01);
+	assert(mBuffer[1] == 0x02);
+	assert(mBuffer[2] == 0x03);
+	assert(mBuffer[3] == 0x04);
+
+    val = 0x0201;
+	writeBits(val, 16);
+	assert(mBuffer[4] == 0x01);
+	assert(mBuffer[5] == 0x02);
+
+	val = 0x0AFF;
+	writeBits(val, 12);
+	assert(mBuffer[6] == 0xFF);
+	assert(mBuffer[7] == 0xA0);
+
+	val = 0xA9;
+	writeBits(val, 8);
+	assert(mBuffer[7] = 0xAA);
+	assert(mBuffer[8] = 0x90);
+
+	clear();
+}
+
+
+//
+// BitStream::testReadBits
+//
+// Unit test for reading an arbitrary number of bits from the buffer.
+//
+void BitStream::testReadBits()
+{
+	clear();
+
+	uint32_t val = 0x04030201;
+	writeBits(val, 32);
+	assert(readBits(32) == val);
+
+    val = 0x0201;
+	writeBits(val, 16);
+	assert(readBits(16) == val);
+
+	val = 0x0AFF;
+	writeBits(val, 12);
+	assert(readBits(12) == val);
+
+	val = 0xA9;
+	writeBits(val, 8);
+	assert(readBits(8) == val);
+
+	clear();
+}
+
+
 // 
 // BitStream::writeBits
 //
-// Writes the bitcount lowest bits of val to the buffer,
-// most significant bit first. All of the public write member functions
-// use this function as their core.
+// Writes the bitcount lowest bits of val to the buffer in little-endian byte
+// ordering.
 //
-void BitStream::writeBits(int val, uint16_t bitcount)
+// All of the public write member functions use this function as their core.
+//
+void BitStream::writeBits(uint32_t val, uint16_t bitcount)
 {
 	bitcount = std::min<uint16_t>(bitcount, 32);
 
 	if (mCheckWriteOverflow(bitcount))
 		return;
 
-	// Odamex uses little-endian byte ordering for network transmission.
-	val = LELONG(val);
+	uint32_t* ptr = (uint32_t*)mBuffer + (mWritten >> 5);
+
+	// start with a clear scratch pad
+	uint64_t scratch = 0;
+
+	// load the scratch pad from mBuffer if it's not blank
+	uint16_t scratch_bits_written = mWritten & 31;
+	if (scratch_bits_written > 0)
+		scratch = uint64_t(BELONG(*ptr)) << 32;
+
+	mWritten += bitcount;
 
 	while (bitcount)
 	{
-		uint32_t* ptr = (uint32_t*)mBuffer + (mWritten >> 5);
+		// Write the least-significant byte (or remainder) to the
+		// scratch pad. We have to write one byte at a time to maintain
+		// little-endian order.
+		uint16_t bits_to_write = std::min<uint16_t>(bitcount, 8);
 
-		uint16_t startbit = mWritten & 31;
-		uint16_t bitstowrite = std::min<uint16_t>(32 - startbit, bitcount);
+		// Get the next 8 least significant bits. If there are less than 8 remaining bits,
+		// shift the remaining bits to the left.
+		uint64_t lsb = val & mask[bits_to_write];
 
-		if (startbit == 0)
-			*ptr = 0;		// if starting a new byte, clear it first
+		// Write the lowest 8 bits to the scratch pad
+		scratch |= lsb << (64 - scratch_bits_written - bits_to_write);
 
-        // write the bitstowrite most significant remaining bits of val to mBuffer
-        *ptr |= (val >> (bitcount - bitstowrite)) << (32 - startbit - bitstowrite);
-        // mask off the bits from val that we've already written to mBuffer
-        val &= ((1 << (bitcount - bitstowrite)) - 1);
-
-		bitcount -= bitstowrite;
-		mWritten += bitstowrite;
+		val >>= bits_to_write;
+		scratch_bits_written += bits_to_write;
+		bitcount -= bits_to_write;
 	}
+
+	// flush the scratch pad to mBuffer
+	*ptr = BELONG(scratch >> 32);
+	if (scratch_bits_written > 32)
+		*(++ptr) = BELONG(scratch & mask[32]);
 }
 
 
@@ -202,28 +299,36 @@ void BitStream::writeBits(int val, uint16_t bitcount)
 // Examines bitcount bits from the buffer, most significant bit first. This
 // does not advance the read position.
 //
-int BitStream::peekBits(uint16_t bitcount) const
+uint32_t BitStream::peekBits(uint16_t bitcount) const
 {
 	bitcount = std::min<uint16_t>(bitcount, 32);
 
 	if (mCheckReadOverflow(bitcount))
 		return 0;
 
-	int val = 0;
-	uint16_t readpos = mRead;
+	uint32_t val = 0;
 
+	uint16_t scratch_bits_read = mRead & 31;
+
+	uint32_t* ptr = (uint32_t*)mBuffer + (mRead >> 5);
+	uint64_t scratch = uint64_t(BELONG(*ptr)) << 32;
+	if (scratch_bits_read + bitcount > 32)
+		scratch |= uint64_t(BELONG(*(++ptr)));
+
+	uint16_t val_offset = 0;
 	while (bitcount)
 	{
-		const uint32_t* ptr = (uint32_t*)mBuffer + (readpos >> 5);
+		uint16_t bits_to_read = std::min<uint16_t>(bitcount, 8);
 
-		uint16_t startbit = readpos & 31;
-		uint16_t bitstoread = std::min<uint16_t>(32 - startbit, bitcount);
+		// Read the 8 next least-significant bits
+		uint64_t lsb = (scratch >> (64 - scratch_bits_read - bits_to_read)) & mask[bits_to_read];
 
-		uint32_t mask = ((uint64_t(1) << bitstoread) - 1) << startbit;
-		val |= (LELONG(*ptr) & mask) >> startbit;
+		// Add to output
+		val |= (lsb << val_offset);
 
-		bitcount -= bitstoread;
-		readpos += bitstoread;
+		val_offset += bits_to_read;
+		scratch_bits_read += bits_to_read;
+		bitcount -= bits_to_read;
 	}
 
 	return val;
@@ -236,14 +341,14 @@ int BitStream::peekBits(uint16_t bitcount) const
 // Reads bitcount bits from the buffer, most significant bit first. All of
 // the public read member functions use this function as their core.
 //
-int BitStream::readBits(uint16_t bitcount)
+uint32_t BitStream::readBits(uint16_t bitcount)
 {
 	bitcount = std::min<uint16_t>(bitcount, 32);
 
 	if (mCheckReadOverflow(bitcount))
 		return 0;
 
-	int val = peekBits(bitcount);
+	uint32_t val = peekBits(bitcount);
 	mRead += bitcount;
 	return val;
 }

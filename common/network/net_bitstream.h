@@ -48,7 +48,7 @@ public:
 	void writeBlob(const uint8_t* data, uint16_t size);
 	void readBlob(uint8_t* data, uint16_t size);
 
-	void writeBits(int val, uint16_t bitcount);
+	void writeBits(uint32_t val, uint16_t bitcount);
 	void writeBit(int val);
 	void writeS8(int val);
 	void writeU8(int val);
@@ -60,7 +60,7 @@ public:
 	void writeString(const OString& str);
 	void writeColor(const argb_t color);
 	
-	int readBits(uint16_t bitcount);
+	uint32_t readBits(uint16_t bitcount);
 	bool readBit();
 	int8_t readS8();
 	uint8_t readU8();
@@ -72,7 +72,7 @@ public:
 	OString readString();
 	argb_t readColor();
 
-	int peekBits(uint16_t bitcount) const;
+	uint32_t peekBits(uint16_t bitcount) const;
 	bool peekBit() const;
 	int8_t peekS8() const;
 	uint8_t peekU8() const;
@@ -88,6 +88,10 @@ private:
 
 	bool mCheckReadOverflow(uint16_t size) const;
 	bool mCheckWriteOverflow(uint16_t size) const;
+
+	// unit tests
+	void testWriteBits();
+	void testReadBits();
 	
 	uint16_t		mWritten;
 	uint16_t		mRead;
