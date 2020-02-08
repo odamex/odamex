@@ -36,14 +36,6 @@
 
 #include "network/net_platform.h"
 
-#ifdef _XBOX
-	#include "i_xbox.h"
-#endif
-
-#ifdef GEKKO
-	#include "i_wii.h"
-#endif
-
 static const uint16_t MAX_INCOMING_SIZE = 8192;		// in bytes
 static const uint16_t MAX_OUTGOING_SIZE = 8192;
 

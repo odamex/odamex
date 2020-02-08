@@ -70,12 +70,4 @@
     #define SETSOCKOPTCAST(x) ((const void *)(x))
 #endif // WIN32
 
-
-#ifdef ODA_HAVE_MINIUPNP
-    #define MINIUPNP_STATICLIB
-    #include "miniwget.h"
-    #include "miniupnpc.h"
-    #include "upnpcommands.h"
-#endif  // ODA_HAVE_MINIUPNP
-
 #endif  // __NET_PLATFORM_H__
