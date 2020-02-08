@@ -40,7 +40,6 @@ class SocketAddress
 {
 public:
 	SocketAddress();
-	SocketAddress(uint8_t oct1, uint8_t oct2, uint8_t oct3, uint8_t oct4, uint16_t port);
 	SocketAddress(const SocketAddress& other);
 	SocketAddress(const OString& stradr);
 	SocketAddress(const struct sockaddr_in& sadr);
@@ -54,7 +53,6 @@ public:
 	bool operator>=(const SocketAddress& other) const;
 
 	void setIPAddress(uint32_t ip);
-	void setIPAddress(uint8_t oct1, uint8_t oct2, uint8_t oct3, uint8_t oct4);
 	void setPort(uint16_t port);
 
 	uint32_t getIPAddress() const;
