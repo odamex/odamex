@@ -22,8 +22,6 @@
 //-----------------------------------------------------------------------------
 
 #include "doomdef.h"
-#include "m_ostring.h"
-#include "m_random.h"
 #include "c_cvars.h"
 #include "cmdlib.h"
 

@@ -274,12 +274,12 @@ bool NetInterface::socketSend(const SocketAddress& dest, const uint8_t* data, ui
 	Net_LogPrintf(LogChan_Interface, "sending %u bytes to %s.", size, dest.getCString());
 	const struct sockaddr_in& saddr = dest.getSockAddrIn();
 
-	// pass the packet data off to the transport layer (UDP)
+	// pass the datagram off to the transport layer (UDP)
 	int ret = sendto(mSocket, data, size, 0, (const struct sockaddr*)&saddr, sizeof(sockaddr_in));
 
 	if (ret != size)
 	{
-		Net_Warning("NetInterface::socketSend: unable to send packet to destination %s.", dest.getCString()); 
+		Net_Warning("NetInterface::socketSend: unable to send datagram to destination %s.", dest.getCString()); 
 
 		#ifdef _WIN32
 		int err = WSAGetLastError();
@@ -309,7 +309,7 @@ bool NetInterface::socketRecv(SocketAddress& source, uint8_t* data, uint16_t& si
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 
-	// receives a packet from the transport layer (UDP)
+	// receives a datagram from the transport layer (UDP)
 	int ret = recvfrom(mSocket, data, MAX_INCOMING_SIZE, 0, (struct sockaddr *)&from, &fromlen);
 
 	source = from;
@@ -329,7 +329,7 @@ bool NetInterface::socketRecv(SocketAddress& source, uint8_t* data, uint16_t& si
 
 		if (errno == WSAEMSGSIZE)
 		{
-			Net_Warning("NetInterface::socketRecv: oversize packet from %s", source.getCString());
+			Net_Warning("NetInterface::socketRecv: oversize datagram from %s", source.getCString());
 			return false;
 		}
 		#else
