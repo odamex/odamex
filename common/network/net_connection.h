@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -28,12 +26,13 @@
 #include <queue>
 #include "doomdef.h"
 
+#include "network/net_common.h"
 #include "network/net_type.h"
 #include "network/net_socketaddress.h"
 #include "network/net_connectionmanager.h"
-#include "network/net_packet.h"
 
 class MessageManager;
+class Connection;
 
 
 // ============================================================================
@@ -52,51 +51,75 @@ public:
 
 	void clear();
 
-	void outgoingPacketSent(const Packet::PacketSequenceNumber seq, uint16_t size);
-	void outgoingPacketAcknowledged(const Packet::PacketSequenceNumber seq);
-	void outgoingPacketLost(const Packet::PacketSequenceNumber seq);
-	void incomingPacketReceived(const Packet::PacketSequenceNumber seq, uint16_t size);
-	void incomingPacketLost(const Packet::PacketSequenceNumber seq);
+	void outgoingPacketSent(uint16_t size);
+	void outgoingPacketAcknowledged();
+	void outgoingPacketLost();
+	void incomingPacketReceived(uint16_t size);
+	void incomingPacketLost();
 
 	// ---------------------------------------------------------------------------
 	// Accessor functions
 	// ---------------------------------------------------------------------------
 
 	uint32_t getTotalOutgoingBits() const
-	{	return mOutgoingBits;	}
+	{
+		return mOutgoingBits;
+	}
 
 	uint32_t getTotalIncomingBits() const
-	{	return mIncomingBits;	}
+	{
+		return mIncomingBits;
+	}
 
 	uint32_t getTotalOutgoingPackets() const
-	{	return mOutgoingPackets;	}
+	{
+		return mOutgoingPackets;
+	}
 
 	uint32_t getTotalIncomingPackets() const
-	{	return mIncomingPackets;	}
+	{
+		return mIncomingPackets;
+	}
 
 	uint32_t getTotalLostOutgoingPackets() const
-	{	return mLostOutgoingPackets;	}
+	{
+		return mLostOutgoingPackets;
+	}
 
 	uint32_t getTotalLostIncomingPackets() const
-	{	return mLostIncomingPackets;	}
+	{
+		return mLostIncomingPackets;
+	}
 
 	double getRoundTripTime() const
-	{	return mAvgRoundTripTime;	}
+	{
+		return mAvgRoundTripTime;
+	}
 
 	double getJitterTime() const
-	{	return mAvgJitterTime;	}
+	{
+		return mAvgJitterTime;
+	}
 
 	double getOutgoingPacketLoss() const
-	{	return mAvgOutgoingPacketLoss;	}
+	{
+		return mAvgOutgoingPacketLoss;
+	}
 
 	double getIncomingPacketLoss() const
-	{	return mAvgIncomingPacketLoss;	}
+	{
+		return mAvgIncomingPacketLoss;
+	}
 
 	double getOutgoingBitrate() const
-	{	return mAvgOutgoingBitrate;	}
+	{
+		return mAvgOutgoingBitrate;
+	}
 
 	double getIncomingBitrate() const
-	{	return mAvgIncomingBitrate;	}
+	{
+		return mAvgIncomingBitrate;
+	}
 
 private:
 	struct PacketRecord
@@ -141,6 +164,7 @@ private:
 // changes in the connection quality such as network congestion.
 //
 // ============================================================================
+
 class ConnectionQuality
 {
 public:
@@ -154,9 +178,303 @@ public:
 	void updateQuality(const ConnectionStatistics& stats);
 	double getQuality() const;
 
-private:
-	
+};
 
+
+
+//=============================================================================
+//
+// Handshake
+//
+// An abstract base class for finite-state machines for protocols related
+// to connection establishment and teardown.
+//
+//=============================================================================
+
+class Handshake
+{
+public:
+	Handshake(Connection* connection) :
+		mConnection(connection)
+	{ }
+
+	virtual ~Handshake()
+	{ }
+
+	virtual bool isConnected() const
+	{
+		return false;
+	}
+
+	virtual bool isFailed() const
+	{
+		return false;
+	}
+
+	virtual bool isNegotiating() const
+	{
+		return false;
+	}
+
+	virtual void service()
+	{ }
+
+	virtual void receive(BitStream& stream)
+	{ }
+
+protected:
+	Connection*				mConnection;
+};
+
+
+//=============================================================================
+//
+// ConnectionHandshake
+//
+// A finite-state machine for establishing a connection between a client and
+// a server using a handshaking protocol.
+//
+//=============================================================================
+
+class ConnectionHandshake : public Handshake
+{
+public:
+	ConnectionHandshake(Connection* connection);
+
+	virtual ~ConnectionHandshake()
+	{ }
+
+	virtual bool isConnected() const
+	{
+		return mState == CONN_CONNECTED;
+	}
+
+	virtual bool isFailed() const
+	{
+		return mState == CONN_FAILED;
+	}
+
+	virtual bool isNegotiating() const
+	{
+		return mState < CONN_CONNECTED;
+	}
+
+	void service();
+
+	void receive(BitStream& stream)
+	{
+		mStream = stream;
+		service();
+	}
+
+private:
+	static const dtime_t NEGOTIATION_TIMEOUT = 2*ONE_SECOND;
+
+	enum HandshakeState
+	{
+		// Client States
+		CONN_REQUESTING,
+		CONN_AWAITING_OFFER,
+		CONN_REVIEWING_OFFER,
+		CONN_ACCEPTING_OFFER,
+		CONN_AWAITING_CONFIRMATION,
+		CONN_REVIEWING_CONFIRMATION,
+
+		// Server States
+		CONN_LISTENING,
+		CONN_REVIEWING_REQUEST,
+		CONN_OFFERING,
+		CONN_AWAITING_ACCEPTANCE,
+		CONN_REVIEWING_ACCEPTANCE,
+		CONN_CONFIRMING,
+
+		// Client & Server States
+		CONN_CONNECTED,
+		CONN_FAILED
+	};
+
+	HandshakeState			mState;
+	dtime_t					mTimeOutTS;
+
+protected:
+	BitStream				mStream;
+
+	virtual bool handleRequestingState() = 0;
+	virtual bool handleReviewingOfferState() = 0;
+	virtual bool handleAcceptingOfferState() = 0;
+	virtual bool handleReviewingConfirmationState() = 0;
+
+	virtual bool handleReviewingRequestState() = 0;
+	virtual bool handleOfferingState() = 0;
+	virtual bool handleReviewingAcceptanceState() = 0;
+	virtual bool handleConfirmingState() = 0;
+};
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 65 connection handshake
+//
+// ============================================================================
+
+class Odamex65ConnectionHandshake : public ConnectionHandshake
+{
+public:
+	Odamex65ConnectionHandshake(Connection* connection) :
+		ConnectionHandshake(connection)
+	{ }
+
+	virtual ~Odamex65ConnectionHandshake()
+	{ }
+
+protected:
+	virtual bool handleRequestingState();
+	virtual bool handleReviewingOfferState();
+	virtual bool handleAcceptingOfferState();
+	virtual bool handleReviewingConfirmationState();
+
+	virtual bool handleReviewingRequestState();
+	virtual bool handleOfferingState();
+	virtual bool handleReviewingAcceptanceState();
+	virtual bool handleConfirmingState();
+
+private:
+	uint32_t				mToken;
+	dtime_t					mTokenTimeOutTS;
+
+	static const uint32_t	SIGNAL_LAUNCHER_CHALLENGE = 0x000BDBA3;
+	static const uint32_t	SIGNAL_CHALLENGE = 0x0054D6D4;
+};
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 100 connection handshake
+//
+// ============================================================================
+
+class Odamex100ConnectionHandshake : public ConnectionHandshake
+{
+public:
+	Odamex100ConnectionHandshake(Connection* connection) :
+		ConnectionHandshake(connection)
+	{ }
+
+	virtual ~Odamex100ConnectionHandshake()
+	{ }
+
+protected:
+	virtual bool handleRequestingState();
+	virtual bool handleReviewingOfferState();
+	virtual bool handleAcceptingOfferState();
+	virtual bool handleReviewingConfirmationState();
+
+	virtual bool handleReviewingRequestState();
+	virtual bool handleOfferingState();
+	virtual bool handleReviewingAcceptanceState();
+	virtual bool handleConfirmingState();
+
+private:
+	uint32_t				mToken;
+	dtime_t					mTokenTimeOutTS;
+
+	static const uint32_t	SIGNAL_GAME_CHALLENGE = 0x00ABABAB;
+	static const uint32_t	SIGNAL_CONNECTION_SEQUENCE = 0xFFFFFFFF;
+};
+
+
+//=============================================================================
+//
+// DisconnectionHandshake
+//
+// A finite-state machine for tearing a connection between a client and
+// a server using a handshaking protocol.
+//
+//=============================================================================
+
+class DisconnectionHandshake : public Handshake
+{
+public:
+	DisconnectionHandshake(Connection* connection) :
+		Handshake(connection),
+		mSentNotification(false)
+	{ }
+
+	virtual ~DisconnectionHandshake()
+	{ }
+
+	virtual bool isConnected() const
+	{
+		return false;
+	}
+
+	virtual bool isFailed() const
+	{
+		return false;
+	}
+
+	virtual bool isNegotiating() const
+	{
+		return false;
+	}
+
+	void service();
+
+	void receive(BitStream& stream)
+	{
+		// do nothing -- ignore all communication after sending notification of disconnection
+	}
+
+protected:
+	virtual bool handleDisconnectingState() = 0;
+
+private:
+	bool					mSentNotification;
+};
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 65 disconnection handshake
+//
+// ============================================================================
+
+class Odamex65DisconnectionHandshake : public DisconnectionHandshake
+{
+public:
+	Odamex65DisconnectionHandshake(Connection* connection) :
+		DisconnectionHandshake(connection)
+	{ }
+
+	virtual ~Odamex65DisconnectionHandshake()
+	{ }
+
+protected:
+	virtual bool handleDisconnectingState();
+};
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 100 disconnection handshake
+//
+// ============================================================================
+
+class Odamex100DisconnectionHandshake : public DisconnectionHandshake
+{
+public:
+	Odamex100DisconnectionHandshake(Connection* connection) :
+		DisconnectionHandshake(connection)
+	{ }
+
+	virtual ~Odamex100DisconnectionHandshake()
+	{ }
+
+protected:
+	virtual bool handleDisconnectingState();
+
+private:
+	static const uint32_t	TERMINATION_SIGNAL = 0xAAAAAAAA;
 };
 
 
@@ -177,10 +495,20 @@ public:
 	Connection(const ConnectionId& id, NetInterface* interface, const SocketAddress& adr);
 	virtual ~Connection();
 
-	ConnectionId getConnectionId() const;
-	NetInterface* getInterface() const;
-	const SocketAddress& getRemoteAddress() const;
-	const char* getRemoteAddressCString() const;
+	ConnectionId getConnectionId() const
+	{
+		return mConnectionId;
+	}
+
+	NetInterface* getInterface() const
+	{
+		return mInterface;
+	}
+
+	const SocketAddress& getRemoteAddress() const
+	{
+		return mRemoteAddress;
+	}
 
 	virtual bool isConnected() const;
 	virtual bool isNegotiating() const;
@@ -191,63 +519,41 @@ public:
 	virtual void closeConnection();
 
 	virtual void service();
-	virtual void sendPacket(const Packet& packet);
-	virtual void processPacket(Packet& packet);
+	virtual void sendDatagram(const BitStream& stream);
+	virtual void receiveDatagram(BitStream& stream);
 
 	virtual void registerMessageManager(MessageManager* manager);
 
-private:
-	enum ConnectionState_t
-	{
-		CONN_LISTENING					= 0x01,
-		CONN_REQUESTING					= 0x02,
-		CONN_OFFERING					= 0x04,
-		CONN_NEGOTIATING				= 0x07,
-		CONN_ACCEPTING					= 0x08,
-		CONN_CONNECTED					= 0x80,
-		CONN_TERMINATED					= 0xFF
-	};
-
+protected:
 	ConnectionId			mConnectionId;
 	NetInterface*			mInterface;
 	SocketAddress			mRemoteAddress;
 
-	ConnectionState_t		mState;
+	bool					mTerminated;
+	Handshake*				mHandshake;
+
 	dtime_t					mCreationTS;
 	dtime_t					mTimeOutTS;
 
 	uint32_t				mConnectionAttempt;
 	dtime_t					mConnectionAttemptTimeOutTS;
 
-	uint32_t				mToken;
-	dtime_t					mTokenTimeOutTS;
+protected:
+	virtual Handshake* createConnectionHandshake() = 0;
+	virtual Handshake* createDisconnectionHandshake() = 0;
 
-	// ------------------------------------------------------------------------
-	// Sequence numbers and receipt acknowledgement
-	//-------------------------------------------------------------------------
-	static const uint8_t ACKNOWLEDGEMENT_COUNT = 32;
-
-	// sequence number to be sent in the next packet
-	Packet::PacketSequenceNumber	mSequence;
-	// most recent sequence number the remote host has acknowledged receiving
-	Packet::PacketSequenceNumber	mLastAckSequence;
-	// set to true during connection negotiation
-	bool							mLastAckSequenceValid;
-
-	// most recent sequence number the remote host has sent
-	Packet::PacketSequenceNumber	mRecvSequence;
-	// set to true during connection negotiation
-	bool							mRecvSequenceValid;
-	// bitfield representing all of the recently received sequence numbers
-	BitField<32>					mRecvHistory;
+	virtual void readDatagramHeader(BitStream& stream) = 0;
+	virtual void composeDatagramHeader(BitStream& stream) = 0;
+	virtual void composeDatagramFooter(BitStream& stream) = 0;
+	virtual bool validateDatagram(const BitStream& stream) const = 0;
 
 	// ------------------------------------------------------------------------
 	// Statistical tracking
 	// ------------------------------------------------------------------------
 	ConnectionStatistics	mConnectionStats;
 
-	void remoteHostReceivedPacket(const Packet::PacketSequenceNumber seq);
-	void remoteHostLostPacket(const Packet::PacketSequenceNumber seq);
+	void remoteHostReceivedPacket(uint32_t seq);
+	void remoteHostLostPacket(uint32_t seq);
 
 	// ------------------------------------------------------------------------
 	// Packet composition and parsing
@@ -255,28 +561,115 @@ private:
 	typedef std::vector<MessageManager*> MessageManagerList;
 	MessageManagerList					mMessageManagers;
 
-	void composePacketHeader(const Packet::PacketType& type, Packet& packet);
-	void composePacketFooter(Packet& packet);
-	bool validatePacketCRC(const Packet& packet) const;
+	void composeGameDatagram(BitStream& stream, uint32_t seq);
+	void parseGameDatagram(BitStream& stream);
 
-	void composeGamePacket(Packet& packet);
-	void parseGamePacket(Packet& packet);
-	void parseNegotiationPacket(Packet& packet);	
+private:
+	static const dtime_t CONNECTION_TIMEOUT = 4*ONE_SECOND;
+};
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 65 connection implementation
+//
+// ============================================================================
+
+class Odamex65Connection : public Connection
+{
+public:
+	typedef SequenceNumber<32> PacketSequenceNumber;
+
+	Odamex65Connection(const ConnectionId& id, NetInterface* interface, const SocketAddress& adr);
+
+	virtual ~Odamex65Connection()
+	{ }
+
+protected:
+	virtual Handshake* createConnectionHandshake()
+	{
+		return new Odamex65ConnectionHandshake(this);
+	}
+
+	virtual Handshake* createDisconnectionHandshake()
+	{
+		return new Odamex65DisconnectionHandshake(this);
+	}
+
+	void readDatagramHeader(BitStream& stream);
+	void composeDatagramHeader(BitStream& stream);
+	void composeDatagramFooter(BitStream& stream);
+	bool validateDatagram(const BitStream& stream) const;
+
+	// sequence number to be sent in the next datagram
+	PacketSequenceNumber	mSequence;
+	// most recent sequence number the remote host has acknowledged receiving
+	PacketSequenceNumber	mLastAckSequence;
+	// most recent sequence number the remote host has sent
+	PacketSequenceNumber	mRecvSequence;
+	// bitfield representing all of the recently received sequence numbers
+	BitField<10>			mRecvHistory;
+};
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 100 connection
+//
+// ============================================================================
+
+class Odamex100Connection : public Connection
+{
+public:
+	typedef SequenceNumber<16> PacketSequenceNumber;
+
+	typedef enum
+	{
+		GAME_PACKET				= 0,
+		NEGOTIATION_PACKET		= 1
+	} PacketType;
+
+	Odamex100Connection(const ConnectionId& id, NetInterface* interface, const SocketAddress& adr);
+
+	virtual ~Odamex100Connection()
+	{ }
+
+protected:
+	virtual Handshake* createConnectionHandshake()
+	{
+		return new Odamex100ConnectionHandshake(this);
+	}
+
+	virtual Handshake* createDisconnectionHandshake()
+	{
+		return new Odamex100DisconnectionHandshake(this);
+	}
+
+	void readDatagramHeader(BitStream& stream);
+	void composeDatagramHeader(BitStream& stream);
+	void composeDatagramFooter(BitStream& stream);
+	bool validateDatagram(const BitStream& stream) const;
 
 	// ------------------------------------------------------------------------
-	// Connection establishment
-	// ------------------------------------------------------------------------
-	Packet::PacketSequenceNumber generateRandomSequence() const;
+	// Sequence numbers and receipt acknowledgement
+	//-------------------------------------------------------------------------
+	static const uint8_t ACKNOWLEDGEMENT_COUNT = 32;
+
+	// sequence number to be sent in the next datagram
+	PacketSequenceNumber	mSequence;
+	// most recent sequence number the remote host has acknowledged receiving
+	PacketSequenceNumber	mLastAckSequence;
+	// set to true during connection negotiation
+	bool					mLastAckSequenceValid;
+
+	// most recent sequence number the remote host has sent
+	PacketSequenceNumber	mRecvSequence;
+	// set to true during connection negotiation
+	bool					mRecvSequenceValid;
+	// bitfield representing all of the recently received sequence numbers
+	BitField<32>			mRecvHistory;
+
 	void resetState();
-
-	bool clientRequest();
-	bool serverProcessRequest(Packet& packet);
-	bool serverOffer();
-	bool clientProcessOffer(Packet& packet);
-	bool clientAccept();
-	bool serverProcessAcceptance(Packet& packet);
-	bool serverConfirmAcceptance();
-	bool clientProcessConfirmation(Packet& packet);
 };
 
 #endif	// __NET_CONNECTION_H__

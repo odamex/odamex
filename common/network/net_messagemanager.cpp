@@ -108,8 +108,7 @@ uint16_t UrgentMessageManager::read(BitStream& stream, uint16_t allotted_size)
 // the appropriate Messages may be freed when notification for the
 // packet with sequence number seq arrives.
 //
-uint16_t UrgentMessageManager::write(BitStream& stream, uint16_t allotted_size,
-			 const Packet::PacketSequenceNumber& seq)
+uint16_t UrgentMessageManager::write(BitStream& stream, uint16_t allotted_size, uint32_t seq)
 {
 	uint16_t written = 0;
 
@@ -119,7 +118,7 @@ uint16_t UrgentMessageManager::write(BitStream& stream, uint16_t allotted_size,
 	if (stream.writeSize() < allotted_size)
 		allotted_size = stream.writeSize();
 
-	const size_t seqidx = seq.getInteger() & HISTORY_MASK;
+	const size_t seqidx = seq & HISTORY_MASK;
 	mNewestSequence = seq;
 
 	// Is the sliding window of Messages full? It's too late to deliver
@@ -153,19 +152,19 @@ uint16_t UrgentMessageManager::write(BitStream& stream, uint16_t allotted_size,
 // Messages that were received can be freed and the list of records for
 // the received sequence number and all older sequence numbers can be cleared.
 //
-void UrgentMessageManager::notifyReceived(const Packet::PacketSequenceNumber& seq)
+void UrgentMessageManager::notifyReceived(uint32_t seq)
 {
 	// Check if seq is too old and the records have already been deleted
 	if (seq + HISTORY_SIZE < mNewestSequence || seq < mOldestSequence)
 		return;
 
 	// Free all Messages in the record for sequence number seq
-	freeRecordList(&mRecords[seq.getInteger() & HISTORY_MASK]);
+	freeRecordList(&mRecords[seq & HISTORY_MASK]);
 
 	// Clear out all message record lists that have been acknowledged. This includes
 	// seq and all sequence numbers older than seq.
-	for (Packet::PacketSequenceNumber i = mOldestSequence; i <= seq; ++i)
-		mRecords[i.getInteger() & HISTORY_MASK].clear();
+	for (uint32_t i = mOldestSequence; i <= seq; ++i)
+		mRecords[i & HISTORY_MASK].clear();
 
 	if (mOldestSequence < mNewestSequence)
 		mOldestSequence = seq + 1;
@@ -179,7 +178,7 @@ void UrgentMessageManager::notifyReceived(const Packet::PacketSequenceNumber& se
 // assumes every message is lost until it is acknowledged, this function does
 // nothing.
 //
-void UrgentMessageManager::notifyLost(const Packet::PacketSequenceNumber& seq)
+void UrgentMessageManager::notifyLost(uint32_t seq)
 {
 	// do nothing
 }
@@ -256,7 +255,7 @@ uint16_t ReplicationManager::read(BitStream& stream, uint16_t allotted_size)
 // ReplicationManager::write
 //
 //
-uint16_t ReplicationManager::write(BitStream& stream, uint16_t allotted_size, const Packet::PacketSequenceNumber& seq)
+uint16_t ReplicationManager::write(BitStream& stream, uint16_t allotted_size, uint32_t seq)
 {
 	return 0;
 }
@@ -268,7 +267,7 @@ uint16_t ReplicationManager::write(BitStream& stream, uint16_t allotted_size, co
 // Informs the ReplicationManager that the packet with sequence number seq
 // (and any ReplicationMessages contained in it) was successfully received.
 //
-void ReplicationManager::notifyReceived(const Packet::PacketSequenceNumber& seq)
+void ReplicationManager::notifyReceived(uint32_t seq)
 {
 }
 
@@ -280,7 +279,7 @@ void ReplicationManager::notifyReceived(const Packet::PacketSequenceNumber& seq)
 // (and any ReplicationMessages contained in it) was lost. Since the
 // ReplicationManager never resends Messages, this function does nothing.
 //
-void ReplicationManager::notifyLost(const Packet::PacketSequenceNumber& seq)
+void ReplicationManager::notifyLost(uint32_t seq)
 {
 	// do nothing
 }
@@ -374,7 +373,7 @@ uint16_t EventManager::read(BitStream& stream, uint16_t allotted_size)
 // are freed immediately after being written. Returns the number of bits
 // written to the stream.
 //
-uint16_t EventManager::write(BitStream& stream, uint16_t allotted_size, const Packet::PacketSequenceNumber& seq)
+uint16_t EventManager::write(BitStream& stream, uint16_t allotted_size, uint32_t seq)
 {
 	uint16_t written = 0;
 
@@ -409,7 +408,7 @@ uint16_t EventManager::write(BitStream& stream, uint16_t allotted_size, const Pa
 // (and any EventMessages contained in it) was successfully received.
 // Since Messages in EventManager are never resent, this function does nothing.
 //
-void EventManager::notifyReceived(const Packet::PacketSequenceNumber& seq)
+void EventManager::notifyReceived(uint32_t seq)
 {
 	// do nothing
 }
@@ -422,10 +421,7 @@ void EventManager::notifyReceived(const Packet::PacketSequenceNumber& seq)
 // (and any EventMessages contained in it) was lost. Since Messages in
 // EventManager are never resent, this function does nothing.
 //
-void EventManager::notifyLost(const Packet::PacketSequenceNumber& seq)
+void EventManager::notifyLost(uint32_t seq)
 {
 	// do nothing
 }
-
-
-VERSION_CONTROL (net_messagemanager_cpp, "$Id$")

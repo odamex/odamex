@@ -24,6 +24,7 @@
 #ifndef __NET_CONNECTION_MANAGER_H__
 #define __NET_CONNECTION_MANAGER_H__
 
+#include <list>
 #include "hashtable.h"
 #include "network/net_type.h"
 #include "network/net_socketaddress.h"
@@ -113,11 +114,19 @@ private:
 	ConnectionAddressTable		mConnectionsByAddress;
 	ConnectionIdTable			mConnectionsById;
 
+	struct TerminatedConnection 
+	{
+		Connection*			mConnection;
+		dtime_t				mRemovalTime;
+	};
+	typedef std::list<TerminatedConnection> TerminatedConnectionList;
+	TerminatedConnectionList	mTerminatedConnections;
+
 	Connection* findConnection(const SocketAddress& adr);
 	const Connection* findConnection(const SocketAddress& adr) const;
 	Connection* createNewConnection(const SocketAddress& remote_address);
 
-	void processPacket(const SocketAddress& remote_address, Packet& packet);
+	void processDatagram(const SocketAddress& remote_address, BitStream& stream);
 };
 
 #endif  // __NET_CONNECTION_MANAGER_H__

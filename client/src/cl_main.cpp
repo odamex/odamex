@@ -77,7 +77,7 @@
 #include <sstream>
 
 #include "network/net_main.h"
-#include "network/net_packet.h"
+#include "network/net_bitstream.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1375,10 +1375,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 // CL_SendUserInfo
 //
-void CL_SendUserInfo(Packet& packet)
+void CL_SendUserInfo(BitStream& stream)
 {
-	BitStream& stream = packet.getPayload();
-
 	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
@@ -1552,6 +1550,7 @@ int connecttimeout = 0;
 //
 void CL_RequestConnectInfo(void)
 {
+	/*
 	if (!serveraddr.ip[0])
 		return;
 
@@ -1570,6 +1569,7 @@ void CL_RequestConnectInfo(void)
 	}
 
 	connecttimeout--;
+	*/
 }
 
 //
@@ -1577,10 +1577,8 @@ void CL_RequestConnectInfo(void)
 // Process server info and switch to the right wads...
 //
 std::string missing_file, missing_hash;
-bool CL_PrepareConnect(Packet& packet)
+bool CL_PrepareConnect(BitStream& stream)
 {
-	BitStream& stream = packet.getPayload();
-
 	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
@@ -1844,10 +1842,8 @@ void CL_InitNetwork (void)
     connected = false;
 }
 
-bool CL_TryToConnect(Packet& packet)
+bool CL_TryToConnect(BitStream& stream)
 {
-	BitStream& stream = packet.getPayload();
-
 	stream.writeU16(version);		// send client version
 
 	if (gamestate == GS_DOWNLOAD)
@@ -1861,7 +1857,7 @@ bool CL_TryToConnect(Packet& packet)
 	else
 		stream.writeU32(GAMEVER);
 
-	CL_SendUserInfo(packet); // send userinfo
+	CL_SendUserInfo(stream); // send userinfo
 
 	stream.writeU32((uint32_t)rate);
 

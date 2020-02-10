@@ -77,7 +77,6 @@
 #include <queue>
 
 #include "network/net_type.h"
-#include "network/net_packet.h"
 #include "network/net_connection.h"
 
 // Stub class for Message
@@ -145,9 +144,9 @@ public:
 	virtual void process() = 0;
 
 	virtual uint16_t read(BitStream& stream, uint16_t allotted_size) = 0;
-	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, const Packet::PacketSequenceNumber& seq) = 0;
-	virtual void notifyReceived(const Packet::PacketSequenceNumber& seq) = 0;
-	virtual void notifyLost(const Packet::PacketSequenceNumber& seq) = 0;
+	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, uint32_t seq) = 0;
+	virtual void notifyReceived(uint32_t seq) = 0;
+	virtual void notifyLost(uint32_t seq) = 0;
 };
 
 
@@ -176,9 +175,9 @@ public:
 	virtual void process();
 
 	virtual uint16_t read(BitStream&stream, uint16_t allotted_size);
-	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, const Packet::PacketSequenceNumber& seq);
-	virtual void notifyReceived(const Packet::PacketSequenceNumber& seq);
-	virtual void notifyLost(const Packet::PacketSequenceNumber& seq);
+	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, uint32_t seq);
+	virtual void notifyReceived(uint32_t seq);
+	virtual void notifyLost(uint32_t seq);
 
 private:
 	// define the maximum number of Messages that can be stored (and written
@@ -197,8 +196,8 @@ private:
 	typedef std::list<MessageId> RecordList;
 	RecordList				mRecords[HISTORY_SIZE];
 
-	Packet::PacketSequenceNumber	mNewestSequence;
-	Packet::PacketSequenceNumber	mOldestSequence;
+	uint32_t				mNewestSequence;
+	uint32_t				mOldestSequence;
 
 	void deleteOutgoingMessage(const MessageId& id);
 	void freeRecordList(UrgentMessageManager::RecordList* recordlist);
@@ -247,9 +246,9 @@ public:
 	virtual void process();
 
 	virtual uint16_t read(BitStream&stream, uint16_t allotted_size);
-	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, const Packet::PacketSequenceNumber& seq);
-	virtual void notifyReceived(const Packet::PacketSequenceNumber& seq);
-	virtual void notifyLost(const Packet::PacketSequenceNumber& seq);
+	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, uint32_t seq);
+	virtual void notifyReceived(uint32_t seq);
+	virtual void notifyLost(uint32_t seq);
 };
 
 
@@ -288,9 +287,9 @@ public:
 	virtual void process();
 
 	virtual uint16_t read(BitStream&stream, uint16_t allotted_size);
-	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, const Packet::PacketSequenceNumber& seq);
-	virtual void notifyReceived(const Packet::PacketSequenceNumber& seq);
-	virtual void notifyLost(const Packet::PacketSequenceNumber& seq);
+	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, uint32_t seq);
+	virtual void notifyReceived(uint32_t seq);
+	virtual void notifyLost(uint32_t seq);
 
 private:
 	typedef std::list<Message*> MessageList;

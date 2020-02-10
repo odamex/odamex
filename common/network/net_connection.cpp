@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -41,23 +39,6 @@ EXTERN_CVAR(net_maxrate)
 
 // ============================================================================
 //
-// Connection management signals
-//
-// ============================================================================
-
-//static const uint32_t LAUNCHER_CHALLENGE = 0x000BDBA3;
-//static const uint32_t CHALLENGE = 0x0054D6D4;
-
-
-static const uint32_t CONNECTION_SEQUENCE = 0xFFFFFFFF;
-static const uint32_t TERMINATION_SEQUENCE = 0xAAAAAAAA;
-static const uint32_t GAME_CHALLENGE = 0x00ABABAB;
-
-
-
-
-// ============================================================================
-//
 // ConnectionStatistics
 //
 // ============================================================================
@@ -69,6 +50,7 @@ ConnectionStatistics::ConnectionStatistics()
 {
 	clear();
 }
+
 
 //
 // ConnectionStatistics::clear
@@ -94,7 +76,7 @@ void ConnectionStatistics::clear()
 //
 // ConnectionStatistics::outgoingPacketSent
 //
-void ConnectionStatistics::outgoingPacketSent(const Packet::PacketSequenceNumber seq, uint16_t size)
+void ConnectionStatistics::outgoingPacketSent(uint16_t size)
 {
 	const dtime_t current_timestamp = Net_CurrentTime();
 
@@ -125,7 +107,7 @@ void ConnectionStatistics::outgoingPacketSent(const Packet::PacketSequenceNumber
 //
 // ConnectionStatistics::outgoingPacketAcknowledged
 //
-void ConnectionStatistics::outgoingPacketAcknowledged(const Packet::PacketSequenceNumber seq)
+void ConnectionStatistics::outgoingPacketAcknowledged()
 {
 	const dtime_t current_timestamp = Net_CurrentTime();
 
@@ -150,7 +132,7 @@ void ConnectionStatistics::outgoingPacketAcknowledged(const Packet::PacketSequen
 //
 // ConnectionStatistics::outgoingPacketLost
 //
-void ConnectionStatistics::outgoingPacketLost(const Packet::PacketSequenceNumber seq)
+void ConnectionStatistics::outgoingPacketLost()
 {
 	mAvgOutgoingPacketLoss = mAvgOutgoingPacketLoss * (1.0 - AVG_WEIGHT) + AVG_WEIGHT;
 
@@ -163,7 +145,7 @@ void ConnectionStatistics::outgoingPacketLost(const Packet::PacketSequenceNumber
 //
 // ConnectionStatistics::incomingPacketReceived
 //
-void ConnectionStatistics::incomingPacketReceived(const Packet::PacketSequenceNumber seq, uint16_t size)
+void ConnectionStatistics::incomingPacketReceived(uint16_t size)
 {
 	const dtime_t current_timestamp = Net_CurrentTime();
 
@@ -186,7 +168,7 @@ void ConnectionStatistics::incomingPacketReceived(const Packet::PacketSequenceNu
 //
 // ConnectionStatistics::incomingPacketLost
 //
-void ConnectionStatistics::incomingPacketLost(const Packet::PacketSequenceNumber seq)
+void ConnectionStatistics::incomingPacketLost()
 {
 	mAvgIncomingPacketLoss = mAvgIncomingPacketLoss * (1.0 - AVG_WEIGHT) + AVG_WEIGHT;
 	mLostIncomingPackets++;
@@ -199,67 +181,38 @@ void ConnectionStatistics::incomingPacketLost(const Packet::PacketSequenceNumber
 //
 // ============================================================================
 
-static const dtime_t CONNECTION_TIMEOUT = 4*ONE_SECOND;
-static const dtime_t NEGOTIATION_TIMEOUT = 2*ONE_SECOND;
-static const uint32_t NEGOTIATION_ATTEMPTS = 4;
-static const dtime_t TOKEN_TIMEOUT = 4*ONE_SECOND;
-static const dtime_t TERMINATION_TIMEOUT = 4*ONE_SECOND;
-
-// ----------------------------------------------------------------------------
-// Public functions
-// ----------------------------------------------------------------------------
-
 Connection::Connection(const ConnectionId& connection_id, NetInterface* interface, const SocketAddress& adr) :
 	mConnectionId(connection_id),
 	mInterface(interface), mRemoteAddress(adr),
+	mTerminated(false),
+	mHandshake(NULL),
 	mCreationTS(Net_CurrentTime()),
 	mTimeOutTS(Net_CurrentTime() + CONNECTION_TIMEOUT),
-	mConnectionAttempt(0), mConnectionAttemptTimeOutTS(0),
-	mToken(0), mTokenTimeOutTS(0),
-	mSequence(generateRandomSequence()),
-	mLastAckSequenceValid(false), mRecvSequenceValid(false)
-{
-	resetState();
-}
-
-
-Connection::~Connection()
+	mConnectionAttempt(0), mConnectionAttemptTimeOutTS(0)
 { }
 
 
-ConnectionId Connection::getConnectionId() const
+Connection::~Connection()
 {
-	return mConnectionId;
-}
-
-
-NetInterface* Connection::getInterface() const
-{
-	return mInterface;
-}
-
-
-const SocketAddress& Connection::getRemoteAddress() const
-{
-	return mRemoteAddress;
+	delete mHandshake;
 }
 
 
 bool Connection::isConnected() const
 {
-	return mState == CONN_CONNECTED;
+	return !isTerminated() && !isNegotiating();
 }
 
 
 bool Connection::isNegotiating() const
 {
-	return mState & CONN_NEGOTIATING;
+	return !mTerminated && mHandshake && mHandshake->isNegotiating();
 }
 
 
 bool Connection::isTerminated() const
 {
-	return mState & CONN_TERMINATED;
+	return mTerminated;
 }
 
 
@@ -276,7 +229,8 @@ bool Connection::isTimedOut() const
 void Connection::openConnection()
 {
 	Net_Printf("Requesting connection to host %s...\n", getRemoteAddress().getCString());
-	clientRequest();
+	assert(mHandshake == NULL);
+	mHandshake = createConnectionHandshake();
 }
 
 
@@ -291,182 +245,65 @@ void Connection::closeConnection()
 {
 	Net_LogPrintf(LogChan_Connection, "terminating connection to host %s.", getRemoteAddress().getCString());
 
-	Packet packet = PacketFactory::createPacket();
-	BitStream& stream = packet.getPayload();
-	stream.writeU32(TERMINATION_SEQUENCE);
-	sendPacket(packet);
+	delete mHandshake;		// just in case the connection is being closed during connection negotiation
+	mHandshake = createDisconnectionHandshake();
 
-	mState = CONN_TERMINATED;
-	mTimeOutTS = Net_CurrentTime() + TERMINATION_TIMEOUT;
+	mTerminated = true;
 }
 
 
 //
-// Connection::sendPacket
+// Connection::sendDatagram
 //
-// Updates statistics and hands the packet off to NetInterface to send
+// Updates statistics and hands the datagram off to NetInterface to send
 //
-void Connection::sendPacket(const Packet& packet)
+void Connection::sendDatagram(const BitStream& stream)
 {
-	if (mState == CONN_TERMINATED)
+	if (isTerminated())
 		return;
 
-	const uint16_t packet_size = BitsToBytes(packet.getSize());
-	const uint8_t* data = packet.getPayload().getRawData();
-	if (mInterface->socketSend(mRemoteAddress, data, packet_size))
-		mConnectionStats.outgoingPacketSent(mSequence, packet.getSize());
+	const uint16_t size = stream.bytesWritten();
+	const uint8_t* data = stream.getRawData();
+	if (mInterface->socketSend(mRemoteAddress, stream.getRawData(), stream.bytesWritten()))
+		mConnectionStats.outgoingPacketSent(stream.bitsWritten());
 }
 
 
 //
-// Connection::validatePacketCRC
+// Connection::receiveDatagram
 //
-// Validates that the packet's CRC32 is correct. This implies that the packet
-// did not get corrupted during transit.
-//
-bool Connection::validatePacketCRC(const Packet& packet) const
-{
-	const BitStream& stream = packet.getPayload();
-
-	// verify the calculated CRC32 value matches the value in the packet
-	uint32_t crcvalue = Net_CRC32(stream.getRawData(), stream.bytesWritten() - sizeof(uint32_t));
-	BitStream footer;
-	footer.writeBlob(stream.getRawData() + stream.bytesWritten() - sizeof(uint32_t), sizeof(uint32_t));
-	return crcvalue != footer.readU32();
-}
-
-
-//
-// Connection::processPacket
-//
-// Reads an incoming packet's header, recording the packet sequence number so
-// it can be acknowledged in the next outgoing packet. Also notifies the
-// registered MessageManagers of any outgoing packet sequence numbers the
+// Reads an incoming datagram's header, recording the sequence number so
+// it can be acknowledged in the next outgoing datagram. Also notifies the
+// registered MessageManagers of any outgoing sequence numbers the
 // remote host has acknowledged receiving or lost. Notification is guaranteed
 // to be handled in order of sequence number.
 //
-// Inspects the type of an incoming packet and then hands the packet off to
+// Inspects the type of an incoming datagram and then hands the packet off to
 // the appropriate parsing function.
 //
-void Connection::processPacket(Packet& packet)
+void Connection::receiveDatagram(BitStream& stream)
 {
-	if (mState == CONN_TERMINATED)
+	if (isTerminated())
 		return;
+
+	// reset the timeout timestamp
+	mTimeOutTS = Net_CurrentTime() + CONNECTION_TIMEOUT;
+
+	mConnectionStats.incomingPacketReceived(stream.bitsWritten());
 
 	if (isNegotiating())
 	{
-		parseNegotiationPacket(packet);
-		return;
+		mHandshake->receive(stream);
 	}
 
-	BitStream& stream = packet.getPayload();
-
-	if (!validatePacketCRC(packet))
+	if (isConnected())
 	{
-		// packet failed CRC32 verificiation
-		Net_Warning("corrupted packet from host %s.", getRemoteAddress().getCString());
-		return;
-	}
-
-	Packet::PacketType packet_type;
-	Packet::PacketSequenceNumber in_seq;
-	Packet::PacketSequenceNumber ack_seq;
-	BitField<32> ack_history;
-
-	// examine the packet's header
-	packet_type = static_cast<Packet::PacketType>(stream.readBits(1));
-	in_seq.read(stream);
-	ack_seq.read(stream);
-	ack_history.read(stream);
-
-	Net_LogPrintf(LogChan_Connection, "processing %s packet from host %s, sequence %u.",
-					packet_type == Packet::NEGOTIATION_PACKET ? "negotiation" : "game",
-					getRemoteAddress().getCString(), in_seq.getInteger());
-
-	if (mRecvSequenceValid)
-	{
-		int32_t diff = SequenceNumberDifference(in_seq, mRecvSequence);
-		if (diff > 0)
+		if (validateDatagram(stream))
 		{
-			// if diff > 1 there is a gap in received sequence numbers and
-			// indicates incoming packets have been lost 
-			for (int32_t i = 1; i < diff; i++)
-				mConnectionStats.incomingPacketLost(mRecvSequence + i);
-
-			// Record the received sequence number and update the bitfield that
-			// stores acknowledgement for the N previously received sequence numbers.
-
-			// shift the window of received sequence numbers to make room
-			mRecvHistory <<= diff;
-			// add the previous sequence received
-			mRecvHistory.set(diff - 1);
-		}
-		else
-		{
-			// drop out-of-order packets
-			Net_Warning("dropping out-of-order packet from host %s " \
-					"(current sequence %u, previous sequence %u).",
-					getRemoteAddress().getCString(), in_seq.getInteger(), mRecvSequence.getInteger());
-			return;
+			readDatagramHeader(stream);
+			parseGameDatagram(stream);
 		}
 	}
-
-	mConnectionStats.incomingPacketReceived(in_seq, packet.getSize());
-	mRecvSequence = in_seq;
-
-	if (mLastAckSequenceValid)
-	{
-		// sanity check (acknowledging a packet we haven't sent yet?!?!)
-		if (ack_seq >= mSequence)
-		{
-			Net_Warning("remote host %s acknowledges an unknown packet.", getRemoteAddress().getCString());
-			return;
-		}
-
-		// sanity check (out of order acknowledgement)
-		if (ack_seq < mLastAckSequence)
-		{
-			Net_Warning("out-of-order packet acknowledgement from remote host %s.", getRemoteAddress().getCString());
-			return;
-		}
-
-		for (Packet::PacketSequenceNumber seq = mLastAckSequence + 1; seq <= ack_seq; ++seq)
-		{
-			if (seq < ack_seq - ACKNOWLEDGEMENT_COUNT)
-			{
-				// seq is too old to fit in the ack_history window
-				// consider it lost
-				remoteHostLostPacket(seq);
-			}
-			else if (seq == ack_seq)
-			{
-				// seq is the most recent acknowledgement in the header
-				remoteHostReceivedPacket(seq);
-			}
-			else
-			{
-				// seq's delivery status is indicated by a bit in the
-				// ack_history bitfield
-				int32_t bit = SequenceNumberDifference(ack_seq, seq - 1);
-				if (ack_history.get(bit))
-					remoteHostReceivedPacket(seq);
-				else
-					remoteHostLostPacket(seq);
-			}
-		}
-	}
-
-	mLastAckSequence = ack_seq;
-
-	// inspect the packet type
-	if (packet_type == Packet::NEGOTIATION_PACKET)
-		parseNegotiationPacket(packet);
-	else if (packet_type == Packet::GAME_PACKET)
-		parseGamePacket(packet);
-	else
-		Net_Warning("unknown packet type from %s.", getRemoteAddress().getCString());
-
-	mTimeOutTS = Net_CurrentTime() + CONNECTION_TIMEOUT;
 }
 
 
@@ -475,24 +312,36 @@ void Connection::processPacket(Packet& packet)
 //
 void Connection::service()
 {
-	// check if we should try to negotiate again
-	if (isNegotiating() && mConnectionAttempt > 0 &&
-		mConnectionAttempt <= NEGOTIATION_ATTEMPTS &&
-		Net_CurrentTime() >= mConnectionAttemptTimeOutTS)
+	if (isTimedOut())
 	{
-		Net_Printf("Re-requesting connection to server %s...", getRemoteAddress().getCString());
-		clientRequest();
+		Net_LogPrintf(LogChan_Connection, "connection to host %s timed-out.",
+							getRemoteAddress().getCString());
+		closeConnection();
+	}
+
+	if (mHandshake)
+	{
+		mHandshake->service();
+
+		if (mHandshake->isFailed())
+			mTerminated = true;
+
+		if (!mHandshake->isNegotiating())
+		{
+			delete mHandshake;
+			mHandshake = NULL;
+		}
 	}
 
 	// compose a new game packet and send it
 	if (isConnected())
 	{
-		Packet packet = PacketFactory::createPacket();
-		composeGamePacket(packet);
-		sendPacket(packet);
+		BitStream stream; 
+		composeGameDatagram(stream, 0);
+		sendDatagram(stream);
 	}
 
-	Printf(PRINT_HIGH, "outgoing bitrate: %f, incoming bitrate: %f\n",
+	Printf(PRINT_HIGH, "outgoing bitrate: %0.2f, incoming bitrate: %0.2f\n",
 		mConnectionStats.getOutgoingBitrate(), mConnectionStats.getIncomingBitrate());
 }
 
@@ -510,433 +359,18 @@ void Connection::registerMessageManager(MessageManager* manager)
 		mMessageManagers.push_back(manager);
 }
 
-// ----------------------------------------------------------------------------
-// Private connection negotiation functions
-// ----------------------------------------------------------------------------
 
 //
-// Connection::generateRandomSequence
-//
-// Returns a randomized sequence number appropriate for the initial sequence
-// number of a new connection.
-//
-Packet::PacketSequenceNumber Connection::generateRandomSequence() const
-{
-	return Packet::PacketSequenceNumber(rand());
-}
-
-
-//
-// Connection::resetState
-//
-// Sets the state of the negotiation back to its default state. This is used
-// when there is an error in the negotiation process and the negotiation needs
-// to be retried.
-//
-void Connection::resetState()
-{
-	mState = CONN_LISTENING;
-	mLastAckSequenceValid = false;
-	mRecvSequenceValid = false;
-	mRecvHistory.clear();
-	mSequence = generateRandomSequence();
-	mConnectionAttempt = 0;
-	mConnectionStats.clear();
-}
-
-
-//
-// Connection::clientRequest
-//
-// Contact the server and initiate a game connection. 
-//
-bool Connection::clientRequest()
-{
-	resetState();
-	mState = CONN_REQUESTING;
-
-	++mConnectionAttempt;
-	mConnectionAttemptTimeOutTS = Net_CurrentTime() + NEGOTIATION_TIMEOUT;
-
-	Net_LogPrintf(LogChan_Connection, "sending connection request packet to host %s.",
-			getRemoteAddress().getCString());
-
-	Packet packet = PacketFactory::createPacket();
-	BitStream& stream = packet.getPayload();
-	stream.writeU32(LAUNCHER_CHALLENGE);
-	sendPacket(packet);
-	return true;
-}
-
-
-//
-// Connection::serverProcessRequest
-//
-// Handle a client's request to initiate a connection.
-//
-bool Connection::serverProcessRequest(Packet& packet)
-{
-	Net_LogPrintf(LogChan_Connection, "processing connection request packet from host %s.",
-			getRemoteAddress().getCString());
-
-	// received a valid sequence number from the client
-	mRecvSequenceValid = true;
-
-	BitStream& stream = packet.getPayload();
-
-	if (stream.readU32() != CONNECTION_SEQUENCE)
-	{
-		//terminate(TERM_BADHANDSHAKE);
-		return false;
-	}
-	if (stream.readU32() != GAME_CHALLENGE)
-	{
-		//terminate(TERM_BADHANDSHAKE);
-		return false;
-	}
-	if (stream.readU8() != GAMEVER)
-	{
-		//terminate(TERM_VERSIONMISMATCH);
-		return false;
-	}
-
-	return true;
-}
-
-
-//
-// Connection::serverOffer
-//
-//
-bool Connection::serverOffer()
-{
-	Net_LogPrintf(LogChan_Connection, "sending connection offer packet to host %s.",
-			getRemoteAddress().getCString());
-
-	Packet packet = PacketFactory::createPacket();
-	composePacketHeader(Packet::NEGOTIATION_PACKET, packet);
-
-	BitStream& stream = packet.getPayload();
-
-	// denis - each launcher reply contains a random token so that
-	// the server will only allow connections with a valid token
-	// in order to protect itself from ip spoofing
-	mToken = rand() * time(0);
-	mTokenTimeOutTS = Net_CurrentTime() + TOKEN_TIMEOUT;
-	stream.writeU32(mToken);
-
-	// TODO: Server gives a list of supported compression types as a bitfield
-	// enum {
-	//		COMPR_NONE = 0,
-	//		COMPR_LZO = 1,
-	//		COMPR_HUFFMAN = 2
-	// } CompressionType;
-	//
-	// BitField<3> compression_availible;
-	// compression_availible.write(stream);
-
-	// TODO: Server gives a list of supported credential types as a bitfield
-	// enum {
-	//		CRED_NONE = 0,
-	//		CRED_PASSWORD = 1,
-	//		CRED_LOCALACCT = 2,
-	//		CRED_MASTERACCT = 3
-	// } CredentialType;
-	//
-	// BitField<3> credential_type;
-	// credential_availible.write(stream);
-
-	sendPacket(packet);
-	return true;
-}	
-
-
-//
-// Connection::clientProcessOffer
-//
-//
-bool Connection::clientProcessOffer(Packet& packet)
-{
-	Net_LogPrintf(LogChan_Connection, "processing connection offer packet from host %s.",
-			getRemoteAddress().getCString());
- 
-	// have not received a valid sequence number from the server
-	mRecvSequenceValid = false;
-	
-	BitStream& stream = packet.getPayload();
-
-	if (stream.readU32() == CHALLENGE)
-	{
-		mToken = stream.readU32();	// save the token
-
-		// TODO: process the server's list of supported compression types. select
-		// one and record it so it can be sent in the clientAccept packet.
-		//
-		// BitField<3> compression_availible;
-		// compression_availible.read(stream);
-
-		// TODO: process the server's list of supported credential types. select
-		// one and record it so it can be sent in the clientAccept packet along
-		// with the relevant credential info.
-		//
-		// BitField<3> credential_type;
-		// credential_availible.write(stream);
-
-		return CL_PrepareConnect(packet);
-	}
-	else
-	{
-		// TODO: Reset connection, issue warning
-		return false;
-	}
-}
-
-
-//
-// Connection::clientAccept
-//
-//
-bool Connection::clientAccept()
-{
-	mState = CONN_ACCEPTING;
-	
-	Net_LogPrintf(LogChan_Connection, "sending connection acceptance packet to host %s.",
-				getRemoteAddress().getCString());
-
-	Packet packet = PacketFactory::createPacket();
-	BitStream& stream = packet.getPayload();
-
-	stream.writeU32(CHALLENGE);
-	stream.writeU32(mToken);			
-
-	if (CL_TryToConnect(packet))
-	{
-		sendPacket(packet);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-
-//
-// Connection::serverProcessAcceptance
-//
-//
-bool Connection::serverProcessAcceptance(Packet& packet)
-{
-	Net_LogPrintf(LogChan_Connection, "processing connection acceptance packet from host %s.",
-				getRemoteAddress().getCString());
-
-	// the client has acknowledged receiving the server's first packet
-	mLastAckSequenceValid = true;
-
-	BitStream& stream = packet.getPayload();
-	
-	// server verifies the token it received from the client matches
-	// what it had sent earlier
-	uint32_t token = stream.readU32();
-	if (token != mToken || Net_CurrentTime() >= mTokenTimeOutTS)
-	{
-		//terminate(Connection::TERM_BADHANDSHAKE);
-		return false;
-	}
-
-	// Read and verify the supplied password.
-	OString password_hash = stream.readString();
-	/*
-	if (!getInterface()->getPassword().empty())
-	{
-		if (password_hash.compare(MD5SUM(getInterface()->getPassword())) != 0)
-		{
-			//terminate(TERM_BADPASSWORD);
-			return false;
-		}
-	}	
-	*/
-
-	return true;
-}
-
-
-//
-// Connection::serverConfirmAcceptance
-//
-//
-bool Connection::serverConfirmAcceptance()
-{
-	Net_LogPrintf(LogChan_Connection, "sending connection confirmation packet to host %s.",
-			getRemoteAddress().getCString());
-
-	Packet packet = PacketFactory::createPacket();
-	composePacketHeader(Packet::NEGOTIATION_PACKET, packet);
-
-	// TODO: maybe tell the client its ClientId, etc
-
-	sendPacket(packet);
-	return true;
-}
-
-
-//
-// Connection::clientProcessConfirmation
-//
-//
-bool Connection::clientProcessConfirmation(Packet& packet)
-{
-	Net_LogPrintf(LogChan_Connection, "processing connection confirmation packet from host %s.",
-			getRemoteAddress().getCString());
-
-	// the server has acknowledged receiving the client's first packet
-	mLastAckSequenceValid = true;
-
-	return true;
-}
-
-
-//
-// Connection::parseNegotiationPacket
-//
-// Handles incoming connection setup/tear-down data for this connection.
-//
-void Connection::parseNegotiationPacket(Packet& packet)
-{
-	BitStream& stream = packet.getPayload();
-
-	if (stream.peekU32() == TERMINATION_SEQUENCE)
-	{
-		mState = CONN_TERMINATED;
-		closeConnection();
-	}
-
-	if (mState == CONN_TERMINATED)
-		return;
-
-	// Once negotiation is successful, we should no longer receive
-	// negotiation packets. If we do, it's an indication that the remote
-	// host lost our last packet and is retrying the from the beginning.
-	if (mState == CONN_CONNECTED)
-		resetState();
-
-	if (mState == CONN_ACCEPTING)
-	{
-		if (clientProcessConfirmation(packet))
-		{
-			mState = CONN_CONNECTED;
-			Net_LogPrintf(LogChan_Connection, "negotiation with host %s successful.",
-					getRemoteAddress().getCString());
-			Net_Printf("Successfully negotiated connection with host %s.", 
-					getRemoteAddress().getCString());
-		}
-		else
-		{
-			resetState();
-		}
-	}
-
-	// server offering connection to client?
-	if (mState == CONN_OFFERING)
-	{
-		if (serverProcessAcceptance(packet))
-		{
-			// server confirms connected status to client
-			serverConfirmAcceptance();
-			mState = CONN_CONNECTED;
-			Net_LogPrintf(LogChan_Connection, "negotiation with host %s successful.",
-					getRemoteAddress().getCString());
-		}
-		else
-		{
-			resetState();
-		}
-	}
-
-	// client requesting connection to server?
-	if (mState == CONN_REQUESTING)
-	{
-		if (clientProcessOffer(packet))
-		{
-			// client accepts connection to server
-			clientAccept();
-			mState = CONN_ACCEPTING;
-		}
-		else
-		{
-			resetState();
-		}
-	}
-
-	// server listening for requests?
-	if (mState == CONN_LISTENING)
-	{
-		if (serverProcessRequest(packet))
-		{
-			// server offers connection to client
-			serverOffer();
-			mState = CONN_OFFERING;
-		}
-		else
-		{
-			resetState();
-		}
-	}
-}
-
-
-//
-// Connection::composePacketHeader
-//
-// Writes the header portion of a new packet. The type of the packet is
-// written first, followed by the outgoing sequence number and then the
-// acknowledgement of receipt for recent packets.
-//
-void Connection::composePacketHeader(const Packet::PacketType& type, Packet& packet)
-{
-	Net_LogPrintf(LogChan_Connection, "writing packet header to host %s, sequence %u.",
-				getRemoteAddress().getCString(), mSequence.getInteger());
-
-
-	BitStream& stream = packet.getPayload();
-
-	stream.writeBit(type);
-	mSequence.write(stream);
-	mRecvSequence.write(stream);
-	mRecvHistory.write(stream);
-
-	++mSequence;
-}
-
-
-//
-// Connection::composePacketFooter
-//
-void Connection::composePacketFooter(Packet& packet)
-{
-	BitStream& stream = packet.getPayload();
-
-	// calculate CRC32 for the packet header & payload
-	uint32_t crcvalue = Net_CRC32(stream.getRawData(), stream.bytesWritten());
-
-	// write the calculated CRC32 value to the buffer
-	stream.writeU32(crcvalue);
-}
-
-
-//
-// Connection::composeGamePacket
+// Connection::composeGameDatagram
 //
 // Writes the header for a new game packet and calls the registered
 // composition callbacks to write game data to the packet.
 //
-void Connection::composeGamePacket(Packet& packet)
+void Connection::composeGameDatagram(BitStream& stream, uint32_t seq)
 {
-	Net_LogPrintf(LogChan_Connection, "composing packet to host %s.", getRemoteAddress().getCString());
+	Net_LogPrintf(LogChan_Connection, "composing datagram to host %s.", getRemoteAddress().getCString());
 
-	composePacketHeader(Packet::GAME_PACKET, packet);
-
-	BitStream& stream = packet.getPayload();
+	composeDatagramHeader(stream);
 
 	// TODO: determine packet_size using flow-control methods
 	const uint32_t bandwidth = 64;	// 64kbps
@@ -949,20 +383,21 @@ void Connection::composeGamePacket(Packet& packet)
 	for (std::vector<MessageManager*>::iterator it = mMessageManagers.begin(); it != mMessageManagers.end(); ++it)
 	{
 		MessageManager* composer = *it;
-		size_left -= composer->write(stream, size_left, mSequence);
+		size_left -= composer->write(stream, size_left, seq);
 	}
+
+	composeDatagramFooter(stream);
 }
 
+
 //
-// Connection::parseGamePacket
+// Connection::parseGameDatagram
 //
 // Handles acknowledgement of packets
 //
-void Connection::parseGamePacket(Packet& packet)
+void Connection::parseGameDatagram(BitStream& stream)
 {
-	Net_LogPrintf(LogChan_Connection, "processing packet from host %s.", getRemoteAddress().getCString());
-
-	BitStream& stream = packet.getPayload();
+	Net_LogPrintf(LogChan_Connection, "processing datagram from host %s.", getRemoteAddress().getCString());
 
 	// call the registered packet parser functions to parse the payload
 	uint16_t size_left = stream.readSize();
@@ -981,12 +416,12 @@ void Connection::parseGamePacket(Packet& packet)
 // a packet sent by this Connection. Connection quality statistics are updated
 // and the registered MessageManagers are notified of the packet's receipt.
 //
-void Connection::remoteHostReceivedPacket(const Packet::PacketSequenceNumber seq)
+void Connection::remoteHostReceivedPacket(uint32_t seq)
 {
 	Net_LogPrintf(LogChan_Connection, "remote host %s received packet %u.", 
-			getRemoteAddress().getCString(), seq.getInteger());
+			getRemoteAddress().getCString(), seq);
 
-	mConnectionStats.outgoingPacketAcknowledged(seq);
+	mConnectionStats.outgoingPacketAcknowledged();
 
 	if (isConnected())
 	{
@@ -1006,12 +441,12 @@ void Connection::remoteHostReceivedPacket(const Packet::PacketSequenceNumber seq
 // a packet sent by this Connection. Connection quality statistics are updated
 // and the registered MessageManagers are notified of the packet's loss.
 //
-void Connection::remoteHostLostPacket(const Packet::PacketSequenceNumber seq)
+void Connection::remoteHostLostPacket(uint32_t seq)
 {
 	Net_LogPrintf(LogChan_Connection, "remote host %s did not receive packet %u.", 
-			getRemoteAddress().getCString(), seq.getInteger());
+			getRemoteAddress().getCString(), seq);
 
-	mConnectionStats.outgoingPacketLost(seq);
+	mConnectionStats.outgoingPacketLost();
 
 	if (isConnected())
 	{
@@ -1021,4 +456,728 @@ void Connection::remoteHostLostPacket(const Packet::PacketSequenceNumber seq)
 			manager->notifyLost(seq);
 		}
 	}
+}
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 65 connection implementation
+//
+// ============================================================================
+
+//
+// Odamex65Connection::Odamex65Connection
+//
+Odamex65Connection::Odamex65Connection(const ConnectionId& connection_id, NetInterface* interface, const SocketAddress& adr) :
+	Connection(connection_id, interface, adr),
+	mSequence(0), mLastAckSequence(0), mRecvSequence(-1)
+{ }
+
+
+//
+// Odamex65Connection::readDatagramHeader
+//
+// Parses a datagram's header, extracting the incoming datagram sequence number,
+// the last outgoing datagram sequence number acknowledged by the remote host,
+// and all of the datagrams the remote host acknowledges having received.
+//
+void Odamex65Connection::readDatagramHeader(BitStream& stream)
+{
+	PacketSequenceNumber in_seq;
+	in_seq.read(stream);
+
+	Net_LogPrintf(LogChan_Connection, "processing game datagram from host %s, sequence %u.",
+					getRemoteAddress().getCString(), in_seq.getInteger());
+
+	int32_t diff = SequenceNumberDifference(in_seq, mRecvSequence);
+	if (diff > 0)
+	{
+		// if diff > 1, there is a gap in received sequence numbers and
+		// indicates incoming packets have been lost 
+		for (int32_t i = 1; i < diff; i++)
+			mConnectionStats.incomingPacketLost();
+
+		// Record the received sequence number and update the bitfield that
+		// stores acknowledgement for the N previously received sequence numbers.
+
+		// shift the window of received sequence numbers to make room
+		mRecvHistory <<= diff;
+		// add the previous sequence received
+		mRecvHistory.set(diff - 1);
+
+		mRecvSequence = in_seq;
+	}
+	else
+	{
+		// drop out-of-order packets
+		Net_Warning("dropping out-of-order datagram from host %s " \
+				"(current sequence %u, previous sequence %u).",
+				getRemoteAddress().getCString(), in_seq.getInteger(), mRecvSequence.getInteger());
+		stream.clear();
+	}
+}
+
+
+//
+// Odamex65Connection::composeDatagramHeader
+//
+// Writes the header portion of a new datagram.
+// Version 65 Protocol only acknowledges datagrams from the server. Gross.
+//
+void Odamex65Connection::composeDatagramHeader(BitStream& stream)
+{
+	Net_LogPrintf(LogChan_Connection, "writing datagram header to host %s, sequence %u.",
+				getRemoteAddress().getCString(), mSequence.getInteger());
+
+	if (getInterface()->getHostType() == HOST_CLIENT)
+	{
+		// Add individual "clc_ack" acknowledgement messages for the last N datagrams received
+		for (uint16_t i = mRecvHistory.size() - 1; i >  0; i--)
+		{
+			if (mRecvHistory.get(i))
+			{
+				PacketSequenceNumber seq(mRecvSequence - i);
+				stream.writeU8(clc_ack);
+				seq.write(stream);
+			}
+		}
+
+		stream.writeU8(clc_ack);
+		mRecvSequence.write(stream);
+	}
+	else if (getInterface()->getHostType() == HOST_SERVER)
+	{
+		// Only the server provides sequence numbers in the datagrams it sends
+		mSequence.write(stream);
+	}
+
+	mSequence++;
+}
+
+
+//
+// Odamex65Connection::composeDatagramFooter
+//
+void Odamex65Connection::composeDatagramFooter(BitStream& stream)
+{
+	// do nothing
+}
+
+
+// Odamex64Connection::validateDatagram
+//
+// Validates that the datagram is correct. This is a no-op for now.
+//
+bool Odamex65Connection::validateDatagram(const BitStream& stream) const
+{
+	return true;
+}
+
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 100 connection implementation
+//
+// ============================================================================
+
+//
+// Odamex100Connection::Odamex100Connection
+//
+Odamex100Connection::Odamex100Connection(const ConnectionId& connection_id, NetInterface* interface, const SocketAddress& adr) :
+	Connection(connection_id, interface, adr),
+	mSequence(rand()),
+	mLastAckSequenceValid(false), mRecvSequenceValid(false)
+{ }
+
+
+//
+// Odamex100Connection::readDatagramHeader
+//
+// Parses a datagram's header, extracting the incoming datagram sequence number,
+// the last outgoing datagram sequence number acknowledged by the remote host,
+// and all of the datagrams the remote host acknowledges having received.
+//
+void Odamex100Connection::readDatagramHeader(BitStream& stream)
+{
+	PacketType packet_type;
+	PacketSequenceNumber in_seq;
+	PacketSequenceNumber ack_seq;
+	BitField<32> ack_history;
+
+	packet_type = static_cast<PacketType>(stream.readBits(1));
+	in_seq.read(stream);
+	ack_seq.read(stream);
+	ack_history.read(stream);
+
+	Net_LogPrintf(LogChan_Connection, "processing %s datagram from host %s, sequence %u.",
+					packet_type == NEGOTIATION_PACKET ? "negotiation" : "game",
+					getRemoteAddress().getCString(), in_seq.getInteger());
+
+	if (mRecvSequenceValid)
+	{
+		int32_t diff = SequenceNumberDifference(in_seq, mRecvSequence);
+		if (diff > 0)
+		{
+			// if diff > 1, there is a gap in received sequence numbers and
+			// indicates incoming packets have been lost 
+			for (int32_t i = 1; i < diff; i++)
+				mConnectionStats.incomingPacketLost();
+
+			// Record the received sequence number and update the bitfield that
+			// stores acknowledgement for the N previously received sequence numbers.
+
+			// shift the window of received sequence numbers to make room
+			mRecvHistory <<= diff;
+			// add the previous sequence received
+			mRecvHistory.set(diff - 1);
+		}
+		else
+		{
+			// drop out-of-order packets
+			Net_Warning("dropping out-of-order datagram from host %s " \
+					"(current sequence %u, previous sequence %u).",
+					getRemoteAddress().getCString(), in_seq.getInteger(), mRecvSequence.getInteger());
+			stream.clear();
+			return;
+		}
+	}
+
+	mConnectionStats.incomingPacketReceived(stream.bitsWritten());
+	mRecvSequence = in_seq;
+
+	if (mLastAckSequenceValid)
+	{
+		// sanity check (acknowledging a datagram we haven't sent yet?!?!)
+		if (ack_seq >= mSequence)
+		{
+			Net_Warning("remote host %s acknowledges an unknown datagram.", getRemoteAddress().getCString());
+			return;
+		}
+
+		// sanity check (out of order acknowledgement)
+		if (ack_seq < mLastAckSequence)
+		{
+			Net_Warning("out-of-order datagram acknowledgement from remote host %s.", getRemoteAddress().getCString());
+			return;
+		}
+
+		for (PacketSequenceNumber seq = mLastAckSequence + 1; seq <= ack_seq; ++seq)
+		{
+			if (seq < ack_seq - ACKNOWLEDGEMENT_COUNT)
+			{
+				// seq is too old to fit in the ack_history window
+				// consider it lost
+				remoteHostLostPacket(seq.getInteger());
+			}
+			else if (seq == ack_seq)
+			{
+				// seq is the most recent acknowledgement in the header
+				remoteHostReceivedPacket(seq.getInteger());
+			}
+			else
+			{
+				// seq's delivery status is indicated by a bit in the
+				// ack_history bitfield
+				int32_t bit = SequenceNumberDifference(ack_seq, seq - 1);
+				if (ack_history.get(bit))
+					remoteHostReceivedPacket(seq.getInteger());
+				else
+					remoteHostLostPacket(seq.getInteger());
+			}
+		}
+	}
+
+	mLastAckSequence = ack_seq;
+}
+
+
+//
+// Odamex100Connection::composeDatagramHeader
+//
+// Writes the header portion of a new datagram. The type of the datagram is
+// written first, followed by the outgoing sequence number and then the
+// acknowledgement of receipt for recent datagrams.
+//
+void Odamex100Connection::composeDatagramHeader(BitStream& stream)
+{
+	Net_LogPrintf(LogChan_Connection, "writing datagram header to host %s, sequence %u.",
+				getRemoteAddress().getCString(), mSequence.getInteger());
+
+	stream.writeBit(GAME_PACKET);
+	mSequence.write(stream);
+	mRecvSequence.write(stream);
+	mRecvHistory.write(stream);
+
+	++mSequence;
+}
+
+
+//
+// Odamex100Connection::composeDatagramFooter
+//
+void Odamex100Connection::composeDatagramFooter(BitStream& stream)
+{
+	// calculate CRC32 for the packet header & payload
+	uint32_t crcvalue = Net_CRC32(stream.getRawData(), stream.bytesWritten());
+
+	// write the calculated CRC32 value to the buffer
+	stream.writeU32(crcvalue);
+}
+
+
+//
+// Odamex100Connection::validateDatagram
+//
+// Validates that the datagram's CRC32 is correct. This implies that the datagram
+// did not get corrupted during transit.
+//
+bool Odamex100Connection::validateDatagram(const BitStream& stream) const
+{
+	// verify that the packet header indicates that this is a game packet
+	PacketType type = static_cast<PacketType>(stream.peekBit());
+	if (type != GAME_PACKET)
+		return false;
+
+	// verify the calculated CRC32 value matches the value in the datagram
+	uint32_t crcvalue = Net_CRC32(stream.getRawData(), stream.bytesWritten() - sizeof(uint32_t));
+	BitStream footer;
+	footer.writeBlob(stream.getRawData() + stream.bytesWritten() - sizeof(uint32_t), sizeof(uint32_t));
+	return crcvalue != footer.readU32();
+}
+
+
+// ============================================================================
+//
+// ConnectionHandshake abstract base class implementation
+//
+// ============================================================================
+
+//
+// ConnectionHandshake::ConnectionHandshake
+//
+ConnectionHandshake::ConnectionHandshake(Connection* connection) :
+	Handshake(connection),
+	mState(CONN_FAILED),
+	mTimeOutTS(Net_CurrentTime() + NEGOTIATION_TIMEOUT)
+{
+	if (mConnection->getInterface()->getHostType() == HOST_CLIENT)
+		mState = CONN_REQUESTING;
+	else if (mConnection->getInterface()->getHostType() == HOST_SERVER)
+		mState = CONN_LISTENING;
+}
+
+
+//
+// ConnectionHandshake::service
+//
+// Progresses through the handshake FSM.
+//
+void ConnectionHandshake::service()
+{
+	if (Net_CurrentTime() >= mTimeOutTS)
+	{
+		Net_LogPrintf(LogChan_Connection, "timeout while connecting to host %s.",
+					mConnection->getRemoteAddress().getCString());
+		mState = CONN_FAILED;
+	}
+
+	if (mState == CONN_FAILED)
+		return;
+
+	if (mConnection->getInterface()->getHostType() == HOST_CLIENT)
+	{
+		if (mState == CONN_REQUESTING)
+		{
+			// Request a new connection from a remote server
+			if (handleRequestingState())
+				mState = CONN_AWAITING_OFFER;
+			else
+				mState = CONN_FAILED;
+		}
+		if (mState == CONN_AWAITING_OFFER)
+		{
+			// Wait for an offer from a remote server
+			if (mStream.bitsWritten() > 0)
+				mState = CONN_REVIEWING_OFFER;
+		}
+		if (mState == CONN_REVIEWING_OFFER)
+		{
+			// Parse the offer from the remote server
+			if (handleReviewingOfferState())
+				mState = CONN_ACCEPTING_OFFER;
+			else
+				mState = CONN_FAILED;
+			mStream.clear();
+		}
+		if (mState == CONN_ACCEPTING_OFFER)
+		{
+			// Accept the connection offer from the remote server
+			if (handleAcceptingOfferState())
+				mState = CONN_AWAITING_CONFIRMATION;
+			else
+				mState = CONN_FAILED;
+		}
+		if (mState == CONN_AWAITING_CONFIRMATION)
+		{
+			// Wait for confirmation of the connection from the remote server
+			if (mStream.bitsWritten() > 0)
+				mState = CONN_REVIEWING_CONFIRMATION;
+		}
+		if (mState == CONN_REVIEWING_CONFIRMATION)
+		{
+			// parse packet
+			if (handleReviewingConfirmationState())
+			{
+				Net_LogPrintf(LogChan_Connection, "negotiation with host %s successful.",
+						mConnection->getRemoteAddress().getCString());
+				mState = CONN_CONNECTED;
+			}
+			else
+				mState = CONN_FAILED;
+			mStream.clear();
+		}
+	}
+	else if (mConnection->getInterface()->getHostType() == HOST_SERVER)
+	{
+		if (mState == CONN_LISTENING)
+		{
+			if (mStream.bitsWritten() > 0)
+				mState = CONN_REVIEWING_REQUEST;
+		}
+		if (mState == CONN_REVIEWING_REQUEST)
+		{
+			if (handleReviewingRequestState())
+				mState = CONN_OFFERING;
+			else
+				mState = CONN_FAILED;
+			mStream.clear();
+		}
+		if (mState == CONN_OFFERING)
+		{
+			if (handleOfferingState())
+				mState = CONN_AWAITING_ACCEPTANCE;
+			else
+				mState = CONN_FAILED;
+		}
+		if (mState == CONN_AWAITING_ACCEPTANCE)
+		{
+			if (mStream.bitsWritten() > 0)
+				mState = CONN_REVIEWING_ACCEPTANCE;
+		}
+		if (mState == CONN_REVIEWING_ACCEPTANCE)
+		{
+			if (handleReviewingAcceptanceState())
+				mState = CONN_CONFIRMING;
+			else
+				mState = CONN_FAILED;
+			mStream.clear();
+		}
+		if (mState == CONN_CONFIRMING)
+		{
+			if (handleConfirmingState())
+			{
+				Net_LogPrintf(LogChan_Connection, "negotiation with host %s successful.",
+						mConnection->getRemoteAddress().getCString());
+				mState = CONN_CONNECTED;
+			}
+			else
+				mState = CONN_FAILED;
+		}
+	}
+}
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 65 connection handshake
+//
+// ============================================================================
+
+//
+// Odamex65ConnectionHandshake::handleRequestingState
+//
+bool Odamex65ConnectionHandshake::handleRequestingState()
+{
+	Net_LogPrintf(LogChan_Connection, "sending connection request datagram to host %s.",
+			mConnection->getRemoteAddress().getCString());
+
+	BitStream stream;
+	stream.writeU32(SIGNAL_LAUNCHER_CHALLENGE);
+	mConnection->sendDatagram(stream);
+	return true;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleReviewingOfferState
+//
+bool Odamex65ConnectionHandshake::handleReviewingOfferState()
+{
+	Net_LogPrintf(LogChan_Connection, "processing connection offer datagram from host %s.",
+			mConnection->getRemoteAddress().getCString());
+ 
+	if (mStream.readU32() == SIGNAL_CHALLENGE)
+	{
+		mToken = mStream.readU32();
+		return CL_PrepareConnect(mStream);
+	}
+	return false;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleAcceptingOfferState
+//
+bool Odamex65ConnectionHandshake::handleAcceptingOfferState()
+{
+	Net_LogPrintf(LogChan_Connection, "sending connection acceptance datagram to host %s.",
+				mConnection->getRemoteAddress().getCString());
+
+	BitStream stream;
+	stream.writeU32(SIGNAL_CHALLENGE);
+	stream.writeU32(mToken);			
+
+	if (CL_TryToConnect(stream))
+	{
+		mConnection->sendDatagram(stream);
+		return true;
+	}
+	return false;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleReviewingConfirmationState
+//
+bool Odamex65ConnectionHandshake::handleReviewingConfirmationState()
+{
+	Net_LogPrintf(LogChan_Connection, "processing connection confirmation datagram from host %s.",
+			mConnection->getRemoteAddress().getCString());
+
+	if (mStream.readU32() == 0)
+		return true;
+	return false;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleReviewingRequestState
+//
+bool Odamex65ConnectionHandshake::handleReviewingRequestState()
+{
+	return false;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleOfferingState
+//
+bool Odamex65ConnectionHandshake::handleOfferingState()
+{
+	return false;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleReviewingAcceptanceState
+//
+bool Odamex65ConnectionHandshake::handleReviewingAcceptanceState()
+{
+	return false;
+}
+
+
+//
+// Odamex65ConnectionHandshake::handleConfirmingState
+//
+bool Odamex65ConnectionHandshake::handleConfirmingState()
+{
+	return false;
+}
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 100 connection handshake
+//
+// ============================================================================
+
+//
+// Odamex100ConnectionHandshake::handleRequestingState
+//
+bool Odamex100ConnectionHandshake::handleRequestingState()
+{
+	Net_LogPrintf(LogChan_Connection, "sending connection request datagram to host %s.",
+			mConnection->getRemoteAddress().getCString());
+
+	BitStream stream;
+	stream.writeBit(Odamex100Connection::NEGOTIATION_PACKET);
+	stream.writeU32(SIGNAL_CONNECTION_SEQUENCE);
+	stream.writeU32(SIGNAL_GAME_CHALLENGE);
+	stream.writeU8(GAMEVER);
+	mConnection->sendDatagram(stream);
+	return true;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleReviewingOfferState
+//
+bool Odamex100ConnectionHandshake::handleReviewingOfferState()
+{
+	Net_LogPrintf(LogChan_Connection, "processing connection offer datagram from host %s.",
+			mConnection->getRemoteAddress().getCString());
+ 
+	mToken = mStream.readU32();
+
+	// TODO: process the server's list of supported compression types. select
+	// one and record it so it can be sent in the clientAccept packet.
+	//
+	// BitField<3> compression_availible;
+	// compression_availible.read(stream);
+
+	// TODO: process the server's list of supported credential types. select
+	// one and record it so it can be sent in the clientAccept packet along
+	// with the relevant credential info.
+	//
+	// BitField<3> credential_type;
+	// credential_availible.write(stream);
+
+	return true;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleAcceptingOfferState
+//
+bool Odamex100ConnectionHandshake::handleAcceptingOfferState()
+{
+	Net_LogPrintf(LogChan_Connection, "sending connection acceptance datagram to host %s.",
+				mConnection->getRemoteAddress().getCString());
+
+	BitStream stream;
+	stream.writeBit(Odamex100Connection::NEGOTIATION_PACKET);
+	stream.writeU32(mToken);			
+	mConnection->sendDatagram(stream);
+	return true;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleReviewingConfirmationState
+//
+bool Odamex100ConnectionHandshake::handleReviewingConfirmationState()
+{
+	Net_LogPrintf(LogChan_Connection, "processing connection confirmation datagram from host %s.",
+			mConnection->getRemoteAddress().getCString());
+
+	if (mStream.readU32() == 0)
+		return true;
+	return false;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleReviewingRequestState
+//
+bool Odamex100ConnectionHandshake::handleReviewingRequestState()
+{
+	return false;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleOfferingState
+//
+bool Odamex100ConnectionHandshake::handleOfferingState()
+{
+	return false;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleReviewingAcceptanceState
+//
+bool Odamex100ConnectionHandshake::handleReviewingAcceptanceState()
+{
+	return false;
+}
+
+
+//
+// Odamex100ConnectionHandshake::handleConfirmingState
+//
+bool Odamex100ConnectionHandshake::handleConfirmingState()
+{
+	return false;
+}
+
+
+// ============================================================================
+//
+// DisconnectionHandshake abstract base class implementation
+//
+// ============================================================================
+
+void DisconnectionHandshake::service()
+{
+	if (!mSentNotification)
+	{
+		if (handleDisconnectingState())
+			mSentNotification = true;
+	}
+}
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 65 disconnection handshake
+//
+// ============================================================================
+
+bool Odamex65DisconnectionHandshake::handleDisconnectingState()
+{
+	Net_LogPrintf(LogChan_Connection, "sending disconnection notification datagram to host %s.",
+			mConnection->getRemoteAddress().getCString());
+
+	BitStream stream;
+
+	if (mConnection->getInterface()->getHostType() == HOST_CLIENT)
+	{
+		// The client does not send a sequence number with Version 65 protocol.
+
+		stream.writeU8(clc_disconnect);
+	}
+	else if (mConnection->getInterface()->getHostType() == HOST_SERVER)
+	{
+		// Only the server sends a sequence number with Version 65 protocol.
+		// Fake a sequence number. Use 0xFFFFFFFF to ensure that this won't get dropped as
+		// an out-of-sequence datagram.
+		stream.writeU32(0xFFFFFFFF);
+
+		stream.writeU8(svc_disconnect);
+	}
+
+	mConnection->sendDatagram(stream);
+	return true;
+}
+
+
+// ============================================================================
+//
+// Odamex Protocol Version 100 disconnection handshake
+//
+// ============================================================================
+
+bool Odamex100DisconnectionHandshake::handleDisconnectingState()
+{
+	Net_LogPrintf(LogChan_Connection, "sending disconnection notification datagram to host %s.",
+			mConnection->getRemoteAddress().getCString());
+
+	BitStream stream;
+	stream.writeBit(Odamex100Connection::NEGOTIATION_PACKET);
+	stream.writeU32(TERMINATION_SIGNAL);
+	mConnection->sendDatagram(stream);
+	return true;
 }
