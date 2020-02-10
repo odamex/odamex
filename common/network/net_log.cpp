@@ -26,6 +26,7 @@
 #include <stdarg.h>
 #include <vector>
 #include <algorithm>
+#include <ctime>
 
 #include "i_system.h"
 #include "c_dispatch.h"
@@ -301,8 +302,13 @@ void Net_LogPrintf2(const OString& channel_name, const char* func_name, const ch
 		const size_t bufsize = 4096;
 		char output[bufsize];
 
+		// generate a date time string
+		char timebuf[20];
+		std::time_t t = std::time(NULL);
+		std::strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", std::gmtime(&t));
+
 		// prepend the channel name & name of the calling function to the output
-		sprintf(output, "[%s] %s: ", channel_name.c_str(), func_name);	
+		sprintf(output, "%s [%s] %s: ", timebuf, channel_name.c_str(), func_name);
 
 		va_list args;
 		va_start(args, str);
