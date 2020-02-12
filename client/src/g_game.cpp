@@ -154,9 +154,6 @@ EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
-EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
-EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
-EXTERN_CVAR (m_filter)
 EXTERN_CVAR (hud_mousegraph)
 EXTERN_CVAR (cl_predictpickup)
 
@@ -205,8 +202,6 @@ EXTERN_CVAR (cl_run)
 EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (m_yaw)
 EXTERN_CVAR (m_forward)
@@ -574,17 +569,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 }
 
 
-// [RH] Spy mode has been separated into two console commands.
-//		One goes forward; the other goes backward.
-// denis - todo - should this be used somewhere?
-/*static void ChangeSpy (void)
-{
-	consoleplayer().camera = players[displayplayer].mo;
-	S_UpdateSounds(consoleplayer().camera);
-	ST_Start();		// killough 3/7/98: switch status bar views too
-}*/
-
-
 void G_ConvertMouseSettings(int old_type, int new_type)
 {
 	if (old_type == new_type)
@@ -627,41 +611,8 @@ float G_ZDoomDIMouseScaleY(float y)
 
 void G_ProcessMouseMovementEvent(const event_t *ev)
 {
-	static float fprevx = 0.0f, fprevy = 0.0f;
 	float fmousex = (float)ev->data2;
 	float fmousey = (float)ev->data3;
-
-	if (mouse_acceleration > 0.0f)
-	{
-		// denis - from chocolate doom
-		//
-		// Mouse acceleration
-		//
-		// This emulates some of the behavior of DOS mouse drivers by increasing
-		// the speed when the mouse is moved fast.
-		//
-		// The mouse input values are input directly to the game, but when
-		// the values exceed the value of mouse_threshold, they are multiplied
-		// by mouse_acceleration to increase the speed.
-		if (fmousex > mouse_threshold)
-			fmousex = (fmousex - mouse_threshold) * mouse_acceleration + mouse_threshold;
-		else if (fmousex < -mouse_threshold)
-			fmousex = (fmousex + mouse_threshold) * mouse_acceleration - mouse_threshold;
-		if (fmousey > mouse_threshold)
-			fmousey = (fmousey - mouse_threshold) * mouse_acceleration + mouse_threshold;
-		else if (fmousey < -mouse_threshold)
-			fmousey = (fmousey + mouse_threshold) * mouse_acceleration - mouse_threshold;
-	}
-
-	if (m_filter)
-	{
-		// smooth out the mouse input
-		fmousex = (fmousex + fprevx) / 2.0f;
-		fmousey = (fmousey + fprevy) / 2.0f;
-	}
-
-	fprevx = fmousex;
-	fprevy = fmousey;
 
 	if (mouse_type == MOUSE_ZDOOM_DI)
 	{
@@ -672,20 +623,6 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	{
 		fmousex = G_DoomMouseScaleX(fmousex);
 		fmousey = G_DoomMouseScaleY(fmousey);
-	}
-
-	if (dynres_state)
-	{
-		// add some funky exponential sensitivity
-		if (fmousex < 0.0f)
-			fmousex = -pow(-fmousex, dynresval);
-		else
-			fmousex = pow(fmousex, dynresval);
-
-		if (fmousey < 0.0f)
-			fmousey = -pow(-fmousey, dynresval);
-		else
-			fmousey = pow(fmousey, dynresval);
 	}
 
 	mousex = (int)fmousex;

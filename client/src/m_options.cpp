@@ -122,8 +122,6 @@ EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
 
 // [Ralphis - Menu] Sound Menu
 EXTERN_CVAR (snd_musicsystem)
@@ -423,9 +421,6 @@ static menuitem_t MouseItems[] =
 	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
 	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ slider,	"Mouse Acceleration"			, {&mouse_acceleration},{0.0},	{10.0},		{0.5},		{NULL}},
-	{ slider,	"Mouse Threshold"				, {&mouse_threshold},	{0.0},	{20.0},		{1.0},		{NULL}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
 
@@ -436,22 +431,14 @@ static void M_UpdateMouseOptions()
 	const static size_t menu_length = STACKARRAY_LENGTH(MouseItems);
 	const static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems, menu_length);
 	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length);
-	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
-	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
 
 	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
 	static menuitem_t doom_pitch_menuitem = MouseItems[mouse_pitch_index];
-	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
-	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
 
 	static menuitem_t zdoom_sens_menuitem =
 		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},		{2.5},		{0.1},		{NULL}};
 	static menuitem_t zdoom_pitch_menuitem =
 		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},		{2.5},		{0.1},		{NULL}};
-	static menuitem_t zdoom_accel_menuitem =
-		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
-	static menuitem_t zdoom_thresh_menuitem =
-		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
 
 	if (mouse_type == MOUSE_ZDOOM_DI)
 	{
@@ -459,10 +446,6 @@ static void M_UpdateMouseOptions()
 			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
 		if (mouse_pitch_index < menu_length)
 			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
-		if (mouse_accel_index < menu_length)
-			memcpy(&MouseItems[mouse_accel_index], &zdoom_accel_menuitem, sizeof(menuitem_t));
-		if (mouse_thresh_index < menu_length)
-			memcpy(&MouseItems[mouse_thresh_index], &zdoom_thresh_menuitem, sizeof(menuitem_t));
 	}
 	else
 	{
@@ -470,10 +453,6 @@ static void M_UpdateMouseOptions()
 			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
 		if (mouse_pitch_index < menu_length)
 			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
-		if (mouse_accel_index < menu_length)
-			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
-		if (mouse_thresh_index < menu_length)
-			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
 	}
 
 	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
@@ -491,8 +470,6 @@ void M_ResetMouseValues()
 	novert.RestoreDefault();
 	m_side.RestoreDefault();
 	m_forward.RestoreDefault();
-	mouse_acceleration.RestoreDefault();
-	mouse_threshold.RestoreDefault();
 
 	previous_mouse_type = mouse_type;
 	M_UpdateMouseOptions();
