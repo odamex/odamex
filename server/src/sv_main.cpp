@@ -3438,7 +3438,9 @@ int SV_CalculateNumTiccmds(player_t &player)
 //
 void SV_ProcessPlayerCmd(player_t &player)
 {
-	static const int maxcmdmove = 12800;
+	const int max_forward_move = 50 << 8;
+	const int max_sr40_side_move = 40 << 8;
+	const int max_sr50_side_move = 50 << 8;
 
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -3459,9 +3461,17 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// Set the latency amount for Unlagging
 		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
 
-		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > maxcmdmove) ||
-			(netcmd->hasSideMove() && abs(netcmd->getSideMove()) > maxcmdmove))
+		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > max_forward_move) ||
+		    (netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr50_side_move))
 		{
+			SV_PlayerTriedToCheat(player);
+			return;
+		}
+ 
+		if ((netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr40_side_move) &&
+		    (player.mo && player.mo->prevangle != netcmd->getAngle()))
+		{
+			// verify SR50 isn't combined with yaw
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
