@@ -190,10 +190,9 @@ wbstartstruct_t wminfo; 				// parms for world map / intermission
 
 #define TURBOTHRESHOLD	12800
 
-float	 		normforwardmove[2] = {0x19, 0x32};		// [RH] For setting turbo from console
-float	 		normsidemove[2] = {0x18, 0x28};			// [RH] Ditto
+fixed_t	 		forwardmove[2] = {0x19, 0x32};
+fixed_t	 		sidemove[2] = {0x18, 0x28};
 
-fixed_t			forwardmove[2], sidemove[2];
 fixed_t 		angleturn[3] = {640, 1280, 320};		// + slow turn
 fixed_t			flyspeed[2] = {1*256, 3*256};
 int				lookspeed[2] = {450, 512};
@@ -257,16 +256,6 @@ player_t		&listenplayer()
 
 // [RH] Name of screenshot file to generate (usually NULL)
 std::string		shotfile;
-
-// [Fly] don't allow to change turbo in csDoom
-void G_SetDefaultTurbo (void)
-{
-	forwardmove[0] = (int)(normforwardmove[0]);
-	forwardmove[1] = (int)(normforwardmove[1]);
-	sidemove[0] = (int)(normsidemove[0]);
-	sidemove[1] = (int)(normsidemove[1]);
-}
-
 
 /* [RH] Impulses: Temporary hack to get weapon changing
  * working with keybindings until I can get the

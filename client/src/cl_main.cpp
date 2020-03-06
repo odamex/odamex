@@ -308,7 +308,6 @@ void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
@@ -1816,8 +1815,6 @@ void CL_InitNetwork (void)
 			gamestate = GS_CONNECTING;
 		}
     }
-
-	G_SetDefaultTurbo ();
 
     connected = false;
 }
