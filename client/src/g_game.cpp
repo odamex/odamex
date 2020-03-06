@@ -438,17 +438,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
-	{
 		side += sidemove[speed];
-		if (strafe) // Two-key strafe50
-			side += sidemove[speed];
-	}
 	if (Actions[ACTION_MOVELEFT])
-	{
 		side -= sidemove[speed];
-		if (strafe) // Two-key strafe50
-			side -= sidemove[speed];
-	}
 
 	// buttons
 	// john - only add attack when console up
