@@ -429,7 +429,8 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	G_CleanupDemo();	// Cleanup in case of a vanilla demo
+	if (demorecording)
+		G_CleanupDemo();	// Cleanup in case of a vanilla demo
 
 	demoplayback = false;
 
