@@ -398,38 +398,6 @@ void xbox_CloseNetwork()
 }
 
 //
-// xbox_SetScreenPosition
-//
-int xbox_SetScreenPosition(float x, float y)
-{
-	float x2, y2;
-
-	SDL_XBOX_SetScreenPosition(x, y);
-	SDL_XBOX_GetScreenPosition(&x2, &y2);
-
-	if(x != x2 || y != y2)
-		return -1;
-
-	return 0;
-}
-
-//
-// xbox_SetScreenStretch
-//
-int xbox_SetScreenStretch(float xs, float ys)
-{
-	float xs2, ys2;
-
-	SDL_XBOX_SetScreenStretch(xs, ys);
-	SDL_XBOX_GetScreenStretch(&xs2, &ys2);
-
-	if(xs != xs2 || ys != ys2)
-		return -1;
-
-	return 0;
-}
-
-//
 // xbox_WriteSaveMeta
 //
 void xbox_WriteSaveMeta(string path, string text)
