@@ -411,20 +411,8 @@ CVAR(			invertmouse, "0", "Invert vertical mouse movement",
 CVAR(			lookstrafe, "0", "Strafe with mouse",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		mouse_acceleration, "0", "",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
-
-CVAR_RANGE(		mouse_threshold, "0", "",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
-
 CVAR(			m_filter, "0", "Smooth mouse input",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-CVAR(			dynres_state, "0", "",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-CVAR_RANGE(		dynresval, "1.0", "",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR(			hud_mousegraph, "0", "Display mouse values",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
