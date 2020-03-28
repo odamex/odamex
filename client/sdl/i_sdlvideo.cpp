@@ -1024,7 +1024,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	// [jsd] set the user's preferred render scaling hint if non-empty:
 	// acceptable values are [("0" or "nearest"), ("1" or "linear"), ("2" or "best")].
 	bool quality_set = false;
-	if (render_scale_quality != nullptr && render_scale_quality[0] != '\0') {
+	if (render_scale_quality != NULL && render_scale_quality[0] != '\0') {
 		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, render_scale_quality) == SDL_TRUE) {
 			quality_set = true;
 		}

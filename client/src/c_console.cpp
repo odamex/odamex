@@ -48,6 +48,12 @@
 #include <list>
 #include <algorithm>
 
+// These functions are standardized in C++11, POSIX standard otherwise
+#if defined(_WIN32) && (__cplusplus <= 199711L)
+#	define vsnprintf _vsnprintf
+#	define snprintf  _snprintf
+#endif
+
 static const int MAX_LINE_LENGTH = 8192;
 
 std::string DownloadStr;
