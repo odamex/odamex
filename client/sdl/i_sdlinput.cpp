@@ -31,6 +31,9 @@
 #include <queue>
 #include <cassert>
 
+static const int MAX_SDL_EVENTS_PER_TIC = 8192;
+
+
 //
 // convUTF8ToUTF32
 // 
@@ -230,6 +233,12 @@ static KeyTranslationTable I_BuildSDLKeyTranslationTable()
 	return key_table;
 }
 
+
+// ============================================================================
+//
+// SDL 1.x Implementation
+//
+// ============================================================================
 
 #ifdef SDL12
 
@@ -557,14 +566,13 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 	// process only mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
 
-	// Retrieve chunks of up to 1024 events from SDL
+	// Retrieve events from SDL
 	int num_events = 0;
-	const int max_events = 1024;
-	SDL_Event sdl_events[max_events];
+	SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
 	bool quit_event = false;
 
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_KEYEVENTMASK)))
+	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_KEYEVENTMASK)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
@@ -679,13 +687,11 @@ void ISDL12MouseInputDevice::center()
 		// re-insert any mouse events that were not inserted by SDL_WarpMouse.
 		SDL_PumpEvents();
 
-		// Retrieve chunks of up to 1024 events from SDL
-		const int max_events = 1024;
+		// Retrieve events from SDL
 		int num_events = 0;
-		SDL_Event sdl_events[max_events];
+		SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
-		num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
-		assert(num_events < max_events);
+		num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEMOTIONMASK);
 		for (int i = 0; i < num_events; i++)
 		{
 			SDL_Event& sdl_ev = sdl_events[i];
@@ -777,12 +783,11 @@ void ISDL12MouseInputDevice::gatherEvents()
 		// process only mouse events, SDL_PumpEvents is necessary.
 		SDL_PumpEvents();
 
-		// Retrieve chunks of up to 1024 events from SDL
+		// Retrieve events from SDL
 		int num_events = 0;
-		const int max_events = 1024;
-		SDL_Event sdl_events[max_events];
+		SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
-		while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEEVENTMASK)))
+		while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEEVENTMASK)))
 		{
 			// insert the SDL_Events into our queue
 			for (int i = 0; i < num_events; i++)
@@ -982,12 +987,11 @@ void ISDL12JoystickInputDevice::gatherEvents()
 	// process only mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
 
-	// Retrieve chunks of up to 1024 events from SDL
+	// Retrieve events from SDL
 	int num_events = 0;
-	const int max_events = 1024;
-	SDL_Event sdl_events[max_events];
+	SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_JOYEVENTMASK)))
+	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_JOYEVENTMASK)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
@@ -1377,6 +1381,13 @@ void ISDL12InputSubsystem::releaseInput()
 
 #endif	// SDL12
 
+
+// ============================================================================
+//
+// SDL 2.x Implementation
+//
+// ============================================================================
+
 #ifdef SDL20
 
 // ============================================================================
@@ -1665,56 +1676,6 @@ bool ISDL20MouseInputDevice::active() const
 
 
 //
-// ISDL20MouseInputDevice::center
-//
-// Moves the mouse to the center of the screen to prevent absolute position
-// methods from causing problems when the mouse is near the screen edges.
-//
-void ISDL20MouseInputDevice::center()
-{
-	if (active())
-	{
-		const int centerx = I_GetVideoWidth() / 2, centery = I_GetVideoHeight() / 2;
-		int prevx, prevy;
-
-		// get the x and y mouse position prior to centering it
-		SDL_GetMouseState(&prevx, &prevy);
-
-		// warp the mouse to the center of the screen
-		// TODO: replace NULL parameter with an SDL_Window*
-		SDL_WarpMouseInWindow(NULL, centerx, centery);
-
-		// SDL_WarpMouse inserts a mouse event to warp the cursor to the center of the screen.
-		// Filter out this mouse event by reading all of the mouse events in SDL'S queue and
-		// re-insert any mouse events that were not inserted by SDL_WarpMouse.
-		SDL_PumpEvents();
-
-		// Retrieve chunks of up to 1024 events from SDL
-		const int max_events = 1024;
-		int num_events = 0;
-		SDL_Event sdl_events[max_events];
-
-		num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION);
-		assert(num_events < max_events);
-		for (int i = 0; i < num_events; i++)
-		{
-			SDL_Event& sdl_ev = sdl_events[i];
-			assert(sdl_ev.type == SDL_MOUSEMOTION);
-
-			// drop the events caused by SDL_WarpMouse
-			if (sdl_ev.motion.x == centerx && sdl_ev.motion.y == centery && 
-				sdl_ev.motion.xrel == centerx - prevx && sdl_ev.motion.yrel == centery - prevy)
-				continue;
-
-			// this event is not the event caused by SDL_WarpMouse so add it back
-			// to the event queue
-			SDL_PushEvent(&sdl_ev);
-		}
-	}
-}
-
-
-//
 // ISDL20MouseInputDevice::flushEvents
 //
 void ISDL20MouseInputDevice::flushEvents()
@@ -1731,7 +1692,6 @@ void ISDL20MouseInputDevice::flushEvents()
 void ISDL20MouseInputDevice::reset()
 {
 	flushEvents();
-	center();
 }
 
 
@@ -1769,6 +1729,7 @@ void ISDL20MouseInputDevice::resume()
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 
@@ -1787,12 +1748,11 @@ void ISDL20MouseInputDevice::gatherEvents()
 		// process only mouse events, SDL_PumpEvents is necessary.
 		SDL_PumpEvents();
 
-		// Retrieve chunks of up to 1024 events from SDL
+		// Retrieve events from SDL
 		int num_events = 0;
-		const int max_events = 1024;
-		SDL_Event sdl_events[max_events];
+		SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
-		while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEWHEEL)))
+		while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEWHEEL)))
 		{
 			// insert the SDL_Events into our queue
 			for (int i = 0; i < num_events; i++)
@@ -1843,8 +1803,6 @@ void ISDL20MouseInputDevice::gatherEvents()
 				mEvents.push(ev);
 			}
 		}
-
-		center();
 	}
 }
 
@@ -1999,12 +1957,11 @@ void ISDL20JoystickInputDevice::gatherEvents()
 	// process only mouse events, SDL_PumpEvents is necessary.
 	SDL_PumpEvents();
 
-	// Retrieve chunks of up to 1024 events from SDL
+	// Retrieve events from SDL
 	int num_events = 0;
-	const int max_events = 1024;
-	SDL_Event sdl_events[max_events];
+	SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
-	while ((num_events = SDL_PeepEvents(sdl_events, max_events, SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYBUTTONUP)))
+	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYBUTTONUP)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{

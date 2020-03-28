@@ -272,8 +272,6 @@ public:
 	virtual void flushEvents();
 
 private:
-	void center();
-
 	bool			mActive;
 
 	typedef std::queue<event_t> EventQueue;
