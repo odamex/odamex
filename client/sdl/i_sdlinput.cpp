@@ -1741,67 +1741,76 @@ void ISDL20MouseInputDevice::resume()
 //
 void ISDL20MouseInputDevice::gatherEvents()
 {
-	if (active())
+	if (!active())
+		return;
+
+	// Force SDL to gather events from input devices. This is called
+	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
+	// process only mouse events, SDL_PumpEvents is necessary.
+	int num_events;
+	SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
+	SDL_PumpEvents();
+
+	// Retrieve mouse movement events from SDL
+	// [SL] accumulate the total mouse movement over all events polled
+	// and post one aggregate mouse movement event to Doom's event queue
+	// after all are polled.
+	event_t movement_event;
+	movement_event.type = ev_mouse;
+	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
+
+	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION)))
 	{
-		// Force SDL to gather events from input devices. This is called
-		// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
-		// process only mouse events, SDL_PumpEvents is necessary.
-		SDL_PumpEvents();
-
-		// Retrieve events from SDL
-		int num_events = 0;
-		SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
-
-		while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEWHEEL)))
+		for (int i = 0; i < num_events; i++)
 		{
-			// insert the SDL_Events into our queue
-			for (int i = 0; i < num_events; i++)
+			const SDL_Event& sdl_ev = sdl_events[i];
+			movement_event.data2 += sdl_ev.motion.xrel;
+			movement_event.data3 -= sdl_ev.motion.yrel;
+		}
+	}
+
+	if (movement_event.data2 || movement_event.data3)
+		mEvents.push(movement_event);
+
+	// Retrieve mouse button and wheel events from SDL and post
+	// as separate events to Doom's event queue.
+	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEBUTTONDOWN, SDL_MOUSEWHEEL)))
+	{
+		for (int i = 0; i < num_events; i++)
+		{
+			event_t ev;
+			ev.data1 = ev.data2 = ev.data3 = 0;
+
+			const SDL_Event& sdl_ev = sdl_events[i];
+
+			if (sdl_ev.type == SDL_MOUSEWHEEL)
 			{
-				const SDL_Event& sdl_ev = sdl_events[i];
-				assert(sdl_ev.type == SDL_MOUSEMOTION || sdl_ev.type == SDL_MOUSEWHEEL ||
-						sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
+				ev.type = ev_keydown;
+				int direction = 1;
+				#if (SDL_VERSION >= SDL_VERSIONNUM(2, 0, 4))
+				if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+					direction = -1;
+				#endif
 
-				event_t ev;
-				ev.data1 = ev.data2 = ev.data3 = 0;
-
-				if (sdl_ev.type == SDL_MOUSEMOTION)
-				{
-					ev.type = ev_mouse;
-					ev.data2 = sdl_ev.motion.xrel;
-					ev.data3 = -sdl_ev.motion.yrel;
-				}
-				else if (sdl_ev.type == SDL_MOUSEWHEEL)
-				{
-					ev.type = ev_keydown;
-					int direction = 1;
-					#if (SDL_VERSION >= SDL_VERSIONNUM(2, 0, 4))
-					if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
-						direction = -1;
-					#endif
-
-					// Don't add mouse wheel events other than wheel up/down
-					if (sdl_ev.wheel.y == 0)
-						continue;
-
-					ev.data1 = (direction * sdl_ev.wheel.y > 0) ? KEY_MWHEELUP : KEY_MWHEELDOWN;
-				}
-				else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
-				{
-					ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
-					if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-						ev.data1 = KEY_MOUSE1;
-					else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-						ev.data1 = KEY_MOUSE2;
-					else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-						ev.data1 = KEY_MOUSE3;
-					else if (sdl_ev.button.button == SDL_BUTTON_X1)
-						ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
-					else if (sdl_ev.button.button == SDL_BUTTON_X2)
-						ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
-				}
-
-				mEvents.push(ev);
+				ev.data1 = (direction * sdl_ev.wheel.y > 0) ? KEY_MWHEELUP : KEY_MWHEELDOWN;
 			}
+			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
+			{
+				ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
+				if (sdl_ev.button.button == SDL_BUTTON_LEFT)
+					ev.data1 = KEY_MOUSE1;
+				else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
+					ev.data1 = KEY_MOUSE2;
+				else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
+					ev.data1 = KEY_MOUSE3;
+				else if (sdl_ev.button.button == SDL_BUTTON_X1)
+					ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+				else if (sdl_ev.button.button == SDL_BUTTON_X2)
+					ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+			}
+
+			if (ev.data1)
+				mEvents.push(ev);
 		}
 	}
 }
