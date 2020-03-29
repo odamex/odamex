@@ -1792,7 +1792,10 @@ void ISDL20MouseInputDevice::gatherEvents()
 					direction = -1;
 				#endif
 
-				ev.data1 = (direction * sdl_ev.wheel.y > 0) ? KEY_MWHEELUP : KEY_MWHEELDOWN;
+				if (direction * sdl_ev.wheel.y > 0)
+					ev.data1 = KEY_MWHEELUP;
+				else if (direction * sdl_ev.wheel.y < 0)
+					ev.data1 = KEY_MWHEELDOWN;
 			}
 			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
 			{
