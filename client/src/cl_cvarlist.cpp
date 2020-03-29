@@ -390,7 +390,7 @@ CVAR_RANGE(		mouse_sensitivity, "1.0", "Overall mouse sensitivity",
 CVAR_FUNC_DECL(	cl_mouselook, "0", "Look up or down with mouse",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		m_pitch, "0.25", "Vertical mouse sensitivity",
+CVAR_RANGE(		m_pitch, "1.0", "Vertical mouse sensitivity",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR_RANGE(		m_yaw, "1.0", "",
