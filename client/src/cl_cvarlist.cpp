@@ -381,17 +381,17 @@ CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
 // Mouse settings
 // --------------
 
-CVAR_RANGE(		mouse_type, "0", "Use vanilla Doom mouse sensitivity or ZDoom mouse sensitivity",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+CVAR_FUNC_DECL(	mouse_type, "1", "Use vanilla Doom or ZDoom mouse sensitivity scaling (DEPRECATED)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		mouse_sensitivity, "35.0", "Overall mouse sensitivity",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+CVAR_RANGE(		mouse_sensitivity, "1.0", "Overall mouse sensitivity",
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR_FUNC_DECL(	cl_mouselook, "0", "Look up or down with mouse",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE(		m_pitch, "0.25", "Vertical mouse sensitivity",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR_RANGE(		m_yaw, "1.0", "",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)

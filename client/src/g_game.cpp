@@ -154,9 +154,32 @@ EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
-EXTERN_CVAR (m_filter)
+EXTERN_CVAR (cl_run)
 EXTERN_CVAR (hud_mousegraph)
 EXTERN_CVAR (cl_predictpickup)
+
+EXTERN_CVAR (mouse_sensitivity)
+EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (m_filter)
+EXTERN_CVAR (invertmouse)
+EXTERN_CVAR (lookstrafe)
+EXTERN_CVAR (m_yaw)
+EXTERN_CVAR (m_forward)
+EXTERN_CVAR (m_side)
+
+
+CVAR_FUNC_IMPL(mouse_type)
+{
+	// Convert vanilla Doom mouse sensitivity settings to ZDoom mouse sensitivity
+	if (var.asInt() == MOUSE_DOOM)
+	{
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
+		m_pitch.Set(m_pitch * 4.0f);
+	}
+	if (var.asInt() != MOUSE_ZDOOM_DI)
+		var.Set(MOUSE_ZDOOM_DI);
+}
+
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -196,16 +219,6 @@ fixed_t			flyspeed[2] = {1*256, 3*256};
 int				lookspeed[2] = {450, 512};
 
 #define SLOWTURNTICS	6
-
-EXTERN_CVAR (cl_run)
-
-EXTERN_CVAR (mouse_type)
-EXTERN_CVAR (invertmouse)
-EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (m_pitch)
-EXTERN_CVAR (m_yaw)
-EXTERN_CVAR (m_forward)
-EXTERN_CVAR (m_side)
 
 int 			turnheld;								// for accelerative turning
 
@@ -562,36 +575,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 }*/
 
 
-void G_ConvertMouseSettings(int old_type, int new_type)
-{
-	if (old_type == new_type)
-		return;
-
-	// first convert to ZDoom settings
-	if (old_type == MOUSE_DOOM)
-	{
-		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
-		m_pitch.Set(m_pitch * 4.0f);
-	}
-
-	// convert to the destination type
-	if (new_type == MOUSE_DOOM)
-	{
-		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.25f);
-	}
-}
-
-float G_DoomMouseScaleX(float x)
-{
-	return (x * (mouse_sensitivity + 5.0f) / 10.0f);
-}
-
-float G_DoomMouseScaleY(float y)
-{
-	return G_DoomMouseScaleX(y); // identical scaling for x and y
-}
-
 float G_ZDoomDIMouseScaleX(float x)
 {
 	return (x * 4.0f * mouse_sensitivity);
@@ -618,20 +601,13 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	fprevx = fmousex;
 	fprevy = fmousey;
 
-	if (mouse_type == MOUSE_ZDOOM_DI)
-	{
-		fmousex = G_ZDoomDIMouseScaleX(fmousex);
-		fmousey = G_ZDoomDIMouseScaleY(fmousey);
-	}
-	else
-	{
-		fmousex = G_DoomMouseScaleX(fmousex);
-		fmousey = G_DoomMouseScaleY(fmousey);
-	}
+	fmousex = G_ZDoomDIMouseScaleX(fmousex);
+	fmousey = G_ZDoomDIMouseScaleY(fmousey);
 
 	mousex = (int)fmousex;
 	mousey = (int)fmousey;
 }
+
 
 //
 // G_Responder

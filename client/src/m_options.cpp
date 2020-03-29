@@ -116,7 +116,6 @@ EXTERN_CVAR (co_blockmapfix)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
-EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (novert)
@@ -398,20 +397,24 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t MouseType[] = {
-	{ MOUSE_DOOM,		"Doom"},
-	{ MOUSE_ZDOOM_DI,	"ZDoom"}
-};
+void M_ResetMouseValues()
+{
+	mouse_sensitivity.RestoreDefault();
+	m_pitch.RestoreDefault();
+	cl_mouselook.RestoreDefault();
+	invertmouse.RestoreDefault();
+	lookstrafe.RestoreDefault();
+	novert.RestoreDefault();
+	m_side.RestoreDefault();
+	m_forward.RestoreDefault();
+}
 
-static int previous_mouse_type;
-void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete,	"Mouse Config Type"				, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
+	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},	{2.5},		{0.1},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},	{2.5},		{0.1},		{NULL}},
+
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
@@ -424,56 +427,6 @@ static menuitem_t MouseItems[] =
 	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
 
-void G_ConvertMouseSettings(int old_type, int new_type);
-
-static void M_UpdateMouseOptions()
-{
-	const static size_t menu_length = STACKARRAY_LENGTH(MouseItems);
-	const static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems, menu_length);
-	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length);
-
-	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
-	static menuitem_t doom_pitch_menuitem = MouseItems[mouse_pitch_index];
-
-	static menuitem_t zdoom_sens_menuitem =
-		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},		{2.5},		{0.1},		{NULL}};
-	static menuitem_t zdoom_pitch_menuitem =
-		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},		{2.5},		{0.1},		{NULL}};
-
-	if (mouse_type == MOUSE_ZDOOM_DI)
-	{
-		if (mouse_sens_index < menu_length)
-			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
-		if (mouse_pitch_index < menu_length)
-			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
-	}
-	else
-	{
-		if (mouse_sens_index < menu_length)
-			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
-		if (mouse_pitch_index < menu_length)
-			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
-	}
-
-	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
-	previous_mouse_type = mouse_type;
-}
-
-void M_ResetMouseValues()
-{
-	mouse_type.RestoreDefault();
-	mouse_sensitivity.RestoreDefault();
-	m_pitch.RestoreDefault();
-	cl_mouselook.RestoreDefault();
-	invertmouse.RestoreDefault();
-	lookstrafe.RestoreDefault();
-	novert.RestoreDefault();
-	m_side.RestoreDefault();
-	m_forward.RestoreDefault();
-
-	previous_mouse_type = mouse_type;
-	M_UpdateMouseOptions();
-}
 
 menu_t MouseMenu = {
     "M_MOUSET",
@@ -483,7 +436,7 @@ menu_t MouseMenu = {
     MouseItems,
 	0,
 	0,
-	&M_UpdateMouseOptions
+	NULL
 };
 
 
@@ -2307,8 +2260,6 @@ void ResetCustomColors (void)
 
 void MouseSetup (void) // [Toke] for mouse menu
 {
-	previous_mouse_type = mouse_type;
-	M_UpdateMouseOptions();
 	M_SwitchMenu (&MouseMenu);
 }
 
