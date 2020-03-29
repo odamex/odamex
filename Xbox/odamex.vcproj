@@ -455,9 +455,6 @@
 				RelativePath="..\client\src\m_options.cpp">
 			</File>
 			<File
-				RelativePath="..\client\src\p_effect.cpp">
-			</File>
-			<File
 				RelativePath="..\client\src\r_bsp.cpp">
 			</File>
 			<File

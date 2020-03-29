@@ -241,10 +241,6 @@ CVAR(				cl_predictpickup, "1", "Predict weapon pickups",
 CVAR_RANGE(			cl_movebob, "1.0", "Adjust weapon and movement bobbing",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(				cl_rockettrails, "0", "Rocket trails on/off (currently unused)",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-
 CVAR_RANGE_FUNC_DECL(sv_gravity, "800", "Gravity of the environment",
 					CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
 					0.0f, 32768.0f)
