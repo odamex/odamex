@@ -76,6 +76,7 @@ extern BOOL            network_game;
 
 // Game mode
 EXTERN_CVAR (sv_gametype)
+EXTERN_CVAR (sv_maxplayers)
 
 #define GM_COOP		0.0f
 #define GM_DM		1.0f
@@ -236,6 +237,12 @@ struct DehInfo
 	int Infight;
 };
 extern struct DehInfo deh;
+
+bool IsGameModeDuel();
+bool IsGameModeFFA();
+bool GameModeSupportsQueue();
+const char* GetGameModeString();
+const char* GetShortGameModeString();
 
 #endif
 

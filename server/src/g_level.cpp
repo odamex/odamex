@@ -333,42 +333,17 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	if (old_gametype != sv_gametype || sv_gametype != GM_COOP) {
+	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
-
-		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
-		for (Players::iterator it = players.begin();it != players.end();++it)
-		{
-			// [SL] 2011-07-30 - Don't force downloading players to become spectators
-			// it stops their downloading
-			if (!(it->ingame()))
-				continue;
-
-			for (Players::iterator pit = players.begin();pit != players.end();++pit)
-			{
-				if (!(pit->ingame()))
-					continue;
-				MSG_WriteMarker (&(pit->client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(pit->client.reliablebuf), it->id);
-				MSG_WriteByte (&(pit->client.reliablebuf), true);
-			}
-			it->spectator = true;
-			it->playerstate = PST_LIVE;
-
-			it->suicide_time = 0;				// Ch0wW : Disallow suicide
-			it->joinafterspectatortime = -(TICRATE * 5);
-		}
-	}
 
 	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
 	// send changed cvars
 	gamestate = GS_LEVEL;
+	if (serverside && !(level.flags & LEVEL_LOBBYSPECIAL))
+		SV_UpdatePlayerQueueLevelChange();
 	SV_ServerSettingChange();
 
-	if (paused)
-	{
-		paused = false;
-	}
+	paused = false;
 
 	// [RH] If this map doesn't exist, bomb out
 	if (W_CheckNumForName (mapname) == -1)
@@ -432,7 +407,7 @@ void G_InitNew (const char *mapname)
 			it->playerstate = PST_ENTER; // [BC]
 
 			it->suicide_time = 0;				// Ch0wW : Disallow suicide
-			it->joinafterspectatortime = -(TICRATE * 5);
+			it->joindelay = 0;
 		}
 	}
 
@@ -446,10 +421,6 @@ void G_InitNew (const char *mapname)
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
-
-	// denis - hack to fix ctfmode, as it is only known after the map is processed!
-	//if(old_ctfmode != ctfmode)
-	//	SV_ServerSettingChange();
 }
 
 //
@@ -625,7 +596,7 @@ void G_DoResetLevel(bool full_reset)
 			it->deathcount = 0;
 			it->killcount = 0;
 			it->points = 0;
-			it->joinafterspectatortime = level.time;
+			it->joindelay = 0;
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
@@ -784,7 +755,7 @@ void G_DoLoadLevel (int position)
 
 	// For single-player servers.
 	for (Players::iterator it = players.begin();it != players.end();++it)
-		it->joinafterspectatortime -= level.time;
+		it->joindelay = 0;
 
 	flagdata *tempflag;
 

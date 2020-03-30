@@ -1012,16 +1012,21 @@ END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
-	if (consoleplayer().spectator)
+	bool spectator = consoleplayer().spectator;
+
+	if (spectator)
 	{
-		// reset camera to self, do not send any messages
+		// reset camera to self
 		displayplayer_id = consoleplayer_id;
 		CL_CheckDisplayPlayer();
-		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_spectate);
-	MSG_WriteByte(&net_buffer, true);
+	// Only send message if currently not a spectator, or to remove from play queue
+	if (!spectator || consoleplayer().QueuePosition > 0)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, true);
+	}
 }
 END_COMMAND (spectate)
 
@@ -1031,11 +1036,11 @@ BEGIN_COMMAND (ready) {
 
 BEGIN_COMMAND (join)
 {
-	if (P_NumPlayersInGame() >= sv_maxplayers)
-	{
-		C_MidPrint("The game is currently full", NULL);
-		return;
-	}
+	//if (P_NumPlayersInGame() >= sv_maxplayers)
+	//{
+	//	C_MidPrint("The game is currently full", NULL);
+	//	return;
+	//}
 
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
@@ -3384,8 +3389,8 @@ void CL_LoadMap(void)
 		std::string filename;
 
 		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
-		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && cl_autorecord_deathmatch)
-		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && cl_autorecord_duel)
+		|| (IsGameModeFFA() && cl_autorecord_deathmatch)
+		|| (IsGameModeDuel() && cl_autorecord_duel)
 		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
 		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
 
@@ -3660,6 +3665,8 @@ void CL_InitCommands(void)
 	cmds[svc_maplist] = &CL_Maplist;
 	cmds[svc_maplist_update] = &CL_MaplistUpdate;
 	cmds[svc_maplist_index] = &CL_MaplistIndex;
+
+	cmds[svc_playerqueuepos] = &CL_UpdatePlayerQueuePos;
 }
 
 //
@@ -4133,6 +4140,28 @@ void CL_SimulateWorld()
 	#endif // _WORLD_INDEX_DEBUG_
 
 	world_index = world_index + 1 + drift_correction;
+}
+
+void CL_UpdatePlayerQueuePos()
+{
+	player_t &player = idplayer(MSG_ReadByte());
+	byte queuePos = MSG_ReadByte();
+
+	if (player.id == consoleplayer_id)
+	{
+		if (queuePos > 0 && player.QueuePosition == 0)
+		{
+			std::ostringstream ss;
+			ss << "Position in line to play: " << (int)queuePos;
+			Printf(PRINT_HIGH, ss.str().c_str());
+		}
+		else if (queuePos == 0 && player.QueuePosition > 0)
+		{
+			Printf(PRINT_HIGH, "You have been removed from the queue.");
+		}
+	}
+
+	player.QueuePosition = queuePos;
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}

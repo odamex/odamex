@@ -968,7 +968,7 @@ player_s::player_s()
 	spectator = false;
 //	deadspectator = false;
 
-	joinafterspectatortime = level.time - TICRATE*5;
+	joindelay = 0;
 	timeout_callvote = 0;
 	timeout_vote = 0;
 
@@ -984,6 +984,8 @@ player_s::player_s()
 
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 	doreborn = false;
+	QueuePosition = 0;
+	//SpawnNextMap = false;
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1071,7 +1073,7 @@ player_s &player_s::operator =(const player_s &other)
 	spying = other.spying;
 	spectator = other.spectator;
 //	deadspectator = other.deadspectator;
-	joinafterspectatortime = other.joinafterspectatortime;
+	joindelay = other.joindelay;
 	timeout_callvote = other.timeout_callvote;
 	timeout_vote = other.timeout_vote;
 
@@ -1095,6 +1097,8 @@ player_s &player_s::operator =(const player_s &other)
 	to_spawn = other.to_spawn;
 
 	doreborn = other.doreborn;
+	QueuePosition = other.QueuePosition;
+	//SpawnNextMap = other.SpawnNextMap;
 
 	return *this;
 }

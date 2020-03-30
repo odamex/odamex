@@ -56,7 +56,6 @@ void SV_ExitLevel();
 void SV_DrawScores();
 
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
-byte SV_PlayerHearingLoss(player_t &cl, fixed_t &x, fixed_t &y);
 
 void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
@@ -71,7 +70,6 @@ void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
 void SV_ParseCommands(player_t &player);
-short SV_FindClientByAddr(void);
 void SV_UpdateFrags (player_t &player);
 void SV_RemoveCorpses (void);
 void SV_DropClient(player_t &who);
@@ -86,13 +84,10 @@ void SV_SpawnMobj(AActor *mo);
 void SV_TouchSpecial(AActor *special, player_t *player);
 
 void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
-void SV_Sound (client_t *cl, AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 
 void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
-
-int SV_CountTeamPlayers(int team);
 
 extern std::vector<std::string> wadnames;
 void MSG_WriteMarker (buf_t *b, svc_t c);
@@ -122,8 +117,15 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
                     const std::vector<std::string> &patchnames,
                     const std::string &mapname, player_t *player);
 
+void SV_AddPlayerToQueue(player_t* player);
+void SV_RemovePlayerFromQueue(player_t* player);
+void SV_UpdatePlayerQueueLevelChange();
+void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer = NULL);
+void SV_SendPlayerQueuePositions(player_t* toPlayer);
+void SV_SetWinPlayer(byte playerId);
+void SV_ClearPlayerQueue();
 
-
+bool CompareQueuePosition(const player_t* p1, const player_t* p2);
 
 extern bool unnatural_level_progression;
 

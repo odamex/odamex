@@ -31,6 +31,8 @@
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
 
+CVAR_FUNC_IMPL(sv_gametype) {}
+
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
@@ -61,6 +63,7 @@ void CTF_RememberFlagPos(mapthing2_t *mthing) {}
 void CTF_SpawnFlag(flag_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
+void SV_SetWinPlayer(byte playerId) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

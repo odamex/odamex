@@ -116,6 +116,8 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
+static const int ReJoinDelay = TICRATE * 5;
+
 //
 // Extended player object info: player_t
 //
@@ -236,7 +238,7 @@ public:
 	byte		spying;					// [SL] id of player being spynext'd by this player
 	bool		spectator;				// [GhostlyDeath] spectating?
 //	bool		deadspectator;			// [tm512] spectating as a dead player?
-	int			joinafterspectatortime; // Nes - Join after spectator time.
+	int			joindelay;			// Number of tics to delay player from rejoining
 	int			timeout_callvote;       // [AM] Tic when a vote last finished.
 	int			timeout_vote;           // [AM] Tic when a player last voted.
 
@@ -247,6 +249,8 @@ public:
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
+
+	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
 	// For flood protection
 	struct LastMessage_s

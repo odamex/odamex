@@ -636,23 +636,11 @@ EXTERN_CVAR(sv_hostname)
 namespace hud {
 
 // [AM] Draw scoreboard header
-void drawHeader(player_t *player, int y) {
+void drawHeader(player_t *player, int y)
+{
 	int color;
 	std::ostringstream buffer;
-	std::string str;
-
-	// Center
-	if (sv_gametype == GM_COOP) {
-		str = "COOPERATIVE";
-	} else if (sv_gametype == GM_DM && sv_maxplayers == 2) {
-		str = "DUEL";
-	} else if (sv_gametype == GM_DM) {
-		str = "DEATHMATCH";
-	} else if (sv_gametype == GM_TEAMDM) {
-		str = "TEAM DEATHMATCH";
-	} else if (sv_gametype == GM_CTF) {
-		str = "CAPTURE THE FLAG";
-	}
+	std::string str(GetGameModeString());
 
 	hud::DrawText(0, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
@@ -1118,20 +1106,7 @@ void Scoreboard(player_t *player) {
 
 // [AM] Draw the low-resolution scoreboard header.
 void drawLowHeader(player_t *player, int y) {
-	std::string str;
-
-	// Center
-	if (sv_gametype == GM_COOP) {
-		str = "COOPERATIVE";
-	} else if (sv_gametype == GM_DM && sv_maxplayers == 2) {
-		str = "DUEL";
-	} else if (sv_gametype == GM_DM) {
-		str = "DEATHMATCH";
-	} else if (sv_gametype == GM_TEAMDM) {
-		str = "TEAM DEATHMATCH";
-	} else if (sv_gametype == GM_CTF) {
-		str = "CAPTURE THE FLAG";
-	}
+	std::string str(GetGameModeString());
 
 	hud::DrawText(0, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,

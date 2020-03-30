@@ -89,6 +89,7 @@ extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
+byte s_winplayerId = -1;
 
 std::set<byte> free_player_ids;
 
@@ -140,12 +141,15 @@ CVAR_FUNC_IMPL (sv_maxclients)
 
 CVAR_FUNC_IMPL (sv_maxplayers)
 {
-	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
+	bool queueExists = false;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		bool spectator = it->spectator || !it->ingame();
+
+		if (it->QueuePosition > 0)
+			queueExists = true;
 
 		if (!spectator)
 		{
@@ -166,7 +170,25 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 								"Active player limit reduced. You are now a spectator!\n");
 				it->spectator = true;
 				it->playerstate = PST_LIVE;
-				it->joinafterspectatortime = level.time;
+				it->joindelay = 0;
+			}
+		}
+	}
+
+	if (!GameModeSupportsQueue() && queueExists)
+		SV_ClearPlayerQueue();
+}
+
+CVAR_FUNC_IMPL(sv_gametype)
+{
+	if (!GameModeSupportsQueue())
+	{
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			if (it->QueuePosition > 0)
+			{
+				SV_ClearPlayerQueue();
+				break;
 			}
 		}
 	}
@@ -534,7 +556,10 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	int player_id = it->id;
 
 	if (!it->spectator)
+	{
 		P_PlayerLeavesGame(&(*it));
+		SV_UpdatePlayerQueuePositions(&(*it));
+	}
 
 	// remove player awareness from all actors
 	AActor* mo;
@@ -2065,6 +2090,7 @@ void SV_ConnectClient()
 		MSG_WriteByte(&pit->client.reliablebuf, player->id);
 	}
 
+	SV_SendPlayerQueuePositions(player); // Notify this player of other player's queue positions
 	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
@@ -2138,8 +2164,8 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
+	SV_UpdatePlayerQueuePositions(&who);
 }
-
 
 //
 // SV_DropClient
@@ -2200,7 +2226,7 @@ void SV_SendReconnectSignal()
 //
 void SV_ExitLevel()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		MSG_WriteMarker(&(it->client.reliablebuf), svc_exitlevel);
 }
 
@@ -3429,6 +3455,9 @@ void SV_ProcessPlayerCmd(player_t &player)
 	const int max_sr40_side_move = 40 << 8;
 	const int max_sr50_side_move = 50 << 8;
 
+	if (player.joindelay)
+		player.joindelay--;
+
 	if (!validplayer(player) || !player.mo)
 		return;
 
@@ -3617,17 +3646,13 @@ void P_SetSpectatorFlags(player_t &player);
 
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 {
-	// We don't care about spectators during intermission
-	if (gamestate == GS_INTERMISSION)
-		return;
-
 	if (player.ingame() == false)
 		return;
 
 	if (!setting && player.spectator)
 	{
 		// We want to unspectate the player.
-		if (level.time > player.joinafterspectatortime + TICRATE * 5)
+		if (player.joindelay == 0)
 		{
 			// Check to see if there is an empty spot on the server
 			int NumPlayers = 0;
@@ -3635,9 +3660,13 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 				if (it->ingame() && !it->spectator)
 					NumPlayers++;
 
-			// Too many players.
-			if (!(NumPlayers < sv_maxplayers))
+			// During intermission a playere can queue, but don't let them immediately join even if a slot is available
+			if (NumPlayers >= sv_maxplayers || gamestate == GS_INTERMISSION)
+			{
+				if (GameModeSupportsQueue() && player.QueuePosition == 0)
+					SV_AddPlayerToQueue(&player);
 				return;
+			}
 
 			// Check to make sure we're not exceeding sv_maxplayersperteam.
 			if (sv_maxplayersperteam && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
@@ -3691,9 +3720,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	}
 	else if (setting && !player.spectator)
 	{
-		// Call the DISCONNECT parameter
-		P_PlayerLeavesGame(&player);
-
 		// We want to spectate the player
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -3727,12 +3753,19 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 		}
 
 		player.playerstate = PST_LIVE;
-		player.joinafterspectatortime = level.time;
+		player.joindelay = ReJoinDelay;
 
 		P_SetSpectatorFlags(player);
 
 		if (!silent)
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
+
+		P_PlayerLeavesGame(&player);
+		SV_UpdatePlayerQueuePositions(&player);
+	}
+	else if (setting && player.spectator && player.QueuePosition > 0)
+	{
+		SV_RemovePlayerFromQueue(&player);
 	}
 }
 
@@ -4527,12 +4560,15 @@ void SV_TimelimitCheck()
 		return;
 
 	// LEVEL TIMER
-	if (!players.empty()) {
-		if (sv_gametype == GM_DM) {
+	if (!players.empty())
+	{
+		if (sv_gametype == GM_DM)
+		{
 			player_t *winplayer = &*(players.begin());
 			bool drawgame = false;
 
-			if (players.size() > 1) {
+			if (players.size() > 1)
+			{
 				for (Players::iterator it = players.begin();it != players.end();++it)
 				{
 					if (it->fragcount > winplayer->fragcount)
@@ -4545,13 +4581,18 @@ void SV_TimelimitCheck()
 						drawgame = true;
 					}
 				}
+
+				// Need to pick someone for the queue
+				SV_SetWinPlayer(winplayer->id);
 			}
 
 			if (drawgame)
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname.c_str());
-		} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		} 
+		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		{
 			team_t winteam = SV_WinningTeam ();
 
 			if(winteam == TEAM_NONE)
@@ -4607,7 +4648,7 @@ void SV_GameTics (void)
 		break;
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		SV_ProcessPlayerCmd(*it);
 
 	SV_WadDownloads();
@@ -5261,6 +5302,134 @@ void SV_PreservePlayer(player_t &player)
 	G_DoReborn(player);
 
 	SV_SendPlayerInfo(player);
+}
+
+void SV_AddPlayerToQueue(player_t* player)
+{
+	player->QueuePosition = 255;
+	SV_UpdatePlayerQueuePositions();
+}
+
+void SV_RemovePlayerFromQueue(player_t* player)
+{
+	SV_UpdatePlayerQueuePositions(player);
+}
+
+void SV_UpdatePlayerQueueLevelChange()
+{
+	if (!GameModeSupportsQueue())
+		return;
+
+	int queuedPlayerCount = 0;
+	player_t* loserPlayer = NULL;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!it->spectator && it->ingame() && it->id != s_winplayerId)
+			loserPlayer = &(*it);
+
+		if (it->QueuePosition > 0)
+			queuedPlayerCount++;
+	}
+
+	s_winplayerId = -1;
+
+	if (queuedPlayerCount > 0)
+	{
+		if (loserPlayer != NULL)
+			SV_SetPlayerSpec(*loserPlayer, true, true);
+
+		SV_UpdatePlayerQueuePositions();
+	}
+}
+
+void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
+{
+	if (!GameModeSupportsQueue())
+		return;
+
+	bool playerSpawned = false;
+	bool queueChanged = false;
+	int playerCount = 0;
+	int queuePos = 1;
+	std::vector<player_t*> playingOrQueued;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (it->QueuePosition > 0 && disconnectPlayer != &(*it))
+			playingOrQueued.push_back(&(*it));
+
+		if (!it->spectator && it->ingame())
+			playerCount++;
+	}
+
+	std::sort(playingOrQueued.begin(), playingOrQueued.end(), CompareQueuePosition);
+
+	for(unsigned int i = 0; i < playingOrQueued.size(); i++)
+	{
+		player_t* p = playingOrQueued[i];
+
+		if (p->QueuePosition == 0)
+			continue;
+
+		if (gamestate != GS_INTERMISSION && playerCount < sv_maxplayers)
+		{
+			p->QueuePosition = 0;
+			SV_SetPlayerSpec(*p, false, true);
+			playerSpawned = true;
+			playerCount++;
+		}
+		else
+		{
+			if (p->QueuePosition != queuePos)
+				queueChanged = true;
+			p->QueuePosition = queuePos++;
+		}
+	}
+
+	if (disconnectPlayer && disconnectPlayer->QueuePosition > 0)
+	{
+		disconnectPlayer->QueuePosition = 0;
+		queueChanged = true;
+	}
+
+	if (playerSpawned || queueChanged)
+	{
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+			SV_SendPlayerQueuePositions(&(*it));
+	}
+
+	if (playerSpawned)
+		warmup.reset(level);
+}
+
+void SV_SendPlayerQueuePositions(player_t* toPlayer)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		MSG_WriteMarker(&(toPlayer->client.reliablebuf), svc_playerqueuepos);
+		MSG_WriteByte(&(toPlayer->client.reliablebuf), it->id);
+		MSG_WriteByte(&(toPlayer->client.reliablebuf), it->QueuePosition);
+	}
+}
+
+bool CompareQueuePosition(const player_t* p1, const player_t* p2)
+{
+	return p1->QueuePosition < p2->QueuePosition;
+}
+
+void SV_SetWinPlayer(byte playerId)
+{
+	s_winplayerId = playerId;
+}
+
+void SV_ClearPlayerQueue()
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		it->QueuePosition = 0;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		SV_SendPlayerQueuePositions(&(*it));
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
