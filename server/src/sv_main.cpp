@@ -3467,7 +3467,8 @@ void SV_ProcessPlayerCmd(player_t &player)
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
- 
+
+		#if 0
 		if ((netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr40_side_move) &&
 		    (player.mo && player.mo->prevangle != netcmd->getAngle()))
 		{
@@ -3475,6 +3476,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
+		#endif
 
 		netcmd->toPlayer(&player);
 
