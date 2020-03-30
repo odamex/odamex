@@ -209,7 +209,7 @@ void C_DoCommand(const char *cmd, uint32_t key)
 
 		if (*com_token == '+')
 		{
-			if (action_key_tracker.keyPressed(key, action))
+			if (action_key_tracker.pressKey(key, action))
 			{
 				if (check != -1)
 					Actions[check] = 1;
@@ -217,7 +217,7 @@ void C_DoCommand(const char *cmd, uint32_t key)
 		}
 		else if (*com_token == '-')
 		{
-			if (action_key_tracker.keyReleased(key, action))
+			if (action_key_tracker.releaseKey(key, action))
 			{
 				if (check != -1)
 					Actions[check] = 0;
