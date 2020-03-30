@@ -886,11 +886,10 @@ bool SV_SetupUserInfo(player_t &player)
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
 
-	// [SL] place holder for deprecated skins
-	MSG_ReadString();
+	MSG_ReadString();	// [SL] place holder for deprecated skins
 
 	fixed_t aimdist = MSG_ReadLong();
-	bool unlag = MSG_ReadBool();
+	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
 	bool predict_weapons = MSG_ReadBool();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
@@ -916,7 +915,6 @@ bool SV_SetupUserInfo(player_t &player)
 		switchweapon = WPSW_ALWAYS;
 
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
-	player.userinfo.unlag			= unlag;
 	player.userinfo.predict_weapons	= predict_weapons;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
@@ -4821,7 +4819,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);

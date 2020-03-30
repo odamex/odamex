@@ -272,9 +272,6 @@ CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a tea
 // Netcode Settings
 // --------------
 
-CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
-					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
-
 CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 

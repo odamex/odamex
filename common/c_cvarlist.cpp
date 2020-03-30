@@ -133,9 +133,6 @@ CVAR(				sv_weaponstay,    "1", "Weapons stay after pickup",
 CVAR(				sv_keepkeys, "0", "Keep keys on death",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR(				sv_unlag, "1", "Allow reconciliation for players on lagged connections",
-					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
