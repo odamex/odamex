@@ -278,9 +278,6 @@ CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 CVAR_RANGE(			cl_prednudge,	"0.70", "Smooth out collisions",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
 
-CVAR(				cl_predictlocalplayer, "1", "Predict local player position",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
 CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
 

@@ -35,7 +35,6 @@
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
-EXTERN_CVAR (cl_predictlocalplayer)
 
 extern NetGraph netgraph;
 
@@ -236,17 +235,6 @@ static void CL_PredictLocalPlayer(int predtic)
 	NetCommand *netcmd = &localcmds[predtic % MAXSAVETICS];
 	netcmd->toPlayer(player);
 
-	if (!cl_predictlocalplayer)
-	{
-		if (predtic == gametic)
-		{
-			P_PlayerThink(player);
-			player->mo->RunThink();
-		}
-
-		return;
-	}
-
 	if (!predicting)
 		P_PlayerThink(player);
 	else
@@ -309,36 +297,33 @@ void CL_PredictWorld(void)
 	PlayerSnapshot snap = p->snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
-	if (cl_predictlocalplayer)
+	while (++predtic < gametic)
 	{
-		while (++predtic < gametic)
+		if (cl_predictsectors)
+			CL_PredictSectors(predtic);
+		CL_PredictLocalPlayer(predtic);  
+	}
+
+	// If the player didn't just spawn or teleport, nudge the player from
+	// his position last tic to this new corrected position.  This smooths the
+	// view when there's a misprediction.
+	if (snap.isContinuous())
+	{
+		PlayerSnapshot correctedprevsnap(p->tic, p);
+
+		// Did we predict correctly?
+		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
+					   (correctedprevsnap.getY() == prevsnap.getY()) &&
+					   (correctedprevsnap.getZ() == prevsnap.getZ());
+
+		if (!correct)
 		{
-			if (cl_predictsectors)
-				CL_PredictSectors(predtic);
-			CL_PredictLocalPlayer(predtic);  
-		}
+			// Update the netgraph concerning our prediction's error
+			netgraph.setMisprediction(true);
 
-		// If the player didn't just spawn or teleport, nudge the player from
-		// his position last tic to this new corrected position.  This smooths the
-		// view when there's a misprediction.
-		if (snap.isContinuous())
-		{
-			PlayerSnapshot correctedprevsnap(p->tic, p);
-
-			// Did we predict correctly?
-			bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-						   (correctedprevsnap.getY() == prevsnap.getY()) &&
-						   (correctedprevsnap.getZ() == prevsnap.getZ());
-
-			if (!correct)
-			{
-				// Update the netgraph concerning our prediction's error
-				netgraph.setMisprediction(true);
-
-				// Lerp from the our previous position to the correct position
-				PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
-				lerpedsnap.toPlayer(p);
-			}
+			// Lerp from the our previous position to the correct position
+			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
+			lerpedsnap.toPlayer(p);
 		}
 	}
 
