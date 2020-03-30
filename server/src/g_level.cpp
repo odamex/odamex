@@ -209,7 +209,7 @@ void G_ChangeMap() {
 		// when onlcvars (addcommandstring's second param) is true.  Is there a
 		// reason why the mapscripts ahve to be safe mode?
 		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.cstring()/*, true*/);
+			AddCommandString(sv_endmapscript.cstring());
 	}
 }
 
@@ -232,7 +232,7 @@ void G_ChangeMap(size_t index) {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 // Restart the current map.
@@ -245,7 +245,7 @@ void G_RestartMap() {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -288,7 +288,7 @@ void G_DoNewGame (void)
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_startmapscript.cstring()))
-		AddCommandString(sv_startmapscript.cstring()/*,true*/);
+		AddCommandString(sv_startmapscript.cstring());
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
