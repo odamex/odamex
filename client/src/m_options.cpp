@@ -146,7 +146,6 @@ EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
 // Network Options
-EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
@@ -571,13 +570,6 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 
-static value_t BandwidthLevels[] = {
-	{ 7.0,			"56kbps" },
-	{ 200.0,		"1.5Mbps" },
-	{ 375.0,		"3.0Mbps" },
-	{ 750.0,		"6.0Mbps" }
-};
-
 static value_t PredictSectors[] = {
 	{ 0.0, "None" },
 	{ 1.0, "All" },
@@ -587,7 +579,6 @@ static value_t PredictSectors[] = {
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },

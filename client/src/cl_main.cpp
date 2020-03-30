@@ -950,16 +950,6 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
-// rate: takes a kbps value
-CVAR_FUNC_IMPL (rate)
-{
-	if (connected)
-	{
-		MSG_WriteMarker(&net_buffer, clc_rate);
-		MSG_WriteLong(&net_buffer, (int)var);
-	}
-}
-
 
 BEGIN_COMMAND (rcon)
 {
@@ -1849,7 +1839,10 @@ void CL_TryToConnect(DWORD server_token)
 
 		CL_SendUserInfo(); // send userinfo
 
-		MSG_WriteLong(&net_buffer, (int)rate);
+		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
+		// maximum rate that the server will ignore.
+		const int rate = 0xFFFF;
+		MSG_WriteLong(&net_buffer, rate); 
 
         MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
 

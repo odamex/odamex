@@ -244,15 +244,6 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "rcon password set");
 }
 
-//
-//  SV_SetClientRate
-//
-//  Performs range checking on client's rate
-//
-void SV_SetClientRate(client_t &client, int rate)
-{
-	client.rate = clamp(rate, 1, (int)sv_maxrate);
-}
 
 EXTERN_CVAR(sv_waddownloadcap)
 CVAR_FUNC_IMPL(sv_maxrate)
@@ -262,10 +253,7 @@ CVAR_FUNC_IMPL(sv_maxrate)
 		sv_waddownloadcap.Set(var);
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		// ensure no clients exceed sv_maxrate
-		SV_SetClientRate(it->client, it->client.rate);
-	}
+		it->client.rate = int(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL (sv_waddownloadcap)
@@ -1967,8 +1955,9 @@ void SV_ConnectClient()
 	if (!SV_SetupUserInfo(*player))
 		return;
 
-	// Get the rate value of the client.
-	SV_SetClientRate(*cl, MSG_ReadLong());
+	// [SL] Read and ignore deprecated client rate. Clients now always use sv_maxrate.
+	MSG_ReadLong();
+	cl->rate = int(sv_maxrate);
 
 	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
@@ -4189,10 +4178,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rate:
-			{
-				// denis - prevent problems by locking rate within a range
-				SV_SetClientRate(player.client, MSG_ReadLong());
-			}
+			MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
 			break;
 
 		case clc_ack:

@@ -77,7 +77,7 @@ EXTERN_CVAR (sv_fastmonsters)
 
 extern size_t got_heapsize;
 
-void C_DoCommand (const char *cmd);
+void C_DoCommand(const char *cmd, uint32_t key = 0);
 
 #ifdef UNIX
 void daemon_init();
