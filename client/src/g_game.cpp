@@ -27,19 +27,16 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_netinf.h"
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "m_misc.h"
 #include "m_menu.h"
 #include "m_random.h"
 #include "i_system.h"
 #include "i_input.h"
 #include "i_video.h"
 #include "v_screenshot.h"
-#include "p_setup.h"
 #include "p_saveg.h"
 #include "p_tick.h"
 #include "d_main.h"
@@ -57,7 +54,6 @@
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "gstrings.h"
-#include "r_data.h"
 #include "r_sky.h"
 #include "r_draw.h"
 #include "g_game.h"
@@ -158,11 +154,32 @@ EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
-EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
-EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
-EXTERN_CVAR (m_filter)
+EXTERN_CVAR (cl_run)
 EXTERN_CVAR (hud_mousegraph)
 EXTERN_CVAR (cl_predictpickup)
+
+EXTERN_CVAR (mouse_sensitivity)
+EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (m_filter)
+EXTERN_CVAR (invertmouse)
+EXTERN_CVAR (lookstrafe)
+EXTERN_CVAR (m_yaw)
+EXTERN_CVAR (m_forward)
+EXTERN_CVAR (m_side)
+
+
+CVAR_FUNC_IMPL(mouse_type)
+{
+	// Convert vanilla Doom mouse sensitivity settings to ZDoom mouse sensitivity
+	if (var.asInt() == MOUSE_DOOM)
+	{
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
+		m_pitch.Set(m_pitch * 4.0f);
+	}
+	if (var.asInt() != MOUSE_ZDOOM_DI)
+		var.Set(MOUSE_ZDOOM_DI);
+}
+
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -176,7 +193,6 @@ CVAR_FUNC_IMPL(cl_mouselook)
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
-BOOL			democlassic;
 
 extern bool		simulated_connection;
 
@@ -195,27 +211,14 @@ wbstartstruct_t wminfo; 				// parms for world map / intermission
 
 #define TURBOTHRESHOLD	12800
 
-float	 		normforwardmove[2] = {0x19, 0x32};		// [RH] For setting turbo from console
-float	 		normsidemove[2] = {0x18, 0x28};			// [RH] Ditto
+fixed_t	 		forwardmove[2] = {0x19, 0x32};
+fixed_t	 		sidemove[2] = {0x18, 0x28};
 
-fixed_t			forwardmove[2], sidemove[2];
 fixed_t 		angleturn[3] = {640, 1280, 320};		// + slow turn
 fixed_t			flyspeed[2] = {1*256, 3*256};
 int				lookspeed[2] = {450, 512};
 
 #define SLOWTURNTICS	6
-
-EXTERN_CVAR (cl_run)
-
-EXTERN_CVAR (mouse_type)
-EXTERN_CVAR (invertmouse)
-EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
-EXTERN_CVAR (m_pitch)
-EXTERN_CVAR (m_yaw)
-EXTERN_CVAR (m_forward)
-EXTERN_CVAR (m_side)
 
 int 			turnheld;								// for accelerative turning
 
@@ -262,16 +265,6 @@ player_t		&listenplayer()
 
 // [RH] Name of screenshot file to generate (usually NULL)
 std::string		shotfile;
-
-// [Fly] don't allow to change turbo in csDoom
-void G_SetDefaultTurbo (void)
-{
-	forwardmove[0] = (int)(normforwardmove[0]);
-	forwardmove[1] = (int)(normforwardmove[1]);
-	sidemove[0] = (int)(normsidemove[0]);
-	sidemove[1] = (int)(normsidemove[1]);
-}
-
 
 /* [RH] Impulses: Temporary hack to get weapon changing
  * working with keybindings until I can get the
@@ -333,7 +326,7 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
 	// FIXME : Find a way to properly write this to the vanilla demo file.
-	if (democlassic && demorecording)
+	if (demorecording)
 		return;
 
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
@@ -345,7 +338,7 @@ END_COMMAND (weapnext)
 BEGIN_COMMAND (weapprev)
 {
 	// FIXME : Find a way to properly write this to the vanilla demo file.
-	if (democlassic && demorecording)
+	if (demorecording)
 		return;
 
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
@@ -443,17 +436,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
-	{
 		side += sidemove[speed];
-		if (strafe) // Two-key strafe50
-			side += sidemove[speed];
-	}
 	if (Actions[ACTION_MOVELEFT])
-	{
 		side -= sidemove[speed];
-		if (strafe) // Two-key strafe50
-			side -= sidemove[speed];
-	}
 
 	// buttons
 	// john - only add attack when console up
@@ -464,7 +449,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		cmd->buttons |= BT_USE;
 
 	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
-	if (Actions[ACTION_JUMP] && !demorecording && !democlassic)
+	if (Actions[ACTION_JUMP] && !demorecording)
 		cmd->buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
@@ -590,36 +575,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 }*/
 
 
-void G_ConvertMouseSettings(int old_type, int new_type)
-{
-	if (old_type == new_type)
-		return;
-
-	// first convert to ZDoom settings
-	if (old_type == MOUSE_DOOM)
-	{
-		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
-		m_pitch.Set(m_pitch * 4.0f);
-	}
-
-	// convert to the destination type
-	if (new_type == MOUSE_DOOM)
-	{
-		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.25f);
-	}
-}
-
-float G_DoomMouseScaleX(float x)
-{
-	return (x * (mouse_sensitivity + 5.0f) / 10.0f);
-}
-
-float G_DoomMouseScaleY(float y)
-{
-	return G_DoomMouseScaleX(y); // identical scaling for x and y
-}
-
 float G_ZDoomDIMouseScaleX(float x)
 {
 	return (x * 4.0f * mouse_sensitivity);
@@ -636,28 +591,6 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	float fmousex = (float)ev->data2;
 	float fmousey = (float)ev->data3;
 
-	if (mouse_acceleration > 0.0f)
-	{
-		// denis - from chocolate doom
-		//
-		// Mouse acceleration
-		//
-		// This emulates some of the behavior of DOS mouse drivers by increasing
-		// the speed when the mouse is moved fast.
-		//
-		// The mouse input values are input directly to the game, but when
-		// the values exceed the value of mouse_threshold, they are multiplied
-		// by mouse_acceleration to increase the speed.
-		if (fmousex > mouse_threshold)
-			fmousex = (fmousex - mouse_threshold) * mouse_acceleration + mouse_threshold;
-		else if (fmousex < -mouse_threshold)
-			fmousex = (fmousex + mouse_threshold) * mouse_acceleration - mouse_threshold;
-		if (fmousey > mouse_threshold)
-			fmousey = (fmousey - mouse_threshold) * mouse_acceleration + mouse_threshold;
-		else if (fmousey < -mouse_threshold)
-			fmousey = (fmousey + mouse_threshold) * mouse_acceleration - mouse_threshold;
-	}
-
 	if (m_filter)
 	{
 		// smooth out the mouse input
@@ -668,34 +601,13 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	fprevx = fmousex;
 	fprevy = fmousey;
 
-	if (mouse_type == MOUSE_ZDOOM_DI)
-	{
-		fmousex = G_ZDoomDIMouseScaleX(fmousex);
-		fmousey = G_ZDoomDIMouseScaleY(fmousey);
-	}
-	else
-	{
-		fmousex = G_DoomMouseScaleX(fmousex);
-		fmousey = G_DoomMouseScaleY(fmousey);
-	}
-
-	if (dynres_state)
-	{
-		// add some funky exponential sensitivity
-		if (fmousex < 0.0f)
-			fmousex = -pow(-fmousex, dynresval);
-		else
-			fmousex = pow(fmousex, dynresval);
-
-		if (fmousey < 0.0f)
-			fmousey = -pow(-fmousey, dynresval);
-		else
-			fmousey = pow(fmousey, dynresval);
-	}
+	fmousex = G_ZDoomDIMouseScaleX(fmousex);
+	fmousey = G_ZDoomDIMouseScaleY(fmousey);
 
 	mousex = (int)fmousex;
 	mousey = (int)fmousey;
 }
+
 
 //
 // G_Responder
@@ -859,7 +771,11 @@ void G_Ticker (void)
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+			{
+				if (it->playerstate == PST_REBORN)	
+					it->doreborn = true;			// State only our will to lose the whole inventory in case of a reborn.
 				G_DoReborn(*it);
+			}
 		}
 
 	// do things to change the game state
@@ -1785,7 +1701,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     usergame = false;
     demorecording = true;
     demostartgametic = gametic;
-
+	multiplayer = false;
 	
 	if (longtics)
 		demoversion = LMP_DOOM_1_9_1;
@@ -1828,8 +1744,6 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
         *demo_p++ = DOOM_1_9_1_DEMO;
     else
         *demo_p++ = DOOM_1_9_DEMO;
-
-    democlassic = true;
 
     int episode, mapid;
     if (gameinfo.flags & GI_MAPxx)
@@ -2021,7 +1935,6 @@ void G_DoPlayDemo(bool justStreamInput)
 	{
 		Printf(PRINT_HIGH, "Playing DOOM demo %s\n", defdemoname.c_str());
 
-		democlassic = true;
 		demostartgametic = gametic;
 		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
 
@@ -2135,7 +2048,6 @@ void G_DoPlayDemo(bool justStreamInput)
 	}
 	else
 	{
-		democlassic = false;
 		Printf(PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
 		gameaction = ga_nothing;
@@ -2153,6 +2065,12 @@ void G_TimeDemo(const char* name)
 
 	defdemoname = name;
 	gameaction = ga_playdemo;
+
+	IWindow* window = I_GetWindow();	
+	if (noblit)
+		window->disableRefresh();
+	else
+		window->enableRefresh();
 }
 
 
@@ -2189,8 +2107,7 @@ void G_CleanupDemo()
 
 	if (demorecording)
 	{
-		if (recorddemo_fp)
-		{
+		if (recorddemo_fp) {
 			fputc(DEMOSTOP, recorddemo_fp);
 			fclose(recorddemo_fp);
 			recorddemo_fp = NULL;
@@ -2204,6 +2121,7 @@ void G_CleanupDemo()
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
 	}
+
 }
 
 
@@ -2260,7 +2178,6 @@ BOOL G_CheckDemoStatus (void)
 				Printf (PRINT_HIGH, "Demo ended.\n");
 
 			demoplayback = false;
-			democlassic = false;
 			gameaction = ga_fullconsole;
 			timingdemo = false;
 			return false;

@@ -37,7 +37,6 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "m_vectors.h"
-#include "r_main.h"
 #include "p_unlag.h"
 #include "p_local.h"
 
@@ -47,7 +46,6 @@ void SV_SpawnMobj(AActor *mo);
 void SV_SendDestroyActor(AActor *mo);
 #endif	// _UNLAG_DEBUG_
 
-EXTERN_CVAR(sv_unlag)
 EXTERN_CVAR(sv_maxunlagtime)
 
 Unlag::SectorHistoryRecord::SectorHistoryRecord()
@@ -99,12 +97,12 @@ Unlag::~Unlag()
 //
 // Unlag::enabled
 //
-// Denotes whether sv_unlag is set and it is a multiplayer game
-// run on the server.
+// Denotes whether a multiplayer game is running on the server.
+//
  
 bool Unlag::enabled()
 {
-	return (sv_unlag && serverside && multiplayer && !demoplayback);
+	return (serverside && multiplayer && !demoplayback);
 }
 
 //
@@ -472,10 +470,6 @@ void Unlag::reconcile(byte shooter_id)
 		return;	
 
 	size_t player_index = player_id_map[shooter_id];
-
-	// Check if client disables unlagging for their weapons
-	if (!player_history[player_index].player->userinfo.unlag)
-		return;
 
 	size_t lag = player_history[player_index].current_lag;
 	

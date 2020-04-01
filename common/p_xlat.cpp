@@ -21,17 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomtype.h"
-#include "g_level.h"
 #include "p_lnspec.h"
 #include "doomdata.h"
 #include "r_data.h"
 #include "m_swap.h"
-#include "p_spec.h"
 #include "p_local.h"
 
 // Speeds for ceilings/crushers (x/8 units per tic)
@@ -736,10 +730,33 @@ void P_TranslateTeleportThings (void)
 
 int P_TranslateSectorSpecial (int special)
 {
+	int high;
+
+	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps
+	// That's for those who like to mess around with existing maps. ;)
+	if (special & 0x8000)
+	{
+		return special & 0x7fff;
+	}
+
+	if (special == 9)
+		return SECRET_MASK;
+
 	// This supports phased lighting with specials 21-24
-	return (special == 9) ? SECRET_MASK :
-			((special & 0xfe0) << 3) |
-			((special & 0x01f) + (((special & 0x1f) < 21) ? 64 : -20));
+	high = (special & 0xfe0) << 3;
+	special &= 0x1f;
+	if (special < 21)
+	{
+		return high | (special + 64);
+	}
+	else if (special < 40)
+	{
+		return high | (special - 20);
+	}
+
+	// Unknown
+	return high | special;
+
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")

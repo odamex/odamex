@@ -24,21 +24,13 @@
 //-----------------------------------------------------------------------------
 
 
-#include "m_alloc.h"
-#include <stdlib.h>
 #include <math.h>
 #include <limits.h>
 #include "doomdef.h"
-#include "d_net.h"
-#include "doomstat.h"
 #include "m_random.h"
 #include "m_bbox.h"
-#include "p_local.h"
 #include "r_local.h"
-#include "r_sky.h"
-#include "c_cvars.h"
 #include "v_video.h"
-#include "z_zone.h"
 
 #define DISTMAP			2
 

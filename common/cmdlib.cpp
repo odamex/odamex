@@ -23,7 +23,6 @@
 //-----------------------------------------------------------------------------
 
 #include <ctime>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
 #include <functional>
@@ -32,12 +31,7 @@
 
 #include "doomtype.h"
 #include "cmdlib.h"
-#include "i_system.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <map>
-
-#include "m_alloc.h"
 
 char		com_token[8192];
 BOOL		com_eof;

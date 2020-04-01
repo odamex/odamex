@@ -25,7 +25,6 @@
 #ifdef UNIX
 #include <ctype.h>
 #include <cstring>
-#include <unistd.h>
 #ifndef O_BINARY
 #define O_BINARY		0
 #endif
@@ -37,10 +36,7 @@
 #define strcmpi	strcasecmp
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <ctype.h>
 
 #include "doomtype.h"
 #include "m_swap.h"
@@ -53,12 +49,9 @@
 
 #include "w_wad.h"
 
-
-#include <string>
 #include <sstream>
 #include <algorithm>
 #include <vector>
-#include <iostream>
 #include <iomanip>
 
 

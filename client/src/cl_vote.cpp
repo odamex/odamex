@@ -154,7 +154,7 @@ BEGIN_COMMAND(callvote) {
 
 	if (!arguments.empty()) {
 		// Match our first argument up with a vote type.
-		std::string votecmd_s = arguments[0];
+		std::string votecmd_s = StdStringToLower(arguments[0]);
 		for (unsigned char i = (VOTE_NONE + 1);i < VOTE_MAX;++i) {
 			if (votecmd_s.compare(vote_type_cmd[i]) == 0) {
 				// Found it.  Set our votecmd and get rid of our

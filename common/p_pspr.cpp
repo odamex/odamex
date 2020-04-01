@@ -27,7 +27,6 @@
 #include "doomdef.h"
 #include "d_event.h"
 
-#include "cmdlib.h"
 #include "c_cvars.h"
 
 #include "m_random.h"
@@ -369,7 +368,7 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	// Always switch - vanilla Doom behavior
 	if ((multiplayer && !sv_allowpwo) ||
 		player->userinfo.switchweapon == WPSW_ALWAYS ||
-		democlassic || demoplayback || demorecording)
+		demoplayback || demorecording)
 	{
 		return true;
 	}

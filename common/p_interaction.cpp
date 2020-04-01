@@ -28,7 +28,6 @@
 #include "m_random.h"
 #include "i_system.h"
 #include "c_console.h"
-#include "c_dispatch.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "p_inter.h"
@@ -1043,6 +1042,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->player->playerstate = PST_DEAD;
 		P_DropWeapon(target->player);
 
+		tplayer->suicide_time = level.time;
 		tplayer->death_time = level.time;
 
 		if (target == consoleplayer().camera)
@@ -1078,7 +1078,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// Nes - Server now broadcasts obituaries.
 	// [CG] Since this is a stub, no worries anymore.
 	if (target->player && level.time && multiplayer &&
-        !(demoplayback && democlassic) && !joinkill)
+        !demoplayback && !joinkill)
 	{
 		ClientObituary(target, inflictor, source);
 	}

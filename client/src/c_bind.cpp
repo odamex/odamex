@@ -24,7 +24,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "doomtype.h"
 #include "doomdef.h"
@@ -34,7 +33,6 @@
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "g_level.h"
-#include "gstrings.h"
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"
@@ -365,7 +363,8 @@ BEGIN_COMMAND (unbind)
 
 	if (argc > 1)
 	{
-		if ( (i = GetKeyFromName (argv[1])) )
+		std::string strArg = StdStringToLower(argv[1]);
+		if ( (i = GetKeyFromName (strArg.c_str())) )
 			Bindings[i] = "";
 		else
 			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
@@ -378,13 +377,15 @@ BEGIN_COMMAND (bind)
 	int i;
 
 	if (argc > 1) {
-		i = GetKeyFromName (argv[1]);
+
+		std::string strArg = StdStringToLower(argv[1]);
+		i = GetKeyFromName (strArg.c_str());
 		if (!i) {
 			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2) {
-			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(Bindings[i]).c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(Bindings[i]).c_str());
 		} else {
 			Bindings[i] = argv[2];
 		}
@@ -405,7 +406,8 @@ BEGIN_COMMAND (undoublebind)
 
 	if (argc > 1)
 	{
-		if ( (i = GetKeyFromName (argv[1])) )
+		std::string strArg = StdStringToLower(argv[1]);
+		if ( (i = GetKeyFromName (strArg.c_str())) )
 			DoubleBindings[i] = "";
 		else
 			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
@@ -419,7 +421,8 @@ BEGIN_COMMAND (doublebind)
 
 	if (argc > 1)
 	{
-		i = GetKeyFromName (argv[1]);
+		std::string strArg = StdStringToLower(argv[1]);
+		i = GetKeyFromName (strArg.c_str());
 		if (!i)
 		{
 			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
@@ -427,7 +430,7 @@ BEGIN_COMMAND (doublebind)
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "%s = %s\n", argv[1], C_QuoteString(DoubleBindings[i]).c_str());
+			Printf (PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(DoubleBindings[i]).c_str());
 		}
 		else
 		{
@@ -493,7 +496,7 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	if (ev->type == ev_keydown)
-		AddCommandString(*binding);
+		AddCommandString(*binding, ev->data1);
 
 	return true;
 }
@@ -512,12 +515,12 @@ bool C_DoSpectatorKey (event_t *ev)
 
 	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELUP)
 	{
-		AddCommandString("spyprev");
+		AddCommandString("spyprev", ev->data1);
 		return true;
 	}
 	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELDOWN)
 	{
-		AddCommandString("spynext");
+		AddCommandString("spynext", ev->data1);
 		return true;
 	}
 
@@ -526,21 +529,22 @@ bool C_DoSpectatorKey (event_t *ev)
 
 BOOL C_DoKey (event_t *ev)
 {
-	std::string *binding;
-	int dclickspot;
-	byte dclickmask;
-
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
-	dclickspot = ev->data1 >> 3;
-	dclickmask = 1 << (ev->data1 & 7);
+	std::string *binding = NULL;
 
-	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
+	int dclickspot = ev->data1 >> 3;
+	byte dclickmask = 1 << (ev->data1 & 7);
+
+	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown)
+	{
 		// Key pressed for a double click
 		binding = &DoubleBindings[ev->data1];
 		DClicked[dclickspot] |= dclickmask;
-	} else {
+	}
+	else
+	{
 		if (ev->type == ev_keydown) {
 			// Key pressed for a normal press
 			binding = &Bindings[ev->data1];
@@ -563,7 +567,7 @@ BOOL C_DoKey (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-			AddCommandString (*binding);
+			AddCommandString(*binding, ev->data1);
 			KeysDown[ev->data1] = true;
 		}
 		else
@@ -576,7 +580,7 @@ BOOL C_DoKey (event_t *ev)
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
 				(*binding)[achar] = '-';
-				AddCommandString (*binding);
+				AddCommandString(*binding, ev->data1);
 				(*binding)[achar] = '+';
 			}
 
@@ -611,7 +615,7 @@ void C_ReleaseKeys()
 			(achar == 0 || (*binding)[achar - 1] <= ' '))
 		{
 			(*binding)[achar] = '-';
-			AddCommandString(*binding);
+			AddCommandString(*binding, i);
 			(*binding)[achar] = '+';
 		}
 	}

@@ -22,7 +22,6 @@
 //-----------------------------------------------------------------------------
 
 #include <cstring>
-#include <stdio.h>
 
 #include "doomtype.h"
 #include "doomstat.h"

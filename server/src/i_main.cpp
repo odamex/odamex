@@ -23,8 +23,6 @@
 
 #include <stack>
 #include <iostream>
-#include <map>
-#include <string>
 
 #include "win32inc.h"
 #ifdef _WIN32
@@ -34,15 +32,11 @@
 
 #ifdef UNIX
 #include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
 #endif
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdarg.h>
-#include <math.h>
-#include <time.h>
 
 #include "i_crash.h"
 #include "m_argv.h"
@@ -52,8 +46,6 @@
 #include "z_zone.h"
 #include "errors.h"
 #include "i_net.h"
-#include "sv_main.h"
-#include "m_ostring.h"
 
 using namespace std;
 

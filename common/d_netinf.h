@@ -65,7 +65,6 @@ struct UserInfo
 	std::string		netname;
 	team_t			team; // [Toke - Teams]
 	fixed_t			aimdist;
-	bool			unlag;
 	bool			predict_weapons;
 	byte			color[4];
 	gender_t		gender;
@@ -75,7 +74,7 @@ struct UserInfo
 	static const byte weapon_prefs_default[NUMWEAPONS];
 
 	UserInfo() : team(TEAM_NONE), aimdist(0),
-	             unlag(true), predict_weapons(true),
+	             predict_weapons(true),
 	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
 	{
 		// default doom weapon ordering when player runs out of ammo

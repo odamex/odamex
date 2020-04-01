@@ -26,7 +26,6 @@
 // HEADER FILES ------------------------------------------------------------
 
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "doomtype.h"
@@ -34,7 +33,6 @@
 #include "sc_man.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "cmdlib.h"
 #include "m_fileio.h"
 
 // MACROS ------------------------------------------------------------------

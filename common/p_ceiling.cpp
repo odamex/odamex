@@ -22,8 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include "m_alloc.h"
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
@@ -421,13 +419,13 @@ manual_ceiling:
 
 		case DCeiling::ceilLowerByTexture:
 			targheight = ceiling->m_BottomHeight =
-				ceilingheight - P_FindShortestUpperAround (secnum);
+				ceilingheight - P_FindShortestUpperAround (sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseByTexture:
 			targheight = ceiling->m_TopHeight =
-				ceilingheight + P_FindShortestUpperAround (secnum);
+				ceilingheight + P_FindShortestUpperAround (sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -453,8 +451,8 @@ manual_ceiling:
 					   type == DCeiling::ceilRaiseToFloor ||
 					   type == DCeiling::ceilLowerToHighest ||
 					   type == DCeiling::ceilLowerToFloor) ?
-					P_FindModelFloorSector (targheight, secnum) :
-					P_FindModelCeilingSector (targheight, secnum);
+					P_FindModelFloorSector (targheight, sec) :
+					P_FindModelCeilingSector (targheight, sec);
 				if (sec)
 				{
 					ceiling->m_Texture = sec->ceilingpic;

@@ -37,7 +37,6 @@
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "gi.h"
 #include "d_net.h"
 #include "g_game.h"
 #include "g_level.h"
@@ -53,7 +52,6 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "w_ident.h"
@@ -246,15 +244,6 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "rcon password set");
 }
 
-//
-//  SV_SetClientRate
-//
-//  Performs range checking on client's rate
-//
-void SV_SetClientRate(client_t &client, int rate)
-{
-	client.rate = clamp(rate, 1, (int)sv_maxrate);
-}
 
 EXTERN_CVAR(sv_waddownloadcap)
 CVAR_FUNC_IMPL(sv_maxrate)
@@ -264,10 +253,7 @@ CVAR_FUNC_IMPL(sv_maxrate)
 		sv_waddownloadcap.Set(var);
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		// ensure no clients exceed sv_maxrate
-		SV_SetClientRate(it->client, it->client.rate);
-	}
+		it->client.rate = int(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL (sv_waddownloadcap)
@@ -900,11 +886,10 @@ bool SV_SetupUserInfo(player_t &player)
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
 
-	// [SL] place holder for deprecated skins
-	MSG_ReadString();
+	MSG_ReadString();	// [SL] place holder for deprecated skins
 
 	fixed_t aimdist = MSG_ReadLong();
-	bool unlag = MSG_ReadBool();
+	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
 	bool predict_weapons = MSG_ReadBool();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
@@ -930,7 +915,6 @@ bool SV_SetupUserInfo(player_t &player)
 		switchweapon = WPSW_ALWAYS;
 
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
-	player.userinfo.unlag			= unlag;
 	player.userinfo.predict_weapons	= predict_weapons;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
@@ -1636,6 +1620,7 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 
 	// update switches
+#if 0
 	for (int l=0; l<numlines; l++)
 	{
 		unsigned state = 0, time = 0;
@@ -1650,6 +1635,9 @@ void SV_ClientFullUpdate(player_t &pl)
 			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
+#else
+	P_UpdateButtons(cl);
+#endif
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
@@ -1965,8 +1953,9 @@ void SV_ConnectClient()
 	if (!SV_SetupUserInfo(*player))
 		return;
 
-	// Get the rate value of the client.
-	SV_SetClientRate(*cl, MSG_ReadLong());
+	// [SL] Read and ignore deprecated client rate. Clients now always use sv_maxrate.
+	MSG_ReadLong();
+	cl->rate = int(sv_maxrate);
 
 	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
@@ -2003,6 +1992,7 @@ void SV_ConnectClient()
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
+	cl->download.md5 = "";
 	if (connection_type == 1)
 	{
 		if (sv_waddownload)
@@ -3249,6 +3239,11 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 		else
 			MSG_WriteByte(buf, 0xFF);
 	}
+
+	if (sv_gametype == GM_COOP) {
+		for (int i = 0; i < NUMCARDS; i++)
+			MSG_WriteByte(buf, player->cards[i]);
+	}
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -3344,8 +3339,6 @@ void SV_WriteCommands(void)
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
-		SV_UpdateHiddenMobj();
-
 		SV_UpdateConsolePlayer(*it);
 
 		SV_UpdateMissiles(*it);
@@ -3356,6 +3349,8 @@ void SV_WriteCommands(void)
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 	}
+
+	SV_UpdateHiddenMobj();
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
@@ -3373,8 +3368,8 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 void SV_FlushPlayerCmds(player_t &player)
 {
-	while (!player.cmdqueue.empty())
-		player.cmdqueue.pop();
+	std::queue<NetCommand> empty;
+	std::swap(player.cmdqueue, empty);
 }
 
 //
@@ -3430,7 +3425,9 @@ int SV_CalculateNumTiccmds(player_t &player)
 //
 void SV_ProcessPlayerCmd(player_t &player)
 {
-	static const int maxcmdmove = 12800;
+	const int max_forward_move = 50 << 8;
+	const int max_sr40_side_move = 40 << 8;
+	const int max_sr50_side_move = 50 << 8;
 
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -3451,12 +3448,22 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// Set the latency amount for Unlagging
 		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
 
-		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > maxcmdmove) ||
-			(netcmd->hasSideMove() && abs(netcmd->getSideMove()) > maxcmdmove))
+		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > max_forward_move) ||
+		    (netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr50_side_move))
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
+
+		#if 0
+		if ((netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr40_side_move) &&
+		    (player.mo && player.mo->prevangle != netcmd->getAngle()))
+		{
+			// verify SR50 isn't combined with yaw
+			SV_PlayerTriedToCheat(player);
+			return;
+		}
+		#endif
 
 		netcmd->toPlayer(&player);
 
@@ -3928,6 +3935,10 @@ void SV_Suicide(player_t &player)
 	if (!player.mo)
 		return;
 
+	// WHY do you want to commit suicide in the intermission screen ?!?!
+	if (gamestate != GS_LEVEL)
+		return;
+
 	// merry suicide!
 	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
 	//player.mo->player = NULL;
@@ -4050,13 +4061,35 @@ void SV_WantWad(player_t &player)
 	std::string md5 = MSG_ReadString();
 	size_t next_offset = MSG_ReadLong();
 
+	std::string curr_request = D_CleanseFileName(cl->download.name);
+
+	//DPrintf("pre-check client requesting {name: \"%s\", hash: \"%s\"} against {name: \"%s\", hash: \"%s\"}\n",
+	//		request.c_str(), md5.c_str(),
+	//		curr_request.c_str(), cl->download.md5.c_str()
+	//);
+
+	// [jsd] quick check for continuation of download:
+	if (curr_request == request &&
+		cl->download.md5 == md5)
+	{
+		cl->download.next_offset = next_offset;
+		player.playerstate = PST_DOWNLOAD;
+
+		return;
+	}
+
 	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
+
+	//DPrintf("client requesting {name: \"%s\", hash: \"%s\"}\n", request.c_str(), md5.c_str());
 
 	size_t i;
 	std::string filename;
 	for (i = 0; i < wadfiles.size(); i++)
 	{
 		filename = D_CleanseFileName(wadfiles[i]);
+		//DPrintf("wads[%d] = {name: \"%s\", hash: \"%s\"}\n", i,
+		//		filename.c_str(), wadhashes[i].c_str()
+		//);
 		if (filename == request && (md5.empty() || wadhashes[i] == md5))
 			break;
 	}
@@ -4088,6 +4121,7 @@ void SV_WantWad(player_t &player)
 		Printf(PRINT_HIGH, "> client %d is downloading %s\n", player.id, filename.c_str());
 
 	cl->download.name = wadfiles[i];
+	cl->download.md5 = md5;
 	cl->download.next_offset = next_offset;
 	player.playerstate = PST_DOWNLOAD;
 }
@@ -4142,10 +4176,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rate:
-			{
-				// denis - prevent problems by locking rate within a range
-				SV_SetClientRate(player.client, MSG_ReadLong());
-			}
+			MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
 			break;
 
 		case clc_ack:
@@ -4194,7 +4225,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_kill:
 			if(player.mo &&
-               level.time > player.death_time + TICRATE*10 &&
+               level.time > player.suicide_time + TICRATE*10 &&
                (sv_allowcheats || sv_gametype == GM_COOP))
             {
 				SV_Suicide (player);
@@ -4788,7 +4819,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);

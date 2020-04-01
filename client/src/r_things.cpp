@@ -24,7 +24,6 @@
 #include "m_alloc.h"
 
 #include "doomdef.h"
-#include "m_swap.h"
 #include "m_argv.h"
 
 #include "i_system.h"
@@ -36,7 +35,6 @@
 
 #include "c_console.h"
 #include "c_cvars.h"
-#include "c_dispatch.h"
 
 #include "doomstat.h"
 
@@ -670,7 +668,13 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	unsigned int		rot;
 	bool 				flip;
 
-	if (!thing || !thing->subsector || !thing->subsector->sector)
+	if (!thing)
+		return;
+
+	if (!thing->subsector)
+		return;
+
+	if (!thing->subsector->sector)
 		return;
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
@@ -1002,7 +1006,7 @@ void R_DrawPlayerSprites (void)
 	{
 		int centerhack = centery;
 
-		centery = viewheight >> 1;
+		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites

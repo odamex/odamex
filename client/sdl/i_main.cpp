@@ -41,7 +41,6 @@
 #endif
 
 #include <new>
-#include <map>
 #include <stack>
 #include <iostream>
 
@@ -62,14 +61,9 @@
 #include "m_argv.h"
 #include "d_main.h"
 #include "i_system.h"
-#include "i_input.h"
 #include "c_console.h"
 #include "z_zone.h"
 #include "version.h"
-#include "i_video.h"
-#include "i_sound.h"
-#include "r_main.h"
-#include "m_ostring.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"

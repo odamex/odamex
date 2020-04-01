@@ -23,15 +23,11 @@
 
 #include <stddef.h>
 #include <cstring>
-#include <math.h>
 
 #include "v_video.h"
 #include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
-#include "w_wad.h"
 #include "z_zone.h"
-#include "c_dispatch.h"
-#include "g_level.h"
 #include "st_stuff.h"
 
 // Declared in doomtype.h as part of argb_t

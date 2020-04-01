@@ -25,12 +25,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "m_random.h"
-#include "m_alloc.h"
-#include "doomdef.h"
-#include "f_wipe.h"
 #include "c_cvars.h"
-#include "i_music.h"
-#include "r_draw.h"
 #include "st_stuff.h"
 
 //

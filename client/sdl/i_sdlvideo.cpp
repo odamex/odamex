@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <string>
 #include "doomstat.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
@@ -46,8 +45,6 @@
 #include "i_system.h"
 #include "i_input.h"
 
-#include "m_argv.h"
-#include "w_wad.h"
 #include "c_dispatch.h"
 
 #include "res_texture.h"
@@ -1011,7 +1008,9 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 // ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager
 //
 ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
-	uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync) :
+	uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window,
+	bool vsync, const char *render_scale_quality
+) :
 		mWindow(window),
 		mSDLRenderer(NULL), mSDLTexture(NULL),
 		mSurface(NULL), m8bppTo32BppSurface(NULL),
@@ -1022,20 +1021,25 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	memcpy(&mFormat, format, sizeof(mFormat));
 
-    // Select the best RENDER_SCALE_QUALITY that is supported
-    const char* scale_hints[] = {"best", "linear", "nearest", ""};
-    for (int i = 0; scale_hints[i][0] != '\0'; i++)
-    {
-        if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
-            break;
-    }
+	// [jsd] set the user's preferred render scaling hint if non-empty:
+	// acceptable values are [("0" or "nearest"), ("1" or "linear"), ("2" or "best")].
+	bool quality_set = false;
+	if (render_scale_quality != NULL && render_scale_quality[0] != '\0') {
+		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, render_scale_quality) == SDL_TRUE) {
+			quality_set = true;
+		}
+	}
 
-	uint32_t renderer_flags = SDL_RENDERER_ACCELERATED;
-	if (vsync)
-		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+	if (!quality_set) {
+		// Select the best RENDER_SCALE_QUALITY that is supported
+		const char *scale_hints[] = {"best", "linear", "nearest", ""};
+		for (int i = 0; scale_hints[i][0] != '\0'; i++) {
+			if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
+				break;
+		}
+	}
 
-	mSDLRenderer = SDL_CreateRenderer(mWindow->mSDLWindow, -1, renderer_flags);
-
+	mSDLRenderer = createRenderer(vsync);
 	if (mSDLRenderer == NULL)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
 
@@ -1097,6 +1101,25 @@ ISDL20TextureWindowSurfaceManager::~ISDL20TextureWindowSurfaceManager()
 		SDL_DestroyTexture(mSDLTexture);
 	if (mSDLRenderer)
 		SDL_DestroyRenderer(mSDLRenderer);
+}
+
+
+//
+// ISDL20TextureWindowSurfaceManager::createRenderer
+//
+SDL_Renderer* ISDL20TextureWindowSurfaceManager::createRenderer(bool vsync) const
+{
+	const char* driver = mWindow->getRendererDriver();
+
+	uint32_t renderer_flags = 0;
+	if (strncmp(driver, "software", strlen(driver)) == 0)
+		renderer_flags |= SDL_RENDERER_SOFTWARE;
+	else
+		renderer_flags |= SDL_RENDERER_ACCELERATED;
+	if (vsync)
+		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
+
+	return SDL_CreateRenderer(mWindow->mSDLWindow, -1, renderer_flags);
 }
 
 
@@ -1176,11 +1199,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	uint32_t window_flags = SDL_WINDOW_SHOWN;
 
-	// Reduce the flickering on start up for the opengl driver on Windows
-	#ifdef _WIN32
-	if (strncmp(driver_name, "opengl", strlen(driver_name)) == 0)
+	if (strncmp(driver_name, "open", 4) == 0)
 		window_flags |= SDL_WINDOW_OPENGL;
-	#endif
 
 	if (fullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -1223,12 +1243,36 @@ ISDL20Window::~ISDL20Window()
 //
 void ISDL20Window::setRendererDriver()
 {
-    const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
-    for (int i = 0; drivers[i][0] != '\0'; i++)
-    {
-        if (SDL_SetHint(SDL_HINT_RENDER_DRIVER, drivers[i]))
-            break;
-    }
+	// Preferred ordering of drivers
+	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
+
+	for (int i = 0; drivers[i][0] != '\0'; i++)
+	{
+		const char* driver = drivers[i];
+		if (isRendererDriverAvailable(driver))
+		{
+			SDL_SetHint(SDL_HINT_RENDER_DRIVER, driver);
+			return;
+		}
+	}
+}
+
+
+//
+// ISDL20Window::isRendererDriverAvailable
+//
+bool ISDL20Window::isRendererDriverAvailable(const char* driver) const
+{
+	SDL_RendererInfo info;
+	int num_drivers = SDL_GetNumRenderDrivers();
+
+	for (int i = 0; i < num_drivers; i++)
+	{
+		SDL_GetRenderDriverInfo(i, &info);
+		if (strncmp(info.name, driver, strlen(driver)) == 0)
+			return true;
+	}
+	return false;
 }
 
 
@@ -1600,6 +1644,11 @@ PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
     return PixelFormat();   // shush warnings regarding no return value
 }
 
+// allows users to set their preferred render scale quality setting; acceptable values are:
+// "0" or "nearest"
+// "1" or "linear"
+// "2" or "best"
+EXTERN_CVAR(vid_filter)
 
 //
 // ISDL20Window::setMode
@@ -1637,7 +1686,8 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 			video_width, video_height,
 			&format,
 			this,
-			vsync);
+			vsync,
+			vid_filter.cstring());
 
 	mWidth = video_width;
 	mHeight = video_height;

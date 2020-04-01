@@ -217,6 +217,7 @@ public:
 	int			jumpTics;				// delay the next jump for a moment
 
 	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
+	int			suicide_time;			// Ch0wW - Time between 2 suicides.
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
@@ -297,11 +298,12 @@ public:
 		{
 		public:
 			std::string name;
+			std::string md5;
 			unsigned int next_offset;
 
-			download_t() : name(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), next_offset(other.next_offset) {}
-		}download;
+			download_t() : name(""), md5(""), next_offset(0) {}
+			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
+		} download;
 
 		client_t()
 		{

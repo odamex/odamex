@@ -41,8 +41,6 @@
 
 #include <stdlib.h>
 
-#include "errors.h"
-
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "gstrings.h"
@@ -53,8 +51,6 @@
 #include "c_console.h"
 #include "i_system.h"
 #include "g_game.h"
-#include "p_setup.h"
-#include "r_local.h"
 #include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"
@@ -793,6 +789,9 @@ void D_LoadResourceFiles(
 		std::string full_filename = D_FindResourceFile(newwadfiles[0], hash);
 		if (W_IsIWAD(full_filename))
 		{
+			if (W_IsIWADDeprecated(full_filename))
+					Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", full_filename.c_str());
+
 			iwad_provided = true;
 			iwad_filename = full_filename;
 			iwad_hash = hash;
@@ -1127,10 +1126,11 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
 	dtime_t display_wake_time = display_scheduler->getNextTime();
 
-	do
-	{
-		I_Yield();
-	} while (I_GetTime() < MIN(simulation_wake_time, display_wake_time));			
+	dtime_t now = I_GetTime();
+	dtime_t waketime = MIN(simulation_wake_time, display_wake_time);
+	if (waketime > now) {
+		I_Sleep(waketime - now);
+	}
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")

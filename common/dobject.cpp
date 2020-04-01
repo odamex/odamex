@@ -23,11 +23,9 @@
 
 
 #include "dobject.h"
-#include "m_alloc.h"
-#include "doomstat.h"		// Ideally, DObjects can be used independant of Doom.
+#include "m_alloc.h"		// Ideally, DObjects can be used independant of Doom.
 #include "d_player.h"		// See p_user.cpp to find out why this doesn't work.
 #include "z_zone.h"
-#include "r_state.h"
 
 ClassInit::ClassInit (TypeInfo *type)
 {

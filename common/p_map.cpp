@@ -678,6 +678,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
+	// Don't clip against a player
+	if (tmthing->player && thing->player && sv_unblockplayers)
+		return true;
+
 	// over / under thing
 	if (tmthing->z > thing->z + thing->height)
 		return true;
@@ -2959,7 +2963,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		P_SetMobjState (thing, S_GIBS);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
-		if ((demoplayback || demorecording) && democlassic) {
+		if ((demoplayback || demorecording)) {
 			thing->height = 0;
 			thing->radius = 0;
 		}
@@ -3111,6 +3115,9 @@ msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 		return NULL;
 
 	msecnode_t *node;
+
+	if (s == NULL)
+		I_FatalError("AddSecnode of 0 for %s\n", thing->_StaticType.Name);
 
 	node = nextnode;
 	while (node)

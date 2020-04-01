@@ -22,10 +22,8 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "doomtype.h"
-#include "i_system.h"
 #include "p_local.h"
 #include "c_effect.h"
 #include "p_mobj.h"

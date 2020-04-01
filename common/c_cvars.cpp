@@ -34,10 +34,8 @@
 
 #include "doomstat.h"
 #include "c_cvars.h"
-#include "d_player.h"
 
 #include "d_netinf.h"
-#include "gstrings.h"
 
 #include "i_system.h"
 

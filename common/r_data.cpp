@@ -25,7 +25,6 @@
 
 #include "i_system.h"
 #include "z_zone.h"
-#include "m_alloc.h"
 
 #include "m_swap.h"
 
@@ -33,7 +32,6 @@
 
 #include "doomdef.h"
 #include "r_local.h"
-#include "p_local.h"
 
 #include "doomstat.h"
 #include "r_sky.h"
