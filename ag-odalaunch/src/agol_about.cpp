@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -93,7 +93,7 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 	box = AG_BoxNewVert(tbox, AG_BOX_HFILL);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "The Odamex Launcher");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
-	label = AG_LabelNewS(box, AG_LABEL_HFILL, "Copyright (C) 2010-2012 by The Odamex Team");
+	label = AG_LabelNewS(box, AG_LABEL_HFILL, "Copyright (C) 2010-2020 by The Odamex Team");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 	label = AG_LabelNew(box, AG_LABEL_HFILL, "Version %d.%d.%d - Protocol Version %d",
 			VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION), PROTOCOL_VERSION);
