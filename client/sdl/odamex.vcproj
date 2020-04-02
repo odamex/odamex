@@ -961,10 +961,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\common\p_effect.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\common\p_enemy.cpp"
 					>
 				</File>

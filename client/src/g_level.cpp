@@ -35,31 +35,21 @@
 #include "g_level.h"
 #include "g_game.h"
 #include "g_warmup.h"
-#include "gstrings.h"
 #include "gi.h"
-#include "hu_stuff.h"
 #include "i_system.h"
 #include "i_music.h"
-#include "m_alloc.h"
-#include "m_fileio.h"
-#include "m_misc.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
-#include "p_ctf.h"
 #include "p_local.h"
-#include "p_mobj.h"
 #include "p_saveg.h"
 #include "p_setup.h"
-#include "p_unlag.h"
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "sc_man.h"
 #include "st_stuff.h"
 #include "v_video.h"
-#include "v_text.h"
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
@@ -154,6 +144,11 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
 
+
+//
+// G_DoNewGame
+// Is called whenever a new Singleplayer game will be started. 
+//
 void G_DoNewGame (void)
 {
 	if (demoplayback)
@@ -433,9 +428,9 @@ void G_DoCompleted (void)
 			//level.inttimeleft = 0;
 		}
 
-		if (!(sv_gametype == GM_DM) &&
-			((level.flags & LEVEL_NOINTERMISSION) ||
-			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB)))) {
+		if ((sv_gametype != GM_DM &&
+			( (level.flags & LEVEL_NOINTERMISSION && ( level.flags & LEVEL_EPISODEENDHACK && (!multiplayer || (demoplayback || demorecording))))) ||
+			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB)) )) {
 			G_WorldDone ();
 			return;
 		}

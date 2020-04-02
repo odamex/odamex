@@ -22,12 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "tables.h"
@@ -400,24 +398,24 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		if (change & 4)
 		{
 			// Numeric model change
-			sector_t *sec;
+			sector_t *tmpsec;
 
-			sec = (floortype == DFloor::floorRaiseToLowestCeiling ||
+			tmpsec = (floortype == DFloor::floorRaiseToLowestCeiling ||
 				   floortype == DFloor::floorLowerToLowestCeiling ||
 				   floortype == DFloor::floorRaiseToCeiling ||
 				   floortype == DFloor::floorLowerToCeiling) ?
-				  P_FindModelCeilingSector (m_FloorDestHeight, sec) :
-				  P_FindModelFloorSector (m_FloorDestHeight, sec);
+					 P_FindModelCeilingSector (m_FloorDestHeight, sec) :
+					 P_FindModelFloorSector (m_FloorDestHeight, sec);
 
-			if (sec) {
-				m_Texture = sec->floorpic;
+			if (tmpsec) {
+				m_Texture = tmpsec->floorpic;
 				switch (change & 3) {
 					case 1:
 						m_NewSpecial = 0;
 						m_Type = DFloor::genFloorChg0;
 						break;
 					case 2:
-						m_NewSpecial = sec->special;
+						m_NewSpecial = tmpsec->special;
 						m_Type = DFloor::genFloorChgT;
 						break;
 					case 3:

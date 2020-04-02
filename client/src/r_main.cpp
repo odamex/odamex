@@ -23,15 +23,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "m_alloc.h"
 #include <stdlib.h>
 #include <math.h>
-#include <limits.h>
-#include "doomdef.h"
-#include "d_net.h"
 #include "doomstat.h"
 #include "m_random.h"
-#include "m_bbox.h"
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -42,7 +37,6 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "m_vectors.h"
-#include "f_wipe.h"
 #include "am_map.h"
 
 void R_BeginInterpolation(fixed_t amount);

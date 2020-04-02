@@ -24,35 +24,22 @@
 
 #include "version.h"
 #include "minilzo.h"
-#include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_misc.h"
 #include "m_random.h"
 #include "i_system.h"
-#include "p_setup.h"
-#include "p_saveg.h"
 #include "p_tick.h"
-#include "d_main.h"
-#include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "v_video.h"
-#include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "gstrings.h"
 #include "r_data.h"
-#include "r_sky.h"
-#include "r_draw.h"
 #include "g_game.h"
 #include "g_level.h"
 #include "sv_main.h"
-#include "p_ctf.h"
-#include "gi.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -176,7 +163,8 @@ void G_Ticker (void)
 	case GS_INTERMISSION:
 	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
-		if (!mapchange || level.flags & LEVEL_NOINTERMISSION)
+		if (!mapchange || 
+			(level.flags & LEVEL_NOINTERMISSION && (level.flags & LEVEL_EPISODEENDHACK) == 0 ))
         {
 			G_ChangeMap ();
             //intcd_oldtime = 0;

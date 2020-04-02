@@ -21,10 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "info.h"
 #include "gi.h"
 
 gameinfo_t gameinfo;

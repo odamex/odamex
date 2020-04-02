@@ -33,8 +33,6 @@
 
 #include "version.h"
 
-#include <stdio.h>
-
 #include "m_memio.h"
 #include "mus2midi.h"
 #include "doomdef.h"

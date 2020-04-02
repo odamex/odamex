@@ -27,34 +27,32 @@
 #include "m_alloc.h"
 #include "m_memio.h"
 #include "version.h"
-#include "gstrings.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
-#include "i_input.h"
-#include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
-#include "m_swap.h"
 #include "v_palette.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
-#include "r_draw.h"
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
-#include "gi.h"
 
 #include <string>
-#include "m_ostring.h"
 #include <list>
-#include <vector>
 #include <algorithm>
+
+// These functions are standardized in C++11, POSIX standard otherwise
+#if defined(_WIN32) && (__cplusplus <= 199711L)
+#	define vsnprintf _vsnprintf
+#	define snprintf  _snprintf
+#endif
 
 static const int MAX_LINE_LENGTH = 8192;
 
@@ -511,7 +509,7 @@ static ConsoleHistory History;
 static void setmsgcolor(int index, const char *color);
 
 
-cvar_t msglevel("msg", "0", "", CVARTYPE_STRING, CVAR_ARCHIVE);
+cvar_t msglevel("msg", "0", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE);
 
 CVAR_FUNC_IMPL(msg0color)
 {

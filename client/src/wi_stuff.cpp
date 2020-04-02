@@ -27,8 +27,6 @@
 
 #include "z_zone.h"
 #include "m_random.h"
-#include "m_swap.h"
-#include "i_system.h"
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
@@ -1286,8 +1284,7 @@ void WI_drawStats (void)
     screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
     WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
 
-	// Only draw PAR times if we're sure the mapinfo includes one.
-	if (wbs->partime > 0)	
+	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
     {
     	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
     	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
@@ -1613,6 +1610,8 @@ void WI_unloadData (void)
 
 void WI_Drawer (void)
 {
+	C_MidPrint(NULL);	// Don't midprint anything during intermission
+
 	// If the background screen has been freed, then we really shouldn't
 	// be in here. (But it happens anyway.)
 	if (background_surface)

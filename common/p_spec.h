@@ -85,6 +85,8 @@ public:
 	bool AffectsWall (int wallnum) { return m_Type == sc_side && m_Affectee == wallnum; }
 	int GetWallNum () { return m_Type == sc_side ? m_Affectee : -1; }
 	void SetRate (fixed_t dx, fixed_t dy) { m_dx = dx; m_dy = dy; }
+	bool IsType(EScrollType type) const { return type == m_Type; }
+	int GetAffectee() const { return m_Affectee; }
 
 protected:
 	EScrollType m_Type;		// Type of scroll effect
@@ -435,6 +437,7 @@ void	P_ProcessSwitchDef ();
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
+void	P_UpdateButtons (client_t *cl);
 
 //
 // P_PLATS

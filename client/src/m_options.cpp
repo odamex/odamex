@@ -36,8 +36,6 @@
 #include "c_bind.h"
 #include "cmdlib.h"
 
-#include "d_main.h"
-
 #include "i_system.h"
 #include "i_video.h"
 #include "i_input.h"
@@ -46,15 +44,8 @@
 #include "v_text.h"
 #include "w_wad.h"
 
-#include "r_local.h"
-
-
 #include "hu_stuff.h"
 
-#include "g_game.h"
-
-#include "m_argv.h"
-#include "m_swap.h"
 #include "m_memio.h"
 
 #include "s_sound.h"
@@ -125,14 +116,11 @@ EXTERN_CVAR (co_blockmapfix)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
-EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
 
 // [Ralphis - Menu] Sound Menu
 EXTERN_CVAR (snd_musicsystem)
@@ -158,8 +146,6 @@ EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
 // Network Options
-EXTERN_CVAR (rate)
-EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictpickup)
@@ -409,20 +395,24 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t MouseType[] = {
-	{ MOUSE_DOOM,		"Doom"},
-	{ MOUSE_ZDOOM_DI,	"ZDoom"}
-};
+void M_ResetMouseValues()
+{
+	mouse_sensitivity.RestoreDefault();
+	m_pitch.RestoreDefault();
+	cl_mouselook.RestoreDefault();
+	invertmouse.RestoreDefault();
+	lookstrafe.RestoreDefault();
+	novert.RestoreDefault();
+	m_side.RestoreDefault();
+	m_forward.RestoreDefault();
+}
 
-static int previous_mouse_type;
-void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete,	"Mouse Config Type"				, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
+	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},	{2.5},		{0.1},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},	{2.5},		{0.1},		{NULL}},
+
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
@@ -432,80 +422,9 @@ static menuitem_t MouseItems[] =
 	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
 	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ slider,	"Mouse Acceleration"			, {&mouse_acceleration},{0.0},	{10.0},		{0.5},		{NULL}},
-	{ slider,	"Mouse Threshold"				, {&mouse_threshold},	{0.0},	{20.0},		{1.0},		{NULL}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
 
-void G_ConvertMouseSettings(int old_type, int new_type);
-
-static void M_UpdateMouseOptions()
-{
-	const static size_t menu_length = STACKARRAY_LENGTH(MouseItems);
-	const static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems, menu_length);
-	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length);
-	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
-	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
-
-	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
-	static menuitem_t doom_pitch_menuitem = MouseItems[mouse_pitch_index];
-	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
-	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
-
-	static menuitem_t zdoom_sens_menuitem =
-		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},		{2.5},		{0.1},		{NULL}};
-	static menuitem_t zdoom_pitch_menuitem =
-		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},		{2.5},		{0.1},		{NULL}};
-	static menuitem_t zdoom_accel_menuitem =
-		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
-	static menuitem_t zdoom_thresh_menuitem =
-		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
-
-	if (mouse_type == MOUSE_ZDOOM_DI)
-	{
-		if (mouse_sens_index < menu_length)
-			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
-		if (mouse_pitch_index < menu_length)
-			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
-		if (mouse_accel_index < menu_length)
-			memcpy(&MouseItems[mouse_accel_index], &zdoom_accel_menuitem, sizeof(menuitem_t));
-		if (mouse_thresh_index < menu_length)
-			memcpy(&MouseItems[mouse_thresh_index], &zdoom_thresh_menuitem, sizeof(menuitem_t));
-	}
-	else
-	{
-		if (mouse_sens_index < menu_length)
-			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
-		if (mouse_pitch_index < menu_length)
-			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
-		if (mouse_accel_index < menu_length)
-			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
-		if (mouse_thresh_index < menu_length)
-			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
-	}
-
-	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
-	previous_mouse_type = mouse_type;
-}
-
-void M_ResetMouseValues()
-{
-	mouse_type.RestoreDefault();
-	mouse_sensitivity.RestoreDefault();
-	m_pitch.RestoreDefault();
-	cl_mouselook.RestoreDefault();
-	invertmouse.RestoreDefault();
-	lookstrafe.RestoreDefault();
-	novert.RestoreDefault();
-	m_side.RestoreDefault();
-	m_forward.RestoreDefault();
-	mouse_acceleration.RestoreDefault();
-	mouse_threshold.RestoreDefault();
-
-	previous_mouse_type = mouse_type;
-	M_UpdateMouseOptions();
-}
 
 menu_t MouseMenu = {
     "M_MOUSET",
@@ -515,7 +434,7 @@ menu_t MouseMenu = {
     MouseItems,
 	0,
 	0,
-	&M_UpdateMouseOptions
+	NULL
 };
 
 
@@ -581,9 +500,9 @@ static float num_mussys = static_cast<float>(STACKARRAY_LENGTH(MusSys));
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.1},      {NULL} },
-	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.1},      {NULL} },
-	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.015625},      {NULL} },
+	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.015625},      {NULL} },
+	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
@@ -650,13 +569,6 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 
-static value_t BandwidthLevels[] = {
-	{ 7.0,			"56kbps" },
-	{ 200.0,		"1.5Mbps" },
-	{ 375.0,		"3.0Mbps" },
-	{ 750.0,		"6.0Mbps" }
-};
-
 static value_t PredictSectors[] = {
 	{ 0.0, "None" },
 	{ 1.0, "All" },
@@ -666,10 +578,8 @@ static value_t PredictSectors[] = {
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
-	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict sector actions",		{&cl_predictsectors},{3.0},		{0.0},		{0.0},		{PredictSectors} },
 	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
@@ -2339,8 +2249,6 @@ void ResetCustomColors (void)
 
 void MouseSetup (void) // [Toke] for mouse menu
 {
-	previous_mouse_type = mouse_type;
-	M_UpdateMouseOptions();
 	M_SwitchMenu (&MouseMenu);
 }
 

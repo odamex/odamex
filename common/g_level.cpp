@@ -38,20 +38,14 @@
 #include "i_system.h"
 #include "m_alloc.h"
 #include "m_fileio.h"
-#include "m_misc.h"
 #include "minilzo.h"
-#include "m_random.h"
 #include "p_acs.h"
-#include "p_ctf.h"
 #include "p_local.h"
-#include "p_mobj.h"
 #include "p_saveg.h"
-#include "p_setup.h"
 #include "p_unlag.h"
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
-#include "s_sndseq.h"
 #include "sc_man.h"
 #include "v_video.h"
 #include "w_wad.h"
@@ -1306,7 +1300,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY1",
 		"D_E1M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
+		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		1,
 		0
 	},
@@ -1436,7 +1430,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY2",
 		"D_E2M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,
+		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		2,
 		0
 	},
@@ -1566,7 +1560,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY3",
 		"D_E3M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,
+		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		3,
 		0
 	},
@@ -1593,7 +1587,7 @@ level_info_t LevelInfos[] = {
 		"WILV30",
 		"E4M2",
 		"E4M9",
-		165,
+		0,
 		"SKY4",
 		"D_E3M4",
 		0,
@@ -1607,7 +1601,7 @@ level_info_t LevelInfos[] = {
 		"WILV31",
 		"E4M3",
 		"E4M9",
-		255,
+		0,
 		"SKY4",
 		"D_E3M2",
 		0,
@@ -1621,7 +1615,7 @@ level_info_t LevelInfos[] = {
 		"WILV32",
 		"E4M4",
 		"E4M9",
-		135,
+		0,
 		"SKY4",
 		"D_E3M3",
 		0,
@@ -1635,7 +1629,7 @@ level_info_t LevelInfos[] = {
 		"WILV33",
 		"E4M5",
 		"E4M9",
-		150,
+		0,
 		"SKY4",
 		"D_E1M5",
 		0,
@@ -1649,7 +1643,7 @@ level_info_t LevelInfos[] = {
 		"WILV34",
 		"E4M6",
 		"E4M9",
-		180,
+		0,
 		"SKY4",
 		"D_E2M7",
 		0,
@@ -1663,7 +1657,7 @@ level_info_t LevelInfos[] = {
 		"WILV35",
 		"E4M7",
 		"E4M9",
-		390,
+		0,
 		"SKY4",
 		"D_E2M4",
 		LEVEL_CYBORGSPECIAL|LEVEL_SPECOPENDOOR,
@@ -1677,7 +1671,7 @@ level_info_t LevelInfos[] = {
 		"WILV36",
 		"E4M8",
 		"E4M9",
-		135,
+		0,
 		"SKY4",
 		"D_E2M6",
 		0,
@@ -1692,10 +1686,10 @@ level_info_t LevelInfos[] = {
 		"EndGame4",
 //		{ 'E','n','d','G','a','m','e','4' },
 		"E4M9",
-		360,
+		0,
 		"SKY4",
 		"D_E2M5",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,
+		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		4,
 		0
 	},
@@ -1706,7 +1700,7 @@ level_info_t LevelInfos[] = {
 		"WILV38",
 		"E4M3",
 		"E4M3",
-		180,
+		0,
 		"SKY4",
 		"D_E1M9",
 		0,

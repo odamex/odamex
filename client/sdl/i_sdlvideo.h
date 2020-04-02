@@ -185,7 +185,13 @@ public:
 	{	mBlit = true;		}
 
 	virtual void disableRefresh()
-	{	mBlit = false;		}
+	{
+		mBlit = false;
+		mSurfaceManager->lockSurface();
+		mSurfaceManager->getWindowSurface()->clear();
+		mSurfaceManager->finishRefresh();
+		mSurfaceManager->unlockSurface();
+	}
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
@@ -316,7 +322,8 @@ private:
 class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
-	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync);
+	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window,
+			bool vsync, const char *render_scale_quality = NULL);
 
 	virtual ~ISDL20TextureWindowSurfaceManager();
 
@@ -347,6 +354,8 @@ private:
 
 	bool mDrawLogicalRect;
 	SDL_Rect mLogicalRect;
+
+	SDL_Renderer* createRenderer(bool vsync) const;
 };
 
 
@@ -407,7 +416,13 @@ public:
 	{	mBlit = true;		}
 
 	virtual void disableRefresh()
-	{	mBlit = false;		}
+	{
+		mBlit = false;
+		mSurfaceManager->lockSurface();
+		mSurfaceManager->getWindowSurface()->clear();
+		mSurfaceManager->finishRefresh();
+		mSurfaceManager->unlockSurface();
+	}
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
@@ -433,6 +448,7 @@ private:
 	void discoverNativePixelFormat();
 	PixelFormat buildSurfacePixelFormat(uint8_t bpp);
 	void setRendererDriver();
+	bool isRendererDriverAvailable(const char* driver) const;
 	const char* getRendererDriver() const;
 	void getEvents();
 

@@ -28,17 +28,13 @@
 #include "c_dispatch.h"
 #include "d_main.h"
 #include "i_music.h"
-#include "i_system.h"
 #include "i_video.h"
-#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "hu_stuff.h"
 #include "g_game.h"
-#include "m_argv.h"
-#include "m_swap.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "doomstat.h"
@@ -52,7 +48,6 @@
 #include "g_level.h"
 
 #include "gi.h"
-#include "m_memio.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX

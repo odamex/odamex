@@ -27,9 +27,6 @@
 // to using a struct.
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-
 #include "m_fixed.h"
 #include "m_vectors.h"
 #include "actor.h"

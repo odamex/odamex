@@ -96,6 +96,7 @@ if(NOT SDL2_FOUND OR NOT SDL2_MIXER_FOUND)
     if(NOT SDLMIXER_FOUND)
       message(WARNING "SDL_mixer not found, client target not generated.")
     endif()
+    SET(BUILD_CLIENT OFF CACHE BOOL "" FORCE)
   endif()
 endif()
 
@@ -253,7 +254,7 @@ if(SDL_VERSION)
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/wad/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS
     )
 
     set_directory_properties(

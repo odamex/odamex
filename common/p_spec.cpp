@@ -37,9 +37,7 @@
 #include "doomstat.h"
 #include "gstrings.h"
 
-#include "i_system.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_random.h"
 #include "m_bbox.h"
 #include "w_wad.h"
@@ -1155,33 +1153,6 @@ int P_FindLineFromID (int id, int start)
 	return start;
 }
 
-// Hash the sector tags across the sectors and linedefs.
-static void P_InitTagLists (void)
-{
-	register int i;
-
-	for (i=numsectors; --i>=0; )		// Initially make all slots empty.
-		sectors[i].firsttag = -1;
-	for (i=numsectors; --i>=0; )		// Proceed from last to first sector
-	{									// so that lower sectors appear first
-		int j = (unsigned) sectors[i].tag % (unsigned) numsectors;	// Hash func
-		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
-		sectors[j].firsttag = i;
-	}
-
-	// killough 4/17/98: same thing, only for linedefs
-
-	for (i=numlines; --i>=0; )			// Initially make all slots empty.
-		lines[i].firstid = -1;
-	for (i=numlines; --i>=0; )        // Proceed from last to first linedef
-	{									// so that lower linedefs appear first
-		int j = (unsigned) lines[i].id % (unsigned) numlines;	// Hash func
-		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
-		lines[j].firstid = i;
-	}
-}
-
-
 //
 // Find minimum light from an adjacent sector
 //
@@ -1664,35 +1635,33 @@ void P_PlayerInSpecialSector (player_t *player)
 	{
 		switch (special)
 		{
-		  case Damage_InstantDeath:
+		
+		// Strife's Instant Death Sector
+		case Damage_InstantDeath:
 			P_DamageMobj (player->mo, NULL, NULL, 999, MOD_UNKNOWN);
 			break;
 
-		  case dDamage_Hellslime:
+		case dDamage_Hellslime:
 			// HELLSLIME DAMAGE
-			if (!player->powers[pw_ironfeet])
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
+			if (!player->powers[pw_ironfeet] && !(level.time&0x1f) )
+				P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
 			break;
 
-		  case dDamage_Nukage:
+		case dDamage_Nukage:
+		case sLight_Strobe_Hurt:
 			// NUKAGE DAMAGE
-			if (!player->powers[pw_ironfeet])
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
+			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				P_DamageMobj (player->mo, NULL, NULL, 5, MOD_SLIME);
 			break;
 
-		  case hDamage_Sludge:
-			if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
+		case hDamage_Sludge:
+			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 4, MOD_SLIME);
 			break;
 
-		  case dDamage_SuperHellslime:
-			// SUPER HELLSLIME DAMAGE
-		  case dLight_Strobe_Hurt:
-			// STROBE HURT
-			if (!player->powers[pw_ironfeet]
-				|| (P_Random ()<5) )
+		case dDamage_SuperHellslime:	// SUPER HELLSLIME DAMAGE
+		case dLight_Strobe_Hurt:		// STROBE HURT
+			if (!player->powers[pw_ironfeet] || (P_Random() < 5) )
 			{
 				if (!(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
@@ -1706,7 +1675,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(sv_gametype == GM_COOP || sv_allowexit)
+			if( sv_gametype == GM_COOP || sv_allowexit )
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);
@@ -1716,14 +1685,18 @@ void P_PlayerInSpecialSector (player_t *player)
 		  case dDamage_LavaWimpy:
 		  case dScroll_EastLavaDamage:
 			if (!(level.time & 15))
+			{
 				P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
-
+				P_HitFloor(player->mo);
+			}
 			break;
 
 		  case dDamage_LavaHefty:
-			if(!(level.time & 15))
+			if (!(level.time & 15))
+			{
 				P_DamageMobj(player->mo, NULL, NULL, 8, MOD_LAVA);
-
+				P_HitFloor(player->mo);
+			}
 			break;
 
 		  default:
@@ -1738,18 +1711,15 @@ void P_PlayerInSpecialSector (player_t *player)
 			case 0x000: // no damage
 				break;
 			case 0x100: // 2/5 damage per 31 ticks
-				if (!player->powers[pw_ironfeet])
-					if (!(level.time&0x1f))
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
 				break;
 			case 0x200: // 5/10 damage per 31 ticks
-				if (!player->powers[pw_ironfeet])
-					if (!(level.time&0x1f))
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
 				break;
 			case 0x300: // 10/20 damage per 31 ticks
-				if (!player->powers[pw_ironfeet]
-					|| (P_Random(player->mo)<5))	// take damage even with suit
+				if (!player->powers[pw_ironfeet] || (P_Random(player->mo)<5))	// take damage even with suit
 				{
 					if (!(level.time&0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
@@ -1758,7 +1728,8 @@ void P_PlayerInSpecialSector (player_t *player)
 		}
 
 		// [RH] Apply any customizable damage
-		if (sector->damage) {
+		if (sector->damage) 
+		{
 			if (sector->damage < 20) {
 				if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, sector->damage, sector->mod);
@@ -2002,8 +1973,6 @@ void P_SpawnSpecials (void)
 
 	// P_InitTagLists() must be called before P_FindSectorFromTag()
 	// or P_FindLineFromID() can be called.
-
-	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 	P_SpawnScrollers(); // killough 3/7/98: Add generalized scrollers
 	P_SpawnFriction();	// phares 3/12/98: New friction model using linedefs
 	P_SpawnPushers();	// phares 3/20/98: New pusher model using linedefs
@@ -2148,10 +2117,8 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t centerfloor = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		fixed_t height = centerfloor + centerceiling;
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
 		dx = FixedMul(dx, delta);
@@ -2170,28 +2137,24 @@ void DScroller::RunThink ()
 
 	switch (m_Type)
 	{
-		side_t *side;
 		sector_t *sec;
 		fixed_t height, waterheight;	// killough 4/4/98: add waterheight
 		msecnode_t *node;
 		AActor *thing;
 
 		case sc_side:				// killough 3/7/98: Scroll wall texture
-			side = sides + m_Affectee;
-			side->textureoffset += dx;
-			side->rowoffset += dy;
+			sides[m_Affectee].textureoffset += dx;
+			sides[m_Affectee].rowoffset += dy;
 			break;
 
 		case sc_floor:				// killough 3/7/98: Scroll floor texture
-			sec = sectors + m_Affectee;
-			sec->floor_xoffs += dx;
-			sec->floor_yoffs += dy;
+			sectors[m_Affectee].floor_xoffs += dx;
+			sectors[m_Affectee].floor_yoffs += dy;
 			break;
 
 		case sc_ceiling:			// killough 3/7/98: Scroll ceiling texture
-			sec = sectors + m_Affectee;
-			sec->ceiling_xoffs += dx;
-			sec->ceiling_yoffs += dy;
+			sectors[m_Affectee].ceiling_xoffs += dx;
+			sectors[m_Affectee].ceiling_yoffs += dy;
 			break;
 
 		case sc_carry:
@@ -2254,12 +2217,9 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t centerfloor =
-			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling =
-			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		m_LastHeight = centerfloor + centerceiling;
+		m_LastHeight = height;
 	}
 	m_Affectee = affectee;
 }
@@ -2291,12 +2251,9 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t centerfloor =
-			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling =
-			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		m_LastHeight = centerfloor + centerceiling;
+		m_LastHeight = height;
 	}
 	m_Affectee = *l->sidenum;
 }
@@ -2420,6 +2377,7 @@ static void P_SpawnScrollers(void)
 				break;
 
 			default:
+				l->special = special;
 				break;
 		}
 	}

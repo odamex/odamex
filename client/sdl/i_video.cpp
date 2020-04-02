@@ -25,15 +25,13 @@
 #include <cstdlib>
 #include <climits>
 #include <string>
+#include <algorithm>
 
 #include "i_video.h"
 #include "v_video.h"
 
 #include "i_system.h"
-#include "c_console.h"
 #include "c_cvars.h"
-#include "c_dispatch.h"
-#include "m_argv.h"
 #include "m_misc.h"
 #include "i_sdlvideo.h"
 #include "i_input.h"
@@ -655,11 +653,7 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	if (converted_surface)
 		converted_surface->setPalette(palette);
 
-	// handle the -noblit parameter when playing a LMP demo
-	if (noblit)
-		window->disableRefresh();
-	else
-		window->enableRefresh();
+	window->enableRefresh();
 }
 
 

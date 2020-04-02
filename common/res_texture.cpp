@@ -24,7 +24,6 @@
 
 #include "i_system.h"
 #include "tables.h"
-#include "r_defs.h"
 #include "r_state.h"
 #include "g_level.h"
 #include "m_random.h"

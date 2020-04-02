@@ -26,7 +26,6 @@
 
 #include <stdlib.h>
 #include <list>
-#include <sstream>
 
 #include "win32inc.h"
 
@@ -40,7 +39,6 @@
 #include "c_console.h"
 #include "c_cvars.h"
 #include "i_system.h"
-#include "c_dispatch.h"
 #include "hu_stuff.h"
 
 #ifdef _XBOX
