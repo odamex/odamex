@@ -652,10 +652,10 @@ CVAR_FUNC_DECL(	vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)",
 
 #ifdef GCONSOLE
 CVAR_FUNC_DECL(	vid_fullscreen, "1", "Full screen video mode",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
 CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",

@@ -41,6 +41,14 @@ enum EDisplayType
 	DISPLAY_Both
 };
 
+enum EWindowMode
+{
+	WINDOW_Windowed = 0,
+	WINDOW_DesktopFullscreen = 1,
+	WINDOW_Fullscreen = 2,
+};
+
+
 // forward definitions
 class IVideoMode;
 class IVideoCapabilities;
@@ -52,7 +60,7 @@ void I_InitHardware();
 void STACK_ARGS I_ShutdownHardware();
 bool I_VideoInitialized();
 
-void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync);
+void I_SetVideoMode(int width, int height, int bpp, EWindowMode window_mode, bool vsync);
 void I_SetWindowSize(int width, int height);
 
 const IVideoCapabilities* I_GetVideoCapabilities();
@@ -518,7 +526,7 @@ public:
 	virtual bool usingVSync() const
 	{	return false;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) = 0;
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) = 0;
 
 	virtual void lockSurface() { }
 	virtual void unlockSurface() { }
@@ -572,7 +580,7 @@ public:
 	virtual const PixelFormat* getPixelFormat() const
 	{	return &mPixelFormat;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync)
 	{
 		if (mPrimarySurface == NULL)
 		{

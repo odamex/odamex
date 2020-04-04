@@ -361,11 +361,11 @@ void ISDL12SoftwareWindowSurfaceManager::finishRefresh()
 // Constructs a new application window using SDL 1.2.
 // A ISDL12WindowSurface object is instantiated for frame rendering.
 //
-ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
+ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) :
 	IWindow(),
 	mSurfaceManager(NULL),
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
-	mIsFullScreen(fullscreen), mUseVSync(vsync),
+	mWindowMode(window_mode), mUseVSync(vsync),
 	mNeedPaletteRefresh(true), mBlit(true), mIgnoreResize(false), mLocks(0)
 { }
 
@@ -442,7 +442,7 @@ void ISDL12Window::getEvents()
 			else if (sdl_ev.type == SDL_VIDEORESIZE)
 			{
 				// Resizable window mode resolutions
-				if (!vid_fullscreen && !mIgnoreResize)
+				if (vid_fullscreen == WINDOW_Windowed && !mIgnoreResize)
 				{
 					char tmp[256];
 					sprintf(tmp, "vid_setmode %i %i", sdl_ev.resize.w, sdl_ev.resize.h);
@@ -715,8 +715,10 @@ const PixelFormat* ISDL12Window::getPixelFormat() const
 // calling SDL_Flip.
 //
 bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
-							bool video_fullscreen, bool vsync)
+							EWindowMode window_mode, bool vsync)
 {
+	bool is_windowed = window_mode == WINDOW_Windowed;
+
 	uint32_t flags = 0;
 
 	if (vsync)
@@ -724,19 +726,18 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	else
 		flags |= SDL_SWSURFACE;
 
-	if (video_fullscreen)
-		flags |= SDL_FULLSCREEN;
-	else
+	if (is_windowed)
+	{
 		flags |= SDL_RESIZABLE;
+	}
+	else
+	{
+		flags |= SDL_FULLSCREEN;
+		if (video_bpp == 8)
+			flags |= SDL_HWPALETTE;
+	}
 
-	if (video_fullscreen && video_bpp == 8)
-		flags |= SDL_HWPALETTE;
-
-	// TODO: check for multicore
 	flags |= SDL_ASYNCBLIT;
-
-	//if (video_fullscreen)
-	//	flags = ((flags & (~SDL_SWSURFACE)) | SDL_HWSURFACE);
 
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
@@ -751,7 +752,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (sdl_surface == NULL)
 	{
 		I_FatalError("I_SetVideoMode: unable to set video mode %ux%ux%u (%s): %s\n",
-				video_width, video_height, video_bpp, video_fullscreen ? "fullscreen" : "windowed",
+				video_width, video_height, video_bpp, is_windowed ? "windowed" : "fullscreen",
 				SDL_GetError());
 		return false;
 	}
@@ -768,7 +769,8 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	mWidth = sdl_surface->w;
 	mHeight = sdl_surface->h;
 	mBitsPerPixel = format->getBitsPerPixel();
-	mIsFullScreen = (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
+	if (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN
+		mWindowMode(WINDOW_Fullscreen);
 	mUseVSync = vsync;
 
 	if (SDL_MUSTLOCK(sdl_surface))
@@ -793,7 +795,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (SDL_MUSTLOCK(sdl_surface))
 		SDL_UnlockSurface(sdl_surface);
 
-	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, !is_windowed);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
@@ -1184,11 +1186,11 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 // Constructs a new application window using SDL 1.2.
 // A ISDL20WindowSurface object is instantiated for frame rendering.
 //
-ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
+ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) :
 	IWindow(),
 	mSDLWindow(NULL), mSurfaceManager(NULL),
 	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
-	mIsFullScreen(fullscreen), mUseVSync(vsync),
+	mWindowMode(window_mode), mUseVSync(vsync),
 	mNeedPaletteRefresh(true), mBlit(true),
 	mMouseFocus(false), mKeyboardFocus(false),
 	mLocks(0)
@@ -1202,10 +1204,12 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	if (strncmp(driver_name, "open", 4) == 0)
 		window_flags |= SDL_WINDOW_OPENGL;
 
-	if (fullscreen)
-		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-	else
+	if (window_mode == WINDOW_Windowed)
 		window_flags |= SDL_WINDOW_RESIZABLE;
+	else if (window_mode == WINDOW_Fullscreen)
+		window_flags |= SDL_WINDOW_FULLSCREEN;
+	else if (window_mode == WINDOW_DesktopFullscreen)
+		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 	mSDLWindow = SDL_CreateWindow(
 			"",			// Empty title for now - it will be set later
@@ -1397,7 +1401,7 @@ void ISDL20Window::getEvents()
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESIZED)
 				{
 					// Resizable window mode resolutions
-					if (!vid_fullscreen)
+					if (vid_fullscreen == WINDOW_Windowed)
 					{
 						char tmp[256];
 						sprintf(tmp, "vid_setmode %i %i", sdl_ev.window.data1, sdl_ev.window.data2);
@@ -1664,7 +1668,7 @@ EXTERN_CVAR(vid_filter)
 // calling SDL_Flip.
 //
 bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
-							bool video_fullscreen, bool vsync)
+							EWindowMode window_mode, bool vsync)
 {
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
@@ -1672,8 +1676,11 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	I_PauseMouse();
 
 	uint32_t fullscreen_flags = 0;
-	if (video_fullscreen)
-		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	if (window_mode == WINDOW_Fullscreen)
+		fullscreen_flags = SDL_WINDOW_FULLSCREEN;
+	else if (window_mode == WINDOW_DesktopFullscreen)
+		fullscreen_flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
@@ -1693,10 +1700,10 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	mHeight = video_height;
     mBitsPerPixel = video_bpp;
 
-	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
-	mUseVSync = vsync;
+	bool is_fullscreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, is_fullscreen);
 
-	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
+	mUseVSync = vsync;
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
@@ -1759,7 +1766,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
-	mWindow = new ISDL20Window(640, 480, 8, false, false);
+	mWindow = new ISDL20Window(640, 480, 8, WINDOW_Windowed, false);
 }
 
 

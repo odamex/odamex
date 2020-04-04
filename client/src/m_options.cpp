@@ -978,11 +978,18 @@ static value_t VidFPSCaps[] = {
 	{ 0.0,		"Unlimited" }
 };
 
+static value_t FullScreenOptions[] = {
+	{ 0.0,		"Window" },
+	{ 1.0,		"Desktop Full Screen" },
+	{ 2.0,		"True Full Screen" }
+};
+
+
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
-	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,

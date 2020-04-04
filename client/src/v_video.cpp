@@ -481,10 +481,10 @@ void V_SetResolution(uint16_t width, uint16_t height)
 bool V_DoSetResolution(uint16_t width, uint16_t height)
 {
 	int surface_bpp = vid_32bpp ? 32 : 8;
-	bool fullscreen = (vid_fullscreen != 0.0f);
+	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
 	bool vsync = (vid_vsync != 0.0f);
 
-	I_SetVideoMode(width, height, surface_bpp, fullscreen, vsync);
+	I_SetVideoMode(width, height, surface_bpp, window_mode, vsync);
 	if (!I_VideoInitialized())
 		return false;
 

@@ -138,7 +138,7 @@ private:
 class ISDL12Window : public IWindow
 {
 public:
-	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual ~ISDL12Window();
 
@@ -171,10 +171,10 @@ public:
 
 	virtual const PixelFormat* getPixelFormat() const;
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual bool isFullScreen() const
-	{	return mIsFullScreen;	}
+	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
 
 	virtual bool isFocused() const;
 
@@ -221,7 +221,7 @@ private:
 
 	IVideoMode			mVideoMode;
 
-	bool				mIsFullScreen;
+	bool				mWindowMode;
 	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
@@ -368,7 +368,7 @@ private:
 class ISDL20Window : public IWindow
 {
 public:
-	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual ~ISDL20Window();
 
@@ -402,10 +402,10 @@ public:
 	virtual const PixelFormat* getPixelFormat() const
 	{	return &mPixelFormat;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual bool isFullScreen() const
-	{	return mIsFullScreen;	}
+	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
 
 	virtual bool isFocused() const;
 
@@ -463,7 +463,7 @@ private:
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
 
-	bool				mIsFullScreen;
+	EWindowMode			mWindowMode;
 	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;

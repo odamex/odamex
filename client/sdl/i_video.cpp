@@ -544,16 +544,18 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 // Main function to set the video mode at the hardware level.
 //
-void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, bool vsync)
+void I_SetVideoMode(int width, int height, int surface_bpp, EWindowMode window_mode, bool vsync)
 {
+	bool is_fullscreen = window_mode != WINDOW_Windowed;
+
 	// ensure the requested mode is valid
-	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
+	IVideoMode desired_mode(width, height, surface_bpp, is_fullscreen);
 	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
 	assert(mode.isValid());
 
 	IWindow* window = I_GetWindow();
 
-	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), window_mode, vsync);
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
@@ -1107,7 +1109,8 @@ void I_SetWindowSize(int width, int height)
 	if (I_VideoInitialized())
 	{
 		int bpp = vid_32bpp ? 32 : 8;
-		I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
+		EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
+		I_SetVideoMode(width, height, bpp, window_mode, vid_vsync);
 	}
 }
 
