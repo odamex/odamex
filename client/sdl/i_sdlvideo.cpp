@@ -1652,19 +1652,14 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	I_PauseMouse();
 
 	uint32_t fullscreen_flags = 0;
-	if (window_mode == WINDOW_Fullscreen)
-		fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
-	else if (window_mode == WINDOW_DesktopFullscreen)
+	if (window_mode == WINDOW_DesktopFullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	else if (window_mode == WINDOW_Fullscreen)
+		fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
 
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
-	if (SDL_GetWindowFlags(mSDLWindow) & SDL_WINDOW_FULLSCREEN)
-		mWindowMode = WINDOW_Fullscreen;
-	else if (SDL_GetWindowFlags(mSDLWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP)
-		mWindowMode = WINDOW_DesktopFullscreen;
-	else
-		mWindowMode = WINDOW_Windowed;
+	mWindowMode = window_mode;
 	bool is_fullscreen = mWindowMode != WINDOW_Windowed;
 
 	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
