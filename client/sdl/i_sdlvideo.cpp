@@ -769,8 +769,10 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	mWidth = sdl_surface->w;
 	mHeight = sdl_surface->h;
 	mBitsPerPixel = format->getBitsPerPixel();
-	if (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN
-		mWindowMode(WINDOW_Fullscreen);
+	if ((sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN)
+		mWindowMode = WINDOW_Fullscreen;
+	else
+		mWindowMode = WINDOW_Windowed;
 	mUseVSync = vsync;
 
 	if (SDL_MUSTLOCK(sdl_surface))
@@ -856,7 +858,7 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL12VideoCapabilities();
 
-	mWindow = new ISDL12Window(640, 480, 8, false, false);
+	mWindow = new ISDL12Window(640, 480, 8, WINDOW_Windowed, false);
 }
 
 
