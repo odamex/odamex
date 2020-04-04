@@ -36,7 +36,6 @@
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"
-//#include "stringutils.h"
 
 extern NetDemo netdemo;
 
