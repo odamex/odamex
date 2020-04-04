@@ -176,6 +176,9 @@ public:
 	virtual bool isFullScreen() const
 	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
 
+	virtual EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
+
 	virtual bool isFocused() const;
 
 	virtual bool usingVSync() const
@@ -221,7 +224,7 @@ private:
 
 	IVideoMode			mVideoMode;
 
-	bool				mWindowMode;
+	EWindowMode			mWindowMode;
 	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
@@ -406,6 +409,9 @@ public:
 
 	virtual bool isFullScreen() const
 	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
+
+	virtual EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
 
 	virtual bool isFocused() const;
 

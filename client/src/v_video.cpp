@@ -142,7 +142,7 @@ bool V_CheckModeAdjustment()
 		return true;
 	}
 
-	if (vid_fullscreen != window->isFullScreen())
+	if ((EWindowMode)vid_fullscreen.asInt() != window->getWindowMode())
 		return true;
 
 	if (vid_filter.str() != vid_filter_old) {

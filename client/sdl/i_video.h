@@ -520,6 +520,8 @@ public:
 	virtual bool isFullScreen() const
 	{	return getVideoMode()->isFullScreen();	}
 
+	virtual EWindowMode getWindowMode() const = 0;
+
 	virtual bool isFocused() const
 	{	return false;	}
 
@@ -565,7 +567,8 @@ class IDummyWindow : public IWindow
 public:
 	IDummyWindow() :
 		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, true),
-		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0)
+		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0),
+		mWindowMode(WINDOW_DesktopFullscreen)
 	{ }
 
 	virtual ~IDummyWindow()
@@ -589,6 +592,7 @@ public:
 			height = mVideoMode.getHeight();
 			bpp = mVideoMode.getBitsPerPixel();
 			mPrimarySurface = I_AllocateSurface(width, height, bpp);
+			mWindowMode = window_mode;
 		}
 		return mPrimarySurface != NULL;
 	}
@@ -596,6 +600,8 @@ public:
 	virtual bool isFullScreen() const
 	{	return mVideoMode.isFullScreen();	}
 
+	virtual EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
 
 	virtual std::string getVideoDriverName() const
 	{
@@ -612,6 +618,7 @@ private:
 
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
+	EWindowMode			mWindowMode;
 };
 
 
