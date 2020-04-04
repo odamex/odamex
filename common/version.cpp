@@ -36,7 +36,8 @@ typedef std::map<std::string, std::string> source_files_t;
 
 source_files_t &get_source_files()
 {
-	static std::auto_ptr<source_files_t> source_files(new source_files_t);
+	// static std::auto_ptr<source_files_t> source_files(new source_files_t);
+	static std::unique_ptr<source_files_t> source_files(new source_files_t);
 	return *source_files.get();
 }
 

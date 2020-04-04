@@ -262,7 +262,7 @@ std::string Timer(int& color)
 	if (hours == 0 && minutes < 1)
 		color = CR_BRICK;
 
-	char str[9];
+	char str[25];
 	if (hours)
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 	else
@@ -289,7 +289,7 @@ std::string IntermissionTimer()
 	timeleft -= minutes * TICRATE * 60;
 	int seconds = timeleft / TICRATE;
 
-	char str[9];
+	char str[25];
 	if (hours)
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 	else
@@ -451,7 +451,7 @@ std::string NetdemoElapsed() {
 	timeelapsed -= minutes * 60;
 	int seconds = timeelapsed;
 
-	char str[9];
+	char str[21];
 	if (hours) {
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 	} else {

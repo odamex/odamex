@@ -232,7 +232,10 @@ int main (int argc, char **argv)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 
-	    seteuid (getuid ());
+		int r_euid = seteuid (getuid ());
+
+		if(r_euid < 0)
+			perror(NULL);
 
 		Args.SetArgs (argc, argv);
 

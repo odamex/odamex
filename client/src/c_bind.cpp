@@ -36,6 +36,7 @@
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"
+//#include "stringutils.h"
 
 extern NetDemo netdemo;
 
@@ -729,7 +730,7 @@ C_GetKeyStringsFromCommand
 Finds binds from a command and returns it into a std::string .
 - If TRUE, second arg returns up to 2 keys. ("x OR y")
 */
-std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
+std::string C_GetKeyStringsFromCommand(const char *cmd, bool bTwoEntries)
 {
 	int first = -1;
 	int second = -1;
@@ -737,7 +738,7 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 	C_GetKeysForCommand(cmd, &first, &second);
 
 	if (!first && !second)
-		return "<???>";
+		return "< ??? >";
 
 	if (bTwoEntries)
 		return C_NameKeys(first, second);
@@ -748,7 +749,7 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 		else
 			return KeyName(first);
 	}
-	return "<???>";
+	return "< ??? >";
 }
 
 

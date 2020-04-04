@@ -1734,7 +1734,12 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (deh) {
 			filelen = M_FileLength (deh);
 			if ( (PatchFile = new char[filelen + 1]) ) {
-				fread (PatchFile, 1, filelen, deh);
+				size_t readlen = fread (PatchFile, 1, filelen, deh);
+				if ( readlen < 1 || readlen < filelen ) {
+					DPrintf ("Failed to read patch\n");
+					fclose (deh);
+					return false;
+				}
 				fclose (deh);
 			}
 		}

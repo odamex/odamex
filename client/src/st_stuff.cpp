@@ -534,8 +534,8 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-    else if (ev->type == ev_keydown && ev->data2)
-    {
+	else if (ev->type == ev_keydown && ev->data2)
+	{
 		char key = ev->data2;
 
         // 'dqd' cheat for toggleable god mode
@@ -691,6 +691,7 @@ bool ST_Responder (event_t *ev)
         else if (cht_CheckCheat(&cheat_clev, key))
         {
             char buf[16];
+	    char cmdstr[21];
 			//char *bb;
 
             cht_GetParam(&cheat_clev, buf);
@@ -701,8 +702,8 @@ bool ST_Responder (event_t *ev)
 			if (gamemode == retail_chex)
 				sprintf(buf,"1%c",buf[1]);
 
-            sprintf (buf + 3, "map %s\n", buf);
-            AddCommandString (buf + 3);
+            sprintf (cmdstr, "map %s\n", buf);
+            AddCommandString (cmdstr);
             eatkey = true;
         }
 
@@ -717,12 +718,13 @@ bool ST_Responder (event_t *ev)
         else if (cht_CheckCheat(&cheat_mus, key))
         {
             char buf[16];
+	    char cmdstr[23];
 
             cht_GetParam(&cheat_mus, buf);
             buf[2] = 0;
 
-            sprintf (buf + 3, "idmus %s\n", buf);
-            AddCommandString (buf + 3);
+            sprintf (cmdstr, "idmus %s\n", buf);
+            AddCommandString (cmdstr);
             eatkey = true;
         }
     }

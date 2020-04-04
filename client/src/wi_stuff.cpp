@@ -1382,7 +1382,7 @@ static int WI_CalcWidth (const char *str)
 void WI_loadData (void)
 {
 	int i, j;
-	char name[9];
+	char name[17];
 	animinfo_t *a;
 
 	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))

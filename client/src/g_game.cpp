@@ -1433,7 +1433,13 @@ void G_DoLoadGame (void)
 	}
 
 	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	fread (text, 16, 1, stdfile);
+	size_t readlen = fread (text, 16, 1, stdfile);
+	if (readlen < 1)
+	{
+		Printf (PRINT_HIGH, "Failed to read savegame '%s'\n", savename);
+		fclose(stdfile);
+		return;
+	}
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
@@ -1442,7 +1448,13 @@ void G_DoLoadGame (void)
 
 		return;
 	}
-	fread (text, 8, 1, stdfile);
+	readlen = fread (text, 8, 1, stdfile);
+	if (readlen < 1)
+	{
+		Printf (PRINT_HIGH, "Failed to read savegame '%s'\n", savename);
+		fclose(stdfile);
+		return;
+	}
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
