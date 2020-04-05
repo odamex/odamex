@@ -201,6 +201,11 @@ value_t OnOff[2] = {
 	{ 1.0, "On" }
 };
 
+value_t HideShow[2] = {
+	{ 0.0, "Hide" },
+	{ 1.0, "Show" }
+};
+
 value_t OffOn[2] = {
 	{ 0.0, "On" },
 	{ 1.0, "Off" }
@@ -586,12 +591,13 @@ static menuitem_t NetworkItems[] = {
 	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
 	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
-	 { redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ bricktext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Autorecord filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Split every map",				{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
+
+	{ redtext,		" ",							{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
@@ -823,6 +829,7 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
+EXTERN_CVAR (con_coloredmessages)
 EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
@@ -875,8 +882,11 @@ static menuitem_t MessagesItems[] = {
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
-    { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete ,"Game Message Type",    {&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
+	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext,"Display settings",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+    { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
+	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
