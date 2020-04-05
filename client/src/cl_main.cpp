@@ -1862,12 +1862,13 @@ void CL_Print (void)
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
+	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "\\c*%s", str);
+		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);	
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "\\c!%s", str);
+		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "\\ck%s", str);
+		Printf(level, "%sk%s", TEXTCOLOR_ESCAPE, str);
 	else
 		Printf(level, "%s", str);
 

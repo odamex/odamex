@@ -121,7 +121,7 @@ class ConsoleLine
 {
 public:
 	ConsoleLine();
-	ConsoleLine(const std::string& _text, const std::string& _color_code = "\\c-",
+	ConsoleLine(const std::string& _text, const std::string& _color_code = "\034-",	// TEXTCOLOR_ESCAPE
 			int _print_level = PRINT_HIGH);
 
 	void join(const ConsoleLine& other);
@@ -143,7 +143,7 @@ public:
 // ============================================================================
 
 ConsoleLine::ConsoleLine() :
-	color_code("\\c-"), wrapped(false), print_level(PRINT_HIGH),
+	color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),	// TEXTCOLOR_ESCAPE
 	timeout(gametic + con_notifytime.asInt() * TICRATE)
 { }
 
@@ -180,10 +180,10 @@ ConsoleLine ConsoleLine::split(size_t max_width)
 	const char* s = text.c_str();
 	while (s)
 	{
-		if (s[0] == '\\' && s[1] == 'c' && s[2] != '\0')
+		if (s[0] == TEXTCOLOR_ESCAPE && s[1] != '\0')
 		{
-			strncpy(wrapped_color_code, s, 3);
-			s += 3;
+			strncpy(wrapped_color_code, s, 2);
+			s += 2;
 			continue;
 		}
 
@@ -631,9 +631,9 @@ static int C_StringWidth(const char* str)
 	while (*str)
 	{
 		// skip over color markup escape codes
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			str += 3;
+			str += 2;
 			continue;
 		}
 
@@ -852,10 +852,10 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 
 	// [SL] the user's message color preference overrides the given color_code
 	// ...unless it's supposed to be formatted bold.
-	if (color_code && color_code[2] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
+	if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
 	{
-		static char printlevel_color_code[4];
-		sprintf(printlevel_color_code, "\\c%c", 'a' + PrintColors[printlevel]);
+		static char printlevel_color_code[3];
+		sprintf(printlevel_color_code, "\034%c", 'a' + PrintColors[printlevel]);
 		color_code = printlevel_color_code;
 	}
 
