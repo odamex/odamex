@@ -837,7 +837,7 @@ DWORD FBehavior::FindLanguage (DWORD langid, bool ignoreregion) const
 	return 0;
 }
 
-void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int arg1, int arg2) const
+void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
 {
 	ScriptPtr *ptr;
 	int i;
@@ -848,7 +848,7 @@ void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int a
 		if (ptr->Type == type)
 		{
 			P_GetScriptGoing (activator, NULL, ptr->Number,
-				(int *)(ptr->Address + Data), 0, arg0, arg1, arg2, 0, true);
+				(int *)(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
 		}
 	}
 }

@@ -72,7 +72,7 @@ public:
 	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
 	const char *LookupString (DWORD index, DWORD ofs=0) const;
 	const char *LocalizeString (DWORD index) const;
-	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0) const;
+	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
 	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
 	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }

@@ -2087,7 +2087,7 @@ void P_SpawnSpecials (void)
 	// [RH] Start running any open scripts on this map
 	if (level.behavior != NULL)
 	{
-		level.behavior->StartTypedScripts (SCRIPT_Open, NULL);
+		level.behavior->StartTypedScripts (SCRIPT_Open, NULL, 0, 0, 0, false);
 	}
 }
 

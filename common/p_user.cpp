@@ -985,7 +985,6 @@ player_s::player_s()
 	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 	doreborn = false;
 	QueuePosition = 0;
-	//SpawnNextMap = false;
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1098,7 +1097,6 @@ player_s &player_s::operator =(const player_s &other)
 
 	doreborn = other.doreborn;
 	QueuePosition = other.QueuePosition;
-	//SpawnNextMap = other.SpawnNextMap;
 
 	return *this;
 }
