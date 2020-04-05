@@ -245,6 +245,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	y = iy;
 	radius = info->radius;
 	height = P_ThingInfoHeight(info);
+	damage = info->damage;
 	flags = info->flags;
 	flags2 = info->flags2;
 	health = info->spawnhealth;
