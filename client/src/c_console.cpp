@@ -85,7 +85,8 @@ static bool midprinting;
 #define SCROLLDN 2
 #define SCROLLNO 0
 
-EXTERN_CVAR (con_buffersize)
+EXTERN_CVAR(con_coloredmessages)
+EXTERN_CVAR(con_buffersize)
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(print_stdout)
 EXTERN_CVAR(con_notifytime)
@@ -915,10 +916,14 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	vsnprintf(outline, STACKARRAY_LENGTH(outline), format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
+	// ToDo: there may be more characters not allowed on a consoleprint, 
+	// maybe restrict a few ASCII stuff later on ?
 	int len = strlen(outline);
 	for (int i = 0; i < len; i++)
+	{
 		if (outline[i] == 0x07)
 			outline[i] = '.';
+	}
 
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)
@@ -926,7 +931,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		strcpy(outlinelog, outline);
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for(int i = 0; i < len; i++)
+		for (int i = 0; i < len; i++)
 		{
 			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
 				outlinelog[i] = '=';
@@ -954,7 +959,12 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
 
-	C_PrintString(printlevel, color_code, outline);
+	std::string sanitized_str(outline);
+
+	if (!con_coloredmessages)
+		StripColorCodes(sanitized_str);
+
+	C_PrintString(printlevel, color_code, sanitized_str.c_str());
 
 	return len;
 }

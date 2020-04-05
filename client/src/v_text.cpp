@@ -106,7 +106,7 @@ int V_GetTextColor(const char* str)
 	{
 		int c = str[1];
 		if (c == '-')
-			return CR_GRAY;			// use print color
+			return msg2color;			// use print color
 		if (c == '+')
 			return CR_GREEN;		// use print bold color
 		if (c == '*')
