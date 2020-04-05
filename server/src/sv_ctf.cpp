@@ -71,36 +71,6 @@ static int ctf_points[NUM_CTF_SCORE] =
 	1 // MANUALRETURN
 };
 
-std::string V_GetTeamColor(int team)
-{
-	std::ostringstream buffer;
-	char* color;
-
-	if (team_names[team] == "RED")
-		color = TEXTCOLOR_RED;
-	else
-		color = TEXTCOLOR_BLUE;
-
-	buffer << color << team_names[team] << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
-}
-
-std::string V_GetTeamColorPlayer(player_t& player)
-{
-	std::ostringstream buffer;
-	char *color;
-
-	if (team_names[player.userinfo.team] == "RED")
-		color = TEXTCOLOR_RED;
-	else
-		color = TEXTCOLOR_BLUE;
-
-		buffer << color << player.userinfo.netname << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
-}
-
 std::string V_GetFlagColor(flag_t flag)
 {
 	std::ostringstream buffer;

@@ -36,6 +36,10 @@
 #include "p_acs.h"
 #include "g_warmup.h"
 
+#ifdef SERVER_APP
+#include "sv_main.h"
+#endif
+
 extern bool predicting;
 
 EXTERN_CVAR(sv_doubleammo)
@@ -1082,6 +1086,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		ClientObituary(target, inflictor, source);
 	}
+
+#ifdef SERVER_APP
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
@@ -1090,11 +1096,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
             splayer->fragcount >= sv_fraglimit && !shotclock)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
-            SV_BroadcastPrintf(
-                PRINT_HIGH,
-                "Frag limit hit. Game won by %s!\n",
-                splayer->userinfo.netname.c_str()
-            );
+            SV_BroadcastPrintf( PRINT_HIGH, "Frag limit hit. Game won by %s!\n", splayer->userinfo.netname.c_str());
             shotclock = TICRATE*2;
 		}
 
@@ -1105,17 +1107,15 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			{
 				if (TEAMpoints[i] >= sv_fraglimit)
 				{
-					SV_BroadcastPrintf(
-                        PRINT_HIGH,
-                        "Frag limit hit. %s team wins!\n",
-                        team_names[i]
-                    );
+					SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. %s team wins!\n", V_GetTeamColor(i).c_str() );
 					shotclock = TICRATE * 2;
 					break;
 				}
 			}
 		}
 	}
+#endif
+
 
 	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
     {

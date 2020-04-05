@@ -122,7 +122,8 @@ void SV_SendLoadMap(const std::vector<std::string> &wadnames,
                     const std::vector<std::string> &patchnames,
                     const std::string &mapname, player_t *player);
 
-
+std::string V_GetTeamColor(int team);
+std::string V_GetTeamColorPlayer(player_t& player);
 
 
 extern bool unnatural_level_progression;

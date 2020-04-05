@@ -64,6 +64,7 @@
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
+#include "v_textcolors.h"
 
 #include <algorithm>
 #include <sstream>
@@ -112,6 +113,36 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
+
+std::string V_GetTeamColor(int team)
+{
+	std::ostringstream buffer;
+	char* color;
+
+	if (team_names[team] == "RED")
+		color = TEXTCOLOR_RED;
+	else
+		color = TEXTCOLOR_BLUE;
+
+	buffer << color << team_names[team] << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
+
+std::string V_GetTeamColorPlayer(player_t& player)
+{
+	std::ostringstream buffer;
+	char* color;
+
+	if (team_names[player.userinfo.team] == "RED")
+		color = TEXTCOLOR_RED;
+	else
+		color = TEXTCOLOR_BLUE;
+
+	buffer << color << player.userinfo.netname << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -1012,7 +1043,7 @@ bool SV_SetupUserInfo(player_t &player)
 			// kill player if team is changed
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
-				player.userinfo.netname.c_str(), team_names[new_team]);
+				player.userinfo.netname.c_str(), V_GetTeamColor(new_team).c_str());
 		}
 	}
 
@@ -3565,7 +3596,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), team_names[team]);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), V_GetTeamColor(team).c_str());
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
@@ -3679,7 +3710,7 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
 				else
 					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-						player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
+						player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
 			}
 
 		}
@@ -4552,7 +4583,7 @@ void SV_TimelimitCheck()
 			if(winteam == TEAM_NONE)
 				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", V_GetTeamColor(winteam).c_str());
 		}
 	}
 
