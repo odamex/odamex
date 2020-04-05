@@ -61,7 +61,7 @@ EXTERN_CVAR (log_fulltimestamps)
 
 char *TimeStamp()
 {
-	static char stamp[32];
+	static char stamp[38];
 
 	time_t ti = time(NULL);
 	struct tm *lt = localtime(&ti);

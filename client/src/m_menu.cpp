@@ -635,7 +635,13 @@ void M_ReadSaveStrings(void)
 		}
 		else
 		{
-			fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			if (readlen < 1)
+			{
+				printf("M_Read_SaveStrings(): Failed to read handle.\n");
+				fclose(handle);
+				return;
+			}
 			fclose (handle);
 			LoadMenu[i].status = 1;
 		}
@@ -1537,7 +1543,7 @@ static void M_EditPlayerName (int choice)
 
 static void M_PlayerNameChanged (int choice)
 {
-	char command[SAVESTRINGSIZE+8];
+	char command[SAVESTRINGSIZE+8+2];
 
 	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);

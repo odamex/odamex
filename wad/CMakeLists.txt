@@ -6,7 +6,7 @@ if(DEUTEX)
 
 	file(REMOVE odamex.wad)
 	add_custom_command(OUTPUT odamex.wad
-		COMMAND ${DEUTEX} -rgb 0 255 255 -doom2 bootstrap -build wadinfo.txt odamex.wad
+		COMMAND ${DEUTEX} -overwrite -rgb 0 255 255 -doom2 bootstrap -build wadinfo.txt odamex.wad
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		VERBATIM)
 

@@ -121,7 +121,11 @@ void FLZOFile::PostOpen()
 	if (m_File && m_Mode == EReading)
 	{
 		char sig[4];
-		fread(sig, 4, 1, m_File);
+		size_t readlen = fread(sig, 4, 1, m_File);
+		if ( readlen < 1 )
+		{
+			printf("FLZOFile::PostOpen(): failed to read m_File\n");
+		}
 		if (sig[0] != LZOSig[0] || sig[1] != LZOSig[1] || sig[2] != LZOSig[2] || sig[3] != LZOSig[3])
 		{
 			fclose(m_File);
@@ -130,14 +134,22 @@ void FLZOFile::PostOpen()
 		else
 		{
 			DWORD sizes[2];
-			fread(sizes, sizeof(DWORD), 2, m_File);
+			readlen = fread(sizes, sizeof(DWORD), 2, m_File);
+			if ( readlen < 1 )
+			{
+				printf("FLZOFile::PostOpen(): failed to read m_File\n");
+			}
 			SWAP_DWORD(sizes[0]);
 			SWAP_DWORD(sizes[1]);
 
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
 			m_Buffer = (byte*)Malloc(len + 8);
 
-			fread(m_Buffer + 8, len, 1, m_File);
+			readlen = fread(m_Buffer + 8, len, 1, m_File);
+			if ( readlen < 1 )
+			{
+				printf("FLZOFile::PostOpen(): failed to read m_File\n");
+			}
 
 			SWAP_DWORD(sizes[0]);
 			SWAP_DWORD(sizes[1]);

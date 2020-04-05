@@ -472,6 +472,8 @@ wxInt32 ExtractCompressedFile(const wxString& Filename, const wxString& SaveLoca
 
 	if(!FileInputStream.IsOk())
 		return 0;
+	else			// else added to remove a warning
+		return 1;
 
 	// Zip file handling
 	// TODO: Complete this

@@ -225,7 +225,13 @@ std::string W_AddFile(std::string filename)
 	size_t newlumps;
 
 	wadinfo_t header;
-	fread(&header, sizeof(header), 1, handle);
+	size_t readlen = fread(&header, sizeof(header), 1, handle);
+	if ( readlen < 1 )
+	{
+		Printf(PRINT_HIGH, "failed to read %s.\n", filename.c_str());
+		fclose(handle);
+		return "";
+	}
 	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
@@ -258,7 +264,13 @@ std::string W_AddFile(std::string filename)
 
 		fileinfo = new filelump_t[header.numlumps];
 		fseek(handle, header.infotableofs, SEEK_SET);
-		fread(fileinfo, length, 1, handle);
+		readlen = fread(fileinfo, length, 1, handle);
+		if (readlen < 1)
+		{
+			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename.c_str());
+			fclose(handle);
+			return "";
+		}
 
 		// convert from little-endian to target arch and capitalize lump name
 		for (int i = 0; i < header.numlumps; i++)
