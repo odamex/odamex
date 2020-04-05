@@ -1490,6 +1490,16 @@ typedef enum {
 	MT_MISC84,
 	MT_MISC85,
 	MT_MISC86,
+	MT_PUSH,    // controls push source                     // phares
+	MT_PULL,    // controls pull source                     // phares 3/20/98
+
+	MT_DOGS,    // killough 7/19/98: Marine's best friend
+
+	MT_PLASMA1, // killough 7/11/98: first  of alternating beta plasma fireballs
+	MT_PLASMA2, // killough 7/11/98: second of alternating beta plasma fireballs
+	MT_SCEPTRE, // killough 7/11/98: evil sceptre in beta version
+	MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
+
 	// [RH] Gibs (code is disabled)
 	MT_GIB0,
 	MT_GIB1,
@@ -1501,8 +1511,6 @@ typedef enum {
 	MT_GIB7,
 	// [RH] Miscellaneous things
 	MT_UNKNOWNTHING,
-	MT_PUSH,		// Boom's push thing
-	MT_PULL,		// Boom's pull thing
 	MT_PATHNODE,
 	MT_AMBIENT,		// Ambient sounds
 	MT_TELEPORTMAN2,// Teleport destination that pays attention to its height
