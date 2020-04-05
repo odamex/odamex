@@ -691,7 +691,6 @@ bool ST_Responder (event_t *ev)
         else if (cht_CheckCheat(&cheat_clev, key))
         {
             char buf[16];
-	    char cmdstr[21];
 			//char *bb;
 
             cht_GetParam(&cheat_clev, buf);
@@ -702,8 +701,8 @@ bool ST_Responder (event_t *ev)
 			if (gamemode == retail_chex)
 				sprintf(buf,"1%c",buf[1]);
 
-            sprintf (cmdstr, "map %s\n", buf);
-            AddCommandString (cmdstr);
+            sprintf (buf + 3, "map %.7s\n", buf);
+            AddCommandString (buf + 3);
             eatkey = true;
         }
 
@@ -718,13 +717,12 @@ bool ST_Responder (event_t *ev)
         else if (cht_CheckCheat(&cheat_mus, key))
         {
             char buf[16];
-	    char cmdstr[23];
 
             cht_GetParam(&cheat_mus, buf);
             buf[2] = 0;
 
-            sprintf (cmdstr, "idmus %s\n", buf);
-            AddCommandString (cmdstr);
+            sprintf (buf + 3, "idmus %.5s\n", buf);
+            AddCommandString (buf + 3);
             eatkey = true;
         }
     }
