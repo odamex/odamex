@@ -168,7 +168,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 
 			trans = translationref_t(Ranges + new_color * 256);
 
-			str += 3;
+			str += 2;
 			continue;
 		}
 
