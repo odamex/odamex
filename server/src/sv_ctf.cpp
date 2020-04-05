@@ -22,12 +22,14 @@
 // ----------------------------------------------------------------------------
 
 
+#include <sstream>
 #include "sv_main.h"
 #include "m_random.h"
 #include "p_ctf.h"
 #include "i_system.h"
 #include "g_warmup.h"
 #include "p_unlag.h"
+#include "v_textcolors.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
@@ -68,6 +70,51 @@ static int ctf_points[NUM_CTF_SCORE] =
 	0, // DROP
 	1 // MANUALRETURN
 };
+
+std::string V_GetTeamColor(int team)
+{
+	std::ostringstream buffer;
+	char* color;
+
+	if (team_names[team] == "RED")
+		color = TEXTCOLOR_RED;
+	else
+		color = TEXTCOLOR_BLUE;
+
+	buffer << color << team_names[team] << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
+
+std::string V_GetTeamColorPlayer(player_t& player)
+{
+	std::ostringstream buffer;
+	char *color;
+
+	if (team_names[player.userinfo.team] == "RED")
+		color = TEXTCOLOR_RED;
+	else
+		color = TEXTCOLOR_BLUE;
+
+		buffer << color << player.userinfo.netname << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
+
+std::string V_GetFlagColor(flag_t flag)
+{
+	std::ostringstream buffer;
+	char *color;
+
+	if (team_names[flag] == "RED")
+		color = TEXTCOLOR_RED;
+	else
+		color = TEXTCOLOR_BLUE;
+
+		buffer << color << team_names[flag] << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
 
 //
 //	[Toke - CTF] SV_CTFEvent
@@ -139,14 +186,14 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 
 	if (player.userinfo.team != (team_t)f) {
 		if (firstgrab) {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
+			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag!\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
 		} else {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
+			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag!\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 			SV_CTFEvent (f, SCORE_GRAB, player);
 		}
 	} else {
-		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag.\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
 }
@@ -161,7 +208,7 @@ void SV_FlagReturn (player_t &player, flag_t f)
 
 	CTF_SpawnFlag (f);
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag.\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 }
 
 //
@@ -200,7 +247,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname.c_str(), team_names[f], CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag! (held for %s)\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str(), CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take scoring player's flag
 	CTFdata[f].flagger = 0;
@@ -210,7 +257,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	// checks to see if a team won a game
 	if(TEAMpoints[player.userinfo.team] >= sv_scorelimit && sv_scorelimit != 0)
 	{
-		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", team_names[player.userinfo.team]);
+		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", V_GetTeamColor(player.userinfo.team).c_str());
 		shotclock = TICRATE*2;
 	}
 }
@@ -288,7 +335,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has dropped the %s flag (held for %s)\n", player.userinfo.netname.c_str(), team_names[f], CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has dropped the %s flag. (held for %s)\n", V_GetTeamColor(player.userinfo.team).c_str(), V_GetTeamColor(player.userinfo.team).c_str(), CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
@@ -325,7 +372,7 @@ void CTF_RunTics (void)
 
 		SV_CTFEvent ((flag_t)i, SCORE_RETURN, idplayer(0));
 
-		SV_BroadcastPrintf (PRINT_HIGH, "%s flag returned.\n", team_names[i]);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s flag returned.\n", V_GetTeamColor(i).c_str() );
 
 		CTF_SpawnFlag((flag_t)i);
 	}
