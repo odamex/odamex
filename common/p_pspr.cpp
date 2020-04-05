@@ -764,7 +764,7 @@ void A_FireBFG(AActor* mo)
 // This code may not be used in other mods without appropriate credit given.
 // Code leeches will be telefragged.
 
-void A_FireOldBFG(player_t* player, pspdef_t* psp)
+void A_FireOldBFG(AActor* mo)
 {
     /* [AM] Not implemented...yet.
     int type = MT_PLASMA1;
