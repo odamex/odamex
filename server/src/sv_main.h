@@ -111,6 +111,8 @@ void SV_KickPlayer(player_t &player, const std::string &reason = "");
 bool CMD_ForcespecCheck(const std::vector<std::string> &arguments,
 						std::string &error, size_t &pid);
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
+void SV_JoinPlayer(player_t &player, bool silent);
+void SV_SpecPlayer(player_t &player, bool silent);
 void SV_SetReady(player_t &player, bool setting, bool silent = false);
 
 void SV_SendLoadMap(const std::vector<std::string> &wadnames,
@@ -121,7 +123,8 @@ void SV_AddPlayerToQueue(player_t* player);
 void SV_RemovePlayerFromQueue(player_t* player);
 void SV_UpdatePlayerQueueLevelChange();
 void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer = NULL);
-void SV_SendPlayerQueuePositions(player_t* toPlayer);
+void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect);
+void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);
 void SV_SetWinPlayer(byte playerId);
 void SV_ClearPlayerQueue();
 
