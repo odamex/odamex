@@ -168,6 +168,8 @@ typedef uint64_t			dtime_t;
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);
+int STACK_ARGS Printf (const char *, ...);
+
 // [Russell] Prints a bold green message to the console
 int STACK_ARGS Printf_Bold (const char *format, ...);
 // [RH] Same here:

@@ -156,14 +156,14 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 
 	if (player.userinfo.team != (team_t)f) {
 		if (firstgrab) {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag!\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
+			SV_BroadcastPrintf ("%s has taken the %s flag!\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
 		} else {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag!\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
+			SV_BroadcastPrintf ("%s picked up the %s flag!\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 			SV_CTFEvent (f, SCORE_GRAB, player);
 		}
 	} else {
-		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag.\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
+		SV_BroadcastPrintf ("%s is recovering the %s flag.\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
 }
@@ -178,7 +178,7 @@ void SV_FlagReturn (player_t &player, flag_t f)
 
 	CTF_SpawnFlag (f);
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag.\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
+	SV_BroadcastPrintf ("%s has returned the %s flag.\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str());
 }
 
 //
@@ -217,7 +217,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag! (held for %s)\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str(), CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf ("%s has captured the %s flag! (held for %s)\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str(), CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take scoring player's flag
 	CTFdata[f].flagger = 0;
@@ -227,7 +227,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	// checks to see if a team won a game
 	if(TEAMpoints[player.userinfo.team] >= sv_scorelimit && sv_scorelimit != 0)
 	{
-		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", V_GetTeamColor(player.userinfo.team).c_str());
+		SV_BroadcastPrintf ("Score limit reached. %s team wins!\n", V_GetTeamColor(player.userinfo.team).c_str());
 		shotclock = TICRATE*2;
 	}
 }
@@ -305,7 +305,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has dropped the %s flag. (held for %s)\n", V_GetTeamColor(player.userinfo.team).c_str(), V_GetTeamColor(player.userinfo.team).c_str(), CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf ("%s has dropped the %s flag. (held for %s)\n", V_GetTeamColorPlayer(player).c_str(), V_GetFlagColor(f).c_str(), CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
@@ -342,7 +342,7 @@ void CTF_RunTics (void)
 
 		SV_CTFEvent ((flag_t)i, SCORE_RETURN, idplayer(0));
 
-		SV_BroadcastPrintf (PRINT_HIGH, "%s flag returned.\n", V_GetTeamColor(i).c_str() );
+		SV_BroadcastPrintf ("%s flag returned.\n", V_GetTeamColor(i).c_str() );
 
 		CTF_SpawnFlag((flag_t)i);
 	}

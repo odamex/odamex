@@ -1818,7 +1818,7 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf(PRINT_HIGH, "challenging %s\n", NET_AdrToString(serveraddr));
+		Printf("challenging %s\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge

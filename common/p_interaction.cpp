@@ -1096,7 +1096,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
             splayer->fragcount >= sv_fraglimit && !shotclock)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
-            SV_BroadcastPrintf( PRINT_HIGH, "Frag limit hit. Game won by %s!\n", splayer->userinfo.netname.c_str());
+            SV_BroadcastPrintf("Frag limit hit. Game won by %s!\n", splayer->userinfo.netname.c_str());
             shotclock = TICRATE*2;
 		}
 
@@ -1107,7 +1107,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			{
 				if (TEAMpoints[i] >= sv_fraglimit)
 				{
-					SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. %s team wins!\n", V_GetTeamColor(i).c_str() );
+					SV_BroadcastPrintf("Frag limit hit. %s team wins!\n", V_GetTeamColor(i).c_str() );
 					shotclock = TICRATE * 2;
 					break;
 				}
