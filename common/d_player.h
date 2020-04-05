@@ -117,6 +117,7 @@ typedef enum
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
 static const int ReJoinDelay = TICRATE * 5;
+static const int SuicideDelay = TICRATE * 10;
 
 //
 // Extended player object info: player_t
@@ -219,7 +220,7 @@ public:
 	int			jumpTics;				// delay the next jump for a moment
 
 	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
-	int			suicide_time;			// Ch0wW - Time between 2 suicides.
+	int			suicidedelay;			// Ch0wW - Time between 2 suicides.
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through

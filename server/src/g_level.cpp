@@ -406,7 +406,7 @@ void G_InitNew (const char *mapname)
 
 			it->playerstate = PST_ENTER; // [BC]
 
-			it->suicide_time = 0;				// Ch0wW : Disallow suicide
+			it->suicidedelay = 0;				// Ch0wW : Disallow suicide
 			it->joindelay = 0;
 		}
 	}

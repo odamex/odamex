@@ -1043,7 +1043,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->player->playerstate = PST_DEAD;
 		P_DropWeapon(target->player);
 
-		tplayer->suicide_time = level.time;
+		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
 
 		if (target == consoleplayer().camera)

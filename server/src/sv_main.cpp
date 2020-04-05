@@ -3459,6 +3459,8 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 	if (player.joindelay)
 		player.joindelay--;
+	if (player.suicidedelay)
+		player.suicidedelay--;
 
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -4252,8 +4254,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_kill:
-			if(player.mo &&
-               level.time > player.suicide_time + TICRATE*10 &&
+			if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
                (sv_allowcheats || sv_gametype == GM_COOP))
             {
 				SV_Suicide (player);
