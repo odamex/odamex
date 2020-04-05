@@ -690,7 +690,7 @@ bool ST_Responder (event_t *ev)
         // 'clev' change-level cheat
         else if (cht_CheckCheat(&cheat_clev, key))
         {
-            char buf[16];
+            char buf[11];
 			//char *bb;
 
             cht_GetParam(&cheat_clev, buf);
@@ -701,7 +701,7 @@ bool ST_Responder (event_t *ev)
 			if (gamemode == retail_chex)
 				sprintf(buf,"1%c",buf[1]);
 
-            sprintf (buf + 3, "map %.7s\n", buf);
+            sprintf (buf + 3, "map %.2s\n", buf);
             AddCommandString (buf + 3);
             eatkey = true;
         }
