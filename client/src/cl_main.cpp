@@ -3804,7 +3804,7 @@ void PickupMessage (AActor *toucher, const char *message)
 	{
 		lastmessagetic = gametic;
 		lastmessage = message;
-		Printf (PRINT_LOW, "%s\n", message);
+		Printf (PRINT_PICKUP, "%s\n", message);
 	}
 }
 

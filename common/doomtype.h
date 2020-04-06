@@ -184,12 +184,18 @@ extern const char *LOG_FILE; //  Default is "odamex.log"
 extern std::ifstream CON;
 
 // game print flags
-#define	PRINT_LOW			0		// pickup messages
-#define	PRINT_OBITUARY		1		// death messages
-#define	PRINT_HIGH			2		// critical messages
-#define	PRINT_CHAT			3		// chat messages
-#define PRINT_TEAMCHAT		4		// chat messages from a teammate
-#define PRINT_SERVERCHAT	5		// chat messages from the server
+typedef enum {
+	PRINT_PICKUP,		// Pickup messages
+	PRINT_OBITUARY,		// Death messages
+	PRINT_HIGH,			// Regular messages
+
+	// Past this one, any rcon'd client should never receive them
+	PRINT_CHAT,			// Chat messages
+	PRINT_TEAMCHAT,		// Chat messages from a teammate
+	PRINT_SERVERCHAT,	// Chat messages from the server
+
+	PRINT_MAXPRINT
+} printlevel_t;
 
 #ifdef __forceinline
 	#define forceinline __forceinline
