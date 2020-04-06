@@ -212,6 +212,20 @@ argb_t CL_GetPlayerColor(player_t *player)
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
 
+std::string V_GetTeamColor(int team)
+{
+	std::ostringstream buffer;
+	char* color;
+
+	if (team == 0)
+		color = TEXTCOLOR_BLUE;
+	else
+		color = TEXTCOLOR_RED;
+
+	buffer << color << team_names[team] << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
 
 static void CL_RebuildAllPlayerTranslations()
 {
@@ -368,7 +382,7 @@ static void CL_ResyncWorldIndex()
 
 void Host_EndGame(const char *msg)
 {
-    Printf(PRINT_HIGH, "%s", msg);
+    Printf("%s", msg);
 	CL_QuitNetGame();
 }
 
@@ -762,12 +776,12 @@ BEGIN_COMMAND (connect)
 {
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: connect ip[:port] [password]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Connect to a server, with optional port number");
-	    Printf(PRINT_HIGH, " and/or password\n");
-	    Printf(PRINT_HIGH, "eg: connect 127.0.0.1\n");
-	    Printf(PRINT_HIGH, "eg: connect 192.168.0.1:12345 secretpass\n");
+	    Printf("Usage: connect ip[:port] [password]\n");
+	    Printf("\n");
+	    Printf("Connect to a server, with optional port number");
+	    Printf(" and/or password\n");
+	    Printf("eg: connect 127.0.0.1\n");
+	    Printf("eg: connect 192.168.0.1:12345 secretpass\n");
 
 	    return;
 	}
@@ -836,11 +850,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf(PRINT_HIGH, "PLAYERS IN GAME:\n");
+	Printf("PLAYERS IN GAME:\n");
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf(PRINT_HIGH, "%3d. %s\n", (*it).first, (*it).second.c_str());
+		Printf("%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
-	Printf(PRINT_HIGH, "%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
+	Printf("%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -855,7 +869,7 @@ BEGIN_COMMAND (playerinfo)
 
 		if (!validplayer(p))
 		{
-			Printf (PRINT_HIGH, "Bad player number\n");
+			Printf ("Bad player number\n");
 			return;
 		}
 		else
@@ -864,7 +878,7 @@ BEGIN_COMMAND (playerinfo)
 
 	if (!validplayer(*player))
 	{
-		Printf (PRINT_HIGH, "Not a valid player\n");
+		Printf ("Not a valid player\n");
 		return;
 	}
 
@@ -872,22 +886,16 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	char team[5] = { 0 };
-	if (player->userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player->userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
-
-	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
-	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
-	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
-	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
-	Printf(PRINT_HIGH, " spectator        - %d \n",		player->spectator);
-	Printf(PRINT_HIGH, " downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
-	Printf (PRINT_HIGH, "--------------------------------------- \n");
+	Printf("---------------[player info]----------- \n");
+	Printf(" userinfo.netname - %s \n",		player->userinfo.netname.c_str());
+	Printf(" userinfo.team    - %s \n",		V_GetTeamColor(player->userinfo.team).c_str());
+	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
+	Printf(" userinfo.color   - %s \n",		color);
+	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
+	Printf(" time             - %d \n",		player->GameTime);
+	Printf(" spectator        - %d \n",		player->spectator);
+	Printf(" downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
+	Printf("--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
 
@@ -897,7 +905,7 @@ BEGIN_COMMAND (kill)
     if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+        Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -997,7 +1005,10 @@ END_COMMAND (rcon_logout)
 
 BEGIN_COMMAND (playerteam)
 {
-	Printf (PRINT_MEDIUM, "Your Team is %d \n", consoleplayer().userinfo.team);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		Printf(PRINT_MEDIUM, "Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
+	else
+		Printf (PRINT_MEDIUM, "You need to play a team-based gamemode in order to use this command.\n");
 }
 END_COMMAND (playerteam)
 
