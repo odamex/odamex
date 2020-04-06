@@ -1361,7 +1361,7 @@ void P_CreateBlockMap()
 		{
 			linelist_t *tmp = bl->next;
 			blockmaplump[offs++] = bl->num;
-			delete[] bl;
+			delete bl;
 			bl = tmp;
 		}
 	}
