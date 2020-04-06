@@ -123,12 +123,13 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	if (str[str.length() - 1] != '\n')
 		str += '\n';
 
-	// send to any rcon players
+	// Only allow sending internal messages to RCON players that are PRINT_HIGH
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t* cl = &(it->client);
 
-		if (cl->allow_rcon)
+		// Only allow RCON messages that are PRINT_HIGH
+		if (cl->allow_rcon && printlevel == PRINT_HIGH)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
 			MSG_WriteByte(&cl->reliablebuf, PRINT_WARNING);
@@ -174,7 +175,7 @@ int STACK_ARGS Printf_Bold (const char *format, ...)
 
 	printxormask = 0x80;
 	va_start (argptr, format);
-	count = VPrintf (PRINT_HIGH, format, argptr);
+	count = VPrintf (PRINT_NORCON, format, argptr);
 	va_end (argptr);
 
 	return count;

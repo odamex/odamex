@@ -190,7 +190,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 					MSG_WriteByte(&pit->client.reliablebuf, it->id);
 					MSG_WriteByte(&pit->client.reliablebuf, true);
 				}
-				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", it->userinfo.netname.c_str());
+				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
 				MSG_WriteMarker(&it->client.reliablebuf, svc_print);
 				MSG_WriteByte(&it->client.reliablebuf, PRINT_CHAT);
 				MSG_WriteString(&it->client.reliablebuf,
@@ -2558,12 +2558,13 @@ void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
 
 	Printf(level, "%s", string);  // print to the console
 
+	// Hacky code to display messages as normal ones to clients
+	if (level == PRINT_NORCON)
+		level = PRINT_HIGH;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		cl = &(it->client);
-
-		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
-			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, level);
@@ -2581,7 +2582,7 @@ void SV_BroadcastPrintf(const char* fmt, ...)
 	vsprintf(string, fmt, argptr);
 	va_end(argptr);
 
-	SV_BroadcastPrintf(PRINT_HIGH, string);
+	SV_BroadcastPrintf(PRINT_NORCON, string);
 }
 
 // GhostlyDeath -- same as above but ONLY for spectators
@@ -2600,9 +2601,6 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		cl = &(it->client);
-
-		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
-			continue;
 
 		bool spectator = it->spectator || !it->ingame();
 		if (spectator)
@@ -3608,7 +3606,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), V_GetTeamColor(team).c_str());
+	SV_BroadcastPrintf ("%s has joined the %s team.\n", player.userinfo.netname.c_str(), V_GetTeamColor(team).c_str());
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)

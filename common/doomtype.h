@@ -194,6 +194,7 @@ typedef enum {
 	PRINT_TEAMCHAT,		// Chat messages from a teammate
 	PRINT_SERVERCHAT,	// Chat messages from the server
 
+	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 	PRINT_WARNING,		// Warning messages
 	PRINT_ERROR,		// Fatal error messages
 

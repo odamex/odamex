@@ -1873,13 +1873,17 @@ void CL_Print (void)
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
+	// Disallow getting NORCON messages
+	if (level == PRINT_NORCON)
+		return;
+
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
 		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);	
 	else if (level == PRINT_TEAMCHAT)
 		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "%sk%s", TEXTCOLOR_ESCAPE, str);
+		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
 	else
 		Printf(level, "%s", str);
 
