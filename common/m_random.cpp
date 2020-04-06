@@ -79,6 +79,13 @@ static const unsigned char rndtable[256] = {
 
 unsigned char rndindex, prndindex;
 
+struct zdoomrng_t {
+	bool is_enabled = 0;
+	unsigned long int table[NUMPRCLASS];
+} zdoomrng;
+
+EXTERN_CVAR(co_zdoomphys)
+
 extern bool step_mode;
 
 //
@@ -90,6 +97,22 @@ int P_Random (AActor *actor)
 	if(!actor || demoplayback || demorecording || step_mode)
 		return P_Random ();
 
+	if(co_zdoomphys) {
+		if(!zdoomrng.is_enabled) {
+			M_ClearRandom();
+			zdoomrng.is_enabled = 1;
+		}
+
+		unsigned long int value = zdoomrng.table[actor->rndindex];
+
+		printf("P_Random zdoomphys\n");
+		zdoomrng.table[actor->rndindex] = value * 1664525ul + 221297ul + actor->rndindex * 2;
+
+		return (value >> 20) & 255;
+
+	} else if(zdoomrng.is_enabled) {
+		zdoomrng.is_enabled = 0;
+	}
 	return (rndtable[++actor->rndindex]);
 }
 
@@ -128,6 +151,13 @@ int M_Random()
 
 void M_ClearRandom (void)
 {
+	if (co_zdoomphys) {
+		printf("M_ClearRandom zdoomphys\n");
+		for (int i = 0; i < NUMPRCLASS; i++) {
+			zdoomrng.table[i] = 1993 * 2 + 1;
+			zdoomrng.table[i] *= 69069ul;
+		}
+	}
 	rndindex = prndindex = 0;
 }
 
