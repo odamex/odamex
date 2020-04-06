@@ -216,7 +216,7 @@ std::string W_AddFile(std::string filename)
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf(PRINT_HIGH, "couldn't open %s\n", filename.c_str());
+		Printf(PRINT_WARNING, "couldn't open %s\n", filename.c_str());
 		return "";
 	}
 
@@ -251,7 +251,7 @@ std::string W_AddFile(std::string filename)
 
 		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf(PRINT_HIGH, "\nbad number of lumps for %s\n", filename.c_str());
+			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
 			return "";
 		}

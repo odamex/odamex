@@ -367,13 +367,13 @@ BEGIN_COMMAND(vid_setmode)
 
 	if (width < 320 || height < 200)
 	{
-		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
+		Printf(PRINT_WARNING, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
 		return;
 	}
 
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 	{
-		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
+		Printf(PRINT_WARNING, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
 		return;
 	}
 

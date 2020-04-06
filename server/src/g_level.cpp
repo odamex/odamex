@@ -803,11 +803,11 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		if (!tempflag->flaglocated)
-			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
+			SV_BroadcastPrintf(PRINT_WARNING, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
 
 		tempflag = &CTFdata[it_redflag];
 		if (!tempflag->flaglocated)
-			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Red flag pedestal not found! No red flags in game.\n");
+			SV_BroadcastPrintf(PRINT_WARNING, "WARNING: Red flag pedestal not found! No red flags in game.\n");
 	}
 
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing

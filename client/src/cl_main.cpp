@@ -938,7 +938,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
+    Printf ("\n%*s - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (size_t i = 0; i < server_cvars.size(); i++)
@@ -946,14 +946,13 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
 
-		Printf(PRINT_HIGH,
-				"%*s - %s\n",
+		Printf( "%*s - %s\n",
 				MaxFieldLength,
 				Cvar->name(),
 				Cvar->cstring());
 	}
 
-    Printf (PRINT_HIGH,	"\n");
+    Printf ("\n");
 }
 END_COMMAND (serverinfo)
 
@@ -1700,7 +1699,7 @@ bool CL_PrepareConnect(void)
 		if (!cl_serverdownload)
 		{
 			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
+			Printf(PRINT_WARNING, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
 								missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
@@ -1709,7 +1708,7 @@ bool CL_PrepareConnect(void)
 		if (netdemo.isPlaying())
 		{
 			// Downloading is disabled client-side
-			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+			Printf(PRINT_WARNING, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
 								missing_file.c_str());			
 			CL_QuitNetGame();
 			return false;

@@ -100,7 +100,7 @@ void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 	// lump is not long enough for the expected header
 	if (W_LumpLength(lumpnum) < 8)
 	{
-		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
+		Printf(PRINT_WARNING, "Warning: unsupported string table %s.\n", lumpname);
 		return;
 	}
 
@@ -116,7 +116,7 @@ void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 	// invalid language lump
 	if (W_LumpLength(lumpnum) != (unsigned)lumpLen)
 	{
-		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
+		Printf(PRINT_WARNING, "Warning: unsupported string table %s.\n", lumpname);
 		return;
 	}
 

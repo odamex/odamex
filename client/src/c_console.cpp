@@ -109,8 +109,19 @@ static struct NotifyText
 	byte text[256];
 } NotifyStrings[NUMNOTIFIES];
 
-#define PRINTLEVELS 5
-int PrintColors[PRINTLEVELS+1] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_GREEN, CR_GOLD };
+// Default Printlevel
+#define PRINTLEVELS 8 //(5 + 3)
+int PrintColors[PRINTLEVELS] = 
+{	CR_RED,		// Pickup
+	CR_GOLD,	// Obituaries
+	CR_GRAY,	// Messages
+	CR_GREEN,	// Chat 
+	CR_GREEN,	// Team chat
+
+	CR_GOLD,	// Server chat
+	CR_YELLOW,	// Warning messages
+	CR_RED		// Critical messages
+};	
 
 
 // ============================================================================
@@ -858,14 +869,9 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	// [SL] the user's message color preference overrides the given color_code
 	// ...unless it's supposed to be formatted bold.
 	static char printlevel_color_code[2];
-	if (printlevel == PRINT_WARNING)
+
+	if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
 	{
-		sprintf(printlevel_color_code, TEXTCOLOR_YELLOW);
-		color_code = printlevel_color_code;
-	}
-	else if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
-	{
-		
 		sprintf(printlevel_color_code, "\034%c", 'a' + PrintColors[printlevel]);
 		color_code = printlevel_color_code;
 	}
@@ -1019,7 +1025,7 @@ int STACK_ARGS DPrintf(const char *format, ...)
 		va_list argptr;
 
 		va_start(argptr, format);
-		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_BOLD, format, argptr);
+		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_NORMAL, format, argptr);
 		va_end(argptr);
 		return count;
 	}
@@ -1126,9 +1132,7 @@ static void C_DrawNotifyText()
 				continue;
 
 			int color;
-			if (NotifyStrings[i].printlevel == PRINT_WARNING)	// Ignore Warning messages, as used for RCON
-				color = CR_YELLOW;
-			else if (NotifyStrings[i].printlevel >= PRINTLEVELS)
+			if (NotifyStrings[i].printlevel >= PRINTLEVELS)
 				color = CR_RED;
 			else
 				color = PrintColors[NotifyStrings[i].printlevel];

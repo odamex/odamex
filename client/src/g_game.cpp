@@ -1855,8 +1855,8 @@ BEGIN_COMMAND(playdemo)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Cannot play demo because WAD didn't load\n");
-			Printf(PRINT_HIGH, "Use the 'wad' command\n");
+			Printf(PRINT_WARNING, "Cannot play demo because WAD didn't load\n");
+			Printf(PRINT_WARNING, "Use the 'wad' command\n");
 		}
 	}
 	else
@@ -1919,7 +1919,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (bytelen)
 			Z_Free(demobuffer);
 
-		Printf(PRINT_HIGH, "DOOM Demo file too short\n");
+		Printf(PRINT_WARNING, "DOOM Demo file too short\n");
 		gameaction = ga_fullconsole;
 		return;
 	}
@@ -2048,7 +2048,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex " \
+		Printf(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
 		gameaction = ga_nothing;
 	}
@@ -2116,7 +2116,7 @@ void G_CleanupDemo()
 		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 
 		demorecording = false;
-		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
+		Printf("Demo %s recorded\n", demoname);
 
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
@@ -2149,7 +2149,7 @@ BOOL G_CheckDemoStatus (void)
 			if (mo)
 				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
-				Printf(PRINT_HIGH, "demotest:no player\n");
+				Printf(PRINT_WARNING, "demotest:no player\n");
 
 			demotest = false;
 

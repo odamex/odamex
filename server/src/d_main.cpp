@@ -117,8 +117,8 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf (PRINT_HIGH, "ERROR: %s\n", error.GetMsg().c_str());
-			Printf (PRINT_HIGH, "sleeping for 10 seconds before map reload...");
+			Printf ("ERROR: %s\n", error.GetMsg().c_str());
+			Printf ("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
 			SV_SendDisconnectSignal();

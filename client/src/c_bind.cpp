@@ -367,7 +367,7 @@ BEGIN_COMMAND (unbind)
 		if ( (i = GetKeyFromName (strArg.c_str())) )
 			Bindings[i] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf (PRINT_WARNING, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (unbind)
@@ -381,7 +381,7 @@ BEGIN_COMMAND (bind)
 		std::string strArg = StdStringToLower(argv[1]);
 		i = GetKeyFromName (strArg.c_str());
 		if (!i) {
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf (PRINT_WARNING, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2) {
@@ -410,7 +410,7 @@ BEGIN_COMMAND (undoublebind)
 		if ( (i = GetKeyFromName (strArg.c_str())) )
 			DoubleBindings[i] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf (PRINT_WARNING, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (undoublebind)
@@ -425,7 +425,7 @@ BEGIN_COMMAND (doublebind)
 		i = GetKeyFromName (strArg.c_str());
 		if (!i)
 		{
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf (PRINT_WARNING, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2)

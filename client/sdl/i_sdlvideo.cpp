@@ -841,7 +841,7 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 
 	if (SDLVersion->patch != SDL_PATCHLEVEL)
 	{
-		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf(PRINT_WARNING, "SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
@@ -1746,7 +1746,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	if (linked.patch != compiled.patch)
 	{
-		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf(PRINT_WARNING, "SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
 			linked.major, linked.minor, linked.patch);
 	}

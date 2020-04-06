@@ -1321,7 +1321,7 @@ void S_ParseSndInfo (void)
 						std::transform(info->music, info->music + strlen(info->music), info->music, toupper);
 					}
 				} else {
-					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
+					Printf (PRINT_WARNING, "Unknown SNDINFO command %s\n", com_token);
 					while (*sndinfo != '\n' && *sndinfo != '\0')
 						sndinfo++;
 				}

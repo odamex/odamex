@@ -500,7 +500,7 @@ BOOL CheckCheatmode (void)
 
 	if ((multiplayer || sv_gametype != GM_COOP) && !sv_allowcheats)
 	{
-		Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
+		Printf (PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 		return true;
 	}
 	else

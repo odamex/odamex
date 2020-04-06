@@ -189,14 +189,14 @@ typedef enum {
 	PRINT_OBITUARY,		// Death messages
 	PRINT_HIGH,			// Regular messages
 
-	// Past this one, any rcon'd client should never receive them
 	PRINT_CHAT,			// Chat messages
 	PRINT_TEAMCHAT,		// Chat messages from a teammate
 	PRINT_SERVERCHAT,	// Chat messages from the server
 
-	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 	PRINT_WARNING,		// Warning messages
 	PRINT_ERROR,		// Fatal error messages
+
+	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 
 	PRINT_MAXPRINT
 } printlevel_t;
