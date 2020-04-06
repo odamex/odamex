@@ -5054,7 +5054,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	{
 		SexMessage(message, gendermessage, gender,
 				self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 		return;
 	}
 
@@ -5092,13 +5092,13 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	{
 		SexMessage(message, gendermessage, gender,
 				self->player->userinfo.netname.c_str(), attacker->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 		return;
 	}
 
 	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
 			self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
-	SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
+	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 }
 
 void SV_SendDamagePlayer(player_t *player, int damage)

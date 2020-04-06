@@ -737,10 +737,10 @@ void CL_RunTics()
 			// debugging output
 			extern unsigned char prndindex;
 			if (!(players.empty()) && players.begin()->mo)
-				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
+				Printf("level.time %d, prndindex %d, %d %d %d\n",
 				       level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+ 				Printf("level.time %d, prndindex %d\n", level.time, prndindex);
 		}
 	}
 	else
@@ -816,7 +816,7 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Could not resolve host %s\n", target.c_str());
+			Printf("Could not resolve host %s\n", target.c_str());
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
 	}
@@ -1006,9 +1006,9 @@ END_COMMAND (rcon_logout)
 BEGIN_COMMAND (playerteam)
 {
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		Printf(PRINT_MEDIUM, "Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
+		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
 	else
-		Printf (PRINT_MEDIUM, "You need to play a team-based gamemode in order to use this command.\n");
+		Printf("You need to play a team-based gamemode in order to use this command.\n");
 }
 END_COMMAND (playerteam)
 

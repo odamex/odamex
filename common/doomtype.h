@@ -185,7 +185,7 @@ extern std::ifstream CON;
 
 // game print flags
 #define	PRINT_LOW			0		// pickup messages
-#define	PRINT_MEDIUM		1		// death messages
+#define	PRINT_OBITUARY		1		// death messages
 #define	PRINT_HIGH			2		// critical messages
 #define	PRINT_CHAT			3		// chat messages
 #define PRINT_TEAMCHAT		4		// chat messages from a teammate
