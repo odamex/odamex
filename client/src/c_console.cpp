@@ -91,6 +91,9 @@ EXTERN_CVAR(show_messages)
 EXTERN_CVAR(print_stdout)
 EXTERN_CVAR(con_notifytime)
 
+EXTERN_CVAR(message_showpickups)
+EXTERN_CVAR(message_showobituaries)
+
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
 
@@ -509,9 +512,6 @@ static ConsoleHistory History;
 
 static void setmsgcolor(int index, const char *color);
 
-
-cvar_t msglevel("msg", "0", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE);
-
 CVAR_FUNC_IMPL(msg0color)
 {
 	setmsgcolor(0, var.cstring());
@@ -842,7 +842,11 @@ static int C_PrintStringStdOut(const char* str)
 // 
 static int C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
-	if (printlevel < (int)msglevel)
+
+	if (printlevel == PRINT_PICKUP && !message_showpickups)
+		return 0;
+
+	if (printlevel == PRINT_OBITUARY && !message_showobituaries)
 		return 0;
 
 	if (I_VideoInitialized() && !midprinting)
@@ -853,9 +857,15 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 
 	// [SL] the user's message color preference overrides the given color_code
 	// ...unless it's supposed to be formatted bold.
-	if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
+	static char printlevel_color_code[2];
+	if (printlevel == PRINT_WARNING)
 	{
-		static char printlevel_color_code[3];
+		sprintf(printlevel_color_code, TEXTCOLOR_YELLOW);
+		color_code = printlevel_color_code;
+	}
+	else if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
+	{
+		
 		sprintf(printlevel_color_code, "\034%c", 'a' + PrintColors[printlevel]);
 		color_code = printlevel_color_code;
 	}
@@ -1009,7 +1019,7 @@ int STACK_ARGS DPrintf(const char *format, ...)
 		va_list argptr;
 
 		va_start(argptr, format);
-		int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
+		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_BOLD, format, argptr);
 		va_end(argptr);
 		return count;
 	}
@@ -1116,7 +1126,9 @@ static void C_DrawNotifyText()
 				continue;
 
 			int color;
-			if (NotifyStrings[i].printlevel >= PRINTLEVELS)
+			if (NotifyStrings[i].printlevel == PRINT_WARNING)	// Ignore Warning messages, as used for RCON
+				color = CR_YELLOW;
+			else if (NotifyStrings[i].printlevel >= PRINTLEVELS)
 				color = CR_RED;
 			else
 				color = PrintColors[NotifyStrings[i].printlevel];

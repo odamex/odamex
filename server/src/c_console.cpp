@@ -131,7 +131,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		if (cl->allow_rcon)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
-			MSG_WriteByte(&cl->reliablebuf, PRINT_OBITUARY);
+			MSG_WriteByte(&cl->reliablebuf, PRINT_WARNING);
 			MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
 		}
 	}

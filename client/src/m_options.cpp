@@ -829,6 +829,8 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
+EXTERN_CVAR(message_showpickups)
+EXTERN_CVAR(message_showobituaries)
 EXTERN_CVAR (con_coloredmessages)
 EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
@@ -837,7 +839,6 @@ EXTERN_CVAR (msg2color)
 EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
-EXTERN_CVAR (msglevel)
 
 static value_t TextColors[] =
 {
@@ -864,12 +865,6 @@ static value_t TextColors[] =
 	{ CR_CYAN,		"cyan" }
 };
 
-static value_t MessageLevels[] = {
-	{ 0.0, "Item Pickup" },
-	{ 1.0, "Obituaries" },
-	{ 2.0, "Critical Messages" }
-};
-
 // TODO: Put all language info in one array, auto detect what's in the lump?
 static value_t Languages[] = {
 	{ 0.0, "Auto" },
@@ -880,14 +875,18 @@ static value_t Languages[] = {
 
 static menuitem_t MessagesItems[] = {
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
-	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
     { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
 	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
+
+
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },

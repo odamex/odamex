@@ -194,6 +194,9 @@ typedef enum {
 	PRINT_TEAMCHAT,		// Chat messages from a teammate
 	PRINT_SERVERCHAT,	// Chat messages from the server
 
+	PRINT_WARNING,		// Warning messages
+	PRINT_ERROR,		// Fatal error messages
+
 	PRINT_MAXPRINT
 } printlevel_t;
 

@@ -149,22 +149,28 @@ CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE_FUNC_DECL(msg0color, "6", "",
+CVAR(				message_showpickups, "1", "Show item pickup messages.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				message_showobituaries, "1", "Show player death messages.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE_FUNC_DECL(msg0color, "6", "Color used for Pickup messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg1color, "5", "",
+CVAR_RANGE_FUNC_DECL(msg1color, "5", "Color used for obituary messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg2color, "2", "",
+CVAR_RANGE_FUNC_DECL(msg2color, "2", "Color used for all regular messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg3color, "3", "",
+CVAR_RANGE_FUNC_DECL(msg3color, "3", "Color used for chat messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg4color, "8", "",
+CVAR_RANGE_FUNC_DECL(msg4color, "8", "Color used for team-chat messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "",
+CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "Color used for centered messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 // Intermission
