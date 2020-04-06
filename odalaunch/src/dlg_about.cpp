@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
 #include <wx/version.h>
 #include <wx/xrc/xmlres.h>
 
-#define _ODA_COPYRIGHT_ "Copyright (C) 2006-2019 The Odamex Team"
+#define _ODA_COPYRIGHT_ "Copyright (C) 2006-2020 The Odamex Team"
 
 BEGIN_EVENT_TABLE(dlgAbout, wxDialog)
 	EVT_TEXT_URL(XRCID("Id_TxtCtrlDevelopers"), dlgAbout::OnTxtCtrlUrlClick)

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -244,15 +244,6 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "rcon password set");
 }
 
-//
-//  SV_SetClientRate
-//
-//  Performs range checking on client's rate
-//
-void SV_SetClientRate(client_t &client, int rate)
-{
-	client.rate = clamp(rate, 1, (int)sv_maxrate);
-}
 
 EXTERN_CVAR(sv_waddownloadcap)
 CVAR_FUNC_IMPL(sv_maxrate)
@@ -262,10 +253,7 @@ CVAR_FUNC_IMPL(sv_maxrate)
 		sv_waddownloadcap.Set(var);
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		// ensure no clients exceed sv_maxrate
-		SV_SetClientRate(it->client, it->client.rate);
-	}
+		it->client.rate = int(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL (sv_waddownloadcap)
@@ -898,11 +886,10 @@ bool SV_SetupUserInfo(player_t &player)
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
 
-	// [SL] place holder for deprecated skins
-	MSG_ReadString();
+	MSG_ReadString();	// [SL] place holder for deprecated skins
 
 	fixed_t aimdist = MSG_ReadLong();
-	bool unlag = MSG_ReadBool();
+	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
 	bool predict_weapons = MSG_ReadBool();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
@@ -928,7 +915,6 @@ bool SV_SetupUserInfo(player_t &player)
 		switchweapon = WPSW_ALWAYS;
 
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
-	player.userinfo.unlag			= unlag;
 	player.userinfo.predict_weapons	= predict_weapons;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
@@ -1969,8 +1955,9 @@ void SV_ConnectClient()
 	if (!SV_SetupUserInfo(*player))
 		return;
 
-	// Get the rate value of the client.
-	SV_SetClientRate(*cl, MSG_ReadLong());
+	// [SL] Read and ignore deprecated client rate. Clients now always use sv_maxrate.
+	MSG_ReadLong();
+	cl->rate = int(sv_maxrate);
 
 	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
@@ -3252,11 +3239,6 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 		else
 			MSG_WriteByte(buf, 0xFF);
 	}
-
-	if (sv_gametype == GM_COOP) {
-		for (int i = 0; i < NUMCARDS; i++)
-			MSG_WriteByte(buf, player->cards[i]);
-	}
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -3438,7 +3420,9 @@ int SV_CalculateNumTiccmds(player_t &player)
 //
 void SV_ProcessPlayerCmd(player_t &player)
 {
-	static const int maxcmdmove = 12800;
+	const int max_forward_move = 50 << 8;
+	const int max_sr40_side_move = 40 << 8;
+	const int max_sr50_side_move = 50 << 8;
 
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -3459,12 +3443,22 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// Set the latency amount for Unlagging
 		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
 
-		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > maxcmdmove) ||
-			(netcmd->hasSideMove() && abs(netcmd->getSideMove()) > maxcmdmove))
+		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > max_forward_move) ||
+		    (netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr50_side_move))
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
+
+		#if 0
+		if ((netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr40_side_move) &&
+		    (player.mo && player.mo->prevangle != netcmd->getAngle()))
+		{
+			// verify SR50 isn't combined with yaw
+			SV_PlayerTriedToCheat(player);
+			return;
+		}
+		#endif
 
 		netcmd->toPlayer(&player);
 
@@ -4168,10 +4162,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rate:
-			{
-				// denis - prevent problems by locking rate within a range
-				SV_SetClientRate(player.client, MSG_ReadLong());
-			}
+			MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
 			break;
 
 		case clc_ack:
@@ -4814,7 +4805,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);

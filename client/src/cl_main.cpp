@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -309,7 +309,6 @@ void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
@@ -431,7 +430,8 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	G_CleanupDemo();	// Cleanup in case of a vanilla demo
+	if (demorecording)
+		G_CleanupDemo();	// Cleanup in case of a vanilla demo
 
 	demoplayback = false;
 
@@ -883,7 +883,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
@@ -950,16 +949,6 @@ BEGIN_COMMAND (serverinfo)
     Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
-
-// rate: takes a kbps value
-CVAR_FUNC_IMPL (rate)
-{
-	if (connected)
-	{
-		MSG_WriteMarker(&net_buffer, clc_rate);
-		MSG_WriteLong(&net_buffer, (int)var);
-	}
-}
 
 
 BEGIN_COMMAND (rcon)
@@ -1378,7 +1367,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, "");
 
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
@@ -1853,8 +1842,6 @@ void CL_InitNetwork (void)
 		}
     }
 
-	G_SetDefaultTurbo ();
-
     connected = false;
 }
 
@@ -1887,7 +1874,10 @@ void CL_TryToConnect(DWORD server_token)
 
 		CL_SendUserInfo(); // send userinfo
 
-		MSG_WriteLong(&net_buffer, (int)rate);
+		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
+		// maximum rate that the server will ignore.
+		const int rate = 0xFFFF;
+		MSG_WriteLong(&net_buffer, rate); 
 
         MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
 
@@ -2127,12 +2117,6 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
-
-	// Receive the keys from a spied player
-	if (sv_gametype == GM_COOP) {
-		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = MSG_ReadByte();
-	}
 }
 
 //

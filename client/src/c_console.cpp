@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,6 +47,12 @@
 #include <string>
 #include <list>
 #include <algorithm>
+
+// These functions are standardized in C++11, POSIX standard otherwise
+#if defined(_WIN32) && (__cplusplus <= 199711L)
+#	define vsnprintf _vsnprintf
+#	define snprintf  _snprintf
+#endif
 
 static const int MAX_LINE_LENGTH = 8192;
 

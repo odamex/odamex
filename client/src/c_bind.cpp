@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -496,7 +496,7 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	if (ev->type == ev_keydown)
-		AddCommandString(*binding);
+		AddCommandString(*binding, ev->data1);
 
 	return true;
 }
@@ -515,12 +515,12 @@ bool C_DoSpectatorKey (event_t *ev)
 
 	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELUP)
 	{
-		AddCommandString("spyprev");
+		AddCommandString("spyprev", ev->data1);
 		return true;
 	}
 	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELDOWN)
 	{
-		AddCommandString("spynext");
+		AddCommandString("spynext", ev->data1);
 		return true;
 	}
 
@@ -529,21 +529,22 @@ bool C_DoSpectatorKey (event_t *ev)
 
 BOOL C_DoKey (event_t *ev)
 {
-	std::string *binding;
-	int dclickspot;
-	byte dclickmask;
-
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
-	dclickspot = ev->data1 >> 3;
-	dclickmask = 1 << (ev->data1 & 7);
+	std::string *binding = NULL;
 
-	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown) {
+	int dclickspot = ev->data1 >> 3;
+	byte dclickmask = 1 << (ev->data1 & 7);
+
+	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown)
+	{
 		// Key pressed for a double click
 		binding = &DoubleBindings[ev->data1];
 		DClicked[dclickspot] |= dclickmask;
-	} else {
+	}
+	else
+	{
 		if (ev->type == ev_keydown) {
 			// Key pressed for a normal press
 			binding = &Bindings[ev->data1];
@@ -566,7 +567,7 @@ BOOL C_DoKey (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-			AddCommandString (*binding);
+			AddCommandString(*binding, ev->data1);
 			KeysDown[ev->data1] = true;
 		}
 		else
@@ -579,7 +580,7 @@ BOOL C_DoKey (event_t *ev)
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
 				(*binding)[achar] = '-';
-				AddCommandString (*binding);
+				AddCommandString(*binding, ev->data1);
 				(*binding)[achar] = '+';
 			}
 
@@ -614,7 +615,7 @@ void C_ReleaseKeys()
 			(achar == 0 || (*binding)[achar - 1] <= ' '))
 		{
 			(*binding)[achar] = '-';
-			AddCommandString(*binding);
+			AddCommandString(*binding, i);
 			(*binding)[achar] = '+';
 		}
 	}
@@ -728,7 +729,7 @@ C_GetKeyStringsFromCommand
 Finds binds from a command and returns it into a std::string .
 - If TRUE, second arg returns up to 2 keys. ("x OR y")
 */
-std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
+std::string C_GetKeyStringsFromCommand(const char *cmd, bool bTwoEntries)
 {
 	int first = -1;
 	int second = -1;
@@ -736,7 +737,7 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 	C_GetKeysForCommand(cmd, &first, &second);
 
 	if (!first && !second)
-		return "<???>";
+		return "<??\?>";
 
 	if (bTwoEntries)
 		return C_NameKeys(first, second);
@@ -747,7 +748,7 @@ std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries)
 		else
 			return KeyName(first);
 	}
-	return "<???>";
+	return "<??\?>";
 }
 
 

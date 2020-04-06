@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -221,7 +221,7 @@ void G_ChangeMap()
 		// when onlcvars (addcommandstring's second param) is true.  Is there a
 		// reason why the mapscripts ahve to be safe mode?
 		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.cstring()/*, true*/);
+			AddCommandString(sv_endmapscript.cstring());
 	}
 }
 
@@ -249,7 +249,7 @@ void G_ChangeMap(size_t index)
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 // Restart the current map.
@@ -263,7 +263,7 @@ void G_RestartMap()
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -306,7 +306,7 @@ void G_DoNewGame (void)
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_startmapscript.cstring()))
-		AddCommandString(sv_startmapscript.cstring()/*,true*/);
+		AddCommandString(sv_startmapscript.cstring());
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

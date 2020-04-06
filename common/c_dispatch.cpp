@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,6 +36,9 @@
 #include "d_player.h"
 #include "r_defs.h"
 #include "i_system.h"
+
+#include "hashtable.h"
+#include "m_ostring.h"
 
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
@@ -71,6 +74,64 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x2314d, ACTION_SHOWSCORES, "showscores" }
 };
 byte Actions[NUM_ACTIONS];
+
+
+class ActionKeyTracker
+{
+public:
+
+	ActionKeyTracker() :
+		mTable(NUM_ACTIONS)
+	{ }
+
+	void clear()
+	{
+		mTable.clear();
+	}
+
+	bool isActionActivated(const OString action)
+	{
+		ActionKeyListTable::iterator it = mTable.find(action);
+		if (it == mTable.end())
+			return false;
+		ActionKeyList* action_key_list = &it->second;
+		return !action_key_list->empty();
+	}
+
+	bool pressKey(uint32_t key, const OString action)
+	{
+		ActionKeyListTable::iterator it = mTable.find(action);
+		if (it == mTable.end())
+			it = mTable.insert(std::make_pair(action, ActionKeyList())).first;
+		ActionKeyList* action_key_list = &it->second;
+
+		if (std::find(action_key_list->begin(), action_key_list->end(), key) != action_key_list->end())
+			return false;
+
+		action_key_list->push_back(key);
+		return true;
+	}
+
+	bool releaseKey(uint32_t key, const OString action)
+	{
+		ActionKeyListTable::iterator it = mTable.find(action);
+		if (it == mTable.end())
+			return false;
+
+		ActionKeyList* action_key_list = &it->second;
+		action_key_list->remove(key);
+		return action_key_list->empty();
+	}
+
+private:
+	typedef std::list<uint32_t> ActionKeyList;
+
+	typedef OHashTable<OString, ActionKeyList> ActionKeyListTable;
+	ActionKeyListTable mTable;
+};
+
+static ActionKeyTracker action_key_tracker;
+
 
 static int ListActionCommands (void)
 {
@@ -126,7 +187,8 @@ int GetActionBit (unsigned int key)
 
 bool safemode = false;
 
-void C_DoCommand (const char *cmd)
+
+void C_DoCommand(const char *cmd, uint32_t key)
 {
 	size_t argc, argsize;
 	char **argv;
@@ -140,24 +202,30 @@ void C_DoCommand (const char *cmd)
 		return;
 
 	// Check if this is an action
-	if (*com_token == '+')
+	if (*com_token == '+' || *com_token == '-')
 	{
-		check = GetActionBit (MakeKey (com_token + 1));
-		//if (Actions[check] < 255)
-		//	Actions[check]++;
-		if (check != -1)
-			Actions[check] = 1;
-	}
-	else if (*com_token == '-')
-	{
-		check = GetActionBit (MakeKey (com_token + 1));
-		//if (Actions[check])
-		//	Actions[check]--;
-		if (check != -1)
-			Actions[check] = 0;
+		OString action(com_token + 1);
+		check = GetActionBit(MakeKey(action.c_str()));
 
-		if ((check == ACTION_LOOKDOWN || check == ACTION_LOOKUP || check == ACTION_MLOOK) && lookspring)
-			AddCommandString ("centerview");
+		if (*com_token == '+')
+		{
+			if (action_key_tracker.pressKey(key, action))
+			{
+				if (check != -1)
+					Actions[check] = 1;
+			}
+		}
+		else if (*com_token == '-')
+		{
+			if (action_key_tracker.releaseKey(key, action))
+			{
+				if (check != -1)
+					Actions[check] = 0;
+
+				if ((check == ACTION_LOOKDOWN || check == ACTION_LOOKUP || check == ACTION_MLOOK) && lookspring)
+					AddCommandString("centerview");
+			}
+		}
 	}
 
 	// Check if this is a normal command
@@ -199,15 +267,13 @@ void C_DoCommand (const char *cmd)
 		{
 			com = c->second;
 
-			if(!safemode
-			|| stricmp(argv[0], "if")==0
-			|| stricmp(argv[0], "exec")==0)
+			if (!safemode || stricmp(argv[0], "if") == 0 || stricmp(argv[0], "exec") == 0)
 			{
 				com->argc = argc;
 				com->argv = argv;
 				com->args = realargs;
 				com->m_Instigator = consoleplayer().mo;
-				com->Run ();
+				com->Run(key);
 			}
 			else
 			{
@@ -230,7 +296,7 @@ void C_DoCommand (const char *cmd)
 						com->argc = argc + 1;
 						com->argv = argv - 1;	// Hack
 						com->m_Instigator = consoleplayer().mo;
-						com->Run();
+						com->Run(key);
 					}
 					else
 						Printf(PRINT_HIGH, "set command not found\n");
@@ -262,7 +328,7 @@ void C_DoCommand (const char *cmd)
 	}
 }
 
-void AddCommandString(const std::string &str, bool onlycvars)
+void AddCommandString(const std::string &str, uint32_t key)
 {
 	size_t totallen = str.length();
 	if (!totallen)
@@ -319,8 +385,6 @@ void AddCommandString(const std::string &str, bool onlycvars)
 			}
 		}
 
-		safemode |= onlycvars;
-
 		cend = cp - 1;
 
 		// remove leading and trailing whitespace
@@ -333,10 +397,7 @@ void AddCommandString(const std::string &str, bool onlycvars)
 		memcpy(command, cstart, clength);
 		command[clength] = '\0';
 
-		C_DoCommand(command);
-
-		if (onlycvars)
-			safemode = false;
+		C_DoCommand(command, key);
 
 		// don't parse anymore if there's a comment
 		if (cp[0] == '/' && cp[1] == '/')
@@ -644,7 +705,7 @@ DConsoleAlias::~DConsoleAlias ()
 {
 }
 
-void DConsoleAlias::Run()
+void DConsoleAlias::Run(uint32_t key)
 {
 	if(!state_lock)
 	{
@@ -662,7 +723,7 @@ void DConsoleAlias::Run()
             }
         }
 
-        AddCommandString (m_CommandParam);
+        AddCommandString(m_CommandParam, key);
 
 		state_lock = false;
 	}
@@ -834,20 +895,6 @@ BEGIN_COMMAND (cmdlist)
 }
 END_COMMAND (cmdlist)
 
-BEGIN_COMMAND (key)
-{
-	if (argc > 1)
-	{
-		while (argc > 1)
-		{
-			Printf (PRINT_HIGH, " %08x", MakeKey (argv[1]));
-			argc--;
-			argv++;
-		}
-		Printf (PRINT_HIGH, "\n");
-	}
-}
-END_COMMAND (key)
 
 // Execute any console commands specified on the command line.
 // These all begin with '+' as opposed to '-'.
@@ -884,7 +931,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile)
 
 			std::string cmdString = BuildString (cmdlen, Args.GetArgList(argstart));
 			if (cmdString.length()) {
-				C_DoCommand (cmdString.c_str() + 1);
+				C_DoCommand(cmdString.c_str() + 1, 0);
 				if (onlylogfile) didlogfile = 1;
 			}
 		}

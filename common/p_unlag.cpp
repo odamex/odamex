@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +46,6 @@ void SV_SpawnMobj(AActor *mo);
 void SV_SendDestroyActor(AActor *mo);
 #endif	// _UNLAG_DEBUG_
 
-EXTERN_CVAR(sv_unlag)
 EXTERN_CVAR(sv_maxunlagtime)
 
 Unlag::SectorHistoryRecord::SectorHistoryRecord()
@@ -98,12 +97,12 @@ Unlag::~Unlag()
 //
 // Unlag::enabled
 //
-// Denotes whether sv_unlag is set and it is a multiplayer game
-// run on the server.
+// Denotes whether a multiplayer game is running on the server.
+//
  
 bool Unlag::enabled()
 {
-	return (sv_unlag && serverside && multiplayer && !demoplayback);
+	return (serverside && multiplayer && !demoplayback);
 }
 
 //
@@ -471,10 +470,6 @@ void Unlag::reconcile(byte shooter_id)
 		return;	
 
 	size_t player_index = player_id_map[shooter_id];
-
-	// Check if client disables unlagging for their weapons
-	if (!player_history[player_index].player->userinfo.unlag)
-		return;
 
 	size_t lag = player_history[player_index].current_lag;
 	
