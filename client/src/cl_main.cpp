@@ -4152,12 +4152,12 @@ void CL_UpdatePlayerQueuePos()
 		if (queuePos > 0 && player.QueuePosition == 0)
 		{
 			std::ostringstream ss;
-			ss << "Position in line to play: " << (int)queuePos;
+			ss << "Position in line to play: " << (int)queuePos << "\n";
 			Printf(PRINT_HIGH, ss.str().c_str());
 		}
-		else if (queuePos == 0 && player.QueuePosition > 0)
+		else if (player.spectator && queuePos == 0 && player.QueuePosition > 0)
 		{
-			Printf(PRINT_HIGH, "You have been removed from the queue.");
+			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
 		}
 	}
 
