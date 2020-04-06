@@ -105,7 +105,6 @@ int P_Random (AActor *actor)
 
 		unsigned long int value = zdoomrng.table[actor->rndindex];
 
-		printf("P_Random zdoomphys\n");
 		zdoomrng.table[actor->rndindex] = value * 1664525ul + 221297ul + actor->rndindex * 2;
 
 		return (value >> 20) & 255;
@@ -152,7 +151,6 @@ int M_Random()
 void M_ClearRandom (void)
 {
 	if (co_zdoomphys) {
-		printf("M_ClearRandom zdoomphys\n");
 		for (int i = 0; i < NUMPRCLASS; i++) {
 			zdoomrng.table[i] = 1993 * 2 + 1;
 			zdoomrng.table[i] *= 69069ul;
