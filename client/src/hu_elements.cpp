@@ -188,13 +188,15 @@ int teamTextColor(byte team) {
 // Please don't add any more of these.
 
 // Return a "help" string.
-std::string HelpText() {
+std::string HelpText()
+{
+	bool isGameFull = false;
+
 	if (P_NumPlayersInGame() >= sv_maxplayers)
 	{
-		return "Game is full";
+		isGameFull = true;
 	}
-
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		size_t min_players = MAXPLAYERS;
 		for (byte i = 0;i < NUMTEAMS;i++)
@@ -203,7 +205,26 @@ std::string HelpText() {
 			if (players < min_players)
 				min_players = players;
 		}
-		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam) {
+
+		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam)
+			isGameFull = true;
+	}
+
+	if (isGameFull)
+	{
+		int queuePos = consoleplayer().QueuePosition;
+
+		if (queuePos > 0)
+		{
+			std::ostringstream ss;
+			ss << "Position in line to play: " << (int)queuePos;
+			return ss.str();
+		}
+		else
+		{
+			if (GameModeSupportsQueue())
+				return "Press USE to join the queue";
+
 			return "Game is full";
 		}
 	}
