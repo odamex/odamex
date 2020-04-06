@@ -315,6 +315,7 @@ void SV_ServerSettingChange();
 void G_InitNew (const char *mapname)
 {
 	size_t i;
+	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -339,8 +340,6 @@ void G_InitNew (const char *mapname)
 	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
 	// send changed cvars
 	gamestate = GS_LEVEL;
-	if (serverside && !(level.flags & LEVEL_LOBBYSPECIAL))
-		SV_UpdatePlayerQueueLevelChange();
 	SV_ServerSettingChange();
 
 	paused = false;
@@ -421,6 +420,9 @@ void G_InitNew (const char *mapname)
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
+		SV_UpdatePlayerQueueLevelChange();
 }
 
 //
