@@ -1651,47 +1651,60 @@ bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
+	// Set the window size
+	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
+
+	int actual_width, actual_height;
+	SDL_GetWindowSize(mSDLWindow, &actual_width, &actual_height);
+	mWidth = actual_width;
+	mHeight = actual_height;
+
+	// Set the window position on the screen
+	SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+	// Set the winodow mode (window / full screen)
 	uint32_t fullscreen_flags = 0;
 	if (window_mode == WINDOW_DesktopFullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else if (window_mode == WINDOW_Fullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
-
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
-	mWindowMode = window_mode;
+	uint32_t window_flags = SDL_GetWindowFlags(mSDLWindow);
+	if ((window_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP)
+		mWindowMode = WINDOW_DesktopFullscreen;
+	else if ((window_flags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN)
+		mWindowMode = WINDOW_Fullscreen;
+	else
+		mWindowMode = WINDOW_Windowed;
+
 	bool is_fullscreen = mWindowMode != WINDOW_Windowed;
 
-	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
-    SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	// Set the surface pixel format
+	PixelFormat format = buildSurfacePixelFormat(video_bpp);
+	// Discover the argb_t pixel format
+	if (format.getBitsPerPixel() == 32)
+		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
+	else
+		argb_t::setChannels(3, 2, 1, 0);
+	mBitsPerPixel = format.getBitsPerPixel();
 
 	delete mSurfaceManager;
-
-    PixelFormat format = buildSurfacePixelFormat(video_bpp);
 	mSurfaceManager = new ISDL20TextureWindowSurfaceManager(
-			video_width, video_height,
+			mWidth, mHeight,
 			&format,
 			this,
 			vsync,
 			vid_filter.cstring());
 
-	mWidth = video_width;
-	mHeight = video_height;
-    mBitsPerPixel = video_bpp;
+	mUseVSync = vsync;
 
 	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, is_fullscreen);
 
-	mUseVSync = vsync;
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
 	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
-
-	// Tell argb_t the pixel format
-	if (format.getBitsPerPixel() == 32)
-		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
-	else
-		argb_t::setChannels(3, 2, 1, 0);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
