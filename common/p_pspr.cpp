@@ -300,7 +300,7 @@ void P_SwitchWeapon(player_t *player)
 	}
 
 	weapontype_t best_weapon = static_cast<weapontype_t>(best_weapon_num);
-	if (best_weapon != player->readyweapon)
+	if (best_weapon != player->readyweapon && player->weaponowned[best_weapon])
 	{
 		// Switch to this weapon
 		player->pendingweapon = best_weapon;
@@ -381,6 +381,9 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 			? player->readyweapon
 			: player->pendingweapon;
 
+	if (currentweapon == NUMWEAPONS)
+		return true;
+
 	// Use player's weapon preferences
 	byte *prefs = player->userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
@@ -436,7 +439,8 @@ static void DecreaseAmmo(player_t *player)
 //
 void P_FireWeapon(player_t* player)
 {
-	if (!P_CheckAmmo(player))
+	// Prevent fire if you don't have any weapon, including fist. See DoClearInv - PCD_CLEARINVENTORY
+	if (!P_CheckAmmo(player) || player->readyweapon == NUMWEAPONS)
 		return;
 
 	// [tm512] Send the client the weapon they just fired so
@@ -575,8 +579,8 @@ void A_Lower(AActor* mo)
 		return;
 	}
 
-	// haleyjd 03/28/10: do not assume pendingweapon is valid
-	if (player->pendingweapon < NUMWEAPONS)
+	// haleyjd 03/28/10: do not assume pendingweapon is valid - include NUMWEAPONS from ClearInventory
+	if (player->pendingweapon < NUMWEAPONS + 1)
 		player->readyweapon = player->pendingweapon;
 
 	P_BringUpWeapon(player);
