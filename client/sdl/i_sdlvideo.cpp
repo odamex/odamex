@@ -60,6 +60,9 @@ EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_pillarbox)
 
 
+void I_SetWindowIcon(SDL_Window* sdl_window);
+
+
 // ****************************************************************************
 
 #ifdef SDL12
@@ -526,60 +529,7 @@ void ISDL12Window::setWindowTitle(const std::string& str)
 //
 void ISDL12Window::setWindowIcon()
 {
-	#if defined(_WIN32) && !defined(_XBOX)
-	// [SL] Use Win32-specific code to make use of multiple-icon sizes
-	// stored in the executable resources. SDL 1.2 only allows a fixed
-	// 32x32 px icon.
-	//
-	// [Russell] - Just for windows, display the icon in the system menu and
-	// alt-tab display
-
-	// TODO: FIXME
-	#if 0
-	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
-
-	if (hIcon)
-	{
-		HWND WindowHandle;
-
-		SDL_SysWMinfo wminfo;
-		SDL_VERSION(&wminfo.version)
-		SDL_GetWMInfo(&wminfo);
-
-		WindowHandle = wminfo.window;
-
-		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-	}
-    #endif
-
-	#else
-
-/*
-	texhandle_t icon_handle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
-	const Texture* icon_texture = texturemanager.getTexture(icon_handle);
-	const int icon_width = icon_texture->getWidth(), icon_height = icon_texture->getHeight();
-
-	SDL_Surface* icon_sdlsurface = SDL_CreateRGBSurface(0, icon_width, icon_height, 8, 0, 0, 0, 0);
-	Res_TransposeImage((byte*)icon_sdlsurface->pixels, icon_texture->getData(), icon_width, icon_height);
-
-	SDL_SetColorKey(icon_sdlsurface, SDL_SRCCOLORKEY, 0);
-
-	// set the surface palette
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-	SDL_Color* sdlcolors = icon_sdlsurface->format->palette->colors;
-	for (int c = 0; c < 256; c++)
-	{
-		sdlcolors[c].r = palette_colors[c].r;
-		sdlcolors[c].g = palette_colors[c].g;
-		sdlcolors[c].b = palette_colors[c].b;
-	}
-
-	SDL_WM_SetIcon(icon_sdlsurface, NULL);
-	SDL_FreeSurface(icon_sdlsurface);
-*/
-
-	#endif
+	I_SetWindowIcon(mSDLWindow);
 }
 
 
@@ -1464,32 +1414,7 @@ void ISDL20Window::setWindowTitle(const std::string& str)
 //
 void ISDL20Window::setWindowIcon()
 {
-	#if defined(_WIN32) && !defined(_XBOX)
-	// [SL] Use Win32-specific code to make use of multiple-icon sizes
-	// stored in the executable resources. SDL 1.2 only allows a fixed
-	// 32x32 px icon.
-	//
-	// [Russell] - Just for windows, display the icon in the system menu and
-	// alt-tab display
-
-	// TODO: Add the icon resources to the wad file and load them with the
-	// other code instead
-	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
-
-	if (hIcon)
-	{
-		HWND WindowHandle;
-
-		SDL_SysWMinfo wminfo;
-		SDL_VERSION(&wminfo.version)
-		SDL_GetWindowWMInfo(mSDLWindow, &wminfo);
-
-		WindowHandle = wminfo.info.win.window;
-
-		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-	}
-	#endif
+	I_SetWindowIcon(mSDLWindow);
 }
 
 
