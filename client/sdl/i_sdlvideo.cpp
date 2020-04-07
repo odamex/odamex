@@ -29,13 +29,7 @@
 #include <functional>
 #include "doomstat.h"
 
-// [Russell] - Just for windows, display the icon in the system menu and
-// alt-tab display
 #include "win32inc.h"
-#if defined(_WIN32) && !defined(_XBOX)
-    #include <SDL_syswm.h>
-    #include "resource.h"
-#endif // WIN32
 
 #include "i_video.h"
 #include "v_video.h"
