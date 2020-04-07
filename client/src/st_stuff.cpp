@@ -47,6 +47,7 @@
 #include "cl_main.h"
 #include "gi.h"
 #include "cl_demo.h"
+#include "c_console.h"
 
 #include "p_ctf.h"
 
@@ -349,7 +350,7 @@ static int		st_fragscount;
 static int		st_oldhealth = -1;
 
 // used for evil grin
-static bool		oldweaponsowned[NUMWEAPONS];
+static bool		oldweaponsowned[NUMWEAPONS+1];
 
  // count until face changes
 static int		st_facecount = 0;
@@ -1172,6 +1173,8 @@ void ST_updateWidgets(void)
 
 void ST_Ticker()
 {
+	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
+		return;
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
 	st_oldhealth = displayplayer().health;
