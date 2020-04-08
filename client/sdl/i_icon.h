@@ -23,8 +23,9 @@
 #define __I_ICON_H__
 
 #include "i_sdl.h"
+#include "win32inc.h"
 
-#ifdef SDL20
+#if defined(SDL20) && !defined(_WIN32)
 
 // Icon data exported from Gimp
 static const struct {
