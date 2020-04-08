@@ -455,6 +455,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
 	#endif
 
+	D_AddSearchDir(dirs, "/usr/share/doom", separator);
 	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
