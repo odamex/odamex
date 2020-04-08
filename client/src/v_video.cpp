@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,31 +23,23 @@
 //-----------------------------------------------------------------------------
 
 
-
 #include <stdio.h>
 #include <assert.h>
-
-#include "m_alloc.h"
 
 #include "i_system.h"
 #include "i_video.h"
 #include "r_local.h"
 #include "r_draw.h"
-#include "r_plane.h"
 #include "r_state.h"
 
 #include "doomdef.h"
-#include "doomdata.h"
 #include "doomstat.h"
 #include "d_main.h"
 
 #include "c_console.h"
-#include "hu_stuff.h"
 
 #include "m_argv.h"
 #include "m_bbox.h"
-#include "m_swap.h"
-#include "m_menu.h"
 
 #include "v_video.h"
 #include "v_text.h"
@@ -133,9 +125,9 @@ EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
 
-int vid_pillarbox_old = -1;
-int vid_32bpp_old = -1;
-std::string vid_filter_old = "";
+static int vid_pillarbox_old = -1;
+static int vid_32bpp_old = -1;
+static std::string vid_filter_old = "";
 
 bool V_CheckModeAdjustment()
 {
@@ -149,7 +141,7 @@ bool V_CheckModeAdjustment()
 		return true;
 	}
 
-	if (vid_fullscreen != window->isFullScreen())
+	if ((EWindowMode)vid_fullscreen.asInt() != window->getWindowMode())
 		return true;
 
 	if (vid_filter.str() != vid_filter_old) {
@@ -182,7 +174,7 @@ CVAR_FUNC_IMPL(vid_defwidth)
 		var.RestoreDefault();
 	
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_SetResolution(var, new_video_height);
+        V_ForceVideoModeAdjustment();
 }
 
 
@@ -192,7 +184,7 @@ CVAR_FUNC_IMPL(vid_defheight)
 		var.RestoreDefault();
 	
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_SetResolution(new_video_width, var);
+        V_ForceVideoModeAdjustment();
 }
 
 
@@ -249,6 +241,7 @@ CVAR_FUNC_IMPL (vid_widescreen)
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
+
 
 CVAR_FUNC_IMPL(vid_pillarbox)
 {
@@ -488,10 +481,10 @@ void V_SetResolution(uint16_t width, uint16_t height)
 bool V_DoSetResolution(uint16_t width, uint16_t height)
 {
 	int surface_bpp = vid_32bpp ? 32 : 8;
-	bool fullscreen = (vid_fullscreen != 0.0f);
+	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
 	bool vsync = (vid_vsync != 0.0f);
 
-	I_SetVideoMode(width, height, surface_bpp, fullscreen, vsync);
+	I_SetVideoMode(width, height, surface_bpp, window_mode, vsync);
 	if (!I_VideoInitialized())
 		return false;
 

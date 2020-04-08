@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -65,11 +65,6 @@ void xbox_AtExit(void (*function)(void));
 
 // Print useful memory information for debugging
 void xbox_PrintMemoryDebug();
-
-// Set the x, y screen starting position in relation to 0,0
-int xbox_SetScreenPosition(float x, float y);
-// Stretch the image to some percentage of its full resolution - 1.0 = 100%
-int xbox_SetScreenStretch(float xs, float ys);
 
 // Write a SaveMeta.xbx file
 void xbox_WriteSaveMeta(std::string path, std::string text);

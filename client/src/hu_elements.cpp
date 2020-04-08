@@ -33,11 +33,9 @@
 #include "doomstat.h"
 #include "g_warmup.h"
 #include "hu_drawers.h"
-#include "hu_elements.h"
 #include "p_ctf.h"
 #include "v_text.h"
 #include "i_video.h"
-#include "v_video.h"
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(player_t*);
@@ -253,18 +251,18 @@ std::string Timer(int& color)
 	if (timeleft < 0)
 		timeleft = 0;
 
-	int hours = timeleft / (TICRATE * 3600);
+	uint8_t hours = timeleft / (TICRATE * 3600);
 
 	timeleft -= hours * TICRATE * 3600;
-	int minutes = timeleft / (TICRATE * 60);
+	uint8_t minutes = timeleft / (TICRATE * 60);
 
 	timeleft -= minutes * TICRATE * 60;
-	int seconds = timeleft / TICRATE;
+	uint8_t seconds = timeleft / TICRATE;
 
 	if (hours == 0 && minutes < 1)
 		color = CR_BRICK;
 
-	char str[9];
+	char str[12];
 	if (hours)
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 	else
@@ -283,15 +281,15 @@ std::string IntermissionTimer()
 	if (timeleft < 0)
 		timeleft = 0;
 
-	int hours = timeleft / (TICRATE * 3600);
+	uint8_t hours = timeleft / (TICRATE * 3600);
 
 	timeleft -= hours * TICRATE * 3600;
-	int minutes = timeleft / (TICRATE * 60);
+	uint8_t minutes = timeleft / (TICRATE * 60);
 
 	timeleft -= minutes * TICRATE * 60;
-	int seconds = timeleft / TICRATE;
+	uint8_t seconds = timeleft / TICRATE;
 
-	char str[9];
+	char str[12];
 	if (hours)
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 	else
@@ -445,15 +443,15 @@ std::string NetdemoElapsed() {
 	}
 
 	int timeelapsed = netdemo.calculateTimeElapsed();
-	int hours = timeelapsed / 3600;
+	uint8_t hours = timeelapsed / 3600;
 
 	timeelapsed -= hours * 3600;
-	int minutes = timeelapsed / 60;
+	uint8_t minutes = timeelapsed / 60;
 
 	timeelapsed -= minutes * 60;
-	int seconds = timeelapsed;
+	uint8_t seconds = timeelapsed;
 
-	char str[9];
+	char str[12];
 	if (hours) {
 		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 	} else {

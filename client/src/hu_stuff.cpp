@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,13 +26,11 @@
 
 #include "doomdef.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "st_stuff.h"
-#include "gstrings.h"
 #include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -42,7 +40,6 @@
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "i_video.h"
-#include "i_input.h"
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"

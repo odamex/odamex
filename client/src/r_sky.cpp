@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,9 +25,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomstat.h"
 #include "m_fixed.h"
 #include "r_data.h"
@@ -36,7 +33,6 @@
 #include "c_cvars.h"
 #include "g_level.h"
 #include "r_sky.h"
-#include "gi.h"
 #include "w_wad.h"
 
 extern int *texturewidthmask;

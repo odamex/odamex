@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,6 +41,14 @@ enum EDisplayType
 	DISPLAY_Both
 };
 
+enum EWindowMode
+{
+	WINDOW_Windowed = 0,
+	WINDOW_DesktopFullscreen = 1,
+	WINDOW_Fullscreen = 2,
+};
+
+
 // forward definitions
 class IVideoMode;
 class IVideoCapabilities;
@@ -52,10 +60,10 @@ void I_InitHardware();
 void STACK_ARGS I_ShutdownHardware();
 bool I_VideoInitialized();
 
-void I_SetVideoMode(int width, int height, int bpp, bool fullscreen, bool vsync);
-void I_SetWindowSize(int width, int height);
+void I_SetVideoMode(int width, int height, int bpp, EWindowMode window_mode, bool vsync);
 
 const IVideoCapabilities* I_GetVideoCapabilities();
+int I_GetMonitorCount();
 IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
 DCanvas* I_GetPrimaryCanvas();
@@ -108,8 +116,10 @@ void I_DrawLoadingIcon();
 class IVideoMode
 {
 public:
-	IVideoMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen) :
-		mWidth(width), mHeight(height), mBitsPerPixel(bpp), mFullScreen(fullscreen)
+	IVideoMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode,
+				bool vsync = false, std::string stretch_mode = "") :
+		mWidth(width), mHeight(height), mBitsPerPixel(bpp), mWindowMode(window_mode),
+		mVsync(vsync), mSurfaceStretchMode(stretch_mode)
 	{ }
 
 	uint16_t getWidth() const
@@ -121,13 +131,17 @@ public:
 	uint8_t getBitsPerPixel() const
 	{	return mBitsPerPixel;	}
 
+	EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
+
 	bool isFullScreen() const
-	{	return mFullScreen;	}
+	{	return mWindowMode != WINDOW_Windowed;	}
 
 	bool operator==(const IVideoMode& other) const
 	{
 		return mWidth == other.mWidth && mHeight == other.mHeight &&
-			mBitsPerPixel == other.mBitsPerPixel && mFullScreen == other.mFullScreen;
+			mBitsPerPixel == other.mBitsPerPixel && 
+			mWindowMode == other.mWindowMode;
 	}
 
 	bool operator!=(const IVideoMode& other) const
@@ -143,22 +157,14 @@ public:
 			return mHeight < other.mHeight;
 		if (mBitsPerPixel != other.mBitsPerPixel)
 			return mBitsPerPixel < other.mBitsPerPixel;
-		if (mFullScreen != other.mFullScreen)
-			return (int)mFullScreen < (int)other.mFullScreen;
+		if (mWindowMode != other.mWindowMode)
+			return (int)mWindowMode < (int)other.mWindowMode;
 		return false;
 	}
 
 	bool operator>(const IVideoMode& other) const
 	{
-		if (mWidth != other.mWidth)
-			return mWidth > other.mWidth;
-		if (mHeight != other.mHeight)
-			return mHeight > other.mHeight;
-		if (mBitsPerPixel != other.mBitsPerPixel)
-			return mBitsPerPixel > other.mBitsPerPixel;
-		if (mFullScreen != other.mFullScreen)
-			return (int)mFullScreen > (int)other.mFullScreen;
-		return false;
+		return !operator==(other) && !operator<(other);
 	}
 
 	bool operator<=(const IVideoMode& other) const
@@ -199,7 +205,9 @@ private:
 	uint16_t	mWidth;
 	uint16_t	mHeight;
 	uint8_t		mBitsPerPixel;
-	bool		mFullScreen;
+	EWindowMode	mWindowMode;
+	bool		mVsync;
+	std::string	mSurfaceStretchMode;
 };
 
 typedef std::vector<IVideoMode> IVideoModeList;
@@ -268,7 +276,7 @@ public:
 class IDummyVideoCapabilities : public IVideoCapabilities
 {
 public:
-	IDummyVideoCapabilities() : IVideoCapabilities(), mVideoMode(320, 200, 8, false)
+	IDummyVideoCapabilities() : IVideoCapabilities(), mVideoMode(320, 200, 8, WINDOW_Windowed)
 	{	mModeList.push_back(mVideoMode);	}
 
 	virtual ~IDummyVideoCapabilities() { }
@@ -512,13 +520,15 @@ public:
 	virtual bool isFullScreen() const
 	{	return getVideoMode()->isFullScreen();	}
 
+	virtual EWindowMode getWindowMode() const = 0;
+
 	virtual bool isFocused() const
 	{	return false;	}
 
 	virtual bool usingVSync() const
 	{	return false;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) = 0;
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) = 0;
 
 	virtual void lockSurface() { }
 	virtual void unlockSurface() { }
@@ -556,8 +566,9 @@ class IDummyWindow : public IWindow
 {
 public:
 	IDummyWindow() :
-		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, true),
-		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0)
+		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, WINDOW_Windowed),
+		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0),
+		mWindowMode(WINDOW_DesktopFullscreen)
 	{ }
 
 	virtual ~IDummyWindow()
@@ -572,7 +583,7 @@ public:
 	virtual const PixelFormat* getPixelFormat() const
 	{	return &mPixelFormat;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync)
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync)
 	{
 		if (mPrimarySurface == NULL)
 		{
@@ -581,6 +592,7 @@ public:
 			height = mVideoMode.getHeight();
 			bpp = mVideoMode.getBitsPerPixel();
 			mPrimarySurface = I_AllocateSurface(width, height, bpp);
+			mWindowMode = window_mode;
 		}
 		return mPrimarySurface != NULL;
 	}
@@ -588,6 +600,8 @@ public:
 	virtual bool isFullScreen() const
 	{	return mVideoMode.isFullScreen();	}
 
+	virtual EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
 
 	virtual std::string getVideoDriverName() const
 	{
@@ -604,6 +618,7 @@ private:
 
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
+	EWindowMode			mWindowMode;
 };
 
 
@@ -631,6 +646,11 @@ public:
 	virtual IWindow* getWindow()
 	{
 		return const_cast<IWindow*>(static_cast<const IVideoSubsystem&>(*this).getWindow());
+	}
+
+	virtual int getMonitorCount() const
+	{
+		return 1;
 	}
 };
 

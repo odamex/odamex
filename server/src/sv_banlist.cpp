@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 // Copyright (C) 2012 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -34,7 +34,6 @@
 #include "cmdlib.h"
 #include "d_player.h"
 #include "m_fileio.h"
-#include "p_tick.h"
 #include "sv_banlist.h"
 #include "sv_main.h"
 

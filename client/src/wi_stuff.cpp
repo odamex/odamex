@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,8 +27,6 @@
 
 #include "z_zone.h"
 #include "m_random.h"
-#include "m_swap.h"
-#include "i_system.h"
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
@@ -1384,7 +1382,7 @@ static int WI_CalcWidth (const char *str)
 void WI_loadData (void)
 {
 	int i, j;
-	char name[9];
+	char name[17];
 	animinfo_t *a;
 
 	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 
 #include <stdlib.h>
 #include <list>
-#include <sstream>
 
 #include "win32inc.h"
 
@@ -40,7 +39,6 @@
 #include "c_console.h"
 #include "c_cvars.h"
 #include "i_system.h"
-#include "c_dispatch.h"
 #include "hu_stuff.h"
 
 #ifdef _XBOX
@@ -147,7 +145,7 @@ static bool I_CanGrab()
 
 	if (!I_GetWindow()->isFocused())
 		return false;
-	else if (I_GetWindow()->isFullScreen())
+	else if (I_GetWindow()->isFullScreen() && I_GetMonitorCount() <= 1)
 		return true;
 	else if (nomouse)
 		return false;

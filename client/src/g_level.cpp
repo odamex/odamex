@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,31 +35,21 @@
 #include "g_level.h"
 #include "g_game.h"
 #include "g_warmup.h"
-#include "gstrings.h"
 #include "gi.h"
-#include "hu_stuff.h"
 #include "i_system.h"
 #include "i_music.h"
-#include "m_alloc.h"
-#include "m_fileio.h"
-#include "m_misc.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
-#include "p_ctf.h"
 #include "p_local.h"
-#include "p_mobj.h"
 #include "p_saveg.h"
 #include "p_setup.h"
-#include "p_unlag.h"
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "sc_man.h"
 #include "st_stuff.h"
 #include "v_video.h"
-#include "v_text.h"
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"

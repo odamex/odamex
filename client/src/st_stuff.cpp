@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,7 +24,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "i_system.h"
 #include "i_video.h"
 #include "z_zone.h"
 #include "m_random.h"
@@ -34,7 +33,6 @@
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "r_local.h"
-#include "p_local.h"
 #include "p_inter.h"
 #include "am_map.h"
 #include "m_cheat.h"
@@ -536,8 +534,8 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-    else if (ev->type == ev_keydown && ev->data2)
-    {
+	else if (ev->type == ev_keydown && ev->data2)
+	{
 		char key = ev->data2;
 
         // 'dqd' cheat for toggleable god mode
@@ -692,7 +690,7 @@ bool ST_Responder (event_t *ev)
         // 'clev' change-level cheat
         else if (cht_CheckCheat(&cheat_clev, key))
         {
-            char buf[16];
+            char buf[11];
 			//char *bb;
 
             cht_GetParam(&cheat_clev, buf);
@@ -703,7 +701,7 @@ bool ST_Responder (event_t *ev)
 			if (gamemode == retail_chex)
 				sprintf(buf,"1%c",buf[1]);
 
-            sprintf (buf + 3, "map %s\n", buf);
+            sprintf (buf + 3, "map %.2s\n", buf);
             AddCommandString (buf + 3);
             eatkey = true;
         }
@@ -723,7 +721,7 @@ bool ST_Responder (event_t *ev)
             cht_GetParam(&cheat_mus, buf);
             buf[2] = 0;
 
-            sprintf (buf + 3, "idmus %s\n", buf);
+            sprintf (buf + 3, "idmus %.5s\n", buf);
             AddCommandString (buf + 3);
             eatkey = true;
         }

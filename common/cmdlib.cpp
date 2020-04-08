@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,6 @@
 //-----------------------------------------------------------------------------
 
 #include <ctime>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
 #include <functional>
@@ -32,12 +31,7 @@
 
 #include "doomtype.h"
 #include "cmdlib.h"
-#include "i_system.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <map>
-
-#include "m_alloc.h"
 
 char		com_token[8192];
 BOOL		com_eof;

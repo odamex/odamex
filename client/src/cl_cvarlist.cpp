@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,8 +24,6 @@
 #include "c_cvars.h"
 #include "s_sound.h"
 #include "i_music.h"
-#include "i_input.h"
-#include "d_netinf.h"
 
 // Automap
 // -------
@@ -274,20 +272,11 @@ CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a tea
 // Netcode Settings
 // --------------
 
-CVAR_RANGE_FUNC_DECL(rate, "200", "Rate of client updates in multiplayer mode",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 2000.0f)
-
-CVAR(				cl_unlag, "1", "client opt-in/out for server unlagging",
-					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
-
 CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR_RANGE(			cl_prednudge,	"0.70", "Smooth out collisions",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
-
-CVAR(				cl_predictlocalplayer, "1", "Predict local player position",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
@@ -383,17 +372,17 @@ CVAR(				cl_splitnetdemos, "0", "Create separate netdemos for each map",
 // Mouse settings
 // --------------
 
-CVAR_RANGE(		mouse_type, "0", "Use vanilla Doom mouse sensitivity or ZDoom mouse sensitivity",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+CVAR_FUNC_DECL(	mouse_type, "1", "Use vanilla Doom or ZDoom mouse sensitivity scaling (DEPRECATED)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		mouse_sensitivity, "35.0", "Overall mouse sensitivity",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+CVAR_RANGE(		mouse_sensitivity, "1.0", "Overall mouse sensitivity",
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR_FUNC_DECL(	cl_mouselook, "0", "Look up or down with mouse",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		m_pitch, "0.25", "Vertical mouse sensitivity",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
+CVAR_RANGE(		m_pitch, "1.0", "Vertical mouse sensitivity",
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR_RANGE(		m_yaw, "1.0", "",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
@@ -413,20 +402,8 @@ CVAR(			invertmouse, "0", "Invert vertical mouse movement",
 CVAR(			lookstrafe, "0", "Strafe with mouse",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		mouse_acceleration, "0", "",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
-
-CVAR_RANGE(		mouse_threshold, "0", "",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
-
 CVAR(			m_filter, "0", "Smooth mouse input",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-CVAR(			dynres_state, "0", "",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-CVAR_RANGE(		dynresval, "1.0", "",
-				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 100.0f)
 
 CVAR(			hud_mousegraph, "0", "Display mouse values",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -675,10 +652,10 @@ CVAR_FUNC_DECL(	vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)",
 
 #ifdef GCONSOLE
 CVAR_FUNC_DECL(	vid_fullscreen, "1", "Full screen video mode",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
 CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",

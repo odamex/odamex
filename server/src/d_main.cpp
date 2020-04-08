@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,8 +26,6 @@
 
 #include "version.h"
 
-#include <sstream>
-#include <string>
 #include <vector>
 #include <algorithm>
 
@@ -46,7 +44,6 @@
 
 #include "errors.h"
 
-#include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
 #include "doomdef.h"
@@ -58,7 +55,6 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
-#include "c_console.h"
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "g_game.h"
@@ -67,14 +63,11 @@
 #include "r_sky.h"
 #include "d_main.h"
 #include "d_dehacked.h"
-#include "cmdlib.h"
 #include "s_sound.h"
-#include "m_swap.h"
 #include "gi.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
 
-#include "res_texture.h"
 #include "w_ident.h"
 
 EXTERN_CVAR (sv_timelimit)
@@ -84,7 +77,7 @@ EXTERN_CVAR (sv_fastmonsters)
 
 extern size_t got_heapsize;
 
-void C_DoCommand (const char *cmd);
+void C_DoCommand(const char *cmd, uint32_t key = 0);
 
 #ifdef UNIX
 void daemon_init();

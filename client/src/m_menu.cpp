@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,17 +28,13 @@
 #include "c_dispatch.h"
 #include "d_main.h"
 #include "i_music.h"
-#include "i_system.h"
 #include "i_video.h"
-#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "hu_stuff.h"
 #include "g_game.h"
-#include "m_argv.h"
-#include "m_swap.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "doomstat.h"
@@ -52,7 +48,6 @@
 #include "g_level.h"
 
 #include "gi.h"
-#include "m_memio.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -640,7 +635,13 @@ void M_ReadSaveStrings(void)
 		}
 		else
 		{
-			fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			if (readlen < 1)
+			{
+				printf("M_Read_SaveStrings(): Failed to read handle.\n");
+				fclose(handle);
+				return;
+			}
 			fclose (handle);
 			LoadMenu[i].status = 1;
 		}
@@ -1542,7 +1543,7 @@ static void M_EditPlayerName (int choice)
 
 static void M_PlayerNameChanged (int choice)
 {
-	char command[SAVESTRINGSIZE+8];
+	char command[SAVESTRINGSIZE+8+2];
 
 	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);

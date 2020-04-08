@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,28 +24,17 @@
 
 #include <stdarg.h>
 
-#include "m_alloc.h"
 #include "m_memio.h"
 #include "version.h"
-#include "gstrings.h"
-#include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "i_system.h"
-#include "m_swap.h"
 #include "v_palette.h"
-#include "v_video.h"
-#include "w_wad.h"
-#include "z_zone.h"
-#include "r_main.h"
-#include "s_sound.h"
 #include "sv_main.h"
 #include "doomstat.h"
 #include "gi.h"
 
 #include <string>
-#include <vector>
 
 static const int MAX_LINE_LENGTH = 8192;
 
@@ -72,7 +61,7 @@ EXTERN_CVAR (log_fulltimestamps)
 
 char *TimeStamp()
 {
-	static char stamp[32];
+	static char stamp[38];
 
 	time_t ti = time(NULL);
 	struct tm *lt = localtime(&ti);

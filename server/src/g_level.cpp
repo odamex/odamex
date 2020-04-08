@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,27 +22,16 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <sstream>
-#include <string>
 #include <algorithm>
-#include <vector>
-#include <set>
 
-#include "c_console.h"
 #include "c_dispatch.h"
 #include "d_event.h"
-#include "d_main.h"
 #include "doomstat.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "gstrings.h"
 #include "gi.h"
 
 #include "i_system.h"
-#include "m_alloc.h"
-#include "m_fileio.h"
-#include "m_misc.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
@@ -55,12 +44,8 @@
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
-#include "s_sndseq.h"
-#include "sc_man.h"
 #include "sv_main.h"
 #include "sv_maplist.h"
-#include "sv_vote.h"
-#include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
@@ -224,7 +209,7 @@ void G_ChangeMap() {
 		// when onlcvars (addcommandstring's second param) is true.  Is there a
 		// reason why the mapscripts ahve to be safe mode?
 		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.cstring()/*, true*/);
+			AddCommandString(sv_endmapscript.cstring());
 	}
 }
 
@@ -247,7 +232,7 @@ void G_ChangeMap(size_t index) {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 // Restart the current map.
@@ -260,7 +245,7 @@ void G_RestartMap() {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -303,7 +288,7 @@ void G_DoNewGame (void)
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_startmapscript.cstring()))
-		AddCommandString(sv_startmapscript.cstring()/*,true*/);
+		AddCommandString(sv_startmapscript.cstring());
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

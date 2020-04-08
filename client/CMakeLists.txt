@@ -96,6 +96,7 @@ if(NOT SDL2_FOUND OR NOT SDL2_MIXER_FOUND)
     if(NOT SDLMIXER_FOUND)
       message(WARNING "SDL_mixer not found, client target not generated.")
     endif()
+    SET(BUILD_CLIENT OFF CACHE BOOL "" FORCE)
   endif()
 endif()
 

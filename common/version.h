@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,12 +25,12 @@
 #define __VERSION_H__
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "81"
-#define GAMEVER (0*256+81)
+#define CONFIGVERSIONSTR "82"
+#define GAMEVER (0*256+82)
 
-#define DOTVERSIONSTR "0.8.1"
+#define DOTVERSIONSTR "0.8.2"
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2019 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2020 The Odamex Team"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
@@ -42,7 +42,7 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.
-#define SAVESIG "ODAMEXSAVE081   "	// Needs to be exactly 16 chars long
+#define SAVESIG "ODAMEXSAVE082   "	// Needs to be exactly 16 chars long
 
 #define NETDEMOVER 3
 

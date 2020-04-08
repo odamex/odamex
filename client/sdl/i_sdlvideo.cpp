@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,16 +27,7 @@
 
 #include <algorithm>
 #include <functional>
-#include <string>
 #include "doomstat.h"
-
-// [Russell] - Just for windows, display the icon in the system menu and
-// alt-tab display
-#include "win32inc.h"
-#if defined(_WIN32) && !defined(_XBOX)
-    #include <SDL_syswm.h>
-    #include "resource.h"
-#endif // WIN32
 
 #include "i_video.h"
 #include "v_video.h"
@@ -45,16 +36,21 @@
 #include "i_sdlvideo.h"
 #include "i_system.h"
 #include "i_input.h"
+#include "i_icon.h"
 
-#include "m_argv.h"
-#include "w_wad.h"
 #include "c_dispatch.h"
 
-#include "res_texture.h"
+// [Russell] - Just for windows, display the icon in the system menu and alt-tab display
+#include "win32inc.h"
+#if defined(_WIN32) && !defined(_XBOX)
+    #include <SDL_syswm.h>
+    #include "resource.h"
+#endif // WIN32
 
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
+
 
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
@@ -84,7 +80,7 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 	memset(&format, 0, sizeof(format));
 	format.BitsPerPixel = bpp;
 
-	SDL_Rect** sdlmodes = SDL_ListModes(&format, SDL_ANYFORMAT |SDL_FULLSCREEN | SDL_SWSURFACE);
+	SDL_Rect** sdlmodes = SDL_ListModes(&format, SDL_ANYFORMAT | SDL_FULLSCREEN | SDL_SWSURFACE);
 
 	if (sdlmodes)
 	{
@@ -104,8 +100,8 @@ static void I_AddSDL12VideoModes(IVideoModeList* modelist, int bpp)
 			if (width > 0 && width <= MAXWIDTH && height > 0 && height <= MAXHEIGHT)
 			{
 				// add this video mode to the list (both fullscreen & windowed)
-				modelist->push_back(IVideoMode(width, height, bpp, false));
-				modelist->push_back(IVideoMode(width, height, bpp, true));
+				modelist->push_back(IVideoMode(width, height, bpp, WINDOW_Windowed));
+				modelist->push_back(IVideoMode(width, height, bpp, WINDOW_Fullscreen));
 			}
 			++sdlmodes;
 		}
@@ -134,7 +130,7 @@ static bool Is8bppFullScreen(const IVideoMode& mode)
 ISDL12VideoCapabilities::ISDL12VideoCapabilities() :
 	IVideoCapabilities(),
 	mNativeMode(SDL_GetVideoInfo()->current_w, SDL_GetVideoInfo()->current_h,
-				SDL_GetVideoInfo()->vfmt->BitsPerPixel, true)
+				SDL_GetVideoInfo()->vfmt->BitsPerPixel, WINDOW_Fullscreen)
 {
 	I_AddSDL12VideoModes(&mModeList, 8);
 	I_AddSDL12VideoModes(&mModeList, 32);
@@ -144,17 +140,17 @@ ISDL12VideoCapabilities::ISDL12VideoCapabilities() :
 	{
 		if (supports8bpp())
 		{
-			mModeList.push_back(IVideoMode(320, 200, 8, false));
-			mModeList.push_back(IVideoMode(320, 240, 8, false));
-			mModeList.push_back(IVideoMode(640, 400, 8, false));
-			mModeList.push_back(IVideoMode(640, 480, 8, false));
+			mModeList.push_back(IVideoMode(320, 200, 8, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(320, 240, 8, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 400, 8, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 480, 8, WINDOW_Windowed));
 		}
 		if (supports32bpp())
 		{
-			mModeList.push_back(IVideoMode(320, 200, 32, false));
-			mModeList.push_back(IVideoMode(320, 240, 32, false));
-			mModeList.push_back(IVideoMode(640, 400, 32, false));
-			mModeList.push_back(IVideoMode(640, 480, 32, false));
+			mModeList.push_back(IVideoMode(320, 200, 32, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(320, 240, 32, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 400, 32, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 480, 32, WINDOW_Windowed));
 		}
 	}
 
@@ -364,11 +360,11 @@ void ISDL12SoftwareWindowSurfaceManager::finishRefresh()
 // Constructs a new application window using SDL 1.2.
 // A ISDL12WindowSurface object is instantiated for frame rendering.
 //
-ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
+ISDL12Window::ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) :
 	IWindow(),
 	mSurfaceManager(NULL),
-	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
-	mIsFullScreen(fullscreen), mUseVSync(vsync),
+	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, WINDOW_Windowed),
+	mWindowMode(window_mode), mUseVSync(vsync),
 	mNeedPaletteRefresh(true), mBlit(true), mIgnoreResize(false), mLocks(0)
 { }
 
@@ -445,7 +441,7 @@ void ISDL12Window::getEvents()
 			else if (sdl_ev.type == SDL_VIDEORESIZE)
 			{
 				// Resizable window mode resolutions
-				if (!vid_fullscreen && !mIgnoreResize)
+				if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && !mIgnoreResize)
 				{
 					char tmp[256];
 					sprintf(tmp, "vid_setmode %i %i", sdl_ev.resize.w, sdl_ev.resize.h);
@@ -537,52 +533,22 @@ void ISDL12Window::setWindowIcon()
 	// [Russell] - Just for windows, display the icon in the system menu and
 	// alt-tab display
 
-	// TODO: FIXME
-	#if 0
 	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
 	if (hIcon)
 	{
-		HWND WindowHandle;
-
 		SDL_SysWMinfo wminfo;
 		SDL_VERSION(&wminfo.version)
 		SDL_GetWMInfo(&wminfo);
+		HWND WindowHandle = wminfo.window;
 
-		WindowHandle = wminfo.window;
-
-		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		if (WindowHandle)
+		{
+			SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+			SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		}
 	}
-    #endif
-
-	#else
-
-/*
-	texhandle_t icon_handle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
-	const Texture* icon_texture = texturemanager.getTexture(icon_handle);
-	const int icon_width = icon_texture->getWidth(), icon_height = icon_texture->getHeight();
-
-	SDL_Surface* icon_sdlsurface = SDL_CreateRGBSurface(0, icon_width, icon_height, 8, 0, 0, 0, 0);
-	Res_TransposeImage((byte*)icon_sdlsurface->pixels, icon_texture->getData(), icon_width, icon_height);
-
-	SDL_SetColorKey(icon_sdlsurface, SDL_SRCCOLORKEY, 0);
-
-	// set the surface palette
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-	SDL_Color* sdlcolors = icon_sdlsurface->format->palette->colors;
-	for (int c = 0; c < 256; c++)
-	{
-		sdlcolors[c].r = palette_colors[c].r;
-		sdlcolors[c].g = palette_colors[c].g;
-		sdlcolors[c].b = palette_colors[c].b;
-	}
-
-	SDL_WM_SetIcon(icon_sdlsurface, NULL);
-	SDL_FreeSurface(icon_sdlsurface);
-*/
-
-	#endif
+	#endif	// _WIN32 && !_XBOX
 }
 
 
@@ -718,8 +684,10 @@ const PixelFormat* ISDL12Window::getPixelFormat() const
 // calling SDL_Flip.
 //
 bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
-							bool video_fullscreen, bool vsync)
+							EWindowMode window_mode, bool vsync)
 {
+	bool is_windowed = window_mode == WINDOW_Windowed;
+
 	uint32_t flags = 0;
 
 	if (vsync)
@@ -727,19 +695,18 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	else
 		flags |= SDL_SWSURFACE;
 
-	if (video_fullscreen)
-		flags |= SDL_FULLSCREEN;
-	else
+	if (is_windowed)
+	{
 		flags |= SDL_RESIZABLE;
+	}
+	else
+	{
+		flags |= SDL_FULLSCREEN;
+		if (video_bpp == 8)
+			flags |= SDL_HWPALETTE;
+	}
 
-	if (video_fullscreen && video_bpp == 8)
-		flags |= SDL_HWPALETTE;
-
-	// TODO: check for multicore
 	flags |= SDL_ASYNCBLIT;
-
-	//if (video_fullscreen)
-	//	flags = ((flags & (~SDL_SWSURFACE)) | SDL_HWSURFACE);
 
 	#ifdef SDL_GL_SWAP_CONTROL
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
@@ -754,7 +721,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (sdl_surface == NULL)
 	{
 		I_FatalError("I_SetVideoMode: unable to set video mode %ux%ux%u (%s): %s\n",
-				video_width, video_height, video_bpp, video_fullscreen ? "fullscreen" : "windowed",
+				video_width, video_height, video_bpp, is_windowed ? "windowed" : "fullscreen",
 				SDL_GetError());
 		return false;
 	}
@@ -771,7 +738,10 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	mWidth = sdl_surface->w;
 	mHeight = sdl_surface->h;
 	mBitsPerPixel = format->getBitsPerPixel();
-	mIsFullScreen = (sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
+	if ((sdl_surface->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN)
+		mWindowMode = WINDOW_Fullscreen;
+	else
+		mWindowMode = WINDOW_Windowed;
 	mUseVSync = vsync;
 
 	if (SDL_MUSTLOCK(sdl_surface))
@@ -796,7 +766,7 @@ bool ISDL12Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t 
 	if (SDL_MUSTLOCK(sdl_surface))
 		SDL_UnlockSurface(sdl_surface);
 
-	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mWindowMode);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
@@ -857,7 +827,7 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL12VideoCapabilities();
 
-	mWindow = new ISDL12Window(640, 480, 8, false, false);
+	mWindow = new ISDL12Window(640, 480, 8, WINDOW_Windowed, false);
 }
 
 
@@ -910,8 +880,9 @@ static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 
 		int width = mode.w, height = mode.h;
 		// add this video mode to the list (both fullscreen & windowed)
-		modelist->push_back(IVideoMode(width, height, bpp, false));
-		modelist->push_back(IVideoMode(width, height, bpp, true));
+		modelist->push_back(IVideoMode(width, height, bpp, WINDOW_Windowed));
+		modelist->push_back(IVideoMode(width, height, bpp, WINDOW_DesktopFullscreen));
+		modelist->push_back(IVideoMode(width, height, bpp, WINDOW_Fullscreen));
 	}
 }
 
@@ -936,7 +907,7 @@ static bool Is8bppFullScreen(const IVideoMode& mode)
 //
 ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	IVideoCapabilities(),
-	mNativeMode(0, 0, 0, false)
+	mNativeMode(0, 0, 0, WINDOW_Windowed)
 {
 	const int display_index = 0;
 	int bpp;
@@ -953,7 +924,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	// a 24bpp mode when it is actually 32bpp, this function clears that up
 	SDL_PixelFormatEnumToMasks(sdl_display_mode.format,&bpp,&Rmask,&Gmask,&Bmask,&Amask);
 
-	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, true);
+	mNativeMode = IVideoMode(sdl_display_mode.w, sdl_display_mode.h, bpp, WINDOW_Fullscreen);
 
 	I_AddSDL20VideoModes(&mModeList, 8);
 	I_AddSDL20VideoModes(&mModeList, 32);
@@ -963,17 +934,17 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	{
 		if (supports8bpp())
 		{
-			mModeList.push_back(IVideoMode(320, 200, 8, false));
-			mModeList.push_back(IVideoMode(320, 240, 8, false));
-			mModeList.push_back(IVideoMode(640, 400, 8, false));
-			mModeList.push_back(IVideoMode(640, 480, 8, false));
+			mModeList.push_back(IVideoMode(320, 200, 8, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(320, 240, 8, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 400, 8, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 480, 8, WINDOW_Windowed));
 		}
 		if (supports32bpp())
 		{
-			mModeList.push_back(IVideoMode(320, 200, 32, false));
-			mModeList.push_back(IVideoMode(320, 240, 32, false));
-			mModeList.push_back(IVideoMode(640, 400, 32, false));
-			mModeList.push_back(IVideoMode(640, 480, 32, false));
+			mModeList.push_back(IVideoMode(320, 200, 32, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(320, 240, 32, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 400, 32, WINDOW_Windowed));
+			mModeList.push_back(IVideoMode(640, 480, 32, WINDOW_Windowed));
 		}
 	}
 
@@ -1027,7 +998,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	// [jsd] set the user's preferred render scaling hint if non-empty:
 	// acceptable values are [("0" or "nearest"), ("1" or "linear"), ("2" or "best")].
 	bool quality_set = false;
-	if (render_scale_quality != nullptr && render_scale_quality[0] != '\0') {
+	if (render_scale_quality != NULL && render_scale_quality[0] != '\0') {
 		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, render_scale_quality) == SDL_TRUE) {
 			quality_set = true;
 		}
@@ -1187,11 +1158,11 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 // Constructs a new application window using SDL 1.2.
 // A ISDL20WindowSurface object is instantiated for frame rendering.
 //
-ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync) :
+ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) :
 	IWindow(),
 	mSDLWindow(NULL), mSurfaceManager(NULL),
-	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, false),
-	mIsFullScreen(fullscreen), mUseVSync(vsync),
+	mWidth(0), mHeight(0), mBitsPerPixel(0), mVideoMode(0, 0, 0, WINDOW_Windowed),
+	mWindowMode(window_mode), mUseVSync(vsync),
 	mNeedPaletteRefresh(true), mBlit(true),
 	mMouseFocus(false), mKeyboardFocus(false),
 	mLocks(0)
@@ -1200,15 +1171,17 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 	const char* driver_name = getRendererDriver();
 	Printf(PRINT_HIGH, "V_Init: rendering mode \"%s\"\n", driver_name);
 
-	uint32_t window_flags = SDL_WINDOW_SHOWN;
+	SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+
+	uint32_t window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
 	if (strncmp(driver_name, "open", 4) == 0)
 		window_flags |= SDL_WINDOW_OPENGL;
 
-	if (fullscreen)
+	if (window_mode == WINDOW_Fullscreen)
+		window_flags |= SDL_WINDOW_FULLSCREEN;
+	else if (window_mode == WINDOW_DesktopFullscreen)
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-	else
-		window_flags |= SDL_WINDOW_RESIZABLE;
 
 	mSDLWindow = SDL_CreateWindow(
 			"",			// Empty title for now - it will be set later
@@ -1218,6 +1191,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fu
 
 	if (mSDLWindow == NULL)
 		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
+
+	SDL_SetWindowMinimumSize(mSDLWindow, 320, 200);
 
     discoverNativePixelFormat();
 
@@ -1400,7 +1375,7 @@ void ISDL20Window::getEvents()
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESIZED)
 				{
 					// Resizable window mode resolutions
-					if (!vid_fullscreen)
+					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed)
 					{
 						char tmp[256];
 						sprintf(tmp, "vid_setmode %i %i", sdl_ev.window.data1, sdl_ev.window.data2);
@@ -1463,57 +1438,37 @@ void ISDL20Window::setWindowIcon()
 {
 	#if defined(_WIN32) && !defined(_XBOX)
 	// [SL] Use Win32-specific code to make use of multiple-icon sizes
-	// stored in the executable resources. SDL 1.2 only allows a fixed
-	// 32x32 px icon.
+	// stored in the executable resources.
 	//
 	// [Russell] - Just for windows, display the icon in the system menu and
 	// alt-tab display
 
-	// TODO: Add the icon resources to the wad file and load them with the
-	// other code instead
 	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
 	if (hIcon)
 	{
-		HWND WindowHandle;
-
 		SDL_SysWMinfo wminfo;
 		SDL_VERSION(&wminfo.version)
 		SDL_GetWindowWMInfo(mSDLWindow, &wminfo);
+		HWND WindowHandle = wminfo.info.win.window;
 
-		WindowHandle = wminfo.info.win.window;
-
-		SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-		SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		if (WindowHandle)
+		{
+			SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+			SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		}
 	}
+	#endif	// _WIN32 && !_XBOX
 
-	#else
-
-/*
-	texhandle_t icon_handle = texturemanager.getHandle("ICON", Texture::TEX_PNG);
-	const Texture* icon_texture = texturemanager.getTexture(icon_handle);
-	const int icon_width = icon_texture->getWidth(), icon_height = icon_texture->getHeight();
-
-	SDL_Surface* icon_sdlsurface = SDL_CreateRGBSurface(0, icon_width, icon_height, 8, 0, 0, 0, 0);
-	Res_TransposeImage((byte*)icon_sdlsurface->pixels, icon_texture->getData(), icon_width, icon_height);
-
-	SDL_SetColorKey(icon_sdlsurface, SDL_SRCCOLORKEY, 0);
-
-	// set the surface palette
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-	SDL_Color* sdlcolors = icon_sdlsurface->format->palette->colors;
-	for (int c = 0; c < 256; c++)
-	{
-		sdlcolors[c].r = palette_colors[c].r;
-		sdlcolors[c].g = palette_colors[c].g;
-		sdlcolors[c].b = palette_colors[c].b;
-	}
-
-	SDL_WM_SetIcon(icon_sdlsurface, NULL);
-	SDL_FreeSurface(icon_sdlsurface);
-*/
-
-	#endif
+	#if !defined(_WIN32) && !defined(_XBOX)
+	SDL_Surface* icon_surface = SDL_CreateRGBSurfaceFrom(
+											(void*)app_icon.pixel_data, app_icon.width, app_icon.height,
+											app_icon.bytes_per_pixel * 8, app_icon.width * app_icon.bytes_per_pixel,
+											0xff << 0, 0xff << 8, 0xff << 16, 0xff << 24);
+	
+	SDL_SetWindowIcon(mSDLWindow, icon_surface);
+	SDL_FreeSurface(icon_surface);
+	#endif	// !_WIN32 && !_XBOX
 }
 
 
@@ -1653,6 +1608,7 @@ PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
 // "2" or "best"
 EXTERN_CVAR(vid_filter)
 
+
 //
 // ISDL20Window::setMode
 //
@@ -1667,49 +1623,65 @@ EXTERN_CVAR(vid_filter)
 // calling SDL_Flip.
 //
 bool ISDL20Window::setMode(uint16_t video_width, uint16_t video_height, uint8_t video_bpp,
-							bool video_fullscreen, bool vsync)
+							EWindowMode window_mode, bool vsync)
 {
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
 	// This interferes with RawWin32Mouse's input handlers so we need to
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
+	// Set the window size
+	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
+
+	int actual_width, actual_height;
+	SDL_GetWindowSize(mSDLWindow, &actual_width, &actual_height);
+	mWidth = actual_width;
+	mHeight = actual_height;
+
+	// Set the window position on the screen
+	SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+	// Set the winodow mode (window / full screen)
 	uint32_t fullscreen_flags = 0;
-	if (video_fullscreen)
+	if (window_mode == WINDOW_DesktopFullscreen)
 		fullscreen_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	else if (window_mode == WINDOW_Fullscreen)
+		fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
 	SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
-	SDL_SetWindowSize(mSDLWindow, video_width, video_height);
-    SDL_SetWindowPosition(mSDLWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	uint32_t window_flags = SDL_GetWindowFlags(mSDLWindow);
+	if ((window_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP)
+		mWindowMode = WINDOW_DesktopFullscreen;
+	else if ((window_flags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN)
+		mWindowMode = WINDOW_Fullscreen;
+	else
+		mWindowMode = WINDOW_Windowed;
+
+	// Set the surface pixel format
+	PixelFormat format = buildSurfacePixelFormat(video_bpp);
+	// Discover the argb_t pixel format
+	if (format.getBitsPerPixel() == 32)
+		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
+	else
+		argb_t::setChannels(3, 2, 1, 0);
+	mBitsPerPixel = format.getBitsPerPixel();
 
 	delete mSurfaceManager;
-
-    PixelFormat format = buildSurfacePixelFormat(video_bpp);
 	mSurfaceManager = new ISDL20TextureWindowSurfaceManager(
-			video_width, video_height,
+			mWidth, mHeight,
 			&format,
 			this,
 			vsync,
 			vid_filter.cstring());
 
-	mWidth = video_width;
-	mHeight = video_height;
-    mBitsPerPixel = video_bpp;
-
-	mIsFullScreen = SDL_GetWindowFlags(mSDLWindow) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
 	mUseVSync = vsync;
 
-	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mIsFullScreen);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mWindowMode);
+
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
 	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
-
-	// Tell argb_t the pixel format
-	if (format.getBitsPerPixel() == 32)
-		argb_t::setChannels(format.getAPos(), format.getRPos(), format.getGPos(), format.getBPos());
-	else
-		argb_t::setChannels(3, 2, 1, 0);
 
 	// [SL] ...and re-enable RawWin32Mouse's input handlers after
 	// DirectInput is reinitalized.
@@ -1762,7 +1734,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
-	mWindow = new ISDL20Window(640, 480, 8, false, false);
+	mWindow = new ISDL20Window(640, 480, 8, WINDOW_Windowed, false);
 }
 
 
@@ -1775,6 +1747,15 @@ ISDL20VideoSubsystem::~ISDL20VideoSubsystem()
 	delete mVideoCapabilities;
 
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
+
+//
+// ISDL20VideoSubsystem::getMonitorCount
+//
+int ISDL20VideoSubsystem::getMonitorCount() const
+{
+	return SDL_GetNumVideoDisplays();
 }
 #endif	// SDL20
 

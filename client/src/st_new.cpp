@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,9 +27,7 @@
 #include <stdlib.h>
 
 #include <algorithm>
-#include <cmath>
 #include <sstream>
-#include <string>
 
 #include "doomtype.h"
 #include "doomdef.h"
@@ -42,11 +40,9 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "i_system.h"
-#include "m_swap.h"
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "hu_stuff.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"
@@ -199,7 +195,7 @@ void ST_initNew (void)
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
-	char digits[8], *d;
+	char digits[11], *d;
 
 	if (num < 0)
 	{

@@ -591,10 +591,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\common\p_effect.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\common\p_enemy.cpp"
 					>
 				</File>
@@ -857,10 +853,6 @@
 			</File>
 			<File
 				RelativePath="..\src\m_misc.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\p_effect.cpp"
 				>
 			</File>
 			<File

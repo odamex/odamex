@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,35 +24,22 @@
 
 #include "version.h"
 #include "minilzo.h"
-#include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_misc.h"
 #include "m_random.h"
 #include "i_system.h"
-#include "p_setup.h"
-#include "p_saveg.h"
 #include "p_tick.h"
-#include "d_main.h"
-#include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "v_video.h"
-#include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "gstrings.h"
 #include "r_data.h"
-#include "r_sky.h"
-#include "r_draw.h"
 #include "g_game.h"
 #include "g_level.h"
 #include "sv_main.h"
-#include "p_ctf.h"
-#include "gi.h"
 
 void	G_PlayerReborn (player_t &player);
 

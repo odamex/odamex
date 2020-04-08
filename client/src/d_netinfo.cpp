@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,9 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include <cstring>
 
 #include "doomtype.h"
@@ -32,16 +29,10 @@
 #include "doomstat.h"
 #include "cmdlib.h"
 #include "d_netinf.h"
-#include "d_net.h"
-#include "v_palette.h"
 #include "v_video.h"
-#include "i_system.h"
 #include "r_draw.h"
 #include "r_state.h"
-#include "st_stuff.h"
 #include "cl_main.h"
-
-#include "p_ctf.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.
@@ -62,7 +53,6 @@ EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_team)
-EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
 EXTERN_CVAR (cl_weaponpref_csw)
@@ -164,7 +154,6 @@ void D_SetupUserInfo(void)
 	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
-	coninfo->unlag				= (cl_unlag != 0);
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
@@ -212,12 +201,14 @@ FArchive &operator<< (FArchive &arc, UserInfo &info)
 	arc << info.aimdist;
 	arc << info.color[0] << info.color[1] << info.color[2] << info.color[3];
 
-	// [SL] place holder for deprecated skins
+	// [SL] use place-holders for deprecated client options
+	// so old save games and netdemos continue to function
 	unsigned int skin = 0;
+	bool unlag = true;
 	byte update_rate = 0;
 	arc << skin;
-	arc << info.unlag;
-	arc << update_rate; //update_rate was removed, still read/write so that old saves continue to function
+	arc << unlag;
+	arc << update_rate;
 
 	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
@@ -240,12 +231,14 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 	arc >> info.aimdist;
 	arc >> info.color[0] >> info.color[1] >> info.color[2] >> info.color[3];
 
-	// [SL] place holder for deprecated skins
+	// [SL] use place-holders for deprecated client options
+	// so old save games and netdemos continue to function.
 	unsigned int skin;
+	bool unlag;
 	byte update_rate;
 	arc >> skin;
-	arc >> info.unlag;
-	arc >> update_rate; //update_rate was removed, still read/write so that old saves continue to function
+	arc >> unlag;
+	arc >> update_rate;
 
 	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
 	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));

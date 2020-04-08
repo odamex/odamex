@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -138,7 +138,7 @@ private:
 class ISDL12Window : public IWindow
 {
 public:
-	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual ~ISDL12Window();
 
@@ -171,10 +171,13 @@ public:
 
 	virtual const PixelFormat* getPixelFormat() const;
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual bool isFullScreen() const
-	{	return mIsFullScreen;	}
+	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
+
+	virtual EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
 
 	virtual bool isFocused() const;
 
@@ -221,7 +224,7 @@ private:
 
 	IVideoMode			mVideoMode;
 
-	bool				mIsFullScreen;
+	EWindowMode			mWindowMode;
 	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
@@ -323,7 +326,7 @@ class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
 	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window,
-			bool vsync, const char *render_scale_quality = nullptr);
+			bool vsync, const char *render_scale_quality = NULL);
 
 	virtual ~ISDL20TextureWindowSurfaceManager();
 
@@ -368,7 +371,7 @@ private:
 class ISDL20Window : public IWindow
 {
 public:
-	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual ~ISDL20Window();
 
@@ -402,10 +405,13 @@ public:
 	virtual const PixelFormat* getPixelFormat() const
 	{	return &mPixelFormat;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual bool isFullScreen() const
-	{	return mIsFullScreen;	}
+	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
+
+	virtual EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
 
 	virtual bool isFocused() const;
 
@@ -463,7 +469,7 @@ private:
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
 
-	bool				mIsFullScreen;
+	EWindowMode			mWindowMode;
 	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
@@ -498,6 +504,8 @@ public:
 
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
+
+	virtual int getMonitorCount() const;
 
 private:
 	const IVideoCapabilities*		mVideoCapabilities;

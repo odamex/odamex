@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,6 @@
 #include "gi.h"
 #include "i_net.h"
 #include "i_system.h"
-#include "i_video.h"
 #include "c_dispatch.h"
 #include "st_stuff.h"
 #include "m_argv.h"
@@ -46,23 +45,18 @@
 #include "p_ctf.h"
 #include "m_random.h"
 #include "m_memio.h"
-#include "w_wad.h"
 #include "w_ident.h"
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
 #include "cl_demo.h"
 #include "cl_download.h"
-#include "p_local.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
 #include "p_mobj.h"
 #include "p_snapshot.h"
 #include "p_lnspec.h"
 #include "cl_netgraph.h"
-#include "cl_maplist.h"
-#include "cl_vote.h"
-#include "p_mobj.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
@@ -317,7 +311,6 @@ void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(BitStream& stream);
@@ -441,7 +434,8 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	G_CleanupDemo();	// Cleanup in case of a vanilla demo
+	if (demorecording)
+		G_CleanupDemo();	// Cleanup in case of a vanilla demo
 
 	demoplayback = false;
 
@@ -902,7 +896,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
@@ -969,16 +962,6 @@ BEGIN_COMMAND (serverinfo)
     Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
-
-// rate: takes a kbps value
-CVAR_FUNC_IMPL (rate)
-{
-	if (connected)
-	{
-		MSG_WriteMarker(&net_buffer, clc_rate);
-		MSG_WriteLong(&net_buffer, (int)var);
-	}
-}
 
 
 BEGIN_COMMAND (rcon)
@@ -1407,7 +1390,7 @@ void CL_SendUserInfo(BitStream& stream)
 	stream.writeString("");
 
 	stream.writeU32(coninfo->aimdist);
-	stream.writeU8(coninfo->unlag);  // [SL] 2011-05-11
+	stream.writeU8(true);	// [SL] deprecated "cl_unlag" CVAR
 	stream.writeU8(coninfo->predict_weapons);
 	stream.writeU8((uint8_t)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
@@ -1856,8 +1839,6 @@ void CL_InitNetwork (void)
 		}
     }
 
-	G_SetDefaultTurbo ();
-
     connected = false;
 }
 
@@ -1877,7 +1858,9 @@ bool CL_TryToConnect(BitStream& stream)
 		stream.writeU32(GAMEVER);
 
 	CL_SendUserInfo(stream); // send userinfo
-
+	// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
+	// maximum rate that the server will ignore.
+	const int rate = 0xFFFF;
 	stream.writeU32((uint32_t)rate);
 
 	stream.writeString(connectpasshash.c_str());
@@ -2115,12 +2098,6 @@ void CL_UpdatePlayerState(BitStream& stream)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
-
-	// Receive the keys from a spied player
-	if (sv_gametype == GM_COOP) {
-		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = stream.readU8();
-	}
 }
 
 //

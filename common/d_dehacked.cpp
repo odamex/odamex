@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,9 +38,7 @@
 #include "cmdlib.h"
 #include "gstrings.h"
 #include "m_alloc.h"
-#include "m_misc.h"
 #include "w_wad.h"
-#include "d_player.h"
 #include "m_fileio.h"
 #include "p_local.h"
 
@@ -350,9 +348,16 @@ void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
 void A_MonsterRail(AActor*);
-void A_Die(AActor*);
 void A_Detonate(AActor*);
 void A_Mushroom(AActor*);
+void A_Die(AActor*);
+void A_Spawn(AActor*);
+void A_Turn(AActor*);
+void A_Face(AActor*);
+void A_Scratch(AActor*);
+void A_PlaySound(AActor*);
+void A_RandomJump(AActor*);
+void A_LineEffect(AActor*);
 
 struct CodePtr {
 	const char *name;
@@ -440,9 +445,16 @@ static const struct CodePtr CodePtrs[] = {
 	{ "SpawnSound",		A_SpawnSound },
 	{ "SpawnFly",		A_SpawnFly },
 	{ "BrainExplode",	A_BrainExplode },
-	{ "Die",	        A_Die },
-	{ "Detonate",	    A_Detonate },
-    { "Mushroom",	    A_Mushroom },
+	{ "Detonate",		A_Detonate },       // killough 8/9/98
+	{ "Mushroom",		A_Mushroom },       // killough 10/98
+	{ "Die",		A_Die },            // killough 11/98
+	{ "Spawn",		A_Spawn },          // killough 11/98
+	{ "Turn",		A_Turn },           // killough 11/98
+	{ "Face",		A_Face },           // killough 11/98
+	{ "Scratch",		A_Scratch },        // killough 11/98
+	{ "PlaySound",		A_PlaySound },      // killough 11/98
+	{ "RandomJump",		A_RandomJump },     // killough 11/98
+	{ "LineEffect",		A_LineEffect },     // killough 11/98
 	{ NULL, NULL }
 };
 
@@ -1736,7 +1748,12 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (deh) {
 			filelen = M_FileLength (deh);
 			if ( (PatchFile = new char[filelen + 1]) ) {
-				fread (PatchFile, 1, filelen, deh);
+				size_t readlen = fread (PatchFile, 1, filelen, deh);
+				if ( readlen < 1 || readlen < filelen ) {
+					DPrintf ("Failed to read patch\n");
+					fclose (deh);
+					return false;
+				}
 				fclose (deh);
 			}
 		}

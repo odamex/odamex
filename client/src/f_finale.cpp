@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,12 +23,10 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
 
 #include "i_music.h"
-#include "i_system.h"
 #include "m_swap.h"
 #include "z_zone.h"
 #include "i_video.h"
