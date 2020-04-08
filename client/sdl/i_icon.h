@@ -19,18 +19,12 @@
 // Window Manager Icon routines
 //-----------------------------------------------------------------------------
 
+#ifndef __I_ICON_H__
+#define __I_ICON_H__
 
 #include "i_sdl.h"
 
-// [Russell] - Just for windows, display the icon in the system menu and alt-tab display
-#include "win32inc.h"
-#if defined(_WIN32) && !defined(_XBOX)
-    #include <SDL_syswm.h>
-    #include "resource.h"
-#endif // WIN32
-
-
-#if !defined(_WIN32)
+#ifdef SDL20
 
 // Icon data exported from Gimp
 static const struct {
@@ -39,7 +33,7 @@ static const struct {
   unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
   char         	*comment;
   unsigned char	 pixel_data[256 * 256 * 4 + 1];
-} icon = {
+} app_icon = {
   256, 256, 4,
   (char*) 0,
   "\377\377\377\000\377\377\377\000\377\377\377\000\377\377\377\000\377\377\377\000\377"
@@ -8635,58 +8629,6 @@ static const struct {
   "\000\377\377\377\000\377\377\377\000\377\377\377\000",
 };
 
+#endif	// SDL20
 
-//
-// I_SetWindowIcon
-// 
-void I_SetWindowIcon(SDL_Window* sdl_window)
-{
-	#ifdef SDL20
-	SDL_Surface* icon_surface = SDL_CreateRGBSurfaceFrom(
-											(void*)icon.pixel_data, icon.width, icon.height,
-											icon.bytes_per_pixel * 8, icon.width * icon.bytes_per_pixel,
-											0xff << 0, 0xff << 8, 0xff << 16, 0xff << 24);
-	
-	SDL_SetWindowIcon(sdl_window, icon_surface);
-	SDL_FreeSurface(icon_surface);
-	#endif
-}
-
-#elif defined(_WIN32) && !defined(_XBOX)
-// [SL] Use Win32-specific code to make use of multiple-icon sizes
-// stored in the executable resources. SDL 1.2 only allows a fixed
-// 32x32 px icon.
-//
-// [Russell] - Just for windows, display the icon in the system menu and
-// alt-tab display
-
-void I_SetWindowIcon(SDL_Window* sdl_window)
-{
-	HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
-
-	if (hIcon)
-	{
-		HWND WindowHandle = NULL;
-
-		#ifdef SDL12
-		SDL_SysWMinfo wminfo;
-		SDL_VERSION(&wminfo.version)
-		SDL_GetWMInfo(&wminfo);
-		WindowHandle = wminfo.window;
-		#endif
-
-		#ifdef SDL20
-		SDL_SysWMinfo wminfo;
-		SDL_VERSION(&wminfo.version)
-		SDL_GetWindowWMInfo(sdl_window, &wminfo);
-		WindowHandle = wminfo.info.win.window;
-		#endif
-
-		if (WindowHandle)
-		{
-			SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-			SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-		}
-	}
-}
-#endif
+#endif	//  __I_ICON_H__

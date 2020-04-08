@@ -61,7 +61,6 @@ void STACK_ARGS I_ShutdownHardware();
 bool I_VideoInitialized();
 
 void I_SetVideoMode(int width, int height, int bpp, EWindowMode window_mode, bool vsync);
-void I_SetWindowSize(int width, int height);
 
 const IVideoCapabilities* I_GetVideoCapabilities();
 IWindow* I_GetWindow();
@@ -116,8 +115,10 @@ void I_DrawLoadingIcon();
 class IVideoMode
 {
 public:
-	IVideoMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen) :
-		mWidth(width), mHeight(height), mBitsPerPixel(bpp), mFullScreen(fullscreen)
+	IVideoMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode,
+				bool vsync = false, std::string stretch_mode = "") :
+		mWidth(width), mHeight(height), mBitsPerPixel(bpp), mWindowMode(window_mode),
+		mVsync(vsync), mSurfaceStretchMode(stretch_mode)
 	{ }
 
 	uint16_t getWidth() const
@@ -129,13 +130,17 @@ public:
 	uint8_t getBitsPerPixel() const
 	{	return mBitsPerPixel;	}
 
+	EWindowMode getWindowMode() const
+	{	return mWindowMode;		}
+
 	bool isFullScreen() const
-	{	return mFullScreen;	}
+	{	return mWindowMode != WINDOW_Windowed;	}
 
 	bool operator==(const IVideoMode& other) const
 	{
 		return mWidth == other.mWidth && mHeight == other.mHeight &&
-			mBitsPerPixel == other.mBitsPerPixel && mFullScreen == other.mFullScreen;
+			mBitsPerPixel == other.mBitsPerPixel && 
+			mWindowMode == other.mWindowMode;
 	}
 
 	bool operator!=(const IVideoMode& other) const
@@ -151,22 +156,14 @@ public:
 			return mHeight < other.mHeight;
 		if (mBitsPerPixel != other.mBitsPerPixel)
 			return mBitsPerPixel < other.mBitsPerPixel;
-		if (mFullScreen != other.mFullScreen)
-			return (int)mFullScreen < (int)other.mFullScreen;
+		if (mWindowMode != other.mWindowMode)
+			return (int)mWindowMode < (int)other.mWindowMode;
 		return false;
 	}
 
 	bool operator>(const IVideoMode& other) const
 	{
-		if (mWidth != other.mWidth)
-			return mWidth > other.mWidth;
-		if (mHeight != other.mHeight)
-			return mHeight > other.mHeight;
-		if (mBitsPerPixel != other.mBitsPerPixel)
-			return mBitsPerPixel > other.mBitsPerPixel;
-		if (mFullScreen != other.mFullScreen)
-			return (int)mFullScreen > (int)other.mFullScreen;
-		return false;
+		return !operator==(other) && !operator<(other);
 	}
 
 	bool operator<=(const IVideoMode& other) const
@@ -207,7 +204,9 @@ private:
 	uint16_t	mWidth;
 	uint16_t	mHeight;
 	uint8_t		mBitsPerPixel;
-	bool		mFullScreen;
+	EWindowMode	mWindowMode;
+	bool		mVsync;
+	std::string	mSurfaceStretchMode;
 };
 
 typedef std::vector<IVideoMode> IVideoModeList;
@@ -276,7 +275,7 @@ public:
 class IDummyVideoCapabilities : public IVideoCapabilities
 {
 public:
-	IDummyVideoCapabilities() : IVideoCapabilities(), mVideoMode(320, 200, 8, false)
+	IDummyVideoCapabilities() : IVideoCapabilities(), mVideoMode(320, 200, 8, WINDOW_Windowed)
 	{	mModeList.push_back(mVideoMode);	}
 
 	virtual ~IDummyVideoCapabilities() { }
@@ -566,7 +565,7 @@ class IDummyWindow : public IWindow
 {
 public:
 	IDummyWindow() :
-		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, true),
+		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, WINDOW_Windowed),
 		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0),
 		mWindowMode(WINDOW_DesktopFullscreen)
 	{ }
@@ -646,6 +645,11 @@ public:
 	virtual IWindow* getWindow()
 	{
 		return const_cast<IWindow*>(static_cast<const IVideoSubsystem&>(*this).getWindow());
+	}
+
+	virtual int getMonitorCount() const
+	{
+		return 1;
 	}
 };
 

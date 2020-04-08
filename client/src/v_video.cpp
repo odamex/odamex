@@ -23,7 +23,6 @@
 //-----------------------------------------------------------------------------
 
 
-
 #include <stdio.h>
 #include <assert.h>
 
@@ -126,9 +125,9 @@ EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
 
-int vid_pillarbox_old = -1;
-int vid_32bpp_old = -1;
-std::string vid_filter_old = "";
+static int vid_pillarbox_old = -1;
+static int vid_32bpp_old = -1;
+static std::string vid_filter_old = "";
 
 bool V_CheckModeAdjustment()
 {
@@ -175,7 +174,7 @@ CVAR_FUNC_IMPL(vid_defwidth)
 		var.RestoreDefault();
 	
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_SetResolution(var, new_video_height);
+        V_ForceVideoModeAdjustment();
 }
 
 
@@ -185,7 +184,7 @@ CVAR_FUNC_IMPL(vid_defheight)
 		var.RestoreDefault();
 	
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_SetResolution(new_video_width, var);
+        V_ForceVideoModeAdjustment();
 }
 
 
@@ -242,6 +241,7 @@ CVAR_FUNC_IMPL (vid_widescreen)
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
         V_ForceVideoModeAdjustment();
 }
+
 
 CVAR_FUNC_IMPL(vid_pillarbox)
 {

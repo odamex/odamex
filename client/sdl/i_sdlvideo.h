@@ -505,6 +505,8 @@ public:
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
 
+	virtual int getMonitorCount() const;
+
 private:
 	const IVideoCapabilities*		mVideoCapabilities;
 
