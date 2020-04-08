@@ -131,13 +131,13 @@ typedef struct menuitem_s {
 		const char			 *res3;
 	} d;
 	union {
-		struct value_s	 *values;
-		const char			 *command;
-        cvarfunc          cfunc;
-        voidfunc          mfunc;
-        intfunc           lfunc;
-		int				  highlight;
-		int				 *flagint;
+		struct value_s		*values;
+		const char		*command;
+        	cvarfunc		cfunc;
+	        voidfunc		mfunc;
+        	intfunc			lfunc;
+		int			highlight;
+		int			*flagint;
 	} e;
 } menuitem_t;
 

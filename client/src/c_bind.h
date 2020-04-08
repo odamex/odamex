@@ -45,7 +45,7 @@ const char *C_GetBinding (int key);
 
 void C_ReleaseKeys();
 
-std::string C_GetKeyStringsFromCommand(char *cmd, bool bTwoEntries = false);
+std::string C_GetKeyStringsFromCommand(const char *cmd, bool bTwoEntries = false);
 
 #endif //__C_BINDINGS_H__
 
