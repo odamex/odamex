@@ -30,6 +30,8 @@
 class BitStream
 {
 public:
+	static const uint16_t MAX_CAPACITY = 1500 * 8;	// in bits 
+
 	BitStream();
 	BitStream(const BitStream &other);
 	~BitStream();
@@ -58,6 +60,7 @@ public:
 	void writeU32(int val);
 	void writeFloat(float val);
 	void writeString(const OString& str);
+	void writeString7(const OString& str);
 	void writeColor(const argb_t color);
 	
 	uint32_t readBits(uint16_t bitcount);
@@ -70,6 +73,7 @@ public:
 	uint32_t readU32();
 	float readFloat();
 	OString readString();
+	OString readString7();
 	argb_t readColor();
 
 	uint32_t peekBits(uint16_t bitcount) const;
@@ -84,8 +88,6 @@ public:
 	const uint8_t* getRawData() const;
 
 private:
-	static const uint16_t MAX_CAPACITY = 1500 * 8;	// in bits 
-
 	bool mCheckReadOverflow(uint16_t size) const;
 	bool mCheckWriteOverflow(uint16_t size) const;
 

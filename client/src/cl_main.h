@@ -53,14 +53,14 @@ void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect(BitStream& stream);
 bool CL_TryToConnect(BitStream& stream);
-void CL_ParseCommands(void);
+void CL_ParseCommands(BitStream& stream);
 void CL_ReadPacketHeader(void);
-void CL_SendCmd(void);
+void CL_SendCmd(BitStream& stream);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
-bool CL_Connect(void);
+bool CL_Connect(BitStream& stream);
 
 void CL_DisplayTics();
 void CL_RunTics();

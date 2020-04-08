@@ -39,6 +39,8 @@
 #include "p_mobj.h"
 #include "g_level.h"
 
+#include "network/net_bitstream.h"
+
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
@@ -890,7 +892,8 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		}
 		else if (type == 0)
 		{
-			CL_Connect();
+			BitStream stream;
+			CL_Connect(stream);
 		}
 	}
 	else
@@ -899,7 +902,8 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		noservermsgs = false;
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
-		CL_ParseCommands();
+		BitStream stream;
+		CL_ParseCommands(stream);
 		CL_SaveCmd();
 		if (gametic - last_received > 65)
 		{

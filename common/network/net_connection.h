@@ -609,6 +609,8 @@ protected:
 	PacketSequenceNumber	mRecvSequence;
 	// bitfield representing all of the recently received sequence numbers
 	BitField<10>			mRecvHistory;
+
+	void decompressDatagram(BitStream& stream);
 };
 
 

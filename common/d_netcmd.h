@@ -31,6 +31,7 @@
 // Forward declaration avoids circular reference
 class player_s;
 typedef player_s player_t;
+class BitStream;
 
 static const short CENTERVIEW = -32768;
 //
@@ -135,6 +136,7 @@ public:
 	
 	void clear();
 	void write(buf_t *buf);
+	void write(BitStream& stream);
 	void read(buf_t *buf);
 	
 	void toPlayer(player_t *player) const;

@@ -469,6 +469,37 @@ OString BitStream::readString()
 }
 
 
+void BitStream::writeString7(const OString& str)
+{
+	uint16_t size = 7 * (str.length() + 1);
+	if (mCheckWriteOverflow(size))
+		return;
+
+	for (uint16_t i = 0; i < str.length(); i++)
+		writeBits(str[i], 7);
+
+	writeBits(0, 7);
+}
+
+
+OString BitStream::readString7()
+{
+	const size_t bufsize = BitStream::MAX_CAPACITY / 8;
+	char data[bufsize];
+
+	for (uint16_t i = 0; i < bufsize && !mCheckReadOverflow(7); i++)
+	{
+		data[i] = (char)readBits(7);
+		if (data[i] == 0)
+			break;
+	}
+
+	// make sure the string is properly terminated no matter what
+	data[bufsize - 1] = 0;
+
+	return OString(data);
+}
+
 //
 // BitStream::writeFloat
 //
@@ -748,12 +779,8 @@ bool BitStream::mCheckWriteOverflow(uint16_t s) const
 //
 bool BitStream::mCheckReadOverflow(uint16_t s) const
 {
-	if (mRead + s > BitStream::MAX_CAPACITY)
+	if (mRead + s > mWritten)
 		mReadOverflow = true;
 	
 	return mReadOverflow;
 }
-
-
-VERSION_CONTROL (net_bitstream_cpp, "$Id$")
-

@@ -23,6 +23,7 @@
 
 #include "d_netcmd.h"
 #include "d_player.h"
+#include "network/net_bitstream.h"
 
 NetCommand::NetCommand()
 {
@@ -111,6 +112,36 @@ void NetCommand::write(buf_t *buf)
 		buf->WriteShort(mUpMove);
 	if (serialized_fields & CMD_IMPULSE)
 		buf->WriteByte(mImpulse);
+}
+
+void NetCommand::write(BitStream& stream)
+{
+	// Let the recipient know which cmd fields are being sent
+	int serialized_fields = getSerializedFields();
+	stream.writeU8(serialized_fields);
+	stream.writeU32(mWorldIndex);
+		
+	if (serialized_fields & CMD_BUTTONS)
+		stream.writeU8(mButtons);
+	if (serialized_fields & CMD_ANGLE)
+		stream.writeS16((mAngle >> FRACBITS) + mDeltaYaw);
+	if (serialized_fields & CMD_PITCH)
+	{
+		// ZDoom uses a hack to center the view when toggling cl_mouselook
+		bool centerview = (mDeltaPitch == CENTERVIEW);
+		if (centerview)
+			stream.writeS16(0);
+		else
+			stream.writeS16((mPitch >> FRACBITS) + mDeltaPitch);
+	}
+	if (serialized_fields & CMD_FORWARD)
+		stream.writeS16(mForwardMove);
+	if (serialized_fields & CMD_SIDE)
+		stream.writeS16(mSideMove);
+	if (serialized_fields & CMD_UP)
+		stream.writeS16(mUpMove);
+	if (serialized_fields & CMD_IMPULSE)
+		stream.writeU8(mImpulse);
 }
 
 void NetCommand::read(buf_t *buf)

@@ -32,6 +32,8 @@
 #include "network/net_connection.h"
 #include "network/net_messagemanager.h"
 
+#include "minilzo.h"
+
 #include "cl_main.h"
 
 EXTERN_CVAR(net_maxrate)
@@ -231,6 +233,7 @@ void Connection::openConnection()
 	Net_Printf("Requesting connection to host %s...\n", getRemoteAddress().getCString());
 	assert(mHandshake == NULL);
 	mHandshake = createConnectionHandshake();
+	service();
 }
 
 
@@ -247,6 +250,7 @@ void Connection::closeConnection()
 
 	delete mHandshake;		// just in case the connection is being closed during connection negotiation
 	mHandshake = createDisconnectionHandshake();
+	service();
 
 	mTerminated = true;
 }
@@ -341,8 +345,10 @@ void Connection::service()
 		sendDatagram(stream);
 	}
 
+	/*
 	Printf(PRINT_HIGH, "outgoing bitrate: %0.2f, incoming bitrate: %0.2f\n",
 		mConnectionStats.getOutgoingBitrate(), mConnectionStats.getIncomingBitrate());
+	*/
 }
 
 
@@ -385,6 +391,7 @@ void Connection::composeGameDatagram(BitStream& stream, uint32_t seq)
 		MessageManager* composer = *it;
 		size_left -= composer->write(stream, size_left, seq);
 	}
+	CL_SendCmd(stream);
 
 	composeDatagramFooter(stream);
 }
@@ -406,6 +413,8 @@ void Connection::parseGameDatagram(BitStream& stream)
 		MessageManager* parser = *it;
 		size_left -= parser->read(stream, size_left);
 	}
+
+	CL_ParseCommands(stream);
 }
 
 
@@ -514,6 +523,55 @@ void Odamex65Connection::readDatagramHeader(BitStream& stream)
 				"(current sequence %u, previous sequence %u).",
 				getRemoteAddress().getCString(), in_seq.getInteger(), mRecvSequence.getInteger());
 		stream.clear();
+	}
+
+	if (stream.peekU8() == svc_compressed)
+	{
+		// Decompress the packet sequence
+		stream.readU8();		// read and ignore svc_compressed
+		decompressDatagram(stream);
+	}
+}
+
+
+//
+// Odamex65Connection::decompressDatagram
+//
+// Decompresses the BitStream.
+//
+// Supports LZO compression method only.
+// [Russell] - reason this was failing is because of huffman routines, so just
+// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
+// if 0'd sections
+//
+void Odamex65Connection::decompressDatagram(BitStream& stream)
+{
+	uint8_t compression_method = stream.readU8();
+
+	const size_t uncompressed_buf_capacity = BitsToBytes(BitStream::MAX_CAPACITY);
+	uint8_t uncompressed_buf[8192];
+
+	if (compression_method & minilzo_mask)
+	{
+		lzo_uint uncompressed_size = uncompressed_buf_capacity;
+
+		// decompress back onto the receive buffer
+		const uint8_t* compressed_buf = stream.getRawData() + stream.bytesRead();
+		uint16_t compressed_size = stream.bytesWritten() - stream.bytesRead();
+
+		int ret = lzo1x_decompress_safe(compressed_buf, compressed_size, uncompressed_buf, &uncompressed_size, NULL);
+
+		if (ret == LZO_E_OK)
+		{
+			stream.clear();
+			stream.writeBlob(uncompressed_buf, BytesToBits(uncompressed_size));
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "Error: minilzo packet decompression failed with error %X\n", ret);
+			stream.clear();
+			return;
+		}
 	}
 }
 
@@ -718,6 +776,10 @@ void Odamex100Connection::composeDatagramHeader(BitStream& stream)
 //
 void Odamex100Connection::composeDatagramFooter(BitStream& stream)
 {
+	// Ensure stream is byte-aligned prior to writing the CRC32
+	if (stream.bitsWritten() & 7)
+		stream.writeBits(0, 8 - (stream.bitsWritten() & 7));
+
 	// calculate CRC32 for the packet header & payload
 	uint32_t crcvalue = Net_CRC32(stream.getRawData(), stream.bytesWritten());
 
@@ -842,11 +904,13 @@ void ConnectionHandshake::service()
 	{
 		if (mState == CONN_LISTENING)
 		{
+			// Wait for a connection request from a client
 			if (mStream.bitsWritten() > 0)
 				mState = CONN_REVIEWING_REQUEST;
 		}
 		if (mState == CONN_REVIEWING_REQUEST)
 		{
+			// Parse the connection request from the client
 			if (handleReviewingRequestState())
 				mState = CONN_OFFERING;
 			else
@@ -956,7 +1020,10 @@ bool Odamex65ConnectionHandshake::handleReviewingConfirmationState()
 			mConnection->getRemoteAddress().getCString());
 
 	if (mStream.readU32() == 0)
+	{
+		CL_Connect(mStream);
 		return true;
+	}
 	return false;
 }
 

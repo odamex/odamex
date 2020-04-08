@@ -295,6 +295,37 @@ private:
 	typedef std::list<Message*> MessageList;
 	MessageList		mMessages;
 };	
+
+
+// ============================================================================
+//
+// ControlsManager class interface
+//
+// Responsible for sending controls messages containing the controller inputs
+// from the client to the server.
+//
+// ============================================================================
+
+class ControlsManager : public MessageManager
+{
+public:
+	ControlsManager();
+	virtual ~ControlsManager();
+
+	virtual void addMessage(Message* msg);
+	virtual void process();
+
+	virtual uint16_t read(BitStream&stream, uint16_t allotted_size);
+	virtual uint16_t write(BitStream& stream, uint16_t allotted_size, uint32_t seq);
+	virtual void notifyReceived(uint32_t seq);
+	virtual void notifyLost(uint32_t seq);
+
+private:
+	static const uint32_t MAX_MESSAGES = 10;
+
+	typedef std::list<Message*> MessageList;
+	MessageList		mMessages;
+};
 	
 #endif	// __NET_MESSAGEMANAGER_H__
 

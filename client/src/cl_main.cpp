@@ -78,6 +78,7 @@
 
 #include "network/net_main.h"
 #include "network/net_bitstream.h"
+#include "g_event.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -319,7 +320,7 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
-void CL_SetMobjSpeedAndAngle(void);
+void CL_SetMobjSpeedAndAngle(BitStream& stream);
 
 void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
@@ -383,6 +384,8 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame(void)
 {
+	Net_CloseConnection();
+
 	if(connected)
 	{
 		SZ_Clear(&net_buffer);
@@ -483,9 +486,9 @@ void CL_CheckDisplayPlayer(void);
 //
 // CL_ConnectClient
 //
-void CL_ConnectClient(void)
+void CL_ConnectClient(BitStream& stream)
 {
-	player_t &player = idplayer(MSG_ReadByte());
+	player_t &player = idplayer(stream.readU8());
 
 	CL_CheckDisplayPlayer();
 
@@ -618,9 +621,9 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 //
 // CL_DisconnectClient
 //
-void CL_DisconnectClient(void)
+void CL_DisconnectClient(BitStream& stream)
 {
-	player_t &player = idplayer(MSG_ReadByte());
+	player_t &player = idplayer(stream.readU8());
 	if (players.empty() || !validplayer(player))
 		return;
 
@@ -749,8 +752,10 @@ void CL_RunTics()
 		CL_StepTics(1);
 	}
 
+	#if 0
 	if (!connected)
 		CL_RequestConnectInfo();
+	#endif
 
 	// [RH] Use the consoleplayer's camera to update sounds
 	S_UpdateSounds(listenplayer().camera);	// move positional sounds
@@ -1046,8 +1051,13 @@ BEGIN_COMMAND (spectate)
 		return;
 	}
 
+	Event event("client_player_spectate");
+	event.setParam("player_id", consoleplayer_id);
+	EventManager::dispatchEvent(event);
+	/*
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, true);
+	*/
 }
 END_COMMAND (spectate)
 
@@ -1063,8 +1073,13 @@ BEGIN_COMMAND (join)
 		return;
 	}
 
+	Event event("client_player_join");
+	event.setParam("player_id", consoleplayer_id);
+	EventManager::dispatchEvent(event);
+	/*
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
+	*/
 }
 END_COMMAND (join)
 
@@ -1426,22 +1441,22 @@ player_t &CL_FindPlayer(size_t id)
 //
 // CL_SetupUserInfo
 //
-void CL_SetupUserInfo(void)
+void CL_SetupUserInfo(BitStream& stream)
 {
-	byte who = MSG_ReadByte();
+	byte who = stream.readU8();
 	player_t *p = &CL_FindPlayer(who);
 
-	p->userinfo.netname = MSG_ReadString();
-	p->userinfo.team	= (team_t)MSG_ReadByte();
-	p->userinfo.gender	= (gender_t)MSG_ReadLong();
+	p->userinfo.netname = stream.readString();
+	p->userinfo.team	= (team_t)stream.readU8();
+	p->userinfo.gender	= (gender_t)stream.readU32();
 
 	for (int i = 3; i >= 0; i--)
-		p->userinfo.color[i] = MSG_ReadByte();
+		p->userinfo.color[i] = stream.readU8();
 
 	// [SL] place holder for deprecated skins
-	MSG_ReadString();
+	stream.readString();
 
-	p->GameTime			= MSG_ReadShort();
+	p->GameTime			= stream.readU16();
 
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
@@ -1458,43 +1473,43 @@ void CL_SetupUserInfo(void)
 //
 // CL_UpdateFrags
 //
-void CL_UpdateFrags(void)
+void CL_UpdateFrags(BitStream& stream)
 {
-	player_t &p = CL_FindPlayer(MSG_ReadByte());
+	player_t &p = CL_FindPlayer(stream.readU8());
 
 	if(sv_gametype != GM_COOP)
-		p.fragcount = MSG_ReadShort();
+		p.fragcount = stream.readS16();
 	else
-		p.killcount = MSG_ReadShort();
-	p.deathcount = MSG_ReadShort();
-	p.points = MSG_ReadShort();
+		p.killcount = stream.readS16();
+	p.deathcount = stream.readS16();
+	p.points = stream.readS16();
 }
 
 //
 // [deathz0r] Receive team frags/captures
 //
-void CL_TeamPoints (void)
+void CL_TeamPoints(BitStream& stream)
 {
 	for(size_t i = 0; i < NUMTEAMS; i++)
-		TEAMpoints[i] = MSG_ReadShort();
+		TEAMpoints[i] = stream.readU16();
 }
 
 //
 // CL_MoveMobj
 //
-void CL_MoveMobj(void)
+void CL_MoveMobj(BitStream& stream)
 {
 	AActor  *mo;
 	int      netid;
 	fixed_t  x, y, z;
 
-	netid = MSG_ReadShort();
-	mo = P_FindThingById (netid);
+	netid = stream.readU16();
+	mo = P_FindThingById(netid);
 
-	byte rndindex = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	byte rndindex = stream.readU8();
+	x = stream.readS32();
+	y = stream.readS32();
+	z = stream.readS32();
 
 	if (!mo)
 		return;
@@ -1522,16 +1537,16 @@ void CL_MoveMobj(void)
 //
 // CL_DamageMobj
 //
-void CL_DamageMobj()
+void CL_DamageMobj(BitStream& stream)
 {
 	AActor  *mo;
 	int      netid, health, pain;
 
-	netid = MSG_ReadShort();
-	health = MSG_ReadShort();
-	pain = MSG_ReadByte();
+	netid = stream.readU16();
+	mo = P_FindThingById(netid);
 
-	mo = P_FindThingById (netid);
+	health = stream.readS16();
+	pain = stream.readU8();
 
 	if (!mo)
 		return;
@@ -1550,7 +1565,7 @@ int connecttimeout = 0;
 //
 void CL_RequestConnectInfo(void)
 {
-	/*
+	#if 0
 	if (!serveraddr.ip[0])
 		return;
 
@@ -1569,7 +1584,7 @@ void CL_RequestConnectInfo(void)
 	}
 
 	connecttimeout--;
-	*/
+	#endif
 }
 
 //
@@ -1743,20 +1758,23 @@ bool CL_PrepareConnect(BitStream& stream)
 //
 //  Connecting to a server...
 //
-bool CL_Connect(void)
+bool CL_Connect(BitStream& stream)
 {
 	players.clear();
 
+	#if 0
 	memset(packetseq, -1, sizeof(packetseq) );
 	packetnum = 0;
 
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
+	compressor.reset();
+	CL_Decompress(0);
+	#endif
+
 	if (gamestate == GS_DOWNLOAD && missing_file.length())
 		CL_RequestDownload(missing_file, missing_hash);
-
-	compressor.reset();
 
 	connected = true;
     multiplayer = true;
@@ -1764,16 +1782,15 @@ bool CL_Connect(void)
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-	CL_Decompress(0);
-	CL_ParseCommands();
+	CL_ParseCommands(stream);
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
 
 	D_SetupUserInfo();
 
-	//raise the weapon
-	if(validplayer(consoleplayer()))
+	// raise the weapon
+	if (validplayer(consoleplayer()))
 		consoleplayer().psprites[ps_weapon].sy = 32*FRACUNIT+0x6000;
 
 	noservermsgs = false;
@@ -1801,7 +1818,9 @@ void CL_InitNetwork (void)
 		localport = CLIENTPORT;
 
     // set up a socket and net_message buffer
+	#if 0
     InitNetCommon();
+	#endif
 
 	Net_InitNetworkInterface(localport);
 
@@ -1871,19 +1890,19 @@ EXTERN_CVAR (show_messages)
 //
 // CL_Print
 //
-void CL_Print (void)
+void CL_Print(BitStream& stream)
 {
-	byte level = MSG_ReadByte();
-	const char *str = MSG_ReadString();
+	byte level = stream.readU8();
+	std::string message = stream.readString();
 
 	if (level == PRINT_CHAT)
-		Printf(level, "\\c*%s", str);
+		Printf(level, "\\c*%s", message.c_str());
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "\\c!%s", str);
+		Printf(level, "\\c!%s", message.c_str());
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "\\ck%s", str);
+		Printf(level, "\\ck%s", message.c_str());
 	else
-		Printf(level, "%s", str);
+		Printf(level, "%s", message.c_str());
 
 	if (show_messages)
 	{
@@ -1895,23 +1914,24 @@ void CL_Print (void)
 }
 
 // Print a message in the middle of the screen
-void CL_MidPrint (void)
+void CL_MidPrint(BitStream& stream)
 {
-    const char *str = MSG_ReadString();
-    int msgtime = MSG_ReadShort();
+	std::string message = stream.readString();
+    int msgtime = stream.readU16();
 
-    C_MidPrint(str,NULL,msgtime);
+    C_MidPrint(message.c_str(), NULL, msgtime);
 }
 
 /**
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
  */
-void CL_Say()
+void CL_Say(BitStream& stream)
 {
-	byte message_visibility = MSG_ReadByte();
-	byte player_id = MSG_ReadByte();
-	const char* message = MSG_ReadString();
+	byte message_visibility = stream.readU8();
+	byte player_id = stream.readU8();
+	std::string message = stream.readString();
+	const char* cmessage = message.c_str();
 
 	player_t &player = idplayer(player_id);
 
@@ -1936,20 +1956,20 @@ void CL_Say()
 
 	if (message_visibility == 0)
 	{
-		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+		if (strnicmp(cmessage, "/me ", 4) == 0)
+			Printf(PRINT_CHAT, "* %s %s\n", name, &cmessage[4]);
 		else
-			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+			Printf(PRINT_CHAT, "%s: %s\n", name, cmessage);
 
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 	}
 	else if (message_visibility == 1)
 	{
-		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+		if (strnicmp(cmessage, "/me ", 4) == 0)
+			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &cmessage[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, cmessage);
 
 		if (show_messages)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
@@ -1979,26 +1999,26 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 		teleported_players.erase(player->id);
 }
 
-void CL_UpdatePlayer()
+void CL_UpdatePlayer(BitStream& stream)
 {
-	byte who = MSG_ReadByte();
+	byte who = stream.readU8();
 	player_t *p = &idplayer(who);
 
-	MSG_ReadLong();	// Read and ignore for now
+	stream.readU32();	// Read and ignore for now
 
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
+	fixed_t x = stream.readS32();
+	fixed_t y = stream.readS32(); 
+	fixed_t z = stream.readS32();
 
-	angle_t angle = MSG_ReadShort() << FRACBITS;
-	angle_t pitch = MSG_ReadShort() << FRACBITS;
+	angle_t angle = stream.readU16() << FRACBITS;
+	angle_t pitch = stream.readU16() << FRACBITS;
 
-	int frame = MSG_ReadByte();
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
+	int frame = stream.readU8();
+	fixed_t momx = stream.readS32();
+	fixed_t momy = stream.readS32();
+	fixed_t momz = stream.readS32();
 
-	int invisibility = MSG_ReadByte();
+	int invisibility = stream.readU8();
 
 	if	(!validplayer(*p) || !p->mo)
 		return;
@@ -2053,23 +2073,23 @@ void CL_UpdatePlayer()
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
-void CL_UpdatePlayerState(void)
+void CL_UpdatePlayerState(BitStream& stream)
 {
-	byte id				= MSG_ReadByte();
-	short health		= MSG_ReadShort();
-	byte armortype		= MSG_ReadByte();
-	short armorpoints	= MSG_ReadShort();
+	byte id				= stream.readU8();
+	short health		= stream.readS16();
+	byte armortype		= stream.readU8();
+	short armorpoints	= stream.readS16();
 
-	weapontype_t weap	= static_cast<weapontype_t>(MSG_ReadByte());
+	weapontype_t weap	= static_cast<weapontype_t>(stream.readU8());
 
 	short ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
-		ammo[i] = MSG_ReadShort();
+		ammo[i] = stream.readS16();
 
 	statenum_t stnum[NUMPSPRITES];
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		int n = MSG_ReadByte();
+		int n = stream.readU8();
 		if (n == 0xFF)
 			stnum[i] = S_NULL;
 		else
@@ -2099,30 +2119,30 @@ void CL_UpdatePlayerState(void)
 	// Receive the keys from a spied player
 	if (sv_gametype == GM_COOP) {
 		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = MSG_ReadByte();
+			player.cards[i] = stream.readU8();
 	}
 }
 
 //
 // CL_UpdateLocalPlayer
 //
-void CL_UpdateLocalPlayer(void)
+void CL_UpdateLocalPlayer(BitStream& stream)
 {
 	player_t &p = consoleplayer();
 
 	// The server has processed the ticcmd that the local client sent
 	// during the the tic referenced below
-	p.tic = MSG_ReadLong();
+	p.tic = stream.readU32();
 
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
+	fixed_t x = stream.readS32();
+	fixed_t y = stream.readS32();
+	fixed_t z = stream.readS32();
 
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
+	fixed_t momx = stream.readS32();
+	fixed_t momy = stream.readS32();
+	fixed_t momz = stream.readS32();
 
-	byte waterlevel = MSG_ReadByte();
+	byte waterlevel = stream.readU8();
 
 	int snaptime = last_svgametic;
 	PlayerSnapshot newsnapshot(snaptime);
@@ -2147,13 +2167,12 @@ void CL_UpdateLocalPlayer(void)
 //
 // CL_SaveSvGametic
 //
-// Receives the server's gametic at the time the packet was sent.  It will be
-// sent back to the server with the next cmd.
+// [SL] 2011-05-11 Receives the server's gametic at the time the packet was sent.
+// It will be sent back to the server with the next cmd.
 //
-// [SL] 2011-05-11
-void CL_SaveSvGametic(void)
+void CL_SaveSvGametic(BitStream& stream)
 {
-	byte t = MSG_ReadByte();
+	byte t = stream.readU8();
 
 	int newtic = (last_svgametic & 0xFFFFFF00) + t;
 
@@ -2175,9 +2194,9 @@ void CL_SaveSvGametic(void)
 // [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
 // for clarity since it sends timestamps, not gametics.
 //
-void CL_SendPingReply(void)
+void CL_SendPingReply(BitStream& stream)
 {
-	int svtimestamp = MSG_ReadLong();
+	int svtimestamp = stream.readU32();
 	MSG_WriteMarker (&net_buffer, clc_pingreply);
 	MSG_WriteLong (&net_buffer, svtimestamp);
 }
@@ -2186,10 +2205,10 @@ void CL_SendPingReply(void)
 // CL_UpdatePing
 // Update ping value
 //
-void CL_UpdatePing(void)
+void CL_UpdatePing(BitStream& stream)
 {
-	player_t &p = idplayer(MSG_ReadByte());
-	p.ping = MSG_ReadLong();
+	player_t &p = idplayer(stream.readU8());
+	p.ping = stream.readU32();
 }
 
 
@@ -2197,39 +2216,39 @@ void CL_UpdatePing(void)
 // CL_UpdateTimeLeft
 // Changes the value of level.timeleft
 //
-void CL_UpdateTimeLeft(void)
+void CL_UpdateTimeLeft(BitStream& stream)
 {
-	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
+	level.timeleft = stream.readU16() * TICRATE;	// convert from seconds to tics
 }
 
 //
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //
-void CL_UpdateIntTimeLeft(void)
+void CL_UpdateIntTimeLeft(BitStream& stream)
 {
-	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
+	level.inttimeleft = stream.readU16();	// convert from seconds to tics
 }
 
 
 //
 // CL_SpawnMobj
 //
-void CL_SpawnMobj()
+void CL_SpawnMobj(BitStream& stream)
 {
 	AActor  *mo;
 
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-	angle_t angle = MSG_ReadLong();
+	fixed_t x = stream.readS32();
+	fixed_t y = stream.readS32();
+	fixed_t z = stream.readS32();
+	angle_t angle = stream.readU32();
 
-	unsigned short type = MSG_ReadShort();
-	unsigned short netid = MSG_ReadShort();
-	byte rndindex = MSG_ReadByte();
-	SWORD state = MSG_ReadShort();
+	unsigned short type = stream.readU16();
+	unsigned short netid = stream.readU16();
+	byte rndindex = stream.readU8();
+	SWORD state = stream.readU16();
 
-	if(type >= NUMMOBJTYPES)
+	if (type >= NUMMOBJTYPES)
 		return;
 
 	P_ClearId(netid);
@@ -2254,16 +2273,16 @@ void CL_SpawnMobj()
 
 	if(mo->flags & MF_MISSILE)
 	{
-		AActor *target = P_FindThingById(MSG_ReadShort());
+		AActor *target = P_FindThingById(stream.readU16());
 		if(target)
 			mo->target = target->ptr();
-		CL_SetMobjSpeedAndAngle();
+		CL_SetMobjSpeedAndAngle(stream);
 	}
 
     if (mo->flags & MF_COUNTKILL)
 		level.total_monsters++;
 
-	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
+	if (Net_IsConnected() && (mo->flags & MF_MISSILE ) && mo->info->seesound)
 		S_Sound (mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
 
 	if (mo->type == MT_IFOG)
@@ -2277,13 +2296,13 @@ void CL_SpawnMobj()
 
 	if (type == MT_FOUNTAIN)
 	{
-		mo->effects = int(MSG_ReadByte()) << FX_FOUNTAINSHIFT;
+		mo->effects = int(stream.readU8()) << FX_FOUNTAINSHIFT;
 	}
 
 	if (type == MT_ZDOOMBRIDGE)
 	{
-		mo->radius = int(MSG_ReadByte()) << FRACBITS;
-		mo->height = int(MSG_ReadByte()) << FRACBITS;
+		mo->radius = int(stream.readU8()) << FRACBITS;
+		mo->height = int(stream.readU8()) << FRACBITS;
 	}
 }
 
@@ -2291,13 +2310,13 @@ void CL_SpawnMobj()
 // CL_Corpse
 // Called after killed thing is created.
 //
-void CL_Corpse(void)
+void CL_Corpse(BitStream& stream)
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	int frame = MSG_ReadByte();
-	int tics = MSG_ReadByte();
+	AActor *mo = P_FindThingById(stream.readU16());
+	int frame = stream.readU8();
+	int tics = stream.readU8();
 
-	if(tics == 0xFF)
+	if (tics == 0xFF)
 		tics = -1;
 
 	// already spawned as gibs?
@@ -2340,7 +2359,7 @@ void CL_TouchSpecialThing (void)
 //
 // CL_SpawnPlayer
 //
-void CL_SpawnPlayer()
+void CL_SpawnPlayer(BitStream& stream)
 {
 	byte		playernum;
 	player_t	*p;
@@ -2350,14 +2369,14 @@ void CL_SpawnPlayer()
 	angle_t		angle = 0;
 	int			i;
 
-	playernum = MSG_ReadByte();
-	netid = MSG_ReadShort();
+	playernum = stream.readU8();
+	netid = stream.readU16();
 	p = &CL_FindPlayer(playernum);
 
-	angle = MSG_ReadLong();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	angle = stream.readU32();
+	x = stream.readS32();
+	y = stream.readS32();
+	z = stream.readS32();
 
 	P_ClearId(netid);
 
@@ -2444,11 +2463,11 @@ void CL_SpawnPlayer()
 // CL_PlayerInfo
 // denis - your personal arsenal, as supplied by the server
 //
-void CL_PlayerInfo(void)
+void CL_PlayerInfo(BitStream& stream)
 {
 	player_t *p = &consoleplayer();
 
-	uint16_t booleans = MSG_ReadShort();
+	uint16_t booleans = stream.readU16();
 
 	for (int i = 0; i < NUMWEAPONS; i++)
 		p->weaponowned[i] = booleans & 1 << i;
@@ -2458,15 +2477,15 @@ void CL_PlayerInfo(void)
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		p->maxammo[i] = MSG_ReadShort();
-		p->ammo[i] = MSG_ReadShort();
+		p->maxammo[i] = stream.readU16();
+		p->ammo[i] = stream.readU16();
 	}
 
-	p->health = MSG_ReadByte();
-	p->armorpoints = MSG_ReadByte();
-	p->armortype = MSG_ReadByte();
+	p->health = stream.readU8();
+	p->armorpoints = stream.readU8();
+	p->armortype = stream.readU8();
 
-	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	weapontype_t newweapon = static_cast<weapontype_t>(stream.readU8());
 	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
 		newweapon = wp_fist;
 
@@ -2474,24 +2493,24 @@ void CL_PlayerInfo(void)
 		p->pendingweapon = newweapon;
 
 	for (int i = 0; i < NUMPOWERS; i++)
-		p->powers[i] = MSG_ReadShort();
+		p->powers[i] = stream.readU16();
 }
 
 //
 // CL_SetMobjSpeedAndAngle
 //
-void CL_SetMobjSpeedAndAngle(void)
+void CL_SetMobjSpeedAndAngle(BitStream& stream)
 {
 	AActor *mo;
 	int     netid;
 
-	netid = MSG_ReadShort();
+	netid = stream.readU16();
 	mo = P_FindThingById(netid);
 
-	angle_t angle = MSG_ReadLong();
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
+	angle_t angle = stream.readU32();
+	fixed_t momx = stream.readS32();
+	fixed_t momy = stream.readS32();
+	fixed_t momz = stream.readS32();
 
 	if (!mo)
 		return;
@@ -2521,12 +2540,12 @@ void CL_SetMobjSpeedAndAngle(void)
 //
 // CL_ExplodeMissile
 //
-void CL_ExplodeMissile(void)
+void CL_ExplodeMissile(BitStream& stream)
 {
     AActor *mo;
 	int     netid;
 
-	netid = MSG_ReadShort();
+	netid = stream.readU16();
 	mo = P_FindThingById(netid);
 
 	if (!mo)
@@ -2539,16 +2558,16 @@ void CL_ExplodeMissile(void)
 //
 // CL_RailTrail
 //
-void CL_RailTrail()
+void CL_RailTrail(BitStream& stream)
 {
 	v3double_t start, end;
 
-	start.x = double(MSG_ReadShort());
-	start.y = double(MSG_ReadShort());
-	start.z = double(MSG_ReadShort());
-	end.x = double(MSG_ReadShort());
-	end.y = double(MSG_ReadShort());
-	end.z = double(MSG_ReadShort());
+	start.x = double(stream.readS16());
+	start.y = double(stream.readS16());
+	start.z = double(stream.readS16());
+	end.x = double(stream.readS16());
+	end.y = double(stream.readS16());
+	end.z = double(stream.readS16());
 
 	P_DrawRailTrail(start, end);
 }
@@ -2556,11 +2575,11 @@ void CL_RailTrail()
 //
 // CL_UpdateMobjInfo
 //
-void CL_UpdateMobjInfo(void)
+void CL_UpdateMobjInfo(BitStream& stream)
 {
-	int netid = MSG_ReadShort();
-	int flags = MSG_ReadLong();
-	//int flags2 = MSG_ReadLong();
+	int netid = stream.readU16();
+	int flags = stream.readU32();
+	//int flags2 = stream.readU32();
 
 	AActor *mo = P_FindThingById(netid);
 
@@ -2575,11 +2594,11 @@ void CL_UpdateMobjInfo(void)
 //
 // CL_RemoveMobj
 //
-void CL_RemoveMobj(void)
+void CL_RemoveMobj(BitStream& stream)
 {
-	int netid = MSG_ReadShort();
-
+	int netid = stream.readU16();
 	AActor *mo = P_FindThingById(netid);
+
 	if (mo && mo->player && mo->player->id == displayplayer_id)
 		displayplayer_id = consoleplayer_id;
 
@@ -2590,16 +2609,16 @@ void CL_RemoveMobj(void)
 //
 // CL_DamagePlayer
 //
-void CL_DamagePlayer(void)
+void CL_DamagePlayer(BitStream& stream)
 {
 	player_t *p;
 	int       health;
 	int       damage;
 
-	p = &idplayer(MSG_ReadByte());
+	p = &idplayer(stream.readU8());
 
-	p->armorpoints = MSG_ReadByte();
-	health         = MSG_ReadShort();
+	p->armorpoints = stream.readU8();
+	health         = stream.readU16();
 
 	if(!p->mo)
 		return;
@@ -2629,16 +2648,16 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-void CL_KillMobj(void)
+void CL_KillMobj(BitStream& stream)
 {
- 	AActor *source = P_FindThingById (MSG_ReadShort() );
-	AActor *target = P_FindThingById (MSG_ReadShort() );
-	AActor *inflictor = P_FindThingById (MSG_ReadShort() );
-	int health = MSG_ReadShort();
+ 	AActor *source = P_FindThingById(stream.readU16());
+	AActor *target = P_FindThingById(stream.readU16());
+	AActor *inflictor = P_FindThingById(stream.readU16());
+	int health = stream.readS16();
 
-	MeansOfDeath = MSG_ReadLong();
+	MeansOfDeath = stream.readU32();
 
-	bool joinkill = ((MSG_ReadByte()) != 0);
+	bool joinkill = ((stream.readU8()) != 0);
 
 	if (!target)
 		return;
@@ -2664,11 +2683,11 @@ void CL_KillMobj(void)
 // The server will send us what weapon we fired, and if that
 // doesn't match the weapon we have up at the moment, fix it
 // and request that we get a full update of playerinfo - apr 14 2012
-void CL_FireWeapon (void)
+void CL_FireWeapon(BitStream& stream)
 {
-	player_t *p = &consoleplayer ();
-	weapontype_t firedweap = (weapontype_t) MSG_ReadByte ();
-	int servertic = MSG_ReadLong ();
+	player_t *p = &consoleplayer();
+	weapontype_t firedweap = (weapontype_t)stream.readU8();
+	int servertic = stream.readU32();
 
 	if (firedweap != p->readyweapon)
 	{
@@ -2676,7 +2695,7 @@ void CL_FireWeapon (void)
 		A_ForceWeaponFire(p->mo, firedweap, servertic);
 
 		// Request the player's ammo status from the server
-		MSG_WriteMarker (&net_buffer, clc_getplayerinfo);
+		//MSG_WriteMarker(&net_buffer, clc_getplayerinfo);
 	}
 
 }
@@ -2684,14 +2703,10 @@ void CL_FireWeapon (void)
 //
 // CL_FirePistol
 //
-void CL_FirePistol(void)
+void CL_FirePistol(BitStream& stream)
 {
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
+	player_t &p = idplayer(stream.readU8());
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	if (&p != &consoleplayer())
@@ -2701,14 +2716,10 @@ void CL_FirePistol(void)
 //
 // CL_FireShotgun
 //
-void CL_FireShotgun(void)
+void CL_FireShotgun(BitStream& stream)
 {
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
+	player_t &p = idplayer(stream.readU8());
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	if (&p != &consoleplayer())
@@ -2718,14 +2729,10 @@ void CL_FireShotgun(void)
 //
 // CL_FireSSG
 //
-void CL_FireSSG(void)
+void CL_FireSSG(BitStream& stream)
 {
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
+	player_t &p = idplayer(stream.readU8());
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	if (&p != &consoleplayer())
@@ -2736,14 +2743,10 @@ void CL_FireSSG(void)
 //
 // CL_FireChainGun
 //
-void CL_FireChainGun(void)
+void CL_FireChainGun(BitStream& stream)
 {
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
+	player_t &p = idplayer(stream.readU8());
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	if (&p != &consoleplayer())
@@ -2754,10 +2757,10 @@ void CL_FireChainGun(void)
 // CL_ChangeWeapon
 // [ML] From Zdaemon .99
 //
-void CL_ChangeWeapon (void)
+void CL_ChangeWeapon(BitStream& stream)
 {
 	player_t *player = &consoleplayer();
-	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
+	weapontype_t newweapon = (weapontype_t)stream.readU8();
 
 	// ensure that the client has the weapon
 	player->weaponowned[newweapon] = true;
@@ -2772,17 +2775,17 @@ void CL_ChangeWeapon (void)
 //
 // CL_Sound
 //
-void CL_Sound(void)
+void CL_Sound(BitStream& stream)
 {
-	int netid = MSG_ReadShort();
-	int x = MSG_ReadLong();
-	int y = MSG_ReadLong();
-	byte channel = MSG_ReadByte();
-	byte sfx_id = MSG_ReadByte();
-	byte attenuation = MSG_ReadByte();
-	byte vol = MSG_ReadByte();
+	int netid = stream.readU16();
+	AActor *mo = P_FindThingById(netid);
 
-	AActor *mo = P_FindThingById (netid);
+	int x = stream.readS32();
+	int y = stream.readS32();
+	byte channel = stream.readU8();
+	byte sfx_id = stream.readU8();
+	byte attenuation = stream.readU8();
+	byte vol = stream.readU8();
 
 	float volume = vol/(float)255;
 
@@ -2792,14 +2795,14 @@ void CL_Sound(void)
 		S_SoundID (x, y, channel, sfx_id, volume, attenuation); // play at approximate thing location
 }
 
-void CL_SoundOrigin(void)
+void CL_SoundOrigin(BitStream& stream)
 {
-	int x = MSG_ReadLong();
-	int y = MSG_ReadLong();
-	byte channel = MSG_ReadByte();
-	byte sfx_id = MSG_ReadByte();
-	byte attenuation = MSG_ReadByte();
-	byte vol = MSG_ReadByte();
+	int x = stream.readS32();
+	int y = stream.readS32();
+	byte channel = stream.readU8();
+	byte sfx_id = stream.readU8();
+	byte attenuation = stream.readU8();
+	byte vol = stream.readU8();
 
 	float volume = vol/(float)255;
 
@@ -3089,15 +3092,16 @@ void CL_ReadPacketHeader(void)
 	netgraph.addPacketIn();
 }
 
-void CL_GetServerSettings(void)
+void CL_GetServerSettings(BitStream& stream)
 {
 	cvar_t *var = NULL, *prev = NULL;
 
 	// TODO: REMOVE IN 0.7 - We don't need this loop anymore
-	while (MSG_ReadByte() != 2)
+	uint8_t token = 0;
+	while ((token = stream.readU8()) != 2)
 	{
-		std::string CvarName = MSG_ReadString();
-		std::string CvarValue = MSG_ReadString();
+		std::string CvarName = stream.readString();
+		std::string CvarValue = stream.readString();
 
 		var = cvar_t::FindCVar(CvarName.c_str(), &prev);
 
@@ -3227,10 +3231,10 @@ void CL_Actor_Tracer()
 //
 // CL_MobjTranslation
 //
-void CL_MobjTranslation()
+void CL_MobjTranslation(BitStream& stream)
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte table = MSG_ReadByte();
+	AActor *mo = P_FindThingById(stream.readU16());
+	byte table = stream.readU8();
 
     if (!mo)
         return;
@@ -3246,14 +3250,14 @@ void P_SetButtonTexture(line_t* line, short texture);
 // CL_Switch
 // denis - switch state and timing
 // Note: this will also be called for doors
-void CL_Switch()
+void CL_Switch(BitStream& stream)
 {
-	unsigned l = MSG_ReadLong();
-	byte switchactive = MSG_ReadByte();
-	byte special = MSG_ReadByte();
-	byte state = MSG_ReadByte(); //DActiveButton::EWhere
-	short texture = MSG_ReadShort();
-	unsigned time = MSG_ReadLong();
+	unsigned l = stream.readU32();
+	byte switchactive = stream.readU8();
+	byte special = stream.readU8();
+	byte state = stream.readU8(); //DActiveButton::EWhere
+	short texture = stream.readU16();
+	unsigned time = stream.readU32();
 
 	if (!lines || l >= (unsigned)numlines || state >= 3)
 		return;
@@ -3266,12 +3270,12 @@ void CL_Switch()
 	lines[l].special = special;
 }
 
-void CL_ActivateLine(void)
+void CL_ActivateLine(BitStream& stream)
 {
-	unsigned l = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte side = MSG_ReadByte();
-	byte activationType = MSG_ReadByte();
+	unsigned l = stream.readU32();
+	AActor *mo = P_FindThingById(stream.readU16());
+	byte side = stream.readU8();
+	byte activationType = stream.readU8();
 
 	if (!lines || l >= (unsigned)numlines)
 		return;
@@ -3312,10 +3316,10 @@ void CL_ActivateLine(void)
 	}
 }
 
-void CL_ConsolePlayer(void)
+void CL_ConsolePlayer(BitStream& stream)
 {
-	displayplayer_id = consoleplayer_id = MSG_ReadByte();
-	digest = MSG_ReadString();
+	displayplayer_id = consoleplayer_id = stream.readU8();
+	digest = stream.readString();
 }
 
 //
@@ -3324,7 +3328,7 @@ void CL_ConsolePlayer(void)
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-void CL_LoadMap(void)
+void CL_LoadMap(BitStream& stream)
 {
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
@@ -3335,21 +3339,21 @@ void CL_LoadMap(void)
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	int wadcount = (byte)MSG_ReadByte();
+	int wadcount = stream.readU8();
 	while (wadcount--)
 	{
-		newwadfiles.push_back(MSG_ReadString());
-		newwadhashes.push_back(MSG_ReadString());
+		newwadfiles.push_back(stream.readString());
+		newwadhashes.push_back(stream.readString());
 	}
 
-	int patchcount = (byte)MSG_ReadByte();
+	int patchcount = stream.readU8();
 	while (patchcount--)
 	{
-		newpatchfiles.push_back(MSG_ReadString());
-		newpatchhashes.push_back(MSG_ReadString());
+		newpatchfiles.push_back(stream.readString());
+		newpatchhashes.push_back(stream.readString());
 	}
 
-	const char *mapname = MSG_ReadString ();
+	std::string mapname = stream.readString();
 
 	if (gamestate == GS_DOWNLOAD)
 	{
@@ -3375,7 +3379,7 @@ void CL_LoadMap(void)
 	// the music from the old wad continues to play...
 	S_StopMusic();
 
-	G_InitNew (mapname);
+	G_InitNew(mapname.c_str());
 
 	movingsectors.clear();
 	teleported_players.clear();
@@ -3432,7 +3436,7 @@ void CL_LoadMap(void)
 
 void P_ResetSwitch(line_t* line);
 
-void CL_ResetMap()
+void CL_ResetMap(BitStream& stream)
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -3467,14 +3471,14 @@ void CL_ResetMap()
 		netdemo.writeMapChange();
 }
 
-void CL_EndGame()
+void CL_EndGame(BitStream& stream)
 {
-	Host_EndGame ("\nServer disconnected\n");
+	Host_EndGame("\nServer disconnected\n");
 }
 
-void CL_FullGame()
+void CL_FullGame(BitStream& stream)
 {
-	Host_EndGame ("Server is full\n");
+	Host_EndGame("Server is full\n");
 }
 
 void CL_ExitLevel()
@@ -3498,13 +3502,13 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-void CL_Spectate()
+void CL_Spectate(BitStream& stream)
 {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
+	player_t &player = CL_FindPlayer(stream.readU8());
 
 	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
 	bool wasspectator = player.spectator;
-	player.spectator = ((MSG_ReadByte()) != 0);
+	player.spectator = ((stream.readU8()) != 0);
 
 	if (player.spectator && wasalive)
 		P_DisconnectEffect(player.mo);
@@ -3553,20 +3557,21 @@ void CL_Spectate()
 	CL_CheckDisplayPlayer();
 }
 
-void CL_ReadyState() {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-	player.ready = MSG_ReadBool();
+void CL_ReadyState(BitStream& stream)
+{
+	player_t &player = CL_FindPlayer(stream.readU8());
+	player.ready = bool(stream.readU8());
 }
 
 // Set local warmup state.
-void CL_WarmupState()
+void CL_WarmupState(BitStream& stream)
 {
-	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
+	warmup.set_client_status(static_cast<Warmup::status_t>(stream.readU8()));
 	if (warmup.get_status() == Warmup::COUNTDOWN ||
 	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
 	{
 		// Read an extra countdown number off the wire
-		short count = MSG_ReadShort();
+		short count = stream.readS16();
 		std::ostringstream buffer;
 		buffer << "Match begins in " << count << "...";
 		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
@@ -3579,7 +3584,7 @@ void CL_WarmupState()
 }
 
 // client source (once)
-typedef void (*client_callback)();
+typedef void (*client_callback)(BitStream&);
 typedef std::map<svc_t, client_callback> cmdmap;
 cmdmap cmds;
 
@@ -3612,7 +3617,6 @@ void CL_InitCommands(void)
 	cmds[svc_damagemobj]		= &CL_DamageMobj;
 	cmds[svc_corpse]			= &CL_Corpse;
 	cmds[svc_spawnplayer]		= &CL_SpawnPlayer;
-//	cmds[svc_spawnhiddenplayer]	= &CL_SpawnHiddenPlayer;
 	cmds[svc_damageplayer]		= &CL_DamagePlayer;
 	cmds[svc_firepistol]		= &CL_FirePistol;
 	cmds[svc_fireweapon]		= &CL_FireWeapon;
@@ -3625,8 +3629,10 @@ void CL_InitCommands(void)
 	cmds[svc_connectclient]		= &CL_ConnectClient;
 	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
 	cmds[svc_activateline]		= &CL_ActivateLine;
+/*
 	cmds[svc_sector]			= &CL_UpdateSector;
 	cmds[svc_movingsector]		= &CL_UpdateMovingSector;
+*/
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
     cmds[svc_midprint]          = &CL_MidPrint;
@@ -3639,6 +3645,7 @@ void CL_InitCommands(void)
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
+/*
 	cmds[svc_mobjstate]			= &CL_SetMobjState;
 	cmds[svc_actor_movedir]		= &CL_Actor_Movedir;
 	cmds[svc_actor_target]		= &CL_Actor_Target;
@@ -3647,9 +3654,11 @@ void CL_InitCommands(void)
 	cmds[svc_forceteam]			= &CL_ForceSetTeam;
 
 	cmds[svc_ctfevent]			= &CL_CTFEvent;
+*/
 	cmds[svc_serversettings]	= &CL_GetServerSettings;
 	cmds[svc_disconnect]		= &CL_EndGame;
 	cmds[svc_full]				= &CL_FullGame;
+/*
 	cmds[svc_reconnect]			= &CL_Reconnect;
 	cmds[svc_exitlevel]			= &CL_ExitLevel;
 
@@ -3658,8 +3667,9 @@ void CL_InitCommands(void)
 
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
-
+*/
 	cmds[svc_spectate]   		= &CL_Spectate;
+/*
 	cmds[svc_readystate]		= &CL_ReadyState;
 	cmds[svc_warmupstate]		= &CL_WarmupState;
 
@@ -3674,12 +3684,13 @@ void CL_InitCommands(void)
 	cmds[svc_maplist] = &CL_Maplist;
 	cmds[svc_maplist_update] = &CL_MaplistUpdate;
 	cmds[svc_maplist_index] = &CL_MaplistIndex;
+*/
 }
 
 //
 // CL_ParseCommands
 //
-void CL_ParseCommands(void)
+void CL_ParseCommands(BitStream& stream)
 {
 	std::vector<svc_t>	history;
 	svc_t				cmd = svc_abort;
@@ -3688,17 +3699,23 @@ void CL_ParseCommands(void)
 	if(once)CL_InitCommands();
 	once = false;
 
-	while(connected)
+	while (Net_IsConnected() || true)
 	{
-		size_t byteStart = net_message.BytesRead();
+		if (stream.bitsRead() >= stream.bitsWritten())
+			break;
 
-		cmd = (svc_t)MSG_ReadByte();
+		size_t byteStart = stream.bytesRead();
+
+		cmd = (svc_t)stream.readU8();
 		history.push_back(cmd);
 
-		if(cmd == (svc_t)-1)
+		if (cmd == (svc_t)-1)
 			break;
 
 		cmdmap::iterator i = cmds.find(cmd);
+		if (i == cmds.end())
+			break;
+		/*
 		if(i == cmds.end())
 		{
 			CL_QuitNetGame();
@@ -3709,8 +3726,9 @@ void CL_ParseCommands(void)
 			Printf(PRINT_HIGH, "\n");
 			break;
 		}
+		*/
 
-		i->second();
+		i->second(stream);
 
 		if (net_message.overflowed)
 		{
@@ -3726,10 +3744,10 @@ void CL_ParseCommands(void)
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
-		if (net_message.BytesRead() < byteStart)
-			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n", net_message.BytesRead(), byteStart);
+		if (stream.bytesWritten() < byteStart)
+			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n", stream.bytesRead(), byteStart);
 
-		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
+		netgraph.addTrafficIn(stream.bytesRead() - byteStart);
 	}
 }
 
@@ -3747,7 +3765,7 @@ extern int outrate;
 //
 // CL_SendCmd
 //
-void CL_SendCmd(void)
+void CL_SendCmd(BitStream& stream)
 {
 	player_t *p = &consoleplayer();
 
@@ -3760,32 +3778,34 @@ void CL_SendCmd(void)
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
-		MSG_WriteMarker(&net_buffer, clc_spectate);
-		MSG_WriteByte(&net_buffer, 5);
-		MSG_WriteLong(&net_buffer, p->mo->x);
-		MSG_WriteLong(&net_buffer, p->mo->y);
-		MSG_WriteLong(&net_buffer, p->mo->z);
+		stream.writeU8(clc_spectate);
+		stream.writeU8(5);
+		stream.writeS32(p->mo->x);
+		stream.writeS32(p->mo->y);
+		stream.writeS32(p->mo->z);
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_move);
+	stream.writeU8(clc_move);
 
-	// Write current client-tic.  Server later sends this back to client
+	// [SL] Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction.
-    MSG_WriteLong(&net_buffer, gametic);
+	stream.writeU32(gametic);
 
 	NetCommand *netcmd;
 	for (int i = 9; i >= 0; i--)
 	{
 		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
-		netcmd->write(&net_buffer);
+		netcmd->write(stream);
 	}
 
+	#if 0
 	int bytesWritten = NET_SendPacket(net_buffer, serveraddr);
 	netgraph.addTrafficOut(bytesWritten);
 
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
+	#endif
 }
 
 //

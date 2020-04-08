@@ -24,7 +24,6 @@
 #include "doomdef.h"
 #include "m_ostring.h"
 #include "m_random.h"
-#include "c_cvars.h"
 #include "cmdlib.h"
 #include "hashtable.h"
 
@@ -38,10 +37,6 @@
 
 static const uint16_t MAX_INCOMING_SIZE = 8192;		// in bytes
 static const uint16_t MAX_OUTGOING_SIZE = 8192;
-
-EXTERN_CVAR(net_ip)
-EXTERN_CVAR(net_port)
-EXTERN_CVAR(net_maxrate)
 
 // ============================================================================
 //
@@ -91,8 +86,6 @@ bool NetInterface::openInterface(const OString& ip_string, uint16_t desired_port
 	#endif
 
 	uint32_t desired_ip = SocketAddress(ip_string).getIPAddress();
-	if (desired_ip == 0)
-		Net_Printf("NetInterface::openInterface: binding to all local network interfaces.");
 
 	// open a socket and bind it to a port and set mLocalAddress
 	openSocket(desired_ip, desired_port);
@@ -153,6 +146,7 @@ void NetInterface::openSocket(uint32_t desired_ip, uint16_t desired_port)
 {
 	const uint16_t MAX_PORT_CHECKS = 32;
 
+	// Open a socket (UDP)
 	mSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (!isSocketValid())
 	{
@@ -162,7 +156,10 @@ void NetInterface::openSocket(uint32_t desired_ip, uint16_t desired_port)
 
 	// [SL] Use INADDR_ANY (all interfaces) for binding purposes if no valid interface address is provided
 	if (desired_ip == 0)
+	{
 		desired_ip = INADDR_ANY;
+		Net_Printf("NetInterface::openSocket: binding to all local network interfaces.");
+	}
 
 	SocketAddress tmp_address;
 	tmp_address.setIPAddress(desired_ip);
@@ -170,6 +167,7 @@ void NetInterface::openSocket(uint32_t desired_ip, uint16_t desired_port)
 	// try up to MAX_PORT_CHECKS port numbers until we find an unbound one
 	for (uint16_t port = desired_port; port < desired_port + MAX_PORT_CHECKS; port++)
 	{
+		// Bind the scoket to "port" on the interface associated with "desired_ip"
 		tmp_address.setPort(port);
 		const struct sockaddr_in* sockaddress = &tmp_address.getSockAddrIn();
 		if (bind(mSocket, (const sockaddr*)sockaddress, sizeof(sockaddr_in)) == 0)

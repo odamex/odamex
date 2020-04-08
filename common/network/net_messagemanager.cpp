@@ -425,3 +425,149 @@ void EventManager::notifyLost(uint32_t seq)
 {
 	// do nothing
 }
+
+
+// ============================================================================
+//
+// ControlsManager class implementation
+//
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Public ControlsManager functions
+// ----------------------------------------------------------------------------
+
+ControlsManager::ControlsManager()
+{ }
+
+
+ControlsManager::~ControlsManager()
+{
+	// free all stored Message objects
+	while (!mMessages.empty())
+	{
+		delete mMessages.front();
+		mMessages.pop_front();
+	}
+}
+
+//
+// ControlsManager::addMessage
+//
+// Adds a Message to the list of outgoing Messages, which will be sent with the
+// next call to ControlsManager::write.
+//
+// Note that the ControlsManager takes over responsibility for freeing the Message
+// object passed to this funciton.
+// 
+void ControlsManager::addMessage(Message* msg)
+{
+	mMessages.push_back(msg);
+
+	// free older Messages
+	while (mMessages.size() > MAX_MESSAGES)
+	{
+		delete mMessages.front();
+		mMessages.pop_front();
+	}
+}
+
+
+//
+// ControlsManager::process
+//
+// Processes any recently received Messages. The ControlsManager processes
+// Messages as soon as they are received instead of queing them so this
+// function does nothing.
+//
+void ControlsManager::process()
+{
+	// do nothing
+}
+
+
+//
+// ControlsManager::read
+//
+//
+uint16_t ControlsManager::read(BitStream& stream, uint16_t allotted_size)
+{
+	uint16_t read_size = 0;
+	const uint16_t message_type_id_size = 8;
+
+	while (allotted_size - read_size >= message_type_id_size)
+	{
+		uint32_t msgtype = stream.readBits(message_type_id_size);
+
+		Message* msg;
+		// TODO: instantiate the correct Message type!
+
+		msg->read(stream);
+		read_size += msg->size();
+		
+		// process this message
+		// create a new ticcmd_t based on the message data and insert it into
+		// the ticcmd queue
+//		msg->process();
+	}
+
+	return read_size;
+}
+
+
+//
+// ControlsManager::write
+//
+// Writes upto allotted_size bits of Messages to the stream. Message objects
+// are freed immediately after being written. Returns the number of bits
+// written to the stream.
+//
+uint16_t ControlsManager::write(BitStream& stream, uint16_t allotted_size, uint32_t seq)
+{
+	allotted_size = std::min<uint16_t>(allotted_size, stream.writeSize());
+
+	uint16_t written = 0;
+
+	// write all Messages to the BitStream
+	for (MessageList::const_iterator itr = mMessages.begin(); itr != mMessages.end(); ++itr)
+	{
+		Message* msg = *itr;
+
+		// is there room for this message?
+		if (written + msg->size() > allotted_size)
+			break;
+
+		msg->write(stream);
+		written += msg->size();
+	}
+
+	return written;
+}
+
+
+//
+// ControlsManager::notifyReceived
+//
+// Informs the ControlsManager that the packet with sequence number seq
+// (and any ControlsMessages contained in it) was successfully received.
+// Since ControlsManager always sends a fixed number of messages regardless
+// of receipt, this function does nothing.
+//
+void ControlsManager::notifyReceived(uint32_t seq)
+{
+	// do nothing
+}
+
+
+//
+// ControlsManager::notifyLost
+//
+// Informs the ControlsManager that the packet with sequence number seq
+// (and any ControlsMessages contained in it) was lost. Since ControlsManager
+// always sends a fixed number of messages regardless of receipt, this
+// function does nothing.
+//
+void ControlsManager::notifyLost(uint32_t seq)
+{
+	// do nothing
+}

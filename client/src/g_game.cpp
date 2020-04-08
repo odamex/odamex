@@ -67,6 +67,8 @@
 #include "gi.h"
 #include "hu_mousegraph.h"
 
+#include "network/net_main.h"
+
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
@@ -373,7 +375,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	int forward = 0, side = 0, look = 0, fly = 0;
 
-	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
+	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && Net_IsConnected())
 		AddCommandString("join");
 
 	// [RH] only use two stage accelerative turning on the keyboard
@@ -947,8 +949,15 @@ void G_Ticker (void)
 		netdemo.readMessages(&net_message);
 	}
 
-	if (connected && !simulated_connection)
+	if (Net_IsConnected() && !simulated_connection)
 	{
+		//Net_ServiceConnections();
+
+		if (gameaction == ga_fullconsole) // Host_EndGame was called
+			return;
+
+		#if 0
+
 		while ((packet_size = NET_GetPacket()) )
 		{
 			// denis - don't accept candy from strangers
@@ -964,7 +973,10 @@ void G_Ticker (void)
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);
 
-			CL_ParseCommands();
+			/*
+			BitStream stream;
+			CL_ParseCommands(stream);
+			*/
 
 			if (gameaction == ga_fullconsole) // Host_EndGame was called
 				return;
@@ -988,7 +1000,10 @@ void G_Ticker (void)
 
 		if (gametic - last_received > 65)
 			noservermsgs = true;
+
+		#endif
 	}
+	#if 0
 	else if (NET_GetPacket() && !simulated_connection)
 	{
 		// denis - don't accept candy from strangers
@@ -1019,6 +1034,7 @@ void G_Ticker (void)
 			}
 		}
 	}
+	#endif
 
 	if (netdemo.isRecording())
 		netdemo.writeMessages();

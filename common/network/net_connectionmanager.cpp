@@ -26,6 +26,7 @@
 #include "network/net_connectionmanager.h"
 #include "network/net_interface.h"
 #include "network/net_connection.h"
+#include "network/net_messagemanager.h"
 
 static uint32_t MAX_INCOMING_SIZE_IN_BYTES = 8192;
 static uint32_t MAX_OUTGOING_SIZE_IN_BYTES = 8192;
@@ -245,6 +246,22 @@ Connection* ConnectionManager::createNewConnection(const SocketAddress& remote_a
 	Connection* conn = new Odamex65Connection(connection_id, mNetworkInterface, remote_address);
 	mConnectionsById.insert(std::pair<ConnectionId, Connection*>(connection_id, conn));
 	mConnectionsByAddress.insert(std::pair<SocketAddress, Connection*>(remote_address, conn));
+
+	#if 0
+	if (mNetworkInterface->getHostType() == HOST_SERVER)
+	{
+		// TODO: figure out who frees the memory for the various MessageManagers
+		// when a connection is deleted
+		conn->registerMessageManager(new ReplicationManager());
+	}
+	else if (mNetworkInterface->getHostType() == HOST_CLIENT)
+	{
+		// TODO: figure out who frees the memory for the various MessageManagers
+		// when a connection is deleted
+		conn->registerMessageManager(new ControlsManager());
+	}
+	#endif
+
 	return conn;
 }
 
