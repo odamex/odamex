@@ -1134,6 +1134,17 @@ void I_SetWindowIcon()
 
 
 //
+// I_GetMonitorCount
+//
+int I_GetMonitorCount()
+{
+	if (I_VideoInitialized())
+		return video_subsystem->getMonitorCount();
+	return 0;
+}
+
+
+//
 // I_GetVideoDriverName
 //
 // Returns the name of the current video driver in-use.

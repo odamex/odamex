@@ -63,6 +63,7 @@ bool I_VideoInitialized();
 void I_SetVideoMode(int width, int height, int bpp, EWindowMode window_mode, bool vsync);
 
 const IVideoCapabilities* I_GetVideoCapabilities();
+int I_GetMonitorCount();
 IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
 DCanvas* I_GetPrimaryCanvas();
