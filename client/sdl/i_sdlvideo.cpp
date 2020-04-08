@@ -1171,6 +1171,8 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindow
 	const char* driver_name = getRendererDriver();
 	Printf(PRINT_HIGH, "V_Init: rendering mode \"%s\"\n", driver_name);
 
+	SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+
 	uint32_t window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
 	if (strncmp(driver_name, "open", 4) == 0)
