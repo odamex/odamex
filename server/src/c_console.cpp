@@ -108,7 +108,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, STACKARRAY_LENGTH(outline), format, parms);
+	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	size_t len = strlen(outline);
@@ -246,4 +246,3 @@ void C_RemoveTabCommand (const char *name)
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")
-
