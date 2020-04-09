@@ -8,8 +8,8 @@ if (!(Test-Path -Path "SDL2-2.0.12")) {
     7z x "SDL2-devel-2.0.12-VC.zip"
 }
 
-if (!(Test-Path -Path "SDL2_mixer-devel-2.0.1-VC.zip" -PathType leaf)) {
-    Start-FileDownload "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.1-VC.zip"
+if (!(Test-Path -Path "SDL2_mixer-devel-2.0.4-VC.zip" -PathType leaf)) {
+    Start-FileDownload "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.4-VC.zip"
 }
 if (!(Test-Path -Path "SDL2_mixer-2.0.4")) {
     7z x "SDL2_mixer-devel-2.0.4-VC.zip"
