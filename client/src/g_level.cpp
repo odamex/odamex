@@ -514,7 +514,7 @@ void G_DoLoadLevel (int position)
 			it->playerstate = PST_ENTER;
 		}
 
-		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
+		// [AM] If sv_keepkeys|sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
 		for (size_t j = 0; j < NUMCARDS; j++)
 			it->cards[j] = false;

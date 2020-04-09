@@ -698,6 +698,10 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
+	
+	// Reset all keys found
+	for (size_t j = 0; j < NUMCARDS; j++)
+		keysfound[j] = false;
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -722,7 +726,7 @@ void G_DoLoadLevel (int position)
 		if (it->ingame() && it->playerstate == PST_DEAD)
 			it->playerstate = PST_REBORN;
 
-		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
+		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
 		for (size_t j = 0; j < NUMCARDS; j++)
 			it->cards[j] = false;
