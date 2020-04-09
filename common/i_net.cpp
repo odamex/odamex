@@ -1030,12 +1030,12 @@ void InitNetMessageFormats()
 
    size_t i;
 
-   for(i = 0; i < sizeof(clc_messages)/sizeof(*clc_messages); i++)
+   for(i = 0; i < ARRAY_LENGTH(clc_messages); i++)
    {
       clc_info[clc_messages[i].id] = clc_messages[i];
    }
 
-   for(i = 0; i < sizeof(svc_messages)/sizeof(*svc_messages); i++)
+   for(i = 0; i < ARRAY_LENGTH(svc_messages); i++)
    {
       svc_info[svc_messages[i].id] = svc_messages[i];
    }
