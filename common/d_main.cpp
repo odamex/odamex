@@ -82,8 +82,6 @@ float maxfps = 35.0f;
 
 #if defined(_WIN32) && !defined(_XBOX)
 
-#define arrlen(array) (sizeof(array) / sizeof(*array))
-
 typedef struct
 {
 	HKEY root;
@@ -359,7 +357,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	{
 		unsigned int i;
 
-		for (i = 0;i < arrlen(uninstall_values);++i)
+		for (i = 0; i < ARRAY_LENGTH(uninstall_values); ++i)
 		{
 			char* val;
 			char* path;
@@ -396,7 +394,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (install_path != NULL)
 		{
-			for (i = 0;i < arrlen(collectors_edition_subdirs);++i)
+			for (i = 0; i < ARRAY_LENGTH(collectors_edition_subdirs); ++i)
 			{
 				subpath = static_cast<char*>(malloc(strlen(install_path)
 				                             + strlen(collectors_edition_subdirs[i])
@@ -421,7 +419,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (install_path != NULL)
 		{
-			for (i = 0;i < arrlen(steam_install_subdirs);++i)
+			for (i = 0; i < ARRAY_LENGTH(steam_install_subdirs); ++i)
 			{
 				subpath = static_cast<char*>(malloc(strlen(install_path)
 				                             + strlen(steam_install_subdirs[i]) + 5));
