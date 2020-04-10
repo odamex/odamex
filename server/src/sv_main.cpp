@@ -3668,7 +3668,7 @@ void SV_JoinPlayer(player_t &player, bool silent)
 
 	int numPlayers = P_NumPlayersInGame();
 
-	// During intermission a playere can queue, but don't let them immediately join even if a slot is available
+	// During intermission a playere can queue, but don't let them enter the game even if a slot is available
 	if (numPlayers >= sv_maxplayers || gamestate == GS_INTERMISSION)
 	{
 		if (GameModeSupportsQueue() && player.QueuePosition == 0)
@@ -5334,7 +5334,10 @@ void SV_UpdatePlayerQueueLevelChange()
 	if (queuedPlayerCount > 0)
 	{
 		if (loserPlayer != NULL)
+		{
 			SV_SetPlayerSpec(*loserPlayer, true, true);
+			loserPlayer->joindelay = 0; //Allow this player to queue up immediately without waiting for ReJoinDelay
+		}
 
 		SV_UpdatePlayerQueuePositions();
 	}
@@ -5369,7 +5372,7 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 		if (p->QueuePosition == 0)
 			continue;
 
-		if (gamestate != GS_INTERMISSION && playerCount < sv_maxplayers)
+		if (gamestate != GS_INTERMISSION && !shotclock && playerCount < sv_maxplayers)
 		{
 			p->QueuePosition = 0;
 			SV_SetPlayerSpec(*p, false, true);
