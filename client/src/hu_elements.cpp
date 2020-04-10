@@ -223,13 +223,21 @@ std::string HelpText()
 		else
 		{
 			if (GameModeSupportsQueue())
-				return "Press USE to join the queue";
+			{
+				std::string use("Press ");
+				use.append(C_GetKeyStringsFromCommand("+use"));
+				use.append(" to join the queue");
+				return use;
+			}
 
 			return "Game is full";
 		}
 	}
 
-	return "Press USE to join";
+	std::string use("Press ");
+	use.append(C_GetKeyStringsFromCommand("+use"));
+	use.append(" to join");
+	return use;
 }
 
 // Return a string that contains the name of the player being spectated,
