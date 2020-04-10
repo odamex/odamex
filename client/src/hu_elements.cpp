@@ -210,28 +210,26 @@ std::string HelpText()
 			isGameFull = true;
 	}
 
+	int queuePos = consoleplayer().QueuePosition;
+
+	if (queuePos > 0)
+	{
+		std::ostringstream ss;
+		ss << "Position in line to play: " << (int)queuePos;
+		return ss.str();
+	}
+
 	if (isGameFull)
 	{
-		int queuePos = consoleplayer().QueuePosition;
-
-		if (queuePos > 0)
+		if (GameModeSupportsQueue())
 		{
-			std::ostringstream ss;
-			ss << "Position in line to play: " << (int)queuePos;
-			return ss.str();
+			std::string use("Press ");
+			use.append(C_GetKeyStringsFromCommand("+use"));
+			use.append(" to join the queue");
+			return use;
 		}
-		else
-		{
-			if (GameModeSupportsQueue())
-			{
-				std::string use("Press ");
-				use.append(C_GetKeyStringsFromCommand("+use"));
-				use.append(" to join the queue");
-				return use;
-			}
 
-			return "Game is full";
-		}
+		return "Game is full";
 	}
 
 	std::string use("Press ");
