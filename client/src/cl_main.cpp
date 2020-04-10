@@ -957,7 +957,7 @@ BEGIN_COMMAND (rcon)
 	{
 		char  command[256];
 
-		strncpy(command, args, STACKARRAY_LENGTH(command) - 1);
+		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);

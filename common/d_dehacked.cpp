@@ -1041,7 +1041,7 @@ static int PatchThing (int thingy)
 					}
 					else
 					{
-						for (iy = 0; iy < sizeof(bitnames)/sizeof(bitnames[0]); iy++)
+						for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
 						{
 							if (!stricmp (strval, bitnames[iy].name))
 							{
@@ -1062,7 +1062,7 @@ static int PatchThing (int thingy)
 								break;
 							}
 						}
-						if (iy >= sizeof(bitnames)/sizeof(bitnames[0]))
+						if (iy >= ARRAY_LENGTH(bitnames))
 							DPrintf("Unknown bit mnemonic %s\n", strval);
 					}
 				}

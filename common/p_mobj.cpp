@@ -927,7 +927,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 
 	do
 	{
-		if (state >= COUNTOF(states) || state < 0)
+		if (state >= ARRAY_LENGTH(states) || state < 0)
 		{
 			I_Error("P_SetMobjState: State %d does not exist in state table.", state);
 		}

@@ -442,9 +442,15 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 //
 std::string I_GetVideoModeString(const IVideoMode* mode)
 {
+	const char window_strs[][20] = {
+		"windowed",
+		"desktop full screen",
+		"true full screen"
+	};
+
 	char str[50];
 	sprintf(str, "%dx%d %dbpp (%s)", mode->getWidth(), mode->getHeight(), mode->getBitsPerPixel(),
-			mode->isFullScreen() ? "fullscreen" : "windowed");
+			window_strs[I_GetWindow()->getWindowMode()]);
 
 	return std::string(str);
 }
@@ -456,12 +462,12 @@ std::string I_GetVideoModeString(const IVideoMode* mode)
 // Helper function for I_ValidateVideoMode. Returns true if there is a video
 // mode availible with the desired bpp and screen mode.
 //
-static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
+static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 {
 	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 
 	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		if (it->isFullScreen() == fullscreen && it->getBitsPerPixel() == bpp)
+		if (it->getBitsPerPixel() == bpp && it->getWindowMode() == window_mode)
 			return true;
 
 	return false;
@@ -476,39 +482,39 @@ static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
 //
 static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 {
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	const IVideoMode invalid_mode(0, 0, 0, WINDOW_Windowed);
 
-	uint16_t desired_width = mode->getWidth(), desired_height = mode->getHeight();
+	uint16_t desired_width = clamp<uint16_t>(mode->getWidth(), 320, MAXWIDTH);
+	uint16_t desired_height = clamp<uint16_t>(mode->getHeight(), 200, MAXHEIGHT);
 	uint8_t desired_bpp = mode->getBitsPerPixel();
-	bool desired_fullscreen = mode->isFullScreen();
+	EWindowMode desired_window_mode = mode->getWindowMode();
 
 	// Ensure the display type is adhered to
-	if (I_GetVideoCapabilities()->supportsFullScreen() == false)
-		desired_fullscreen = false;
-	else if (I_GetVideoCapabilities()->supportsWindowed() == false)
-		desired_fullscreen = true;
+	if (!I_GetVideoCapabilities()->supportsFullScreen())
+		desired_window_mode = WINDOW_Windowed;
+	else if (!I_GetVideoCapabilities()->supportsWindowed())
+		desired_window_mode = WINDOW_Fullscreen;
 
 	// check if the given bit-depth is supported
-	if (!I_IsModeSupported(desired_bpp, desired_fullscreen))
+	if (!I_IsModeSupported(desired_bpp, desired_window_mode))
 	{
-		desired_bpp = desired_bpp ^ (32 | 8);			// toggle bpp between 8 and 32
-
-		// check if the new bit-depth is supported
-		if (!I_IsModeSupported(desired_bpp, desired_fullscreen))
-			return IVideoMode(0, 0, 0, false);		// return an invalid video mode
+		// mode is not supported -- check a different bit depth 
+		desired_bpp = desired_bpp ^ (32 | 8);
+		if (!I_IsModeSupported(desired_bpp, desired_window_mode))
+			return invalid_mode;
 	}
 
-	desired_width = clamp<uint16_t>(desired_width, 320, MAXWIDTH);
-	desired_height = clamp<uint16_t>(desired_height, 200, MAXHEIGHT);
+	IVideoMode desired_mode(desired_width, desired_height, desired_bpp, desired_window_mode);
 
-	IVideoMode desired_mode(desired_width, desired_height, desired_bpp, desired_fullscreen);
-
-	if (!desired_fullscreen || !vid_autoadjust)
+	// If the user requested a windowed mode, we don't have to worry about
+	// the requested dimensions aligning to an actual video resolution.
+	if (desired_window_mode == WINDOW_Windowed || !vid_autoadjust)
 		return desired_mode;
 
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
 
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (int iteration = 0; iteration < 2; iteration++)
 	{
 		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
@@ -516,7 +522,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 			if (*it == desired_mode)		// perfect match?
 				return *it;
 
-			if (it->getBitsPerPixel() == desired_bpp && it->isFullScreen() == desired_fullscreen)
+			if (it->getBitsPerPixel() == desired_bpp && it->getWindowMode() == desired_window_mode)
 			{
 				if (iteration == 0 && (it->getWidth() < desired_width || it->getHeight() < desired_height))
 					continue;
@@ -536,7 +542,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 			return *closest_mode;
 	}
 
-	return IVideoMode(0, 0, 0, false);		// return an invalid video mode
+	return invalid_mode;
 }
 
 
@@ -545,16 +551,16 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 // Main function to set the video mode at the hardware level.
 //
-void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, bool vsync)
+void I_SetVideoMode(int width, int height, int surface_bpp, EWindowMode window_mode, bool vsync)
 {
 	// ensure the requested mode is valid
-	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
+	IVideoMode desired_mode(width, height, surface_bpp, window_mode);
 	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
 	assert(mode.isValid());
 
 	IWindow* window = I_GetWindow();
 
-	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), window_mode, vsync);
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
@@ -1099,21 +1105,6 @@ void I_SetPalette(const argb_t* palette)
 
 
 //
-// I_SetWindowSize
-//
-// Resizes the application window to the specified size.
-//
-void I_SetWindowSize(int width, int height)
-{
-	if (I_VideoInitialized())
-	{
-		int bpp = vid_32bpp ? 32 : 8;
-		I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
-	}
-}
-
-
-//
 // I_SetWindowCaption
 //
 // Set the window caption.
@@ -1140,6 +1131,17 @@ void I_SetWindowCaption(const std::string& caption)
 void I_SetWindowIcon()
 {
 	I_GetWindow()->setWindowIcon();
+}
+
+
+//
+// I_GetMonitorCount
+//
+int I_GetMonitorCount()
+{
+	if (I_VideoInitialized())
+		return video_subsystem->getMonitorCount();
+	return 0;
 }
 
 

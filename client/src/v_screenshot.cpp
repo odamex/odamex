@@ -149,7 +149,7 @@ static void V_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t* no
 	
 	char datebuf[80];
 	const char *dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
-	strftime(datebuf, sizeof(datebuf) / sizeof(char), dateformat, gmtime(now));
+	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
 	
 	pngtext[text_line].key = (png_charp)"Created Time";
 	pngtext[text_line].text = (png_charp)datebuf;

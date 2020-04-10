@@ -98,8 +98,6 @@ typedef int SOCKET;
 #include "upnpcommands.h"
 #endif
 
-#include "m_memio.h"	// for STACKARRAY_LENGTH
-
 unsigned int	inet_socket;
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
@@ -716,7 +714,7 @@ void MSG_WriteHexString(buf_t *b, const char *s)
 
     const size_t numdigits = strlen(s) / 2;
 
-    if (numdigits > STACKARRAY_LENGTH(output))
+    if (numdigits > ARRAY_LENGTH(output))
     {
         Printf (PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
         return;
@@ -1051,12 +1049,12 @@ void InitNetMessageFormats()
 
    size_t i;
 
-   for(i = 0; i < sizeof(clc_messages)/sizeof(*clc_messages); i++)
+   for(i = 0; i < ARRAY_LENGTH(clc_messages); i++)
    {
       clc_info[clc_messages[i].id] = clc_messages[i];
    }
 
-   for(i = 0; i < sizeof(svc_messages)/sizeof(*svc_messages); i++)
+   for(i = 0; i < ARRAY_LENGTH(svc_messages); i++)
    {
       svc_info[svc_messages[i].id] = svc_messages[i];
    }
@@ -1149,5 +1147,3 @@ void I_SetPort(netadr_t &addr, int port)
 }
 
 VERSION_CONTROL (i_net_cpp, "$Id$")
-
-

@@ -287,7 +287,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	STACKARRAY_LENGTH(OptionItems),
+	ARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
 	0,
@@ -382,7 +382,7 @@ static menuitem_t ControlsItems[] = {
 menu_t ControlsMenu = {
 	"M_CONTRO",
 	3,
-	STACKARRAY_LENGTH(ControlsItems),
+	ARRAY_LENGTH(ControlsItems),
 	0,
 	ControlsItems,
 	2,
@@ -430,7 +430,7 @@ static menuitem_t MouseItems[] =
 menu_t MouseMenu = {
     "M_MOUSET",
     0,
-    STACKARRAY_LENGTH(MouseItems),
+    ARRAY_LENGTH(MouseItems),
     177,
     MouseItems,
 	0,
@@ -465,7 +465,7 @@ static menuitem_t JoystickItems[] =
 menu_t JoystickMenu = {
     "M_JOYSTK",
     0,
-    STACKARRAY_LENGTH(JoystickItems),
+    ARRAY_LENGTH(JoystickItems),
     177,
     JoystickItems,
 	0,
@@ -496,7 +496,7 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
-static float num_mussys = static_cast<float>(STACKARRAY_LENGTH(MusSys));
+static float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -518,7 +518,7 @@ static menuitem_t SoundItems[] = {
 menu_t SoundMenu = {
 	"M_SOUND",
 	2,
-	STACKARRAY_LENGTH(SoundItems),
+	ARRAY_LENGTH(SoundItems),
 	177,
 	SoundItems,
 	0,
@@ -555,7 +555,7 @@ static menuitem_t CompatItems[] ={
 menu_t CompatMenu = {
 	"M_COMPAT",
 	1,
-	STACKARRAY_LENGTH(CompatItems),
+	ARRAY_LENGTH(CompatItems),
 	240,
 	CompatItems,
 	0,
@@ -603,7 +603,7 @@ static menuitem_t NetworkItems[] = {
 menu_t NetworkMenu = {
 	"M_NETWRK",
 	2,
-	STACKARRAY_LENGTH(NetworkItems),
+	ARRAY_LENGTH(NetworkItems),
 	177,
 	NetworkItems,
 	1,
@@ -648,7 +648,7 @@ static menuitem_t WeaponItems[] = {
 menu_t WeaponMenu = {
 	"M_WEAPON",
 	1,
-	STACKARRAY_LENGTH(WeaponItems),
+	ARRAY_LENGTH(WeaponItems),
 	177,
 	WeaponItems,
 	0,
@@ -799,7 +799,7 @@ static menuitem_t VideoItems[] = {
 
 static void M_UpdateDisplayOptions()
 {
-	const static size_t menu_length = STACKARRAY_LENGTH(VideoItems);
+	const static size_t menu_length = ARRAY_LENGTH(VideoItems);
 	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length);
 
 	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
@@ -811,7 +811,7 @@ static void M_UpdateDisplayOptions()
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	STACKARRAY_LENGTH(VideoItems),
+	ARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
 	3,
@@ -892,7 +892,7 @@ static menuitem_t MessagesItems[] = {
 menu_t MessagesMenu = {
 	"M_MESS",
 	0,
-	STACKARRAY_LENGTH(MessagesItems),
+	ARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
 	0,
@@ -929,7 +929,7 @@ static menuitem_t AutomapItems[] = {
 menu_t AutomapMenu = {
 	"M_MESS",
 	0,
-	STACKARRAY_LENGTH(AutomapItems),
+	ARRAY_LENGTH(AutomapItems),
 	0,
 	AutomapItems,
 	0,
@@ -979,11 +979,18 @@ static value_t VidFPSCaps[] = {
 	{ 0.0,		"Unlimited" }
 };
 
+static value_t FullScreenOptions[] = {
+	{ WINDOW_Windowed,			"Window" },
+	{ WINDOW_DesktopFullscreen,	"Full Screen Window" },
+	{ WINDOW_Fullscreen,		"Full Screen Exclusive" }
+};
+
+
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
-	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
@@ -1012,7 +1019,7 @@ static menuitem_t ModesItems[] = {
 menu_t ModesMenu = {
 	"M_VIDMOD",
 	0,
-	STACKARRAY_LENGTH(ModesItems),
+	ARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
 	0,
@@ -2347,6 +2354,3 @@ BEGIN_COMMAND (menu_video)
 END_COMMAND (menu_video)
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
-
-
-

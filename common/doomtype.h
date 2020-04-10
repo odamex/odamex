@@ -245,18 +245,18 @@ forceinline T clamp (const T in, const T min, const T max)
 }
 
 //
-// COUNTOF
+// ARRAY_LENGTH
 //
 // Safely counts the number of items in an C array.
 // 
 // https://www.drdobbs.com/cpp/counting-array-elements-at-compile-time/197800525?pgno=1
 //
-#define COUNTOF(arr) ( \
-	0 * sizeof(reinterpret_cast<const ::Bad_arg_to_COUNTOF*>(arr)) + \
-	0 * sizeof(::Bad_arg_to_COUNTOF::check_type((arr), &(arr))) + \
+#define ARRAY_LENGTH(arr) ( \
+	0 * sizeof(reinterpret_cast<const ::Bad_arg_to_ARRAY_LENGTH*>(arr)) + \
+	0 * sizeof(::Bad_arg_to_ARRAY_LENGTH::check_type((arr), &(arr))) + \
 	sizeof(arr) / sizeof((arr)[0]) )
 
-struct Bad_arg_to_COUNTOF {
+struct Bad_arg_to_ARRAY_LENGTH {
 	class Is_pointer; // incomplete
 	class Is_array {};
 	template <typename T>

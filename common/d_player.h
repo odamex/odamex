@@ -184,7 +184,7 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	bool		weaponowned[NUMWEAPONS];
+	bool		weaponowned[NUMWEAPONS+1];
 	int			ammo[NUMAMMO];
 	int			maxammo[NUMAMMO];
 

@@ -145,7 +145,7 @@ static bool I_CanGrab()
 
 	if (!I_GetWindow()->isFocused())
 		return false;
-	else if (I_GetWindow()->isFullScreen())
+	else if (I_GetWindow()->isFullScreen() && I_GetMonitorCount() <= 1)
 		return true;
 	else if (nomouse)
 		return false;

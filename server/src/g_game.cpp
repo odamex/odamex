@@ -240,6 +240,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.readyweapon = p.pendingweapon = wp_pistol;
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
+	p.weaponowned[NUMWEAPONS] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	p.cheats = 0;						// Reset cheat flags
 

@@ -40,7 +40,7 @@
 // atkstate, i.e. attack/fire/hit frame
 // flashstate, muzzle flash
 //
-weaponinfo_t	weaponinfo[NUMWEAPONS] =
+weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 {
 	{
 		// fist
@@ -149,6 +149,18 @@ weaponinfo_t	weaponinfo[NUMWEAPONS] =
 		MT_SUPERSHOTGUN,
 		2,
 		2
+	},
+	{
+		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
+		am_noammo,
+		S_NOWEAPONUP,
+		S_NOWEAPONDOWN,
+		S_NOWEAPON,
+		S_NOWEAPON,
+		S_NOWEAPON,
+		MT_MISC26,
+		0,
+		0
 	},
 };
 
