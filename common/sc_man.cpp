@@ -27,6 +27,7 @@
 
 
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "doomtype.h"
 #include "i_system.h"
@@ -363,10 +364,7 @@ void SC_MustGetStringName (const char *name)
 	SC_MustGetString ();
 	if (SC_Compare (name) == false)
 	{
-		const char *args[2];
-		args[0] = name;
-		args[1] = sc_String;
-		SC_ScriptError ("Expected '%s', got '%s'.", args);
+		SC_ScriptError("Expected '%s', got '%s'.", name, sc_String);
 	}
 }
 
@@ -390,10 +388,7 @@ BOOL SC_GetNumber (void)
 			sc_Number = strtol (sc_String, &stopper, 0);
 			if (*stopper != 0)
 			{
-				//I_Error ("SC_GetNumber: Bad numeric constant \"%s\".\n"
-				//	"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
-				Printf (PRINT_HIGH,"SC_GetNumber: Bad numeric constant \"%s\".\n"
-					"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
+				SC_ScriptError("Bad numeric constant \"%s\".", sc_String);
 			}
 		}
 		sc_Float = (float)sc_Number;
@@ -431,10 +426,7 @@ BOOL SC_GetFloat (void)
 		sc_Float = (float)strtod (sc_String, &stopper);
 		if (*stopper != 0)
 		{
-			//I_Error ("SC_GetFloat: Bad numeric constant \"%s\".\n"
-			//	"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
-			Printf (PRINT_HIGH,"SC_GetFloat: Bad numeric constant \"%s\".\n"
-				"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
+			SC_ScriptError("Bad floating-point constant \"%s\".", sc_String);
 		}
 		sc_Number = (int)sc_Float;
 		return true;
@@ -539,7 +531,7 @@ int SC_MustMatchString (const char **strings)
 	i = SC_MatchString (strings);
 	if (i == -1)
 	{
-		SC_ScriptError (NULL);
+		SC_ScriptError("Unexpected string (found \"%s\").", sc_String);
 	}
 	return i;
 }
@@ -557,26 +549,19 @@ BOOL SC_Compare (const char *text)
 //
 // SC_ScriptError
 //
-void SC_ScriptError (const char *message, const char **args)
+void STACK_ARGS SC_ScriptError(const char* format, ...)
 {
-	//char composed[2048];
-	if (message == NULL)
-		message = "Bad syntax.";
+	char composed[2048];
+	va_list va;
 
-/*#if !defined(__GNUC__) && !defined(_MSC_VER)
-	va_list arglist;
-	va_start (arglist, *args);
-	vsprintf (composed, message, arglist);
-	va_end (arglist);
-#else
-	vsprintf (composed, message, args);
-#endif*/
+	va_start(va, format);
+	vsnprintf(composed, ARRAY_LENGTH(composed), format, va);
+	va_end(va);
 
-    Printf(PRINT_HIGH,"Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
-		sc_Line, message);
-
-	//I_Error ("Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
-	//	sc_Line, message);
+	I_Error(
+		"Script error: %s:%d %s\n", ScriptName.c_str(),
+		sc_Line, composed
+	);
 }
 
 
