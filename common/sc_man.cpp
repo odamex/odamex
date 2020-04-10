@@ -238,37 +238,44 @@ BOOL SC_GetString (void)
 	}
 	while (foundToken == false)
 	{
+		// Skip past whitespace.
 		while (*ScriptPtr <= 32)
 		{
+			// Are we at the end?
 			if (ScriptPtr >= ScriptEndPtr)
 			{
 				sc_End = true;
 				return false;
 			}
+			// Did we hit a newline?
 			if (*ScriptPtr++ == '\n')
 			{
 				sc_Line++;
 				sc_Crossed = true;
 			}
+			// Did we hit the end after munching the newline?
 			if (ScriptPtr >= ScriptEndPtr)
 			{
 				sc_End = true;
 				return false;
 			}
 		}
+		// A redundant EOF check?
 		if (ScriptPtr >= ScriptEndPtr)
 		{
 			sc_End = true;
 			return false;
 		}
+		// Did we hit something other than a comment?
 		if (*ScriptPtr != ASCII_COMMENT &&
 			!(ScriptPtr[0] == CPP_COMMENT && ScriptPtr < ScriptEndPtr - 1 &&
 			  (ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))
-		{ // Found a token
+		{
 			foundToken = true;
 		}
 		else
-		{ // Skip comment
+		{
+			// Since we found a comment, we have to skip past it.
 			if (ScriptPtr[0] == CPP_COMMENT && ScriptPtr[1] == C_COMMENT)
 			{	// C comment
 				while (ScriptPtr[0] != C_COMMENT || ScriptPtr[1] != CPP_COMMENT)
