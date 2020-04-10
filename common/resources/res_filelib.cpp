@@ -352,6 +352,7 @@ static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", SEARCHPATHSEPCHAR);
 	#endif
 
+	Res_AddSearchDir(search_dirs, "/usr/share/doom", SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(search_dirs, "/usr/share/games/doom", SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(search_dirs, "/usr/local/share/games/doom", SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(search_dirs, "/usr/local/share/doom", SEARCHPATHSEPCHAR);
