@@ -264,6 +264,22 @@ static const char* MapInfoEpisodeLevel[] =
 	NULL
 };
 
+MapInfoHandler EpisodeHandlers[] =
+{
+	// name <nice name>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// lookup <keyword>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// picname <piclump>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// remove
+	{ MITYPE_IGNORE, 0, 0 },
+	// noskillmenu
+	{ MITYPE_IGNORE, 0, 0 },
+	// optional
+	{ MITYPE_IGNORE, 0, 0 }
+};
+
 int FindWadLevelInfo (char *name)
 {
 	for (size_t i = 0; i < wadlevelinfos.size(); i++)
@@ -400,7 +416,7 @@ static void ParseMapInfoLower(
 			}
 		}
 
-		if (SC_MatchString(MapInfoTopLevel) != SC_NOMATCH)
+		if (newMapinfoStack <= 0 && SC_MatchString(MapInfoTopLevel) != SC_NOMATCH)
 		{
 			// Old-style MAPINFO is done
 			SC_UnGet();
@@ -436,26 +452,44 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_INT:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetNumber();
 			*((int*)(info + handler->data1)) = sc_Number;
 			break;
 
 		case MITYPE_FLOAT:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetFloat();
 			*((float*)(info + handler->data1)) = sc_Float;
 			break;
 
 		case MITYPE_COLOR:
+		{
+			if (newMapinfoStack > 0)
 			{
-				SC_MustGetString();
-
-				argb_t color(V_GetColorFromString(sc_String));
-				uint8_t* ptr = (uint8_t*)(info + handler->data1);
-				ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
+				SC_MustGetStringName("=");
 			}
-			break;
 
+			SC_MustGetString();
+			argb_t color(V_GetColorFromString(sc_String));
+			uint8_t* ptr = (uint8_t*)(info + handler->data1);
+			ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
+			break;
+		}
 		case MITYPE_MAPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			if (IsNum(sc_String))
 			{
@@ -466,6 +500,11 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_LUMPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			uppercopy((char*)(info + handler->data1), sc_String);
 			break;
@@ -503,6 +542,11 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_CLUSTER:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetNumber();
 			*((int*)(info + handler->data1)) = sc_Number;
 			if (HexenHack)
@@ -514,11 +558,21 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_STRING:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			ReplaceString((const char**)(info + handler->data1), sc_String);
 			break;
 
 		case MITYPE_CSTRING:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
@@ -639,10 +693,21 @@ void G_ParseMapInfo (void)
 			case MITL_EPISODE:
 			{
 				// Not implemented
+				SC_MustGetString(); // Map lump
+				SC_GetString();
+				if (SC_Compare("teaser"))
+				{
+					SC_MustGetString(); // Teaser lump
+				}
+				else
+				{
+					SC_UnGet();
+				}
+
 				tagged_info_t tinfo;
 				tinfo.tag = tagged_info_t::EPISODE;
 				tinfo.episode = NULL;
-				ParseMapInfoLower(NULL, MapInfoEpisodeLevel, &tinfo, 0);
+				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
 				break;
 			}
 			case MITL_CLEAREPISODES:
