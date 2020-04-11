@@ -134,13 +134,13 @@ void init_upnp (void)
 	struct UPNPDev * dev;
 	char * descXML;
 	int descXMLsize = 0;
-    int res = 0;
+	int res = 0;
 
-    char IPAddress[40];
-    int r;
+	char IPAddress[40];
+	int r;
 
-    if (!sv_upnp)
-        return;
+	if (!sv_upnp)
+		return;
 
 	memset(&urls, 0, sizeof(struct UPNPUrls));
 	memset(&data, 0, sizeof(struct IGDdatas));
@@ -155,67 +155,67 @@ void init_upnp (void)
 
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
-    {
+	{
 		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n",
-            res);
+			res);
 
-        is_upnp_ok = false;
+		is_upnp_ok = false;
 
-        return;
-    }
+		return;
+	}
 
-    dev = devlist;
+	dev = devlist;
 
-    while (dev)
-    {
-        if (strstr (dev->st, "InternetGatewayDevice"))
-            break;
-        dev = dev->pNext;
-    }
+	while (dev)
+	{
+		if (strstr (dev->st, "InternetGatewayDevice"))
+			break;
+		dev = dev->pNext;
+	}
 
-    if (!dev)
-        dev = devlist; /* defaulting to first device */
+	if (!dev)
+		dev = devlist; /* defaulting to first device */
 
-    //Printf(PRINT_HIGH, "UPnP device :\n"
-      //      " desc: %s\n st: %s\n",
-        //    dev->descURL, dev->st);
+	//Printf(PRINT_HIGH, "UPnP device :\n"
+	  //	  " desc: %s\n st: %s\n",
+		//	dev->descURL, dev->st);
 
 #if MINIUPNPC_API_VERSION < 16
-    descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
+	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
 #else
-    descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
+	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
 #endif
 
-    if (descXML)
-    {
-        parserootdesc (descXML, descXMLsize, &data);
-        free (descXML);
-        descXML = NULL;
-        GetUPNPUrls (&urls, &data, dev->descURL, 0);
-    }
+	if (descXML)
+	{
+		parserootdesc (descXML, descXMLsize, &data);
+		free (descXML);
+		descXML = NULL;
+		GetUPNPUrls (&urls, &data, dev->descURL, 0);
+	}
 
-    freeUPNPDevlist(devlist);
+	freeUPNPDevlist(devlist);
 
-    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype,
-            IPAddress);
+	r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype,
+			IPAddress);
 
-    if (r != 0)
-    {
-        Printf(PRINT_HIGH,
-            "UPnP: Router found but unable to get external IP address\n");
+	if (r != 0)
+	{
+		Printf(PRINT_HIGH,
+			"UPnP: Router found but unable to get external IP address\n");
 
-        is_upnp_ok = false;
-    }
-    else
-    {
-        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
-            IPAddress);
+		is_upnp_ok = false;
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
+			IPAddress);
 
-        // Store ip address just in case admin wants it
-        sv_upnp_externalip.ForceSet(IPAddress);
+		// Store ip address just in case admin wants it
+		sv_upnp_externalip.ForceSet(IPAddress);
 
-        is_upnp_ok = true;
-    }
+		is_upnp_ok = true;
+	}
 }
 
 void upnp_add_redir (const char * addr, int port)
@@ -223,40 +223,40 @@ void upnp_add_redir (const char * addr, int port)
 	char port_str[16];
 	int r;
 
-    if (!sv_upnp || !is_upnp_ok)
-        return;
+	if (!sv_upnp || !is_upnp_ok)
+		return;
 
-	if(urls.controlURL == NULL)
+	if (urls.controlURL == NULL)
 		return;
 
 	sprintf(port_str, "%d", port);
 
-    // Set a description if none exists
-    if (!sv_upnp_description.cstring()[0])
-    {
-        std::stringstream desc;
+	// Set a description if none exists
+	if (!sv_upnp_description.cstring()[0])
+	{
+		std::stringstream desc;
 
-        desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
+		desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
 
-        sv_upnp_description.Set(desc.str().c_str());
-    }
+		sv_upnp_description.Set(desc.str().c_str());
+	}
 
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-            port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+			port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
 
 	if (r != 0)
 	{
 		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
 
-        is_upnp_ok = false;
+		is_upnp_ok = false;
 	}
-    else
-    {
-        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
-            sv_upnp_description.cstring());
+	else
+	{
+		Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
+			sv_upnp_description.cstring());
 
-        is_upnp_ok = true;
-    }
+		is_upnp_ok = true;
+	}
 }
 
 void upnp_rem_redir (int port)
@@ -264,23 +264,23 @@ void upnp_rem_redir (int port)
 	char port_str[16];
 	int r;
 
-    if (!is_upnp_ok)
-        return;
+	if (!is_upnp_ok)
+		return;
 
 	if(urls.controlURL == NULL)
 		return;
 
 	sprintf(port_str, "%d", port);
 	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-        port_str, "UDP", 0);
+		port_str, "UDP", 0);
 
 	if (r != 0)
-    {
-        Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
-        is_upnp_ok = false;
-    }
-    else
-        is_upnp_ok = true;
+	{
+		Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+		is_upnp_ok = false;
+	}
+	else
+		is_upnp_ok = true;
 }
 #endif
 
