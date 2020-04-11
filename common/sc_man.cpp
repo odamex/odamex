@@ -576,7 +576,7 @@ void STACK_ARGS SC_ScriptError(const char* format, ...)
 	va_end(va);
 
 	I_Error(
-		"Script error: %s:%d %s\n", ScriptName.c_str(),
+		"%s:%d: Script Error: %s\n", ScriptName.c_str(),
 		sc_Line, composed
 	);
 }
