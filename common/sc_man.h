@@ -27,6 +27,8 @@
 
 #include "doomtype.h"
 
+#define SC_NOMATCH (-1)
+
 void SC_Open (const char *name);
 void SC_OpenFile (const char *name);
 void SC_OpenMem (const char *name, char *buffer, int size);

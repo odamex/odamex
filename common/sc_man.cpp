@@ -515,20 +515,26 @@ BOOL SC_Check(void)
 // SC_MatchString
 //
 // Returns the index of the first match to sc_String from the passed
-// array of strings, or -1 if not found.
+// null-terminated array of strings, or SC_NOMATCH if not found.  You can also
+// pass a NULL pointer to this function, in which case the return value is
+// always SC_NOMATCH.
 //
-int SC_MatchString (const char **strings)
+int SC_MatchString(const char** strings)
 {
-	int i;
-
-	for (i = 0; *strings != NULL; i++)
+	if (strings == NULL)
 	{
-		if (SC_Compare (*strings++))
+		return SC_NOMATCH;
+	}
+
+	for (int i = 0; *strings != NULL; i++)
+	{
+		if (SC_Compare(*strings++))
 		{
 			return i;
 		}
 	}
-	return -1;
+
+	return SC_NOMATCH;
 }
 
 
@@ -540,7 +546,7 @@ int SC_MustMatchString (const char **strings)
 	int i;
 
 	i = SC_MatchString (strings);
-	if (i == -1)
+	if (i == SC_NOMATCH)
 	{
 		SC_ScriptError("Unexpected string (found \"%s\").", sc_String);
 	}
