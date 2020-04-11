@@ -334,7 +334,23 @@ void G_ParseMapInfo (void)
 	}
 }
 
-static void SkipUnknownTypes(int* newMapinfoStack)
+static void SkipUnknownParams()
+{
+	// Every loop, try to burn a comma.
+	while (SC_GetString())
+	{
+		if (!SC_Compare(","))
+		{
+			SC_UnGet();
+			return;
+		}
+
+		// Burn the parameter.
+		SC_GetString();
+	}
+}
+
+static void SkipUnknownTypes()
 {
 	SC_GetString();
 	if (!SC_Compare("="))
@@ -343,7 +359,8 @@ static void SkipUnknownTypes(int* newMapinfoStack)
 		return;
 	}
 
-	SC_ScriptError("Not Implemented...");
+	SC_GetString(); // Get the first parameter
+	SkipUnknownParams();
 }
 
 static void ParseMapInfoLower (MapInfoHandler *handlers,
@@ -396,7 +413,7 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 
 			// New MAPINFO is capable of skipping past unknown
 			// types.
-			SkipUnknownTypes(&newMapinfoStack);
+			SkipUnknownTypes();
 			continue;
 		}
 
@@ -447,17 +464,27 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_SKY:
-			SC_MustGetString();	// get texture name;
-			uppercopy((char*)(info + handler->data1), sc_String);
-			SC_MustGetFloat();		// get scroll speed
-			//if (HexenHack)
-			//{
-			//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
-			//}
-			//else
-			//{
-			//	*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-			//}
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+				SC_MustGetString(); // Texture name
+				uppercopy((char*)(info + handler->data1), sc_String);
+				SkipUnknownParams();
+			}
+			else
+			{
+				SC_MustGetString();	// get texture name;
+				uppercopy((char*)(info + handler->data1), sc_String);
+				SC_MustGetFloat();		// get scroll speed
+				//if (HexenHack)
+				//{
+				//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+				//}
+				//else
+				//{
+				//	*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
+				//}
+			}
 			break;
 
 		case MITYPE_SETFLAG:
