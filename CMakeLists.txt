@@ -1,3 +1,7 @@
+# Use C++ 98/03 for all targets
+set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # use unquoted #defines
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
@@ -74,7 +78,7 @@ endif()
 # Global compile options.  Useful defines for any Odamex project.
 macro(global_compile_options)
   if(NOT MSVC)
-    set(GLOBAL_CXX_FLAGS "-std=c++03 -Wall")
+    set(GLOBAL_CXX_FLAGS "-Wall")
 	if(USE_GPROF)
 	  set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -p")
 	endif()
