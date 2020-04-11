@@ -74,6 +74,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joi
 void SV_SendDamagePlayer(player_t *player, int pain);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
+void SV_SetWinPlayer(byte playerId);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 
@@ -1042,7 +1043,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->player->playerstate = PST_DEAD;
 		P_DropWeapon(target->player);
 
-		tplayer->suicide_time = level.time;
+		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
 
 		if (target == consoleplayer().camera)
@@ -1095,6 +1096,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
                 "Frag limit hit. Game won by %s!\n",
                 splayer->userinfo.netname.c_str()
             );
+			SV_SetWinPlayer(splayer->id);
             shotclock = TICRATE*2;
 		}
 

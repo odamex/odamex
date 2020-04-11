@@ -116,6 +116,9 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
+static const int ReJoinDelay = TICRATE * 5;
+static const int SuicideDelay = TICRATE * 10;
+
 //
 // Extended player object info: player_t
 //
@@ -217,7 +220,7 @@ public:
 	int			jumpTics;				// delay the next jump for a moment
 
 	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
-	int			suicide_time;			// Ch0wW - Time between 2 suicides.
+	int			suicidedelay;			// Ch0wW - Time between 2 suicides.
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
@@ -236,7 +239,7 @@ public:
 	byte		spying;					// [SL] id of player being spynext'd by this player
 	bool		spectator;				// [GhostlyDeath] spectating?
 //	bool		deadspectator;			// [tm512] spectating as a dead player?
-	int			joinafterspectatortime; // Nes - Join after spectator time.
+	int			joindelay;			// Number of tics to delay player from rejoining
 	int			timeout_callvote;       // [AM] Tic when a vote last finished.
 	int			timeout_vote;           // [AM] Tic when a player last voted.
 
@@ -247,6 +250,8 @@ public:
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
+
+	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
 	// For flood protection
 	struct LastMessage_s

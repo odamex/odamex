@@ -73,6 +73,11 @@ static bool STACK_ARGS cmpPoints (const player_t *arg1, const player_t *arg2) {
 	return arg2->points < arg1->points;
 }
 
+static bool STACK_ARGS cmpQueue(const player_t *arg1, const player_t *arg2) {
+	return arg1->QueuePosition < arg2->QueuePosition;
+}
+
+
 // Returns true if a player is ingame.
 bool ingamePlayer(player_t* player) {
 	return (player->ingame() && player->spectator == false);
@@ -92,26 +97,59 @@ bool spectatingPlayer(player_t* player) {
 std::vector<player_t *> sortedPlayers(void) {
 	static int sp_tic = -1;
 	static std::vector<player_t *> sortedplayers(players.size());
+	static std::vector<player_t*> inGame;
+	static std::vector<player_t*> specInQueue;
+	static std::vector<player_t*> specNormal;
 
-	if (sp_tic == gametic) {
+	if (sp_tic == gametic)
 		return sortedplayers;
-	}
 
 	sortedplayers.clear();
-	for (Players::iterator it = players.begin();it != players.end();++it) {
-		sortedplayers.push_back(&*it);
-	}
+	inGame.clear();
+	specInQueue.clear();
+	specNormal.clear();
 
-	if (sv_gametype == GM_COOP) {
-		std::sort(sortedplayers.begin(), sortedplayers.end(), cmpKills);
-	} else {
-		std::sort(sortedplayers.begin(), sortedplayers.end(), cmpFrags);
-		if (sv_gametype == GM_CTF) {
-			std::sort(sortedplayers.begin(), sortedplayers.end(), cmpPoints);
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		if (it->spectator)
+		{
+			if (it->QueuePosition > 0)
+				specInQueue.push_back(&(*it));
+			else
+				specNormal.push_back(&(*it));
+		}
+		else
+		{
+			inGame.push_back(&(*it));
 		}
 	}
 
-	sp_tic = gametic; 
+	if (sv_gametype == GM_COOP)
+	{
+		std::sort(inGame.begin(), inGame.end(), cmpKills);
+	}
+	else
+	{
+		std::sort(inGame.begin(), inGame.end(), cmpFrags);
+		if (sv_gametype == GM_CTF)
+			std::sort(inGame.begin(), inGame.end(), cmpPoints);
+	}
+
+	std::sort(specInQueue.begin(), specInQueue.end(), cmpQueue);
+
+	for (std::vector<player_t*>::iterator it = inGame.begin(); it != inGame.end(); it++)
+		sortedplayers.push_back(*it);
+
+	for (std::vector<player_t*>::iterator it = specInQueue.begin(); it != specInQueue.end(); it++)
+		sortedplayers.push_back(*it);
+
+	for (std::vector<player_t*>::iterator it = specNormal.begin(); it != specNormal.end(); it++)
+		sortedplayers.push_back(*it);
+
+	sp_tic = gametic;
 	return sortedplayers;
 }
 
@@ -150,13 +188,15 @@ int teamTextColor(byte team) {
 // Please don't add any more of these.
 
 // Return a "help" string.
-std::string HelpText() {
+std::string HelpText()
+{
+	bool isGameFull = false;
+
 	if (P_NumPlayersInGame() >= sv_maxplayers)
 	{
-		return "Game is full";
+		isGameFull = true;
 	}
-
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		size_t min_players = MAXPLAYERS;
 		for (byte i = 0;i < NUMTEAMS;i++)
@@ -165,12 +205,32 @@ std::string HelpText() {
 			if (players < min_players)
 				min_players = players;
 		}
-		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam) {
-			return "Game is full";
-		}
+
+		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam)
+			isGameFull = true;
 	}
 
-	return "Press USE to join";
+	int queuePos = consoleplayer().QueuePosition;
+
+	if (queuePos > 0)
+	{
+		std::ostringstream ss;
+		ss << "Position in line to play: " << (int)queuePos;
+		return ss.str();
+	}
+
+	if (isGameFull)
+	{
+		std::string use("Press ");
+		use.append(C_GetKeyStringsFromCommand("+use"));
+		use.append(" to join the queue");
+		return use;
+	}
+
+	std::string use("Press ");
+	use.append(C_GetKeyStringsFromCommand("+use"));
+	use.append(" to join");
+	return use;
 }
 
 // Return a string that contains the name of the player being spectated,
@@ -714,6 +774,7 @@ void EAPlayerNames(int x, int y, const float scale,
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname.c_str(), color, force_opaque);
+
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -778,13 +839,14 @@ void EASpectatorNames(int x, int y, const float scale,
                       const short padding, short skip, const short limit,
                       const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	std::vector<player_t*> sortPlayers = sortedPlayers();
+	for (size_t i = 0; i < sortPlayers.size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
 			break;
-		}
 
-		player_t* player = sortedPlayers()[i];
+		player_t* player = sortPlayers[i];
 		if (spectatingPlayer(player)) {
 			if (skip <= 0) {
 				int color = CR_GREY;
@@ -799,8 +861,19 @@ void EASpectatorNames(int x, int y, const float scale,
 						color = CR_GOLD;
 					}
 				}
-				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-				              player->userinfo.netname.c_str(), color, force_opaque);
+				std::string drawName = player->userinfo.netname;
+				if (player->QueuePosition)
+				{
+					std::ostringstream ss;
+					ss << (int)player->QueuePosition << ". " << player->userinfo.netname;
+					hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+						ss.str().c_str(), color, force_opaque);
+				}
+				else
+				{
+					hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+						player->userinfo.netname.c_str(), color, force_opaque);
+				}
 				y += 7 + padding;
 				drawn += 1;
 			} else {

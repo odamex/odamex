@@ -123,6 +123,7 @@ enum svc_t
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
 	svc_warmupstate,		// [AM] Broadcast warmup state to client
 	svc_resetmap,			// [AM] Server is resetting the map
+	svc_playerqueuepos,        // Notify clients of player queue postion
 
 	// for co-op
 	svc_mobjstate = 70,
