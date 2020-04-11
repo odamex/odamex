@@ -78,6 +78,29 @@ struct tagged_info_t {
 
 BOOL HexenHack;
 
+enum EMIType
+{
+	MITYPE_IGNORE,
+	MITYPE_EATNEXT,
+	MITYPE_INT,
+	MITYPE_FLOAT,
+	MITYPE_COLOR,
+	MITYPE_MAPNAME,
+	MITYPE_LUMPNAME,
+	MITYPE_SKY,
+	MITYPE_SETFLAG,
+	MITYPE_SCFLAGS,
+	MITYPE_CLUSTER,
+	MITYPE_STRING,
+	MITYPE_CSTRING,
+};
+
+struct MapInfoHandler
+{
+    EMIType type;
+    DWORD data1, data2;
+};
+
 static const char *MapInfoTopLevel[] =
 {
 	"map",
@@ -161,32 +184,14 @@ static const char *MapInfoMapLevel[] =
 	"aircontrol",
 	"islobby",					// Support for lobbies
 	"lobby",					// Alias for "islobby"
+	"nocrouch",
+	"intermusic",
+	"par",
+	"sucktime",
 	NULL
 };
 
-enum EMIType
-{
-	MITYPE_IGNORE,
-	MITYPE_EATNEXT,
-	MITYPE_INT,
-	MITYPE_FLOAT,
-	MITYPE_COLOR,
-	MITYPE_MAPNAME,
-	MITYPE_LUMPNAME,
-	MITYPE_SKY,
-	MITYPE_SETFLAG,
-	MITYPE_SCFLAGS,
-	MITYPE_CLUSTER,
-	MITYPE_STRING,
-	MITYPE_CSTRING,
-};
-
-struct MapInfoHandler
-{
-	EMIType type;
-	DWORD data1, data2;
-}
-MapHandlers[] =
+MapInfoHandler MapHandlers[] =
 {
 	{ MITYPE_INT,		lioffset(levelnum), 0 },
 	{ MITYPE_MAPNAME,	lioffset(nextmap), 0 },
@@ -231,6 +236,10 @@ MapHandlers[] =
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
 	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	{ MITYPE_IGNORE, 0, 0 },
+	{ MITYPE_EATNEXT, 0, 0 },
+	{ MITYPE_EATNEXT, 0, 0 },
+	{ MITYPE_EATNEXT, 0, 0 },
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -416,7 +425,13 @@ static void ParseMapInfoLower(
 			}
 		}
 
-		if (newMapinfoStack <= 0 && SC_MatchString(MapInfoTopLevel) != SC_NOMATCH)
+		if (
+			newMapinfoStack <= 0 &&
+			SC_MatchString(MapInfoTopLevel) != SC_NOMATCH &&
+			// "cluster" is a valid map block type and is also
+			// a valid top-level type.
+			!SC_Compare("cluster")
+		)
 		{
 			// Old-style MAPINFO is done
 			SC_UnGet();
@@ -448,6 +463,11 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_EATNEXT:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			break;
 

@@ -48,7 +48,7 @@ void SC_UnGet (void);
 BOOL SC_Compare (const char *text);
 int SC_MatchString (const char **strings);
 int SC_MustMatchString (const char **strings);
-void STACK_ARGS SC_ScriptError(const char* message, ...);
+void STACK_ARGS SC_ScriptError(const char* format, ...);
 
 extern char *sc_String;
 extern int sc_Number;
