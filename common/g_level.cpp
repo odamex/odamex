@@ -334,27 +334,71 @@ void G_ParseMapInfo (void)
 	}
 }
 
+static void SkipUnknownTypes(int* newMapinfoStack)
+{
+	SC_GetString();
+	if (!SC_Compare("="))
+	{
+		SC_UnGet();
+		return;
+	}
+
+	SC_ScriptError("Not Implemented...");
+}
+
 static void ParseMapInfoLower (MapInfoHandler *handlers,
 							   const char *strings[],
 							   level_pwad_info_t *levelinfo,
 							   cluster_info_t *clusterinfo,
 							   DWORD flags)
 {
+	// 0 if old mapinfo, positive number if new MAPINFO, the exact
+	// number represents current brace depth.
+	int newMapinfoStack = 0;
 	MapInfoHandler *handler;
 
 	byte* info = levelinfo ? (byte*)levelinfo : (byte*)clusterinfo;
 
 	while (SC_GetString())
 	{
+		if (SC_Compare("{"))
+		{
+			// Detected new-style MAPINFO
+			newMapinfoStack++;
+			continue;
+		}
+		else if (SC_Compare("}"))
+		{
+			newMapinfoStack--;
+			if (newMapinfoStack <= 0)
+			{
+				// MAPINFO block is done
+				break;
+			}
+		}
+
 		if (SC_MatchString(MapInfoTopLevel) != -1)
 		{
 			SC_UnGet();
 			break;
 		}
 
-		int entry = SC_MustMatchString(strings);
+		int entry = SC_MatchString(strings);
 		if (entry == -1)
+		{
+			if (newMapinfoStack <= 0)
+			{
+				// Old MAPINFO is up a creek, we need to be
+				// able to parse all types even if we can't
+				// do anything with them.
+				SC_ScriptError("Unknown MAPINFO token \"%s\"", sc_String);
+			}
+
+			// New MAPINFO is capable of skipping past unknown
+			// types.
+			SkipUnknownTypes(&newMapinfoStack);
 			continue;
+		}
 
 		handler = handlers + entry;
 

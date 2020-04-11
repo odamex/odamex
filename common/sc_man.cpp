@@ -309,9 +309,18 @@ BOOL SC_GetString (void)
 			}
 		}
 	}
+
 	text = sc_String;
-	if (*ScriptPtr == ASCII_QUOTE)
-	{ // Quoted string
+	if (strchr("{}|=,", *ScriptPtr))
+	{
+		// A lone character we can use, stop here.
+		*text++ = *ScriptPtr++;
+		*text = '\0';
+		return true;
+	}
+	else if (*ScriptPtr == ASCII_QUOTE)
+	{
+		// Quoted string
 		ScriptPtr++;
 		while (*ScriptPtr != ASCII_QUOTE)
 		{
@@ -325,28 +334,23 @@ BOOL SC_GetString (void)
 		ScriptPtr++;
 	}
 	else
-	{ // Normal string
-		if (strchr ("{}|=", *ScriptPtr))
+	{
+		// Normal string
+		while ((*ScriptPtr > 32) && (strchr ("{}|=,", *ScriptPtr) == NULL)
+			&& (*ScriptPtr != ASCII_COMMENT)
+			&& !(ScriptPtr[0] == CPP_COMMENT && (ScriptPtr < ScriptEndPtr - 1) &&
+			(ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))
 		{
 			*text++ = *ScriptPtr++;
-		}
-		else
-		{
-			while ((*ScriptPtr > 32) && (strchr ("{}|=", *ScriptPtr) == NULL)
-				&& (*ScriptPtr != ASCII_COMMENT)
-				&& !(ScriptPtr[0] == CPP_COMMENT && (ScriptPtr < ScriptEndPtr - 1) &&
-					 (ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))
+			if (ScriptPtr == ScriptEndPtr
+				|| text == &sc_String[MAX_STRING_SIZE-1])
 			{
-				*text++ = *ScriptPtr++;
-				if (ScriptPtr == ScriptEndPtr
-					|| text == &sc_String[MAX_STRING_SIZE-1])
-				{
-					break;
-				}
+				break;
 			}
 		}
 	}
-	*text = 0;
+
+	*text = '\0';
 	return true;
 }
 
