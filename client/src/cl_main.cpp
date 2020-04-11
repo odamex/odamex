@@ -1996,12 +1996,12 @@ void CL_UpdatePlayer()
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-    // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	// [Russell] - hack, read and set invisibility flag
+	p->powers[pw_invisibility] = invisibility;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -3212,8 +3212,8 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);

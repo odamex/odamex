@@ -444,7 +444,6 @@ public:
 	//
 	inline const SArrayId getId(const VT& item) const
 	{
-		SlotNumber slot = getSlot(item);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
 	}

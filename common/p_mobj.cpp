@@ -252,19 +252,19 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	translucency = info->translucency;
 	rndindex = M_Random();
 
-    if (multiplayer && serverside)
-        netid = ServerNetID.ObtainNetID();
+	if (multiplayer && serverside)
+		netid = ServerNetID.ObtainNetID();
 
 	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
 
-    if (clientside)
-        lastlook = P_Random() % MAXPLAYERS_VANILLA;
-    else
-        lastlook = P_Random() % MAXPLAYERS;
+	if (clientside)
+		lastlook = P_Random() % MAXPLAYERS_VANILLA;
+	else
+		lastlook = P_Random() % MAXPLAYERS;
 
-    // do not set the state with P_SetMobjState,
-    // because action routines can not be called yet
+	// do not set the state with P_SetMobjState,
+	// because action routines can not be called yet
 	st = &states[info->spawnstate];
 	state = st;
 	tics = st->tics;
@@ -1861,22 +1861,22 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 					   !consoleplayer().userinfo.predict_weapons))
 		return;
 
-    AActor *puff;
+	AActor *puff;
 
 	z += (P_RandomDiff () << 10);
 
-    puff = new AActor(x, y, z, MT_PUFF);
-    puff->momz = FRACUNIT;
-    puff->tics -= P_Random(puff) & 3;
+	puff = new AActor(x, y, z, MT_PUFF);
+	puff->momz = FRACUNIT;
+	puff->tics -= P_Random(puff) & 3;
 
-    if (puff->tics < 1)
-        puff->tics = 1;
+	if (puff->tics < 1)
+		puff->tics = 1;
 
 	// don't make punches spark on the wall
 	if (attackrange == MELEERANGE)
-        P_SetMobjState(puff, S_PUFF3);
+		P_SetMobjState(puff, S_PUFF3);
 
-    if (serverside)
+	if (serverside)
 	{
 		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
 		// so don't send the puffs to the client already predicting
@@ -2147,11 +2147,11 @@ void P_RespawnSpecials (void)
 
 	int 				i;
 
-    // clients do no control respawning of items
+	// clients do no control respawning of items
 	if(!serverside)
 		return;
 
-    // allow respawning if we specified it
+	// allow respawning if we specified it
 	if (!sv_itemsrespawn)
 		return;
 
@@ -2200,8 +2200,8 @@ void P_RespawnSpecials (void)
 	// spawn a teleport fog at the new spot
 	mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
-    if (clientside)
-        S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+	if (clientside)
+		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// spawn it
 	mo = new AActor (x, y, z, (mobjtype_t)i);

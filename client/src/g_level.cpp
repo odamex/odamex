@@ -409,21 +409,23 @@ void G_DoCompleted (void)
 		cluster_info_t *thiscluster = FindClusterInfo (level.cluster);
 		cluster_info_t *nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
 
-		if (thiscluster != nextcluster ||
-			sv_gametype == GM_DM ||
-			!(thiscluster->flags & CLUSTER_HUB)) {
+		if (thiscluster != nextcluster || sv_gametype == GM_DM || !(thiscluster->flags & CLUSTER_HUB))
+		{
 			for (Players::iterator it = players.begin();it != players.end();++it)
 				if (it->ingame())
 					G_PlayerFinishLevel(*it); // take away cards and stuff
 
-				if (nextcluster->flags & CLUSTER_HUB) {
-					memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
-					P_RemoveDefereds ();
-					G_ClearSnapshots ();
-				}
-		} else {
+			if (nextcluster->flags & CLUSTER_HUB) {
+				memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+				P_RemoveDefereds ();
+				G_ClearSnapshots ();
+			}
+		}
+		else
+		{
 			G_SnapshotLevel ();
 		}
+
 		if (!(nextcluster->flags & CLUSTER_HUB) || !(thiscluster->flags & CLUSTER_HUB))
 		{
 			level.time = 0;	// Reset time to zero if not entering/staying in a hub
@@ -431,10 +433,11 @@ void G_DoCompleted (void)
 			//level.inttimeleft = 0;
 		}
 
-		if ((sv_gametype != GM_DM &&
-			( (level.flags & LEVEL_NOINTERMISSION && ( level.flags & LEVEL_EPISODEENDHACK && (!multiplayer || (demoplayback || demorecording))))) ||
-			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB)) )) {
-			G_WorldDone ();
+		if (sv_gametype != GM_DM &&
+			(((level.flags & LEVEL_NOINTERMISSION) && ((level.flags & LEVEL_EPISODEENDHACK) && (!multiplayer || demoplayback || demorecording))) ||
+			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB))))
+		{
+			G_WorldDone();
 			return;
 		}
 	}
