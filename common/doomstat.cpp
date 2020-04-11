@@ -63,11 +63,6 @@ bool IsGameModeFFA()
 	return sv_gametype == GM_DM && sv_maxplayers > 2;
 }
 
-bool GameModeSupportsQueue()
-{
-	return IsGameModeDuel();
-}
-
 const char* GetGameModeString()
 {
 	if (sv_gametype == GM_COOP)

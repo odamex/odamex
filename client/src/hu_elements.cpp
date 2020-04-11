@@ -221,15 +221,10 @@ std::string HelpText()
 
 	if (isGameFull)
 	{
-		if (GameModeSupportsQueue())
-		{
-			std::string use("Press ");
-			use.append(C_GetKeyStringsFromCommand("+use"));
-			use.append(" to join the queue");
-			return use;
-		}
-
-		return "Game is full";
+		std::string use("Press ");
+		use.append(C_GetKeyStringsFromCommand("+use"));
+		use.append(" to join the queue");
+		return use;
 	}
 
 	std::string use("Press ");

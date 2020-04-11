@@ -89,7 +89,7 @@ extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
-byte s_winplayerId = -1;
+byte s_duelWinPlayerId = 0;
 
 std::set<byte> free_player_ids;
 
@@ -175,23 +175,8 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 		}
 	}
 
-	if (!GameModeSupportsQueue() && queueExists)
+	if (queueExists)
 		SV_ClearPlayerQueue();
-}
-
-CVAR_FUNC_IMPL(sv_gametype)
-{
-	if (!GameModeSupportsQueue())
-	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		{
-			if (it->QueuePosition > 0)
-			{
-				SV_ClearPlayerQueue();
-				break;
-			}
-		}
-	}
 }
 
 // [AM] - Force extras on a team to become spectators.
@@ -2091,8 +2076,7 @@ void SV_ConnectClient()
 		MSG_WriteByte(&pit->client.reliablebuf, player->id);
 	}
 
-	if (GameModeSupportsQueue())
-		SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
+	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
 	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
 }
@@ -3671,7 +3655,7 @@ void SV_JoinPlayer(player_t &player, bool silent)
 	// During intermission a playere can queue, but don't let them enter the game even if a slot is available
 	if (numPlayers >= sv_maxplayers || gamestate == GS_INTERMISSION)
 	{
-		if (GameModeSupportsQueue() && player.QueuePosition == 0)
+		if (player.QueuePosition == 0)
 			SV_AddPlayerToQueue(&player);
 		return;
 	}
@@ -5314,40 +5298,42 @@ void SV_RemovePlayerFromQueue(player_t* player)
 
 void SV_UpdatePlayerQueueLevelChange()
 {
-	if (!GameModeSupportsQueue())
-		return;
-
 	int queuedPlayerCount = 0;
 	player_t* loserPlayer = NULL;
+	bool isDuel = IsGameModeDuel();
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		if (!it->spectator && it->ingame() && it->id != s_winplayerId)
+		if (isDuel && !it->spectator && it->ingame() && it->id != s_duelWinPlayerId)
 			loserPlayer = &(*it);
 
 		if (it->QueuePosition > 0)
 			queuedPlayerCount++;
 	}
 
-	s_winplayerId = -1;
+	s_duelWinPlayerId = 0;
 
 	if (queuedPlayerCount > 0)
 	{
 		if (loserPlayer != NULL)
 		{
 			SV_SetPlayerSpec(*loserPlayer, true, true);
-			loserPlayer->joindelay = 0; //Allow this player to queue up immediately without waiting for ReJoinDelay
+			loserPlayer->joindelay = 0; // Allow this player to queue up immediately without waiting for ReJoinDelay
 		}
-
-		SV_UpdatePlayerQueuePositions();
+		else
+		{
+			SV_UpdatePlayerQueuePositions();
+		}
 	}
+}
+
+bool SV_ShouldDequeuePlayer(int playerCount)
+{
+	return gamestate != GS_INTERMISSION && !shotclock && playerCount < sv_maxplayers;
 }
 
 void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 {
-	if (!GameModeSupportsQueue())
-		return;
-
 	int playerCount = 0;
 	int queuePos = 1;
 	bool warmupReset = false;
@@ -5372,7 +5358,7 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 		if (p->QueuePosition == 0)
 			continue;
 
-		if (gamestate != GS_INTERMISSION && !shotclock && playerCount < sv_maxplayers)
+		if (SV_ShouldDequeuePlayer(playerCount))
 		{
 			p->QueuePosition = 0;
 			SV_SetPlayerSpec(*p, false, true);
@@ -5428,7 +5414,8 @@ bool CompareQueuePosition(const player_t* p1, const player_t* p2)
 
 void SV_SetWinPlayer(byte playerId)
 {
-	s_winplayerId = playerId;
+	if (IsGameModeDuel())
+		s_duelWinPlayerId = playerId;
 }
 
 void SV_ClearPlayerQueue()

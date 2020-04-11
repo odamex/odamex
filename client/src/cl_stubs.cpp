@@ -31,8 +31,6 @@
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
 
-CVAR_FUNC_IMPL(sv_gametype) {}
-
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
