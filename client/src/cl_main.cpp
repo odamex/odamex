@@ -3241,8 +3241,8 @@ void CL_Switch()
 	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
 		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if (texture)
-		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	if (!recv_full_update && texture) // Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
+		P_SetButtonTexture(&lines[l], texture);
 	lines[l].special = special;
 }
 
