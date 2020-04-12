@@ -1176,8 +1176,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved;
-	player_t*   splayer; // shorthand for source->player
-	player_t*   tplayer; // shorthand for target->player
+	player_t*   splayer = NULL; // shorthand for source->player
+	player_t*   tplayer = NULL; // shorthand for target->player
 	fixed_t 	thrust;
 
 	if (!serverside)

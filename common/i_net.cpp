@@ -134,13 +134,13 @@ void init_upnp (void)
 	struct UPNPDev * dev;
 	char * descXML;
 	int descXMLsize = 0;
-    int res = 0;
+	int res = 0;
 
-    char IPAddress[40];
-    int r;
+	char IPAddress[40];
+	int r;
 
-    if (!sv_upnp)
-        return;
+	if (!sv_upnp)
+		return;
 
 	memset(&urls, 0, sizeof(struct UPNPUrls));
 	memset(&data, 0, sizeof(struct IGDdatas));
@@ -155,67 +155,67 @@ void init_upnp (void)
 
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
-    {
+	{
 		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n",
-            res);
+			res);
 
-        is_upnp_ok = false;
+		is_upnp_ok = false;
 
-        return;
-    }
+		return;
+	}
 
-    dev = devlist;
+	dev = devlist;
 
-    while (dev)
-    {
-        if (strstr (dev->st, "InternetGatewayDevice"))
-            break;
-        dev = dev->pNext;
-    }
+	while (dev)
+	{
+		if (strstr (dev->st, "InternetGatewayDevice"))
+			break;
+		dev = dev->pNext;
+	}
 
-    if (!dev)
-        dev = devlist; /* defaulting to first device */
+	if (!dev)
+		dev = devlist; /* defaulting to first device */
 
-    //Printf(PRINT_HIGH, "UPnP device :\n"
-      //      " desc: %s\n st: %s\n",
-        //    dev->descURL, dev->st);
+	//Printf(PRINT_HIGH, "UPnP device :\n"
+	  //	  " desc: %s\n st: %s\n",
+		//	dev->descURL, dev->st);
 
 #if MINIUPNPC_API_VERSION < 16
-    descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
+	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
 #else
-    descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
+	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
 #endif
 
-    if (descXML)
-    {
-        parserootdesc (descXML, descXMLsize, &data);
-        free (descXML);
-        descXML = NULL;
-        GetUPNPUrls (&urls, &data, dev->descURL, 0);
-    }
+	if (descXML)
+	{
+		parserootdesc (descXML, descXMLsize, &data);
+		free (descXML);
+		descXML = NULL;
+		GetUPNPUrls (&urls, &data, dev->descURL, 0);
+	}
 
-    freeUPNPDevlist(devlist);
+	freeUPNPDevlist(devlist);
 
-    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype,
-            IPAddress);
+	r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype,
+			IPAddress);
 
-    if (r != 0)
-    {
-        Printf(PRINT_HIGH,
-            "UPnP: Router found but unable to get external IP address\n");
+	if (r != 0)
+	{
+		Printf(PRINT_HIGH,
+			"UPnP: Router found but unable to get external IP address\n");
 
-        is_upnp_ok = false;
-    }
-    else
-    {
-        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
-            IPAddress);
+		is_upnp_ok = false;
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
+			IPAddress);
 
-        // Store ip address just in case admin wants it
-        sv_upnp_externalip.ForceSet(IPAddress);
+		// Store ip address just in case admin wants it
+		sv_upnp_externalip.ForceSet(IPAddress);
 
-        is_upnp_ok = true;
-    }
+		is_upnp_ok = true;
+	}
 }
 
 void upnp_add_redir (const char * addr, int port)
@@ -223,40 +223,40 @@ void upnp_add_redir (const char * addr, int port)
 	char port_str[16];
 	int r;
 
-    if (!sv_upnp || !is_upnp_ok)
-        return;
+	if (!sv_upnp || !is_upnp_ok)
+		return;
 
-	if(urls.controlURL == NULL)
+	if (urls.controlURL == NULL)
 		return;
 
 	sprintf(port_str, "%d", port);
 
-    // Set a description if none exists
-    if (!sv_upnp_description.cstring()[0])
-    {
-        std::stringstream desc;
+	// Set a description if none exists
+	if (!sv_upnp_description.cstring()[0])
+	{
+		std::stringstream desc;
 
-        desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
+		desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
 
-        sv_upnp_description.Set(desc.str().c_str());
-    }
+		sv_upnp_description.Set(desc.str().c_str());
+	}
 
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-            port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+			port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
 
 	if (r != 0)
 	{
 		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
 
-        is_upnp_ok = false;
+		is_upnp_ok = false;
 	}
-    else
-    {
-        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
-            sv_upnp_description.cstring());
+	else
+	{
+		Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
+			sv_upnp_description.cstring());
 
-        is_upnp_ok = true;
-    }
+		is_upnp_ok = true;
+	}
 }
 
 void upnp_rem_redir (int port)
@@ -264,23 +264,23 @@ void upnp_rem_redir (int port)
 	char port_str[16];
 	int r;
 
-    if (!is_upnp_ok)
-        return;
+	if (!is_upnp_ok)
+		return;
 
 	if(urls.controlURL == NULL)
 		return;
 
 	sprintf(port_str, "%d", port);
 	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-        port_str, "UDP", 0);
+		port_str, "UDP", 0);
 
 	if (r != 0)
-    {
-        Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
-        is_upnp_ok = false;
-    }
-    else
-        is_upnp_ok = true;
+	{
+		Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+		is_upnp_ok = false;
+	}
+	else
+		is_upnp_ok = true;
 }
 #endif
 
@@ -395,42 +395,42 @@ char *NET_AdrToString (netadr_t a)
 
 bool NET_StringToAdr (const char *s, netadr_t *a)
 {
-     struct hostent  *h;
-     struct sockaddr_in sadr;
-     char    *colon;
-     char    copy[256];
+	 struct hostent  *h;
+	 struct sockaddr_in sadr;
+	 char	*colon;
+	 char	copy[256];
 
 
-     memset (&sadr, 0, sizeof(sadr));
-     sadr.sin_family = AF_INET;
+	 memset (&sadr, 0, sizeof(sadr));
+	 sadr.sin_family = AF_INET;
 
-     sadr.sin_port = 0;
+	 sadr.sin_port = 0;
 
-     strncpy (copy, s, sizeof(copy) - 1);
+	 strncpy (copy, s, sizeof(copy) - 1);
 	 copy[sizeof(copy) - 1] = 0;
 
-     // strip off a trailing :port if present
-     for (colon = copy ; *colon ; colon++)
-        if (*colon == ':')
-        {
-            *colon = 0;
-            sadr.sin_port = htons(atoi(colon+1));
-        }
+	 // strip off a trailing :port if present
+	 for (colon = copy ; *colon ; colon++)
+		if (*colon == ':')
+		{
+			*colon = 0;
+			sadr.sin_port = htons(atoi(colon+1));
+		}
 
-    if (! (h = gethostbyname(copy)) )
-        return 0;
+	if (! (h = gethostbyname(copy)) )
+		return 0;
 
-    *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
+	*(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
 
-    SockadrToNetadr (&sadr, a);
+	SockadrToNetadr (&sadr, a);
 
-    return true;
+	return true;
 }
 
 bool NET_CompareAdr (netadr_t a, netadr_t b)
 {
-    if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
-        return true;
+	if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
+		return true;
 
 	return false;
 }
@@ -441,54 +441,54 @@ typedef int socklen_t;
 
 int NET_GetPacket (void)
 {
-    int                  ret;
-    struct sockaddr_in   from;
-    socklen_t            fromlen;
+	int				  ret;
+	struct sockaddr_in   from;
+	socklen_t			fromlen;
 
-    fromlen = sizeof(from);
+	fromlen = sizeof(from);
 	net_message.clear();
-    ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
 
-    if (ret == -1)
-    {
+	if (ret == -1)
+	{
 #ifdef _WIN32
-        errno = WSAGetLastError();
+		errno = WSAGetLastError();
 
-        if (errno == WSAEWOULDBLOCK)
-            return false;
+		if (errno == WSAEWOULDBLOCK)
+			return false;
 
 		if (errno == WSAECONNRESET)
-            return false;
+			return false;
 
-        if (errno == WSAEMSGSIZE)
+		if (errno == WSAEMSGSIZE)
 		{
-             Printf (PRINT_HIGH, "Warning:  Oversize packet from %s\n",
-                             NET_AdrToString (net_from));
-             return false;
-        }
+			 Printf (PRINT_HIGH, "Warning:  Oversize packet from %s\n",
+							 NET_AdrToString (net_from));
+			 return false;
+		}
 
-        Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
 		return false;
 #else
-        if (errno == EWOULDBLOCK)
-            return false;
-        if (errno == ECONNREFUSED)
-            return false;
+		if (errno == EWOULDBLOCK)
+			return false;
+		if (errno == ECONNREFUSED)
+			return false;
 
-        Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
-        return false;
+		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		return false;
 #endif
-    }
-    net_message.setcursize(ret);
-    SockadrToNetadr (&from, &net_from);
+	}
+	net_message.setcursize(ret);
+	SockadrToNetadr (&from, &net_from);
 
-    return ret;
+	return ret;
 }
 
 int NET_SendPacket (buf_t &buf, netadr_t &to)
 {
-    int                   ret;
-    struct sockaddr_in    addr;
+	int				   ret;
+	struct sockaddr_in	addr;
 
 	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
 	// (eg, a netdemo is being played back)
@@ -498,28 +498,28 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 		return 0;
 	}
 
-    NetadrToSockadr (&to, &addr);
+	NetadrToSockadr (&to, &addr);
 
 	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	buf.clear();
 
-    if (ret == -1)
-    {
+	if (ret == -1)
+	{
 #ifdef _WIN32
-          int err = WSAGetLastError();
+		  int err = WSAGetLastError();
 
-          // wouldblock is silent
-          if (err == WSAEWOULDBLOCK)
-              return 0;
+		  // wouldblock is silent
+		  if (err == WSAEWOULDBLOCK)
+			  return 0;
 #else
-          if (errno == EWOULDBLOCK)
-              return 0;
-          if (errno == ECONNREFUSED)
-              return 0;
-          Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
+		  if (errno == EWOULDBLOCK)
+			  return 0;
+		  if (errno == ECONNREFUSED)
+			  return 0;
+		  Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
 #endif
-    }
+	}
 
 	return ret;
 }
@@ -589,9 +589,9 @@ void SV_SendPackets(void);
 
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
-    //[Spleen] final check to prevent huge packets from being sent to players
-    if (b->cursize > 600)
-        SV_SendPackets();
+	//[Spleen] final check to prevent huge packets from being sent to players
+	if (b->cursize > 600)
+		SV_SendPackets();
 
 	b->WriteByte((byte)c);
 }

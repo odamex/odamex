@@ -1996,12 +1996,12 @@ void CL_UpdatePlayer()
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-    // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	// [Russell] - hack, read and set invisibility flag
+	p->powers[pw_invisibility] = invisibility;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -3212,8 +3212,8 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);
@@ -3241,8 +3241,8 @@ void CL_Switch()
 	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
 		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if (texture)
-		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	if (!recv_full_update && texture) // Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
+		P_SetButtonTexture(&lines[l], texture);
 	lines[l].special = special;
 }
 
