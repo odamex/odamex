@@ -111,6 +111,7 @@ static const char *MapInfoTopLevel[] =
 	"episode",
 	"clearepisodes",
 	"gameinfo",
+	"intermission",
 	NULL
 };
 
@@ -137,7 +138,10 @@ enum
 	MITL_CLEAREPISODES,
 
 	// gameinfo // New MAPINFO only
-	MITL_GAMEINFO
+	MITL_GAMEINFO,
+
+	// intermission // New MAPINFO only
+	MITL_INTERMISSION
 };
 
 static const char *MapInfoMapLevel[] =
@@ -359,7 +363,7 @@ static void SkipUnknownType()
 //
 // Assumes you have already munched the first opening brace.
 //
-// This function does not work with old-school ZDoom 
+// This function does not work with old-school ZDoom MAPINFO.
 //
 static void SkipUnknownBlock()
 {
@@ -640,6 +644,134 @@ static void ParseMapInfoLower(
 	}
 }
 
+static void ParseMapInfoLump(int lump, const char* lumpname)
+{
+	level_pwad_info_t defaultinfo;
+	level_pwad_info_t* levelinfo;
+	int levelindex;
+	cluster_info_t* clusterinfo;
+	int clusterindex;
+	DWORD levelflags;
+
+	SetLevelDefaults (&defaultinfo);
+	SC_OpenLumpNum (lump, lumpname);
+
+	while (SC_GetString ())
+	{
+		switch (SC_MustMatchString (MapInfoTopLevel))
+		{
+		case MITL_DEFAULTMAP:
+		{
+			SetLevelDefaults(&defaultinfo);
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::LEVEL;
+			tinfo.level = &defaultinfo;
+			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0);
+			break;
+		}
+		case MITL_MAP:
+		{
+			levelflags = defaultinfo.flags;
+			SC_MustGetString ();
+			if (IsNum (sc_String))
+			{	// MAPNAME is a number, assume a Hexen wad
+				int map = atoi (sc_String);
+				sprintf (sc_String, "MAP%02d", map);
+				SKYFLATNAME[5] = 0;
+				HexenHack = true;
+				// Hexen levels are automatically nointermission
+				// and even lighting and no auto sound sequences
+				levelflags |= LEVEL_NOINTERMISSION
+							| LEVEL_EVENLIGHTING
+							| LEVEL_SNDSEQTOTALCTRL;
+			}
+			levelindex = FindWadLevelInfo (sc_String);
+			if (levelindex == -1)
+			{
+				wadlevelinfos.push_back(level_pwad_info_t());
+				levelindex = wadlevelinfos.size() - 1;
+			}
+			levelinfo = &wadlevelinfos[levelindex];
+			memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
+			uppercopy (levelinfo->mapname, sc_String);
+			SC_MustGetString ();
+			ReplaceString (&levelinfo->level_name, sc_String);
+			// Set up levelnum now so that the Teleport_NewMap specials
+			// in hexen.wad work without modification.
+			if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
+			{
+				int mapnum = atoi (levelinfo->mapname + 3);
+
+				if (mapnum >= 1 && mapnum <= 99)
+					levelinfo->levelnum = mapnum;
+			}
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::LEVEL;
+			tinfo.level = levelinfo;
+			ParseMapInfoLower (MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
+			break;
+		}
+		case MITL_CLUSTER:
+		case MITL_CLUSTERDEF:
+		{
+			SC_MustGetNumber ();
+			clusterindex = FindWadClusterInfo (sc_Number);
+			if (clusterindex == -1)
+			{
+				wadclusterinfos.push_back(cluster_info_t());
+				clusterindex = wadclusterinfos.size() - 1;
+				memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
+			}
+			clusterinfo = &wadclusterinfos[clusterindex];
+			clusterinfo->cluster = sc_Number;
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::CLUSTER;
+			tinfo.cluster = clusterinfo;
+			ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, &tinfo, 0);
+			break;
+		}
+		case MITL_EPISODE:
+		{
+			// Not implemented
+			SC_MustGetString(); // Map lump
+			SC_GetString();
+			if (SC_Compare("teaser"))
+			{
+				SC_MustGetString(); // Teaser lump
+			}
+			else
+			{
+				SC_UnGet();
+			}
+
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::EPISODE;
+			tinfo.episode = NULL;
+			ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
+			break;
+		}
+		case MITL_CLEAREPISODES:
+			// Not implemented
+			break;
+
+		case MITL_GAMEINFO:
+			// Not implemented
+			ParseMapInfoLower(NULL, NULL, NULL, 0);
+			break;
+
+		case MITL_INTERMISSION:
+			// Not implemented
+			SC_MustGetString(); // Name
+			ParseMapInfoLower(NULL, NULL, NULL, 0);
+			break;
+
+		default:
+			SC_ScriptError("Unimplemented top-level type \"%s\"", sc_String);
+		}
+	}
+	SC_Close ();
+}
+
 //
 // G_ParseMapInfo
 // Parses the MAPINFO lumps of all loaded WADs and generates
@@ -647,127 +779,25 @@ static void ParseMapInfoLower(
 //
 void G_ParseMapInfo (void)
 {
-	level_pwad_info_t defaultinfo;
-	level_pwad_info_t *levelinfo;
-	int levelindex;
-	cluster_info_t *clusterinfo;
-	int clusterindex;
-	DWORD levelflags;
+	BOOL found_zmapinfo = false;
 
 	int lump = -1;
+	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
+	{
+		found_zmapinfo = true;
+		ParseMapInfoLump(lump, "ZMAPINFO");
+	}
+
+	// If ZMAPINFO exists, we don't parse a normal MAPINFO
+	if (found_zmapinfo == true)
+	{
+		return;
+	}
+
+	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
-		SetLevelDefaults (&defaultinfo);
-		SC_OpenLumpNum (lump, "MAPINFO");
-
-		while (SC_GetString ())
-		{
-			switch (SC_MustMatchString (MapInfoTopLevel))
-			{
-			case MITL_DEFAULTMAP:
-			{
-				SetLevelDefaults(&defaultinfo);
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::LEVEL;
-				tinfo.level = &defaultinfo;
-				ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0);
-				break;
-			}
-			case MITL_MAP:
-			{
-				levelflags = defaultinfo.flags;
-				SC_MustGetString ();
-				if (IsNum (sc_String))
-				{	// MAPNAME is a number, assume a Hexen wad
-					int map = atoi (sc_String);
-					sprintf (sc_String, "MAP%02d", map);
-					SKYFLATNAME[5] = 0;
-					HexenHack = true;
-					// Hexen levels are automatically nointermission
-					// and even lighting and no auto sound sequences
-					levelflags |= LEVEL_NOINTERMISSION
-								| LEVEL_EVENLIGHTING
-								| LEVEL_SNDSEQTOTALCTRL;
-				}
-				levelindex = FindWadLevelInfo (sc_String);
-				if (levelindex == -1)
-				{
-					wadlevelinfos.push_back(level_pwad_info_t());
-					levelindex = wadlevelinfos.size() - 1;
-				}
-				levelinfo = &wadlevelinfos[levelindex];
-				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
-				uppercopy (levelinfo->mapname, sc_String);
-				SC_MustGetString ();
-				ReplaceString (&levelinfo->level_name, sc_String);
-				// Set up levelnum now so that the Teleport_NewMap specials
-				// in hexen.wad work without modification.
-				if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
-				{
-					int mapnum = atoi (levelinfo->mapname + 3);
-
-					if (mapnum >= 1 && mapnum <= 99)
-						levelinfo->levelnum = mapnum;
-				}
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::LEVEL;
-				tinfo.level = levelinfo;
-				ParseMapInfoLower (MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
-				break;
-			}
-			case MITL_CLUSTER:
-			case MITL_CLUSTERDEF:
-			{
-				SC_MustGetNumber ();
-				clusterindex = FindWadClusterInfo (sc_Number);
-				if (clusterindex == -1)
-				{
-					wadclusterinfos.push_back(cluster_info_t());
-					clusterindex = wadclusterinfos.size() - 1;
-					memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
-				}
-				clusterinfo = &wadclusterinfos[clusterindex];
-				clusterinfo->cluster = sc_Number;
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::CLUSTER;
-				tinfo.cluster = clusterinfo;
-				ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, &tinfo, 0);
-				break;
-			}
-			case MITL_EPISODE:
-			{
-				// Not implemented
-				SC_MustGetString(); // Map lump
-				SC_GetString();
-				if (SC_Compare("teaser"))
-				{
-					SC_MustGetString(); // Teaser lump
-				}
-				else
-				{
-					SC_UnGet();
-				}
-
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::EPISODE;
-				tinfo.episode = NULL;
-				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
-				break;
-			}
-			case MITL_CLEAREPISODES:
-				// Not implemented
-				break;
-
-			case MITL_GAMEINFO:
-				// Not implemented
-				ParseMapInfoLower(NULL, NULL, NULL, 0);
-				break;
-
-			default:
-				SC_ScriptError("Unimplemented top-level type \"%s\"", sc_String);
-			}
-		}
-		SC_Close ();
+		ParseMapInfoLump(lump, "MAPINFO");
 	}
 }
 
