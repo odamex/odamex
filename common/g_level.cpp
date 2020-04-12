@@ -87,7 +87,7 @@ enum EMIType
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
-	MITYPE_$LUMPNAME,
+	MITYPE_MUSICLUMPNAME,
 	MITYPE_SKY,
 	MITYPE_SETFLAG,
 	MITYPE_SCFLAGS,
@@ -220,7 +220,7 @@ MapInfoHandler MapHandlers[] =
 	// par <partime>
 	{ MITYPE_INT, lioffset(partime), 0 },
 	// music <musiclump>
-	{ MITYPE_$LUMPNAME, lioffset(music), 0 },
+	{ MITYPE_MUSICLUMPNAME, lioffset(music), 0 },
 	// nointermission
 	{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
 	// doublesky
@@ -587,7 +587,8 @@ static void ParseMapInfoLower(
 			uppercopy((char*)(info + handler->data1), sc_String);
 			break;
 
-		case MITYPE_$LUMPNAME:
+		case MITYPE_MUSICLUMPNAME:
+		{
 			if (newMapinfoStack > 0)
 			{
 				SC_MustGetStringName("=");
@@ -596,20 +597,27 @@ static void ParseMapInfoLower(
 			SC_MustGetString();
 			if (sc_String[0] == '$')
 			{
+				// It is possible to pass a DeHackEd string
+				// prefixed by a $.
 				char* s = sc_String + 1;
 				int i = GStrings.FindString(s);
 				if (i == -1)
 				{
 					SC_ScriptError("Unknown lookup string \"%s\"", s);
 				}
-				ReplaceString((const char**)(info + handler->data1), GStrings(i));
+
+				// Music lumps in the stringtable do not begin
+				// with a D_, so we must add it.
+				char lumpname[9];
+				snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", GStrings(i));
+				uppercopy((char*)(info + handler->data1), lumpname);
 			}
 			else
 			{
 				uppercopy((char*)(info + handler->data1), sc_String);
 			}
 			break;
-
+		}
 		case MITYPE_SKY:
 			if (newMapinfoStack > 0)
 			{

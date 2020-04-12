@@ -542,6 +542,7 @@ static int PatchText (int);
 static int PatchStrings (int);
 static int PatchPars (int);
 static int PatchCodePtrs (int);
+static int PatchMusic (int);
 static int DoInclude (int);
 
 static const struct {
@@ -564,6 +565,7 @@ static const struct {
 	{ "[STRINGS]",	PatchStrings },
 	{ "[PARS]",		PatchPars },
 	{ "[CODEPTR]",	PatchCodePtrs },
+	{ "[MUSIC]",	PatchMusic },
 	{ NULL, NULL},
 };
 
@@ -1482,6 +1484,29 @@ static int PatchCodePtrs (int dummy)
 			}
 		}
 	}
+	return result;
+}
+
+static int PatchMusic (int dummy)
+{
+	int result;
+	char keystring[128];
+
+	DPrintf ("[Music]\n");
+
+	while ((result = GetLine()) == 1)
+	{
+		const char* newname = skipwhite(Line2);
+
+		snprintf(keystring, ARRAY_LENGTH(keystring), "MUSIC_%s", Line1);
+		int i = GStrings.FindString(keystring);
+		if (i != -1)
+		{
+			GStrings.SetString(i, newname);
+			DPrintf ("Music %s set to:\n%s\n", keystring, newname);
+		}
+	}
+
 	return result;
 }
 
