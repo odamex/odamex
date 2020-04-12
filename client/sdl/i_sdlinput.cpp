@@ -797,7 +797,6 @@ void ISDL12MouseInputDevice::gatherEvents()
 						sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP);
 
 				event_t ev;
-				ev.data1 = ev.data2 = ev.data3 = 0;
 
 				if (sdl_ev.type == SDL_MOUSEMOTION)
 				{
@@ -1005,16 +1004,13 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				sdl_ev.jbutton.which == mJoystickId)
 			{
 				event_t button_event;
-				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
-				button_event.data3 = 0;
+				button_event.data1 = sdl_ev.jbutton.button + KEY_JOY1;
 				button_event.type = (sdl_ev.type == SDL_JOYBUTTONDOWN) ? ev_keydown : ev_keyup;
 				mEvents.push(button_event);
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
 			{
-				event_t motion_event;
-				motion_event.type = ev_joystick;
-				motion_event.data1 = motion_event.data3 = 0;
+				event_t motion_event(ev_joystick);
 				motion_event.data2 = sdl_ev.jaxis.axis;
 				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
 					motion_event.data3 = sdl_ev.jaxis.value;
@@ -1034,8 +1030,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				for (int i = 0; i < 4; i++)
 				{
 					event_t hat_event;
-					hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
-					hat_event.data3 = 0;
+					hat_event.data1 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
 
 					// determine if the flag's state has changed (ignore it if it hasn't)
 					if (!(old_state & flags[i]) && (new_state & flags[i]))
@@ -1584,8 +1579,6 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 	SDL_Event sdl_ev;
 	while (SDL_PeepEvents(&sdl_ev, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_TEXTINPUT))
 	{
-		event_t ev;
-
 		// Process SDL_KEYDOWN / SDL_KEYUP events. SDL_TEXTINPUT events will
 		// be implicitly ignored unless handled below.
 		if (sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP)
@@ -1593,6 +1586,7 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 			const int sym = sdl_ev.key.keysym.sym;
 			const int mod = sdl_ev.key.keysym.mod;
 
+			event_t ev;
 			ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
 			ev.data1 = translateKey(sym);
 
@@ -1755,9 +1749,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 	// [SL] accumulate the total mouse movement over all events polled
 	// and post one aggregate mouse movement event to Doom's event queue
 	// after all are polled.
-	event_t movement_event;
-	movement_event.type = ev_mouse;
-	movement_event.data1 = movement_event.data2 = movement_event.data3 = 0;
+	event_t movement_event(ev_mouse);
 
 	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION)))
 	{
@@ -1779,7 +1771,6 @@ void ISDL20MouseInputDevice::gatherEvents()
 		for (int i = 0; i < num_events; i++)
 		{
 			event_t ev;
-			ev.data1 = ev.data2 = ev.data3 = 0;
 
 			const SDL_Event& sdl_ev = sdl_events[i];
 
@@ -1987,16 +1978,14 @@ void ISDL20JoystickInputDevice::gatherEvents()
 				sdl_ev.jbutton.which == mJoystickId)
 			{
 				event_t button_event;
-				button_event.data1 = button_event.data2 = sdl_ev.jbutton.button + KEY_JOY1;
-				button_event.data3 = 0;
 				button_event.type = (sdl_ev.type == SDL_JOYBUTTONDOWN) ? ev_keydown : ev_keyup;
+				button_event.data1 = sdl_ev.jbutton.button + KEY_JOY1;
 				mEvents.push(button_event);
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
 			{
-				event_t motion_event;
+				event_t motion_event(ev_joystick);
 				motion_event.type = ev_joystick;
-				motion_event.data1 = motion_event.data3 = 0;
 				motion_event.data2 = sdl_ev.jaxis.axis;
 				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
 					motion_event.data3 = sdl_ev.jaxis.value;
@@ -2016,8 +2005,7 @@ void ISDL20JoystickInputDevice::gatherEvents()
 				for (int i = 0; i < 4; i++)
 				{
 					event_t hat_event;
-					hat_event.data1 = hat_event.data2 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
-					hat_event.data3 = 0;
+					hat_event.data1 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
 
 					// determine if the flag's state has changed (ignore it if it hasn't)
 					if (!(old_state & flags[i]) && (new_state & flags[i]))
