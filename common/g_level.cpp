@@ -87,6 +87,7 @@ enum EMIType
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
+	MITYPE_$LUMPNAME,
 	MITYPE_SKY,
 	MITYPE_SETFLAG,
 	MITYPE_SCFLAGS,
@@ -187,8 +188,8 @@ static const char *MapInfoMapLevel[] =
 	"warptrans",
 	"gravity",
 	"aircontrol",
-	"islobby",					// Support for lobbies
-	"lobby",					// Alias for "islobby"
+	"islobby",
+	"lobby",
 	"nocrouch",
 	"intermusic",
 	"par",
@@ -198,52 +199,99 @@ static const char *MapInfoMapLevel[] =
 
 MapInfoHandler MapHandlers[] =
 {
-	{ MITYPE_INT,		lioffset(levelnum), 0 },
-	{ MITYPE_MAPNAME,	lioffset(nextmap), 0 },
-	{ MITYPE_MAPNAME,	lioffset(secretmap), 0 },
-	{ MITYPE_CLUSTER,	lioffset(cluster), 0 },
-	{ MITYPE_SKY,		lioffset(skypic), 0 },
-	{ MITYPE_SKY,		lioffset(skypic2), 0 },
-	{ MITYPE_COLOR,		lioffset(fadeto_color), 0 },
-	{ MITYPE_COLOR,		lioffset(outsidefog_color), 0 },
-	{ MITYPE_LUMPNAME,	lioffset(pname), 0 },
-	{ MITYPE_INT,		lioffset(partime), 0 },
-	{ MITYPE_LUMPNAME,	lioffset(music), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_NOINTERMISSION, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_DOUBLESKY, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_NOSOUNDCLIPPING, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_MONSTERSTELEFRAG, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_MAP07SPECIAL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_BRUISERSPECIAL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_CYBORGSPECIAL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_SPIDERSPECIAL, 0 },
-	{ MITYPE_SCFLAGS,	0, ~LEVEL_SPECACTIONSMASK },
-	{ MITYPE_SCFLAGS,	LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
-	{ MITYPE_SCFLAGS,	LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
-	{ MITYPE_IGNORE,	0, 0 },		// lightning
-	{ MITYPE_LUMPNAME,	lioffset(fadetable), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_EVENLIGHTING, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_SNDSEQTOTALCTRL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_FORCENOSKYSTRETCH, 0 },
-	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
-	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
-	{ MITYPE_SCFLAGS,	LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-	{ MITYPE_SCFLAGS,	LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
-	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	// levelnum <levelnum>
+	{ MITYPE_INT, lioffset(levelnum), 0 },
+	// next <maplump>
+	{ MITYPE_MAPNAME, lioffset(nextmap), 0 },
+	// secretnext <maplump>
+	{ MITYPE_MAPNAME, lioffset(secretmap), 0 },
+	// cluster <number>
+	{ MITYPE_CLUSTER, lioffset(cluster), 0 },
+	// sky1 <texture> <scrollspeed>
+	{ MITYPE_SKY, lioffset(skypic), 0 },
+	// sky2 <texture> <scrollspeed>
+	{ MITYPE_SKY, lioffset(skypic2), 0 },
+	// fade <color>
+	{ MITYPE_COLOR, lioffset(fadeto_color), 0 },
+	// outsidefog <color>
+	{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
+	// titlepatch <patch>
+	{ MITYPE_LUMPNAME, lioffset(pname), 0 },
+	// par <partime>
+	{ MITYPE_INT, lioffset(partime), 0 },
+	// music <musiclump>
+	{ MITYPE_$LUMPNAME, lioffset(music), 0 },
+	// nointermission
+	{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
+	// doublesky
+	{ MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0 },
+	// nosoundclipping
+	{ MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0 },
+	// allowmonstertelefrags
+	{ MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0 },
+	// map07special
+	{ MITYPE_SETFLAG, LEVEL_MAP07SPECIAL, 0 },
+	// baronspecial
+	{ MITYPE_SETFLAG, LEVEL_BRUISERSPECIAL, 0 },
+	// cyberdemonspecial
+	{ MITYPE_SETFLAG, LEVEL_CYBORGSPECIAL, 0 },
+	// spidermastermindspecial
+	{ MITYPE_SETFLAG, LEVEL_SPIDERSPECIAL, 0 },
+	// specialaction_exitlevel
+	{ MITYPE_SCFLAGS, 0, ~LEVEL_SPECACTIONSMASK },
+	// specialaction_opendoor
+	{ MITYPE_SCFLAGS, LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
+	// specialaction_lowerfloor
+	{ MITYPE_SCFLAGS, LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
+	// lightning
 	{ MITYPE_IGNORE, 0, 0 },
+	// fadetable <colormap>
+	{ MITYPE_LUMPNAME, lioffset(fadetable), 0 },
+	// evenlighting
+	{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
+	// noautosequences
+	{ MITYPE_SETFLAG, LEVEL_SNDSEQTOTALCTRL, 0 },
+	// forcenoskystretch
+	{ MITYPE_SETFLAG, LEVEL_FORCENOSKYSTRETCH, 0 },
+	// allowfreelook
+	{ MITYPE_SCFLAGS, LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
+	// nofreelook
+	{ MITYPE_SCFLAGS, LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
+	// allowjump
+	{ MITYPE_SCFLAGS, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
+	// nojump
+	{ MITYPE_SCFLAGS, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+	// cdtrack <track number>
 	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_start_track ???
 	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_end1_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_end2_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_end3_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_intermission_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_title_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// warptrans ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// gravity <amount>
+	{ MITYPE_FLOAT, lioffset(gravity), 0 },
+	// aircontrol <amount>
+	{ MITYPE_FLOAT, lioffset(aircontrol), 0 },
+	// islobby
+	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+	// lobby
+	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+	// nocrouch
+	{ MITYPE_IGNORE, 0, 0 },
+	// intermusic <musicname>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// par <partime>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// sucktime <value>
 	{ MITYPE_EATNEXT, 0, 0 },
 };
 
@@ -259,10 +307,15 @@ static const char *MapInfoClusterLevel[] =
 
 MapInfoHandler ClusterHandlers[] =
 {
+	// entertext <message>
 	{ MITYPE_STRING_OR_LOOKUP, cioffset(entertext), 0 },
+	// exittext <message>
 	{ MITYPE_STRING_OR_LOOKUP, cioffset(exittext), 0 },
+	// music <musiclump>
 	{ MITYPE_CSTRING, cioffset(messagemusic), 8 },
+	// flat <flatlump>
 	{ MITYPE_LUMPNAME, cioffset(finaleflat), 0 },
+	// hub
 	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 }
 };
 
@@ -534,6 +587,29 @@ static void ParseMapInfoLower(
 			uppercopy((char*)(info + handler->data1), sc_String);
 			break;
 
+		case MITYPE_$LUMPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
+			SC_MustGetString();
+			if (sc_String[0] == '$')
+			{
+				char* s = sc_String + 1;
+				int i = GStrings.FindString(s);
+				if (i == -1)
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", s);
+				}
+				ReplaceString((const char**)(info + handler->data1), GStrings(i));
+			}
+			else
+			{
+				uppercopy((char*)(info + handler->data1), sc_String);
+			}
+			break;
+
 		case MITYPE_SKY:
 			if (newMapinfoStack > 0)
 			{
@@ -694,8 +770,24 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			levelinfo = &wadlevelinfos[levelindex];
 			memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
 			uppercopy (levelinfo->mapname, sc_String);
-			SC_MustGetString ();
-			ReplaceString (&levelinfo->level_name, sc_String);
+
+			// Map name.
+			SC_MustGetString();
+			if (SC_Compare("lookup"))
+			{
+				SC_MustGetString();
+				int i = GStrings.FindString(sc_String);
+				if (i == -1)
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+				}
+				ReplaceString(&levelinfo->level_name, GStrings(i));
+			}
+			else
+			{
+				ReplaceString(&levelinfo->level_name, sc_String);
+			}
+
 			// Set up levelnum now so that the Teleport_NewMap specials
 			// in hexen.wad work without modification.
 			if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
