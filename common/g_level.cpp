@@ -93,6 +93,7 @@ enum EMIType
 	MITYPE_CLUSTER,
 	MITYPE_STRING,
 	MITYPE_CSTRING,
+	MITYPE_STRING_OR_LOOKUP,
 };
 
 struct MapInfoHandler
@@ -254,11 +255,11 @@ static const char *MapInfoClusterLevel[] =
 
 MapInfoHandler ClusterHandlers[] =
 {
-	{ MITYPE_STRING,	cioffset(entertext), 0 },
-	{ MITYPE_STRING,	cioffset(exittext), 0 },
-	{ MITYPE_CSTRING,	cioffset(messagemusic), 8 },
-	{ MITYPE_LUMPNAME,	cioffset(finaleflat), 0 },
-	{ MITYPE_SETFLAG,	CLUSTER_HUB, 0 }
+	{ MITYPE_STRING_OR_LOOKUP, cioffset(entertext), 0 },
+	{ MITYPE_STRING_OR_LOOKUP, cioffset(exittext), 0 },
+	{ MITYPE_CSTRING, cioffset(messagemusic), 8 },
+	{ MITYPE_LUMPNAME, cioffset(finaleflat), 0 },
+	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 }
 };
 
 static const char* MapInfoEpisodeLevel[] =
@@ -596,6 +597,29 @@ static void ParseMapInfoLower(
 			SC_MustGetString();
 			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
+			break;
+
+		case MITYPE_STRING_OR_LOOKUP:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
+			SC_MustGetString();
+			if (SC_Compare("lookup"))
+			{
+				SC_MustGetString();
+				int i = GStrings.FindString(sc_String);
+				if (i == -1)
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+				}
+				ReplaceString((const char**)(info + handler->data1), GStrings(i));
+			}
+			else
+			{
+				ReplaceString((const char**)(info + handler->data1), sc_String);
+			}
 			break;
 		}
 	}
