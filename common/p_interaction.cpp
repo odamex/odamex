@@ -174,7 +174,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	if (player->userinfo.switchweapon != WPSW_NEVER)
+	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback || demorecording)
 	{
 		switch (ammotype)
 		{
