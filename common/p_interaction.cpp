@@ -71,7 +71,7 @@ void SV_TouchSpecial(AActor *special, player_t *player);
 ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, flag_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, int pain);
+void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
 void SV_SetWinPlayer(byte playerId);
@@ -1179,11 +1179,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 // [Toke] This is no longer needed client-side
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
-    unsigned	ang;
-	int 		saved;
 	player_t*   splayer = NULL; // shorthand for source->player
 	player_t*   tplayer = NULL; // shorthand for target->player
-	fixed_t 	thrust;
 
 	if (!serverside)
     {
@@ -1235,9 +1232,9 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	if (inflictor && !(target->flags & MF_NOCLIP) &&
         (!source || !splayer || splayer->readyweapon != wp_chainsaw))
 	{
-		ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
+		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
-		thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
+		fixed_t thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
 
 		// make fall forwards sometimes
 		if (damage < 40
@@ -1288,42 +1285,36 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			}
 		}
 
+		int armorDamage = 0;
 		if (tplayer->armortype && !(flags & DMG_NO_ARMOR))
 		{
 			if (tplayer->armortype == deh.GreenAC)
-            {
-				saved = damage / 3;
-            }
+				armorDamage = damage / 3;
 			else
-            {
-				saved = damage / 2;
-            }
+				armorDamage = damage / 2;
 
-			if (tplayer->armorpoints <= saved)
+			if (tplayer->armorpoints <= armorDamage)
 			{
 				// armor is used up
-				saved = tplayer->armorpoints;
+				armorDamage = tplayer->armorpoints;
 				tplayer->armortype = 0;
 			}
-			tplayer->armorpoints -= saved;
-			damage -= saved;
+			tplayer->armorpoints -= armorDamage;
+			damage -= armorDamage;
 		}
 
 		tplayer->health -= damage;		// mirror mobj health here for Dave
 
 		if (tplayer->health <= 0)
-        {
 			tplayer->health = 0;
-        }
 
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
 		tplayer->damagecount += damage;	// add damage after armor / invuln
 
 		if (tplayer->damagecount > 100)
-        {
 			tplayer->damagecount = 100;	// teleport stomp does 10k points...
-        }
-		SV_SendDamagePlayer(tplayer, target->health - damage);
+        
+		SV_SendDamagePlayer(tplayer, damage, armorDamage);
 	}
 
 	// do the damage

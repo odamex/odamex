@@ -5081,16 +5081,16 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	SV_BroadcastPrintf(PRINT_MEDIUM, "%s\n", gendermessage);
 }
 
-void SV_SendDamagePlayer(player_t *player, int damage)
+void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_damageplayer);
-		MSG_WriteByte(&cl->reliablebuf, player->id);
-		MSG_WriteByte(&cl->reliablebuf, player->armorpoints);
-		MSG_WriteShort(&cl->reliablebuf, damage);
+		MSG_WriteShort(&cl->reliablebuf, player->mo->netid);
+		MSG_WriteShort(&cl->reliablebuf, healthDamage);
+		MSG_WriteByte(&cl->reliablebuf, armorDamage);
 	}
 }
 

@@ -2577,29 +2577,28 @@ void CL_RemoveMobj(void)
 //
 void CL_DamagePlayer(void)
 {
-	player_t *p;
-	int       health;
-	int       damage;
+	int netid = MSG_ReadShort();
+	int healthDamage = MSG_ReadShort();
+	int armorDamage = MSG_ReadByte();
 
-	p = &idplayer(MSG_ReadByte());
+	AActor* actor = P_FindThingById(netid);
 
-	p->armorpoints = MSG_ReadByte();
-	health         = MSG_ReadShort();
-
-	if(!p->mo)
+	if (!actor || !actor->player)
 		return;
 
-	damage = p->health - health;
-	p->mo->health = p->health = health;
+	player_t *p = actor->player;
+	p->health -= healthDamage;
+	p->mo->health = p->health;
+	p->armorpoints -= armorDamage;
 
 	if (p->health < 0)
 		p->health = 0;
+	if (p->armorpoints < 0)
+		p->armorpoints = 0;
 
-	if (damage < 0)  // can't be!
-		return;
-
-	if (damage > 0) {
-		p->damagecount += damage;
+	if (healthDamage > 0)
+	{
+		p->damagecount += healthDamage;
 
 		if (p->damagecount > 100)
 			p->damagecount = 100;
