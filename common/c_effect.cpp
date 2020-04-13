@@ -243,9 +243,6 @@ void P_RunEffect (AActor *actor, int effects)
 	if (!actor || !clientside)
 		return;
 
-	angle_t moveangle = R_PointToAngle2(0,0,actor->momx,actor->momy);
-	particle_t *particle;
-
 	if (effects & FX_FOUNTAINMASK) {
 		// Particle fountain
 

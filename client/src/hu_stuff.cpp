@@ -523,9 +523,8 @@ void HU_Drawer()
 
 	if (multiplayer && consoleplayer().camera && !(demoplayback))
 	{
-		if (gamestate != GS_INTERMISSION && 
-			(Actions[ACTION_SHOWSCORES]) 
-			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator) )
+		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES])
+			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator))
 		{
 			HU_DrawScores(&displayplayer());
 		}

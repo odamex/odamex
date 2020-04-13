@@ -695,8 +695,8 @@ void AM_LevelInit(void)
 //
 void AM_Stop()
 {
-    if (!automapactive)
-        return;
+	if (!automapactive)
+		return;
 
 	AM_unloadPics ();
 	automapactive = false;

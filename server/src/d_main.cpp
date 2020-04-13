@@ -255,11 +255,11 @@ void D_DoomMain()
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
 
-    C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
+	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	// Always log by default
-    if (!LOG.is_open())
-    	C_DoCommand("logfile");
+	if (!LOG.is_open())
+		C_DoCommand("logfile");
 	
 	std::vector<std::string> newwadfiles, newpatchfiles;
 
@@ -304,7 +304,7 @@ void D_DoomMain()
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		DPrintf ("%s", GStrings(D_DEVSTR));        // D_DEVSTR
+		DPrintf ("%s", GStrings(D_DEVSTR));		// D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))
@@ -318,7 +318,7 @@ void D_DoomMain()
 	if (Args.CheckParm("-fast"))
 		sv_fastmonsters = 1;
 
-    // get skill / episode / map from parms
+	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
 	const char* val = Args.CheckValue("-skill");

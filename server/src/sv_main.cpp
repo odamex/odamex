@@ -3433,7 +3433,9 @@ int SV_CalculateNumTiccmds(player_t &player)
 void SV_ProcessPlayerCmd(player_t &player)
 {
 	const int max_forward_move = 50 << 8;
+	#if 0
 	const int max_sr40_side_move = 40 << 8;
+	#endif
 	const int max_sr50_side_move = 50 << 8;
 
 	if (player.joindelay)
@@ -3454,9 +3456,9 @@ void SV_ProcessPlayerCmd(player_t &player)
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
 		NetCommand *netcmd = &(player.cmdqueue.front());
-		memset(&player.cmd, 0, sizeof(ticcmd_t));
-
+		player.cmd = ticcmd_t();
 		player.tic = netcmd->getTic();
+
 		// Set the latency amount for Unlagging
 		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
 

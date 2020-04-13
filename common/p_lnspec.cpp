@@ -455,8 +455,7 @@ FUNC(LS_Generic_Floor)
 		}
 	}
 
-	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT,
-					   (arg4 & 16) ? 20 : -1, arg4 & 7);
+	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), arg4 & 7);
 
 }
 
@@ -663,8 +662,7 @@ FUNC(LS_Generic_Ceiling)
 		}
 	}
 
-	return EV_DoCeiling (type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT,
-						 (arg4 & 16) ? 20 : -1, 0, arg4 & 7);
+	return EV_DoCeiling(type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), 0, arg4 & 7);
 	return false;
 }
 

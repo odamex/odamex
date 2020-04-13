@@ -88,10 +88,10 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	// TODO: Remove guard before next release
 	QRYNEWINFO(7)
 	{
-	    MSG_WriteString(&ml_message, GitDescribe());
+		MSG_WriteString(&ml_message, GitDescribe());
 	}
 	else
-        MSG_WriteLong(&ml_message, -1);
+		MSG_WriteLong(&ml_message, -1);
 
 	cvar_t* var = GetFirstCvar();
 
@@ -173,18 +173,18 @@ next:
 
 	if(timeleft < 0)
 		timeleft = 0;
-    
-    // TODO: Remove guard on next release and reset protocol version
-    // TODO: Incorporate code above into block
-    // Only send timeleft if sv_timelimit has been set
-    QRYNEWINFO(6)
-    {
-        if (sv_timelimit.asInt())
-            MSG_WriteShort(&ml_message, timeleft);
-    }
-    else
-        MSG_WriteShort(&ml_message, timeleft);
-    
+	
+	// TODO: Remove guard on next release and reset protocol version
+	// TODO: Incorporate code above into block
+	// Only send timeleft if sv_timelimit has been set
+	QRYNEWINFO(6)
+	{
+		if (sv_timelimit.asInt())
+			MSG_WriteShort(&ml_message, timeleft);
+	}
+	else
+		MSG_WriteShort(&ml_message, timeleft);
+	
 	// Teams
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
@@ -252,14 +252,13 @@ next:
 
 		MSG_WriteShort(&ml_message, timeingame);
 
-		// FIXME - Treat non-players (downloaders/others) as spectators too for
-		// now
+		// FIXME - Treat non-players (downloaders/others) as spectators too for now
 		bool spectator;
 
 		spectator = (it->spectator ||
-		             ((it->playerstate != PST_LIVE) &&
-		              (it->playerstate != PST_DEAD) &&
-		              (it->playerstate != PST_REBORN)));
+					 ((it->playerstate != PST_LIVE) &&
+					  (it->playerstate != PST_DEAD) &&
+					  (it->playerstate != PST_REBORN)));
 
 		MSG_WriteBool(&ml_message, spectator);
 

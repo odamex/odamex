@@ -441,10 +441,10 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 //
 std::string I_GetVideoModeString(const IVideoMode* mode)
 {
-	const char window_strs[][20] = {
-		"windowed",
-		"desktop full screen",
-		"true full screen"
+	const char window_strs[][25] = {
+		"window",
+		"full screen window",
+		"full screen exclusive"
 	};
 
 	char str[50];

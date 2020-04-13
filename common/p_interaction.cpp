@@ -175,54 +175,57 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	switch (ammotype)
+	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback || demorecording)
 	{
-        case am_clip:
-            if (player->readyweapon == wp_fist)
-            {
-                if (player->weaponowned[wp_chaingun])
-                {
-                    player->pendingweapon = wp_chaingun;
-                }
-                else
-                {
-                    player->pendingweapon = wp_pistol;
-                }
-            }
-            break;
+		switch (ammotype)
+		{
+		case am_clip:
+			if (player->readyweapon == wp_fist)
+			{
+				if (player->weaponowned[wp_chaingun])
+				{
+					player->pendingweapon = wp_chaingun;
+				}
+				else
+				{
+					player->pendingweapon = wp_pistol;
+				}
+			}
+			break;
 
-	    case am_shell:
-            if (player->readyweapon == wp_fist ||
-                player->readyweapon == wp_pistol)
-            {
-                if (player->weaponowned[wp_shotgun])
-                {
-                    player->pendingweapon = wp_shotgun;
-                }
-            }
-            break;
+		case am_shell:
+			if (player->readyweapon == wp_fist ||
+				player->readyweapon == wp_pistol)
+			{
+				if (player->weaponowned[wp_shotgun])
+				{
+					player->pendingweapon = wp_shotgun;
+				}
+			}
+			break;
 
-	    case am_cell:
-            if (player->readyweapon == wp_fist
-                || player->readyweapon == wp_pistol)
-            {
-                if (player->weaponowned[wp_plasma])
-                {
-                    player->pendingweapon = wp_plasma;
-                }
-            }
-            break;
+		case am_cell:
+			if (player->readyweapon == wp_fist
+				|| player->readyweapon == wp_pistol)
+			{
+				if (player->weaponowned[wp_plasma])
+				{
+					player->pendingweapon = wp_plasma;
+				}
+			}
+			break;
 
-	    case am_misl:
-            if (player->readyweapon == wp_fist)
-            {
-                if (player->weaponowned[wp_missile])
-                {
-                    player->pendingweapon = wp_missile;
-                }
-            }
-	    default:
-            break;
+		case am_misl:
+			if (player->readyweapon == wp_fist)
+			{
+				if (player->weaponowned[wp_missile])
+				{
+					player->pendingweapon = wp_missile;
+				}
+			}
+		default:
+			break;
+		}
 	}
 
 	return IEV_EquipRemove;
@@ -1178,8 +1181,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved;
-	player_t*   splayer; // shorthand for source->player
-	player_t*   tplayer; // shorthand for target->player
+	player_t*   splayer = NULL; // shorthand for source->player
+	player_t*   tplayer = NULL; // shorthand for target->player
 	fixed_t 	thrust;
 
 	if (!serverside)

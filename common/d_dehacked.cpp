@@ -575,9 +575,9 @@ static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
 
-static int filelen = 0;	// Be quiet, gcc
+static size_t filelen = 0;	// Be quiet, gcc
 
-#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == filelen)
+#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == (int)filelen)
 
 static int HandleMode (const char *mode, int num)
 {
@@ -1538,17 +1538,17 @@ static int PatchText (int oldSize)
 	DPrintf ("Searching for text:\n%s\n", oldStr);
 	good = false;
 
-    // Search through sprite names
-    for (i = 0; i < NUMSPRITES; i++) {
-        if (!strcmp (sprnames[i], oldStr)) {
-            sprnames[i] = copystring (newStr);
-            good = true;
-            // See above.
-        }
-    }
+	// Search through sprite names
+	for (i = 0; i < NUMSPRITES; i++) {
+		if (!strcmp (sprnames[i], oldStr)) {
+			sprnames[i] = copystring (newStr);
+			good = true;
+			// See above.
+		}
+	}
 
-    if (good)
-        goto donewithtext;
+	if (good)
+		goto donewithtext;
 
 	// Search through music names.
 	if (oldSize < 7)

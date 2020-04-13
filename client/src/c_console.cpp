@@ -1624,8 +1624,8 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-    if (!msgtime)
-        msgtime = con_midtime.asInt();
+	if (!msgtime)
+		msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);
@@ -1634,9 +1634,9 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 	{
 		midprinting = true;
 
-        // [Russell] - convert textual "\n" into the binary representation for
-        // line breaking
-    	std::string str = msg;
+		// [Russell] - convert textual "\n" into the binary representation for
+		// line breaking
+		std::string str = msg;
 
 		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
 		{
