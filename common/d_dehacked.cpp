@@ -549,6 +549,8 @@ static const struct {
 	const char *name;
 	int (*func)(int);
 } Modes[] = {
+	// https://eternity.youfailit.net/wiki/DeHackEd_/_BEX_Reference
+
 	// These appear in .deh and .bex files
 	{ "Thing",		PatchThing },
 	{ "Sound",		PatchSound },
@@ -565,6 +567,7 @@ static const struct {
 	{ "[STRINGS]",	PatchStrings },
 	{ "[PARS]",		PatchPars },
 	{ "[CODEPTR]",	PatchCodePtrs },
+	// Eternity engine added a few more features to BEX
 	{ "[MUSIC]",	PatchMusic },
 	{ NULL, NULL},
 };

@@ -75,13 +75,13 @@ class FBehavior;
 struct level_info_t {
 	char			mapname[9];
 	int				levelnum;
-	const char*		level_name;
+	char*			level_name;
 	char			pname[9];
 	char			nextmap[9];
 	char			secretmap[9];
 	int				partime;
 	char			skypic[9];
-	char			music[9];
+	char*			music;
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -93,13 +93,13 @@ struct level_pwad_info_t
 	// level_info_t
 	char			mapname[9];
 	int				levelnum;
-	const char*		level_name;
+	char*			level_name;
 	char			pname[9];
 	char			nextmap[9];
 	char			secretmap[9];
 	int				partime;
 	char			skypic[9];
-	char			music[9];
+	char*			music;
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -171,10 +171,10 @@ struct level_locals_t {
 
 struct cluster_info_t {
 	int				cluster;
-	char			messagemusic[9];
+	char*			messagemusic;
 	char			finaleflat[9];
-	const char*		exittext;
-	const char*		entertext;
+	char*			exittext;
+	char*			entertext;
 	int				flags;
 };
 

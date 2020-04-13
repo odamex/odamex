@@ -673,7 +673,7 @@ static void ParseMapInfoLower(
 			}
 
 			SC_MustGetString();
-			ReplaceString((const char**)(info + handler->data1), sc_String);
+			ReplaceString((char**)(info + handler->data1), sc_String);
 			break;
 
 		case MITYPE_CSTRING:
@@ -702,11 +702,11 @@ static void ParseMapInfoLower(
 				{
 					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 				}
-				ReplaceString((const char**)(info + handler->data1), GStrings(i));
+				ReplaceString((char**)(info + handler->data1), GStrings(i));
 			}
 			else
 			{
-				ReplaceString((const char**)(info + handler->data1), sc_String);
+				ReplaceString((char**)(info + handler->data1), sc_String);
 			}
 			break;
 		}
@@ -1223,15 +1223,17 @@ cluster_info_t *FindClusterInfo (int cluster)
 
 void G_SetLevelStrings (void)
 {
-	char temp[8];
+	char temp[9];
 	const char *namepart;
-	int i, start;
+	int i, start, zi;
 
 	temp[0] = '0';
 	temp[1] = ':';
 	temp[2] = 0;
 	for (i = HUSTR_E1M1; i <= HUSTR_E4M9; ++i)
 	{
+		zi = i - HUSTR_E1M1;
+
 		if (temp[0] < '9')
 			temp[0]++;
 		else
@@ -1248,8 +1250,11 @@ void G_SetLevelStrings (void)
 			namepart = GStrings(i);
 		}
 
-		ReplaceString (&LevelInfos[i-HUSTR_E1M1].level_name, namepart);
-		//ReplaceString (&LevelInfos[i-HUSTR_E1M1].music, Musics1[i-HUSTR_E1M1]);
+		ReplaceString (&LevelInfos[zi].level_name, namepart);
+
+		char muslump[9];
+		snprintf(muslump, ARRAY_LENGTH(muslump), "D_%s", GStrings(MUSIC_E1M1 + zi));
+		ReplaceString(&LevelInfos[zi].music, muslump);
 	}
 
 	for (i = 0; i < 4; i++)
@@ -1272,6 +1277,10 @@ void G_SetLevelStrings (void)
 			namepart = GStrings(i+start);
  		}
  		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+
+		char muslump[9];
+		snprintf(muslump, ARRAY_LENGTH(muslump), "D_%s", GStrings(MUSIC_RUNNIN + i));
+		ReplaceString(&LevelInfos[36+i].music, muslump);
  	}
 
 	if (gamemission == pack_plut)
@@ -1286,8 +1295,25 @@ void G_SetLevelStrings (void)
 	for (; i < 6; i++)
 		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
 
-	//for (i = 0; i < 15; i++)
-	//	ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
+
+	for (i = 0; i < 15; i++)
+	{
+		if (!ClusterInfos[i].cluster)
+		{
+			break;
+		}
+
+		if (ClusterInfos[i].cluster <= 4)
+		{
+			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
+			ReplaceString(&ClusterInfos[i].messagemusic, temp);
+		}
+		else
+		{
+			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
+			ReplaceString(&ClusterInfos[i].messagemusic, temp);
+		}
+	}
 
 	if (level.info)
 		strncpy (level.level_name, level.info->level_name, 63);
@@ -1647,7 +1673,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		30,
 		"SKY1",
-		"D_E1M1",
+		NULL,
 		0,
 		1,
 		0
@@ -1661,7 +1687,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		75,
 		"SKY1",
-		"D_E1M2",
+		NULL,
 		0,
 		1,
 		0
@@ -1675,7 +1701,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		120,
 		"SKY1",
-		"D_E1M3",
+		NULL,
 		0,
 		1,
 		0
@@ -1689,7 +1715,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		90,
 		"SKY1",
-		"D_E1M4",
+		NULL,
 		0,
 		1,
 		0
@@ -1703,7 +1729,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		165,
 		"SKY1",
-		"D_E1M5",
+		NULL,
 		0,
 		1,
 		0
@@ -1717,7 +1743,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		180,
 		"SKY1",
-		"D_E1M6",
+		NULL,
 		0,
 		1,
 		0
@@ -1731,7 +1757,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		180,
 		"SKY1",
-		"D_E1M7",
+		NULL,
 		0,
 		1,
 		0
@@ -1746,7 +1772,7 @@ level_info_t LevelInfos[] = {
 		"E1M9",
 		30,
 		"SKY1",
-		"D_E1M8",
+		NULL,
 		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		1,
 		0
@@ -1760,7 +1786,7 @@ level_info_t LevelInfos[] = {
 		"E1M4",
 		165,
 		"SKY1",
-		"D_E1M9",
+		NULL,
 		0,
 		1,
 		0
@@ -1776,7 +1802,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		90,
 		"SKY2",
-		"D_E2M1",
+		NULL,
 		0,
 		2,
 		0
@@ -1805,7 +1831,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		90,
 		"SKY2",
-		"D_E2M3",
+		NULL,
 		0,
 		2,
 		0
@@ -1819,7 +1845,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		120,
 		"SKY2",
-		"D_E2M4",
+		NULL,
 		0,
 		2,
 		0
@@ -1833,7 +1859,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		90,
 		"SKY2",
-		"D_E2M5",
+		NULL,
 		0,
 		2,
 		0
@@ -1847,7 +1873,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		360,
 		"SKY2",
-		"D_E2M6",
+		NULL,
 		0,
 		2,
 		0
@@ -1861,7 +1887,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		240,
 		"SKY2",
-		"D_E2M7",
+		NULL,
 		0,
 		2,
 		0
@@ -1876,7 +1902,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		30,
 		"SKY2",
-		"D_E2M8",
+		NULL,
 		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		2,
 		0
@@ -1890,7 +1916,7 @@ level_info_t LevelInfos[] = {
 		"E2M6",
 		170,
 		"SKY2",
-		"D_E2M9",
+		NULL,
 		0,
 		2,
 		0
@@ -1907,7 +1933,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		90,
 		"SKY3",
-		"D_E3M1",
+		NULL,
 		0,
 		3,
 		0
@@ -1921,7 +1947,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		45,
 		"SKY3",
-		"D_E3M2",
+		NULL,
 		0,
 		3,
 		0
@@ -1935,7 +1961,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		90,
 		"SKY3",
-		"D_E3M3",
+		NULL,
 		0,
 		3,
 		0
@@ -1949,7 +1975,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		150,
 		"SKY3",
-		"D_E3M4",
+		NULL,
 		0,
 		3,
 		0
@@ -1963,7 +1989,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		90,
 		"SKY3",
-		"D_E3M5",
+		NULL,
 		0,
 		3,
 		0
@@ -1977,7 +2003,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		90,
 		"SKY3",
-		"D_E3M6",
+		NULL,
 		0,
 		3,
 		0
@@ -1991,7 +2017,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		165,
 		"SKY3",
-		"D_E3M7",
+		NULL,
 		0,
 		3,
 		0
@@ -2006,7 +2032,7 @@ level_info_t LevelInfos[] = {
 		"E3M9",
 		30,
 		"SKY3",
-		"D_E3M8",
+		NULL,
 		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		3,
 		0
@@ -2020,7 +2046,7 @@ level_info_t LevelInfos[] = {
 		"E3M7",
 		135,
 		"SKY3",
-		"D_E3M9",
+		NULL,
 		0,
 		3,
 		0
@@ -2036,7 +2062,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E3M4",
+		NULL,
 		0,
 		4,
 		0
@@ -2050,7 +2076,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E3M2",
+		NULL,
 		0,
 		4,
 		0
@@ -2064,7 +2090,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E3M3",
+		NULL,
 		0,
 		4,
 		0
@@ -2078,7 +2104,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E1M5",
+		NULL,
 		0,
 		4,
 		0
@@ -2092,7 +2118,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E2M7",
+		NULL,
 		0,
 		4,
 		0
@@ -2106,7 +2132,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E2M4",
+		NULL,
 		LEVEL_CYBORGSPECIAL|LEVEL_SPECOPENDOOR,
 		4,
 		0
@@ -2120,7 +2146,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E2M6",
+		NULL,
 		0,
 		4,
 		0
@@ -2135,7 +2161,7 @@ level_info_t LevelInfos[] = {
 		"E4M9",
 		0,
 		"SKY4",
-		"D_E2M5",
+		NULL,
 		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
 		4,
 		0
@@ -2149,7 +2175,7 @@ level_info_t LevelInfos[] = {
 		"E4M3",
 		0,
 		"SKY4",
-		"D_E1M9",
+		NULL,
 		0,
 		4,
 		0
@@ -2166,7 +2192,7 @@ level_info_t LevelInfos[] = {
 		"MAP02",
 		30,
 		"SKY1",
-        "D_RUNNIN",
+        NULL,
 //		{ 'D','_','R','U','N','N','I','N' },
 		0,
 		5,
@@ -2181,7 +2207,7 @@ level_info_t LevelInfos[] = {
 		"MAP03",
 		90,
 		"SKY1",
-		"D_STALKS",
+		NULL,
 //		{ 'D','_','S','T','A','L','K','S' },
 		0,
 		5,
@@ -2196,7 +2222,7 @@ level_info_t LevelInfos[] = {
 		"MAP04",
 		120,
 		"SKY1",
-        "D_COUNTD",
+        NULL,
 //		{ 'D','_','C','O','U','N','T','D' },
 		0,
 		5,
@@ -2211,7 +2237,7 @@ level_info_t LevelInfos[] = {
 		"MAP05",
 		120,
 		"SKY1",
-		"D_BETWEE",
+		NULL,
 //		{ 'D','_','B','E','T','W','E','E' },
 		0,
 		5,
@@ -2226,7 +2252,7 @@ level_info_t LevelInfos[] = {
 		"MAP06",
 		90,
 		"SKY1",
-		"D_DOOM",
+		NULL,
 		0,
 		5,
 		0
@@ -2240,7 +2266,7 @@ level_info_t LevelInfos[] = {
 		"MAP07",
 		150,
 		"SKY1",
-		"D_THE_DA",
+		NULL,
 //		{ 'D','_','T','H','E','_','D','A' },
 		0,
 		5,
@@ -2255,7 +2281,7 @@ level_info_t LevelInfos[] = {
 		"MAP08",
 		120,
 		"SKY1",
-		"D_SHAWN",
+		NULL,
 		LEVEL_MAP07SPECIAL,
 		6,
 		0
@@ -2269,7 +2295,7 @@ level_info_t LevelInfos[] = {
 		"MAP09",
 		120,
 		"SKY1",
-		"D_DDTBLU",
+		NULL,
 //		{ 'D','_','D','D','T','B','L','U' },
 		0,
 		6,
@@ -2284,7 +2310,7 @@ level_info_t LevelInfos[] = {
 		"MAP10",
 		270,
 		"SKY1",
-        "D_IN_CIT",
+        NULL,
 //		{ 'D','_','I','N','_','C','I','T' },
 		0,
 		6,
@@ -2299,7 +2325,7 @@ level_info_t LevelInfos[] = {
 		"MAP11",
 		90,
 		"SKY1",
-		"D_DEAD",
+		NULL,
 		0,
 		6,
 		0
@@ -2313,7 +2339,7 @@ level_info_t LevelInfos[] = {
 		"MAP12",
 		210,
 		"SKY1",
-        "D_STLKS2",
+        NULL,
 //		{ 'D','_','S','T','L','K','S','2' },
 		0,
 		6,
@@ -2328,7 +2354,7 @@ level_info_t LevelInfos[] = {
 		"MAP13",
 		150,
 		"SKY2",
-		"D_THEDA2",
+		NULL,
 //		{ 'D','_','T','H','E','D','A','2' },
 		0,
 		7,
@@ -2343,7 +2369,7 @@ level_info_t LevelInfos[] = {
 		"MAP14",
 		150,
 		"SKY2",
-		"D_DOOM2",
+		NULL,
 		0,
 		7,
 		0
@@ -2357,7 +2383,7 @@ level_info_t LevelInfos[] = {
 		"MAP15",
 		150,
 		"SKY2",
-		"D_DDTBL2",
+		NULL,
 //		{ 'D','_','D','D','T','B','L','2' },
 		0,
 		7,
@@ -2372,7 +2398,7 @@ level_info_t LevelInfos[] = {
 		"MAP31",
 		210,
 		"SKY2",
-		"D_RUNNI2",
+		NULL,
 //		{ 'D','_','R','U','N','N','I','2' },
 		0,
 		7,
@@ -2387,7 +2413,7 @@ level_info_t LevelInfos[] = {
 		"MAP17",
 		150,
 		"SKY2",
-		"D_DEAD2",
+		NULL,
 		0,
 		7,
 		0
@@ -2401,7 +2427,7 @@ level_info_t LevelInfos[] = {
 		"MAP18",
 		420,
 		"SKY2",
-		"D_STLKS3",
+		NULL,
 //		{ 'D','_','S','T','L','K','S','3' },
 		0,
 		7,
@@ -2416,7 +2442,7 @@ level_info_t LevelInfos[] = {
 		"MAP19",
 		150,
 		"SKY2",
-		"D_ROMERO",
+		NULL,
 //		{ 'D','_','R','O','M','E','R','O' },
 		0,
 		7,
@@ -2431,7 +2457,7 @@ level_info_t LevelInfos[] = {
 		"MAP20",
 		210,
 		"SKY2",
-		"D_SHAWN2",
+		NULL,
 //		{ 'D','_','S','H','A','W','N','2' },
 		0,
 		7,
@@ -2446,7 +2472,7 @@ level_info_t LevelInfos[] = {
 		"MAP21",
 		150,
 		"SKY2",
-		"D_MESSAG",
+		NULL,
 //		{ 'D','_','M','E','S','S','A','G' },
 		0,
 		7,
@@ -2461,7 +2487,7 @@ level_info_t LevelInfos[] = {
 		"MAP22",
 		240,
 		"SKY3",
-		"D_COUNT2",
+		NULL,
 //		{ 'D','_','C','O','U','N','T','2' },
 		0,
 		8,
@@ -2476,7 +2502,7 @@ level_info_t LevelInfos[] = {
 		"MAP23",
 		150,
 		"SKY3",
-		"D_DDTBL3",
+		NULL,
 //		{ 'D','_','D','D','T','B','L','3' },
 		0,
 		8,
@@ -2491,7 +2517,7 @@ level_info_t LevelInfos[] = {
 		"MAP24",
 		180,
 		"SKY3",
-		"D_AMPIE",
+		NULL,
 		0,
 		8,
 		0
@@ -2505,7 +2531,7 @@ level_info_t LevelInfos[] = {
 		"MAP25",
 		150,
 		"SKY3",
-		"D_THEDA3",
+		NULL,
 //		{ 'D','_','T','H','E','D','A','3' },
 		0,
 		8,
@@ -2520,7 +2546,7 @@ level_info_t LevelInfos[] = {
 		"MAP26",
 		150,
 		"SKY3",
-		"D_ADRIAN",
+		NULL,
 //		{ 'D','_','A','D','R','I','A','N' },
 		0,
 		8,
@@ -2535,7 +2561,7 @@ level_info_t LevelInfos[] = {
 		"MAP27",
 		300,
 		"SKY3",
-		"D_MESSG2",
+		NULL,
 //		{ 'D','_','M','E','S','S','G','2' },
 		0,
 		8,
@@ -2550,7 +2576,7 @@ level_info_t LevelInfos[] = {
 		"MAP28",
 		330,
 		"SKY3",
-        "D_ROMER2",
+        NULL,
 //		{ 'D','_','R','O','M','E','R','2' },
 		0,
 		8,
@@ -2565,7 +2591,7 @@ level_info_t LevelInfos[] = {
 		"MAP29",
 		420,
 		"SKY3",
-		"D_TENSE",
+		NULL,
 		0,
 		8,
 		0
@@ -2579,7 +2605,7 @@ level_info_t LevelInfos[] = {
 		"MAP30",
 		300,
 		"SKY3",
-		"D_SHAWN3",
+		NULL,
 //		{ 'D','_','S','H','A','W','N','3' },
 		0,
 		8,
@@ -2596,7 +2622,7 @@ level_info_t LevelInfos[] = {
 //		{ 'E','n','d','G','a','m','e','C' },
 		180,
 		"SKY3",
-		"D_OPENIN",
+		NULL,
 //		{ 'D','_','O','P','E','N','I','N' },
 		LEVEL_MONSTERSTELEFRAG,
 		8,
@@ -2611,7 +2637,7 @@ level_info_t LevelInfos[] = {
 		"MAP32",
 		120,
 		"SKY3",
-		"D_EVIL",
+		NULL,
 		0,
 		9,
 		0
@@ -2625,7 +2651,7 @@ level_info_t LevelInfos[] = {
 		"MAP16",
 		30,
 		"SKY3",
-		"D_ULTIMA",
+		NULL,
 //		{ 'D','_','U','L','T','I','M','A' },
 		0,
 		10,
@@ -2651,7 +2677,7 @@ level_info_t LevelInfos[] = {
 cluster_info_t ClusterInfos[] = {
 	{
 		1,		// DOOM Episode 1
-		"D_VICTOR",
+		NULL,
 		"FLOOR4_8",
 //		{ 'F','L','O','O','R','4','_','8' }, // questionable
 		NULL,
@@ -2660,7 +2686,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		2,		// DOOM Episode 2
-		"D_VICTOR",
+		NULL,
 		"SFLR6_1",
 		NULL,
 		NULL,
@@ -2668,7 +2694,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		3,		// DOOM Episode 3
-		"D_VICTOR",
+		NULL,
 		"MFLR8_4",
 		NULL,
 		NULL,
@@ -2676,7 +2702,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		4,		// DOOM Episode 4
-		"D_VICTOR",
+		NULL,
 		"MFLR8_3",
 		NULL,
 		NULL,
@@ -2684,7 +2710,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		5,		// DOOM II first cluster (up thru level 6)
-		"D_READ_M",
+		NULL,
 		"SLIME16",
 		NULL,
 		NULL,
@@ -2692,7 +2718,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		6,		// DOOM II second cluster (up thru level 11)
-		"D_READ_M",
+		NULL,
 		"RROCK14",
 		NULL,
 		NULL,
@@ -2700,7 +2726,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		7,		// DOOM II third cluster (up thru level 20)
-		"D_READ_M",
+		NULL,
 		"RROCK07",
 		NULL,
 		NULL,
@@ -2708,7 +2734,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		8,		// DOOM II fourth cluster (up thru level 30)
-		"D_READ_M",
+		NULL,
 		"RROCK17",
 		NULL,
 		NULL,
@@ -2716,7 +2742,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		9,		// DOOM II fifth cluster (level 31)
-		"D_READ_M",
+		NULL,
 		"RROCK13",
 		NULL,
 		NULL,
@@ -2724,7 +2750,7 @@ cluster_info_t ClusterInfos[] = {
 	},
 	{
 		10,		// DOOM II sixth cluster (level 32)
-		"D_READ_M",
+		NULL,
 		"RROCK19",
 		NULL,
 		NULL,
