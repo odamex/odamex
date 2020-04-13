@@ -161,4 +161,67 @@
 #define KEY_HAT8				0x172
 #define NUM_KEYS				0x174
 
+
+#define SCANCODE_TO_KEYS_ARRAY {                                                            \
+	0, 0, 0, 0, 'a',                                                        /* 0 - 9 */     \
+	'b', 'c', 'd', 'e', 'f',                                                                \
+	'g', 'h', 'i', 'j', 'k',                                                /* 10 - 19 */   \
+	'l', 'm', 'n', 'o', 'p',                                                                \
+	'q', 'r', 's', 't', 'u',                                                /* 20 - 29 */   \
+	'v', 'w', 'x', 'y', 'z',                                                                \
+	'1', '2', '3', '4', '5',                                                /* 30 - 39 */   \
+	'6', '7', '8', '9', '0',                                                                \
+	KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_TAB, KEY_SPACE,               /* 40 - 49 */   \
+	KEY_MINUS, KEY_EQUALS, '[', ']', '\\',                                                  \
+	'#', ';', '\'', '`', ',',                                               /* 50 - 59 */   \
+	'.', '/', KEY_CAPSLOCK, KEY_F1, KEY_F2,                                                 \
+	KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7,                                 /* 60 - 69 */   \
+	KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12,                                              \
+	KEY_PRINT, KEY_SCRLCK, KEY_PAUSE, KEY_INS, KEY_HOME,                    /* 70 - 79 */   \
+	KEY_PGUP, KEY_DEL, KEY_END, KEY_PGDN, KEY_RIGHTARROW,                                   \
+	KEY_LEFTARROW, KEY_DOWNARROW, KEY_UPARROW, KEY_NUMLOCK, KEYP_DIVIDE,    /* 80 - 89 */   \
+	KEYP_MULTIPLY, KEYP_MINUS, KEYP_PLUS, KEYP_ENTER, KEYP_1,                               \
+	KEYP_2, KEYP_3, KEYP_4, KEYP_5, KEYP_6,                                 /* 90 - 99 */   \
+	KEYP_7, KEYP_8, KEYP_9, KEYP_0, KEYP_PERIOD,                                            \
+	0, 0, 0, KEYP_EQUALS, KEY_F13,                                          /* 100 - 109 */ \
+	KEY_F14, KEY_F15, 0, 0, 0,                                                              \
+	0, 0, 0, 0, 0,                                                          /* 110 - 119 */ \
+	0, 0, KEY_HELP, 0, 0,                                                                   \
+	0, 0, 0, 0, 0,                                                          /* 120 - 129 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 130 - 139 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 140 - 149 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, KEY_SYSRQ,                                                  /* 150 - 159 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 160 - 169 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 170 - 179 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 180 - 189 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 190 - 199 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 200 - 209 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 210 - 219 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, KEY_LCTRL,                                                  /* 220 - 229 */ \
+	KEY_LSHIFT, KEY_LALT, KEY_LWIN, KEY_RCTRL, KEY_RSHIFT,                                  \
+	KEY_RALT, KEY_RWIN, 0, 0, 0,                                            /* 230 - 239 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 240 - 249 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 250 - 259 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 260 - 269 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 270 - 279 */ \
+	0, 0, 0, 0, 0,                                                                          \
+	0, 0, 0, 0, 0,                                                          /* 280 - 286 */ \
+	0, 0                                                                                    \
+}
+
+
 #endif	// __DOOMKEYS_H__
