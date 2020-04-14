@@ -57,6 +57,124 @@ static bool window_focused = false;
 static bool input_grabbed = false;
 static bool nomouse = false;
 
+
+// SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
+// so I get to re-write the entire system. YES I RE-DID ALL OF THIS BY HAND
+// SoM: note: eat shit and die Randy Heit this uses SDL key codes now!
+static const char* KeyNames[NUM_KEYS] = {
+// :: Begin ASCII mapped keycodes
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 00 - 07
+"backspace","tab",   NULL,    NULL,    NULL, "enter",    NULL,    NULL, // 08 - 0F
+   NULL,    NULL,    NULL, "pause",    NULL,    NULL,    NULL,    NULL, // 10 - 17
+   NULL,    NULL,    NULL,"escape",    NULL,    NULL,    NULL,    NULL, // 18 - 1F
+"space",     "!",    "\"",     "#",     "$",    NULL,     "&",     "'", // 20 - 27
+    "(",     ")",     "*",     "+",     ",",     "-",     ".",     "/", // 28 - 2F
+    "0",     "1",     "2",     "3",     "4",     "5",     "6",     "7", // 30 - 37
+    "8",     "9",     ":",     ";",     "<",     "=",     ">",     "?", // 38 - 3F
+    "@",    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 40 - 47
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 48 - 4F
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 50 - 57
+   NULL,    NULL,    NULL,     "[",    "\\",     "]",     "^",     "_", // 58 - 5F
+"grave",     "a",     "b",     "c",     "d",     "e",     "f",     "g", // 60 - 67
+    "h",     "i",     "j",     "k",     "l",     "m",     "n",     "o", // 68 - 6F
+    "p",     "q",     "r",     "s",     "t",     "u",     "v",     "w", // 70 - 77
+    "x",     "y",     "z",    NULL,    NULL,    NULL,    NULL,   "del", // 78 - 7F
+// :: End ASCII mapped keycodes
+// :: Begin World keycodes
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 80 - 87
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 88 - 8F
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 90 - 97
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 98 - 9F
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A0 - A7
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A8 - AF
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B0 - B7
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B8 - BF
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C0 - C7
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C8 - CF
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D0 - D7
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D8 - DF
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E0 - E7
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E8 - EF
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F0 - F7
+   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
+// :: End world keycodes
+  "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
+  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
+  "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
+ "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
+   "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
+  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", "rightshift", // 0128 - 012F
+"leftshift", "rightctrl", "leftctrl", "rightalt", "leftalt",    NULL,    NULL,  "lwin", // 0130 - 0137
+ "rwin",    NULL,    NULL,  "help", "print", "sysrq", "break",    NULL,  // 0138 - 013F
+   NULL,    NULL,    NULL,    // 0140 - 0142
+
+	// non-keyboard buttons that can be bound
+   // 0143 - 0146 & 0173
+	"mouse1",	"mouse2",	"mouse3",	"mouse4",			// 5 mouse buttons
+   // 0147 - 014A
+   "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
+   // 014B - 014E
+	"joy1",		"joy2",		"joy3",		"joy4",			// 32 joystick buttons
+   // 014F - 0152
+	"joy5",		"joy6",		"joy7",		"joy8",
+   // 0153 - 0156
+	"joy9",		"joy10",	"joy11",	"joy12",
+   // 0157 - 015A
+	"joy13",	"joy14",	"joy15",	"joy16",
+   // 015B - 015E
+	"joy17",	"joy18",	"joy19",	"joy20",
+   // 015F - 0162
+	"joy21",	"joy22",	"joy23",	"joy24",
+   // 0163 - 0166
+	"joy25",	"joy26",	"joy27",	"joy28",
+   // 0167 - 016A
+	"joy29",	"joy30",	"joy31",	"joy32",
+  // 016B - 016E
+	"hat1up",	"hat1right","hat1down",	"hat1left",
+  // 016F - 0172
+	"hat2up",	"hat2right","hat2down",	"hat2left", "mouse5"
+};
+
+
+//
+// I_GetKeyFromName
+//
+// Returns the key code for the given key name
+//
+int I_GetKeyFromName(const std::string& name)
+{
+	// Names of the form #xxx are translated to key xxx automatically
+	if (name[0] == '#' && name[1] != 0)
+	{
+		return atoi(name.c_str() + 1);
+	}
+
+	// Otherwise, we scan the KeyNames[] array for a matching name
+	for (int key = 0; key < NUM_KEYS; key++)
+	{
+		if (KeyNames[key] && !stricmp(KeyNames[key], name.c_str()))
+			return key;
+	}
+	return 0;
+}
+
+
+//
+// I_GetKeyName
+//
+// Returns the key code for the given key name
+//
+std::string I_GetKeyName(int key)
+{
+	if (KeyNames[key])
+		return std::string(KeyNames[key]);
+
+	static char name[5];
+	sprintf(name, "#%d", key);
+	return std::string(name);
+}
+
+
 //
 // I_FlushInput
 //

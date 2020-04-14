@@ -46,6 +46,8 @@ int I_GetJoystickCount();
 std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
+std::string I_GetKeyName(int key);
+int I_GetKeyFromName(const std::string& name);
 
 
 // ============================================================================

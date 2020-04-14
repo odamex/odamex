@@ -28,7 +28,6 @@
 #include "doomtype.h"
 #include "doomdef.h"
 #include "m_ostring.h"
-#include "hashtable.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
@@ -36,6 +35,7 @@
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"
+#include "i_input.h"
 
 extern NetDemo netdemo;
 
@@ -128,333 +128,122 @@ static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 static bool KeysDown[NUM_KEYS];
 
-typedef OHashTable<OString, int> NameToKeyCodeTable;
-static NameToKeyCodeTable nameToKeyCode = NameToKeyCodeTable();
-
-typedef OHashTable<int, OString> KeyCodeToNameTable;
-static KeyCodeToNameTable keyCodeToName = KeyCodeToNameTable();
-
-static void buildKeyCodeTables()
-{
-	nameToKeyCode.clear();
-	nameToKeyCode.insert(std::make_pair("backspace", KEY_BACKSPACE));
-	nameToKeyCode.insert(std::make_pair("tab", KEY_TAB));
-	nameToKeyCode.insert(std::make_pair("enter", KEY_ENTER));
-	nameToKeyCode.insert(std::make_pair("pause", KEY_PAUSE));
-	nameToKeyCode.insert(std::make_pair("escape", KEY_ESCAPE));
-	nameToKeyCode.insert(std::make_pair("space", KEY_SPACE));
-	nameToKeyCode.insert(std::make_pair("!", '!'));
-	nameToKeyCode.insert(std::make_pair("\"", '\"'));
-	nameToKeyCode.insert(std::make_pair("#", '#'));
-	nameToKeyCode.insert(std::make_pair("$", '$'));
-	nameToKeyCode.insert(std::make_pair("&", '&'));
-	nameToKeyCode.insert(std::make_pair("\'", '\''));
-	nameToKeyCode.insert(std::make_pair("(", '('));
-	nameToKeyCode.insert(std::make_pair(")", ')'));
-	nameToKeyCode.insert(std::make_pair("*", '*'));
-	nameToKeyCode.insert(std::make_pair("+", '+'));
-	nameToKeyCode.insert(std::make_pair(",", ','));
-	nameToKeyCode.insert(std::make_pair("-", '-'));
-	nameToKeyCode.insert(std::make_pair(".", '.'));
-	nameToKeyCode.insert(std::make_pair("/", '/'));
-	nameToKeyCode.insert(std::make_pair("0", '0'));
-	nameToKeyCode.insert(std::make_pair("1", '1'));
-	nameToKeyCode.insert(std::make_pair("2", '2'));
-	nameToKeyCode.insert(std::make_pair("3", '3'));
-	nameToKeyCode.insert(std::make_pair("4", '4'));
-	nameToKeyCode.insert(std::make_pair("5", '5'));
-	nameToKeyCode.insert(std::make_pair("6", '6'));
-	nameToKeyCode.insert(std::make_pair("7", '7'));
-	nameToKeyCode.insert(std::make_pair("8", '8'));
-	nameToKeyCode.insert(std::make_pair("9", '9'));
-	nameToKeyCode.insert(std::make_pair(":", ':'));
-	nameToKeyCode.insert(std::make_pair(";", ';'));
-	nameToKeyCode.insert(std::make_pair("<", '<'));
-	nameToKeyCode.insert(std::make_pair("=", '='));
-	nameToKeyCode.insert(std::make_pair(">", '>'));
-	nameToKeyCode.insert(std::make_pair("?", '?'));
-	nameToKeyCode.insert(std::make_pair("@", '@'));
-	nameToKeyCode.insert(std::make_pair("[", '['));
-	nameToKeyCode.insert(std::make_pair("\\", '\\'));
-	nameToKeyCode.insert(std::make_pair("]", ']'));
-	nameToKeyCode.insert(std::make_pair("^", '^'));
-	nameToKeyCode.insert(std::make_pair("_", '_'));
-	nameToKeyCode.insert(std::make_pair("grave", '`'));
-	nameToKeyCode.insert(std::make_pair("a", 'a'));
-	nameToKeyCode.insert(std::make_pair("b", 'b'));
-	nameToKeyCode.insert(std::make_pair("c", 'c'));
-	nameToKeyCode.insert(std::make_pair("d", 'd'));
-	nameToKeyCode.insert(std::make_pair("e", 'e'));
-	nameToKeyCode.insert(std::make_pair("f", 'f'));
-	nameToKeyCode.insert(std::make_pair("g", 'g'));
-	nameToKeyCode.insert(std::make_pair("h", 'h'));
-	nameToKeyCode.insert(std::make_pair("i", 'i'));
-	nameToKeyCode.insert(std::make_pair("j", 'j'));
-	nameToKeyCode.insert(std::make_pair("k", 'k'));
-	nameToKeyCode.insert(std::make_pair("l", 'l'));
-	nameToKeyCode.insert(std::make_pair("m", 'm'));
-	nameToKeyCode.insert(std::make_pair("n", 'n'));
-	nameToKeyCode.insert(std::make_pair("o", 'o'));
-	nameToKeyCode.insert(std::make_pair("p", 'p'));
-	nameToKeyCode.insert(std::make_pair("q", 'q'));
-	nameToKeyCode.insert(std::make_pair("r", 'r'));
-	nameToKeyCode.insert(std::make_pair("s", 's'));
-	nameToKeyCode.insert(std::make_pair("t", 't'));
-	nameToKeyCode.insert(std::make_pair("u", 'u'));
-	nameToKeyCode.insert(std::make_pair("v", 'v'));
-	nameToKeyCode.insert(std::make_pair("w", 'w'));
-	nameToKeyCode.insert(std::make_pair("x", 'x'));
-	nameToKeyCode.insert(std::make_pair("y", 'y'));
-	nameToKeyCode.insert(std::make_pair("z", 'z'));
-	nameToKeyCode.insert(std::make_pair("kp0", KEYP_0));
-	nameToKeyCode.insert(std::make_pair("kp1", KEYP_1));
-	nameToKeyCode.insert(std::make_pair("kp2", KEYP_2));
-	nameToKeyCode.insert(std::make_pair("kp3", KEYP_3));
-	nameToKeyCode.insert(std::make_pair("kp4", KEYP_4));
-	nameToKeyCode.insert(std::make_pair("kp5", KEYP_5));
-	nameToKeyCode.insert(std::make_pair("kp6", KEYP_6));
-	nameToKeyCode.insert(std::make_pair("kp7", KEYP_7));
-	nameToKeyCode.insert(std::make_pair("kp8", KEYP_8));
-	nameToKeyCode.insert(std::make_pair("kp9", KEYP_9));
-	nameToKeyCode.insert(std::make_pair("kp.", KEYP_PERIOD));
-	nameToKeyCode.insert(std::make_pair("kp/", KEYP_DIVIDE));
-	nameToKeyCode.insert(std::make_pair("kp*", KEYP_MULTIPLY));
-	nameToKeyCode.insert(std::make_pair("kp-", KEYP_MINUS));
-	nameToKeyCode.insert(std::make_pair("kp+", KEYP_PLUS));
-	nameToKeyCode.insert(std::make_pair("kpenter", KEYP_ENTER));
-	nameToKeyCode.insert(std::make_pair("kp=", KEYP_EQUALS));
-	nameToKeyCode.insert(std::make_pair("uparrow", KEY_UPARROW));
-	nameToKeyCode.insert(std::make_pair("downarrow", KEY_DOWNARROW));
-	nameToKeyCode.insert(std::make_pair("rightarrow", KEY_RIGHTARROW));
-	nameToKeyCode.insert(std::make_pair("leftarrow", KEY_LEFTARROW));
-	nameToKeyCode.insert(std::make_pair("ins", KEY_INS));
-	nameToKeyCode.insert(std::make_pair("home", KEY_HOME));
-	nameToKeyCode.insert(std::make_pair("end", KEY_END));
-	nameToKeyCode.insert(std::make_pair("pgup", KEY_PGUP));
-	nameToKeyCode.insert(std::make_pair("pgdn", KEY_PGDN));
-	nameToKeyCode.insert(std::make_pair("f1", KEY_F1));
-	nameToKeyCode.insert(std::make_pair("f2", KEY_F2));
-	nameToKeyCode.insert(std::make_pair("f3", KEY_F3));
-	nameToKeyCode.insert(std::make_pair("f4", KEY_F4));
-	nameToKeyCode.insert(std::make_pair("f5", KEY_F5));
-	nameToKeyCode.insert(std::make_pair("f6", KEY_F6));
-	nameToKeyCode.insert(std::make_pair("f7", KEY_F7));
-	nameToKeyCode.insert(std::make_pair("f8", KEY_F8));
-	nameToKeyCode.insert(std::make_pair("f9", KEY_F9));
-	nameToKeyCode.insert(std::make_pair("f10", KEY_F10));
-	nameToKeyCode.insert(std::make_pair("f11", KEY_F11));
-	nameToKeyCode.insert(std::make_pair("f12", KEY_F12));
-	nameToKeyCode.insert(std::make_pair("f13", KEY_F13));
-	nameToKeyCode.insert(std::make_pair("f14", KEY_F14));
-	nameToKeyCode.insert(std::make_pair("f15", KEY_F15));
-	nameToKeyCode.insert(std::make_pair("capslock", KEY_CAPSLOCK));
-	nameToKeyCode.insert(std::make_pair("numlock", KEY_NUMLOCK));
-	nameToKeyCode.insert(std::make_pair("scroll", KEY_SCRLCK));
-	nameToKeyCode.insert(std::make_pair("rightshift", KEY_RSHIFT));
-	nameToKeyCode.insert(std::make_pair("leftshift", KEY_LSHIFT));
-	nameToKeyCode.insert(std::make_pair("rightctrl", KEY_RCTRL));
-	nameToKeyCode.insert(std::make_pair("leftctrl", KEY_LCTRL));
-	nameToKeyCode.insert(std::make_pair("rightalt", KEY_RALT));
-	nameToKeyCode.insert(std::make_pair("leftalt", KEY_LALT));
-	nameToKeyCode.insert(std::make_pair("lwin", KEY_LWIN));
-	nameToKeyCode.insert(std::make_pair("rwin", KEY_RWIN));
-	nameToKeyCode.insert(std::make_pair("help", KEY_HELP));
-	nameToKeyCode.insert(std::make_pair("print", KEY_PRINT));
-	nameToKeyCode.insert(std::make_pair("sysrq", KEY_SYSRQ));
-	nameToKeyCode.insert(std::make_pair("break", KEY_BREAK));
-	nameToKeyCode.insert(std::make_pair("mouse1", KEY_MOUSE1));
-	nameToKeyCode.insert(std::make_pair("mouse2", KEY_MOUSE2));
-	nameToKeyCode.insert(std::make_pair("mouse3", KEY_MOUSE3));
-	nameToKeyCode.insert(std::make_pair("mouse4", KEY_MOUSE4));
-	nameToKeyCode.insert(std::make_pair("mouse5", KEY_MOUSE5));
-	nameToKeyCode.insert(std::make_pair("mwheelup", KEY_MWHEELUP));
-	nameToKeyCode.insert(std::make_pair("mwheeldown", KEY_MWHEELDOWN));
-	nameToKeyCode.insert(std::make_pair("joy1", KEY_JOY1));
-	nameToKeyCode.insert(std::make_pair("joy2", KEY_JOY2));
-	nameToKeyCode.insert(std::make_pair("joy3", KEY_JOY3));
-	nameToKeyCode.insert(std::make_pair("joy4", KEY_JOY4));
-	nameToKeyCode.insert(std::make_pair("joy5", KEY_JOY5));
-	nameToKeyCode.insert(std::make_pair("joy6", KEY_JOY6));
-	nameToKeyCode.insert(std::make_pair("joy7", KEY_JOY7));
-	nameToKeyCode.insert(std::make_pair("joy8", KEY_JOY8));
-	nameToKeyCode.insert(std::make_pair("joy9", KEY_JOY9));
-	nameToKeyCode.insert(std::make_pair("joy10", KEY_JOY10));
-	nameToKeyCode.insert(std::make_pair("joy11", KEY_JOY11));
-	nameToKeyCode.insert(std::make_pair("joy12", KEY_JOY12));
-	nameToKeyCode.insert(std::make_pair("joy13", KEY_JOY13));
-	nameToKeyCode.insert(std::make_pair("joy14", KEY_JOY14));
-	nameToKeyCode.insert(std::make_pair("joy15", KEY_JOY15));
-	nameToKeyCode.insert(std::make_pair("joy16", KEY_JOY16));
-	nameToKeyCode.insert(std::make_pair("joy17", KEY_JOY17));
-	nameToKeyCode.insert(std::make_pair("joy18", KEY_JOY18));
-	nameToKeyCode.insert(std::make_pair("joy19", KEY_JOY19));
-	nameToKeyCode.insert(std::make_pair("joy20", KEY_JOY20));
-	nameToKeyCode.insert(std::make_pair("joy21", KEY_JOY21));
-	nameToKeyCode.insert(std::make_pair("joy22", KEY_JOY22));
-	nameToKeyCode.insert(std::make_pair("joy23", KEY_JOY23));
-	nameToKeyCode.insert(std::make_pair("joy24", KEY_JOY24));
-	nameToKeyCode.insert(std::make_pair("joy25", KEY_JOY25));
-	nameToKeyCode.insert(std::make_pair("joy26", KEY_JOY26));
-	nameToKeyCode.insert(std::make_pair("joy27", KEY_JOY27));
-	nameToKeyCode.insert(std::make_pair("joy28", KEY_JOY28));
-	nameToKeyCode.insert(std::make_pair("joy29", KEY_JOY29));
-	nameToKeyCode.insert(std::make_pair("joy30", KEY_JOY30));
-	nameToKeyCode.insert(std::make_pair("joy31", KEY_JOY31));
-	nameToKeyCode.insert(std::make_pair("joy32", KEY_JOY32));
-	nameToKeyCode.insert(std::make_pair("hat1up", KEY_HAT1));
-	nameToKeyCode.insert(std::make_pair("hat1right", KEY_HAT2));
-	nameToKeyCode.insert(std::make_pair("hat1down", KEY_HAT3));
-	nameToKeyCode.insert(std::make_pair("hat1left", KEY_HAT4));
-	nameToKeyCode.insert(std::make_pair("hat2up", KEY_HAT5));
-	nameToKeyCode.insert(std::make_pair("hat2right", KEY_HAT6));
-	nameToKeyCode.insert(std::make_pair("hat2down", KEY_HAT7));
-	nameToKeyCode.insert(std::make_pair("hat2left", KEY_HAT8));
-
-	keyCodeToName.clear();
-	for (NameToKeyCodeTable::const_iterator it = nameToKeyCode.begin(); it != nameToKeyCode.end(); ++it)
-		keyCodeToName.insert(std::make_pair(it->second, it->first));
-}
-
-static int GetKeyFromName(const char *name)
-{
-	if (nameToKeyCode.empty())
-		buildKeyCodeTables();
-
-	// Names of the form #xxx are translated to key xxx automatically
-	if (name[0] == '#' && name[1] != 0) {
-		return atoi (name + 1);
-	}
-
-	NameToKeyCodeTable::const_iterator it = nameToKeyCode.find(name);
-	if (it != nameToKeyCode.end())
-		return it->second;
-	return 0;
-}
-
-static const char* KeyName(int key)
-{
-	if (keyCodeToName.empty())
-		buildKeyCodeTables();
-
-	KeyCodeToNameTable::const_iterator it = keyCodeToName.find(key);
-	if (it != keyCodeToName.end())
-		return it->second.c_str();
-
-	static char name[5];
-	sprintf(name, "#%d", key);
-	return name;
-}
 
 BEGIN_COMMAND (unbindall)
 {
-	int i;
+	for (int key = 0; key < NUM_KEYS; key++)
+		Bindings[key] = "";
 
-	for (i = 0; i < NUM_KEYS; i++)
-		Bindings[i] = "";
-
-	for (i = 0; i < NUM_KEYS; i++)
-		DoubleBindings[i] = "";
+	for (key = 0; key < NUM_KEYS; key++)
+		DoubleBindings[key] = "";
 }
 END_COMMAND (unbindall)
 
+
 BEGIN_COMMAND (unbind)
 {
-	int i;
-
 	if (argc > 1)
 	{
 		std::string strArg = StdStringToLower(argv[1]);
-		if ( (i = GetKeyFromName (strArg.c_str())) )
-			Bindings[i] = "";
+		int key = I_GetKeyFromName(strArg);
+		if (key)
+			Bindings[key] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (unbind)
 
+
 BEGIN_COMMAND (bind)
 {
-	int i;
-
 	if (argc > 1) {
 
 		std::string strArg = StdStringToLower(argv[1]);
-		i = GetKeyFromName (strArg.c_str());
-		if (!i) {
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+		int key = I_GetKeyFromName(strArg);
+		if (!key)
+		{
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
-		if (argc == 2) {
-			Printf (PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(Bindings[i]).c_str());
-		} else {
-			Bindings[i] = argv[2];
+		if (argc == 2)
+		{
+			Printf(PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(Bindings[key]).c_str());
 		}
-	} else {
-		Printf (PRINT_HIGH, "Current key bindings:\n");
+		else
+		{
+			Bindings[key] = argv[2];
+		}
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Current key bindings:\n");
 
-		for (i = 0; i < NUM_KEYS; i++) {
-			if (Bindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(Bindings[i]).c_str());
+		for (int key = 0; key < NUM_KEYS; key++)
+		{
+			if (Bindings[key].length())
+				Printf(PRINT_HIGH, "%s %s\n", I_GetKeyName(key), C_QuoteString(Bindings[key]).c_str());
 		}
 	}
 }
 END_COMMAND (bind)
 
+
 BEGIN_COMMAND (undoublebind)
 {
-	int i;
-
 	if (argc > 1)
 	{
 		std::string strArg = StdStringToLower(argv[1]);
-		if ( (i = GetKeyFromName (strArg.c_str())) )
-			DoubleBindings[i] = "";
+		int key = I_GetKeyFromName(strArg);
+		if (key)
+			DoubleBindings[key] = "";
 		else
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (undoublebind)
 
+
 BEGIN_COMMAND (doublebind)
 {
-	int i;
-
 	if (argc > 1)
 	{
 		std::string strArg = StdStringToLower(argv[1]);
-		i = GetKeyFromName (strArg.c_str());
-		if (!i)
+		int key = I_GetKeyFromName(strArg);
+		if (!key)
 		{
-			Printf (PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 			return;
 		}
 		if (argc == 2)
 		{
-			Printf (PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(DoubleBindings[i]).c_str());
+			Printf(PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(DoubleBindings[key]).c_str());
 		}
 		else
 		{
-			DoubleBindings[i] = argv[2];
+			DoubleBindings[key] = argv[2];
 		}
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "Current key doublebindings:\n");
+		Printf(PRINT_HIGH, "Current key doublebindings:\n");
 
-		for (i = 0; i < NUM_KEYS; i++)
+		for (key = 0; key < NUM_KEYS; key++)
 		{
-			if (DoubleBindings[i].length())
-				Printf (PRINT_HIGH, "%s %s\n", KeyName(i), C_QuoteString(DoubleBindings[i]).c_str());
+			if (DoubleBindings[key].length())
+				Printf(PRINT_HIGH, "%s %s\n", I_GetKeyName(key), C_QuoteString(DoubleBindings[key]).c_str());
 		}
 	}
 }
 END_COMMAND (doublebind)
+
 
 BEGIN_COMMAND (binddefaults)
 {
 	AddCommandString (DefBindings);
 }
 END_COMMAND (binddefaults)
+
 
 //
 // C_DoNetDemoKey
@@ -473,11 +262,11 @@ bool C_DoNetDemoKey (event_t *ev)
 
 	if (!initialized)
 	{
-		NetDemoBindings[GetKeyFromName("leftarrow")]	= "netrew";
-		NetDemoBindings[GetKeyFromName("rightarrow")]	= "netff";
-		NetDemoBindings[GetKeyFromName("uparrow")]		= "netprevmap";
-		NetDemoBindings[GetKeyFromName("downarrow")]	= "netnextmap";
-		NetDemoBindings[GetKeyFromName("space")]		= "netpause";
+		NetDemoBindings[I_GetKeyFromName("leftarrow")] = "netrew";
+		NetDemoBindings[I_GetKeyFromName("rightarrow")] = "netff";
+		NetDemoBindings[I_GetKeyFromName("uparrow")] = "netprevmap";
+		NetDemoBindings[I_GetKeyFromName("downarrow")] = "netnextmap";
+		NetDemoBindings[I_GetKeyFromName("space")] = "netpause";
 
 		initialized = true;
 	}
@@ -489,7 +278,7 @@ bool C_DoNetDemoKey (event_t *ev)
 
 	// hardcode the pause key to also control netpause
 	if (iequals(Bindings[ev->data1], "pause"))
-		binding = &NetDemoBindings[GetKeyFromName("space")];
+		binding = &NetDemoBindings[I_GetKeyFromName("space")];
 
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
@@ -625,39 +414,33 @@ void C_ReleaseKeys()
 
 void C_ArchiveBindings (FILE *f)
 {
-	int i;
-
-	fprintf (f, "unbindall\n");
-	for (i = 0; i < NUM_KEYS; i++)
+	fprintf(f, "unbindall\n");
+	for (int key = 0; key < NUM_KEYS; key++)
 	{
-		if (Bindings[i].length())
-			fprintf (f, "bind %s %s\n",
-					C_QuoteString(KeyName(i)).c_str(),
-					C_QuoteString(Bindings[i]).c_str());
+		if (Bindings[key].length())
+			fprintf(f, "bind %s %s\n", C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(Bindings[key]).c_str());
 	}
-	for (i = 0; i < NUM_KEYS; i++)
+	for (int key = 0; key < NUM_KEYS; key++)
 	{
-		if (DoubleBindings[i].length())
-			fprintf (f, "doublebind %s %s\n",
-					C_QuoteString(KeyName(i)).c_str(),
-					C_QuoteString(DoubleBindings[i]).c_str());
+		if (DoubleBindings[key].length())
+			fprintf(f, "doublebind %s %s\n", C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(DoubleBindings[key]).c_str());
 	}
 }
 
 int C_GetKeysForCommand (const char *cmd, int *first, int *second)
 {
-	int c, i;
+	int c = 0;
+	*first = *second = 0;
 
-	*first = *second = c = i = 0;
-
-	while (i < NUM_KEYS && c < 2) {
-		if (Bindings[i].length() && !stricmp (cmd, Bindings[i].c_str())) {
+	for (int key = 0; key < NUM_KEYS && c < 2; key++)
+	{
+		if (Bindings[key].length() && !stricmp(cmd, Bindings[key].c_str()))
+		{
 			if (c++ == 0)
-				*first = i;
+				*first = key;
 			else
-				*second = i;
+				*second = key;
 		}
-		i++;
 	}
 	return c;
 }
@@ -669,15 +452,16 @@ std::string C_NameKeys (int first, int second)
 
 	std::string out;
 
-	if(first)
+	if (first)
 	{
-		out += KeyName(first);
-		if(second)out += " or ";
+		out += I_GetKeyName(first);
+		if (second)
+			out += " or ";
 	}
 
-	if(second)
+	if (second)
 	{
-		out += KeyName(second);
+		out += I_GetKeyName(second);
 	}
 
 	return out;
@@ -685,12 +469,10 @@ std::string C_NameKeys (int first, int second)
 
 void C_UnbindACommand (const char *str)
 {
-	int i;
-
-	for (i = 0; i < NUM_KEYS; i++) {
-		if (Bindings[i].length() && !stricmp (str, Bindings[i].c_str())) {
-			Bindings[i] = "";
-		}
+	for (int key = 0; key < NUM_KEYS; key++) 
+	{
+		if (Bindings[key].length() && !stricmp(str, Bindings[key].c_str()))
+			Bindings[key] = "";
 	}
 }
 
@@ -744,9 +526,9 @@ std::string C_GetKeyStringsFromCommand(const char *cmd, bool bTwoEntries)
 	else
 	{
 		if (!first && second)
-			return KeyName(second);
+			return I_GetKeyName(second);
 		else
-			return KeyName(first);
+			return I_GetKeyName(first);
 	}
 	return "<??\?>";
 }
