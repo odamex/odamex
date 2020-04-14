@@ -51,6 +51,7 @@
 #include "w_wad.h"
 #include "w_ident.h"
 #include "z_zone.h"
+#include "stringenums.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
