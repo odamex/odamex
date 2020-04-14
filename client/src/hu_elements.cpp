@@ -184,6 +184,23 @@ int teamTextColor(byte team) {
 	return color;
 }
 
+// generate an ordinal suffix from an integer (1 -> "st", 2 -> "nd", etc)
+// used in HelpText() to display position in queue
+static std::string ordinal(int n)
+{
+	n %= 100;
+
+	if (n > 10 && n < 20)
+		return "th";
+
+	switch (n % 10) {
+		case 1: return "st";
+		case 2: return "nd";
+		case 3: return "rd";
+		default: return "th";
+	}
+}
+
 //// OLD-STYLE "VARIABLES" ////
 // Please don't add any more of these.
 
@@ -215,7 +232,7 @@ std::string HelpText()
 	if (queuePos > 0)
 	{
 		std::ostringstream ss;
-		ss << "Position in line to play: " << (int)queuePos;
+		ss << "Waiting to play - " << queuePos << ordinal(queuePos) << " in line";
 		return ss.str();
 	}
 
