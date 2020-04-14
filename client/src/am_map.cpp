@@ -834,7 +834,7 @@ BOOL AM_Responder (event_t *ev)
 				AM_restoreScaleAndLoc();
 			break;
 		default:
-			switch (ev->data2)
+			switch (ev->data3)
 			{
 			case AM_FOLLOWKEY:
 				followplayer = !followplayer;
@@ -857,7 +857,7 @@ BOOL AM_Responder (event_t *ev)
 				rc = false;
 			}
 		}
-		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
+		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
 		{
 			rc = true;	// [RH] Eat last keypress of cheat sequence
 			cheating = (cheating+1) % 3;

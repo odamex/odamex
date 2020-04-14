@@ -535,9 +535,9 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown && ev->data2)
+	else if (ev->type == ev_keydown && ev->data3)
 	{
-		char key = ev->data2;
+		char key = ev->data3;
 
         // 'dqd' cheat for toggleable god mode
         if (cht_CheckCheat(&cheat_god, key))

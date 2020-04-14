@@ -1506,13 +1506,13 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	}
 
-	const char keytext = ev->data2;
+	const char keytext = ev->data3;
 
 	if (KeysCtrl)
 	{
 		// handle key combinations
 		// NOTE: we have to use ev->data1 here instead of the
-		// localization-aware ev->data2 since SDL2 does not send a SDL_TEXTINPUT
+		// localization-aware ev->data3 since SDL2 does not send a SDL_TEXTINPUT
 		// event when Ctrl is held down.
 
 		// Go to beginning of line

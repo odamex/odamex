@@ -2180,9 +2180,9 @@ void M_OptResponder (event_t *ev)
 
 		default:
 #ifdef _XBOX
-			if (ev->data2 == 't' || ev->data2 == KEY_JOY3)
+			if (ev->data3 == 't' || ev->data1 == KEY_JOY3)
 #else
-			if (ev->data2 == 't')
+			if (ev->data3 == 't')
 #endif
 			{
 				// Test selected resolution
