@@ -13,6 +13,7 @@ _D1NFO
 _D2NFO
 _PLUTNFO
 _TNTNFO
+_CHEXNFO
 
 # List of Sounds
 [sounds]

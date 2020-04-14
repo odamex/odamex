@@ -1,8 +1,6 @@
 // MAPINFO for TNT. Exactly the same as Doom 2, except it
 // has different map names and cluster messages.
 
-include "mapinfo/doomcommon.txt"
-
 clearepisodes
 episode map01
 {

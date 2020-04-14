@@ -91,6 +91,7 @@ enum EMIType
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
+	MITYPE_$LUMPNAME,
 	MITYPE_MUSICLUMPNAME,
 	MITYPE_SKY,
 	MITYPE_SETFLAG,
@@ -318,7 +319,7 @@ MapInfoHandler ClusterHandlers[] =
 	// messagemusic <musiclump>
 	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
 	// flat <flatlump>
-	{ MITYPE_LUMPNAME, cioffset(finaleflat), 0 },
+	{ MITYPE_$LUMPNAME, cioffset(finaleflat), 0 },
 	// hub
 	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 }
 };
@@ -595,6 +596,31 @@ static void ParseMapInfoLower(
 
 			SC_MustGetString();
 			uppercopy((char*)(info + handler->data1), sc_String);
+			break;
+
+		case MITYPE_$LUMPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
+			SC_MustGetString();
+			if (sc_String[0] == '$')
+			{
+				// It is possible to pass a DeHackEd string
+				// prefixed by a $.
+				char* s = sc_String + 1;
+				int i = GStrings.FindString(s);
+				if (i == -1)
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", s);
+				}
+				uppercopy((char*)(info + handler->data1), GStrings(i));
+			}
+			else
+			{
+				uppercopy((char*)(info + handler->data1), sc_String);
+			}
 			break;
 
 		case MITYPE_MUSICLUMPNAME:
