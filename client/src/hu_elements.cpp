@@ -186,7 +186,7 @@ int teamTextColor(byte team) {
 
 // generate an ordinal suffix from an integer (1 -> "st", 2 -> "nd", etc)
 // used in HelpText() to display position in queue
-static std::string ordinal(int n)
+static const char *ordinal(int n)
 {
 	n %= 100;
 
