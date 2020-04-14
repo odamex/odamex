@@ -47,7 +47,6 @@ CVAR_FUNC_IMPL (language)
     
 	GStrings.ResetStrings ();
 	GStrings.Compact ();
-	G_SetLevelStrings ();
 }
 
 // Set if homebrew PWAD stuff has been added.

@@ -600,7 +600,6 @@ void D_Init()
 
 	HU_Init();
 
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();

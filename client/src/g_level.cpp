@@ -197,10 +197,9 @@ void G_InitNew (const char *mapname)
 	if (!savegamerestore)
 	{
 		for (i = 0; i < wadlevelinfos.size(); i++)
+		{
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
-
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
-			LevelInfos[i].flags &= ~LEVEL_VISITED;
+		}
 	}
 
 	cvar_t::UnlatchCVars ();

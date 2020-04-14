@@ -81,7 +81,7 @@ struct level_info_t {
 	char			secretmap[9];
 	int				partime;
 	char			skypic[9];
-	char*			music;
+	char			music[9];
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -99,7 +99,7 @@ struct level_pwad_info_t
 	char			secretmap[9];
 	int				partime;
 	char			skypic[9];
-	char*			music;
+	char			music[9];
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -182,8 +182,6 @@ struct cluster_info_t {
 #define CLUSTER_HUB		0x00000001
 
 extern level_locals_t level;
-extern level_info_t LevelInfos[];
-extern cluster_info_t ClusterInfos[];
 
 extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
@@ -214,8 +212,6 @@ void G_DoResetLevel (bool full_reset);
 void G_InitLevelLocals (void);
 
 void G_AirControlChanged ();
-
-void G_SetLevelStrings (void);
 
 cluster_info_t *FindClusterInfo (int cluster);
 level_info_t *FindLevelInfo (char *mapname);
