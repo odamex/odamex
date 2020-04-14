@@ -1217,6 +1217,22 @@ char *CalcMapName (int episode, int level)
 	return lumpname;
 }
 
+level_info_t missinglevel = {
+	"",
+	0,
+	NULL,
+	"",
+	"",
+	"",
+	0,
+	"",
+	"",
+	0,
+	0,
+	NULL,
+	NULL,
+};
+
 level_info_t* FindLevelInfo(char* mapname)
 {
 	int i;
@@ -1226,7 +1242,7 @@ level_info_t* FindLevelInfo(char* mapname)
 		return(level_info_t*)(&wadlevelinfos[i]);
 	}
 
-	I_Error("Could not find level info for %s\n", mapname);
+	return &missinglevel;
 }
 
 level_info_t* FindLevelByNum(int num)
@@ -1239,8 +1255,17 @@ level_info_t* FindLevelByNum(int num)
 		}
 	}
 
-	I_Error("Could not find level info for level number %d\n", num);
+	return &missinglevel;
 }
+
+cluster_info_t missingculster = {
+	0,
+	"",
+	"",
+	"",
+	"",
+	0,
+};
 
 cluster_info_t* FindClusterInfo(int cluster)
 {
@@ -1251,7 +1276,7 @@ cluster_info_t* FindClusterInfo(int cluster)
 		return &wadclusterinfos[i];
 	}
 
-	I_Error("Could not find culster info for culster number %d\n", i);
+	return &missingculster;
 }
 
 void G_AirControlChanged ()
