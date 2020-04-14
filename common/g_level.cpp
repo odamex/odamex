@@ -315,8 +315,8 @@ MapInfoHandler ClusterHandlers[] =
 	{ MITYPE_STRING_OR_LOOKUP, cioffset(entertext), 0 },
 	// exittext <message>
 	{ MITYPE_STRING_OR_LOOKUP, cioffset(exittext), 0 },
-	// music <musiclump>
-	{ MITYPE_CSTRING, cioffset(messagemusic), 8 },
+	// messagemusic <musiclump>
+	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
 	// flat <flatlump>
 	{ MITYPE_LUMPNAME, cioffset(finaleflat), 0 },
 	// hub

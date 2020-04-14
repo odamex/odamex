@@ -171,7 +171,7 @@ struct level_locals_t {
 
 struct cluster_info_t {
 	int				cluster;
-	char*			messagemusic;
+	char			messagemusic[9];
 	char			finaleflat[9];
 	char*			exittext;
 	char*			entertext;
