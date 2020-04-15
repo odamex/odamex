@@ -38,7 +38,7 @@ extern bool predicting;
 
 void P_SetDoorDestroy(DDoor *door)
 {
-	if (!door)
+	if (!door || predicting)
 		return;
 
 	door->m_Status = DDoor::destroy;
