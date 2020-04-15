@@ -161,7 +161,6 @@ void G_Ticker (void)
 		break;
 
 	case GS_INTERMISSION:
-	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
 		if (!mapchange)
 		{

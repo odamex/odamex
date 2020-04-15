@@ -324,9 +324,6 @@ void G_InitNew (const char *mapname)
 	{
 		for (i = 0; i < wadlevelinfos.size(); i++)
 			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
-
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
-			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
 	int old_gametype = sv_gametype.asInt();
