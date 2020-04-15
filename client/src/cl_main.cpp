@@ -157,6 +157,7 @@ EXTERN_CVAR (r_forceteamcolor)
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
+void P_DestroyButtonThinkers();
 
 //
 // CL_ShadePlayerColor
@@ -3123,6 +3124,11 @@ void CL_FinishedFullUpdate()
 		netdemo.writeMapChange();
 }
 
+void CL_StartFullUpdate()
+{
+	recv_full_update = false;
+}
+
 //
 // CL_SetMobjState
 //
@@ -3414,8 +3420,6 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 }
 
-void P_ResetSwitch(line_t* line);
-
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -3445,6 +3449,8 @@ void CL_ResetMap()
 			sectors[i].ceilingdata->Destroy();
 		}
 	}
+
+	P_DestroyButtonThinkers();
 
 	// write the map index to the netdemo
 	if (netdemo.isRecording() && recv_full_update)
@@ -3653,6 +3659,7 @@ void CL_InitCommands(void)
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
 	cmds[svc_netdemoloadsnap]	= &CL_NetDemoLoadSnap;
 	cmds[svc_fullupdatedone]	= &CL_FinishedFullUpdate;
+	cmds[svc_fullupdatestart]	= &CL_StartFullUpdate;
 
 	cmds[svc_vote_update] = &CL_VoteUpdate;
 	cmds[svc_maplist] = &CL_Maplist;
