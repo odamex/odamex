@@ -90,7 +90,7 @@ const char* GetShortGameModeString()
 	else if (sv_gametype == GM_TEAMDM)
 		return "TDM";
 	else if (sv_gametype == GM_CTF)
-		return "CAPTURE THE FLAG";
+		return "CTF";
 
 	return "";
 }
