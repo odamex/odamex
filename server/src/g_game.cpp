@@ -163,14 +163,15 @@ void G_Ticker (void)
 	case GS_INTERMISSION:
 	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
-		if (!mapchange || 
-			(level.flags & LEVEL_NOINTERMISSION && (level.flags & LEVEL_EPISODEENDHACK) == 0 ))
-        {
-			G_ChangeMap ();
-            //intcd_oldtime = 0;
-        }
-	}
-    break;
+		if (!mapchange)
+		{
+			G_ChangeMap();
+		}
+		else if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
+		{
+			G_ChangeMap();
+		}
+		break;
 
 	default:
 		break;
