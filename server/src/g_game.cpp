@@ -166,7 +166,10 @@ void G_Ticker (void)
 		{
 			G_ChangeMap();
 		}
-		else if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
+		// Doom episodes 1-4 end with no intermission, but in
+		// multiplayer games we still want to pause on the ending
+		// screen.
+		else if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) != 0)
 		{
 			G_ChangeMap();
 		}
