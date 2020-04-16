@@ -1573,6 +1573,8 @@ void SV_ClientFullUpdate(player_t &pl)
 {
 	client_t *cl = &pl.client;
 
+	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
+
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
