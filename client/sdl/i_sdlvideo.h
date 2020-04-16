@@ -166,12 +166,12 @@ public:
 	virtual int getBytesPerPixel() const
 	{	return mBitsPerPixel >> 3;	}
 
-	virtual const IVideoMode* getVideoMode() const
-	{	return &mVideoMode;	}
+	virtual const IVideoMode& getVideoMode() const
+	{	return mVideoMode;	}
 
 	virtual const PixelFormat* getPixelFormat() const;
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
+	virtual bool setMode(const IVideoMode& video_mode);
 
 	virtual bool isFullScreen() const
 	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
@@ -301,8 +301,8 @@ public:
 		#endif
 	}
 
-	virtual const IVideoMode* getNativeMode() const
-	{	return &mNativeMode;	}
+	virtual const IVideoMode& getNativeMode() const
+	{	return mNativeMode;	}
 
 private:
 	IVideoModeList		mModeList;
@@ -399,13 +399,13 @@ public:
 	virtual int getBytesPerPixel() const
 	{	return mBitsPerPixel >> 3;	}
 
-	virtual const IVideoMode* getVideoMode() const
-	{	return &mVideoMode;	}
+	virtual const IVideoMode& getVideoMode() const
+	{	return mVideoMode;	}
 
 	virtual const PixelFormat* getPixelFormat() const
 	{	return &mPixelFormat;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
+	virtual bool setMode(const IVideoMode& video_mode);
 
 	virtual bool isFullScreen() const
 	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
@@ -457,6 +457,10 @@ private:
 	bool isRendererDriverAvailable(const char* driver) const;
 	const char* getRendererDriver() const;
 	void getEvents();
+
+	uint16_t getCurrentWidth() const;
+	uint16_t getCurrentHeight() const;
+	EWindowMode getCurrentWindowMode() const;
 
 	SDL_Window*			mSDLWindow;
 
