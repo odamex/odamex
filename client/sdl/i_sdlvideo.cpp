@@ -685,11 +685,11 @@ const PixelFormat* ISDL12Window::getPixelFormat() const
 //
 bool ISDL12Window::setMode(const IVideoMode& video_mode)
 {
-	bool is_windowed = window_mode == WINDOW_Windowed;
+	bool is_windowed = video_mode.window_mode == WINDOW_Windowed;
 
 	uint32_t flags = 0;
 
-	if (vsync)
+	if (video_mode.vsync)
 		flags |= SDL_HWSURFACE | SDL_DOUBLEBUF;
 	else
 		flags |= SDL_SWSURFACE;
@@ -701,14 +701,14 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 	else
 	{
 		flags |= SDL_FULLSCREEN;
-		if (video_bpp == 8)
+		if (video_mode.bpp == 8)
 			flags |= SDL_HWPALETTE;
 	}
 
 	flags |= SDL_ASYNCBLIT;
 
 	#ifdef SDL_GL_SWAP_CONTROL
-	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync);
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video_mode.vsync);
 	#endif
 
 	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
@@ -716,11 +716,11 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 	// disable them prior to reinitalizing DirectInput...
 	I_PauseMouse();
 
-	SDL_Surface* sdl_surface = SDL_SetVideoMode(video_width, video_height, video_bpp, flags);
+	SDL_Surface* sdl_surface = SDL_SetVideoMode(video_mode.width, video_mode.height, video_mode.bpp, flags);
 	if (sdl_surface == NULL)
 	{
 		I_FatalError("I_SetVideoMode: unable to set video mode %ux%ux%u (%s): %s\n",
-				video_width, video_height, video_bpp, is_windowed ? "windowed" : "fullscreen",
+				video_mode.width, video_mode.height, video_mode.bpp, is_windowed ? "windowed" : "fullscreen",
 				SDL_GetError());
 		return false;
 	}
@@ -741,7 +741,7 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 		mWindowMode = WINDOW_Fullscreen;
 	else
 		mWindowMode = WINDOW_Windowed;
-	mUseVSync = vsync;
+	mUseVSync = video_mode.vsync;
 
 	if (SDL_MUSTLOCK(sdl_surface))
 		SDL_LockSurface(sdl_surface);		// lock prior to accessing pixel format
@@ -765,7 +765,7 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 	if (SDL_MUSTLOCK(sdl_surface))
 		SDL_UnlockSurface(sdl_surface);
 
-	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mWindowMode);
+	mVideoMode = IVideoMode(mWidth, mHeight, mBitsPerPixel, mWindowMode, mUseVSync);
 
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
@@ -1640,7 +1640,6 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 
 	mWidth = getCurrentWidth();
 	mHeight = getCurrentHeight();
-
 
 	if (video_mode.window_mode != getCurrentWindowMode())
 	{

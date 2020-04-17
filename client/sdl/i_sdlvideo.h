@@ -56,8 +56,8 @@ public:
 		#endif
 	}
 
-	virtual const IVideoMode* getNativeMode() const
-	{	return &mNativeMode;	}
+	virtual const IVideoMode& getNativeMode() const
+	{	return mNativeMode;	}
 
 private:
 	IVideoModeList		mModeList;
