@@ -1031,10 +1031,12 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		mLogicalRect.y = 0;
 
 		mDrawLogicalRect = true;
+		SDL_RenderSetLogicalSize(mSDLRenderer, mLogicalRect.w, mLogicalRect.h);
 	}
 	else
 	{
 		mDrawLogicalRect = false;
+		SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
 	}
 
 	// Ensure the game window is clear, even if using -noblit
