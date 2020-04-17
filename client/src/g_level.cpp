@@ -433,12 +433,23 @@ void G_DoCompleted (void)
 			//level.inttimeleft = 0;
 		}
 
-		if (sv_gametype != GM_DM &&
-			(((level.flags & LEVEL_NOINTERMISSION) && ((level.flags & LEVEL_EPISODEENDHACK) && (!multiplayer || demoplayback || demorecording))) ||
-			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB))))
+		if (sv_gametype == GM_COOP)
 		{
-			G_WorldDone();
-			return;
+			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
+			{
+				if (!multiplayer || demoplayback || demorecording)
+				{
+					// Normal progression
+					G_WorldDone();
+					return;
+				}
+			}
+			else if (nextcluster == thiscluster && thiscluster->flags & CLUSTER_HUB)
+			{
+				// Cluster progression
+				G_WorldDone();
+				return;
+			}
 		}
 	}
 

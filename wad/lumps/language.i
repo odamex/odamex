@@ -534,6 +534,19 @@ PD_ANY = "Any key will open this door";
 PD_ALL3 = "You need all three keys to open this door";
 PD_ALL6 = "You need all six keys to open this door";
 
+// MBF (BOOM?) narration backgrounds
+BGFLATE1 = "FLOOR4_8";
+BGFLATE2 = "SFLR6_1";
+BGFLATE3 = "MFLR8_4";
+BGFLATE4 = "MFLR8_3";
+BGFLAT06 = "SLIME16";
+BGFLAT11 = "RROCK14";
+BGFLAT20 = "RROCK07";
+BGFLAT30 = "RROCK17";
+BGFLAT15 = "RROCK13";
+BGFLAT31 = "RROCK19";
+BGCASTCALL = "BOSSBACK";
+
 // Gameflow messages
 TXT_FRAGLIMIT = "Fraglimit hit.";
 TXT_TIMELIMIT = "Timelimit hit.";

@@ -87,6 +87,7 @@ enum EMIType
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
+	MITYPE_$LUMPNAME,
 	MITYPE_MUSICLUMPNAME,
 	MITYPE_SKY,
 	MITYPE_SETFLAG,
@@ -311,10 +312,10 @@ MapInfoHandler ClusterHandlers[] =
 	{ MITYPE_STRING_OR_LOOKUP, cioffset(entertext), 0 },
 	// exittext <message>
 	{ MITYPE_STRING_OR_LOOKUP, cioffset(exittext), 0 },
-	// music <musiclump>
-	{ MITYPE_CSTRING, cioffset(messagemusic), 8 },
+	// messagemusic <musiclump>
+	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
 	// flat <flatlump>
-	{ MITYPE_LUMPNAME, cioffset(finaleflat), 0 },
+	{ MITYPE_$LUMPNAME, cioffset(finaleflat), 0 },
 	// hub
 	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 }
 };
@@ -585,6 +586,32 @@ static void ParseMapInfoLower(
 
 			SC_MustGetString();
 			uppercopy((char*)(info + handler->data1), sc_String);
+			break;
+
+
+		case MITYPE_$LUMPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
+			SC_MustGetString();
+			if (sc_String[0] == '$')
+			{
+				// It is possible to pass a DeHackEd string
+				// prefixed by a $.
+				char* s = sc_String + 1;
+				int i = GStrings.FindString(s);
+				if (i == -1)
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", s);
+				}
+				uppercopy((char*)(info + handler->data1), GStrings(i));
+			}
+			else
+			{
+				uppercopy((char*)(info + handler->data1), sc_String);
+			}
 			break;
 
 		case MITYPE_MUSICLUMPNAME:
@@ -1254,7 +1281,7 @@ void G_SetLevelStrings (void)
 
 		char muslump[9];
 		snprintf(muslump, ARRAY_LENGTH(muslump), "D_%s", GStrings(MUSIC_E1M1 + zi));
-		ReplaceString(&LevelInfos[zi].music, muslump);
+		uppercopy(&LevelInfos[zi].music[0], muslump);
 	}
 
 	for (i = 0; i < 4; i++)
@@ -1280,23 +1307,17 @@ void G_SetLevelStrings (void)
 
 		char muslump[9];
 		snprintf(muslump, ARRAY_LENGTH(muslump), "D_%s", GStrings(MUSIC_RUNNIN + i));
-		ReplaceString(&LevelInfos[36+i].music, muslump);
+		uppercopy(&LevelInfos[36+i].music[0], muslump);
  	}
 
 	if (gamemission == pack_plut)
-		start = P1TEXT;		// P1TEXT
+		start = P1TEXT; // P1TEXT
 	else if (gamemission == pack_tnt)
-		start = T1TEXT;		// T1TEXT
+		start = T1TEXT; // T1TEXT
 	else
-		start = C1TEXT;		// C1TEXT
+		start = C1TEXT; // C1TEXT
 
-	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[4 + i].exittext, GStrings(start+i));
-	for (; i < 6; i++)
-		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
-
-
-	for (i = 0; i < 15; i++)
+	for (i = 0; i < ARRAY_LENGTH(ClusterInfos); i++)
 	{
 		if (!ClusterInfos[i].cluster)
 		{
@@ -1305,14 +1326,24 @@ void G_SetLevelStrings (void)
 
 		if (ClusterInfos[i].cluster <= 4)
 		{
+			// Cluster music.
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
-			ReplaceString(&ClusterInfos[i].messagemusic, temp);
+			uppercopy(&ClusterInfos[i].messagemusic[0], temp);
+
+			// Exit text at end of episode.
+			ReplaceString(&ClusterInfos[i].exittext, GStrings(E1TEXT + i));
 		}
 		else
 		{
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			ReplaceString(&ClusterInfos[i].messagemusic, temp);
+			uppercopy(&ClusterInfos[i].messagemusic[0], temp);
+
+			// Enter text between levels.
+			ReplaceString(&ClusterInfos[i].entertext, GStrings(start + i - 4));
 		}
+
+		// Cluster background flat.
+		uppercopy(&ClusterInfos[i].finaleflat[0], GStrings(BGFLATE1 + i));
 	}
 
 	if (level.info)
@@ -1773,7 +1804,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY1",
 		NULL,
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
 		1,
 		0
 	},
@@ -1817,7 +1848,7 @@ level_info_t LevelInfos[] = {
 		"E2M9",
 		90,
 		"SKY2",
-		"D_E2M2",
+		NULL,
 		0,
 		2,
 		0
@@ -1903,7 +1934,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY2",
 		NULL,
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,
 		2,
 		0
 	},
@@ -2033,7 +2064,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY3",
 		NULL,
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,
 		3,
 		0
 	},
@@ -2162,7 +2193,7 @@ level_info_t LevelInfos[] = {
 		0,
 		"SKY4",
 		NULL,
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,
 		4,
 		0
 	},
@@ -2677,81 +2708,80 @@ level_info_t LevelInfos[] = {
 cluster_info_t ClusterInfos[] = {
 	{
 		1,		// DOOM Episode 1
-		NULL,
-		"FLOOR4_8",
-//		{ 'F','L','O','O','R','4','_','8' }, // questionable
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		2,		// DOOM Episode 2
-		NULL,
-		"SFLR6_1",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		3,		// DOOM Episode 3
-		NULL,
-		"MFLR8_4",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		4,		// DOOM Episode 4
-		NULL,
-		"MFLR8_3",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		5,		// DOOM II first cluster (up thru level 6)
-		NULL,
-		"SLIME16",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		6,		// DOOM II second cluster (up thru level 11)
-		NULL,
-		"RROCK14",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		7,		// DOOM II third cluster (up thru level 20)
-		NULL,
-		"RROCK07",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		8,		// DOOM II fourth cluster (up thru level 30)
-		NULL,
-		"RROCK17",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		9,		// DOOM II fifth cluster (level 31)
-		NULL,
-		"RROCK13",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
 	},
 	{
 		10,		// DOOM II sixth cluster (level 32)
-		NULL,
-		"RROCK19",
+		"",
+		"",
 		NULL,
 		NULL,
 		0
