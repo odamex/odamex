@@ -181,8 +181,8 @@ struct cluster_info_t {
 #define CLUSTER_HUB		0x00000001
 
 extern level_locals_t level;
-extern level_info_t LevelInfos[69];
-extern cluster_info_t ClusterInfos[11];
+extern level_info_t LevelInfos[];
+extern cluster_info_t ClusterInfos[];
 
 extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
