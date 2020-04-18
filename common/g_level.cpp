@@ -95,7 +95,7 @@ enum EMIType
 	MITYPE_CLUSTER,
 	MITYPE_STRING,
 	MITYPE_CSTRING,
-	MITYPE_STRING_OR_LOOKUP,
+	MITYPE_CLUSTERSTRING,
 };
 
 struct MapInfoHandler
@@ -309,9 +309,9 @@ static const char *MapInfoClusterLevel[] =
 MapInfoHandler ClusterHandlers[] =
 {
 	// entertext <message>
-	{ MITYPE_STRING_OR_LOOKUP, cioffset(entertext), 0 },
+	{ MITYPE_CLUSTERSTRING, cioffset(entertext), 0 },
 	// exittext <message>
-	{ MITYPE_STRING_OR_LOOKUP, cioffset(exittext), 0 },
+	{ MITYPE_CLUSTERSTRING, cioffset(exittext), 0 },
 	// messagemusic <musiclump>
 	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
 	// flat <flatlump>
@@ -714,26 +714,62 @@ static void ParseMapInfoLower(
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
 			break;
 
-		case MITYPE_STRING_OR_LOOKUP:
+		case MITYPE_CLUSTERSTRING:
+			Printf(PRINT_HIGH, "MAPINFO entertext/exittext\n");
 			if (newMapinfoStack > 0)
 			{
 				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			if (SC_Compare("lookup"))
-			{
 				SC_MustGetString();
-				int i = GStrings.FindString(sc_String);
-				if (i == -1)
+				if (SC_Compare("lookup"))
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					SC_MustGetStringName(",");
+					SC_MustGetString();
+					int i = GStrings.FindString(sc_String);
+					if (i == -1)
+					{
+						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					}
+					ReplaceString((char**)(info + handler->data1), GStrings(i));
 				}
-				ReplaceString((char**)(info + handler->data1), GStrings(i));
+				else
+				{
+					// One line per string.
+					std::string ctext;
+					SC_UnGet();
+					do
+					{
+						SC_MustGetString();
+						ctext += sc_String;
+						ctext += "\n";
+						SC_GetString();
+					} while (SC_Compare(","));
+
+					// Trim trailing newline.
+					if (ctext.length() > 0)
+					{
+						ctext.resize(ctext.length() - 1);
+					}
+
+					ReplaceString((char**)(info + handler->data1), ctext.c_str());
+				}
 			}
 			else
 			{
-				ReplaceString((char**)(info + handler->data1), sc_String);
+				SC_MustGetString();
+				if (SC_Compare("lookup"))
+				{
+					SC_MustGetString();
+					int i = GStrings.FindString(sc_String);
+					if (i == -1)
+					{
+						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					}
+					ReplaceString((char**)(info + handler->data1), GStrings(i));
+				}
+				else
+				{
+					ReplaceString((char**)(info + handler->data1), sc_String);
+				}
 			}
 			break;
 		}
@@ -1284,9 +1320,6 @@ void G_SetLevelStrings (void)
 		uppercopy(&LevelInfos[zi].music[0], muslump);
 	}
 
-	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[i].exittext, GStrings(E1TEXT+i));
-
 	if (gamemission == pack_plut)
 		start = PHUSTR_1;
 	else if (gamemission == pack_tnt)
@@ -1324,26 +1357,38 @@ void G_SetLevelStrings (void)
 			break;
 		}
 
-		if (ClusterInfos[i].cluster <= 4)
+		cluster_info_t& clusterinfo = ClusterInfos[i];
+		if (clusterinfo.cluster <= 4)
 		{
 			// Cluster music.
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
-			uppercopy(&ClusterInfos[i].messagemusic[0], temp);
+			uppercopy(clusterinfo.messagemusic, temp);
 
 			// Exit text at end of episode.
-			ReplaceString(&ClusterInfos[i].exittext, GStrings(E1TEXT + i));
+			Printf(PRINT_HIGH, "SetString exittext (%d)\n", ClusterInfos[i].cluster);
+			ReplaceString(&clusterinfo.exittext, GStrings(E1TEXT + i));
 		}
-		else
+		else if (clusterinfo.cluster <= 8)
 		{
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(&ClusterInfos[i].messagemusic[0], temp);
+			uppercopy(clusterinfo.messagemusic, temp);
 
-			// Enter text between levels.
-			ReplaceString(&ClusterInfos[i].entertext, GStrings(start + i - 4));
+			// Exit text between clusters.
+			Printf(PRINT_HIGH, "SetString exittext (%d)\n", ClusterInfos[i].cluster);
+			ReplaceString(&clusterinfo.exittext, GStrings(start + i - 4));
+		}
+		else if (clusterinfo.cluster <= 10)
+		{
+			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
+			uppercopy(clusterinfo.messagemusic, temp);
+
+			// Enter text before secret maps.
+			Printf(PRINT_HIGH, "SetString entertext (%d)\n", ClusterInfos[i].cluster);
+			ReplaceString(&clusterinfo.entertext, GStrings(start + i - 4));
 		}
 
 		// Cluster background flat.
-		uppercopy(&ClusterInfos[i].finaleflat[0], GStrings(BGFLATE1 + i));
+		uppercopy(clusterinfo.finaleflat, GStrings(BGFLATE1 + i));
 	}
 
 	if (level.info)
