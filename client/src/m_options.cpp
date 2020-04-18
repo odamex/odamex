@@ -1030,7 +1030,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 {
 	// gathers a list of unique resolutions availible for the current
 	// screen mode (windowed or fullscreen)
-	bool fullscreen = I_GetWindow()->getVideoMode()->isFullScreen();
+	bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
 
 	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
 	MenuModeList menumodelist;
