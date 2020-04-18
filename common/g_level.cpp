@@ -1689,6 +1689,113 @@ void G_InitLevelLocals()
 	movingsectors.clear();
 }
 
+// A debugging tool to examine the state of computed map data.
+BEGIN_COMMAND(mapinfo)
+{
+	if (argc < 2)
+	{
+		Printf(PRINT_HIGH, "Usage: mapinfo <lumpname | \"DEFAULT\">\n");
+		return;
+	}
+
+	level_info_t* level = FindLevelInfo(argv[1]);
+	if (level == NULL || level->levelnum == 0)
+	{
+		Printf(PRINT_HIGH, "Map \"%s\"not found\n", argv[1]);
+		return;
+	}
+
+	Printf(PRINT_HIGH, "Map Name: %s\n", level->mapname);
+	Printf(PRINT_HIGH, "Level Number: %d\n", level->levelnum);
+	Printf(PRINT_HIGH, "Level Name: %s\n", level->level_name);
+	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", level->pname);
+	Printf(PRINT_HIGH, "Next Map: %s\n", level->nextmap);
+	Printf(PRINT_HIGH, "Secret Map: %s\n", level->secretmap);
+	Printf(PRINT_HIGH, "Par Time: %d\n", level->partime);
+	Printf(PRINT_HIGH, "Sky: %s\n", level->skypic);
+	Printf(PRINT_HIGH, "Music: %s\n", level->music);
+
+	// Stringify the set level flags.
+	std::string flags;
+	flags += (level->flags & LEVEL_NOINTERMISSION ? " NOINTERMISSION" : "");
+	flags += (level->flags & LEVEL_DOUBLESKY ? " DOUBLESKY" : "");
+	flags += (level->flags & LEVEL_NOSOUNDCLIPPING ? " NOSOUNDCLIPPING" : "");
+	flags += (level->flags & LEVEL_MAP07SPECIAL ? " MAP07SPECIAL" : "");
+	flags += (level->flags & LEVEL_BRUISERSPECIAL ? " BRUISERSPECIAL" : "");
+	flags += (level->flags & LEVEL_CYBORGSPECIAL ? " CYBORGSPECIAL" : "");
+	flags += (level->flags & LEVEL_SPIDERSPECIAL ? " SPIDERSPECIAL" : "");
+	flags += (level->flags & LEVEL_SPECLOWERFLOOR ? " SPECLOWERFLOOR" : "");
+	flags += (level->flags & LEVEL_SPECOPENDOOR ? " SPECOPENDOOR" : "");
+	flags += (level->flags & LEVEL_SPECACTIONSMASK ? " SPECACTIONSMASK" : "");
+	flags += (level->flags & LEVEL_MONSTERSTELEFRAG ? " MONSTERSTELEFRAG" : "");
+	flags += (level->flags & LEVEL_EVENLIGHTING ? " EVENLIGHTING" : "");
+	flags += (level->flags & LEVEL_SNDSEQTOTALCTRL ? " SNDSEQTOTALCTRL" : "");
+	flags += (level->flags & LEVEL_FORCENOSKYSTRETCH ? " FORCENOSKYSTRETCH" : "");
+	flags += (level->flags & LEVEL_JUMP_NO ? " JUMP_NO" : "");
+	flags += (level->flags & LEVEL_JUMP_YES ? " JUMP_YES" : "");
+	flags += (level->flags & LEVEL_FREELOOK_NO ? " FREELOOK_NO" : "");
+	flags += (level->flags & LEVEL_FREELOOK_YES ? " FREELOOK_YES" : "");
+	flags += (level->flags & LEVEL_STARTLIGHTNING ? " STARTLIGHTNING" : "");
+	flags += (level->flags & LEVEL_FILTERSTARTS ? " FILTERSTARTS" : "");
+	flags += (level->flags & LEVEL_LOBBYSPECIAL ? " LOBBYSPECIAL" : "");
+	flags += (level->flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
+	flags += (level->flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
+	flags += (level->flags & LEVEL_VISITED ? " VISITED" : "");
+
+	if (flags.length() > 0)
+	{
+		Printf(PRINT_HIGH, "Flags: %s\n", flags.c_str());
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Flags: None\n");
+	}
+
+	Printf(PRINT_HIGH, "Cluster: %d\n", level->cluster);
+	Printf(PRINT_HIGH, "Snapshot? %s\n", level->snapshot ? "Yes" : "No");
+	Printf(PRINT_HIGH, "ACS defereds? %s\n", level->defered ? "Yes" : "No");
+}
+END_COMMAND(mapinfo)
+
+// A debugging tool to examine the state of computed cluster data.
+BEGIN_COMMAND(clusterinfo)
+{
+	if (argc < 2)
+	{
+		Printf(PRINT_HIGH, "Usage: clusterinfo <cluster id>\n");
+		return;
+	}
+
+	cluster_info_t* cluster = FindClusterInfo(std::atoi(argv[1]));
+	if (cluster == NULL || cluster->cluster == 0)
+	{
+		Printf(PRINT_HIGH, "Cluster %s not found\n", argv[1]);
+		return;
+	}
+
+	Printf(PRINT_HIGH, "Cluster: %d\n", cluster->cluster);
+	Printf(PRINT_HIGH, "Message Music: %s\n", cluster->messagemusic);
+	Printf(PRINT_HIGH, "Message Flat: %s\n", cluster->finaleflat);
+	if (cluster->exittext)
+	{
+		Printf(PRINT_HIGH, "- = Exit Text = -\n%s\n- = = = -\n", cluster->exittext);
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Exit Text: None\n");
+	}
+	if (cluster->entertext)
+	{
+		Printf(PRINT_HIGH, "- = Enter Text = -\n%s\n- = = = -\n", cluster->entertext);
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Enter Text: None\n");
+	}
+	Printf(PRINT_HIGH, "Flags: %d\n", cluster->flags);
+}
+END_COMMAND(clusterinfo)
+
 // Static level info from original game
 // The level names and cluster messages get filled in
 // by G_SetLevelStrings().
