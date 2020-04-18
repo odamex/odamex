@@ -715,7 +715,6 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_CLUSTERSTRING:
-			Printf(PRINT_HIGH, "MAPINFO entertext/exittext\n");
 			if (newMapinfoStack > 0)
 			{
 				SC_MustGetStringName("=");
@@ -1365,7 +1364,6 @@ void G_SetLevelStrings (void)
 			uppercopy(clusterinfo.messagemusic, temp);
 
 			// Exit text at end of episode.
-			Printf(PRINT_HIGH, "SetString exittext (%d)\n", ClusterInfos[i].cluster);
 			ReplaceString(&clusterinfo.exittext, GStrings(E1TEXT + i));
 		}
 		else if (clusterinfo.cluster <= 8)
@@ -1374,7 +1372,6 @@ void G_SetLevelStrings (void)
 			uppercopy(clusterinfo.messagemusic, temp);
 
 			// Exit text between clusters.
-			Printf(PRINT_HIGH, "SetString exittext (%d)\n", ClusterInfos[i].cluster);
 			ReplaceString(&clusterinfo.exittext, GStrings(start + i - 4));
 		}
 		else if (clusterinfo.cluster <= 10)
@@ -1383,7 +1380,6 @@ void G_SetLevelStrings (void)
 			uppercopy(clusterinfo.messagemusic, temp);
 
 			// Enter text before secret maps.
-			Printf(PRINT_HIGH, "SetString entertext (%d)\n", ClusterInfos[i].cluster);
 			ReplaceString(&clusterinfo.entertext, GStrings(start + i - 4));
 		}
 
