@@ -287,7 +287,6 @@ void CL_Decompress(int sequence);
 
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
-void CL_NetDemoSnapshot(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
@@ -1143,7 +1142,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
 	{
-		//I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
 		I_Warning("Unable to generate netdemo file name.");
 		return std::string();
 	}
@@ -1154,11 +1152,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 void CL_NetDemoStop()
 {
 	netdemo.stopPlaying();
-}
-
-void CL_NetDemoRecord(const std::string &filename)
-{
-	netdemo.startRecording(filename);
 }
 
 void CL_NetDemoPlay(const std::string &filename)
@@ -1220,8 +1213,8 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename);
-	netdemo.writeMapChange();
+	if (netdemo.startRecording(filename))
+		netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
 
