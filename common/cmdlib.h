@@ -94,6 +94,9 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 typedef std::vector<std::string> StringTokens;
 StringTokens TokenizeString(const std::string& str, const std::string& delim);
 
+void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...);
+void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
+
 bool StrFormatISOTime(std::string& s, const tm* utc_tm);
 bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
