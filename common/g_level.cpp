@@ -190,7 +190,7 @@ level_pwad_info_t LevelInfos::_empty = {
 	NULL, // defered
 	{ 0, 0, 0, 0 },    // fadeto_color
 	{ 0xFF, 0, 0, 0 }, // outsidefog_color, 0xFF000000 is special token signaling to not handle it specially
-	"",   // fadetable
+	"COLORMAP",        // fadetable
 	"",   // skypic2
 	0.0,  // gravity
 	0.0,  // aircontrol
@@ -993,7 +993,6 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 
 	level_pwad_info_t defaultinfo;
 	int levelindex;
-	cluster_info_t* clusterinfo;
 	int clusterindex;
 	DWORD levelflags;
 
@@ -1083,10 +1082,10 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				clusters.findByCluster(sc_Number) :
 				clusters.create();
 
-			clusterinfo->cluster = sc_Number;
+			info.cluster = sc_Number;
 			tagged_info_t tinfo;
 			tinfo.tag = tagged_info_t::CLUSTER;
-			tinfo.cluster = clusterinfo;
+			tinfo.cluster = &info;
 			ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, &tinfo, 0);
 			break;
 		}
@@ -1444,8 +1443,8 @@ void G_SetLevelStrings (void)
 			muslump = MUSIC_RUNNIN + offset;
 		}
 
-		ReplaceString(&level.level_name, GStrings(level_name));
-		ReplaceString(&level.level_name, GStrings(muslump));
+		free(level.level_name);
+		level.level_name = strdup(GStrings(level_name));
 	}
 
 	// Loop through clusters and assign any DeHackEd or otherwise dynamic text.
@@ -1461,7 +1460,8 @@ void G_SetLevelStrings (void)
 			uppercopy(cluster.messagemusic, temp);
 
 			// Exit text at end of episode.
-			ReplaceString(&cluster.exittext, GStrings(E1TEXT + cluster.cluster - 1));
+			free(cluster.exittext);
+			cluster.exittext = strdup(GStrings(E1TEXT + cluster.cluster - 1));
 		}
 		else if (cluster.cluster <= 8)
 		{
@@ -1470,16 +1470,18 @@ void G_SetLevelStrings (void)
 			uppercopy(cluster.messagemusic, temp);
 
 			// Exit text between clusters.
-			ReplaceString(&cluster.exittext, GStrings(txtstart + cluster.cluster - 5));
+			free(cluster.exittext);
+			cluster.exittext = strdup(GStrings(txtstart + cluster.cluster - 5));
 		}
 		else if (cluster.cluster <= 10)
 		{
 			// Doom 2 + Expansions, Secret progression
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(cluster.exittext, temp);
+			uppercopy(cluster.messagemusic, temp);
 
 			// Enter text before secret maps.
-			ReplaceString(&cluster.exittext, GStrings(txtstart + cluster.cluster - 5));
+			free(cluster.entertext);
+			cluster.entertext = strdup(GStrings(txtstart + cluster.cluster - 5));
 		}
 
 		// Cluster background flat.
@@ -1770,9 +1772,6 @@ void G_InitLevelLocals()
 		::level.aircontrol = (fixed_t)(info.aircontrol * 65536.f);
 	}
 
-	// [AM] This was done for non-MAPINFO maps in the old codebase.
-	// R_ForceDefaultColormap("COLORMAP");
-
 	::level.partime = info.partime;
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
@@ -1827,7 +1826,7 @@ BEGIN_COMMAND(mapinfo)
 	level_pwad_info_t& info = getLevelInfos().findByName(argv[1]);
 	if (info.levelnum == 0)
 	{
-		Printf(PRINT_HIGH, "Map \"%s\"not found\n", argv[1]);
+		Printf(PRINT_HIGH, "Map \"%s\" not found\n", argv[1]);
 		return;
 	}
 

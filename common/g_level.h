@@ -114,7 +114,7 @@ struct level_pwad_info_t
 	byte			fadeto_color[4];
 	byte			outsidefog_color[4];
 
-	char			fadetable[8];
+	char			fadetable[9];
 	char			skypic2[9];
 	float			gravity;
 	float			aircontrol;
