@@ -183,6 +183,8 @@ static void I_InitializeKeyNameTable()
 	key_names[KEY_NUMLOCK] = "numlock";
 	key_names[KEY_CAPSLOCK] = "capslock";
 	key_names[KEY_SCRLCK] = "scroll";
+	key_names[KEY_RSHIFT] = "rightshift";
+	key_names[KEY_LSHIFT] = "leftshift";
 	key_names[KEY_RCTRL] = "rightctrl";
 	key_names[KEY_LCTRL] = "leftctrl";
 	key_names[KEY_RALT] = "rightalt";
