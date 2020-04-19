@@ -197,17 +197,8 @@ void STACK_ARGS D_Shutdown()
 		G_ExitLevel(0, 0);
 
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	// stop sound effects and music
 	S_Stop();
