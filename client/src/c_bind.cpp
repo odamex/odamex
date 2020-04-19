@@ -36,6 +36,7 @@
 #include "cl_demo.h"
 #include "d_player.h"
 #include "i_input.h"
+#include "hashtable.h"
 
 extern NetDemo netdemo;
 
@@ -120,22 +121,31 @@ char DefBindings[] =
 	"bind m changeteams ";
 
 
+typedef OHashTable<int, std::string> BindingTable;
+static BindingTable Bindings;
+static BindingTable DoubleBindings;
+static BindingTable NetDemoBindings;
 
-static std::string Bindings[NUM_KEYS];
-static std::string DoubleBindings[NUM_KEYS];
-static std::string NetDemoBindings[NUM_KEYS];
-static int DClickTime[NUM_KEYS];
-static byte DClicked[(NUM_KEYS+7)/8];
-static bool KeysDown[NUM_KEYS];
+
+struct KeyState
+{
+	KeyState() :
+		double_click_time(0), double_clicked(false), key_down(false)
+	{}
+
+	int double_click_time;
+	bool double_clicked;
+	bool key_down;
+};
+
+typedef OHashTable<int, KeyState> KeyStateTable;
+static KeyStateTable KeyStates;
 
 
 BEGIN_COMMAND (unbindall)
 {
-	for (int key = 0; key < NUM_KEYS; key++)
-		Bindings[key] = "";
-
-	for (key = 0; key < NUM_KEYS; key++)
-		DoubleBindings[key] = "";
+	Bindings.clear();
+	DoubleBindings.clear();
 }
 END_COMMAND (unbindall)
 
@@ -144,10 +154,9 @@ BEGIN_COMMAND (unbind)
 {
 	if (argc > 1)
 	{
-		std::string strArg = StdStringToLower(argv[1]);
-		int key = I_GetKeyFromName(strArg);
+		int key = I_GetKeyFromName(StdStringToLower(argv[1]));
 		if (key)
-			Bindings[key] = "";
+			Bindings.erase(key);
 		else
 			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
@@ -157,32 +166,31 @@ END_COMMAND (unbind)
 
 BEGIN_COMMAND (bind)
 {
-	if (argc > 1) {
-
-		std::string strArg = StdStringToLower(argv[1]);
-		int key = I_GetKeyFromName(strArg);
-		if (!key)
+	if (argc > 1)
+	{
+		std::string key_name = StdStringToLower(argv[1]);
+		int key = I_GetKeyFromName(key_name);
+		if (key)
 		{
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
-			return;
-		}
-		if (argc == 2)
-		{
-			Printf(PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(Bindings[key]).c_str());
+			if (argc == 2)
+				Printf(PRINT_HIGH, "%s = %s\n", key_name.c_str(), C_QuoteString(Bindings[key]).c_str());
+			else
+				Bindings[key] = argv[2];
 		}
 		else
 		{
-			Bindings[key] = argv[2];
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 		}
 	}
 	else
 	{
 		Printf(PRINT_HIGH, "Current key bindings:\n");
-
-		for (int key = 0; key < NUM_KEYS; key++)
+		for (BindingTable::const_iterator it = Bindings.begin(); it != Bindings.end(); ++it)
 		{
-			if (Bindings[key].length())
-				Printf(PRINT_HIGH, "%s %s\n", I_GetKeyName(key), C_QuoteString(Bindings[key]).c_str());
+			int key = it->first;
+			const std::string& binding = it->second;
+			if (!binding.empty())
+				Printf(PRINT_HIGH, "%s %s\n", I_GetKeyName(key).c_str(), C_QuoteString(binding).c_str());
 		}
 	}
 }
@@ -193,10 +201,9 @@ BEGIN_COMMAND (undoublebind)
 {
 	if (argc > 1)
 	{
-		std::string strArg = StdStringToLower(argv[1]);
-		int key = I_GetKeyFromName(strArg);
+		int key = I_GetKeyFromName(StdStringToLower(argv[1]));
 		if (key)
-			DoubleBindings[key] = "";
+			DoubleBindings.erase(key);
 		else
 			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
@@ -208,30 +215,29 @@ BEGIN_COMMAND (doublebind)
 {
 	if (argc > 1)
 	{
-		std::string strArg = StdStringToLower(argv[1]);
-		int key = I_GetKeyFromName(strArg);
-		if (!key)
+		std::string key_name = StdStringToLower(argv[1]);
+		int key = I_GetKeyFromName(key_name);
+		if (key)
 		{
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
-			return;
-		}
-		if (argc == 2)
-		{
-			Printf(PRINT_HIGH, "%s = %s\n", strArg.c_str(), C_QuoteString(DoubleBindings[key]).c_str());
+			if (argc == 2)
+				Printf(PRINT_HIGH, "%s = %s\n", key_name.c_str(), C_QuoteString(DoubleBindings[key]).c_str());
+			else
+				DoubleBindings[key] = argv[2];
 		}
 		else
 		{
-			DoubleBindings[key] = argv[2];
+			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 		}
 	}
 	else
 	{
 		Printf(PRINT_HIGH, "Current key doublebindings:\n");
-
-		for (key = 0; key < NUM_KEYS; key++)
+		for (BindingTable::const_iterator it = DoubleBindings.begin(); it != DoubleBindings.end(); ++it)
 		{
-			if (DoubleBindings[key].length())
-				Printf(PRINT_HIGH, "%s %s\n", I_GetKeyName(key), C_QuoteString(DoubleBindings[key]).c_str());
+			int key = it->first;
+			const std::string& binding = it->second;
+			if (!binding.empty())
+				Printf(PRINT_HIGH, "%s %s\n", I_GetKeyName(key).c_str(), C_QuoteString(binding).c_str());
 		}
 	}
 }
@@ -290,6 +296,7 @@ bool C_DoNetDemoKey (event_t *ev)
 	return true;
 }
 
+
 //
 // C_DoSpectatorKey
 //
@@ -316,67 +323,71 @@ bool C_DoSpectatorKey (event_t *ev)
 	return false;
 }
 
-BOOL C_DoKey (event_t *ev)
+
+BOOL C_DoKey(event_t *ev)
 {
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
-	std::string *binding = NULL;
+	const std::string* binding = NULL;
+	int key = ev->data1;
 
-	int dclickspot = ev->data1 >> 3;
-	byte dclickmask = 1 << (ev->data1 & 7);
-
-	if (DClickTime[ev->data1] > level.time && ev->type == ev_keydown)
+	KeyState& key_state = KeyStates[key];
+	if (ev->type == ev_keydown && key_state.double_click_time > level.time)
 	{
 		// Key pressed for a double click
-		binding = &DoubleBindings[ev->data1];
-		DClicked[dclickspot] |= dclickmask;
+		binding = &DoubleBindings[key];
+		key_state.double_clicked = true;
 	}
 	else
 	{
-		if (ev->type == ev_keydown) {
+		if (ev->type == ev_keydown)
+		{
 			// Key pressed for a normal press
-			binding = &Bindings[ev->data1];
-			DClickTime[ev->data1] = level.time + 20;
-		} else if (DClicked[dclickspot] & dclickmask) {
+			binding = &Bindings[key];
+			key_state.double_click_time = level.time + 20;
+		}
+		else if (key_state.double_clicked)
+		{
 			// Key released from a double click
-			binding = &DoubleBindings[ev->data1];
-			DClicked[dclickspot] &= ~dclickmask;
-			DClickTime[ev->data1] = 0;
+			binding = &DoubleBindings[key];
+			key_state.double_click_time = 0;
+			key_state.double_clicked = false;
 		} else {
 			// Key released from a normal press
-			binding = &Bindings[ev->data1];
+			binding = &Bindings[key];
 		}
 	}
 
-	if (!binding->length())
-		binding = &Bindings[ev->data1];
+	if (binding->empty())
+		binding = &Bindings[key];
 
-	if (binding->length() && (HU_ChatMode() == CHAT_INACTIVE || ev->data1 < 256))
+	if (!binding->empty() && (HU_ChatMode() == CHAT_INACTIVE || key < 256))
 	{
 		if (ev->type == ev_keydown)
 		{
-			AddCommandString(*binding, ev->data1);
-			KeysDown[ev->data1] = true;
+			key_state.key_down = true;
+			AddCommandString(*binding, key);
 		}
-		else
+		else if (ev->type == ev_keyup)
 		{
-			size_t achar = binding->find_first_of('+');
+			key_state.key_down = false;
 
+			size_t achar = binding->find_first_of('+');
 			if (achar == std::string::npos)
 				return false;
 
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
-				(*binding)[achar] = '-';
-				AddCommandString(*binding, ev->data1);
-				(*binding)[achar] = '+';
+				std::string action_release(*binding);
+				action_release[achar] = '-';
+				AddCommandString(action_release, key);
 			}
-
-			KeysDown[ev->data1] = false;
 		}
+
 		return true;
 	}
+
 	return false;
 }
 
@@ -388,66 +399,83 @@ BOOL C_DoKey (event_t *ev)
 //
 void C_ReleaseKeys()
 {
-	for (int i = 0; i < NUM_KEYS; i++)
+	for (KeyStateTable::iterator it = KeyStates.begin(); it != KeyStates.end(); ++it)
 	{
-		if (!KeysDown[i])
-			continue;
-
-		KeysDown[i] = false;
-		std::string *binding = &Bindings[i];
-		if (binding->empty())
-			continue;
-
-		size_t achar = binding->find_first_of('+');
-
-		if (achar != std::string::npos &&
-			(achar == 0 || (*binding)[achar - 1] <= ' '))
+		int key = it->first;
+		KeyState& key_state = it->second;
+		if (key_state.key_down)
 		{
-			(*binding)[achar] = '-';
-			AddCommandString(*binding, i);
-			(*binding)[achar] = '+';
+			key_state.key_down = false;
+			std::string *binding = &Bindings[key];
+			if (!binding->empty())
+			{
+				size_t achar = binding->find_first_of('+');
+				if (achar != std::string::npos && (achar == 0 || (*binding)[achar - 1] <= ' '))
+				{
+					std::string action_release(*binding);
+					action_release[achar] = '-';
+					AddCommandString(action_release, key);
+				}
+			}
 		}
 	}
 
 	HU_ReleaseKeyStates();
 }
 
+
 void C_ArchiveBindings (FILE *f)
 {
 	fprintf(f, "unbindall\n");
-	for (int key = 0; key < NUM_KEYS; key++)
+
+	for (BindingTable::const_iterator it = Bindings.begin(); it != Bindings.end(); ++it)
 	{
-		if (Bindings[key].length())
-			fprintf(f, "bind %s %s\n", C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(Bindings[key]).c_str());
+		int key = it->first;
+		const std::string& binding = it->second;
+		if (!binding.empty())
+			fprintf(f, "bind %s %s\n", C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());
 	}
-	for (int key = 0; key < NUM_KEYS; key++)
+
+	for (BindingTable::const_iterator it = DoubleBindings.begin(); it != DoubleBindings.end(); ++it)
 	{
-		if (DoubleBindings[key].length())
-			fprintf(f, "doublebind %s %s\n", C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(DoubleBindings[key]).c_str());
+		int key = it->first;
+		const std::string& binding = it->second;
+		if (!binding.empty())
+			fprintf(f, "doublebind %s %s\n", C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());
 	}
 }
 
-int C_GetKeysForCommand (const char *cmd, int *first, int *second)
+
+int C_GetKeysForCommand (const char* cmd, int* first, int* second)
 {
 	int c = 0;
 	*first = *second = 0;
 
-	for (int key = 0; key < NUM_KEYS && c < 2; key++)
+	for (BindingTable::const_iterator it = Bindings.begin(); it != Bindings.end(); ++it)
 	{
-		if (Bindings[key].length() && !stricmp(cmd, Bindings[key].c_str()))
+		int key = it->first;
+		const std::string& binding = it->second;
+		if (!binding.empty() and stricmp(cmd, binding.c_str()) == 0)
 		{
-			if (c++ == 0)
+			c++;
+			if (c == 1)
+			{
 				*first = key;
+			}
 			else
+			{
 				*second = key;
+				break;
+			}
 		}
 	}
 	return c;
 }
 
-std::string C_NameKeys (int first, int second)
+
+std::string C_NameKeys(int first, int second)
 {
-	if(!first && !second)
+	if (!first && !second)
 		return "???";
 
 	std::string out;
@@ -467,21 +495,27 @@ std::string C_NameKeys (int first, int second)
 	return out;
 }
 
-void C_UnbindACommand (const char *str)
+
+void C_UnbindACommand(const char* str)
 {
-	for (int key = 0; key < NUM_KEYS; key++) 
+	for (BindingTable::iterator it = Bindings.begin(); it != Bindings.end(); ++it)
 	{
-		if (Bindings[key].length() && !stricmp(str, Bindings[key].c_str()))
-			Bindings[key] = "";
+		const std::string& binding = it->second;
+		if (!binding.empty() && stricmp(str, binding.c_str()) == 0)
+		{
+			Bindings.erase(it);
+			it = Bindings.begin();		// restart iteration since the container was modified during iteration
+		}
 	}
 }
+
 
 void C_ChangeBinding (const char *str, int newone)
 {
 	// Check which bindings that are already set. If both binding slots are taken,
 	// erase all bindings and reassign the new one and the secondary binding to the key instead.
-	int first = -1;
-	int second = -1;
+	int first = 0;
+	int second = 0;
 
 	C_GetKeysForCommand(str, &first, &second);
 
@@ -489,7 +523,7 @@ void C_ChangeBinding (const char *str, int newone)
 	{
 		return;
 	}
-	else if (first > -1 && second > -1)
+	else if (first > 0 && second > 0)
 	{
 		C_UnbindACommand(str);
 		Bindings[newone] = str;
@@ -500,6 +534,7 @@ void C_ChangeBinding (const char *str, int newone)
 		Bindings[newone] = str;
 	}
 }
+
 
 const char *C_GetBinding (int key)
 {

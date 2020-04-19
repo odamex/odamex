@@ -1177,25 +1177,14 @@ int ISDL20KeyboardInputDevice::getTextEventValue()
 //
 // ISDL20KeyboardInputDevice::translateKey
 //
-// Uses a translation table to convert raw keyboard scancodes
-// to Odamex's internal key representation using a fixed translation
-// table that does not take keyboard layout into account.
+// Performs translation of an SDL_Keysym event to 
+// to Odamex's internal key representation (which is identical
+// to SDL 2.0's key representation).
 //
-// Paraphrased from Chocolate Doom:
-// The keyboard scan code is used to give the character typed
-// and does not change depending on keyboard layout.
-// If you have a German keyboard, pressing 'z' will
-// give 'y', for example.
-//
-int ISDL20KeyboardInputDevice::translateKey(int scancode)
+int ISDL20KeyboardInputDevice::translateKey(SDL_Keysym keysym)
 {
-	static const int scancode_translate_table[] = SCANCODE_TO_KEYS_ARRAY;
-
-	if (scancode >= 0 && scancode < (int)ARRAY_LENGTH(scancode_translate_table))
-		return scancode_translate_table[scancode];
-	return 0;
+	return keysym.sym;
 }
-
 
 
 //
@@ -1221,7 +1210,6 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 		// be implicitly ignored unless handled below.
 		if (sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP)
 		{
-			const int scancode = sdl_ev.key.keysym.scancode;
 			const int sym = sdl_ev.key.keysym.sym;
 			const int mod = sdl_ev.key.keysym.mod;
 
@@ -1229,7 +1217,7 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 			ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
 
 			// Get the Odamex key code from the scancode
-			ev.data1 = translateKey(scancode);
+			ev.data1 = translateKey(sdl_ev.key.keysym);
 
 			// From Chocolate Doom:
 			// Get the localized version of the key press. This takes into account the

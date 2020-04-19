@@ -58,82 +58,188 @@ static bool input_grabbed = false;
 static bool nomouse = false;
 
 
-// SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
-// so I get to re-write the entire system. YES I RE-DID ALL OF THIS BY HAND
-// SoM: note: eat shit and die Randy Heit this uses SDL key codes now!
-static const char* KeyNames[NUM_KEYS] = {
-// :: Begin ASCII mapped keycodes
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 00 - 07
-"backspace","tab",   NULL,    NULL,    NULL, "enter",    NULL,    NULL, // 08 - 0F
-   NULL,    NULL,    NULL, "pause",    NULL,    NULL,    NULL,    NULL, // 10 - 17
-   NULL,    NULL,    NULL,"escape",    NULL,    NULL,    NULL,    NULL, // 18 - 1F
-"space",     "!",    "\"",     "#",     "$",    NULL,     "&",     "'", // 20 - 27
-    "(",     ")",     "*",     "+",     ",",     "-",     ".",     "/", // 28 - 2F
-    "0",     "1",     "2",     "3",     "4",     "5",     "6",     "7", // 30 - 37
-    "8",     "9",     ":",     ";",     "<",     "=",     ">",     "?", // 38 - 3F
-    "@",    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 40 - 47
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 48 - 4F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 50 - 57
-   NULL,    NULL,    NULL,     "[",    "\\",     "]",     "^",     "_", // 58 - 5F
-"grave",     "a",     "b",     "c",     "d",     "e",     "f",     "g", // 60 - 67
-    "h",     "i",     "j",     "k",     "l",     "m",     "n",     "o", // 68 - 6F
-    "p",     "q",     "r",     "s",     "t",     "u",     "v",     "w", // 70 - 77
-    "x",     "y",     "z",    NULL,    NULL,    NULL,    NULL,   "del", // 78 - 7F
-// :: End ASCII mapped keycodes
-// :: Begin World keycodes
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 80 - 87
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 88 - 8F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 90 - 97
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 98 - 9F
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A0 - A7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // A8 - AF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B0 - B7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // B8 - BF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C0 - C7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // C8 - CF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D0 - D7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // D8 - DF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E0 - E7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // E8 - EF
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F0 - F7
-   NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
-// :: End world keycodes
-  "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
-  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
-  "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
- "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
-   "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
-  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", "rightshift", // 0128 - 012F
-"leftshift", "rightctrl", "leftctrl", "rightalt", "leftalt",    NULL,    NULL,  "lwin", // 0130 - 0137
- "rwin",    NULL,    NULL,  "help", "print", "sysrq", "break",    NULL,  // 0138 - 013F
-   NULL,    NULL,    NULL,    // 0140 - 0142
+typedef OHashTable<int, std::string> KeyNameTable;
+KeyNameTable key_names;
 
-	// non-keyboard buttons that can be bound
-   // 0143 - 0146 & 0173
-	"mouse1",	"mouse2",	"mouse3",	"mouse4",			// 5 mouse buttons
-   // 0147 - 014A
-   "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
-   // 014B - 014E
-	"joy1",		"joy2",		"joy3",		"joy4",			// 32 joystick buttons
-   // 014F - 0152
-	"joy5",		"joy6",		"joy7",		"joy8",
-   // 0153 - 0156
-	"joy9",		"joy10",	"joy11",	"joy12",
-   // 0157 - 015A
-	"joy13",	"joy14",	"joy15",	"joy16",
-   // 015B - 015E
-	"joy17",	"joy18",	"joy19",	"joy20",
-   // 015F - 0162
-	"joy21",	"joy22",	"joy23",	"joy24",
-   // 0163 - 0166
-	"joy25",	"joy26",	"joy27",	"joy28",
-   // 0167 - 016A
-	"joy29",	"joy30",	"joy31",	"joy32",
-  // 016B - 016E
-	"hat1up",	"hat1right","hat1down",	"hat1left",
-  // 016F - 0172
-	"hat2up",	"hat2right","hat2down",	"hat2left", "mouse5"
-};
+//
+// I_InitializeKeyNameTable
+//
+// Builds a table mapping keycodes to string representations of key names.
+//
+static void I_InitializeKeyNameTable()
+{
+	key_names.clear();
+	key_names[KEY_BACKSPACE] = "backspace";
+	key_names[KEY_TAB] = "tab";
+	key_names[KEY_ENTER] = "enter";
+	key_names[KEY_PAUSE] = "pause";
+	key_names[KEY_ESCAPE] = "escape";
+	key_names[KEY_SPACE] = "space";
+	key_names['!'] = "!";
+	key_names['\"'] = "\"";
+	key_names['#'] = "#";
+	key_names['$'] = "$";
+	key_names['&'] = "&";
+	key_names['\''] = "\'";
+	key_names['('] = "(";
+	key_names[')'] = ")";
+	key_names['*'] = "*";
+	key_names['+'] = "+";
+	key_names[','] = ",";
+	key_names['-'] = "-";
+	key_names['.'] = ".";
+	key_names['/'] = "/";
+	key_names['0'] = "0";
+	key_names['1'] = "1";
+	key_names['2'] = "2";
+	key_names['3'] = "3";
+	key_names['4'] = "4";
+	key_names['5'] = "5";
+	key_names['6'] = "6";
+	key_names['7'] = "7";
+	key_names['8'] = "8";
+	key_names['9'] = "9";
+	key_names[':'] = ":";
+	key_names[';'] = ":";
+	key_names['<'] = "<";
+	key_names['='] = "=";
+	key_names['>'] = ">";
+	key_names['?'] = "?";
+	key_names['@'] = "@";
+	key_names['['] = "[";
+	key_names['\\'] = "\\";
+	key_names[']'] = "]";
+	key_names['^'] = "^";
+	key_names['_'] = "_";
+	key_names['`'] = "grave";
+	key_names['a'] = "a";
+	key_names['b'] = "b";
+	key_names['c'] = "c";
+	key_names['d'] = "d";
+	key_names['e'] = "e";
+	key_names['f'] = "f";
+	key_names['g'] = "g";
+	key_names['h'] = "h";
+	key_names['i'] = "i";
+	key_names['j'] = "j";
+	key_names['k'] = "k";
+	key_names['l'] = "l";
+	key_names['m'] = "m";
+	key_names['n'] = "n";
+	key_names['o'] = "o";
+	key_names['p'] = "p";
+	key_names['q'] = "q";
+	key_names['r'] = "r";
+	key_names['s'] = "s";
+	key_names['t'] = "t";
+	key_names['u'] = "u";
+	key_names['v'] = "v";
+	key_names['w'] = "w";
+	key_names['x'] = "x";
+	key_names['y'] = "y";
+	key_names['z'] = "z";
+	key_names[KEY_DEL] = "del";
+	key_names[KEYP_0] = "kp0";
+	key_names[KEYP_1] = "kp1";
+	key_names[KEYP_2] = "kp2";
+	key_names[KEYP_3] = "kp3";
+	key_names[KEYP_4] = "kp4";
+	key_names[KEYP_5] = "kp5";
+	key_names[KEYP_6] = "kp6";
+	key_names[KEYP_7] = "kp7";
+	key_names[KEYP_8] = "kp8";
+	key_names[KEYP_9] = "kp9";
+	key_names[KEYP_PERIOD] = "kp.";
+	key_names[KEYP_DIVIDE] = "kp/";
+	key_names[KEYP_MULTIPLY] = "kp*";
+	key_names[KEYP_MINUS] = "kp-";
+	key_names[KEYP_PLUS] = "kp+";
+	key_names[KEYP_ENTER] = "kpenter";
+	key_names[KEYP_EQUALS] = "kp=";
+	key_names[KEY_UPARROW] = "uparrow";
+	key_names[KEY_DOWNARROW] = "downarrow";
+	key_names[KEY_LEFTARROW] = "leftarrow";
+	key_names[KEY_RIGHTARROW] = "rightarrow";
+	key_names[KEY_INS] = "ins";
+	key_names[KEY_HOME] = "home";
+	key_names[KEY_END] = "end";
+	key_names[KEY_PGUP] = "pgup";
+	key_names[KEY_PGDN] = "pgdn";
+	key_names[KEY_F1] = "f1";
+	key_names[KEY_F2] = "f2";
+	key_names[KEY_F3] = "f3";
+	key_names[KEY_F4] = "f4";
+	key_names[KEY_F5] = "f5";
+	key_names[KEY_F6] = "f6";
+	key_names[KEY_F7] = "f7";
+	key_names[KEY_F8] = "f8";
+	key_names[KEY_F9] = "f9";
+	key_names[KEY_F10] = "f10";
+	key_names[KEY_F11] = "f11";
+	key_names[KEY_F12] = "f12";
+	key_names[KEY_F13] = "f13";
+	key_names[KEY_F14] = "f14";
+	key_names[KEY_F15] = "f15";
+	key_names[KEY_NUMLOCK] = "numlock";
+	key_names[KEY_CAPSLOCK] = "capslock";
+	key_names[KEY_SCRLCK] = "scroll";
+	key_names[KEY_RCTRL] = "rightctrl";
+	key_names[KEY_LCTRL] = "leftctrl";
+	key_names[KEY_RALT] = "rightalt";
+	key_names[KEY_LALT] = "leftalt";
+	key_names[KEY_LWIN] = "lwin";
+	key_names[KEY_RWIN] = "rwin";
+	key_names[KEY_HELP] = "help";
+	key_names[KEY_PRINT] = "print";
+	key_names[KEY_SYSRQ] = "sysrq";
+	key_names[KEY_MOUSE1] = "mouse1";
+	key_names[KEY_MOUSE2] = "mouse2";
+	key_names[KEY_MOUSE3] = "mouse3";
+	key_names[KEY_MOUSE4] = "mouse4";
+	key_names[KEY_MOUSE5] = "mouse5";
+	key_names[KEY_MWHEELDOWN] = "mwheeldown";
+	key_names[KEY_MWHEELUP] = "mwheelup";
+	key_names[KEY_JOY1] = "joy1";
+	key_names[KEY_JOY2] = "joy2";
+	key_names[KEY_JOY3] = "joy3";
+	key_names[KEY_JOY4] = "joy4";
+	key_names[KEY_JOY5] = "joy5";
+	key_names[KEY_JOY6] = "joy6";
+	key_names[KEY_JOY7] = "joy7";
+	key_names[KEY_JOY8] = "joy8";
+	key_names[KEY_JOY9] = "joy9";
+	key_names[KEY_JOY10] = "joy10";
+	key_names[KEY_JOY11] = "joy11";
+	key_names[KEY_JOY12] = "joy12";
+	key_names[KEY_JOY13] = "joy13";
+	key_names[KEY_JOY14] = "joy14";
+	key_names[KEY_JOY15] = "joy15";
+	key_names[KEY_JOY16] = "joy16";
+	key_names[KEY_JOY17] = "joy17";
+	key_names[KEY_JOY18] = "joy18";
+	key_names[KEY_JOY19] = "joy19";
+	key_names[KEY_JOY20] = "joy20";
+	key_names[KEY_JOY21] = "joy21";
+	key_names[KEY_JOY22] = "joy22";
+	key_names[KEY_JOY23] = "joy23";
+	key_names[KEY_JOY24] = "joy24";
+	key_names[KEY_JOY25] = "joy25";
+	key_names[KEY_JOY26] = "joy26";
+	key_names[KEY_JOY27] = "joy27";
+	key_names[KEY_JOY28] = "joy28";
+	key_names[KEY_JOY29] = "joy29";
+	key_names[KEY_JOY30] = "joy30";
+	key_names[KEY_JOY31] = "joy31";
+	key_names[KEY_JOY32] = "joy32";
+	key_names[KEY_HAT1] = "hat1up";
+	key_names[KEY_HAT2] = "hat1right";
+	key_names[KEY_HAT3] = "hat1down";
+	key_names[KEY_HAT4] = "hat1left";
+	key_names[KEY_HAT5] = "hat2up";
+	key_names[KEY_HAT6] = "hat2right";
+	key_names[KEY_HAT7] = "hat2down";
+	key_names[KEY_HAT8] = "hat2left";
+}
 
 
 //
@@ -143,17 +249,18 @@ static const char* KeyNames[NUM_KEYS] = {
 //
 int I_GetKeyFromName(const std::string& name)
 {
+	if (key_names.empty())
+		I_InitializeKeyNameTable();
+
 	// Names of the form #xxx are translated to key xxx automatically
 	if (name[0] == '#' && name[1] != 0)
-	{
 		return atoi(name.c_str() + 1);
-	}
 
 	// Otherwise, we scan the KeyNames[] array for a matching name
-	for (int key = 0; key < NUM_KEYS; key++)
+	for (KeyNameTable::const_iterator it = key_names.begin(); it != key_names.end(); ++it)
 	{
-		if (KeyNames[key] && !stricmp(KeyNames[key], name.c_str()))
-			return key;
+		if (iequals(name, it->second))
+			return it->first;
 	}
 	return 0;
 }
@@ -166,10 +273,14 @@ int I_GetKeyFromName(const std::string& name)
 //
 std::string I_GetKeyName(int key)
 {
-	if (KeyNames[key])
-		return std::string(KeyNames[key]);
+	if (key_names.empty())
+		I_InitializeKeyNameTable();
 
-	static char name[5];
+	KeyNameTable::const_iterator it = key_names.find(key);
+	if (it != key_names.end() && !it->second.empty())
+		return it->second;
+
+	static char name[11];
 	sprintf(name, "#%d", key);
 	return std::string(name);
 }

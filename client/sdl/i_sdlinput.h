@@ -223,7 +223,7 @@ public:
 	virtual void disableTextEntry();
 
 private:
-	int translateKey(int scancode);
+	int translateKey(SDL_Keysym keysym);
 	int getTextEventValue();
 
 	bool					mActive;
