@@ -181,8 +181,39 @@ struct cluster_info_t {
 #define CLUSTER_HUB		0x00000001
 
 extern level_locals_t level;
-extern level_info_t LevelInfos[];
-extern cluster_info_t ClusterInfos[];
+
+class LevelInfos
+{
+	typedef std::vector<level_pwad_info_t> _LevelInfoArray;
+	static level_pwad_info_t _empty;
+	std::vector<level_pwad_info_t> _infos;
+public:
+	LevelInfos(const level_info_t* levels);
+	~LevelInfos();
+	level_pwad_info_t& at(size_t i);
+	level_pwad_info_t& create();
+	void clear();
+	void clearSnapshots();
+	level_pwad_info_t& findByName(char* mapname);
+	level_pwad_info_t& findByNum(int levelnum);
+	size_t size();
+	void zapDeferreds();
+};
+
+class ClusterInfos
+{
+	typedef std::vector<cluster_info_t> _ClusterInfoArray;
+	static cluster_info_t _empty;
+	std::vector<cluster_info_t> _infos;
+public:
+	ClusterInfos(const cluster_info_t* clusters);
+	~ClusterInfos();
+	cluster_info_t& at(size_t i);
+	void clear();
+	cluster_info_t& create();
+	cluster_info_t& findByCluster(int i);
+	size_t size();
+};
 
 extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
@@ -216,10 +247,6 @@ void G_AirControlChanged ();
 
 void G_SetLevelStrings (void);
 
-cluster_info_t *FindClusterInfo (int cluster);
-level_info_t *FindLevelInfo (char *mapname);
-level_info_t *FindLevelByNum (int num);
-
 char *CalcMapName (int episode, int level);
 
 void G_ParseMapInfo (void);
@@ -235,11 +262,6 @@ void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::str
 extern bool unnatural_level_progression;
 
 void P_RemoveDefereds (void);
-int FindWadLevelInfo (char *name);
-int FindWadClusterInfo (int cluster);
-
-level_info_t *FindDefLevelInfo (char *mapname);
-cluster_info_t *FindDefClusterInfo (int cluster);
 
 bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 				const std::vector<std::string> &newpatchfiles,
@@ -248,5 +270,8 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 				const std::string &mapname = "");
 
 bool G_LoadWad(const std::string &str, const std::string &mapname = "");
+
+LevelInfos& getLevelInfos();
+ClusterInfos& getClusterInfos();
 
 #endif //__G_LEVEL_H__

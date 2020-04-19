@@ -1388,7 +1388,6 @@ static int PatchMisc (int dummy)
 static int PatchPars (int dummy)
 {
 	char *space, mapname[8], *moredata;
-	level_info_t *info;
 	int result, par;
 
 	DPrintf ("[Pars]\n");
@@ -1426,12 +1425,15 @@ static int PatchPars (int dummy)
 			par = atoi (space);
 		}
 
-		if (!(info = FindLevelInfo (mapname)) ) {
+		LevelInfos& levels = getLevelInfos();
+		level_pwad_info_t& info = levels.findByName(mapname);
+
+		if (info.levelnum == 0) {
 			DPrintf ("No map %s\n", mapname);
 			continue;
 		}
 
-		info->partime = par;
+		info.partime = par;
 		DPrintf ("Par for %s changed to %d\n", mapname, par);
 	}
 	return result;
@@ -1501,6 +1503,8 @@ static int PatchMusic (int dummy)
 
 static int PatchText (int oldSize)
 {
+	LevelInfos& levels = getLevelInfos();
+
 	int newSize;
 	char *oldStr;
 	char *newStr;
@@ -1568,17 +1572,16 @@ static int PatchText (int oldSize)
 	if (oldSize < 7)
 	{		// Music names are never >6 chars
 		char musname[9];
-		level_info_t *info = LevelInfos;
-		sprintf (musname, "d_%s", oldStr);
+		snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
 
-		while (info->level_name)
+		for (size_t i = 0; i < levels.size(); i++)
 		{
-			if (stricmp (info->music, musname) == 0)
+			level_pwad_info_t& level = levels.at(0);
+			if (stricmp(level.music, musname) == 0)
 			{
 				good = true;
-				strcpy (info->music, musname);
+				uppercopy(level.music, musname);
 			}
-			info++;
 		}
 	}
 
