@@ -231,6 +231,14 @@ cluster_info_t& ClusterInfos::at(size_t i)
 // Clear all cluster definitions
 void ClusterInfos::clear()
 {
+	// Free all strings.
+	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		free(it->exittext);
+		it->exittext = NULL;
+		free(it->entertext);
+		it->entertext = NULL;
+	}
 	return _infos.clear();
 }
 
@@ -890,14 +898,19 @@ static void ParseMapInfoLower(
 			break;
 
 		case MITYPE_STRING:
+		{
+			char** text = (char**)(info + handler->data1);
+
 			if (newMapinfoStack > 0)
 			{
 				SC_MustGetStringName("=");
 			}
 
 			SC_MustGetString();
-			ReplaceString((char**)(info + handler->data1), sc_String);
+			free(*text);
+			*text = strdup(sc_String);
 			break;
+		}
 
 		case MITYPE_CSTRING:
 			if (newMapinfoStack > 0)
@@ -909,8 +922,10 @@ static void ParseMapInfoLower(
 			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
 			break;
-
 		case MITYPE_CLUSTERSTRING:
+		{
+			char** text = (char**)(info + handler->data1);
+
 			if (newMapinfoStack > 0)
 			{
 				SC_MustGetStringName("=");
@@ -924,7 +939,8 @@ static void ParseMapInfoLower(
 					{
 						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
-					ReplaceString((char**)(info + handler->data1), GStrings(i));
+					free(*text);
+					*text = strdup(GStrings(i));
 				}
 				else
 				{
@@ -945,7 +961,8 @@ static void ParseMapInfoLower(
 						ctext.resize(ctext.length() - 1);
 					}
 
-					ReplaceString((char**)(info + handler->data1), ctext.c_str());
+					free(*text);
+					*text = strdup(ctext.c_str());
 				}
 			}
 			else
@@ -959,15 +976,18 @@ static void ParseMapInfoLower(
 					{
 						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
-					ReplaceString((char**)(info + handler->data1), GStrings(i));
+
+					free(*text);
+					*text = strdup(GStrings(i));
 				}
 				else
 				{
-					ReplaceString((char**)(info + handler->data1), sc_String);
+					free(*text);
+					*text = strdup(sc_String);
 				}
 			}
 			break;
-		}
+		}}
 	}
 
 	if (tinfo == NULL)
@@ -1046,11 +1066,13 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				{
 					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 				}
-				ReplaceString(&info.level_name, GStrings(i));
+				free(info.level_name);
+				info.level_name = strdup(GStrings(i));
 			}
 			else
 			{
-				ReplaceString(&info.level_name, sc_String);
+				free(info.level_name);
+				info.level_name = strdup(sc_String);
 			}
 
 			// Set up levelnum now so that the Teleport_NewMap specials
