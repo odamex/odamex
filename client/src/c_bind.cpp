@@ -455,7 +455,7 @@ int C_GetKeysForCommand (const char* cmd, int* first, int* second)
 	{
 		int key = it->first;
 		const std::string& binding = it->second;
-		if (!binding.empty() and stricmp(cmd, binding.c_str()) == 0)
+		if (!binding.empty() && stricmp(cmd, binding.c_str()) == 0)
 		{
 			c++;
 			if (c == 1)
