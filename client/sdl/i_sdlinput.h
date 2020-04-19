@@ -64,6 +64,8 @@ public:
 	virtual void flushEvents();
 
 private:
+	int translateKey(SDL_keysym keysym);
+
 	bool					mActive;
 
 	typedef std::queue<event_t> EventQueue;
