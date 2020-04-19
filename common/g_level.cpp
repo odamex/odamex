@@ -1050,7 +1050,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			}
 
 			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(sc_String).levelnum == 0) ?
+			level_pwad_info_t& info = (levels.findByName(sc_String).levelnum != 0) ?
 				levels.findByName(sc_String) :
 				levels.create();
 			info = defaultinfo;
@@ -1100,7 +1100,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			SC_MustGetNumber();
 
 			// Find the cluster.
-			cluster_info_t& info = (clusters.findByCluster(sc_Number).cluster == 0) ?
+			cluster_info_t& info = (clusters.findByCluster(sc_Number).cluster != 0) ?
 				clusters.findByCluster(sc_Number) :
 				clusters.create();
 
