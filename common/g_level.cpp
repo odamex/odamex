@@ -1445,69 +1445,69 @@ void G_SetLevelStrings (void)
 	// Loop through levels and assign any DeHackEd or otherwise dynamic text.
 	for (size_t i = 0; i < levels.size(); i++)
 	{
-		level_pwad_info_t& level = levels.at(i);
+		level_pwad_info_t& info = levels.at(i);
 
 		// Level name
 		int level_name;
 		int muslump;
-		if (level.cluster <= 4)
+		if (info.cluster <= 4)
 		{
 			// Doom 1
-			int offset = (level.cluster - 1) * 9 + (level.levelnum - 1);
+			int offset = (info.cluster - 1) * 9 + (info.levelnum - 1);
 			level_name = HUSTR_E1M1 + offset;
 			muslump = MUSIC_E1M1 + offset;
 		}
 		else
 		{
 			// Doom 2 + Expansions
-			int offset = (level.levelnum - 1);
+			int offset = (info.levelnum - 1);
 			level_name = hustart + offset;
 			muslump = MUSIC_RUNNIN + offset;
 		}
 
-		free(level.level_name);
-		level.level_name = strdup(GStrings(level_name));
+		free(info.level_name);
+		info.level_name = strdup(GStrings(level_name));
 	}
 
 	// Loop through clusters and assign any DeHackEd or otherwise dynamic text.
 	for (size_t i = 0; i < clusters.size(); i++)
 	{
-		cluster_info_t& cluster = clusters.at(i);
-		if (cluster.cluster <= 4)
+		cluster_info_t& info = clusters.at(i);
+		if (info.cluster <= 4)
 		{
 			// Doom 1
 
 			// Cluster music is all the same.
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
-			uppercopy(cluster.messagemusic, temp);
+			uppercopy(info.messagemusic, temp);
 
 			// Exit text at end of episode.
-			free(cluster.exittext);
-			cluster.exittext = strdup(GStrings(E1TEXT + cluster.cluster - 1));
+			free(info.exittext);
+			info.exittext = strdup(GStrings(E1TEXT + info.cluster - 1));
 		}
-		else if (cluster.cluster <= 8)
+		else if (info.cluster <= 8)
 		{
 			// Doom 2 + Expansions, Normal progression
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(cluster.messagemusic, temp);
+			uppercopy(info.messagemusic, temp);
 
 			// Exit text between clusters.
-			free(cluster.exittext);
-			cluster.exittext = strdup(GStrings(txtstart + cluster.cluster - 5));
+			free(info.exittext);
+			info.exittext = strdup(GStrings(txtstart + info.cluster - 5));
 		}
-		else if (cluster.cluster <= 10)
+		else if (info.cluster <= 10)
 		{
 			// Doom 2 + Expansions, Secret progression
 			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(cluster.messagemusic, temp);
+			uppercopy(info.messagemusic, temp);
 
 			// Enter text before secret maps.
-			free(cluster.entertext);
-			cluster.entertext = strdup(GStrings(txtstart + cluster.cluster - 5));
+			free(info.entertext);
+			info.entertext = strdup(GStrings(txtstart + info.cluster - 5));
 		}
 
 		// Cluster background flat.
-		uppercopy(cluster.finaleflat, GStrings(BGFLATE1 + i));
+		uppercopy(info.finaleflat, GStrings(BGFLATE1 + i));
 	}
 
 	if (::level.info)
