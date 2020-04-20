@@ -38,6 +38,7 @@
 #define KEY_ENTER           0x0000000D
 #define KEY_EQUALS          0x0000003D
 #define KEY_ESCAPE          0x0000001B
+#define KEY_TILDE           0x000000B2
 #define KEY_F1              0x4000003A
 #define KEY_F2              0x4000003B
 #define KEY_F3              0x4000003C

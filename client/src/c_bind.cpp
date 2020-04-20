@@ -44,7 +44,8 @@ extern NetDemo netdemo;
  * to the original DOOM's keymappings.
  */
 char DefBindings[] =
-	"bind grave toggleconsole; "			// <- This is new
+	"bind grave toggleconsole; "
+	"bind tilde toggleconsole; "
 	"bind 1 \"impulse 1\"; "
 	"bind 2 \"impulse 2\"; "
 	"bind 3 \"impulse 3\"; "
@@ -118,7 +119,7 @@ char DefBindings[] =
 	"bind pgdn vote_no; "				// <- New for voting
 	"bind home ready; "
 	"bind end spectate; "
-	"bind m changeteams ";
+	"bind m changeteams; ";
 
 
 typedef OHashTable<int, std::string> BindingTable;

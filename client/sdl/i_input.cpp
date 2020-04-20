@@ -112,6 +112,7 @@ static void I_InitializeKeyNameTable()
 	key_names['^'] = "^";
 	key_names['_'] = "_";
 	key_names['`'] = "grave";
+	key_names[KEY_TILDE] = "tilde";
 	key_names['a'] = "a";
 	key_names['b'] = "b";
 	key_names['c'] = "c";
