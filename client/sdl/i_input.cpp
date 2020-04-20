@@ -825,20 +825,14 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 		return 0;
 
 	int button = ev->data1;
-	if (button < KEY_MOUSE1)
-	{
-		if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
-			button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
-			button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
-			return 0;
-		return 1;
-	}
+	if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
+		button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
+		button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
+		return 0;
 	else if (button >= KEY_HAT1 && button <= KEY_HAT8)
-	{
 		return button;
-	}
-
-	return 0;
+	else
+		return 1;
 }
 
 
