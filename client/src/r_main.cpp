@@ -69,7 +69,6 @@ float			yfoc;		// FIXEDFLOAT(FocalLengthY)
 fixed_t			fovtan;
 float			focratio;
 float			ifocratio;
-int 			viewangleoffset = 0;
 
 // increment every time a check is made
 int 			validcount = 1;
@@ -776,7 +775,7 @@ void R_SetupFrame (player_t *player)
 		viewx = CameraX;
 		viewy = CameraY;
 		viewz = CameraZ;
-		viewangle = viewangleoffset + camera->angle;
+		viewangle = camera->angle;
 	}
 	else
 	{
@@ -789,7 +788,7 @@ void R_SetupFrame (player_t *player)
 			viewx = camera->x;
 			viewy = camera->y;
 			viewz = camera->player ? camera->player->viewz : camera->z;
-			viewangle = viewangleoffset + camera->angle;
+			viewangle = camera->angle;
 		}
 	}
 
