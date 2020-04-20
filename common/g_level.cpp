@@ -1075,23 +1075,37 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				info.level_name = strdup(sc_String);
 			}
 
-			// Set up levelnum now so that the Teleport_NewMap specials
-			// in hexen.wad work without modification.
-			if (!strnicmp (info.mapname, "MAP", 3) && info.mapname[5] == 0)
-			{
-				// [AM] This doesn't look right to me - it might be correct,
-				//      but if so it certainly needs to be clearer.
-				int mapnum = atoi(info.mapname + 3);
-
-				if (mapnum >= 1 && mapnum <= 99)
-				{
-					level.levelnum = mapnum;
-				}
-			}
 			tagged_info_t tinfo;
 			tinfo.tag = tagged_info_t::LEVEL;
 			tinfo.level = &info;
-			ParseMapInfoLower (MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
+			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
+
+			// If the level info was parsed and no levelnum was applied,
+			// try and synthesize one from the level name.
+			if (info.levelnum == 0)
+			{
+				if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
+				{
+					// Convert a char into its equivalent integer.
+					int e = info.mapname[1] - '0';
+					int m = info.mapname[3] - '0';
+					if (e >= 1 && e <= 9 && m >= 1 && m <= 9)
+					{
+						// Copypasted from the ZDoom wiki.
+						info.levelnum = (e - 1 ) * 10 + m;
+					}
+				}
+				else if (strnicmp(info.mapname, "MAP", 3) == 0)
+				{
+					// Try and turn the trailing digits after the "MAP" into a
+					// level number.
+					int mapnum = atoi(info.mapname + 3);
+					if (mapnum >= 1 && mapnum <= 99)
+					{
+						info.levelnum = mapnum;
+					}
+				}
+			}
 			break;
 		}
 		case MITL_CLUSTER:
