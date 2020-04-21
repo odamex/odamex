@@ -912,7 +912,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, STACKARRAY_LENGTH(outline), format, parms);
+	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	int len = strlen(outline);
@@ -1506,13 +1506,13 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	}
 
-	const char keytext = ev->data2;
+	const char keytext = ev->data3;
 
 	if (KeysCtrl)
 	{
 		// handle key combinations
 		// NOTE: we have to use ev->data1 here instead of the
-		// localization-aware ev->data2 since SDL2 does not send a SDL_TEXTINPUT
+		// localization-aware ev->data3 since SDL2 does not send a SDL_TEXTINPUT
 		// event when Ctrl is held down.
 
 		// Go to beginning of line
@@ -1624,8 +1624,8 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-    if (!msgtime)
-        msgtime = con_midtime.asInt();
+	if (!msgtime)
+		msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);
@@ -1634,9 +1634,9 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 	{
 		midprinting = true;
 
-        // [Russell] - convert textual "\n" into the binary representation for
-        // line breaking
-    	std::string str = msg;
+		// [Russell] - convert textual "\n" into the binary representation for
+		// line breaking
+		std::string str = msg;
 
 		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
 		{

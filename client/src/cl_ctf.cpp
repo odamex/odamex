@@ -303,12 +303,11 @@ static void TintScreen(argb_t color)
 //
 void CTF_RunTics (void)
 {
-
-    // NES - Glowing effect on screen tint.
-    if (tintglow < 90)
-        tintglow++;
-    else
-        tintglow = 0;
+	// NES - Glowing effect on screen tint.
+	if (tintglow < 90)
+		tintglow++;
+	else
+		tintglow = 0;
 
 	// Move the physical clientside flag sprites
 	CTF_MoveFlags();

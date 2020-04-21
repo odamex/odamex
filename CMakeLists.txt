@@ -22,10 +22,14 @@ cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
 set(PROJECT_VERSION 0.8.2)
 set(PROJECT_COPYRIGHT "2006-2020")
+
+# Use C++ 98/03 for all targets
+set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
@@ -74,7 +78,16 @@ endif()
 # Global compile options.  Useful defines for any Odamex project.
 macro(global_compile_options)
   if(NOT MSVC)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+    set(GLOBAL_CXX_FLAGS "-Wall")
+	if(USE_GPROF)
+	  set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -p")
+	endif()
+
+    set(CMAKE_CXX_FLAGS_DEBUG "${GLOBAL_CXX_FLAGS} -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "${GLOBAL_CXX_FLAGS} -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${GLOBAL_CXX_FLAGS} -g -DNDEBUG -O2")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${GLOBAL_CXX_FLAGS} -DNDEBUG -Os")
+
     if(USE_STATIC_STDLIB)
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
     endif()
@@ -86,6 +99,21 @@ macro(global_compile_options)
 	endif()
   endif()
 endmacro(global_compile_options)
+
+# Output the G++ CXX flags
+macro(print_cxx_flags)
+  if(NOT MSVC)
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_MINSIZEREL}")
+    endif()
+  endif()
+endmacro(print_cxx_flags)
 
 # jsd: hide warnings about using insecure crt functions:
 if(MSVC)

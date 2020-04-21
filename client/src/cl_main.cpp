@@ -285,7 +285,6 @@ void CL_Decompress(int sequence);
 
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
-void CL_NetDemoSnapshot(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
@@ -961,7 +960,7 @@ BEGIN_COMMAND (rcon)
 	{
 		char  command[256];
 
-		strncpy(command, args, STACKARRAY_LENGTH(command) - 1);
+		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);
@@ -1158,7 +1157,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
 	{
-		//I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
 		I_Warning("Unable to generate netdemo file name.");
 		return std::string();
 	}
@@ -1169,11 +1167,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 void CL_NetDemoStop()
 {
 	netdemo.stopPlaying();
-}
-
-void CL_NetDemoRecord(const std::string &filename)
-{
-	netdemo.startRecording(filename);
 }
 
 void CL_NetDemoPlay(const std::string &filename)
@@ -1235,8 +1228,8 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename);
-	netdemo.writeMapChange();
+	if (netdemo.startRecording(filename))
+		netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
 
@@ -1978,12 +1971,12 @@ void CL_UpdatePlayer(BitStream& stream)
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-    // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	// [Russell] - hack, read and set invisibility flag
+	p->powers[pw_invisibility] = invisibility;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -3077,10 +3070,6 @@ void CL_GetServerSettings(BitStream& stream)
 void CL_FinishedFullUpdate()
 {
 	recv_full_update = true;
-
-	// Write the first map snapshot to a netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
 }
 
 
@@ -3174,8 +3163,8 @@ void CL_MobjTranslation(BitStream& stream)
 	AActor *mo = P_FindThingById(stream.readU16());
 	byte table = stream.readU8();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);
@@ -3204,8 +3193,8 @@ void CL_Switch(BitStream& stream)
 	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
 		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if (texture)
-		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	if (!recv_full_update && texture) // Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
+		P_SetButtonTexture(&lines[l], texture);
 	lines[l].special = special;
 }
 
@@ -3369,7 +3358,7 @@ void CL_LoadMap(BitStream& stream)
 	}
 
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording())
 		netdemo.writeMapChange();
 }
 

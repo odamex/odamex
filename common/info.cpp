@@ -44,18 +44,8 @@ const char *sprnames[NUMSPRITES+1] = {
 	"POL3","POL1","POL6","GOR2","GOR3","GOR4","GOR5","SMIT","COL1","COL2",
 	"COL3","COL4","CAND","CBRA","COL6","TRE1","TRE2","ELEC","CEYE","FSKU",
 	"COL5","TBLU","TGRN","TRED","SMBT","SMGT","SMRT","HDB1","HDB2","HDB3",
-	"HDB4","HDB5","HDB6","POB1","POB2","BRS1","TLMP","TLP2",
-
-	"TNT1", // invisible sprite                                 phares 3/9/98
-
-	"DOGS", // killough 7/19/98: Marine's best friend :)
-
-	"PLS1", // killough 7/19/98: first  of two plasma fireballs in the beta
-	"PLS2", // killough 7/19/98: second of two plasma fireballs in the beta
-	"BON3", // killough 7/11/98: evil sceptre in the beta version
-	"BON4", // killough 7/11/98: unholy bible in the beta version
-
-	"GIB0","GIB1","GIB2","GIB3","GIB4","GIB5","GIB6","GIB7","UNKN",
+	"HDB4","HDB5","HDB6","POB1","POB2","BRS1","TLMP","TLP2","TNT1","GIB0",
+	"GIB1","GIB2","GIB3","GIB4","GIB5","GIB6","GIB7","UNKN",
 
 	//	[Toke - CTF]
 	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR","TLGL",
@@ -95,14 +85,12 @@ void A_Explode(AActor*);
 void A_Pain(AActor*);
 void A_PlayerScream(AActor*);
 void A_Fall(AActor*);
-void A_Stop(AActor*);
 void A_XScream(AActor*);
 void A_Look(AActor*);
 void A_Chase(AActor*);
 void A_FaceTarget(AActor*);
 void A_PosAttack(AActor*);
 void A_Scream(AActor*);
-void A_Die(AActor*);
 void A_SPosAttack(AActor*);
 void A_VileChase(AActor*);
 void A_VileStart(AActor*);
@@ -144,10 +132,6 @@ void A_BrainSpit(AActor*);
 void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
-void A_FireOldBFG(AActor*);      // killough 7/19/98: classic BFG firing function
-void A_Detonate(AActor*);        // killough 8/9/98: detonate a bomb or other device
-void A_Mushroom(AActor*);        // killough 10/98: mushroom effect
-void A_BetaSkullAttack(AActor*); // killough 10/98: beta lost souls attacked different
 void A_Ambient(AActor*);		// [RH] Play ambient sound
 void A_Gibify(AActor*); // denis - squash thing
 
@@ -1119,126 +1103,8 @@ state_t	states[NUMSTATES] = {
 	{SPR_TLP2,32769,4,NULL,S_TECH2LAMP3,0,0},	// S_TECH2LAMP2
 	{SPR_TLP2,32770,4,NULL,S_TECH2LAMP4,0,0},	// S_TECH2LAMP3
 	{SPR_TLP2,32771,4,NULL,S_TECH2LAMP,0,0},	// S_TECH2LAMP4
-
-	// Boom/MBF stuff starts here
-
-	{SPR_TNT1,0,-1,NULL,S_TNT1},          // S_TNT1    // phares 3/8/98
-
-	// killough 8/9/98: grenade
-	{SPR_MISL,32768,1000,A_Die,S_GRENADE},      // S_GRENADE
-
-	// killough 8/10/98: variable damage explosion
-	{SPR_MISL,32769,4,A_Scream,S_DETONATE2},    // S_DETONATE
-	{SPR_MISL,32770,6,A_Detonate,S_DETONATE3},  // S_DETONATE2
-	{SPR_MISL,32771,10,NULL,S_NULL},            // S_DETONATE3
-
-	// killough 7/19/98: Marine's best friend :)
-	{SPR_DOGS,0,10,A_Look,S_DOGS_STND2},  // S_DOGS_STND
-	{SPR_DOGS,1,10,A_Look,S_DOGS_STND}, // S_DOGS_STND2
-	{SPR_DOGS,0,2,A_Chase,S_DOGS_RUN2}, // S_DOGS_RUN1
-	{SPR_DOGS,0,2,A_Chase,S_DOGS_RUN3}, // S_DOGS_RUN2
-	{SPR_DOGS,1,2,A_Chase,S_DOGS_RUN4}, // S_DOGS_RUN3
-	{SPR_DOGS,1,2,A_Chase,S_DOGS_RUN5}, // S_DOGS_RUN4
-	{SPR_DOGS,2,2,A_Chase,S_DOGS_RUN6}, // S_DOGS_RUN5
-	{SPR_DOGS,2,2,A_Chase,S_DOGS_RUN7}, // S_DOGS_RUN6
-	{SPR_DOGS,3,2,A_Chase,S_DOGS_RUN8}, // S_DOGS_RUN7
-	{SPR_DOGS,3,2,A_Chase,S_DOGS_RUN1}, // S_DOGS_RUN8
-	{SPR_DOGS,4,8,A_FaceTarget,S_DOGS_ATK2},  // S_DOGS_ATK1
-	{SPR_DOGS,5,8,A_FaceTarget,S_DOGS_ATK3},  // S_DOGS_ATK2
-	{SPR_DOGS,6,8,A_SargAttack,S_DOGS_RUN1},  // S_DOGS_ATK3
-	{SPR_DOGS,7,2,NULL,S_DOGS_PAIN2}, // S_DOGS_PAIN
-	{SPR_DOGS,7,2,A_Pain,S_DOGS_RUN1},  // S_DOGS_PAIN2
-	{SPR_DOGS,8,8,NULL,S_DOGS_DIE2},  // S_DOGS_DIE1
-	{SPR_DOGS,9,8,A_Scream,S_DOGS_DIE3},  // S_DOGS_DIE2
-	{SPR_DOGS,10,4,NULL,S_DOGS_DIE4}, // S_DOGS_DIE3
-	{SPR_DOGS,11,4,A_Fall,S_DOGS_DIE5}, // S_DOGS_DIE4
-	{SPR_DOGS,12,4,NULL,S_DOGS_DIE6}, // S_DOGS_DIE5
-	{SPR_DOGS,13,-1,NULL,S_NULL}, // S_DOGS_DIE6
-	{SPR_DOGS,13,5,NULL,S_DOGS_RAISE2}, // S_DOGS_RAISE1
-	{SPR_DOGS,12,5,NULL,S_DOGS_RAISE3}, // S_DOGS_RAISE2
-	{SPR_DOGS,11,5,NULL,S_DOGS_RAISE4}, // S_DOGS_RAISE3
-	{SPR_DOGS,10,5,NULL,S_DOGS_RAISE5}, // S_DOGS_RAISE4
-	{SPR_DOGS,9,5,NULL,S_DOGS_RAISE6},  // S_DOGS_RAISE5
-	{SPR_DOGS,8,5,NULL,S_DOGS_RUN1},  // S_DOGS_RAISE6
-
-	// killough 7/11/98: beta BFG begins here
-	// S_OLDBFG1
-
-#define BFGDELAY 1
-#define OLDBFG_1FRAMES(x) {SPR_BFGG,1,BFGDELAY,A_FireOldBFG,static_cast<statenum_t>(x+S_OLDBFG1+2)},
-#define OLDBFG_2FRAMES(x) OLDBFG_1FRAMES(x) OLDBFG_1FRAMES(x+1)
-#define OLDBFG_4FRAMES(x) OLDBFG_2FRAMES(x) OLDBFG_2FRAMES(x+2)
-#define OLDBFG_8FRAMES(x) OLDBFG_4FRAMES(x) OLDBFG_4FRAMES(x+4)
-	{SPR_BFGG,0,10,A_BFGsound,static_cast<statenum_t>(S_OLDBFG1+1)},  // S_OLDBFG1
-
-	OLDBFG_8FRAMES(0)
-	OLDBFG_8FRAMES(8)
-	OLDBFG_8FRAMES(16) 
-	OLDBFG_8FRAMES(24)
-	OLDBFG_8FRAMES(32)
-
-	{SPR_BFGG,1,0,A_Light0,S_OLDBFG43}, // S_OLDBFG42
-	{SPR_BFGG,1,20,A_ReFire,S_BFG},   // S_OLDBFG43
-
-	// killough 7/11/98: end of beta BFG
-
-	// killough 7/19/98: First plasma fireball in the beta:
-	{SPR_PLS1,32768,6,NULL,S_PLS1BALL2},  // S_PLS1BALL
-	{SPR_PLS1,32769,6,NULL,S_PLS1BALL}, // S_PLS1BALL2
-	{SPR_PLS1,32770,4,NULL,S_PLS1EXP2}, // S_PLS1EXP
-	{SPR_PLS1,32771,4,NULL,S_PLS1EXP3}, // S_PLS1EXP2
-	{SPR_PLS1,32772,4,NULL,S_PLS1EXP4}, // S_PLS1EXP3
-	{SPR_PLS1,32773,4,NULL,S_PLS1EXP5}, // S_PLS1EXP4
-	{SPR_PLS1,32774,4,NULL,S_NULL}, // S_PLS1EXP5
-
-	// killough 7/19/98: Second plasma fireball in the beta:
-	{SPR_PLS2,32768,4,NULL,S_PLS2BALL2}, // S_PLS2BALL
-	{SPR_PLS2,32769,4,NULL,S_PLS2BALL},  // S_PLS2BALL2
-	{SPR_PLS2,32770,6,NULL,S_PLS2BALLX2},  // S_PLS2BALLX1
-	{SPR_PLS2,32771,6,NULL,S_PLS2BALLX3},  // S_PLS2BALLX2
-	{SPR_PLS2,32772,6,NULL,S_NULL}, // S_PLS2BALLX3
-
-	{SPR_BON3,0,6,NULL,S_BON3},           // S_BON3  // killough 7/11/98:
-	{SPR_BON4,0,6,NULL,S_BON4},           // S_BON4  // beta bonus items
-
-	// killough 10/98: beta lost souls attacked from a distance, 
-	// animated with colors, and stayed in the air when killed.
-	// This is an approximation, but I'm sure it can be improved.
-
-	// spawnstate
-	{SPR_SKUL,0,10,A_Look,S_BSKUL_STND},  // S_BSKUL_STND
-
-	// chasestate
-	{SPR_SKUL,1,5,A_Chase,S_BSKUL_RUN2},  // S_BSKUL_RUN1
-	{SPR_SKUL,2,5,A_Chase,S_BSKUL_RUN3},  // S_BSKUL_RUN2
-	{SPR_SKUL,3,5,A_Chase,S_BSKUL_RUN4},  // S_BSKUL_RUN3
-	{SPR_SKUL,0,5,A_Chase,S_BSKUL_RUN1},  // S_BSKUL_RUN4
-
-	// missilestate
-	{SPR_SKUL,4,4,A_FaceTarget,S_BSKUL_ATK2},     // S_BSKUL_ATK1
-	{SPR_SKUL,5,5,A_BetaSkullAttack,S_BSKUL_ATK3}, // S_BSKUL_ATK2
-	{SPR_SKUL,5,4,NULL,S_BSKUL_RUN1},              // S_BSKUL_ATK3
-
-	// painstate
-	{SPR_SKUL,6,4,NULL,S_BSKUL_PAIN2},     // S_BSKUL_PAIN1
-	{SPR_SKUL,7,2,A_Pain,S_BSKUL_RUN1},   // S_BSKUL_PAIN2
-	{SPR_SKUL,8,4,NULL,S_BSKUL_RUN1},      // S_BSKUL_PAIN3
-
-	// deathstate
-	{SPR_SKUL, 9,5,NULL,S_BSKUL_DIE2},     // S_BSKUL_DIE1
-	{SPR_SKUL,10,5,NULL,S_BSKUL_DIE3},     // S_BSKUL_DIE2
-	{SPR_SKUL,11,5,NULL,S_BSKUL_DIE4},     // S_BSKUL_DIE3
-	{SPR_SKUL,12,5,NULL,S_BSKUL_DIE5},     // S_BSKUL_DIE4
-	{SPR_SKUL,13,5,A_Scream,S_BSKUL_DIE6}, // S_BSKUL_DIE5
-	{SPR_SKUL,14,5,NULL,S_BSKUL_DIE7},     // S_BSKUL_DIE6
-	{SPR_SKUL,15,5,A_Fall,S_BSKUL_DIE8},   // S_BSKUL_DIE7
-	{SPR_SKUL,16,5,A_Stop,S_BSKUL_DIE8},   // S_BSKUL_DIE8
-
-	// killough 10/98: mushroom effect
-	{SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2},  // S_MUSHROOM
-
-	// ZDoom/Odamex stuff starts here
-
+	// END of vanilla DOOM things
+	{SPR_TNT1,0,-1,NULL,S_NULL,0,0},	// S_TNT1
 	{SPR_GIB0,0,-1,NULL,S_NULL,0,0},	// S_GIB0
 	{SPR_GIB1,0,-1,NULL,S_NULL,0,0},	// S_GIB1
 	{SPR_GIB2,0,-1,NULL,S_NULL,0,0},	// S_GIB2
@@ -1278,7 +1144,11 @@ state_t	states[NUMSTATES] = {
 	{SPR_TLGL,32769,4,NULL,S_BRIDGE3,0,0},	// S_BRIDGE2
 	{SPR_TLGL,32770,4,NULL,S_BRIDGE4,0,0},	// S_BRIDGE3
 	{SPR_TLGL,32771,4,NULL,S_BRIDGE5,0,0},	// S_BRIDGE4
-	{SPR_TLGL,32772,4,NULL,S_BRIDGE1,0,0},	// S_BRIDGE5		
+	{SPR_TLGL,32772,4,NULL,S_BRIDGE1,0,0},	// S_BRIDGE5
+
+	{ SPR_TNT1,0,1,A_Raise,S_NOWEAPON,0,0 },    //    S_NOWEAPONUP
+	{ SPR_TNT1,0,1,A_Lower,S_NOWEAPON,0,0 },    //S_NOWEAPONDOWN
+	{ SPR_TNT1,0,1,A_WeaponReady,S_NOWEAPON,0,0 },    //S_NOWEAPON
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
@@ -5393,223 +5263,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_MISC86"
 	},
 
-	// For use with wind and current effects
-	{		// MT_PUSH	// phares
-	5001,		// doomednum	//   |    //jff 5/11/98 deconflict
-	S_TNT1,		// spawnstate	//   V    // with DOSDoom
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	8,		// radius
-	8,		// height
-	8,		// cdheight
-	10,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,	// flags
-	MF2_DONTDRAW,	// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_PUSH"	// name
-	},
-
-	// For use with wind and current effects
-	{		// MT_PULL
-	5002,		// doomednum                   //jff 5/11/98 deconflict
-	S_TNT1,		// spawnstate                  // with DOSDoom
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	8,		// radius
-	8,		// height
-	8,		// cdheight
-	10,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,	// flags
-	MF2_DONTDRAW,	// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_PULL"	// name
-	},
-
-	// Marine's best friend :)      // killough 7/19/98
-	{		// MT_DOGS
-	888,		// doomednum
-	S_DOGS_STND,	// spawnstate
-	500,		// spawnhealth
-	S_DOGS_RUN1,	// seestate
-	"dog/sight",	// seesound
-	8,		// reactiontime
-	"dog/attack",	// attacksound
-	S_DOGS_PAIN,	// painstate
-	180,		// painchance
-	"dog/pain",	// painsound
-	S_DOGS_ATK1,	// meleestate
-	S_NULL,		// missilestate
-	S_DOGS_DIE1,	// deathstate
-	S_NULL,		// xdeathstate
-	"dog/death",	// deathsound
-	10,		// speed
-	12*FRACUNIT,	// radius
-	28*FRACUNIT,	// height
-	28*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"dog/active",	// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,   // flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL, // flags2
-	S_DOGS_RAISE1,	// raisestate
-	0x10000,	// translucency
-	"MT_DOGS"	// name
-	},
-
-	// killough 7/11/98: this is the first of two plasma fireballs in the beta
-	{		// MT_PLASMA1
-	-1,		// doomednum
-	S_PLS1BALL,	// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf", // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLS1EXP,	// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax", // deathsound
-	25*FRACUNIT,	// speed
-	13*FRACUNIT,	// radius
-	8*FRACUNIT,	// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	4,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY, // flags [AM] MF_BOUNCES not implemented
-	MF2_PCROSS|MF2_IMPACT, // flags2
-	S_NULL,		// raisestate
-	FRACUNIT,	// translucency
-	"MT_PLASMA1"	// name
-	},
-
-	// killough 7/11/98: this is the second of two plasma fireballs in the beta
-	{		// MT_PLASMA2
-	-1,		// doomednum
-	S_PLS2BALL,	// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf", // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLS2BALLX1,	// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax", // deathsound
-	25*FRACUNIT,	// speed
-	6*FRACUNIT,	// radius
-	8*FRACUNIT,	// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	4,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY, // flags [AM] MF_BOUNCES not implemented
-	MF2_PCROSS|MF2_IMPACT, // flags2
-	S_NULL,		// raisestate
-	FRACUNIT,	// translucency
-	"MT_PLASMA2"	// name
-	},
-
-	// killough 7/11/98: this is the evil sceptre in the beta version
-	{		// MT_SCEPTRE
-	2016,		// doomednum
-	S_BON3,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	10*FRACUNIT,	// radius
-	16*FRACUNIT,	// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM, // flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_SCEPTRE"	// name
-	},
-
-	// killough 7/11/98: this is the unholy bible in the beta version
-	{		// MT_BIBLE
-	2017,		// doomednum
-	S_BON4,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,	// radius
-	10*FRACUNIT,	// height
-	10*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM, // flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_BIBLE"	// name
-	},
-
 	{		// MT_GIB0
 	-1,		// doomednum
 	S_GIB0,		// spawnstate
@@ -5878,6 +5531,68 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_UNKNOWNTHING"
+	},
+
+	// For use with wind and current effects
+	{		// MT_PUSH				// phares
+	5001,		// doomednum		//   |		//jff 5/11/98 deconflict
+	S_TNT1,		// spawnstate		//   V		// with DOSDoom
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	8,		// radius
+	8,		// height
+	8*FRACUNIT,	// cdheight
+	10,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_NOBLOCKMAP,		// flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_PUSH"				// phares
+	},
+
+	// For use with wind and current effects
+	{		// MT_PULL
+	5002,		// doomednum					//jff 5/11/98 deconflict
+	S_TNT1,		// spawnstate					// with DOSDoom
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	8,		// radius
+	8,		// height
+	8*FRACUNIT,	// cdheight
+	10,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_NOBLOCKMAP,		// flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_PULL"
 	},
 
 	{		// [RH] MT_PATHNODE -- used for monster patrols

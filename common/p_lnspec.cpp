@@ -42,6 +42,7 @@
 // activated by walking across the backside of a line.
 int TeleportSide;
 extern bool HasBehavior;
+extern bool s_SpecialFromServer;
 
 // Set true if this special was activated from inside a script.
 BOOL InScript;
@@ -455,8 +456,7 @@ FUNC(LS_Generic_Floor)
 		}
 	}
 
-	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT,
-					   (arg4 & 16) ? 20 : -1, arg4 & 7);
+	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), arg4 & 7);
 
 }
 
@@ -663,8 +663,7 @@ FUNC(LS_Generic_Ceiling)
 		}
 	}
 
-	return EV_DoCeiling (type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT,
-						 (arg4 & 16) ? 20 : -1, 0, arg4 & 7);
+	return EV_DoCeiling(type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), 0, arg4 & 7);
 	return false;
 }
 
@@ -1043,6 +1042,9 @@ FUNC(LS_Thing_SetGoal)
 FUNC(LS_ACS_Execute)
 // ACS_Execute (script, map, s_arg1, s_arg2, s_arg3)
 {
+	if (!serverside && s_SpecialFromServer)
+		return false;
+
 	level_info_t *info;
 
 	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
@@ -1054,6 +1056,9 @@ FUNC(LS_ACS_Execute)
 FUNC(LS_ACS_ExecuteAlways)
 // ACS_ExecuteAlways (script, map, s_arg1, s_arg2, s_arg3)
 {
+	if (!serverside && s_SpecialFromServer)
+		return false;
+
 	level_info_t *info;
 
 	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
@@ -1065,6 +1070,9 @@ FUNC(LS_ACS_ExecuteAlways)
 FUNC(LS_ACS_LockedExecute)
 // ACS_LockedExecute (script, map, s_arg1, s_arg2, lock)
 {
+	if (!serverside && s_SpecialFromServer)
+		return false;
+
 	if (arg4 && !P_CheckKeys (it->player, (card_t)arg4, 1))
 		return false;
 	else
@@ -1074,6 +1082,9 @@ FUNC(LS_ACS_LockedExecute)
 FUNC(LS_ACS_Suspend)
 // ACS_Suspend (script, map)
 {
+	if (!serverside && s_SpecialFromServer)
+		return false;
+
 	level_info_t *info;
 
 	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
@@ -1087,6 +1098,9 @@ FUNC(LS_ACS_Suspend)
 FUNC(LS_ACS_Terminate)
 // ACS_Terminate (script, map)
 {
+	if (!serverside && s_SpecialFromServer)
+		return false;
+
 	level_info_t *info;
 
 	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )

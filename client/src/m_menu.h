@@ -31,7 +31,6 @@
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
-#define NUM_MENU_ITEMS(m)	(sizeof(m)/sizeof(m[0]))
 
 //
 // MENUS

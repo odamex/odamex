@@ -89,12 +89,13 @@ static void ClearInventory(AActor* activator)
 {
 	if (activator == NULL)
 	{
-		Players::iterator it;
-		for (it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			if (it->ingame() && !it->spectator)
+			{
 				DoClearInv(&(*it));
 				SV_SendPlayerInfo(*it);
+			}
 		}
 	}
 	else if (activator->player != NULL)
@@ -222,9 +223,6 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 
 static void GiveInventory(AActor* activator, const char* type, int amount)
 {
-	if (amount <= 0)
-	{
-	}
 	if (activator == NULL)
 	{
 		for (int i = 0; i < MAXPLAYERS; ++i)
@@ -348,9 +346,6 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 
 static void TakeInventory(AActor* activator, const char* type, int amount)
 {
-	if (amount < 0)
-	{
-	}
 	if (activator == NULL)
 	{
 		Players::iterator it;

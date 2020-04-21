@@ -47,7 +47,7 @@ struct weaponinfo_s
 };
 typedef struct weaponinfo_s weaponinfo_t;
 
-extern	weaponinfo_t	weaponinfo[NUMWEAPONS];
+extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 
 // Item stuff: (this is d_items.h, right?)
 

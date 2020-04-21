@@ -348,16 +348,9 @@ void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
 void A_MonsterRail(AActor*);
+void A_Die(AActor*);
 void A_Detonate(AActor*);
 void A_Mushroom(AActor*);
-void A_Die(AActor*);
-void A_Spawn(AActor*);
-void A_Turn(AActor*);
-void A_Face(AActor*);
-void A_Scratch(AActor*);
-void A_PlaySound(AActor*);
-void A_RandomJump(AActor*);
-void A_LineEffect(AActor*);
 
 struct CodePtr {
 	const char *name;
@@ -445,16 +438,9 @@ static const struct CodePtr CodePtrs[] = {
 	{ "SpawnSound",		A_SpawnSound },
 	{ "SpawnFly",		A_SpawnFly },
 	{ "BrainExplode",	A_BrainExplode },
-	{ "Detonate",		A_Detonate },       // killough 8/9/98
-	{ "Mushroom",		A_Mushroom },       // killough 10/98
-	{ "Die",		A_Die },            // killough 11/98
-	{ "Spawn",		A_Spawn },          // killough 11/98
-	{ "Turn",		A_Turn },           // killough 11/98
-	{ "Face",		A_Face },           // killough 11/98
-	{ "Scratch",		A_Scratch },        // killough 11/98
-	{ "PlaySound",		A_PlaySound },      // killough 11/98
-	{ "RandomJump",		A_RandomJump },     // killough 11/98
-	{ "LineEffect",		A_LineEffect },     // killough 11/98
+	{ "Die",	        A_Die },
+	{ "Detonate",	    A_Detonate },
+    { "Mushroom",	    A_Mushroom },
 	{ NULL, NULL }
 };
 
@@ -575,9 +561,9 @@ static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
 
-static int filelen = 0;	// Be quiet, gcc
+static size_t filelen = 0;	// Be quiet, gcc
 
-#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == filelen)
+#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == (int)filelen)
 
 static int HandleMode (const char *mode, int num)
 {
@@ -1042,7 +1028,7 @@ static int PatchThing (int thingy)
 					}
 					else
 					{
-						for (iy = 0; iy < sizeof(bitnames)/sizeof(bitnames[0]); iy++)
+						for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
 						{
 							if (!stricmp (strval, bitnames[iy].name))
 							{
@@ -1063,7 +1049,7 @@ static int PatchThing (int thingy)
 								break;
 							}
 						}
-						if (iy >= sizeof(bitnames)/sizeof(bitnames[0]))
+						if (iy >= ARRAY_LENGTH(bitnames))
 							DPrintf("Unknown bit mnemonic %s\n", strval);
 					}
 				}
@@ -1538,17 +1524,17 @@ static int PatchText (int oldSize)
 	DPrintf ("Searching for text:\n%s\n", oldStr);
 	good = false;
 
-    // Search through sprite names
-    for (i = 0; i < NUMSPRITES; i++) {
-        if (!strcmp (sprnames[i], oldStr)) {
-            sprnames[i] = copystring (newStr);
-            good = true;
-            // See above.
-        }
-    }
+	// Search through sprite names
+	for (i = 0; i < NUMSPRITES; i++) {
+		if (!strcmp (sprnames[i], oldStr)) {
+			sprnames[i] = copystring (newStr);
+			good = true;
+			// See above.
+		}
+	}
 
-    if (good)
-        goto donewithtext;
+	if (good)
+		goto donewithtext;
 
 	// Search through music names.
 	if (oldSize < 7)

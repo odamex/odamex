@@ -7,7 +7,6 @@ if(DEUTEX)
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/odamex.wad
 		COMMAND ${DEUTEX} -rgb 0 255 255 -doom2 bootstrap -build wadinfo.txt ${CMAKE_CURRENT_BINARY_DIR}/odamex.wad
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-		BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/odamex.wad
 		VERBATIM)
 
 	add_custom_target(odawad ALL

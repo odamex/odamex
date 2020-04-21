@@ -240,6 +240,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.readyweapon = p.pendingweapon = wp_pistol;
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
+	p.weaponowned[NUMWEAPONS] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	p.cheats = 0;						// Reset cheat flags
 
@@ -440,30 +441,24 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 // [AM] Moved out of CTF gametype and cleaned up.
 static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
 {
-	size_t i;
-
 	switch (player.userinfo.team)
 	{
 	case TEAM_BLUE:
 		for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
 		{
-			i = M_Random() % selections;
+			size_t i = M_Random() % selections;
 			if (G_CheckSpot(player, &blueteamstarts[i]))
-			{
 				return &blueteamstarts[i];
-			}
 		}
-		return &blueteamstarts[i];
+		return &blueteamstarts[0];		// could not find a free spot, use spot 0
 	case TEAM_RED:
 		for (size_t j = 0; j < MaxRedTeamStarts; ++j)
 		{
-			i = M_Random() % selections;
+			size_t i = M_Random() % selections;
 			if (G_CheckSpot(player, &redteamstarts[i]))
-			{
 				return &redteamstarts[i];
-			}
 		}
-		return &redteamstarts[i];
+		return &redteamstarts[0];		// could not find a free spot, use spot 0
 	default:
 		// This team doesn't have a dedicated spawn point.  Fallthrough
 		// to using a deathmatch spawn point.
@@ -542,9 +537,9 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [Russell] - Readded, makes modern dm more interesting
 	// NOTE - Might also be useful for other game modes
 	if ((sv_dmfarspawn) && player.mo)
-        spot = SelectFarthestDeathmatchSpot(selections);
-    else
-        spot = SelectRandomDeathmatchSpot (player, selections);
+		spot = SelectFarthestDeathmatchSpot(selections);
+	else
+		spot = SelectRandomDeathmatchSpot (player, selections);
 
 	if (!spot && !playerstarts.empty())
 	{

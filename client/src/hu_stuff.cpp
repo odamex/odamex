@@ -271,9 +271,9 @@ BOOL HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// send a macro
-		if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
+		if (ev->data1 >= KEY_JOY1 && ev->data1 <= KEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev->data1 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
@@ -302,7 +302,7 @@ BOOL HU_Responder(event_t *ev)
 		return true;
 	}
 
-	int textkey = ev->data2;	// [RH] Use localized keymap
+	int textkey = ev->data3;	// [RH] Use localized keymap
 	if (textkey < ' ' || textkey > '~')		// ASCII only please
 		return false;
 
@@ -523,9 +523,8 @@ void HU_Drawer()
 
 	if (multiplayer && consoleplayer().camera && !(demoplayback))
 	{
-		if (gamestate != GS_INTERMISSION && 
-			(Actions[ACTION_SHOWSCORES]) 
-			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator) )
+		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES])
+			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator))
 		{
 			HU_DrawScores(&displayplayer());
 		}

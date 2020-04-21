@@ -439,16 +439,16 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 //
 // Returns a string with a text description of the given video mode.
 //
-std::string I_GetVideoModeString(const IVideoMode* mode)
+std::string I_GetVideoModeString(const IVideoMode& mode)
 {
-	const char window_strs[][20] = {
-		"windowed",
-		"desktop full screen",
-		"true full screen"
+	const char window_strs[][25] = {
+		"window",
+		"full screen window",
+		"full screen exclusive"
 	};
 
 	char str[50];
-	sprintf(str, "%dx%d %dbpp (%s)", mode->getWidth(), mode->getHeight(), mode->getBitsPerPixel(),
+	sprintf(str, "%dx%d %dbpp (%s)", mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(),
 			window_strs[I_GetWindow()->getWindowMode()]);
 
 	return std::string(str);
@@ -479,14 +479,14 @@ static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 // Transforms the given video mode into a mode that is valid for the current
 // video hardware capabilities.
 //
-static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
+static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 {
 	const IVideoMode invalid_mode(0, 0, 0, WINDOW_Windowed);
 
-	uint16_t desired_width = clamp<uint16_t>(mode->getWidth(), 320, MAXWIDTH);
-	uint16_t desired_height = clamp<uint16_t>(mode->getHeight(), 200, MAXHEIGHT);
-	uint8_t desired_bpp = mode->getBitsPerPixel();
-	EWindowMode desired_window_mode = mode->getWindowMode();
+	uint16_t desired_width = clamp<uint16_t>(mode.getWidth(), 320, MAXWIDTH);
+	uint16_t desired_height = clamp<uint16_t>(mode.getHeight(), 200, MAXHEIGHT);
+	uint8_t desired_bpp = mode.getBitsPerPixel();
+	EWindowMode desired_window_mode = mode.getWindowMode();
 
 	// Ensure the display type is adhered to
 	if (!I_GetVideoCapabilities()->supportsFullScreen())
@@ -503,12 +503,20 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 			return invalid_mode;
 	}
 
-	IVideoMode desired_mode(desired_width, desired_height, desired_bpp, desired_window_mode);
+	IVideoMode desired_mode(
+					desired_width, desired_height, desired_bpp,
+					desired_window_mode, mode.getVSync(),
+					mode.getStrechMode());
 
 	// If the user requested a windowed mode, we don't have to worry about
 	// the requested dimensions aligning to an actual video resolution.
 	if (desired_window_mode == WINDOW_Windowed || !vid_autoadjust)
 		return desired_mode;
+
+
+	// TODO:
+	return desired_mode;
+
 
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
@@ -550,16 +558,15 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 // Main function to set the video mode at the hardware level.
 //
-void I_SetVideoMode(int width, int height, int surface_bpp, EWindowMode window_mode, bool vsync)
+void I_SetVideoMode(const IVideoMode& requested_mode)
 {
 	// ensure the requested mode is valid
-	IVideoMode desired_mode(width, height, surface_bpp, window_mode);
-	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
-	assert(mode.isValid());
+	IVideoMode validated_mode = I_ValidateVideoMode(requested_mode);
+	assert(validated_mode.isValid());
 
 	IWindow* window = I_GetWindow();
 
-	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), window_mode, vsync);
+	window->setMode(validated_mode);
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
@@ -574,9 +581,9 @@ void I_SetVideoMode(int width, int height, int surface_bpp, EWindowMode window_m
 	I_FreeSurface(emulated_surface);
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
-	if (surface_bpp != mode.getBitsPerPixel())
+	if (requested_mode.getBitsPerPixel() != validated_mode.getBitsPerPixel())
 	{
-		const PixelFormat* format = surface_bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
+		const PixelFormat* format = requested_mode.getBitsPerPixel() == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
 		converted_surface = new IWindowSurface(surface_width, surface_height, format);
 		primary_surface = converted_surface;
 	}
@@ -643,9 +650,9 @@ void I_SetVideoMode(int width, int height, int surface_bpp, EWindowMode window_m
 
 	assert(I_VideoInitialized());
 
-	if (*window->getVideoMode() != desired_mode)
+	if (window->getVideoMode() != requested_mode)
 		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
-						I_GetVideoModeString(&desired_mode).c_str(),
+						I_GetVideoModeString(requested_mode).c_str(),
 						I_GetVideoModeString(window->getVideoMode()).c_str());
 	else
 		DPrintf("I_SetVideoMode: set video mode to %s\n",
@@ -706,7 +713,7 @@ void I_InitHardware()
 		#endif
 		assert(video_subsystem != NULL);
 
-		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
+		const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
 	}
 }

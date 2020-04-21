@@ -153,8 +153,10 @@ void R_DrawSpanD_SSE2 (void)
 		mvfrac = _mm_add_epi32(mvfrac, mvfracinc);
 	}
 
-	ufrac = (dsfixed_t)((dsfixed_t*)&mufrac)[0];
-	vfrac = (dsfixed_t)((dsfixed_t*)&mvfrac)[0];
+	dsfixed_t* ufracs = (dsfixed_t*)&mufrac;
+	ufrac = *ufracs;
+	dsfixed_t* vfracs = (dsfixed_t*)&mvfrac;
+	vfrac = *vfracs;
 
 	// blit the remaining 0 - 3 pixels
 	while (remainder--)
