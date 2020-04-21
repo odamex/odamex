@@ -624,6 +624,44 @@ void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 	b->WriteChunk((const char *)p, l);
 }
 
+int MSG_WriteVarInt(byte* buf, unsigned int value)
+{
+	int i = 0;
+
+	while (value >= 0x80)
+	{
+		buf[i] = value | 0x80;
+		value >>= 7;
+		i++;
+	}
+
+	buf[i] = value;
+	return i + 1;
+}
+
+int MSG_ReadVarInt(byte* buf, int bufLen, int& bytesRead)
+{
+	int x = 0;
+	int s = 0;
+
+	for (int i = 0; i < bufLen; i++)
+	{
+		if (buf[i] < 0x80)
+		{
+			if (i > 5 || i == 5 && buf[i] > 1)
+				return 0;
+
+			bytesRead += i + 1;
+			return x | buf[i] << s;
+		}
+
+		x |= (buf[i] & 0x7f) << s;
+		s += 7;
+	}
+
+	bytesRead = -1;
+	return 0;
+}
 
 void MSG_WriteShort (buf_t *b, short c)
 {

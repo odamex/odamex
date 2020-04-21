@@ -125,13 +125,13 @@ enum svc_t
 	svc_resetmap,			// [AM] Server is resetting the map
 	svc_playerqueuepos,     // Notify clients of player queue postion
 	svc_fullupdatestart,	// Inform client the full update has started
-
-	// for co-op
 	svc_mobjstate = 70,
 	svc_actor_movedir,
 	svc_actor_target,
 	svc_actor_tracer,
 	svc_damagemobj,
+	svc_executelinespecial,
+	svc_executeacsspecial,
 
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]
@@ -557,6 +557,9 @@ void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
+
+int MSG_WriteVarInt(byte* buf, unsigned int value);
+int MSG_ReadVarInt(byte* buf, int buflen, int& bytesRead);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);

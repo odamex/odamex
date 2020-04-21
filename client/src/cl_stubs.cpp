@@ -62,6 +62,9 @@ void CTF_SpawnFlag(flag_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
 void SV_SetWinPlayer(byte playerId) {}
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, int arg0 = -1, int arg1 = -1, int arg2 = -1, int arg3 = -1,
+	int arg4 = -1, int arg5 = -1, int arg6 = -1, int arg7 = -1, int arg8 = -1) {}
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg1, byte arg2, byte arg3, byte arg4, byte arg5) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

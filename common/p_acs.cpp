@@ -54,6 +54,7 @@ static int Stack[STACK_SIZE];
 
 static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
+AActor* P_FindThingById(size_t id);
 
 struct FBehavior::ArrayInfo
 {
@@ -65,6 +66,9 @@ struct FBehavior::ArrayInfo
 #include "gi.h"
 
 void SV_SendPlayerInfo(player_t &player);
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, int arg0 = -1, int arg1 = -1, int arg2 = -1, int arg3 = -1,
+	int arg4 = -1, int arg5 = -1, int arg6 = -1, int arg7 = -1, int arg8 = -1);
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg1, byte arg2, byte arg3, byte arg4, byte arg5);
 
 static void DoClearInv(player_t* player)
 {
@@ -83,6 +87,9 @@ static void DoClearInv(player_t* player)
 	}
 
 	player->pendingweapon = NUMWEAPONS;
+
+	if (serverside)
+		SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL);
 }
 
 static void ClearInventory(AActor* activator)
@@ -834,6 +841,9 @@ DWORD FBehavior::FindLanguage (DWORD langid, bool ignoreregion) const
 
 void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
 {
+	if (!serverside)
+		return;
+
 	ScriptPtr *ptr;
 	int i;
 
@@ -1085,17 +1095,20 @@ DPlaneWatcher::DPlaneWatcher (AActor *it, line_t *line, int lineSide, bool ceili
 	if (secnum >= 0)
 	{
 		Sector = &sectors[secnum];
+		fixed_t amount = height << FRACBITS;
 		if (bCeiling)
 		{
 			LastD = Sector->ceilingplane.d;
-			P_ChangeCeilingHeight(Sector, height << FRACBITS);
+			P_ChangeCeilingHeight(Sector, amount);
 			WatchD = Sector->ceilingplane.d;
+			P_ChangeCeilingHeight(Sector, -amount);
 		}
 		else
 		{
 			LastD = Sector->floorplane.d;
-			P_ChangeFloorHeight(Sector, height << FRACBITS);
+			P_ChangeFloorHeight(Sector, amount);
 			WatchD = Sector->floorplane.d;
+			P_ChangeFloorHeight(Sector, -amount);
 		}
 	}
 	else
@@ -1147,6 +1160,9 @@ void DPlaneWatcher::RunThink ()
 	{
 		TeleportSide = LineSide;
 		LineSpecials[Special] (Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
+
+		if (serverside)
+			SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 		Destroy ();
 	}
 }
@@ -1361,6 +1377,9 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 		else
 			sectors[secnum].ceilingpic = flat;
 	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR, NULL, NULL, tag, name);
 }
 
 extern size_t P_NumPlayersInGame();
@@ -1370,7 +1389,134 @@ int DLevelScript::CountPlayers()
 	return static_cast<int>(P_NumPlayersInGame());
 }
 
-void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
+void DLevelScript::ACS_SetLineTexture(int* args, byte argCount)
+{
+	if (argCount < 4)
+		return;
+
+	SetLineTexture(args[0], args[1], args[2], args[3]);
+}
+
+void DLevelScript::ACS_ClearInventory(AActor* actor)
+{
+	ClearInventory(actor);
+}
+
+void DLevelScript::ACS_Print(byte pcd, AActor* activator, const char* print)
+{
+	if (print == NULL)
+		return;
+
+	if (serverside)
+		SV_ACSExecuteSpecial(pcd, activator, print);
+
+	if (clientside &&
+		(pcd == DLevelScript::PCD_ENDPRINTBOLD || activator == NULL || (activator->player && activator->player->mo == consoleplayer().camera)))
+	{
+		C_MidPrint(print);
+	}
+}
+
+void DLevelScript::ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte argCount)
+{
+	if (argCount < 2)
+		return;
+
+	ChangeMusic(pcd, activator, args[0], args[1]);
+}
+
+void DLevelScript::ACS_StartSound(byte pcd, AActor* activator, int* args, byte argCount)
+{
+	if (pcd == PCD_SECTORSOUND)
+	{
+		if (argCount < 5)
+			return;
+
+		int sectorid = args[0];
+		if (sectorid < numsectors)
+			StartSectorSound(pcd, &sectors[sectorid], args[1], args[2], args[3], args[4]);
+	}
+	else if (pcd == PCD_THINGSOUND || pcd == PCD_ACTIVATORSOUND)
+	{
+		if (argCount < 4)
+			return;
+
+		StartThingSound(pcd, activator, args[0], args[1], args[2], args[3]);
+	}
+	else
+	{
+		if (argCount < 4)
+			return;
+
+		StartSound(pcd, activator, args[0], args[1], args[2], args[3]);
+	}
+}
+
+void DLevelScript::ACS_SetLineBlocking(int* args, byte argCount)
+{
+	if (argCount < 2)
+		return;
+
+	SetLineBlocking(args[0], args[1]);
+}
+
+void DLevelScript::ACS_SetLineMonsterBlocking(int* args, byte argCount)
+{
+	if (argCount < 2)
+		return;
+
+	SetLineMonsterBlocking(args[0], args[1]);
+}
+
+void DLevelScript::ACS_SetLineSpecial(int* args, byte argCount)
+{
+	if (argCount < 7)
+		return;
+
+	SetLineSpecial(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+}
+
+void DLevelScript::ACS_SetThingSpecial(int* args, byte argCount)
+{
+	if (argCount < 7)
+		return;
+
+	AActor* actor = P_FindThingById(args[0]);
+	if (actor)
+		SetThingSpecial(actor, args[1], args[2], args[3], args[4], args[5], args[6]);
+}
+
+void DLevelScript::ACS_FadeRange(AActor* activator, int* args, byte argCount)
+{
+	if (argCount < 9)
+		return;
+
+	DoFadeRange(activator, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+}
+
+void DLevelScript::ACS_CancelFade(AActor* actor)
+{
+	CancelFade(actor);
+}
+
+void DLevelScript::ACS_ChangeFlat(byte pcd, int* args, byte argCount)
+{
+	if (argCount < 2)
+		return;
+
+	ChangeFlat(args[0], args[1], pcd == PCD_CHANGECEILING);
+}
+
+void DLevelScript::ACS_SoundSequence(int* args, byte argCount)
+{
+	if (argCount < 2)
+		return;
+
+	if (args[0] < numsectors)
+		StartSoundSequence(&sectors[args[0]], args[1]);
+}
+
+void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 {
 	int texture, linenum = -1;
 	const char *texname = level.behavior->LookupString (name);
@@ -1378,32 +1524,217 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 	if (texname == NULL)
 		return;
 
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, lineid, side, position, name);
+
 	side = (side) ? 1 : 0;
 
 	texture = R_TextureNumForName (texname);
 
-	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0) {
-		side_t *sidedef;
+	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0)
+	{
+		side_t *currentSideDef;
 
 		if (lines[linenum].sidenum[side] == R_NOSIDE)
 			continue;
-		sidedef = sides + lines[linenum].sidenum[side];
 
-		switch (position) {
+		currentSideDef = sides + lines[linenum].sidenum[side];
+
+		switch (position)
+		{
 			case TEXTURE_TOP:
-				sidedef->toptexture = texture;
+				currentSideDef->toptexture = texture;
 				break;
 			case TEXTURE_MIDDLE:
-				sidedef->midtexture = texture;
+				currentSideDef->midtexture = texture;
 				break;
 			case TEXTURE_BOTTOM:
-				sidedef->bottomtexture = texture;
+				currentSideDef->bottomtexture = texture;
 				break;
 			default:
 				break;
 		}
-
 	}
+}
+
+void DLevelScript::SetLineBlocking(int lineid, int flags)
+{
+	int line = -1;
+
+	while ((line = P_FindLineFromID(lineid, line)) >= 0)
+	{
+		switch (flags)
+		{
+		case BLOCK_NOTHING:
+			lines[line].flags &= ~(ML_BLOCKING | ML_BLOCKEVERYTHING);
+			break;
+		case BLOCK_CREATURES:
+		default:
+			lines[line].flags &= ~ML_BLOCKEVERYTHING;
+			lines[line].flags |= ML_BLOCKING;
+			break;
+		case BLOCK_EVERYTHING:
+			lines[line].flags |= ML_BLOCKING | ML_BLOCKEVERYTHING;
+			break;
+		}
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, lineid, flags);
+}
+
+void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
+{
+	int line = -1;
+
+	while ((line = P_FindLineFromID(lineid, line)) >= 0)
+	{
+		if (toggle)
+		{
+			lines[line].flags |= ML_BLOCKMONSTERS;
+		}
+		else
+		{
+			lines[line].flags &= ~ML_BLOCKMONSTERS;
+		}
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, lineid, toggle);
+}
+
+void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
+{
+	int linenum = -1;
+
+	while ((linenum = P_FindLineFromID(lineid, linenum)) >= 0)
+	{
+		line_t *line = &lines[linenum];
+
+		line->special = special;
+		line->args[0] = arg1;
+		line->args[1] = arg2;
+		line->args[2] = arg3;
+		line->args[3] = arg4;
+		line->args[4] = arg5;
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, lineid, special, arg1, arg2, arg3, arg4, arg5);
+}
+
+void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator, byte arg1, byte arg2, byte arg3, byte arg4, byte arg5)
+{
+	LineSpecials[special](line, activator, arg1, arg2, arg3, arg4, arg5);
+
+	if (serverside)
+		SV_SendExecuteLineSpecial(special, line, activator, arg1, arg2, arg3, arg4, arg5);
+}
+
+void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
+{
+	if (clientside)
+	{
+		if ((pcd == PCD_LOCALSETMUSIC || pcd == PCD_LOCALSETMUSICDIRECT) && activator != consoleplayer().mo)
+			return;
+
+		const char* lookup = level.behavior->LookupString(index);
+		if (lookup != NULL)
+			S_ChangeMusic(lookup, loop);
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(pcd, activator, NULL, index, loop);
+}
+
+
+void DLevelScript::StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation)
+{
+	if (clientside)
+	{
+		if (pcd == PCD_LOCALAMBIENTSOUND && consoleplayer().camera != activator)
+			return;
+
+		const char* lookup = level.behavior->LookupString(index);
+		if (lookup != NULL)
+			S_Sound(channel, lookup, (float)volume / 127.0F, attenuation);
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(pcd, activator, NULL, channel, index, volume, attenuation);
+}
+
+void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation)
+{
+	if (clientside)
+	{
+		const char* lookup = level.behavior->LookupString(index);
+		if (lookup != NULL)
+			S_Sound(sector->soundorg, channel, lookup, (float)volume / 127.0F, attenuation);
+	}
+
+	if (serverside)
+	{
+		int sectorNum = sector ? sector - sectors : 0;
+		SV_ACSExecuteSpecial(pcd, NULL, NULL, sectorNum, channel, index, volume, attenuation);
+	}
+}
+
+void DLevelScript::StartThingSound(byte pcd, AActor* actor, int channel, int index, int volume, int attenuation)
+{
+	if (clientside)
+	{
+		const char* lookup = level.behavior->LookupString(index);
+		if (lookup != NULL)
+			S_Sound(actor, channel, lookup, (float)volume / 127.0F, attenuation);
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(pcd, actor, NULL, channel, index, volume, attenuation);
+}
+
+void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
+{
+	actor->special = special;
+	actor->args[0] = arg1;
+	actor->args[1] = arg2;
+	actor->args[2] = arg3;
+	actor->args[3] = arg4;
+	actor->args[4] = arg5;
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, NULL, NULL, actor->netid, special, arg1, arg2, arg3, arg4, arg5);
+}
+
+void DLevelScript::CancelFade(AActor* actor)
+{
+	if (clientside)
+	{
+		TThinkerIterator<DFlashFader> iterator;
+		DFlashFader *fader;
+
+		while ((fader = iterator.Next()))
+		{
+			if (actor == NULL || fader->WhoFor() == actor)
+				fader->Cancel();
+		}
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_CANCELFADE, actor, NULL);
+}
+
+void DLevelScript::StartSoundSequence(sector_t* sec, int index)
+{
+	if (clientside)
+	{
+		const char* lookup = level.behavior->LookupString(index);
+		if (lookup != NULL)
+			SN_StartSequence(sec, lookup);
+	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, sec - sectors, index);
 }
 
 /*int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
@@ -1454,10 +1785,9 @@ int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
 	return spawned;
 }*/
 
-void DLevelScript::DoFadeTo (int r, int g, int b, int a, fixed_t time)
+void DLevelScript::DoFadeTo(AActor* who, int r, int g, int b, int a, fixed_t time)
 {
-    Printf(PRINT_HIGH,"DoFadeRange now... \n");
-	DoFadeRange (0, 0, 0, -1, r, g, b, a, time);
+	DoFadeRange(who, 0, 0, 0, -1, r, g, b, a, time);
 }
 
 static void DoActualFadeRange(player_s* viewer, float ftime, bool fadingFrom,
@@ -1491,43 +1821,34 @@ static void DoActualFadeRange(player_s* viewer, float ftime, bool fadingFrom,
 	}
 }
 
-void DLevelScript::DoFadeRange(int r1, int g1, int b1, int a1,
-                               int r2, int g2, int b2, int a2, fixed_t time)
+void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
+	int r2, int g2, int b2, int a2, fixed_t time)
 {
-	player_t *viewer;
-	float ftime = (float)time / 65536.f;
-	bool fadingFrom = a1 >= 0;
-	float fr1 = 0.f, fg1 = 0.f, fb1 = 0.f, fa1 = 0.f;
-	float fr2, fg2, fb2, fa2;
-
-	fr2 = (float)r2 / 255.f;
-	fg2 = (float)g2 / 255.f;
-	fb2 = (float)b2 / 255.f;
-	fa2 = (float)a2 / 65536.f;
-
-	if (fadingFrom)
+	if (clientside && who->player != NULL)
 	{
-		fr1 = (float)r1 / 255.f;
-		fg1 = (float)g1 / 255.f;
-		fb1 = (float)b1 / 255.f;
-		fa1 = (float)a1 / 65536.f;
-	}
+		float ftime = (float)time / 65536.f;
+		bool fadingFrom = a1 >= 0;
+		float fr1 = 0.f, fg1 = 0.f, fb1 = 0.f, fa1 = 0.f;
+		float fr2, fg2, fb2, fa2;
 
-	if (activator != NULL)
-	{
-		viewer = activator->player;
-		if (viewer == NULL)
-			return;
-		DoActualFadeRange(viewer, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
-	}
-	else
-	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		fr2 = (float)r2 / 255.f;
+		fg2 = (float)g2 / 255.f;
+		fb2 = (float)b2 / 255.f;
+		fa2 = (float)a2 / 65536.f;
+
+		if (fadingFrom)
 		{
-			if (it->ingame())
-				DoActualFadeRange(&*it, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
+			fr1 = (float)r1 / 255.f;
+			fg1 = (float)g1 / 255.f;
+			fb1 = (float)b1 / 255.f;
+			fa1 = (float)a1 / 65536.f;
 		}
+
+		DoActualFadeRange(who->player, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
 	}
+
+	if (serverside)
+		SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, r1, g1, b1, a1, r2, g2, b2, a2, time);
 }
 
 
@@ -1697,99 +2018,99 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_LSPEC1:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(1), 0, 0, 0, 0);
+			ActivateLineSpecial(NEXTBYTE, activationline, activator,
+						STACK(1), 0, 0, 0, 0);
 			sp -= 1;
 			break;
 
 		case PCD_LSPEC2:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(2), STACK(1), 0, 0, 0);
+			ActivateLineSpecial(NEXTBYTE, activationline, activator,
+						STACK(2), STACK(1), 0, 0, 0);
 			sp -= 2;
 			break;
 
 		case PCD_LSPEC3:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(3), STACK(2), STACK(1), 0, 0);
+			ActivateLineSpecial(NEXTBYTE, activationline, activator,
+						STACK(3), STACK(2), STACK(1), 0, 0);
 			sp -= 3;
 			break;
 
 		case PCD_LSPEC4:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(4), STACK(3), STACK(2),
-									STACK(1), 0);
+			ActivateLineSpecial(NEXTBYTE, activationline, activator,
+						STACK(4), STACK(3), STACK(2),
+						STACK(1), 0);
 			sp -= 4;
 			break;
 
 		case PCD_LSPEC5:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(5), STACK(4), STACK(3),
-									STACK(2), STACK(1));
+			ActivateLineSpecial(NEXTBYTE, activationline, activator,
+						STACK(5), STACK(4), STACK(3),
+						STACK(2), STACK(1));
 			sp -= 5;
 			break;
 
 		case PCD_LSPEC1DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], 0, 0, 0, 0);
+			ActivateLineSpecial(temp, activationline, activator,
+						pc[0], 0, 0, 0, 0);
 			pc += 1;
 			break;
 
 		case PCD_LSPEC2DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], 0, 0, 0);
+			ActivateLineSpecial(temp, activationline, activator,
+						pc[0], pc[1], 0, 0, 0);
 			pc += 2;
 			break;
 
 		case PCD_LSPEC3DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], pc[2], 0, 0);
+			ActivateLineSpecial(temp, activationline, activator,
+						pc[0], pc[1], pc[2], 0, 0);
 			pc += 3;
 			break;
 
 		case PCD_LSPEC4DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], pc[2], pc[3], 0);
+			ActivateLineSpecial(temp, activationline, activator,
+						pc[0], pc[1], pc[2], pc[3], 0);
 			pc += 4;
 			break;
 
 		case PCD_LSPEC5DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], pc[2], pc[3], pc[4]);
+			ActivateLineSpecial(temp, activationline, activator,
+						pc[0], pc[1], pc[2], pc[3], pc[4]);
 			pc += 5;
 			break;
 
 		case PCD_LSPEC1DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
+			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
 				((BYTE *)pc)[1], 0, 0, 0, 0);
 			pc = (int *)((BYTE *)pc + 2);
 			break;
 
 		case PCD_LSPEC2DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
+			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
 				((BYTE *)pc)[1], ((BYTE *)pc)[2], 0, 0, 0);
 			pc = (int *)((BYTE *)pc + 3);
 			break;
 
 		case PCD_LSPEC3DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
+			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
 				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3], 0, 0);
 			pc = (int *)((BYTE *)pc + 4);
 			break;
 
 		case PCD_LSPEC4DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
+			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
 				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3],
 				((BYTE *)pc)[4], 0);
 			pc = (int *)((BYTE *)pc + 5);
 			break;
 
 		case PCD_LSPEC5DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
+			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
 				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3],
 				((BYTE *)pc)[4], ((BYTE *)pc)[5]);
 			pc = (int *)((BYTE *)pc + 6);
@@ -2444,12 +2765,7 @@ void DLevelScript::RunScript ()
 			strbin (work);
 			if (pcd != PCD_MOREHUDMESSAGE)
 			{
-				if (pcd == PCD_ENDPRINTBOLD || activator == NULL ||
-					(activator->player && activator->player->mo == consoleplayer().camera))
-				{
-					strbin (work);
-					C_MidPrint (work);
-				}
+				ACS_Print(pcd, activator, work);
 			}
 			else
 			{
@@ -2553,11 +2869,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_MUSICCHANGE:
-			lookup = level.behavior->LookupString (STACK(2));
-			if (lookup != NULL)
-			{
-				S_ChangeMusic (lookup, STACK(1));
-			}
+			ChangeMusic(pcd, activator, STACK(2), STACK(1));
 			sp -= 2;
 			break;
 
@@ -2571,73 +2883,33 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SECTORSOUND:
-			lookup = level.behavior->LookupString (STACK(2));
-			if (lookup != NULL)
-			{
-				if (activationline)
-				{
-					S_Sound (
-						activationline->frontsector->soundorg,
-						CHAN_BODY,
-						lookup,
-						(float)(STACK(1)) / 127.f,
-						ATTN_NORM);
-				}
-				else
-				{
-					S_Sound (
-						CHAN_BODY,
-						lookup,
-						(float)(STACK(1)) / 127.f,
-						ATTN_NORM);
-				}
-			}
+			if (activationline)
+				StartSectorSound(pcd, activationline->frontsector, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
+			else
+				StartSound(pcd, activator, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
 			sp -= 2;
 			break;
 
 		case PCD_AMBIENTSOUND:
-			lookup = level.behavior->LookupString (STACK(2));
-			if (lookup != NULL)
-			{
-				S_Sound (CHAN_AUTO,
-						 lookup,
-						 (float)(STACK(1)) / 127.f, ATTN_NONE);
-			}
-			sp -= 2;
+			StartSound(pcd, activator, CHAN_AUTO, STACK(2), STACK(1), ATTN_NONE);
 			break;
 
 		case PCD_LOCALAMBIENTSOUND:
-			lookup = level.behavior->LookupString (STACK(2));
-			if (lookup != NULL && consoleplayer().camera == activator)
-			{
-				S_Sound (CHAN_AUTO,
-						 lookup,
-						 (float)(STACK(1)) / 127.f, ATTN_NONE);
-			}
+			StartSound(pcd, activator, CHAN_AUTO, STACK(2), STACK(1), ATTN_NONE);
 			sp -= 2;
 			break;
 
 		case PCD_ACTIVATORSOUND:
-			lookup = level.behavior->LookupString (STACK(2));
-			if (lookup != NULL)
-			{
-				S_Sound (activator, CHAN_AUTO,
-						 lookup,
-						 (float)(STACK(1)) / 127.f, ATTN_NORM);
-			}
+			StartThingSound(pcd, activator, CHAN_AUTO, STACK(2), STACK(1), ATTN_NORM);
 			sp -= 2;
 			break;
 
-		case PCD_SOUNDSEQUENCE:
-			lookup = level.behavior->LookupString (STACK(1));
-			if (lookup != NULL)
+		case PCD_SOUNDSEQUENCE:	
+			if (activationline)
 			{
-				if (activationline)
-				{
-					SN_StartSequence (
-						activationline->frontsector,
-						lookup);
-				}
+				StartSoundSequence(activationline->frontsector, STACK(1));
+				// TODO
+				//SN_StartSequence (activationline->frontsector, lookup);
 			}
 			sp--;
 			break;
@@ -2648,100 +2920,45 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SETLINEBLOCKING:
-			{
-				int line = -1;
-
-				while ((line = P_FindLineFromID (STACK(2), line)) >= 0)
-				{
-					switch (STACK(1))
-					{
-					case BLOCK_NOTHING:
-						lines[line].flags &= ~(ML_BLOCKING|ML_BLOCKEVERYTHING);
-						break;
-					case BLOCK_CREATURES:
-					default:
-						lines[line].flags &= ~ML_BLOCKEVERYTHING;
-						lines[line].flags |= ML_BLOCKING;
-						break;
-					case BLOCK_EVERYTHING:
-						lines[line].flags |= ML_BLOCKING|ML_BLOCKEVERYTHING;
-						break;
-					}
-				}
-
-				sp -= 2;
-			}
+			SetLineBlocking(STACK(2), STACK(1));
+			sp -= 2;
 			break;
 
 		case PCD_SETLINEMONSTERBLOCKING:
-			{
-				int line = -1;
-
-				while ((line = P_FindLineFromID (STACK(2), line)) >= 0)
-				{
-					if (STACK(1))
-						lines[line].flags |= ML_BLOCKMONSTERS;
-					else
-						lines[line].flags &= ~ML_BLOCKMONSTERS;
-				}
-
-				sp -= 2;
-			}
+			SetLineMonsterBlocking(STACK(2), STACK(1));
+			sp -= 2;
 			break;
 
 		case PCD_SETLINESPECIAL:
-			{
-				int linenum = -1;
-
-				while ((linenum = P_FindLineFromID (STACK(7), linenum)) >= 0) {
-					line_t *line = &lines[linenum];
-
-					line->special = STACK(6);
-					line->args[0] = STACK(5);
-					line->args[1] = STACK(4);
-					line->args[2] = STACK(3);
-					line->args[3] = STACK(2);
-					line->args[4] = STACK(1);
-				}
-				sp -= 7;
-			}
+			SetLineSpecial(STACK(7), STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+			sp -= 7;
 			break;
 
 		case PCD_SETTHINGSPECIAL:
-			{
-				FActorIterator iterator (STACK(7));
-				AActor *actor;
+		{				
+			FActorIterator iterator (STACK(7));
+			AActor *actor;
 
-				while ( (actor = iterator.Next ()) )
-				{
-					actor->special = STACK(6);
-					actor->args[0] = STACK(5);
-					actor->args[1] = STACK(4);
-					actor->args[2] = STACK(3);
-					actor->args[3] = STACK(2);
-					actor->args[4] = STACK(1);
-				}
-				sp -= 7;
-			}
+			while ( (actor = iterator.Next ()) )
+				SetThingSpecial(actor, STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+			sp -= 7;
+		}
 			break;
 
 		case PCD_THINGSOUND:
-			lookup = level.behavior->LookupString (STACK(2));
-			if (lookup != NULL)
-			{
-				FActorIterator iterator (STACK(3));
-				AActor *spot;
+		{
+			FActorIterator iterator(STACK(3));
+			AActor *spot;
 
-				while ( (spot = iterator.Next ()) )
-				{
-					S_Sound (spot, CHAN_BODY,
-							 lookup,
-							 (float)(STACK(1))/127.f, ATTN_NORM);
-				}
+			while ((spot = iterator.Next()))
+			{
+				// TODO
+				StartThingSound(pcd, spot, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
+				//S_Sound (spot, CHAN_BODY, lookup, (float)(STACK(1))/127.f, ATTN_NORM);
 			}
 			sp -= 3;
+		}
 			break;
-
 
 		case PCD_FIXEDMUL:
 			STACK(2) = FixedMul (STACK(2), STACK(1));
@@ -2796,25 +3013,30 @@ void DLevelScript::RunScript ()
 			break;*/
 
 		case PCD_CLEARINVENTORY:
+			// TODO
 			ClearInventory (activator);
 			break;
 
 		case PCD_GIVEINVENTORY:
+			// TODO
 			GiveInventory (activator, level.behavior->LookupString (STACK(2)), STACK(1));
 			sp -= 2;
 			break;
 
 		case PCD_GIVEINVENTORYDIRECT:
+			// TODO
 			GiveInventory (activator, level.behavior->LookupString (pc[0]), pc[1]);
 			pc += 2;
 			break;
 
 		case PCD_TAKEINVENTORY:
+			// TODO
 			TakeInventory (activator, level.behavior->LookupString (STACK(2)), STACK(1));
 			sp -= 2;
 			break;
 
 		case PCD_TAKEINVENTORYDIRECT:
+			// TODO
 			TakeInventory (activator, level.behavior->LookupString (pc[0]), pc[1]);
 			pc += 2;
 			break;
@@ -2829,55 +3051,40 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SETMUSIC:
-			S_ChangeMusic (level.behavior->LookupString (STACK(3)), STACK(2));
+			ChangeMusic(pcd, activator, STACK(3), STACK(2));
 			sp -= 3;
 			break;
 
 		case PCD_SETMUSICDIRECT:
-			S_ChangeMusic (level.behavior->LookupString (pc[0]), pc[1]);
+			ChangeMusic(pcd, activator, pc[0], pc[1]);
 			pc += 3;
 			break;
 
 		case PCD_LOCALSETMUSIC:
-			if (activator == consoleplayer().mo)
-			{
-				S_ChangeMusic (level.behavior->LookupString (STACK(3)), STACK(2));
-			}
+			ChangeMusic(pcd, activator, STACK(3), STACK(2));
 			sp -= 3;
 			break;
 
 		case PCD_LOCALSETMUSICDIRECT:
-			if (activator == consoleplayer().mo)
-			{
-				S_ChangeMusic (level.behavior->LookupString (pc[0]), pc[1]);
-			}
+			ChangeMusic(pcd, activator, pc[0], pc[1]);
 			pc += 3;
 			break;
 
 		case PCD_FADETO:
-			DoFadeTo (STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+			// TODO
+			DoFadeTo (activator, STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
 			sp -= 5;
 			break;
 
 		case PCD_FADERANGE:
-			DoFadeRange (STACK(9), STACK(8), STACK(7), STACK(6),
+			// TODO
+			DoFadeRange (activator, STACK(9), STACK(8), STACK(7), STACK(6),
 						 STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
 			sp -= 9;
 			break;
 
 		case PCD_CANCELFADE:
-			{
-				TThinkerIterator<DFlashFader> iterator;
-				DFlashFader *fader;
-
-				while ( (fader = iterator.Next()) )
-				{
-					if (activator == NULL || fader->WhoFor() == activator)
-					{
-						fader->Cancel ();
-					}
-				}
-			}
+			CancelFade(activator);
 			break;
 
 		/*case PCD_PLAYMOVIE:

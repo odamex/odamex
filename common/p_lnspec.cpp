@@ -1042,7 +1042,7 @@ FUNC(LS_Thing_SetGoal)
 FUNC(LS_ACS_Execute)
 // ACS_Execute (script, map, s_arg1, s_arg2, s_arg3)
 {
-	if (!serverside && s_SpecialFromServer)
+	if (!serverside)
 		return false;
 
 	level_info_t *info;
@@ -1056,7 +1056,7 @@ FUNC(LS_ACS_Execute)
 FUNC(LS_ACS_ExecuteAlways)
 // ACS_ExecuteAlways (script, map, s_arg1, s_arg2, s_arg3)
 {
-	if (!serverside && s_SpecialFromServer)
+	if (!serverside)
 		return false;
 
 	level_info_t *info;
@@ -1070,7 +1070,7 @@ FUNC(LS_ACS_ExecuteAlways)
 FUNC(LS_ACS_LockedExecute)
 // ACS_LockedExecute (script, map, s_arg1, s_arg2, lock)
 {
-	if (!serverside && s_SpecialFromServer)
+	if (!serverside)
 		return false;
 
 	if (arg4 && !P_CheckKeys (it->player, (card_t)arg4, 1))
@@ -1082,7 +1082,7 @@ FUNC(LS_ACS_LockedExecute)
 FUNC(LS_ACS_Suspend)
 // ACS_Suspend (script, map)
 {
-	if (!serverside && s_SpecialFromServer)
+	if (!serverside)
 		return false;
 
 	level_info_t *info;
@@ -1098,7 +1098,7 @@ FUNC(LS_ACS_Suspend)
 FUNC(LS_ACS_Terminate)
 // ACS_Terminate (script, map)
 {
-	if (!serverside && s_SpecialFromServer)
+	if (!serverside)
 		return false;
 
 	level_info_t *info;
