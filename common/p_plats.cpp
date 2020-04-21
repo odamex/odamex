@@ -241,7 +241,8 @@ void DPlat::RunThink ()
 	if (m_Status == finished)
 	{
 		PlayPlatSound();
-		m_Status = destroy;
+		if (!predicting)
+			m_Status = destroy;
 	}
 
 	if (m_Status == destroy)

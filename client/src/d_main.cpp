@@ -545,7 +545,6 @@ bool HashOk(std::string &required, std::string &available)
 }
 
 
-void CL_NetDemoRecord(const std::string &filename);
 void CL_NetDemoPlay(const std::string &filename);
 
 

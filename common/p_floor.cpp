@@ -40,7 +40,7 @@ extern bool predicting;
 
 void P_SetFloorDestroy(DFloor *floor)
 {
-	if (!floor)
+	if (!floor || predicting)
 		return;
 
 	floor->m_Status = DFloor::destroy;
@@ -832,7 +832,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 
 void P_SetElevatorDestroy(DElevator *elevator)
 {
-	if (!elevator)
+	if (!elevator || predicting)
 		return;
 
 	elevator->m_Status = DElevator::destroy;

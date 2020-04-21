@@ -3,12 +3,12 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
+global_compile_options()
+
 # Server flags. [AM] TODO: Test -O3 again sometime.
 if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 endif()
-
-global_compile_options()
 
 # #define SERVER_APP for use in the source code
 add_definitions(-DSERVER_APP)
@@ -114,3 +114,5 @@ else()
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT server)
 endif()
+
+print_cxx_flags()

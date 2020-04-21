@@ -31,7 +31,7 @@ extern bool predicting;
 
 void P_SetPillarDestroy(DPillar *pillar)
 {
-	if (!pillar)
+	if (!pillar || predicting)
 		return;
 
 	pillar->m_Status = DPillar::destroy;

@@ -1031,7 +1031,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 {
 	// gathers a list of unique resolutions availible for the current
 	// screen mode (windowed or fullscreen)
-	bool fullscreen = I_GetWindow()->getVideoMode()->isFullScreen();
+	bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
 
 	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
 	MenuModeList menumodelist;
@@ -2201,9 +2201,9 @@ void M_OptResponder (event_t *ev)
 
 		default:
 #ifdef _XBOX
-			if (ev->data2 == 't' || ev->data2 == KEY_JOY3)
+			if (ev->data3 == 't' || ev->data1 == KEY_JOY3)
 #else
-			if (ev->data2 == 't')
+			if (ev->data3 == 't')
 #endif
 			{
 				// Test selected resolution

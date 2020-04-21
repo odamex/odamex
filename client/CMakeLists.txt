@@ -3,27 +3,26 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
+global_compile_options()
+
 # Client flags
 if(NOT MSVC)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
       if(target_arch STREQUAL "i386" OR target_arch STREQUAL "amd64")        
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
       else()
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
       endif()
     else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
       if(APPLE)
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -faltivec")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELASE} -O3 -faltivec")
       endif()
     endif()
   endif()
 else()
   set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
 endif()
-
-
-global_compile_options()
 
 # #define CLIENT_APP for use in the source code
 add_definitions(-DCLIENT_APP)
@@ -311,3 +310,5 @@ if(SDL_VERSION)
       COMPONENT client)
   endif()
 endif()
+
+print_cxx_flags()

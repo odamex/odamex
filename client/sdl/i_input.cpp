@@ -57,6 +57,238 @@ static bool window_focused = false;
 static bool input_grabbed = false;
 static bool nomouse = false;
 
+
+typedef OHashTable<int, std::string> KeyNameTable;
+KeyNameTable key_names;
+
+//
+// I_InitializeKeyNameTable
+//
+// Builds a table mapping keycodes to string representations of key names.
+//
+static void I_InitializeKeyNameTable()
+{
+	key_names.clear();
+	key_names[KEY_BACKSPACE] = "backspace";
+	key_names[KEY_TAB] = "tab";
+	key_names[KEY_ENTER] = "enter";
+	key_names[KEY_PAUSE] = "pause";
+	key_names[KEY_ESCAPE] = "escape";
+	key_names[KEY_SPACE] = "space";
+	key_names['!'] = "!";
+	key_names['\"'] = "\"";
+	key_names['#'] = "#";
+	key_names['$'] = "$";
+	key_names['&'] = "&";
+	key_names['\''] = "\'";
+	key_names['('] = "(";
+	key_names[')'] = ")";
+	key_names['*'] = "*";
+	key_names['+'] = "+";
+	key_names[','] = ",";
+	key_names['-'] = "-";
+	key_names['.'] = ".";
+	key_names['/'] = "/";
+	key_names['0'] = "0";
+	key_names['1'] = "1";
+	key_names['2'] = "2";
+	key_names['3'] = "3";
+	key_names['4'] = "4";
+	key_names['5'] = "5";
+	key_names['6'] = "6";
+	key_names['7'] = "7";
+	key_names['8'] = "8";
+	key_names['9'] = "9";
+	key_names[':'] = ":";
+	key_names[';'] = ":";
+	key_names['<'] = "<";
+	key_names['='] = "=";
+	key_names['>'] = ">";
+	key_names['?'] = "?";
+	key_names['@'] = "@";
+	key_names['['] = "[";
+	key_names['\\'] = "\\";
+	key_names[']'] = "]";
+	key_names['^'] = "^";
+	key_names['_'] = "_";
+	key_names['`'] = "grave";
+	key_names[KEY_TILDE] = "tilde";
+	key_names['a'] = "a";
+	key_names['b'] = "b";
+	key_names['c'] = "c";
+	key_names['d'] = "d";
+	key_names['e'] = "e";
+	key_names['f'] = "f";
+	key_names['g'] = "g";
+	key_names['h'] = "h";
+	key_names['i'] = "i";
+	key_names['j'] = "j";
+	key_names['k'] = "k";
+	key_names['l'] = "l";
+	key_names['m'] = "m";
+	key_names['n'] = "n";
+	key_names['o'] = "o";
+	key_names['p'] = "p";
+	key_names['q'] = "q";
+	key_names['r'] = "r";
+	key_names['s'] = "s";
+	key_names['t'] = "t";
+	key_names['u'] = "u";
+	key_names['v'] = "v";
+	key_names['w'] = "w";
+	key_names['x'] = "x";
+	key_names['y'] = "y";
+	key_names['z'] = "z";
+	key_names[KEY_DEL] = "del";
+	key_names[KEYP_0] = "kp0";
+	key_names[KEYP_1] = "kp1";
+	key_names[KEYP_2] = "kp2";
+	key_names[KEYP_3] = "kp3";
+	key_names[KEYP_4] = "kp4";
+	key_names[KEYP_5] = "kp5";
+	key_names[KEYP_6] = "kp6";
+	key_names[KEYP_7] = "kp7";
+	key_names[KEYP_8] = "kp8";
+	key_names[KEYP_9] = "kp9";
+	key_names[KEYP_PERIOD] = "kp.";
+	key_names[KEYP_DIVIDE] = "kp/";
+	key_names[KEYP_MULTIPLY] = "kp*";
+	key_names[KEYP_MINUS] = "kp-";
+	key_names[KEYP_PLUS] = "kp+";
+	key_names[KEYP_ENTER] = "kpenter";
+	key_names[KEYP_EQUALS] = "kp=";
+	key_names[KEY_UPARROW] = "uparrow";
+	key_names[KEY_DOWNARROW] = "downarrow";
+	key_names[KEY_LEFTARROW] = "leftarrow";
+	key_names[KEY_RIGHTARROW] = "rightarrow";
+	key_names[KEY_INS] = "ins";
+	key_names[KEY_HOME] = "home";
+	key_names[KEY_END] = "end";
+	key_names[KEY_PGUP] = "pgup";
+	key_names[KEY_PGDN] = "pgdn";
+	key_names[KEY_F1] = "f1";
+	key_names[KEY_F2] = "f2";
+	key_names[KEY_F3] = "f3";
+	key_names[KEY_F4] = "f4";
+	key_names[KEY_F5] = "f5";
+	key_names[KEY_F6] = "f6";
+	key_names[KEY_F7] = "f7";
+	key_names[KEY_F8] = "f8";
+	key_names[KEY_F9] = "f9";
+	key_names[KEY_F10] = "f10";
+	key_names[KEY_F11] = "f11";
+	key_names[KEY_F12] = "f12";
+	key_names[KEY_F13] = "f13";
+	key_names[KEY_F14] = "f14";
+	key_names[KEY_F15] = "f15";
+	key_names[KEY_NUMLOCK] = "numlock";
+	key_names[KEY_CAPSLOCK] = "capslock";
+	key_names[KEY_SCRLCK] = "scroll";
+	key_names[KEY_RSHIFT] = "rightshift";
+	key_names[KEY_LSHIFT] = "leftshift";
+	key_names[KEY_RCTRL] = "rightctrl";
+	key_names[KEY_LCTRL] = "leftctrl";
+	key_names[KEY_RALT] = "rightalt";
+	key_names[KEY_LALT] = "leftalt";
+	key_names[KEY_LWIN] = "lwin";
+	key_names[KEY_RWIN] = "rwin";
+	key_names[KEY_HELP] = "help";
+	key_names[KEY_PRINT] = "print";
+	key_names[KEY_SYSRQ] = "sysrq";
+	key_names[KEY_MOUSE1] = "mouse1";
+	key_names[KEY_MOUSE2] = "mouse2";
+	key_names[KEY_MOUSE3] = "mouse3";
+	key_names[KEY_MOUSE4] = "mouse4";
+	key_names[KEY_MOUSE5] = "mouse5";
+	key_names[KEY_MWHEELDOWN] = "mwheeldown";
+	key_names[KEY_MWHEELUP] = "mwheelup";
+	key_names[KEY_JOY1] = "joy1";
+	key_names[KEY_JOY2] = "joy2";
+	key_names[KEY_JOY3] = "joy3";
+	key_names[KEY_JOY4] = "joy4";
+	key_names[KEY_JOY5] = "joy5";
+	key_names[KEY_JOY6] = "joy6";
+	key_names[KEY_JOY7] = "joy7";
+	key_names[KEY_JOY8] = "joy8";
+	key_names[KEY_JOY9] = "joy9";
+	key_names[KEY_JOY10] = "joy10";
+	key_names[KEY_JOY11] = "joy11";
+	key_names[KEY_JOY12] = "joy12";
+	key_names[KEY_JOY13] = "joy13";
+	key_names[KEY_JOY14] = "joy14";
+	key_names[KEY_JOY15] = "joy15";
+	key_names[KEY_JOY16] = "joy16";
+	key_names[KEY_JOY17] = "joy17";
+	key_names[KEY_JOY18] = "joy18";
+	key_names[KEY_JOY19] = "joy19";
+	key_names[KEY_JOY20] = "joy20";
+	key_names[KEY_JOY21] = "joy21";
+	key_names[KEY_JOY22] = "joy22";
+	key_names[KEY_JOY23] = "joy23";
+	key_names[KEY_JOY24] = "joy24";
+	key_names[KEY_JOY25] = "joy25";
+	key_names[KEY_JOY26] = "joy26";
+	key_names[KEY_JOY27] = "joy27";
+	key_names[KEY_JOY28] = "joy28";
+	key_names[KEY_JOY29] = "joy29";
+	key_names[KEY_JOY30] = "joy30";
+	key_names[KEY_JOY31] = "joy31";
+	key_names[KEY_JOY32] = "joy32";
+	key_names[KEY_HAT1] = "hat1up";
+	key_names[KEY_HAT2] = "hat1right";
+	key_names[KEY_HAT3] = "hat1down";
+	key_names[KEY_HAT4] = "hat1left";
+	key_names[KEY_HAT5] = "hat2up";
+	key_names[KEY_HAT6] = "hat2right";
+	key_names[KEY_HAT7] = "hat2down";
+	key_names[KEY_HAT8] = "hat2left";
+}
+
+
+//
+// I_GetKeyFromName
+//
+// Returns the key code for the given key name
+//
+int I_GetKeyFromName(const std::string& name)
+{
+	if (key_names.empty())
+		I_InitializeKeyNameTable();
+
+	// Names of the form #xxx are translated to key xxx automatically
+	if (name[0] == '#' && name[1] != 0)
+		return atoi(name.c_str() + 1);
+
+	// Otherwise, we scan the KeyNames[] array for a matching name
+	for (KeyNameTable::const_iterator it = key_names.begin(); it != key_names.end(); ++it)
+	{
+		if (iequals(name, it->second))
+			return it->first;
+	}
+	return 0;
+}
+
+
+//
+// I_GetKeyName
+//
+// Returns the key code for the given key name
+//
+std::string I_GetKeyName(int key)
+{
+	if (key_names.empty())
+		I_InitializeKeyNameTable();
+
+	KeyNameTable::const_iterator it = key_names.find(key);
+	if (it != key_names.end() && !it->second.empty())
+		return it->second;
+
+	static char name[11];
+	sprintf(name, "#%d", key);
+	return std::string(name);
+}
+
+
 //
 // I_FlushInput
 //
@@ -723,9 +955,7 @@ void IInputSubsystem::gatherEvents()
 void IInputSubsystem::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 

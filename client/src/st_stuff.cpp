@@ -531,9 +531,9 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown && ev->data2)
+	else if (ev->type == ev_keydown && ev->data3)
 	{
-		char key = ev->data2;
+		char key = ev->data3;
 
         // 'dqd' cheat for toggleable god mode
         if (cht_CheckCheat(&cheat_god, key))
@@ -735,10 +735,10 @@ BEGIN_COMMAND (god)
 
 	consoleplayer().cheats ^= CF_GODMODE;
 
-    if (consoleplayer().cheats & CF_GODMODE)
-        Printf(PRINT_HIGH, "Degreelessness mode on\n");
-    else
-        Printf(PRINT_HIGH, "Degreelessness mode off\n");
+	if (consoleplayer().cheats & CF_GODMODE)
+		Printf(PRINT_HIGH, "Degreelessness mode on\n");
+	else
+		Printf(PRINT_HIGH, "Degreelessness mode off\n");
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -752,10 +752,10 @@ BEGIN_COMMAND (notarget)
 
 	consoleplayer().cheats ^= CF_NOTARGET;
 
-    if (consoleplayer().cheats & CF_NOTARGET)
-        Printf(PRINT_HIGH, "Notarget on\n");
-    else
-        Printf(PRINT_HIGH, "Notarget off\n");
+	if (consoleplayer().cheats & CF_NOTARGET)
+		Printf(PRINT_HIGH, "Notarget on\n");
+	else
+		Printf(PRINT_HIGH, "Notarget off\n");
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -769,10 +769,10 @@ BEGIN_COMMAND (fly)
 
 	consoleplayer().cheats ^= CF_FLY;
 
-    if (consoleplayer().cheats & CF_FLY)
-        Printf(PRINT_HIGH, "Fly mode on\n");
-    else
-        Printf(PRINT_HIGH, "Fly mode off\n");
+	if (consoleplayer().cheats & CF_FLY)
+		Printf(PRINT_HIGH, "Fly mode on\n");
+	else
+		Printf(PRINT_HIGH, "Fly mode off\n");
 
 	if (!consoleplayer().spectator)
 	{
@@ -789,10 +789,10 @@ BEGIN_COMMAND (noclip)
 
 	consoleplayer().cheats ^= CF_NOCLIP;
 
-    if (consoleplayer().cheats & CF_NOCLIP)
-        Printf(PRINT_HIGH, "No clipping mode on\n");
-    else
-        Printf(PRINT_HIGH, "No clipping mode off\n");
+	if (consoleplayer().cheats & CF_NOCLIP)
+		Printf(PRINT_HIGH, "No clipping mode on\n");
+	else
+		Printf(PRINT_HIGH, "No clipping mode off\n");
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);

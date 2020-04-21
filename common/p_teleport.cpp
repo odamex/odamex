@@ -187,7 +187,9 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 	// problem between normal doom2 1.9 and final doom
 	// Note that although chex.exe is based on Final Doom,
 	// it does not have this quirk.
-	if (gamemission < pack_tnt || gamemission == chex)
+	// [AM] For z-teleports, the destination sets the height, don't
+	//      override it here.
+	if (m->type == MT_TELEPORTMAN && (gamemission < pack_tnt || gamemission == chex))
 		thing->z = thing->floorz;
 
 	if (player)

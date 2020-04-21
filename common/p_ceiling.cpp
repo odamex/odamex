@@ -201,7 +201,7 @@ void DCeiling::RunThink ()
 				case ceilLowerAndCrush:
 					if (m_Speed1 == FRACUNIT && m_Speed2 == FRACUNIT)
 						m_Speed = FRACUNIT / 8;
-						break;
+					break;
 
 				default:
 					break;
@@ -443,7 +443,7 @@ manual_ceiling:
 		{
 			if (change & 4)	// if a numeric model change
 			{
-				sector_t *sec;
+				sector_t* sec = NULL;
 
 				//jff 5/23/98 find model with floor at target height if target
 				//is a floor type
@@ -451,8 +451,8 @@ manual_ceiling:
 					   type == DCeiling::ceilRaiseToFloor ||
 					   type == DCeiling::ceilLowerToHighest ||
 					   type == DCeiling::ceilLowerToFloor) ?
-					P_FindModelFloorSector (targheight, sec) :
-					P_FindModelCeilingSector (targheight, sec);
+					P_FindModelFloorSector(targheight, sec) :
+					P_FindModelCeilingSector(targheight, sec);
 				if (sec)
 				{
 					ceiling->m_Texture = sec->ceiling_res_id;

@@ -1724,7 +1724,7 @@ bool M_Responder (event_t* ev)
 	if (ev->type == ev_keydown)
 	{
 		ch = ev->data1; 		// scancode
-		ch2 = ev->data2;		// ASCII
+		ch2 = ev->data3;		// ASCII
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1790,7 +1790,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = ev->data2;	// [RH] Use user keymap
+			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <

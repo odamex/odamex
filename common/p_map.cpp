@@ -511,8 +511,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 		(tmthing->player && tmthing->player->spectator))
 		return true;
 
-    if (tmthing->player && thing->player && sv_unblockplayers)
-        return true;
+	if (tmthing->player && thing->player && sv_unblockplayers)
+		return true;
 
 	fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
@@ -531,7 +531,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 			return true;
 	}
 
-    // check for skulls slamming into things
+	// check for skulls slamming into things
 	if (tmthing->flags & MF_SKULLFLY)
 	{
 		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
@@ -544,7 +544,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		return false;			// stop moving
 	}
 
-    // missiles can hit other things
+	// missiles can hit other things
 	if (tmthing->flags & MF_MISSILE)
 	{
 		// see if it went over / under

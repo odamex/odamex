@@ -275,33 +275,31 @@ void CL_DownloadStart()
 	}
 
 	// don't go for more than 100 megs
-	if(file_len > 100*1024*1024)
+	if (file_len > 100*1024*1024)
 	{
 		Printf(PRINT_HIGH, "Download is over 100MiB, aborting!\n");
 		CL_QuitNetGame();
 		return;
 	}
 
-    // [Russell] - Allow resumeable downloads
+	// [Russell] - Allow resumeable downloads
 	if (download.got_bytes == 0)
-    {
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
+	{
+		if (download.buf != NULL)
+		{
+			delete download.buf;
+			download.buf = NULL;
+		}
 
-        download.buf = new buf_t ((size_t)file_len);
+		download.buf = new buf_t ((size_t)file_len);
+		memset(download.buf->ptr(), 0, file_len);
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
+	}
 
-        memset(download.buf->ptr(), 0, file_len);
-    }
-    else
-        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
-
-
-
-	Printf(PRINT_HIGH, "Downloading %s bytes...\n",
-        FormatNBytes(file_len).c_str());
+	Printf(PRINT_HIGH, "Downloading %s bytes...\n", FormatNBytes(file_len).c_str());
 
 	// Make initial 0% show
 	SetDownloadPercentage(0);
