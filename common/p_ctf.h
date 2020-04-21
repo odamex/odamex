@@ -26,6 +26,8 @@
 #include "d_netinf.h"
 #include "p_local.h"
 
+class BitStream;
+
 //	Map ID for flags
 #define	ID_BLUE_FLAG	5130
 #define	ID_RED_FLAG		5131
@@ -90,7 +92,7 @@ enum flag_score_t
 //	Network Events
 // [CG] I'm aware having CL_* and SV_* functions in common/ is not great, I'll
 //      do more work on CTF and team-related things later.
-void CL_CTFEvent(void);
+void CL_CTFEvent(BitStream& stream);
 void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
 ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, flag_t f);

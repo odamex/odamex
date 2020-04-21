@@ -88,11 +88,6 @@ baseapp_t baseapp = client;
 
 extern bool step_mode;
 
-// denis - client version (VERSION or other supported)
-short version = 0;
-int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
-int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
-
 buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
@@ -478,25 +473,6 @@ std::string spyplayername;
 void CL_CheckDisplayPlayer(void);
 
 //
-// CL_ConnectClient
-//
-void CL_ConnectClient(BitStream& stream)
-{
-	player_t &player = idplayer(stream.readU8());
-
-	CL_CheckDisplayPlayer();
-
-	if (!cl_connectalert)
-		return;
-
-	// GhostlyDeath <August 1, 2008> -- Play connect sound
-	if (&player == &consoleplayer())
-		return;
-
-	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
-}
-
-//
 // CL_CheckDisplayPlayer
 //
 // Perfoms validation on the value of displayplayer_id based on the current
@@ -611,6 +587,21 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		}
 	} while (it != sentinal);
 }
+
+
+//
+// CL_ConnectClient
+//
+void CL_ConnectClient(BitStream& stream)
+{
+	player_t& player = idplayer(stream.readU8());
+
+	CL_CheckDisplayPlayer();
+
+	if (cl_connectalert && player.id == consoleplayer_id)
+		S_Sound(CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
+}
+
 
 //
 // CL_DisconnectClient
@@ -1386,11 +1377,10 @@ void CL_SendUserInfo(BitStream& stream)
 	for (int i = 3; i >= 0; i--)
 		stream.writeU8(coninfo->color[i]);
 
-	// [SL] place holder for deprecated skins
-	stream.writeString("");
+	stream.writeString("");		// [SL] place holder for deprecated skins
 
 	stream.writeU32(coninfo->aimdist);
-	stream.writeU8(true);	// [SL] deprecated "cl_unlag" CVAR
+	stream.writeU8(1);	// [SL] deprecated "cl_unlag" CVAR
 	stream.writeU8(coninfo->predict_weapons);
 	stream.writeU8((uint8_t)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
@@ -1458,9 +1448,9 @@ void CL_SetupUserInfo(BitStream& stream)
 //
 void CL_UpdateFrags(BitStream& stream)
 {
-	player_t &p = CL_FindPlayer(stream.readU8());
+	player_t& p = CL_FindPlayer(stream.readU8());
 
-	if(sv_gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 		p.fragcount = stream.readS16();
 	else
 		p.killcount = stream.readS16();
@@ -1473,7 +1463,7 @@ void CL_UpdateFrags(BitStream& stream)
 //
 void CL_TeamPoints(BitStream& stream)
 {
-	for(size_t i = 0; i < NUMTEAMS; i++)
+	for (size_t i = 0; i < NUMTEAMS; i++)
 		TEAMpoints[i] = stream.readU16();
 }
 
@@ -1575,18 +1565,14 @@ void CL_RequestConnectInfo(void)
 // Process server info and switch to the right wads...
 //
 std::string missing_file, missing_hash;
+
 bool CL_PrepareConnect(BitStream& stream)
 {
 	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	size_t i;
-
 	server_host = stream.readString();
-
-	bool recv_teamplay_stats = 0;
-	gameversiontosend = 0;
 
 	byte playercount = stream.readU8();
 	stream.readU8();	// read and ignore max_players
@@ -1599,15 +1585,17 @@ bool CL_PrepareConnect(BitStream& stream)
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
 	std::vector<std::string> newwadfiles(server_wads);
-	for(i = 0; i < server_wads; i++)
+	for (size_t i = 0; i < server_wads; i++)
 		newwadfiles[i] = stream.readString();
 
 	stream.readU8();						// ignore deathmatch
 	stream.readU8();						// ignore skill
-	recv_teamplay_stats |= stream.readU8();	// teamplay
-	recv_teamplay_stats |= stream.readU8();	// ctf
 
-	for(i = 0; i < playercount; i++)
+	int teamplay = 0;
+	teamplay |= stream.readU8();	// teamplay
+	teamplay |= stream.readU8();	// ctf
+
+	for (size_t i = 0; i < playercount; i++)
 	{
 		stream.readString();
 		stream.readU16();
@@ -1616,7 +1604,7 @@ bool CL_PrepareConnect(BitStream& stream)
 	}
 
 	std::vector<std::string> newwadhashes(server_wads);
-	for(i = 0; i < server_wads; i++)
+	for (size_t i = 0; i < server_wads; i++)
 	{
 		newwadhashes[i] = stream.readString();
 		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
@@ -1625,11 +1613,11 @@ bool CL_PrepareConnect(BitStream& stream)
 	stream.readString();
 
 	// Receive conditional teamplay information
-	if (recv_teamplay_stats)
+	if (teamplay)
 	{
 		stream.readU32();
 
-		for(size_t i = 0; i < NUMTEAMS; i++)
+		for (size_t i = 0; i < NUMTEAMS; i++)
 		{
 			bool enabled = stream.readU8();
 			if (enabled)
@@ -1637,60 +1625,41 @@ bool CL_PrepareConnect(BitStream& stream)
 		}
 	}
 
-	version = stream.readU16();
-
+	uint16_t version = stream.readU16();
 	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
+	if (version != VERSION)
+		return false;
 
-	if(version > VERSION)
-		version = VERSION;
-	if(version < 62)
-		version = 62;
+	stream.readString();
 
-	/* GhostlyDeath -- Need the actual version info */
-	if (version == 65)
+	for (size_t l = 0; l < 3; l++)
+		stream.readU16();
+	for (size_t l = 0; l < 14; l++)
+		stream.readU8();
+	for (size_t l = 0; l < playercount; l++)
 	{
-		size_t l;
-		stream.readString();
-
-		for (l = 0; l < 3; l++)
-			stream.readU16();
-		for (l = 0; l < 14; l++)
-			stream.readU8();
-		for (l = 0; l < playercount; l++)
-		{
-			stream.readU16();
-			stream.readU16();
-			stream.readU16();
-		}
-
-		stream.readU32();
 		stream.readU16();
-
-		for (l = 0; l < playercount; l++)
-			stream.readU8();
-
-		stream.readU32();
 		stream.readU16();
-
-		gameversion = stream.readU32();
-
-		// GhostlyDeath -- Assume 40 for compatibility and fake it
-		if (((gameversion % 256) % 10) == -1)
-		{
-			gameversion = 40;
-			gameversiontosend = 40;
-		}
-
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+		stream.readU16();
 	}
 
-    Printf(PRINT_HIGH, "\n");
+	stream.readU32();
+	stream.readU16();
+
+	for (size_t l = 0; l < playercount; l++)
+		stream.readU8();
+
+	stream.readU32();
+	stream.readU16();
+
+	uint32_t gameversion = stream.readU32();
+	Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
 
     // DEH/BEX Patch files
     size_t patch_count = stream.readU8();
 	std::vector<std::string> newpatchfiles(patch_count);
 
-    for (i = 0; i < patch_count; ++i)
+    for (size_t i = 0; i < patch_count; ++i)
         newpatchfiles[i] = stream.readString();
 
     // TODO: Allow deh/bex file downloads
@@ -1844,24 +1813,20 @@ void CL_InitNetwork (void)
 
 bool CL_TryToConnect(BitStream& stream)
 {
-	stream.writeU16(version);		// send client version
+	stream.writeU16(VERSION);		// client protocol version 
 
 	if (gamestate == GS_DOWNLOAD)
-		stream.writeU8(1);			// send type of connection (play/spectate/rcon/download)
+		stream.writeU8(1);			// connection for downloading resource files
 	else
-		stream.writeU8(0);			// send type of connection (play/spectate/rcon/download)
+		stream.writeU8(0);			// connection for playing
 
-	// GhostlyDeath -- Send more version info
-	if (gameversiontosend)
-		stream.writeU32(gameversiontosend);
-	else
-		stream.writeU32(GAMEVER);
+	stream.writeU32(GAMEVER);
 
 	CL_SendUserInfo(stream); // send userinfo
+
 	// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
 	// maximum rate that the server will ignore.
-	const int rate = 0xFFFF;
-	stream.writeU32((uint32_t)rate);
+	stream.writeU32(0xFFFFFFFF);
 
 	stream.writeString(connectpasshash.c_str());
 
@@ -2213,24 +2178,22 @@ void CL_UpdateIntTimeLeft(BitStream& stream)
 //
 void CL_SpawnMobj(BitStream& stream)
 {
-	AActor  *mo;
-
 	fixed_t x = stream.readS32();
 	fixed_t y = stream.readS32();
 	fixed_t z = stream.readS32();
 	angle_t angle = stream.readU32();
 
-	unsigned short type = stream.readU16();
+	mobjtype_t type = (mobjtype_t)stream.readU16();
 	unsigned short netid = stream.readU16();
 	byte rndindex = stream.readU8();
-	SWORD state = stream.readU16();
+	statenum_t state = (statenum_t)stream.readU16();
 
 	if (type >= NUMMOBJTYPES)
 		return;
 
 	P_ClearId(netid);
 
-	mo = new AActor (x, y, z, (mobjtype_t)type);
+	AActor* mo = new AActor(x, y, z, type);
 
 	// denis - puff hack
 	if(mo->type == MT_PUFF)
@@ -2246,7 +2209,7 @@ void CL_SpawnMobj(BitStream& stream)
 	mo->rndindex = rndindex;
 
 	if (state < NUMSTATES)
-		P_SetMobjState(mo, (statenum_t)state);
+		P_SetMobjState(mo, state);
 
 	if(mo->flags & MF_MISSILE)
 	{
@@ -3120,19 +3083,19 @@ void CL_FinishedFullUpdate()
 		netdemo.writeMapChange();
 }
 
+
 //
 // CL_SetMobjState
 //
-void CL_SetMobjState()
+void CL_SetMobjState(BitStream& stream)
 {
-	AActor *mo = P_FindThingById (MSG_ReadShort() );
-	SWORD s = MSG_ReadShort();
+	AActor *mo = P_FindThingById(stream.readU16());
+	uint16_t state = stream.readU16();
 
-	if (!mo || s >= NUMSTATES)
-		return;
-
-	P_SetMobjState (mo, (statenum_t)s);
+	if (mo && state < NUMSTATES)
+		P_SetMobjState(mo, (statenum_t)state);
 }
+
 
 // ---------------------------------------------------------------------------------------------------------
 //	CL_ForceSetTeam
@@ -3161,49 +3124,47 @@ void CL_ForceSetTeam (void)
 	}
 }
 
+
 //
 // CL_Actor_Movedir
 //
-void CL_Actor_Movedir()
+void CL_Actor_Movedir(BitStream& stream)
 {
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	BYTE movedir = MSG_ReadByte();
-    SDWORD movecount = MSG_ReadLong();
+	AActor* mo = P_FindThingById(stream.readU16());
+	uint8_t movedir = stream.readU8();
+	uint32_t movecount = stream.readU32();
 
-	if (!actor || movedir >= 8)
-		return;
-
-	actor->movedir = movedir;
-	actor->movecount = movecount;
+	if (mo && movedir < 8)
+	{
+		mo->movedir = movedir;
+		mo->movecount = movecount;
+	}
 }
+
 
 //
 // CL_Actor_Target
 //
-void CL_Actor_Target()
+void CL_Actor_Target(BitStream& stream)
 {
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *target = P_FindThingById (MSG_ReadShort());
-
-	if (!actor || !target)
-		return;
-
-	actor->target = target->ptr();
+	AActor* mo = P_FindThingById(stream.readU16());
+	AActor* target = P_FindThingById(stream.readU16());
+	if (mo && target)
+		mo->target = target->ptr();
 }
+
 
 //
 // CL_Actor_Tracer
 //
-void CL_Actor_Tracer()
+void CL_Actor_Tracer(BitStream& stream)
 {
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *tracer = P_FindThingById (MSG_ReadShort());
-
-	if (!actor || !tracer)
-		return;
-
-	actor->tracer = tracer->ptr();
+	AActor* mo = P_FindThingById(stream.readU16());
+	AActor* tracer = P_FindThingById(stream.readU16());
+	if (mo && tracer)
+		mo->tracer = tracer->ptr();
 }
+
 
 //
 // CL_MobjTranslation
@@ -3221,6 +3182,7 @@ void CL_MobjTranslation(BitStream& stream)
 	else
 		mo->translation = translationref_t(translationtables + 256 * table);
 }
+
 
 void P_SetButtonTexture(line_t* line, short texture);
 //
@@ -3622,16 +3584,15 @@ void CL_InitCommands(void)
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
-/*
 	cmds[svc_mobjstate]			= &CL_SetMobjState;
 	cmds[svc_actor_movedir]		= &CL_Actor_Movedir;
 	cmds[svc_actor_target]		= &CL_Actor_Target;
 	cmds[svc_actor_tracer]		= &CL_Actor_Tracer;
+/*
 	cmds[svc_missedpacket]		= &CL_CheckMissedPacket;
 	cmds[svc_forceteam]			= &CL_ForceSetTeam;
-
-	cmds[svc_ctfevent]			= &CL_CTFEvent;
 */
+	cmds[svc_ctfevent]			= &CL_CTFEvent;
 	cmds[svc_serversettings]	= &CL_GetServerSettings;
 	cmds[svc_disconnect]		= &CL_EndGame;
 	cmds[svc_full]				= &CL_FullGame;
@@ -3692,8 +3653,7 @@ void CL_ParseCommands(BitStream& stream)
 		cmdmap::iterator i = cmds.find(cmd);
 		if (i == cmds.end())
 			break;
-		/*
-		if(i == cmds.end())
+		if(i == cmds.end() || cmd == svc_abort)
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
@@ -3703,7 +3663,6 @@ void CL_ParseCommands(BitStream& stream)
 			Printf(PRINT_HIGH, "\n");
 			break;
 		}
-		*/
 
 		i->second(stream);
 

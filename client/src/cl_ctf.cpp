@@ -34,6 +34,8 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "v_text.h"
+#include "network/net_bitstream.h"
+
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -61,7 +63,7 @@ EXTERN_CVAR (hud_heldflag_flash)
 // CTF_Connect
 // Receive states of all flags
 //
-void CTF_Connect()
+void CTF_Connect(BitStream& stream)
 {
 	size_t i;
 
@@ -73,8 +75,8 @@ void CTF_Connect()
 	for(i = 0; i < NUMFLAGS; i++)
 	{
 		CTFdata[i].flagger = 0;
-		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
-		byte flagger = MSG_ReadByte();
+		CTFdata[i].state = (flag_state_t)stream.readU8();
+		byte flagger = stream.readU8();
 
 		if(CTFdata[i].state == flag_carried)
 		{
@@ -90,25 +92,25 @@ void CTF_Connect()
 //	[Toke - CTF] CL_CTFEvent
 //	Deals with CTF specific network data
 //
-void CL_CTFEvent (void)
+void CL_CTFEvent(BitStream& stream)
 {
-	flag_score_t event = (flag_score_t)MSG_ReadByte();
+	flag_score_t event = (flag_score_t)stream.readU8();
 
-	if(event == SCORE_NONE) // CTF state refresh
+	if (event == SCORE_NONE) // CTF state refresh
 	{
-		CTF_Connect();
+		CTF_Connect(stream);
 		return;
 	}
 
-	flag_t flag = (flag_t)MSG_ReadByte();
-	player_t &player = idplayer(MSG_ReadByte());
-	int points = MSG_ReadLong();
+	flag_t flag = (flag_t)stream.readU8();
+	player_t& player = idplayer(stream.readU8());
+	int points = stream.readS32();
 
-	if(validplayer(player))
+	if (validplayer(player))
 		player.points = points;
 
-	for(size_t i = 0; i < NUMFLAGS; i++)
-		TEAMpoints[i] = MSG_ReadLong ();
+	for (size_t i = 0; i < NUMFLAGS; i++)
+		TEAMpoints[i] = stream.readS32();
 
 	switch(event)
 	{
