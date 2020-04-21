@@ -957,6 +957,7 @@ static void ParseMapInfoLower(
 						ctext += "\n";
 						SC_GetString();
 					} while (SC_Compare(","));
+					SC_UnGet();
 
 					// Trim trailing newline.
 					if (ctext.length() > 0)
@@ -1142,10 +1143,22 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				SC_UnGet();
 			}
 
-			tagged_info_t tinfo;
-			tinfo.tag = tagged_info_t::EPISODE;
-			tinfo.episode = NULL;
-			ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
+			SC_MustGetString();
+			if (SC_Compare("{"))
+			{
+				// If we encounter an episode block in new MAPINFO, we can just
+				// eat the entire block.
+				SkipUnknownBlock();
+			}
+			else
+			{
+				// If we encounter an episode block in old MAPINFO, we have to
+				// parse it and just not do anything with it.
+				tagged_info_t tinfo;
+				tinfo.tag = tagged_info_t::EPISODE;
+				tinfo.episode = NULL;
+				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
+			}
 			break;
 		}
 		case MITL_CLEAREPISODES:
