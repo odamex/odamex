@@ -5397,223 +5397,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_MISC86"
 	},
 
-	// For use with wind and current effects
-	{		// MT_PUSH	// phares
-	5001,		// doomednum	//   |    //jff 5/11/98 deconflict
-	S_TNT1,		// spawnstate	//   V    // with DOSDoom
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	8,		// radius
-	8,		// height
-	8,		// cdheight
-	10,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,	// flags
-	MF2_DONTDRAW,	// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_PUSH"	// name
-	},
-
-	// For use with wind and current effects
-	{		// MT_PULL
-	5002,		// doomednum                   //jff 5/11/98 deconflict
-	S_TNT1,		// spawnstate                  // with DOSDoom
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	8,		// radius
-	8,		// height
-	8,		// cdheight
-	10,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,	// flags
-	MF2_DONTDRAW,	// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_PULL"	// name
-	},
-
-	// Marine's best friend :)      // killough 7/19/98
-	{		// MT_DOGS
-	888,		// doomednum
-	S_DOGS_STND,	// spawnstate
-	500,		// spawnhealth
-	S_DOGS_RUN1,	// seestate
-	"dog/sight",	// seesound
-	8,		// reactiontime
-	"dog/attack",	// attacksound
-	S_DOGS_PAIN,	// painstate
-	180,		// painchance
-	"dog/pain",	// painsound
-	S_DOGS_ATK1,	// meleestate
-	S_NULL,		// missilestate
-	S_DOGS_DIE1,	// deathstate
-	S_NULL,		// xdeathstate
-	"dog/death",	// deathsound
-	10,		// speed
-	12*FRACUNIT,	// radius
-	28*FRACUNIT,	// height
-	28*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"dog/active",	// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,   // flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL, // flags2
-	S_DOGS_RAISE1,	// raisestate
-	0x10000,	// translucency
-	"MT_DOGS"	// name
-	},
-
-	// killough 7/11/98: this is the first of two plasma fireballs in the beta
-	{		// MT_PLASMA1
-	-1,		// doomednum
-	S_PLS1BALL,	// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf", // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLS1EXP,	// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax", // deathsound
-	25*FRACUNIT,	// speed
-	13*FRACUNIT,	// radius
-	8*FRACUNIT,	// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	4,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY, // flags [AM] MF_BOUNCES not implemented
-	MF2_PCROSS|MF2_IMPACT, // flags2
-	S_NULL,		// raisestate
-	FRACUNIT,	// translucency
-	"MT_PLASMA1"	// name
-	},
-
-	// killough 7/11/98: this is the second of two plasma fireballs in the beta
-	{		// MT_PLASMA2
-	-1,		// doomednum
-	S_PLS2BALL,	// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf", // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLS2BALLX1,	// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax", // deathsound
-	25*FRACUNIT,	// speed
-	6*FRACUNIT,	// radius
-	8*FRACUNIT,	// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	4,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY, // flags [AM] MF_BOUNCES not implemented
-	MF2_PCROSS|MF2_IMPACT, // flags2
-	S_NULL,		// raisestate
-	FRACUNIT,	// translucency
-	"MT_PLASMA2"	// name
-	},
-
-	// killough 7/11/98: this is the evil sceptre in the beta version
-	{		// MT_SCEPTRE
-	2016,		// doomednum
-	S_BON3,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	10*FRACUNIT,	// radius
-	16*FRACUNIT,	// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM, // flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_SCEPTRE"	// name
-	},
-
-	// killough 7/11/98: this is the unholy bible in the beta version
-	{		// MT_BIBLE
-	2017,		// doomednum
-	S_BON4,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,	// radius
-	10*FRACUNIT,	// height
-	10*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM, // flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_BIBLE"	// name
-	},
-
 	{		// MT_GIB0
 	-1,		// doomednum
 	S_GIB0,		// spawnstate
@@ -5882,6 +5665,68 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_UNKNOWNTHING"
+	},
+
+	// For use with wind and current effects
+	{		// MT_PUSH				// phares
+	5001,		// doomednum		//   |		//jff 5/11/98 deconflict
+	S_TNT1,		// spawnstate		//   V		// with DOSDoom
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	8,		// radius
+	8,		// height
+	8*FRACUNIT,	// cdheight
+	10,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_NOBLOCKMAP,		// flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_PUSH"				// phares
+	},
+
+	// For use with wind and current effects
+	{		// MT_PULL
+	5002,		// doomednum					//jff 5/11/98 deconflict
+	S_TNT1,		// spawnstate					// with DOSDoom
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	8,		// radius
+	8,		// height
+	8*FRACUNIT,	// cdheight
+	10,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_NOBLOCKMAP,		// flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_PULL"
 	},
 
 	{		// [RH] MT_PATHNODE -- used for monster patrols
