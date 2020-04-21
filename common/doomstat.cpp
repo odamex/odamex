@@ -48,10 +48,10 @@ CVAR_FUNC_IMPL (language)
 	GStrings.ResetStrings ();
 	GStrings.Compact ();
 	G_SetLevelStrings ();
+	G_ParseMapInfo();
 }
 
 // Set if homebrew PWAD stuff has been added.
 BOOL			modifiedgame;
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")
-
