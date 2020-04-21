@@ -683,7 +683,15 @@ void G_WorldDone (void)
 			else if (thiscluster.exittext)
 			{
 				AM_Stop();
-				F_StartFinale(thiscluster.messagemusic, thiscluster.finaleflat, thiscluster.exittext);
+				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
+				{
+					const char* text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					F_StartFinale(thiscluster.messagemusic, thiscluster.finaleflat, text);
+				}
+				else
+				{
+					F_StartFinale(thiscluster.messagemusic, thiscluster.finaleflat, thiscluster.exittext);
+				}
 			}
 		}
 	}

@@ -168,6 +168,9 @@ struct level_locals_t {
 	SDWORD			vars[NUM_MAPVARS];
 };
 
+#define CLUSTER_HUB            0x00000001u
+#define CLUSTER_EXITTEXTISLUMP 0x00000002u
+
 struct cluster_info_t {
 	int				cluster;
 	char			messagemusic[9];
@@ -176,9 +179,6 @@ struct cluster_info_t {
 	char*			entertext;
 	int				flags;
 };
-
-// Only one cluster flag right now
-#define CLUSTER_HUB		0x00000001
 
 extern level_locals_t level;
 

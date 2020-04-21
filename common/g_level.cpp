@@ -519,6 +519,7 @@ static const char *MapInfoClusterLevel[] =
 {
 	"entertext",
 	"exittext",
+	"exittextislump",
 	"music",
 	"flat",
 	"hub",
@@ -531,6 +532,8 @@ MapInfoHandler ClusterHandlers[] =
 	{ MITYPE_CLUSTERSTRING, cioffset(entertext), 0 },
 	// exittext <message>
 	{ MITYPE_CLUSTERSTRING, cioffset(exittext), 0 },
+	// exittextislump
+	{ MITYPE_SETFLAG, CLUSTER_EXITTEXTISLUMP, 0 },
 	// messagemusic <musiclump>
 	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
 	// flat <flatlump>
@@ -1905,7 +1908,7 @@ BEGIN_COMMAND(mapinfo)
 
 	if (flags.length() > 0)
 	{
-		Printf(PRINT_HIGH, "Flags: %s\n", flags.c_str());
+		Printf(PRINT_HIGH, "Flags:%s\n", flags.c_str());
 	}
 	else
 	{
@@ -1953,7 +1956,20 @@ BEGIN_COMMAND(clusterinfo)
 	{
 		Printf(PRINT_HIGH, "Enter Text: None\n");
 	}
-	Printf(PRINT_HIGH, "Flags: %d\n", info.flags);
+
+	// Stringify the set cluster flags.
+	std::string flags;
+	flags += (info.flags & CLUSTER_HUB ? " HUB" : "");
+	flags += (info.flags & CLUSTER_EXITTEXTISLUMP ? " EXITTEXTISLUMP" : "");
+
+	if (flags.length() > 0)
+	{
+		Printf(PRINT_HIGH, "Flags:%s\n", flags.c_str());
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Flags: None\n");
+	}
 }
 END_COMMAND(clusterinfo)
 
