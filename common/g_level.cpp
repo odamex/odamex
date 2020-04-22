@@ -1832,7 +1832,22 @@ void G_InitLevelLocals()
 	::level.flags = info.flags;
 	::level.levelnum = info.levelnum;
 
-	strncpy(::level.level_name, info.level_name, 63);
+	// Only copy the level name if there's a valid level name to be copied.
+	if (info.level_name != NULL)
+	{
+		strncpy(
+			::level.level_name, info.level_name,
+			ARRAY_LENGTH(::level.level_name) - 1
+		);
+	}
+	else
+	{
+		strncpy(
+			::level.level_name, "Untitled Level",
+			ARRAY_LENGTH(::level.level_name) - 1
+		);
+	}
+
 	strncpy(::level.nextmap, info.nextmap, 8);
 	strncpy(::level.secretmap, info.secretmap, 8);
 	strncpy(::level.music, info.music, 8);
@@ -1846,15 +1861,15 @@ void G_InitLevelLocals()
 	{
 		sv_allowjump = 1;
 	}
-	if (level.flags & LEVEL_JUMP_NO)
+	if (::level.flags & LEVEL_JUMP_NO)
 	{
 		sv_allowjump = 0.0;
 	}
-	if (level.flags & LEVEL_FREELOOK_YES)
+	if (::level.flags & LEVEL_FREELOOK_YES)
 	{
 		sv_freelook = 1;
 	}
-	if (level.flags & LEVEL_FREELOOK_NO)
+	if (::level.flags & LEVEL_FREELOOK_NO)
 	{
 		sv_freelook = 0.0;
 	}
