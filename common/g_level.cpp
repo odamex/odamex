@@ -523,6 +523,7 @@ static const char *MapInfoClusterLevel[] =
 	"music",
 	"flat",
 	"hub",
+	"pic",
 	NULL
 };
 
@@ -539,7 +540,9 @@ MapInfoHandler ClusterHandlers[] =
 	// flat <flatlump>
 	{ MITYPE_$LUMPNAME, cioffset(finaleflat), 0 },
 	// hub
-	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 }
+	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 },
+	// pic <graphiclump>
+	{ MITYPE_$LUMPNAME, cioffset(finalepic), 0 },
 };
 
 static const char* MapInfoEpisodeLevel[] =

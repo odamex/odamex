@@ -660,10 +660,25 @@ void G_WorldDone (void)
 		return;
 
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
-	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))
+
+	// Sort out default options to pass to F_StartFinale
+	finale_options_t options = { 0 };
+	options.music = thiscluster.messagemusic;
+	options.music = thiscluster.exittext;
+	if (thiscluster.finalepic[0] != '\0')
+	{
+		options.pic = &thiscluster.finalepic[0];
+	}
+	else
+	{
+		options.flat = &thiscluster.finaleflat[0];
+	}
+	options.text = thiscluster.exittext;
+
+	if (!strncmp(level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp(level.nextmap, "E1M6", 4)))
 	{
 		AM_Stop();
-		F_StartFinale (thiscluster.messagemusic, thiscluster.finaleflat, thiscluster.exittext);
+		F_StartFinale(options);
 	}
 	else
 	{
@@ -677,20 +692,32 @@ void G_WorldDone (void)
 			// than the current one and we're not in deathmatch.
 			if (nextcluster.entertext)
 			{
+				// All of our options need to be from the next cluster.
+				options.music = nextcluster.messagemusic;
+				if (nextcluster.finalepic[0] != '\0')
+				{
+					options.pic = &nextcluster.finalepic[0];
+				}
+				else
+				{
+					options.flat = &nextcluster.finaleflat[0];
+				}
+				options.text = nextcluster.entertext;
+
 				AM_Stop();
-				F_StartFinale(nextcluster.messagemusic, nextcluster.finaleflat, nextcluster.entertext);
+				F_StartFinale(options);
 			}
 			else if (thiscluster.exittext)
 			{
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					const char* text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
-					F_StartFinale(thiscluster.messagemusic, thiscluster.finaleflat, text);
+					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					F_StartFinale(options);
 				}
 				else
 				{
-					F_StartFinale(thiscluster.messagemusic, thiscluster.finaleflat, thiscluster.exittext);
+					F_StartFinale(options);
 				}
 			}
 		}

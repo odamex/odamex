@@ -178,6 +178,7 @@ struct cluster_info_t {
 	char*			exittext;
 	char*			entertext;
 	int				flags;
+	char			finalepic[9];
 };
 
 extern level_locals_t level;
