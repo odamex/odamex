@@ -1884,21 +1884,81 @@ void G_InitLevelLocals()
 	movingsectors.clear();
 }
 
+static void MapinfoHelp()
+{
+	Printf(PRINT_HIGH,
+		"mapinfo - Looks up internal information about levels\n\n"
+		"Usage:\n"
+		"    ] mapinfo lump <LUMPNAME>\n"
+		"    Looks up a map named LUMPNAME.\n\n"
+		"    ] mapinfo levelnum <LEVELNUM>\n"
+		"    Looks up a map with a levelnum of LEVELNUM.\n\n"
+		"    ] mapinfo id <LEVELINFO ID>\n"
+		"    Looks up a map based on its placement in the internal level info array.\n\n"
+		"    ] mapinfo count\n"
+		"    Return the size of the internal level info array.\n");
+}
+
 // A debugging tool to examine the state of computed map data.
 BEGIN_COMMAND(mapinfo)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_HIGH, "Usage: mapinfo <lumpname | \"DEFAULT\">\n");
+		MapinfoHelp();
 		return;
 	}
 
-	level_pwad_info_t& info = getLevelInfos().findByName(argv[1]);
-	if (info.levelnum == 0)
+	LevelInfos& levels = getLevelInfos();
+	if (stricmp(argv[1], "count") == 0)
 	{
-		Printf(PRINT_HIGH, "Map \"%s\" not found\n", argv[1]);
+		Printf(PRINT_HIGH, "%u maps found\n", levels.size());
 		return;
 	}
+
+	if (argc < 3)
+	{
+		MapinfoHelp();
+		return;
+	}
+
+	level_pwad_info_t* infoptr = NULL;
+	if (stricmp(argv[1], "lump") == 0)
+	{
+		infoptr = &levels.findByName(argv[2]);
+		if (infoptr->levelnum == 0)
+		{
+			Printf(PRINT_HIGH, "Map \"%s\" not found\n", argv[2]);
+			return;
+		}
+	}
+	else if (stricmp(argv[1], "levelnum") == 0)
+	{
+		int levelnum = atoi(argv[2]);
+		infoptr = &levels.findByNum(levelnum);
+		if (infoptr->levelnum == 0)
+		{
+			Printf(PRINT_HIGH, "Map number %d not found\n", levelnum);
+			return;
+		}
+	}
+	else if (stricmp(argv[1], "id") == 0)
+	{
+		// Check ahead of time, otherwise we might crash.
+		int id = atoi(argv[2]);
+		if (id < 0 || id >= levels.size())
+		{
+			Printf(PRINT_HIGH, "Map index %d does not exist\n", id);
+			return;
+		}
+		infoptr = &levels.at(id);
+	}
+	else
+	{
+		MapinfoHelp();
+		return;
+	}
+
+	level_pwad_info_t& info = *infoptr;
 
 	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname);
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
