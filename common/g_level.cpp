@@ -62,11 +62,24 @@ level_locals_t level;			// info about current level
 //
 
 // Construct from array of levelinfos, ending with an "empty" level
-LevelInfos::LevelInfos(const level_info_t* levels)
+LevelInfos::LevelInfos(const level_info_t* levels) :
+	_defaultInfos(levels)
+{
+	addDefaults();
+}
+
+// Destructor frees everything in the class
+LevelInfos::~LevelInfos()
+{
+	clear();
+}
+
+// Add default level infos
+void LevelInfos::addDefaults()
 {
 	for (size_t i = 0;; i++)
 	{
-		const level_info_t& level = levels[i];
+		const level_info_t& level = _defaultInfos[i];
 		if (level.levelnum == 0)
 		{
 			break;
@@ -77,12 +90,6 @@ LevelInfos::LevelInfos(const level_info_t* levels)
 		memcpy(&info, &level, sizeof(level));
 		_infos.push_back(info);
 	}
-}
-
-// Destructor frees everything in the class
-LevelInfos::~LevelInfos()
-{
-	clear();
 }
 
 // Get a specific info index
@@ -201,11 +208,24 @@ level_pwad_info_t LevelInfos::_empty = {
 //
 
 // Construct from array of clusterinfos, ending with an "empty" cluster.
-ClusterInfos::ClusterInfos(const cluster_info_t* clusters)
+ClusterInfos::ClusterInfos(const cluster_info_t* clusters) :
+	_defaultInfos(clusters)
+{
+	addDefaults();
+}
+
+// Destructor frees everything in the class
+ClusterInfos::~ClusterInfos()
+{
+	clear();
+}
+
+// Add default level infos
+void ClusterInfos::addDefaults()
 {
 	for (size_t i = 0;; i++)
 	{
-		const cluster_info_t& cluster = clusters[i];
+		const cluster_info_t& cluster = _defaultInfos[i];
 		if (cluster.cluster == 0)
 		{
 			break;
@@ -214,12 +234,6 @@ ClusterInfos::ClusterInfos(const cluster_info_t* clusters)
 		// Copied, so it can be mutated.
 		_infos.push_back(cluster);
 	}
-}
-
-// Destructor frees everything in the class
-ClusterInfos::~ClusterInfos()
-{
-	clear();
 }
 
 // Get a specific info index

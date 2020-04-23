@@ -172,6 +172,17 @@ void D_Init()
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
+	LevelInfos& levels = getLevelInfos();
+	if (levels.size() == 0)
+	{
+		levels.addDefaults();
+	}
+
+	ClusterInfos& clusters = getClusterInfos();
+	if (clusters.size() == 0)
+	{
+		clusters.addDefaults();
+	}
 	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();

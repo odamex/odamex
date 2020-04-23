@@ -186,11 +186,13 @@ extern level_locals_t level;
 class LevelInfos
 {
 	typedef std::vector<level_pwad_info_t> _LevelInfoArray;
+	const level_info_t* _defaultInfos;
 	static level_pwad_info_t _empty;
 	std::vector<level_pwad_info_t> _infos;
 public:
 	LevelInfos(const level_info_t* levels);
 	~LevelInfos();
+	void addDefaults();
 	level_pwad_info_t& at(size_t i);
 	level_pwad_info_t& create();
 	void clear();
@@ -204,11 +206,13 @@ public:
 class ClusterInfos
 {
 	typedef std::vector<cluster_info_t> _ClusterInfoArray;
+	const cluster_info_t* _defaultInfos;
 	static cluster_info_t _empty;
 	std::vector<cluster_info_t> _infos;
 public:
 	ClusterInfos(const cluster_info_t* clusters);
 	~ClusterInfos();
+	void addDefaults();
 	cluster_info_t& at(size_t i);
 	void clear();
 	cluster_info_t& create();
