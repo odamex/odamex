@@ -5242,7 +5242,13 @@ void SV_SendPlayerInfo(player_t &player)
 	MSG_WriteByte (&cl->reliablebuf, player.health);
 	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
 	MSG_WriteByte (&cl->reliablebuf, player.armortype);
-	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+
+	// If the player has a pending weapon then tell the client it has changed
+	// The client will set the pendingweapon to this weapon if it doesn't match the readyweapon
+	if (player.pendingweapon == wp_nochange)
+		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+	else
+		MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		MSG_WriteShort(&cl->reliablebuf, player.powers[i]);
@@ -5428,10 +5434,15 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 	}
 }
 
+// If the activator is not null and a player then this activation will be sent to that player only.
+// Do not pass along the activating player if this message needs to be sent to all players.
 void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
 {
 	int length = 0;
 	static byte argBuffer[64];
+	player_s* sendPlayer = NULL;
+	if (activator != NULL && activator->player != NULL)
+		sendPlayer = activator->player;
 
 	if (arg0 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg0);
 	if (arg1 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg1);
@@ -5445,7 +5456,7 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, in
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		if (!(it->ingame()))
+		if (!(it->ingame()) || (sendPlayer != NULL && sendPlayer != &(*it)))
 			continue;
 
 		client_t* cl = &it->client;

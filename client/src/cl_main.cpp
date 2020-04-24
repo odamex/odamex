@@ -2446,7 +2446,7 @@ void CL_PlayerInfo(void)
 	p->armortype = MSG_ReadByte();
 
 	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
+	if (newweapon > NUMWEAPONS)	// bad weapon number, choose something else
 		newweapon = wp_fist;
 
 	if (newweapon != p->readyweapon)
@@ -4247,12 +4247,10 @@ void CL_ACSExecuteSpecial()
 		break;
 
 	case DLevelScript::PCD_FADERANGE:
-		// TODO test
 		DLevelScript::ACS_FadeRange(activator, acsArgs, count);
 		break;
 
 	case DLevelScript::PCD_CANCELFADE:
-		// TODO test
 		DLevelScript::ACS_CancelFade(activator);
 		break;
 
@@ -4262,7 +4260,6 @@ void CL_ACSExecuteSpecial()
 		break;
 
 	case DLevelScript::PCD_SOUNDSEQUENCE:
-		// TODO test
 		DLevelScript::ACS_SoundSequence(acsArgs, count);
 		break;
 
