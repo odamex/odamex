@@ -164,6 +164,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 		if (strcmp(DoomAmmoNames[i], type) == 0)
 		{
 			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
+			SV_SendPlayerInfo(*player);
 			return;
 		}
 	}
@@ -181,6 +182,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 
 			// Don't bring it up automatically
 			player->pendingweapon = savedpendingweap;
+			SV_SendPlayerInfo(*player);
 			return;
 		}
 	}
@@ -195,6 +197,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GiveCard(player, static_cast<card_t>(i));
 			}
 			while (--amount > 0);
+			SV_SendPlayerInfo(*player);
 			return;
 		}
 	}
@@ -209,6 +212,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GivePower(player, i);
 			}
 			while (--amount > 0);
+			SV_SendPlayerInfo(*player);
 			return;
 		}
 	}
@@ -221,6 +225,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			GiveBackpack(player);
 		}
 		while (--amount > 0);
+		SV_SendPlayerInfo(*player);
 		return;
 	}
 
@@ -237,17 +242,14 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 			Players::iterator it;
 			for (it = players.begin();it != players.end();++it)
 			{
-				if (it->ingame() && !it->spectator) {
+				if (it->ingame() && !it->spectator)
 					DoGiveInv(&(*it), type, amount);
-					SV_SendPlayerInfo(*it);
-				}
 			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
 		DoGiveInv(activator->player, type, amount);
-		SV_SendPlayerInfo(*(activator->player));
 	}
 }
 
@@ -259,6 +261,19 @@ static void TakeWeapon(player_t* player, int weapon)
 	if (player->readyweapon == weapon || player->pendingweapon == weapon)
 	{
 		P_SwitchWeapon(player);
+
+		bool hasWeapon = false;
+		for (int i = 0; i < NUMWEAPONS; i++)
+		{
+			if (player->weaponowned[i])
+			{
+				hasWeapon = true;
+				break;
+			}
+		}
+
+		if (!hasWeapon)
+			player->pendingweapon = NUMWEAPONS;
 	}
 	SV_SendPlayerInfo(*player);
 }
@@ -358,16 +373,13 @@ static void TakeInventory(AActor* activator, const char* type, int amount)
 		Players::iterator it;
 		for (it = players.begin();it != players.end();++it)
 		{
-			if (it->ingame() && !it->spectator) {
+			if (it->ingame() && !it->spectator)
 				DoTakeInv(&(*it), type, amount);
-				SV_SendPlayerInfo(*it);
-			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
 		DoTakeInv(activator->player, type, amount);
-		SV_SendPlayerInfo(*(activator->player));
 	}
 }
 
@@ -2886,7 +2898,7 @@ void DLevelScript::RunScript ()
 			if (activationline)
 				StartSectorSound(pcd, activationline->frontsector, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
 			else
-				StartSound(pcd, activator, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
+				StartSound(pcd, NULL, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
 			sp -= 2;
 			break;
 
@@ -2895,7 +2907,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_LOCALAMBIENTSOUND:
-			StartSound(pcd, activator, CHAN_AUTO, STACK(2), STACK(1), ATTN_NONE);
+			StartSound(pcd, NULL, CHAN_AUTO, STACK(2), STACK(1), ATTN_NONE);
 			sp -= 2;
 			break;
 
@@ -2905,12 +2917,9 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SOUNDSEQUENCE:	
+			// TODO
 			if (activationline)
-			{
-				StartSoundSequence(activationline->frontsector, STACK(1));
-				// TODO
-				//SN_StartSequence (activationline->frontsector, lookup);
-			}
+				StartSoundSequence(activationline->frontsector, STACK(1));			
 			sp--;
 			break;
 
@@ -3013,12 +3022,10 @@ void DLevelScript::RunScript ()
 			break;*/
 
 		case PCD_CLEARINVENTORY:
-			// TODO
 			ClearInventory (activator);
 			break;
 
 		case PCD_GIVEINVENTORY:
-			// TODO
 			GiveInventory (activator, level.behavior->LookupString (STACK(2)), STACK(1));
 			sp -= 2;
 			break;
@@ -3030,13 +3037,11 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_TAKEINVENTORY:
-			// TODO
 			TakeInventory (activator, level.behavior->LookupString (STACK(2)), STACK(1));
 			sp -= 2;
 			break;
 
 		case PCD_TAKEINVENTORYDIRECT:
-			// TODO
 			TakeInventory (activator, level.behavior->LookupString (pc[0]), pc[1]);
 			pc += 2;
 			break;
@@ -3051,12 +3056,12 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SETMUSIC:
-			ChangeMusic(pcd, activator, STACK(3), STACK(2));
+			ChangeMusic(pcd, NULL, STACK(3), STACK(2));
 			sp -= 3;
 			break;
 
 		case PCD_SETMUSICDIRECT:
-			ChangeMusic(pcd, activator, pc[0], pc[1]);
+			ChangeMusic(pcd, NULL, pc[0], pc[1]);
 			pc += 3;
 			break;
 
