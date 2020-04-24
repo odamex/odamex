@@ -3106,10 +3106,6 @@ void CL_GetServerSettings(void)
 void CL_FinishedFullUpdate()
 {
 	recv_full_update = true;
-
-	// Write the first map snapshot to a netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
 }
 
 //
@@ -3399,7 +3395,7 @@ void CL_LoadMap(void)
 	}
 
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording())
 		netdemo.writeMapChange();
 }
 

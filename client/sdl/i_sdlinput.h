@@ -64,18 +64,12 @@ public:
 	virtual void flushEvents();
 
 private:
-	void initKeyTextTranslation();
-	int translateKey(int sym);
-	int translateKeyText(int sym, int mod);
+	int translateKey(SDL_keysym keysym);
 
 	bool					mActive;
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
-
-	KeyTranslationTable		mSDLKeyTransTable;
-	KeyTranslationTable		mSDLKeyTextTransTable;
-	KeyTranslationTable		mShiftTransTable;
 };
 
 
@@ -231,7 +225,7 @@ public:
 	virtual void disableTextEntry();
 
 private:
-	int translateKey(int sym);
+	int translateKey(SDL_Keysym keysym);
 	int getTextEventValue();
 
 	bool					mActive;
@@ -239,8 +233,6 @@ private:
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
-
-	KeyTranslationTable		mSDLKeyTransTable;
 };
 
 
