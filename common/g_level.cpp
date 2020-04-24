@@ -1074,6 +1074,10 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			level_pwad_info_t& info = (levels.findByName(sc_String).levelnum != 0) ?
 				levels.findByName(sc_String) :
 				levels.create();
+
+			// Free the level name string before we pave over it.
+			free(info.level_name);
+
 			info = defaultinfo;
 			uppercopy(info.mapname, sc_String);
 
