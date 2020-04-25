@@ -450,8 +450,8 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
   
 	std::string str;
 	StrFormat(str, "%dx%d %dbpp (%s)",
-		mode->getWidth(), mode->getHeight(),
-		mode->getBitsPerPixel(), window_strs[I_GetWindow()->getWindowMode()]);
+		mode.getWidth(), mode.getHeight(),
+		mode.getBitsPerPixel(), window_strs[I_GetWindow()->getWindowMode()]);
 	return str;
 }
 
