@@ -711,11 +711,6 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video_mode.vsync);
 	#endif
 
-	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
-	// This interferes with RawWin32Mouse's input handlers so we need to
-	// disable them prior to reinitalizing DirectInput...
-	I_PauseMouse();
-
 	SDL_Surface* sdl_surface = SDL_SetVideoMode(video_mode.width, video_mode.height, video_mode.bpp, flags);
 	if (sdl_surface == NULL)
 	{
@@ -726,10 +721,6 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 	}
 
 	assert(sdl_surface == SDL_GetVideoSurface());
-
-	// [SL] ...and re-enable RawWin32Mouse's input handlers after
-	// DirectInput is reinitalized.
-	I_ResumeMouse();
 
 	const PixelFormat* format = getPixelFormat();
 
@@ -1336,6 +1327,7 @@ void ISDL20Window::getEvents()
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_HIDDEN)
 				{
 					DPrintf("SDL_WINDOWEVENT_HIDDEN\n");
+					mMouseFocus = mKeyboardFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_EXPOSED)
 				{
@@ -1344,6 +1336,7 @@ void ISDL20Window::getEvents()
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_MINIMIZED)
 				{
 					DPrintf("SDL_WINDOWEVENT_MINIMIZED\n");
+					mMouseFocus = mKeyboardFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_MAXIMIZED)
 				{
@@ -1625,11 +1618,6 @@ EXTERN_CVAR(vid_filter)
 //
 bool ISDL20Window::setMode(const IVideoMode& video_mode)
 {
-	// [SL] SDL_SetVideoMode reinitializes DirectInput if DirectX is being used.
-	// This interferes with RawWin32Mouse's input handlers so we need to
-	// disable them prior to reinitalizing DirectInput...
-	I_PauseMouse();
-
 	if (video_mode.width != getCurrentWidth() || video_mode.height != getCurrentHeight())
 	{
 		// SDL has a bug where the window size cannot be changed in full screen modes.
@@ -1684,10 +1672,6 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 	assert(mWidth >= 0 && mWidth <= MAXWIDTH);
 	assert(mHeight >= 0 && mHeight <= MAXHEIGHT);
 	assert(mBitsPerPixel == 8 || mBitsPerPixel == 32);
-
-	// [SL] ...and re-enable RawWin32Mouse's input handlers after
-	// DirectInput is reinitalized.
-	I_ResumeMouse();
 
 	return true;
 }
