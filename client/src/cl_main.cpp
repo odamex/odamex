@@ -896,7 +896,7 @@ BEGIN_COMMAND (kill)
     if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -3106,10 +3106,6 @@ void CL_GetServerSettings(void)
 void CL_FinishedFullUpdate()
 {
 	recv_full_update = true;
-
-	// Write the first map snapshot to a netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
 }
 
 //
@@ -3399,7 +3395,7 @@ void CL_LoadMap(void)
 	}
 
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording())
 		netdemo.writeMapChange();
 }
 

@@ -77,6 +77,10 @@ void SV_ActorTarget(AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 
+#ifdef SERVER_APP
+void SV_ShareKeys(card_t card, player_t& player);
+#endif
+
 //
 // GET STUFF
 //
@@ -370,6 +374,12 @@ ItemEquipVal P_GiveCard(player_t *player, card_t card)
 
 	if (multiplayer)
 	{
+#ifdef SERVER_APP
+		// Register the key
+		SV_ShareKeys(card, *player);	
+#endif
+
+
 		return IEV_EquipStay;
 	}
 

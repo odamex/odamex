@@ -10,8 +10,7 @@ ANIMATED
 X11R6RGB
 LANGUAGE
 
-# List of Sounds
-[sounds]
+# List of Sounds (prevent conversion)
 DSEMPTY
 DSSECRET
 DSQUAKE
