@@ -5413,7 +5413,7 @@ void SV_ClearPlayerQueue()
 		SV_SendPlayerQueuePositions(&(*it), false);
 }
 
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg1, byte arg2, byte arg3, byte arg4, byte arg5)
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4)
 {
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -5426,22 +5426,22 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 		MSG_WriteByte(&cl->reliablebuf, special);
 		MSG_WriteShort(&cl->reliablebuf, lines - line);
 		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
+		MSG_WriteByte(&cl->reliablebuf, arg0);
 		MSG_WriteByte(&cl->reliablebuf, arg1);
 		MSG_WriteByte(&cl->reliablebuf, arg2);
 		MSG_WriteByte(&cl->reliablebuf, arg3);
 		MSG_WriteByte(&cl->reliablebuf, arg4);
-		MSG_WriteByte(&cl->reliablebuf, arg5);
 	}
 }
 
-// If the activator is not null and a player then this activation will be sent to that player only.
-// Do not pass along the activating player if this message needs to be sent to all players.
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+// If playerOnly is true and the activator is a player, then it will only be sent to the activating player
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly,
+	int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
 {
 	int length = 0;
 	static byte argBuffer[64];
 	player_s* sendPlayer = NULL;
-	if (activator != NULL && activator->player != NULL)
+	if (playerOnly && activator != NULL && activator->player != NULL)
 		sendPlayer = activator->player;
 
 	if (arg0 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg0);

@@ -4164,16 +4164,16 @@ void CL_ExecuteLineSpecial()
 	byte special = MSG_ReadByte();
 	short lineid = MSG_ReadShort();
 	AActor* activator = P_FindThingById(MSG_ReadShort());
+	byte arg0 = MSG_ReadByte();
 	byte arg1 = MSG_ReadByte();
 	byte arg2 = MSG_ReadByte();
 	byte arg3 = MSG_ReadByte();
 	byte arg4 = MSG_ReadByte();
-	byte arg5 = MSG_ReadByte();
 
 	if (lineid > numlines)
 		return;
 
-	LineSpecials[special](&lines[lineid], activator, arg1, arg2, arg3, arg4, arg5);
+	LineSpecials[special](&lines[lineid], activator, arg0, arg1, arg2, arg3, arg4);
 }
 
 void CL_ACSExecuteSpecial()
