@@ -66,6 +66,7 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
+EXTERN_CVAR (sv_resetprng)
 EXTERN_CVAR (sv_timelimit)
 
 extern int mapchange;
@@ -631,8 +632,10 @@ void G_DoResetLevel(bool full_reset)
 			if (sv_warmup)
 				it->ready = false;
 		}
+
 		// For predictable first spawns.
-		M_ClearRandom();
+		if (sv_resetprng)
+			M_ClearRandom();
 	}
 
 	// [SL] always reset the time (for now at least)

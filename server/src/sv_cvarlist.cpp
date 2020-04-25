@@ -154,6 +154,8 @@ CVAR(			sv_ticbuffer, "1", "Buffer controller input from players experiencing su
 				"latency spikes for smoother movement",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(			sv_resetprng, "1", "Reset the PRNG when the map resets, which makes initial spawns predictable like Vanilla.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Ban settings
 // ============
@@ -253,4 +255,3 @@ CVAR(sv_download_test, "0", "Experimental download optimization testing",
 // None currently
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
-
