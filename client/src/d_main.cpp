@@ -148,8 +148,8 @@ EXTERN_CVAR (vid_vsync)
 
 const char *LOG_FILE;
 
-void M_RestoreMode (void);
-void M_ModeFlashTestText (void);
+void M_RestoreVideoMode();
+void M_ModeFlashTestText();
 
 //
 // D_ProcessEvents
@@ -163,7 +163,7 @@ void D_ProcessEvents (void)
 	if (testingmode)
 	{
 		if (testingmode <= I_MSTime() * TICRATE / 1000)
-			M_RestoreMode ();
+			M_RestoreVideoMode();
 		else
 			M_ModeFlashTestText();
 
