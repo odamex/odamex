@@ -1,4 +1,9 @@
-![](https://github.com/odamex/odamex/blob/master/media/icon_odamex_128.png?raw=true) [![Build Status](https://travis-ci.org/odamex/odamex.svg?branch=master)](https://travis-ci.org/odamex/odamex)
+![](https://github.com/odamex/odamex/blob/master/media/icon_odamex_128.png?raw=true)
+
+Platform | Build Status
+-------- | ------------
+Windows  | [![Build status](https://ci.appveyor.com/api/projects/status/qvpmneg0mbuedla4/branch/development?svg=true)](https://ci.appveyor.com/project/odamex/odamex/branch/development)
+Linux    | [![Build status](https://travis-ci.org/odamex/odamex.svg?branch=development)](https://travis-ci.org/github/odamex/odamex)
 
 Odamex is a modification of DOOM to allow players to compete with each other over the Internet using the client/server architecture. Thanks to the source code release of DOOM by id Software in December 1997, there have been many modifications that enhanced DOOM in various ways. These modifications are known as "source ports", as early modifications mainly ported DOOM to other platforms and operating systems such as Windows and Macintosh.
 
