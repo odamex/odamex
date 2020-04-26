@@ -14,7 +14,8 @@ addons:
 
 before_script: ./travis_before_script.sh
 script:
-  - cd build && ninja odawad
-  - cd build && ninja odamex
-  - cd build && ninja odasrv
-  - cd build && ninja odalaunch
+  - cd build
+  - ninja odawad
+  - ninja odamex
+  - ninja odasrv
+  - ninja odalaunch
