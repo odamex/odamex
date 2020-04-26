@@ -12,7 +12,7 @@ addons:
       - libwxgtk3.0-gtk3-dev
       - ninja-build
 
-before_script: travis_before_script.sh
+before_script: ./travis_before_script.sh
 script:
   - cd build && ninja odawad
   - cd build && ninja odamex
