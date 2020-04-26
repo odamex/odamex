@@ -68,7 +68,7 @@ endif()
 if(NOT MSVC)
   set(USE_COLOR_DIAGNOSTICS "No" CACHE STRING
     "Force the use of color diagnostics, necessary to get color output with Ninja.")
-  set_property(CACHE USE_SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
+  set_property(CACHE USE_COLOR_DIAGNOSTICS PROPERTY STRINGS Yes No)
 
   set(USE_STATIC_STDLIB "No" CACHE STRING
     "Statically link against the C and C++ Standard Library.")
