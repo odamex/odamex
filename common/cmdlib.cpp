@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include <ctime>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <sstream>
 #include <functional>
@@ -365,6 +366,9 @@ void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
 //
 void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
 {
+	va_list va2;
+	va_copy(va2, va);
+
 	// Get desired length of buffer.
 	int chars = vsnprintf(NULL, 0, fmt, va);
 	if (chars < 0)
@@ -381,8 +385,8 @@ void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
 	}
 
 	// Actually write to the buffer.
-	int ok = vsnprintf(buf, len, fmt, va);
-	if (ok < 0 || ok < chars)
+	int ok = vsnprintf(buf, len, fmt, va2);
+	if (ok != chars)
 	{
 		I_Error("Truncation detected in StrFormat\n");
 	}

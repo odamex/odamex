@@ -447,11 +447,11 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 		"full screen window",
 		"full screen exclusive"
 	};
-  
+
 	std::string str;
 	StrFormat(str, "%dx%d %dbpp (%s)",
-		mode->getWidth(), mode->getHeight(),
-		mode->getBitsPerPixel(), window_strs[I_GetWindow()->getWindowMode()]);
+		mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(),
+		window_strs[I_GetWindow()->getWindowMode()]);
 	return str;
 }
 
@@ -1199,5 +1199,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-
