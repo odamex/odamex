@@ -27,6 +27,7 @@
 #include <string>
 #include <algorithm>
 
+#include "cmdlib.h"
 #include "i_video.h"
 #include "v_video.h"
 
@@ -447,11 +448,11 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 		"full screen exclusive"
 	};
 
-	char str[50];
-	sprintf(str, "%dx%d %dbpp (%s)", mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(),
-			window_strs[I_GetWindow()->getWindowMode()]);
-
-	return std::string(str);
+	std::string str;
+	StrFormat(str, "%dx%d %dbpp (%s)",
+		mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(),
+		window_strs[I_GetWindow()->getWindowMode()]);
+	return str;
 }
 
 
@@ -1198,5 +1199,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-
