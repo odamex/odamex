@@ -53,8 +53,8 @@ cd ..
 & cmake .. `
     -G "Visual Studio 16 2019" `
     -DUSE_MINIUPNP=False -DBUILD_ODALAUNCH=0 `
-    -DSDL2_INCLUDE_DIR="./SDL2-2.0.12/include/" -DSDL2_LIBRARY="./SDL2-2.0.12/lib/x86/SDL2.lib" -DSDL2MAIN_LIBRARY="./lib/x86/SDL2main.lib" `
-    -DSDL2_MIXER_INCLUDE_DIR="./SDL2_mixer-2.0.4/include/" -DSDL2_MIXER_LIBRARY="./SDL2_mixer-2.0.4/lib/x86/SDL2_mixer.lib" `
+    -DSDL2_INCLUDE_DIR="./SDL2-2.0.12/include/" -DSDL2_LIBRARY="./SDL2-2.0.12/lib/x64/SDL2.lib" -DSDL2MAIN_LIBRARY="./lib/x64/SDL2main.lib" `
+    -DSDL2_MIXER_INCLUDE_DIR="./SDL2_mixer-2.0.4/include/" -DSDL2_MIXER_LIBRARY="./SDL2_mixer-2.0.4/lib/x64/SDL2_mixer.lib" `
     -DwxWidgets_ROOT_DIR="./wxMSW" -DwxWidgets_wxrc_EXECUTABLE="./wxMSW/lib/vc14x_x64_dll/wxrc.exe"
 
-    cd ..
+cd ..
