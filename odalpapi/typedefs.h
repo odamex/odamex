@@ -26,14 +26,8 @@
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H
 
-/**
- * odalpapi namespace.
- *
- * All code for the odamex launcher protocol api is contained within the odalpapi
- * namespace.
- */
-namespace odalpapi
-{
+// [AM] Do not namespace type definitions that shadow real ones, unless
+//      new, unique names are invented for them.
 
 #ifdef _MSC_VER
 typedef signed   __int8   int8_t;
@@ -51,7 +45,5 @@ typedef unsigned __int64  uint64_t;
 typedef unsigned int DWORD;
 #endif
 #endif
-
-} // namespace
 
 #endif
