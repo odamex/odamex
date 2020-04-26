@@ -35,7 +35,7 @@ if (!(Test-Path -Path "wxMSW\include")) {
 if (!(Test-Path -Path "wxMSW\build")) {
     7z x "wxMSW-3.1.3_vc14x_x64_Dev.7z" -o:wxMSW
 }
-if (!(Test-Path -Path "wxMSW\lib\vc14x_x64_dll\wxbase313u_vc14x_x64.dll") -PathType leaf) {
+if (!(Test-Path -Path "wxMSW\lib\vc14x_x64_dll\wxbase313u_vc14x_x64.dll" -PathType leaf)) {
     7z x "wxMSW-3.1.3_vc14x_x64_ReleaseDLL.7z" -o:wxMSW
 }
 
