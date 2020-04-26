@@ -29,15 +29,19 @@ if (!(Test-Path -Path "wxMSW")) {
     mkdir wxMSW | Out-Null
 }
 
-if (!(Test-Path -Path "wxMSW\include")) {
-    7z x "wxWidgets-3.1.3-headers.7z" -o:wxMSW
+cd wxMSW
+
+if (!(Test-Path -Path "include")) {
+    7z x "..\wxWidgets-3.1.3-headers.7z"
 }
-if (!(Test-Path -Path "wxMSW\build")) {
-    7z x "wxMSW-3.1.3_vc14x_x64_Dev.7z" -o:wxMSW
+if (!(Test-Path -Path "build")) {
+    7z x "..\wxMSW-3.1.3_vc14x_x64_Dev.7z"
 }
-if (!(Test-Path -Path "wxMSW\lib\vc14x_x64_dll\wxbase313u_vc14x_x64.dll" -PathType leaf)) {
-    7z x "wxMSW-3.1.3_vc14x_x64_ReleaseDLL.7z" -o:wxMSW
+if (!(Test-Path -Path "lib\vc14x_x64_dll\wxbase313u_vc14x_x64.dll" -PathType leaf)) {
+    7z x "..\wxMSW-3.1.3_vc14x_x64_ReleaseDLL.7z"
 }
+
+cd ..
 
 & "C:\Program Files (x86)\cmake\bin\cmake.exe" .. `
     -G "Visual Studio 14 2015" -T v140_xp `
