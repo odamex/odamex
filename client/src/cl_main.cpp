@@ -2446,7 +2446,7 @@ void CL_PlayerInfo(void)
 	p->armortype = MSG_ReadByte();
 
 	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
+	if (newweapon > NUMWEAPONS)	// bad weapon number, choose something else
 		newweapon = wp_fist;
 
 	if (newweapon != p->readyweapon)
@@ -3660,6 +3660,8 @@ void CL_InitCommands(void)
 	cmds[svc_maplist_index] = &CL_MaplistIndex;
 
 	cmds[svc_playerqueuepos] = &CL_UpdatePlayerQueuePos;
+	cmds[svc_executelinespecial] = &CL_ExecuteLineSpecial;
+	cmds[svc_executeacsspecial] = &CL_ACSExecuteSpecial;
 }
 
 //
@@ -4155,6 +4157,116 @@ void CL_UpdatePlayerQueuePos()
 	}
 
 	player.QueuePosition = queuePos;
+}
+
+void CL_ExecuteLineSpecial()
+{
+	byte special = MSG_ReadByte();
+	short lineid = MSG_ReadShort();
+	AActor* activator = P_FindThingById(MSG_ReadShort());
+	byte arg0 = MSG_ReadByte();
+	byte arg1 = MSG_ReadByte();
+	byte arg2 = MSG_ReadByte();
+	byte arg3 = MSG_ReadByte();
+	byte arg4 = MSG_ReadByte();
+
+	if (lineid > numlines)
+		return;
+
+	LineSpecials[special](&lines[lineid], activator, arg0, arg1, arg2, arg3, arg4);
+}
+
+void CL_ACSExecuteSpecial()
+{
+	byte special = MSG_ReadByte();
+	short netid = MSG_ReadShort();
+	byte length = MSG_ReadByte();
+	byte* argBuffer = (byte*)MSG_ReadChunk(length);
+	const char* print = MSG_ReadString();
+
+	static int acsArgs[16];
+	int count = 0, bytesRead = 0;
+
+	while (length > 0 && bytesRead < length && count < 16)
+	{
+		acsArgs[count++] = MSG_ReadVarInt(argBuffer + bytesRead, length, bytesRead);
+
+		if (bytesRead < 0)
+		{
+			count--;
+			break;
+		}
+	}
+
+	AActor* activator = P_FindThingById(netid);
+
+	switch (special)
+	{
+	case DLevelScript::PCD_CLEARINVENTORY:
+		DLevelScript::ACS_ClearInventory(activator);
+		break;
+
+	case DLevelScript::PCD_SETLINETEXTURE:
+		DLevelScript::ACS_SetLineTexture(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_ENDPRINT:
+	case DLevelScript::PCD_ENDPRINTBOLD:
+		DLevelScript::ACS_Print(special, activator, print);
+		break;
+
+	case DLevelScript::PCD_SETMUSIC:
+	case DLevelScript::PCD_SETMUSICDIRECT:
+	case DLevelScript::PCD_LOCALSETMUSIC:
+	case DLevelScript::PCD_LOCALSETMUSICDIRECT:
+		DLevelScript::ACS_ChangeMusic(special, activator, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SECTORSOUND:
+	case DLevelScript::PCD_AMBIENTSOUND:
+	case DLevelScript::PCD_LOCALAMBIENTSOUND:
+	case DLevelScript::PCD_ACTIVATORSOUND:
+	case DLevelScript::PCD_THINGSOUND:
+		DLevelScript::ACS_StartSound(special, activator, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETLINEBLOCKING:
+		DLevelScript::ACS_SetLineBlocking(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETLINEMONSTERBLOCKING:
+		DLevelScript::ACS_SetLineMonsterBlocking(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETLINESPECIAL:
+		DLevelScript::ACS_SetLineSpecial(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETTHINGSPECIAL:
+		DLevelScript::ACS_SetThingSpecial(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_FADERANGE:
+		DLevelScript::ACS_FadeRange(activator, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_CANCELFADE:
+		DLevelScript::ACS_CancelFade(activator);
+		break;
+
+	case DLevelScript::PCD_CHANGEFLOOR:
+	case DLevelScript::PCD_CHANGECEILING:
+		DLevelScript::ACS_ChangeFlat(special, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SOUNDSEQUENCE:
+		DLevelScript::ACS_SoundSequence(acsArgs, count);
+		break;
+
+	default:
+		Printf(PRINT_HIGH, "Invalid ACS special: %d", special);
+		break;
+	}
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}

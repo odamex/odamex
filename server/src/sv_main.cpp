@@ -1566,6 +1566,7 @@ void SV_SendGametic(client_t* cl)
 }
 
 short P_GetButtonTexture(line_t* line);
+
 //
 // SV_ClientFullUpdate
 //
@@ -1582,10 +1583,8 @@ void SV_ClientFullUpdate(player_t &pl)
 			SV_AwarenessUpdate(pl, it->mo);
 
 		SV_SendUserInfo(*it, cl);
-
-		if (cl->reliablebuf.cursize >= 600)
-			if (!SV_SendPacket(pl))
-				return;
+		if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
+			return;
 	}
 
 	// update warmup state
@@ -1626,31 +1625,13 @@ void SV_ClientFullUpdate(player_t &pl)
 	if (sv_gametype == GM_CTF)
 		CTF_Connect(pl);
 
-	// update sectors
 	SV_UpdateSectors(cl);
-	if (cl->reliablebuf.cursize >= 600)
-		if(!SV_SendPacket(pl))
-			return;
+	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
+		return;
 
-	// update switches
-#if 0
-	for (int l=0; l<numlines; l++)
-	{
-		unsigned state = 0, time = 0;
-		if(P_GetButtonInfo(&lines[l], state, time) || lines[l].wastoggled)
-		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-			MSG_WriteLong(&cl->reliablebuf, l);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
-			MSG_WriteByte(&cl->reliablebuf, state);
-			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
-			MSG_WriteLong(&cl->reliablebuf, time);
-		}
-	}
-#else
 	P_UpdateButtons(cl);
-#endif
+	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
+		return;
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
@@ -5261,7 +5242,13 @@ void SV_SendPlayerInfo(player_t &player)
 	MSG_WriteByte (&cl->reliablebuf, player.health);
 	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
 	MSG_WriteByte (&cl->reliablebuf, player.armortype);
-	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+
+	// If the player has a pending weapon then tell the client it has changed
+	// The client will set the pendingweapon to this weapon if it doesn't match the readyweapon
+	if (player.pendingweapon == wp_nochange)
+		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+	else
+		MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		MSG_WriteShort(&cl->reliablebuf, player.powers[i]);
@@ -5424,6 +5411,66 @@ void SV_ClearPlayerQueue()
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		SV_SendPlayerQueuePositions(&(*it), false);
+}
+
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!(it->ingame()))
+			continue;
+
+		client_t* cl = &it->client;
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_executelinespecial);
+		MSG_WriteByte(&cl->reliablebuf, special);
+		MSG_WriteShort(&cl->reliablebuf, lines - line);
+		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
+		MSG_WriteByte(&cl->reliablebuf, arg0);
+		MSG_WriteByte(&cl->reliablebuf, arg1);
+		MSG_WriteByte(&cl->reliablebuf, arg2);
+		MSG_WriteByte(&cl->reliablebuf, arg3);
+		MSG_WriteByte(&cl->reliablebuf, arg4);
+	}
+}
+
+// If playerOnly is true and the activator is a player, then it will only be sent to the activating player
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly,
+	int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+{
+	int length = 0;
+	static byte argBuffer[64];
+	player_s* sendPlayer = NULL;
+	if (playerOnly && activator != NULL && activator->player != NULL)
+		sendPlayer = activator->player;
+
+	if (arg0 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg0);
+	if (arg1 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg1);
+	if (arg2 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg2);
+	if (arg3 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg3);
+	if (arg4 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg4);
+	if (arg5 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg5);
+	if (arg6 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg6);
+	if (arg7 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg7);
+	if (arg8 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg8);
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!(it->ingame()) || (sendPlayer != NULL && sendPlayer != &(*it)))
+			continue;
+
+		client_t* cl = &it->client;
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_executeacsspecial);
+		MSG_WriteByte(&cl->reliablebuf, special);
+		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
+		MSG_WriteByte(&cl->reliablebuf, length);
+		MSG_WriteChunk(&cl->reliablebuf, argBuffer, length);
+		if (print)
+			MSG_WriteString(&cl->reliablebuf, print);
+		else
+			MSG_WriteString(&cl->reliablebuf, "");
+	}
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

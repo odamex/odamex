@@ -90,7 +90,7 @@ std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 //
 void P_AddMovingCeiling(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || (clientside && consoleplayer().spectator))
 		return;
 
 	movingsector_t *movesec;
@@ -125,7 +125,7 @@ void P_AddMovingCeiling(sector_t *sector)
 //
 void P_AddMovingFloor(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || (clientside && consoleplayer().spectator))
 		return;
 
 	movingsector_t *movesec;
