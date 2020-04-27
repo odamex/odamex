@@ -1603,16 +1603,20 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 	bool change_dimensions = (video_mode.width != mVideoMode.width || video_mode.height != mVideoMode.height);
 	bool change_window_mode = (video_mode.window_mode != mVideoMode.window_mode);
 
-	// SDL has a bug where the window size cannot be changed in full screen modes.
-	// If changing resolution in fullscreen, we need to change the window mode
-	// to windowed and then back to fullscreen.
-	if (change_dimensions && mVideoMode.window_mode != WINDOW_Windowed)
-		SDL_SetWindowFullscreen(mSDLWindow, 0);
-
-	// Set the window size
 	if (change_dimensions)
 	{
+		// SDL has a bug where the window size cannot be changed in full screen modes.
+		// If changing resolution in fullscreen, we need to change the window mode
+		// to windowed and then back to fullscreen.
+		if (mVideoMode.window_mode != WINDOW_Windowed)
+		{
+			SDL_SetWindowFullscreen(mSDLWindow, 0);
+			change_window_mode = true;		// need to change the window mode back
+		}
+
+		// Set the window size
 		SDL_SetWindowSize(mSDLWindow, video_mode.width, video_mode.height);
+
 		mVideoMode.width = video_mode.width;
 		mVideoMode.height = video_mode.height;
 	}
@@ -1627,14 +1631,14 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 			fullscreen_flags |= SDL_WINDOW_FULLSCREEN;
 		SDL_SetWindowFullscreen(mSDLWindow, fullscreen_flags);
 
+		// SDL has a bug where it sets the total window size (including window decorations & title bar)
+		// to the requested window size when transitioning from fullscreen to windowed.
+		// So we need to reset the window size again.
+		if (video_mode.window_mode == WINDOW_Windowed)
+			SDL_SetWindowSize(mSDLWindow, video_mode.width, video_mode.height);
+
 		mVideoMode.window_mode = video_mode.window_mode;
 	}
-
-	// SDL has a bug where it sets the total window size (including window decorations & title bar)
-	// to the requested window size when transitioning from fullscreen to windowed.
-	// So we need to reset the window size again.
-	if (change_window_mode && video_mode.window_mode == WINDOW_Windowed)
-		SDL_SetWindowSize(mSDLWindow, video_mode.width, video_mode.height);
 
 	// SDL will publish various window resizing events in response to changing the
 	// window dimensions or toggling window modes. We need to ignore these
