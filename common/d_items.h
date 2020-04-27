@@ -83,6 +83,8 @@ gitem_t	*GetItemByIndex (int index);
 gitem_t	*FindItemByClassname (const char *classname);
 gitem_t *FindItem (const char *pickup_name);
 
+gitem_t* FindCardItem(card_t card);
+
 #define ITEM_INDEX(i)	((i)-itemlist)
 
 #endif //__D_ITEMS_H__

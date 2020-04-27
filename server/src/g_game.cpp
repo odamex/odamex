@@ -50,6 +50,7 @@ void	G_DoWorldDone (void);
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_keepkeys)
+EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_fastmonsters)
@@ -211,6 +212,7 @@ void G_PlayerFinishLevel (player_t &player)
 	p->bonuscount = 0;
 }
 
+void SV_SendPlayerInfo(player_t& player);
 
 //
 // G_PlayerReborn
@@ -227,11 +229,21 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	if (!sv_keepkeys)
+	if (!sv_keepkeys && !sv_sharekeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;
 	}
+
+	// That said, if keys are found between a player's death and respawn, resync them.
+	if (sv_sharekeys)
+	{
+		for (i = 0; i < NUMCARDS; i++)
+			p.cards[i] = keysfound[i];
+
+		SV_SendPlayerInfo(p);
+	}
+
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
 	for (i = 0; i < NUMFLAGS; i++)

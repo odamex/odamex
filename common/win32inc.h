@@ -79,6 +79,10 @@
         int snprintf(char *s, size_t n, const char *fmt, ...);
         int vsnprintf(char *s, size_t n, const char *fmt, va_list ap);
     #endif
+
+    #if defined(_MSC_VER) && _MSC_VER < 1800
+        #define va_copy(d,s)((d) = (s))
+    #endif
 #endif // WIN32
 
 #endif  // __WIN32INC_H__

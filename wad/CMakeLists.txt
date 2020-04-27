@@ -1,8 +1,9 @@
-find_program(DEUTEX deutex)
+find_program(DEUTEX deutex
+	PATHS "/usr/games") # Debian installation location
 
 # If DeuTex is available, use it to build the WAD.
 if(DEUTEX)
-	message("Found DeuTex: ${DEUTEX}")
+	message(STATUS "Found DeuTex: ${DEUTEX}")
 
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/odamex.wad
 		COMMAND ${DEUTEX} -rgb 0 255 255 -doom2 bootstrap -build wadinfo.txt ${CMAKE_CURRENT_BINARY_DIR}/odamex.wad
@@ -22,6 +23,7 @@ if(DEUTEX)
 			COMPONENT common)
 	endif()
 else()
+	message(STATUS "Could NOT find DeuTex, ODAMEX.WAD will not be built.")
 	if(WIN32)
 		install(FILES odamex.wad
 			DESTINATION .
