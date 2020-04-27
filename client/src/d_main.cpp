@@ -101,7 +101,7 @@ void D_DoAdvanceDemo (void);
 
 void D_DoomLoop (void);
 
-extern QWORD testingmode;
+extern int testingmode;
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop

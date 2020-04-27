@@ -629,6 +629,12 @@ void STACK_ARGS I_ShutdownInput()
 //
 static void I_GetEvents()
 {
+	static bool previously_focused = false;
+	bool currently_focused = I_GetWindow()->isFocused();
+	if (currently_focused && !previously_focused)
+		I_FlushInput();
+	previously_focused = currently_focused;
+
 	I_UpdateGrab();
 	if (I_CanRepeat())
 		I_EnableKeyRepeat();
