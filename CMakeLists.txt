@@ -171,6 +171,9 @@ if (USE_MINIUPNP)
   add_subdirectory(libraries/libminiupnpc)
 endif()
 
+# Libraries
+add_subdirectory(libraries)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT)
   add_subdirectory(client)

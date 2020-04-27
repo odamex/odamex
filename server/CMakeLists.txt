@@ -28,11 +28,6 @@ if(WIN32)
   set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
 endif()
 
-# JsonCpp
-set(JSONCPP_DIR ../libraries/jsoncpp)
-file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
-set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
-
 # MiniUPnPc
 if (USE_MINIUPNP)
   set(MINIUPNPC_DIR ../libraries/libminiupnpc)
@@ -72,6 +67,7 @@ add_executable(odasrv
   ${COMMON_SOURCES} ${COMMON_HEADERS}
   ${SERVER_SOURCES} ${SERVER_HEADERS}
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+target_link_libraries(odasrv jsoncpp)
 
 if (USE_MINIUPNP)
   target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
