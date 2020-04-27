@@ -14,4 +14,5 @@ target_include_directories(jsoncpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 include(GNUInstallDirs)
 install(TARGETS jsoncpp
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/json")
