@@ -161,8 +161,7 @@ void R_InterpolateCamera(fixed_t amount)
 	if (gamestate == GS_LEVEL && camera)
 	{
 		// interpolate amount/FRACUNIT percent between previous value and current value
-		viewangle = viewangleoffset + camera->prevangle +
-				FixedMul(amount, camera->angle - camera->prevangle);
+		viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
 		viewx = camera->prevx + FixedMul(amount, camera->x - camera->prevx);
 		viewy = camera->prevy + FixedMul(amount, camera->y - camera->prevy);
 		if (camera->player)

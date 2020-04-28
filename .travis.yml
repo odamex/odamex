@@ -1,13 +1,21 @@
-dist: trusty
-sudo: required
+os: linux
+dist: bionic
 language: cpp
 
 addons:
   apt:
     packages:
+      - deutex
       - libasound2-dev
       - libsdl2-dev
       - libsdl2-mixer-dev
-      - libwxgtk3.0-dev
+      - libwxgtk3.0-gtk3-dev
+      - ninja-build
 
-script: mkdir build && cd build && cmake .. && make
+before_script: ./travis_before_script.sh
+script:
+  - cd build
+  - ninja odawad
+  - ninja odamex
+  - ninja odasrv
+  - ninja odalaunch

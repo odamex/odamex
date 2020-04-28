@@ -93,6 +93,8 @@ byte s_duelWinPlayerId = 0;
 
 std::set<byte> free_player_ids;
 
+bool keysfound[NUMCARDS];		// Ch0wW : Found keys
+
 // General server settings
 EXTERN_CVAR(sv_motd)
 EXTERN_CVAR(sv_hostname)
@@ -108,11 +110,14 @@ EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(sv_sharekeys)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
+
+void SV_UpdateShareKeys(player_t& player);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -220,7 +225,6 @@ EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_infiniteammo)
-EXTERN_CVAR (sv_keepkeys)
 
 // Teamplay/CTF
 EXTERN_CVAR (sv_scorelimit)
@@ -268,6 +272,17 @@ CVAR_FUNC_IMPL (sv_waddownloadcap)
 	// sv_waddownloadcap can not be larger than sv_maxrate
 	if (var > sv_maxrate)
 		var.Set(sv_maxrate);
+}
+
+CVAR_FUNC_IMPL(sv_sharekeys)
+{
+	if (var == 1.0f)
+	{
+		// Refresh it to everyone
+		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+			SV_UpdateShareKeys(*it);
+		}
+	}
 }
 
 client_c clients;
@@ -5470,6 +5485,52 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bo
 			MSG_WriteString(&cl->reliablebuf, print);
 		else
 			MSG_WriteString(&cl->reliablebuf, "");
+	}
+}
+
+void SV_UpdateShareKeys(player_t& player)
+{
+	// Player needs to be valid.
+	if (!validplayer(player))
+		return;
+
+	// Disallow to spectators
+	if (player.spectator)
+		return;
+
+	// Don't send to dead players... Yet, since they'll get it upon respawning
+	if (player.health <= 0)
+		return;
+
+	// Update their keys informations
+	for (int i = 0; i < NUMCARDS; i++) {
+		player.cards[i] = keysfound[i];
+	}
+
+	// Refresh that new data to the client
+	SV_SendPlayerInfo(player);
+}
+
+void SV_ShareKeys(card_t card, player_t &player)
+{
+	// Add it to the KeysCheck array
+	keysfound[card] = true;
+
+	// If the server hasn't accepted to share keys yet, stop it.
+	if (!sv_sharekeys)
+		return;
+
+	// Broadcast the key shared to 
+	gitem_t* item;
+	if (item = FindCardItem(card))
+		SV_BroadcastPrintf(PRINT_HIGH, "%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
+	else
+		SV_BroadcastPrintf(PRINT_HIGH, "%s found a key!\n", player.userinfo.netname.c_str());
+
+	// Refresh the inventory to everyone
+	// ToDo: If we're the player who picked it, don't refresh our own inventory
+	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+		SV_UpdateShareKeys(*it);
 	}
 }
 

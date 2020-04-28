@@ -121,11 +121,6 @@ extern	"C" int 		viewheight;
 extern	"C" int 		viewwidth;
 
 
-
-// This one is related to the 3-screen display mode.
-// ANG90 = left side, ANG270 = right
-extern	int				viewangleoffset;
-
 extern level_locals_t level;
 
 

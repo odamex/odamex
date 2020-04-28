@@ -64,14 +64,12 @@ DCanvas *screen;
 
 static DBoundingBox dirtybox;
 
-bool V_DoSetResolution(uint16_t, uint16_t);
+static bool V_DoSetResolution();
 static void BuildTransTable(const argb_t* palette_colors);
 
 // flag to indicate that V_AdjustVideoMode should try to change the video mode
 static bool setmodeneeded = false;
 
-// video mode that V_DoSetResolution should change to 
-static uint16_t new_video_width, new_video_height;
 
 //
 //	V_ForceVideoModeAdjustment
@@ -96,12 +94,14 @@ void V_AdjustVideoMode()
 {
 	if (setmodeneeded)
 	{
+		setmodeneeded = false;
+
 		// [SL] surface buffer address will be changing
 		// so just end the screen-wipe
 		Wipe_Stop();
 
 		// Change screen mode.
-		if (!V_DoSetResolution(new_video_width, new_video_height))
+		if (!V_DoSetResolution())
 			I_FatalError("Could not change screen mode");
 
 		// Refresh the console.
@@ -109,8 +109,6 @@ void V_AdjustVideoMode()
 
 		// Recalculate various view parameters.
 		R_ForceViewWindowResize();
-
-		setmodeneeded = false;
 	}
 }
 
@@ -126,8 +124,17 @@ EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
 
 static int vid_pillarbox_old = -1;
-static int vid_32bpp_old = -1;
-static std::string vid_filter_old = "";
+
+
+static IVideoMode V_GetRequestedVideoMode()
+{
+	int surface_bpp = vid_32bpp ? 32 : 8;
+	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
+	bool vsync = (vid_vsync != 0.0f);
+
+	return IVideoMode(vid_defwidth, vid_defheight, surface_bpp, window_mode, vsync, vid_filter);
+}
+
 
 bool V_CheckModeAdjustment()
 {
@@ -135,21 +142,7 @@ bool V_CheckModeAdjustment()
 	if (!window)
 		return false;
 
-	if (vid_32bpp != vid_32bpp_old)
-	{
-		vid_32bpp_old = vid_32bpp;
-		return true;
-	}
-
-	if ((EWindowMode)vid_fullscreen.asInt() != window->getWindowMode())
-		return true;
-
-	if (vid_filter.str() != vid_filter_old) {
-		vid_filter_old = vid_filter.str();
-		return true;
-	}
-
-	if (vid_vsync != window->usingVSync())
+	if (V_GetRequestedVideoMode() != window->getVideoMode())
 		return true;
 
 	bool using_widescreen = I_IsWideResolution();
@@ -168,13 +161,14 @@ bool V_CheckModeAdjustment()
 	return false;
 }
 
+
 CVAR_FUNC_IMPL(vid_defwidth)
 {
 	if (var < 320 || var > MAXWIDTH)
 		var.RestoreDefault();
 	
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
@@ -184,15 +178,16 @@ CVAR_FUNC_IMPL(vid_defheight)
 		var.RestoreDefault();
 	
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_fullscreen)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
+
 
 CVAR_FUNC_IMPL(vid_filter)
 {
@@ -204,42 +199,42 @@ CVAR_FUNC_IMPL(vid_filter)
 CVAR_FUNC_IMPL(vid_32bpp)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_vsync)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_overscan)
 {
 	if (gamestate != GS_STARTUP)
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_320x200)
 {
 	if (gamestate != GS_STARTUP)
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL(vid_640x400)
 {
 	if (gamestate != GS_STARTUP)
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
@@ -253,7 +248,7 @@ CVAR_FUNC_IMPL(vid_pillarbox)
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-        V_ForceVideoModeAdjustment();
+		V_ForceVideoModeAdjustment();
 }
 
 
@@ -289,10 +284,10 @@ BEGIN_COMMAND(vid_listmodes)
 
 	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
 	{
-		if (*it == *I_GetWindow()->getVideoMode())
-			Printf_Bold("%s\n", I_GetVideoModeString(&(*it)).c_str());
+		if (*it == I_GetWindow()->getVideoMode())
+			Printf_Bold("%s\n", I_GetVideoModeString(*it).c_str());
 		else
-			Printf(PRINT_HIGH, "%s\n", I_GetVideoModeString(&(*it)).c_str());
+			Printf(PRINT_HIGH, "%s\n", I_GetVideoModeString(*it).c_str());
 	}
 }
 END_COMMAND(vid_listmodes)
@@ -325,7 +320,7 @@ BEGIN_COMMAND(vid_currentmode)
 		pixel_string = std::string(temp_str);
 	}
 
-	const IVideoMode* mode = I_GetWindow()->getVideoMode();
+	const IVideoMode& mode = I_GetWindow()->getVideoMode();
 	Printf(PRINT_HIGH, "%s %s surface\n",
 			I_GetVideoModeString(mode).c_str(), pixel_string.c_str());
 }
@@ -343,6 +338,7 @@ END_COMMAND(checkres)
 // vid_setmode
 //
 // Sets the video mode resolution.
+// The actual change of resolution will take place at the start of the next frame.
 //
 BEGIN_COMMAND(vid_setmode)
 {
@@ -363,7 +359,7 @@ BEGIN_COMMAND(vid_setmode)
 	if (argc > 2)
 		height = atoi(argv[2]);
 	if (height == 0)
-		height = new_video_height;
+		height = vid_defheight;
 
 	if (width < 320 || height < 200)
 	{
@@ -379,11 +375,6 @@ BEGIN_COMMAND(vid_setmode)
 
 	vid_defwidth.Set(width);
 	vid_defheight.Set(height);
-
-	// The actual change of resolution will take place
-	// near the beginning of D_Display().
-	if (gamestate != GS_STARTUP)
-		V_SetResolution(width, height);
 }
 END_COMMAND (vid_setmode)
 
@@ -459,32 +450,16 @@ bool V_UseWidescreen()
 
 
 //
-// V_SetResolution
-//
-// Prepares to set the resolution to the given width and height at the start
-// of drawing the next frame.
-//
-void V_SetResolution(uint16_t width, uint16_t height)
-{
-	new_video_width = width;
-	new_video_height = height;
-	V_ForceVideoModeAdjustment();
-}
-
-
-//
 // V_DoSetResolution
 //
 // Changes the video resolution to the given dimensions. This should only
 // be called at the begining of drawing a frame (or during startup)!
 //
-bool V_DoSetResolution(uint16_t width, uint16_t height)
+static bool V_DoSetResolution()
 {
-	int surface_bpp = vid_32bpp ? 32 : 8;
-	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
-	bool vsync = (vid_vsync != 0.0f);
+	const IVideoMode requested_mode = V_GetRequestedVideoMode();
 
-	I_SetVideoMode(width, height, surface_bpp, window_mode, vsync);
+	I_SetVideoMode(requested_mode);
 	if (!I_VideoInitialized())
 		return false;
 
@@ -543,10 +518,7 @@ void V_Init()
 			video_bpp = vid_32bpp ? 32 : 8;
 		vid_32bpp.Set(video_bpp == 32);
 
-		new_video_width = video_width;
-		new_video_height = video_height;
-
-		V_DoSetResolution(video_width, video_height);
+		V_DoSetResolution();
 
 		Printf(PRINT_HIGH, "V_Init: using %s video driver.\n", I_GetVideoDriverName().c_str());
 	}
@@ -580,7 +552,6 @@ void V_Init()
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
 	vid_pillarbox_old = vid_pillarbox;
-	vid_32bpp_old = vid_32bpp;
 }
 
 
