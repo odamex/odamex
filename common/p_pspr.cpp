@@ -318,6 +318,9 @@ void P_SwitchWeapon(player_t *player)
 //
 weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 {
+	if (player->readyweapon == NUMWEAPONS || player->pendingweapon == NUMWEAPONS)
+		return wp_nochange;
+
 	gitem_t *item;
 
 	if (player->pendingweapon != wp_nochange)
@@ -374,7 +377,8 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	}
 
 	// Never switch - player has to manually change themselves
-	if (player->userinfo.switchweapon == WPSW_NEVER)
+	// Having no weapons because of ClearInventory/TakeInventory overrides this
+	if (player->userinfo.switchweapon == WPSW_NEVER && player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
 		return false;
 
 	weapontype_t currentweapon = (player->pendingweapon == wp_nochange)
