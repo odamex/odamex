@@ -1884,67 +1884,91 @@ void P_SpawnSpecials (void)
 
 		case dLight_Flicker:
 			// FLICKERING LIGHTS
+			if (IgnoreSpecial)
+				break;
 			new DLightFlash (sector);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeFast:
 			// STROBE FAST
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeSlow:
 			// STROBE SLOW
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, false);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_Strobe_Hurt:
 			// STROBE FAST/DEATH SLIME
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
 			break;
 
 		case dLight_Glow:
 			// GLOWING LIGHT
+			if (IgnoreSpecial)
+				break;
 			new DGlow (sector);
 			sector->special &= 0xff00;
 			break;
 
 		case dSector_DoorCloseIn30:
+			if (!serverside)
+				break;
 			// DOOR CLOSE IN 30 SECONDS
 			P_SpawnDoorCloseIn30 (sector);
 			break;
 
 		case dLight_StrobeSlowSync:
 			// SYNC STROBE SLOW
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, true);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeFastSync:
 			// SYNC STROBE FAST
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, true);
 			sector->special &= 0xff00;
 			break;
 
 		case dSector_DoorRaiseIn5Mins:
+			if (!serverside)
+				break;
 			// DOOR RAISE IN 5 MINUTES
 			P_SpawnDoorRaiseIn5Mins (sector);
 			break;
 
 		case dLight_FireFlicker:
 			// fire flickering
+			if (IgnoreSpecial)
+				break;
 			new DFireFlicker (sector);
 			sector->special &= 0xff00;
 			break;
 
 		  // [RH] Hexen-like phased lighting
 		case LightSequenceStart:
+			if (IgnoreSpecial)
+				break;
 			new DPhased (sector);
 			break;
 
 		case Light_Phased:
+			if (IgnoreSpecial)
+				break;
 			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
 			break;
 
@@ -1953,6 +1977,8 @@ void P_SpawnSpecials (void)
 			break;
 
 		default:
+			if (IgnoreSpecial)
+				break;
 			// [RH] Try for normal Hexen scroller
 			if ((sector->special & 0xff) >= Scroll_North_Slow &&
 				(sector->special & 0xff) <= Scroll_SouthWest_Fast)
@@ -2063,6 +2089,8 @@ void P_SpawnSpecials (void)
 			{
 			case Init_Gravity:
 				{
+				if (IgnoreSpecial)
+					break;
 				float grav = ((float)P_AproxDistance (lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
 				for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 					sectors[s].gravity = grav;
@@ -2074,6 +2102,9 @@ void P_SpawnSpecials (void)
 
 			case Init_Damage:
 				{
+					if (IgnoreSpecial)
+						break;
+
 					int damage = P_AproxDistance (lines[i].dx, lines[i].dy) >> FRACBITS;
 					for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 					{
@@ -2331,11 +2362,17 @@ static void P_SpawnScrollers(void)
 			register int s;
 
 			case Scroll_Ceiling:
+				if (IgnoreSpecial)
+					break;
+
 				for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
 					new DScroller (DScroller::sc_ceiling, -dx, dy, control, s, accel);
 				break;
 
 			case Scroll_Floor:
+				if (IgnoreSpecial)
+					break;
+
 				if (l->args[2] != 1)
 					// scroll the floor
 					for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
@@ -2353,12 +2390,18 @@ static void P_SpawnScrollers(void)
 			// killough 3/1/98: scroll wall according to linedef
 			// (same direction and speed as scrolling floors)
 			case Scroll_Texture_Model:
+				if (IgnoreSpecial)
+					break;
+
 				for (s=-1; (s = P_FindLineFromID (l->args[0],s)) >= 0;)
 					if (s != i)
 						new DScroller (dx, dy, lines+s, control, accel);
 				break;
 
 			case Scroll_Texture_Offsets:
+				if (IgnoreSpecial)
+					break;
+
 				// killough 3/2/98: scroll according to sidedef offsets
 				s = lines[i].sidenum[0];
 				new DScroller (DScroller::sc_side, -sides[s].textureoffset,
@@ -2366,26 +2409,41 @@ static void P_SpawnScrollers(void)
 				break;
 
 			case Scroll_Texture_Left:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, l->args[0] * (FRACUNIT/64), 0,
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Right:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, l->args[0] * (-FRACUNIT/64), 0,
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Up:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, 0, l->args[0] * (FRACUNIT/64),
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Down:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, 0, l->args[0] * (-FRACUNIT/64),
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Both:
+				if (IgnoreSpecial)
+					break;
+
 				if (l->args[0] == 0) {
 					dx = (l->args[1] - l->args[2]) * (FRACUNIT/64);
 					dy = (l->args[4] - l->args[3]) * (FRACUNIT/64);

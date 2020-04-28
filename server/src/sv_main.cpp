@@ -1363,6 +1363,69 @@ void SV_UpdateSectors(client_t* cl)
 	for (int sectornum = 0; sectornum < numsectors; sectornum++)
 	{
 		SV_UpdateSector(cl, sectornum);
+
+		sector_s* sector = &sectors[sectornum];
+		if (!sector->SectorChanges)
+			continue;
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_sectorproperties);
+		MSG_WriteShort(&cl->reliablebuf, sectornum);
+		MSG_WriteShort(&cl->reliablebuf, sector->SectorChanges);
+
+		for (int i = 0, prop = 1; prop < SPC_Max; i++)
+		{
+			prop = 1 << i;
+			if ((prop & sector->SectorChanges) == 0)
+				continue;
+
+			switch (prop)
+			{
+			case SPC_FlatPic:
+				MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
+				MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
+				break;
+			case SPC_LightLevel:
+				MSG_WriteShort(&cl->reliablebuf, sector->lightlevel);
+				break;
+			case SPC_Color:
+				MSG_WriteByte(&cl->reliablebuf, sector->colormap->color.getr());
+				MSG_WriteByte(&cl->reliablebuf, sector->colormap->color.getg());
+				MSG_WriteByte(&cl->reliablebuf, sector->colormap->color.getb());
+				break;
+			case SPC_Fade:
+				MSG_WriteByte(&cl->reliablebuf, sector->colormap->fade.getr());
+				MSG_WriteByte(&cl->reliablebuf, sector->colormap->fade.getg());
+				MSG_WriteByte(&cl->reliablebuf, sector->colormap->fade.getb());
+				break;
+			case SPC_Gravity:
+				MSG_WriteLong(&cl->reliablebuf, sector->gravity);
+				break;
+			case SPC_Panning:
+				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_xoffs);
+				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_yoffs);
+				MSG_WriteLong(&cl->reliablebuf, sector->floor_xoffs);
+				MSG_WriteLong(&cl->reliablebuf, sector->floor_yoffs);
+				break;
+			case SPC_Scale:
+				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_xscale);
+				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_yscale);
+				MSG_WriteLong(&cl->reliablebuf, sector->floor_xscale);
+				MSG_WriteLong(&cl->reliablebuf, sector->floor_yscale);
+				break;
+			case SPC_Rotation:
+				MSG_WriteLong(&cl->reliablebuf, sector->floor_angle);
+				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_angle);
+				break;
+			case SPC_AlignBase:
+				MSG_WriteLong(&cl->reliablebuf, sector->base_ceiling_angle);
+				MSG_WriteLong(&cl->reliablebuf, sector->base_ceiling_yoffs);
+				MSG_WriteLong(&cl->reliablebuf, sector->base_floor_angle);
+				MSG_WriteLong(&cl->reliablebuf, sector->base_floor_yoffs);
+				break;
+			default:
+				break;
+			}
+		}
 	}
 }
 
@@ -1582,6 +1645,164 @@ void SV_SendGametic(client_t* cl)
 
 short P_GetButtonTexture(line_t* line);
 
+void SV_LineStateUpdate(client_t *cl)
+{
+	for (int lineNum = 0; lineNum < numlines; lineNum++)
+	{
+		line_t* line = &lines[lineNum];
+
+		if (line->PropertiesChanged)
+		{
+			MSG_WriteMarker(&cl->reliablebuf, svc_lineupdate);
+			MSG_WriteShort(&cl->reliablebuf, lineNum);
+			MSG_WriteShort(&cl->reliablebuf, line->flags);
+			MSG_WriteShort(&cl->reliablebuf, line->special);
+			MSG_WriteByte(&cl->reliablebuf, line->args[0]);
+			MSG_WriteByte(&cl->reliablebuf, line->args[1]);
+			MSG_WriteByte(&cl->reliablebuf, line->args[2]);
+			MSG_WriteByte(&cl->reliablebuf, line->args[3]);
+			MSG_WriteByte(&cl->reliablebuf, line->args[4]);
+		}
+
+		if (!line->SidedefChanged)
+			continue;
+		
+		for (int sideNum = 0; sideNum < 2; sideNum++)
+		{
+			if (line->sidenum[sideNum] != R_NOSIDE)
+			{
+				side_t* currentSideDef = sides + line->sidenum[sideNum];
+				if (!currentSideDef->SidedefChanges)
+					continue;
+
+				MSG_WriteMarker(&cl->reliablebuf, svc_linesideupdate);
+				MSG_WriteShort(&cl->reliablebuf, lineNum);
+				MSG_WriteByte(&cl->reliablebuf, sideNum);
+				MSG_WriteByte(&cl->reliablebuf, currentSideDef->SidedefChanges);
+
+				for (int i = 0, prop = 1; prop < SDPC_Max; i++)
+				{
+					prop = 1 << i;
+					if ((prop & currentSideDef->SidedefChanges) == 0)
+						continue;
+
+					switch (prop)
+					{
+					case SDPC_TexTop:
+						MSG_WriteShort(&cl->reliablebuf, currentSideDef->toptexture);
+						break;
+					case SDPC_TexMid:
+						MSG_WriteShort(&cl->reliablebuf, currentSideDef->midtexture);
+						break;
+					case SDPC_TexBottom:
+						MSG_WriteShort(&cl->reliablebuf, currentSideDef->bottomtexture);
+						break;
+					default:
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+void SV_ThinkerUpdate(client_t* cl)
+{
+	TThinkerIterator<DScroller> scrollIter;
+	TThinkerIterator<DFireFlicker> fireIter;
+	TThinkerIterator<DFlicker> flickerIter;
+	TThinkerIterator<DLightFlash> lightFlashIter;
+	TThinkerIterator<DStrobe> strobeIter;
+	TThinkerIterator<DGlow>	glowIter;
+	TThinkerIterator<DGlow2> glow2Iter;
+	TThinkerIterator<DPhased> phasedIter;
+
+	DScroller *scroller;
+	DFireFlicker* fireFlicker;
+	DFlicker* flicker;
+	DLightFlash* lightFlash;
+	DStrobe* strobe;
+	DGlow* glow;
+	DGlow2* glow2;
+	DPhased* phased;
+
+	while ((scroller = scrollIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_Scroller);
+		MSG_WriteByte(&cl->reliablebuf, scroller->GetType());
+		MSG_WriteLong(&cl->reliablebuf, scroller->GetScrollX());
+		MSG_WriteLong(&cl->reliablebuf, scroller->GetScrollY());
+		MSG_WriteLong(&cl->reliablebuf, scroller->GetAffectee());
+	}
+
+	while ((fireFlicker = fireIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_FireFlicker);
+		MSG_WriteShort(&cl->reliablebuf, fireFlicker->GetSector() - sectors);
+		MSG_WriteShort(&cl->reliablebuf, fireFlicker->GetMinLight());
+		MSG_WriteShort(&cl->reliablebuf, fireFlicker->GetMaxLight());
+	}
+
+	while ((flicker = flickerIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_Flicker);
+		MSG_WriteShort(&cl->reliablebuf, flicker->GetSector() - sectors);
+		MSG_WriteShort(&cl->reliablebuf, flicker->GetMinLight());
+		MSG_WriteShort(&cl->reliablebuf, flicker->GetMaxLight());
+	}
+
+	while ((lightFlash = lightFlashIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_LightFlash);
+		MSG_WriteShort(&cl->reliablebuf, lightFlash->GetSector() - sectors);
+		MSG_WriteShort(&cl->reliablebuf, lightFlash->GetMinLight());
+		MSG_WriteShort(&cl->reliablebuf, lightFlash->GetMaxLight());
+	}
+
+	while ((strobe = strobeIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_Strobe);
+		MSG_WriteShort(&cl->reliablebuf, strobe->GetSector() - sectors);
+		MSG_WriteShort(&cl->reliablebuf, strobe->GetMinLight());
+		MSG_WriteShort(&cl->reliablebuf, strobe->GetMaxLight());
+		MSG_WriteShort(&cl->reliablebuf, strobe->GetDarkTime());
+		MSG_WriteShort(&cl->reliablebuf, strobe->GetBrightTime());
+		MSG_WriteByte(&cl->reliablebuf, strobe->GetCount());
+	}
+
+	while ((glow = glowIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_Glow);
+		MSG_WriteShort(&cl->reliablebuf, glow->GetSector() - sectors);
+	}
+
+	while ((glow2 = glow2Iter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_Glow2);
+		MSG_WriteShort(&cl->reliablebuf, glow2->GetSector() - sectors);
+		MSG_WriteShort(&cl->reliablebuf, glow2->GetStart());
+		MSG_WriteShort(&cl->reliablebuf, glow2->GetEnd());
+		MSG_WriteShort(&cl->reliablebuf, glow2->GetMaxTics());
+		MSG_WriteByte(&cl->reliablebuf, glow2->GetOneShot());
+	}
+
+	while ((phased = phasedIter.Next()))
+	{
+		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
+		MSG_WriteByte(&cl->reliablebuf, TT_Phased);
+		MSG_WriteShort(&cl->reliablebuf, phased->GetSector() - sectors);
+		MSG_WriteShort(&cl->reliablebuf, phased->GetBaseLevel());
+		MSG_WriteByte(&cl->reliablebuf, phased->GetPhase());
+	}
+}
+
 //
 // SV_ClientFullUpdate
 //
@@ -1645,6 +1866,14 @@ void SV_ClientFullUpdate(player_t &pl)
 		return;
 
 	P_UpdateButtons(cl);
+	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
+		return;
+
+	SV_LineStateUpdate(cl);
+	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
+		return;
+
+	SV_ThinkerUpdate(cl);
 	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
 		return;
 
@@ -5439,7 +5668,10 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_executelinespecial);
 		MSG_WriteByte(&cl->reliablebuf, special);
-		MSG_WriteShort(&cl->reliablebuf, lines - line);
+		if (line)
+			MSG_WriteShort(&cl->reliablebuf, line - lines);
+		else
+			MSG_WriteShort(&cl->reliablebuf, -1);
 		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
 		MSG_WriteByte(&cl->reliablebuf, arg0);
 		MSG_WriteByte(&cl->reliablebuf, arg1);

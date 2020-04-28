@@ -3658,6 +3658,10 @@ void CL_InitCommands(void)
 	cmds[svc_playerqueuepos] = &CL_UpdatePlayerQueuePos;
 	cmds[svc_executelinespecial] = &CL_ExecuteLineSpecial;
 	cmds[svc_executeacsspecial] = &CL_ACSExecuteSpecial;
+	cmds[svc_lineupdate] = &CL_LineUpdate;
+	cmds[svc_linesideupdate] = &CL_LineSideUpdate;
+	cmds[svc_sectorproperties] = &CL_SectorSectorPropertiesUpdate;
+	cmds[svc_thinkerupdate] = &CL_ThinkerUpdate;
 }
 
 //
@@ -4169,7 +4173,13 @@ void CL_ExecuteLineSpecial()
 	if (lineid > numlines)
 		return;
 
-	LineSpecials[special](&lines[lineid], activator, arg0, arg1, arg2, arg3, arg4);
+	line_s* line = NULL;
+	if (lineid != -1)
+		line = &lines[lineid];
+
+	s_SpecialFromServer = true;
+	LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
+	s_SpecialFromServer = false;
 }
 
 void CL_ACSExecuteSpecial()
@@ -4262,6 +4272,245 @@ void CL_ACSExecuteSpecial()
 	default:
 		Printf(PRINT_HIGH, "Invalid ACS special: %d", special);
 		break;
+	}
+}
+
+void CL_LineUpdate()
+{
+	short id = MSG_ReadShort();
+	short flags = MSG_ReadShort();
+	short special = MSG_ReadShort();
+	byte arg0 = MSG_ReadByte();
+	byte arg1 = MSG_ReadByte();
+	byte arg2 = MSG_ReadByte();
+	byte arg3 = MSG_ReadByte();
+	byte arg4 = MSG_ReadByte();
+
+	if (id < numlines)
+	{
+		line_t* line = &lines[id];
+		line->flags = flags;
+		line->special = special;
+		line->args[0] = arg0;
+		line->args[1] = arg1;
+		line->args[2] = arg2;
+		line->args[3] = arg3;
+		line->args[4] = arg4;
+	}
+}
+
+void CL_LineSideUpdate()
+{
+	short id = MSG_ReadShort();
+	byte side = MSG_ReadByte();
+	int changes = MSG_ReadByte();
+
+	side_t* sidedef;
+	side_t empty;
+
+	if (id > -1 && id < numlines && side < 2 && lines[id].sidenum[side] != R_NOSIDE)
+		sidedef = sides + lines[id].sidenum[side];
+	else
+		sidedef = &empty;
+
+	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SDPC_TexTop:
+			sidedef->toptexture = MSG_ReadShort();
+			break;
+		case SDPC_TexMid:
+			sidedef->midtexture = MSG_ReadShort();
+			break;
+		case SDPC_TexBottom:
+			sidedef->bottomtexture = MSG_ReadShort();
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+void CL_SectorSectorPropertiesUpdate()
+{
+	short secnum = MSG_ReadShort();
+	int changes = MSG_ReadShort();
+
+	sector_t* sector;
+	sector_t empty;
+
+	if (secnum > -1 && secnum < numsectors)
+	{
+		sector = &sectors[secnum];
+	}
+	else
+	{
+		sector = &empty;
+		extern dyncolormap_t NormalLight;
+		empty.colormap = &NormalLight;
+	}
+
+	for (int i = 0, prop = 1; prop < SPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SPC_FlatPic:
+			sector->floorpic = MSG_ReadShort();
+			sector->ceilingpic = MSG_ReadShort();
+			break;
+		case SPC_LightLevel:
+			sector->lightlevel = MSG_ReadShort();
+			break;
+		case SPC_Color:
+		{
+			byte r = MSG_ReadByte();
+			byte g = MSG_ReadByte();
+			byte b = MSG_ReadByte();
+			sector->colormap = GetSpecialLights(r, g, b,
+				sector->colormap->fade.getr(), sector->colormap->fade.getg(), sector->colormap->fade.getb());
+		}
+			break;
+		case SPC_Fade:
+		{
+			byte r = MSG_ReadByte();
+			byte g = MSG_ReadByte();
+			byte b = MSG_ReadByte();
+			sector->colormap = GetSpecialLights(sector->colormap->color.getr(), sector->colormap->color.getg(), sector->colormap->color.getb(),
+				r, g, b);
+		}
+			break;
+		case SPC_Gravity:
+			*(int*)&sector->gravity = MSG_ReadLong();
+			break;
+		case SPC_Panning:
+			sector->ceiling_xoffs = MSG_ReadLong();
+			sector->ceiling_yoffs = MSG_ReadLong();
+			sector->floor_xoffs = MSG_ReadLong();
+			sector->floor_yoffs = MSG_ReadLong();
+			break;
+		case SPC_Scale:
+			sector->ceiling_xscale = MSG_ReadLong();
+			sector->ceiling_yscale = MSG_ReadLong();
+			sector->floor_xscale = MSG_ReadLong();
+			sector->floor_yscale = MSG_ReadLong();
+			break;
+		case SPC_Rotation:
+			sector->floor_angle = MSG_ReadLong();
+			sector->ceiling_angle = MSG_ReadLong();
+			break;
+		case SPC_AlignBase:
+			sector->base_ceiling_angle = MSG_ReadLong();
+			sector->base_ceiling_yoffs = MSG_ReadLong();
+			sector->base_floor_angle = MSG_ReadLong();
+			sector->base_floor_yoffs = MSG_ReadLong();
+		default:
+			break;
+		}
+	}
+}
+
+void CL_ThinkerUpdate()
+{
+	ThinkerType type = (ThinkerType)MSG_ReadByte();
+
+	switch (type)
+	{
+		case TT_Scroller:
+		{
+			DScroller::EScrollType scrollType = (DScroller::EScrollType)MSG_ReadByte();
+			fixed_t dx = MSG_ReadLong();
+			fixed_t dy = MSG_ReadLong();
+			int affectee = MSG_ReadLong();
+			if (affectee < 0)
+				break;
+			if (scrollType == DScroller::sc_side && affectee > numsides)
+				break;
+			if (scrollType != DScroller::sc_side && affectee > numsectors)
+				break;
+
+			new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		}
+			break;
+		case TT_FireFlicker:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DFireFlicker(&sectors[secnum], max, min);
+		}
+			break;
+		case TT_Flicker:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DFlicker(&sectors[secnum], max, min);
+		}
+			break;
+		case TT_LightFlash:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DLightFlash(&sectors[secnum], min, max);
+		}
+			break;
+		case TT_Strobe:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			int dark = MSG_ReadShort();
+			int bright = MSG_ReadShort();
+			int count = MSG_ReadByte();
+			if (secnum < numsectors)
+			{
+				DStrobe* strobe = new DStrobe(&sectors[secnum], max, min, bright, dark);
+				strobe->SetCount(count);
+			}
+		}
+			break;
+		case TT_Glow:
+		{
+			short secnum = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DGlow(&sectors[secnum]);
+		}
+			break;
+		case TT_Glow2:
+		{
+			short secnum = MSG_ReadShort();
+			int start = MSG_ReadShort();
+			int end = MSG_ReadShort();
+			int tics = MSG_ReadShort();
+			bool oneShot = MSG_ReadByte();
+			if (secnum < numsectors)
+				new DGlow2(&sectors[secnum], start, end, tics, oneShot);
+		}
+			break;
+		case TT_Phased:
+		{
+			short secnum = MSG_ReadShort();
+			int base = MSG_ReadShort();
+			int phase = MSG_ReadByte();
+			if (secnum < numsectors)
+				new DPhased(&sectors[secnum], base, phase);
+		}
+			break;
+		default:
+			break;
 	}
 }
 
