@@ -155,16 +155,16 @@ public:
 	}
 
 	virtual uint16_t getWidth() const
-	{	return mWidth;	}
+	{	return mVideoMode.width;	}
 
 	virtual uint16_t getHeight() const
-	{	return mHeight;	}
+	{	return mVideoMode.height;	}
 
 	virtual uint8_t getBitsPerPixel() const
-	{	return mBitsPerPixel;	}
+	{	return mVideoMode.bpp;	}
 
 	virtual int getBytesPerPixel() const
-	{	return mBitsPerPixel >> 3;	}
+	{	return mVideoMode.bpp >> 3;	}
 
 	virtual const IVideoMode& getVideoMode() const
 	{	return mVideoMode;	}
@@ -174,15 +174,15 @@ public:
 	virtual bool setMode(const IVideoMode& video_mode);
 
 	virtual bool isFullScreen() const
-	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
+	{	return mVideoMode.window_mode != WINDOW_Windowed;	}
 
 	virtual EWindowMode getWindowMode() const
-	{	return mWindowMode;		}
+	{	return mVideoMode.window_mode;		}
 
 	virtual bool isFocused() const;
 
 	virtual bool usingVSync() const
-	{	return mUseVSync;	}
+	{	return mVideoMode.vsync;	}
 
 	virtual void enableRefresh()
 	{	mBlit = true;		}
@@ -218,14 +218,7 @@ private:
 
 	IWindowSurfaceManager*	mSurfaceManager;
 
-	uint16_t			mWidth;
-	uint16_t			mHeight;
-	uint8_t				mBitsPerPixel;
-
 	IVideoMode			mVideoMode;
-
-	EWindowMode			mWindowMode;
-	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;
@@ -388,16 +381,16 @@ public:
 	}
 
 	virtual uint16_t getWidth() const
-	{	return mWidth;	}
+	{	return mVideoMode.width;	}
 
 	virtual uint16_t getHeight() const
-	{	return mHeight;	}
+	{	return mVideoMode.height;	}
 
 	virtual uint8_t getBitsPerPixel() const
-	{	return mBitsPerPixel;	}
+	{	return mVideoMode.bpp;	}
 
 	virtual int getBytesPerPixel() const
-	{	return mBitsPerPixel >> 3;	}
+	{	return mVideoMode.bpp >> 3;	}
 
 	virtual const IVideoMode& getVideoMode() const
 	{	return mVideoMode;	}
@@ -408,15 +401,15 @@ public:
 	virtual bool setMode(const IVideoMode& video_mode);
 
 	virtual bool isFullScreen() const
-	{	return mWindowMode == WINDOW_Fullscreen || mWindowMode == WINDOW_DesktopFullscreen;	}
+	{	return mVideoMode.isFullScreen();	}
 
 	virtual EWindowMode getWindowMode() const
-	{	return mWindowMode;		}
+	{	return mVideoMode.window_mode;		}
 
 	virtual bool isFocused() const;
 
 	virtual bool usingVSync() const
-	{	return mUseVSync;	}
+	{	return mVideoMode.vsync;	}
 
 	virtual void enableRefresh()
 	{	mBlit = true;		}
@@ -432,7 +425,6 @@ public:
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
-
 
 	virtual void lockSurface();
 	virtual void unlockSurface();
@@ -466,15 +458,8 @@ private:
 
 	IWindowSurfaceManager* mSurfaceManager;
 
-	uint16_t			mWidth;
-	uint16_t			mHeight;
-	uint8_t				mBitsPerPixel;
-
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
-
-	EWindowMode			mWindowMode;
-	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;
@@ -482,8 +467,11 @@ private:
 	bool				mMouseFocus;
 	bool				mKeyboardFocus;
 
+	bool				mIgnoreResizeEvents;
+
 	int16_t				mLocks;
 };
+
 
 // ****************************************************************************
 

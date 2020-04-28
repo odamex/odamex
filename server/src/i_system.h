@@ -97,12 +97,6 @@ void I_SetTitleString (const char *title);
 
 std::string I_ConsoleInput (void);
 
-// In i_input.c. Used to release control of the
-// mouse to the user when the game is paused in
-// windowed modes.
-void I_PauseMouse (void);
-void I_ResumeMouse (void);
-
 // [RH] Returns millisecond-accurate time
 dtime_t I_MSTime (void);
 
