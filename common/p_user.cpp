@@ -934,8 +934,8 @@ player_s::player_s()
 	fragcount = 0;
 	deathcount = 0;
 	killcount = 0;
-	pendingweapon = wp_nochange;
-	readyweapon = wp_nochange;
+	pendingweapon = wp_fist;
+	readyweapon = wp_fist;
 	for (i = 0; i < NUMWEAPONS; i++)
 		weaponowned[i] = false;
 	for (i = 0; i < NUMAMMO; i++)
@@ -1104,4 +1104,3 @@ player_s::~player_s()
 }
 
 VERSION_CONTROL (p_user_cpp, "$Id$")
-
