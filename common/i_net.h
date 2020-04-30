@@ -135,7 +135,6 @@ enum svc_t
 	svc_damagemobj,
 	svc_executelinespecial,
 	svc_executeacsspecial,
-	svc_actorspecialupdate,
 	svc_thinkerupdate,
 
 	// for downloading
