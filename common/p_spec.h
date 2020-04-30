@@ -64,6 +64,15 @@ typedef enum
 	lighting_special
 } special_e;
 
+enum LineActivationType
+{
+	LineCross,
+	LineUse,
+	LineShoot,
+	LinePush,
+	LineACS,
+};
+
 // killough 3/7/98: Add generalized scroll effects
 
 class DScroller : public DThinker

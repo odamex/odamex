@@ -1280,7 +1280,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain);
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType);
 
 //
 // EVENTS
@@ -1421,7 +1421,7 @@ P_CrossSpecialLine
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, side, 0);
+	OnActivatedLine(line, thing, side, LineCross);
 
 	s_SpecialFromServer = false;
 }
@@ -1461,7 +1461,7 @@ P_ShootSpecialLine
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, 0, 2);
+	OnActivatedLine(line, thing, 0, LineShoot);
 
 	if(serverside)
 	{
@@ -1542,7 +1542,7 @@ P_UseSpecialLine
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, 1);
+		OnActivatedLine(line, thing, side, LineUse);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
@@ -1612,7 +1612,7 @@ P_PushSpecialLine
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, 3);
+		OnActivatedLine(line, thing, side, LinePush);
 
 		if(serverside)
 		{

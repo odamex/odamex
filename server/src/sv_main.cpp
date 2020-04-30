@@ -116,6 +116,7 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
+bool P_LineSpecialMovesSector(byte special);
 
 void SV_UpdateShareKeys(player_t& player);
 
@@ -1656,12 +1657,7 @@ void SV_LineStateUpdate(client_t *cl)
 			MSG_WriteMarker(&cl->reliablebuf, svc_lineupdate);
 			MSG_WriteShort(&cl->reliablebuf, lineNum);
 			MSG_WriteShort(&cl->reliablebuf, line->flags);
-			MSG_WriteShort(&cl->reliablebuf, line->special);
-			MSG_WriteByte(&cl->reliablebuf, line->args[0]);
-			MSG_WriteByte(&cl->reliablebuf, line->args[1]);
-			MSG_WriteByte(&cl->reliablebuf, line->args[2]);
-			MSG_WriteByte(&cl->reliablebuf, line->args[3]);
-			MSG_WriteByte(&cl->reliablebuf, line->args[4]);
+			MSG_WriteByte(&cl->reliablebuf, line->lucency);
 		}
 
 		if (!line->SidedefChanged)
@@ -5118,8 +5114,11 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	}
 }
 
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType)
 {
+	if (P_LineSpecialMovesSector(line->special))
+		return;
+
 	int l = line - lines;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -5659,6 +5658,9 @@ void SV_ClearPlayerQueue()
 
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4)
 {
+	if (P_LineSpecialMovesSector(special))
+		return;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
@@ -5671,7 +5673,7 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 		if (line)
 			MSG_WriteShort(&cl->reliablebuf, line - lines);
 		else
-			MSG_WriteShort(&cl->reliablebuf, -1);
+			MSG_WriteShort(&cl->reliablebuf, 0xFFFF);
 		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
 		MSG_WriteByte(&cl->reliablebuf, arg0);
 		MSG_WriteByte(&cl->reliablebuf, arg1);

@@ -1591,14 +1591,17 @@ void DLevelScript::SetLineBlocking(int lineid, int flags)
 		{
 		case BLOCK_NOTHING:
 			lines[line].flags &= ~(ML_BLOCKING | ML_BLOCKEVERYTHING);
+			lines[line].PropertiesChanged = true;
 			break;
 		case BLOCK_CREATURES:
 		default:
 			lines[line].flags &= ~ML_BLOCKEVERYTHING;
 			lines[line].flags |= ML_BLOCKING;
+			lines[line].PropertiesChanged = true;
 			break;
 		case BLOCK_EVERYTHING:
 			lines[line].flags |= ML_BLOCKING | ML_BLOCKEVERYTHING;
+			lines[line].PropertiesChanged = true;
 			break;
 		}
 	}
@@ -1641,7 +1644,6 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 		line->args[2] = arg3;
 		line->args[3] = arg4;
 		line->args[4] = arg5;
-		line->PropertiesChanged = true;
 	}
 
 	if (serverside)
@@ -2697,10 +2699,7 @@ void DLevelScript::RunScript ()
 
 		case PCD_CLEARLINESPECIAL:
 			if (activationline)
-			{
 				activationline->special = 0;
-				activationline->PropertiesChanged = true;
-			}
 			break;
 
 		case PCD_CASEGOTO:

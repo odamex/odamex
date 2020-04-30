@@ -60,11 +60,8 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int dir
 // Returns true if the special for line will cause a DMovingFloor or
 // DMovingCeiling object to be created.
 //
-bool P_LineSpecialMovesSector(line_t *line)
+bool P_LineSpecialMovesSector(byte special)
 {
-	if (!line)
-		return false;
-
 	static bool initialized = false;
 	static bool specials[256];
 
@@ -150,7 +147,7 @@ bool P_LineSpecialMovesSector(line_t *line)
 		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255
 	}
 
-	return specials[line->special];
+	return specials[special];
 }
 
 EXTERN_CVAR (cl_predictsectors)
@@ -171,7 +168,7 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	}
 
 	// Predict sectors that don't actually create floor or ceiling thinkers.
-	if (!P_LineSpecialMovesSector(line))
+	if (line && !P_LineSpecialMovesSector(line->special))
 		return true;
 
 	return false;
@@ -1748,13 +1745,14 @@ FUNC(LS_SetPlayerProperty)
 FUNC(LS_TranslucentLine)
 // TranslucentLine (id, amount)
 {
-	if (ln)
+	if (IgnoreSpecial)
 		return false;
 
 	int linenum = -1;
 	while ((linenum = P_FindLineFromID (arg0, linenum)) >= 0)
 	{
 		lines[linenum].lucency = arg1 & 255;
+		lines[linenum].PropertiesChanged = true;
 	}
 
 	return true;

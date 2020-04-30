@@ -3245,22 +3245,15 @@ void CL_Switch()
 	lines[l].special = special;
 }
 
-void CL_ActivateLine(void)
+void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activationType,
+	byte special = 0, byte arg0 = 0, byte arg1 = 0, byte arg2 = 0, byte arg3 = 0, byte arg4 = 0)
 {
-	unsigned l = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte side = MSG_ReadByte();
-	byte activationType = MSG_ReadByte();
-
-	if (!lines || l >= (unsigned)numlines)
-		return;
-
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
 	// positions since they cannot be used for interpolation.
-	if ((mo && mo->player) &&
-		(lines[l].special == Teleport || lines[l].special == Teleport_NoFog ||
-		 lines[l].special == Teleport_Line))
+	if (line && (mo && mo->player) &&
+		(line->special == Teleport || line->special == Teleport_NoFog ||
+			line->special == Teleport_Line))
 	{
 		teleported_players.insert(mo->player->id);
 
@@ -3271,24 +3264,48 @@ void CL_ActivateLine(void)
 
 	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
 	// need to create moving sectors on their own in response to svc_activateline
-	if (P_LineSpecialMovesSector(&lines[l]))
+	if (line && P_LineSpecialMovesSector(line->special))
 		return;
 
 	switch (activationType)
 	{
-	case 0:
-		P_CrossSpecialLine(l, side, mo, true);
+	case LineCross:
+		if (line)
+			P_CrossSpecialLine(line - lines, side, mo, true);
 		break;
-	case 1:
-		P_UseSpecialLine(mo, &lines[l], side, true);
+	case LineUse:
+		if (line)
+			P_UseSpecialLine(mo, line, side, true);
 		break;
-	case 2:
-		P_ShootSpecialLine(mo, &lines[l], true);
+	case LineShoot:
+		if (line)
+			P_ShootSpecialLine(mo, line, true);
 		break;
-    case 3:
-		P_PushSpecialLine(mo, &lines[l], side, true);
+	case LinePush:
+		if (line)
+			P_PushSpecialLine(mo, line, side, true);
+		break;
+	case LineACS:
+		s_SpecialFromServer = true;
+		LineSpecials[special](line, mo, arg0, arg1, arg2, arg3, arg4);
+		s_SpecialFromServer = false;
+		break;
+	default:
 		break;
 	}
+}
+
+void CL_ActivateLine(void)
+{
+	unsigned linenum = MSG_ReadLong();
+	AActor *mo = P_FindThingById(MSG_ReadShort());
+	byte side = MSG_ReadByte();
+	LineActivationType activationType = (LineActivationType)MSG_ReadByte();
+
+	if (!lines || linenum >= (unsigned)numlines)
+		return;
+
+	ActivateLine(mo, &lines[linenum], side, activationType);
 }
 
 void CL_ConsolePlayer(void)
@@ -4162,7 +4179,7 @@ void CL_UpdatePlayerQueuePos()
 void CL_ExecuteLineSpecial()
 {
 	byte special = MSG_ReadByte();
-	short lineid = MSG_ReadShort();
+	uint16_t lineid = MSG_ReadShort();
 	AActor* activator = P_FindThingById(MSG_ReadShort());
 	byte arg0 = MSG_ReadByte();
 	byte arg1 = MSG_ReadByte();
@@ -4170,16 +4187,14 @@ void CL_ExecuteLineSpecial()
 	byte arg3 = MSG_ReadByte();
 	byte arg4 = MSG_ReadByte();
 
-	if (lineid > numlines)
+	if (lineid != 0xFFFF && lineid > numlines)
 		return;
 
 	line_s* line = NULL;
-	if (lineid != -1)
+	if (lineid != 0xFFFF)
 		line = &lines[lineid];
 
-	s_SpecialFromServer = true;
-	LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
-	s_SpecialFromServer = false;
+	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
 }
 
 void CL_ACSExecuteSpecial()
@@ -4277,41 +4292,31 @@ void CL_ACSExecuteSpecial()
 
 void CL_LineUpdate()
 {
-	short id = MSG_ReadShort();
+	uint16_t id = MSG_ReadShort();
 	short flags = MSG_ReadShort();
-	short special = MSG_ReadShort();
-	byte arg0 = MSG_ReadByte();
-	byte arg1 = MSG_ReadByte();
-	byte arg2 = MSG_ReadByte();
-	byte arg3 = MSG_ReadByte();
-	byte arg4 = MSG_ReadByte();
+	byte lucency = MSG_ReadByte();
 
 	if (id < numlines)
 	{
 		line_t* line = &lines[id];
 		line->flags = flags;
-		line->special = special;
-		line->args[0] = arg0;
-		line->args[1] = arg1;
-		line->args[2] = arg2;
-		line->args[3] = arg3;
-		line->args[4] = arg4;
+		line->lucency = lucency;
 	}
 }
 
 void CL_LineSideUpdate()
 {
-	short id = MSG_ReadShort();
+	uint16_t id = MSG_ReadShort();
 	byte side = MSG_ReadByte();
 	int changes = MSG_ReadByte();
 
-	side_t* sidedef;
+	side_t* currentSidedef;
 	side_t empty;
 
-	if (id > -1 && id < numlines && side < 2 && lines[id].sidenum[side] != R_NOSIDE)
-		sidedef = sides + lines[id].sidenum[side];
+	if (id < numlines && side < 2 && lines[id].sidenum[side] != R_NOSIDE)
+		currentSidedef = sides + lines[id].sidenum[side];
 	else
-		sidedef = &empty;
+		currentSidedef = &empty;
 
 	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
 	{
@@ -4322,13 +4327,13 @@ void CL_LineSideUpdate()
 		switch (prop)
 		{
 		case SDPC_TexTop:
-			sidedef->toptexture = MSG_ReadShort();
+			currentSidedef->toptexture = MSG_ReadShort();
 			break;
 		case SDPC_TexMid:
-			sidedef->midtexture = MSG_ReadShort();
+			currentSidedef->midtexture = MSG_ReadShort();
 			break;
 		case SDPC_TexBottom:
-			sidedef->bottomtexture = MSG_ReadShort();
+			currentSidedef->bottomtexture = MSG_ReadShort();
 			break;
 		default:
 			break;
@@ -4338,7 +4343,7 @@ void CL_LineSideUpdate()
 
 void CL_SectorSectorPropertiesUpdate()
 {
-	short secnum = MSG_ReadShort();
+	uint16_t secnum = MSG_ReadShort();
 	int changes = MSG_ReadShort();
 
 	sector_t* sector;
@@ -4515,6 +4520,6 @@ void CL_ThinkerUpdate()
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
