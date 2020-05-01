@@ -53,9 +53,13 @@ ExternalProject_Add(miniupnpc-project
   BUILD_BYPRODUCTS ${MINIUPNPC_LIBRARY}
   EXCLUDE_FROM_ALL ON)
 
+# Ensure the destination include directory exists, or else CMake complains.
+set(MINIUPNPC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc")
+file(MAKE_DIRECTORY "${MINIUPNPC_INCLUDE_DIR}")
+
 # Synthesize an imported target that can be linked against.
 add_library(upnpc-static STATIC IMPORTED GLOBAL)
 add_dependencies(upnpc-static miniupnpc-project)
 set_target_properties(upnpc-static PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc"
+  INTERFACE_INCLUDE_DIRECTORIES "${MINIUPNPC_INCLUDE_DIR}"
   IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
