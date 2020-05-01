@@ -53,8 +53,6 @@ bool tab_keydown = false;	// [ML] Actual status of tab key
 
 static IInputSubsystem* input_subsystem = NULL;
 
-static bool window_focused = false;
-static bool input_grabbed = false;
 static bool nomouse = false;
 
 
@@ -336,29 +334,6 @@ static bool I_CanRepeat()
 
 
 //
-// I_UpdateFocus
-//
-// Update the value of window_focused each tic and in response to
-// window manager events.
-//
-// We try to make ourselves be well-behaved: the grab on the mouse
-// is removed if we lose focus (such as a popup window appearing),
-// and we dont move the mouse around if we aren't focused either.
-// [ML] 4-2-14: Make more in line with EE and choco, handle alt+tab focus better
-//
-static void I_UpdateFocus()
-{
-	bool new_window_focused = I_GetWindow()->isFocused();
-
-	// [CG][EE] Handle focus changes, this is all necessary to avoid repeat events.
-	if (window_focused != new_window_focused)
-		I_FlushInput();
-
-	window_focused = new_window_focused;
-}
-
-
-//
 // I_CanGrab
 //
 // Returns true if the input (mouse & keyboard) can be grabbed in
@@ -375,20 +350,30 @@ static bool I_CanGrab()
 
 	assert(I_GetWindow() != NULL);
 
+	// If the window doesn't have the focus, don't grab
 	if (!I_GetWindow()->isFocused())
 		return false;
-	else if (I_GetWindow()->isFullScreen() && I_GetMonitorCount() <= 1)
+
+	// If the window is full screen and has only one monitor, always grab
+	if (I_GetWindow()->isFullScreen() && I_GetMonitorCount() <= 1)
 		return true;
-	else if (nomouse)
+
+	if (nomouse)
 		return false;
-	else if (configuring_controls)
+
+	// Always grab when configuring controllers in the menu
+	if (configuring_controls)
 		return true;
-	else if (menuactive || ConsoleState == c_down || paused)
+
+	// If paused, in the menu or in the console, don't grab
+	if (menuactive || ConsoleState == c_down || paused)
 		return false;
-	else if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
+
+	// If playing the game, always grab
+	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
 		return true;
-	else
-		return false;
+
+	return false;
 }
 
 
@@ -398,9 +383,8 @@ static bool I_CanGrab()
 static void I_GrabInput()
 {
 	input_subsystem->grabInput();
-	input_grabbed = true;
-	I_ResumeMouse();
 }
+
 
 //
 // I_UngrabInput
@@ -408,8 +392,6 @@ static void I_GrabInput()
 static void I_UngrabInput()
 {
 	input_subsystem->releaseInput();
-	input_grabbed = false;
-	I_PauseMouse();
 }
 
 
@@ -423,8 +405,6 @@ static void I_UngrabInput()
 //
 void I_ForceUpdateGrab()
 {
-	window_focused = I_GetWindow()->isFocused();
-
 	if (I_CanGrab())
 		I_GrabInput();
 	else
@@ -449,9 +429,9 @@ static void I_UpdateGrab()
 	prev_fullscreen = fullscreen;
 
 	// check if the window focus changed (or menu/console status changed)
-	if (!input_grabbed && I_CanGrab())
+	if (!input_subsystem->isInputGrabbed() && I_CanGrab())
 		I_GrabInput();
-	else if (input_grabbed && !I_CanGrab())
+	else if (input_subsystem->isInputGrabbed() && !I_CanGrab())
 		I_UngrabInput();
 #endif
 }
@@ -572,9 +552,6 @@ void I_CloseJoystick()
 //
 // ============================================================================
 
-bool I_OpenMouse();
-void I_CloseMouse();
-
 //
 // I_CloseMouse()
 //
@@ -596,30 +573,6 @@ bool I_OpenMouse()
 		return true;
 	}
 	return false;
-}
-
-
-//
-// I_PauseMouse
-//
-// Enables the mouse cursor and prevents the game from processing mouse movement
-// or button events
-//
-void I_PauseMouse()
-{
-	input_subsystem->pauseMouse();
-}
-
-
-//
-// I_ResumeMouse
-//
-// Disables the mouse cursor and allows the game to process mouse movement
-// or button events
-//
-void I_ResumeMouse()
-{
-	input_subsystem->resumeMouse();
 }
 
 
@@ -662,8 +615,6 @@ void STACK_ARGS I_ShutdownInput()
 {
 	input_subsystem->disableTextEntry();
 
-	I_PauseMouse();
-
 	I_UngrabInput();
 
 	delete input_subsystem;
@@ -678,7 +629,12 @@ void STACK_ARGS I_ShutdownInput()
 //
 static void I_GetEvents()
 {
-	I_UpdateFocus();
+	static bool previously_focused = false;
+	bool currently_focused = I_GetWindow()->isFocused();
+	if (currently_focused && !previously_focused)
+		I_FlushInput();
+	previously_focused = currently_focused;
+
 	I_UpdateGrab();
 	if (I_CanRepeat())
 		I_EnableKeyRepeat();
@@ -694,6 +650,7 @@ static void I_GetEvents()
 		D_PostEvent(&ev);
 	}
 }
+
 
 //
 // I_StartTic
@@ -825,20 +782,14 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 		return 0;
 
 	int button = ev->data1;
-	if (button < KEY_MOUSE1)
-	{
-		if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
-			button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
-			button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
-			return 0;
-		return 1;
-	}
+	if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
+		button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
+		button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
+		return 0;
 	else if (button >= KEY_HAT1 && button <= KEY_HAT8)
-	{
 		return button;
-	}
-
-	return 0;
+	else
+		return 1;
 }
 
 

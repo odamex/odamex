@@ -422,6 +422,7 @@ void ISDL12MouseInputDevice::pause()
 	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
+	SDL_WM_GrabInput(SDL_GRAB_OFF);
 	SDL_ShowCursor(true);
 }
 
@@ -437,8 +438,9 @@ void ISDL12MouseInputDevice::pause()
 void ISDL12MouseInputDevice::resume()
 {
 	mActive = true;
-	SDL_ShowCursor(false);
 	reset();
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+	SDL_ShowCursor(false);
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
@@ -851,28 +853,6 @@ void ISDL12InputSubsystem::shutdownKeyboard(int id)
 
 
 //
-// ISDL12InputSubsystem::pauseKeyboard
-//
-void ISDL12InputSubsystem::pauseKeyboard()
-{
-	IInputDevice* device = getKeyboardInputDevice();
-	if (device)
-		device->pause();
-}
-
-
-//
-// ISDL12InputSubsystem::resumeKeyboard
-//
-void ISDL12InputSubsystem::resumeKeyboard()
-{
-	IInputDevice* device = getKeyboardInputDevice();
-	if (device)
-		device->resume();
-}
-
-
-//
 // ISDL12InputSubsystem::getMouseDevices
 //
 // SDL only allows for one logical mouse so just return a dummy device
@@ -926,28 +906,6 @@ void ISDL12InputSubsystem::shutdownMouse(int id)
 		delete device;
 		setMouseInputDevice(NULL);
 	}
-}
-
-
-//
-// ISDL12InputSubsystem::pauseMouse
-//
-void ISDL12InputSubsystem::pauseMouse()
-{
-	IInputDevice* device = getMouseInputDevice();
-	if (device)
-		device->pause();
-}
-
-
-//
-// ISDL12InputSubsystem::resumeMouse
-//
-void ISDL12InputSubsystem::resumeMouse()
-{
-	IInputDevice* device = getMouseInputDevice();
-	if (device)
-		device->resume();
 }
 
 
@@ -1011,34 +969,14 @@ void ISDL12InputSubsystem::shutdownJoystick(int id)
 
 
 //
-// ISDL12InputSubsystem::pauseJoystick
-//
-void ISDL12InputSubsystem::pauseJoystick()
-{
-	IInputDevice* device = getJoystickInputDevice();
-	if (device)
-		device->pause();
-}
-
-
-//
-// ISDL12InputSubsystem::resumeJoystick
-//
-void ISDL12InputSubsystem::resumeJoystick()
-{
-	IInputDevice* device = getJoystickInputDevice();
-	if (device)
-		device->resume();
-}
-
-
-//
 // ISDL12InputSubsystem::grabInput
 //
 void ISDL12InputSubsystem::grabInput()
 {
-	SDL_WM_GrabInput(SDL_GRAB_ON);
 	mInputGrabbed = true;
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->resume();
 }
 
 
@@ -1047,8 +985,10 @@ void ISDL12InputSubsystem::grabInput()
 //
 void ISDL12InputSubsystem::releaseInput()
 {
-	SDL_WM_GrabInput(SDL_GRAB_OFF);
 	mInputGrabbed = false;
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->pause();
 }
 
 #endif	// SDL12
@@ -1428,7 +1368,7 @@ void ISDL20MouseInputDevice::pause()
 	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
-	SDL_ShowCursor(true);
+	SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
 
@@ -1443,12 +1383,11 @@ void ISDL20MouseInputDevice::pause()
 void ISDL20MouseInputDevice::resume()
 {
 	mActive = true;
-	SDL_ShowCursor(false);
 	reset();
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
-	SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 
@@ -1798,7 +1737,6 @@ ISDL20InputSubsystem::ISDL20InputSubsystem() :
 	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_JOYBUTTONUP, SDL_IGNORE);
 
-	SDL_ShowCursor(false);
 	grabInput();
 }
 
@@ -1875,28 +1813,6 @@ void ISDL20InputSubsystem::shutdownKeyboard(int id)
 
 
 //
-// ISDL20InputSubsystem::pauseKeyboard
-//
-void ISDL20InputSubsystem::pauseKeyboard()
-{
-	IInputDevice* device = getKeyboardInputDevice();
-	if (device)
-		device->pause();
-}
-
-
-//
-// ISDL20InputSubsystem::resumeKeyboard
-//
-void ISDL20InputSubsystem::resumeKeyboard()
-{
-	IInputDevice* device = getKeyboardInputDevice();
-	if (device)
-		device->resume();
-}
-
-
-//
 // ISDL20InputSubsystem::getMouseDevices
 //
 // SDL only allows for one logical mouse so just return a dummy device
@@ -1949,28 +1865,6 @@ void ISDL20InputSubsystem::shutdownMouse(int id)
 		delete device;
 		setMouseInputDevice(NULL);
 	}
-}
-
-
-//
-// ISDL20InputSubsystem::pauseMouse
-//
-void ISDL20InputSubsystem::pauseMouse()
-{
-	IInputDevice* device = getMouseInputDevice();
-	if (device)
-		device->pause();
-}
-
-
-//
-// ISDL20InputSubsystem::resumeMouse
-//
-void ISDL20InputSubsystem::resumeMouse()
-{
-	IInputDevice* device = getMouseInputDevice();
-	if (device)
-		device->resume();
 }
 
 
@@ -2035,34 +1929,14 @@ void ISDL20InputSubsystem::shutdownJoystick(int id)
 
 
 //
-// ISDL20InputSubsystem::pauseJoystick
-//
-void ISDL20InputSubsystem::pauseJoystick()
-{
-	IInputDevice* device = getJoystickInputDevice();
-	if (device)
-		device->pause();
-}
-
-
-//
-// ISDL20InputSubsystem::resumeJoystick
-//
-void ISDL20InputSubsystem::resumeJoystick()
-{
-	IInputDevice* device = getJoystickInputDevice();
-	if (device)
-		device->resume();
-}
-
-
-//
 // ISDL20InputSubsystem::grabInput
 //
 void ISDL20InputSubsystem::grabInput()
 {
-	SDL_SetRelativeMouseMode(SDL_TRUE);
 	mInputGrabbed = true;
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->resume();
 }
 
 
@@ -2071,8 +1945,10 @@ void ISDL20InputSubsystem::grabInput()
 //
 void ISDL20InputSubsystem::releaseInput()
 {
-	SDL_SetRelativeMouseMode(SDL_FALSE);
 	mInputGrabbed = false;
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->pause();
 }
 
 #endif	// SDL20
