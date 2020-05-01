@@ -28,12 +28,6 @@ if(WIN32)
   set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
 endif()
 
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(MINIUPNPC_DIR ../libraries/libminiupnpc)
-  set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
-endif()
-
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
 
@@ -52,11 +46,6 @@ if(WIN32 AND NOT MSVC)
 endif()
 include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
-# Include miniupnpc if we want it
-if (USE_MINIUPNP)
-  include_directories(${MINIUPNPC_DIR})
-endif()
-
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
@@ -68,8 +57,8 @@ add_executable(odasrv
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
 target_link_libraries(odasrv jsoncpp)
 
-if (USE_MINIUPNP)
-  target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
+if(USE_MINIUPNP)
+  target_link_libraries(odasrv upnpc-static)
 endif()
 
 if(WIN32)

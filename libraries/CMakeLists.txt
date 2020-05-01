@@ -38,3 +38,24 @@ add_dependencies(jsoncpp jsoncpp-project)
 set_target_properties(jsoncpp PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
   IMPORTED_LOCATION ${JSONCPP_LIBRARY})
+
+# Figure out the correct library path to attach to our imported target
+set(MINIUPNPC_LIBRARY
+  "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
+
+# Build the library as an ExternalProject.
+ExternalProject_Add(miniupnpc-project
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libminiupnpc"
+  CMAKE_ARGS
+  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+  "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+  "-DUPNPC_BUILD_SHARED=No"
+  BUILD_BYPRODUCTS ${MINIUPNPC_LIBRARY}
+  EXCLUDE_FROM_ALL ON)
+
+# Synthesize an imported target that can be linked against.
+add_library(upnpc-static STATIC IMPORTED GLOBAL)
+add_dependencies(upnpc-static miniupnpc-project)
+set_target_properties(upnpc-static PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc"
+  IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
