@@ -66,7 +66,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
-bool s_SpecialFromServer = false;
+bool s_SpecialFromServer;
 
 //
 // P_FindMovingSector
@@ -1314,12 +1314,7 @@ void P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void
-P_CrossSpecialLine
-( int		linenum,
-  int		side,
-  AActor*	thing,
-  bool      FromServer)
+void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 {
     line_t*	line = &lines[linenum];
 
@@ -1413,8 +1408,6 @@ P_CrossSpecialLine
 
 	TeleportSide = side;
 
-	s_SpecialFromServer = FromServer;
-
 	LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]);
@@ -1422,19 +1415,13 @@ P_CrossSpecialLine
 	P_HandleSpecialRepeat(line);
 
 	OnActivatedLine(line, thing, side, LineCross);
-
-	s_SpecialFromServer = false;
 }
 
 //
 // P_ShootSpecialLine - IMPACT SPECIALS
 // Called when a thing shoots a special line.
 //
-void
-P_ShootSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  bool      FromServer)
+void P_ShootSpecialLine(AActor*	thing, line_t* line)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return;
@@ -1451,8 +1438,6 @@ P_ShootSpecialLine
 			return;
 	}
 
-	s_SpecialFromServer = FromServer;
-
 	//TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1468,8 +1453,6 @@ P_ShootSpecialLine
 		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
-
-	s_SpecialFromServer = false;
 }
 
 
@@ -1478,12 +1461,7 @@ P_ShootSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
-bool
-P_UseSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  int		side,
-  bool      FromServer)
+bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
@@ -1532,8 +1510,6 @@ P_UseSpecialLine
 		}
 	}
 
-	s_SpecialFromServer = FromServer;
-
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1551,8 +1527,6 @@ P_UseSpecialLine
 		}
 	}
 
-	s_SpecialFromServer = false;
-
     return true;
 }
 
@@ -1562,12 +1536,7 @@ P_UseSpecialLine
 // Called when a thing pushes a special line, only in advanced map format
 // Only the front sides of lines are pushable.
 //
-bool
-P_PushSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  int		side,
-  bool      FromServer)
+bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
@@ -1604,8 +1573,6 @@ P_PushSpecialLine
 
     TeleportSide = side;
 
-	s_SpecialFromServer = FromServer;
-
 	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
@@ -1620,8 +1587,6 @@ P_PushSpecialLine
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
-
-	s_SpecialFromServer = false;
 
     return true;
 }

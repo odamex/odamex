@@ -3267,32 +3267,34 @@ void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activa
 	if (line && P_LineSpecialMovesSector(line->special))
 		return;
 
+	s_SpecialFromServer = true;
+
 	switch (activationType)
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo, true);
+			P_CrossSpecialLine(line - lines, side, mo);
 		break;
 	case LineUse:
 		if (line)
-			P_UseSpecialLine(mo, line, side, true);
+			P_UseSpecialLine(mo, line, side);
 		break;
 	case LineShoot:
 		if (line)
-			P_ShootSpecialLine(mo, line, true);
+			P_ShootSpecialLine(mo, line);
 		break;
 	case LinePush:
 		if (line)
-			P_PushSpecialLine(mo, line, side, true);
+			P_PushSpecialLine(mo, line, side);
 		break;
 	case LineACS:
-		s_SpecialFromServer = true;
 		LineSpecials[special](line, mo, arg0, arg1, arg2, arg3, arg4);
-		s_SpecialFromServer = false;
 		break;
 	default:
 		break;
 	}
+
+	s_SpecialFromServer = false;
 }
 
 void CL_ActivateLine(void)
