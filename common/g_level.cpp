@@ -428,6 +428,7 @@ static const char *MapInfoMapLevel[] =
 	"intermusic",
 	"par",
 	"sucktime",
+	"translator",
 	NULL
 };
 
@@ -526,6 +527,8 @@ MapInfoHandler MapHandlers[] =
 	// par <partime>
 	{ MITYPE_EATNEXT, 0, 0 },
 	// sucktime <value>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// translator <value>
 	{ MITYPE_EATNEXT, 0, 0 },
 };
 
