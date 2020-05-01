@@ -1504,7 +1504,7 @@ void G_SetLevelStrings (void)
 		if (info.cluster <= 4)
 		{
 			// Doom 1
-			int offset = (info.cluster - 1) + (info.levelnum - 1);
+			int offset = info.levelnum - 1 - (info.cluster - 1);
 			level_name = HUSTR_E1M1 + offset;
 			muslump = MUSIC_E1M1 + offset;
 		}
