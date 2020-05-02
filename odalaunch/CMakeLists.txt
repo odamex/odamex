@@ -64,7 +64,7 @@ if(wxWidgets_FOUND)
       TARGET odalaunch
       POST_BUILD
       COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources"
-      COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/"
+      COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE}" "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/"
       VERBATIM
     )
 
