@@ -1,8 +1,5 @@
 Set-PSDebug -Trace 1
 
-# Install Ninja using Chocolatey
-choco install ninja
-
 mkdir build | Out-Null
 Set-Location build
 
@@ -56,16 +53,10 @@ if (!(Test-Path -Path "lib\vc14x_x64_dll\wxbase313u_vc14x_x64.dll" -PathType lea
 
 Set-Location ..
 
-# Attempt to locate and get into a Visual Studio DevShell context
-# https://intellitect.com/enter-vsdevshell-powershell/
-
-$installPath = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -version 16.0 -property installationpath
-Import-Module (Join-Path $installPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
-Enter-VsDevShell -VsInstallPath $installPath -SkipAutomaticLocation
-
 # [AM] Odalaunch does not build correctly at this point using Visual Studio
 
-& cmake .. -G "Ninja" `
+& cmake .. `
+    -G "Visual Studio 16 2019" `
     -DUSE_MINIUPNP=False -DBUILD_ODALAUNCH=0 `
     -DSDL2_INCLUDE_DIR="./SDL2-2.0.12/include/" -DSDL2_LIBRARY="./SDL2-2.0.12/lib/x64/SDL2.lib" -DSDL2MAIN_LIBRARY="./lib/x64/SDL2main.lib" `
     -DSDL2_MIXER_INCLUDE_DIR="./SDL2_mixer-2.0.4/include/" -DSDL2_MIXER_LIBRARY="./SDL2_mixer-2.0.4/lib/x64/SDL2_mixer.lib" `
