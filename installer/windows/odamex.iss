@@ -64,7 +64,7 @@ Name: base; Description: Base data; Types: full compact custom; Flags: fixed
 Name: client; Description: Odamex Client; Types: full compact custom; Flags: DisableNoUninstallWarning
 Name: server; Description: Odamex Server; Types: full; Flags: DisableNoUninstallWarning
 Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact custom; Flags: DisableNoUninstallWarning
-Name: libs; Description: Libraries (SDL 2.0.5, SDL_Mixer 2.0.1); Types: full compact; Flags: DisableNoUninstallWarning
+Name: libs; Description: Libraries (SDL 2.0.12, SDL_Mixer 2.0.4); Types: full compact; Flags: DisableNoUninstallWarning
 
 
 [Files]
