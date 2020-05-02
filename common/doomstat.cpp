@@ -27,6 +27,7 @@
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
+#include "d_dehacked.h"
 
 // Localizable strings
 FStringTable	GStrings;
@@ -38,16 +39,25 @@ GameMission_t	gamemission = doom;
 // Language.
 CVAR_FUNC_IMPL (language)
 {
-	SetLanguageIDs ();
+	SetLanguageIDs();
 	if (level.behavior != NULL)
 	{
 		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
 			LanguageIDs[2], LanguageIDs[3]);
 	}
-    
-	GStrings.ResetStrings ();
-	GStrings.Compact ();
-	G_SetLevelStrings ();
+
+	// Load LANGUAGE strings.
+	GStrings.ResetStrings();
+	GStrings.Compact();
+
+	// Reapply DeHackEd patches on top of these strings.
+	// FIXME: This only handles PWAD patches for now.
+	DoDehPatch(NULL, true);
+
+	// Set default level strings based on those DeHackEd patches.
+	G_SetLevelStrings();
+
+	// MAPINFO comes last, because it overrides default level strings.
 	G_ParseMapInfo();
 }
 
