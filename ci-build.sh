@@ -7,8 +7,7 @@ IFS=$'\n\t'
 
 set -x
 
-type apt > /dev/null
-if [[ $? == 0 ]]; then
+if [[ $(uname -s) == "Linux" ]]; then
     # Ubuntu
     sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev
 else
