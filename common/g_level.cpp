@@ -1922,14 +1922,14 @@ static void MapinfoHelp()
 	Printf(PRINT_HIGH,
 		"mapinfo - Looks up internal information about levels\n\n"
 		"Usage:\n"
-		"    ] mapinfo lump <LUMPNAME>\n"
-		"    Looks up a map named LUMPNAME.\n\n"
-		"    ] mapinfo levelnum <LEVELNUM>\n"
-		"    Looks up a map with a levelnum of LEVELNUM.\n\n"
-		"    ] mapinfo id <LEVELINFO ID>\n"
-		"    Looks up a map based on its placement in the internal level info array.\n\n"
-		"    ] mapinfo count\n"
-		"    Return the size of the internal level info array.\n");
+		"  ] mapinfo mapname <LUMPNAME>\n"
+		"  Looks up a map contained in the lump LUMPNAME.\n\n"
+		"  ] mapinfo levelnum <LEVELNUM>\n"
+		"  Looks up a map with a levelnum of LEVELNUM.\n\n"
+		"  ] mapinfo at <LEVELINFO ID>\n"
+		"  Looks up a map based on its placement in the internal level info array.\n\n"
+		"  ] mapinfo size\n"
+		"  Return the size of the internal level info array.\n");
 }
 
 // A debugging tool to examine the state of computed map data.
@@ -1942,7 +1942,7 @@ BEGIN_COMMAND(mapinfo)
 	}
 
 	LevelInfos& levels = getLevelInfos();
-	if (stricmp(argv[1], "count") == 0)
+	if (stricmp(argv[1], "size") == 0)
 	{
 		Printf(PRINT_HIGH, "%u maps found\n", levels.size());
 		return;
@@ -1955,7 +1955,7 @@ BEGIN_COMMAND(mapinfo)
 	}
 
 	level_pwad_info_t* infoptr = NULL;
-	if (stricmp(argv[1], "lump") == 0)
+	if (stricmp(argv[1], "mapname") == 0)
 	{
 		infoptr = &levels.findByName(argv[2]);
 		if (!infoptr->exists())
@@ -1974,7 +1974,7 @@ BEGIN_COMMAND(mapinfo)
 			return;
 		}
 	}
-	else if (stricmp(argv[1], "id") == 0)
+	else if (stricmp(argv[1], "at") == 0)
 	{
 		// Check ahead of time, otherwise we might crash.
 		int id = atoi(argv[2]);
