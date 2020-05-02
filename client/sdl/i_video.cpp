@@ -76,6 +76,7 @@ static IWindowSurface* loading_icon_background_surface = NULL;
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_overscan)
 EXTERN_CVAR(vid_320x200)
 EXTERN_CVAR(vid_640x400)
@@ -552,6 +553,8 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 {
 	// ensure the requested mode is valid
 	IVideoMode validated_mode = I_ValidateVideoMode(requested_mode);
+	validated_mode.vsync = bool(vid_vsync.asInt());
+	validated_mode.stretch_mode = std::string(vid_filter);
 	assert(validated_mode.isValid());
 
 	IWindow* window = I_GetWindow();

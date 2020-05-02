@@ -131,8 +131,9 @@ static IVideoMode V_GetRequestedVideoMode()
 	int surface_bpp = vid_32bpp ? 32 : 8;
 	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
 	bool vsync = (vid_vsync != 0.0f);
+	const std::string stretch_mode(vid_filter);
 
-	return IVideoMode(vid_defwidth, vid_defheight, surface_bpp, window_mode, vsync, vid_filter);
+	return IVideoMode(vid_defwidth.asInt(), vid_defheight.asInt(), surface_bpp, window_mode, vsync, stretch_mode);
 }
 
 
