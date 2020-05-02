@@ -9,9 +9,11 @@ set -x
 
 if [[ $(uname -s) == "Linux" ]]; then
     # Ubuntu
+    sudo apt update
     sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev
 else
     # macOS
+    brew update
     brew install ninja sdl2 sdl2_mixer
 fi
 

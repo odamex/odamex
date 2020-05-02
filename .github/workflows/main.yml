@@ -24,7 +24,7 @@ jobs:
     - name: Prepare the build
       run: bash ci-build.sh
     - name: Run the build
-      run: cmake --build .\build\
+      run: cmake --build ./build/
   linux-build:
     runs-on: ubuntu-latest
     steps:
@@ -32,4 +32,4 @@ jobs:
     - name: Prepare the build
       run: bash ci-build.sh
     - name: Run the build
-      run: cmake --build .\build\
+      run: cmake --build ./build/
