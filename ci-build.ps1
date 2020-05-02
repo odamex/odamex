@@ -1,6 +1,9 @@
+Set-PSDebug -Trace 1
+
 mkdir build | Out-Null
 Set-Location build
 
+# Grab SDL2 library
 if (!(Test-Path -Path "SDL2-devel-2.0.12-VC.zip" -PathType leaf)) {
     curl.exe --fail --location --max-time 30 --remote-name --silent --show-error `
         "https://www.libsdl.org/release/SDL2-devel-2.0.12-VC.zip"
@@ -9,6 +12,7 @@ if (!(Test-Path -Path "SDL2-2.0.12")) {
     7z x "SDL2-devel-2.0.12-VC.zip"
 }
 
+# Grab SDL2_mixer library
 if (!(Test-Path -Path "SDL2_mixer-devel-2.0.4-VC.zip" -PathType leaf)) {
     curl.exe --fail --location --max-time 30 --remote-name --silent --show-error `
         "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.4-VC.zip"
@@ -17,6 +21,7 @@ if (!(Test-Path -Path "SDL2_mixer-2.0.4")) {
     7z x "SDL2_mixer-devel-2.0.4-VC.zip"
 }
 
+# Grab wxWidgets libraries - all of them.
 if (!(Test-Path -Path "wxWidgets-3.1.3-headers.7z" -PathType leaf)) {
     curl.exe --fail --location --max-time 30 --remote-name --silent --show-error `
         "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.3/wxWidgets-3.1.3-headers.7z"

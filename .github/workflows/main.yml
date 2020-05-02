@@ -16,11 +16,10 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: Odamex
-        path: build/odamex.zip
+        path: 'build/artifact/*'
   macos-build:
     runs-on: macos-latest
     steps:
-    - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: actions/checkout@v2
     - name: Prepare the build
       run: bash ci-build.sh
@@ -29,7 +28,6 @@ jobs:
   linux-build:
     runs-on: ubuntu-latest
     steps:
-    - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: actions/checkout@v2
     - name: Prepare the build
       run: bash ci-build.sh

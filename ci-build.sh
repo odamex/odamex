@@ -7,11 +7,15 @@ IFS=$'\n\t'
 
 set -x
 
-echo "which gcc = $(which gcc)"
-echo "which clang = $(which clang)"
-echo "which ninja = $(which ninja)"
+type apt > /dev/null
+if [[ $? == 0 ]]; then
+    # Ubuntu
+    sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev
+else
+    # macOS
+    brew install ninja sdl2 sdl2_mixer
+fi
 
 mkdir -p build && cd build
 cmake .. -GNinja \
-    -DCMAKE_BUILD_TYPE=Debug -DUSE_COLOR_DIAGNOSTICS=1 \
-    -DCMAKE_MAKE_PROGRAM="$(which ninja)"
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1
