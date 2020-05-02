@@ -23,7 +23,7 @@ jobs:
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         echo "This runs on macOS"
-    - name: Build on macOS
+    - name: Build on Ubuntu
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         echo "This runs on Ubuntu"
