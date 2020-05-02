@@ -21,9 +21,15 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/upload-artifact@v2
+    - name: Prepare the build
+      run: sh ci-build.sh
+    - name: Run the build
+      run: cmake --build .\build\
   linux-build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/upload-artifact@v2
+    - name: Prepare the build
+      run: sh ci-build.sh
+    - name: Run the build
+      run: cmake --build .\build\
