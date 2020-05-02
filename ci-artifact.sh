@@ -16,5 +16,5 @@ if [[ $(uname -s) == "Linux" ]]; then
 else
     cp -r \
         "client/odamex.app" "server/odasrv" "odalaunch/odalaunch.app" \
-        "wad/odamex.wad" artifact/
+        "../wad/odamex.wad" artifact/
 fi
