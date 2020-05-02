@@ -1,5 +1,5 @@
 mkdir build | Out-Null
-cd build
+Set-Location build
 
 if (!(Test-Path -Path "SDL2-devel-2.0.12-VC.zip" -PathType leaf)) {
     curl.exe --fail --location --max-time 30 --remote-name --silent --show-error `
@@ -34,7 +34,7 @@ if (!(Test-Path -Path "wxMSW")) {
     mkdir wxMSW | Out-Null
 }
 
-cd wxMSW
+Set-Location wxMSW
 
 if (!(Test-Path -Path "include")) {
     7z x "..\wxWidgets-3.1.3-headers.7z"
@@ -46,7 +46,7 @@ if (!(Test-Path -Path "lib\vc14x_x64_dll\wxbase313u_vc14x_x64.dll" -PathType lea
     7z x "..\wxMSW-3.1.3_vc14x_x64_ReleaseDLL.7z"
 }
 
-cd ..
+Set-Location ..
 
 # [AM] Odalaunch does not build correctly at this point using Visual Studio
 
@@ -57,4 +57,4 @@ cd ..
     -DSDL2_MIXER_INCLUDE_DIR="./SDL2_mixer-2.0.4/include/" -DSDL2_MIXER_LIBRARY="./SDL2_mixer-2.0.4/lib/x64/SDL2_mixer.lib" `
     -DwxWidgets_ROOT_DIR="./wxMSW" -DwxWidgets_wxrc_EXECUTABLE="./wxMSW/lib/vc14x_x64_dll/wxrc.exe"
 
-cd ..
+Set-Location ..

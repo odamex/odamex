@@ -2,28 +2,30 @@ name: CI
 
 on:
   push:
-    branches: [ ci-update ]
   pull_request:
-    branches: [ ci-update ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ windows-latest, macos-latest, ubuntu-latest ]
-
+  Windows Build:
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Build on Windows
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: |
-        echo "This runs on Windows"
-    - name: Build on macOS
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: |
-        echo "This runs on macOS"
-    - name: Build on Ubuntu
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: |
-        echo "This runs on Ubuntu"
+    - name: Prepare the build
+      run: .\ci-build.ps1
+    - name: Run the build
+      run: cmake --build .\build\ --config RelWithDebInfo
+    - name: Prepare the artifact
+      run: .\ci-artifact.ps1
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Odamex
+        path: build/odamex.zip
+  macOS Build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/upload-artifact@v2
+  Linux Build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/upload-artifact@v2
