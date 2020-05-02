@@ -23,7 +23,7 @@ jobs:
     - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: actions/checkout@v2
     - name: Prepare the build
-      run: sh ci-build.sh
+      run: bash ci-build.sh
     - name: Run the build
       run: cmake --build .\build\
   linux-build:
@@ -32,6 +32,6 @@ jobs:
     - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: actions/checkout@v2
     - name: Prepare the build
-      run: sh ci-build.sh
+      run: bash ci-build.sh
     - name: Run the build
       run: cmake --build .\build\

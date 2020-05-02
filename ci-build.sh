@@ -7,4 +7,5 @@ IFS=$'\n\t'
 
 mkdir -p build && cd build
 cmake .. -GNinja \
-    -DCMAKE_BUILD_TYPE=Debug -DUSE_COLOR_DIAGNOSTICS=1
+    -DCMAKE_BUILD_TYPE=Debug -DUSE_COLOR_DIAGNOSTICS=1 \
+    -DCMAKE_MAKE_PROGRAM="${which ninja}"
