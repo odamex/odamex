@@ -10,7 +10,7 @@ jobs:
     - name: Prepare the build
       run: .\ci-build.ps1
     - name: Run the build
-      run: cmake --build .\build\ --config RelWithDebInfo
+      run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare the artifact
       run: .\ci-artifact.ps1
     - uses: actions/upload-artifact@v2
