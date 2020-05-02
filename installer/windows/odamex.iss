@@ -3,21 +3,21 @@
 
 [Setup]
 AppName=Odamex
-AppVersion=0.8.2
-AppVerName=Odamex 0.8.2
+AppVersion=0.8.3
+AppVerName=Odamex 0.8.3
 AppPublisher=Odamex Development Team
 AppPublisherURL=https://odamex.net
 AppSupportURL=https://odamex.net
 AppUpdatesURL=https://odamex.net
-VersionInfoVersion=0.8.2 
-VersionInfoProductVersion=0.8.2
+VersionInfoVersion=0.8.3
+VersionInfoProductVersion=0.8.3
 VersionInfoProductName=Odamex Windows Installer
 DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win-0.8.2
+OutputBaseFilename=odamex-win-0.8.3
 Compression=lzma2
 SolidCompression=true
 AlwaysShowDirOnReadyPage=true
