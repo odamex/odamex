@@ -1428,7 +1428,7 @@ static int PatchPars (int dummy)
 		LevelInfos& levels = getLevelInfos();
 		level_pwad_info_t& info = levels.findByName(mapname);
 
-		if (info.levelnum == 0) {
+		if (!info.exists()) {
 			DPrintf ("No map %s\n", mapname);
 			continue;
 		}

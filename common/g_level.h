@@ -85,6 +85,11 @@ struct level_info_t {
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
+
+	BOOL exists() const
+	{
+		return this->mapname[0] != '\0';
+	}
 };
 
 struct level_pwad_info_t
@@ -118,6 +123,11 @@ struct level_pwad_info_t
 	char			skypic2[9];
 	float			gravity;
 	float			aircontrol;
+
+	BOOL exists() const
+	{
+		return this->mapname[0] != '\0';
+	}
 };
 
 
@@ -179,6 +189,11 @@ struct cluster_info_t {
 	char*			entertext;
 	int				flags;
 	char			finalepic[9];
+
+	BOOL exists() const
+	{
+		return this->cluster != 0;
+	}
 };
 
 extern level_locals_t level;

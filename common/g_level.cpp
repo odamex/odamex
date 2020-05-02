@@ -80,10 +80,8 @@ void LevelInfos::addDefaults()
 	for (size_t i = 0;; i++)
 	{
 		const level_info_t& level = _defaultInfos[i];
-		if (level.levelnum == 0)
-		{
+		if (!level.exists())
 			break;
-		}
 
 		// Copied, so it can be mutated.
 		level_pwad_info_t info = _empty;
@@ -1036,8 +1034,6 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
-	int levelindex;
-	int clusterindex;
 	DWORD levelflags;
 
 	SetLevelDefaults (&defaultinfo);
@@ -1074,7 +1070,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			}
 
 			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(sc_String).levelnum != 0) ?
+			level_pwad_info_t& info = (levels.findByName(sc_String).exists()) ?
 				levels.findByName(sc_String) :
 				levels.create();
 
@@ -1117,10 +1113,10 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 					// Convert a char into its equivalent integer.
 					int e = info.mapname[1] - '0';
 					int m = info.mapname[3] - '0';
-					if (e >= 1 && e <= 9 && m >= 1 && m <= 9)
+					if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
 					{
 						// Copypasted from the ZDoom wiki.
-						info.levelnum = (e - 1 ) * 10 + m;
+						info.levelnum = (e - 1) * 10 + m;
 					}
 				}
 				else if (strnicmp(info.mapname, "MAP", 3) == 0)
@@ -1128,7 +1124,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 					// Try and turn the trailing digits after the "MAP" into a
 					// level number.
 					int mapnum = atoi(info.mapname + 3);
-					if (mapnum >= 1 && mapnum <= 99)
+					if (mapnum >= 0 && mapnum <= 99)
 					{
 						info.levelnum = mapnum;
 					}
@@ -1508,15 +1504,31 @@ void G_SetLevelStrings (void)
 		{
 			// Doom 1
 			int offset = info.levelnum - 1 - (info.cluster - 1);
-			level_name = HUSTR_E1M1 + offset;
-			muslump = MUSIC_E1M1 + offset;
+			if (offset >= 0 && offset < 36)
+			{
+				level_name = HUSTR_E1M1 + offset;
+				muslump = MUSIC_E1M1 + offset;
+			}
+			else
+			{
+				level_name = HUSTR_E1M1;
+				muslump = MUSIC_E1M1;
+			}
 		}
 		else
 		{
 			// Doom 2 + Expansions
 			int offset = (info.levelnum - 1);
-			level_name = hustart + offset;
-			muslump = MUSIC_RUNNIN + offset;
+			if (offset >= 0 && offset < 32)
+			{
+				level_name = hustart + offset;
+				muslump = MUSIC_RUNNIN + offset;
+			}
+			else
+			{
+				level_name = HUSTR_1;
+				muslump = MUSIC_RUNNIN;
+			}
 		}
 
 		free(info.level_name);
@@ -1762,7 +1774,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 		{
 			arc.Read(&mapname[1], 7);
 			level_pwad_info_t& info = levels.findByName(mapname);
-			if (info.levelnum == 0)
+			if (!info.exists())
 			{
 				char name[9];
 				strncpy(name, mapname, ARRAY_LENGTH(name) - 1);
@@ -1946,7 +1958,7 @@ BEGIN_COMMAND(mapinfo)
 	if (stricmp(argv[1], "lump") == 0)
 	{
 		infoptr = &levels.findByName(argv[2]);
-		if (infoptr->levelnum == 0)
+		if (!infoptr->exists())
 		{
 			Printf(PRINT_HIGH, "Map \"%s\" not found\n", argv[2]);
 			return;
@@ -1956,7 +1968,7 @@ BEGIN_COMMAND(mapinfo)
 	{
 		int levelnum = atoi(argv[2]);
 		infoptr = &levels.findByNum(levelnum);
-		if (infoptr->levelnum == 0)
+		if (!infoptr->exists())
 		{
 			Printf(PRINT_HIGH, "Map number %d not found\n", levelnum);
 			return;

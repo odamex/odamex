@@ -1049,10 +1049,8 @@ FUNC(LS_ACS_Execute)
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
-	if (arg1 == 0 || info.levelnum == 0)
-	{
+	if (arg1 == 0 || !info.exists())
 		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 0);
-	}
 
 	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 0);
 }
@@ -1066,10 +1064,8 @@ FUNC(LS_ACS_ExecuteAlways)
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
-	if (arg1 == 0 || info.levelnum == 0)
-	{
+	if (arg1 == 0 || !info.exists())
 		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 1);
-	}
 
 	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 1);
 }
@@ -1095,14 +1091,10 @@ FUNC(LS_ACS_Suspend)
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
-	if (arg1 == 0 || info.levelnum == 0)
-	{
+	if (arg1 == 0 || !info.exists())
 		P_SuspendScript(arg0, ::level.mapname);
-	}
 	else
-	{
 		P_SuspendScript(arg0, info.mapname);
-	}
 
 	return true;
 }
@@ -1115,14 +1107,10 @@ FUNC(LS_ACS_Terminate)
 
 	level_pwad_info_t& info = getLevelInfos().findByNum(arg1);
 
-	if (arg1 == 0 || info.levelnum == 0)
-	{
+	if (arg1 == 0 || !info.exists())
 		P_TerminateScript(arg0, ::level.mapname);
-	}
 	else
-	{
 		P_TerminateScript(arg0, info.mapname);
-	}
 
 	return true;
 }
@@ -2058,4 +2046,3 @@ BOOL CheckIfExitIsGood (AActor *self)
 }
 
 VERSION_CONTROL (p_lnspec_cpp, "$Id$")
-
