@@ -1,0 +1,21 @@
+name: Linux
+
+on: [push, pull_request]
+
+jobs:
+  linux-build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Prepare build
+      run: bash ci-build.sh
+    - name: Run build
+      run: cmake --build ./build/
+    - name: Prepare artifact
+      run: bash ci-artifact.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Linux-x86_64
+        path: 'build/artifact/*'
