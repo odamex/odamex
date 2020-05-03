@@ -1,9 +1,10 @@
-name: CI
+name: Windows
 
 on: [push, pull_request]
 
 jobs:
-  windows-build:
+  build:
+    name: Build
     runs-on: windows-latest
     steps:
     - name: Checkout source
@@ -19,7 +20,8 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
-  windows-build-odalaunch:
+  build-odalaunch:
+    name: Build Odalaunch
     runs-on: windows-latest
     steps:
     - name: Checkout source
@@ -39,35 +41,3 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build-gcc/artifact/*'
-  macos-build:
-    runs-on: macos-latest
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-    - name: Prepare build
-      run: bash ci-build.sh
-    - name: Run build
-      run: cmake --build ./build/
-    - name: Prepare artifact
-      run: bash ci-artifact.sh
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: Odamex-macOS
-        path: 'build/artifact/*'
-  linux-build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-    - name: Prepare build
-      run: bash ci-build.sh
-    - name: Run build
-      run: cmake --build ./build/
-    - name: Prepare artifact
-      run: bash ci-artifact.sh
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: Odamex-Linux-x86_64
-        path: 'build/artifact/*'
