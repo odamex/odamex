@@ -30,7 +30,7 @@
 
 #include "net_packet.h"
 
-DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
+wxDECLARE_EVENT(wxEVT_THREAD_WORKER_SIGNAL, wxCommandEvent);
 
 class QueryThread : public wxThread
 {
