@@ -17,6 +17,20 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
+  windows-build-odalaunch:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Prepare build
+      run: .\ci-build-odalaunch.ps1
+    - name: Run build
+      run: cmake --build .\build-gcc\
+    - name: Prepare artifact
+      run: .\ci-artifact-odalaunch.ps1
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x64
+        path: 'build-gcc/artifact/*'
   macos-build:
     runs-on: macos-latest
     steps:
