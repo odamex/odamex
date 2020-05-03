@@ -5,8 +5,6 @@ Set-Location build-gcc
 
 # [AM] Odalaunch doesn't compile correctly in Visual Studio, so we must use MinGW.
 
-choco install ninja
-
 # Grab wxWidgets libraries - all of them.
 if (!(Test-Path -Path "wxWidgets-3.1.3-headers.7z" -PathType leaf)) {
     curl.exe --fail --location --max-time 30 --remote-name --silent --show-error `

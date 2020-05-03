@@ -5,7 +5,7 @@ mkdir artifact | Out-Null
 
 # Copy all built files into artifact directory
 Copy-Item `
-    -Path ".\client\odalaunch.exe", `
+    -Path ".\odalaunch\odalaunch.exe", `
     ".\wxMSW\lib\gcc_dll\wxbase313u_gcc810_x64.dll", `
     ".\wxMSW\lib\gcc_dll\wxbase313u_net_gcc810_x64.dll", `
     ".\wxMSW\lib\gcc_dll\wxbase313u_xml_gcc810_x64.dll", `
