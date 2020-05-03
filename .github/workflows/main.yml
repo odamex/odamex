@@ -24,7 +24,7 @@ jobs:
     - name: Prepare build
       run: .\ci-build-odalaunch.ps1
     - name: Run build
-      run: cmake --build .\build-gcc\
+      run: cmake --build .\build-gcc\ --target odalaunch
     - name: Prepare artifact
       run: .\ci-artifact-odalaunch.ps1
     - uses: actions/upload-artifact@v2
