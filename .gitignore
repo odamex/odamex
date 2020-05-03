@@ -1,4 +1,4 @@
-/build
+/build*
 *.vscode
 
 # Used by Visual Studio when loading this project as a folder, which uses CMake.

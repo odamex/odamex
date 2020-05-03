@@ -20,7 +20,7 @@ set(XRCRES_HEADER "${XRCRES_BINARY_DIR}/xrc_resource.h")
 include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
 
 # wxWidgets configuration
-find_package(wxWidgets)
+find_package(wxWidgets COMPONENTS core base adv net xrc)
 if(wxWidgets_FOUND)
   include( "${wxWidgets_USE_FILE}" )
 else()
@@ -64,7 +64,7 @@ if(wxWidgets_FOUND)
       TARGET odalaunch
       POST_BUILD
       COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources"
-      COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/"
+      COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE}" "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/"
       VERBATIM
     )
 
