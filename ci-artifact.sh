@@ -10,11 +10,11 @@ set -x
 mkdir -p build/artifact && cd build
 
 if [[ $(uname -s) == "Linux" ]]; then
-    cp \
+    cp -aR \
         "client/odamex" "server/odasrv" "odalaunch/odalaunch" \
         "wad/odamex.wad" artifact/
 else
-    cp -r \
+    cp -pR \
         "client/odamex.app" "server/odasrv" "odalaunch/odalaunch.app" \
         "../wad/odamex.wad" artifact/
 fi
