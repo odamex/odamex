@@ -3,7 +3,8 @@ name: macOS
 on: [push, pull_request]
 
 jobs:
-  macos-build:
+  build:
+    name: Build
     runs-on: macos-latest
     steps:
     - name: Checkout source

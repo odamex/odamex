@@ -3,7 +3,8 @@ name: Windows
 on: [push, pull_request]
 
 jobs:
-  windows-build:
+  build:
+    name: Build
     runs-on: windows-latest
     steps:
     - name: Checkout source
@@ -19,7 +20,8 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
-  windows-build-odalaunch:
+  build-odalaunch:
+    name: Build Odalaunch
     runs-on: windows-latest
     steps:
     - name: Checkout source
