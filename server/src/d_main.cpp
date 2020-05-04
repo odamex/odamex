@@ -164,8 +164,7 @@ void D_Init()
 
 	// [RH] Initialize localizable strings.
 	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.LoadStrings();
 
 	// init the renderer
 	if (first_time)

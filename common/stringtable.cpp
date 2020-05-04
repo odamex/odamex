@@ -32,6 +32,7 @@
 #include "w_wad.h"
 #include "i_system.h"
 #include "errors.h"
+#include "sc_man.h"
 
 struct FStringTable::Header
 {
@@ -88,8 +89,20 @@ void FStringTable::FreeStandardStrings()
 	}
 }
 
-void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
+void FStringTable::LoadStrings()
 {
+	int lump = -1;
+
+	lump = -1;
+	while ((lump = W_FindLump("LANGUAGE", lump)) != -1)
+	{
+		LoadStringsLump(lump, "LANGUAGE");
+	}
+/*
+
+
+
+
 	if (lumpnum < 0)
 		return;
 
@@ -169,26 +182,138 @@ void FStringTable::LoadStrings(int lumpnum, int expectedSize, bool enuOnly)
 	DoneLoading(start, end);
 
 	if (loadedCount != nameCount)
-		I_FatalError("Loaded %d strings (expected %d)", loadedCount, nameCount);
+		I_FatalError("Loaded %d strings (expected %d)", loadedCount, nameCount);*/
+	I_FatalError("not done");
 }
 
-void FStringTable::ReloadStrings()
+void FStringTable::LoadStringsLump(int lump, const char* lumpname)
 {
-	if (LumpNum >= 0)
-		LoadStrings(LumpNum, -1, false);
+	// Can't use Z_Malloc this early, so we use raw new/delete.
+	size_t len = W_LumpLength(lump);
+	char* languageLump = new char[len + 1];
+	W_ReadLump(lump, languageLump);
+	languageLump[len] = '\0';
+
+	// Load string defaults.
+	LoadLanguage(MAKE_ID('*','*',0,0), true, languageLump, len);
+
+	// Load language-specific strings.
+	for (size_t i = 0; i < ARRAY_LENGTH(LanguageIDs); i++)
+	{
+		LoadLanguage(LanguageIDs[i], true, languageLump, len);
+		LoadLanguage(LanguageIDs[i] & MAKE_ID(0xff,0xff,0,0), true, languageLump, len);
+		LoadLanguage(LanguageIDs[i], false, languageLump, len);
+	}
+
+	delete[] languageLump;
 }
 
-// Like ReloadStrings, but clears all the strings before reloading
-void FStringTable::ResetStrings()
+void FStringTable::LoadLanguage(
+	uint32_t code, bool exactMatch, char* lump, size_t lumpLen
+)
 {
-	FreeData();
-	if (LumpNum >= 0)
-		LoadStrings(LumpNum, -1, false);
-}
+	fprintf(stderr, "code: %u\n", code);
+	fprintf(stderr, "(%02x, %02x, %02x, %02x)\n",
+		code & 0xFF, (code & 0xFF00) >> 8, (code & 0xFF0000) >> 16,
+		(code & 0xFF000000) >> 24
+	);
 
-int FStringTable::LoadLanguage(uint32_t code, bool exactMatch, byte* start, byte* end)
-{
-	const uint32_t orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
+	// const uint32_t orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
+	// code |= orMask;
+
+	SC_OpenMem("LANGUAGE", lump, lumpLen);
+
+	for (;;)
+	{
+		// Parse a language section.
+		bool shouldParseSection = false;
+		SC_MustGetStringName("[");
+		for (;;)
+		{
+			SC_GetString();
+			if (SC_Compare("]"))
+			{
+				break;
+			}
+			else if (SC_Compare("default"))
+			{
+				// Default has a speical ID.
+				if (code == (uint32_t)MAKE_ID('*','*',0,0))
+				{
+					shouldParseSection = true;
+				}
+			}
+			else
+			{
+				// Turn the language into an ID and compare it with the passed code.
+				fprintf(stderr, "lang: %s\n", sc_String);
+				size_t langLen = strlen(sc_String);
+				if (langLen == 2)
+				{
+					if (code == (uint32_t)MAKE_ID(sc_String[1],sc_String[2],'\0','\0'))
+					{
+						shouldParseSection = true;
+					}
+				}
+				else if (langLen == 3)
+				{
+					if (code == (uint32_t)MAKE_ID(sc_String[1],sc_String[2],sc_String[3],'\0'))
+					{
+						shouldParseSection = true;
+					}
+				}
+				else
+				{
+					SC_ScriptError("Language identifier must be 2 or 3 characters");
+				}
+			}
+		}
+
+		if (shouldParseSection)
+		{
+			// Parse all of the strings in this section.
+			for (;;)
+			{
+				SC_MustGetString(); // String identifier
+				std::string ident = sc_String;
+				SC_MustGetStringName("="); // =
+				std::string value;
+				for (;;)
+				{
+					SC_MustGetString(); // String value
+					if (SC_Compare(";"))
+					{
+						// Found the end of the string, next batter up.
+						break;
+					}
+					value += sc_String;
+					fprintf(stderr, "%s += %s\n", ident.c_str(), sc_String);
+				}
+				I_Error("%s %s\n", ident.c_str(), value.c_str());
+			}
+		}
+		else
+		{
+			// Skip past all of the strings in this section.
+			for (;;)
+			{
+				BOOL got = SC_GetString();
+				if (got == false)
+				{
+					// Ran off the end of the lump.
+					return;
+				}
+				else if (SC_Compare("["))
+				{
+					// Found another section, parse it.
+					SC_UnGet();
+					break;
+				}
+			}
+		}
+	}
+
+	/*const uint32_t orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
 	int count = 0;
 
 	code |= orMask;
@@ -219,7 +344,21 @@ int FStringTable::LoadLanguage(uint32_t code, bool exactMatch, byte* start, byte
 		start += langLen + 8;
 		start += (4 - (ptrdiff_t)start) & 3;
 	}
-	return count;
+	return count;*/
+}
+
+void FStringTable::ReloadStrings()
+{
+	// if (LumpNum >= 0)
+	// 	LoadStrings(LumpNum, -1, false);
+}
+
+// Like ReloadStrings, but clears all the strings before reloading
+void FStringTable::ResetStrings()
+{
+	// FreeData();
+	// if (LumpNum >= 0)
+	// 	LoadStrings(LumpNum, -1, false);
 }
 
 void FStringTable::DoneLoading(byte* start, byte* end)

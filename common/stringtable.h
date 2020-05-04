@@ -36,11 +36,14 @@
 
 #include <stdlib.h>
 #include "doomtype.h"
+#include "hashtable.h"
+#include "m_ostring.h"
 
 class FStringTable
 {
 public:
 	FStringTable () :
+		_stringTable(),
 		StringStatus(NULL),
 		NumStrings (0),
 		Names(NULL),
@@ -48,11 +51,11 @@ public:
 		CompactBase(NULL),
 		CompactSize(0),
 		LumpNum(-1),
-		LumpData(NULL) {}
+		LumpData(NULL) { }
 
 	~FStringTable () { FreeData (); }
 
-	void LoadStrings(int lumpnum, int expectedSize, bool enuOnly);
+	void LoadStrings();
 	void ReloadStrings();
 	void ResetStrings();
 
@@ -79,7 +82,12 @@ public:
 
 private:
 	struct Header;
+	struct TableEntry
+	{
+		OString string;
+	};
 
+	OHashTable<OString, TableEntry> _stringTable;
 	byte* StringStatus;
 	int NumStrings;
 	mutable byte* Names;
@@ -89,10 +97,13 @@ private:
 	int LumpNum;
 	byte* LumpData;
 
+	void LoadStringsLump(int lump, const char* lumpname);
 	void FreeStrings();
 	void FreeStandardStrings();
 	int SumStringSizes() const;
-	int LoadLanguage(uint32_t code, bool exactMatch, byte* startPos, byte* endPos);
+	void LoadLanguage(
+		uint32_t code, bool exactMatch, char* lump, size_t lumpLen
+	);
 	void DoneLoading(byte* startPos, byte* endPos);
 };
 

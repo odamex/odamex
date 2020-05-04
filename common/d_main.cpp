@@ -832,8 +832,7 @@ void D_LoadResourceFiles(
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
 	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.LoadStrings();
 
 	D_DoDefDehackedPatch(newpatchfiles);
 }
