@@ -318,6 +318,7 @@ void FStringTable::LoadLanguage(
 				if (os.compareToken("["))
 				{
 					// Found another section, parse it.
+					os.unScan();
 					break;
 				}
 			}

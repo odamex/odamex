@@ -157,6 +157,12 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
 //
 bool OScanner::scan()
 {
+	if (_unScan)
+	{
+		_unScan = false;
+		return true;
+	}
+
 	while (_position < _scriptEnd)
 	{
 		// What are we looking at?
@@ -217,11 +223,20 @@ bool OScanner::scan()
 }
 
 //
-// Rewind the parser.
+// Rewind to the previous token.
+//
+// FIXME: Currently this just causes the scanner to return early once - you
+//        can't actually access the previous token.
 //
 void OScanner::unScan()
 {
-	
+	if (_unScan == true)
+	{
+		I_Error("Script Error: %d:%s: Tried to unScan twice in a row",
+			_lineNumber, _config.lumpName);
+	}
+
+	_unScan = true;
 }
 
 //

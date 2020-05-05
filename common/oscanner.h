@@ -41,6 +41,7 @@ class OScanner
 	const char* _position;
 	int _lineNumber;
 	std::string _token;
+	bool _unScan;
 
 	bool checkPair(char a, char b);
 	void skipWhitespace();
@@ -54,7 +55,7 @@ class OScanner
   public:
 	OScanner(const OScannerConfig& config)
 	    : _config(config), _scriptStart(NULL), _scriptEnd(NULL), _position(NULL),
-	      _lineNumber(0){};
+	      _lineNumber(0), _token(""), _unScan(false){};
 
 	static OScanner openBuffer(const OScannerConfig& config, const char* start,
 	                           const char* end);
