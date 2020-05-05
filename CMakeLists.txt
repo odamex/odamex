@@ -31,6 +31,10 @@ set(PROJECT_COPYRIGHT "2006-2020")
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(VWII)
+  include("wii.cmake" REQUIRED)     # Wii/vWii
+endif()
+
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
@@ -142,6 +146,11 @@ macro(define_platform)
     add_definitions(-DOSX -DUNIX )
   elseif(SOLARIS)
     add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
+  elseif(VWII)
+    add_definitions(-DGEKKO -DUNIX -DNOASM -DGCONSOLE -DUSE_PNG)
+    include_directories("$ENV{DEVKITPRO}/libogc/include")
+    include_directories("$ENV{DEVKITPRO}/libogc/include/ogc")
+    include_directories("$ENV{PORTLIBS_PREFIX}/include")
   elseif(UNIX)
     add_definitions(-DUNIX)
     find_package(X11)

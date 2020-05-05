@@ -500,7 +500,11 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 
 	NetadrToSockadr (&to, &addr);
 
-	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+#ifdef GEKKO
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// 8 is important for online
+#else
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+#endif
 
 	buf.clear();
 
@@ -1082,7 +1086,11 @@ void InitNetCommon(void)
     #endif
 
    BindToLocalPort (inet_socket, localport);
-   if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
+#ifdef GEKKO
+   if (ioctlsocket (inet_socket, FIONBIO, (char *)&_true) < 0)
+#else
+   if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
+#endif
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs

@@ -40,6 +40,15 @@ if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
 
+# Include console folders if compiling homebrews
+if (GCONSOLE)
+  if (VWII)
+    set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
+  endif()
+endif()
+
 # git describe
 set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
 
@@ -50,6 +59,7 @@ define_platform()
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
 
 # Textscreen
+if (NOT GCONSOLE)
 set(TEXTSCREEN_LIBRARY "textscreen")
 set(TEXTSCREEN_DIR ../libraries/textscreen)
 set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
@@ -58,6 +68,7 @@ set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 include_directories(${TEXTSCREEN_DIR})
 add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
 message(STATUS "Textscreen will be statically linked.")
+endif()
 
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)
@@ -229,6 +240,10 @@ if(SDL_VERSION)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  elseif(VWII)
+    # Ch0wW : this is UGLY, please fix it ASAP !!
+    target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
+    target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
@@ -302,6 +317,10 @@ if(SDL_VERSION)
         " )
     endif()
 
+  elseif(VWII)
+    message(${CMAKE_BINARY_DIR})
+    add_custom_command( TARGET odamex POST_BUILD
+    COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

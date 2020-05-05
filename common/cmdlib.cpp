@@ -35,6 +35,10 @@
 #include "cmdlib.h"
 #include <map>
 
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
 char		com_token[8192];
 BOOL		com_eof;
 
