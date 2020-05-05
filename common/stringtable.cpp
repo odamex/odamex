@@ -32,7 +32,7 @@
 #include "w_wad.h"
 #include "i_system.h"
 #include "errors.h"
-#include "sc_man.h"
+#include "oscanner.h"
 
 struct FStringTable::Header
 {
@@ -221,21 +221,25 @@ void FStringTable::LoadLanguage(
 	// const uint32_t orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
 	// code |= orMask;
 
-	SC_OpenMem("LANGUAGE", lump, lumpLen);
-
-	for (;;)
+	OScannerConfig config = {
+		"LANGUAGE", // lumpName
+		false,      // semiComments
+		true,       // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, lump, lump + lumpLen);
+	while (os.scan())
 	{
 		// Parse a language section.
 		bool shouldParseSection = false;
-		SC_MustGetStringName("[");
-		for (;;)
+
+		os.assertTokenIs("[");
+		while (os.scan())
 		{
-			SC_GetString();
-			if (SC_Compare("]"))
+			if (os.compareToken("]"))
 			{
 				break;
 			}
-			else if (SC_Compare("default"))
+			else if (os.compareToken("default"))
 			{
 				// Default has a speical ID.
 				if (code == (uint32_t)MAKE_ID('*','*',0,0))
@@ -246,25 +250,25 @@ void FStringTable::LoadLanguage(
 			else
 			{
 				// Turn the language into an ID and compare it with the passed code.
-				fprintf(stderr, "lang: %s\n", sc_String);
-				size_t langLen = strlen(sc_String);
-				if (langLen == 2)
+				const std::string& lang = os.getToken();
+
+				if (lang.length() == 2)
 				{
-					if (code == (uint32_t)MAKE_ID(sc_String[1],sc_String[2],'\0','\0'))
+					if (code == (uint32_t)MAKE_ID(lang[0],lang[1],'\0','\0'))
 					{
 						shouldParseSection = true;
 					}
 				}
-				else if (langLen == 3)
+				else if (lang.length() == 3)
 				{
-					if (code == (uint32_t)MAKE_ID(sc_String[1],sc_String[2],sc_String[3],'\0'))
+					if (code == (uint32_t)MAKE_ID(lang[0],lang[1],lang[2],'\0'))
 					{
 						shouldParseSection = true;
 					}
 				}
 				else
 				{
-					SC_ScriptError("Language identifier must be 2 or 3 characters");
+					os.error("Language identifier must be 2 or 3 characters");
 				}
 			}
 		}
@@ -272,46 +276,55 @@ void FStringTable::LoadLanguage(
 		if (shouldParseSection)
 		{
 			// Parse all of the strings in this section.
-			for (;;)
+			while (os.scan())
 			{
-				SC_MustGetString(); // String identifier
-				std::string ident = sc_String;
-				SC_MustGetStringName("="); // =
-				std::string value;
-				for (;;)
+				if (os.compareToken("["))
 				{
-					SC_MustGetString(); // String value
-					if (SC_Compare(";"))
+					// We reached the end of the section.
+					os.unScan();
+					break;
+				}
+
+				// String identifier
+				const std::string& ident = os.getToken();
+
+				fprintf(stderr, "begin string: %s\n", ident.c_str());
+
+				os.scan();
+				os.assertTokenIs("=");
+
+				// Grab the string value.
+				std::string value;
+				while (os.scan())
+				{
+					const std::string piece = os.getToken();
+					if (piece.compare(";") == 0)
 					{
+						fprintf(stderr, "end string: %s\n", value.c_str());
 						// Found the end of the string, next batter up.
 						break;
 					}
-					value += sc_String;
-					fprintf(stderr, "%s += %s\n", ident.c_str(), sc_String);
+
+					fprintf(stderr, "appending: %s\n", piece.c_str());
+					value += piece;
 				}
-				I_Error("%s %s\n", ident.c_str(), value.c_str());
 			}
 		}
 		else
 		{
 			// Skip past all of the strings in this section.
-			for (;;)
+			while (os.scan())
 			{
-				BOOL got = SC_GetString();
-				if (got == false)
-				{
-					// Ran off the end of the lump.
-					return;
-				}
-				else if (SC_Compare("["))
+				if (os.compareToken("["))
 				{
 					// Found another section, parse it.
-					SC_UnGet();
 					break;
 				}
 			}
 		}
 	}
+
+	I_Error("done with all loops");
 
 	/*const uint32_t orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
 	int count = 0;
