@@ -1086,11 +1086,7 @@ void InitNetCommon(void)
     #endif
 
    BindToLocalPort (inet_socket, localport);
-#ifdef GEKKO
-   if (ioctlsocket (inet_socket, FIONBIO, (char *)&_true) < 0)
-#else
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
-#endif
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs

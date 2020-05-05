@@ -3,10 +3,10 @@
 Informations required for Odamex on Nintendo Wii.
 
 ## Known Bugs :
-- Inputs in the menu are currently missing
-- Some wads (such as DUEL2020OA.wad) crash on startup
-- Switches disappear once pressed
-- Multiplayer can still be laggy at times.
+- Inputs in the menu are currently missing with a joystick.
+- Due to a recent update, You cannot write anything in the console.
+- Some wads (such as DUEL2020OA.wad) may crash on startup.
+- Switches disappear once pressed due to recent updates.
 
 ## Requirements to compile Odamex-Wii:
 - The latest release of **DevKitPro** with the *wii-development* option ticked.
