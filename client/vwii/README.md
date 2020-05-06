@@ -2,19 +2,27 @@
 
 Informations required for Odamex on Nintendo Wii.
 
-## Known Bugs :
-- Inputs in the menu are currently missing with a joystick.
-- Due to a recent update, You cannot write anything in the console.
-- Some wads (such as DUEL2020OA.wad) may crash on startup.
-- Switches disappear once pressed due to recent updates.
+## Installation
+- Create a folder named **odx_data** to the *root* of the SD Card, and put your IWADs in that specific folder.
+- Add the **odamex** folder containing boot.dol, meta.xml and icon.png to your *sd:/apps* folder
+- Run the game in the Homebrew Channel.
 
-## Requirements to compile Odamex-Wii:
-- The latest release of **DevKitPro** with the *wii-development* option ticked.
-- Cmake package
-- [SDL-Wii](https://github.com/dborth/sdl-wii) by **dborth**
-
+#### Known Bugs :
+- Controllers cannot interact in the menu yet, so you may need to navigate using an USB Keyboard.
+- Due to a recent update, you cannot write anything in the console.
+- Some wads (such as *DUEL2020OA.wad*) may crash on specific maps.
+- Switches disappear once pressed due to recent updates, resulting in a HOM.
+- Wiimote pointing is not working (and may be removed in a future update).
 
 ## Building from scratch
+
+### Requirements to compile Odamex-Wii:
+- The latest release of **DevKitPro** with the *wii-development* toolchain ticked.
+- *Cmake* 3.X.X
+- [SDL-Wii](https://github.com/dborth/sdl-wii) by **dborth**
+
+### Compilation instructions
+
 Make sure your Devkitpro environment is always up to date before attempting to compile :
 ```bash
 pacman -SYu
@@ -25,7 +33,7 @@ pacman -SYu
 pacman -Sy ppc-portlibs cmake
 ```
 
-2) in a separate folder, clone the SDL-Wii github repository :
+2) In a separate folder, clone the SDL-Wii github repository :
 ```bash
 git clone https://github.com/dborth/sdl-wii
 ```
@@ -40,7 +48,7 @@ cd sdl-wii && make && make install
 mkdir odamex_wii && cd odamex_wii
 ```
 
-5) Ran these commands :
+5) Run these commands :
 ```bash
 source $DEVKITPRO/ppcvars.sh
 export PATH=/opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
