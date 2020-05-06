@@ -105,8 +105,8 @@ class StringTable
 
 	bool hasString(const OString& name) const;
 	void loadStrings();
-	const OString& matchString(const char* string) const;
-	void setString(const OString& name, const char* string);
+	const OString& matchString(const OString& string) const;
+	void setString(const OString& name, const OString& string);
 };
 
 #endif //__STRINGTABLE_H__

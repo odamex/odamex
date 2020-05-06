@@ -35,6 +35,8 @@
 
 void StringTable::clearStrings()
 {
+	_stringHash.empty();
+	_indexes.empty();
 }
 
 void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_t lumpLen)
@@ -188,6 +190,9 @@ bool StringTable::hasString(const OString& name) const
 	return true;
 }
 
+//
+// Load strings from all LANGUAGE lumps in all loaded WAD files.
+//
 void StringTable::loadStrings()
 {
 	clearStrings();
@@ -203,16 +208,32 @@ void StringTable::loadStrings()
 	I_FatalError("not done");
 }
 
-// Find a string with the same text
-const OString& StringTable::matchString(const char* string) const
+//
+// Find a string with the same text.
+//
+const OString& StringTable::matchString(const OString& string) const
 {
+	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end();
+	     ++it)
+	{
+		if ((*it).second.string == string)
+			return (*it).first;
+	}
+
 	static OString empty = "";
 	return empty;
 }
 
-// Set a string to something specific.
-void StringTable::setString(const OString& name, const char* string)
+//
+// Set a string to something specific by name.
+//
+void StringTable::setString(const OString& name, const OString& string)
 {
+	StringHash::iterator it = _stringHash.find(name);
+	if (it == _stringHash.end())
+		return;
+
+	(*it).second.string = string;
 }
 
 VERSION_CONTROL(stringtable_cpp, "$Id$")
