@@ -822,13 +822,12 @@ static void ParseMapInfoLower(
 			{
 				// It is possible to pass a DeHackEd string
 				// prefixed by a $.
-				char* s = sc_String + 1;
-				int i = GStrings.FindString(s);
-				if (i == -1)
+				const OString& s = GStrings(sc_String + 1);
+				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", s);
+					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
 				}
-				uppercopy((char*)(info + handler->data1), GStrings(i));
+				uppercopy((char*)(info + handler->data1), s.c_str());
 			}
 			else
 			{
@@ -848,17 +847,16 @@ static void ParseMapInfoLower(
 			{
 				// It is possible to pass a DeHackEd string
 				// prefixed by a $.
-				char* s = sc_String + 1;
-				int i = GStrings.FindString(s);
-				if (i == -1)
+				const OString& s = GStrings(s);
+				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", s);
+					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
 				}
 
 				// Music lumps in the stringtable do not begin
 				// with a D_, so we must add it.
 				char lumpname[9];
-				snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", GStrings(i));
+				snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
 				uppercopy((char*)(info + handler->data1), lumpname);
 			}
 			else
@@ -955,13 +953,13 @@ static void ParseMapInfoLower(
 				{
 					SC_MustGetStringName(",");
 					SC_MustGetString();
-					int i = GStrings.FindString(sc_String);
-					if (i == -1)
+					const OString& s = GStrings(sc_String);
+					if (s.empty())
 					{
 						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
 					free(*text);
-					*text = strdup(GStrings(i));
+					*text = strdup(s.c_str());
 				}
 				else
 				{
@@ -993,14 +991,14 @@ static void ParseMapInfoLower(
 				if (SC_Compare("lookup"))
 				{
 					SC_MustGetString();
-					int i = GStrings.FindString(sc_String);
-					if (i == -1)
+					const OString& s = GStrings(sc_String);
+					if (s.empty())
 					{
 						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
 
 					free(*text);
-					*text = strdup(GStrings(i));
+					*text = strdup(s.c_str());
 				}
 				else
 				{
@@ -1085,13 +1083,13 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			if (SC_Compare("lookup"))
 			{
 				SC_MustGetString();
-				int i = GStrings.FindString(sc_String);
-				if (i == -1)
+				const OString& s = GStrings(sc_String);
+				if (s.empty())
 				{
 					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 				}
 				free(info.level_name);
-				info.level_name = strdup(GStrings(i));
+				info.level_name = strdup(s.c_str());
 			}
 			else
 			{
@@ -1478,18 +1476,18 @@ void G_SetLevelStrings (void)
 	int hustart, txtstart;
 	if (gamemission == pack_plut)
 	{
-		hustart = PHUSTR_1;
-		txtstart = P1TEXT;
+		hustart = StringIndex(PHUSTR_1);
+		txtstart = StringIndex(P1TEXT);
 	}
 	else if (gamemission == pack_tnt)
 	{
-		hustart = THUSTR_1;
-		txtstart = T1TEXT;
+		hustart = StringIndex(THUSTR_1);
+		txtstart = StringIndex(T1TEXT);
 	}
 	else
 	{
-		hustart = HUSTR_1;
-		txtstart = C1TEXT;
+		hustart = StringIndex(HUSTR_1);
+		txtstart = StringIndex(C1TEXT);
 	}
 
 	// Loop through levels and assign any DeHackEd or otherwise dynamic text.
@@ -1506,13 +1504,13 @@ void G_SetLevelStrings (void)
 			int offset = info.levelnum - 1 - (info.cluster - 1);
 			if (offset >= 0 && offset < 36)
 			{
-				level_name = HUSTR_E1M1 + offset;
-				muslump = MUSIC_E1M1 + offset;
+				level_name = StringIndex(HUSTR_E1M1) + offset;
+				muslump = StringIndex(MUSIC_E1M1) + offset;
 			}
 			else
 			{
-				level_name = HUSTR_E1M1;
-				muslump = MUSIC_E1M1;
+				level_name = StringIndex(HUSTR_E1M1);
+				muslump = StringIndex(MUSIC_E1M1);
 			}
 		}
 		else
@@ -1522,12 +1520,12 @@ void G_SetLevelStrings (void)
 			if (offset >= 0 && offset < 32)
 			{
 				level_name = hustart + offset;
-				muslump = MUSIC_RUNNIN + offset;
+				muslump = StringIndex(MUSIC_RUNNIN) + offset;
 			}
 			else
 			{
-				level_name = HUSTR_1;
-				muslump = MUSIC_RUNNIN;
+				level_name = StringIndex(HUSTR_1);
+				muslump = StringIndex(MUSIC_RUNNIN);
 			}
 		}
 
@@ -1549,7 +1547,7 @@ void G_SetLevelStrings (void)
 
 			// Exit text at end of episode.
 			free(info.exittext);
-			info.exittext = strdup(GStrings(E1TEXT + info.cluster - 1));
+			info.exittext = strdup(GStrings(StringIndex(E1TEXT) + info.cluster - 1));
 		}
 		else if (info.cluster <= 8)
 		{
@@ -1573,7 +1571,7 @@ void G_SetLevelStrings (void)
 		}
 
 		// Cluster background flat.
-		uppercopy(info.finaleflat, GStrings(BGFLATE1 + i));
+		uppercopy(info.finaleflat, GStrings(StringIndex(BGFLATE1) + i));
 	}
 
 	if (::level.info)

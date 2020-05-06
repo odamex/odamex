@@ -30,7 +30,7 @@
 #include "d_dehacked.h"
 
 // Localizable strings
-FStringTable	GStrings;
+StringTable	GStrings;
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
@@ -46,9 +46,8 @@ CVAR_FUNC_IMPL (language)
 			LanguageIDs[2], LanguageIDs[3]);
 	}
 
-	// Load LANGUAGE strings.
-	GStrings.ResetStrings();
-	GStrings.Compact();
+	// Reload LANGUAGE strings.
+	GStrings.loadStrings();
 
 	// Reapply DeHackEd patches on top of these strings.
 	// FIXME: This only handles PWAD patches for now.

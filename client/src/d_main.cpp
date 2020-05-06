@@ -583,7 +583,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
@@ -687,8 +687,6 @@ void STACK_ARGS D_Shutdown()
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();
-
-	GStrings.FreeData();
 
 //	Res_ShutdownTextureManager();
 

@@ -1749,16 +1749,16 @@ void AM_Drawer()
 				case doom2:
 				case commercial_freedoom:
 				case commercial_hacx:
-					firstmap = HUSTR_1;
+					firstmap = StringIndex(HUSTR_1);
 					break;
 				case pack_plut:
-					firstmap = PHUSTR_1;
+					firstmap = StringIndex(PHUSTR_1);
 					break;
 				case pack_tnt:
-					firstmap = THUSTR_1;
+					firstmap = StringIndex(THUSTR_1);
 					break;
 				default:
-					firstmap = HUSTR_E1M1;
+					firstmap = StringIndex(HUSTR_E1M1);
 					mapoffset = level.cluster; // Episodes skip map numbers.
 					break;
 			}
@@ -1817,5 +1817,3 @@ void AM_Drawer()
 }
 
 VERSION_CONTROL (am_map_cpp, "$Id$")
-
-

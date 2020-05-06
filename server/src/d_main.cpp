@@ -163,8 +163,7 @@ void D_Init()
 	R_InitColormaps();
 
 	// [RH] Initialize localizable strings.
-	GStrings.FreeData();
-	GStrings.LoadStrings();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
@@ -216,8 +215,6 @@ void STACK_ARGS D_Shutdown()
 	DThinker::DestroyAllThinkers();
 
 	UndoDehPatch();
-
-	GStrings.FreeData();
 
 	// close all open WAD files
 	W_Close();

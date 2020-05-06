@@ -33,78 +33,54 @@
 #pragma once
 #endif
 
-
-#include <stdlib.h>
 #include "doomtype.h"
 #include "hashtable.h"
 #include "m_ostring.h"
+#include <stdlib.h>
 
-class FStringTable
+class StringTable
 {
-public:
-	FStringTable () :
-		_stringTable(),
-		StringStatus(NULL),
-		NumStrings (0),
-		Names(NULL),
-		Strings(NULL),
-		CompactBase(NULL),
-		CompactSize(0),
-		LumpNum(-1),
-		LumpData(NULL) { }
+	typedef OHashTable<OString, OString> StringHash;
+	StringHash _stringHash;
 
-	~FStringTable () { FreeData (); }
+	void clearStrings();
+	void loadLanguage(uint32_t code, bool exactMatch, char* lump, size_t lumpLen);
+	void loadStringsLump(int lump, const char* lumpname);
 
-	void LoadStrings();
-	void ReloadStrings();
-	void ResetStrings();
+  public:
+	StringTable() : _stringHash()
+	{
+	}
 
-	void LoadNames() const;
-	void FlushNames() const;
-	int FindString(const char* stringName) const;
-	int MatchString(const char* string) const;
+	//
+	// Obtain a string by index.
+	//
+	const char* operator()(int index)
+	{
+		// invalid index, return an empty cstring
+		static const char emptystr = 0;
+		return &emptystr;
+	}
 
-	void SetString(int index, const char* newString);
-	void Compact();
-
-	void FreeData();
-
-	const char *operator() (int index)
+	//
+	// Obtain a string by identifier.
+	//
+	const char* operator()(const OString& ident)
 	{
 		// [SL] ensure index is sane
-		if (index >= 0 && index < NumStrings)
-			return Strings[index];
+		StringHash::iterator it = _stringHash.find(ident);
+		if (it != _stringHash.end())
+			return (*it).second.c_str();
 
 		// invalid index, return an empty cstring
 		static const char emptystr = 0;
 		return &emptystr;
 	}
 
-private:
-	struct Header;
-	struct TableEntry
-	{
-		OString string;
-	};
-
-	OHashTable<OString, TableEntry> _stringTable;
-	byte* StringStatus;
-	int NumStrings;
-	mutable byte* Names;
-	char** Strings;
-	char* CompactBase;
-	size_t CompactSize;
-	int LumpNum;
-	byte* LumpData;
-
-	void LoadStringsLump(int lump, const char* lumpname);
-	void FreeStrings();
-	void FreeStandardStrings();
-	int SumStringSizes() const;
-	void LoadLanguage(
-		uint32_t code, bool exactMatch, char* lump, size_t lumpLen
-	);
-	void DoneLoading(byte* startPos, byte* endPos);
+	bool hasString(const OString& name) const;
+	void loadStrings();
+	const OString& matchString(const char* string) const;
+	void setString(const OString& name, const char* string);
 };
 
 #endif //__STRINGTABLE_H__

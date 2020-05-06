@@ -1162,7 +1162,7 @@ void M_QuitDOOM (int choice)
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
 	sprintf (endstring, "%s\n\n%s",
-		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+		GStrings(StringIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
 
 	M_StartMessage(endstring,M_QuitResponse,true);
 }
@@ -2178,5 +2178,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
-
-

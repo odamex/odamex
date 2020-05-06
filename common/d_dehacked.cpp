@@ -1490,10 +1490,9 @@ static int PatchMusic (int dummy)
 		const char* newname = skipwhite(Line2);
 
 		snprintf(keystring, ARRAY_LENGTH(keystring), "MUSIC_%s", Line1);
-		int i = GStrings.FindString(keystring);
-		if (i != -1)
+		if (GStrings.hasString(keystring))
 		{
-			GStrings.SetString(i, newname);
+			GStrings.setString(keystring, newname);
 			DPrintf ("Music %s set to:\n%s\n", keystring, newname);
 		}
 	}
@@ -1512,6 +1511,7 @@ static int PatchText (int oldSize)
 	BOOL good;
 	int result;
 	int i;
+	const OString* name = NULL;
 
 	// Skip old size, since we already know it
 	temp = Line2;
@@ -1589,10 +1589,10 @@ static int PatchText (int oldSize)
 		goto donewithtext;
 	
 	// Search through most other texts
-	i = GStrings.MatchString (oldStr);
-	if (i != -1)
+	name = &GStrings.matchString(oldStr);
+	if (name != NULL && !name->empty())
 	{
-		GStrings.SetString (i, newStr);
+		GStrings.setString(*name, newStr);
 		good = true;
 	}
 
@@ -1650,28 +1650,28 @@ static int PatchStrings (int dummy)
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		i = GStrings.FindString (Line1);
-
+		i = StringIndex(Line1);
 		if (i == -1)
 		{
 			Printf (PRINT_HIGH,"Unknown string: %s\n", Line1);
 		}
 		else
 		{
+
 			ReplaceSpecialChars (holdstring);
-			if ((i >= OB_SUICIDE && i <= OB_DEFAULT &&
-				strstr (holdstring, "%o") == NULL) ||
-				(i >= OB_FRIENDLY1 && i <= OB_FRIENDLY4 &&
-				strstr (holdstring, "%k") == NULL))
+			if ((i >= StringIndex(OB_SUICIDE) && i <= StringIndex(OB_DEFAULT) &&
+			     strstr(holdstring, "%o") == NULL) ||
+			    (i >= StringIndex(OB_FRIENDLY1) && i <= StringIndex(OB_FRIENDLY4) &&
+			     strstr(holdstring, "%k") == NULL))
 			{
 				int len = strlen (holdstring);
 				memmove (holdstring+3, holdstring, len);
 				holdstring[0] = '%';
-				holdstring[1] = i <= OB_DEFAULT ? 'o' : 'k';
+				holdstring[1] = i <= StringIndex(OB_DEFAULT) ? 'o' : 'k';
 				holdstring[2] = ' ';
 				holdstring[3+len] = '.';
 				holdstring[4+len] = 0;
-				if (i >= OB_MPFIST && i <= OB_RAILGUN)
+				if (i >= StringIndex(OB_MPFIST) && i <= StringIndex(OB_RAILGUN))
 				{
 					char *spot = strstr (holdstring, "%s");
 					if (spot != NULL)
@@ -1680,7 +1680,7 @@ static int PatchStrings (int dummy)
 					}
 				}
 			}
-			GStrings.SetString (i, holdstring);
+			GStrings.setString(Line1, holdstring);
 			DPrintf ("%s set to:\n%s\n", Line1, holdstring);
 		}
 	}

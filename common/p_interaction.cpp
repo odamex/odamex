@@ -459,7 +459,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		return;
 
 	AActor *toucher = player->mo;
-	int sound = 0, msg = 0;
+	int sound = 0;
+	const OString* msg = NULL;
 	bool firstgrab = false;
 	ItemEquipVal val = IEV_EquipRemove;
 
@@ -469,12 +470,12 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		// armor
 	    case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
-			msg = GOTARMOR;
+			msg = &GOTARMOR;
             break;
 
 	    case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
-			msg = GOTMEGA;
+			msg = &GOTMEGA;
             break;
 
 		// bonus items
@@ -485,7 +486,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-			msg = GOTHTHBONUS;
+			msg = &GOTHTHBONUS;
             break;
 
 	    case SPR_BON2:
@@ -498,7 +499,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
                 player->armortype = deh.GreenAC;
             }
-			msg = GOTARMBONUS;
+			msg = &GOTARMBONUS;
             break;
 
 	    case SPR_SOUL:
@@ -508,7 +509,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-			msg = GOTSUPER;
+			msg = &GOTSUPER;
             sound = 1;
             break;
 
@@ -516,61 +517,61 @@ void P_GiveSpecial(player_t *player, AActor *special)
             player->health = deh.MegasphereHealth;
             player->mo->health = player->health;
             P_GiveArmor(player,deh.BlueAC);
-			msg = GOTMSPHERE;
+			msg = &GOTMSPHERE;
             sound = 1;
             break;
 
 		// cards
 	    case SPR_BKEY:
 			val = P_GiveCard(player, it_bluecard);
-			msg = GOTBLUECARD;
+			msg = &GOTBLUECARD;
             sound = 3;
             break;
 
 	    case SPR_YKEY:
             val = P_GiveCard(player, it_yellowcard);
-			msg = GOTYELWCARD;
+			msg = &GOTYELWCARD;
             sound = 3;
             break;
 
 	    case SPR_RKEY:
             val = P_GiveCard(player, it_redcard);
-			msg = GOTREDCARD;
+			msg = &GOTREDCARD;
             sound = 3;
             break;
 
 	    case SPR_BSKU:
             val = P_GiveCard(player, it_blueskull);
-			msg = GOTBLUESKUL;
+			msg = &GOTBLUESKUL;
             sound = 3;
             break;
 
 	    case SPR_YSKU:
             val = P_GiveCard(player, it_yellowskull);
-			msg = GOTYELWSKUL;
+			msg = &GOTYELWSKUL;
             sound = 3;
             break;
 
 	    case SPR_RSKU:
             val = P_GiveCard(player, it_redskull);
-			msg = GOTREDSKUL;
+			msg = &GOTREDSKUL;
             sound = 3;
             break;
 
 		// medikits, heals
 	    case SPR_STIM:
 			val = P_GiveBody(player, 10);
-			msg = GOTSTIM;
+			msg = &GOTSTIM;
             break;
 
 	    case SPR_MEDI:
             if (player->health < 25)
             {
-				msg = GOTMEDINEED;
+				msg = &GOTMEDINEED;
             }
             else if (player->health < 100)
             {
-                msg = GOTMEDIKIT;
+                msg = &GOTMEDIKIT;
             }
 			val = P_GiveBody(player, 25);
             break;
@@ -578,13 +579,13 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		// power ups
 	    case SPR_PINV:
             val = P_GivePower(player, pw_invulnerability);
-			msg = GOTINVUL;
+			msg = &GOTINVUL;
             sound = 1;
             break;
 
 	    case SPR_PSTR:
 			val = P_GivePower(player, pw_strength);
-			msg = GOTBERSERK;
+			msg = &GOTBERSERK;
             if (player->readyweapon != wp_fist)
             {
                 player->pendingweapon = wp_fist;
@@ -594,25 +595,25 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 	    case SPR_PINS:
             val = P_GivePower(player, pw_invisibility);
-			msg = GOTINVIS;
+			msg = &GOTINVIS;
             sound = 1;
             break;
 
 	    case SPR_SUIT:
             val = P_GivePower(player, pw_ironfeet);
-			msg = GOTSUIT;
+			msg = &GOTSUIT;
             sound = 1;
             break;
 
 	    case SPR_PMAP:
 			val = P_GivePower(player, pw_allmap);
-			msg = GOTMAP;
+			msg = &GOTMAP;
             sound = 1;
             break;
 
 	    case SPR_PVIS:
             val = P_GivePower(player, pw_infrared);
-			msg = GOTVISOR;
+			msg = &GOTVISOR;
             sound = 1;
             break;
 
@@ -626,42 +627,42 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
 				val = P_GiveAmmo(player, am_clip, 1);
             }
-			msg = GOTCLIP;
+			msg = &GOTCLIP;
             break;
 
 	    case SPR_AMMO:
 			val = P_GiveAmmo(player, am_clip, 5);
-			msg = GOTCLIPBOX;
+			msg = &GOTCLIPBOX;
             break;
 
 	    case SPR_ROCK:
             val = P_GiveAmmo(player, am_misl, 1);
-			msg = GOTROCKET;
+			msg = &GOTROCKET;
             break;
 
 	    case SPR_BROK:
             val = P_GiveAmmo(player, am_misl, 5);
-			msg = GOTROCKBOX;
+			msg = &GOTROCKBOX;
             break;
 
 	    case SPR_CELL:
             val = P_GiveAmmo(player, am_cell, 1);
-			msg = GOTCELL;
+			msg = &GOTCELL;
             break;
 
 	    case SPR_CELP:
             val = P_GiveAmmo(player, am_cell, 5);
-			msg = GOTCELLBOX;
+			msg = &GOTCELLBOX;
             break;
 
 	    case SPR_SHEL:
             val = P_GiveAmmo(player, am_shell, 1);
-			msg = GOTSHELLS;
+			msg = &GOTSHELLS;
             break;
 
 	    case SPR_SBOX:
 			val = P_GiveAmmo(player, am_shell, 5);
-			msg = GOTSHELLBOX;
+			msg = &GOTSHELLBOX;
             break;
 
 	    case SPR_BPAK:
@@ -677,49 +678,49 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
                 P_GiveAmmo(player, (ammotype_t)i, 1);
             }
-			msg = GOTBACKPACK;
+			msg = &GOTBACKPACK;
             break;
 
 		// weapons
 	    case SPR_BFUG:
             val = P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED);
-			msg = GOTBFG9000;
+			msg = &GOTBFG9000;
             sound = 2;
             break;
 
 	    case SPR_MGUN:
             val = P_GiveWeapon(player, wp_chaingun, special->flags & MF_DROPPED);
-			msg = GOTCHAINGUN;
+			msg = &GOTCHAINGUN;
             sound = 2;
             break;
 
 	    case SPR_CSAW:
 			val = P_GiveWeapon(player, wp_chainsaw, special->flags & MF_DROPPED);
-			msg = GOTCHAINSAW;
+			msg = &GOTCHAINSAW;
             sound = 2;
             break;
 
 	    case SPR_LAUN:
             val = P_GiveWeapon(player, wp_missile, special->flags & MF_DROPPED);
-			msg = GOTLAUNCHER;
+			msg = &GOTLAUNCHER;
             sound = 2;
             break;
 
 	    case SPR_PLAS:
 			val = P_GiveWeapon(player, wp_plasma, special->flags & MF_DROPPED);
-			msg = GOTPLASMA;
+			msg = &GOTPLASMA;
             sound = 2;
             break;
 
 	    case SPR_SHOT:
             val = P_GiveWeapon(player, wp_shotgun, special->flags & MF_DROPPED);
-			msg = GOTSHOTGUN;
+			msg = &GOTSHOTGUN;
             sound = 2;
             break;
 
 	    case SPR_SGN2:
 			val = P_GiveWeapon(player, wp_supershotgun, special->flags & MF_DROPPED);
-			msg = GOTSHOTGUN2;
+			msg = &GOTSHOTGUN2;
             sound = 2;
             break;
 
@@ -772,8 +773,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	player->bonuscount = BONUSADD;
 	SV_TouchSpecial(special, player);
 
-	if (msg)
-		PickupMessage(toucher, GStrings(msg));
+	if (msg != NULL)
+		PickupMessage(toucher, GStrings(*msg));
 
 	if (val == IEV_EquipRemove)
 		special->Destroy();
@@ -1398,4 +1399,3 @@ void P_PlayerLeavesGame(player_s* player)
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")
-
