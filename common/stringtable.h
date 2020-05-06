@@ -33,15 +33,33 @@
 #pragma once
 #endif
 
+#include <stdlib.h>
+#include <vector>
+
 #include "doomtype.h"
 #include "hashtable.h"
 #include "m_ostring.h"
-#include <stdlib.h>
 
 class StringTable
 {
-	typedef OHashTable<OString, OString> StringHash;
+	struct TableEntry
+	{
+		// String value.
+		OString string;
+
+		// Index of string.
+		//
+		// The old strings implementation used an enum to name all of the
+		// strings, and there were (and still are) several places in the
+		// code that used comparison operators on the enum index.  This
+		// index is -1 if it's a custom string.
+		int index;
+	};
+	typedef OHashTable<OString, TableEntry> StringHash;
 	StringHash _stringHash;
+
+	typedef std::vector<OString> Indexes;
+	Indexes _indexes;
 
 	void clearStrings();
 	void loadLanguage(uint32_t code, bool exactMatch, char* lump, size_t lumpLen);
@@ -53,24 +71,32 @@ class StringTable
 	}
 
 	//
-	// Obtain a string by index.
+	// Obtain a string by name.
 	//
-	const char* operator()(int index)
+	const char* operator()(const OString& name)
 	{
+		// [SL] ensure index is sane
+		StringHash::iterator it = _stringHash.find(name);
+		if (it != _stringHash.end())
+			return (*it).second.string.c_str();
+
 		// invalid index, return an empty cstring
 		static const char emptystr = 0;
 		return &emptystr;
 	}
 
 	//
-	// Obtain a string by identifier.
+	// Obtain a string by index.
 	//
-	const char* operator()(const OString& ident)
+	const char* getIndex(int index)
 	{
-		// [SL] ensure index is sane
-		StringHash::iterator it = _stringHash.find(ident);
-		if (it != _stringHash.end())
-			return (*it).second.c_str();
+		if (index >= 0 || index < _indexes.size())
+		{
+			OString name = _indexes.at(index);
+			StringHash::iterator it = _stringHash.find(name);
+			if (it != _stringHash.end())
+				return (*it).second.string.c_str();
+		}
 
 		// invalid index, return an empty cstring
 		static const char emptystr = 0;

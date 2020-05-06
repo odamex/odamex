@@ -4924,19 +4924,37 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
 	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
 	const char* message = NULL;
-	OString messagename = "";
+	OString messagename;
 
 	switch (mod)
 	{
-		case MOD_SUICIDE:		messagename = OB_SUICIDE;	break;
-		case MOD_FALLING:		messagename = OB_FALLING;	break;
-		case MOD_CRUSH:			messagename = OB_CRUSH;		break;
-		case MOD_EXIT:			messagename = OB_EXIT;		break;
-		case MOD_WATER:			messagename = OB_WATER;		break;
-		case MOD_SLIME:			messagename = OB_SLIME;		break;
-		case MOD_LAVA:			messagename = OB_LAVA;		break;
-		case MOD_BARREL:		messagename = OB_BARREL;		break;
-		case MOD_SPLASH:		messagename = OB_SPLASH;		break;
+	case MOD_SUICIDE:
+		messagename = OB_SUICIDE;
+		break;
+	case MOD_FALLING:
+		messagename = OB_FALLING;
+		break;
+	case MOD_CRUSH:
+		messagename = OB_CRUSH;
+		break;
+	case MOD_EXIT:
+		messagename = OB_EXIT;
+		break;
+	case MOD_WATER:
+		messagename = OB_WATER;
+		break;
+	case MOD_SLIME:
+		messagename = OB_SLIME;
+		break;
+	case MOD_LAVA:
+		messagename = OB_LAVA;
+		break;
+	case MOD_BARREL:
+		messagename = OB_BARREL;
+		break;
+	case MOD_SPLASH:
+		messagename = OB_SPLASH;
+		break;
 	}
 
 	if (!messagename.empty())
@@ -4948,9 +4966,15 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		{
 			switch (mod)
 			{
-			case MOD_R_SPLASH:	messagename = OB_R_SPLASH;		break;
-			case MOD_ROCKET:	messagename = OB_ROCKET;			break;
-			default:			messagename = OB_KILLEDSELF;		break;
+			case MOD_R_SPLASH:
+				messagename = OB_R_SPLASH;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_ROCKET;
+				break;
+			default:
+				messagename = OB_KILLEDSELF;
+				break;
 			}
 			message = GStrings(messagename);
 		}
@@ -4989,22 +5013,53 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 			{
 				switch (attacker->type)
 				{
-					case MT_POSSESSED:	messagename = OB_ZOMBIE;		break;
-					case MT_SHOTGUY:	messagename = OB_SHOTGUY;	break;
-					case MT_VILE:		messagename = OB_VILE;		break;
-					case MT_UNDEAD:		messagename = OB_UNDEAD;		break;
-					case MT_FATSO:		messagename = OB_FATSO;		break;
-					case MT_CHAINGUY:	messagename = OB_CHAINGUY;	break;
-					case MT_SKULL:		messagename = OB_SKULL;		break;
-					case MT_TROOP:		messagename = OB_IMP;		break;
-					case MT_HEAD:		messagename = OB_CACO;		break;
-					case MT_BRUISER:	messagename = OB_BARON;		break;
-					case MT_KNIGHT:		messagename = OB_KNIGHT;		break;
-					case MT_SPIDER:		messagename = OB_SPIDER;		break;
-					case MT_BABY:		messagename = OB_BABY;		break;
-					case MT_CYBORG:		messagename = OB_CYBORG;		break;
-					case MT_WOLFSS:		messagename = OB_WOLFSS;		break;
-					default:break;
+				case MT_POSSESSED:
+					messagename = OB_ZOMBIE;
+					break;
+				case MT_SHOTGUY:
+					messagename = OB_SHOTGUY;
+					break;
+				case MT_VILE:
+					messagename = OB_VILE;
+					break;
+				case MT_UNDEAD:
+					messagename = OB_UNDEAD;
+					break;
+				case MT_FATSO:
+					messagename = OB_FATSO;
+					break;
+				case MT_CHAINGUY:
+					messagename = OB_CHAINGUY;
+					break;
+				case MT_SKULL:
+					messagename = OB_SKULL;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMP;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACO;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARON;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHT;
+					break;
+				case MT_SPIDER:
+					messagename = OB_SPIDER;
+					break;
+				case MT_BABY:
+					messagename = OB_BABY;
+					break;
+				case MT_CYBORG:
+					messagename = OB_CYBORG;
+					break;
+				case MT_WOLFSS:
+					messagename = OB_WOLFSS;
+					break;
+				default:
+					break;
 				}
 			}
 
@@ -5026,25 +5081,51 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		if (friendly)
 		{
 			gender = attacker->player->userinfo.gender;
-			messagename = GStrings(StringIndex(OB_FRIENDLY1) + (P_Random() & 3));
+			messagename = GStrings.getIndex(StringIndex(OB_FRIENDLY1) + (P_Random() & 3));
 		}
 		else
 		{
 			switch (mod)
 			{
-				case MOD_FIST:			messagename = OB_MPFIST;			break;
-				case MOD_CHAINSAW:		messagename = OB_MPCHAINSAW;		break;
-				case MOD_PISTOL:		messagename = OB_MPPISTOL;		break;
-				case MOD_SHOTGUN:		messagename = OB_MPSHOTGUN;		break;
-				case MOD_SSHOTGUN:		messagename = OB_MPSSHOTGUN;		break;
-				case MOD_CHAINGUN:		messagename = OB_MPCHAINGUN;		break;
-				case MOD_ROCKET:		messagename = OB_MPROCKET;		break;
-				case MOD_R_SPLASH:		messagename = OB_MPR_SPLASH;		break;
-				case MOD_PLASMARIFLE:	messagename = OB_MPPLASMARIFLE;	break;
-				case MOD_BFG_BOOM:		messagename = OB_MPBFG_BOOM;		break;
-				case MOD_BFG_SPLASH:	messagename = OB_MPBFG_SPLASH;	break;
-				case MOD_TELEFRAG:		messagename = OB_MPTELEFRAG;		break;
-				case MOD_RAILGUN:		messagename = OB_RAILGUN;		break;
+			case MOD_FIST:
+				messagename = OB_MPFIST;
+				break;
+			case MOD_CHAINSAW:
+				messagename = OB_MPCHAINSAW;
+				break;
+			case MOD_PISTOL:
+				messagename = OB_MPPISTOL;
+				break;
+			case MOD_SHOTGUN:
+				messagename = OB_MPSHOTGUN;
+				break;
+			case MOD_SSHOTGUN:
+				messagename = OB_MPSSHOTGUN;
+				break;
+			case MOD_CHAINGUN:
+				messagename = OB_MPCHAINGUN;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_MPROCKET;
+				break;
+			case MOD_R_SPLASH:
+				messagename = OB_MPR_SPLASH;
+				break;
+			case MOD_PLASMARIFLE:
+				messagename = OB_MPPLASMARIFLE;
+				break;
+			case MOD_BFG_BOOM:
+				messagename = OB_MPBFG_BOOM;
+				break;
+			case MOD_BFG_SPLASH:
+				messagename = OB_MPBFG_SPLASH;
+				break;
+			case MOD_TELEFRAG:
+				messagename = OB_MPTELEFRAG;
+				break;
+			case MOD_RAILGUN:
+				messagename = OB_RAILGUN;
+				break;
 			}
 		}
 		if (!messagename.empty())

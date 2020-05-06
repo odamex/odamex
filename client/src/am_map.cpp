@@ -1763,7 +1763,8 @@ void AM_Drawer()
 					break;
 			}
 
-			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
+			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
+			        ARRAY_LENGTH(line) - 1);
 
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;

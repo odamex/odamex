@@ -1530,7 +1530,7 @@ void G_SetLevelStrings (void)
 		}
 
 		free(info.level_name);
-		info.level_name = strdup(GStrings(level_name));
+		info.level_name = strdup(GStrings.getIndex(level_name));
 	}
 
 	// Loop through clusters and assign any DeHackEd or otherwise dynamic text.
@@ -1547,7 +1547,8 @@ void G_SetLevelStrings (void)
 
 			// Exit text at end of episode.
 			free(info.exittext);
-			info.exittext = strdup(GStrings(StringIndex(E1TEXT) + info.cluster - 1));
+			info.exittext =
+			    strdup(GStrings.getIndex(StringIndex(E1TEXT) + info.cluster - 1));
 		}
 		else if (info.cluster <= 8)
 		{
@@ -1557,7 +1558,7 @@ void G_SetLevelStrings (void)
 
 			// Exit text between clusters.
 			free(info.exittext);
-			info.exittext = strdup(GStrings(txtstart + info.cluster - 5));
+			info.exittext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
 		}
 		else if (info.cluster <= 10)
 		{
@@ -1567,11 +1568,11 @@ void G_SetLevelStrings (void)
 
 			// Enter text before secret maps.
 			free(info.entertext);
-			info.entertext = strdup(GStrings(txtstart + info.cluster - 5));
+			info.entertext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
 		}
 
 		// Cluster background flat.
-		uppercopy(info.finaleflat, GStrings(StringIndex(BGFLATE1) + i));
+		uppercopy(info.finaleflat, GStrings.getIndex(StringIndex(BGFLATE1) + i));
 	}
 
 	if (::level.info)

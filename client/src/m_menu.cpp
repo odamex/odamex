@@ -100,8 +100,6 @@ int                 repeatCount;
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
-char				endstring[160];
-
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
@@ -1157,18 +1155,18 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM (int choice)
+void M_QuitDOOM(int choice)
 {
+	std::string endstring;
+
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	sprintf (endstring, "%s\n\n%s",
-		GStrings(StringIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+	StrFormat(endstring, "%s\n\n%s",
+	          GStrings.getIndex(StringIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings(DOSY));
 
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
