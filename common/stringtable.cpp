@@ -796,7 +796,7 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 					value += piece;
 				}
 
-				fprintf(stderr, "%s = %s\n", name.c_str(), value.c_str());
+				setMissingString(name, value);
 			}
 		}
 		else
@@ -848,7 +848,7 @@ void StringTable::prepareIndexes()
 		StringHash::iterator it = _stringHash.find(name);
 		if (it == _stringHash.end())
 		{
-			TableEntry entry = {"", i};
+			TableEntry entry = {std::make_pair(false, ""), i};
 			_stringHash.insert(std::make_pair(name, entry));
 		}
 	}
@@ -881,8 +881,6 @@ void StringTable::loadStrings()
 	{
 		loadStringsLump(lump, "LANGUAGE");
 	}
-
-	I_FatalError("not done");
 }
 
 //
@@ -893,7 +891,9 @@ const OString& StringTable::matchString(const OString& string) const
 	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end();
 	     ++it)
 	{
-		if ((*it).second.string == string)
+		if ((*it).second.string.first == false)
+			continue;
+		if ((*it).second.string.second == string)
 			return (*it).first;
 	}
 
@@ -904,13 +904,33 @@ const OString& StringTable::matchString(const OString& string) const
 //
 // Set a string to something specific by name.
 //
+// Overrides the existing string, if it exists.
+//
 void StringTable::setString(const OString& name, const OString& string)
 {
 	StringHash::iterator it = _stringHash.find(name);
 	if (it == _stringHash.end())
 		return;
 
-	(*it).second.string = string;
+	(*it).second.string.first = true;
+	(*it).second.string.second = string;
+}
+
+//
+// Set a string to something specific by name.
+//
+// Does not set the string if it already exists.
+//
+void StringTable::setMissingString(const OString& name, const OString& string)
+{
+	StringHash::iterator it = _stringHash.find(name);
+	if (it == _stringHash.end())
+		return;
+	if ((*it).second.string.first == true)
+		return;
+
+	(*it).second.string.first = true;
+	(*it).second.string.second = string;
 }
 
 VERSION_CONTROL(stringtable_cpp, "$Id$")

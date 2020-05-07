@@ -43,10 +43,13 @@
 
 class StringTable
 {
+	// First is if the string "exists", second is the string value.
+	typedef std::pair<bool, OString> OptionalString;
+
 	struct TableEntry
 	{
 		// String value.
-		OString string;
+		OptionalString string;
 
 		// Index of string.
 		//
@@ -68,7 +71,7 @@ class StringTable
 	void prepareIndexes();
 
   public:
-	StringTable() : _stringHash()
+	StringTable() : _stringHash(), _indexes()
 	{
 	}
 
@@ -80,7 +83,10 @@ class StringTable
 		// [SL] ensure index is sane
 		StringHash::iterator it = _stringHash.find(name);
 		if (it != _stringHash.end())
-			return (*it).second.string.c_str();
+		{
+			if ((*it).second.string.first == true)
+				return (*it).second.string.second.c_str();
+		}
 
 		// invalid index, return an empty cstring
 		static const char emptystr = 0;
@@ -97,7 +103,10 @@ class StringTable
 			OString name = _indexes.at(index);
 			StringHash::iterator it = _stringHash.find(name);
 			if (it != _stringHash.end())
-				return (*it).second.string.c_str();
+			{
+				if ((*it).second.string.first == true)
+					return (*it).second.string.second.c_str();
+			}
 		}
 
 		// invalid index, return an empty cstring
@@ -109,6 +118,7 @@ class StringTable
 	void loadStrings();
 	const OString& matchString(const OString& string) const;
 	void setString(const OString& name, const OString& string);
+	void setMissingString(const OString& name, const OString& string);
 };
 
 #endif //__STRINGTABLE_H__
