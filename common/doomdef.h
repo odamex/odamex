@@ -76,10 +76,7 @@ enum gameplatform_t
 {
 	PF_PC,
 	PF_XBOX,
-	PF_SWITCH,
-	PF_WII,			//	Yet SUPER INCOMPLETE
-	PF_WIIU,		//	The WiiU !
-	PF_PSVITA,		//	Playstation Vita
+	PF_WII,			//	Wii/vWii
 	PF_UNKNOWN,		//	Unknown platform yet
 };
 

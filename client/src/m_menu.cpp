@@ -45,6 +45,7 @@
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
+#include "cl_responderkeys.h"
 #include "g_level.h"
 
 #include "gi.h"
@@ -799,7 +800,7 @@ char	tempstring[80];
 
 void M_QuickSaveResponse(int ch)
 {
-	if (ch == 'y' || ch == KEY_JOY4)
+	if (ch == 'y' || keypress.IsYesKey(ch))
 	{
 		M_DoSave (quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -846,7 +847,7 @@ void M_QuickSave(void)
 //
 void M_QuickLoadResponse(int ch)
 {
-	if (ch == 'y' || ch == KEY_JOY4)
+	if (ch == 'y' || keypress.IsYesKey(ch))
 	{
 		M_LoadSelect(quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -979,7 +980,7 @@ void M_DrawEpisode(void)
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y' && ch != KEY_JOY4) {
+	if (ch != 'y' && !keypress.IsYesKey(ch)) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1103,7 +1104,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !keypress.IsYesKey(ch)) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1134,7 +1135,7 @@ void STACK_ARGS call_terms (void);
 
 void M_QuitResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !keypress.IsYesKey(ch) ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1718,32 +1719,24 @@ bool M_Responder (event_t* ev)
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
 
+	// Transfer any action to the Options Menu Responder 
+	// if we're not on the main menu.
 	if (menuactive && OptionsActive) {
 		M_OptResponder (ev);
 		return true;
 	}
 
 	// Handle Repeat
-	switch(ch)
+	if (keypress.IsLeftKey(ch) || keypress.IsRightKey(ch))
 	{
-	  case KEY_HAT4:
-	  case KEY_LEFTARROW:
-	  case KEY_HAT2:
-	  case KEY_RIGHTARROW:
-	  case KEYP_4:
-	  case KEYP_6:
-		if(repeatKey == ch)
+		if (repeatKey == ch)
 			repeatCount++;
 		else
 		{
 			repeatKey = ch;
 			repeatCount = 0;
 		}
-		break;
-	  default:
-		break;
 	}
-
 
 	cmd = C_GetBinding (ch);
 
@@ -1751,53 +1744,50 @@ bool M_Responder (event_t* ev)
 	// [RH] and Player Name string input
 	if (genStringEnter)
 	{
-		switch(ch)
+		if (ch == KEY_BACKSPACE)
 		{
-		  case KEY_BACKSPACE:
 			if (saveCharIndex > 0)
 			{
 				saveCharIndex--;
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
-			break;
-
-		  case KEY_JOY2:
-		  case KEY_ESCAPE:
+		} 
+		else if (keypress.IsReturnKey(ch))
+		{
 			genStringEnter = 0;
-			M_ClearMenus ();
-			strcpy(&savegamestrings[saveSlot][0],saveOldString);
-			break;
-
-		  case KEY_JOY1:
-		  case KEY_ENTER:
-		  case KEYP_ENTER:
+			M_ClearMenus();
+			strcpy(&savegamestrings[saveSlot][0], saveOldString);
+		}
+		else if (keypress.IsEnterKey(ch)) 
+		{
 			genStringEnter = 0;
-			M_ClearMenus ();
+			M_ClearMenus();
 			if (savegamestrings[saveSlot][0])
 				genStringEnd(saveSlot);	// [RH] Function to call when enter is pressed
-			break;
-
-		  default:
+		}
+		else 
+		{ 
 			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
-				(genStringLen-1)*8)
+				(genStringLen - 1) * 8)
 			{
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
-			break;
 		}
+
 		return true;
 	}
 
 	// Take care of any messages that need input
 	if (messageToPrint)
 	{
-		if (messageNeedsInput &&
-			(!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 ||
-			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
+		if (messageNeedsInput 
+			&& ( !(ch2 == ' ' 
+				|| (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')
+				|| keypress.IsYesKey(ch) || keypress.IsNoKey(ch)) )))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -1810,9 +1800,6 @@ bool M_Responder (event_t* ev)
 		return true;
 	}
 
-	// [RH] F-Keys are now just normal keys that can be bound,
-	//		so they aren't checked here anymore.
-
 	// If devparm is set, pressing F1 always takes a screenshot no matter
 	// what it's bound to. (for those who don't bother to read the docs)
 	if (devparm && ch == KEY_F1) {
@@ -1823,13 +1810,7 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
-		// [ML] This is a regular binding now too!
-#ifdef _XBOX
-		if (ch == KEY_ESCAPE || ch == KEY_JOY9)
-#else
-		if (ch == KEY_ESCAPE)
-#endif
-		{
+		if (keypress.IsMenuKey(ch)) {
 			AddCommandString("menu_main");
 			return true;
 		}
@@ -1847,104 +1828,96 @@ bool M_Responder (event_t* ev)
 	}
 
 	// Keys usable within menu
-	switch (ch)
 	{
-	  case KEY_HAT3:
-	  case KEY_DOWNARROW:
-	  case KEYP_2:
-		do
+		if (keypress.IsDownKey(ch))
 		{
-			if (itemOn+1 > currentMenu->numitems-1)
-				itemOn = 0;
-			else
-				itemOn++;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT1:
-	  case KEY_UPARROW:
-	  case KEYP_8:
-		do
-		{
-			if (!itemOn)
-				itemOn = currentMenu->numitems-1;
-			else
-				itemOn--;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT4:
-	  case KEY_LEFTARROW:
-	  case KEYP_4:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
-		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(0);
+			do {
+				if (itemOn + 1 > currentMenu->numitems - 1)
+					itemOn = 0;
+				else
+					itemOn++;
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while (currentMenu->menuitems[itemOn].status == -1);
+			return true;
 		}
-		return true;
-
-	  case KEY_HAT2:
-	  case KEY_RIGHTARROW:
-	  case KEYP_6:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
+		else if (keypress.IsUpKey(ch))
 		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(1);
+			do {
+				if (!itemOn)
+					itemOn = currentMenu->numitems - 1;
+				else
+					itemOn--;
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while (currentMenu->menuitems[itemOn].status == -1);
+			return true;
 		}
-		return true;
-
-	  case KEY_JOY1:
-	  case KEY_ENTER:
-	  case KEYP_ENTER:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status)
+		else if (keypress.IsLeftKey(ch))
 		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
+			{
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(0);
+			}
+			return true;
+		}
+		else if (keypress.IsRightKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
+			{
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(1);
+			}
+			return true;
+		}
+		else if (keypress.IsEnterKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status)
+			{
+				currentMenu->lastOn = itemOn;
+				if (currentMenu->menuitems[itemOn].status == 2)
+				{
+					currentMenu->menuitems[itemOn].routine(1);		// right arrow
+					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				}
+				else
+				{
+					currentMenu->menuitems[itemOn].routine(itemOn);
+					S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				}
+			}
+			return true;
+		}
+		else if (keypress.IsReturnKey(ch))
+		{
+			// [RH] Escaping now moves back one menu instead of
+			//	  quitting the menu system. Thus, backspace
+			//	  is now ignored.
 			currentMenu->lastOn = itemOn;
-			if (currentMenu->menuitems[itemOn].status == 2)
-			{
-				currentMenu->menuitems[itemOn].routine(1);		// right arrow
-				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			}
-			else
-			{
-				currentMenu->menuitems[itemOn].routine(itemOn);
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			M_PopMenuStack();
+			return true;
+		}
+		else
+		{
+			if (ch2 && (ch < KEY_JOY1)) {
+				for (i = itemOn + 1; i < currentMenu->numitems; i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
+				for (i = 0; i <= itemOn; i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
 			}
 		}
-		return true;
-
-	  // [RH] Escape now moves back one menu instead of
-	  //	  quitting the menu system. Thus, backspace
-	  //	  is now ignored.
-	  case KEY_JOY2:
-	  case KEY_ESCAPE:
-		currentMenu->lastOn = itemOn;
-		M_PopMenuStack ();
-		return true;
-
-	  default:
-		if (ch2 && (ch < KEY_JOY1)) {
-			for (i = itemOn+1;i < currentMenu->numitems;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-			for (i = 0;i <= itemOn;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-		}
-		break;
-
 	}
 
 	// [RH] Menu now eats all keydown events while active
@@ -1953,7 +1926,6 @@ bool M_Responder (event_t* ev)
 	else
 		return false;
 }
-
 
 
 //
