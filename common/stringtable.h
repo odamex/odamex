@@ -34,6 +34,7 @@
 #endif
 
 #include <stdlib.h>
+#include <utility>
 #include <vector>
 
 #include "doomtype.h"

@@ -839,6 +839,9 @@ void StringTable::loadStringsLump(int lump, const char* lumpname)
 
 void StringTable::prepareIndexes()
 {
+	// All of the default strings have index numbers that represent their
+	// position in the now-removed enumeration.  This function simply sets
+	// them all up.
 	for (size_t i = 0; i < ARRAY_LENGTH(::stringOrder); i++)
 	{
 		OString name = *(::stringOrder[0]);
@@ -846,9 +849,7 @@ void StringTable::prepareIndexes()
 		if (it == _stringHash.end())
 		{
 			TableEntry entry = {"", i};
-			std::pair<OString, TableEntry> toInsert =
-			    std::pair<OString, TableEntry>(name, entry);
-			_stringHash.insert(toInsert);
+			_stringHash.insert(std::make_pair(name, entry));
 		}
 	}
 }
