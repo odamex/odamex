@@ -95,24 +95,32 @@ bool FResponderKey::IsRightKey(int key)
 
 bool FResponderKey::IsPageUpKey(int key)
 {
+    bool keyboard = (key == KEY_PGUP);
+
     switch (platform) 
     {
+        case PF_XBOX:
+            return (key == KEY_JOY7 || keyboard); 
         default:
             break;            
     }
     
-    return (key == KEY_PGUP);
+    return (keyboard);
 }
 
 bool FResponderKey::IsPageDownKey(int key)
 {
-    switch (platform) 
+    bool keyboard = (key == KEY_PGDN);
+
+    switch (platform)
     {
-        default:
-            break;            
+    case PF_XBOX:
+        return (key == KEY_JOY8 || keyboard);
+    default:
+        break;
     }
-    
-    return (key == KEY_PGDN);
+
+    return (keyboard);
 }
 
 //
@@ -135,9 +143,9 @@ bool FResponderKey::IsAcceptKey(int key)
 }
 
 //
-// FResponderKey::IsReturnKey
+// FResponderKey::IsCancelKey
 //
-bool FResponderKey::IsReturnKey(int key)
+bool FResponderKey::IsCancelKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_ESCAPE);
@@ -231,4 +239,40 @@ bool FResponderKey::IsUnbindKey(int key)
     }
     
     return (keyboard);
+}
+
+bool FResponderKey::IsSpyNextKey(int key)
+{
+    // Default Keyboard press
+    bool mouse = (key == KEY_MWHEELDOWN);
+
+    switch (platform)
+    {
+    case PF_WII:
+        return mouse;
+    case PF_XBOX:
+        return (mouse); // TODO : Need to be LEFT
+    default:
+        break;
+    }
+
+    return (mouse);
+}
+
+bool FResponderKey::IsSpyPrevKey(int key)
+{
+    // Default Keyboard press
+    bool mouse = (key == KEY_MWHEELUP);
+
+    switch (platform)
+    {
+    case PF_WII:
+        return mouse;
+    case PF_XBOX:
+        return (mouse); // TODO : Need to be LEFT
+    default:
+        break;
+    }
+
+    return (mouse);
 }

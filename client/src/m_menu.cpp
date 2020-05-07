@@ -1752,7 +1752,7 @@ bool M_Responder (event_t* ev)
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
 		} 
-		else if (keypress.IsReturnKey(ch))
+		else if (keypress.IsCancelKey(ch))
 		{
 			genStringEnter = 0;
 			M_ClearMenus();
@@ -1890,7 +1890,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (keypress.IsReturnKey(ch))
+		else if (keypress.IsCancelKey(ch))
 		{
 			// [RH] Escaping now moves back one menu instead of
 			//	  quitting the menu system. Thus, backspace

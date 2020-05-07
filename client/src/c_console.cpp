@@ -43,6 +43,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
+#include "cl_responderkeys.h"
 
 #include <string>
 #include <list>
@@ -1387,8 +1388,9 @@ void C_DrawConsole()
 static bool C_HandleKey(const event_t* ev)
 {
 	const char* cmd = C_GetBinding(ev->data1);
+	int ch = ev->data1;
 
-	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
+	if (keypress.IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{
 		// don't eat the Esc key if we're in full console
 		// let it be processed elsewhere (to bring up the menu)
@@ -1399,55 +1401,96 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	}
 
-	switch (ev->data1)
+	// General keys used by all systems
+	{
+		if (keypress.IsPageUpKey(ch))
+		{
+			if ((int)(ConRows) > (int)(ConBottom / 8))
+			{
+				if (KeysShifted)
+					// Move to top of console buffer
+					RowAdjust = ConRows - ConBottom / 8;
+				else
+					// Start scrolling console buffer up
+					ScrollState = SCROLLUP;
+			}
+			return true;
+		}
+		else if (keypress.IsPageDownKey(ch))
+		{
+			if (KeysShifted)
+				// Move to bottom of console buffer
+				RowAdjust = 0;
+			else
+				// Start scrolling console buffer down
+				ScrollState = SCROLLDN;
+			return true;
+		}
+		else if (keypress.IsLeftKey(ch))
+		{
+			if (KeysCtrl)
+				CmdLine.moveCursorLeftWord();
+			else
+				CmdLine.moveCursorLeft();
+				return true;
+		}
+		else if (keypress.IsRightKey(ch))
+		{
+			if (KeysCtrl)
+				CmdLine.moveCursorRightWord();
+			else
+				CmdLine.moveCursorRight();
+			return true;
+		}
+		else if (keypress.IsUpKey(ch))
+		{
+			// Move to previous entry in the command history
+			History.movePositionUp();
+			CmdLine.clear();
+			CmdLine.insertString(History.getString());
+			TabbedLast = false;
+			return true;
+		}
+		else if (keypress.IsDownKey(ch))
+		{
+			// Move to next entry in the command history
+			History.movePositionDown();
+			CmdLine.clear();
+			CmdLine.insertString(History.getString());
+			TabbedLast = false;
+			return true;
+		}
+		else if (keypress.IsAcceptKey(ch))
+		{
+			// Execute command line (ENTER)
+			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
+				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
+
+			// add command line text to history
+			History.addString(CmdLine.text);
+			History.resetPosition();
+
+			Printf(127, "]%s\n", CmdLine.text.c_str());
+			AddCommandString(CmdLine.text.c_str());
+			CmdLine.clear();
+
+			TabbedLast = false;
+			return true;
+		}
+	}
+
+	switch (ch)
 	{
 	case KEY_TAB:
 		// Try to do tab-completion
 		C_TabComplete();
-		return true;
-#ifdef _XBOX
-	case KEY_JOY7: // Left Trigger
-#endif
-	case KEY_PGUP:
-		if ((int)(ConRows) > (int)(ConBottom/8))
-		{
-			if (KeysShifted)
-				// Move to top of console buffer
-				RowAdjust = ConRows - ConBottom/8;
-			else
-				// Start scrolling console buffer up
-				ScrollState = SCROLLUP;
-		}
-		return true;
-#ifdef _XBOX
-	case KEY_JOY8: // Right Trigger
-#endif
-	case KEY_PGDN:
-		if (KeysShifted)
-			// Move to bottom of console buffer
-			RowAdjust = 0;
-		else
-			// Start scrolling console buffer down
-			ScrollState = SCROLLDN;
 		return true;
 	case KEY_HOME:
 		CmdLine.moveCursorHome();
 		return true;
 	case KEY_END:
 		CmdLine.moveCursorEnd();
-		return true;
-	case KEY_LEFTARROW:
-		if (KeysCtrl)
-			CmdLine.moveCursorLeftWord();
-		else
-			CmdLine.moveCursorLeft();
-		return true;
-	case KEY_RIGHTARROW:
-		if (KeysCtrl)
-			CmdLine.moveCursorRightWord();
-		else
-			CmdLine.moveCursorRight();
-		return true;
+		return true;		
 	case KEY_BACKSPACE:
 		CmdLine.backspace();
 		TabbedLast = false;
@@ -1469,39 +1512,9 @@ static bool C_HandleKey(const event_t* ev)
 		// SHIFT was pressed
 		KeysShifted = true;
 		return true;
-	case KEY_UPARROW:
-		// Move to previous entry in the command history
-		History.movePositionUp();
-		CmdLine.clear();
-		CmdLine.insertString(History.getString());
-		TabbedLast = false;
-		return true;
-	case KEY_DOWNARROW:
-		// Move to next entry in the command history
-		History.movePositionDown();
-		CmdLine.clear();
-		CmdLine.insertString(History.getString());
-		TabbedLast = false;
-		return true;
 	case KEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
-		TabbedLast = false;
-		return true;
-	case KEY_ENTER:
-	case KEYP_ENTER:
-		// Execute command line (ENTER)
-		if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
-			RowAdjust = 0;   // con_scrlock = 0 does it automatically.
-
-		// add command line text to history
-		History.addString(CmdLine.text);
-		History.resetPosition();
-	
-		Printf(127, "]%s\n", CmdLine.text.c_str());
-		AddCommandString(CmdLine.text.c_str());
-		CmdLine.clear();
-
 		TabbedLast = false;
 		return true;
 	}
@@ -1548,26 +1561,26 @@ BOOL C_Responder(event_t *ev)
 
 	if (ev->type == ev_keyup)
 	{
-		switch (ev->data1)
-		{
-#ifdef _XBOX
-		case KEY_JOY7: // Left Trigger
-		case KEY_JOY8: // Right Trigger
-#endif
-		case KEY_PGUP:
-		case KEY_PGDN:
+		// General Keys used by all systems
+		if (keypress.IsPageUpKey(ev->data1) || keypress.IsPageDownKey(ev->data1)) {
 			ScrollState = SCROLLNO;
-			break;
-		case KEY_LCTRL:
-		case KEY_RCTRL:
-			KeysCtrl = false;
-			break;
-		case KEY_LSHIFT:
-		case KEY_RSHIFT:
-			KeysShifted = false;
-			break;
-		default:
-			return false;
+		}
+		else
+		{
+			// Keyboard keys only
+			switch (ev->data1)
+			{
+			case KEY_LCTRL:
+			case KEY_RCTRL:
+				KeysCtrl = false;
+				break;
+			case KEY_LSHIFT:
+			case KEY_RSHIFT:
+				KeysShifted = false;
+				break;
+			default:
+				return false;
+			}
 		}
 	}
 	else if (ev->type == ev_keydown)

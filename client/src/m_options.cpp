@@ -1654,7 +1654,7 @@ void M_OptResponder (event_t *ev)
 	{
 		if(ev->type == ev_keydown)
 		{
-			if(keypress.IsReturnKey(ch))
+			if(keypress.IsCancelKey(ch))
 			{
 				WaitingForAxis = false;
 				CurrentMenu->items[8].label = OldAxisMessage;
@@ -2157,7 +2157,7 @@ void M_OptResponder (event_t *ev)
 		{
 		}
 		}
-		else if (keypress.IsReturnKey(ch))
+		else if (keypress.IsCancelKey(ch))
 		{
 			CurrentMenu->lastOn = CurrentItem;
 			M_PopMenuStack();

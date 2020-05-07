@@ -38,11 +38,14 @@ struct FResponderKey
         bool IsPageDownKey (int key);
 
         bool IsAcceptKey(int key);
-        bool IsReturnKey (int key);
+        bool IsCancelKey(int key);
         bool IsMenuKey  (int key);
         bool IsYesKey (int key);
         bool IsNoKey (int key);
         bool IsUnbindKey (int key);
+
+        bool IsSpyPrevKey(int key);
+        bool IsSpyNextKey(int key);
 };
 
 extern FResponderKey keypress;
