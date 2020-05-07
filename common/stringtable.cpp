@@ -764,11 +764,11 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 					break;
 				}
 
-				// String identifier
-				const std::string& ident = os.getToken();
+				// String name
+				const std::string& name = os.getToken();
 
 				// If we can find the token, skip past the string.
-				StringHash::iterator it = _stringHash.find(ident);
+				StringHash::iterator it = _stringHash.find(name);
 				if (it != _stringHash.end())
 				{
 					while (os.scan())
@@ -776,7 +776,7 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 						if (os.compareToken(";"))
 							break;
 					}
-					break;
+					continue;
 				}
 
 				os.scan();
@@ -796,7 +796,7 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 					value += piece;
 				}
 
-				fprintf(stderr, "%s = %s\n", ident.c_str(), value.c_str());
+				fprintf(stderr, "%s = %s\n", name.c_str(), value.c_str());
 			}
 		}
 		else
