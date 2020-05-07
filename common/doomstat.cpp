@@ -22,15 +22,12 @@
 //-----------------------------------------------------------------------------
 
 
-#include "stringtable.h"
+#include "gstrings.h"
 #include "doomstat.h"
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
 #include "d_dehacked.h"
-
-// Localizable strings
-StringTable	GStrings;
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;

@@ -933,4 +933,12 @@ void StringTable::setMissingString(const OString& name, const OString& string)
 	(*it).second.string.second = string;
 }
 
+//
+// Number of entries in the stringtable.
+//
+size_t StringTable::size()
+{
+	return _stringHash.size();
+}
+
 VERSION_CONTROL(stringtable_cpp, "$Id$")

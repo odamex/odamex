@@ -25,10 +25,6 @@
 #ifndef __GSTRINGS_H__
 #define __GSTRINGS_H__
 
-#ifdef _MSC_VER
-#pragma once
-#endif
-
 #include "stringtable.h"
 #include "stringenums.h"
 
