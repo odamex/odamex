@@ -78,10 +78,10 @@ class StringTable
 	//
 	// Obtain a string by name.
 	//
-	const char* operator()(const OString& name)
+	const char* operator()(const OString& name) const
 	{
 		// [SL] ensure index is sane
-		StringHash::iterator it = _stringHash.find(name);
+		StringHash::const_iterator it = _stringHash.find(name);
 		if (it != _stringHash.end())
 		{
 			if ((*it).second.string.first == true)
@@ -96,12 +96,12 @@ class StringTable
 	//
 	// Obtain a string by index.
 	//
-	const char* getIndex(int index)
+	const char* getIndex(int index) const
 	{
 		if (index >= 0 && static_cast<size_t>(index) < _indexes.size())
 		{
 			OString name = _indexes.at(index);
-			StringHash::iterator it = _stringHash.find(name);
+			StringHash::const_iterator it = _stringHash.find(name);
 			if (it != _stringHash.end())
 			{
 				if ((*it).second.string.first == true)
@@ -119,7 +119,7 @@ class StringTable
 	const OString& matchString(const OString& string) const;
 	void setString(const OString& name, const OString& string);
 	void setMissingString(const OString& name, const OString& string);
-	size_t size();
+	size_t size() const;
 };
 
 #endif //__STRINGTABLE_H__

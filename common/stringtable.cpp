@@ -936,7 +936,7 @@ void StringTable::setMissingString(const OString& name, const OString& string)
 //
 // Number of entries in the stringtable.
 //
-size_t StringTable::size()
+size_t StringTable::size() const
 {
 	return _stringHash.size();
 }
