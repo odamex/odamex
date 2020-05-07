@@ -80,7 +80,6 @@ class StringTable
 	//
 	const char* operator()(const OString& name) const
 	{
-		// [SL] ensure index is sane
 		StringHash::const_iterator it = _stringHash.find(name);
 		if (it != _stringHash.end())
 		{

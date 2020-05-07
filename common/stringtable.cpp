@@ -910,10 +910,17 @@ void StringTable::setString(const OString& name, const OString& string)
 {
 	StringHash::iterator it = _stringHash.find(name);
 	if (it == _stringHash.end())
-		return;
-
-	(*it).second.string.first = true;
-	(*it).second.string.second = string;
+	{
+		// Stringtable entry does nto exist, insert it.
+		TableEntry entry = {std::make_pair(true, string), -1};
+		_stringHash.insert(std::make_pair(name, entry));
+	}
+	else
+	{
+		// Stringtable entry exists, update it.
+		(*it).second.string.first = true;
+		(*it).second.string.second = string;
+	}
 }
 
 //
@@ -925,12 +932,22 @@ void StringTable::setMissingString(const OString& name, const OString& string)
 {
 	StringHash::iterator it = _stringHash.find(name);
 	if (it == _stringHash.end())
+	{
+		// Stringtable entry does not exist.
+		TableEntry entry = {std::make_pair(true, string), -1};
+		_stringHash.insert(std::make_pair(name, entry));
+	}
+	else if ((*it).second.string.first == true)
+	{
+		// We already set this string
 		return;
-	if ((*it).second.string.first == true)
-		return;
-
-	(*it).second.string.first = true;
-	(*it).second.string.second = string;
+	}
+	else
+	{
+		// Stringtable entry exists, but has not been set yet.
+		(*it).second.string.first = true;
+		(*it).second.string.second = string;
+	}
 }
 
 //
