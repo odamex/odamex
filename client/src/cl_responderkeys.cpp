@@ -116,9 +116,9 @@ bool FResponderKey::IsPageDownKey(int key)
 }
 
 //
-// FResponderKey::IsEnterKey
+// FResponderKey::IsAcceptKey
 //
-bool FResponderKey::IsEnterKey(int key)
+bool FResponderKey::IsAcceptKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_ENTER || key == KEYP_ENTER);

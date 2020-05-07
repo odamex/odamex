@@ -1758,7 +1758,7 @@ bool M_Responder (event_t* ev)
 			M_ClearMenus();
 			strcpy(&savegamestrings[saveSlot][0], saveOldString);
 		}
-		else if (keypress.IsEnterKey(ch)) 
+		else if (keypress.IsAcceptKey(ch))
 		{
 			genStringEnter = 0;
 			M_ClearMenus();
@@ -1871,7 +1871,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (keypress.IsEnterKey(ch))
+		else if (keypress.IsAcceptKey(ch))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status)

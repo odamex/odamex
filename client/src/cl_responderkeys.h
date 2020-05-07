@@ -37,7 +37,7 @@ struct FResponderKey
         bool IsPageUpKey (int key);
         bool IsPageDownKey (int key);
 
-        bool IsEnterKey (int key);
+        bool IsAcceptKey(int key);
         bool IsReturnKey (int key);
         bool IsMenuKey  (int key);
         bool IsYesKey (int key);
