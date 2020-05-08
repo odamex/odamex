@@ -1162,7 +1162,7 @@ void M_QuitDOOM(int choice)
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
 	StrFormat(endstring, "%s\n\n%s",
-	          GStrings.getIndex(StringIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
 	          GStrings(DOSY));
 
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);

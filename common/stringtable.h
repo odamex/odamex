@@ -113,16 +113,23 @@ class StringTable
 		return &emptystr;
 	}
 
-	// Sometimes a blunt instrument is what is necessary.
-	void dumpStrings()
+	//
+	// Obtain an index by name.
+	//
+	int toIndex(const OString& name) const
 	{
-		StringHash::const_iterator it = _stringHash.begin();
-		for (; it != _stringHash.end(); ++it)
+		StringHash::const_iterator it = _stringHash.find(name);
+		if (it != _stringHash.end())
 		{
-			Printf(PRINT_HIGH, "%s = %s\n", (*it).first.c_str(), (*it).second.string.second.c_str());
+			// We don't care if the string exists or not, we just want its index.
+			return (*it).second.index;
 		}
+
+		// Not found.
+		return -1;
 	}
 
+	void dumpStrings();
 	bool hasString(const OString& name) const;
 	void loadStrings();
 	const OString& matchString(const OString& string) const;

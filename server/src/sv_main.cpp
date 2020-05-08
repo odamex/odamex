@@ -5081,7 +5081,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		if (friendly)
 		{
 			gender = attacker->player->userinfo.gender;
-			messagename = GStrings.getIndex(StringIndex(OB_FRIENDLY1) + (P_Random() & 3));
+			messagename = GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
 		}
 		else
 		{

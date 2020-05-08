@@ -767,9 +767,8 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 				// String name
 				const std::string& name = os.getToken();
 
-				// If we can find the token, skip past the string.
-				StringHash::iterator it = _stringHash.find(name);
-				if (it != _stringHash.end())
+				// If we can find the token, skip past the string
+				if (hasString(name))
 				{
 					while (os.scan())
 					{
@@ -844,7 +843,7 @@ void StringTable::prepareIndexes()
 	// them all up.
 	for (size_t i = 0; i < ARRAY_LENGTH(::stringOrder); i++)
 	{
-		OString name = *(::stringOrder[0]);
+		OString name = *(::stringOrder[i]);
 		StringHash::iterator it = _stringHash.find(name);
 		if (it == _stringHash.end())
 		{
@@ -855,12 +854,29 @@ void StringTable::prepareIndexes()
 }
 
 //
+// Dump all strings to the console.
+//
+// Sometimes a blunt instrument is what is necessary.
+//
+void StringTable::dumpStrings()
+{
+	StringHash::const_iterator it = _stringHash.begin();
+	for (; it != _stringHash.end(); ++it)
+	{
+		Printf(PRINT_HIGH, "%s (%d) = %s\n", (*it).first.c_str(), (*it).second.index,
+		       (*it).second.string.second.c_str());
+	}
+}
+
+//
 // See if a string exists in the table.
 //
 bool StringTable::hasString(const OString& name) const
 {
 	StringHash::const_iterator it = _stringHash.find(name);
 	if (it == _stringHash.end())
+		return false;
+	if ((*it).second.string.first == false)
 		return false;
 
 	return true;
@@ -888,8 +904,7 @@ void StringTable::loadStrings()
 //
 const OString& StringTable::matchString(const OString& string) const
 {
-	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end();
-	     ++it)
+	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end(); ++it)
 	{
 		if ((*it).second.string.first == false)
 			continue;

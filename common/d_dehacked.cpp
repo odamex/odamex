@@ -1650,7 +1650,7 @@ static int PatchStrings (int dummy)
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		i = StringIndex(Line1);
+		i = GStrings.toIndex(Line1);
 		if (i == -1)
 		{
 			Printf (PRINT_HIGH,"Unknown string: %s\n", Line1);
@@ -1659,19 +1659,19 @@ static int PatchStrings (int dummy)
 		{
 
 			ReplaceSpecialChars (holdstring);
-			if ((i >= StringIndex(OB_SUICIDE) && i <= StringIndex(OB_DEFAULT) &&
+			if ((i >= GStrings.toIndex(OB_SUICIDE) && i <= GStrings.toIndex(OB_DEFAULT) &&
 			     strstr(holdstring, "%o") == NULL) ||
-			    (i >= StringIndex(OB_FRIENDLY1) && i <= StringIndex(OB_FRIENDLY4) &&
+			    (i >= GStrings.toIndex(OB_FRIENDLY1) && i <= GStrings.toIndex(OB_FRIENDLY4) &&
 			     strstr(holdstring, "%k") == NULL))
 			{
 				int len = strlen (holdstring);
 				memmove (holdstring+3, holdstring, len);
 				holdstring[0] = '%';
-				holdstring[1] = i <= StringIndex(OB_DEFAULT) ? 'o' : 'k';
+				holdstring[1] = i <= GStrings.toIndex(OB_DEFAULT) ? 'o' : 'k';
 				holdstring[2] = ' ';
 				holdstring[3+len] = '.';
 				holdstring[4+len] = 0;
-				if (i >= StringIndex(OB_MPFIST) && i <= StringIndex(OB_RAILGUN))
+				if (i >= GStrings.toIndex(OB_MPFIST) && i <= GStrings.toIndex(OB_RAILGUN))
 				{
 					char *spot = strstr (holdstring, "%s");
 					if (spot != NULL)

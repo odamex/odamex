@@ -1749,16 +1749,16 @@ void AM_Drawer()
 				case doom2:
 				case commercial_freedoom:
 				case commercial_hacx:
-					firstmap = StringIndex(HUSTR_1);
+					firstmap = GStrings.toIndex(HUSTR_1);
 					break;
 				case pack_plut:
-					firstmap = StringIndex(PHUSTR_1);
+					firstmap = GStrings.toIndex(PHUSTR_1);
 					break;
 				case pack_tnt:
-					firstmap = StringIndex(THUSTR_1);
+					firstmap = GStrings.toIndex(THUSTR_1);
 					break;
 				default:
-					firstmap = StringIndex(HUSTR_E1M1);
+					firstmap = GStrings.toIndex(HUSTR_E1M1);
 					mapoffset = level.cluster; // Episodes skip map numbers.
 					break;
 			}

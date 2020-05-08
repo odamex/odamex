@@ -681,6 +681,4 @@ extern const OString MUSIC_READ_M;
 extern const OString MUSIC_DM2TTL;
 extern const OString MUSIC_DM2INT;
 
-int StringIndex(const OString& name);
-
 #endif //__STRINGENUMS_H__

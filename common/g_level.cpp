@@ -1476,18 +1476,18 @@ void G_SetLevelStrings (void)
 	int hustart, txtstart;
 	if (gamemission == pack_plut)
 	{
-		hustart = StringIndex(PHUSTR_1);
-		txtstart = StringIndex(P1TEXT);
+		hustart = GStrings.toIndex(PHUSTR_1);
+		txtstart = GStrings.toIndex(P1TEXT);
 	}
 	else if (gamemission == pack_tnt)
 	{
-		hustart = StringIndex(THUSTR_1);
-		txtstart = StringIndex(T1TEXT);
+		hustart = GStrings.toIndex(THUSTR_1);
+		txtstart = GStrings.toIndex(T1TEXT);
 	}
 	else
 	{
-		hustart = StringIndex(HUSTR_1);
-		txtstart = StringIndex(C1TEXT);
+		hustart = GStrings.toIndex(HUSTR_1);
+		txtstart = GStrings.toIndex(C1TEXT);
 	}
 
 	// Loop through levels and assign any DeHackEd or otherwise dynamic text.
@@ -1504,13 +1504,13 @@ void G_SetLevelStrings (void)
 			int offset = info.levelnum - 1 - (info.cluster - 1);
 			if (offset >= 0 && offset < 36)
 			{
-				level_name = StringIndex(HUSTR_E1M1) + offset;
-				muslump = StringIndex(MUSIC_E1M1) + offset;
+				level_name = GStrings.toIndex(HUSTR_E1M1) + offset;
+				muslump = GStrings.toIndex(MUSIC_E1M1) + offset;
 			}
 			else
 			{
-				level_name = StringIndex(HUSTR_E1M1);
-				muslump = StringIndex(MUSIC_E1M1);
+				level_name = GStrings.toIndex(HUSTR_E1M1);
+				muslump = GStrings.toIndex(MUSIC_E1M1);
 			}
 		}
 		else
@@ -1520,12 +1520,12 @@ void G_SetLevelStrings (void)
 			if (offset >= 0 && offset < 32)
 			{
 				level_name = hustart + offset;
-				muslump = StringIndex(MUSIC_RUNNIN) + offset;
+				muslump = GStrings.toIndex(MUSIC_RUNNIN) + offset;
 			}
 			else
 			{
-				level_name = StringIndex(HUSTR_1);
-				muslump = StringIndex(MUSIC_RUNNIN);
+				level_name = GStrings.toIndex(HUSTR_1);
+				muslump = GStrings.toIndex(MUSIC_RUNNIN);
 			}
 		}
 
@@ -1548,7 +1548,7 @@ void G_SetLevelStrings (void)
 			// Exit text at end of episode.
 			free(info.exittext);
 			info.exittext =
-			    strdup(GStrings.getIndex(StringIndex(E1TEXT) + info.cluster - 1));
+			    strdup(GStrings.getIndex(GStrings.toIndex(E1TEXT) + info.cluster - 1));
 		}
 		else if (info.cluster <= 8)
 		{
@@ -1572,7 +1572,7 @@ void G_SetLevelStrings (void)
 		}
 
 		// Cluster background flat.
-		uppercopy(info.finaleflat, GStrings.getIndex(StringIndex(BGFLATE1) + i));
+		uppercopy(info.finaleflat, GStrings.getIndex(GStrings.toIndex(BGFLATE1) + i));
 	}
 
 	if (::level.info)

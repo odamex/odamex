@@ -679,11 +679,3 @@ const OString MUSIC_ULTIMA = "MUSIC_ULTIMA";
 const OString MUSIC_READ_M = "MUSIC_READ_M";
 const OString MUSIC_DM2TTL = "MUSIC_DM2TTL";
 const OString MUSIC_DM2INT = "MUSIC_DM2INT";
-
-//
-// Return the index of the given string name.
-//
-int StringIndex(const OString& name)
-{
-	return -1;
-}
