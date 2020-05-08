@@ -38,7 +38,9 @@ static void StringinfoHelp()
 		"  ] stringinfo index <INDEX>\n"
 		"  Looks up a string by index INDEX.\n\n"
 		"  ] stringinfo size\n"
-		"  Return the size of the internal stringtable.\n");
+		"  Return the size of the internal stringtable.\n\n"
+		"  ] stringinfo dump\n"
+		"  Dumps all strings in the stringtable.  Sometimes a blunt instrument is appropriate.\n");
 }
 
 BEGIN_COMMAND(stringinfo)
@@ -52,6 +54,11 @@ BEGIN_COMMAND(stringinfo)
 	if (stricmp(argv[1], "size") == 0)
 	{
 		Printf(PRINT_HIGH, "%u strings found\n", GStrings.size());
+		return;
+	}
+	else if (stricmp(argv[1], "dump") == 0)
+	{
+		GStrings.dumpStrings();
 		return;
 	}
 

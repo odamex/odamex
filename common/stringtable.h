@@ -113,6 +113,16 @@ class StringTable
 		return &emptystr;
 	}
 
+	// Sometimes a blunt instrument is what is necessary.
+	void dumpStrings()
+	{
+		StringHash::const_iterator it = _stringHash.begin();
+		for (; it != _stringHash.end(); ++it)
+		{
+			Printf(PRINT_HIGH, "%s = %s\n", (*it).first.c_str(), (*it).second.string.second.c_str());
+		}
+	}
+
 	bool hasString(const OString& name) const;
 	void loadStrings();
 	const OString& matchString(const OString& string) const;
