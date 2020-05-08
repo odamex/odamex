@@ -40,7 +40,10 @@ void StringTable::clearStrings()
 	_stringHash.empty();
 }
 
-void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_t lumpLen)
+//
+// Loads a language
+//
+void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump, size_t lumpLen)
 {
 	OScannerConfig config = {
 	    "LANGUAGE", // lumpName
@@ -56,6 +59,9 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 		os.assertTokenIs("[");
 		while (os.scan())
 		{
+			// Code to check against.
+			char checkCode[4] = { '\0', '\0', '\0', '\0' };
+
 			if (os.compareToken("]"))
 			{
 				break;
@@ -63,34 +69,30 @@ void StringTable::loadLanguage(uint32_t code, bool exactMatch, char* lump, size_
 			else if (os.compareToken("default"))
 			{
 				// Default has a speical ID.
-				if (code == (uint32_t)MAKE_ID('*', '*', 0, 0))
-				{
-					shouldParseSection = true;
-				}
+				strncpy(checkCode, "**", 2);
 			}
 			else
 			{
-				// Turn the language into an ID and compare it with the passed code.
+				// Turn the language into an ID.
 				const std::string& lang = os.getToken();
 
-				if (lang.length() == 2)
+				if (lang.length() == 2 || lang.length() == 3)
 				{
-					if (code == (uint32_t)MAKE_ID(lang[0], lang[1], '\0', '\0'))
-					{
-						shouldParseSection = true;
-					}
-				}
-				else if (lang.length() == 3)
-				{
-					if (code == (uint32_t)MAKE_ID(lang[0], lang[1], lang[2], '\0'))
-					{
-						shouldParseSection = true;
-					}
+					strncpy(checkCode, lang.c_str(), lang.length());
 				}
 				else
 				{
 					os.error("Language identifier must be 2 or 3 characters");
 				}
+			}
+
+			if (exactMatch && strncmp(code, checkCode, 3) == 0)
+			{
+				shouldParseSection = true;
+			}
+			else if (!exactMatch && strncmp(code, checkCode, 2) == 0)
+			{
+				shouldParseSection = true;
 			}
 		}
 
@@ -167,13 +169,26 @@ void StringTable::loadStringsLump(int lump, const char* lumpname)
 	// Load language-specific strings.
 	for (size_t i = 0; i < ARRAY_LENGTH(LanguageIDs); i++)
 	{
-		loadLanguage(LanguageIDs[i], true, languageLump, len);
-		loadLanguage(LanguageIDs[i] & MAKE_ID(0xff, 0xff, 0, 0), true, languageLump, len);
-		loadLanguage(LanguageIDs[i], false, languageLump, len);
+		// Deconstruct code into something less confusing.
+		char code[4];
+		UNMAKE_ID(code, LanguageIDs[i]);
+
+		// Language codes are up to three letters long.
+		code[3] = '\0';
+
+		// Try the full language code (enu).
+		loadLanguage(code, true, languageLump, len);
+
+		// Try the partial language code (en).
+		code[2] = '\0';
+		loadLanguage(code, true, languageLump, len);
+
+		// Try an inexact match for all languages in the same family (en_).
+		loadLanguage(code, false, languageLump, len);
 	}
 
 	// Load string defaults.
-	loadLanguage(MAKE_ID('*', '*', 0, 0), true, languageLump, len);
+	loadLanguage("**", true, languageLump, len);
 
 	delete[] languageLump;
 }

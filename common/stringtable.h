@@ -60,7 +60,7 @@ class StringTable
 	StringHash _stringHash;
 
 	void clearStrings();
-	void loadLanguage(uint32_t code, bool exactMatch, char* lump, size_t lumpLen);
+	void loadLanguage(const char* code, bool exactMatch, char* lump, size_t lumpLen);
 	void loadStringsLump(int lump, const char* lumpname);
 	void prepareIndexes();
 
