@@ -1157,7 +1157,7 @@ void M_QuitResponse(int ch)
 
 void M_QuitDOOM(int choice)
 {
-	std::string endstring;
+	static std::string endstring;
 
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
