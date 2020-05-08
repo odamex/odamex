@@ -43,7 +43,8 @@ void StringTable::clearStrings()
 //
 // Loads a language
 //
-void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump, size_t lumpLen)
+void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump,
+                               size_t lumpLen)
 {
 	OScannerConfig config = {
 	    "LANGUAGE", // lumpName
@@ -60,7 +61,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump, si
 		while (os.scan())
 		{
 			// Code to check against.
-			char checkCode[4] = { '\0', '\0', '\0', '\0' };
+			char checkCode[4] = {'\0', '\0', '\0', '\0'};
 
 			if (os.compareToken("]"))
 			{
@@ -287,7 +288,8 @@ void StringTable::loadStrings()
 //
 const OString& StringTable::matchString(const OString& string) const
 {
-	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end(); ++it)
+	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end();
+	     ++it)
 	{
 		if ((*it).second.string.first == false)
 			continue;

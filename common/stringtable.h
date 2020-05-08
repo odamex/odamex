@@ -33,10 +33,10 @@
 #include <utility>
 #include <vector>
 
-#include "stringenums.h"
 #include "doomtype.h"
 #include "hashtable.h"
 #include "m_ostring.h"
+#include "stringenums.h"
 
 class StringTable
 {
