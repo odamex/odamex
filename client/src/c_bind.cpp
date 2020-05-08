@@ -45,6 +45,7 @@ extern NetDemo netdemo;
  */
 OBinding DefaultBindings[] =
 {
+	{"tilde", "toggleconsole"},
 	{"grave", "toggleconsole"},		// <- This is new
 	{"1", "impulse 1"},
 	{"2", "impulse 2"},
@@ -62,6 +63,8 @@ OBinding DefaultBindings[] =
 	{"rightshift", "+speed"},
 	{"space", "+use"},
 	{"e", "+use"},
+	{"uparrow", "+forward"},
+	{"backarrow", "+back"},
 	{"rightarrow", "+right"},
 	{"leftarrow", "+left"},
 	{"w", "+forward"},
@@ -237,7 +240,6 @@ bool C_DoNetDemoKey (event_t *ev)
 	if (!netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	static bool initialized = false;
 	std::string *binding;
 
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
