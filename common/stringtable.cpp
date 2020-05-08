@@ -139,6 +139,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump, si
 					value += piece;
 				}
 
+				replaceEscapes(value);
 				setMissingString(name, value);
 			}
 		}
@@ -207,6 +208,31 @@ void StringTable::prepareIndexes()
 			TableEntry entry = {std::make_pair(false, ""), i};
 			_stringHash.insert(std::make_pair(name, entry));
 		}
+	}
+}
+
+void StringTable::replaceEscapes(std::string& str)
+{
+	size_t index = 0;
+
+	for (;;)
+	{
+		// Find the initial slash.
+		index = str.find("\\", index);
+		if (index == std::string::npos || index == str.length() - 1)
+			break;
+
+		// Substitute the escape string.
+		switch (str.at(index + 1))
+		{
+		case 'n':
+			str.replace(index, 2, "\n");
+			break;
+		case '\\':
+			str.replace(index, 2, "\\");
+			break;
+		}
+		index += 1;
 	}
 }
 
