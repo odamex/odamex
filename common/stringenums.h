@@ -681,4 +681,8 @@ extern const OString MUSIC_READ_M;
 extern const OString MUSIC_DM2TTL;
 extern const OString MUSIC_DM2INT;
 
+#define STRING_INDEXES_LENGTH 653
+
+extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];
+
 #endif //__STRINGENUMS_H__

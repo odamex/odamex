@@ -29,14 +29,11 @@
 #ifndef __STRINGTABLE_H__
 #define __STRINGTABLE_H__
 
-#ifdef _MSC_VER
-#pragma once
-#endif
-
 #include <stdlib.h>
 #include <utility>
 #include <vector>
 
+#include "stringenums.h"
 #include "doomtype.h"
 #include "hashtable.h"
 #include "m_ostring.h"
@@ -62,16 +59,13 @@ class StringTable
 	typedef OHashTable<OString, TableEntry> StringHash;
 	StringHash _stringHash;
 
-	typedef std::vector<OString> Indexes;
-	Indexes _indexes;
-
 	void clearStrings();
 	void loadLanguage(uint32_t code, bool exactMatch, char* lump, size_t lumpLen);
 	void loadStringsLump(int lump, const char* lumpname);
 	void prepareIndexes();
 
   public:
-	StringTable() : _stringHash(), _indexes()
+	StringTable() : _stringHash()
 	{
 	}
 
@@ -97,10 +91,10 @@ class StringTable
 	//
 	const char* getIndex(int index) const
 	{
-		if (index >= 0 && static_cast<size_t>(index) < _indexes.size())
+		if (index >= 0 && static_cast<size_t>(index) < ARRAY_LENGTH(::stringIndexes))
 		{
-			OString name = _indexes.at(index);
-			StringHash::const_iterator it = _stringHash.find(name);
+			const OString* name = ::stringIndexes[index];
+			StringHash::const_iterator it = _stringHash.find(*name);
 			if (it != _stringHash.end())
 			{
 				if ((*it).second.string.first == true)
