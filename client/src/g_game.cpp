@@ -621,7 +621,7 @@ BOOL G_Responder (event_t *ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = C_GetBinding (ev->data1);
+		const char *cmd = Bindings.GetBinding (ev->data1);
 
 		if (ev->type == ev_keydown)
 		{
@@ -646,11 +646,11 @@ BOOL G_Responder (event_t *ev)
 			}
 			else
 			{
-				return C_DoKey (ev);
+				return C_DoKey (ev, &Bindings, &DoubleBindings);
 			}
 		}
 		if (cmd && cmd[0] == '+')
-			return C_DoKey (ev);
+			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
@@ -679,12 +679,12 @@ BOOL G_Responder (event_t *ev)
 	switch (ev->type)
 	{
 	  case ev_keydown:
-		if (C_DoKey (ev))
+		if (C_DoKey (ev, &Bindings, &DoubleBindings))
 			return true;
 		break;
 
 	  case ev_keyup:
-		C_DoKey (ev);
+		C_DoKey(ev, &Bindings, &DoubleBindings);
 		break;
 
 	  // [Toke - Mouse] New mouse code

@@ -217,7 +217,7 @@ std::string Warmup(int& color)
 			if (dp == cp)
 			{
 				char strReady[64];
-				sprintf(strReady, "Warmup: Press %s to ready up", C_GetKeyStringsFromCommand("ready").c_str());
+				sprintf(strReady, "Warmup: Press %s to ready up", Bindings.GetKeynameFromCommand("ready").c_str());
 				return strReady;
 			}
 			else

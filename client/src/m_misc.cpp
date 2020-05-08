@@ -106,7 +106,9 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 
 		// Archive all active key bindings
 		fprintf(f, "// --- Key Bindings ---\n\n");
-		C_ArchiveBindings(f);
+		fprintf(f, "unbindall\n");
+		Bindings.ArchiveBindings(f);
+		DoubleBindings.ArchiveBindings(f);
 
 		// Archive all aliases
 		fprintf(f, "\n// --- Aliases ---\n\n");
@@ -140,7 +142,7 @@ void M_LoadDefaults(void)
 
 	// Set default key bindings. These will be overridden
 	// by the bindings in the config file if it exists.
-	AddCommandString(DefBindings);
+	C_BindDefaults();
 
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 

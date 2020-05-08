@@ -1296,7 +1296,7 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	for (i = 0; i < numitems; i++, item++)
 	{
 		if (item->type == control)
-			C_GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
@@ -1547,7 +1547,7 @@ void M_OptDrawer (void)
 
 			case control:
 			{
-				std::string desc = C_NameKeys (item->b.key1, item->c.key2);
+				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
@@ -1625,7 +1625,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
-	const char *cmd = C_GetBinding(ch);
+	const char *cmd = Bindings.GetBinding(ch);
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1640,7 +1640,7 @@ void M_OptResponder (event_t *ev)
 			if (ch != KEY_ESCAPE)
 #endif
 			{
-				C_ChangeBinding (item->e.command, ch);
+				Bindings.ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -2108,7 +2108,7 @@ void M_OptResponder (event_t *ev)
 		case KEY_BACKSPACE:
 			if (item->type == control)
 			{
-				C_UnbindACommand (item->e.command);
+				Bindings.UnbindACommand (item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
 			break;

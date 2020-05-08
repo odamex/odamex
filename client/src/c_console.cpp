@@ -1386,7 +1386,7 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
-	const char* cmd = C_GetBinding(ev->data1);
+	const char* cmd = Bindings.GetBinding(ev->data1);
 
 	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{
