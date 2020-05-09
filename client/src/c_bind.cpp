@@ -141,7 +141,27 @@ OBinding DefaultNetDemoBindings[] =
 	{ NULL, NULL }
 };
 
-OKeyBindings Bindings, DoubleBindings;
+/* Special bindings for the automap
+ */
+OBinding DefaultAutomapBindings[] =
+{
+	{ "g", "am_grid" },
+	{ "m", "am_setmark" },
+	{ "c", "am_clearmarks" },
+	{ "f", "am_togglefollow" },
+	{ "+", "+am_zoomin" },
+	{ "kp+", "+am_zoomin" },
+	{ "-", "+am_zoomout" },
+	{ "kp-", "+am_zoomout" },
+	{ "uparrow", "+am_panup"},
+	{ "downarrow", "+am_pandown"},
+	{ "leftarrow", "+am_panleft"},
+	{ "rightarrow", "+am_panright"},
+	{ "0", "am_big"},
+	{ NULL, NULL }
+};
+
+OKeyBindings Bindings, DoubleBindings, AutomapBindings;
 OKeyBindings NetDemoBindings;
 
 struct KeyState
@@ -312,7 +332,7 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 			binding = &binds->Binds[key];
 			key_state.double_click_time = level.time + 20;
 		}
-		else if (key_state.double_clicked)
+		else if (doublebinds != NULL && key_state.double_clicked)
 		{
 			// Key released from a double click
 			binding = &doublebinds->Binds[key];
@@ -331,8 +351,8 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	{
 		if (ev->type == ev_keydown)
 		{
-			key_state.key_down = true;
 			AddCommandString(*binding, key);
+			key_state.key_down = true;
 		}
 		else if (ev->type == ev_keyup)
 		{
@@ -534,13 +554,14 @@ void C_BindingsInit(void)
 {
 	Bindings.SetBindingType("bind");
 	DoubleBindings.SetBindingType("doublebind");
-	NetDemoBindings.SetBindingType("netdemobind");
+	AutomapBindings.SetBindingType("automapbind");
 }
 
 // Bind default bindings
 void C_BindDefaults(void)
 {
 	Bindings.SetBinds(DefaultBindings);
+	AutomapBindings.SetBinds(DefaultAutomapBindings);
 }
 
 
@@ -563,7 +584,7 @@ END_COMMAND(unbind)
 // Doublebind command
 BEGIN_COMMAND(doublebind)
 {
-	DoubleBindings.BindAKey(argc, argv, "Current key doublebindings: ");
+	DoubleBindings.BindAKey(argc, argv, "Current doublebindings: ");
 }
 END_COMMAND(doublebind)
 
@@ -575,6 +596,20 @@ BEGIN_COMMAND(undoublebind)
 }
 END_COMMAND(undoublebind)
 
+// Automapbind command
+BEGIN_COMMAND(automapbind)
+{
+	AutomapBindings.BindAKey(argc, argv, "Current automap bindings: ");
+}
+END_COMMAND(automapbind)
+
+BEGIN_COMMAND(unautomapbind)
+{
+	if (argc > 1) {
+		AutomapBindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(unautomapbind)
 
 // Other commands
 BEGIN_COMMAND(binddefaults)
@@ -587,6 +622,7 @@ BEGIN_COMMAND(unbindall)
 {
 	Bindings.UnbindAll();
 	DoubleBindings.UnbindAll();
+	AutomapBindings.UnbindAll();
 }
 END_COMMAND(unbindall)
 

@@ -28,6 +28,9 @@
 // Automap
 // -------
 
+CVAR(					am_followplayer, "1", "",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_rotate, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
