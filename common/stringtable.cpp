@@ -35,6 +35,25 @@
 #include "stringenums.h"
 #include "w_wad.h"
 
+bool StringTable::canSetPassString(int pass, const std::string& name) const
+{
+	StringHash::const_iterator it = _stringHash.find(name);
+
+	// New string?
+	if (it == _stringHash.end())
+		return true;
+
+	// Found an entry, does the string exist?
+	if ((*it).second.string.first == false)
+		return true;
+
+	// Was the string set with a less exact pass?
+	if ((*it).second.pass <= pass)
+		return true;
+
+	return false;
+}
+
 void StringTable::clearStrings()
 {
 	_stringHash.empty();
@@ -43,7 +62,7 @@ void StringTable::clearStrings()
 //
 // Loads a language
 //
-void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump,
+void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
                                size_t lumpLen)
 {
 	OScannerConfig config = {
@@ -113,7 +132,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump,
 				const std::string& name = os.getToken();
 
 				// If we can find the token, skip past the string
-				if (hasString(name))
+				if (!canSetPassString(pass, name))
 				{
 					while (os.scan())
 					{
@@ -141,7 +160,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, char* lump,
 				}
 
 				replaceEscapes(value);
-				setMissingString(name, value);
+				setPassString(pass, name, value);
 			}
 		}
 		else
@@ -168,6 +187,10 @@ void StringTable::loadStringsLump(int lump, const char* lumpname)
 	W_ReadLump(lump, languageLump);
 	languageLump[len] = '\0';
 
+	// String replacement pass.  Strings in an later pass can be replaced
+	// by a string in an earlier pass from another lump.
+	int pass = 1;
+
 	// Load language-specific strings.
 	for (size_t i = 0; i < ARRAY_LENGTH(LanguageIDs); i++)
 	{
@@ -179,18 +202,18 @@ void StringTable::loadStringsLump(int lump, const char* lumpname)
 		code[3] = '\0';
 
 		// Try the full language code (enu).
-		loadLanguage(code, true, languageLump, len);
+		loadLanguage(code, true, pass++, languageLump, len);
 
 		// Try the partial language code (en).
 		code[2] = '\0';
-		loadLanguage(code, true, languageLump, len);
+		loadLanguage(code, true, pass++, languageLump, len);
 
 		// Try an inexact match for all languages in the same family (en_).
-		loadLanguage(code, false, languageLump, len);
+		loadLanguage(code, false, pass++, languageLump, len);
 	}
 
 	// Load string defaults.
-	loadLanguage("**", true, languageLump, len);
+	loadLanguage("**", true, pass++, languageLump, len);
 
 	delete[] languageLump;
 }
@@ -206,7 +229,7 @@ void StringTable::prepareIndexes()
 		StringHash::iterator it = _stringHash.find(name);
 		if (it == _stringHash.end())
 		{
-			TableEntry entry = {std::make_pair(false, ""), i};
+			TableEntry entry = {std::make_pair(false, ""), 0xFF, i};
 			_stringHash.insert(std::make_pair(name, entry));
 		}
 	}
@@ -247,8 +270,8 @@ void StringTable::dumpStrings()
 	StringHash::const_iterator it = _stringHash.begin();
 	for (; it != _stringHash.end(); ++it)
 	{
-		Printf(PRINT_HIGH, "%s (%d) = %s\n", (*it).first.c_str(), (*it).second.index,
-		       (*it).second.string.second.c_str());
+		Printf(PRINT_HIGH, "%s (pass: %d, index: %d) = %s\n", (*it).first.c_str(),
+		       (*it).second.pass, (*it).second.index, (*it).second.string.second.c_str());
 	}
 }
 
@@ -312,7 +335,7 @@ void StringTable::setString(const OString& name, const OString& string)
 	if (it == _stringHash.end())
 	{
 		// Stringtable entry does nto exist, insert it.
-		TableEntry entry = {std::make_pair(true, string), -1};
+		TableEntry entry = {std::make_pair(true, string), 0, -1};
 		_stringHash.insert(std::make_pair(name, entry));
 	}
 	else
@@ -328,13 +351,13 @@ void StringTable::setString(const OString& name, const OString& string)
 //
 // Does not set the string if it already exists.
 //
-void StringTable::setMissingString(const OString& name, const OString& string)
+void StringTable::setPassString(int pass, const OString& name, const OString& string)
 {
 	StringHash::iterator it = _stringHash.find(name);
 	if (it == _stringHash.end())
 	{
 		// Stringtable entry does not exist.
-		TableEntry entry = {std::make_pair(true, string), -1};
+		TableEntry entry = {std::make_pair(true, string), pass, -1};
 		_stringHash.insert(std::make_pair(name, entry));
 	}
 	else if ((*it).second.string.first == true)
@@ -347,6 +370,7 @@ void StringTable::setMissingString(const OString& name, const OString& string)
 		// Stringtable entry exists, but has not been set yet.
 		(*it).second.string.first = true;
 		(*it).second.string.second = string;
+		(*it).second.pass = pass;
 	}
 }
 

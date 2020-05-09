@@ -48,6 +48,11 @@ class StringTable
 		// String value.
 		OptionalString string;
 
+		// Pass that string was added by.
+		//
+		// In some cases, we need to
+		int pass;
+
 		// Index of string.
 		//
 		// The old strings implementation used an enum to name all of the
@@ -59,8 +64,10 @@ class StringTable
 	typedef OHashTable<OString, TableEntry> StringHash;
 	StringHash _stringHash;
 
+	bool canSetPassString(int pass, const std::string& name) const;
 	void clearStrings();
-	void loadLanguage(const char* code, bool exactMatch, char* lump, size_t lumpLen);
+	void loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+	                  size_t lumpLen);
 	void loadStringsLump(int lump, const char* lumpname);
 	void prepareIndexes();
 	void replaceEscapes(std::string& str);
@@ -129,7 +136,7 @@ class StringTable
 	void loadStrings();
 	const OString& matchString(const OString& string) const;
 	void setString(const OString& name, const OString& string);
-	void setMissingString(const OString& name, const OString& string);
+	void setPassString(int pass, const OString& name, const OString& string);
 	size_t size() const;
 };
 
