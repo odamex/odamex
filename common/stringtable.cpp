@@ -360,11 +360,6 @@ void StringTable::setPassString(int pass, const OString& name, const OString& st
 		TableEntry entry = {std::make_pair(true, string), pass, -1};
 		_stringHash.insert(std::make_pair(name, entry));
 	}
-	else if ((*it).second.string.first == true)
-	{
-		// We already set this string
-		return;
-	}
 	else
 	{
 		// Stringtable entry exists, but has not been set yet.
