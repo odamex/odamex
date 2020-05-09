@@ -125,13 +125,17 @@ enum svc_t
 	svc_resetmap,			// [AM] Server is resetting the map
 	svc_playerqueuepos,     // Notify clients of player queue postion
 	svc_fullupdatestart,	// Inform client the full update has started
-	svc_mobjstate = 70,
+	svc_lineupdate,			// Sync client with any line property changes - e.g. SetLineTexture, SetLineBlocking, SetLineSpecial, etc.
+	svc_sectorproperties,
+	svc_linesideupdate,
+	svc_mobjstate,
 	svc_actor_movedir,
 	svc_actor_target,
 	svc_actor_tracer,
 	svc_damagemobj,
 	svc_executelinespecial,
 	svc_executeacsspecial,
+	svc_thinkerupdate,
 
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]
@@ -154,6 +158,18 @@ enum svc_t
 	svc_launcher_challenge = 212,
 	svc_challenge = 163,
 	svc_max = 255
+};
+
+enum ThinkerType
+{
+	TT_Scroller,
+	TT_FireFlicker,
+	TT_Flicker,
+	TT_LightFlash,
+	TT_Strobe,
+	TT_Glow,
+	TT_Glow2,
+	TT_Phased,
 };
 
 // network messages

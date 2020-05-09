@@ -60,11 +60,8 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int dir
 // Returns true if the special for line will cause a DMovingFloor or
 // DMovingCeiling object to be created.
 //
-bool P_LineSpecialMovesSector(line_t *line)
+bool P_LineSpecialMovesSector(byte special)
 {
-	if (!line)
-		return false;
-
 	static bool initialized = false;
 	static bool specials[256];
 
@@ -150,7 +147,7 @@ bool P_LineSpecialMovesSector(line_t *line)
 		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255
 	}
 
-	return specials[line->special];
+	return specials[special];
 }
 
 EXTERN_CVAR (cl_predictsectors)
@@ -171,7 +168,7 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	}
 
 	// Predict sectors that don't actually create floor or ceiling thinkers.
-	if (!P_LineSpecialMovesSector(line))
+	if (line && !P_LineSpecialMovesSector(line->special))
 		return true;
 
 	return false;
@@ -1316,6 +1313,9 @@ FUNC(LS_Sector_SetFriction)
 FUNC(LS_Scroll_Texture_Both)
 // Scroll_Texture_Both (id, left, right, up, down)
 {
+	if (!serverside && !s_SpecialFromServer)
+		return false;
+
 	if (arg0 == 0)
 		return false;
 
@@ -1431,6 +1431,9 @@ static void SetScroller(int tag, DScroller::EScrollType type, fixed_t dx, fixed_
 
 FUNC(LS_Scroll_Floor)
 {
+	if (IgnoreSpecial)
+		return false;
+
 	fixed_t dx = arg1 * FRACUNIT / 32;
 	fixed_t dy = arg2 * FRACUNIT / 32;
 
@@ -1485,8 +1488,11 @@ FUNC(LS_Sector_SetGravity)
 		arg2 = 99;
 	gravity = (float)arg1 + (float)arg2 * 0.01f;
 
-	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
+	{
 		sectors[secnum].gravity = gravity;
+		sectors[secnum].SectorChanges |= SPC_Gravity;
+	}
 
 	return true;
 }
@@ -1495,16 +1501,13 @@ FUNC(LS_Sector_SetColor)
 // Sector_SetColor (tag, r, g, b)
 {
 	int secnum = -1;
-
-	if (clientside)
+	while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 	{
-		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
-		{
-			sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
-					sectors[secnum].colormap->fade.getr(),
-					sectors[secnum].colormap->fade.getg(),
-					sectors[secnum].colormap->fade.getb());
-		}
+		sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
+				sectors[secnum].colormap->fade.getr(),
+				sectors[secnum].colormap->fade.getg(),
+				sectors[secnum].colormap->fade.getb());
+		sectors[secnum].SectorChanges |= SPC_Color;
 	}
 	return true;
 }
@@ -1513,17 +1516,17 @@ FUNC(LS_Sector_SetFade)
 // Sector_SetFade (tag, r, g, b)
 {
 	int secnum = -1;
-
-	if (clientside)
+	while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 	{
-		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
-		{
-			sectors[secnum].colormap = GetSpecialLights(
-					sectors[secnum].colormap->color.getr(),
-					sectors[secnum].colormap->color.getg(),
-					sectors[secnum].colormap->color.getb(),
-					arg1, arg2, arg3);
-		}
+		sectors[secnum].colormap = GetSpecialLights(
+				sectors[secnum].colormap->color.getr(),
+				sectors[secnum].colormap->color.getg(),
+				sectors[secnum].colormap->color.getb(),
+				arg1, arg2, arg3);
+		byte r = sectors[secnum].colormap->fade.getr();
+		byte g = sectors[secnum].colormap->fade.getg();
+		byte b = sectors[secnum].colormap->fade.getb();
+		sectors[secnum].SectorChanges |= SPC_Fade;
 	}
 	return true;
 }
@@ -1539,6 +1542,7 @@ FUNC(LS_Sector_SetCeilingPanning)
 	{
 		sectors[secnum].ceiling_xoffs = xofs;
 		sectors[secnum].ceiling_yoffs = yofs;
+		sectors[secnum].SectorChanges |= SPC_Panning;
 	}
 	return true;
 }
@@ -1554,6 +1558,7 @@ FUNC(LS_Sector_SetFloorPanning)
 	{
 		sectors[secnum].floor_xoffs = xofs;
 		sectors[secnum].floor_yoffs = yofs;
+		sectors[secnum].SectorChanges |= SPC_Panning;
 	}
 	return true;
 }
@@ -1576,6 +1581,7 @@ FUNC(LS_Sector_SetCeilingScale)
 			sectors[secnum].ceiling_xscale = xscale;
 		if (yscale)
 			sectors[secnum].ceiling_yscale = yscale;
+		sectors[secnum].SectorChanges |= SPC_Scale;
 	}
 	return true;
 }
@@ -1598,6 +1604,7 @@ FUNC(LS_Sector_SetFloorScale)
 			sectors[secnum].floor_xscale = xscale;
 		if (yscale)
 			sectors[secnum].floor_yscale = yscale;
+		sectors[secnum].SectorChanges |= SPC_Scale;
 	}
 	return true;
 }
@@ -1613,6 +1620,7 @@ FUNC(LS_Sector_SetRotation)
 	{
 		sectors[secnum].floor_angle = floor;
 		sectors[secnum].ceiling_angle = ceiling;
+		sectors[secnum].SectorChanges |= SPC_Rotation;
 	}
 	return true;
 }
@@ -1737,13 +1745,14 @@ FUNC(LS_SetPlayerProperty)
 FUNC(LS_TranslucentLine)
 // TranslucentLine (id, amount)
 {
-	if (ln)
+	if (IgnoreSpecial)
 		return false;
 
 	int linenum = -1;
 	while ((linenum = P_FindLineFromID (arg0, linenum)) >= 0)
 	{
 		lines[linenum].lucency = arg1 & 255;
+		lines[linenum].PropertiesChanged = true;
 	}
 
 	return true;

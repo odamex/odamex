@@ -61,6 +61,10 @@ bool CL_Connect(void);
 void CL_UpdatePlayerQueuePos();
 void CL_ExecuteLineSpecial();
 void CL_ACSExecuteSpecial();
+void CL_LineUpdate();
+void CL_LineSideUpdate();
+void CL_SectorSectorPropertiesUpdate();
+void CL_ThinkerUpdate();
 
 void CL_DisplayTics();
 void CL_RunTics();

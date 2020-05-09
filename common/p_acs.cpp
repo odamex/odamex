@@ -181,7 +181,8 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			while (--amount > 0);
 
 			// Don't bring it up automatically
-			player->pendingweapon = savedpendingweap;
+			if (player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
+				player->pendingweapon = savedpendingweap;
 			SV_SendPlayerInfo(*player);
 			return;
 		}
@@ -1385,9 +1386,14 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
 		if (floorOrCeiling == false)
+		{
 			sectors[secnum].floorpic = flat;
+		}
 		else
+		{
 			sectors[secnum].ceilingpic = flat;
+		}
+		sectors[secnum].SectorChanges |= SPC_FlatPic;
 	}
 
 	if (serverside)
@@ -1552,18 +1558,22 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 		if (lines[linenum].sidenum[side] == R_NOSIDE)
 			continue;
 
+		lines[linenum].SidedefChanged = true;
 		currentSideDef = sides + lines[linenum].sidenum[side];
 
 		switch (position)
 		{
 			case TEXTURE_TOP:
 				currentSideDef->toptexture = texture;
+				currentSideDef->SidedefChanges |= SDPC_TexTop;
 				break;
 			case TEXTURE_MIDDLE:
 				currentSideDef->midtexture = texture;
+				currentSideDef->SidedefChanges |= SDPC_TexMid;
 				break;
 			case TEXTURE_BOTTOM:
 				currentSideDef->bottomtexture = texture;
+				currentSideDef->SidedefChanges |= SDPC_TexBottom;
 				break;
 			default:
 				break;
@@ -1581,14 +1591,17 @@ void DLevelScript::SetLineBlocking(int lineid, int flags)
 		{
 		case BLOCK_NOTHING:
 			lines[line].flags &= ~(ML_BLOCKING | ML_BLOCKEVERYTHING);
+			lines[line].PropertiesChanged = true;
 			break;
 		case BLOCK_CREATURES:
 		default:
 			lines[line].flags &= ~ML_BLOCKEVERYTHING;
 			lines[line].flags |= ML_BLOCKING;
+			lines[line].PropertiesChanged = true;
 			break;
 		case BLOCK_EVERYTHING:
 			lines[line].flags |= ML_BLOCKING | ML_BLOCKEVERYTHING;
+			lines[line].PropertiesChanged = true;
 			break;
 		}
 	}
