@@ -89,7 +89,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 			else if (os.compareToken("default"))
 			{
 				// Default has a speical ID.
-				strncpy(checkCode, "**", 2);
+				strncpy(checkCode, "**", 3);
 			}
 			else
 			{
