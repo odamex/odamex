@@ -48,7 +48,7 @@ bool StringTable::canSetPassString(int pass, const std::string& name) const
 		return true;
 
 	// Was the string set with a less exact pass?
-	if ((*it).second.pass <= pass)
+	if ((*it).second.pass >= pass)
 		return true;
 
 	return false;
