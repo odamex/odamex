@@ -104,6 +104,7 @@ EColorRange GetTeamTextColor(team_t team)
 
 	return CR_GREY;
 }
+#endif
 
 argb_t GetTeamColor(team_t team)
 {
@@ -115,9 +116,8 @@ argb_t GetTeamColor(team_t team)
 		return argb_t(255, 255, 0, 0);
 	default:
 		return argb_t(255, 0, 255, 0);
-	}	
+	}
 }
-#endif
 
 const char* GetTeamName(team_t team)
 {
@@ -137,6 +137,16 @@ const char* GetTeamColorString(team_t team)
 		return TeamNames[team];
 
 	return "NONE";
+}
+
+const char* GetTeamColorStringCase(team_t team)
+{
+	static const char* TeamNamesCase[NUMTEAMS] = { "Blue", "Red", "Green" };
+
+	if (team < NUMTEAMS)
+		return TeamNamesCase[team];
+
+	return "";
 }
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")

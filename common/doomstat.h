@@ -235,12 +235,12 @@ const char* GetShortGameModeString();
 
 #ifdef CLIENT_APP
 EColorRange GetTeamTextColor(team_t team);
-argb_t GetTeamColor(team_t team);
 #endif
 
-
+argb_t GetTeamColor(team_t team);
 const char* GetTeamName(team_t team);
 const char* GetTeamColorString(team_t team);
+const char* GetTeamColorStringCase(team_t team);
 
 #endif
 
