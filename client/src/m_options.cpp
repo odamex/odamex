@@ -1000,8 +1000,8 @@ static value_t VidFPSCaps[] = {
 
 static value_t FullScreenOptions[] = {
 	{ WINDOW_Windowed,			"Window" },
-	{ WINDOW_DesktopFullscreen,	"Full Screen Window" },
-	{ WINDOW_Fullscreen,		"Full Screen Exclusive" }
+	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
+	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
 
