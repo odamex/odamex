@@ -42,12 +42,12 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker) {}
 
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor *special, player_t *player) {}
-ItemEquipVal SV_FlagTouch (player_t &player, flag_t f, bool firstgrab) { return IEV_NotEquipped; }
-void SV_SocketTouch (player_t &player, flag_t f) {}
+ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
+void SV_SocketTouch (player_t &player, team_t f) {}
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill) {}
 void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage) {}
 void SV_SendDamageMobj(AActor *target, int pain) {}
-void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
+void SV_CTFEvent(team_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
@@ -58,7 +58,7 @@ void SV_UpdateMobjState(AActor *mo) {}
 void SV_BroadcastSector(int sectornum) {}
 
 void CTF_RememberFlagPos(mapthing2_t *mthing) {}
-void CTF_SpawnFlag(flag_t f) {}
+void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
 void SV_SetWinPlayer(byte playerId) {}

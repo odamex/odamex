@@ -1499,7 +1499,7 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	P_SerializeACSDefereds(arc);
 
 	// Save the status of the flags in CTF
-	for (int i = 0; i < NUMFLAGS; i++)
+	for (int i = 0; i < NUMTEAMS; i++)
 		arc << CTFdata[i];
 
 	// Save team points
@@ -1593,7 +1593,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	P_SerializeACSDefereds(arc);
 
 	// Read the status of flags in CTF
-	for (int i = 0; i < NUMFLAGS; i++)
+	for (int i = 0; i < NUMTEAMS; i++)
 		arc >> CTFdata[i];
 
 	// Read team points
@@ -1652,9 +1652,11 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	while ( (mo = flagiterator.Next() ) )
 	{
 		if (mo->type == MT_BDWN || mo->type == MT_BCAR)
-			CTFdata[it_blueflag].actor = mo->ptr();
+			CTFdata[TEAM_BLUE].actor = mo->ptr();
 		if (mo->type == MT_RDWN || mo->type == MT_RCAR)
-			CTFdata[it_redflag].actor = mo->ptr();
+			CTFdata[TEAM_RED].actor = mo->ptr();
+		if (mo->type == MT_GDWN || mo->type == MT_GCAR)
+			CTFdata[TEAM_GREEN].actor = mo->ptr();
 	}
 
 	// Make sure the status bar is displayed correctly

@@ -1060,7 +1060,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
 

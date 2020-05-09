@@ -807,7 +807,7 @@ static EColorRange GetTeamPlayerColor(player_t* player)
 {
 	if (sv_gametype == GM_CTF)
 	{
-		for (int i = 0; i < NUMFLAGS; i++)
+		for (int i = 0; i < NUMTEAMS; i++)
 		{
 			if (player->flags[i])
 				return GetTeamTextColor((team_t)i);

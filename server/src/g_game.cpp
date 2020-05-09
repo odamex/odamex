@@ -56,6 +56,7 @@ EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_teamsinplay)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -240,7 +241,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
 
@@ -478,7 +479,7 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 	selections = 0;
 
 	// [Toke - CTF - starts]
-	if (player.userinfo.team < NUMTEAMS)
+	if (player.userinfo.team < sv_teamsinplay)
 		selections = TeamStarts[player.userinfo.team].size();
 
 	// denis - fall back to deathmatch spawnpoints, if no team ones available

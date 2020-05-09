@@ -35,18 +35,13 @@
 #include "s_sound.h"
 #include "v_text.h"
 
-flagdata CTFdata[NUMFLAGS];
-int TEAMpoints[NUMFLAGS];
+flagdata CTFdata[NUMTEAMS];
+int TEAMpoints[NUMTEAMS];
 
 static int tintglow = 0;
 
-const char *team_names[NUMTEAMS + 2] =
-{
-	"BLUE", "RED", "GREEN", "", ""
-};
-
 // denis - this is a lot clearer than doubly nested switches
-static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
+static mobjtype_t flag_table[NUMTEAMS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
 	{MT_RFLG, MT_RDWN, MT_RCAR},
@@ -68,10 +63,10 @@ void CTF_Connect()
 
 	// clear player flags client may have imagined
 	for (Players::iterator it = players.begin();it != players.end();++it)
-		for(size_t j = 0; j < NUMFLAGS; j++)
+		for(size_t j = 0; j < NUMTEAMS; j++)
 			it->flags[j] = false;
 
-	for(i = 0; i < NUMFLAGS; i++)
+	for(i = 0; i < NUMTEAMS; i++)
 	{
 		CTFdata[i].flagger = 0;
 		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
@@ -82,7 +77,7 @@ void CTF_Connect()
 			player_t &player = idplayer(flagger);
 
 			if(validplayer(player))
-				CTF_CarryFlag(player, (flag_t)i);
+				CTF_CarryFlag(player, (team_t)i);
 		}
 	}
 }
@@ -101,7 +96,7 @@ void CL_CTFEvent (void)
 		return;
 	}
 
-	flag_t flag = (flag_t)MSG_ReadByte();
+	team_t flag = (team_t)MSG_ReadByte();
 	team_t team = (team_t)MSG_ReadByte();
 	player_t &player = idplayer(MSG_ReadByte());
 	int points = MSG_ReadLong();
@@ -109,7 +104,7 @@ void CL_CTFEvent (void)
 	if(validplayer(player))
 		player.points = points;
 
-	for(size_t i = 0; i < NUMFLAGS; i++)
+	for(size_t i = 0; i < NUMTEAMS; i++)
 		TEAMpoints[i] = MSG_ReadLong ();
 
 	switch(event)
@@ -183,7 +178,7 @@ void CL_CTFEvent (void)
 //
 void CTF_CheckFlags (player_t &player)
 {
-	for(size_t i = 0; i < NUMFLAGS; i++)
+	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
 		if(player.flags[i])
 		{
@@ -217,7 +212,7 @@ END_COMMAND		(flagtoss)
 //	[Toke - CTF] CTF_CarryFlag
 //	Spawns a flag on a players location and links the flag to the player
 //
-void CTF_CarryFlag (player_t &player, flag_t flag)
+void CTF_CarryFlag (player_t &player, team_t flag)
 {
 	if (!validplayer(player))
 		return;
@@ -239,7 +234,7 @@ void CTF_CarryFlag (player_t &player, flag_t flag)
 void CTF_MoveFlags ()
 {
 	// denis - flag is now a boolean
-	for(size_t i = 0; i < NUMFLAGS; i++)
+	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
 		if(CTFdata[i].flagger && CTFdata[i].actor)
 		{
@@ -313,7 +308,7 @@ void CTF_RunTics (void)
 	CTF_MoveFlags();
 
 	// Don't draw the flag the display player is carrying as it blocks the view.
-	for (size_t flag = 0; flag < NUMFLAGS; flag++)
+	for (size_t flag = 0; flag < NUMTEAMS; flag++)
 	{
 		if (!CTFdata[flag].actor)
 			continue;
@@ -337,25 +332,25 @@ void CTF_RunTics (void)
 void CTF_DrawHud (void)
 {
     int tintglowtype = 0;
-	flag_t yourFlag = NUMFLAGS;
-	flag_t enemyFlag = NUMFLAGS;
+	team_t yourFlag = NUMTEAMS;
+	team_t enemyFlag = NUMTEAMS;
 
 	if(sv_gametype != GM_CTF)
 		return;
 
 	player_t &player = displayplayer();
-	for(size_t i = 0; i < NUMFLAGS; i++)
+	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
 		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == player.id)
 		{
 			if ((team_t)i == player.userinfo.team)
-				yourFlag = (flag_t)i;
+				yourFlag = (team_t)i;
 			else
-				enemyFlag = (flag_t)i;
+				enemyFlag = (team_t)i;
 		}
 	}
 
-	if ((yourFlag != NUMFLAGS || enemyFlag != NUMFLAGS) && hud_heldflag > 0)
+	if ((yourFlag != NUMTEAMS || enemyFlag != NUMTEAMS) && hud_heldflag > 0)
 	{
 		if (hud_heldflag_flash == 1)
 		{
@@ -372,20 +367,20 @@ void CTF_DrawHud (void)
 		}
 
 		argb_t tintColor = 0;
-		if (yourFlag != NUMFLAGS && enemyFlag != NUMFLAGS)
+		if (yourFlag != NUMTEAMS && enemyFlag != NUMTEAMS)
 		{
 			if (tintglow < 15 || tintglow > 60)
-				tintColor = GetTeamColor((team_t)yourFlag);
+				tintColor = GetTeamColor(yourFlag);
 			else
-				tintColor = GetTeamColor((team_t)enemyFlag);
+				tintColor = GetTeamColor(enemyFlag);
 		}
-		else if (enemyFlag != NUMFLAGS)
+		else if (enemyFlag != NUMTEAMS)
 		{
-			tintColor = GetTeamColor((team_t)enemyFlag);
+			tintColor = GetTeamColor(enemyFlag);
 		}
-		else if (yourFlag != NUMFLAGS)
+		else if (yourFlag != NUMTEAMS)
 		{
-			tintColor = GetTeamColor((team_t)yourFlag);
+			tintColor = GetTeamColor(yourFlag);
 		}
 
 		if (tintColor != 0)
@@ -466,9 +461,9 @@ EXTERN_CVAR(snd_voxtype)
 EXTERN_CVAR(snd_gamesfx)
 
 // [AM] Play appropriate sounds for CTF events.
-void CTF_Sound(flag_t flag, team_t team, flag_score_t event)
+void CTF_Sound(team_t flag, team_t team, flag_score_t event)
 {
-	if (flag >= NUMFLAGS || team >= NUMTEAMS || event >= NUM_CTF_SCORE || strcmp(flag_sound[event][0], "") == 0)
+	if (flag >= NUMTEAMS || team >= NUMTEAMS || event >= NUM_CTF_SCORE || strcmp(flag_sound[event][0], "") == 0)
 		return;
 
 	// Play sound effect
@@ -476,7 +471,7 @@ void CTF_Sound(flag_t flag, team_t team, flag_score_t event)
 	{
 		int sound = 1;
 		bool isGrab = (event == SCORE_GRAB || event == SCORE_FIRSTGRAB);
-		bool yourFlag = consoleplayer().userinfo.team == (team_t)flag;
+		bool yourFlag = consoleplayer().userinfo.team == flag;
 		bool yourTeam = consoleplayer().userinfo.team == team;
 		// Enemy event
 		if (isGrab && (consoleplayer().spectator || yourFlag))
@@ -496,7 +491,7 @@ void CTF_Sound(flag_t flag, team_t team, flag_score_t event)
 		// Possessive (yours/theirs)
 		if (!consoleplayer().spectator)
 		{
-			if (consoleplayer().userinfo.team != (team_t)flag)
+			if (consoleplayer().userinfo.team != flag)
 			{
 				// Enemy flag is being evented
 				if (S_FindSound(flag_sound[event][3]) != -1)
@@ -546,9 +541,9 @@ static const char* flag_message[NUM_CTF_SCORE][5] = {
 	{"Your Flag Returning", "Enemy Flag Returning", "Blue Flag Returning", "Red Flag Returning", "Green Flag Returning"} // MANUALRETURN*/
 };
 
-void CTF_Message(flag_t flag, team_t team, flag_score_t event) {
+void CTF_Message(team_t flag, team_t team, flag_score_t event) {
 	// Invalid team
-	if (flag >= NUMFLAGS)
+	if (flag >= NUMTEAMS)
 		return;
 
 	// Invalid CTF event
@@ -593,7 +588,7 @@ void CTF_Message(flag_t flag, team_t team, flag_score_t event) {
 		if (event == SCORE_CAPTURE)
 			C_GMidPrint(flag_message[event][2 + team], GetTeamTextColor(team), 0);
 		else
-			C_GMidPrint(flag_message[event][2 + flag], GetTeamTextColor((team_t)flag), 0);
+			C_GMidPrint(flag_message[event][2 + flag], GetTeamTextColor(flag), 0);
 		break;
 	default:
 		break;

@@ -929,7 +929,7 @@ player_s::player_s()
 		cards[i] = false;
 	backpack = false;
 	points = 0;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		flags[i] = false;
 	fragcount = 0;
 	deathcount = 0;
@@ -1013,7 +1013,7 @@ player_s &player_s::operator =(const player_s &other)
 	for(i = 0; i < NUMCARDS; i++)
 		cards[i] = other.cards[i];
 
-	for(i = 0; i < NUMFLAGS; i++)
+	for(i = 0; i < NUMTEAMS; i++)
 		flags[i] = other.flags[i];
 
 	points = other.points;

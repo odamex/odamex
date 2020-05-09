@@ -66,10 +66,10 @@ void SV_SpawnMobj(AActor *mobj);
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...);
 void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
-void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
+void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor *special, player_t *player);
-ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
-void SV_SocketTouch(player_t &player, flag_t f);
+ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
+void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
@@ -732,35 +732,35 @@ void P_GiveSpecial(player_t *player, AActor *special)
             firstgrab = true;
 			//Fall through to flag touch
         case SPR_BDWN: // Player touches the blue flag after it's been dropped
-			val = SV_FlagTouch(*player, it_blueflag, firstgrab);
+			val = SV_FlagTouch(*player, TEAM_BLUE, firstgrab);
 			sound = -1;
             break;
 
         case SPR_BSOK:
-            SV_SocketTouch(*player, it_blueflag);
+            SV_SocketTouch(*player, TEAM_BLUE);
             return;
 
         case SPR_RFLG: // Player touches the red flag at its base
             firstgrab = true;
 			//Fall through to flag touch
         case SPR_RDWN: // Player touches the red flag after its been dropped
-			val = SV_FlagTouch(*player, it_redflag, firstgrab);
+			val = SV_FlagTouch(*player, TEAM_RED, firstgrab);
 			sound = -1;
             break;
 
         case SPR_RSOK:
-            SV_SocketTouch(*player, it_redflag);
+            SV_SocketTouch(*player, TEAM_RED);
             return;
 
 		case SPR_GFLG:
 			firstgrab = true;
 		case SPR_GDWN:
-			val = SV_FlagTouch(*player, it_greenflag, firstgrab);
+			val = SV_FlagTouch(*player, TEAM_GREEN, firstgrab);
 			sound = -1;
 			break;
 
 		case SPR_GSOK:
-			SV_SocketTouch(*player, it_greenflag);
+			SV_SocketTouch(*player, TEAM_GREEN);
 			return;
 
         default:
@@ -998,7 +998,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						SV_CTFEvent((flag_t)0, SCORE_BETRAYAL, *splayer);
+						SV_CTFEvent((team_t)0, SCORE_BETRAYAL, *splayer);
 					}
 				}
 				else
@@ -1011,13 +1011,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						if (tplayer->flags[(flag_t)splayer->userinfo.team])
+						if (tplayer->flags[splayer->userinfo.team])
 						{
-							SV_CTFEvent((flag_t)0, SCORE_CARRIERKILL, *splayer);
+							SV_CTFEvent((team_t)0, SCORE_CARRIERKILL, *splayer);
 						}
 						else
 						{
-							SV_CTFEvent((flag_t)0, SCORE_KILL, *splayer);
+							SV_CTFEvent((team_t)0, SCORE_KILL, *splayer);
 						}
 					}
 				}
@@ -1127,14 +1127,14 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		// [Toke] TeamDM sv_fraglimit
 		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
 		{
-			for (size_t i = 0; i < NUMFLAGS; i++)
+			for (size_t i = 0; i < NUMTEAMS; i++)
 			{
 				if (TEAMpoints[i] >= sv_fraglimit)
 				{
 					SV_BroadcastPrintf(
                         PRINT_HIGH,
                         "Frag limit hit. %s team wins!\n",
-                        team_names[i]
+						GetTeamColorStringCase((team_t)i)
                     );
 					shotclock = TICRATE * 2;
 					break;

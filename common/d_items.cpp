@@ -545,7 +545,7 @@ gitem_t itemlist[] = {
 		NULL,
 		NULL,
 		IT_FLAG,
-		it_blueflag,
+		TEAM_BLUE,
 		0,
 		"Blue Flag"
 	},
@@ -556,9 +556,19 @@ gitem_t itemlist[] = {
 		NULL,
 		NULL,
 		IT_FLAG,
-		it_redflag,
+		TEAM_RED,
 		0,
 		"Red Flag"
+	},
+
+	{
+		"green_flag",
+		NULL,
+		NULL,
+		IT_FLAG,
+		TEAM_GREEN,
+		0,
+		"Green Flag"
 	},
 				// end of list marker
 	{

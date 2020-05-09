@@ -2639,11 +2639,11 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// [Toke - CTF] Setup flag sockets
 		if (mthing->type == ID_BLUE_FLAG)
-			SpawnFlag(mthing, it_blueflag);
+			SpawnFlag(mthing, TEAM_BLUE);
 		else if (mthing->type == ID_RED_FLAG)
-			SpawnFlag(mthing, it_redflag);
+			SpawnFlag(mthing, TEAM_RED);
 		else if (mthing->type == ID_GREEN_FLAG)
-			SpawnFlag(mthing, it_greenflag);
+			SpawnFlag(mthing, TEAM_GREEN);
 	}
 
 	// [RH] Go dormant as needed
@@ -2651,7 +2651,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		P_DeactivateMobj (mobj);
 }
 
-void SpawnFlag(mapthing2_t* mthing, flag_t flag)
+void SpawnFlag(mapthing2_t* mthing, team_t flag)
 {
 	flagdata *data = &CTFdata[flag];
 	if (data->flaglocated)

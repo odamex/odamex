@@ -86,7 +86,7 @@ extern patch_t	*faces[];
 extern int		st_faceindex;
 extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
-extern flagdata CTFdata[NUMFLAGS];
+extern flagdata CTFdata[NUMTEAMS];
 
 extern NetDemo netdemo;
 

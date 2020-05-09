@@ -39,19 +39,6 @@ enum gender_t
 	NUMGENDER
 };
 
-// [Toke - Teams]
-// denis - for both teamplay and ctfmode
-enum team_t
-{
-	TEAM_BLUE,
-	TEAM_RED,
-	TEAM_GREEN,
-	
-	NUMTEAMS,
-	
-	TEAM_NONE
-};
-
 enum weaponswitch_t
 {
 	WPSW_NEVER,

@@ -383,7 +383,7 @@ extern byte cheat_clev_seq[10];
 extern byte cheat_mypos_seq[8];
 
 // CTF...
-extern flagdata CTFdata[NUMFLAGS];
+extern flagdata CTFdata[NUMTEAMS];
 
 // Now what?
 cheatseq_t		cheat_mus = { cheat_mus_seq, 0 };

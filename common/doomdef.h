@@ -192,16 +192,20 @@ enum card_t
         CardIsSkull = 128
 };
 
-//
-//	[Toke - CTF] CTF Flags
-//
-enum flag_t
+
+// [Toke - Teams]
+// denis - for both teamplay and ctfmode
+enum team_t
 {
-	it_blueflag,
-	it_redflag,
-	it_greenflag,
-	NUMFLAGS
+	TEAM_BLUE,
+	TEAM_RED,
+	TEAM_GREEN,
+
+	NUMTEAMS,
+
+	TEAM_NONE
 };
+
 
 enum ItemEquipVal
 {
