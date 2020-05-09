@@ -466,52 +466,50 @@ EXTERN_CVAR(snd_voxtype)
 EXTERN_CVAR(snd_gamesfx)
 
 // [AM] Play appropriate sounds for CTF events.
-void CTF_Sound(flag_t flag, team_t team, flag_score_t event) {
-	if (flag >= NUMFLAGS) {
-		// Invalid team
+void CTF_Sound(flag_t flag, team_t team, flag_score_t event)
+{
+	if (flag >= NUMFLAGS || team >= NUMTEAMS || event >= NUM_CTF_SCORE || strcmp(flag_sound[event][0], "") == 0)
 		return;
-	}
-
-	if (event >= NUM_CTF_SCORE) {
-		// Invalid CTF event
-		return;
-	}
-
-	if (strcmp(flag_sound[event][0], "") == 0) {
-		// No logical sound for this event
-		return;
-	}
 
 	// Play sound effect
-	if (snd_gamesfx) {
-		if (consoleplayer().spectator || consoleplayer().userinfo.team != (team_t)flag) {
-			// Enemy flag is being evented
-			if (S_FindSound(flag_sound[event][1]) != -1) {
-				S_Sound(CHAN_GAMEINFO, flag_sound[event][1], 1, ATTN_NONE);
-			}
-		} else {
-			// Your flag is being evented
-			if (S_FindSound(flag_sound[event][0]) != -1) {
-				S_Sound(CHAN_GAMEINFO, flag_sound[event][0], 1, ATTN_NONE);
-			}
-		}
+	if (snd_gamesfx)
+	{
+		int sound = 1;
+		bool isGrab = (event == SCORE_GRAB || event == SCORE_FIRSTGRAB);
+		bool yourFlag = consoleplayer().userinfo.team == (team_t)flag;
+		bool yourTeam = consoleplayer().userinfo.team == team;
+		// Enemy event
+		if (isGrab && (consoleplayer().spectator || yourFlag))
+			sound = 0;
+		else if (event == SCORE_CAPTURE && (consoleplayer().spectator || !yourTeam))
+			sound = 0;
+
+		// Do not play sound if enemy is grabbing another enemy's flag
+		if (!(isGrab && !yourTeam && !yourFlag) && S_FindSound(flag_sound[event][sound]) != -1)
+			S_Sound(CHAN_GAMEINFO, flag_sound[event][sound], 1, ATTN_NONE);
 	}
 
 	// Play announcer sound
-	switch (snd_voxtype.asInt()) {
+	switch (snd_voxtype.asInt())
+	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (!consoleplayer().spectator) {
-			if (consoleplayer().userinfo.team != (team_t)flag) {
+		if (!consoleplayer().spectator)
+		{
+			if (consoleplayer().userinfo.team != (team_t)flag)
+			{
 				// Enemy flag is being evented
-				if (S_FindSound(flag_sound[event][3]) != -1) {
+				if (S_FindSound(flag_sound[event][3]) != -1)
+				{
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][3], 1, ATTN_NONE);
 					break;
 				}
 			}
-			else {
+			else
+			{
 				// Your flag is being evented
-				if (S_FindSound(flag_sound[event][2]) != -1) {
+				if (S_FindSound(flag_sound[event][2]) != -1)
+				{
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][2], 1, ATTN_NONE);
 					break;
 				}
@@ -525,7 +523,7 @@ void CTF_Sound(flag_t flag, team_t team, flag_score_t event) {
 			sound = team;
 		// Team colors (red/blue)
 		if (S_FindSound(flag_sound[event][4 + sound]) != -1) 
-				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + sound], 1, ATTN_NONE);
+			S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + sound], 1, ATTN_NONE);
 		break;
 	}
 		// fallthrough
