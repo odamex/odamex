@@ -3226,22 +3226,15 @@ void CL_Switch()
 	lines[l].special = special;
 }
 
-void CL_ActivateLine(void)
+void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activationType,
+	byte special = 0, byte arg0 = 0, byte arg1 = 0, byte arg2 = 0, byte arg3 = 0, byte arg4 = 0)
 {
-	unsigned l = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte side = MSG_ReadByte();
-	byte activationType = MSG_ReadByte();
-
-	if (!lines || l >= (unsigned)numlines)
-		return;
-
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
 	// positions since they cannot be used for interpolation.
-	if ((mo && mo->player) &&
-		(lines[l].special == Teleport || lines[l].special == Teleport_NoFog ||
-		 lines[l].special == Teleport_Line))
+	if (line && (mo && mo->player) &&
+		(line->special == Teleport || line->special == Teleport_NoFog ||
+			line->special == Teleport_Line))
 	{
 		teleported_players.insert(mo->player->id);
 
@@ -3252,24 +3245,50 @@ void CL_ActivateLine(void)
 
 	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
 	// need to create moving sectors on their own in response to svc_activateline
-	if (P_LineSpecialMovesSector(&lines[l]))
+	if (line && P_LineSpecialMovesSector(line->special))
 		return;
+
+	s_SpecialFromServer = true;
 
 	switch (activationType)
 	{
-	case 0:
-		P_CrossSpecialLine(l, side, mo, true);
+	case LineCross:
+		if (line)
+			P_CrossSpecialLine(line - lines, side, mo);
 		break;
-	case 1:
-		P_UseSpecialLine(mo, &lines[l], side, true);
+	case LineUse:
+		if (line)
+			P_UseSpecialLine(mo, line, side);
 		break;
-	case 2:
-		P_ShootSpecialLine(mo, &lines[l], true);
+	case LineShoot:
+		if (line)
+			P_ShootSpecialLine(mo, line);
 		break;
-    case 3:
-		P_PushSpecialLine(mo, &lines[l], side, true);
+	case LinePush:
+		if (line)
+			P_PushSpecialLine(mo, line, side);
+		break;
+	case LineACS:
+		LineSpecials[special](line, mo, arg0, arg1, arg2, arg3, arg4);
+		break;
+	default:
 		break;
 	}
+
+	s_SpecialFromServer = false;
+}
+
+void CL_ActivateLine(void)
+{
+	unsigned linenum = MSG_ReadLong();
+	AActor *mo = P_FindThingById(MSG_ReadShort());
+	byte side = MSG_ReadByte();
+	LineActivationType activationType = (LineActivationType)MSG_ReadByte();
+
+	if (!lines || linenum >= (unsigned)numlines)
+		return;
+
+	ActivateLine(mo, &lines[linenum], side, activationType);
 }
 
 void CL_ConsolePlayer(void)
@@ -3639,6 +3658,10 @@ void CL_InitCommands(void)
 	cmds[svc_playerqueuepos] = &CL_UpdatePlayerQueuePos;
 	cmds[svc_executelinespecial] = &CL_ExecuteLineSpecial;
 	cmds[svc_executeacsspecial] = &CL_ACSExecuteSpecial;
+	cmds[svc_lineupdate] = &CL_LineUpdate;
+	cmds[svc_linesideupdate] = &CL_LineSideUpdate;
+	cmds[svc_sectorproperties] = &CL_SectorSectorPropertiesUpdate;
+	cmds[svc_thinkerupdate] = &CL_ThinkerUpdate;
 }
 
 //
@@ -4139,7 +4162,7 @@ void CL_UpdatePlayerQueuePos()
 void CL_ExecuteLineSpecial()
 {
 	byte special = MSG_ReadByte();
-	short lineid = MSG_ReadShort();
+	uint16_t lineid = MSG_ReadShort();
 	AActor* activator = P_FindThingById(MSG_ReadShort());
 	byte arg0 = MSG_ReadByte();
 	byte arg1 = MSG_ReadByte();
@@ -4147,10 +4170,14 @@ void CL_ExecuteLineSpecial()
 	byte arg3 = MSG_ReadByte();
 	byte arg4 = MSG_ReadByte();
 
-	if (lineid > numlines)
+	if (lineid != 0xFFFF && lineid > numlines)
 		return;
 
-	LineSpecials[special](&lines[lineid], activator, arg0, arg1, arg2, arg3, arg4);
+	line_s* line = NULL;
+	if (lineid != 0xFFFF)
+		line = &lines[lineid];
+
+	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
 }
 
 void CL_ACSExecuteSpecial()
@@ -4246,7 +4273,236 @@ void CL_ACSExecuteSpecial()
 	}
 }
 
+void CL_LineUpdate()
+{
+	uint16_t id = MSG_ReadShort();
+	short flags = MSG_ReadShort();
+	byte lucency = MSG_ReadByte();
+
+	if (id < numlines)
+	{
+		line_t* line = &lines[id];
+		line->flags = flags;
+		line->lucency = lucency;
+	}
+}
+
+void CL_LineSideUpdate()
+{
+	uint16_t id = MSG_ReadShort();
+	byte side = MSG_ReadByte();
+	int changes = MSG_ReadByte();
+
+	side_t* currentSidedef;
+	side_t empty;
+
+	if (id < numlines && side < 2 && lines[id].sidenum[side] != R_NOSIDE)
+		currentSidedef = sides + lines[id].sidenum[side];
+	else
+		currentSidedef = &empty;
+
+	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SDPC_TexTop:
+			currentSidedef->toptexture = MSG_ReadShort();
+			break;
+		case SDPC_TexMid:
+			currentSidedef->midtexture = MSG_ReadShort();
+			break;
+		case SDPC_TexBottom:
+			currentSidedef->bottomtexture = MSG_ReadShort();
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+void CL_SectorSectorPropertiesUpdate()
+{
+	uint16_t secnum = MSG_ReadShort();
+	int changes = MSG_ReadShort();
+
+	sector_t* sector;
+	sector_t empty;
+
+	if (secnum > -1 && secnum < numsectors)
+	{
+		sector = &sectors[secnum];
+	}
+	else
+	{
+		sector = &empty;
+		extern dyncolormap_t NormalLight;
+		empty.colormap = &NormalLight;
+	}
+
+	for (int i = 0, prop = 1; prop < SPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SPC_FlatPic:
+			sector->floorpic = MSG_ReadShort();
+			sector->ceilingpic = MSG_ReadShort();
+			break;
+		case SPC_LightLevel:
+			sector->lightlevel = MSG_ReadShort();
+			break;
+		case SPC_Color:
+		{
+			byte r = MSG_ReadByte();
+			byte g = MSG_ReadByte();
+			byte b = MSG_ReadByte();
+			sector->colormap = GetSpecialLights(r, g, b,
+				sector->colormap->fade.getr(), sector->colormap->fade.getg(), sector->colormap->fade.getb());
+		}
+			break;
+		case SPC_Fade:
+		{
+			byte r = MSG_ReadByte();
+			byte g = MSG_ReadByte();
+			byte b = MSG_ReadByte();
+			sector->colormap = GetSpecialLights(sector->colormap->color.getr(), sector->colormap->color.getg(), sector->colormap->color.getb(),
+				r, g, b);
+		}
+			break;
+		case SPC_Gravity:
+			*(int*)&sector->gravity = MSG_ReadLong();
+			break;
+		case SPC_Panning:
+			sector->ceiling_xoffs = MSG_ReadLong();
+			sector->ceiling_yoffs = MSG_ReadLong();
+			sector->floor_xoffs = MSG_ReadLong();
+			sector->floor_yoffs = MSG_ReadLong();
+			break;
+		case SPC_Scale:
+			sector->ceiling_xscale = MSG_ReadLong();
+			sector->ceiling_yscale = MSG_ReadLong();
+			sector->floor_xscale = MSG_ReadLong();
+			sector->floor_yscale = MSG_ReadLong();
+			break;
+		case SPC_Rotation:
+			sector->floor_angle = MSG_ReadLong();
+			sector->ceiling_angle = MSG_ReadLong();
+			break;
+		case SPC_AlignBase:
+			sector->base_ceiling_angle = MSG_ReadLong();
+			sector->base_ceiling_yoffs = MSG_ReadLong();
+			sector->base_floor_angle = MSG_ReadLong();
+			sector->base_floor_yoffs = MSG_ReadLong();
+		default:
+			break;
+		}
+	}
+}
+
+void CL_ThinkerUpdate()
+{
+	ThinkerType type = (ThinkerType)MSG_ReadByte();
+
+	switch (type)
+	{
+		case TT_Scroller:
+		{
+			DScroller::EScrollType scrollType = (DScroller::EScrollType)MSG_ReadByte();
+			fixed_t dx = MSG_ReadLong();
+			fixed_t dy = MSG_ReadLong();
+			int affectee = MSG_ReadLong();
+			if (affectee < 0)
+				break;
+			if (scrollType == DScroller::sc_side && affectee > numsides)
+				break;
+			if (scrollType != DScroller::sc_side && affectee > numsectors)
+				break;
+
+			new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		}
+			break;
+		case TT_FireFlicker:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DFireFlicker(&sectors[secnum], max, min);
+		}
+			break;
+		case TT_Flicker:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DFlicker(&sectors[secnum], max, min);
+		}
+			break;
+		case TT_LightFlash:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DLightFlash(&sectors[secnum], min, max);
+		}
+			break;
+		case TT_Strobe:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			int dark = MSG_ReadShort();
+			int bright = MSG_ReadShort();
+			int count = MSG_ReadByte();
+			if (secnum < numsectors)
+			{
+				DStrobe* strobe = new DStrobe(&sectors[secnum], max, min, bright, dark);
+				strobe->SetCount(count);
+			}
+		}
+			break;
+		case TT_Glow:
+		{
+			short secnum = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DGlow(&sectors[secnum]);
+		}
+			break;
+		case TT_Glow2:
+		{
+			short secnum = MSG_ReadShort();
+			int start = MSG_ReadShort();
+			int end = MSG_ReadShort();
+			int tics = MSG_ReadShort();
+			bool oneShot = MSG_ReadByte();
+			if (secnum < numsectors)
+				new DGlow2(&sectors[secnum], start, end, tics, oneShot);
+		}
+			break;
+		case TT_Phased:
+		{
+			short secnum = MSG_ReadShort();
+			int base = MSG_ReadShort();
+			int phase = MSG_ReadByte();
+			if (secnum < numsectors)
+				new DPhased(&sectors[secnum], base, phase);
+		}
+			break;
+		default:
+			break;
+	}
+}
+
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
