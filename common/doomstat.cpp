@@ -35,6 +35,8 @@ FStringTable	GStrings;
 GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
+static const char* TeamNames[NUMTEAMS] = { "BLUE", "RED", "GREEN" };
+
 // Language.
 CVAR_FUNC_IMPL (language)
 {
@@ -131,8 +133,6 @@ const char* GetTeamName(team_t team)
 
 const char* GetTeamColorString(team_t team)
 {
-	static const char* TeamNames[NUMTEAMS] = { "BLUE", "RED", "GREEN" };
-
 	if (team < NUMTEAMS)
 		return TeamNames[team];
 
@@ -147,6 +147,11 @@ const char* GetTeamColorStringCase(team_t team)
 		return TeamNamesCase[team];
 
 	return "";
+}
+
+const char** GetTeamColorStrings()
+{
+	return TeamNames;
 }
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")

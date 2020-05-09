@@ -241,6 +241,7 @@ argb_t GetTeamColor(team_t team);
 const char* GetTeamName(team_t team);
 const char* GetTeamColorString(team_t team);
 const char* GetTeamColorStringCase(team_t team);
+const char** GetTeamColorStrings();
 
 #endif
 
