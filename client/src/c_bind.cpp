@@ -416,7 +416,7 @@ void OKeyBindings::ArchiveBindings(FILE* f)
 	{
 		int key = it->first;
 		const std::string& binding = it->second;
-		if (!Binds.empty())
+		if (!binding.empty())
 			fprintf(f, "%s %s %s\n", command.c_str(), C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());
 	}
 }
@@ -597,19 +597,19 @@ BEGIN_COMMAND(undoublebind)
 END_COMMAND(undoublebind)
 
 // Automapbind command
-BEGIN_COMMAND(automapbind)
+BEGIN_COMMAND(ambind)
 {
 	AutomapBindings.BindAKey(argc, argv, "Current automap bindings: ");
 }
-END_COMMAND(automapbind)
+END_COMMAND(ambind)
 
-BEGIN_COMMAND(unautomapbind)
+BEGIN_COMMAND(amunbind)
 {
 	if (argc > 1) {
 		AutomapBindings.UnbindKey(argv[1]);
 	}
 }
-END_COMMAND(unautomapbind)
+END_COMMAND(amunbind)
 
 // Other commands
 BEGIN_COMMAND(binddefaults)
