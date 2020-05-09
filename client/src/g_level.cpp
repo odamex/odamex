@@ -564,30 +564,19 @@ void G_DoLoadLevel (int position)
 		}
 
 		// Check for a free deathmatch start point
-		for (int n = 0; n < deathmatch_p - deathmatchstarts && !consoleplayer().mo; n++)
+		for (size_t n = 0; n < DeathMatchStarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &deathmatchstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &deathmatchstarts[n]);
+			if (G_CheckSpot(consoleplayer(), &DeathMatchStarts[n]))
+				P_SpawnPlayer(consoleplayer(), &DeathMatchStarts[n]);
 		}
 
-		// Check for a free team start point
-		for (int n = 0; n < blueteam_p - blueteamstarts && !consoleplayer().mo; n++)
+		for (size_t team = 0; team < TeamStarts->size(); team++)
 		{
-			if (G_CheckSpot(consoleplayer(), &blueteamstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &blueteamstarts[n]);
-		}
-
-		// Check for a free team start point
-		for (int n = 0; n <redteam_p - redteamstarts && !consoleplayer().mo; n++)
-		{
-			if (G_CheckSpot(consoleplayer(), &redteamstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &redteamstarts[n]);
-		}
-
-		for (int n = 0; n < greenteam_p - greenteamstarts && !consoleplayer().mo; n++)
-		{
-			if (G_CheckSpot(consoleplayer(), &greenteamstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &greenteamstarts[n]);
+			for (size_t n = 0; n < TeamStarts[team].size(); n++)
+			{
+				if (G_CheckSpot(consoleplayer(), &TeamStarts[team][n]))
+					P_SpawnPlayer(consoleplayer(), &TeamStarts[team][n]);
+			}
 		}
 	}
 

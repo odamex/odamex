@@ -1258,14 +1258,12 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &deathmatchstarts[i]) )
-		{
-			return &deathmatchstarts[i];
-		}
+		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+			return &DeathMatchStarts[i];
 	}
 
 	// [RH] return a spot anyway, since we allow telefragging when a player spawns
-	return &deathmatchstarts[i];
+	return &DeathMatchStarts[i];
 }
 
 void G_DeathMatchSpawnPlayer (player_t &player)
@@ -1276,7 +1274,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	if(!serverside || sv_gametype == GM_COOP)
 		return;
 
-	selections = deathmatch_p - deathmatchstarts;
+	selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error ("No deathmatch starts");

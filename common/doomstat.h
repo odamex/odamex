@@ -163,9 +163,7 @@ extern	gamestate_t 	gamestate;
 extern	int 			gametic;
 
 // Player spawn spots for deathmatch.
-extern	size_t			MaxDeathmatchStarts;
-extern	mapthing2_t		*deathmatchstarts;
-extern	mapthing2_t*	deathmatch_p;
+extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
 #define MAXPLAYERSTARTS		64
@@ -174,20 +172,7 @@ extern std::vector<mapthing2_t> voodoostarts;
 
 // ----------------------------------------------
 //	[Toke - CTF - starts]
-
-		// Blue team starts
-extern	mapthing2_t		*blueteamstarts;
-extern	size_t			MaxBlueTeamStarts;
-extern	mapthing2_t*	blueteam_p;
-
-		// Red team starts
-extern	mapthing2_t		*redteamstarts;
-extern	size_t			MaxRedTeamStarts;
-extern	mapthing2_t*	redteam_p;
-
-extern	mapthing2_t		*greenteamstarts;
-extern	size_t			MaxGreenTeamStarts;
-extern	mapthing2_t*	greenteam_p;
+extern std::vector<mapthing2_t> TeamStarts[NUMTEAMS];
 
 // ----------------------------------------------
 

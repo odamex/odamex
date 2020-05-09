@@ -124,25 +124,12 @@ BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
-size_t			MaxDeathmatchStarts;
-mapthing2_t		*deathmatchstarts;
-mapthing2_t		*deathmatch_p;
-
+std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
 
 //	[Toke - CTF - starts] Teamplay starts
-size_t			MaxBlueTeamStarts;
-size_t			MaxRedTeamStarts;
-size_t			MaxGreenTeamStarts;
-
-mapthing2_t		*blueteamstarts;
-mapthing2_t		*redteamstarts;
-mapthing2_t		*greenteamstarts;
-
-mapthing2_t		*blueteam_p;
-mapthing2_t		*redteam_p;
-mapthing2_t		*greenteam_p;
+std::vector<mapthing2_t> TeamStarts[NUMTEAMS];
 
 //
 // P_LoadVertexes
@@ -1620,41 +1607,6 @@ void P_LoadBehavior (int lumpnum)
 }
 
 //
-// P_AllocStarts
-//
-void P_AllocStarts(void)
-{
-	if (!deathmatchstarts)
-	{
-		MaxDeathmatchStarts = 16;	// [RH] Default. Increased as needed.
-		deathmatchstarts = (mapthing2_t *)Malloc (MaxDeathmatchStarts * sizeof(mapthing2_t));
-	}
-	deathmatch_p = deathmatchstarts;
-
-	//	[Toke - CTF]
-	if (!blueteamstarts) // [Toke - CTF - starts]
-	{
-		MaxBlueTeamStarts = 16;
-		blueteamstarts = (mapthing2_t *)Malloc (MaxBlueTeamStarts * sizeof(mapthing2_t));
-	}
-	blueteam_p = blueteamstarts;
-
-	if (!redteamstarts) // [Toke - CTF - starts]
-	{
-		MaxRedTeamStarts = 16;
-		redteamstarts = (mapthing2_t *)Malloc (MaxRedTeamStarts * sizeof(mapthing2_t));
-	}
-	redteam_p = redteamstarts;
-
-	if (!greenteamstarts) // [Toke - CTF - starts]
-	{
-		MaxGreenTeamStarts = 16;
-		greenteamstarts = (mapthing2_t *)Malloc(MaxGreenTeamStarts * sizeof(mapthing2_t));
-	}
-	greenteam_p = greenteamstarts;
-}
-
-//
 // P_SetupLevel
 //
 extern polyblock_t **PolyBlockMap;
@@ -1788,8 +1740,6 @@ void P_SetupLevel (char *lumpname, int position)
 	P_SetupSlopes();
 
     po_NumPolyobjs = 0;
-
-	P_AllocStarts();
 
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 

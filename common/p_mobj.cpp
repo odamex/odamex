@@ -2286,19 +2286,6 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 			(mthing->type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
-void AddStart(mapthing2_t* mthing, mapthing2_t*& starts, mapthing2_t*& startp, size_t& startSize)
-{
-	if (startp == &starts[startSize])
-	{
-		int offset = startSize;
-		startSize *= 2;
-		starts = (mapthing2_t *)Realloc(starts, startSize * sizeof(mapthing2_t));
-		startp = &starts[offset];
-	}
-	memcpy(startp, mthing, sizeof(*mthing));
-	startp++;
-}
-
 //
 // P_SpawnMapThing
 // The fields of the mapthing should
@@ -2329,26 +2316,26 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
-		if (deathmatch_p >= &deathmatchstarts[10] && demoplayback)
+		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
-		AddStart(mthing, deathmatchstarts, deathmatch_p, MaxDeathmatchStarts);
+		DeathMatchStarts.push_back(*mthing);
 		return;
 	}
 
 	if (mthing->type == ID_BLUE_TEAM_SPAWN && sv_teamspawns)
 	{
-		AddStart(mthing, blueteamstarts, blueteam_p, MaxBlueTeamStarts);
+		TeamStarts[TEAM_BLUE].push_back(*mthing);
 		return;
 	}
 	else if (mthing->type == ID_RED_TEAM_SPAWN && sv_teamspawns)
 	{
-		AddStart(mthing, redteamstarts, redteam_p, MaxRedTeamStarts);
+		TeamStarts[TEAM_RED].push_back(*mthing);
 		return;
 	}
 	else if (mthing->type == ID_GREEN_TEAM_SPAWN && sv_teamspawns)
 	{
-		AddStart(mthing, greenteamstarts, greenteam_p, MaxGreenTeamStarts);
+		TeamStarts[TEAM_GREEN].push_back(*mthing);
 		return;
 	}
 
