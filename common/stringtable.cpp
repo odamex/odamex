@@ -56,7 +56,7 @@ bool StringTable::canSetPassString(int pass, const std::string& name) const
 
 void StringTable::clearStrings()
 {
-	_stringHash.empty();
+	_stringHash.clear();
 }
 
 //
