@@ -567,6 +567,8 @@ void P_LoadThings (int lump)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	for (size_t i = 0; i < TeamStarts->size(); i++)
+		TeamStarts[i].clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -614,6 +616,8 @@ void P_LoadThings2 (int lump, int position)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	for (size_t i = 0; i < TeamStarts->size(); i++)
+		TeamStarts[i].clear();
 
 	for ( ; mt < lastmt; mt++)
 	{
