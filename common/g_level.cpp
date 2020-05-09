@@ -847,7 +847,7 @@ static void ParseMapInfoLower(
 			{
 				// It is possible to pass a DeHackEd string
 				// prefixed by a $.
-				const OString& s = GStrings(s);
+				const OString& s = GStrings(sc_String + 1);
 				if (s.empty())
 				{
 					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
