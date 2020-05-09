@@ -202,6 +202,11 @@ typedef enum
 	SPR_RDWN,
 	SPR_BCAR,
 	SPR_RCAR,
+
+	SPR_GSOK,
+	SPR_GFLG,
+	SPR_GDWN,
+	SPR_GCAR,
 	
 	SPR_TLGL,
 	
@@ -1303,6 +1308,19 @@ typedef enum
 	S_RDWN,	// Red Flag
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
+
+	S_GSOK,
+	S_GFLG,
+	S_GFLG2,
+	S_GFLG3,
+	S_GFLG4,
+	S_GFLG5,
+	S_GFLG6,
+	S_GFLG7,
+	S_GFLG8,
+	S_GDWN,
+	S_GCAR,
+
 	// -----------------------------------
 	S_BRIDGE1,
 	S_BRIDGE2,
@@ -1555,6 +1573,11 @@ typedef enum {
 	MT_SECACTEYESSURFACE,
 	MT_SECACTEYESBELOWC,
 	MT_SECACTEYESABOVEC,
+
+	MT_GSOK,
+	MT_GFLG,
+	MT_GDWN,
+	MT_GCAR,
 
 	// FIXME: Has no info.cpp entry.
 	MT_MUSICCHANGE,

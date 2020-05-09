@@ -95,5 +95,49 @@ const char* GetShortGameModeString()
 	return "";
 }
 
+#ifdef CLIENT_APP
+EColorRange GetTeamTextColor(team_t team)
+{
+	static const EColorRange TeamColors[NUMTEAMS] = { CR_BLUE, CR_RED, CR_GREEN };
+	if (team < NUMTEAMS)
+		return TeamColors[team];
+
+	return CR_GREY;
+}
+
+argb_t GetTeamColor(team_t team)
+{
+	switch (team)
+	{
+	case TEAM_BLUE:
+		return argb_t(255, 0, 0, 255);
+	case TEAM_RED:
+		return argb_t(255, 255, 0, 0);
+	default:
+		return argb_t(255, 0, 255, 0);
+	}	
+}
+#endif
+
+const char* GetTeamName(team_t team)
+{
+	static const char* TeamNames[NUMTEAMS] = { "BLUE TEAM", "RED TEAM", "GREEN TEAM" };
+
+	if (team < NUMTEAMS)
+		return TeamNames[team];
+
+	return "NO TEAM";
+}
+
+const char* GetTeamColorString(team_t team)
+{
+	static const char* TeamNames[NUMTEAMS] = { "BLUE", "RED", "GREEN" };
+
+	if (team < NUMTEAMS)
+		return TeamNames[team];
+
+	return "NONE";
+}
+
 VERSION_CONTROL (doomstat_cpp, "$Id$")
 

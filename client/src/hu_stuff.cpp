@@ -79,7 +79,7 @@ EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(noisedebug)
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
-
+EXTERN_CVAR(sv_teamsinplay)
 
 static int crosshair_lump;
 
@@ -665,24 +665,27 @@ void drawHeader(player_t *player, int y)
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              hud::ClientsSplit().c_str(), CR_GREEN, true);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		hud::DrawText(-236, y + 8, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_LEFT, hud::Y_TOP,
-		              "BLUE PLAYERS: ", CR_GREY, true);
-		hud::DrawText(-236 + V_StringWidth("BLUE PLAYERS: "), y + 8, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_LEFT, hud::Y_TOP,
-		              TeamPlayers(color, TEAM_BLUE).c_str(), CR_GREEN, true);
-		hud::DrawText(-236, y + 16, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_LEFT, hud::Y_TOP,
-		              "RED PLAYERS: ", CR_GREY, true);
-		hud::DrawText(-236 + V_StringWidth("RED PLAYERS: "), y + 16, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_LEFT, hud::Y_TOP,
-		              TeamPlayers(color, TEAM_RED).c_str(), CR_GREEN, true);
-	} else {
+
+	int yOffset = 0;
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) 
+	{
+		for (int i = 0; i < sv_teamsinplay; i++)
+		{
+			std::string displayName = TeamName(color, i);
+			displayName.append(": ");
+			yOffset += 8;
+			hud::DrawText(-236, y + yOffset, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_LEFT, hud::Y_TOP,
+				displayName.c_str(), CR_GREY, true);
+			hud::DrawText(-236 + V_StringWidth(displayName.c_str()), y + yOffset, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_LEFT, hud::Y_TOP,
+				TeamPlayers(color, i).c_str(), CR_GREEN, true);
+		}
+	} 
+	else
+	{
 		hud::DrawText(-236, y + 8, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
@@ -763,7 +766,7 @@ void drawHeader(player_t *player, int y)
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 24, hud_scalescoreboard,
+		hud::DrawTranslatedPatch(xi, y + yOffset + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
@@ -869,120 +872,130 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 	std::string str;
 	static short tx[2] = {-236, 4};
 
-	for (byte i = 0;i < 2;i++) {
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		int xOffset = tx[i % 2];
+		int yOffset = i / 2;
+		y += yOffset * (4 * 16);
+
 		// Column headers
-		hud::DrawText(tx[i] + 9, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_LEFT, hud::Y_TOP,
-		              "Name", CR_GREY, true);
-		if (sv_gametype == GM_CTF) {
-			hud::DrawText(tx[i] + 168, y, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              "PTS", CR_GREY, true);
-			hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              "FRG", CR_GREY, true);
-		} else {
-			hud::DrawText(tx[i] + 164, y, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              "FRG", CR_GREY, true);
-			hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              "K/D", CR_GREY, true);
+		hud::DrawText(xOffset + 9, yOffset + y, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_LEFT, hud::Y_TOP,
+			"Name", CR_GREY, true);
+		if (sv_gametype == GM_CTF)
+		{
+			hud::DrawText(xOffset + 168, y, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				"PTS", CR_GREY, true);
+			hud::DrawText(xOffset + 200, y, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				"FRG", CR_GREY, true);
 		}
-		hud::DrawText(tx[i] + 232, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              "PNG", CR_GREY, true);
-
-		// Line
-		if (i == TEAM_BLUE) {
-			color = CR_BLUE;
-		} else {
-			color = CR_RED;
+		else
+		{
+			hud::DrawText(xOffset + 164, y, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				"FRG", CR_GREY, true);
+			hud::DrawText(xOffset + 200, y, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				"K/D", CR_GREY, true);
 		}
+		hud::DrawText(xOffset + 232, y, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_RIGHT, hud::Y_TOP,
+			"PNG", CR_GREY, true);
 
-		for (short xi = tx[i];xi < tx[i] + 232;xi += 2) {
+		color = GetTeamTextColor((team_t)i);
+
+		for (short xi = tx[i]; xi < tx[i] + 232; xi += 2)
+		{
 			hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
-			                         hud::X_CENTER, hud::Y_MIDDLE,
-			                         hud::X_LEFT, hud::Y_TOP,
-			                         sbline, Ranges + color * 256, true);
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_LEFT, hud::Y_TOP,
+				sbline, Ranges + color * 256, true);
 			hud::DrawTranslatedPatch(xi, y + 19, hud_scalescoreboard,
-			                         hud::X_CENTER, hud::Y_MIDDLE,
-			                         hud::X_LEFT, hud::Y_TOP,
-			                         sbline, Ranges + color * 256, true);
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_LEFT, hud::Y_TOP,
+				sbline, Ranges + color * 256, true);
 		}
 
 		// Team Info
 		str = hud::TeamName(color, i);
-		hud::DrawText(tx[i] + 9, y + 11, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_LEFT, hud::Y_TOP,
-		              str.c_str(), color, true);
-		if (sv_gametype == GM_CTF) {
-			hud::DrawText(tx[i] + 168, y + 11, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              hud::TeamPoints(color, i).c_str(), color, true);
+		hud::DrawText(xOffset + 9, y + 11, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_LEFT, hud::Y_TOP,
+			str.c_str(), color, true);
+		if (sv_gametype == GM_CTF)
+		{
+			hud::DrawText(xOffset + 168, y + 11, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				hud::TeamPoints(color, i).c_str(), color, true);
 			str = hud::TeamFrags(color, i);
-			hud::DrawText(tx[i] + 200, y + 11, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              str.c_str(), color, true);
-		} else {
-			hud::DrawText(tx[i] + 164, y + 11, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              hud::TeamPoints(color, i).c_str(), color, true);
+			hud::DrawText(xOffset + 200, y + 11, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				str.c_str(), color, true);
+		}
+		else
+		{
+			hud::DrawText(xOffset + 164, y + 11, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				hud::TeamPoints(color, i).c_str(), color, true);
 			str = hud::TeamKD(color, i);
-			hud::DrawText(tx[i] + 200, y + 11, hud_scalescoreboard,
-			              hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP,
-			              str.c_str(), color, true);
+			hud::DrawText(xOffset + 200, y + 11, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				str.c_str(), color, true);
 		}
 		str = hud::TeamPing(color, i);
-		hud::DrawText(tx[i] + 232, y + 11, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              str.c_str(), color, true);
+		hud::DrawText(xOffset + 232, y + 11, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_RIGHT, hud::Y_TOP,
+			str.c_str(), color, true);
 
 		// Ingame Players
 		byte limit = extra_rows + 4;
-		hud::EATeamPlayerColors(tx[i], y + 22, 7, 7, hud_scalescoreboard,
-		                        hud::X_CENTER, hud::Y_MIDDLE,
-		                        hud::X_LEFT, hud::Y_TOP,
-		                        1, limit, i);
-		hud::EATeamPlayerNames(tx[i] + 9, y + 22, hud_scalescoreboard,
-		                       hud::X_CENTER, hud::Y_MIDDLE,
-		                       hud::X_LEFT, hud::Y_TOP,
-		                       1, limit, i, true);
-		if (sv_gametype == GM_CTF) {
-			hud::EATeamPlayerPoints(tx[i] + 168, y + 22, hud_scalescoreboard,
-			                        hud::X_CENTER, hud::Y_MIDDLE,
-			                        hud::X_RIGHT, hud::Y_TOP,
-			                        1, limit, i, true);
-			hud::EATeamPlayerFrags(tx[i] + 200, y + 22, hud_scalescoreboard,
-			                       hud::X_CENTER, hud::Y_MIDDLE,
-			                       hud::X_RIGHT, hud::Y_TOP,
-			                       1, limit, i, true);
-		} else {
-			hud::EATeamPlayerFrags(tx[i] + 164, y + 22, hud_scalescoreboard,
-			                       hud::X_CENTER, hud::Y_MIDDLE,
-			                       hud::X_RIGHT, hud::Y_TOP,
-			                       1, limit, i, true);
-			hud::EATeamPlayerKD(tx[i] + 200, y + 22, hud_scalescoreboard,
-			                    hud::X_CENTER, hud::Y_MIDDLE,
-			                    hud::X_RIGHT, hud::Y_TOP,
-			                    1, limit, i, true);
+		hud::EATeamPlayerColors(xOffset, y + 22, 7, 7, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_LEFT, hud::Y_TOP,
+			1, limit, i);
+		hud::EATeamPlayerNames(xOffset + 9, y + 22, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_LEFT, hud::Y_TOP,
+			1, limit, i, true);
+		if (sv_gametype == GM_CTF)
+		{
+			hud::EATeamPlayerPoints(xOffset + 168, y + 22, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				1, limit, i, true);
+			hud::EATeamPlayerFrags(xOffset + 200, y + 22, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				1, limit, i, true);
 		}
-		hud::EATeamPlayerPings(tx[i] + 232, y + 22, hud_scalescoreboard,
-		                       hud::X_CENTER, hud::Y_MIDDLE,
-		                       hud::X_RIGHT, hud::Y_TOP,
-		                       1, limit, i, true);
+		else
+		{
+			hud::EATeamPlayerFrags(xOffset + 164, y + 22, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				1, limit, i, true);
+			hud::EATeamPlayerKD(xOffset + 200, y + 22, hud_scalescoreboard,
+				hud::X_CENTER, hud::Y_MIDDLE,
+				hud::X_RIGHT, hud::Y_TOP,
+				1, limit, i, true);
+		}
+		hud::EATeamPlayerPings(xOffset + 232, y + 22, hud_scalescoreboard,
+			hud::X_CENTER, hud::Y_MIDDLE,
+			hud::X_RIGHT, hud::Y_TOP,
+			1, limit, i, true);
 	}
 }
 
@@ -1018,8 +1031,40 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 	}
 }
 
+static int GetExtraPlayerTeamRowsQuad()
+{
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		int count = hud::CountTeamPlayers(i);
+		if (count > 4)
+		{
+			return count - 4;
+			break;
+		}
+	}
+
+	return 0;
+}
+
+static int GetExtraPlayerTeamRowsList()
+{
+	int extra = 0;
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		int count = hud::CountTeamPlayers(i);
+		if (count > 4)
+		{
+			extra += count - 4;
+			break;
+		}
+	}
+
+	return extra;
+}
+
 // [AM] Draw the scoreboard
-void Scoreboard(player_t *player) {
+void Scoreboard(player_t *player)
+{
 	// Calculate height
 	int height, y;
 	byte extra_spec_rows = 0;
@@ -1029,17 +1074,25 @@ void Scoreboard(player_t *player) {
 	if (gamestate == GS_INTERMISSION)
 		displayplayer_id = consoleplayer_id;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
 		height = 99;
 
 		// Team scoreboard was designed for 4 players on a team.  If
 		// there are more, increase the height.
-		byte blue = hud::CountTeamPlayers(TEAM_BLUE);
-		byte red = hud::CountTeamPlayers(TEAM_RED);
-		if (blue > 4 || red > 4) {
-			extra_player_rows += (blue > red) ? (blue - 4) : (red - 4);
+		extra_player_rows += GetExtraPlayerTeamRowsQuad();
+
+		if (sv_teamsinplay > 2)
+		{
+			int teams = sv_teamsinplay.asInt();
+			if (teams % 2 != 0)
+				teams++;
+			height += (teams - 2) / 2 * 80;
+			height += (sv_teamsinplay - 2) * 8;
 		}
-	} else {
+	} 
+	else
+	{
 		height = 88;
 
 		// Normal scoreboard was designed for 4 players.  If there are
@@ -1093,12 +1146,16 @@ void Scoreboard(player_t *player) {
 	         hud::X_CENTER, hud::Y_MIDDLE,
 	         hud::X_CENTER, hud::Y_TOP);
 
-	hud::drawHeader(player, y + 4);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		hud::drawTeamScores(player, y + 31, extra_player_rows);
-	} else {
+	hud::drawHeader(player, y+4);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		hud::drawTeamScores(player, y + 31 + (sv_teamsinplay - 2) * 8, extra_player_rows);
+	} 
+	else
+	{
 		hud::drawScores(player, y + 31, extra_player_rows);
 	}
+
 	hud::drawSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
 	                    extra_spec_rows);
 }
@@ -1262,31 +1319,19 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_RIGHT, hud::Y_TOP,
 	              "PNG", CR_GREY, true);
 
-	// Since we are doing blue-over-red scores, we need to measure how
-	// far down we want to start for the red team.
-	byte blue_size = hud::CountTeamPlayers(TEAM_BLUE);
-	if (blue_size < 4) {
-		blue_size = 4;
-	} else if (blue_size > extra_rows + 4) {
-		blue_size = extra_rows + 4;
-	}
+	int yOffset = 8;
 
-	short ty[2] = {8, short(blue_size * 8 + 22) };
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		color = GetTeamTextColor((team_t)i);
 
-	for (byte i = 0;i < 2;i++) {
-		// Line
-		if (i == TEAM_BLUE) {
-			color = CR_BLUE;
-		} else {
-			color = CR_RED;
-		}
-
-		for (short xi = -146 + 1;xi < 146;xi += 2) {
-			hud::DrawTranslatedPatch(xi, y + ty[i], hud_scalescoreboard,
+		for (short xi = -146 + 1;xi < 146;xi += 2)
+		{
+			hud::DrawTranslatedPatch(xi, y + yOffset, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
-			hud::DrawTranslatedPatch(xi, y + ty[i] + 11, hud_scalescoreboard,
+			hud::DrawTranslatedPatch(xi, y + yOffset + 11, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
@@ -1294,82 +1339,85 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 
 		// Team Info
 		str = hud::TeamName(color, i);
-		hud::DrawText(-137, y + ty[i] + 3, hud_scalescoreboard,
+		hud::DrawText(-137, y + yOffset + 3, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
 		              str.c_str(), color, true);
 		if (sv_gametype == GM_CTF) {
-			hud::DrawText(34, y + ty[i] + 3, hud_scalescoreboard,
+			hud::DrawText(34, y + yOffset + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              TeamPlayers(color, i).c_str(), color, true);
-			hud::DrawText(62, y + ty[i] + 3, hud_scalescoreboard,
+			hud::DrawText(62, y + yOffset + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              hud::TeamPoints(color, i).c_str(), color, true);
 			str = hud::TeamFrags(color, i);
-			hud::DrawText(90 , y + ty[i] + 3, hud_scalescoreboard,
+			hud::DrawText(90 , y + yOffset + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              str.c_str(), color, true);
 		} else {
-			hud::DrawText(22, y + ty[i] + 3, hud_scalescoreboard,
+			hud::DrawText(22, y + yOffset + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              TeamPlayers(color, i).c_str(), color, true);
-			hud::DrawText(50, y + ty[i] + 3, hud_scalescoreboard,
+			hud::DrawText(50, y + yOffset + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              hud::TeamPoints(color, i).c_str(), color, true);
 			str = hud::TeamKD(color, i);
-			hud::DrawText(90, y + ty[i] + 3, hud_scalescoreboard,
+			hud::DrawText(90, y + yOffset + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              str.c_str(), color, true);
 		}
 		str = hud::TeamPing(color, i);
-		hud::DrawText(146, y + ty[i] + 3, hud_scalescoreboard,
+		hud::DrawText(146, y + yOffset + 3, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP,
 		              str.c_str(), color, true);
 
 		// Ingame Players
 		byte limit = extra_rows + 4;
-		hud::EATeamPlayerColors(-146, y + ty[i] + 14, 7, 7, hud_scalescoreboard,
+		hud::EATeamPlayerColors(-146, y + yOffset + 14, 7, 7, hud_scalescoreboard,
 		                        hud::X_CENTER, hud::Y_MIDDLE,
 		                        hud::X_LEFT, hud::Y_TOP,
 		                        1, limit, i);
-		hud::EATeamPlayerNames(-137, y + ty[i] + 14, hud_scalescoreboard,
+		hud::EATeamPlayerNames(-137, y + yOffset + 14, hud_scalescoreboard,
 		                       hud::X_CENTER, hud::Y_MIDDLE,
 		                       hud::X_LEFT, hud::Y_TOP,
 		                       1, limit, i, true);
 		if (sv_gametype == GM_CTF) {
-			hud::EATeamPlayerPoints(62, y + ty[i] + 14, hud_scalescoreboard,
+			hud::EATeamPlayerPoints(62, y + yOffset + 14, hud_scalescoreboard,
 			                        hud::X_CENTER, hud::Y_MIDDLE,
 			                        hud::X_RIGHT, hud::Y_TOP,
 			                        1, limit, i, true);
-			hud::EATeamPlayerFrags(90, y + ty[i] + 14, hud_scalescoreboard,
+			hud::EATeamPlayerFrags(90, y + yOffset + 14, hud_scalescoreboard,
 			                       hud::X_CENTER, hud::Y_MIDDLE,
 			                       hud::X_RIGHT, hud::Y_TOP,
 			                       1, limit, i, true);
 		} else {
-			hud::EATeamPlayerFrags(50, y + ty[i] + 14, hud_scalescoreboard,
+			hud::EATeamPlayerFrags(50, y + yOffset + 14, hud_scalescoreboard,
 			                       hud::X_CENTER, hud::Y_MIDDLE,
 			                       hud::X_RIGHT, hud::Y_TOP,
 			                       1, limit, i, true);
-			hud::EATeamPlayerKD(90, y + ty[i] + 14, hud_scalescoreboard,
+			hud::EATeamPlayerKD(90, y + yOffset + 14, hud_scalescoreboard,
 			                    hud::X_CENTER, hud::Y_MIDDLE,
 			                    hud::X_RIGHT, hud::Y_TOP,
 			                    1, limit, i, true);
 		}
-		hud::EATeamPlayerTimes(118, y + ty[i] + 14, hud_scalescoreboard,
+		hud::EATeamPlayerTimes(118, y + yOffset + 14, hud_scalescoreboard,
 		                       hud::X_CENTER, hud::Y_MIDDLE,
 		                       hud::X_RIGHT, hud::Y_TOP,
 		                       1, limit, i, true);
-		hud::EATeamPlayerPings(146, y + ty[i] + 14, hud_scalescoreboard,
+		hud::EATeamPlayerPings(146, y + yOffset + 14, hud_scalescoreboard,
 		                       hud::X_CENTER, hud::Y_MIDDLE,
 		                       hud::X_RIGHT, hud::Y_TOP,
 		                       1, limit, i, true);
+
+		int count = MAX(hud::CountTeamPlayers(i), 4);
+		yOffset += 22 + count * 8;
 	}
 }
 
@@ -1406,33 +1454,28 @@ void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 }
 
 // [AM] Draw the low-resolution scoreboard.
-void LowScoreboard(player_t *player) {
+void LowScoreboard(player_t *player)
+{
 	int height, y;
 	byte extra_spec_rows = 0;
 	byte extra_player_rows = 0;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
 		height = 129;
-
 		// Team scoreboard was designed for 4 players on a team.  If
 		// there are more (per team), increase the height.
-		byte blue = hud::CountTeamPlayers(TEAM_BLUE);
-		byte red = hud::CountTeamPlayers(TEAM_RED);
-		if (blue > 4) {
-			extra_player_rows += blue - 4;
-		}
-		if (red > 4) {
-			extra_player_rows += red - 4;
-		}
-	} else {
+		extra_player_rows = GetExtraPlayerTeamRowsList();
+	}
+	else
+	{
 		height = 72;
 
 		// Normal scoreboard was designed for 4 players.  If there are
 		// more, increase the height.
 		byte players = P_NumPlayersInGame();
-		if (players > 4) {
+		if (players > 4)
 			extra_player_rows += players - 4;
-		}
 	}
 
 	// If there are more than 2 spectators, increase the height.
@@ -1442,63 +1485,43 @@ void LowScoreboard(player_t *player) {
 	}
 
 	height += (extra_player_rows + extra_spec_rows) * 8;
-
-	// 180 is our max height.
-	while (height > 180) {
-		// We have too many rows.  Start removing extra spectator rows
-		// to make the scoreboard fit.
-		if (extra_spec_rows == 0) {
-			break;
-		}
-		extra_spec_rows -= 1;
-		height -= 8;
-	}
-
-	while (height > 180) {
-		// We still have too many rows.  Start removing extra player
-		// rows to make the scoreboard fit.
-		if (extra_player_rows == 0) {
-			break;
-		}
-		extra_player_rows -= 1;
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-			// Removing one player row sometimes means removing two
-			// lines on the low resolution team scoreboard.
-			if (extra_player_rows + 4 < hud::CountTeamPlayers(TEAM_BLUE)) {
-				height -= 8;
-			}
-			if (extra_player_rows + 4 < hud::CountTeamPlayers(TEAM_RED)) {
-				height -= 8;
-			}
-		} else {
-			height -= 8;
-		}
-	}
+	if (sv_teamsinplay > 2)
+		height += (sv_teamsinplay - 2) * 72;
 
 	// Starting Y position, measured from the center up.
 	y = -(height / 2);
-	if (y > -64) {
-		// Scoreboard starts slightly off-center, then grows to be centered.
-		// -96 makes it even with where the default lowres TDM begins.
-		// For the record, the lowres DM scoreboard begins at -54.
+	// Scoreboard starts slightly off-center, then grows to be centered.
+	// -96 makes it even with where the default lowres TDM begins.
+	// For the record, the lowres DM scoreboard begins at -54.
+	if (y > -64)
 		y = -64;
+
+	int maxHeight = hud::YSize(hud_scalescoreboard);
+	int dimHeight = height;
+	// hud::Dim breaks if drawing off screen, fix to take up max
+	if (height > maxHeight)
+	{
+		y = -(maxHeight / 2);
+		y = hud::YSize(hud_scalescoreboard);
+		dimHeight = maxHeight;
 	}
 
 	// Dim the background.
-	hud::Dim(0, y, 300, height, hud_scalescoreboard,
-	         hud::X_CENTER, hud::Y_MIDDLE,
-	         hud::X_CENTER, hud::Y_TOP);
+	hud::Dim(0, y, 300, dimHeight, hud_scalescoreboard,
+		hud::X_CENTER, hud::Y_MIDDLE,
+		hud::X_CENTER, hud::Y_TOP);
 
 	hud::drawLowHeader(player, y + 4);
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 		hud::drawLowTeamScores(player, y + 15,
-		                       extra_player_rows);
-	} else {
+			extra_player_rows);
+	}
+	else {
 		hud::drawLowScores(player, y + 15,
-		                   extra_player_rows);
+			extra_player_rows);
 	}
 	hud::drawLowSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
-	                       extra_spec_rows);
+		extra_spec_rows);
 }
 
 }
@@ -1631,10 +1654,13 @@ void HU_ConsoleScores(player_t *player)
 
 		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
 		{
+			// TODO
 			if (team_num == TEAM_BLUE)
 				Printf_Bold("\n-----------------------------BLUE TEAM\n");
 			else if (team_num == TEAM_RED)
 				Printf_Bold("\n------------------------------RED TEAM\n");
+			else if (team_num == TEAM_GREEN)
+				Printf_Bold("\n----------------------------GREEN TEAM\n");
 			else		// shouldn't happen
 				Printf_Bold("\n--------------------------UNKNOWN TEAM\n");
 
@@ -1690,6 +1716,8 @@ void HU_ConsoleScores(player_t *player)
 				Printf_Bold("\n-----------------------------BLUE TEAM\n");
 			else if (team_num == TEAM_RED)
 				Printf_Bold("\n------------------------------RED TEAM\n");
+			else if (team_num == TEAM_GREEN)
+				Printf_Bold("\n----------------------------GREEN TEAM\n");
 			else		// shouldn't happen
 				Printf_Bold("\n--------------------------UNKNOWN TEAM\n");
 

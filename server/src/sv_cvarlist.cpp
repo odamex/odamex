@@ -138,7 +138,7 @@ CVAR(			sv_upnp_externalip, "", "Set to the router IP address",
 // =================
 
 CVAR_RANGE(		sv_teamsinplay, "2", "Teams that are enabled",
-				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
 CVAR(			ctf_manualreturn, "0", "Flags dropped must be returned manually", 
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

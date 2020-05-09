@@ -38,6 +38,12 @@
 
 // We also need the definition of a cvar
 #include "c_cvars.h"
+#include "d_netinf.h"
+
+#ifdef CLIENT_APP
+#include "v_text.h"
+#endif
+
 
 // ------------------------
 // Command line parameters.
@@ -157,7 +163,7 @@ extern	gamestate_t 	gamestate;
 extern	int 			gametic;
 
 // Player spawn spots for deathmatch.
-extern	int				MaxDeathmatchStarts;
+extern	size_t			MaxDeathmatchStarts;
 extern	mapthing2_t		*deathmatchstarts;
 extern	mapthing2_t*	deathmatch_p;
 
@@ -178,6 +184,10 @@ extern	mapthing2_t*	blueteam_p;
 extern	mapthing2_t		*redteamstarts;
 extern	size_t			MaxRedTeamStarts;
 extern	mapthing2_t*	redteam_p;
+
+extern	mapthing2_t		*greenteamstarts;
+extern	size_t			MaxGreenTeamStarts;
+extern	mapthing2_t*	greenteam_p;
 
 // ----------------------------------------------
 
@@ -235,9 +245,17 @@ extern struct DehInfo deh;
 
 bool IsGameModeDuel();
 bool IsGameModeFFA();
-bool GameModeSupportsQueue();
 const char* GetGameModeString();
 const char* GetShortGameModeString();
+
+#ifdef CLIENT_APP
+EColorRange GetTeamTextColor(team_t team);
+argb_t GetTeamColor(team_t team);
+#endif
+
+
+const char* GetTeamName(team_t team);
+const char* GetTeamColorString(team_t team);
 
 #endif
 

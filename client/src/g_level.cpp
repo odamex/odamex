@@ -583,6 +583,12 @@ void G_DoLoadLevel (int position)
 			if (G_CheckSpot(consoleplayer(), &redteamstarts[n]))
 				P_SpawnPlayer(consoleplayer(), &redteamstarts[n]);
 		}
+
+		for (int n = 0; n < greenteam_p - greenteamstarts && !consoleplayer().mo; n++)
+		{
+			if (G_CheckSpot(consoleplayer(), &greenteamstarts[n]))
+				P_SpawnPlayer(consoleplayer(), &greenteamstarts[n]);
+		}
 	}
 
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing

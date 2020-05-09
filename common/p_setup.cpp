@@ -124,7 +124,7 @@ BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
-int				MaxDeathmatchStarts;
+size_t			MaxDeathmatchStarts;
 mapthing2_t		*deathmatchstarts;
 mapthing2_t		*deathmatch_p;
 
@@ -134,12 +134,15 @@ std::vector<mapthing2_t> voodoostarts;
 //	[Toke - CTF - starts] Teamplay starts
 size_t			MaxBlueTeamStarts;
 size_t			MaxRedTeamStarts;
+size_t			MaxGreenTeamStarts;
 
 mapthing2_t		*blueteamstarts;
 mapthing2_t		*redteamstarts;
+mapthing2_t		*greenteamstarts;
 
 mapthing2_t		*blueteam_p;
 mapthing2_t		*redteam_p;
+mapthing2_t		*greenteam_p;
 
 //
 // P_LoadVertexes
@@ -1642,6 +1645,13 @@ void P_AllocStarts(void)
 		redteamstarts = (mapthing2_t *)Malloc (MaxRedTeamStarts * sizeof(mapthing2_t));
 	}
 	redteam_p = redteamstarts;
+
+	if (!greenteamstarts) // [Toke - CTF - starts]
+	{
+		MaxGreenTeamStarts = 16;
+		greenteamstarts = (mapthing2_t *)Malloc(MaxGreenTeamStarts * sizeof(mapthing2_t));
+	}
+	greenteam_p = greenteamstarts;
 }
 
 //

@@ -111,6 +111,7 @@ EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
+EXTERN_CVAR(sv_teamsinplay)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -1060,8 +1061,6 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : team_names[team]);
 	MSG_WriteShort (&cl->reliablebuf, team);
 }
-
-EXTERN_CVAR (sv_teamsinplay)
 
 //
 //	SV_CheckTeam
@@ -2356,6 +2355,8 @@ void SV_DrawScores()
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
 			else if (team_num == TEAM_RED)
                 Printf_Bold("---------------------------------------------------RED TEAM");
+			else if (team_num == TEAM_GREEN)
+				Printf_Bold("-------------------------------------------------GREEN TEAM");
 			else		// shouldn't happen
                 Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
 
@@ -2408,6 +2409,8 @@ void SV_DrawScores()
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
 			else if (team_num == TEAM_RED)
                 Printf_Bold("---------------------------------------------------RED TEAM");
+			else if (team_num == TEAM_GREEN)
+				Printf_Bold("-------------------------------------------------GREEN TEAM");
 			else		// shouldn't happen
                 Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
 
@@ -2656,11 +2659,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
  */
 void SVC_TeamSay(player_t &player, const char* message)
 {
-	char team[5] = { 0 };
-	if (player.userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player.userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
+	const char* team = GetTeamColorString(player.userinfo.team);
 
 	if (strnicmp(message, "/me ", 4) == 0)
 		Printf(PRINT_TEAMCHAT, "<%s TEAM> * %s %s\n", team, player.userinfo.netname.c_str(), &message[4]);
@@ -3643,7 +3642,16 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 void SV_JoinPlayer(player_t &player, bool silent)
 {
 	if (player.joindelay > 0)
-		return;  
+		return;
+
+	// Player tried to join on an invalid team
+	if (player.userinfo.team >= sv_teamsinplay && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
+	{
+		std::string msg;
+		StrFormat(msg, "Cannot join the %s team", team_names[player.userinfo.team]);
+		SV_MidPrint(msg.c_str(), &player);
+		return;
+	}
 
 	int numPlayers = P_NumPlayersInGame();
 
@@ -4824,11 +4832,7 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	char team[5] = { 0 };
-	if (player->userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player->userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
+	const char* team = GetTeamColorString(player->userinfo.team);
 
 	Printf(PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " IP Address       - %s \n",		ip);

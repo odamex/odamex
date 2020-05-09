@@ -1276,67 +1276,26 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	if(!serverside || sv_gametype == GM_COOP)
 		return;
 
-	//if (!ctfmode)
+	selections = deathmatch_p - deathmatchstarts;
+	// [RH] We can get by with just 1 deathmatch start
+	if (selections < 1)
+		I_Error ("No deathmatch starts");
+
+	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
+	spot = SelectRandomDeathmatchSpot (player, selections);
+
+	if (!spot && !playerstarts.empty())
 	{
-		selections = deathmatch_p - deathmatchstarts;
-		// [RH] We can get by with just 1 deathmatch start
-		if (selections < 1)
-			I_Error ("No deathmatch starts");
-
-		// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-		spot = SelectRandomDeathmatchSpot (player, selections);
-
-		if (!spot && !playerstarts.empty())
-		{
-			// no good spot, so the player will probably get stuck
-			spot = &playerstarts[player.id%playerstarts.size()];
-		}
-		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;	// [RH] > 4 players
-		}
-
-
+		// no good spot, so the player will probably get stuck
+		spot = &playerstarts[player.id%playerstarts.size()];
 	}
-	/*else
+	else
 	{
-		selections = 0;
-
-		if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-		{
-			selections = blueteam_p - blueteamstarts;
-
-			if (selections < 1)
-				I_Error ("No blue team starts");
-		}
-
-		if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-		{
-			selections = redteam_p - redteamstarts;
-
-			if (selections < 1)
-				I_Error ("No red team starts");
-		}
-
-		if (selections < 1)
-			I_Error ("No team starts");
-
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
-
-		if (!spot && !playerstarts.empty())
-			spot = &playerstarts[player.id%playerstarts.size()];
-
+		if (player.id < 4)
+			spot->type = player.id+1;
 		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;
-		}
-	}*/
+			spot->type = player.id+4001-4;	// [RH] > 4 players
+	}
 
 	P_SpawnPlayer (player, spot);
 }

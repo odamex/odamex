@@ -199,7 +199,7 @@ enum flag_t
 {
 	it_blueflag,
 	it_redflag,
-
+	it_greenflag,
 	NUMFLAGS
 };
 

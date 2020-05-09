@@ -42,14 +42,15 @@ static int tintglow = 0;
 
 const char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "", ""
+	"BLUE", "RED", "GREEN", "", ""
 };
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
-	{MT_RFLG, MT_RDWN, MT_RCAR}
+	{MT_RFLG, MT_RDWN, MT_RCAR},
+	{MT_GFLG, MT_GDWN, MT_GCAR}
 };
 
 EXTERN_CVAR (screenblocks)
@@ -101,6 +102,7 @@ void CL_CTFEvent (void)
 	}
 
 	flag_t flag = (flag_t)MSG_ReadByte();
+	team_t team = (team_t)MSG_ReadByte();
 	player_t &player = idplayer(MSG_ReadByte());
 	int points = MSG_ReadLong();
 
@@ -169,10 +171,10 @@ void CL_CTFEvent (void)
 	}
 
 	// [AM] Play CTF sound, moved from server.
-	CTF_Sound(flag, event);
+	CTF_Sound(flag, team, event);
 
 	// [AM] Show CTF message.
-	CTF_Message(flag, event);
+	CTF_Message(flag, team, event);
 }
 
 //	CTF_CheckFlags
@@ -335,7 +337,8 @@ void CTF_RunTics (void)
 void CTF_DrawHud (void)
 {
     int tintglowtype = 0;
-    bool hasflag = false, hasflags[NUMFLAGS];
+	flag_t yourFlag = NUMFLAGS;
+	flag_t enemyFlag = NUMFLAGS;
 
 	if(sv_gametype != GM_CTF)
 		return;
@@ -343,15 +346,16 @@ void CTF_DrawHud (void)
 	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
-		hasflags[i] = false;
 		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == player.id)
 		{
-			hasflag = true;
-			hasflags[i] = true;
+			if ((team_t)i == player.userinfo.team)
+				yourFlag = (flag_t)i;
+			else
+				enemyFlag = (flag_t)i;
 		}
 	}
 
-	if (hasflag && hud_heldflag > 0)
+	if ((yourFlag != NUMFLAGS || enemyFlag != NUMFLAGS) && hud_heldflag > 0)
 	{
 		if (hud_heldflag_flash == 1)
 		{
@@ -368,20 +372,32 @@ void CTF_DrawHud (void)
 		}
 
 		argb_t tintColor = 0;
-		if (hasflags[0] && hasflags[1])
+		if (yourFlag != NUMFLAGS && enemyFlag != NUMFLAGS)
 		{
 			if (tintglow < 15 || tintglow > 60)
-				tintColor = argb_t((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
+				tintColor = GetTeamColor((team_t)yourFlag);
 			else
-				tintColor = argb_t(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+				tintColor = GetTeamColor((team_t)enemyFlag);
 		}
-		else if (hasflags[0])
-			tintColor = argb_t((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
-		else if (hasflags[1])
-			tintColor = argb_t(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+		else if (enemyFlag != NUMFLAGS)
+		{
+			tintColor = GetTeamColor((team_t)enemyFlag);
+		}
+		else if (yourFlag != NUMFLAGS)
+		{
+			tintColor = GetTeamColor((team_t)yourFlag);
+		}
 
 		if (tintColor != 0)
+		{
+			if (tintColor.getr() != 255)
+				tintColor.setr(17 * tintglowtype);
+			if (tintColor.getg() != 255)
+				tintColor.setg(17 * tintglowtype);
+			if (tintColor.getb() != 255)
+				tintColor.setb(17 * tintglowtype);
 			TintScreen(tintColor);
+		}
 	}
 }
 
@@ -432,25 +448,25 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 // 2: Enemy team announcer
 // 3: Blue team announcer
 // 4: Red team announcer
-static const char *flag_sound[NUM_CTF_SCORE][6] = {
+static const char *flag_sound[NUM_CTF_SCORE][7] = {
 	{"", "", "", "", "", ""}, // NONE
 	{"", "", "", "", "", ""}, // REFRESH
 	{"", "", "", "", "", ""}, // KILL
 	{"", "", "", "", "", ""}, // BETRAYAL
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // GRAB
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take"}, // FIRSTGRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take", "vox/green/flag/take"}, // GRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take", "vox/green/flag/take"}, // FIRSTGRAB
 	{"", "", "", "", "", ""}, // CARRIERKILL
-	{"ctf/your/flag/return", "ctf/enemy/flag/return", "vox/your/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return"}, // RETURN
-	{"ctf/enemy/score", "ctf/your/score", "vox/enemy/score", "vox/your/score", "vox/red/score", "vox/blue/score"}, // CAPTURE
-	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", "vox/your/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop"}, // DROP
-	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", "vox/your/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn"}, // MANUALRETURN
+	{"ctf/your/flag/return", "ctf/enemy/flag/return", "vox/your/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return", "vox/green/flag/return"}, // RETURN
+	{"ctf/enemy/score", "ctf/your/score", "vox/enemy/score", "vox/your/score", "vox/blue/score", "vox/red/score", "vox/green/score"}, // CAPTURE
+	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", "vox/your/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop", "vox/green/flag/drop"}, // DROP
+	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", "vox/your/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn", "vox/green/flag/manualreturn"}, // MANUALRETURN
 };
 
 EXTERN_CVAR(snd_voxtype)
 EXTERN_CVAR(snd_gamesfx)
 
 // [AM] Play appropriate sounds for CTF events.
-void CTF_Sound(flag_t flag, flag_score_t event) {
+void CTF_Sound(flag_t flag, team_t team, flag_score_t event) {
 	if (flag >= NUMFLAGS) {
 		// Invalid team
 		return;
@@ -492,7 +508,8 @@ void CTF_Sound(flag_t flag, flag_score_t event) {
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][3], 1, ATTN_NONE);
 					break;
 				}
-			} else {
+			}
+			else {
 				// Your flag is being evented
 				if (S_FindSound(flag_sound[event][2]) != -1) {
 					S_Sound(CHAN_ANNOUNCER, flag_sound[event][2], 1, ATTN_NONE);
@@ -502,36 +519,36 @@ void CTF_Sound(flag_t flag, flag_score_t event) {
 		}
 		// fallthrough
 	case 1:
+	{
+		int sound = flag;
+		if (event == SCORE_CAPTURE)
+			sound = team;
 		// Team colors (red/blue)
-		if (S_FindSound(flag_sound[event][4 + flag]) != -1) {
-			if (consoleplayer().userinfo.team != (team_t)flag && !consoleplayer().spectator) {
-				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + flag], 1, ATTN_NONE);
-			} else {
-				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + flag], 1, ATTN_NONE);
-			}
-			break;
-		}
+		if (S_FindSound(flag_sound[event][4 + sound]) != -1) 
+				S_Sound(CHAN_ANNOUNCER, flag_sound[event][4 + sound], 1, ATTN_NONE);
+		break;
+	}
 		// fallthrough
 	default:
 		break;
 	}
 }
 
-static const char* flag_message[NUM_CTF_SCORE][4] = {
-	{"", "", "", ""}, // NONE
-	{"", "", "", ""}, // REFRESH
-	{"", "", "", ""}, // KILL
-	{"", "", "", ""}, // BETRAYAL
-	{"Your Flag Taken", "Enemy Flag Taken", "Blue Flag Taken", "Red Flag Taken"}, // GRAB
-	{"Your Flag Taken", "Enemy Flag Taken", "Blue Flag Taken", "Red Flag Taken"}, // FIRSTGRAB
-	{"", "", "", ""}, // CARRIERKILL
-	{"Your Flag Returned", "Enemy Flag Returned", "Blue Flag Returned", "Red Flag Returned"}, // RETURN
-	{"Enemy Team Scores", "Your Team Scores", "Red Team Scores", "Blue Team Scores"}, // CAPTURE
-	{"Your Flag Dropped", "Enemy Flag Dropped", "Blue Flag Dropped", "Red Flag Dropped"}, // DROP
-	{"Your Flag Returning", "Enemy Flag Returning", "Blue Flag Returning", "Red Flag Returning"} // MANUALRETURN*/
+static const char* flag_message[NUM_CTF_SCORE][5] = {
+	{"", "", "", "", ""}, // NONE
+	{"", "", "", "", ""}, // REFRESH
+	{"", "", "", "", ""}, // KILL
+	{"", "", "", "", ""}, // BETRAYAL
+	{"Your Flag Taken", "Enemy Flag Taken", "Blue Flag Taken", "Red Flag Taken", "Green Flag Taken"}, // GRAB
+	{"Your Flag Taken", "Enemy Flag Taken", "Blue Flag Taken", "Red Flag Taken",  "Green Flag Taken"}, // FIRSTGRAB
+	{"", "", "", "", ""}, // CARRIERKILL
+	{"Your Flag Returned", "Enemy Flag Returned", "Blue Flag Returned", "Red Flag Returned", "Green Flag Returned"}, // RETURN
+	{"Enemy Team Scores", "Your Team Scores", "Blue Team Scores", "Red Team Scores" , "Green Team Scores"}, // CAPTURE
+	{"Your Flag Dropped", "Enemy Flag Dropped", "Blue Flag Dropped", "Red Flag Dropped", "Green Flag Dropped"}, // DROP
+	{"Your Flag Returning", "Enemy Flag Returning", "Blue Flag Returning", "Red Flag Returning", "Green Flag Returning"} // MANUALRETURN*/
 };
 
-void CTF_Message(flag_t flag, flag_score_t event) {
+void CTF_Message(flag_t flag, team_t team, flag_score_t event) {
 	// Invalid team
 	if (flag >= NUMFLAGS)
 		return;
@@ -547,18 +564,23 @@ void CTF_Message(flag_t flag, flag_score_t event) {
 	int color = CR_GREY;
 
 	// Show message 
-	switch (hud_gamemsgtype.asInt()) {
+	switch (hud_gamemsgtype.asInt())
+	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (!consoleplayer().spectator) {
-			if (consoleplayer().userinfo.team != (team_t)flag) {
+		if (!consoleplayer().spectator)
+		{
+			if (consoleplayer().userinfo.team != team)
+			{
 				// Enemy flag is being evented
 				if (event == SCORE_GRAB || event == SCORE_FIRSTGRAB || event == SCORE_CAPTURE)
 					color = CR_GREEN;
 				else
 					color = CR_BRICK;
 				C_GMidPrint(flag_message[event][1], color, 0);
-			} else {
+			} 
+			else
+			{
 				// Friendly flag is being evented
 				if (event == SCORE_GRAB || event == SCORE_FIRSTGRAB || event == SCORE_CAPTURE)
 					color = CR_BRICK;
@@ -570,20 +592,10 @@ void CTF_Message(flag_t flag, flag_score_t event) {
 		}
 		// fallthrough
 	case 1:
-		// Team colors (red/blue)
-		if (event == SCORE_CAPTURE) {
-			if (flag == it_blueflag)
-				color = CR_RED;
-			else
-				color = CR_BLUE;
-		} else {
-			if (flag == it_blueflag)
-				color = CR_BLUE;
-			else
-				color = CR_RED;
-		}
-		
-		C_GMidPrint(flag_message[event][2 + flag], color, 0);
+		if (event == SCORE_CAPTURE)
+			C_GMidPrint(flag_message[event][2 + team], GetTeamTextColor(team), 0);
+		else
+			C_GMidPrint(flag_message[event][2 + flag], GetTeamTextColor((team_t)flag), 0);
 		break;
 	default:
 		break;

@@ -2286,6 +2286,19 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 			(mthing->type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
+void AddStart(mapthing2_t* mthing, mapthing2_t*& starts, mapthing2_t*& startp, size_t& startSize)
+{
+	if (startp == &starts[startSize])
+	{
+		int offset = startSize;
+		startSize *= 2;
+		starts = (mapthing2_t *)Realloc(starts, startSize * sizeof(mapthing2_t));
+		startp = &starts[offset];
+	}
+	memcpy(startp, mthing, sizeof(*mthing));
+	startp++;
+}
+
 //
 // P_SpawnMapThing
 // The fields of the mapthing should
@@ -2319,46 +2332,23 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (deathmatch_p >= &deathmatchstarts[10] && demoplayback)
 			return;
 
-		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
-		{
-			// [RH] Get more deathmatchstarts
-			int offset = MaxDeathmatchStarts;
-			MaxDeathmatchStarts *= 2;
-			deathmatchstarts = (mapthing2_t *)Realloc (deathmatchstarts, MaxDeathmatchStarts * sizeof(mapthing2_t));
-			deathmatch_p = &deathmatchstarts[offset];
-		}
-		memcpy (deathmatch_p, mthing, sizeof(*mthing));
-		deathmatch_p++;
+		AddStart(mthing, deathmatchstarts, deathmatch_p, MaxDeathmatchStarts);
 		return;
 	}
 
-	// [Toke - CTF - starts] CTF starts - count Blue team start positions
-	if (mthing->type == 5080 && sv_teamspawns)
+	if (mthing->type == ID_BLUE_TEAM_SPAWN && sv_teamspawns)
 	{
-		if (blueteam_p == &blueteamstarts[MaxBlueTeamStarts])
-		{
-			int offset = MaxBlueTeamStarts;
-			MaxBlueTeamStarts *= 2;
-			blueteamstarts = (mapthing2_t *)Realloc (blueteamstarts, MaxBlueTeamStarts * sizeof(mapthing2_t));
-			blueteam_p = &blueteamstarts[offset];
-		}
-		memcpy (blueteam_p, mthing, sizeof(*mthing));
-		blueteam_p++;
+		AddStart(mthing, blueteamstarts, blueteam_p, MaxBlueTeamStarts);
 		return;
 	}
-
-	// [Toke - CTF - starts] CTF starts - count Red team start positions
-	if (mthing->type == 5081 && sv_teamspawns)
+	else if (mthing->type == ID_RED_TEAM_SPAWN && sv_teamspawns)
 	{
-		if (redteam_p == &redteamstarts[MaxRedTeamStarts])
-		{
-			int offset = MaxRedTeamStarts;
-			MaxRedTeamStarts *= 2;
-			redteamstarts = (mapthing2_t *)Realloc (redteamstarts, MaxRedTeamStarts * sizeof(mapthing2_t));
-			redteam_p = &redteamstarts[offset];
-		}
-		memcpy (redteam_p, mthing, sizeof(*mthing));
-		redteam_p++;
+		AddStart(mthing, redteamstarts, redteam_p, MaxRedTeamStarts);
+		return;
+	}
+	else if (mthing->type == ID_GREEN_TEAM_SPAWN && sv_teamspawns)
+	{
+		AddStart(mthing, greenteamstarts, greenteam_p, MaxGreenTeamStarts);
 		return;
 	}
 
@@ -2658,32 +2648,30 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->subsector->sector->SecActTarget = mobj->ptr();
 	}
 
-	if (sv_gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF)
+	{
 		// [Toke - CTF] Setup flag sockets
 		if (mthing->type == ID_BLUE_FLAG)
-		{
-			flagdata *data = &CTFdata[it_blueflag];
-			if (data->flaglocated)
-				return;
-
-			CTF_RememberFlagPos (mthing);
-			CTF_SpawnFlag(it_blueflag);
-		}
-
-		if (mthing->type == ID_RED_FLAG)
-		{
-			flagdata *data = &CTFdata[it_redflag];
-			if (data->flaglocated)
-				return;
-
-			CTF_RememberFlagPos (mthing);
-			CTF_SpawnFlag(it_redflag);
-		}
+			SpawnFlag(mthing, it_blueflag);
+		else if (mthing->type == ID_RED_FLAG)
+			SpawnFlag(mthing, it_redflag);
+		else if (mthing->type == ID_GREEN_FLAG)
+			SpawnFlag(mthing, it_greenflag);
 	}
 
 	// [RH] Go dormant as needed
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
+}
+
+void SpawnFlag(mapthing2_t* mthing, flag_t flag)
+{
+	flagdata *data = &CTFdata[flag];
+	if (data->flaglocated)
+		return;
+
+	CTF_RememberFlagPos(mthing);
+	CTF_SpawnFlag(flag);
 }
 
 

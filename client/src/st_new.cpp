@@ -53,16 +53,18 @@ static const patch_t	*armors[2];
 static const patch_t	*ammos[4];
 static const patch_t	*bigammos[4];
 static const patch_t	*flagiconteam;
-static const patch_t	*flagiconbhome;
-static const patch_t	*flagiconrhome;
-static const patch_t	*flagiconbtakenbyb;
-static const patch_t	*flagiconbtakenbyr;
-static const patch_t	*flagiconrtakenbyb;
-static const patch_t	*flagiconrtakenbyr;
-static const patch_t	*flagicongtakenbyb;
-static const patch_t	*flagicongtakenbyr;
-static const patch_t	*flagiconbdropped;
-static const patch_t	*flagiconrdropped;
+static const patch_t	*FlagIconBlueHome;
+static const patch_t	*FlagIconRedHome;
+static const patch_t	*FlagIconGreenHome;
+static const patch_t	*FlagIconBlueReturn;
+static const patch_t	*FlagIconBlueTaken;
+static const patch_t	*FlagIconRedTaken;
+static const patch_t	*FlagIconRedReturn;
+static const patch_t	*FlagIconGreenReturn;
+static const patch_t	*FlagIconGreenTaken;
+static const patch_t	*FlagIconBlueDropped;
+static const patch_t	*FlagIconRedDropped;
+static const patch_t	*FlagIconGreenDropped;
 static const patch_t *line_leftempty;
 static const patch_t *line_leftfull;
 static const patch_t *line_centerempty;
@@ -96,22 +98,25 @@ EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_targetcount)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR (sv_teamsinplay)
 
 void ST_unloadNew (void)
 {
 	int i;
 
 	Z_ChangeTag (flagiconteam, PU_CACHE);
-	Z_ChangeTag (flagiconbhome, PU_CACHE);
-	Z_ChangeTag (flagiconrhome, PU_CACHE);
-	Z_ChangeTag (flagiconbtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagiconbtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagiconrtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagiconrtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagiconbdropped, PU_CACHE);
-	Z_ChangeTag (flagiconrdropped, PU_CACHE);
+	Z_ChangeTag (FlagIconBlueHome, PU_CACHE);
+	Z_ChangeTag (FlagIconRedHome, PU_CACHE);
+	Z_ChangeTag (FlagIconGreenHome, PU_CACHE);
+	Z_ChangeTag (FlagIconBlueReturn, PU_CACHE);
+	Z_ChangeTag (FlagIconBlueTaken, PU_CACHE);
+	Z_ChangeTag (FlagIconRedTaken, PU_CACHE);
+	Z_ChangeTag (FlagIconRedReturn, PU_CACHE);
+	Z_ChangeTag (FlagIconGreenReturn, PU_CACHE);
+	Z_ChangeTag (FlagIconGreenTaken, PU_CACHE);
+	Z_ChangeTag (FlagIconBlueDropped, PU_CACHE);
+	Z_ChangeTag (FlagIconRedDropped, PU_CACHE);
+	Z_ChangeTag (FlagIconGreenDropped, PU_CACHE);
 	Z_ChangeTag (line_leftempty, PU_CACHE);
 	Z_ChangeTag (line_leftfull, PU_CACHE);
 	Z_ChangeTag (line_centerempty, PU_CACHE);
@@ -168,14 +173,18 @@ void ST_initNew (void)
 	}
 
 	flagiconteam = W_CachePatch ("FLAGIT", PU_STATIC);
-	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
-	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
-	flagiconbtakenbyb = W_CachePatch ("FLAGI3BB", PU_STATIC);
-	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
-	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
-	flagiconrtakenbyr = W_CachePatch ("FLAGI3RR", PU_STATIC);
-	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
-	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
+	FlagIconBlueHome = W_CachePatch ("FLAGIC2B", PU_STATIC);
+	FlagIconRedHome = W_CachePatch ("FLAGIC2R", PU_STATIC);
+	FlagIconGreenHome = W_CachePatch ("FLAGIC2G", PU_STATIC);
+	FlagIconBlueReturn = W_CachePatch ("FLAGI3BB", PU_STATIC);
+	FlagIconBlueTaken = W_CachePatch ("FLAGI3BR", PU_STATIC);
+	FlagIconRedTaken = W_CachePatch ("FLAGI3RB", PU_STATIC);
+	FlagIconRedReturn = W_CachePatch ("FLAGI3RR", PU_STATIC);
+	FlagIconGreenReturn = W_CachePatch("FLAGI3GG", PU_STATIC);
+	FlagIconGreenTaken = W_CachePatch("FLAGI3GR", PU_STATIC);
+	FlagIconBlueDropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
+	FlagIconRedDropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
+	FlagIconGreenDropped = W_CachePatch("FLAGIC4G", PU_STATIC);
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();
@@ -450,78 +459,52 @@ void drawCTF() {
 	player_t *plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	const patch_t *flagbluepatch = flagiconbhome;
-	const patch_t *flagredpatch = flagiconrhome;
 
-	switch (CTFdata[it_blueflag].state) {
+	static const patch_t* flagHome[NUMTEAMS] = { FlagIconBlueHome, FlagIconRedHome, FlagIconGreenHome };
+	static const patch_t* flagReturn[NUMTEAMS] = { FlagIconBlueReturn, FlagIconRedReturn, FlagIconGreenReturn };
+	static const patch_t* flagTaken[NUMTEAMS] = { FlagIconBlueTaken, FlagIconRedTaken, FlagIconGreenTaken };
+	static const patch_t* flagDropped[NUMTEAMS] = { FlagIconBlueDropped, FlagIconRedDropped, FlagIconGreenDropped };
+	int patchPosY = 61;
+
+	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
+
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		const patch_t* drawPatch = flagHome[i];
+
+		switch (CTFdata[i].state)
+		{
 		case flag_carried:
-			if (CTFdata[it_blueflag].flagger) {
-				player_t &player = idplayer(CTFdata[it_blueflag].flagger);
-				if (player.userinfo.team == TEAM_BLUE) {
-					flagbluepatch = flagiconbtakenbyb;
-				} else if (player.userinfo.team == TEAM_RED) {
-					flagbluepatch = flagiconbtakenbyr;
-				}
-			}
+			if (idplayer(CTFdata[i].flagger).userinfo.team == i)
+				drawPatch = flagReturn[i];
+			else
+				drawPatch = flagTaken[i];
 			break;
 		case flag_dropped:
-			flagbluepatch = flagiconbdropped;
+			drawPatch = flagDropped[i];
 			break;
 		default:
 			break;
+		}
+
+		hud::DrawPatch(4, patchPosY, hud_scale,
+			hud::X_RIGHT, hud::Y_BOTTOM,
+			hud::X_RIGHT, hud::Y_BOTTOM,
+			drawPatch);
+
+		if (!plyr->spectator && plyr->userinfo.team == i)
+		{
+			hud::DrawPatch(4, patchPosY, hud_scale,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				flagiconteam);
+		}
+
+		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+			screen, TEAMpoints[i]);
+
+		patchPosY -= 18;
 	}
-
-	switch (CTFdata[it_redflag].state) {
-		case flag_carried:
-			if (CTFdata[it_redflag].flagger) {
-				player_t &player = idplayer(CTFdata[it_redflag].flagger);
-				if (player.userinfo.team == TEAM_BLUE) {
-					flagredpatch = flagiconrtakenbyb;
-				} else if (player.userinfo.team == TEAM_RED) {
-					flagredpatch = flagiconrtakenbyr;
-				}
-			}
-			break;
-		case flag_dropped:
-			flagredpatch = flagiconrdropped;
-			break;
-		default:
-			break;
-	}
-
-	// Draw base flag patches
-	hud::DrawPatch(4, 61, hud_scale,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               flagbluepatch);
-	hud::DrawPatch(4, 43, hud_scale,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               flagredpatch);
-
-	// Draw team border
-	switch (plyr->userinfo.team) {
-		case TEAM_BLUE:
-			hud::DrawPatch(4, 61, hud_scale,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               flagiconteam);
-			break;
-		case TEAM_RED:
-			hud::DrawPatch(4, 43, hud_scale,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               flagiconteam);
-			break;
-		default:
-			break;
-	}
-
-	// Draw team scores
-	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (62 + 16) * yscale,
-	                screen, TEAMpoints[TEAM_BLUE]);
-	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (44 + 16) * yscale,
-	                screen, TEAMpoints[TEAM_RED]);
 }
 
 // [AM] Draw netdemo state

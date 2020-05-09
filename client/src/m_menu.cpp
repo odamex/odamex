@@ -1461,29 +1461,20 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	if(choice)
+	int iTeam = (int)team;
+	if (choice)
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_BLUE; break;
-			case TEAM_BLUE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			team = TEAM_NONE; break;
-		}
+		iTeam = ++iTeam % NUMTEAMS;
 	}
 	else
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			case TEAM_BLUE: team = TEAM_NONE; break;
-		}
+		iTeam--;
+		if (iTeam < 0)
+			iTeam = NUMTEAMS - 1;
 	}
+	team = (team_t)iTeam;
 
-	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
+	cl_team = GetTeamColorString(team);
 }
 
 static void M_ChangeGender (int choice)

@@ -127,6 +127,8 @@ bool P_VisibleToPlayers(AActor *mo);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
+void AddTeamStart(mapthing2_t* mthing, mapthing2_t*& starts, mapthing2_t*& startp, size_t& startSize);
+void SpawnFlag(mapthing2_t* mthing, flag_t flag);
 
 #endif
 

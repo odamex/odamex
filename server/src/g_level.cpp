@@ -767,11 +767,9 @@ void G_DoLoadLevel (int position)
 
 	// Nes - CTF Pre flag setup
 	if (sv_gametype == GM_CTF) {
-		tempflag = &CTFdata[it_blueflag];
-		tempflag->flaglocated = false;
 
-		tempflag = &CTFdata[it_redflag];
-		tempflag->flaglocated = false;
+		for (int i = 0; i < NUMFLAGS; i++)
+			CTFdata[i].flaglocated = false;
 	}
 
 	P_SetupLevel (level.mapname, position);

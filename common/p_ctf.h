@@ -29,6 +29,11 @@
 //	Map ID for flags
 #define	ID_BLUE_FLAG	5130
 #define	ID_RED_FLAG		5131
+#define ID_GREEN_FLAG	5133
+
+#define ID_BLUE_TEAM_SPAWN		5080
+#define ID_RED_TEAM_SPAWN		5081
+#define ID_GREEN_TEAM_SPAWN		5083
 // Reserve for maintaining the DOOM CTF standard.
 //#define ID_NEUTRAL_FLAG	5132
 //#define ID_TEAM3_FLAG	5133
@@ -105,8 +110,8 @@ void CTF_SpawnFlag(flag_t f);
 void CTF_SpawnDroppedFlag(flag_t f, int x, int y, int z);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
 void CTF_CheckFlags(player_t &player);
-void CTF_Sound(flag_t f, flag_score_t event);
-void CTF_Message(flag_t f, flag_score_t event);
+void CTF_Sound(flag_t f, team_t t, flag_score_t event);
+void CTF_Message(flag_t f, team_t t, flag_score_t event);
 // void CTF_TossFlag(player_t &player);  [ML] 04/4/06: Removed buggy flagtoss
 // void CTF_SpawnPlayer(player_t &player);	// denis - todo - where's the implementation!?
 

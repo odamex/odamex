@@ -78,6 +78,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 	// Rip through our eligible vector, forcing players in the vector
 	// onto alternating teams.
+	// TODO hobomaster
 	team_t dest_team = TEAM_BLUE;
 	size_t i = 0;
 	for (std::vector<player_t*>::iterator it = eligible.begin();it != eligible.end();++it,++i) {
@@ -86,11 +87,10 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
 
-		// Is the last player an odd-one-out?  Randomize
-		// the team he is put on.
-		if ((eligible.size() % 2) == 1 && i == (eligible.size() - 1)) {
+		// Is the last player an odd-one-out?  Randomize the team he is put on.
+		// Do not randomize if num_players = NUMTEAMS for randcaps (3 way ctf) 
+		if (num_players != NUMTEAMS && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
 			dest_team = (team_t)(P_Random() % NUMTEAMS);
-		}
 
 		// Switch player to the proper team, ensure the correct color,
 		// and then update everyone else in the game about it.
@@ -106,11 +106,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 			SV_SendUserInfo(player, &(pit->client));
 		}
 
-		if (dest_team == TEAM_BLUE) {
-			dest_team = TEAM_RED;
-		} else {
-			dest_team = TEAM_BLUE;
-		}
+		int iTeam = dest_team;
+		iTeam = ++iTeam % NUMTEAMS;
+		dest_team = (team_t)iTeam;
 	}
 
 	// Force-spectate everyone who is not eligible.

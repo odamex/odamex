@@ -58,7 +58,8 @@ const char *sprnames[NUMSPRITES+1] = {
 	"GIB0","GIB1","GIB2","GIB3","GIB4","GIB5","GIB6","GIB7","UNKN",
 
 	//	[Toke - CTF]
-	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR","TLGL",
+	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR",
+	"GSOK","GFLG","GDWN","GCAR","TLGL",
 	0
 };
 
@@ -1273,6 +1274,18 @@ state_t	states[NUMSTATES] = {
 	{SPR_RDWN,0,-1,NULL,S_NULL,0,0},	// Red Dropped Flag
 	{SPR_BCAR,0,-1,NULL,S_NULL,0,0},	// Blue Dropped Flag
 	{SPR_RCAR,0,-1,NULL,S_NULL,0,0},	// Red Dropped Flag
+
+	{SPR_GSOK,0,-1,NULL,S_NULL,0,0},	//S_GSOK,
+	{SPR_GFLG,32768,4,NULL,S_GFLG2,0,0}, // BLUE Flag Animation
+	{SPR_GFLG,32769,4,NULL,S_GFLG3,0,0},
+	{SPR_GFLG,32770,4,NULL,S_GFLG4,0,0},
+	{SPR_GFLG,32771,4,NULL,S_GFLG5,0,0},
+	{SPR_GFLG,32772,4,NULL,S_GFLG6,0,0},
+	{SPR_GFLG,32773,4,NULL,S_GFLG7,0,0},
+	{SPR_GFLG,32774,4,NULL,S_GFLG8,0,0},
+	{SPR_GFLG,32775,4,NULL,S_GFLG,0,0},
+	{SPR_GDWN,0,-1,NULL,S_NULL,0,0},	//S_GDWN,
+	{SPR_GCAR,0,-1,NULL,S_NULL,0,0},	//S_GCAR,
 	
 	{SPR_TLGL,32768,4,NULL,S_BRIDGE2,0,0},	// S_BRIDGE1
 	{SPR_TLGL,32769,4,NULL,S_BRIDGE3,0,0},	// S_BRIDGE2
@@ -6910,7 +6923,140 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_SECACTEYESABOVEC"
-	}
+	},
+	
+		/*
+	MT_GSOK,
+	MT_GFLG,
+	MT_GDWN,
+	MT_GCAR,
+		*/
+
+	{		// MT_GSOK
+	5133,		// doomednum
+	S_GSOK,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20 * FRACUNIT,		// radius
+	14 * FRACUNIT,		// height
+	14 * FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_SPECIAL,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_GSOK"
+	},
+
+		// [Toke - CTF] Blue Flag
+	{		// MT_BFLG
+	-1,		// doomednum
+	S_GFLG,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20 * FRACUNIT,		// radius
+	16 * FRACUNIT,		// height
+	16 * FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_SPECIAL,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_GFLG"
+	},
+
+
+		// [Toke - CTF] Blue Dropped Flag
+	{		// MT_BDWN
+	-1,		// doomednum
+	S_GDWN,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20 * FRACUNIT,		// radius
+	16 * FRACUNIT,		// height
+	16 * FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_SPECIAL,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_GDWN"
+	},
+
+
+		// [Toke - CTF] Blue Carrying Flag
+	{		// MT_BCAR
+	-1,		// doomednum
+	S_GCAR,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20 * FRACUNIT,		// radius
+	16 * FRACUNIT,		// height
+	16 * FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_NOGRAVITY,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_GCAR"
+	},
+
 };
 
 VERSION_CONTROL (info_cpp, "$Id$")

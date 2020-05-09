@@ -46,12 +46,13 @@ int TEAMpoints[NUMFLAGS];
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
-	{MT_RFLG, MT_RDWN, MT_RCAR}
+	{MT_RFLG, MT_RDWN, MT_RCAR},
+	{MT_GFLG, MT_GDWN, MT_GCAR}
 };
 
 const char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "", ""
+	"BLUE", "RED", "GREEN", "", ""
 };
 
 static int ctf_points[NUM_CTF_SCORE] =
@@ -88,6 +89,7 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
 		MSG_WriteByte (&cl->reliablebuf, event);
 		MSG_WriteByte (&cl->reliablebuf, f);
+		MSG_WriteByte(&cl->reliablebuf, who.userinfo.team);
 
 		if(validplayer(who))
 		{
@@ -130,14 +132,25 @@ void CTF_Connect(player_t &player)
 //	[Toke - CTF] SV_FlagGrab
 //	Event of a player picking up a flag
 //
-void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
+ItemEquipVal SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 {
+	// Manual return allows you to carry your flag and an opponents flag
+	if ((team_t)f != player.userinfo.team)
+	{
+		for (int i = 0; i < NUMFLAGS; i++)
+		{
+			// Already carrying an enemy flag, can't pick up more than one
+			if ((team_t)i != player.userinfo.team && player.flags[i])
+				return IEV_NotEquipped;
+		}
+	}
+
 	player.flags[f] = true;
 	CTFdata[f].flagger = player.id;
 	CTFdata[f].state = flag_carried;
 	CTFdata[f].pickup_time = I_MSTime();
 
-	if (player.userinfo.team != (team_t)f) {
+	if (player.userinfo.team != (team_t)f){
 		if (firstgrab) {
 			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
@@ -149,6 +162,8 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
+
+	return IEV_EquipRemove;
 }
 
 //
@@ -238,14 +253,16 @@ ItemEquipVal SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 		else // Returning team flag.
 		{
 			if (ctf_manualreturn)
-				SV_FlagGrab(player, f, firstgrab);
+			{
+				return SV_FlagGrab(player, f, firstgrab);	
+			}
 			else
 				SV_FlagReturn(player, f);
 		}
 	}
 	else // Grabbing enemy flag.
 	{
-		SV_FlagGrab(player, f, firstgrab);
+		return SV_FlagGrab(player, f, firstgrab);
 	}
 
 	// returning IEV_EquipRemove should make P_TouchSpecial destroy the touched flag
@@ -387,8 +404,15 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 
 	switch(mthing->type)
 	{
-		case ID_BLUE_FLAG: f = it_blueflag; break;
-		case ID_RED_FLAG: f = it_redflag; break;
+		case ID_BLUE_FLAG:
+			f = it_blueflag;
+			break;
+		case ID_RED_FLAG:
+			f = it_redflag;
+			break;
+		case ID_GREEN_FLAG:
+			f = it_greenflag;
+			break;
 		default:
 			return;
 	}

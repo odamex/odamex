@@ -752,6 +752,17 @@ void P_GiveSpecial(player_t *player, AActor *special)
             SV_SocketTouch(*player, it_redflag);
             return;
 
+		case SPR_GFLG:
+			firstgrab = true;
+		case SPR_GDWN:
+			val = SV_FlagTouch(*player, it_greenflag, firstgrab);
+			sound = -1;
+			break;
+
+		case SPR_GSOK:
+			SV_SocketTouch(*player, it_greenflag);
+			return;
+
         default:
             Printf(
                 PRINT_HIGH,

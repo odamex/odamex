@@ -103,11 +103,13 @@ gender_t D_GenderByName (const char *gender)
 //
 team_t D_TeamByName (const char *team)
 {
-	if (!stricmp (team, "blue"))
+	//  TODO hobomaster
+	if (stricmp(team, "blue") == 0)
 		return TEAM_BLUE;
-
-	else if (!stricmp (team, "red"))
+	else if (stricmp(team, "red") == 0)
 		return TEAM_RED;
+	else if (stricmp(team, "green") == 0)
+		return TEAM_GREEN;
 
 	else return TEAM_NONE;
 }

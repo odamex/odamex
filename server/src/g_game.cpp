@@ -449,6 +449,17 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	return &deathmatchstarts[i];
 }
 
+static mapthing2_t* SelectTeamSpot(player_t &player, mapthing2_t* starts, size_t size, int selections)
+{
+	for (size_t j = 0; j < size; ++j)
+	{
+		size_t i = M_Random() % selections;
+		if (G_CheckSpot(player, &starts[i]))
+			return &starts[i];
+	}
+	return &starts[0];		// could not find a free spot, use spot 0
+}
+
 // [Toke] Randomly selects a team spawn point
 // [AM] Moved out of CTF gametype and cleaned up.
 static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
@@ -456,21 +467,11 @@ static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
 	switch (player.userinfo.team)
 	{
 	case TEAM_BLUE:
-		for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
-		{
-			size_t i = M_Random() % selections;
-			if (G_CheckSpot(player, &blueteamstarts[i]))
-				return &blueteamstarts[i];
-		}
-		return &blueteamstarts[0];		// could not find a free spot, use spot 0
+		return SelectTeamSpot(player, blueteamstarts, MaxBlueTeamStarts, selections);
 	case TEAM_RED:
-		for (size_t j = 0; j < MaxRedTeamStarts; ++j)
-		{
-			size_t i = M_Random() % selections;
-			if (G_CheckSpot(player, &redteamstarts[i]))
-				return &redteamstarts[i];
-		}
-		return &redteamstarts[0];		// could not find a free spot, use spot 0
+		return SelectTeamSpot(player, redteamstarts, MaxRedTeamStarts, selections);
+	case TEAM_GREEN:
+		return SelectTeamSpot(player, greenteamstarts, MaxGreenTeamStarts, selections);
 	default:
 		// This team doesn't have a dedicated spawn point.  Fallthrough
 		// to using a deathmatch spawn point.
@@ -489,9 +490,10 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 
 	if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
 		selections = blueteam_p - blueteamstarts;
-
-	if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
+	else if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
 		selections = redteam_p - redteamstarts;
+	else if (player.userinfo.team == TEAM_GREEN)
+		selections = greenteam_p - greenteamstarts;
 
 	// denis - fall back to deathmatch spawnpoints, if no team ones available
 	if (selections < 1)
