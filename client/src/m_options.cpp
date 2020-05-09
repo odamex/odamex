@@ -322,7 +322,6 @@ static menuitem_t ControlsItems[] = {
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -335,6 +334,20 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 6"} },
 	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
 	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Automap",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
+	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
+	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
+	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_setmark"} },
+	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_clearmarks"} },
+	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_big"} },
+	{ mapcontrol,	"Zoom In",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomin"} },
+	{ mapcontrol,	"Zoom Out",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomout"} },
+	{ mapcontrol,	"Pan Up",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panup"} },
+	{ mapcontrol,	"Pan Down",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_pandown"} },
+	{ mapcontrol,	"Pan Left",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
+	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
@@ -1297,6 +1310,8 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	{
 		if (item->type == control)
 			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+		if (item->type == mapcontrol)
+			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
@@ -1552,6 +1567,13 @@ void M_OptDrawer (void)
 			}
 			break;
 
+			case mapcontrol:
+			{
+				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+			}
+			break;
+
 			case bitflag:
 			{
 				value_t *value;
@@ -1640,7 +1662,10 @@ void M_OptResponder (event_t *ev)
 			if (ch != KEY_ESCAPE)
 #endif
 			{
-				Bindings.ChangeBinding (item->e.command, ch);
+				if (item->type == control)
+					Bindings.ChangeBinding (item->e.command, ch);
+				else if (item->type == mapcontrol)
+					AutomapBindings.ChangeBinding(item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -2111,6 +2136,11 @@ void M_OptResponder (event_t *ev)
 				Bindings.UnbindACommand (item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
+			else if (item->type == mapcontrol)
+			{
+				AutomapBindings.UnbindACommand(item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
 			break;
 
 		case KEY_JOY1:
@@ -2152,7 +2182,7 @@ void M_OptResponder (event_t *ev)
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
-			else if (item->type == control)
+			else if (item->type == control || item->type == mapcontrol)
 			{
 				configuring_controls = true;
 				WaitingForKey = true;

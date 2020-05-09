@@ -554,7 +554,7 @@ void C_BindingsInit(void)
 {
 	Bindings.SetBindingType("bind");
 	DoubleBindings.SetBindingType("doublebind");
-	AutomapBindings.SetBindingType("automapbind");
+	AutomapBindings.SetBindingType("ambind");
 }
 
 // Bind default bindings

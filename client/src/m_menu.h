@@ -95,6 +95,7 @@ typedef enum {
 	discrete,
 	cdiscrete,
 	control,
+	mapcontrol,		// Ch0wW : Automap bindings
 	screenres,
 	bitflag,
 	listelement,
