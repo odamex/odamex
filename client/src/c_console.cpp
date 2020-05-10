@@ -600,7 +600,7 @@ static ConsoleCommandLine CmdLine;
 
 static ConsoleHistory History;
 
-static ConsoleCompletions Completions;
+static ConsoleCompletions CmdCompletions;
 
 static void setmsgcolor(int index, const char *color);
 
@@ -776,6 +776,7 @@ void STACK_ARGS C_ShutdownConsole()
 	Lines.clear();
 	History.clear();
 	CmdLine.clear();
+	CmdCompletions.clear();
 }
 
 
@@ -1299,6 +1300,7 @@ void C_HideConsole()
 	ConsoleState = c_up;
 	ConBottom = 0;
 	CmdLine.clear();
+	CmdCompletions.clear();
 	History.resetPosition();
 }
 
@@ -1337,6 +1339,7 @@ void C_ToggleConsole()
 	}
 
 	CmdLine.clear();
+	CmdCompletions.clear();
 	History.resetPosition();
 }
 
@@ -1432,13 +1435,13 @@ void C_DrawConsole()
 	if (lines > 0)
 	{
 		// First draw any completions, if we have any.
-		if (!::Completions.empty())
+		if (!::CmdCompletions.empty())
 		{
 			// True if we have too many completions to render all of them.
 			bool cOverflow = false;
 
 			// We want at least 8-space tabs.
-			size_t cTabLen = (::Completions.getMaxLen() + 1);
+			size_t cTabLen = (::CmdCompletions.getMaxLen() + 1);
 			if (cTabLen < 8)
 				cTabLen = 8;
 
@@ -1446,8 +1449,8 @@ void C_DrawConsole()
 			size_t cColumns = ::ConCols / cTabLen;
 
 			// Given the number of columns, how many lines do we need?
-			size_t cLines = ::Completions.size() / cColumns;
-			if (::Completions.size() % cColumns != 0)
+			size_t cLines = ::CmdCompletions.size() / cColumns;
+			if (::CmdCompletions.size() % cColumns != 0)
 				cLines += 1;
 
 			// Currently we cap the number of completion lines to 5
@@ -1477,14 +1480,14 @@ void C_DrawConsole()
 				{
 					// Turn our current line/column into an index.
 					size_t index = (c * cLines) + l;
-					if (index >= ::Completions.size())
+					if (index >= ::CmdCompletions.size())
 					{
 						rowstring[col] = '\0';
 						break;
 					}
 
 					// Copy our completion into the row.
-					const std::string& str = ::Completions.at(index);
+					const std::string& str = ::CmdCompletions.at(index);
 					memcpy(&rowstring[col], str.c_str(), str.length());
 					col += cTabLen;
 
@@ -1501,7 +1504,7 @@ void C_DrawConsole()
 			if (cOverflow)
 			{
 				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %lu more...",
-				         ::Completions.size() - (cLines * cColumns));
+				         ::CmdCompletions.size() - (cLines * cColumns));
 				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring);
 			}
 		}
@@ -1645,6 +1648,7 @@ static bool C_HandleKey(const event_t* ev)
 		History.movePositionUp();
 		CmdLine.clear();
 		CmdLine.insertString(History.getString());
+		CmdCompletions.clear();
 		TabbedLast = false;
 		return true;
 	case KEY_DOWNARROW:
@@ -1652,11 +1656,13 @@ static bool C_HandleKey(const event_t* ev)
 		History.movePositionDown();
 		CmdLine.clear();
 		CmdLine.insertString(History.getString());
+		CmdCompletions.clear();
 		TabbedLast = false;
 		return true;
 	case KEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
+		CmdCompletions.clear();
 		TabbedLast = false;
 		return true;
 	case KEY_ENTER:
@@ -1672,6 +1678,7 @@ static bool C_HandleKey(const event_t* ev)
 		Printf(127, "]%s\n", CmdLine.text.c_str());
 		AddCommandString(CmdLine.text.c_str());
 		CmdLine.clear();
+		CmdCompletions.clear();
 
 		TabbedLast = false;
 		return true;
@@ -1765,6 +1772,7 @@ BEGIN_COMMAND(clear)
 	Lines.clear();
 	History.resetPosition();
 	CmdLine.clear();
+	CmdCompletions.clear();
 }
 END_COMMAND(clear)
 
@@ -1993,7 +2001,7 @@ void C_RemoveTabCommand(const char *name)
 static void TabComplete()
 {
 	// Clear the completions.
-	::Completions.clear();
+	::CmdCompletions.clear();
 
 	// Figure out what we need to autocomplete.
 	size_t tabStart = ::CmdLine.text.find_first_not_of(' ', 0);
@@ -2015,20 +2023,20 @@ static void TabComplete()
 	for (; it != TabCommands().end(); ++it)
 	{
 		if (strncmp(cTabPos, it->first.c_str(), sTabPos.length()) == 0)
-			::Completions.add(it->first.c_str());
+			::CmdCompletions.add(it->first.c_str());
 	}
 
-	if (::Completions.size() > 1)
+	if (::CmdCompletions.size() > 1)
 	{
 		// Get common substring of all completions.
-		std::string common = ::Completions.getCommon();
+		std::string common = ::CmdCompletions.getCommon();
 		::CmdLine.replaceString(common);
 	}
-	else if (::Completions.size() == 1)
+	else if (::CmdCompletions.size() == 1)
 	{
 		// We found a single completion, use it.
-		::CmdLine.replaceString(::Completions.at(0));
-		::Completions.clear();
+		::CmdLine.replaceString(::CmdCompletions.at(0));
+		::CmdCompletions.clear();
 	}
 }
 
