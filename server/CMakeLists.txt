@@ -58,23 +58,6 @@ if (USE_MINIUPNP)
   include_directories(${MINIUPNPC_DIR})
 endif()
 
-# zlib configuration
-find_package(ZLIB)
-if(NOT ZLIB_FOUND)
-  set(USE_INTREE_ZLIB)
-  set(ZLIB_LIBRARY "z")
-  set(ZLIB_LIBRARIES ${ZLIB_LIBRARY})
-  set(ZLIB_DIR ../libraries/zlib/)
-  set(ZLIB_INCLUDE_DIR ${ZLIB_DIR})
-  set(ZLIB_INCLUDE_DIRS ${ZLIB_DIR})
-  file(GLOB ZLIB_HEADERS ${ZLIB_DIR}/*.h)
-  file(GLOB ZLIB_SOURCES ${ZLIB_DIR}/*.c)
-  include_directories(${ZLIB_DIR})
-  add_library(${ZLIB_LIBRARY} STATIC ${ZLIB_SOURCES} ${ZLIB_HEADERS})
-  message(STATUS "zlib will be built and staticaly linked when compiling the client application.")
-endif()
-include_directories(${ZLIB_INCLUDE_DIRS})
-
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
