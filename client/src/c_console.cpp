@@ -58,7 +58,7 @@ static const int MAX_LINE_LENGTH = 8192;
 
 std::string DownloadStr;
 
-static void C_TabComplete();
+static void TabComplete();
 static bool TabbedLast;		// Last key pressed was tab
 
 static IWindowSurface* background_surface;
@@ -492,6 +492,40 @@ void ConsoleHistory::dump()
 		Printf(PRINT_HIGH, "   %s\n", it->c_str());
 }
 
+class ConsoleCompletions
+{
+	std::vector<std::string> _completions;
+	size_t _maxlen;
+
+  public:
+	void add(const std::string& completion)
+	{
+		_completions.push_back(completion);
+		if (_maxlen < completion.length())
+			_maxlen = completion.length();
+	}
+	const std::string& at(size_t index) const
+	{
+		return _completions.at(index);
+	}
+	void clear()
+	{
+		_completions.clear();
+		_maxlen = 0;
+	}
+	bool empty() const
+	{
+		return _completions.empty();
+	}
+	size_t getMaxLen() const
+	{
+		return _maxlen;
+	}
+	size_t size() const
+	{
+		return _completions.size();
+	}
+};
 
 // ============================================================================
 //
@@ -505,6 +539,8 @@ static ConsoleLineList Lines;
 static ConsoleCommandLine CmdLine;
 
 static ConsoleHistory History;
+
+static ConsoleCompletions Completions;
 
 static void setmsgcolor(int index, const char *color);
 
@@ -1335,6 +1371,81 @@ void C_DrawConsole()
 
 	if (lines > 0)
 	{
+		// First draw any completions, if we have any.
+		if (!::Completions.empty())
+		{
+			// True if we have too many completions to render all of them.
+			bool cOverflow = false;
+
+			// We want at least 8-space tabs.
+			size_t cTabLen = (::Completions.getMaxLen() + 1);
+			if (cTabLen < 8)
+				cTabLen = 8;
+
+			// How many columns can we fit on the screen at one time?
+			size_t cColumns = ::ConCols / cTabLen;
+
+			// Given the number of columns, how many lines do we need?
+			size_t cLines = ::Completions.size() / cColumns;
+			if (::Completions.size() % cColumns != 0)
+				cLines += 1;
+
+			// Currently we cap the number of completion lines to 5
+			if (cLines > 5)
+			{
+				cLines = 5;
+				cOverflow = true;
+			}
+
+			// Offset our standard console printing.
+			if (cOverflow)
+				lines -= cLines + 1;
+			else
+				lines -= cLines;
+
+			static char rowstring[MAX_LINE_LENGTH];
+
+			// Completions are rendered top to bottom in columns like a
+			// backwards "N".
+			for (size_t l = 0; l < cLines; l++)
+			{
+				// Prepare a row string to copy completions into.
+				memset(rowstring, ' ', ARRAY_LENGTH(rowstring));
+				unsigned int col = 0;
+
+				for (size_t c = 0; c < cColumns; c++)
+				{
+					// Turn our current line/column into an index.
+					size_t index = (c * cLines) + l;
+					if (index >= ::Completions.size())
+					{
+						rowstring[col] = '\0';
+						break;
+					}
+
+					// Copy our completion into the row.
+					const std::string& str = ::Completions.at(index);
+					memcpy(&rowstring[col], str.c_str(), str.length());
+					col += cTabLen;
+
+					if (c + 1 == cColumns)
+						rowstring[col - 1] = '\0';
+					else
+						rowstring[col - 1] = ' ';
+				}
+
+				screen->PrintStr(left, offset + (lines + l + 1) * 8, rowstring);
+			}
+
+			// Render an overflow message if necessary.
+			if (cOverflow)
+			{
+				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %u more...",
+				         ::Completions.size() - (cLines * cColumns));
+				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring);
+			}
+		}
+
 		// find the ConsoleLine that will be printed to bottom of the console
 		ConsoleLineList::reverse_iterator current_line_it = Lines.rbegin();
 		for (unsigned i = 0; i < RowAdjust && current_line_it != Lines.rend(); i++)
@@ -1403,7 +1514,7 @@ static bool C_HandleKey(const event_t* ev)
 	{
 	case KEY_TAB:
 		// Try to do tab-completion
-		C_TabComplete();
+		TabComplete();
 		return true;
 #ifdef _XBOX
 	case KEY_JOY7: // Left Trigger
@@ -1819,37 +1930,29 @@ void C_RemoveTabCommand(const char *name)
 			TabCommands().erase(it);
 }
 
-static void C_TabComplete()
+static void TabComplete()
 {
-	static size_t TabStart;			// First char in CmdLine to use for tab completion
-	static size_t TabSize;			// Size of tab string
+	// Clear the completions.
+	::Completions.clear();
 
-	if (!TabbedLast)
+	// Figure out what we need to autocomplete.
+	size_t tabStart = ::CmdLine.text.find_first_not_of(' ', 0);
+	if (tabStart == std::string::npos)
+		tabStart = 0;
+	size_t tabEnd = ::CmdLine.text.find(' ', 0);
+	if (tabEnd == std::string::npos)
+		tabEnd = ::CmdLine.text.length();
+	size_t tabLen = tabEnd - tabStart;
+
+	// Find all substrings.
+	std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
+	const char* cTabPos = sTabPos.c_str();
+	tabcommand_map_t::iterator it = TabCommands().lower_bound(sTabPos);
+	for (; it != TabCommands().end(); ++it)
 	{
-		// Skip any spaces at beginning of command line
-		TabStart = CmdLine.text.find_first_not_of(' ', 0);
-		if (TabStart == std::string::npos)
-			TabStart = 0;
-		TabSize = CmdLine.text.length() - TabStart;
-		TabbedLast = true;
+		if (strncmp(cTabPos, it->first.c_str(), sTabPos.length()) == 0)
+			::Completions.add(it->first.c_str());
 	}
-
-	// Find next near match
-	std::string TabPos = StdStringToLower(CmdLine.text.substr(TabStart));
-	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
-
-	// Does this near match fail to actually match what the user typed in?
-	if (i == TabCommands().end() || strnicmp(TabPos.c_str(), i->first.c_str(), TabSize) != 0)
-	{
-		TabbedLast = false;
-		CmdLine.moveCursorEnd();
-		return;
-	}
-
-	// Found a valid replacement
-	CmdLine.text.replace(TabStart, std::string::npos, i->first);
-	CmdLine.text.append(" ");
-	CmdLine.moveCursorEnd();
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")
