@@ -258,6 +258,7 @@ public:
 
 	void insertCharacter(char c);
 	void insertString(const std::string& str);
+	void replaceString(const std::string& str);
 	void deleteCharacter();
 	void backspace();
 
@@ -373,6 +374,14 @@ void ConsoleCommandLine::insertString(const std::string& str)
 	text.insert(cursor_position, str);
 
 	cursor_position += str.length();
+	doScrolling();
+}
+
+void ConsoleCommandLine::replaceString(const std::string& str)
+{
+	text = str;
+
+	cursor_position = str.length();
 	doScrolling();
 }
 
@@ -504,23 +513,74 @@ class ConsoleCompletions
 		if (_maxlen < completion.length())
 			_maxlen = completion.length();
 	}
+
 	const std::string& at(size_t index) const
 	{
 		return _completions.at(index);
 	}
+
 	void clear()
 	{
 		_completions.clear();
 		_maxlen = 0;
 	}
+
 	bool empty() const
 	{
 		return _completions.empty();
 	}
+
+	//
+	// Get longest common substring of completions.
+	//
+	std::string getCommon() const
+	{
+		bool diff = false;
+		std::string common;
+
+		for (size_t index = 0;; index++)
+		{
+			char compare = '\xFF';
+
+			std::vector<std::string>::const_iterator it = _completions.begin();
+			for (; it != _completions.end(); ++it)
+			{
+				if (index >= it->length())
+				{
+					// End of string, this is an implicit failed match.
+					diff = true;
+					break;
+				}
+
+				if (compare == '\xFF')
+				{
+					// Set character to compare against.
+					compare = it->at(index);
+				}
+				else if (compare != it->at(index))
+				{
+					// Found a different character.
+					diff = true;
+					break;
+				}
+			}
+
+			// If we found a different character, break, otherwise add it
+			// to the string we're going to return and try the next index.
+			if (diff == true)
+				break;
+			else
+				common += compare;
+		}
+
+		return common;
+	}
+
 	size_t getMaxLen() const
 	{
 		return _maxlen;
 	}
+
 	size_t size() const
 	{
 		return _completions.size();
@@ -1952,6 +2012,18 @@ static void TabComplete()
 	{
 		if (strncmp(cTabPos, it->first.c_str(), sTabPos.length()) == 0)
 			::Completions.add(it->first.c_str());
+	}
+
+	if (::Completions.size() > 1)
+	{
+		// Get common substring of all completions.
+		std::string common = ::Completions.getCommon();
+		::CmdLine.replaceString(common);
+	}
+	else if (::Completions.size() == 1)
+	{
+		// We found a single completion, use it.
+		::CmdLine.replaceString(::Completions.at(0));
 	}
 }
 
