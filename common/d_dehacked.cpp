@@ -1574,6 +1574,11 @@ donewithtext:
 	if (oldStr)
 		delete[] oldStr;
 
+	// Ensure that we've munched the entire line in the case of an incomplete
+	// substitution.
+	if (!(*read_ptr == '\0' || *read_ptr == '\n'))
+		igets();
+
 	// Fetch next identifier for main loop
 	while ((result = GetLine ()) == 1)
 		;
@@ -1788,4 +1793,3 @@ bool D_LoadDehLump(const ResourceId res_id)
 }
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
-

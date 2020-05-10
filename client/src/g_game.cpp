@@ -98,6 +98,7 @@ EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
+EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_allowdropoff)
 
@@ -1052,7 +1053,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	if (!sv_keepkeys)
+	if (!sv_keepkeys && !sv_sharekeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;

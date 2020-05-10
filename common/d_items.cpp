@@ -221,6 +221,19 @@ gitem_t	*FindItem (const char *pickup_name)
 	return NULL;
 }
 
+gitem_t* FindCardItem(card_t card)
+{
+	int		i;
+	gitem_t* it;
+
+	it = itemlist;
+	for (i = 0; i < num_items; i++, it++)
+		if (it->flags == IT_KEY && (card_t)it->offset == card)
+			return it;
+
+	return NULL;
+}
+
 
 // Item info
 // Used mainly by the give command. Hopefully will
@@ -547,8 +560,7 @@ gitem_t itemlist[] = {
 		0,
 		"Red Flag"
 	},
-
-	// end of list marker
+				// end of list marker
 	{
 	    "",
 	    NULL,

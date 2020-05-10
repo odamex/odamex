@@ -52,10 +52,8 @@
 #include "net_packet.h"
 
 // custom event declarations
-BEGIN_DECLARE_EVENT_TYPES()
-DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
-DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
-END_DECLARE_EVENT_TYPES()
+wxDECLARE_EVENT(wxEVT_THREAD_MONITOR_SIGNAL, wxCommandEvent);
+wxDECLARE_EVENT(wxEVT_THREAD_WORKER_SIGNAL, wxCommandEvent);
 
 class dlgMain : public wxFrame, wxThreadHelper
 {

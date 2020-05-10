@@ -40,6 +40,7 @@
 #include "gi.h"
 #include "v_text.h"
 #include "resources/res_texture.h"
+#include "st_stuff.h"
 
 #undef RANGECHECK
 
@@ -1422,19 +1423,22 @@ void R_DrawViewBorder()
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
 	int surface_width = surface->getWidth();
+	int surface_height = surface->getHeight();
+	int top = 0, bottom = ST_StatusBarY(surface_width, surface_height);
+	int left = 0, right = surface_width;
 
 	const gameborder_t* border = gameinfo.border;
 	const int offset = border->offset;
 	const int size = border->size;
 
 	// draw top border
-	R_DrawBorder(0, 0, surface_width, viewwindowy);
+	R_DrawBorder(left, top, right, viewwindowy);
 	// draw bottom border
-	R_DrawBorder(0, viewwindowy + viewheight, surface_width, ST_Y);
+	R_DrawBorder(left, viewwindowy + viewheight, right, bottom);
 	// draw left border
-	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + viewheight);
+	R_DrawBorder(left, viewwindowy, viewwindowx, viewwindowy + viewheight);
 	// draw right border
-	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
+	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, right, viewwindowy + viewheight);
 
 	const Texture* t_texture = Res_CacheTexture(border->t, PATCH);
 	const Texture* b_texture = Res_CacheTexture(border->b, PATCH);
@@ -1465,9 +1469,8 @@ void R_DrawViewBorder()
 	canvas->DrawTexture(bl_texture, viewwindowx - offset, viewwindowy + viewheight);
 	canvas->DrawTexture(br_texture, viewwindowx + viewwidth, viewwindowy + viewheight);
 
-	V_MarkRect(0, 0, surface_width, ST_Y);
+	V_MarkRect(left, top, right, bottom);
 }
-
 
 
 enum r_optimize_kind {
