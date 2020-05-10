@@ -2004,6 +2004,10 @@ static void TabComplete()
 		tabEnd = ::CmdLine.text.length();
 	size_t tabLen = tabEnd - tabStart;
 
+	// Don't complete if the cursor is past the command.
+	if (::CmdLine.cursor_position >= tabEnd + 1)
+		return;
+
 	// Find all substrings.
 	std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
 	const char* cTabPos = sTabPos.c_str();
