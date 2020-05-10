@@ -2024,6 +2024,7 @@ static void TabComplete()
 	{
 		// We found a single completion, use it.
 		::CmdLine.replaceString(::Completions.at(0));
+		::Completions.clear();
 	}
 }
 
