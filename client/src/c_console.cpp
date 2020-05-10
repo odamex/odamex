@@ -1440,7 +1440,7 @@ void C_DrawConsole()
 			// Render an overflow message if necessary.
 			if (cOverflow)
 			{
-				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %u more...",
+				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %lu more...",
 				         ::Completions.size() - (cLines * cColumns));
 				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring);
 			}
