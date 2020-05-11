@@ -590,24 +590,26 @@ std::string PlayersSplit() {
 }
 
 // Returns the number of players on a team
-int CountTeamPlayers(byte team) {
+int CountTeamPlayers(byte team)
+{
 	int count = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
-		player_t* player = sortedPlayers()[i];
-		if (inTeamPlayer(player, team)) {
+	std::vector<player_t*> sortPlayers = sortedPlayers();
+	for (size_t i = 0; i < sortPlayers.size(); i++)
+	{
+		if (inTeamPlayer(sortPlayers[i], team))
 			count++;
-		}
 	}
 	return count;
 }
 
 // Returns the number of spectators on a team
-byte CountSpectators() {
-	byte count = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++)
+int CountSpectators()
+{
+	int count = 0;
+	std::vector<player_t*> sortPlayers = sortedPlayers();
+	for (size_t i = 0; i < sortPlayers.size(); i++)
 	{
-		player_t* player = sortedPlayers()[i];
-		if (spectatingPlayer(player))
+		if (spectatingPlayer(sortPlayers[i]))
 			count++;
 	}
 	return count;

@@ -39,7 +39,7 @@ std::string NetdemoMaps(void);
 std::string ClientsSplit(void);
 std::string PlayersSplit(void);
 int CountTeamPlayers(byte team);
-byte CountSpectators(void);
+int CountSpectators(void);
 std::string TeamPlayers(int& color, byte team);
 const char* TeamName(int& color, byte team);
 std::string TeamFrags(int& color, byte team);
