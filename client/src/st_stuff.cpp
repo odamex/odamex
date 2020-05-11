@@ -837,7 +837,7 @@ END_COMMAND (chase)
 
 BEGIN_COMMAND (idmus)
 {
-	level_info_t *info;
+	LevelInfos& levels = getLevelInfos();
 	char *map;
 	int l;
 
@@ -859,15 +859,19 @@ BEGIN_COMMAND (idmus)
 			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
 		}
 
-		if ( (info = FindLevelInfo (map)) )
+		level_pwad_info_t& info = levels.findByName(map);
+		if (level.levelnum != 0)
 		{
-			if (info->music[0])
+			if (info.music[0])
 			{
-				S_ChangeMusic (std::string(info->music, 8), 1);
+				S_ChangeMusic(std::string(info.music, 8), 1);
 				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
-		} else
-			Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+		}
 	}
 }
 END_COMMAND (idmus)

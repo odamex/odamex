@@ -636,7 +636,7 @@ public:
 	}
 }rst;
 
-void ReplaceString (const char **ptr, const char *str)
+void ReplaceString (char** ptr, const char *str)
 {
 	if (*ptr)
 	{
