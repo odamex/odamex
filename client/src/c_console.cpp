@@ -58,8 +58,9 @@ static const int MAX_LINE_LENGTH = 8192;
 
 std::string DownloadStr;
 
-static void TabComplete();
-static bool TabbedLast;		// Last key pressed was tab
+static bool ShouldTabCycle = false;
+static size_t NextCycleIndex = 0;
+static size_t PrevCycleIndex = 0;
 
 static IWindowSurface* background_surface;
 
@@ -602,8 +603,149 @@ static ConsoleHistory History;
 
 static ConsoleCompletions CmdCompletions;
 
-static void setmsgcolor(int index, const char *color);
+/****** Tab completion code ******/
 
+typedef std::map<std::string, size_t> tabcommand_map_t; // name, use count
+tabcommand_map_t& TabCommands()
+{
+	static tabcommand_map_t _TabCommands;
+	return _TabCommands;
+}
+
+void C_AddTabCommand(const char* name)
+{
+	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
+
+	if (it != TabCommands().end())
+		TabCommands()[name]++;
+	else
+		TabCommands()[name] = 1;
+}
+
+void C_RemoveTabCommand(const char* name)
+{
+	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
+
+	if (it != TabCommands().end())
+		if (!--it->second)
+			TabCommands().erase(it);
+}
+
+//
+// Start tab cycling.
+//
+// Note that this initial state points to the front and back of the completions
+// index, which is a unique state that is not possible to get into after you
+// start hitting tab.
+//
+static void TabCycleStart()
+{
+	::ShouldTabCycle = true;
+	::NextCycleIndex = 0;
+	::PrevCycleIndex = CmdCompletions.size() - 1;
+}
+
+//
+// Given an specific completion index, determine the next and previous index.
+//
+static void TabCycleSet(size_t index)
+{
+	// Find the next index.
+	if (index >= CmdCompletions.size() - 1)
+		::NextCycleIndex = 0;
+	else
+		::NextCycleIndex = index + 1;
+
+	// Find the previous index.
+	if (index == 0)
+		::PrevCycleIndex = CmdCompletions.size() - 1;
+	else
+		::PrevCycleIndex = index - 1;
+}
+
+//
+// Get out of the tab cycle state.
+//
+static void TabCycleClear()
+{
+	::ShouldTabCycle = false;
+	::NextCycleIndex = 0;
+	::PrevCycleIndex = 0;
+}
+
+enum TabCompleteDirection
+{
+	TAB_COMPLETE_FORWARD,
+	TAB_COMPLETE_BACKWARD
+};
+
+//
+// Handle tab-completion and cycling.
+//
+static void TabComplete(TabCompleteDirection dir)
+{
+	// Pressing tab twice in a row starts cycling the completion.
+	if (::ShouldTabCycle && ::CmdCompletions.size() > 0)
+	{
+		if (dir == TAB_COMPLETE_FORWARD)
+		{
+			size_t index = ::NextCycleIndex;
+			::CmdLine.replaceString(::CmdCompletions.at(index));
+			TabCycleSet(index);
+		}
+		else if (dir == TAB_COMPLETE_BACKWARD)
+		{
+			size_t index = ::PrevCycleIndex;
+			::CmdLine.replaceString(::CmdCompletions.at(index));
+			TabCycleSet(index);
+		}
+		return;
+	}
+
+	// Clear the completions.
+	::CmdCompletions.clear();
+
+	// Figure out what we need to autocomplete.
+	size_t tabStart = ::CmdLine.text.find_first_not_of(' ', 0);
+	if (tabStart == std::string::npos)
+		tabStart = 0;
+	size_t tabEnd = ::CmdLine.text.find(' ', 0);
+	if (tabEnd == std::string::npos)
+		tabEnd = ::CmdLine.text.length();
+	size_t tabLen = tabEnd - tabStart;
+
+	// Don't complete if the cursor is past the command.
+	if (::CmdLine.cursor_position >= tabEnd + 1)
+		return;
+
+	// Find all substrings.
+	std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
+	const char* cTabPos = sTabPos.c_str();
+	tabcommand_map_t::iterator it = TabCommands().lower_bound(sTabPos);
+	for (; it != TabCommands().end(); ++it)
+	{
+		if (strncmp(cTabPos, it->first.c_str(), sTabPos.length()) == 0)
+			::CmdCompletions.add(it->first.c_str());
+	}
+
+	if (::CmdCompletions.size() > 1)
+	{
+		// Get common substring of all completions.
+		std::string common = ::CmdCompletions.getCommon();
+		::CmdLine.replaceString(common);
+	}
+	else if (::CmdCompletions.size() == 1)
+	{
+		// We found a single completion, use it.
+		::CmdLine.replaceString(::CmdCompletions.at(0));
+		::CmdCompletions.clear();
+	}
+
+	// If we press tab twice, cycle the command.
+	TabCycleStart();
+}
+
+static void setmsgcolor(int index, const char *color);
 
 cvar_t msglevel("msg", "0", "", CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE);
 
@@ -645,7 +787,6 @@ CVAR_FUNC_IMPL(msgmidcolor)
 // con_scrlock 1 = Only input commands bring scroll to the bottom.
 // con_scrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR(con_scrlock)
-
 
 //
 // C_InitConCharsFont
@@ -1284,7 +1425,7 @@ void C_FullConsole()
 
 	ConsoleState = c_down;
 
-	TabbedLast = false;
+	TabCycleClear();
 
 	C_AdjustBottom();
 }
@@ -1326,7 +1467,7 @@ void C_ToggleConsole()
 		else
 			ConsoleState = c_falling;
 
-		TabbedLast = false;
+		TabCycleClear();
 	}
 	else
 	{
@@ -1577,7 +1718,10 @@ static bool C_HandleKey(const event_t* ev)
 	{
 	case KEY_TAB:
 		// Try to do tab-completion
-		TabComplete();
+		if (::KeysShifted)
+			TabComplete(TAB_COMPLETE_BACKWARD);
+		else
+			TabComplete(TAB_COMPLETE_FORWARD);
 		return true;
 #ifdef _XBOX
 	case KEY_JOY7: // Left Trigger
@@ -1624,11 +1768,11 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	case KEY_BACKSPACE:
 		CmdLine.backspace();
-		TabbedLast = false;
+		TabCycleClear();
 		return true;
 	case KEY_DEL:
 		CmdLine.deleteCharacter();
-		TabbedLast = false;
+		TabCycleClear();
 		return true;
 	case KEY_LALT:
 	case KEY_RALT:
@@ -1649,7 +1793,7 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.clear();
 		CmdLine.insertString(History.getString());
 		CmdCompletions.clear();
-		TabbedLast = false;
+		TabCycleClear();
 		return true;
 	case KEY_DOWNARROW:
 		// Move to next entry in the command history
@@ -1657,13 +1801,13 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.clear();
 		CmdLine.insertString(History.getString());
 		CmdCompletions.clear();
-		TabbedLast = false;
+		TabCycleClear();
 		return true;
 	case KEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
 		CmdCompletions.clear();
-		TabbedLast = false;
+		TabCycleClear();
 		return true;
 	case KEY_ENTER:
 	case KEYP_ENTER:
@@ -1680,7 +1824,7 @@ static bool C_HandleKey(const event_t* ev)
 		CmdLine.clear();
 		CmdCompletions.clear();
 
-		TabbedLast = false;
+		TabCycleClear();
 		return true;
 	}
 
@@ -1705,7 +1849,7 @@ static bool C_HandleKey(const event_t* ev)
  		if (tolower(ev->data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
-			TabbedLast = false;
+			TabCycleClear();
 		}
 		return true;
 	}
@@ -1714,7 +1858,7 @@ static bool C_HandleKey(const event_t* ev)
 	{	
 		// Add keypress to command line
 		CmdLine.insertCharacter(keytext);
-		TabbedLast = false;
+		TabCycleClear();
 	}
 	return true;
 }
@@ -1968,76 +2112,6 @@ void C_RevealSecret()
 
 	C_MidPrint("A secret is revealed!");
 	S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
-}
-
-/****** Tab completion code ******/
-
-typedef std::map<std::string, size_t> tabcommand_map_t; // name, use count
-tabcommand_map_t &TabCommands()
-{
-	static tabcommand_map_t _TabCommands;
-	return _TabCommands;
-}
-
-void C_AddTabCommand(const char *name)
-{
-	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
-
-	if (it != TabCommands().end())
-		TabCommands()[name]++;
-	else
-		TabCommands()[name] = 1;
-}
-
-void C_RemoveTabCommand(const char *name)
-{
-	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
-
-	if (it != TabCommands().end())
-		if(!--it->second)
-			TabCommands().erase(it);
-}
-
-static void TabComplete()
-{
-	// Clear the completions.
-	::CmdCompletions.clear();
-
-	// Figure out what we need to autocomplete.
-	size_t tabStart = ::CmdLine.text.find_first_not_of(' ', 0);
-	if (tabStart == std::string::npos)
-		tabStart = 0;
-	size_t tabEnd = ::CmdLine.text.find(' ', 0);
-	if (tabEnd == std::string::npos)
-		tabEnd = ::CmdLine.text.length();
-	size_t tabLen = tabEnd - tabStart;
-
-	// Don't complete if the cursor is past the command.
-	if (::CmdLine.cursor_position >= tabEnd + 1)
-		return;
-
-	// Find all substrings.
-	std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
-	const char* cTabPos = sTabPos.c_str();
-	tabcommand_map_t::iterator it = TabCommands().lower_bound(sTabPos);
-	for (; it != TabCommands().end(); ++it)
-	{
-		if (strncmp(cTabPos, it->first.c_str(), sTabPos.length()) == 0)
-			::CmdCompletions.add(it->first.c_str());
-	}
-
-	if (::CmdCompletions.size() > 1)
-	{
-		// Get common substring of all completions.
-		std::string common = ::CmdCompletions.getCommon();
-		::CmdLine.replaceString(common);
-	}
-	else if (::CmdCompletions.size() == 1)
-	{
-		// We found a single completion, use it.
-		::CmdLine.replaceString(::CmdCompletions.at(0));
-		::CmdCompletions.clear();
-	}
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")
