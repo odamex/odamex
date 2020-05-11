@@ -1867,10 +1867,29 @@ void G_InitLevelLocals()
 	// Only copy the level name if there's a valid level name to be copied.
 	if (info.level_name != NULL)
 	{
-		strncpy(
-			::level.level_name, info.level_name,
-			ARRAY_LENGTH(::level.level_name) - 1
-		);
+		// Get rid of initial lump name or level number.
+		char* begin = NULL;
+		if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
+		{
+			std::string search;
+			StrFormat(search, "E%cM%c: ", info.mapname[1], info.mapname[3]);
+			begin = strstr(info.level_name, search.c_str());
+			if (begin != NULL)
+				begin += search.length();
+			else
+				begin = info.level_name;
+		}
+		else if (strstr(info.mapname, "MAP") == &info.mapname[0])
+		{
+			std::string search;
+			StrFormat(search, "%u: ", info.levelnum);
+			begin = strstr(info.level_name, search.c_str());
+			if (begin != NULL)
+				begin += search.length();
+			else
+				begin = info.level_name;
+		}
+		strncpy(::level.level_name, begin, ARRAY_LENGTH(::level.level_name) - 1);
 	}
 	else
 	{
