@@ -128,9 +128,9 @@ size_t P_NumPlayersInGame();
 static void ShoveChatStr(std::string str, byte who);
 
 static std::string input_text;
-
-
 static chatmode_t chatmode;
+
+static const int DefaultTeamHeight = 56;
 
 chatmode_t HU_ChatMode()
 {
@@ -183,6 +183,8 @@ cvar_t *chat_macros[10] =
 	&chatmacro8,
 	&chatmacro9
 };
+
+static const int HiResolutionWidth = 480;
 
 //
 // HU_Init
@@ -634,6 +636,25 @@ EXTERN_CVAR(sv_hostname)
 
 namespace hud {
 
+static int GetLongestTeamWidth()
+{
+	int longest = 0;
+	const char* longestTeamName = "";
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		const char* teamName = GetTeamName((team_t)i);
+		int length = strlen(teamName);
+		if (length > longest)
+		{
+			longest = length;
+			longestTeamName = teamName;
+		}
+	}
+
+	std::string teamString = std::string(longestTeamName) + ": ";
+	return V_StringWidth(teamString.c_str());
+}
+
 // [AM] Draw scoreboard header
 void drawHeader(player_t *player, int y)
 {
@@ -669,6 +690,8 @@ void drawHeader(player_t *player, int y)
 	int yOffset = 0;
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) 
 	{
+		int xOffset = GetLongestTeamWidth();
+		
 		for (int i = 0; i < sv_teamsinplay; i++)
 		{
 			std::string displayName = TeamName(color, i);
@@ -678,7 +701,7 @@ void drawHeader(player_t *player, int y)
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
 				displayName.c_str(), CR_GREY, true);
-			hud::DrawText(-236 + V_StringWidth(displayName.c_str()), y + yOffset, hud_scalescoreboard,
+			hud::DrawText(-236 + xOffset, y + yOffset, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
 				TeamPlayers(color, i).c_str(), CR_GREEN, true);
@@ -694,6 +717,7 @@ void drawHeader(player_t *player, int y)
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
 		              hud::PlayersSplit().c_str(), CR_GREEN, true);
+		yOffset += 16;
 	}
 
 	// Right
@@ -866,17 +890,34 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 }
 
 // [AM] Draw scores for team gametypes.
-void drawTeamScores(player_t *player, int y, byte extra_rows) {
+void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 	int color;
 	std::ostringstream buffer;
 	std::string str;
 	static short tx[2] = {-236, 4};
 
-	for (int i = 0; i < sv_teamsinplay; i++)
+	int teams = sv_teamsinplay.asInt();
+
+	for (int i = 0; i < teams + 1; i++)
 	{
 		int xOffset = tx[i % 2];
-		int yOffset = i / 2;
-		y += yOffset * (4 * 16);
+		int row = i / 2; // Set of two teams per row
+		int yOffset = (row * DefaultTeamHeight) + (row * extra_rows * 8);
+
+		// Add spacing between team rows
+		if (row > 0)
+			yOffset += 8;
+
+		// Adjust y with next row yOffset so spectators draw correctly
+		if (i == teams)
+		{
+			if (i % 2 != 0)
+				row++;
+			y += (row * DefaultTeamHeight) + (row * extra_rows * 8);
+			// Account for extra spacing between rows after the first
+			y += (row - 1) * 8;
+			break;
+		}
 
 		// Column headers
 		hud::DrawText(xOffset + 9, yOffset + y, hud_scalescoreboard,
@@ -885,18 +926,18 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 			"Name", CR_GREY, true);
 		if (sv_gametype == GM_CTF)
 		{
-			hud::DrawText(xOffset + 168, y, hud_scalescoreboard,
+			hud::DrawText(xOffset + 168, yOffset + y, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				"PTS", CR_GREY, true);
-			hud::DrawText(xOffset + 200, y, hud_scalescoreboard,
+			hud::DrawText(xOffset + 200, yOffset + y, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				"FRG", CR_GREY, true);
 		}
 		else
 		{
-			hud::DrawText(xOffset + 164, y, hud_scalescoreboard,
+			hud::DrawText(xOffset + 164, yOffset + y, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				"FRG", CR_GREY, true);
@@ -905,7 +946,7 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 				hud::X_RIGHT, hud::Y_TOP,
 				"K/D", CR_GREY, true);
 		}
-		hud::DrawText(xOffset + 232, y, hud_scalescoreboard,
+		hud::DrawText(xOffset + 232, yOffset + y, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
 			hud::X_RIGHT, hud::Y_TOP,
 			"PNG", CR_GREY, true);
@@ -914,11 +955,11 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 
 		for (short xi = tx[i]; xi < tx[i] + 232; xi += 2)
 		{
-			hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
+			hud::DrawTranslatedPatch(xi, yOffset + y + 8, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
 				sbline, Ranges + color * 256, true);
-			hud::DrawTranslatedPatch(xi, y + 19, hud_scalescoreboard,
+			hud::DrawTranslatedPatch(xi, yOffset + y + 19, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
 				sbline, Ranges + color * 256, true);
@@ -926,73 +967,73 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 
 		// Team Info
 		str = hud::TeamName(color, i);
-		hud::DrawText(xOffset + 9, y + 11, hud_scalescoreboard,
+		hud::DrawText(xOffset + 9, yOffset + y + 11, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
 			hud::X_LEFT, hud::Y_TOP,
 			str.c_str(), color, true);
 		if (sv_gametype == GM_CTF)
 		{
-			hud::DrawText(xOffset + 168, y + 11, hud_scalescoreboard,
+			hud::DrawText(xOffset + 168, yOffset + y + 11, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				hud::TeamPoints(color, i).c_str(), color, true);
 			str = hud::TeamFrags(color, i);
-			hud::DrawText(xOffset + 200, y + 11, hud_scalescoreboard,
+			hud::DrawText(xOffset + 200, yOffset+ y + 11, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				str.c_str(), color, true);
 		}
 		else
 		{
-			hud::DrawText(xOffset + 164, y + 11, hud_scalescoreboard,
+			hud::DrawText(xOffset + 164, yOffset + y + 11, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				hud::TeamPoints(color, i).c_str(), color, true);
 			str = hud::TeamKD(color, i);
-			hud::DrawText(xOffset + 200, y + 11, hud_scalescoreboard,
+			hud::DrawText(xOffset + 200, yOffset + y + 11, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				str.c_str(), color, true);
 		}
 		str = hud::TeamPing(color, i);
-		hud::DrawText(xOffset + 232, y + 11, hud_scalescoreboard,
+		hud::DrawText(xOffset + 232, yOffset + y + 11, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
 			hud::X_RIGHT, hud::Y_TOP,
 			str.c_str(), color, true);
 
 		// Ingame Players
 		byte limit = extra_rows + 4;
-		hud::EATeamPlayerColors(xOffset, y + 22, 7, 7, hud_scalescoreboard,
+		hud::EATeamPlayerColors(xOffset, yOffset + y + 22, 7, 7, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
 			hud::X_LEFT, hud::Y_TOP,
 			1, limit, i);
-		hud::EATeamPlayerNames(xOffset + 9, y + 22, hud_scalescoreboard,
+		hud::EATeamPlayerNames(xOffset + 9, yOffset + y + 22, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
 			hud::X_LEFT, hud::Y_TOP,
 			1, limit, i, true);
 		if (sv_gametype == GM_CTF)
 		{
-			hud::EATeamPlayerPoints(xOffset + 168, y + 22, hud_scalescoreboard,
+			hud::EATeamPlayerPoints(xOffset + 168, yOffset + y + 22, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				1, limit, i, true);
-			hud::EATeamPlayerFrags(xOffset + 200, y + 22, hud_scalescoreboard,
+			hud::EATeamPlayerFrags(xOffset + 200, yOffset + y + 22, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				1, limit, i, true);
 		}
 		else
 		{
-			hud::EATeamPlayerFrags(xOffset + 164, y + 22, hud_scalescoreboard,
+			hud::EATeamPlayerFrags(xOffset + 164, yOffset + y + 22, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				1, limit, i, true);
-			hud::EATeamPlayerKD(xOffset + 200, y + 22, hud_scalescoreboard,
+			hud::EATeamPlayerKD(xOffset + 200, yOffset + y + 22, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_RIGHT, hud::Y_TOP,
 				1, limit, i, true);
 		}
-		hud::EATeamPlayerPings(xOffset + 232, y + 22, hud_scalescoreboard,
+		hud::EATeamPlayerPings(xOffset + 232, yOffset + y + 22, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
 			hud::X_RIGHT, hud::Y_TOP,
 			1, limit, i, true);
@@ -1033,15 +1074,16 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 
 static int GetExtraPlayerTeamRowsQuad()
 {
+	int max = 0;
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
 		int count = hud::CountTeamPlayers(i);
-		if (count > 4)
-		{
-			return count - 4;
-			break;
-		}
+		if (count > max)
+			max = count;
 	}
+
+	if (max > 4)
+		return max - 4;
 
 	return 0;
 }
@@ -1053,13 +1095,28 @@ static int GetExtraPlayerTeamRowsList()
 	{
 		int count = hud::CountTeamPlayers(i);
 		if (count > 4)
-		{
 			extra += count - 4;
-			break;
-		}
 	}
 
 	return extra;
+}
+
+static void ClampToScreenTopLeft(int& y, int& height)
+{
+	int maxHeight = hud::YSize(hud_scalescoreboard);
+	if (height > maxHeight)
+	{
+		y = -(maxHeight / 2);
+		height = maxHeight;
+	}
+	if (abs(y) > maxHeight / 2)
+	{
+		if (y < 0)
+			y = -maxHeight / 2;
+		else
+			y = maxHeight / 2;
+		y = hud::YSize(hud_scalescoreboard);
+	}
 }
 
 // [AM] Draw the scoreboard
@@ -1067,19 +1124,20 @@ void Scoreboard(player_t *player)
 {
 	// Calculate height
 	int height, y;
-	byte extra_spec_rows = 0;
-	byte extra_player_rows = 0;
+	int extra_spec_rows = 0;
+	int extra_player_rows = 0;
 
 	// Reset playerID to self if ever happening to spy.
 	if (gamestate == GS_INTERMISSION)
 		displayplayer_id = consoleplayer_id;
 
+	int extraQuadRows = 0;
+
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		height = 99;
+		height = 100;
 
-		// Team scoreboard was designed for 4 players on a team.  If
-		// there are more, increase the height.
+		// Team scoreboard was designed for 4 players on a team. If there are more, increase the height.
 		extra_player_rows += GetExtraPlayerTeamRowsQuad();
 
 		if (sv_teamsinplay > 2)
@@ -1087,77 +1145,61 @@ void Scoreboard(player_t *player)
 			int teams = sv_teamsinplay.asInt();
 			if (teams % 2 != 0)
 				teams++;
-			height += (teams - 2) / 2 * 80;
-			height += (sv_teamsinplay - 2) * 8;
+			extraQuadRows = teams - 2;
+			height += extraQuadRows / 2 * DefaultTeamHeight;
+			height += (sv_teamsinplay - 2) * 16;
 		}
 	} 
 	else
 	{
-		height = 88;
+		height = 92;
 
-		// Normal scoreboard was designed for 4 players.  If there are
-		// more, increase the height.
-		byte players = P_NumPlayersInGame();
-		if (players > 4) {
-			extra_player_rows += players - 4;
-		}
+		// Normal scoreboard was designed for 4 players. If there are more, increase the height.
+		int inGamePlayers = P_NumPlayersInGame();
+		if (inGamePlayers > 4)
+			extra_player_rows += inGamePlayers - 4;
 	}
 
 	// If there are more than 3 spectators, increase the height.
-	byte specs = hud::CountSpectators();
-	if (specs > 3) {
+	int specs = hud::CountSpectators();
+	if (specs > 3)
 		extra_spec_rows += ((specs + 2) / 3) - 1;
-	}
 
-	height += (extra_player_rows + extra_spec_rows) * 8;
+	if (extraQuadRows > 0)
+		height += extra_player_rows * 8 * extraQuadRows;
+	else
+		height += extra_player_rows * 8;
 
-	// 368 is our max height.
-	while (height > 368) {
-		// We have too many rows.  Start removing extra spectator rows
-		// to make the scoreboard fit.
-		if (extra_spec_rows == 0) {
-			break;
-		}
-		extra_spec_rows -= 1;
-		height -= 8;
-	}
-
-	while (height > 368) {
-		// We still have too many rows.  Start removing extra player
-		// rows to make the scoreboard fit.
-		if (extra_player_rows == 0) {
-			break;
-		}
-		extra_player_rows -= 1;
-		height -= 8;
-	}
+	height += extra_spec_rows * 8;
 
 	// Starting Y position, measured from the center up.
 	y = -(height / 2);
-	if (y > -96) {
+	if (y > -96)
+	{
 		// Scoreboard starts slightly off-center, then grows to be centered.
 		// -96 makes it even with where the default lowres TDM begins.
 		// For the record, the lowres DM scoreboard begins at -54.
 		y = -96;
 	}
 
-	// Dim the background
-	hud::Dim(0, y, 480, height, hud_scalescoreboard,
-	         hud::X_CENTER, hud::Y_MIDDLE,
-	         hud::X_CENTER, hud::Y_TOP);
+	ClampToScreenTopLeft(y, height);
+	hud::Dim(0, y, HiResolutionWidth, height, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP);
 
-	hud::drawHeader(player, y+4);
+	hud::drawHeader(player, y + 4);
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		hud::drawTeamScores(player, y + 31 + (sv_teamsinplay - 2) * 8, extra_player_rows);
+		// Teams after 2 require extra player count in header
+		y += 31 + (sv_teamsinplay - 2) * 8;
+		hud::drawTeamScores(player, y, extra_player_rows);
 	} 
 	else
 	{
-		hud::drawScores(player, y + 31, extra_player_rows);
+		y += 31;
+		hud::drawScores(player, y, extra_player_rows);
+		y += extra_player_rows * 8 + 48;
 	}
 
-	hud::drawSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
-	                    extra_spec_rows);
+	hud::drawSpectators(player, y, extra_spec_rows);
 }
 
 // [AM] Draw the low-resolution scoreboard header.
@@ -1274,7 +1316,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 }
 
 // [AM] Draw low-resolution team gametype scores.
-void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
+void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 	int color;
 	std::string str;
 
@@ -1417,8 +1459,10 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		                       1, limit, i, true);
 
 		int count = MAX(hud::CountTeamPlayers(i), 4);
-		yOffset += 22 + count * 8;
+		yOffset += 14 + count * 8;
 	}
+
+	y += yOffset;
 }
 
 // [AM] Draw low-resolution spectators.
@@ -1471,22 +1515,20 @@ void LowScoreboard(player_t *player)
 	{
 		height = 72;
 
-		// Normal scoreboard was designed for 4 players.  If there are
-		// more, increase the height.
-		byte players = P_NumPlayersInGame();
+		// Normal scoreboard was designed for 4 players.  If there are more, increase the height.
+		int players = P_NumPlayersInGame();
 		if (players > 4)
 			extra_player_rows += players - 4;
 	}
 
 	// If there are more than 2 spectators, increase the height.
-	byte specs = hud::CountSpectators();
-	if (specs > 2) {
+	int specs = hud::CountSpectators();
+	if (specs > 2)
 		extra_spec_rows += ((specs + 1) / 2) - 1;
-	}
 
 	height += (extra_player_rows + extra_spec_rows) * 8;
 	if (sv_teamsinplay > 2)
-		height += (sv_teamsinplay - 2) * 72;
+		height += (sv_teamsinplay.asInt() / 2) * 46;
 
 	// Starting Y position, measured from the center up.
 	y = -(height / 2);
@@ -1496,44 +1538,33 @@ void LowScoreboard(player_t *player)
 	if (y > -64)
 		y = -64;
 
-	int maxHeight = hud::YSize(hud_scalescoreboard);
-	int dimHeight = height;
-	// hud::Dim breaks if drawing off screen, fix to take up max
-	if (height > maxHeight)
-	{
-		y = -(maxHeight / 2);
-		y = hud::YSize(hud_scalescoreboard);
-		dimHeight = maxHeight;
-	}
+	ClampToScreenTopLeft(y, height);
 
 	// Dim the background.
-	hud::Dim(0, y, 300, dimHeight, hud_scalescoreboard,
-		hud::X_CENTER, hud::Y_MIDDLE,
-		hud::X_CENTER, hud::Y_TOP);
+	hud::Dim(0, y, 300, height, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP);
 
 	hud::drawLowHeader(player, y + 4);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		hud::drawLowTeamScores(player, y + 15,
-			extra_player_rows);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		y += 15;
+		hud::drawLowTeamScores(player, y, extra_player_rows);
 	}
-	else {
-		hud::drawLowScores(player, y + 15,
-			extra_player_rows);
+	else
+	{
+		hud::drawLowScores(player, y + 15, extra_player_rows);
 	}
-	hud::drawLowSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
-		extra_spec_rows);
+
+	hud::drawLowSpectators(player, y, extra_spec_rows);
 }
 
 }
 
-void HU_DrawScores(player_t *player) {
-	// We need at least 480 scaled horizontal units for our "high resolution"
-	// scoreboard to fit.
-	if (hud::XSize(hud_scalescoreboard) >= 480) {
-		hud::Scoreboard(player);
-	} else {
+void HU_DrawScores(player_t *player)
+{
+	if (hud::XSize(hud_scalescoreboard) >= HiResolutionWidth)
+		hud::Scoreboard(player); 
+	else 
 		hud::LowScoreboard(player);
-	}
 }
 
 //
@@ -1652,9 +1683,8 @@ void HU_ConsoleScores(player_t *player)
 
 		Printf_Bold("%18s\n", str);
 
-		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
-			// TODO
 			if (team_num == TEAM_BLUE)
 				Printf_Bold("\n-----------------------------BLUE TEAM\n");
 			else if (team_num == TEAM_RED)
@@ -1710,7 +1740,7 @@ void HU_ConsoleScores(player_t *player)
 
 		Printf_Bold("%18s\n", str);
 
-		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
 				Printf_Bold("\n-----------------------------BLUE TEAM\n");
