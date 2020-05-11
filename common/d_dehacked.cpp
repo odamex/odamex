@@ -1588,6 +1588,11 @@ donewithtext:
 	if (oldStr)
 		delete[] oldStr;
 
+	// Ensure that we've munched the entire line in the case of an incomplete
+	// substitution.
+	if (!(*PatchPt == '\0' || *PatchPt == '\n'))
+		igets();
+
 	// Fetch next identifier for main loop
 	while ((result = GetLine ()) == 1)
 		;
@@ -1848,4 +1853,3 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 }
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
-
