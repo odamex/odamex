@@ -470,17 +470,17 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t event)
 	if (snd_gamesfx)
 	{
 		int sound = 1;
-		bool isGrab = (event == SCORE_GRAB || event == SCORE_FIRSTGRAB);
+		bool nonScoreEvent = event != SCORE_CAPTURE;
 		bool yourFlag = consoleplayer().userinfo.team == flag;
 		bool yourTeam = consoleplayer().userinfo.team == team;
 		// Enemy event
-		if (isGrab && (consoleplayer().spectator || yourFlag))
+		if (nonScoreEvent && (consoleplayer().spectator || yourFlag))
 			sound = 0;
 		else if (event == SCORE_CAPTURE && (consoleplayer().spectator || !yourTeam))
 			sound = 0;
 
 		// Do not play sound if enemy is grabbing another enemy's flag
-		if (!(isGrab && !yourTeam && !yourFlag) && S_FindSound(flag_sound[event][sound]) != -1)
+		if (!(nonScoreEvent && !yourTeam && !yourFlag) && S_FindSound(flag_sound[event][sound]) != -1)
 			S_Sound(CHAN_GAMEINFO, flag_sound[event][sound], 1, ATTN_NONE);
 	}
 
