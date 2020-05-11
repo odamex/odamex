@@ -28,6 +28,7 @@
 #include "g_level.h"
 #include "z_zone.h"
 #include "st_stuff.h"
+#include "hu_stuff.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "resources/res_main.h"
@@ -43,8 +44,6 @@
 #include "v_video.h"
 
 #include "v_text.h"
-
-extern const Texture* hu_font[];
 
 // State.
 #include "doomstat.h"

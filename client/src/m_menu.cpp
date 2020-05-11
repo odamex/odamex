@@ -56,8 +56,6 @@
 #include "i_xbox.h"
 #endif
 
-extern const Texture* 	hu_font[HU_FONTSIZE];
-
 // temp for screenblocks (0-9)
 int 				screenSize;
 

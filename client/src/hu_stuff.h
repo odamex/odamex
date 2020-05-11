@@ -37,6 +37,9 @@
 // Calculate # of glyphs in font.
 #define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1) 
 
+class Texture;
+extern const Texture* hu_font[HU_FONTSIZE];
+
 void HU_Init();
 void STACK_ARGS HU_Shutdown();
 
@@ -64,6 +67,5 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 class player_s;
 void HU_DrawScores (player_s *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);
-#endif
 
-
+#endif	__HU_STUFF_H__

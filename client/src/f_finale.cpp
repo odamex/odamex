@@ -231,9 +231,6 @@ void F_Ticker (void)
 //
 // F_TextWrite
 //
-extern Texture* hu_font[HU_FONTSIZE];
-
-
 void F_TextWrite (void)
 {
 	// erase the entire screen to a tiled background

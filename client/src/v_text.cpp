@@ -42,9 +42,6 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-extern Texture* hu_font[HU_FONTSIZE];
-
-
 byte *ConChars;
 
 extern byte *Ranges;
