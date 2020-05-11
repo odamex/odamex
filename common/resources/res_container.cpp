@@ -129,10 +129,10 @@ static std::string Res_TransformResourcePath(const std::string& path)
 // Use the filename as the name of the lump and attempt to determine which
 // directory to insert the lump into.
 //
-SingleLumpResourceContainer::SingleLumpResourceContainer(FileAccessor* file) :
-		mFile(file),
-		mResourceId(ResourceId::INVALID_ID)
-{ }
+SingleLumpResourceContainer::SingleLumpResourceContainer(FileAccessor* file)
+{
+	init(file);
+}
 
 
 //
@@ -141,9 +141,10 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(FileAccessor* file) :
 // Use the filename as the name of the lump and attempt to determine which
 // directory to insert the lump into.
 //
-SingleLumpResourceContainer::SingleLumpResourceContainer(const OString& path) :
-		SingleLumpResourceContainer(new DiskFileAccessor(path))
-{ }
+SingleLumpResourceContainer::SingleLumpResourceContainer(const OString& path)
+{
+	init(new DiskFileAccessor(path));
+}
 
 
 //
@@ -152,6 +153,16 @@ SingleLumpResourceContainer::SingleLumpResourceContainer(const OString& path) :
 SingleLumpResourceContainer::~SingleLumpResourceContainer()
 {
 	delete mFile;
+}
+
+
+//
+// SingleLumpResourceContainer::init
+//
+void SingleLumpResourceContainer::init(FileAccessor* file)
+{
+	mFile = file;
+	mResourceId = ResourceId::INVALID_ID;
 }
 
 
@@ -224,9 +235,9 @@ uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId 
 // with the ResourceManager. If the WAD file has an invalid directory, no lumps
 // will be registered and getResourceCount() will return 0.
 //
-WadResourceContainer::WadResourceContainer(const OString& path) :
-		WadResourceContainer(new DiskFileAccessor(path))
+WadResourceContainer::WadResourceContainer(const OString& path)
 {
+	init(new DiskFileAccessor(path));
 }
 
 
@@ -241,15 +252,9 @@ WadResourceContainer::WadResourceContainer(const OString& path) :
 // memory or from disk. The WadResourceContainer will own the FileAccessor
 // pointer and is responsible for de-allocating it.
 //
-WadResourceContainer::WadResourceContainer(FileAccessor* file) :
-		mFile(file),
-		mDirectory(256),
-		mLumpIdLookup(256)
+WadResourceContainer::WadResourceContainer(FileAccessor* file)
 {
-	if (!readWadDirectory())
-		mDirectory.clear();
-
-	buildMarkerRecords();
+	init(file);
 }
 
 
@@ -259,6 +264,20 @@ WadResourceContainer::WadResourceContainer(FileAccessor* file) :
 WadResourceContainer::~WadResourceContainer()
 {
 	delete mFile;
+}
+
+
+//
+// WadResourceContainer::init
+//
+void WadResourceContainer::init(FileAccessor* file)
+{
+	mFile = file;
+
+	if (!readWadDirectory())
+		mDirectory.clear();
+
+	buildMarkerRecords();
 }
 
 
@@ -530,7 +549,7 @@ uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id,
 // will be registered and getResourceCount() will return 0.
 //
 SingleMapWadResourceContainer::SingleMapWadResourceContainer(const OString& path) :
-		SingleMapWadResourceContainer(new DiskFileAccessor(path))
+		WadResourceContainer(path)
 { }
 
 
@@ -761,21 +780,18 @@ bool compare_zip_directory_entries(const ZipDirectoryEntry& entry1, const ZipDir
 //
 // ZipResourceContainer::ZipResourceContainer
 //
-ZipResourceContainer::ZipResourceContainer(const OString& path) :
-		ZipResourceContainer(new DiskFileAccessor(path))
-{ }
+ZipResourceContainer::ZipResourceContainer(const OString& path)
+{
+	init(new DiskFileAccessor(path));
+}
 
 
 //
 // ZipResourceContainer::ZipResourceContainer
 //
-ZipResourceContainer::ZipResourceContainer(FileAccessor* file) :
-		mFile(file),
-		mDirectory(256),
-		mLumpIdLookup(256)
+ZipResourceContainer::ZipResourceContainer(FileAccessor* file)
 {
-    readCentralDirectory();
-	//addEmbeddedResourceContainers(manager);
+	init(file);
 }
 
 
@@ -785,6 +801,17 @@ ZipResourceContainer::ZipResourceContainer(FileAccessor* file) :
 ZipResourceContainer::~ZipResourceContainer()
 {
 	delete mFile;
+}
+
+
+//
+// ZipResourceContainer::init
+//
+void ZipResourceContainer::init(FileAccessor* file)
+{
+	mFile = file;
+
+    readCentralDirectory();
 }
 
 
