@@ -27,7 +27,12 @@
 #include "cmdlib.h"
 
 #include <sys/stat.h>
-#include <dirent.h>
+
+#include "win32inc.h"
+#ifdef UNIX
+  #include <dirent.h>
+#endif
+
 
 // Simple logging
 std::ofstream LOG;
@@ -303,6 +308,8 @@ bool M_IsFile(const std::string& path)
 // Returns a vector of strings containing the recursive contents
 // of a directory, in alphabetical order.
 //
+
+#ifdef UNIX
 std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
 {
 	std::vector<std::string> files;
@@ -332,5 +339,41 @@ std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, s
 	std::sort(files.begin(), files.end());
 	return files;
 }
+#endif
+
+#ifdef _WIN32
+std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
+{
+	std::vector<std::string> files;
+	if (max_depth > 0)
+	{
+	    std::string path = base_path + PATHSEPCHAR + '*';
+
+		WIN32_FIND_DATA find_data;
+		HANDLE h_find = FindFirstFile(TEXT(path.c_str()), &find_data);
+		for (bool valid = h_find != INVALID_HANDLE_VALID; valid; valid = FindNextFile(h_find, &find_data))
+		{
+			std::string name(find_data.cFileName);
+			std::string path = base_path + PATHSEPCHAR + name;
+			if (M_IsDirectory(path) && name != "." && name != "..")
+			{
+				std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
+				files.insert(files.end(), child_files.begin(), child_files.end());
+			}
+			else if (M_IsFile(path))
+			{
+				files.push_back(path);
+			}
+		}
+
+		FindClose(h_find);
+
+		closedir(dir);
+		}
+	}
+	std::sort(files.begin(), files.end());
+	return files;
+}
+#endif
 
 VERSION_CONTROL (m_fileio_cpp, "$Id$")
