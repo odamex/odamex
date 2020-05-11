@@ -1640,7 +1640,8 @@ void C_DrawConsole()
 						rowstring[col - 1] = ' ';
 				}
 
-				screen->PrintStr(left, offset + (lines + l + 1) * 8, rowstring);
+				screen->PrintStr(left, offset + (lines + l + 1) * 8, rowstring,
+				                 CR_YELLOW);
 			}
 
 			// Render an overflow message if necessary.
@@ -1648,7 +1649,8 @@ void C_DrawConsole()
 			{
 				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %lu more...",
 				         ::CmdCompletions.size() - (cLines * cColumns));
-				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring);
+				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring,
+				                 CR_YELLOW);
 			}
 		}
 
