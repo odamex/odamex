@@ -1588,6 +1588,8 @@ void C_DrawConsole()
 
 			// How many columns can we fit on the screen at one time?
 			size_t cColumns = ::ConCols / cTabLen;
+			if (cColumns == 0)
+				cColumns += 1;
 
 			// Given the number of columns, how many lines do we need?
 			size_t cLines = ::CmdCompletions.size() / cColumns;
