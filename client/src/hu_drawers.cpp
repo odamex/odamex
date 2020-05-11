@@ -144,6 +144,15 @@ void Clear(int x, int y,
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	int maxHeight = I_GetSurfaceHeight();
+	int maxWidth = I_GetSurfaceWidth();
+
+	if (x + (w * x_scale) > maxWidth)
+		return;
+	if (y + (h * y_scale) > maxHeight)
+		return;
+
 	screen->Clear(x, y, x + (w * x_scale), y + (h * y_scale), color);
 }
 
