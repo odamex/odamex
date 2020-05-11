@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -287,6 +287,10 @@ std::string M_ExtractFileName(const std::string &filename) {
 //
 bool M_IsDirectory(const std::string& path)
 {
+	#ifndef S_ISDIR
+	#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+	#endif
+
 	struct stat sb;
 	return (stat(path.c_str(), &sb) == 0) && S_ISDIR(sb.st_mode);
 }
@@ -297,6 +301,10 @@ bool M_IsDirectory(const std::string& path)
 //
 bool M_IsFile(const std::string& path)
 {
+	#ifndef S_ISREG
+	#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+	#endif
+
 	struct stat sb;
 	return (stat(path.c_str(), &sb) == 0) && S_ISREG(sb.st_mode);
 }
@@ -308,13 +316,34 @@ bool M_IsFile(const std::string& path)
 // Returns a vector of strings containing the recursive contents
 // of a directory, in alphabetical order.
 //
-
-#ifdef UNIX
 std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
 {
 	std::vector<std::string> files;
 	if (max_depth > 0)
 	{
+	#if defined(_WIN32)
+	    std::string path = base_path + PATHSEPCHAR + '*';
+
+		WIN32_FIND_DATA find_data;
+		HANDLE h_find = FindFirstFile(TEXT(path.c_str()), &find_data);
+		for (bool valid = h_find != INVALID_HANDLE_VALUE; valid; valid = FindNextFile(h_find, &find_data))
+		{
+			std::string name(find_data.cFileName);
+			std::string path = base_path + PATHSEPCHAR + name;
+			if (M_IsDirectory(path) && name != "." && name != "..")
+			{
+				std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
+				files.insert(files.end(), child_files.begin(), child_files.end());
+			}
+			else if (M_IsFile(path))
+			{
+				files.push_back(path);
+			}
+		}
+
+		FindClose(h_find);
+
+	#else
 		DIR *dir = opendir(base_path.c_str());
 		if (dir != NULL)
 		{
@@ -335,45 +364,11 @@ std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, s
 			}
 			closedir(dir);
 		}
+	#endif
 	}
 	std::sort(files.begin(), files.end());
 	return files;
 }
-#endif
 
-#ifdef _WIN32
-std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
-{
-	std::vector<std::string> files;
-	if (max_depth > 0)
-	{
-	    std::string path = base_path + PATHSEPCHAR + '*';
-
-		WIN32_FIND_DATA find_data;
-		HANDLE h_find = FindFirstFile(TEXT(path.c_str()), &find_data);
-		for (bool valid = h_find != INVALID_HANDLE_VALID; valid; valid = FindNextFile(h_find, &find_data))
-		{
-			std::string name(find_data.cFileName);
-			std::string path = base_path + PATHSEPCHAR + name;
-			if (M_IsDirectory(path) && name != "." && name != "..")
-			{
-				std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
-				files.insert(files.end(), child_files.begin(), child_files.end());
-			}
-			else if (M_IsFile(path))
-			{
-				files.push_back(path);
-			}
-		}
-
-		FindClose(h_find);
-
-		closedir(dir);
-		}
-	}
-	std::sort(files.begin(), files.end());
-	return files;
-}
-#endif
 
 VERSION_CONTROL (m_fileio_cpp, "$Id$")
