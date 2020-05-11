@@ -66,8 +66,6 @@ void G_ScreenShot(const char* filename);
 
 void G_PlayerFinishLevel(player_t &player);
 
-extern std::vector<level_pwad_info_t> wadlevelinfos;
-extern std::vector<cluster_info_t> wadclusterinfos;
 extern int mapchange;
 
 extern bool timingdemo;
