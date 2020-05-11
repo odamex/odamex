@@ -2569,7 +2569,7 @@ void SV_DrawScores()
 
 		Printf_Bold("%18s\n", str);
 
-		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
@@ -2623,7 +2623,7 @@ void SV_DrawScores()
 
 		Printf_Bold("%18s\n", str);
 
-		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
