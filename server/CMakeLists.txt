@@ -69,9 +69,10 @@ add_executable(odasrv
   ${SERVER_SOURCES} ${SERVER_HEADERS}
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
 
+target_link_libraries(odasrv ${ZLIB_LIBRARY})
+  
 if (USE_MINIUPNP)
   target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
-  target_link_libraries(odasrv ${ZLIB_LIBRARY})
 endif()
 
 if(WIN32)
