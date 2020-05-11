@@ -563,7 +563,7 @@ void CTF_Message(team_t flag, team_t team, flag_score_t event) {
 		// Possessive (yours/theirs)
 		if (!consoleplayer().spectator)
 		{
-			if (consoleplayer().userinfo.team != team)
+			if (consoleplayer().userinfo.team == team)
 			{
 				// Enemy flag is being evented
 				if (event == SCORE_GRAB || event == SCORE_FIRSTGRAB || event == SCORE_CAPTURE)
