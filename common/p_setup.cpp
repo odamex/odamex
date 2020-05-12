@@ -616,7 +616,7 @@ void P_LoadThings2 (int lump, int position)
 
 	playerstarts.clear();
 	voodoostarts.clear();
-	for (size_t i = 0; i < TeamStarts->size(); i++)
+	for (size_t i = 0; i < NUMTEAMS; i++)
 		TeamStarts[i].clear();
 
 	for ( ; mt < lastmt; mt++)
