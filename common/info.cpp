@@ -6924,13 +6924,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0x10000,
 	"MT_SECACTEYESABOVEC"
 	},
-	
-		/*
-	MT_GSOK,
-	MT_GFLG,
-	MT_GDWN,
-	MT_GCAR,
-		*/
 
 	{		// MT_GSOK
 	5133,		// doomednum
@@ -6962,8 +6955,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_GSOK"
 	},
 
-		// [Toke - CTF] Blue Flag
-	{		// MT_BFLG
+	{		// MT_GFLG
 	-1,		// doomednum
 	S_GFLG,		// spawnstate
 	1000,		// spawnhealth
@@ -6993,9 +6985,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_GFLG"
 	},
 
-
-		// [Toke - CTF] Blue Dropped Flag
-	{		// MT_BDWN
+	{		// MT_GDWN
 	-1,		// doomednum
 	S_GDWN,		// spawnstate
 	1000,		// spawnhealth
@@ -7025,9 +7015,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_GDWN"
 	},
 
-
-		// [Toke - CTF] Blue Carrying Flag
-	{		// MT_BCAR
+	{		// MT_GCAR
 	-1,		// doomednum
 	S_GCAR,		// spawnstate
 	1000,		// spawnhealth
