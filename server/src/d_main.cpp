@@ -164,15 +164,24 @@ void D_Init()
 	R_InitColormaps();
 
 	// [RH] Initialize localizable strings.
-	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
+	LevelInfos& levels = getLevelInfos();
+	if (levels.size() == 0)
+	{
+		levels.addDefaults();
+	}
+
+	ClusterInfos& clusters = getClusterInfos();
+	if (clusters.size() == 0)
+	{
+		clusters.addDefaults();
+	}
 	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
@@ -198,17 +207,8 @@ void STACK_ARGS D_Shutdown()
 		G_ExitLevel(0, 0);
 
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	// stop sound effects and music
 	S_Stop();
@@ -216,8 +216,6 @@ void STACK_ARGS D_Shutdown()
 	DThinker::DestroyAllThinkers();
 
 	UndoDehPatch();
-
-	GStrings.FreeData();
 
 	// close all open WAD files
 	W_Close();

@@ -370,41 +370,31 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 }
 #endif
 
-//
-// SetLanguageIDs
-//
-static const char *langids[] = {
-	"auto",
-	"enu",
-	"fr",
-	"it"
-};
+EXTERN_CVAR(language)
 
-EXTERN_CVAR (language)
-void SetLanguageIDs ()
+void SetLanguageIDs()
 {
-	unsigned int langid = language.asInt();
+	const char* langid = language.cstring();
 
-	if (langid == 0 || langid > 3)
+	if (strcmp(langid, "auto") == 0)
 	{
-    #if defined _WIN32 && !defined _XBOX
-		memset (LanguageIDs, 0, sizeof(LanguageIDs));
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
-    #else
-        langid = 1;     // Default to US English on non-windows systems
-    #endif
+#if defined _WIN32 && !defined _XBOX
+		memset(LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+#else
+		// Default to US English on non-windows systems
+		// FIXME: Use SDL Locale support if available.
+		langid = "enu";
+#endif
 	}
 	else
 	{
-		DWORD lang = 0;
-		const char *langtag = langids[langid];
-
-		((BYTE *)&lang)[0] = (langtag)[0];
-		((BYTE *)&lang)[1] = (langtag)[1];
-		((BYTE *)&lang)[2] = (langtag)[2];
+		char slang[4] = {'\0', '\0', '\0', '\0'};
+		strncpy(slang, langid, ARRAY_LENGTH(slang) - 1);
+		uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
 		LanguageIDs[0] = lang;
 		LanguageIDs[1] = lang;
 		LanguageIDs[2] = lang;
@@ -1126,4 +1116,3 @@ bool I_IsHeadless()
 
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
-

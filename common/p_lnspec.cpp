@@ -790,16 +790,17 @@ FUNC(LS_Exit_Secret)
 FUNC(LS_Teleport_NewMap)
 // Teleport_NewMap (map, position)
 {
-   	if (!TeleportSide)
+	if (!TeleportSide)
 	{
-        level_info_t *info = FindLevelByNum (arg0);
+		LevelInfos& levels = getLevelInfos();
+		level_pwad_info_t info = levels.findByNum(arg0);
 
-        if (it && (info && CheckIfExitIsGood (it)))
-        {
-            strncpy (level.nextmap, info->mapname, 8);
-            G_ExitLevel (arg1, 1);
-            return true;
-        }
+		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
+		{
+			strncpy(level.nextmap, info.mapname, 8);
+			G_ExitLevel(arg1, 1);
+			return true;
+		}
 	}
 	return false;
 }
@@ -1042,12 +1043,13 @@ FUNC(LS_ACS_Execute)
 	if (!serverside)
 		return false;
 
-	level_info_t *info;
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& info = levels.findByNum(arg1);
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		return P_StartScript (it, ln, arg0, level.mapname, TeleportSide, arg2, arg3, arg4, 0);
-	else
-		return P_StartScript (it, ln, arg0, info->mapname, TeleportSide, arg2, arg3, arg4, 0);
+	if (arg1 == 0 || !info.exists())
+		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 0);
+
+	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 0);
 }
 
 FUNC(LS_ACS_ExecuteAlways)
@@ -1056,12 +1058,13 @@ FUNC(LS_ACS_ExecuteAlways)
 	if (!serverside)
 		return false;
 
-	level_info_t *info;
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& info = levels.findByNum(arg1);
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		return P_StartScript (it, ln, arg0, level.mapname, TeleportSide, arg2, arg3, arg4, 1);
-	else
-		return P_StartScript (it, ln, arg0, info->mapname, TeleportSide, arg2, arg3, arg4, 1);
+	if (arg1 == 0 || !info.exists())
+		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 1);
+
+	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 1);
 }
 
 FUNC(LS_ACS_LockedExecute)
@@ -1082,12 +1085,13 @@ FUNC(LS_ACS_Suspend)
 	if (!serverside)
 		return false;
 
-	level_info_t *info;
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& info = levels.findByNum(arg1);
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		P_SuspendScript (arg0, level.mapname);
+	if (arg1 == 0 || !info.exists())
+		P_SuspendScript(arg0, ::level.mapname);
 	else
-		P_SuspendScript (arg0, info->mapname);
+		P_SuspendScript(arg0, info.mapname);
 
 	return true;
 }
@@ -1098,12 +1102,12 @@ FUNC(LS_ACS_Terminate)
 	if (!serverside)
 		return false;
 
-	level_info_t *info;
+	level_pwad_info_t& info = getLevelInfos().findByNum(arg1);
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		P_TerminateScript (arg0, level.mapname);
+	if (arg1 == 0 || !info.exists())
+		P_TerminateScript(arg0, ::level.mapname);
 	else
-		P_TerminateScript (arg0, info->mapname);
+		P_TerminateScript(arg0, info.mapname);
 
 	return true;
 }
@@ -2051,4 +2055,3 @@ BOOL CheckIfExitIsGood (AActor *self)
 }
 
 VERSION_CONTROL (p_lnspec_cpp, "$Id$")
-

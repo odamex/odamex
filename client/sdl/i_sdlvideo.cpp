@@ -1149,7 +1149,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindow
 	mVideoMode(0, 0, 0, WINDOW_Windowed),
 	mNeedPaletteRefresh(true), mBlit(true),
 	mMouseFocus(false), mKeyboardFocus(false),
-	mIgnoreResizeEvents(false), mLocks(0)
+	mAcceptResizeEventsTime(0), mLocks(0)
 {
 	setRendererDriver();
 	const char* driver_name = getRendererDriver();
@@ -1362,13 +1362,13 @@ void ISDL20Window::getEvents()
 					uint16_t height = sdl_ev.window.data2;
 					DPrintf("SDL_WINDOWEVENT_RESIZED (%dx%d)\n", width, height);
 
-					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && !mIgnoreResizeEvents)
+					int current_time = I_MSTime();
+					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
 					{
 						char tmp[30];
 						sprintf(tmp, "vid_setmode %d %d", width, height);
 						AddCommandString(tmp);
 					}
-					mIgnoreResizeEvents = false;
 				}
 			}
 		}
@@ -1595,6 +1595,10 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 
 		mVideoMode.width = video_mode.width;
 		mVideoMode.height = video_mode.height;
+
+		// SDL will publish various window resizing events in response to changing the
+		// window dimensions or toggling window modes. We need to ignore these.
+		mAcceptResizeEventsTime = I_MSTime() + 60;
 	}
 
 	// Set the winodow mode (window / full screen)
@@ -1614,11 +1618,11 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 			SDL_SetWindowSize(mSDLWindow, video_mode.width, video_mode.height);
 
 		mVideoMode.window_mode = video_mode.window_mode;
-	}
 
-	// SDL will publish various window resizing events in response to changing the
-	// window dimensions or toggling window modes. We need to ignore these
-	mIgnoreResizeEvents = true;
+		// SDL will publish various window resizing events in response to changing the
+		// window dimensions or toggling window modes. We need to ignore these.
+		mAcceptResizeEventsTime = I_MSTime() + 1000;
+	}
 
 	// Set the window position on the screen
 	if (!isFullScreen())

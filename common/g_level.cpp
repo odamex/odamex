@@ -57,24 +57,324 @@
 
 level_locals_t level;			// info about current level
 
-std::vector<level_pwad_info_t> wadlevelinfos;
-std::vector<cluster_info_t> wadclusterinfos;
+//
+// LevelInfos methods
+//
+
+// Construct from array of levelinfos, ending with an "empty" level
+LevelInfos::LevelInfos(const level_info_t* levels) :
+	_defaultInfos(levels)
+{
+	addDefaults();
+}
+
+// Destructor frees everything in the class
+LevelInfos::~LevelInfos()
+{
+	clear();
+}
+
+// Add default level infos
+void LevelInfos::addDefaults()
+{
+	for (size_t i = 0;; i++)
+	{
+		const level_info_t& level = _defaultInfos[i];
+		if (!level.exists())
+			break;
+
+		// Copied, so it can be mutated.
+		level_pwad_info_t info = _empty;
+		memcpy(&info, &level, sizeof(level));
+		_infos.push_back(info);
+	}
+}
+
+// Get a specific info index
+level_pwad_info_t& LevelInfos::at(size_t i)
+{
+	return _infos.at(i);
+}
+
+// Clear all cluster definitions
+void LevelInfos::clear()
+{
+	// Free all strings.
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		free(it->level_name);
+		it->level_name = NULL;
+	}
+	clearSnapshots();
+	zapDeferreds();
+	_infos.clear();
+}
+
+// Clear all stored snapshots
+void LevelInfos::clearSnapshots()
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		if (it->snapshot)
+		{
+			delete it->snapshot;
+			it->snapshot = NULL;
+		}
+	}
+}
+
+// Add a new levelinfo and return it by reference
+level_pwad_info_t& LevelInfos::create()
+{
+	_infos.push_back(level_pwad_info_t());
+	_infos.back() = _empty;
+	return _infos.back();
+}
+
+// Find a levelinfo by mapname
+level_pwad_info_t& LevelInfos::findByName(char* mapname)
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		if (stricmp(mapname, it->mapname) == 0)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
+// Find a levelinfo by mapnum
+level_pwad_info_t& LevelInfos::findByNum(int levelnum)
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname) != -1)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
+// Number of info entries.
+size_t LevelInfos::size()
+{
+	return _infos.size();
+}
+
+// Zap all deferred ACS scripts
+void LevelInfos::zapDeferreds()
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		acsdefered_t* def = it->defered;
+		while (def) {
+			acsdefered_t* next = def->next;
+			delete def;
+			def = next;
+		}
+		it->defered = NULL;
+	}
+}
+
+// Empty levelinfo.
+level_pwad_info_t LevelInfos::_empty = {
+	"",   // mapname
+	0,    // levelnum
+	NULL, // level_name
+	"",   // pname
+	"",   // nextmap
+	"",   // secretmap
+	0,    // partime
+	"",   // skypic
+	"",   // music
+	0,    // flags
+	0,    // cluster
+	NULL, // snapshot
+	NULL, // defered
+	{ 0, 0, 0, 0 },    // fadeto_color
+	{ 0xFF, 0, 0, 0 }, // outsidefog_color, 0xFF000000 is special token signaling to not handle it specially
+	"COLORMAP",        // fadetable
+	"",   // skypic2
+	0.0,  // gravity
+	0.0,  // aircontrol
+};
+
+//
+// ClusterInfos methods
+//
+
+// Construct from array of clusterinfos, ending with an "empty" cluster.
+ClusterInfos::ClusterInfos(const cluster_info_t* clusters) :
+	_defaultInfos(clusters)
+{
+	addDefaults();
+}
+
+// Destructor frees everything in the class
+ClusterInfos::~ClusterInfos()
+{
+	clear();
+}
+
+// Add default level infos
+void ClusterInfos::addDefaults()
+{
+	for (size_t i = 0;; i++)
+	{
+		const cluster_info_t& cluster = _defaultInfos[i];
+		if (cluster.cluster == 0)
+		{
+			break;
+		}
+
+		// Copied, so it can be mutated.
+		_infos.push_back(cluster);
+	}
+}
+
+// Get a specific info index
+cluster_info_t& ClusterInfos::at(size_t i)
+{
+	return _infos.at(i);
+}
+
+// Clear all cluster definitions
+void ClusterInfos::clear()
+{
+	// Free all strings.
+	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	{
+		free(it->exittext);
+		it->exittext = NULL;
+		free(it->entertext);
+		it->entertext = NULL;
+	}
+	return _infos.clear();
+}
+
+// Add a new levelinfo and return it by reference
+cluster_info_t& ClusterInfos::create()
+{
+	_infos.push_back(cluster_info_t());
+	_infos.back() = _empty;
+	return _infos.back();
+}
+
+// Find a clusterinfo by mapname
+cluster_info_t& ClusterInfos::findByCluster(int i)
+{
+	for (_ClusterInfoArray::iterator it = _infos.begin();it != _infos.end();it++)
+	{
+		if (it->cluster == i)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
+// Number of info entries.
+size_t ClusterInfos::size()
+{
+	return _infos.size();
+}
+
+// Empty clusterinfo.
+cluster_info_t ClusterInfos::_empty = {
+	0,    // cluster
+	"",   // messagemusic
+	"",   // finaleflat
+	NULL, // exittext
+	NULL, // entertext
+	0,    // flags
+};
+
+// A tagged union that represents all possible infos that we can pass to
+// the "lower" MAPINFO parser.
+struct tagged_info_t {
+	enum tags {
+		LEVEL,
+		CLUSTER,
+		EPISODE,
+	};
+	tags tag;
+	union {
+		level_pwad_info_t* level;
+		cluster_info_t* cluster;
+		void* episode;
+	};
+};
 
 BOOL HexenHack;
+
+enum EMIType
+{
+	MITYPE_IGNORE,
+	MITYPE_EATNEXT,
+	MITYPE_INT,
+	MITYPE_FLOAT,
+	MITYPE_COLOR,
+	MITYPE_MAPNAME,
+	MITYPE_LUMPNAME,
+	MITYPE_$LUMPNAME,
+	MITYPE_MUSICLUMPNAME,
+	MITYPE_SKY,
+	MITYPE_SETFLAG,
+	MITYPE_SCFLAGS,
+	MITYPE_CLUSTER,
+	MITYPE_STRING,
+	MITYPE_CSTRING,
+	MITYPE_CLUSTERSTRING,
+};
+
+struct MapInfoHandler
+{
+    EMIType type;
+    DWORD data1, data2;
+};
 
 static const char *MapInfoTopLevel[] =
 {
 	"map",
 	"defaultmap",
+	"cluster",
 	"clusterdef",
+	"episode",
+	"clearepisodes",
+	"gameinfo",
+	"intermission",
 	NULL
 };
 
 enum
 {
+	// map <maplump> <nice name>
+	// map <maplump> lookup <keyword>
 	MITL_MAP,
+
+	// defaultmap
 	MITL_DEFAULTMAP,
+
+	// cluster <value>
+	MITL_CLUSTER,
+
+	// clusterdef <value>
 	MITL_CLUSTERDEF,
+
+	// episode <maplump>
+	// episode <maplump> teaser <maplump> // New MAPINFO only
+	MITL_EPISODE,
+
+	// clearepisodes
+	MITL_CLEAREPISODES,
+
+	// gameinfo // New MAPINFO only
+	MITL_GAMEINFO,
+
+	// intermission // New MAPINFO only
+	MITL_INTERMISSION
 };
 
 static const char *MapInfoMapLevel[] =
@@ -120,122 +420,173 @@ static const char *MapInfoMapLevel[] =
 	"warptrans",
 	"gravity",
 	"aircontrol",
-	"islobby",					// Support for lobbies
-	"lobby",					// Alias for "islobby"
+	"islobby",
+	"lobby",
+	"nocrouch",
+	"intermusic",
+	"par",
+	"sucktime",
+	"translator",
 	NULL
 };
 
-enum EMIType
+MapInfoHandler MapHandlers[] =
 {
-	MITYPE_IGNORE,
-	MITYPE_EATNEXT,
-	MITYPE_INT,
-	MITYPE_FLOAT,
-	MITYPE_COLOR,
-	MITYPE_MAPNAME,
-	MITYPE_LUMPNAME,
-	MITYPE_SKY,
-	MITYPE_SETFLAG,
-	MITYPE_SCFLAGS,
-	MITYPE_CLUSTER,
-	MITYPE_STRING,
-	MITYPE_CSTRING,
-};
-
-struct MapInfoHandler
-{
-	EMIType type;
-	DWORD data1, data2;
-}
-MapHandlers[] =
-{
-	{ MITYPE_INT,		lioffset(levelnum), 0 },
-	{ MITYPE_MAPNAME,	lioffset(nextmap), 0 },
-	{ MITYPE_MAPNAME,	lioffset(secretmap), 0 },
-	{ MITYPE_CLUSTER,	lioffset(cluster), 0 },
-	{ MITYPE_SKY,		lioffset(skypic), 0 },
-	{ MITYPE_SKY,		lioffset(skypic2), 0 },
-	{ MITYPE_COLOR,		lioffset(fadeto_color), 0 },
-	{ MITYPE_COLOR,		lioffset(outsidefog_color), 0 },
-	{ MITYPE_LUMPNAME,	lioffset(pname), 0 },
-	{ MITYPE_INT,		lioffset(partime), 0 },
-	{ MITYPE_LUMPNAME,	lioffset(music), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_NOINTERMISSION, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_DOUBLESKY, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_NOSOUNDCLIPPING, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_MONSTERSTELEFRAG, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_MAP07SPECIAL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_BRUISERSPECIAL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_CYBORGSPECIAL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_SPIDERSPECIAL, 0 },
-	{ MITYPE_SCFLAGS,	0, ~LEVEL_SPECACTIONSMASK },
-	{ MITYPE_SCFLAGS,	LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
-	{ MITYPE_SCFLAGS,	LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
-	{ MITYPE_IGNORE,	0, 0 },		// lightning
-	{ MITYPE_LUMPNAME,	lioffset(fadetable), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_EVENLIGHTING, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_SNDSEQTOTALCTRL, 0 },
-	{ MITYPE_SETFLAG,	LEVEL_FORCENOSKYSTRETCH, 0 },
-	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
-	{ MITYPE_SCFLAGS,	LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
-	{ MITYPE_SCFLAGS,	LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-	{ MITYPE_SCFLAGS,	LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
-	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
-	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
-	{ MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0},
+	// levelnum <levelnum>
+	{ MITYPE_INT, lioffset(levelnum), 0 },
+	// next <maplump>
+	{ MITYPE_MAPNAME, lioffset(nextmap), 0 },
+	// secretnext <maplump>
+	{ MITYPE_MAPNAME, lioffset(secretmap), 0 },
+	// cluster <number>
+	{ MITYPE_CLUSTER, lioffset(cluster), 0 },
+	// sky1 <texture> <scrollspeed>
+	{ MITYPE_SKY, lioffset(skypic), 0 },
+	// sky2 <texture> <scrollspeed>
+	{ MITYPE_SKY, lioffset(skypic2), 0 },
+	// fade <color>
+	{ MITYPE_COLOR, lioffset(fadeto_color), 0 },
+	// outsidefog <color>
+	{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
+	// titlepatch <patch>
+	{ MITYPE_LUMPNAME, lioffset(pname), 0 },
+	// par <partime>
+	{ MITYPE_INT, lioffset(partime), 0 },
+	// music <musiclump>
+	{ MITYPE_MUSICLUMPNAME, lioffset(music), 0 },
+	// nointermission
+	{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
+	// doublesky
+	{ MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0 },
+	// nosoundclipping
+	{ MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0 },
+	// allowmonstertelefrags
+	{ MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0 },
+	// map07special
+	{ MITYPE_SETFLAG, LEVEL_MAP07SPECIAL, 0 },
+	// baronspecial
+	{ MITYPE_SETFLAG, LEVEL_BRUISERSPECIAL, 0 },
+	// cyberdemonspecial
+	{ MITYPE_SETFLAG, LEVEL_CYBORGSPECIAL, 0 },
+	// spidermastermindspecial
+	{ MITYPE_SETFLAG, LEVEL_SPIDERSPECIAL, 0 },
+	// specialaction_exitlevel
+	{ MITYPE_SCFLAGS, 0, ~LEVEL_SPECACTIONSMASK },
+	// specialaction_opendoor
+	{ MITYPE_SCFLAGS, LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
+	// specialaction_lowerfloor
+	{ MITYPE_SCFLAGS, LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
+	// lightning
+	{ MITYPE_IGNORE, 0, 0 },
+	// fadetable <colormap>
+	{ MITYPE_LUMPNAME, lioffset(fadetable), 0 },
+	// evenlighting
+	{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
+	// noautosequences
+	{ MITYPE_SETFLAG, LEVEL_SNDSEQTOTALCTRL, 0 },
+	// forcenoskystretch
+	{ MITYPE_SETFLAG, LEVEL_FORCENOSKYSTRETCH, 0 },
+	// allowfreelook
+	{ MITYPE_SCFLAGS, LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
+	// nofreelook
+	{ MITYPE_SCFLAGS, LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
+	// allowjump
+	{ MITYPE_SCFLAGS, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
+	// nojump
+	{ MITYPE_SCFLAGS, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+	// cdtrack <track number>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_start_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_end1_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_end2_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_end3_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_intermission_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// cd_title_track ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// warptrans ???
+	{ MITYPE_EATNEXT, 0, 0 },
+	// gravity <amount>
+	{ MITYPE_FLOAT, lioffset(gravity), 0 },
+	// aircontrol <amount>
+	{ MITYPE_FLOAT, lioffset(aircontrol), 0 },
+	// islobby
+	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+	// lobby
+	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+	// nocrouch
+	{ MITYPE_IGNORE, 0, 0 },
+	// intermusic <musicname>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// par <partime>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// sucktime <value>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// translator <value>
+	{ MITYPE_EATNEXT, 0, 0 },
 };
 
 static const char *MapInfoClusterLevel[] =
 {
 	"entertext",
 	"exittext",
+	"exittextislump",
 	"music",
 	"flat",
 	"hub",
+	"pic",
 	NULL
 };
 
 MapInfoHandler ClusterHandlers[] =
 {
-	{ MITYPE_STRING,	cioffset(entertext), 0 },
-	{ MITYPE_STRING,	cioffset(exittext), 0 },
-	{ MITYPE_CSTRING,	cioffset(messagemusic), 8 },
-	{ MITYPE_LUMPNAME,	cioffset(finaleflat), 0 },
-	{ MITYPE_SETFLAG,	CLUSTER_HUB, 0 }
+	// entertext <message>
+	{ MITYPE_CLUSTERSTRING, cioffset(entertext), 0 },
+	// exittext <message>
+	{ MITYPE_CLUSTERSTRING, cioffset(exittext), 0 },
+	// exittextislump
+	{ MITYPE_SETFLAG, CLUSTER_EXITTEXTISLUMP, 0 },
+	// messagemusic <musiclump>
+	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
+	// flat <flatlump>
+	{ MITYPE_$LUMPNAME, cioffset(finaleflat), 0 },
+	// hub
+	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 },
+	// pic <graphiclump>
+	{ MITYPE_$LUMPNAME, cioffset(finalepic), 0 },
 };
 
-static void ParseMapInfoLower (MapInfoHandler *handlers,
-							   const char *strings[],
-							   level_pwad_info_t *levelinfo,
-							   cluster_info_t *clusterinfo,
-							   DWORD levelflags);
-
-int FindWadLevelInfo (char *name)
+static const char* MapInfoEpisodeLevel[] =
 {
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-		if (!strnicmp (name, wadlevelinfos[i].mapname, 8))
-			return i;
+	"name",
+	"lookup",
+	"picname",
+	"key",
+	"remove",
+	"noskillmenu",
+	"optional",
+	NULL
+};
 
-	return -1;
-}
-
-int FindWadClusterInfo (int cluster)
+MapInfoHandler EpisodeHandlers[] =
 {
-	for (size_t i = 0; i < wadclusterinfos.size(); i++)
-		if (wadclusterinfos[i].cluster == cluster)
-			return i;
-
-	return -1;
-}
+	// name <nice name>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// lookup <keyword>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// picname <piclump>
+	{ MITYPE_EATNEXT, 0, 0 },
+	// remove
+	{ MITYPE_IGNORE, 0, 0 },
+	// noskillmenu
+	{ MITYPE_IGNORE, 0, 0 },
+	// optional
+	{ MITYPE_IGNORE, 0, 0 }
+};
 
 static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 {
@@ -249,114 +600,143 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 }
 
 //
-// G_ParseMapInfo
-// Parses the MAPINFO lumps of all loaded WADs and generates
-// data for wadlevelinfos and wadclusterinfos.
+// Assumes that you have munched the last parameter you know how to handle,
+// but have not yet munched a comma.
 //
-void G_ParseMapInfo (void)
+static void SkipUnknownParams()
 {
-	level_pwad_info_t defaultinfo;
-	level_pwad_info_t *levelinfo;
-	int levelindex;
-	cluster_info_t *clusterinfo;
-	int clusterindex;
-	DWORD levelflags;
-
-	int lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	// Every loop, try to burn a comma.
+	while (SC_GetString())
 	{
-		SetLevelDefaults (&defaultinfo);
-		SC_OpenLumpNum (lump, "MAPINFO");
-
-		while (SC_GetString ())
+		if (!SC_Compare(","))
 		{
-			switch (SC_MustMatchString (MapInfoTopLevel))
-			{
-			case MITL_DEFAULTMAP:
-				SetLevelDefaults (&defaultinfo);
-				ParseMapInfoLower (MapHandlers, MapInfoMapLevel, &defaultinfo, NULL, 0);
-				break;
-
-			case MITL_MAP:		// map <MAPNAME> <Nice Name>
-				levelflags = defaultinfo.flags;
-				SC_MustGetString ();
-				if (IsNum (sc_String))
-				{	// MAPNAME is a number, assume a Hexen wad
-					int map = atoi (sc_String);
-					sprintf (sc_String, "MAP%02d", map);
-					SKYFLATNAME[5] = 0;
-					HexenHack = true;
-					// Hexen levels are automatically nointermission
-					// and even lighting and no auto sound sequences
-					levelflags |= LEVEL_NOINTERMISSION
-								| LEVEL_EVENLIGHTING
-								| LEVEL_SNDSEQTOTALCTRL;
-				}
-				levelindex = FindWadLevelInfo (sc_String);
-				if (levelindex == -1)
-				{
-					wadlevelinfos.push_back(level_pwad_info_t());
-					levelindex = wadlevelinfos.size() - 1;
-				}
-				levelinfo = &wadlevelinfos[levelindex];
-				memcpy (levelinfo, &defaultinfo, sizeof(level_pwad_info_t));
-				uppercopy (levelinfo->mapname, sc_String);
-				SC_MustGetString ();
-				ReplaceString (&levelinfo->level_name, sc_String);
-				// Set up levelnum now so that the Teleport_NewMap specials
-				// in hexen.wad work without modification.
-				if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
-				{
-					int mapnum = atoi (levelinfo->mapname + 3);
-
-					if (mapnum >= 1 && mapnum <= 99)
-						levelinfo->levelnum = mapnum;
-				}
-				ParseMapInfoLower (MapHandlers, MapInfoMapLevel, levelinfo, NULL, levelflags);
-				break;
-
-			case MITL_CLUSTERDEF:	// clusterdef <clusternum>
-				SC_MustGetNumber ();
-				clusterindex = FindWadClusterInfo (sc_Number);
-				if (clusterindex == -1)
-				{
-					wadclusterinfos.push_back(cluster_info_t());
-					clusterindex = wadclusterinfos.size() - 1;
-					memset(&wadclusterinfos[clusterindex], 0, sizeof(cluster_info_t));
-				}
-				clusterinfo = &wadclusterinfos[clusterindex];
-				clusterinfo->cluster = sc_Number;
-				ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, NULL, clusterinfo, 0);
-				break;
-			}
+			SC_UnGet();
+			return;
 		}
-		SC_Close ();
+
+		// Burn the parameter.
+		SC_GetString();
 	}
 }
 
-static void ParseMapInfoLower (MapInfoHandler *handlers,
-							   const char *strings[],
-							   level_pwad_info_t *levelinfo,
-							   cluster_info_t *clusterinfo,
-							   DWORD flags)
+//
+// Assumes that you have already munched the unknown type name, and just need
+// to much parameters, if any.
+//
+static void SkipUnknownType()
 {
-	MapInfoHandler *handler;
+	SC_GetString();
+	if (!SC_Compare("="))
+	{
+		SC_UnGet();
+		return;
+	}
 
-	byte* info = levelinfo ? (byte*)levelinfo : (byte*)clusterinfo;
+	SC_GetString(); // Get the first parameter
+	SkipUnknownParams();
+}
+
+//
+// Assumes you have already munched the first opening brace.
+//
+// This function does not work with old-school ZDoom MAPINFO.
+//
+static void SkipUnknownBlock()
+{
+	int stack = 0;
 
 	while (SC_GetString())
 	{
-		if (SC_MatchString(MapInfoTopLevel) != -1)
+		if (SC_Compare("{"))
 		{
+			// Found another block
+			stack++;
+			continue;
+		}
+		else if (SC_Compare("}"))
+		{
+			stack--;
+			if (stack <= 0)
+			{
+				// Done with all blocks
+				break;
+			}
+		}
+	}
+}
+
+//
+// Parse a MAPINFO block
+//
+// NULL pointers can be passed if the block is unimplemented.  However, if
+// the block you want to stub out is compatible with old MAPINFO, you need
+// to parse the block anyway, even if you throw away the values.  This is
+// done by passing in a strings pointer, and leaving the others NULL.
+//
+static void ParseMapInfoLower(
+	MapInfoHandler* handlers, const char** strings, tagged_info_t* tinfo, DWORD flags
+)
+{
+	// 0 if old mapinfo, positive number if new MAPINFO, the exact
+	// number represents current brace depth.
+	int newMapinfoStack = 0;
+
+	byte* info = NULL;
+	if (tinfo)
+	{
+		// The union pointer is always the same, regardless of the tag.
+		info = reinterpret_cast<byte*>(tinfo->level);
+	}
+
+	while (SC_GetString())
+	{
+		if (SC_Compare("{"))
+		{
+			// Detected new-style MAPINFO
+			newMapinfoStack++;
+			continue;
+		}
+		else if (SC_Compare("}"))
+		{
+			newMapinfoStack--;
+			if (newMapinfoStack <= 0)
+			{
+				// MAPINFO block is done
+				break;
+			}
+		}
+
+		if (
+			newMapinfoStack <= 0 &&
+			SC_MatchString(MapInfoTopLevel) != SC_NOMATCH &&
+			// "cluster" is a valid map block type and is also
+			// a valid top-level type.
+			!SC_Compare("cluster")
+		)
+		{
+			// Old-style MAPINFO is done
 			SC_UnGet();
 			break;
 		}
 
-		int entry = SC_MustMatchString(strings);
-		if (entry == -1)
-			continue;
+		int entry = SC_MatchString(strings);
+		if (entry == SC_NOMATCH)
+		{
+			if (newMapinfoStack <= 0)
+			{
+				// Old MAPINFO is up a creek, we need to be
+				// able to parse all types even if we can't
+				// do anything with them.
+				SC_ScriptError("Unknown MAPINFO token \"%s\"", sc_String);
+			}
 
-		handler = handlers + entry;
+			// New MAPINFO is capable of skipping past unknown
+			// types.
+			SkipUnknownType();
+			continue;
+		}
+
+		MapInfoHandler* handler = handlers + entry;
 
 		switch (handler->type)
 		{
@@ -364,30 +744,53 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_EATNEXT:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			break;
 
 		case MITYPE_INT:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetNumber();
 			*((int*)(info + handler->data1)) = sc_Number;
 			break;
 
 		case MITYPE_FLOAT:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetFloat();
 			*((float*)(info + handler->data1)) = sc_Float;
 			break;
 
 		case MITYPE_COLOR:
+		{
+			if (newMapinfoStack > 0)
 			{
-				SC_MustGetString();
-
-				argb_t color(V_GetColorFromString(sc_String));
-				uint8_t* ptr = (uint8_t*)(info + handler->data1);
-				ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
+				SC_MustGetStringName("=");
 			}
-			break;
 
+			SC_MustGetString();
+			argb_t color(V_GetColorFromString(sc_String));
+			uint8_t* ptr = (uint8_t*)(info + handler->data1);
+			ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
+			break;
+		}
 		case MITYPE_MAPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			if (IsNum(sc_String))
 			{
@@ -398,22 +801,92 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_LUMPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			uppercopy((char*)(info + handler->data1), sc_String);
 			break;
 
+
+		case MITYPE_$LUMPNAME:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
+			SC_MustGetString();
+			if (sc_String[0] == '$')
+			{
+				// It is possible to pass a DeHackEd string
+				// prefixed by a $.
+				const OString& s = GStrings(sc_String + 1);
+				if (s.empty())
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
+				}
+				uppercopy((char*)(info + handler->data1), s.c_str());
+			}
+			else
+			{
+				uppercopy((char*)(info + handler->data1), sc_String);
+			}
+			break;
+
+		case MITYPE_MUSICLUMPNAME:
+		{
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
+			SC_MustGetString();
+			if (sc_String[0] == '$')
+			{
+				// It is possible to pass a DeHackEd string
+				// prefixed by a $.
+				const OString& s = GStrings(sc_String + 1);
+				if (s.empty())
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
+				}
+
+				// Music lumps in the stringtable do not begin
+				// with a D_, so we must add it.
+				char lumpname[9];
+				snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
+				uppercopy((char*)(info + handler->data1), lumpname);
+			}
+			else
+			{
+				uppercopy((char*)(info + handler->data1), sc_String);
+			}
+			break;
+		}
 		case MITYPE_SKY:
-			SC_MustGetString();	// get texture name;
-			uppercopy((char*)(info + handler->data1), sc_String);
-			SC_MustGetFloat();		// get scroll speed
-			//if (HexenHack)
-			//{
-			//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
-			//}
-			//else
-			//{
-			//	*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-			//}
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+				SC_MustGetString(); // Texture name
+				uppercopy((char*)(info + handler->data1), sc_String);
+				SkipUnknownParams();
+			}
+			else
+			{
+				SC_MustGetString();	// get texture name;
+				uppercopy((char*)(info + handler->data1), sc_String);
+				SC_MustGetFloat();		// get scroll speed
+				//if (HexenHack)
+				//{
+				//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+				//}
+				//else
+				//{
+				//	*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
+				//}
+			}
 			break;
 
 		case MITYPE_SETFLAG:
@@ -425,60 +898,341 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			break;
 
 		case MITYPE_CLUSTER:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetNumber();
 			*((int*)(info + handler->data1)) = sc_Number;
 			if (HexenHack)
 			{
-				cluster_info_t* clusterH = FindClusterInfo(sc_Number);
-				if (clusterH)
-					clusterH->flags |= CLUSTER_HUB;
+				ClusterInfos& clusters = getClusterInfos();
+				cluster_info_t& clusterH = clusters.findByCluster(sc_Number);
+				if (clusterH.cluster != 0)
+				{
+					clusterH.flags |= CLUSTER_HUB;
+				}
 			}
 			break;
 
 		case MITYPE_STRING:
+		{
+			char** text = (char**)(info + handler->data1);
+
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
-			ReplaceString((const char**)(info + handler->data1), sc_String);
+			free(*text);
+			*text = strdup(sc_String);
 			break;
+		}
 
 		case MITYPE_CSTRING:
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+			}
+
 			SC_MustGetString();
 			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
 			break;
-		}
+		case MITYPE_CLUSTERSTRING:
+		{
+			char** text = (char**)(info + handler->data1);
+
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+				SC_MustGetString();
+				if (SC_Compare("lookup"))
+				{
+					SC_MustGetStringName(",");
+					SC_MustGetString();
+					const OString& s = GStrings(sc_String);
+					if (s.empty())
+					{
+						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					}
+					free(*text);
+					*text = strdup(s.c_str());
+				}
+				else
+				{
+					// One line per string.
+					std::string ctext;
+					SC_UnGet();
+					do
+					{
+						SC_MustGetString();
+						ctext += sc_String;
+						ctext += "\n";
+						SC_GetString();
+					} while (SC_Compare(","));
+					SC_UnGet();
+
+					// Trim trailing newline.
+					if (ctext.length() > 0)
+					{
+						ctext.resize(ctext.length() - 1);
+					}
+
+					free(*text);
+					*text = strdup(ctext.c_str());
+				}
+			}
+			else
+			{
+				SC_MustGetString();
+				if (SC_Compare("lookup"))
+				{
+					SC_MustGetString();
+					const OString& s = GStrings(sc_String);
+					if (s.empty())
+					{
+						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					}
+
+					free(*text);
+					*text = strdup(s.c_str());
+				}
+				else
+				{
+					free(*text);
+					*text = strdup(sc_String);
+				}
+			}
+			break;
+		}}
 	}
 
-	if (levelinfo)
-		levelinfo->flags = flags;
-	else
-		clusterinfo->flags = flags;
+	if (tinfo == NULL)
+	{
+		return;
+	}
+
+	switch (tinfo->tag)
+	{
+	case tagged_info_t::LEVEL:
+		tinfo->level->flags = flags;
+		break;
+	case tagged_info_t::CLUSTER:
+		tinfo->cluster->flags = flags;
+		break;
+	}
 }
 
-static void zapDefereds (acsdefered_t *def)
+static void ParseMapInfoLump(int lump, const char* lumpname)
 {
-	while (def) {
-		acsdefered_t *next = def->next;
-		delete def;
-		def = next;
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
+
+	level_pwad_info_t defaultinfo;
+	DWORD levelflags;
+
+	SetLevelDefaults (&defaultinfo);
+	SC_OpenLumpNum (lump, lumpname);
+
+	while (SC_GetString ())
+	{
+		switch (SC_MustMatchString (MapInfoTopLevel))
+		{
+		case MITL_DEFAULTMAP:
+		{
+			SetLevelDefaults(&defaultinfo);
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::LEVEL;
+			tinfo.level = &defaultinfo;
+			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0);
+			break;
+		}
+		case MITL_MAP:
+		{
+			levelflags = defaultinfo.flags;
+			SC_MustGetString ();
+			if (IsNum (sc_String))
+			{	// MAPNAME is a number, assume a Hexen wad
+				int map = atoi (sc_String);
+				sprintf (sc_String, "MAP%02d", map);
+				SKYFLATNAME[5] = 0;
+				HexenHack = true;
+				// Hexen levels are automatically nointermission
+				// and even lighting and no auto sound sequences
+				levelflags |= LEVEL_NOINTERMISSION
+							| LEVEL_EVENLIGHTING
+							| LEVEL_SNDSEQTOTALCTRL;
+			}
+
+			// Find the level.
+			level_pwad_info_t& info = (levels.findByName(sc_String).exists()) ?
+				levels.findByName(sc_String) :
+				levels.create();
+
+			// Free the level name string before we pave over it.
+			free(info.level_name);
+
+			info = defaultinfo;
+			uppercopy(info.mapname, sc_String);
+
+			// Map name.
+			SC_MustGetString();
+			if (SC_Compare("lookup"))
+			{
+				SC_MustGetString();
+				const OString& s = GStrings(sc_String);
+				if (s.empty())
+				{
+					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+				}
+				free(info.level_name);
+				info.level_name = strdup(s.c_str());
+			}
+			else
+			{
+				free(info.level_name);
+				info.level_name = strdup(sc_String);
+			}
+
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::LEVEL;
+			tinfo.level = &info;
+			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
+
+			// If the level info was parsed and no levelnum was applied,
+			// try and synthesize one from the level name.
+			if (info.levelnum == 0)
+			{
+				if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
+				{
+					// Convert a char into its equivalent integer.
+					int e = info.mapname[1] - '0';
+					int m = info.mapname[3] - '0';
+					if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
+					{
+						// Copypasted from the ZDoom wiki.
+						info.levelnum = (e - 1) * 10 + m;
+					}
+				}
+				else if (strnicmp(info.mapname, "MAP", 3) == 0)
+				{
+					// Try and turn the trailing digits after the "MAP" into a
+					// level number.
+					int mapnum = atoi(info.mapname + 3);
+					if (mapnum >= 0 && mapnum <= 99)
+					{
+						info.levelnum = mapnum;
+					}
+				}
+			}
+			break;
+		}
+		case MITL_CLUSTER:
+		case MITL_CLUSTERDEF:
+		{
+			SC_MustGetNumber();
+
+			// Find the cluster.
+			cluster_info_t& info = (clusters.findByCluster(sc_Number).cluster != 0) ?
+				clusters.findByCluster(sc_Number) :
+				clusters.create();
+
+			info.cluster = sc_Number;
+			tagged_info_t tinfo;
+			tinfo.tag = tagged_info_t::CLUSTER;
+			tinfo.cluster = &info;
+			ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, &tinfo, 0);
+			break;
+		}
+		case MITL_EPISODE:
+		{
+			// Not implemented
+			SC_MustGetString(); // Map lump
+			SC_GetString();
+			if (SC_Compare("teaser"))
+			{
+				SC_MustGetString(); // Teaser lump
+			}
+			else
+			{
+				SC_UnGet();
+			}
+
+			SC_MustGetString();
+			if (SC_Compare("{"))
+			{
+				// If we encounter an episode block in new MAPINFO, we can just
+				// eat the entire block.
+				SkipUnknownBlock();
+			}
+			else
+			{
+				// If we encounter an episode block in old MAPINFO, we have to
+				// parse it and just not do anything with it.
+				tagged_info_t tinfo;
+				tinfo.tag = tagged_info_t::EPISODE;
+				tinfo.episode = NULL;
+				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
+			}
+			break;
+		}
+		case MITL_CLEAREPISODES:
+			// Not implemented
+			break;
+
+		case MITL_GAMEINFO:
+			// Not implemented
+			ParseMapInfoLower(NULL, NULL, NULL, 0);
+			break;
+
+		case MITL_INTERMISSION:
+			// Not implemented
+			SC_MustGetString(); // Name
+			ParseMapInfoLower(NULL, NULL, NULL, 0);
+			break;
+
+		default:
+			SC_ScriptError("Unimplemented top-level type \"%s\"", sc_String);
+		}
+	}
+	SC_Close ();
+}
+
+//
+// G_ParseMapInfo
+// Parses the MAPINFO lumps of all loaded WADs and generates
+// data for wadlevelinfos and wadclusterinfos.
+//
+void G_ParseMapInfo (void)
+{
+	BOOL found_zmapinfo = false;
+
+	int lump = -1;
+	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
+	{
+		found_zmapinfo = true;
+		ParseMapInfoLump(lump, "ZMAPINFO");
+	}
+
+	// If ZMAPINFO exists, we don't parse a normal MAPINFO
+	if (found_zmapinfo == true)
+	{
+		return;
+	}
+
+	lump = -1;
+	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	{
+		ParseMapInfoLump(lump, "MAPINFO");
 	}
 }
 
 void P_RemoveDefereds (void)
 {
-	unsigned int i;
-
-	// Remove any existing defereds
-	for (i = 0; i < wadlevelinfos.size(); i++)
-		if (wadlevelinfos[i].defered) {
-			zapDefereds (wadlevelinfos[i].defered);
-			wadlevelinfos[i].defered = NULL;
-		}
-
-	for (i = 0; LevelInfos[i].level_name; i++)
-		if (LevelInfos[i].defered) {
-			zapDefereds (LevelInfos[i].defered);
-			LevelInfos[i].defered = NULL;
-		}
+	::getLevelInfos().zapDeferreds();
 }
 
 // [ML] Not sure where to put this for now...
@@ -712,138 +1466,119 @@ char *CalcMapName (int episode, int level)
 	return lumpname;
 }
 
-level_info_t *FindDefLevelInfo (char *mapname)
-{
-	level_info_t *i;
-
-	i = LevelInfos;
-	while (i->level_name) {
-		if (!strnicmp (i->mapname, mapname, 8))
-			break;
-		i++;
-	}
-	return i;
-}
-
-level_info_t *FindLevelInfo (char *mapname)
-{
-	int i;
-
-	if ((i = FindWadLevelInfo (mapname)) > -1)
-		return (level_info_t *)(&wadlevelinfos[i]);
-	else
-		return FindDefLevelInfo (mapname);
-}
-
-level_info_t *FindLevelByNum (int num)
-{
-	{
-		for (size_t i = 0; i < wadlevelinfos.size(); i++)
-			if (wadlevelinfos[i].levelnum == num)
-				return (level_info_t *)(&wadlevelinfos[i]);
-	}
-	{
-		level_info_t *i = LevelInfos;
-		while (i->level_name) {
-			if (i->levelnum == num && W_CheckNumForName (i->mapname) != -1)
-				return i;
-			i++;
-		}
-		return NULL;
-	}
-}
-
-cluster_info_t *FindDefClusterInfo (int cluster)
-{
-	cluster_info_t *i;
-
-	i = ClusterInfos;
-	while (i->cluster && i->cluster != cluster)
-		i++;
-
-	return i;
-}
-
-cluster_info_t *FindClusterInfo (int cluster)
-{
-	int i;
-
-	if ((i = FindWadClusterInfo (cluster)) > -1)
-		return &wadclusterinfos[i];
-	else
-		return FindDefClusterInfo (cluster);
-}
-
 void G_SetLevelStrings (void)
 {
-	char temp[8];
-	const char *namepart;
-	int i, start;
+	char temp[9] = "";
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
 
-	temp[0] = '0';
-	temp[1] = ':';
-	temp[2] = 0;
-	for (i = HUSTR_E1M1; i <= HUSTR_E4M9; ++i)
+	// Plutonia and TNT take the place of Doom 2.
+	int hustart, txtstart;
+	if (gamemission == pack_plut)
 	{
-		if (temp[0] < '9')
-			temp[0]++;
-		else
-			temp[0] = '1';
-
-		if ( (namepart = strstr (GStrings(i), temp)) )
-		{
-			namepart += 2;
-			while (*namepart && *namepart <= ' ')
-				namepart++;
-		}
-		else
-		{
-			namepart = GStrings(i);
-		}
-
-		ReplaceString (&LevelInfos[i-HUSTR_E1M1].level_name, namepart);
-		//ReplaceString (&LevelInfos[i-HUSTR_E1M1].music, Musics1[i-HUSTR_E1M1]);
+		hustart = GStrings.toIndex(PHUSTR_1);
+		txtstart = GStrings.toIndex(P1TEXT);
+	}
+	else if (gamemission == pack_tnt)
+	{
+		hustart = GStrings.toIndex(THUSTR_1);
+		txtstart = GStrings.toIndex(T1TEXT);
+	}
+	else
+	{
+		hustart = GStrings.toIndex(HUSTR_1);
+		txtstart = GStrings.toIndex(C1TEXT);
 	}
 
-	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[i].exittext, GStrings(E1TEXT+i));
+	// Loop through levels and assign any DeHackEd or otherwise dynamic text.
+	for (size_t i = 0; i < levels.size(); i++)
+	{
+		level_pwad_info_t& info = levels.at(i);
 
-	if (gamemission == pack_plut)
-		start = PHUSTR_1;
-	else if (gamemission == pack_tnt)
-		start = THUSTR_1;
-	else
-		start = HUSTR_1;
+		// Level name
+		int level_name;
+		int muslump;
+		if (info.cluster <= 4)
+		{
+			// Doom 1
+			int offset = info.levelnum - 1 - (info.cluster - 1);
+			if (offset >= 0 && offset < 36)
+			{
+				level_name = GStrings.toIndex(HUSTR_E1M1) + offset;
+				muslump = GStrings.toIndex(MUSIC_E1M1) + offset;
+			}
+			else
+			{
+				level_name = GStrings.toIndex(HUSTR_E1M1);
+				muslump = GStrings.toIndex(MUSIC_E1M1);
+			}
+		}
+		else
+		{
+			// Doom 2 + Expansions
+			int offset = (info.levelnum - 1);
+			if (offset >= 0 && offset < 32)
+			{
+				level_name = hustart + offset;
+				muslump = GStrings.toIndex(MUSIC_RUNNIN) + offset;
+			}
+			else
+			{
+				level_name = GStrings.toIndex(HUSTR_1);
+				muslump = GStrings.toIndex(MUSIC_RUNNIN);
+			}
+		}
 
- 	for (i = 0; i < 32; i++) {
- 		sprintf (temp, "%d:", i + 1);
-		if ( (namepart = strstr (GStrings(i+start), temp)) ) {
- 			namepart += strlen (temp);
- 			while (*namepart && *namepart <= ' ')
- 				namepart++;
- 		} else {
-			namepart = GStrings(i+start);
- 		}
- 		ReplaceString (&LevelInfos[36+i].level_name, namepart);
- 	}
+		free(info.level_name);
+		info.level_name = strdup(GStrings.getIndex(level_name));
+	}
 
-	if (gamemission == pack_plut)
-		start = P1TEXT;		// P1TEXT
-	else if (gamemission == pack_tnt)
-		start = T1TEXT;		// T1TEXT
-	else
-		start = C1TEXT;		// C1TEXT
+	// Loop through clusters and assign any DeHackEd or otherwise dynamic text.
+	for (size_t i = 0; i < clusters.size(); i++)
+	{
+		cluster_info_t& info = clusters.at(i);
+		if (info.cluster <= 4)
+		{
+			// Doom 1
 
-	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[4 + i].exittext, GStrings(start+i));
-	for (; i < 6; i++)
-		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
+			// Cluster music is all the same.
+			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
+			uppercopy(info.messagemusic, temp);
 
-	//for (i = 0; i < 15; i++)
-	//	ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
+			// Exit text at end of episode.
+			free(info.exittext);
+			info.exittext =
+			    strdup(GStrings.getIndex(GStrings.toIndex(E1TEXT) + info.cluster - 1));
+		}
+		else if (info.cluster <= 8)
+		{
+			// Doom 2 + Expansions, Normal progression
+			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
+			uppercopy(info.messagemusic, temp);
 
-	if (level.info)
-		strncpy (level.level_name, level.info->level_name, 63);
+			// Exit text between clusters.
+			free(info.exittext);
+			info.exittext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
+		}
+		else if (info.cluster <= 10)
+		{
+			// Doom 2 + Expansions, Secret progression
+			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
+			uppercopy(info.messagemusic, temp);
+
+			// Enter text before secret maps.
+			free(info.entertext);
+			info.entertext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
+		}
+
+		// Cluster background flat.
+		uppercopy(info.finaleflat, GStrings.getIndex(GStrings.toIndex(BGFLATE1) + i));
+	}
+
+	if (::level.info)
+	{
+		strncpy(::level.level_name, ::level.info->level_name, 63);
+	}
 }
 
 
@@ -952,21 +1687,7 @@ void G_UnSnapshotLevel (bool hubLoad)
 
 void G_ClearSnapshots (void)
 {
-	size_t i;
-
-	for (i = 0; i < wadlevelinfos.size(); i++)
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-
-	for (i = 0; LevelInfos[i].level_name; i++)
-		if (LevelInfos[i].snapshot)
-		{
-			delete LevelInfos[i].snapshot;
-			LevelInfos[i].snapshot = NULL;
-		}
+	getLevelInfos().clearSnapshots();
 }
 
 static void writeSnapShot (FArchive &arc, level_info_t *i)
@@ -977,21 +1698,25 @@ static void writeSnapShot (FArchive &arc, level_info_t *i)
 
 void G_SerializeSnapshots (FArchive &arc)
 {
+	LevelInfos& levels = getLevelInfos();
+
 	if (arc.IsStoring())
 	{
-		for (size_t i = 0; i < wadlevelinfos.size(); i++)
-			if (wadlevelinfos[i].snapshot)
-				writeSnapShot(arc, (level_info_t*)&wadlevelinfos[i]);
-
-		for (size_t i = 0; LevelInfos[i].level_name; i++)
-			if (LevelInfos[i].snapshot)
-				writeSnapShot(arc, &LevelInfos[i]);
+		for (size_t i = 0; i < levels.size(); i++)
+		{
+			level_pwad_info_t& level = levels.at(i);
+			if (level.snapshot)
+			{
+				writeSnapShot(arc, reinterpret_cast<level_info_t*>(&level));
+			}
+		}
 
 		// Signal end of snapshots
 		arc << (char)0;
 	}
 	else
 	{
+		LevelInfos& levels = getLevelInfos();
 		char mapname[8];
 
 		G_ClearSnapshots ();
@@ -1000,9 +1725,13 @@ void G_SerializeSnapshots (FArchive &arc)
 		while (mapname[0])
 		{
 			arc.Read(&mapname[1], 7);
-			level_info_t* i = FindLevelInfo(mapname);
-			i->snapshot = new FLZOMemFile;
-			i->snapshot->Serialize(arc);
+
+			// FIXME: We should really serialize the full levelinfo
+			level_info_t narrow = { 0 };
+			level_pwad_info_t& info = levels.findByName(mapname);
+			memcpy(&narrow, &info, sizeof(narrow));
+			info.snapshot = new FLZOMemFile;
+			info.snapshot->Serialize(arc);
 			arc >> mapname[0];
 		}
 	}
@@ -1016,21 +1745,25 @@ static void writeDefereds (FArchive &arc, level_info_t *i)
 
 void P_SerializeACSDefereds(FArchive &arc)
 {
+	LevelInfos& levels = getLevelInfos();
+
 	if (arc.IsStoring())
 	{
-		for (size_t i = 0; i < wadlevelinfos.size(); i++)
-			if (wadlevelinfos[i].defered)
-				writeDefereds(arc, (level_info_t*)&wadlevelinfos[i]);
-
-		for (size_t i = 0; LevelInfos[i].level_name; i++)
-			if (LevelInfos[i].defered)
-				writeDefereds(arc, &LevelInfos[i]);
+		for (size_t i = 0; i < levels.size(); i++)
+		{
+			level_pwad_info_t& level = levels.at(i);
+			if (level.defered)
+			{
+				writeDefereds(arc, reinterpret_cast<level_info_t*>(&level));
+			}
+		}
 
 		// Signal end of defereds
 		arc << (byte)0;
 	}
 	else
 	{
+		LevelInfos& levels = getLevelInfos();
 		char mapname[8];
 
 		P_RemoveDefereds();
@@ -1039,16 +1772,15 @@ void P_SerializeACSDefereds(FArchive &arc)
 		while (mapname[0])
 		{
 			arc.Read(&mapname[1], 7);
-			level_info_t* i = FindLevelInfo(mapname);
-			if (i == NULL)
+			level_pwad_info_t& info = levels.findByName(mapname);
+			if (!info.exists())
 			{
 				char name[9];
-
-				strncpy(name, mapname, 8);
+				strncpy(name, mapname, ARRAY_LENGTH(name) - 1);
 				name[8] = 0;
 				I_Error("Unknown map '%s' in savegame", name);
 			}
-			arc >> i->defered;
+			arc >> info.defered;
 			arc >> mapname[0];
 		}
 	}
@@ -1085,9 +1817,6 @@ void G_InitLevelLocals()
 	byte old_fadeto_color[4];
 	memcpy(old_fadeto_color, level.fadeto_color, 4);
 
-	level_info_t *info;
-	int i;
-
 	R_ExitLevel();
 
 	NormalLight.maps = shaderef_t(&realcolormaps, 0);
@@ -1100,96 +1829,297 @@ void G_InitLevelLocals()
 	// clear all ACS variables
 	memset(level.vars, 0, sizeof(level.vars));
 
-	if ((i = FindWadLevelInfo(level.mapname)) > -1)
-	{
-		level_pwad_info_t* pinfo = &wadlevelinfos[i];
+	// Get our canonical level data.
+	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname);
 
-		// [ML] 5/11/06 - Remove sky scrolling and sky2
-		// [SL] 2012-03-19 - Add sky2 back
-		level.info = (level_info_t*)pinfo;
-		info = (level_info_t*)pinfo;
-		strncpy (level.skypic2, pinfo->skypic2, 8);
-
-		memcpy(level.fadeto_color, pinfo->fadeto_color, 4);
+	// [ML] 5/11/06 - Remove sky scrolling and sky2
+	// [SL] 2012-03-19 - Add sky2 back
+	::level.info = (level_info_t*)&info;
+	strncpy(::level.skypic2, info.skypic2, 8);
+	memcpy(::level.fadeto_color, info.fadeto_color, 4);
 	
-		if (level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3])
-			NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
-		else
-			R_ForceDefaultColormap(pinfo->fadetable);
-
-		memcpy(level.outsidefog_color, pinfo->outsidefog_color, 4);
-
-		level.flags |= LEVEL_DEFINEDINMAPINFO;
-		if (pinfo->gravity != 0.f)
-			level.gravity = pinfo->gravity;
-		if (pinfo->aircontrol != 0.f)
-			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
+	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
+	{
+		NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 	}
 	else
 	{
-		info = FindDefLevelInfo(level.mapname);
-		level.info = info;
-		level.skypic2[0] = 0;
-
-		level.fadeto_color[0] = 0;
-		level.fadeto_color[1] = 0;
-		level.fadeto_color[2] = 0;
-		level.fadeto_color[3] = 0;
-		level.outsidefog_color[0] = 255;	// 0xFF000000 == special token signaling to not handle it specially
-		level.outsidefog_color[1] = 0;
-		level.outsidefog_color[2] = 0;
-		level.outsidefog_color[3] = 0;
-		R_ForceDefaultColormap ("COLORMAP");
+		R_ForceDefaultColormap(info.fadetable);
 	}
 
-	if (info->level_name)
-	{
-		level.partime = info->partime;
-		level.cluster = info->cluster;
-		level.flags = info->flags;
-		level.levelnum = info->levelnum;
+	memcpy(::level.outsidefog_color, info.outsidefog_color, 4);
 
-		strncpy(level.level_name, info->level_name, 63);
-		strncpy(level.nextmap, info->nextmap, 8);
-		strncpy(level.secretmap, info->secretmap, 8);
-		strncpy(level.music, info->music, 8);
-		strncpy(level.skypic, info->skypic, 8);
-		if (!level.skypic2[0])
-			strncpy(level.skypic2, level.skypic, 8);
+	::level.flags |= LEVEL_DEFINEDINMAPINFO;
+	if (info.gravity != 0.f)
+	{
+		::level.gravity = info.gravity;
+	}
+	if (info.aircontrol != 0.f)
+	{
+		::level.aircontrol = (fixed_t)(info.aircontrol * 65536.f);
+	}
+
+	::level.partime = info.partime;
+	::level.cluster = info.cluster;
+	::level.flags = info.flags;
+	::level.levelnum = info.levelnum;
+
+	// Only copy the level name if there's a valid level name to be copied.
+	if (info.level_name != NULL)
+	{
+		// Get rid of initial lump name or level number.
+		char* begin = NULL;
+		if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
+		{
+			std::string search;
+			StrFormat(search, "E%cM%c: ", info.mapname[1], info.mapname[3]);
+			begin = strstr(info.level_name, search.c_str());
+			if (begin != NULL)
+				begin += search.length();
+			else
+				begin = info.level_name;
+		}
+		else if (strstr(info.mapname, "MAP") == &info.mapname[0])
+		{
+			std::string search;
+			StrFormat(search, "%u: ", info.levelnum);
+			begin = strstr(info.level_name, search.c_str());
+			if (begin != NULL)
+				begin += search.length();
+			else
+				begin = info.level_name;
+		}
+		strncpy(::level.level_name, begin, ARRAY_LENGTH(::level.level_name) - 1);
 	}
 	else
 	{
-		level.partime = level.cluster = 0;
-		strcpy(level.level_name, "Unnamed");
-		level.nextmap[0] = level.secretmap[0] = level.music[0] = 0;
-		strncpy(level.skypic, "SKY1", 8);
-		strncpy(level.skypic2, "SKY1", 8);
-		level.flags = 0;
-		level.levelnum = 1;
+		strncpy(
+			::level.level_name, "Untitled Level",
+			ARRAY_LENGTH(::level.level_name) - 1
+		);
 	}
-	
-	if (level.flags & LEVEL_JUMP_YES)
+
+	strncpy(::level.nextmap, info.nextmap, 8);
+	strncpy(::level.secretmap, info.secretmap, 8);
+	strncpy(::level.music, info.music, 8);
+	strncpy(::level.skypic, info.skypic, 8);
+	if (!::level.skypic2[0])
+	{
+			strncpy(::level.skypic2, ::level.skypic, 8);
+	}
+
+	if (::level.flags & LEVEL_JUMP_YES)
+	{
 		sv_allowjump = 1;
-	if (level.flags & LEVEL_JUMP_NO)
+	}
+	if (::level.flags & LEVEL_JUMP_NO)
+	{
 		sv_allowjump = 0.0;
-	if (level.flags & LEVEL_FREELOOK_YES)
+	}
+	if (::level.flags & LEVEL_FREELOOK_YES)
+	{
 		sv_freelook = 1;
-	if (level.flags & LEVEL_FREELOOK_NO)
+	}
+	if (::level.flags & LEVEL_FREELOOK_NO)
+	{
 		sv_freelook = 0.0;
+	}
 
 //	memset (level.vars, 0, sizeof(level.vars));
 
-	if (memcmp(level.fadeto_color, old_fadeto_color, 4) != 0)
+	if (memcmp(::level.fadeto_color, old_fadeto_color, 4) != 0)
+	{
 		V_RefreshColormaps();
+	}
 
 	movingsectors.clear();
 }
+
+static void MapinfoHelp()
+{
+	Printf(PRINT_HIGH,
+		"mapinfo - Looks up internal information about levels\n\n"
+		"Usage:\n"
+		"  ] mapinfo mapname <LUMPNAME>\n"
+		"  Looks up a map contained in the lump LUMPNAME.\n\n"
+		"  ] mapinfo levelnum <LEVELNUM>\n"
+		"  Looks up a map with a levelnum of LEVELNUM.\n\n"
+		"  ] mapinfo at <LEVELINFO ID>\n"
+		"  Looks up a map based on its placement in the internal level info array.\n\n"
+		"  ] mapinfo size\n"
+		"  Return the size of the internal level info array.\n");
+}
+
+// A debugging tool to examine the state of computed map data.
+BEGIN_COMMAND(mapinfo)
+{
+	if (argc < 2)
+	{
+		MapinfoHelp();
+		return;
+	}
+
+	LevelInfos& levels = getLevelInfos();
+	if (stricmp(argv[1], "size") == 0)
+	{
+		Printf(PRINT_HIGH, "%u maps found\n", levels.size());
+		return;
+	}
+
+	if (argc < 3)
+	{
+		MapinfoHelp();
+		return;
+	}
+
+	level_pwad_info_t* infoptr = NULL;
+	if (stricmp(argv[1], "mapname") == 0)
+	{
+		infoptr = &levels.findByName(argv[2]);
+		if (!infoptr->exists())
+		{
+			Printf(PRINT_HIGH, "Map \"%s\" not found\n", argv[2]);
+			return;
+		}
+	}
+	else if (stricmp(argv[1], "levelnum") == 0)
+	{
+		int levelnum = atoi(argv[2]);
+		infoptr = &levels.findByNum(levelnum);
+		if (!infoptr->exists())
+		{
+			Printf(PRINT_HIGH, "Map number %d not found\n", levelnum);
+			return;
+		}
+	}
+	else if (stricmp(argv[1], "at") == 0)
+	{
+		// Check ahead of time, otherwise we might crash.
+		int id = atoi(argv[2]);
+		if (id < 0 || id >= levels.size())
+		{
+			Printf(PRINT_HIGH, "Map index %d does not exist\n", id);
+			return;
+		}
+		infoptr = &levels.at(id);
+	}
+	else
+	{
+		MapinfoHelp();
+		return;
+	}
+
+	level_pwad_info_t& info = *infoptr;
+
+	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname);
+	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
+	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name);
+	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname);
+	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap);
+	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap);
+	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
+	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic);
+	Printf(PRINT_HIGH, "Music: %s\n", info.music);
+
+	// Stringify the set level flags.
+	std::string flags;
+	flags += (info.flags & LEVEL_NOINTERMISSION ? " NOINTERMISSION" : "");
+	flags += (info.flags & LEVEL_DOUBLESKY ? " DOUBLESKY" : "");
+	flags += (info.flags & LEVEL_NOSOUNDCLIPPING ? " NOSOUNDCLIPPING" : "");
+	flags += (info.flags & LEVEL_MAP07SPECIAL ? " MAP07SPECIAL" : "");
+	flags += (info.flags & LEVEL_BRUISERSPECIAL ? " BRUISERSPECIAL" : "");
+	flags += (info.flags & LEVEL_CYBORGSPECIAL ? " CYBORGSPECIAL" : "");
+	flags += (info.flags & LEVEL_SPIDERSPECIAL ? " SPIDERSPECIAL" : "");
+	flags += (info.flags & LEVEL_SPECLOWERFLOOR ? " SPECLOWERFLOOR" : "");
+	flags += (info.flags & LEVEL_SPECOPENDOOR ? " SPECOPENDOOR" : "");
+	flags += (info.flags & LEVEL_SPECACTIONSMASK ? " SPECACTIONSMASK" : "");
+	flags += (info.flags & LEVEL_MONSTERSTELEFRAG ? " MONSTERSTELEFRAG" : "");
+	flags += (info.flags & LEVEL_EVENLIGHTING ? " EVENLIGHTING" : "");
+	flags += (info.flags & LEVEL_SNDSEQTOTALCTRL ? " SNDSEQTOTALCTRL" : "");
+	flags += (info.flags & LEVEL_FORCENOSKYSTRETCH ? " FORCENOSKYSTRETCH" : "");
+	flags += (info.flags & LEVEL_JUMP_NO ? " JUMP_NO" : "");
+	flags += (info.flags & LEVEL_JUMP_YES ? " JUMP_YES" : "");
+	flags += (info.flags & LEVEL_FREELOOK_NO ? " FREELOOK_NO" : "");
+	flags += (info.flags & LEVEL_FREELOOK_YES ? " FREELOOK_YES" : "");
+	flags += (info.flags & LEVEL_STARTLIGHTNING ? " STARTLIGHTNING" : "");
+	flags += (info.flags & LEVEL_FILTERSTARTS ? " FILTERSTARTS" : "");
+	flags += (info.flags & LEVEL_LOBBYSPECIAL ? " LOBBYSPECIAL" : "");
+	flags += (info.flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
+	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
+	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
+
+	if (flags.length() > 0)
+	{
+		Printf(PRINT_HIGH, "Flags:%s\n", flags.c_str());
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Flags: None\n");
+	}
+
+	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
+	Printf(PRINT_HIGH, "Snapshot? %s\n", info.snapshot ? "Yes" : "No");
+	Printf(PRINT_HIGH, "ACS defereds? %s\n", info.defered ? "Yes" : "No");
+}
+END_COMMAND(mapinfo)
+
+// A debugging tool to examine the state of computed cluster data.
+BEGIN_COMMAND(clusterinfo)
+{
+	if (argc < 2)
+	{
+		Printf(PRINT_HIGH, "Usage: clusterinfo <cluster id>\n");
+		return;
+	}
+
+	cluster_info_t& info = getClusterInfos().findByCluster(std::atoi(argv[1]));
+	if (info.cluster == 0)
+	{
+		Printf(PRINT_HIGH, "Cluster %s not found\n", argv[1]);
+		return;
+	}
+
+	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
+	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic);
+	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat);
+	if (info.exittext)
+	{
+		Printf(PRINT_HIGH, "- = Exit Text = -\n%s\n- = = = -\n", info.exittext);
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Exit Text: None\n");
+	}
+	if (info.entertext)
+	{
+		Printf(PRINT_HIGH, "- = Enter Text = -\n%s\n- = = = -\n", info.entertext);
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Enter Text: None\n");
+	}
+
+	// Stringify the set cluster flags.
+	std::string flags;
+	flags += (info.flags & CLUSTER_HUB ? " HUB" : "");
+	flags += (info.flags & CLUSTER_EXITTEXTISLUMP ? " EXITTEXTISLUMP" : "");
+
+	if (flags.length() > 0)
+	{
+		Printf(PRINT_HIGH, "Flags:%s\n", flags.c_str());
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "Flags: None\n");
+	}
+}
+END_COMMAND(clusterinfo)
 
 // Static level info from original game
 // The level names and cluster messages get filled in
 // by G_SetLevelStrings().
 
-level_info_t LevelInfos[] = {
+const level_info_t IWADLevelInfos[] = {
 	// Registered/Retail Episode 1
 	{
 		"E1M1",
@@ -1300,7 +2230,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY1",
 		"D_E1M8",
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
 		1,
 		0
 	},
@@ -1430,7 +2360,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY2",
 		"D_E2M8",
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,
 		2,
 		0
 	},
@@ -1560,7 +2490,7 @@ level_info_t LevelInfos[] = {
 		30,
 		"SKY3",
 		"D_E3M8",
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,
 		3,
 		0
 	},
@@ -1689,7 +2619,7 @@ level_info_t LevelInfos[] = {
 		0,
 		"SKY4",
 		"D_E2M5",
-		LEVEL_EPISODEENDHACK|LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,	// ToDo: Intermission workaround for LEVEL_EPISODEENDHACK
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,
 		4,
 		0
 	},
@@ -2201,7 +3131,7 @@ level_info_t LevelInfos[] = {
 };
 
 // Episode/Cluster information
-cluster_info_t ClusterInfos[] = {
+const cluster_info_t IWADClusterInfos[] = {
 	{
 		1,		// DOOM Episode 1
 		"D_VICTOR",
@@ -2293,5 +3223,18 @@ cluster_info_t ClusterInfos[] = {
 	}
 };
 
+// Get global canonical levelinfo
+LevelInfos& getLevelInfos()
+{
+	static LevelInfos li(IWADLevelInfos);
+	return li;
+}
+
+// Get global canonical clusterinfo
+ClusterInfos& getClusterInfos()
+{
+	static ClusterInfos ci(IWADClusterInfos);
+	return ci;
+}
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
