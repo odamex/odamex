@@ -37,6 +37,7 @@
 #include "p_local.h"
 
 EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_teamsinplay)
 
 // Distribute X number of players between teams.
 bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
@@ -78,9 +79,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 	// Rip through our eligible vector, forcing players in the vector
 	// onto alternating teams.
-	// TODO hobomaster
 	team_t dest_team = TEAM_BLUE;
 	size_t i = 0;
+	int teamCount = sv_teamsinplay.asInt();
 	for (std::vector<player_t*>::iterator it = eligible.begin();it != eligible.end();++it,++i) {
 		player_t &player = **it;
 
@@ -88,9 +89,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		SV_SetPlayerSpec(player, false, true);
 
 		// Is the last player an odd-one-out?  Randomize the team he is put on.
-		// Do not randomize if num_players = NUMTEAMS for randcaps (3 way ctf) 
-		if (num_players != NUMTEAMS && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
-			dest_team = (team_t)(P_Random() % NUMTEAMS);
+		// Do not randomize if num_players = teamCount for randcaps (3 way ctf) 
+		if (num_players != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
+			dest_team = (team_t)(P_Random() % teamCount);
 
 		// Switch player to the proper team, ensure the correct color,
 		// and then update everyone else in the game about it.
