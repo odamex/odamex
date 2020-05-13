@@ -22,14 +22,12 @@
 //-----------------------------------------------------------------------------
 
 
-#include "stringtable.h"
+#include "gstrings.h"
 #include "doomstat.h"
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
-
-// Localizable strings
-FStringTable	GStrings;
+#include "d_dehacked.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
@@ -40,16 +38,25 @@ static const char* TeamColors[NUMTEAMS] = { "BLUE", "RED", "GREEN" };
 // Language.
 CVAR_FUNC_IMPL (language)
 {
-	SetLanguageIDs ();
+	SetLanguageIDs();
 	if (level.behavior != NULL)
 	{
 		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
 			LanguageIDs[2], LanguageIDs[3]);
 	}
-    
-	GStrings.ResetStrings ();
-	GStrings.Compact ();
-	G_SetLevelStrings ();
+
+	// Reload LANGUAGE strings.
+	GStrings.loadStrings();
+
+	// Reapply DeHackEd patches on top of these strings.
+	// FIXME: This only handles PWAD patches for now.
+	DoDehPatch(NULL, true);
+
+	// Set default level strings based on those DeHackEd patches.
+	G_SetLevelStrings();
+
+	// MAPINFO comes last, because it overrides default level strings.
+	G_ParseMapInfo();
 }
 
 // Set if homebrew PWAD stuff has been added.
@@ -155,4 +162,3 @@ const char** GetTeamColorStrings()
 }
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")
-

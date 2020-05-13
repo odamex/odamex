@@ -29,71 +29,115 @@
 #ifndef __STRINGTABLE_H__
 #define __STRINGTABLE_H__
 
-#ifdef _MSC_VER
-#pragma once
-#endif
-
-
 #include <stdlib.h>
+#include <utility>
+#include <vector>
+
 #include "doomtype.h"
+#include "hashtable.h"
+#include "m_ostring.h"
+#include "stringenums.h"
 
-class FStringTable
+class StringTable
 {
-public:
-	FStringTable () :
-		StringStatus(NULL),
-		NumStrings (0),
-		Names(NULL),
-		Strings(NULL),
-		CompactBase(NULL),
-		CompactSize(0),
-		LumpNum(-1),
-		LumpData(NULL) {}
+	// First is if the string "exists", second is the string value.
+	typedef std::pair<bool, OString> OptionalString;
 
-	~FStringTable () { FreeData (); }
-
-	void LoadStrings(int lumpnum, int expectedSize, bool enuOnly);
-	void ReloadStrings();
-	void ResetStrings();
-
-	void LoadNames() const;
-	void FlushNames() const;
-	int FindString(const char* stringName) const;
-	int MatchString(const char* string) const;
-
-	void SetString(int index, const char* newString);
-	void Compact();
-
-	void FreeData();
-
-	const char *operator() (int index)
+	struct TableEntry
 	{
-		// [SL] ensure index is sane
-		if (index >= 0 && index < NumStrings)
-			return Strings[index];
+		// String value.
+		OptionalString string;
+
+		// Pass that string was added by.
+		//
+		// In some cases, we need to
+		int pass;
+
+		// Index of string.
+		//
+		// The old strings implementation used an enum to name all of the
+		// strings, and there were (and still are) several places in the
+		// code that used comparison operators on the enum index.  This
+		// index is -1 if it's a custom string.
+		int index;
+	};
+	typedef OHashTable<OString, TableEntry> StringHash;
+	StringHash _stringHash;
+
+	bool canSetPassString(int pass, const std::string& name) const;
+	void clearStrings();
+	void loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+	                  size_t lumpLen);
+	void loadStringsLump(int lump, const char* lumpname);
+	void prepareIndexes();
+	void replaceEscapes(std::string& str);
+
+  public:
+	StringTable() : _stringHash()
+	{
+	}
+
+	//
+	// Obtain a string by name.
+	//
+	const char* operator()(const OString& name) const
+	{
+		StringHash::const_iterator it = _stringHash.find(name);
+		if (it != _stringHash.end())
+		{
+			if ((*it).second.string.first == true)
+				return (*it).second.string.second.c_str();
+		}
 
 		// invalid index, return an empty cstring
 		static const char emptystr = 0;
 		return &emptystr;
 	}
 
-private:
-	struct Header;
+	//
+	// Obtain a string by index.
+	//
+	const char* getIndex(int index) const
+	{
+		if (index >= 0 && static_cast<size_t>(index) < ARRAY_LENGTH(::stringIndexes))
+		{
+			const OString* name = ::stringIndexes[index];
+			StringHash::const_iterator it = _stringHash.find(*name);
+			if (it != _stringHash.end())
+			{
+				if ((*it).second.string.first == true)
+					return (*it).second.string.second.c_str();
+			}
+		}
 
-	byte* StringStatus;
-	int NumStrings;
-	mutable byte* Names;
-	char** Strings;
-	char* CompactBase;
-	size_t CompactSize;
-	int LumpNum;
-	byte* LumpData;
+		// invalid index, return an empty cstring
+		static const char emptystr = 0;
+		return &emptystr;
+	}
 
-	void FreeStrings();
-	void FreeStandardStrings();
-	int SumStringSizes() const;
-	int LoadLanguage(uint32_t code, bool exactMatch, byte* startPos, byte* endPos);
-	void DoneLoading(byte* startPos, byte* endPos);
+	//
+	// Obtain an index by name.
+	//
+	int toIndex(const OString& name) const
+	{
+		StringHash::const_iterator it = _stringHash.find(name);
+		if (it != _stringHash.end())
+		{
+			// We don't care if the string exists or not, we just want its index.
+			return (*it).second.index;
+		}
+
+		// Not found.
+		return -1;
+	}
+
+	void dumpStrings();
+	bool hasString(const OString& name) const;
+	void loadStrings();
+	const OString& matchString(const OString& string) const;
+	void setString(const OString& name, const OString& string);
+	void setPassString(int pass, const OString& name, const OString& string);
+	size_t size() const;
 };
 
 #endif //__STRINGTABLE_H__

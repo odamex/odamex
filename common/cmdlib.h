@@ -102,7 +102,7 @@ bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
 
 bool CheckWildcards (const char *pattern, const char *text);
-void ReplaceString (const char **ptr, const char *str);
+void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
 

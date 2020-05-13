@@ -331,6 +331,13 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 #define MAKE_ID(a,b,c,d)	((d)|((c)<<8)|((b)<<16)|((a)<<24))
 #endif
 
+static inline void UNMAKE_ID(char* out, uint32_t id)
+{
+	out[0] = id & 0xFF;
+	out[1] = (id >> 8) & 0xFF;
+	out[2] = (id >> 16) & 0xFF;
+	out[3] = (id >> 24) & 0xFF;
+}
 
 //==========================================================================
 //

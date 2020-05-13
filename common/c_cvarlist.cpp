@@ -262,8 +262,8 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE_FUNC_DECL(language, "0", "",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0f)
+CVAR_FUNC_DECL(		language, "auto", "Language to use for ingame strings",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				port, "0", "Display currently used network port number",
 					CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)
