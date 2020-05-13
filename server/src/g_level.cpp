@@ -765,8 +765,6 @@ void G_DoLoadLevel (int position)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		it->joindelay = 0;
 
-	flagdata *tempflag;
-
 	// Nes - CTF Pre flag setup
 	if (sv_gametype == GM_CTF) {
 
