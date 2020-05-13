@@ -84,7 +84,10 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
 		MSG_WriteByte (&cl->reliablebuf, event);
 		MSG_WriteByte (&cl->reliablebuf, f);
-		MSG_WriteByte(&cl->reliablebuf, who.userinfo.team);
+		if (who.userinfo.team == TEAM_NONE)
+			MSG_WriteByte(&cl->reliablebuf, f);
+		else
+			MSG_WriteByte(&cl->reliablebuf, who.userinfo.team);
 
 		if(validplayer(who))
 		{
