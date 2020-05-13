@@ -44,8 +44,8 @@ enum EDisplayType
 enum EWindowMode
 {
 	WINDOW_Windowed = 0,
-	WINDOW_DesktopFullscreen = 1,
-	WINDOW_Fullscreen = 2,
+	WINDOW_Fullscreen = 1,
+	WINDOW_DesktopFullscreen = 2,
 };
 
 
@@ -122,27 +122,8 @@ public:
 		vsync(_vsync), stretch_mode(_stretch_mode)
 	{ }
 
-	uint16_t getWidth() const
-	{	return width;	}
-
-	uint16_t getHeight() const
-	{	return height;	}
-
-	uint8_t getBitsPerPixel() const
-	{	return bpp;	}
-
-	EWindowMode getWindowMode() const
-	{	return window_mode;		}
-
 	bool isFullScreen() const
 	{	return window_mode != WINDOW_Windowed;	}
-
-	bool getVSync() const
-	{	return vsync;	}
-
-	std::string getStrechMode() const
-	{	return stretch_mode;	}
-
 
 	bool operator==(const IVideoMode& other) const
 	{
@@ -256,7 +237,7 @@ public:
 		const IVideoModeList* modelist = getSupportedVideoModes();
 		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
 		{
-			if (it->getBitsPerPixel() == 8)
+			if (it->bpp == 8)
 				return true;
 		}
 		return false;
@@ -267,7 +248,7 @@ public:
 		const IVideoModeList* modelist = getSupportedVideoModes();
 		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
 		{
-			if (it->getBitsPerPixel() == 32)
+			if (it->bpp == 32)
 				return true;
 		}
 		return false;
@@ -579,8 +560,7 @@ class IDummyWindow : public IWindow
 public:
 	IDummyWindow() :
 		IWindow(), mPrimarySurface(NULL), mVideoMode(320, 200, 8, WINDOW_Windowed),
-		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0),
-		mWindowMode(WINDOW_DesktopFullscreen)
+		mPixelFormat(8, 0, 0, 0, 0, 0, 0, 0, 0)
 	{ }
 
 	virtual ~IDummyWindow()
@@ -600,7 +580,7 @@ public:
 		if (mPrimarySurface == NULL)
 		{
 			// ignore the requested mode and setup the hardcoded mode
-			mPrimarySurface = I_AllocateSurface(mVideoMode.getWidth(), mVideoMode.getHeight(), mVideoMode.getBitsPerPixel());
+			mPrimarySurface = I_AllocateSurface(mVideoMode.width, mVideoMode.height, mVideoMode.bpp);
 		}
 		return mPrimarySurface != NULL;
 	}
@@ -609,7 +589,7 @@ public:
 	{	return mVideoMode.isFullScreen();	}
 
 	virtual EWindowMode getWindowMode() const
-	{	return mWindowMode;		}
+	{	return mVideoMode.window_mode;	}
 
 	virtual std::string getVideoDriverName() const
 	{
@@ -626,7 +606,6 @@ private:
 
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
-	EWindowMode			mWindowMode;
 };
 
 

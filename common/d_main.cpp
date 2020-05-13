@@ -831,9 +831,7 @@ void D_LoadResourceFiles(
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	D_DoDefDehackedPatch(newpatchfiles);
 }
@@ -1124,11 +1122,15 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 	// Sleep until the next scheduled task.
 	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
 	dtime_t display_wake_time = display_scheduler->getNextTime();
+	dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
 
-	dtime_t now = I_GetTime();
-	dtime_t waketime = MIN(simulation_wake_time, display_wake_time);
-	if (waketime > now) {
-		I_Sleep(waketime - now);
+	const dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
+
+	// Sleep in 1ms increments until the next scheduled task
+	for (dtime_t now = I_GetTime(); wake_time > now; now = I_GetTime())
+	{
+		dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
+		I_Sleep(sleep_amount);
 	}
 }
 

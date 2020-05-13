@@ -118,16 +118,16 @@ typedef struct menuitem_s {
 	union {
 		float			  leftval;		/* aka numvalues aka invflag */
 		int				  key1;
-		const char			 *res1;
+		char			 *res1;
 	} b;
 	union {
 		float			  rightval;
 		int				  key2;
-		const char			 *res2;
+		char			 *res2;
 	} c;
 	union {
 		float			  step;
-		const char			 *res3;
+		char			 *res3;
 	} d;
 	union {
 		struct value_s		*values;

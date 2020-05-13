@@ -943,19 +943,40 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-QWORD testingmode;		// Holds time to revert to old mode
-int OldWidth, OldHeight;
+int testingmode;		// Holds time to revert to old mode
 
 static bool GetSelectedSize(int line, int *width, int *height);
 
-EXTERN_CVAR (vid_defwidth)
-EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_maxfps)
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_32bpp)
+
+static uint16_t old_width, old_height;
+
+static void SetModesMenu(int w, int h);
+
+static void M_SetVideoMode(uint16_t width, uint16_t height)
+{
+	old_width = I_GetVideoWidth();
+	old_height = I_GetVideoHeight();
+
+	char command[30];
+	sprintf(command, "vid_setmode %d %d", width, height);
+	AddCommandString(command);
+
+	SetModesMenu(width, height);
+}
+
+
+void M_RestoreVideoMode()
+{
+	testingmode = 0;
+	M_SetVideoMode(old_width, old_height);
+}
+
 
 static value_t Depths[22];
 
@@ -968,7 +989,6 @@ static const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
 static const char VMTestWaitText[] = "Please wait 5 seconds...";
-static const char VMTestBlankText[] = " ";
 
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
@@ -980,8 +1000,8 @@ static value_t VidFPSCaps[] = {
 
 static value_t FullScreenOptions[] = {
 	{ WINDOW_Windowed,			"Window" },
-	{ WINDOW_DesktopFullscreen,	"Full Screen Window" },
-	{ WINDOW_Fullscreen,		"Full Screen Exclusive" }
+	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
+	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
 
@@ -1038,12 +1058,12 @@ static void BuildModesList(int hiwidth, int hiheight)
 	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
 		if (it->isFullScreen() == fullscreen)
-			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
+			menumodelist.push_back(std::make_pair(it->width, it->height));
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
 
-    const char** str = NULL;
+	char** str = NULL;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1072,7 +1092,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 			}
 			else
 			{
-				*str = NULL;
+				str = NULL;
 			}
 		}
 	}
@@ -1143,18 +1163,10 @@ static void SetModesMenu(int w, int h)
 //
 void M_ModeFlashTestText()
 {
-    if (ModesItems[VM_TESTLINE].label[0] == ' ')
+	if (I_MSTime() & 256)
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
 	else
-		ModesItems[VM_TESTLINE].label = VMTestBlankText;
-}
-
-void M_RestoreMode (void)
-{
-	V_SetResolution(OldWidth, OldHeight);
-	testingmode = 0;
-
-	SetModesMenu(OldWidth, OldHeight);
+		ModesItems[VM_TESTLINE].label = "";
 }
 
 static void SetVidMode()
@@ -2113,11 +2125,7 @@ void M_OptResponder (event_t *ev)
 					height = I_GetVideoHeight();
 				}
 
-				vid_defwidth.Set(width);
-				vid_defheight.Set(height);
-
-				V_SetResolution(width, height);
-				SetModesMenu(width, height);
+				M_SetVideoMode(width, height);
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
 			else if (item->type == more && item->e.mfunc)
@@ -2196,13 +2204,8 @@ void M_OptResponder (event_t *ev)
 						height = I_GetVideoHeight();
 					}
 
-					OldWidth = I_GetVideoWidth();
-					OldHeight = I_GetVideoHeight();
-
-					V_SetResolution(width, height);
-
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
-					SetModesMenu(width, height);
+					M_SetVideoMode(width, height);
 
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				}

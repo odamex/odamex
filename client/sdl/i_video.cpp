@@ -27,7 +27,6 @@
 #include <string>
 #include <algorithm>
 
-#include "cmdlib.h"
 #include "i_video.h"
 #include "v_video.h"
 
@@ -39,6 +38,7 @@
 #include "m_fileio.h"
 
 #include "w_wad.h"
+#include "cmdlib.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -77,6 +77,7 @@ static IWindowSurface* loading_icon_background_surface = NULL;
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_overscan)
 EXTERN_CVAR(vid_320x200)
 EXTERN_CVAR(vid_640x400)
@@ -444,14 +445,12 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 {
 	const char window_strs[][25] = {
 		"window",
-		"full screen window",
-		"full screen exclusive"
+		"full screen exclusive",
+		"full screen window"
 	};
 
 	std::string str;
-	StrFormat(str, "%dx%d %dbpp (%s)",
-		mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(),
-		window_strs[I_GetWindow()->getWindowMode()]);
+	StrFormat(str, "%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
 	return str;
 }
 
@@ -467,7 +466,7 @@ static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 
 	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		if (it->getBitsPerPixel() == bpp && it->getWindowMode() == window_mode)
+		if (it->bpp == bpp && it->window_mode == window_mode)
 			return true;
 
 	return false;
@@ -483,41 +482,32 @@ static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 {
 	const IVideoMode invalid_mode(0, 0, 0, WINDOW_Windowed);
+	IVideoMode desired_mode = mode;
 
-	uint16_t desired_width = clamp<uint16_t>(mode.getWidth(), 320, MAXWIDTH);
-	uint16_t desired_height = clamp<uint16_t>(mode.getHeight(), 200, MAXHEIGHT);
-	uint8_t desired_bpp = mode.getBitsPerPixel();
-	EWindowMode desired_window_mode = mode.getWindowMode();
-
-	// Ensure the display type is adhered to
-	if (!I_GetVideoCapabilities()->supportsFullScreen())
-		desired_window_mode = WINDOW_Windowed;
-	else if (!I_GetVideoCapabilities()->supportsWindowed())
-		desired_window_mode = WINDOW_Fullscreen;
-
-	// check if the given bit-depth is supported
-	if (!I_IsModeSupported(desired_bpp, desired_window_mode))
-	{
-		// mode is not supported -- check a different bit depth 
-		desired_bpp = desired_bpp ^ (32 | 8);
-		if (!I_IsModeSupported(desired_bpp, desired_window_mode))
-			return invalid_mode;
-	}
-
-	IVideoMode desired_mode(
-					desired_width, desired_height, desired_bpp,
-					desired_window_mode, mode.getVSync(),
-					mode.getStrechMode());
+	desired_mode.width = clamp<uint16_t>(mode.width, 320, MAXWIDTH);
+	desired_mode.height = clamp<uint16_t>(mode.height, 200, MAXHEIGHT);
+	desired_mode.bpp = mode.bpp;
+	desired_mode.window_mode = mode.window_mode;
 
 	// If the user requested a windowed mode, we don't have to worry about
 	// the requested dimensions aligning to an actual video resolution.
-	if (desired_window_mode == WINDOW_Windowed || !vid_autoadjust)
+	if (mode.window_mode != WINDOW_Fullscreen || !vid_autoadjust)
 		return desired_mode;
 
+	// Ensure the display type is adhered to
+	if (!I_GetVideoCapabilities()->supportsFullScreen())
+		desired_mode.window_mode = WINDOW_Windowed;
+	else if (!I_GetVideoCapabilities()->supportsWindowed())
+		desired_mode.window_mode = WINDOW_Fullscreen;
 
-	// TODO:
-	return desired_mode;
-
+	// check if the given bit-depth is supported
+	if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
+	{
+		// mode is not supported -- check a different bit depth 
+		desired_mode.bpp = desired_mode.bpp ^ (32 | 8);
+		if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
+			return invalid_mode;
+	}
 
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
@@ -530,13 +520,13 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 			if (*it == desired_mode)		// perfect match?
 				return *it;
 
-			if (it->getBitsPerPixel() == desired_bpp && it->getWindowMode() == desired_window_mode)
+			if (it->bpp == desired_mode.bpp && it->window_mode == desired_mode.window_mode)
 			{
-				if (iteration == 0 && (it->getWidth() < desired_width || it->getHeight() < desired_height))
+				if (iteration == 0 && (it->width < desired_mode.width || it->height < desired_mode.height))
 					continue;
 
-				unsigned int dist = (it->getWidth() - desired_width) * (it->getWidth() - desired_width)
-						+ (it->getHeight() - desired_height) * (it->getHeight() - desired_height);
+				unsigned int dist = (it->width - desired_mode.width) * (it->width - desired_mode.width)
+						+ (it->height - desired_mode.height) * (it->height - desired_mode.height);
 
 				if (dist < closest_dist)
 				{
@@ -563,6 +553,8 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 {
 	// ensure the requested mode is valid
 	IVideoMode validated_mode = I_ValidateVideoMode(requested_mode);
+	validated_mode.vsync = bool(vid_vsync.asInt());
+	validated_mode.stretch_mode = std::string(vid_filter);
 	assert(validated_mode.isValid());
 
 	IWindow* window = I_GetWindow();
@@ -582,9 +574,9 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	I_FreeSurface(emulated_surface);
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
-	if (requested_mode.getBitsPerPixel() != validated_mode.getBitsPerPixel())
+	if (requested_mode.bpp != validated_mode.bpp)
 	{
-		const PixelFormat* format = requested_mode.getBitsPerPixel() == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
+		const PixelFormat* format = requested_mode.bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
 		converted_surface = new IWindowSurface(surface_width, surface_height, format);
 		primary_surface = converted_surface;
 	}
@@ -1069,13 +1061,13 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		// Draws frame time and cumulative fps
-		if (vid_displayfps)
-			V_DrawFPSWidget();
-
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)
 			V_DrawFPSTicker();
+
+		// Draws frame time and cumulative fps
+		if (vid_displayfps)
+			V_DrawFPSWidget();
 
 		// draws a disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
@@ -1199,3 +1191,5 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
+
+

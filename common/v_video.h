@@ -462,8 +462,6 @@ void V_MarkRect (int x, int y, int width, int height);
 // as defined in the X11R6RGB lump.
 argb_t V_GetColorFromString(const std::string& str);
 
-void V_SetResolution(uint16_t width, uint16_t height);
-
 template<>
 forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
 {
