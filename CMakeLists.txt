@@ -165,6 +165,9 @@ git_describe(GIT_DESCRIBE --tags --always)
 add_subdirectory(libraries)
 
 # Subdirectories for Odamex projects
+if(BUILD_CLIENT OR BUILD_SERVER)
+  add_subdirectory(common)
+endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
 endif()

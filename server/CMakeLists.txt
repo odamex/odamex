@@ -13,11 +13,6 @@ endif()
 # #define SERVER_APP for use in the source code
 add_definitions(-DSERVER_APP)
 
-# Common
-set(COMMON_DIR ../common)
-file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
-file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
-
 # Server
 set(SERVER_DIR src)
 file(GLOB SERVER_HEADERS ${SERVER_DIR}/*.h)
@@ -28,8 +23,16 @@ if(WIN32)
   set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
 endif()
 
-# git describe
-set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
+# JsonCpp
+set(JSONCPP_DIR ../libraries/jsoncpp)
+file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
+set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
+
+# MiniUPnPc
+if (USE_MINIUPNP)
+  set(MINIUPNPC_DIR ../libraries/libminiupnpc)
+  set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
+endif()
 
 # Platform definitions
 define_platform()
@@ -44,7 +47,7 @@ endif()
 if(WIN32 AND NOT MSVC)
   add_definitions(-DWINVER=0x0500)
 endif()
-include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
+include_directories(${JSONCPP_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
@@ -52,10 +55,9 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 add_executable(odasrv
-  ${COMMON_SOURCES} ${COMMON_HEADERS}
   ${SERVER_SOURCES} ${SERVER_HEADERS}
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
-target_link_libraries(odasrv jsoncpp)
+target_link_libraries(odasrv jsoncpp odamex-common)
 
 if(USE_MINIUPNP)
   target_link_libraries(odasrv upnpc-static)

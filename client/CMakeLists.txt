@@ -27,11 +27,6 @@ endif()
 # #define CLIENT_APP for use in the source code
 add_definitions(-DCLIENT_APP)
 
-# Common
-set(COMMON_DIR ../common)
-file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
-file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
-
 # Client
 set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_HEADERS sdl/*.h src/*.h)
@@ -40,14 +35,11 @@ if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
 
-# git describe
-set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
-
 # Platform definitions
 define_platform()
 
 # Client definitions
-include_directories(${COMMON_DIR} ${CLIENT_DIR})
+include_directories(${CLIENT_DIR})
 
 # Textscreen
 set(TEXTSCREEN_LIBRARY "textscreen")
@@ -57,6 +49,7 @@ set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 
 include_directories(${TEXTSCREEN_DIR})
 add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
 message(STATUS "Textscreen will be statically linked.")
 
 # Make sure we don't find libraries that are in Program Files/Odamex
@@ -213,8 +206,8 @@ endif()
 # Client target
 if(SDL_VERSION)
   add_executable(odamex MACOSX_BUNDLE WIN32
-    ${COMMON_SOURCES} ${COMMON_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
+  target_link_libraries(odamex odamex-common)
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
 
