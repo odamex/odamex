@@ -487,7 +487,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 			sound = Yours;
 
 		// Do not play sound if enemy is grabbing another enemy's flag etc
-		if (!(nonScoreEvent && !yourTeam && !yourFlag) && S_FindSound(flag_sound[ev][sound]) != -1)
+		if ((ev == SCORE_RETURN || !(nonScoreEvent && !yourTeam && !yourFlag)) && S_FindSound(flag_sound[ev][sound]) != -1)
 			S_Sound(CHAN_GAMEINFO, flag_sound[ev][sound], 1, ATTN_NONE);
 	}
 
@@ -503,7 +503,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 
 			if (ev == SCORE_CAPTURE && playerTeam == team)
 				sound = Yours;
-			else if ((ev == SCORE_RETURN || SCORE_MANUALRETURN || ev == SCORE_DROP || ev == SCORE_GRAB || ev == SCORE_FIRSTGRAB) && playerTeam == flag)
+			else if ((ev == SCORE_RETURN || ev == SCORE_MANUALRETURN || ev == SCORE_DROP || ev == SCORE_GRAB || ev == SCORE_FIRSTGRAB) && playerTeam == flag)
 				sound = Yours;
 
 			if (S_FindSound(flag_sound[ev][2 + sound]))
