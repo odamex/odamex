@@ -192,21 +192,6 @@ enum card_t
         CardIsSkull = 128
 };
 
-
-// [Toke - Teams]
-// denis - for both teamplay and ctfmode
-enum team_t
-{
-	TEAM_BLUE,
-	TEAM_RED,
-	TEAM_GREEN,
-
-	NUMTEAMS,
-
-	TEAM_NONE
-};
-
-
 enum ItemEquipVal
 {
 	IEV_NotEquipped, //was not equipped, item should stay

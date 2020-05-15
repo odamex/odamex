@@ -40,11 +40,6 @@
 #include "c_cvars.h"
 #include "d_netinf.h"
 
-#ifdef CLIENT_APP
-#include "v_text.h"
-#endif
-
-
 // ------------------------
 // Command line parameters.
 //
@@ -171,10 +166,6 @@ extern std::vector<mapthing2_t> playerstarts;
 extern std::vector<mapthing2_t> voodoostarts;
 
 // ----------------------------------------------
-//	[Toke - CTF - starts]
-extern std::vector<mapthing2_t> TeamStarts[NUMTEAMS];
-
-// ----------------------------------------------
 
 // Intermission stats.
 // Parameters for world map / intermission.
@@ -232,16 +223,6 @@ bool IsGameModeDuel();
 bool IsGameModeFFA();
 const char* GetGameModeString();
 const char* GetShortGameModeString();
-
-#ifdef CLIENT_APP
-EColorRange GetTeamTextColor(team_t team);
-#endif
-
-argb_t GetTeamColor(team_t team);
-const char* GetTeamName(team_t team);
-const char* GetTeamColorString(team_t team);
-const char* GetTeamColorStringCase(team_t team);
-const char** GetTeamColorStrings();
 
 #endif
 

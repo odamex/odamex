@@ -128,9 +128,6 @@ std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
 
-//	[Toke - CTF - starts] Teamplay starts
-std::vector<mapthing2_t> TeamStarts[NUMTEAMS];
-
 //
 // P_LoadVertexes
 //
@@ -567,8 +564,8 @@ void P_LoadThings (int lump)
 
 	playerstarts.clear();
 	voodoostarts.clear();
-	for (size_t i = 0; i < TeamStarts->size(); i++)
-		TeamStarts[i].clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -620,8 +617,8 @@ void P_LoadThings2 (int lump, int position)
 
 	playerstarts.clear();
 	voodoostarts.clear();
-	for (size_t i = 0; i < NUMTEAMS; i++)
-		TeamStarts[i].clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -1803,6 +1800,7 @@ void P_Init (void)
 	P_InitSwitchList ();
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
+	InitTeamInfo();
 }
 
 

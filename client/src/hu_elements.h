@@ -41,7 +41,7 @@ std::string PlayersSplit(void);
 int CountTeamPlayers(byte team);
 int CountSpectators(void);
 std::string TeamPlayers(int& color, byte team);
-const char* TeamName(int& color, byte team);
+std::string TeamName(int& color, byte team);
 std::string TeamFrags(int& color, byte team);
 std::string TeamPoints(int& color, byte team);
 std::string TeamKD(int& color, byte team);

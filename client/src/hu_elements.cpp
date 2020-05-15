@@ -243,7 +243,7 @@ std::string SpyPlayerName(int& color) {
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = GetTeamTextColor(plyr->userinfo.team);
+		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());
 	}
 
 	return plyr->userinfo.netname;
@@ -365,16 +365,17 @@ static int GetWinningTeamPoints(team_t& winningTeam, int& secondPlaceTeamPoints)
 
 	for (int i = 0; i < NUMTEAMS; i++)
 	{
-		if (TEAMpoints[i] > maxPoints)
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		if (teamInfo->Points > maxPoints)
 		{
 			secondPlaceTeamPoints = maxPoints;
 
-			maxPoints = TEAMpoints[i];
+			maxPoints = teamInfo->Points;
 			winningTeam = (team_t)i;
 		}
-		else if (TEAMpoints[i] > secondPlaceTeamPoints)
+		else if (teamInfo->Points > secondPlaceTeamPoints)
 		{
-			secondPlaceTeamPoints = TEAMpoints[i];
+			secondPlaceTeamPoints = teamInfo->Points;
 		}
 	}
 
@@ -470,8 +471,8 @@ std::string PersonalSpread(int& color) {
 		
 		if (plyr->userinfo.team == winningTeam)
 			diff = winningPoints - secondPlacePoints;
-		else
-			diff = TEAMpoints[plyr->userinfo.team] - winningPoints;
+		else			
+			diff = GetTeamInfo(plyr->userinfo.team)->Points - winningPoints;
 
 		if (diff > 0 && plyr->userinfo.team == winningTeam)
 		{
@@ -508,8 +509,8 @@ std::string PersonalScore(int& color) {
 			buffer << "/" << sv_fraglimit.asInt();
 		}
 	} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = GetTeamTextColor(plyr->userinfo.team);
-		buffer << TEAMpoints[plyr->userinfo.team];
+		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());		
+		buffer << GetTeamInfo(plyr->userinfo.team)->Points;
 
 		if (sv_gametype == GM_TEAMDM) {
 			if (sv_fraglimit.asInt() > 0) {
@@ -615,27 +616,31 @@ int CountSpectators()
 	return count;
 }
 
-std::string TeamPlayers(int& color, byte team) {
-	color = GetTeamTextColor((team_t)team);
+std::string TeamPlayers(int& color, byte team)
+{
+	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	std::ostringstream buffer;
 	buffer << (short)CountTeamPlayers(team);
 	return buffer.str();
 }
 
-const char* TeamName(int& color, byte team)
+std::string TeamName(int& color, byte team)
 {
-	color = GetTeamTextColor((team_t)team);
-	return GetTeamName((team_t)team);
+	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
+	color = V_GetTextColor(teamInfo->TextColor.c_str());
+	std::string name = teamInfo->ColorStringUpper;
+	return name.append(" TEAM");
 }
 
-std::string TeamFrags(int& color, byte team) {
+std::string TeamFrags(int& color, byte team)
+{
 	if (CountTeamPlayers(team) == 0) {
 		color = CR_GREY;
 		return "---";
 	}
 
-	color = GetTeamTextColor((team_t)team);
+	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	int fragcount = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
@@ -656,10 +661,11 @@ std::string TeamPoints(int& color, byte team) {
 		return "---";
 	}
 
-	color = GetTeamTextColor((team_t)team);
+	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
+	color = V_GetTextColor(teamInfo->TextColor.c_str());
 
 	std::ostringstream buffer;
-	buffer << TEAMpoints[team];
+	buffer << teamInfo->Points;
 	return buffer.str();
 }
 
@@ -669,7 +675,7 @@ std::string TeamKD(int& color, byte team) {
 		return "---";
 	}
 
-	color = GetTeamTextColor((team_t)team);
+	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	int killcount = 0;
 	unsigned int deathcount = 0;
@@ -812,7 +818,7 @@ static EColorRange GetTeamPlayerColor(player_t* player)
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
 			if (player->flags[i])
-				return GetTeamTextColor((team_t)i);
+				return (EColorRange)V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 		}
 	}
 
@@ -1302,7 +1308,7 @@ void EATargets(int x, int y, const float scale,
 		int color;
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 			// In teamgames, we want to use team colors for targets.
-			color = GetTeamTextColor(it->userinfo.team);
+			color = V_GetTextColor(GetTeamInfo(it->userinfo.team)->TextColor.c_str());
 		} else {
 			color = CR_GREY;
 		}

@@ -1428,7 +1428,7 @@ static void M_PlayerSetupDrawer (void)
 		team_t team = D_TeamByName(cl_team.cstring());
 		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamColorString(team));
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
@@ -1472,7 +1472,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 	}
 	team = (team_t)iTeam;
 
-	cl_team = GetTeamColorString(team);
+	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
 
 static void M_ChangeGender (int choice)

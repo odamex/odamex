@@ -35,9 +35,6 @@
 #include "s_sound.h"
 #include "v_text.h"
 
-flagdata CTFdata[NUMTEAMS];
-int TEAMpoints[NUMTEAMS];
-
 static int tintglow = 0;
 
 // denis - this is a lot clearer than doubly nested switches
@@ -68,11 +65,13 @@ void CTF_Connect()
 
 	for(i = 0; i < NUMTEAMS; i++)
 	{
-		CTFdata[i].flagger = 0;
-		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.state = (flag_state_t)MSG_ReadByte();
 		byte flagger = MSG_ReadByte();
 
-		if(CTFdata[i].state == flag_carried)
+		if(teamInfo->FlagData.state == flag_carried)
 		{
 			player_t &player = idplayer(flagger);
 
@@ -101,11 +100,13 @@ void CL_CTFEvent (void)
 	player_t &player = idplayer(MSG_ReadByte());
 	int points = MSG_ReadLong();
 
+	TeamInfo* teamInfo = GetTeamInfo(flag);
+
 	if(validplayer(player))
 		player.points = points;
 
 	for(size_t i = 0; i < NUMTEAMS; i++)
-		TEAMpoints[i] = MSG_ReadLong ();
+		GetTeamInfo((team_t)i)->Points = MSG_ReadLong ();
 
 	switch(event)
 	{
@@ -134,10 +135,10 @@ void CL_CTFEvent (void)
 				player.flags[flag] = 0;
 			}
 
-			CTFdata[flag].flagger = 0;
-			CTFdata[flag].state = flag_home;
-			if(CTFdata[flag].actor)
-				CTFdata[flag].actor->Destroy();
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = flag_home;
+			if(teamInfo->FlagData.actor)
+				teamInfo->FlagData.actor->Destroy();
 			break;
 
 		case SCORE_RETURN:
@@ -146,10 +147,10 @@ void CL_CTFEvent (void)
 				player.flags[flag] = 0;
 			}
 
-			CTFdata[flag].flagger = 0;
-			CTFdata[flag].state = flag_home;
-			if(CTFdata[flag].actor)
-				CTFdata[flag].actor->Destroy();
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = flag_home;
+			if(teamInfo->FlagData.actor)
+				teamInfo->FlagData.actor->Destroy();
 			break;
 
 		case SCORE_DROP:
@@ -158,10 +159,10 @@ void CL_CTFEvent (void)
 				player.flags[flag] = 0;
 			}
 
-			CTFdata[flag].flagger = 0;
-			CTFdata[flag].state = flag_dropped;
-			if(CTFdata[flag].actor)
-				CTFdata[flag].actor->Destroy();
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = flag_dropped;
+			if(teamInfo->FlagData.actor)
+				teamInfo->FlagData.actor->Destroy();
 			break;
 	}
 
@@ -183,7 +184,7 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			CTFdata[i].flagger = 0;
+			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
 		}
 	}
 }
@@ -217,12 +218,14 @@ void CTF_CarryFlag (player_t &player, team_t flag)
 	if (!validplayer(player))
 		return;
 
+	TeamInfo* teamInfo = GetTeamInfo(flag);
+
 	player.flags[flag] = true;
-	CTFdata[flag].flagger = player.id;
-	CTFdata[flag].state = flag_carried;
+	teamInfo->FlagData.flagger = player.id;
+	teamInfo->FlagData.state = flag_carried;
 
 	AActor *actor = new AActor(0, 0, 0, flag_table[flag][flag_carried]);
-	CTFdata[flag].actor = actor->ptr();
+	teamInfo->FlagData.actor = actor->ptr();
 
 	CTF_MoveFlags();
 }
@@ -236,19 +239,21 @@ void CTF_MoveFlags ()
 	// denis - flag is now a boolean
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		if(CTFdata[i].flagger && CTFdata[i].actor)
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+
+		if(teamInfo->FlagData.flagger && teamInfo->FlagData.actor)
 		{
-			player_t &player = idplayer(CTFdata[i].flagger);
-			AActor *flag = CTFdata[i].actor;
+			player_t &player = idplayer(teamInfo->FlagData.flagger);
+			AActor *flag = teamInfo->FlagData.actor;
 
 			if (!validplayer(player) || !player.mo)
 			{
 				// [SL] 2012-12-13 - Remove a flag if it's being carried but
 				// there's not a valid player carrying it (should not happen)
-				CTFdata[i].flagger = 0;
-				CTFdata[i].state = flag_home;
-				if(CTFdata[i].actor)
-					CTFdata[i].actor->Destroy();
+				teamInfo->FlagData.flagger = 0;
+				teamInfo->FlagData.state = flag_home;
+				if(teamInfo->FlagData.actor)
+					teamInfo->FlagData.actor->Destroy();
 				continue;
 			}
 
@@ -263,8 +268,8 @@ void CTF_MoveFlags ()
 			// [AM] The flag isn't actually being held by anybody, so if
 			// anything is in CTFdata[i].actor it's a ghost and should
 			// be cleaned up.
-			if(CTFdata[i].actor)
-				CTFdata[i].actor->Destroy();
+			if(teamInfo->FlagData.actor)
+				teamInfo->FlagData.actor->Destroy();
 		}
 	}
 }
@@ -310,17 +315,19 @@ void CTF_RunTics (void)
 	// Don't draw the flag the display player is carrying as it blocks the view.
 	for (size_t flag = 0; flag < NUMTEAMS; flag++)
 	{
-		if (!CTFdata[flag].actor)
+		TeamInfo* teamInfo = GetTeamInfo((team_t)flag);
+
+		if (!teamInfo->FlagData.actor)
 			continue;
 
-		if (CTFdata[flag].flagger == displayplayer().id && 
-			CTFdata[flag].state == flag_carried)
+		if (teamInfo->FlagData.flagger == displayplayer().id &&
+			teamInfo->FlagData.state == flag_carried)
 		{
-			CTFdata[flag].actor->flags2 |= MF2_DONTDRAW;
+			teamInfo->FlagData.actor->flags2 |= MF2_DONTDRAW;
 		}
 		else
 		{
-			CTFdata[flag].actor->flags2 &= ~MF2_DONTDRAW;
+			teamInfo->FlagData.actor->flags2 &= ~MF2_DONTDRAW;
 		}
 	}
 }
@@ -341,12 +348,14 @@ void CTF_DrawHud (void)
 	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == player.id)
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+
+		if(teamInfo->FlagData.state == flag_carried && teamInfo->FlagData.flagger == player.id)
 		{
-			if ((team_t)i == player.userinfo.team)
-				yourFlag = (team_t)i;
+			if (teamInfo->Team == player.userinfo.team)
+				yourFlag = teamInfo->Team;
 			else
-				enemyFlag = (team_t)i;
+				enemyFlag = teamInfo->Team;
 		}
 	}
 
@@ -370,17 +379,17 @@ void CTF_DrawHud (void)
 		if (yourFlag != NUMTEAMS && enemyFlag != NUMTEAMS)
 		{
 			if (tintglow < 15 || tintglow > 60)
-				tintColor = GetTeamColor(yourFlag);
+				tintColor = GetTeamInfo(yourFlag)->Color;
 			else
-				tintColor = GetTeamColor(enemyFlag);
+				tintColor = GetTeamInfo(enemyFlag)->Color;
 		}
 		else if (enemyFlag != NUMTEAMS)
 		{
-			tintColor = GetTeamColor(enemyFlag);
+			tintColor = GetTeamInfo(enemyFlag)->Color;
 		}
 		else if (yourFlag != NUMTEAMS)
 		{
-			tintColor = GetTeamColor(yourFlag);
+			tintColor = GetTeamInfo(yourFlag)->Color;
 		}
 
 		if (tintColor != 0)
@@ -623,9 +632,9 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 		// fallthrough
 	case 1:
 		if (ev == SCORE_CAPTURE)
-			C_GMidPrint(flag_message[ev][2 + team], GetTeamTextColor(team), 0);
+			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor.c_str()), 0);
 		else
-			C_GMidPrint(flag_message[ev][2 + flag], GetTeamTextColor(flag), 0);
+			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor.c_str()), 0);
 		break;
 	default:
 		break;

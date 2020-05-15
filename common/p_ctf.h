@@ -26,55 +26,6 @@
 #include "d_netinf.h"
 #include "p_local.h"
 
-//	Map ID for flags
-#define	ID_BLUE_FLAG	5130
-#define	ID_RED_FLAG		5131
-#define ID_GREEN_FLAG	5133
-
-#define ID_BLUE_TEAM_SPAWN		5080
-#define ID_RED_TEAM_SPAWN		5081
-#define ID_GREEN_TEAM_SPAWN		5083
-// Reserve for maintaining the DOOM CTF standard.
-//#define ID_NEUTRAL_FLAG	5132
-//#define ID_TEAM3_FLAG	5133
-//#define ID_TEAM4_FLAG	5134
-
-// flags can only be in one of these states
-enum flag_state_t
-{
-	flag_home,
-	flag_dropped,
-	flag_carried,
-
-	NUMFLAGSTATES
-};
-
-// data associated with a flag
-struct flagdata
-{
-	// Does this flag have a spawn yet?
-	bool flaglocated;
-
-	// Actor when being carried by a player, follows player
-	AActor::AActorPtr actor;
-
-	// Integer representation of WHO has each flag (player id)
-	byte flagger;
-	int	pickup_time;
-
-	// Flag locations
-	int x, y, z;
-
-	// Flag Timout Counters
-	int timeout;
-
-	// True when a flag has been dropped
-	flag_state_t state;
-
-	// Used for the blinking flag indicator on the statusbar
-	int sb_tick;
-};
-
 // events
 enum flag_score_t
 {
@@ -112,22 +63,9 @@ void CTF_RememberFlagPos(mapthing2_t *mthing);
 void CTF_CheckFlags(player_t &player);
 void CTF_Sound(team_t f, team_t t, flag_score_t event);
 void CTF_Message(team_t f, team_t t, flag_score_t event);
-// void CTF_TossFlag(player_t &player);  [ML] 04/4/06: Removed buggy flagtoss
-// void CTF_SpawnPlayer(player_t &player);	// denis - todo - where's the implementation!?
-
-//	Externals
-// EXTERN_CVAR (sv_scorelimit)
-
-// CTF Game Data
-extern flagdata CTFdata[NUMTEAMS];
-extern int TEAMpoints[NUMTEAMS];
 
 FArchive &operator<< (FArchive &arc, flagdata &flag);
 FArchive &operator>> (FArchive &arc, flagdata &flag);
-
-//	Colors
-#define	BLUECOLOR		200
-#define	REDCOLOR		176
 
 #endif
 

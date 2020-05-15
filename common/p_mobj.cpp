@@ -2323,20 +2323,18 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (mthing->type == ID_BLUE_TEAM_SPAWN && sv_teamspawns)
+	if (sv_teamspawns)
 	{
-		TeamStarts[TEAM_BLUE].push_back(*mthing);
-		return;
-	}
-	else if (mthing->type == ID_RED_TEAM_SPAWN && sv_teamspawns)
-	{
-		TeamStarts[TEAM_RED].push_back(*mthing);
-		return;
-	}
-	else if (mthing->type == ID_GREEN_TEAM_SPAWN && sv_teamspawns)
-	{
-		TeamStarts[TEAM_GREEN].push_back(*mthing);
-		return;
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+			if (mthing->type == teamInfo->TeamSpawnThingNum)
+			{
+				teamInfo->Starts.push_back(*mthing);
+				return;
+			}
+		}
 	}
 
 	// [RH] Record polyobject-related things
@@ -2637,13 +2635,15 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (sv_gametype == GM_CTF)
 	{
-		// [Toke - CTF] Setup flag sockets
-		if (mthing->type == ID_BLUE_FLAG)
-			SpawnFlag(mthing, TEAM_BLUE);
-		else if (mthing->type == ID_RED_FLAG)
-			SpawnFlag(mthing, TEAM_RED);
-		else if (mthing->type == ID_GREEN_FLAG)
-			SpawnFlag(mthing, TEAM_GREEN);
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			if (mthing->type == teamInfo->FlagThingNum)
+			{
+				SpawnFlag(mthing, teamInfo->Team);
+				break;
+			}
+		}
 	}
 
 	// [RH] Go dormant as needed
@@ -2653,8 +2653,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 void SpawnFlag(mapthing2_t* mthing, team_t flag)
 {
-	flagdata *data = &CTFdata[flag];
-	if (data->flaglocated)
+	if (GetTeamInfo(flag)->FlagData.flaglocated)
 		return;
 
 	CTF_RememberFlagPos(mthing);

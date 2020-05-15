@@ -26,6 +26,7 @@
 #include "info.h"
 
 #include "d_items.h"
+#include "teaminfo.h"
 
 
 //

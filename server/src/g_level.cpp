@@ -521,11 +521,11 @@ void G_DoResetLevel(bool full_reset)
 		for (size_t i = 0;i < NUMTEAMS;i++)
 		{
 			for (it = players.begin();it != players.end();++it)
-			{
 				it->flags[i] = false;
-			}
-			CTFdata[i].flagger = 0;
-			CTFdata[i].state = flag_home;
+
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = flag_home;
 		}
 	}
 
@@ -590,7 +590,7 @@ void G_DoResetLevel(bool full_reset)
 		level.time = level_time;
 		// Clear global goals.
 		for (size_t i = 0; i < NUMTEAMS; i++)
-			TEAMpoints[i] = 0;
+			GetTeamInfo((team_t)i)->Points;
 		// Clear player information.
 		for (it = players.begin();it != players.end();++it)
 		{
@@ -733,7 +733,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
-			TEAMpoints[i] = 0;
+			GetTeamInfo((team_t)i)->Points = 0;
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
@@ -769,7 +769,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_CTF) {
 
 		for (int i = 0; i < NUMTEAMS; i++)
-			CTFdata[i].flaglocated = false;
+			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
 
 	P_SetupLevel (level.mapname, position);
@@ -779,9 +779,10 @@ void G_DoLoadLevel (int position)
 	{
 		for (int i = 0; i < sv_teamsinplay; i++)
 		{
-			if (!CTFdata[i].flaglocated)
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			if (!teamInfo->FlagData.flaglocated)
 			{
-				const char* teamColor = GetTeamColorStringCase((team_t)i);
+				const char* teamColor = teamInfo->ColorString.c_str();
 				SV_BroadcastPrintf(PRINT_HIGH, "WARNING: %s flag pedestal not found! No %s flags in game.\n", teamColor, teamColor);
 			}
 		}

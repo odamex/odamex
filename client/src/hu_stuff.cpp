@@ -638,20 +638,21 @@ namespace hud {
 
 static int GetLongestTeamWidth()
 {
+	int color;
 	int longest = 0;
-	const char* longestTeamName = "";
+	std::string longestTeamName;
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		const char* teamName = GetTeamName((team_t)i);
-		int length = strlen(teamName);
+		std::string name = TeamName(color, i);
+		int length = name.length();
 		if (length > longest)
 		{
 			longest = length;
-			longestTeamName = teamName;
+			longestTeamName = name;
 		}
 	}
 
-	std::string teamString = std::string(longestTeamName) + ": ";
+	std::string teamString = longestTeamName + ": ";
 	return V_StringWidth(teamString.c_str());
 }
 
@@ -951,7 +952,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			hud::X_RIGHT, hud::Y_TOP,
 			"PNG", CR_GREY, true);
 
-		color = GetTeamTextColor((team_t)i);
+		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
 		for (short xi = tx[i]; xi < tx[i] + 232; xi += 2)
 		{
@@ -1365,7 +1366,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		color = GetTeamTextColor((team_t)i);
+		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
 		for (short xi = -146 + 1;xi < 146;xi += 2)
 		{

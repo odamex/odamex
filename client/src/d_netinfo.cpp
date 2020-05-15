@@ -103,11 +103,10 @@ gender_t D_GenderByName (const char *gender)
 //
 team_t D_TeamByName (const char *team)
 {
-	const char** names = GetTeamColorStrings();
-
 	for (int i = 0; i < NUMTEAMS; i++)
 	{
-		if (stricmp(team, names[i]) == 0)
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		if (stricmp(team, teamInfo->ColorString.c_str()) == 0)
 			return (team_t)i;
 	}
 

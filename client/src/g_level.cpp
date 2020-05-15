@@ -597,12 +597,13 @@ void G_DoLoadLevel (int position)
 				P_SpawnPlayer(consoleplayer(), &DeathMatchStarts[n]);
 		}
 
-		for (size_t team = 0; team < TeamStarts->size(); team++)
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			for (size_t n = 0; n < TeamStarts[team].size(); n++)
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			for (size_t n = 0; n < teamInfo->Starts.size(); n++)
 			{
-				if (G_CheckSpot(consoleplayer(), &TeamStarts[team][n]))
-					P_SpawnPlayer(consoleplayer(), &TeamStarts[team][n]);
+				if (G_CheckSpot(consoleplayer(), &teamInfo->Starts[n]))
+					P_SpawnPlayer(consoleplayer(), &teamInfo->Starts[n]);
 			}
 		}
 	}

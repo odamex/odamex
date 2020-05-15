@@ -195,9 +195,10 @@ next:
 
 		for (int i = 0; i < teams; i++)
 		{
-			MSG_WriteString(&ml_message, GetTeamColorStringCase((team_t)i));
-			MSG_WriteLong(&ml_message, GetTeamColor((team_t)i));
-			MSG_WriteShort(&ml_message, TEAMpoints[i]);
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
+			MSG_WriteLong(&ml_message, teamInfo->Color);
+			MSG_WriteShort(&ml_message, teamInfo->Points);
 		}
 	}
 

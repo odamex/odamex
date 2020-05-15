@@ -86,7 +86,6 @@ extern patch_t	*faces[];
 extern int		st_faceindex;
 extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
-extern flagdata CTFdata[NUMTEAMS];
 
 extern NetDemo netdemo;
 
@@ -470,12 +469,13 @@ void drawCTF() {
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 		const patch_t* drawPatch = flagHome[i];
 
-		switch (CTFdata[i].state)
+		switch (teamInfo->FlagData.state)
 		{
 		case flag_carried:
-			if (idplayer(CTFdata[i].flagger).userinfo.team == i)
+			if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
 				drawPatch = flagReturn[i];
 			else
 				drawPatch = flagTaken[i];
@@ -501,7 +501,7 @@ void drawCTF() {
 		}
 
 		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
-			screen, TEAMpoints[i]);
+			screen, teamInfo->Points);
 
 		patchPosY -= 18;
 	}

@@ -472,7 +472,7 @@ static mapthing2_t* SelectTeamSpot(player_t &player, std::vector<mapthing2_t>& s
 static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
 {
 	if (player.userinfo.team < NUMTEAMS)
-		return SelectTeamSpot(player, TeamStarts[player.userinfo.team], selections);
+		return SelectTeamSpot(player, GetTeamInfo(player.userinfo.team)->Starts, selections);
 
 	return SelectRandomDeathmatchSpot(player, selections);
 }
@@ -486,7 +486,7 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 
 	// [Toke - CTF - starts]
 	if (player.userinfo.team < sv_teamsinplay)
-		selections = TeamStarts[player.userinfo.team].size();
+		selections = GetTeamInfo(player.userinfo.team)->Starts.size();
 
 	// denis - fall back to deathmatch spawnpoints, if no team ones available
 	if (selections < 1)

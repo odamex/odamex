@@ -27,6 +27,7 @@
 
 #include "doomdef.h"
 #include "c_cvars.h"
+#include "teaminfo.h"
 
 #define MAXPLAYERNAME	15
 

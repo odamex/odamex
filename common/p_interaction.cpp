@@ -115,7 +115,8 @@ void P_GiveTeamPoints(player_t* player, int num)
 {
 	if (!warmup.checkscorechange())
 		return;
-	TEAMpoints[player->userinfo.team] += num;
+
+	GetTeamInfo(player->userinfo.team)->Points += num;
 }
 
 //
@@ -465,7 +466,6 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	AActor *toucher = player->mo;
 	int sound = 0;
 	const OString* msg = NULL;
-	bool firstgrab = false;
 	ItemEquipVal val = IEV_EquipRemove;
 
 	// Identify by sprite.
@@ -728,50 +728,34 @@ void P_GiveSpecial(player_t *player, AActor *special)
             sound = 2;
             break;
 
-	// [Toke - CTF - Core]
-        case SPR_BFLG: // Player touches the blue flag at its base
-            firstgrab = true;
-			//Fall through to flag touch
-        case SPR_BDWN: // Player touches the blue flag after it's been dropped
-			val = SV_FlagTouch(*player, TEAM_BLUE, firstgrab);
-			sound = -1;
-            break;
-
-        case SPR_BSOK:
-            SV_SocketTouch(*player, TEAM_BLUE);
-            return;
-
-        case SPR_RFLG: // Player touches the red flag at its base
-            firstgrab = true;
-			//Fall through to flag touch
-        case SPR_RDWN: // Player touches the red flag after its been dropped
-			val = SV_FlagTouch(*player, TEAM_RED, firstgrab);
-			sound = -1;
-            break;
-
-        case SPR_RSOK:
-            SV_SocketTouch(*player, TEAM_RED);
-            return;
-
-		case SPR_GFLG:
-			firstgrab = true;
-		case SPR_GDWN:
-			val = SV_FlagTouch(*player, TEAM_GREEN, firstgrab);
-			sound = -1;
-			break;
-
-		case SPR_GSOK:
-			SV_SocketTouch(*player, TEAM_GREEN);
-			return;
-
         default:
-            Printf(
-                PRINT_HIGH,
-                "P_SpecialThing: Unknown gettable thing %d: %s\n",
-                special->sprite,
-                special->info->name
-            );
-            return;
+		{
+			bool teamItemSuccess = false;
+			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+			{
+				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+				if (teamInfo->FlagSprite == special->sprite || teamInfo->FlagDownSprite == special->sprite)
+				{
+					val = SV_FlagTouch(*player, teamInfo->Team, teamInfo->FlagSprite == special->sprite);
+					sound = -1;
+					teamItemSuccess = true;
+					break;
+				}
+
+				if (teamInfo->FlagSocketSprite == special->sprite)
+				{
+					SV_SocketTouch(*player, teamInfo->Team);
+					return;
+				}
+			}
+
+			if (!teamItemSuccess)
+			{
+				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
+				return;
+			}
+		}
 	}
 
 	if (special->flags & MF_COUNTITEM)
@@ -1130,12 +1114,12 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		{
 			for (size_t i = 0; i < NUMTEAMS; i++)
 			{
-				if (TEAMpoints[i] >= sv_fraglimit)
+				if (GetTeamInfo((team_t)i)->Points >= sv_fraglimit)
 				{
 					SV_BroadcastPrintf(
                         PRINT_HIGH,
                         "Frag limit hit. %s team wins!\n",
-						GetTeamColorStringCase((team_t)i)
+						GetTeamInfo((team_t)i)->ColorString.c_str()
                     );
 					shotclock = TICRATE * 2;
 					break;
