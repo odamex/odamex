@@ -49,6 +49,7 @@ EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
+EXTERN_CVAR (sv_teamsinplay)
 
 //
 // CTF_Connect
@@ -476,6 +477,19 @@ enum PossessiveType
 	Theirs
 };
 
+// If two teams in play then the event is possessive
+// For more than two teams the event will only be possessive for your team events only
+bool IsPossesiveEvent(team_t playerTeam, team_t flag, team_t team, flag_score_t ev)
+{
+	if (sv_teamsinplay.asInt() == 2)
+		return true;
+
+	if (ev == SCORE_CAPTURE && team == playerTeam)
+		return true;
+
+	return flag == playerTeam;
+}
+
 // [AM] Play appropriate sounds for CTF events.
 void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 {
@@ -515,7 +529,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 			else if ((ev == SCORE_RETURN || ev == SCORE_MANUALRETURN || ev == SCORE_DROP || ev == SCORE_GRAB || ev == SCORE_FIRSTGRAB) && playerTeam == flag)
 				sound = Yours;
 
-			if (S_FindSound(flag_sound[ev][2 + sound]))
+			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(flag_sound[ev][2 + sound]))
 			{
 				S_Sound(CHAN_ANNOUNCER, flag_sound[ev][2 + sound], 1, ATTN_NONE);
 				break;
@@ -626,8 +640,11 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 				}
 			}
 
-			C_GMidPrint(flag_message[ev][msg], color, 0);
-			break;
+			if (IsPossesiveEvent(playerTeam, flag, team, ev))
+			{
+				C_GMidPrint(flag_message[ev][msg], color, 0);
+				break;
+			}
 		}
 		// fallthrough
 	case 1:
