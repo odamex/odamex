@@ -39,6 +39,7 @@ ExternalProject_Add(jsoncpp-project
 add_library(jsoncpp STATIC IMPORTED GLOBAL)
 add_dependencies(jsoncpp jsoncpp-project)
 set_target_properties(jsoncpp PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
   IMPORTED_LOCATION ${JSONCPP_LIBRARY})
 
@@ -68,7 +69,6 @@ file(MAKE_DIRECTORY "${MINIUPNPC_INCLUDE_DIR}")
 add_library(upnpc-static STATIC IMPORTED GLOBAL)
 add_dependencies(upnpc-static miniupnpc-project)
 set_target_properties(upnpc-static PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
   INTERFACE_INCLUDE_DIRECTORIES "${MINIUPNPC_INCLUDE_DIR}"
   IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
 if(WIN32)
