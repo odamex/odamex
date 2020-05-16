@@ -27,9 +27,7 @@ endif()
 define_platform()
 
 # Server definitions
-add_definitions(-DJSON_IS_AMALGAMATION)
-
-if (USE_MINIUPNP)
+if(USE_MINIUPNP)
   add_definitions(-DODA_HAVE_MINIUPNP)
 endif()
 
