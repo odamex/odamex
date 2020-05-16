@@ -954,7 +954,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 
 		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
-		for (short xi = tx[i]; xi < tx[i] + 232; xi += 2)
+		for (short xi = xOffset; xi < xOffset + 232; xi += 2)
 		{
 			hud::DrawTranslatedPatch(xi, yOffset + y + 8, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
