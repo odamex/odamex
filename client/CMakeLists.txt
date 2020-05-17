@@ -41,17 +41,6 @@ define_platform()
 # Client definitions
 include_directories(${CLIENT_DIR})
 
-# Textscreen
-set(TEXTSCREEN_LIBRARY "textscreen")
-set(TEXTSCREEN_DIR ../libraries/textscreen)
-set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
-
-include_directories(${TEXTSCREEN_DIR})
-add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
-target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
-message(STATUS "Textscreen will be statically linked.")
-
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)
   list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
@@ -169,14 +158,27 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 # Client target
-if(SDL_VERSION)
+if(TRUE)
+  # Textscreen
+  set(TEXTSCREEN_LIBRARY "textscreen")
+  set(TEXTSCREEN_DIR ../libraries/textscreen)
+  set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
+  set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
+
+  include_directories(${TEXTSCREEN_DIR})
+  add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+  target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
+  target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
+
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
-  target_link_libraries(odamex odamex-common)
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
-
-  target_link_libraries(odamex ${ZLIB_LIBRARY})
+  target_link_libraries(odamex odamex-common)
+  if(SDL_FOUND)
+    target_link_libraries(odamex SDL::SDL SDL::SDLmain SDL::mixer)
+  else()
+    target_link_libraries(odamex SDL2::SDL2 SDL2::SDL2main SDL2::mixer)
+  endif()
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})
 
   if(ENABLE_PORTMIDI)

@@ -19,6 +19,8 @@ set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 include(ExternalProject)
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
+### JsonCpp ###
+
 # Figure out the correct library path to attach to our imported target
 set(JSONCPP_LIBRARY
   "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncpp${libsuffix}")
@@ -42,6 +44,8 @@ set_target_properties(jsoncpp PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
   IMPORTED_LOCATION ${JSONCPP_LIBRARY})
+
+### MiniUPnPc ###
 
 # Figure out the correct library path to attach to our imported target
 set(MINIUPNPC_LIBRARY
@@ -117,7 +121,38 @@ if(NOT USE_SDL12 AND NOT SDL2_FOUND)
       set(SDL2MAIN_LIBRARY "${SDL2_DIR}/lib/libSDL2main.a" CACHE FILEPATH "")
     endif()
   endif()
+
   find_package(SDL2)
+
+  if(SDL2_FOUND)
+    # SDL2 library
+    add_library(SDL2::SDL2 UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(SDL2::SDL2 PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${SDL2_INCLUDE_DIR}"
+      IMPORTED_LOCATION "${SDL2_LIBRARY}")
+
+    # SDL2main library
+    if(MINGW)
+      # Gross hack to get mingw32 first in the linker order.
+      add_library(SDL2::_SDL2main_detail UNKNOWN IMPORTED GLOBAL)
+      set_target_properties(SDL2::_SDL2main_detail PROPERTIES
+        IMPORTED_LOCATION "${SDL2_MAIN_LIBRARY}")
+
+      # Ensure that SDL2main comes before SDL2 in the linker order.  CMake
+      # isn't smart enough to keep proper ordering for indirect dependencies
+      # so we have to spell it out here.
+      target_link_libraries(SDL2::_SDL2main_detail INTERFACE SDL2::SDL2)
+
+      add_library(SDL2::SDL2main INTERFACE IMPORTED GLOBAL)
+      set_target_properties(SDL2::SDL2main PROPERTIES
+        IMPORTED_LIBNAME mingw32)
+      target_link_libraries(SDL2::SDL2main INTERFACE SDL2::_SDL2main_detail)
+    else()
+      add_library(SDL2::SDL2main UNKNOWN IMPORTED GLOBAL)
+      set_target_properties(SDL2::SDL2main PROPERTIES
+        IMPORTED_LOCATION "${SDL2MAIN_LIBRARY}")
+    endif()
+  endif()
 endif()
 
 ### SDL2_mixer ###
@@ -159,7 +194,17 @@ if(NOT USE_SDL12 AND NOT SDL2_MIXER_FOUND)
       set(SDL2_MIXER_LIBRARY "${SDL2_MIXER_DIR}/lib/libSDL2_mixer.dll.a" CACHE FILEPATH "")
     endif()
   endif()
+
   find_package(SDL2_mixer)
+
+  if(SDL2_MIXER_FOUND)
+    # SDL2_mixer library
+    add_library(SDL2::mixer UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(SDL2::mixer PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${SDL2_MIXER_INCLUDE_DIR}"
+      INTERFACE_LINK_LIBRARIES SDL2::SDL2
+      IMPORTED_LOCATION "${SDL2_MIXER_LIBRARY}")
+  endif()
 endif()
 
 # if(NOT SDL2_FOUND OR NOT SDL2_MIXER_FOUND)
