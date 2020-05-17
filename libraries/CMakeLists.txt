@@ -81,9 +81,8 @@ endif()
 
 ### SDL2 ###
 
-if(NOT USE_SDL12 AND NOT SDL2_FOUND)
+if(NOT USE_SDL12)
   if(WIN32)
-    message(STATUS "Downloading SDL2 Development Library...")
     if(MSVC)
       file(DOWNLOAD
         "https://www.libsdl.org/release/SDL2-devel-2.0.12-VC.zip"
@@ -159,7 +158,6 @@ endif()
 
 if(NOT USE_SDL12 AND NOT SDL2_MIXER_FOUND)
   if(WIN32)
-    message(STATUS "Downloading SDL2_mixer Development Library...")
     if(MSVC)
       file(DOWNLOAD
         "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.4-VC.zip"

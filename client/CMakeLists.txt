@@ -158,7 +158,7 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 # Client target
-if(TRUE)
+if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   # Textscreen
   set(TEXTSCREEN_LIBRARY "textscreen")
   set(TEXTSCREEN_DIR ../libraries/textscreen)
@@ -174,7 +174,7 @@ if(TRUE)
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex odamex-common)
-  if(SDL_FOUND)
+  if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL SDL::SDLmain SDL::mixer)
   else()
     target_link_libraries(odamex SDL2::SDL2 SDL2::SDL2main SDL2::mixer)
@@ -229,13 +229,13 @@ if(TRUE)
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
-    if(SDL2_FOUND AND SDL2_MIXER_FOUND)
-        string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL2_LIBRARY})
-        string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDL2_MIXER_LIBRARY})
-    else(SDL2_FOUND AND SDL2_MIXER_FOUND)
-        string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
-        string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
-    endif()
+    # if(SDL2_FOUND AND SDL2_MIXER_FOUND)
+    #     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL2_LIBRARY})
+    #     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDL2_MIXER_LIBRARY})
+    # else(SDL2_FOUND AND SDL2_MIXER_FOUND)
+    #     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
+    #     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
+    # endif()
 
     # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})
