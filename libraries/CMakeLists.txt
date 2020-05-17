@@ -136,7 +136,7 @@ if(NOT USE_SDL12 AND NOT SDL2_FOUND)
       # Gross hack to get mingw32 first in the linker order.
       add_library(SDL2::_SDL2main_detail UNKNOWN IMPORTED GLOBAL)
       set_target_properties(SDL2::_SDL2main_detail PROPERTIES
-        IMPORTED_LOCATION "${SDL2_MAIN_LIBRARY}")
+        IMPORTED_LOCATION "${SDL2MAIN_LIBRARY}")
 
       # Ensure that SDL2main comes before SDL2 in the linker order.  CMake
       # isn't smart enough to keep proper ordering for indirect dependencies
