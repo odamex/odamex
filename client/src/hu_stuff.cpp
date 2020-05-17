@@ -907,7 +907,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 
 		// Add spacing between team rows
 		if (row > 0)
-			yOffset += 8;
+			yOffset += 8 * row;
 
 		// Adjust y with next row yOffset so spectators draw correctly
 		if (i == teams)
@@ -916,7 +916,8 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 				row++;
 			y += (row * DefaultTeamHeight) + (row * extra_rows * 8);
 			// Account for extra spacing between rows after the first
-			y += (row - 1) * 8;
+			if (row > 1)
+				y += row * 8;
 			break;
 		}
 
@@ -1148,7 +1149,7 @@ void Scoreboard(player_t *player)
 				teams++;
 			extraQuadRows = teams - 2;
 			height += extraQuadRows / 2 * DefaultTeamHeight;
-			height += (sv_teamsinplay - 2) * 16;
+			height += extraQuadRows * 16;
 		}
 	} 
 	else
@@ -1166,11 +1167,7 @@ void Scoreboard(player_t *player)
 	if (specs > 3)
 		extra_spec_rows += ((specs + 2) / 3) - 1;
 
-	if (extraQuadRows > 0)
-		height += extra_player_rows * 8 * extraQuadRows;
-	else
-		height += extra_player_rows * 8;
-
+	height += extra_player_rows * 8;
 	height += extra_spec_rows * 8;
 
 	// Starting Y position, measured from the center up.
@@ -1190,7 +1187,10 @@ void Scoreboard(player_t *player)
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		// Teams after 2 require extra player count in header
-		y += 31 + (sv_teamsinplay - 2) * 8;
+		int teams = sv_teamsinplay - 2;
+		if (teams % 2 != 0)
+			teams++;
+		y += 31 + (teams * 8);
 		hud::drawTeamScores(player, y, extra_player_rows);
 	} 
 	else
