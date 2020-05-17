@@ -1110,6 +1110,8 @@ static void ClampToScreenTopLeft(int& y, int& height)
 	{
 		y = -(maxHeight / 2);
 		height = maxHeight;
+		if (maxHeight % 2 != 0)
+			height--;
 	}
 	if (abs(y) > maxHeight / 2)
 	{
@@ -1117,7 +1119,6 @@ static void ClampToScreenTopLeft(int& y, int& height)
 			y = -maxHeight / 2;
 		else
 			y = maxHeight / 2;
-		y = hud::YSize(hud_scalescoreboard);
 	}
 }
 
