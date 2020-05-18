@@ -1,3 +1,5 @@
+include(OdamexCopyLibs)
+
 # use unquoted #defines
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
@@ -199,6 +201,8 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       target_link_libraries(odamex X11)
     endif()
   endif()
+
+  odamex_copy_libs(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
