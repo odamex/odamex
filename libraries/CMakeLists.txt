@@ -242,6 +242,7 @@ if(USE_SDL12)
       add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
       set_target_properties(SDL::SDLmain PROPERTIES
         IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+    endif()
   endif()
 
   ### SDL_mixer ###
