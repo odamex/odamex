@@ -124,13 +124,13 @@ if(NOT USE_SDL12)
   find_package(SDL2)
 
   if(SDL2_FOUND)
-    # SDL2 library
+    # SDL2 target.
     add_library(SDL2::SDL2 UNKNOWN IMPORTED GLOBAL)
     set_target_properties(SDL2::SDL2 PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${SDL2_INCLUDE_DIR}"
       IMPORTED_LOCATION "${SDL2_LIBRARY}")
 
-    # SDL2main library
+    # SDL2main target.
     if(MINGW)
       # Gross hack to get mingw32 first in the linker order.
       add_library(SDL2::_SDL2main_detail UNKNOWN IMPORTED GLOBAL)
@@ -156,7 +156,7 @@ endif()
 
 ### SDL2_mixer ###
 
-if(NOT USE_SDL12 AND NOT SDL2_MIXER_FOUND)
+if(NOT USE_SDL12)
   if(WIN32)
     if(MSVC)
       file(DOWNLOAD
@@ -196,7 +196,7 @@ if(NOT USE_SDL12 AND NOT SDL2_MIXER_FOUND)
   find_package(SDL2_mixer)
 
   if(SDL2_MIXER_FOUND)
-    # SDL2_mixer library
+    # SDL2_mixer target.
     add_library(SDL2::mixer UNKNOWN IMPORTED GLOBAL)
     set_target_properties(SDL2::mixer PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${SDL2_MIXER_INCLUDE_DIR}"
@@ -205,44 +205,56 @@ if(NOT USE_SDL12 AND NOT SDL2_MIXER_FOUND)
   endif()
 endif()
 
-# if(NOT SDL2_FOUND OR NOT SDL2_MIXER_FOUND)
-#   find_package(SDL)
-#   find_package(SDL_mixer)
-#   if(SDL_FOUND AND SDLMIXER_FOUND)
-#     set(SDL_VERSION "1")
-#     message(STATUS "Using SDL library version 1.2.")
-#     include_directories(${SDL_INCLUDE_DIR})
-#     include_directories(${SDL_MIXER_INCLUDE_DIR})
-#     set(SDL_LINK_LIBRARIES ${SDL_LIBRARY} ${SDL_MIXER_LIBRARY})
-#   else()
-#     if(NOT SDL_FOUND)
-#       message(WARNING "SDL not found, client target not generated.")
-# 	endif()
-#     if(NOT SDLMIXER_FOUND)
-#       message(WARNING "SDL_mixer not found, client target not generated.")
-#     endif()
-#     SET(BUILD_CLIENT OFF CACHE BOOL "" FORCE)
-#   endif()
-# endif()
+# We only get SDL 1.2 if the builder explicitly asks for it, and we do not
+# provide it ourselves, since SDL2 is preferred on most platforms and we
+# assume the builder knows what they're doing asking for 1.2.
+if(USE_SDL12)
 
-# # SDL2main imported target.
-# if(MINGW)
-#   # Gross hack to get mingw32 first in the linker order.
-#   add_library(SDL2::_SDL2main_detail UNKNOWN IMPORTED)
-#   set_target_properties(SDL2::_SDL2main_detail PROPERTIES
-#     IMPORTED_LOCATION "${SDL2_MAIN_LIBRARY}")
+  ### SDL ###
 
-#   # Ensure that SDL2main comes before SDL2 in the linker order.  CMake
-#   # isn't smart enough to keep proper ordering for indirect dependencies
-#   # so we have to spell it out here.
-#   target_link_libraries(SDL2::_SDL2main_detail INTERFACE SDL2::SDL2)
+  find_package(SDL)
+  if(SDL_FOUND)
+    message(STATUS "Using SDL ${SDL_VERSION_STRING}")
 
-#   add_library(SDL2::SDL2main INTERFACE IMPORTED)
-#   set_target_properties(SDL2::SDL2main PROPERTIES
-#     IMPORTED_LIBNAME mingw32)
-#   target_link_libraries(SDL2::SDL2main INTERFACE SDL2::_SDL2main_detail)
-# else()
-#   add_library(SDL2::SDL2main UNKNOWN IMPORTED)
-#   set_target_properties(SDL2::SDL2main PROPERTIES
-#     IMPORTED_LOCATION "${SDL2_MAIN_LIBRARY}")
-# endif()
+    # SDL target.
+    add_library(SDL::SDL UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(SDL::SDL PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${SDL_INCLUDE_DIR}"
+      IMPORTED_LOCATION "${SDL_LIBRARY}")
+
+    # SDLmain target.
+    if(MINGW)
+      # Gross hack to get mingw32 first in the linker order.
+      add_library(SDL::_SDLmain_detail UNKNOWN IMPORTED GLOBAL)
+      set_target_properties(SDL::_SDLmain_detail PROPERTIES
+        IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+
+      # Ensure that SDLmain comes before SDL in the linker order.  CMake
+      # isn't smart enough to keep proper ordering for indirect dependencies
+      # so we have to spell it out here.
+      target_link_libraries(SDL::_SDLmain_detail INTERFACE SDL::SDL)
+
+      add_library(SDL::SDLmain INTERFACE IMPORTED GLOBAL)
+      set_target_properties(SDL::SDLmain PROPERTIES
+        IMPORTED_LIBNAME mingw32)
+      target_link_libraries(SDL::SDLmain INTERFACE SDL::_SDLmain_detail)
+    else()
+      add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
+      set_target_properties(SDL::SDLmain PROPERTIES
+        IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+  endif()
+
+  ### SDL_mixer ###
+
+  find_package(SDL_mixer)
+  if(SDL_FOUND)
+    message(STATUS "Using SDL_mixer ${SDL_MIXER_VERSION_STRING}")
+
+    # SDL_mixer target.
+    add_library(SDL::mixer UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(SDL::mixer PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${SDL_MIXER_INCLUDE_DIR}"
+      INTERFACE_LINK_LIBRARIES SDL::SDL
+      IMPORTED_LOCATION "${SDL_MIXER_LIBRARY}")
+  endif()
+endif()
