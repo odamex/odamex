@@ -214,7 +214,21 @@ if(USE_SDL12)
 
   find_package(SDL)
   if(SDL_FOUND)
-    message(STATUS "Using SDL ${SDL_VERSION_STRING}")
+    message(STATUS "Using SDL version ${SDL_VERSION_STRING}")
+
+    # [AM] FindSDL.cmake is kind of a hot mess, this is my best attempt at
+    #      turning it into a neat and tidy target.
+    if(UNIX AND NOT APPLE)
+      # On Linux, CMake rolls all the link libraries into one list - the main
+      # library, the actual library, and pthread (which sdl-config says is
+      # unnecessary).
+      list(POP_FRONT SDL_LIBRARY)
+      list(POP_FRONT SDL_LIBRARY SDL_ACTUAL_LIBRARY)
+      set(SDL_LIBRARY "${SDL_ACTUAL_LIBRARY}")
+      unset(SDL_ACTUAL_LIBRARY)
+    else()
+      message(FATAL_ERROR "Unknown platform for SDL 1.2")
+    endif()
 
     # SDL target.
     add_library(SDL::SDL UNKNOWN IMPORTED GLOBAL)
@@ -223,33 +237,16 @@ if(USE_SDL12)
       IMPORTED_LOCATION "${SDL_LIBRARY}")
 
     # SDLmain target.
-    if(MINGW)
-      # Gross hack to get mingw32 first in the linker order.
-      add_library(SDL::_SDLmain_detail UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(SDL::_SDLmain_detail PROPERTIES
-        IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
-
-      # Ensure that SDLmain comes before SDL in the linker order.  CMake
-      # isn't smart enough to keep proper ordering for indirect dependencies
-      # so we have to spell it out here.
-      target_link_libraries(SDL::_SDLmain_detail INTERFACE SDL::SDL)
-
-      add_library(SDL::SDLmain INTERFACE IMPORTED GLOBAL)
-      set_target_properties(SDL::SDLmain PROPERTIES
-        IMPORTED_LIBNAME mingw32)
-      target_link_libraries(SDL::SDLmain INTERFACE SDL::_SDLmain_detail)
-    else()
-      add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(SDL::SDLmain PROPERTIES
-        IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
-    endif()
+    add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(SDL::SDLmain PROPERTIES
+      IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
   endif()
 
   ### SDL_mixer ###
 
   find_package(SDL_mixer)
   if(SDL_FOUND)
-    message(STATUS "Using SDL_mixer ${SDL_MIXER_VERSION_STRING}")
+    message(STATUS "Using SDL_mixer version ${SDL_MIXER_VERSION_STRING}")
 
     # SDL_mixer target.
     add_library(SDL::mixer UNKNOWN IMPORTED GLOBAL)
