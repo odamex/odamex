@@ -1,3 +1,5 @@
+include(OdamexCopyWad)
+
 # use unquoted #defines
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
@@ -62,6 +64,8 @@ endif()
 if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
+
+odamex_copy_wad(odasrv)
 
 if(APPLE)
 elseif(WIN32)
