@@ -69,6 +69,7 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
+EXTERN_CVAR(sv_teamsinplay)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -2635,7 +2636,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (sv_gametype == GM_CTF)
 	{
-		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		for (int iTeam = 0; iTeam < sv_teamsinplay; iTeam++)
 		{
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 			if (mthing->type == teamInfo->FlagThingNum)
