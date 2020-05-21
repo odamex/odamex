@@ -171,7 +171,11 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
   include_directories(${TEXTSCREEN_DIR})
   add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
-  target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
+  if(TARGET SDL::SDL)
+    target_link_libraries(${TEXTSCREEN_LIBRARY} SDL::SDL)
+  else()
+    target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
+  endif()
   target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
 
   add_executable(odamex MACOSX_BUNDLE WIN32

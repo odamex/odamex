@@ -29,5 +29,5 @@ if [[ -z ${USE_SDL12:-} ]]; then
         -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1
 else
     cmake .. -GNinja \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1 -DUSE_SDL12
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1 -DUSE_SDL12=1
 fi
