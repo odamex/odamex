@@ -1,5 +1,6 @@
 include(OdamexCopyLibs)
 include(OdamexCopyWad)
+include(OdamexTargetSettings)
 
 # use unquoted #defines
 if(COMMAND cmake_policy)
@@ -175,6 +176,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
+  odamex_target_settings(odamex)
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex odamex-common)
   if(TARGET SDL::SDL)

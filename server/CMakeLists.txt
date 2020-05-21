@@ -1,4 +1,5 @@
 include(OdamexCopyWad)
+include(OdamexTargetSettings)
 
 # use unquoted #defines
 if(COMMAND cmake_policy)
@@ -46,6 +47,7 @@ endif()
 add_executable(odasrv
   ${SERVER_SOURCES} ${SERVER_HEADERS}
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+odamex_target_settings(odasrv)
 target_link_libraries(odasrv jsoncpp odamex-common)
 
 if(USE_MINIUPNP)
