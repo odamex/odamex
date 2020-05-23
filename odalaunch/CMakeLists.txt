@@ -1,3 +1,5 @@
+include(OdamexTargetSettings)
+
 global_compile_options()
 
 # API
@@ -46,6 +48,7 @@ if(wxWidgets_FOUND)
     ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${XRCRES_HEADER})
+  odamex_target_settings(odalaunch)
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
   if(WIN32)
