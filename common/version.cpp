@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
+#include "git_describe.h"
 
 #include <map>
 #include <string>

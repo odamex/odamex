@@ -3,8 +3,8 @@ name: Linux
 on: [push, pull_request]
 
 jobs:
-  build:
-    name: Build
+  build-sdl20:
+    name: Build (SDL 2.0)
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
@@ -20,3 +20,15 @@ jobs:
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
+  build-sdl12:
+    name: Build (SDL 1.2)
+    runs-on: ubuntu-latest
+    env:
+      USE_SDL12: 1
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Prepare build
+      run: bash ci-build.sh
+    - name: Run build
+      run: cmake --build ./build/

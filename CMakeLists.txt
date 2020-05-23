@@ -161,17 +161,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 include(GetGitRevisionDescription)
 git_describe(GIT_DESCRIBE --tags --always)
 
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_INSTALL OFF CACHE INTERNAL "" FORCE)
-  mark_as_advanced(FORCE UPNPC_INSTALL)
-  add_subdirectory(libraries/libminiupnpc)
-endif()
+# Libraries
+add_subdirectory(libraries)
 
 # Subdirectories for Odamex projects
+if(BUILD_CLIENT OR BUILD_SERVER)
+  add_subdirectory(common)
+endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
 endif()
