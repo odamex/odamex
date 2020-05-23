@@ -1499,12 +1499,12 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	P_SerializeACSDefereds(arc);
 
 	// Save the status of the flags in CTF
-	for (int i = 0; i < NUMFLAGS; i++)
-		arc << CTFdata[i];
+	for (int i = 0; i < NUMTEAMS; i++)
+		arc << GetTeamInfo((team_t)i)->FlagData;
 
 	// Save team points
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc << TEAMpoints[i];
+		arc << GetTeamInfo((team_t)i)->Points;
 	
 	arc << level.time;
 
@@ -1593,12 +1593,12 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	P_SerializeACSDefereds(arc);
 
 	// Read the status of flags in CTF
-	for (int i = 0; i < NUMFLAGS; i++)
-		arc >> CTFdata[i];
+	for (int i = 0; i < NUMTEAMS; i++)
+		arc >> GetTeamInfo((team_t)i)->FlagData;
 
 	// Read team points
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc >> TEAMpoints[i];	
+		arc >> GetTeamInfo((team_t)i)->Points;
 
 	arc >> level.time;
 
@@ -1651,10 +1651,12 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )
 	{
-		if (mo->type == MT_BDWN || mo->type == MT_BCAR)
-			CTFdata[it_blueflag].actor = mo->ptr();
-		if (mo->type == MT_RDWN || mo->type == MT_RCAR)
-			CTFdata[it_redflag].actor = mo->ptr();
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			if (mo->sprite == teamInfo->FlagDownSprite || mo->sprite == teamInfo->FlagCarrySprite)
+				teamInfo->FlagData.actor = mo->ptr();
+		}
 	}
 
 	// Make sure the status bar is displayed correctly

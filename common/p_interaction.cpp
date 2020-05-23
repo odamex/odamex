@@ -66,10 +66,10 @@ void SV_SpawnMobj(AActor *mobj);
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...);
 void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
-void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
+void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor *special, player_t *player);
-ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
-void SV_SocketTouch(player_t &player, flag_t f);
+ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
+void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
@@ -115,7 +115,8 @@ void P_GiveTeamPoints(player_t* player, int num)
 {
 	if (!warmup.checkscorechange())
 		return;
-	TEAMpoints[player->userinfo.team] += num;
+
+	GetTeamInfo(player->userinfo.team)->Points += num;
 }
 
 //
@@ -465,7 +466,6 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	AActor *toucher = player->mo;
 	int sound = 0;
 	const OString* msg = NULL;
-	bool firstgrab = false;
 	ItemEquipVal val = IEV_EquipRemove;
 
 	// Identify by sprite.
@@ -728,39 +728,34 @@ void P_GiveSpecial(player_t *player, AActor *special)
             sound = 2;
             break;
 
-	// [Toke - CTF - Core]
-        case SPR_BFLG: // Player touches the blue flag at its base
-            firstgrab = true;
-			//Fall through to flag touch
-        case SPR_BDWN: // Player touches the blue flag after it's been dropped
-			val = SV_FlagTouch(*player, it_blueflag, firstgrab);
-			sound = -1;
-            break;
-
-        case SPR_BSOK:
-            SV_SocketTouch(*player, it_blueflag);
-            return;
-
-        case SPR_RFLG: // Player touches the red flag at its base
-            firstgrab = true;
-			//Fall through to flag touch
-        case SPR_RDWN: // Player touches the red flag after its been dropped
-			val = SV_FlagTouch(*player, it_redflag, firstgrab);
-			sound = -1;
-            break;
-
-        case SPR_RSOK:
-            SV_SocketTouch(*player, it_redflag);
-            return;
-
         default:
-            Printf(
-                PRINT_HIGH,
-                "P_SpecialThing: Unknown gettable thing %d: %s\n",
-                special->sprite,
-                special->info->name
-            );
-            return;
+		{
+			bool teamItemSuccess = false;
+			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+			{
+				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+				if (teamInfo->FlagSprite == special->sprite || teamInfo->FlagDownSprite == special->sprite)
+				{
+					val = SV_FlagTouch(*player, teamInfo->Team, teamInfo->FlagSprite == special->sprite);
+					sound = -1;
+					teamItemSuccess = true;
+					break;
+				}
+
+				if (teamInfo->FlagSocketSprite == special->sprite)
+				{
+					SV_SocketTouch(*player, teamInfo->Team);
+					return;
+				}
+			}
+
+			if (!teamItemSuccess)
+			{
+				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
+				return;
+			}
+		}
 	}
 
 	if (special->flags & MF_COUNTITEM)
@@ -988,7 +983,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						SV_CTFEvent((flag_t)0, SCORE_BETRAYAL, *splayer);
+						SV_CTFEvent((team_t)0, SCORE_BETRAYAL, *splayer);
 					}
 				}
 				else
@@ -1001,13 +996,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						if (tplayer->flags[(flag_t)splayer->userinfo.team])
+						if (tplayer->flags[splayer->userinfo.team])
 						{
-							SV_CTFEvent((flag_t)0, SCORE_CARRIERKILL, *splayer);
+							SV_CTFEvent((team_t)0, SCORE_CARRIERKILL, *splayer);
 						}
 						else
 						{
-							SV_CTFEvent((flag_t)0, SCORE_KILL, *splayer);
+							SV_CTFEvent((team_t)0, SCORE_KILL, *splayer);
 						}
 					}
 				}
@@ -1117,14 +1112,14 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		// [Toke] TeamDM sv_fraglimit
 		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
 		{
-			for (size_t i = 0; i < NUMFLAGS; i++)
+			for (size_t i = 0; i < NUMTEAMS; i++)
 			{
-				if (TEAMpoints[i] >= sv_fraglimit)
+				if (GetTeamInfo((team_t)i)->Points >= sv_fraglimit)
 				{
 					SV_BroadcastPrintf(
                         PRINT_HIGH,
                         "Frag limit hit. %s team wins!\n",
-                        team_names[i]
+						GetTeamInfo((team_t)i)->ColorString.c_str()
                     );
 					shotclock = TICRATE * 2;
 					break;

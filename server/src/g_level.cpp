@@ -67,6 +67,7 @@ EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_teamsinplay)
 
 extern int mapchange;
 extern int shotclock;
@@ -517,14 +518,14 @@ void G_DoResetLevel(bool full_reset)
 	Players::iterator it;
 	if (sv_gametype == GM_CTF)
 	{
-		for (size_t i = 0;i < NUMFLAGS;i++)
+		for (size_t i = 0;i < NUMTEAMS;i++)
 		{
 			for (it = players.begin();it != players.end();++it)
-			{
 				it->flags[i] = false;
-			}
-			CTFdata[i].flagger = 0;
-			CTFdata[i].state = flag_home;
+
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = flag_home;
 		}
 	}
 
@@ -589,7 +590,7 @@ void G_DoResetLevel(bool full_reset)
 		level.time = level_time;
 		// Clear global goals.
 		for (size_t i = 0; i < NUMTEAMS; i++)
-			TEAMpoints[i] = 0;
+			GetTeamInfo((team_t)i)->Points;
 		// Clear player information.
 		for (it = players.begin();it != players.end();++it)
 		{
@@ -732,7 +733,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
-			TEAMpoints[i] = 0;
+			GetTeamInfo((team_t)i)->Points = 0;
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
@@ -764,28 +765,27 @@ void G_DoLoadLevel (int position)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		it->joindelay = 0;
 
-	flagdata *tempflag;
-
 	// Nes - CTF Pre flag setup
 	if (sv_gametype == GM_CTF) {
-		tempflag = &CTFdata[it_blueflag];
-		tempflag->flaglocated = false;
 
-		tempflag = &CTFdata[it_redflag];
-		tempflag->flaglocated = false;
+		for (int i = 0; i < NUMTEAMS; i++)
+			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
 
 	P_SetupLevel (level.mapname, position);
 
 	// Nes - CTF Post flag setup
-	if (sv_gametype == GM_CTF) {
-		tempflag = &CTFdata[it_blueflag];
-		if (!tempflag->flaglocated)
-			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
-
-		tempflag = &CTFdata[it_redflag];
-		if (!tempflag->flaglocated)
-			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Red flag pedestal not found! No red flags in game.\n");
+	if (sv_gametype == GM_CTF)
+	{
+		for (int i = 0; i < sv_teamsinplay; i++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			if (!teamInfo->FlagData.flaglocated)
+			{
+				const char* teamColor = teamInfo->ColorString.c_str();
+				SV_BroadcastPrintf(PRINT_HIGH, "WARNING: %s flag pedestal not found! No %s flags in game.\n", teamColor, teamColor);
+			}
+		}
 	}
 
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing

@@ -40,6 +40,7 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_teamsinplay)
 
 EXTERN_CVAR(sv_vote_countabs)
 EXTERN_CVAR(sv_vote_majority)
@@ -426,7 +427,7 @@ public:
 	}
 	bool exec(void)
 	{
-		return Pickup_DistributePlayers(2, this->error);
+		return Pickup_DistributePlayers(sv_teamsinplay, this->error);
 	}
 };
 

@@ -31,10 +31,6 @@
 #include "d_player.h"
 #include "i_net.h"
 
-#define GAME_NORMAL		1
-#define GAME_TEAMPLAY	2
-#define GAME_CTF		3
-
 static const int MaxPacketSize = 600;
 
 #include <json/json.h>

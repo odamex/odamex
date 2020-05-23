@@ -69,6 +69,7 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
+EXTERN_CVAR(sv_teamsinplay)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -2316,50 +2317,25 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
-		if (deathmatch_p >= &deathmatchstarts[10] && demoplayback)
+		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
-		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
-		{
-			// [RH] Get more deathmatchstarts
-			int offset = MaxDeathmatchStarts;
-			MaxDeathmatchStarts *= 2;
-			deathmatchstarts = (mapthing2_t *)Realloc (deathmatchstarts, MaxDeathmatchStarts * sizeof(mapthing2_t));
-			deathmatch_p = &deathmatchstarts[offset];
-		}
-		memcpy (deathmatch_p, mthing, sizeof(*mthing));
-		deathmatch_p++;
+		DeathMatchStarts.push_back(*mthing);
 		return;
 	}
 
-	// [Toke - CTF - starts] CTF starts - count Blue team start positions
-	if (mthing->type == 5080 && sv_teamspawns)
+	if (sv_teamspawns)
 	{
-		if (blueteam_p == &blueteamstarts[MaxBlueTeamStarts])
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			int offset = MaxBlueTeamStarts;
-			MaxBlueTeamStarts *= 2;
-			blueteamstarts = (mapthing2_t *)Realloc (blueteamstarts, MaxBlueTeamStarts * sizeof(mapthing2_t));
-			blueteam_p = &blueteamstarts[offset];
-		}
-		memcpy (blueteam_p, mthing, sizeof(*mthing));
-		blueteam_p++;
-		return;
-	}
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 
-	// [Toke - CTF - starts] CTF starts - count Red team start positions
-	if (mthing->type == 5081 && sv_teamspawns)
-	{
-		if (redteam_p == &redteamstarts[MaxRedTeamStarts])
-		{
-			int offset = MaxRedTeamStarts;
-			MaxRedTeamStarts *= 2;
-			redteamstarts = (mapthing2_t *)Realloc (redteamstarts, MaxRedTeamStarts * sizeof(mapthing2_t));
-			redteam_p = &redteamstarts[offset];
+			if (mthing->type == teamInfo->TeamSpawnThingNum)
+			{
+				teamInfo->Starts.push_back(*mthing);
+				return;
+			}
 		}
-		memcpy (redteam_p, mthing, sizeof(*mthing));
-		redteam_p++;
-		return;
 	}
 
 	// [RH] Record polyobject-related things
@@ -2658,32 +2634,31 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->subsector->sector->SecActTarget = mobj->ptr();
 	}
 
-	if (sv_gametype == GM_CTF) {
-		// [Toke - CTF] Setup flag sockets
-		if (mthing->type == ID_BLUE_FLAG)
+	if (sv_gametype == GM_CTF)
+	{
+		for (int iTeam = 0; iTeam < sv_teamsinplay; iTeam++)
 		{
-			flagdata *data = &CTFdata[it_blueflag];
-			if (data->flaglocated)
-				return;
-
-			CTF_RememberFlagPos (mthing);
-			CTF_SpawnFlag(it_blueflag);
-		}
-
-		if (mthing->type == ID_RED_FLAG)
-		{
-			flagdata *data = &CTFdata[it_redflag];
-			if (data->flaglocated)
-				return;
-
-			CTF_RememberFlagPos (mthing);
-			CTF_SpawnFlag(it_redflag);
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			if (mthing->type == teamInfo->FlagThingNum)
+			{
+				SpawnFlag(mthing, teamInfo->Team);
+				break;
+			}
 		}
 	}
 
 	// [RH] Go dormant as needed
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
+}
+
+void SpawnFlag(mapthing2_t* mthing, team_t flag)
+{
+	if (GetTeamInfo(flag)->FlagData.flaglocated)
+		return;
+
+	CTF_RememberFlagPos(mthing);
+	CTF_SpawnFlag(flag);
 }
 
 

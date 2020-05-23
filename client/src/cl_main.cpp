@@ -174,7 +174,6 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 	return V_HSVtoRGB(color);
 }
 
-
 //
 // CL_GetPlayerColor
 //
@@ -197,10 +196,7 @@ argb_t CL_GetPlayerColor(player_t *player)
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		teammate = P_AreTeammates(consoleplayer(), *player);
-		if (player->userinfo.team == TEAM_BLUE)
-			base_color = argb_t(255, 0, 0, 255);
-		else if (player->userinfo.team == TEAM_RED)
-			base_color = argb_t(255, 255, 0, 0);
+		base_color = GetTeamInfo(player->userinfo.team)->Color;
 	}
 	if (player->id != consoleplayer_id && !consoleplayer().spectator)
 	{
@@ -872,11 +868,7 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	char team[5] = { 0 };
-	if (player->userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player->userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
+	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
@@ -1003,10 +995,9 @@ END_COMMAND (playerteam)
 
 BEGIN_COMMAND (changeteams)
 {
-	if (consoleplayer().userinfo.team == TEAM_BLUE)
-		cl_team.Set("RED");
-	else if (consoleplayer().userinfo.team == TEAM_RED)
-		cl_team.Set("BLUE");
+	int iTeam = (int)consoleplayer().userinfo.team;
+	iTeam = ++iTeam % NUMTEAMS;
+	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
 
@@ -1053,7 +1044,7 @@ BEGIN_COMMAND (flagnext)
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
-			byte id = CTFdata[i].flagger;
+			byte id = GetTeamInfo((team_t)i)->FlagData.flagger;
 			if (id != 0 && displayplayer_id != id)
 			{
 				displayplayer_id = id;
@@ -1451,7 +1442,7 @@ void CL_UpdateFrags(void)
 void CL_TeamPoints (void)
 {
 	for(size_t i = 0; i < NUMTEAMS; i++)
-		TEAMpoints[i] = MSG_ReadShort();
+		GetTeamInfo((team_t)i)->Points = MSG_ReadShort();
 }
 
 //
@@ -3146,17 +3137,7 @@ void CL_ForceSetTeam (void)
 
 	// Setting the cl_team will send a playerinfo packet back to the server.
 	// Unfortunately, this is unavoidable until we rework the team system.
-	switch (consoleplayer().userinfo.team) {
-	case TEAM_BLUE:
-		cl_team.Set("BLUE");
-		break;
-	case TEAM_RED:
-		cl_team.Set("RED");
-		break;
-	default:
-		cl_team.Set("NONE");
-		break;
-	}
+	cl_team.Set(GetTeamInfo(consoleplayer().userinfo.team)->ColorStringUpper.c_str());
 }
 
 //

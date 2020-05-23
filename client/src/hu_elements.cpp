@@ -44,6 +44,7 @@ extern NetDemo netdemo;
 extern bool HasBehavior;
 extern fixed_t FocalLengthX;
 
+
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
 EXTERN_CVAR (sv_maxclients)
@@ -165,25 +166,6 @@ int pingTextColor(unsigned short ping) {
 	return CR_RED;
 }
 
-// Return a text color based on a team.
-int teamTextColor(byte team) {
-	int color;
-
-	switch (team) {
-	case TEAM_BLUE:
-		color = CR_BLUE;
-		break;
-	case TEAM_RED:
-		color = CR_RED;
-		break;
-	default:
-		color = CR_GREY;
-		break;
-	}
-
-	return color;
-}
-
 // generate an ordinal suffix from an integer (1 -> "st", 2 -> "nd", etc)
 // used in HelpText() to display position in queue
 static const char *ordinal(int n)
@@ -261,7 +243,7 @@ std::string SpyPlayerName(int& color) {
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = teamTextColor(plyr->userinfo.team);
+		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());
 	}
 
 	return plyr->userinfo.netname;
@@ -375,6 +357,31 @@ std::string IntermissionTimer()
 	return str;
 }
 
+static int GetWinningTeamPoints(team_t& winningTeam, int& secondPlaceTeamPoints)
+{
+	int maxPoints = 0;
+	winningTeam = TEAM_BLUE;
+	secondPlaceTeamPoints = 0;
+
+	for (int i = 0; i < NUMTEAMS; i++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		if (teamInfo->Points > maxPoints)
+		{
+			secondPlaceTeamPoints = maxPoints;
+
+			maxPoints = teamInfo->Points;
+			winningTeam = (team_t)i;
+		}
+		else if (teamInfo->Points > secondPlaceTeamPoints)
+		{
+			secondPlaceTeamPoints = teamInfo->Points;
+		}
+	}
+
+	return maxPoints;
+}
+
 // Return a "spread" of personal frags or team points that the
 // current player or team is ahead or behind by.
 std::string PersonalSpread(int& color) {
@@ -452,28 +459,34 @@ std::string PersonalSpread(int& color) {
 		// We are behind the leader.
 		buffer << (plyr->fragcount - maxfrags);
 		return buffer.str();
-	} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		// Team spreads are significantly easier.  Just compare two numbers.
-		// FIXME: Not if we have more than two teams!
+	} 
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
 		std::ostringstream buffer;
-		switch (plyr->userinfo.team) {
-		case TEAM_BLUE:
-			if (TEAMpoints[TEAM_BLUE] >= TEAMpoints[TEAM_RED]) {
-				color = CR_GREEN;
-				buffer << "+";
-			}
-			buffer << (TEAMpoints[TEAM_BLUE] - TEAMpoints[TEAM_RED]);
-			break;
-		case TEAM_RED:
-			if (TEAMpoints[TEAM_RED] >= TEAMpoints[TEAM_BLUE]) {
-				color = CR_GREEN;
-				buffer << "+";
-			}
-			buffer << (TEAMpoints[TEAM_RED] - TEAMpoints[TEAM_BLUE]);
-			break;
-		default:
-			// No valid team?  Something is wrong...
-			return "";
+		team_t winningTeam;
+		int secondPlacePoints;
+		int winningPoints = GetWinningTeamPoints(winningTeam, secondPlacePoints);
+
+		int diff;
+		
+		if (plyr->userinfo.team == winningTeam)
+			diff = winningPoints - secondPlacePoints;
+		else			
+			diff = GetTeamInfo(plyr->userinfo.team)->Points - winningPoints;
+
+		if (diff > 0 && plyr->userinfo.team == winningTeam)
+		{
+			color = CR_GREEN;
+			buffer << "+" << winningPoints - secondPlacePoints;
+		}
+		else
+		{
+			if (diff < 0)
+				color = CR_RED;
+			else
+				color = CR_GREY;
+
+			buffer << diff;
 		}
 		return buffer.str();
 	}
@@ -496,8 +509,8 @@ std::string PersonalScore(int& color) {
 			buffer << "/" << sv_fraglimit.asInt();
 		}
 	} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = teamTextColor(plyr->userinfo.team);
-		buffer << TEAMpoints[plyr->userinfo.team];
+		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());		
+		buffer << GetTeamInfo(plyr->userinfo.team)->Points;
 
 		if (sv_gametype == GM_TEAMDM) {
 			if (sv_fraglimit.asInt() > 0) {
@@ -578,57 +591,56 @@ std::string PlayersSplit() {
 }
 
 // Returns the number of players on a team
-byte CountTeamPlayers(byte team) {
-	byte count = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
-		player_t* player = sortedPlayers()[i];
-		if (inTeamPlayer(player, team)) {
+int CountTeamPlayers(byte team)
+{
+	int count = 0;
+	std::vector<player_t*> sortPlayers = sortedPlayers();
+	for (size_t i = 0; i < sortPlayers.size(); i++)
+	{
+		if (inTeamPlayer(sortPlayers[i], team))
 			count++;
-		}
 	}
 	return count;
 }
 
 // Returns the number of spectators on a team
-byte CountSpectators() {
-	byte count = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++)
+int CountSpectators()
+{
+	int count = 0;
+	std::vector<player_t*> sortPlayers = sortedPlayers();
+	for (size_t i = 0; i < sortPlayers.size(); i++)
 	{
-		player_t* player = sortedPlayers()[i];
-		if (spectatingPlayer(player))
+		if (spectatingPlayer(sortPlayers[i]))
 			count++;
 	}
 	return count;
 }
 
-std::string TeamPlayers(int& color, byte team) {
-	color = teamTextColor(team);
+std::string TeamPlayers(int& color, byte team)
+{
+	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	std::ostringstream buffer;
 	buffer << (short)CountTeamPlayers(team);
 	return buffer.str();
 }
 
-std::string TeamName(int& color, byte team) {
-	color = teamTextColor(team);
-
-	switch (team) {
-	case TEAM_BLUE:
-		return "BLUE TEAM";
-	case TEAM_RED:
-		return "RED TEAM";
-	default:
-		return "NO TEAM";
-	}
+std::string TeamName(int& color, byte team)
+{
+	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
+	color = V_GetTextColor(teamInfo->TextColor.c_str());
+	std::string name = teamInfo->ColorStringUpper;
+	return name.append(" TEAM");
 }
 
-std::string TeamFrags(int& color, byte team) {
+std::string TeamFrags(int& color, byte team)
+{
 	if (CountTeamPlayers(team) == 0) {
 		color = CR_GREY;
 		return "---";
 	}
 
-	color = teamTextColor(team);
+	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	int fragcount = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
@@ -649,10 +661,11 @@ std::string TeamPoints(int& color, byte team) {
 		return "---";
 	}
 
-	color = teamTextColor(team);
+	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
+	color = V_GetTextColor(teamInfo->TextColor.c_str());
 
 	std::ostringstream buffer;
-	buffer << TEAMpoints[team];
+	buffer << teamInfo->Points;
 	return buffer.str();
 }
 
@@ -662,7 +675,7 @@ std::string TeamKD(int& color, byte team) {
 		return "---";
 	}
 
-	color = teamTextColor(team);
+	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	int killcount = 0;
 	unsigned int deathcount = 0;
@@ -798,6 +811,25 @@ void EAPlayerNames(int x, int y, const float scale,
 	}
 }
 
+static EColorRange GetTeamPlayerColor(player_t* player)
+{
+	if (sv_gametype == GM_CTF)
+	{
+		for (int i = 0; i < NUMTEAMS; i++)
+		{
+			if (player->flags[i])
+				return (EColorRange)V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
+		}
+	}
+
+	if (player->ready)
+		return CR_GREEN;
+	else if (player->id == displayplayer().id)
+		return CR_GOLD;
+
+	return CR_GREY;
+}
+
 // Draw a list of players on a team.
 void EATeamPlayerNames(int x, int y, const float scale,
                        const x_align_t x_align, const y_align_t y_align,
@@ -814,32 +846,13 @@ void EATeamPlayerNames(int x, int y, const float scale,
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int color = CR_GREY;
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-				if (player->userinfo.team == TEAM_BLUE) {
-					if (player->flags[it_redflag]) {
-						color = CR_RED;
-					} else if (player->flags[it_blueflag]) {
-						color = CR_BLUE;
-					} else if (player->ready) {
-						color = CR_GREEN;
-					} else if (player->id == displayplayer().id) {
-						color = CR_GOLD;
-					}
-				} else if (player->userinfo.team == TEAM_RED) {
-					if (player->flags[it_blueflag]) {
-						color = CR_BLUE;
-					} else if (player->flags[it_redflag]) {
-						color = CR_RED;
-					} else if (player->ready) {
-						color = CR_GREEN;
-					} else if (player->id == displayplayer().id) {
-						color = CR_GOLD;
-					}
-				}
-			} else {
-				if (player->id == displayplayer().id) {
-					color = CR_GOLD;
-				}
+			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			{
+				color = GetTeamPlayerColor(player);
+			}
+			else if(player->id == displayplayer().id) 
+			{	
+				color = CR_GOLD;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname.c_str(), color, force_opaque);
@@ -1295,7 +1308,7 @@ void EATargets(int x, int y, const float scale,
 		int color;
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 			// In teamgames, we want to use team colors for targets.
-			color = teamTextColor(it->userinfo.team);
+			color = V_GetTextColor(GetTeamInfo(it->userinfo.team)->TextColor.c_str());
 		} else {
 			color = CR_GREY;
 		}

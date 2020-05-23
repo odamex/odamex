@@ -111,6 +111,7 @@ EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
+EXTERN_CVAR(sv_teamsinplay)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -1039,7 +1040,7 @@ bool SV_SetupUserInfo(player_t &player)
 			// kill player if team is changed
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
-				player.userinfo.netname.c_str(), team_names[new_team]);
+				player.userinfo.netname.c_str(), GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
 		}
 	}
 
@@ -1058,11 +1059,9 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	MSG_WriteMarker (&cl->reliablebuf, svc_forceteam);
 
 	who.userinfo.team = team;
-	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : team_names[team]);
+	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	MSG_WriteShort (&cl->reliablebuf, team);
 }
-
-EXTERN_CVAR (sv_teamsinplay)
 
 //
 //	SV_CheckTeam
@@ -1071,13 +1070,8 @@ EXTERN_CVAR (sv_teamsinplay)
 //
 void SV_CheckTeam (player_t &player)
 {
-	if (sv_gametype == GM_CTF &&
-			(player.userinfo.team < 0 || player.userinfo.team >= NUMTEAMS))
-		SV_ForceSetTeam (player, SV_GoodTeam ());
-
-	if (sv_gametype != GM_CTF &&
-			(player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
-		SV_ForceSetTeam (player, SV_GoodTeam ());
+	if (player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay)
+		SV_ForceSetTeam(player, SV_GoodTeam());
 }
 
 //
@@ -1848,7 +1842,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_teampoints);
 		for (int i = 0;i < NUMTEAMS;i++)
-			MSG_WriteShort(&cl->reliablebuf, TEAMpoints[i]);
+			MSG_WriteShort(&cl->reliablebuf, GetTeamInfo((team_t)i)->Points);
 	}
 
 	SV_UpdateHiddenMobj();
@@ -2339,7 +2333,7 @@ void SV_DisconnectClient(player_t &who)
 		{
 			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			{
-				sprintf(str, "%s TEAM, ", team_names[who.userinfo.team]);
+				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
 				status += str;
 			}
 
@@ -2575,12 +2569,14 @@ void SV_DrawScores()
 
 		Printf_Bold("%18s\n", str);
 
-		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
 			else if (team_num == TEAM_RED)
                 Printf_Bold("---------------------------------------------------RED TEAM");
+			else if (team_num == TEAM_GREEN)
+				Printf_Bold("-------------------------------------------------GREEN TEAM");
 			else		// shouldn't happen
                 Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
 
@@ -2627,12 +2623,14 @@ void SV_DrawScores()
 
 		Printf_Bold("%18s\n", str);
 
-		for (int team_num = 0; team_num < NUMTEAMS; team_num++)
+		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
                 Printf_Bold("--------------------------------------------------BLUE TEAM");
 			else if (team_num == TEAM_RED)
                 Printf_Bold("---------------------------------------------------RED TEAM");
+			else if (team_num == TEAM_GREEN)
+				Printf_Bold("-------------------------------------------------GREEN TEAM");
 			else		// shouldn't happen
                 Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
 
@@ -2881,11 +2879,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
  */
 void SVC_TeamSay(player_t &player, const char* message)
 {
-	char team[5] = { 0 };
-	if (player.userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player.userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
+	const char* team = GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str();
 
 	if (strnicmp(message, "/me ", 4) == 0)
 		Printf(PRINT_TEAMCHAT, "<%s TEAM> * %s %s\n", team, player.userinfo.netname.c_str(), &message[4]);
@@ -3807,7 +3801,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), team_names[team]);
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has joined the %s team.\n", player.userinfo.netname.c_str(), GetTeamInfo(team)->ColorStringUpper.c_str());
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
@@ -3868,7 +3862,16 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 void SV_JoinPlayer(player_t &player, bool silent)
 {
 	if (player.joindelay > 0)
-		return;  
+		return;
+
+	// Player tried to join on an invalid team
+	if (player.userinfo.team >= sv_teamsinplay && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
+	{
+		std::string msg;
+		StrFormat(msg, "Cannot join the %s team", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+		SV_MidPrint(msg.c_str(), &player);
+		return;
+	}
 
 	int numPlayers = P_NumPlayersInGame();
 
@@ -3925,7 +3928,7 @@ void SV_JoinPlayer(player_t &player, bool silent)
 			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
 		else
 			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-				player.userinfo.netname.c_str(), team_names[player.userinfo.team]);
+				player.userinfo.netname.c_str(), GetTeamInfo(player.userinfo.team)->ColorString.c_str());
 	}
 }
 
@@ -4718,10 +4721,10 @@ team_t SV_WinningTeam (void)
 
 	for(size_t i = 1; i < NUMTEAMS; i++)
 	{
-		if(TEAMpoints[i] > TEAMpoints[(int)team]) {
+		if(GetTeamInfo((team_t)i)->Points > GetTeamInfo(team)->Points) {
 			team = (team_t)i;
 			isdraw = false;
-		} else if(TEAMpoints[i] == TEAMpoints[(int)team]) {
+		} else if(GetTeamInfo((team_t)i)->Points == GetTeamInfo(team)->Points) {
 			isdraw = true;
 		}
 	}
@@ -4798,7 +4801,7 @@ void SV_TimelimitCheck()
 			if(winteam == TEAM_NONE)
 				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", GetTeamInfo(winteam)->ColorStringUpper.c_str());
 		}
 	}
 
@@ -5049,11 +5052,7 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	char team[5] = { 0 };
-	if (player->userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player->userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
+	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
 
 	Printf(PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " IP Address       - %s \n",		ip);

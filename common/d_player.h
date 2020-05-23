@@ -176,7 +176,7 @@ public:
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
-	bool		flags[NUMFLAGS];
+	bool		flags[NUMTEAMS];
 
     // Frags, deaths, monster kills
 	int			fragcount;
