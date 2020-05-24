@@ -819,7 +819,7 @@ FUNC(LS_Teleport)
 		result = EV_Teleport(arg0, arg1, TeleportSide, it);
 	else
 		// [AM] Use Vanilla-style teleport for Doom-format maps
-		result = EV_LineTeleport(ln, TeleportSide, it);
+		result = EV_VanillaTeleport(ln, TeleportSide, it);
 
 	return result;
 }

@@ -216,7 +216,7 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 }
 
 // [ML] Original vanilla-style EV_Teleport, based on code from chocolate doom
-BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
+BOOL EV_VanillaTeleport (line_t *line, int side, AActor *thing)
 {
 	AActor *m;
 	unsigned	an;
