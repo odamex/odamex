@@ -3792,10 +3792,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	if ((team >= NUMTEAMS && team != TEAM_NONE) || team < 0)
 		return;
 
-	if(sv_gametype == GM_CTF && team >= 2)
-		return;
-
-	if(sv_gametype != GM_CTF && team >= sv_teamsinplay)
+	if (team >= sv_teamsinplay)
 		return;
 
 	team_t old_team = player.userinfo.team;
