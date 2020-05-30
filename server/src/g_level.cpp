@@ -526,6 +526,7 @@ void G_DoResetLevel(bool full_reset)
 			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 			teamInfo->FlagData.flagger = 0;
 			teamInfo->FlagData.state = flag_home;
+			teamInfo->Points = 0;
 		}
 	}
 
