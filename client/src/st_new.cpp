@@ -134,7 +134,7 @@ void ST_unloadNew (void)
 void PushFlagIcon(std::vector<patch_t*>& patches, std::string& name)
 {
 	if (W_CheckNumForName(name.c_str()) == -1)
-		patches.push_back((patch_t*)flagiconteam);
+		patches.push_back(NULL);
 	else
 		patches.push_back(W_CachePatch(name.c_str(), PU_STATIC));
 }
@@ -498,10 +498,13 @@ void drawCTF() {
 			break;
 		}
 
-		hud::DrawPatch(4, patchPosY, hud_scale,
-			hud::X_RIGHT, hud::Y_BOTTOM,
-			hud::X_RIGHT, hud::Y_BOTTOM,
-			drawPatch);
+		if (drawPatch != NULL)
+		{
+			hud::DrawPatch(4, patchPosY, hud_scale,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				drawPatch);
+		}
 
 		if (!plyr->spectator && plyr->userinfo.team == i)
 		{
