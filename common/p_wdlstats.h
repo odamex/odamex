@@ -43,6 +43,8 @@ enum WDLEvents {
 	WDL_ACCURACY,
 };
 
+void P_StartWDLLog();
 void P_LogWDLEvent(WDLEvents event, int arg0, int arg1, int arg2);
+void P_CommitWDLLog();
 
 #endif

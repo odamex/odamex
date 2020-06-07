@@ -24,10 +24,37 @@
 #include "p_wdlstats.h"
 
 #include <string>
+#include <vector>
 
 #include "c_dispatch.h"
 
-std::string wdlstatdir;
+// A single event.
+struct WDLEvent
+{
+	WDLEvents ev;
+	int arg0;
+	int arg1;
+	int arg2;
+};
+
+// Events that we're keeping track of.
+static std::vector<WDLEvent> events;
+
+// WDL Stats dir - if not empty, we are logging.
+static std::string wdlstatdir;
+
+// Generate a log filename based on the current time.
+static std::string GenerateLogFilename()
+{
+	time_t ti = time(NULL);
+	struct tm *lt = localtime(&ti);
+
+	char buffer[128];
+	if (!strftime(buffer, ARRAY_LENGTH(buffer), "wdl_%Y.%m.%d.%H.%M.%S.log", lt))
+		return "";
+
+	return std::string(buffer, ARRAY_LENGTH(buffer));
+}
 
 static void WDLStatsHelp()
 {
@@ -49,9 +76,29 @@ BEGIN_COMMAND(wdlstats)
 }
 END_COMMAND(wdlstats)
 
+void P_StartWDLLog()
+{
+	if (::wdlstatdir.empty())
+		return;
+
+	// TODO: Clear the globals.
+}
+
 void P_LogWDLEvent(WDLEvents event, int arg0, int arg1, int arg2)
 {
-	// Do we have a stat directory set?
-	if (wdlstatdir.empty())
+	if (::wdlstatdir.empty())
 		return;
+
+	WDLEvent ev = { event, arg0, arg1, arg2 };
+	::events.push_back(ev);
+}
+
+void P_CommitWDLLog()
+{
+	if (::wdlstatdir.empty())
+		return;
+
+	GenerateLogFilename();
+
+	// TODO: Actually write the log.
 }
