@@ -27,6 +27,9 @@
 #include <vector>
 
 #include "c_dispatch.h"
+#include "d_player.h"
+
+extern Players players;
 
 // A single event.
 struct WDLEvent
@@ -42,6 +45,32 @@ static std::vector<WDLEvent> events;
 
 // WDL Stats dir - if not empty, we are logging.
 static std::string wdlstatdir;
+
+// Returns true if a player is ingame and on a specific team
+// FIXME: Put this someplace global.
+static bool PlayerInTeam(const player_t* player, const byte team) {
+	return (
+		player->ingame() &&
+		player->userinfo.team == team &&
+		player->spectator == false
+	);
+}
+
+// Returns the number of players on a team
+// FIXME: Put this someplace global.
+static int CountTeamPlayers(byte team) {
+	int count = 0;
+
+	Players::const_iterator it = players.begin();
+	for (; it != players.end(); ++it)
+	{
+		const player_t* player = &*it;
+		if (PlayerInTeam(player, team))
+			count += 1;
+	}
+
+	return count;
+}
 
 // Generate a log filename based on the current time.
 static std::string GenerateLogFilename()
@@ -73,6 +102,12 @@ BEGIN_COMMAND(wdlstats)
 		WDLStatsHelp();
 		return;
 	}
+
+	// Setting the stats dir tells us that we intend to log.
+	wdlstatdir = argv[1];
+	Printf(
+		PRINT_HIGH, "wdlstats: Enabled and will log to %s.\n", wdlstatdir.c_str()
+	);
 }
 END_COMMAND(wdlstats)
 
@@ -81,7 +116,21 @@ void P_StartWDLLog()
 	if (::wdlstatdir.empty())
 		return;
 
-	// TODO: Clear the globals.
+	int blueplayers = CountTeamPlayers(TEAM_BLUE);
+	int redplayers = CountTeamPlayers(TEAM_RED);
+	if (blueplayers < 3 && redplayers < 3)
+	{
+		Printf(
+			PRINT_HIGH,
+			"wdlstats: Not logging, too few players on a team (%d vs %d).\n",
+			blueplayers, redplayers
+		);
+		return;
+	}
+
+	::events.clear();
+
+	Printf(PRINT_HIGH, "wdlstats: Log started...\n");
 }
 
 void P_LogWDLEvent(WDLEvents event, int arg0, int arg1, int arg2)
@@ -98,7 +147,7 @@ void P_CommitWDLLog()
 	if (::wdlstatdir.empty())
 		return;
 
-	GenerateLogFilename();
+	std::string filename = GenerateLogFilename();
 
-	// TODO: Actually write the log.
+	Printf(PRINT_HIGH, "wdlstats: Log saved as %s.\n", filename.c_str());
 }

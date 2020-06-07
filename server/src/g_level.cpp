@@ -49,6 +49,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
+#include "p_wdlstats.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -667,6 +668,8 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	P_StartWDLLog();
 }
 
 //
