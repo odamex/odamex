@@ -49,7 +49,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
-#include "p_wdlstats.h"
+#include "m_wdlstats.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -447,6 +447,9 @@ void G_InitNew (const char *mapname)
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	// [AM] Start the WDL log on new level.
+	P_StartWDLLog();
 
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
 	//if(old_ctfmode != ctfmode)

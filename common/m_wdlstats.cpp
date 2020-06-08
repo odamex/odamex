@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "p_wdlstats.h"
+#include "m_wdlstats.h"
 
 #include <string>
 #include <vector>
@@ -29,7 +29,24 @@
 #include "c_dispatch.h"
 #include "d_player.h"
 
+#define WDLSTATS_VERSION 5
+
 extern Players players;
+
+EXTERN_CVAR(sv_gametype)
+
+// WDL Stats dir - if not empty, we are logging.
+static std::string wdlstatdir;
+
+// A single tracked player
+struct WDLPlayer
+{
+	std::string netname;
+	team_t team;
+};
+
+// WDL Players that we're keeping track of.
+static std::vector<WDLPlayer> wdlplayers;
 
 // A single event.
 struct WDLEvent
@@ -41,14 +58,25 @@ struct WDLEvent
 };
 
 // Events that we're keeping track of.
-static std::vector<WDLEvent> events;
+static std::vector<WDLEvent> wdlevents;
 
-// WDL Stats dir - if not empty, we are logging.
-static std::string wdlstatdir;
+// The starting gametic of the most recent log.
+static int wdlbegintic;
+
+// Returns true if a player is ingame.
+// FIXME: Put this someplace global.
+static bool PlayerInGame(const player_t* player)
+{
+	return (
+		player->ingame() &&
+		player->spectator == false
+	);
+}
 
 // Returns true if a player is ingame and on a specific team
 // FIXME: Put this someplace global.
-static bool PlayerInTeam(const player_t* player, const byte team) {
+static bool PlayerInTeam(const player_t* player, byte team)
+{
 	return (
 		player->ingame() &&
 		player->userinfo.team == team &&
@@ -58,7 +86,8 @@ static bool PlayerInTeam(const player_t* player, const byte team) {
 
 // Returns the number of players on a team
 // FIXME: Put this someplace global.
-static int CountTeamPlayers(byte team) {
+static int CountTeamPlayers(byte team)
+{
 	int count = 0;
 
 	Players::const_iterator it = players.begin();
@@ -106,7 +135,7 @@ BEGIN_COMMAND(wdlstats)
 	// Setting the stats dir tells us that we intend to log.
 	wdlstatdir = argv[1];
 	Printf(
-		PRINT_HIGH, "wdlstats: Enabled and will log to %s.\n", wdlstatdir.c_str()
+		PRINT_HIGH, "wdlstats: Enabled and will log to \"%s\".\n", wdlstatdir.c_str()
 	);
 }
 END_COMMAND(wdlstats)
@@ -116,6 +145,17 @@ void P_StartWDLLog()
 	if (::wdlstatdir.empty())
 		return;
 
+	// Ensure we're CTF.
+	if (sv_gametype != 3)
+	{
+		Printf(
+			PRINT_HIGH,
+			"wdlstats: Not logging, incorrect gametype.\n"
+		);
+		return;
+	}
+
+	// Ensure we're 3v3 or more.
 	int blueplayers = CountTeamPlayers(TEAM_BLUE);
 	int redplayers = CountTeamPlayers(TEAM_RED);
 	if (blueplayers < 3 && redplayers < 3)
@@ -128,7 +168,23 @@ void P_StartWDLLog()
 		return;
 	}
 
-	::events.clear();
+	/// Tally up our ingame players.
+	::wdlplayers.clear();
+	Players::const_iterator pit = ::players.begin();
+	for (; pit != ::players.end(); ++pit)
+	{
+		WDLPlayer wdlplayer = {
+			(*pit).userinfo.netname,
+			(*pit).userinfo.team,
+		};
+		::wdlplayers.push_back(wdlplayer);
+	}
+
+	// Start with a fresh slate of events.
+	::wdlevents.clear();
+
+	// Set our starting tic.
+	::wdlbegintic = ::gametic;
 
 	Printf(PRINT_HIGH, "wdlstats: Log started...\n");
 }
@@ -139,7 +195,7 @@ void P_LogWDLEvent(WDLEvents event, int arg0, int arg1, int arg2)
 		return;
 
 	WDLEvent ev = { event, arg0, arg1, arg2 };
-	::events.push_back(ev);
+	::wdlevents.push_back(ev);
 }
 
 void P_CommitWDLLog()
@@ -149,5 +205,5 @@ void P_CommitWDLLog()
 
 	std::string filename = GenerateLogFilename();
 
-	Printf(PRINT_HIGH, "wdlstats: Log saved as %s.\n", filename.c_str());
+	Printf(PRINT_HIGH, "wdlstats: Log saved as \"%s\".\n", filename.c_str());
 }

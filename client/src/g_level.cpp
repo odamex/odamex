@@ -53,6 +53,7 @@
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
+#include "m_wdlstats.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -272,6 +273,9 @@ void G_InitNew (const char *mapname)
 	
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	// [AM}] WDL stats (for testing purposes)
+	P_StartWDLLog();
 }
 
 //
