@@ -275,7 +275,7 @@ void G_InitNew (const char *mapname)
 	G_DoLoadLevel (0);
 
 	// [AM}] WDL stats (for testing purposes)
-	P_StartWDLLog();
+	M_StartWDLLog();
 }
 
 //

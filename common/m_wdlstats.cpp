@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "c_dispatch.h"
-#include "d_player.h"
+#include "g_warmup.h"
 
 #define WDLSTATS_VERSION 5
 
@@ -52,6 +52,11 @@ static std::vector<WDLPlayer> wdlplayers;
 struct WDLEvent
 {
 	WDLEvents ev;
+	std::string activator;
+	std::string target;
+	int gametic;
+	fixed_t apos[3];
+	fixed_t tpos[3];
 	int arg0;
 	int arg1;
 	int arg2;
@@ -140,7 +145,7 @@ BEGIN_COMMAND(wdlstats)
 }
 END_COMMAND(wdlstats)
 
-void P_StartWDLLog()
+void M_StartWDLLog()
 {
 	if (::wdlstatdir.empty())
 		return;
@@ -155,10 +160,23 @@ void P_StartWDLLog()
 		return;
 	}
 
+	// Ensure that we're not in an invalid warmup state.
+	Warmup::status_t wstatus = ::warmup.get_status();
+	if (wstatus != Warmup::DISABLED && wstatus != Warmup::INGAME)
+	{
+		// [AM] This message can probably be deleted once we're sure the
+		//      condition is appropriate.
+		Printf(
+			PRINT_HIGH,
+			"wdlstats: Not logging, not ingame (yet).\n"
+		);
+		return;
+	}
+
 	// Ensure we're 3v3 or more.
 	int blueplayers = CountTeamPlayers(TEAM_BLUE);
 	int redplayers = CountTeamPlayers(TEAM_RED);
-	if (blueplayers < 3 && redplayers < 3)
+	if (blueplayers < 3 && redplayers < 3 && false)
 	{
 		Printf(
 			PRINT_HIGH,
@@ -189,16 +207,44 @@ void P_StartWDLLog()
 	Printf(PRINT_HIGH, "wdlstats: Log started...\n");
 }
 
-void P_LogWDLEvent(WDLEvents event, int arg0, int arg1, int arg2)
+/**
+ * Log a WDL event.
+ * 
+ * The particulars of what you pass to this needs to be checked against the document.
+ */
+void M_LogWDLEvent(
+	WDLEvents event, player_t* activator, player_t* target,
+	int arg0, int arg1, int arg2
+)
 {
 	if (::wdlstatdir.empty())
 		return;
 
-	WDLEvent ev = { event, arg0, arg1, arg2 };
-	::wdlevents.push_back(ev);
+	if (target != NULL)
+	{
+		// Event has a target.
+		WDLEvent ev = {
+			event, activator->userinfo.netname, target->userinfo.netname, ::gametic,
+			{ activator->mo->x, activator->mo->y, activator->mo->z },
+			{ target->mo->x, target->mo->y, target->mo->z },
+			arg0, arg1, arg2
+		};
+		::wdlevents.push_back(ev);
+	}
+	else
+	{
+		// Event does not have a target.
+		WDLEvent ev = {
+			event, activator->userinfo.netname, "", ::gametic,
+			{ activator->mo->x, activator->mo->y, activator->mo->z },
+			{ 0, 0, 0 },
+			arg0, arg1, arg2
+		};
+		::wdlevents.push_back(ev);
+	}
 }
 
-void P_CommitWDLLog()
+void M_CommitWDLLog()
 {
 	if (::wdlstatdir.empty())
 		return;

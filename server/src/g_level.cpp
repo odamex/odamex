@@ -449,7 +449,7 @@ void G_InitNew (const char *mapname)
 	G_DoLoadLevel (0);
 
 	// [AM] Start the WDL log on new level.
-	P_StartWDLLog();
+	M_StartWDLLog();
 
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
 	//if(old_ctfmode != ctfmode)
@@ -672,7 +672,7 @@ void G_DoResetLevel(bool full_reset)
 		G_DoReborn(*it);
 	}
 
-	P_StartWDLLog();
+	M_StartWDLLog();
 }
 
 //

@@ -24,6 +24,8 @@
 #ifndef __WDLSTATS_H__
 #define __WDLSTATS_H__
 
+#include "d_player.h"
+
 enum WDLEvents {
 	WDL_DAMAGE,
 	WDL_CARRIERDAMAGE,
@@ -43,8 +45,11 @@ enum WDLEvents {
 	WDL_ACCURACY,
 };
 
-void P_StartWDLLog();
-void P_LogWDLEvent(WDLEvents event, int arg0, int arg1, int arg2);
-void P_CommitWDLLog();
+void M_StartWDLLog();
+void M_LogWDLEvent(
+	WDLEvents event, player_t* activator, player_t* target,
+	int arg0, int arg1, int arg2
+);
+void M_CommitWDLLog();
 
 #endif
