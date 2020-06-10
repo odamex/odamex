@@ -64,6 +64,7 @@
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
+#include "m_wdlstats.h"
 
 #include <algorithm>
 #include <sstream>
@@ -4305,7 +4306,10 @@ void SV_WinCheck (void)
 		shotclock--;
 
 		if (!shotclock)
-			G_ExitLevel (0, 1);
+		{
+			M_CommitWDLLog();
+			G_ExitLevel(0, 1);
+		}
 	}
 }
 

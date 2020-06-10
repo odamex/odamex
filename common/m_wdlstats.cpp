@@ -46,7 +46,8 @@ struct WDLPlayer
 };
 
 // WDL Players that we're keeping track of.
-static std::vector<WDLPlayer> wdlplayers;
+typedef std::vector<WDLPlayer> WDLPlayers;
+static WDLPlayers wdlplayers;
 
 // A single event.
 struct WDLEvent
@@ -67,6 +68,23 @@ static std::vector<WDLEvent> wdlevents;
 
 // The starting gametic of the most recent log.
 static int wdlbegintic;
+
+static void AddWDLPlayer(const player_t* player)
+{
+	// Don't add player if their name is already in the vector.
+	WDLPlayers::const_iterator it = ::wdlplayers.begin();
+	for (; it != ::wdlplayers.end(); ++it)
+	{
+		if ((*it).netname == player->userinfo.netname)
+			return;
+	}
+
+	WDLPlayer wdlplayer = {
+		player->userinfo.netname,
+		player->userinfo.team,
+	};
+	::wdlplayers.push_back(wdlplayer);
+}
 
 // Returns true if a player is ingame.
 // FIXME: Put this someplace global.
@@ -116,7 +134,8 @@ static std::string GenerateLogFilename()
 	if (!strftime(buffer, ARRAY_LENGTH(buffer), "wdl_%Y.%m.%d.%H.%M.%S.log", lt))
 		return "";
 
-	return std::string(buffer, ARRAY_LENGTH(buffer));
+	std::string filename = std::string(buffer, ARRAY_LENGTH(buffer));
+	return std::string(::wdlstatdir + filename);
 }
 
 static void WDLStatsHelp()
@@ -138,9 +157,14 @@ BEGIN_COMMAND(wdlstats)
 	}
 
 	// Setting the stats dir tells us that we intend to log.
-	wdlstatdir = argv[1];
+	::wdlstatdir = argv[1];
+
+	// Ensure our path ends with a slash.
+	if (*(::wdlstatdir.end() - 1) != PATHSEPCHAR)
+		::wdlstatdir += PATHSEPCHAR;
+
 	Printf(
-		PRINT_HIGH, "wdlstats: Enabled and will log to \"%s\".\n", wdlstatdir.c_str()
+		PRINT_HIGH, "wdlstats: Enabled.  Will log to directory \"%s\".\n", wdlstatdir.c_str()
 	);
 }
 END_COMMAND(wdlstats)
@@ -186,17 +210,8 @@ void M_StartWDLLog()
 		return;
 	}
 
-	/// Tally up our ingame players.
+	/// Clear our ingame players.
 	::wdlplayers.clear();
-	Players::const_iterator pit = ::players.begin();
-	for (; pit != ::players.end(); ++pit)
-	{
-		WDLPlayer wdlplayer = {
-			(*pit).userinfo.netname,
-			(*pit).userinfo.team,
-		};
-		::wdlplayers.push_back(wdlplayer);
-	}
 
 	// Start with a fresh slate of events.
 	::wdlevents.clear();
@@ -220,9 +235,14 @@ void M_LogWDLEvent(
 	if (::wdlstatdir.empty())
 		return;
 
+	// Add the activator.
+	AddWDLPlayer(activator);
+
 	if (target != NULL)
 	{
-		// Event has a target.
+		// Event has a target, add them to the player list.
+		AddWDLPlayer(activator);
+
 		WDLEvent ev = {
 			event, activator->userinfo.netname, target->userinfo.netname, ::gametic,
 			{ activator->mo->x, activator->mo->y, activator->mo->z },
