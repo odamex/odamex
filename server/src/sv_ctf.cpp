@@ -28,6 +28,7 @@
 #include "i_system.h"
 #include "g_warmup.h"
 #include "p_unlag.h"
+#include "m_wdlstats.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
@@ -211,6 +212,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	if(TEAMpoints[player.userinfo.team] >= sv_scorelimit && sv_scorelimit != 0)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", team_names[player.userinfo.team]);
+		M_CommitWDLLog();
 		shotclock = TICRATE*2;
 	}
 }
@@ -413,4 +415,3 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 }
 
 VERSION_CONTROL (sv_ctf_cpp, "$Id$")
-

@@ -125,17 +125,16 @@ static int CountTeamPlayers(byte team)
 }
 
 // Generate a log filename based on the current time.
-static std::string GenerateLogFilename()
+static std::string GenerateTimestamp()
 {
 	time_t ti = time(NULL);
 	struct tm *lt = localtime(&ti);
 
-	char buffer[128];
-	if (!strftime(buffer, ARRAY_LENGTH(buffer), "wdl_%Y.%m.%d.%H.%M.%S.log", lt))
+	char buf[128];
+	if (!strftime(&buf[0], ARRAY_LENGTH(buf), "%Y.%m.%d.%H.%M.%S", lt))
 		return "";
 
-	std::string filename = std::string(buffer, ARRAY_LENGTH(buffer));
-	return std::string(::wdlstatdir + filename);
+	return std::string(buf, strlen(&buf[0]));
 }
 
 static void WDLStatsHelp()
@@ -269,7 +268,29 @@ void M_CommitWDLLog()
 	if (::wdlstatdir.empty())
 		return;
 
-	std::string filename = GenerateLogFilename();
+	std::string timestamp = GenerateTimestamp();
+	std::string filename = ::wdlstatdir + "wdl_" + timestamp + ".log";
+	FILE* fh = fopen(filename.c_str(), "w+");
+	if (fh == NULL)
+	{
+		Printf(PRINT_HIGH, "wdlstats: Could not save\"%s\" for writing.\n", filename.c_str());
+		return;
+	}
 
+	// Header
+	fprintf(fh, "version=%d\n", 5);
+	fprintf(fh, "time=%s\n", timestamp.c_str());
+	fprintf(fh, "levelnum=%d\n", ::level.levelnum);
+	fprintf(fh, "levelname=%s\n", ::level.level_name);
+	fprintf(fh, "duration=%d\n", ::gametic - ::wdlbegintic);
+	fprintf(fh, "endgametic=%d\n", ::gametic);
+
+	// Players
+	fprintf(fh, "players\n");
+	WDLPlayers::const_iterator pit = ::wdlplayers.begin();
+	for (; pit != ::wdlplayers.end(); ++pit)
+		fprintf(fh, "%d,%s\n", pit->team, pit->netname.c_str());
+
+	fclose(fh);
 	Printf(PRINT_HIGH, "wdlstats: Log saved as \"%s\".\n", filename.c_str());
 }

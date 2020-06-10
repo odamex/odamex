@@ -4306,10 +4306,7 @@ void SV_WinCheck (void)
 		shotclock--;
 
 		if (!shotclock)
-		{
-			M_CommitWDLLog();
 			G_ExitLevel(0, 1);
-		}
 	}
 }
 
@@ -4558,6 +4555,8 @@ void SV_TimelimitCheck()
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
 		}
+
+		M_CommitWDLLog();
 	}
 
 	shotclock = TICRATE*2;
