@@ -64,7 +64,8 @@ struct WDLEvent
 };
 
 // Events that we're keeping track of.
-static std::vector<WDLEvent> wdlevents;
+typedef std::vector<WDLEvent> WDLEventLog;
+static WDLEventLog wdlevents;
 
 // The starting gametic of the most recent log.
 static int wdlbegintic;
@@ -222,44 +223,113 @@ void M_StartWDLLog()
 }
 
 /**
+ * Log a damage event.
+ * 
+ * Because damage can come in multiple pieces, this checks for an existing
+ * event this tic and adds to it if it finds one.
+ * 
+ * Returns true if the function successfully appended to an existing event,
+ * otherwise false if we need to generate a new event.
+ */
+static bool LogDamageEvent(
+	WDLEvents event, AActor* activator, AActor* target,
+	int arg0, int arg1, int arg2
+)
+{
+	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
+	for (;it != ::wdlevents.rend(); ++it)
+	{
+		if ((*it).gametic != ::gametic)
+		{
+			// We're too late for events from last tic, so we must have a
+			// new event.
+			return false;
+		}
+
+		// Event type is the same?
+		if ((*it).ev != event)
+			continue;
+
+		// Activator is the same?
+		if ((*it).activator != activator->player->userinfo.netname)
+			continue;
+
+		// Target is the same?
+		if ((*it).target != target->player->userinfo.netname)
+			continue;
+
+		// Update our existing event.
+		(*it).arg0 += arg0;
+		(*it).arg1 += arg1;
+		Printf(PRINT_HIGH, "wdlstats: Updated damage event %d.\n", event);
+		return true;
+	}
+
+	// We ran through all our events, must be a new event.
+	return false;
+}
+
+/**
  * Log a WDL event.
  * 
  * The particulars of what you pass to this needs to be checked against the document.
  */
 void M_LogWDLEvent(
-	WDLEvents event, player_t* activator, player_t* target,
+	WDLEvents event, AActor* activator, AActor* target,
 	int arg0, int arg1, int arg2
 )
 {
 	if (::wdlstatdir.empty())
 		return;
 
+	if (activator->type != MT_PLAYER)
+	{
+		Printf(PRINT_HIGH, "wdlstats: Ignoring event activated by actor type %d.\n", activator->type);
+		return;
+	}
+
 	// Add the activator.
-	AddWDLPlayer(activator);
+	AddWDLPlayer(activator->player);
 
 	if (target != NULL)
 	{
+		if (target->type != MT_PLAYER)
+		{
+			Printf(PRINT_HIGH, "wdlstats: Ignoring event with a target of actor type %d.\n", target->type);
+			return;
+		}
+
 		// Event has a target, add them to the player list.
-		AddWDLPlayer(activator);
+		AddWDLPlayer(activator->player);
+
+		// Damage events are handled specially.
+		if (event == WDL_DAMAGE || event == WDL_CARRIERDAMAGE)
+		{
+			if (LogDamageEvent(event, activator, target, arg0, arg1, arg2))
+				return;
+		}
 
 		WDLEvent ev = {
-			event, activator->userinfo.netname, target->userinfo.netname, ::gametic,
-			{ activator->mo->x, activator->mo->y, activator->mo->z },
-			{ target->mo->x, target->mo->y, target->mo->z },
+			event, activator->player->userinfo.netname,
+			target->player->userinfo.netname, ::gametic,
+			{ activator->x, activator->y, activator->z },
+			{ target->x, target->y, target->z },
 			arg0, arg1, arg2
 		};
 		::wdlevents.push_back(ev);
+		Printf(PRINT_HIGH, "wdlstats: Logged targeted event %d.\n", event);
 	}
 	else
 	{
 		// Event does not have a target.
 		WDLEvent ev = {
-			event, activator->userinfo.netname, "", ::gametic,
-			{ activator->mo->x, activator->mo->y, activator->mo->z },
+			event, activator->player->userinfo.netname, "", ::gametic,
+			{ activator->x, activator->y, activator->z },
 			{ 0, 0, 0 },
 			arg0, arg1, arg2
 		};
 		::wdlevents.push_back(ev);
+		Printf(PRINT_HIGH, "wdlstats: Logged event %d.\n", event);
 	}
 }
 

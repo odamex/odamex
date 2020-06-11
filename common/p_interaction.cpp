@@ -35,6 +35,7 @@
 #include "p_ctf.h"
 #include "p_acs.h"
 #include "g_warmup.h"
+#include "m_wdlstats.h"
 
 extern bool predicting;
 
@@ -1175,7 +1176,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
     unsigned	ang;
-	int 		saved;
+	int 		saved = 0;
 	player_t*   splayer; // shorthand for source->player
 	player_t*   tplayer; // shorthand for target->player
 	fixed_t 	thrust;
@@ -1319,6 +1320,20 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			tplayer->damagecount = 100;	// teleport stomp does 10k points...
         }
 		SV_SendDamagePlayer(tplayer, target->health - damage);
+
+		// WDL damage events
+		// FIXME: Only works with two teams.
+		if (
+			&idplayer(CTFdata[TEAM_BLUE].flagger) == tplayer ||
+			&idplayer(CTFdata[TEAM_RED].flagger) == tplayer
+		)
+		{
+			M_LogWDLEvent(WDL_CARRIERDAMAGE, inflictor, target, damage, saved, mod);
+		}
+		else
+		{
+			M_LogWDLEvent(WDL_DAMAGE, inflictor, target, damage, saved, mod);
+		}
 	}
 
 	// do the damage
@@ -1388,4 +1403,3 @@ void P_PlayerLeavesGame(player_s* player)
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")
-

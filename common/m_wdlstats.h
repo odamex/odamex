@@ -47,7 +47,7 @@ enum WDLEvents {
 
 void M_StartWDLLog();
 void M_LogWDLEvent(
-	WDLEvents event, player_t* activator, player_t* target,
+	WDLEvents event, AActor* activator, AActor* target,
 	int arg0, int arg1, int arg2
 );
 void M_CommitWDLLog();
