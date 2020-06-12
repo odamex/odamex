@@ -261,7 +261,7 @@ static bool LogDamageEvent(
 		// Update our existing event.
 		(*it).arg0 += arg0;
 		(*it).arg1 += arg1;
-		Printf(PRINT_HIGH, "wdlstats: Updated damage event %d.\n", event);
+		Printf(PRINT_HIGH, "wdlstats: Updated targeted event %d.\n", event);
 		return true;
 	}
 
@@ -291,46 +291,51 @@ void M_LogWDLEvent(
 	// Add the activator.
 	AddWDLPlayer(activator->player);
 
-	if (target != NULL)
+	// Activator
+	std::string aname = "";
+	int ax = 0;
+	int ay = 0;
+	int az = 0;
+	if (activator != NULL && activator->type == MT_PLAYER)
 	{
-		if (target->type != MT_PLAYER)
-		{
-			Printf(PRINT_HIGH, "wdlstats: Ignoring event with a target of actor type %d.\n", target->type);
-			return;
-		}
-
-		// Event has a target, add them to the player list.
 		AddWDLPlayer(activator->player);
-
-		// Damage events are handled specially.
-		if (event == WDL_DAMAGE || event == WDL_CARRIERDAMAGE)
-		{
-			if (LogDamageEvent(event, activator, target, arg0, arg1, arg2))
-				return;
-		}
-
-		WDLEvent ev = {
-			event, activator->player->userinfo.netname,
-			target->player->userinfo.netname, ::gametic,
-			{ activator->x, activator->y, activator->z },
-			{ target->x, target->y, target->z },
-			arg0, arg1, arg2
-		};
-		::wdlevents.push_back(ev);
-		Printf(PRINT_HIGH, "wdlstats: Logged targeted event %d.\n", event);
+		aname = activator->player->userinfo.netname;
+		ax = activator->x >> FRACBITS;
+		ay = activator->y >> FRACBITS;
+		az = activator->z >> FRACBITS;
 	}
-	else
+
+	// Target
+	std::string tname = "";
+	int tx = 0;
+	int ty = 0;
+	int tz = 0;
+	if (target != NULL && target->type == MT_PLAYER)
 	{
-		// Event does not have a target.
-		WDLEvent ev = {
-			event, activator->player->userinfo.netname, "", ::gametic,
-			{ activator->x, activator->y, activator->z },
-			{ 0, 0, 0 },
-			arg0, arg1, arg2
-		};
-		::wdlevents.push_back(ev);
-		Printf(PRINT_HIGH, "wdlstats: Logged event %d.\n", event);
+		AddWDLPlayer(target->player);
+		tname = target->player->userinfo.netname;
+		tx = target->x >> FRACBITS;
+		ty = target->y >> FRACBITS;
+		tz = target->z >> FRACBITS;
 	}
+
+	// Damage events are handled specially.
+	if (
+		activator && target &&
+		(event == WDL_DAMAGE || event == WDL_CARRIERDAMAGE)
+	) {
+		if (LogDamageEvent(event, activator, target, arg0, arg1, arg2))
+			return;
+	}
+
+	// Add the event to the log.
+	WDLEvent evt = {
+		event, aname, tname, ::gametic,
+		{ ax, ay, az }, { tx, ty, tz },
+		arg0, arg1, arg2
+	};
+	::wdlevents.push_back(evt);
+	Printf(PRINT_HIGH, "wdlstats: Logged targeted event %d.\n", event);
 }
 
 void M_CommitWDLLog()
@@ -361,6 +366,93 @@ void M_CommitWDLLog()
 	for (; pit != ::wdlplayers.end(); ++pit)
 		fprintf(fh, "%d,%s\n", pit->team, pit->netname.c_str());
 
+	// Events
+	WDLEventLog::const_iterator eit = ::wdlevents.begin();
+	for (; eit != ::wdlevents.end(); ++eit)
+	{
+		//          "ev,ac,tg,gt,ax,ay,az,tx,ty,tz,a0,a1,a2"
+		fprintf(fh, "%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+			eit->ev, eit->activator.c_str(), eit->target.c_str(), ::gametic,
+			eit->apos[0], eit->apos[1], eit->apos[2],
+			eit->tpos[0], eit->tpos[1], eit->tpos[2],
+			eit->arg0, eit->arg1, eit->arg2);
+	}
+
 	fclose(fh);
 	Printf(PRINT_HIGH, "wdlstats: Log saved as \"%s\".\n", filename.c_str());
 }
+
+static void PrintWDLEvent(const WDLEvent& evt)
+{
+	// FIXME: Once we have access to StrFormat, dedupe this format string.
+	//                 "ev,ac,tg,gt,ax,ay,az,tx,ty,tz,a0,a1,a2"
+	Printf(PRINT_HIGH, "%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+		evt.ev, evt.activator.c_str(), evt.target.c_str(), ::gametic,
+		evt.apos[0], evt.apos[1], evt.apos[2],
+		evt.tpos[0], evt.tpos[1], evt.tpos[2],
+		evt.arg0, evt.arg1, evt.arg2);
+}
+
+static void WDLInfoHelp()
+{
+	Printf(PRINT_HIGH,
+		"wdlinfo - Looks up internal information about logged WDL events\n\n"
+		"Usage:\n"
+		"  ] wdlinfo event <ID>\n"
+		"  Print the event by ID.\n\n"
+		"  ] wdlinfo size\n"
+		"  Return the size of the internal event array.\n\n"
+		"  ] wdlinfo tail\n"
+		"  Print the last 10 events.\n");
+}
+
+BEGIN_COMMAND(wdlinfo)
+{
+	if (argc < 2)
+	{
+		WDLInfoHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "size") == 0)
+	{
+		// Count total events.
+		Printf(PRINT_HIGH, "%u events found\n", ::wdlevents.size());
+		return;
+	}
+	else if (stricmp(argv[1], "tail") == 0)
+	{
+		// Show last 10 events.
+		WDLEventLog::const_iterator it = ::wdlevents.end() - 10;
+		if (it < ::wdlevents.begin())
+			it = wdlevents.begin();
+
+		Printf(PRINT_HIGH, "Showing last %u events:\n", ::wdlevents.end() - it);
+		for (; it != ::wdlevents.end(); ++it)
+			PrintWDLEvent(*it);
+		return;
+	}
+
+	if (argc < 3)
+	{
+		WDLInfoHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "event") == 0)
+	{
+		int id = atoi(argv[2]);
+		if (id >= ::wdlevents.size())
+		{
+			Printf(PRINT_HIGH, "Event number %d not found\n", id);
+			return;
+		}
+		WDLEvent evt = ::wdlevents.at(id);
+		PrintWDLEvent(evt);
+		return;
+	}
+
+	// Unknown command.
+	WDLInfoHelp();
+}
+END_COMMAND(wdlinfo)
