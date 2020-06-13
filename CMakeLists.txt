@@ -27,8 +27,8 @@ cmake_minimum_required(VERSION 3.1)
 set(PROJECT_VERSION 0.8.3)
 set(PROJECT_COPYRIGHT "2006-2020")
 
-# Use C++ 98/03 for all targets
-set(CMAKE_CXX_STANDARD 98)
+# Use C++ 11 for all targets
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # identify the target CPU
