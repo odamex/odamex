@@ -1208,6 +1208,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	MeansOfDeath = mod;
+	bool targethasflag = (
+		&idplayer(CTFdata[TEAM_BLUE].flagger) == tplayer ||
+		&idplayer(CTFdata[TEAM_RED].flagger) == tplayer
+	);
 
 	if (target->flags & MF_SKULLFLY)
 	{
@@ -1322,18 +1326,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		SV_SendDamagePlayer(tplayer, target->health - damage);
 
 		// WDL damage events
-		// FIXME: Only works with two teams.
-		if (
-			&idplayer(CTFdata[TEAM_BLUE].flagger) == tplayer ||
-			&idplayer(CTFdata[TEAM_RED].flagger) == tplayer
-		)
-		{
-			M_LogWDLEvent(WDL_CARRIERDAMAGE, inflictor, target, damage, saved, mod);
-		}
+		if (source == NULL)
+			M_LogWDLEvent(WDL_ENVIRODAMAGE, source, target, damage, saved, mod);
+		else if (targethasflag)
+			M_LogWDLEvent(WDL_CARRIERDAMAGE, source, target, damage, saved, mod);
 		else
-		{
-			M_LogWDLEvent(WDL_DAMAGE, inflictor, target, damage, saved, mod);
-		}
+			M_LogWDLEvent(WDL_DAMAGE, source, target, damage, saved, mod);
 	}
 
 	// do the damage
@@ -1344,6 +1342,16 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (target->health <= 0)
 		{
 			P_KillMobj(source, target, inflictor, false);
+
+			// WDL kill events
+			if (source == NULL && targethasflag)
+				M_LogWDLEvent(WDL_ENVIROCARRIERKILL, source, target, 0, 0, mod);
+			else if (source == NULL)
+				M_LogWDLEvent(WDL_ENVIROKILL, source, target, 0, 0, mod);
+			else if (targethasflag)
+				M_LogWDLEvent(WDL_CARRIERKILL, source, target, 0, 0, mod);
+			else
+				M_LogWDLEvent(WDL_KILL, source, target, 0, 0, mod);
 			return;
 		}
 	}
