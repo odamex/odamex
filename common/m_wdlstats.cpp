@@ -35,6 +35,26 @@ extern Players players;
 
 EXTERN_CVAR(sv_gametype)
 
+// Strings for WDL events.
+static const char* wdlevstrings[] = {
+	"DAMAGE",
+	"CARRIERDAMAGE",
+	"KILL",
+	"CARRIERKILL",
+	"ENVIRODAMAGEUNUSED",
+	"ENVIRODAMAGE",
+	"ENVIROKILL",
+	"ENVIROCARRIERKILL",
+	"TOUCH",
+	"PICKUPTOUCH",
+	"CAPTURE",
+	"PICKUPCAPTURE",
+	"ASSIST",
+	"RETURNFLAG",
+	"ITEMPICKUP",
+	"ACCURACY",
+};
+
 // WDL Stats dir - if not empty, we are logging.
 static std::string wdlstatdir;
 
@@ -69,6 +89,14 @@ static WDLEventLog wdlevents;
 
 // The starting gametic of the most recent log.
 static int wdlbegintic;
+
+// Turn an event enum into a string.
+static const char* WDLEventString(WDLEvents i)
+{
+	if (i >= ARRAY_LENGTH(::wdlevstrings) || i < 0)
+		return "UNKNOWN";
+	return ::wdlevstrings[i];
+}
 
 static void AddWDLPlayer(const player_t* player)
 {
@@ -164,7 +192,7 @@ BEGIN_COMMAND(wdlstats)
 		::wdlstatdir += PATHSEPCHAR;
 
 	Printf(
-		PRINT_HIGH, "wdlstats: Enabled.  Will log to directory \"%s\".\n", wdlstatdir.c_str()
+		PRINT_HIGH, "wdlstats: Enabled, will log to directory \"%s\".\n", wdlstatdir.c_str()
 	);
 }
 END_COMMAND(wdlstats)
@@ -219,7 +247,7 @@ void M_StartWDLLog()
 	// Set our starting tic.
 	::wdlbegintic = ::gametic;
 
-	Printf(PRINT_HIGH, "wdlstats: Log started...\n");
+	Printf(PRINT_HIGH, "wdlstats: Started, will log to directory \"%s\".\n", wdlstatdir.c_str());
 }
 
 /**
@@ -261,7 +289,7 @@ static bool LogDamageEvent(
 		// Update our existing event.
 		(*it).arg0 += arg0;
 		(*it).arg1 += arg1;
-		Printf(PRINT_HIGH, "wdlstats: Updated targeted event %d.\n", event);
+		Printf(PRINT_HIGH, "wdlstats: Updated targeted event %s.\n", WDLEventString(event));
 		return true;
 	}
 
@@ -335,7 +363,7 @@ void M_LogWDLEvent(
 		arg0, arg1, arg2
 	};
 	::wdlevents.push_back(evt);
-	Printf(PRINT_HIGH, "wdlstats: Logged targeted event %d.\n", event);
+	Printf(PRINT_HIGH, "wdlstats: Logged targeted event %s.\n", WDLEventString(event));
 }
 
 void M_CommitWDLLog()

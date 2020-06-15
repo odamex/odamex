@@ -306,7 +306,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
-	CTFdata[f].firstgrab = false
+	CTFdata[f].firstgrab = false;
 
 	fixed_t x, y, z;
 	Unlag::getInstance().getCurrentPlayerPosition(player.id, x, y, z);
