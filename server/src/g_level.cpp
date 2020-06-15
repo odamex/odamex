@@ -554,6 +554,7 @@ void G_DoResetLevel(bool full_reset)
 				it->flags[i] = false;
 			}
 			CTFdata[i].flagger = 0;
+			CTFdata[i].firstgrab = false;
 			CTFdata[i].state = flag_home;
 		}
 	}
