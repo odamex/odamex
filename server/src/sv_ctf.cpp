@@ -167,6 +167,8 @@ void SV_FlagReturn (player_t &player, flag_t f)
 	CTF_SpawnFlag (f);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
+
+	M_LogWDLEvent(WDL_RETURNFLAG, player.mo, NULL, 0, 0, 0);
 }
 
 //
