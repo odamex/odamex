@@ -41,8 +41,8 @@ static const char* wdlevstrings[] = {
 	"CARRIERDAMAGE",
 	"KILL",
 	"CARRIERKILL",
-	"ENVIRODAMAGEUNUSED",
 	"ENVIRODAMAGE",
+	"ENVIROCARRIERDAMAGE",
 	"ENVIROKILL",
 	"ENVIROCARRIERKILL",
 	"TOUCH",
@@ -51,7 +51,7 @@ static const char* wdlevstrings[] = {
 	"PICKUPCAPTURE",
 	"ASSIST",
 	"RETURNFLAG",
-	"ITEMPICKUP",
+	"POWERPICKUP",
 	"ACCURACY",
 };
 
@@ -350,7 +350,7 @@ void M_LogWDLEvent(
 	// Damage events are handled specially.
 	if (
 		activator && target &&
-		(event == WDL_DAMAGE || event == WDL_CARRIERDAMAGE)
+		(event == WDL_EVENT_DAMAGE || event == WDL_EVENT_CARRIERDAMAGE)
 	) {
 		if (LogDamageEvent(event, activator, target, arg0, arg1, arg2))
 			return;

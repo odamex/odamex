@@ -461,11 +461,15 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
 			msg = GOTARMOR;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_GREENARMOR, 0, 0);
             break;
 
 	    case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
 			msg = GOTMEGA;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_BLUEARMOR, 0, 0);
             break;
 
 		// bonus items
@@ -477,6 +481,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
             }
             player->mo->health = player->health;
 			msg = GOTHTHBONUS;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_HEALTHBONUS, 0, 0);
             break;
 
 	    case SPR_BON2:
@@ -490,6 +496,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->armortype = deh.GreenAC;
             }
 			msg = GOTARMBONUS;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_ARMORBONUS, 0, 0);
             break;
 
 	    case SPR_SOUL:
@@ -501,6 +509,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
             player->mo->health = player->health;
 			msg = GOTSUPER;
             sound = 1;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_SOULSPHERE, 0, 0);
             break;
 
 	    case SPR_MEGA:
@@ -509,6 +519,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
             P_GiveArmor(player,deh.BlueAC);
 			msg = GOTMSPHERE;
             sound = 1;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_MEGASPHERE, 0, 0);
             break;
 
 		// cards
@@ -552,6 +564,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_STIM:
 			val = P_GiveBody(player, 10);
 			msg = GOTSTIM;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_STIMPACK, 0, 0);
             break;
 
 	    case SPR_MEDI:
@@ -564,6 +578,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 msg = GOTMEDIKIT;
             }
 			val = P_GiveBody(player, 25);
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_MEDKIT, 0, 0);
             break;
 
 		// power ups
@@ -581,6 +597,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->pendingweapon = wp_fist;
             }
             sound = 1;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				WDL_PICKUP_BERSERK, 0, 0);
             break;
 
 	    case SPR_PINS:
@@ -1327,11 +1345,11 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		// WDL damage events
 		if (source == NULL)
-			M_LogWDLEvent(WDL_ENVIRODAMAGE, source, target, damage, saved, mod);
+			M_LogWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, damage, saved, mod);
 		else if (targethasflag)
-			M_LogWDLEvent(WDL_CARRIERDAMAGE, source, target, damage, saved, mod);
+			M_LogWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, damage, saved, mod);
 		else
-			M_LogWDLEvent(WDL_DAMAGE, source, target, damage, saved, mod);
+			M_LogWDLEvent(WDL_EVENT_DAMAGE, source, target, damage, saved, mod);
 	}
 
 	// do the damage
@@ -1345,13 +1363,13 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			// WDL kill events
 			if (source == NULL && targethasflag)
-				M_LogWDLEvent(WDL_ENVIROCARRIERKILL, source, target, 0, 0, mod);
+				M_LogWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, mod);
 			else if (source == NULL)
-				M_LogWDLEvent(WDL_ENVIROKILL, source, target, 0, 0, mod);
+				M_LogWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod);
 			else if (targethasflag)
-				M_LogWDLEvent(WDL_CARRIERKILL, source, target, 0, 0, mod);
+				M_LogWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
 			else
-				M_LogWDLEvent(WDL_KILL, source, target, 0, 0, mod);
+				M_LogWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
 			return;
 		}
 	}
