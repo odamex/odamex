@@ -461,15 +461,17 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
 			msg = GOTARMOR;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
-				WDL_PICKUP_GREENARMOR, 0, 0);
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+					WDL_PICKUP_GREENARMOR, 0, 0);
             break;
 
 	    case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
 			msg = GOTMEGA;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
-				WDL_PICKUP_BLUEARMOR, 0, 0);
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+					WDL_PICKUP_BLUEARMOR, 0, 0);
             break;
 
 		// bonus items
@@ -564,8 +566,9 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_STIM:
 			val = P_GiveBody(player, 10);
 			msg = GOTSTIM;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
-				WDL_PICKUP_STIMPACK, 0, 0);
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+					WDL_PICKUP_STIMPACK, 0, 0);
             break;
 
 	    case SPR_MEDI:
@@ -578,8 +581,9 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 msg = GOTMEDIKIT;
             }
 			val = P_GiveBody(player, 25);
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
-				WDL_PICKUP_MEDKIT, 0, 0);
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+					WDL_PICKUP_MEDKIT, 0, 0);
             break;
 
 		// power ups
@@ -597,8 +601,9 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->pendingweapon = wp_fist;
             }
             sound = 1;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
-				WDL_PICKUP_BERSERK, 0, 0);
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+					WDL_PICKUP_BERSERK, 0, 0);
             break;
 
 	    case SPR_PINS:
