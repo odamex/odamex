@@ -1343,13 +1343,16 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
         }
 		SV_SendDamagePlayer(tplayer, target->health - damage);
 
-		// WDL damage events
-		if (source == NULL)
-			M_LogWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, damage, saved, mod);
-		else if (targethasflag)
-			M_LogWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, damage, saved, mod);
-		else
-			M_LogWDLEvent(WDL_EVENT_DAMAGE, source, target, damage, saved, mod);
+		// WDL damage events - none of them count self-harm.
+		if (source != target)
+		{
+			if (source == NULL)
+				M_LogWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, damage, saved, mod);
+			else if (targethasflag)
+				M_LogWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, damage, saved, mod);
+			else
+				M_LogWDLEvent(WDL_EVENT_DAMAGE, source, target, damage, saved, mod);
+		}
 	}
 
 	// do the damage
@@ -1361,15 +1364,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		{
 			P_KillMobj(source, target, inflictor, false);
 
-			// WDL kill events
-			if (source == NULL && targethasflag)
-				M_LogWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, mod);
-			else if (source == NULL)
-				M_LogWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod);
-			else if (targethasflag)
-				M_LogWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
-			else
-				M_LogWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+			// WDL damage events - none of them count self-harm.
+			if (source != target)
+			{
+				if (source == NULL && targethasflag)
+					M_LogWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, mod);
+				else if (source == NULL)
+					M_LogWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod);
+				else if (targethasflag)
+					M_LogWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+				else
+					M_LogWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+			}
 			return;
 		}
 	}
