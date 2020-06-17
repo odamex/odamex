@@ -417,6 +417,7 @@ void M_CommitWDLLog()
 		fprintf(fh, "%d,%s\n", pit->team, pit->netname.c_str());
 
 	// Events
+	fprintf(fh, "events\n");
 	WDLEventLog::const_iterator eit = ::wdlevents.begin();
 	for (; eit != ::wdlevents.end(); ++eit)
 	{
