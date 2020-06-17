@@ -58,6 +58,9 @@ static const char* wdlevstrings[] = {
 // WDL Stats dir - if not empty, we are logging.
 static std::string wdlstatdir;
 
+// True if we're recording stats for this map, otherwise false.
+static bool wdlstatrecording;
+
 // A single tracked player
 struct WDLPlayer
 {
@@ -192,7 +195,7 @@ BEGIN_COMMAND(wdlstats)
 		::wdlstatdir += PATHSEPCHAR;
 
 	Printf(
-		PRINT_HIGH, "wdlstats: Enabled, will log to directory \"%s\".\n", wdlstatdir.c_str()
+		PRINT_HIGH, "wdlstats: Enabled, will log to directory \"%s\" on next map change.\n", wdlstatdir.c_str()
 	);
 }
 END_COMMAND(wdlstats)
@@ -200,11 +203,15 @@ END_COMMAND(wdlstats)
 void M_StartWDLLog()
 {
 	if (::wdlstatdir.empty())
+	{
+		::wdlstatrecording = false;
 		return;
+	}
 
 	// Ensure we're CTF.
 	if (sv_gametype != 3)
 	{
+		::wdlstatrecording = false;
 		Printf(
 			PRINT_HIGH,
 			"wdlstats: Not logging, incorrect gametype.\n"
@@ -218,6 +225,7 @@ void M_StartWDLLog()
 	{
 		// [AM] This message can probably be deleted once we're sure the
 		//      condition is appropriate.
+		::wdlstatrecording = false;
 		Printf(
 			PRINT_HIGH,
 			"wdlstats: Not logging, not ingame (yet).\n"
@@ -230,6 +238,7 @@ void M_StartWDLLog()
 	int redplayers = CountTeamPlayers(TEAM_RED);
 	if (blueplayers < 3 && redplayers < 3 && false)
 	{
+		::wdlstatrecording = false;
 		Printf(
 			PRINT_HIGH,
 			"wdlstats: Not logging, too few players on a team (%d vs %d).\n",
@@ -238,7 +247,7 @@ void M_StartWDLLog()
 		return;
 	}
 
-	/// Clear our ingame players.
+	// Clear our ingame players.
 	::wdlplayers.clear();
 
 	// Start with a fresh slate of events.
@@ -246,6 +255,9 @@ void M_StartWDLLog()
 
 	// Set our starting tic.
 	::wdlbegintic = ::gametic;
+
+	// Turn on recording.
+	::wdlstatrecording = true;
 
 	Printf(PRINT_HIGH, "wdlstats: Started, will log to directory \"%s\".\n", wdlstatdir.c_str());
 }
@@ -307,7 +319,7 @@ void M_LogWDLEvent(
 	int arg0, int arg1, int arg2
 )
 {
-	if (::wdlstatdir.empty())
+	if (!::wdlstatrecording)
 		return;
 
 	// Activator
@@ -390,7 +402,7 @@ void M_LogActorWDLEvent(
 
 void M_CommitWDLLog()
 {
-	if (::wdlstatdir.empty())
+	if (!::wdlstatrecording)
 		return;
 
 	std::string timestamp = GenerateTimestamp();
@@ -423,13 +435,18 @@ void M_CommitWDLLog()
 	{
 		//          "ev,ac,tg,gt,ax,ay,az,tx,ty,tz,a0,a1,a2"
 		fprintf(fh, "%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-			eit->ev, eit->activator.c_str(), eit->target.c_str(), ::gametic,
+			eit->ev, eit->activator.c_str(), eit->target.c_str(), eit->gametic,
 			eit->apos[0], eit->apos[1], eit->apos[2],
 			eit->tpos[0], eit->tpos[1], eit->tpos[2],
 			eit->arg0, eit->arg1, eit->arg2);
 	}
 
 	fclose(fh);
+
+	// Turn off stat recording global - it must be turned on again by the
+	// log starter next go-around.
+	::wdlstatrecording = false;
+
 	Printf(PRINT_HIGH, "wdlstats: Log saved as \"%s\".\n", filename.c_str());
 }
 
@@ -438,7 +455,7 @@ static void PrintWDLEvent(const WDLEvent& evt)
 	// FIXME: Once we have access to StrFormat, dedupe this format string.
 	//                 "ev,ac,tg,gt,ax,ay,az,tx,ty,tz,a0,a1,a2"
 	Printf(PRINT_HIGH, "%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-		evt.ev, evt.activator.c_str(), evt.target.c_str(), ::gametic,
+		evt.ev, evt.activator.c_str(), evt.target.c_str(), evt.gametic,
 		evt.apos[0], evt.apos[1], evt.apos[2],
 		evt.tpos[0], evt.tpos[1], evt.tpos[2],
 		evt.arg0, evt.arg1, evt.arg2);
@@ -453,6 +470,8 @@ static void WDLInfoHelp()
 		"  Print the event by ID.\n\n"
 		"  ] wdlinfo size\n"
 		"  Return the size of the internal event array.\n\n"
+		"  ] wdlinfo state\n"
+		"  Return relevant WDL stats state.\n\n"
 		"  ] wdlinfo tail\n"
 		"  Print the last 10 events.\n");
 }
@@ -469,6 +488,14 @@ BEGIN_COMMAND(wdlinfo)
 	{
 		// Count total events.
 		Printf(PRINT_HIGH, "%u events found\n", ::wdlevents.size());
+		return;
+	}
+	else if (stricmp(argv[1], "state") == 0)
+	{
+		// Count total events.
+		Printf(PRINT_HIGH, "Currently recording?: %s\n", ::wdlstatrecording ? "Yes" : "No");
+		Printf(PRINT_HIGH, "Directory to write logs to: \"%s\"\n", ::wdlstatdir.c_str());
+		Printf(PRINT_HIGH, "Log starting gametic: %d\n", ::wdlbegintic);
 		return;
 	}
 	else if (stricmp(argv[1], "tail") == 0)
