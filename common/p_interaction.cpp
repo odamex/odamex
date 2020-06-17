@@ -462,7 +462,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			val = P_GiveArmor(player, deh.GreenAC);
 			msg = GOTARMOR;
 			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_GREENARMOR, 0, 0);
             break;
 
@@ -470,7 +470,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			val = P_GiveArmor(player, deh.BlueAC);
 			msg = GOTMEGA;
 			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_BLUEARMOR, 0, 0);
             break;
 
@@ -483,7 +483,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             }
             player->mo->health = player->health;
 			msg = GOTHTHBONUS;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_HEALTHBONUS, 0, 0);
             break;
 
@@ -498,7 +498,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->armortype = deh.GreenAC;
             }
 			msg = GOTARMBONUS;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_ARMORBONUS, 0, 0);
             break;
 
@@ -511,7 +511,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             player->mo->health = player->health;
 			msg = GOTSUPER;
             sound = 1;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_SOULSPHERE, 0, 0);
             break;
 
@@ -521,7 +521,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             P_GiveArmor(player,deh.BlueAC);
 			msg = GOTMSPHERE;
             sound = 1;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_MEGASPHERE, 0, 0);
             break;
 
@@ -567,7 +567,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			val = P_GiveBody(player, 10);
 			msg = GOTSTIM;
 			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_STIMPACK, 0, 0);
             break;
 
@@ -582,7 +582,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             }
 			val = P_GiveBody(player, 25);
 			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_MEDKIT, 0, 0);
             break;
 
@@ -602,7 +602,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             }
             sound = 1;
 			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player->mo, NULL,
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_BERSERK, 0, 0);
             break;
 
@@ -1352,11 +1352,11 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (source != target)
 		{
 			if (source == NULL)
-				M_LogWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, damage, saved, mod);
+				M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, damage, saved, mod);
 			else if (targethasflag)
-				M_LogWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, damage, saved, mod);
+				M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, damage, saved, mod);
 			else
-				M_LogWDLEvent(WDL_EVENT_DAMAGE, source, target, damage, saved, mod);
+				M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, damage, saved, mod);
 		}
 	}
 
@@ -1373,13 +1373,13 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			if (source != target)
 			{
 				if (source == NULL && targethasflag)
-					M_LogWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, mod);
+					M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, mod);
 				else if (source == NULL)
-					M_LogWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod);
+					M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod);
 				else if (targethasflag)
-					M_LogWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+					M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
 				else
-					M_LogWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+					M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
 			}
 			return;
 		}

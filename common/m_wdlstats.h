@@ -59,6 +59,10 @@ enum WDLPowerups {
 
 void M_StartWDLLog();
 void M_LogWDLEvent(
+	WDLEvents event, player_t* activator, player_t* target,
+	int arg0, int arg1, int arg2
+);
+void M_LogActorWDLEvent(
 	WDLEvents event, AActor* activator, AActor* target,
 	int arg0, int arg1, int arg2
 );

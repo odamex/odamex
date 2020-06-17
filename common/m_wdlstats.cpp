@@ -260,7 +260,7 @@ void M_StartWDLLog()
  * otherwise false if we need to generate a new event.
  */
 static bool LogDamageEvent(
-	WDLEvents event, AActor* activator, AActor* target,
+	WDLEvents event, player_t* activator, player_t* target,
 	int arg0, int arg1, int arg2
 )
 {
@@ -279,11 +279,11 @@ static bool LogDamageEvent(
 			continue;
 
 		// Activator is the same?
-		if ((*it).activator != activator->player->userinfo.netname)
+		if ((*it).activator != activator->userinfo.netname)
 			continue;
 
 		// Target is the same?
-		if ((*it).target != target->player->userinfo.netname)
+		if ((*it).target != target->userinfo.netname)
 			continue;
 
 		// Update our existing event.
@@ -303,34 +303,31 @@ static bool LogDamageEvent(
  * The particulars of what you pass to this needs to be checked against the document.
  */
 void M_LogWDLEvent(
-	WDLEvents event, AActor* activator, AActor* target,
+	WDLEvents event, player_t* activator, player_t* target,
 	int arg0, int arg1, int arg2
 )
 {
 	if (::wdlstatdir.empty())
 		return;
 
-	if (activator->type != MT_PLAYER)
-	{
-		Printf(PRINT_HIGH, "wdlstats: Ignoring event activated by actor type %d.\n", activator->type);
-		return;
-	}
-
-	// Add the activator.
-	AddWDLPlayer(activator->player);
-
 	// Activator
 	std::string aname = "";
 	int ax = 0;
 	int ay = 0;
 	int az = 0;
-	if (activator != NULL && activator->type == MT_PLAYER)
+	if (activator != NULL)
 	{
-		AddWDLPlayer(activator->player);
-		aname = activator->player->userinfo.netname;
-		ax = activator->x >> FRACBITS;
-		ay = activator->y >> FRACBITS;
-		az = activator->z >> FRACBITS;
+		// Add the activator.
+		AddWDLPlayer(activator);
+		aname = activator->userinfo.netname;
+
+		// Add the activator's body information.
+		if (activator->mo)
+		{
+			ax = activator->mo->x >> FRACBITS;
+			ay = activator->mo->y >> FRACBITS;
+			az = activator->mo->z >> FRACBITS;
+		}
 	}
 
 	// Target
@@ -338,13 +335,19 @@ void M_LogWDLEvent(
 	int tx = 0;
 	int ty = 0;
 	int tz = 0;
-	if (target != NULL && target->type == MT_PLAYER)
+	if (target != NULL)
 	{
-		AddWDLPlayer(target->player);
-		tname = target->player->userinfo.netname;
-		tx = target->x >> FRACBITS;
-		ty = target->y >> FRACBITS;
-		tz = target->z >> FRACBITS;
+		// Add the target.
+		AddWDLPlayer(target);
+		tname = target->userinfo.netname;
+
+		// Add the target's body information.
+		if (target->mo)
+		{
+			tx = target->mo->x >> FRACBITS;
+			ty = target->mo->y >> FRACBITS;
+			tz = target->mo->z >> FRACBITS;
+		}
 	}
 
 	// Damage events are handled specially.
@@ -364,6 +367,25 @@ void M_LogWDLEvent(
 	};
 	::wdlevents.push_back(evt);
 	Printf(PRINT_HIGH, "wdlstats: Logged targeted event %s.\n", WDLEventString(event));
+}
+
+/**
+ * Log a WDL event when you have actor pointers.
+ */
+void M_LogActorWDLEvent(
+	WDLEvents event, AActor* activator, AActor* target,
+	int arg0, int arg1, int arg2
+)
+{
+	player_t* ap = NULL;
+	if (activator != NULL && activator->type == MT_PLAYER)
+		ap = activator->player;
+
+	player_t* tp = NULL;
+	if (target != NULL && target->type == MT_PLAYER)
+		tp = target->player;
+
+	M_LogWDLEvent(event, ap, tp, arg0, arg1, arg2);
 }
 
 void M_CommitWDLLog()

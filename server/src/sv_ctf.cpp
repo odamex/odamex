@@ -143,12 +143,12 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 			CTFdata[f].firstgrab = true;
 			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
-			M_LogWDLEvent(WDL_EVENT_TOUCH, player.mo, NULL, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, 0, 0, 0);
 		} else {
 			CTFdata[f].firstgrab = false;
 			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_GRAB, player);
-			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, player.mo, NULL, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, 0, 0, 0);
 		}
 	} else {
 		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
@@ -168,7 +168,7 @@ void SV_FlagReturn (player_t &player, flag_t f)
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 
-	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, player.mo, NULL, 0, 0, 0);
+	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, 0, 0, 0);
 }
 
 //
@@ -209,9 +209,9 @@ void SV_FlagScore (player_t &player, flag_t f)
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname.c_str(), team_names[f], CTF_TimeMSG(time_held));
 	if (CTFdata[f].firstgrab)
-		M_LogWDLEvent(WDL_EVENT_CAPTURE, player.mo, NULL, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, 0, 0, 0);
 	else
-		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, player.mo, NULL, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, 0, 0, 0);
 
 	player.flags[f] = false; // take scoring player's flag
 	CTFdata[f].flagger = 0;
