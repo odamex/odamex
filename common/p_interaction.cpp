@@ -1348,15 +1348,19 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
         }
 		SV_SendDamagePlayer(tplayer, target->health - damage);
 
-		// WDL damage events - none of them count self-harm.
+		// WDL damage events - they have to be up here to ensure we know how
+		// much armor is subtracted.  Also, none of them count self-harm.
 		if (source != target)
 		{
+			int low = std::max(target->health - damage, 0);
+			int actualdamage = target->health - low;
+
 			if (source == NULL)
-				M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, damage, saved, mod);
+				M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, mod);
 			else if (targethasflag)
-				M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, damage, saved, mod);
+				M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
 			else
-				M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, damage, saved, mod);
+				M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
 	}
 
