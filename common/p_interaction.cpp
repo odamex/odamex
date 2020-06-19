@@ -1349,18 +1349,28 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		SV_SendDamagePlayer(tplayer, target->health - damage);
 
 		// WDL damage events - they have to be up here to ensure we know how
-		// much armor is subtracted.  Also, none of them count self-harm.
-		if (source != target)
-		{
-			int low = std::max(target->health - damage, 0);
-			int actualdamage = target->health - low;
+		// much armor is subtracted.
+		int low = std::max(target->health - damage, 0);
+		int actualdamage = target->health - low;
 
-			if (source == NULL)
-				M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, mod);
-			else if (targethasflag)
-				M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
-			else
-				M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
+		if (source == NULL)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, emod);
+		}
+		else if (targethasflag)
+		{
+			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
+				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4, mod, 0);
+
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
+		}
+		else
+		{
+			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
+				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4, mod, 0);
+
+			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
 	}
 
@@ -1373,18 +1383,21 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		{
 			P_KillMobj(source, target, inflictor, false);
 
-			// WDL damage events - none of them count self-harm.
-			if (source != target)
+			// WDL damage events.
+			if (source == NULL && targethasflag)
 			{
-				if (source == NULL && targethasflag)
-					M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, mod);
-				else if (source == NULL)
-					M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod);
-				else if (targethasflag)
-					M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
-				else
-					M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
 			}
+			else if (source == NULL)
+			{
+				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+				M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
+			}
+			else if (targethasflag)
+				M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+			else
+				M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
 			return;
 		}
 	}

@@ -66,6 +66,7 @@ void M_LogActorWDLEvent(
 	WDLEvents event, AActor* activator, AActor* target,
 	int arg0, int arg1, int arg2
 );
+void M_MaybeLogWDLAccuracyMiss(player_t* activator, int arg0, int arg1);
 void M_CommitWDLLog();
 
 #endif

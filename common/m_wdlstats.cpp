@@ -310,6 +310,48 @@ static bool LogDamageEvent(
 }
 
 /**
+ * Log accuracy event.
+ * 
+ * Returns true if the function successfully appended to an existing event,
+ * otherwise false if we need to generate a new event.
+ */
+static bool LogAccuracyEvent(
+	WDLEvents event, player_t* activator, player_t* target,
+	int arg0, int arg1, int arg2
+)
+{
+	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
+	for (;it != ::wdlevents.rend(); ++it)
+	{
+		if ((*it).gametic != ::gametic)
+		{
+			// We're too late for events from last tic, so we must have a
+			// new event.
+			return false;
+		}
+
+		// Event type is the same?
+		if ((*it).ev != event)
+			continue;
+
+		// Activator is the same?
+		if ((*it).activator != activator->userinfo.netname)
+			continue;
+
+		// Target is the same?
+		if ((*it).target != target->userinfo.netname)
+			continue;
+
+		// Update our existing event - by doing nothing.
+		Printf(PRINT_HIGH, "wdlstats: Updated targeted event %s.\n", WDLEventString(event));
+		return true;
+	}
+
+	// We ran through all our events, must be a new event.
+	return false;
+}
+
+/**
  * Log a WDL event.
  * 
  * The particulars of what you pass to this needs to be checked against the document.
@@ -371,6 +413,12 @@ void M_LogWDLEvent(
 			return;
 	}
 
+	if (event == WDL_EVENT_ACCURACY)
+	{
+		if (LogAccuracyEvent(event, activator, target, arg0, arg1, arg2))
+			return;
+	}
+
 	// Add the event to the log.
 	WDLEvent evt = {
 		event, aname, tname, ::gametic,
@@ -389,6 +437,9 @@ void M_LogActorWDLEvent(
 	int arg0, int arg1, int arg2
 )
 {
+	if (!::wdlstatrecording)
+		return;
+
 	player_t* ap = NULL;
 	if (activator != NULL && activator->type == MT_PLAYER)
 		ap = activator->player;
@@ -398,6 +449,69 @@ void M_LogActorWDLEvent(
 		tp = target->player;
 
 	M_LogWDLEvent(event, ap, tp, arg0, arg1, arg2);
+}
+
+/**
+ * Possibly log a WDL accuracy miss.
+ * 
+ * Looks for an accuracy log somewhere in the backlog, if there is none, it's
+ * a miss.
+ */
+void M_MaybeLogWDLAccuracyMiss(player_t* activator, int arg0, int arg1)
+{
+	if (!::wdlstatrecording)
+		return;
+
+	std::string aname = "";
+	int ax = 0;
+	int ay = 0;
+	int az = 0;
+	if (activator != NULL)
+	{
+		// Add the activator.
+		AddWDLPlayer(activator);
+		aname = activator->userinfo.netname;
+
+		// Add the activator's body information.
+		if (activator->mo)
+		{
+			ax = activator->mo->x >> FRACBITS;
+			ay = activator->mo->y >> FRACBITS;
+			az = activator->mo->z >> FRACBITS;
+		}
+	}
+
+	// See if we have an existing accuracy event for this tic.
+	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
+	for (;it != ::wdlevents.rend(); ++it)
+	{
+		if ((*it).gametic != ::gametic)
+		{
+			// Whoops, we went a whole gametic without seeing an accuracy
+			// to our name.
+			break;
+		}
+
+		// Event type is the same?
+		if ((*it).ev != WDL_EVENT_ACCURACY)
+			continue;
+
+		// Activator is the same?
+		if ((*it).activator != activator->userinfo.netname)
+			continue;
+
+		// We found an existing accuracy event for this tic - bail out.
+		return;
+	}
+
+	// Add the event to the log.
+	WDLEvent evt = {
+		WDL_EVENT_ACCURACY, aname, "", ::gametic,
+		{ ax, ay, az }, { 0, 0, 0 },
+		arg0, arg1, 0
+	};
+	::wdlevents.push_back(evt);
+	Printf(PRINT_HIGH, "wdlstats: Logged miss event.\n");
 }
 
 void M_CommitWDLLog()
