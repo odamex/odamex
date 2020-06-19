@@ -961,7 +961,7 @@ void A_FirePistol(AActor* mo)
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan (player, 1, accuracy);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, MOD_PISTOL);
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_pistol);
 }
 
 
@@ -983,7 +983,7 @@ void A_FireShotgun(AActor* mo)
 
 	P_FireHitscan (player, 7, SPREAD_NORMAL);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, MOD_SHOTGUN);
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_shotgun);
 }
 
 
@@ -1006,7 +1006,7 @@ void A_FireShotgun2(AActor* mo)
 
 	P_FireHitscan (player, 20, SPREAD_SUPERSHOTGUN);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, MOD_SSHOTGUN);
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_supershotgun);
 }
 
 //
@@ -1036,7 +1036,7 @@ void A_FireCGun(AActor* mo)
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan (player, 1, accuracy);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, MOD_CHAINGUN);
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_chaingun);
 }
 
 

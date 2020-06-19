@@ -57,6 +57,23 @@ enum WDLPowerups {
 	WDL_PICKUP_ARMORBONUS,
 };
 
+/**
+ * Weapons used by the Accuracy event.
+ * 
+ * There's probably an equivalent enum for these elsewhere.
+ */
+enum WDLWeapons {
+	WDL_WEAPON_FIST,
+	WDL_WEAPON_PISTOL,
+	WDL_WEAPON_SHOTGUN,
+	WDL_WEAPON_CHAINGUN,
+	WDL_WEAPON_MISSLE,
+	WDL_WEAPON_PLASMA,
+	WDL_WEAPON_BFG,
+	WDL_WEAPON_CHAINSAW,
+	WDL_WEAPON_SSG,
+};
+
 void M_StartWDLLog();
 void M_LogWDLEvent(
 	WDLEvents event, player_t* activator, player_t* target,
@@ -67,6 +84,7 @@ void M_LogActorWDLEvent(
 	int arg0, int arg1, int arg2
 );
 void M_MaybeLogWDLAccuracyMiss(player_t* activator, int arg0, int arg1);
+weapontype_t M_MODToWeapon(int mod);
 void M_CommitWDLLog();
 
 #endif

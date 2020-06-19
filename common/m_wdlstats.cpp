@@ -28,6 +28,7 @@
 
 #include "c_dispatch.h"
 #include "g_warmup.h"
+#include "p_local.h"
 
 #define WDLSTATS_VERSION 5
 
@@ -512,6 +513,35 @@ void M_MaybeLogWDLAccuracyMiss(player_t* activator, int arg0, int arg1)
 	};
 	::wdlevents.push_back(evt);
 	Printf(PRINT_HIGH, "wdlstats: Logged miss event.\n");
+}
+
+weapontype_t M_MODToWeapon(int mod)
+{
+	switch (mod)
+	{
+	case MOD_FIST:
+		return wp_fist;
+	case MOD_PISTOL:
+		return wp_pistol;
+	case MOD_SHOTGUN:
+		return wp_shotgun;
+	case MOD_CHAINGUN:
+		return wp_chaingun;
+	case MOD_ROCKET:
+	case MOD_R_SPLASH:
+		return wp_missile;
+	case MOD_PLASMARIFLE:
+		return wp_plasma;
+	case MOD_BFG_BOOM:
+	case MOD_BFG_SPLASH:
+		return wp_bfg;
+	case MOD_CHAINSAW:
+		return wp_chainsaw;
+	case MOD_SSHOTGUN:
+		return wp_supershotgun;
+	}
+
+	return NUMWEAPONS;
 }
 
 void M_CommitWDLLog()

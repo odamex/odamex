@@ -1361,14 +1361,16 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		else if (targethasflag)
 		{
 			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
-				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4, mod, 0);
+				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4,
+					M_MODToWeapon(mod), 0);
 
 			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
 		}
 		else
 		{
 			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
-				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4, mod, 0);
+				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4,
+					M_MODToWeapon(mod), 0);
 
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
