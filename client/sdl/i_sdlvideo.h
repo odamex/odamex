@@ -467,7 +467,7 @@ private:
 	bool				mMouseFocus;
 	bool				mKeyboardFocus;
 
-	bool				mIgnoreResizeEvents;
+	int					mAcceptResizeEventsTime;
 
 	int16_t				mLocks;
 };

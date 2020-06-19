@@ -25,10 +25,10 @@
 #define __VERSION_H__
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "82"
-#define GAMEVER (0*256+82)
+#define CONFIGVERSIONSTR "83"
+#define GAMEVER (0*256+83)
 
-#define DOTVERSIONSTR "0.8.2"
+#define DOTVERSIONSTR "0.8.3"
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2020 The Odamex Team"
 
@@ -42,7 +42,7 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.
-#define SAVESIG "ODAMEXSAVE082   "	// Needs to be exactly 16 chars long
+#define SAVESIG "ODAMEXSAVE083   "	// Needs to be exactly 16 chars long
 
 #define NETDEMOVER 3
 
@@ -58,5 +58,3 @@ public:
 const char* GitDescribe();
 
 #endif //__VERSION_H__
-
-
