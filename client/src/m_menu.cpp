@@ -1785,15 +1785,19 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			( !(ch2 == ' ' 
-			|| (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')) 
-			|| keypress.IsYesKey(ch) || keypress.IsNoKey(ch)) ))
+			( !(ch2 == ' ' || keypress.IsMenuKey(ch) || keypress.IsYesKey(ch) || keypress.IsNoKey(ch) || 
+			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y'))))) 
 			return true;
 
 		menuactive = messageLastMenuActive;
 		messageToPrint = 0;
 		if (messageRoutine)
-			messageRoutine(ch2);
+		{
+			if (ch == NULL and ch2 != NULL)
+				messageRoutine(ch2);
+			else
+				messageRoutine(ch);
+		}
 
 		menuactive = false;
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
