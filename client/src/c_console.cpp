@@ -49,6 +49,10 @@
 #include <list>
 #include <algorithm>
 
+#ifdef __SWITCH__
+#include "nx_io.h"
+#endif
+
 // These functions are standardized in C++11, POSIX standard otherwise
 #if defined(_WIN32) && (__cplusplus <= 199711L)
 #	define vsnprintf _vsnprintf
@@ -1400,6 +1404,30 @@ static bool C_HandleKey(const event_t* ev)
 		C_ToggleConsole();
 		return true;
 	}
+
+#ifdef __SWITCH__
+	if (ev->data1 == KEY_JOY3)
+{
+	char oldtext[64], text[64], fulltext[65];		
+
+		strcpy (text, CmdLine.text.c_str());
+
+		// Initiate the console
+		NX_SetKeyboard(text, 64);
+
+		// No action if no text or same as earlier
+		if (!strlen(text) || !strcmp(oldtext, text))
+			return true;
+
+				// add command line text to history
+		History.addString(text);
+		History.resetPosition();
+	
+		Printf(127, "]%s\n", text);
+		AddCommandString(text);
+		CmdLine.clear();
+}
+#endif
 
 	// General keys used by all systems
 	{

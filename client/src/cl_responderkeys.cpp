@@ -186,8 +186,8 @@ bool FResponderKey::IsYesKey(int key)
     {
     case PF_WII:
         return (key == KEY_JOY10 || key == KEY_JOY1); // A | (a)
-        case PF_SWITCH:
-            return (key == KEY_JOY4);  
+    case PF_SWITCH:
+            return (key == KEY_JOY1);  
     default:
         break;
     }
@@ -207,8 +207,8 @@ bool FResponderKey::IsNoKey(int key)
     {
     case PF_WII:
         return (key == KEY_JOY11 || key == KEY_JOY2 || keyboard);
-        case PF_SWITCH:
-            return (key == KEY_JOY2); 
+    case PF_SWITCH:
+        return (key == KEY_JOY2); 
    default:
         break;
     }
@@ -254,8 +254,8 @@ bool FResponderKey::IsUnbindKey(int key)
         return keyboard;
     case PF_XBOX:
         return (key == KEY_JOY9 || keyboard); // START
-        case PF_SWITCH:
-            return (key == KEY_JOY3); // X
+    case PF_SWITCH:
+        return (key == KEY_JOY3); // X
     default:
         break;
     }
@@ -295,7 +295,7 @@ bool FResponderKey::IsSpyPrevKey(int key)
     case PF_XBOX:
         return (mouse); // TODO : Need to be LEFT
     case PF_SWITCH:
-        return KEY_JOY15;   // DPAD-LEFT
+        return KEY_JOY13;   // DPAD-LEFT
     default:
         break;
     }

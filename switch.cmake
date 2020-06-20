@@ -16,14 +16,15 @@ message("source $DEVKITPRO/switchvars.sh")
 message("")
 message("")
 
-#Default variables to do
-include("$ENV{DEVKITPRO}/switch.cmake" REQUIRED)
-
 set (PKG_CONFIG_EXECUTABLE, "$ENV{DEVKITPRO}/portlibs/switch/bin/aarch64-none-elf-pkg-config")
 set (CMAKE_GENERATOR "Unix Makefiles" CACHE INTERNAL "" FORCE)
 
 # Build type (Release/Debug)
 set (CMAKE_BUILD_TYPE, "Release")
+
+# Since 0.8.3, Odamex is forced to C++98 standards, making Switch funcs unusuable.
+# Force it back to C++11.
+set(CMAKE_CXX_STANDARD 11)
 
 # Odamex specific settings
 set (BUILD_CLIENT 1)

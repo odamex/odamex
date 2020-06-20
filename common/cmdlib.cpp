@@ -40,7 +40,7 @@
 #endif
 
 #ifdef __SWITCH__
-#include "i_switch.h"
+#include "nx_system.h"
 #endif
 
 

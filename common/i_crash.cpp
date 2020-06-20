@@ -307,7 +307,7 @@ void I_SetCrashCallbacks()
 	sigaction(SIGBUS, &act, NULL);
 }
 
-/*#elif defined(__SWITCH__)
+#elif defined(__SWITCH__)
 
 #include <switch.h>
 #include <stdlib.h>
@@ -352,7 +352,7 @@ void I_SetCrashCallbacks()
 	// not required
 }
 
-*/
+
 #else
 
 void I_SetCrashCallbacks()

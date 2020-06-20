@@ -245,6 +245,7 @@ if(SDL_VERSION)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SWITCH_LIBNX)
+  target_link_libraries(odamex -L$ENV{DEVKITPRO}/libnx/lib -L$ENV{DEVKITPRO}/portlibs/switch/lib)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   elseif(VWII)
     # Ch0wW : this is UGLY, please fix it ASAP !!

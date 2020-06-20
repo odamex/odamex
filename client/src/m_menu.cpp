@@ -1784,10 +1784,10 @@ bool M_Responder (event_t* ev)
 	// Take care of any messages that need input
 	if (messageToPrint)
 	{
-		if (messageNeedsInput 
-			&& ( !(ch2 == ' ' 
-				|| (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')
-				|| keypress.IsYesKey(ch) || keypress.IsNoKey(ch)) )))
+		if (messageNeedsInput &&
+			( !(ch2 == ' ' 
+			|| (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')) 
+			|| keypress.IsYesKey(ch) || keypress.IsNoKey(ch)) ))
 			return true;
 
 		menuactive = messageLastMenuActive;

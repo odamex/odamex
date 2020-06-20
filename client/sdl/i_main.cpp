@@ -38,6 +38,9 @@
 // for getuid and geteuid
 #include <unistd.h>
 #include <sys/types.h>
+#ifdef __SWITCH__
+#include "nx_system.h"
+#endif
 #endif
 
 #include <new>
@@ -93,7 +96,22 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-#ifdef GCONSOLE
+#ifdef __SWITCH__
+void STACK_ARGS nx_early_init (void)
+{
+	socketInitializeDefault();
+#ifdef ODAMEX_DEBUG
+	nxlinkStdio();
+#endif
+}
+void STACK_ARGS nx_early_deinit (void)
+{
+	socketExit();
+}
+#endif
+
+
+#if defined GCONSOLE && !defined __SWITCH__ 
 int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
@@ -104,7 +122,13 @@ int main(int argc, char *argv[])
 
 	try
 	{
-#if defined(UNIX) && !defined(GEKKO)
+
+#if defined(__SWITCH__)
+		nx_early_init();
+		atterm(nx_early_deinit);
+#endif
+
+#if defined(UNIX) && !defined(GCONSOLE)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
