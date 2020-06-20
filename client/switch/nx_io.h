@@ -1,0 +1,6 @@
+#ifndef __NX_IO_H__
+#define __NX_IO_H__Ò
+
+void NX_SetKeyboard(char *out, int out_len);
+
+#endif

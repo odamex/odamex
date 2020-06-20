@@ -119,7 +119,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef GCONSOLE
+#if defined(GCONSOLE) && !defined(__SWITCH__)
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
@@ -504,6 +504,8 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
+#elif defined(__SWITCH__)
+	std::string path = file;
 #else
 	if (!PathIsRelative(file))
 		return std::string (file);
@@ -561,6 +563,8 @@ std::string I_GetBinaryDir()
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
+#elif defined __SWITCH__ 
+	return "./";
 #else
 	if(!Args[0])
 		return "./";

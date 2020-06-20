@@ -39,6 +39,11 @@
 #include "i_wii.h"
 #endif
 
+#ifdef __SWITCH__
+#include "i_switch.h"
+#endif
+
+
 char		com_token[8192];
 BOOL		com_eof;
 

@@ -42,7 +42,11 @@ endif()
 
 # Include console folders if compiling homebrews
 if (GCONSOLE)
-  if (VWII)
+  if (SWITCH_LIBNX)
+    set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} switch/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} switch/*.cpp)
+  elseif (VWII)
     set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
     file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
     file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
