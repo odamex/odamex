@@ -275,7 +275,7 @@ bool FResponderKey::IsSpyNextKey(int key)
     case PF_XBOX:
         return (mouse); // TODO : Need to be LEFT
     case PF_SWITCH:
-        return KEY_JOY15;   // DPAD-LEFT
+        return (key == KEY_JOY15);   // DPAD-LEFT
     default:
         break;
     }
@@ -295,7 +295,7 @@ bool FResponderKey::IsSpyPrevKey(int key)
     case PF_XBOX:
         return (mouse); // TODO : Need to be LEFT
     case PF_SWITCH:
-        return KEY_JOY13;   // DPAD-LEFT
+        return (key == KEY_JOY13);   // DPAD-LEFT
     default:
         break;
     }
