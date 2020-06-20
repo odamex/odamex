@@ -250,6 +250,7 @@ CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOE
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE (joy_deadzone, "0.14", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 1.0f)
 
 CVAR(				show_messages, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -632,7 +633,7 @@ CVAR_FUNC_DECL(	vid_defheight, "480", "",
 CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
+CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",
