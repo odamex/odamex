@@ -56,11 +56,16 @@ static const char* wdlevstrings[] = {
 	"ACCURACY",
 };
 
-// WDL Stats dir - if not empty, we are logging.
-static std::string wdlstatdir;
+static struct WDLState {
+	// Directory to log stats to.
+	std::string logdir;
 
-// True if we're recording stats for this map, otherwise false.
-static bool wdlstatrecording;
+	// True if we're recording stats for this map or restart, otherwise false.
+	bool recording;
+
+	// The starting gametic of the most recent log.
+	int begintic;
+} wdlstate;
 
 // A single tracked player
 struct WDLPlayer
@@ -91,9 +96,6 @@ struct WDLEvent
 typedef std::vector<WDLEvent> WDLEventLog;
 static WDLEventLog wdlevents;
 
-// The starting gametic of the most recent log.
-static int wdlbegintic;
-
 // Turn an event enum into a string.
 static const char* WDLEventString(WDLEvents i)
 {
@@ -117,44 +119,6 @@ static void AddWDLPlayer(const player_t* player)
 		player->userinfo.team,
 	};
 	::wdlplayers.push_back(wdlplayer);
-}
-
-// Returns true if a player is ingame.
-// FIXME: Put this someplace global.
-static bool PlayerInGame(const player_t* player)
-{
-	return (
-		player->ingame() &&
-		player->spectator == false
-	);
-}
-
-// Returns true if a player is ingame and on a specific team
-// FIXME: Put this someplace global.
-static bool PlayerInTeam(const player_t* player, byte team)
-{
-	return (
-		player->ingame() &&
-		player->userinfo.team == team &&
-		player->spectator == false
-	);
-}
-
-// Returns the number of players on a team
-// FIXME: Put this someplace global.
-static int CountTeamPlayers(byte team)
-{
-	int count = 0;
-
-	Players::const_iterator it = players.begin();
-	for (; it != players.end(); ++it)
-	{
-		const player_t* player = &*it;
-		if (PlayerInTeam(player, team))
-			count += 1;
-	}
-
-	return count;
 }
 
 // Generate a log filename based on the current time.
@@ -189,30 +153,31 @@ BEGIN_COMMAND(wdlstats)
 	}
 
 	// Setting the stats dir tells us that we intend to log.
-	::wdlstatdir = argv[1];
+	::wdlstate.logdir = argv[1];
 
 	// Ensure our path ends with a slash.
-	if (*(::wdlstatdir.end() - 1) != PATHSEPCHAR)
-		::wdlstatdir += PATHSEPCHAR;
+	if (*(::wdlstate.logdir.end() - 1) != PATHSEPCHAR)
+		::wdlstate.logdir += PATHSEPCHAR;
 
 	Printf(
-		PRINT_HIGH, "wdlstats: Enabled, will log to directory \"%s\" on next map change.\n", wdlstatdir.c_str()
+		PRINT_HIGH, "wdlstats: Enabled, will log to directory \"%s\" on next map change.\n",
+		wdlstate.logdir.c_str()
 	);
 }
 END_COMMAND(wdlstats)
 
 void M_StartWDLLog()
 {
-	if (::wdlstatdir.empty())
+	if (::wdlstate.logdir.empty())
 	{
-		::wdlstatrecording = false;
+		::wdlstate.recording = false;
 		return;
 	}
 
 	// Ensure we're CTF.
 	if (sv_gametype != 3)
 	{
-		::wdlstatrecording = false;
+		::wdlstate.recording = false;
 		Printf(
 			PRINT_HIGH,
 			"wdlstats: Not logging, incorrect gametype.\n"
@@ -224,27 +189,8 @@ void M_StartWDLLog()
 	Warmup::status_t wstatus = ::warmup.get_status();
 	if (wstatus != Warmup::DISABLED && wstatus != Warmup::INGAME)
 	{
-		// [AM] This message can probably be deleted once we're sure the
-		//      condition is appropriate.
-		::wdlstatrecording = false;
-		Printf(
-			PRINT_HIGH,
-			"wdlstats: Not logging, not ingame (yet).\n"
-		);
-		return;
-	}
-
-	// Ensure we're 3v3 or more.
-	int blueplayers = CountTeamPlayers(TEAM_BLUE);
-	int redplayers = CountTeamPlayers(TEAM_RED);
-	if (blueplayers < 3 && redplayers < 3 && false)
-	{
-		::wdlstatrecording = false;
-		Printf(
-			PRINT_HIGH,
-			"wdlstats: Not logging, too few players on a team (%d vs %d).\n",
-			blueplayers, redplayers
-		);
+		// [AM] This is a little too much inside baseball to print about.
+		::wdlstate.recording = false;
 		return;
 	}
 
@@ -254,13 +200,16 @@ void M_StartWDLLog()
 	// Start with a fresh slate of events.
 	::wdlevents.clear();
 
-	// Set our starting tic.
-	::wdlbegintic = ::gametic;
-
 	// Turn on recording.
-	::wdlstatrecording = true;
+	::wdlstate.recording = true;
 
-	Printf(PRINT_HIGH, "wdlstats: Started, will log to directory \"%s\".\n", wdlstatdir.c_str());
+	// Set our starting tic.
+	::wdlstate.begintic = ::gametic;
+
+	Printf(
+		PRINT_HIGH, "wdlstats: Started, will log to directory \"%s\".\n",
+		wdlstate.logdir.c_str()
+	);
 }
 
 /**
@@ -360,7 +309,7 @@ void M_LogWDLEvent(
 	int arg0, int arg1, int arg2
 )
 {
-	if (!::wdlstatrecording)
+	if (!::wdlstate.recording)
 		return;
 
 	// Activator
@@ -435,7 +384,7 @@ void M_LogActorWDLEvent(
 	int arg0, int arg1, int arg2
 )
 {
-	if (!::wdlstatrecording)
+	if (!::wdlstate.recording)
 		return;
 
 	player_t* ap = NULL;
@@ -457,7 +406,7 @@ void M_LogActorWDLEvent(
  */
 void M_MaybeLogWDLAccuracyMiss(player_t* activator, int arg0, int arg1)
 {
-	if (!::wdlstatrecording)
+	if (!::wdlstate.recording)
 		return;
 
 	std::string aname = "";
@@ -542,14 +491,16 @@ weapontype_t M_MODToWeapon(int mod)
 
 void M_CommitWDLLog()
 {
-	if (!::wdlstatrecording)
+	if (!::wdlstate.recording)
 		return;
 
+	// See if we can write a file.
 	std::string timestamp = GenerateTimestamp();
-	std::string filename = ::wdlstatdir + "wdl_" + timestamp + ".log";
+	std::string filename = ::wdlstate.logdir + "wdl_" + timestamp + ".log";
 	FILE* fh = fopen(filename.c_str(), "w+");
 	if (fh == NULL)
 	{
+		::wdlstate.recording = false;
 		Printf(PRINT_HIGH, "wdlstats: Could not save\"%s\" for writing.\n", filename.c_str());
 		return;
 	}
@@ -559,7 +510,7 @@ void M_CommitWDLLog()
 	fprintf(fh, "time=%s\n", timestamp.c_str());
 	fprintf(fh, "levelnum=%d\n", ::level.levelnum);
 	fprintf(fh, "levelname=%s\n", ::level.level_name);
-	fprintf(fh, "duration=%d\n", ::gametic - ::wdlbegintic);
+	fprintf(fh, "duration=%d\n", ::gametic - ::wdlstate.begintic);
 	fprintf(fh, "endgametic=%d\n", ::gametic);
 
 	// Players
@@ -585,7 +536,7 @@ void M_CommitWDLLog()
 
 	// Turn off stat recording global - it must be turned on again by the
 	// log starter next go-around.
-	::wdlstatrecording = false;
+	::wdlstate.recording = false;
 
 	Printf(PRINT_HIGH, "wdlstats: Log saved as \"%s\".\n", filename.c_str());
 }
@@ -633,9 +584,9 @@ BEGIN_COMMAND(wdlinfo)
 	else if (stricmp(argv[1], "state") == 0)
 	{
 		// Count total events.
-		Printf(PRINT_HIGH, "Currently recording?: %s\n", ::wdlstatrecording ? "Yes" : "No");
-		Printf(PRINT_HIGH, "Directory to write logs to: \"%s\"\n", ::wdlstatdir.c_str());
-		Printf(PRINT_HIGH, "Log starting gametic: %d\n", ::wdlbegintic);
+		Printf(PRINT_HIGH, "Currently recording?: %s\n", ::wdlstate.recording ? "Yes" : "No");
+		Printf(PRINT_HIGH, "Directory to write logs to: \"%s\"\n", ::wdlstate.logdir.c_str());
+		Printf(PRINT_HIGH, "Log starting gametic: %d\n", ::wdlstate.begintic);
 		return;
 	}
 	else if (stricmp(argv[1], "tail") == 0)
