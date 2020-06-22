@@ -302,7 +302,6 @@ static bool LogDamageEvent(
 		// Update our existing event.
 		(*it).arg0 += arg0;
 		(*it).arg1 += arg1;
-		Printf(PRINT_HIGH, "wdlstats: Updated targeted event %s.\n", WDLEventString(event));
 		return true;
 	}
 
@@ -344,7 +343,6 @@ static bool LogAccuracyEvent(
 			continue;
 
 		// Update our existing event - by doing nothing.
-		Printf(PRINT_HIGH, "wdlstats: Updated targeted event %s.\n", WDLEventString(event));
 		return true;
 	}
 
@@ -427,7 +425,6 @@ void M_LogWDLEvent(
 		arg0, arg1, arg2
 	};
 	::wdlevents.push_back(evt);
-	Printf(PRINT_HIGH, "wdlstats: Logged targeted event %s.\n", WDLEventString(event));
 }
 
 /**
@@ -512,7 +509,6 @@ void M_MaybeLogWDLAccuracyMiss(player_t* activator, int arg0, int arg1)
 		arg0, arg1, 0
 	};
 	::wdlevents.push_back(evt);
-	Printf(PRINT_HIGH, "wdlstats: Logged miss event.\n");
 }
 
 weapontype_t M_MODToWeapon(int mod)
