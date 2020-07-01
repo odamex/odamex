@@ -3750,10 +3750,16 @@ void CL_SendCmd(void)
 	// need to be used for client's positional prediction.
     MSG_WriteLong(&net_buffer, gametic);
 
-	NetCommand *netcmd;
 	for (int i = 9; i >= 0; i--)
 	{
-		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		NetCommand blank_netcmd;
+		NetCommand* netcmd;
+
+		if (gametic >= i)
+			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		else
+			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
+
 		netcmd->write(&net_buffer);
 	}
 
