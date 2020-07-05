@@ -57,6 +57,9 @@ struct flagdata
 	byte flagger;
 	int	pickup_time;
 
+	// True if the flag is currently grabbed for the first time.
+	bool firstgrab;
+
 	// Flag locations
 	int x, y, z;
 
@@ -126,4 +129,3 @@ FArchive &operator>> (FArchive &arc, flagdata &flag);
 #define	REDCOLOR		176
 
 #endif
-

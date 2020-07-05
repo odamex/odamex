@@ -28,6 +28,7 @@
 #include "i_system.h"
 #include "g_warmup.h"
 #include "p_unlag.h"
+#include "m_wdlstats.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
@@ -139,11 +140,15 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 
 	if (player.userinfo.team != (team_t)f) {
 		if (firstgrab) {
+			CTFdata[f].firstgrab = true;
 			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
+			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, 0, 0, 0);
 		} else {
+			CTFdata[f].firstgrab = false;
 			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
 			SV_CTFEvent (f, SCORE_GRAB, player);
+			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, 0, 0, 0);
 		}
 	} else {
 		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
@@ -162,6 +167,8 @@ void SV_FlagReturn (player_t &player, flag_t f)
 	CTF_SpawnFlag (f);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname.c_str(), team_names[f]);
+
+	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, 0, 0, 0);
 }
 
 //
@@ -201,9 +208,14 @@ void SV_FlagScore (player_t &player, flag_t f)
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname.c_str(), team_names[f], CTF_TimeMSG(time_held));
+	if (CTFdata[f].firstgrab)
+		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, 0, 0, 0);
+	else
+		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, 0, 0, 0);
 
 	player.flags[f] = false; // take scoring player's flag
 	CTFdata[f].flagger = 0;
+	CTFdata[f].firstgrab = false;
 
 	CTF_SpawnFlag(f);
 
@@ -211,6 +223,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	if(TEAMpoints[player.userinfo.team] >= sv_scorelimit && sv_scorelimit != 0)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", team_names[player.userinfo.team]);
+		M_CommitWDLLog();
 		shotclock = TICRATE*2;
 	}
 }
@@ -265,6 +278,7 @@ void SV_SocketTouch (player_t &player, flag_t f)
 	if (player.userinfo.team == (team_t)f && player.flags[f]) {
 		player.flags[f] = false;
 		CTFdata[f].flagger = 0;
+		CTFdata[f].firstgrab = false;
 		SV_FlagReturn(player, f);
 	}
 
@@ -292,6 +306,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
+	CTFdata[f].firstgrab = false;
 
 	fixed_t x, y, z;
 	Unlag::getInstance().getCurrentPlayerPosition(player.id, x, y, z);
@@ -346,6 +361,7 @@ void CTF_SpawnFlag (flag_t f)
 	data->actor = flag->ptr();
 	data->state = flag_home;
 	data->flagger = 0;
+	data->firstgrab = false;
 }
 
 //
@@ -364,6 +380,7 @@ void CTF_SpawnDroppedFlag (flag_t f, int x, int y, int z)
 	data->state = flag_dropped;
 	data->timeout = (size_t)(ctf_flagtimeout * TICRATE);
 	data->flagger = 0;
+	data->firstgrab = false;
 }
 
 //
@@ -413,4 +430,3 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 }
 
 VERSION_CONTROL (sv_ctf_cpp, "$Id$")
-
