@@ -53,11 +53,6 @@
         #undef DrawText
     #endif
 
-    // LoadMenu macros in winuser.h interfere with m_menu.cpp
-    #ifdef LoadMenu
-        #undef LoadMenu
-    #endif  // LoadMenu
-
     // POSIX functions
 	#include <ctime>
     char * strptime(const char *buf, const char *fmt, struct tm *timeptr);
