@@ -79,6 +79,12 @@ if(WIN32)
   set_target_properties(upnpc-static PROPERTIES INTERFACE_LINK_LIBRARIES "ws2_32;iphlpapi")
 endif()
 
+### microui ###
+
+add_library(microui STATIC
+  "microui/microui.c" "microui/microui.h")
+target_include_directories(microui PUBLIC microui)
+
 ### SDL2 ###
 
 if(NOT USE_SDL12)

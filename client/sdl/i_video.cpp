@@ -48,6 +48,8 @@
     #include "resource.h"
 #endif	// _WIN32
 
+#include "i_gui.h"
+
 // Declared in doomtype.h as part of argb_t
 uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
 
@@ -1061,6 +1063,10 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
+		I_InitGUI();
+		UI_SelectIWAD();
+		I_DrawGUI();
+
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)
 			V_DrawFPSTicker();
