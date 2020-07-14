@@ -79,11 +79,11 @@ if(WIN32)
   set_target_properties(upnpc-static PROPERTIES INTERFACE_LINK_LIBRARIES "ws2_32;iphlpapi")
 endif()
 
-### microui ###
+### Nuklear ###
 
-add_library(microui STATIC
-  "microui/microui.c" "microui/microui.h")
-target_include_directories(microui PUBLIC microui)
+add_library(nuklear STATIC
+  "nuklear/nuklear.cpp" "nuklear/nuklear.h")
+target_include_directories(nuklear PUBLIC nuklear)
 
 ### SDL2 ###
 

@@ -190,7 +190,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   else()
     target_link_libraries(odamex SDL2::SDL2 SDL2::SDL2main SDL2::mixer)
   endif()
-  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} microui)
+  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} nuklear)
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
