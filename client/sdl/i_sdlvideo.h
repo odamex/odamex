@@ -329,6 +329,26 @@ public:
 	virtual const IWindowSurface* getWindowSurface() const
 	{	return mSurface;	}
 
+	virtual IWindowSurface* get32bppSurface()
+	{
+		return m32bppSurface;
+	}
+
+	virtual const IWindowSurface* get32bppSurface() const
+	{
+		return m32bppSurface;
+	}
+
+	virtual IWindowSurface* getAtlasSurface()
+	{
+		return mAtlasSurface;
+	}
+
+	virtual const IWindowSurface* getAtlasSurface() const
+	{
+		return mAtlasSurface;
+	}
+
 	virtual void lockSurface();
 	virtual void unlockSurface();
 
@@ -342,6 +362,8 @@ private:
 
 	IWindowSurface*			mSurface;
 	IWindowSurface*			m8bppTo32BppSurface;
+	IWindowSurface*			m32bppSurface;
+	IWindowSurface*			mAtlasSurface;
 
 	uint16_t				mWidth;
 	uint16_t				mHeight;
@@ -378,6 +400,30 @@ public:
 	virtual IWindowSurface* getPrimarySurface()
 	{
 		return const_cast<IWindowSurface*>(static_cast<const ISDL20Window&>(*this).getPrimarySurface());
+	}
+
+	virtual const IWindowSurface* get32bppSurface() const
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->get32bppSurface();
+		return NULL;
+	}
+
+	virtual IWindowSurface* get32bppSurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const ISDL20Window&>(*this).get32bppSurface());
+	}
+
+	virtual const IWindowSurface* getAtlasSurface() const
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->getAtlasSurface();
+		return NULL;
+	}
+
+	virtual IWindowSurface* getAtlasSurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const ISDL20Window&>(*this).getAtlasSurface());
 	}
 
 	virtual uint16_t getWidth() const

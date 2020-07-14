@@ -961,6 +961,8 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 //
 // ============================================================================
 
+#define ATLAS_SIZE 2048
+
 //
 // ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager
 //
@@ -970,7 +972,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 ) :
 		mWindow(window),
 		mSDLRenderer(NULL), mSDLTexture(NULL),
-		mSurface(NULL), m8bppTo32BppSurface(NULL),
+		mSurface(NULL), m8bppTo32BppSurface(NULL), mAtlasSurface(NULL),
         mWidth(width), mHeight(height)
 {
 	assert(mWindow != NULL);
@@ -1045,6 +1047,8 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	mSurface = new IWindowSurface(width, height, &mFormat);
     if (mSurface->getBitsPerPixel() ==8)
         m8bppTo32BppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
+	m32bppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
+	mAtlasSurface = new IWindowSurface(ATLAS_SIZE, ATLAS_SIZE, mWindow->getPixelFormat());
 }
 
 
@@ -1053,6 +1057,8 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 //
 ISDL20TextureWindowSurfaceManager::~ISDL20TextureWindowSurfaceManager()
 {
+	delete mAtlasSurface;
+	delete m32bppSurface;
     delete m8bppTo32BppSurface;
 	delete mSurface;
 
@@ -1112,10 +1118,14 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
     {
         m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
                 0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());
+		m8bppTo32BppSurface->blit(m32bppSurface, 0, 0, m32bppSurface->getWidth(), m32bppSurface->getHeight(),
+			0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight(), true);
 	    SDL_UpdateTexture(mSDLTexture, NULL, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
     }
     else
     {
+		mSurface->blit(m32bppSurface, 0, 0, m32bppSurface->getWidth(), m32bppSurface->getHeight(),
+			0, 0, mSurface->getWidth(), mSurface->getHeight(), true);
 	   SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
     }
 

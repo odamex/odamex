@@ -113,13 +113,13 @@ static mu_Context* ctx;
 
 static void SetClip(mu_ClipCommand clip)
 {
-	IWindowSurface* surface = I_GetWindow()->getPrimarySurface();
+	IWindowSurface* surface = I_GetWindow()->get32bppSurface();
 	uint8_t* buffer = surface->getBuffer();
 }
 
 static void RenderRect(mu_RectCommand rect)
 {
-	IWindowSurface* surface = I_GetWindow()->getPrimarySurface();
+	IWindowSurface* surface = I_GetWindow()->get32bppSurface();
 	for (int yoff = 0; yoff < rect.rect.h; yoff++)
 	{
 		for (int xoff = 0; xoff < rect.rect.w; xoff++)
@@ -128,6 +128,7 @@ static void RenderRect(mu_RectCommand rect)
 			dest[0] = rect.color.b;
 			dest[1] = rect.color.g;
 			dest[2] = rect.color.r;
+			dest[3] = 0xFF;
 		}
 	}
 }
@@ -137,7 +138,7 @@ static void RenderText(mu_TextCommand text)
 	int tx = text.pos.x;
 	int ty = text.pos.y;
 
-	IWindowSurface* surface = I_GetWindow()->getPrimarySurface();
+	IWindowSurface* surface = I_GetWindow()->get32bppSurface();
 
 	for (const char* p = text.str; *p != '\0'; p++)
 	{
@@ -195,6 +196,8 @@ void I_QuitGUI()
 
 void I_DrawGUI()
 {
+	I_GetWindow()->get32bppSurface()->clear();
+
 	mu_Command* cmd = NULL;
 	while (mu_next_command(::ctx, &cmd))
 	{

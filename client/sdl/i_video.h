@@ -362,7 +362,7 @@ public:
 	{	return mPalette;	}
 
 	void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
-			int destx, int desty, int destw, int desth);
+			int destx, int desty, int destw, int desth, bool alpha = false);
 
 	void clear();
 
@@ -425,6 +425,20 @@ public:
 	virtual IWindowSurface* getWindowSurface()
 	{
 		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getWindowSurface());
+	}
+
+	virtual const IWindowSurface* get32bppSurface() const = 0;
+
+	virtual IWindowSurface* get32bppSurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).get32bppSurface());
+	}
+
+	virtual const IWindowSurface* getAtlasSurface() const = 0;
+
+	virtual IWindowSurface* getAtlasSurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getAtlasSurface());
 	}
 
 	virtual void lockSurface() { }
@@ -492,6 +506,13 @@ public:
 	virtual IWindowSurface* getPrimarySurface()
 	{
 		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).getPrimarySurface());
+	}
+
+	virtual const IWindowSurface* get32bppSurface() const = 0;
+
+	virtual IWindowSurface* get32bppSurface()
+	{
+		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).get32bppSurface());
 	}
 
 	virtual uint16_t getWidth() const
@@ -569,6 +590,16 @@ public:
 	virtual const IWindowSurface* getPrimarySurface() const
 	{	return mPrimarySurface;	}
 
+	virtual const IWindowSurface* get32bppSurface() const
+	{
+		return m32bppSurface;
+	}
+
+	virtual const IWindowSurface* getAtlasSurface() const
+	{
+		return mAtlasSurface;
+	}
+
 	virtual const IVideoMode& getVideoMode() const
 	{	return mVideoMode;	}
 
@@ -603,6 +634,8 @@ private:
 	IDummyWindow& operator=(const IDummyWindow&);
 
 	IWindowSurface*		mPrimarySurface;
+	IWindowSurface*		m32bppSurface;
+	IWindowSurface*		mAtlasSurface;
 
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
