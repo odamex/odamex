@@ -49,95 +49,29 @@
 
 #include "doomtype.h"
 #include "i_system.h"
-
-typedef enum rawfb_pixel_layout
-{
-	PIXEL_LAYOUT_XRGB_8888,
-	PIXEL_LAYOUT_RGBX_8888,
-} rawfb_pl;
-
-struct rawfb_image
-{
-	void* pixels;
-	int w, h, pitch;
-	rawfb_pl pl;
-	enum nk_font_atlas_format format;
-};
+#include "i_video.h"
 
 struct rawfb_context
 {
 	nk_context ctx;
 	struct nk_rect scissors;
-	rawfb_image fb;
-	rawfb_image font_tex;
+	IWindowSurface* surface;
+	IWindowSurface* fontSurface;
 	nk_font_atlas atlas;
 };
-
-static unsigned int Color2Int(const nk_color c, rawfb_pl pl)
-{
-	unsigned int res = 0;
-
-	switch (pl)
-	{
-	case PIXEL_LAYOUT_RGBX_8888:
-		res |= c.r << 24;
-		res |= c.g << 16;
-		res |= c.b << 8;
-		res |= c.a;
-		break;
-	case PIXEL_LAYOUT_XRGB_8888:
-		res |= c.a << 24;
-		res |= c.r << 16;
-		res |= c.g << 8;
-		res |= c.b;
-		break;
-
-	default:
-		I_FatalError("nk_rawfb_color2int(): Unsupported pixel layout.\n");
-		break;
-	}
-	return (res);
-}
-
-static nk_color Int2Color(const unsigned int i, rawfb_pl pl)
-{
-	nk_color col = {0, 0, 0, 0};
-
-	switch (pl)
-	{
-	case PIXEL_LAYOUT_RGBX_8888:
-		col.r = (i >> 24) & 0xff;
-		col.g = (i >> 16) & 0xff;
-		col.b = (i >> 8) & 0xff;
-		col.a = i & 0xff;
-		break;
-	case PIXEL_LAYOUT_XRGB_8888:
-		col.a = (i >> 24) & 0xff;
-		col.r = (i >> 16) & 0xff;
-		col.g = (i >> 8) & 0xff;
-		col.b = i & 0xff;
-		break;
-
-	default:
-		I_FatalError("nk_rawfb_int2color(): Unsupported pixel layout.\n");
-		break;
-	}
-	return col;
-}
 
 static void CTXSetpixel(const rawfb_context* rawfb, const short x0, const short y0,
                         const nk_color col)
 {
-	unsigned int c = Color2Int(col, rawfb->fb.pl);
-	unsigned char* pixels = (unsigned char*)rawfb->fb.pixels;
-	unsigned int* ptr;
+	if (!(y0 < rawfb->scissors.h && y0 >= rawfb->scissors.y && x0 >= rawfb->scissors.x &&
+	      x0 < rawfb->scissors.w))
+		return;
 
-	pixels += y0 * rawfb->fb.pitch;
-	ptr = (unsigned int*)pixels + x0;
-
-	if (y0 < rawfb->scissors.h && y0 >= rawfb->scissors.y && x0 >= rawfb->scissors.x &&
-	    x0 < rawfb->scissors.w)
-		*ptr = c;
+	argb_t* pixel = (argb_t*)rawfb->surface->getBuffer(x0, y0);
+	pixel->setr(col.r);
+	pixel->setg(col.g);
+	pixel->setb(col.b);
+	pixel->seta(col.a);
 }
 
 static void LineHorizontal(const rawfb_context* rawfb, const short x0, const short y,
@@ -146,75 +80,40 @@ static void LineHorizontal(const rawfb_context* rawfb, const short x0, const sho
 	/* This function is called the most. Try to optimize it a bit...
 	 * It does not check for scissors or image borders.
 	 * The caller has to make sure it does no exceed bounds. */
-	unsigned int i, n;
-	unsigned int c[16];
-	unsigned char* pixels = (unsigned char*)rawfb->fb.pixels;
-	unsigned int* ptr;
-
-	pixels += y * rawfb->fb.pitch;
-	ptr = (unsigned int*)pixels + x0;
-
-	n = x1 - x0;
-	for (i = 0; i < sizeof(c) / sizeof(c[0]); i++)
-		c[i] = Color2Int(col, rawfb->fb.pl);
-
-	while (n > 16)
+	argb_t* pixels = (argb_t*)rawfb->surface->getBuffer(x0, y);
+	for (short i = x0; i <= x1; i++, pixels++)
 	{
-		memcpy((void*)ptr, c, sizeof(c));
-		n -= 16;
-		ptr += 16;
+		pixels->setr(col.r);
+		pixels->setg(col.g);
+		pixels->setb(col.b);
+		pixels->seta(col.a);
 	}
-	for (i = 0; i < n; i++)
-		ptr[i] = c[i];
 }
 
-static void ImgSetpixel(const rawfb_image* img, const int x0, const int y0,
+static void ImgSetpixel(const IWindowSurface* img, const int x0, const int y0,
                         const nk_color col)
 {
-	unsigned int c = Color2Int(col, img->pl);
-	unsigned char* ptr;
-	unsigned int* pixel;
-	assert(img);
-	if (y0 < img->h && y0 >= 0 && x0 >= 0 && x0 < img->w)
-	{
-		ptr = (unsigned char*)img->pixels + (img->pitch * y0);
-		pixel = (unsigned int*)ptr;
-
-		if (img->format == NK_FONT_ATLAS_ALPHA8)
-		{
-			ptr[x0] = col.a;
-		}
-		else
-		{
-			pixel[x0] = c;
-		}
-	}
+	argb_t* pixel = (argb_t*)img->getBuffer(x0, y0);
+	pixel->setr(col.r);
+	pixel->setg(col.g);
+	pixel->setb(col.b);
+	pixel->seta(col.a);
 }
 
-static nk_color ImgGetpixel(const rawfb_image* img, const int x0, const int y0)
+static nk_color ImgGetpixel(const IWindowSurface* img, const int x0, const int y0)
 {
 	nk_color col = {0, 0, 0, 0};
-	unsigned char* ptr;
-	unsigned int pixel;
-	assert(img);
-	if (y0 < img->h && y0 >= 0 && x0 >= 0 && x0 < img->w)
-	{
-		ptr = (unsigned char*)img->pixels + (img->pitch * y0);
 
-		if (img->format == NK_FONT_ATLAS_ALPHA8)
-		{
-			col.a = ptr[x0];
-			col.b = col.g = col.r = 0xff;
-		}
-		else
-		{
-			pixel = ((unsigned int*)ptr)[x0];
-			col = Int2Color(pixel, img->pl);
-		}
-	}
+	argb_t* pixel = (argb_t*)img->getBuffer(x0, y0);
+	col.r = pixel->getr();
+	col.g = pixel->getg();
+	col.b = pixel->getb();
+	col.a = pixel->geta();
+
 	return col;
 }
-static void ImgBlendpixel(const rawfb_image* img, const int x0, const int y0,
+
+static void ImgBlendpixel(const IWindowSurface* img, const int x0, const int y0,
                           nk_color col)
 {
 	nk_color col2;
@@ -233,10 +132,10 @@ static void ImgBlendpixel(const rawfb_image* img, const int x0, const int y0,
 static void Scissor(rawfb_context* rawfb, const float x, const float y, const float w,
                     const float h)
 {
-	rawfb->scissors.x = MIN(MAX(x, 0.f), (float)rawfb->fb.w);
-	rawfb->scissors.y = MIN(MAX(y, 0.f), (float)rawfb->fb.h);
-	rawfb->scissors.w = MIN(MAX(w + x, 0.f), (float)rawfb->fb.w);
-	rawfb->scissors.h = MIN(MAX(h + y, 0.f), (float)rawfb->fb.h);
+	rawfb->scissors.x = MIN(MAX(x, 0.f), (float)rawfb->surface->getWidth());
+	rawfb->scissors.y = MIN(MAX(y, 0.f), (float)rawfb->surface->getHeight());
+	rawfb->scissors.w = MIN(MAX(w + x, 0.f), (float)rawfb->surface->getWidth());
+	rawfb->scissors.h = MIN(MAX(h + y, 0.f), (float)rawfb->surface->getHeight());
 }
 
 static void StrokeLine(const rawfb_context* rawfb, short x0, short y0, short x1, short y1,
@@ -696,21 +595,21 @@ void DrawRectMultiColor(const rawfb_context* rawfb, const short x, const short y
 		{
 			if (i == 0)
 			{
-				ImgBlendpixel(&rawfb->fb, x + j, y + i, edge_t[j]);
+				ImgBlendpixel(rawfb->surface, x + j, y + i, edge_t[j]);
 			}
 			else if (i == h - 1)
 			{
-				ImgBlendpixel(&rawfb->fb, x + j, y + i, edge_b[j]);
+				ImgBlendpixel(rawfb->surface, x + j, y + i, edge_b[j]);
 			}
 			else
 			{
 				if (j == 0)
 				{
-					ImgBlendpixel(&rawfb->fb, x + j, y + i, edge_l[i]);
+					ImgBlendpixel(rawfb->surface, x + j, y + i, edge_l[i]);
 				}
 				else if (j == w - 1)
 				{
-					ImgBlendpixel(&rawfb->fb, x + j, y + i, edge_r[i]);
+					ImgBlendpixel(rawfb->surface, x + j, y + i, edge_r[i]);
 				}
 				else
 				{
@@ -726,7 +625,7 @@ void DrawRectMultiColor(const rawfb_context* rawfb, const short x, const short y
 					pixel.a =
 					    (((((float)edge_r[i].a - edge_l[i].a) / (w - 1)) * j) + 0.5) +
 					    edge_l[i].a;
-					ImgBlendpixel(&rawfb->fb, x + j, y + i, pixel);
+					ImgBlendpixel(rawfb->surface, x + j, y + i, pixel);
 				}
 			}
 		}
@@ -895,77 +794,55 @@ static void StrokeCurve(const rawfb_context* rawfb, const struct nk_vec2i p1,
 
 static void Clear(const rawfb_context* rawfb, const nk_color col)
 {
-	FillRect(rawfb, 0, 0, rawfb->fb.w, rawfb->fb.h, 0, col);
+	FillRect(rawfb, 0, 0, rawfb->surface->getWidth(), rawfb->surface->getHeight(), 0,
+	         col);
 }
 
-static rawfb_context* Init(void* fb, void* tex_mem, const unsigned int w,
-                           const unsigned int h, const unsigned int pitch,
-                           const rawfb_pl pl)
+static rawfb_context* Init(IWindowSurface* surface)
 {
-	const void* tex;
-	rawfb_context* rawfb;
-	rawfb = (rawfb_context*)malloc(sizeof(rawfb_context));
-	if (!rawfb)
-		return NULL;
+	// First bake our font atlas.
+	nk_font_atlas atlas;
+	int fwidth, fheight;
 
-	memset(rawfb, 0, sizeof(rawfb_context));
-	rawfb->font_tex.pixels = tex_mem;
-	rawfb->font_tex.format = NK_FONT_ATLAS_ALPHA8;
-	rawfb->font_tex.w = rawfb->font_tex.h = 0;
-
-	rawfb->fb.pixels = fb;
-	rawfb->fb.w = w;
-	rawfb->fb.h = h;
-	rawfb->fb.pl = pl;
-
-	if (pl == PIXEL_LAYOUT_RGBX_8888 || pl == PIXEL_LAYOUT_XRGB_8888)
-	{
-		rawfb->fb.format = NK_FONT_ATLAS_RGBA32;
-		rawfb->fb.pitch = pitch;
-	}
-	else
-	{
-		perror("nk_rawfb_init(): Unsupported pixel layout.\n");
-		free(rawfb);
-		return NULL;
-	}
-
-	if (0 == nk_init_default(&rawfb->ctx, 0))
-	{
-		free(rawfb);
-		return NULL;
-	}
-
-	nk_font_atlas_init_default(&rawfb->atlas);
-	nk_font_atlas_begin(&rawfb->atlas);
-	tex = nk_font_atlas_bake(&rawfb->atlas, &rawfb->font_tex.w, &rawfb->font_tex.h,
-	                         rawfb->font_tex.format);
+	nk_font_atlas_init_default(&atlas);
+	nk_font_atlas_begin(&atlas);
+	nk_font* font = nk_font_atlas_add_default(&atlas, 13.f, NULL);
+	const void* tex = nk_font_atlas_bake(&atlas, &fwidth, &fheight, NK_FONT_ATLAS_RGBA32);
 	if (!tex)
+		return NULL;
+
+	// Blit our atlas into a dedicated surface.
+	IWindowSurface* fontSurface =
+	    new IWindowSurface(fwidth, fheight, I_GetPrimarySurface()->getPixelFormat());
+	argb_t* buffer = (argb_t*)fontSurface->getBuffer();
+	memcpy(buffer, tex,
+	       fontSurface->getPitchInPixels() * fontSurface->getHeight());
+	nk_font_atlas_end(&atlas, nk_handle_ptr(fontSurface), NULL);
+
+	// Now that we have our font and an atlas, we can initialize Nuklear properly.
+	rawfb_context* rawfb = new rawfb_context;
+	memset(rawfb, 0, sizeof(rawfb_context));
+	rawfb->surface = surface;
+	rawfb->fontSurface = fontSurface;
+	rawfb->atlas = atlas;
+
+	if (0 == nk_init_default(&rawfb->ctx, &font->handle))
 	{
-		free(rawfb);
+		delete fontSurface;
+		delete rawfb;
 		return NULL;
 	}
 
-	switch (rawfb->font_tex.format)
-	{
-	case NK_FONT_ATLAS_ALPHA8:
-		rawfb->font_tex.pitch = rawfb->font_tex.w * 1;
-		break;
-	case NK_FONT_ATLAS_RGBA32:
-		rawfb->font_tex.pitch = rawfb->font_tex.w * 4;
-		break;
-	};
-	/* Store the font texture in tex scratch memory */
-	memcpy(rawfb->font_tex.pixels, tex, rawfb->font_tex.pitch * rawfb->font_tex.h);
-	nk_font_atlas_end(&rawfb->atlas, nk_handle_ptr(NULL), NULL);
 	if (rawfb->atlas.default_font)
 		nk_style_set_font(&rawfb->ctx, &rawfb->atlas.default_font->handle);
+
 	nk_style_load_all_cursors(&rawfb->ctx, rawfb->atlas.cursors);
-	Scissor(rawfb, 0, 0, rawfb->fb.w, rawfb->fb.h);
+	Scissor(rawfb, 0, 0, rawfb->surface->getWidth(), rawfb->surface->getHeight());
+
 	return rawfb;
 }
 
-static void StretchImage(const rawfb_image* dst, const rawfb_image* src,
+static void StretchImage(const IWindowSurface* dst, const IWindowSurface* src,
                          const struct nk_rect* dst_rect, const struct nk_rect* src_rect,
                          const struct nk_rect* dst_scissors, const nk_color* fg)
 {
@@ -1068,10 +945,12 @@ static void DrawText(const rawfb_context* rawfb, const nk_user_font* font,
 
 		/* calculate and draw glyph drawing rectangle and image */
 		char_width = g.xadvance;
-		src_rect.x = g.uv[0].x * rawfb->font_tex.w;
-		src_rect.y = g.uv[0].y * rawfb->font_tex.h;
-		src_rect.w = g.uv[1].x * rawfb->font_tex.w - g.uv[0].x * rawfb->font_tex.w;
-		src_rect.h = g.uv[1].y * rawfb->font_tex.h - g.uv[0].y * rawfb->font_tex.h;
+		src_rect.x = g.uv[0].x * rawfb->fontSurface->getWidth();
+		src_rect.y = g.uv[0].y * rawfb->fontSurface->getHeight();
+		src_rect.w = g.uv[1].x * rawfb->fontSurface->getWidth() -
+		             g.uv[0].x * rawfb->fontSurface->getWidth();
+		src_rect.h = g.uv[1].y * rawfb->fontSurface->getHeight() -
+		             g.uv[0].y * rawfb->fontSurface->getHeight();
 
 		dst_rect.x = x + g.offset.x + rect.x;
 		dst_rect.y = g.offset.y + rect.y;
@@ -1079,8 +958,8 @@ static void DrawText(const rawfb_context* rawfb, const nk_user_font* font,
 		dst_rect.h = ceil(g.height);
 
 		/* Use software rescaling to blit glyph from font_text to framebuffer */
-		StretchImage(&rawfb->fb, &rawfb->font_tex, &dst_rect, &src_rect, &rawfb->scissors,
-		             &fg);
+		StretchImage(rawfb->surface, rawfb->fontSurface, &dst_rect, &src_rect,
+		             &rawfb->scissors, &fg);
 
 		/* offset next glyph */
 		text_len += glyph_len;
@@ -1105,28 +984,20 @@ static void DrawImage(const rawfb_context* rawfb, const int x, const int y, cons
 	dst_rect.y = y;
 	dst_rect.w = w;
 	dst_rect.h = h;
-	StretchImage(&rawfb->fb, &rawfb->font_tex, &dst_rect, &src_rect, &rawfb->scissors,
-	             col);
+	StretchImage(rawfb->surface, rawfb->fontSurface, &dst_rect, &src_rect,
+	             &rawfb->scissors, col);
 }
 
 static void Shutdown(rawfb_context* rawfb)
 {
 	if (rawfb)
 	{
+		delete rawfb->fontSurface;
 		nk_free(&rawfb->ctx);
-		memset(rawfb, 0, sizeof(rawfb_context));
-		free(rawfb);
-	}
-}
 
-static void ResizeFB(rawfb_context* rawfb, void* fb, const unsigned int w,
-                     const unsigned int h, const unsigned int pitch, const rawfb_pl pl)
-{
-	rawfb->fb.w = w;
-	rawfb->fb.h = h;
-	rawfb->fb.pixels = fb;
-	rawfb->fb.pitch = pitch;
-	rawfb->fb.pl = pl;
+		memset(rawfb, 0, sizeof(rawfb_context));
+		delete rawfb;
+	}
 }
 
 static void Render(const rawfb_context* rawfb, const nk_color clear,
@@ -1242,12 +1113,12 @@ static void Render(const rawfb_context* rawfb, const nk_color clear,
 
 static rawfb_context* ctx;
 
-void I_InitGUI()
+void I_InitGUI(IWindowSurface* surface)
 {
 	if (::ctx != NULL)
 		return;
 
-	//::ctx = Init();
+	::ctx = Init(surface);
 }
 
 void I_QuitGUI()
@@ -1258,7 +1129,7 @@ void I_QuitGUI()
 
 void I_DrawGUI()
 {
-	nk_color color = {0xFF, 0xFF, 0xFF, 0xFF};
+	nk_color color = {0x7F, 0x7F, 0x00, 0x00};
 	Render(::ctx, color, 1);
 }
 
@@ -1301,5 +1172,6 @@ void UI_SelectIWAD()
 			nk_slider_float(GUICTX, 0, &value, 1.0f, 0.1f);
 		}
 		nk_layout_row_end(GUICTX);
+		nk_end(GUICTX);
 	}
 }

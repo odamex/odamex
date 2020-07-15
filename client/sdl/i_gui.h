@@ -51,7 +51,9 @@
 #define NK_INCLUDE_SOFTWARE_FONT
 #include "nuklear.h"
 
-void I_InitGUI();
+#include "i_video.h"
+
+void I_InitGUI(IWindowSurface* surface);
 void I_QuitGUI();
 void I_DrawGUI();
 void UI_SelectIWAD();

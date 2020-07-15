@@ -1111,7 +1111,7 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		I_InitGUI();
+		I_InitGUI(I_GetWindow()->get32bppSurface());
 		UI_SelectIWAD();
 		I_DrawGUI();
 
@@ -1245,5 +1245,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-
