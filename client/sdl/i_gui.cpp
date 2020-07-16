@@ -806,7 +806,8 @@ static rawfb_context* Init(IWindowSurface* surface)
 
 	nk_font_atlas_init_default(&atlas);
 	nk_font_atlas_begin(&atlas);
-	const struct nk_color* tex = (struct nk_color*)nk_font_atlas_bake(&atlas, &fwidth, &fheight, NK_FONT_ATLAS_RGBA32);
+	const struct nk_color* tex = (struct nk_color*)nk_font_atlas_bake(
+	    &atlas, &fwidth, &fheight, NK_FONT_ATLAS_RGBA32);
 	if (!tex)
 		return NULL;
 
