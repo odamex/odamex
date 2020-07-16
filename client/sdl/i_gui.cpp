@@ -806,17 +806,29 @@ static rawfb_context* Init(IWindowSurface* surface)
 
 	nk_font_atlas_init_default(&atlas);
 	nk_font_atlas_begin(&atlas);
-	nk_font* font = nk_font_atlas_add_default(&atlas, 13.f, NULL);
-	const void* tex = nk_font_atlas_bake(&atlas, &fwidth, &fheight, NK_FONT_ATLAS_RGBA32);
+	const struct nk_color* tex = (struct nk_color*)nk_font_atlas_bake(&atlas, &fwidth, &fheight, NK_FONT_ATLAS_RGBA32);
 	if (!tex)
 		return NULL;
 
 	// Blit our atlas into a dedicated surface.
 	IWindowSurface* fontSurface =
-	    new IWindowSurface(fwidth, fheight, I_GetPrimarySurface()->getPixelFormat());
-	argb_t* buffer = (argb_t*)fontSurface->getBuffer();
-	memcpy(buffer, tex,
-	       fontSurface->getPitchInPixels() * fontSurface->getHeight());
+	    new IWindowSurface(fwidth, fheight, I_Get32bppPixelFormat());
+
+	// [AM] A surface can sometimes have extra scratch space in the far
+	//      right margin, so we need to blit this a row at a time.
+	for (size_t y = 0; y < fheight; y++)
+	{
+		size_t srcoff = y * fwidth;
+		argb_t* buffer = (argb_t*)fontSurface->getBuffer(0, y);
+		for (size_t i = 0; i < fwidth; i++)
+		{
+			struct nk_color px = tex[srcoff + i];
+			buffer[i].seta(px.a);
+			buffer[i].setr(px.r);
+			buffer[i].setg(px.g);
+			buffer[i].setb(px.b);
+		}
+	}
 	nk_font_atlas_end(&atlas, nk_handle_ptr(fontSurface), NULL);
 
 	// Now that we have our font and an atlas, we can initialize Nuklear properly.
@@ -826,7 +838,7 @@ static rawfb_context* Init(IWindowSurface* surface)
 	rawfb->fontSurface = fontSurface;
 	rawfb->atlas = atlas;
 
-	if (0 == nk_init_default(&rawfb->ctx, &font->handle))
+	if (0 == nk_init_default(&rawfb->ctx, NULL))
 	{
 		delete fontSurface;
 		delete rawfb;
