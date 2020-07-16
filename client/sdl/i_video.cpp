@@ -249,50 +249,37 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 }
 
 //
-// RGBA surfaces can be blit with alpha
+// RGBA surfaces can be blit with alpha under certain circumstances.
 //
-static void BlitLoopAlpha(
-	argb_t* dest, const argb_t* source, int destw, int desth, fixed_t xstep, fixed_t ystep
-)
+static void BlitLoopAlpha(argb_t* dest, const argb_t* source, int destpitchpixels,
+                          int srcpitchpixels, int destw, int desth)
 {
-	const int destpitchpixels = destw;
-	const int srcpitchpixels = destw;
-
-	fixed_t yfrac = 0;
 	for (int y = 0; y < desth; y++)
 	{
-		fixed_t xfrac = 0;
 		for (int x = 0; x < destw; x++)
 		{
-			size_t sx = xfrac >> FRACBITS;
-
 			// https://stackoverflow.com/a/12016968/91642
 			//
 			// This blends a source pixel into a destination pixel given
 			// a specific alpha value.  This method uses only integers by
 			// doing the calculation in 8.8 fixed point.
-			uint_fast16_t alpha = source[sx].geta() + 1;
-			uint_fast16_t inverse = 256 - source[sx].geta();
-			uint8_t sb = source[sx].getb();
-			uint8_t sg = source[sx].getg();
-			uint8_t sr = source[sx].getr();
-			uint8_t db = dest[x].getb();
-			uint8_t dg = dest[x].getg();
+			uint_fast16_t alpha = source[x].geta() + 1;
+			uint_fast16_t inverse = 256 - source[x].geta();
+			uint8_t sr = source[x].getr();
+			uint8_t sg = source[x].getg();
+			uint8_t sb = source[x].getb();
 			uint8_t dr = dest[x].getr();
-			dest[x].setb((alpha * sb + inverse * db) >> 8);
-			dest[x].setg((alpha * sg + inverse * dg) >> 8);
+			uint8_t dg = dest[x].getg();
+			uint8_t db = dest[x].getb();
 			dest[x].setr((alpha * sr + inverse * dr) >> 8);
-			xfrac += xstep;
+			dest[x].setg((alpha * sg + inverse * dg) >> 8);
+			dest[x].setb((alpha * sb + inverse * db) >> 8);
 		}
 
+		source += srcpitchpixels;
 		dest += destpitchpixels;
-		yfrac += ystep;
-
-		source += srcpitchpixels * (yfrac >> FRACBITS);
-		yfrac &= (FRACUNIT - 1);
 	}
 }
-
 
 //
 // IWindowSurface::blit
@@ -382,8 +369,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
 
-		if (alpha)
-			BlitLoopAlpha(dest, source, destw, desth, xstep, ystep);
+		if (alpha && xstep == FRACUNIT && ystep == FRACUNIT)
+			BlitLoopAlpha(dest, source, destpitchpixels, srcpitchpixels, destw, desth);
 		else
 			BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}

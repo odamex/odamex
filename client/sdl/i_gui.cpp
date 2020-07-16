@@ -1142,7 +1142,7 @@ void I_QuitGUI()
 
 void I_DrawGUI()
 {
-	nk_color color = {0x7F, 0x7F, 0x00, 0x00};
+	nk_color color = {0x00, 0x7F, 0x7F, 0x00};
 	Render(::ctx, color, 1);
 }
 
