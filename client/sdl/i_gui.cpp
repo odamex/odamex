@@ -51,7 +51,7 @@
 #include "i_system.h"
 #include "i_video.h"
 
-struct rawfb_context
+struct GUIContext
 {
 	nk_context ctx;
 	struct nk_rect scissors;
@@ -60,7 +60,7 @@ struct rawfb_context
 	nk_font_atlas atlas;
 };
 
-static void CTXSetpixel(const rawfb_context* rawfb, const short x0, const short y0,
+static void CTXSetpixel(const GUIContext* rawfb, const short x0, const short y0,
                         const nk_color col)
 {
 	if (!(y0 < rawfb->scissors.h && y0 >= rawfb->scissors.y && x0 >= rawfb->scissors.x &&
@@ -74,7 +74,7 @@ static void CTXSetpixel(const rawfb_context* rawfb, const short x0, const short 
 	pixel->seta(col.a);
 }
 
-static void LineHorizontal(const rawfb_context* rawfb, const short x0, const short y,
+static void LineHorizontal(const GUIContext* rawfb, const short x0, const short y,
                            const short x1, const nk_color col)
 {
 	/* This function is called the most. Try to optimize it a bit...
@@ -129,7 +129,7 @@ static void ImgBlendpixel(const IWindowSurface* img, const int x0, const int y0,
 	ImgSetpixel(img, x0, y0, col);
 }
 
-static void Scissor(rawfb_context* rawfb, const float x, const float y, const float w,
+static void Scissor(GUIContext* rawfb, const float x, const float y, const float w,
                     const float h)
 {
 	rawfb->scissors.x = MIN(MAX(x, 0.f), (float)rawfb->surface->getWidth());
@@ -138,7 +138,7 @@ static void Scissor(rawfb_context* rawfb, const float x, const float y, const fl
 	rawfb->scissors.h = MIN(MAX(h + y, 0.f), (float)rawfb->surface->getHeight());
 }
 
-static void StrokeLine(const rawfb_context* rawfb, short x0, short y0, short x1, short y1,
+static void StrokeLine(const GUIContext* rawfb, short x0, short y0, short x1, short y1,
                        const unsigned int line_thickness, const nk_color col)
 {
 	short tmp;
@@ -219,8 +219,8 @@ static void StrokeLine(const rawfb_context* rawfb, short x0, short y0, short x1,
 	}
 }
 
-static void FillPolygon(const rawfb_context* rawfb, const struct nk_vec2i* pnts,
-                        int count, const nk_color col)
+static void FillPolygon(const GUIContext* rawfb, const struct nk_vec2i* pnts, int count,
+                        const nk_color col)
 {
 	int i = 0;
 #define MAX_POINTS 64
@@ -301,7 +301,7 @@ static void FillPolygon(const rawfb_context* rawfb, const struct nk_vec2i* pnts,
 #undef MAX_POINTS
 }
 
-static void StrokeArc(const rawfb_context* rawfb, short x0, short y0, short w, short h,
+static void StrokeArc(const GUIContext* rawfb, short x0, short y0, short w, short h,
                       const short s, const short line_thickness, const nk_color col)
 {
 	/* Bresenham's ellipses - modified to draw one quarter */
@@ -360,7 +360,7 @@ static void StrokeArc(const rawfb_context* rawfb, short x0, short y0, short w, s
 	}
 }
 
-static void FillArc(const rawfb_context* rawfb, short x0, short y0, short w, short h,
+static void FillArc(const GUIContext* rawfb, short x0, short y0, short w, short h,
                     const short s, const nk_color col)
 {
 	/* Bresenham's ellipses - modified to fill one quarter */
@@ -452,7 +452,7 @@ static void FillArc(const rawfb_context* rawfb, short x0, short y0, short w, sho
 	}
 }
 
-static void StrokeRect(const rawfb_context* rawfb, const short x, const short y,
+static void StrokeRect(const GUIContext* rawfb, const short x, const short y,
                        const short w, const short h, const short r,
                        const short line_thickness, const nk_color col)
 {
@@ -485,8 +485,8 @@ static void StrokeRect(const rawfb_context* rawfb, const short x, const short y,
 	}
 }
 
-static void FillRect(const rawfb_context* rawfb, const short x, const short y,
-                     const short w, const short h, const short r, const nk_color col)
+static void FillRect(const GUIContext* rawfb, const short x, const short y, const short w,
+                     const short h, const short r, const nk_color col)
 {
 	int i;
 	if (r == 0)
@@ -540,7 +540,7 @@ static void FillRect(const rawfb_context* rawfb, const short x, const short y,
 	}
 }
 
-void DrawRectMultiColor(const rawfb_context* rawfb, const short x, const short y,
+void DrawRectMultiColor(const GUIContext* rawfb, const short x, const short y,
                         const short w, const short h, nk_color tl, nk_color tr,
                         nk_color br, nk_color bl)
 {
@@ -634,7 +634,7 @@ void DrawRectMultiColor(const rawfb_context* rawfb, const short x, const short y
 	free(edge_buf);
 }
 
-static void FillTriangle(const rawfb_context* rawfb, const short x0, const short y0,
+static void FillTriangle(const GUIContext* rawfb, const short x0, const short y0,
                          const short x1, const short y1, const short x2, const short y2,
                          const nk_color col)
 {
@@ -648,7 +648,7 @@ static void FillTriangle(const rawfb_context* rawfb, const short x0, const short
 	FillPolygon(rawfb, pnts, 3, col);
 }
 
-static void StrokeTriangle(const rawfb_context* rawfb, const short x0, const short y0,
+static void StrokeTriangle(const GUIContext* rawfb, const short x0, const short y0,
                            const short x1, const short y1, const short x2, const short y2,
                            const unsigned short line_thickness, const nk_color col)
 {
@@ -657,7 +657,7 @@ static void StrokeTriangle(const rawfb_context* rawfb, const short x0, const sho
 	StrokeLine(rawfb, x2, y2, x0, y0, line_thickness, col);
 }
 
-static void StrokePolygon(const rawfb_context* rawfb, const struct nk_vec2i* pnts,
+static void StrokePolygon(const GUIContext* rawfb, const struct nk_vec2i* pnts,
                           const int count, const unsigned short line_thickness,
                           const nk_color col)
 {
@@ -669,7 +669,7 @@ static void StrokePolygon(const rawfb_context* rawfb, const struct nk_vec2i* pnt
 	           line_thickness, col);
 }
 
-static void StrokePolyline(const rawfb_context* rawfb, const struct nk_vec2i* pnts,
+static void StrokePolyline(const GUIContext* rawfb, const struct nk_vec2i* pnts,
                            const int count, const unsigned short line_thickness,
                            const nk_color col)
 {
@@ -679,7 +679,7 @@ static void StrokePolyline(const rawfb_context* rawfb, const struct nk_vec2i* pn
 		           line_thickness, col);
 }
 
-static void FillCircle(const rawfb_context* rawfb, short x0, short y0, short w, short h,
+static void FillCircle(const GUIContext* rawfb, short x0, short y0, short w, short h,
                        const nk_color col)
 {
 	/* Bresenham's ellipses */
@@ -720,7 +720,7 @@ static void FillCircle(const rawfb_context* rawfb, short x0, short y0, short w, 
 	}
 }
 
-static void StrokeCircle(const rawfb_context* rawfb, short x0, short y0, short w, short h,
+static void StrokeCircle(const GUIContext* rawfb, short x0, short y0, short w, short h,
                          const short line_thickness, const nk_color col)
 {
 	/* Bresenham's ellipses */
@@ -765,7 +765,7 @@ static void StrokeCircle(const rawfb_context* rawfb, short x0, short y0, short w
 	}
 }
 
-static void StrokeCurve(const rawfb_context* rawfb, const struct nk_vec2i p1,
+static void StrokeCurve(const GUIContext* rawfb, const struct nk_vec2i p1,
                         const struct nk_vec2i p2, const struct nk_vec2i p3,
                         const struct nk_vec2i p4, const unsigned int num_segments,
                         const unsigned short line_thickness, const nk_color col)
@@ -792,13 +792,13 @@ static void StrokeCurve(const rawfb_context* rawfb, const struct nk_vec2i p1,
 	}
 }
 
-static void Clear(const rawfb_context* rawfb, const nk_color col)
+static void Clear(const GUIContext* rawfb, const nk_color col)
 {
 	FillRect(rawfb, 0, 0, rawfb->surface->getWidth(), rawfb->surface->getHeight(), 0,
 	         col);
 }
 
-static rawfb_context* Init(IWindowSurface* surface)
+static GUIContext* CreateContext(IWindowSurface* surface)
 {
 	// First bake our font atlas.
 	nk_font_atlas atlas;
@@ -833,8 +833,8 @@ static rawfb_context* Init(IWindowSurface* surface)
 	nk_font_atlas_end(&atlas, nk_handle_ptr(fontSurface), NULL);
 
 	// Now that we have our font and an atlas, we can initialize Nuklear properly.
-	rawfb_context* rawfb = new rawfb_context;
-	memset(rawfb, 0, sizeof(rawfb_context));
+	GUIContext* rawfb = new GUIContext;
+	memset(rawfb, 0, sizeof(GUIContext));
 	rawfb->surface = surface;
 	rawfb->fontSurface = fontSurface;
 	rawfb->atlas = atlas;
@@ -922,7 +922,7 @@ static void FontQueryFontGlyph(nk_handle handle, const float height,
 	glyph->uv[1] = nk_vec2(g->u1, g->v1);
 }
 
-static void DrawText(const rawfb_context* rawfb, const nk_user_font* font,
+static void DrawText(const GUIContext* rawfb, const nk_user_font* font,
                      const struct nk_rect rect, const char* text, const int len,
                      const float font_height, const nk_color fg)
 {
@@ -982,7 +982,7 @@ static void DrawText(const rawfb_context* rawfb, const nk_user_font* font,
 	}
 }
 
-static void DrawImage(const rawfb_context* rawfb, const int x, const int y, const int w,
+static void DrawImage(const GUIContext* rawfb, const int x, const int y, const int w,
                       const int h, const struct nk_image* img, const nk_color* col)
 {
 	struct nk_rect src_rect;
@@ -1001,19 +1001,19 @@ static void DrawImage(const rawfb_context* rawfb, const int x, const int y, cons
 	             &rawfb->scissors, col);
 }
 
-static void Shutdown(rawfb_context* rawfb)
+static void DestroyContext(GUIContext* rawfb)
 {
 	if (rawfb)
 	{
 		delete rawfb->fontSurface;
 		nk_free(&rawfb->ctx);
 
-		memset(rawfb, 0, sizeof(rawfb_context));
+		memset(rawfb, 0, sizeof(GUIContext));
 		delete rawfb;
 	}
 }
 
-static void Render(const rawfb_context* rawfb, const nk_color clear,
+static void Render(const GUIContext* rawfb, const nk_color clear,
                    const unsigned char enable_clear)
 {
 	const nk_command* cmd;
@@ -1028,7 +1028,7 @@ static void Render(const rawfb_context* rawfb, const nk_color clear,
 			break;
 		case NK_COMMAND_SCISSOR: {
 			const nk_command_scissor* s = (const nk_command_scissor*)cmd;
-			Scissor((rawfb_context*)rawfb, s->x, s->y, s->w, s->h);
+			Scissor((GUIContext*)rawfb, s->x, s->y, s->w, s->h);
 		}
 		break;
 		case NK_COMMAND_LINE: {
@@ -1124,26 +1124,42 @@ static void Render(const rawfb_context* rawfb, const nk_color clear,
 	nk_clear((nk_context*)&rawfb->ctx);
 }
 
-static rawfb_context* ctx;
+static GUIContext* ctx;
 
-void I_InitGUI(IWindowSurface* surface)
+namespace gui
+{
+
+void Init(IWindowSurface* surface)
 {
 	if (::ctx != NULL)
 		return;
 
-	::ctx = Init(surface);
+	::ctx = CreateContext(surface);
 }
 
-void I_QuitGUI()
+void Quit()
 {
-	Shutdown(::ctx);
+	DestroyContext(::ctx);
 	::ctx = NULL;
 }
 
-void I_DrawGUI()
+void Draw()
 {
 	nk_color color = {0x00, 0x7F, 0x7F, 0x00};
 	Render(::ctx, color, 1);
+}
+
+//
+// Handle events.
+//
+bool Responder(event_t* evt)
+{
+	nk_context* ctx = &::ctx->ctx;
+
+	if (evt->type == ev_keydown || evt->type == ev_keyup)
+	{
+	}
+	return false;
 }
 
 enum
@@ -1151,40 +1167,43 @@ enum
 	EASY,
 	HARD
 };
+
 static int op = EASY;
 static float value = 0.6f;
 static int i = 20;
 
-#define GUICTX &::ctx->ctx
-
-void UI_SelectIWAD()
+void Demo()
 {
-	if (nk_begin(GUICTX, "Show", nk_rect(50, 50, 220, 220),
+	nk_context* ctx = &::ctx->ctx;
+
+	if (nk_begin(ctx, "Show", nk_rect(50, 50, 220, 220),
 	             NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
 	{
 		/* fixed widget pixel width */
-		nk_layout_row_static(GUICTX, 30, 80, 1);
-		if (nk_button_label(GUICTX, "button"))
+		nk_layout_row_static(ctx, 30, 80, 1);
+		if (nk_button_label(ctx, "button"))
 		{
 			/* event handling */
 		}
 
 		/* fixed widget window ratio width */
-		nk_layout_row_dynamic(GUICTX, 30, 2);
-		if (nk_option_label(GUICTX, "easy", op == EASY))
+		nk_layout_row_dynamic(ctx, 30, 2);
+		if (nk_option_label(ctx, "easy", op == EASY))
 			op = EASY;
-		if (nk_option_label(GUICTX, "hard", op == HARD))
+		if (nk_option_label(ctx, "hard", op == HARD))
 			op = HARD;
 
 		/* custom widget pixel width */
-		nk_layout_row_begin(GUICTX, NK_STATIC, 30, 2);
+		nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
 		{
-			nk_layout_row_push(GUICTX, 50);
-			nk_label(GUICTX, "Volume:", NK_TEXT_LEFT);
-			nk_layout_row_push(GUICTX, 110);
-			nk_slider_float(GUICTX, 0, &value, 1.0f, 0.1f);
+			nk_layout_row_push(ctx, 50);
+			nk_label(ctx, "Volume:", NK_TEXT_LEFT);
+			nk_layout_row_push(ctx, 110);
+			nk_slider_float(ctx, 0, &value, 1.0f, 0.1f);
 		}
-		nk_layout_row_end(GUICTX);
-		nk_end(GUICTX);
+		nk_layout_row_end(ctx);
+		nk_end(ctx);
 	}
 }
+
+} // namespace gui

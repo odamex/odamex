@@ -1098,9 +1098,9 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		I_InitGUI(I_GetWindow()->get32bppSurface());
-		UI_SelectIWAD();
-		I_DrawGUI();
+		gui::Init(I_GetWindow()->get32bppSurface());
+		gui::Demo();
+		gui::Draw();
 
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)

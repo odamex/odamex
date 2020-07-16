@@ -82,6 +82,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "i_gui.h"
 
 #include "w_ident.h"
 
@@ -173,6 +174,8 @@ void D_ProcessEvents (void)
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
 		ev = &events[eventtail];
+		if (gui::Responder(ev))
+			continue;				// GUI ate the event.
 		if (C_Responder (ev))
 			continue;				// console ate the event
 		if (M_Responder (ev))

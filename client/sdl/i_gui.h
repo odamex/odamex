@@ -52,10 +52,16 @@
 #include "nuklear.h"
 
 #include "i_video.h"
+#include "d_event.h"
 
-void I_InitGUI(IWindowSurface* surface);
-void I_QuitGUI();
-void I_DrawGUI();
-void UI_SelectIWAD();
+namespace gui {
+
+void Init(IWindowSurface* surface);
+void Quit();
+void Draw();
+bool Responder(event_t* evt);
+void Demo();
+
+}
 
 #endif // __I_GUI_H__
