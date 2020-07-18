@@ -171,6 +171,8 @@ void D_ProcessEvents (void)
 		return;
 	}
 
+	gui::BeginEvents();
+
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
 		ev = &events[eventtail];
@@ -182,6 +184,8 @@ void D_ProcessEvents (void)
 			continue;				// menu ate the event
 		G_Responder (ev);
 	}
+
+	gui::EndEvents();
 }
 
 //

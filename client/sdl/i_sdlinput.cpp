@@ -1365,9 +1365,9 @@ void ISDL20MouseInputDevice::reset()
 void ISDL20MouseInputDevice::pause()
 {
 	mActive = false;
-	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
-	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
+	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
@@ -1399,8 +1399,8 @@ void ISDL20MouseInputDevice::resume()
 //
 void ISDL20MouseInputDevice::gatherEvents()
 {
-	if (!active())
-		return;
+	// Determine if we should be using relative or absolute coordinates.
+	evtype_t mousetype = active() ? ev_mouse : ev_amouse;
 
 	// Force SDL to gather events from input devices. This is called
 	// implicitly from SDL_PollEvent but since we're using SDL_PeepEvents to
@@ -1410,18 +1410,26 @@ void ISDL20MouseInputDevice::gatherEvents()
 	SDL_PumpEvents();
 
 	// Retrieve mouse movement events from SDL
-	// [SL] accumulate the total mouse movement over all events polled
-	// and post one aggregate mouse movement event to Doom's event queue
-	// after all are polled.
-	event_t movement_event(ev_mouse);
-
+	event_t movement_event(mousetype);
 	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
-			movement_event.data2 += sdl_ev.motion.xrel;
-			movement_event.data3 -= sdl_ev.motion.yrel;
+			if (mousetype == ev_mouse)
+			{
+				// [SL] accumulate the total mouse movement over all events polled
+				// and post one aggregate mouse movement event to Doom's event queue
+				// after all are polled.
+				movement_event.data2 += sdl_ev.motion.xrel;
+				movement_event.data3 -= sdl_ev.motion.yrel;
+			}
+			else
+			{
+				// [AM] The last absolute mouse event "wins".
+				movement_event.data2 = sdl_ev.motion.x;
+				movement_event.data3 = sdl_ev.motion.y;
+			}
 		}
 	}
 

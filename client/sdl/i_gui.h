@@ -51,17 +51,20 @@
 #define NK_INCLUDE_SOFTWARE_FONT
 #include "nuklear.h"
 
-#include "i_video.h"
 #include "d_event.h"
+#include "i_video.h"
 
-namespace gui {
+namespace gui
+{
 
 void Init(IWindowSurface* surface);
 void Quit();
 void Draw();
+void BeginEvents();
+void EndEvents();
 bool Responder(event_t* evt);
 void Demo();
 
-}
+} // namespace gui
 
 #endif // __I_GUI_H__

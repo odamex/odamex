@@ -39,7 +39,8 @@ typedef enum
 	ev_keydown,
 	ev_keyup,
 	ev_mouse,
-	ev_joystick
+	ev_joystick,
+	ev_amouse
 } evtype_t;
 
 // Event structure.
@@ -138,5 +139,3 @@ extern	gameaction_t	gameaction;
 
 
 #endif
-
-

@@ -47,6 +47,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include "doomkeys.h"
 #include "doomtype.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -1131,7 +1132,7 @@ namespace gui
 
 void Init(IWindowSurface* surface)
 {
-	if (::ctx != NULL)
+	if (::ctx)
 		return;
 
 	::ctx = CreateContext(surface);
@@ -1139,14 +1140,46 @@ void Init(IWindowSurface* surface)
 
 void Quit()
 {
+	if (!::ctx)
+		return;
+
 	DestroyContext(::ctx);
 	::ctx = NULL;
 }
 
 void Draw()
 {
+	if (!::ctx)
+		return;
+
 	nk_color color = {0x00, 0x7F, 0x7F, 0x00};
 	Render(::ctx, color, 1);
+}
+
+//
+// Start parsing events.
+//
+// Call this before you start responding to events.
+//
+void BeginEvents()
+{
+	if (!::ctx)
+		return;
+
+	nk_input_begin(&::ctx->ctx);
+}
+
+//
+// Finish parsing events.
+//
+// Call this before you start responding to events.
+//
+void EndEvents()
+{
+	if (!::ctx)
+		return;
+
+	nk_input_end(&::ctx->ctx);
 }
 
 //
@@ -1154,11 +1187,57 @@ void Draw()
 //
 bool Responder(event_t* evt)
 {
+	if (!::ctx)
+		return false;
+
+	static int lastx, lasty;
 	nk_context* ctx = &::ctx->ctx;
 
 	if (evt->type == ev_keydown || evt->type == ev_keyup)
 	{
+		int down = evt->type == ev_keydown;
+
+		if (evt->data1 >= ' ' && evt->data1 <= '~')
+			nk_input_char(ctx, evt->data1);
+		else if (evt->data1 == KEY_LSHIFT || evt->data1 == KEY_RSHIFT)
+			nk_input_key(ctx, NK_KEY_SHIFT, down);
+		else if (evt->data1 == KEY_LCTRL || evt->data1 == KEY_RCTRL)
+			nk_input_key(ctx, NK_KEY_CTRL, down);
+		else if (evt->data1 == KEY_DEL)
+			nk_input_key(ctx, NK_KEY_DEL, down);
+		else if (evt->data1 == KEY_ENTER || evt->data1 == KEYP_ENTER)
+			nk_input_key(ctx, NK_KEY_ENTER, down);
+		else if (evt->data1 == KEY_TAB)
+			nk_input_key(ctx, NK_KEY_TAB, down);
+		else if (evt->data1 == KEY_BACKSPACE)
+			nk_input_key(ctx, NK_KEY_BACKSPACE, down);
+		else if (evt->data1 == KEY_UPARROW)
+			nk_input_key(ctx, NK_KEY_UP, down);
+		else if (evt->data1 == KEY_DOWNARROW)
+			nk_input_key(ctx, NK_KEY_DOWN, down);
+		else if (evt->data1 == KEY_LEFTARROW)
+			nk_input_key(ctx, NK_KEY_LEFT, down);
+		else if (evt->data1 == KEY_RIGHTARROW)
+			nk_input_key(ctx, NK_KEY_RIGHT, down);
+		else if (evt->data1 == KEY_MOUSE1)
+			nk_input_button(ctx, NK_BUTTON_LEFT, lastx, lasty, down);
+		else if (evt->data1 == KEY_MOUSE2)
+			nk_input_button(ctx, NK_BUTTON_RIGHT, lastx, lasty, down);
+		else if (evt->data1 == KEY_MOUSE3)
+			nk_input_button(ctx, NK_BUTTON_MIDDLE, lastx, lasty, down);
+		else
+			return false;
+
+		return true;
 	}
+	else if (evt->type == ev_amouse)
+	{
+		nk_input_motion(ctx, evt->data2, evt->data3);
+		lastx = evt->data2;
+		lasty = evt->data3;
+		return true;
+	}
+
 	return false;
 }
 
@@ -1202,8 +1281,8 @@ void Demo()
 			nk_slider_float(ctx, 0, &value, 1.0f, 0.1f);
 		}
 		nk_layout_row_end(ctx);
-		nk_end(ctx);
 	}
+	nk_end(ctx);
 }
 
 } // namespace gui
