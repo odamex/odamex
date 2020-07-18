@@ -46,9 +46,10 @@
 #define __I_GUI_H__
 
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
+#define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_SOFTWARE_FONT
+#define NK_INCLUDE_STANDARD_VARARGS
 #include "nuklear.h"
 
 #include "d_event.h"
