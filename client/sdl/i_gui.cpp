@@ -46,6 +46,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <time.h>
 
 #include "doomkeys.h"
 #include "doomtype.h"
@@ -59,6 +60,15 @@ struct GUIContext
 	IWindowSurface* surface;
 	IWindowSurface* fontSurface;
 	nk_font_atlas atlas;
+
+	~GUIContext()
+	{
+		nk_free(&this->ctx);
+		delete this->fontSurface;
+	}
+
+	static GUIContext* init(IWindowSurface* surface);
+	void update(IWindowSurface* surface);
 };
 
 static void CTXSetpixel(const GUIContext* rawfb, const short x0, const short y0,
@@ -799,7 +809,12 @@ static void Clear(const GUIContext* rawfb, const nk_color col)
 	         col);
 }
 
-static GUIContext* CreateContext(IWindowSurface* surface)
+//
+// Initialize a GUIContext from scratch.
+//
+// This function allocates with `new` - it is up to the caller to free it.
+//
+GUIContext* GUIContext::init(IWindowSurface* surface)
 {
 	// First bake our font atlas.
 	nk_font_atlas atlas;
@@ -854,6 +869,14 @@ static GUIContext* CreateContext(IWindowSurface* surface)
 	Scissor(rawfb, 0, 0, rawfb->surface->getWidth(), rawfb->surface->getHeight());
 
 	return rawfb;
+}
+
+//
+// Updates an existing GUI with a new surface.
+//
+void GUIContext::update(IWindowSurface* surface)
+{
+	this->surface = surface;
 }
 
 static void StretchImage(const IWindowSurface* dst, const IWindowSurface* src,
@@ -1130,23 +1153,46 @@ static GUIContext* ctx;
 namespace gui
 {
 
+//
+// Initialize or update the GUI context.
+//
 void Init(IWindowSurface* surface)
 {
 	if (::ctx)
-		return;
-
-	::ctx = CreateContext(surface);
+		::ctx->update(surface);
+	else
+		::ctx = GUIContext::init(surface);
 }
 
+//
+// Destroy the GUI context.
+//
 void Quit()
 {
 	if (!::ctx)
 		return;
 
-	DestroyContext(::ctx);
+	delete ::ctx;
 	::ctx = NULL;
 }
 
+//
+// Get a pointer to the underlying Nuklear context for interface creation.
+//
+nk_context* GetContext()
+{
+	if (::ctx == NULL)
+	{
+		I_FatalError("Tried to get GUI context before GUI init.");
+		return NULL;
+	}
+
+	return &::ctx->ctx;
+}
+
+//
+// Draw any queued draw commands.
+//
 void Draw()
 {
 	if (!::ctx)
@@ -1187,6 +1233,8 @@ void EndEvents()
 //
 bool Responder(event_t* evt)
 {
+	return false;
+
 	if (!::ctx)
 		return false;
 

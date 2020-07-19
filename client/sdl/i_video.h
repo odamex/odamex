@@ -67,6 +67,7 @@ int I_GetMonitorCount();
 IWindow* I_GetWindow();
 IWindowSurface* I_GetPrimarySurface();
 DCanvas* I_GetPrimaryCanvas();
+IWindowSurface* I_GetTruecolorSurface();
 
 IWindowSurface* I_GetEmulatedSurface();
 void I_BlitEmulatedSurface();
@@ -427,18 +428,11 @@ public:
 		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getWindowSurface());
 	}
 
-	virtual const IWindowSurface* get32bppSurface() const = 0;
+	virtual const IWindowSurface* getTruecolorSurface() const = 0;
 
-	virtual IWindowSurface* get32bppSurface()
+	virtual IWindowSurface* getTruecolorSurface()
 	{
-		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).get32bppSurface());
-	}
-
-	virtual const IWindowSurface* getAtlasSurface() const = 0;
-
-	virtual IWindowSurface* getAtlasSurface()
-	{
-		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getAtlasSurface());
+		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getTruecolorSurface());
 	}
 
 	virtual void lockSurface() { }
@@ -508,11 +502,11 @@ public:
 		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).getPrimarySurface());
 	}
 
-	virtual const IWindowSurface* get32bppSurface() const = 0;
+	virtual const IWindowSurface* getTruecolorSurface() const = 0;
 
-	virtual IWindowSurface* get32bppSurface()
+	virtual IWindowSurface* getTruecolorSurface()
 	{
-		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).get32bppSurface());
+		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).getTruecolorSurface());
 	}
 
 	virtual uint16_t getWidth() const
@@ -590,14 +584,9 @@ public:
 	virtual const IWindowSurface* getPrimarySurface() const
 	{	return mPrimarySurface;	}
 
-	virtual const IWindowSurface* get32bppSurface() const
+	virtual const IWindowSurface* getTruecolorSurface() const
 	{
-		return m32bppSurface;
-	}
-
-	virtual const IWindowSurface* getAtlasSurface() const
-	{
-		return mAtlasSurface;
+		return mTruecolorSurface;
 	}
 
 	virtual const IVideoMode& getVideoMode() const
@@ -634,7 +623,7 @@ private:
 	IDummyWindow& operator=(const IDummyWindow&);
 
 	IWindowSurface*		mPrimarySurface;
-	IWindowSurface*		m32bppSurface;
+	IWindowSurface*		mTruecolorSurface;
 	IWindowSurface*		mAtlasSurface;
 
 	IVideoMode			mVideoMode;

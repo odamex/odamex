@@ -59,6 +59,10 @@ static IVideoSubsystem* video_subsystem = NULL;
 // Global IWindowSurface instance for the application window
 static IWindowSurface* primary_surface = NULL;
 
+// Global IWindowSurface instance for the truecolor surface meant to be
+// layered on top of the primary surface.
+static IWindowSurface* truecolor_surface = NULL;
+
 // Global IWindowSurface instance for converting 8bpp data to a 32bpp surface
 static IWindowSurface* converted_surface = NULL;
 
@@ -623,6 +627,15 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	primary_surface->clear();
 	primary_surface->unlock();
 
+	// Set up truecolor surface.
+	::truecolor_surface = window->getTruecolorSurface();
+	::truecolor_surface->lock();
+	::truecolor_surface->clear();
+	::truecolor_surface->unlock();
+
+	// Update our GUI with the new truecolor surface.
+	gui::Init(::truecolor_surface);
+
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
 	// if vid_320x200/vid_640x400 are being used in a wide-screen video mode, or
@@ -840,6 +853,16 @@ DCanvas* I_GetPrimaryCanvas()
 	return NULL;
 }
 
+//
+// I_GetTruecolorSurface
+//
+// Returns a pointer to the application window's truecolor surface object.
+// This surface is blit on top of the primary surface and is always 32bpp.
+//
+IWindowSurface* I_GetTruecolorSurface()
+{
+	return truecolor_surface;
+}
 
 //
 // I_GetEmulatedSurface
@@ -1098,10 +1121,6 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		gui::Init(I_GetWindow()->get32bppSurface());
-		gui::Demo();
-		gui::Draw();
-
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)
 			V_DrawFPSTicker();

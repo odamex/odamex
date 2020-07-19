@@ -60,6 +60,7 @@ namespace gui
 
 void Init(IWindowSurface* surface);
 void Quit();
+nk_context* GetContext();
 void Draw();
 void BeginEvents();
 void EndEvents();

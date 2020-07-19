@@ -325,9 +325,13 @@ void D_Display()
 	if (wiping_screen)
 		Wipe_Drawer();
 
-	C_DrawConsole();	// draw console
-	M_Drawer();			// menu is drawn even on top of everything
-	I_FinishUpdate();	// page flip or blit buffer
+	// [AM] FIXME: This could probably be moved elsewhere, as all this does
+	//             is merely queue the widgets to be drawn later.
+	C_DrawConsole();
+
+	M_Drawer();       // Draws the menu on top of the game.
+	gui::Draw();      // Draws any queued GUI widgets.
+	I_FinishUpdate(); // Page flip or blit buffer
 
 	END_STAT(D_Display);
 }
