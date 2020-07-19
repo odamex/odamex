@@ -43,6 +43,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
+#include "i_gui.h"
 
 #include <string>
 #include <list>
@@ -1490,6 +1491,33 @@ void C_ToggleConsole()
 //
 void C_DrawConsole()
 {
+	nk_context* ctx = gui::GetContext();
+
+	static char input[64];
+	static int inputlen;
+	static int value;
+
+	std::string combined;
+	static char cstr[2048];
+	static int clen = ARRAY_LENGTH(cstr); // Needs to be set to the last character.
+
+	nk_color txtc = {255, 255, 255, 255};
+	if (nk_begin(ctx, "Console", nk_rect(8, 8, 640 - 16, 240), 0))
+	{
+		nk_layout_row_dynamic(ctx, 240 - 13, 1);
+		ConsoleLineList::const_reverse_iterator it = ::Lines.rbegin();
+		for (; it != ::Lines.rend(); ++it)
+			combined = it->text + "\n" + combined;
+		strncpy(&cstr[0], combined.c_str(), ARRAY_LENGTH(cstr) - 1);
+		nk_edit_string(ctx, NK_EDIT_EDITOR, &cstr[0], &clen, ARRAY_LENGTH(cstr), nk_filter_default);
+
+		nk_layout_row_dynamic(ctx, 0, 1);
+		nk_edit_string(ctx, NK_EDIT_SIMPLE, &input[0], &inputlen, 64, nk_filter_default);
+	}
+	nk_end(ctx);
+
+	return;
+
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	int primary_surface_width = primary_surface->getWidth();
 	int primary_surface_height = primary_surface->getHeight();

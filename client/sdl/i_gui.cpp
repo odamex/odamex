@@ -1233,8 +1233,6 @@ void EndEvents()
 //
 bool Responder(event_t* evt)
 {
-	return false;
-
 	if (!::ctx)
 		return false;
 
