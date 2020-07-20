@@ -1502,16 +1502,21 @@ void C_DrawConsole()
 	static int clen = ARRAY_LENGTH(cstr); // Needs to be set to the last character.
 
 	nk_color txtc = {255, 255, 255, 255};
-	if (nk_begin(ctx, "Console", nk_rect(8, 8, 640 - 16, 240), 0))
+	if (nk_begin(ctx, "Odamex Console", nk_rect(8, 8, 640 - 16, 240),
+	             NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR | NK_WINDOW_TITLE |
+	                 NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE))
 	{
-		nk_layout_row_dynamic(ctx, 240 - 13, 1);
+		struct nk_rect bounds = nk_window_get_bounds(ctx);
+
+		nk_layout_row_static(ctx, bounds.h - 81, bounds.w - 13, 1);
 		ConsoleLineList::const_reverse_iterator it = ::Lines.rbegin();
 		for (; it != ::Lines.rend(); ++it)
 			combined = it->text + "\n" + combined;
 		strncpy(&cstr[0], combined.c_str(), ARRAY_LENGTH(cstr) - 1);
-		nk_edit_string(ctx, NK_EDIT_EDITOR, &cstr[0], &clen, ARRAY_LENGTH(cstr), nk_filter_default);
+		nk_edit_string(ctx, NK_EDIT_EDITOR, &cstr[0], &clen, ARRAY_LENGTH(cstr),
+		               nk_filter_default);
 
-		nk_layout_row_dynamic(ctx, 0, 1);
+		nk_layout_row_static(ctx, 0, bounds.w - 13, 1);
 		nk_edit_string(ctx, NK_EDIT_SIMPLE, &input[0], &inputlen, 64, nk_filter_default);
 	}
 	nk_end(ctx);
