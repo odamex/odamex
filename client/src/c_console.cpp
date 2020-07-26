@@ -1491,24 +1491,30 @@ void C_ToggleConsole()
 //
 void C_DrawConsole()
 {
+	const float BOTTOM_BORDER_PLUS_INPUT_SIZE = 80;
+
 	nk_context* ctx = gui::GetContext();
 
 	static char input[64];
 	static int inputlen;
-	static int value;
 
 	std::string combined;
 	static char cstr[2048];
 	static int clen = ARRAY_LENGTH(cstr); // Needs to be set to the last character.
 
-	nk_color txtc = {255, 255, 255, 255};
-	if (nk_begin(ctx, "Odamex Console", nk_rect(8, 8, 640 - 16, 240),
+	float width = I_GetPrimarySurface()->getWidth();
+	float height = I_GetPrimarySurface()->getHeight();
+
+	if (nk_begin(ctx, "Odamex Console",
+	             nk_rect(8, 8, (width * (2.f / 3)) - 16, height / 2 - 16),
 	             NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR | NK_WINDOW_TITLE |
 	                 NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE))
 	{
+		// Bounds of the current window.
 		struct nk_rect bounds = nk_window_get_bounds(ctx);
 
-		nk_layout_row_static(ctx, bounds.h - 81, bounds.w - 13, 1);
+		// Main console output.
+		nk_layout_row_dynamic(ctx, bounds.h - BOTTOM_BORDER_PLUS_INPUT_SIZE, 1);
 		ConsoleLineList::const_reverse_iterator it = ::Lines.rbegin();
 		for (; it != ::Lines.rend(); ++it)
 			combined = it->text + "\n" + combined;
@@ -1516,7 +1522,8 @@ void C_DrawConsole()
 		nk_edit_string(ctx, NK_EDIT_EDITOR, &cstr[0], &clen, ARRAY_LENGTH(cstr),
 		               nk_filter_default);
 
-		nk_layout_row_static(ctx, 0, bounds.w - 13, 1);
+		// Text input.
+		nk_layout_row_dynamic(ctx, 0, 1);
 		nk_edit_string(ctx, NK_EDIT_SIMPLE, &input[0], &inputlen, 64, nk_filter_default);
 	}
 	nk_end(ctx);
