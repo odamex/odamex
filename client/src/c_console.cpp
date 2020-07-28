@@ -1485,6 +1485,36 @@ void C_ToggleConsole()
 	History.resetPosition();
 }
 
+static void DrawConsoleTextWidget(nk_context* ctx)
+{
+	if (nk_group_begin(ctx, "Console Text Widget", 0))
+	{
+		nk_command_buffer* cmd = nk_window_get_canvas(ctx);
+		struct nk_rect winbounds = nk_window_get_bounds(ctx);
+
+		// We need a layout inside the group.
+		nk_layout_row_dynamic(ctx, winbounds.h, 1);
+
+		// Get boundaries of widget
+		struct nk_rect bounds;
+		if (nk_widget(&bounds, ctx) != NK_WIDGET_INVALID)
+		{
+			// Draw the containing rectangle.
+			nk_fill_rect(cmd, bounds, ctx->style.edit.rounding,
+			             ctx->style.edit.normal.data.color);
+			nk_stroke_rect(cmd, bounds, ctx->style.edit.rounding, ctx->style.edit.border,
+			               ctx->style.edit.border_color);
+
+			// Get a run of text to render.
+			struct nk_color bg = {0, 0, 0, 0};
+			nk_draw_text(cmd, bounds, "xyzzy", sizeof("xyzzy") - 1, ctx->style.font, bg,
+			             ctx->style.text.color);
+			nk_draw_text(cmd, bounds, "xyzzy2", sizeof("xyzzy2") - 1, ctx->style.font, bg,
+			             ctx->style.text.color);
+		}
+		nk_group_end(ctx);
+	}
+}
 
 //
 // C_DrawConsole
@@ -1515,12 +1545,14 @@ void C_DrawConsole()
 
 		// Main console output.
 		nk_layout_row_dynamic(ctx, bounds.h - BOTTOM_BORDER_PLUS_INPUT_SIZE, 1);
-		ConsoleLineList::const_reverse_iterator it = ::Lines.rbegin();
-		for (; it != ::Lines.rend(); ++it)
-			combined = it->text + "\n" + combined;
-		strncpy(&cstr[0], combined.c_str(), ARRAY_LENGTH(cstr) - 1);
-		nk_edit_string(ctx, NK_EDIT_EDITOR, &cstr[0], &clen, ARRAY_LENGTH(cstr),
-		               nk_filter_default);
+		DrawConsoleTextWidget(ctx);
+
+		// ConsoleLineList::const_reverse_iterator it = ::Lines.rbegin();
+		// for (; it != ::Lines.rend(); ++it)
+		// 	combined = it->text + "\n" + combined;
+		// strncpy(&cstr[0], combined.c_str(), ARRAY_LENGTH(cstr) - 1);
+		// nk_edit_string(ctx, NK_EDIT_BOX, &cstr[0], &clen, ARRAY_LENGTH(cstr),
+		//                nk_filter_default);
 
 		// Text input.
 		nk_layout_row_dynamic(ctx, 0, 1);
