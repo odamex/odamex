@@ -36,6 +36,7 @@
 #include "p_ctf.h"
 #include "v_text.h"
 #include "i_video.h"
+#include "cmdlib.h"
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(player_t*);
@@ -1259,4 +1260,46 @@ void EATargets(int x, int y, const float scale,
 	}
 }
 
+// Draw a situation report.
+void SitRep(int x, int y, const float scale, const x_align_t x_align,
+            const y_align_t y_align, const x_align_t x_origin, const y_align_t y_origin)
+{
+	// Find the widest name.
+	int maxwidth = 0;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		int width = V_StringWidth(it->userinfo.netname.c_str());
+		maxwidth = MAX(maxwidth, width);
+	}
+
+	std::string buf;
+	int iy = y;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		int ix = 0;
+
+		// Name
+		hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin,
+		              it->userinfo.netname.c_str(), CR_GREY);
+
+		// Only draw health and armor if they have a body.
+		if (it->mo)
+		{
+			// Health
+			ix += maxwidth;
+			StrFormat(buf, "%4d", it->mo->health);
+			hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin, buf.c_str(),
+						CR_GREY);
+
+			// Armor
+			ix += V_StringWidth(buf.c_str());
+			StrFormat(buf, "%4d", it->armorpoints);
+			hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin, buf.c_str(),
+						CR_GREY);
+		}
+
+		iy += 8;
+	}
 }
+
+} // namespace hud

@@ -732,6 +732,9 @@ void SpectatorHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+
+	// Draw sitrep
+	hud::SitRep(0, 0, hud_scale, hud::X_LEFT, hud::Y_MIDDLE, hud::X_LEFT, hud::Y_MIDDLE);
 }
 
 // [AM] Original ZDoom HUD
@@ -904,6 +907,9 @@ void DoomHUD()
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+
+	// Draw sitrep
+	hud::SitRep(0, 0, hud_scale, hud::X_LEFT, hud::Y_MIDDLE, hud::X_LEFT, hud::Y_MIDDLE);
 }
 
 }
