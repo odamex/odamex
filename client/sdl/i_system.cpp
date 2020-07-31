@@ -728,7 +728,7 @@ NORETURN void STACK_ARGS I_FatalError (const char *error, ...)
 	va_start(argptr, error);
 	fprintf(stderr, "Recursive I_FatalError detected!\r\nError = ");
 	vfprintf(stderr, error, argptr);
-	fprintf(stderr, "\r\nnSDL_GetError = %s\r\n", SDL_GetError());
+	fprintf(stderr, "\r\nSDL_GetError = %s\r\n", SDL_GetError());
 	va_end(argptr);
 
 	abort();
