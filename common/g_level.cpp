@@ -345,6 +345,7 @@ static const char *MapInfoTopLevel[] =
 	"clearepisodes",
 	"gameinfo",
 	"intermission",
+	"automap",
 	NULL
 };
 
@@ -374,7 +375,10 @@ enum
 	MITL_GAMEINFO,
 
 	// intermission // New MAPINFO only
-	MITL_INTERMISSION
+	MITL_INTERMISSION,
+
+	// automap // New MAPINFO only
+	MITL_AUTOMAP
 };
 
 static const char *MapInfoMapLevel[] =
@@ -1191,6 +1195,11 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 		case MITL_INTERMISSION:
 			// Not implemented
 			SC_MustGetString(); // Name
+			ParseMapInfoLower(NULL, NULL, NULL, 0);
+			break;
+
+		case MITL_AUTOMAP:
+			// Not implemented
 			ParseMapInfoLower(NULL, NULL, NULL, 0);
 			break;
 
