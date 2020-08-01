@@ -245,10 +245,27 @@ CVAR_FUNC_IMPL(vid_pillarbox)
 		V_ForceVideoModeAdjustment();
 }
 
+//
+// Only checks to see if the widescreen mode is proper compared to sv_allowwidescreen.
+//
+// Doing a full check on Windows results in strange flashing behavior in fullscreen
+// because there's an 32-bit surface being rendered to as 8-bit.
+//
+static bool CheckWideModeAdjustment()
+{
+	bool using_widescreen = I_IsWideResolution();
+	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
+		return true;
+
+	if (vid_widescreen != using_widescreen)
+		return true;
+
+	return false;
+}
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
+	if (gamestate != GS_STARTUP && CheckWideModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
 
