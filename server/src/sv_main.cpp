@@ -64,6 +64,7 @@
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
+#include "m_wdlstats.h"
 
 #include <algorithm>
 #include <sstream>
@@ -4543,7 +4544,7 @@ void SV_WinCheck (void)
 		shotclock--;
 
 		if (!shotclock)
-			G_ExitLevel (0, 1);
+			G_ExitLevel(0, 1);
 	}
 }
 
@@ -4800,6 +4801,8 @@ void SV_TimelimitCheck()
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", GetTeamInfo(winteam)->ColorStringUpper.c_str());
 		}
+
+		M_CommitWDLLog();
 	}
 
 	shotclock = TICRATE*2;

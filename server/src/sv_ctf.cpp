@@ -28,6 +28,7 @@
 #include "i_system.h"
 #include "g_warmup.h"
 #include "p_unlag.h"
+#include "m_wdlstats.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
@@ -150,14 +151,18 @@ ItemEquipVal SV_FlagGrab (player_t &player, team_t f, bool firstgrab)
 
 	if (player.userinfo.team != f){
 		if (firstgrab) {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str());
+			teamInfo->FlagData.firstgrab = true;
+			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname.c_str(), teamInfo->ColorStringUpper.c_str());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
+			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, 0, 0, 0);
 		} else {
-			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str());
+			teamInfo->FlagData.firstgrab = false;
+			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname.c_str(), teamInfo->ColorStringUpper.c_str());
 			SV_CTFEvent (f, SCORE_GRAB, player);
+			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, 0, 0, 0);
 		}
 	} else {
-		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str());
+		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname.c_str(), teamInfo->ColorStringUpper.c_str());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
 
@@ -175,6 +180,7 @@ void SV_FlagReturn (player_t &player, team_t f)
 	CTF_SpawnFlag (f);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has returned the %s flag\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str());
+	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, 0, 0, 0);
 }
 
 //
@@ -214,10 +220,15 @@ void SV_FlagScore (player_t &player, team_t f)
 	TeamInfo* teamInfo = GetTeamInfo(f);
 	int time_held = I_MSTime() - teamInfo->FlagData.pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str(), CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf(PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str(), CTF_TimeMSG(time_held));
+	if (teamInfo->FlagData.firstgrab)
+		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, 0, 0, 0);
+	else
+		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, 0, 0, 0);
 
 	player.flags[f] = false; // take scoring player's flag
 	teamInfo->FlagData.flagger = 0;
+	teamInfo->FlagData.firstgrab = false;
 
 	CTF_SpawnFlag(f);
 
@@ -225,6 +236,7 @@ void SV_FlagScore (player_t &player, team_t f)
 	if(GetTeamInfo(player.userinfo.team)->Points >= sv_scorelimit && sv_scorelimit != 0)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+		M_CommitWDLLog();
 		shotclock = TICRATE*2;
 	}
 }
@@ -278,6 +290,7 @@ void SV_SocketTouch (player_t &player, team_t f)
 	if (player.userinfo.team == f && player.flags[f]) {
 		player.flags[f] = false;
 		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.firstgrab = false;
 		SV_FlagReturn(player, f);
 	}
 
@@ -310,6 +323,7 @@ void SV_FlagDrop (player_t &player, team_t f)
 
 	player.flags[f] = false; // take ex-carrier's flag
 	teamInfo->FlagData.flagger = 0;
+	teamInfo->FlagData.firstgrab = false;
 
 	fixed_t x, y, z;
 	Unlag::getInstance().getCurrentPlayerPosition(player.id, x, y, z);
@@ -364,6 +378,7 @@ void CTF_SpawnFlag (team_t f)
 	teamInfo->FlagData.actor = flag->ptr();
 	teamInfo->FlagData.state = flag_home;
 	teamInfo->FlagData.flagger = 0;
+	teamInfo->FlagData.firstgrab = false;
 }
 
 //
@@ -382,6 +397,7 @@ void CTF_SpawnDroppedFlag (team_t f, int x, int y, int z)
 	teamInfo->FlagData.state = flag_dropped;
 	teamInfo->FlagData.timeout = (size_t)(ctf_flagtimeout * TICRATE);
 	teamInfo->FlagData.flagger = 0;
+	teamInfo->FlagData.firstgrab = false;
 }
 
 //
@@ -429,4 +445,3 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 }
 
 VERSION_CONTROL (sv_ctf_cpp, "$Id$")
-
