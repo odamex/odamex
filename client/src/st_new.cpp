@@ -43,6 +43,7 @@
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
+#include "hu_sitrep.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"
@@ -734,7 +735,7 @@ void SpectatorHUD() {
 	hud::drawCTF();
 
 	// Draw sitrep
-	hud::SitRep(0, 0, hud_scale, hud::X_LEFT, hud::Y_MIDDLE, hud::X_LEFT, hud::Y_MIDDLE);
+	hud::SitRep();
 }
 
 // [AM] Original ZDoom HUD
@@ -909,7 +910,7 @@ void DoomHUD()
 	hud::drawCTF();
 
 	// Draw sitrep
-	hud::SitRep(0, 0, hud_scale, hud::X_LEFT, hud::Y_MIDDLE, hud::X_LEFT, hud::Y_MIDDLE);
+	hud::SitRep();
 }
 
 }
