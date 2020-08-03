@@ -26,9 +26,9 @@
 
 #include "cmdlib.h"
 #include "d_player.h"
+#include "hu_drawers.h"
 #include "v_text.h"
 #include "v_video.h"
-#include "hu_drawers.h"
 
 namespace hud
 {
@@ -58,7 +58,7 @@ void SitRep()
 
 		// Name
 		hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin,
-					  it->userinfo.netname.c_str(), CR_GREY);
+		              it->userinfo.netname.c_str(), CR_GREY);
 
 		// Only draw health and armor if they have a body.
 		if (it->mo)
@@ -66,18 +66,18 @@ void SitRep()
 			// Health
 			ix += maxwidth;
 			StrFormat(buf, "%4d", it->mo->health);
-			hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin, buf.c_str(),
-						CR_GREY);
+			hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin,
+			              buf.c_str(), CR_GREY);
 
 			// Armor
 			ix += V_StringWidth(buf.c_str());
 			StrFormat(buf, "%4d", it->armorpoints);
-			hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin, buf.c_str(),
-						CR_GREY);
+			hud::DrawText(ix, iy, scale, x_align, y_align, x_origin, y_origin,
+			              buf.c_str(), CR_GREY);
 		}
 
 		iy += 8;
 	}
 }
 
-}
+} // namespace hud
