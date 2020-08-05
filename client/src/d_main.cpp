@@ -82,6 +82,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "i_http.h"
 
 #include "w_ident.h"
 
@@ -240,6 +241,7 @@ void D_Display()
 		case GS_FULLCONSOLE:
 		case GS_DOWNLOAD:
 		    CL_DownloadTicker();
+			http::Tick();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
@@ -829,6 +831,10 @@ void D_DoomMain()
 	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
 
 	I_FinishClockCalibration();
+
+	// Initialize HTTP subsystem
+	http::Init();
+	atterm(http::Shutdown);
 
 	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();
