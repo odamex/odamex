@@ -19,6 +19,33 @@ set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 include(ExternalProject)
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
+### libcurl ###
+
+set(CURL_LIBRARY
+  "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}curl-d${libsuffix}")
+
+# Build the library as an ExternalProject.
+ExternalProject_Add(curl-project
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/curl"
+  CMAKE_ARGS
+  "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+  "-DCMAKE_LINKER=${CMAKE_LINKER}"
+  "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+  "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+  "-DBUILD_CURL_EXE=OFF"
+  "-DBUILD_SHARED_LIBS=OFF"
+  "-DHTTP_ONLY=ON"
+  BUILD_BYPRODUCTS ${CURL_LIBRARY}
+  EXCLUDE_FROM_ALL ON)
+
+# Synthesize an imported target that can be linked against.
+add_library(curl STATIC IMPORTED GLOBAL)
+add_dependencies(curl curl-project)
+set_target_properties(curl PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
+  IMPORTED_LOCATION ${CURL_LIBRARY})
+
 ### JsonCpp ###
 
 # Figure out the correct library path to attach to our imported target
