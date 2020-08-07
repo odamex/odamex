@@ -236,12 +236,13 @@ void D_Display()
 		wiping_screen = true;
 	}
 
+	http::Tick();
+
 	switch (gamestate)
 	{
 		case GS_FULLCONSOLE:
 		case GS_DOWNLOAD:
 		    CL_DownloadTicker();
-			http::Tick();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();

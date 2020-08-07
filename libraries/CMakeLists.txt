@@ -22,7 +22,7 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 ### libcurl ###
 
 set(CURL_LIBRARY
-  "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}curl-d${libsuffix}")
+  "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl-d${libsuffix}")
 
 # Build the library as an ExternalProject.
 ExternalProject_Add(curl-project
@@ -46,6 +46,9 @@ add_dependencies(curl curl-project)
 set_target_properties(curl PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
   IMPORTED_LOCATION ${CURL_LIBRARY})
+if(WIN32)
+  target_link_libraries(curl INTERFACE ws2_32)
+endif()
 
 ### JsonCpp ###
 
