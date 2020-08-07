@@ -40,6 +40,10 @@ struct TransferProgress
 	}
 };
 
+struct TransferInfo
+{
+};
+
 class Transfer
 {
 	CURLM* _curlm;
@@ -85,26 +89,50 @@ class Transfer
 		curl_multi_cleanup(_curlm);
 	}
 
-	void setSource(const char* src)
+	/**
+	 * @brief Set the source URL of the transfer.
+	 *
+	 * @param src Source URL, complete with protocol.
+	 */
+	void setURL(const char* src)
 	{
-		curl_easy_setopt(_curl, CURLOPT_URL, src);
-		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, _file);
+		CURLcode err;
+		err = curl_easy_setopt(_curl, CURLOPT_URL, src);
 	}
 
-	bool setDestination(const char* dest)
+	/**
+	 * @brief Set the destination file of the transfer.
+	 *
+	 * @param dest Destination file path, passed to fopen.
+	 * @return True if the output file was set successfully, otherwise false.
+	 */
+	bool setOutputFile(const char* dest)
 	{
-		_file = fopen("udm3.wad", "wb+");
+		_file = fopen(dest, "wb+");
 		if (_file == NULL)
 			return false;
+
+		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, _file);
+		return true;
 	}
 
-	void start()
+	/**
+	 * @brief Start the transfer.
+	 *
+	 * @return True if the transfer was started, or false if the transfer
+	 *         stopped after the initial perform.
+	 */
+	bool start()
 	{
-		curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, curlSetProgress);
+		curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, Transfer::curlSetProgress);
 		curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
-		curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+		curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, Transfer::curlDebug);
 		curl_easy_setopt(_curl, CURLOPT_DEBUGDATA, this);
 		curl_multi_add_handle(_curlm, _curl);
+
+		int running;
+		curl_multi_perform(_curlm, &running);
+		return running > 0;
 	}
 
 	void stop()
@@ -119,10 +147,19 @@ class Transfer
 		return running;
 	}
 
+	void getInfo()
+	{
+		long resCode;
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &resCode);
+	}
+
 	int getMessage(CURLcode* code)
 	{
 		int queuelen;
 		CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+		if (msg == NULL)
+			return 0;
+
 		*code = msg->data.result;
 		return queuelen;
 	}
@@ -166,45 +203,81 @@ void Shutdown()
 	::http::state = STATE_SHUTDOWN;
 }
 
-void Tick()
+/**
+ * @brief Gets the latest curl error message.
+ *
+ * @return Returns a pointer to a static string with an error message, or
+ *         NULL if there was no error.
+ */
+const char* GetCURLMessage()
 {
-	if (::http::transfer)
-	{
-		int running = ::http::transfer->tick();
-		TransferProgress prog = ::http::transfer->getProgress();
-		Printf(PRINT_HIGH, "Transfer is active (%d, %zd, %zd) ", running, prog.dlnow,
-		       prog.dltotal);
-
-		CURLcode code;
-		int messages = ::http::transfer->getMessage(&code);
-		Printf(PRINT_HIGH, "%d, %d\n", messages, code);
-	}
+	CURLcode msg = CURLE_OK;
+	::http::transfer->getMessage(&msg);
+	if (msg == CURLE_OK)
+		return NULL;
+	return curl_easy_strerror(msg);
 }
 
 /**
  * Start a transfer.
  */
-void Download()
+bool Download()
 {
 	if (::http::state != STATE_READY)
-		return;
+		return false;
 
 	::http::state = STATE_DOWNLOADING;
 
 	::http::transfer = new Transfer();
-	::http::transfer->setSource("https://doomshack.org/wads/udm3.wad");
-	::http::transfer->setDestination("udm3.wad");
-	::http::transfer->start();
+	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
+	::http::transfer->setOutputFile("udm3.wad");
+
+	bool started = ::http::transfer->start();
 }
 
-void Cancel()
+void Tick()
 {
+	if (::http::state != STATE_DOWNLOADING)
+		return;
+
+	if (::http::transfer == NULL)
+		return;
+
+	int running = ::http::transfer->tick();
+	if (running < 1)
+	{
+		// Was the download successful?
+		const char* msg = GetCURLMessage();
+		if (msg)
+			Printf(PRINT_HIGH, "Download finished (%s).\n", msg);
+		else
+			Printf(PRINT_HIGH, "Download successful.\n");
+
+		// Clean up and prepare for the next one.
+		delete ::http::transfer;
+		::http::transfer = NULL;
+		::http::state = STATE_READY;
+
+		return;
+	}
+
+	TransferProgress prog = ::http::transfer->getProgress();
+	Printf(PRINT_HIGH, "Transfer is active (%d, %zd, %zd) ", running, prog.dlnow,
+	       prog.dltotal);
+
+	CURLcode code;
+	int messages = ::http::transfer->getMessage(&code);
+	if (messages > 0)
+		Printf(PRINT_HIGH, "%d, %d\n", messages, code);
 }
 
 } // namespace http
 
 BEGIN_COMMAND(download)
 {
-	::http::Download();
+	if (::http::Download())
+		Printf(PRINT_HIGH, "Download starting...\n");
+	else
+		Printf(PRINT_HIGH, "Download did not start (%s).\n", ::http::GetCURLMessage());
 }
 END_COMMAND(download)
