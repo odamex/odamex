@@ -46,6 +46,8 @@ struct FResponderKey
 
         bool IsSpyPrevKey(int key);
         bool IsSpyNextKey(int key);
+
+        bool IsTabulationKey(int key);
 };
 
 extern FResponderKey keypress;

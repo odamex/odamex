@@ -276,3 +276,20 @@ bool FResponderKey::IsSpyPrevKey(int key)
 
     return (mouse);
 }
+
+bool FResponderKey::IsTabulationKey(int key)
+{
+    bool keyboard = (key == KEY_TAB);
+
+    switch (platform)
+    {
+        case PF_WII:
+            return keyboard;
+        case PF_XBOX:
+            return keyboard;
+        default:
+            break;
+    }
+
+    return (keyboard);
+}
