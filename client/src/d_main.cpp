@@ -82,7 +82,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
-#include "i_http.h"
+#include "cl_http.h"
 
 #include "w_ident.h"
 

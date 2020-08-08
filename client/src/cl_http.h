@@ -20,8 +20,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_HTTP_H__
-#define __I_HTTP_H__
+#ifndef __CL_HTTP_H__
+#define __CL_HTTP_H__
 
 namespace http
 {
@@ -30,6 +30,6 @@ void Init();
 void Shutdown();
 void Tick();
 
-}
+} // namespace http
 
 #endif

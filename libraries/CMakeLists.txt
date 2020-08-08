@@ -35,6 +35,7 @@ ExternalProject_Add(curl-project
   "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
   "-DBUILD_CURL_EXE=OFF"
   "-DBUILD_SHARED_LIBS=OFF"
+  "-DCMAKE_USE_WINSSL=ON"
   "-DCURL_ZLIB=OFF"
   "-DHTTP_ONLY=ON"
   BUILD_BYPRODUCTS ${CURL_LIBRARY}
@@ -47,7 +48,7 @@ set_target_properties(curl PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
   IMPORTED_LOCATION ${CURL_LIBRARY})
 if(WIN32)
-  target_link_libraries(curl INTERFACE ws2_32)
+  target_link_libraries(curl INTERFACE ws2_32 crypt32)
 endif()
 
 ### JsonCpp ###

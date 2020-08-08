@@ -24,6 +24,24 @@
 
 #include "i_system.h"
 
+bool OTransferInfo::hydrate(CURL* curl)
+{
+	long resCode;
+	if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resCode) != CURLE_OK)
+		return false;
+
+	curl_off_t speed;
+	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed) != CURLE_OK)
+		return false;
+
+	this->code = resCode;
+	this->speed = speed;
+
+	return true;
+}
+
+// // OTransfer // //
+
 // PRIVATE //
 
 //
@@ -48,9 +66,9 @@ void OTransfer::curlDebug(CURL* handle, curl_infotype type, char* data, size_t s
 
 // PUBLIC //
 
-OTransfer::OTransfer()
-    : _curlm(curl_multi_init()), _curl(curl_easy_init()), _file(NULL),
-      _progress(OTransferProgress())
+OTransfer::OTransfer(OTransferDoneProc done, OTransferErrorProc err)
+    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()), _curl(curl_easy_init()),
+      _file(NULL), _progress(OTransferProgress())
 {
 }
 
@@ -92,12 +110,10 @@ bool OTransfer::setOutputFile(const char* dest)
 
 /**
  * @brief Start the transfer.
- *
- * @return True if the transfer was started, or false if the transfer
- *         stopped after the initial perform.
  */
-bool OTransfer::start()
+void OTransfer::start()
 {
+	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, (long)1);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlSetProgress);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
 	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, OTransfer::curlDebug);
@@ -106,7 +122,6 @@ bool OTransfer::start()
 
 	int running;
 	curl_multi_perform(_curlm, &running);
-	return running > 0;
 }
 
 /**
@@ -120,30 +135,42 @@ void OTransfer::stop()
 /**
  * @brief Run one tic of the transfer.
  *
- * @return
+ * @return True if the transfer is ongoing, false if it's done and the object
+ *         should be deleted.
  */
-int OTransfer::tick()
+bool OTransfer::tick()
 {
 	int running;
 	curl_multi_perform(_curlm, &running);
-	return running;
-}
+	if (running > 0)
+		return true;
 
-void OTransfer::getInfo()
-{
-	long resCode;
-	curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &resCode);
-}
-
-int OTransfer::getMessage(CURLcode* code)
-{
+	// We're done.  Was the transfer successful, or an error?
 	int queuelen;
 	CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
 	if (msg == NULL)
-		return 0;
+	{
+		_errproc("CURL reports no info");
+		return false;
+	}
 
-	*code = msg->data.result;
-	return queuelen;
+	CURLcode code = msg->data.result;
+	if (code != CURLE_OK)
+	{
+		_errproc(curl_easy_strerror(code));
+		return false;
+	}
+
+	// A successful transfer.  Populate the info struct.
+	OTransferInfo info = OTransferInfo();
+	if (!info.hydrate(_curl))
+	{
+		_errproc("Info struct could not be populated");
+		return false;
+	}
+
+	_doneproc(info);
+	return false;
 }
 
 OTransferProgress OTransfer::getProgress() const

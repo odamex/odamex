@@ -35,12 +35,23 @@ struct OTransferProgress
 	}
 };
 
-struct OTransferResult
+struct OTransferInfo
 {
+	int code;
+	curl_off_t speed;
+	OTransferInfo() : code(0), speed(0)
+	{
+	}
+	bool hydrate(CURL* curl);
 };
+
+typedef void (*OTransferDoneProc)(const OTransferInfo& info);
+typedef void (*OTransferErrorProc)(const char* msg);
 
 class OTransfer
 {
+	OTransferDoneProc _doneproc;
+	OTransferErrorProc _errproc;
 	CURLM* _curlm;
 	CURL* _curl;
 	FILE* _file;
@@ -54,15 +65,13 @@ class OTransfer
 	                      void* userptr);
 
   public:
-	OTransfer();
+	OTransfer(OTransferDoneProc done, OTransferErrorProc err);
 	~OTransfer();
 	void setURL(const char* src);
 	bool setOutputFile(const char* dest);
-	bool start();
+	void start();
 	void stop();
-	int tick();
-	void getInfo();
-	int getMessage(CURLcode* code);
+	bool tick();
 	OTransferProgress getProgress() const;
 };
 

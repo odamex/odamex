@@ -20,7 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "i_http.h"
+#include "cl_http.h"
 
 #define CURL_STATICLIB
 #include "curl/curl.h"
@@ -32,8 +32,6 @@
 namespace http
 {
 
-static OTransfer* transfer = NULL;
-
 enum States
 {
 	STATE_SHUTDOWN,
@@ -41,7 +39,36 @@ enum States
 	STATE_DOWNLOADING
 };
 
+static OTransfer* transfer = NULL;
+
 static States state = STATE_SHUTDOWN;
+
+static void TransferDone(const OTransferInfo& info)
+{
+	Printf(PRINT_HIGH, "Download complete (%d).\n", info.code);
+}
+
+static void TransferError(const char* msg)
+{
+	Printf(PRINT_HIGH, "Download error (%s).\n", msg);
+}
+
+/**
+ * Start a transfer.
+ */
+static void Download()
+{
+	if (::http::state != STATE_READY)
+		return;
+
+	::http::state = STATE_DOWNLOADING;
+
+	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
+	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
+	::http::transfer->setOutputFile("udm3.wad");
+
+	::http::transfer->start();
+}
 
 void Init()
 {
@@ -65,38 +92,6 @@ void Shutdown()
 	::http::state = STATE_SHUTDOWN;
 }
 
-/**
- * @brief Gets the latest curl error message.
- *
- * @return Returns a pointer to a static string with an error message, or
- *         NULL if there was no error.
- */
-const char* GetCURLMessage()
-{
-	CURLcode msg = CURLE_OK;
-	::http::transfer->getMessage(&msg);
-	if (msg == CURLE_OK)
-		return NULL;
-	return curl_easy_strerror(msg);
-}
-
-/**
- * Start a transfer.
- */
-bool Download()
-{
-	if (::http::state != STATE_READY)
-		return false;
-
-	::http::state = STATE_DOWNLOADING;
-
-	::http::transfer = new OTransfer();
-	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
-	::http::transfer->setOutputFile("udm3.wad");
-
-	bool started = ::http::transfer->start();
-}
-
 void Tick()
 {
 	if (::http::state != STATE_DOWNLOADING)
@@ -105,41 +100,19 @@ void Tick()
 	if (::http::transfer == NULL)
 		return;
 
-	int running = ::http::transfer->tick();
-	if (running < 1)
+	if (!::http::transfer->tick())
 	{
-		// Was the download successful?
-		const char* msg = GetCURLMessage();
-		if (msg)
-			Printf(PRINT_HIGH, "Download finished (%s).\n", msg);
-		else
-			Printf(PRINT_HIGH, "Download successful.\n");
-
-		// Clean up and prepare for the next one.
+		// Transfer is done ticking - clean it up and prepare for the next one.
 		delete ::http::transfer;
 		::http::transfer = NULL;
 		::http::state = STATE_READY;
-
-		return;
 	}
-
-	OTransferProgress prog = ::http::transfer->getProgress();
-	Printf(PRINT_HIGH, "Transfer is active (%d, %zd, %zd) ", running, prog.dlnow,
-	       prog.dltotal);
-
-	CURLcode code;
-	int messages = ::http::transfer->getMessage(&code);
-	if (messages > 0)
-		Printf(PRINT_HIGH, "%d, %d\n", messages, code);
 }
 
 } // namespace http
 
 BEGIN_COMMAND(download)
 {
-	if (::http::Download())
-		Printf(PRINT_HIGH, "Download starting...\n");
-	else
-		Printf(PRINT_HIGH, "Download did not start (%s).\n", ::http::GetCURLMessage());
+	http::Download();
 }
 END_COMMAND(download)
