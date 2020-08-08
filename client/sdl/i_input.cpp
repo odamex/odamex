@@ -49,8 +49,6 @@
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
-#define JOY_DEADZONE 6000
-
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool nomouse = false;

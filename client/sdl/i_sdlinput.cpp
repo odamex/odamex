@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomtype.h"
+#include "c_cvars.h"
 #include "i_sdl.h" 
 #include "i_input.h"
 #include "i_sdlinput.h"
@@ -33,6 +34,7 @@
 
 static const int MAX_SDL_EVENTS_PER_TIC = 8192;
 
+EXTERN_CVAR(joy_deadzone)
 
 // ============================================================================
 //
@@ -689,9 +691,10 @@ void ISDL12JoystickInputDevice::gatherEvents()
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
 			{
+				float deadzone = (joy_deadzone * 32767);
 				event_t motion_event(ev_joystick);
 				motion_event.data2 = sdl_ev.jaxis.axis;
-				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
+				if ((sdl_ev.jaxis.value >= deadzone || (sdl_ev.jaxis.value <= -deadzone))
 					motion_event.data3 = sdl_ev.jaxis.value;
 				mEvents.push(motion_event);
 			}
@@ -1648,10 +1651,11 @@ void ISDL20JoystickInputDevice::gatherEvents()
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
 			{
+				float deadzone = (joy_deadzone * 32767);
 				event_t motion_event(ev_joystick);
 				motion_event.type = ev_joystick;
 				motion_event.data2 = sdl_ev.jaxis.axis;
-				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
+				if ((sdl_ev.jaxis.value >= deadzone) || (sdl_ev.jaxis.value <= -deadzone))
 					motion_event.data3 = sdl_ev.jaxis.value;
 				mEvents.push(motion_event);
 			}

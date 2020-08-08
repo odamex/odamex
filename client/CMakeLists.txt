@@ -42,7 +42,11 @@ endif()
 
 # Include console folders if compiling homebrews
 if (GCONSOLE)
-  if (VWII)
+  if (SWITCH_LIBNX)
+    set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} switch/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} switch/*.cpp)
+  elseif (VWII)
     set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
     file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
     file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
@@ -226,6 +230,9 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex winmm wsock32 Shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  elseif(SWITCH_LIBNX)
+  target_link_libraries(odamex -L$ENV{DEVKITPRO}/libnx/lib -L$ENV{DEVKITPRO}/portlibs/switch/lib)
+    target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   elseif(VWII)
     # Ch0wW : this is UGLY, please fix it ASAP !!
     target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
@@ -305,7 +312,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
-
+  elseif(SWITCH_LIBNX)
+    add_custom_command( TARGET odamex POST_BUILD
+       COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
+       COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.nacp )
   elseif(VWII)
     message(${CMAKE_BINARY_DIR})
     add_custom_command( TARGET odamex POST_BUILD

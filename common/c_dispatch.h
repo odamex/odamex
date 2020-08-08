@@ -120,7 +120,8 @@ protected:
 #define ACTION_MOVEUP		15
 #define ACTION_JUMP			16
 #define ACTION_SHOWSCORES	17
-#define NUM_ACTIONS			18
+#define ACTION_FASTTURN		18
+#define NUM_ACTIONS			19
 
 extern byte Actions[NUM_ACTIONS];
 

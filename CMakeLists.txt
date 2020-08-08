@@ -39,7 +39,10 @@ set(PROJECT_COPYRIGHT "2006-2020")
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(VWII)
+# Include early required commands for specific systems
+if (SWITCH_LIBNX)
+	include("switch.cmake" REQUIRED)  # Nintendo Switch
+elseif(VWII)
   include("wii.cmake" REQUIRED)     # Wii/vWii
 endif()
 
@@ -108,7 +111,7 @@ macro(global_compile_options)
 
     set(CMAKE_CXX_FLAGS_DEBUG "${GLOBAL_CXX_FLAGS} -g")
     set(CMAKE_CXX_FLAGS_RELEASE "${GLOBAL_CXX_FLAGS} -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${GLOBAL_CXX_FLAGS} -g -DNDEBUG -O2")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${GLOBAL_CXX_FLAGS} -g -DNDEBUG -O2 -fexceptions")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "${GLOBAL_CXX_FLAGS} -DNDEBUG -Os")
 
     if(USE_STATIC_STDLIB)
@@ -154,6 +157,10 @@ macro(define_platform)
     add_definitions(-DOSX -DUNIX )
   elseif(SOLARIS)
     add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
+  elseif(SWITCH_LIBNX)
+    add_definitions(-D__SWITCH__ -DUNIX -D__ARM_NEON__ -DGCONSOLE)
+    include_directories("$ENV{DEVKITPRO}/libnx/include")
+    include_directories("$ENV{PORTLIBS_PREFIX}/include")
   elseif(VWII)
     add_definitions(-DGEKKO -DUNIX -DNOASM -DGCONSOLE -DUSE_PNG)
     include_directories("$ENV{DEVKITPRO}/libogc/include")
@@ -180,6 +187,14 @@ git_describe(GIT_DESCRIBE --tags --always)
 
 # Libraries
 add_subdirectory(libraries)
+
+# We have to include AGAIN this... Why ? I have no idea !
+if(SWITCH_LIBNX)
+   add_definitions(-D__SWITCH__ -DUNIX -D__ARM_NEON__ -DGCONSOLE)
+   include_directories("$ENV{DEVKITPRO}/libnx/include")
+   include_directories("$ENV{PORTLIBS_PREFIX}/include")
+   include_directories("libraries/sse2neon")
+endif()
 
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER)

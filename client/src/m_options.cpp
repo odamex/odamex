@@ -143,8 +143,10 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastsensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
+EXTERN_CVAR (joy_deadzone)
 
 // Network Options
 EXTERN_CVAR (cl_interp)
@@ -319,6 +321,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
+	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
@@ -454,6 +457,8 @@ static menuitem_t JoystickItems[] =
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},

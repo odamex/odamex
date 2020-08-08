@@ -158,6 +158,8 @@ void D_SetPlatform(void)
 		platform = PF_XBOX;
 	#elif GEKKO
 		platform = PF_WII;
+	#elif __SWITCH__
+		platform = PF_SWITCH;
 	#else
 		platform = PF_UNKNOWN;
 	#endif
