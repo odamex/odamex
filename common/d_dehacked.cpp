@@ -528,12 +528,15 @@ static int PatchText (int);
 static int PatchStrings (int);
 static int PatchPars (int);
 static int PatchCodePtrs (int);
+static int PatchMusic (int);
 static int DoInclude (int);
 
 static const struct {
 	const char *name;
 	int (*func)(int);
 } Modes[] = {
+	// https://eternity.youfailit.net/wiki/DeHackEd_/_BEX_Reference
+
 	// These appear in .deh and .bex files
 	{ "Thing",		PatchThing },
 	{ "Sound",		PatchSound },
@@ -550,6 +553,8 @@ static const struct {
 	{ "[STRINGS]",	PatchStrings },
 	{ "[PARS]",		PatchPars },
 	{ "[CODEPTR]",	PatchCodePtrs },
+	// Eternity engine added a few more features to BEX
+	{ "[MUSIC]",	PatchMusic },
 	{ NULL, NULL},
 };
 
@@ -1383,7 +1388,6 @@ static int PatchMisc (int dummy)
 static int PatchPars (int dummy)
 {
 	char *space, mapname[8], *moredata;
-	level_info_t *info;
 	int result, par;
 
 	DPrintf ("[Pars]\n");
@@ -1421,12 +1425,15 @@ static int PatchPars (int dummy)
 			par = atoi (space);
 		}
 
-		if (!(info = FindLevelInfo (mapname)) ) {
+		LevelInfos& levels = getLevelInfos();
+		level_pwad_info_t& info = levels.findByName(mapname);
+
+		if (!info.exists()) {
 			DPrintf ("No map %s\n", mapname);
 			continue;
 		}
 
-		info->partime = par;
+		info.partime = par;
 		DPrintf ("Par for %s changed to %d\n", mapname, par);
 	}
 	return result;
@@ -1471,8 +1478,32 @@ static int PatchCodePtrs (int dummy)
 	return result;
 }
 
+static int PatchMusic (int dummy)
+{
+	int result;
+	char keystring[128];
+
+	DPrintf ("[Music]\n");
+
+	while ((result = GetLine()) == 1)
+	{
+		const char* newname = skipwhite(Line2);
+
+		snprintf(keystring, ARRAY_LENGTH(keystring), "MUSIC_%s", Line1);
+		if (GStrings.hasString(keystring))
+		{
+			GStrings.setString(keystring, newname);
+			DPrintf ("Music %s set to:\n%s\n", keystring, newname);
+		}
+	}
+
+	return result;
+}
+
 static int PatchText (int oldSize)
 {
+	LevelInfos& levels = getLevelInfos();
+
 	int newSize;
 	char *oldStr;
 	char *newStr;
@@ -1480,6 +1511,7 @@ static int PatchText (int oldSize)
 	BOOL good;
 	int result;
 	int i;
+	const OString* name = NULL;
 
 	// Skip old size, since we already know it
 	temp = Line2;
@@ -1540,17 +1572,16 @@ static int PatchText (int oldSize)
 	if (oldSize < 7)
 	{		// Music names are never >6 chars
 		char musname[9];
-		level_info_t *info = LevelInfos;
-		sprintf (musname, "d_%s", oldStr);
+		snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
 
-		while (info->level_name)
+		for (size_t i = 0; i < levels.size(); i++)
 		{
-			if (stricmp (info->music, musname) == 0)
+			level_pwad_info_t& level = levels.at(0);
+			if (stricmp(level.music, musname) == 0)
 			{
 				good = true;
-				strcpy (info->music, musname);
+				uppercopy(level.music, musname);
 			}
-			info++;
 		}
 	}
 
@@ -1558,10 +1589,10 @@ static int PatchText (int oldSize)
 		goto donewithtext;
 	
 	// Search through most other texts
-	i = GStrings.MatchString (oldStr);
-	if (i != -1)
+	name = &GStrings.matchString(oldStr);
+	if (name != NULL && !name->empty())
 	{
-		GStrings.SetString (i, newStr);
+		GStrings.setString(*name, newStr);
 		good = true;
 	}
 
@@ -1619,28 +1650,28 @@ static int PatchStrings (int dummy)
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		i = GStrings.FindString (Line1);
-
+		i = GStrings.toIndex(Line1);
 		if (i == -1)
 		{
 			Printf (PRINT_HIGH,"Unknown string: %s\n", Line1);
 		}
 		else
 		{
+
 			ReplaceSpecialChars (holdstring);
-			if ((i >= OB_SUICIDE && i <= OB_DEFAULT &&
-				strstr (holdstring, "%o") == NULL) ||
-				(i >= OB_FRIENDLY1 && i <= OB_FRIENDLY4 &&
-				strstr (holdstring, "%k") == NULL))
+			if ((i >= GStrings.toIndex(OB_SUICIDE) && i <= GStrings.toIndex(OB_DEFAULT) &&
+			     strstr(holdstring, "%o") == NULL) ||
+			    (i >= GStrings.toIndex(OB_FRIENDLY1) && i <= GStrings.toIndex(OB_FRIENDLY4) &&
+			     strstr(holdstring, "%k") == NULL))
 			{
 				int len = strlen (holdstring);
 				memmove (holdstring+3, holdstring, len);
 				holdstring[0] = '%';
-				holdstring[1] = i <= OB_DEFAULT ? 'o' : 'k';
+				holdstring[1] = i <= GStrings.toIndex(OB_DEFAULT) ? 'o' : 'k';
 				holdstring[2] = ' ';
 				holdstring[3+len] = '.';
 				holdstring[4+len] = 0;
-				if (i >= OB_MPFIST && i <= OB_RAILGUN)
+				if (i >= GStrings.toIndex(OB_MPFIST) && i <= GStrings.toIndex(OB_RAILGUN))
 				{
 					char *spot = strstr (holdstring, "%s");
 					if (spot != NULL)
@@ -1649,7 +1680,7 @@ static int PatchStrings (int dummy)
 					}
 				}
 			}
-			GStrings.SetString (i, holdstring);
+			GStrings.setString(Line1, holdstring);
 			DPrintf ("%s set to:\n%s\n", Line1, holdstring);
 		}
 	}

@@ -64,6 +64,7 @@
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
+#include "m_wdlstats.h"
 
 #include <algorithm>
 #include <sstream>
@@ -4311,7 +4312,7 @@ void SV_WinCheck (void)
 		shotclock--;
 
 		if (!shotclock)
-			G_ExitLevel (0, 1);
+			G_ExitLevel(0, 1);
 	}
 }
 
@@ -4560,6 +4561,8 @@ void SV_TimelimitCheck()
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
 		}
+
+		M_CommitWDLLog();
 	}
 
 	shotclock = TICRATE*2;
@@ -4924,23 +4927,41 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
 	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
 	const char* message = NULL;
-	int messagenum = 0;
+	OString messagename;
 
 	switch (mod)
 	{
-		case MOD_SUICIDE:		messagenum = OB_SUICIDE;	break;
-		case MOD_FALLING:		messagenum = OB_FALLING;	break;
-		case MOD_CRUSH:			messagenum = OB_CRUSH;		break;
-		case MOD_EXIT:			messagenum = OB_EXIT;		break;
-		case MOD_WATER:			messagenum = OB_WATER;		break;
-		case MOD_SLIME:			messagenum = OB_SLIME;		break;
-		case MOD_LAVA:			messagenum = OB_LAVA;		break;
-		case MOD_BARREL:		messagenum = OB_BARREL;		break;
-		case MOD_SPLASH:		messagenum = OB_SPLASH;		break;
+	case MOD_SUICIDE:
+		messagename = OB_SUICIDE;
+		break;
+	case MOD_FALLING:
+		messagename = OB_FALLING;
+		break;
+	case MOD_CRUSH:
+		messagename = OB_CRUSH;
+		break;
+	case MOD_EXIT:
+		messagename = OB_EXIT;
+		break;
+	case MOD_WATER:
+		messagename = OB_WATER;
+		break;
+	case MOD_SLIME:
+		messagename = OB_SLIME;
+		break;
+	case MOD_LAVA:
+		messagename = OB_LAVA;
+		break;
+	case MOD_BARREL:
+		messagename = OB_BARREL;
+		break;
+	case MOD_SPLASH:
+		messagename = OB_SPLASH;
+		break;
 	}
 
-	if (messagenum)
-		message = GStrings(messagenum);
+	if (!messagename.empty())
+		message = GStrings(messagename);
 
 	if (attacker && message == NULL)
 	{
@@ -4948,11 +4969,17 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		{
 			switch (mod)
 			{
-			case MOD_R_SPLASH:	messagenum = OB_R_SPLASH;		break;
-			case MOD_ROCKET:	messagenum = OB_ROCKET;			break;
-			default:			messagenum = OB_KILLEDSELF;		break;
+			case MOD_R_SPLASH:
+				messagename = OB_R_SPLASH;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_ROCKET;
+				break;
+			default:
+				messagename = OB_KILLEDSELF;
+				break;
 			}
-			message = GStrings(messagenum);
+			message = GStrings(messagename);
 		}
 		else if (!attacker->player)
 		{
@@ -4961,25 +4988,25 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				switch (attacker->type)
 				{
 					case MT_UNDEAD:
-						messagenum = OB_UNDEADHIT;
+						messagename = OB_UNDEADHIT;
 						break;
 					case MT_TROOP:
-						messagenum = OB_IMPHIT;
+						messagename = OB_IMPHIT;
 						break;
 					case MT_HEAD:
-						messagenum = OB_CACOHIT;
+						messagename = OB_CACOHIT;
 						break;
 					case MT_SERGEANT:
-						messagenum = OB_DEMONHIT;
+						messagename = OB_DEMONHIT;
 						break;
 					case MT_SHADOWS:
-						messagenum = OB_SPECTREHIT;
+						messagename = OB_SPECTREHIT;
 						break;
 					case MT_BRUISER:
-						messagenum = OB_BARONHIT;
+						messagename = OB_BARONHIT;
 						break;
 					case MT_KNIGHT:
-						messagenum = OB_KNIGHTHIT;
+						messagename = OB_KNIGHTHIT;
 						break;
 					default:
 						break;
@@ -4989,27 +5016,58 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 			{
 				switch (attacker->type)
 				{
-					case MT_POSSESSED:	messagenum = OB_ZOMBIE;		break;
-					case MT_SHOTGUY:	messagenum = OB_SHOTGUY;	break;
-					case MT_VILE:		messagenum = OB_VILE;		break;
-					case MT_UNDEAD:		messagenum = OB_UNDEAD;		break;
-					case MT_FATSO:		messagenum = OB_FATSO;		break;
-					case MT_CHAINGUY:	messagenum = OB_CHAINGUY;	break;
-					case MT_SKULL:		messagenum = OB_SKULL;		break;
-					case MT_TROOP:		messagenum = OB_IMP;		break;
-					case MT_HEAD:		messagenum = OB_CACO;		break;
-					case MT_BRUISER:	messagenum = OB_BARON;		break;
-					case MT_KNIGHT:		messagenum = OB_KNIGHT;		break;
-					case MT_SPIDER:		messagenum = OB_SPIDER;		break;
-					case MT_BABY:		messagenum = OB_BABY;		break;
-					case MT_CYBORG:		messagenum = OB_CYBORG;		break;
-					case MT_WOLFSS:		messagenum = OB_WOLFSS;		break;
-					default:break;
+				case MT_POSSESSED:
+					messagename = OB_ZOMBIE;
+					break;
+				case MT_SHOTGUY:
+					messagename = OB_SHOTGUY;
+					break;
+				case MT_VILE:
+					messagename = OB_VILE;
+					break;
+				case MT_UNDEAD:
+					messagename = OB_UNDEAD;
+					break;
+				case MT_FATSO:
+					messagename = OB_FATSO;
+					break;
+				case MT_CHAINGUY:
+					messagename = OB_CHAINGUY;
+					break;
+				case MT_SKULL:
+					messagename = OB_SKULL;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMP;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACO;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARON;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHT;
+					break;
+				case MT_SPIDER:
+					messagename = OB_SPIDER;
+					break;
+				case MT_BABY:
+					messagename = OB_BABY;
+					break;
+				case MT_CYBORG:
+					messagename = OB_CYBORG;
+					break;
+				case MT_WOLFSS:
+					messagename = OB_WOLFSS;
+					break;
+				default:
+					break;
 				}
 			}
 
-			if (messagenum)
-				message = GStrings(messagenum);
+			if (!messagename.empty())
+				message = GStrings(messagename);
 		}
 	}
 
@@ -5026,29 +5084,55 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		if (friendly)
 		{
 			gender = attacker->player->userinfo.gender;
-			messagenum = OB_FRIENDLY1 + (P_Random() & 3);
+			messagename = GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
 		}
 		else
 		{
 			switch (mod)
 			{
-				case MOD_FIST:			messagenum = OB_MPFIST;			break;
-				case MOD_CHAINSAW:		messagenum = OB_MPCHAINSAW;		break;
-				case MOD_PISTOL:		messagenum = OB_MPPISTOL;		break;
-				case MOD_SHOTGUN:		messagenum = OB_MPSHOTGUN;		break;
-				case MOD_SSHOTGUN:		messagenum = OB_MPSSHOTGUN;		break;
-				case MOD_CHAINGUN:		messagenum = OB_MPCHAINGUN;		break;
-				case MOD_ROCKET:		messagenum = OB_MPROCKET;		break;
-				case MOD_R_SPLASH:		messagenum = OB_MPR_SPLASH;		break;
-				case MOD_PLASMARIFLE:	messagenum = OB_MPPLASMARIFLE;	break;
-				case MOD_BFG_BOOM:		messagenum = OB_MPBFG_BOOM;		break;
-				case MOD_BFG_SPLASH:	messagenum = OB_MPBFG_SPLASH;	break;
-				case MOD_TELEFRAG:		messagenum = OB_MPTELEFRAG;		break;
-				case MOD_RAILGUN:		messagenum = OB_RAILGUN;		break;
+			case MOD_FIST:
+				messagename = OB_MPFIST;
+				break;
+			case MOD_CHAINSAW:
+				messagename = OB_MPCHAINSAW;
+				break;
+			case MOD_PISTOL:
+				messagename = OB_MPPISTOL;
+				break;
+			case MOD_SHOTGUN:
+				messagename = OB_MPSHOTGUN;
+				break;
+			case MOD_SSHOTGUN:
+				messagename = OB_MPSSHOTGUN;
+				break;
+			case MOD_CHAINGUN:
+				messagename = OB_MPCHAINGUN;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_MPROCKET;
+				break;
+			case MOD_R_SPLASH:
+				messagename = OB_MPR_SPLASH;
+				break;
+			case MOD_PLASMARIFLE:
+				messagename = OB_MPPLASMARIFLE;
+				break;
+			case MOD_BFG_BOOM:
+				messagename = OB_MPBFG_BOOM;
+				break;
+			case MOD_BFG_SPLASH:
+				messagename = OB_MPBFG_SPLASH;
+				break;
+			case MOD_TELEFRAG:
+				messagename = OB_MPTELEFRAG;
+				break;
+			case MOD_RAILGUN:
+				messagename = OB_RAILGUN;
+				break;
 			}
 		}
-		if (messagenum)
-			message = GStrings(messagenum);
+		if (!messagename.empty())
+			message = GStrings(messagename);
 	}
 
 	if (message && attacker && attacker->player)

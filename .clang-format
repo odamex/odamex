@@ -1,0 +1,6 @@
+---
+BasedOnStyle: Microsoft
+ColumnLimit: 90
+IndentWidth: 4
+PointerAlignment: Left
+UseTab: ForIndentation

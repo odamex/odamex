@@ -53,6 +53,7 @@
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
+#include "m_wdlstats.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -196,11 +197,12 @@ void G_InitNew (const char *mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < wadlevelinfos.size(); i++)
-			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
-
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
-			LevelInfos[i].flags &= ~LEVEL_VISITED;
+		LevelInfos& levels = getLevelInfos();
+		for (size_t i = 0; i < levels.size(); i++)
+		{
+			level_pwad_info_t& level = levels.at(i);
+			level.flags &= ~LEVEL_VISITED;
+		}
 	}
 
 	cvar_t::UnlatchCVars ();
@@ -272,6 +274,9 @@ void G_InitNew (const char *mapname)
 	
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	// [AM}] WDL stats (for testing purposes)
+	M_StartWDLLog();
 }
 
 //
@@ -284,18 +289,22 @@ extern BOOL		NoWipe;		// [RH] Don't wipe when travelling in hubs
 // [RH] The position parameter to these next three functions should
 //		match the first parameter of the single player start spots
 //		that should appear in the next map.
-static void goOn (int position)
+static void goOn(int position)
 {
-	cluster_info_t *thiscluster = FindClusterInfo (level.cluster);
-	cluster_info_t *nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
+	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
+	cluster_info_t& nextcluster = clusters.findByCluster(levels.findByName(level.nextmap).cluster);
 
 	startpos = position;
 	gameaction = ga_completed;
 
-	if (thiscluster && (thiscluster->flags & CLUSTER_HUB))
+	if (thiscluster.cluster != 0 && (thiscluster.flags & CLUSTER_HUB))
 	{
-		if ((level.flags & LEVEL_NOINTERMISSION) || (nextcluster == thiscluster))
+		if ((level.flags & LEVEL_NOINTERMISSION) || (nextcluster.cluster == thiscluster.cluster))
+		{
 			NoWipe = 4;
+		}
 		D_DrawIcon = "TELEICON";
 	}
 }
@@ -341,7 +350,9 @@ void G_DoCompleted (void)
 
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
-		FindLevelInfo (level.mapname)->flags |= LEVEL_VISITED;
+	{
+		getLevelInfos().findByName(level.mapname).flags |= LEVEL_VISITED;
+	}
 
 	AM_Stop();
 
@@ -356,23 +367,30 @@ void G_DoCompleted (void)
 	strncpy (wminfo.lname0, level.info->pname, 8);
 	strncpy (wminfo.current, level.mapname, 8);
 
-	if (sv_gametype != GM_COOP &&
-		!(level.flags & LEVEL_CHANGEMAPCHEAT)) {
+	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
+	{
 		strncpy (wminfo.next, level.mapname, 8);
 		strncpy (wminfo.lname1, level.info->pname, 8);
-	} else {
+	}
+	else
+	{
 		wminfo.next[0] = 0;
-		if (secretexit) {
-			if (W_CheckNumForName (level.secretmap) != -1) {
-				strncpy (wminfo.next, level.secretmap, 8);
-				strncpy (wminfo.lname1, FindLevelInfo (level.secretmap)->pname, 8);
-			} else {
+		if (secretexit)
+		{
+			if (W_CheckNumForName (level.secretmap) != -1)
+			{
+				strncpy(wminfo.next, level.secretmap, 8);
+				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname, 8);
+			}
+			else
+			{
 				secretexit = false;
 			}
 		}
-		if (!wminfo.next[0]) {
-			strncpy (wminfo.next, level.nextmap, 8);
-			strncpy (wminfo.lname1, FindLevelInfo (level.nextmap)->pname, 8);
+		if (!wminfo.next[0])
+		{
+			strncpy(wminfo.next, level.nextmap, 8);
+			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname, 8);
 		}
 	}
 
@@ -405,17 +423,19 @@ void G_DoCompleted (void)
 	//		the player and clear the world vars. If this is just an
 	//		ordinary cluster (not a hub), take stuff from the player, but
 	//		leave the world vars alone.
+	LevelInfos& levels= getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
 	{
-		cluster_info_t *thiscluster = FindClusterInfo (level.cluster);
-		cluster_info_t *nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
+		cluster_info_t& thiscluster = clusters.findByCluster(::level.cluster);
+		cluster_info_t& nextcluster = clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (thiscluster != nextcluster || sv_gametype == GM_DM || !(thiscluster->flags & CLUSTER_HUB))
+		if (&thiscluster != &nextcluster || sv_gametype == GM_DM || !(thiscluster.flags & CLUSTER_HUB))
 		{
 			for (Players::iterator it = players.begin();it != players.end();++it)
 				if (it->ingame())
 					G_PlayerFinishLevel(*it); // take away cards and stuff
 
-			if (nextcluster->flags & CLUSTER_HUB) {
+			if (nextcluster.flags & CLUSTER_HUB) {
 				memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 				P_RemoveDefereds ();
 				G_ClearSnapshots ();
@@ -426,19 +446,30 @@ void G_DoCompleted (void)
 			G_SnapshotLevel ();
 		}
 
-		if (!(nextcluster->flags & CLUSTER_HUB) || !(thiscluster->flags & CLUSTER_HUB))
+		if (!(nextcluster.flags & CLUSTER_HUB) || !(thiscluster.flags & CLUSTER_HUB))
 		{
 			level.time = 0;	// Reset time to zero if not entering/staying in a hub
 			level.timeleft = 0;
 			//level.inttimeleft = 0;
 		}
 
-		if (sv_gametype != GM_DM &&
-			(((level.flags & LEVEL_NOINTERMISSION) && ((level.flags & LEVEL_EPISODEENDHACK) && (!multiplayer || demoplayback || demorecording))) ||
-			((nextcluster == thiscluster) && (thiscluster->flags & CLUSTER_HUB))))
+		if (sv_gametype == GM_COOP)
 		{
-			G_WorldDone();
-			return;
+			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
+			{
+				if (!multiplayer || demoplayback || demorecording)
+				{
+					// Normal progression
+					G_WorldDone();
+					return;
+				}
+			}
+			else if (&nextcluster == &thiscluster && thiscluster.flags & CLUSTER_HUB)
+			{
+				// Cluster progression
+				G_WorldDone();
+				return;
+			}
 		}
 	}
 
@@ -622,8 +653,8 @@ void G_DoLoadLevel (int position)
 //
 void G_WorldDone (void)
 {
-	cluster_info_t *nextcluster;
-	cluster_info_t *thiscluster;
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
 
 	gameaction = ga_worlddone;
 
@@ -632,31 +663,66 @@ void G_WorldDone (void)
 	if (level.flags & LEVEL_CHANGEMAPCHEAT)
 		return;
 
-	thiscluster = FindClusterInfo (level.cluster);
-	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))
+	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
+
+	// Sort out default options to pass to F_StartFinale
+	finale_options_t options = { 0 };
+	options.music = thiscluster.messagemusic;
+	options.music = thiscluster.exittext;
+	if (thiscluster.finalepic[0] != '\0')
 	{
-		AM_Stop();
-		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext);
+		options.pic = &thiscluster.finalepic[0];
 	}
 	else
 	{
-		if (!secretexit)
-			nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
-		else
-			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
+		options.flat = &thiscluster.finaleflat[0];
+	}
+	options.text = thiscluster.exittext;
 
-		if (nextcluster->cluster != level.cluster && sv_gametype == GM_COOP) {
+	if (!strncmp(level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp(level.nextmap, "E1M6", 4)))
+	{
+		AM_Stop();
+		F_StartFinale(options);
+	}
+	else
+	{
+		// Figure out if we took a secret exit.
+		cluster_info_t& nextcluster = (secretexit) ?
+			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
+			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
+
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
-			if (nextcluster->entertext)
+			if (nextcluster.entertext)
 			{
+				// All of our options need to be from the next cluster.
+				options.music = nextcluster.messagemusic;
+				if (nextcluster.finalepic[0] != '\0')
+				{
+					options.pic = &nextcluster.finalepic[0];
+				}
+				else
+				{
+					options.flat = &nextcluster.finaleflat[0];
+				}
+				options.text = nextcluster.entertext;
+
 				AM_Stop();
-				F_StartFinale (nextcluster->messagemusic, nextcluster->finaleflat, nextcluster->entertext);
+				F_StartFinale(options);
 			}
-			else if (thiscluster->exittext)
+			else if (thiscluster.exittext)
 			{
 				AM_Stop();
-				F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext);
+				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
+				{
+					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					F_StartFinale(options);
+				}
+				else
+				{
+					F_StartFinale(options);
+				}
 			}
 		}
 	}

@@ -1,0 +1,1 @@
+#cmakedefine GIT_DESCRIBE "@GIT_DESCRIBE@"

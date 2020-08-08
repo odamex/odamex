@@ -1001,8 +1001,8 @@ static value_t VidFPSCaps[] = {
 
 static value_t FullScreenOptions[] = {
 	{ WINDOW_Windowed,			"Window" },
-	{ WINDOW_DesktopFullscreen,	"Full Screen Window" },
-	{ WINDOW_Fullscreen,		"Full Screen Exclusive" }
+	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
+	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
 
@@ -1064,7 +1064,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
 
-    const char** str = NULL;
+	char** str = NULL;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1093,7 +1093,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 			}
 			else
 			{
-				*str = NULL;
+				str = NULL;
 			}
 		}
 	}

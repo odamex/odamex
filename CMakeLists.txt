@@ -13,18 +13,26 @@ include(GNUInstallDirs OPTIONAL)
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
+if(WIN32)
+  set(USE_INTERNAL_LIBS 1)
+else()
+  set(USE_INTERNAL_LIBS 0)
+endif()
+
 # options
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
 option(BUILD_MASTER "Build master server target" 1)
 option(BUILD_ODALAUNCH "Build odalaunch target" 1)
+cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
 cmake_minimum_required(VERSION 3.1)
 
-set(PROJECT_VERSION 0.8.2)
+set(PROJECT_VERSION 0.8.3)
 set(PROJECT_COPYRIGHT "2006-2020")
 
 # Use C++ 98/03 for all targets
@@ -170,17 +178,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 include(GetGitRevisionDescription)
 git_describe(GIT_DESCRIBE --tags --always)
 
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_INSTALL OFF CACHE INTERNAL "" FORCE)
-  mark_as_advanced(FORCE UPNPC_INSTALL)
-  add_subdirectory(libraries/libminiupnpc)
-endif()
+# Libraries
+add_subdirectory(libraries)
 
 # Subdirectories for Odamex projects
+if(BUILD_CLIENT OR BUILD_SERVER)
+  add_subdirectory(common)
+endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
 endif()

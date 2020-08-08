@@ -84,7 +84,7 @@ ticcmd_t *I_BaseTiccmd (void);
 void STACK_ARGS I_Quit (void);
 
 void STACK_ARGS I_Error (const char *error, ...);
-void STACK_ARGS I_FatalError (const char *error, ...);
+NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
@@ -130,6 +130,3 @@ int I_FindAttr (findstate_t *fileinfo);
 #define FA_ARCH		16
 
 #endif
-
-
-

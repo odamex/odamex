@@ -44,8 +44,8 @@ enum EDisplayType
 enum EWindowMode
 {
 	WINDOW_Windowed = 0,
-	WINDOW_DesktopFullscreen = 1,
-	WINDOW_Fullscreen = 2,
+	WINDOW_Fullscreen = 1,
+	WINDOW_DesktopFullscreen = 2,
 };
 
 
