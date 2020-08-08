@@ -1839,10 +1839,6 @@ static bool C_HandleKey(const event_t* ev)
 
 	switch (ch)
 	{
-	case KEY_TAB:
-		// Try to do tab-completion
-		C_TabComplete();
-		return true;
 	case KEY_HOME:
 		CmdLine.moveCursorHome();
 		return true;
