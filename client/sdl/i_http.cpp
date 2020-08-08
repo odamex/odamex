@@ -27,150 +27,12 @@
 
 #include "c_dispatch.h"
 #include "i_system.h"
+#include "otransfer.h"
 
 namespace http
 {
 
-struct TransferProgress
-{
-	ptrdiff_t dltotal;
-	ptrdiff_t dlnow;
-	TransferProgress() : dltotal(0), dlnow(0)
-	{
-	}
-};
-
-struct TransferInfo
-{
-};
-
-class Transfer
-{
-	CURLM* _curlm;
-	CURL* _curl;
-	FILE* _file;
-	TransferProgress _progress;
-
-	Transfer(const Transfer&);
-
-	//
-	// https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
-	//
-	static void curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-	                            curl_off_t ultotal, curl_off_t ulnow)
-	{
-		Printf(PRINT_HIGH, "%s\n", __FUNCTION__);
-		static_cast<Transfer*>(thisp)->_progress.dltotal = dltotal;
-		static_cast<Transfer*>(thisp)->_progress.dlnow = dlnow;
-	}
-
-	//
-	// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
-	//
-	static void curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-	                      void* userptr)
-	{
-		Printf(PRINT_HIGH, "%s\n", __FUNCTION__);
-	}
-
-  public:
-	Transfer()
-	    : _curlm(curl_multi_init()), _curl(curl_easy_init()), _file(NULL),
-	      _progress(TransferProgress())
-	{
-	}
-
-	~Transfer()
-	{
-		if (_file != NULL)
-			fclose(_file);
-		curl_multi_remove_handle(_curlm, _curl);
-		curl_easy_cleanup(_curl);
-		curl_multi_cleanup(_curlm);
-	}
-
-	/**
-	 * @brief Set the source URL of the transfer.
-	 *
-	 * @param src Source URL, complete with protocol.
-	 */
-	void setURL(const char* src)
-	{
-		CURLcode err;
-		err = curl_easy_setopt(_curl, CURLOPT_URL, src);
-	}
-
-	/**
-	 * @brief Set the destination file of the transfer.
-	 *
-	 * @param dest Destination file path, passed to fopen.
-	 * @return True if the output file was set successfully, otherwise false.
-	 */
-	bool setOutputFile(const char* dest)
-	{
-		_file = fopen(dest, "wb+");
-		if (_file == NULL)
-			return false;
-
-		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, _file);
-		return true;
-	}
-
-	/**
-	 * @brief Start the transfer.
-	 *
-	 * @return True if the transfer was started, or false if the transfer
-	 *         stopped after the initial perform.
-	 */
-	bool start()
-	{
-		curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, Transfer::curlSetProgress);
-		curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
-		curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, Transfer::curlDebug);
-		curl_easy_setopt(_curl, CURLOPT_DEBUGDATA, this);
-		curl_multi_add_handle(_curlm, _curl);
-
-		int running;
-		curl_multi_perform(_curlm, &running);
-		return running > 0;
-	}
-
-	void stop()
-	{
-		curl_multi_remove_handle(_curlm, _curl);
-	}
-
-	int tick()
-	{
-		int running;
-		curl_multi_perform(_curlm, &running);
-		return running;
-	}
-
-	void getInfo()
-	{
-		long resCode;
-		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &resCode);
-	}
-
-	int getMessage(CURLcode* code)
-	{
-		int queuelen;
-		CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
-		if (msg == NULL)
-			return 0;
-
-		*code = msg->data.result;
-		return queuelen;
-	}
-
-	TransferProgress getProgress() const
-	{
-		return _progress;
-	}
-};
-
-static Transfer* transfer = NULL;
+static OTransfer* transfer = NULL;
 
 enum States
 {
@@ -228,7 +90,7 @@ bool Download()
 
 	::http::state = STATE_DOWNLOADING;
 
-	::http::transfer = new Transfer();
+	::http::transfer = new OTransfer();
 	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
 	::http::transfer->setOutputFile("udm3.wad");
 
@@ -261,7 +123,7 @@ void Tick()
 		return;
 	}
 
-	TransferProgress prog = ::http::transfer->getProgress();
+	OTransferProgress prog = ::http::transfer->getProgress();
 	Printf(PRINT_HIGH, "Transfer is active (%d, %zd, %zd) ", running, prog.dlnow,
 	       prog.dltotal);
 
