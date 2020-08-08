@@ -21,35 +21,50 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
 ### libcurl ###
 
-set(CURL_LIBRARY
-  "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl-d${libsuffix}")
+if(USE_INTERNAL_CURL)
+  # [AM] Don't put an early return in this block, otherwise you run the risk
+  #      of changes in the build cache not percolating down to the library.
 
-# Build the library as an ExternalProject.
-ExternalProject_Add(curl-project
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/curl"
-  CMAKE_ARGS
-  "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-  "-DCMAKE_LINKER=${CMAKE_LINKER}"
-  "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-  "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-  "-DBUILD_CURL_EXE=OFF"
-  "-DBUILD_SHARED_LIBS=OFF"
-  "-DCMAKE_USE_WINSSL=ON"
-  "-DCURL_ZLIB=OFF"
-  "-DHTTP_ONLY=ON"
-  BUILD_BYPRODUCTS ${CURL_LIBRARY}
-  EXCLUDE_FROM_ALL ON)
+  message(STATUS "Compiling internal CURL...")
 
-# Synthesize an imported target that can be linked against.
-add_library(curl STATIC IMPORTED GLOBAL)
-add_dependencies(curl curl-project)
-set_target_properties(curl PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
-  IMPORTED_LOCATION ${CURL_LIBRARY})
-if(WIN32)
-  target_link_libraries(curl INTERFACE ws2_32 crypt32)
+  # Set vars so the finder can find them.
+  set(CURL_INCLUDE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+  set(CURL_LIBRARY
+    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl-d${libsuffix}")
+
+  if(WIN32)
+    set(_COMPILE_CURL_WINSSL ON)
+  else()
+    set(_COMPILE_CURL_WINSSL OFF)
+  endif()
+
+  # Generate the build.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/curl"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
+    -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+    "-DCMAKE_LINKER=${CMAKE_LINKER}"
+    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+    "-DBUILD_CURL_EXE=OFF"
+    "-DBUILD_SHARED_LIBS=OFF"
+    "-DCMAKE_USE_WINSSL=${_COMPILE_CURL_WINSSL}"
+    "-DCURL_ZLIB=OFF"
+    "-DHTTP_ONLY=ON"
+  )
+  unset(_COMPILE_CURL_WINSSL)
+
+  # Compile the library.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build" --target install
+  )
 endif()
+
+find_package(CURL)
+set_target_properties(CURL::libcurl PROPERTIES IMPORTED_GLOBAL True)
 
 ### JsonCpp ###
 
