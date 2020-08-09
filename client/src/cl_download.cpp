@@ -97,7 +97,7 @@ struct download_s
 } download;
 
 
-extern std::string DownloadStr;
+std::string DownloadStr;
 
 // Pretty prints supplied byte amount into a string
 std::string FormatNBytes(float b)

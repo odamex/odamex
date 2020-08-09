@@ -63,6 +63,7 @@
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
+#include "cl_http.h"
 
 #include <string>
 #include <vector>
@@ -139,6 +140,7 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_website)
 
 EXTERN_CVAR (cl_predictsectors)
 
@@ -1696,9 +1698,21 @@ bool CL_PrepareConnect(void)
 			CL_QuitNetGame();
 			return false;
 		}
-		
+
+		if (sv_website.str().empty())
+		{
+			// Server forgot to set a reasonable sv_website.
+			Printf(PRINT_HIGH,
+			       "Unable to find \"%s\".  Server does not have a WAD download website "
+			       "configured.\n",
+			       missing_file.c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+
 		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());	
+		Printf(PRINT_HIGH, "Will download \"%s\" from %s\n", missing_file.c_str(),
+		       sv_website.str().c_str());
 	}
 
 	recv_full_update = false;
@@ -1722,8 +1736,17 @@ bool CL_Connect(void)
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
-	if (gamestate == GS_DOWNLOAD && missing_file.length())
-		CL_RequestDownload(missing_file, missing_hash);
+	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
+	{
+		// Ensure our website ends with a forward slash.
+		std::string buffer = sv_website.str();
+		if (*buffer.rbegin() != '/')
+			buffer += '/';
+
+		// Attach the website to the file and download it.
+		buffer += missing_file;
+		http::Download(buffer, missing_hash);
+	}
 
 	compressor.reset();
 

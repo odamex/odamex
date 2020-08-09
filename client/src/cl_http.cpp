@@ -26,6 +26,8 @@
 #include "curl/curl.h"
 
 #include "c_dispatch.h"
+#include "cl_main.h"
+#include "cmdlib.h"
 #include "i_system.h"
 #include "otransfer.h"
 
@@ -45,30 +47,22 @@ static States state = STATE_SHUTDOWN;
 
 static void TransferDone(const OTransferInfo& info)
 {
-	Printf(PRINT_HIGH, "Download complete (%d from %s @ %d bytes per second).\n", info.code, info.url, info.speed);
+	Printf(PRINT_HIGH, "Download complete (%d from %s @ %d bytes per second).\n",
+	       info.code, info.url, info.speed);
+
+	CL_QuitNetGame();
+	CL_Reconnect();
 }
 
 static void TransferError(const char* msg)
 {
 	Printf(PRINT_HIGH, "Download error (%s).\n", msg);
+	CL_QuitNetGame();
 }
 
 /**
- * Start a transfer.
+ * @brief Init the HTTP download system.
  */
-static void Download()
-{
-	if (::http::state != STATE_READY)
-		return;
-
-	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
-	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
-	::http::transfer->setOutputFile("udm3.wad");
-
-	::http::transfer->start();
-	::http::state = STATE_DOWNLOADING;
-}
-
 void Init()
 {
 	Printf(PRINT_HIGH, "http::Init: Init HTTP subsystem (libcurl %d.%d.%d)\n",
@@ -79,6 +73,9 @@ void Init()
 	::http::state = STATE_READY;
 }
 
+/**
+ * @brief Shutdown the HTTP download system completely.
+ */
 void Shutdown()
 {
 	if (::http::state == STATE_SHUTDOWN)
@@ -91,6 +88,28 @@ void Shutdown()
 	::http::state = STATE_SHUTDOWN;
 }
 
+/**
+ * @brief Start a transfer.
+ *
+ * @param file File to download.
+ * @param hash Hash of the file to download.
+ */
+void Download(const std::string& file, const std::string& hash)
+{
+	if (::http::state != STATE_READY)
+		return;
+
+	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
+	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
+	::http::transfer->setOutputFile("udm3.wad");
+
+	::http::transfer->start();
+	::http::state = STATE_DOWNLOADING;
+}
+
+/**
+ * @brief Service the download per-tick.
+ */
 void Tick()
 {
 	if (::http::state != STATE_DOWNLOADING)
@@ -107,16 +126,29 @@ void Tick()
 		::http::state = STATE_READY;
 		return;
 	}
+}
 
-	// Progress is ongoing, print some information about it.
+/**
+ * @brief Returns a progress string for the console.
+ *
+ * @return Progress string, or empty string if there is no progress.
+ */
+std::string Progress()
+{
+	std::string buffer;
+
+	if (::http::state != STATE_DOWNLOADING)
+		return buffer;
+
 	OTransferProgress progress = ::http::transfer->getProgress();
-	Printf(PRINT_HIGH, "Downloaded %d of %d...\n", progress.dlnow, progress.dltotal);
+	StrFormat(buffer, "Downloaded %d of %d...\n", progress.dlnow, progress.dltotal);
+	return buffer;
 }
 
 } // namespace http
 
 BEGIN_COMMAND(download)
 {
-	http::Download();
+	http::Download(std::string("udm3.wad"), "");
 }
 END_COMMAND(download)

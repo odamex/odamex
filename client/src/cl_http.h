@@ -23,12 +23,16 @@
 #ifndef __CL_HTTP_H__
 #define __CL_HTTP_H__
 
+#include <string>
+
 namespace http
 {
 
 void Init();
 void Shutdown();
+void Download(const std::string& file, const std::string& hash);
 void Tick();
+std::string Progress();
 
 } // namespace http
 

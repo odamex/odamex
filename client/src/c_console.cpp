@@ -43,6 +43,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
+#include "cl_http.h"
 
 #include <string>
 #include <list>
@@ -55,8 +56,6 @@
 #endif
 
 static const int MAX_LINE_LENGTH = 8192;
-
-std::string DownloadStr;
 
 static bool ShouldTabCycle = false;
 static size_t NextCycleIndex = 0;
@@ -1541,7 +1540,7 @@ void C_DrawConsole()
 
 		// Download progress bar hack
 		if (gamestate == GS_DOWNLOAD)
-			screen->PrintStr(left + 2, ConBottom - 10, DownloadStr.c_str(), CR_GRAY);
+			screen->PrintStr(left + 2, ConBottom - 10, ::http::Progress().c_str(), CR_GRAY);
 
 		if (TickerMax)
 		{
