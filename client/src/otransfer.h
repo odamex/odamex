@@ -32,6 +32,7 @@ struct OTransferProgress
 {
 	ptrdiff_t dltotal;
 	ptrdiff_t dlnow;
+
 	OTransferProgress() : dltotal(0), dlnow(0)
 	{
 	}
@@ -41,6 +42,8 @@ struct OTransferInfo
 {
 	int code;
 	curl_off_t speed;
+	const char* url;
+
 	OTransferInfo() : code(0), speed(0)
 	{
 	}
@@ -61,17 +64,17 @@ class OTransfer
 
 	OTransfer(const OTransfer&);
 
-	static void curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-	                            curl_off_t ultotal, curl_off_t ulnow);
-	static void curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-	                      void* userptr);
+	static int curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
+	                           curl_off_t ultotal, curl_off_t ulnow);
+	static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+	                     void* userptr);
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err);
 	~OTransfer();
 	void setURL(const char* src);
 	bool setOutputFile(const char* dest);
-	void start();
+	bool start();
 	void stop();
 	bool tick();
 	OTransferProgress getProgress() const;

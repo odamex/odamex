@@ -34,8 +34,13 @@ bool OTransferInfo::hydrate(CURL* curl)
 	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed) != CURLE_OK)
 		return false;
 
+	const char* url;
+	if (curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url) != CURLE_OK)
+		return false;
+
 	this->code = resCode;
 	this->speed = speed;
+	this->url = url;
 
 	return true;
 }
@@ -47,21 +52,21 @@ bool OTransferInfo::hydrate(CURL* curl)
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
 //
-void OTransfer::curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-                                curl_off_t ultotal, curl_off_t ulnow)
+int OTransfer::curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
+                               curl_off_t ultotal, curl_off_t ulnow)
 {
-	Printf(PRINT_HIGH, "%s\n", __FUNCTION__);
 	static_cast<OTransfer*>(thisp)->_progress.dltotal = dltotal;
 	static_cast<OTransfer*>(thisp)->_progress.dlnow = dlnow;
+	return 0;
 }
 
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
 //
-void OTransfer::curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-                          void* userptr)
+int OTransfer::curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+                         void* userptr)
 {
-	Printf(PRINT_HIGH, "%s\n", __FUNCTION__);
+	return 0;
 }
 
 // PUBLIC //
@@ -110,10 +115,13 @@ bool OTransfer::setOutputFile(const char* dest)
 
 /**
  * @brief Start the transfer.
+ *
+ * @return True if the transfer started properly.
  */
-void OTransfer::start()
+bool OTransfer::start()
 {
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, (long)1);
+	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, (long)0);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlSetProgress);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
 	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, OTransfer::curlDebug);
@@ -122,6 +130,29 @@ void OTransfer::start()
 
 	int running;
 	curl_multi_perform(_curlm, &running);
+	if (running < 1)
+	{
+		// Transfer isn't running right after we enabled it, error out.
+		int queuelen;
+		CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+		if (msg == NULL)
+		{
+			_errproc("CURL reports no info");
+			return false;
+		}
+
+		CURLcode code = msg->data.result;
+		if (code != CURLE_OK)
+		{
+			_errproc(curl_easy_strerror(code));
+			return false;
+		}
+
+		_errproc("CURL isn't running the transfer with no error");
+		return false;
+	}
+
+	return true;
 }
 
 /**

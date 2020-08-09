@@ -45,7 +45,7 @@ static States state = STATE_SHUTDOWN;
 
 static void TransferDone(const OTransferInfo& info)
 {
-	Printf(PRINT_HIGH, "Download complete (%d).\n", info.code);
+	Printf(PRINT_HIGH, "Download complete (%d from %s @ %d bytes per second).\n", info.code, info.url, info.speed);
 }
 
 static void TransferError(const char* msg)
@@ -61,13 +61,12 @@ static void Download()
 	if (::http::state != STATE_READY)
 		return;
 
-	::http::state = STATE_DOWNLOADING;
-
 	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
 	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
 	::http::transfer->setOutputFile("udm3.wad");
 
 	::http::transfer->start();
+	::http::state = STATE_DOWNLOADING;
 }
 
 void Init()
@@ -106,7 +105,12 @@ void Tick()
 		delete ::http::transfer;
 		::http::transfer = NULL;
 		::http::state = STATE_READY;
+		return;
 	}
+
+	// Progress is ongoing, print some information about it.
+	OTransferProgress progress = ::http::transfer->getProgress();
+	Printf(PRINT_HIGH, "Downloaded %d of %d...\n", progress.dlnow, progress.dltotal);
 }
 
 } // namespace http
