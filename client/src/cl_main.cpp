@@ -1745,7 +1745,7 @@ bool CL_Connect(void)
 
 		// Attach the website to the file and download it.
 		buffer += missing_file;
-		http::Download(buffer, missing_hash);
+		http::Download(buffer, missing_file, missing_hash);
 	}
 
 	compressor.reset();

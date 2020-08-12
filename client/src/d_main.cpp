@@ -236,11 +236,14 @@ void D_Display()
 		wiping_screen = true;
 	}
 
+	// We always want to service downloads, even outside of a specific
+	// download gamestate.
+	http::Tick();
+
 	switch (gamestate)
 	{
 		case GS_FULLCONSOLE:
 		case GS_DOWNLOAD:
-			http::Tick();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();

@@ -1539,7 +1539,7 @@ void C_DrawConsole()
 					ConBottom - 12, version_str, CR_ORANGE);
 
 		// Download progress bar hack
-		if (gamestate == GS_DOWNLOAD)
+		if (::http::IsDownloading())
 			screen->PrintStr(left + 2, ConBottom - 10, ::http::Progress().c_str(), CR_GRAY);
 
 		if (TickerMax)

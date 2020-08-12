@@ -63,9 +63,10 @@ class OTransfer
 	OTransferProgress _progress;
 
 	OTransfer(const OTransfer&);
-
 	static int curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
 	                           curl_off_t ultotal, curl_off_t ulnow);
+	static int curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
+
 	static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
 	                     void* userptr);
 

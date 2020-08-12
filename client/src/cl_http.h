@@ -30,7 +30,8 @@ namespace http
 
 void Init();
 void Shutdown();
-void Download(const std::string& file, const std::string& hash);
+bool IsDownloading();
+void Download(const std::string& url, const std::string& file, const std::string& hash);
 void Tick();
 std::string Progress();
 

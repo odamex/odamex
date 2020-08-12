@@ -22,6 +22,7 @@
 
 #include "otransfer.h"
 
+#include "cmdlib.h"
 #include "i_system.h"
 
 bool OTransferInfo::hydrate(CURL* curl)
@@ -61,6 +62,33 @@ int OTransfer::curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow
 }
 
 //
+// https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+//
+int OTransfer::curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
+{
+	static std::string CONTENT_TYPE = "content-type: ";
+	static std::string WANTED_TYPE = "content-type: application/octet-stream";
+
+	if (nitems < 2)
+		return nitems;
+
+	// Ensure we're only grabbing binary content types.
+	std::string str = StdStringToLower(std::string(buffer, nitems - 2));
+	size_t pos = str.find(CONTENT_TYPE);
+	if (pos == 0)
+	{
+		// Found Content-Type, see if it's the correct one.
+		size_t pos2 = str.find(WANTED_TYPE);
+		if (pos2 != 0)
+		{
+			// Bzzt, wrong answer.
+			return 0;
+		}
+	}
+	return nitems;
+}
+
+//
 // https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
 //
 int OTransfer::curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
@@ -93,8 +121,7 @@ OTransfer::~OTransfer()
  */
 void OTransfer::setURL(const char* src)
 {
-	CURLcode err;
-	err = curl_easy_setopt(_curl, CURLOPT_URL, src);
+	curl_easy_setopt(_curl, CURLOPT_URL, src);
 }
 
 /**
@@ -120,12 +147,14 @@ bool OTransfer::setOutputFile(const char* dest)
  */
 bool OTransfer::start()
 {
-	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, (long)1);
-	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, (long)0);
+	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlSetProgress);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
-	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, OTransfer::curlDebug);
-	curl_easy_setopt(_curl, CURLOPT_DEBUGDATA, this);
+	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, OTransfer::curlHeader);
+	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L); // turns on debug
+	// curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, OTransfer::curlDebug);
+	// curl_easy_setopt(_curl, CURLOPT_DEBUGDATA, this);
 	curl_multi_add_handle(_curlm, _curl);
 
 	int running;

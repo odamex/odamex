@@ -28,6 +28,7 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cmdlib.h"
+#include "doomstat.h"
 #include "i_system.h"
 #include "otransfer.h"
 
@@ -50,14 +51,19 @@ static void TransferDone(const OTransferInfo& info)
 	Printf(PRINT_HIGH, "Download complete (%d from %s @ %d bytes per second).\n",
 	       info.code, info.url, info.speed);
 
-	CL_QuitNetGame();
-	CL_Reconnect();
+	if (::gamestate == GS_DOWNLOAD)
+	{
+		CL_QuitNetGame();
+		CL_Reconnect();
+	}
 }
 
 static void TransferError(const char* msg)
 {
 	Printf(PRINT_HIGH, "Download error (%s).\n", msg);
-	CL_QuitNetGame();
+
+	if (::gamestate == GS_DOWNLOAD)
+		CL_QuitNetGame();
 }
 
 /**
@@ -89,19 +95,30 @@ void Shutdown()
 }
 
 /**
+ * @brief Get the current state of any file transfer.
+ *
+ * @return true if there is a download in progress.
+ */
+bool IsDownloading()
+{
+	return ::http::state == STATE_DOWNLOADING;
+}
+
+/**
  * @brief Start a transfer.
  *
- * @param file File to download.
+ * @param url URL to download.
+ * @param file Base filename of the WAD to download.
  * @param hash Hash of the file to download.
  */
-void Download(const std::string& file, const std::string& hash)
+void Download(const std::string& url, const std::string& file, const std::string& hash)
 {
 	if (::http::state != STATE_READY)
 		return;
 
 	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
-	::http::transfer->setURL("http://doomshack.org/wads/udm3.wad");
-	::http::transfer->setOutputFile("udm3.wad");
+	::http::transfer->setURL(url.c_str());
+	::http::transfer->setOutputFile(file.c_str());
 
 	::http::transfer->start();
 	::http::state = STATE_DOWNLOADING;
@@ -141,7 +158,7 @@ std::string Progress()
 		return buffer;
 
 	OTransferProgress progress = ::http::transfer->getProgress();
-	StrFormat(buffer, "Downloaded %d of %d...\n", progress.dlnow, progress.dltotal);
+	StrFormat(buffer, "Downloaded %ld of %ld...", progress.dlnow, progress.dltotal);
 	return buffer;
 }
 
@@ -149,6 +166,8 @@ std::string Progress()
 
 BEGIN_COMMAND(download)
 {
-	http::Download(std::string("udm3.wad"), "");
+	std::string outfile = "udm3.wad";
+	std::string url = "http://doomshack.org/wads/" + outfile;
+	http::Download(url.c_str(), outfile.c_str(), "");
 }
 END_COMMAND(download)
