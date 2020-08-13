@@ -65,6 +65,9 @@ endif()
 
 find_package(CURL)
 set_target_properties(CURL::libcurl PROPERTIES IMPORTED_GLOBAL True)
+if(WIN32)
+  target_link_libraries(CURL::libcurl INTERFACE ws2_32 crypt32)
+endif()
 
 ### JsonCpp ###
 
