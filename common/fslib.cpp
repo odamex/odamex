@@ -143,6 +143,7 @@ std::string Clean(std::string path)
 {
 	std::string originalPath = path;
 	size_t volLen = volumeNameLen(path);
+	std::string vol = path.substr(0, volLen);
 	path = path.substr(volLen, std::string::npos);
 	if (path == "")
 	{
@@ -224,6 +225,6 @@ std::string Clean(std::string path)
 	if (out.length() == 0)
 		out.push_back('.');
 
-	return FromSlash(out);
+	return FromSlash(vol + out);
 }
 } // namespace fs

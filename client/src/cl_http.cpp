@@ -165,12 +165,15 @@ std::string Progress()
 
 } // namespace http
 
-BEGIN_COMMAND(download)
+BEGIN_COMMAND(fsclean)
 {
-	std::string str = std::string("/xyzzy/../");
+	if (argc < 2)
+		return;
+
+	std::string str = std::string(argv[1]);
 	Printf(PRINT_HIGH, "%s\n", fs::Clean(str).c_str());
 	// std::string outfile = "udm3.wad";
 	// std::string url = "http://doomshack.org/wads/" + outfile;
 	// http::Download(url.c_str(), outfile.c_str(), "");
 }
-END_COMMAND(download)
+END_COMMAND(fsclean)
