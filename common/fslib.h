@@ -36,7 +36,7 @@
 namespace fs
 {
 
-static bool IsPathSeparator(char c);
+bool IsPathSeparator(char c);
 std::string FromSlash(std::string path);
 std::string Clean(std::string path);
 
