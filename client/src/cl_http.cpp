@@ -29,6 +29,7 @@
 #include "cl_main.h"
 #include "cmdlib.h"
 #include "doomstat.h"
+#include "fslib.h"
 #include "i_system.h"
 #include "otransfer.h"
 
@@ -166,8 +167,10 @@ std::string Progress()
 
 BEGIN_COMMAND(download)
 {
-	std::string outfile = "udm3.wad";
-	std::string url = "http://doomshack.org/wads/" + outfile;
-	http::Download(url.c_str(), outfile.c_str(), "");
+	std::string str = std::string("/xyzzy/../");
+	Printf(PRINT_HIGH, "%s\n", fs::Clean(str).c_str());
+	// std::string outfile = "udm3.wad";
+	// std::string url = "http://doomshack.org/wads/" + outfile;
+	// http::Download(url.c_str(), outfile.c_str(), "");
 }
 END_COMMAND(download)
