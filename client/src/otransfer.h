@@ -24,6 +24,7 @@
 #define __OTRANSFER_H__
 
 #include <stddef.h>
+#include <string>
 
 #define CURL_STATICLIB
 #include "curl/curl.h"
@@ -61,20 +62,21 @@ class OTransfer
 	CURL* _curl;
 	FILE* _file;
 	OTransferProgress _progress;
+	std::string _filename;
+	std::string _filepart;
 
 	OTransfer(const OTransfer&);
 	static int curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
 	                           curl_off_t ultotal, curl_off_t ulnow);
 	static int curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
-
 	static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
 	                     void* userptr);
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err);
 	~OTransfer();
-	void setURL(const char* src);
-	bool setOutputFile(const char* dest);
+	void setURL(const std::string& src);
+	bool setOutputFile(const std::string& dest);
 	bool start();
 	void stop();
 	bool tick();

@@ -131,7 +131,7 @@ void Download(const std::string& website, const std::string& filename,
 
 	// Construct an output filename.
 	std::string waddir = fs::Clean(cl_waddownloaddir.str());
-	std::string file = fs::Clean(waddir + PATHSEPCHAR + filename + ".part");
+	std::string file = fs::Clean(waddir + PATHSEPCHAR + filename);
 
 	// If waddir is cleaned to a single dot, add it to the file so the next
 	// comparison works correctly.
@@ -194,7 +194,10 @@ std::string Progress()
 
 BEGIN_COMMAND(download)
 {
-	std::string outfile = "udm3.wad";
+	if (argc < 2)
+		return;
+
+	std::string outfile = argv[1];
 	std::string url = "http://doomshack.org/wads/";
 	http::Download(url, outfile, "");
 }

@@ -1738,14 +1738,8 @@ bool CL_Connect(void)
 
 	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
 	{
-		// Ensure our website ends with a forward slash.
-		std::string buffer = sv_website.str();
-		if (*buffer.rbegin() != '/')
-			buffer += '/';
-
 		// Attach the website to the file and download it.
-		buffer += missing_file;
-		http::Download(buffer, missing_file, missing_hash);
+		http::Download(sv_website.str(), missing_file, missing_hash);
 	}
 
 	compressor.reset();

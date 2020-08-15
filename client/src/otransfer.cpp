@@ -101,7 +101,7 @@ int OTransfer::curlDebug(CURL* handle, curl_infotype type, char* data, size_t si
 
 OTransfer::OTransfer(OTransferDoneProc done, OTransferErrorProc err)
     : _doneproc(done), _errproc(err), _curlm(curl_multi_init()), _curl(curl_easy_init()),
-      _file(NULL), _progress(OTransferProgress())
+      _file(NULL), _progress(OTransferProgress()), _filename(""), _filepart("")
 {
 }
 
@@ -119,9 +119,9 @@ OTransfer::~OTransfer()
  *
  * @param src Source URL, complete with protocol.
  */
-void OTransfer::setURL(const char* src)
+void OTransfer::setURL(const std::string& src)
 {
-	curl_easy_setopt(_curl, CURLOPT_URL, src);
+	curl_easy_setopt(_curl, CURLOPT_URL, src.c_str());
 }
 
 /**
@@ -130,9 +130,13 @@ void OTransfer::setURL(const char* src)
  * @param dest Destination file path, passed to fopen.
  * @return True if the output file was set successfully, otherwise false.
  */
-bool OTransfer::setOutputFile(const char* dest)
+bool OTransfer::setOutputFile(const std::string& dest)
 {
-	_file = fopen(dest, "wb+");
+	// We download to the partial file and move it later.
+	_filename = dest;
+	_filepart = dest + ".part";
+
+	_file = fopen(_filepart.c_str(), "wb+");
 	if (_file == NULL)
 		return false;
 
@@ -226,6 +230,14 @@ bool OTransfer::tick()
 	if (!info.hydrate(_curl))
 	{
 		_errproc("Info struct could not be populated");
+		return false;
+	}
+
+	// Rename the file.
+	int ok = rename(_filepart.c_str(), _filename.c_str());
+	if (ok != 0)
+	{
+		_errproc("File could not be renamed");
 		return false;
 	}
 
