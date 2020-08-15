@@ -51,8 +51,7 @@ static States state = STATE_SHUTDOWN;
 
 static void TransferDone(const OTransferInfo& info)
 {
-	Printf(PRINT_HIGH, "Download complete (%d from %s @ %d bytes per second).\n",
-	       info.code, info.url, info.speed);
+	Printf(PRINT_HIGH, "Download completed at %d bytes per second.\n", info.speed);
 
 	if (::gamestate == GS_DOWNLOAD)
 	{
@@ -147,9 +146,11 @@ void Download(const std::string& website, const std::string& filename,
 	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
 	::http::transfer->setURL(url.c_str());
 	::http::transfer->setOutputFile(file.c_str());
+	if (!::http::transfer->start())
+		return;
 
-	::http::transfer->start();
 	::http::state = STATE_DOWNLOADING;
+	Printf(PRINT_HIGH, "Downloading %s...\n", url.c_str());
 }
 
 /**

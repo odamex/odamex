@@ -112,6 +112,10 @@ OTransfer::~OTransfer()
 	curl_multi_remove_handle(_curlm, _curl);
 	curl_easy_cleanup(_curl);
 	curl_multi_cleanup(_curlm);
+	
+	// Delete partial file if it exists.
+	if (_filepart.length() > 0)
+		remove(_filepart.c_str());
 }
 
 /**
@@ -151,6 +155,7 @@ bool OTransfer::setOutputFile(const std::string& dest)
  */
 bool OTransfer::start()
 {
+	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlSetProgress);
