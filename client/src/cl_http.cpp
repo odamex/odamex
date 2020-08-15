@@ -33,6 +33,8 @@
 #include "i_system.h"
 #include "otransfer.h"
 
+EXTERN_CVAR(cl_waddownloaddir)
+
 namespace http
 {
 
@@ -108,15 +110,40 @@ bool IsDownloading()
 /**
  * @brief Start a transfer.
  *
- * @param url URL to download.
- * @param file Base filename of the WAD to download.
+ * @param website Website to download from, without the WAD at the end.
+ * @param filename Filename of the WAD to download.
  * @param hash Hash of the file to download.
  */
-void Download(const std::string& url, const std::string& file, const std::string& hash)
+void Download(const std::string& website, const std::string& filename,
+              const std::string& hash)
 {
 	if (::http::state != STATE_READY)
 		return;
 
+	std::string url = website;
+
+	// Add a slash to the end of the base website.
+	if (*(url.rbegin()) != '/')
+		url.push_back('/');
+
+	// Add the filename.
+	url.append(filename);
+
+	// Construct an output filename.
+	std::string waddir = fs::Clean(cl_waddownloaddir.str());
+	std::string file = fs::Clean(waddir + PATHSEPCHAR + filename + ".part");
+
+	// If waddir is cleaned to a single dot, add it to the file so the next
+	// comparison works correctly.
+	if (waddir == ".")
+		file.insert(0, "." PATHSEP);
+
+	// Ensure that there's no path traversal chicanery.
+	size_t idx = file.find(waddir);
+	if (idx != 0)
+		return;
+
+	// Start the transfer.
 	::http::transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
 	::http::transfer->setURL(url.c_str());
 	::http::transfer->setOutputFile(file.c_str());
@@ -165,15 +192,10 @@ std::string Progress()
 
 } // namespace http
 
-BEGIN_COMMAND(fsclean)
+BEGIN_COMMAND(download)
 {
-	if (argc < 2)
-		return;
-
-	std::string str = std::string(argv[1]);
-	Printf(PRINT_HIGH, "%s\n", fs::Clean(str).c_str());
-	// std::string outfile = "udm3.wad";
-	// std::string url = "http://doomshack.org/wads/" + outfile;
-	// http::Download(url.c_str(), outfile.c_str(), "");
+	std::string outfile = "udm3.wad";
+	std::string url = "http://doomshack.org/wads/";
+	http::Download(url, outfile, "");
 }
-END_COMMAND(fsclean)
+END_COMMAND(download)
