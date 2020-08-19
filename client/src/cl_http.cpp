@@ -29,7 +29,7 @@
 #include "cl_main.h"
 #include "cmdlib.h"
 #include "doomstat.h"
-#include "fslib.h"
+#include "m_fileio.h"
 #include "i_system.h"
 #include "otransfer.h"
 
@@ -129,8 +129,8 @@ void Download(const std::string& website, const std::string& filename,
 	url.append(filename);
 
 	// Construct an output filename.
-	std::string waddir = fs::Clean(cl_waddownloaddir.str());
-	std::string file = fs::Clean(waddir + PATHSEPCHAR + filename);
+	std::string waddir = M_CleanPath(cl_waddownloaddir.str());
+	std::string file = M_CleanPath(waddir + PATHSEPCHAR + filename);
 
 	// If waddir is cleaned to a single dot, add it to the file so the next
 	// comparison works correctly.
