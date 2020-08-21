@@ -64,6 +64,7 @@
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
+#include "m_wdlstats.h"
 
 #include <algorithm>
 #include <sstream>
@@ -3792,10 +3793,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	if ((team >= NUMTEAMS && team != TEAM_NONE) || team < 0)
 		return;
 
-	if(sv_gametype == GM_CTF && team >= 2)
-		return;
-
-	if(sv_gametype != GM_CTF && team >= sv_teamsinplay)
+	if (team >= sv_teamsinplay)
 		return;
 
 	team_t old_team = player.userinfo.team;
@@ -4546,7 +4544,7 @@ void SV_WinCheck (void)
 		shotclock--;
 
 		if (!shotclock)
-			G_ExitLevel (0, 1);
+			G_ExitLevel(0, 1);
 	}
 }
 
@@ -4803,6 +4801,8 @@ void SV_TimelimitCheck()
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", GetTeamInfo(winteam)->ColorStringUpper.c_str());
 		}
+
+		M_CommitWDLLog();
 	}
 
 	shotclock = TICRATE*2;

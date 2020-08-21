@@ -108,7 +108,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		}
 
 		int iTeam = dest_team;
-		iTeam = ++iTeam % NUMTEAMS;
+		iTeam = ++iTeam % teamCount;
 		dest_team = (team_t)iTeam;
 	}
 

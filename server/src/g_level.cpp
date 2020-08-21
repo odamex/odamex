@@ -49,6 +49,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
+#include "m_wdlstats.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -425,6 +426,8 @@ void G_InitNew (const char *mapname)
 
 	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange();
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog();
 }
 
 //
@@ -526,6 +529,8 @@ void G_DoResetLevel(bool full_reset)
 			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 			teamInfo->FlagData.flagger = 0;
 			teamInfo->FlagData.state = flag_home;
+			teamInfo->FlagData.firstgrab = false;
+			teamInfo->Points = 0;
 		}
 	}
 
@@ -642,6 +647,8 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	M_StartWDLLog();
 }
 
 //

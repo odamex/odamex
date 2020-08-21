@@ -353,7 +353,7 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 //
 // A quick and dirty std::string formatting that uses snprintf under the covers.
 //
-void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
+FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);

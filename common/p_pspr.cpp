@@ -40,6 +40,7 @@
 #include "p_pspr.h"
 
 #include "p_unlag.h"
+#include "m_wdlstats.h"
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
@@ -1019,6 +1020,8 @@ void A_FirePistol(AActor* mo)
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan (player, 1, accuracy);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_pistol);
 }
 
 
@@ -1039,6 +1042,8 @@ void A_FireShotgun(AActor* mo)
 				  weaponinfo[player->readyweapon].flashstate);
 
 	P_FireHitscan (player, 7, SPREAD_NORMAL);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_shotgun);
 }
 
 
@@ -1060,6 +1065,8 @@ void A_FireShotgun2(AActor* mo)
 				  weaponinfo[player->readyweapon].flashstate);
 
 	P_FireHitscan (player, 20, SPREAD_SUPERSHOTGUN);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_supershotgun);
 }
 
 //
@@ -1088,6 +1095,8 @@ void A_FireCGun(AActor* mo)
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan (player, 1, accuracy);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_chaingun);
 }
 
 
@@ -1265,4 +1274,3 @@ FArchive &operator>> (FArchive &arc, pspdef_t &def)
 }
 
 VERSION_CONTROL (p_pspr_cpp, "$Id$")
-

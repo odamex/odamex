@@ -68,4 +68,3 @@ FArchive &operator<< (FArchive &arc, flagdata &flag);
 FArchive &operator>> (FArchive &arc, flagdata &flag);
 
 #endif
-
