@@ -20,7 +20,7 @@ if [[ $(uname -s) == "Linux" ]]; then
 else
     # macOS
     brew update
-    brew install ninja sdl2 sdl2_mixer curl wxmac
+    brew install ninja sdl2 sdl2_mixer wxmac
 fi
 
 mkdir -p build && cd build
