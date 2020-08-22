@@ -69,8 +69,19 @@ class OTransferCheck
 	static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
 
   public:
-	OTransferCheck(OTransferDoneProc done, OTransferErrorProc err);
-	~OTransferCheck();
+	OTransferCheck(OTransferDoneProc done, OTransferErrorProc err)
+	    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()),
+	      _curl(curl_easy_init())
+	{
+	}
+
+	~OTransferCheck()
+	{
+		curl_multi_remove_handle(_curlm, _curl);
+		curl_easy_cleanup(_curl);
+		curl_multi_cleanup(_curlm);
+	}
+
 	void setURL(const std::string& src);
 	bool start();
 	void stop();
@@ -99,8 +110,26 @@ class OTransfer
 	                     void* userptr);
 
   public:
-	OTransfer(OTransferDoneProc done, OTransferErrorProc err);
-	~OTransfer();
+	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
+	    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()),
+	      _curl(curl_easy_init()), _file(NULL), _progress(OTransferProgress()),
+	      _filename(""), _filepart("")
+	{
+	}
+
+	~OTransfer()
+	{
+		if (_file != NULL)
+			fclose(_file);
+		curl_multi_remove_handle(_curlm, _curl);
+		curl_easy_cleanup(_curl);
+		curl_multi_cleanup(_curlm);
+
+		// Delete partial file if it exists.
+		if (_filepart.length() > 0)
+			remove(_filepart.c_str());
+	}
+
 	void setURL(const std::string& src);
 	bool setOutputFile(const std::string& dest);
 	bool start();

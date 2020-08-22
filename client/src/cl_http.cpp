@@ -71,7 +71,7 @@ static struct DownloadState
 		delete this->check;
 		this->check = NULL;
 		delete this->transfer;
-		this->check = NULL;
+		this->transfer = NULL;
 		this->url = "";
 		this->filename = "";
 		this->hash = "";
@@ -178,7 +178,8 @@ static void CheckError(const char* msg)
 	if (g_state.checkfails >= 3)
 	{
 		g_state.Ready();
-		Printf(PRINT_HIGH, "Could not find %s (%s)...\n", g_state.checkfilename, msg);
+		Printf(PRINT_HIGH, "Could not find %s (%s)...\n", g_state.checkfilename.c_str(),
+		       msg);
 
 		if (::gamestate == GS_DOWNLOAD)
 			CL_QuitNetGame();
@@ -219,11 +220,9 @@ static void TickCheck()
 		Printf(PRINT_HIGH, "Checking for file at %s...\n", fullurl.c_str());
 	}
 
-	if (!g_state.check->tick())
-	{
-		// Check is done ticking - clean it up and prepare for the next one.
-		g_state.Ready();
-	}
+	// Tick the checker - the done/error callbacks mutate the state appropriately,
+	// so we don't need to bother with the return value here.
+	g_state.check->tick();
 }
 
 static void TransferDone(const OTransferInfo& info)
@@ -313,8 +312,16 @@ std::string Progress()
 		          g_state.checkfails + 1);
 		break;
 	case STATE_DOWNLOADING: {
-		OTransferProgress progress = g_state.transfer->getProgress();
-		StrFormat(buffer, "Downloaded %ld of %ld...", progress.dlnow, progress.dltotal);
+		if (g_state.transfer == NULL)
+		{
+			buffer = "Downloading...";
+		}
+		else
+		{
+			OTransferProgress progress = g_state.transfer->getProgress();
+			StrFormat(buffer, "Downloaded %ld of %ld...", progress.dlnow,
+			          progress.dltotal);
+		}
 		break;
 	}
 	default:
