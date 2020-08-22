@@ -9,6 +9,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@master
     - name: Prepare build
       run: .\ci-build.ps1
     - name: Run build
@@ -26,6 +28,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@master
     - name: Install packages
       uses: crazy-max/ghaction-chocolatey@v1
       with:
