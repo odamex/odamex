@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,19 +23,16 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stddef.h>
 #include <cstring>
+#include <algorithm>
 
 #include "doomtype.h"
 #include "farchive.h"
 #include "m_alloc.h"
 #include "m_swap.h"
 #include "minilzo.h"
-#include "cmdlib.h"
-#include "gstrings.h"
 #include "i_system.h"
-#include "c_cvars.h"
 #include "d_player.h"
 #include "dobject.h"
 
@@ -124,7 +121,11 @@ void FLZOFile::PostOpen()
 	if (m_File && m_Mode == EReading)
 	{
 		char sig[4];
-		fread(sig, 4, 1, m_File);
+		size_t readlen = fread(sig, 4, 1, m_File);
+		if ( readlen < 1 )
+		{
+			printf("FLZOFile::PostOpen(): failed to read m_File\n");
+		}
 		if (sig[0] != LZOSig[0] || sig[1] != LZOSig[1] || sig[2] != LZOSig[2] || sig[3] != LZOSig[3])
 		{
 			fclose(m_File);
@@ -133,14 +134,22 @@ void FLZOFile::PostOpen()
 		else
 		{
 			DWORD sizes[2];
-			fread(sizes, sizeof(DWORD), 2, m_File);
+			readlen = fread(sizes, sizeof(DWORD), 2, m_File);
+			if ( readlen < 1 )
+			{
+				printf("FLZOFile::PostOpen(): failed to read m_File\n");
+			}
 			SWAP_DWORD(sizes[0]);
 			SWAP_DWORD(sizes[1]);
 
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
 			m_Buffer = (byte*)Malloc(len + 8);
 
-			fread(m_Buffer + 8, len, 1, m_File);
+			readlen = fread(m_Buffer + 8, len, 1, m_File);
+			if ( readlen < 1 )
+			{
+				printf("FLZOFile::PostOpen(): failed to read m_File\n");
+			}
 
 			SWAP_DWORD(sizes[0]);
 			SWAP_DWORD(sizes[1]);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,22 +23,11 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
-#include "m_alloc.h"
-#include "m_menu.h"
-#include "m_random.h"
 #include "i_system.h"
-#include "i_video.h"
-#include "i_net.h"
 #include "g_game.h"
-#include "doomdef.h"
 #include "doomstat.h"
-#include "c_console.h"
 #include "d_netinf.h"
-#include "cmdlib.h"
-#include "s_sound.h"
-#include "m_cheat.h"
 #include "p_local.h"
-#include "c_dispatch.h"
 #include "gi.h"
 #include "cl_main.h"
 #include "m_argv.h"

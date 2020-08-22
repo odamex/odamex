@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,19 +30,17 @@
 #include "i_sdl.h"
 #include "r_intrin.h"
 
-#include "m_alloc.h"
 #include "doomdef.h"
-#include "i_system.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "i_video.h"
 #include "v_video.h"
 #include "doomstat.h"
-#include "st_stuff.h"
 
 #include "gi.h"
 #include "v_text.h"
+#include "st_stuff.h"
 
 #undef RANGECHECK
 
@@ -1407,19 +1405,22 @@ void R_DrawViewBorder()
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
 	int surface_width = surface->getWidth();
+	int surface_height = surface->getHeight();
+	int top = 0, bottom = ST_StatusBarY(surface_width, surface_height);
+	int left = 0, right = surface_width;
 
 	const gameborder_t* border = gameinfo.border;
 	const int offset = border->offset;
 	const int size = border->size;
 
 	// draw top border
-	R_DrawBorder(0, 0, surface_width, viewwindowy);
+	R_DrawBorder(left, top, right, viewwindowy);
 	// draw bottom border
-	R_DrawBorder(0, viewwindowy + viewheight, surface_width, ST_Y);
+	R_DrawBorder(left, viewwindowy + viewheight, right, bottom);
 	// draw left border
-	R_DrawBorder(0, viewwindowy, viewwindowx, viewwindowy + viewheight);
+	R_DrawBorder(left, viewwindowy, viewwindowx, viewwindowy + viewheight);
 	// draw right border
-	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, surface_width, viewwindowy + viewheight);
+	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, right, viewwindowy + viewheight);
 
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
@@ -1441,9 +1442,8 @@ void R_DrawViewBorder()
 	canvas->DrawPatch(W_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
 	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
 
-	V_MarkRect(0, 0, surface_width, ST_Y);
+	V_MarkRect(left, top, right, bottom);
 }
-
 
 
 enum r_optimize_kind {

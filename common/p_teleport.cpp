@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "doomtype.h"
@@ -188,7 +187,9 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 	// problem between normal doom2 1.9 and final doom
 	// Note that although chex.exe is based on Final Doom,
 	// it does not have this quirk.
-	if (gamemission < pack_tnt || gamemission == chex)
+	// [AM] For z-teleports, the destination sets the height, don't
+	//      override it here.
+	if (m->type == MT_TELEPORTMAN && (gamemission < pack_tnt || gamemission == chex))
 		thing->z = thing->floorz;
 
 	if (player)

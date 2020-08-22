@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,17 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomtype.h"
-#include "g_level.h"
 #include "p_lnspec.h"
 #include "doomdata.h"
 #include "r_data.h"
 #include "m_swap.h"
-#include "p_spec.h"
 #include "p_local.h"
 
 // Speeds for ceilings/crushers (x/8 units per tic)
@@ -648,11 +642,19 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		{
 			// Generalized ceiling (tag, speed, height, target, change/model/direct/crush)
 			// Generalized floor (tag, speed, height, target, change/model/direct/crush)
-			if (special <= GenFloorBase)
-				ld->special = Generic_Ceiling;
-			else
+			if ((unsigned)special >= GenFloorBase)
+			{
 				ld->special = Generic_Floor;
-			
+			}
+			else if ((unsigned)special >= GenCeilingBase)
+			{
+				ld->special = Generic_Ceiling;
+			}
+			else
+			{
+				Printf(PRINT_HIGH, "Unknown special %u\n", (unsigned)special);
+			}
+
 			switch (special & 0x0018)
 			{
 				case 0x0000:	ld->args[1] = F_SLOW;	break;
@@ -766,4 +768,3 @@ int P_TranslateSectorSpecial (int special)
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")
-

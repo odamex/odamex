@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,8 +41,15 @@ void F_Ticker (void);
 // Called by main loop.
 void F_Drawer (void);
 
+struct finale_options_t
+{
+	const char* music;
+	const char* flat;
+	const char* text;
+	const char* pic;
+};
 
-void F_StartFinale(char *music, char *flat, const char *text);
+void F_StartFinale(finale_options_t& options);
 void STACK_ARGS F_ShutdownFinale();
 
 

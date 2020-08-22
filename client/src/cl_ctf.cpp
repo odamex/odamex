@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 #include "p_local.h"
 #include "p_inter.h"
 #include "p_ctf.h"
-#include "p_mobj.h"
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "v_text.h"
@@ -275,51 +274,26 @@ void CTF_MoveFlags ()
 
 static void TintScreen(argb_t color)
 {
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int thickness = std::min(surface_height / 100, surface_width / 100);
+
 	// draw border around the screen excluding the status bar
 	// NOTE: status bar is not currently drawn when spectating
 	if (R_StatusBarVisible())
+		surface_height = ST_StatusBarY(surface_width, surface_height);
+
+	if (hud_heldflag == 1)
 	{
-		if (hud_heldflag == 1) {
-			screen->Clear(0, 0,
-				I_GetSurfaceWidth() / 100, I_GetSurfaceHeight() - ST_HEIGHT,
-				color);
-
-			screen->Clear(0, 0,
-				I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
-				color);
-
-			screen->Clear(I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
-				I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
-				color);
-		}
-			screen->Clear (0, (I_GetSurfaceHeight() - ST_HEIGHT) - (I_GetSurfaceHeight() / 100),
-						   I_GetSurfaceWidth(), I_GetSurfaceHeight() - ST_HEIGHT,
-						   color);
+		screen->Clear(0, 0, thickness, surface_height, color);
+		screen->Clear(0, 0, surface_width, thickness, color);
+		screen->Clear(surface_width - thickness, 0, surface_width, surface_height, color);
 	}
-
-	// if there's no status bar, draw border around the full screen
-	else
+	if (hud_heldflag > 0)
 	{
-		if (hud_heldflag == 1)
-		{
-			screen->Clear(0, 0,
-				I_GetSurfaceWidth() / 100, I_GetSurfaceHeight(),
-				color);
-
-			screen->Clear(0, 0,
-				I_GetSurfaceWidth(), I_GetSurfaceHeight() / 100,
-				color);
-
-			screen->Clear(I_GetSurfaceWidth() - (I_GetSurfaceWidth() / 100), 0,
-				I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-				color);
-
-		}
-			screen->Clear (0, (I_GetSurfaceHeight()) - (I_GetSurfaceHeight() / 100),
-						   I_GetSurfaceWidth(), I_GetSurfaceHeight(),
-						   color);
+		screen->Clear (0, surface_height - thickness, surface_width, surface_height, color);
 	}
 }
+
 
 //
 //	[Toke - CTF] CTF_RunTics
@@ -327,12 +301,11 @@ static void TintScreen(argb_t color)
 //
 void CTF_RunTics (void)
 {
-
-    // NES - Glowing effect on screen tint.
-    if (tintglow < 90)
-        tintglow++;
-    else
-        tintglow = 0;
+	// NES - Glowing effect on screen tint.
+	if (tintglow < 90)
+		tintglow++;
+	else
+		tintglow = 0;
 
 	// Move the physical clientside flag sprites
 	CTF_MoveFlags();
@@ -378,10 +351,7 @@ void CTF_DrawHud (void)
 		}
 	}
 
-	if (!hud_heldflag)
-		return;
-
-	if (hasflag)
+	if (hasflag && hud_heldflag > 0)
 	{
 		if (hud_heldflag_flash == 1)
 		{

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -94,12 +94,15 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 typedef std::vector<std::string> StringTokens;
 StringTokens TokenizeString(const std::string& str, const std::string& delim);
 
+FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...);
+void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
+
 bool StrFormatISOTime(std::string& s, const tm* utc_tm);
 bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
 
 bool CheckWildcards (const char *pattern, const char *text);
-void ReplaceString (const char **ptr, const char *str);
+void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
 

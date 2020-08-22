@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,28 +24,17 @@
 
 #include <stdarg.h>
 
-#include "m_alloc.h"
 #include "m_memio.h"
 #include "version.h"
-#include "gstrings.h"
-#include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "i_system.h"
-#include "m_swap.h"
 #include "v_palette.h"
-#include "v_video.h"
-#include "w_wad.h"
-#include "z_zone.h"
-#include "r_main.h"
-#include "s_sound.h"
 #include "sv_main.h"
 #include "doomstat.h"
 #include "gi.h"
 
 #include <string>
-#include <vector>
 
 static const int MAX_LINE_LENGTH = 8192;
 
@@ -72,7 +61,7 @@ EXTERN_CVAR (log_fulltimestamps)
 
 char *TimeStamp()
 {
-	static char stamp[32];
+	static char stamp[38];
 
 	time_t ti = time(NULL);
 	struct tm *lt = localtime(&ti);
@@ -119,7 +108,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, STACKARRAY_LENGTH(outline), format, parms);
+	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	size_t len = strlen(outline);
@@ -155,7 +144,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	return PrintString(printlevel, str.c_str());
 }
 
-int STACK_ARGS Printf (int printlevel, const char *format, ...)
+FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
 {
 	va_list argptr;
 	int count;
@@ -167,7 +156,7 @@ int STACK_ARGS Printf (int printlevel, const char *format, ...)
 	return count;
 }
 
-int STACK_ARGS Printf_Bold (const char *format, ...)
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
 {
 	va_list argptr;
 	int count;
@@ -180,7 +169,7 @@ int STACK_ARGS Printf_Bold (const char *format, ...)
 	return count;
 }
 
-int STACK_ARGS DPrintf (const char *format, ...)
+FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
 {
 	va_list argptr;
 	int count;
@@ -257,4 +246,3 @@ void C_RemoveTabCommand (const char *name)
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")
-

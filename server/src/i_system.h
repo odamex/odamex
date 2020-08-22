@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -84,7 +84,7 @@ ticcmd_t *I_BaseTiccmd (void);
 void STACK_ARGS I_Quit (void);
 
 void STACK_ARGS I_Error (const char *error, ...);
-void STACK_ARGS I_FatalError (const char *error, ...);
+NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
@@ -96,12 +96,6 @@ void I_PrintStr (int x, const char *str, int count, BOOL scroll);
 void I_SetTitleString (const char *title);
 
 std::string I_ConsoleInput (void);
-
-// In i_input.c. Used to release control of the
-// mouse to the user when the game is paused in
-// windowed modes.
-void I_PauseMouse (void);
-void I_ResumeMouse (void);
 
 // [RH] Returns millisecond-accurate time
 dtime_t I_MSTime (void);
@@ -136,6 +130,3 @@ int I_FindAttr (findstate_t *fileinfo);
 #define FA_ARCH		16
 
 #endif
-
-
-

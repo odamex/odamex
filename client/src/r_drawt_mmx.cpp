@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,6 @@
 // NOTE(jsd): Do not consider MMX deprecated so lightly. The XBOX and other older systems still make use of it.
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <mmintrin.h>
 
 #ifdef _MSC_VER
@@ -38,10 +37,6 @@
 #endif
 
 #include "doomtype.h"
-#include "doomdef.h"
-#include "i_system.h"
-#include "r_defs.h"
-#include "r_draw.h"
 #include "r_main.h"
 #include "i_video.h"
 

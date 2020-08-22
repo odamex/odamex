@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,8 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include "m_alloc.h"
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
@@ -203,7 +201,7 @@ void DCeiling::RunThink ()
 				case ceilLowerAndCrush:
 					if (m_Speed1 == FRACUNIT && m_Speed2 == FRACUNIT)
 						m_Speed = FRACUNIT / 8;
-						break;
+					break;
 
 				default:
 					break;
@@ -445,7 +443,7 @@ manual_ceiling:
 		{
 			if (change & 4)	// if a numeric model change
 			{
-				sector_t *sec;
+				sector_t* sec = NULL;
 
 				//jff 5/23/98 find model with floor at target height if target
 				//is a floor type
@@ -453,8 +451,8 @@ manual_ceiling:
 					   type == DCeiling::ceilRaiseToFloor ||
 					   type == DCeiling::ceilLowerToHighest ||
 					   type == DCeiling::ceilLowerToFloor) ?
-					P_FindModelFloorSector (targheight, sec) :
-					P_FindModelCeilingSector (targheight, sec);
+					P_FindModelFloorSector(targheight, sec) :
+					P_FindModelCeilingSector(targheight, sec);
 				if (sec)
 				{
 					ceiling->m_Texture = sec->ceilingpic;

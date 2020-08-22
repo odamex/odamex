@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,9 +37,7 @@
 #include "doomstat.h"
 #include "gstrings.h"
 
-#include "i_system.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_random.h"
 #include "m_bbox.h"
 #include "w_wad.h"
@@ -68,6 +66,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
+bool s_SpecialFromServer = false;
 
 //
 // P_FindMovingSector
@@ -1193,7 +1192,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
 
-	int msg = 0;
+	const OString* msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -1219,49 +1218,49 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		case AnyKey:
 			if (bc || bs || rc || rs || yc || ys)
 				return true;
-			msg = PD_ANY;
+			msg = &PD_ANY;
 			break;
 
 		case AllKeys:
 			if (bc && bs && rc && rs && yc && ys)
 				return true;
-			msg = equiv ? PD_ALL3 : PD_ALL6;
+			msg = equiv ? &PD_ALL3 : &PD_ALL6;
 			break;
 
 		case RCard:
 			if (rc)
 				return true;
-			msg = equiv ? (remote ? PD_REDO : PD_REDK) : PD_REDC;
+			msg = equiv ? (remote ? &PD_REDO : &PD_REDK) : &PD_REDC;
 			break;
 
 		case BCard:
 			if (bc)
 				return true;
-			msg = equiv ? (remote ? PD_BLUEO : PD_BLUEK) : PD_BLUEC;
+			msg = equiv ? (remote ? &PD_BLUEO : &PD_BLUEK) : &PD_BLUEC;
 			break;
 
 		case YCard:
 			if (yc)
 				return true;
-			msg = equiv ? (remote ? PD_YELLOWO : PD_YELLOWK) : PD_YELLOWC;
+			msg = equiv ? (remote ? &PD_YELLOWO : &PD_YELLOWK) : &PD_YELLOWC;
 			break;
 
 		case RSkull:
 			if (rs)
 				return true;
-			msg = equiv ? (remote ? PD_REDO : PD_REDK) : PD_REDS;
+			msg = equiv ? (remote ? &PD_REDO : &PD_REDK) : &PD_REDS;
 			break;
 
 		case BSkull:
 			if (bs)
 				return true;
-			msg = equiv ? (remote ? PD_BLUEO : PD_BLUEK) : PD_BLUES;
+			msg = equiv ? (remote ? &PD_BLUEO : &PD_BLUEK) : &PD_BLUES;
 			break;
 
 		case YSkull:
 			if (ys)
 				return true;
-			msg = equiv ? (remote ? PD_YELLOWO : PD_YELLOWK) : PD_YELLOWS;
+			msg = equiv ? (remote ? &PD_YELLOWO : &PD_YELLOWK) : &PD_YELLOWS;
 			break;
 	}
 
@@ -1274,7 +1273,9 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-		C_MidPrint (GStrings(msg), p);
+
+		if (msg != NULL)
+			C_MidPrint(GStrings(*msg), p);
 	}
 
 	return false;
@@ -1414,6 +1415,8 @@ P_CrossSpecialLine
 
 	TeleportSide = side;
 
+	s_SpecialFromServer = FromServer;
+
 	LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]);
@@ -1421,6 +1424,8 @@ P_CrossSpecialLine
 	P_HandleSpecialRepeat(line);
 
 	OnActivatedLine(line, thing, side, 0);
+
+	s_SpecialFromServer = false;
 }
 
 //
@@ -1448,6 +1453,8 @@ P_ShootSpecialLine
 			return;
 	}
 
+	s_SpecialFromServer = FromServer;
+
 	//TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1463,6 +1470,8 @@ P_ShootSpecialLine
 		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
 		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
+
+	s_SpecialFromServer = false;
 }
 
 
@@ -1525,6 +1534,8 @@ P_UseSpecialLine
 		}
 	}
 
+	s_SpecialFromServer = FromServer;
+
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1541,6 +1552,8 @@ P_UseSpecialLine
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
+
+	s_SpecialFromServer = false;
 
     return true;
 }
@@ -1593,6 +1606,8 @@ P_PushSpecialLine
 
     TeleportSide = side;
 
+	s_SpecialFromServer = FromServer;
+
 	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
@@ -1607,6 +1622,8 @@ P_PushSpecialLine
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
+
+	s_SpecialFromServer = false;
 
     return true;
 }
@@ -2909,4 +2926,3 @@ bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
 }
 
 VERSION_CONTROL (p_spec_cpp, "$Id$")
-

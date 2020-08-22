@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,11 +23,9 @@
 
 
 #include "dobject.h"
-#include "m_alloc.h"
-#include "doomstat.h"		// Ideally, DObjects can be used independant of Doom.
+#include "m_alloc.h"		// Ideally, DObjects can be used independant of Doom.
 #include "d_player.h"		// See p_user.cpp to find out why this doesn't work.
 #include "z_zone.h"
-#include "r_state.h"
 
 ClassInit::ClassInit (TypeInfo *type)
 {

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 
 #include "version.h"
 
-#include <sstream>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -41,7 +40,6 @@
 #include <dirent.h>
 #endif
 
-#include <time.h>
 #include <math.h>
 
 #include "errors.h"
@@ -66,7 +64,6 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
-#include "i_sound.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "g_game.h"
@@ -81,16 +78,11 @@
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "cl_download.h"
-#include "cmdlib.h"
-#include "s_sound.h"
-#include "m_swap.h"
-#include "v_text.h"
 #include "gi.h"
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
 
-#include "res_texture.h"
 #include "w_ident.h"
 
 #ifdef GEKKO
@@ -109,7 +101,7 @@ void D_DoAdvanceDemo (void);
 
 void D_DoomLoop (void);
 
-extern QWORD testingmode;
+extern int testingmode;
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
@@ -156,8 +148,8 @@ EXTERN_CVAR (vid_vsync)
 
 const char *LOG_FILE;
 
-void M_RestoreMode (void);
-void M_ModeFlashTestText (void);
+void M_RestoreVideoMode();
+void M_ModeFlashTestText();
 
 //
 // D_ProcessEvents
@@ -171,7 +163,7 @@ void D_ProcessEvents (void)
 	if (testingmode)
 	{
 		if (testingmode <= I_MSTime() * TICRATE / 1000)
-			M_RestoreMode ();
+			M_RestoreVideoMode();
 		else
 			M_ModeFlashTestText();
 
@@ -559,7 +551,6 @@ bool HashOk(std::string &required, std::string &available)
 }
 
 
-void CL_NetDemoRecord(const std::string &filename);
 void CL_NetDemoPlay(const std::string &filename);
 
 
@@ -592,8 +583,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
@@ -607,6 +597,18 @@ void D_Init()
 	C_InitConCharsFont();
 
 	HU_Init();
+
+	LevelInfos& levels = getLevelInfos();
+	if (levels.size() == 0)
+	{
+		levels.addDefaults();
+	}
+
+	ClusterInfos& clusters = getClusterInfos();
+	if (clusters.size() == 0)
+	{
+		clusters.addDefaults();
+	}
 
 	G_SetLevelStrings();
 	G_ParseMapInfo();
@@ -654,18 +656,8 @@ void STACK_ARGS D_Shutdown()
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
-	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	F_ShutdownFinale();
 
@@ -695,8 +687,6 @@ void STACK_ARGS D_Shutdown()
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();
-
-	GStrings.FreeData();
 
 //	Res_ShutdownTextureManager();
 
@@ -972,8 +962,3 @@ void D_DoomMain()
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
-
-
-
-
-

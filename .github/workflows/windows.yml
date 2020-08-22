@@ -1,0 +1,43 @@
+name: Windows
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build (Visual Studio)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Prepare build
+      run: .\ci-build.ps1
+    - name: Run build
+      run: cmake --build .\build\ --config RelWithDebInfo --parallel
+    - name: Prepare artifact
+      run: .\ci-artifact.ps1
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x64
+        path: 'build/artifact/*'
+  build-mingw:
+    name: Build (MinGW)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Install packages
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install ninja
+    - name: Prepare build
+      run: .\ci-build-mingw.ps1
+    - name: Run build
+      run: cmake --build .\build-gcc\
+    - name: Prepare Odalaunch artifact
+      run: .\ci-artifact-odalaunch.ps1
+    - name: Upload Odalaunch artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x64
+        path: 'build-gcc/artifact/*'

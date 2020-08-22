@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <emmintrin.h>
 
 #ifdef _MSC_VER
@@ -154,8 +153,10 @@ void R_DrawSpanD_SSE2 (void)
 		mvfrac = _mm_add_epi32(mvfrac, mvfracinc);
 	}
 
-	ufrac = (dsfixed_t)((dsfixed_t*)&mufrac)[0];
-	vfrac = (dsfixed_t)((dsfixed_t*)&mvfrac)[0];
+	dsfixed_t* ufracs = (dsfixed_t*)&mufrac;
+	ufrac = *ufracs;
+	dsfixed_t* vfracs = (dsfixed_t*)&mvfrac;
+	vfrac = *vfracs;
 
 	// blit the remaining 0 - 3 pixels
 	while (remainder--)

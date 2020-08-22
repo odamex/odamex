@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,7 +37,6 @@
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "gi.h"
 #include "d_net.h"
 #include "g_game.h"
 #include "g_level.h"
@@ -53,7 +52,6 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "m_vectors.h"
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "w_ident.h"
@@ -66,6 +64,7 @@
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
+#include "m_wdlstats.h"
 
 #include <algorithm>
 #include <sstream>
@@ -94,6 +93,8 @@ bool step_mode = false;
 
 std::set<byte> free_player_ids;
 
+bool keysfound[NUMCARDS];		// Ch0wW : Found keys
+
 // General server settings
 EXTERN_CVAR(sv_motd)
 EXTERN_CVAR(sv_hostname)
@@ -109,11 +110,14 @@ EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(sv_sharekeys)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
+
+void SV_UpdateShareKeys(player_t& player);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -215,7 +219,6 @@ EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_infiniteammo)
-EXTERN_CVAR (sv_keepkeys)
 
 // Teamplay/CTF
 EXTERN_CVAR (sv_scorelimit)
@@ -246,15 +249,6 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "rcon password set");
 }
 
-//
-//  SV_SetClientRate
-//
-//  Performs range checking on client's rate
-//
-void SV_SetClientRate(client_t &client, int rate)
-{
-	client.rate = clamp(rate, 1, (int)sv_maxrate);
-}
 
 EXTERN_CVAR(sv_waddownloadcap)
 CVAR_FUNC_IMPL(sv_maxrate)
@@ -264,10 +258,7 @@ CVAR_FUNC_IMPL(sv_maxrate)
 		sv_waddownloadcap.Set(var);
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		// ensure no clients exceed sv_maxrate
-		SV_SetClientRate(it->client, it->client.rate);
-	}
+		it->client.rate = int(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL (sv_waddownloadcap)
@@ -900,11 +891,10 @@ bool SV_SetupUserInfo(player_t &player)
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
 
-	// [SL] place holder for deprecated skins
-	MSG_ReadString();
+	MSG_ReadString();	// [SL] place holder for deprecated skins
 
 	fixed_t aimdist = MSG_ReadLong();
-	bool unlag = MSG_ReadBool();
+	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
 	bool predict_weapons = MSG_ReadBool();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
@@ -930,7 +920,6 @@ bool SV_SetupUserInfo(player_t &player)
 		switchweapon = WPSW_ALWAYS;
 
 	// [SL] 2011-12-02 - Players can update these parameters whenever they like
-	player.userinfo.unlag			= unlag;
 	player.userinfo.predict_weapons	= predict_weapons;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
@@ -1636,6 +1625,7 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 
 	// update switches
+#if 0
 	for (int l=0; l<numlines; l++)
 	{
 		unsigned state = 0, time = 0;
@@ -1650,6 +1640,9 @@ void SV_ClientFullUpdate(player_t &pl)
 			MSG_WriteLong(&cl->reliablebuf, time);
 		}
 	}
+#else
+	P_UpdateButtons(cl);
+#endif
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
@@ -1965,8 +1958,9 @@ void SV_ConnectClient()
 	if (!SV_SetupUserInfo(*player))
 		return;
 
-	// Get the rate value of the client.
-	SV_SetClientRate(*cl, MSG_ReadLong());
+	// [SL] Read and ignore deprecated client rate. Clients now always use sv_maxrate.
+	MSG_ReadLong();
+	cl->rate = int(sv_maxrate);
 
 	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
@@ -3250,11 +3244,6 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 		else
 			MSG_WriteByte(buf, 0xFF);
 	}
-
-	if (sv_gametype == GM_COOP) {
-		for (int i = 0; i < NUMCARDS; i++)
-			MSG_WriteByte(buf, player->cards[i]);
-	}
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -3350,8 +3339,6 @@ void SV_WriteCommands(void)
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
-		SV_UpdateHiddenMobj();
-
 		SV_UpdateConsolePlayer(*it);
 
 		SV_UpdateMissiles(*it);
@@ -3362,6 +3349,8 @@ void SV_WriteCommands(void)
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 	}
+
+	SV_UpdateHiddenMobj();
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
@@ -3379,8 +3368,8 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 void SV_FlushPlayerCmds(player_t &player)
 {
-	while (!player.cmdqueue.empty())
-		player.cmdqueue.pop();
+	std::queue<NetCommand> empty;
+	std::swap(player.cmdqueue, empty);
 }
 
 //
@@ -3436,7 +3425,11 @@ int SV_CalculateNumTiccmds(player_t &player)
 //
 void SV_ProcessPlayerCmd(player_t &player)
 {
-	static const int maxcmdmove = 12800;
+	const int max_forward_move = 50 << 8;
+	#if 0
+	const int max_sr40_side_move = 40 << 8;
+	#endif
+	const int max_sr50_side_move = 50 << 8;
 
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -3451,18 +3444,28 @@ void SV_ProcessPlayerCmd(player_t &player)
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
 		NetCommand *netcmd = &(player.cmdqueue.front());
-		memset(&player.cmd, 0, sizeof(ticcmd_t));
-
+		player.cmd = ticcmd_t();
 		player.tic = netcmd->getTic();
+
 		// Set the latency amount for Unlagging
 		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
 
-		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > maxcmdmove) ||
-			(netcmd->hasSideMove() && abs(netcmd->getSideMove()) > maxcmdmove))
+		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > max_forward_move) ||
+		    (netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr50_side_move))
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
+
+		#if 0
+		if ((netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr40_side_move) &&
+		    (player.mo && player.mo->prevangle != netcmd->getAngle()))
+		{
+			// verify SR50 isn't combined with yaw
+			SV_PlayerTriedToCheat(player);
+			return;
+		}
+		#endif
 
 		netcmd->toPlayer(&player);
 
@@ -4175,10 +4178,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rate:
-			{
-				// denis - prevent problems by locking rate within a range
-				SV_SetClientRate(player.client, MSG_ReadLong());
-			}
+			MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
 			break;
 
 		case clc_ack:
@@ -4312,7 +4312,7 @@ void SV_WinCheck (void)
 		shotclock--;
 
 		if (!shotclock)
-			G_ExitLevel (0, 1);
+			G_ExitLevel(0, 1);
 	}
 }
 
@@ -4561,6 +4561,8 @@ void SV_TimelimitCheck()
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
 		}
+
+		M_CommitWDLLog();
 	}
 
 	shotclock = TICRATE*2;
@@ -4821,7 +4823,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
@@ -4926,23 +4927,41 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
 	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
 	const char* message = NULL;
-	int messagenum = 0;
+	OString messagename;
 
 	switch (mod)
 	{
-		case MOD_SUICIDE:		messagenum = OB_SUICIDE;	break;
-		case MOD_FALLING:		messagenum = OB_FALLING;	break;
-		case MOD_CRUSH:			messagenum = OB_CRUSH;		break;
-		case MOD_EXIT:			messagenum = OB_EXIT;		break;
-		case MOD_WATER:			messagenum = OB_WATER;		break;
-		case MOD_SLIME:			messagenum = OB_SLIME;		break;
-		case MOD_LAVA:			messagenum = OB_LAVA;		break;
-		case MOD_BARREL:		messagenum = OB_BARREL;		break;
-		case MOD_SPLASH:		messagenum = OB_SPLASH;		break;
+	case MOD_SUICIDE:
+		messagename = OB_SUICIDE;
+		break;
+	case MOD_FALLING:
+		messagename = OB_FALLING;
+		break;
+	case MOD_CRUSH:
+		messagename = OB_CRUSH;
+		break;
+	case MOD_EXIT:
+		messagename = OB_EXIT;
+		break;
+	case MOD_WATER:
+		messagename = OB_WATER;
+		break;
+	case MOD_SLIME:
+		messagename = OB_SLIME;
+		break;
+	case MOD_LAVA:
+		messagename = OB_LAVA;
+		break;
+	case MOD_BARREL:
+		messagename = OB_BARREL;
+		break;
+	case MOD_SPLASH:
+		messagename = OB_SPLASH;
+		break;
 	}
 
-	if (messagenum)
-		message = GStrings(messagenum);
+	if (!messagename.empty())
+		message = GStrings(messagename);
 
 	if (attacker && message == NULL)
 	{
@@ -4950,11 +4969,17 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		{
 			switch (mod)
 			{
-			case MOD_R_SPLASH:	messagenum = OB_R_SPLASH;		break;
-			case MOD_ROCKET:	messagenum = OB_ROCKET;			break;
-			default:			messagenum = OB_KILLEDSELF;		break;
+			case MOD_R_SPLASH:
+				messagename = OB_R_SPLASH;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_ROCKET;
+				break;
+			default:
+				messagename = OB_KILLEDSELF;
+				break;
 			}
-			message = GStrings(messagenum);
+			message = GStrings(messagename);
 		}
 		else if (!attacker->player)
 		{
@@ -4963,25 +4988,25 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				switch (attacker->type)
 				{
 					case MT_UNDEAD:
-						messagenum = OB_UNDEADHIT;
+						messagename = OB_UNDEADHIT;
 						break;
 					case MT_TROOP:
-						messagenum = OB_IMPHIT;
+						messagename = OB_IMPHIT;
 						break;
 					case MT_HEAD:
-						messagenum = OB_CACOHIT;
+						messagename = OB_CACOHIT;
 						break;
 					case MT_SERGEANT:
-						messagenum = OB_DEMONHIT;
+						messagename = OB_DEMONHIT;
 						break;
 					case MT_SHADOWS:
-						messagenum = OB_SPECTREHIT;
+						messagename = OB_SPECTREHIT;
 						break;
 					case MT_BRUISER:
-						messagenum = OB_BARONHIT;
+						messagename = OB_BARONHIT;
 						break;
 					case MT_KNIGHT:
-						messagenum = OB_KNIGHTHIT;
+						messagename = OB_KNIGHTHIT;
 						break;
 					default:
 						break;
@@ -4991,27 +5016,58 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 			{
 				switch (attacker->type)
 				{
-					case MT_POSSESSED:	messagenum = OB_ZOMBIE;		break;
-					case MT_SHOTGUY:	messagenum = OB_SHOTGUY;	break;
-					case MT_VILE:		messagenum = OB_VILE;		break;
-					case MT_UNDEAD:		messagenum = OB_UNDEAD;		break;
-					case MT_FATSO:		messagenum = OB_FATSO;		break;
-					case MT_CHAINGUY:	messagenum = OB_CHAINGUY;	break;
-					case MT_SKULL:		messagenum = OB_SKULL;		break;
-					case MT_TROOP:		messagenum = OB_IMP;		break;
-					case MT_HEAD:		messagenum = OB_CACO;		break;
-					case MT_BRUISER:	messagenum = OB_BARON;		break;
-					case MT_KNIGHT:		messagenum = OB_KNIGHT;		break;
-					case MT_SPIDER:		messagenum = OB_SPIDER;		break;
-					case MT_BABY:		messagenum = OB_BABY;		break;
-					case MT_CYBORG:		messagenum = OB_CYBORG;		break;
-					case MT_WOLFSS:		messagenum = OB_WOLFSS;		break;
-					default:break;
+				case MT_POSSESSED:
+					messagename = OB_ZOMBIE;
+					break;
+				case MT_SHOTGUY:
+					messagename = OB_SHOTGUY;
+					break;
+				case MT_VILE:
+					messagename = OB_VILE;
+					break;
+				case MT_UNDEAD:
+					messagename = OB_UNDEAD;
+					break;
+				case MT_FATSO:
+					messagename = OB_FATSO;
+					break;
+				case MT_CHAINGUY:
+					messagename = OB_CHAINGUY;
+					break;
+				case MT_SKULL:
+					messagename = OB_SKULL;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMP;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACO;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARON;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHT;
+					break;
+				case MT_SPIDER:
+					messagename = OB_SPIDER;
+					break;
+				case MT_BABY:
+					messagename = OB_BABY;
+					break;
+				case MT_CYBORG:
+					messagename = OB_CYBORG;
+					break;
+				case MT_WOLFSS:
+					messagename = OB_WOLFSS;
+					break;
+				default:
+					break;
 				}
 			}
 
-			if (messagenum)
-				message = GStrings(messagenum);
+			if (!messagename.empty())
+				message = GStrings(messagename);
 		}
 	}
 
@@ -5028,29 +5084,55 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		if (friendly)
 		{
 			gender = attacker->player->userinfo.gender;
-			messagenum = OB_FRIENDLY1 + (P_Random() & 3);
+			messagename = GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
 		}
 		else
 		{
 			switch (mod)
 			{
-				case MOD_FIST:			messagenum = OB_MPFIST;			break;
-				case MOD_CHAINSAW:		messagenum = OB_MPCHAINSAW;		break;
-				case MOD_PISTOL:		messagenum = OB_MPPISTOL;		break;
-				case MOD_SHOTGUN:		messagenum = OB_MPSHOTGUN;		break;
-				case MOD_SSHOTGUN:		messagenum = OB_MPSSHOTGUN;		break;
-				case MOD_CHAINGUN:		messagenum = OB_MPCHAINGUN;		break;
-				case MOD_ROCKET:		messagenum = OB_MPROCKET;		break;
-				case MOD_R_SPLASH:		messagenum = OB_MPR_SPLASH;		break;
-				case MOD_PLASMARIFLE:	messagenum = OB_MPPLASMARIFLE;	break;
-				case MOD_BFG_BOOM:		messagenum = OB_MPBFG_BOOM;		break;
-				case MOD_BFG_SPLASH:	messagenum = OB_MPBFG_SPLASH;	break;
-				case MOD_TELEFRAG:		messagenum = OB_MPTELEFRAG;		break;
-				case MOD_RAILGUN:		messagenum = OB_RAILGUN;		break;
+			case MOD_FIST:
+				messagename = OB_MPFIST;
+				break;
+			case MOD_CHAINSAW:
+				messagename = OB_MPCHAINSAW;
+				break;
+			case MOD_PISTOL:
+				messagename = OB_MPPISTOL;
+				break;
+			case MOD_SHOTGUN:
+				messagename = OB_MPSHOTGUN;
+				break;
+			case MOD_SSHOTGUN:
+				messagename = OB_MPSSHOTGUN;
+				break;
+			case MOD_CHAINGUN:
+				messagename = OB_MPCHAINGUN;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_MPROCKET;
+				break;
+			case MOD_R_SPLASH:
+				messagename = OB_MPR_SPLASH;
+				break;
+			case MOD_PLASMARIFLE:
+				messagename = OB_MPPLASMARIFLE;
+				break;
+			case MOD_BFG_BOOM:
+				messagename = OB_MPBFG_BOOM;
+				break;
+			case MOD_BFG_SPLASH:
+				messagename = OB_MPBFG_SPLASH;
+				break;
+			case MOD_TELEFRAG:
+				messagename = OB_MPTELEFRAG;
+				break;
+			case MOD_RAILGUN:
+				messagename = OB_RAILGUN;
+				break;
 			}
 		}
-		if (messagenum)
-			message = GStrings(messagenum);
+		if (!messagename.empty())
+			message = GStrings(messagename);
 	}
 
 	if (message && attacker && attacker->player)
@@ -5264,6 +5346,65 @@ void SV_PreservePlayer(player_t &player)
 	G_DoReborn(player);
 
 	SV_SendPlayerInfo(player);
+}
+
+
+CVAR_FUNC_IMPL (sv_sharekeys)
+{
+	if (var == 1.0f)
+	{
+		// Refresh it to everyone
+		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+			SV_UpdateShareKeys(*it);
+		}
+	}
+}
+
+
+void SV_UpdateShareKeys(player_t& player)
+{
+	// Player needs to be valid.
+	if (!validplayer(player))
+		return;
+
+	// Disallow to spectators
+	if (player.spectator)
+		return;
+
+	// Don't send to dead players... Yet, since they'll get it upon respawning
+	if (player.health <= 0)
+		return;
+
+	// Update their keys informations
+	for (int i = 0; i < NUMCARDS; i++) {
+		player.cards[i] = keysfound[i];
+	}
+
+	// Refresh that new data to the client
+	SV_SendPlayerInfo(player);
+}
+
+void SV_ShareKeys(card_t card, player_t &player)
+{
+	// Add it to the KeysCheck array
+	keysfound[card] = true;
+
+	// If the server hasn't accepted to share keys yet, stop it.
+	if (!sv_sharekeys)
+		return;
+
+	// Broadcast the key shared to 
+	gitem_t* item;
+	if (item = FindCardItem(card))
+		SV_BroadcastPrintf(PRINT_HIGH, "%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
+	else
+		SV_BroadcastPrintf(PRINT_HIGH, "%s found a key!\n", player.userinfo.netname.c_str());
+
+	// Refresh the inventory to everyone
+	// ToDo: If we're the player who picked it, don't refresh our own inventory
+	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+		SV_UpdateShareKeys(*it);
+	}
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

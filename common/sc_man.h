@@ -4,7 +4,7 @@
 // $Id$
 //
 // sc_man.h : Heretic 2 : Raven Software, Corp.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,10 @@
 #ifndef __SC_MAN_H__
 #define __SC_MAN_H__
 
+#include "doomtype.h"
+
+#define SC_NOMATCH (-1)
+
 void SC_Open (const char *name);
 void SC_OpenFile (const char *name);
 void SC_OpenMem (const char *name, char *buffer, int size);
@@ -44,7 +48,7 @@ void SC_UnGet (void);
 BOOL SC_Compare (const char *text);
 int SC_MatchString (const char **strings);
 int SC_MustMatchString (const char **strings);
-void SC_ScriptError (const char *message, const char **args = NULL);
+void STACK_ARGS SC_ScriptError(const char* format, ...);
 
 extern char *sc_String;
 extern int sc_Number;

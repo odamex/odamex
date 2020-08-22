@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,6 @@
 #include "gi.h"
 #include "i_net.h"
 #include "i_system.h"
-#include "i_video.h"
 #include "c_dispatch.h"
 #include "st_stuff.h"
 #include "m_argv.h"
@@ -46,23 +45,18 @@
 #include "p_ctf.h"
 #include "m_random.h"
 #include "m_memio.h"
-#include "w_wad.h"
 #include "w_ident.h"
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
 #include "cl_demo.h"
 #include "cl_download.h"
-#include "p_local.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
 #include "p_mobj.h"
 #include "p_snapshot.h"
 #include "p_lnspec.h"
 #include "cl_netgraph.h"
-#include "cl_maplist.h"
-#include "cl_vote.h"
-#include "p_mobj.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
@@ -293,7 +287,6 @@ void CL_Decompress(int sequence);
 
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
-void CL_NetDemoSnapshot(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
@@ -314,7 +307,6 @@ void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
@@ -383,6 +375,7 @@ void CL_QuitNetGame(void)
 {
 	if(connected)
 	{
+		SZ_Clear(&net_buffer);
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
@@ -435,7 +428,8 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	G_CleanupDemo();	// Cleanup in case of a vanilla demo
+	if (demorecording)
+		G_CleanupDemo();	// Cleanup in case of a vanilla demo
 
 	demoplayback = false;
 
@@ -472,12 +466,17 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+std::string spyplayername;
+void CL_CheckDisplayPlayer(void);
+
 //
 // CL_ConnectClient
 //
 void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
+
+	CL_CheckDisplayPlayer();
 
 	if (!cl_connectalert)
 		return;
@@ -495,10 +494,18 @@ void CL_ConnectClient(void)
 // Perfoms validation on the value of displayplayer_id based on the current
 // game state and status of the consoleplayer.
 //
-void CL_CheckDisplayPlayer()
+void CL_CheckDisplayPlayer(void)
 {
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
+
+	// [jsd]: try to spy on player by name when connected if spyplayername is set:
+	if (spyplayername.length() > 0) {
+		player_t &spyplayer = nameplayer(spyplayername);
+		if (validplayer(spyplayer)) {
+			displayplayer_id = spyplayer.id;
+		}
+	}
 
 	if (displayplayer_id != previd)
 		newid = displayplayer_id;
@@ -828,10 +835,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf(PRINT_HIGH, " PLAYERS IN GAME:\n");
+	Printf(PRINT_HIGH, "PLAYERS IN GAME:\n");
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf(PRINT_HIGH, "%d. %s\n", (*it).first, (*it).second.c_str());
+		Printf(PRINT_HIGH, "%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
+	Printf(PRINT_HIGH, "%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -873,7 +881,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
@@ -889,7 +896,7 @@ BEGIN_COMMAND (kill)
     if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -941,16 +948,6 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
-// rate: takes a kbps value
-CVAR_FUNC_IMPL (rate)
-{
-	if (connected)
-	{
-		MSG_WriteMarker(&net_buffer, clc_rate);
-		MSG_WriteLong(&net_buffer, (int)var);
-	}
-}
-
 
 BEGIN_COMMAND (rcon)
 {
@@ -958,7 +955,7 @@ BEGIN_COMMAND (rcon)
 	{
 		char  command[256];
 
-		strncpy(command, args, STACKARRAY_LENGTH(command) - 1);
+		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);
@@ -1076,22 +1073,27 @@ END_COMMAND (spyprev)
 
 BEGIN_COMMAND (spy)
 {
-	byte id = consoleplayer_id;
+	if (argc <= 1) {
+		if (spyplayername.length() > 0) {
+			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
 
-	if (argc > 1)
-		id = atoi(argv[1]);
+			// revert to not spying:
+			displayplayer_id = consoleplayer_id;
+		} else {
+			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		}
 
-	if (id == 0)
-	{
-		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
-		return;
+		// clear last player name:
+		spyplayername = "";
+	} else {
+		// remember player name in case of disconnect/reconnect e.g. level change:
+		spyplayername = argv[1];
+
+		Printf(PRINT_HIGH, "Following player '%s'. Use 'spy' with no player name to unfollow.\n",
+			   spyplayername.c_str());
 	}
 
-	displayplayer_id = id;
 	CL_CheckDisplayPlayer();
-
-	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
 }
 END_COMMAND (spy)
 
@@ -1140,7 +1142,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
 	{
-		//I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
 		I_Warning("Unable to generate netdemo file name.");
 		return std::string();
 	}
@@ -1151,11 +1152,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 void CL_NetDemoStop()
 {
 	netdemo.stopPlaying();
-}
-
-void CL_NetDemoRecord(const std::string &filename)
-{
-	netdemo.startRecording(filename);
 }
 
 void CL_NetDemoPlay(const std::string &filename)
@@ -1217,8 +1213,8 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename);
-	netdemo.writeMapChange();
+	if (netdemo.startRecording(filename))
+		netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
 
@@ -1363,7 +1359,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, "");
 
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
@@ -1803,8 +1799,6 @@ void CL_InitNetwork (void)
 		}
     }
 
-	G_SetDefaultTurbo ();
-
     connected = false;
 }
 
@@ -1837,7 +1831,10 @@ void CL_TryToConnect(DWORD server_token)
 
 		CL_SendUserInfo(); // send userinfo
 
-		MSG_WriteLong(&net_buffer, (int)rate);
+		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
+		// maximum rate that the server will ignore.
+		const int rate = 0xFFFF;
+		MSG_WriteLong(&net_buffer, rate); 
 
         MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
 
@@ -1992,12 +1989,12 @@ void CL_UpdatePlayer()
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-    // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	// [Russell] - hack, read and set invisibility flag
+	p->powers[pw_invisibility] = invisibility;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -2077,12 +2074,6 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
-
-	// Receive the keys from a spied player
-	if (sv_gametype == GM_COOP) {
-		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = MSG_ReadByte();
-	}
 }
 
 //
@@ -3067,6 +3058,8 @@ void CL_ReadPacketHeader(void)
 
 	packetseq[packetnum] = sequence;
 	packetnum++;
+
+	netgraph.addPacketIn();
 }
 
 void CL_GetServerSettings(void)
@@ -3113,10 +3106,6 @@ void CL_GetServerSettings(void)
 void CL_FinishedFullUpdate()
 {
 	recv_full_update = true;
-
-	// Write the first map snapshot to a netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
 }
 
 //
@@ -3212,8 +3201,8 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);
@@ -3241,8 +3230,8 @@ void CL_Switch()
 	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
 		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if (texture)
-		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	if (!recv_full_update && texture) // Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
+		P_SetButtonTexture(&lines[l], texture);
 	lines[l].special = special;
 }
 
@@ -3406,7 +3395,7 @@ void CL_LoadMap(void)
 	}
 
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording())
 		netdemo.writeMapChange();
 }
 
@@ -3754,10 +3743,16 @@ void CL_SendCmd(void)
 	// need to be used for client's positional prediction.
     MSG_WriteLong(&net_buffer, gametic);
 
-	NetCommand *netcmd;
 	for (int i = 9; i >= 0; i--)
 	{
-		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		NetCommand blank_netcmd;
+		NetCommand* netcmd;
+
+		if (gametic >= i)
+			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		else
+			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
+
 		netcmd->write(&net_buffer);
 	}
 

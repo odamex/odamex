@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <cstring>
 #include <stdarg.h>
-#include <math.h>
 
 #ifdef OSX
 #include <mach/clock.h>
@@ -50,9 +49,7 @@
 #ifdef UNIX
 #define HAVE_PWD_H
 
-#include <fnmatch.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/time.h>
 #include <pwd.h>
 #include <unistd.h>
@@ -64,14 +61,10 @@
 
 #include "doomtype.h"
 #include "version.h"
-#include "doomdef.h"
 #include "cmdlib.h"
 #include "m_argv.h"
-#include "m_misc.h"
 
 #include "d_main.h"
-#include "d_net.h"
-#include "g_game.h"
 #include "i_system.h"
 #include "i_net.h"
 #include "c_dispatch.h"
@@ -127,38 +120,38 @@ void *I_ZoneBase (size_t *size)
 {
 	void *zone = NULL;
 
-    // User wanted a different default size
+	// User wanted a different default size
 	const char *p = Args.CheckValue ("-heapsize");
 
 	if (p)
 		def_heapsize = atoi(p);
 
-    if (def_heapsize < min_heapsize)
-        def_heapsize = min_heapsize;
+	if (def_heapsize < min_heapsize)
+		def_heapsize = min_heapsize;
 
-    // Set the size
+	// Set the size
 	*size = I_MegabytesToBytes(def_heapsize);
 
-    // Allocate the def_heapsize, otherwise try to allocate a smaller amount
+	// Allocate the def_heapsize, otherwise try to allocate a smaller amount
 	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
 	{
-	    zone = malloc (*size);
+		zone = malloc (*size);
 
-	    if (zone != NULL)
-            break;
+		if (zone != NULL)
+			break;
 
-        *size -= I_MegabytesToBytes(1);
+		*size -= I_MegabytesToBytes(1);
 	}
 
-    // Our heap size we received
-    got_heapsize = I_BytesToMegabytes(*size);
+	// Our heap size we received
+	got_heapsize = I_BytesToMegabytes(*size);
 
-    // Die if the system has insufficient memory
-    if (got_heapsize < min_heapsize)
-        I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
-                     "is %lu MB but got %lu MB instead",
-                     min_heapsize,
-                     got_heapsize);
+	// Die if the system has insufficient memory
+	if (got_heapsize < min_heapsize)
+		I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
+					 "is %lu MB but got %lu MB instead",
+					 min_heapsize,
+					 got_heapsize);
 
 	return zone;
 }
@@ -317,27 +310,12 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 }
 #endif
 
-//
-// SetLanguageIDs
-//
-static const char *langids[] = {
-	"auto",
-	"enu",
-	"fr",
-	"it"
-};
-
-EXTERN_CVAR (language)
+EXTERN_CVAR(language)
 
 // Force the language to English (default)
-void SetLanguageIDs ()
+void SetLanguageIDs()
 {
-	DWORD lang = 0;
-	const char *langtag = langids[1];	// Forces ENGLISH as language.
-
-	((BYTE *)&lang)[0] = (langtag)[0];
-	((BYTE *)&lang)[1] = (langtag)[1];
-	((BYTE *)&lang)[2] = (langtag)[2];
+	uint32_t lang = MAKE_ID('*', '*', '\0', '\0');
 	LanguageIDs[0] = lang;
 	LanguageIDs[1] = lang;
 	LanguageIDs[2] = lang;
@@ -706,23 +684,23 @@ std::string I_ConsoleInput (void)
 std::string I_ConsoleInput (void)
 {
 	std::string ret;
-    static char     text[1024] = {0};
-    int             len;
+	static char	 text[1024] = {0};
+	int			 len;
 
-    fd_set fdr;
-    FD_ZERO(&fdr);
-    FD_SET(0, &fdr);
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
+	fd_set fdr;
+	FD_ZERO(&fdr);
+	FD_SET(0, &fdr);
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
 
-    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
-        return "";
+	if (select(1, &fdr, NULL, NULL, &tv) <= 0)
+		return "";
 
-    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
+	len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
-    if (len < 1)
-        return "";
+	if (len < 1)
+		return "";
 
 	len = strlen(text);
 
@@ -745,9 +723,8 @@ std::string I_ConsoleInput (void)
 		return ret;
 	}
 
-    return "";
+	return "";
 }
 #endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
-

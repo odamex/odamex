@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,35 +24,22 @@
 
 #include "version.h"
 #include "minilzo.h"
-#include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_misc.h"
 #include "m_random.h"
 #include "i_system.h"
-#include "p_setup.h"
-#include "p_saveg.h"
 #include "p_tick.h"
-#include "d_main.h"
-#include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "v_video.h"
-#include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "gstrings.h"
 #include "r_data.h"
-#include "r_sky.h"
-#include "r_draw.h"
 #include "g_game.h"
 #include "g_level.h"
 #include "sv_main.h"
-#include "p_ctf.h"
-#include "gi.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -63,6 +50,7 @@ void	G_DoWorldDone (void);
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_keepkeys)
+EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_fastmonsters)
@@ -176,14 +164,20 @@ void G_Ticker (void)
 	case GS_INTERMISSION:
 	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
-		if (!mapchange || 
-			(level.flags & LEVEL_NOINTERMISSION && (level.flags & LEVEL_EPISODEENDHACK) == 0 ))
-        {
-			G_ChangeMap ();
-            //intcd_oldtime = 0;
-        }
+		if (!mapchange)
+		{
+			G_ChangeMap();
+		}
+		// Doom episodes 1-4 end with no intermission, but in
+		// multiplayer games we still want to pause on the ending
+		// screen.
+		else if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) != 0)
+		{
+			G_ChangeMap();
+		}
+		break;
 	}
-    break;
+	break;
 
 	default:
 		break;
@@ -218,6 +212,7 @@ void G_PlayerFinishLevel (player_t &player)
 	p->bonuscount = 0;
 }
 
+void SV_SendPlayerInfo(player_t& player);
 
 //
 // G_PlayerReborn
@@ -234,11 +229,21 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	if (!sv_keepkeys)
+	if (!sv_keepkeys && !sv_sharekeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;
 	}
+
+	// That said, if keys are found between a player's death and respawn, resync them.
+	if (sv_sharekeys)
+	{
+		for (i = 0; i < NUMCARDS; i++)
+			p.cards[i] = keysfound[i];
+
+		SV_SendPlayerInfo(p);
+	}
+
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
 	for (i = 0; i < NUMFLAGS; i++)
@@ -253,6 +258,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.readyweapon = p.pendingweapon = wp_pistol;
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
+	p.weaponowned[NUMWEAPONS] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	p.cheats = 0;						// Reset cheat flags
 
@@ -453,30 +459,24 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 // [AM] Moved out of CTF gametype and cleaned up.
 static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
 {
-	size_t i;
-
 	switch (player.userinfo.team)
 	{
 	case TEAM_BLUE:
 		for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
 		{
-			i = M_Random() % selections;
+			size_t i = M_Random() % selections;
 			if (G_CheckSpot(player, &blueteamstarts[i]))
-			{
 				return &blueteamstarts[i];
-			}
 		}
-		return &blueteamstarts[i];
+		return &blueteamstarts[0];		// could not find a free spot, use spot 0
 	case TEAM_RED:
 		for (size_t j = 0; j < MaxRedTeamStarts; ++j)
 		{
-			i = M_Random() % selections;
+			size_t i = M_Random() % selections;
 			if (G_CheckSpot(player, &redteamstarts[i]))
-			{
 				return &redteamstarts[i];
-			}
 		}
-		return &redteamstarts[i];
+		return &redteamstarts[0];		// could not find a free spot, use spot 0
 	default:
 		// This team doesn't have a dedicated spawn point.  Fallthrough
 		// to using a deathmatch spawn point.
@@ -555,9 +555,9 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [Russell] - Readded, makes modern dm more interesting
 	// NOTE - Might also be useful for other game modes
 	if ((sv_dmfarspawn) && player.mo)
-        spot = SelectFarthestDeathmatchSpot(selections);
-    else
-        spot = SelectRandomDeathmatchSpot (player, selections);
+		spot = SelectFarthestDeathmatchSpot(selections);
+	else
+		spot = SelectRandomDeathmatchSpot (player, selections);
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -628,4 +628,3 @@ void G_DoReborn (player_t &player)
 }
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
-

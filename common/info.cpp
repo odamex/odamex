@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1144,7 +1144,11 @@ state_t	states[NUMSTATES] = {
 	{SPR_TLGL,32769,4,NULL,S_BRIDGE3,0,0},	// S_BRIDGE2
 	{SPR_TLGL,32770,4,NULL,S_BRIDGE4,0,0},	// S_BRIDGE3
 	{SPR_TLGL,32771,4,NULL,S_BRIDGE5,0,0},	// S_BRIDGE4
-	{SPR_TLGL,32772,4,NULL,S_BRIDGE1,0,0},	// S_BRIDGE5		
+	{SPR_TLGL,32772,4,NULL,S_BRIDGE1,0,0},	// S_BRIDGE5
+
+	{ SPR_TNT1,0,1,A_Raise,S_NOWEAPON,0,0 },    //    S_NOWEAPONUP
+	{ SPR_TNT1,0,1,A_Lower,S_NOWEAPON,0,0 },    //S_NOWEAPONDOWN
+	{ SPR_TNT1,0,1,A_WeaponReady,S_NOWEAPON,0,0 },    //S_NOWEAPON
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {

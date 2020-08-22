@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 #include "cl_main.h"
 
 #include "m_alloc.h"
-#include "i_system.h"
 #include "i_sound.h"
 #include "i_music.h"
 #include "s_sound.h"
@@ -1312,16 +1311,14 @@ void S_ParseSndInfo (void)
 						ambient->volume = 0;
 				} else if (!stricmp (com_token + 1, "map")) {
 					// Hexen-style $MAP command
-					level_info_t *info;
-
 					sndinfo = COM_Parse (sndinfo);
 					sprintf (com_token, "MAP%02d", atoi (com_token));
-					info = FindLevelInfo (com_token);
+					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
 					sndinfo = COM_Parse (sndinfo);
-					if (info->mapname[0])
+					if (info.mapname[0])
 					{
-						strncpy (info->music, com_token, 9); // denis - todo -string limit?
-						std::transform(info->music, info->music + strlen(info->music), info->music, toupper);
+						strncpy (info.music, com_token, 9); // denis - todo -string limit?
+						std::transform(info.music, info.music + strlen(info.music), info.music, toupper);
 					}
 				} else {
 					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
