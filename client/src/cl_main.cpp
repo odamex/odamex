@@ -1739,7 +1739,7 @@ bool CL_Connect(void)
 	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
 	{
 		// Attach the website to the file and download it.
-		http::Download(sv_website.str(), missing_file, missing_hash);
+		http::StartDownload(sv_website.str(), missing_file, missing_hash);
 	}
 
 	compressor.reset();

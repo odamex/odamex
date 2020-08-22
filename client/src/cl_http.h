@@ -31,8 +31,8 @@ namespace http
 void Init();
 void Shutdown();
 bool IsDownloading();
-void Download(const std::string& website, const std::string& filename,
-              const std::string& hash);
+void StartDownload(const std::string& website, const std::string& filename,
+                   const std::string& hash);
 void Tick();
 std::string Progress();
 

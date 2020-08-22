@@ -46,6 +46,142 @@ bool OTransferInfo::hydrate(CURL* curl)
 	return true;
 }
 
+// // OTransferExists // //
+
+// PRIVATE //
+
+//
+// https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+//
+size_t OTransferCheck::curlHeader(char* buffer, size_t size, size_t nitems,
+                                  void* userdata)
+{
+	static std::string CONTENT_TYPE = "content-type: ";
+	static std::string WANTED_TYPE = "content-type: application/octet-stream";
+
+	if (nitems < 2)
+		return nitems;
+
+	// Ensure we're only grabbing binary content types.
+	std::string str = StdStringToLower(std::string(buffer, nitems - 2));
+	size_t pos = str.find(CONTENT_TYPE);
+	if (pos == 0)
+	{
+		// Found Content-Type, see if it's the correct one.
+		size_t pos2 = str.find(WANTED_TYPE);
+		if (pos2 != 0)
+		{
+			// Bzzt, wrong answer.
+			return 0;
+		}
+	}
+	return nitems;
+}
+
+//
+// https://curl.haxx.se/libcurl/c/CURLOPT_WRITEFUNCTION.html
+//
+size_t OTransferCheck::curlWrite(void* data, size_t size, size_t nmemb, void* userp)
+{
+	// A HEAD request should never write anything.
+	return size * nmemb;
+}
+
+// PUBLIC //
+
+OTransferCheck::OTransferCheck(OTransferDoneProc done, OTransferErrorProc err)
+    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()), _curl(curl_easy_init())
+{
+}
+
+OTransferCheck::~OTransferCheck()
+{
+	curl_multi_remove_handle(_curlm, _curl);
+	curl_easy_cleanup(_curl);
+	curl_multi_cleanup(_curlm);
+}
+
+void OTransferCheck::setURL(const std::string& src)
+{
+	curl_easy_setopt(_curl, CURLOPT_URL, src.c_str());
+}
+
+bool OTransferCheck::start()
+{
+	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
+	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, OTransferCheck::curlHeader);
+	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
+	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
+	curl_multi_add_handle(_curlm, _curl);
+
+	int running;
+	curl_multi_perform(_curlm, &running);
+	if (running < 1)
+	{
+		// Transfer isn't running right after we enabled it, error out.
+		int queuelen;
+		CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+		if (msg == NULL)
+		{
+			_errproc("CURL reports no info");
+			return false;
+		}
+
+		CURLcode code = msg->data.result;
+		if (code != CURLE_OK)
+		{
+			_errproc(curl_easy_strerror(code));
+			return false;
+		}
+
+		_errproc("CURL isn't running the transfer with no error");
+		return false;
+	}
+
+	return true;
+}
+
+void OTransferCheck::stop()
+{
+	curl_multi_remove_handle(_curlm, _curl);
+}
+
+bool OTransferCheck::tick()
+{
+	int running;
+	curl_multi_perform(_curlm, &running);
+	if (running > 0)
+		return true;
+
+	// We're done.  Was the transfer successful, or an error?
+	int queuelen;
+	CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+	if (msg == NULL)
+	{
+		_errproc("CURL reports no info");
+		return false;
+	}
+
+	CURLcode code = msg->data.result;
+	if (code != CURLE_OK)
+	{
+		_errproc(curl_easy_strerror(code));
+		return false;
+	}
+
+	// A successful transfer.  Populate the info struct.
+	OTransferInfo info = OTransferInfo();
+	if (!info.hydrate(_curl))
+	{
+		_errproc("Info struct could not be populated");
+		return false;
+	}
+
+	_doneproc(info);
+	return false;
+}
+
 // // OTransfer // //
 
 // PRIVATE //
@@ -53,8 +189,8 @@ bool OTransferInfo::hydrate(CURL* curl)
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
 //
-int OTransfer::curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-                               curl_off_t ultotal, curl_off_t ulnow)
+int OTransfer::curlProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
+                            curl_off_t ultotal, curl_off_t ulnow)
 {
 	static_cast<OTransfer*>(thisp)->_progress.dltotal = dltotal;
 	static_cast<OTransfer*>(thisp)->_progress.dlnow = dlnow;
@@ -64,7 +200,7 @@ int OTransfer::curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
 //
-int OTransfer::curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
+size_t OTransfer::curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
 {
 	static std::string CONTENT_TYPE = "content-type: ";
 	static std::string WANTED_TYPE = "content-type: application/octet-stream";
@@ -112,7 +248,7 @@ OTransfer::~OTransfer()
 	curl_multi_remove_handle(_curlm, _curl);
 	curl_easy_cleanup(_curl);
 	curl_multi_cleanup(_curlm);
-	
+
 	// Delete partial file if it exists.
 	if (_filepart.length() > 0)
 		remove(_filepart.c_str());
@@ -158,7 +294,7 @@ bool OTransfer::start()
 	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
-	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlSetProgress);
+	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, OTransfer::curlHeader);
 	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L); // turns on debug

@@ -54,6 +54,32 @@ struct OTransferInfo
 typedef void (*OTransferDoneProc)(const OTransferInfo& info);
 typedef void (*OTransferErrorProc)(const char* msg);
 
+/**
+ * @brief Encapsulates an HTTP check to see if a specific remote file exists.
+ */
+class OTransferCheck
+{
+	OTransferDoneProc _doneproc;
+	OTransferErrorProc _errproc;
+	CURLM* _curlm;
+	CURL* _curl;
+
+	OTransferCheck(const OTransferCheck&);
+	static size_t curlWrite(void* data, size_t size, size_t nmemb, void* userp);
+	static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
+
+  public:
+	OTransferCheck(OTransferDoneProc done, OTransferErrorProc err);
+	~OTransferCheck();
+	void setURL(const std::string& src);
+	bool start();
+	void stop();
+	bool tick();
+};
+
+/**
+ * @brief Encapsulates an HTTP transfer of a remote file to a local file.
+ */
 class OTransfer
 {
 	OTransferDoneProc _doneproc;
@@ -66,9 +92,9 @@ class OTransfer
 	std::string _filepart;
 
 	OTransfer(const OTransfer&);
-	static int curlSetProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-	                           curl_off_t ultotal, curl_off_t ulnow);
-	static int curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
+	static int curlProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
+	                        curl_off_t ultotal, curl_off_t ulnow);
+	static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
 	static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
 	                     void* userptr);
 
