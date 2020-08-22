@@ -10,9 +10,7 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Checkout submodules
-      uses: srt32/git-actions@v0.0.3
-      with:
-        args: git submodule update --init --recursive
+      run: git submodule update --init --recursive
     - name: Prepare build
       run: .\ci-build.ps1
     - name: Run build
@@ -31,9 +29,7 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Checkout submodules
-      uses: srt32/git-actions@v0.0.3
-      with:
-        args: git submodule update --init --recursive
+      run: git submodule update --init --recursive
     - name: Install packages
       uses: crazy-max/ghaction-chocolatey@v1
       with:
