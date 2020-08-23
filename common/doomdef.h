@@ -192,17 +192,6 @@ enum card_t
         CardIsSkull = 128
 };
 
-//
-//	[Toke - CTF] CTF Flags
-//
-enum flag_t
-{
-	it_blueflag,
-	it_redflag,
-
-	NUMFLAGS
-};
-
 enum ItemEquipVal
 {
 	IEV_NotEquipped, //was not equipped, item should stay

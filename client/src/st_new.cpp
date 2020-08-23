@@ -53,16 +53,6 @@ static const patch_t	*armors[2];
 static const patch_t	*ammos[4];
 static const patch_t	*bigammos[4];
 static const patch_t	*flagiconteam;
-static const patch_t	*flagiconbhome;
-static const patch_t	*flagiconrhome;
-static const patch_t	*flagiconbtakenbyb;
-static const patch_t	*flagiconbtakenbyr;
-static const patch_t	*flagiconrtakenbyb;
-static const patch_t	*flagiconrtakenbyr;
-static const patch_t	*flagicongtakenbyb;
-static const patch_t	*flagicongtakenbyr;
-static const patch_t	*flagiconbdropped;
-static const patch_t	*flagiconrdropped;
 static const patch_t *line_leftempty;
 static const patch_t *line_leftfull;
 static const patch_t *line_centerempty;
@@ -84,34 +74,27 @@ extern patch_t	*faces[];
 extern int		st_faceindex;
 extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
-extern flagdata CTFdata[NUMFLAGS];
 
 extern NetDemo netdemo;
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
-EXTERN_CVAR (hud_scale)
-EXTERN_CVAR (hud_timer)
-EXTERN_CVAR (hud_targetcount)
-EXTERN_CVAR (hud_demobar)
-EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR(hud_scale)
+EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(hud_targetcount)
+EXTERN_CVAR(hud_demobar)
+EXTERN_CVAR(sv_fraglimit)
+EXTERN_CVAR(sv_teamsinplay)
+
+std::vector<patch_t*> FlagIconHome;
+std::vector<patch_t*> FlagIconReturn;
+std::vector<patch_t*> FlagIconTaken;
+std::vector<patch_t*> FlagIconDropped;
 
 void ST_unloadNew (void)
 {
-	int i;
-
 	Z_ChangeTag (flagiconteam, PU_CACHE);
-	Z_ChangeTag (flagiconbhome, PU_CACHE);
-	Z_ChangeTag (flagiconrhome, PU_CACHE);
-	Z_ChangeTag (flagiconbtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagiconbtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagiconrtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagiconrtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagiconbdropped, PU_CACHE);
-	Z_ChangeTag (flagiconrdropped, PU_CACHE);
 	Z_ChangeTag (line_leftempty, PU_CACHE);
 	Z_ChangeTag (line_leftfull, PU_CACHE);
 	Z_ChangeTag (line_centerempty, PU_CACHE);
@@ -121,14 +104,39 @@ void ST_unloadNew (void)
 	Z_ChangeTag (line_rightempty, PU_CACHE);
 	Z_ChangeTag (line_rightfull, PU_CACHE);
 
-	for (i = 0; i < 2; i++)
+	for (size_t i = 0; i < FlagIconHome.size(); i++)
+		Z_ChangeTag(FlagIconHome[i], PU_CACHE);
+
+	for (size_t i = 0; i < FlagIconReturn.size(); i++)
+		Z_ChangeTag(FlagIconReturn[i], PU_CACHE);
+
+	for (size_t i = 0; i < FlagIconTaken.size(); i++)
+		Z_ChangeTag(FlagIconTaken[i], PU_CACHE);
+
+	for (size_t i = 0; i < FlagIconDropped.size(); i++)
+		Z_ChangeTag(FlagIconDropped[i], PU_CACHE);
+
+	FlagIconHome.clear();
+	FlagIconReturn.clear();
+	FlagIconTaken.clear();
+	FlagIconDropped.clear();
+
+	for (int i = 0; i < 2; i++)
 	{
 		Z_ChangeTag(medi[i], PU_CACHE);
 		Z_ChangeTag(armors[i], PU_CACHE);
 	}
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 		Z_ChangeTag (ammos[i], PU_CACHE);
+}
+
+void PushFlagIcon(std::vector<patch_t*>& patches, std::string& name)
+{
+	if (W_CheckNumForName(name.c_str()) == -1)
+		patches.push_back(NULL);
+	else
+		patches.push_back(W_CachePatch(name.c_str(), PU_STATIC));
 }
 
 void ST_initNew (void)
@@ -168,14 +176,29 @@ void ST_initNew (void)
 	}
 
 	flagiconteam = W_CachePatch ("FLAGIT", PU_STATIC);
-	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
-	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
-	flagiconbtakenbyb = W_CachePatch ("FLAGI3BB", PU_STATIC);
-	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
-	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
-	flagiconrtakenbyr = W_CachePatch ("FLAGI3RR", PU_STATIC);
-	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
-	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
+	// Team flag icons format - FLAGIC followed by number, then color
+	std::string flagIcon = "FLAGICnx";
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+		if (teamInfo->ColorStringUpper.length() == 0)
+			flagIcon[7] = 'x';
+		else
+			flagIcon[7] = teamInfo->ColorStringUpper[0];
+
+		flagIcon[6] = '2'; // FLAGIC2X
+		PushFlagIcon(FlagIconHome, flagIcon);
+
+		flagIcon[6] = '3'; // FLAGIC3X
+		PushFlagIcon(FlagIconTaken, flagIcon);
+
+		flagIcon[6] = '4'; // FLAGIC4X
+		PushFlagIcon(FlagIconReturn, flagIcon);
+
+		flagIcon[6] = '5'; // FLAGIC5X
+		PushFlagIcon(FlagIconDropped, flagIcon);
+	}
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();
@@ -450,78 +473,52 @@ void drawCTF() {
 	player_t *plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	const patch_t *flagbluepatch = flagiconbhome;
-	const patch_t *flagredpatch = flagiconrhome;
 
-	switch (CTFdata[it_blueflag].state) {
+	int patchPosY = 61;
+
+	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
+
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		const patch_t* drawPatch = FlagIconHome[i];
+
+		switch (teamInfo->FlagData.state)
+		{
 		case flag_carried:
-			if (CTFdata[it_blueflag].flagger) {
-				player_t &player = idplayer(CTFdata[it_blueflag].flagger);
-				if (player.userinfo.team == TEAM_BLUE) {
-					flagbluepatch = flagiconbtakenbyb;
-				} else if (player.userinfo.team == TEAM_RED) {
-					flagbluepatch = flagiconbtakenbyr;
-				}
-			}
+			if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
+				drawPatch = FlagIconReturn[i];
+			else
+				drawPatch = FlagIconTaken[i];
 			break;
 		case flag_dropped:
-			flagbluepatch = flagiconbdropped;
+			drawPatch = FlagIconDropped[i];
 			break;
 		default:
 			break;
+		}
+
+		if (drawPatch != NULL)
+		{
+			hud::DrawPatch(4, patchPosY, hud_scale,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				drawPatch);
+		}
+
+		if (!plyr->spectator && plyr->userinfo.team == i)
+		{
+			hud::DrawPatch(4, patchPosY, hud_scale,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::X_RIGHT, hud::Y_BOTTOM,
+				flagiconteam);
+		}
+
+		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+			screen, teamInfo->Points);
+
+		patchPosY -= 18;
 	}
-
-	switch (CTFdata[it_redflag].state) {
-		case flag_carried:
-			if (CTFdata[it_redflag].flagger) {
-				player_t &player = idplayer(CTFdata[it_redflag].flagger);
-				if (player.userinfo.team == TEAM_BLUE) {
-					flagredpatch = flagiconrtakenbyb;
-				} else if (player.userinfo.team == TEAM_RED) {
-					flagredpatch = flagiconrtakenbyr;
-				}
-			}
-			break;
-		case flag_dropped:
-			flagredpatch = flagiconrdropped;
-			break;
-		default:
-			break;
-	}
-
-	// Draw base flag patches
-	hud::DrawPatch(4, 61, hud_scale,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               flagbluepatch);
-	hud::DrawPatch(4, 43, hud_scale,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               flagredpatch);
-
-	// Draw team border
-	switch (plyr->userinfo.team) {
-		case TEAM_BLUE:
-			hud::DrawPatch(4, 61, hud_scale,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               flagiconteam);
-			break;
-		case TEAM_RED:
-			hud::DrawPatch(4, 43, hud_scale,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               flagiconteam);
-			break;
-		default:
-			break;
-	}
-
-	// Draw team scores
-	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (62 + 16) * yscale,
-	                screen, TEAMpoints[TEAM_BLUE]);
-	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (44 + 16) * yscale,
-	                screen, TEAMpoints[TEAM_RED]);
 }
 
 // [AM] Draw netdemo state

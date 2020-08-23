@@ -1687,6 +1687,30 @@ void A_SkullAttack (AActor *actor)
 	actor->momz = (dest->z+(dest->height>>1) - actor->z) / dist;
 }
 
+//
+// A_BetaSkullAttack()
+// killough 10/98: this emulates the beta version's lost soul attacks
+//
+
+void A_BetaSkullAttack(AActor* actor)
+{
+	if (!actor->target || actor->target->type == MT_SKULL)
+		return;
+
+	// [FG] fix crash when attack sound is missing
+	if (actor->info->attacksound)
+	{
+		S_Sound(actor, CHAN_VOICE, actor->info->attacksound, 1, ATTN_NORM);
+	}
+	A_FaceTarget(actor);
+	int damage = (P_Random(actor) % 8 + 1) * actor->info->damage;
+	P_DamageMobj(actor->target, actor, actor, damage);
+}
+
+void A_Stop(AActor* actor)
+{
+	actor->momx = actor->momy = actor->momz = 0;
+}
 
 //
 // A_PainShootSkull
@@ -2261,6 +2285,90 @@ void A_Gibify(AActor *mo) // denis - squash thing
 	mo->flags &= ~MF_SOLID;
 	mo->height = 0;
 	mo->radius = 0;
+}
+
+//
+// killough 11/98
+//
+// The following were inspired by Len Pitre
+//
+// A small set of highly-sought-after code pointers
+//
+
+void A_Spawn(AActor* mo)
+{
+	/* [AM] Not implemented...yet.
+	if (mo->state->misc1)
+	{
+		AActor* newmobj = P_SpawnMobj(
+			mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
+			mo->state->misc1 - 1
+		);
+		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+	}
+	*/
+}
+
+void A_Turn(AActor* mo)
+{
+	mo->angle += (angle_t)(((uint64_t)mo->state->misc1 << 32) / 360);
+}
+
+void A_Face(AActor* mo)
+{
+	mo->angle = (angle_t)(((uint64_t)mo->state->misc1 << 32) / 360);
+}
+
+void A_Scratch(AActor* mo)
+{
+	/* [AM] Not implemented...yet.
+	mo->target && (A_FaceTarget(mo), P_CheckMeleeRange(mo)) ?
+		mo->state->misc2 ? S_StartSound(mo, mo->state->misc2) : (void)0,
+		P_DamageMobj(mo->target, mo, mo, mo->state->misc1) : (void)0;
+	*/
+}
+
+void A_PlaySound(AActor* mo)
+{
+	/* [AM] Not implemented...yet.
+	S_StartSound(mo->state->misc2 ? NULL : mo, mo->state->misc1);
+	*/
+}
+
+void A_RandomJump(AActor* mo)
+{
+	/* [AM] Not implemented...yet.
+	if (P_Random(mo) < mo->state->misc2)
+		P_SetMobjState(mo, mo->state->misc1);
+	*/
+}
+
+//
+// This allows linedef effects to be activated inside deh frames.
+//
+
+void A_LineEffect(AActor* mo)
+{
+	/* [AM] Not implemented...yet.
+	if (!(mo->intflags & MIF_LINEDONE))                // Unless already used up
+	{
+		line_t junk = *lines;                          // Fake linedef set to 1st
+		if ((junk.special = (short)mo->state->misc1))  // Linedef type
+		{
+			// [FG] made static
+			static player_t player;                    // Remember player status
+			player_t* oldplayer = mo->player;          // Remember player status
+			mo->player = &player;                      // Fake player
+			player.health = 100;                       // Alive player
+			junk.tag = (short)mo->state->misc2;        // Sector tag for linedef
+			if (!P_UseSpecialLine(mo, &junk, 0))       // Try using it
+			    P_CrossSpecialLine(&junk, 0, mo);        // Try crossing it
+			if (!junk.special)                         // If type cleared,
+			    mo->intflags |= MIF_LINEDONE;            // no more for this thing
+			mo->player = oldplayer;                    // Restore player status
+		}
+	}
+	*/
 }
 
 VERSION_CONTROL (p_enemy_cpp, "$Id$")

@@ -68,6 +68,7 @@ EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_teamsinplay)
 
 extern int mapchange;
 extern int shotclock;
@@ -316,6 +317,7 @@ void SV_ServerSettingChange();
 void G_InitNew (const char *mapname)
 {
 	size_t i;
+	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -335,42 +337,15 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	if (old_gametype != sv_gametype || sv_gametype != GM_COOP) {
+	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
-
-		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
-		for (Players::iterator it = players.begin();it != players.end();++it)
-		{
-			// [SL] 2011-07-30 - Don't force downloading players to become spectators
-			// it stops their downloading
-			if (!(it->ingame()))
-				continue;
-
-			for (Players::iterator pit = players.begin();pit != players.end();++pit)
-			{
-				if (!(pit->ingame()))
-					continue;
-				MSG_WriteMarker (&(pit->client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(pit->client.reliablebuf), it->id);
-				MSG_WriteByte (&(pit->client.reliablebuf), true);
-			}
-			it->spectator = true;
-			it->playerstate = PST_LIVE;
-
-			it->suicide_time = 0;				// Ch0wW : Disallow suicide
-			it->joinafterspectatortime = -(TICRATE * 5);
-		}
-	}
 
 	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
 	// send changed cvars
 	gamestate = GS_LEVEL;
 	SV_ServerSettingChange();
 
-	if (paused)
-	{
-		paused = false;
-	}
+	paused = false;
 
 	// [RH] If this map doesn't exist, bomb out
 	if (W_CheckNumForName (mapname) == -1)
@@ -433,8 +408,8 @@ void G_InitNew (const char *mapname)
 
 			it->playerstate = PST_ENTER; // [BC]
 
-			it->suicide_time = 0;				// Ch0wW : Disallow suicide
-			it->joinafterspectatortime = -(TICRATE * 5);
+			it->suicidedelay = 0;				// Ch0wW : Disallow suicide
+			it->joindelay = 0;
 		}
 	}
 
@@ -449,12 +424,10 @@ void G_InitNew (const char *mapname)
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
+	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
+		SV_UpdatePlayerQueueLevelChange();
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog();
-
-	// denis - hack to fix ctfmode, as it is only known after the map is processed!
-	//if(old_ctfmode != ctfmode)
-	//	SV_ServerSettingChange();
 }
 
 //
@@ -548,15 +521,16 @@ void G_DoResetLevel(bool full_reset)
 	Players::iterator it;
 	if (sv_gametype == GM_CTF)
 	{
-		for (size_t i = 0;i < NUMFLAGS;i++)
+		for (size_t i = 0;i < NUMTEAMS;i++)
 		{
 			for (it = players.begin();it != players.end();++it)
-			{
 				it->flags[i] = false;
-			}
-			CTFdata[i].flagger = 0;
-			CTFdata[i].firstgrab = false;
-			CTFdata[i].state = flag_home;
+
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = flag_home;
+			teamInfo->FlagData.firstgrab = false;
+			teamInfo->Points = 0;
 		}
 	}
 
@@ -621,7 +595,7 @@ void G_DoResetLevel(bool full_reset)
 		level.time = level_time;
 		// Clear global goals.
 		for (size_t i = 0; i < NUMTEAMS; i++)
-			TEAMpoints[i] = 0;
+			GetTeamInfo((team_t)i)->Points;
 		// Clear player information.
 		for (it = players.begin();it != players.end();++it)
 		{
@@ -631,7 +605,7 @@ void G_DoResetLevel(bool full_reset)
 			it->deathcount = 0;
 			it->killcount = 0;
 			it->points = 0;
-			it->joinafterspectatortime = level.time;
+			it->joindelay = 0;
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
@@ -766,7 +740,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
-			TEAMpoints[i] = 0;
+			GetTeamInfo((team_t)i)->Points = 0;
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
@@ -796,30 +770,29 @@ void G_DoLoadLevel (int position)
 
 	// For single-player servers.
 	for (Players::iterator it = players.begin();it != players.end();++it)
-		it->joinafterspectatortime -= level.time;
-
-	flagdata *tempflag;
+		it->joindelay = 0;
 
 	// Nes - CTF Pre flag setup
 	if (sv_gametype == GM_CTF) {
-		tempflag = &CTFdata[it_blueflag];
-		tempflag->flaglocated = false;
 
-		tempflag = &CTFdata[it_redflag];
-		tempflag->flaglocated = false;
+		for (int i = 0; i < NUMTEAMS; i++)
+			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
 
 	P_SetupLevel (level.mapname, position);
 
 	// Nes - CTF Post flag setup
-	if (sv_gametype == GM_CTF) {
-		tempflag = &CTFdata[it_blueflag];
-		if (!tempflag->flaglocated)
-			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
-
-		tempflag = &CTFdata[it_redflag];
-		if (!tempflag->flaglocated)
-			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Red flag pedestal not found! No red flags in game.\n");
+	if (sv_gametype == GM_CTF)
+	{
+		for (int i = 0; i < sv_teamsinplay; i++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			if (!teamInfo->FlagData.flaglocated)
+			{
+				const char* teamColor = teamInfo->ColorString.c_str();
+				SV_BroadcastPrintf(PRINT_HIGH, "WARNING: %s flag pedestal not found! No %s flags in game.\n", teamColor, teamColor);
+			}
+		}
 	}
 
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
