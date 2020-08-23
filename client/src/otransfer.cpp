@@ -25,6 +25,37 @@
 #include "cmdlib.h"
 #include "i_system.h"
 
+// // Common callbacks // //
+
+//
+// https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+//
+static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
+{
+	static std::string CONTENT_TYPE = "content-type: ";
+	static std::string WANTED_TYPE = "content-type: application/octet-stream";
+
+	if (nitems < 2)
+		return nitems;
+
+	// Ensure we're only grabbing binary content types.
+	std::string str = StdStringToLower(std::string(buffer, nitems - 2));
+	size_t pos = str.find(CONTENT_TYPE);
+	if (pos == 0)
+	{
+		// Found Content-Type, see if it's the correct one.
+		size_t pos2 = str.find(WANTED_TYPE);
+		if (pos2 != 0)
+		{
+			// Bzzt, wrong answer.
+			return 0;
+		}
+	}
+	return nitems;
+}
+
+// // OTransferInfo // //
+
 bool OTransferInfo::hydrate(CURL* curl)
 {
 	long resCode;
@@ -51,34 +82,6 @@ bool OTransferInfo::hydrate(CURL* curl)
 // PRIVATE //
 
 //
-// https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
-//
-size_t OTransferCheck::curlHeader(char* buffer, size_t size, size_t nitems,
-                                  void* userdata)
-{
-	static std::string CONTENT_TYPE = "content-type: ";
-	static std::string WANTED_TYPE = "content-type: application/octet-stream";
-
-	if (nitems < 2)
-		return nitems;
-
-	// Ensure we're only grabbing binary content types.
-	std::string str = StdStringToLower(std::string(buffer, nitems - 2));
-	size_t pos = str.find(CONTENT_TYPE);
-	if (pos == 0)
-	{
-		// Found Content-Type, see if it's the correct one.
-		size_t pos2 = str.find(WANTED_TYPE);
-		if (pos2 != 0)
-		{
-			// Bzzt, wrong answer.
-			return 0;
-		}
-	}
-	return nitems;
-}
-
-//
 // https://curl.haxx.se/libcurl/c/CURLOPT_WRITEFUNCTION.html
 //
 size_t OTransferCheck::curlWrite(void* data, size_t size, size_t nmemb, void* userp)
@@ -98,7 +101,7 @@ bool OTransferCheck::start()
 {
 	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, OTransferCheck::curlHeader);
+	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
 	curl_multi_add_handle(_curlm, _curl);
@@ -185,42 +188,6 @@ int OTransfer::curlProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
 	return 0;
 }
 
-//
-// https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
-//
-size_t OTransfer::curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
-{
-	static std::string CONTENT_TYPE = "content-type: ";
-	static std::string WANTED_TYPE = "content-type: application/octet-stream";
-
-	if (nitems < 2)
-		return nitems;
-
-	// Ensure we're only grabbing binary content types.
-	std::string str = StdStringToLower(std::string(buffer, nitems - 2));
-	size_t pos = str.find(CONTENT_TYPE);
-	if (pos == 0)
-	{
-		// Found Content-Type, see if it's the correct one.
-		size_t pos2 = str.find(WANTED_TYPE);
-		if (pos2 != 0)
-		{
-			// Bzzt, wrong answer.
-			return 0;
-		}
-	}
-	return nitems;
-}
-
-//
-// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
-//
-int OTransfer::curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-                         void* userptr)
-{
-	return 0;
-}
-
 // PUBLIC //
 
 /**
@@ -265,10 +232,7 @@ bool OTransfer::start()
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
-	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, OTransfer::curlHeader);
-	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L); // turns on debug
-	// curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, OTransfer::curlDebug);
-	// curl_easy_setopt(_curl, CURLOPT_DEBUGDATA, this);
+	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_multi_add_handle(_curlm, _curl);
 
 	int running;

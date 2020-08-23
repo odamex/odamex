@@ -66,7 +66,6 @@ class OTransferCheck
 
 	OTransferCheck(const OTransferCheck&);
 	static size_t curlWrite(void* data, size_t size, size_t nmemb, void* userp);
-	static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
 
   public:
 	OTransferCheck(OTransferDoneProc done, OTransferErrorProc err)
@@ -105,9 +104,6 @@ class OTransfer
 	OTransfer(const OTransfer&);
 	static int curlProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
 	                        curl_off_t ultotal, curl_off_t ulnow);
-	static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata);
-	static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-	                     void* userptr);
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
