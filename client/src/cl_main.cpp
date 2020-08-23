@@ -1593,7 +1593,8 @@ bool CL_PrepareConnect(void)
 		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
 	}
 
-	MSG_ReadString();
+	// Download website - needed for HTTP downloading to work.
+	sv_website.Set(MSG_ReadString());
 
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
