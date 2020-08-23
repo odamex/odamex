@@ -127,7 +127,7 @@ class OTransfer
 	}
 
 	void setURL(const std::string& src);
-	bool setOutputFile(const std::string& dest);
+	int setOutputFile(const std::string& dest);
 	bool start();
 	void stop();
 	bool tick();

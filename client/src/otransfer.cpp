@@ -204,9 +204,9 @@ void OTransfer::setURL(const std::string& src)
  * @brief Set the destination file of the transfer.
  *
  * @param dest Destination file path, passed to fopen.
- * @return True if the output file was set successfully, otherwise false.
+ * @return 0 on success, or the value of errno after the failed fopen on failure.
  */
-bool OTransfer::setOutputFile(const std::string& dest)
+int OTransfer::setOutputFile(const std::string& dest)
 {
 	// We download to the partial file and move it later.
 	_filename = dest;
@@ -214,10 +214,10 @@ bool OTransfer::setOutputFile(const std::string& dest)
 
 	_file = fopen(_filepart.c_str(), "wb+");
 	if (_file == NULL)
-		return false;
+		return errno;
 
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, _file);
-	return true;
+	return 0;
 }
 
 /**

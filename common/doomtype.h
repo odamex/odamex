@@ -173,9 +173,13 @@ typedef uint64_t			dtime_t;
 #ifdef _WIN32
 	#define PATHSEP "\\"
 	#define PATHSEPCHAR '\\'
+	#define PATHLISTSEP ";"
+	#define PATHLISTSEPCHAR ';'
 #else
 	#define PATHSEP "/"
 	#define PATHSEPCHAR '/'
+	#define PATHLISTSEP ":"
+	#define PATHLISTSEPCHAR ':'
 #endif
 
 // [RH] This gets used all over; define it here:

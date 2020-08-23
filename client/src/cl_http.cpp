@@ -30,10 +30,12 @@
 #include "cmdlib.h"
 #include "doomstat.h"
 #include "i_system.h"
+#include "m_argv.h"
 #include "m_fileio.h"
 #include "otransfer.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
+EXTERN_CVAR(waddirs)
 
 namespace http
 {
@@ -225,6 +227,32 @@ static void TickCheck()
 	g_state.check->tick();
 }
 
+/**
+ * @brief Construct a list of download directories.
+ */
+static StringTokens GetDownloadDirs()
+{
+	StringTokens dirs;
+
+	// Add all of the sources.
+	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
+	dirs.push_back(startdir);
+	dirs.push_back(progdir);
+
+	// Clean up all of the directories before deduping them.
+	StringTokens::iterator it = dirs.begin();
+	for (; it != dirs.end(); ++it)
+		*it = M_CleanPath(*it);
+
+	// Dedupe directories.
+	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
+	return dirs;
+}
+
 static void TransferDone(const OTransferInfo& info)
 {
 	Printf(PRINT_HIGH, "Download completed at %ld bytes per second.\n", info.speed);
@@ -248,10 +276,46 @@ static void TickDownload()
 {
 	if (g_state.transfer == NULL)
 	{
-		// Start the transfer.
+		// Create the transfer.
 		g_state.transfer = new OTransfer(::http::TransferDone, ::http::TransferError);
 		g_state.transfer->setURL(g_state.url.c_str());
-		g_state.transfer->setOutputFile(g_state.filename.c_str());
+
+		// Figure out where our destination should be.
+		std::string dest;
+		StringTokens dirs = GetDownloadDirs();
+		for (StringTokens::iterator it = dirs.begin(); it != dirs.end(); ++it)
+		{
+			// Ensure no path-traversal shenanegins are going on.
+			dest = *it + PATHSEP + g_state.filename;
+			M_CleanPath(dest);
+			if (dest.find(*it) != 0)
+			{
+				// Something about the filename is trying to escape the
+				// download directory.  This is almost certainly malicious.
+				::http::TransferError("Saved file tried to escape download directory.\n");
+				g_state.Ready();
+				return;
+			}
+
+			// If the output file was set successfully, escape the loop.
+			int err = g_state.transfer->setOutputFile(g_state.filename.c_str());
+			if (err == 0)
+				break;
+
+			// Otherwise, set the destination to the empty string and try again.
+			Printf(PRINT_HIGH, "Could not save to %s (%s)\n", dest.c_str(),
+			       strerror(err));
+			dest = "";
+		}
+
+		if (dest.empty())
+		{
+			// Found no safe place to write, bail out.
+			::http::TransferError("No safe place to save file.\n");
+			g_state.Ready();
+			return;
+		}
+
 		if (!g_state.transfer->start())
 		{
 			// Failed to start, bail out.
