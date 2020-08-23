@@ -343,11 +343,17 @@ bool OTransfer::tick()
 		return false;
 	}
 
-	// Rename the file.
+	// Close the file so we can rename it.
+	fclose(_file);
+	_file = NULL;
+
 	int ok = rename(_filepart.c_str(), _filename.c_str());
 	if (ok != 0)
 	{
-		_errproc("File could not be renamed");
+		std::string buf;
+		StrFormat(buf, "File %s could not be renamed to %s - %s", _filepart.c_str(),
+		          _filename.c_str(), strerror(errno));
+		_errproc(buf.c_str());
 		return false;
 	}
 
