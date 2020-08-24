@@ -28,16 +28,10 @@ if(USE_INTERNAL_CURL)
   message(STATUS "Compiling internal CURL...")
 
   # Set vars so the finder can find them.
-  # [AM] FIXME: Figure out how to handle multi-config.
   set(CURL_INCLUDE_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CURL_LIBRARY
-      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl-d${libsuffix}")
-  else()
-    set(CURL_LIBRARY
-      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl${libsuffix}")
-  endif()
+  set(CURL_LIBRARY
+    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl${libsuffix}")
 
   if(WIN32)
     set(_COMPILE_CURL_WINSSL ON)
@@ -53,7 +47,7 @@ if(USE_INTERNAL_CURL)
     "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
     "-DCMAKE_LINKER=${CMAKE_LINKER}"
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DBUILD_CURL_EXE=OFF"
     "-DBUILD_SHARED_LIBS=OFF"
@@ -65,7 +59,8 @@ if(USE_INTERNAL_CURL)
 
   # Compile the library.
   execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build" --target install
+    --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
+    --config RelWithDebInfo --target install
   )
 endif()
 
