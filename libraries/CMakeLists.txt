@@ -28,10 +28,16 @@ if(USE_INTERNAL_CURL)
   message(STATUS "Compiling internal CURL...")
 
   # Set vars so the finder can find them.
+  # [AM] FIXME: Figure out how to handle multi-config.
   set(CURL_INCLUDE_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-  set(CURL_LIBRARY
-    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl-d${libsuffix}")
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CURL_LIBRARY
+      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl-d${libsuffix}")
+  else()
+    set(CURL_LIBRARY
+      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libcurl${libsuffix}")
+  endif()
 
   if(WIN32)
     set(_COMPILE_CURL_WINSSL ON)

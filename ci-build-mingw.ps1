@@ -44,6 +44,7 @@ Move-Item "lib\gcc810_x64_dll" "lib\gcc_dll"
 Set-Location ..
 
 & cmake .. -G "Ninja" `
+    -DCMAKE_BUILD_TYPE="RelWithDebInfo" `
     -DwxWidgets_ROOT_DIR="./wxMSW" `
     -DwxWidgets_wxrc_EXECUTABLE="./wxMSW/lib/gcc_dll/wxrc.exe"
 
