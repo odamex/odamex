@@ -178,7 +178,18 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
-	
+
+// Game mode options
+// -----------------
+
+CVAR(g_survival, "0", "Turns on surival mode - players have limited lives", CVARTYPE_BOOL,
+     CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+CVAR(g_survival_lives, "0", "Number of lives a player has in survival", CVARTYPE_INT,
+     CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+CVAR(g_survival_jointimer, "0",
+     "Number of seconds after the game begins that a survival session can be joined by "
+     "new players",
+     CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // Compatibility options
 // ---------------------------------

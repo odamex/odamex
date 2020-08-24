@@ -173,6 +173,8 @@ public:
 	bool		cards[NUMCARDS];
 	bool		backpack;
 
+	// [AM] Lives left.
+	int			lives;
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
@@ -450,6 +452,3 @@ typedef struct wbstartstruct_s
 } wbstartstruct_t;
 
 #endif // __D_PLAYER_H__
-
-
-

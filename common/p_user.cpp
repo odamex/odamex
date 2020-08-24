@@ -815,6 +815,7 @@ void player_s::Serialize (FArchive &arc)
 			<< armorpoints
 			<< armortype
 			<< backpack
+			<< lives
 			<< fragcount
 			<< readyweapon
 			<< pendingweapon
@@ -866,6 +867,7 @@ void player_s::Serialize (FArchive &arc)
 			>> armorpoints
 			>> armortype
 			>> backpack
+			>> lives
 			>> fragcount
 			>> readyweapon
 			>> pendingweapon
@@ -923,6 +925,7 @@ player_s::player_s() :
 	armorpoints(0),
 	armortype(0),
 	backpack(false),
+	lives(0),
 	points(0),
 	fragcount(0),
 	deathcount(0),
@@ -1025,6 +1028,8 @@ player_s &player_s::operator =(const player_s &other)
 
 	for(i = 0; i < NUMCARDS; i++)
 		cards[i] = other.cards[i];
+
+	lives = other.lives;
 
 	for(i = 0; i < NUMTEAMS; i++)
 		flags[i] = other.flags[i];
