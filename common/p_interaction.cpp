@@ -35,6 +35,7 @@
 #include "p_ctf.h"
 #include "p_acs.h"
 #include "g_warmup.h"
+#include "m_wdlstats.h"
 
 extern bool predicting;
 
@@ -471,11 +472,17 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
 			msg = &GOTARMOR;
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+					WDL_PICKUP_GREENARMOR, 0, 0);
             break;
 
 	    case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
 			msg = &GOTMEGA;
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+					WDL_PICKUP_BLUEARMOR, 0, 0);
             break;
 
 		// bonus items
@@ -487,6 +494,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
             }
             player->mo->health = player->health;
 			msg = &GOTHTHBONUS;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+				WDL_PICKUP_HEALTHBONUS, 0, 0);
             break;
 
 	    case SPR_BON2:
@@ -500,6 +509,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->armortype = deh.GreenAC;
             }
 			msg = &GOTARMBONUS;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+				WDL_PICKUP_ARMORBONUS, 0, 0);
             break;
 
 	    case SPR_SOUL:
@@ -511,6 +522,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
             player->mo->health = player->health;
 			msg = &GOTSUPER;
             sound = 1;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+				WDL_PICKUP_SOULSPHERE, 0, 0);
             break;
 
 	    case SPR_MEGA:
@@ -519,6 +532,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
             P_GiveArmor(player,deh.BlueAC);
 			msg = &GOTMSPHERE;
             sound = 1;
+			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+				WDL_PICKUP_MEGASPHERE, 0, 0);
             break;
 
 		// cards
@@ -562,6 +577,9 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_STIM:
 			val = P_GiveBody(player, 10);
 			msg = &GOTSTIM;
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+					WDL_PICKUP_STIMPACK, 0, 0);
             break;
 
 	    case SPR_MEDI:
@@ -574,6 +592,9 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 msg = &GOTMEDIKIT;
             }
 			val = P_GiveBody(player, 25);
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+					WDL_PICKUP_MEDKIT, 0, 0);
             break;
 
 		// power ups
@@ -591,6 +612,9 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->pendingweapon = wp_fist;
             }
             sound = 1;
+			if (val == IEV_EquipRemove)
+				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
+					WDL_PICKUP_BERSERK, 0, 0);
             break;
 
 	    case SPR_PINS:
@@ -1186,7 +1210,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
     unsigned	ang;
-	int 		saved;
+	int 		saved = 0;
 	player_t*   splayer = NULL; // shorthand for source->player
 	player_t*   tplayer = NULL; // shorthand for target->player
 	fixed_t 	thrust;
@@ -1218,6 +1242,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	MeansOfDeath = mod;
+	bool targethasflag = (
+		&idplayer(CTFdata[TEAM_BLUE].flagger) == tplayer ||
+		&idplayer(CTFdata[TEAM_RED].flagger) == tplayer
+	);
 
 	if (target->flags & MF_SKULLFLY)
 	{
@@ -1330,6 +1358,33 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			tplayer->damagecount = 100;	// teleport stomp does 10k points...
         }
 		SV_SendDamagePlayer(tplayer, target->health - damage);
+
+		// WDL damage events - they have to be up here to ensure we know how
+		// much armor is subtracted.
+		int low = std::max(target->health - damage, 0);
+		int actualdamage = target->health - low;
+
+		if (source == NULL)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, emod);
+		}
+		else if (targethasflag)
+		{
+			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
+				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4,
+					M_MODToWeapon(mod), 0);
+
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
+		}
+		else
+		{
+			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
+				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4,
+					M_MODToWeapon(mod), 0);
+
+			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
+		}
 	}
 
 	// do the damage
@@ -1340,6 +1395,22 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (target->health <= 0)
 		{
 			P_KillMobj(source, target, inflictor, false);
+
+			// WDL damage events.
+			if (source == NULL && targethasflag)
+			{
+				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
+			}
+			else if (source == NULL)
+			{
+				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+				M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
+			}
+			else if (targethasflag)
+				M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+			else
+				M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
 			return;
 		}
 	}

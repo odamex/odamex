@@ -49,6 +49,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
+#include "m_wdlstats.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -448,6 +449,9 @@ void G_InitNew (const char *mapname)
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog();
+
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
 	//if(old_ctfmode != ctfmode)
 	//	SV_ServerSettingChange();
@@ -551,6 +555,7 @@ void G_DoResetLevel(bool full_reset)
 				it->flags[i] = false;
 			}
 			CTFdata[i].flagger = 0;
+			CTFdata[i].firstgrab = false;
 			CTFdata[i].state = flag_home;
 		}
 	}
@@ -668,6 +673,8 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	M_StartWDLLog();
 }
 
 //

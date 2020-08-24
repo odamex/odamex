@@ -696,15 +696,15 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-void STACK_ARGS I_FatalError (const char *error, ...)
+NORETURN void STACK_ARGS I_FatalError (const char *error, ...)
 {
+	char errortext[MAX_ERRORTEXT];
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
 
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
-		char errortext[MAX_ERRORTEXT];
 		va_list argptr;
 		va_start (argptr, error);
 		int index = vsprintf (errortext, error, argptr);
@@ -722,6 +722,16 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
 		exit(EXIT_FAILURE);
 	}
+
+	// Something has seriously gone sideways.
+	va_list argptr;
+	va_start(argptr, error);
+	fprintf(stderr, "Recursive I_FatalError detected!\r\nError = ");
+	vfprintf(stderr, error, argptr);
+	fprintf(stderr, "\r\nSDL_GetError = %s\r\n", SDL_GetError());
+	va_end(argptr);
+
+	abort();
 }
 
 void STACK_ARGS I_Error (const char *error, ...)
