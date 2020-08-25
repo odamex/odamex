@@ -54,6 +54,8 @@ EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
+EXTERN_CVAR (g_survival)
+EXTERN_CVAR (g_survival_lives)
 
 extern bool predicting, step_mode;
 
@@ -577,7 +579,9 @@ void P_DeathThink (player_t *player)
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
+		if (player->ingame() &&
+		    ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
+		    ((g_survival && player->lives > 0) || !g_survival))
 		{
 			player->playerstate = PST_REBORN;
 		}

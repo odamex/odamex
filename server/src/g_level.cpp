@@ -69,6 +69,7 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR (g_survival_lives)
 
 extern int mapchange;
 extern int shotclock;
@@ -599,6 +600,7 @@ void G_DoResetLevel(bool full_reset)
 		// Clear player information.
 		for (it = players.begin();it != players.end();++it)
 		{
+			it->lives = g_survival_lives.asInt();
 			it->fragcount = 0;
 			it->itemcount = 0;
 			it->secretcount = 0;
@@ -713,6 +715,7 @@ void G_DoLoadLevel (int position)
 		for (size_t j = 0; j < NUMCARDS; j++)
 			it->cards[j] = false;
 
+		it->lives = g_survival_lives.asInt();
 		it->fragcount = 0;
 		it->itemcount = 0;
 		it->secretcount = 0;

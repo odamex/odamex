@@ -113,6 +113,7 @@ EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_survival_lives)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -2074,6 +2075,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 void SV_InitPlayerEnterState(player_s* player)
 {
+	player->lives = g_survival_lives.asInt();
 	player->fragcount = 0;
 	player->killcount = 0;
 	player->points = 0;

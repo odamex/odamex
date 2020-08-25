@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include "cmdlib.h"
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
@@ -86,6 +87,8 @@ EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_survival_lives)
 
 std::vector<patch_t*> FlagIconHome;
 std::vector<patch_t*> FlagIconReturn;
@@ -464,8 +467,29 @@ void ST_voteDraw (int y) {
 
 namespace hud {
 
+/**
+ * @brief Draw the number of lives left on the HUD.
+ * 
+ * @param y Bottom Y to align with.
+ */
+static void drawLives(int y)
+{
+	if (!g_survival)
+		return;
+
+	// If the game mode has fewer than 2 lives, showing the fact that we have
+	// 1 life left all the time would be kind of silly.
+	if (g_survival_lives < 2)
+		return;
+
+	static std::string str;
+	StrFormat(str, "%d lives left", displayplayer().lives);
+	hud::DrawText(0, y, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, str.c_str(), CR_GREY);
+}
+
 // [AM] Draw CTF scoreboard
-void drawCTF() {
+static void drawCTF() {
 	if (sv_gametype != GM_CTF) {
 		return;
 	}
@@ -682,6 +706,9 @@ void OdamexHUD() {
 		}
 	}
 
+	// Draw number of lives left.
+	hud::drawLives(0);
+
 	// Draw CTF scoreboard
 	hud::drawCTF();
 }
@@ -726,6 +753,9 @@ void SpectatorHUD() {
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, 0);
+
+	// Draw number of lives left.
+	hud::drawLives(0);
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
@@ -898,6 +928,9 @@ void DoomHUD()
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, hud_targetcount);
+
+	// Draw number of lives left.
+	hud::drawLives(st_y);
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
