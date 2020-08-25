@@ -13,6 +13,6 @@ WORKDIR build
 
 # Build commands
 RUN cmake3 .. -GNinja \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_MINIUPNP=0
 
 CMD ["ninja"]
