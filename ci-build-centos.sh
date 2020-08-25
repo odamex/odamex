@@ -8,4 +8,4 @@ IFS=$'\n\t'
 set -x
 
 docker build -t odamex -f ci-centos.Dockerfile .
-docker run --rm -it odamex
+docker run --rm odamex
