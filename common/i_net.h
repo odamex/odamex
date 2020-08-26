@@ -280,6 +280,42 @@ public:
 		}
 	}
 
+	//
+	// Write an unsigned varint to the wire.
+	//
+	// Use these when you want to send an int and are reasonably sure that
+	// the int will usually be small.
+	//
+	// https://developers.google.com/protocol-buffers/docs/encoding#varints
+	//
+	void WriteUVarint(unsigned int v)
+	{
+		for (;;)
+		{
+			// Our next byte contains 7 bits of the number.
+			int out = v & 0x7F;
+
+			// Any bits left?
+			v >>= 7;
+			if (v == 0)
+			{
+				// We're done, bail after writing this byte.
+				WriteByte(out);
+				return;
+			}
+
+			// Flag the last bit to indicate more is coming.
+			out |= 0x80;
+			WriteByte(out);
+		}
+	}
+
+	void WriteVarint(int v)
+	{
+		// Zig-zag encoding for negative numbers.
+		WriteUVarint((v << 1) ^ (v >> 31));
+	}
+
 	void WriteString(const char *c)
 	{
 		if(c && *c)
@@ -363,6 +399,49 @@ public:
 				(data[oldpos+1]<<8) +
 				(data[oldpos+2]<<16)+
 				(data[oldpos+3]<<24);
+	}
+
+	unsigned int ReadUVarint()
+	{
+		unsigned char b;
+		unsigned int out = 0;
+		unsigned int offset = 0;
+
+		for (;;)
+		{
+			// Read part of the variant.
+			b = ReadByte();
+			if (overflowed)
+				return -1;
+
+			// Shove the first seven bits into our output variable.
+			out |= (unsigned int)(b & 0x7F) << offset;
+			offset += 7;
+
+			// Is the flag bit set?
+			if (!(b & 0x80))
+			{
+				// Nope, we're done.
+				return out;
+			}
+
+			if (offset >= 32)
+			{
+				// Our variant int is too big - overflow us.
+				overflowed = true;
+				return -1;
+			}
+		}
+	}
+
+	int ReadVarint()
+	{
+		unsigned int uv = ReadUVarint();
+		if (overflowed)
+			return -1;
+
+		// Zig-zag encoding for negative numbers.
+		return (uv >> 1) ^ -(uv & 1);
 	}
 
 	const char *ReadString()
