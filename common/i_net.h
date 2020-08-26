@@ -647,14 +647,13 @@ void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
+void MSG_WriteUVarint(buf_t* b, unsigned int uv);
+void MSG_WriteVarint(buf_t* b, int uv);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
-
-int MSG_WriteVarInt(byte* buf, unsigned int value);
-int MSG_ReadVarInt(byte* buf, int buflen, int& bytesRead);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);
@@ -663,6 +662,8 @@ int MSG_ReadByte (void);
 void *MSG_ReadChunk (const size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
+unsigned int MSG_ReadUVarint();
+int MSG_ReadVarint();
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);
@@ -676,6 +677,3 @@ bool MSG_DecompressAdaptive (huffman &huff);
 bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);
 
 #endif
-
-
-

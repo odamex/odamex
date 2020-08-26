@@ -2604,10 +2604,9 @@ void CL_KillMobj(void)
 	AActor *target = P_FindThingById (MSG_ReadShort() );
 	AActor *inflictor = P_FindThingById (MSG_ReadShort() );
 	int health = MSG_ReadShort();
-
 	MeansOfDeath = MSG_ReadLong();
-
 	bool joinkill = ((MSG_ReadByte()) != 0);
+	int lives = MSG_ReadVarint();
 
 	if (!target)
 		return;
@@ -2620,6 +2619,9 @@ void CL_KillMobj(void)
 	if (target->player == &consoleplayer())
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
+
+	if (lives >= 0)
+		target->player->lives = lives;
 
 	P_KillMobj (source, target, inflictor, joinkill);
 }
@@ -4189,24 +4191,16 @@ void CL_ExecuteLineSpecial()
 void CL_ACSExecuteSpecial()
 {
 	byte special = MSG_ReadByte();
-	short netid = MSG_ReadShort();
-	byte length = MSG_ReadByte();
-	byte* argBuffer = (byte*)MSG_ReadChunk(length);
-	const char* print = MSG_ReadString();
+	int netid = MSG_ReadVarint();
+	byte count = MSG_ReadByte();
+	if (count >= 8)
+		count = 8;
 
 	static int acsArgs[16];
-	int count = 0, bytesRead = 0;
+	for (unsigned int i = 0; i < count; i++)
+		acsArgs[i] = MSG_ReadVarint();
 
-	while (length > 0 && bytesRead < length && count < 16)
-	{
-		acsArgs[count++] = MSG_ReadVarInt(argBuffer + bytesRead, length, bytesRead);
-
-		if (bytesRead < 0)
-		{
-			count--;
-			break;
-		}
-	}
+	const char* print = MSG_ReadString();
 
 	AActor* activator = P_FindThingById(netid);
 

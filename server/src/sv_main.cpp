@@ -5481,6 +5481,13 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteShort (&cl->reliablebuf, target->health);
 		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
 		MSG_WriteByte (&cl->reliablebuf, joinkill);
+
+		// [AM] Confusingly, we send the lives _before_ we take it away, so
+		//      the lives logic can live in the kill function.
+		if (target->player)
+			MSG_WriteVarint(&cl->reliablebuf, target->player->lives);
+		else
+			MSG_WriteVarint(&cl->reliablebuf, -1);
 	}
 }
 
@@ -5765,25 +5772,39 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 	}
 }
 
-// If playerOnly is true and the activator is a player, then it will only be sent to the activating player
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly,
-	int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+//
+// If playerOnly is true and the activator is a player, then it will only be
+// sent to the activating player.
+//
+// [AM] FIXME: Use vargs or a vector or even a ptr/length instead of....this.
+//
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
+                          bool playerOnly, int arg0, int arg1, int arg2, int arg3,
+                          int arg4, int arg5, int arg6, int arg7, int arg8)
 {
-	int length = 0;
-	static byte argBuffer[64];
+	byte argc = 0;
 	player_s* sendPlayer = NULL;
 	if (playerOnly && activator != NULL && activator->player != NULL)
 		sendPlayer = activator->player;
 
-	if (arg0 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg0);
-	if (arg1 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg1);
-	if (arg2 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg2);
-	if (arg3 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg3);
-	if (arg4 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg4);
-	if (arg5 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg5);
-	if (arg6 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg6);
-	if (arg7 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg7);
-	if (arg8 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg8);
+	if (arg0 != -1)
+		argc += 1;
+	if (arg1 != -1)
+		argc += 1;
+	if (arg2 != -1)
+		argc += 1;
+	if (arg3 != -1)
+		argc += 1;
+	if (arg4 != -1)
+		argc += 1;
+	if (arg5 != -1)
+		argc += 1;
+	if (arg6 != -1)
+		argc += 1;
+	if (arg7 != -1)
+		argc += 1;
+	if (arg8 != -1)
+		argc += 1;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -5794,9 +5815,28 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bo
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_executeacsspecial);
 		MSG_WriteByte(&cl->reliablebuf, special);
-		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
-		MSG_WriteByte(&cl->reliablebuf, length);
-		MSG_WriteChunk(&cl->reliablebuf, argBuffer, length);
+		MSG_WriteVarint(&cl->reliablebuf, activator ? activator->netid : 0);
+
+		MSG_WriteByte(&cl->reliablebuf, argc);
+		if (arg0 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg0);
+		if (arg1 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg1);
+		if (arg2 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg2);
+		if (arg3 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg3);
+		if (arg4 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg4);
+		if (arg5 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg5);
+		if (arg6 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg6);
+		if (arg7 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg7);
+		if (arg8 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg8);
+
 		if (print)
 			MSG_WriteString(&cl->reliablebuf, print);
 		else
