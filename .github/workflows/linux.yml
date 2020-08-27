@@ -20,6 +20,14 @@ jobs:
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
+  build-centos:
+    name: Build (CentOS)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Run build
+      run: bash ci-build-centos.sh
   build-sdl12:
     name: Build (SDL 1.2)
     runs-on: ubuntu-latest
