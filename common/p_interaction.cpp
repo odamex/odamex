@@ -1242,8 +1242,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	MeansOfDeath = mod;
 
-	TeamInfo* teamInfo = GetTeamInfo(tplayer->userinfo.team);
-	bool targethasflag = &idplayer(teamInfo->FlagData.flagger) == tplayer;
+	bool targethasflag = tplayer != NULL && 
+		&idplayer(GetTeamInfo(tplayer->userinfo.team)->FlagData.flagger) == tplayer;
 
 	if (target->flags & MF_SKULLFLY)
 	{
