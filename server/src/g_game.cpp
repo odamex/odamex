@@ -572,10 +572,6 @@ void G_DoReborn (player_t &player)
 	if(!serverside)
 		return;
 
-	// Take away a life, if needed.
-	if (player.lives > 0)
-		player.lives -= 1;
-
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
