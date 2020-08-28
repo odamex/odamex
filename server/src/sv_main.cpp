@@ -3445,32 +3445,36 @@ void SV_SendPackets()
 	fair_send++;
 }
 
+static void SVC_PlayerState(buf_t& b, player_t& player)
+{
+	MSG_WriteMarker(&b, svc_playerstate);
+
+	MSG_WriteByte(&b, player.id);
+	MSG_WriteVarint(&b, player.health);
+	MSG_WriteVarint(&b, player.armortype);
+	MSG_WriteVarint(&b, player.armorpoints);
+	MSG_WriteVarint(&b, player.lives);
+	MSG_WriteVarint(&b, player.readyweapon);
+
+	for (int i = 0; i < NUMAMMO; i++)
+		MSG_WriteVarint(&b, player.ammo[i]);
+
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		pspdef_t *psp = &player.psprites[i];
+		if (psp->state)
+			MSG_WriteByte(&b, psp->state - states);
+		else
+			MSG_WriteByte(&b, 0xFF);
+	}
+}
+
 void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 {
 	if (!client || !player || !player->mo)
 		return;
 
-	buf_t *buf = &client->netbuf;
-
-	MSG_WriteMarker(buf, svc_playerstate);
-	MSG_WriteByte(buf, player->id);
-	MSG_WriteShort(buf, player->health);
-	MSG_WriteByte(buf, player->armortype);
-	MSG_WriteShort(buf, player->armorpoints);
-
-	MSG_WriteByte(buf, player->readyweapon);
-
-	for (int i = 0; i < NUMAMMO; i++)
-		MSG_WriteShort(buf, player->ammo[i]);
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		pspdef_t *psp = &player->psprites[i];
-		if (psp->state)
-			MSG_WriteByte(buf, psp->state - states);
-		else
-			MSG_WriteByte(buf, 0xFF);
-	}
+	SVC_PlayerState(client->netbuf, *player);
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -5432,8 +5436,8 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	}
 }
 
-static void SV_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor,
-                        int mod, bool joinkill)
+static void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor,
+                         int mod, bool joinkill)
 {
 	MSG_WriteMarker(&b, svc_killmobj);
 
@@ -5494,7 +5498,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong (&cl->reliablebuf, target->momy);
 		MSG_WriteLong (&cl->reliablebuf, target->momz);
 
-		SV_KillMobj(cl->reliablebuf, source, target, inflictor, ::MeansOfDeath, joinkill);
+		SVC_KillMobj(cl->reliablebuf, source, target, inflictor, ::MeansOfDeath, joinkill);
 	}
 }
 
@@ -5545,16 +5549,9 @@ void SV_ExplodeMissile(AActor *mo)
 	}
 }
 
-//
-// SV_SendPlayerInfo
-//
-// Sends a player their current inventory
-//
-void SV_SendPlayerInfo(player_t &player)
+static void SVC_PlayerInfo(buf_t& b, player_t& player)
 {
-	client_t *cl = &player.client;
-
-	MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+	MSG_WriteMarker(&b, svc_playerinfo);
 
 	// [AM] 9 weapons, 6 cards, 1 backpack = 16 bits
 	uint16_t booleans = 0;
@@ -5570,27 +5567,40 @@ void SV_SendPlayerInfo(player_t &player)
 	}
 	if (player.backpack)
 		booleans |= (1 << (NUMWEAPONS + NUMCARDS));
-	MSG_WriteShort(&cl->reliablebuf, booleans);
+	MSG_WriteShort(&b, booleans);
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
-		MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
+		MSG_WriteVarint(&b, player.maxammo[i]);
+		MSG_WriteVarint(&b, player.ammo[i]);
 	}
 
-	MSG_WriteByte (&cl->reliablebuf, player.health);
-	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-	MSG_WriteByte (&cl->reliablebuf, player.armortype);
+	MSG_WriteVarint(&b, player.health);
+	MSG_WriteVarint(&b, player.armorpoints);
+	MSG_WriteVarint(&b, player.armortype);
+	MSG_WriteVarint(&b, player.lives);
 
 	// If the player has a pending weapon then tell the client it has changed
-	// The client will set the pendingweapon to this weapon if it doesn't match the readyweapon
+	// The client will set the pendingweapon to this weapon if it doesn't match the
+	// readyweapon
 	if (player.pendingweapon == wp_nochange)
-		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+		MSG_WriteVarint(&b, player.readyweapon);
 	else
-		MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
+		MSG_WriteVarint(&b, player.pendingweapon);
 
 	for (int i = 0; i < NUMPOWERS; i++)
-		MSG_WriteShort(&cl->reliablebuf, player.powers[i]);
+		MSG_WriteVarint(&b, player.powers[i]);
+}
+
+//
+// SV_SendPlayerInfo
+//
+// Sends a player their current inventory
+//
+void SV_SendPlayerInfo(player_t &player)
+{
+	client_t *cl = &player.client;
+	SVC_PlayerInfo(cl->reliablebuf, player);
 }
 
 //

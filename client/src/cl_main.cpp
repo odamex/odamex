@@ -2029,18 +2029,18 @@ void CL_UpdatePlayer()
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
-void CL_UpdatePlayerState(void)
+void CL_UpdatePlayerState()
 {
-	byte id				= MSG_ReadByte();
-	short health		= MSG_ReadShort();
-	byte armortype		= MSG_ReadByte();
-	short armorpoints	= MSG_ReadShort();
+	byte id = MSG_ReadByte();
+	int health = MSG_ReadVarint();
+	int armortype = MSG_ReadVarint();
+	int armorpoints = MSG_ReadVarint();
+	int lives = MSG_ReadVarint();
+	weapontype_t weap = static_cast<weapontype_t>(MSG_ReadVarint());
 
-	weapontype_t weap	= static_cast<weapontype_t>(MSG_ReadByte());
-
-	short ammo[NUMAMMO];
+	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
-		ammo[i] = MSG_ReadShort();
+		ammo[i] = MSG_ReadVarint();
 
 	statenum_t stnum[NUMPSPRITES];
 	for (int i = 0; i < NUMPSPRITES; i++)
@@ -2052,13 +2052,14 @@ void CL_UpdatePlayerState(void)
 			stnum[i] = static_cast<statenum_t>(n);
 	}
 
-	player_t &player = idplayer(id);
+	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
 
 	player.health = player.mo->health = health;
 	player.armortype = armortype;
 	player.armorpoints = armorpoints;
+	player.lives = lives;
 
 	player.readyweapon = weap;
 	player.pendingweapon = wp_nochange;
@@ -2414,12 +2415,11 @@ void CL_SpawnPlayer()
 // CL_PlayerInfo
 // denis - your personal arsenal, as supplied by the server
 //
-void CL_PlayerInfo(void)
+void CL_PlayerInfo()
 {
-	player_t *p = &consoleplayer();
+	player_t* p = &consoleplayer();
 
 	uint16_t booleans = MSG_ReadShort();
-
 	for (int i = 0; i < NUMWEAPONS; i++)
 		p->weaponowned[i] = booleans & 1 << i;
 	for (int i = 0; i < NUMCARDS; i++)
@@ -2428,23 +2428,24 @@ void CL_PlayerInfo(void)
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		p->maxammo[i] = MSG_ReadShort();
-		p->ammo[i] = MSG_ReadShort();
+		p->maxammo[i] = MSG_ReadVarint();
+		p->ammo[i] = MSG_ReadVarint();
 	}
 
-	p->health = MSG_ReadByte();
-	p->armorpoints = MSG_ReadByte();
-	p->armortype = MSG_ReadByte();
+	p->health = MSG_ReadVarint();
+	p->armorpoints = MSG_ReadVarint();
+	p->armortype = MSG_ReadVarint();
+	p->lives = MSG_ReadVarint();
 
-	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	if (newweapon > NUMWEAPONS)	// bad weapon number, choose something else
+	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadVarint());
+	if (newweapon > NUMWEAPONS) // bad weapon number, choose something else
 		newweapon = wp_fist;
 
 	if (newweapon != p->readyweapon)
 		p->pendingweapon = newweapon;
 
 	for (int i = 0; i < NUMPOWERS; i++)
-		p->powers[i] = MSG_ReadShort();
+		p->powers[i] = MSG_ReadVarint();
 }
 
 //

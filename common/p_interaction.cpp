@@ -972,8 +972,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	if (tplayer)
 	{
-		// If the target has a life, take it.
-		if (tplayer->lives > 0)
+		// If the target has a life and we're not joining the game, take it.
+		if (tplayer->lives > 0 && !joinkill)
 			tplayer->lives -= 1;
 
 		// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
