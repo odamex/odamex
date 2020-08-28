@@ -5432,6 +5432,30 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	}
 }
 
+static void SV_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor,
+                        int mod, bool joinkill)
+{
+	MSG_WriteMarker(&b, svc_killmobj);
+
+	if (source)
+		MSG_WriteVarint(&b, source->netid);
+	else
+		MSG_WriteVarint(&b, 0);
+
+	MSG_WriteVarint(&b, target->netid);
+	MSG_WriteVarint(&b, inflictor ? inflictor->netid : 0);
+	MSG_WriteVarint(&b, target->health);
+	MSG_WriteVarint(&b, mod);
+	MSG_WriteBool(&b, joinkill);
+
+	// [AM] Confusingly, we send the lives _before_ we take it away, so
+	//      the lives logic can live in the kill function.
+	if (target->player)
+		MSG_WriteVarint(&b, target->player->lives);
+	else
+		MSG_WriteVarint(&b, -1);
+}
+
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 				     bool joinkill)
 {
@@ -5470,24 +5494,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong (&cl->reliablebuf, target->momy);
 		MSG_WriteLong (&cl->reliablebuf, target->momz);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
-		if (source)
-			MSG_WriteShort(&cl->reliablebuf, source->netid);
-		else
-			MSG_WriteShort(&cl->reliablebuf, 0);
-
-		MSG_WriteShort (&cl->reliablebuf, target->netid);
-		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
-		MSG_WriteShort (&cl->reliablebuf, target->health);
-		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
-		MSG_WriteByte (&cl->reliablebuf, joinkill);
-
-		// [AM] Confusingly, we send the lives _before_ we take it away, so
-		//      the lives logic can live in the kill function.
-		if (target->player)
-			MSG_WriteVarint(&cl->reliablebuf, target->player->lives);
-		else
-			MSG_WriteVarint(&cl->reliablebuf, -1);
+		SV_KillMobj(cl->reliablebuf, source, target, inflictor, ::MeansOfDeath, joinkill);
 	}
 }
 

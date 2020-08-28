@@ -2598,22 +2598,26 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-void CL_KillMobj(void)
+void CL_KillMobj()
 {
- 	AActor *source = P_FindThingById (MSG_ReadShort() );
-	AActor *target = P_FindThingById (MSG_ReadShort() );
-	AActor *inflictor = P_FindThingById (MSG_ReadShort() );
-	int health = MSG_ReadShort();
-	MeansOfDeath = MSG_ReadLong();
-	bool joinkill = ((MSG_ReadByte()) != 0);
+	int srcid = MSG_ReadVarint();
+	int tgtid = MSG_ReadVarint();
+	int infid = MSG_ReadVarint();
+	int health = MSG_ReadVarint();
+	::MeansOfDeath = MSG_ReadVarint();
+	bool joinkill = MSG_ReadBool();
 	int lives = MSG_ReadVarint();
+
+	AActor* source = P_FindThingById(srcid);
+	AActor* target = P_FindThingById(tgtid);
+	AActor* inflictor = P_FindThingById(infid);
 
 	if (!target)
 		return;
 
 	target->health = health;
 
-    if (!serverside && target->flags & MF_COUNTKILL)
+	if (!serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 
 	if (target->player == &consoleplayer())
@@ -2623,9 +2627,8 @@ void CL_KillMobj(void)
 	if (lives >= 0)
 		target->player->lives = lives;
 
-	P_KillMobj (source, target, inflictor, joinkill);
+	P_KillMobj(source, target, inflictor, joinkill);
 }
-
 
 ///////////////////////////////////////////////////////////
 ///// CL_Fire* called when someone uses a weapon  /////////

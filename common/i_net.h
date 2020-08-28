@@ -648,7 +648,7 @@ void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteUVarint(buf_t* b, unsigned int uv);
-void MSG_WriteVarint(buf_t* b, int uv);
+void MSG_WriteVarint(buf_t* b, int v);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
