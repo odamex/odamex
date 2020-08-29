@@ -86,6 +86,7 @@ ExternalProject_Add(jsoncpp-project
   "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+  "-DCMAKE_INSTALL_LIBDIR=lib"  # Without this, CentOS installs into lib64
   BUILD_BYPRODUCTS ${JSONCPP_LIBRARY}
   EXCLUDE_FROM_ALL ON)
 
@@ -112,6 +113,7 @@ ExternalProject_Add(miniupnpc-project
   "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+  "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
   "-DUPNPC_BUILD_SHARED=No"
   "-DUPNPC_BUILD_TESTS=No"
   BUILD_BYPRODUCTS ${MINIUPNPC_LIBRARY}
@@ -182,26 +184,28 @@ if(NOT USE_SDL12)
       INTERFACE_INCLUDE_DIRECTORIES "${SDL2_INCLUDE_DIR}"
       IMPORTED_LOCATION "${SDL2_LIBRARY}")
 
-    # SDL2main target.
-    if(MINGW)
-      # Gross hack to get mingw32 first in the linker order.
-      add_library(SDL2::_SDL2main_detail UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(SDL2::_SDL2main_detail PROPERTIES
-        IMPORTED_LOCATION "${SDL2MAIN_LIBRARY}")
+    if(SDL2MAIN_LIBRARY)
+      # SDL2main target.
+      if(MINGW)
+        # Gross hack to get mingw32 first in the linker order.
+        add_library(SDL2::_SDL2main_detail UNKNOWN IMPORTED GLOBAL)
+        set_target_properties(SDL2::_SDL2main_detail PROPERTIES
+          IMPORTED_LOCATION "${SDL2MAIN_LIBRARY}")
 
-      # Ensure that SDL2main comes before SDL2 in the linker order.  CMake
-      # isn't smart enough to keep proper ordering for indirect dependencies
-      # so we have to spell it out here.
-      target_link_libraries(SDL2::_SDL2main_detail INTERFACE SDL2::SDL2)
+        # Ensure that SDL2main comes before SDL2 in the linker order.  CMake
+        # isn't smart enough to keep proper ordering for indirect dependencies
+        # so we have to spell it out here.
+        target_link_libraries(SDL2::_SDL2main_detail INTERFACE SDL2::SDL2)
 
-      add_library(SDL2::SDL2main INTERFACE IMPORTED GLOBAL)
-      set_target_properties(SDL2::SDL2main PROPERTIES
-        IMPORTED_LIBNAME mingw32)
-      target_link_libraries(SDL2::SDL2main INTERFACE SDL2::_SDL2main_detail)
-    else()
-      add_library(SDL2::SDL2main UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(SDL2::SDL2main PROPERTIES
-        IMPORTED_LOCATION "${SDL2MAIN_LIBRARY}")
+        add_library(SDL2::SDL2main INTERFACE IMPORTED GLOBAL)
+        set_target_properties(SDL2::SDL2main PROPERTIES
+          IMPORTED_LIBNAME mingw32)
+        target_link_libraries(SDL2::SDL2main INTERFACE SDL2::_SDL2main_detail)
+      else()
+        add_library(SDL2::SDL2main UNKNOWN IMPORTED GLOBAL)
+        set_target_properties(SDL2::SDL2main PROPERTIES
+          IMPORTED_LOCATION "${SDL2MAIN_LIBRARY}")
+      endif()
     endif()
   endif()
 endif()
@@ -288,10 +292,12 @@ if(USE_SDL12)
       INTERFACE_INCLUDE_DIRECTORIES "${SDL_INCLUDE_DIR}"
       IMPORTED_LOCATION "${SDL_LIBRARY}")
 
-    # SDLmain target.
-    add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
-    set_target_properties(SDL::SDLmain PROPERTIES
-      IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+    if(SDLMAIN_LIBRARY)
+      # SDLmain target.
+      add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
+      set_target_properties(SDL::SDLmain PROPERTIES
+        IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+    endif()
   endif()
 
   ### SDL_mixer ###
