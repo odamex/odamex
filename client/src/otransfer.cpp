@@ -62,8 +62,8 @@ bool OTransferInfo::hydrate(CURL* curl)
 	if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resCode) != CURLE_OK)
 		return false;
 
-	curl_off_t speed;
-	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed) != CURLE_OK)
+	double speed;
+	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &speed) != CURLE_OK)
 		return false;
 
 	const char* url;
@@ -180,11 +180,11 @@ bool OTransferCheck::tick()
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
 //
-int OTransfer::curlProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-                            curl_off_t ultotal, curl_off_t ulnow)
+int OTransfer::curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
+                            double ulnow)
 {
-	static_cast<OTransfer*>(thisp)->_progress.dltotal = dltotal;
-	static_cast<OTransfer*>(thisp)->_progress.dlnow = dlnow;
+	static_cast<OTransfer*>(clientp)->_progress.dltotal = dltotal;
+	static_cast<OTransfer*>(clientp)->_progress.dlnow = dlnow;
 	return 0;
 }
 
@@ -230,8 +230,8 @@ bool OTransfer::start()
 	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
-	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlProgress);
-	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
+	curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
+	curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_multi_add_handle(_curlm, _curl);
 

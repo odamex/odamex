@@ -102,8 +102,8 @@ class OTransfer
 	std::string _filepart;
 
 	OTransfer(const OTransfer&);
-	static int curlProgress(void* thisp, curl_off_t dltotal, curl_off_t dlnow,
-	                        curl_off_t ultotal, curl_off_t ulnow);
+	static int curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
+	                        double ulnow);
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
