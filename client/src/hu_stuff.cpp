@@ -497,6 +497,8 @@ void HU_Drawer()
 		{
 			hud::DoomHUD();
 		}
+
+		hud::LevelStateHUD();
 	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
@@ -1880,5 +1882,3 @@ BEGIN_COMMAND (displayscores)
 END_COMMAND (displayscores)
 
 VERSION_CONTROL (hu_stuff_cpp, "$Id$")
-
-

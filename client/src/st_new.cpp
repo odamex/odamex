@@ -47,6 +47,7 @@
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"
+#include "g_levelstate.h"
 
 static int		widestnum, numheight;
 static const patch_t	*medi[2];
@@ -711,6 +712,19 @@ void OdamexHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+}
+
+void LevelStateHUD()
+{
+	std::string str;
+	const char* lss = ::levelstate.getStateString();
+
+	hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              lss, CR_GREEN);
+
+	StrFormat(str, "Countdown: %d", ::levelstate.getCountdown());
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              str.c_str(), CR_GREEN);
 }
 
 // [AM] Spectator HUD.

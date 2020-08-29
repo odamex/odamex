@@ -35,18 +35,19 @@ class LevelState
   public:
 	enum States
 	{
-		UNKNOWN,                // Unknown state.
-		INGAME,                 // In the middle of a game.
-		COUNTDOWN,              // Ingame round countdown.
-		END,                    // Game complete, a slight pause before intermission.
-		WARMUP,                 // Warmup state.
-		WARMUP_COUNTDOWN,       // Warmup countdown.
-		WARMUP_FORCE_COUNTDOWN, // Forced countdown, can't be cancelled by unreadying.
+		UNKNOWN,                 // Unknown state.
+		INGAME,                  // In the middle of a game.
+		COUNTDOWN,               // Ingame round countdown.
+		ENDGAME,                 // Game complete, a slight pause before intermission.
+		WARMUP,                  // Warmup state.
+		WARMUP_COUNTDOWN,        // Warmup countdown.
+		WARMUP_FORCED_COUNTDOWN, // Forced countdown, can't be cancelled by unreadying.
 	};
 	LevelState() : _state(LevelState::UNKNOWN), _time_begin(0)
 	{
 	}
 	LevelState::States getState() const;
+	const char* getStateString() const;
 	short getCountdown() const;
 	void reset(level_locals_t& level);
 	bool checkScoreChange() const;

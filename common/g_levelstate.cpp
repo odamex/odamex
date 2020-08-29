@@ -48,6 +48,30 @@ LevelState::States LevelState::getState() const
 }
 
 /**
+ * @brief Get state as string.
+ */
+const char* LevelState::getStateString() const
+{
+	switch (_state)
+	{
+	case LevelState::UNKNOWN:
+		return "Unknown";
+	case LevelState::INGAME:
+		return "In-game";
+	case LevelState::COUNTDOWN:
+		return "Countdown";
+	case LevelState::ENDGAME:
+		return "Endgame";
+	case LevelState::WARMUP:
+		return "Warmup";
+	case LevelState::WARMUP_COUNTDOWN:
+		return "Warmup Countdown";
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
+		return "Warmup Forced Countdown";
+	}
+}
+
+/**
  * @brief Countdown getter.
  */
 short LevelState::getCountdown() const
@@ -106,7 +130,7 @@ bool LevelState::checkReadyToggle() const
  */
 void LevelState::restart()
 {
-	setState(LevelState::WARMUP_FORCE_COUNTDOWN);
+	setState(LevelState::WARMUP_FORCED_COUNTDOWN);
 }
 
 /**
@@ -118,7 +142,7 @@ void LevelState::forceStart()
 	if (_state != LevelState::WARMUP)
 		return;
 
-	setState(LevelState::WARMUP_FORCE_COUNTDOWN);
+	setState(LevelState::WARMUP_FORCED_COUNTDOWN);
 }
 
 /**
@@ -179,7 +203,8 @@ void LevelState::tic()
 		setState(LevelState::WARMUP);
 
 	// If we're not advancing the countdown, we don't care.
-	if (!(_state == LevelState::WARMUP_COUNTDOWN || _state == LevelState::WARMUP_FORCE_COUNTDOWN))
+	if (!(_state == LevelState::WARMUP_COUNTDOWN ||
+	      _state == LevelState::WARMUP_FORCED_COUNTDOWN))
 		return;
 
 	// If we haven't reached the level tic that we begin the map on,
@@ -189,7 +214,7 @@ void LevelState::tic()
 		// Broadcast a countdown (this should be handled clientside)
 		if ((_time_begin - level.time) % TICRATE == 0)
 		{
-			//SV_BroadcastWarmupState(this->status, getCountdown());
+			// SV_BroadcastWarmupState(this->status, getCountdown());
 		}
 		return;
 	}
@@ -207,7 +232,7 @@ void LevelState::tic()
 
 /**
  * @brief Serialize level state into a struct.
- * 
+ *
  * @return Serialzied level state.
  */
 SerializedLevelState LevelState::serialize() const
@@ -220,7 +245,7 @@ SerializedLevelState LevelState::serialize() const
 
 /**
  * @brief Unserialize variables into levelstate.  Usually comes from a server.
- * 
+ *
  * @param serialized New level state to set.
  */
 void LevelState::unserialize(SerializedLevelState serialized)
@@ -235,10 +260,11 @@ void LevelState::setState(LevelState::States new_state)
 	_state = new_state;
 
 	// [AM] If we switch to countdown, set the correct time.
-	if (_state == LevelState::COUNTDOWN || _state == LevelState::WARMUP_COUNTDOWN || _state == LevelState::WARMUP_FORCE_COUNTDOWN)
+	if (_state == LevelState::COUNTDOWN || _state == LevelState::WARMUP_COUNTDOWN ||
+	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		_time_begin = level.time + (sv_countdown.asInt() * TICRATE);
-		//SV_BroadcastWarmupState(new_status, (short)sv_countdown.asInt());
+		// SV_BroadcastWarmupState(new_status, (short)sv_countdown.asInt());
 	}
 	// else
 	// 	SV_BroadcastWarmupState(new_status);

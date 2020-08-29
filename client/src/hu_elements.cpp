@@ -283,7 +283,7 @@ std::string Warmup(int& color)
 				return "Warmup: This player is not ready";
 		}
 	}
-	else if (state == LevelState::WARMUP_COUNTDOWN || state == LevelState::WARMUP_FORCE_COUNTDOWN)
+	else if (state == LevelState::WARMUP_COUNTDOWN || state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		color = CR_GOLD;
 		return "Match is about to start...";

@@ -82,6 +82,9 @@ void drawNetdemo();
 // [ML] New Odamex fullscreen HUD
 void OdamexHUD(void);
 
+// [AM] HUD for showing level state
+void LevelStateHUD();
+
 // [AM] Spectator HUD
 void SpectatorHUD(void);
 
@@ -105,5 +108,3 @@ bool ST_Responder(event_t* ev);
 
 
 #endif
-
-
