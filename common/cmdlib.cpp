@@ -403,7 +403,7 @@ void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
  */
 void StrFormatBytes(std::string& out, size_t bytes)
 {
-	static const char* BYTE_MAGS[]{
+	static const char* BYTE_MAGS[] = {
 	    "B",
 	    "kB",
 	    "MB",
