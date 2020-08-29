@@ -395,6 +395,35 @@ void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
 	free(buf);
 }
 
+/**
+ * @brief Format passed number of bytes with a byte multiple suffix. 
+ * 
+ * @param out Output string buffer.
+ * @param bytes Number of bytes to format.
+ */
+void StrFormatBytes(std::string& out, size_t bytes)
+{
+	static const char* BYTE_MAGS[]{
+	    "B",
+	    "kB",
+	    "MB",
+	    "GB",
+	};
+
+	size_t magnitude = 0;
+	double checkbytes = bytes;
+	while (checkbytes >= 1000.0 && magnitude < 4)
+	{
+		magnitude += 1;
+		checkbytes /= 1000.0;
+	}
+
+	if (magnitude)
+		StrFormat(out, "%.2f %s", checkbytes, BYTE_MAGS[magnitude]);
+	else
+		StrFormat(out, "%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
+}
+
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
 bool StrFormatISOTime(std::string& s, const tm* utc_tm) {

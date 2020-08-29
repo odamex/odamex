@@ -255,7 +255,9 @@ static StringTokens GetDownloadDirs()
 
 static void TransferDone(const OTransferInfo& info)
 {
-	Printf(PRINT_HIGH, "Download completed at %ld bytes per second.\n", info.speed);
+	std::string bytes;
+	StrFormatBytes(bytes, info.speed);
+	Printf(PRINT_HIGH, "Download completed at %s/s.\n", bytes.c_str());
 
 	if (::gamestate == GS_DOWNLOAD)
 	{
@@ -383,8 +385,13 @@ std::string Progress()
 		else
 		{
 			OTransferProgress progress = g_state.transfer->getProgress();
-			StrFormat(buffer, "Downloaded %ld of %ld...", progress.dlnow,
-			          progress.dltotal);
+
+			std::string now;
+			StrFormatBytes(now, progress.dlnow);
+			std::string total;
+			StrFormatBytes(total, progress.dltotal);
+
+			StrFormat(buffer, "Downloaded %s of %s...", now.c_str(), total.c_str());
 		}
 		break;
 	}
