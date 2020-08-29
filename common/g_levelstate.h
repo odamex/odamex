@@ -33,6 +33,7 @@ struct SerializedLevelState;
 class LevelState
 {
   public:
+	typedef void (*SetStateCB)(SerializedLevelState);
 	enum States
 	{
 		UNKNOWN,                 // Unknown state.
@@ -43,17 +44,18 @@ class LevelState
 		WARMUP_COUNTDOWN,        // Warmup countdown.
 		WARMUP_FORCED_COUNTDOWN, // Forced countdown, can't be cancelled by unreadying.
 	};
-	LevelState() : _state(LevelState::UNKNOWN), _time_begin(0)
+	LevelState() : _state(LevelState::UNKNOWN), _time_begin(0), _set_state_cb(NULL)
 	{
 	}
 	LevelState::States getState() const;
 	const char* getStateString() const;
 	short getCountdown() const;
-	void reset(level_locals_t& level);
 	bool checkScoreChange() const;
 	bool checkTimeLeftAdvance() const;
 	bool checkFireWeapon() const;
 	bool checkReadyToggle() const;
+	void setStateCB(LevelState::SetStateCB cb);
+	void reset(level_locals_t& level);
 	void restart();
 	void forceStart();
 	void readyToggle();
@@ -64,6 +66,7 @@ class LevelState
   private:
 	LevelState::States _state;
 	int _time_begin;
+	LevelState::SetStateCB _set_state_cb;
 	void setState(LevelState::States new_state);
 };
 

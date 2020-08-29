@@ -457,6 +457,24 @@ BEGIN_COMMAND (exit)
 END_COMMAND (exit)
 
 
+static void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
+{
+	Printf(PRINT_HIGH, "SVC_LevelState\n");
+
+	MSG_WriteMarker(&b, svc_levelstate);
+	MSG_WriteVarint(&b, sls.state);
+	MSG_WriteVarint(&b, sls.time_begin);
+}
+
+static void SendLevelState(SerializedLevelState sls)
+{
+	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
+		client_t& cl = it->client;
+		SVC_LevelState(cl.reliablebuf, sls);
+	}
+}
+
 //
 // SV_InitNetwork
 //
@@ -488,6 +506,9 @@ void SV_InitNetwork (void)
 	}
 
 	step_mode = Args.CheckParm ("-stepmode");
+
+	// [AM] Set up levelstate so it calls a netmessage broadcast function on change.
+	::levelstate.setStateCB(SendLevelState);
 
 	// Nes - Connect with the master servers. (If valid)
 	SV_InitMasters();
@@ -1795,15 +1816,6 @@ void SV_ThinkerUpdate(client_t* cl)
 	}
 }
 
-static void SVC_LevelState(buf_t& b, LevelState& ls)
-{
-	SerializedLevelState sls = ls.serialize();
-
-	MSG_WriteMarker(&b, svc_levelstate);
-	MSG_WriteVarint(&b, sls.state);
-	MSG_WriteVarint(&b, sls.time_begin);
-}
-
 //
 // SV_ClientFullUpdate
 //
@@ -1825,7 +1837,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	// update warmup state
-	SVC_LevelState(cl->reliablebuf, ::levelstate);
+	SVC_LevelState(cl->reliablebuf, ::levelstate.serialize());
 
 	// update frags/points/.tate./ready
 	for (Players::iterator it = players.begin();it != players.end();++it)

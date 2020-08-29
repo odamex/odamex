@@ -54,8 +54,6 @@ const char* LevelState::getStateString() const
 {
 	switch (_state)
 	{
-	case LevelState::UNKNOWN:
-		return "Unknown";
 	case LevelState::INGAME:
 		return "In-game";
 	case LevelState::COUNTDOWN:
@@ -68,6 +66,8 @@ const char* LevelState::getStateString() const
 		return "Warmup Countdown";
 	case LevelState::WARMUP_FORCED_COUNTDOWN:
 		return "Warmup Forced Countdown";
+	default:
+		return "Unknown";
 	}
 }
 
@@ -81,18 +81,6 @@ short LevelState::getCountdown() const
 		return 0;
 
 	return ceil((_time_begin - level.time) / (float)TICRATE);
-}
-
-// Reset warmup to "factory defaults".
-void LevelState::reset(level_locals_t& level)
-{
-	if (sv_warmup && sv_gametype != GM_COOP &&
-	    !(level.flags & LEVEL_LOBBYSPECIAL)) // do not allow warmup in lobby!
-		setState(LevelState::WARMUP);
-	else
-		setState(LevelState::INGAME);
-
-	_time_begin = 0;
 }
 
 /**
@@ -126,6 +114,28 @@ bool LevelState::checkReadyToggle() const
 {
 	return _state == LevelState::INGAME || _state == LevelState::COUNTDOWN ||
 	       _state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN;
+}
+
+/**
+ * @brief Set callback to call when changing state.
+ */
+void LevelState::setStateCB(LevelState::SetStateCB cb)
+{
+	_set_state_cb = cb;
+}
+
+/**
+ * @brief Reset warmup to "factory defaults" for the level.
+ */
+void LevelState::reset(level_locals_t& level)
+{
+	if (sv_warmup && sv_gametype != GM_COOP &&
+	    !(level.flags & LEVEL_LOBBYSPECIAL)) // do not allow warmup in lobby!
+		setState(LevelState::WARMUP);
+	else
+		setState(LevelState::INGAME);
+
+	_time_begin = 0;
 }
 
 /**
@@ -180,11 +190,11 @@ void LevelState::readyToggle()
 	if (ready >= needed)
 	{
 		if (_state == LevelState::WARMUP)
-			setState(LevelState::COUNTDOWN);
+			setState(LevelState::WARMUP_COUNTDOWN);
 	}
 	else
 	{
-		if (_state == LevelState::COUNTDOWN)
+		if (_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
 			// SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
@@ -214,14 +224,7 @@ void LevelState::tic()
 	// If we haven't reached the level tic that we begin the map on,
 	// we don't care.
 	if (_time_begin > level.time)
-	{
-		// Broadcast a countdown (this should be handled clientside)
-		if ((_time_begin - level.time) % TICRATE == 0)
-		{
-			// SV_BroadcastWarmupState(this->status, getCountdown());
-		}
 		return;
-	}
 
 	setState(LevelState::INGAME);
 
@@ -254,6 +257,8 @@ SerializedLevelState LevelState::serialize() const
  */
 void LevelState::unserialize(SerializedLevelState serialized)
 {
+	Printf(PRINT_HIGH, "LevelState::unserialize(%d, %d)\n", serialized.state,
+	       serialized.time_begin);
 	_state = serialized.state;
 	_time_begin = serialized.time_begin;
 }
@@ -261,6 +266,7 @@ void LevelState::unserialize(SerializedLevelState serialized)
 // Set warmup status.
 void LevelState::setState(LevelState::States new_state)
 {
+	Printf(PRINT_HIGH, "LevelState::setState(%d)\n", new_state);
 	_state = new_state;
 
 	// [AM] If we switch to countdown, set the correct time.
@@ -268,10 +274,12 @@ void LevelState::setState(LevelState::States new_state)
 	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		_time_begin = level.time + (sv_countdown.asInt() * TICRATE);
-		// SV_BroadcastWarmupState(new_status, (short)sv_countdown.asInt());
 	}
-	// else
-	// 	SV_BroadcastWarmupState(new_status);
+
+	if (_set_state_cb)
+	{
+		_set_state_cb(serialize());
+	}
 }
 
 BEGIN_COMMAND(forcestart)
