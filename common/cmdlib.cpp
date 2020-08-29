@@ -412,7 +412,7 @@ void StrFormatBytes(std::string& out, size_t bytes)
 
 	size_t magnitude = 0;
 	double checkbytes = bytes;
-	while (checkbytes >= 1000.0 && magnitude < 4)
+	while (checkbytes >= 1000.0 && magnitude < ARRAY_LENGTH(BYTE_MAGS))
 	{
 		magnitude += 1;
 		checkbytes /= 1000.0;
