@@ -419,6 +419,19 @@ static void TakeAmmo(player_t* player, int ammo, int amount)
 	SV_SendPlayerInfo(*player);
 }
 
+static AActor* SingleActorFromTID(int tid, AActor* defactor)
+{
+	if (tid == 0)
+	{
+		return defactor;
+	}
+	else
+	{
+		FActorIterator iterator(tid);
+		return iterator.Next();
+	}
+}
+
 static void TakeBackpack(player_t* player)
 {
 	if (!player->backpack)
@@ -3035,17 +3048,8 @@ void DLevelScript::RunScript ()
 		case PCD_GETACTORY:
 		case PCD_GETACTORZ:
 			{
-				AActor *actor;
+			    AActor *actor = SingleActorFromTID(STACK(1), activator);
 
-				if (STACK(1) == 0)
-				{
-					actor = activator;
-				}
-				else
-				{
-					FActorIterator iterator (STACK(1));
-					actor = iterator.Next ();
-				}
 				if (actor == NULL)
 				{
 					STACK(1) = 0;
@@ -3053,6 +3057,21 @@ void DLevelScript::RunScript ()
 				else
 				{
 					STACK(1) = (&actor->x)[pcd - PCD_GETACTORX];
+				}
+			}
+			break;
+
+		case PCD_GETACTORANGLE:
+			{
+				AActor *actor = SingleActorFromTID (STACK(1), activator);
+
+				if (actor == NULL)
+				{
+					STACK(1) = 0;
+				}
+				else
+				{
+					STACK(1) = actor->angle >> FRACBITS;
 				}
 			}
 			break;
