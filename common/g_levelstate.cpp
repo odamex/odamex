@@ -76,6 +76,10 @@ const char* LevelState::getStateString() const
  */
 short LevelState::getCountdown() const
 {
+	if (_state != LevelState::COUNTDOWN && _state != LevelState::WARMUP_COUNTDOWN &&
+	    _state != LevelState::WARMUP_FORCED_COUNTDOWN)
+		return 0;
+
 	return ceil((_time_begin - level.time) / (float)TICRATE);
 }
 
