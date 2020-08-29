@@ -105,30 +105,155 @@ static void ClearInventory(AActor* activator)
 	}
 }
 
-static const char* DoomAmmoNames[4] =
-{
-	"Clip", "Shell", "Cell", "RocketAmmo"
+// TODO: HACKY WACKY, need to port classes from ZDOOM 1.23 to make that way cleaner
+struct DoomEntity{
+	const char* Name;
+	mobjtype_t Type;
 };
-static const char* DoomWeaponNames[9] =
-{
-	"Fist", "Pistol", "Shotgun", "Chaingun", "RocketLauncher",
-	"PlasmaRifle", "BFG9000", "Chainsaw", "SuperShotgun"
-};
-static const char* DoomKeyNames[6] =
-{
-	"BlueCard", "YellowCard", "RedCard",
-	"BlueSkull", "YellowSkull", "RedSkull"
-};
-static const char* DoomPowerNames[7] =
-{
-	"InvulnerabilitySphere", "Berserk", "BlurSphere",
-	"RadSuit", "Allmap", "Infrared"
-};
+#define NUMMONSTERS 22
+
+static DoomEntity DoomMonsterNames[NUMMONSTERS] = {
+    {"ZombieMan", MT_POSSESSED},  {"ShotgunGuy", MT_SHOTGUY},
+    {"ChaingunGuy", MT_CHAINGUY}, {"DoomImp", MT_TROOP},
+    {"Demon", MT_SERGEANT},       {"Spectre", MT_SHADOWS},
+    {"LostSoul", MT_SKULL},       {"Cacodemon", MT_HEAD},
+    {"HellKnight", MT_KNIGHT},    {"BaronOfHell", MT_BRUISER},
+    {"Arachnotron", MT_BABY},     {"PainElemental", MT_PAIN},
+    {"Revenant", MT_UNDEAD},      {"Fatso", MT_FATSO},
+    {"Archvile", MT_VILE},        {"SpiderMastermind", MT_SPIDER},
+    {"Cyberdemon", MT_CYBORG},    {"CommanderKeen", MT_KEEN},
+    {"WolfensteinSS", MT_WOLFSS}, {"BossBrain", MT_BOSSBRAIN},
+    {"BossTarget", MT_BOSSTARGET}, {"BossEye", MT_BOSSSPIT}};
+
+static DoomEntity DoomAmmoNames[8] = {{"Clip", MT_CLIP},        {"Shell", MT_MISC22},
+                                      {"Cell", MT_MISC20},      {"RocketAmmo", MT_MISC18},
+                                      {"ClipBox", MT_MISC17},   {"ShellBox", MT_MISC23},
+                                      {"RocketBox", MT_MISC19}, {"CellPack", MT_MISC21}};
+
+static DoomEntity DoomWeaponNames[9] = {
+    {"Fist", (mobjtype_t)NULL}, // Default weapon, no entity
+    {"Pistol", (mobjtype_t)NULL}, {"Shotgun", MT_SHOTGUN},
+    {"Chaingun", MT_CHAINGUN},    {"RocketLauncher", MT_MISC27},
+    {"PlasmaRifle", MT_MISC28},   {"BFG9000", MT_MISC25},
+    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN}};
+
+static DoomEntity DoomKeyNames[6] = {{"BlueCard", MT_MISC4},
+                                     {"YellowCard", MT_MISC6},
+                                     {"RedCard", MT_MISC5},
+                                     {"BlueSkull", MT_MISC9},
+                                     {"YellowSkull", MT_MISC7},
+									 {"RedSkull", MT_MISC8}};
+
+static DoomEntity DoomPowerNames[7] = {{"InvulnerabilitySphere", MT_INV},
+                                       {"Berserk", MT_MISC13},
+                                       {"BlurSphere", MT_INS},
+                                       {"RadSuit", MT_MISC14},
+                                       {"Allmap", MT_MISC15},
+                                       {"Infrared", MT_MISC16}};
+
+static DoomEntity DoomHealthArmorNames[9] = {
+    {"HealthBonus", MT_MISC2}, {"ArmorBonus", MT_MISC3}, {"GreenArmor", MT_MISC0},
+    {"BlueArmor", MT_MISC1},   {"Stimpack", MT_MISC10},  {"Medikit", MT_MISC11},
+    {"Soulsphere", MT_MISC12}, {"Megasphere", MT_MEGA},  {"Backpack", MT_MISC24}};
+
+static DoomEntity DoomDecorationNames[60] = {{"BurningBarrel", MT_MISC77},
+                                             {"HangNoGuts", MT_MISC78},
+                                             {"HangBNoBrain", MT_MISC79},
+                                             {"HangTLookingDown", MT_MISC80},
+                                             {"HangTSkull", MT_MISC81},
+                                             {"HangTLookingUp", MT_MISC82},
+                                             {"HangTNoBrain", MT_MISC83},
+                                             {"ColonGibs", MT_MISC84},
+                                             {"SmallBloodPool", MT_MISC85},
+                                             {"BrainStem", MT_MISC86},
+                                             {"TechLamp", MT_MISC29},
+                                             {"TechLamp2", MT_MISC30},
+                                             {"GibbedMarine", MT_MISC68},
+                                             {"GibbedMarineExtra", MT_MISC69},
+                                             {"DeadMarine", MT_MISC62},
+                                             {"DeadZombieMan", MT_MISC63},
+                                             {"DeadShotgunGuy", MT_MISC67},
+                                             {"DeadDoomImp", MT_MISC66},
+                                             {"DeadDemon", MT_MISC64},
+                                             {"DeadCacodemon", MT_MISC61},
+                                             {"DeadLostSoul", MT_MISC65},
+                                             {"Gibs", MT_MISC71},
+                                             {"DeadStick", MT_MISC74},
+                                             {"LiveStick", MT_MISC75},
+                                             {"HeadOnAStick", MT_MISC72},
+                                             {"HeadsOnAStick", MT_MISC70},
+                                             {"HeadCandles", MT_MISC73},
+                                             {"TallGreenColumn", MT_MISC32},
+                                             {"ShortGreenColumn", MT_MISC33},
+                                             {"TallRedColumn", MT_MISC34},
+                                             {"ShortRedColumn", MT_MISC35},
+                                             {"Candlestick", MT_MISC49},
+                                             {"Candelabra", MT_MISC50},
+                                             {"HeartColumn", MT_MISC37},
+                                             {"SkullColumn", MT_MISC36},
+                                             {"EvilEye", MT_MISC38},
+                                             {"FloatingSkull", MT_MISC39},
+                                             {"TorchTree", MT_MISC40},
+                                             {"BlueTorch", MT_MISC41},
+                                             {"GreenTorch", MT_MISC42},
+                                             {"RedTorch", MT_MISC43},
+                                             {"Stalagtite", MT_MISC47},
+                                             {"TechPillar", MT_MISC48},
+                                             {"BloodyTwitch", MT_MISC51},
+                                             {"Meat2", MT_MISC52},
+                                             {"Meat3", MT_MISC53},
+                                             {"Meat4", MT_MISC54},
+                                             {"Meat5", MT_MISC55},
+                                             {"BigTree", MT_MISC76},
+                                             {"ShortBlueTorch", MT_MISC44},
+                                             {"ShortGreenTorch", MT_MISC45},
+                                             {"ShortRedTorch", MT_MISC46},
+                                             {"NonsolidMeat2", MT_MISC56},
+                                             {"NonsolidMeat4", MT_MISC57},
+                                             {"NonsolidMeat3", MT_MISC58},
+                                             {"NonsolidMeat5", MT_MISC59},
+                                             {"NonsolidTwitch", MT_MISC60},
+                                             {"ZBridge", MT_BRIDGE},
+                                             {"Column", MT_MISC31},
+                                             {"ExplosiveBarrel", MT_BARREL}};
 
 extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
 extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
 extern ItemEquipVal P_GivePower(player_t *player, int  power);
+
+mobjtype_t FindWeaponEntity(const char* type)
+{
+	int i;
+	for (i = 0; i < 9; i++)
+	{
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
+		{
+			if (DoomWeaponNames[i].Type == NULL)
+			{
+				DPrintf("ACS: LOGIC ERROR - Cannot spawn default weapons!\n");
+				return (mobjtype_t)NULL;
+			}
+			return DoomWeaponNames[i].Type;
+		}
+	}
+
+	return (mobjtype_t)NULL;
+}
+
+mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
+{
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		if (strcmp(list[i].Name, type) == 0)
+		{
+			return list[i].Type;
+		}
+	}
+
+	return (mobjtype_t)NULL;
+}
 
 static void GiveBackpack(player_t* player)
 {
@@ -154,7 +279,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give ammo
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (strcmp(DoomAmmoNames[i], type) == 0)
+		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
 			return;
@@ -164,7 +289,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give weapon
 	for (int i = 0; i < NUMWEAPONS; i++)
 	{
-		if (strcmp(DoomWeaponNames[i], type) == 0)
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -181,7 +306,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give keycard
 	for (int i = 0; i < NUMCARDS; i++)
 	{
-		if (strcmp(DoomKeyNames[i], type) == 0)
+		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -195,7 +320,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give power
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (strcmp(DoomPowerNames[i], type) == 0)
+		if (strcmp(DoomPowerNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -317,7 +442,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 
 	for (i = 0; i < NUMAMMO; ++i)
 	{
-		if (strcmp(DoomAmmoNames[i], type) == 0)
+		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			TakeAmmo(player, i, amount);
 			return;
@@ -325,7 +450,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 	}
 	for (i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (strcmp(DoomWeaponNames[i], type) == 0)
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			TakeWeapon(player, i);
 			return;
@@ -333,7 +458,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 	}
 	for (i = 0; i < NUMCARDS; ++i)
 	{
-		if (strcmp(DoomKeyNames[i], type) == 0)
+		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			player->cards[i] = 0;
 		}
@@ -373,21 +498,21 @@ static int CheckInventory(AActor* activator, const char* type)
 
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
-		if (strcmp(DoomAmmoNames[i], type) == 0)
+		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			return player->ammo[i];
 		}
 	}
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (strcmp(DoomWeaponNames[i], type) == 0)
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			return player->weaponowned[i] ? 1 : 0;
 		}
 	}
 	for (int i = 0; i < NUMCARDS; ++i)
 	{
-		if (strcmp(DoomKeyNames[i], type) == 0)
+		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			return player->cards[i] ? 1 : 0;
 		}
@@ -1406,7 +1531,7 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 	}
 }
 
-/*int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
+int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
 {
 	const char* typestr = level.behavior->LookupString(type);
 	if (typestr == NULL)
@@ -1416,12 +1541,33 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 	name[63] = 0;
 	strncpy(name+1, typestr, 62);
 
-	const TypeInfo* info = TypeInfo::FindType(name);
+	//const TypeInfo* info = TypeInfo::FindType(name);
+	mobjtype_t info;
+
+	{
+		// Find an entity through cycles
+		info = FindDoomEntity(typestr, DoomMonsterNames, NUMMONSTERS);
+
+		if (info == (mobjtype_t)NULL)
+			info = FindWeaponEntity(typestr);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomAmmoNames, 8);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomKeyNames, 6);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomPowerNames, 6);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomHealthArmorNames, 9); // Ch0wW
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomDecorationNames, 60); // Ch0wW
+	}
+
 	AActor* actor = NULL;
 
 	if (info != NULL)
 	{
-		actor = Spawn(info, x, y, z);
+		actor = new AActor (x, y, z, info);
+
 		if (actor != NULL)
 		{
 			if (P_TestMobjLocation(actor))
@@ -1438,7 +1584,8 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 			}
 		}
 	}
-	return (int)actor;
+
+	return (int)(actor - (AActor*)0);
 }
 
 int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
@@ -1447,16 +1594,15 @@ int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
 	AActor* aspot;
 	int spawned = 0;
 
-	while ((aspot = iterator.Next()))
-	{
+	while ((aspot = iterator.Next())) {
 		spawned = DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle);
 	}
 	return spawned;
-}*/
+}
 
 void DLevelScript::DoFadeTo (int r, int g, int b, int a, fixed_t time)
 {
-    Printf(PRINT_HIGH,"DoFadeRange now... \n");
+    DPrintf("DoFadeRange now... \n");
 	DoFadeRange (0, 0, 0, -1, r, g, b, a, time);
 }
 
@@ -1623,6 +1769,7 @@ void DLevelScript::RunScript ()
 		{
 		default:
 			Printf (PRINT_HIGH,"Unknown P-Code %d in script %d\n", pcd, script);
+			continue;
 			// fall through
 		case PCD_TERMINATE:
 			state = SCRIPT_PleaseRemove;
@@ -2775,7 +2922,7 @@ void DLevelScript::RunScript ()
 			G_AirControlChanged ();
 			break;
 
-		/*case PCD_SPAWN:
+		case PCD_SPAWN:
 			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
 			sp -= 5;
 			break;
@@ -2793,7 +2940,7 @@ void DLevelScript::RunScript ()
 		case PCD_SPAWNSPOTDIRECT:
 			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3]));
 			pc += 4;
-			break;*/
+			break;
 
 		case PCD_CLEARINVENTORY:
 			ClearInventory (activator);
