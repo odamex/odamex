@@ -59,7 +59,7 @@
 #include "cl_netgraph.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
@@ -3543,24 +3543,13 @@ void CL_ReadyState() {
 	player.ready = MSG_ReadBool();
 }
 
-// Set local warmup state.
-void CL_WarmupState()
+// Set local levelstate.
+void CL_LevelState()
 {
-	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
-	if (warmup.get_status() == Warmup::COUNTDOWN ||
-	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
-	{
-		// Read an extra countdown number off the wire
-		short count = MSG_ReadShort();
-		std::ostringstream buffer;
-		buffer << "Match begins in " << count << "...";
-		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
-	}
-	else
-	{
-		// Clear the midprint in other cases.
-		C_GMidPrint("", CR_GREY, 0);
-	}
+	SerializedLevelState sls;
+	sls.state = static_cast<LevelState::States>(MSG_ReadVarint());
+	sls.time_begin = MSG_ReadVarint();
+	::levelstate.unserialize(sls);
 }
 
 // client source (once)
@@ -3646,7 +3635,7 @@ void CL_InitCommands(void)
 
 	cmds[svc_spectate]   		= &CL_Spectate;
 	cmds[svc_readystate]		= &CL_ReadyState;
-	cmds[svc_warmupstate]		= &CL_WarmupState;
+	cmds[svc_levelstate]		= &CL_LevelState;
 
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 

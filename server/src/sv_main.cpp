@@ -60,7 +60,7 @@
 #include "p_unlag.h"
 #include "sv_vote.h"
 #include "sv_maplist.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
@@ -1795,6 +1795,15 @@ void SV_ThinkerUpdate(client_t* cl)
 	}
 }
 
+static void SVC_LevelState(buf_t& b, LevelState& ls)
+{
+	SerializedLevelState sls = ls.serialize();
+
+	MSG_WriteMarker(&b, svc_levelstate);
+	MSG_WriteVarint(&b, sls.state);
+	MSG_WriteVarint(&b, sls.time_begin);
+}
+
 //
 // SV_ClientFullUpdate
 //
@@ -1816,7 +1825,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	// update warmup state
-	SV_SendWarmupState(pl, warmup.get_status(), warmup.get_countdown());
+	SVC_LevelState(cl->reliablebuf, ::levelstate);
 
 	// update frags/points/.tate./ready
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -4075,7 +4084,7 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 		}
 	}
 
-	warmup.readytoggle();
+	::levelstate.readyToggle();
 }
 
 void SV_Ready(player_t &player)
@@ -4091,7 +4100,7 @@ void SV_Ready(player_t &player)
 	}
 
 	// Check to see if warmup will allow us to toggle our ready state.
-	if (!warmup.checkreadytoggle())
+	if (!::levelstate.checkReadyToggle())
 	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready in the middle of a match!\n");
 		return;
@@ -4750,7 +4759,7 @@ void SV_TimelimitCheck()
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
 
 	// Don't substract the proper amount of time unless we're actually ingame.
-	if (warmup.checktimeleftadvance())
+	if (::levelstate.checkTimeLeftAdvance())
 		level.timeleft -= level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
@@ -4844,7 +4853,7 @@ void SV_GameTics (void)
 	{
 		case GS_LEVEL:
 			SV_RemoveCorpses();
-			warmup.tic();
+			::levelstate.tic();
 			SV_WinCheck();
 			SV_TimelimitCheck();
 			Vote_Runtic();
@@ -5722,7 +5731,7 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 	}
 
 	if (warmupReset)
-		warmup.reset(level);
+		::levelstate.reset(level);
 }
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)

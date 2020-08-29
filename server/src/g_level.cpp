@@ -48,7 +48,7 @@
 #include "sv_maplist.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "m_wdlstats.h"
 
 
@@ -259,9 +259,11 @@ BEGIN_COMMAND (forcenextmap) {
 	G_ChangeMap();
 } END_COMMAND (forcenextmap)
 
-BEGIN_COMMAND (restart) {
-	warmup.restart();
-} END_COMMAND (restart)
+BEGIN_COMMAND(restart)
+{
+	::levelstate.restart();
+}
+END_COMMAND(restart)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
@@ -813,7 +815,7 @@ void G_DoLoadLevel (int position)
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
 	// [AM] Handle warmup init.
-	warmup.reset(level);
+	::levelstate.reset(level);
 	//	C_FlushDisplay ();
 }
 

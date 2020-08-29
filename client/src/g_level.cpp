@@ -34,7 +34,7 @@
 #include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "gi.h"
 #include "i_system.h"
 #include "i_music.h"
@@ -172,8 +172,6 @@ void G_DoNewGame (void)
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
-	warmup.set_client_status(Warmup::DISABLED);		// Ch0wW: disable warmup
-
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
 }
@@ -275,6 +273,8 @@ void G_InitNew (const char *mapname)
 	
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	::levelstate.reset(level);
 
 	// [AM}] WDL stats (for testing purposes)
 	M_StartWDLLog();

@@ -405,6 +405,10 @@ player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
+size_t P_NumPlayersInGame();
+size_t P_NumReadyPlayersInGame();
+size_t P_NumPlayersOnTeam(team_t team);
+
 extern byte consoleplayer_id;
 extern byte displayplayer_id;
 

@@ -31,7 +31,7 @@
 #include "d_netinf.h"
 #include "d_player.h"
 #include "doomstat.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"
 #include "v_text.h"
@@ -256,9 +256,9 @@ std::string Warmup(int& color)
 	player_t *dp = &displayplayer();
 	player_t *cp = &consoleplayer();
 
-	::Warmup::status_t wstatus = warmup.get_status();
+	LevelState::States state = ::levelstate.getState();
 
-	if (wstatus == ::Warmup::WARMUP)
+	if (state == LevelState::WARMUP)
 	{
 		if (dp->spectator)
 			return "Warmup: You are spectating";
@@ -283,7 +283,7 @@ std::string Warmup(int& color)
 				return "Warmup: This player is not ready";
 		}
 	}
-	else if (wstatus == ::Warmup::COUNTDOWN || wstatus == ::Warmup::FORCE_COUNTDOWN)
+	else if (state == LevelState::WARMUP_COUNTDOWN || state == LevelState::WARMUP_FORCE_COUNTDOWN)
 	{
 		color = CR_GOLD;
 		return "Match is about to start...";

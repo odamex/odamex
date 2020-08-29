@@ -26,7 +26,7 @@
 #include "m_random.h"
 #include "p_ctf.h"
 #include "i_system.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "p_unlag.h"
 #include "m_wdlstats.h"
 
@@ -72,7 +72,7 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 	if(event == SCORE_NONE)
 		return;
 
-	if(validplayer(who) && warmup.checkscorechange())
+	if(validplayer(who) && ::levelstate.checkScoreChange())
 		who.points += ctf_points[event];
 
 	for (Players::iterator it = players.begin();it != players.end();++it)

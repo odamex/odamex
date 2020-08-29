@@ -34,7 +34,7 @@
 #include "p_lnspec.h"
 #include "p_ctf.h"
 #include "p_acs.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "m_wdlstats.h"
 
 extern bool predicting;
@@ -90,7 +90,7 @@ void SV_ShareKeys(card_t card, player_t& player);
 // Give frags to a player
 void P_GiveFrags(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
+	if (!::levelstate.checkScoreChange())
 		return;
 	player->fragcount += num;
 }
@@ -98,7 +98,7 @@ void P_GiveFrags(player_t* player, int num)
 // Give coop kills to a player
 void P_GiveKills(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
+	if (!::levelstate.checkScoreChange())
 		return;
 	player->killcount += num;
 }
@@ -106,7 +106,7 @@ void P_GiveKills(player_t* player, int num)
 // Give coop kills to a player
 void P_GiveDeaths(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
+	if (!::levelstate.checkScoreChange())
 		return;
 	player->deathcount += num;
 }
@@ -114,7 +114,7 @@ void P_GiveDeaths(player_t* player, int num)
 // Give a specific number of points to a player's team
 void P_GiveTeamPoints(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
+	if (!::levelstate.checkScoreChange())
 		return;
 
 	GetTeamInfo(player->userinfo.team)->Points += num;

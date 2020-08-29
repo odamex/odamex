@@ -226,17 +226,6 @@ CVAR(			sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-// Warmup mode
-CVAR(			sv_warmup, "0", "Enable a 'warmup mode' before the match starts.",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
-
-CVAR_RANGE(		sv_warmup_autostart, "1.0", "Ratio of players needed for warmup to automatically start the game.",
-				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the game from " \
-				"warmup or restarting the game.",
-				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
-
 // Experimental settings (all categories)
 // =======================================
 
@@ -253,4 +242,3 @@ CVAR(sv_download_test, "0", "Experimental download optimization testing",
 // None currently
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
-
