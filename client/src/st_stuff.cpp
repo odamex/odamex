@@ -1113,14 +1113,12 @@ void ST_updateFaceWidget(void)
 
 void ST_updateWidgets(void)
 {
-	static int DONT_DRAW_NUM = 1994; 			// means "n/a"
-
 	player_t *plyr = &displayplayer();
 
 	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
-		w_ready.num = &DONT_DRAW_NUM;
+		st_current_ammo = ST_DONT_DRAW_NUM;
 	else
-		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
+		st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	w_ready.data = plyr->readyweapon;
 
@@ -1141,8 +1139,6 @@ void ST_updateWidgets(void)
 		else
 			st_weaponowned[i] = 0;
 	}
-
-	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	// update keycard multiple widgets
 	for (int i = 0; i < 3; i++)
@@ -1692,5 +1688,3 @@ void STACK_ARGS ST_Shutdown()
 
 
 VERSION_CONTROL (st_stuff_cpp, "$Id$")
-
-
