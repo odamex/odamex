@@ -106,6 +106,13 @@ void G_DeferedInitNew (char *mapname)
 	gameaction = ga_newgame;
 }
 
+void G_DeferedFullReset() {
+
+}
+
+void G_DeferedReset() {
+
+}
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {

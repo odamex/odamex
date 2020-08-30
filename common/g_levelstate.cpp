@@ -30,6 +30,7 @@
 #include "g_game.h"
 #include "g_level.h"
 #include "i_net.h"
+#include "i_system.h"
 
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_warmup)
@@ -197,10 +198,9 @@ void LevelState::readyToggle()
 		if (_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
-			// SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
+			Printf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
 		}
 	}
-	return;
 }
 
 /**
@@ -208,33 +208,50 @@ void LevelState::readyToggle()
  */
 void LevelState::tic()
 {
-	// If autostart is zeroed out, start immediately.
-	if (_state == LevelState::WARMUP && sv_warmup_autostart == 0.0f)
-		setState(LevelState::WARMUP_COUNTDOWN);
+	// [AM] Clients are not authoritative on levelstate.
+	if (!serverside)
+		return;
 
 	// If there aren't any more active players, go back to warm up mode [tm512 2014/04/08]
-	if (_state != LevelState::WARMUP && P_NumPlayersInGame() == 0)
+	if (sv_warmup && _state != LevelState::WARMUP && P_NumPlayersInGame() == 0)
+	{
 		setState(LevelState::WARMUP);
-
-	// If we're not advancing the countdown, we don't care.
-	if (!(_state == LevelState::WARMUP_COUNTDOWN ||
-	      _state == LevelState::WARMUP_FORCED_COUNTDOWN))
 		return;
+	}
 
-	// If we haven't reached the level tic that we begin the map on,
-	// we don't care.
-	if (_time_begin > level.time)
-		return;
-
-	setState(LevelState::INGAME);
-
-	// [SL] always reset the time (for now at least)
-	// level.time = 0;
-	// level.timeleft = sv_timelimit * TICRATE * 60;
-	// level.inttimeleft = mapchange / TICRATE;
-
-	// G_DeferedFullReset();
-	// SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
+	// Depending on our state, do something.
+	switch (_state)
+	{
+	case LevelState::UNKNOWN:
+		I_FatalError("Tried to tic unknown LevelState.\n");
+		break;
+	case LevelState::INGAME:
+	case LevelState::COUNTDOWN:
+	case LevelState::ENDGAME:
+		// Nothing special happens.
+		break;
+	case LevelState::WARMUP: {
+		// If autostart is zeroed out, start immediately.
+		if (sv_warmup_autostart == 0.0f)
+		{
+			setState(LevelState::WARMUP_COUNTDOWN);
+			return;
+		}
+		break;
+	}
+	case LevelState::WARMUP_COUNTDOWN:
+	case LevelState::WARMUP_FORCED_COUNTDOWN: {
+		// Once the timer has run out, start the game.
+		if (level.time >= _time_begin)
+		{
+			setState(LevelState::INGAME);
+			G_DeferedFullReset();
+			Printf(PRINT_HIGH, "The match has started.\n");
+			return;
+		}
+		break;
+	}
+	}
 }
 
 /**
