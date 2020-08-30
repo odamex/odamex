@@ -141,7 +141,8 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 		if (out)
 			out->push_back(&*pit);
 
-		counts.total++;
+		counts.total += 1;
+		counts.teams[pit->userinfo.team] += 1;
 	}
 
 	return counts;

@@ -374,6 +374,10 @@ END_COMMAND(forcestart)
  */
 void G_LivesEndGame()
 {
+	// [AM] Only the server dictates the end of the game.
+	if (!::serverside)
+		return;
+
 	static PlayerResults pr;
 
 	if (!g_survival || !::levelstate.checkEndGame())
@@ -394,7 +398,7 @@ void G_LivesEndGame()
 
 		// One person being alive is success, nobody alive is a draw.
 		size_t alive = P_PlayerQuery(&pr, PQ_HASLIVES).total;
-		if (alive == 0)
+		if (alive == 0 || pr.empty())
 		{
 			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
 			::levelstate.endGame();
@@ -417,7 +421,7 @@ void G_LivesEndGame()
 		pr.clear();
 
 		// One person alive on a single team is success, nobody alive is a draw.
-		PlayerCounts pc = P_PlayerQuery(NULL, PQ_HASLIVES);
+		PlayerCounts pc = P_PlayerQuery(&pr, PQ_HASLIVES);
 		int aliveteams = 0;
 		for (int i = 0; i < teamsinplay; i++)
 		{
@@ -425,7 +429,7 @@ void G_LivesEndGame()
 				aliveteams += 1;
 		}
 
-		if (aliveteams == 0)
+		if (aliveteams == 0 || pr.empty())
 		{
 			Printf(PRINT_HIGH, "Game over: All teams have run out of lives.\n");
 			::levelstate.endGame();
