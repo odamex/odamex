@@ -358,3 +358,5 @@ BEGIN_COMMAND(forcestart)
 	::levelstate.forceStart();
 }
 END_COMMAND(forcestart)
+
+VERSION_CONTROL(g_levelstate, "$Id$")

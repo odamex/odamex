@@ -170,3 +170,5 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.state);
 	MSG_WriteVarint(&b, sls.time_begin);
 }
+
+VERSION_CONTROL(msg_server, "$Id$")
