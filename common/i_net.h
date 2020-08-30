@@ -286,6 +286,9 @@ public:
 	// Use these when you want to send an int and are reasonably sure that
 	// the int will usually be small.
 	//
+	// [AM] If you make a change to this, please also duplicate that change
+	//      into varint.c in the tools directory.
+	//
 	// https://developers.google.com/protocol-buffers/docs/encoding#varints
 	//
 	void WriteUVarint(unsigned int v)
@@ -401,6 +404,14 @@ public:
 				(data[oldpos+3]<<24);
 	}
 
+	//
+	// Read an unsigned varint off the wire.
+	//
+	// [AM] If you make a change to this, please also duplicate that change
+	//      into varint.c in the tools directory.
+	//
+	// https://developers.google.com/protocol-buffers/docs/encoding#varints
+	//
 	unsigned int ReadUVarint()
 	{
 		unsigned char b;
