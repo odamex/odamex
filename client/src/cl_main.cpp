@@ -3335,6 +3335,7 @@ void CL_LoadMap(void)
 	}
 
 	const char *mapname = MSG_ReadString ();
+	int server_level_time = MSG_ReadVarint();
 
 	if (gamestate == GS_DOWNLOAD)
 	{
@@ -3361,6 +3362,9 @@ void CL_LoadMap(void)
 	S_StopMusic();
 
 	G_InitNew (mapname);
+
+	// [AM] Sync the server's level time with the client.
+	::level.time = server_level_time;
 
 	movingsectors.clear();
 	teleported_players.clear();

@@ -37,6 +37,7 @@
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "g_level.h"
+#include "msg_server.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1162,25 +1163,8 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().spectator);
 
 	// Server sends wads & map name
-	MSG_WriteMarker	(netbuffer, svc_loadmap);
-
-	// send list of wads (skip over wadnames[0] == odamex.wad)  
-	MSG_WriteByte(netbuffer, MIN<size_t>(wadfiles.size() - 1, 255));
-	for (size_t i = 1; i < MIN<size_t>(wadfiles.size(), 256); i++)
-	{
-		MSG_WriteString(netbuffer, D_CleanseFileName(wadfiles[i], "wad").c_str());
-		MSG_WriteString(netbuffer, wadhashes[i].c_str());
-	}
-
-    // send list of DEH/BEX patches
-    MSG_WriteByte(netbuffer, MIN<size_t>(patchfiles.size(), 255));
-    for (size_t i = 0; i < MIN<size_t>(patchfiles.size(), 255); i++)
-    {
-        MSG_WriteString(netbuffer, D_CleanseFileName(patchfiles[i]).c_str());
-        MSG_WriteString(netbuffer, patchfiles[i].c_str());
-    }
-
-	MSG_WriteString(netbuffer, level.mapname);
+	SVC_LoadMap(*netbuffer, wadfiles, wadhashes, patchfiles, patchhashes, level.mapname,
+	            level.time);
 
 	// Server spawns the player
 	MSG_WriteMarker	(netbuffer, svc_spawnplayer);

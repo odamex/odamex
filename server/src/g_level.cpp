@@ -26,6 +26,7 @@
 
 #include "c_dispatch.h"
 #include "d_event.h"
+#include "d_main.h"
 #include "doomstat.h"
 #include "g_level.h"
 #include "g_game.h"
@@ -50,6 +51,7 @@
 #include "z_zone.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
+#include "msg_server.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -280,7 +282,8 @@ void G_DoNewGame (void)
 		if(!(it->ingame()))
 			continue;
 
-		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &*it);
+		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::wadhashes, ::patchfiles,
+		            ::patchhashes, d_mapname, 0);
 	}
 
 	sv_curmap.ForceSet(d_mapname);
