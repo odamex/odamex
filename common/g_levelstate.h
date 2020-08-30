@@ -82,6 +82,6 @@ struct SerializedLevelState
 
 extern LevelState levelstate;
 
-void G_LivesEndGame();
+void G_SurvivalEndGame();
 
 #endif

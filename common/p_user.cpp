@@ -117,17 +117,16 @@ bool validplayer(player_t &ref)
  */
 PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 {
-	// Zero out our return array.
 	PlayerCounts counts;
-	counts.total = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(counts.teams); i++)
-		counts.teams[i] = 0;
 
 	Players::const_iterator pit = ::players.begin();
 	for (; pit != players.end(); ++pit)
 	{
 		if (!pit->ingame() || pit->spectator)
 			continue;
+
+		counts.total += 1;
+		counts.teamtotal[pit->userinfo.team] += 1;
 
 		if (flags & PQ_READY && !pit->ready)
 			continue;
@@ -141,8 +140,8 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 		if (out)
 			out->push_back(&*pit);
 
-		counts.total += 1;
-		counts.teams[pit->userinfo.team] += 1;
+		counts.result += 1;
+		counts.teamresult[pit->userinfo.team] += 1;
 	}
 
 	return counts;
@@ -158,7 +157,7 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 //
 size_t P_NumPlayersInGame()
 {
-	return P_PlayerQuery(NULL, 0).total;
+	return P_PlayerQuery(NULL, 0).result;
 }
 
 //
@@ -169,7 +168,7 @@ size_t P_NumPlayersInGame()
 //
 size_t P_NumReadyPlayersInGame()
 {
-	return P_PlayerQuery(NULL, PQ_READY).total;
+	return P_PlayerQuery(NULL, PQ_READY).result;
 }
 
 // P_NumPlayersOnTeam()
@@ -177,7 +176,7 @@ size_t P_NumReadyPlayersInGame()
 // Returns the number of active players on a team.  No specs or downloaders.
 size_t P_NumPlayersOnTeam(team_t team)
 {
-	return P_PlayerQuery(NULL, 0, team).total;
+	return P_PlayerQuery(NULL, 0, team).teamtotal[team];
 }
 
 //

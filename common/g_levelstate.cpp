@@ -156,11 +156,28 @@ void LevelState::setStateCB(LevelState::SetStateCB cb)
  */
 void LevelState::reset(level_locals_t& level)
 {
-	if (sv_warmup && sv_gametype != GM_COOP &&
-	    !(level.flags & LEVEL_LOBBYSPECIAL)) // do not allow warmup in lobby!
+	if (level.flags & LEVEL_LOBBYSPECIAL)
+	{
+		// Lobbies are all warmup, all the time.
 		setState(LevelState::WARMUP);
+	}
+	else if (g_survival && sv_gametype != GM_COOP)
+	{
+		// We need a warmup state when playing competitive survival modes,
+		// so people have a safe period of time to switch teams and join
+		// the game without the game trying to end prematurely.
+		setState(LevelState::WARMUP);
+	}
+	else if (sv_warmup)
+	{
+		// This is the kind of "ready up" warmup used in certain gametypes.
+		setState(LevelState::WARMUP);
+	}
 	else
+	{
+		// We can go straight in-game.
 		setState(LevelState::INGAME);
+	}
 
 	_time_begin = 0;
 }
@@ -191,8 +208,13 @@ void LevelState::forceStart()
  */
 void LevelState::readyToggle()
 {
-	// Rerun our checks to make sure we didn't skip them earlier.
-	if (!checkReadyToggle())
+	// No useful work can be done with sv_warmup disabled.
+	if (!sv_warmup)
+		return;
+
+	// No useful work can be done unless we're either in warmup or taking
+	// part in the normal warmup countdown.
+	if (_state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN)
 		return;
 
 	// Check to see if we satisfy our autostart setting.
@@ -234,7 +256,16 @@ void LevelState::readyToggle()
  */
 void LevelState::endGame()
 {
-	setState(LevelState::ENDGAME);
+	if (sv_gametype == GM_COOP)
+	{
+		// A normal coop exit bypasses LevelState completely, so if we're
+		// here, the mission was a failure and needs to be restarted.
+		setState(LevelState::WARMUP_FORCED_COUNTDOWN);
+	}
+	else
+	{
+		setState(LevelState::ENDGAME);
+	}
 }
 
 /**
@@ -280,6 +311,41 @@ void LevelState::tic()
 		}
 		break;
 	case LevelState::WARMUP: {
+		if (!sv_warmup)
+		{
+			// We are in here for gametype reasons.  Auto-start once we
+			// have enough players.
+			PlayerCounts pc = P_PlayerQuery(NULL, 0);
+			if (sv_gametype == GM_COOP && pc.result >= 1)
+			{
+				// Coop needs one player.
+				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
+				return;
+			}
+			else if (sv_gametype == GM_DM && pc.result >= 2)
+			{
+				// DM needs two players.
+				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
+				return;
+			}
+			else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			{
+				// We need at least one person on at least two different teams.
+				int ready = 0;
+				for (int i = 0; i < NUMTEAMS; i++)
+				{
+					if (pc.teamresult[i] > 0)
+						ready += 1;
+				}
+
+				if (ready >= 2)
+				{
+					setState(LevelState::WARMUP_FORCED_COUNTDOWN);
+					return;
+				}
+			}
+		}
+
 		// If autostart is zeroed out, start immediately.
 		if (sv_warmup_autostart == 0.0f)
 		{
@@ -372,7 +438,7 @@ END_COMMAND(forcestart)
 /**
  * @brief Check to see if we should end the game on lives.
  */
-void G_LivesEndGame()
+void G_SurvivalEndGame()
 {
 	// [AM] Only the server dictates the end of the game.
 	if (!::serverside)
@@ -386,7 +452,7 @@ void G_LivesEndGame()
 	if (sv_gametype == GM_COOP)
 	{
 		// Everybody losing their lives in coop is a failure.
-		if (P_PlayerQuery(NULL, PQ_HASLIVES).total == 0)
+		if (P_PlayerQuery(NULL, PQ_HASLIVES).result == 0)
 		{
 			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
 			::levelstate.endGame();
@@ -397,13 +463,13 @@ void G_LivesEndGame()
 		pr.clear();
 
 		// One person being alive is success, nobody alive is a draw.
-		size_t alive = P_PlayerQuery(&pr, PQ_HASLIVES).total;
-		if (alive == 0 || pr.empty())
+		PlayerCounts pc = P_PlayerQuery(&pr, PQ_HASLIVES);
+		if (pc.result == 0 || pr.empty())
 		{
 			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
 			::levelstate.endGame();
 		}
-		else if (alive == 1)
+		else if (pc.result == 1)
 		{
 			Printf(PRINT_HIGH, "Game over: %s was the last player standing.\n",
 			       pr.front()->userinfo.netname.c_str());
@@ -414,6 +480,7 @@ void G_LivesEndGame()
 	}
 	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
+		// If someone has configured TeamDM improperly, just don't do anything.
 		int teamsinplay = sv_teamsinplay.asInt();
 		if (teamsinplay < 1 || teamsinplay > NUMTEAMS)
 			return;
@@ -425,7 +492,7 @@ void G_LivesEndGame()
 		int aliveteams = 0;
 		for (int i = 0; i < teamsinplay; i++)
 		{
-			if (pc.teams[i] > 0)
+			if (pc.teamresult[i] > 0)
 				aliveteams += 1;
 		}
 

@@ -416,10 +416,21 @@ bool			validplayer(player_t &ref);
 #define PQ_HASLIVES (1 << 1)
 
 typedef std::vector<const player_t*> PlayerResults;
-struct PlayerCounts {
-	size_t total;
-	size_t teams[NUMTEAMS];
+struct PlayerCounts
+{
+	int result;
+	int teamresult[NUMTEAMS];
+	int total;
+	int teamtotal[NUMTEAMS];
+	PlayerCounts() : result(0), total(0)
+	{
+		for (size_t i = 0; i < ARRAY_LENGTH(teamresult); i++)
+			teamresult[i] = 0;
+		for (size_t i = 0; i < ARRAY_LENGTH(teamtotal); i++)
+			teamtotal[i] = 0;
+	}
 };
+
 PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team = TEAM_NONE);
 size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
