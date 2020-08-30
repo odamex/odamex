@@ -32,11 +32,13 @@
 #include "i_net.h"
 #include "i_system.h"
 
-EXTERN_CVAR(sv_gametype)
-EXTERN_CVAR(sv_warmup)
-EXTERN_CVAR(sv_warmup_autostart)
+EXTERN_CVAR(g_survival)
 EXTERN_CVAR(sv_countdown)
+EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_warmup_autostart)
+EXTERN_CVAR(sv_warmup)
 
 LevelState levelstate;
 
@@ -82,6 +84,14 @@ short LevelState::getCountdown() const
 		return 0;
 
 	return ceil((_time_begin - level.time) / (float)TICRATE);
+}
+
+/**
+ * @brief Check if a player's lives should be allowed to change.
+ */
+bool LevelState::checkLivesChange() const
+{
+	return _state == LevelState::INGAME;
 }
 
 /**
@@ -358,5 +368,78 @@ BEGIN_COMMAND(forcestart)
 	::levelstate.forceStart();
 }
 END_COMMAND(forcestart)
+
+/**
+ * @brief Check to see if we should end the game on lives.
+ */
+void G_LivesEndGame()
+{
+	static PlayerResults pr;
+
+	if (!g_survival || !::levelstate.checkEndGame())
+		return;
+
+	if (sv_gametype == GM_COOP)
+	{
+		// Everybody losing their lives in coop is a failure.
+		if (P_PlayerQuery(NULL, PQ_HASLIVES).total == 0)
+		{
+			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
+			::levelstate.endGame();
+		}
+	}
+	else if (sv_gametype == GM_DM)
+	{
+		pr.clear();
+
+		// One person being alive is success, nobody alive is a draw.
+		size_t alive = P_PlayerQuery(&pr, PQ_HASLIVES).total;
+		if (alive == 0)
+		{
+			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
+			::levelstate.endGame();
+		}
+		else if (alive == 1)
+		{
+			Printf(PRINT_HIGH, "Game over: %s was the last player standing.\n",
+			       pr.front()->userinfo.netname.c_str());
+			::levelstate.endGame();
+		}
+
+		// Nobody won the game yet - keep going.
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		int teamsinplay = sv_teamsinplay.asInt();
+		if (teamsinplay < 1 || teamsinplay > NUMTEAMS)
+			return;
+
+		pr.clear();
+
+		// One person alive on a single team is success, nobody alive is a draw.
+		PlayerCounts pc = P_PlayerQuery(NULL, PQ_HASLIVES);
+		int aliveteams = 0;
+		for (int i = 0; i < teamsinplay; i++)
+		{
+			if (pc.teams[i] > 0)
+				aliveteams += 1;
+		}
+
+		if (aliveteams == 0)
+		{
+			Printf(PRINT_HIGH, "Game over: All teams have run out of lives.\n");
+			::levelstate.endGame();
+		}
+		else if (aliveteams == 1)
+		{
+			TeamInfo* teamInfo = GetTeamInfo(pr.front()->userinfo.team);
+			Printf(PRINT_HIGH, "Game over: %s team was the last team standing.\n",
+			       teamInfo->ColorStringUpper.c_str());
+			::levelstate.endGame();
+		}
+
+		// Nobody won the game yet - keep going.
+	}
+}
 
 VERSION_CONTROL(g_levelstate, "$Id$")

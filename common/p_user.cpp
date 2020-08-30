@@ -106,6 +106,49 @@ bool validplayer(player_t &ref)
 	return true;
 }
 
+/**
+ * @brief Get a count of ingame players based on conditions. 
+ * 
+ * @param out Output vector for players, or NULL if we don't care about the
+ *            specific players.
+ * @param flags PC_* bitfield flags.
+ * @param team Team to fixate on, if any.
+ * @return size_t Number of players found.
+ */
+PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
+{
+	// Zero out our return array.
+	PlayerCounts counts;
+	counts.total = 0;
+	for (size_t i = 0; i < ARRAY_LENGTH(counts.teams); i++)
+		counts.teams[i] = 0;
+
+	Players::const_iterator pit = ::players.begin();
+	for (; pit != players.end(); ++pit)
+	{
+		if (!pit->ingame() || pit->spectator)
+			continue;
+
+		if (flags & PQ_READY && !pit->ready)
+			continue;
+
+		if (flags & PQ_HASLIVES && pit->lives <= 0)
+			continue;
+
+		if (team != TEAM_NONE && pit->userinfo.team != team)
+			continue;
+
+		if (out)
+			out->push_back(&*pit);
+
+		counts.total++;
+	}
+
+	return counts;
+}
+
+
+
 //
 // P_NumPlayersInGame()
 //
@@ -114,13 +157,7 @@ bool validplayer(player_t &ref)
 //
 size_t P_NumPlayersInGame()
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator)
-			num_players++;
-
-	return num_players;
+	return P_PlayerQuery(NULL, 0).total;
 }
 
 //
@@ -131,13 +168,7 @@ size_t P_NumPlayersInGame()
 //
 size_t P_NumReadyPlayersInGame()
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator && it->ready)
-			num_players++;
-
-	return num_players;
+	return P_PlayerQuery(NULL, PQ_READY).total;
 }
 
 // P_NumPlayersOnTeam()
@@ -145,13 +176,7 @@ size_t P_NumReadyPlayersInGame()
 // Returns the number of active players on a team.  No specs or downloaders.
 size_t P_NumPlayersOnTeam(team_t team)
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator && it->userinfo.team == team)
-			num_players++;
-
-	return num_players;
+	return P_PlayerQuery(NULL, 0, team).total;
 }
 
 //

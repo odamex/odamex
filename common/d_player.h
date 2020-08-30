@@ -405,6 +405,22 @@ player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
+/**
+ * @brief Check for ready players only.
+ */
+#define PQ_READY (1 << 0)
+
+/**
+ * @brief Check for players with lives left.
+ */
+#define PQ_HASLIVES (1 << 1)
+
+typedef std::vector<const player_t*> PlayerResults;
+struct PlayerCounts {
+	size_t total;
+	size_t teams[NUMTEAMS];
+};
+PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team = TEAM_NONE);
 size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);

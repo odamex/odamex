@@ -50,6 +50,7 @@ class LevelState
 	LevelState::States getState() const;
 	const char* getStateString() const;
 	short getCountdown() const;
+	bool checkLivesChange() const;
 	bool checkScoreChange() const;
 	bool checkTimeLeftAdvance() const;
 	bool checkFireWeapon() const;
@@ -80,5 +81,7 @@ struct SerializedLevelState
 };
 
 extern LevelState levelstate;
+
+void G_LivesEndGame();
 
 #endif
