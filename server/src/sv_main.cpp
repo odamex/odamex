@@ -307,8 +307,6 @@ void SV_ServerSettingChange (void);
 size_t P_NumPlayersOnTeam(team_t team);
 size_t P_NumPlayersInGame();
 
-void SV_WinCheck (void);
-
 // [AM] Flip a coin between heads and tails
 BEGIN_COMMAND (coinflip) {
 	std::string result;
@@ -4493,20 +4491,6 @@ void SV_ParseCommands(player_t &player)
 	 }
 }
 
-//
-// SV_WinCheck - Checks to see if a game has been won
-//
-void SV_WinCheck (void)
-{
-	if (shotclock)
-	{
-		shotclock--;
-
-		if (!shotclock)
-			G_ExitLevel(0, 1);
-	}
-}
-
 EXTERN_CVAR (sv_waddownloadcap)
 EXTERN_CVAR (sv_download_test)
 
@@ -4716,7 +4700,8 @@ void SV_TimelimitCheck()
 		}
 	}
 
-	if (level.timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
+	if (level.timeleft > 0 || !::levelstate.checkEndGame() ||
+	    gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER
@@ -4764,7 +4749,7 @@ void SV_TimelimitCheck()
 		M_CommitWDLLog();
 	}
 
-	shotclock = TICRATE*2;
+	::levelstate.endGame();
 }
 
 void SV_IntermissionTimeCheck()
@@ -4798,7 +4783,6 @@ void SV_GameTics (void)
 		case GS_LEVEL:
 			SV_RemoveCorpses();
 			::levelstate.tic();
-			SV_WinCheck();
 			SV_TimelimitCheck();
 			Vote_Runtic();
 		break;
@@ -5105,7 +5089,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		return;
 
 	// Don't print obituaries after the end of a round
-	if (shotclock || gamestate != GS_LEVEL)
+	if (!::levelstate.checkShowObituary() || gamestate != GS_LEVEL)
 		return;
 
 	int gender = self->player->userinfo.gender;

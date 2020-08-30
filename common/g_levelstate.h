@@ -38,7 +38,7 @@ class LevelState
 	{
 		UNKNOWN,                 // Unknown state.
 		INGAME,                  // In the middle of a game.
-		COUNTDOWN,               // Ingame round countdown.
+		PREGAME,                 // Ingame round countdown.
 		ENDGAME,                 // Game complete, a slight pause before intermission.
 		WARMUP,                  // Warmup state.
 		WARMUP_COUNTDOWN,        // Warmup countdown.
@@ -54,11 +54,14 @@ class LevelState
 	bool checkTimeLeftAdvance() const;
 	bool checkFireWeapon() const;
 	bool checkReadyToggle() const;
+	bool checkEndGame() const;
+	bool checkShowObituary() const;
 	void setStateCB(LevelState::SetStateCB cb);
 	void reset(level_locals_t& level);
 	void restart();
 	void forceStart();
 	void readyToggle();
+	void endGame();
 	void tic();
 	SerializedLevelState serialize() const;
 	void unserialize(SerializedLevelState serialized);

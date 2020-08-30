@@ -57,7 +57,7 @@ const char* LevelState::getStateString() const
 	{
 	case LevelState::INGAME:
 		return "In-game";
-	case LevelState::COUNTDOWN:
+	case LevelState::PREGAME:
 		return "Countdown";
 	case LevelState::ENDGAME:
 		return "Endgame";
@@ -77,7 +77,7 @@ const char* LevelState::getStateString() const
  */
 short LevelState::getCountdown() const
 {
-	if (_state != LevelState::COUNTDOWN && _state != LevelState::WARMUP_COUNTDOWN &&
+	if (_state != LevelState::PREGAME && _state != LevelState::WARMUP_COUNTDOWN &&
 	    _state != LevelState::WARMUP_FORCED_COUNTDOWN)
 		return 0;
 
@@ -113,8 +113,24 @@ bool LevelState::checkFireWeapon() const
  */
 bool LevelState::checkReadyToggle() const
 {
-	return _state == LevelState::INGAME || _state == LevelState::COUNTDOWN ||
+	return _state == LevelState::INGAME || _state == LevelState::PREGAME ||
 	       _state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN;
+}
+
+/**
+ * @brief Check if the round should be allowed to end.
+ */
+bool LevelState::checkEndGame() const
+{
+	return _state == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if obituaries are allowed to be shown.
+ */
+bool LevelState::checkShowObituary() const
+{
+	return _state == LevelState::INGAME;
 }
 
 /**
@@ -204,6 +220,14 @@ void LevelState::readyToggle()
 }
 
 /**
+ * @brief Switch to the endgame state if we're in the proper position to do so.
+ */
+void LevelState::endGame()
+{
+	setState(LevelState::ENDGAME);
+}
+
+/**
  * @brief Handle tic-by-tic maintenance of the level state.
  */
 void LevelState::tic()
@@ -226,9 +250,24 @@ void LevelState::tic()
 		I_FatalError("Tried to tic unknown LevelState.\n");
 		break;
 	case LevelState::INGAME:
-	case LevelState::COUNTDOWN:
-	case LevelState::ENDGAME:
 		// Nothing special happens.
+		break;
+	case LevelState::PREGAME:
+		// Once the timer has run out, start the round.
+		if (level.time >= _time_begin)
+		{
+			setState(LevelState::INGAME);
+			Printf(PRINT_HIGH, "The round has started.\n");
+			return;
+		}
+		break;
+	case LevelState::ENDGAME:
+		// Once the timer has run out, go to intermission.
+		if (level.time >= _time_begin)
+		{
+			G_ExitLevel(0, 1);
+			return;
+		}
 		break;
 	case LevelState::WARMUP: {
 		// If autostart is zeroed out, start immediately.
@@ -280,17 +319,32 @@ void LevelState::unserialize(SerializedLevelState serialized)
 	_time_begin = serialized.time_begin;
 }
 
-// Set warmup status.
+/**
+ * @brief Set a new state.  You probably should not be making this method
+ *        public, since you probably don't want to be able to set any
+ *        arbitrary state at any arbitrary point from outside the class.
+ *
+ * @param new_state The state to set.
+ */
 void LevelState::setState(LevelState::States new_state)
 {
 	Printf(PRINT_HIGH, "LevelState::setState(%d)\n", new_state);
 	_state = new_state;
 
-	// [AM] If we switch to countdown, set the correct time.
-	if (_state == LevelState::COUNTDOWN || _state == LevelState::WARMUP_COUNTDOWN ||
+	if (_state == LevelState::PREGAME || _state == LevelState::WARMUP_COUNTDOWN ||
 	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
+		// Most countdowns use the countdown cvar.
 		_time_begin = level.time + (sv_countdown.asInt() * TICRATE);
+	}
+	else if (_state == LevelState::ENDGAME)
+	{
+		// Endgame is always two seconds, like the old "shotclock" variable.
+		_time_begin = level.time + 2 * TICRATE;
+	}
+	else
+	{
+		_time_begin = 0;
 	}
 
 	if (_set_state_cb)

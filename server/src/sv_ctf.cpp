@@ -232,12 +232,14 @@ void SV_FlagScore (player_t &player, team_t f)
 
 	CTF_SpawnFlag(f);
 
-	// checks to see if a team won a game		
-	if(GetTeamInfo(player.userinfo.team)->Points >= sv_scorelimit && sv_scorelimit != 0)
+	// checks to see if a team won a game
+	if (GetTeamInfo(player.userinfo.team)->Points >= sv_scorelimit &&
+	    sv_scorelimit != 0 && ::levelstate.checkEndGame())
 	{
-		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+		SV_BroadcastPrintf(PRINT_HIGH, "Score limit reached. %s team wins!\n",
+		                   GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
 		M_CommitWDLLog();
-		shotclock = TICRATE*2;
+		::levelstate.endGame();
 	}
 }
 

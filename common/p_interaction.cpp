@@ -1124,21 +1124,21 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	if (source && source->player && target->player && level.time)
 	{
 		// [Toke] Better sv_fraglimit
-		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= sv_fraglimit && !shotclock)
+		if (sv_gametype == GM_DM && sv_fraglimit && splayer->fragcount >= sv_fraglimit &&
+		    ::levelstate.checkEndGame())
 		{
-            // [ML] 04/4/06: Added !sv_fragexitswitch
+			// [ML] 04/4/06: Added !sv_fragexitswitch
             SV_BroadcastPrintf(
                 PRINT_HIGH,
                 "Frag limit hit. Game won by %s!\n",
                 splayer->userinfo.netname.c_str()
             );
 			SV_SetWinPlayer(splayer->id);
-            shotclock = TICRATE*2;
+			::levelstate.endGame();
 		}
 
 		// [Toke] TeamDM sv_fraglimit
-		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
+		if (sv_gametype == GM_TEAMDM && sv_fraglimit && ::levelstate.checkEndGame())
 		{
 			for (size_t i = 0; i < NUMTEAMS; i++)
 			{
@@ -1149,7 +1149,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
                         "Frag limit hit. %s team wins!\n",
 						GetTeamInfo((team_t)i)->ColorString.c_str()
                     );
-					shotclock = TICRATE * 2;
+					::levelstate.endGame();
 					break;
 				}
 			}
