@@ -426,7 +426,7 @@ void I_InitSound()
 
 	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-#if SDL_MIXER_VERSION_ATLEAST(2, 0, 2)
+#ifdef SDL20
     // Apparently, when Mix_OpenAudio requests a certain number of channels
     // and the device claims to not support that number of channels, instead
     // of handling it automatically behind the scenes, Mixer might initialize
@@ -444,7 +444,7 @@ void I_InitSound()
 		return;
 	}
 
-	if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
+    if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
 	{
 		Printf(PRINT_HIGH, 
                "I_InitSound: Error initializing SDL_mixer: %s\n", 
