@@ -54,7 +54,7 @@ unsigned char ReadByte()
 //
 // https://developers.google.com/protocol-buffers/docs/encoding#varints
 //
-void WriteUVarint(unsigned int v)
+void WriteUnVarint(unsigned int v)
 {
 	for (;;)
 	{
@@ -79,7 +79,7 @@ void WriteUVarint(unsigned int v)
 void WriteVarint(int v)
 {
 	// Zig-zag encoding for negative numbers.
-	WriteUVarint((v << 1) ^ (v >> 31));
+	WriteUnVarint((v << 1) ^ (v >> 31));
 }
 
 //
@@ -87,7 +87,7 @@ void WriteVarint(int v)
 //
 // https://developers.google.com/protocol-buffers/docs/encoding#varints
 //
-unsigned int ReadUVarint()
+unsigned int ReadUnVarint()
 {
 	unsigned char b;
 	unsigned int out = 0;
@@ -122,7 +122,7 @@ unsigned int ReadUVarint()
 
 int ReadVarint()
 {
-	unsigned int uv = ReadUVarint();
+	unsigned int uv = ReadUnVarint();
 	if (overflowed)
 		return -1;
 

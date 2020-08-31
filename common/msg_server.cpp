@@ -88,8 +88,8 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
 
 	// send list of wads (skip over wadnames[0] == odamex.wad)
 	size_t wadcount = wadnames.size() - 1;
-	MSG_WriteUVarint(&b, wadcount);
-	for (size_t i = 0; i < wadcount; i++)
+	MSG_WriteUnVarint(&b, wadcount);
+	for (size_t i = 1; i < wadcount + 1; i++)
 	{
 		MSG_WriteString(&b, D_CleanseFileName(wadnames[i], "wad").c_str());
 		MSG_WriteString(&b, wadhashes[i].c_str());
@@ -97,7 +97,7 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
 
 	// send list of DEH/BEX patches
 	size_t patchcount = patchnames.size();
-	MSG_WriteUVarint(&b, patchcount);
+	MSG_WriteUnVarint(&b, patchcount);
 	for (size_t i = 0; i < patchcount; i++)
 	{
 		MSG_WriteString(&b, D_CleanseFileName(patchnames[i]).c_str());

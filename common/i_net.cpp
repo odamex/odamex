@@ -639,11 +639,11 @@ void MSG_WriteLong (buf_t *b, int c)
 	b->WriteLong(c);
 }
 
-void MSG_WriteUVarint(buf_t* b, unsigned int uv)
+void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
 {
 	if (simulated_connection)
 		return;
-	b->WriteUVarint(uv);
+	b->WriteUnVarint(uv);
 }
 
 void MSG_WriteVarint(buf_t* b, int v)
@@ -888,9 +888,9 @@ int MSG_ReadLong (void)
 	return net_message.ReadLong();
 }
 
-unsigned int MSG_ReadUVarint()
+unsigned int MSG_ReadUnVarint()
 {
-	return net_message.ReadUVarint();
+	return net_message.ReadUnVarint();
 }
 
 int MSG_ReadVarint()

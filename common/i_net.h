@@ -291,7 +291,7 @@ public:
 	//
 	// https://developers.google.com/protocol-buffers/docs/encoding#varints
 	//
-	void WriteUVarint(unsigned int v)
+	void WriteUnVarint(unsigned int v)
 	{
 		for (;;)
 		{
@@ -316,7 +316,7 @@ public:
 	void WriteVarint(int v)
 	{
 		// Zig-zag encoding for negative numbers.
-		WriteUVarint((v << 1) ^ (v >> 31));
+		WriteUnVarint((v << 1) ^ (v >> 31));
 	}
 
 	void WriteString(const char *c)
@@ -412,7 +412,7 @@ public:
 	//
 	// https://developers.google.com/protocol-buffers/docs/encoding#varints
 	//
-	unsigned int ReadUVarint()
+	unsigned int ReadUnVarint()
 	{
 		unsigned char b;
 		unsigned int out = 0;
@@ -447,7 +447,7 @@ public:
 
 	int ReadVarint()
 	{
-		unsigned int uv = ReadUVarint();
+		unsigned int uv = ReadUnVarint();
 		if (overflowed)
 			return -1;
 
@@ -658,7 +658,7 @@ void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
-void MSG_WriteUVarint(buf_t* b, unsigned int uv);
+void MSG_WriteUnVarint(buf_t* b, unsigned int uv);
 void MSG_WriteVarint(buf_t* b, int v);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
@@ -673,7 +673,7 @@ int MSG_ReadByte (void);
 void *MSG_ReadChunk (const size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
-unsigned int MSG_ReadUVarint();
+unsigned int MSG_ReadUnVarint();
 int MSG_ReadVarint();
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);

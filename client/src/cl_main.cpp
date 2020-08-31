@@ -3320,21 +3320,21 @@ void CL_LoadMap(void)
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	int wadcount = (byte)MSG_ReadByte();
+	size_t wadcount = MSG_ReadUnVarint();
 	while (wadcount--)
 	{
 		newwadfiles.push_back(MSG_ReadString());
 		newwadhashes.push_back(MSG_ReadString());
 	}
 
-	int patchcount = (byte)MSG_ReadByte();
+	size_t patchcount = MSG_ReadUnVarint();
 	while (patchcount--)
 	{
 		newpatchfiles.push_back(MSG_ReadString());
 		newpatchhashes.push_back(MSG_ReadString());
 	}
 
-	const char *mapname = MSG_ReadString ();
+	const char *mapname = MSG_ReadString();
 	int server_level_time = MSG_ReadVarint();
 
 	if (gamestate == GS_DOWNLOAD)
