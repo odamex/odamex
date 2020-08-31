@@ -26,6 +26,7 @@
 
 #include "c_cvars.h"
 #include "c_dispatch.h"
+#include "cmdlib.h"
 #include "d_player.h"
 #include "g_game.h"
 #include "g_level.h"
@@ -41,6 +42,8 @@ EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
 
 LevelState levelstate;
+
+void STACK_ARGS SV_BroadcastPrintf(int level, const char* fmt, ...);
 
 /**
  * @brief State getter.
@@ -454,7 +457,8 @@ void G_SurvivalCheckEndGame()
 		// Everybody losing their lives in coop is a failure.
 		if (P_PlayerQuery(NULL, PQ_HASLIVES).result == 0)
 		{
-			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
+			SV_BroadcastPrintf(PRINT_HIGH,
+			                   "Game over: All players have run out of lives.\n");
 			::levelstate.endGame();
 		}
 	}
@@ -466,13 +470,15 @@ void G_SurvivalCheckEndGame()
 		PlayerCounts pc = P_PlayerQuery(&pr, PQ_HASLIVES);
 		if (pc.result == 0 || pr.empty())
 		{
-			Printf(PRINT_HIGH, "Game over: All players have run out of lives.\n");
+			SV_BroadcastPrintf(PRINT_HIGH,
+			                   "Game over: All players have run out of lives.\n");
 			::levelstate.endGame();
 		}
 		else if (pc.result == 1)
 		{
-			Printf(PRINT_HIGH, "Game over: %s was the last player standing.\n",
-			       pr.front()->userinfo.netname.c_str());
+			SV_BroadcastPrintf(PRINT_HIGH,
+			                   "Game over: %s was the last player standing.\n",
+			                   pr.front()->userinfo.netname.c_str());
 			::levelstate.endGame();
 		}
 
@@ -498,14 +504,16 @@ void G_SurvivalCheckEndGame()
 
 		if (aliveteams == 0 || pr.empty())
 		{
-			Printf(PRINT_HIGH, "Game over: All teams have run out of lives.\n");
+			SV_BroadcastPrintf(PRINT_HIGH,
+			                   "Game over: All teams have run out of lives.\n");
 			::levelstate.endGame();
 		}
 		else if (aliveteams == 1)
 		{
 			TeamInfo* teamInfo = GetTeamInfo(pr.front()->userinfo.team);
-			Printf(PRINT_HIGH, "Game over: %s team was the last team standing.\n",
-			       teamInfo->ColorStringUpper.c_str());
+			SV_BroadcastPrintf(PRINT_HIGH,
+			                   "Game over: %s team was the last team standing.\n",
+			                   teamInfo->ColorStringUpper.c_str());
 			::levelstate.endGame();
 		}
 

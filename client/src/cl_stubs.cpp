@@ -21,8 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <stdarg.h>
+
 #include "actor.h"
 #include "c_cvars.h"
+#include "cmdlib.h"
 #include "p_ctf.h"
 #include "doomdef.h"
 #include "d_player.h"
@@ -31,7 +34,20 @@
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
 
-void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
+void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
+{
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+	va_list va;
+	va_start(va, fmt);
+	VStrFormat(str, fmt, va);
+	va_end(va);
+
+	Printf(level, "%s", str.c_str());
+}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
@@ -69,4 +85,3 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 CVAR_FUNC_IMPL(sv_sharekeys) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
-
