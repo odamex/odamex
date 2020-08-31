@@ -438,7 +438,7 @@ END_COMMAND(forcestart)
 /**
  * @brief Check to see if we should end the game on lives.
  */
-void G_SurvivalEndGame()
+void G_SurvivalCheckEndGame()
 {
 	// [AM] Only the server dictates the end of the game.
 	if (!::serverside)

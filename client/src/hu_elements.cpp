@@ -36,6 +36,7 @@
 #include "p_ctf.h"
 #include "v_text.h"
 #include "i_video.h"
+#include "cmdlib.h"
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(player_t*);
@@ -52,6 +53,7 @@ EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxplayersperteam)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR(sv_warmup)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -249,46 +251,80 @@ std::string SpyPlayerName(int& color) {
 	return plyr->userinfo.netname;
 }
 
-// Returns a string that contains the current warmup state.
-std::string Warmup(int& color)
+/**
+ * @brief Returns a string that contains the current warmup state.
+ * 
+ * @param out String to put output data into.
+ * @param color Color that string should be colored with.
+ */
+void Warmup(std::string& out, int& color)
 {
 	color = CR_GREY;
-	player_t *dp = &displayplayer();
-	player_t *cp = &consoleplayer();
+	player_t* dp = &displayplayer();
+	player_t* cp = &consoleplayer();
 
 	LevelState::States state = ::levelstate.getState();
 
+	if (state == LevelState::WARMUP && !sv_warmup)
+	{
+		// Warmup for a game mode.
+		if (dp->spectator)
+		{
+			out = "Warmup: You are spectating";
+			return;
+		}
+		else
+		{
+			color = CR_GREEN;
+			out = "Warmup: Waiting for players";
+			return;
+		}
+	}
 	if (state == LevelState::WARMUP)
 	{
 		if (dp->spectator)
-			return "Warmup: You are spectating";
+		{
+			out = "Warmup: You are spectating";
+			return;
+		}
+
 		else if (dp->ready)
 		{
 			color = CR_GREEN;
 			if (dp == cp)
-				return "Warmup: You are ready";
+			{
+				out = "Warmup: You are ready";
+				return;
+			}
 			else
-				return "Warmup: This player is ready";
+			{
+				out = "Warmup: This player is ready";
+				return;
+			}
 		}
 		else
 		{
 			color = CR_RED;
 			if (dp == cp)
 			{
-				char strReady[64];
-				sprintf(strReady, "Warmup: Press %s to ready up", C_GetKeyStringsFromCommand("ready").c_str());
-				return strReady;
+				StrFormat(out, "Warmup: Press %s to ready up",
+				          C_GetKeyStringsFromCommand("ready").c_str());
+				return;
 			}
 			else
-				return "Warmup: This player is not ready";
+			{
+				out = "Warmup: This player is not ready";
+				return;
+			}
 		}
 	}
-	else if (state == LevelState::WARMUP_COUNTDOWN || state == LevelState::WARMUP_FORCED_COUNTDOWN)
+	else if (state == LevelState::WARMUP_COUNTDOWN ||
+	         state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		color = CR_GOLD;
-		return "Match is about to start...";
+		out = "Match is about to start...";
+		return;
 	}
-	return "";
 }
 
 // Return a string that contains the amount of time left in the map,

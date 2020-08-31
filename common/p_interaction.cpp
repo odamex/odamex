@@ -978,7 +978,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			tplayer->lives -= 1;
 
 			// [AM] Check to see if survival conditions have been met.
-			G_SurvivalEndGame();
+			G_SurvivalCheckEndGame();
 		}
 
 		// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
@@ -1473,6 +1473,9 @@ void P_PlayerLeavesGame(player_s* player)
 	{
 		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());
 	}
+
+	// [AM] Leaving the game might have triggered a survival end state.
+	G_SurvivalCheckEndGame();
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")

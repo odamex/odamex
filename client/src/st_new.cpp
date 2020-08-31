@@ -652,7 +652,7 @@ void OdamexHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
+	hud::Warmup(str, color);
 	if (!str.empty())
 	{
 		hud::DrawText(0, 4, hud_scale,
@@ -733,7 +733,7 @@ void SpectatorHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
+	hud::Warmup(str, color);
 	if (!str.empty()) {
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -870,7 +870,7 @@ void ZDoomHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
+	hud::Warmup(str, color);
 	if (!str.empty()) {
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -913,7 +913,7 @@ void DoomHUD()
 	std::string str;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
+	hud::Warmup(str, color);
 	if (!str.empty())
 	{
 		hud::DrawText(0, st_y + 4, hud_scale,
