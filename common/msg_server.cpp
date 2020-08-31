@@ -164,8 +164,6 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 {
-	Printf(PRINT_HIGH, "SVC_LevelState\n");
-
 	MSG_WriteMarker(&b, svc_levelstate);
 	MSG_WriteVarint(&b, sls.state);
 	MSG_WriteVarint(&b, sls.time_begin);

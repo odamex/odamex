@@ -3550,7 +3550,6 @@ void CL_ReadyState() {
 // Set local levelstate.
 void CL_LevelState()
 {
-	Printf(PRINT_HIGH, "CL_LevelState\n");
 	SerializedLevelState sls;
 	sls.state = static_cast<LevelState::States>(MSG_ReadVarint());
 	sls.time_begin = MSG_ReadVarint();

@@ -249,7 +249,7 @@ void LevelState::readyToggle()
 		if (_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
-			Printf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
 		}
 	}
 }
@@ -301,7 +301,7 @@ void LevelState::tic()
 		if (level.time >= _time_begin)
 		{
 			setState(LevelState::INGAME);
-			Printf(PRINT_HIGH, "The round has started.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "The round has started.\n");
 			return;
 		}
 		break;
@@ -364,7 +364,7 @@ void LevelState::tic()
 		{
 			setState(LevelState::INGAME);
 			G_DeferedFullReset();
-			Printf(PRINT_HIGH, "The match has started.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
 			return;
 		}
 		break;
@@ -392,8 +392,6 @@ SerializedLevelState LevelState::serialize() const
  */
 void LevelState::unserialize(SerializedLevelState serialized)
 {
-	Printf(PRINT_HIGH, "LevelState::unserialize(%d, %d)\n", serialized.state,
-	       serialized.time_begin);
 	_state = serialized.state;
 	_time_begin = serialized.time_begin;
 }
@@ -407,7 +405,6 @@ void LevelState::unserialize(SerializedLevelState serialized)
  */
 void LevelState::setState(LevelState::States new_state)
 {
-	Printf(PRINT_HIGH, "LevelState::setState(%d)\n", new_state);
 	_state = new_state;
 
 	if (_state == LevelState::PREGAME || _state == LevelState::WARMUP_COUNTDOWN ||
