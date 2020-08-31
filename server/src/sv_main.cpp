@@ -4042,7 +4042,7 @@ void SV_Ready(player_t &player)
 	}
 
 	// Check to see if warmup will allow us to toggle our ready state.
-	if (!::levelstate.checkReadyToggle())
+	if (!::levelstate.canReadyToggle())
 	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready in the middle of a match!\n");
 		return;
@@ -4149,9 +4149,6 @@ void SV_Cheat(player_t &player)
 
 	player.cheats = cheats;
 }
-
-ItemEquipVal P_GiveWeapon(player_s*, weapontype_t, BOOL);
-ItemEquipVal P_GivePower(player_s*, int);
 
 void SV_CheatPulse(player_t &player)
 {
@@ -4687,7 +4684,7 @@ void SV_TimelimitCheck()
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
 
 	// Don't substract the proper amount of time unless we're actually ingame.
-	if (::levelstate.checkTimeLeftAdvance())
+	if (::levelstate.canTimeLeftAdvance())
 		level.timeleft -= level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
@@ -4700,7 +4697,7 @@ void SV_TimelimitCheck()
 		}
 	}
 
-	if (level.timeleft > 0 || !::levelstate.checkEndGame() ||
+	if (level.timeleft > 0 || !::levelstate.canEndGame() ||
 	    gamestate == GS_INTERMISSION)
 		return;
 
@@ -5089,7 +5086,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		return;
 
 	// Don't print obituaries after the end of a round
-	if (!::levelstate.checkShowObituary() || gamestate != GS_LEVEL)
+	if (!::levelstate.canShowObituary() || gamestate != GS_LEVEL)
 		return;
 
 	int gender = self->player->userinfo.gender;
@@ -5534,7 +5531,7 @@ void SV_UpdatePlayerQueueLevelChange()
 
 bool SV_ShouldDequeuePlayer(int playerCount)
 {
-	return gamestate != GS_INTERMISSION && !shotclock && playerCount < sv_maxplayers;
+	return gamestate != GS_INTERMISSION && playerCount < sv_maxplayers;
 }
 
 void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)

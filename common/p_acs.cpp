@@ -38,6 +38,7 @@
 #include "s_sndseq.h"
 #include "i_system.h"
 #include "m_vectors.h"
+#include "p_inter.h"
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
 #define LANGREGIONMASK	MAKE_ID(0,0,0xff,0xff)
@@ -131,11 +132,6 @@ static const char* DoomPowerNames[7] =
 	"InvulnerabilitySphere", "Berserk", "BlurSphere",
 	"RadSuit", "Allmap", "Infrared"
 };
-
-extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
-extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
-extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
-extern ItemEquipVal P_GivePower(player_t *player, int  power);
 
 static void GiveBackpack(player_t* player)
 {
@@ -3676,4 +3672,3 @@ void DACSThinker::DumpScriptStatus ()
 
 
 VERSION_CONTROL (p_acs_cpp, "$Id$")
-

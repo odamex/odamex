@@ -63,8 +63,6 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void R_ResetInterpolation();
 
-extern int shotclock;
-
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
@@ -274,7 +272,6 @@ void G_InitNew (const char *mapname)
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
-	shotclock = 0;
 
 	D_SetupUserInfo();
 	
@@ -320,7 +317,6 @@ static void goOn(int position)
 void G_ExitLevel (int position, int drawscores)
 {
 	secretexit = false;
-	shotclock = 0;
 
 	goOn (position);
 
@@ -336,8 +332,6 @@ void G_SecretExitLevel (int position, int drawscores)
 		secretexit = false;
 	else
 		secretexit = true;
-
-	shotclock = 0;
 
     goOn (position);
 	//gameaction = ga_completed;

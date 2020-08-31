@@ -74,7 +74,6 @@ EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR (g_survival_lives)
 
 extern int mapchange;
-extern int shotclock;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
@@ -425,7 +424,6 @@ void G_InitNew (const char *mapname)
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
-	shotclock = 0;
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
@@ -448,7 +446,6 @@ void G_ExitLevel (int position, int drawscores)
         SV_DrawScores();
 	
 	gamestate = GS_INTERMISSION;
-	shotclock = 0;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
 
     secretexit = false;
@@ -468,7 +465,6 @@ void G_SecretExitLevel (int position, int drawscores)
         SV_DrawScores();
         
 	gamestate = GS_INTERMISSION;
-	shotclock = 0;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!

@@ -35,7 +35,6 @@ static const int MaxPacketSize = 600;
 
 #include <json/json.h>
 
-extern int shotclock;
 extern bool keysfound[NUMCARDS];
 
 class client_c

@@ -53,14 +53,15 @@ class LevelState
 	const char* getStateString() const;
 	short getCountdown() const;
 	int getJoinTimeLeft() const;
-	bool checkJoinGame() const;
-	bool checkLivesChange() const;
-	bool checkScoreChange() const;
-	bool checkTimeLeftAdvance() const;
-	bool checkFireWeapon() const;
-	bool checkReadyToggle() const;
-	bool checkEndGame() const;
-	bool checkShowObituary() const;
+	bool canEndGame() const;
+	bool canFireWeapon() const;
+	bool canJoinGame() const;
+	bool canLivesChange() const;
+	bool canReadyToggle() const;
+	bool canScoreChange() const;
+	bool canShowObituary() const;
+	bool canTickGameplay() const;
+	bool canTimeLeftAdvance() const;
 	void setStateCB(LevelState::SetStateCB cb);
 	void reset(level_locals_t& level);
 	void restart();
@@ -88,6 +89,8 @@ struct SerializedLevelState
 
 extern LevelState levelstate;
 
-void G_SurvivalCheckEndGame();
+void G_FragsCheckEndGame();
+void G_TeamFragsCheckEndGame();
+void G_LivesCheckEndGame();
 
 #endif

@@ -54,7 +54,6 @@ EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
 
-int shotclock = 0;
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -90,7 +89,7 @@ void SV_ShareKeys(card_t card, player_t& player);
 // Give frags to a player
 void P_GiveFrags(player_t* player, int num)
 {
-	if (!::levelstate.checkScoreChange())
+	if (!::levelstate.canScoreChange())
 		return;
 	player->fragcount += num;
 }
@@ -98,7 +97,7 @@ void P_GiveFrags(player_t* player, int num)
 // Give coop kills to a player
 void P_GiveKills(player_t* player, int num)
 {
-	if (!::levelstate.checkScoreChange())
+	if (!::levelstate.canScoreChange())
 		return;
 	player->killcount += num;
 }
@@ -106,7 +105,7 @@ void P_GiveKills(player_t* player, int num)
 // Give coop kills to a player
 void P_GiveDeaths(player_t* player, int num)
 {
-	if (!::levelstate.checkScoreChange())
+	if (!::levelstate.canScoreChange())
 		return;
 	player->deathcount += num;
 }
@@ -114,10 +113,19 @@ void P_GiveDeaths(player_t* player, int num)
 // Give a specific number of points to a player's team
 void P_GiveTeamPoints(player_t* player, int num)
 {
-	if (!::levelstate.checkScoreChange())
+	if (!::levelstate.canScoreChange())
 		return;
-
 	GetTeamInfo(player->userinfo.team)->Points += num;
+}
+
+/**
+ * @brief Give lives to a player...or take them away.
+ */
+void P_GiveLives(player_t* player, int num)
+{
+	if (!::levelstate.canLivesChange())
+		return;
+	player->lives += num;
 }
 
 //
@@ -972,15 +980,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	if (tplayer)
 	{
-		// If the target has a life and we're not joining the game, take it.
-		if (tplayer->lives > 0 && !joinkill && ::levelstate.checkLivesChange())
-		{
-			tplayer->lives -= 1;
-
-			// [AM] Check to see if survival conditions have been met.
-			G_SurvivalCheckEndGame();
-		}
-
 		// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
 		// was not being set clientside
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
@@ -993,7 +992,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		// fair to count them toward a player's score.
 		if (target->player && level.time)
 		{
-			if (!joinkill && !shotclock)
+			if (!joinkill)
 			{
 				if (target->player == source->player) // [RH] Cumulative frag count
 				{
@@ -1057,10 +1056,11 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (sv_gametype == GM_CTF)
 			CTF_CheckFlags(*target->player);
 
-		if (!joinkill && !shotclock)
-		{
+		if (!joinkill)
 			P_GiveDeaths(tplayer, 1);
-		}
+
+		if (!joinkill && tplayer->lives > 0)
+			P_GiveLives(tplayer, -1);
 
 		// Death script execution, care of Skull Tag
 		if (level.behavior != NULL)
@@ -1069,7 +1069,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 
 		// count environment kills against you
-		if (!source && !joinkill && !shotclock)
+		if (!source && !joinkill)
 		{
 			// [RH] Cumulative frag count
 			P_GiveFrags(tplayer, -1);
@@ -1125,41 +1125,22 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		ClientObituary(target, inflictor, source);
 	}
+
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
 		// [Toke] Better sv_fraglimit
-		if (sv_gametype == GM_DM && sv_fraglimit && splayer->fragcount >= sv_fraglimit &&
-		    ::levelstate.checkEndGame())
-		{
-			// [ML] 04/4/06: Added !sv_fragexitswitch
-            SV_BroadcastPrintf(
-                PRINT_HIGH,
-                "Frag limit hit. Game won by %s!\n",
-                splayer->userinfo.netname.c_str()
-            );
-			SV_SetWinPlayer(splayer->id);
-			::levelstate.endGame();
-		}
+		if (sv_gametype == GM_DM)
+			G_FragsCheckEndGame();
 
 		// [Toke] TeamDM sv_fraglimit
-		if (sv_gametype == GM_TEAMDM && sv_fraglimit && ::levelstate.checkEndGame())
-		{
-			for (size_t i = 0; i < NUMTEAMS; i++)
-			{
-				if (GetTeamInfo((team_t)i)->Points >= sv_fraglimit)
-				{
-					SV_BroadcastPrintf(
-                        PRINT_HIGH,
-                        "Frag limit hit. %s team wins!\n",
-						GetTeamInfo((team_t)i)->ColorString.c_str()
-                    );
-					::levelstate.endGame();
-					break;
-				}
-			}
-		}
+		if (sv_gametype == GM_TEAMDM)
+			G_TeamFragsCheckEndGame();
 	}
+
+	// Check survival endgame
+	if (target->player && level.time)
+		G_LivesCheckEndGame();
 
 	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
     {
@@ -1475,7 +1456,7 @@ void P_PlayerLeavesGame(player_s* player)
 	}
 
 	// [AM] Leaving the game might have triggered a survival end state.
-	G_SurvivalCheckEndGame();
+	G_LivesCheckEndGame();
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")

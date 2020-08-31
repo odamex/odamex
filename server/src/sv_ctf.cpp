@@ -27,12 +27,11 @@
 #include "p_ctf.h"
 #include "i_system.h"
 #include "g_levelstate.h"
+#include "p_inter.h"
 #include "p_unlag.h"
 #include "m_wdlstats.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
-
-extern int shotclock;
 
 EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR (sv_scorelimit)
@@ -72,7 +71,7 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 	if(event == SCORE_NONE)
 		return;
 
-	if(validplayer(who) && ::levelstate.checkScoreChange())
+	if(validplayer(who) && ::levelstate.canScoreChange())
 		who.points += ctf_points[event];
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -205,8 +204,6 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 	return msg;
 }
 
-extern void P_GiveTeamPoints(player_t* player, int num);
-
 //
 //	[Toke - CTF] SV_FlagScore
 //	Event of a player capturing the flag
@@ -234,7 +231,7 @@ void SV_FlagScore (player_t &player, team_t f)
 
 	// checks to see if a team won a game
 	if (GetTeamInfo(player.userinfo.team)->Points >= sv_scorelimit &&
-	    sv_scorelimit != 0 && ::levelstate.checkEndGame())
+	    sv_scorelimit != 0 && ::levelstate.canEndGame())
 	{
 		SV_BroadcastPrintf(PRINT_HIGH, "Score limit reached. %s team wins!\n",
 		                   GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
@@ -249,7 +246,7 @@ void SV_FlagScore (player_t &player, team_t f)
 //
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 {
-	if (shotclock)
+	if (::levelstate.canTickGameplay())
 		return IEV_NotEquipped;
 
 	if(player.userinfo.team == f)
@@ -283,7 +280,7 @@ ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 //
 void SV_SocketTouch (player_t &player, team_t f)
 {
-	if (shotclock)
+	if (::levelstate.canTickGameplay())
 		return;
 
 	TeamInfo* teamInfo = GetTeamInfo(f);
@@ -313,7 +310,7 @@ void SV_SocketTouch (player_t &player, team_t f)
 //
 void SV_FlagDrop (player_t &player, team_t f)
 {
-	if (shotclock)
+	if (::levelstate.canTickGameplay())
 		return;
 
 	SV_CTFEvent (f, SCORE_DROP, player);
@@ -338,7 +335,7 @@ void SV_FlagDrop (player_t &player, team_t f)
 //
 void CTF_RunTics (void)
 {
-	if (shotclock || gamestate != GS_LEVEL)
+	if (!::levelstate.canTickGameplay() || gamestate != GS_LEVEL)
 		return;
 
 	for(size_t i = 0; i < NUMTEAMS; i++)
