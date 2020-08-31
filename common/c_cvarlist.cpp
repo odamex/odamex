@@ -189,8 +189,7 @@ CVAR(g_survival_lives, "1", "Number of lives a player has in survival", CVARTYPE
 CVAR(g_survival_jointimer, "0",
      "Number of seconds after the game begins that a survival session can be joined by "
      "new players",
-     CVARTYPE_INT,
-     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"

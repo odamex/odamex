@@ -34,6 +34,7 @@
 #include "i_system.h"
 
 EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_survival_jointimer)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_teamsinplay)
@@ -86,7 +87,34 @@ short LevelState::getCountdown() const
 	    _state != LevelState::WARMUP_FORCED_COUNTDOWN)
 		return 0;
 
-	return ceil((_time_begin - level.time) / (float)TICRATE);
+	return ceil((_countdown_done_time - level.time) / (float)TICRATE);
+}
+
+/**
+ * @brief Amount of time left for a player to join the game.
+ */
+int LevelState::getJoinTimeLeft() const
+{
+	int end_time = _ingame_start_time + g_survival_jointimer * TICRATE;
+	return ceil((end_time - level.time) / (float)TICRATE);
+}
+
+/**
+ * @brief Check if a player should be allowed to join the game.
+ */
+bool LevelState::checkJoinGame() const
+{
+	if (g_survival && LevelState::INGAME)
+	{
+		// Joining in the middle of a survival round needs special
+		// permission from the jointimer.
+		if (getJoinTimeLeft() <= 0)
+			return false;
+		else
+			return true;
+	}
+
+	return _state != LevelState::ENDGAME;
 }
 
 /**
@@ -182,7 +210,7 @@ void LevelState::reset(level_locals_t& level)
 		setState(LevelState::INGAME);
 	}
 
-	_time_begin = 0;
+	_countdown_done_time = 0;
 }
 
 /**
@@ -298,7 +326,7 @@ void LevelState::tic()
 		break;
 	case LevelState::PREGAME:
 		// Once the timer has run out, start the round.
-		if (level.time >= _time_begin)
+		if (level.time >= _countdown_done_time)
 		{
 			setState(LevelState::INGAME);
 			SV_BroadcastPrintf(PRINT_HIGH, "The round has started.\n");
@@ -307,7 +335,7 @@ void LevelState::tic()
 		break;
 	case LevelState::ENDGAME:
 		// Once the timer has run out, go to intermission.
-		if (level.time >= _time_begin)
+		if (level.time >= _countdown_done_time)
 		{
 			G_ExitLevel(0, 1);
 			return;
@@ -360,7 +388,7 @@ void LevelState::tic()
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
 		// Once the timer has run out, start the game.
-		if (level.time >= _time_begin)
+		if (level.time >= _countdown_done_time)
 		{
 			setState(LevelState::INGAME);
 			G_DeferedFullReset();
@@ -381,7 +409,8 @@ SerializedLevelState LevelState::serialize() const
 {
 	SerializedLevelState serialized;
 	serialized.state = _state;
-	serialized.time_begin = _time_begin;
+	serialized.countdown_done_time = _countdown_done_time;
+	serialized.ingame_start_time = _ingame_start_time;
 	return serialized;
 }
 
@@ -393,7 +422,8 @@ SerializedLevelState LevelState::serialize() const
 void LevelState::unserialize(SerializedLevelState serialized)
 {
 	_state = serialized.state;
-	_time_begin = serialized.time_begin;
+	_countdown_done_time = serialized.countdown_done_time;
+	_ingame_start_time = serialized.ingame_start_time;
 }
 
 /**
@@ -411,16 +441,21 @@ void LevelState::setState(LevelState::States new_state)
 	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		// Most countdowns use the countdown cvar.
-		_time_begin = level.time + (sv_countdown.asInt() * TICRATE);
+		_countdown_done_time = level.time + (sv_countdown.asInt() * TICRATE);
 	}
 	else if (_state == LevelState::ENDGAME)
 	{
 		// Endgame is always two seconds, like the old "shotclock" variable.
-		_time_begin = level.time + 2 * TICRATE;
+		_countdown_done_time = level.time + 2 * TICRATE;
 	}
 	else
 	{
-		_time_begin = 0;
+		_countdown_done_time = 0;
+	}
+
+	if (_state == LevelState::INGAME)
+	{
+		_ingame_start_time = level.time;
 	}
 
 	if (_set_state_cb)

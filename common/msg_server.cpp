@@ -166,7 +166,8 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 {
 	MSG_WriteMarker(&b, svc_levelstate);
 	MSG_WriteVarint(&b, sls.state);
-	MSG_WriteVarint(&b, sls.time_begin);
+	MSG_WriteVarint(&b, sls.countdown_done_time);
+	MSG_WriteVarint(&b, sls.ingame_start_time);
 }
 
 VERSION_CONTROL(msg_server, "$Id$")

@@ -3552,7 +3552,8 @@ void CL_LevelState()
 {
 	SerializedLevelState sls;
 	sls.state = static_cast<LevelState::States>(MSG_ReadVarint());
-	sls.time_begin = MSG_ReadVarint();
+	sls.countdown_done_time = MSG_ReadVarint();
+	sls.ingame_start_time = MSG_ReadVarint();
 	::levelstate.unserialize(sls);
 }
 

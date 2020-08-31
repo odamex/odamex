@@ -44,12 +44,16 @@ class LevelState
 		WARMUP_COUNTDOWN,        // Warmup countdown.
 		WARMUP_FORCED_COUNTDOWN, // Forced countdown, can't be cancelled by unreadying.
 	};
-	LevelState() : _state(LevelState::UNKNOWN), _time_begin(0), _set_state_cb(NULL)
+	LevelState()
+	    : _state(LevelState::UNKNOWN), _countdown_done_time(0), _ingame_start_time(0),
+	      _set_state_cb(NULL)
 	{
 	}
 	LevelState::States getState() const;
 	const char* getStateString() const;
 	short getCountdown() const;
+	int getJoinTimeLeft() const;
+	bool checkJoinGame() const;
 	bool checkLivesChange() const;
 	bool checkScoreChange() const;
 	bool checkTimeLeftAdvance() const;
@@ -69,7 +73,8 @@ class LevelState
 
   private:
 	LevelState::States _state;
-	int _time_begin;
+	int _countdown_done_time;
+	int _ingame_start_time;
 	LevelState::SetStateCB _set_state_cb;
 	void setState(LevelState::States new_state);
 };
@@ -77,7 +82,8 @@ class LevelState
 struct SerializedLevelState
 {
 	LevelState::States state;
-	int time_begin;
+	int countdown_done_time;
+	int ingame_start_time;
 };
 
 extern LevelState levelstate;

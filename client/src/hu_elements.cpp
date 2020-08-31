@@ -54,6 +54,7 @@ EXTERN_CVAR (sv_maxplayersperteam)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR (g_survival)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -324,6 +325,21 @@ void Warmup(std::string& out, int& color)
 		color = CR_GOLD;
 		out = "Match is about to start...";
 		return;
+	}
+	else if (state == LevelState::INGAME && g_survival && cp->spectator)
+	{
+		// Display the state of the join timer here:
+		int time = ::levelstate.getJoinTimeLeft();
+		if (time > 0)
+		{
+			color = CR_GOLD;
+			StrFormat(out, "You have %d second(s) to join...", time);
+		}
+		else
+		{
+			color = CR_RED;
+			StrFormat(out, "Wait for the next round to join.");
+		}
 	}
 }
 
