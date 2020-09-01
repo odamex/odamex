@@ -111,7 +111,7 @@ void LevelState::setStateCB(LevelState::SetStateCB cb)
 }
 
 /**
- * @brief Reset warmup to "factory defaults" for the level.
+ * @brief Reset levelstate to "factory defaults" for the level.
  */
 void LevelState::reset(level_locals_t& level)
 {
@@ -125,6 +125,9 @@ void LevelState::reset(level_locals_t& level)
 		// We need a warmup state when playing competitive survival modes,
 		// so people have a safe period of time to switch teams and join
 		// the game without the game trying to end prematurely.
+		//
+		// However, if we reset while we're playing survival coop, it will
+		// destroy players' inventory, so don't do that.
 		setState(LevelState::WARMUP);
 	}
 	else if (sv_warmup)
@@ -219,7 +222,7 @@ void LevelState::endGame()
 	{
 		// A normal coop exit bypasses LevelState completely, so if we're
 		// here, the mission was a failure and needs to be restarted.
-		setState(LevelState::WARMUP_FORCED_COUNTDOWN);
+		setState(LevelState::WARMUP);
 	}
 	else
 	{
@@ -237,10 +240,15 @@ void LevelState::tic()
 		return;
 
 	// If there aren't any more active players, go back to warm up mode [tm512 2014/04/08]
-	if (sv_warmup && _state != LevelState::WARMUP && P_NumPlayersInGame() == 0)
+	if (_state != LevelState::WARMUP && P_NumPlayersInGame() == 0)
 	{
-		setState(LevelState::WARMUP);
-		return;
+		// [AM] Warmup is for obvious reasons, but survival needs a clean
+		//      slate to function properly.
+		if (sv_warmup || g_survival)
+		{
+			setState(LevelState::WARMUP);
+			return;
+		}
 	}
 
 	// Depending on our state, do something.
