@@ -32,6 +32,7 @@
 #include "g_level.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "m_wdlstats.h"
 
 EXTERN_CVAR(g_survival)
 EXTERN_CVAR(g_survival_jointimer)
@@ -42,6 +43,7 @@ EXTERN_CVAR(sv_timelimit)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_fraglimit)
+EXTERN_CVAR(sv_scorelimit)
 
 LevelState levelstate;
 
@@ -98,89 +100,6 @@ int LevelState::getJoinTimeLeft() const
 {
 	int end_time = _ingame_start_time + g_survival_jointimer * TICRATE;
 	return ceil((end_time - level.time) / (float)TICRATE);
-}
-
-/**
- * @brief Check if the round should be allowed to end.
- */
-bool LevelState::canEndGame() const
-{
-	return _state == LevelState::INGAME;
-}
-
-/**
- * @brief Check if the player should be able to fire their weapon.
- */
-bool LevelState::canFireWeapon() const
-{
-	return _state == LevelState::INGAME || _state == LevelState::WARMUP;
-}
-
-/**
- * @brief Check if a player should be allowed to join the game.
- */
-bool LevelState::canJoinGame() const
-{
-	if (g_survival && LevelState::INGAME)
-	{
-		// Joining in the middle of a survival round needs special
-		// permission from the jointimer.
-		if (getJoinTimeLeft() <= 0)
-			return false;
-		else
-			return true;
-	}
-
-	return _state != LevelState::ENDGAME;
-}
-
-/**
- * @brief Check if a player's lives should be allowed to change.
- */
-bool LevelState::canLivesChange() const
-{
-	return _state == LevelState::INGAME;
-}
-
-/**
- * @brief Check to see if we should allow players to toggle their ready state.
- */
-bool LevelState::canReadyToggle() const
-{
-	return _state == LevelState::INGAME || _state == LevelState::PREGAME ||
-	       _state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN;
-}
-
-/**
- * @brief Check if a score should be allowed to change.
- */
-bool LevelState::canScoreChange() const
-{
-	return _state == LevelState::INGAME;
-}
-
-/**
- * @brief Check if obituaries are allowed to be shown.
- */
-bool LevelState::canShowObituary() const
-{
-	return _state == LevelState::INGAME;
-}
-
-/**
- * @brief Check if we're allowed to "tick" gameplay systems.
- */
-bool LevelState::canTickGameplay() const
-{
-	return _state == LevelState::WARMUP || _state == LevelState::INGAME;
-}
-
-/**
- * @brief Check if timeleft should advance.
- */
-bool LevelState::canTimeLeftAdvance() const
-{
-	return _state == LevelState::INGAME;
 }
 
 /**
@@ -480,11 +399,98 @@ BEGIN_COMMAND(forcestart)
 END_COMMAND(forcestart)
 
 /**
- * @brief Check to see if se whould end the game on frags.
+ * @brief Check if the round should be allowed to end.
+ */
+bool G_CanEndGame()
+{
+	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if the player should be able to fire their weapon.
+ */
+bool G_CanFireWeapon()
+{
+	return ::levelstate.getState() == LevelState::INGAME ||
+	       ::levelstate.getState() == LevelState::WARMUP;
+}
+
+/**
+ * @brief Check if a player should be allowed to join the game.
+ */
+bool G_CanJoinGame()
+{
+	if (g_survival && ::levelstate.getState() == LevelState::INGAME)
+	{
+		// Joining in the middle of a survival round needs special
+		// permission from the jointimer.
+		if (::levelstate.getJoinTimeLeft() <= 0)
+			return false;
+		else
+			return true;
+	}
+
+	return ::levelstate.getState() != LevelState::ENDGAME;
+}
+
+/**
+ * @brief Check if a player's lives should be allowed to change.
+ */
+bool G_CanLivesChange()
+{
+	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check to see if we should allow players to toggle their ready state.
+ */
+bool G_CanReadyToggle()
+{
+	return ::levelstate.getState() == LevelState::INGAME ||
+	       ::levelstate.getState() == LevelState::PREGAME ||
+	       ::levelstate.getState() == LevelState::WARMUP ||
+	       ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN;
+}
+
+/**
+ * @brief Check if a score should be allowed to change.
+ */
+bool G_CanScoreChange()
+{
+	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if obituaries are allowed to be shown.
+ */
+bool G_CanShowObituary()
+{
+	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if we're allowed to "tick" gameplay systems.
+ */
+bool G_CanTickGameplay()
+{
+	return ::levelstate.getState() == LevelState::WARMUP ||
+	       ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if timeleft should advance.
+ */
+bool G_CanTimeLeftAdvance()
+{
+	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check for an endgame condition on individual frags.
  */
 void G_FragsCheckEndGame()
 {
-	if (!::serverside || !::levelstate.canEndGame())
+	if (!::serverside || !G_CanEndGame())
 		return;
 
 	if (sv_fraglimit <= 0.0)
@@ -505,9 +511,12 @@ void G_FragsCheckEndGame()
 	}
 }
 
+/**
+ * @brief Check for an endgame condition on team frags.
+ */
 void G_TeamFragsCheckEndGame()
 {
-	if (!::serverside || !::levelstate.canEndGame())
+	if (!::serverside || !G_CanEndGame())
 		return;
 
 	if (sv_fraglimit <= 0.0)
@@ -526,6 +535,30 @@ void G_TeamFragsCheckEndGame()
 }
 
 /**
+ * @brief Check for an endgame condition on team score.
+ */
+void G_TeamScoreCheckEndGame()
+{
+	if (!::serverside || !G_CanEndGame())
+		return;
+
+	if (sv_scorelimit <= 0.0)
+		return;
+
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		if (GetTeamInfo((team_t)i)->Points >= sv_scorelimit)
+		{
+			SV_BroadcastPrintf(PRINT_HIGH, "Score limit hit. %s team wins!\n",
+			                   GetTeamInfo((team_t)i)->ColorString.c_str());
+			::levelstate.endGame();
+			M_CommitWDLLog();
+			return;
+		}
+	}
+}
+
+/**
  * @brief Check to see if we should end the game on lives.
  */
 void G_LivesCheckEndGame()
@@ -535,7 +568,7 @@ void G_LivesCheckEndGame()
 
 	static PlayerResults pr;
 
-	if (!g_survival || !::levelstate.canEndGame())
+	if (!g_survival || !G_CanEndGame())
 		return;
 
 	if (sv_gametype == GM_COOP)
@@ -543,8 +576,7 @@ void G_LivesCheckEndGame()
 		// Everybody losing their lives in coop is a failure.
 		if (P_PlayerQuery(NULL, PQ_HASLIVES).result == 0)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH,
-			                   "Game over: All players have run out of lives.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
 			::levelstate.endGame();
 		}
 	}
@@ -556,14 +588,12 @@ void G_LivesCheckEndGame()
 		PlayerCounts pc = P_PlayerQuery(&pr, PQ_HASLIVES);
 		if (pc.result == 0 || pr.empty())
 		{
-			SV_BroadcastPrintf(PRINT_HIGH,
-			                   "Game over: All players have run out of lives.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
 			::levelstate.endGame();
 		}
 		else if (pc.result == 1)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH,
-			                   "Game over: %s was the last player standing.\n",
+			SV_BroadcastPrintf(PRINT_HIGH, "%s wins as the last player standing!\n",
 			                   pr.front()->userinfo.netname.c_str());
 			::levelstate.endGame();
 		}
@@ -590,16 +620,14 @@ void G_LivesCheckEndGame()
 
 		if (aliveteams == 0 || pr.empty())
 		{
-			SV_BroadcastPrintf(PRINT_HIGH,
-			                   "Game over: All teams have run out of lives.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "All teams have run out of lives.\n");
 			::levelstate.endGame();
 		}
 		else if (aliveteams == 1)
 		{
 			TeamInfo* teamInfo = GetTeamInfo(pr.front()->userinfo.team);
-			SV_BroadcastPrintf(PRINT_HIGH,
-			                   "Game over: %s team was the last team standing.\n",
-			                   teamInfo->ColorStringUpper.c_str());
+			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins as the last team standing!\n",
+			                   teamInfo->ColorString.c_str());
 			::levelstate.endGame();
 		}
 

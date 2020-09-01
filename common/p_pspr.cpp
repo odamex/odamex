@@ -503,7 +503,7 @@ void A_WeaponReady(AActor* mo)
 
 	// check for fire - the missile launcher and bfg do not auto fire
 	// [AM] Allow warmup to disallow weapon firing.
-	if (player->cmd.buttons & BT_ATTACK && ::levelstate.canFireWeapon())
+	if (player->cmd.buttons & BT_ATTACK && G_CanFireWeapon())
 	{
 		if (!player->attackdown || (player->readyweapon != wp_missile && player->readyweapon != wp_bfg))
 		{
@@ -532,7 +532,7 @@ void A_ReFire(AActor* mo)
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
 	// [AM] Allow warmup to disallow weapon refiring.
-	if ((player->cmd.buttons & BT_ATTACK && ::levelstate.canFireWeapon())
+	if ((player->cmd.buttons & BT_ATTACK && G_CanFireWeapon())
 		 && player->pendingweapon == wp_nochange
 		 && player->health)
 	{

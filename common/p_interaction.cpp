@@ -88,7 +88,7 @@ void SV_ShareKeys(card_t card, player_t& player);
 // Give frags to a player
 void P_GiveFrags(player_t* player, int num)
 {
-	if (!::levelstate.canScoreChange())
+	if (!G_CanScoreChange())
 		return;
 	player->fragcount += num;
 }
@@ -96,7 +96,7 @@ void P_GiveFrags(player_t* player, int num)
 // Give coop kills to a player
 void P_GiveKills(player_t* player, int num)
 {
-	if (!::levelstate.canScoreChange())
+	if (!G_CanScoreChange())
 		return;
 	player->killcount += num;
 }
@@ -104,7 +104,7 @@ void P_GiveKills(player_t* player, int num)
 // Give coop kills to a player
 void P_GiveDeaths(player_t* player, int num)
 {
-	if (!::levelstate.canScoreChange())
+	if (!G_CanScoreChange())
 		return;
 	player->deathcount += num;
 }
@@ -112,7 +112,7 @@ void P_GiveDeaths(player_t* player, int num)
 // Give a specific number of points to a player's team
 void P_GiveTeamPoints(player_t* player, int num)
 {
-	if (!::levelstate.canScoreChange())
+	if (!G_CanScoreChange())
 		return;
 	GetTeamInfo(player->userinfo.team)->Points += num;
 }
@@ -122,7 +122,7 @@ void P_GiveTeamPoints(player_t* player, int num)
  */
 void P_GiveLives(player_t* player, int num)
 {
-	if (!::levelstate.canLivesChange())
+	if (!G_CanLivesChange())
 		return;
 	player->lives += num;
 }
