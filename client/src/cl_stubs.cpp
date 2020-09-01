@@ -34,7 +34,8 @@
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
 
-void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
+FORMAT_PRINTF(2, 3)
+void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 {
 	if (!serverside)
 		return;
@@ -42,11 +43,11 @@ void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
 	// Local game, print the message normally.
 	std::string str;
 	va_list va;
-	va_start(va, fmt);
-	VStrFormat(str, fmt, va);
+	va_start(va, format);
+	VStrFormat(str, format, va);
 	va_end(va);
 
-	Printf(level, "%s", str.c_str());
+	Printf(printlevel, "%s", str.c_str());
 }
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}

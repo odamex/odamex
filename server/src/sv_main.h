@@ -55,7 +55,6 @@ void SV_DrawScores();
 
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 
-void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);

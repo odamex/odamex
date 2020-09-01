@@ -45,7 +45,6 @@ EXTERN_CVAR(sv_fraglimit)
 
 LevelState levelstate;
 
-void STACK_ARGS SV_BroadcastPrintf(int level, const char* fmt, ...);
 void SV_SetWinPlayer(byte playerId);
 
 /**

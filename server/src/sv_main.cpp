@@ -2723,32 +2723,31 @@ BEGIN_COMMAND (showscores)
 }
 END_COMMAND (showscores)
 
-//
-// SV_BroadcastPrintf
-// Sends text to all active clients.
-//
-void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
+FORMAT_PRINTF(2, 3)
+void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 {
 	va_list argptr;
-	char string[2048];
-	client_t *cl;
+	std::string string;
+	client_t* cl;
 
-	va_start(argptr, fmt);
-	vsprintf(string, fmt, argptr);
+	va_start(argptr, format);
+	VStrFormat(string, format, argptr);
 	va_end(argptr);
 
-	Printf(level, "%s", string);  // print to the console
+	Printf(printlevel, "%s", string.c_str()); // print to the console
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		cl = &(it->client);
 
-		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+		// [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the
+		// console
+		if (cl->allow_rcon)
 			continue;
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, level);
-		MSG_WriteString (&cl->reliablebuf, string);
+		MSG_WriteMarker(&cl->reliablebuf, svc_print);
+		MSG_WriteByte(&cl->reliablebuf, printlevel);
+		MSG_WriteString(&cl->reliablebuf, string.c_str());
 	}
 }
 
