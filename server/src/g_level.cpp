@@ -504,7 +504,6 @@ void G_DoSaveResetState()
 	reset_snapshot->Open();
 	FArchive arc(*reset_snapshot);
 	G_SerializeLevel(arc, false, true);
-	arc << level.time;
 }
 
 // [AM] - Reset the state of the level.  Second parameter is true if you want
@@ -565,9 +564,10 @@ void G_DoResetLevel(bool full_reset)
 	reset_snapshot->Reopen();
 	FArchive arc(*reset_snapshot);
 	G_SerializeLevel(arc, false, true);
-	int level_time;
-	arc >> level_time;
 	reset_snapshot->Seek(0, FFile::ESeekSet);
+
+	// Set time to the initial tic.
+	level.time = 0;
 
 	// Assign new netids to every non-player actor to make sure we don't have
 	// any weird destruction of any items post-reset.
@@ -593,8 +593,6 @@ void G_DoResetLevel(bool full_reset)
 	// Potentially clear out gamestate as well.
 	if (full_reset)
 	{
-		// Set time to the initial tic
-		level.time = level_time;
 		// Clear global goals.
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			GetTeamInfo((team_t)i)->Points;

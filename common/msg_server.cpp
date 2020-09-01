@@ -162,12 +162,24 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 	}
 }
 
+/**
+ * @brief Send information about the server's LevelState to the client.
+ */
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 {
 	MSG_WriteMarker(&b, svc_levelstate);
 	MSG_WriteVarint(&b, sls.state);
 	MSG_WriteVarint(&b, sls.countdown_done_time);
 	MSG_WriteVarint(&b, sls.ingame_start_time);
+}
+
+/**
+ * @brief Tell the client about the server's level time.
+ */
+void SVC_LevelTimeUpdate(buf_t& b, int leveltime)
+{
+	MSG_WriteMarker(&b, svc_leveltimeupdate);
+	MSG_WriteVarint(&b, level.time);
 }
 
 VERSION_CONTROL(msg_server, "$Id$")

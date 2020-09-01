@@ -136,6 +136,7 @@ enum svc_t
 	svc_executelinespecial,
 	svc_executeacsspecial,
 	svc_thinkerupdate,
+	svc_leveltimeupdate,
 
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]

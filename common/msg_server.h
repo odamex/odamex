@@ -45,5 +45,6 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
                   bool joinkill);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
+void SVC_LevelTimeUpdate(buf_t& b, int leveltime);
 
 #endif

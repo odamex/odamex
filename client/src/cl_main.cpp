@@ -3557,6 +3557,12 @@ void CL_LevelState()
 	::levelstate.unserialize(sls);
 }
 
+// Set the level time appropriately.
+void CL_LevelTimeUpdate()
+{
+	level.time = MSG_ReadVarint();
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -3662,6 +3668,7 @@ void CL_InitCommands(void)
 	cmds[svc_linesideupdate] = &CL_LineSideUpdate;
 	cmds[svc_sectorproperties] = &CL_SectorSectorPropertiesUpdate;
 	cmds[svc_thinkerupdate] = &CL_ThinkerUpdate;
+	cmds[svc_leveltimeupdate] = &CL_LevelTimeUpdate;
 }
 
 //

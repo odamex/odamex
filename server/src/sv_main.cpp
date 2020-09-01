@@ -1814,6 +1814,9 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
 
+	// Send the player the current time of the level.
+	SVC_LevelTimeUpdate(cl->reliablebuf, level.time);
+
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -3805,7 +3808,7 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	if (player.ingame() == false)
 		return;
 
-	if (!setting && player.spectator)
+	if (!setting && player.spectator && G_CanJoinGame())
 		SV_JoinPlayer(player, silent);
 	else if (setting && !player.spectator)
 		SV_SpecPlayer(player, silent);
