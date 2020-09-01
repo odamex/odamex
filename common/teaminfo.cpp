@@ -1,5 +1,9 @@
 #include "teaminfo.h"
 
+#include "c_cvars.h"
+
+EXTERN_CVAR(sv_teamsinplay)
+
 TeamInfo s_Teams[NUMTEAMS];
 TeamInfo s_NoTeam;
 
@@ -18,6 +22,7 @@ void InitTeamInfo()
 	teamInfo->FlagSprite = SPR_BFLG;
 	teamInfo->FlagDownSprite = SPR_BDWN;
 	teamInfo->Points = 0;
+	teamInfo->RoundWins = 0;
 
 	teamInfo = &s_Teams[TEAM_RED];
 	teamInfo->Team = TEAM_RED;
@@ -33,6 +38,7 @@ void InitTeamInfo()
 	teamInfo->FlagDownSprite = SPR_RDWN;
 	teamInfo->FlagCarrySprite = SPR_RCAR;
 	teamInfo->Points = 0;
+	teamInfo->RoundWins = 0;
 
 	teamInfo = &s_Teams[TEAM_GREEN];
 	teamInfo->Team = TEAM_GREEN;
@@ -48,6 +54,7 @@ void InitTeamInfo()
 	teamInfo->FlagDownSprite = SPR_GDWN;
 	teamInfo->FlagCarrySprite = SPR_GCAR;
 	teamInfo->Points = 0;
+	teamInfo->RoundWins = 0;
 
 	s_NoTeam.Team = NUMTEAMS;
 	s_NoTeam.Color = argb_t(255, 0, 255, 0);
@@ -61,6 +68,7 @@ void InitTeamInfo()
 	s_NoTeam.FlagDownSprite = 0;
 	s_NoTeam.FlagCarrySprite = 0;
 	s_NoTeam.Points = 0;
+	s_NoTeam.RoundWins = 0;
 }
 
 TeamInfo* GetTeamInfo(team_t team)
@@ -69,4 +77,60 @@ TeamInfo* GetTeamInfo(team_t team)
 		return &s_NoTeam;
 
 	return &s_Teams[team];
+}
+
+/**
+ * @brief Determines the winning team, if there is one. [Toke - teams]
+ */
+TeamCount P_TeamQuery(TeamResults* out, unsigned flags)
+{
+	TeamCount tc;
+	int maxscore = 0;
+
+	// Only teams in play are considered.
+	size_t teams = sv_teamsinplay;
+
+	for (size_t i = 0; i < teams; i++)
+	{
+		tc.total += 1;
+		TeamInfo* team = GetTeamInfo((team_t)i);
+
+		if (out)
+		{
+			if (flags & TQ_MAXPOINTS)
+			{
+				if (team->Points > maxscore)
+				{
+					// Maximum score is unique.
+					maxscore = team->Points;
+					out->clear();
+					tc.result = 0;
+				}
+				else if (team->Points < maxscore)
+				{
+					// We don't care about teams < the maximum
+					continue;
+				}
+			}
+			else if (flags & TQ_MAXWINS)
+			{
+				if (team->RoundWins > maxscore)
+				{
+					// Maximum score is unique.
+					maxscore = team->RoundWins;
+					out->clear();
+					tc.result = 0;
+				}
+				else if (team->RoundWins < maxscore)
+				{
+					// We don't care about teams < the maximum
+					continue;
+				}
+			}
+		}
+
+		tc.result += 1;
+	}
+
+	return tc;
 }

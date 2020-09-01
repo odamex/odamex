@@ -175,6 +175,8 @@ public:
 
 	// [AM] Lives left.
 	int			lives;
+	// [AM] Rounds won in round-based games.
+	int			roundwins;
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
@@ -415,7 +417,17 @@ bool			validplayer(player_t &ref);
  */
 #define PQ_HASLIVES (1 << 1)
 
-typedef std::vector<const player_t*> PlayerResults;
+/**
+ * @brief Return players with the top frag count, whatever that may be.
+ */
+#define PQ_MAXFRAGS (1 << 2)
+
+/**
+ * @brief Return players with the top win count, whatever that may be.
+ */
+#define PQ_MAXWINS (1 << 3)
+
+typedef std::vector<player_t*> PlayerResults;
 struct PlayerCounts
 {
 	int result;
@@ -429,9 +441,16 @@ struct PlayerCounts
 		for (size_t i = 0; i < ARRAY_LENGTH(teamtotal); i++)
 			teamtotal[i] = 0;
 	}
+	void ClearResult()
+	{
+		result = 0;
+		for (size_t i = 0; i < ARRAY_LENGTH(teamresult); i++)
+			teamresult[i] = 0;
+	}
 };
 
 PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team = TEAM_NONE);
+void P_ClearPlayerScores(player_t& p, bool wins);
 size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);

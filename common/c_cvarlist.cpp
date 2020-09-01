@@ -182,13 +182,29 @@ CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "",
 // Game mode options
 // -----------------
 
+CVAR(g_rounds, "0",
+     "Turns on rounds - if enabled, reaching the gametype's win condition only wins a "
+     "single round, and a player or team must win a certain number of rounds to win the "
+     "game",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH);
+
+CVAR(g_roundlimit, "0",
+     "Number of total rounds the game can go on for before the game ends", CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR(g_survival, "0", "Turns on surival mode - players have limited lives", CVARTYPE_BOOL,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR(g_survival_lives, "1", "Number of lives a player has in survival", CVARTYPE_INT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
 CVAR(g_survival_jointimer, "0",
      "Number of seconds after the game begins that a survival session can be joined by "
      "new players",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_winlimit, "0",
+     "Number of times a round must be won before a player or team wins the game",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Game mode options commonized from the server

@@ -725,6 +725,10 @@ void LevelStateHUD()
 	StrFormat(str, "Countdown: %d", ::levelstate.getCountdown());
 	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              str.c_str(), CR_GREEN);
+
+	StrFormat(str, "Round %d", ::levelstate.getRound());
+	hud::DrawText(0, 20, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              str.c_str(), CR_GREEN);
 }
 
 // [AM] Spectator HUD.

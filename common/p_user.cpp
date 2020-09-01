@@ -107,6 +107,25 @@ bool validplayer(player_t &ref)
 }
 
 /**
+ * @brief Clear all scores from a player.
+ * 
+ * @param p Player to clear.
+ * @param wins True if a player's wins should be cleared as well - should
+ *             usually be True unless it's a reset across rounds.
+ */
+void P_ClearPlayerScores(player_t& p, bool wins)
+{
+	p.lives = g_survival_lives.asInt();
+	p.roundwins = 0;
+	p.fragcount = 0;
+	p.itemcount = 0;
+	p.secretcount = 0;
+	p.deathcount = 0; // [Toke - Scores - deaths]
+	p.killcount = 0; // [deathz0r] Coop kills
+	p.points = 0;
+}
+
+/**
  * @brief Get a count of ingame players based on conditions. 
  * 
  * @param out Output vector for players, or NULL if we don't care about the
@@ -118,8 +137,9 @@ bool validplayer(player_t &ref)
 PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 {
 	PlayerCounts counts;
+	int maxscore = 0;
 
-	Players::const_iterator pit = ::players.begin();
+	Players::iterator pit = ::players.begin();
 	for (; pit != players.end(); ++pit)
 	{
 		if (!pit->ingame() || pit->spectator)
@@ -138,7 +158,40 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 			continue;
 
 		if (out)
+		{
+			if (flags & PQ_MAXFRAGS)
+			{
+				if (pit->fragcount > maxscore)
+				{
+					// Maximum score is unique.
+					maxscore = pit->fragcount;
+					out->clear();
+					counts.ClearResult();
+				}
+				else if (pit->fragcount < maxscore)
+				{
+					// We don't care about players < the maximum
+					continue;
+				}
+			}
+			else if (flags & PQ_MAXWINS)
+			{
+				if (pit->roundwins > maxscore)
+				{
+					// Maximum score is unique.
+					maxscore = pit->fragcount;
+					out->clear();
+					counts.ClearResult();
+				}
+				else if (pit->roundwins < maxscore)
+				{
+					// We don't care about players < the maximum
+					continue;
+				}
+			}
+
 			out->push_back(&*pit);
+		}
 
 		counts.result += 1;
 		counts.teamresult[pit->userinfo.team] += 1;
@@ -146,8 +199,6 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 
 	return counts;
 }
-
-
 
 //
 // P_NumPlayersInGame()
@@ -845,6 +896,7 @@ void player_s::Serialize (FArchive &arc)
 			<< armortype
 			<< backpack
 			<< lives
+			<< roundwins
 			<< fragcount
 			<< readyweapon
 			<< pendingweapon
@@ -897,6 +949,7 @@ void player_s::Serialize (FArchive &arc)
 			>> armortype
 			>> backpack
 			>> lives
+			>> roundwins
 			>> fragcount
 			>> readyweapon
 			>> pendingweapon
@@ -955,6 +1008,7 @@ player_s::player_s() :
 	armortype(0),
 	backpack(false),
 	lives(0),
+	roundwins(0),
 	points(0),
 	fragcount(0),
 	deathcount(0),
@@ -1059,6 +1113,7 @@ player_s &player_s::operator =(const player_s &other)
 		cards[i] = other.cards[i];
 
 	lives = other.lives;
+	roundwins = other.roundwins;
 
 	for(i = 0; i < NUMTEAMS; i++)
 		flags[i] = other.flags[i];

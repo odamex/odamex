@@ -37,27 +37,30 @@ class LevelState
 	enum States
 	{
 		UNKNOWN,                 // Unknown state.
-		INGAME,                  // In the middle of a game.
-		PREGAME,                 // Ingame round countdown.
-		ENDGAME,                 // Game complete, a slight pause before intermission.
 		WARMUP,                  // Warmup state.
 		WARMUP_COUNTDOWN,        // Warmup countdown.
 		WARMUP_FORCED_COUNTDOWN, // Forced countdown, can't be cancelled by unreadying.
+		PREROUND_COUNTDOWN,      // Before-the-round countdown.
+		INGAME,                  // In the middle of a game/round.
+		ENDROUND_COUNTDOWN,      // Round complete, a slight pause before the next round.
+		ENDGAME_COUNTDOWN,       // Game complete, a slight pause before intermission.
 	};
 	LevelState()
 	    : _state(LevelState::UNKNOWN), _countdown_done_time(0), _ingame_start_time(0),
-	      _set_state_cb(NULL)
+	      _round(0), _set_state_cb(NULL)
 	{
 	}
 	LevelState::States getState() const;
 	const char* getStateString() const;
-	short getCountdown() const;
+	int getCountdown() const;
+	int getRound() const;
 	int getJoinTimeLeft() const;
 	void setStateCB(LevelState::SetStateCB cb);
 	void reset(level_locals_t& level);
 	void restart();
 	void forceStart();
 	void readyToggle();
+	void endRound();
 	void endGame();
 	void tic();
 	SerializedLevelState serialize() const;
@@ -67,6 +70,7 @@ class LevelState
 	LevelState::States _state;
 	int _countdown_done_time;
 	int _ingame_start_time;
+	int _round;
 	LevelState::SetStateCB _set_state_cb;
 	void setState(LevelState::States new_state);
 };
@@ -76,6 +80,7 @@ struct SerializedLevelState
 	LevelState::States state;
 	int countdown_done_time;
 	int ingame_start_time;
+	int round;
 };
 
 extern LevelState levelstate;

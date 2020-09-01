@@ -2088,10 +2088,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 void SV_InitPlayerEnterState(player_s* player)
 {
-	player->lives = g_survival_lives.asInt();
-	player->fragcount = 0;
-	player->killcount = 0;
-	player->points = 0;
+	P_ClearPlayerScores(*player, true);
 	player->playerstate = PST_ENTER;
 }
 
@@ -4649,109 +4646,24 @@ void SV_WadDownloads (void)
 		SV_DownloadOriginal();
 }
 
-//
-//	SV_WinningTeam					[Toke - teams]
-//
-//	Determines the winning team, if there is one
-//
-team_t SV_WinningTeam (void)
+static void TimeCheck()
 {
-	team_t team = (team_t)0;
-	bool isdraw = false;
-
-	for(size_t i = 1; i < NUMTEAMS; i++)
-	{
-		if(GetTeamInfo((team_t)i)->Points > GetTeamInfo(team)->Points) {
-			team = (team_t)i;
-			isdraw = false;
-		} else if(GetTeamInfo((team_t)i)->Points == GetTeamInfo(team)->Points) {
-			isdraw = true;
-		}
-	}
-
-	if (isdraw)
-		team = TEAM_NONE;
-
-	return team;
-}
-
-//
-//	SV_TimelimitCheck
-//
-void SV_TimelimitCheck()
-{
-	if(!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) //no time limit in lobby
-		return;
-
-	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
-
-	// Don't substract the proper amount of time unless we're actually ingame.
-	if (G_CanTimeLeftAdvance())
-		level.timeleft -= level.time;	// in tics
-
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
-	if (P_AtInterval(1 * TICRATE))		// every second
+	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			MSG_WriteMarker(&(it->client.netbuf), svc_timeleft);
 			MSG_WriteShort(&(it->client.netbuf), level.timeleft / TICRATE);
 		}
 	}
-
-	if (level.timeleft > 0 || !G_CanEndGame() || gamestate == GS_INTERMISSION)
-		return;
-
-	// LEVEL TIMER
-	if (!players.empty())
-	{
-		if (sv_gametype == GM_DM)
-		{
-			player_t *winplayer = &*(players.begin());
-			bool drawgame = false;
-
-			if (players.size() > 1)
-			{
-				for (Players::iterator it = players.begin();it != players.end();++it)
-				{
-					if (it->fragcount > winplayer->fragcount)
-					{
-						drawgame = false;
-						winplayer = &*it;
-					}
-					else if (it->id != winplayer->id && it->fragcount == winplayer->fragcount)
-					{
-						drawgame = true;
-					}
-				}
-
-				// Need to pick someone for the queue
-				SV_SetWinPlayer(winplayer->id);
-			}
-
-			if (drawgame)
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
-			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname.c_str());
-		} 
-		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		{
-			team_t winteam = SV_WinningTeam ();
-
-			if(winteam == TEAM_NONE)
-				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
-			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", GetTeamInfo(winteam)->ColorStringUpper.c_str());
-		}
-
-		M_CommitWDLLog();
-	}
-
-	::levelstate.endGame();
 }
 
 void SV_IntermissionTimeCheck()
 {
+	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
+		return;
+
 	level.inttimeleft = mapchange/TICRATE;
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
@@ -4781,7 +4693,7 @@ void SV_GameTics (void)
 		case GS_LEVEL:
 			SV_RemoveCorpses();
 			::levelstate.tic();
-			SV_TimelimitCheck();
+			TimeCheck();
 			Vote_Runtic();
 		break;
 		case GS_INTERMISSION:

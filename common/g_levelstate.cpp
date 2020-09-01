@@ -44,6 +44,8 @@ EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
+EXTERN_CVAR(g_rounds)
+EXTERN_CVAR(g_winlimit)
 
 LevelState levelstate;
 
@@ -64,18 +66,20 @@ const char* LevelState::getStateString() const
 {
 	switch (_state)
 	{
-	case LevelState::INGAME:
-		return "In-game";
-	case LevelState::PREGAME:
-		return "Countdown";
-	case LevelState::ENDGAME:
-		return "Endgame";
 	case LevelState::WARMUP:
 		return "Warmup";
 	case LevelState::WARMUP_COUNTDOWN:
 		return "Warmup Countdown";
 	case LevelState::WARMUP_FORCED_COUNTDOWN:
 		return "Warmup Forced Countdown";
+	case LevelState::PREROUND_COUNTDOWN:
+		return "Pre-round Countdown";
+	case LevelState::INGAME:
+		return "In-game";
+	case LevelState::ENDROUND_COUNTDOWN:
+		return "Endgame Countdown";
+	case LevelState::ENDGAME_COUNTDOWN:
+		return "Endgame Countdown";
 	default:
 		return "Unknown";
 	}
@@ -84,13 +88,17 @@ const char* LevelState::getStateString() const
 /**
  * @brief Countdown getter.
  */
-short LevelState::getCountdown() const
+int LevelState::getCountdown() const
 {
-	if (_state != LevelState::PREGAME && _state != LevelState::WARMUP_COUNTDOWN &&
-	    _state != LevelState::WARMUP_FORCED_COUNTDOWN)
+	if (_state == LevelState::WARMUP || _state == LevelState::INGAME)
 		return 0;
 
 	return ceil((_countdown_done_time - level.time) / (float)TICRATE);
+}
+
+int LevelState::getRound() const
+{
+	return _round;
 }
 
 /**
@@ -214,6 +222,22 @@ void LevelState::readyToggle()
 }
 
 /**
+ * @brief Depending on if we're using rounds or not, either kick us to an
+ *        "end of round" state or just end the game right here.
+ */
+void LevelState::endRound()
+{
+	if (g_rounds)
+	{
+		setState(LevelState::ENDROUND_COUNTDOWN);
+	}
+	else
+	{
+		endGame();
+	}
+}
+
+/**
  * @brief Switch to the endgame state if we're in the proper position to do so.
  */
 void LevelState::endGame()
@@ -226,7 +250,7 @@ void LevelState::endGame()
 	}
 	else
 	{
-		setState(LevelState::ENDGAME);
+		setState(LevelState::ENDGAME_COUNTDOWN);
 	}
 }
 
@@ -257,11 +281,8 @@ void LevelState::tic()
 	case LevelState::UNKNOWN:
 		I_FatalError("Tried to tic unknown LevelState.\n");
 		break;
-	case LevelState::INGAME:
-		// Nothing special happens.
-		break;
-	case LevelState::PREGAME:
-		// Once the timer has run out, start the round.
+	case LevelState::PREROUND_COUNTDOWN:
+		// Once the timer has run out, start the round without a reset.
 		if (level.time >= _countdown_done_time)
 		{
 			setState(LevelState::INGAME);
@@ -269,7 +290,21 @@ void LevelState::tic()
 			return;
 		}
 		break;
-	case LevelState::ENDGAME:
+	case LevelState::INGAME:
+		// Nothing special happens.
+		// [AM] Maybe tic the gametype-specific logic here?
+		break;
+	case LevelState::ENDROUND_COUNTDOWN:
+		// Once the timer has run out, reset and go to the next round.
+		if (level.time >= _countdown_done_time)
+		{
+			_round += 1;
+			setState(LevelState::INGAME);
+			G_DeferedReset();
+			return;
+		}
+		break;
+	case LevelState::ENDGAME_COUNTDOWN:
 		// Once the timer has run out, go to intermission.
 		if (level.time >= _countdown_done_time)
 		{
@@ -322,17 +357,22 @@ void LevelState::tic()
 		break;
 	}
 	case LevelState::WARMUP_COUNTDOWN:
-	case LevelState::WARMUP_FORCED_COUNTDOWN: {
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
 		// Once the timer has run out, start the game.
 		if (level.time >= _countdown_done_time)
 		{
+			_round += 1;
 			setState(LevelState::INGAME);
 			G_DeferedFullReset();
-			SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
+
+			if (g_rounds)
+				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round);
+			else
+				SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
+
 			return;
 		}
 		break;
-	}
 	}
 }
 
@@ -347,6 +387,7 @@ SerializedLevelState LevelState::serialize() const
 	serialized.state = _state;
 	serialized.countdown_done_time = _countdown_done_time;
 	serialized.ingame_start_time = _ingame_start_time;
+	serialized.round = _round;
 	return serialized;
 }
 
@@ -373,13 +414,15 @@ void LevelState::setState(LevelState::States new_state)
 {
 	_state = new_state;
 
-	if (_state == LevelState::PREGAME || _state == LevelState::WARMUP_COUNTDOWN ||
-	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
+	if (_state == LevelState::WARMUP_COUNTDOWN ||
+	    _state == LevelState::WARMUP_FORCED_COUNTDOWN ||
+	    _state == LevelState::PREROUND_COUNTDOWN)
 	{
 		// Most countdowns use the countdown cvar.
 		_countdown_done_time = level.time + (sv_countdown.asInt() * TICRATE);
 	}
-	else if (_state == LevelState::ENDGAME)
+	else if (_state == LevelState::ENDROUND_COUNTDOWN ||
+	         _state == LevelState::ENDGAME_COUNTDOWN)
 	{
 		// Endgame is always two seconds, like the old "shotclock" variable.
 		_countdown_done_time = level.time + 2 * TICRATE;
@@ -392,6 +435,13 @@ void LevelState::setState(LevelState::States new_state)
 	if (_state == LevelState::INGAME)
 	{
 		_ingame_start_time = level.time;
+	}
+
+	// Rounds need to be set to zero here, but don't automatically increment
+	// the round counter on PREGAME | INGAME.
+	if (_state == LevelState::WARMUP)
+	{
+		_round = 0;
 	}
 
 	if (_set_state_cb)
@@ -438,7 +488,7 @@ bool G_CanJoinGame()
 			return true;
 	}
 
-	return ::levelstate.getState() != LevelState::ENDGAME;
+	return ::levelstate.getState() != LevelState::ENDGAME_COUNTDOWN;
 }
 
 /**
@@ -454,14 +504,12 @@ bool G_CanLivesChange()
  */
 bool G_CanReadyToggle()
 {
-	return ::levelstate.getState() == LevelState::INGAME ||
-	       ::levelstate.getState() == LevelState::PREGAME ||
-	       ::levelstate.getState() == LevelState::WARMUP ||
-	       ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN;
+	return ::levelstate.getState() != LevelState::WARMUP_FORCED_COUNTDOWN &&
+	       ::levelstate.getState() != LevelState::ENDGAME_COUNTDOWN;
 }
 
 /**
- * @brief Check if a score should be allowed to change.
+ * @brief Check if a non-win score should be allowed to change.
  */
 bool G_CanScoreChange()
 {
@@ -494,6 +542,66 @@ bool G_CanTimeLeftAdvance()
 }
 
 /**
+ * @brief Check if timelimit should end the game.
+ */
+void G_TimeCheckEndGame()
+{
+	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
+		return;
+
+	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
+
+	// Don't substract the proper amount of time unless we're actually ingame.
+	if (G_CanTimeLeftAdvance())
+		level.timeleft -= level.time; // in tics
+
+	if (level.timeleft > 0 || !G_CanEndGame() || gamestate == GS_INTERMISSION)
+		return;
+
+	if (P_NumPlayersInGame() == 0)
+	{
+		// Just end the game and move on.
+		::levelstate.endRound();
+		return;
+	}
+
+	if (sv_gametype == GM_DM)
+	{
+		PlayerResults pr;
+		P_PlayerQuery(&pr, PQ_MAXFRAGS);
+		if (pr.empty())
+		{
+			// Something has seriously gone sideways...
+			::levelstate.endRound();
+			return;
+		}
+
+		// Need to pick someone for the queue
+		SV_SetWinPlayer(pr.front()->id);
+
+		if (pr.size() != 1)
+			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+		else
+			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game won by %s!\n",
+			                   pr.front()->userinfo.netname.c_str());
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		TeamResults tr;
+		P_TeamQuery(&tr, TQ_MAXPOINTS);
+
+		if (tr.size() != 1)
+			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+		else
+			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
+			                   tr.front()->ColorStringUpper.c_str());
+	}
+
+	M_CommitWDLLog();
+	::levelstate.endRound();
+}
+
+/**
  * @brief Check for an endgame condition on individual frags.
  */
 void G_FragsCheckEndGame()
@@ -505,16 +613,19 @@ void G_FragsCheckEndGame()
 		return;
 
 	PlayerResults pr;
-	P_PlayerQuery(&pr, 0);
-	for (PlayerResults::const_iterator it = pr.begin(); it != pr.end(); ++it)
+	P_PlayerQuery(&pr, PQ_MAXFRAGS);
+	if (!pr.empty())
 	{
-		if ((*it)->fragcount >= sv_fraglimit)
+		player_t* top = pr.front();
+		if (top->fragcount >= sv_fraglimit)
 		{
+			top->roundwins += 1;
+
 			// [ML] 04/4/06: Added !sv_fragexitswitch
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. Game won by %s!\n",
-			                   (*it)->userinfo.netname.c_str());
-			SV_SetWinPlayer((*it)->id);
-			::levelstate.endGame();
+			                   top->userinfo.netname.c_str());
+			SV_SetWinPlayer(top->id);
+			::levelstate.endRound();
 		}
 	}
 }
@@ -530,13 +641,17 @@ void G_TeamFragsCheckEndGame()
 	if (sv_fraglimit <= 0.0)
 		return;
 
-	for (size_t i = 0; i < NUMTEAMS; i++)
+	TeamResults tr;
+	P_TeamQuery(&tr, TQ_MAXPOINTS);
+	if (!tr.empty())
 	{
-		if (GetTeamInfo((team_t)i)->Points >= sv_fraglimit)
+		TeamInfo* team = tr.front();
+		if (team->Points >= sv_fraglimit)
 		{
+			team->RoundWins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. %s team wins!\n",
-			                   GetTeamInfo((team_t)i)->ColorString.c_str());
-			::levelstate.endGame();
+			                   team->ColorString.c_str());
+			::levelstate.endRound();
 			return;
 		}
 	}
@@ -553,13 +668,17 @@ void G_TeamScoreCheckEndGame()
 	if (sv_scorelimit <= 0.0)
 		return;
 
-	for (size_t i = 0; i < NUMTEAMS; i++)
+	TeamResults tr;
+	P_TeamQuery(&tr, TQ_MAXPOINTS);
+	if (!tr.empty())
 	{
-		if (GetTeamInfo((team_t)i)->Points >= sv_scorelimit)
+		TeamInfo* team = tr.front();
+		if (team->Points >= sv_scorelimit)
 		{
+			team->RoundWins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "Score limit hit. %s team wins!\n",
-			                   GetTeamInfo((team_t)i)->ColorString.c_str());
-			::levelstate.endGame();
+			                   team->ColorString.c_str());
+			::levelstate.endRound();
 			M_CommitWDLLog();
 			return;
 		}
@@ -585,7 +704,7 @@ void G_LivesCheckEndGame()
 		if (P_PlayerQuery(NULL, PQ_HASLIVES).result == 0)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
-			::levelstate.endGame();
+			::levelstate.endRound();
 		}
 	}
 	else if (sv_gametype == GM_DM)
@@ -597,13 +716,14 @@ void G_LivesCheckEndGame()
 		if (pc.result == 0 || pr.empty())
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
-			::levelstate.endGame();
+			::levelstate.endRound();
 		}
 		else if (pc.result == 1)
 		{
+			pr.front()->roundwins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "%s wins as the last player standing!\n",
 			                   pr.front()->userinfo.netname.c_str());
-			::levelstate.endGame();
+			::levelstate.endRound();
 		}
 
 		// Nobody won the game yet - keep going.
@@ -629,17 +749,60 @@ void G_LivesCheckEndGame()
 		if (aliveteams == 0 || pr.empty())
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All teams have run out of lives.\n");
-			::levelstate.endGame();
+			::levelstate.endRound();
 		}
 		else if (aliveteams == 1)
 		{
 			TeamInfo* teamInfo = GetTeamInfo(pr.front()->userinfo.team);
+			teamInfo->RoundWins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins as the last team standing!\n",
 			                   teamInfo->ColorString.c_str());
-			::levelstate.endGame();
+			::levelstate.endRound();
 		}
 
 		// Nobody won the game yet - keep going.
+	}
+}
+
+/**
+ * @brief Check to see if we should end the game on won rounds...or just rounds total.
+ */
+void G_RoundsCheckEndGame()
+{
+	if (!::serverside)
+		return;
+
+	// Coop doesn't have rounds to speak of - though perhaps in the future
+	// rounds might be used to limit the number of tries a map is attempted.
+	if (sv_gametype == GM_COOP)
+		return;
+
+	if (sv_gametype == GM_DM)
+	{
+		PlayerResults pr;
+		P_PlayerQuery(&pr, 0);
+		for (PlayerResults::const_iterator it = pr.begin(); it != pr.end(); ++it)
+		{
+			if ((*it)->roundwins >= g_winlimit)
+			{
+				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
+				                   (*it)->userinfo.netname.c_str());
+				::levelstate.endGame();
+			}
+		}
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		for (size_t i = 0; i < NUMTEAMS; i++)
+		{
+			TeamInfo* team = GetTeamInfo((team_t)i);
+			if (team->RoundWins >= g_winlimit)
+			{
+				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. %s team wins!\n",
+				                   team->ColorString.c_str());
+				::levelstate.endGame();
+			}
+		}
 	}
 }
 

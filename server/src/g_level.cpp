@@ -506,8 +506,12 @@ void G_DoSaveResetState()
 	G_SerializeLevel(arc, false, true);
 }
 
-// [AM] - Reset the state of the level.  Second parameter is true if you want
-//        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
+/**
+ * @brief Reset the state of the level.
+ *
+ * @param full_reset True if you want to zero-out between-round gamestate
+ *                   as well.
+ */
 void G_DoResetLevel(bool full_reset)
 {
 	gameaction = ga_nothing;
@@ -518,45 +522,43 @@ void G_DoResetLevel(bool full_reset)
 		return;
 	}
 
-	// Clear CTF state.
+	// Clear teamgame state.
 	Players::iterator it;
-	if (sv_gametype == GM_CTF)
+	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		for (size_t i = 0;i < NUMTEAMS;i++)
-		{
-			for (it = players.begin();it != players.end();++it)
-				it->flags[i] = false;
+		for (it = players.begin(); it != players.end(); ++it)
+			it->flags[i] = false;
 
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-			teamInfo->FlagData.flagger = 0;
-			teamInfo->FlagData.state = flag_home;
-			teamInfo->FlagData.firstgrab = false;
-			teamInfo->Points = 0;
-		}
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.state = flag_home;
+		teamInfo->FlagData.firstgrab = false;
+		teamInfo->Points = 0;
+
+		if (full_reset)
+			teamInfo->RoundWins = 0;
 	}
 
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
 	{
-		AActor* mo;
-		TThinkerIterator<AActor> iterator;
-		while ((mo = iterator.Next()))
+		if (mo->netid && mo->type != MT_PLAYER)
 		{
-			if (mo->netid && mo->type != MT_PLAYER)
-			{
-				ServerNetID.ReleaseNetID(mo->netid);
-				mo->netid = 0;
-			}
+			ServerNetID.ReleaseNetID(mo->netid);
+			mo->netid = 0;
 		}
 	}
 
 	// Tell clients that a map reset is incoming.
-	for (it = players.begin();it != players.end();++it)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
 			continue;
 
-		client_t *cl = &(it->client);
+		client_t* cl = &(it->client);
 		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
 	}
 
@@ -583,37 +585,29 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
-	//reset switch activation
+	// reset switch activation
 	for (int i = 0; i < numlines; i++)
 		lines[i].switchactive = false;
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	iquehead = iquetail = 0;
-	// Potentially clear out gamestate as well.
-	if (full_reset)
+
+	// Clear player information.
+	for (it = players.begin(); it != players.end(); ++it)
 	{
-		// Clear global goals.
-		for (size_t i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->Points;
-		// Clear player information.
-		for (it = players.begin();it != players.end();++it)
+		if (full_reset)
 		{
-			it->lives = g_survival_lives.asInt();
-			it->fragcount = 0;
-			it->itemcount = 0;
-			it->secretcount = 0;
-			it->deathcount = 0;
-			it->killcount = 0;
-			it->points = 0;
-			it->joindelay = 0;
+			P_ClearPlayerScores(*it, true);
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
 				it->ready = false;
 		}
-		// For predictable first spawns.
-		M_ClearRandom();
+		else
+		{
+			P_ClearPlayerScores(*it, false);
+		}
 	}
 
 	// [SL] always reset the time (for now at least)
@@ -622,7 +616,7 @@ void G_DoResetLevel(bool full_reset)
 	level.inttimeleft = mapchange / TICRATE;
 
 	// Send information about the newly reset map.
-	for (it = players.begin();it != players.end();++it)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Player needs to actually be ingame
 		if (!it->ingame())
@@ -630,8 +624,9 @@ void G_DoResetLevel(bool full_reset)
 
 		SV_ClientFullUpdate(*it);
 	}
+
 	// Force every ingame player to be reborn.
-	for (it = players.begin();it != players.end();++it)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Spectators aren't reborn.
 		if (!it->ingame() || it->spectator)
@@ -714,13 +709,7 @@ void G_DoLoadLevel (int position)
 		for (size_t j = 0; j < NUMCARDS; j++)
 			it->cards[j] = false;
 
-		it->lives = g_survival_lives.asInt();
-		it->fragcount = 0;
-		it->itemcount = 0;
-		it->secretcount = 0;
-		it->deathcount = 0; // [Toke - Scores - deaths]
-		it->killcount = 0; // [deathz0r] Coop kills
-		it->points = 0;
+		P_ClearPlayerScores(*it, true);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)

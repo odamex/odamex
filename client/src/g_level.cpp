@@ -555,13 +555,7 @@ void G_DoLoadLevel (int position)
 		for (size_t j = 0; j < NUMCARDS; j++)
 			it->cards[j] = false;
 
-		it->lives = g_survival_lives.asInt();
-		it->fragcount = 0;
-		it->itemcount = 0;
-		it->secretcount = 0;
-		it->deathcount = 0; // [Toke - Scores - deaths]
-		it->killcount = 0; // [deathz0r] Coop kills
-		it->points = 0;
+		P_ClearPlayerScores(*it, false);
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98

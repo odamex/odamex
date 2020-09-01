@@ -78,10 +78,33 @@ struct TeamInfo
 	int FlagCarrySprite;
 
 	int Points;
+	int RoundWins;
 	flagdata FlagData;
 };
 
+struct TeamCount
+{
+	int result;
+	int total;
+	TeamCount() : result(0), total(0)
+	{
+	}
+};
+
+typedef std::vector<TeamInfo*> TeamResults;
+
+/**
+ * @brief Return teams with the top point count, whatever that may be.
+ */
+#define TQ_MAXPOINTS (1 << 0)
+
+/**
+ * @brief Return teams with the top win acount, whatever that may be.
+ */
+#define TQ_MAXWINS (1 << 1)
+
 void InitTeamInfo();
 TeamInfo* GetTeamInfo(team_t team);
+TeamCount P_TeamQuery(TeamResults* out, unsigned flags);
 
 #endif
