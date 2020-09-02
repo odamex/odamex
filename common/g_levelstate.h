@@ -47,7 +47,7 @@ class LevelState
 	};
 	LevelState()
 	    : _state(LevelState::UNKNOWN), _countdown_done_time(0), _ingame_start_time(0),
-	      _round(0), _set_state_cb(NULL)
+	      _round_number(0), _set_state_cb(NULL)
 	{
 	}
 	LevelState::States getState() const;
@@ -61,7 +61,6 @@ class LevelState
 	void forceStart();
 	void readyToggle();
 	void endRound();
-	void endGame();
 	void tic();
 	SerializedLevelState serialize() const;
 	void unserialize(SerializedLevelState serialized);
@@ -70,8 +69,9 @@ class LevelState
 	LevelState::States _state;
 	int _countdown_done_time;
 	int _ingame_start_time;
-	int _round;
+	int _round_number;
 	LevelState::SetStateCB _set_state_cb;
+	static LevelState::States getStartOfRoundState();
 	void setState(LevelState::States new_state);
 };
 
@@ -80,7 +80,7 @@ struct SerializedLevelState
 	LevelState::States state;
 	int countdown_done_time;
 	int ingame_start_time;
-	int round;
+	int round_number;
 };
 
 extern LevelState levelstate;
@@ -98,5 +98,6 @@ void G_FragsCheckEndGame();
 void G_TeamFragsCheckEndGame();
 void G_TeamScoreCheckEndGame();
 void G_LivesCheckEndGame();
+bool G_RoundsShouldEndGame();
 
 #endif

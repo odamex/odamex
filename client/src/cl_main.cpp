@@ -3554,7 +3554,7 @@ void CL_LevelState()
 	sls.state = static_cast<LevelState::States>(MSG_ReadVarint());
 	sls.countdown_done_time = MSG_ReadVarint();
 	sls.ingame_start_time = MSG_ReadVarint();
-	sls.round = MSG_ReadVarint();
+	sls.round_number = MSG_ReadVarint();
 	::levelstate.unserialize(sls);
 }
 

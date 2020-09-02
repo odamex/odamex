@@ -49,6 +49,9 @@ EXTERN_CVAR(g_winlimit)
 
 LevelState levelstate;
 
+const int PREROUND_SECONDS = 5;
+const int ENDGAME_SECONDS = 3;
+
 void SV_SetWinPlayer(byte playerId);
 
 /**
@@ -98,7 +101,7 @@ int LevelState::getCountdown() const
 
 int LevelState::getRound() const
 {
-	return _round;
+	return _round_number;
 }
 
 /**
@@ -145,8 +148,8 @@ void LevelState::reset(level_locals_t& level)
 	}
 	else
 	{
-		// We can go straight in-game.
-		setState(LevelState::INGAME);
+		// Defer to the default.
+		setState(LevelState::getStartOfRoundState());
 	}
 
 	_countdown_done_time = 0;
@@ -229,20 +232,13 @@ void LevelState::endRound()
 {
 	if (g_rounds)
 	{
-		setState(LevelState::ENDROUND_COUNTDOWN);
+		// Check for round-ending conditions.
+		if (G_RoundsShouldEndGame())
+			setState(LevelState::ENDGAME_COUNTDOWN);
+		else
+			setState(LevelState::ENDROUND_COUNTDOWN);
 	}
-	else
-	{
-		endGame();
-	}
-}
-
-/**
- * @brief Switch to the endgame state if we're in the proper position to do so.
- */
-void LevelState::endGame()
-{
-	if (sv_gametype == GM_COOP)
+	else if (sv_gametype == GM_COOP)
 	{
 		// A normal coop exit bypasses LevelState completely, so if we're
 		// here, the mission was a failure and needs to be restarted.
@@ -298,8 +294,8 @@ void LevelState::tic()
 		// Once the timer has run out, reset and go to the next round.
 		if (level.time >= _countdown_done_time)
 		{
-			_round += 1;
-			setState(LevelState::INGAME);
+			_round_number += 1;
+			setState(LevelState::getStartOfRoundState());
 			G_DeferedReset();
 			return;
 		}
@@ -361,12 +357,12 @@ void LevelState::tic()
 		// Once the timer has run out, start the game.
 		if (level.time >= _countdown_done_time)
 		{
-			_round += 1;
-			setState(LevelState::INGAME);
+			_round_number += 1;
+			setState(LevelState::getStartOfRoundState());
 			G_DeferedFullReset();
 
 			if (g_rounds)
-				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round);
+				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
 			else
 				SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
 
@@ -387,7 +383,7 @@ SerializedLevelState LevelState::serialize() const
 	serialized.state = _state;
 	serialized.countdown_done_time = _countdown_done_time;
 	serialized.ingame_start_time = _ingame_start_time;
-	serialized.round = _round;
+	serialized.round_number = _round_number;
 	return serialized;
 }
 
@@ -401,6 +397,20 @@ void LevelState::unserialize(SerializedLevelState serialized)
 	_state = serialized.state;
 	_countdown_done_time = serialized.countdown_done_time;
 	_ingame_start_time = serialized.ingame_start_time;
+	_round_number = serialized.round_number;
+}
+
+/**
+ * @brief Set the appropriate start-of-round state.
+ */
+LevelState::States LevelState::getStartOfRoundState()
+{
+	// Deathmatch game modes in survival start with a start-of-round timer.
+	// This is inappropriate for coop or objective-based modes.
+	if (g_survival && (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM))
+		return LevelState::PREROUND_COUNTDOWN;
+
+	return LevelState::INGAME;
 }
 
 /**
@@ -415,17 +425,23 @@ void LevelState::setState(LevelState::States new_state)
 	_state = new_state;
 
 	if (_state == LevelState::WARMUP_COUNTDOWN ||
-	    _state == LevelState::WARMUP_FORCED_COUNTDOWN ||
-	    _state == LevelState::PREROUND_COUNTDOWN)
+	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		// Most countdowns use the countdown cvar.
 		_countdown_done_time = level.time + (sv_countdown.asInt() * TICRATE);
 	}
+	else if (_state == LevelState::PREROUND_COUNTDOWN)
+	{
+		// This actually has tactical significance, so it needs to have its
+		// own hardcoded time or a cvar dedicated to it.  Also, we don't add
+		// level.time to it becuase level.time always starts at zero preround.
+		_countdown_done_time = PREROUND_SECONDS * TICRATE;
+	}
 	else if (_state == LevelState::ENDROUND_COUNTDOWN ||
 	         _state == LevelState::ENDGAME_COUNTDOWN)
 	{
-		// Endgame is always two seconds, like the old "shotclock" variable.
-		_countdown_done_time = level.time + 2 * TICRATE;
+		// Endgame has a little pause as well, like the old "shotclock" variable.
+		_countdown_done_time = level.time + ENDGAME_SECONDS * TICRATE;
 	}
 	else
 	{
@@ -441,7 +457,7 @@ void LevelState::setState(LevelState::States new_state)
 	// the round counter on PREGAME | INGAME.
 	if (_state == LevelState::WARMUP)
 	{
-		_round = 0;
+		_round_number = 0;
 	}
 
 	if (_set_state_cb)
@@ -766,16 +782,18 @@ void G_LivesCheckEndGame()
 
 /**
  * @brief Check to see if we should end the game on won rounds...or just rounds total.
+ *        Note that this function does not actually end the game - that's the job
+ *        of the caller.
  */
-void G_RoundsCheckEndGame()
+bool G_RoundsShouldEndGame()
 {
 	if (!::serverside)
-		return;
+		return false;
 
 	// Coop doesn't have rounds to speak of - though perhaps in the future
 	// rounds might be used to limit the number of tries a map is attempted.
 	if (sv_gametype == GM_COOP)
-		return;
+		return true;
 
 	if (sv_gametype == GM_DM)
 	{
@@ -783,11 +801,12 @@ void G_RoundsCheckEndGame()
 		P_PlayerQuery(&pr, 0);
 		for (PlayerResults::const_iterator it = pr.begin(); it != pr.end(); ++it)
 		{
+			Printf(PRINT_HIGH, "%s:  %d\n", (*it)->userinfo.netname.c_str(), (*it)->roundwins);
 			if ((*it)->roundwins >= g_winlimit)
 			{
 				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
 				                   (*it)->userinfo.netname.c_str());
-				::levelstate.endGame();
+				return true;
 			}
 		}
 	}
@@ -800,10 +819,46 @@ void G_RoundsCheckEndGame()
 			{
 				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. %s team wins!\n",
 				                   team->ColorString.c_str());
-				::levelstate.endGame();
+				return true;
 			}
 		}
 	}
+
+	return false;
 }
+
+static void LMSHelp()
+{
+	Printf(PRINT_HIGH,
+	       "lms - Configures some settings for a basic game of Last Man Standing\n\n"
+	       "Usage:\n"
+	       "  ] lms wins <ROUNDS>\n"
+	       "  Configure LMS so a player needs to win ROUNDS number of rounds to win the "
+	       "game\n\n");
+}
+
+BEGIN_COMMAND(lms)
+{
+	if (argc < 1)
+	{
+		LMSHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "wins") == 0)
+	{
+		std::string str;
+		StrFormat(
+		    str,
+		    "sv_gametype 1; sv_nomonsters 1; g_survival 1; g_rounds 1; g_winlimit %s",
+		    argv[2]);
+		Printf(PRINT_HIGH, "Configuring Last Man Standing...\n%s\n", str.c_str());
+		AddCommandString(str.c_str());
+		return;
+	}
+
+	LMSHelp();
+}
+END_COMMAND(lms)
 
 VERSION_CONTROL(g_levelstate, "$Id$")

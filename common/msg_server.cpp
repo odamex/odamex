@@ -171,6 +171,7 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.state);
 	MSG_WriteVarint(&b, sls.countdown_done_time);
 	MSG_WriteVarint(&b, sls.ingame_start_time);
+	MSG_WriteVarint(&b, sls.round_number);
 }
 
 /**

@@ -115,8 +115,10 @@ bool validplayer(player_t &ref)
  */
 void P_ClearPlayerScores(player_t& p, bool wins)
 {
+	if (wins)
+		p.roundwins = 0;
+
 	p.lives = g_survival_lives.asInt();
-	p.roundwins = 0;
 	p.fragcount = 0;
 	p.itemcount = 0;
 	p.secretcount = 0;
