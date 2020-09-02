@@ -32,8 +32,9 @@
 //
 static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
 {
-	static std::string CONTENT_TYPE = "content-type: ";
-	static std::string WANTED_TYPE = "content-type: application/octet-stream";
+	static const std::string CONTENT_TYPE = "content-type: ";
+	static const std::string WANTED_TYPES[] = {"content-type: application/octet-stream",
+	                                           "content-type: application/x-doom"};
 
 	if (nitems < 2)
 		return nitems;
@@ -44,13 +45,20 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	if (pos == 0)
 	{
 		// Found Content-Type, see if it's the correct one.
-		size_t pos2 = str.find(WANTED_TYPE);
-		if (pos2 != 0)
+		for (size_t i = 0; i < ARRAY_LENGTH(WANTED_TYPES); i++)
 		{
-			// Bzzt, wrong answer.
-			return 0;
+			size_t pos2 = str.find(WANTED_TYPES[i]);
+			if (pos2 == 0)
+			{
+				// Ding, right answer.
+				return nitems;
+			}
 		}
+
+		// Bzzt, wrong answer.
+		return 0;
 	}
+
 	return nitems;
 }
 
