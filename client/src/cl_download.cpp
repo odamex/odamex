@@ -3,8 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -18,435 +16,411 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	File downloads
+//	HTTP Downloading.
 //
 //-----------------------------------------------------------------------------
 
-#include <sstream>
-#include <iomanip>
+#include "cl_download.h"
 
-#include "cmdlib.h"
+#define CURL_STATICLIB
+#include "curl/curl.h"
+
+#include "c_dispatch.h"
 #include "cl_main.h"
-#include "d_main.h"
-#include "i_net.h"
+#include "cmdlib.h"
+#include "doomstat.h"
 #include "i_system.h"
-#include "md5.h"
 #include "m_argv.h"
 #include "m_fileio.h"
+#include "otransfer.h"
 
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
+EXTERN_CVAR(cl_waddownloaddir)
+EXTERN_CVAR(waddirs)
 
-EXTERN_CVAR (waddirs)
-EXTERN_CVAR (cl_serverdownload)
-EXTERN_CVAR (cl_waddownloaddir)
-
-void CL_Reconnect(void);
-
-// GhostlyDeath <October 26, 2008> -- VC6 Compiler Error
-// C2552: 'identifier' : non-aggregates cannot be initialized with initializer list
-// What does this mean? VC6 considers std::string non-static (that it changes every time?)
-// So it complains because std::string has a constructor!
-
-/*struct download_s
+enum States
 {
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		unsigned int got_bytes;
-} download = { "", "", NULL, 0 };*/
+	STATE_SHUTDOWN,
+	STATE_READY,
+	STATE_CHECKING,
+	STATE_DOWNLOADING
+};
 
-// this works though!
-struct download_s
+static struct DownloadState
 {
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		size_t got_bytes;
-        dtime_t timeout;
-		int retrycount;
-		
-		download_s()
-		{
-			buf = NULL;
-			this->clear();
-			timeout = 0;
-		}
+  private:
+	DownloadState(const DownloadState&);
 
-		~download_s()
-		{
-		}
-
-		void clear()
-		{
-			filename = "";
-			md5 = "";
-			got_bytes = 0;
-            timeout = 0;
-            retrycount = 0;
-            
-			if (buf != NULL)
-			{
-				delete buf;
-				buf = NULL;
-			}
-		}
-} download;
-
-
-std::string DownloadStr;
-
-// Pretty prints supplied byte amount into a string
-std::string FormatNBytes(float b)
-{
-    std::ostringstream osstr;
-    float amt;
-
-    if (b >= 1048576)
-    {
-        amt = b / 1048576;
-
-        osstr << std::setprecision(4) << amt << 'M';
-    }
-    else
-    if (b >= 1024)
-    {
-        amt = b / 1024;
-
-        osstr << std::setprecision(4) << amt << 'K';
-    }
-    else
-    {
-       osstr << std::setprecision(4) << b << 'B';
-    }
-
-    return osstr.str();
-}
-
-void SetDownloadPercentage(size_t pc)
-{
-    std::stringstream ss;
-
-    ss << "Downloading " << download.filename << ": " << pc << "%";
-
-    DownloadStr = ss.str();
-}
-
-void ClearDownloadProgressBar()
-{
-    DownloadStr = "";
-}
-
-
-void IntDownloadComplete(void)
-{
-    std::string actual_md5 = MD5SUM(download.buf->ptr(), download.buf->maxsize());
-
-	Printf(PRINT_HIGH, "\nDownload complete, got %u bytes\n", download.buf->maxsize());
-	Printf(PRINT_HIGH, "%s\n %s\n", download.filename.c_str(), actual_md5.c_str());
-
-	if(download.md5 == "")
+  public:
+	States state;
+	OTransferCheck* check;
+	OTransfer* transfer;
+	std::string url;
+	std::string filename;
+	std::string hash;
+	std::string checkfilename;
+	int checkfails;
+	DownloadState()
+	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
+	      hash(""), checkfilename(""), checkfails(0)
 	{
-		Printf(PRINT_HIGH, "Server gave no checksum, assuming valid\n", (int)download.buf->maxsize());
 	}
-	else if(actual_md5 != download.md5)
+	void Ready()
 	{
-		Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
-		Printf(PRINT_HIGH, "Download failed: bad checksum\n");
-
-		download.clear();
-        CL_QuitNetGame();
-
-        ClearDownloadProgressBar();
-
-        return;
-    }
-
-    // got the wad! save it!
-    std::vector<std::string> dirs;
-    std::string filename;
-    size_t i;
-#ifdef _WIN32
-    const char separator = ';';
-#else
-    const char separator = ':';
-#endif
-
-    // Try to save to the wad paths in this order -- Hyper_Eye
-    D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
-    D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-    D_AddSearchDir(dirs, waddirs.cstring(), separator);
-    dirs.push_back(startdir);
-    dirs.push_back(progdir);
-
-    dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
-
-    for(i = 0; i < dirs.size(); i++)
-    {
-        filename.clear();
-        filename = dirs[i];
-        if(filename[filename.length() - 1] != PATHSEPCHAR)
-            filename += PATHSEP;
-        filename += download.filename;
-
-        // check for existing file
-   	    if(M_FileExists(filename))
-   	    {
-   	        // there is an existing file, so use a new file whose name includes the checksum
-   	        filename += ".";
-   	        filename += actual_md5;
-   	    }
-
-        if (M_WriteFile(filename, download.buf->ptr(), download.buf->maxsize()))
-            break;
-    }
-
-    // Unable to write
-    if(i == dirs.size())
-    {
-		download.clear();
-        CL_QuitNetGame();
-        return;
-    }
-
-    Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
-
-	download.clear();
-    CL_QuitNetGame();
-    CL_Reconnect();
-
-    ClearDownloadProgressBar();
-}
-
-//
-// CL_RequestDownload
-// please sir, can i have some more?
-//
-void CL_RequestDownload(std::string filename, std::string filehash)
-{
-	if (cl_serverdownload)
-	{
-		// [Russell] - Allow resumeable downloads
-		if ((download.filename != filename) ||
-			(download.md5 != filehash))
-		{
-			download.filename = filename;
-			download.md5 = filehash;
-			download.got_bytes = 0;
-		}
-
-		// denis todo clear previous downloads
-		MSG_WriteMarker(&net_buffer, clc_wantwad);
-		MSG_WriteString(&net_buffer, filename.c_str());
-		MSG_WriteString(&net_buffer, filehash.c_str());
-		MSG_WriteLong(&net_buffer, download.got_bytes);
-
-		NET_SendPacket(net_buffer, serveraddr);
-
-		Printf(PRINT_HIGH, "Requesting download...\n");
-
-		// check for completion
-		// [Russell] - We go over the boundary, because sometimes the download will
-		// pause at 100% if the server disconnected you previously, you can
-		// reconnect a couple of times and this will let the checksum system do its
-		// work
-
-		if ((download.buf != NULL) &&
-			(download.got_bytes >= download.buf->maxsize()))
-		{
-			IntDownloadComplete();
-		}
+		this->state = STATE_READY;
+		delete this->check;
+		this->check = NULL;
+		delete this->transfer;
+		this->transfer = NULL;
+		this->url = "";
+		this->filename = "";
+		this->hash = "";
+		this->checkfilename = "";
+		this->checkfails = 0;
 	}
+} g_state;
+
+/**
+ * @brief Init the HTTP download system.
+ */
+void CL_DownloadInit()
+{
+	Printf(PRINT_HIGH, "CL_DownloadInit: Init HTTP subsystem (libcurl %d.%d.%d)\n",
+	       LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
+
+	curl_global_init(CURL_GLOBAL_ALL);
+
+	g_state.state = STATE_READY;
 }
 
-//
-// CL_DownloadStart
-// server tells us the size of the file we are about to download
-//
-void CL_DownloadStart()
+/**
+ * @brief Shutdown the HTTP download system completely.
+ */
+void CL_DownloadShutdown()
 {
-	DWORD file_len = MSG_ReadLong();
-
-	if(gamestate != GS_DOWNLOAD)
-	{
-		Printf(PRINT_HIGH, "Server initiated download failed\n");
+	if (g_state.state == STATE_SHUTDOWN)
 		return;
+
+	delete g_state.check;
+	g_state.check = NULL;
+	delete g_state.transfer;
+	g_state.transfer = NULL;
+
+	curl_global_cleanup();
+	g_state.state = STATE_SHUTDOWN;
+}
+
+/**
+ * @brief Get the current state of any file transfer.
+ *
+ * @return true if there is a download in progress.
+ */
+bool CL_IsDownloading()
+{
+	return g_state.state == STATE_CHECKING || g_state.state == STATE_DOWNLOADING;
+}
+
+/**
+ * @brief Start a transfer.
+ *
+ * @param website Website to download from, without the WAD at the end.
+ * @param filename Filename of the WAD to download.
+ * @param hash Hash of the file to download.
+ */
+void CL_StartDownload(const std::string& website, const std::string& filename,
+                      const std::string& hash)
+{
+	if (g_state.state != STATE_READY)
+		return;
+
+	std::string url = website;
+
+	// Add a slash to the end of the base website.
+	if (*(url.rbegin()) != '/')
+		url.push_back('/');
+
+	g_state.url = url;
+	g_state.filename = filename;
+	g_state.hash = hash;
+
+	// Start the checking bit on the next tick.
+	g_state.state = STATE_CHECKING;
+}
+
+/**
+ * @brief Called after a check is done.
+ *
+ * @param info Completed check info.
+ */
+static void CheckDone(const OTransferInfo& info)
+{
+	// Found the file, download it next tick.
+	g_state.state = STATE_DOWNLOADING;
+	g_state.url = info.url;
+
+	Printf(PRINT_HIGH, "Found file at %s.\n", info.url);
+}
+
+/**
+ * @brief Called after a check bails out.
+ *
+ * @param msg Error message.
+ */
+static void CheckError(const char* msg)
+{
+	// That's a strike.
+	g_state.checkfails += 1;
+
+	delete g_state.check;
+	g_state.check = NULL;
+
+	// Has our luck run out?
+	if (g_state.checkfails >= 3)
+	{
+		g_state.Ready();
+		Printf(PRINT_HIGH, "Could not find %s (%s)...\n", g_state.checkfilename.c_str(),
+		       msg);
+
+		if (::gamestate == GS_DOWNLOAD)
+			CL_QuitNetGame();
+	}
+}
+
+static void TickCheck()
+{
+	if (g_state.check == NULL)
+	{
+		// Try three different variants of the file.
+		g_state.checkfilename = g_state.filename;
+		if (g_state.checkfails >= 2)
+		{
+			// Second strike, try all uppercase.
+			g_state.checkfilename = StdStringToUpper(g_state.checkfilename);
+		}
+		else if (g_state.checkfails == 1)
+		{
+			// First stirke, try all lowercase.
+			g_state.checkfilename = StdStringToLower(g_state.checkfilename);
+		}
+
+		// Now we have the full URL.
+		std::string fullurl = g_state.url + g_state.checkfilename;
+
+		// Create the check transfer.
+		g_state.check = new OTransferCheck(CheckDone, CheckError);
+		g_state.check->setURL(fullurl.c_str());
+		if (!g_state.check->start())
+		{
+			// Failed to start, bail out.
+			g_state.Ready();
+			return;
+		}
+
+		g_state.state = STATE_CHECKING;
+		Printf(PRINT_HIGH, "Checking for file at %s...\n", fullurl.c_str());
 	}
 
-	// don't go for more than 100 megs
-	if (file_len > 100*1024*1024)
+	// Tick the checker - the done/error callbacks mutate the state appropriately,
+	// so we don't need to bother with the return value here.
+	g_state.check->tick();
+}
+
+/**
+ * @brief Construct a list of download directories.
+ */
+static StringTokens GetDownloadDirs()
+{
+	StringTokens dirs;
+
+	// Add all of the sources.
+	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
+	dirs.push_back(startdir);
+	dirs.push_back(progdir);
+
+	// Clean up all of the directories before deduping them.
+	StringTokens::iterator it = dirs.begin();
+	for (; it != dirs.end(); ++it)
+		*it = M_CleanPath(*it);
+
+	// Dedupe directories.
+	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
+	return dirs;
+}
+
+static void TransferDone(const OTransferInfo& info)
+{
+	std::string bytes;
+	StrFormatBytes(bytes, info.speed);
+	Printf(PRINT_HIGH, "Download completed at %s/s.\n", bytes.c_str());
+
+	if (::gamestate == GS_DOWNLOAD)
 	{
-		Printf(PRINT_HIGH, "Download is over 100MiB, aborting!\n");
 		CL_QuitNetGame();
-		return;
+		CL_Reconnect();
 	}
-
-	// [Russell] - Allow resumeable downloads
-	if (download.got_bytes == 0)
-	{
-		if (download.buf != NULL)
-		{
-			delete download.buf;
-			download.buf = NULL;
-		}
-
-		download.buf = new buf_t ((size_t)file_len);
-		memset(download.buf->ptr(), 0, file_len);
-	}
-	else
-	{
-		Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
-	}
-
-	Printf(PRINT_HIGH, "Downloading %s bytes...\n", FormatNBytes(file_len).c_str());
-
-	// Make initial 0% show
-	SetDownloadPercentage(0);
 }
 
-// Resets the timeout for a packet retry
+static void TransferError(const char* msg)
+{
+	Printf(PRINT_HIGH, "Download error (%s).\n", msg);
+
+	if (::gamestate == GS_DOWNLOAD)
+		CL_QuitNetGame();
+}
+
+static void TickDownload()
+{
+	if (g_state.transfer == NULL)
+	{
+		// Create the transfer.
+		g_state.transfer = new OTransfer(TransferDone, TransferError);
+		g_state.transfer->setURL(g_state.url.c_str());
+
+		// Figure out where our destination should be.
+		std::string dest;
+		StringTokens dirs = GetDownloadDirs();
+		for (StringTokens::iterator it = dirs.begin(); it != dirs.end(); ++it)
+		{
+			// Ensure no path-traversal shenanegins are going on.
+			dest = *it + PATHSEP + g_state.filename;
+			M_CleanPath(dest);
+			if (dest.find(*it) != 0)
+			{
+				// Something about the filename is trying to escape the
+				// download directory.  This is almost certainly malicious.
+				TransferError("Saved file tried to escape download directory.\n");
+				g_state.Ready();
+				return;
+			}
+
+			// If the output file was set successfully, escape the loop.
+			int err = g_state.transfer->setOutputFile(g_state.filename.c_str());
+			if (err == 0)
+				break;
+
+			// Otherwise, set the destination to the empty string and try again.
+			Printf(PRINT_HIGH, "Could not save to %s (%s)\n", dest.c_str(),
+			       strerror(err));
+			dest = "";
+		}
+
+		if (dest.empty())
+		{
+			// Found no safe place to write, bail out.
+			TransferError("No safe place to save file.\n");
+			g_state.Ready();
+			return;
+		}
+
+		if (!g_state.transfer->start())
+		{
+			// Failed to start, bail out.
+			g_state.Ready();
+			return;
+		}
+
+		g_state.state = STATE_DOWNLOADING;
+		Printf(PRINT_HIGH, "Downloading %s...\n", g_state.url.c_str());
+	}
+
+	if (!g_state.transfer->tick())
+	{
+		// Transfer is done ticking - clean it up.
+		g_state.Ready();
+	}
+}
+
+/**
+ * @brief Service the download per-tick.
+ */
 void CL_DownloadTick()
 {
-    download.timeout = 0;
+	switch (g_state.state)
+	{
+	case STATE_CHECKING:
+		delete g_state.transfer;
+		g_state.transfer = NULL;
+		TickCheck();
+		break;
+	case STATE_DOWNLOADING:
+		delete g_state.check;
+		g_state.check = NULL;
+		TickDownload();
+		break;
+	default:
+		delete g_state.check;
+		g_state.check = NULL;
+		delete g_state.transfer;
+		g_state.check = NULL;
+		return;
+	}
 }
 
-// Checks if we need to ask the server for a re-request of the current download
-// chunk
-void CL_DownloadTicker()
+/**
+ * @brief Returns a progress string for the console.
+ *
+ * @return Progress string, or empty string if there is no progress.
+ */
+std::string CL_DownloadProgress()
 {
-	dtime_t diff = 0;
+	std::string buffer;
 
-	if(gamestate != GS_DOWNLOAD || download.filename.empty())
-    {
-		return;
-    }
+	switch (g_state.state)
+	{
+	case STATE_CHECKING:
+		StrFormat(buffer, "Checking possible locations: %d of 3...",
+		          g_state.checkfails + 1);
+		break;
+	case STATE_DOWNLOADING: {
+		if (g_state.transfer == NULL)
+		{
+			buffer = "Downloading...";
+		}
+		else
+		{
+			OTransferProgress progress = g_state.transfer->getProgress();
 
-    if (download.timeout)
-    {
-        // Calculate how many seconds have elapsed since the last server 
-        // response
-        diff = I_GetTime() - download.timeout;
+			std::string now;
+			StrFormatBytes(now, progress.dlnow);
+			std::string total;
+			StrFormatBytes(total, progress.dltotal);
 
-        if (diff)
-            diff /= I_ConvertTimeFromMs(1000);
-    }
-    else
-    {
-        download.timeout = I_GetTime();
-        return;
-    }
+			StrFormat(buffer, "Downloaded %s of %s...", now.c_str(), total.c_str());
+		}
+		break;
+	}
+	default:
+		break;
+	}
 
-    if (diff >= 3)
-    {
-		DPrintf("No response from server for %d seconds, re-requesting\n", diff);
-		
-		MSG_WriteMarker(&net_buffer, clc_wantwad);
-		MSG_WriteString(&net_buffer, download.filename.c_str());
-		MSG_WriteString(&net_buffer, download.md5.c_str());
-		MSG_WriteLong(&net_buffer, download.got_bytes);
-
-		NET_SendPacket(net_buffer, serveraddr);
-
-		download.timeout = 0;
-
-		++download.retrycount;
-    }
-
-    if (download.retrycount >= 5)
-    {
-        Printf(PRINT_HIGH, "Server hasn't responded to download re-requests, aborting\n");
-
-        download.retrycount = 0;
-        download.timeout = 0;
-
-		CL_QuitNetGame();
-
-		gamestate = GS_STARTUP;
-    }
+	return buffer;
 }
 
-//
-// CL_Download
-// denis - get a little chunk of the file and store it, much like a hampster. Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn. But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
-//
-void CL_Download()
+static void DownloadHelp()
 {
-	DWORD offset = MSG_ReadLong();
-	size_t len = MSG_ReadShort();
-	size_t left = MSG_BytesLeft();
-	void *p = MSG_ReadChunk(len);
-
-	if(gamestate != GS_DOWNLOAD)
-		return;
-
-	if (download.buf == NULL)
-	{
-		// We must have not received the svc_wadinfo message
-		Printf(PRINT_HIGH, "Unable to start download, aborting\n");
-		download.clear();
-		CL_QuitNetGame();
-		return;
-	}
-
-	// check ranges
-	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
-	{
-		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
-
-		download.clear();
-		CL_QuitNetGame();
-		return;
-	}
-
-	// Reset retransmission timer
-	CL_DownloadTick();
-	
-	if (offset < download.got_bytes)
-        return;
-	
-	// check for missing packet, re-request
-	if(offset > download.got_bytes)
-	{
-		DPrintf("Missed a packet after %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
-		MSG_WriteMarker(&net_buffer, clc_wantwad);
-		MSG_WriteString(&net_buffer, download.filename.c_str());
-		MSG_WriteString(&net_buffer, download.md5.c_str());
-		MSG_WriteLong(&net_buffer, download.got_bytes);
-		NET_SendPacket(net_buffer, serveraddr);
-		return;
-	}
-
-	// send keepalive
-	NET_SendPacket(net_buffer, serveraddr);
-
-	// copy into downloaded buffer
-	memcpy(download.buf->ptr() + offset, p, len);
-	download.got_bytes += len;
-
-	// calculate percentage for the user
-	static size_t old_percent = 0;
-	size_t percent = (download.got_bytes*100)/download.buf->maxsize();
-	if(percent != old_percent)
-	{
-        SetDownloadPercentage(percent);
-
-		old_percent = percent;
-	}
-
-	// check for completion
-	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can
-	// reconnect a couple of times and this will let the checksum system do its
-	// work
-	if(download.got_bytes >= download.buf->maxsize())
-	{
-        IntDownloadComplete();
-	}
+	Printf(PRINT_HIGH,
+		"download - Downloads a WAD file\n\n"
+		"Usage:\n"
+		"  ] download <WEBSITE> <FILENAME>\n"
+		"  Downloads the file FILENAME from WEBSITE.\n");
 }
 
-VERSION_CONTROL (cl_download_cpp, "$Id$")
+
+BEGIN_COMMAND(download)
+{
+	if (argc < 3)
+	{
+		DownloadHelp();
+		return;
+	}
+
+	std::string url = argv[1];
+	std::string outfile = argv[2];
+	CL_StartDownload(url, outfile, "");
+}
+END_COMMAND(download)
+
+VERSION_CONTROL(cl_download_cpp, "$Id$")

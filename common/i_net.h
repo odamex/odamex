@@ -136,10 +136,6 @@ enum svc_t
 	svc_executelinespecial,
 	svc_executeacsspecial,
 	svc_thinkerupdate,
-
-	// for downloading
-	svc_wadinfo,			// denis - [ulong:filesize]
-	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
 		
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
@@ -597,6 +593,3 @@ bool MSG_DecompressAdaptive (huffman &huff);
 bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);
 
 #endif
-
-
-

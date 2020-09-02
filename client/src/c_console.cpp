@@ -43,7 +43,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
-#include "cl_http.h"
+#include "cl_download.h"
 
 #include <string>
 #include <list>
@@ -1539,8 +1539,8 @@ void C_DrawConsole()
 					ConBottom - 12, version_str, CR_ORANGE);
 
 		// Download progress bar hack
-		if (::http::IsDownloading())
-			screen->PrintStr(left + 2, ConBottom - 10, ::http::Progress().c_str(), CR_GRAY);
+		if (CL_IsDownloading())
+			screen->PrintStr(left + 2, ConBottom - 10, CL_DownloadProgress().c_str(), CR_GRAY);
 
 		if (TickerMax)
 		{

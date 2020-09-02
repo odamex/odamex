@@ -82,7 +82,6 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
-#include "cl_http.h"
 
 #include "w_ident.h"
 
@@ -238,7 +237,7 @@ void D_Display()
 
 	// We always want to service downloads, even outside of a specific
 	// download gamestate.
-	http::Tick();
+	CL_DownloadTick();
 
 	switch (gamestate)
 	{
@@ -835,8 +834,8 @@ void D_DoomMain()
 	I_FinishClockCalibration();
 
 	// Initialize HTTP subsystem
-	http::Init();
-	atterm(http::Shutdown);
+	CL_DownloadInit();
+	atterm(CL_DownloadShutdown);
 
 	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();

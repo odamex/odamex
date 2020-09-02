@@ -3,8 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -18,15 +16,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	File downloads
+//	HTTP Downloading.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_DOWNLOAD__
-#define __CL_DOWNLOAD__
+#ifndef __CL_DOWNLOAD_H__
+#define __CL_DOWNLOAD_H__
 
-void CL_DownloadStart();
-void CL_DownloadTicker();
-void CL_Download();
+#include <string>
 
-#endif // __CL_DOWNLOAD__
+void CL_DownloadInit();
+void CL_DownloadShutdown();
+bool CL_IsDownloading();
+void CL_StartDownload(const std::string& website, const std::string& filename,
+                      const std::string& hash);
+void CL_DownloadTick();
+std::string CL_DownloadProgress();
+
+#endif

@@ -63,7 +63,6 @@
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
-#include "cl_http.h"
 
 #include <string>
 #include <vector>
@@ -1737,7 +1736,7 @@ bool CL_Connect(void)
 	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
 	{
 		// Attach the website to the file and download it.
-		http::StartDownload(sv_website.str(), missing_file, missing_hash);
+		CL_StartDownload(sv_website.str(), missing_file, missing_hash);
 	}
 
 	compressor.reset();
@@ -3649,9 +3648,6 @@ void CL_InitCommands(void)
 	cmds[svc_full]				= &CL_FullGame;
 	cmds[svc_reconnect]			= &CL_Reconnect;
 	cmds[svc_exitlevel]			= &CL_ExitLevel;
-
-	cmds[svc_wadinfo]			= &CL_DownloadStart;
-	cmds[svc_wadchunk]			= &CL_Download;
 
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
