@@ -801,7 +801,6 @@ bool G_RoundsShouldEndGame()
 		P_PlayerQuery(&pr, 0);
 		for (PlayerResults::const_iterator it = pr.begin(); it != pr.end(); ++it)
 		{
-			Printf(PRINT_HIGH, "%s:  %d\n", (*it)->userinfo.netname.c_str(), (*it)->roundwins);
 			if ((*it)->roundwins >= g_winlimit)
 			{
 				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
