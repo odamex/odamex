@@ -28,6 +28,7 @@
 #include <string>
 
 #include "doomtype.h"
+#include "cmdlib.h"
 #include "i_video.h"
 
 #include "c_dispatch.h"
@@ -126,62 +127,75 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
 }
 
+typedef std::vector<std::string> PNGStrings;
 
-//
-// V_SetPNGComments
-//
-// Write comment lines to PNG file's tEXt chunk
-//
-static void V_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t* now)
+/**
+ * @brief Write comment lines to PNG file's tEXt chunk.
+ *
+ * @param out Storage for non-static strings.  Must be kept alive until the
+ *            info struct or the entire PNG file is written, after which you
+ *            can clear or discard the vector.
+ * @param png_ptr PNG to write to.
+ * @param info_ptr PNG info to write to.
+ * @param now Time to write.
+ */
+static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_ptr,
+                           time_t* now)
 {
-	#ifdef PNG_TEXT_SUPPORTED
+#ifndef PNG_TEXT_SUPPORTED
+	Printf(PRINT_HIGH, "SetPNGComments: Skipping PNG tEXt chunk\n");
+	return;
+#endif
+
+	std::string strbuf;
 	const int PNG_TEXT_LINES = 6;
 	png_text pngtext[PNG_TEXT_LINES];
 	int text_line = 0;
-	
+
+	// If we don't pre-allocate our vector, a resize will destroy our c_str
+	// pointers before we write the file.
+	out.resize(PNG_TEXT_LINES);
+
 	// write text lines uncompressed
 	for (int i = 0; i < PNG_TEXT_LINES; i++)
 		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
-	
-	pngtext[text_line].key = (png_charp)"Description";
+
+	pngtext[text_line].key = (png_charp) "Description";
 	pngtext[text_line].text = (png_charp)("Odamex " DOTVERSIONSTR " Screenshot");
 	text_line++;
-	
-	char datebuf[80];
-	const char *dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
-	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
-	
-	pngtext[text_line].key = (png_charp)"Created Time";
-	pngtext[text_line].text = (png_charp)datebuf;
-	text_line++;
-	
-	pngtext[text_line].key = (png_charp)"Game Mode";
-	pngtext[text_line].text = (png_charp)(M_ExpandTokens("%g").c_str());
-	text_line++;
-	
-	pngtext[text_line].key = (png_charp)"In-Game Video Mode";
-	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-				? (png_charp)"8bpp" : (png_charp)"32bpp";
-	text_line++;
-	
-	char gammabuf[20];	// large enough to not overflow with three digits of precision
-	sprintf(gammabuf, "%#.3f", gammalevel.value());
-	
-	pngtext[text_line].key = (png_charp)"In-game Gamma Correction Level";
-	pngtext[text_line].text = (png_charp)gammabuf;
-	text_line++;
-	
-	pngtext[text_line].key = (png_charp)"In-Game Gamma Correction Type";
-	pngtext[text_line].text =
-		(vid_gammatype == 0) ? (png_charp)"Classic Doom" : (png_charp)"ZDoom";
-	text_line++;
-	
-	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
-	#else
-	Printf(PRINT_HIGH, "I_SetPNGComments: Skipping PNG tEXt chunk\n");
-	#endif // PNG_TEXT_SUPPORTED
-}
 
+	char datebuf[80];
+	const char* dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
+	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
+	out.at(text_line) = datebuf;
+	pngtext[text_line].key = (png_charp) "Created Time";
+	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	text_line++;
+
+	out.at(text_line) = M_ExpandTokens("%g");
+	pngtext[text_line].key = (png_charp) "Game Mode";
+	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	text_line++;
+
+	pngtext[text_line].key = (png_charp) "In-Game Video Mode";
+	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	                              ? (png_charp) "8bpp"
+	                              : (png_charp) "32bpp";
+	text_line++;
+
+	StrFormat(strbuf, "%#.3f", gammalevel.value());
+	out.at(text_line) = strbuf;
+	pngtext[text_line].key = (png_charp) "In-game Gamma Correction Level";
+	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	text_line++;
+
+	pngtext[text_line].key = (png_charp) "In-Game Gamma Correction Type";
+	pngtext[text_line].text =
+	    (vid_gammatype == 0) ? (png_charp) "Classic Doom" : (png_charp) "ZDoom";
+	text_line++;
+
+	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
+}
 
 //
 // V_SavePNG
@@ -332,8 +346,11 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	// commit PNG image data to file
 	surface->unlock();
 	png_init_io(png_ptr, fp);
-	V_SetPNGComments(png_ptr, info_ptr, &now);
-	
+
+	// Holds the text strings until the file is written.
+	PNGStrings png_strings;
+	SetPNGComments(png_strings, png_ptr, info_ptr, &now);
+
 	// set PNG timestamp
 	#ifdef PNG_tIME_SUPPORTED
 	png_time pngtime;
@@ -464,5 +481,3 @@ void V_ScreenShot(std::string filename)
 
 
 VERSION_CONTROL (v_screenshot_cpp, "$Id$")
-
-
