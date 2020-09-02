@@ -564,6 +564,7 @@ void P_LoadThings (int lump)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
@@ -617,6 +618,7 @@ void P_LoadThings2 (int lump, int position)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
