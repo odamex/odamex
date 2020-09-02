@@ -265,8 +265,13 @@ static bool CheckWideModeAdjustment()
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	if (gamestate != GS_STARTUP && CheckWideModeAdjustment())
-		V_ForceVideoModeAdjustment();
+	if (!I_VideoInitialized() || gamestate == GS_STARTUP)
+		return;
+
+	if (!CheckWideModeAdjustment())
+		return;
+
+	V_ForceVideoModeAdjustment();
 }
 
 
@@ -916,4 +921,3 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 
 VERSION_CONTROL (v_video_cpp, "$Id$")
-
