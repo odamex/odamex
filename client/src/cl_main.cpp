@@ -1736,7 +1736,11 @@ bool CL_Connect(void)
 	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
 	{
 		// Attach the website to the file and download it.
-		CL_StartDownload(sv_website.str(), missing_file, missing_hash);
+		if (!CL_StartDownload(sv_website.str(), missing_file, missing_hash))
+		{
+			CL_QuitNetGame();
+			return false;
+		}
 	}
 
 	compressor.reset();

@@ -33,6 +33,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "otransfer.h"
+#include "w_ident.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
 EXTERN_CVAR(waddirs)
@@ -126,11 +127,23 @@ bool CL_IsDownloading()
  * @param filename Filename of the WAD to download.
  * @param hash Hash of the file to download.
  */
-void CL_StartDownload(const std::string& website, const std::string& filename,
+bool CL_StartDownload(const std::string& website, const std::string& filename,
                       const std::string& hash)
 {
 	if (g_state.state != STATE_READY)
-		return;
+		return false;
+
+	if (W_IsFilenameCommercialIWAD(filename))
+	{
+		Printf(PRINT_HIGH, "Refusing to download commercial IWAD file.\n");
+		return false;
+	}
+
+	if (W_IsFilehashCommercialIWAD(hash))
+	{
+		Printf(PRINT_HIGH, "Refusing to download renamed commercial IWAD file.\n");
+		return false;
+	}
 
 	std::string url = website;
 
@@ -144,6 +157,7 @@ void CL_StartDownload(const std::string& website, const std::string& filename,
 
 	// Start the checking bit on the next tick.
 	g_state.state = STATE_CHECKING;
+	return true;
 }
 
 /**
@@ -401,13 +415,11 @@ std::string CL_DownloadProgress()
 
 static void DownloadHelp()
 {
-	Printf(PRINT_HIGH,
-		"download - Downloads a WAD file\n\n"
-		"Usage:\n"
-		"  ] download <WEBSITE> <FILENAME>\n"
-		"  Downloads the file FILENAME from WEBSITE.\n");
+	Printf(PRINT_HIGH, "download - Downloads a WAD file\n\n"
+	                   "Usage:\n"
+	                   "  ] download <WEBSITE> <FILENAME>\n"
+	                   "  Downloads the file FILENAME from WEBSITE.\n");
 }
-
 
 BEGIN_COMMAND(download)
 {

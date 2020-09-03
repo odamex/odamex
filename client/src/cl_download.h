@@ -28,7 +28,7 @@
 void CL_DownloadInit();
 void CL_DownloadShutdown();
 bool CL_IsDownloading();
-void CL_StartDownload(const std::string& website, const std::string& filename,
+bool CL_StartDownload(const std::string& website, const std::string& filename,
                       const std::string& hash);
 void CL_DownloadTick();
 std::string CL_DownloadProgress();

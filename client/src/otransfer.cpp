@@ -24,6 +24,7 @@
 
 #include "cmdlib.h"
 #include "i_system.h"
+#include "w_ident.h"
 
 // // Common callbacks // //
 
@@ -318,6 +319,14 @@ bool OTransfer::tick()
 	// Close the file so we can rename it.
 	fclose(_file);
 	_file = NULL;
+
+	// ...but first, check to see if we just downloaded an IWAD...
+	if (W_IsFileCommercialIWAD(_filepart))
+	{
+		remove(_filepart.c_str());
+		_errproc("Accidentally downloaded a commercial IWAD - file removed.");
+		return false;
+	}
 
 	int ok = rename(_filepart.c_str(), _filename.c_str());
 	if (ok != 0)
