@@ -149,7 +149,12 @@ void LevelState::reset(level_locals_t& level)
 	else
 	{
 		// Defer to the default.
+		_round_number = 1;
 		setState(LevelState::getStartOfRoundState());
+
+		// Don't print "match started" for every game mode.
+		if (g_rounds)
+			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
 	}
 
 	_countdown_done_time = 0;
@@ -455,9 +460,9 @@ void LevelState::setState(LevelState::States new_state)
 		_ingame_start_time = level.time;
 	}
 
-	// Rounds need to be set to zero here, but don't automatically increment
-	// the round counter on PREGAME | INGAME.
-	if (_state == LevelState::WARMUP)
+	// If we're in a warmup state, alwasy reset the round count to zero.
+	if (_state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN ||
+	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		_round_number = 0;
 	}
