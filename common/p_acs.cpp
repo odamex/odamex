@@ -3298,6 +3298,20 @@ void DLevelScript::RunScript ()
 				PushToStack(activator->tid);
 			break;
 
+		case PCD_GETCVAR: {
+			cvar_t *var, *prev;
+			var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+			if (var == NULL)
+			{
+				STACK(1) = 0;
+			}
+			else
+			{
+				STACK(1) = (int)var->value();
+			}
+		}
+		break;
+
 		case PCD_GETLEVELINFO:
 			switch (STACK(1))
 			{
