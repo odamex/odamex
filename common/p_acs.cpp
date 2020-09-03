@@ -1781,7 +1781,7 @@ void DLevelScript::RunScript ()
 		switch (pcd)
 		{
 		default:
-			Printf (PRINT_HIGH,"Unknown P-Code %d in script %d\n", pcd, script);
+			Printf(PRINT_HIGH, "Unknown P-Code %d in script %d\n", pcd, script);
 			continue;
 			// fall through
 		case PCD_TERMINATE:
@@ -1796,236 +1796,229 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_PUSHNUMBER:
-			PushToStack (NEXTWORD);
+			PushToStack(NEXTWORD);
 			break;
 
 		case PCD_PUSHBYTE:
-			PushToStack (*(BYTE *)pc);
-			pc = (int *)((BYTE *)pc + 1);
+			PushToStack(*(BYTE*)pc);
+			pc = (int*)((BYTE*)pc + 1);
 			break;
 
 		case PCD_PUSH2BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
 			sp += 2;
-			pc = (int *)((BYTE *)pc + 2);
+			pc = (int*)((BYTE*)pc + 2);
 			break;
 
 		case PCD_PUSH3BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
-			Stack[sp+2] = ((BYTE *)pc)[2];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp + 2] = ((BYTE*)pc)[2];
 			sp += 3;
-			pc = (int *)((BYTE *)pc + 3);
+			pc = (int*)((BYTE*)pc + 3);
 			break;
 
 		case PCD_PUSH4BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
-			Stack[sp+2] = ((BYTE *)pc)[2];
-			Stack[sp+3] = ((BYTE *)pc)[3];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp + 2] = ((BYTE*)pc)[2];
+			Stack[sp + 3] = ((BYTE*)pc)[3];
 			sp += 4;
-			pc = (int *)((BYTE *)pc + 4);
+			pc = (int*)((BYTE*)pc + 4);
 			break;
 
 		case PCD_PUSH5BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
-			Stack[sp+2] = ((BYTE *)pc)[2];
-			Stack[sp+3] = ((BYTE *)pc)[3];
-			Stack[sp+4] = ((BYTE *)pc)[4];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp + 2] = ((BYTE*)pc)[2];
+			Stack[sp + 3] = ((BYTE*)pc)[3];
+			Stack[sp + 4] = ((BYTE*)pc)[4];
 			sp += 5;
-			pc = (int *)((BYTE *)pc + 5);
+			pc = (int*)((BYTE*)pc + 5);
 			break;
 
 		case PCD_PUSHBYTES:
-			temp = *(BYTE *)pc;
-			pc = (int *)((BYTE *)pc + temp + 1);
+			temp = *(BYTE*)pc;
+			pc = (int*)((BYTE*)pc + temp + 1);
 			for (temp = -temp; temp; temp++)
 			{
-				PushToStack (*((BYTE *)pc + temp));
+				PushToStack(*((BYTE*)pc + temp));
 			}
 			break;
 
 		case PCD_DUP:
-			Stack[sp] = Stack[sp-1];
+			Stack[sp] = Stack[sp - 1];
 			sp++;
 			break;
 
 		case PCD_SWAP:
-			std::swap(Stack[sp-2], Stack[sp-1]);
+			std::swap(Stack[sp - 2], Stack[sp - 1]);
 			break;
 
 		case PCD_LSPEC1:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(1), 0, 0, 0, 0);
+			LineSpecials[NEXTBYTE](activationline, activator, STACK(1), 0, 0, 0, 0);
 			sp -= 1;
 			break;
 
 		case PCD_LSPEC2:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(2), STACK(1), 0, 0, 0);
+			LineSpecials[NEXTBYTE](activationline, activator, STACK(2), STACK(1), 0, 0,
+			                       0);
 			sp -= 2;
 			break;
 
 		case PCD_LSPEC3:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(3), STACK(2), STACK(1), 0, 0);
+			LineSpecials[NEXTBYTE](activationline, activator, STACK(3), STACK(2),
+			                       STACK(1), 0, 0);
 			sp -= 3;
 			break;
 
 		case PCD_LSPEC4:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(4), STACK(3), STACK(2),
-									STACK(1), 0);
+			LineSpecials[NEXTBYTE](activationline, activator, STACK(4), STACK(3),
+			                       STACK(2), STACK(1), 0);
 			sp -= 4;
 			break;
 
 		case PCD_LSPEC5:
-			LineSpecials[NEXTBYTE] (activationline, activator,
-									STACK(5), STACK(4), STACK(3),
-									STACK(2), STACK(1));
+			LineSpecials[NEXTBYTE](activationline, activator, STACK(5), STACK(4),
+			                       STACK(3), STACK(2), STACK(1));
 			sp -= 5;
 			break;
 
 		case PCD_LSPEC1DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], 0, 0, 0, 0);
+			LineSpecials[temp](activationline, activator, pc[0], 0, 0, 0, 0);
 			pc += 1;
 			break;
 
 		case PCD_LSPEC2DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], 0, 0, 0);
+			LineSpecials[temp](activationline, activator, pc[0], pc[1], 0, 0, 0);
 			pc += 2;
 			break;
 
 		case PCD_LSPEC3DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], pc[2], 0, 0);
+			LineSpecials[temp](activationline, activator, pc[0], pc[1], pc[2], 0, 0);
 			pc += 3;
 			break;
 
 		case PCD_LSPEC4DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], pc[2], pc[3], 0);
+			LineSpecials[temp](activationline, activator, pc[0], pc[1], pc[2], pc[3], 0);
 			pc += 4;
 			break;
 
 		case PCD_LSPEC5DIRECT:
 			temp = NEXTBYTE;
-			LineSpecials[temp] (activationline, activator,
-								pc[0], pc[1], pc[2], pc[3], pc[4]);
+			LineSpecials[temp](activationline, activator, pc[0], pc[1], pc[2], pc[3],
+			                   pc[4]);
 			pc += 5;
 			break;
 
 		case PCD_LSPEC1DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
-				((BYTE *)pc)[1], 0, 0, 0, 0);
-			pc = (int *)((BYTE *)pc + 2);
+			LineSpecials[((BYTE*)pc)[0]](activationline, activator, ((BYTE*)pc)[1], 0, 0,
+			                             0, 0);
+			pc = (int*)((BYTE*)pc + 2);
 			break;
 
 		case PCD_LSPEC2DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], 0, 0, 0);
-			pc = (int *)((BYTE *)pc + 3);
+			LineSpecials[((BYTE*)pc)[0]](activationline, activator, ((BYTE*)pc)[1],
+			                             ((BYTE*)pc)[2], 0, 0, 0);
+			pc = (int*)((BYTE*)pc + 3);
 			break;
 
 		case PCD_LSPEC3DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3], 0, 0);
-			pc = (int *)((BYTE *)pc + 4);
+			LineSpecials[((BYTE*)pc)[0]](activationline, activator, ((BYTE*)pc)[1],
+			                             ((BYTE*)pc)[2], ((BYTE*)pc)[3], 0, 0);
+			pc = (int*)((BYTE*)pc + 4);
 			break;
 
 		case PCD_LSPEC4DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3],
-				((BYTE *)pc)[4], 0);
-			pc = (int *)((BYTE *)pc + 5);
+			LineSpecials[((BYTE*)pc)[0]](activationline, activator, ((BYTE*)pc)[1],
+			                             ((BYTE*)pc)[2], ((BYTE*)pc)[3], ((BYTE*)pc)[4],
+			                             0);
+			pc = (int*)((BYTE*)pc + 5);
 			break;
 
 		case PCD_LSPEC5DIRECTB:
-			LineSpecials[((BYTE *)pc)[0]] (activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3],
-				((BYTE *)pc)[4], ((BYTE *)pc)[5]);
-			pc = (int *)((BYTE *)pc + 6);
+			LineSpecials[((BYTE*)pc)[0]](activationline, activator, ((BYTE*)pc)[1],
+			                             ((BYTE*)pc)[2], ((BYTE*)pc)[3], ((BYTE*)pc)[4],
+			                             ((BYTE*)pc)[5]);
+			pc = (int*)((BYTE*)pc + 6);
 			break;
 
 		case PCD_CALL:
-		case PCD_CALLDISCARD:
-			{
-				int funcnum;
-				int i;
-				ScriptFunction *func;
+		case PCD_CALLDISCARD: {
+			int funcnum;
+			int i;
+			ScriptFunction* func;
 
-				funcnum = NEXTBYTE;
-				func = level.behavior->GetFunction (funcnum);
-				if (func == NULL)
-				{
-					Printf (PRINT_HIGH,"Function %d in script %d out of range\n", funcnum, script);
-					state = SCRIPT_PleaseRemove;
-					break;
-				}
-				if (sp + func->LocalCount + 32 > STACK_SIZE)
-				{ // 32 is the margin for the function's working space
-					Printf (PRINT_HIGH,"Out of stack space in script %d\n", script);
-					state = SCRIPT_PleaseRemove;
-					break;
-				}
-				// The function's first argument is also its first local variable.
-				locals = &Stack[sp - func->ArgCount];
-				// Make space on the stack for any other variables the function uses.
-				for (i = 0; i < func->LocalCount; ++i)
-				{
-					Stack[sp+i] = 0;
-				}
-				sp += i;
-				((CallReturn *)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs (pc);
-				((CallReturn *)&Stack[sp])->ReturnFunction = activeFunction;
-				((CallReturn *)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
-				sp += sizeof(CallReturn)/sizeof(int);
-				pc = level.behavior->Ofs2PC (func->Address);
-				activeFunction = func;
+			funcnum = NEXTBYTE;
+			func = level.behavior->GetFunction(funcnum);
+			if (func == NULL)
+			{
+				Printf(PRINT_HIGH, "Function %d in script %d out of range\n", funcnum,
+				       script);
+				state = SCRIPT_PleaseRemove;
+				break;
 			}
-			break;
+			if (sp + func->LocalCount + 32 > STACK_SIZE)
+			{ // 32 is the margin for the function's working space
+				Printf(PRINT_HIGH, "Out of stack space in script %d\n", script);
+				state = SCRIPT_PleaseRemove;
+				break;
+			}
+			// The function's first argument is also its first local variable.
+			locals = &Stack[sp - func->ArgCount];
+			// Make space on the stack for any other variables the function uses.
+			for (i = 0; i < func->LocalCount; ++i)
+			{
+				Stack[sp + i] = 0;
+			}
+			sp += i;
+			((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
+			((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
+			((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
+			sp += sizeof(CallReturn) / sizeof(int);
+			pc = level.behavior->Ofs2PC(func->Address);
+			activeFunction = func;
+		}
+		break;
 
 		case PCD_RETURNVOID:
-		case PCD_RETURNVAL:
-			{
-				int value;
-				CallReturn *retState;
+		case PCD_RETURNVAL: {
+			int value;
+			CallReturn* retState;
 
-				if (pcd == PCD_RETURNVAL)
-				{
-					value = Stack[--sp];
-				}
-				else
-				{
-					value = 0;
-				}
-				sp -= sizeof(CallReturn)/sizeof(int);
-				retState = (CallReturn *)&Stack[sp];
-				pc = level.behavior->Ofs2PC (retState->ReturnAddress);
-				sp -= activeFunction->ArgCount + activeFunction->LocalCount;
-				activeFunction = retState->ReturnFunction;
-				if (activeFunction == NULL)
-				{
-					locals = localvars;
-				}
-				else
-				{
-					locals = &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
-				}
-				if (!retState->bDiscardResult)
-				{
-					Stack[sp++] = value;
-				}
+			if (pcd == PCD_RETURNVAL)
+			{
+				value = Stack[--sp];
 			}
-			break;
+			else
+			{
+				value = 0;
+			}
+			sp -= sizeof(CallReturn) / sizeof(int);
+			retState = (CallReturn*)&Stack[sp];
+			pc = level.behavior->Ofs2PC(retState->ReturnAddress);
+			sp -= activeFunction->ArgCount + activeFunction->LocalCount;
+			activeFunction = retState->ReturnFunction;
+			if (activeFunction == NULL)
+			{
+				locals = localvars;
+			}
+			else
+			{
+				locals =
+				    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
+			}
+			if (!retState->bDiscardResult)
+			{
+				Stack[sp++] = value;
+			}
+		}
+		break;
 
 		case PCD_ADD:
 			STACK(2) = STACK(2) + STACK(1);
@@ -2043,8 +2036,15 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_DIVIDE:
-			STACK(2) = STACK(2) / STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				STACK(2) = STACK(2) / STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODULUS:
@@ -2087,7 +2087,6 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-
 		case PCD_ASSIGNMAPVAR:
 			level.vars[NEXTBYTE] = STACK(1);
 			sp--;
@@ -2104,28 +2103,28 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_ASSIGNMAPARRAY:
-			level.behavior->SetArrayVal (ACS_WorldVars[NEXTBYTE], STACK(2), STACK(1));
+			level.behavior->SetArrayVal(ACS_WorldVars[NEXTBYTE], STACK(2), STACK(1));
 			sp -= 2;
 			break;
 
 		case PCD_PUSHSCRIPTVAR:
-			PushToStack (locals[NEXTBYTE]);
+			PushToStack(locals[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHMAPVAR:
-			PushToStack (level.vars[NEXTBYTE]);
+			PushToStack(level.vars[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHWORLDVAR:
-			PushToStack (ACS_WorldVars[NEXTBYTE]);
+			PushToStack(ACS_WorldVars[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHGLOBALVAR:
-			PushToStack (ACS_GlobalVars[NEXTBYTE]);
+			PushToStack(ACS_GlobalVars[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHMAPARRAY:
-			STACK(1) = level.behavior->GetArrayVal (level.vars[NEXTBYTE], STACK(1));
+			STACK(1) = level.behavior->GetArrayVal(level.vars[NEXTBYTE], STACK(1));
 			break;
 
 		case PCD_ADDSCRIPTVAR:
@@ -2148,15 +2147,14 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ADDMAPARRAY:
-			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) + STACK(1));
-				sp -= 2;
-			}
-			break;
+		case PCD_ADDMAPARRAY: {
+			int a = ACS_WorldVars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) + STACK(1));
+			sp -= 2;
+		}
+		break;
 
 		case PCD_SUBSCRIPTVAR:
 			locals[NEXTBYTE] -= STACK(1);
@@ -2178,15 +2176,14 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_SUBMAPARRAY:
-			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) - STACK(1));
-				sp -= 2;
-			}
-			break;
+		case PCD_SUBMAPARRAY: {
+			int a = ACS_WorldVars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) - STACK(1));
+			sp -= 2;
+		}
+		break;
 
 		case PCD_MULSCRIPTVAR:
 			locals[NEXTBYTE] *= STACK(1);
@@ -2208,43 +2205,77 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_MULMAPARRAY:
+		case PCD_MULMAPARRAY: {
+			int a = ACS_WorldVars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) * STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_DIVSCRIPTVAR:
+			if (STACK(1) == 0)
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) * STACK(1));
-				sp -= 2;
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				locals[NEXTBYTE] /= STACK(1);
+				sp--;
 			}
 			break;
 
-		case PCD_DIVSCRIPTVAR:
-			locals[NEXTBYTE] /= STACK(1);
-			sp--;
-			break;
-
 		case PCD_DIVMAPVAR:
-			level.vars[NEXTBYTE] /= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				level.vars[NEXTBYTE] /= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_DIVWORLDVAR:
-			ACS_WorldVars[NEXTBYTE] /= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				ACS_WorldVars[NEXTBYTE] /= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_DIVGLOBALVAR:
-			ACS_GlobalVars[NEXTBYTE] /= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				ACS_GlobalVars[NEXTBYTE] /= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_DIVMAPARRAY:
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) / STACK(1));
-				sp -= 2;
+				if (STACK(1) == 0)
+				{
+					state = SCRIPT_DivideBy0;
+				}
+			    else
+			    {
+				    int a = ACS_WorldVars[NEXTBYTE];
+				    int i = STACK(2);
+				    level.behavior->SetArrayVal(
+				        a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
+				    sp -= 2;
+			    }
 			}
 			break;
 
@@ -3276,6 +3307,12 @@ void DLevelScript::RunScript ()
 
 	this->pc = pc;
 	this->sp = sp;
+
+	if (state == SCRIPT_DivideBy0)
+	{
+		DPrintf("Divide by zero in script %d\n", script);
+		state = SCRIPT_PleaseRemove;
+	}
 
 	if (state == SCRIPT_PleaseRemove)
 	{

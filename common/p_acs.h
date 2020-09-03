@@ -418,7 +418,8 @@ public:
 		SCRIPT_PolyWait,
 		SCRIPT_ScriptWaitPre,
 		SCRIPT_ScriptWait,
-		SCRIPT_PleaseRemove
+		SCRIPT_PleaseRemove,
+		SCRIPT_DivideBy0,
 	};
 
 	DLevelScript (AActor *who, line_t *where, int num, int *code,
