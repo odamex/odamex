@@ -1772,7 +1772,7 @@ void DLevelScript::RunScript ()
 	{
 		if (++runaway > 500000)
 		{
-			Printf (PRINT_HIGH,"Runaway script %d terminated\n", script);
+			DPrintf ("Runaway script %d terminated\n", script);
 			state = SCRIPT_PleaseRemove;
 			break;
 		}
@@ -1781,7 +1781,7 @@ void DLevelScript::RunScript ()
 		switch (pcd)
 		{
 		default:
-			Printf(PRINT_HIGH, "Unknown P-Code %d in script %d\n", pcd, script);
+			DPrintf("Unknown P-Code %d in script %d\n", pcd, script);
 			continue;
 			// fall through
 		case PCD_TERMINATE:
@@ -3298,6 +3298,44 @@ void DLevelScript::RunScript ()
 				PushToStack(activator->tid);
 			break;
 
+		case PCD_GETLEVELINFO:
+			switch (STACK(1))
+			{
+			case LEVELINFO_PAR_TIME:
+				STACK(1) = level.partime;
+				break;
+			case LEVELINFO_SUCK_TIME:
+				STACK(1) = 0;	//level.sucktime; -- ToDo?
+				break;
+			case LEVELINFO_CLUSTERNUM:
+				STACK(1) = level.cluster;
+				break;
+			case LEVELINFO_LEVELNUM:
+				STACK(1) = level.levelnum;
+				break;
+			case LEVELINFO_TOTAL_SECRETS:
+				STACK(1) = level.total_secrets;
+				break;
+			case LEVELINFO_FOUND_SECRETS:
+				STACK(1) = level.found_secrets;
+				break;
+			case LEVELINFO_TOTAL_ITEMS:
+				STACK(1) = level.total_items;
+				break;
+			case LEVELINFO_FOUND_ITEMS:
+				STACK(1) = level.found_items;
+				break;
+			case LEVELINFO_TOTAL_MONSTERS:
+				STACK(1) = level.total_monsters;
+				break;
+			case LEVELINFO_KILLED_MONSTERS:
+				STACK(1) = level.killed_monsters;
+				break;
+			default:
+				STACK(1) = 0;
+				break;
+			}
+			break;
 		/*case PCD_CHECKWEAPON:
 			if (activator == NULL || activator->player == NULL)
 			{ // Non-players do not have ready weapons
