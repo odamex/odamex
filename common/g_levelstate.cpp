@@ -282,7 +282,7 @@ void LevelState::tic()
 		if (level.time >= _countdown_done_time)
 		{
 			setState(LevelState::INGAME);
-			SV_BroadcastPrintf(PRINT_HIGH, "The round has started.\n");
+			SV_BroadcastPrintf(PRINT_HIGH, "FIGHT!\n");
 			return;
 		}
 		break;
@@ -297,6 +297,8 @@ void LevelState::tic()
 			_round_number += 1;
 			setState(LevelState::getStartOfRoundState());
 			G_DeferedReset();
+
+			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
 			return;
 		}
 		break;
@@ -838,7 +840,7 @@ static void LMSHelp()
 
 BEGIN_COMMAND(lms)
 {
-	if (argc < 1)
+	if (argc < 2)
 	{
 		LMSHelp();
 		return;

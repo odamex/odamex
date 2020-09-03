@@ -129,6 +129,7 @@ TeamCount P_TeamQuery(TeamResults* out, unsigned flags)
 			}
 		}
 
+		out->push_back(team);
 		tc.result += 1;
 	}
 

@@ -239,7 +239,7 @@ void SV_FlagScore (player_t &player, team_t f)
 //
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 {
-	if (::G_CanTickGameplay())
+	if (!G_CanTickGameplay())
 		return IEV_NotEquipped;
 
 	if(player.userinfo.team == f)
@@ -273,7 +273,7 @@ ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 //
 void SV_SocketTouch (player_t &player, team_t f)
 {
-	if (::G_CanTickGameplay())
+	if (!G_CanTickGameplay())
 		return;
 
 	TeamInfo* teamInfo = GetTeamInfo(f);
@@ -303,7 +303,7 @@ void SV_SocketTouch (player_t &player, team_t f)
 //
 void SV_FlagDrop (player_t &player, team_t f)
 {
-	if (::G_CanTickGameplay())
+	if (!G_CanTickGameplay())
 		return;
 
 	SV_CTFEvent (f, SCORE_DROP, player);
