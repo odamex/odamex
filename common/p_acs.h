@@ -420,6 +420,7 @@ public:
 		SCRIPT_ScriptWait,
 		SCRIPT_PleaseRemove,
 		SCRIPT_DivideBy0,
+		SCRIPT_ModulusBy0,
 	};
 
 	DLevelScript (AActor *who, line_t *where, int num, int *code,

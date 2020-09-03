@@ -2048,8 +2048,15 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_MODULUS:
-			STACK(2) = STACK(2) % STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				STACK(2) = STACK(2) % STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_EQ:
@@ -2280,31 +2287,64 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_MODSCRIPTVAR:
-			locals[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				locals[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODMAPVAR:
-			level.vars[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				level.vars[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODWORLDVAR:
-			ACS_WorldVars[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				ACS_WorldVars[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODGLOBALVAR:
-			ACS_GlobalVars[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				ACS_GlobalVars[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODMAPARRAY:
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
 			{
 				int a = ACS_WorldVars[NEXTBYTE];
 				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) % STACK(1));
+				level.behavior->SetArrayVal(a, i,
+											level.behavior->GetArrayVal(a, i) % STACK(1));
 				sp -= 2;
 			}
 			break;
@@ -3311,6 +3351,11 @@ void DLevelScript::RunScript ()
 	if (state == SCRIPT_DivideBy0)
 	{
 		DPrintf("Divide by zero in script %d\n", script);
+		state = SCRIPT_PleaseRemove;
+	}
+	else if (state == SCRIPT_ModulusBy0)
+	{
+		DPrintf("Modulus by zero in script %d\n", script);
 		state = SCRIPT_PleaseRemove;
 	}
 
