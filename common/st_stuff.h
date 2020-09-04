@@ -66,12 +66,6 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// Draw the HUD (only if old status bar is not drawn)
-void ST_newDraw (void);
-
-// Called on init
-void ST_loadGraphics (void);
-
 // [ML] HUDified status bar
 void ST_drawStatusBar (void);
 
@@ -105,5 +99,3 @@ bool ST_Responder(event_t* ev);
 
 
 #endif
-
-
