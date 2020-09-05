@@ -751,6 +751,7 @@ void P_FinishLoadingLineDefs (void)
 						if (lines[j].id == ld->args[0])
 							lines[j].lucency = (byte)ld->args[1];
 #endif
+				ld->special = 0;
 				break;
 		}
 	}
