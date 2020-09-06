@@ -13,19 +13,31 @@ include(GNUInstallDirs OPTIONAL)
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
+if(WIN32)
+  set(USE_INTERNAL_LIBS 1)
+else()
+  set(USE_INTERNAL_LIBS 0)
+endif()
+
 # options
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
 option(BUILD_MASTER "Build master server target" 1)
 option(BUILD_ODALAUNCH "Build odalaunch target" 1)
+cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
-set(PROJECT_VERSION 0.8.2)
+set(PROJECT_VERSION 0.8.3)
 set(PROJECT_COPYRIGHT "2006-2020")
+
+# Use C++ 98/03 for all targets
+set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
@@ -62,6 +74,10 @@ endif()
 
 # Global compile options as shown in a GUI.
 if(NOT MSVC)
+  set(USE_COLOR_DIAGNOSTICS "No" CACHE STRING
+    "Force the use of color diagnostics, necessary to get color output with Ninja.")
+  set_property(CACHE USE_COLOR_DIAGNOSTICS PROPERTY STRINGS Yes No)
+
   set(USE_STATIC_STDLIB "No" CACHE STRING
     "Statically link against the C and C++ Standard Library.")
   set_property(CACHE USE_STATIC_STDLIB PROPERTY STRINGS Yes No)
@@ -74,18 +90,49 @@ endif()
 # Global compile options.  Useful defines for any Odamex project.
 macro(global_compile_options)
   if(NOT MSVC)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+    set(GLOBAL_CXX_FLAGS "-Wall")
+    if(USE_GPROF)
+      set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -p")
+    endif()
+    if(USE_COLOR_DIAGNOSTICS)
+      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -fcolor-diagnostics")
+      else()
+        set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -fdiagnostics-color=always")
+      endif()
+    endif()
+
+    set(CMAKE_CXX_FLAGS_DEBUG "${GLOBAL_CXX_FLAGS} -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "${GLOBAL_CXX_FLAGS} -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${GLOBAL_CXX_FLAGS} -g -DNDEBUG -O2")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${GLOBAL_CXX_FLAGS} -DNDEBUG -Os")
+
     if(USE_STATIC_STDLIB)
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
     endif()
     if(USE_SANITIZE_ADDRESS)
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-    endif()
+    endif()    
     if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
       add_definitions(-DODAMEX_DEBUG)
-	endif()
+    endif()
   endif()
 endmacro(global_compile_options)
+
+# Output the G++ CXX flags
+macro(print_cxx_flags)
+  if(NOT MSVC)
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
+      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_MINSIZEREL}")
+    endif()
+  endif()
+endmacro(print_cxx_flags)
 
 # jsd: hide warnings about using insecure crt functions:
 if(MSVC)
@@ -122,31 +169,27 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 include(GetGitRevisionDescription)
 git_describe(GIT_DESCRIBE --tags --always)
 
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_INSTALL OFF CACHE INTERNAL "" FORCE)
-  mark_as_advanced(FORCE UPNPC_INSTALL)
-  add_subdirectory(libraries/libminiupnpc)
-endif()
+# Libraries
+add_subdirectory(libraries)
 
 # Subdirectories for Odamex projects
+if(BUILD_CLIENT OR BUILD_SERVER)
+  add_subdirectory(common)
+endif()
 if(BUILD_CLIENT)
-	add_subdirectory(client)
+  add_subdirectory(client)
 endif()
 if(BUILD_SERVER)
-	add_subdirectory(server)
+  add_subdirectory(server)
 endif()
 if(BUILD_MASTER)
-	add_subdirectory(master)
+  add_subdirectory(master)
 endif()
 if(BUILD_ODALAUNCH)
-	add_subdirectory(odalaunch)
+  add_subdirectory(odalaunch)
 endif()
 if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER)
-	message(FATAL_ERROR "No target chosen, doing nothing.")
+  message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 
 # Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET

@@ -40,7 +40,7 @@
 // atkstate, i.e. attack/fire/hit frame
 // flashstate, muzzle flash
 //
-weaponinfo_t	weaponinfo[NUMWEAPONS] =
+weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 {
 	{
 		// fist
@@ -150,6 +150,18 @@ weaponinfo_t	weaponinfo[NUMWEAPONS] =
 		2,
 		2
 	},
+	{
+		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
+		am_noammo,
+		S_NOWEAPONUP,
+		S_NOWEAPONDOWN,
+		S_NOWEAPON,
+		S_NOWEAPON,
+		S_NOWEAPON,
+		MT_MISC26,
+		0,
+		0
+	},
 };
 
 int num_items;
@@ -204,6 +216,19 @@ gitem_t	*FindItem (const char *pickup_name)
 	it = itemlist;
 	for (i = 0; i < num_items; i++, it++)
 		if (it->pickup_name && !stricmp(it->pickup_name, pickup_name))
+			return it;
+
+	return NULL;
+}
+
+gitem_t* FindCardItem(card_t card)
+{
+	int		i;
+	gitem_t* it;
+
+	it = itemlist;
+	for (i = 0; i < num_items; i++, it++)
+		if (it->flags == IT_KEY && (card_t)it->offset == card)
 			return it;
 
 	return NULL;
@@ -535,8 +560,7 @@ gitem_t itemlist[] = {
 		0,
 		"Red Flag"
 	},
-
-	// end of list marker
+				// end of list marker
 	{
 	    "",
 	    NULL,

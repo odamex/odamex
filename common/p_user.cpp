@@ -906,84 +906,97 @@ void player_s::Serialize (FArchive &arc)
 	}
 }
 
-player_s::player_s()
+player_s::player_s() :
+	id(0),
+	playerstate(PST_LIVE),
+	mo(AActor::AActorPtr()),
+	cmd(ticcmd_t()),
+	cmdqueue(std::queue<NetCommand>()),
+	userinfo(UserInfo()),
+	fov(90.0),
+	viewz(0 << FRACBITS),
+	prevviewz(0 << FRACBITS),
+	viewheight(0 << FRACBITS),
+	deltaviewheight(0 << FRACBITS),
+	bob(0 << FRACBITS),
+	health(0),
+	armorpoints(0),
+	armortype(0),
+	backpack(false),
+	points(0),
+	fragcount(0),
+	deathcount(0),
+	killcount(0),
+	itemcount(0),
+	secretcount(0),
+	pendingweapon(wp_fist),
+	readyweapon(wp_fist),
+	attackdown(0),
+	usedown(0),
+	cheats(0),
+	refire(0),
+	damagecount(0),
+	bonuscount(0),
+	extralight(0),
+	fixedcolormap(0),
+	xviewshift(0),
+	psprnum(0),
+	jumpTics(0),
+	death_time(0),
+	suicide_time(0),
+	camera(AActor::AActorPtr()),
+	air_finished(0),
+	GameTime(0),
+	JoinTime(time_t()),
+	ping(0),
+	last_received(0),
+	tic(0),
+	snapshots(PlayerSnapshotManager()),
+	spying(0),
+	spectator(false),
+	joinafterspectatortime(level.time - TICRATE * 5),
+	timeout_callvote(0),
+	timeout_vote(0),
+	ready(false),
+	timeout_ready(0),
+	blend_color(argb_t(0, 0, 0, 0)),
+	doreborn(false),
+	LastMessage(LastMessage_s()),
+	to_spawn(std::queue<AActor::AActorPtr>()),
+	client(player_s::client_t())
 {
-	size_t i;
-
-	// GhostlyDeath -- Initialize EVERYTHING
-	id = 0;
-	playerstate = PST_LIVE;
-	mo = AActor::AActorPtr();
 	cmd.clear();
-	fov = 90.0;
-	viewz = 0 << FRACBITS;
-	viewheight = 0 << FRACBITS;
-	deltaviewheight = 0 << FRACBITS;
-	bob = 0 << FRACBITS;
-	health = 0;
-	armorpoints = 0;
-	armortype = 0;
-	for (i = 0; i < NUMPOWERS; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(powers); i++)
 		powers[i] = 0;
-	for (i = 0; i < NUMCARDS; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(cards); i++)
 		cards[i] = false;
-	backpack = false;
-	points = 0;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(flags); i++)
 		flags[i] = false;
-	fragcount = 0;
-	deathcount = 0;
-	killcount = 0;
-	pendingweapon = wp_nochange;
-	readyweapon = wp_nochange;
-	for (i = 0; i < NUMWEAPONS; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
 		weaponowned[i] = false;
-	for (i = 0; i < NUMAMMO; i++)
-	{
-		ammo[i] = 0;
-		maxammo[i] = 0;
-	}
-	attackdown = 0;
-	usedown = 0;
-	cheats = 0;
-	refire = 0;
-	damagecount = 0;
-	bonuscount = 0;
+	for (size_t i = 0; i < ARRAY_LENGTH(ammo); i++)
+		ammo[i] = false;
+	for (size_t i = 0; i < ARRAY_LENGTH(maxammo); i++)
+		maxammo[i] = false;
+
+	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
-	extralight = 0;
-	fixedcolormap = 0;
-	xviewshift = 0;
-	memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
-	jumpTics = 0;
-	death_time = 0;
-	memset(oldvelocity, 0, sizeof(oldvelocity));
-	camera = AActor::AActorPtr();
-	air_finished = 0;
-	GameTime = 0;
-	JoinTime = 0;
-	ping = 0;
-	last_received = 0;
-	tic = 0;
-	spying = id;
-	spectator = false;
-//	deadspectator = false;
 
-	joinafterspectatortime = level.time - TICRATE*5;
-	timeout_callvote = 0;
-	timeout_vote = 0;
-
-	ready = false;
-	timeout_ready = 0;
-
-	memset(prefcolor, 0, 4);
+	pspdef_t zeropsp = { NULL, 0, 0, 0 };
+	for (size_t i = 0; i < ARRAY_LENGTH(psprites); i++)
+		psprites[i] = zeropsp;
+	for (size_t i = 0; i < ARRAY_LENGTH(oldvelocity); i++)
+		oldvelocity[i] = 0;
+	for (size_t i = 0; i < ARRAY_LENGTH(prefcolor); i++)
+		prefcolor[i] = 0;
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
 
-	blend_color = argb_t(0, 0, 0, 0);
-
-	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
-	doreborn = false;
+	for (size_t i = 0; i < ARRAY_LENGTH(netcmds); i++)
+	{
+		netcmds[i] = ticcmd_t();
+	}
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1104,4 +1117,3 @@ player_s::~player_s()
 }
 
 VERSION_CONTROL (p_user_cpp, "$Id$")
-

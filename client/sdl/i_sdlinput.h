@@ -64,18 +64,12 @@ public:
 	virtual void flushEvents();
 
 private:
-	void initKeyTextTranslation();
-	int translateKey(int sym);
-	int translateKeyText(int sym, int mod);
+	int translateKey(SDL_keysym keysym);
 
 	bool					mActive;
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
-
-	KeyTranslationTable		mSDLKeyTransTable;
-	KeyTranslationTable		mSDLKeyTextTransTable;
-	KeyTranslationTable		mShiftTransTable;
 };
 
 
@@ -174,23 +168,20 @@ public:
 	virtual void grabInput();
 	virtual void releaseInput();
 
+	virtual bool isInputGrabbed() const
+	{	return mInputGrabbed;	}
+
 	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const;
 	virtual void initKeyboard(int id);
 	virtual void shutdownKeyboard(int id);
-	virtual void pauseKeyboard();
-	virtual void resumeKeyboard();
 
 	virtual std::vector<IInputDeviceInfo> getMouseDevices() const;
 	virtual void initMouse(int id);
 	virtual void shutdownMouse(int id);
-	virtual void pauseMouse();
-	virtual void resumeMouse();
 
 	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const;
 	virtual void initJoystick(int id);
 	virtual void shutdownJoystick(int id);
-	virtual void pauseJoystick();
-	virtual void resumeJoystick();
 
 private:
 	bool				mInputGrabbed;
@@ -231,7 +222,7 @@ public:
 	virtual void disableTextEntry();
 
 private:
-	int translateKey(int sym);
+	int translateKey(SDL_Keysym keysym);
 	int getTextEventValue();
 
 	bool					mActive;
@@ -239,8 +230,6 @@ private:
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue				mEvents;
-
-	KeyTranslationTable		mSDLKeyTransTable;
 };
 
 
@@ -337,23 +326,20 @@ public:
 	virtual void grabInput();
 	virtual void releaseInput();
 
+	virtual bool isInputGrabbed() const
+	{	return mInputGrabbed;	}
+
 	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const;
 	virtual void initKeyboard(int id);
 	virtual void shutdownKeyboard(int id);
-	virtual void pauseKeyboard();
-	virtual void resumeKeyboard();
 
 	virtual std::vector<IInputDeviceInfo> getMouseDevices() const;
 	virtual void initMouse(int id);
 	virtual void shutdownMouse(int id);
-	virtual void pauseMouse();
-	virtual void resumeMouse();
 
 	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const;
 	virtual void initJoystick(int id);
 	virtual void shutdownJoystick(int id);
-	virtual void pauseJoystick();
-	virtual void resumeJoystick();
 
 private:
 	bool				mInputGrabbed;

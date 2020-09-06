@@ -222,7 +222,7 @@ mline_t player_arrow[] = {
 	{ { -R+3*R/8, 0 }, { -R+R/8, -R/4 } }
 };
 #undef R
-#define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
+#define NUMPLYRLINES (ARRAY_LENGTH(player_arrow))
 
 #define R ((8*PLAYERRADIUS)/7)
 mline_t cheat_player_arrow[] = {
@@ -244,7 +244,7 @@ mline_t cheat_player_arrow[] = {
 	{ { R/6+R/32, -R/7-R/32 }, { R/6+R/10, -R/7 } }
 };
 #undef R
-#define NUMCHEATPLYRLINES (sizeof(cheat_player_arrow)/sizeof(mline_t))
+#define NUMCHEATPLYRLINES (ARRAY_LENGTH(cheat_player_arrow))
 
 #define R (FRACUNIT)
 // [RH] Avoid lots of warnings without compiler-specific #pragmas
@@ -254,7 +254,7 @@ mline_t triangle_guy[] = {
 	L (.867,-.5, 0,1),
 	L (0,1, -.867,-.5)
 };
-#define NUMTRIANGLEGUYLINES (sizeof(triangle_guy)/sizeof(mline_t))
+#define NUMTRIANGLEGUYLINES (ARRAY_LENGTH(triangle_guy))
 
 mline_t thintriangle_guy[] = {
 	L (-.5,-.7, 1,0),
@@ -263,7 +263,7 @@ mline_t thintriangle_guy[] = {
 };
 #undef L
 #undef R
-#define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
+#define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
 
 
 
@@ -695,8 +695,8 @@ void AM_LevelInit(void)
 //
 void AM_Stop()
 {
-    if (!automapactive)
-        return;
+	if (!automapactive)
+		return;
 
 	AM_unloadPics ();
 	automapactive = false;
@@ -834,7 +834,7 @@ BOOL AM_Responder (event_t *ev)
 				AM_restoreScaleAndLoc();
 			break;
 		default:
-			switch (ev->data2)
+			switch (ev->data3)
 			{
 			case AM_FOLLOWKEY:
 				followplayer = !followplayer;
@@ -857,7 +857,7 @@ BOOL AM_Responder (event_t *ev)
 				rc = false;
 			}
 		}
-		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
+		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
 		{
 			rc = true;	// [RH] Eat last keypress of cheat sequence
 			cheating = (cheating+1) % 3;
@@ -1749,21 +1749,22 @@ void AM_Drawer()
 				case doom2:
 				case commercial_freedoom:
 				case commercial_hacx:
-					firstmap = HUSTR_1;
+					firstmap = GStrings.toIndex(HUSTR_1);
 					break;
 				case pack_plut:
-					firstmap = PHUSTR_1;
+					firstmap = GStrings.toIndex(PHUSTR_1);
 					break;
 				case pack_tnt:
-					firstmap = THUSTR_1;
+					firstmap = GStrings.toIndex(THUSTR_1);
 					break;
 				default:
-					firstmap = HUSTR_E1M1;
+					firstmap = GStrings.toIndex(HUSTR_E1M1);
 					mapoffset = level.cluster; // Episodes skip map numbers.
 					break;
 			}
 
-			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
+			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
+			        ARRAY_LENGTH(line) - 1);
 
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;
@@ -1817,5 +1818,3 @@ void AM_Drawer()
 }
 
 VERSION_CONTROL (am_map_cpp, "$Id$")
-
-

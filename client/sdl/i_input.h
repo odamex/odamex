@@ -37,8 +37,6 @@
 
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
-void I_PauseMouse();
-void I_ResumeMouse();
 void I_ForceUpdateGrab();
 void I_FlushInput();
 
@@ -46,6 +44,8 @@ int I_GetJoystickCount();
 std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
+std::string I_GetKeyName(int key);
+int I_GetKeyFromName(const std::string& name);
 
 
 // ============================================================================
@@ -114,6 +114,9 @@ public:
 	virtual void grabInput() = 0;
 	virtual void releaseInput() = 0;
 
+	virtual bool isInputGrabbed() const
+	{	return false;	}
+
 	virtual void enableKeyRepeat();
 	virtual void disableKeyRepeat();
 	virtual void enableTextEntry();
@@ -136,20 +139,14 @@ public:
 	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0; 
 	virtual void initKeyboard(int id) = 0;
 	virtual void shutdownKeyboard(int id) = 0;
-	virtual void pauseKeyboard() = 0;
-	virtual void resumeKeyboard() = 0;
 
 	virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0; 
 	virtual void initMouse(int id) = 0;
 	virtual void shutdownMouse(int id) = 0;
-	virtual void pauseMouse() = 0;
-	virtual void resumeMouse() = 0;
 
 	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0; 
 	virtual void initJoystick(int id) = 0;
 	virtual void shutdownJoystick(int id) = 0;
-	virtual void pauseJoystick() = 0;
-	virtual void resumeJoystick() = 0;
 
 protected:
 	void registerInputDevice(IInputDevice* device);

@@ -291,7 +291,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	STACKARRAY_LENGTH(OptionItems),
+	ARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
 	0,
@@ -386,7 +386,7 @@ static menuitem_t ControlsItems[] = {
 menu_t ControlsMenu = {
 	"M_CONTRO",
 	3,
-	STACKARRAY_LENGTH(ControlsItems),
+	ARRAY_LENGTH(ControlsItems),
 	0,
 	ControlsItems,
 	2,
@@ -434,7 +434,7 @@ static menuitem_t MouseItems[] =
 menu_t MouseMenu = {
     "M_MOUSET",
     0,
-    STACKARRAY_LENGTH(MouseItems),
+    ARRAY_LENGTH(MouseItems),
     177,
     MouseItems,
 	0,
@@ -469,7 +469,7 @@ static menuitem_t JoystickItems[] =
 menu_t JoystickMenu = {
     "M_JOYSTK",
     0,
-    STACKARRAY_LENGTH(JoystickItems),
+    ARRAY_LENGTH(JoystickItems),
     177,
     JoystickItems,
 	0,
@@ -500,7 +500,7 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
-static float num_mussys = static_cast<float>(STACKARRAY_LENGTH(MusSys));
+static float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -522,7 +522,7 @@ static menuitem_t SoundItems[] = {
 menu_t SoundMenu = {
 	"M_SOUND",
 	2,
-	STACKARRAY_LENGTH(SoundItems),
+	ARRAY_LENGTH(SoundItems),
 	177,
 	SoundItems,
 	0,
@@ -559,7 +559,7 @@ static menuitem_t CompatItems[] ={
 menu_t CompatMenu = {
 	"M_COMPAT",
 	1,
-	STACKARRAY_LENGTH(CompatItems),
+	ARRAY_LENGTH(CompatItems),
 	240,
 	CompatItems,
 	0,
@@ -608,7 +608,7 @@ static menuitem_t NetworkItems[] = {
 menu_t NetworkMenu = {
 	"M_NETWRK",
 	2,
-	STACKARRAY_LENGTH(NetworkItems),
+	ARRAY_LENGTH(NetworkItems),
 	177,
 	NetworkItems,
 	1,
@@ -653,7 +653,7 @@ static menuitem_t WeaponItems[] = {
 menu_t WeaponMenu = {
 	"M_WEAPON",
 	1,
-	STACKARRAY_LENGTH(WeaponItems),
+	ARRAY_LENGTH(WeaponItems),
 	177,
 	WeaponItems,
 	0,
@@ -804,7 +804,7 @@ static menuitem_t VideoItems[] = {
 
 static void M_UpdateDisplayOptions()
 {
-	const static size_t menu_length = STACKARRAY_LENGTH(VideoItems);
+	const static size_t menu_length = ARRAY_LENGTH(VideoItems);
 	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length);
 
 	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
@@ -816,7 +816,7 @@ static void M_UpdateDisplayOptions()
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	STACKARRAY_LENGTH(VideoItems),
+	ARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
 	3,
@@ -900,7 +900,7 @@ static menuitem_t MessagesItems[] = {
 menu_t MessagesMenu = {
 	"M_MESS",
 	0,
-	STACKARRAY_LENGTH(MessagesItems),
+	ARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
 	0,
@@ -937,7 +937,7 @@ static menuitem_t AutomapItems[] = {
 menu_t AutomapMenu = {
 	"M_MESS",
 	0,
-	STACKARRAY_LENGTH(AutomapItems),
+	ARRAY_LENGTH(AutomapItems),
 	0,
 	AutomapItems,
 	0,
@@ -952,19 +952,40 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-QWORD testingmode;		// Holds time to revert to old mode
-int OldWidth, OldHeight;
+int testingmode;		// Holds time to revert to old mode
 
 static bool GetSelectedSize(int line, int *width, int *height);
 
-EXTERN_CVAR (vid_defwidth)
-EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_maxfps)
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_32bpp)
+
+static uint16_t old_width, old_height;
+
+static void SetModesMenu(int w, int h);
+
+static void M_SetVideoMode(uint16_t width, uint16_t height)
+{
+	old_width = I_GetVideoWidth();
+	old_height = I_GetVideoHeight();
+
+	char command[30];
+	sprintf(command, "vid_setmode %d %d", width, height);
+	AddCommandString(command);
+
+	SetModesMenu(width, height);
+}
+
+
+void M_RestoreVideoMode()
+{
+	testingmode = 0;
+	M_SetVideoMode(old_width, old_height);
+}
+
 
 static value_t Depths[22];
 
@@ -977,7 +998,6 @@ static const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
 static const char VMTestWaitText[] = "Please wait 5 seconds...";
-static const char VMTestBlankText[] = " ";
 
 static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
@@ -987,11 +1007,18 @@ static value_t VidFPSCaps[] = {
 	{ 0.0,		"Unlimited" }
 };
 
+static value_t FullScreenOptions[] = {
+	{ WINDOW_Windowed,			"Window" },
+	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
+	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
+};
+
+
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
-	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
@@ -1020,7 +1047,7 @@ static menuitem_t ModesItems[] = {
 menu_t ModesMenu = {
 	"M_VIDMOD",
 	0,
-	STACKARRAY_LENGTH(ModesItems),
+	ARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
 	0,
@@ -1032,7 +1059,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 {
 	// gathers a list of unique resolutions availible for the current
 	// screen mode (windowed or fullscreen)
-	bool fullscreen = I_GetWindow()->getVideoMode()->isFullScreen();
+	bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
 
 	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
 	MenuModeList menumodelist;
@@ -1040,12 +1067,12 @@ static void BuildModesList(int hiwidth, int hiheight)
 	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
 		if (it->isFullScreen() == fullscreen)
-			menumodelist.push_back(std::make_pair(it->getWidth(), it->getHeight()));
+			menumodelist.push_back(std::make_pair(it->width, it->height));
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
 
-    const char** str = NULL;
+	char** str = NULL;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1074,7 +1101,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 			}
 			else
 			{
-				*str = NULL;
+				str = NULL;
 			}
 		}
 	}
@@ -1145,18 +1172,10 @@ static void SetModesMenu(int w, int h)
 //
 void M_ModeFlashTestText()
 {
-    if (ModesItems[VM_TESTLINE].label[0] == ' ')
+	if (I_MSTime() & 256)
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
 	else
-		ModesItems[VM_TESTLINE].label = VMTestBlankText;
-}
-
-void M_RestoreMode (void)
-{
-	V_SetResolution(OldWidth, OldHeight);
-	testingmode = 0;
-
-	SetModesMenu(OldWidth, OldHeight);
+		ModesItems[VM_TESTLINE].label = "";
 }
 
 static void SetVidMode()
@@ -2115,11 +2134,7 @@ void M_OptResponder (event_t *ev)
 					height = I_GetVideoHeight();
 				}
 
-				vid_defwidth.Set(width);
-				vid_defheight.Set(height);
-
-				V_SetResolution(width, height);
-				SetModesMenu(width, height);
+				M_SetVideoMode(width, height);
 				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
 			else if (item->type == more && item->e.mfunc)
@@ -2182,9 +2197,9 @@ void M_OptResponder (event_t *ev)
 
 		default:
 #ifdef _XBOX
-			if (ev->data2 == 't' || ev->data2 == KEY_JOY3)
+			if (ev->data3 == 't' || ev->data1 == KEY_JOY3)
 #else
-			if (ev->data2 == 't')
+			if (ev->data3 == 't')
 #endif
 			{
 				// Test selected resolution
@@ -2198,13 +2213,8 @@ void M_OptResponder (event_t *ev)
 						height = I_GetVideoHeight();
 					}
 
-					OldWidth = I_GetVideoWidth();
-					OldHeight = I_GetVideoHeight();
-
-					V_SetResolution(width, height);
-
 					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
-					SetModesMenu(width, height);
+					M_SetVideoMode(width, height);
 
 					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				}
@@ -2335,6 +2345,3 @@ BEGIN_COMMAND (menu_video)
 END_COMMAND (menu_video)
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
-
-
-

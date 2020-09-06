@@ -47,6 +47,7 @@
 #include "cl_main.h"
 #include "gi.h"
 #include "cl_demo.h"
+#include "c_console.h"
 
 #include "p_ctf.h"
 
@@ -349,7 +350,7 @@ static int		st_fragscount;
 static int		st_oldhealth = -1;
 
 // used for evil grin
-static bool		oldweaponsowned[NUMWEAPONS];
+static bool		oldweaponsowned[NUMWEAPONS+1];
 
  // count until face changes
 static int		st_facecount = 0;
@@ -534,9 +535,9 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-    else if (ev->type == ev_keydown && ev->data2)
-    {
-		char key = ev->data2;
+	else if (ev->type == ev_keydown && ev->data3)
+	{
+		char key = ev->data3;
 
         // 'dqd' cheat for toggleable god mode
         if (cht_CheckCheat(&cheat_god, key))
@@ -690,7 +691,7 @@ bool ST_Responder (event_t *ev)
         // 'clev' change-level cheat
         else if (cht_CheckCheat(&cheat_clev, key))
         {
-            char buf[16];
+            char buf[11];
 			//char *bb;
 
             cht_GetParam(&cheat_clev, buf);
@@ -701,7 +702,7 @@ bool ST_Responder (event_t *ev)
 			if (gamemode == retail_chex)
 				sprintf(buf,"1%c",buf[1]);
 
-            sprintf (buf + 3, "map %s\n", buf);
+            sprintf (buf + 3, "map %.2s\n", buf);
             AddCommandString (buf + 3);
             eatkey = true;
         }
@@ -721,7 +722,7 @@ bool ST_Responder (event_t *ev)
             cht_GetParam(&cheat_mus, buf);
             buf[2] = 0;
 
-            sprintf (buf + 3, "idmus %s\n", buf);
+            sprintf (buf + 3, "idmus %.5s\n", buf);
             AddCommandString (buf + 3);
             eatkey = true;
         }
@@ -738,10 +739,10 @@ BEGIN_COMMAND (god)
 
 	consoleplayer().cheats ^= CF_GODMODE;
 
-    if (consoleplayer().cheats & CF_GODMODE)
-        Printf(PRINT_HIGH, "Degreelessness mode on\n");
-    else
-        Printf(PRINT_HIGH, "Degreelessness mode off\n");
+	if (consoleplayer().cheats & CF_GODMODE)
+		Printf(PRINT_HIGH, "Degreelessness mode on\n");
+	else
+		Printf(PRINT_HIGH, "Degreelessness mode off\n");
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -755,10 +756,10 @@ BEGIN_COMMAND (notarget)
 
 	consoleplayer().cheats ^= CF_NOTARGET;
 
-    if (consoleplayer().cheats & CF_NOTARGET)
-        Printf(PRINT_HIGH, "Notarget on\n");
-    else
-        Printf(PRINT_HIGH, "Notarget off\n");
+	if (consoleplayer().cheats & CF_NOTARGET)
+		Printf(PRINT_HIGH, "Notarget on\n");
+	else
+		Printf(PRINT_HIGH, "Notarget off\n");
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -772,10 +773,10 @@ BEGIN_COMMAND (fly)
 
 	consoleplayer().cheats ^= CF_FLY;
 
-    if (consoleplayer().cheats & CF_FLY)
-        Printf(PRINT_HIGH, "Fly mode on\n");
-    else
-        Printf(PRINT_HIGH, "Fly mode off\n");
+	if (consoleplayer().cheats & CF_FLY)
+		Printf(PRINT_HIGH, "Fly mode on\n");
+	else
+		Printf(PRINT_HIGH, "Fly mode off\n");
 
 	if (!consoleplayer().spectator)
 	{
@@ -792,10 +793,10 @@ BEGIN_COMMAND (noclip)
 
 	consoleplayer().cheats ^= CF_NOCLIP;
 
-    if (consoleplayer().cheats & CF_NOCLIP)
-        Printf(PRINT_HIGH, "No clipping mode on\n");
-    else
-        Printf(PRINT_HIGH, "No clipping mode off\n");
+	if (consoleplayer().cheats & CF_NOCLIP)
+		Printf(PRINT_HIGH, "No clipping mode on\n");
+	else
+		Printf(PRINT_HIGH, "No clipping mode off\n");
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -836,7 +837,7 @@ END_COMMAND (chase)
 
 BEGIN_COMMAND (idmus)
 {
-	level_info_t *info;
+	LevelInfos& levels = getLevelInfos();
 	char *map;
 	int l;
 
@@ -858,15 +859,19 @@ BEGIN_COMMAND (idmus)
 			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
 		}
 
-		if ( (info = FindLevelInfo (map)) )
+		level_pwad_info_t& info = levels.findByName(map);
+		if (level.levelnum != 0)
 		{
-			if (info->music[0])
+			if (info.music[0])
 			{
-				S_ChangeMusic (std::string(info->music, 8), 1);
+				S_ChangeMusic(std::string(info.music, 8), 1);
 				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
-		} else
-			Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+		}
 	}
 }
 END_COMMAND (idmus)
@@ -1108,14 +1113,12 @@ void ST_updateFaceWidget(void)
 
 void ST_updateWidgets(void)
 {
-	static int DONT_DRAW_NUM = 1994; 			// means "n/a"
-
 	player_t *plyr = &displayplayer();
 
 	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
-		w_ready.num = &DONT_DRAW_NUM;
+		st_current_ammo = ST_DONT_DRAW_NUM;
 	else
-		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
+		st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	w_ready.data = plyr->readyweapon;
 
@@ -1136,8 +1139,6 @@ void ST_updateWidgets(void)
 		else
 			st_weaponowned[i] = 0;
 	}
-
-	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	// update keycard multiple widgets
 	for (int i = 0; i < 3; i++)
@@ -1172,6 +1173,8 @@ void ST_updateWidgets(void)
 
 void ST_Ticker()
 {
+	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
+		return;
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
 	st_oldhealth = displayplayer().health;
@@ -1685,5 +1688,3 @@ void STACK_ARGS ST_Shutdown()
 
 
 VERSION_CONTROL (st_stuff_cpp, "$Id$")
-
-

@@ -1,0 +1,42 @@
+name: Linux
+
+on: [push, pull_request]
+
+jobs:
+  build-sdl20:
+    name: Build (SDL 2.0)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Prepare build
+      run: bash ci-build.sh
+    - name: Run build
+      run: cmake --build ./build/
+    - name: Prepare artifact
+      run: bash ci-artifact.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Linux-x86_64
+        path: 'build/artifact/*'
+  build-centos:
+    name: Build (CentOS)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Run build
+      run: bash ci-build-centos.sh
+  build-sdl12:
+    name: Build (SDL 1.2)
+    runs-on: ubuntu-latest
+    env:
+      USE_SDL12: 1
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Prepare build
+      run: bash ci-build.sh
+    - name: Run build
+      run: cmake --build ./build/

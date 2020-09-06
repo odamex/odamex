@@ -27,6 +27,7 @@
 
 
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "doomtype.h"
 #include "i_system.h"
@@ -237,37 +238,44 @@ BOOL SC_GetString (void)
 	}
 	while (foundToken == false)
 	{
+		// Skip past whitespace.
 		while (*ScriptPtr <= 32)
 		{
+			// Are we at the end?
 			if (ScriptPtr >= ScriptEndPtr)
 			{
 				sc_End = true;
 				return false;
 			}
+			// Did we hit a newline?
 			if (*ScriptPtr++ == '\n')
 			{
 				sc_Line++;
 				sc_Crossed = true;
 			}
+			// Did we hit the end after munching the newline?
 			if (ScriptPtr >= ScriptEndPtr)
 			{
 				sc_End = true;
 				return false;
 			}
 		}
+		// A redundant EOF check?
 		if (ScriptPtr >= ScriptEndPtr)
 		{
 			sc_End = true;
 			return false;
 		}
+		// Did we hit something other than a comment?
 		if (*ScriptPtr != ASCII_COMMENT &&
 			!(ScriptPtr[0] == CPP_COMMENT && ScriptPtr < ScriptEndPtr - 1 &&
 			  (ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))
-		{ // Found a token
+		{
 			foundToken = true;
 		}
 		else
-		{ // Skip comment
+		{
+			// Since we found a comment, we have to skip past it.
 			if (ScriptPtr[0] == CPP_COMMENT && ScriptPtr[1] == C_COMMENT)
 			{	// C comment
 				while (ScriptPtr[0] != C_COMMENT || ScriptPtr[1] != CPP_COMMENT)
@@ -301,9 +309,18 @@ BOOL SC_GetString (void)
 			}
 		}
 	}
+
 	text = sc_String;
-	if (*ScriptPtr == ASCII_QUOTE)
-	{ // Quoted string
+	if (strchr("{}|=,[];", *ScriptPtr))
+	{
+		// A lone character we can use, stop here.
+		*text++ = *ScriptPtr++;
+		*text = '\0';
+		return true;
+	}
+	else if (*ScriptPtr == ASCII_QUOTE)
+	{
+		// Quoted string
 		ScriptPtr++;
 		while (*ScriptPtr != ASCII_QUOTE)
 		{
@@ -317,28 +334,23 @@ BOOL SC_GetString (void)
 		ScriptPtr++;
 	}
 	else
-	{ // Normal string
-		if (strchr ("{}|=", *ScriptPtr))
+	{
+		// Normal string
+		while ((*ScriptPtr > 32) && (strchr ("{}|=,[];", *ScriptPtr) == NULL)
+			&& (*ScriptPtr != ASCII_COMMENT)
+			&& !(ScriptPtr[0] == CPP_COMMENT && (ScriptPtr < ScriptEndPtr - 1) &&
+			(ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))
 		{
 			*text++ = *ScriptPtr++;
-		}
-		else
-		{
-			while ((*ScriptPtr > 32) && (strchr ("{}|=", *ScriptPtr) == NULL)
-				&& (*ScriptPtr != ASCII_COMMENT)
-				&& !(ScriptPtr[0] == CPP_COMMENT && (ScriptPtr < ScriptEndPtr - 1) &&
-					 (ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))
+			if (ScriptPtr == ScriptEndPtr
+				|| text == &sc_String[MAX_STRING_SIZE-1])
 			{
-				*text++ = *ScriptPtr++;
-				if (ScriptPtr == ScriptEndPtr
-					|| text == &sc_String[MAX_STRING_SIZE-1])
-				{
-					break;
-				}
+				break;
 			}
 		}
 	}
-	*text = 0;
+
+	*text = '\0';
 	return true;
 }
 
@@ -363,10 +375,7 @@ void SC_MustGetStringName (const char *name)
 	SC_MustGetString ();
 	if (SC_Compare (name) == false)
 	{
-		const char *args[2];
-		args[0] = name;
-		args[1] = sc_String;
-		SC_ScriptError ("Expected '%s', got '%s'.", args);
+		SC_ScriptError("Expected '%s', got '%s'.", name, sc_String);
 	}
 }
 
@@ -390,10 +399,7 @@ BOOL SC_GetNumber (void)
 			sc_Number = strtol (sc_String, &stopper, 0);
 			if (*stopper != 0)
 			{
-				//I_Error ("SC_GetNumber: Bad numeric constant \"%s\".\n"
-				//	"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
-				Printf (PRINT_WARNING, "SC_GetNumber: Bad numeric constant \"%s\".\n"
-					"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
+				SC_ScriptError("Bad numeric constant \"%s\".", sc_String);
 			}
 		}
 		sc_Float = (float)sc_Number;
@@ -431,10 +437,7 @@ BOOL SC_GetFloat (void)
 		sc_Float = (float)strtod (sc_String, &stopper);
 		if (*stopper != 0)
 		{
-			//I_Error ("SC_GetFloat: Bad numeric constant \"%s\".\n"
-			//	"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
-			Printf (PRINT_WARNING, "SC_GetFloat: Bad numeric constant \"%s\".\n"
-				"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
+			SC_ScriptError("Bad floating-point constant \"%s\".", sc_String);
 		}
 		sc_Number = (int)sc_Float;
 		return true;
@@ -512,20 +515,26 @@ BOOL SC_Check(void)
 // SC_MatchString
 //
 // Returns the index of the first match to sc_String from the passed
-// array of strings, or -1 if not found.
+// null-terminated array of strings, or SC_NOMATCH if not found.  You can also
+// pass a NULL pointer to this function, in which case the return value is
+// always SC_NOMATCH.
 //
-int SC_MatchString (const char **strings)
+int SC_MatchString(const char** strings)
 {
-	int i;
-
-	for (i = 0; *strings != NULL; i++)
+	if (strings == NULL)
 	{
-		if (SC_Compare (*strings++))
+		return SC_NOMATCH;
+	}
+
+	for (int i = 0; *strings != NULL; i++)
+	{
+		if (SC_Compare(*strings++))
 		{
 			return i;
 		}
 	}
-	return -1;
+
+	return SC_NOMATCH;
 }
 
 
@@ -537,9 +546,9 @@ int SC_MustMatchString (const char **strings)
 	int i;
 
 	i = SC_MatchString (strings);
-	if (i == -1)
+	if (i == SC_NOMATCH)
 	{
-		SC_ScriptError (NULL);
+		SC_ScriptError("Unexpected string (found \"%s\").", sc_String);
 	}
 	return i;
 }
@@ -557,26 +566,19 @@ BOOL SC_Compare (const char *text)
 //
 // SC_ScriptError
 //
-void SC_ScriptError (const char *message, const char **args)
+void STACK_ARGS SC_ScriptError(const char* format, ...)
 {
-	//char composed[2048];
-	if (message == NULL)
-		message = "Bad syntax.";
+	char composed[2048];
+	va_list va;
 
-/*#if !defined(__GNUC__) && !defined(_MSC_VER)
-	va_list arglist;
-	va_start (arglist, *args);
-	vsprintf (composed, message, arglist);
-	va_end (arglist);
-#else
-	vsprintf (composed, message, args);
-#endif*/
+	va_start(va, format);
+	vsnprintf(composed, ARRAY_LENGTH(composed), format, va);
+	va_end(va);
 
-    Printf(PRINT_WARNING, "Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
-		sc_Line, message);
-
-	//I_Error ("Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
-	//	sc_Line, message);
+	I_Error(
+		"%s:%d: Script Error: %s\n", ScriptName.c_str(),
+		sc_Line, composed
+	);
 }
 
 

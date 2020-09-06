@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
+#include "git_describe.h"
 
 #include <map>
 #include <string>
@@ -29,8 +30,6 @@
 #include <memory>
 
 #include "c_dispatch.h"
-
-static unsigned int last_revision = 0;
 
 typedef std::map<std::string, std::string> source_files_t;
 

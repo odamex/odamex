@@ -367,7 +367,11 @@ void M_FindResponseFile (void)
 			size = ftell (handle);
 			fseek (handle, 0, SEEK_SET);
 			file = new char[size+1];
-			fread (file, size, 1, handle);
+			size_t readlen = fread (file, size, 1, handle);
+			if (readlen < 1)
+			{
+				Printf (PRINT_HIGH,"Failed to read response file %s.\n", Args.GetArg(i) + 1);
+			}
 			file[size] = 0;
 			fclose (handle);
 

@@ -82,8 +82,6 @@ float maxfps = 35.0f;
 
 #if defined(_WIN32) && !defined(_XBOX)
 
-#define arrlen(array) (sizeof(array) / sizeof(*array))
-
 typedef struct
 {
 	HKEY root;
@@ -359,7 +357,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	{
 		unsigned int i;
 
-		for (i = 0;i < arrlen(uninstall_values);++i)
+		for (i = 0; i < ARRAY_LENGTH(uninstall_values); ++i)
 		{
 			char* val;
 			char* path;
@@ -396,7 +394,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (install_path != NULL)
 		{
-			for (i = 0;i < arrlen(collectors_edition_subdirs);++i)
+			for (i = 0; i < ARRAY_LENGTH(collectors_edition_subdirs); ++i)
 			{
 				subpath = static_cast<char*>(malloc(strlen(install_path)
 				                             + strlen(collectors_edition_subdirs[i])
@@ -421,7 +419,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (install_path != NULL)
 		{
-			for (i = 0;i < arrlen(steam_install_subdirs);++i)
+			for (i = 0; i < ARRAY_LENGTH(steam_install_subdirs); ++i)
 			{
 				subpath = static_cast<char*>(malloc(strlen(install_path)
 				                             + strlen(steam_install_subdirs[i]) + 5));
@@ -455,6 +453,7 @@ static void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
 	#endif
 
+	D_AddSearchDir(dirs, "/usr/share/doom", separator);
 	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
@@ -611,9 +610,9 @@ void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
 		}
 	}
 
-    // try default patches
-    if (use_default)
-        DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
+	// try default patches
+	if (use_default)
+		DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
 
 	for (size_t i = 0; i < patchfiles.size(); i++)
 		patchhashes.push_back(W_MD5(patchfiles[i]));
@@ -832,9 +831,7 @@ void D_LoadResourceFiles(
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	D_DoDefDehackedPatch(newpatchfiles);
 }
@@ -1125,11 +1122,15 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 	// Sleep until the next scheduled task.
 	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
 	dtime_t display_wake_time = display_scheduler->getNextTime();
+	dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
 
-	dtime_t now = I_GetTime();
-	dtime_t waketime = MIN(simulation_wake_time, display_wake_time);
-	if (waketime > now) {
-		I_Sleep(waketime - now);
+	const dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
+
+	// Sleep in 1ms increments until the next scheduled task
+	for (dtime_t now = I_GetTime(); wake_time > now; now = I_GetTime())
+	{
+		dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
+		I_Sleep(sleep_amount);
 	}
 }
 

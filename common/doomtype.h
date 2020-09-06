@@ -35,6 +35,18 @@
 	#include <gctypes.h>
 #endif
 
+#ifdef _MSC_VER
+	#define FORMAT_PRINTF(index, first_arg)
+#else
+	#define FORMAT_PRINTF(index, first_arg) __attribute__ ((format(printf, index, first_arg)))
+#endif
+
+#ifdef _MSC_VER
+	#define NORETURN __declspec(noreturn)
+#else
+	#define NORETURN __attribute__ ((noreturn))
+#endif
+
 #ifndef __BYTEBOOL__
 	#define __BYTEBOOL__
 	// [RH] Some windows includes already define this
@@ -167,13 +179,11 @@ typedef uint64_t			dtime_t;
 #endif
 
 // [RH] This gets used all over; define it here:
-int STACK_ARGS Printf (int printlevel, const char *, ...);
-int STACK_ARGS Printf (const char *, ...);
-
+FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
 // [Russell] Prints a bold green message to the console
-int STACK_ARGS Printf_Bold (const char *format, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...);
 // [RH] Same here:
-int STACK_ARGS DPrintf (const char *, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...);
 
 // Simple log file
 #include <fstream>
@@ -252,6 +262,25 @@ forceinline T clamp (const T in, const T min, const T max)
 	return in <= min ? min : in >= max ? max : in;
 }
 
+//
+// ARRAY_LENGTH
+//
+// Safely counts the number of items in an C array.
+// 
+// https://www.drdobbs.com/cpp/counting-array-elements-at-compile-time/197800525?pgno=1
+//
+#define ARRAY_LENGTH(arr) ( \
+	0 * sizeof(reinterpret_cast<const ::Bad_arg_to_ARRAY_LENGTH*>(arr)) + \
+	0 * sizeof(::Bad_arg_to_ARRAY_LENGTH::check_type((arr), &(arr))) + \
+	sizeof(arr) / sizeof((arr)[0]) )
+
+struct Bad_arg_to_ARRAY_LENGTH {
+	class Is_pointer; // incomplete
+	class Is_array {};
+	template <typename T>
+	static Is_pointer check_type(const T*, const T* const*);
+	static Is_array check_type(const void*, const void*);
+};
 
 
 // ----------------------------------------------------------------------------

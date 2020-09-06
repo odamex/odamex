@@ -195,7 +195,7 @@ void ST_initNew (void)
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
-	char digits[8], *d;
+	char digits[11], *d;
 
 	if (num < 0)
 	{

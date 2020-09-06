@@ -131,7 +131,10 @@ CVAR(				sv_weaponstay,    "1", "Weapons stay after pickup",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(				sv_keepkeys, "0", "Keep keys on death",
-					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
@@ -259,8 +262,8 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE_FUNC_DECL(language, "0", "",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0f)
+CVAR_FUNC_DECL(		language, "auto", "Language to use for ingame strings",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				port, "0", "Display currently used network port number",
 					CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)

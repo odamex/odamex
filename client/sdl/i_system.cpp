@@ -164,38 +164,38 @@ void *I_ZoneBase (size_t *size)
 {
 	void *zone = NULL;
 
-    // User wanted a different default size
+	// User wanted a different default size
 	const char *p = Args.CheckValue ("-heapsize");
 
 	if (p)
 		def_heapsize = atoi(p);
 
-    if (def_heapsize < min_heapsize)
-        def_heapsize = min_heapsize;
+	if (def_heapsize < min_heapsize)
+		def_heapsize = min_heapsize;
 
-    // Set the size
+	// Set the size
 	*size = I_MegabytesToBytes(def_heapsize);
 
-    // Allocate the def_heapsize, otherwise try to allocate a smaller amount
+	// Allocate the def_heapsize, otherwise try to allocate a smaller amount
 	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
 	{
-	    zone = malloc (*size);
+		zone = malloc (*size);
 
-	    if (zone != NULL)
-            break;
+		if (zone != NULL)
+			break;
 
-        *size -= I_MegabytesToBytes(1);
+		*size -= I_MegabytesToBytes(1);
 	}
 
-    // Our heap size we received
-    got_heapsize = I_BytesToMegabytes(*size);
+	// Our heap size we received
+	got_heapsize = I_BytesToMegabytes(*size);
 
-    // Die if the system has insufficient memory
-    if (got_heapsize < min_heapsize)
-        I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
-                     "is %lu MB but got %lu MB instead",
-                     min_heapsize,
-                     got_heapsize);
+	// Die if the system has insufficient memory
+	if (got_heapsize < min_heapsize)
+		I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
+					 "is %lu MB but got %lu MB instead",
+					 min_heapsize,
+					 got_heapsize);
 
 	return zone;
 }
@@ -370,41 +370,31 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 }
 #endif
 
-//
-// SetLanguageIDs
-//
-static const char *langids[] = {
-	"auto",
-	"enu",
-	"fr",
-	"it"
-};
+EXTERN_CVAR(language)
 
-EXTERN_CVAR (language)
-void SetLanguageIDs ()
+void SetLanguageIDs()
 {
-	unsigned int langid = language.asInt();
+	const char* langid = language.cstring();
 
-	if (langid == 0 || langid > 3)
+	if (strcmp(langid, "auto") == 0)
 	{
-    #if defined _WIN32 && !defined _XBOX
-		memset (LanguageIDs, 0, sizeof(LanguageIDs));
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
-    #else
-        langid = 1;     // Default to US English on non-windows systems
-    #endif
+#if defined _WIN32 && !defined _XBOX
+		memset(LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+#else
+		// Default to US English on non-windows systems
+		// FIXME: Use SDL Locale support if available.
+		langid = "enu";
+#endif
 	}
 	else
 	{
-		DWORD lang = 0;
-		const char *langtag = langids[langid];
-
-		((BYTE *)&lang)[0] = (langtag)[0];
-		((BYTE *)&lang)[1] = (langtag)[1];
-		((BYTE *)&lang)[2] = (langtag)[2];
+		char slang[4] = {'\0', '\0', '\0', '\0'};
+		strncpy(slang, langid, ARRAY_LENGTH(slang) - 1);
+		uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
 		LanguageIDs[0] = lang;
 		LanguageIDs[1] = lang;
 		LanguageIDs[2] = lang;
@@ -706,15 +696,15 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-void STACK_ARGS I_FatalError (const char *error, ...)
+NORETURN void STACK_ARGS I_FatalError (const char *error, ...)
 {
+	char errortext[MAX_ERRORTEXT];
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
 
 	if (!alreadyThrown)		// ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
-		char errortext[MAX_ERRORTEXT];
 		va_list argptr;
 		va_start (argptr, error);
 		int index = vsprintf (errortext, error, argptr);
@@ -732,6 +722,16 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 
 		exit(EXIT_FAILURE);
 	}
+
+	// Something has seriously gone sideways.
+	va_list argptr;
+	va_start(argptr, error);
+	fprintf(stderr, "Recursive I_FatalError detected!\r\nError = ");
+	vfprintf(stderr, error, argptr);
+	fprintf(stderr, "\r\nSDL_GetError = %s\r\n", SDL_GetError());
+	va_end(argptr);
+
+	abort();
 }
 
 void STACK_ARGS I_Error (const char *error, ...)
@@ -1062,23 +1062,23 @@ std::string I_ConsoleInput (void)
 std::string I_ConsoleInput (void)
 {
 	std::string ret;
-    static char     text[1024] = {0};
-    int             len;
+	static char	 text[1024] = {0};
+	int			 len;
 
-    fd_set fdr;
-    FD_ZERO(&fdr);
-    FD_SET(0, &fdr);
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
+	fd_set fdr;
+	FD_ZERO(&fdr);
+	FD_SET(0, &fdr);
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
 
-    if (select(1, &fdr, NULL, NULL, &tv) <= 0)
-        return "";
+	if (select(1, &fdr, NULL, NULL, &tv) <= 0)
+		return "";
 
-    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
+	len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
-    if (len < 1)
-        return "";
+	if (len < 1)
+		return "";
 
 	len = strlen(text);
 
@@ -1101,7 +1101,7 @@ std::string I_ConsoleInput (void)
 		return ret;
 	}
 
-    return "";
+	return "";
 }
 #endif
 
@@ -1126,4 +1126,3 @@ bool I_IsHeadless()
 
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
-

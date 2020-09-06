@@ -100,8 +100,6 @@ int                 repeatCount;
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
-char				endstring[160];
-
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
@@ -461,7 +459,7 @@ enum load_t
 	load_end
 } load_e;
 
-oldmenuitem_t LoadMenu[]=
+static oldmenuitem_t LoadSavegameMenu[]=
 {
 	{1,"", M_LoadSelect,'1'},
 	{1,"", M_LoadSelect,'2'},
@@ -476,7 +474,7 @@ oldmenuitem_t LoadMenu[]=
 oldmenu_t LoadDef =
 {
 	load_end,
-	LoadMenu,
+	LoadSavegameMenu,
 	M_DrawLoad,
 	80,54,
 	0
@@ -631,13 +629,19 @@ void M_ReadSaveStrings(void)
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
-			LoadMenu[i].status = 0;
+			LoadSavegameMenu[i].status = 0;
 		}
 		else
 		{
-			fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			if (readlen < 1)
+			{
+				printf("M_Read_SaveStrings(): Failed to read handle.\n");
+				fclose(handle);
+				return;
+			}
 			fclose (handle);
-			LoadMenu[i].status = 1;
+			LoadSavegameMenu[i].status = 1;
 		}
 	}
 }
@@ -745,7 +749,7 @@ void M_SaveSelect (int choice)
 	// If on a game console, auto-fill with date and time to save name
 
 #ifndef GCONSOLE
-	if (!LoadMenu[choice].status)
+	if (!LoadSavegameMenu[choice].status)
 #endif
 	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
@@ -1151,18 +1155,18 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM (int choice)
+void M_QuitDOOM(int choice)
 {
+	static std::string endstring;
+
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	sprintf (endstring, "%s\n\n%s",
-		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+	StrFormat(endstring, "%s\n\n%s",
+	          GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings(DOSY));
 
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1537,7 +1541,7 @@ static void M_EditPlayerName (int choice)
 
 static void M_PlayerNameChanged (int choice)
 {
-	char command[SAVESTRINGSIZE+8];
+	char command[SAVESTRINGSIZE+8+2];
 
 	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
@@ -1706,7 +1710,7 @@ bool M_Responder (event_t* ev)
 	if (ev->type == ev_keydown)
 	{
 		ch = ev->data1; 		// scancode
-		ch2 = ev->data2;		// ASCII
+		ch2 = ev->data3;		// ASCII
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1772,7 +1776,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = ev->data2;	// [RH] Use user keymap
+			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
@@ -2172,5 +2176,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
-
-

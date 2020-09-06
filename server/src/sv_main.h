@@ -38,6 +38,7 @@
 #include <json/json.h>
 
 extern int shotclock;
+extern bool keysfound[NUMCARDS];
 
 class client_c
 {

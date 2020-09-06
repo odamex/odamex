@@ -89,12 +89,13 @@ static void ClearInventory(AActor* activator)
 {
 	if (activator == NULL)
 	{
-		Players::iterator it;
-		for (it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			if (it->ingame() && !it->spectator)
+			{
 				DoClearInv(&(*it));
 				SV_SendPlayerInfo(*it);
+			}
 		}
 	}
 	else if (activator->player != NULL)
@@ -222,9 +223,6 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 
 static void GiveInventory(AActor* activator, const char* type, int amount)
 {
-	if (amount <= 0)
-	{
-	}
 	if (activator == NULL)
 	{
 		for (int i = 0; i < MAXPLAYERS; ++i)
@@ -348,9 +346,6 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 
 static void TakeInventory(AActor* activator, const char* type, int amount)
 {
-	if (amount < 0)
-	{
-	}
 	if (activator == NULL)
 	{
 		Players::iterator it;
@@ -3235,13 +3230,13 @@ void P_DoDeferedScripts (void)
 	level.info->defered = NULL;
 }
 
-static void addDefered (level_info_t *i, acsdefered_t::EType type, int script, int arg0, int arg1, int arg2, AActor *who)
+static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int script, int arg0, int arg1, int arg2, AActor *who)
 {
-	if (i)
+	if (i.levelnum != 0)
 	{
 		acsdefered_t *def = new acsdefered_s;
 
-		def->next = i->defered;
+		def->next = i.defered;
 		def->type = type;
 		def->script = script;
 		def->arg0 = arg0;
@@ -3255,8 +3250,8 @@ static void addDefered (level_info_t *i, acsdefered_t::EType type, int script, i
 		{
 			def->playernum = -1;
 		}
-		i->defered = def;
-		DPrintf ("Script %d on map %s defered\n", script, i->mapname);
+		i.defered = def;
+		DPrintf ("Script %d on map %s defered\n", script, i.mapname);
 	}
 }
 
@@ -3281,7 +3276,8 @@ bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineS
 	}
 	else
 	{
-		addDefered (FindLevelInfo (map),
+		LevelInfos& levels = getLevelInfos();
+		addDefered (levels.findByName(map),
 					always ? acsdefered_t::defexealways : acsdefered_t::defexecute,
 					script, arg0, arg1, arg2, who);
 	}
@@ -3290,18 +3286,30 @@ bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineS
 
 void P_SuspendScript (int script, char *map)
 {
-	if (strnicmp (level.mapname, map, 8))
-		addDefered (FindLevelInfo (map), acsdefered_t::defsuspend, script, 0, 0, 0, NULL);
+	if (strnicmp(level.mapname, map, 8))
+	{
+		LevelInfos& levels = getLevelInfos();
+		addDefered(levels.findByName(map),
+			acsdefered_t::defsuspend, script, 0, 0, 0, NULL);
+	}
 	else
-		SetScriptState (script, DLevelScript::SCRIPT_Suspended);
+	{
+		SetScriptState(script, DLevelScript::SCRIPT_Suspended);
+	}
 }
 
 void P_TerminateScript (int script, char *map)
 {
-	if (strnicmp (level.mapname, map, 8))
-		addDefered (FindLevelInfo (map), acsdefered_t::defterminate, script, 0, 0, 0, NULL);
+	if (strnicmp(level.mapname, map, 8))
+	{
+		LevelInfos& levels = getLevelInfos();
+		addDefered(levels.findByName(map),
+			acsdefered_t::defterminate, script, 0, 0, 0, NULL);
+	}
 	else
+	{
 		SetScriptState (script, DLevelScript::SCRIPT_PleaseRemove);
+	}
 }
 
 void strbin (char *str)

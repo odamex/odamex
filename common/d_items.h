@@ -47,7 +47,7 @@ struct weaponinfo_s
 };
 typedef struct weaponinfo_s weaponinfo_t;
 
-extern	weaponinfo_t	weaponinfo[NUMWEAPONS];
+extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 
 // Item stuff: (this is d_items.h, right?)
 
@@ -82,6 +82,8 @@ void InitItems (void);
 gitem_t	*GetItemByIndex (int index);
 gitem_t	*FindItemByClassname (const char *classname);
 gitem_t *FindItem (const char *pickup_name);
+
+gitem_t* FindCardItem(card_t card);
 
 #define ITEM_INDEX(i)	((i)-itemlist)
 
