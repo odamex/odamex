@@ -158,8 +158,9 @@ static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
 void P_DestroyButtonThinkers();
+std::string V_GetTeamColorPlayer(player_t& player);
 
-//
+    //
 // CL_ShadePlayerColor
 //
 // Shades base_color darker using the intensity of shade_color.
@@ -209,20 +210,7 @@ argb_t CL_GetPlayerColor(player_t *player)
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
 
-std::string V_GetTeamColor(int team)
-{
-	std::ostringstream buffer;
-	char* color;
 
-	if (team == 0)
-		color = TEXTCOLOR_BLUE;
-	else
-		color = TEXTCOLOR_RED;
-
-	buffer << color << team_names[team] << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
-}
 
 static void CL_RebuildAllPlayerTranslations()
 {

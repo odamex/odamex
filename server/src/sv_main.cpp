@@ -121,37 +121,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(byte special);
 
-std::string V_GetTeamColor(int team)
-{
-	std::ostringstream buffer;
-	char* color;
-
-	if (team_names[team] == "RED")
-		color = TEXTCOLOR_RED;
-	else
-		color = TEXTCOLOR_BLUE;
-
-	buffer << color << team_names[team] << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
-}
-
-std::string V_GetTeamColorPlayer(player_t& player)
-{
-	std::ostringstream buffer;
-	char* color;
-
-	if (team_names[player.userinfo.team] == "RED")
-		color = TEXTCOLOR_RED;
-	else
-		color = TEXTCOLOR_BLUE;
-
-	buffer << color << player.userinfo.netname << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
-}
-
 void SV_UpdateShareKeys(player_t& player);
+std::string V_GetTeamColorPlayer(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -1071,8 +1042,8 @@ bool SV_SetupUserInfo(player_t &player)
 		{
 			// kill player if team is changed
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
-			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
-				player.userinfo.netname.c_str(), GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+			SV_BroadcastPrintf("%s switched to the %s team.\n",
+				player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
 		}
 	}
 
@@ -1091,7 +1062,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	MSG_WriteMarker (&cl->reliablebuf, svc_forceteam);
 
 	who.userinfo.team = team;
-	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
 	MSG_WriteShort (&cl->reliablebuf, team);
 }
 
@@ -3835,7 +3806,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf ("%s has joined the %s team.\n", player.userinfo.netname.c_str(), GetTeamInfo(team)->ColorStringUpper.c_str());
+	SV_BroadcastPrintf ("%s has joined the %s team.\n", player.userinfo.netname.c_str(), V_GetTeamColor(team).c_str());
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
@@ -3962,7 +3933,7 @@ void SV_JoinPlayer(player_t &player, bool silent)
 			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
 		else
 			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-				player.userinfo.netname.c_str(), GetTeamInfo(player.userinfo.team)->ColorString.c_str());
+				player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
 	}
 }
 
@@ -4835,7 +4806,7 @@ void SV_TimelimitCheck()
 			if(winteam == TEAM_NONE)
 				SV_BroadcastPrintf ("Time limit hit. Game is a draw!\n");
 			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", GetTeamInfo(winteam)->ColorStringUpper.c_str());
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", V_GetTeamColor(winteam).c_str());
 		}
 
 		M_CommitWDLLog();
