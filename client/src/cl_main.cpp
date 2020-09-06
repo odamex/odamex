@@ -3559,7 +3559,7 @@ void CL_LevelState()
 }
 
 // Set the level time appropriately.
-void CL_LevelTimeUpdate()
+void CL_LevelTime()
 {
 	level.time = MSG_ReadVarint();
 }
@@ -3620,7 +3620,7 @@ void CL_InitCommands(void)
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
-	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
+	cmds[svc_leveltime]			= &CL_LevelTime;
 	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
@@ -3669,7 +3669,6 @@ void CL_InitCommands(void)
 	cmds[svc_linesideupdate] = &CL_LineSideUpdate;
 	cmds[svc_sectorproperties] = &CL_SectorSectorPropertiesUpdate;
 	cmds[svc_thinkerupdate] = &CL_ThinkerUpdate;
-	cmds[svc_leveltimeupdate] = &CL_LevelTimeUpdate;
 }
 
 //

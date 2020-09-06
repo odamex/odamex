@@ -30,6 +30,7 @@
 
 #include "win32inc.h"
 
+#include "doomdef.h"
 #include "i_system.h"
 #include "doomtype.h"
 #include "cmdlib.h"
@@ -523,6 +524,27 @@ bool StrToTime(std::string str, time_t &tim) {
 	}
 
 	return true;
+}
+
+/**
+ * @brief Turn the given number of tics into a time.
+ * 
+ * @param str String buffer to write into.
+ * @param time Number of tics to turn into a time.
+ */
+void TicsToTime(OTimespan& span, int time)
+{
+	if (time < 0)
+		time = 0;
+
+	span.hours = time / (TICRATE * 3600);
+	time -= span.hours * TICRATE * 3600;
+
+	span.minutes = time / (TICRATE * 60);
+	time -= span.minutes * TICRATE * 60;
+
+	span.seconds = time / TICRATE;
+	span.tics = time % TICRATE;
 }
 
 // [SL] Reimplement std::isspace

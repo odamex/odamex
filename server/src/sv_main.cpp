@@ -1815,7 +1815,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
 
 	// Send the player the current time of the level.
-	SVC_LevelTimeUpdate(cl->reliablebuf, level.time);
+	SVC_LevelTime(cl->reliablebuf, level.time);
 
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -4648,14 +4648,13 @@ void SV_WadDownloads (void)
 
 static void TimeCheck()
 {
+	G_TimeCheckEndGame();
+
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		{
-			MSG_WriteMarker(&(it->client.netbuf), svc_timeleft);
-			MSG_WriteShort(&(it->client.netbuf), level.timeleft / TICRATE);
-		}
+			SVC_LevelTime(it->client.netbuf, level.time);
 	}
 }
 

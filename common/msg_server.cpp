@@ -136,6 +136,15 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 }
 
 /**
+ * @brief Tell the client about the server's level time.
+ */
+void SVC_LevelTime(buf_t& b, int leveltime)
+{
+	MSG_WriteMarker(&b, svc_leveltime);
+	MSG_WriteVarint(&b, leveltime);
+}
+
+/**
  * @brief Send information about a player
  */
 void SVC_PlayerState(buf_t& b, player_t& player)
@@ -172,15 +181,6 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.countdown_done_time);
 	MSG_WriteVarint(&b, sls.ingame_start_time);
 	MSG_WriteVarint(&b, sls.round_number);
-}
-
-/**
- * @brief Tell the client about the server's level time.
- */
-void SVC_LevelTimeUpdate(buf_t& b, int leveltime)
-{
-	MSG_WriteMarker(&b, svc_leveltimeupdate);
-	MSG_WriteVarint(&b, level.time);
 }
 
 VERSION_CONTROL(msg_server, "$Id$")

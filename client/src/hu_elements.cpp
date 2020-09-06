@@ -187,7 +187,13 @@ static const char *ordinal(int n)
 }
 
 //// OLD-STYLE "VARIABLES" ////
-// Please don't add any more of these.
+//
+// These just populate variables with data based on conditions and don't give
+// you a ton of flexability at the call-site about how they should be drawn.
+//
+// Please don't add any more of these.  If you want to draw something, make
+// a fully-fledged "draw" function where you pass position, alignment, etc.
+// without a useless trampoline back to the parent scope.
 
 // Return a "help" string.
 std::string HelpText()
@@ -346,67 +352,55 @@ void Warmup(std::string& out, int& color)
 // Return a string that contains the amount of time left in the map,
 // or a blank string if there is no timer needed.  Can also display
 // warmup information if it exists.
-std::string Timer(int& color)
+void Timer(std::string& str, int& color)
 {
 	color = CR_GREY;
 
 	if (!multiplayer || !(sv_timelimit > 0.0f))
-		return "";
+	{
+		str = "";
+		return;
+	}
 
 	// Do NOT display if in a lobby
 	if (level.flags & LEVEL_LOBBYSPECIAL)
-		return "";
+	{
+		str = "";
+		return;
+	}
 
-	int timeleft = level.timeleft;
+	OTimespan tspan;
+	TicsToTime(tspan, level.time);
 
-	if (timeleft < 0)
-		timeleft = 0;
-
-	uint8_t hours = timeleft / (TICRATE * 3600);
-
-	timeleft -= hours * TICRATE * 3600;
-	uint8_t minutes = timeleft / (TICRATE * 60);
-
-	timeleft -= minutes * TICRATE * 60;
-	uint8_t seconds = timeleft / TICRATE;
-
-	if (hours == 0 && minutes < 1)
+	if (tspan.hours == 0 && tspan.minutes < 1)
 		color = CR_BRICK;
 
-	char str[12];
-	if (hours)
-		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
+	if (tspan.hours)
+		StrFormat(str, "%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
 	else
-		sprintf(str, "%02d:%02d", minutes, seconds);
-
-	return str;
+		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
 }
 
-std::string IntermissionTimer()
+void IntermissionTimer(std::string& str)
 {
 	if (gamestate != GS_INTERMISSION)
-		return "";
+	{
+		str = "";
+		return;
+	}
 
 	int timeleft = level.inttimeleft * TICRATE;
 
 	if (timeleft < 0)
 		timeleft = 0;
 
-	uint8_t hours = timeleft / (TICRATE * 3600);
+	OTimespan tspan;
+	TicsToTime(tspan, level.inttimeleft);
 
-	timeleft -= hours * TICRATE * 3600;
-	uint8_t minutes = timeleft / (TICRATE * 60);
-
-	timeleft -= minutes * TICRATE * 60;
-	uint8_t seconds = timeleft / TICRATE;
-
-	char str[12];
-	if (hours)
-		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
+	if (tspan.hours)
+		StrFormat(str, "%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
 	else
-		sprintf(str, "%02d:%02d", minutes, seconds);
-
-	return str;
+		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
 }
 
 static int GetWinningTeamPoints(team_t& winningTeam, int& secondPlaceTeamPoints)

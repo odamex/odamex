@@ -662,7 +662,7 @@ void OdamexHUD() {
 	}
 	else if (hud_timer)
 	{
-		str = hud::Timer(color);
+		hud::Timer(str, color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -744,7 +744,7 @@ void SpectatorHUD() {
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              str.c_str(), color);
 	} else if (hud_timer) {
-		str = hud::Timer(color);
+		hud::Timer(str, color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -881,7 +881,7 @@ void ZDoomHUD() {
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              str.c_str(), color);
 	} else if (hud_timer) {
-		str = hud::Timer(color);
+		hud::Timer(str, color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -927,7 +927,7 @@ void DoomHUD()
 	}
 	else if (hud_timer)
 	{
-		str = hud::Timer(color);
+		hud::Timer(str, color);
 		hud::DrawText(0, st_y + 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
 		              hud::X_CENTER, hud::Y_BOTTOM,

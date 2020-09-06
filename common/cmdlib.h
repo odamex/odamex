@@ -47,6 +47,15 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+struct OTimespan
+{
+	int tics;
+	int seconds;
+	int minutes;
+	int hours;
+	OTimespan(): tics(0), seconds(0), minutes(0), hours(0) { }
+};
+
 extern std::string progdir, startdir;
 
 void	FixPathSeparator (std::string &path);
@@ -100,6 +109,8 @@ void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
 bool StrFormatISOTime(std::string& s, const tm* utc_tm);
 bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
+
+void TicsToTime(OTimespan& span, int time);
 
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (char** ptr, const char* str);

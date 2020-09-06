@@ -93,7 +93,7 @@ bool G_CanReadyToggle();
 bool G_CanScoreChange();
 bool G_CanShowObituary();
 bool G_CanTickGameplay();
-bool G_CanTimeLeftAdvance();
+void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();
 void G_TeamFragsCheckEndGame();
 void G_TeamScoreCheckEndGame();

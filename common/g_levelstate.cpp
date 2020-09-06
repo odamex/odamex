@@ -80,7 +80,7 @@ const char* LevelState::getStateString() const
 	case LevelState::INGAME:
 		return "In-game";
 	case LevelState::ENDROUND_COUNTDOWN:
-		return "Endgame Countdown";
+		return "Endround Countdown";
 	case LevelState::ENDGAME_COUNTDOWN:
 		return "Endgame Countdown";
 	default:
@@ -557,33 +557,24 @@ bool G_CanTickGameplay()
 }
 
 /**
- * @brief Check if timeleft should advance.
- */
-bool G_CanTimeLeftAdvance()
-{
-	return ::levelstate.getState() == LevelState::INGAME;
-}
-
-/**
  * @brief Check if timelimit should end the game.
  */
 void G_TimeCheckEndGame()
 {
-	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
+	if (!::serverside || !G_CanEndGame())
 		return;
 
-	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
-
-	// Don't substract the proper amount of time unless we're actually ingame.
-	if (G_CanTimeLeftAdvance())
-		level.timeleft -= level.time; // in tics
-
-	if (level.timeleft > 0 || !G_CanEndGame() || gamestate == GS_INTERMISSION)
+	if (sv_timelimit <= 0.0 || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
 		return;
 
+	// Check to see if we have any time left.
+	float timeleft = sv_timelimit * TICRATE * 60;
+	if (timeleft > 0.0)
+		return;
+
+	// If nobody is in the game, just end the game and move on.
 	if (P_NumPlayersInGame() == 0)
 	{
-		// Just end the game and move on.
 		::levelstate.endRound();
 		return;
 	}
@@ -716,7 +707,7 @@ void G_LivesCheckEndGame()
 	if (!::serverside)
 		return;
 
-	static PlayerResults pr;
+	PlayerResults pr;
 
 	if (!g_survival || !G_CanEndGame())
 		return;

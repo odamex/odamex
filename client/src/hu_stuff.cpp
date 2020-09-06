@@ -726,9 +726,9 @@ void drawHeader(player_t *player, int y)
 	// Right
 	std::string timer, fraglimit, scorelimit;
 	if (gamestate == GS_INTERMISSION)
-		timer = hud::IntermissionTimer();
+		hud::IntermissionTimer(timer);
 	else
-		timer = hud::Timer(color);
+		hud::Timer(timer, color);
 
 	if (timer.empty())
 		timer = "N/A";

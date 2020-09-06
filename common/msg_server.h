@@ -43,8 +43,8 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
                  int time);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);
+void SVC_LevelTime(buf_t& b, int leveltime);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
-void SVC_LevelTimeUpdate(buf_t& b, int leveltime);
 
 #endif

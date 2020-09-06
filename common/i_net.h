@@ -114,7 +114,7 @@ enum svc_t
 	svc_connectclient,
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
-	svc_timeleft,
+	svc_leveltime,
 	svc_inttimeleft,		// [ML] For intermission timer
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
@@ -136,7 +136,6 @@ enum svc_t
 	svc_executelinespecial,
 	svc_executeacsspecial,
 	svc_thinkerupdate,
-	svc_leveltimeupdate,
 
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]
