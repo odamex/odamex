@@ -2771,16 +2771,22 @@ void DLevelScript::RunScript ()
 		case PCD_PLAYERHEALTH:
 			if (activator)
 				PushToStack (activator->health);
+			else
+				PushToStack (0);
 			break;
 
 		case PCD_PLAYERARMORPOINTS:
 			if (activator && activator->player)
 				PushToStack (activator->player->armorpoints);
+			else
+				PushToStack (0);
 			break;
 
 		case PCD_PLAYERFRAGS:
 			if (activator && activator->player)
 				PushToStack (activator->player->fragcount);
+			else
+				PushToStack (0);
 			break;
 
 		case PCD_MUSICCHANGE:
@@ -3350,6 +3356,7 @@ void DLevelScript::RunScript ()
 				break;
 			}
 			break;
+
 		/*case PCD_CHECKWEAPON:
 			if (activator == NULL || activator->player == NULL)
 			{ // Non-players do not have ready weapons
