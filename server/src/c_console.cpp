@@ -145,6 +145,18 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	return PrintString(printlevel, str.c_str());
 }
 
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
+{
+	va_list argptr;
+	int count;
+
+	va_start(argptr, format);
+	count = VPrintf(PRINT_HIGH, format, argptr);
+	va_end(argptr);
+
+	return count;
+}
+
 FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
 {
 	va_list argptr;

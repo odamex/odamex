@@ -3021,7 +3021,7 @@ void CL_CheckMissedPacket(void)
             MSG_ReadChunk(size);
 
 			#ifdef _DEBUG
-                Printf (PRINT_LOW, "warning: duplicate packet\n");
+                Printf (PRINT_WARNING, "warning: duplicate packet\n");
 			#endif
 			return;
 		}

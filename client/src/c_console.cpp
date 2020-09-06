@@ -1226,6 +1226,18 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	return len;
 }
 
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
+{
+	va_list argptr;
+	int count;
+
+	va_start(argptr, format);
+	count = VPrintf(PRINT_HIGH, TEXTCOLOR_NORMAL, format, argptr);
+	va_end(argptr);
+
+	return count;
+}
+
 FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
 {
 	va_list argptr;
