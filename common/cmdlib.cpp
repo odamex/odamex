@@ -531,11 +531,32 @@ bool StrToTime(std::string str, time_t &tim) {
  * 
  * @param str String buffer to write into.
  * @param time Number of tics to turn into a time.
+ * @param ceil Round up to the nearest second.
  */
-void TicsToTime(OTimespan& span, int time)
+void TicsToTime(OTimespan& span, int time, bool ceilsec)
 {
 	if (time < 0)
-		time = 0;
+	{
+		// We do not support negative time, so just zero the struct.
+		span.hours = 0;
+		span.minutes = 0;
+		span.seconds = 0;
+		span.tics = 0;
+		return;
+	}
+
+	if (ceilsec)
+	{
+		if (time > 0)
+		{
+			// This ensures that if two clocks are run side by side and the
+			// normal time is exactly 1 second, the ceiling time is also 1
+			// second.
+			time -= 1;
+		}
+
+		time = time + TICRATE - (time % TICRATE);
+	}
 
 	span.hours = time / (TICRATE * 3600);
 	time -= span.hours * TICRATE * 3600;

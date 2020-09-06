@@ -557,6 +557,14 @@ bool G_CanTickGameplay()
 }
 
 /**
+ * @brief Calculate the tic that the level ends on.
+ */
+int G_EndingTic()
+{
+	return sv_timelimit * 60 * TICRATE + 1;
+}
+
+/**
  * @brief Check if timelimit should end the game.
  */
 void G_TimeCheckEndGame()
@@ -568,8 +576,7 @@ void G_TimeCheckEndGame()
 		return;
 
 	// Check to see if we have any time left.
-	float timeleft = sv_timelimit * TICRATE * 60;
-	if ((int)timeleft >= level.time)
+	if (G_EndingTic() > level.time)
 		return;
 
 	// If nobody is in the game, just end the game and move on.

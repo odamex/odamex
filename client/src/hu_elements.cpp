@@ -58,6 +58,7 @@ EXTERN_CVAR (g_survival)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
+EXTERN_CVAR (hud_timer)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -356,7 +357,7 @@ void Timer(std::string& str, int& color)
 {
 	color = CR_GREY;
 
-	if (!multiplayer || !(sv_timelimit > 0.0f))
+	if (sv_timelimit <= 0.0f)
 	{
 		str = "";
 		return;
@@ -370,9 +371,21 @@ void Timer(std::string& str, int& color)
 	}
 
 	OTimespan tspan;
-	TicsToTime(tspan, level.time);
+	if (hud_timer == 2)
+	{
+		// Timer counts up.
+		TicsToTime(tspan, level.time);
+	}
+	else if (hud_timer == 1)
+	{
+		// Timer counts down.
+		int timeleft = G_EndingTic() - level.time;
+		TicsToTime(tspan, timeleft, true);
+	}
 
-	if (tspan.hours == 0 && tspan.minutes < 1)
+	// If we're in the danger zone flip the color.
+	int warning = G_EndingTic() - (60 * TICRATE);
+	if (level.time > warning)
 		color = CR_BRICK;
 
 	if (tspan.hours)

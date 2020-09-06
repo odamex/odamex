@@ -110,7 +110,7 @@ bool StrFormatISOTime(std::string& s, const tm* utc_tm);
 bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
 
-void TicsToTime(OTimespan& span, int time);
+void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
 
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (char** ptr, const char* str);
