@@ -1431,9 +1431,17 @@ void CL_UpdateFrags(void)
 	if(sv_gametype != GM_COOP)
 		p.fragcount = MSG_ReadShort();
 	else
+	{
 		p.killcount = MSG_ReadShort();
+		p.secretcount = MSG_ReadByte();
+	}
 	p.deathcount = MSG_ReadShort();
 	p.points = MSG_ReadShort();
+}
+
+void CL_UpdateSecrets(void)
+{
+	level.found_secrets = MSG_ReadByte();
 }
 
 //
@@ -3575,6 +3583,7 @@ void CL_InitCommands(void)
 	cmds[svc_updatefrags]		= &CL_UpdateFrags;
 	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
+	cmds[svc_updatesecrets]		= &CL_UpdateSecrets;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
