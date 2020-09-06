@@ -2165,15 +2165,6 @@ void CL_UpdatePing(void)
 
 
 //
-// CL_UpdateTimeLeft
-// Changes the value of level.timeleft
-//
-void CL_UpdateTimeLeft(void)
-{
-	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
-}
-
-//
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //

@@ -394,7 +394,6 @@ void G_InitNew (const char *mapname)
 		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
-		level.timeleft = 0;
 		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
@@ -612,7 +611,6 @@ void G_DoResetLevel(bool full_reset)
 
 	// [SL] always reset the time (for now at least)
 	level.time = 0;
-	level.timeleft = sv_timelimit * TICRATE * 60;
 	level.inttimeleft = mapchange / TICRATE;
 
 	// Send information about the newly reset map.

@@ -262,7 +262,6 @@ void G_InitNew (const char *mapname)
 		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
-		level.timeleft = 0;
 		level.inttimeleft = 0;
 	}
 
@@ -451,7 +450,6 @@ void G_DoCompleted (void)
 		if (!(nextcluster.flags & CLUSTER_HUB) || !(thiscluster.flags & CLUSTER_HUB))
 		{
 			level.time = 0;	// Reset time to zero if not entering/staying in a hub
-			level.timeleft = 0;
 			//level.inttimeleft = 0;
 		}
 
