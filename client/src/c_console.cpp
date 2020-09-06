@@ -111,8 +111,8 @@ static struct NotifyText
 } NotifyStrings[NUMNOTIFIES];
 
 // Default Printlevel
-#define PRINTLEVELS 8 //(5 + 3)
-int PrintColors[PRINTLEVELS] = 
+#define PRINTLEVELS 5 //(5 + 3)
+int PrintColors[PRINTLEVELS+3] = 
 {	CR_RED,		// Pickup
 	CR_GOLD,	// Obituaries
 	CR_GRAY,	// Messages
@@ -1109,11 +1109,11 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 
 	// [SL] the user's message color preference overrides the given color_code
 	// ...unless it's supposed to be formatted bold.
-	static char printlevel_color_code[2];
+	static char printlevel_color_code[3];
 
 	if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
 	{
-		sprintf(printlevel_color_code, "\034%c", 'a' + PrintColors[printlevel]);
+		snprintf(printlevel_color_code, sizeof(printlevel_color_code), "\034%c", 'a' + PrintColors[printlevel]);
 		color_code = printlevel_color_code;
 	}
 
