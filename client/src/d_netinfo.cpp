@@ -103,13 +103,14 @@ gender_t D_GenderByName (const char *gender)
 //
 team_t D_TeamByName (const char *team)
 {
-	if (!stricmp (team, "blue"))
-		return TEAM_BLUE;
+	for (int i = 0; i < NUMTEAMS; i++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		if (stricmp(team, teamInfo->ColorString.c_str()) == 0)
+			return (team_t)i;
+	}
 
-	else if (!stricmp (team, "red"))
-		return TEAM_RED;
-
-	else return TEAM_NONE;
+	return TEAM_NONE;
 }
 
 

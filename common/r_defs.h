@@ -117,6 +117,28 @@ enum
 	FAKED_AboveCeiling
 };
 
+enum SectorPropChanges
+{
+	SPC_FlatPic = 1,
+	SPC_LightLevel = 2,
+	SPC_Color = 4,
+	SPC_Fade = 8,
+	SPC_Gravity = 16,
+	SPC_Panning = 32,
+	SPC_Scale = 64,
+	SPC_Rotation = 128,
+	SPC_AlignBase = 256,
+	SPC_Max = 512,
+};
+
+enum SideDefPropChanges
+{
+	SDPC_TexTop = 1,
+	SDPC_TexMid = 2,
+	SDPC_TexBottom = 4,
+	SDPC_Max = 8,
+};
+
 //
 // Plane
 //
@@ -234,6 +256,7 @@ struct sector_s
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane, ceilingplane;
+	int SectorChanges;
 };
 typedef struct sector_s sector_t;
 
@@ -264,6 +287,7 @@ struct side_s
 	short		linenum;
 	short		special;
 	short		tag;
+	int SidedefChanges;
 };
 typedef struct side_s side_t;
 
@@ -322,6 +346,8 @@ struct line_s
 	int			firstid, nextid;
 	bool wastoggled;
 	bool switchactive;
+	bool PropertiesChanged;
+	bool SidedefChanged;
 };
 typedef struct line_s line_t;
 

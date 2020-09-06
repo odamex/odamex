@@ -943,7 +943,7 @@ player_s::player_s() :
 	psprnum(0),
 	jumpTics(0),
 	death_time(0),
-	suicide_time(0),
+	suicidedelay(0),
 	camera(AActor::AActorPtr()),
 	air_finished(0),
 	GameTime(0),
@@ -954,13 +954,14 @@ player_s::player_s() :
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
-	joinafterspectatortime(level.time - TICRATE * 5),
+	joindelay(0),
 	timeout_callvote(0),
 	timeout_vote(0),
 	ready(false),
 	timeout_ready(0),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
+	QueuePosition(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())
@@ -1025,7 +1026,7 @@ player_s &player_s::operator =(const player_s &other)
 	for(i = 0; i < NUMCARDS; i++)
 		cards[i] = other.cards[i];
 
-	for(i = 0; i < NUMFLAGS; i++)
+	for(i = 0; i < NUMTEAMS; i++)
 		flags[i] = other.flags[i];
 
 	points = other.points;
@@ -1084,7 +1085,7 @@ player_s &player_s::operator =(const player_s &other)
 	spying = other.spying;
 	spectator = other.spectator;
 //	deadspectator = other.deadspectator;
-	joinafterspectatortime = other.joinafterspectatortime;
+	joindelay = other.joindelay;
 	timeout_callvote = other.timeout_callvote;
 	timeout_vote = other.timeout_vote;
 
@@ -1108,6 +1109,7 @@ player_s &player_s::operator =(const player_s &other)
 	to_spawn = other.to_spawn;
 
 	doreborn = other.doreborn;
+	QueuePosition = other.QueuePosition;
 
 	return *this;
 }

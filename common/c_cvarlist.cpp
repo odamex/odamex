@@ -27,7 +27,7 @@
 // ---------------
 
 // Game mode
-CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
+CVAR_RANGE(sv_gametype, "0", "Sets the game mode, values are:\n" \
 					"// 0 = Cooperative\n" \
 					"// 1 = Deathmatch\n" \
 					"// 2 = Team Deathmatch\n" \

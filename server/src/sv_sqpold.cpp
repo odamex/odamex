@@ -206,7 +206,7 @@ void SV_SendServerInfo()
 		{
 			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
 				MSG_WriteByte(&ml_message, 1);
-				MSG_WriteLong(&ml_message, TEAMpoints[i]);
+				MSG_WriteLong(&ml_message, GetTeamInfo((team_t)i)->Points);
 			} else {
 				MSG_WriteByte(&ml_message, 0);
 			}

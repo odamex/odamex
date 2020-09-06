@@ -382,9 +382,6 @@ extern byte cheat_powerup_seq[7][10];
 extern byte cheat_clev_seq[10];
 extern byte cheat_mypos_seq[8];
 
-// CTF...
-extern flagdata CTFdata[NUMFLAGS];
-
 // Now what?
 cheatseq_t		cheat_mus = { cheat_mus_seq, 0 };
 cheatseq_t		cheat_god = { cheat_god_seq, 0 };
@@ -1161,7 +1158,7 @@ void ST_updateWidgets(void)
 
 	//	[Toke - CTF]
 	if (sv_gametype == GM_CTF)
-		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
+		st_fragscount = GetTeamInfo(plyr->userinfo.team)->Points; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 

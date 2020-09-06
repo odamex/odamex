@@ -124,22 +124,9 @@ BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
-int				MaxDeathmatchStarts;
-mapthing2_t		*deathmatchstarts;
-mapthing2_t		*deathmatch_p;
-
+std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
-
-//	[Toke - CTF - starts] Teamplay starts
-size_t			MaxBlueTeamStarts;
-size_t			MaxRedTeamStarts;
-
-mapthing2_t		*blueteamstarts;
-mapthing2_t		*redteamstarts;
-
-mapthing2_t		*blueteam_p;
-mapthing2_t		*redteam_p;
 
 //
 // P_LoadVertexes
@@ -577,6 +564,9 @@ void P_LoadThings (int lump)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -628,6 +618,9 @@ void P_LoadThings2 (int lump, int position)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -1621,34 +1614,6 @@ void P_LoadBehavior (int lumpnum)
 }
 
 //
-// P_AllocStarts
-//
-void P_AllocStarts(void)
-{
-	if (!deathmatchstarts)
-	{
-		MaxDeathmatchStarts = 16;	// [RH] Default. Increased as needed.
-		deathmatchstarts = (mapthing2_t *)Malloc (MaxDeathmatchStarts * sizeof(mapthing2_t));
-	}
-	deathmatch_p = deathmatchstarts;
-
-	//	[Toke - CTF]
-	if (!blueteamstarts) // [Toke - CTF - starts]
-	{
-		MaxBlueTeamStarts = 16;
-		blueteamstarts = (mapthing2_t *)Malloc (MaxBlueTeamStarts * sizeof(mapthing2_t));
-	}
-	blueteam_p = blueteamstarts;
-
-	if (!redteamstarts) // [Toke - CTF - starts]
-	{
-		MaxRedTeamStarts = 16;
-		redteamstarts = (mapthing2_t *)Malloc (MaxRedTeamStarts * sizeof(mapthing2_t));
-	}
-	redteam_p = redteamstarts;
-}
-
-//
 // P_SetupLevel
 //
 extern polyblock_t **PolyBlockMap;
@@ -1783,8 +1748,6 @@ void P_SetupLevel (char *lumpname, int position)
 
     po_NumPolyobjs = 0;
 
-	P_AllocStarts();
-
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
 	if (!HasBehavior)
@@ -1839,6 +1802,7 @@ void P_Init (void)
 	P_InitSwitchList ();
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
+	InitTeamInfo();
 }
 
 
