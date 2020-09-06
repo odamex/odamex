@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,6 @@
 
 
 #include <cstdio>
-#include <cstdlib>
 #include <ctime>
 #include <string>
 #include <sstream>
@@ -32,13 +31,11 @@
 #include "c_bind.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomdef.h"
 #include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
-#include "m_fileio.h"
 #include "version.h"
 
 // Used to identify the version of the game that saved
@@ -204,28 +201,7 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			case 'g':
 			{
-				switch (sv_gametype.asInt())
-				{
-					case (int)(GM_COOP):
-						if (!multiplayer)
-							buffer << "SOLO";
-						else
-							buffer << "COOP";
-						break;
-					case (int)(GM_DM):
-						if (sv_maxplayers == 2)
-							buffer << "DUEL";
-						else
-							buffer << "DM";
-						break;
-					case (int)(GM_TEAMDM):
-						buffer << "TDM";
-						break;
-					case (int)(GM_CTF):
-						buffer << "CTF";
-						break;
-				}
-
+				buffer << GetShortGameModeString();
 				break;
 			}
 			case 'w':

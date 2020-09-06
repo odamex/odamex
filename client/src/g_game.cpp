@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,19 +27,16 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_netinf.h"
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "m_misc.h"
 #include "m_menu.h"
 #include "m_random.h"
 #include "i_system.h"
 #include "i_input.h"
 #include "i_video.h"
 #include "v_screenshot.h"
-#include "p_setup.h"
 #include "p_saveg.h"
 #include "p_tick.h"
 #include "d_main.h"
@@ -57,7 +54,6 @@
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "gstrings.h"
-#include "r_data.h"
 #include "r_sky.h"
 #include "r_draw.h"
 #include "g_game.h"
@@ -102,6 +98,7 @@ EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
+EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_allowdropoff)
 
@@ -158,11 +155,32 @@ EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
-EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
-EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
-EXTERN_CVAR (m_filter)
+EXTERN_CVAR (cl_run)
 EXTERN_CVAR (hud_mousegraph)
 EXTERN_CVAR (cl_predictpickup)
+
+EXTERN_CVAR (mouse_sensitivity)
+EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (m_filter)
+EXTERN_CVAR (invertmouse)
+EXTERN_CVAR (lookstrafe)
+EXTERN_CVAR (m_yaw)
+EXTERN_CVAR (m_forward)
+EXTERN_CVAR (m_side)
+
+
+CVAR_FUNC_IMPL(mouse_type)
+{
+	// Convert vanilla Doom mouse sensitivity settings to ZDoom mouse sensitivity
+	if (var.asInt() == MOUSE_DOOM)
+	{
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
+		m_pitch.Set(m_pitch * 4.0f);
+	}
+	if (var.asInt() != MOUSE_ZDOOM_DI)
+		var.Set(MOUSE_ZDOOM_DI);
+}
+
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -194,27 +212,14 @@ wbstartstruct_t wminfo; 				// parms for world map / intermission
 
 #define TURBOTHRESHOLD	12800
 
-float	 		normforwardmove[2] = {0x19, 0x32};		// [RH] For setting turbo from console
-float	 		normsidemove[2] = {0x18, 0x28};			// [RH] Ditto
+fixed_t	 		forwardmove[2] = {0x19, 0x32};
+fixed_t	 		sidemove[2] = {0x18, 0x28};
 
-fixed_t			forwardmove[2], sidemove[2];
 fixed_t 		angleturn[3] = {640, 1280, 320};		// + slow turn
 fixed_t			flyspeed[2] = {1*256, 3*256};
 int				lookspeed[2] = {450, 512};
 
 #define SLOWTURNTICS	6
-
-EXTERN_CVAR (cl_run)
-
-EXTERN_CVAR (mouse_type)
-EXTERN_CVAR (invertmouse)
-EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (mouse_acceleration)
-EXTERN_CVAR (mouse_threshold)
-EXTERN_CVAR (m_pitch)
-EXTERN_CVAR (m_yaw)
-EXTERN_CVAR (m_forward)
-EXTERN_CVAR (m_side)
 
 int 			turnheld;								// for accelerative turning
 
@@ -261,16 +266,6 @@ player_t		&listenplayer()
 
 // [RH] Name of screenshot file to generate (usually NULL)
 std::string		shotfile;
-
-// [Fly] don't allow to change turbo in csDoom
-void G_SetDefaultTurbo (void)
-{
-	forwardmove[0] = (int)(normforwardmove[0]);
-	forwardmove[1] = (int)(normforwardmove[1]);
-	sidemove[0] = (int)(normsidemove[0]);
-	sidemove[1] = (int)(normsidemove[1]);
-}
-
 
 /* [RH] Impulses: Temporary hack to get weapon changing
  * working with keybindings until I can get the
@@ -442,17 +437,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
-	{
 		side += sidemove[speed];
-		if (strafe) // Two-key strafe50
-			side += sidemove[speed];
-	}
 	if (Actions[ACTION_MOVELEFT])
-	{
 		side -= sidemove[speed];
-		if (strafe) // Two-key strafe50
-			side -= sidemove[speed];
-	}
 
 	// buttons
 	// john - only add attack when console up
@@ -589,36 +576,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 }*/
 
 
-void G_ConvertMouseSettings(int old_type, int new_type)
-{
-	if (old_type == new_type)
-		return;
-
-	// first convert to ZDoom settings
-	if (old_type == MOUSE_DOOM)
-	{
-		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
-		m_pitch.Set(m_pitch * 4.0f);
-	}
-
-	// convert to the destination type
-	if (new_type == MOUSE_DOOM)
-	{
-		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.25f);
-	}
-}
-
-float G_DoomMouseScaleX(float x)
-{
-	return (x * (mouse_sensitivity + 5.0f) / 10.0f);
-}
-
-float G_DoomMouseScaleY(float y)
-{
-	return G_DoomMouseScaleX(y); // identical scaling for x and y
-}
-
 float G_ZDoomDIMouseScaleX(float x)
 {
 	return (x * 4.0f * mouse_sensitivity);
@@ -635,28 +592,6 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	float fmousex = (float)ev->data2;
 	float fmousey = (float)ev->data3;
 
-	if (mouse_acceleration > 0.0f)
-	{
-		// denis - from chocolate doom
-		//
-		// Mouse acceleration
-		//
-		// This emulates some of the behavior of DOS mouse drivers by increasing
-		// the speed when the mouse is moved fast.
-		//
-		// The mouse input values are input directly to the game, but when
-		// the values exceed the value of mouse_threshold, they are multiplied
-		// by mouse_acceleration to increase the speed.
-		if (fmousex > mouse_threshold)
-			fmousex = (fmousex - mouse_threshold) * mouse_acceleration + mouse_threshold;
-		else if (fmousex < -mouse_threshold)
-			fmousex = (fmousex + mouse_threshold) * mouse_acceleration - mouse_threshold;
-		if (fmousey > mouse_threshold)
-			fmousey = (fmousey - mouse_threshold) * mouse_acceleration + mouse_threshold;
-		else if (fmousey < -mouse_threshold)
-			fmousey = (fmousey + mouse_threshold) * mouse_acceleration - mouse_threshold;
-	}
-
 	if (m_filter)
 	{
 		// smooth out the mouse input
@@ -667,34 +602,13 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	fprevx = fmousex;
 	fprevy = fmousey;
 
-	if (mouse_type == MOUSE_ZDOOM_DI)
-	{
-		fmousex = G_ZDoomDIMouseScaleX(fmousex);
-		fmousey = G_ZDoomDIMouseScaleY(fmousey);
-	}
-	else
-	{
-		fmousex = G_DoomMouseScaleX(fmousex);
-		fmousey = G_DoomMouseScaleY(fmousey);
-	}
-
-	if (dynres_state)
-	{
-		// add some funky exponential sensitivity
-		if (fmousex < 0.0f)
-			fmousex = -pow(-fmousex, dynresval);
-		else
-			fmousex = pow(fmousex, dynresval);
-
-		if (fmousey < 0.0f)
-			fmousey = -pow(-fmousey, dynresval);
-		else
-			fmousey = pow(fmousey, dynresval);
-	}
+	fmousex = G_ZDoomDIMouseScaleX(fmousex);
+	fmousey = G_ZDoomDIMouseScaleY(fmousey);
 
 	mousex = (int)fmousex;
 	mousey = (int)fmousey;
 }
+
 
 //
 // G_Responder
@@ -858,8 +772,11 @@ void G_Ticker (void)
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
 			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
+			{
+				if (it->playerstate == PST_REBORN)	
+					it->doreborn = true;			// State only our will to lose the whole inventory in case of a reborn.
 				G_DoReborn(*it);
-			it->doreborn = true;
+			}
 		}
 
 	// do things to change the game state
@@ -1136,14 +1053,14 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	if (!sv_keepkeys)
+	if (!sv_keepkeys && !sv_sharekeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;
 	}
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
 
@@ -1155,6 +1072,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.readyweapon = p.pendingweapon = wp_pistol;
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
+	p.weaponowned[NUMWEAPONS] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	p.cheats = 0;						// Reset cheat flags
 
@@ -1340,14 +1258,12 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &deathmatchstarts[i]) )
-		{
-			return &deathmatchstarts[i];
-		}
+		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+			return &DeathMatchStarts[i];
 	}
 
 	// [RH] return a spot anyway, since we allow telefragging when a player spawns
-	return &deathmatchstarts[i];
+	return &DeathMatchStarts[i];
 }
 
 void G_DeathMatchSpawnPlayer (player_t &player)
@@ -1358,67 +1274,26 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	if(!serverside || sv_gametype == GM_COOP)
 		return;
 
-	//if (!ctfmode)
+	selections = DeathMatchStarts.size();
+	// [RH] We can get by with just 1 deathmatch start
+	if (selections < 1)
+		I_Error ("No deathmatch starts");
+
+	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
+	spot = SelectRandomDeathmatchSpot (player, selections);
+
+	if (!spot && !playerstarts.empty())
 	{
-		selections = deathmatch_p - deathmatchstarts;
-		// [RH] We can get by with just 1 deathmatch start
-		if (selections < 1)
-			I_Error ("No deathmatch starts");
-
-		// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-		spot = SelectRandomDeathmatchSpot (player, selections);
-
-		if (!spot && !playerstarts.empty())
-		{
-			// no good spot, so the player will probably get stuck
-			spot = &playerstarts[player.id%playerstarts.size()];
-		}
-		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;	// [RH] > 4 players
-		}
-
-
+		// no good spot, so the player will probably get stuck
+		spot = &playerstarts[player.id%playerstarts.size()];
 	}
-	/*else
+	else
 	{
-		selections = 0;
-
-		if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-		{
-			selections = blueteam_p - blueteamstarts;
-
-			if (selections < 1)
-				I_Error ("No blue team starts");
-		}
-
-		if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-		{
-			selections = redteam_p - redteamstarts;
-
-			if (selections < 1)
-				I_Error ("No red team starts");
-		}
-
-		if (selections < 1)
-			I_Error ("No team starts");
-
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
-
-		if (!spot && !playerstarts.empty())
-			spot = &playerstarts[player.id%playerstarts.size()];
-
+		if (player.id < 4)
+			spot->type = player.id+1;
 		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;
-		}
-	}*/
+			spot->type = player.id+4001-4;	// [RH] > 4 players
+	}
 
 	P_SpawnPlayer (player, spot);
 }
@@ -1517,7 +1392,13 @@ void G_DoLoadGame (void)
 	}
 
 	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	fread (text, 16, 1, stdfile);
+	size_t readlen = fread (text, 16, 1, stdfile);
+	if (readlen < 1)
+	{
+		Printf (PRINT_HIGH, "Failed to read savegame '%s'\n", savename);
+		fclose(stdfile);
+		return;
+	}
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
@@ -1526,7 +1407,13 @@ void G_DoLoadGame (void)
 
 		return;
 	}
-	fread (text, 8, 1, stdfile);
+	readlen = fread (text, 8, 1, stdfile);
+	if (readlen < 1)
+	{
+		Printf (PRINT_HIGH, "Failed to read savegame '%s'\n", savename);
+		fclose(stdfile);
+		return;
+	}
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
@@ -1785,7 +1672,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
     usergame = false;
     demorecording = true;
     demostartgametic = gametic;
-
+	multiplayer = false;
 	
 	if (longtics)
 		demoversion = LMP_DOOM_1_9_1;
@@ -2149,6 +2036,12 @@ void G_TimeDemo(const char* name)
 
 	defdemoname = name;
 	gameaction = ga_playdemo;
+
+	IWindow* window = I_GetWindow();	
+	if (noblit)
+		window->disableRefresh();
+	else
+		window->enableRefresh();
 }
 
 
@@ -2199,6 +2092,7 @@ void G_CleanupDemo()
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
 	}
+
 }
 
 

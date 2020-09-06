@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,13 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "m_alloc.h"
-#include "i_system.h"
-#include "z_zone.h"
 #include "m_random.h"
 #include "doomdef.h"
 #include "p_local.h"
-#include "p_lnspec.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "doomtype.h"
@@ -36,11 +32,9 @@
 #include "c_effect.h"
 #include "m_vectors.h"
 #include "p_mobj.h"
-#include "cl_main.h"
-#include "p_ctf.h"
 #include "st_stuff.h"
-#include "hu_stuff.h"
 #include "p_acs.h"
+#include "p_ctf.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -189,15 +183,15 @@ void P_ShowSpawns(mapthing2_t* mthing)
 
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		{
-			if (mthing->type == 5080)
+			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
-				spawn->args[0] = 3; // Blue
-			}
-			else if (mthing->type == 5081)
-			{
-				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
-				spawn->args[0] = 1; // Red
+				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				if (teamInfo->TeamSpawnThingNum == mthing->type)
+				{
+					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+					spawn->args[0] = teamInfo->FountainColorArg;
+					break;
+				}
 			}
 		}
 

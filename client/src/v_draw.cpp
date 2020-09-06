@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,10 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomtype.h"
 #include "v_video.h"
 #include "i_video.h"
@@ -32,8 +28,6 @@
 #include "m_swap.h"
 
 #include "i_system.h"
-
-#include "cmdlib.h"
 
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
@@ -583,7 +577,10 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
-	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
+	if (!patch)
+		return;
+
+	if (patch->width() <= 0 || patch->height() <= 0 ||
 	    destwidth <= 0 || destheight <= 0)
 		return;
 
@@ -602,8 +599,15 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
 	//      artifacts since it forces col to roll over to the next real number
 	//      a column-of-real-pixels sooner.
-	int xinc = (patch->width() << FRACBITS) / destwidth + 1;
-	int yinc = (patch->height() << FRACBITS) / destheight + 1;
+	int xinc = (patch->width() << FRACBITS) / destwidth;
+	int yinc = (patch->height() << FRACBITS) / destheight;
+	// [jsd] only adding 1 in cases where scaling is non-integral:
+	if (xinc & (FRACUNIT-1)) {
+		xinc++;
+	}
+	if (yinc & (FRACUNIT-1)) {
+		yinc++;
+	}
 	int xmul = (destwidth << FRACBITS) / patch->width();
 	int ymul = (destheight << FRACBITS) / patch->height();
 

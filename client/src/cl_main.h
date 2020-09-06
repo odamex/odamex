@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +46,6 @@ extern NetDemo	netdemo;
 
 extern bool predicting;
 
-
 void CL_QuitNetGame(void);
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
@@ -59,6 +58,13 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
+void CL_UpdatePlayerQueuePos();
+void CL_ExecuteLineSpecial();
+void CL_ACSExecuteSpecial();
+void CL_LineUpdate();
+void CL_LineSideUpdate();
+void CL_SectorSectorPropertiesUpdate();
+void CL_ThinkerUpdate();
 
 void CL_DisplayTics();
 void CL_RunTics();

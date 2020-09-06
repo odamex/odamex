@@ -4,7 +4,7 @@
 #
 # $Id: upversion.pl 2223 2011-06-10 19:16:30Z dr_sean $
 #
-# Copyright (C) 2011 by The Odamex Team.
+# Copyright (C) 2006-2020 by The Odamex Team.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License

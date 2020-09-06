@@ -3,21 +3,21 @@
 
 [Setup]
 AppName=Odamex
-AppVersion=0.8.1
-AppVerName=Odamex 0.8.1
+AppVersion=0.8.3
+AppVerName=Odamex 0.8.3
 AppPublisher=Odamex Development Team
 AppPublisherURL=https://odamex.net
 AppSupportURL=https://odamex.net
 AppUpdatesURL=https://odamex.net
-VersionInfoVersion=0.8.1 
-VersionInfoProductVersion=0.8.1
+VersionInfoVersion=0.8.3
+VersionInfoProductVersion=0.8.3
 VersionInfoProductName=Odamex Windows Installer
 DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex
 AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-win-0.8.0
+OutputBaseFilename=odamex-win-0.8.3
 Compression=lzma2
 SolidCompression=true
 AlwaysShowDirOnReadyPage=true
@@ -64,7 +64,7 @@ Name: base; Description: Base data; Types: full compact custom; Flags: fixed
 Name: client; Description: Odamex Client; Types: full compact custom; Flags: DisableNoUninstallWarning
 Name: server; Description: Odamex Server; Types: full; Flags: DisableNoUninstallWarning
 Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact custom; Flags: DisableNoUninstallWarning
-Name: libs; Description: Libraries (SDL 2.0.5, SDL_Mixer 2.0.1); Types: full compact; Flags: DisableNoUninstallWarning
+Name: libs; Description: Libraries (SDL 2.0.12, SDL_Mixer 2.0.4); Types: full compact; Flags: DisableNoUninstallWarning
 
 
 [Files]

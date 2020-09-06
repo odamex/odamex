@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,8 +56,8 @@ public:
 		#endif
 	}
 
-	virtual const IVideoMode* getNativeMode() const
-	{	return &mNativeMode;	}
+	virtual const IVideoMode& getNativeMode() const
+	{	return mNativeMode;	}
 
 private:
 	IVideoModeList		mModeList;
@@ -138,7 +138,7 @@ private:
 class ISDL12Window : public IWindow
 {
 public:
-	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	ISDL12Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual ~ISDL12Window();
 
@@ -155,37 +155,46 @@ public:
 	}
 
 	virtual uint16_t getWidth() const
-	{	return mWidth;	}
+	{	return mVideoMode.width;	}
 
 	virtual uint16_t getHeight() const
-	{	return mHeight;	}
+	{	return mVideoMode.height;	}
 
 	virtual uint8_t getBitsPerPixel() const
-	{	return mBitsPerPixel;	}
+	{	return mVideoMode.bpp;	}
 
 	virtual int getBytesPerPixel() const
-	{	return mBitsPerPixel >> 3;	}
+	{	return mVideoMode.bpp >> 3;	}
 
-	virtual const IVideoMode* getVideoMode() const
-	{	return &mVideoMode;	}
+	virtual const IVideoMode& getVideoMode() const
+	{	return mVideoMode;	}
 
 	virtual const PixelFormat* getPixelFormat() const;
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	virtual bool setMode(const IVideoMode& video_mode);
 
 	virtual bool isFullScreen() const
-	{	return mIsFullScreen;	}
+	{	return mVideoMode.window_mode != WINDOW_Windowed;	}
+
+	virtual EWindowMode getWindowMode() const
+	{	return mVideoMode.window_mode;		}
 
 	virtual bool isFocused() const;
 
 	virtual bool usingVSync() const
-	{	return mUseVSync;	}
+	{	return mVideoMode.vsync;	}
 
 	virtual void enableRefresh()
 	{	mBlit = true;		}
 
 	virtual void disableRefresh()
-	{	mBlit = false;		}
+	{
+		mBlit = false;
+		mSurfaceManager->lockSurface();
+		mSurfaceManager->getWindowSurface()->clear();
+		mSurfaceManager->finishRefresh();
+		mSurfaceManager->unlockSurface();
+	}
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
@@ -209,14 +218,7 @@ private:
 
 	IWindowSurfaceManager*	mSurfaceManager;
 
-	uint16_t			mWidth;
-	uint16_t			mHeight;
-	uint8_t				mBitsPerPixel;
-
 	IVideoMode			mVideoMode;
-
-	bool				mIsFullScreen;
-	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;
@@ -292,8 +294,8 @@ public:
 		#endif
 	}
 
-	virtual const IVideoMode* getNativeMode() const
-	{	return &mNativeMode;	}
+	virtual const IVideoMode& getNativeMode() const
+	{	return mNativeMode;	}
 
 private:
 	IVideoModeList		mModeList;
@@ -316,7 +318,8 @@ private:
 class ISDL20TextureWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
-	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window, bool vsync);
+	ISDL20TextureWindowSurfaceManager(uint16_t width, uint16_t height, const PixelFormat* format, ISDL20Window* window,
+			bool vsync, const char *render_scale_quality = NULL);
 
 	virtual ~ISDL20TextureWindowSurfaceManager();
 
@@ -347,6 +350,8 @@ private:
 
 	bool mDrawLogicalRect;
 	SDL_Rect mLogicalRect;
+
+	SDL_Renderer* createRenderer(bool vsync) const;
 };
 
 
@@ -359,7 +364,7 @@ private:
 class ISDL20Window : public IWindow
 {
 public:
-	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync);
 
 	virtual ~ISDL20Window();
 
@@ -376,42 +381,50 @@ public:
 	}
 
 	virtual uint16_t getWidth() const
-	{	return mWidth;	}
+	{	return mVideoMode.width;	}
 
 	virtual uint16_t getHeight() const
-	{	return mHeight;	}
+	{	return mVideoMode.height;	}
 
 	virtual uint8_t getBitsPerPixel() const
-	{	return mBitsPerPixel;	}
+	{	return mVideoMode.bpp;	}
 
 	virtual int getBytesPerPixel() const
-	{	return mBitsPerPixel >> 3;	}
+	{	return mVideoMode.bpp >> 3;	}
 
-	virtual const IVideoMode* getVideoMode() const
-	{	return &mVideoMode;	}
+	virtual const IVideoMode& getVideoMode() const
+	{	return mVideoMode;	}
 
 	virtual const PixelFormat* getPixelFormat() const
 	{	return &mPixelFormat;	}
 
-	virtual bool setMode(uint16_t width, uint16_t height, uint8_t bpp, bool fullscreen, bool vsync);
+	virtual bool setMode(const IVideoMode& video_mode);
 
 	virtual bool isFullScreen() const
-	{	return mIsFullScreen;	}
+	{	return mVideoMode.isFullScreen();	}
+
+	virtual EWindowMode getWindowMode() const
+	{	return mVideoMode.window_mode;		}
 
 	virtual bool isFocused() const;
 
 	virtual bool usingVSync() const
-	{	return mUseVSync;	}
+	{	return mVideoMode.vsync;	}
 
 	virtual void enableRefresh()
 	{	mBlit = true;		}
 
 	virtual void disableRefresh()
-	{	mBlit = false;		}
+	{
+		mBlit = false;
+		mSurfaceManager->lockSurface();
+		mSurfaceManager->getWindowSurface()->clear();
+		mSurfaceManager->finishRefresh();
+		mSurfaceManager->unlockSurface();
+	}
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
-
 
 	virtual void lockSurface();
 	virtual void unlockSurface();
@@ -433,22 +446,20 @@ private:
 	void discoverNativePixelFormat();
 	PixelFormat buildSurfacePixelFormat(uint8_t bpp);
 	void setRendererDriver();
+	bool isRendererDriverAvailable(const char* driver) const;
 	const char* getRendererDriver() const;
 	void getEvents();
+
+	uint16_t getCurrentWidth() const;
+	uint16_t getCurrentHeight() const;
+	EWindowMode getCurrentWindowMode() const;
 
 	SDL_Window*			mSDLWindow;
 
 	IWindowSurfaceManager* mSurfaceManager;
 
-	uint16_t			mWidth;
-	uint16_t			mHeight;
-	uint8_t				mBitsPerPixel;
-
 	IVideoMode			mVideoMode;
 	PixelFormat			mPixelFormat;
-
-	bool				mIsFullScreen;
-	bool				mUseVSync;
 
 	bool				mNeedPaletteRefresh;
 	bool				mBlit;
@@ -456,8 +467,11 @@ private:
 	bool				mMouseFocus;
 	bool				mKeyboardFocus;
 
+	int					mAcceptResizeEventsTime;
+
 	int16_t				mLocks;
 };
+
 
 // ****************************************************************************
 
@@ -482,6 +496,8 @@ public:
 
 	virtual const IWindow* getWindow() const
 	{	return mWindow;	}
+
+	virtual int getMonitorCount() const;
 
 private:
 	const IVideoCapabilities*		mVideoCapabilities;

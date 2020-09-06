@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,10 +20,6 @@
 //	Refresh, visplane stuff (floor, ceilings).
 //
 //-----------------------------------------------------------------------------
-
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "r_local.h"
 
@@ -53,11 +49,13 @@ BOOL R_AlignFlat (int linenum, int side, int fc)
 	{
 		sec->base_ceiling_angle = 0-angle;
 		sec->base_ceiling_yoffs = dist & ((1<<(FRACBITS+8))-1);
+		sec->SectorChanges |= SPC_AlignBase;
 	}
 	else
 	{
 		sec->base_floor_angle = 0-angle;
 		sec->base_floor_yoffs = dist & ((1<<(FRACBITS+8))-1);
+		sec->SectorChanges |= SPC_AlignBase;
 	}
 
 	return true;

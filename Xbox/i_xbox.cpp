@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -395,38 +395,6 @@ void xbox_InitNet()
 void xbox_CloseNetwork()
 {
 	XNetCleanup();
-}
-
-//
-// xbox_SetScreenPosition
-//
-int xbox_SetScreenPosition(float x, float y)
-{
-	float x2, y2;
-
-	SDL_XBOX_SetScreenPosition(x, y);
-	SDL_XBOX_GetScreenPosition(&x2, &y2);
-
-	if(x != x2 || y != y2)
-		return -1;
-
-	return 0;
-}
-
-//
-// xbox_SetScreenStretch
-//
-int xbox_SetScreenStretch(float xs, float ys)
-{
-	float xs2, ys2;
-
-	SDL_XBOX_SetScreenStretch(xs, ys);
-	SDL_XBOX_GetScreenStretch(&xs2, &ys2);
-
-	if(xs != xs2 || ys != ys2)
-		return -1;
-
-	return 0;
 }
 
 //

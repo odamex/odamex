@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,12 +29,6 @@
 #include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
-#include "p_local.h"
-#include "sv_main.h"
-#include "sv_master.h"
-#include "c_console.h"
-#include "c_dispatch.h"
-#include "i_system.h"
 #include "md5.h"
 #include "p_ctf.h"
 #include "version.h"
@@ -43,6 +37,7 @@ static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(join_password)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_teamsinplay)
 
 struct CvarField_t
 {
@@ -94,10 +89,10 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	// TODO: Remove guard before next release
 	QRYNEWINFO(7)
 	{
-	    MSG_WriteString(&ml_message, GitDescribe());
+		MSG_WriteString(&ml_message, GitDescribe());
 	}
 	else
-        MSG_WriteLong(&ml_message, -1);
+		MSG_WriteLong(&ml_message, -1);
 
 	cvar_t* var = GetFirstCvar();
 
@@ -179,45 +174,33 @@ next:
 
 	if(timeleft < 0)
 		timeleft = 0;
-    
-    // TODO: Remove guard on next release and reset protocol version
-    // TODO: Incorporate code above into block
-    // Only send timeleft if sv_timelimit has been set
-    QRYNEWINFO(6)
-    {
-        if (sv_timelimit.asInt())
-            MSG_WriteShort(&ml_message, timeleft);
-    }
-    else
-        MSG_WriteShort(&ml_message, timeleft);
-    
+	
+	// TODO: Remove guard on next release and reset protocol version
+	// TODO: Incorporate code above into block
+	// Only send timeleft if sv_timelimit has been set
+	QRYNEWINFO(6)
+	{
+		if (sv_timelimit.asInt())
+			MSG_WriteShort(&ml_message, timeleft);
+	}
+	else
+		MSG_WriteShort(&ml_message, timeleft);
+	
 	// Teams
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		// Team data
-		MSG_WriteByte(&ml_message, 2);
+		int teams = sv_teamsinplay.asInt();
+		MSG_WriteByte(&ml_message, teams);
 
-		// Blue
-		MSG_WriteString(&ml_message, "Blue");
-		MSG_WriteLong(&ml_message, 0x000000FF);
-		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
-
-		MSG_WriteString(&ml_message, "Red");
-		MSG_WriteLong(&ml_message, 0x00FF0000);
-		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+		for (int i = 0; i < teams; i++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
+			MSG_WriteLong(&ml_message, teamInfo->Color);
+			MSG_WriteShort(&ml_message, teamInfo->Points);
+		}
 	}
-
-	// TODO: When real dynamic teams are implemented
-	//byte TeamCount = (byte)sv_teamsinplay;
-	//MSG_WriteByte(&ml_message, TeamCount);
-
-	//for (byte i = 0; i < TeamCount; ++i)
-	//{
-	// TODO - Figure out where the info resides
-	//MSG_WriteString(&ml_message, "");
-	//MSG_WriteLong(&ml_message, 0);
-	//MSG_WriteShort(&ml_message, TEAMpoints[i]);
-	//}
 
 	// Patch files
 	MSG_WriteByte(&ml_message, patchfiles.size());
@@ -258,14 +241,13 @@ next:
 
 		MSG_WriteShort(&ml_message, timeingame);
 
-		// FIXME - Treat non-players (downloaders/others) as spectators too for
-		// now
+		// FIXME - Treat non-players (downloaders/others) as spectators too for now
 		bool spectator;
 
 		spectator = (it->spectator ||
-		             ((it->playerstate != PST_LIVE) &&
-		              (it->playerstate != PST_DEAD) &&
-		              (it->playerstate != PST_REBORN)));
+					 ((it->playerstate != PST_LIVE) &&
+					  (it->playerstate != PST_DEAD) &&
+					  (it->playerstate != PST_REBORN)));
 
 		MSG_WriteBool(&ml_message, spectator);
 

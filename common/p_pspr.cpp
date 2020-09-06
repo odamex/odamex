@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 #include "doomdef.h"
 #include "d_event.h"
 
-#include "cmdlib.h"
 #include "c_cvars.h"
 
 #include "m_random.h"
@@ -41,6 +40,7 @@
 #include "p_pspr.h"
 
 #include "p_unlag.h"
+#include "m_wdlstats.h"
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
@@ -264,10 +264,10 @@ bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 	if (switching && (weapon == wp_bfg || weapon == wp_supershotgun))
 		count++;
 
-    // Some do not need ammunition anyway.
-    // Return if current ammunition sufficient.
-    if (ammotype == am_noammo || player->ammo[ammotype] >= count)
-        return true;
+	// Some do not need ammunition anyway.
+	// Return if current ammunition sufficient.
+	if (ammotype == am_noammo || player->ammo[ammotype] >= count)
+		return true;
 
 	return false;
 }
@@ -301,7 +301,7 @@ void P_SwitchWeapon(player_t *player)
 	}
 
 	weapontype_t best_weapon = static_cast<weapontype_t>(best_weapon_num);
-	if (best_weapon != player->readyweapon)
+	if (best_weapon != player->readyweapon && player->weaponowned[best_weapon])
 	{
 		// Switch to this weapon
 		player->pendingweapon = best_weapon;
@@ -319,6 +319,9 @@ void P_SwitchWeapon(player_t *player)
 //
 weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 {
+	if (player->readyweapon == NUMWEAPONS || player->pendingweapon == NUMWEAPONS)
+		return wp_nochange;
+
 	gitem_t *item;
 
 	if (player->pendingweapon != wp_nochange)
@@ -375,12 +378,16 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	}
 
 	// Never switch - player has to manually change themselves
-	if (player->userinfo.switchweapon == WPSW_NEVER)
+	// Having no weapons because of ClearInventory/TakeInventory overrides this
+	if (player->userinfo.switchweapon == WPSW_NEVER && player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
 		return false;
 
 	weapontype_t currentweapon = (player->pendingweapon == wp_nochange)
 			? player->readyweapon
 			: player->pendingweapon;
+
+	if (currentweapon == NUMWEAPONS)
+		return true;
 
 	// Use player's weapon preferences
 	byte *prefs = player->userinfo.weapon_prefs;
@@ -437,7 +444,8 @@ static void DecreaseAmmo(player_t *player)
 //
 void P_FireWeapon(player_t* player)
 {
-	if (!P_CheckAmmo(player))
+	// Prevent fire if you don't have any weapon, including fist. See DoClearInv - PCD_CLEARINVENTORY
+	if (!P_CheckAmmo(player) || player->readyweapon == NUMWEAPONS)
 		return;
 
 	// [tm512] Send the client the weapon they just fired so
@@ -576,8 +584,8 @@ void A_Lower(AActor* mo)
 		return;
 	}
 
-	// haleyjd 03/28/10: do not assume pendingweapon is valid
-	if (player->pendingweapon < NUMWEAPONS)
+	// haleyjd 03/28/10: do not assume pendingweapon is valid - include NUMWEAPONS from ClearInventory
+	if (player->pendingweapon < NUMWEAPONS + 1)
 		player->readyweapon = player->pendingweapon;
 
 	P_BringUpWeapon(player);
@@ -756,7 +764,67 @@ void A_FireBFG(AActor* mo)
 	player->userinfo.aimdist = storedaimdist;
 }
 
+//
+// A_FireOldBFG
+//
+// This function emulates Doom's Pre-Beta BFG
+// By Lee Killough 6/6/98, 7/11/98, 7/19/98, 8/20/98
+//
+// This code may not be used in other mods without appropriate credit given.
+// Code leeches will be telefragged.
 
+void A_FireOldBFG(AActor* mo)
+{
+    /* [AM] Not implemented...yet.
+    int type = MT_PLASMA1;
+
+    if (weapon_recoil && !(player->mo->flags & MF_NOCLIP))
+	P_Thrust(player, ANG180 + player->mo->angle,
+	    512 * recoil_values[wp_plasma]);
+
+    player->ammo[weaponinfo[player->readyweapon].ammo]--;
+
+    player->extralight = 2;
+
+    do
+    {
+	mobj_t* th, * mo = player->mo;
+	angle_t an = mo->angle;
+	angle_t an1 = ((P_Random(pr_bfg) & 127) - 64) * (ANG90 / 768) + an;
+	angle_t an2 = ((P_Random(pr_bfg) & 127) - 64) * (ANG90 / 640) + ANG90;
+	extern int autoaim;
+
+	if (autoaim || !beta_emulation)
+	{
+	    // killough 8/2/98: make autoaiming prefer enemies
+	    int mask = MF_FRIEND;
+	    fixed_t slope;
+	    do
+	    {
+		slope = P_AimLineAttack(mo, an, 16 * 64 * FRACUNIT, mask);
+		if (!linetarget)
+		    slope = P_AimLineAttack(mo, an += 1 << 26, 16 * 64 * FRACUNIT, mask);
+		if (!linetarget)
+		    slope = P_AimLineAttack(mo, an -= 2 << 26, 16 * 64 * FRACUNIT, mask);
+		if (!linetarget)
+		    slope = 0, an = mo->angle;
+	    } while (mask && (mask = 0, !linetarget));     // killough 8/2/98
+	    an1 += an - mo->angle;
+	    an2 += tantoangle[slope >> DBITS];
+	}
+
+	th = P_SpawnMobj(mo->x, mo->y,
+	    mo->z + 62 * FRACUNIT - player->psprites[ps_weapon].sy,
+	    type);
+	P_SetTarget(&th->target, mo);
+	th->angle = an1;
+	th->momx = finecosine[an1 >> ANGLETOFINESHIFT] * 25;
+	th->momy = finesine[an1 >> ANGLETOFINESHIFT] * 25;
+	th->momz = finetangent[an2 >> ANGLETOFINESHIFT] * 25;
+	P_CheckMissileSpawn(th);
+    } while ((type != MT_PLASMA2) && (type = MT_PLASMA2)); //killough: obfuscated!
+    */
+}
 
 //
 // A_FirePlasma
@@ -952,6 +1020,8 @@ void A_FirePistol(AActor* mo)
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan (player, 1, accuracy);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_pistol);
 }
 
 
@@ -972,6 +1042,8 @@ void A_FireShotgun(AActor* mo)
 				  weaponinfo[player->readyweapon].flashstate);
 
 	P_FireHitscan (player, 7, SPREAD_NORMAL);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_shotgun);
 }
 
 
@@ -993,6 +1065,8 @@ void A_FireShotgun2(AActor* mo)
 				  weaponinfo[player->readyweapon].flashstate);
 
 	P_FireHitscan (player, 20, SPREAD_SUPERSHOTGUN);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_supershotgun);
 }
 
 //
@@ -1021,6 +1095,8 @@ void A_FireCGun(AActor* mo)
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan (player, 1, accuracy);
+
+	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_chaingun);
 }
 
 
@@ -1198,4 +1274,3 @@ FArchive &operator>> (FArchive &arc, pspdef_t &def)
 }
 
 VERSION_CONTROL (p_pspr_cpp, "$Id$")
-

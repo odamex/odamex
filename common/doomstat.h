@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,6 +38,7 @@
 
 // We also need the definition of a cvar
 #include "c_cvars.h"
+#include "d_netinf.h"
 
 // ------------------------
 // Command line parameters.
@@ -76,6 +77,7 @@ extern BOOL            network_game;
 
 // Game mode
 EXTERN_CVAR (sv_gametype)
+EXTERN_CVAR (sv_maxplayers)
 
 #define GM_COOP		0.0f
 #define GM_DM		1.0f
@@ -120,11 +122,6 @@ extern	"C" int 		viewheight;
 extern	"C" int 		viewwidth;
 
 
-
-// This one is related to the 3-screen display mode.
-// ANG90 = left side, ANG270 = right
-extern	int				viewangleoffset;
-
 extern level_locals_t level;
 
 
@@ -161,27 +158,12 @@ extern	gamestate_t 	gamestate;
 extern	int 			gametic;
 
 // Player spawn spots for deathmatch.
-extern	int				MaxDeathmatchStarts;
-extern	mapthing2_t		*deathmatchstarts;
-extern	mapthing2_t*	deathmatch_p;
+extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
 #define MAXPLAYERSTARTS		64
 extern std::vector<mapthing2_t> playerstarts;
 extern std::vector<mapthing2_t> voodoostarts;
-
-// ----------------------------------------------
-//	[Toke - CTF - starts]
-
-		// Blue team starts
-extern	mapthing2_t		*blueteamstarts;
-extern	size_t			MaxBlueTeamStarts;
-extern	mapthing2_t*	blueteam_p;
-
-		// Red team starts
-extern	mapthing2_t		*redteamstarts;
-extern	size_t			MaxRedTeamStarts;
-extern	mapthing2_t*	redteam_p;
 
 // ----------------------------------------------
 
@@ -236,6 +218,11 @@ struct DehInfo
 	int Infight;
 };
 extern struct DehInfo deh;
+
+bool IsGameModeDuel();
+bool IsGameModeFFA();
+const char* GetGameModeString();
+const char* GetShortGameModeString();
 
 #endif
 

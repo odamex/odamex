@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,9 +37,7 @@
 #include "doomstat.h"
 #include "gstrings.h"
 
-#include "i_system.h"
 #include "z_zone.h"
-#include "m_argv.h"
 #include "m_random.h"
 #include "m_bbox.h"
 #include "w_wad.h"
@@ -68,6 +66,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
+bool s_SpecialFromServer;
 
 //
 // P_FindMovingSector
@@ -91,7 +90,7 @@ std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 //
 void P_AddMovingCeiling(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || (clientside && consoleplayer().spectator))
 		return;
 
 	movingsector_t *movesec;
@@ -126,7 +125,7 @@ void P_AddMovingCeiling(sector_t *sector)
 //
 void P_AddMovingFloor(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || (clientside && consoleplayer().spectator))
 		return;
 
 	movingsector_t *movesec;
@@ -996,22 +995,21 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (int secnum)
+fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	sector_t *sec = &sectors[secnum];
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum, i, 0);
+			side = getSide (sec, i, 0);
 			if (side->bottomtexture >= 0)
 				if (textureheight[side->bottomtexture] < minsize)
 					minsize = textureheight[side->bottomtexture];
-			side = getSide (secnum, i, 1);
+			side = getSide (sec, i, 1);
 			if (side->bottomtexture >= 0)
 				if (textureheight[side->bottomtexture] < minsize)
 					minsize = textureheight[side->bottomtexture];
@@ -1032,22 +1030,21 @@ fixed_t P_FindShortestTextureAround (int secnum)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (int secnum)
+fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	sector_t *sec = &sectors[secnum];
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (secnum, i))
+		if (twoSided (sec, i))
 		{
-			side = getSide (secnum,i,0);
+			side = getSide (sec,i,0);
 			if (side->toptexture >= 0)
 				if (textureheight[side->toptexture] < minsize)
 					minsize = textureheight[side->toptexture];
-			side = getSide (secnum,i,1);
+			side = getSide (sec,i,1);
 			if (side->toptexture >= 0)
 				if (textureheight[side->toptexture] < minsize)
 					minsize = textureheight[side->toptexture];
@@ -1073,9 +1070,9 @@ fixed_t P_FindShortestUpperAround (int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
+sector_t *P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -1110,9 +1107,9 @@ sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, int secnum)
+sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 {
-	sector_t *other, *sec = &sectors[secnum];
+	sector_t *other;
 
     //jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
@@ -1157,33 +1154,6 @@ int P_FindLineFromID (int id, int start)
 	return start;
 }
 
-// Hash the sector tags across the sectors and linedefs.
-static void P_InitTagLists (void)
-{
-	register int i;
-
-	for (i=numsectors; --i>=0; )		// Initially make all slots empty.
-		sectors[i].firsttag = -1;
-	for (i=numsectors; --i>=0; )		// Proceed from last to first sector
-	{									// so that lower sectors appear first
-		int j = (unsigned) sectors[i].tag % (unsigned) numsectors;	// Hash func
-		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
-		sectors[j].firsttag = i;
-	}
-
-	// killough 4/17/98: same thing, only for linedefs
-
-	for (i=numlines; --i>=0; )			// Initially make all slots empty.
-		lines[i].firstid = -1;
-	for (i=numlines; --i>=0; )        // Proceed from last to first linedef
-	{									// so that lower linedefs appear first
-		int j = (unsigned) lines[i].id % (unsigned) numlines;	// Hash func
-		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
-		lines[j].firstid = i;
-	}
-}
-
-
 //
 // Find minimum light from an adjacent sector
 //
@@ -1222,7 +1192,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
 
-	int msg = 0;
+	const OString* msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -1248,49 +1218,49 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		case AnyKey:
 			if (bc || bs || rc || rs || yc || ys)
 				return true;
-			msg = PD_ANY;
+			msg = &PD_ANY;
 			break;
 
 		case AllKeys:
 			if (bc && bs && rc && rs && yc && ys)
 				return true;
-			msg = equiv ? PD_ALL3 : PD_ALL6;
+			msg = equiv ? &PD_ALL3 : &PD_ALL6;
 			break;
 
 		case RCard:
 			if (rc)
 				return true;
-			msg = equiv ? (remote ? PD_REDO : PD_REDK) : PD_REDC;
+			msg = equiv ? (remote ? &PD_REDO : &PD_REDK) : &PD_REDC;
 			break;
 
 		case BCard:
 			if (bc)
 				return true;
-			msg = equiv ? (remote ? PD_BLUEO : PD_BLUEK) : PD_BLUEC;
+			msg = equiv ? (remote ? &PD_BLUEO : &PD_BLUEK) : &PD_BLUEC;
 			break;
 
 		case YCard:
 			if (yc)
 				return true;
-			msg = equiv ? (remote ? PD_YELLOWO : PD_YELLOWK) : PD_YELLOWC;
+			msg = equiv ? (remote ? &PD_YELLOWO : &PD_YELLOWK) : &PD_YELLOWC;
 			break;
 
 		case RSkull:
 			if (rs)
 				return true;
-			msg = equiv ? (remote ? PD_REDO : PD_REDK) : PD_REDS;
+			msg = equiv ? (remote ? &PD_REDO : &PD_REDK) : &PD_REDS;
 			break;
 
 		case BSkull:
 			if (bs)
 				return true;
-			msg = equiv ? (remote ? PD_BLUEO : PD_BLUEK) : PD_BLUES;
+			msg = equiv ? (remote ? &PD_BLUEO : &PD_BLUEK) : &PD_BLUES;
 			break;
 
 		case YSkull:
 			if (ys)
 				return true;
-			msg = equiv ? (remote ? PD_YELLOWO : PD_YELLOWK) : PD_YELLOWS;
+			msg = equiv ? (remote ? &PD_YELLOWO : &PD_YELLOWK) : &PD_YELLOWS;
 			break;
 	}
 
@@ -1303,14 +1273,16 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-		C_MidPrint (GStrings(msg), p);
+
+		if (msg != NULL)
+			C_MidPrint(GStrings(*msg), p);
 	}
 
 	return false;
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain);
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType);
 
 //
 // EVENTS
@@ -1344,12 +1316,7 @@ void P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void
-P_CrossSpecialLine
-( int		linenum,
-  int		side,
-  AActor*	thing,
-  bool      FromServer)
+void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 {
     line_t*	line = &lines[linenum];
 
@@ -1449,18 +1416,14 @@ P_CrossSpecialLine
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, side, 0);
+	OnActivatedLine(line, thing, side, LineCross);
 }
 
 //
 // P_ShootSpecialLine - IMPACT SPECIALS
 // Called when a thing shoots a special line.
 //
-void
-P_ShootSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  bool      FromServer)
+void P_ShootSpecialLine(AActor*	thing, line_t* line)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return;
@@ -1485,7 +1448,7 @@ P_ShootSpecialLine
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, 0, 2);
+	OnActivatedLine(line, thing, 0, LineShoot);
 
 	if(serverside)
 	{
@@ -1500,12 +1463,7 @@ P_ShootSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
-bool
-P_UseSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  int		side,
-  bool      FromServer)
+bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
@@ -1562,7 +1520,7 @@ P_UseSpecialLine
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, 1);
+		OnActivatedLine(line, thing, side, LineUse);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
@@ -1580,12 +1538,7 @@ P_UseSpecialLine
 // Called when a thing pushes a special line, only in advanced map format
 // Only the front sides of lines are pushable.
 //
-bool
-P_PushSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  int		side,
-  bool      FromServer)
+bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
@@ -1628,7 +1581,7 @@ P_PushSpecialLine
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, 3);
+		OnActivatedLine(line, thing, side, LinePush);
 
 		if(serverside)
 		{
@@ -1670,35 +1623,33 @@ void P_PlayerInSpecialSector (player_t *player)
 	{
 		switch (special)
 		{
-		  case Damage_InstantDeath:
+		
+		// Strife's Instant Death Sector
+		case Damage_InstantDeath:
 			P_DamageMobj (player->mo, NULL, NULL, 999, MOD_UNKNOWN);
 			break;
 
-		  case dDamage_Hellslime:
+		case dDamage_Hellslime:
 			// HELLSLIME DAMAGE
-			if (!player->powers[pw_ironfeet])
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
+			if (!player->powers[pw_ironfeet] && !(level.time&0x1f) )
+				P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
 			break;
 
-		  case dDamage_Nukage:
+		case dDamage_Nukage:
+		case sLight_Strobe_Hurt:
 			// NUKAGE DAMAGE
-			if (!player->powers[pw_ironfeet])
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
+			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				P_DamageMobj (player->mo, NULL, NULL, 5, MOD_SLIME);
 			break;
 
-		  case hDamage_Sludge:
-			if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
+		case hDamage_Sludge:
+			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 4, MOD_SLIME);
 			break;
 
-		  case dDamage_SuperHellslime:
-			// SUPER HELLSLIME DAMAGE
-		  case dLight_Strobe_Hurt:
-			// STROBE HURT
-			if (!player->powers[pw_ironfeet]
-				|| (P_Random ()<5) )
+		case dDamage_SuperHellslime:	// SUPER HELLSLIME DAMAGE
+		case dLight_Strobe_Hurt:		// STROBE HURT
+			if (!player->powers[pw_ironfeet] || (P_Random() < 5) )
 			{
 				if (!(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
@@ -1712,7 +1663,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(sv_gametype == GM_COOP || sv_allowexit)
+			if( sv_gametype == GM_COOP || sv_allowexit )
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);
@@ -1722,14 +1673,18 @@ void P_PlayerInSpecialSector (player_t *player)
 		  case dDamage_LavaWimpy:
 		  case dScroll_EastLavaDamage:
 			if (!(level.time & 15))
+			{
 				P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
-
+				P_HitFloor(player->mo);
+			}
 			break;
 
 		  case dDamage_LavaHefty:
-			if(!(level.time & 15))
+			if (!(level.time & 15))
+			{
 				P_DamageMobj(player->mo, NULL, NULL, 8, MOD_LAVA);
-
+				P_HitFloor(player->mo);
+			}
 			break;
 
 		  default:
@@ -1744,18 +1699,15 @@ void P_PlayerInSpecialSector (player_t *player)
 			case 0x000: // no damage
 				break;
 			case 0x100: // 2/5 damage per 31 ticks
-				if (!player->powers[pw_ironfeet])
-					if (!(level.time&0x1f))
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
 				break;
 			case 0x200: // 5/10 damage per 31 ticks
-				if (!player->powers[pw_ironfeet])
-					if (!(level.time&0x1f))
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
 				break;
 			case 0x300: // 10/20 damage per 31 ticks
-				if (!player->powers[pw_ironfeet]
-					|| (P_Random(player->mo)<5))	// take damage even with suit
+				if (!player->powers[pw_ironfeet] || (P_Random(player->mo)<5))	// take damage even with suit
 				{
 					if (!(level.time&0x1f))
 						P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
@@ -1764,7 +1716,8 @@ void P_PlayerInSpecialSector (player_t *player)
 		}
 
 		// [RH] Apply any customizable damage
-		if (sector->damage) {
+		if (sector->damage) 
+		{
 			if (sector->damage < 20) {
 				if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
 					P_DamageMobj (player->mo, NULL, NULL, sector->damage, sector->mod);
@@ -1908,67 +1861,91 @@ void P_SpawnSpecials (void)
 
 		case dLight_Flicker:
 			// FLICKERING LIGHTS
+			if (IgnoreSpecial)
+				break;
 			new DLightFlash (sector);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeFast:
 			// STROBE FAST
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeSlow:
 			// STROBE SLOW
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, false);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_Strobe_Hurt:
 			// STROBE FAST/DEATH SLIME
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
 			break;
 
 		case dLight_Glow:
 			// GLOWING LIGHT
+			if (IgnoreSpecial)
+				break;
 			new DGlow (sector);
 			sector->special &= 0xff00;
 			break;
 
 		case dSector_DoorCloseIn30:
+			if (!serverside)
+				break;
 			// DOOR CLOSE IN 30 SECONDS
 			P_SpawnDoorCloseIn30 (sector);
 			break;
 
 		case dLight_StrobeSlowSync:
 			// SYNC STROBE SLOW
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, true);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeFastSync:
 			// SYNC STROBE FAST
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, true);
 			sector->special &= 0xff00;
 			break;
 
 		case dSector_DoorRaiseIn5Mins:
+			if (!serverside)
+				break;
 			// DOOR RAISE IN 5 MINUTES
 			P_SpawnDoorRaiseIn5Mins (sector);
 			break;
 
 		case dLight_FireFlicker:
 			// fire flickering
+			if (IgnoreSpecial)
+				break;
 			new DFireFlicker (sector);
 			sector->special &= 0xff00;
 			break;
 
 		  // [RH] Hexen-like phased lighting
 		case LightSequenceStart:
+			if (IgnoreSpecial)
+				break;
 			new DPhased (sector);
 			break;
 
 		case Light_Phased:
+			if (IgnoreSpecial)
+				break;
 			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
 			break;
 
@@ -1977,6 +1954,8 @@ void P_SpawnSpecials (void)
 			break;
 
 		default:
+			if (IgnoreSpecial)
+				break;
 			// [RH] Try for normal Hexen scroller
 			if ((sector->special & 0xff) >= Scroll_North_Slow &&
 				(sector->special & 0xff) <= Scroll_SouthWest_Fast)
@@ -2014,8 +1993,6 @@ void P_SpawnSpecials (void)
 
 	// P_InitTagLists() must be called before P_FindSectorFromTag()
 	// or P_FindLineFromID() can be called.
-
-	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 	P_SpawnScrollers(); // killough 3/7/98: Add generalized scrollers
 	P_SpawnFriction();	// phares 3/12/98: New friction model using linedefs
 	P_SpawnPushers();	// phares 3/20/98: New pusher model using linedefs
@@ -2089,6 +2066,8 @@ void P_SpawnSpecials (void)
 			{
 			case Init_Gravity:
 				{
+				if (IgnoreSpecial)
+					break;
 				float grav = ((float)P_AproxDistance (lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
 				for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 					sectors[s].gravity = grav;
@@ -2100,6 +2079,9 @@ void P_SpawnSpecials (void)
 
 			case Init_Damage:
 				{
+					if (IgnoreSpecial)
+						break;
+
 					int damage = P_AproxDistance (lines[i].dx, lines[i].dy) >> FRACBITS;
 					for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 					{
@@ -2130,7 +2112,7 @@ void P_SpawnSpecials (void)
 	// [RH] Start running any open scripts on this map
 	if (level.behavior != NULL)
 	{
-		level.behavior->StartTypedScripts (SCRIPT_Open, NULL);
+		level.behavior->StartTypedScripts (SCRIPT_Open, NULL, 0, 0, 0, false);
 	}
 }
 
@@ -2160,10 +2142,8 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t centerfloor = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		fixed_t height = centerfloor + centerceiling;
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
 		dx = FixedMul(dx, delta);
@@ -2182,28 +2162,24 @@ void DScroller::RunThink ()
 
 	switch (m_Type)
 	{
-		side_t *side;
 		sector_t *sec;
 		fixed_t height, waterheight;	// killough 4/4/98: add waterheight
 		msecnode_t *node;
 		AActor *thing;
 
 		case sc_side:				// killough 3/7/98: Scroll wall texture
-			side = sides + m_Affectee;
-			side->textureoffset += dx;
-			side->rowoffset += dy;
+			sides[m_Affectee].textureoffset += dx;
+			sides[m_Affectee].rowoffset += dy;
 			break;
 
 		case sc_floor:				// killough 3/7/98: Scroll floor texture
-			sec = sectors + m_Affectee;
-			sec->floor_xoffs += dx;
-			sec->floor_yoffs += dy;
+			sectors[m_Affectee].floor_xoffs += dx;
+			sectors[m_Affectee].floor_yoffs += dy;
 			break;
 
 		case sc_ceiling:			// killough 3/7/98: Scroll ceiling texture
-			sec = sectors + m_Affectee;
-			sec->ceiling_xoffs += dx;
-			sec->ceiling_yoffs += dy;
+			sectors[m_Affectee].ceiling_xoffs += dx;
+			sectors[m_Affectee].ceiling_yoffs += dy;
 			break;
 
 		case sc_carry:
@@ -2266,12 +2242,9 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t centerfloor =
-			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling =
-			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		m_LastHeight = centerfloor + centerceiling;
+		m_LastHeight = height;
 	}
 	m_Affectee = affectee;
 }
@@ -2303,12 +2276,9 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t centerfloor =
-			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
-		fixed_t centerceiling =
-			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
 
-		m_LastHeight = centerfloor + centerceiling;
+		m_LastHeight = height;
 	}
 	m_Affectee = *l->sidenum;
 }
@@ -2369,11 +2339,17 @@ static void P_SpawnScrollers(void)
 			register int s;
 
 			case Scroll_Ceiling:
+				if (IgnoreSpecial)
+					break;
+
 				for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
 					new DScroller (DScroller::sc_ceiling, -dx, dy, control, s, accel);
 				break;
 
 			case Scroll_Floor:
+				if (IgnoreSpecial)
+					break;
+
 				if (l->args[2] != 1)
 					// scroll the floor
 					for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
@@ -2391,12 +2367,18 @@ static void P_SpawnScrollers(void)
 			// killough 3/1/98: scroll wall according to linedef
 			// (same direction and speed as scrolling floors)
 			case Scroll_Texture_Model:
+				if (IgnoreSpecial)
+					break;
+
 				for (s=-1; (s = P_FindLineFromID (l->args[0],s)) >= 0;)
 					if (s != i)
 						new DScroller (dx, dy, lines+s, control, accel);
 				break;
 
 			case Scroll_Texture_Offsets:
+				if (IgnoreSpecial)
+					break;
+
 				// killough 3/2/98: scroll according to sidedef offsets
 				s = lines[i].sidenum[0];
 				new DScroller (DScroller::sc_side, -sides[s].textureoffset,
@@ -2404,26 +2386,41 @@ static void P_SpawnScrollers(void)
 				break;
 
 			case Scroll_Texture_Left:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, l->args[0] * (FRACUNIT/64), 0,
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Right:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, l->args[0] * (-FRACUNIT/64), 0,
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Up:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, 0, l->args[0] * (FRACUNIT/64),
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Down:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, 0, l->args[0] * (-FRACUNIT/64),
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Both:
+				if (IgnoreSpecial)
+					break;
+
 				if (l->args[0] == 0) {
 					dx = (l->args[1] - l->args[2]) * (FRACUNIT/64);
 					dy = (l->args[4] - l->args[3]) * (FRACUNIT/64);
@@ -2432,6 +2429,7 @@ static void P_SpawnScrollers(void)
 				break;
 
 			default:
+				l->special = special;
 				break;
 		}
 	}
@@ -2961,4 +2959,3 @@ bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
 }
 
 VERSION_CONTROL (p_spec_cpp, "$Id$")
-

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@
 
 #include "doomdef.h"
 #include "c_cvars.h"
+#include "teaminfo.h"
 
 #define MAXPLAYERNAME	15
 
@@ -37,18 +38,6 @@ enum gender_t
 	GENDER_NEUTER,
 	
 	NUMGENDER
-};
-
-// [Toke - Teams]
-// denis - for both teamplay and ctfmode
-enum team_t
-{
-	TEAM_BLUE,
-	TEAM_RED,
-	
-	NUMTEAMS,
-	
-	TEAM_NONE
 };
 
 enum weaponswitch_t
@@ -65,7 +54,6 @@ struct UserInfo
 	std::string		netname;
 	team_t			team; // [Toke - Teams]
 	fixed_t			aimdist;
-	bool			unlag;
 	bool			predict_weapons;
 	byte			color[4];
 	gender_t		gender;
@@ -75,7 +63,7 @@ struct UserInfo
 	static const byte weapon_prefs_default[NUMWEAPONS];
 
 	UserInfo() : team(TEAM_NONE), aimdist(0),
-	             unlag(true), predict_weapons(true),
+	             predict_weapons(true),
 	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
 	{
 		// default doom weapon ordering when player runs out of ammo

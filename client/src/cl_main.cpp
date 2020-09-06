@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,6 @@
 #include "gi.h"
 #include "i_net.h"
 #include "i_system.h"
-#include "i_video.h"
 #include "c_dispatch.h"
 #include "st_stuff.h"
 #include "m_argv.h"
@@ -46,23 +45,18 @@
 #include "p_ctf.h"
 #include "m_random.h"
 #include "m_memio.h"
-#include "w_wad.h"
 #include "w_ident.h"
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
 #include "cl_demo.h"
 #include "cl_download.h"
-#include "p_local.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
 #include "p_mobj.h"
 #include "p_snapshot.h"
 #include "p_lnspec.h"
 #include "cl_netgraph.h"
-#include "cl_maplist.h"
-#include "cl_vote.h"
-#include "p_mobj.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
 #include "g_warmup.h"
@@ -163,6 +157,7 @@ EXTERN_CVAR (r_forceteamcolor)
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
+void P_DestroyButtonThinkers();
 
 //
 // CL_ShadePlayerColor
@@ -178,7 +173,6 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 	color.setv(0.7f * color.getv() + 0.3f * V_RGBtoHSV(shade_color).getv());
 	return V_HSVtoRGB(color);
 }
-
 
 //
 // CL_GetPlayerColor
@@ -202,10 +196,7 @@ argb_t CL_GetPlayerColor(player_t *player)
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		teammate = P_AreTeammates(consoleplayer(), *player);
-		if (player->userinfo.team == TEAM_BLUE)
-			base_color = argb_t(255, 0, 0, 255);
-		else if (player->userinfo.team == TEAM_RED)
-			base_color = argb_t(255, 255, 0, 0);
+		base_color = GetTeamInfo(player->userinfo.team)->Color;
 	}
 	if (player->id != consoleplayer_id && !consoleplayer().spectator)
 	{
@@ -293,7 +284,6 @@ void CL_Decompress(int sequence);
 
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
-void CL_NetDemoSnapshot(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
@@ -314,7 +304,6 @@ void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
@@ -383,6 +372,7 @@ void CL_QuitNetGame(void)
 {
 	if(connected)
 	{
+		SZ_Clear(&net_buffer);
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
@@ -414,7 +404,18 @@ void CL_QuitNetGame(void)
 	mute_enemies = 0.f;
 
 	P_ClearAllNetIds();
-	players.clear();
+
+	{
+		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
+		for (Players::iterator it = players.begin(); it != players.end(); it++) {
+			player_s &player = *it;
+			if (player.mo) {
+				player.mo->player = NULL;
+			}
+		}
+
+		players.clear();
+	}
 
 	recv_full_update = false;
 
@@ -424,9 +425,8 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	// Don't forget to clean a vanilla demo !
 	if (demorecording)
-		G_CleanupDemo();
+		G_CleanupDemo();	// Cleanup in case of a vanilla demo
 
 	demoplayback = false;
 
@@ -463,12 +463,17 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+std::string spyplayername;
+void CL_CheckDisplayPlayer(void);
+
 //
 // CL_ConnectClient
 //
 void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
+
+	CL_CheckDisplayPlayer();
 
 	if (!cl_connectalert)
 		return;
@@ -486,10 +491,18 @@ void CL_ConnectClient(void)
 // Perfoms validation on the value of displayplayer_id based on the current
 // game state and status of the consoleplayer.
 //
-void CL_CheckDisplayPlayer()
+void CL_CheckDisplayPlayer(void)
 {
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
+
+	// [jsd]: try to spy on player by name when connected if spyplayername is set:
+	if (spyplayername.length() > 0) {
+		player_t &spyplayer = nameplayer(spyplayername);
+		if (validplayer(spyplayer)) {
+			displayplayer_id = spyplayer.id;
+		}
+	}
 
 	if (displayplayer_id != previd)
 		newid = displayplayer_id;
@@ -819,10 +832,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf(PRINT_HIGH, " PLAYERS IN GAME:\n");
+	Printf(PRINT_HIGH, "PLAYERS IN GAME:\n");
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf(PRINT_HIGH, "%d. %s\n", (*it).first, (*it).second.c_str());
+		Printf(PRINT_HIGH, "%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
+	Printf(PRINT_HIGH, "%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -854,17 +868,12 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	char team[5] = { 0 };
-	if (player->userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player->userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
+	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
 	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.unlag   - %d \n",		player->userinfo.unlag);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
@@ -880,7 +889,7 @@ BEGIN_COMMAND (kill)
     if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -932,16 +941,6 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
-// rate: takes a kbps value
-CVAR_FUNC_IMPL (rate)
-{
-	if (connected)
-	{
-		MSG_WriteMarker(&net_buffer, clc_rate);
-		MSG_WriteLong(&net_buffer, (int)var);
-	}
-}
-
 
 BEGIN_COMMAND (rcon)
 {
@@ -949,7 +948,7 @@ BEGIN_COMMAND (rcon)
 	{
 		char  command[256];
 
-		strncpy(command, args, STACKARRAY_LENGTH(command) - 1);
+		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';		
 
 		MSG_WriteMarker(&net_buffer, clc_rcon);
@@ -996,25 +995,29 @@ END_COMMAND (playerteam)
 
 BEGIN_COMMAND (changeteams)
 {
-	if (consoleplayer().userinfo.team == TEAM_BLUE)
-		cl_team.Set("RED");
-	else if (consoleplayer().userinfo.team == TEAM_RED)
-		cl_team.Set("BLUE");
+	int iTeam = (int)consoleplayer().userinfo.team;
+	iTeam = ++iTeam % NUMTEAMS;
+	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
-	if (consoleplayer().spectator)
+	bool spectator = consoleplayer().spectator;
+
+	if (spectator)
 	{
-		// reset camera to self, do not send any messages
+		// reset camera to self
 		displayplayer_id = consoleplayer_id;
 		CL_CheckDisplayPlayer();
-		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_spectate);
-	MSG_WriteByte(&net_buffer, true);
+	// Only send message if currently not a spectator, or to remove from play queue
+	if (!spectator || consoleplayer().QueuePosition > 0)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, true);
+	}
 }
 END_COMMAND (spectate)
 
@@ -1024,11 +1027,11 @@ BEGIN_COMMAND (ready) {
 
 BEGIN_COMMAND (join)
 {
-	if (P_NumPlayersInGame() >= sv_maxplayers)
-	{
-		C_MidPrint("The game is currently full", NULL);
-		return;
-	}
+	//if (P_NumPlayersInGame() >= sv_maxplayers)
+	//{
+	//	C_MidPrint("The game is currently full", NULL);
+	//	return;
+	//}
 
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
@@ -1041,7 +1044,7 @@ BEGIN_COMMAND (flagnext)
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
-			byte id = CTFdata[i].flagger;
+			byte id = GetTeamInfo((team_t)i)->FlagData.flagger;
 			if (id != 0 && displayplayer_id != id)
 			{
 				displayplayer_id = id;
@@ -1067,22 +1070,27 @@ END_COMMAND (spyprev)
 
 BEGIN_COMMAND (spy)
 {
-	byte id = consoleplayer_id;
+	if (argc <= 1) {
+		if (spyplayername.length() > 0) {
+			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
 
-	if (argc > 1)
-		id = atoi(argv[1]);
+			// revert to not spying:
+			displayplayer_id = consoleplayer_id;
+		} else {
+			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+		}
 
-	if (id == 0)
-	{
-		Printf(PRINT_HIGH, "Expecting player ID.  Try 'players' to list all of the player IDs.\n");
-		return;
+		// clear last player name:
+		spyplayername = "";
+	} else {
+		// remember player name in case of disconnect/reconnect e.g. level change:
+		spyplayername = argv[1];
+
+		Printf(PRINT_HIGH, "Following player '%s'. Use 'spy' with no player name to unfollow.\n",
+			   spyplayername.c_str());
 	}
 
-	displayplayer_id = id;
 	CL_CheckDisplayPlayer();
-
-	if (displayplayer_id != id)
-		Printf(PRINT_HIGH, "Unable to spy player ID %i!\n", id);
 }
 END_COMMAND (spy)
 
@@ -1131,7 +1139,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
 	{
-		//I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
 		I_Warning("Unable to generate netdemo file name.");
 		return std::string();
 	}
@@ -1142,11 +1149,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 void CL_NetDemoStop()
 {
 	netdemo.stopPlaying();
-}
-
-void CL_NetDemoRecord(const std::string &filename)
-{
-	netdemo.startRecording(filename);
 }
 
 void CL_NetDemoPlay(const std::string &filename)
@@ -1208,8 +1210,8 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(filename);
-	netdemo.writeMapChange();
+	if (netdemo.startRecording(filename))
+		netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
 
@@ -1354,7 +1356,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, "");
 
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
@@ -1448,7 +1450,7 @@ void CL_UpdateSecrets(void)
 void CL_TeamPoints (void)
 {
 	for(size_t i = 0; i < NUMTEAMS; i++)
-		TEAMpoints[i] = MSG_ReadShort();
+		GetTeamInfo((team_t)i)->Points = MSG_ReadShort();
 }
 
 //
@@ -1802,8 +1804,6 @@ void CL_InitNetwork (void)
 		}
     }
 
-	G_SetDefaultTurbo ();
-
     connected = false;
 }
 
@@ -1836,7 +1836,10 @@ void CL_TryToConnect(DWORD server_token)
 
 		CL_SendUserInfo(); // send userinfo
 
-		MSG_WriteLong(&net_buffer, (int)rate);
+		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
+		// maximum rate that the server will ignore.
+		const int rate = 0xFFFF;
+		MSG_WriteLong(&net_buffer, rate); 
 
         MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
 
@@ -1991,12 +1994,12 @@ void CL_UpdatePlayer()
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-    // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = invisibility;
-    if (p->powers[pw_invisibility])
-        p->mo->flags |= MF_SHADOW;
-    else
-        p->mo->flags &= ~MF_SHADOW;
+	// [Russell] - hack, read and set invisibility flag
+	p->powers[pw_invisibility] = invisibility;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
@@ -2076,12 +2079,6 @@ void CL_UpdatePlayerState(void)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
-
-	// Receive the keys from a spied player
-	if (sv_gametype == GM_COOP) {
-		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = MSG_ReadByte();
-	}
 }
 
 //
@@ -2448,7 +2445,7 @@ void CL_PlayerInfo(void)
 	p->armortype = MSG_ReadByte();
 
 	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
+	if (newweapon > NUMWEAPONS)	// bad weapon number, choose something else
 		newweapon = wp_fist;
 
 	if (newweapon != p->readyweapon)
@@ -2573,29 +2570,28 @@ void CL_RemoveMobj(void)
 //
 void CL_DamagePlayer(void)
 {
-	player_t *p;
-	int       health;
-	int       damage;
+	int netid = MSG_ReadShort();
+	int healthDamage = MSG_ReadShort();
+	int armorDamage = MSG_ReadByte();
 
-	p = &idplayer(MSG_ReadByte());
+	AActor* actor = P_FindThingById(netid);
 
-	p->armorpoints = MSG_ReadByte();
-	health         = MSG_ReadShort();
-
-	if(!p->mo)
+	if (!actor || !actor->player)
 		return;
 
-	damage = p->health - health;
-	p->mo->health = p->health = health;
+	player_t *p = actor->player;
+	p->health -= healthDamage;
+	p->mo->health = p->health;
+	p->armorpoints -= armorDamage;
 
 	if (p->health < 0)
 		p->health = 0;
+	if (p->armorpoints < 0)
+		p->armorpoints = 0;
 
-	if (damage < 0)  // can't be!
-		return;
-
-	if (damage > 0) {
-		p->damagecount += damage;
+	if (healthDamage > 0)
+	{
+		p->damagecount += healthDamage;
 
 		if (p->damagecount > 100)
 			p->damagecount = 100;
@@ -3066,6 +3062,8 @@ void CL_ReadPacketHeader(void)
 
 	packetseq[packetnum] = sequence;
 	packetnum++;
+
+	netgraph.addPacketIn();
 }
 
 void CL_GetServerSettings(void)
@@ -3112,10 +3110,11 @@ void CL_GetServerSettings(void)
 void CL_FinishedFullUpdate()
 {
 	recv_full_update = true;
+}
 
-	// Write the first map snapshot to a netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
+void CL_StartFullUpdate()
+{
+	recv_full_update = false;
 }
 
 //
@@ -3146,17 +3145,7 @@ void CL_ForceSetTeam (void)
 
 	// Setting the cl_team will send a playerinfo packet back to the server.
 	// Unfortunately, this is unavoidable until we rework the team system.
-	switch (consoleplayer().userinfo.team) {
-	case TEAM_BLUE:
-		cl_team.Set("BLUE");
-		break;
-	case TEAM_RED:
-		cl_team.Set("RED");
-		break;
-	default:
-		cl_team.Set("NONE");
-		break;
-	}
+	cl_team.Set(GetTeamInfo(consoleplayer().userinfo.team)->ColorStringUpper.c_str());
 }
 
 //
@@ -3211,8 +3200,8 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
-    if (!mo)
-        return;
+	if (!mo)
+		return;
 
 	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);
@@ -3240,27 +3229,20 @@ void CL_Switch()
 	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
 		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
 
-	if (texture)
-		P_SetButtonTexture(&lines[l], texture); //accept the texture from the server, this is mostly to fix warmup desyncs
+	if (!recv_full_update && texture) // Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
+		P_SetButtonTexture(&lines[l], texture);
 	lines[l].special = special;
 }
 
-void CL_ActivateLine(void)
+void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activationType,
+	byte special = 0, byte arg0 = 0, byte arg1 = 0, byte arg2 = 0, byte arg3 = 0, byte arg4 = 0)
 {
-	unsigned l = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte side = MSG_ReadByte();
-	byte activationType = MSG_ReadByte();
-
-	if (!lines || l >= (unsigned)numlines)
-		return;
-
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
 	// positions since they cannot be used for interpolation.
-	if ((mo && mo->player) &&
-		(lines[l].special == Teleport || lines[l].special == Teleport_NoFog ||
-		 lines[l].special == Teleport_Line))
+	if (line && (mo && mo->player) &&
+		(line->special == Teleport || line->special == Teleport_NoFog ||
+			line->special == Teleport_Line))
 	{
 		teleported_players.insert(mo->player->id);
 
@@ -3271,24 +3253,50 @@ void CL_ActivateLine(void)
 
 	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
 	// need to create moving sectors on their own in response to svc_activateline
-	if (P_LineSpecialMovesSector(&lines[l]))
+	if (line && P_LineSpecialMovesSector(line->special))
 		return;
+
+	s_SpecialFromServer = true;
 
 	switch (activationType)
 	{
-	case 0:
-		P_CrossSpecialLine(l, side, mo, true);
+	case LineCross:
+		if (line)
+			P_CrossSpecialLine(line - lines, side, mo);
 		break;
-	case 1:
-		P_UseSpecialLine(mo, &lines[l], side, true);
+	case LineUse:
+		if (line)
+			P_UseSpecialLine(mo, line, side);
 		break;
-	case 2:
-		P_ShootSpecialLine(mo, &lines[l], true);
+	case LineShoot:
+		if (line)
+			P_ShootSpecialLine(mo, line);
 		break;
-    case 3:
-		P_PushSpecialLine(mo, &lines[l], side, true);
+	case LinePush:
+		if (line)
+			P_PushSpecialLine(mo, line, side);
+		break;
+	case LineACS:
+		LineSpecials[special](line, mo, arg0, arg1, arg2, arg3, arg4);
+		break;
+	default:
 		break;
 	}
+
+	s_SpecialFromServer = false;
+}
+
+void CL_ActivateLine(void)
+{
+	unsigned linenum = MSG_ReadLong();
+	AActor *mo = P_FindThingById(MSG_ReadShort());
+	byte side = MSG_ReadByte();
+	LineActivationType activationType = (LineActivationType)MSG_ReadByte();
+
+	if (!lines || linenum >= (unsigned)numlines)
+		return;
+
+	ActivateLine(mo, &lines[linenum], side, activationType);
 }
 
 void CL_ConsolePlayer(void)
@@ -3377,8 +3385,8 @@ void CL_LoadMap(void)
 		std::string filename;
 
 		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
-		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && cl_autorecord_deathmatch)
-		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && cl_autorecord_duel)
+		|| (IsGameModeFFA() && cl_autorecord_deathmatch)
+		|| (IsGameModeDuel() && cl_autorecord_duel)
 		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
 		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
 
@@ -3405,11 +3413,9 @@ void CL_LoadMap(void)
 	}
 
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording())
 		netdemo.writeMapChange();
 }
-
-void P_ResetSwitch(line_t* line);
 
 void CL_ResetMap()
 {
@@ -3440,6 +3446,8 @@ void CL_ResetMap()
 			sectors[i].ceilingdata->Destroy();
 		}
 	}
+
+	P_DestroyButtonThinkers();
 
 	// write the map index to the netdemo
 	if (netdemo.isRecording() && recv_full_update)
@@ -3649,11 +3657,20 @@ void CL_InitCommands(void)
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
 	cmds[svc_netdemoloadsnap]	= &CL_NetDemoLoadSnap;
 	cmds[svc_fullupdatedone]	= &CL_FinishedFullUpdate;
+	cmds[svc_fullupdatestart]	= &CL_StartFullUpdate;
 
 	cmds[svc_vote_update] = &CL_VoteUpdate;
 	cmds[svc_maplist] = &CL_Maplist;
 	cmds[svc_maplist_update] = &CL_MaplistUpdate;
 	cmds[svc_maplist_index] = &CL_MaplistIndex;
+
+	cmds[svc_playerqueuepos] = &CL_UpdatePlayerQueuePos;
+	cmds[svc_executelinespecial] = &CL_ExecuteLineSpecial;
+	cmds[svc_executeacsspecial] = &CL_ACSExecuteSpecial;
+	cmds[svc_lineupdate] = &CL_LineUpdate;
+	cmds[svc_linesideupdate] = &CL_LineSideUpdate;
+	cmds[svc_sectorproperties] = &CL_SectorSectorPropertiesUpdate;
+	cmds[svc_thinkerupdate] = &CL_ThinkerUpdate;
 }
 
 //
@@ -3754,10 +3771,16 @@ void CL_SendCmd(void)
 	// need to be used for client's positional prediction.
     MSG_WriteLong(&net_buffer, gametic);
 
-	NetCommand *netcmd;
 	for (int i = 9; i >= 0; i--)
 	{
-		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		NetCommand blank_netcmd;
+		NetCommand* netcmd;
+
+		if (gametic >= i)
+			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		else
+			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
+
 		netcmd->write(&net_buffer);
 	}
 
@@ -4129,7 +4152,372 @@ void CL_SimulateWorld()
 	world_index = world_index + 1 + drift_correction;
 }
 
+void CL_UpdatePlayerQueuePos()
+{
+	player_t &player = idplayer(MSG_ReadByte());
+	byte queuePos = MSG_ReadByte();
+
+	if (player.id == consoleplayer_id)
+	{
+		if (queuePos > 0 && player.QueuePosition == 0)
+		{
+			std::ostringstream ss;
+			ss << "Position in line to play: " << (int)queuePos << "\n";
+			Printf(PRINT_HIGH, ss.str().c_str());
+		}
+		else if (player.spectator && queuePos == 0 && player.QueuePosition > 0)
+		{
+			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
+		}
+	}
+
+	player.QueuePosition = queuePos;
+}
+
+void CL_ExecuteLineSpecial()
+{
+	byte special = MSG_ReadByte();
+	uint16_t lineid = MSG_ReadShort();
+	AActor* activator = P_FindThingById(MSG_ReadShort());
+	byte arg0 = MSG_ReadByte();
+	byte arg1 = MSG_ReadByte();
+	byte arg2 = MSG_ReadByte();
+	byte arg3 = MSG_ReadByte();
+	byte arg4 = MSG_ReadByte();
+
+	if (lineid != 0xFFFF && lineid > numlines)
+		return;
+
+	line_s* line = NULL;
+	if (lineid != 0xFFFF)
+		line = &lines[lineid];
+
+	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
+}
+
+void CL_ACSExecuteSpecial()
+{
+	byte special = MSG_ReadByte();
+	short netid = MSG_ReadShort();
+	byte length = MSG_ReadByte();
+	byte* argBuffer = (byte*)MSG_ReadChunk(length);
+	const char* print = MSG_ReadString();
+
+	static int acsArgs[16];
+	int count = 0, bytesRead = 0;
+
+	while (length > 0 && bytesRead < length && count < 16)
+	{
+		acsArgs[count++] = MSG_ReadVarInt(argBuffer + bytesRead, length, bytesRead);
+
+		if (bytesRead < 0)
+		{
+			count--;
+			break;
+		}
+	}
+
+	AActor* activator = P_FindThingById(netid);
+
+	switch (special)
+	{
+	case DLevelScript::PCD_CLEARINVENTORY:
+		DLevelScript::ACS_ClearInventory(activator);
+		break;
+
+	case DLevelScript::PCD_SETLINETEXTURE:
+		DLevelScript::ACS_SetLineTexture(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_ENDPRINT:
+	case DLevelScript::PCD_ENDPRINTBOLD:
+		DLevelScript::ACS_Print(special, activator, print);
+		break;
+
+	case DLevelScript::PCD_SETMUSIC:
+	case DLevelScript::PCD_SETMUSICDIRECT:
+	case DLevelScript::PCD_LOCALSETMUSIC:
+	case DLevelScript::PCD_LOCALSETMUSICDIRECT:
+		DLevelScript::ACS_ChangeMusic(special, activator, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SECTORSOUND:
+	case DLevelScript::PCD_AMBIENTSOUND:
+	case DLevelScript::PCD_LOCALAMBIENTSOUND:
+	case DLevelScript::PCD_ACTIVATORSOUND:
+	case DLevelScript::PCD_THINGSOUND:
+		DLevelScript::ACS_StartSound(special, activator, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETLINEBLOCKING:
+		DLevelScript::ACS_SetLineBlocking(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETLINEMONSTERBLOCKING:
+		DLevelScript::ACS_SetLineMonsterBlocking(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETLINESPECIAL:
+		DLevelScript::ACS_SetLineSpecial(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SETTHINGSPECIAL:
+		DLevelScript::ACS_SetThingSpecial(acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_FADERANGE:
+		DLevelScript::ACS_FadeRange(activator, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_CANCELFADE:
+		DLevelScript::ACS_CancelFade(activator);
+		break;
+
+	case DLevelScript::PCD_CHANGEFLOOR:
+	case DLevelScript::PCD_CHANGECEILING:
+		DLevelScript::ACS_ChangeFlat(special, acsArgs, count);
+		break;
+
+	case DLevelScript::PCD_SOUNDSEQUENCE:
+		DLevelScript::ACS_SoundSequence(acsArgs, count);
+		break;
+
+	default:
+		Printf(PRINT_HIGH, "Invalid ACS special: %d", special);
+		break;
+	}
+}
+
+void CL_LineUpdate()
+{
+	uint16_t id = MSG_ReadShort();
+	short flags = MSG_ReadShort();
+	byte lucency = MSG_ReadByte();
+
+	if (id < numlines)
+	{
+		line_t* line = &lines[id];
+		line->flags = flags;
+		line->lucency = lucency;
+	}
+}
+
+void CL_LineSideUpdate()
+{
+	uint16_t id = MSG_ReadShort();
+	byte side = MSG_ReadByte();
+	int changes = MSG_ReadByte();
+
+	side_t* currentSidedef;
+	side_t empty;
+
+	if (id < numlines && side < 2 && lines[id].sidenum[side] != R_NOSIDE)
+		currentSidedef = sides + lines[id].sidenum[side];
+	else
+		currentSidedef = &empty;
+
+	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SDPC_TexTop:
+			currentSidedef->toptexture = MSG_ReadShort();
+			break;
+		case SDPC_TexMid:
+			currentSidedef->midtexture = MSG_ReadShort();
+			break;
+		case SDPC_TexBottom:
+			currentSidedef->bottomtexture = MSG_ReadShort();
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+void CL_SectorSectorPropertiesUpdate()
+{
+	uint16_t secnum = MSG_ReadShort();
+	int changes = MSG_ReadShort();
+
+	sector_t* sector;
+	sector_t empty;
+
+	if (secnum > -1 && secnum < numsectors)
+	{
+		sector = &sectors[secnum];
+	}
+	else
+	{
+		sector = &empty;
+		extern dyncolormap_t NormalLight;
+		empty.colormap = &NormalLight;
+	}
+
+	for (int i = 0, prop = 1; prop < SPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SPC_FlatPic:
+			sector->floorpic = MSG_ReadShort();
+			sector->ceilingpic = MSG_ReadShort();
+			break;
+		case SPC_LightLevel:
+			sector->lightlevel = MSG_ReadShort();
+			break;
+		case SPC_Color:
+		{
+			byte r = MSG_ReadByte();
+			byte g = MSG_ReadByte();
+			byte b = MSG_ReadByte();
+			sector->colormap = GetSpecialLights(r, g, b,
+				sector->colormap->fade.getr(), sector->colormap->fade.getg(), sector->colormap->fade.getb());
+		}
+			break;
+		case SPC_Fade:
+		{
+			byte r = MSG_ReadByte();
+			byte g = MSG_ReadByte();
+			byte b = MSG_ReadByte();
+			sector->colormap = GetSpecialLights(sector->colormap->color.getr(), sector->colormap->color.getg(), sector->colormap->color.getb(),
+				r, g, b);
+		}
+			break;
+		case SPC_Gravity:
+			*(int*)&sector->gravity = MSG_ReadLong();
+			break;
+		case SPC_Panning:
+			sector->ceiling_xoffs = MSG_ReadLong();
+			sector->ceiling_yoffs = MSG_ReadLong();
+			sector->floor_xoffs = MSG_ReadLong();
+			sector->floor_yoffs = MSG_ReadLong();
+			break;
+		case SPC_Scale:
+			sector->ceiling_xscale = MSG_ReadLong();
+			sector->ceiling_yscale = MSG_ReadLong();
+			sector->floor_xscale = MSG_ReadLong();
+			sector->floor_yscale = MSG_ReadLong();
+			break;
+		case SPC_Rotation:
+			sector->floor_angle = MSG_ReadLong();
+			sector->ceiling_angle = MSG_ReadLong();
+			break;
+		case SPC_AlignBase:
+			sector->base_ceiling_angle = MSG_ReadLong();
+			sector->base_ceiling_yoffs = MSG_ReadLong();
+			sector->base_floor_angle = MSG_ReadLong();
+			sector->base_floor_yoffs = MSG_ReadLong();
+		default:
+			break;
+		}
+	}
+}
+
+void CL_ThinkerUpdate()
+{
+	ThinkerType type = (ThinkerType)MSG_ReadByte();
+
+	switch (type)
+	{
+		case TT_Scroller:
+		{
+			DScroller::EScrollType scrollType = (DScroller::EScrollType)MSG_ReadByte();
+			fixed_t dx = MSG_ReadLong();
+			fixed_t dy = MSG_ReadLong();
+			int affectee = MSG_ReadLong();
+			if (affectee < 0)
+				break;
+			if (scrollType == DScroller::sc_side && affectee > numsides)
+				break;
+			if (scrollType != DScroller::sc_side && affectee > numsectors)
+				break;
+
+			new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		}
+			break;
+		case TT_FireFlicker:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DFireFlicker(&sectors[secnum], max, min);
+		}
+			break;
+		case TT_Flicker:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DFlicker(&sectors[secnum], max, min);
+		}
+			break;
+		case TT_LightFlash:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DLightFlash(&sectors[secnum], min, max);
+		}
+			break;
+		case TT_Strobe:
+		{
+			short secnum = MSG_ReadShort();
+			int min = MSG_ReadShort();
+			int max = MSG_ReadShort();
+			int dark = MSG_ReadShort();
+			int bright = MSG_ReadShort();
+			int count = MSG_ReadByte();
+			if (secnum < numsectors)
+			{
+				DStrobe* strobe = new DStrobe(&sectors[secnum], max, min, bright, dark);
+				strobe->SetCount(count);
+			}
+		}
+			break;
+		case TT_Glow:
+		{
+			short secnum = MSG_ReadShort();
+			if (secnum < numsectors)
+				new DGlow(&sectors[secnum]);
+		}
+			break;
+		case TT_Glow2:
+		{
+			short secnum = MSG_ReadShort();
+			int start = MSG_ReadShort();
+			int end = MSG_ReadShort();
+			int tics = MSG_ReadShort();
+			bool oneShot = MSG_ReadByte();
+			if (secnum < numsectors)
+				new DGlow2(&sectors[secnum], start, end, tics, oneShot);
+		}
+			break;
+		case TT_Phased:
+		{
+			short secnum = MSG_ReadShort();
+			int base = MSG_ReadShort();
+			int phase = MSG_ReadByte();
+			if (secnum < numsectors)
+				new DPhased(&sectors[secnum], base, phase);
+		}
+			break;
+		default:
+			break;
+	}
+}
+
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")

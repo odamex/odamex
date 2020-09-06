@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2011 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,14 +25,10 @@
 #ifndef __GSTRINGS_H__
 #define __GSTRINGS_H__
 
-#ifdef _MSC_VER
-#pragma once
-#endif
-
 #include "stringtable.h"
 #include "stringenums.h"
 
-extern FStringTable GStrings;
+extern StringTable GStrings;
 
 // QuitDOOM messages
 #define NUM_QUITMESSAGES   15

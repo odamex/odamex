@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,7 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include "z_zone.h"
 #include "m_random.h"
 
 #include "doomdef.h"
@@ -159,6 +158,9 @@ DFlicker::DFlicker (sector_t *sector, int upper, int lower)
 
 void EV_StartLightFlickering (int tag, int upper, int lower)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -313,6 +315,9 @@ DStrobe::DStrobe (sector_t *sector, int utics, int ltics, bool inSync)
 //
 void EV_StartLightStrobing (int tag, int upper, int lower, int utics, int ltics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -328,6 +333,9 @@ void EV_StartLightStrobing (int tag, int upper, int lower, int utics, int ltics)
 
 void EV_StartLightStrobing (int tag, int utics, int ltics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -366,6 +374,7 @@ void EV_TurnTagLightsOff (int tag)
 				min = tsec->lightlevel;
 		}
 		sector->lightlevel = min;
+		sector->SectorChanges |= SPC_LightLevel;
 	}
 }
 
@@ -403,6 +412,7 @@ void EV_LightTurnOn (int tag, int bright)
 			}
 		}
 		sector->lightlevel = CLIPLIGHT(bright);
+		sector->SectorChanges |= SPC_LightLevel;
 	}
 }
 
@@ -457,6 +467,7 @@ int EV_LightTurnOnPartway(int tag, int level)
         // Set level in-between extremes
         sector->lightlevel =
             (level * bright + (FRACUNIT-level) * min) >> FRACBITS;
+		sector->SectorChanges |= SPC_LightLevel;
     }
     return 1;
 }
@@ -474,6 +485,7 @@ void EV_LightChange (int tag, int value)
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0) {
 		int newlight = sectors[secnum].lightlevel + value;
 		sectors[secnum].lightlevel = CLIPLIGHT(newlight);
+		sectors[secnum].SectorChanges |= SPC_LightLevel;
 	}
 }
 
@@ -584,6 +596,9 @@ DGlow2::DGlow2 (sector_t *sector, int start, int end, int tics, bool oneshot)
 
 void EV_StartLightGlowing (int tag, int upper, int lower, int tics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 
 	if (upper < lower) {
@@ -598,13 +613,15 @@ void EV_StartLightGlowing (int tag, int upper, int lower, int tics)
 		sector_t *sec = &sectors[secnum];
 		if (sec->lightingdata)
 			continue;
-		
 		new DGlow2 (sec, upper, lower, tics, false);
 	}
 }
 
 void EV_StartLightFading (int tag, int value, int tics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;

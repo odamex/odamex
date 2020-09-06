@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,10 +21,6 @@
 //	or false if it couldn't perform the desired action.
 //
 //-----------------------------------------------------------------------------
-
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "doomstat.h"
 #include "p_local.h"
@@ -46,6 +42,7 @@
 // activated by walking across the backside of a line.
 int TeleportSide;
 extern bool HasBehavior;
+extern bool s_SpecialFromServer;
 
 // Set true if this special was activated from inside a script.
 BOOL InScript;
@@ -63,11 +60,8 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int dir
 // Returns true if the special for line will cause a DMovingFloor or
 // DMovingCeiling object to be created.
 //
-bool P_LineSpecialMovesSector(line_t *line)
+bool P_LineSpecialMovesSector(byte special)
 {
-	if (!line)
-		return false;
-
 	static bool initialized = false;
 	static bool specials[256];
 
@@ -153,7 +147,7 @@ bool P_LineSpecialMovesSector(line_t *line)
 		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255
 	}
 
-	return specials[line->special];
+	return specials[special];
 }
 
 EXTERN_CVAR (cl_predictsectors)
@@ -174,7 +168,7 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	}
 
 	// Predict sectors that don't actually create floor or ceiling thinkers.
-	if (!P_LineSpecialMovesSector(line))
+	if (line && !P_LineSpecialMovesSector(line->special))
 		return true;
 
 	return false;
@@ -459,8 +453,7 @@ FUNC(LS_Generic_Floor)
 		}
 	}
 
-	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT,
-					   (arg4 & 16) ? 20 : -1, arg4 & 7);
+	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), arg4 & 7);
 
 }
 
@@ -667,8 +660,7 @@ FUNC(LS_Generic_Ceiling)
 		}
 	}
 
-	return EV_DoCeiling (type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT,
-						 (arg4 & 16) ? 20 : -1, 0, arg4 & 7);
+	return EV_DoCeiling(type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), 0, arg4 & 7);
 	return false;
 }
 
@@ -798,16 +790,17 @@ FUNC(LS_Exit_Secret)
 FUNC(LS_Teleport_NewMap)
 // Teleport_NewMap (map, position)
 {
-   	if (!TeleportSide)
+	if (!TeleportSide)
 	{
-        level_info_t *info = FindLevelByNum (arg0);
+		LevelInfos& levels = getLevelInfos();
+		level_pwad_info_t info = levels.findByNum(arg0);
 
-        if (it && (info && CheckIfExitIsGood (it)))
-        {
-            strncpy (level.nextmap, info->mapname, 8);
-            G_ExitLevel (arg1, 1);
-            return true;
-        }
+		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
+		{
+			strncpy(level.nextmap, info.mapname, 8);
+			G_ExitLevel(arg1, 1);
+			return true;
+		}
 	}
 	return false;
 }
@@ -1047,28 +1040,39 @@ FUNC(LS_Thing_SetGoal)
 FUNC(LS_ACS_Execute)
 // ACS_Execute (script, map, s_arg1, s_arg2, s_arg3)
 {
-	level_info_t *info;
+	if (!serverside)
+		return false;
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		return P_StartScript (it, ln, arg0, level.mapname, TeleportSide, arg2, arg3, arg4, 0);
-	else
-		return P_StartScript (it, ln, arg0, info->mapname, TeleportSide, arg2, arg3, arg4, 0);
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& info = levels.findByNum(arg1);
+
+	if (arg1 == 0 || !info.exists())
+		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 0);
+
+	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 0);
 }
 
 FUNC(LS_ACS_ExecuteAlways)
 // ACS_ExecuteAlways (script, map, s_arg1, s_arg2, s_arg3)
 {
-	level_info_t *info;
+	if (!serverside)
+		return false;
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		return P_StartScript (it, ln, arg0, level.mapname, TeleportSide, arg2, arg3, arg4, 1);
-	else
-		return P_StartScript (it, ln, arg0, info->mapname, TeleportSide, arg2, arg3, arg4, 1);
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& info = levels.findByNum(arg1);
+
+	if (arg1 == 0 || !info.exists())
+		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 1);
+
+	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 1);
 }
 
 FUNC(LS_ACS_LockedExecute)
 // ACS_LockedExecute (script, map, s_arg1, s_arg2, lock)
 {
+	if (!serverside)
+		return false;
+
 	if (arg4 && !P_CheckKeys (it->player, (card_t)arg4, 1))
 		return false;
 	else
@@ -1078,12 +1082,16 @@ FUNC(LS_ACS_LockedExecute)
 FUNC(LS_ACS_Suspend)
 // ACS_Suspend (script, map)
 {
-	level_info_t *info;
+	if (!serverside)
+		return false;
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		P_SuspendScript (arg0, level.mapname);
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& info = levels.findByNum(arg1);
+
+	if (arg1 == 0 || !info.exists())
+		P_SuspendScript(arg0, ::level.mapname);
 	else
-		P_SuspendScript (arg0, info->mapname);
+		P_SuspendScript(arg0, info.mapname);
 
 	return true;
 }
@@ -1091,12 +1099,15 @@ FUNC(LS_ACS_Suspend)
 FUNC(LS_ACS_Terminate)
 // ACS_Terminate (script, map)
 {
-	level_info_t *info;
+	if (!serverside)
+		return false;
 
-	if ( (arg1 == 0) || !(info = FindLevelByNum (arg1)) )
-		P_TerminateScript (arg0, level.mapname);
+	level_pwad_info_t& info = getLevelInfos().findByNum(arg1);
+
+	if (arg1 == 0 || !info.exists())
+		P_TerminateScript(arg0, ::level.mapname);
 	else
-		P_TerminateScript (arg0, info->mapname);
+		P_TerminateScript(arg0, info.mapname);
 
 	return true;
 }
@@ -1306,6 +1317,9 @@ FUNC(LS_Sector_SetFriction)
 FUNC(LS_Scroll_Texture_Both)
 // Scroll_Texture_Both (id, left, right, up, down)
 {
+	if (!serverside && !s_SpecialFromServer)
+		return false;
+
 	if (arg0 == 0)
 		return false;
 
@@ -1383,9 +1397,67 @@ FUNC(LS_Scroll_Texture_Both)
 	return true;
 }
 
+static void SetScroller(int tag, DScroller::EScrollType type, fixed_t dx, fixed_t dy)
+{
+	TThinkerIterator<DScroller> iterator;
+	DScroller *scroller;
+	int i;
+
+	// Check if there is already a scroller for this tag
+	// If at least one sector with this tag is scrolling, then they all are.
+	// If the deltas are both 0, we don't remove the scroller, because a
+	// displacement/accelerative scroller might have been set up, and there's
+	// no way to create one after the level is fully loaded.
+	i = 0;
+	while ((scroller = iterator.Next()))
+	{
+		if (scroller->IsType(type))
+		{
+			if (sectors[scroller->GetAffectee()].tag == tag)
+			{
+				i++;
+				scroller->SetRate(dx, dy);
+			}
+		}
+	}
+
+	if (i > 0 || (dx | dy) == 0)
+	{
+		return;
+	}
+
+	// Need to create scrollers for the sector(s)
+	for (i = -1; (i = P_FindSectorFromTag(tag, i)) >= 0; )
+	{
+		new DScroller(type, dx, dy, -1, i, 0);
+	}
+}
+
 FUNC(LS_Scroll_Floor)
 {
-	return false;
+	if (IgnoreSpecial)
+		return false;
+
+	fixed_t dx = arg1 * FRACUNIT / 32;
+	fixed_t dy = arg2 * FRACUNIT / 32;
+
+	if (arg3 == 0 || arg3 == 2)
+	{
+		SetScroller(arg0, DScroller::sc_floor, -dx, dy);
+	}
+	else
+	{
+		SetScroller(arg0, DScroller::sc_floor, 0, 0);
+	}
+	if (arg3 > 0)
+	{
+		SetScroller(arg0, DScroller::sc_carry, dx, dy);
+	}
+	else
+	{
+		SetScroller(arg0, DScroller::sc_carry, 0, 0);
+	}
+	return true;
 }
 
 FUNC(LS_Scroll_Ceiling)
@@ -1420,8 +1492,11 @@ FUNC(LS_Sector_SetGravity)
 		arg2 = 99;
 	gravity = (float)arg1 + (float)arg2 * 0.01f;
 
-	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
+	{
 		sectors[secnum].gravity = gravity;
+		sectors[secnum].SectorChanges |= SPC_Gravity;
+	}
 
 	return true;
 }
@@ -1430,16 +1505,13 @@ FUNC(LS_Sector_SetColor)
 // Sector_SetColor (tag, r, g, b)
 {
 	int secnum = -1;
-
-	if (clientside)
+	while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 	{
-		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
-		{
-			sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
-					sectors[secnum].colormap->fade.getr(),
-					sectors[secnum].colormap->fade.getg(),
-					sectors[secnum].colormap->fade.getb());
-		}
+		sectors[secnum].colormap = GetSpecialLights(arg1, arg2, arg3,
+				sectors[secnum].colormap->fade.getr(),
+				sectors[secnum].colormap->fade.getg(),
+				sectors[secnum].colormap->fade.getb());
+		sectors[secnum].SectorChanges |= SPC_Color;
 	}
 	return true;
 }
@@ -1448,17 +1520,17 @@ FUNC(LS_Sector_SetFade)
 // Sector_SetFade (tag, r, g, b)
 {
 	int secnum = -1;
-
-	if (clientside)
+	while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
 	{
-		while ((secnum = P_FindSectorFromTag(arg0, secnum)) >= 0)
-		{
-			sectors[secnum].colormap = GetSpecialLights(
-					sectors[secnum].colormap->color.getr(),
-					sectors[secnum].colormap->color.getg(),
-					sectors[secnum].colormap->color.getb(),
-					arg1, arg2, arg3);
-		}
+		sectors[secnum].colormap = GetSpecialLights(
+				sectors[secnum].colormap->color.getr(),
+				sectors[secnum].colormap->color.getg(),
+				sectors[secnum].colormap->color.getb(),
+				arg1, arg2, arg3);
+		byte r = sectors[secnum].colormap->fade.getr();
+		byte g = sectors[secnum].colormap->fade.getg();
+		byte b = sectors[secnum].colormap->fade.getb();
+		sectors[secnum].SectorChanges |= SPC_Fade;
 	}
 	return true;
 }
@@ -1474,6 +1546,7 @@ FUNC(LS_Sector_SetCeilingPanning)
 	{
 		sectors[secnum].ceiling_xoffs = xofs;
 		sectors[secnum].ceiling_yoffs = yofs;
+		sectors[secnum].SectorChanges |= SPC_Panning;
 	}
 	return true;
 }
@@ -1489,6 +1562,7 @@ FUNC(LS_Sector_SetFloorPanning)
 	{
 		sectors[secnum].floor_xoffs = xofs;
 		sectors[secnum].floor_yoffs = yofs;
+		sectors[secnum].SectorChanges |= SPC_Panning;
 	}
 	return true;
 }
@@ -1511,6 +1585,7 @@ FUNC(LS_Sector_SetCeilingScale)
 			sectors[secnum].ceiling_xscale = xscale;
 		if (yscale)
 			sectors[secnum].ceiling_yscale = yscale;
+		sectors[secnum].SectorChanges |= SPC_Scale;
 	}
 	return true;
 }
@@ -1533,6 +1608,7 @@ FUNC(LS_Sector_SetFloorScale)
 			sectors[secnum].floor_xscale = xscale;
 		if (yscale)
 			sectors[secnum].floor_yscale = yscale;
+		sectors[secnum].SectorChanges |= SPC_Scale;
 	}
 	return true;
 }
@@ -1548,6 +1624,7 @@ FUNC(LS_Sector_SetRotation)
 	{
 		sectors[secnum].floor_angle = floor;
 		sectors[secnum].ceiling_angle = ceiling;
+		sectors[secnum].SectorChanges |= SPC_Rotation;
 	}
 	return true;
 }
@@ -1672,13 +1749,14 @@ FUNC(LS_SetPlayerProperty)
 FUNC(LS_TranslucentLine)
 // TranslucentLine (id, amount)
 {
-	if (ln)
+	if (IgnoreSpecial)
 		return false;
 
 	int linenum = -1;
 	while ((linenum = P_FindLineFromID (arg0, linenum)) >= 0)
 	{
 		lines[linenum].lucency = arg1 & 255;
+		lines[linenum].PropertiesChanged = true;
 	}
 
 	return true;
@@ -1977,4 +2055,3 @@ BOOL CheckIfExitIsGood (AActor *self)
 }
 
 VERSION_CONTROL (p_lnspec_cpp, "$Id$")
-

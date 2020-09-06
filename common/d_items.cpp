@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,6 +26,7 @@
 #include "info.h"
 
 #include "d_items.h"
+#include "teaminfo.h"
 
 
 //
@@ -40,7 +41,7 @@
 // atkstate, i.e. attack/fire/hit frame
 // flashstate, muzzle flash
 //
-weaponinfo_t	weaponinfo[NUMWEAPONS] =
+weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 {
 	{
 		// fist
@@ -150,6 +151,18 @@ weaponinfo_t	weaponinfo[NUMWEAPONS] =
 		2,
 		2
 	},
+	{
+		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
+		am_noammo,
+		S_NOWEAPONUP,
+		S_NOWEAPONDOWN,
+		S_NOWEAPON,
+		S_NOWEAPON,
+		S_NOWEAPON,
+		MT_MISC26,
+		0,
+		0
+	},
 };
 
 int num_items;
@@ -204,6 +217,19 @@ gitem_t	*FindItem (const char *pickup_name)
 	it = itemlist;
 	for (i = 0; i < num_items; i++, it++)
 		if (it->pickup_name && !stricmp(it->pickup_name, pickup_name))
+			return it;
+
+	return NULL;
+}
+
+gitem_t* FindCardItem(card_t card)
+{
+	int		i;
+	gitem_t* it;
+
+	it = itemlist;
+	for (i = 0; i < num_items; i++, it++)
+		if (it->flags == IT_KEY && (card_t)it->offset == card)
 			return it;
 
 	return NULL;
@@ -520,7 +546,7 @@ gitem_t itemlist[] = {
 		NULL,
 		NULL,
 		IT_FLAG,
-		it_blueflag,
+		TEAM_BLUE,
 		0,
 		"Blue Flag"
 	},
@@ -531,12 +557,21 @@ gitem_t itemlist[] = {
 		NULL,
 		NULL,
 		IT_FLAG,
-		it_redflag,
+		TEAM_RED,
 		0,
 		"Red Flag"
 	},
 
-	// end of list marker
+	{
+		"green_flag",
+		NULL,
+		NULL,
+		IT_FLAG,
+		TEAM_GREEN,
+		0,
+		"Green Flag"
+	},
+				// end of list marker
 	{
 	    "",
 	    NULL,

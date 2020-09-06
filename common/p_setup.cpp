@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -124,22 +124,9 @@ BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
-int				MaxDeathmatchStarts;
-mapthing2_t		*deathmatchstarts;
-mapthing2_t		*deathmatch_p;
-
+std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
-
-//	[Toke - CTF - starts] Teamplay starts
-size_t			MaxBlueTeamStarts;
-size_t			MaxRedTeamStarts;
-
-mapthing2_t		*blueteamstarts;
-mapthing2_t		*redteamstarts;
-
-mapthing2_t		*blueteam_p;
-mapthing2_t		*redteam_p;
 
 //
 // P_LoadVertexes
@@ -578,14 +565,21 @@ void P_LoadThings (int lump)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
 	//		referenced, we translate them into a Hexen-style thing.
-	memset (&mt2, 0, sizeof(mt2));
-
 	for ( ; mt < lastmt; mt++)
 	{
+		// [AM] Ensure that we get a fresh mapthing every iteration - sometimes
+		//      P_SpawnMapThing mutates a part of the mapthing that the map
+		//      data doesn't care about, and we don't want it to carry over
+		//      between iterations.
+		memset(&mt2, 0, sizeof(mt2));
+
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
@@ -625,6 +619,9 @@ void P_LoadThings2 (int lump, int position)
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	for ( ; mt < lastmt; mt++)
 	{
@@ -1362,7 +1359,7 @@ void P_CreateBlockMap()
 		{
 			linelist_t *tmp = bl->next;
 			blockmaplump[offs++] = bl->num;
-			delete[] bl;
+			delete bl;
 			bl = tmp;
 		}
 	}
@@ -1618,37 +1615,35 @@ void P_LoadBehavior (int lumpnum)
 }
 
 //
-// P_AllocStarts
-//
-void P_AllocStarts(void)
-{
-	if (!deathmatchstarts)
-	{
-		MaxDeathmatchStarts = 16;	// [RH] Default. Increased as needed.
-		deathmatchstarts = (mapthing2_t *)Malloc (MaxDeathmatchStarts * sizeof(mapthing2_t));
-	}
-	deathmatch_p = deathmatchstarts;
-
-	//	[Toke - CTF]
-	if (!blueteamstarts) // [Toke - CTF - starts]
-	{
-		MaxBlueTeamStarts = 16;
-		blueteamstarts = (mapthing2_t *)Malloc (MaxBlueTeamStarts * sizeof(mapthing2_t));
-	}
-	blueteam_p = blueteamstarts;
-
-	if (!redteamstarts) // [Toke - CTF - starts]
-	{
-		MaxRedTeamStarts = 16;
-		redteamstarts = (mapthing2_t *)Malloc (MaxRedTeamStarts * sizeof(mapthing2_t));
-	}
-	redteam_p = redteamstarts;
-}
-
-//
 // P_SetupLevel
 //
 extern polyblock_t **PolyBlockMap;
+
+// Hash the sector tags across the sectors and linedefs.
+static void P_InitTagLists(void)
+{
+	register int i;
+
+	for (i = numsectors; --i >= 0; )		// Initially make all slots empty.
+		sectors[i].firsttag = -1;
+	for (i = numsectors; --i >= 0; )		// Proceed from last to first sector
+	{									// so that lower sectors appear first
+		int j = (unsigned)sectors[i].tag % (unsigned)numsectors;	// Hash func
+		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
+		sectors[j].firsttag = i;
+	}
+
+	// killough 4/17/98: same thing, only for linedefs
+
+	for (i = numlines; --i >= 0; )			// Initially make all slots empty.
+		lines[i].firstid = -1;
+	for (i = numlines; --i >= 0; )        // Proceed from last to first linedef
+	{									// so that lower linedefs appear first
+		int j = (unsigned)lines[i].id % (unsigned)numlines;	// Hash func
+		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
+		lines[j].firstid = i;
+	}
+}
 
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (char *lumpname, int position)
@@ -1754,7 +1749,7 @@ void P_SetupLevel (char *lumpname, int position)
 
     po_NumPolyobjs = 0;
 
-	P_AllocStarts();
+	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
 	if (!HasBehavior)
 		P_LoadThings (lumpnum+ML_THINGS);
@@ -1808,6 +1803,7 @@ void P_Init (void)
 	P_InitSwitchList ();
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
+	InitTeamInfo();
 }
 
 
@@ -1820,7 +1816,13 @@ CVAR_FUNC_IMPL(sv_timelimit)
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
+	if (sv_gametype == GM_COOP && var < 10) {
+		var.Set(10.0);	// Force to 10 seconds minimum
+	} else if (var < 1) {
+		var.RestoreDefault();
+	}
+
+	level.inttimeleft = var;
 }
 
 
@@ -1954,4 +1956,3 @@ static void P_SetupSlopes()
 
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")
-

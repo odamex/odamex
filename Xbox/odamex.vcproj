@@ -23,7 +23,7 @@
 				OmitFramePointers="FALSE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
-				PreprocessorDefinitions="CLIENT_APP;_DEBUG;WIN32;_XBOX;NOASM;GCONSOLE;__MMX__"
+				PreprocessorDefinitions="CLIENT_APP;USE_PNG;_DEBUG;WIN32;_XBOX;NOASM;GCONSOLE;__MMX__"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="3"
@@ -453,9 +453,6 @@
 			</File>
 			<File
 				RelativePath="..\client\src\m_options.cpp">
-			</File>
-			<File
-				RelativePath="..\client\src\p_effect.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\r_bsp.cpp">

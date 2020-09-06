@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,17 +28,13 @@
 #include "c_dispatch.h"
 #include "d_main.h"
 #include "i_music.h"
-#include "i_system.h"
 #include "i_video.h"
-#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "hu_stuff.h"
 #include "g_game.h"
-#include "m_argv.h"
-#include "m_swap.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "doomstat.h"
@@ -52,7 +48,6 @@
 #include "g_level.h"
 
 #include "gi.h"
-#include "m_memio.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -104,8 +99,6 @@ int                 repeatCount;
 
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
-
-char				endstring[160];
 
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
@@ -466,7 +459,7 @@ enum load_t
 	load_end
 } load_e;
 
-oldmenuitem_t LoadMenu[]=
+static oldmenuitem_t LoadSavegameMenu[]=
 {
 	{1,"", M_LoadSelect,'1'},
 	{1,"", M_LoadSelect,'2'},
@@ -481,7 +474,7 @@ oldmenuitem_t LoadMenu[]=
 oldmenu_t LoadDef =
 {
 	load_end,
-	LoadMenu,
+	LoadSavegameMenu,
 	M_DrawLoad,
 	80,54,
 	0
@@ -636,13 +629,19 @@ void M_ReadSaveStrings(void)
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
-			LoadMenu[i].status = 0;
+			LoadSavegameMenu[i].status = 0;
 		}
 		else
 		{
-			fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			if (readlen < 1)
+			{
+				printf("M_Read_SaveStrings(): Failed to read handle.\n");
+				fclose(handle);
+				return;
+			}
 			fclose (handle);
-			LoadMenu[i].status = 1;
+			LoadSavegameMenu[i].status = 1;
 		}
 	}
 }
@@ -750,7 +749,7 @@ void M_SaveSelect (int choice)
 	// If on a game console, auto-fill with date and time to save name
 
 #ifndef GCONSOLE
-	if (!LoadMenu[choice].status)
+	if (!LoadSavegameMenu[choice].status)
 #endif
 	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
@@ -1156,18 +1155,18 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM (int choice)
+void M_QuitDOOM(int choice)
 {
+	static std::string endstring;
+
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	sprintf (endstring, "%s\n\n%s",
-		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+	StrFormat(endstring, "%s\n\n%s",
+	          GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings(DOSY));
 
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1429,7 +1428,7 @@ static void M_PlayerSetupDrawer (void)
 		team_t team = D_TeamByName(cl_team.cstring());
 		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : team_names[team]);
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
@@ -1460,29 +1459,20 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	if(choice)
+	int iTeam = (int)team;
+	if (choice)
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_BLUE; break;
-			case TEAM_BLUE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			team = TEAM_NONE; break;
-		}
+		iTeam = ++iTeam % NUMTEAMS;
 	}
 	else
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			case TEAM_BLUE: team = TEAM_NONE; break;
-		}
+		iTeam--;
+		if (iTeam < 0)
+			iTeam = NUMTEAMS - 1;
 	}
+	team = (team_t)iTeam;
 
-	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
+	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
 
 static void M_ChangeGender (int choice)
@@ -1542,7 +1532,7 @@ static void M_EditPlayerName (int choice)
 
 static void M_PlayerNameChanged (int choice)
 {
-	char command[SAVESTRINGSIZE+8];
+	char command[SAVESTRINGSIZE+8+2];
 
 	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
@@ -1711,7 +1701,7 @@ bool M_Responder (event_t* ev)
 	if (ev->type == ev_keydown)
 	{
 		ch = ev->data1; 		// scancode
-		ch2 = ev->data2;		// ASCII
+		ch2 = ev->data3;		// ASCII
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1777,7 +1767,7 @@ bool M_Responder (event_t* ev)
 			break;
 
 		  default:
-			ch = ev->data2;	// [RH] Use user keymap
+			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
@@ -2177,5 +2167,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
-
-

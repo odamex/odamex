@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,21 +23,17 @@
 //-----------------------------------------------------------------------------
 
 #include <ctime>
-#include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <sstream>
 #include <functional>
 
 #include "win32inc.h"
 
+#include "i_system.h"
 #include "doomtype.h"
 #include "cmdlib.h"
-#include "i_system.h"
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <map>
-
-#include "m_alloc.h"
 
 char		com_token[8192];
 BOOL		com_eof;
@@ -354,6 +350,51 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 	return tokens;
 }
 
+//
+// A quick and dirty std::string formatting that uses snprintf under the covers.
+//
+FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	VStrFormat(out, fmt, va);
+	va_end(va);
+}
+
+//
+// A quick and dirty std::string formatting that uses snprintf under the covers.
+//
+void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
+{
+	va_list va2;
+	va_copy(va2, va);
+
+	// Get desired length of buffer.
+	int chars = vsnprintf(NULL, 0, fmt, va);
+	if (chars < 0)
+	{
+		I_Error("Encoding error detected in StrFormat\n");
+	}
+	size_t len = (size_t)chars + sizeof('\0');
+
+	// Allocate the buffer.
+	char* buf = (char*)malloc(len);
+	if (buf == NULL)
+	{
+		I_Error("Could not allocate StrFormat buffer\n");
+	}
+
+	// Actually write to the buffer.
+	int ok = vsnprintf(buf, len, fmt, va2);
+	if (ok != chars)
+	{
+		I_Error("Truncation detected in StrFormat\n");
+	}
+
+	out = buf;
+	free(buf);
+}
+
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
 bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
@@ -595,7 +636,7 @@ public:
 	}
 }rst;
 
-void ReplaceString (const char **ptr, const char *str)
+void ReplaceString (char** ptr, const char *str)
 {
 	if (*ptr)
 	{

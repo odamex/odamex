@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,6 +43,9 @@ typedef struct movingsector_s
 } movingsector_t;
 
 extern std::list<movingsector_t> movingsectors;
+extern bool s_SpecialFromServer;
+
+#define IgnoreSpecial !serverside && !s_SpecialFromServer
 
 std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
 void P_AddMovingCeiling(sector_t *sector);
@@ -60,6 +63,15 @@ typedef enum
 	ceiling_special,
 	lighting_special
 } special_e;
+
+enum LineActivationType
+{
+	LineCross,
+	LineUse,
+	LineShoot,
+	LinePush,
+	LineACS,
+};
 
 // killough 3/7/98: Add generalized scroll effects
 
@@ -85,6 +97,12 @@ public:
 	bool AffectsWall (int wallnum) { return m_Type == sc_side && m_Affectee == wallnum; }
 	int GetWallNum () { return m_Type == sc_side ? m_Affectee : -1; }
 	void SetRate (fixed_t dx, fixed_t dy) { m_dx = dx; m_dy = dy; }
+	bool IsType(EScrollType type) const { return type == m_Type; }
+	int GetAffectee() const { return m_Affectee; }
+
+	EScrollType GetType() const { return m_Type; }
+	fixed_t GetScrollX() const { return m_dx; }
+	fixed_t GetScrollY() const { return m_dy; }
 
 protected:
 	EScrollType m_Type;		// Type of scroll effect
@@ -185,10 +203,10 @@ void	P_SpawnSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
-void    P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
-bool    P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
-bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
+void    P_CrossSpecialLine (int linenum, int side, AActor* thing);
+void    P_ShootSpecialLine (AActor* thing, line_t* line);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int side);
+bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
 void    P_PlayerInSpecialSector (player_t *player);
 
@@ -198,9 +216,9 @@ void    P_PlayerInSpecialSector (player_t *player);
 //	given the number of the current sector,
 //	the line number, and the side (0/1) that you want.
 //
-inline side_t *getSide (int currentSector, int line, int side)
+inline side_t *getSide (sector_t *sec, int line, int side)
 {
-	return &sides[ (sectors[currentSector].lines[line])->sidenum[side] ];
+	return &sides[ (sec->lines[line])->sidenum[side] ];
 }
 
 //
@@ -220,9 +238,9 @@ inline sector_t *getSector (int currentSector, int line, int side)
 // Given the sector number and the line number,
 //	it will tell you whether the line is two-sided or not.
 //
-inline int twoSided (int sector, int line)
+inline int twoSided (sector_t *sec, int line)
 {
-	return (sectors[sector].lines[line])->flags & ML_TWOSIDED;
+	return (sec->lines[line])->flags & ML_TWOSIDED;
 }
 
 //
@@ -253,11 +271,11 @@ fixed_t	P_FindHighestCeilingSurrounding (sector_t *sec);	// jff 2/04/98
 fixed_t P_FindNextLowestCeiling (sector_t *sec);		// jff 2/04/98
 fixed_t P_FindNextHighestCeiling (sector_t *sec);	// jff 2/04/98
 
-fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
-fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98
+fixed_t P_FindShortestTextureAround (sector_t *sec);	// jff 2/04/98
+fixed_t P_FindShortestUpperAround (sector_t *sec);		// jff 2/04/98
 
-sector_t* P_FindModelFloorSector (fixed_t floordestheight, int secnum);	//jff 02/04/98
-sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98
+sector_t* P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec);	//jff 02/04/98
+sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec);	//jff 02/04/98
 
 int		P_FindSectorFromTag (int tag, int start);
 int		P_FindLineFromID (int id, int start);
@@ -288,6 +306,8 @@ public:
 	DFireFlicker (sector_t *sector);
 	DFireFlicker (sector_t *sector, int upper, int lower);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -302,6 +322,8 @@ class DFlicker : public DLighting
 public:
 	DFlicker (sector_t *sector, int upper, int lower);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -317,6 +339,8 @@ public:
 	DLightFlash (sector_t *sector);
 	DLightFlash (sector_t *sector, int min, int max);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -334,6 +358,12 @@ public:
 	DStrobe (sector_t *sector, int utics, int ltics, bool inSync);
 	DStrobe (sector_t *sector, int upper, int lower, int utics, int ltics);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
+	int GetDarkTime() const { return m_DarkTime; }
+	int GetBrightTime() const { return m_BrightTime; }
+	int GetCount() const { return m_Count; }
+	void SetCount(int count) { m_Count = count; }
 protected:
 	int 		m_Count;
 	int 		m_MinLight;
@@ -365,6 +395,10 @@ class DGlow2 : public DLighting
 public:
 	DGlow2 (sector_t *sector, int start, int end, int tics, bool oneshot);
 	void		RunThink ();
+	int GetStart() const { return m_Start; }
+	int GetEnd() const { return m_End; }
+	int GetMaxTics() const { return m_MaxTics; }
+	bool GetOneShot() const { return m_OneShot; }
 protected:
 	int			m_Start;
 	int			m_End;
@@ -383,6 +417,8 @@ public:
 	DPhased (sector_t *sector);
 	DPhased (sector_t *sector, int baselevel, int phase);
 	void		RunThink ();
+	byte GetBaseLevel() const { return m_BaseLevel; }
+	byte GetPhase() const { return m_Phase; }
 protected:
 	byte		m_BaseLevel;
 	byte		m_Phase;
@@ -435,6 +471,7 @@ void	P_ProcessSwitchDef ();
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
+void	P_UpdateButtons (client_t *cl);
 
 //
 // P_PLATS

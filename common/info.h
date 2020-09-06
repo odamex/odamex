@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -173,6 +173,14 @@ typedef enum
 	SPR_TLMP,
 	SPR_TLP2,
 	SPR_TNT1,
+
+	SPR_DOGS, // killough 7/19/98: Marine's best friend :)
+
+	SPR_PLS1, // killough 7/19/98: first  of two plasma fireballs in the beta
+	SPR_PLS2, // killough 7/19/98: second of two plasma fireballs in the beta
+	SPR_BON3, // killough 7/11/98: evil sceptre in beta version
+	SPR_BON4, // killough 7/11/98: unholy bible in beta version
+
 	// [RH] Gibs
 	SPR_GIB0,
 	SPR_GIB1,
@@ -194,6 +202,11 @@ typedef enum
 	SPR_RDWN,
 	SPR_BCAR,
 	SPR_RCAR,
+
+	SPR_GSOK,
+	SPR_GFLG,
+	SPR_GDWN,
+	SPR_GCAR,
 	
 	SPR_TLGL,
 	
@@ -1173,7 +1186,85 @@ typedef enum
 	S_TECH2LAMP2,
 	S_TECH2LAMP3,
 	S_TECH2LAMP4,
-	S_TNT1,
+
+	S_TNT1, // add state for invisible sprite         // phares 3/8/98 
+
+	S_GRENADE,   // killough 8/9/98: grenade launcher
+	S_DETONATE,  // killough 8/9/98: detonation of objects
+	S_DETONATE2,
+	S_DETONATE3,
+
+	S_DOGS_STND,      // killough 7/19/98: Marine's best friend :)
+	S_DOGS_STND2,
+	S_DOGS_RUN1,
+	S_DOGS_RUN2,
+	S_DOGS_RUN3,
+	S_DOGS_RUN4,
+	S_DOGS_RUN5,
+	S_DOGS_RUN6,
+	S_DOGS_RUN7,
+	S_DOGS_RUN8,
+	S_DOGS_ATK1,
+	S_DOGS_ATK2,
+	S_DOGS_ATK3,
+	S_DOGS_PAIN,
+	S_DOGS_PAIN2,
+	S_DOGS_DIE1,
+	S_DOGS_DIE2,
+	S_DOGS_DIE3,
+	S_DOGS_DIE4,
+	S_DOGS_DIE5,
+	S_DOGS_DIE6,
+	S_DOGS_RAISE1,
+	S_DOGS_RAISE2,
+	S_DOGS_RAISE3,
+	S_DOGS_RAISE4,
+	S_DOGS_RAISE5,
+	S_DOGS_RAISE6,
+
+	S_OLDBFG1,  // killough 7/11/98: the old BFG's 43 firing frames
+	S_OLDBFG42 = S_OLDBFG1 + 41,
+	S_OLDBFG43,
+
+	S_PLS1BALL,      // killough 7/19/98: first plasma fireball in the beta
+	S_PLS1BALL2,
+	S_PLS1EXP,
+	S_PLS1EXP2,
+	S_PLS1EXP3,
+	S_PLS1EXP4,
+	S_PLS1EXP5,
+
+	S_PLS2BALL,     // killough 7/19/98: second plasma fireball in the beta
+	S_PLS2BALL2,
+	S_PLS2BALLX1,
+	S_PLS2BALLX2,
+	S_PLS2BALLX3,
+	S_BON3, // killough 7/11/98: evil sceptre in beta version
+	S_BON4, // killough 7/11/98: unholy bible in beta version
+
+	// killough 10/98: beta lost souls were different from their modern cousins
+	S_BSKUL_STND,
+	S_BSKUL_RUN1,
+	S_BSKUL_RUN2,
+	S_BSKUL_RUN3,
+	S_BSKUL_RUN4,
+	S_BSKUL_ATK1,
+	S_BSKUL_ATK2,
+	S_BSKUL_ATK3,
+	S_BSKUL_PAIN1,
+	S_BSKUL_PAIN2,
+	S_BSKUL_PAIN3,
+	S_BSKUL_DIE1,
+	S_BSKUL_DIE2,
+	S_BSKUL_DIE3,
+	S_BSKUL_DIE4,
+	S_BSKUL_DIE5,
+	S_BSKUL_DIE6,
+	S_BSKUL_DIE7,
+	S_BSKUL_DIE8,
+
+	S_MUSHROOM,  // killough 10/98: mushroom explosion effect
+
 	// [RH] gibs
 	S_GIB0,
 	S_GIB1,
@@ -1217,12 +1308,28 @@ typedef enum
 	S_RDWN,	// Red Flag
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
+
+	S_GSOK,
+	S_GFLG,
+	S_GFLG2,
+	S_GFLG3,
+	S_GFLG4,
+	S_GFLG5,
+	S_GFLG6,
+	S_GFLG7,
+	S_GFLG8,
+	S_GDWN,
+	S_GCAR,
+
 	// -----------------------------------
 	S_BRIDGE1,
 	S_BRIDGE2,
 	S_BRIDGE3,
 	S_BRIDGE4,
-	S_BRIDGE5,	
+	S_BRIDGE5,
+	S_NOWEAPONUP,
+	S_NOWEAPONDOWN,
+	S_NOWEAPON,
 	NUMSTATES
 } statenum_t;
 
@@ -1404,6 +1511,16 @@ typedef enum {
 	MT_MISC84,
 	MT_MISC85,
 	MT_MISC86,
+	MT_PUSH,    // controls push source                     // phares
+	MT_PULL,    // controls pull source                     // phares 3/20/98
+
+	MT_DOGS,    // killough 7/19/98: Marine's best friend
+
+	MT_PLASMA1, // killough 7/11/98: first  of alternating beta plasma fireballs
+	MT_PLASMA2, // killough 7/11/98: second of alternating beta plasma fireballs
+	MT_SCEPTRE, // killough 7/11/98: evil sceptre in beta version
+	MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
+
 	// [RH] Gibs (code is disabled)
 	MT_GIB0,
 	MT_GIB1,
@@ -1415,8 +1532,6 @@ typedef enum {
 	MT_GIB7,
 	// [RH] Miscellaneous things
 	MT_UNKNOWNTHING,
-	MT_PUSH,		// Boom's push thing
-	MT_PULL,		// Boom's pull thing
 	MT_PATHNODE,
 	MT_AMBIENT,		// Ambient sounds
 	MT_TELEPORTMAN2,// Teleport destination that pays attention to its height
@@ -1458,6 +1573,11 @@ typedef enum {
 	MT_SECACTEYESSURFACE,
 	MT_SECACTEYESBELOWC,
 	MT_SECACTEYESABOVEC,
+
+	MT_GSOK,
+	MT_GFLG,
+	MT_GDWN,
+	MT_GCAR,
 
 	// FIXME: Has no info.cpp entry.
 	MT_MUSICCHANGE,

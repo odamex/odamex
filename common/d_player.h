@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -116,6 +116,9 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
+static const int ReJoinDelay = TICRATE * 5;
+static const int SuicideDelay = TICRATE * 10;
+
 //
 // Extended player object info: player_t
 //
@@ -173,7 +176,7 @@ public:
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
-	bool		flags[NUMFLAGS];
+	bool		flags[NUMTEAMS];
 
     // Frags, deaths, monster kills
 	int			fragcount;
@@ -184,7 +187,7 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	bool		weaponowned[NUMWEAPONS];
+	bool		weaponowned[NUMWEAPONS+1];
 	int			ammo[NUMAMMO];
 	int			maxammo[NUMAMMO];
 
@@ -217,6 +220,7 @@ public:
 	int			jumpTics;				// delay the next jump for a moment
 
 	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
+	int			suicidedelay;			// Ch0wW - Time between 2 suicides.
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
@@ -235,7 +239,7 @@ public:
 	byte		spying;					// [SL] id of player being spynext'd by this player
 	bool		spectator;				// [GhostlyDeath] spectating?
 //	bool		deadspectator;			// [tm512] spectating as a dead player?
-	int			joinafterspectatortime; // Nes - Join after spectator time.
+	int			joindelay;			// Number of tics to delay player from rejoining
 	int			timeout_callvote;       // [AM] Tic when a vote last finished.
 	int			timeout_vote;           // [AM] Tic when a player last voted.
 
@@ -246,6 +250,8 @@ public:
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
+
+	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
 	// For flood protection
 	struct LastMessage_s
@@ -297,11 +303,12 @@ public:
 		{
 		public:
 			std::string name;
+			std::string md5;
 			unsigned int next_offset;
 
-			download_t() : name(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), next_offset(other.next_offset) {}
-		}download;
+			download_t() : name(""), md5(""), next_offset(0) {}
+			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
+		} download;
 
 		client_t()
 		{

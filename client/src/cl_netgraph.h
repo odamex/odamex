@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +35,7 @@ public:
 	void setInterpolation(int val);
 	void addTrafficIn(int val);
 	void addTrafficOut(int val);
+	void addPacketIn();
 	void draw();
 
 private:
@@ -42,6 +43,7 @@ private:
 	void drawMispredictions(int x, int y);
 	void drawTrafficIn(int x, int y);
 	void drawTrafficOut(int x, int y);
+	void drawPackets(int x, int y);
 
 	static const int BAR_HEIGHT_WORLD_INDEX = 4;
 	static const int BAR_WIDTH_WORLD_INDEX = 2;
@@ -62,6 +64,7 @@ private:
 	int		mInterpolation;
 	int		mTrafficIn[NetGraph::MAX_HISTORY_TICS];
 	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
+	int		mPacketsIn[NetGraph::MAX_HISTORY_TICS];
 };
 
 #endif // __CL_NETGRAPH_H__

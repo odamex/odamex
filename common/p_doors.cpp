@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,15 +23,12 @@
 //-----------------------------------------------------------------------------
 
 
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
-#include "gstrings.h"
-#include "c_console.h"
 
 #include "p_spec.h"
 
@@ -41,7 +38,7 @@ extern bool predicting;
 
 void P_SetDoorDestroy(DDoor *door)
 {
-	if (!door)
+	if (!door || predicting)
 		return;
 
 	door->m_Status = DDoor::destroy;
@@ -491,7 +488,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 
 	sec->special = 0;
 
-	door->m_Type = DDoor::doorRaiseIn5Mins;
+	door->m_Type = DDoor::doorCloseWaitOpen;
 	door->m_Speed = FRACUNIT * 2;
 	door->m_TopHeight = P_FindLowestCeilingSurrounding (sec);
 	door->m_TopHeight -= 4*FRACUNIT;

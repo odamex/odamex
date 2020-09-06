@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,9 +32,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <sstream>
-#include <string>
 #include <vector>
 
 EXTERN_CVAR(sv_gametype)
@@ -42,6 +40,7 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_teamsinplay)
 
 EXTERN_CVAR(sv_vote_countabs)
 EXTERN_CVAR(sv_vote_majority)
@@ -428,7 +427,7 @@ public:
 	}
 	bool exec(void)
 	{
-		return Pickup_DistributePlayers(2, this->error);
+		return Pickup_DistributePlayers(sv_teamsinplay, this->error);
 	}
 };
 
