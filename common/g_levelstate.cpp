@@ -569,7 +569,7 @@ void G_TimeCheckEndGame()
 
 	// Check to see if we have any time left.
 	float timeleft = sv_timelimit * TICRATE * 60;
-	if (timeleft > 0.0)
+	if ((int)timeleft >= level.time)
 		return;
 
 	// If nobody is in the game, just end the game and move on.
