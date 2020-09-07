@@ -183,7 +183,7 @@ void SV_FlagReturn (player_t &player, team_t f)
 
 	CTF_SpawnFlag (f);
 
-	SV_BroadcastPrintf ("%s has returned the %s flag.\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str());
+	SV_BroadcastPrintf ("%s has returned the %s flag.\n", player.userinfo.netname.c_str(), V_GetTeamColor(f).c_str());
 	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, 0, 0, 0);
 }
 
@@ -323,7 +323,7 @@ void SV_FlagDrop (player_t &player, team_t f)
 	TeamInfo* teamInfo = GetTeamInfo(f);
 	int time_held = I_MSTime() - teamInfo->FlagData.pickup_time;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s has dropped the %s flag. (held for %s)\n", player.userinfo.netname.c_str(), GetTeamInfo(f)->ColorStringUpper.c_str(), CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf ("%s has dropped the %s flag. (held for %s)\n", player.userinfo.netname.c_str(), V_GetTeamColor(f).c_str(), CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take ex-carrier's flag
 	teamInfo->FlagData.flagger = 0;
@@ -361,7 +361,7 @@ void CTF_RunTics (void)
 
 		SV_CTFEvent (teamInfo->Team, SCORE_RETURN, idplayer(0));
 
-		SV_BroadcastPrintf ("%s flag returned.\n", teamInfo->ColorStringUpper.c_str());
+		SV_BroadcastPrintf ("%s flag returned.\n", V_GetTeamColor(teamInfo).c_str());
 
 		CTF_SpawnFlag(teamInfo->Team);
 	}
