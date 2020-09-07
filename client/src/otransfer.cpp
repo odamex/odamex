@@ -101,15 +101,26 @@ size_t OTransferCheck::curlWrite(void* data, size_t size, size_t nmemb, void* us
 
 // PUBLIC //
 
+/**
+ * @brief Set the source URL of the check.
+ *
+ * @param src Source URL, complete with protocol.
+ */
 void OTransferCheck::setURL(const std::string& src)
 {
 	curl_easy_setopt(_curl, CURLOPT_URL, src.c_str());
 }
 
+/**
+ * @brief Start the checking transfer.
+ *
+ * @return True if the transfer started properly.
+ */
 bool OTransferCheck::start()
 {
 	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
@@ -142,11 +153,20 @@ bool OTransferCheck::start()
 	return true;
 }
 
+/**
+ * @brief Cancel the transfer.
+ */
 void OTransferCheck::stop()
 {
 	curl_multi_remove_handle(_curlm, _curl);
 }
 
+/**
+ * @brief Run one tic of the transfer.
+ *
+ * @return True if the transfer is ongoing, false if it's done and the object
+ *         should be deleted.
+ */
 bool OTransferCheck::tick()
 {
 	int running;
@@ -238,6 +258,7 @@ bool OTransfer::start()
 {
 	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
