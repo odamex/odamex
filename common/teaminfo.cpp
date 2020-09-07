@@ -1,4 +1,7 @@
+#include <sstream>
 #include "teaminfo.h"
+#include "v_textcolors.h"
+#include "d_player.h"
 
 #include "c_cvars.h"
 
@@ -14,7 +17,7 @@ void InitTeamInfo()
 	teamInfo->Color = argb_t(255, 0, 0, 255);
 	teamInfo->ColorStringUpper = "BLUE";
 	teamInfo->ColorString = "Blue";
-	teamInfo->TextColor = "\\ch";
+	teamInfo->TextColor = TEXTCOLOR_BLUE;
 	teamInfo->FountainColorArg = 3;
 	teamInfo->TeamSpawnThingNum = 5080;
 	teamInfo->FlagThingNum = 5130;
@@ -29,7 +32,7 @@ void InitTeamInfo()
 	teamInfo->Color = argb_t(255, 255, 0, 0);
 	teamInfo->ColorStringUpper = "RED";
 	teamInfo->ColorString = "Red";
-	teamInfo->TextColor = "\\cg";
+	teamInfo->TextColor = TEXTCOLOR_RED;
 	teamInfo->FountainColorArg = 1;
 	teamInfo->TeamSpawnThingNum = 5081;
 	teamInfo->FlagThingNum = 5131;
@@ -45,7 +48,7 @@ void InitTeamInfo()
 	teamInfo->Color = argb_t(255, 0, 255, 0);
 	teamInfo->ColorStringUpper = "GREEN";
 	teamInfo->ColorString = "Green";
-	teamInfo->TextColor = "\\cd";
+	teamInfo->TextColor = TEXTCOLOR_GREEN;
 	teamInfo->FountainColorArg = 2;
 	teamInfo->TeamSpawnThingNum = 5083;
 	teamInfo->FlagThingNum = 5133;
@@ -60,7 +63,7 @@ void InitTeamInfo()
 	s_NoTeam.Color = argb_t(255, 0, 255, 0);
 	s_NoTeam.ColorStringUpper = "";
 	s_NoTeam.ColorString = "";
-	s_NoTeam.TextColor = "\\cc";
+	s_NoTeam.TextColor = TEXTCOLOR_GRAY;
 	s_NoTeam.FountainColorArg = 0;
 	s_NoTeam.TeamSpawnThingNum = 0;
 	s_NoTeam.FlagSocketSprite = 0;
@@ -134,4 +137,31 @@ TeamCount P_TeamQuery(TeamResults* out, unsigned flags)
 	}
 
 	return tc;
+}
+
+std::string V_GetTeamColor(TeamInfo *team)
+{
+	std::ostringstream buffer;
+	buffer << team->TextColor << team->ColorStringUpper << TEXTCOLOR_NORMAL;
+	return buffer.str();
+}
+
+std::string V_GetTeamColor(team_t ateam)
+{
+	std::ostringstream buffer;
+	TeamInfo* team = GetTeamInfo(ateam);
+	
+	buffer << team->TextColor << team->ColorStringUpper << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
+}
+
+std::string V_GetTeamColorPlayer(UserInfo userinfo)
+{
+	std::ostringstream buffer;
+	TeamInfo* team = GetTeamInfo(userinfo.team);
+
+	buffer << team->TextColor << userinfo.netname << TEXTCOLOR_NORMAL;
+
+	return buffer.str();
 }

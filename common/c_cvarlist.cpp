@@ -120,9 +120,9 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 					"// 5 - Nightmare",
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
-CVAR(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
-     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f,
-     1440.0f)
+CVAR_RANGE(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
+           CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+           0.0f, 1440.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_intermissionlimit, "10", "Sets the time limit for the intermission to end (in seconds).",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)

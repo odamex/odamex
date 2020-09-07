@@ -37,6 +37,10 @@
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
 
+#ifdef SERVER_APP
+#include "sv_main.h"
+#endif
+
 extern bool predicting;
 
 EXTERN_CVAR(sv_doubleammo)

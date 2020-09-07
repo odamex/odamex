@@ -627,7 +627,7 @@ void P_InitPicAnims (void)
 			lastanim->curframe = 0;
 
 			if (lastanim->numframes < 2)
-				Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
+				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
 						 anim_p + 10 /* .startname */,
 						 anim_p + 1 /* .endname */);
 
@@ -1595,6 +1595,10 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 
 
+#ifdef SERVER_APP
+void SV_UpdateSecret(int sectornum, player_t &player);
+#endif
+
 //
 // P_PlayerInSpecialSector
 // Called every tic frame
@@ -1730,10 +1734,13 @@ void P_PlayerInSpecialSector (player_t *player)
 			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
-
-#ifdef CLIENT_APP
+	
+#ifdef SERVER_APP
+			int sectornum = sector - sectors;
+			SV_UpdateSecret(sectornum, *player);	// Update the sector to all clients so that they don't discover an already found secret.
+#else
 			if (player->mo == consoleplayer().camera)
-				C_RevealSecret();
+				C_RevealSecret();		// Display the secret revealed message
 #endif
 		}
 	}
@@ -1842,7 +1849,10 @@ void P_SpawnSpecials (void)
 
 		// [RH] All secret sectors are marked with a BOOM-ish bitfield
 		if (sector->special & SECRET_MASK)
+		{
+			sector->secretsector = true;
 			level.total_secrets++;
+		}
 
 		switch (sector->special & 0xff)
 		{

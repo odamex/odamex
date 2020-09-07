@@ -106,5 +106,7 @@ typedef std::vector<TeamInfo*> TeamResults;
 void InitTeamInfo();
 TeamInfo* GetTeamInfo(team_t team);
 TeamCount P_TeamQuery(TeamResults* out, unsigned flags);
+std::string V_GetTeamColor(TeamInfo* team);
+std::string V_GetTeamColor(team_t ateam);
 
 #endif

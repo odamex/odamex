@@ -309,6 +309,7 @@ void P_LoadSectors (int lump)
 			ss->special = LESHORT(ms->special);
 		else	// [RH] Translate to new sector special
 			ss->special = P_TranslateSectorSpecial (LESHORT(ms->special));
+		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;		// phares 3/14/98
@@ -751,6 +752,7 @@ void P_FinishLoadingLineDefs (void)
 						if (lines[j].id == ld->args[0])
 							lines[j].lucency = (byte)ld->args[1];
 #endif
+				ld->special = 0;
 				break;
 		}
 	}

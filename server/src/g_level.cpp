@@ -779,7 +779,7 @@ void G_DoLoadLevel (int position)
 			if (!teamInfo->FlagData.flaglocated)
 			{
 				const char* teamColor = teamInfo->ColorString.c_str();
-				SV_BroadcastPrintf(PRINT_HIGH, "WARNING: %s flag pedestal not found! No %s flags in game.\n", teamColor, teamColor);
+				SV_BroadcastPrintf(PRINT_WARNING, "WARNING: %s flag pedestal not found! No %s flags in game.\n", teamColor, teamColor);
 			}
 		}
 	}

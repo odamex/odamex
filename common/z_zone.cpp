@@ -572,13 +572,13 @@ void Z_DumpHeap(int lowtag, int hightag)
 			break;		// all blocks have been hit
 	
 		if ((byte*)block + block->size != (byte*)block->next)
-			Printf(PRINT_HIGH, "ERROR: block size does not touch the next block\n");
+			Printf(PRINT_WARNING, "ERROR: block size does not touch the next block\n");
 
 		if (block->next->prev != block)
-			Printf(PRINT_HIGH, "ERROR: next block doesn't have proper back link\n");
+			Printf(PRINT_WARNING, "ERROR: next block doesn't have proper back link\n");
 
 		if (block->tag == PU_FREE && block->next->tag == PU_FREE)
-			Printf(PRINT_HIGH, "ERROR: two consecutive free blocks\n");
+			Printf(PRINT_WARNING, "ERROR: two consecutive free blocks\n");
     }
 }
 

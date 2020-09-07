@@ -167,6 +167,7 @@ struct sector_s
 	short		special;
 	short		tag;
 	int			nexttag,firsttag;	// killough 1/30/98: improves searches for tags.
+	bool		secretsector;		// Ch0wW : This is a secret sector !
 
     // 0 = untraversed, 1,2 = sndlines -1
 	int 				soundtraversed;
