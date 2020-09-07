@@ -105,7 +105,7 @@
 	#define PRI_SIZE_PREFIX "z"
 #endif
 
-    // Format constants for ssize_t/size_t.
+// Format constants for ssize_t/size_t.
 
 #define PRIdSIZE PRI_SIZE_PREFIX "d"
 #define PRIiSIZE PRI_SIZE_PREFIX "i"
