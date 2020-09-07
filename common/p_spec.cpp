@@ -627,7 +627,7 @@ void P_InitPicAnims (void)
 			lastanim->curframe = 0;
 
 			if (lastanim->numframes < 2)
-				Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
+				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
 						 anim_p + 10 /* .startname */,
 						 anim_p + 1 /* .endname */);
 

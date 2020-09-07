@@ -3545,7 +3545,7 @@ void strbin (char *str)
 		} else {
 			switch (*p) {
 				case 'c':
-					*str++ = '\x8a';
+					*str++ = '\034';	// TEXTCOLOR_ESCAPE	
 					break;
 				case 'n':
 					*str++ = '\n';

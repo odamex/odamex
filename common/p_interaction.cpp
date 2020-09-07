@@ -37,6 +37,10 @@
 #include "g_warmup.h"
 #include "m_wdlstats.h"
 
+#ifdef SERVER_APP
+#include "sv_main.h"
+#endif
+
 extern bool predicting;
 
 EXTERN_CVAR(sv_doubleammo)
@@ -1116,6 +1120,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		ClientObituary(target, inflictor, source);
 	}
+
+#ifdef SERVER_APP
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
@@ -1151,6 +1157,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			}
 		}
 	}
+#endif
+
 
 	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
     {

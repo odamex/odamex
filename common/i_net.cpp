@@ -155,9 +155,9 @@ void init_upnp (void)
 
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
-	{
-		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n",
-			res);
+    {
+		Printf(PRINT_WARNING, "UPnP: Router not found or timed out, error %d\n",
+            res);
 
 		is_upnp_ok = false;
 

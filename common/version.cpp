@@ -75,7 +75,7 @@ BEGIN_COMMAND (version)
 		source_files_t::const_iterator it = get_source_files().find(argv[1]);
 
 		if (it == get_source_files().end())
-			Printf(PRINT_HIGH, "no such file: %s", argv[1]);
+			Printf(PRINT_WARNING, "no such file: %s", argv[1]);
 		else
 			Printf(PRINT_HIGH, "%s", it->second.c_str());
 	}

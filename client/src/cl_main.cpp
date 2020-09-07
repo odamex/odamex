@@ -158,8 +158,9 @@ static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
 void P_DestroyButtonThinkers();
+std::string V_GetTeamColorPlayer(player_t& player);
 
-//
+    //
 // CL_ShadePlayerColor
 //
 // Shades base_color darker using the intensity of shade_color.
@@ -208,6 +209,7 @@ argb_t CL_GetPlayerColor(player_t *player)
 
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
+
 
 
 static void CL_RebuildAllPlayerTranslations()
@@ -364,7 +366,7 @@ static void CL_ResyncWorldIndex()
 
 void Host_EndGame(const char *msg)
 {
-    Printf(PRINT_HIGH, "%s", msg);
+    Printf("%s", msg);
 	CL_QuitNetGame();
 }
 
@@ -719,10 +721,10 @@ void CL_RunTics()
 			// debugging output
 			extern unsigned char prndindex;
 			if (!(players.empty()) && players.begin()->mo)
-				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
+				Printf("level.time %d, prndindex %d, %d %d %d\n",
 				       level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+ 				Printf("level.time %d, prndindex %d\n", level.time, prndindex);
 		}
 	}
 	else
@@ -758,12 +760,12 @@ BEGIN_COMMAND (connect)
 {
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: connect ip[:port] [password]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Connect to a server, with optional port number");
-	    Printf(PRINT_HIGH, " and/or password\n");
-	    Printf(PRINT_HIGH, "eg: connect 127.0.0.1\n");
-	    Printf(PRINT_HIGH, "eg: connect 192.168.0.1:12345 secretpass\n");
+	    Printf("Usage: connect ip[:port] [password]\n");
+	    Printf("\n");
+	    Printf("Connect to a server, with optional port number");
+	    Printf(" and/or password\n");
+	    Printf("eg: connect 127.0.0.1\n");
+	    Printf("eg: connect 192.168.0.1:12345 secretpass\n");
 
 	    return;
 	}
@@ -798,7 +800,7 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Could not resolve host %s\n", target.c_str());
+			Printf("Could not resolve host %s\n", target.c_str());
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
 	}
@@ -832,11 +834,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf(PRINT_HIGH, "PLAYERS IN GAME:\n");
+	Printf("PLAYERS IN GAME:\n");
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf(PRINT_HIGH, "%3d. %s\n", (*it).first, (*it).second.c_str());
+		Printf("%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
-	Printf(PRINT_HIGH, "%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
+	Printf("%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -851,7 +853,7 @@ BEGIN_COMMAND (playerinfo)
 
 		if (!validplayer(p))
 		{
-			Printf (PRINT_HIGH, "Bad player number\n");
+			Printf ("Bad player number\n");
 			return;
 		}
 		else
@@ -860,7 +862,7 @@ BEGIN_COMMAND (playerinfo)
 
 	if (!validplayer(*player))
 	{
-		Printf (PRINT_HIGH, "Not a valid player\n");
+		Printf ("Not a valid player\n");
 		return;
 	}
 
@@ -889,7 +891,7 @@ BEGIN_COMMAND (kill)
     if (sv_allowcheats || sv_gametype == GM_COOP)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
+        Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -922,7 +924,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
+    Printf ("\n%*s - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (size_t i = 0; i < server_cvars.size(); i++)
@@ -930,14 +932,13 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
 
-		Printf(PRINT_HIGH,
-				"%*s - %s\n",
+		Printf( "%*s - %s\n",
 				MaxFieldLength,
 				Cvar->name(),
 				Cvar->cstring());
 	}
 
-    Printf (PRINT_HIGH,	"\n");
+    Printf ("\n");
 }
 END_COMMAND (serverinfo)
 
@@ -989,7 +990,10 @@ END_COMMAND (rcon_logout)
 
 BEGIN_COMMAND (playerteam)
 {
-	Printf (PRINT_MEDIUM, "Your Team is %d \n", consoleplayer().userinfo.team);
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
+	else
+		Printf("You need to play a team-based gamemode in order to use this command.\n");
 }
 END_COMMAND (playerteam)
 
@@ -1687,7 +1691,7 @@ bool CL_PrepareConnect(void)
 		if (!cl_serverdownload)
 		{
 			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
+			Printf(PRINT_WARNING, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
 								missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
@@ -1696,7 +1700,7 @@ bool CL_PrepareConnect(void)
 		if (netdemo.isPlaying())
 		{
 			// Downloading is disabled client-side
-			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+			Printf(PRINT_WARNING, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
 								missing_file.c_str());			
 			CL_QuitNetGame();
 			return false;
@@ -1816,7 +1820,7 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf(PRINT_HIGH, "challenging %s\n", NET_AdrToString(serveraddr));
+		Printf("challenging %s\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
@@ -1860,12 +1864,17 @@ void CL_Print (void)
 	byte level = MSG_ReadByte();
 	const char *str = MSG_ReadString();
 
+	// Disallow getting NORCON messages
+	if (level == PRINT_NORCON)
+		return;
+
+	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "\\c*%s", str);
+		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);	
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "\\c!%s", str);
+		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "\\ck%s", str);
+		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
 	else
 		Printf(level, "%s", str);
 
@@ -1897,6 +1906,8 @@ void CL_Say()
 	byte player_id = MSG_ReadByte();
 	const char* message = MSG_ReadString();
 
+	bool filtermessage = false;
+
 	player_t &player = idplayer(player_id);
 
 	if (!validplayer(player))
@@ -1907,13 +1918,13 @@ void CL_Say()
 	if (consoleplayer().id != player.id)
 	{
 		if (spectator && mute_spectators)
-			return;
+			filtermessage = true;
 
 		if (mute_enemies && !spectator &&
 		    (sv_gametype == GM_DM ||
 		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
-			return;
+			filtermessage = true;
 	}
 
 	const char* name = player.userinfo.netname.c_str();
@@ -1921,11 +1932,12 @@ void CL_Say()
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
+			       message);
 
-		if (show_messages)
+		if (show_messages && !filtermessage)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 	}
 	else if (message_visibility == 1)
@@ -3010,7 +3022,7 @@ void CL_CheckMissedPacket(void)
             MSG_ReadChunk(size);
 
 			#ifdef _DEBUG
-                Printf (PRINT_LOW, "warning: duplicate packet\n");
+                Printf (PRINT_WARNING, "warning: duplicate packet\n");
 			#endif
 			return;
 		}
@@ -3815,7 +3827,7 @@ void PickupMessage (AActor *toucher, const char *message)
 	{
 		lastmessagetic = gametic;
 		lastmessage = message;
-		Printf (PRINT_LOW, "%s\n", message);
+		Printf (PRINT_PICKUP, "%s\n", message);
 	}
 }
 

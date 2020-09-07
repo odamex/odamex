@@ -162,7 +162,7 @@ void MusicSystem::setVolume(float volume)
 SdlMixerMusicSystem::SdlMixerMusicSystem() :
 	mIsInitialized(false), mRegisteredSong()
 {
-	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using SDL_Mixer.\n");
+	Printf("I_InitMusic: Music playback enabled using SDL_Mixer.\n");
 	mIsInitialized = true;
 }
 
@@ -194,7 +194,7 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 	if (Mix_PlayMusic(mRegisteredSong.Track, loop ? -1 : 1) == -1)
 	{
-		Printf(PRINT_HIGH, "Mix_PlayMusic: %s\n", Mix_GetError());
+		Printf(PRINT_WARNING, "Mix_PlayMusic: %s\n", Mix_GetError());
 		return;
 	}
 
@@ -305,7 +305,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 		if (result == 0)
 			mRegisteredSong.Data = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
 		else
-			Printf(PRINT_HIGH, "MUS is not valid\n");
+			Printf(PRINT_WARNING, "MUS is not valid\n");
 
 		mem_fclose(mus);
 		mem_fclose(midi);		
@@ -317,7 +317,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 
 	if (!mRegisteredSong.Data)
 	{
-		Printf(PRINT_HIGH, "SDL_RWFromMem: %s\n", SDL_GetError());
+		Printf(PRINT_WARNING, "SDL_RWFromMem: %s\n", SDL_GetError());
 		return;
 	}
 
@@ -327,7 +327,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	FILE *fp = fopen(TEMP_MIDI, "wb+");
 	if (!fp)
 	{
-		Printf(PRINT_HIGH, "Could not open temporary music file %s, not playing track\n", TEMP_MIDI);
+		Printf(PRINT_WARNING, "Could not open temporary music file %s, not playing track\n", TEMP_MIDI);
 		return;
 	}
     
@@ -354,7 +354,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 
 	if (!mRegisteredSong.Track)
 	{
-		Printf(PRINT_HIGH, "Mix_LoadMUSW: %s\n", Mix_GetError());
+		Printf(PRINT_WARNING, "Mix_LoadMUSW: %s\n", Mix_GetError());
 		return;
 	}
 
@@ -369,7 +369,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	
 	if (!mRegisteredSong.Track)
 	{
-		Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
+		Printf(PRINT_WARNING, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
 		return;
 	}
 
@@ -736,14 +736,14 @@ static MidiSong* I_RegisterMidiSong(byte *data, size_t length)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "I_RegisterMidiSong: MUS is not valid\n");
+			Printf(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
 			regdata = NULL;
 			reglength = 0;
 		}
 	}
 	else if (!S_MusicIsMidi(data, length))
 	{
-		Printf(PRINT_HIGH, "I_RegisterMidiSong: Only midi music formats are supported with the selected music system.\n");
+		Printf(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported with the selected music system.\n");
 		return NULL;
 	}
 	
@@ -1011,7 +1011,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 	
 	if (Pm_Initialize() != pmNoError)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: PortMidi initialization failed.\n");
+		Printf(PRINT_WARNING, "I_InitMusic: PortMidi initialization failed.\n");
 		return;
 	}
 
@@ -1034,14 +1034,14 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
     
     if (mOutputDevice == pmNoDevice)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: No PortMidi output devices available.\n");
+		Printf(PRINT_WARNING, "I_InitMusic: No PortMidi output devices available.\n");
 		Pm_Terminate ();
 		return;
 	}
 	
 	if (Pm_OpenOutput(&mStream,	mOutputDevice, NULL, output_buffer_size, I_PortMidiTime, NULL, cLatency) != pmNoError)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: Failure opening PortMidi output device %d.\n", mOutputDevice);
+		Printf(PRINT_WARNING, "I_InitMusic: Failure opening PortMidi output device %d.\n", mOutputDevice);
 		return;
 	} 
                   

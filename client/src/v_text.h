@@ -26,71 +26,13 @@
 #define __V_TEXT_H__
 
 #include "doomtype.h"
+#include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 
 struct brokenlines_s {
 	int width;
 	char *string;
 };
 typedef struct brokenlines_s brokenlines_t;
-
-enum EColorRange
-{
-	CR_BRICK,
-	CR_TAN,
-	CR_GRAY,
-	CR_GREY = CR_GRAY,
-	CR_GREEN,
-	CR_BROWN,
-	CR_GOLD,
-	CR_RED,
-	CR_BLUE,
-	CR_ORANGE,
-	CR_WHITE,
-	CR_YELLOW,
-
-	CR_UNTRANSLATED,
-	CR_BLACK,
-	CR_LIGHTBLUE,
-	CR_CREAM,
-	CR_OLIVE,
-	CR_DARKGREEN,
-	CR_DARKRED,
-	CR_DARKBROWN,
-	CR_PURPLE,
-	CR_DARKGRAY,
-	CR_DARKGREY = CR_DARKGRAY,
-	CR_CYAN,
-	NUM_TEXT_COLORS
-};
-
-#define TEXTCOLOR_BRICK			"\\ca"
-#define TEXTCOLOR_TAN			"\\cb"
-#define TEXTCOLOR_GRAY			"\\cc"
-#define TEXTCOLOR_GREY			"\\cc"
-#define TEXTCOLOR_GREEN			"\\cd"
-#define TEXTCOLOR_BROWN			"\\ce"
-#define TEXTCOLOR_GOLD			"\\cf"
-#define TEXTCOLOR_RED			"\\cg"
-#define TEXTCOLOR_BLUE			"\\ch"
-#define TEXTCOLOR_ORANGE		"\\ci"
-#define TEXTCOLOR_WHITE			"\\cj"
-#define TEXTCOLOR_YELLOW		"\\ck"
-
-#define TEXTCOLOR_UNTRANSLATED	"\\cl"
-#define TEXTCOLOR_BLACK			"\\cm"
-#define TEXTCOLOR_LIGHTBLUE		"\\cn"
-#define TEXTCOLOR_CREAM			"\\co"
-#define TEXTCOLOR_OLIVE			"\\cp"
-#define TEXTCOLOR_DARKGREEN		"\\cq"
-#define TEXTCOLOR_DARKRED		"\\cr"
-#define TEXTCOLOR_DARKBROWN		"\\cs"
-#define TEXTCOLOR_PURPLE		"\\ct"
-#define TEXTCOLOR_DARKGRAY		"\\cu"
-#define TEXTCOLOR_DARKGREY		"\\cu"
-#define TEXTCOLOR_CYAN			"\\cv"
-
-#define TEXTCOLOR_NORMAL		"\\c-"
-#define TEXTCOLOR_BOLD			"\\c+"
 
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
