@@ -1898,6 +1898,8 @@ void CL_Say()
 	byte player_id = MSG_ReadByte();
 	const char* message = MSG_ReadString();
 
+	bool filtermessage = false;
+
 	player_t &player = idplayer(player_id);
 
 	if (!validplayer(player))
@@ -1908,13 +1910,13 @@ void CL_Say()
 	if (consoleplayer().id != player.id)
 	{
 		if (spectator && mute_spectators)
-			return;
+			filtermessage = true;
 
 		if (mute_enemies && !spectator &&
 		    (sv_gametype == GM_DM ||
 		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
-			return;
+			filtermessage = true;
 	}
 
 	const char* name = player.userinfo.netname.c_str();
@@ -1922,11 +1924,12 @@ void CL_Say()
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_CHAT, "%s: %s\n", name, message);
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
+			       message);
 
-		if (show_messages)
+		if (show_messages && !filtermessage)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 	}
 	else if (message_visibility == 1)

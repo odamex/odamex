@@ -91,6 +91,9 @@ EXTERN_CVAR (r_enemycolor)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
+EXTERN_CVAR (mute_spectators)
+EXTERN_CVAR (mute_enemies)
+
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (hud_targetnames)
@@ -881,6 +884,8 @@ static menuitem_t MessagesItems[] = {
 	{ bricktext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Hide spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Hide enemies messages",	{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
     { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
 	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },

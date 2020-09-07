@@ -1026,6 +1026,10 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
+	// Do not display filtered chat messages
+	if (printlevel == PRINT_FILTERCHAT)
+		return;
+
 	int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
@@ -1103,6 +1107,10 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 
 	if (I_VideoInitialized() && !midprinting)
 		C_AddNotifyString(printlevel, color_code, outline);
+
+	// Revert filtered chat to a normal chat to display to the console
+	if (printlevel == PRINT_FILTERCHAT)
+		printlevel = PRINT_CHAT;
 
 	const char* line_start = outline;
 	const char* line_end = line_start;

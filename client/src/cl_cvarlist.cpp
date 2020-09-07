@@ -263,11 +263,11 @@ CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR(				show_messages, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				mute_spectators, "0", "Mute spectators chat until next disconnect",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(				mute_spectators, "0", "Mute spectators chat.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				mute_enemies, "0", "Mute enemy players chat until next disconnect",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(				mute_enemies, "0", "Mute enemy players chat.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 
 // Maximum number of clients who can connect to the server
