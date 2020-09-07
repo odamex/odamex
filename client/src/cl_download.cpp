@@ -78,7 +78,7 @@ static struct DownloadState
 		this->checkfilename = "";
 		this->checkfails = 0;
 	}
-} g_state;
+} dlstate;
 
 /**
  * @brief Init the HTTP download system.
@@ -90,7 +90,7 @@ void CL_DownloadInit()
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	g_state.state = STATE_READY;
+	::dlstate.state = STATE_READY;
 }
 
 /**
@@ -98,16 +98,16 @@ void CL_DownloadInit()
  */
 void CL_DownloadShutdown()
 {
-	if (g_state.state == STATE_SHUTDOWN)
+	if (::dlstate.state == STATE_SHUTDOWN)
 		return;
 
-	delete g_state.check;
-	g_state.check = NULL;
-	delete g_state.transfer;
-	g_state.transfer = NULL;
+	delete ::dlstate.check;
+	::dlstate.check = NULL;
+	delete ::dlstate.transfer;
+	::dlstate.transfer = NULL;
 
 	curl_global_cleanup();
-	g_state.state = STATE_SHUTDOWN;
+	::dlstate.state = STATE_SHUTDOWN;
 }
 
 /**
@@ -117,7 +117,7 @@ void CL_DownloadShutdown()
  */
 bool CL_IsDownloading()
 {
-	return g_state.state == STATE_CHECKING || g_state.state == STATE_DOWNLOADING;
+	return ::dlstate.state == STATE_CHECKING || ::dlstate.state == STATE_DOWNLOADING;
 }
 
 /**
@@ -130,7 +130,7 @@ bool CL_IsDownloading()
 bool CL_StartDownload(const std::string& website, const std::string& filename,
                       const std::string& hash)
 {
-	if (g_state.state != STATE_READY)
+	if (::dlstate.state != STATE_READY)
 		return false;
 
 	if (W_IsFilenameCommercialIWAD(filename))
@@ -151,12 +151,12 @@ bool CL_StartDownload(const std::string& website, const std::string& filename,
 	if (*(url.rbegin()) != '/')
 		url.push_back('/');
 
-	g_state.url = url;
-	g_state.filename = filename;
-	g_state.hash = hash;
+	::dlstate.url = url;
+	::dlstate.filename = filename;
+	::dlstate.hash = hash;
 
 	// Start the checking bit on the next tick.
-	g_state.state = STATE_CHECKING;
+	::dlstate.state = STATE_CHECKING;
 	return true;
 }
 
@@ -170,7 +170,7 @@ bool CL_StopDownload()
 	if (!CL_IsDownloading())
 		return false;
 
-	g_state.Ready();
+	::dlstate.Ready();
 	return true;
 }
 
@@ -182,8 +182,8 @@ bool CL_StopDownload()
 static void CheckDone(const OTransferInfo& info)
 {
 	// Found the file, download it next tick.
-	g_state.state = STATE_DOWNLOADING;
-	g_state.url = info.url;
+	::dlstate.state = STATE_DOWNLOADING;
+	::dlstate.url = info.url;
 
 	Printf("Found file at %s.\n", info.url);
 }
@@ -196,17 +196,17 @@ static void CheckDone(const OTransferInfo& info)
 static void CheckError(const char* msg)
 {
 	// That's a strike.
-	g_state.checkfails += 1;
+	::dlstate.checkfails += 1;
 
-	delete g_state.check;
-	g_state.check = NULL;
+	delete ::dlstate.check;
+	::dlstate.check = NULL;
 
 	// Has our luck run out?
-	if (g_state.checkfails >= 3)
+	if (::dlstate.checkfails >= 3)
 	{
-		g_state.Ready();
+		::dlstate.Ready();
 		Printf(PRINT_WARNING, "Could not find %s (%s)...\n",
-		       g_state.checkfilename.c_str(), msg);
+		       ::dlstate.checkfilename.c_str(), msg);
 
 		if (::gamestate == GS_DOWNLOAD)
 			CL_QuitNetGame();
@@ -215,41 +215,41 @@ static void CheckError(const char* msg)
 
 static void TickCheck()
 {
-	if (g_state.check == NULL)
+	if (::dlstate.check == NULL)
 	{
 		// Try three different variants of the file.
-		g_state.checkfilename = g_state.filename;
-		if (g_state.checkfails >= 2)
+		::dlstate.checkfilename = ::dlstate.filename;
+		if (::dlstate.checkfails >= 2)
 		{
 			// Second strike, try all uppercase.
-			g_state.checkfilename = StdStringToUpper(g_state.checkfilename);
+			::dlstate.checkfilename = StdStringToUpper(::dlstate.checkfilename);
 		}
-		else if (g_state.checkfails == 1)
+		else if (::dlstate.checkfails == 1)
 		{
 			// First stirke, try all lowercase.
-			g_state.checkfilename = StdStringToLower(g_state.checkfilename);
+			::dlstate.checkfilename = StdStringToLower(::dlstate.checkfilename);
 		}
 
 		// Now we have the full URL.
-		std::string fullurl = g_state.url + g_state.checkfilename;
+		std::string fullurl = ::dlstate.url + ::dlstate.checkfilename;
 
 		// Create the check transfer.
-		g_state.check = new OTransferCheck(CheckDone, CheckError);
-		g_state.check->setURL(fullurl.c_str());
-		if (!g_state.check->start())
+		::dlstate.check = new OTransferCheck(CheckDone, CheckError);
+		::dlstate.check->setURL(fullurl.c_str());
+		if (!::dlstate.check->start())
 		{
 			// Failed to start, bail out.
-			g_state.Ready();
+			::dlstate.Ready();
 			return;
 		}
 
-		g_state.state = STATE_CHECKING;
+		::dlstate.state = STATE_CHECKING;
 		Printf("Checking for file at %s...\n", fullurl.c_str());
 	}
 
 	// Tick the checker - the done/error callbacks mutate the state appropriately,
 	// so we don't need to bother with the return value here.
-	g_state.check->tick();
+	::dlstate.check->tick();
 }
 
 /**
@@ -301,11 +301,11 @@ static void TransferError(const char* msg)
 
 static void TickDownload()
 {
-	if (g_state.transfer == NULL)
+	if (::dlstate.transfer == NULL)
 	{
 		// Create the transfer.
-		g_state.transfer = new OTransfer(TransferDone, TransferError);
-		g_state.transfer->setURL(g_state.url.c_str());
+		::dlstate.transfer = new OTransfer(TransferDone, TransferError);
+		::dlstate.transfer->setURL(::dlstate.url.c_str());
 
 		// Figure out where our destination should be.
 		std::string dest;
@@ -313,19 +313,19 @@ static void TickDownload()
 		for (StringTokens::iterator it = dirs.begin(); it != dirs.end(); ++it)
 		{
 			// Ensure no path-traversal shenanegins are going on.
-			dest = *it + PATHSEP + g_state.filename;
+			dest = *it + PATHSEP + ::dlstate.filename;
 			M_CleanPath(dest);
 			if (dest.find(*it) != 0)
 			{
 				// Something about the filename is trying to escape the
 				// download directory.  This is almost certainly malicious.
 				TransferError("Saved file tried to escape download directory.\n");
-				g_state.Ready();
+				::dlstate.Ready();
 				return;
 			}
 
 			// If the output file was set successfully, escape the loop.
-			int err = g_state.transfer->setOutputFile(g_state.filename.c_str());
+			int err = ::dlstate.transfer->setOutputFile(::dlstate.filename.c_str());
 			if (err == 0)
 				break;
 
@@ -339,25 +339,25 @@ static void TickDownload()
 		{
 			// Found no safe place to write, bail out.
 			TransferError("No safe place to save file.\n");
-			g_state.Ready();
+			::dlstate.Ready();
 			return;
 		}
 
-		if (!g_state.transfer->start())
+		if (!::dlstate.transfer->start())
 		{
 			// Failed to start, bail out.
-			g_state.Ready();
+			::dlstate.Ready();
 			return;
 		}
 
-		g_state.state = STATE_DOWNLOADING;
-		Printf("Downloading %s...\n", g_state.url.c_str());
+		::dlstate.state = STATE_DOWNLOADING;
+		Printf("Downloading %s...\n", ::dlstate.url.c_str());
 	}
 
-	if (!g_state.transfer->tick())
+	if (!::dlstate.transfer->tick())
 	{
 		// Transfer is done ticking - clean it up.
-		g_state.Ready();
+		::dlstate.Ready();
 	}
 }
 
@@ -366,23 +366,23 @@ static void TickDownload()
  */
 void CL_DownloadTick()
 {
-	switch (g_state.state)
+	switch (::dlstate.state)
 	{
 	case STATE_CHECKING:
-		delete g_state.transfer;
-		g_state.transfer = NULL;
+		delete ::dlstate.transfer;
+		::dlstate.transfer = NULL;
 		TickCheck();
 		break;
 	case STATE_DOWNLOADING:
-		delete g_state.check;
-		g_state.check = NULL;
+		delete ::dlstate.check;
+		::dlstate.check = NULL;
 		TickDownload();
 		break;
 	default:
-		delete g_state.check;
-		g_state.check = NULL;
-		delete g_state.transfer;
-		g_state.check = NULL;
+		delete ::dlstate.check;
+		::dlstate.check = NULL;
+		delete ::dlstate.transfer;
+		::dlstate.check = NULL;
 		return;
 	}
 }
@@ -396,20 +396,20 @@ std::string CL_DownloadProgress()
 {
 	std::string buffer;
 
-	switch (g_state.state)
+	switch (::dlstate.state)
 	{
 	case STATE_CHECKING:
 		StrFormat(buffer, "Checking possible locations: %d of 3...",
-		          g_state.checkfails + 1);
+		          ::dlstate.checkfails + 1);
 		break;
 	case STATE_DOWNLOADING: {
-		if (g_state.transfer == NULL)
+		if (::dlstate.transfer == NULL)
 		{
 			buffer = "Downloading...";
 		}
 		else
 		{
-			OTransferProgress progress = g_state.transfer->getProgress();
+			OTransferProgress progress = ::dlstate.transfer->getProgress();
 
 			std::string now;
 			StrFormatBytes(now, progress.dlnow);
