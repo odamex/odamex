@@ -89,24 +89,24 @@
 #endif
 
 #if (defined _XBOX || defined _MSC_VER)
-    typedef signed   __int8   int8_t;
-    typedef signed   __int16  int16_t;
-    typedef signed   __int32  int32_t;
-    typedef signed   __int64  int64_t;
-    typedef unsigned __int8   uint8_t;
-    typedef unsigned __int16  uint16_t;
-    typedef unsigned __int32  uint32_t;
-    typedef unsigned __int64  uint64_t;
+	typedef signed __int8 int8_t;
+	typedef signed __int16 int16_t;
+	typedef signed __int32 int32_t;
+	typedef signed __int64 int64_t;
+	typedef unsigned __int8 uint8_t;
+	typedef unsigned __int16 uint16_t;
+	typedef unsigned __int32 uint32_t;
+	typedef unsigned __int64 uint64_t;
 
-    #define PRI_SIZE_PREFIX "I"
+	#define PRI_SIZE_PREFIX "I"
 #else
-    #include <stdint.h>
-    #include <inttypes.h>
+	#include <inttypes.h>
+	#include <stdint.h>
 
-    #define PRI_SIZE_PREFIX "z"
+	#define PRI_SIZE_PREFIX "z"
 #endif
 
-// Format constants for ssize_t/size_t.
+    // Format constants for ssize_t/size_t.
 
 #define PRIdSIZE PRI_SIZE_PREFIX "d"
 #define PRIiSIZE PRI_SIZE_PREFIX "i"
