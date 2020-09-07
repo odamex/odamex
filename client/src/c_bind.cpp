@@ -159,7 +159,7 @@ BEGIN_COMMAND (unbind)
 		if (key)
 			Bindings.erase(key);
 		else
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf (PRINT_WARNING, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (unbind)
@@ -206,7 +206,7 @@ BEGIN_COMMAND (undoublebind)
 		if (key)
 			DoubleBindings.erase(key);
 		else
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			Printf (PRINT_WARNING, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
 	}
 }
 END_COMMAND (undoublebind)

@@ -529,7 +529,7 @@ BEGIN_COMMAND (menu_save)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
@@ -539,7 +539,7 @@ BEGIN_COMMAND (menu_load)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -558,7 +558,7 @@ BEGIN_COMMAND (quicksave)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
@@ -576,7 +576,7 @@ BEGIN_COMMAND (quickload)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 

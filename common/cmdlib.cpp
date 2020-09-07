@@ -688,8 +688,8 @@ void StripColorCodes(std::string& str)
 	size_t pos = 0;
 	while (pos < str.length())
 	{
-		if (str.c_str()[pos] == '\\' && str.c_str()[pos + 1] == 'c' && str.c_str()[pos + 2] != '\0')
-			str.erase(pos, 3);
+		if (str.c_str()[pos] == '\034' && str.c_str()[pos + 1] != '\0')
+			str.erase(pos, 2);
 		else
 			pos++;
 	}

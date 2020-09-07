@@ -358,7 +358,7 @@ void M_FindResponseFile (void)
 			handle = fopen (Args.GetArg(i) + 1,"rb");
 			if (!handle)
 			{ // [RH] Make this a warning, not an error.
-				Printf (PRINT_HIGH,"No such response file (%s)!", Args.GetArg(i) + 1);
+				Printf (PRINT_WARNING,"No such response file (%s)!", Args.GetArg(i) + 1);
 				continue;
 			}
 
