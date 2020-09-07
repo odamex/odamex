@@ -100,7 +100,6 @@
 
 	#define PRI_SIZE_PREFIX "I"
 #else
-	#include <inttypes.h>
 	#include <stdint.h>
 
 	#define PRI_SIZE_PREFIX "z"
