@@ -139,7 +139,8 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_website)
+EXTERN_CVAR (sv_downloadsites)
+EXTERN_CVAR (cl_downloadsites)
 
 EXTERN_CVAR (cl_predictsectors)
 
@@ -1602,7 +1603,7 @@ bool CL_PrepareConnect(void)
 	}
 
 	// Download website - needed for HTTP downloading to work.
-	sv_website.Set(MSG_ReadString());
+	sv_downloadsites.Set(MSG_ReadString());
 
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
@@ -1708,20 +1709,18 @@ bool CL_PrepareConnect(void)
 			return false;
 		}
 
-		if (sv_website.str().empty())
+		if (sv_downloadsites.str().empty() && cl_downloadsites.str().empty())
 		{
-			// Server forgot to set a reasonable sv_website.
-			Printf(PRINT_HIGH,
-			       "Unable to find \"%s\".  Server does not have a WAD download website "
-			       "configured.\n",
+			// Nobody has any download sites configured.
+			Printf("Unable to find \"%s\".  Both your client and the server have no "
+			       "download sites configured.\n",
 			       missing_file.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
 
 		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download \"%s\" from %s\n", missing_file.c_str(),
-		       sv_website.str().c_str());
+		Printf(PRINT_HIGH, "Will download \"%s\"...\n", missing_file.c_str());
 	}
 
 	recv_full_update = false;
@@ -1745,12 +1744,23 @@ bool CL_Connect(void)
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 
-	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
+	if (gamestate == GS_DOWNLOAD && missing_file.length())
 	{
-		StringTokens websites = TokenizeString(sv_website, " ");
+		StringTokens serversites = TokenizeString(sv_downloadsites.str(), " "); 
+		StringTokens clientsites = TokenizeString(cl_downloadsites.str(), " ");
+
+		// Shuffle the sites so we evenly distribute our requests.
+		std::random_shuffle(serversites.begin(), serversites.end());
+		std::random_shuffle(clientsites.begin(), clientsites.end());
+
+		// Combine them into one big site list.
+		Websites downloadsites;
+		downloadsites.reserve(serversites.size() + clientsites.size());
+		downloadsites.insert(downloadsites.end(), serversites.begin(), serversites.end());
+		downloadsites.insert(downloadsites.end(), clientsites.begin(), clientsites.end());
 
 		// Attach the website to the file and download it.
-		if (!CL_StartDownload(websites, missing_file, missing_hash))
+		if (!CL_StartDownload(downloadsites, missing_file, missing_hash))
 		{
 			CL_QuitNetGame();
 			return false;

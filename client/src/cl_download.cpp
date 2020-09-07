@@ -135,7 +135,37 @@ bool CL_StartDownload(const Websites& urls, const std::string& filename,
                       const std::string& hash)
 {
 	if (::dlstate.state != STATE_READY)
+	{
+		Printf(PRINT_WARNING, "Can't start download when download state is not ready.\n");
 		return false;
+	}
+
+	// Remove all URL's that don't look like URL's.
+	Websites checkurls;
+	Websites::const_iterator wit = urls.begin();
+	for (; wit != urls.end(); ++wit)
+	{
+		// Ensure the URL exists.
+		if (wit->empty())
+			continue;
+
+		// Ensure that the URL begins with the proper protocol.
+		if (wit->find("http://", 0) != 0 && wit->find("https://", 0) != 0)
+			continue;
+
+		// Ensure the URL ends with a slash.
+		std::string url = *wit;
+		if (*(url.rbegin()) != '/')
+			url += '/';
+
+		checkurls.push_back(url);
+	}
+
+	if (checkurls.empty())
+	{
+		Printf(PRINT_WARNING, "No sites were provided for download.\n");
+		return false;
+	}
 
 	if (W_IsFilenameCommercialIWAD(filename))
 	{
@@ -150,13 +180,7 @@ bool CL_StartDownload(const Websites& urls, const std::string& filename,
 	}
 
 	// Add a slash to the end of the base sites.
-	::dlstate.checkurls = urls;
-	Websites::iterator wit = ::dlstate.checkurls.begin();
-	for (; wit != ::dlstate.checkurls.end(); ++wit)
-	{
-		if (*(wit->rbegin()) != '/')
-			wit->push_back('/');
-	}
+	::dlstate.checkurls = checkurls;
 
 	// Assign the other params to the download state.
 	::dlstate.filename = filename;
