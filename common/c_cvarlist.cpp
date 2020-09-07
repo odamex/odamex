@@ -169,7 +169,7 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
-CVAR(				sv_website, "http://odamex.net/", "Server or Admin website",
+CVAR(				sv_website, "http://odamex.net/", "Download website or websites, separated by spaces",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 

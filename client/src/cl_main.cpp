@@ -1747,8 +1747,10 @@ bool CL_Connect(void)
 
 	if (gamestate == GS_DOWNLOAD && missing_file.length() && sv_website.str().length())
 	{
+		StringTokens websites = TokenizeString(sv_website, " ");
+
 		// Attach the website to the file and download it.
-		if (!CL_StartDownload(sv_website.str(), missing_file, missing_hash))
+		if (!CL_StartDownload(websites, missing_file, missing_hash))
 		{
 			CL_QuitNetGame();
 			return false;

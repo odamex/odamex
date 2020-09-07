@@ -24,11 +24,14 @@
 #define __CL_DOWNLOAD_H__
 
 #include <string>
+#include <vector>
+
+typedef std::vector<std::string> Websites;
 
 void CL_DownloadInit();
 void CL_DownloadShutdown();
 bool CL_IsDownloading();
-bool CL_StartDownload(const std::string& website, const std::string& filename,
+bool CL_StartDownload(const Websites& url, const std::string& filename,
                       const std::string& hash);
 bool CL_StopDownload();
 void CL_DownloadTick();

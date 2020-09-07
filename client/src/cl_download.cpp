@@ -58,11 +58,13 @@ static struct DownloadState
 	std::string url;
 	std::string filename;
 	std::string hash;
+	Websites checkurls;
+	size_t checkurlidx;
 	std::string checkfilename;
 	int checkfails;
 	DownloadState()
 	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(""), checkfilename(""), checkfails(0)
+	      hash(""), checkurls(), checkurlidx(0), checkfilename(""), checkfails(0)
 	{
 	}
 	void Ready()
@@ -75,6 +77,8 @@ static struct DownloadState
 		this->url = "";
 		this->filename = "";
 		this->hash = "";
+		this->checkurls.clear();
+		this->checkurlidx = 0;
 		this->checkfilename = "";
 		this->checkfails = 0;
 	}
@@ -123,11 +127,11 @@ bool CL_IsDownloading()
 /**
  * @brief Start a transfer.
  *
- * @param website Website to download from, without the WAD at the end.
+ * @param urls Website to download from, without the WAD at the end.
  * @param filename Filename of the WAD to download.
  * @param hash Hash of the file to download.
  */
-bool CL_StartDownload(const std::string& website, const std::string& filename,
+bool CL_StartDownload(const Websites& urls, const std::string& filename,
                       const std::string& hash)
 {
 	if (::dlstate.state != STATE_READY)
@@ -145,13 +149,16 @@ bool CL_StartDownload(const std::string& website, const std::string& filename,
 		return false;
 	}
 
-	std::string url = website;
+	// Add a slash to the end of the base sites.
+	::dlstate.checkurls = urls;
+	Websites::iterator wit = ::dlstate.checkurls.begin();
+	for (; wit != ::dlstate.checkurls.end(); ++wit)
+	{
+		if (*(wit->rbegin()) != '/')
+			wit->push_back('/');
+	}
 
-	// Add a slash to the end of the base website.
-	if (*(url.rbegin()) != '/')
-		url.push_back('/');
-
-	::dlstate.url = url;
+	// Assign the other params to the download state.
 	::dlstate.filename = filename;
 	::dlstate.hash = hash;
 
@@ -201,15 +208,26 @@ static void CheckError(const char* msg)
 	delete ::dlstate.check;
 	::dlstate.check = NULL;
 
-	// Has our luck run out?
+	// Three strikes and you're out.
 	if (::dlstate.checkfails >= 3)
 	{
-		::dlstate.Ready();
-		Printf(PRINT_WARNING, "Could not find %s (%s)...\n",
-		       ::dlstate.checkfilename.c_str(), msg);
+		Printf(PRINT_WARNING, "Could not find %s at %s (%s)...\n",
+		       ::dlstate.checkfilename.c_str(),
+		       ::dlstate.checkurls.at(::dlstate.checkurlidx).c_str(), msg);
 
-		if (::gamestate == GS_DOWNLOAD)
-			CL_QuitNetGame();
+		// Check the next base URL.
+		::dlstate.checkfails = 0;
+		::dlstate.checkurlidx += 1;
+		if (::dlstate.checkurlidx >= ::dlstate.checkurls.size())
+		{
+			// No more base URL's to check - our luck has run out.
+			Printf(PRINT_WARNING, "Download failed, no sites have %s for download.\n",
+			       ::dlstate.checkfilename.c_str());
+			::dlstate.Ready();
+
+			if (::gamestate == GS_DOWNLOAD)
+				CL_QuitNetGame();
+		}
 	}
 }
 
@@ -217,6 +235,9 @@ static void TickCheck()
 {
 	if (::dlstate.check == NULL)
 	{
+		// Start with our base URL.
+		std::string fullurl = ::dlstate.checkurls.at(::dlstate.checkurlidx);
+
 		// Try three different variants of the file.
 		::dlstate.checkfilename = ::dlstate.filename;
 		if (::dlstate.checkfails >= 2)
@@ -231,7 +252,7 @@ static void TickCheck()
 		}
 
 		// Now we have the full URL.
-		std::string fullurl = ::dlstate.url + ::dlstate.checkfilename;
+		fullurl += ::dlstate.checkfilename;
 
 		// Create the check transfer.
 		::dlstate.check = new OTransferCheck(CheckDone, CheckError);
@@ -463,7 +484,8 @@ BEGIN_COMMAND(download)
 		return;
 	}
 
-	std::string url = argv[1];
+	Websites url;
+	url.push_back(argv[1]);
 	std::string outfile = argv[2];
 	CL_StartDownload(url, outfile, "");
 }
