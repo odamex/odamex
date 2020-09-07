@@ -30,6 +30,7 @@ void CL_DownloadShutdown();
 bool CL_IsDownloading();
 bool CL_StartDownload(const std::string& website, const std::string& filename,
                       const std::string& hash);
+bool CL_StopDownload();
 void CL_DownloadTick();
 std::string CL_DownloadProgress();
 
