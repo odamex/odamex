@@ -85,7 +85,7 @@ static struct DownloadState
  */
 void CL_DownloadInit()
 {
-	Printf(PRINT_HIGH, "CL_DownloadInit: Init HTTP subsystem (libcurl %d.%d.%d)\n",
+	Printf("CL_DownloadInit: Init HTTP subsystem (libcurl %d.%d.%d)\n",
 	       LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
 
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -135,13 +135,13 @@ bool CL_StartDownload(const std::string& website, const std::string& filename,
 
 	if (W_IsFilenameCommercialIWAD(filename))
 	{
-		Printf(PRINT_HIGH, "Refusing to download commercial IWAD file.\n");
+		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
 		return false;
 	}
 
 	if (W_IsFilehashCommercialIWAD(hash))
 	{
-		Printf(PRINT_HIGH, "Refusing to download renamed commercial IWAD file.\n");
+		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
 		return false;
 	}
 
@@ -161,6 +161,20 @@ bool CL_StartDownload(const std::string& website, const std::string& filename,
 }
 
 /**
+ * @brief Cancel an in-progress download.
+ *
+ * @return True if a download was cancelled, otherwise false.
+ */
+bool CL_StopDownload()
+{
+	if (!CL_IsDownloading())
+		return false;
+
+	g_state.Ready();
+	return true;
+}
+
+/**
  * @brief Called after a check is done.
  *
  * @param info Completed check info.
@@ -171,7 +185,7 @@ static void CheckDone(const OTransferInfo& info)
 	g_state.state = STATE_DOWNLOADING;
 	g_state.url = info.url;
 
-	Printf(PRINT_HIGH, "Found file at %s.\n", info.url);
+	Printf("Found file at %s.\n", info.url);
 }
 
 /**
@@ -191,8 +205,8 @@ static void CheckError(const char* msg)
 	if (g_state.checkfails >= 3)
 	{
 		g_state.Ready();
-		Printf(PRINT_HIGH, "Could not find %s (%s)...\n", g_state.checkfilename.c_str(),
-		       msg);
+		Printf(PRINT_WARNING, "Could not find %s (%s)...\n",
+		       g_state.checkfilename.c_str(), msg);
 
 		if (::gamestate == GS_DOWNLOAD)
 			CL_QuitNetGame();
@@ -230,7 +244,7 @@ static void TickCheck()
 		}
 
 		g_state.state = STATE_CHECKING;
-		Printf(PRINT_HIGH, "Checking for file at %s...\n", fullurl.c_str());
+		Printf("Checking for file at %s...\n", fullurl.c_str());
 	}
 
 	// Tick the checker - the done/error callbacks mutate the state appropriately,
@@ -268,7 +282,7 @@ static void TransferDone(const OTransferInfo& info)
 {
 	std::string bytes;
 	StrFormatBytes(bytes, info.speed);
-	Printf(PRINT_HIGH, "Download completed at %s/s.\n", bytes.c_str());
+	Printf("Download completed at %s/s.\n", bytes.c_str());
 
 	if (::gamestate == GS_DOWNLOAD)
 	{
@@ -279,7 +293,7 @@ static void TransferDone(const OTransferInfo& info)
 
 static void TransferError(const char* msg)
 {
-	Printf(PRINT_HIGH, "Download error (%s).\n", msg);
+	Printf(PRINT_WARNING, "Download error (%s).\n", msg);
 
 	if (::gamestate == GS_DOWNLOAD)
 		CL_QuitNetGame();
@@ -316,7 +330,7 @@ static void TickDownload()
 				break;
 
 			// Otherwise, set the destination to the empty string and try again.
-			Printf(PRINT_HIGH, "Could not save to %s (%s)\n", dest.c_str(),
+			Printf(PRINT_WARNING, "Could not save to %s (%s)\n", dest.c_str(),
 			       strerror(err));
 			dest = "";
 		}
@@ -337,7 +351,7 @@ static void TickDownload()
 		}
 
 		g_state.state = STATE_DOWNLOADING;
-		Printf(PRINT_HIGH, "Downloading %s...\n", g_state.url.c_str());
+		Printf("Downloading %s...\n", g_state.url.c_str());
 	}
 
 	if (!g_state.transfer->tick())
@@ -415,14 +429,34 @@ std::string CL_DownloadProgress()
 
 static void DownloadHelp()
 {
-	Printf(PRINT_HIGH, "download - Downloads a WAD file\n\n"
-	                   "Usage:\n"
-	                   "  ] download <WEBSITE> <FILENAME>\n"
-	                   "  Downloads the file FILENAME from WEBSITE.\n");
+	Printf("download - Downloads a WAD file\n\n"
+	       "Usage:\n"
+	       "  ] download <WEBSITE> <FILENAME>\n"
+	       "  Downloads the file FILENAME from WEBSITE.\n"
+	       "  ] download stop\n"
+	       "  Stop an in-progress download.");
 }
 
 BEGIN_COMMAND(download)
 {
+	if (argc < 2)
+	{
+		DownloadHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "stop") == 0)
+	{
+		if (CL_StopDownload())
+		{
+			Printf(PRINT_WARNING, "Download cancelled.\n");
+
+			if (::gamestate == GS_DOWNLOAD)
+				CL_QuitNetGame();
+		}
+		return;
+	}
+
 	if (argc < 3)
 	{
 		DownloadHelp();
