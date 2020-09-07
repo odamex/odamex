@@ -65,6 +65,7 @@
 #include "d_main.h"
 #include "m_fileio.h"
 #include "v_textcolors.h"
+#include "p_lnspec.h"
 #include "m_wdlstats.h"
 
 #include <algorithm>
@@ -841,7 +842,10 @@ void SV_UpdateFrags(player_t &player)
 		if (sv_gametype != GM_COOP)
 			MSG_WriteShort(&cl->reliablebuf, player.fragcount);
 		else
+		{
 			MSG_WriteShort(&cl->reliablebuf, player.killcount);
+			MSG_WriteByte(&cl->reliablebuf, player.secretcount);
+		}
 		MSG_WriteShort (&cl->reliablebuf, player.deathcount);
 		MSG_WriteShort(&cl->reliablebuf, player.points);
 	}
@@ -1263,9 +1267,9 @@ void SV_SpawnMobj(AActor *mo)
 	if (!mo)
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		if(mo->player)
+		if (mo->player)
 			SV_AwarenessUpdate(*it, mo);
 		else
 			it->to_spawn.push(mo->ptr());
@@ -1292,39 +1296,39 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 //
 // SV_UpdateHiddenMobj
 //
-void SV_UpdateHiddenMobj (void)
+void SV_UpdateHiddenMobj(void)
 {
 	// denis - todo - throttle this
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		player_t &pl = *it;
 
-		if(!pl.mo)
+		if (!pl.mo)
 			continue;
 
 		int updated = 0;
 
-		while(!pl.to_spawn.empty())
+		while (!pl.to_spawn.empty())
 		{
 			mo = pl.to_spawn.front();
 
 			pl.to_spawn.pop();
 
-			if(mo && !mo->WasDestroyed())
+			if (mo && !mo->WasDestroyed())
 				updated += SV_AwarenessUpdate(pl, mo);
 
-			if(updated > 16)
+			if (updated > 16)
 				break;
 		}
 
-		while ( (mo = iterator.Next() ) )
+		while ((mo = iterator.Next()))
 		{
 			updated += SV_AwarenessUpdate(pl, mo);
 
-			if(updated > 16)
+			if (updated > 16)
 				break;
 		}
 	}
@@ -1334,7 +1338,8 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 {
 	sector_t* sector = &sectors[sectornum];
 
-	if (sector->moveable)
+	// Only update moveable sectors to clients, OR secret sectors that've been discovered.
+	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK) == 0 && sector->secretsector)
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
@@ -1827,7 +1832,10 @@ void SV_ClientFullUpdate(player_t &pl)
 		if(sv_gametype != GM_COOP)
 			MSG_WriteShort(&cl->reliablebuf, it->fragcount);
 		else
+		{
 			MSG_WriteShort(&cl->reliablebuf, it->killcount);
+			MSG_WriteByte(&cl->reliablebuf, it->secretcount);
+		}
 		MSG_WriteShort(&cl->reliablebuf, it->deathcount);
 		MSG_WriteShort(&cl->reliablebuf, it->points);
 
@@ -1839,6 +1847,9 @@ void SV_ClientFullUpdate(player_t &pl)
 		MSG_WriteByte (&cl->reliablebuf, it->id);
 		MSG_WriteByte (&cl->reliablebuf, it->ready);
 	}
+
+	MSG_WriteMarker(&cl->reliablebuf, svc_updatesecrets);
+	MSG_WriteByte(&cl->reliablebuf, level.found_secrets);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -1873,6 +1884,17 @@ void SV_ClientFullUpdate(player_t &pl)
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 
 	SV_SendPacket(pl);
+}
+
+//===========================
+// SV_UpdateSecret
+// Updates a sector to a client and the number of secrets found.
+//===========================
+void SV_UpdateSecret(int sectornum, player_t &player)
+{
+	SV_BroadcastSector(sectornum);
+	SV_UpdateFrags(player);			// I don't like syncing back all the frags aswell, but whatever.
+	SV_UpdateSecretCount();
 }
 
 //
@@ -3332,6 +3354,16 @@ void SV_SendPingRequest(client_t* cl)
 
 	MSG_WriteMarker (&cl->reliablebuf, svc_pingrequest);
 	MSG_WriteLong (&cl->reliablebuf, I_MSTime());
+}
+
+void SV_UpdateSecretCount(void)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		client_t *cl = &(it->client);
+		MSG_WriteMarker(&cl->reliablebuf, svc_updatesecrets);
+		MSG_WriteByte(&cl->reliablebuf, level.found_secrets);
+	}
 }
 
 // calculates ping using gametic which was sent by SV_SendGametic and
