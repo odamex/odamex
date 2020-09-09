@@ -75,6 +75,38 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 }
 
 /**
+ * @brief Persist level locals to the client.
+ *
+ * @param b Buffer to write to.
+ * @param locals Level locals struct to send.
+ * @param flags SVC_LL_* bit flags to designate what gets sent.
+ */
+void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags)
+{
+	MSG_WriteMarker(&b, svc_levellocals);
+	MSG_WriteByte(&b, flags);
+
+	if (flags & SVC_LL_TIME)
+		MSG_WriteVarint(&b, locals.time);
+
+	if (flags & SVC_LL_TOTALS)
+	{
+		MSG_WriteVarint(&b, locals.total_secrets);
+		MSG_WriteVarint(&b, locals.total_items);
+		MSG_WriteVarint(&b, locals.total_monsters);
+	}
+
+	if (flags & SVC_LL_SECRETS)
+		MSG_WriteVarint(&b, locals.found_secrets);
+
+	if (flags & SVC_LL_ITEMS)
+		MSG_WriteVarint(&b, locals.found_items);
+
+	if (flags & SVC_LL_MONSTERS)
+		MSG_WriteVarint(&b, locals.killed_monsters);
+}
+
+/**
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.
  */
@@ -133,15 +165,6 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 		MSG_WriteVarint(&b, target->player->lives);
 	else
 		MSG_WriteVarint(&b, -1);
-}
-
-/**
- * @brief Tell the client about the server's level time.
- */
-void SVC_LevelTime(buf_t& b, int leveltime)
-{
-	MSG_WriteMarker(&b, svc_leveltime);
-	MSG_WriteVarint(&b, leveltime);
 }
 
 /**

@@ -42,6 +42,36 @@
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
+/**
+ * @brief svc_levellocals: Transmit level time
+ */
+#define SVC_LL_TIME (1 << 0)
+
+/**
+ * @brief svc_levellocals: Transmit all level stat totals
+ */
+#define SVC_LL_TOTALS (1 << 1)
+
+/**
+ * @brief svc_levellocals: Transmite found secrets.
+ */
+#define SVC_LL_SECRETS (1 << 2)
+
+/**
+ * @brief svc_levellocals: Transmite found items.
+ */
+#define SVC_LL_ITEMS (1 << 3)
+
+/**
+ * @brief svc_levellocals: Transmite killed monsters.
+ */
+#define SVC_LL_MONSTERS (1 << 4)
+
+/**
+ * @brief svc_levellocals: Transmit all possible data.
+ */
+#define SVC_LL_ALL (0xFF)
+
 extern int   localport;
 extern int   msg_badread;
 
@@ -65,7 +95,7 @@ enum svc_t
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
-	svc_updatesecrets,		// [byte] - secrets discovered to a client
+	svc_levellocals,		// [AM] Persist one or more level locals
 	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
 	svc_updateping,			// [byte] [byte]
 	svc_spawnmobj,			//
@@ -115,14 +145,13 @@ enum svc_t
 	svc_connectclient,
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
-	svc_leveltime,
 	svc_inttimeleft,		// [ML] For intermission timer
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
 	svc_readystate,			// [AM] Broadcast ready state to client
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
-	svc_levelstate,		// [AM] Broadcast warmup state to client
+	svc_levelstate,			// [AM] Broadcast level state to client
 	svc_resetmap,			// [AM] Server is resetting the map
 	svc_playerqueuepos,     // Notify clients of player queue postion
 	svc_fullupdatestart,	// Inform client the full update has started

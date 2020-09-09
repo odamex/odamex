@@ -32,10 +32,12 @@
 
 #include "actor.h"
 #include "d_player.h"
+#include "g_level.h"
 #include "g_levelstate.h"
 #include "i_net.h"
 
 void SVC_PlayerInfo(buf_t& b, player_t& player);
+void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags);
 void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
                  const std::vector<std::string>& wadhashes,
                  const std::vector<std::string>& patchnames,
@@ -43,7 +45,6 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
                  int time);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);
-void SVC_LevelTime(buf_t& b, int leveltime);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
 

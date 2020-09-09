@@ -3569,10 +3569,29 @@ void CL_LevelState()
 	::levelstate.unserialize(sls);
 }
 
-// Set the level time appropriately.
-void CL_LevelTime()
+// Set level locals.
+void CL_LevelLocals()
 {
-	level.time = MSG_ReadVarint();
+	byte flags = MSG_ReadByte();
+
+	if (flags & SVC_LL_TIME)
+		::level.time = MSG_ReadVarint();
+
+	if (flags & SVC_LL_TOTALS)
+	{
+		::level.total_secrets = MSG_ReadVarint();
+		::level.total_items = MSG_ReadVarint();
+		::level.total_monsters = MSG_ReadVarint();
+	}
+
+	if (flags & SVC_LL_SECRETS)
+		::level.found_secrets = MSG_ReadVarint();
+
+	if (flags & SVC_LL_ITEMS)
+		::level.found_items = MSG_ReadVarint();
+
+	if (flags & SVC_LL_MONSTERS)
+		::level.killed_monsters = MSG_ReadVarint();
 }
 
 // client source (once)
@@ -3593,7 +3612,7 @@ void CL_InitCommands(void)
 	cmds[svc_updatefrags]		= &CL_UpdateFrags;
 	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
-	cmds[svc_updatesecrets]		= &CL_UpdateSecrets;
+	cmds[svc_levellocals]		= &CL_LevelLocals;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
@@ -3632,7 +3651,6 @@ void CL_InitCommands(void)
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
-	cmds[svc_leveltime]			= &CL_LevelTime;
 	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;

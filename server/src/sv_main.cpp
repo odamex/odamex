@@ -1821,8 +1821,8 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
 
-	// Send the player the current time of the level.
-	SVC_LevelTime(cl->reliablebuf, level.time);
+	// Send the player all level locals.
+	SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_ALL);
 
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -1835,7 +1835,7 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 	}
 
-	// update warmup state
+	// update levelstate
 	SVC_LevelState(cl->reliablebuf, ::levelstate.serialize());
 
 	// update frags/points/.tate./ready
@@ -1861,9 +1861,6 @@ void SV_ClientFullUpdate(player_t &pl)
 		MSG_WriteByte (&cl->reliablebuf, it->id);
 		MSG_WriteByte (&cl->reliablebuf, it->ready);
 	}
-
-	MSG_WriteMarker(&cl->reliablebuf, svc_updatesecrets);
-	MSG_WriteByte(&cl->reliablebuf, level.found_secrets);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -3335,8 +3332,7 @@ void SV_UpdateSecretCount(void)
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatesecrets);
-		MSG_WriteByte(&cl->reliablebuf, level.found_secrets);
+		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
 	}
 }
 
@@ -4691,7 +4687,7 @@ static void TimeCheck()
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-			SVC_LevelTime(it->client.netbuf, level.time);
+			SVC_LevelLocals(it->client.netbuf, level, SVC_LL_TIME);
 	}
 }
 
