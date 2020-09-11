@@ -129,15 +129,19 @@ static void CacheHUDSprite(const patch_t** patch, const char* lump)
 }
 
 /**
- * @brief All of our patches will be freed when zone memory gets reset, but
- *        we need to ensure all our pointers are NULL too so we don't
- *        dereference a stale patch address by accident.
+ * @brief In addition to unloading our patches we need to ensure the pointers
+ *        are NULL, so we don't dereference a stale patch on WAD change by
+ *        accident.
  */
 void ST_unloadNew()
 {
 	PathFreeList::iterator it = ::freelist.begin();
 	for (; it != ::freelist.end(); ++it)
+	{
+		if (**it != NULL)
+			Z_ChangeTag(**it, PU_CACHE);
 		**it = NULL;
+	}
 }
 
 void ST_initNew()
