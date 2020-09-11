@@ -1656,6 +1656,10 @@ void M_StopMessage (void)
 //
 int M_StringHeight(char* string)
 {
+	// Default height without a working font is 8.
+	if (::hu_font[0] == NULL)
+		return 8;
+
 	int h;
 	int height = hu_font[0]->height();
 
@@ -1979,7 +1983,7 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	if (messageToPrint)
+	if (messageToPrint && ::hu_font[0] != NULL)
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
