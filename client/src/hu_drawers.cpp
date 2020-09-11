@@ -194,6 +194,9 @@ void DrawPatch(int x, int y, const float scale,
                const patch_t* patch, const bool force_opaque,
                const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Calculate width and height of patch
 	unsigned short w = patch->width();
 	unsigned short h = patch->height();
@@ -222,6 +225,9 @@ void DrawTranslatedPatch(int x, int y, const float scale,
                          const patch_t* patch, byte* translation,
                          const bool force_opaque, const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Calculate width and height of patch
 	unsigned short w = patch->width();
 	unsigned short h = patch->height();
@@ -255,6 +261,9 @@ void DrawPatchStretched(int x, int y,
                         const patch_t* patch, const bool force_opaque,
                         const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
@@ -281,6 +290,9 @@ void DrawPatchScaled(const int x, const int y,
                      const patch_t* patch, const bool force_opaque,
                      const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Calculate aspect ratios of patch and destination.
 	float patch_aspect = patch->width() / (float)patch->height();
 	float dest_aspect = w / (float)h;
