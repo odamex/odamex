@@ -1637,7 +1637,7 @@ void C_DrawConsole()
 			}
 
 			// Draw the thing.
-			screen->PrintStr(left + 2, ConBottom - 10, download.c_str(), CR_GREEN);
+			screen->PrintStr(left + 2, ConBottom - 12, download.c_str(), CR_GREEN);
 		}
 
 		if (TickerMax)
