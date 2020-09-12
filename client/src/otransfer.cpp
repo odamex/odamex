@@ -63,6 +63,32 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	return nitems;
 }
 
+//
+// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+//
+static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr)
+{
+	std::string str = std::string(data, size);
+
+	switch (type)
+	{
+	case CURLINFO_TEXT:
+		Printf("curl | %s\n", str.c_str());
+		break;
+	case CURLINFO_HEADER_IN:
+		Printf("curl < %s\n", str.c_str());
+		break;
+	case CURLINFO_HEADER_OUT:
+		Printf("curl > %s\n", str.c_str());
+		break;
+	default:
+		// Don't print data/binary SSL stuff.
+		break;
+	}
+
+	return 0;
+}
+
 // // OTransferInfo // //
 
 bool OTransferInfo::hydrate(CURL* curl)
@@ -122,6 +148,8 @@ bool OTransferCheck::start()
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
+	curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
+	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
 	curl_multi_add_handle(_curlm, _curl);
@@ -263,6 +291,8 @@ bool OTransfer::start()
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
+	curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
+	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_multi_add_handle(_curlm, _curl);
 
 	int running;
