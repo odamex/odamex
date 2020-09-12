@@ -101,6 +101,7 @@ class OTransfer
 	OTransferProgress _progress;
 	std::string _filename;
 	std::string _filepart;
+	std::string _expectHash;
 
 	OTransfer(const OTransfer&);
 	static int curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
@@ -110,7 +111,7 @@ class OTransfer
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
 	    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()),
 	      _curl(curl_easy_init()), _file(NULL), _progress(OTransferProgress()),
-	      _filename(""), _filepart("")
+	      _filename(""), _filepart(""), _expectHash("")
 	{
 	}
 
@@ -129,6 +130,7 @@ class OTransfer
 
 	void setURL(const std::string& src);
 	int setOutputFile(const std::string& dest);
+	void setHash(const std::string& hash);
 	bool start();
 	void stop();
 	bool tick();

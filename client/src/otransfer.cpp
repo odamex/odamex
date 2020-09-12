@@ -25,6 +25,7 @@
 #include "cmdlib.h"
 #include "i_system.h"
 #include "w_ident.h"
+#include "w_wad.h"
 
 // // Common callbacks // //
 
@@ -294,6 +295,16 @@ int OTransfer::setOutputFile(const std::string& dest)
 }
 
 /**
+ * Assert a specific file hash for this file.
+ * 
+ * @param hash Hash string.
+ */
+void OTransfer::setHash(const std::string& hash)
+{
+	_expectHash = hash;
+}
+
+/**
  * @brief Start the transfer.
  *
  * @return True if the transfer started properly.
@@ -394,11 +405,19 @@ bool OTransfer::tick()
 	fclose(_file);
 	_file = NULL;
 
-	// ...but first, check to see if we just downloaded an IWAD...
-	if (W_IsFileCommercialIWAD(_filepart))
+	// Verify that the file is what the server wants and is not a renamed
+	// commercial IWAD.
+	std::string actualHash = W_MD5(_filepart);
+	if (W_IsFilehashCommercialIWAD(actualHash))
 	{
 		remove(_filepart.c_str());
 		_errproc("Accidentally downloaded a commercial IWAD - file removed");
+		return false;
+	}
+	else if (!_expectHash.empty() && _expectHash != actualHash)
+	{
+		remove(_filepart.c_str());
+		_errproc("Downloaded file is not the same as the server's file - file removed");
 		return false;
 	}
 

@@ -387,6 +387,9 @@ static void TickDownload()
 			return;
 		}
 
+		// Set our expected hash of the file.
+		::dlstate.transfer->setHash(::dlstate.hash);
+
 		if (!::dlstate.transfer->start())
 		{
 			// Failed to start, bail out.
