@@ -34,8 +34,11 @@
 static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdata)
 {
 	static const std::string CONTENT_TYPE = "content-type: ";
-	static const std::string WANTED_TYPES[] = {"content-type: application/octet-stream",
-	                                           "content-type: application/x-doom"};
+	static const std::string WANTED_TYPES[] = {
+	    "content-type: application/octet-stream", // Generic binary file.
+	    "content-type: application/x-doom",       // Doom WAD MIME type.
+	    "content-type: text/html"                 // Used for redirect pages.
+	};
 
 	if (nitems < 2)
 		return nitems;
@@ -66,7 +69,8 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
 //
-static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr)
+static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+                     void* userptr)
 {
 	std::string str = std::string(data, size);
 
@@ -105,9 +109,14 @@ bool OTransferInfo::hydrate(CURL* curl)
 	if (curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url) != CURLE_OK)
 		return false;
 
+	const char* contentType;
+	if (curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &contentType) != CURLE_OK)
+		return false;
+
 	this->code = resCode;
 	this->speed = speed;
 	this->url = url;
+	this->contentType = contentType;
 
 	return true;
 }
@@ -148,8 +157,8 @@ bool OTransferCheck::start()
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
-	curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
-	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+	//curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
+	//curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
 	curl_multi_add_handle(_curlm, _curl);
@@ -226,6 +235,13 @@ bool OTransferCheck::tick()
 		return false;
 	}
 
+	// Make sure we didn't find an HTML file - those are only okay on redirects.
+	if (stricmp(info.contentType, "text/html") == 0)
+	{
+		_errproc("Only found an HTML file");
+		return false;
+	}
+
 	_doneproc(info);
 	return false;
 }
@@ -291,8 +307,8 @@ bool OTransfer::start()
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
-	curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
-	curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+	//curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
+	//curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_multi_add_handle(_curlm, _curl);
 
 	int running;
@@ -367,6 +383,13 @@ bool OTransfer::tick()
 		return false;
 	}
 
+	// Make sure we didn't download an HTML file - those are only okay on redirects.
+	if (stricmp(info.contentType, "text/html") == 0)
+	{
+		_errproc("Accidentally downloaded an HTML file");
+		return false;
+	}
+
 	// Close the file so we can rename it.
 	fclose(_file);
 	_file = NULL;
@@ -375,7 +398,7 @@ bool OTransfer::tick()
 	if (W_IsFileCommercialIWAD(_filepart))
 	{
 		remove(_filepart.c_str());
-		_errproc("Accidentally downloaded a commercial IWAD - file removed.");
+		_errproc("Accidentally downloaded a commercial IWAD - file removed");
 		return false;
 	}
 

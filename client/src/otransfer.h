@@ -44,8 +44,9 @@ struct OTransferInfo
 	int code;
 	curl_off_t speed;
 	const char* url;
+	const char* contentType;
 
-	OTransferInfo() : code(0), speed(0)
+	OTransferInfo() : code(0), speed(0), url(NULL), contentType(NULL)
 	{
 	}
 	bool hydrate(CURL* curl);
