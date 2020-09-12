@@ -560,11 +560,9 @@ int W_CheckNumForName(const char *name, int namespc)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (const char* name)
+int W_GetNumForName(const char* name, int namespc)
 {
-	int	i;
-
-	i = W_CheckNumForName (name);
+	int i = W_CheckNumForName(name, namespc);
 
 	if (i == -1)
 		I_Error ("W_GetNumForName: %s not found!", name);
@@ -815,4 +813,3 @@ void W_Close ()
 }
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")
-

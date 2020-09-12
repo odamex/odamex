@@ -49,24 +49,41 @@
 #include "cl_vote.h"
 #include "g_levelstate.h"
 
-static int		widestnum, numheight;
-static const patch_t	*medi[2];
-static const patch_t	*armors[2];
-static const patch_t	*ammos[4];
-static const patch_t	*bigammos[4];
-static const patch_t	*flagiconteam;
-static const patch_t *line_leftempty;
-static const patch_t *line_leftfull;
-static const patch_t *line_centerempty;
-static const patch_t *line_centerleft;
-static const patch_t *line_centerright;
-static const patch_t *line_centerfull;
-static const patch_t *line_rightempty;
-static const patch_t *line_rightfull;
+static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
+static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
+static const char* ammopatches[] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
+static const char* bigammopatches[] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
+static const char* flaghomepatches[NUMTEAMS] = {"FLAGIC2B", "FLAGIC2R", "FLAGIC2G"};
+static const char* flagtakenpatches[NUMTEAMS] = {"FLAGIC3B", "FLAGIC3R", "FLAGIC3G"};
+static const char* flagreturnpatches[NUMTEAMS] = {"FLAGIC4B", "FLAGIC4R", "FLAGIC4G"};
+static const char* flagdroppatches[NUMTEAMS] = {"FLAGIC5B", "FLAGIC5R", "FLAGIC5G"};
 
-static const char medipatches[2][8] = { "MEDIA0", "PSTRA0" };
-static const char ammopatches[4][8] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
-static const char bigammopatches[4][8] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
+static int widest_num, num_height;
+static const patch_t* medi[ARRAY_LENGTH(::medipatches)];
+static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
+static const patch_t* ammos[ARRAY_LENGTH(::ammopatches)];
+static const patch_t* bigammos[ARRAY_LENGTH(::bigammopatches)];
+static const patch_t* flagiconteam;
+static const patch_t* flagiconbhome;
+static const patch_t* flagiconrhome;
+static const patch_t* flagiconbtakenbyb;
+static const patch_t* flagiconbtakenbyr;
+static const patch_t* flagiconrtakenbyb;
+static const patch_t* flagiconrtakenbyr;
+static const patch_t* flagiconbdropped;
+static const patch_t* flagiconrdropped;
+static const patch_t* line_leftempty;
+static const patch_t* line_leftfull;
+static const patch_t* line_centerempty;
+static const patch_t* line_centerleft;
+static const patch_t* line_centerright;
+static const patch_t* line_centerfull;
+static const patch_t* line_rightempty;
+static const patch_t* line_rightfull;
+static const patch_t* FlagIconHome[NUMTEAMS];
+static const patch_t* FlagIconReturn[NUMTEAMS];
+static const patch_t* FlagIconTaken[NUMTEAMS];
+static const patch_t* FlagIconDropped[NUMTEAMS];
 
 static int		NameUp = -1;
 
@@ -78,6 +95,13 @@ extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
 
 extern NetDemo netdemo;
+
+typedef std::vector<const patch_t**> PathFreeList;
+
+/**
+ * @brief Stores pointers to status bar objects that should be freed on shutdown. 
+ */
+PathFreeList freelist;
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
@@ -91,133 +115,95 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_survival)
 EXTERN_CVAR(g_survival_lives)
 
-std::vector<patch_t*> FlagIconHome;
-std::vector<patch_t*> FlagIconReturn;
-std::vector<patch_t*> FlagIconTaken;
-std::vector<patch_t*> FlagIconDropped;
-
-void ST_unloadNew (void)
+/**
+ * @brief Caches a patch, while also adding to a freelist, where it can be
+ *        cleaned up in one fell swoop. 
+ * 
+ * @param patch Destination pointer to write to.
+ * @param lump Lump name to cache.
+ */
+static void CacheHUDPatch(const patch_t** patch, const char* lump)
 {
-	Z_ChangeTag (flagiconteam, PU_CACHE);
-	Z_ChangeTag (line_leftempty, PU_CACHE);
-	Z_ChangeTag (line_leftfull, PU_CACHE);
-	Z_ChangeTag (line_centerempty, PU_CACHE);
-	Z_ChangeTag (line_centerleft, PU_CACHE);
-	Z_ChangeTag (line_centerright, PU_CACHE);
-	Z_ChangeTag (line_centerfull, PU_CACHE);
-	Z_ChangeTag (line_rightempty, PU_CACHE);
-	Z_ChangeTag (line_rightfull, PU_CACHE);
+	*patch = W_CachePatch(lump, PU_STATIC);
+	::freelist.push_back(patch);
+}
 
-	for (size_t i = 0; i < FlagIconHome.size(); i++)
-		Z_ChangeTag(FlagIconHome[i], PU_CACHE);
+/**
+ * @brief Cache a patch from a sprite, which needs a special lookup.
+ * 
+ * @param patch Destination pointer to write to.
+ * @param lump Lump name to cache.
+ */
+static void CacheHUDSprite(const patch_t** patch, const char* lump)
+{
+	*patch = W_CachePatch(W_GetNumForName(lump, ns_sprites), PU_STATIC);
+	::freelist.push_back(patch);
+}
 
-	for (size_t i = 0; i < FlagIconReturn.size(); i++)
-		Z_ChangeTag(FlagIconReturn[i], PU_CACHE);
-
-	for (size_t i = 0; i < FlagIconTaken.size(); i++)
-		Z_ChangeTag(FlagIconTaken[i], PU_CACHE);
-
-	for (size_t i = 0; i < FlagIconDropped.size(); i++)
-		Z_ChangeTag(FlagIconDropped[i], PU_CACHE);
-
-	FlagIconHome.clear();
-	FlagIconReturn.clear();
-	FlagIconTaken.clear();
-	FlagIconDropped.clear();
-
-	for (int i = 0; i < 2; i++)
+/**
+ * @brief In addition to unloading our patches we need to ensure the pointers
+ *        are NULL, so we don't dereference a stale patch on WAD change by
+ *        accident.
+ */
+void ST_unloadNew()
+{
+	PathFreeList::iterator it = ::freelist.begin();
+	for (; it != ::freelist.end(); ++it)
 	{
-		Z_ChangeTag(medi[i], PU_CACHE);
-		Z_ChangeTag(armors[i], PU_CACHE);
+		if (**it != NULL)
+			Z_ChangeTag(**it, PU_CACHE);
+		**it = NULL;
 	}
-
-	for (int i = 0; i < 4; i++)
-		Z_ChangeTag (ammos[i], PU_CACHE);
 }
 
-void PushFlagIcon(std::vector<patch_t*>& patches, std::string& name)
+void ST_initNew()
 {
-	if (W_CheckNumForName(name.c_str()) == -1)
-		patches.push_back(NULL);
-	else
-		patches.push_back(W_CachePatch(name.c_str(), PU_STATIC));
-}
-
-void ST_initNew (void)
-{
-	int i;
 	int widest = 0;
-	char name[8];
-	int lump;
 
 	// denis - todo - security - these patches have unchecked dimensions
 	// ie, if a patch has a 0 width/height, it may cause a divide by zero
 	// somewhere else in the code. we download wads, so this is an issue!
 
-	for (i = 0; i < 10; i++) {
-		if (tallnum[i]->width() > widest)
-			widest = tallnum[i]->width();
-	}
-
-	strcpy (name, "ARM1A0");
-	for (i = 0; i < 2; i++) {
-		name[3] = i + '1';
-		if ((lump = W_CheckNumForName (name, ns_sprites)) != -1)
-			armors[i] = W_CachePatch (lump, PU_STATIC);
-	}
-
-	for (i = 0; i < 4; i++) {
-		if ((lump = W_CheckNumForName (ammopatches[i], ns_sprites)) != -1)
-			ammos[i] = W_CachePatch (lump, PU_STATIC);
-		if ((lump = W_CheckNumForName (bigammopatches[i], ns_sprites)) != -1)
-			bigammos[i] = W_CachePatch (lump, PU_STATIC);
-	}
-
-	for (i = 0; i < 2; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(::tallnum); i++)
 	{
-		if ((lump = W_CheckNumForName(medipatches[i], ns_sprites)) != -1)
-			medi[i] = W_CachePatch(lump, PU_STATIC);
+		if (::tallnum[i]->width() > widest)
+			widest = ::tallnum[i]->width();
 	}
 
-	flagiconteam = W_CachePatch ("FLAGIT", PU_STATIC);
-	// Team flag icons format - FLAGIC followed by number, then color
-	std::string flagIcon = "FLAGICnx";
+	for (size_t i = 0; i < ARRAY_LENGTH(::medipatches); i++)
+		CacheHUDSprite(&::medi[i], ::medipatches[i]);
 
-	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	for (size_t i = 0; i < ARRAY_LENGTH(::armorpatches); i++)
+		CacheHUDSprite(&::armors[i], ::armorpatches[i]);
+
+	for (size_t i = 0; i < ARRAY_LENGTH(::ammopatches); i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-		if (teamInfo->ColorStringUpper.length() == 0)
-			flagIcon[7] = 'x';
-		else
-			flagIcon[7] = teamInfo->ColorStringUpper[0];
-
-		flagIcon[6] = '2'; // FLAGIC2X
-		PushFlagIcon(FlagIconHome, flagIcon);
-
-		flagIcon[6] = '3'; // FLAGIC3X
-		PushFlagIcon(FlagIconTaken, flagIcon);
-
-		flagIcon[6] = '4'; // FLAGIC4X
-		PushFlagIcon(FlagIconReturn, flagIcon);
-
-		flagIcon[6] = '5'; // FLAGIC5X
-		PushFlagIcon(FlagIconDropped, flagIcon);
+		CacheHUDSprite(&::ammos[i], ::ammopatches[i]);
+		CacheHUDSprite(&::bigammos[i], ::bigammopatches[i]);
 	}
 
-	widestnum = widest;
-	numheight = tallnum[0]->height();
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		CacheHUDPatch(&::FlagIconHome[i], ::flaghomepatches[i]);
+		CacheHUDPatch(&::FlagIconTaken[i], ::flagtakenpatches[i]);
+		CacheHUDPatch(&::FlagIconReturn[i], ::flagreturnpatches[i]);
+		CacheHUDPatch(&::FlagIconDropped[i], ::flagdroppatches[i]);
+	}
+
+	::widest_num = widest;
+	::num_height = ::tallnum[0]->height();
 
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
-		NameUp = level.time + 2*TICRATE;
+		NameUp = level.time + 2 * TICRATE;
 
-	line_leftempty = W_CachePatch ("ODABARLE", PU_STATIC);
-	line_leftfull = W_CachePatch ("ODABARLF", PU_STATIC);
-	line_centerempty = W_CachePatch ("ODABARCE", PU_STATIC);
-	line_centerleft = W_CachePatch ("ODABARCL", PU_STATIC);
-	line_centerright = W_CachePatch ("ODABARCR", PU_STATIC);
-	line_centerfull = W_CachePatch ("ODABARCF", PU_STATIC);
-	line_rightempty = W_CachePatch ("ODABARRE", PU_STATIC);
-	line_rightfull = W_CachePatch ("ODABARRF", PU_STATIC);
+	CacheHUDPatch(&::line_leftempty, "ODABARLE");
+	CacheHUDPatch(&::line_leftfull, "ODABARLF");
+	CacheHUDPatch(&::line_centerempty, "ODABARCE");
+	CacheHUDPatch(&::line_centerleft, "ODABARCL");
+	CacheHUDPatch(&::line_centerright, "ODABARCR");
+	CacheHUDPatch(&::line_centerfull, "ODABARCF");
+	CacheHUDPatch(&::line_rightempty, "ODABARRE");
+	CacheHUDPatch(&::line_rightfull, "ODABARRF");
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -591,7 +577,7 @@ void OdamexHUD() {
 	unsigned int y, xscale, yscale;
 	xscale = hud_scale ? CleanXfac : 1;
 	yscale = hud_scale ? CleanYfac : 1;
-	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
+	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
 
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
@@ -787,7 +773,7 @@ void ZDoomHUD() {
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
-	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
+	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
 
 	// Draw health
 	{

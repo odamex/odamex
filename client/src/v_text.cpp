@@ -235,6 +235,9 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
+	if (::hu_font[0] == NULL)
+		return;
+
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
 		normalcolor = CR_RED;
 
@@ -292,6 +295,10 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 //
 int V_StringWidth(const byte* str)
 {
+	// Default width without a font loaded is 8.
+	if (::hu_font[0] == NULL)
+		return 8;
+
 	int width = 0;
 	
 	while (*str)
@@ -336,6 +343,9 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
+	if (::hu_font[0] == NULL)
+		return NULL;
+
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
 
 	const byte* space = NULL;
@@ -449,4 +459,3 @@ void V_FreeBrokenLines(brokenlines_t* lines)
 
 
 VERSION_CONTROL (v_text_cpp, "$Id$")
-
