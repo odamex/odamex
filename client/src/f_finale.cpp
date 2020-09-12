@@ -270,6 +270,10 @@ extern patch_t *hu_font[HU_FONTSIZE];
 
 void F_TextWrite (void)
 {
+	// Don't draw text without a working font.
+	if (::hu_font[0] == NULL)
+		return;
+
 	// erase the entire screen to a tiled background
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes

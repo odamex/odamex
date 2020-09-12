@@ -93,7 +93,7 @@ std::string W_MD5(std::string filename);
 std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filenames);
 
 int		W_CheckNumForName (const char *name, int ns = ns_global);
-int		W_GetNumForName (const char *name);
+int		W_GetNumForName (const char *name, int ns = ns_global);
 
 unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
@@ -129,6 +129,3 @@ int W_GetLumpFile (unsigned lump);
 //void W_SetLumpNamespace (unsigned lump, int nmspace);
 
 #endif
-
-
-

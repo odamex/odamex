@@ -518,12 +518,19 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 /*							  */
 /******************************/
 
-//
-// V_DrawWrapper
-// Masks a column based masked pic to the screen.
-//
-void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int y) const
+/**
+ * @brief Masks a column based masked pic to the screen.
+ * 
+ * @param drawer Draw code to use.
+ * @param patch Patch to draw.  Attempting to draw a NULL patch will have no effect.
+ * @param x X coordinate of patch.
+ * @param y Y coordinate of patch.
+ */
+void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int y) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
@@ -569,15 +576,21 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 	}
 }
 
-//
-// V_DrawSWrapper
-// Masks a column based masked pic to the screen
-// stretching it to fit the given dimensions.
-//
+
+/**
+ * @brief Masks a column based masked pic to the screen stretching it to fit the given dimensions.
+ * 
+ * @param drawer Draw code to use.
+ * @param patch 
+ * @param x0 
+ * @param y0 
+ * @param destwidth 
+ * @param destheight 
+ */
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
-	if (!patch)
+	if (patch == NULL)
 		return;
 
 	if (patch->width() <= 0 || patch->height() <= 0 ||
@@ -659,6 +672,9 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 //
 void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (surface_width == 320 && surface_height == 200)
@@ -675,6 +691,9 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 //
 void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
@@ -691,6 +710,9 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 //
 void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	if (CleanXfac == 1 && CleanYfac == 1)
 		DrawWrapper(drawer, patch, x0, y0);
 	else
@@ -717,6 +739,9 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 //
 void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
@@ -876,4 +901,3 @@ void DCanvas::GetTransposedBlock(int x, int y, int width, int height, byte* dest
 }
 
 VERSION_CONTROL (v_draw_cpp, "$Id$")
-
