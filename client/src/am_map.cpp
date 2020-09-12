@@ -1696,7 +1696,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2))
+	if (!(viewactive && am_overlay < 2) && hu_font[0] != NULL)
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;
