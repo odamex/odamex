@@ -70,9 +70,7 @@ IWindowSurface* stnum_surface;
 
 // functions in st_new.c
 void ST_initNew();
-void ST_unloadNew (void);
-void ST_newDraw (void);
-void ST_newDrawCTF (void);
+void ST_unloadNew();
 
 extern bool simulated_connection;
 
@@ -1337,7 +1335,7 @@ static patch_t *LoadFaceGraphic (char *name, int namespc)
 	return W_CachePatch (lump, PU_STATIC);
 }
 
-void ST_loadGraphics(void)
+static void ST_loadGraphics()
 {
 	int i, j;
 	int namespc;
@@ -1429,13 +1427,13 @@ void ST_loadGraphics(void)
 	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
 }
 
-void ST_loadData()
+static void ST_loadData()
 {
     lu_palette = W_GetNumForName("PLAYPAL");
 	ST_loadGraphics();
 }
 
-void ST_unloadGraphics (void)
+static void ST_unloadGraphics()
 {
 
 	int i;
@@ -1475,7 +1473,7 @@ void ST_unloadGraphics (void)
 
 }
 
-void ST_unloadData(void)
+static void ST_unloadData()
 {
 	ST_unloadGraphics();
 	ST_unloadNew();
@@ -1679,6 +1677,8 @@ void ST_Init()
 
 void STACK_ARGS ST_Shutdown()
 {
+	ST_unloadData();
+
 	I_FreeSurface(stbar_surface);
 	I_FreeSurface(stnum_surface);
 }
