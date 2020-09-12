@@ -717,11 +717,7 @@ void G_DoLoadLevel (int position)
 
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
-			{
-				MSG_WriteMarker(&(pit->client.reliablebuf), svc_readystate);
-				MSG_WriteByte(&(pit->client.reliablebuf), it->id);
-				MSG_WriteBool(&(pit->client.reliablebuf), false);
-			}
+				SVC_PlayerMembers(pit->client.reliablebuf, *it, SVC_PM_READY);
 		}
 	}
 

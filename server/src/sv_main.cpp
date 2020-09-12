@@ -170,20 +170,18 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 
 			if (normalcount > var)
 			{
+				it->spectator = true;
+				it->playerstate = PST_LIVE;
+				it->joindelay = 0;
+
 				for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-				{
-					MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-					MSG_WriteByte(&pit->client.reliablebuf, it->id);
-					MSG_WriteByte(&pit->client.reliablebuf, true);
-				}
+					SVC_PlayerMembers(pit->client.reliablebuf, *it, SVC_PM_SPECTATOR);
+
 				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
 				MSG_WriteMarker(&it->client.reliablebuf, svc_print);
 				MSG_WriteByte(&it->client.reliablebuf, PRINT_CHAT);
 				MSG_WriteString(&it->client.reliablebuf,
 								"Active player limit reduced. You are now a spectator!\n");
-				it->spectator = true;
-				it->playerstate = PST_LIVE;
-				it->joindelay = 0;
 			}
 		}
 	}
@@ -847,18 +845,7 @@ void SV_UpdateFrags(player_t &player)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
-
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatefrags);
-		MSG_WriteByte(&cl->reliablebuf, player.id);
-		if (sv_gametype != GM_COOP)
-			MSG_WriteShort(&cl->reliablebuf, player.fragcount);
-		else
-		{
-			MSG_WriteShort(&cl->reliablebuf, player.killcount);
-			MSG_WriteByte(&cl->reliablebuf, player.secretcount);
-		}
-		MSG_WriteShort (&cl->reliablebuf, player.deathcount);
-		MSG_WriteShort(&cl->reliablebuf, player.points);
+		SVC_PlayerMembers(cl->reliablebuf, player, SVC_PM_SCORE);
 	}
 }
 
@@ -1822,7 +1809,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
 
 	// Send the player all level locals.
-	SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_ALL);
+	SVC_LevelLocals(cl->reliablebuf, ::level, SVC_MSG_ALL);
 
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -1838,29 +1825,9 @@ void SV_ClientFullUpdate(player_t &pl)
 	// update levelstate
 	SVC_LevelState(cl->reliablebuf, ::levelstate.serialize());
 
-	// update frags/points/.tate./ready
-	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatefrags);
-		MSG_WriteByte(&cl->reliablebuf, it->id);
-		if(sv_gametype != GM_COOP)
-			MSG_WriteShort(&cl->reliablebuf, it->fragcount);
-		else
-		{
-			MSG_WriteShort(&cl->reliablebuf, it->killcount);
-			MSG_WriteByte(&cl->reliablebuf, it->secretcount);
-		}
-		MSG_WriteShort(&cl->reliablebuf, it->deathcount);
-		MSG_WriteShort(&cl->reliablebuf, it->points);
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_spectate);
-		MSG_WriteByte (&cl->reliablebuf, it->id);
-		MSG_WriteByte (&cl->reliablebuf, it->spectator);
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_readystate);
-		MSG_WriteByte (&cl->reliablebuf, it->id);
-		MSG_WriteByte (&cl->reliablebuf, it->ready);
-	}
+	// update all player members
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		SVC_PlayerMembers(cl->reliablebuf, *it, SVC_MSG_ALL);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -2259,6 +2226,7 @@ void SV_ConnectClient()
 		if (sv_waddownload)
 		{
 			player->playerstate = PST_DOWNLOAD;
+			player->spectator = true;
 			SV_BroadcastUserInfo(*player);
 			SV_BroadcastPrintf("%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
@@ -2268,9 +2236,7 @@ void SV_ConnectClient()
 			for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 			{
 				// [SL] 2011-07-30 - clients should consider downloaders as spectators
-				MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-				MSG_WriteByte(&pit->client.reliablebuf, player->id);
-				MSG_WriteByte(&pit->client.reliablebuf, true);
+				SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
 			}
 		}
 		else
@@ -2300,11 +2266,7 @@ void SV_ConnectClient()
 	{
 		player->spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-			MSG_WriteByte(&pit->client.reliablebuf, player->id);
-			MSG_WriteByte(&pit->client.reliablebuf, player->spectator);
-		}
+			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
 	}
 
 	// Send a map name
@@ -3889,11 +3851,7 @@ void SV_JoinPlayer(player_t &player, bool silent)
 	// Warn everyone we're not a spectator anymore.
 	player.spectator = false;
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		MSG_WriteMarker(&it->client.reliablebuf, svc_spectate);
-		MSG_WriteByte(&it->client.reliablebuf, player.id);
-		MSG_WriteByte(&it->client.reliablebuf, player.spectator);
-	}
+		SVC_PlayerMembers(it->client.reliablebuf, player, SVC_PM_SPECTATOR);
 
 	if (player.mo)
 		P_KillMobj(NULL, player.mo, NULL, true);
@@ -3921,13 +3879,6 @@ void SV_JoinPlayer(player_t &player, bool silent)
 
 void SV_SpecPlayer(player_t &player, bool silent)
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_spectate);
-		MSG_WriteByte(&(it->client.reliablebuf), player.id);
-		MSG_WriteByte(&(it->client.reliablebuf), true);
-	}
-
 	// call CTF_CheckFlags _before_ the player becomes a spectator.
 	// Otherwise a flag carrier will drop his flag at (0,0), which
 	// is often right next to one of the bases...
@@ -3940,6 +3891,8 @@ void SV_SpecPlayer(player_t &player, bool silent)
 		G_DoReborn(player);
 
 	player.spectator = true;
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		SVC_PlayerMembers(it->client.reliablebuf, *it, SVC_PM_SPECTATOR);
 
 	// [AM] Set player unready if we're in warmup mode.
 	if (sv_warmup)
@@ -4051,11 +4004,7 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 	if (changed) {
 		// Broadcast the new ready state to all connected players.
 		for (Players::iterator it = players.begin();it != players.end();++it)
-		{
-			MSG_WriteMarker(&(it->client.reliablebuf), svc_readystate);
-			MSG_WriteByte(&(it->client.reliablebuf), player.id);
-			MSG_WriteBool(&(it->client.reliablebuf), setting);
-		}
+			SVC_PlayerMembers(it->client.reliablebuf, player, SVC_PM_READY);
 	}
 
 	::levelstate.readyToggle();

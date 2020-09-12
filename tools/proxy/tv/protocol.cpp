@@ -70,7 +70,7 @@ enum svc_t
 	svc_sector,
 	svc_print,
 	svc_mobjinfo,
-	svc_updatefrags,		// [byte] [short]
+	svc_playermembers,
 	svc_teampoints,
 	svc_activateline,
 	svc_movingsector,

@@ -168,6 +168,44 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 }
 
 /**
+ * @brief Persist player information to the client that is less vital.
+ *
+ * @param b Buffer to write to.
+ * @param player Player to send information about.
+ * @param flags SVC_PM_* flags to designate what gets sent.
+ */
+void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
+{
+	MSG_WriteMarker(&b, svc_playermembers);
+	MSG_WriteByte(&b, player.id);
+	MSG_WriteByte(&b, flags);
+
+	if (flags & SVC_PM_SPECTATOR)
+		MSG_WriteBool(&b, player.spectator);
+
+	if (flags & SVC_PM_READY)
+		MSG_WriteBool(&b, player.ready);
+
+	if (flags & SVC_PM_LIVES)
+		MSG_WriteVarint(&b, player.lives);
+
+	if (flags & SVC_PM_SCORE)
+	{
+		// [AM] Just send everything instead of trying to be clever about
+		//      what we send based on game modes.  There's less room for
+		//      breakage when adding game modes, and we have varints now,
+		//      which means we're probably saving bandwidth anyway.
+		MSG_WriteVarint(&b, player.roundwins);
+		MSG_WriteVarint(&b, player.points);
+		MSG_WriteVarint(&b, player.fragcount);
+		MSG_WriteVarint(&b, player.deathcount);
+		MSG_WriteVarint(&b, player.killcount);
+		// [AM] Is there any reason we would ever care about itemcount?
+		MSG_WriteVarint(&b, player.secretcount);
+	}
+}
+
+/**
  * @brief Send information about a player
  */
 void SVC_PlayerState(buf_t& b, player_t& player)

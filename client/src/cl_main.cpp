@@ -1424,23 +1424,91 @@ void CL_SetupUserInfo(void)
 	CL_CheckDisplayPlayer();
 }
 
-
-//
-// CL_UpdateFrags
-//
-void CL_UpdateFrags(void)
+/**
+ * @brief Update a player's spectate setting and do any necessary busywork for it.
+ * 
+ * @param player Plyaer to update.
+ * @param spectate New spectate setting.
+*/
+void CL_SpectatePlayer(player_t& player, bool spectate)
 {
-	player_t &p = CL_FindPlayer(MSG_ReadByte());
+	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
+	player.spectator = spectate;
 
-	if(sv_gametype != GM_COOP)
-		p.fragcount = MSG_ReadShort();
+	if (player.spectator && wasalive)
+		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
+
+	// [tm512 2014/04/11] Do as the server does when unspectating a player.
+	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
+	// that are still targeting the spectating player will cause a stack
+	// overflow in P_SetMobjState.
+
+	if (!player.spectator && !wasalive)
+	{
+		if (player.mo)
+			P_KillMobj(NULL, player.mo, NULL, true);
+
+		player.playerstate = PST_REBORN;
+	}
+
+	if (&player == &consoleplayer())
+	{
+		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
+
+		if (player.spectator)
+		{
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
+		}
+		else
+		{
+			displayplayer_id = consoleplayer_id; // get out of spynext
+			player.cheats &= ~CF_FLY;	// remove flying ability
+		}
+
+		CL_RebuildAllPlayerTranslations();
+	}
 	else
 	{
-		p.killcount = MSG_ReadShort();
-		p.secretcount = MSG_ReadByte();
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
-	p.deathcount = MSG_ReadShort();
-	p.points = MSG_ReadShort();
+
+	// GhostlyDeath -- If the player matches our display player...
+	CL_CheckDisplayPlayer();
+}
+
+/**
+ * @brief Updates less-vital members of a player struct.
+ */
+void CL_PlayerMembers()
+{
+	player_t& p = CL_FindPlayer(MSG_ReadByte());
+	byte flags = MSG_ReadByte();
+
+	if (flags & SVC_PM_SPECTATOR)
+		CL_SpectatePlayer(p, MSG_ReadBool());
+
+	if (flags & SVC_PM_READY)
+		p.ready = MSG_ReadBool();
+
+	if (flags & SVC_PM_LIVES)
+		p.lives = MSG_ReadVarint();
+
+	if (flags & SVC_PM_SCORE)
+	{
+		p.roundwins = MSG_ReadVarint();
+		p.points = MSG_ReadVarint();
+		p.fragcount = MSG_ReadVarint();
+		p.deathcount = MSG_ReadVarint();
+		p.killcount = MSG_ReadVarint();
+		p.secretcount = MSG_ReadVarint();
+	}
 }
 
 void CL_UpdateSecrets(void)
@@ -3498,66 +3566,6 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-void CL_Spectate()
-{
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-
-	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
-	bool wasspectator = player.spectator;
-	player.spectator = ((MSG_ReadByte()) != 0);
-
-	if (player.spectator && wasalive)
-		P_DisconnectEffect(player.mo);
-	if (player.spectator && player.mo && !wasspectator)
-		P_PlayerLeavesGame(&player);
-
-	// [tm512 2014/04/11] Do as the server does when unspectating a player.
-	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
-	// that are still targeting the spectating player will cause a stack
-	// overflow in P_SetMobjState.
-
-	if (!player.spectator && !wasalive)
-	{
-		if (player.mo)
-			P_KillMobj(NULL, player.mo, NULL, true);
-
-		player.playerstate = PST_REBORN;
-	}
-
-	if (&player == &consoleplayer())
-	{
-		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
-
-		if (player.spectator)
-		{
-			player.playerstate = PST_LIVE;				// Resurrect dead spectators
-			player.cheats |= CF_FLY;					// Make players fly by default
-			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-
-			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
-		}
-		else
-		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
-			player.cheats &= ~CF_FLY;	// remove flying ability
-		}
-
-		CL_RebuildAllPlayerTranslations();
-	}
-	else
-	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
-	}
-
-	// GhostlyDeath -- If the player matches our display player...
-	CL_CheckDisplayPlayer();
-}
-
-void CL_ReadyState() {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-	player.ready = MSG_ReadBool();
-}
-
 // Set local levelstate.
 void CL_LevelState()
 {
@@ -3609,7 +3617,7 @@ void CL_InitCommands(void)
 	cmds[svc_resetmap]			= &CL_ResetMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
-	cmds[svc_updatefrags]		= &CL_UpdateFrags;
+	cmds[svc_playermembers]		= &CL_PlayerMembers;
 	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
 	cmds[svc_levellocals]		= &CL_LevelLocals;
@@ -3675,8 +3683,6 @@ void CL_InitCommands(void)
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
 
-	cmds[svc_spectate]   		= &CL_Spectate;
-	cmds[svc_readystate]		= &CL_ReadyState;
 	cmds[svc_levelstate]		= &CL_LevelState;
 
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;

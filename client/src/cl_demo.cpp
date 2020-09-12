@@ -1158,9 +1158,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, 2);		// end of server settings marker
 
 	// Server tells everyone if we're a spectator
-	MSG_WriteMarker	(netbuffer, svc_spectate);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteByte	(netbuffer, consoleplayer().spectator);
+	SVC_PlayerMembers(*netbuffer, consoleplayer(), SVC_PM_SPECTATOR);
 
 	// Server sends wads & map name
 	SVC_LoadMap(*netbuffer, wadfiles, wadhashes, patchfiles, patchhashes, level.mapname,

@@ -42,35 +42,57 @@
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
+
 /**
- * @brief svc_levellocals: Transmit level time
+ * @brief svc_*: Transmit all possible data.
+ */
+#define SVC_MSG_ALL (0xFF)
+
+/**
+ * @brief svc_levellocals: Level time.
  */
 #define SVC_LL_TIME (1 << 0)
 
 /**
- * @brief svc_levellocals: Transmit all level stat totals
+ * @brief svc_levellocals: All level stat totals.
  */
 #define SVC_LL_TOTALS (1 << 1)
 
 /**
- * @brief svc_levellocals: Transmite found secrets.
+ * @brief svc_levellocals: Found secrets.
  */
 #define SVC_LL_SECRETS (1 << 2)
 
 /**
- * @brief svc_levellocals: Transmite found items.
+ * @brief svc_levellocals: Found items.
  */
 #define SVC_LL_ITEMS (1 << 3)
 
 /**
- * @brief svc_levellocals: Transmite killed monsters.
+ * @brief svc_levellocals: Killed monsters.
  */
 #define SVC_LL_MONSTERS (1 << 4)
 
 /**
- * @brief svc_levellocals: Transmit all possible data.
+ * @brief svc_playermembers: Spectator status.
  */
-#define SVC_LL_ALL (0xFF)
+#define SVC_PM_SPECTATOR (1 << 0)
+
+/**
+ * @brief svc_playermembers: Ready status.
+ */ 
+#define SVC_PM_READY (1 << 1)
+
+/**
+ * @brief svc_playermembers: Number of lives.
+ */
+#define SVC_PM_LIVES (1 << 2)
+
+/**
+ * @brief svc_playermembers: "Score" members like frags, etc.
+ */
+#define SVC_PM_SCORE (1 << 3)
+
 
 extern int   localport;
 extern int   msg_badread;
@@ -118,7 +140,7 @@ enum svc_t
 	svc_sector,
 	svc_print,
 	svc_mobjinfo,
-	svc_updatefrags,		// [byte] [short]
+	svc_playermembers,
 	svc_teampoints,
 	svc_activateline,
 	svc_movingsector,
@@ -141,7 +163,6 @@ enum svc_t
 	svc_updatedeaths,		// [byte] [short]
 	svc_ctfevent,			// [Toke - CTF] - [int]
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
-	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 	svc_connectclient,
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
@@ -149,7 +170,6 @@ enum svc_t
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
-	svc_readystate,			// [AM] Broadcast ready state to client
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
 	svc_levelstate,			// [AM] Broadcast level state to client
 	svc_resetmap,			// [AM] Server is resetting the map
