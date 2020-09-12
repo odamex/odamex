@@ -472,12 +472,14 @@ std::string CL_DownloadProgress()
 	return buffer;
 }
 
+EXTERN_CVAR(cl_downloadsites)
+
 static void DownloadHelp()
 {
 	Printf("download - Downloads a WAD file\n\n"
 	       "Usage:\n"
-	       "  ] download <WEBSITE> <FILENAME>\n"
-	       "  Downloads the file FILENAME from WEBSITE.\n"
+	       "  ] download get <FILENAME>\n"
+	       "  Downloads the file FILENAME from your configured download sites.\n"
 	       "  ] download stop\n"
 	       "  Stop an in-progress download.");
 }
@@ -487,6 +489,18 @@ BEGIN_COMMAND(download)
 	if (argc < 2)
 	{
 		DownloadHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "get") == 0 && argc >= 3)
+	{
+		Websites clientsites = TokenizeString(cl_downloadsites.str(), " ");
+
+		// Shuffle the sites so we evenly distribute our requests.
+		std::random_shuffle(clientsites.begin(), clientsites.end());
+
+		// Attach the website to the file and download it.
+		CL_StartDownload(clientsites, std::string(argv[2]), "");
 		return;
 	}
 
@@ -502,16 +516,7 @@ BEGIN_COMMAND(download)
 		return;
 	}
 
-	if (argc < 3)
-	{
-		DownloadHelp();
-		return;
-	}
-
-	Websites url;
-	url.push_back(argv[1]);
-	std::string outfile = argv[2];
-	CL_StartDownload(url, outfile, "");
+	DownloadHelp();
 }
 END_COMMAND(download)
 
