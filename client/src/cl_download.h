@@ -26,6 +26,8 @@
 #include <string>
 #include <vector>
 
+#include "otransfer.h"
+
 typedef std::vector<std::string> Websites;
 
 void CL_DownloadInit();
@@ -35,6 +37,7 @@ bool CL_StartDownload(const Websites& url, const std::string& filename,
                       const std::string& hash);
 bool CL_StopDownload();
 void CL_DownloadTick();
-std::string CL_DownloadProgress();
+std::string CL_DownloadFilename();
+OTransferProgress CL_DownloadProgress();
 
 #endif

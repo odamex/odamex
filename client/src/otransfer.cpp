@@ -363,6 +363,11 @@ bool OTransfer::tick()
 	return false;
 }
 
+std::string OTransfer::getFilename() const
+{
+	return _filename;
+}
+
 OTransferProgress OTransfer::getProgress() const
 {
 	return _progress;

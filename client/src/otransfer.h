@@ -131,6 +131,7 @@ class OTransfer
 	bool start();
 	void stop();
 	bool tick();
+	std::string getFilename() const;
 	OTransferProgress getProgress() const;
 };
 

@@ -32,7 +32,6 @@
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "otransfer.h"
 #include "w_ident.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
@@ -433,43 +432,35 @@ void CL_DownloadTick()
 }
 
 /**
- * @brief Returns a progress string for the console.
+ * @brief Returns a transfer filename for use by the console.
  *
- * @return Progress string, or empty string if there is no progress.
+ * @return Filename being transferred.
  */
-std::string CL_DownloadProgress()
+std::string CL_DownloadFilename()
 {
-	std::string buffer;
+	if (::dlstate.state != STATE_DOWNLOADING)
+		return std::string("");
 
-	switch (::dlstate.state)
-	{
-	case STATE_CHECKING:
-		StrFormat(buffer, "Checking possible locations: %d of 3...",
-		          ::dlstate.checkfails + 1);
-		break;
-	case STATE_DOWNLOADING: {
-		if (::dlstate.transfer == NULL)
-		{
-			buffer = "Downloading...";
-		}
-		else
-		{
-			OTransferProgress progress = ::dlstate.transfer->getProgress();
+	if (::dlstate.transfer == NULL)
+		return std::string("");
 
-			std::string now;
-			StrFormatBytes(now, progress.dlnow);
-			std::string total;
-			StrFormatBytes(total, progress.dltotal);
+	return ::dlstate.transfer->getFilename();
+}
 
-			StrFormat(buffer, "Downloaded %s of %s...", now.c_str(), total.c_str());
-		}
-		break;
-	}
-	default:
-		break;
-	}
+/**
+ * @brief Returns a transfer progress object for use by the console.
+ *
+ * @return Progress object.
+ */
+OTransferProgress CL_DownloadProgress()
+{
+	if (::dlstate.state != STATE_DOWNLOADING)
+		return OTransferProgress();
 
-	return buffer;
+	if (::dlstate.transfer == NULL)
+		return OTransferProgress();
+
+	return ::dlstate.transfer->getProgress();
 }
 
 EXTERN_CVAR(cl_downloadsites)
