@@ -75,10 +75,17 @@ void EASpectatorNames(int x, int y, const float scale,
                       const x_align_t x_origin, const y_align_t y_origin,
                       const short padding, short skip, const short limit,
                       const bool force_opaque = false);
-void EAPlayerFrags(int x, int y, const float scale,
-                   const x_align_t x_align, const y_align_t y_align,
-                   const x_align_t x_origin, const y_align_t y_origin,
-                   const short padding, const short limit,
+void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
+                   const y_align_t y_align, const x_align_t x_origin,
+                   const y_align_t y_origin, const short padding, const short limit,
+                   const bool force_opaque);
+void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const byte team, const bool force_opaque);
+void EAPlayerFrags(int x, int y, const float scale, const x_align_t x_align,
+                   const y_align_t y_align, const x_align_t x_origin,
+                   const y_align_t y_origin, const short padding, const short limit,
                    const bool force_opaque = false);
 void EATeamPlayerFrags(int x, int y, const float scale,
                        const x_align_t x_align, const y_align_t y_align,
