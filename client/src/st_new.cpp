@@ -698,13 +698,20 @@ void LevelStateHUD()
 	hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              lss, CR_GREEN);
 
-	StrFormat(str, "Countdown: %d", ::levelstate.getCountdown());
+	StrFormat(str, "Round %d", ::levelstate.getRound());
 	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              str.c_str(), CR_GREEN);
 
-	StrFormat(str, "Round %d", ::levelstate.getRound());
-	hud::DrawText(0, 20, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
-	              str.c_str(), CR_GREEN);
+	// [AM] We want this to display in generally the same spot every time.
+	V_SetFont("BIGFONT");
+
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	StrFormat(str, "Round begins in %d...", ::levelstate.getCountdown());
+	int w = V_StringWidth(str.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2, surface_height / 4 - h / 2, str.c_str(), CleanYfac, CleanYfac);
+
+	V_SetFont("SMALLFONT");
 }
 
 // [AM] Spectator HUD.

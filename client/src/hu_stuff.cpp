@@ -111,7 +111,6 @@ void HU_Init();
 void HU_Drawer();
 BOOL HU_Responder(event_t *ev);
 
-patch_t *hu_font[HU_FONTSIZE];
 patch_t* sbline;
 
 void HU_DrawScores (player_t *plyr);
@@ -192,21 +191,12 @@ static const int HiResolutionWidth = 480;
 //
 void HU_Init()
 {
-	const char *tplate = "STCFN%.3d";
 	char buffer[12];
 
 	HU_UnsetChatMode();
 	input_text.clear();
 
-	// load the heads-up font
-	int j = HU_FONTSTART;
-	int sub = 0;
-
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		sprintf(buffer, tplate, j++ - sub);
-		hu_font[i] = W_CachePatch(buffer, PU_STATIC);
-	}
+	V_TextInit();
 
 	// Load the status bar line
 	sbline = W_CachePatch("SBLINE", PU_STATIC);
@@ -225,11 +215,7 @@ void STACK_ARGS HU_Shutdown()
 	Z_ChangeTag(sbline, PU_CACHE);
 	sbline = NULL;
 
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		Z_ChangeTag(hu_font[i], PU_CACHE);
-		hu_font[i] = NULL;
-	}
+	V_TextShutdown();
 }
 
 

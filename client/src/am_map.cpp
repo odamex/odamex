@@ -43,8 +43,6 @@
 
 #include "v_text.h"
 
-extern patch_t *hu_font[];
-
 // State.
 #include "doomstat.h"
 #include "r_state.h"

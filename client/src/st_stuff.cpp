@@ -1443,7 +1443,6 @@ static void ST_loadData()
 
 static void ST_unloadGraphics()
 {
-
 	int i;
 
 	// unload the numbers, tall and short
