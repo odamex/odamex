@@ -80,6 +80,7 @@ EXTERN_CVAR(noisedebug)
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_survival)
 
 static int crosshair_lump;
 
@@ -819,37 +820,54 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              "Name", CR_GREY, true);
-	if (sv_gametype != GM_COOP) {
-		hud::DrawText(44, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              "FRG", CR_GREY, true);
-		hud::DrawText(92, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              "DTH", CR_GREY, true);
-		hud::DrawText(140, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              "K/D", CR_GREY, true);
-	} else {
-		hud::DrawText(92, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              "KIL", CR_GREY, true);
-		hud::DrawText(140, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              "DTH", CR_GREY, true);
+
+	if (sv_gametype == GM_COOP)
+	{
+		if (g_survival)
+		{
+			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
+		}
+		else
+		{
+			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
+		}
 	}
+	else
+	{
+		if (g_survival)
+		{
+			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
+			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true);
+			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
+		}
+		else
+		{
+			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true);
+			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
+			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true);
+		}
+	}
+
 	hud::DrawText(188, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_RIGHT, hud::Y_TOP,
-	              "MIN", CR_GREY, true);
+	              "MINS", CR_GREY, true);
 	hud::DrawText(236, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_RIGHT, hud::Y_TOP,
-	              "PNG", CR_GREY, true);
+	              "PING", CR_GREY, true);
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
@@ -869,29 +887,47 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	                   hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_LEFT, hud::Y_TOP,
 	                   1, limit, true);
-	if (sv_gametype != GM_COOP) {
-		hud::EAPlayerFrags(44, y + 11, hud_scalescoreboard,
-		                   hud::X_CENTER, hud::Y_MIDDLE,
-		                   hud::X_RIGHT, hud::Y_TOP,
-		                   1, limit, true);
-		hud::EAPlayerDeaths(92, y + 11, hud_scalescoreboard,
-		                   hud::X_CENTER, hud::Y_MIDDLE,
-		                   hud::X_RIGHT, hud::Y_TOP,
-		                   1, limit, true);
-		hud::EAPlayerKD(140, y + 11, hud_scalescoreboard,
-		                hud::X_CENTER, hud::Y_MIDDLE,
-		                hud::X_RIGHT, hud::Y_TOP,
-		                1, limit, true);
-	} else {
-		hud::EAPlayerKills(92, y + 11, hud_scalescoreboard,
-		                   hud::X_CENTER, hud::Y_MIDDLE,
-		                   hud::X_RIGHT, hud::Y_TOP,
-		                   1, limit, true);
-		hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard,
-		                   hud::X_CENTER, hud::Y_MIDDLE,
-		                   hud::X_RIGHT, hud::Y_TOP,
-		                   1, limit, true);
+
+	if (sv_gametype == GM_COOP)
+	{
+		if (g_survival)
+		{
+			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+		}
+		else
+		{
+			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+		}
 	}
+	else
+	{
+		if (g_survival)
+		{
+			hud::EAPlayerRoundWins(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
+			                       true);
+			hud::EAPlayerFrags(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+		}
+		else
+		{
+			hud::EAPlayerFrags(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDeaths(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerKD(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+		}
+	}
+
 	hud::EAPlayerTimes(188, y + 11, hud_scalescoreboard,
 	                   hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_RIGHT, hud::Y_TOP,

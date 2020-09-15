@@ -454,27 +454,6 @@ void ST_voteDraw (int y) {
 
 namespace hud {
 
-/**
- * @brief Draw the number of lives left on the HUD.
- * 
- * @param y Bottom Y to align with.
- */
-static void drawLives(int y)
-{
-	if (!g_survival)
-		return;
-
-	// If the game mode has fewer than 2 lives, showing the fact that we have
-	// 1 life left all the time would be kind of silly.
-	if (g_survival_lives < 2)
-		return;
-
-	static std::string str;
-	StrFormat(str, "%d lives left", displayplayer().lives);
-	hud::DrawText(0, y, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, str.c_str(), CR_GREY);
-}
-
 // [AM] Draw CTF scoreboard
 static void drawCTF() {
 	if (sv_gametype != GM_CTF) {
@@ -570,6 +549,7 @@ void drawNetdemo() {
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
+	std::string buf;
 	player_t *plyr = &displayplayer();
 
 	// TODO: I can probably get rid of these invocations once I put a
@@ -603,6 +583,19 @@ void OdamexHUD() {
 	                     hud::X_CENTER, hud::Y_BOTTOM,
 	                     faces[st_faceindex]);
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
+
+	// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
+	int lives_color = CR_GREEN;
+	if (plyr->lives <= 0)
+		lives_color = CR_DARKGREY;
+	else if (plyr->lives == g_survival_lives.asInt())
+		lives_color = CR_GOLD;
+	else if (plyr->lives == 1)
+		lives_color = CR_RED;
+
+	StrFormat(buf, "x%d", plyr->lives);
+	hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+	              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 
 	// Draw Ammo
 	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
@@ -693,9 +686,6 @@ void OdamexHUD() {
 		}
 	}
 
-	// Draw number of lives left.
-	hud::drawLives(0);
-
 	// Draw CTF scoreboard
 	hud::drawCTF();
 }
@@ -757,9 +747,6 @@ void SpectatorHUD() {
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, 0);
-
-	// Draw number of lives left.
-	hud::drawLives(0);
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
@@ -932,9 +919,6 @@ void DoomHUD()
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, hud_targetcount);
-
-	// Draw number of lives left.
-	hud::drawLives(st_y);
 
 	// Draw CTF scoreboard
 	hud::drawCTF();

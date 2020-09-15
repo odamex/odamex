@@ -75,6 +75,10 @@ void EASpectatorNames(int x, int y, const float scale,
                       const x_align_t x_origin, const y_align_t y_origin,
                       const short padding, short skip, const short limit,
                       const bool force_opaque = false);
+void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const bool force_opaque);
 void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
                    const y_align_t y_align, const x_align_t x_origin,
                    const y_align_t y_origin, const short padding, const short limit,

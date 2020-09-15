@@ -972,6 +972,35 @@ void EASpectatorNames(int x, int y, const float scale,
 	}
 }
 
+// Draw a list of round wins in the game.  Lines up with player names.
+void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const bool force_opaque)
+{
+	byte drawn = 0;
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
+		// Make sure we're not overrunning our limit.
+		if (limit != 0 && drawn >= limit)
+		{
+			break;
+		}
+
+		player_t* player = sortedPlayers()[i];
+		if (ingamePlayer(player))
+		{
+			std::string buffer;
+			StrFormat(buffer, "%d", player->roundwins);
+
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              buffer.c_str(), CR_GREY, force_opaque);
+			y += 7 + padding;
+			drawn += 1;
+		}
+	}
+}
+
 // Draw a list of lives in the game.  Lines up with player names.
 void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
                    const y_align_t y_align, const x_align_t x_origin,
