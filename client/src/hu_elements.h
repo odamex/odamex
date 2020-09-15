@@ -44,6 +44,7 @@ std::string TeamPlayers(int& color, byte team);
 std::string TeamName(int& color, byte team);
 std::string TeamFrags(int& color, byte team);
 std::string TeamPoints(int& color, byte team);
+void TeamLives(std::string& str, int& color, byte team);
 std::string TeamKD(int& color, byte team);
 std::string TeamPing(int& color, byte team);
 

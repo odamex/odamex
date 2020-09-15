@@ -976,25 +976,45 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			"Name", CR_GREY, true);
 		if (sv_gametype == GM_CTF)
 		{
-			hud::DrawText(xOffset + 168, yOffset + y, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				"PTS", CR_GREY, true);
-			hud::DrawText(xOffset + 200, yOffset + y, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				"FRG", CR_GREY, true);
+			if (g_survival)
+			{
+				hud::DrawText(xOffset + 168, yOffset + y, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              "PTS", CR_GREY, true);
+				hud::DrawText(xOffset + 200, yOffset + y, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              "LIV", CR_GREY, true);
+			}
+			else
+			{
+				hud::DrawText(xOffset + 168, yOffset + y, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              "PTS", CR_GREY, true);
+				hud::DrawText(xOffset + 200, yOffset + y, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              "FRG", CR_GREY, true);
+			}
 		}
 		else
 		{
-			hud::DrawText(xOffset + 164, yOffset + y, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				"FRG", CR_GREY, true);
-			hud::DrawText(xOffset + 200, y, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				"K/D", CR_GREY, true);
+			if (g_survival)
+			{
+				hud::DrawText(xOffset + 164, yOffset + y, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              "FRG", CR_GREY, true);
+				hud::DrawText(xOffset + 200, y, hud_scalescoreboard, hud::X_CENTER,
+				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY,
+				              true);
+			}
+			else
+			{
+				hud::DrawText(xOffset + 164, yOffset + y, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              "FRG", CR_GREY, true);
+				hud::DrawText(xOffset + 200, y, hud_scalescoreboard, hud::X_CENTER,
+				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY,
+				              true);
+			}
 		}
 		hud::DrawText(xOffset + 232, yOffset + y, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,
@@ -1023,27 +1043,53 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			str.c_str(), color, true);
 		if (sv_gametype == GM_CTF)
 		{
-			hud::DrawText(xOffset + 168, yOffset + y + 11, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				hud::TeamPoints(color, i).c_str(), color, true);
-			str = hud::TeamFrags(color, i);
-			hud::DrawText(xOffset + 200, yOffset+ y + 11, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				str.c_str(), color, true);
+			if (g_survival)
+			{
+				str = hud::TeamPoints(color, i);
+				hud::DrawText(xOffset + 168, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+				hud::TeamLives(str, color, i);
+				hud::DrawText(xOffset + 200, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+			}
+			else
+			{
+				str = hud::TeamPoints(color, i);
+				hud::DrawText(xOffset + 168, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+				str = hud::TeamFrags(color, i);
+				hud::DrawText(xOffset + 200, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+			}
 		}
 		else
 		{
-			hud::DrawText(xOffset + 164, yOffset + y + 11, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				hud::TeamPoints(color, i).c_str(), color, true);
-			str = hud::TeamKD(color, i);
-			hud::DrawText(xOffset + 200, yOffset + y + 11, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				str.c_str(), color, true);
+			if (g_survival)
+			{
+				str = hud::TeamPoints(color, i);
+				hud::DrawText(xOffset + 164, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+				hud::TeamLives(str, color, i);
+				hud::DrawText(xOffset + 200, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+			}
+			else
+			{
+				str = hud::TeamPoints(color, i);
+				hud::DrawText(xOffset + 164, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+				str = hud::TeamKD(color, i);
+				hud::DrawText(xOffset + 200, yOffset + y + 11, hud_scalescoreboard,
+				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
+				              str.c_str(), color, true);
+			}
 		}
 		str = hud::TeamPing(color, i);
 		hud::DrawText(xOffset + 232, yOffset + y + 11, hud_scalescoreboard,
@@ -1063,25 +1109,45 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			1, limit, i, true);
 		if (sv_gametype == GM_CTF)
 		{
-			hud::EATeamPlayerPoints(xOffset + 168, yOffset + y + 22, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				1, limit, i, true);
-			hud::EATeamPlayerFrags(xOffset + 200, yOffset + y + 22, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				1, limit, i, true);
+			if (g_survival)
+			{
+				hud::EATeamPlayerPoints(xOffset + 168, yOffset + y + 22,
+				                        hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                        hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+				hud::EATeamPlayerLives(xOffset + 200, yOffset + y + 22,
+				                       hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                       hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+			}
+			else
+			{
+				hud::EATeamPlayerPoints(xOffset + 168, yOffset + y + 22,
+				                        hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                        hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+				hud::EATeamPlayerFrags(xOffset + 200, yOffset + y + 22,
+				                       hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                       hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+			}
 		}
 		else
 		{
-			hud::EATeamPlayerFrags(xOffset + 164, yOffset + y + 22, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				1, limit, i, true);
-			hud::EATeamPlayerKD(xOffset + 200, yOffset + y + 22, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_RIGHT, hud::Y_TOP,
-				1, limit, i, true);
+			if (g_survival)
+			{
+				hud::EATeamPlayerFrags(xOffset + 164, yOffset + y + 22,
+				                       hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                       hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+				hud::EATeamPlayerLives(xOffset + 200, yOffset + y + 22,
+				                       hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                       hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+			}
+			else
+			{
+				hud::EATeamPlayerFrags(xOffset + 164, yOffset + y + 22,
+				                       hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+				                       hud::X_RIGHT, hud::Y_TOP, 1, limit, i, true);
+				hud::EATeamPlayerKD(xOffset + 200, yOffset + y + 22, hud_scalescoreboard,
+				                    hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
+				                    hud::Y_TOP, 1, limit, i, true);
+			}
 		}
 		hud::EATeamPlayerPings(xOffset + 232, yOffset + y + 22, hud_scalescoreboard,
 			hud::X_CENTER, hud::Y_MIDDLE,

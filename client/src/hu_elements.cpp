@@ -728,6 +728,36 @@ std::string TeamPoints(int& color, byte team) {
 	return buffer.str();
 }
 
+/**
+ * @brief Calculate the number of team lives for the HUD.
+ * 
+ * @param str Output string buffer.
+ * @param color Output color.
+ * @param team Team to construct for.
+*/
+void TeamLives(std::string& str, int& color, byte team)
+{
+	if (team >= NUMTEAMS)
+	{
+		color = CR_GREY;
+		str = "---";
+		return;
+	}
+
+	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
+	color = V_GetTextColor(teamInfo->TextColor.c_str());
+
+	PlayerResults results;
+	P_PlayerQuery(&results, PQ_HASLIVES, (team_t)team);
+
+	int lives = 0;
+	PlayerResults::const_iterator it = results.begin();
+	for (; it != results.end(); ++it)
+		lives += (*it)->lives;
+
+	StrFormat(str, "%d", lives);
+}
+
 std::string TeamKD(int& color, byte team) {
 	if (CountTeamPlayers(team) == 0) {
 		color = CR_GREY;
