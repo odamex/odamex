@@ -1533,8 +1533,7 @@ void CL_RequestConnectInfo(void)
 	if (!serveraddr.ip[0])
 		return;
 
-	if(gamestate != GS_DOWNLOAD)
-		gamestate = GS_CONNECTING;
+	gamestate = GS_CONNECTING;
 
 	if(!connecttimeout)
 	{
@@ -1550,11 +1549,73 @@ void CL_RequestConnectInfo(void)
 	connecttimeout--;
 }
 
+/**
+ * @brief Quit the network game while attempting to download a file.
+ *
+ * @param missing_file Missing file to attempt to download.
+ * @param missing_hash Hash of the missing file to download.
+ */
+static void QuitAndTryDownload(const std::string& missing_file,
+                               const std::string& missing_hash)
+{
+	if (!cl_serverdownload)
+	{
+		// Playing a netdemo and unable to download from the server
+		Printf(PRINT_WARNING,
+		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
+		       "Options > Network Options to enable downloading.\n",
+		       missing_file.c_str());
+		CL_QuitNetGame();
+		return;
+	}
+
+	if (netdemo.isPlaying())
+	{
+		// Downloading is disabled client-side
+		Printf(PRINT_WARNING,
+		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+		       missing_file.c_str());
+		CL_QuitNetGame();
+		return;
+	}
+
+	if (sv_downloadsites.str().empty() && cl_downloadsites.str().empty())
+	{
+		// Nobody has any download sites configured.
+		Printf("Unable to find \"%s\".  Both your client and the server have no "
+		       "download sites configured.\n",
+		       missing_file.c_str());
+		CL_QuitNetGame();
+		return;
+	}
+
+	// Gather our server and client sites.
+	StringTokens serversites = TokenizeString(sv_downloadsites.str(), " ");
+	StringTokens clientsites = TokenizeString(cl_downloadsites.str(), " ");
+
+	// Shuffle the sites so we evenly distribute our requests.
+	std::random_shuffle(serversites.begin(), serversites.end());
+	std::random_shuffle(clientsites.begin(), clientsites.end());
+
+	// Combine them into one big site list.
+	Websites downloadsites;
+	downloadsites.reserve(serversites.size() + clientsites.size());
+	downloadsites.insert(downloadsites.end(), serversites.begin(), serversites.end());
+	downloadsites.insert(downloadsites.end(), clientsites.begin(), clientsites.end());
+
+	// Disconnect from the server before we start the download.
+	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
+	       missing_file.c_str());
+	CL_QuitNetGame();
+
+	// Start the download.
+	CL_StartDownload(downloadsites, missing_file, missing_hash, DL_RECONNECT);
+}
+
 //
 // [denis] CL_PrepareConnect
 // Process server info and switch to the right wads...
 //
-std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
 	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
@@ -1680,6 +1741,7 @@ bool CL_PrepareConnect(void)
 
 	if (!missingfiles.empty() || cl_forcedownload)
 	{
+		std::string missing_file, missing_hash;
 		if (missingfiles.empty())				// cl_forcedownload
 		{
 			missing_file = newwadfiles.back();
@@ -1687,40 +1749,12 @@ bool CL_PrepareConnect(void)
 		}
 		else									// client is really missing a file
 		{
-			missing_file = missingfiles[0];
-			missing_hash = missinghashes[0];
+			missing_file = missingfiles.front();
+			missing_hash = missinghashes.front();
 		}
 
-		if (!cl_serverdownload)
-		{
-			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_WARNING, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
-								missing_file.c_str());
-			CL_QuitNetGame();
-			return false;
-		}
-		
-		if (netdemo.isPlaying())
-		{
-			// Downloading is disabled client-side
-			Printf(PRINT_WARNING, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
-								missing_file.c_str());			
-			CL_QuitNetGame();
-			return false;
-		}
-
-		if (sv_downloadsites.str().empty() && cl_downloadsites.str().empty())
-		{
-			// Nobody has any download sites configured.
-			Printf("Unable to find \"%s\".  Both your client and the server have no "
-			       "download sites configured.\n",
-			       missing_file.c_str());
-			CL_QuitNetGame();
-			return false;
-		}
-
-		gamestate = GS_DOWNLOAD;
-		Printf(PRINT_HIGH, "Will download \"%s\"...\n", missing_file.c_str());
+		QuitAndTryDownload(missing_file, missing_hash);
+		return false;
 	}
 
 	recv_full_update = false;
@@ -1743,29 +1777,6 @@ bool CL_Connect(void)
 
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
-
-	if (gamestate == GS_DOWNLOAD && missing_file.length())
-	{
-		StringTokens serversites = TokenizeString(sv_downloadsites.str(), " "); 
-		StringTokens clientsites = TokenizeString(cl_downloadsites.str(), " ");
-
-		// Shuffle the sites so we evenly distribute our requests.
-		std::random_shuffle(serversites.begin(), serversites.end());
-		std::random_shuffle(clientsites.begin(), clientsites.end());
-
-		// Combine them into one big site list.
-		Websites downloadsites;
-		downloadsites.reserve(serversites.size() + clientsites.size());
-		downloadsites.insert(downloadsites.end(), serversites.begin(), serversites.end());
-		downloadsites.insert(downloadsites.end(), clientsites.begin(), clientsites.end());
-
-		// Attach the website to the file and download it.
-		if (!CL_StartDownload(downloadsites, missing_file, missing_hash))
-		{
-			CL_QuitNetGame();
-			return false;
-		}
-	}
 
 	compressor.reset();
 
@@ -1790,8 +1801,7 @@ bool CL_Connect(void)
 	noservermsgs = false;
 	last_received = gametic;
 
-	if (gamestate != GS_DOWNLOAD)
-        gamestate = GS_CONNECTED;
+	gamestate = GS_CONNECTED;
 
 	return true;
 }
@@ -1859,11 +1869,7 @@ void CL_TryToConnect(DWORD server_token)
 		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
 		MSG_WriteLong(&net_buffer, server_token); // confirm server token
 		MSG_WriteShort(&net_buffer, version); // send client version
-
-		if(gamestate == GS_DOWNLOAD)
-			MSG_WriteByte(&net_buffer, 1); // send type of connection (play/spectate/rcon/download)
-		else
-			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
+		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
 
 		// GhostlyDeath -- Send more version info
 		if (gameversiontosend)
@@ -3383,22 +3389,15 @@ void CL_LoadMap(void)
 
 	const char *mapname = MSG_ReadString ();
 
-	if (gamestate == GS_DOWNLOAD)
-	{
-		CL_Reconnect();
-		return;
-	}
-
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
 	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 
 	if (!missingfiles.empty())
 	{
-		missing_file = missingfiles[0];
-		missing_hash = missinghashes[0];
-
-		CL_Reconnect();
+		std::string missing_file = missingfiles.front();
+		std::string missing_hash = missinghashes.front();
+		QuitAndTryDownload(missing_file, missing_hash);
 		return;
 	}
 
@@ -3511,12 +3510,10 @@ void CL_FullGame()
 
 void CL_ExitLevel()
 {
-	if(gamestate != GS_DOWNLOAD) {
-		gameaction = ga_completed;
+	gameaction = ga_completed;
 
-		if (netdemo.isRecording())
-			netdemo.writeIntermission();
-	}
+	if (netdemo.isRecording())
+		netdemo.writeIntermission();
 }
 
 void CL_Noop()

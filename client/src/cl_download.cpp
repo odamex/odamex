@@ -57,13 +57,15 @@ static struct DownloadState
 	std::string url;
 	std::string filename;
 	std::string hash;
+	unsigned flags;
 	Websites checkurls;
 	size_t checkurlidx;
 	std::string checkfilename;
 	int checkfails;
 	DownloadState()
 	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(""), checkurls(), checkurlidx(0), checkfilename(""), checkfails(0)
+	      hash(""), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
+	      checkfails(0)
 	{
 	}
 	void Ready()
@@ -76,6 +78,7 @@ static struct DownloadState
 		this->url = "";
 		this->filename = "";
 		this->hash = "";
+		this->flags = 0;
 		this->checkurls.clear();
 		this->checkurlidx = 0;
 		this->checkfilename = "";
@@ -129,9 +132,10 @@ bool CL_IsDownloading()
  * @param urls Website to download from, without the WAD at the end.
  * @param filename Filename of the WAD to download.
  * @param hash Hash of the file to download.
+ * @param flags DL_* flags to set for the download process.
  */
 bool CL_StartDownload(const Websites& urls, const std::string& filename,
-                      const std::string& hash)
+                      const std::string& hash, unsigned flags)
 {
 	if (::dlstate.state != STATE_READY)
 	{
@@ -184,6 +188,7 @@ bool CL_StartDownload(const Websites& urls, const std::string& filename,
 	// Assign the other params to the download state.
 	::dlstate.filename = filename;
 	::dlstate.hash = hash;
+	::dlstate.flags = flags;
 
 	// Start the checking bit on the next tick.
 	::dlstate.state = STATE_CHECKING;
@@ -247,9 +252,6 @@ static void CheckError(const char* msg)
 			Printf(PRINT_WARNING, "Download failed, no sites have %s for download.\n",
 			       ::dlstate.checkfilename.c_str());
 			::dlstate.Ready();
-
-			if (::gamestate == GS_DOWNLOAD)
-				CL_QuitNetGame();
 		}
 	}
 }
@@ -328,19 +330,13 @@ static void TransferDone(const OTransferInfo& info)
 	StrFormatBytes(bytes, info.speed);
 	Printf("Download completed at %s/s.\n", bytes.c_str());
 
-	if (::gamestate == GS_DOWNLOAD)
-	{
-		CL_QuitNetGame();
+	if (::dlstate.flags & DL_RECONNECT)
 		CL_Reconnect();
-	}
 }
 
 static void TransferError(const char* msg)
 {
 	Printf(PRINT_WARNING, "Download error (%s).\n", msg);
-
-	if (::gamestate == GS_DOWNLOAD)
-		CL_QuitNetGame();
 }
 
 static void TickDownload()
@@ -494,19 +490,15 @@ BEGIN_COMMAND(download)
 		std::random_shuffle(clientsites.begin(), clientsites.end());
 
 		// Attach the website to the file and download it.
-		CL_StartDownload(clientsites, std::string(argv[2]), "");
+		CL_StartDownload(clientsites, std::string(argv[2]), "", 0);
 		return;
 	}
 
 	if (stricmp(argv[1], "stop") == 0)
 	{
 		if (CL_StopDownload())
-		{
 			Printf(PRINT_WARNING, "Download cancelled.\n");
 
-			if (::gamestate == GS_DOWNLOAD)
-				CL_QuitNetGame();
-		}
 		return;
 	}
 

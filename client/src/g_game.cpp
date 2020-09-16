@@ -906,8 +906,7 @@ void G_Ticker (void)
 	else if (NET_GetPacket() && !simulated_connection)
 	{
 		// denis - don't accept candy from strangers
-		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
-			&& NET_CompareAdr(serveraddr, net_from))
+		if (gamestate == GS_CONNECTING && NET_CompareAdr(serveraddr, net_from))
 		{
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);

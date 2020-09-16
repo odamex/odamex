@@ -242,7 +242,6 @@ void D_Display()
 	switch (gamestate)
 	{
 		case GS_FULLCONSOLE:
-		case GS_DOWNLOAD:
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
