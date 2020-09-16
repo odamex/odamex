@@ -584,18 +584,17 @@ void OdamexHUD() {
 	                     faces[st_faceindex]);
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
 
-	// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
-	int lives_color = CR_GREEN;
-	if (plyr->lives <= 0)
-		lives_color = CR_DARKGREY;
-	else if (plyr->lives == g_survival_lives.asInt())
-		lives_color = CR_GOLD;
-	else if (plyr->lives == 1)
-		lives_color = CR_RED;
+	if (g_survival)
+	{
+		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
+		int lives_color = CR_GREY;
+		if (plyr->lives <= 0)
+			lives_color = CR_DARKGREY;
 
-	StrFormat(buf, "x%d", plyr->lives);
-	hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
-	              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
+		StrFormat(buf, "x%d", plyr->lives);
+		hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
+	}
 
 	// Draw Ammo
 	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
