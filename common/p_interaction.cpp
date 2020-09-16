@@ -34,7 +34,7 @@
 #include "p_lnspec.h"
 #include "p_ctf.h"
 #include "p_acs.h"
-#include "g_levelstate.h"
+#include "g_gametype.h"
 #include "m_wdlstats.h"
 
 #ifdef SERVER_APP

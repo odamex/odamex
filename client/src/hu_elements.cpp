@@ -31,6 +31,7 @@
 #include "d_netinf.h"
 #include "d_player.h"
 #include "doomstat.h"
+#include "g_gametype.h"
 #include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"

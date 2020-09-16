@@ -36,6 +36,7 @@
 #include "c_dispatch.h"
 #include "c_cvars.h"
 #include "v_text.h"
+#include "g_gametype.h"
 
 #include "cl_main.h"
 #include "p_ctf.h"
@@ -660,7 +661,7 @@ void drawHeader(player_t *player, int y)
 {
 	int color;
 	std::ostringstream buffer;
-	std::string str(GetGameModeString());
+	std::string str = G_GametypeName();
 
 	hud::DrawText(0, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
@@ -1306,7 +1307,7 @@ void Scoreboard(player_t *player)
 
 // [AM] Draw the low-resolution scoreboard header.
 void drawLowHeader(player_t *player, int y) {
-	std::string str(GetGameModeString());
+	std::string str = G_GametypeName();
 
 	hud::DrawText(0, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,

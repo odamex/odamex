@@ -3382,6 +3382,16 @@ void CL_ConsolePlayer(void)
 	digest = MSG_ReadString();
 }
 
+bool IsGameModeFFA()
+{
+	return sv_gametype == GM_DM && sv_maxplayers > 2;
+}
+
+bool IsGameModeDuel()
+{
+	return sv_gametype == GM_DM && sv_maxplayers == 2;
+}
+
 //
 // CL_LoadMap
 //

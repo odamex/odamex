@@ -33,7 +33,7 @@
 #include "p_local.h"
 #include "s_sound.h"
 
-#include "g_levelstate.h"
+#include "g_gametype.h"
 
 // State.
 #include "doomstat.h"

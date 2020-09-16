@@ -219,11 +219,6 @@ struct DehInfo
 };
 extern struct DehInfo deh;
 
-bool IsGameModeDuel();
-bool IsGameModeFFA();
-const char* GetGameModeString();
-const char* GetShortGameModeString();
-
 #endif
 
 
