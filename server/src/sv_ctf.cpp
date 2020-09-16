@@ -27,12 +27,12 @@
 #include "m_random.h"
 #include "p_ctf.h"
 #include "i_system.h"
-#include "g_levelstate.h"
+#include "g_gametype.h"
 #include "p_inter.h"
 #include "p_unlag.h"
 #include "v_textcolors.h"
 #include "m_wdlstats.h"
-
+#include "doomstat.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 std::string V_GetTeamColorPlayer(UserInfo userinfo);

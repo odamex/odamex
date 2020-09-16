@@ -61,6 +61,7 @@
 #include "sv_vote.h"
 #include "sv_maplist.h"
 #include "g_levelstate.h"
+#include "g_gametype.h"
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
@@ -5390,6 +5391,11 @@ void SV_RemovePlayerFromQueue(player_t* player)
 {
 	player->joindelay = ReJoinDelay;
 	SV_UpdatePlayerQueuePositions(player);
+}
+
+bool IsGameModeDuel()
+{
+	return sv_gametype == GM_DM && sv_maxplayers <= 2;
 }
 
 void SV_UpdatePlayerQueueLevelChange()
