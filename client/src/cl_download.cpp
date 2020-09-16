@@ -215,7 +215,7 @@ static void CheckDone(const OTransferInfo& info)
 	::dlstate.state = STATE_DOWNLOADING;
 	::dlstate.url = info.url;
 
-	Printf("Found file at %s.\n", info.url);
+	Printf("Found file at %s.\n", info.url.c_str());
 }
 
 /**

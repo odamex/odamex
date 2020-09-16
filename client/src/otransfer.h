@@ -43,10 +43,10 @@ struct OTransferInfo
 {
 	int code;
 	curl_off_t speed;
-	const char* url;
-	const char* contentType;
+	std::string url;
+	std::string contentType;
 
-	OTransferInfo() : code(0), speed(0), url(NULL), contentType(NULL)
+	OTransferInfo() : code(0), speed(0), url(""), contentType("")
 	{
 	}
 	bool hydrate(CURL* curl);

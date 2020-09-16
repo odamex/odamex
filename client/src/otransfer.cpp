@@ -116,8 +116,8 @@ bool OTransferInfo::hydrate(CURL* curl)
 
 	this->code = resCode;
 	this->speed = speed;
-	this->url = url;
-	this->contentType = contentType;
+	this->url = (url != NULL) ? url : "";
+	this->contentType = (contentType != NULL) ? contentType : "";
 
 	return true;
 }
@@ -158,8 +158,8 @@ bool OTransferCheck::start()
 	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
-	//curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
-	//curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
+	// curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
 	curl_multi_add_handle(_curlm, _curl);
@@ -237,7 +237,7 @@ bool OTransferCheck::tick()
 	}
 
 	// Make sure we didn't find an HTML file - those are only okay on redirects.
-	if (stricmp(info.contentType, "text/html") == 0)
+	if (stricmp(info.contentType.c_str(), "text/html") == 0)
 	{
 		_errproc("Only found an HTML file");
 		return false;
@@ -296,7 +296,7 @@ int OTransfer::setOutputFile(const std::string& dest)
 
 /**
  * Assert a specific file hash for this file.
- * 
+ *
  * @param hash Hash string.
  */
 void OTransfer::setHash(const std::string& hash)
@@ -318,8 +318,8 @@ bool OTransfer::start()
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
-	//curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
-	//curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
+	// curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_multi_add_handle(_curlm, _curl);
 
 	int running;
@@ -395,7 +395,7 @@ bool OTransfer::tick()
 	}
 
 	// Make sure we didn't download an HTML file - those are only okay on redirects.
-	if (stricmp(info.contentType, "text/html") == 0)
+	if (stricmp(info.contentType.c_str(), "text/html") == 0)
 	{
 		_errproc("Accidentally downloaded an HTML file");
 		return false;
