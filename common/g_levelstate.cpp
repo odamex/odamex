@@ -24,29 +24,17 @@
 
 #include <cmath>
 
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "cmdlib.h"
-#include "d_player.h"
-#include "g_game.h"
-#include "g_level.h"
-#include "i_net.h"
-#include "i_system.h"
-#include "m_wdlstats.h"
 #include "g_gametype.h"
+#include "i_system.h"
 
 EXTERN_CVAR(g_survival)
 EXTERN_CVAR(g_survival_jointimer)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_gametype)
-EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(sv_timelimit)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
-EXTERN_CVAR(sv_fraglimit)
-EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(g_rounds)
-EXTERN_CVAR(g_winlimit)
 
 LevelState levelstate;
 

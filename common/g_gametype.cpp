@@ -27,14 +27,16 @@
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
 
+EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_winlimit)
+EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_maxplayers)
-EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(sv_fraglimit)
-EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_scorelimit)
-EXTERN_CVAR(g_winlimit)
+EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(sv_timelimit)
 
 void SV_SetWinPlayer(byte playerId);
 
