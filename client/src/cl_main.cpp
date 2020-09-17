@@ -1558,6 +1558,10 @@ void CL_RequestConnectInfo(void)
 static void QuitAndTryDownload(const std::string& missing_file,
                                const std::string& missing_hash)
 {
+	// Need to set this here, otherwise we render a frame of wild pointers
+	// filled with garbage data.
+	gamestate = GS_FULLCONSOLE;
+
 	if (!cl_serverdownload)
 	{
 		// Playing a netdemo and unable to download from the server
