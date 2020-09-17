@@ -209,47 +209,37 @@ static const char *ordinal(int n)
 // Return a "help" string.
 std::string HelpText()
 {
-	bool isGameFull = false;
-
-	if (P_NumPlayersInGame() >= sv_maxplayers)
-	{
-		isGameFull = true;
-	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		size_t min_players = MAXPLAYERS;
-		for (byte i = 0;i < NUMTEAMS;i++)
-		{
-			size_t players = P_NumPlayersOnTeam((team_t)i);
-			if (players < min_players)
-				min_players = players;
-		}
-
-		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam)
-			isGameFull = true;
-	}
-
+	std::string str;
 	int queuePos = consoleplayer().QueuePosition;
 
 	if (queuePos > 0)
 	{
-		std::ostringstream ss;
-		ss << "Waiting to play - " << queuePos << ordinal(queuePos) << " in line";
-		return ss.str();
+		StrFormat(str,
+		          "Waiting to play - " TEXTCOLOR_GREEN "%d%s" TEXTCOLOR_NORMAL " in line",
+		          queuePos, ordinal(queuePos));
+		return str;
 	}
 
-	if (isGameFull)
+	if (!G_CanJoinGame())
 	{
-		std::string use("Press ");
-		use.append(C_GetKeyStringsFromCommand("+use"));
-		use.append(" to join the queue");
-		return use;
+		StrFormat(str, "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join the queue",
+		          C_GetKeyStringsFromCommand("+use").c_str());
+		return str;
 	}
 
-	std::string use("Press ");
-	use.append(C_GetKeyStringsFromCommand("+use"));
-	use.append(" to join");
-	return use;
+	if (::levelstate.getJoinTimeLeft() > 0)
+	{
+		StrFormat(str,
+		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
+		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
+		          C_GetKeyStringsFromCommand("+use").c_str(),
+		          ::levelstate.getJoinTimeLeft());
+		return str;
+	}
+
+	StrFormat(str, "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
+	          C_GetKeyStringsFromCommand("+use").c_str());
+	return str;
 }
 
 // Return a string that contains the name of the player being spectated,

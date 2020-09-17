@@ -37,6 +37,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_maxplayersperteam)
 
 void SV_SetWinPlayer(byte playerId);
 
@@ -91,6 +92,29 @@ bool G_CanFireWeapon()
  */
 bool G_CanJoinGame()
 {
+	bool isGameFull = false;
+
+	if (P_NumPlayersInGame() >= sv_maxplayers)
+	{
+		isGameFull = true;
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		size_t min_players = MAXPLAYERS;
+		for (byte i = 0;i < NUMTEAMS;i++)
+		{
+			size_t players = P_NumPlayersOnTeam((team_t)i);
+			if (players < min_players)
+				min_players = players;
+		}
+
+		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam)
+			isGameFull = true;
+	}
+
+	if (isGameFull)
+		return false;
+
 	if (g_survival && ::levelstate.getState() == LevelState::INGAME)
 	{
 		// Joining in the middle of a survival round needs special
