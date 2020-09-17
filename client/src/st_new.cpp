@@ -741,7 +741,7 @@ void LevelStateHUD()
 			break;
 
 		StrFormat(str,
-		          "Press " TEXTCOLOR_GREEN "%s " TEXTCOLOR_NORMAL " when ready to play",
+		          "Press " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL " when ready to play",
 		          C_GetKeyStringsFromCommand("ready").c_str());
 		break;
 	case LevelState::WARMUP_COUNTDOWN:
