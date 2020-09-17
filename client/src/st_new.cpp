@@ -48,6 +48,8 @@
 #include "p_ctf.h"
 #include "cl_vote.h"
 #include "g_levelstate.h"
+#include "g_gametype.h"
+#include "c_bind.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -691,26 +693,79 @@ void OdamexHUD() {
 
 void LevelStateHUD()
 {
+	// First line...BIGFONT.
 	std::string str;
-	const char* lss = ::levelstate.getStateString();
 
-	hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
-	              lss, CR_GREEN);
+	switch (::levelstate.getState())
+	{
+	case LevelState::WARMUP:
+		if (consoleplayer().spectator)
+			break;
 
-	StrFormat(str, "Round %d", ::levelstate.getRound());
-	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
-	              str.c_str(), CR_GREEN);
+		str = "Warmup";
+		break;
+	case LevelState::WARMUP_COUNTDOWN:
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
+		str = G_GametypeName();
+		break;
+	case LevelState::PREROUND_COUNTDOWN:
+		StrFormat(str, "Round %d\n", ::levelstate.getRound());
+		break;
+	case LevelState::ENDROUND_COUNTDOWN:
+		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
+		break;
+	case LevelState::ENDGAME_COUNTDOWN:
+		StrFormat(str, "Match complete\n");
+		break;
+	default:
+		break;
+	}
 
-	// [AM] We want this to display in generally the same spot every time.
 	V_SetFont("BIGFONT");
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	StrFormat(str, "Round begins in %d...", ::levelstate.getCountdown());
 	int w = V_StringWidth(str.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
-	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2, surface_height / 4 - h / 2, str.c_str(), CleanYfac, CleanYfac);
+	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
+	                          surface_height / 4 - h / 2, str.c_str(), CleanYfac,
+	                          CleanYfac);
 
 	V_SetFont("SMALLFONT");
+
+	// Second line...SMALLFONT.
+	str = "";
+	switch (::levelstate.getState())
+	{
+	case LevelState::WARMUP:
+		if (consoleplayer().spectator)
+			break;
+
+		StrFormat(str,
+		          "Press " TEXTCOLOR_GREEN "%s " TEXTCOLOR_NORMAL " when ready to play",
+		          C_GetKeyStringsFromCommand("ready").c_str());
+		break;
+	case LevelState::WARMUP_COUNTDOWN:
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
+		StrFormat(str, "Match begins in " TEXTCOLOR_GREEN "%d",
+		          ::levelstate.getCountdown());
+		break;
+	case LevelState::PREROUND_COUNTDOWN:
+		StrFormat(str, "Weapons free in " TEXTCOLOR_GREEN "%d",
+		          ::levelstate.getCountdown());
+		break;
+	case LevelState::ENDROUND_COUNTDOWN:
+		StrFormat(str, "BLUE/RED team wins the round");
+		break;
+	case LevelState::ENDGAME_COUNTDOWN:
+		StrFormat(str, "BLUE/RED team wins the match");
+		break;
+	}
+
+	w = V_StringWidth(str.c_str()) * CleanYfac;
+	h = 8 * CleanYfac;
+	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
+	                          (surface_height / 4 - h / 2) + (12 * CleanYfac),
+	                          str.c_str(), CleanYfac, CleanYfac);
 }
 
 // [AM] Spectator HUD.
