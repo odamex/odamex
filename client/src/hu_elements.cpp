@@ -79,6 +79,10 @@ static bool STACK_ARGS cmpPoints (const player_t *arg1, const player_t *arg2) {
 	return arg2->points < arg1->points;
 }
 
+static bool STACK_ARGS cmpRoundWins (const player_t *arg1, const player_t *arg2) {
+	return arg2->roundwins < arg1->roundwins;
+}
+
 static bool STACK_ARGS cmpQueue(const player_t *arg1, const player_t *arg2) {
 	return arg1->QueuePosition < arg2->QueuePosition;
 }
@@ -136,6 +140,11 @@ std::vector<player_t *> sortedPlayers(void) {
 	if (sv_gametype == GM_COOP)
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpKills);
+	}
+	else if (sv_gametype == GM_DM && g_survival)
+	{
+		std::sort(inGame.begin(), inGame.end(), cmpFrags);
+		std::sort(inGame.begin(), inGame.end(), cmpRoundWins);
 	}
 	else
 	{
