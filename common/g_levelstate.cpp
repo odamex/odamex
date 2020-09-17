@@ -86,6 +86,9 @@ int LevelState::getCountdown() const
 	return ceil((_countdown_done_time - level.time) / (float)TICRATE);
 }
 
+/**
+ * @brief Get the current round number.
+ */
 int LevelState::getRound() const
 {
 	return _round_number;
@@ -98,6 +101,14 @@ int LevelState::getJoinTimeLeft() const
 {
 	int end_time = _ingame_start_time + g_survival_jointimer * TICRATE;
 	return ceil((end_time - level.time) / (float)TICRATE);
+}
+
+/**
+ * @brief Get the most recent win information.
+ */
+WinInfo LevelState::getWinInfo() const
+{
+	return _last_wininfo;
 }
 
 /**
@@ -214,6 +225,20 @@ void LevelState::readyToggle()
 			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
 		}
 	}
+}
+
+/**
+ * @brief Set who the winner of the round or match should be.  Note that this
+ *        data isn't persisted until after the state changes.
+ * 
+ * @param type Winner of the round.
+ * @param id ID of the winning player or team.  If N/A, put 0.
+ */
+void LevelState::setWinner(WinInfo::WinType type, int id)
+{
+	// Set our round/match winner.
+	_last_wininfo.type = type;
+	_last_wininfo.id = id;
 }
 
 /**
@@ -378,6 +403,8 @@ SerializedLevelState LevelState::serialize() const
 	serialized.countdown_done_time = _countdown_done_time;
 	serialized.ingame_start_time = _ingame_start_time;
 	serialized.round_number = _round_number;
+	serialized.last_wininfo_type = _last_wininfo.type;
+	serialized.last_wininfo_id = _last_wininfo.id;
 	return serialized;
 }
 
@@ -392,6 +419,8 @@ void LevelState::unserialize(SerializedLevelState serialized)
 	_countdown_done_time = serialized.countdown_done_time;
 	_ingame_start_time = serialized.ingame_start_time;
 	_round_number = serialized.round_number;
+	_last_wininfo.type = serialized.last_wininfo_type;
+	_last_wininfo.id = serialized.last_wininfo_id;
 }
 
 /**
@@ -452,6 +481,14 @@ void LevelState::setState(LevelState::States new_state)
 	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		_round_number = 0;
+	}
+
+	// If we're setting the state to something that's not an ending countdown,
+	// reset our winners to nothing.
+	if (_state != LevelState::ENDROUND_COUNTDOWN &&
+	    _state != LevelState::ENDGAME_COUNTDOWN)
+	{
+		_last_wininfo.reset();
 	}
 
 	if (_set_state_cb)

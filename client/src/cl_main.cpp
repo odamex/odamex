@@ -3584,6 +3584,8 @@ void CL_LevelState()
 	sls.countdown_done_time = MSG_ReadVarint();
 	sls.ingame_start_time = MSG_ReadVarint();
 	sls.round_number = MSG_ReadVarint();
+	sls.last_wininfo_type = static_cast<WinInfo::WinType>(MSG_ReadVarint());
+	sls.last_wininfo_id = MSG_ReadVarint();
 	::levelstate.unserialize(sls);
 }
 

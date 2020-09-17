@@ -172,6 +172,7 @@ void G_TimeCheckEndGame()
 	// If nobody is in the game, just end the game and move on.
 	if (P_NumPlayersInGame() == 0)
 	{
+		::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
 		::levelstate.endRound();
 		return;
 	}
@@ -183,6 +184,7 @@ void G_TimeCheckEndGame()
 		if (pr.empty())
 		{
 			// Something has seriously gone sideways...
+			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
 			::levelstate.endRound();
 			return;
 		}
@@ -195,6 +197,8 @@ void G_TimeCheckEndGame()
 		else
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game won by %s!\n",
 			                   pr.front()->userinfo.netname.c_str());
+
+		::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
 	}
 	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
@@ -206,10 +210,12 @@ void G_TimeCheckEndGame()
 		else
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
 			                   tr.front()->ColorStringUpper.c_str());
+
+		::levelstate.setWinner(WinInfo::WIN_TEAM, tr.front()->Team);
 	}
 
-	M_CommitWDLLog();
 	::levelstate.endRound();
+	M_CommitWDLLog();
 }
 
 /**
@@ -236,6 +242,7 @@ void G_FragsCheckEndGame()
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. Game won by %s!\n",
 			                   top->userinfo.netname.c_str());
 			SV_SetWinPlayer(top->id);
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, top->id);
 			::levelstate.endRound();
 		}
 	}
@@ -262,6 +269,7 @@ void G_TeamFragsCheckEndGame()
 			team->RoundWins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. %s team wins!\n",
 			                   team->ColorString.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			::levelstate.endRound();
 			return;
 		}
@@ -289,6 +297,7 @@ void G_TeamScoreCheckEndGame()
 			team->RoundWins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "Score limit hit. %s team wins!\n",
 			                   team->ColorString.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			::levelstate.endRound();
 			M_CommitWDLLog();
 			return;
@@ -315,6 +324,7 @@ void G_LivesCheckEndGame()
 		if (P_PlayerQuery(NULL, PQ_HASLIVES).result == 0)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
+			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
 			::levelstate.endRound();
 		}
 	}
@@ -327,6 +337,7 @@ void G_LivesCheckEndGame()
 		if (pc.result == 0 || pr.empty())
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			::levelstate.endRound();
 		}
 		else if (pc.result == 1)
@@ -334,6 +345,7 @@ void G_LivesCheckEndGame()
 			pr.front()->roundwins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "%s wins as the last player standing!\n",
 			                   pr.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
 			::levelstate.endRound();
 		}
 
@@ -360,6 +372,7 @@ void G_LivesCheckEndGame()
 		if (aliveteams == 0 || pr.empty())
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All teams have run out of lives.\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			::levelstate.endRound();
 		}
 		else if (aliveteams == 1)
@@ -368,6 +381,7 @@ void G_LivesCheckEndGame()
 			teamInfo->RoundWins += 1;
 			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins as the last team standing!\n",
 			                   teamInfo->ColorString.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, teamInfo->Team);
 			::levelstate.endRound();
 		}
 
@@ -400,6 +414,7 @@ bool G_RoundsShouldEndGame()
 			{
 				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
 				                   (*it)->userinfo.netname.c_str());
+				::levelstate.setWinner(WinInfo::WIN_PLAYER, (*it)->id);
 				return true;
 			}
 		}
@@ -413,6 +428,7 @@ bool G_RoundsShouldEndGame()
 			{
 				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. %s team wins!\n",
 				                   team->ColorString.c_str());
+				::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 				return true;
 			}
 		}

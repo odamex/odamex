@@ -30,6 +30,28 @@
 
 struct SerializedLevelState;
 
+struct WinInfo
+{
+	enum WinType
+	{
+		WIN_UNKNOWN, // Not sure what happened here.
+		WIN_NOBODY,  // Everybody lost the game.
+		WIN_DRAW,    // Tie at the end of the game.
+		WIN_PLAYER,  // A single player won the game.
+		WIN_TEAM     // A team won the game.
+	};
+
+	WinType type;
+	int id;
+
+	WinInfo() : type(WIN_UNKNOWN), id(0) { }
+	void reset()
+	{
+		this->type = WIN_UNKNOWN;
+		this->id = 0;
+	}
+};
+
 class LevelState
 {
   public:
@@ -55,11 +77,13 @@ class LevelState
 	int getCountdown() const;
 	int getRound() const;
 	int getJoinTimeLeft() const;
+	WinInfo getWinInfo() const;
 	void setStateCB(LevelState::SetStateCB cb);
 	void reset(level_locals_t& level);
 	void restart();
 	void forceStart();
 	void readyToggle();
+	void setWinner(WinInfo::WinType type, int id);
 	void endRound();
 	void tic();
 	SerializedLevelState serialize() const;
@@ -70,7 +94,9 @@ class LevelState
 	int _countdown_done_time;
 	int _ingame_start_time;
 	int _round_number;
+	WinInfo _last_wininfo;
 	LevelState::SetStateCB _set_state_cb;
+
 	static LevelState::States getStartOfRoundState();
 	void setState(LevelState::States new_state);
 };
@@ -81,6 +107,8 @@ struct SerializedLevelState
 	int countdown_done_time;
 	int ingame_start_time;
 	int round_number;
+	WinInfo::WinType last_wininfo_type;
+	int last_wininfo_id;
 };
 
 extern LevelState levelstate;

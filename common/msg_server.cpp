@@ -242,6 +242,8 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.countdown_done_time);
 	MSG_WriteVarint(&b, sls.ingame_start_time);
 	MSG_WriteVarint(&b, sls.round_number);
+	MSG_WriteVarint(&b, sls.last_wininfo_type);
+	MSG_WriteVarint(&b, sls.last_wininfo_id);
 }
 
 VERSION_CONTROL(msg_server, "$Id$")

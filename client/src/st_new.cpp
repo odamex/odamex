@@ -116,6 +116,7 @@ EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_survival)
 EXTERN_CVAR(g_survival_lives)
+EXTERN_CVAR(sv_warmup)
 
 /**
  * @brief Caches a patch, while also adding to a freelist, where it can be
@@ -631,16 +632,7 @@ void OdamexHUD() {
 	int color;
 	std::string str;
 
-	// Draw warmup state or timer
-	hud::Warmup(str, color);
-	if (!str.empty())
-	{
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	}
-	else if (hud_timer)
+	if (hud_timer)
 	{
 		hud::Timer(str, color);
 		hud::DrawText(0, 4, hud_scale,
@@ -689,6 +681,34 @@ void OdamexHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+}
+
+static std::string WinToColorString(const WinInfo& win)
+{
+	std::string buf;
+	if (win.type == WinInfo::WIN_PLAYER)
+	{
+		player_t pl = idplayer(win.id);
+		if (pl.userinfo.netname.empty())
+			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		else
+			StrFormat(buf, TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
+			          pl.userinfo.netname.c_str());
+		return buf;
+	}
+	else if (win.type == WinInfo::WIN_TEAM)
+	{
+		TeamInfo* tm = GetTeamInfo((team_t)win.id);
+		if (tm == NULL)
+			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		else
+			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm->TextColor.c_str(),
+			          tm->ColorString.c_str());
+		return buf;
+	}
+
+	StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+	return buf;
 }
 
 void LevelStateHUD()
@@ -740,9 +760,25 @@ void LevelStateHUD()
 		if (consoleplayer().spectator)
 			break;
 
-		StrFormat(str,
-		          "Press " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL " when ready to play",
-		          C_GetKeyStringsFromCommand("ready").c_str());
+		if (sv_warmup)
+		{
+			if (consoleplayer().ready)
+			{
+				StrFormat(str, "Waiting for other players to ready up...");
+			}
+			else
+			{
+				StrFormat(str,
+				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
+				          " when ready to play",
+				          C_GetKeyStringsFromCommand("ready").c_str());
+			}
+		}
+		else
+		{
+			StrFormat(str, "Waiting for other players to join...");
+		}
+
 		break;
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN:
@@ -753,12 +789,26 @@ void LevelStateHUD()
 		StrFormat(str, "Weapons free in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
-	case LevelState::ENDROUND_COUNTDOWN:
-		StrFormat(str, "BLUE/RED team wins the round");
+	case LevelState::ENDROUND_COUNTDOWN: {
+		WinInfo win = ::levelstate.getWinInfo();
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(str, "Tied at the end of the round");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(str, "%s wins the round", WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(str, "%s team wins the round", WinToColorString(win).c_str());
 		break;
-	case LevelState::ENDGAME_COUNTDOWN:
-		StrFormat(str, "BLUE/RED team wins the match");
+	}
+	case LevelState::ENDGAME_COUNTDOWN: {
+		WinInfo win = ::levelstate.getWinInfo();
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(str, "The game ends in a tie");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(str, "%s wins!", WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(str, "%s team wins!", WinToColorString(win).c_str());
 		break;
+	}
 	}
 
 	w = V_StringWidth(str.c_str()) * CleanYfac;
@@ -774,13 +824,7 @@ void SpectatorHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	hud::Warmup(str, color);
-	if (!str.empty()) {
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	} else if (hud_timer) {
+	if (hud_timer) {
 		hud::Timer(str, color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -908,13 +952,7 @@ void ZDoomHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	hud::Warmup(str, color);
-	if (!str.empty()) {
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	} else if (hud_timer) {
+	if (hud_timer) {
 		hud::Timer(str, color);
 		hud::DrawText(0, 4, hud_scale,
 		              hud::X_CENTER, hud::Y_BOTTOM,
@@ -951,15 +989,7 @@ void DoomHUD()
 	std::string str;
 
 	// Draw warmup state or timer
-	hud::Warmup(str, color);
-	if (!str.empty())
-	{
-		hud::DrawText(0, st_y + 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	}
-	else if (hud_timer)
+	if (hud_timer)
 	{
 		hud::Timer(str, color);
 		hud::DrawText(0, st_y + 4, hud_scale,
