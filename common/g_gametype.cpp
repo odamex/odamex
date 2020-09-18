@@ -171,6 +171,30 @@ bool G_CanTickGameplay()
 }
 
 /**
+ * @brief Check if the gametype uses winlimit.
+ */
+bool G_UsesWinlimit()
+{
+	return g_rounds;
+}
+
+/**
+ * @brief Check if the gametype uses scorelimit.
+ */
+bool G_UsesScorelimit()
+{
+	return sv_gametype == GM_CTF;
+}
+
+/**
+ * @brief Check if the gametype uses fraglimit.
+ */
+bool G_UsesFraglimit()
+{
+	return sv_gametype == GM_DM || sv_gametype == GM_TEAMDM;
+}
+
+/**
  * @brief Calculate the tic that the level ends on.
  */
 int G_EndingTic()

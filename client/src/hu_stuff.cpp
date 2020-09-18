@@ -744,7 +744,7 @@ void drawHeader(player_t *player, int y)
 	}
 
 	// Winlimit.
-	if (g_winlimit > 0.0)
+	if (g_winlimit > 0.0 && G_UsesWinlimit())
 	{
 		StrFormat(str, "%d", g_winlimit.asInt());
 		names.push_back("WIN LIMIT: ");
@@ -752,7 +752,7 @@ void drawHeader(player_t *player, int y)
 	}
 
 	// Scorelimit.
-	if (sv_scorelimit > 0.0)
+	if (sv_scorelimit > 0.0 && G_UsesScorelimit())
 	{
 		StrFormat(str, "%d", sv_scorelimit.asInt());
 		names.push_back("SCORE LIMIT: ");
@@ -760,7 +760,7 @@ void drawHeader(player_t *player, int y)
 	}
 
 	// Fraglimit
-	if (sv_fraglimit > 0.0)
+	if (sv_fraglimit > 0.0 && G_UsesFraglimit())
 	{
 		StrFormat(str, "%d", sv_fraglimit.asInt());
 		names.push_back("FRAG LIMIT: ");
