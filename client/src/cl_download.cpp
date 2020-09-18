@@ -365,7 +365,7 @@ static void TickDownload()
 			}
 
 			// If the output file was set successfully, escape the loop.
-			int err = ::dlstate.transfer->setOutputFile(::dlstate.filename.c_str());
+			int err = ::dlstate.transfer->setOutputFile(dest.c_str());
 			if (err == 0)
 				break;
 
