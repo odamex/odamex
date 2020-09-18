@@ -38,6 +38,7 @@ bool G_UsesWinlimit();
 bool G_UsesScorelimit();
 bool G_UsesFraglimit();
 int G_EndingTic();
+void G_PlayerCountEndGame();
 void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();
 void G_TeamFragsCheckEndGame();

@@ -203,6 +203,55 @@ int G_EndingTic()
 }
 
 /**
+ * @brief Check if we should end the game due to lack of players.
+ */
+void G_PlayerCountEndGame()
+{
+	if (!::serverside || !G_CanEndGame())
+		return;
+
+	// We only care about player count changes in LMS game modes.
+	if (!g_survival)
+		return;
+
+	if (P_NumPlayersInGame() == 0)
+	{
+		// Literally nobody is in the game, just end it here.
+		::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
+	}
+	else if (sv_gametype == GM_DM)
+	{
+		// End the game if the player is by themselves.
+		PlayerResults pr;
+		P_PlayerQuery(&pr, 0);
+		if (pr.size() == 1)
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+	}
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		// End the game if there's only one team with players in it.
+		int hasplayers = TEAM_NONE;
+		PlayerCounts pc = P_PlayerQuery(NULL, 0);
+		for (int i = 0; i < NUMTEAMS; i++)
+		{
+			if (pc.teamtotal[i] > 0)
+			{
+				// Does more than one team has players?  If so, the game continues.
+				if (hasplayers != TEAM_NONE)
+					return;
+				hasplayers = i;
+			}
+		}
+
+		if (hasplayers != TEAM_NONE)
+			::levelstate.setWinner(WinInfo::WIN_TEAM, hasplayers);
+		else
+			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
+	}
+	::levelstate.endRound();
+}
+
+/**
  * @brief Check if timelimit should end the game.
  */
 void G_TimeCheckEndGame()

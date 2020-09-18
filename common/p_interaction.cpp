@@ -1464,8 +1464,8 @@ void P_PlayerLeavesGame(player_s* player)
 		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());
 	}
 
-	// [AM] Leaving the game might have triggered a survival end state.
-	G_LivesCheckEndGame();
+	// Playercount changes can cause end-of-game conditions.
+	G_PlayerCountEndGame();
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")
