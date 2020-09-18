@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include <algorithm>
+#include <iterator>
 #include <sstream>
 
 #include "doomdef.h"
@@ -629,10 +630,12 @@ BEGIN_COMMAND (say_to)
 END_COMMAND (say_to)
 
 EXTERN_CVAR(hud_scalescoreboard)
+EXTERN_CVAR(hud_timer)
 
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(sv_hostname)
+EXTERN_CVAR(g_winlimit)
 
 namespace hud {
 
@@ -660,7 +663,6 @@ static int GetLongestTeamWidth()
 void drawHeader(player_t *player, int y)
 {
 	int color;
-	std::ostringstream buffer;
 	std::string str = G_GametypeName();
 
 	hud::DrawText(0, y, hud_scalescoreboard,
@@ -728,28 +730,42 @@ void drawHeader(player_t *player, int y)
 	else
 		hud::Timer(timer, color);
 
-	if (timer.empty())
-		timer = "N/A";
+	StringTokens names, values;
 
-	buffer.clear();
-	if (sv_fraglimit.asInt() == 0)
-		buffer.str("N/A");
-	else
+	// Timelimit.
+	if (sv_timelimit > 0.0)
 	{
-		buffer.str("");
-		buffer << sv_fraglimit.asInt();
-	}
-	fraglimit = buffer.str();
+		if (hud_timer == 2 && ::gamestate != GS_INTERMISSION)
+			names.push_back("TIME: ");
+		else
+			names.push_back("TIME LEFT: ");
 
-	buffer.clear();
-	if (sv_scorelimit.asInt() == 0)
-		buffer.str("N/A");
-	else
-	{
-		buffer.str("");
-		buffer << sv_scorelimit.asInt();
+		values.push_back(timer);
 	}
-	scorelimit = buffer.str();
+
+	// Winlimit.
+	if (g_winlimit > 0.0)
+	{
+		StrFormat(str, "%d", g_winlimit.asInt());
+		names.push_back("WIN LIMIT: ");
+		values.push_back(str);
+	}
+
+	// Scorelimit.
+	if (sv_scorelimit > 0.0)
+	{
+		StrFormat(str, "%d", sv_scorelimit.asInt());
+		names.push_back("SCORE LIMIT: ");
+		values.push_back(str);
+	}
+
+	// Fraglimit
+	if (sv_fraglimit > 0.0)
+	{
+		StrFormat(str, "%d", sv_fraglimit.asInt());
+		names.push_back("FRAG LIMIT: ");
+		values.push_back(str);
+	}
 
 	int rw = V_StringWidth("00:00");
 	if (sv_timelimit.asInt() == 0 && gamestate != GS_INTERMISSION)
@@ -757,37 +773,20 @@ void drawHeader(player_t *player, int y)
 	else if (timer.size() > 5)
 		rw = V_StringWidth("00:00:00");
 
-	if (V_StringWidth(fraglimit.c_str()) > rw)
-		rw = V_StringWidth(fraglimit.c_str());
+	StringTokens::const_iterator it;
+	for (it = values.begin(); it != values.end(); ++it)
+		rw = std::max(V_StringWidth(it->c_str()), rw);
 
-	if (V_StringWidth(scorelimit.c_str()) > rw)
-		rw = V_StringWidth(scorelimit.c_str());
-
-	hud::DrawText(236 - rw, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_LEFT, hud::Y_TOP,
-	              timer.c_str(), CR_GREEN, true);
-	hud::DrawText(236 - rw, y + 8, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_LEFT, hud::Y_TOP,
-	              fraglimit.c_str(), CR_GREEN, true);
-	hud::DrawText(236 - rw, y + 16, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_LEFT, hud::Y_TOP,
-	              scorelimit.c_str(), CR_GREEN, true);
-
-	hud::DrawText(236 - rw, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "TIME LEFT: ", CR_GREY, true);
-	hud::DrawText(236 - rw, y + 8, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "FRAGLIMIT: ", CR_GREY, true);
-	hud::DrawText(236 - rw, y + 16, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "SCORELIMIT: ", CR_GREY, true);
+	for (size_t i = 0; i < values.size() && i < 3; i++)
+	{
+		int yoff = i * 8;
+		hud::DrawText(236 - rw, y + yoff, hud_scalescoreboard, hud::X_CENTER,
+		              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, names.at(i).c_str(),
+		              CR_GREY, true);
+		hud::DrawText(236 - rw, y + yoff, hud_scalescoreboard, hud::X_CENTER,
+		              hud::Y_MIDDLE, hud::X_LEFT, hud::Y_TOP, values.at(i).c_str(),
+		              CR_GREEN, true);
+	}
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
