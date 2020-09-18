@@ -90,42 +90,34 @@ bool G_CanFireWeapon()
 /**
  * @brief Check if a player should be allowed to join the game.
  */
-bool G_CanJoinGame()
+JoinResult G_CanJoinGame()
 {
-	bool isGameFull = false;
-
+	// Too many people in the game.
 	if (P_NumPlayersInGame() >= sv_maxplayers)
-	{
-		isGameFull = true;
-	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		size_t min_players = MAXPLAYERS;
-		for (byte i = 0;i < NUMTEAMS;i++)
-		{
-			size_t players = P_NumPlayersOnTeam((team_t)i);
-			if (players < min_players)
-				min_players = players;
-		}
+		return JOIN_GAMEFULL;
 
-		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam)
-			isGameFull = true;
+	// Too many people on this team.
+	if (G_UsesTeams() && sv_maxplayersperteam)
+	{
+		int teamplayers = sv_maxplayersperteam * sv_teamsinplay;
+		if (P_NumPlayersInGame() >= teamplayers)
+			return JOIN_GAMEFULL;
 	}
-
-	if (isGameFull)
-		return false;
 
 	if (g_survival && ::levelstate.getState() == LevelState::INGAME)
 	{
 		// Joining in the middle of a survival round needs special
 		// permission from the jointimer.
 		if (::levelstate.getJoinTimeLeft() <= 0)
-			return false;
+			return JOIN_JOINTIMER;
 		else
-			return true;
+			return JOIN_OK;
 	}
 
-	return ::levelstate.getState() != LevelState::ENDGAME_COUNTDOWN;
+	if (::levelstate.getState() == LevelState::ENDGAME_COUNTDOWN)
+		return JOIN_ENDGAME;
+
+	return JOIN_OK;
 }
 
 /**
@@ -171,6 +163,14 @@ bool G_CanTickGameplay()
 }
 
 /**
+ * @brief Check if the gametype uses teams.
+ */
+bool G_UsesTeams()
+{
+	return sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF;
+}
+
+/**
  * @brief Check if the gametype uses winlimit.
  */
 bool G_UsesWinlimit()
@@ -203,21 +203,27 @@ int G_EndingTic()
 }
 
 /**
- * @brief Check if we should end the game due to lack of players.
+ * @brief Assert that we have enough players to continue the game, otherwise
+ *        end the game or reset it.
  */
-void G_PlayerCountEndGame()
+void G_AssertValidPlayerCount()
 {
-	if (!::serverside || !G_CanEndGame())
+	if (!::serverside)
 		return;
 
-	// We only care about player count changes in LMS game modes.
-	if (!g_survival)
+	// In warmup player counts don't matter, and at the end of the game the
+	// check is useless.
+	if (::levelstate.getState() == LevelState::WARMUP ||
+	    ::levelstate.getState() == LevelState::ENDGAME_COUNTDOWN)
 		return;
+
+	bool valid = true;
 
 	if (P_NumPlayersInGame() == 0)
 	{
-		// Literally nobody is in the game, just end it here.
+		// Literally nobody is in the game.
 		::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
+		valid = false;
 	}
 	else if (sv_gametype == GM_DM)
 	{
@@ -225,7 +231,10 @@ void G_PlayerCountEndGame()
 		PlayerResults pr;
 		P_PlayerQuery(&pr, 0);
 		if (pr.size() == 1)
+		{
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			valid = false;
+		}
 	}
 	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
@@ -247,8 +256,19 @@ void G_PlayerCountEndGame()
 			::levelstate.setWinner(WinInfo::WIN_TEAM, hasplayers);
 		else
 			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
+		valid = false;
 	}
-	::levelstate.endRound();
+
+	// If we haven't signaled an invalid state by now, we're cool.
+	if (valid == true)
+		return;
+
+	// If we're in warmup, back out before we start.  Otherwise, end the game.
+	if (::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+	    ::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN)
+		::levelstate.reset();
+	else
+		::levelstate.endGame();
 }
 
 /**

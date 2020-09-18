@@ -526,7 +526,7 @@ public:
 	bool exec(void)
 	{
 		// When in warmup mode, we would rather not catch players off guard.
-		::levelstate.reset(level);
+		::levelstate.reset();
 
 		// Do a countdown-led restart.
 		::levelstate.restart();

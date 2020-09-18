@@ -25,20 +25,29 @@
 
 #include <string>
 
+enum JoinResult
+{
+	JOIN_OK,
+	JOIN_ENDGAME,
+	JOIN_GAMEFULL,
+	JOIN_JOINTIMER
+};
+
 const std::string& G_GametypeName();
 bool G_CanEndGame();
 bool G_CanFireWeapon();
-bool G_CanJoinGame();
+JoinResult G_CanJoinGame();
 bool G_CanLivesChange();
 bool G_CanReadyToggle();
 bool G_CanScoreChange();
 bool G_CanShowObituary();
 bool G_CanTickGameplay();
+bool G_UsesTeams();
 bool G_UsesWinlimit();
 bool G_UsesScorelimit();
 bool G_UsesFraglimit();
 int G_EndingTic();
-void G_PlayerCountEndGame();
+void G_AssertValidPlayerCount();
 void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();
 void G_TeamFragsCheckEndGame();

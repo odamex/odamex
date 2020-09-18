@@ -212,18 +212,34 @@ std::string HelpText()
 	std::string str;
 	int queuePos = consoleplayer().QueuePosition;
 
-	if (queuePos > 0)
+	std::string joinmsg;
+	JoinResult join = G_CanJoinGame();
+	switch (join)
 	{
-		StrFormat(str,
-		          "Waiting to play - " TEXTCOLOR_GREEN "%d%s" TEXTCOLOR_NORMAL " in line",
-		          queuePos, ordinal(queuePos));
-		return str;
+	case JOIN_ENDGAME:
+		joinmsg = "Game is ending";
+		break;
+	case JOIN_GAMEFULL:
+		joinmsg = "Game is full";
+		break;
+	case JOIN_JOINTIMER:
+		joinmsg = "Too late to join round";
+		break;
+	default:
+		break;
 	}
 
-	if (!G_CanJoinGame())
+	if (join != JOIN_OK)
 	{
-		StrFormat(str, "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join the queue",
-		          C_GetKeyStringsFromCommand("+use").c_str());
+		if (queuePos > 0)
+		{
+			StrFormat(str, "%s - " TEXTCOLOR_GREEN "%d%s" TEXTCOLOR_NORMAL " in line",
+			          joinmsg.c_str(), queuePos, ordinal(queuePos));
+			return str;
+		}
+
+		StrFormat(str, "%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
+		          joinmsg.c_str(), C_GetKeyStringsFromCommand("+use").c_str());
 		return str;
 	}
 

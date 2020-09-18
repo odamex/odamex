@@ -3756,6 +3756,9 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+
+	// Team changes can result with not enough players on a team.
+	G_AssertValidPlayerCount();
 }
 
 //
@@ -3801,7 +3804,7 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 	if (player.ingame() == false)
 		return;
 
-	if (!setting && player.spectator && G_CanJoinGame())
+	if (!setting && player.spectator)
 		SV_JoinPlayer(player, silent);
 	else if (setting && !player.spectator)
 		SV_SpecPlayer(player, silent);
@@ -3809,39 +3812,36 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 		SV_RemovePlayerFromQueue(&player);
 }
 
-void SV_JoinPlayer(player_t &player, bool silent)
+void SV_JoinPlayer(player_t& player, bool silent)
 {
 	if (player.joindelay > 0)
 		return;
 
-	// Player tried to join on an invalid team
-	if (player.userinfo.team >= sv_teamsinplay && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
-	{
-		std::string msg;
-		StrFormat(msg, "Cannot join the %s team", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
-		SV_MidPrint(msg.c_str(), &player);
-		return;
-	}
-
-	int numPlayers = P_NumPlayersInGame();
-
-	// During intermission a playere can queue, but don't let them enter the game even if a slot is available
-	if (numPlayers >= sv_maxplayers || gamestate == GS_INTERMISSION)
+	// Can the player join the game?
+	if (G_CanJoinGame() != JOIN_OK || gamestate == GS_INTERMISSION)
 	{
 		if (player.QueuePosition == 0)
 			SV_AddPlayerToQueue(&player);
+
 		return;
 	}
 
-	// Check to make sure we're not exceeding sv_maxplayersperteam.
-	if (sv_maxplayersperteam && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
+	// Figure out which team the player should be assigned to.
+	if (G_UsesTeams())
 	{
-		if (P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam)
+		bool invalidteam = player.userinfo.team >= sv_teamsinplay;
+		bool toomanyplayers =
+		    sv_maxplayersperteam &&
+		    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
+		if (invalidteam || toomanyplayers)
 		{
-			if (SV_GoodTeam() == TEAM_NONE)
+			// If this check fails, our "CanJoin" function didn't do a good-enough
+			// job of scoping out a potential team.
+			team_t newteam = SV_GoodTeam();
+			if (newteam == TEAM_NONE)
 				return;
 
-			SV_ForceSetTeam(player, SV_GoodTeam());
+			SV_ForceSetTeam(player, newteam);
 			SV_CheckTeam(player);
 		}
 	}
@@ -5429,11 +5429,6 @@ void SV_UpdatePlayerQueueLevelChange()
 	}
 }
 
-bool SV_ShouldDequeuePlayer(int playerCount)
-{
-	return gamestate != GS_INTERMISSION && playerCount < sv_maxplayers;
-}
-
 void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 {
 	int playerCount = 0;
@@ -5460,7 +5455,7 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 		if (p->QueuePosition == 0)
 			continue;
 
-		if (SV_ShouldDequeuePlayer(playerCount))
+		if (G_CanJoinGame() == JOIN_OK)
 		{
 			p->QueuePosition = 0;
 			SV_SetPlayerSpec(*p, false, true);
@@ -5489,7 +5484,7 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 	}
 
 	if (warmupReset)
-		::levelstate.reset(level);
+		::levelstate.reset();
 }
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)

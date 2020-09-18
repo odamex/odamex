@@ -1465,7 +1465,7 @@ void P_PlayerLeavesGame(player_s* player)
 	}
 
 	// Playercount changes can cause end-of-game conditions.
-	G_PlayerCountEndGame();
+	G_AssertValidPlayerCount();
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")

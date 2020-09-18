@@ -120,11 +120,25 @@ void LevelState::setStateCB(LevelState::SetStateCB cb)
 }
 
 /**
+ * @brief Set who the winner of the round or match should be.  Note that this
+ *        data isn't persisted until after the state changes.
+ *
+ * @param type Winner of the round.
+ * @param id ID of the winning player or team.  If N/A, put 0.
+ */
+void LevelState::setWinner(WinInfo::WinType type, int id)
+{
+	// Set our round/match winner.
+	_last_wininfo.type = type;
+	_last_wininfo.id = id;
+}
+
+/**
  * @brief Reset levelstate to "factory defaults" for the level.
  */
-void LevelState::reset(level_locals_t& level)
+void LevelState::reset()
 {
-	if (level.flags & LEVEL_LOBBYSPECIAL)
+	if (::level.flags & LEVEL_LOBBYSPECIAL)
 	{
 		// Lobbies are all warmup, all the time.
 		setState(LevelState::WARMUP);
@@ -228,20 +242,6 @@ void LevelState::readyToggle()
 }
 
 /**
- * @brief Set who the winner of the round or match should be.  Note that this
- *        data isn't persisted until after the state changes.
- * 
- * @param type Winner of the round.
- * @param id ID of the winning player or team.  If N/A, put 0.
- */
-void LevelState::setWinner(WinInfo::WinType type, int id)
-{
-	// Set our round/match winner.
-	_last_wininfo.type = type;
-	_last_wininfo.id = id;
-}
-
-/**
  * @brief Depending on if we're using rounds or not, either kick us to an
  *        "end of round" state or just end the game right here.
  */
@@ -265,6 +265,14 @@ void LevelState::endRound()
 	{
 		setState(LevelState::ENDGAME_COUNTDOWN);
 	}
+}
+
+/**
+ * @brief End the game immediately.
+ */
+void LevelState::endGame()
+{
+	setState(LevelState::ENDGAME_COUNTDOWN);
 }
 
 /**

@@ -79,12 +79,13 @@ class LevelState
 	int getJoinTimeLeft() const;
 	WinInfo getWinInfo() const;
 	void setStateCB(LevelState::SetStateCB cb);
-	void reset(level_locals_t& level);
+	void setWinner(WinInfo::WinType type, int id);
+	void reset();
 	void restart();
 	void forceStart();
 	void readyToggle();
-	void setWinner(WinInfo::WinType type, int id);
 	void endRound();
+	void endGame();
 	void tic();
 	SerializedLevelState serialize() const;
 	void unserialize(SerializedLevelState serialized);

@@ -277,7 +277,7 @@ void G_InitNew (const char *mapname)
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
-	::levelstate.reset(level);
+	::levelstate.reset();
 
 	// [AM}] WDL stats (for testing purposes)
 	M_StartWDLLog();
