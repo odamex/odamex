@@ -157,6 +157,7 @@ void ST_unloadNew()
 			Z_ChangeTag(**it, PU_CACHE);
 		**it = NULL;
 	}
+	::freelist.clear();
 }
 
 void ST_initNew()
