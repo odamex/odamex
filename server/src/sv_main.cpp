@@ -94,7 +94,6 @@ extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
-byte s_duelWinPlayerId = 0;
 
 std::set<byte> free_player_ids;
 
@@ -118,6 +117,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_survival_lives)
+EXTERN_CVAR(g_speclosers)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -5393,40 +5393,48 @@ void SV_RemovePlayerFromQueue(player_t* player)
 	SV_UpdatePlayerQueuePositions(player);
 }
 
-bool IsGameModeDuel()
-{
-	return sv_gametype == GM_DM && sv_maxplayers <= 2;
-}
-
 void SV_UpdatePlayerQueueLevelChange()
 {
+	if (!g_speclosers)
+		return;
+
 	int queuedPlayerCount = 0;
-	player_t* loserPlayer = NULL;
-	bool isDuel = IsGameModeDuel();
+	std::vector<player_t*> loserPlayers;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	WinInfo win = ::levelstate.getWinInfo();
+
+	PlayerResults pr;
+	P_PlayerQuery(&pr, 0);
+	for (PlayerResults::iterator it = pr.begin(); it != pr.end(); ++it)
 	{
-		if (isDuel && !it->spectator && it->ingame() && it->id != s_duelWinPlayerId)
-			loserPlayer = &(*it);
-
-		if (it->QueuePosition > 0)
-			queuedPlayerCount++;
-	}
-
-	s_duelWinPlayerId = 0;
-
-	if (queuedPlayerCount > 0)
-	{
-		if (loserPlayer != NULL)
+		if (win.type == WinInfo::WIN_PLAYER)
 		{
-			SV_SetPlayerSpec(*loserPlayer, true, true);
-			loserPlayer->joindelay = 0; // Allow this player to queue up immediately without waiting for ReJoinDelay
+			// Boot everybody but the winner.
+			if ((*it)->id != win.id)
+				loserPlayers.push_back(*it);
+		}
+		else if (win.type == WinInfo::WIN_TEAM)
+		{
+			// Boot everybody except the winning team.
+			if ((*it)->userinfo.team != win.id)
+				loserPlayers.push_back(*it);
 		}
 		else
 		{
-			SV_UpdatePlayerQueuePositions();
+			// Draws are just another way of saying there were no winners.
+			loserPlayers.push_back(*it);
 		}
 	}
+
+	for (std::vector<player_t*>::iterator it = loserPlayers.begin();
+	     it != loserPlayers.end(); ++it)
+	{
+		SV_SetPlayerSpec(**it, true, true);
+		(*it)->joindelay = 0; // Allow this player to queue up immediately without waiting
+		                      // for ReJoinDelay
+	}
+
+	SV_UpdatePlayerQueuePositions();
 }
 
 void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
@@ -5507,12 +5515,6 @@ void SV_SendPlayerQueuePosition(player_t* source, player_t* dest)
 bool CompareQueuePosition(const player_t* p1, const player_t* p2)
 {
 	return p1->QueuePosition < p2->QueuePosition;
-}
-
-void SV_SetWinPlayer(byte playerId)
-{
-	if (IsGameModeDuel())
-		s_duelWinPlayerId = playerId;
 }
 
 void SV_ClearPlayerQueue()

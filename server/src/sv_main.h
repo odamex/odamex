@@ -118,7 +118,6 @@ void SV_UpdatePlayerQueueLevelChange();
 void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer = NULL);
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect);
 void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);
-void SV_SetWinPlayer(byte playerId);
 void SV_ClearPlayerQueue();
 
 void SV_UpdateSecretCount(void);

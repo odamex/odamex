@@ -207,6 +207,10 @@ CVAR(g_winlimit, "0",
      "Number of times a round must be won before a player or team wins the game",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+CVAR(g_speclosers, "0",
+     "Force losing players or teams to spectate and go to the back of the queue",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
 // -------------------------------------------------------------------------

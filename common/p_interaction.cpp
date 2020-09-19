@@ -78,7 +78,6 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joi
 void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
-void SV_SetWinPlayer(byte playerId);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 

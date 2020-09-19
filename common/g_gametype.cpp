@@ -39,8 +39,6 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
 EXTERN_CVAR(sv_maxplayersperteam)
 
-void SV_SetWinPlayer(byte playerId);
-
 /**
  * @brief Returns a string containing the name of the gametype.
  *
@@ -306,9 +304,6 @@ void G_TimeCheckEndGame()
 			return;
 		}
 
-		// Need to pick someone for the queue
-		SV_SetWinPlayer(pr.front()->id);
-
 		if (pr.size() != 1)
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 		else
@@ -358,7 +353,6 @@ void G_FragsCheckEndGame()
 			// [ML] 04/4/06: Added !sv_fragexitswitch
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. Game won by %s!\n",
 			                   top->userinfo.netname.c_str());
-			SV_SetWinPlayer(top->id);
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, top->id);
 			::levelstate.endRound();
 		}
