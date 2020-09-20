@@ -714,9 +714,13 @@ static std::string WinToColorString(const WinInfo& win)
 
 void LevelStateHUD()
 {
-	// First line...BIGFONT.
 	std::string str;
 
+	// [AM] Debug stuff
+	hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              ::levelstate.getStateString(), CR_GREEN);
+
+	// First line...BIGFONT.
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP:

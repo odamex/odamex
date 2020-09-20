@@ -52,6 +52,7 @@
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
 #include "msg_server.h"
+#include "g_gametype.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -429,6 +430,7 @@ void G_InitNew (const char *mapname)
 
 	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange();
+
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog();
 }
@@ -622,6 +624,9 @@ void G_DoResetLevel(bool full_reset)
 
 		SV_ClientFullUpdate(*it);
 	}
+
+	// Get queued players in the game.
+	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
 
 	// Force every ingame player to be reborn.
 	for (it = players.begin(); it != players.end(); ++it)

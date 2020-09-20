@@ -44,7 +44,9 @@ struct WinInfo
 	WinType type;
 	int id;
 
-	WinInfo() : type(WIN_UNKNOWN), id(0) { }
+	WinInfo() : type(WIN_UNKNOWN), id(0)
+	{
+	}
 	void reset()
 	{
 		this->type = WIN_UNKNOWN;

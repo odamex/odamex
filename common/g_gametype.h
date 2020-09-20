@@ -33,10 +33,13 @@ enum JoinResult
 	JOIN_JOINTIMER
 };
 
+typedef JoinResult(*JoinTest)();
+
 const std::string& G_GametypeName();
 bool G_CanEndGame();
 bool G_CanFireWeapon();
 JoinResult G_CanJoinGame();
+JoinResult G_CanJoinGameStart();
 bool G_CanLivesChange();
 bool G_CanReadyToggle();
 bool G_CanScoreChange();

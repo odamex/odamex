@@ -575,7 +575,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	if (!it->spectator)
 	{
 		P_PlayerLeavesGame(&(*it));
-		SV_UpdatePlayerQueuePositions(&(*it));
+		SV_UpdatePlayerQueuePositions(G_CanJoinGame, &(*it));
 	}
 
 	// remove player awareness from all actors
@@ -2364,7 +2364,7 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
-	SV_UpdatePlayerQueuePositions(&who);
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
 }
 
 //
@@ -3911,7 +3911,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
 
 	P_PlayerLeavesGame(&player);
-	SV_UpdatePlayerQueuePositions(&player);
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &player);
 }
 
 bool CMD_ForcespecCheck(const std::vector<std::string> &arguments,
@@ -5384,13 +5384,13 @@ void SV_PreservePlayer(player_t &player)
 void SV_AddPlayerToQueue(player_t* player)
 {
 	player->QueuePosition = 255;
-	SV_UpdatePlayerQueuePositions();
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, NULL);
 }
 
 void SV_RemovePlayerFromQueue(player_t* player)
 {
 	player->joindelay = ReJoinDelay;
-	SV_UpdatePlayerQueuePositions(player);
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, player);
 }
 
 void SV_UpdatePlayerQueueLevelChange()
@@ -5434,10 +5434,10 @@ void SV_UpdatePlayerQueueLevelChange()
 		                      // for ReJoinDelay
 	}
 
-	SV_UpdatePlayerQueuePositions();
+	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
 }
 
-void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
+void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer)
 {
 	int playerCount = 0;
 	int queuePos = 1;
@@ -5463,7 +5463,7 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 		if (p->QueuePosition == 0)
 			continue;
 
-		if (G_CanJoinGame() == JOIN_OK)
+		if (joinTest() == JOIN_OK)
 		{
 			p->QueuePosition = 0;
 			SV_SetPlayerSpec(*p, false, true);

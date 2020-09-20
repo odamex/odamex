@@ -86,34 +86,49 @@ bool G_CanFireWeapon()
 }
 
 /**
- * @brief Check if a player should be allowed to join the game.
+ * @brief Check if a player should be allowed to join the game in the middle
+ *        of play.
  */
 JoinResult G_CanJoinGame()
 {
+	// Make sure our usual conditions are satisfied.
+	JoinResult join = G_CanJoinGameStart();
+	if (join != JOIN_OK)
+		return join;
+
+	// Join timer checks.
+	if (g_survival && ::levelstate.getState() == LevelState::INGAME)
+	{
+		if (::levelstate.getJoinTimeLeft() <= 0)
+			return JOIN_JOINTIMER;
+	}
+
+	return JOIN_OK;
+}
+
+/**
+ * @brief Check if a player should be allowed to join the game.
+ * 
+ *        This function ignores the join timer which is usually a bad idea,
+ *        but is vital for the join queue to work.
+ */
+JoinResult G_CanJoinGameStart()
+{
+	// Can't join during the endgame.
+	if (::levelstate.getState() == LevelState::ENDGAME_COUNTDOWN)
+		return JOIN_ENDGAME;
+
 	// Too many people in the game.
 	if (P_NumPlayersInGame() >= sv_maxplayers)
 		return JOIN_GAMEFULL;
 
-	// Too many people on this team.
+	// Too many people on either team.
 	if (G_UsesTeams() && sv_maxplayersperteam)
 	{
 		int teamplayers = sv_maxplayersperteam * sv_teamsinplay;
 		if (P_NumPlayersInGame() >= teamplayers)
 			return JOIN_GAMEFULL;
 	}
-
-	if (g_survival && ::levelstate.getState() == LevelState::INGAME)
-	{
-		// Joining in the middle of a survival round needs special
-		// permission from the jointimer.
-		if (::levelstate.getJoinTimeLeft() <= 0)
-			return JOIN_JOINTIMER;
-		else
-			return JOIN_OK;
-	}
-
-	if (::levelstate.getState() == LevelState::ENDGAME_COUNTDOWN)
-		return JOIN_ENDGAME;
 
 	return JOIN_OK;
 }
