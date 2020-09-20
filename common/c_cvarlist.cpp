@@ -192,23 +192,23 @@ CVAR(g_roundlimit, "0",
      "Number of total rounds the game can go on for before the game ends", CVARTYPE_INT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(g_survival, "0", "Turns on surival mode - players have limited lives", CVARTYPE_BOOL,
-     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-
-CVAR(g_survival_lives, "1", "Number of lives a player has in survival", CVARTYPE_INT,
+CVAR(g_lives, "0",
+     "Number of lives a player has before they can no longer respawn - this can result "
+     "in a game loss depending on the gametype",
+     CVARTYPE_INT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
-CVAR(g_survival_jointimer, "0",
-     "Number of seconds after the game begins that a survival session can be joined by "
-     "new players",
+CVAR(g_lives_jointimer, "0",
+     "When players have limited lives, this is the number of seconds after the round or "
+     "game started that new players can join - if set to zero, players need to queue and "
+     "wait until the next round to join",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(g_winlimit, "0",
      "Number of times a round must be won before a player or team wins the game",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(g_speclosers, "0",
-     "Force losing players or teams to spectate and go to the back of the queue",
+CVAR(g_speclosers, "0", "After a game is won, force losing players or teams to spectate",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // Game mode options commonized from the server

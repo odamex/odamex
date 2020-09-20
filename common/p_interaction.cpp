@@ -57,7 +57,7 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
-EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_lives)
 
 int MeansOfDeath;
 
@@ -1130,7 +1130,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	}
 
 	// [AM] Save the "out of lives" message until after the obit.
-	if (g_survival && tplayer && tplayer->lives <= 0)
+	if (g_lives && tplayer && tplayer->lives <= 0)
 		SV_BroadcastPrintf(PRINT_HIGH, "%s is out of lives.\n",
 		                   tplayer->userinfo.netname.c_str());
 

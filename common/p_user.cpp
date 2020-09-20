@@ -54,8 +54,7 @@ EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
-EXTERN_CVAR (g_survival)
-EXTERN_CVAR (g_survival_lives)
+EXTERN_CVAR (g_lives)
 
 extern bool predicting, step_mode;
 
@@ -118,7 +117,7 @@ void P_ClearPlayerScores(player_t& p, bool wins)
 	if (wins)
 		p.roundwins = 0;
 
-	p.lives = g_survival_lives.asInt();
+	p.lives = g_lives.asInt();
 	p.fragcount = 0;
 	p.itemcount = 0;
 	p.secretcount = 0;
@@ -659,7 +658,7 @@ void P_DeathThink (player_t *player)
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() &&
 		    ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
-		    ((g_survival && player->lives > 0) || !g_survival))
+		    ((g_lives && player->lives > 0) || !g_lives))
 		{
 			player->playerstate = PST_REBORN;
 		}

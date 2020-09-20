@@ -82,7 +82,7 @@ EXTERN_CVAR(noisedebug)
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_lives)
 
 static int crosshair_lump;
 
@@ -809,7 +809,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 
 	if (sv_gametype == GM_COOP)
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
@@ -826,7 +826,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
@@ -876,7 +876,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 
 	if (sv_gametype == GM_COOP)
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
@@ -893,7 +893,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::EAPlayerRoundWins(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
@@ -962,7 +962,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			"Name", CR_GREY, true);
 		if (sv_gametype == GM_CTF)
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				hud::DrawText(xOffset + 168, yOffset + y, hud_scalescoreboard,
 				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
@@ -983,7 +983,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 		}
 		else
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				hud::DrawText(xOffset + 164, yOffset + y, hud_scalescoreboard,
 				              hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP,
@@ -1029,7 +1029,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			str.c_str(), color, true);
 		if (sv_gametype == GM_CTF)
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(xOffset + 168, yOffset + y + 11, hud_scalescoreboard,
@@ -1054,7 +1054,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 		}
 		else
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(xOffset + 164, yOffset + y + 11, hud_scalescoreboard,
@@ -1095,7 +1095,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			1, limit, i, true);
 		if (sv_gametype == GM_CTF)
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				hud::EATeamPlayerPoints(xOffset + 168, yOffset + y + 22,
 				                        hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
@@ -1116,7 +1116,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 		}
 		else
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				hud::EATeamPlayerFrags(xOffset + 164, yOffset + y + 22,
 				                       hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
@@ -1333,7 +1333,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	              "Name", CR_GREY, true);
 	if (sv_gametype == GM_COOP)
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "KIL", CR_GREY, true);
@@ -1350,7 +1350,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WIN", CR_GREY, true);
@@ -1398,7 +1398,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	                   1, limit, true);
 	if (sv_gametype == GM_COOP)
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
@@ -1415,7 +1415,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::EAPlayerRoundWins(22, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
@@ -1460,7 +1460,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 	{
 		hud::DrawText(34, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP, "PPL", CR_GREY, true);
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "PTS", CR_GREY, true);
@@ -1479,7 +1479,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 	{
 		hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP, "PPL", CR_GREY, true);
-		if (g_survival)
+		if (g_lives)
 		{
 			hud::DrawText(50, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true);
@@ -1535,7 +1535,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 			              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
 			              true);
 
-			if (g_survival)
+			if (g_lives)
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(62, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
@@ -1565,7 +1565,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 			              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
 			              true);
 
-			if (g_survival)
+			if (g_lives)
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(50, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
@@ -1608,7 +1608,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 
 		if (sv_gametype == GM_CTF)
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				hud::EATeamPlayerPoints(62, y + yOffset + 14, hud_scalescoreboard,
 				                        hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
@@ -1629,7 +1629,7 @@ void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
 		}
 		else
 		{
-			if (g_survival)
+			if (g_lives)
 			{
 				hud::EATeamPlayerFrags(50, y + yOffset + 14, hud_scalescoreboard,
 				                       hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,

@@ -116,7 +116,6 @@ EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(g_survival_lives)
 EXTERN_CVAR(g_speclosers)
 
 void SexMessage (const char *from, char *to, int gender,

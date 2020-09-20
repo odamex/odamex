@@ -72,7 +72,6 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
-EXTERN_CVAR (g_survival_lives)
 
 extern int mapchange;
 

@@ -63,7 +63,7 @@ static int		lu_palette;
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
-EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_lives)
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
@@ -1131,7 +1131,7 @@ void ST_updateWidgets(void)
 		st_maxammo[i] = plyr->maxammo[i];
 	}
 
-	if (g_survival)
+	if (g_lives)
 		st_lives = plyr->lives;
 	else
 		st_lives = ST_DONT_DRAW_NUM;

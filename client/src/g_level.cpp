@@ -67,7 +67,6 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
-EXTERN_CVAR(g_survival_lives)
 
 // Start time for timing demos
 dtime_t starttime;

@@ -114,8 +114,7 @@ EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(g_survival)
-EXTERN_CVAR(g_survival_lives)
+EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_warmup)
 
 /**
@@ -588,7 +587,7 @@ void OdamexHUD() {
 	                     faces[st_faceindex]);
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
 
-	if (g_survival)
+	if (g_lives)
 	{
 		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
 		int lives_color = CR_GREY;

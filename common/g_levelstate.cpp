@@ -28,8 +28,8 @@
 #include "g_gametype.h"
 #include "i_system.h"
 
-EXTERN_CVAR(g_survival)
-EXTERN_CVAR(g_survival_jointimer)
+EXTERN_CVAR(g_lives)
+EXTERN_CVAR(g_lives_jointimer)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_warmup_autostart)
@@ -99,7 +99,7 @@ int LevelState::getRound() const
  */
 int LevelState::getJoinTimeLeft() const
 {
-	int end_time = _ingame_start_time + g_survival_jointimer * TICRATE;
+	int end_time = _ingame_start_time + g_lives_jointimer * TICRATE;
 	return ceil((end_time - level.time) / (float)TICRATE);
 }
 
@@ -143,7 +143,7 @@ void LevelState::reset()
 		// Lobbies are all warmup, all the time.
 		setState(LevelState::WARMUP);
 	}
-	else if (g_survival && sv_gametype != GM_COOP)
+	else if (g_lives && sv_gametype != GM_COOP)
 	{
 		// We need a warmup state when playing competitive survival modes,
 		// so people have a safe period of time to switch teams and join
@@ -289,7 +289,7 @@ void LevelState::tic()
 	{
 		// [AM] Warmup is for obvious reasons, but survival needs a clean
 		//      slate to function properly.
-		if (sv_warmup || g_survival)
+		if (sv_warmup || g_lives)
 		{
 			setState(LevelState::WARMUP);
 			return;
@@ -438,7 +438,7 @@ LevelState::States LevelState::getStartOfRoundState()
 {
 	// Deathmatch game modes in survival start with a start-of-round timer.
 	// This is inappropriate for coop or objective-based modes.
-	if (g_survival && (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM))
+	if (g_lives && (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM))
 		return LevelState::PREROUND_COUNTDOWN;
 
 	return LevelState::INGAME;

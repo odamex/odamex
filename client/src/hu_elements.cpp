@@ -55,7 +55,7 @@ EXTERN_CVAR (sv_maxplayersperteam)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
-EXTERN_CVAR (g_survival)
+EXTERN_CVAR (g_lives)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -141,7 +141,7 @@ std::vector<player_t *> sortedPlayers(void) {
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpKills);
 	}
-	else if (sv_gametype == GM_DM && g_survival)
+	else if (sv_gametype == GM_DM && g_lives)
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpFrags);
 		std::sort(inGame.begin(), inGame.end(), cmpRoundWins);

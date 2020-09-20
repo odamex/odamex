@@ -28,7 +28,7 @@
 #include "m_wdlstats.h"
 
 EXTERN_CVAR(g_rounds)
-EXTERN_CVAR(g_survival)
+EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_winlimit)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_gametype)
@@ -47,21 +47,21 @@ EXTERN_CVAR(sv_maxplayersperteam)
 const std::string& G_GametypeName()
 {
 	static std::string name;
-	if (sv_gametype == GM_COOP && g_survival)
+	if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP)
 		name = "Cooperative";
-	else if (sv_gametype == GM_DM && g_survival)
+	else if (sv_gametype == GM_DM && g_lives)
 		name = "Last Marine Standing";
 	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)
 		name = "Duel";
 	else if (sv_gametype == GM_DM)
 		name = "Deathmatch";
-	else if (sv_gametype == GM_TEAMDM && g_survival)
+	else if (sv_gametype == GM_TEAMDM && g_lives)
 		name = "Team Last Marine Standing";
 	else if (sv_gametype == GM_TEAMDM)
 		name = "Team Deathmatch";
-	else if (sv_gametype == GM_CTF && g_survival)
+	else if (sv_gametype == GM_CTF && g_lives)
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
 		name = "Capture The Flag";
@@ -97,7 +97,7 @@ JoinResult G_CanJoinGame()
 		return join;
 
 	// Join timer checks.
-	if (g_survival && ::levelstate.getState() == LevelState::INGAME)
+	if (g_lives && ::levelstate.getState() == LevelState::INGAME)
 	{
 		if (::levelstate.getJoinTimeLeft() <= 0)
 			return JOIN_JOINTIMER;
@@ -441,7 +441,7 @@ void G_LivesCheckEndGame()
 
 	PlayerResults pr;
 
-	if (!g_survival || !G_CanEndGame())
+	if (!g_lives || !G_CanEndGame())
 		return;
 
 	if (sv_gametype == GM_COOP)
@@ -563,6 +563,39 @@ bool G_RoundsShouldEndGame()
 	return false;
 }
 
+static void SurvivalHelp()
+{
+	Printf(PRINT_HIGH,
+	       "survival - Configures some settings for a basic game of Survival\n\n"
+	       "Usage:\n"
+	       "  ] survival lives <LIVES>\n"
+	       "  Configure Survival so a player only has <LIVES> lives\n\n");
+}
+
+BEGIN_COMMAND(survival)
+{
+	if (argc < 2)
+	{
+		SurvivalHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "lives") == 0)
+	{
+		std::string str;
+		StrFormat(str,
+		          "sv_gametype 0; sv_nomonsters 0; sv_skill 4; g_lives 1; g_rounds 0; "
+		          "g_winlimit %s",
+		          argv[2]);
+		Printf(PRINT_HIGH, "Configuring Last Man Standing...\n%s\n", str.c_str());
+		AddCommandString(str.c_str());
+		return;
+	}
+
+	SurvivalHelp();
+}
+END_COMMAND(survival)
+
 static void LMSHelp()
 {
 	Printf(PRINT_HIGH,
@@ -584,10 +617,9 @@ BEGIN_COMMAND(lms)
 	if (stricmp(argv[1], "wins") == 0)
 	{
 		std::string str;
-		StrFormat(
-		    str,
-		    "sv_gametype 1; sv_nomonsters 1; g_survival 1; g_rounds 1; g_winlimit %s",
-		    argv[2]);
+		StrFormat(str,
+		          "sv_gametype 1; sv_nomonsters 1; g_lives 1; g_rounds 1; g_winlimit %s",
+		          argv[2]);
 		Printf(PRINT_HIGH, "Configuring Last Man Standing...\n%s\n", str.c_str());
 		AddCommandString(str.c_str());
 		return;
