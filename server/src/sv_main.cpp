@@ -3804,27 +3804,37 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 		return;
 
 	if (!setting && player.spectator)
+	{
+		// Join delay means they're mashing buttons too fast.
+		if (player.joindelay > 0)
+			return;
+
+		if (G_CanJoinGame() != JOIN_OK)
+		{
+			// Not allowed to join yet - add them to the queue.
+			if (player.QueuePosition == 0)
+				SV_AddPlayerToQueue(&player);
+
+			return;
+		}
 		SV_JoinPlayer(player, silent);
+	}
 	else if (setting && !player.spectator)
 		SV_SpecPlayer(player, silent);
 	else if (setting && player.spectator && player.QueuePosition > 0)
 		SV_RemovePlayerFromQueue(&player);
 }
 
+/**
+ * @brief Have a player join the game.  Note that this function does no 
+ *        checking against maxplayers or round limits or whatever, that's
+ *        the job of the caller.
+ * 
+ * @param player Player that should join the game.
+ * @param silent True if the join should be done "silently".
+*/
 void SV_JoinPlayer(player_t& player, bool silent)
 {
-	if (player.joindelay > 0)
-		return;
-
-	// Can the player join the game?
-	if (G_CanJoinGame() != JOIN_OK || gamestate == GS_INTERMISSION)
-	{
-		if (player.QueuePosition == 0)
-			SV_AddPlayerToQueue(&player);
-
-		return;
-	}
-
 	// Figure out which team the player should be assigned to.
 	if (G_UsesTeams())
 	{
@@ -5394,43 +5404,43 @@ void SV_RemovePlayerFromQueue(player_t* player)
 
 void SV_UpdatePlayerQueueLevelChange()
 {
-	if (!g_speclosers)
-		return;
-
-	int queuedPlayerCount = 0;
-	std::vector<player_t*> loserPlayers;
-
-	WinInfo win = ::levelstate.getWinInfo();
-
-	PlayerResults pr;
-	P_PlayerQuery(&pr, 0);
-	for (PlayerResults::iterator it = pr.begin(); it != pr.end(); ++it)
+	if (g_speclosers)
 	{
-		if (win.type == WinInfo::WIN_PLAYER)
-		{
-			// Boot everybody but the winner.
-			if ((*it)->id != win.id)
-				loserPlayers.push_back(*it);
-		}
-		else if (win.type == WinInfo::WIN_TEAM)
-		{
-			// Boot everybody except the winning team.
-			if ((*it)->userinfo.team != win.id)
-				loserPlayers.push_back(*it);
-		}
-		else
-		{
-			// Draws are just another way of saying there were no winners.
-			loserPlayers.push_back(*it);
-		}
-	}
+		int queuedPlayerCount = 0;
+		std::vector<player_t*> loserPlayers;
 
-	for (std::vector<player_t*>::iterator it = loserPlayers.begin();
-	     it != loserPlayers.end(); ++it)
-	{
-		SV_SetPlayerSpec(**it, true, true);
-		(*it)->joindelay = 0; // Allow this player to queue up immediately without waiting
-		                      // for ReJoinDelay
+		WinInfo win = ::levelstate.getWinInfo();
+
+		PlayerResults pr;
+		P_PlayerQuery(&pr, 0);
+		for (PlayerResults::iterator it = pr.begin(); it != pr.end(); ++it)
+		{
+			if (win.type == WinInfo::WIN_PLAYER)
+			{
+				// Boot everybody but the winner.
+				if ((*it)->id != win.id)
+					loserPlayers.push_back(*it);
+			}
+			else if (win.type == WinInfo::WIN_TEAM)
+			{
+				// Boot everybody except the winning team.
+				if ((*it)->userinfo.team != win.id)
+					loserPlayers.push_back(*it);
+			}
+			else
+			{
+				// Draws are just another way of saying there were no winners.
+				loserPlayers.push_back(*it);
+			}
+		}
+
+		for (std::vector<player_t*>::iterator it = loserPlayers.begin();
+			it != loserPlayers.end(); ++it)
+		{
+			SV_SetPlayerSpec(**it, true, true);
+			(*it)->joindelay = 0; // Allow this player to queue up immediately without waiting
+								  // for ReJoinDelay
+		}
 	}
 
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
@@ -5455,7 +5465,7 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 
 	std::sort(queued.begin(), queued.end(), CompareQueuePosition);
 
-	for(unsigned int i = 0; i < queued.size(); i++)
+	for (size_t i = 0; i < queued.size(); i++)
 	{
 		player_t* p = queued[i];
 
@@ -5465,7 +5475,7 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		if (joinTest() == JOIN_OK)
 		{
 			p->QueuePosition = 0;
-			SV_SetPlayerSpec(*p, false, true);
+			SV_JoinPlayer(*p, true);
 			warmupReset = true;
 			queueUpdates.push_back(p);
 			playerCount++;

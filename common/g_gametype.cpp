@@ -114,6 +114,10 @@ JoinResult G_CanJoinGame()
  */
 JoinResult G_CanJoinGameStart()
 {
+	// Can't join anytime that's not ingame.
+	if (::gamestate != GS_LEVEL)
+		return JOIN_ENDGAME;
+
 	// Can't join during the endgame.
 	if (::levelstate.getState() == LevelState::ENDGAME_COUNTDOWN)
 		return JOIN_ENDGAME;
