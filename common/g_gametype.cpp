@@ -28,17 +28,18 @@
 #include "m_wdlstats.h"
 #include "msg_server.h"
 
-EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(g_roundlimit)
+EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_winlimit)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_maxplayers)
+EXTERN_CVAR(sv_maxplayersperteam)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
-EXTERN_CVAR(sv_maxplayersperteam)
 
 /**
  * @brief Returns a string containing the name of the gametype.
@@ -109,7 +110,7 @@ JoinResult G_CanJoinGame()
 
 /**
  * @brief Check if a player should be allowed to join the game.
- * 
+ *
  *        This function ignores the join timer which is usually a bad idea,
  *        but is vital for the join queue to work.
  */
@@ -362,12 +363,16 @@ void G_TimeCheckEndGame()
 		}
 
 		if (pr.size() != 1)
+		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+		}
 		else
+		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game won by %s!\n",
 			                   pr.front()->userinfo.netname.c_str());
-
-		::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+		}
 	}
 	else if (G_UsesTeams())
 	{
@@ -375,12 +380,16 @@ void G_TimeCheckEndGame()
 		P_TeamQuery(&tr, TQ_MAXPOINTS);
 
 		if (tr.size() != 1)
+		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+		}
 		else
+		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
 			                   tr.front()->ColorStringUpper.c_str());
-
-		::levelstate.setWinner(WinInfo::WIN_TEAM, tr.front()->Team);
+			::levelstate.setWinner(WinInfo::WIN_TEAM, tr.front()->Team);
+		}
 	}
 
 	::levelstate.endRound();
@@ -567,6 +576,9 @@ bool G_RoundsShouldEndGame()
 	if (!::serverside)
 		return false;
 
+	if (!g_roundlimit && !g_winlimit)
+		return false;
+
 	// Coop doesn't have rounds to speak of - though perhaps in the future
 	// rounds might be used to limit the number of tries a map is attempted.
 	if (sv_gametype == GM_COOP)
@@ -575,16 +587,28 @@ bool G_RoundsShouldEndGame()
 	if (sv_gametype == GM_DM)
 	{
 		PlayerResults pr;
-		P_PlayerQuery(&pr, 0);
-		for (PlayerResults::const_iterator it = pr.begin(); it != pr.end(); ++it)
+		P_PlayerQuery(&pr, PQ_MAXWINS);
+
+		if (pr.size() == 1 && g_winlimit && pr.front()->roundwins >= g_winlimit)
 		{
-			if ((*it)->roundwins >= g_winlimit)
-			{
-				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
-				                   (*it)->userinfo.netname.c_str());
-				::levelstate.setWinner(WinInfo::WIN_PLAYER, (*it)->id);
-				return true;
-			}
+			SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
+			                   pr.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			return true;
+		}
+		else if (pr.size() == 1 && g_roundlimit &&
+		         ::levelstate.getRound() >= g_roundlimit)
+		{
+			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Match won by %s!\n",
+			                   pr.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			return true;
+		}
+		else if (g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
+		{
+			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Game is a draw!\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			return true;
 		}
 	}
 	else if (G_UsesTeams())
