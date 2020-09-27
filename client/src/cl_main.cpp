@@ -1511,18 +1511,22 @@ void CL_PlayerMembers()
 	}
 }
 
-void CL_UpdateSecrets(void)
-{
-	level.found_secrets = MSG_ReadByte();
-}
-
 //
 // [deathz0r] Receive team frags/captures
 //
-void CL_TeamPoints (void)
+void CL_TeamMembers()
 {
-	for(size_t i = 0; i < NUMTEAMS; i++)
-		GetTeamInfo((team_t)i)->Points = MSG_ReadShort();
+	team_t team = static_cast<team_t>(MSG_ReadVarint());
+	int points = MSG_ReadVarint();
+	int roundWins = MSG_ReadVarint();
+
+	// Ensure our team is valid.
+	TeamInfo* info = GetTeamInfo(team);
+	if (info->Team >= NUMTEAMS)
+		return;
+
+	info->Points = points;
+	info->RoundWins = roundWins;
 }
 
 //
@@ -3634,7 +3638,7 @@ void CL_InitCommands(void)
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
 	cmds[svc_levellocals]		= &CL_LevelLocals;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
-	cmds[svc_teampoints]		= &CL_TeamPoints;
+	cmds[svc_teammembers]		= &CL_TeamMembers;
 	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
 
 	cmds[svc_updateping]		= &CL_UpdatePing;

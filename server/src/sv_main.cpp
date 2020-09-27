@@ -1830,11 +1830,10 @@ void SV_ClientFullUpdate(player_t &pl)
 		SVC_PlayerMembers(cl->reliablebuf, *it, SVC_MSG_ALL);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_UsesTeams())
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_teampoints);
-		for (int i = 0;i < NUMTEAMS;i++)
-			MSG_WriteShort(&cl->reliablebuf, GetTeamInfo((team_t)i)->Points);
+		for (int i = 0; i < NUMTEAMS; i++)
+			SVC_TeamMembers(cl->reliablebuf, static_cast<team_t>(i));
 	}
 
 	SV_UpdateHiddenMobj();

@@ -206,6 +206,19 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 }
 
 /**
+ * Persist mutable team information to the client.
+ */
+void SVC_TeamMembers(buf_t& b, team_t team)
+{
+	TeamInfo* info = GetTeamInfo(team);
+
+	MSG_WriteMarker(&b, svc_teammembers);
+	MSG_WriteVarint(&b, team);
+	MSG_WriteVarint(&b, info->Points);
+	MSG_WriteVarint(&b, info->RoundWins);
+}
+
+/**
  * @brief Send information about a player
  */
 void SVC_PlayerState(buf_t& b, player_t& player)

@@ -1007,7 +1007,7 @@ void InitNetMessageFormats()
 	MSG(svc_print,              "x"),
 	MSG(svc_mobjinfo,           "x"),
 	MSG(svc_playermembers,      "x"),
-	MSG(svc_teampoints,         "x"),
+	MSG(svc_teammembers,         "x"),
 	MSG(svc_activateline,       "x"),
 	MSG(svc_movingsector,       "x"),
 	MSG(svc_startsound,         "x"),

@@ -30,11 +30,11 @@
 
 #define BONUSADD 6
 
-void P_GiveFrags(player_t* player, int num);
-void P_GiveKills(player_t* player, int num);
-void P_GiveDeaths(player_t* player, int num);
-void P_GiveTeamPoints(player_t* player, int num);
-void P_GiveLives(player_t* player, int num);
+bool P_GiveFrags(player_t* player, int num);
+bool P_GiveKills(player_t* player, int num);
+bool P_GiveDeaths(player_t* player, int num);
+bool P_GiveTeamPoints(player_t* player, int num);
+bool P_GiveLives(player_t* player, int num);
 ItemEquipVal P_GiveAmmo(player_t* player, ammotype_t ammotype, int num);
 ItemEquipVal P_GiveWeapon(player_t* player, weapontype_t weapon, BOOL dropped);
 ItemEquipVal P_GiveArmor(player_t* player, int armortype);

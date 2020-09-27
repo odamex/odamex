@@ -141,7 +141,7 @@ enum svc_t
 	svc_print,
 	svc_mobjinfo,
 	svc_playermembers,
-	svc_teampoints,
+	svc_teammembers,
 	svc_activateline,
 	svc_movingsector,
 	svc_startsound,

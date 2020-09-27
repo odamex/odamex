@@ -46,6 +46,7 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);
+void SVC_TeamMembers(buf_t& b, team_t team);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
 

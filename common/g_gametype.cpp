@@ -26,6 +26,7 @@
 #include "cmdlib.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
+#include "msg_server.h"
 
 EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_lives)
@@ -253,7 +254,7 @@ void G_AssertValidPlayerCount()
 			valid = false;
 		}
 	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (G_UsesTeams())
 	{
 		// End the game if there's only one team with players in it.
 		int hasplayers = TEAM_NONE;
@@ -286,6 +287,43 @@ void G_AssertValidPlayerCount()
 		::levelstate.reset();
 	else
 		::levelstate.endGame();
+}
+
+static void GiveWins(player_t& player, int wins)
+{
+	player.roundwins += wins;
+
+	// If we're not a server, we're done.
+	if (!::serverside || ::clientside)
+		return;
+
+	// Send information about the new round wins to all players.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+		SVC_PlayerMembers(it->client.netbuf, player, SVC_PM_SCORE);
+	}
+}
+
+static void GiveTeamWins(team_t team, int wins)
+{
+	TeamInfo* info = GetTeamInfo(team);
+	if (info->Team >= NUMTEAMS)
+		return;
+	info->RoundWins += wins;
+
+	// If we're not a server, we're done.
+	if (!::serverside || ::clientside)
+		return;
+
+	// Send information about the new team round wins to all players.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+		SVC_TeamMembers(it->client.netbuf, team);
+	}
 }
 
 /**
@@ -331,7 +369,7 @@ void G_TimeCheckEndGame()
 
 		::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
 	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (G_UsesTeams())
 	{
 		TeamResults tr;
 		P_TeamQuery(&tr, TQ_MAXPOINTS);
@@ -367,7 +405,7 @@ void G_FragsCheckEndGame()
 		player_t* top = pr.front();
 		if (top->fragcount >= sv_fraglimit)
 		{
-			top->roundwins += 1;
+			GiveWins(*top, 1);
 
 			// [ML] 04/4/06: Added !sv_fragexitswitch
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. Game won by %s!\n",
@@ -396,7 +434,7 @@ void G_TeamFragsCheckEndGame()
 		TeamInfo* team = tr.front();
 		if (team->Points >= sv_fraglimit)
 		{
-			team->RoundWins += 1;
+			GiveTeamWins(team->Team, 1);
 			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. %s team wins!\n",
 			                   team->ColorString.c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
@@ -424,7 +462,7 @@ void G_TeamScoreCheckEndGame()
 		TeamInfo* team = tr.front();
 		if (team->Points >= sv_scorelimit)
 		{
-			team->RoundWins += 1;
+			GiveTeamWins(team->Team, 1);
 			SV_BroadcastPrintf(PRINT_HIGH, "Score limit hit. %s team wins!\n",
 			                   team->ColorString.c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
@@ -472,7 +510,7 @@ void G_LivesCheckEndGame()
 		}
 		else if (pc.result == 1)
 		{
-			pr.front()->roundwins += 1;
+			GiveWins(*pr.front(), 1);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s wins as the last player standing!\n",
 			                   pr.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
@@ -481,7 +519,7 @@ void G_LivesCheckEndGame()
 
 		// Nobody won the game yet - keep going.
 	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (G_UsesTeams())
 	{
 		// If someone has configured TeamDM improperly, just don't do anything.
 		int teamsinplay = sv_teamsinplay.asInt();
@@ -507,11 +545,11 @@ void G_LivesCheckEndGame()
 		}
 		else if (aliveteams == 1)
 		{
-			TeamInfo* teamInfo = GetTeamInfo(pr.front()->userinfo.team);
-			teamInfo->RoundWins += 1;
+			team_t team = pr.front()->userinfo.team;
+			GiveTeamWins(team, 1);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins as the last team standing!\n",
-			                   teamInfo->ColorString.c_str());
-			::levelstate.setWinner(WinInfo::WIN_TEAM, teamInfo->Team);
+			                   GetTeamInfo(team)->ColorString.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, team);
 			::levelstate.endRound();
 		}
 
@@ -549,7 +587,7 @@ bool G_RoundsShouldEndGame()
 			}
 		}
 	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (G_UsesTeams())
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 		{
