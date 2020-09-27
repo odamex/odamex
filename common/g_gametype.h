@@ -47,6 +47,7 @@ bool G_CanShowObituary();
 bool G_CanTickGameplay();
 bool G_UsesTeams();
 bool G_UsesWinlimit();
+bool G_UsesRoundlimit();
 bool G_UsesScorelimit();
 bool G_UsesFraglimit();
 int G_EndingTic();

@@ -636,6 +636,7 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(g_winlimit)
+EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(g_rounds)
 
 namespace hud {
@@ -770,6 +771,14 @@ void drawHeader(player_t *player, int y)
 	{
 		StrFormat(str, "%d", g_winlimit.asInt());
 		names.push_back("WIN LIMIT: ");
+		values.push_back(str);
+	}
+
+	// Roundlimit.
+	if (g_roundlimit > 0.0 && G_UsesRoundlimit())
+	{
+		StrFormat(str, "%d", g_roundlimit.asInt());
+		names.push_back("ROUND LIMIT: ");
 		values.push_back(str);
 	}
 

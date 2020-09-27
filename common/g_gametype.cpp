@@ -198,6 +198,14 @@ bool G_UsesWinlimit()
 }
 
 /**
+ * @brief Check if the gametype uses roundlimit.
+ */
+bool G_UsesRoundlimit()
+{
+	return g_rounds;
+}
+
+/**
  * @brief Check if the gametype uses scorelimit.
  */
 bool G_UsesScorelimit()
