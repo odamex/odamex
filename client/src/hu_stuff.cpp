@@ -636,6 +636,7 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(g_winlimit)
+EXTERN_CVAR(g_rounds)
 
 namespace hud {
 
@@ -655,8 +656,13 @@ static int GetLongestTeamWidth()
 		}
 	}
 
-	std::string teamString = longestTeamName + ": ";
-	return V_StringWidth(teamString.c_str());
+	if (g_rounds)
+		longestTeamName.append(" WINS: ");
+	else if (sv_gametype == GM_TEAMDM)
+		longestTeamName.append(" FRAGS: ");
+	else
+		longestTeamName.append(" POINTS: ");
+	return V_StringWidth(longestTeamName.c_str());
 }
 
 // [AM] Draw scoreboard header
@@ -697,17 +703,33 @@ void drawHeader(player_t *player, int y)
 		
 		for (int i = 0; i < sv_teamsinplay; i++)
 		{
+			// Display wins for round-based gamemodes, otherwise points.
 			std::string displayName = TeamName(color, i);
-			displayName.append(": ");
+			if (g_rounds)
+				displayName.append(" WINS: ");
+			else if (sv_gametype == GM_TEAMDM)
+				displayName.append(" FRAGS: ");
+			else
+				displayName.append(" POINTS: ");
+
 			yOffset += 8;
-			hud::DrawText(-236, y + yOffset, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_LEFT, hud::Y_TOP,
-				displayName.c_str(), CR_GREY, true);
-			hud::DrawText(-236 + xOffset, y + yOffset, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_LEFT, hud::Y_TOP,
-				TeamPlayers(color, i).c_str(), CR_GREEN, true);
+			hud::DrawText(-236, y + yOffset, hud_scalescoreboard, hud::X_CENTER,
+			              hud::Y_MIDDLE, hud::X_LEFT, hud::Y_TOP, displayName.c_str(),
+			              CR_GREY, true);
+
+			std::string points;
+			if (g_rounds)
+			{
+				StrFormat(points, "%d", GetTeamInfo((team_t)i)->RoundWins);
+			}
+			else
+			{
+				StrFormat(points, "%d", GetTeamInfo((team_t)i)->Points);
+			}
+
+			hud::DrawText(-236 + xOffset, y + yOffset, hud_scalescoreboard, hud::X_CENTER,
+			              hud::Y_MIDDLE, hud::X_LEFT, hud::Y_TOP, points.c_str(),
+			              CR_GREEN, true);
 		}
 	} 
 	else
