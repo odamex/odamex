@@ -2072,12 +2072,6 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 	return AllowConnect;
 }
 
-void SV_InitPlayerEnterState(player_s* player)
-{
-	P_ClearPlayerScores(*player, true);
-	player->playerstate = PST_ENTER;
-}
-
 //
 //	SV_ConnectClient
 //
@@ -2259,7 +2253,10 @@ void SV_ConnectClient()
 	}
 
 	SV_BroadcastUserInfo(*player);
-	SV_InitPlayerEnterState(player);
+
+	// Newly connected players get ENTER state.
+	P_ClearPlayerScores(*player, true);
+	player->playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
@@ -3859,30 +3856,43 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 	// Warn everyone we're not a spectator anymore.
 	player.spectator = false;
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		SVC_PlayerMembers(it->client.reliablebuf, player, SVC_PM_SPECTATOR);
 
+	// Whatever mobj we had it doesn't matter anymore.
 	if (player.mo)
 		P_KillMobj(NULL, player.mo, NULL, true);
 
-	SV_InitPlayerEnterState(&player);
-	SV_UpdateFrags(player);
+	// Fresh joins get fresh player scores.
+	P_ClearPlayerScores(player, true);
 
-	// [AM] Set player unready if we're in warmup mode.
+	// Ensure our player is in the ENTER state.
+	player.playerstate = PST_ENTER;
+
+	// Set player unready if we're in warmup mode.
 	if (sv_warmup)
 	{
 		SV_SetReady(player, false, true);
 		player.timeout_ready = 0;
 	}
 
+	// Finally, persist info about our freshly-joining player to the world.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		SVC_PlayerMembers(it->client.reliablebuf, player, SVC_MSG_ALL);
+	}
+
 	// Everything is set, now warn everyone the player joined.
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
+			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n",
+			                   player.userinfo.netname.c_str());
 		else
 			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-				player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
+			                   player.userinfo.netname.c_str(),
+			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
 }
 

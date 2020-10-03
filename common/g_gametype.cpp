@@ -658,10 +658,10 @@ BEGIN_COMMAND(survival)
 	{
 		std::string str;
 		StrFormat(str,
-		          "sv_gametype 0; sv_nomonsters 0; sv_skill 4; g_lives 1; g_rounds 0; "
-		          "g_winlimit %s",
+		          "sv_gametype 0; sv_nomonsters 0; sv_skill 4; g_lives %s; "
+		          "g_lives_jointimer 30",
 		          argv[2]);
-		Printf(PRINT_HIGH, "Configuring Last Man Standing...\n%s\n", str.c_str());
+		Printf(PRINT_HIGH, "Configuring Survival...\n%s\n", str.c_str());
 		AddCommandString(str.c_str());
 		return;
 	}
@@ -673,7 +673,7 @@ END_COMMAND(survival)
 static void LMSHelp()
 {
 	Printf(PRINT_HIGH,
-	       "lms - Configures some settings for a basic game of Last Man Standing\n\n"
+	       "lms - Configures some settings for a basic game of Last Marine Standing\n\n"
 	       "Usage:\n"
 	       "  ] lms wins <ROUNDS>\n"
 	       "  Configure LMS so a player needs to win ROUNDS number of rounds to win the "
@@ -694,7 +694,7 @@ BEGIN_COMMAND(lms)
 		StrFormat(str,
 		          "sv_gametype 1; sv_nomonsters 1; g_lives 1; g_rounds 1; g_winlimit %s",
 		          argv[2]);
-		Printf(PRINT_HIGH, "Configuring Last Man Standing...\n%s\n", str.c_str());
+		Printf(PRINT_HIGH, "Configuring Last Marine Standing...\n%s\n", str.c_str());
 		AddCommandString(str.c_str());
 		return;
 	}

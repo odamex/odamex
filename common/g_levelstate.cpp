@@ -83,7 +83,7 @@ int LevelState::getCountdown() const
 	if (_state == LevelState::WARMUP || _state == LevelState::INGAME)
 		return 0;
 
-	return ceil((_countdown_done_time - level.time) / (float)TICRATE);
+	return ceil((_countdown_done_time - ::level.time) / (float)TICRATE);
 }
 
 /**
@@ -99,8 +99,12 @@ int LevelState::getRound() const
  */
 int LevelState::getJoinTimeLeft() const
 {
+	if (_state != LevelState::INGAME)
+		return 0;
+
 	int end_time = _ingame_start_time + g_lives_jointimer * TICRATE;
-	return ceil((end_time - level.time) / (float)TICRATE);
+	int left = ceil((end_time - ::level.time) / (float)TICRATE);
+	return MAX(left, 0);
 }
 
 /**
@@ -304,7 +308,7 @@ void LevelState::tic()
 		break;
 	case LevelState::PREROUND_COUNTDOWN:
 		// Once the timer has run out, start the round without a reset.
-		if (level.time >= _countdown_done_time)
+		if (::level.time >= _countdown_done_time)
 		{
 			setState(LevelState::INGAME);
 			SV_BroadcastPrintf(PRINT_HIGH, "FIGHT!\n");
@@ -317,11 +321,13 @@ void LevelState::tic()
 		break;
 	case LevelState::ENDROUND_COUNTDOWN:
 		// Once the timer has run out, reset and go to the next round.
-		if (level.time >= _countdown_done_time)
+		if (::level.time >= _countdown_done_time)
 		{
+			// Must be run first, so setState(INGAME) knows the correct start time.
+			G_DeferedReset();
+
 			_round_number += 1;
 			setState(LevelState::getStartOfRoundState());
-			G_DeferedReset();
 
 			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
 			return;
@@ -329,7 +335,7 @@ void LevelState::tic()
 		break;
 	case LevelState::ENDGAME_COUNTDOWN:
 		// Once the timer has run out, go to intermission.
-		if (level.time >= _countdown_done_time)
+		if (::level.time >= _countdown_done_time)
 		{
 			G_ExitLevel(0, 1);
 			return;
@@ -382,11 +388,13 @@ void LevelState::tic()
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN:
 		// Once the timer has run out, start the game.
-		if (level.time >= _countdown_done_time)
+		if (::level.time >= _countdown_done_time)
 		{
+			// Must be run first, so setState(INGAME) knows the correct start time.
+			G_DeferedFullReset();
+
 			_round_number += 1;
 			setState(LevelState::getStartOfRoundState());
-			G_DeferedFullReset();
 
 			if (g_rounds)
 				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
@@ -459,7 +467,7 @@ void LevelState::setState(LevelState::States new_state)
 	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		// Most countdowns use the countdown cvar.
-		_countdown_done_time = level.time + (sv_countdown.asInt() * TICRATE);
+		_countdown_done_time = ::level.time + (sv_countdown.asInt() * TICRATE);
 	}
 	else if (_state == LevelState::PREROUND_COUNTDOWN)
 	{
@@ -472,16 +480,24 @@ void LevelState::setState(LevelState::States new_state)
 	         _state == LevelState::ENDGAME_COUNTDOWN)
 	{
 		// Endgame has a little pause as well, like the old "shotclock" variable.
-		_countdown_done_time = level.time + ENDGAME_SECONDS * TICRATE;
+		_countdown_done_time = ::level.time + ENDGAME_SECONDS * TICRATE;
 	}
 	else
 	{
 		_countdown_done_time = 0;
 	}
 
+	// Set the start time as soon as we go ingame.
 	if (_state == LevelState::INGAME)
 	{
-		_ingame_start_time = level.time;
+		if (::gameaction == ga_resetlevel || ::gameaction == ga_fullresetlevel)
+		{
+			_ingame_start_time = 1;
+		}
+		else
+		{
+			_ingame_start_time = ::level.time + 1;
+		}
 	}
 
 	// If we're in a warmup state, alwasy reset the round count to zero.

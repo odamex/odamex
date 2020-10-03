@@ -718,13 +718,19 @@ void LevelStateHUD()
 	// [AM] Debug stuff
 	hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              ::levelstate.getStateString(), CR_GREEN);
+	StrFormat(str, "%d : %d", ::level.time, ::levelstate.getJoinTimeLeft());
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              str.c_str(), CR_GREEN);
 
 	// First line...BIGFONT.
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP:
 		if (consoleplayer().spectator)
+		{
+			str = "";
 			break;
+		}
 
 		str = "Warmup";
 		break;
@@ -742,6 +748,7 @@ void LevelStateHUD()
 		StrFormat(str, "Match complete\n");
 		break;
 	default:
+		str = "";
 		break;
 	}
 
