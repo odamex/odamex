@@ -5459,7 +5459,6 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 {
 	int playerCount = 0;
 	int queuePos = 1;
-	bool warmupReset = false;
 	std::vector<player_t*> queued;
 	std::vector<player_t*> queueUpdates;
 
@@ -5485,7 +5484,6 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		{
 			p->QueuePosition = 0;
 			SV_JoinPlayer(*p, true);
-			warmupReset = true;
 			queueUpdates.push_back(p);
 			playerCount++;
 		}
@@ -5508,9 +5506,6 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		for (unsigned int i = 0; i < queueUpdates.size(); i++)
 			SV_SendPlayerQueuePosition(queueUpdates[i], &(*dest));
 	}
-
-	if (warmupReset)
-		::levelstate.reset();
 }
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)

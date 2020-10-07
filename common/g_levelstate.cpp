@@ -462,6 +462,7 @@ LevelState::States LevelState::getStartOfRoundState()
 void LevelState::setState(LevelState::States new_state)
 {
 	_state = new_state;
+	//Printf("setState: %s\n", getStateString());
 
 	if (_state == LevelState::WARMUP_COUNTDOWN ||
 	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)

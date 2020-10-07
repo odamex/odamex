@@ -692,7 +692,8 @@ BEGIN_COMMAND(lms)
 	{
 		std::string str;
 		StrFormat(str,
-		          "sv_gametype 1; sv_nomonsters 1; g_lives 1; g_rounds 1; g_winlimit %s",
+		          "sv_gametype 1; sv_nomonsters 1; sv_forcerespawn 1; g_lives 1; "
+		          "g_rounds 1; g_winlimit %s",
 		          argv[2]);
 		Printf(PRINT_HIGH, "Configuring Last Marine Standing...\n%s\n", str.c_str());
 		AddCommandString(str.c_str());
@@ -702,3 +703,38 @@ BEGIN_COMMAND(lms)
 	LMSHelp();
 }
 END_COMMAND(lms)
+
+static void TLMSHelp()
+{
+	Printf(PRINT_HIGH,
+	       "tlms - Configures some settings for a basic game of Team Last Marine "
+	       "Standing\n\n"
+	       "Usage:\n"
+	       "  ] tlms wins <ROUNDS>\n"
+	       "  Configure TLMS so a player needs to win ROUNDS number of rounds to win the "
+	       "game\n\n");
+}
+
+BEGIN_COMMAND(tlms)
+{
+	if (argc < 2)
+	{
+		TLMSHelp();
+		return;
+	}
+
+	if (stricmp(argv[1], "wins") == 0)
+	{
+		std::string str;
+		StrFormat(str,
+		          "sv_gametype 2; sv_nomonsters 1; sv_forcerespawn 1; g_lives 1; "
+		          "g_rounds 1; g_winlimit %s",
+		          argv[2]);
+		Printf(PRINT_HIGH, "Configuring Team Last Marine Standing...\n%s\n", str.c_str());
+		AddCommandString(str.c_str());
+		return;
+	}
+
+	TLMSHelp();
+}
+END_COMMAND(tlms)
