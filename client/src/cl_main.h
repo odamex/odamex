@@ -47,6 +47,7 @@ extern NetDemo	netdemo;
 extern bool predicting;
 
 void CL_QuitNetGame(void);
+void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect(void);
@@ -74,4 +75,3 @@ bool CL_SectorIsPredicting(sector_t *sector);
 std::string M_ExpandTokens(const std::string &str);
 
 #endif
-

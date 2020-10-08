@@ -43,6 +43,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
+#include "cl_download.h"
 
 #include <string>
 #include <list>
@@ -55,8 +56,6 @@
 #endif
 
 static const int MAX_LINE_LENGTH = 8192;
-
-std::string DownloadStr;
 
 static bool ShouldTabCycle = false;
 static size_t NextCycleIndex = 0;
@@ -1583,14 +1582,63 @@ void C_DrawConsole()
 	if (ConBottom >= 12)
 	{
 		// print the Odamex version in gold in the bottom right corner of console
-		char version_str[32];
-		snprintf(version_str, sizeof(version_str), "%s (%s)", DOTVERSIONSTR, GitDescribe());
-		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version_str),
-					ConBottom - 12, version_str, CR_ORANGE);
+		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(GitDescribe()),
+		                 ConBottom - 12, GitDescribe(), CR_ORANGE);
 
-		// Download progress bar hack
-		if (gamestate == GS_DOWNLOAD)
-			screen->PrintStr(left + 2, ConBottom - 10, DownloadStr.c_str(), CR_GRAY);
+		// Amount of space remaining.
+		int remain = primary_surface_width - 16 - C_StringWidth(GitDescribe());
+
+		if (CL_IsDownloading())
+		{
+			// Use the remaining space for a download bar.
+			size_t chars = remain / C_StringWidth(" ");
+			std::string download;
+
+			// Stamp out the text bits.
+			std::string filename = CL_DownloadFilename();
+			if (filename.empty())
+				filename = "...";
+			OTransferProgress progress = CL_DownloadProgress();
+			std::string dlnow;
+			StrFormatBytes(dlnow, progress.dlnow);
+			std::string dltotal;
+			StrFormatBytes(dltotal, progress.dltotal);
+			StrFormat(download, "%s: %s/%s", filename.c_str(), dlnow.c_str(),
+			          dltotal.c_str());
+
+			// Avoid divide by zero.
+			if (progress.dltotal == 0)
+				progress.dltotal = 1;
+
+			// Stamp out the bar...if we have enough room - if we at tiny
+			// resolutions we may not.
+			size_t dltxtlen = download.length();
+			ptrdiff_t barchars = chars - dltxtlen;
+
+			if (barchars >= 2)
+			{
+				download.resize(chars);
+				for (size_t i = 0; i < barchars; i++)
+				{
+					char ch = '\30'; // empty middle
+					if (i == 0)
+						ch = '\27'; // empty left
+					else if (i == barchars - 1)
+						ch = '\31'; // empty right
+
+					double barpct = i / (double)barchars;
+					double dlpct = progress.dlnow / (double)progress.dltotal;
+
+					if (dlpct > barpct)
+						ch += 3; // full bar
+
+					download.at(i + dltxtlen) = ch;
+				}
+			}
+
+			// Draw the thing.
+			screen->PrintStr(left + 2, ConBottom - 12, download.c_str(), CR_GREEN);
+		}
 
 		if (TickerMax)
 		{

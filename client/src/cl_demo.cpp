@@ -956,12 +956,6 @@ void NetDemo::capture(const buf_t* inputbuffer)
 		return;
 	}
 
-	if (gamestate == GS_DOWNLOAD)
-	{
-		// NullPoint: I think this will skip the downloading process
-		return;
-	}
-
 	if (inputbuffer->size() > 0)
 	{
 		captured.push_back(*inputbuffer);
