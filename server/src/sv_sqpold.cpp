@@ -65,7 +65,7 @@ EXTERN_CVAR (sv_teamsinplay)
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (join_password)
-EXTERN_CVAR (sv_website)
+EXTERN_CVAR (sv_downloadsites)
 
 EXTERN_CVAR (sv_natport)
 
@@ -196,7 +196,8 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadhashes[i].c_str());
 
-	MSG_WriteString(&ml_message, sv_website.cstring());
+	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
+	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{

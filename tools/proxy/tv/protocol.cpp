@@ -101,10 +101,6 @@ enum svc_t
 	svc_actor_target,
 	svc_actor_tracer,
 	svc_damagemobj,
-
-	// for downloading
-	svc_wadinfo,			// denis - [ulong:filesize]
-	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
 	
 	// for compressed packets
 	svc_compressed = 200,
@@ -314,12 +310,6 @@ public:
 				case svc_exitlevel:
 					Copy(in, out, 1);
 					break;
-				case svc_wadinfo:
-					in.ReadChunk(1+ 4);
-					break;
-				case svc_wadchunk:
-					in.ReadChunk(1+ 4);
-					break;
 				case svc_challenge:
 					Copy(in, out, 1);
 					break;
@@ -459,4 +449,3 @@ void OnPacketTV()
 		OnNewClientTV();
 	}
 }
-

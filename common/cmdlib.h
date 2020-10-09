@@ -106,6 +106,7 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim);
 FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...);
 void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
 
+void StrFormatBytes(std::string& out, size_t bytes);
 bool StrFormatISOTime(std::string& s, const tm* utc_tm);
 bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);

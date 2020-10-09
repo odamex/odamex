@@ -186,10 +186,6 @@ enum svc_t
 	svc_executelinespecial,
 	svc_executeacsspecial,
 	svc_thinkerupdate,
-
-	// for downloading
-	svc_wadinfo,			// denis - [ulong:filesize]
-	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
 		
 	// netdemos - NullPoint
 	svc_netdemocap = 100,

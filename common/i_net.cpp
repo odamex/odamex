@@ -1034,8 +1034,6 @@ void InitNetMessageFormats()
 	MSG(svc_actor_target,       "x"),
 	MSG(svc_actor_tracer,       "x"),
 	MSG(svc_damagemobj,         "x"),
-	MSG(svc_wadinfo,            "x"),
-	MSG(svc_wadchunk,           "x"),
 	MSG(svc_compressed,         "x"),
 	MSG(svc_launcher_challenge, "x"),
 	MSG(svc_challenge,          "x"),
