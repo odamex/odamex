@@ -316,3 +316,54 @@ if(USE_SDL12)
       IMPORTED_LOCATION "${SDL_MIXER_LIBRARY}")
   endif()
 endif()
+
+### wxWidgets ###
+
+if(BUILD_ODALAUNCH)
+  if(USE_INTERNAL_WXWIDGETS)
+    if(WIN32)
+      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
+      set(wxWidgets_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets" CACHE PATH "")
+
+      # Cross-compiler headers
+      file(DOWNLOAD
+        "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.4/wxWidgets-3.1.4-headers.7z"
+        "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.4-headers.7z"
+        EXPECTED_HASH SHA256=9fa6087f24a4282cd883748d79f9b60b7ab54aced7af5aa616af810d09bd8f39)
+      execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+        "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.4-headers.7z"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
+
+      if(MSVC_VERSION GREATER_EQUAL 1900)
+        # Visual Studio 2015/2017/2019
+        file(DOWNLOAD
+          "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.4/wxMSW-3.1.4_vc14x_Dev.7z"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.4_vc14x_Dev.7z"
+          EXPECTED_HASH SHA256=812c7e603799debe8d3bb486598d8585c953ade01bba14573d32485fd82a6651)
+        execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.4_vc14x_Dev.7z"
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
+
+        # Move the lib directory to where FindwxWidgets.cmake can find it.
+        file(RENAME
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/vc14x_dll"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/vc14x_x64_dll")
+      elseif(MINGW)
+        # MinGW
+        file(DOWNLOAD
+          "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.4/wxMSW-3.1.4_gcc810_x64_Dev.7z"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.4_gcc810_x64_Dev.7z"
+          EXPECTED_HASH SHA256=812c7e603799debe8d3bb486598d8585c953ade01bba14573d32485fd82a6651)
+        execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.4_gcc810_x64_Dev.7z"
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
+
+        # Move the lib directory to where FindwxWidgets.cmake can find it.
+        file(RENAME
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc810_x64_dll")
+      endif()
+    endif()
+  endif()
+  find_package(wxWidgets COMPONENTS core base adv net xrc)
+endif()
