@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "dlg_servers.h"
+
 #include <wx/settings.h>
 #include <wx/menu.h>
 #include <wx/statusbr.h>
@@ -29,7 +31,6 @@
 #include <wx/tokenzr.h>
 #include <wx/dirdlg.h>
 
-#include "dlg_servers.h"
 #include "str_utils.h"
 #include "net_utils.h"
 

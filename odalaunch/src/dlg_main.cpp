@@ -20,17 +20,22 @@
 //  AUTHOR: Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
+
+#include "dlg_main.h"
+
 #include <algorithm>
 #include <iostream>
 
-#include "dlg_main.h"
-#include "query_thread.h"
-#include "plat_utils.h"
-#include "str_utils.h"
-#include "oda_defs.h"
-#include "net_utils.h"
-
-#include "md5.h"
+#ifdef __WXMSW__
+#include <windows.h>
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#endif
 
 #include <wx/settings.h>
 #include <wx/menu.h>
@@ -55,16 +60,13 @@
 #include <wx/stream.h>
 #include <wx/sstream.h>
 
-#ifdef __WXMSW__
-#include <windows.h>
-#include <winsock.h>
-#else
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-#include <netdb.h>
-#endif
+#include "net_utils.h"
+#include "oda_defs.h"
+#include "plat_utils.h"
+#include "query_thread.h"
+#include "str_utils.h"
+
+#include "md5.h"
 
 using namespace odalpapi;
 

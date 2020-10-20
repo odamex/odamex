@@ -16,47 +16,17 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  This file was generated when the project was created
-//  in CodeBlocks
+//  Global header included by all other headers.  Ensures we always get
+//  the defines in this file everywhere.
 //
 //-----------------------------------------------------------------------------
 
+#ifndef __ODALAUNCH_H__
+#define __ODALAUNCH_H__
 
-#ifndef WX_PCH_H_INCLUDED
-#define WX_PCH_H_INCLUDED
-
-#if ( defined(USE_PCH) && !defined(WX_PRECOMP) )
-#define WX_PRECOMP
-#endif // USE_PCH
-
-#include "odalaunch.h"
-
-// basic wxWidgets headers
-#include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #endif
 
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
 #endif
-
-#ifdef USE_PCH
-#include "net_error.h"
-#include "net_io.h"
-#include "net_packet.h"
-#include "net_utils.h"
-#include "typedefs.h"
-
-#include "oda_defs.h"
-#include "lst_custom.h"
-#include "main.h"
-#include "md5.h"
-#include "query_thread.h"
-#include "resource.h"
-
-#include "dlg_about.h"
-#endif // USE_PCH
-
-#endif // WX_PCH_H_INCLUDED

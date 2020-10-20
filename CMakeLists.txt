@@ -189,7 +189,7 @@ endif()
 if(BUILD_ODALAUNCH)
   add_subdirectory(odalaunch)
 endif()
-if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER)
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_ODALAUNCH)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 

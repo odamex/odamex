@@ -22,13 +22,13 @@
 
 #include "lst_servers.h"
 
-#include "str_utils.h"
-#include "oda_defs.h"
-
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/clipbrd.h>
 #include <wx/dataobj.h>
+
+#include "str_utils.h"
+#include "oda_defs.h"
 
 using namespace odalpapi;
 
