@@ -1,3 +1,4 @@
+include(OdalaunchCopyLibs)
 include(OdamexTargetSettings)
 
 global_compile_options()
@@ -63,6 +64,8 @@ if(wxWidgets_FOUND)
   if(WIN32)
     target_link_libraries(odalaunch ws2_32)
   endif()
+
+  odalaunch_copy_libs(odalaunch)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
