@@ -22,7 +22,11 @@ set(XRCRES_HEADER "${XRCRES_BINARY_DIR}/xrc_resource.h")
 include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
 
 # wxWidgets configuration
-#find_package(wxWidgets COMPONENTS core base adv net xrc)
+# [AM] Putting this "find" in libraries would only work (from a scope
+#      perspective) if we got a target out of it, which we don't for
+#      wxWidgets.  So we do the ugly downloading bits in libraries and do
+#      the "find" here.
+find_package(wxWidgets COMPONENTS core base adv net xrc)
 if(wxWidgets_FOUND)
   include( "${wxWidgets_USE_FILE}" )
 else()
