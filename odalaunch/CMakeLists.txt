@@ -96,5 +96,8 @@ if(wxWidgets_FOUND)
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT odalaunch)
   endif()
+endif()
 
+if(BUILD_OR_FAIL AND NOT TARGET odalaunch)
+  message(FATAL_ERROR "Odalaunch target could not be generated")
 endif()

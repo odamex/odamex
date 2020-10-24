@@ -330,7 +330,7 @@ endif()
 
 ### wxWidgets ###
 
-if(BUILD_ODALAUNCH)
+if(BUILD_LAUNCHER)
   if(USE_INTERNAL_WXWIDGETS)
     if(WIN32)
       file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
@@ -370,17 +370,21 @@ if(BUILD_ODALAUNCH)
         file(DOWNLOAD
           "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.4/wxMSW-3.1.4_gcc810_x64_Dev.7z"
           "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.4_gcc810_x64_Dev.7z"
-          EXPECTED_HASH SHA256=812c7e603799debe8d3bb486598d8585c953ade01bba14573d32485fd82a6651)
+          EXPECTED_HASH SHA256=ad531472c6843114c8d4e8cad790c3a3050d6b6f0d6951b1d7b63025d9b8629f)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
           "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.4_gcc810_x64_Dev.7z"
           WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
 
         # Move the lib directory to where FindwxWidgets.cmake can find it.
-        if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc810_x64_dll")
+        if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll")
           file(RENAME
-            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll"
-            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc810_x64_dll")
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc810_x64_dll"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll")
         endif()
+
+        set(wxWidgets_wxrc_EXECUTABLE
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll/wxrc.exe"
+          CACHE FILEPATH "")
       endif()
     endif()
   endif()
