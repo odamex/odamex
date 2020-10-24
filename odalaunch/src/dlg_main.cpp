@@ -360,10 +360,13 @@ void dlgMain::OnClose(wxCloseEvent& event)
             {
                 (*it)->GracefulExit();
                 delete *it;
+                *it = NULL;
             }
-
-            threadVector.pop_back();
         }
+
+        // Clear the vector at the end so we don't play fast and loose with
+        // iterator invalidation.
+        threadVector.clear();
 	}
     
 	// Save the UI layout and shut it all down
