@@ -19,7 +19,12 @@ if [[ $(uname -s) == "Linux" ]]; then
     fi
 else
     # macOS
+
+    # Workaround for https://github.com/actions/virtual-environments/issues/1811#issuecomment-708480190
+    brew uninstall openssl@1.0.2t
     brew update
+    brew upgrade
+
     brew install ninja sdl2 sdl2_mixer wxmac
 fi
 
