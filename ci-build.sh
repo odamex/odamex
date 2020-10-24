@@ -20,8 +20,7 @@ if [[ $(uname -s) == "Linux" ]]; then
 else
     # macOS
 
-    # Workaround for https://github.com/actions/virtual-environments/issues/1811#issuecomment-708480190
-    brew uninstall openssl@1.0.2t
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     brew update
     brew upgrade
 
