@@ -174,7 +174,7 @@ PlayerResults PlayerQuery::execute()
 	case SORT_NONE:
 		break;
 	case SORT_FRAGS:
-		std::sort(results.players.rbegin(), results.players.rbegin(), cmpFrags);
+		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
 		if (m_filterOnlyTop && results.count > 0)
 		{
 			// Since it's sorted, we know the top fragger is at the front.
@@ -191,7 +191,7 @@ PlayerResults PlayerQuery::execute()
 		}
 		break;
 	case SORT_WINS:
-		std::sort(results.players.rbegin(), results.players.rbegin(), cmpWins);
+		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
 		if (m_filterOnlyTop && results.count > 0)
 		{
 			// Since it's sorted, we know the top winner is at the front.
