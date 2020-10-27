@@ -236,6 +236,9 @@ EXTERN_CVAR (sv_infiniteammo)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_friendlyfire)
 
+// Survival
+EXTERN_CVAR (g_lives)
+
 // Private server settings
 CVAR_FUNC_IMPL (join_password)
 {
@@ -4740,19 +4743,91 @@ BEGIN_COMMAND (playerinfo)
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(" time             - %d \n",		player->GameTime);
 	Printf(" spectator        - %d \n",		player->spectator);
-	Printf(" downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
+	if (sv_gametype == GM_COOP)
+	{
+		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);
+	}
+	else
+	{
+		Printf(" frags - %d  deaths - %d  points - %d\n", player->fragcount,
+		       player->deathcount, player->points);
+	}
+	if (g_lives)
+	{
+		Printf(" lives - %d  wins - %d\n", player->lives, player->roundwins);
+	}
 	Printf("--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
 
-BEGIN_COMMAND (playerlist)
+BEGIN_COMMAND(playerlist)
 {
 	bool anybody = false;
 
-	for (Players::reverse_iterator it = players.rbegin();it != players.rend();++it)
+	for (Players::reverse_iterator it = players.rbegin(); it != players.rend(); ++it)
 	{
-		Printf("(%02d): %s - %s - frags:%d - time:%d - ping:%d\n",
-		       it->id, it->userinfo.netname.c_str(), NET_AdrToString(it->client.address), it->fragcount, it->GameTime, it->ping);
+		std::string strMain, strScore;
+		StrFormat(strMain, "(%02d): %s %s - %s - time:%d - ping:%d", it->id,
+		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
+		          NET_AdrToString(it->client.address), it->GameTime, it->ping);
+
+		if (sv_gametype == GM_COOP)
+		{
+			if (g_lives)
+			{
+				// Kills and Lives
+				StrFormat(strScore, " - kills:%d - lives:%d", it->killcount, it->lives);
+			}
+			else
+			{
+				// Kills and Deaths
+				StrFormat(strScore, " - kills:%d - deaths:%d", it->killcount,
+				          it->deathcount);
+			}
+		}
+		else if (sv_gametype == GM_DM)
+		{
+			if (g_lives)
+			{
+				// Wins, Lives, and Frags
+				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
+				          it->lives, it->fragcount);
+			}
+			else
+			{
+				// Frags, Deaths
+				StrFormat(strScore, " - frags:%d - deaths:%d", it->fragcount,
+				          it->deathcount);
+			}
+		}
+		else if (sv_gametype == GM_TEAMDM)
+		{
+			if (g_lives)
+			{
+				// Frags and Lives
+				StrFormat(strScore, " - frags:%d - lives:%d", it->fragcount, it->lives);
+			}
+			else
+			{
+				// Frags
+				StrFormat(strScore, " - frags:%d", it->fragcount);
+			}
+		}
+		else if (sv_gametype == GM_CTF)
+		{
+			if (g_lives)
+			{
+				// Points and Lives
+				StrFormat(strScore, " - points:%d - lives:%d", it->points, it->lives);
+			}
+			else
+			{
+				// Points and Frags
+				StrFormat(strScore, " - points:%d - frags:%d", it->points, it->fragcount);
+			}
+		}
+
+		Printf("%s%s\n", strMain.c_str(), strScore.c_str());
 		anybody = true;
 	}
 
@@ -4762,7 +4837,7 @@ BEGIN_COMMAND (playerlist)
 		return;
 	}
 }
-END_COMMAND (playerlist)
+END_COMMAND(playerlist)
 
 BEGIN_COMMAND (players)
 {
