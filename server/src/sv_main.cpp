@@ -5244,9 +5244,8 @@ void SV_UpdatePlayerQueueLevelChange()
 
 		WinInfo win = ::levelstate.getWinInfo();
 
-		PlayerResults pr;
-		P_PlayerQuery(&pr, 0);
-		for (PlayerResults::iterator it = pr.begin(); it != pr.end(); ++it)
+		PlayerResults pr = PlayerQuery().execute();
+		for (PlayersView::iterator it = pr.players.begin(); it != pr.players.end(); ++it)
 		{
 			if (win.type == WinInfo::WIN_PLAYER)
 			{
@@ -5267,12 +5266,12 @@ void SV_UpdatePlayerQueueLevelChange()
 			}
 		}
 
-		for (std::vector<player_t*>::iterator it = loserPlayers.begin();
-			it != loserPlayers.end(); ++it)
+		for (PlayersView::iterator it = loserPlayers.begin(); it != loserPlayers.end();
+		     ++it)
 		{
 			SV_SetPlayerSpec(**it, true, true);
-			(*it)->joindelay = 0; // Allow this player to queue up immediately without waiting
-								  // for ReJoinDelay
+			(*it)->joindelay = 0; // Allow this player to queue up immediately without
+			                      // waiting for ReJoinDelay
 		}
 	}
 
@@ -5283,10 +5282,10 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 {
 	int playerCount = 0;
 	int queuePos = 1;
-	std::vector<player_t*> queued;
-	std::vector<player_t*> queueUpdates;
+	PlayersView queued;
+	PlayersView queueUpdates;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (it->QueuePosition > 0 && disconnectPlayer != &(*it))
 			queued.push_back(&(*it));
@@ -5299,7 +5298,7 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 
 	for (size_t i = 0; i < queued.size(); i++)
 	{
-		player_t* p = queued[i];
+		player_t* p = queued.at(i);
 
 		if (p->QueuePosition == 0)
 			continue;
@@ -5325,10 +5324,13 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		queueUpdates.push_back(disconnectPlayer);
 	}
 
-	for (Players::iterator dest = players.begin(); dest != players.end(); ++dest)
+	for (Players::iterator dest = ::players.begin(); dest != ::players.end(); ++dest)
 	{
-		for (unsigned int i = 0; i < queueUpdates.size(); i++)
-			SV_SendPlayerQueuePosition(queueUpdates[i], &(*dest));
+		for (PlayersView::iterator it = queueUpdates.begin(); it != queueUpdates.end();
+		     ++it)
+		{
+			SV_SendPlayerQueuePosition(*it, &(*dest));
+		}
 	}
 }
 

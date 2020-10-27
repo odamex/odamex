@@ -126,18 +126,24 @@ void P_ClearPlayerScores(player_t& p, bool wins)
 	p.points = 0;
 }
 
-/**
- * @brief Get a count of ingame players based on conditions. 
- * 
- * @param out Output vector for players, or NULL if we don't care about the
- *            specific players.
- * @param flags PC_* bitfield flags.
- * @param team Team to fixate on, if any.
- * @return size_t Number of players found.
- */
-PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
+static bool cmpFrags(player_t* a, player_t* b)
 {
-	PlayerCounts counts;
+	return a->fragcount < b->fragcount;
+}
+
+static bool cmpWins(player_t* a, const player_t* b)
+{
+	return a->roundwins < b->roundwins;
+}
+
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+PlayerResults PlayerQuery::execute()
+{
+	PlayerResults results;
 	int maxscore = 0;
 
 	Players::iterator pit = ::players.begin();
@@ -146,59 +152,64 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 		if (!pit->ingame() || pit->spectator)
 			continue;
 
-		counts.total += 1;
-		counts.teamtotal[pit->userinfo.team] += 1;
+		results.total += 1;
+		results.teamTotal[pit->userinfo.team] += 1;
 
-		if (flags & PQ_READY && !pit->ready)
+		if (m_ready && !pit->ready)
 			continue;
 
-		if (flags & PQ_HASLIVES && pit->lives <= 0)
+		if (m_lives && pit->lives <= 0)
 			continue;
 
-		if (team != TEAM_NONE && pit->userinfo.team != team)
+		if (m_team != TEAM_NONE && pit->userinfo.team != m_team)
 			continue;
 
-		if (out)
-		{
-			if (flags & PQ_MAXFRAGS)
-			{
-				if (pit->fragcount > maxscore)
-				{
-					// Maximum score is unique.
-					maxscore = pit->fragcount;
-					out->clear();
-					counts.ClearResult();
-				}
-				else if (pit->fragcount < maxscore)
-				{
-					// We don't care about players < the maximum
-					continue;
-				}
-			}
-			else if (flags & PQ_MAXWINS)
-			{
-				if (pit->roundwins > maxscore)
-				{
-					// Maximum score is unique.
-					maxscore = pit->fragcount;
-					out->clear();
-					counts.ClearResult();
-				}
-				else if (pit->roundwins < maxscore)
-				{
-					// We don't care about players < the maximum
-					continue;
-				}
-			}
-
-			out->push_back(&*pit);
-		}
-
-		counts.result += 1;
-		counts.teamresult[pit->userinfo.team] += 1;
+		results.players.push_back(&*pit);
+		results.count += 1;
+		results.teamCount[pit->userinfo.team] += 1;
 	}
 
-	return counts;
+	switch (m_sort)
+	{
+	case SORT_NONE:
+		break;
+	case SORT_FRAGS:
+		std::sort(results.players.rbegin(), results.players.rbegin(), cmpFrags);
+		if (m_filterOnlyTop && results.count > 0)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->fragcount;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end(); ++it)
+			{
+				if ((*it)->fragcount != top)
+				{
+					results.players.erase(it, results.players.end());
+					break;
+				}
+			}
+		}
+		break;
+	case SORT_WINS:
+		std::sort(results.players.rbegin(), results.players.rbegin(), cmpWins);
+		if (m_filterOnlyTop && results.count > 0)
+		{
+			// Since it's sorted, we know the top winner is at the front.
+			int top = results.players.at(0)->roundwins;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end(); ++it)
+			{
+				if ((*it)->roundwins != top)
+				{
+					results.players.erase(it, results.players.end());
+					break;
+				}
+			}
+		}
+		break;
+	}
+
+	return results;
 }
 
 //
@@ -209,7 +220,7 @@ PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team)
 //
 size_t P_NumPlayersInGame()
 {
-	return P_PlayerQuery(NULL, 0).result;
+	return PlayerQuery().execute().count;
 }
 
 //
@@ -220,7 +231,7 @@ size_t P_NumPlayersInGame()
 //
 size_t P_NumReadyPlayersInGame()
 {
-	return P_PlayerQuery(NULL, PQ_READY).result;
+	return PlayerQuery().isReady().execute().count;
 }
 
 // P_NumPlayersOnTeam()
@@ -228,7 +239,7 @@ size_t P_NumReadyPlayersInGame()
 // Returns the number of active players on a team.  No specs or downloaders.
 size_t P_NumPlayersOnTeam(team_t team)
 {
-	return P_PlayerQuery(NULL, 0, team).teamtotal[team];
+	return PlayerQuery().onTeam(team).execute().teamTotal[team];
 }
 
 //

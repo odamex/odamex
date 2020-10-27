@@ -346,14 +346,14 @@ void LevelState::tic()
 		{
 			// We are in here for gametype reasons.  Auto-start once we
 			// have enough players.
-			PlayerCounts pc = P_PlayerQuery(NULL, 0);
-			if (sv_gametype == GM_COOP && pc.result >= 1)
+			PlayerResults pr = PlayerQuery().execute();
+			if (sv_gametype == GM_COOP && pr.count >= 1)
 			{
 				// Coop needs one player.
 				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
 				return;
 			}
-			else if (sv_gametype == GM_DM && pc.result >= 2)
+			else if (sv_gametype == GM_DM && pr.count >= 2)
 			{
 				// DM needs two players.
 				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
@@ -363,9 +363,9 @@ void LevelState::tic()
 			{
 				// We need at least one person on at least two different teams.
 				int ready = 0;
-				for (int i = 0; i < NUMTEAMS; i++)
+				for (size_t i = 0; i < NUMTEAMS; i++)
 				{
-					if (pc.teamresult[i] > 0)
+					if (pr.teamCount[i] > 0)
 						ready += 1;
 				}
 

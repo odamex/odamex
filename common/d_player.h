@@ -408,48 +408,141 @@ player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
 /**
- * @brief Check for ready players only.
+ * @brief A collection of pointers to players, commonly called a "view".
  */
-#define PQ_READY (1 << 0)
+typedef std::vector<player_t*> PlayersView;
 
 /**
- * @brief Check for players with lives left.
- */
-#define PQ_HASLIVES (1 << 1)
-
-/**
- * @brief Return players with the top frag count, whatever that may be.
- */
-#define PQ_MAXFRAGS (1 << 2)
-
-/**
- * @brief Return players with the top win count, whatever that may be.
- */
-#define PQ_MAXWINS (1 << 3)
-
-typedef std::vector<player_t*> PlayerResults;
-struct PlayerCounts
+ * @brief Results of a PlayerQuery.
+*/
+struct PlayerResults
 {
-	int result;
-	int teamresult[NUMTEAMS];
+	/**
+	 * @brief Number of results returned.
+	 */
+	int count;
+
+	/**
+	 * @brief Number of results returned per team.
+	 */
+	int teamCount[NUMTEAMS];
+
+	/**
+	 * @brief Total number of players scanned.
+	 */
 	int total;
-	int teamtotal[NUMTEAMS];
-	PlayerCounts() : result(0), total(0)
+
+	/**
+	 * @brief Total number of players per team.
+	 */
+	int teamTotal[NUMTEAMS];
+
+	/**
+	 * @brief A view containing player pointers that satisfy the query.
+	 */
+	PlayersView players;
+
+	PlayerResults() : count(0), total(0)
 	{
-		for (size_t i = 0; i < ARRAY_LENGTH(teamresult); i++)
-			teamresult[i] = 0;
-		for (size_t i = 0; i < ARRAY_LENGTH(teamtotal); i++)
-			teamtotal[i] = 0;
-	}
-	void ClearResult()
-	{
-		result = 0;
-		for (size_t i = 0; i < ARRAY_LENGTH(teamresult); i++)
-			teamresult[i] = 0;
+		for (size_t i = 0; i < ARRAY_LENGTH(teamCount); i++)
+			teamCount[i] = 0;
+		for (size_t i = 0; i < ARRAY_LENGTH(teamTotal); i++)
+			teamTotal[i] = 0;
 	}
 };
 
-PlayerCounts P_PlayerQuery(PlayerResults* out, unsigned flags, team_t team = TEAM_NONE);
+class PlayerQuery
+{
+	enum SortTypes
+	{
+		SORT_NONE,
+		SORT_FRAGS,
+		SORT_WINS,
+	};
+
+	bool m_ready;
+	bool m_lives;
+	team_t m_team;
+	SortTypes m_sort;
+	bool m_filterOnlyTop;
+
+  public:
+	PlayerQuery()
+	    : m_ready(false), m_lives(false), m_team(TEAM_NONE), m_sort(SORT_NONE),
+	      m_filterOnlyTop(false)
+	{
+	}
+
+	/**
+	 * @brief Check for ready players only.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& isReady()
+	{
+		m_ready = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with lives left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& hasLives()
+	{
+		m_lives = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Filter players by a specific team.
+	 *
+	 * @param team Team to filter by.
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& onTeam(team_t team)
+	{
+		m_team = team;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top frag count, whatever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortFrags()
+	{
+		m_sort = SortTypes::SORT_FRAGS;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top win count, whatever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortWins()
+	{
+		m_sort = SortTypes::SORT_WINS;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only the top item remains.
+	 * 
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& filterSortMax()
+	{
+		m_filterOnlyTop = true;
+		return *this;
+	}
+
+	PlayerResults execute();
+};
+
 void P_ClearPlayerScores(player_t& p, bool wins);
 size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();

@@ -673,12 +673,10 @@ void TeamLives(std::string& str, int& color, byte team)
 	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
 	color = V_GetTextColor(teamInfo->TextColor.c_str());
 
-	PlayerResults results;
-	P_PlayerQuery(&results, PQ_HASLIVES, (team_t)team);
-
+	PlayerResults results = PlayerQuery().hasLives().onTeam(static_cast<team_t>(team)).execute();
 	int lives = 0;
-	PlayerResults::const_iterator it = results.begin();
-	for (; it != results.end(); ++it)
+	PlayersView::const_iterator it = results.players.begin();
+	for (; it != results.players.end(); ++it)
 		lives += (*it)->lives;
 
 	StrFormat(str, "%d", lives);

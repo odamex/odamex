@@ -255,11 +255,10 @@ void G_AssertValidPlayerCount()
 	else if (sv_gametype == GM_DM)
 	{
 		// End the game if the player is by themselves.
-		PlayerResults pr;
-		P_PlayerQuery(&pr, 0);
-		if (pr.size() == 1)
+		PlayerResults pr = PlayerQuery().execute();
+		if (pr.count == 1)
 		{
-			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			valid = false;
 		}
 	}
@@ -267,10 +266,10 @@ void G_AssertValidPlayerCount()
 	{
 		// End the game if there's only one team with players in it.
 		int hasplayers = TEAM_NONE;
-		PlayerCounts pc = P_PlayerQuery(NULL, 0);
+		PlayerResults pr = PlayerQuery().execute();
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
-			if (pc.teamtotal[i] > 0)
+			if (pr.teamTotal[i] > 0)
 			{
 				// Does more than one team has players?  If so, the game continues.
 				if (hasplayers != TEAM_NONE)
@@ -360,17 +359,15 @@ void G_TimeCheckEndGame()
 
 	if (sv_gametype == GM_DM)
 	{
-		PlayerResults pr;
-		P_PlayerQuery(&pr, PQ_MAXFRAGS);
-		if (pr.empty())
+		PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+		if (pr.count == 0)
 		{
 			// Something has seriously gone sideways...
 			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
 			::levelstate.endRound();
 			return;
 		}
-
-		if (pr.size() != 1)
+		else if (pr.count >= 2)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
@@ -378,8 +375,8 @@ void G_TimeCheckEndGame()
 		else
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game won by %s!\n",
-			                   pr.front()->userinfo.netname.c_str());
-			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			                   pr.players.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 		}
 	}
 	else if (G_UsesTeams())
@@ -415,11 +412,10 @@ void G_FragsCheckEndGame()
 	if (sv_fraglimit <= 0.0)
 		return;
 
-	PlayerResults pr;
-	P_PlayerQuery(&pr, PQ_MAXFRAGS);
-	if (!pr.empty())
+	PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+	if (pr.count > 0)
 	{
-		player_t* top = pr.front();
+		player_t* top = pr.players.front();
 		if (top->fragcount >= sv_fraglimit)
 		{
 			GiveWins(*top, 1);
@@ -498,15 +494,14 @@ void G_LivesCheckEndGame()
 	if (!::serverside)
 		return;
 
-	PlayerResults pr;
-
 	if (!g_lives || !G_CanEndGame())
 		return;
 
 	if (sv_gametype == GM_COOP)
 	{
 		// Everybody losing their lives in coop is a failure.
-		if (P_PlayerQuery(NULL, PQ_HASLIVES).result == 0)
+		PlayerResults pr = PlayerQuery().hasLives().execute();
+		if (pr.count == 0)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
@@ -515,22 +510,20 @@ void G_LivesCheckEndGame()
 	}
 	else if (sv_gametype == GM_DM)
 	{
-		pr.clear();
-
 		// One person being alive is success, nobody alive is a draw.
-		PlayerCounts pc = P_PlayerQuery(&pr, PQ_HASLIVES);
-		if (pc.result == 0 || pr.empty())
+		PlayerResults pr = PlayerQuery().hasLives().execute();
+		if (pr.count == 0)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			::levelstate.endRound();
 		}
-		else if (pc.result == 1)
+		else if (pr.count == 1)
 		{
-			GiveWins(*pr.front(), 1);
+			GiveWins(*pr.players.front(), 1);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s wins as the last player standing!\n",
-			                   pr.front()->userinfo.netname.c_str());
-			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			                   pr.players.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			::levelstate.endRound();
 		}
 
@@ -543,18 +536,16 @@ void G_LivesCheckEndGame()
 		if (teamsinplay < 1 || teamsinplay > NUMTEAMS)
 			return;
 
-		pr.clear();
-
 		// One person alive on a single team is success, nobody alive is a draw.
-		PlayerCounts pc = P_PlayerQuery(&pr, PQ_HASLIVES);
+		PlayerResults pr = PlayerQuery().hasLives().execute();
 		int aliveteams = 0;
 		for (int i = 0; i < teamsinplay; i++)
 		{
-			if (pc.teamresult[i] > 0)
+			if (pr.teamCount[i] > 0)
 				aliveteams += 1;
 		}
 
-		if (aliveteams == 0 || pr.empty())
+		if (aliveteams == 0 || pr.count == 0)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All teams have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
@@ -562,7 +553,7 @@ void G_LivesCheckEndGame()
 		}
 		else if (aliveteams == 1)
 		{
-			team_t team = pr.front()->userinfo.team;
+			team_t team = pr.players.front()->userinfo.team;
 			GiveTeamWins(team, 1);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins as the last team standing!\n",
 			                   GetTeamInfo(team)->ColorString.c_str());
@@ -594,22 +585,19 @@ bool G_RoundsShouldEndGame()
 
 	if (sv_gametype == GM_DM)
 	{
-		PlayerResults pr;
-		P_PlayerQuery(&pr, PQ_MAXWINS);
-
-		if (pr.size() == 1 && g_winlimit && pr.front()->roundwins >= g_winlimit)
+		PlayerResults pr = PlayerQuery().sortWins().filterSortMax().execute();
+		if (pr.count == 1 && g_winlimit && pr.players.front()->roundwins >= g_winlimit)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
-			                   pr.front()->userinfo.netname.c_str());
-			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			                   pr.players.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			return true;
 		}
-		else if (pr.size() == 1 && g_roundlimit &&
-		         ::levelstate.getRound() >= g_roundlimit)
+		else if (pr.count == 1 && g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Match won by %s!\n",
-			                   pr.front()->userinfo.netname.c_str());
-			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.front()->id);
+			                   pr.players.front()->userinfo.netname.c_str());
+			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			return true;
 		}
 		else if (g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
