@@ -146,36 +146,42 @@ PlayerResults PlayerQuery::execute()
 	PlayerResults results;
 	int maxscore = 0;
 
-	Players::iterator pit = ::players.begin();
-	for (; pit != players.end(); ++pit)
+	// Construct a base result set from all ingame players, possibly filtered.
+	for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
 	{
-		if (!pit->ingame() || pit->spectator)
+		if (!it->ingame() || it->spectator)
 			continue;
 
 		results.total += 1;
-		results.teamTotal[pit->userinfo.team] += 1;
+		results.teamTotal[it->userinfo.team] += 1;
 
-		if (m_ready && !pit->ready)
+		if (m_ready && !it->ready)
 			continue;
 
-		if (m_lives && pit->lives <= 0)
+		if (m_lives && it->lives <= 0)
 			continue;
 
-		if (m_team != TEAM_NONE && pit->userinfo.team != m_team)
+		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
 			continue;
 
-		results.players.push_back(&*pit);
-		results.count += 1;
-		results.teamCount[pit->userinfo.team] += 1;
+		results.players.push_back(&*it);
 	}
 
+	// We have no filtered players, we have our totals, there is no more
+	// useful work to be done.
+	if (results.players.size() == 0)
+	{
+		return results;
+	}
+
+	// Sort our list of players if needed.
 	switch (m_sort)
 	{
 	case SORT_NONE:
 		break;
 	case SORT_FRAGS:
 		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
-		if (m_filterOnlyTop && results.count > 0)
+		if (m_filterOnlyTop)
 		{
 			// Since it's sorted, we know the top fragger is at the front.
 			int top = results.players.at(0)->fragcount;
@@ -192,7 +198,7 @@ PlayerResults PlayerQuery::execute()
 		break;
 	case SORT_WINS:
 		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
-		if (m_filterOnlyTop && results.count > 0)
+		if (m_filterOnlyTop)
 		{
 			// Since it's sorted, we know the top winner is at the front.
 			int top = results.players.at(0)->roundwins;
@@ -207,6 +213,14 @@ PlayerResults PlayerQuery::execute()
 			}
 		}
 		break;
+	}
+
+	// Get the final totals.
+	for (PlayersView::iterator it = results.players.begin(); it != results.players.end();
+	     ++it)
+	{
+		results.count += 1;
+		results.teamCount[(*it)->userinfo.team] += 1;
 	}
 
 	return results;
