@@ -549,8 +549,7 @@ void G_DoLoadLevel (int position)
 
 		// [AM] If sv_keepkeys|sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
-		for (size_t j = 0; j < NUMCARDS; j++)
-			it->cards[j] = false;
+		P_ClearPlayerCards(*it);
 
 		P_ClearPlayerScores(*it, false);
 	}

@@ -106,6 +106,17 @@ bool validplayer(player_t &ref)
 }
 
 /**
+ * @brief Clear all cards from a player.
+ * 
+ * @param p Player to clear.
+*/
+void P_ClearPlayerCards(player_t& p)
+{
+	for (size_t i = 0; i < NUMCARDS; i++)
+		p.cards[i] = false;
+}
+
+/**
  * @brief Clear all scores from a player.
  * 
  * @param p Player to clear.

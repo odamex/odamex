@@ -596,6 +596,10 @@ void G_DoResetLevel(bool full_reset)
 	// Clear player information.
 	for (it = players.begin(); it != players.end(); ++it)
 	{
+		// Don't let players keep cards through a reset.
+		if (sv_gametype == GM_COOP)
+			P_ClearPlayerCards(*it);
+
 		if (full_reset)
 		{
 			P_ClearPlayerScores(*it, true);
@@ -708,8 +712,7 @@ void G_DoLoadLevel (int position)
 
 		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
-		for (size_t j = 0; j < NUMCARDS; j++)
-			it->cards[j] = false;
+		P_ClearPlayerCards(*it);
 
 		P_ClearPlayerScores(*it, true);
 
