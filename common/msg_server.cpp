@@ -24,6 +24,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <bitset>
+
 #include "msg_server.h"
 
 #include "d_main.h"
@@ -231,6 +233,12 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 	MSG_WriteVarint(&b, player.armorpoints);
 	MSG_WriteVarint(&b, player.lives);
 	MSG_WriteVarint(&b, player.readyweapon);
+
+	std::bitset<6> cardBits;
+	for (int i = 0; i < NUMCARDS; i++)
+		cardBits.set(i, player.cards[i]);
+
+	MSG_WriteByte(&b, cardBits.to_ulong());
 
 	for (int i = 0; i < NUMAMMO; i++)
 		MSG_WriteVarint(&b, player.ammo[i]);

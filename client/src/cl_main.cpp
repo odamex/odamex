@@ -64,6 +64,7 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 
+#include <bitset>
 #include <string>
 #include <vector>
 #include <map>
@@ -2173,6 +2174,9 @@ void CL_UpdatePlayerState()
 	int lives = MSG_ReadVarint();
 	weapontype_t weap = static_cast<weapontype_t>(MSG_ReadVarint());
 
+	byte cardByte = MSG_ReadByte();
+	std::bitset<6> cardBits(cardByte);
+
 	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
 		ammo[i] = MSG_ReadVarint();
@@ -2198,6 +2202,9 @@ void CL_UpdatePlayerState()
 
 	player.readyweapon = weap;
 	player.pendingweapon = wp_nochange;
+
+	for (int i = 0; i < NUMCARDS; i++)
+		player.cards[i] = cardBits[i];
 
 	if (!player.weaponowned[weap])
 		P_GiveWeapon(&player, weap, false);
@@ -3579,6 +3586,10 @@ void CL_ResetMap()
 	}
 
 	P_DestroyButtonThinkers();
+
+	// You don't get to keep cards.  This isn't communicated anywhere else.
+	if (sv_gametype == GM_COOP)
+		P_ClearPlayerCards(consoleplayer());
 
 	// write the map index to the netdemo
 	if (netdemo.isRecording() && recv_full_update)
