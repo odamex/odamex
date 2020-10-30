@@ -35,11 +35,10 @@ EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(g_rounds)
+EXTERN_CVAR(g_preroundtime)
+EXTERN_CVAR(g_postroundtime)
 
 LevelState levelstate;
-
-const int PREROUND_SECONDS = 5;
-const int ENDGAME_SECONDS = 3;
 
 /**
  * @brief State getter.
@@ -475,13 +474,13 @@ void LevelState::setState(LevelState::States new_state)
 		// This actually has tactical significance, so it needs to have its
 		// own hardcoded time or a cvar dedicated to it.  Also, we don't add
 		// level.time to it becuase level.time always starts at zero preround.
-		_countdown_done_time = PREROUND_SECONDS * TICRATE;
+		_countdown_done_time = g_preroundtime.asInt() * TICRATE;
 	}
 	else if (_state == LevelState::ENDROUND_COUNTDOWN ||
 	         _state == LevelState::ENDGAME_COUNTDOWN)
 	{
 		// Endgame has a little pause as well, like the old "shotclock" variable.
-		_countdown_done_time = ::level.time + ENDGAME_SECONDS * TICRATE;
+		_countdown_done_time = ::level.time + (g_postroundtime.asInt() * TICRATE);
 	}
 	else
 	{

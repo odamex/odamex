@@ -214,6 +214,13 @@ CVAR(g_winlimit, "0",
 CVAR(g_speclosers, "0", "After a game is won, force losing players or teams to spectate",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
 // -------------------------------------------------------------------------
