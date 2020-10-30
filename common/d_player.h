@@ -514,7 +514,7 @@ class PlayerQuery
 	 */
 	PlayerQuery& sortFrags()
 	{
-		m_sort = SortTypes::SORT_FRAGS;
+		m_sort = SORT_FRAGS;
 		return *this;
 	}
 
@@ -525,7 +525,7 @@ class PlayerQuery
 	 */
 	PlayerQuery& sortWins()
 	{
-		m_sort = SortTypes::SORT_WINS;
+		m_sort = SORT_WINS;
 		return *this;
 	}
 
