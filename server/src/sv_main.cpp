@@ -3894,8 +3894,8 @@ void SV_SpecPlayer(player_t &player, bool silent)
 		G_DoReborn(player);
 
 	player.spectator = true;
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		SVC_PlayerMembers(it->client.reliablebuf, *it, SVC_PM_SPECTATOR);
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+		SVC_PlayerMembers(it->client.reliablebuf, player, SVC_PM_SPECTATOR);
 
 	// [AM] Set player unready if we're in warmup mode.
 	if (sv_warmup)
