@@ -478,6 +478,26 @@ static void HU_DrawChatPrompt()
 							scaledxfac, scaledyfac);
 }
 
+#include "gui_element.h"
+
+// Set of random names to choose from.
+static const char* names[] = {
+    "[UD]AceOfSpades", "[UD]AlexMax", "[UD]deathz0r", "[UD]HeX",
+    "[UD]KBlair",      "[UD]Ralhpis", "[UD]RottKing", "[UD]Xen",
+};
+
+OGUIContext ctx;
+
+void TestLayout()
+{
+	DGUIText name(::ctx, "[UD]AlexMax");
+	
+	std::vector<DGUIElement*> vec;
+	vec.push_back(&name);
+	vec.at(0)->layout();
+	lay_run_context(::ctx.layoutAddr());
+	vec.at(0)->render();
+}
 
 //
 // HU_Drawer
@@ -508,6 +528,8 @@ void HU_Drawer()
 			hud::DoomHUD();
 		}
 	}
+
+	TestLayout();
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
