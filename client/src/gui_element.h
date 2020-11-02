@@ -4,8 +4,14 @@
 #include "layout.h"
 
 #include <limits>
+#include <vector>
 
 #include "dobject.h"
+
+/**
+ * @brief Used to indicate an unset layout ID.
+ */
+const lay_id LAYOUT_NOID = std::numeric_limits<lay_id>::max();
 
 /**
  * @brief Class for managing construction and destruction of layout contexts.
@@ -50,15 +56,42 @@ class DGUIElement : public DObject
 	 * @brief Shared layout pointer that all nodes of a widget use.
 	 */
 	OGUIContext& m_ctx;
-	DGUIElement(OGUIContext& ctx) : m_ctx(ctx)
+
+	/**
+	 * @brief The most recent layout ID of this element.  Returned bu getID().
+	 *
+	 * @detail This ID is usually set by the layout() method.  The element
+	 *         is
+	 */
+	lay_id m_layoutID;
+
+	DGUIElement(OGUIContext& ctx) : m_ctx(ctx), m_layoutID(LAYOUT_NOID)
 	{
 	}
 
   public:
+	virtual ~DGUIElement()
+	{
+	}
+
+	/**
+	 * @brief Gets the currently-set layout ID.
+	 *
+	 * @return Currently set Layout ID.
+	 */
+	virtual lay_id getID()
+	{
+		return m_layoutID;
+	}
+
 	/**
 	 * @brief Functionality to be run after a layout is reset but before
-	 *        it is run.  Usually allocates a fresh layout ID and applies
-	 *        the proper settings.
+	 *        it is run.
+	 *
+	 * @detail A typical implementation should create a new layout item,
+	 *         apply settings to it, and set m_layoutID.  If this element
+	 *         has children, their layout methods should also be run and
+	 *         the proper relationships should be set up.
 	 */
 	virtual void layout() = 0;
 
@@ -72,10 +105,27 @@ class DGUIElement : public DObject
  * @brief Wraps a "dim" that draws a solid block of color over an area of
  *        the screen.
  */
+class DGUIContainer : public DGUIElement
+{
+	DECLARE_CLASS(DGUIContainer, DGUIElement)
+	uint32_t m_containFlags;
+	std::vector<DGUIElement*> m_children;
+
+  public:
+	DGUIContainer(OGUIContext& ctx, uint32_t containFlags);
+	~DGUIContainer();
+	void layout();
+	void render();
+	void push_back(DGUIElement* ele);
+};
+
+/**
+ * @brief Wraps a "dim" that draws a solid block of color over an area of
+ *        the screen.
+ */
 class DGUIDim : public DGUIElement
 {
 	DECLARE_CLASS(DGUIDim, DGUIElement)
-	lay_id m_layoutID;
 
   public:
 	DGUIDim(OGUIContext& ctx);
@@ -90,7 +140,6 @@ class DGUIDim : public DGUIElement
 class DGUIFlat : public DGUIElement
 {
 	DECLARE_CLASS(DGUIFlat, DGUIElement)
-	lay_id m_layoutID;
 	std::string m_flatLump;
 
   public:
@@ -105,7 +154,6 @@ class DGUIFlat : public DGUIElement
 class DGUIPatch : public DGUIElement
 {
 	DECLARE_CLASS(DGUIPatch, DGUIElement)
-	lay_id m_layoutID;
 	std::string m_patchLump;
 
   public:
@@ -120,7 +168,6 @@ class DGUIPatch : public DGUIElement
 class DGUIText : public DGUIElement
 {
 	DECLARE_CLASS(DGUIText, DGUIElement)
-	lay_id m_layoutID;
 	std::string m_text;
 
   public:

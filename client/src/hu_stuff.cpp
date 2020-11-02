@@ -490,13 +490,16 @@ OGUIContext ctx;
 
 void TestLayout()
 {
-	DGUIText name(::ctx, "[UD]AlexMax");
-	
-	std::vector<DGUIElement*> vec;
-	vec.push_back(&name);
-	vec.at(0)->layout();
+	DGUIContainer contain(::ctx, LAY_FLEX | LAY_COLUMN);
+	for (size_t i = 0; i < ARRAY_LENGTH(::names); i++)
+	{
+		contain.push_back(new DGUIText(::ctx, ::names[i]));
+	}
+
+	contain.layout();
 	lay_run_context(::ctx.layoutAddr());
-	vec.at(0)->render();
+	contain.render();
+	lay_reset_context(::ctx.layoutAddr());
 }
 
 //

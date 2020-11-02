@@ -6,16 +6,80 @@
 #include "v_video.h"
 #include "w_wad.h"
 
-/**
- * @brief Used to indicate an unset layout ID.
- */
-const lay_id LAYOUT_NOID = std::numeric_limits<lay_id>::max();
-
 /*
  * Base abstract element.
  */
 
 IMPLEMENT_CLASS(DGUIElement, DObject)
+
+/*
+ * Container element - holds multiple children.
+ */
+
+IMPLEMENT_CLASS(DGUIContainer, DGUIElement)
+
+DGUIContainer::DGUIContainer(OGUIContext& ctx, uint32_t containFlags)
+    : DGUIElement(ctx), m_containFlags(containFlags)
+{
+}
+
+DGUIContainer::~DGUIContainer()
+{
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		delete *it;
+	}
+}
+
+/**
+ * @brief Push a GUI element into the container.
+ *
+ * @param ele Element to push into the container.  The container takes
+ *            ownership of this element, so the caller should not free this
+ *            pointer.  The element must have been heap-allocated with "new".
+ */
+void DGUIContainer::push_back(DGUIElement* ele)
+{
+	m_children.push_back(ele);
+}
+
+void DGUIContainer::layout()
+{
+	m_layoutID = lay_item(m_ctx.layoutAddr());
+	lay_set_contain(m_ctx.layoutAddr(), m_layoutID, m_containFlags);
+
+	lay_id lastID = LAYOUT_NOID; 
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		(*it)->layout();
+		lay_id iterID = (*it)->getID();
+
+		// This next bit is recommended by the library docs.
+		if (lastID == LAYOUT_NOID)
+		{
+			// Establish parent-child item relationship.
+			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
+		}
+		else
+		{
+			// Append this child after previous one.
+			lay_append(m_ctx.layoutAddr(), lastID, iterID);
+		}
+
+		lastID = iterID;
+	}
+}
+
+void DGUIContainer::render()
+{
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		(*it)->render();
+	}
+}
 
 /*
  * Dim element
@@ -89,7 +153,7 @@ void DGUIPatch::render()
 IMPLEMENT_CLASS(DGUIText, DGUIElement)
 
 DGUIText::DGUIText(OGUIContext& ctx, const std::string& text)
-    : DGUIElement(ctx), m_layoutID(LAYOUT_NOID), m_text(text)
+    : DGUIElement(ctx), m_text(text)
 {
 }
 

@@ -38,6 +38,7 @@ class		DCanvas;
 class		DConsoleCommand;
 class			DConsoleAlias;
 class		DGUIElement;
+class			DGUIContainer;
 class			DGUIDim;
 class			DGUIFlat;
 class			DGUIPatch;
