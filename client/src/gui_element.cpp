@@ -18,8 +18,9 @@ IMPLEMENT_CLASS(DGUIElement, DObject)
 
 IMPLEMENT_CLASS(DGUIContainer, DGUIElement)
 
-DGUIContainer::DGUIContainer(OGUIContext& ctx, uint32_t containFlags)
-    : DGUIElement(ctx), m_containFlags(containFlags)
+DGUIContainer::DGUIContainer(OGUIContext& ctx, uint32_t containFlags,
+                             uint32_t behaviorFlags)
+    : DGUIElement(ctx), m_containFlags(containFlags), m_behaveFlags(behaviorFlags)
 {
 }
 
@@ -48,8 +49,9 @@ void DGUIContainer::layout()
 {
 	m_layoutID = lay_item(m_ctx.layoutAddr());
 	lay_set_contain(m_ctx.layoutAddr(), m_layoutID, m_containFlags);
+	lay_set_behave(m_ctx.layoutAddr(), m_layoutID, m_behaveFlags);
 
-	lay_id lastID = LAYOUT_NOID; 
+	lay_id lastID = LAYOUT_NOID;
 	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
 	     it != m_children.end(); ++it)
 	{
@@ -87,9 +89,31 @@ void DGUIContainer::render()
 
 IMPLEMENT_CLASS(DGUIDim, DGUIElement)
 
+DGUIDim::DGUIDim(OGUIContext& ctx, const std::string& color, float amount)
+    : DGUIElement(ctx), m_color(color), m_amount(amount), m_child(NULL)
+{
+}
+
+DGUIDim::DGUIDim(OGUIContext& ctx, const std::string& color, float amount,
+                 DGUIElement* child)
+    : DGUIElement(ctx), m_color(color), m_amount(amount), m_child(child)
+{
+}
+
+DGUIDim::~DGUIDim()
+{
+	delete m_child;
+	m_child = NULL;
+}
+
 void DGUIDim::layout()
 {
 	m_layoutID = lay_item(m_ctx.layoutAddr());
+	m_child->layout();
+
+	// Establish parent-child item relationship.
+	lay_id childID = m_child->getID();
+	lay_insert(m_ctx.layoutAddr(), m_layoutID, childID);
 }
 
 void DGUIDim::render()
@@ -99,6 +123,9 @@ void DGUIDim::render()
 
 	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
 	::screen->Dim(vec[0], vec[1], vec[2], vec[3]);
+
+	// Render child after parent.
+	m_child->render();
 }
 
 /*

@@ -490,15 +490,41 @@ OGUIContext ctx;
 
 void TestLayout()
 {
-	DGUIContainer contain(::ctx, LAY_FLEX | LAY_COLUMN);
-	for (size_t i = 0; i < ARRAY_LENGTH(::names); i++)
-	{
-		contain.push_back(new DGUIText(::ctx, ::names[i]));
-	}
+	// Left header.
+	DGUIContainer* headerLeft = new DGUIContainer(::ctx, LAY_FLEX | LAY_COLUMN, LAY_LEFT);
 
-	contain.layout();
+	headerLeft->push_back(new DGUIText(::ctx, "CLIENTS: " TEXTCOLOR_GREEN "N/A"));
+	headerLeft->push_back(new DGUIText(::ctx, "PLAYERS: " TEXTCOLOR_GREEN "N/A"));
+
+	// Middle header.
+	DGUIContainer* headerMid =
+	    new DGUIContainer(::ctx, LAY_FLEX | LAY_COLUMN, LAY_MIDDLE);
+	headerMid->push_back(new DGUIText(::ctx, TEXTCOLOR_GOLD "CAPTURE THE FLAG"));
+	headerMid->push_back(new DGUIText(::ctx, "[NJ] FUNCRUSHER || CAPTURE THE FLAG"));
+
+	// Right header.
+	DGUIContainer* headerRight =
+	    new DGUIContainer(::ctx, LAY_FLEX | LAY_COLUMN, LAY_RIGHT);
+
+	headerRight->push_back(new DGUIText(::ctx, "TIME LEFT: " TEXTCOLOR_GREEN "N/A"));
+	headerRight->push_back(new DGUIText(::ctx, "FRAGLIMIT: " TEXTCOLOR_GREEN "N/A"));
+	headerRight->push_back(new DGUIText(::ctx, "SCORELIMIT: " TEXTCOLOR_GREEN "N/A"));
+
+	// Header as a whole.
+	DGUIContainer* header = new DGUIContainer(::ctx, LAY_FLEX | LAY_ROW, 0);
+	header->push_back(headerLeft);
+	header->push_back(headerMid);
+	header->push_back(headerRight);
+
+	// Scoreboard as a whole.
+	DGUIContainer* scoreboard = new DGUIContainer(::ctx, LAY_FLEX | LAY_COLUMN, 0);
+	scoreboard->push_back(header);
+
+	DGUIDim scorebg(::ctx, "00 00 00", 0.9, scoreboard);
+
+	scorebg.layout();
 	lay_run_context(::ctx.layoutAddr());
-	contain.render();
+	scorebg.render();
 	lay_reset_context(::ctx.layoutAddr());
 }
 

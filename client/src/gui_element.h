@@ -21,8 +21,8 @@ class OGUIContext
 	lay_context m_layout;
 	int m_maxWidth;
 	int m_maxHeight;
-	double m_scaleWidth;
-	double m_scaleHeight;
+	float m_scaleWidth;
+	float m_scaleHeight;
 
 	// Contexts can't be copied.
 	OGUIContext(const OGUIContext&);
@@ -109,10 +109,11 @@ class DGUIContainer : public DGUIElement
 {
 	DECLARE_CLASS(DGUIContainer, DGUIElement)
 	uint32_t m_containFlags;
+	uint32_t m_behaveFlags;
 	std::vector<DGUIElement*> m_children;
 
   public:
-	DGUIContainer(OGUIContext& ctx, uint32_t containFlags);
+	DGUIContainer(OGUIContext& ctx, uint32_t containFlags, uint32_t behaviorFlags);
 	~DGUIContainer();
 	void layout();
 	void render();
@@ -126,9 +127,14 @@ class DGUIContainer : public DGUIElement
 class DGUIDim : public DGUIElement
 {
 	DECLARE_CLASS(DGUIDim, DGUIElement)
+	std::string m_color;
+	float m_amount;
+	DGUIElement* m_child;
 
   public:
-	DGUIDim(OGUIContext& ctx);
+	DGUIDim(OGUIContext& ctx, const std::string& color, float amount);
+	DGUIDim(OGUIContext& ctx, const std::string& color, float amount, DGUIElement* child);
+	~DGUIDim();
 	void layout();
 	void render();
 };
