@@ -244,6 +244,23 @@ void G_AssertValidPlayerCount()
 	    ::levelstate.getState() == LevelState::ENDGAME_COUNTDOWN)
 		return;
 
+	// Cooperative game modes have slightly different logic.
+	if (::sv_gametype == GM_COOP && P_NumPlayersInGame() == 0)
+	{
+		if (::g_lives)
+		{
+			// Survival modes cannot function with no players in the gamne,
+			// so the level must be reset at this point.
+			::levelstate.reset();
+		}
+		else
+		{
+			// Normal coop is pretty casual so in this case we leave it to
+			// sv_emptyreset to reset the level for us.
+		}
+		return;
+	}
+
 	bool valid = true;
 
 	if (P_NumPlayersInGame() == 0)
