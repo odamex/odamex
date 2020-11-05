@@ -27,6 +27,7 @@
 
 #include "cmdlib.h"
 #include "doomdef.h"
+#include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
 #include "doomstat.h"
@@ -697,6 +698,19 @@ void P_DeathThink (player_t *player)
 		    ((g_lives && player->lives > 0) || !g_lives))
 		{
 			player->playerstate = PST_REBORN;
+		}
+	}
+
+	if (clientside)
+	{
+		// [AM] If the player runs out of lives in an LMS gamemode, having
+		//      them spectate another player after a beat is expected.
+		if (::g_lives && player->lives < 1 && &consoleplayer() == &displayplayer() &&
+		    level.time >= player->death_time + (TICRATE * 2))
+		{
+			// CL_SpyCycle is located in cl and templated, so we use this
+			// instead.
+			AddCommandString("spynext");
 		}
 	}
 }
