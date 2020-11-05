@@ -730,6 +730,10 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (P_AreTeammates(viewer, other))
 		return true;
 
+	// A player who is out of lives in LMS can see everyone else
+	if (::sv_gametype == GM_DM && ::g_lives && viewer.lives < 1)
+		return true;
+
 	return false;
 }
 
