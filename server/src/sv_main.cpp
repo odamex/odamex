@@ -4092,7 +4092,29 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 	warmup.readytoggle();
 }
 
-void SV_Ready(player_t &player)
+/**
+ * @brief Tell the client about any custom commands we have.
+ * 
+ * @detail A stock server is not expected to have any custom commands.
+ *         Custom servers can implement their own features, and this is
+ *         where you tell players about it.
+ * 
+ * @param player Player who asked for help.
+ */
+static void HelpCmd(player_t& player)
+{
+	SV_PlayerPrintf(PRINT_HIGH, player.id,
+	                "odasrv v%s\n\n"
+	                "This server has no custom commands\n",
+	                GitDescribe());
+}
+
+/**
+ * @brief Toggle a player as ready/unready.
+ * 
+ * @param player Player to toggle.
+ */
+static void ReadyCmd(player_t &player)
 {
 	// If the player is not ingame, he shouldn't be sending us ready packets.
 	if (!player.ingame()) {
@@ -4131,6 +4153,39 @@ void SV_Ready(player_t &player)
 
 	// Toggle ready state
 	SV_SetReady(player, !player.ready);
+}
+
+/**
+ * @brief Send the player a MOTD on demand.
+ * 
+ * @param player Player who wants the MOTD.
+ */
+void MOTDCmd(player_t& player)
+{
+	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+}
+
+/**
+ * @brief Interpret a "netcmd" string from a client.
+ * 
+ * @param player Player who sent the netcmd.
+ */
+void SV_NetCmd(player_t& player)
+{
+	const char* cmd = MSG_ReadString();
+
+	if (!stricmp(cmd, "help"))
+	{
+		HelpCmd(player);
+	}
+	if (!stricmp(cmd, "motd"))
+	{
+		MOTDCmd(player);
+	}
+	else if (!stricmp(cmd, "ready"))
+	{
+		ReadyCmd(player);
+	}
 }
 
 //
@@ -4474,8 +4529,8 @@ void SV_ParseCommands(player_t &player)
             }
 			break;
 
-		case clc_ready:
-			SV_Ready(player);
+		case clc_netcmd:
+			SV_NetCmd(player);
 			break;
 
 		case clc_kill:
