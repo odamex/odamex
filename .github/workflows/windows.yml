@@ -31,11 +31,11 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
-      run: .\ci-build-32bit.ps1
+      run: .\ci-build-x32.ps1
     - name: Run build
       run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
-      run: .\ci-artifact.ps1
+      run: .\ci-artifact-x32.ps1
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
