@@ -22,7 +22,7 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
-  build:
+  build-x32:
     name: Build (Visual Studio, 32-bit)
     runs-on: windows-latest
     steps:
@@ -33,14 +33,14 @@ jobs:
     - name: Prepare build
       run: .\ci-build-32bit.ps1
     - name: Run build
-      run: cmake --build .\build32\ --config RelWithDebInfo --parallel
+      run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci-artifact.ps1
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: Odamex-Win-x32
-        path: 'build32/artifact/*'
+        path: 'build-x32/artifact/*'
   build-mingw:
     name: Build (MinGW)
     runs-on: windows-latest
