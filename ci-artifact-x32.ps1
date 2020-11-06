@@ -1,6 +1,6 @@
 Set-PSDebug -Trace 1
 
-Set-Location build
+Set-Location "build-x32"
 mkdir artifact | Out-Null
 
 # Copy all built files into artifact directory
