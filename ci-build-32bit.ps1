@@ -1,6 +1,6 @@
 Set-PSDebug -Trace 1
 
-mkdir build | Out-Null
+mkdir "build-x32" | Out-Null
 Set-Location "build-x32"
 
 & cmake .. `
