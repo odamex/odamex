@@ -109,6 +109,9 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 		fprintf(f, "unbindall\n");
 		Bindings.ArchiveBindings(f);
 		DoubleBindings.ArchiveBindings(f);
+
+		fprintf(f, "\n// --- Automap Bindings ---\n\n");
+		fprintf(f, "unbindall automap\n");
 		AutomapBindings.ArchiveBindings(f);
 
 		// Archive all aliases
@@ -139,8 +142,6 @@ extern int cvar_defflags;
  */
 void M_LoadDefaults(void)
 {
-	extern char DefBindings[];
-
 	// Set default key bindings. These will be overridden
 	// by the bindings in the config file if it exists.
 	C_BindDefaults();

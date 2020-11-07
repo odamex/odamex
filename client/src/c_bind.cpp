@@ -125,7 +125,6 @@ OBinding DefaultBindings[] =
 	{"end", "spectate"},
 	{"m", "changeteams"},
 	{ NULL, NULL }
-	//{"", ""},
 };
 
 /* Special bindings when it comes
@@ -620,10 +619,24 @@ END_COMMAND(binddefaults)
 
 BEGIN_COMMAND(unbindall)
 {
-	Bindings.UnbindAll();
-	DoubleBindings.UnbindAll();
-	AutomapBindings.UnbindAll();
+	if (argc > 1) {
+		std::string lowerstring = StdStringToLower(argv[1]);
+
+		if (iequals(lowerstring, "bind"))
+			Bindings.UnbindAll();
+		else if (iequals(lowerstring, "doublebind"))
+			DoubleBindings.UnbindAll();
+		else if (iequals(lowerstring, "automap"))
+			AutomapBindings.UnbindAll();
+	}
+	else {
+		// Original settings
+		Bindings.UnbindAll();
+		DoubleBindings.UnbindAll();
+	}
 }
 END_COMMAND(unbindall)
+
+
 
 VERSION_CONTROL (c_bind_cpp, "$Id$")
