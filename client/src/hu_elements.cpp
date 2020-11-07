@@ -221,13 +221,13 @@ std::string HelpText()
 	if (isGameFull)
 	{
 		std::string use("Press ");
-		use.append(C_GetKeyStringsFromCommand("+use"));
+		use.append(Bindings.GetKeynameFromCommand("+use"));
 		use.append(" to join the queue");
 		return use;
 	}
 
 	std::string use("Press ");
-	use.append(C_GetKeyStringsFromCommand("+use"));
+	use.append(Bindings.GetKeynameFromCommand("+use"));
 	use.append(" to join");
 	return use;
 }
