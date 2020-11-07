@@ -631,7 +631,7 @@ void R_InitTextures (void)
 			patch->patch = patchlookup[LESHORT(mpatch->patch)];
 			if (patch->patch == -1)
 			{
-				Printf (PRINT_HIGH, "R_InitTextures: Missing patch in texture %s\n", texture->name);
+				Printf (PRINT_WARNING, "R_InitTextures: Missing patch in texture %s\n", texture->name);
 				errors++;
 			}
 		}
@@ -1050,7 +1050,7 @@ int R_TextureNumForName (const char *name)
 		namet[8] = 0;
 		//I_Error ("R_TextureNumForName: %s not found", namet);
 		// [RH] Return empty texture if it wasn't found.
-		Printf (PRINT_HIGH, "Texture %s not found\n", namet);
+		Printf (PRINT_WARNING, "Texture %s not found\n", namet);
 		return 0;
 	}
 

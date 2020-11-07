@@ -27,7 +27,7 @@
 // ---------------
 
 // Game mode
-CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
+CVAR_RANGE(sv_gametype, "0", "Sets the game mode, values are:\n" \
 					"// 0 = Cooperative\n" \
 					"// 1 = Deathmatch\n" \
 					"// 2 = Team Deathmatch\n" \
@@ -169,7 +169,10 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
-					
+CVAR(sv_downloadsites, "",
+     "A list of websites to download WAD files from, separated by spaces",
+     CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
 					
@@ -178,7 +181,6 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
-	
 
 // Compatibility options
 // ---------------------------------

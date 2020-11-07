@@ -34,6 +34,7 @@
 #include "p_mobj.h"
 #include "st_stuff.h"
 #include "p_acs.h"
+#include "p_ctf.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -182,15 +183,15 @@ void P_ShowSpawns(mapthing2_t* mthing)
 
 		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		{
-			if (mthing->type == 5080)
+			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
-				spawn->args[0] = 3; // Blue
-			}
-			else if (mthing->type == 5081)
-			{
-				spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
-				spawn->args[0] = 1; // Red
+				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				if (teamInfo->TeamSpawnThingNum == mthing->type)
+				{
+					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+					spawn->args[0] = teamInfo->FountainColorArg;
+					break;
+				}
 			}
 		}
 

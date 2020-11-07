@@ -149,22 +149,31 @@ CVAR_RANGE(			con_scrlock, "1", "",
 CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 512.0f, 65536.0f)
 
-CVAR_RANGE_FUNC_DECL(msg0color, "6", "",
+CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				message_showpickups, "1", "Show item pickup messages.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(				message_showobituaries, "1", "Show player death messages.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE_FUNC_DECL(msg0color, "6", "Color used for Pickup messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg1color, "5", "",
+CVAR_RANGE_FUNC_DECL(msg1color, "5", "Color used for obituary messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg2color, "2", "",
+CVAR_RANGE_FUNC_DECL(msg2color, "2", "Color used for all regular messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg3color, "3", "",
+CVAR_RANGE_FUNC_DECL(msg3color, "3", "Color used for chat messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msg4color, "8", "",
+CVAR_RANGE_FUNC_DECL(msg4color, "8", "Color used for team-chat messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
-CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "",
+CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "Color used for centered messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
 
 // Intermission
@@ -257,11 +266,11 @@ CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR(				show_messages, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				mute_spectators, "0", "Mute spectators chat until next disconnect",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(				mute_spectators, "0", "Mute spectators chat.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				mute_enemies, "0", "Mute enemy players chat until next disconnect",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(				mute_enemies, "0", "Mute enemy players chat.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 
 // Maximum number of clients who can connect to the server
@@ -270,10 +279,22 @@ CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVA
 CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can be on a team
 CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR (sv_teamsinplay, "0", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
 
 // Netcode Settings
 // --------------
+
+CVAR(cl_downloadsites,
+     "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+     "http://grandpachuck.org/files/wads/ http://ts.chaosunleashed.net/ "
+     "https://wads.doomleague.org/ http://files.funcrusher.net/wads/",
+     "A list of websites to download WAD files from.  These websites are used if the "
+     "server doesn't provide any websites to download files from, or the file can't be "
+     "found on any of their sites.  The list of sites is separated by spaces.  These "
+     "websites are tried in random order, and their WAD files must not be compressed "
+     "with ZIP.",
+     CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
@@ -686,4 +707,3 @@ CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting (as a percentage of 
 
 
 VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")
-

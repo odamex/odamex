@@ -205,28 +205,7 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			case 'g':
 			{
-				switch (sv_gametype.asInt())
-				{
-					case (int)(GM_COOP):
-						if (!multiplayer)
-							buffer << "SOLO";
-						else
-							buffer << "COOP";
-						break;
-					case (int)(GM_DM):
-						if (sv_maxplayers == 2)
-							buffer << "DUEL";
-						else
-							buffer << "DM";
-						break;
-					case (int)(GM_TEAMDM):
-						buffer << "TDM";
-						break;
-					case (int)(GM_CTF):
-						buffer << "CTF";
-						break;
-				}
-
+				buffer << GetShortGameModeString();
 				break;
 			}
 			case 'w':

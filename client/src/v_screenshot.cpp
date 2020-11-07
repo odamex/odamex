@@ -111,7 +111,7 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 {
 	if (png_get_color_type(png_ptr, info_ptr) != 3)
 	{
-		Printf(PRINT_HIGH, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
+		Printf(PRINT_WARNING, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
 		return;
 	}
 
@@ -212,7 +212,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	if (fp == NULL)
 	{
-		Printf(PRINT_HIGH, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
+		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
 		return -1;
 	}
 
@@ -221,7 +221,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	if (png_ptr == NULL)
 	{
 		fclose(fp);
-		Printf(PRINT_HIGH, "I_SavePNG: png_create_write_struct failed\n");
+		Printf(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
 		return -1;
 	}
 
@@ -244,7 +244,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	{
 		fclose(fp);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
-		Printf(PRINT_HIGH, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
+		Printf(PRINT_WARNING, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
 		return -1;
 	}
 	#endif // PNG_SETJMP_SUPPORTED
@@ -288,7 +288,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 			png_destroy_write_struct(&png_ptr, &info_ptr);
 			fclose(fp);
 			
-			Printf(PRINT_HIGH, "I_SavePNG: Not enough RAM to create PNG file\n");
+			Printf(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
 			return -1;
 		}
 	}
@@ -398,7 +398,7 @@ static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
 
 	if (sdlsurface == NULL)
 	{
-		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
+		Printf(PRINT_WARNING, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
 		return -1;
 	}
 
@@ -421,7 +421,7 @@ static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
 	int result = SDL_SaveBMP(sdlsurface, filename.c_str());
 
 	if (result != 0)
-		Printf(PRINT_HIGH, "SDL_SaveBMP failed: %s\n", SDL_GetError());
+		Printf(PRINT_WARNING, "SDL_SaveBMP failed: %s\n", SDL_GetError());
 
 	return result;
 }
@@ -453,7 +453,7 @@ void V_ScreenShot(std::string filename)
 	// If the file already exists, append numbers.
 	if (!M_FindFreeName(filename, extension))
 	{
-		Printf(PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
+		Printf(PRINT_WARNING, "I_ScreenShot: Delete some screenshots\n");
 		return;
 	}
 
@@ -464,14 +464,14 @@ void V_ScreenShot(std::string filename)
 	int result = V_SavePNG(filename, primary_surface); 
 	if (result != 0)
 	{
-		Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
+		Printf(PRINT_WARNING, "I_SavePNG Error: Returned error code %d\n", result);
 		return;
 	}
 	#else
 	int result = V_SaveBMP(filename, primary_surface); 
 	if (result != 0)
 	{
-		Printf(PRINT_HIGH, "I_SaveBMP Error: Returned error code %d\n", result);
+		Printf(PRINT_WARNING, "I_SaveBMP Error: Returned error code %d\n", result);
 		return;
 	}
 	#endif	// USE_PNG
