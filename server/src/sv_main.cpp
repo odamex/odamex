@@ -282,7 +282,7 @@ CVAR_FUNC_IMPL (sv_waddownloadcap)
 
 CVAR_FUNC_IMPL(sv_sharekeys)
 {
-	if (var == 1.0f)
+	if (var)
 	{
 		// Refresh it to everyone
 		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
