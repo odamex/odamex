@@ -310,27 +310,12 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 }
 #endif
 
-//
-// SetLanguageIDs
-//
-static const char *langids[] = {
-	"auto",
-	"enu",
-	"fr",
-	"it"
-};
-
-EXTERN_CVAR (language)
+EXTERN_CVAR(language)
 
 // Force the language to English (default)
-void SetLanguageIDs ()
+void SetLanguageIDs()
 {
-	DWORD lang = 0;
-	const char *langtag = langids[1];	// Forces ENGLISH as language.
-
-	((BYTE *)&lang)[0] = (langtag)[0];
-	((BYTE *)&lang)[1] = (langtag)[1];
-	((BYTE *)&lang)[2] = (langtag)[2];
+	uint32_t lang = MAKE_ID('*', '*', '\0', '\0');
 	LanguageIDs[0] = lang;
 	LanguageIDs[1] = lang;
 	LanguageIDs[2] = lang;
@@ -743,4 +728,3 @@ std::string I_ConsoleInput (void)
 #endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
-

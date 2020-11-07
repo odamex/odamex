@@ -1,3 +1,5 @@
+include(OdamexTargetSettings)
+
 global_compile_options()
 
 # API
@@ -33,6 +35,11 @@ endif()
 
 # Odalaunch target
 if(wxWidgets_FOUND)
+  # wxWidgets 3.0.4 requires C++11
+  if(wxWidgets_VERSION_STRING VERSION_GREATER 3.0.3)
+    set(CMAKE_CXX_STANDARD 11)
+  endif()
+
   file(MAKE_DIRECTORY "${XRCRES_BINARY_DIR}")
 
   # Attempt to compile all of the XRC files with custom commands.
@@ -46,6 +53,7 @@ if(wxWidgets_FOUND)
     ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${XRCRES_HEADER})
+  odamex_target_settings(odalaunch)
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
   if(WIN32)

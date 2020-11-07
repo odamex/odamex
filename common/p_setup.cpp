@@ -581,10 +581,14 @@ void P_LoadThings (int lump)
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
 	//		referenced, we translate them into a Hexen-style thing.
-	memset (&mt2, 0, sizeof(mt2));
-
 	for ( ; mt < lastmt; mt++)
 	{
+		// [AM] Ensure that we get a fresh mapthing every iteration - sometimes
+		//      P_SpawnMapThing mutates a part of the mapthing that the map
+		//      data doesn't care about, and we don't want it to carry over
+		//      between iterations.
+		memset(&mt2, 0, sizeof(mt2));
+
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
@@ -1987,4 +1991,3 @@ static void P_SetupSlopes()
 
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")
-

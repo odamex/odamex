@@ -100,8 +100,6 @@ int                 repeatCount;
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
-char				endstring[160];
-
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
@@ -461,7 +459,7 @@ enum load_t
 	load_end
 } load_e;
 
-oldmenuitem_t LoadMenu[]=
+static oldmenuitem_t LoadSavegameMenu[]=
 {
 	{1,"", M_LoadSelect,'1'},
 	{1,"", M_LoadSelect,'2'},
@@ -476,7 +474,7 @@ oldmenuitem_t LoadMenu[]=
 oldmenu_t LoadDef =
 {
 	load_end,
-	LoadMenu,
+	LoadSavegameMenu,
 	M_DrawLoad,
 	80,54,
 	0
@@ -631,7 +629,7 @@ void M_ReadSaveStrings(void)
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
-			LoadMenu[i].status = 0;
+			LoadSavegameMenu[i].status = 0;
 		}
 		else
 		{
@@ -643,7 +641,7 @@ void M_ReadSaveStrings(void)
 				return;
 			}
 			fclose (handle);
-			LoadMenu[i].status = 1;
+			LoadSavegameMenu[i].status = 1;
 		}
 	}
 }
@@ -751,7 +749,7 @@ void M_SaveSelect (int choice)
 	// If on a game console, auto-fill with date and time to save name
 
 #ifndef GCONSOLE
-	if (!LoadMenu[choice].status)
+	if (!LoadSavegameMenu[choice].status)
 #endif
 	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
@@ -1157,18 +1155,18 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM (int choice)
+void M_QuitDOOM(int choice)
 {
+	static std::string endstring;
+
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	sprintf (endstring, "%s\n\n%s",
-		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+	StrFormat(endstring, "%s\n\n%s",
+	          GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings(DOSY));
 
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1658,6 +1656,10 @@ void M_StopMessage (void)
 //
 int M_StringHeight(char* string)
 {
+	// Default height without a working font is 8.
+	if (::hu_font[0] == NULL)
+		return 8;
+
 	int h;
 	int height = hu_font[0]->height();
 
@@ -1981,7 +1983,7 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	if (messageToPrint)
+	if (messageToPrint && ::hu_font[0] != NULL)
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
@@ -2178,5 +2180,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
-
-

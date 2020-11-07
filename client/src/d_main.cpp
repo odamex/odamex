@@ -584,8 +584,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
@@ -599,6 +598,18 @@ void D_Init()
 	C_InitConCharsFont();
 
 	HU_Init();
+
+	LevelInfos& levels = getLevelInfos();
+	if (levels.size() == 0)
+	{
+		levels.addDefaults();
+	}
+
+	ClusterInfos& clusters = getClusterInfos();
+	if (clusters.size() == 0)
+	{
+		clusters.addDefaults();
+	}
 
 	G_SetLevelStrings();
 	G_ParseMapInfo();
@@ -646,18 +657,8 @@ void STACK_ARGS D_Shutdown()
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
-	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	F_ShutdownFinale();
 
@@ -687,8 +688,6 @@ void STACK_ARGS D_Shutdown()
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();
-
-	GStrings.FreeData();
 
 //	Res_ShutdownTextureManager();
 
@@ -966,8 +965,3 @@ void D_DoomMain()
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
-
-
-
-
-

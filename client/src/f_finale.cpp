@@ -21,6 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "f_finale.h"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -52,8 +53,16 @@ int	finalecount;
 #define TEXTSPEED		2
 #define TEXTWAIT		250
 
-static const char*	finaletext;
-static const char*	finaleflat;
+enum finale_lump_t
+{
+	FINALE_NONE,
+	FINALE_FLAT,
+	FINALE_GRAPHIC,
+};
+
+const char* finaletext;
+const char* finalelump;
+finale_lump_t finalelumptype = FINALE_NONE;
 
 void	F_StartCast (void);
 void	F_CastTicker (void);
@@ -106,11 +115,11 @@ static int F_GetHeight()
 //
 // F_StartFinale
 //
-void F_StartFinale (char *music, char *flat, const char *text)
+void F_StartFinale(finale_options_t& options)
 {
-	gameaction = ga_nothing;
-	gamestate = GS_FINALE;
-	viewactive = false;
+	::gameaction = ga_nothing;
+	::gamestate = GS_FINALE;
+	::viewactive = false;
 
 	// Okay - IWAD dependend stuff.
 	// This has been changed severly, and
@@ -120,29 +129,55 @@ void F_StartFinale (char *music, char *flat, const char *text)
 	//  determined in G_WorldDone() based on data in
 	//  a level_info_t and a cluster_info_t.
 
-	if (*music == 0) {
-		currentmusic = gameinfo.finaleMusic;
-		S_ChangeMusic (currentmusic.c_str(),
-			!(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
+	if (options.music == NULL)
+	{
+		::currentmusic = ::gameinfo.finaleMusic;
+		S_ChangeMusic(
+			::currentmusic.c_str(),
+			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
+		);
 	}
-	else {
-		currentmusic = music;			
-		S_ChangeMusic (currentmusic.c_str(), !(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
+	else
+	{
+		::currentmusic = options.music;
+		S_ChangeMusic(
+			::currentmusic.c_str(),
+			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
+		);
 	}
 
-	if (*flat == 0)
-		finaleflat = gameinfo.finaleFlat;
+	if (options.pic != NULL)
+	{
+		::finalelumptype = FINALE_GRAPHIC;
+		::finalelump = options.pic;
+	}
+	else if (options.flat != NULL)
+	{
+		::finalelumptype = FINALE_FLAT;
+		::finalelump = options.flat;
+	}
 	else
-		finaleflat = flat;
+	{
+		::finalelumptype = FINALE_FLAT;
+		::finalelump = gameinfo.finaleFlat;
+	}
 
-	if (text)
-		finaletext = text;
+	if (options.text == NULL)
+	{
+		::finaletext = "In the quiet following your last battle, you suddenly "
+			"get the feeling that something is...missing.  Like there was "
+			"supposed to be intermission text here, but somehow it couldn't "
+			"be found.\n\nNo matter.  You ready your weapon and continue on "
+			"into the chaos.";
+	}
 	else
-		finaletext = "Empty message";
+	{
+		::finaletext = options.text;
+	}
 
-	finalestage = 0;
-	finalecount = 0;
-	S_StopAllChannels ();
+	::finalestage = 0;
+	::finalecount = 0;
+	S_StopAllChannels();
 }
 
 
@@ -235,6 +270,10 @@ extern patch_t *hu_font[HU_FONTSIZE];
 
 void F_TextWrite (void)
 {
+	// Don't draw text without a working font.
+	if (::hu_font[0] == NULL)
+		return;
+
 	// erase the entire screen to a tiled background
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
@@ -244,9 +283,26 @@ void F_TextWrite (void)
 	int x = (primary_surface->getWidth() - width) / 2;
 	int y = (primary_surface->getHeight() - height) / 2;
 
-	int lump = W_CheckNumForName(finaleflat, ns_flats);
-	if (lump >= 0)
-		screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+	int lump;
+	switch (finalelumptype)
+	{
+	case FINALE_GRAPHIC:
+		lump = W_CheckNumForName(finalelump, ns_global);
+		if (lump >= 0)
+		{
+			screen->DrawPatchFullScreen((patch_t*)W_CachePatch(lump, PU_CACHE));
+		}
+		break;
+	case FINALE_FLAT:
+		lump = W_CheckNumForName(finalelump, ns_flats);
+		if (lump >= 0)
+		{
+			screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+		}
+		break;
+	default:
+		break;
+	}
 
 	V_MarkRect(x, y, width, height);
 
@@ -850,4 +906,3 @@ void F_Drawer (void)
 }
 
 VERSION_CONTROL (f_finale_cpp, "$Id$")
-

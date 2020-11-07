@@ -131,8 +131,9 @@ static IVideoMode V_GetRequestedVideoMode()
 	int surface_bpp = vid_32bpp ? 32 : 8;
 	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
 	bool vsync = (vid_vsync != 0.0f);
+	const std::string stretch_mode(vid_filter);
 
-	return IVideoMode(vid_defwidth, vid_defheight, surface_bpp, window_mode, vsync, vid_filter);
+	return IVideoMode(vid_defwidth.asInt(), vid_defheight.asInt(), surface_bpp, window_mode, vsync, stretch_mode);
 }
 
 
@@ -244,11 +245,33 @@ CVAR_FUNC_IMPL(vid_pillarbox)
 		V_ForceVideoModeAdjustment();
 }
 
+//
+// Only checks to see if the widescreen mode is proper compared to sv_allowwidescreen.
+//
+// Doing a full check on Windows results in strange flashing behavior in fullscreen
+// because there's an 32-bit surface being rendered to as 8-bit.
+//
+static bool CheckWideModeAdjustment()
+{
+	bool using_widescreen = I_IsWideResolution();
+	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
+		return true;
+
+	if (vid_widescreen != using_widescreen)
+		return true;
+
+	return false;
+}
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-		V_ForceVideoModeAdjustment();
+	if (!I_VideoInitialized() || gamestate == GS_STARTUP)
+		return;
+
+	if (!CheckWideModeAdjustment())
+		return;
+
+	V_ForceVideoModeAdjustment();
 }
 
 
@@ -898,4 +921,3 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 
 VERSION_CONTROL (v_video_cpp, "$Id$")
-

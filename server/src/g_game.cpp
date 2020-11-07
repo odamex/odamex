@@ -164,14 +164,20 @@ void G_Ticker (void)
 	case GS_INTERMISSION:
 	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
-		if (!mapchange || 
-			(level.flags & LEVEL_NOINTERMISSION && (level.flags & LEVEL_EPISODEENDHACK) == 0 ))
-        {
-			G_ChangeMap ();
-            //intcd_oldtime = 0;
-        }
+		if (!mapchange)
+		{
+			G_ChangeMap();
+		}
+		// Doom episodes 1-4 end with no intermission, but in
+		// multiplayer games we still want to pause on the ending
+		// screen.
+		else if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) != 0)
+		{
+			G_ChangeMap();
+		}
+		break;
 	}
-    break;
+	break;
 
 	default:
 		break;
@@ -622,4 +628,3 @@ void G_DoReborn (player_t &player)
 }
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
-

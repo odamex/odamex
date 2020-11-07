@@ -1681,7 +1681,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2))
+	if (!(viewactive && am_overlay < 2) && hu_font[0] != NULL)
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;
@@ -1734,21 +1734,22 @@ void AM_Drawer()
 				case doom2:
 				case commercial_freedoom:
 				case commercial_hacx:
-					firstmap = HUSTR_1;
+					firstmap = GStrings.toIndex(HUSTR_1);
 					break;
 				case pack_plut:
-					firstmap = PHUSTR_1;
+					firstmap = GStrings.toIndex(PHUSTR_1);
 					break;
 				case pack_tnt:
-					firstmap = THUSTR_1;
+					firstmap = GStrings.toIndex(THUSTR_1);
 					break;
 				default:
-					firstmap = HUSTR_E1M1;
+					firstmap = GStrings.toIndex(HUSTR_E1M1);
 					mapoffset = level.cluster; // Episodes skip map numbers.
 					break;
 			}
 
-			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
+			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
+			        ARRAY_LENGTH(line) - 1);
 
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;
@@ -1802,5 +1803,3 @@ void AM_Drawer()
 }
 
 VERSION_CONTROL (am_map_cpp, "$Id$")
-
-

@@ -49,6 +49,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
+#include "m_wdlstats.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -322,11 +323,12 @@ void G_InitNew (const char *mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < wadlevelinfos.size(); i++)
-			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
-
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
-			LevelInfos[i].flags &= ~LEVEL_VISITED;
+		LevelInfos& levels = getLevelInfos();
+		for (size_t i = 0; i < levels.size(); i++)
+		{
+			level_pwad_info_t& level = levels.at(i);
+			level.flags &= ~LEVEL_VISITED;
+		}
 	}
 
 	int old_gametype = sv_gametype.asInt();
@@ -447,6 +449,9 @@ void G_InitNew (const char *mapname)
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog();
+
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
 	//if(old_ctfmode != ctfmode)
 	//	SV_ServerSettingChange();
@@ -550,6 +555,7 @@ void G_DoResetLevel(bool full_reset)
 				it->flags[i] = false;
 			}
 			CTFdata[i].flagger = 0;
+			CTFdata[i].firstgrab = false;
 			CTFdata[i].state = flag_home;
 		}
 	}
@@ -667,6 +673,8 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	M_StartWDLLog();
 }
 
 //
@@ -838,8 +846,8 @@ void G_DoLoadLevel (int position)
 //
 void G_WorldDone (void)
 {
-	cluster_info_t *nextcluster;
-	cluster_info_t *thiscluster;
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
 
 	//gameaction = ga_worlddone;
 
@@ -847,25 +855,28 @@ void G_WorldDone (void)
 		return;
 
 	const char *finaletext = NULL;
-	thiscluster = FindClusterInfo (level.cluster);
+	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
 //		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme - what should happen on the server?
-		finaletext = thiscluster->exittext;
+		finaletext = thiscluster.exittext;
 	} else {
-		if (!secretexit)
-			nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
-		else
-			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
+		cluster_info_t& nextcluster = (secretexit) ?
+			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
+			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (nextcluster->cluster != level.cluster && sv_gametype == GM_COOP) {
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP)
+		{
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
-			if (nextcluster->entertext) {
+			if (nextcluster.entertext)
+			{
 //				F_StartFinale (nextcluster->messagemusic, nextcluster->finaleflat, nextcluster->entertext); // denis - fixme
-				finaletext = nextcluster->entertext;
-			} else if (thiscluster->exittext) {
+				finaletext = nextcluster.entertext;
+			}
+			else if (thiscluster.exittext)
+			{
 //				F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme
-				finaletext = thiscluster->exittext;
+				finaletext = thiscluster.exittext;
 			}
 		}
 	}
