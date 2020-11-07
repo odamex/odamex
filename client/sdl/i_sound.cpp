@@ -390,12 +390,12 @@ void I_InitSound()
 		
     Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
     #elif defined(SDL20)
-    Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem\n");
+    Printf("I_InitSound: Initializing SDL's sound subsystem\n");
     #endif
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
-		Printf(PRINT_HIGH, 
+		Printf(PRINT_ERROR,
                "I_InitSound: Unable to set up sound: %s\n", 
                SDL_GetError());
                
@@ -403,7 +403,7 @@ void I_InitSound()
 	}
 
     #if defined(SDL20)
-	Printf(PRINT_HIGH, "I_InitSound: Using SDL's audio driver (%s)\n", SDL_GetCurrentAudioDriver());
+	Printf("I_InitSound: Using SDL's audio driver (%s)\n", SDL_GetCurrentAudioDriver());
 	#endif
 	
 	const SDL_version *ver = Mix_Linked_Version();
@@ -411,7 +411,7 @@ void I_InitSound()
 	if(ver->major != MIX_MAJOR_VERSION
 		|| ver->minor != MIX_MINOR_VERSION)
 	{
-		Printf(PRINT_HIGH, "I_InitSound: SDL_mixer version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf(PRINT_ERROR, "I_InitSound: SDL_mixer version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 		return;
@@ -419,7 +419,7 @@ void I_InitSound()
 
 	if(ver->patch != MIX_PATCHLEVEL)
 	{
-		Printf_Bold("I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf(PRINT_WARNING, "I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 	}
@@ -438,7 +438,7 @@ void I_InitSound()
 	if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
 #endif
 	{
-		Printf(PRINT_HIGH, 
+		Printf(PRINT_ERROR,
                "I_InitSound: Error initializing SDL_mixer: %s\n", 
                Mix_GetError());
 		return;
@@ -446,14 +446,13 @@ void I_InitSound()
 
     if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
 	{
-		Printf(PRINT_HIGH, 
+		Printf(PRINT_ERROR,
                "I_InitSound: Error initializing SDL_mixer: %s\n", 
                Mix_GetError());
 		return;
 	}
 	
-	Printf(PRINT_HIGH, 
-           "I_InitSound: Using %d channels (freq:%d, fmt:%d, chan:%d)\n",
+	Printf("I_InitSound: Using %d channels (freq:%d, fmt:%d, chan:%d)\n",
            Mix_AllocateChannels(NUM_CHANNELS),
 		   mixer_freq, mixer_format, mixer_channels);
 
@@ -463,7 +462,7 @@ void I_InitSound()
 
 	SDL_PauseAudio(0);
 
-	Printf(PRINT_HIGH, "I_InitSound: sound module ready\n");
+	Printf("I_InitSound: sound module ready\n");
 
 	I_InitMusic();
 

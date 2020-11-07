@@ -43,6 +43,9 @@ typedef struct movingsector_s
 } movingsector_t;
 
 extern std::list<movingsector_t> movingsectors;
+extern bool s_SpecialFromServer;
+
+#define IgnoreSpecial !serverside && !s_SpecialFromServer
 
 std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
 void P_AddMovingCeiling(sector_t *sector);
@@ -60,6 +63,15 @@ typedef enum
 	ceiling_special,
 	lighting_special
 } special_e;
+
+enum LineActivationType
+{
+	LineCross,
+	LineUse,
+	LineShoot,
+	LinePush,
+	LineACS,
+};
 
 // killough 3/7/98: Add generalized scroll effects
 
@@ -87,6 +99,10 @@ public:
 	void SetRate (fixed_t dx, fixed_t dy) { m_dx = dx; m_dy = dy; }
 	bool IsType(EScrollType type) const { return type == m_Type; }
 	int GetAffectee() const { return m_Affectee; }
+
+	EScrollType GetType() const { return m_Type; }
+	fixed_t GetScrollX() const { return m_dx; }
+	fixed_t GetScrollY() const { return m_dy; }
 
 protected:
 	EScrollType m_Type;		// Type of scroll effect
@@ -187,10 +203,10 @@ void	P_SpawnSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
-void    P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
-bool    P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
-bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
+void    P_CrossSpecialLine (int linenum, int side, AActor* thing);
+void    P_ShootSpecialLine (AActor* thing, line_t* line);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int side);
+bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
 void    P_PlayerInSpecialSector (player_t *player);
 
@@ -290,6 +306,8 @@ public:
 	DFireFlicker (sector_t *sector);
 	DFireFlicker (sector_t *sector, int upper, int lower);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -304,6 +322,8 @@ class DFlicker : public DLighting
 public:
 	DFlicker (sector_t *sector, int upper, int lower);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -319,6 +339,8 @@ public:
 	DLightFlash (sector_t *sector);
 	DLightFlash (sector_t *sector, int min, int max);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -336,6 +358,12 @@ public:
 	DStrobe (sector_t *sector, int utics, int ltics, bool inSync);
 	DStrobe (sector_t *sector, int upper, int lower, int utics, int ltics);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
+	int GetDarkTime() const { return m_DarkTime; }
+	int GetBrightTime() const { return m_BrightTime; }
+	int GetCount() const { return m_Count; }
+	void SetCount(int count) { m_Count = count; }
 protected:
 	int 		m_Count;
 	int 		m_MinLight;
@@ -367,6 +395,10 @@ class DGlow2 : public DLighting
 public:
 	DGlow2 (sector_t *sector, int start, int end, int tics, bool oneshot);
 	void		RunThink ();
+	int GetStart() const { return m_Start; }
+	int GetEnd() const { return m_End; }
+	int GetMaxTics() const { return m_MaxTics; }
+	bool GetOneShot() const { return m_OneShot; }
 protected:
 	int			m_Start;
 	int			m_End;
@@ -385,6 +417,8 @@ public:
 	DPhased (sector_t *sector);
 	DPhased (sector_t *sector, int baselevel, int phase);
 	void		RunThink ();
+	byte GetBaseLevel() const { return m_BaseLevel; }
+	byte GetPhase() const { return m_Phase; }
 protected:
 	byte		m_BaseLevel;
 	byte		m_Phase;

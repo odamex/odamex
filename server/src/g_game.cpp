@@ -56,6 +56,7 @@ EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_teamsinplay)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -246,7 +247,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
 
@@ -425,12 +426,12 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 
 	for (i = 0; i < selections; i++)
 	{
-		fixed_t distance = PlayersRangeFromSpot (&deathmatchstarts[i]);
+		fixed_t distance = PlayersRangeFromSpot (&DeathMatchStarts[i]);
 
 		if (distance > bestdistance)
 		{
 			bestdistance = distance;
-			bestspot = &deathmatchstarts[i];
+			bestspot = &DeathMatchStarts[i];
 		}
 	}
 
@@ -445,43 +446,33 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &deathmatchstarts[i]) )
+		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
 		{
-			return &deathmatchstarts[i];
+			return &DeathMatchStarts[i];
 		}
 	}
 
 	// [RH] return a spot anyway, since we allow telefragging when a player spawns
-	return &deathmatchstarts[i];
+	return &DeathMatchStarts[i];
+}
+
+static mapthing2_t* SelectTeamSpot(player_t &player, std::vector<mapthing2_t>& starts, int selections)
+{
+	for (size_t j = 0; j < starts.size(); ++j)
+	{
+		size_t i = M_Random() % selections;
+		if (G_CheckSpot(player, &starts[i]))
+			return &starts[i];
+	}
+	return &starts[0];		// could not find a free spot, use spot 0
 }
 
 // [Toke] Randomly selects a team spawn point
 // [AM] Moved out of CTF gametype and cleaned up.
 static mapthing2_t *SelectRandomTeamSpot(player_t &player, int selections)
 {
-	switch (player.userinfo.team)
-	{
-	case TEAM_BLUE:
-		for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
-		{
-			size_t i = M_Random() % selections;
-			if (G_CheckSpot(player, &blueteamstarts[i]))
-				return &blueteamstarts[i];
-		}
-		return &blueteamstarts[0];		// could not find a free spot, use spot 0
-	case TEAM_RED:
-		for (size_t j = 0; j < MaxRedTeamStarts; ++j)
-		{
-			size_t i = M_Random() % selections;
-			if (G_CheckSpot(player, &redteamstarts[i]))
-				return &redteamstarts[i];
-		}
-		return &redteamstarts[0];		// could not find a free spot, use spot 0
-	default:
-		// This team doesn't have a dedicated spawn point.  Fallthrough
-		// to using a deathmatch spawn point.
-		break;
-	}
+	if (player.userinfo.team < NUMTEAMS)
+		return SelectTeamSpot(player, GetTeamInfo(player.userinfo.team)->Starts, selections);
 
 	return SelectRandomDeathmatchSpot(player, selections);
 }
@@ -493,16 +484,14 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 
 	selections = 0;
 
-	if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-		selections = blueteam_p - blueteamstarts;
-
-	if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-		selections = redteam_p - redteamstarts;
+	// [Toke - CTF - starts]
+	if (player.userinfo.team < sv_teamsinplay)
+		selections = GetTeamInfo(player.userinfo.team)->Starts.size();
 
 	// denis - fall back to deathmatch spawnpoints, if no team ones available
 	if (selections < 1)
 	{
-		selections = deathmatch_p - deathmatchstarts;
+		selections = DeathMatchStarts.size();
 
 		if (selections)
 		{
@@ -546,7 +535,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		return;
 	}
 
-	selections = deathmatch_p - deathmatchstarts;
+	selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error ("No deathmatch starts");

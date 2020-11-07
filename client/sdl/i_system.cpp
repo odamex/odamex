@@ -759,7 +759,7 @@ void STACK_ARGS I_Warning(const char *warning, ...)
 	vsprintf (warningtext, warning, argptr);
 	va_end (argptr);
 
-	Printf_Bold ("\n%s\n", warningtext);
+	Printf (PRINT_WARNING, "\n%s\n", warningtext);
 }
 
 char DoomStartupTitle[256] = { 0 };

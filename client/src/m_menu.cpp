@@ -530,7 +530,7 @@ BEGIN_COMMAND (menu_save)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
@@ -540,7 +540,7 @@ BEGIN_COMMAND (menu_load)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -559,7 +559,7 @@ BEGIN_COMMAND (quicksave)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
@@ -577,7 +577,7 @@ BEGIN_COMMAND (quickload)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 
@@ -1429,7 +1429,7 @@ static void M_PlayerSetupDrawer (void)
 		team_t team = D_TeamByName(cl_team.cstring());
 		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : team_names[team]);
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
@@ -1460,29 +1460,20 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	if(choice)
+	int iTeam = (int)team;
+	if (choice)
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_BLUE; break;
-			case TEAM_BLUE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			team = TEAM_NONE; break;
-		}
+		iTeam = ++iTeam % NUMTEAMS;
 	}
 	else
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			case TEAM_BLUE: team = TEAM_NONE; break;
-		}
+		iTeam--;
+		if (iTeam < 0)
+			iTeam = NUMTEAMS - 1;
 	}
+	team = (team_t)iTeam;
 
-	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
+	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
 
 static void M_ChangeGender (int choice)

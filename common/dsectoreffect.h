@@ -49,6 +49,7 @@ public:
 	~DSectorEffect ();
 	virtual DSectorEffect* Clone(sector_t *sector) const;
 	virtual void Destroy();
+	sector_t* GetSector() const { return m_Sector; }
 protected:
 	DSectorEffect ();
 	sector_t	*m_Sector;

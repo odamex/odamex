@@ -224,7 +224,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
     target_link_libraries(odamex SDL2::mixer)
   endif()
-  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})
+  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})

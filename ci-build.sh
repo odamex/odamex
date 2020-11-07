@@ -12,10 +12,10 @@ if [[ $(uname -s) == "Linux" ]]; then
     sudo apt update
     if [[ -z ${USE_SDL12:-} ]]; then
         sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev \
-            libwxgtk3.0-gtk3-dev deutex
+            libcurl4-openssl-dev libwxgtk3.0-gtk3-dev deutex
     else
         sudo apt install ninja-build libsdl1.2-dev libsdl-mixer1.2-dev \
-            libwxgtk3.0-gtk3-dev deutex
+            libcurl4-openssl-dev libwxgtk3.0-gtk3-dev deutex
     fi
 else
     # macOS

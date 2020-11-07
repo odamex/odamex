@@ -345,7 +345,7 @@ BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 
-bool P_LineSpecialMovesSector(line_t *line);
+bool P_LineSpecialMovesSector(byte special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
 
 extern int TeleportSide;
