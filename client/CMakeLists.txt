@@ -199,7 +199,12 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   else()
     target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
   endif()
-  target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
+
+  if (NOT GCONSOLE)
+    target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
+  else()
+    include_directories(../common)
+  endif()
 
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})

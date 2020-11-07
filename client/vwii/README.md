@@ -25,7 +25,7 @@ Informations required for Odamex on Nintendo Wii.
 
 Make sure your Devkitpro environment is always up to date before attempting to compile :
 ```bash
-pacman -SYu
+pacman -Syu
 ```
 
 1) Install the portlibs package and CMake :
