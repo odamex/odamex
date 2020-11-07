@@ -621,7 +621,7 @@ BOOL G_Responder (event_t *ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBinding (ev->data1);
+		const char *cmd = Bindings.GetBind(ev->data1).c_str();
 
 		if (ev->type == ev_keydown)
 		{

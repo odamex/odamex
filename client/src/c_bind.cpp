@@ -511,14 +511,9 @@ void OKeyBindings::ChangeBinding (const char *str, int newone)
 }
 
 
-std::string OKeyBindings::GetBind (int key)
+const std::string &OKeyBindings::GetBind (int key)
 {
 	return Binds[key];
-}
-
-const char* OKeyBindings::GetBinding(int key)
-{
-	return Binds[key].c_str();
 }
 
 /*
@@ -573,6 +568,12 @@ END_COMMAND(bind)
 
 BEGIN_COMMAND(unbind)
 {
+	if (argc < 2) {
+		Printf(PRINT_WARNING, "Unbinds a key.\n");
+		Printf(PRINT_WARNING, "Usage: unbind <key>\n");
+		return;
+	}
+
 	if (argc > 1) {
 		Bindings.UnbindKey(argv[1]);
 	}
@@ -589,6 +590,13 @@ END_COMMAND(doublebind)
 
 BEGIN_COMMAND(undoublebind)
 {
+	if (argc < 2)
+	{
+		Printf(PRINT_WARNING, "Unbinds a doublekey.\n");
+		Printf(PRINT_WARNING, "Usage: undoublebind <key>\n");
+		return;
+	}
+
 	if (argc > 1) {
 		DoubleBindings.UnbindKey(argv[1]);
 	}
@@ -602,13 +610,20 @@ BEGIN_COMMAND(ambind)
 }
 END_COMMAND(ambind)
 
-BEGIN_COMMAND(amunbind)
+BEGIN_COMMAND(unambind)
 {
+	if (argc < 2)
+	{
+		Printf(PRINT_WARNING, "Unbinds an automap key.\n");
+		Printf(PRINT_WARNING, "Usage: unambind <key>\n");
+		return;
+	}
+
 	if (argc > 1) {
 		AutomapBindings.UnbindKey(argv[1]);
 	}
 }
-END_COMMAND(amunbind)
+END_COMMAND(unambind)
 
 // Other commands
 BEGIN_COMMAND(binddefaults)

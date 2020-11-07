@@ -58,8 +58,7 @@ public :
 
 	void ChangeBinding(const char* str, int newone);	// Stuff used by the customize controls menu
 
-	std::string GetBind(int key);			// Returns string bound to given key (NULL if none)
-	const char* GetBinding(int key);
+	const std::string &GetBind(int key);			// Returns string bound to given key (NULL if none)
 	std::string GetNameKeys(int first, int second);
 	int  GetKeysForCommand(const char* cmd, int* first, int* second);
 	std::string GetKeynameFromCommand(char* cmd, bool bTwoEntries = false);

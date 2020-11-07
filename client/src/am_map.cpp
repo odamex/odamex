@@ -334,9 +334,9 @@ extern NetDemo netdemo;
 
 void AM_clearMarks();
 void AM_addMark();
-void AM_saveScaleAndLoc(void);
-void AM_restoreScaleAndLoc(void);
-void AM_minOutWindowScale(void);
+void AM_saveScaleAndLoc();
+void AM_restoreScaleAndLoc();
+void AM_minOutWindowScale();
 
 #define NUMALIASES		3
 #define WALLCOLORS		-1

@@ -1661,7 +1661,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
-	const char *cmd = Bindings.GetBinding(ch);
+	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
 
