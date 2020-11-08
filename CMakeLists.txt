@@ -33,7 +33,7 @@ cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 
 project(Odamex)
 cmake_minimum_required(VERSION 3.1)
 
-set(PROJECT_VERSION 0.8.3)
+set(PROJECT_VERSION 0.9.0)
 set(PROJECT_COPYRIGHT "2006-2020")
 
 # Use C++ 98/03 for all targets
