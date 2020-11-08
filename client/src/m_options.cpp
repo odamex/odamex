@@ -2142,96 +2142,70 @@ void M_OptResponder (event_t *ev)
 			}
 		}
 		else if (keypress.IsAcceptKey(ch)) {
-		if (CurrentMenu == &ModesMenu)
-		{
-			int width, height;
-
-			if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
+			if (CurrentMenu == &ModesMenu)
 			{
-				width = I_GetVideoWidth();
-				height = I_GetVideoHeight();
+				int width, height;
+
+				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
+				{
+					width = I_GetVideoWidth();
+					height = I_GetVideoHeight();
+				}
+
+				M_SetVideoMode(width, height);
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
-
-			M_SetVideoMode(width, height);
-			S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-		}
-		else if (item->type == more && item->e.mfunc)
-		{
-			CurrentMenu->lastOn = CurrentItem;
-			S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-			item->e.mfunc();
-		}
-		else if (item->type == discrete || item->type == cdiscrete)
-		{
-			int cur;
-			int numvals;
-
-			numvals = (int)item->b.leftval;
-			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
-			if (++cur >= numvals)
-				cur = 0;
-
-			item->a.cvar->Set(item->e.values[cur].value);
-
-			// Hack hack. Rebuild list of resolutions
-			if (item->e.values == Depths)
-				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			}
-			else if (item->type == control || item->type == mapcontrol)
-			{
-				configuring_controls = true;
-				WaitingForKey = true;
-				OldContMessage = CurrentMenu->items[0].label;
-				OldContType = CurrentMenu->items[0].type;
-				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
-				CurrentMenu->items[0].type = redtext;
-			}
-			else if (item->type == listelement)
+			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				item->e.lfunc (CurrentItem);
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				item->e.mfunc();
 			}
+			else if (item->type == discrete || item->type == cdiscrete)
+			{
+				int cur;
+				int numvals;
+
+				numvals = (int)item->b.leftval;
+				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+				if (++cur >= numvals)
+					cur = 0;
+
+				item->a.cvar->Set(item->e.values[cur].value);
+
+				// Hack hack. Rebuild list of resolutions
+				if (item->e.values == Depths)
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+			}
+			else if (item->type == control || item->type == mapcontrol)
+				{
+					configuring_controls = true;
+					WaitingForKey = true;
+					OldContMessage = CurrentMenu->items[0].label;
+					OldContType = CurrentMenu->items[0].type;
+					CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+					CurrentMenu->items[0].type = redtext;
+				}
+			else if (item->type == listelement)
+				{
+					CurrentMenu->lastOn = CurrentItem;
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+					item->e.lfunc (CurrentItem);
+				}
 			else if (item->type == joyaxis)
-			{
-				WaitingForAxis = true;
-				OldAxisMessage = CurrentMenu->items[8].label;
-				OldAxisType = CurrentMenu->items[8].type;
-				CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
-				CurrentMenu->items[8].type = redtext;
-			}
+				{
+					WaitingForAxis = true;
+					OldAxisMessage = CurrentMenu->items[8].label;
+					OldAxisType = CurrentMenu->items[8].type;
+					CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
+					CurrentMenu->items[8].type = redtext;
+				}
 			else if (item->type == screenres)
-			{
-			}
+				{
+				}
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-		}
-		else if (item->type == control)
-		{
-			configuring_controls = true;
-			WaitingForKey = true;
-			OldContMessage = CurrentMenu->items[0].label;
-			OldContType = CurrentMenu->items[0].type;
-			CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
-			CurrentMenu->items[0].type = redtext;
-		}
-		else if (item->type == listelement)
-		{
-			CurrentMenu->lastOn = CurrentItem;
-			S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-			item->e.lfunc(CurrentItem);
-		}
-		else if (item->type == joyaxis)
-		{
-			WaitingForAxis = true;
-			OldAxisMessage = CurrentMenu->items[8].label;
-			OldAxisType = CurrentMenu->items[8].type;
-			CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
-			CurrentMenu->items[8].type = redtext;
-		}
-		else if (item->type == screenres)
-		{
 		}
 		else if (keypress.IsCancelKey(ch))
 		{

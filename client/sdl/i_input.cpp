@@ -42,7 +42,9 @@
 #include "hu_stuff.h"
 
 #ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_xbox.h"
+#elif __SWITCH__
+	#include "nx_io.h"
 #endif
 
 #ifdef _WIN32
@@ -53,8 +55,6 @@ static IInputSubsystem* input_subsystem = NULL;
 
 static bool nomouse = false;
 
-
-typedef OHashTable<int, std::string> KeyNameTable;
 KeyNameTable key_names;
 
 //
@@ -238,6 +238,11 @@ static void I_InitializeKeyNameTable()
 	key_names[KEY_HAT6] = "hat2right";
 	key_names[KEY_HAT7] = "hat2down";
 	key_names[KEY_HAT8] = "hat2left";
+
+#ifdef __SWITCH__
+	NX_InitializeKeyNameTable();
+#endif
+
 }
 
 
