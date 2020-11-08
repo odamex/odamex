@@ -62,6 +62,24 @@ const char* GitDescribe()
 #endif
 }
 
+const char* GitBranch()
+{
+#ifdef GIT_BRANCH
+	return GIT_BRANCH;
+#else
+	return "unknown";
+#endif
+}
+
+const char* GitHash()
+{
+#ifdef GIT_HASH
+	return GIT_HASH;
+#else
+	return "unknown";
+#endif
+}
+
 BEGIN_COMMAND (version)
 {
 	if (argc == 1)
