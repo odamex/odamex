@@ -569,14 +569,17 @@ END_COMMAND(bind)
 BEGIN_COMMAND(unbind)
 {
 	if (argc < 2) {
-		Printf(PRINT_WARNING, "Unbinds a key.\n");
+		Printf(PRINT_WARNING, "Unbinds a key. \"all\" unbinds every key.\n");
 		Printf(PRINT_WARNING, "Usage: unbind <key>\n");
 		return;
 	}
 
-	if (argc > 1) {
+	std::string lostr = StdStringToLower(argv[1]);
+
+	if (iequals(lostr, "all"))
+		Bindings.UnbindAll();
+	else
 		Bindings.UnbindKey(argv[1]);
-	}
 }
 END_COMMAND(unbind)
 
@@ -592,14 +595,17 @@ BEGIN_COMMAND(undoublebind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING, "Unbinds a doublekey.\n");
+		Printf(PRINT_WARNING, "Unbinds a doublekey. \"all\" unbinds every doublebind key.\n");
 		Printf(PRINT_WARNING, "Usage: undoublebind <key>\n");
 		return;
 	}
 
-	if (argc > 1) {
+	std::string lostr = StdStringToLower(argv[1]);
+
+	if (iequals(lostr, "all"))
+		DoubleBindings.UnbindAll();
+	else
 		DoubleBindings.UnbindKey(argv[1]);
-	}
 }
 END_COMMAND(undoublebind)
 
@@ -614,13 +620,19 @@ BEGIN_COMMAND(unambind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING, "Unbinds an automap key.\n");
+		Printf(PRINT_WARNING, "Unbinds an automap key. \"all\" unbinds every automap key.\n");
 		Printf(PRINT_WARNING, "Usage: unambind <key>\n");
 		return;
 	}
 
 	if (argc > 1) {
-		AutomapBindings.UnbindKey(argv[1]);
+
+		std::string lostr = StdStringToLower(argv[1]);
+
+		if (iequals(lostr, "all"))
+			AutomapBindings.UnbindAll();
+		else 
+			AutomapBindings.UnbindKey(argv[1]);
 	}
 }
 END_COMMAND(unambind)
@@ -634,21 +646,8 @@ END_COMMAND(binddefaults)
 
 BEGIN_COMMAND(unbindall)
 {
-	if (argc > 1) {
-		std::string lowerstring = StdStringToLower(argv[1]);
-
-		if (iequals(lowerstring, "bind"))
-			Bindings.UnbindAll();
-		else if (iequals(lowerstring, "doublebind"))
-			DoubleBindings.UnbindAll();
-		else if (iequals(lowerstring, "automap"))
-			AutomapBindings.UnbindAll();
-	}
-	else {
-		// Original settings
 		Bindings.UnbindAll();
 		DoubleBindings.UnbindAll();
-	}
 }
 END_COMMAND(unbindall)
 

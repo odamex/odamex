@@ -111,7 +111,7 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 		DoubleBindings.ArchiveBindings(f);
 
 		fprintf(f, "\n// --- Automap Bindings ---\n\n");
-		fprintf(f, "unbindall automap\n");
+		fprintf(f, "unambind all\n");
 		AutomapBindings.ArchiveBindings(f);
 
 		// Archive all aliases
