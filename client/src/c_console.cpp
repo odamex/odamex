@@ -1807,8 +1807,8 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
-	const char* cmd = C_GetBinding(ev->data1);
 	int ch = ev->data1;
+	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
 	if (keypress.IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{

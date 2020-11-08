@@ -334,7 +334,6 @@ static menuitem_t ControlsItems[] = {
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -347,6 +346,20 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 6"} },
 	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
 	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
+	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
+	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
+	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_setmark"} },
+	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_clearmarks"} },
+	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_big"} },
+	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomin"} },
+	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomout"} },
+	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panup"} },
+	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_pandown"} },
+	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
+	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
@@ -1316,7 +1329,9 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	for (i = 0; i < numitems; i++, item++)
 	{
 		if (item->type == control)
-			C_GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+		if (item->type == mapcontrol)
+			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
@@ -1567,8 +1582,15 @@ void M_OptDrawer (void)
 
 			case control:
 			{
-				std::string desc = C_NameKeys (item->b.key1, item->c.key2);
+				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+			}
+			break;
+
+			case mapcontrol:
+			{
+				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
@@ -1645,7 +1667,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
-	const char *cmd = C_GetBinding(ch);
+	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1656,7 +1678,10 @@ void M_OptResponder (event_t *ev)
 		{
 			if (!keypress.IsMenuKey(ch))
 			{
-				C_ChangeBinding (item->e.command, ch);
+				if (item->type == control)
+					Bindings.ChangeBinding (item->e.command, ch);
+				else if (item->type == mapcontrol)
+					AutomapBindings.ChangeBinding(item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -2107,7 +2132,12 @@ void M_OptResponder (event_t *ev)
 		else if (keypress.IsUnbindKey(ch)) {
 			if (item->type == control)
 			{
-				C_UnbindACommand(item->e.command);
+				Bindings.UnbindACommand (item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
+			else if (item->type == mapcontrol)
+			{
+				AutomapBindings.UnbindACommand(item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
 		}
@@ -2146,6 +2176,34 @@ void M_OptResponder (event_t *ev)
 			// Hack hack. Rebuild list of resolutions
 			if (item->e.values == Depths)
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+			}
+			else if (item->type == control || item->type == mapcontrol)
+			{
+				configuring_controls = true;
+				WaitingForKey = true;
+				OldContMessage = CurrentMenu->items[0].label;
+				OldContType = CurrentMenu->items[0].type;
+				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+				CurrentMenu->items[0].type = redtext;
+			}
+			else if (item->type == listelement)
+			{
+				CurrentMenu->lastOn = CurrentItem;
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				item->e.lfunc (CurrentItem);
+			}
+			else if (item->type == joyaxis)
+			{
+				WaitingForAxis = true;
+				OldAxisMessage = CurrentMenu->items[8].label;
+				OldAxisType = CurrentMenu->items[8].type;
+				CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
+				CurrentMenu->items[8].type = redtext;
+			}
+			else if (item->type == screenres)
+			{
+			}
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		}
@@ -2174,7 +2232,6 @@ void M_OptResponder (event_t *ev)
 		}
 		else if (item->type == screenres)
 		{
-		}
 		}
 		else if (keypress.IsCancelKey(ch))
 		{
