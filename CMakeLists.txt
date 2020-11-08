@@ -168,13 +168,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
 #
-# Grabs the branch we're on, plus a short hash.
+# Grabs the git hash and branch a few different ways.
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --all --long)
+get_git_head_revision(HEAD GIT_HASH)
+git_describe(GIT_DESCRIBE --all --long --abbrev=4)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\2" GIT_BRANCH "${GIT_DESCRIBE}")
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
-  "\\4" GIT_HASH "${GIT_DESCRIBE}")
+  "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
 add_subdirectory(libraries)

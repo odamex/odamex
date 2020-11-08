@@ -55,9 +55,9 @@ public:
 
 #define VERSION_CONTROL(uid, id) static file_version file_version_unique_##uid(#uid, id, __FILE__, __LINE__, __TIME__, __DATE__);
 
-const char* GitDescribe();
-const char* GitBranch();
 const char* GitHash();
+const char* GitBranch();
+const char* GitShortHash();
 const char* GitNiceVersion();
 
 #endif //__VERSION_H__
