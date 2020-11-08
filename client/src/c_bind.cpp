@@ -148,7 +148,7 @@ OBinding DefaultAutomapBindings[] =
 	{ "m", "am_setmark" },
 	{ "c", "am_clearmarks" },
 	{ "f", "am_togglefollow" },
-	{ "+", "+am_zoomin" },
+	{ "=", "+am_zoomin" },
 	{ "kp+", "+am_zoomin" },
 	{ "-", "+am_zoomout" },
 	{ "kp-", "+am_zoomout" },
