@@ -58,5 +58,6 @@ public:
 const char* GitDescribe();
 const char* GitBranch();
 const char* GitHash();
+const char* GitNiceVersion();
 
 #endif //__VERSION_H__

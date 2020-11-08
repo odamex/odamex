@@ -1581,25 +1581,14 @@ void C_DrawConsole()
 
 	if (ConBottom >= 12)
 	{
-		static std::string version;
-		if (version.empty())
-		{
-			if (!strcmp(GitBranch(), "master"))
-			{
-				StrFormat(version, "%s (%s)", DOTVERSIONSTR, GitHash());
-			}
-			else
-			{
-				StrFormat(version, "%s (%s)", GitBranch(), GitHash());
-			}
-		}
+		const char* version = GitNiceVersion();
 
 		// print the Odamex version in gold in the bottom right corner of console
-		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version.c_str()),
-		                 ConBottom - 12, version.c_str(), CR_ORANGE);
+		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version),
+		                 ConBottom - 12, version, CR_ORANGE);
 
 		// Amount of space remaining.
-		int remain = primary_surface_width - 16 - C_StringWidth(version.c_str());
+		int remain = primary_surface_width - 16 - C_StringWidth(version);
 
 		if (CL_IsDownloading())
 		{

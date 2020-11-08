@@ -29,6 +29,7 @@
 #include <sstream>
 #include <memory>
 
+#include "cmdlib.h"
 #include "c_dispatch.h"
 
 typedef std::map<std::string, std::string> source_files_t;
@@ -78,6 +79,30 @@ const char* GitHash()
 #else
 	return "unknown";
 #endif
+}
+
+/**
+ * @brief Return the Git version in a format that's good-enough to display
+ *        in most end-user contexts.
+ * 
+ * @return A version string in the format of "branch (hash)".  If we are on
+ *         master branch, a dotted version number is used instead.
+*/
+const char* GitNiceVersion()
+{
+	static std::string version;
+	if (version.empty())
+	{
+		if (!strcmp(GitBranch(), "master"))
+		{
+			StrFormat(version, "%s (%s)", DOTVERSIONSTR, GitHash());
+		}
+		else
+		{
+			StrFormat(version, "%s (%s)", GitBranch(), GitHash());
+		}
+	}
+	return version.c_str();
 }
 
 BEGIN_COMMAND (version)
