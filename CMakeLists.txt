@@ -167,8 +167,13 @@ endmacro(define_platform)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
+#
+# Grabs the branch we're on, plus a short hash.  We also do a little massaging
+# of the output to make it look better in a version string.
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --tags --always)
+git_describe(GIT_DESCRIBE --all --long --abbrev=4)
+string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
+  "\\2 \\4" GIT_DESCRIBE "${GIT_DESCRIBE}")
 
 # Libraries
 add_subdirectory(libraries)
