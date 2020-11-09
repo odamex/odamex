@@ -698,7 +698,7 @@ BEGIN_COMMAND(lms)
 		std::string str;
 		StrFormat(str,
 		          "sv_gametype 1; sv_nomonsters 1; sv_forcerespawn 1; g_lives 1; "
-		          "g_rounds 1; g_winlimit %s",
+		          "g_rounds 1; g_winlimit %s; g_lives_jointimer 0",
 		          argv[2]);
 		Printf(PRINT_HIGH, "Configuring Last Marine Standing...\n%s\n", str.c_str());
 		AddCommandString(str.c_str());
@@ -733,7 +733,7 @@ BEGIN_COMMAND(tlms)
 		std::string str;
 		StrFormat(str,
 		          "sv_gametype 2; sv_nomonsters 1; sv_forcerespawn 1; g_lives 1; "
-		          "g_rounds 1; g_winlimit %s",
+		          "g_rounds 1; g_winlimit %s; g_lives_jointimer 0",
 		          argv[2]);
 		Printf(PRINT_HIGH, "Configuring Team Last Marine Standing...\n%s\n", str.c_str());
 		AddCommandString(str.c_str());
