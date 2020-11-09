@@ -1031,6 +1031,7 @@ BEGIN_COMMAND(ready)
 {
 	MSG_WriteMarker(&net_buffer, clc_netcmd);
 	MSG_WriteString(&net_buffer, "ready");
+	MSG_WriteByte(&net_buffer, 0);
 }
 END_COMMAND(ready)
 
@@ -1042,9 +1043,11 @@ static void NetCmdHelp()
 	       "  ] netcmd help\n"
 	       "  Check to see if the server has any server-specific netcmd's.\n\n"
 	       "  ] netcmd motd\n"
-	       "  Set yourself as ready or unready.\n\n"
+	       "  Ask the server for the MOTD.\n\n"
 	       "  ] netcmd ready\n"
-	       "  Set yourself as ready or unready.\n");
+	       "  Set yourself as ready or unready.\n\n"
+	       "  ] netcmd vote <\"yes\"|\"no\">\n"
+	       "  Vote \"yes\" or \"no\" in an ongoing vote.\n");
 }
 
 BEGIN_COMMAND(netcmd)
@@ -1057,6 +1060,15 @@ BEGIN_COMMAND(netcmd)
 
 	MSG_WriteMarker(&net_buffer, clc_netcmd);
 	MSG_WriteString(&net_buffer, argv[1]);
+
+	// Pass additional arguments as separate strings.  Avoids argument
+	// parsing at the opposite end.
+	byte netargc = MIN<size_t>(argc - 2, 0xFF);
+	MSG_WriteByte(&net_buffer, netargc);
+	for (size_t i = 0; i < netargc; i++)
+	{
+		MSG_WriteString(&net_buffer, argv[i + 2]);
+	}
 }
 END_COMMAND(netcmd)
 

@@ -4172,19 +4172,32 @@ void MOTDCmd(player_t& player)
  */
 void SV_NetCmd(player_t& player)
 {
-	const char* cmd = MSG_ReadString();
+	std::vector<std::string> netargs;
 
-	if (!stricmp(cmd, "help"))
+	// Parse arguments into a vector.
+	netargs.push_back(MSG_ReadString());
+	size_t netargc = MSG_ReadByte();
+
+	for (size_t i = 0; i < netargc; i++)
+	{
+		netargs.push_back(MSG_ReadString());
+	}
+
+	if (netargs.at(0) == "help")
 	{
 		HelpCmd(player);
 	}
-	if (!stricmp(cmd, "motd"))
+	else if (netargs.at(0) == "motd")
 	{
 		MOTDCmd(player);
 	}
-	else if (!stricmp(cmd, "ready"))
+	else if (netargs.at(0) == "ready")
 	{
 		ReadyCmd(player);
+	}
+	else if (netargs.at(0) == "vote")
+	{
+		SV_VoteCmd(player, netargs);
 	}
 }
 
@@ -4579,9 +4592,6 @@ void SV_ParseCommands(player_t &player)
 		// [AM] Vote
 		case clc_callvote:
 			SV_Callvote(player);
-			break;
-		case clc_vote:
-			SV_Vote(player);
 			break;
 
 		// [AM] Maplist
