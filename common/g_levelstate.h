@@ -70,8 +70,8 @@ class LevelState
 		ENDGAME_COUNTDOWN,       // Game complete, a slight pause before intermission.
 	};
 	LevelState()
-	    : _state(LevelState::UNKNOWN), _countdown_done_time(0), _ingame_start_time(0),
-	      _round_number(0), _set_state_cb(NULL)
+	    : m_state(LevelState::UNKNOWN), m_countdownDoneTime(0), m_ingameStartTime(0),
+	      m_roundNumber(0), m_setStateCB(NULL)
 	{
 	}
 	LevelState::States getState() const;
@@ -93,12 +93,12 @@ class LevelState
 	void unserialize(SerializedLevelState serialized);
 
   private:
-	LevelState::States _state;
-	int _countdown_done_time;
-	int _ingame_start_time;
-	int _round_number;
-	WinInfo _last_wininfo;
-	LevelState::SetStateCB _set_state_cb;
+	LevelState::States m_state;
+	int m_countdownDoneTime;
+	int m_ingameStartTime;
+	int m_roundNumber;
+	WinInfo m_lastWininfo;
+	LevelState::SetStateCB m_setStateCB;
 
 	static LevelState::States getStartOfRoundState();
 	void setState(LevelState::States new_state);

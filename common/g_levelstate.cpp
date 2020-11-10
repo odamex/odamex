@@ -45,7 +45,7 @@ LevelState levelstate;
  */
 LevelState::States LevelState::getState() const
 {
-	return _state;
+	return m_state;
 }
 
 /**
@@ -53,7 +53,7 @@ LevelState::States LevelState::getState() const
  */
 const char* LevelState::getStateString() const
 {
-	switch (_state)
+	switch (m_state)
 	{
 	case LevelState::WARMUP:
 		return "Warmup";
@@ -79,10 +79,10 @@ const char* LevelState::getStateString() const
  */
 int LevelState::getCountdown() const
 {
-	if (_state == LevelState::WARMUP || _state == LevelState::INGAME)
+	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
 		return 0;
 
-	return ceil((_countdown_done_time - ::level.time) / (float)TICRATE);
+	return ceil((m_countdownDoneTime - ::level.time) / (float)TICRATE);
 }
 
 /**
@@ -90,7 +90,7 @@ int LevelState::getCountdown() const
  */
 int LevelState::getRound() const
 {
-	return _round_number;
+	return m_roundNumber;
 }
 
 /**
@@ -98,10 +98,10 @@ int LevelState::getRound() const
  */
 int LevelState::getJoinTimeLeft() const
 {
-	if (_state != LevelState::INGAME)
+	if (m_state != LevelState::INGAME)
 		return 0;
 
-	int end_time = _ingame_start_time + g_lives_jointimer * TICRATE;
+	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
 	int left = ceil((end_time - ::level.time) / (float)TICRATE);
 	return MAX(left, 0);
 }
@@ -111,7 +111,7 @@ int LevelState::getJoinTimeLeft() const
  */
 WinInfo LevelState::getWinInfo() const
 {
-	return _last_wininfo;
+	return m_lastWininfo;
 }
 
 /**
@@ -119,7 +119,7 @@ WinInfo LevelState::getWinInfo() const
  */
 void LevelState::setStateCB(LevelState::SetStateCB cb)
 {
-	_set_state_cb = cb;
+	m_setStateCB = cb;
 }
 
 /**
@@ -132,8 +132,8 @@ void LevelState::setStateCB(LevelState::SetStateCB cb)
 void LevelState::setWinner(WinInfo::WinType type, int id)
 {
 	// Set our round/match winner.
-	_last_wininfo.type = type;
-	_last_wininfo.id = id;
+	m_lastWininfo.type = type;
+	m_lastWininfo.id = id;
 }
 
 /**
@@ -164,15 +164,15 @@ void LevelState::reset()
 	else
 	{
 		// Defer to the default.
-		_round_number = 1;
+		m_roundNumber = 1;
 		setState(LevelState::getStartOfRoundState());
 
 		// Don't print "match started" for every game mode.
 		if (g_rounds)
-			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
+			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
 	}
 
-	_countdown_done_time = 0;
+	m_countdownDoneTime = 0;
 }
 
 /**
@@ -190,7 +190,7 @@ void LevelState::restart()
 void LevelState::forceStart()
 {
 	// Useless outside of warmup.
-	if (_state != LevelState::WARMUP)
+	if (m_state != LevelState::WARMUP)
 		return;
 
 	setState(LevelState::WARMUP_FORCED_COUNTDOWN);
@@ -207,7 +207,7 @@ void LevelState::readyToggle()
 
 	// No useful work can be done unless we're either in warmup or taking
 	// part in the normal warmup countdown.
-	if (_state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN)
+	if (m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN)
 		return;
 
 	// Check to see if we satisfy our autostart setting.
@@ -231,12 +231,12 @@ void LevelState::readyToggle()
 
 	if (ready >= needed)
 	{
-		if (_state == LevelState::WARMUP)
+		if (m_state == LevelState::WARMUP)
 			setState(LevelState::WARMUP_COUNTDOWN);
 	}
 	else
 	{
-		if (_state == LevelState::WARMUP_COUNTDOWN)
+		if (m_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
 			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
@@ -288,7 +288,7 @@ void LevelState::tic()
 		return;
 
 	// If there aren't any more active players, go back to warm up mode [tm512 2014/04/08]
-	if (_state != LevelState::WARMUP && P_NumPlayersInGame() == 0)
+	if (m_state != LevelState::WARMUP && P_NumPlayersInGame() == 0)
 	{
 		// [AM] Warmup is for obvious reasons, but survival needs a clean
 		//      slate to function properly.
@@ -300,14 +300,14 @@ void LevelState::tic()
 	}
 
 	// Depending on our state, do something.
-	switch (_state)
+	switch (m_state)
 	{
 	case LevelState::UNKNOWN:
 		I_FatalError("Tried to tic unknown LevelState.\n");
 		break;
 	case LevelState::PREROUND_COUNTDOWN:
 		// Once the timer has run out, start the round without a reset.
-		if (::level.time >= _countdown_done_time)
+		if (::level.time >= m_countdownDoneTime)
 		{
 			setState(LevelState::INGAME);
 			SV_BroadcastPrintf(PRINT_HIGH, "FIGHT!\n");
@@ -320,21 +320,21 @@ void LevelState::tic()
 		break;
 	case LevelState::ENDROUND_COUNTDOWN:
 		// Once the timer has run out, reset and go to the next round.
-		if (::level.time >= _countdown_done_time)
+		if (::level.time >= m_countdownDoneTime)
 		{
 			// Must be run first, so setState(INGAME) knows the correct start time.
 			G_DeferedReset();
 
-			_round_number += 1;
+			m_roundNumber += 1;
 			setState(LevelState::getStartOfRoundState());
 
-			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
+			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
 			return;
 		}
 		break;
 	case LevelState::ENDGAME_COUNTDOWN:
 		// Once the timer has run out, go to intermission.
-		if (::level.time >= _countdown_done_time)
+		if (::level.time >= m_countdownDoneTime)
 		{
 			G_ExitLevel(0, 1);
 			return;
@@ -387,16 +387,16 @@ void LevelState::tic()
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN:
 		// Once the timer has run out, start the game.
-		if (::level.time >= _countdown_done_time)
+		if (::level.time >= m_countdownDoneTime)
 		{
 			// Must be run first, so setState(INGAME) knows the correct start time.
 			G_DeferedFullReset();
 
-			_round_number += 1;
+			m_roundNumber += 1;
 			setState(LevelState::getStartOfRoundState());
 
 			if (g_rounds)
-				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", _round_number);
+				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
 			else
 				SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
 
@@ -414,12 +414,12 @@ void LevelState::tic()
 SerializedLevelState LevelState::serialize() const
 {
 	SerializedLevelState serialized;
-	serialized.state = _state;
-	serialized.countdown_done_time = _countdown_done_time;
-	serialized.ingame_start_time = _ingame_start_time;
-	serialized.round_number = _round_number;
-	serialized.last_wininfo_type = _last_wininfo.type;
-	serialized.last_wininfo_id = _last_wininfo.id;
+	serialized.state = m_state;
+	serialized.countdown_done_time = m_countdownDoneTime;
+	serialized.ingame_start_time = m_ingameStartTime;
+	serialized.round_number = m_roundNumber;
+	serialized.last_wininfo_type = m_lastWininfo.type;
+	serialized.last_wininfo_id = m_lastWininfo.id;
 	return serialized;
 }
 
@@ -430,12 +430,12 @@ SerializedLevelState LevelState::serialize() const
  */
 void LevelState::unserialize(SerializedLevelState serialized)
 {
-	_state = serialized.state;
-	_countdown_done_time = serialized.countdown_done_time;
-	_ingame_start_time = serialized.ingame_start_time;
-	_round_number = serialized.round_number;
-	_last_wininfo.type = serialized.last_wininfo_type;
-	_last_wininfo.id = serialized.last_wininfo_id;
+	m_state = serialized.state;
+	m_countdownDoneTime = serialized.countdown_done_time;
+	m_ingameStartTime = serialized.ingame_start_time;
+	m_roundNumber = serialized.round_number;
+	m_lastWininfo.type = serialized.last_wininfo_type;
+	m_lastWininfo.id = serialized.last_wininfo_id;
 }
 
 /**
@@ -460,64 +460,64 @@ LevelState::States LevelState::getStartOfRoundState()
  */
 void LevelState::setState(LevelState::States new_state)
 {
-	_state = new_state;
-	//Printf("setState: %s\n", getStateString());
+	m_state = new_state;
+	// Printf("setState: %s\n", getStateString());
 
-	if (_state == LevelState::WARMUP_COUNTDOWN ||
-	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
+	if (m_state == LevelState::WARMUP_COUNTDOWN ||
+	    m_state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		// Most countdowns use the countdown cvar.
-		_countdown_done_time = ::level.time + (sv_countdown.asInt() * TICRATE);
+		m_countdownDoneTime = ::level.time + (sv_countdown.asInt() * TICRATE);
 	}
-	else if (_state == LevelState::PREROUND_COUNTDOWN)
+	else if (m_state == LevelState::PREROUND_COUNTDOWN)
 	{
 		// This actually has tactical significance, so it needs to have its
 		// own hardcoded time or a cvar dedicated to it.  Also, we don't add
 		// level.time to it becuase level.time always starts at zero preround.
-		_countdown_done_time = g_preroundtime.asInt() * TICRATE;
+		m_countdownDoneTime = g_preroundtime.asInt() * TICRATE;
 	}
-	else if (_state == LevelState::ENDROUND_COUNTDOWN ||
-	         _state == LevelState::ENDGAME_COUNTDOWN)
+	else if (m_state == LevelState::ENDROUND_COUNTDOWN ||
+	         m_state == LevelState::ENDGAME_COUNTDOWN)
 	{
 		// Endgame has a little pause as well, like the old "shotclock" variable.
-		_countdown_done_time = ::level.time + (g_postroundtime.asInt() * TICRATE);
+		m_countdownDoneTime = ::level.time + (g_postroundtime.asInt() * TICRATE);
 	}
 	else
 	{
-		_countdown_done_time = 0;
+		m_countdownDoneTime = 0;
 	}
 
 	// Set the start time as soon as we go ingame.
-	if (_state == LevelState::INGAME)
+	if (m_state == LevelState::INGAME)
 	{
 		if (::gameaction == ga_resetlevel || ::gameaction == ga_fullresetlevel)
 		{
-			_ingame_start_time = 1;
+			m_ingameStartTime = 1;
 		}
 		else
 		{
-			_ingame_start_time = ::level.time + 1;
+			m_ingameStartTime = ::level.time + 1;
 		}
 	}
 
 	// If we're in a warmup state, alwasy reset the round count to zero.
-	if (_state == LevelState::WARMUP || _state == LevelState::WARMUP_COUNTDOWN ||
-	    _state == LevelState::WARMUP_FORCED_COUNTDOWN)
+	if (m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN ||
+	    m_state == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
-		_round_number = 0;
+		m_roundNumber = 0;
 	}
 
 	// If we're setting the state to something that's not an ending countdown,
 	// reset our winners to nothing.
-	if (_state != LevelState::ENDROUND_COUNTDOWN &&
-	    _state != LevelState::ENDGAME_COUNTDOWN)
+	if (m_state != LevelState::ENDROUND_COUNTDOWN &&
+	    m_state != LevelState::ENDGAME_COUNTDOWN)
 	{
-		_last_wininfo.reset();
+		m_lastWininfo.reset();
 	}
 
-	if (_set_state_cb)
+	if (m_setStateCB)
 	{
-		_set_state_cb(serialize());
+		m_setStateCB(serialize());
 	}
 }
 
