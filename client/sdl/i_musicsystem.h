@@ -94,7 +94,7 @@ private:
 class SilentMusicSystem : public MusicSystem
 {
 public:
-	SilentMusicSystem() { Printf(PRINT_HIGH, "I_InitMusic: Music playback disabled.\n"); }
+	SilentMusicSystem() { Printf(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n"); }
 	
 	virtual void startSong(byte* data, size_t length, bool loop) {}
 	virtual void stopSong() {}

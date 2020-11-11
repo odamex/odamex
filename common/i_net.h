@@ -65,6 +65,7 @@ enum svc_t
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
+	svc_updatesecrets,		// [byte] - secrets discovered to a client
 	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
 	svc_updateping,			// [byte] [byte]
 	svc_spawnmobj,			//
@@ -123,17 +124,19 @@ enum svc_t
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
 	svc_warmupstate,		// [AM] Broadcast warmup state to client
 	svc_resetmap,			// [AM] Server is resetting the map
-
-	// for co-op
-	svc_mobjstate = 70,
+	svc_playerqueuepos,     // Notify clients of player queue postion
+	svc_fullupdatestart,	// Inform client the full update has started
+	svc_lineupdate,			// Sync client with any line property changes - e.g. SetLineTexture, SetLineBlocking, SetLineSpecial, etc.
+	svc_sectorproperties,
+	svc_linesideupdate,
+	svc_mobjstate,
 	svc_actor_movedir,
 	svc_actor_target,
 	svc_actor_tracer,
 	svc_damagemobj,
-
-	// for downloading
-	svc_wadinfo,			// denis - [ulong:filesize]
-	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
+	svc_executelinespecial,
+	svc_executeacsspecial,
+	svc_thinkerupdate,
 		
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
@@ -152,6 +155,18 @@ enum svc_t
 	svc_launcher_challenge = 212,
 	svc_challenge = 163,
 	svc_max = 255
+};
+
+enum ThinkerType
+{
+	TT_Scroller,
+	TT_FireFlicker,
+	TT_Flicker,
+	TT_LightFlash,
+	TT_Strobe,
+	TT_Glow,
+	TT_Glow2,
+	TT_Phased,
 };
 
 // network messages
@@ -556,6 +571,9 @@ void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 
+int MSG_WriteVarInt(byte* buf, unsigned int value);
+int MSG_ReadVarInt(byte* buf, int buflen, int& bytesRead);
+
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);
 
@@ -576,6 +594,3 @@ bool MSG_DecompressAdaptive (huffman &huff);
 bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);
 
 #endif
-
-
-

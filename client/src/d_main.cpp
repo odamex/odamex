@@ -61,6 +61,7 @@
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
+#include "c_bind.h"
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
@@ -235,11 +236,13 @@ void D_Display()
 		wiping_screen = true;
 	}
 
+	// We always want to service downloads, even outside of a specific
+	// download gamestate.
+	CL_DownloadTick();
+
 	switch (gamestate)
 	{
 		case GS_FULLCONSOLE:
-		case GS_DOWNLOAD:
-		    CL_DownloadTicker();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
@@ -338,7 +341,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
+			Printf (PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
 
 			CL_QuitNetGame ();
 
@@ -731,6 +734,8 @@ void D_DoomMain()
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	M_LoadDefaults();					// load before initing other systems
+	C_BindingsInit();					// Ch0wW : Initialize bindings
+
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::vector<std::string> newwadfiles, newpatchfiles;
@@ -829,6 +834,10 @@ void D_DoomMain()
 	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
 
 	I_FinishClockCalibration();
+
+	// Initialize HTTP subsystem
+	CL_DownloadInit();
+	atterm(CL_DownloadShutdown);
 
 	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();

@@ -37,6 +37,7 @@ static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(join_password)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_teamsinplay)
 
 struct CvarField_t
 {
@@ -189,29 +190,17 @@ next:
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		// Team data
-		MSG_WriteByte(&ml_message, 2);
+		int teams = sv_teamsinplay.asInt();
+		MSG_WriteByte(&ml_message, teams);
 
-		// Blue
-		MSG_WriteString(&ml_message, "Blue");
-		MSG_WriteLong(&ml_message, 0x000000FF);
-		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
-
-		MSG_WriteString(&ml_message, "Red");
-		MSG_WriteLong(&ml_message, 0x00FF0000);
-		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+		for (int i = 0; i < teams; i++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
+			MSG_WriteLong(&ml_message, teamInfo->Color);
+			MSG_WriteShort(&ml_message, teamInfo->Points);
+		}
 	}
-
-	// TODO: When real dynamic teams are implemented
-	//byte TeamCount = (byte)sv_teamsinplay;
-	//MSG_WriteByte(&ml_message, TeamCount);
-
-	//for (byte i = 0; i < TeamCount; ++i)
-	//{
-	// TODO - Figure out where the info resides
-	//MSG_WriteString(&ml_message, "");
-	//MSG_WriteLong(&ml_message, 0);
-	//MSG_WriteShort(&ml_message, TEAMpoints[i]);
-	//}
 
 	// Patch files
 	MSG_WriteByte(&ml_message, patchfiles.size());

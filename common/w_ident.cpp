@@ -147,6 +147,17 @@ public:
 		return mIWADSearchOrder;
 	}
 
+	bool isCommercialFilename(const std::string& filename) const
+	{
+		OString upper = StdStringToUpper(filename);
+		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
+		{
+			if (it->mIsCommercial && it->mFilename == upper)
+				return true;
+		}
+		return false;
+	}
+
 	bool isCommercial(const OString& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
@@ -1067,11 +1078,33 @@ bool W_IsIWAD(const std::string& filename)
 
 
 //
-// W_IsIWADCommercial
+// W_IsFilenameCommercialIWAD
 //
-// Checks to see whether a given file is an IWAD flagged as "commercial"
+// Checks to see whether a given filename is an IWAD flagged as "commercial"
 //
-bool W_IsIWADCommercial(const std::string& filename)
+bool W_IsFilenameCommercialIWAD(const std::string& filename)
+{
+	return identtab.isCommercialFilename(filename);
+}
+
+
+//
+// W_IsFilenameCommercialIWAD
+//
+// Checks to see whether a given hash belongs to an IWAD flagged as "commercial"
+//
+bool W_IsFilehashCommercialIWAD(const std::string& filename)
+{
+	return identtab.isCommercial(filename);
+}
+
+
+//
+// W_IsFileCommercialIWAD
+//
+// Checks to see whether a given file on disk is an IWAD flagged as "commercial"
+//
+bool W_IsFileCommercialIWAD(const std::string& filename)
 {
 	const OString md5sum = W_MD5(filename);
 	return identtab.isCommercial(md5sum);

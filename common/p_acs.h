@@ -72,7 +72,7 @@ public:
 	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
 	const char *LookupString (DWORD index, DWORD ofs=0) const;
 	const char *LocalizeString (DWORD index) const;
-	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0) const;
+	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
 	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
 	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
@@ -371,6 +371,21 @@ public:
 		PCODE_COMMAND_COUNT
 	};
 
+
+	static void ACS_SetLineTexture(int* args, byte argCount);
+	static void ACS_ClearInventory(AActor* actor);
+	static void ACS_Print(byte pcd, AActor* actor, const char* print);
+	static void ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte argCount);
+	static void ACS_StartSound(byte pcd, AActor* activator, int* args, byte argCount);
+	static void ACS_SetLineBlocking(int* args, byte argCount);
+	static void ACS_SetLineMonsterBlocking(int* args, byte argCount);
+	static void ACS_SetLineSpecial(int* args, byte argCount);
+	static void ACS_SetThingSpecial(int* args, byte argCount);
+	static void ACS_FadeRange(AActor* activator, int* args, byte argCount);
+	static void ACS_CancelFade(AActor* activator);
+	static void ACS_ChangeFlat(byte pcd, int* args, byte argCount);
+	static void ACS_SoundSequence(int* args, byte argCount);
+
 	// Some constants used by ACS scripts
 	enum {
 		LINE_FRONT =			0,
@@ -473,11 +488,24 @@ protected:
 	static void ChangeFlat (int tag, int name, bool floorOrCeiling);
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
+
 	static int DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle);
 	static int DoSpawnSpot (int type, int spot, int tid, int angle);
 
-	void DoFadeTo (int r, int g, int b, int a, fixed_t time);
-	void DoFadeRange (int r1, int g1, int b1, int a1,
+	static void SetLineBlocking(int lineid, int flags);
+	static void SetLineMonsterBlocking(int lineid, int toggle);
+	static void SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
+	static void ActivateLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4);
+	static void ChangeMusic(byte pcd, AActor* activator, int index, int loop);
+	static void StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation);
+	static void StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation);
+	static void StartThingSound(byte pcd, AActor* actor, int channel, int index, int volume, int attenuation);
+	static void SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
+	static void CancelFade(AActor* actor);
+	static void StartSoundSequence(sector_t* sec, int index);
+
+	static void DoFadeTo (AActor* who, int r, int g, int b, int a, fixed_t time);
+	static void DoFadeRange (AActor* who, int r1, int g1, int b1, int a1,
 		int r2, int g2, int b2, int a2, fixed_t time);
 
 private:

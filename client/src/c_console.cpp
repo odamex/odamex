@@ -43,6 +43,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
+#include "cl_download.h"
 
 #include <string>
 #include <list>
@@ -55,8 +56,6 @@
 #endif
 
 static const int MAX_LINE_LENGTH = 8192;
-
-std::string DownloadStr;
 
 static bool ShouldTabCycle = false;
 static size_t NextCycleIndex = 0;
@@ -86,10 +85,14 @@ static bool midprinting;
 #define SCROLLDN 2
 #define SCROLLNO 0
 
-EXTERN_CVAR (con_buffersize)
+EXTERN_CVAR(con_coloredmessages)
+EXTERN_CVAR(con_buffersize)
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(print_stdout)
 EXTERN_CVAR(con_notifytime)
+
+EXTERN_CVAR(message_showpickups)
+EXTERN_CVAR(message_showobituaries)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -106,8 +109,19 @@ static struct NotifyText
 	byte text[256];
 } NotifyStrings[NUMNOTIFIES];
 
-#define PRINTLEVELS 5
-int PrintColors[PRINTLEVELS+1] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_GREEN, CR_GOLD };
+// Default Printlevel
+#define PRINTLEVELS 5 //(5 + 3)
+int PrintColors[PRINTLEVELS+3] = 
+{	CR_RED,		// Pickup
+	CR_GOLD,	// Obituaries
+	CR_GRAY,	// Messages
+	CR_GREEN,	// Chat 
+	CR_GREEN,	// Team chat
+
+	CR_GOLD,	// Server chat
+	CR_YELLOW,	// Warning messages
+	CR_RED		// Critical messages
+};	
 
 
 // ============================================================================
@@ -122,7 +136,7 @@ class ConsoleLine
 {
 public:
 	ConsoleLine();
-	ConsoleLine(const std::string& _text, const std::string& _color_code = "\\c-",
+	ConsoleLine(const std::string& _text, const std::string& _color_code = "\034-",	// TEXTCOLOR_ESCAPE
 			int _print_level = PRINT_HIGH);
 
 	void join(const ConsoleLine& other);
@@ -144,7 +158,7 @@ public:
 // ============================================================================
 
 ConsoleLine::ConsoleLine() :
-	color_code("\\c-"), wrapped(false), print_level(PRINT_HIGH),
+	color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),	// TEXTCOLOR_ESCAPE
 	timeout(gametic + con_notifytime.asInt() * TICRATE)
 { }
 
@@ -181,10 +195,10 @@ ConsoleLine ConsoleLine::split(size_t max_width)
 	const char* s = text.c_str();
 	while (s)
 	{
-		if (s[0] == '\\' && s[1] == 'c' && s[2] != '\0')
+		if (s[0] == TEXTCOLOR_ESCAPE && s[1] != '\0')
 		{
-			strncpy(wrapped_color_code, s, 3);
-			s += 3;
+			strncpy(wrapped_color_code, s, 2);
+			s += 2;
 			continue;
 		}
 
@@ -868,9 +882,9 @@ static int C_StringWidth(const char* str)
 	while (*str)
 	{
 		// skip over color markup escape codes
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			str += 3;
+			str += 2;
 			continue;
 		}
 
@@ -1011,6 +1025,10 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
+	// Do not display filtered chat messages
+	if (printlevel == PRINT_FILTERCHAT)
+		return;
+
 	int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
@@ -1079,21 +1097,30 @@ static int C_PrintStringStdOut(const char* str)
 // 
 static int C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
-	if (printlevel < (int)msglevel)
+
+	if (printlevel == PRINT_PICKUP && !message_showpickups)
+		return 0;
+
+	if (printlevel == PRINT_OBITUARY && !message_showobituaries)
 		return 0;
 
 	if (I_VideoInitialized() && !midprinting)
 		C_AddNotifyString(printlevel, color_code, outline);
+
+	// Revert filtered chat to a normal chat to display to the console
+	if (printlevel == PRINT_FILTERCHAT)
+		printlevel = PRINT_CHAT;
 
 	const char* line_start = outline;
 	const char* line_end = line_start;
 
 	// [SL] the user's message color preference overrides the given color_code
 	// ...unless it's supposed to be formatted bold.
-	if (color_code && color_code[2] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
+	static char printlevel_color_code[3];
+
+	if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
 	{
-		static char printlevel_color_code[4];
-		sprintf(printlevel_color_code, "\\c%c", 'a' + PrintColors[printlevel]);
+		snprintf(printlevel_color_code, sizeof(printlevel_color_code), "\034%c", 'a' + PrintColors[printlevel]);
 		color_code = printlevel_color_code;
 	}
 
@@ -1153,10 +1180,14 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
+	// ToDo: there may be more characters not allowed on a consoleprint, 
+	// maybe restrict a few ASCII stuff later on ?
 	int len = strlen(outline);
 	for (int i = 0; i < len; i++)
+	{
 		if (outline[i] == 0x07)
 			outline[i] = '.';
+	}
 
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)
@@ -1164,7 +1195,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		strcpy(outlinelog, outline);
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for(int i = 0; i < len; i++)
+		for (int i = 0; i < len; i++)
 		{
 			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
 				outlinelog[i] = '=';
@@ -1192,9 +1223,26 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	if (print_stdout && gamestate != GS_FORCEWIPE)
 		C_PrintStringStdOut(outline);
 
-	C_PrintString(printlevel, color_code, outline);
+	std::string sanitized_str(outline);
+
+	if (!con_coloredmessages)
+		StripColorCodes(sanitized_str);
+
+	C_PrintString(printlevel, color_code, sanitized_str.c_str());
 
 	return len;
+}
+
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
+{
+	va_list argptr;
+	int count;
+
+	va_start(argptr, format);
+	count = VPrintf(PRINT_HIGH, TEXTCOLOR_NORMAL, format, argptr);
+	va_end(argptr);
+
+	return count;
 }
 
 FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
@@ -1226,7 +1274,7 @@ FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
 		va_list argptr;
 
 		va_start(argptr, format);
-		int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
+		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_NORMAL, format, argptr);
 		va_end(argptr);
 		return count;
 	}
@@ -1534,14 +1582,63 @@ void C_DrawConsole()
 	if (ConBottom >= 12)
 	{
 		// print the Odamex version in gold in the bottom right corner of console
-		char version_str[32];
-		snprintf(version_str, sizeof(version_str), "%s (%s)", DOTVERSIONSTR, GitDescribe());
-		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version_str),
-					ConBottom - 12, version_str, CR_ORANGE);
+		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(GitDescribe()),
+		                 ConBottom - 12, GitDescribe(), CR_ORANGE);
 
-		// Download progress bar hack
-		if (gamestate == GS_DOWNLOAD)
-			screen->PrintStr(left + 2, ConBottom - 10, DownloadStr.c_str(), CR_GRAY);
+		// Amount of space remaining.
+		int remain = primary_surface_width - 16 - C_StringWidth(GitDescribe());
+
+		if (CL_IsDownloading())
+		{
+			// Use the remaining space for a download bar.
+			size_t chars = remain / C_StringWidth(" ");
+			std::string download;
+
+			// Stamp out the text bits.
+			std::string filename = CL_DownloadFilename();
+			if (filename.empty())
+				filename = "...";
+			OTransferProgress progress = CL_DownloadProgress();
+			std::string dlnow;
+			StrFormatBytes(dlnow, progress.dlnow);
+			std::string dltotal;
+			StrFormatBytes(dltotal, progress.dltotal);
+			StrFormat(download, "%s: %s/%s", filename.c_str(), dlnow.c_str(),
+			          dltotal.c_str());
+
+			// Avoid divide by zero.
+			if (progress.dltotal == 0)
+				progress.dltotal = 1;
+
+			// Stamp out the bar...if we have enough room - if we at tiny
+			// resolutions we may not.
+			size_t dltxtlen = download.length();
+			ptrdiff_t barchars = chars - dltxtlen;
+
+			if (barchars >= 2)
+			{
+				download.resize(chars);
+				for (size_t i = 0; i < barchars; i++)
+				{
+					char ch = '\30'; // empty middle
+					if (i == 0)
+						ch = '\27'; // empty left
+					else if (i == barchars - 1)
+						ch = '\31'; // empty right
+
+					double barpct = i / (double)barchars;
+					double dlpct = progress.dlnow / (double)progress.dltotal;
+
+					if (dlpct > barpct)
+						ch += 3; // full bar
+
+					download.at(i + dltxtlen) = ch;
+				}
+			}
+
+			// Draw the thing.
+			screen->PrintStr(left + 2, ConBottom - 12, download.c_str(), CR_GREEN);
+		}
 
 		if (TickerMax)
 		{
@@ -1705,7 +1802,7 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
-	const char* cmd = C_GetBinding(ev->data1);
+	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
 	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{

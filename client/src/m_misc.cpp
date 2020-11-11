@@ -106,7 +106,13 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 
 		// Archive all active key bindings
 		fprintf(f, "// --- Key Bindings ---\n\n");
-		C_ArchiveBindings(f);
+		fprintf(f, "unbindall\n");
+		Bindings.ArchiveBindings(f);
+		DoubleBindings.ArchiveBindings(f);
+
+		fprintf(f, "\n// --- Automap Bindings ---\n\n");
+		fprintf(f, "unambind all\n");
+		AutomapBindings.ArchiveBindings(f);
 
 		// Archive all aliases
 		fprintf(f, "\n// --- Aliases ---\n\n");
@@ -136,11 +142,9 @@ extern int cvar_defflags;
  */
 void M_LoadDefaults(void)
 {
-	extern char DefBindings[];
-
 	// Set default key bindings. These will be overridden
 	// by the bindings in the config file if it exists.
-	AddCommandString(DefBindings);
+	C_BindDefaults();
 
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 
@@ -201,28 +205,7 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			case 'g':
 			{
-				switch (sv_gametype.asInt())
-				{
-					case (int)(GM_COOP):
-						if (!multiplayer)
-							buffer << "SOLO";
-						else
-							buffer << "COOP";
-						break;
-					case (int)(GM_DM):
-						if (sv_maxplayers == 2)
-							buffer << "DUEL";
-						else
-							buffer << "DM";
-						break;
-					case (int)(GM_TEAMDM):
-						buffer << "TDM";
-						break;
-					case (int)(GM_CTF):
-						buffer << "CTF";
-						break;
-				}
-
+				buffer << GetShortGameModeString();
 				break;
 			}
 			case 'w':
