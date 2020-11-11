@@ -384,6 +384,147 @@ void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
      s->sin_port = a->port;
 }
 
+const char* SVC_ToString(svc_t svc)
+{
+	static char unknown[32];
+
+	switch (svc)
+	{
+	case svc_abort: return "svc_abort";
+	case svc_full: return "svc_full";
+	case svc_disconnect: return "svc_disconnect";
+	case svc_reserved3: return "svc_reserved3";
+	case svc_playerinfo: return "svc_playerinfo";
+	case svc_moveplayer: return "svc_moveplayer";
+	case svc_updatelocalplayer: return "svc_updatelocalplayer";
+	case svc_updatesecrets: return "svc_updatesecrets";
+	case svc_pingrequest: return "svc_pingrequest";
+	case svc_updateping: return "svc_updateping";
+	case svc_spawnmobj: return "svc_spawnmobj";
+	case svc_disconnectclient: return "svc_disconnectclient";
+	case svc_loadmap: return "svc_loadmap";
+	case svc_consoleplayer: return "svc_consoleplayer";
+	case svc_mobjspeedangle: return "svc_mobjspeedangle";
+	case svc_explodemissile: return "svc_explodemissile";
+	case svc_removemobj: return "svc_removemobj";
+	case svc_userinfo: return "svc_userinfo";
+	case svc_movemobj: return "svc_movemobj";
+	case svc_spawnplayer: return "svc_spawnplayer";
+	case svc_damageplayer: return "svc_damageplayer";
+	case svc_killmobj: return "svc_killmobj";
+	case svc_firepistol: return "svc_firepistol";
+	case svc_fireshotgun: return "svc_fireshotgun";
+	case svc_firessg: return "svc_firessg";
+	case svc_firechaingun: return "svc_firechaingun";
+	case svc_fireweapon: return "svc_fireweapon";
+	case svc_sector: return "svc_sector";
+	case svc_print: return "svc_print";
+	case svc_mobjinfo: return "svc_mobjinfo";
+	case svc_updatefrags: return "svc_updatefrags";
+	case svc_teampoints: return "svc_teampoints";
+	case svc_activateline: return "svc_activateline";
+	case svc_movingsector: return "svc_movingsector";
+	case svc_startsound: return "svc_startsound";
+	case svc_reconnect: return "svc_reconnect";
+	case svc_exitlevel: return "svc_exitlevel";
+	case svc_touchspecial: return "svc_touchspecial";
+	case svc_changeweapon: return "svc_changeweapon";
+	case svc_reserved42: return "svc_reserved42";
+	case svc_corpse: return "svc_corpse";
+	case svc_missedpacket: return "svc_missedpacket";
+	case svc_soundorigin: return "svc_soundorigin";
+	case svc_reserved46: return "svc_reserved46";
+	case svc_reserved47: return "svc_reserved47";
+	case svc_forceteam: return "svc_forceteam";
+	case svc_switch: return "svc_switch";
+	case svc_say: return "svc_say";
+	case svc_reserved51: return "svc_reserved51";
+	case svc_spawnhiddenplayer: return "svc_spawnhiddenplayer";
+	case svc_updatedeaths: return "svc_updatedeaths";
+	case svc_ctfevent: return "svc_ctfevent";
+	case svc_serversettings: return "svc_serversettings";
+	case svc_spectate: return "svc_spectate";
+	case svc_connectclient: return "svc_connectclient";
+	case svc_midprint: return "svc_midprint";
+	case svc_svgametic: return "svc_svgametic";
+	case svc_timeleft: return "svc_timeleft";
+	case svc_inttimeleft: return "svc_inttimeleft";
+	case svc_mobjtranslation: return "svc_mobjtranslation";
+	case svc_fullupdatedone: return "svc_fullupdatedone";
+	case svc_railtrail: return "svc_railtrail";
+	case svc_readystate: return "svc_readystate";
+	case svc_playerstate: return "svc_playerstate";
+	case svc_warmupstate: return "svc_warmupstate";
+	case svc_resetmap: return "svc_resetmap";
+	case svc_playerqueuepos: return "svc_playerqueuepos";
+	case svc_fullupdatestart: return "svc_fullupdatestart";
+	case svc_lineupdate: return "svc_lineupdate";
+	case svc_sectorproperties: return "svc_sectorproperties";
+	case svc_linesideupdate: return "svc_linesideupdate";
+	case svc_mobjstate: return "svc_mobjstate";
+	case svc_actor_movedir: return "svc_actor_movedir";
+	case svc_actor_target: return "svc_actor_target";
+	case svc_actor_tracer: return "svc_actor_tracer";
+	case svc_damagemobj: return "svc_damagemobj";
+	case svc_executelinespecial: return "svc_executelinespecial";
+	case svc_executeacsspecial: return "svc_executeacsspecial";
+	case svc_thinkerupdate: return "svc_thinkerupdate";
+	case svc_netdemocap: return "svc_netdemocap";
+	case svc_netdemostop: return "svc_netdemostop";
+	case svc_netdemoloadsnap: return "svc_netdemoloadsnap";
+	case svc_vote_update: return "svc_vote_update";
+	case svc_maplist: return "svc_maplist";
+	case svc_maplist_update: return "svc_maplist_update";
+	case svc_maplist_index: return "svc_maplist_index";
+	case svc_compressed: return "svc_compressed";
+	case svc_launcher_challenge: return "svc_launcher_challenge";
+	case svc_challenge: return "svc_challenge";
+	}
+
+	snprintf(unknown, ARRAY_LENGTH(unknown), "svc_unknown%d", svc);
+	return unknown;
+}
+
+const char* CLC_ToString(clc_t clc)
+{
+	static char unknown[32];
+
+	switch (clc)
+	{
+	case clc_abort: return "clc_abort";
+	case clc_reserved1: return "clc_reserved1";
+	case clc_disconnect: return "clc_disconnect";
+	case clc_say: return "clc_say";
+	case clc_move: return "clc_move";
+	case clc_userinfo: return "clc_userinfo";
+	case clc_pingreply: return "clc_pingreply";
+	case clc_rate: return "clc_rate";
+	case clc_ack: return "clc_ack";
+	case clc_rcon: return "clc_rcon";
+	case clc_rcon_password: return "clc_rcon_password";
+	case clc_changeteam: return "clc_changeteam";
+	case clc_ctfcommand: return "clc_ctfcommand";
+	case clc_spectate: return "clc_spectate";
+	case clc_wantwad: return "clc_wantwad";
+	case clc_kill: return "clc_kill";
+	case clc_cheat: return "clc_cheat";
+	case clc_cheatpulse: return "clc_cheatpulse";
+	case clc_callvote: return "clc_callvote";
+	case clc_vote: return "clc_vote";
+	case clc_maplist: return "clc_maplist";
+	case clc_maplist_update: return "clc_maplist_update";
+	case clc_getplayerinfo: return "clc_getplayerinfo";
+	case clc_ready: return "clc_ready";
+	case clc_spy: return "clc_spy";
+	case clc_privmsg: return "clc_privmsg";
+	case clc_launcher_challenge: return "clc_launcher_challenge";
+	case clc_challenge: return "clc_challenge";
+	}
+
+	snprintf(unknown, ARRAY_LENGTH(unknown), "clc_unknown%d", clc);
+	return unknown;
+}
+
 char *NET_AdrToString (netadr_t a)
 {
      static  char    s[64];

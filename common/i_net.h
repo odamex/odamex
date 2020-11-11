@@ -549,6 +549,9 @@ void InitNetCommon(void);
 void I_SetPort(netadr_t &addr, int port);
 bool NetWaitOrTimeout(size_t ms);
 
+const char* SVC_ToString(svc_t svc);
+const char* CLC_ToString(clc_t clc);
+
 char *NET_AdrToString (netadr_t a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
