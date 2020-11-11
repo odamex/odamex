@@ -707,6 +707,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	MSG_WriteLong(netbuffer, mo->momz);
 	MSG_WriteLong(netbuffer, mo->angle);
 	MSG_WriteLong(netbuffer, mo->pitch);
+	MSG_WriteLong(netbuffer, player->viewz);
 	MSG_WriteLong(netbuffer, player->viewheight);
 	MSG_WriteLong(netbuffer, player->deltaviewheight);
 	MSG_WriteLong(netbuffer, player->jumpTics);
