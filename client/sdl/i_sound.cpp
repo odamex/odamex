@@ -426,7 +426,17 @@ void I_InitSound()
 
 	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-    if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
+#ifdef SDL20
+    // Apparently, when Mix_OpenAudio requests a certain number of channels
+    // and the device claims to not support that number of channels, instead
+    // of handling it automatically behind the scenes, Mixer might initialize
+    // with a broken audio buffer instead.  Using this function instead works
+    // around the problem.
+	if (Mix_OpenAudioDevice((int)snd_samplerate, AUDIO_S16SYS, 2, 1024, NULL,
+	                        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE) < 0)
+#else
+	if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
+#endif
 	{
 		Printf(PRINT_HIGH, 
                "I_InitSound: Error initializing SDL_mixer: %s\n", 
@@ -476,4 +486,3 @@ void STACK_ARGS I_ShutdownSound (void)
 
 
 VERSION_CONTROL (i_sound_cpp, "$Id$")
-

@@ -219,8 +219,14 @@ void HU_Init()
 //
 void STACK_ARGS HU_Shutdown()
 {
-	Z_Free(sbline);
+	Z_ChangeTag(sbline, PU_CACHE);
 	sbline = NULL;
+
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		Z_ChangeTag(hu_font[i], PU_CACHE);
+		hu_font[i] = NULL;
+	}
 }
 
 
@@ -402,6 +408,10 @@ static void HU_DrawCrosshair()
 
 static void HU_DrawChatPrompt()
 {
+	// Don't draw the chat prompt without a valid font.
+	if (::hu_font[0] == NULL)
+		return;
+
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// Set up text scaling
@@ -1845,5 +1855,3 @@ BEGIN_COMMAND (displayscores)
 END_COMMAND (displayscores)
 
 VERSION_CONTROL (hu_stuff_cpp, "$Id$")
-
-
