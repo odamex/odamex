@@ -44,18 +44,6 @@ DGUIContainer::~DGUIContainer()
 	}
 }
 
-/**
- * @brief Push a GUI element into the container.
- *
- * @param ele Element to push into the container.  The container takes
- *            ownership of this element, so the caller should not free this
- *            pointer.  The element must have been heap-allocated with "new".
- */
-void DGUIContainer::push_back(DGUIElement* ele)
-{
-	m_children.push_back(ele);
-}
-
 void DGUIContainer::layout()
 {
 	// Default layout is fine.
@@ -93,6 +81,18 @@ void DGUIContainer::render()
 	}
 }
 
+/**
+ * @brief Push a GUI element into the container.
+ *
+ * @param ele Element to push into the container.  The container takes
+ *            ownership of this element, so the caller should not free this
+ *            pointer.  The element must have been heap-allocated with "new".
+ */
+void DGUIContainer::push_back(DGUIElement* ele)
+{
+	m_children.push_back(ele);
+}
+
 /*
  * Dim element
  */
@@ -100,20 +100,17 @@ void DGUIContainer::render()
 IMPLEMENT_CLASS(DGUIDim, DGUIElement)
 
 DGUIDim::DGUIDim(OGUIContext& ctx, const std::string& color, float amount)
-    : DGUIElement(ctx), m_color(color), m_amount(amount), m_child(NULL)
-{
-}
-
-DGUIDim::DGUIDim(OGUIContext& ctx, const std::string& color, float amount,
-                 DGUIElement* child)
-    : DGUIElement(ctx), m_color(color), m_amount(amount), m_child(child)
+    : DGUIElement(ctx), m_color(color), m_amount(amount)
 {
 }
 
 DGUIDim::~DGUIDim()
 {
-	delete m_child;
-	m_child = NULL;
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		delete *it;
+	}
 }
 
 void DGUIDim::layout()
@@ -121,13 +118,26 @@ void DGUIDim::layout()
 	// Default layout is fine.
 	DGUIElement::layout();
 
-	if (m_child != NULL)
+	lay_id lastID = LAY_INVALID_ID;
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
 	{
-		m_child->layout();
+		(*it)->layout();
+		lay_id iterID = (*it)->getID();
 
-		// Establish parent-child item relationship.
-		lay_id childID = m_child->getID();
-		lay_insert(m_ctx.layoutAddr(), m_layoutID, childID);
+		// This next bit is recommended by the library docs.
+		if (lastID == LAY_INVALID_ID)
+		{
+			// Establish parent-child item relationship.
+			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
+		}
+		else
+		{
+			// Append this child after previous one.
+			lay_append(m_ctx.layoutAddr(), lastID, iterID);
+		}
+
+		lastID = iterID;
 	}
 }
 
@@ -139,9 +149,23 @@ void DGUIDim::render()
 	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
 	::screen->Dim(vec[0], vec[1], vec[2], vec[3], m_color.c_str(), m_amount);
 
-	// Render child after parent.
-	if (m_child != NULL)
-		m_child->render();
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		(*it)->render();
+	}
+}
+
+/**
+ * @brief Push a GUI element into the container.
+ *
+ * @param ele Element to push into the container.  The container takes
+ *            ownership of this element, so the caller should not free this
+ *            pointer.  The element must have been heap-allocated with "new".
+ */
+void DGUIDim::push_back(DGUIElement* ele)
+{
+	m_children.push_back(ele);
 }
 
 /*
@@ -150,10 +174,37 @@ void DGUIDim::render()
 
 IMPLEMENT_CLASS(DGUIFlat, DGUIElement)
 
+DGUIFlat::DGUIFlat(OGUIContext& ctx, const std::string& flatLump)
+    : DGUIElement(ctx), m_flatLump(flatLump)
+{
+}
+
 void DGUIFlat::layout()
 {
 	// Default layout is fine.
 	DGUIElement::layout();
+
+	lay_id lastID = LAY_INVALID_ID;
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		(*it)->layout();
+		lay_id iterID = (*it)->getID();
+
+		// This next bit is recommended by the library docs.
+		if (lastID == LAY_INVALID_ID)
+		{
+			// Establish parent-child item relationship.
+			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
+		}
+		else
+		{
+			// Append this child after previous one.
+			lay_append(m_ctx.layoutAddr(), lastID, iterID);
+		}
+
+		lastID = iterID;
+	}
 }
 
 void DGUIFlat::render()
@@ -161,9 +212,34 @@ void DGUIFlat::render()
 	if (m_layoutID == LAY_INVALID_ID)
 		return;
 
-	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
-	::screen->FlatFill(vec[0], vec[1], vec[2], vec[3],
-	                   (byte*)W_CacheLumpName(m_flatLump.c_str(), PU_CACHE));
+	// Find the flat to render.
+	int index = W_CheckNumForName(m_flatLump.c_str(), ns_flats);
+	if (index)
+	{
+		// Only attempt to render the flat if it was found.
+		byte* flat = (byte*)W_CacheLumpNum(index, PU_CACHE);
+		lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
+		::screen->FlatFill(vec[0], vec[1], vec[0] + vec[2], vec[1] + vec[3], flat);
+	}
+
+	// Render children.
+	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
+	     it != m_children.end(); ++it)
+	{
+		(*it)->render();
+	}
+}
+
+/**
+ * @brief Push a GUI element into the container.
+ *
+ * @param ele Element to push into the container.  The container takes
+ *            ownership of this element, so the caller should not free this
+ *            pointer.  The element must have been heap-allocated with "new".
+ */
+void DGUIFlat::push_back(DGUIElement* ele)
+{
+	m_children.push_back(ele);
 }
 
 /*

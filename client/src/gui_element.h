@@ -201,8 +201,7 @@ class DGUIElement : public DObject
 };
 
 /**
- * @brief Wraps a "dim" that draws a solid block of color over an area of
- *        the screen.
+ * @brief An invisible container that exists only to contain other elements.
  */
 class DGUIContainer : public DGUIElement
 {
@@ -226,14 +225,14 @@ class DGUIDim : public DGUIElement
 	DECLARE_CLASS(DGUIDim, DGUIElement)
 	std::string m_color;
 	float m_amount;
-	DGUIElement* m_child;
+	std::vector<DGUIElement*> m_children;
 
   public:
 	DGUIDim(OGUIContext& ctx, const std::string& color, float amount);
-	DGUIDim(OGUIContext& ctx, const std::string& color, float amount, DGUIElement* child);
 	~DGUIDim();
 	void layout();
 	void render();
+	void push_back(DGUIElement* ele);
 };
 
 /**
@@ -244,11 +243,13 @@ class DGUIFlat : public DGUIElement
 {
 	DECLARE_CLASS(DGUIFlat, DGUIElement)
 	std::string m_flatLump;
+	std::vector<DGUIElement*> m_children;
 
   public:
-	DGUIFlat(OGUIContext& ctx);
+	DGUIFlat(OGUIContext& ctx, const std::string& flatLump);
 	void layout();
 	void render();
+	void push_back(DGUIElement* ele);
 };
 
 /**

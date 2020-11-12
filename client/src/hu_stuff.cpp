@@ -536,8 +536,9 @@ static DGUIElement* ScoreboardSpecs()
 		root->push_back(new DGUIText(::ctx, ::names[i]));
 	}
 
-	DGUIDim* dim = new DGUIDim(::ctx, "7f 00 7f", 1.0, root);
+	DGUIFlat* dim = new DGUIFlat(::ctx, "SLIME13");
 	dim->behave(LAY_FILL);
+	dim->push_back(root);
 	return dim;
 }
 
@@ -552,7 +553,8 @@ static void TestLayout()
 	scoreboard->push_back(ScoreboardPlayers());
 	scoreboard->push_back(ScoreboardSpecs());
 
-	DGUIDim scorebg(::ctx, "00 00 00", 0.9, scoreboard);
+	DGUIFlat scorebg(::ctx, "FLOOR4_8");
+	scorebg.push_back(scoreboard);
 
 	scorebg.layout();
 	lay_run_context(::ctx.layoutAddr());
