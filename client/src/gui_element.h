@@ -87,8 +87,12 @@ class DGUIElement : public DObject
 	DGUIElement(OGUIContext& ctx)
 	    : m_ctx(ctx), m_containFlags(0), m_behaveFlags(0), m_layoutID(LAY_INVALID_ID)
 	{
-		m_size = {0, 0};
-		m_margins = {0, 0, 0, 0};
+		m_size[0] = 0;
+		m_size[1] = 0;
+		m_margins[0] = 0;
+		m_margins[1] = 0;
+		m_margins[2] = 0;
+		m_margins[3] = 0;
 	}
 
   public:
@@ -104,7 +108,8 @@ class DGUIElement : public DObject
 	 */
 	void size(lay_scalar w, lay_scalar h)
 	{
-		m_size = {w, h};
+		m_size[0] = w;
+		m_size[1] = h;
 	}
 
 	/**
@@ -134,7 +139,10 @@ class DGUIElement : public DObject
 	 */
 	void margin(lay_scalar all)
 	{
-		m_margins = {all, all, all, all};
+		m_margins[0] = all;
+		m_margins[1] = all;
+		m_margins[2] = all;
+		m_margins[3] = all;
 	}
 
 	/**
@@ -145,7 +153,10 @@ class DGUIElement : public DObject
 	 */
 	void margin(lay_scalar tb, lay_scalar lr)
 	{
-		m_margins = {lr, tb, lr, tb};
+		m_margins[0] = lr;
+		m_margins[1] = tb;
+		m_margins[2] = lr;
+		m_margins[3] = tb;
 	}
 
 	/**
@@ -157,7 +168,10 @@ class DGUIElement : public DObject
 	 */
 	void margin(lay_scalar t, lay_scalar lr, lay_scalar b)
 	{
-		m_margins = {lr, t, lr, b};
+		m_margins[0] = lr;
+		m_margins[1] = t;
+		m_margins[2] = lr;
+		m_margins[3] = b;
 	}
 
 	/**
@@ -170,7 +184,10 @@ class DGUIElement : public DObject
 	 */
 	void margin(lay_scalar t, lay_scalar r, lay_scalar b, lay_scalar l)
 	{
-		m_margins = {l, t, r, b};
+		m_margins[0] = l;
+		m_margins[1] = t;
+		m_margins[2] = r;
+		m_margins[3] = b;
 	}
 
 	/**
