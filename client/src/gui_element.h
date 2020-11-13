@@ -45,6 +45,11 @@ class OGUIContext
 class DGUIElement : public DObject
 {
 	DECLARE_CLASS(DGUIElement, DObject)
+	typedef std::vector<DGUIElement*> Elements;
+
+	static void destroyElements(Elements& eles);
+	void layoutElements(Elements& eles);
+	static void renderElements(Elements& eles);
 
   protected:
 	/**
@@ -223,7 +228,7 @@ class DGUIElement : public DObject
 class DGUIContainer : public DGUIElement
 {
 	DECLARE_CLASS(DGUIContainer, DGUIElement)
-	std::vector<DGUIElement*> m_children;
+	Elements m_children;
 
   public:
 	DGUIContainer(OGUIContext& ctx);
@@ -242,7 +247,7 @@ class DGUIDim : public DGUIElement
 	DECLARE_CLASS(DGUIDim, DGUIElement)
 	std::string m_color;
 	float m_amount;
-	std::vector<DGUIElement*> m_children;
+	Elements m_children;
 
   public:
 	DGUIDim(OGUIContext& ctx, const std::string& color, float amount);
@@ -260,10 +265,11 @@ class DGUIFlat : public DGUIElement
 {
 	DECLARE_CLASS(DGUIFlat, DGUIElement)
 	std::string m_flatLump;
-	std::vector<DGUIElement*> m_children;
+	Elements m_children;
 
   public:
 	DGUIFlat(OGUIContext& ctx, const std::string& flatLump);
+	~DGUIFlat();
 	void layout();
 	void render();
 	void push_back(DGUIElement* ele);

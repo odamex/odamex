@@ -13,6 +13,61 @@
 IMPLEMENT_CLASS(DGUIElement, DObject)
 
 /**
+ * @brief Destroy all passed elements.
+ *
+ * @param eles Elements to destroy.
+ */
+void DGUIElement::destroyElements(Elements& eles)
+{
+	for (Elements::iterator it = eles.begin(); it != eles.end(); ++it)
+	{
+		delete *it;
+	}
+}
+
+/**
+ * @brief Layout all passed elements.
+ *
+ * @param eles Elements to layout.
+ */
+void DGUIElement::layoutElements(Elements& eles)
+{
+	lay_id lastID = LAY_INVALID_ID;
+	for (Elements::iterator it = eles.begin(); it != eles.end(); ++it)
+	{
+		(*it)->layout();
+		lay_id iterID = (*it)->getID();
+
+		// This next bit is recommended by the library docs.
+		if (lastID == LAY_INVALID_ID)
+		{
+			// Establish parent-child item relationship.
+			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
+		}
+		else
+		{
+			// Append this child after previous one.
+			lay_append(m_ctx.layoutAddr(), lastID, iterID);
+		}
+
+		lastID = iterID;
+	}
+}
+
+/**
+ * @brief Render all passed elements.
+ *
+ * @param eles Elements to render.
+ */
+void DGUIElement::renderElements(Elements& eles)
+{
+	for (Elements::iterator it = eles.begin(); it != eles.end(); ++it)
+	{
+		(*it)->render();
+	}
+}
+
+/**
  * @brief A default layout method that does a few common things needed for
  *        most elements.
  */
@@ -37,48 +92,18 @@ DGUIContainer::DGUIContainer(OGUIContext& ctx) : DGUIElement(ctx)
 
 DGUIContainer::~DGUIContainer()
 {
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		delete *it;
-	}
+	destroyElements(m_children);
 }
 
 void DGUIContainer::layout()
 {
-	// Default layout is fine.
 	DGUIElement::layout();
-
-	lay_id lastID = LAY_INVALID_ID;
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		(*it)->layout();
-		lay_id iterID = (*it)->getID();
-
-		// This next bit is recommended by the library docs.
-		if (lastID == LAY_INVALID_ID)
-		{
-			// Establish parent-child item relationship.
-			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
-		}
-		else
-		{
-			// Append this child after previous one.
-			lay_append(m_ctx.layoutAddr(), lastID, iterID);
-		}
-
-		lastID = iterID;
-	}
+	layoutElements(m_children);
 }
 
 void DGUIContainer::render()
 {
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		(*it)->render();
-	}
+	renderElements(m_children);
 }
 
 /**
@@ -106,39 +131,13 @@ DGUIDim::DGUIDim(OGUIContext& ctx, const std::string& color, float amount)
 
 DGUIDim::~DGUIDim()
 {
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		delete *it;
-	}
+	destroyElements(m_children);
 }
 
 void DGUIDim::layout()
 {
-	// Default layout is fine.
 	DGUIElement::layout();
-
-	lay_id lastID = LAY_INVALID_ID;
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		(*it)->layout();
-		lay_id iterID = (*it)->getID();
-
-		// This next bit is recommended by the library docs.
-		if (lastID == LAY_INVALID_ID)
-		{
-			// Establish parent-child item relationship.
-			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
-		}
-		else
-		{
-			// Append this child after previous one.
-			lay_append(m_ctx.layoutAddr(), lastID, iterID);
-		}
-
-		lastID = iterID;
-	}
+	layoutElements(m_children);
 }
 
 void DGUIDim::render()
@@ -146,14 +145,11 @@ void DGUIDim::render()
 	if (m_layoutID == LAY_INVALID_ID)
 		return;
 
+	// Render the dim area.
 	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
 	::screen->Dim(vec[0], vec[1], vec[2], vec[3], m_color.c_str(), m_amount);
 
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		(*it)->render();
-	}
+	renderElements(m_children);
 }
 
 /**
@@ -179,32 +175,15 @@ DGUIFlat::DGUIFlat(OGUIContext& ctx, const std::string& flatLump)
 {
 }
 
+DGUIFlat::~DGUIFlat()
+{
+	destroyElements(m_children);
+}
+
 void DGUIFlat::layout()
 {
-	// Default layout is fine.
 	DGUIElement::layout();
-
-	lay_id lastID = LAY_INVALID_ID;
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		(*it)->layout();
-		lay_id iterID = (*it)->getID();
-
-		// This next bit is recommended by the library docs.
-		if (lastID == LAY_INVALID_ID)
-		{
-			// Establish parent-child item relationship.
-			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
-		}
-		else
-		{
-			// Append this child after previous one.
-			lay_append(m_ctx.layoutAddr(), lastID, iterID);
-		}
-
-		lastID = iterID;
-	}
+	layoutElements(m_children);
 }
 
 void DGUIFlat::render()
@@ -223,11 +202,7 @@ void DGUIFlat::render()
 	}
 
 	// Render children.
-	for (std::vector<DGUIElement*>::iterator it = m_children.begin();
-	     it != m_children.end(); ++it)
-	{
-		(*it)->render();
-	}
+	renderElements(m_children);
 }
 
 /**
@@ -250,7 +225,6 @@ IMPLEMENT_CLASS(DGUIPatch, DGUIElement)
 
 void DGUIPatch::layout()
 {
-	// Default layout is fine.
 	DGUIElement::layout();
 }
 
@@ -259,12 +233,15 @@ void DGUIPatch::render()
 	if (m_layoutID == LAY_INVALID_ID)
 		return;
 
-	patch_t* patch = W_CachePatch(m_patchLump.c_str());
-	if (patch == NULL)
-		return;
-
-	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
-	::screen->DrawPatch(patch, vec[0], vec[1]);
+	// Find the flat to render.
+	int index = W_CheckNumForName(m_patchLump.c_str(), ns_global);
+	if (index)
+	{
+		// Only attempt to render the flat if it was found.
+		patch_t* patch = (patch_t*)W_CacheLumpNum(index, PU_CACHE);
+		lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
+		::screen->DrawPatch(patch, vec[0], vec[1]);
+	}
 }
 
 /*
