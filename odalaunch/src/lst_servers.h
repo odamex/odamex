@@ -23,6 +23,8 @@
 #ifndef __LST_SERVERS_H__
 #define __LST_SERVERS_H__
 
+#include "odalaunch.h"
+
 #include "net_packet.h"
 #include "lst_custom.h"
 

@@ -22,6 +22,25 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
+  build-x32:
+    name: Build (Visual Studio, 32-bit)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: .\ci-build-x32.ps1
+    - name: Run build
+      run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
+    - name: Prepare artifact
+      run: .\ci-artifact-x32.ps1
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x32
+        path: 'build-x32/artifact/*'
   build-mingw:
     name: Build (MinGW)
     runs-on: windows-latest
@@ -38,10 +57,3 @@ jobs:
       run: .\ci-build-mingw.ps1
     - name: Run build
       run: cmake --build .\build-gcc\
-    - name: Prepare Odalaunch artifact
-      run: .\ci-artifact-odalaunch.ps1
-    - name: Upload Odalaunch artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: Odamex-Win-x64
-        path: 'build-gcc/artifact/*'

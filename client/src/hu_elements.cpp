@@ -221,13 +221,13 @@ std::string HelpText()
 	if (isGameFull)
 	{
 		std::string use("Press ");
-		use.append(C_GetKeyStringsFromCommand("+use"));
+		use.append(Bindings.GetKeynameFromCommand("+use"));
 		use.append(" to join the queue");
 		return use;
 	}
 
 	std::string use("Press ");
-	use.append(C_GetKeyStringsFromCommand("+use"));
+	use.append(Bindings.GetKeynameFromCommand("+use"));
 	use.append(" to join");
 	return use;
 }
@@ -276,7 +276,7 @@ std::string Warmup(int& color)
 			if (dp == cp)
 			{
 				char strReady[64];
-				sprintf(strReady, "Warmup: Press %s to ready up", C_GetKeyStringsFromCommand("ready").c_str());
+				sprintf(strReady, "Warmup: Press %s to ready up", Bindings.GetKeynameFromCommand("ready").c_str());
 				return strReady;
 			}
 			else

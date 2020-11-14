@@ -23,7 +23,10 @@
 #ifndef __STR_UTILS_H__
 #define __STR_UTILS_H__
 
+#include "odalaunch.h"
+
 #include <string>
+
 #include <wx/string.h>
 
 std::string stdstr_toupper(const std::string&);

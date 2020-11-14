@@ -25,6 +25,8 @@
 #ifndef DLG_CONFIG_H
 #define DLG_CONFIG_H
 
+#include "odalaunch.h"
+
 #include <wx/dialog.h>
 #include <wx/intl.h>
 #include <wx/settings.h>

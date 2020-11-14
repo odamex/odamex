@@ -24,6 +24,8 @@
 #ifndef __PLAT_UTILS__
 #define __PLAT_UTILS__
 
+#include "odalaunch.h"
+
 #include <wx/frame.h>
 #include <wx/icon.h>
 #include <wx/string.h>

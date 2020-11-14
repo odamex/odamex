@@ -18,3 +18,7 @@ endif()
 if(UNIX)
 	install( TARGETS odamast DESTINATION ${CMAKE_INSTALL_BINDIR} )
 endif()
+
+if(BUILD_OR_FAIL AND NOT TARGET odamast)
+  message(FATAL_ERROR "Odamex metaserver target could not be generated")
+endif()
