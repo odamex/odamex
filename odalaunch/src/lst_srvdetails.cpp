@@ -20,9 +20,10 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "lst_srvdetails.h"
+
 #include <algorithm>
 
-#include "lst_srvdetails.h"
 #include "str_utils.h"
 
 #include <wx/settings.h>
