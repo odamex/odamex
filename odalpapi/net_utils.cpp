@@ -28,6 +28,11 @@
 
 #ifdef _XBOX
 #include "xbox_main.h"
+#elif defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <WinSock2.h>
+#include <Windows.h>
 #else
 #include <sys/time.h>
 #endif
@@ -42,6 +47,30 @@
 
 namespace odalpapi
 {
+
+#if defined(_WIN32)
+
+/* FILETIME of Jan 1 1970 00:00:00. */
+static const unsigned __int64 epoch = ((unsigned __int64)116444736000000000ULL);
+
+int gettimeofday(struct timeval* tp, ...)
+{
+	FILETIME file_time;
+	SYSTEMTIME system_time;
+	ULARGE_INTEGER ularge;
+
+	GetSystemTime(&system_time);
+	SystemTimeToFileTime(&system_time, &file_time);
+	ularge.LowPart = file_time.dwLowDateTime;
+	ularge.HighPart = file_time.dwHighDateTime;
+
+	tp->tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
+	tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
+
+	return 0;
+}
+
+#endif
 
 // GetMillisNow()
 

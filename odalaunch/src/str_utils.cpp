@@ -20,9 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <algorithm>
-
 #include "str_utils.h"
+
+#include <algorithm>
 
 using namespace std;
 

@@ -24,6 +24,8 @@
 #ifndef QUERY_THREAD_H_INCLUDED
 #define QUERY_THREAD_H_INCLUDED
 
+#include "odalaunch.h"
+
 #include <wx/thread.h>
 #include <wx/event.h>
 #include <wx/msgqueue.h>
