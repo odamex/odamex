@@ -216,7 +216,7 @@ std::string W_AddFile(std::string filename)
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf(PRINT_HIGH, "couldn't open %s\n", filename.c_str());
+		Printf(PRINT_WARNING, "couldn't open %s\n", filename.c_str());
 		return "";
 	}
 
@@ -257,7 +257,7 @@ std::string W_AddFile(std::string filename)
 
 		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf(PRINT_HIGH, "\nbad number of lumps for %s\n", filename.c_str());
+			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
 			return "";
 		}
@@ -560,11 +560,9 @@ int W_CheckNumForName(const char *name, int namespc)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (const char* name)
+int W_GetNumForName(const char* name, int namespc)
 {
-	int	i;
-
-	i = W_CheckNumForName (name);
+	int i = W_CheckNumForName(name, namespc);
 
 	if (i == -1)
 		I_Error ("W_GetNumForName: %s not found!", name);
@@ -815,4 +813,3 @@ void W_Close ()
 }
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")
-

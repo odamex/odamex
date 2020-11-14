@@ -910,9 +910,7 @@ void IInputSubsystem::gatherMouseEvents()
 void IInputSubsystem::getEvent(event_t* ev)
 {
 	assert(hasEvent());
-
-	memcpy(ev, &mEvents.front(), sizeof(event_t));
-
+	*ev = mEvents.front();
 	mEvents.pop();
 }
 

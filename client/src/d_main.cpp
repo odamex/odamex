@@ -242,11 +242,13 @@ void D_Display()
 		wiping_screen = true;
 	}
 
+	// We always want to service downloads, even outside of a specific
+	// download gamestate.
+	CL_DownloadTick();
+
 	switch (gamestate)
 	{
 		case GS_FULLCONSOLE:
-		case GS_DOWNLOAD:
-		    CL_DownloadTicker();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
@@ -345,7 +347,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
+			Printf (PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
 
 			CL_QuitNetGame ();
 
@@ -558,7 +560,6 @@ bool HashOk(std::string &required, std::string &available)
 }
 
 
-void CL_NetDemoRecord(const std::string &filename);
 void CL_NetDemoPlay(const std::string &filename);
 
 
@@ -591,8 +592,7 @@ void D_Init()
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
@@ -606,6 +606,18 @@ void D_Init()
 	C_InitConCharsFont();
 
 	HU_Init();
+
+	LevelInfos& levels = getLevelInfos();
+	if (levels.size() == 0)
+	{
+		levels.addDefaults();
+	}
+
+	ClusterInfos& clusters = getClusterInfos();
+	if (clusters.size() == 0)
+	{
+		clusters.addDefaults();
+	}
 
 	G_SetLevelStrings();
 	G_ParseMapInfo();
@@ -653,18 +665,8 @@ void STACK_ARGS D_Shutdown()
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
-	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	F_ShutdownFinale();
 
@@ -694,8 +696,6 @@ void STACK_ARGS D_Shutdown()
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();
-
-	GStrings.FreeData();
 
 //	Res_ShutdownTextureManager();
 
@@ -839,6 +839,10 @@ void D_DoomMain()
 
 	I_FinishClockCalibration();
 
+	// Initialize HTTP subsystem
+	CL_DownloadInit();
+	atterm(CL_DownloadShutdown);
+
 	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();
 
@@ -971,8 +975,3 @@ void D_DoomMain()
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
-
-
-
-
-

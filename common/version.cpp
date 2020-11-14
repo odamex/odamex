@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
+#include "git_describe.h"
 
 #include <map>
 #include <string>
@@ -29,8 +30,6 @@
 #include <memory>
 
 #include "c_dispatch.h"
-
-static unsigned int last_revision = 0;
 
 typedef std::map<std::string, std::string> source_files_t;
 
@@ -76,7 +75,7 @@ BEGIN_COMMAND (version)
 		source_files_t::const_iterator it = get_source_files().find(argv[1]);
 
 		if (it == get_source_files().end())
-			Printf(PRINT_HIGH, "no such file: %s", argv[1]);
+			Printf(PRINT_WARNING, "no such file: %s", argv[1]);
 		else
 			Printf(PRINT_HIGH, "%s", it->second.c_str());
 	}

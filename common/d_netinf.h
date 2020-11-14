@@ -27,6 +27,7 @@
 
 #include "doomdef.h"
 #include "c_cvars.h"
+#include "teaminfo.h"
 
 #define MAXPLAYERNAME	15
 
@@ -37,18 +38,6 @@ enum gender_t
 	GENDER_NEUTER,
 	
 	NUMGENDER
-};
-
-// [Toke - Teams]
-// denis - for both teamplay and ctfmode
-enum team_t
-{
-	TEAM_BLUE,
-	TEAM_RED,
-	
-	NUMTEAMS,
-	
-	TEAM_NONE
 };
 
 enum weaponswitch_t

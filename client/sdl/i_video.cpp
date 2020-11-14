@@ -38,6 +38,7 @@
 #include "m_fileio.h"
 
 #include "w_wad.h"
+#include "cmdlib.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -448,10 +449,9 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 		"full screen window"
 	};
 
-	char str[50];
-	sprintf(str, "%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[mode.window_mode]);
-
-	return std::string(str);
+	std::string str;
+	StrFormat(str, "%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
+	return str;
 }
 
 

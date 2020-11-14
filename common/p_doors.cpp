@@ -38,7 +38,7 @@ extern bool predicting;
 
 void P_SetDoorDestroy(DDoor *door)
 {
-	if (!door)
+	if (!door || predicting)
 		return;
 
 	door->m_Status = DDoor::destroy;
@@ -488,7 +488,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 
 	sec->special = 0;
 
-	door->m_Type = DDoor::doorRaiseIn5Mins;
+	door->m_Type = DDoor::doorCloseWaitOpen;
 	door->m_Speed = FRACUNIT * 2;
 	door->m_TopHeight = P_FindLowestCeilingSurrounding (sec);
 	door->m_TopHeight -= 4*FRACUNIT;

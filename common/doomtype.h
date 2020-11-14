@@ -35,6 +35,18 @@
 	#include <gctypes.h>
 #endif
 
+#ifdef _MSC_VER
+	#define FORMAT_PRINTF(index, first_arg)
+#else
+	#define FORMAT_PRINTF(index, first_arg) __attribute__ ((format(printf, index, first_arg)))
+#endif
+
+#ifdef _MSC_VER
+	#define NORETURN __declspec(noreturn)
+#else
+	#define NORETURN __attribute__ ((noreturn))
+#endif
+
 #ifndef __BYTEBOOL__
 	#define __BYTEBOOL__
 	// [RH] Some windows includes already define this
@@ -77,17 +89,30 @@
 #endif
 
 #if (defined _XBOX || defined _MSC_VER)
-	typedef signed   __int8   int8_t;
-	typedef signed   __int16  int16_t;
-	typedef signed   __int32  int32_t;
-	typedef signed   __int64  int64_t;
-	typedef unsigned __int8   uint8_t;
-	typedef unsigned __int16  uint16_t;
-	typedef unsigned __int32  uint32_t;
-	typedef unsigned __int64  uint64_t;
+	typedef signed __int8 int8_t;
+	typedef signed __int16 int16_t;
+	typedef signed __int32 int32_t;
+	typedef signed __int64 int64_t;
+	typedef unsigned __int8 uint8_t;
+	typedef unsigned __int16 uint16_t;
+	typedef unsigned __int32 uint32_t;
+	typedef unsigned __int64 uint64_t;
+
+	#define PRI_SIZE_PREFIX "I"
 #else
 	#include <stdint.h>
+
+	#define PRI_SIZE_PREFIX "z"
 #endif
+
+// Format constants for ssize_t/size_t.
+
+#define PRIdSIZE PRI_SIZE_PREFIX "d"
+#define PRIiSIZE PRI_SIZE_PREFIX "i"
+#define PRIuSIZE PRI_SIZE_PREFIX "u"
+#define PRIoSIZE PRI_SIZE_PREFIX "o"
+#define PRIxSIZE PRI_SIZE_PREFIX "x"
+#define PRIXSIZE PRI_SIZE_PREFIX "X"
 
 #ifdef UNIX
 	#define stricmp strcasecmp
@@ -161,17 +186,22 @@ typedef uint64_t			dtime_t;
 #ifdef _WIN32
 	#define PATHSEP "\\"
 	#define PATHSEPCHAR '\\'
+	#define PATHLISTSEP ";"
+	#define PATHLISTSEPCHAR ';'
 #else
 	#define PATHSEP "/"
 	#define PATHSEPCHAR '/'
+	#define PATHLISTSEP ":"
+	#define PATHLISTSEPCHAR ':'
 #endif
 
 // [RH] This gets used all over; define it here:
-int STACK_ARGS Printf (int printlevel, const char *, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...);
+FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
 // [Russell] Prints a bold green message to the console
-int STACK_ARGS Printf_Bold (const char *format, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...);
 // [RH] Same here:
-int STACK_ARGS DPrintf (const char *, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...);
 
 // Simple log file
 #include <fstream>
@@ -182,12 +212,24 @@ extern const char *LOG_FILE; //  Default is "odamex.log"
 extern std::ifstream CON;
 
 // game print flags
-#define	PRINT_LOW			0		// pickup messages
-#define	PRINT_MEDIUM		1		// death messages
-#define	PRINT_HIGH			2		// critical messages
-#define	PRINT_CHAT			3		// chat messages
-#define PRINT_TEAMCHAT		4		// chat messages from a teammate
-#define PRINT_SERVERCHAT	5		// chat messages from the server
+typedef enum {
+	PRINT_PICKUP,		// Pickup messages
+	PRINT_OBITUARY,		// Death messages
+	PRINT_HIGH,			// Regular messages
+
+	PRINT_CHAT,			// Chat messages
+	PRINT_TEAMCHAT,		// Chat messages from a teammate
+	PRINT_SERVERCHAT,	// Chat messages from the server
+
+	PRINT_WARNING,		// Warning messages
+	PRINT_ERROR,		// Fatal error messages
+
+	PRINT_NORCON,		// Do NOT send the message to any rcon client.
+
+	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)		
+
+	PRINT_MAXPRINT
+} printlevel_t;
 
 #ifdef __forceinline
 	#define forceinline __forceinline

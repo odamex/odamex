@@ -117,8 +117,8 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf (PRINT_HIGH, "ERROR: %s\n", error.GetMsg().c_str());
-			Printf (PRINT_HIGH, "sleeping for 10 seconds before map reload...");
+			Printf ("ERROR: %s\n", error.GetMsg().c_str());
+			Printf ("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
 			SV_SendDisconnectSignal();
@@ -142,6 +142,7 @@ void D_DoomLoop (void)
 //
 void D_Init()
 {
+	argb_t::setChannels(3, 2, 1, 0);
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
 
@@ -163,15 +164,24 @@ void D_Init()
 	R_InitColormaps();
 
 	// [RH] Initialize localizable strings.
-	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
+	LevelInfos& levels = getLevelInfos();
+	if (levels.size() == 0)
+	{
+		levels.addDefaults();
+	}
+
+	ClusterInfos& clusters = getClusterInfos();
+	if (clusters.size() == 0)
+	{
+		clusters.addDefaults();
+	}
 	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
@@ -197,17 +207,8 @@ void STACK_ARGS D_Shutdown()
 		G_ExitLevel(0, 0);
 
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	// stop sound effects and music
 	S_Stop();
@@ -215,8 +216,6 @@ void STACK_ARGS D_Shutdown()
 	DThinker::DestroyAllThinkers();
 
 	UndoDehPatch();
-
-	GStrings.FreeData();
 
 	// close all open WAD files
 	W_Close();
@@ -255,11 +254,11 @@ void D_DoomMain()
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
 
-    C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
+	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	// Always log by default
-    if (!LOG.is_open())
-    	C_DoCommand("logfile");
+	if (!LOG.is_open())
+		C_DoCommand("logfile");
 	
 	std::vector<std::string> newwadfiles, newpatchfiles;
 
@@ -304,7 +303,7 @@ void D_DoomMain()
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		DPrintf ("%s", GStrings(D_DEVSTR));        // D_DEVSTR
+		DPrintf ("%s", GStrings(D_DEVSTR));		// D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))
@@ -318,7 +317,7 @@ void D_DoomMain()
 	if (Args.CheckParm("-fast"))
 		sv_fastmonsters = 1;
 
-    // get skill / episode / map from parms
+	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
 	const char* val = Args.CheckValue("-skill");

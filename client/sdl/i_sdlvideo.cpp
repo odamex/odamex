@@ -797,7 +797,7 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 
 	if (SDLVersion->patch != SDL_PATCHLEVEL)
 	{
-		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf(PRINT_WARNING, "SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
@@ -1487,30 +1487,6 @@ std::string ISDL20Window::getVideoDriverName() const
 
 
 //
-// I_SetSDL20Palette
-//
-// Helper function for ISDL20Window::setPalette
-//
-static void I_SetSDL20Palette(SDL_Surface* sdlsurface, const argb_t* palette_colors)
-{
-	if (sdlsurface->format->BitsPerPixel == 8)
-	{
-		assert(sdlsurface->format->palette != NULL);
-		assert(sdlsurface->format->palette->ncolors == 256);
-
-		SDL_Color* sdlcolors = sdlsurface->format->palette->colors;
-		for (int c = 0; c < 256; c++)
-		{
-			argb_t color = palette_colors[c];
-			sdlcolors[c].r = color.getr();
-			sdlcolors[c].g = color.getg();
-			sdlcolors[c].b = color.getb();
-		}
-	}
-}
-
-
-//
 // ISDL20Window::setPalette
 //
 // Saves the given palette and updates it during refresh.
@@ -1743,7 +1719,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	if (linked.patch != compiled.patch)
 	{
-		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf(PRINT_WARNING, "SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
 			linked.major, linked.minor, linked.patch);
 	}

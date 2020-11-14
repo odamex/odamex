@@ -66,6 +66,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
+bool s_SpecialFromServer;
 
 //
 // P_FindMovingSector
@@ -89,7 +90,7 @@ std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 //
 void P_AddMovingCeiling(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || (clientside && consoleplayer().spectator))
 		return;
 
 	movingsector_t *movesec;
@@ -124,7 +125,7 @@ void P_AddMovingCeiling(sector_t *sector)
 //
 void P_AddMovingFloor(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || (clientside && consoleplayer().spectator))
 		return;
 
 	movingsector_t *movesec;
@@ -626,7 +627,7 @@ void P_InitPicAnims (void)
 			lastanim->curframe = 0;
 
 			if (lastanim->numframes < 2)
-				Printf (PRINT_HIGH,"P_InitPicAnims: bad cycle from %s to %s",
+				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
 						 anim_p + 10 /* .startname */,
 						 anim_p + 1 /* .endname */);
 
@@ -1191,7 +1192,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
 
-	int msg = 0;
+	const OString* msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -1217,49 +1218,49 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		case AnyKey:
 			if (bc || bs || rc || rs || yc || ys)
 				return true;
-			msg = PD_ANY;
+			msg = &PD_ANY;
 			break;
 
 		case AllKeys:
 			if (bc && bs && rc && rs && yc && ys)
 				return true;
-			msg = equiv ? PD_ALL3 : PD_ALL6;
+			msg = equiv ? &PD_ALL3 : &PD_ALL6;
 			break;
 
 		case RCard:
 			if (rc)
 				return true;
-			msg = equiv ? (remote ? PD_REDO : PD_REDK) : PD_REDC;
+			msg = equiv ? (remote ? &PD_REDO : &PD_REDK) : &PD_REDC;
 			break;
 
 		case BCard:
 			if (bc)
 				return true;
-			msg = equiv ? (remote ? PD_BLUEO : PD_BLUEK) : PD_BLUEC;
+			msg = equiv ? (remote ? &PD_BLUEO : &PD_BLUEK) : &PD_BLUEC;
 			break;
 
 		case YCard:
 			if (yc)
 				return true;
-			msg = equiv ? (remote ? PD_YELLOWO : PD_YELLOWK) : PD_YELLOWC;
+			msg = equiv ? (remote ? &PD_YELLOWO : &PD_YELLOWK) : &PD_YELLOWC;
 			break;
 
 		case RSkull:
 			if (rs)
 				return true;
-			msg = equiv ? (remote ? PD_REDO : PD_REDK) : PD_REDS;
+			msg = equiv ? (remote ? &PD_REDO : &PD_REDK) : &PD_REDS;
 			break;
 
 		case BSkull:
 			if (bs)
 				return true;
-			msg = equiv ? (remote ? PD_BLUEO : PD_BLUEK) : PD_BLUES;
+			msg = equiv ? (remote ? &PD_BLUEO : &PD_BLUEK) : &PD_BLUES;
 			break;
 
 		case YSkull:
 			if (ys)
 				return true;
-			msg = equiv ? (remote ? PD_YELLOWO : PD_YELLOWK) : PD_YELLOWS;
+			msg = equiv ? (remote ? &PD_YELLOWO : &PD_YELLOWK) : &PD_YELLOWS;
 			break;
 	}
 
@@ -1272,14 +1273,16 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-		C_MidPrint (GStrings(msg), p);
+
+		if (msg != NULL)
+			C_MidPrint(GStrings(*msg), p);
 	}
 
 	return false;
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain);
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
+void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType);
 
 //
 // EVENTS
@@ -1313,12 +1316,7 @@ void P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void
-P_CrossSpecialLine
-( int		linenum,
-  int		side,
-  AActor*	thing,
-  bool      FromServer)
+void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 {
     line_t*	line = &lines[linenum];
 
@@ -1418,18 +1416,14 @@ P_CrossSpecialLine
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, side, 0);
+	OnActivatedLine(line, thing, side, LineCross);
 }
 
 //
 // P_ShootSpecialLine - IMPACT SPECIALS
 // Called when a thing shoots a special line.
 //
-void
-P_ShootSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  bool      FromServer)
+void P_ShootSpecialLine(AActor*	thing, line_t* line)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return;
@@ -1454,7 +1448,7 @@ P_ShootSpecialLine
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, 0, 2);
+	OnActivatedLine(line, thing, 0, LineShoot);
 
 	if(serverside)
 	{
@@ -1469,12 +1463,7 @@ P_ShootSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
-bool
-P_UseSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  int		side,
-  bool      FromServer)
+bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
@@ -1531,7 +1520,7 @@ P_UseSpecialLine
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, 1);
+		OnActivatedLine(line, thing, side, LineUse);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
@@ -1549,12 +1538,7 @@ P_UseSpecialLine
 // Called when a thing pushes a special line, only in advanced map format
 // Only the front sides of lines are pushable.
 //
-bool
-P_PushSpecialLine
-( AActor*	thing,
-  line_t*	line,
-  int		side,
-  bool      FromServer)
+bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 {
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
@@ -1597,7 +1581,7 @@ P_PushSpecialLine
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, 3);
+		OnActivatedLine(line, thing, side, LinePush);
 
 		if(serverside)
 		{
@@ -1610,6 +1594,10 @@ P_PushSpecialLine
 }
 
 
+
+#ifdef SERVER_APP
+void SV_UpdateSecret(int sectornum, player_t &player);
+#endif
 
 //
 // P_PlayerInSpecialSector
@@ -1746,10 +1734,13 @@ void P_PlayerInSpecialSector (player_t *player)
 			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
-
-#ifdef CLIENT_APP
+	
+#ifdef SERVER_APP
+			int sectornum = sector - sectors;
+			SV_UpdateSecret(sectornum, *player);	// Update the sector to all clients so that they don't discover an already found secret.
+#else
 			if (player->mo == consoleplayer().camera)
-				C_RevealSecret();
+				C_RevealSecret();		// Display the secret revealed message
 #endif
 		}
 	}
@@ -1858,7 +1849,10 @@ void P_SpawnSpecials (void)
 
 		// [RH] All secret sectors are marked with a BOOM-ish bitfield
 		if (sector->special & SECRET_MASK)
+		{
+			sector->secretsector = true;
 			level.total_secrets++;
+		}
 
 		switch (sector->special & 0xff)
 		{
@@ -1867,67 +1861,91 @@ void P_SpawnSpecials (void)
 
 		case dLight_Flicker:
 			// FLICKERING LIGHTS
+			if (IgnoreSpecial)
+				break;
 			new DLightFlash (sector);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeFast:
 			// STROBE FAST
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeSlow:
 			// STROBE SLOW
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, false);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_Strobe_Hurt:
 			// STROBE FAST/DEATH SLIME
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
 			break;
 
 		case dLight_Glow:
 			// GLOWING LIGHT
+			if (IgnoreSpecial)
+				break;
 			new DGlow (sector);
 			sector->special &= 0xff00;
 			break;
 
 		case dSector_DoorCloseIn30:
+			if (!serverside)
+				break;
 			// DOOR CLOSE IN 30 SECONDS
 			P_SpawnDoorCloseIn30 (sector);
 			break;
 
 		case dLight_StrobeSlowSync:
 			// SYNC STROBE SLOW
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, true);
 			sector->special &= 0xff00;
 			break;
 
 		case dLight_StrobeFastSync:
 			// SYNC STROBE FAST
+			if (IgnoreSpecial)
+				break;
 			new DStrobe (sector, STROBEBRIGHT, FASTDARK, true);
 			sector->special &= 0xff00;
 			break;
 
 		case dSector_DoorRaiseIn5Mins:
+			if (!serverside)
+				break;
 			// DOOR RAISE IN 5 MINUTES
 			P_SpawnDoorRaiseIn5Mins (sector);
 			break;
 
 		case dLight_FireFlicker:
 			// fire flickering
+			if (IgnoreSpecial)
+				break;
 			new DFireFlicker (sector);
 			sector->special &= 0xff00;
 			break;
 
 		  // [RH] Hexen-like phased lighting
 		case LightSequenceStart:
+			if (IgnoreSpecial)
+				break;
 			new DPhased (sector);
 			break;
 
 		case Light_Phased:
+			if (IgnoreSpecial)
+				break;
 			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
 			break;
 
@@ -1936,6 +1954,8 @@ void P_SpawnSpecials (void)
 			break;
 
 		default:
+			if (IgnoreSpecial)
+				break;
 			// [RH] Try for normal Hexen scroller
 			if ((sector->special & 0xff) >= Scroll_North_Slow &&
 				(sector->special & 0xff) <= Scroll_SouthWest_Fast)
@@ -2046,6 +2066,8 @@ void P_SpawnSpecials (void)
 			{
 			case Init_Gravity:
 				{
+				if (IgnoreSpecial)
+					break;
 				float grav = ((float)P_AproxDistance (lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
 				for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 					sectors[s].gravity = grav;
@@ -2057,6 +2079,9 @@ void P_SpawnSpecials (void)
 
 			case Init_Damage:
 				{
+					if (IgnoreSpecial)
+						break;
+
 					int damage = P_AproxDistance (lines[i].dx, lines[i].dy) >> FRACBITS;
 					for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 					{
@@ -2087,7 +2112,7 @@ void P_SpawnSpecials (void)
 	// [RH] Start running any open scripts on this map
 	if (level.behavior != NULL)
 	{
-		level.behavior->StartTypedScripts (SCRIPT_Open, NULL);
+		level.behavior->StartTypedScripts (SCRIPT_Open, NULL, 0, 0, 0, false);
 	}
 }
 
@@ -2314,11 +2339,17 @@ static void P_SpawnScrollers(void)
 			register int s;
 
 			case Scroll_Ceiling:
+				if (IgnoreSpecial)
+					break;
+
 				for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
 					new DScroller (DScroller::sc_ceiling, -dx, dy, control, s, accel);
 				break;
 
 			case Scroll_Floor:
+				if (IgnoreSpecial)
+					break;
+
 				if (l->args[2] != 1)
 					// scroll the floor
 					for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
@@ -2336,12 +2367,18 @@ static void P_SpawnScrollers(void)
 			// killough 3/1/98: scroll wall according to linedef
 			// (same direction and speed as scrolling floors)
 			case Scroll_Texture_Model:
+				if (IgnoreSpecial)
+					break;
+
 				for (s=-1; (s = P_FindLineFromID (l->args[0],s)) >= 0;)
 					if (s != i)
 						new DScroller (dx, dy, lines+s, control, accel);
 				break;
 
 			case Scroll_Texture_Offsets:
+				if (IgnoreSpecial)
+					break;
+
 				// killough 3/2/98: scroll according to sidedef offsets
 				s = lines[i].sidenum[0];
 				new DScroller (DScroller::sc_side, -sides[s].textureoffset,
@@ -2349,26 +2386,41 @@ static void P_SpawnScrollers(void)
 				break;
 
 			case Scroll_Texture_Left:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, l->args[0] * (FRACUNIT/64), 0,
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Right:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, l->args[0] * (-FRACUNIT/64), 0,
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Up:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, 0, l->args[0] * (FRACUNIT/64),
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Down:
+				if (IgnoreSpecial)
+					break;
+
 				new DScroller (DScroller::sc_side, 0, l->args[0] * (-FRACUNIT/64),
 							   -1, lines[i].sidenum[0], accel);
 				break;
 
 			case Scroll_Texture_Both:
+				if (IgnoreSpecial)
+					break;
+
 				if (l->args[0] == 0) {
 					dx = (l->args[1] - l->args[2]) * (FRACUNIT/64);
 					dy = (l->args[4] - l->args[3]) * (FRACUNIT/64);
@@ -2907,4 +2959,3 @@ bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
 }
 
 VERSION_CONTROL (p_spec_cpp, "$Id$")
-

@@ -155,7 +155,7 @@ void STlib_drawNum(st_number_t* n, bool force_refresh)
 	STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
 
 	// if non-number, do not draw it
-	if (num == 1994)
+	if (num == ST_DONT_DRAW_NUM)
 		return;
 
 	x = n->x;
@@ -268,4 +268,3 @@ void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
 }
 
 VERSION_CONTROL (st_lib_cpp, "$Id$")
-

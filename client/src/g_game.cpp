@@ -98,6 +98,7 @@ EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
+EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_allowdropoff)
 
@@ -938,8 +939,7 @@ void G_Ticker (void)
 	else if (NET_GetPacket() && !simulated_connection)
 	{
 		// denis - don't accept candy from strangers
-		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
-			&& NET_CompareAdr(serveraddr, net_from))
+		if (gamestate == GS_CONNECTING && NET_CompareAdr(serveraddr, net_from))
 		{
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);
@@ -1085,14 +1085,14 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
-	if (!sv_keepkeys)
+	if (!sv_keepkeys && !sv_sharekeys)
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = false;
 	}
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
 
@@ -1290,14 +1290,12 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &deathmatchstarts[i]) )
-		{
-			return &deathmatchstarts[i];
-		}
+		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+			return &DeathMatchStarts[i];
 	}
 
 	// [RH] return a spot anyway, since we allow telefragging when a player spawns
-	return &deathmatchstarts[i];
+	return &DeathMatchStarts[i];
 }
 
 void G_DeathMatchSpawnPlayer (player_t &player)
@@ -1308,67 +1306,26 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	if(!serverside || sv_gametype == GM_COOP)
 		return;
 
-	//if (!ctfmode)
+	selections = DeathMatchStarts.size();
+	// [RH] We can get by with just 1 deathmatch start
+	if (selections < 1)
+		I_Error ("No deathmatch starts");
+
+	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
+	spot = SelectRandomDeathmatchSpot (player, selections);
+
+	if (!spot && !playerstarts.empty())
 	{
-		selections = deathmatch_p - deathmatchstarts;
-		// [RH] We can get by with just 1 deathmatch start
-		if (selections < 1)
-			I_Error ("No deathmatch starts");
-
-		// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-		spot = SelectRandomDeathmatchSpot (player, selections);
-
-		if (!spot && !playerstarts.empty())
-		{
-			// no good spot, so the player will probably get stuck
-			spot = &playerstarts[player.id%playerstarts.size()];
-		}
-		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;	// [RH] > 4 players
-		}
-
-
+		// no good spot, so the player will probably get stuck
+		spot = &playerstarts[player.id%playerstarts.size()];
 	}
-	/*else
+	else
 	{
-		selections = 0;
-
-		if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-		{
-			selections = blueteam_p - blueteamstarts;
-
-			if (selections < 1)
-				I_Error ("No blue team starts");
-		}
-
-		if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-		{
-			selections = redteam_p - redteamstarts;
-
-			if (selections < 1)
-				I_Error ("No red team starts");
-		}
-
-		if (selections < 1)
-			I_Error ("No team starts");
-
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
-
-		if (!spot && !playerstarts.empty())
-			spot = &playerstarts[player.id%playerstarts.size()];
-
+		if (player.id < 4)
+			spot->type = player.id+1;
 		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;
-		}
-	}*/
+			spot->type = player.id+4001-4;	// [RH] > 4 players
+	}
 
 	P_SpawnPlayer (player, spot);
 }
@@ -1901,8 +1858,8 @@ BEGIN_COMMAND(playdemo)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Cannot play demo because WAD didn't load\n");
-			Printf(PRINT_HIGH, "Use the 'wad' command\n");
+			Printf(PRINT_WARNING, "Cannot play demo because WAD didn't load\n");
+			Printf(PRINT_WARNING, "Use the 'wad' command\n");
 		}
 	}
 	else
@@ -1965,7 +1922,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (bytelen)
 			Z_Free(demobuffer);
 
-		Printf(PRINT_HIGH, "DOOM Demo file too short\n");
+		Printf(PRINT_WARNING, "DOOM Demo file too short\n");
 		gameaction = ga_fullconsole;
 		return;
 	}
@@ -2094,7 +2051,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex " \
+		Printf(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
 		gameaction = ga_nothing;
 	}
@@ -2162,7 +2119,7 @@ void G_CleanupDemo()
 		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 
 		demorecording = false;
-		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
+		Printf("Demo %s recorded\n", demoname);
 
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
@@ -2195,7 +2152,7 @@ BOOL G_CheckDemoStatus (void)
 			if (mo)
 				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
-				Printf(PRINT_HIGH, "demotest:no player\n");
+				Printf(PRINT_WARNING, "demotest:no player\n");
 
 			demotest = false;
 

@@ -27,7 +27,7 @@
 // ---------------
 
 // Game mode
-CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
+CVAR_RANGE(sv_gametype, "0", "Sets the game mode, values are:\n" \
 					"// 0 = Cooperative\n" \
 					"// 1 = Deathmatch\n" \
 					"// 2 = Team Deathmatch\n" \
@@ -131,7 +131,10 @@ CVAR(				sv_weaponstay,    "1", "Weapons stay after pickup",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(				sv_keepkeys, "0", "Keep keys on death",
-					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
@@ -166,7 +169,10 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
-					
+CVAR(sv_downloadsites, "",
+     "A list of websites to download WAD files from, separated by spaces",
+     CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
 					
@@ -175,7 +181,6 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
-	
 
 // Compatibility options
 // ---------------------------------
@@ -259,8 +264,8 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE_FUNC_DECL(language, "0", "",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0f)
+CVAR_FUNC_DECL(		language, "auto", "Language to use for ingame strings",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				port, "0", "Display currently used network port number",
 					CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)

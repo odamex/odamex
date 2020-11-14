@@ -1309,19 +1309,17 @@ void S_ParseSndInfo (void)
 						ambient->volume = 0;
 				} else if (!stricmp (com_token + 1, "map")) {
 					// Hexen-style $MAP command
-					level_info_t *info;
-
 					sndinfo = COM_Parse (sndinfo);
 					sprintf (com_token, "MAP%02d", atoi (com_token));
-					info = FindLevelInfo (com_token);
+					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
 					sndinfo = COM_Parse (sndinfo);
-					if (info->mapname[0])
+					if (info.mapname[0])
 					{
-						strncpy (info->music, com_token, 9); // denis - todo -string limit?
-						std::transform(info->music, info->music + strlen(info->music), info->music, toupper);
+						strncpy (info.music, com_token, 9); // denis - todo -string limit?
+						std::transform(info.music, info.music + strlen(info.music), info.music, toupper);
 					}
 				} else {
-					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
+					Printf (PRINT_WARNING, "Unknown SNDINFO command %s\n", com_token);
 					while (*sndinfo != '\n' && *sndinfo != '\0')
 						sndinfo++;
 				}

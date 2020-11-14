@@ -23,12 +23,14 @@
 //-----------------------------------------------------------------------------
 
 #include <ctime>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <sstream>
 #include <functional>
 
 #include "win32inc.h"
 
+#include "i_system.h"
 #include "doomtype.h"
 #include "cmdlib.h"
 #include <map>
@@ -348,6 +350,80 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 	return tokens;
 }
 
+//
+// A quick and dirty std::string formatting that uses snprintf under the covers.
+//
+FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	VStrFormat(out, fmt, va);
+	va_end(va);
+}
+
+//
+// A quick and dirty std::string formatting that uses snprintf under the covers.
+//
+void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
+{
+	va_list va2;
+	va_copy(va2, va);
+
+	// Get desired length of buffer.
+	int chars = vsnprintf(NULL, 0, fmt, va);
+	if (chars < 0)
+	{
+		I_Error("Encoding error detected in StrFormat\n");
+	}
+	size_t len = (size_t)chars + sizeof('\0');
+
+	// Allocate the buffer.
+	char* buf = (char*)malloc(len);
+	if (buf == NULL)
+	{
+		I_Error("Could not allocate StrFormat buffer\n");
+	}
+
+	// Actually write to the buffer.
+	int ok = vsnprintf(buf, len, fmt, va2);
+	if (ok != chars)
+	{
+		I_Error("Truncation detected in StrFormat\n");
+	}
+
+	out = buf;
+	free(buf);
+}
+
+/**
+ * @brief Format passed number of bytes with a byte multiple suffix. 
+ * 
+ * @param out Output string buffer.
+ * @param bytes Number of bytes to format.
+ */
+void StrFormatBytes(std::string& out, size_t bytes)
+{
+	static const char* BYTE_MAGS[] = {
+	    "B",
+	    "kB",
+	    "MB",
+	    "GB",
+	};
+
+	size_t magnitude = 0;
+	double checkbytes = bytes;
+	while (checkbytes >= 1000.0 && magnitude < ARRAY_LENGTH(BYTE_MAGS))
+	{
+		magnitude += 1;
+		checkbytes /= 1000.0;
+	}
+
+	if (magnitude)
+		StrFormat(out, "%.2f %s", checkbytes, BYTE_MAGS[magnitude]);
+	else
+		StrFormat(out, "%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
+}
+
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
 bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
@@ -589,7 +665,7 @@ public:
 	}
 }rst;
 
-void ReplaceString (const char **ptr, const char *str)
+void ReplaceString (char** ptr, const char *str)
 {
 	if (*ptr)
 	{
@@ -612,8 +688,8 @@ void StripColorCodes(std::string& str)
 	size_t pos = 0;
 	while (pos < str.length())
 	{
-		if (str.c_str()[pos] == '\\' && str.c_str()[pos + 1] == 'c' && str.c_str()[pos + 2] != '\0')
-			str.erase(pos, 3);
+		if (str.c_str()[pos] == '\034' && str.c_str()[pos + 1] != '\0')
+			str.erase(pos, 2);
 		else
 			pos++;
 	}

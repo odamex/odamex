@@ -280,7 +280,7 @@ void SV_AcknowledgePacket(player_t &player)
 				return;
 			}
 
-			if (cl->reliablebuf.cursize > 600)
+			if (cl->reliablebuf.cursize > MaxPacketSize)
 				SV_SendPacket(player);
 
 		}

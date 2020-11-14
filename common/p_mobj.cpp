@@ -69,6 +69,7 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
+EXTERN_CVAR(sv_teamsinplay)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -245,25 +246,26 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	y = iy;
 	radius = info->radius;
 	height = P_ThingInfoHeight(info);
+	damage = info->damage;
 	flags = info->flags;
 	flags2 = info->flags2;
 	health = info->spawnhealth;
 	translucency = info->translucency;
 	rndindex = M_Random();
 
-    if (multiplayer && serverside)
-        netid = ServerNetID.ObtainNetID();
+	if (multiplayer && serverside)
+		netid = ServerNetID.ObtainNetID();
 
 	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
 
-    if (clientside)
-        lastlook = P_Random() % MAXPLAYERS_VANILLA;
-    else
-        lastlook = P_Random() % MAXPLAYERS;
+	if (clientside)
+		lastlook = P_Random() % MAXPLAYERS_VANILLA;
+	else
+		lastlook = P_Random() % MAXPLAYERS;
 
-    // do not set the state with P_SetMobjState,
-    // because action routines can not be called yet
+	// do not set the state with P_SetMobjState,
+	// because action routines can not be called yet
 	st = &states[info->spawnstate];
 	state = st;
 	tics = st->tics;
@@ -299,6 +301,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 		z = iz;
 	}
 
+	spawnpoint.type = 0;
 	memset(args, 0, sizeof(args));
 }
 
@@ -385,18 +388,15 @@ void AActor::Destroy ()
 	SV_SendDestroyActor(this);
 
     // Add special to item respawn queue if it is destined to be respawned
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED))
+	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
 	{
-		if (type < MT_BSOK || type > MT_RDWN)
-		{
-			itemrespawnque[iquehead] = spawnpoint;
-			itemrespawntime[iquehead] = level.time;
-			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
+		itemrespawnque[iquehead] = spawnpoint;
+		itemrespawntime[iquehead] = level.time;
+		iquehead = (iquehead+1)&(ITEMQUESIZE-1);
 
-			// lose one off the end?
-			if (iquehead == iquetail)
-				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
-		}
+		// lose one off the end?
+		if (iquehead == iquetail)
+			iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 	}
 
 	// [RH] Unlink from tid chain
@@ -925,6 +925,11 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 
 	do
 	{
+		if (state >= ARRAY_LENGTH(states) || state < 0)
+		{
+			I_Error("P_SetMobjState: State %d does not exist in state table.", state);
+		}
+
 		if (state == S_NULL)
 		{
 			mobj->state = (state_t *) S_NULL;
@@ -1855,22 +1860,22 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 					   !consoleplayer().userinfo.predict_weapons))
 		return;
 
-    AActor *puff;
+	AActor *puff;
 
 	z += (P_RandomDiff () << 10);
 
-    puff = new AActor(x, y, z, MT_PUFF);
-    puff->momz = FRACUNIT;
-    puff->tics -= P_Random(puff) & 3;
+	puff = new AActor(x, y, z, MT_PUFF);
+	puff->momz = FRACUNIT;
+	puff->tics -= P_Random(puff) & 3;
 
-    if (puff->tics < 1)
-        puff->tics = 1;
+	if (puff->tics < 1)
+		puff->tics = 1;
 
 	// don't make punches spark on the wall
 	if (attackrange == MELEERANGE)
-        P_SetMobjState(puff, S_PUFF3);
+		P_SetMobjState(puff, S_PUFF3);
 
-    if (serverside)
+	if (serverside)
 	{
 		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
 		// so don't send the puffs to the client already predicting
@@ -2141,11 +2146,11 @@ void P_RespawnSpecials (void)
 
 	int 				i;
 
-    // clients do no control respawning of items
+	// clients do no control respawning of items
 	if(!serverside)
 		return;
 
-    // allow respawning if we specified it
+	// allow respawning if we specified it
 	if (!sv_itemsrespawn)
 		return;
 
@@ -2194,8 +2199,8 @@ void P_RespawnSpecials (void)
 	// spawn a teleport fog at the new spot
 	mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
-    if (clientside)
-        S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+	if (clientside)
+		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// spawn it
 	mo = new AActor (x, y, z, (mobjtype_t)i);
@@ -2310,50 +2315,25 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
-		if (deathmatch_p >= &deathmatchstarts[10] && demoplayback)
+		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
-		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
-		{
-			// [RH] Get more deathmatchstarts
-			int offset = MaxDeathmatchStarts;
-			MaxDeathmatchStarts *= 2;
-			deathmatchstarts = (mapthing2_t *)Realloc (deathmatchstarts, MaxDeathmatchStarts * sizeof(mapthing2_t));
-			deathmatch_p = &deathmatchstarts[offset];
-		}
-		memcpy (deathmatch_p, mthing, sizeof(*mthing));
-		deathmatch_p++;
+		DeathMatchStarts.push_back(*mthing);
 		return;
 	}
 
-	// [Toke - CTF - starts] CTF starts - count Blue team start positions
-	if (mthing->type == 5080 && sv_teamspawns)
+	if (sv_teamspawns)
 	{
-		if (blueteam_p == &blueteamstarts[MaxBlueTeamStarts])
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			int offset = MaxBlueTeamStarts;
-			MaxBlueTeamStarts *= 2;
-			blueteamstarts = (mapthing2_t *)Realloc (blueteamstarts, MaxBlueTeamStarts * sizeof(mapthing2_t));
-			blueteam_p = &blueteamstarts[offset];
-		}
-		memcpy (blueteam_p, mthing, sizeof(*mthing));
-		blueteam_p++;
-		return;
-	}
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 
-	// [Toke - CTF - starts] CTF starts - count Red team start positions
-	if (mthing->type == 5081 && sv_teamspawns)
-	{
-		if (redteam_p == &redteamstarts[MaxRedTeamStarts])
-		{
-			int offset = MaxRedTeamStarts;
-			MaxRedTeamStarts *= 2;
-			redteamstarts = (mapthing2_t *)Realloc (redteamstarts, MaxRedTeamStarts * sizeof(mapthing2_t));
-			redteam_p = &redteamstarts[offset];
+			if (mthing->type == teamInfo->TeamSpawnThingNum)
+			{
+				teamInfo->Starts.push_back(*mthing);
+				return;
+			}
 		}
-		memcpy (redteam_p, mthing, sizeof(*mthing));
-		redteam_p++;
-		return;
 	}
 
 	// [RH] Record polyobject-related things
@@ -2472,7 +2452,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 		if (type > 63)
 		{
-			Printf (PRINT_HIGH, "Sound sequence %d out of range\n", type);
+			Printf (PRINT_WARNING, "Sound sequence %d out of range\n", type);
 		}
 		else
 		{
@@ -2518,7 +2498,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i >= NUMMOBJTYPES || i < 0)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
-		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
+		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
 			mthing->type,
 			mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
@@ -2527,7 +2507,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	//		it to the unknown thing.
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
-		Printf (PRINT_HIGH, "Type %i at (%i, %i) has no frames\n",
+		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",
 				mthing->type, mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
@@ -2652,32 +2632,31 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->subsector->sector->SecActTarget = mobj->ptr();
 	}
 
-	if (sv_gametype == GM_CTF) {
-		// [Toke - CTF] Setup flag sockets
-		if (mthing->type == ID_BLUE_FLAG)
+	if (sv_gametype == GM_CTF)
+	{
+		for (int iTeam = 0; iTeam < sv_teamsinplay; iTeam++)
 		{
-			flagdata *data = &CTFdata[it_blueflag];
-			if (data->flaglocated)
-				return;
-
-			CTF_RememberFlagPos (mthing);
-			CTF_SpawnFlag(it_blueflag);
-		}
-
-		if (mthing->type == ID_RED_FLAG)
-		{
-			flagdata *data = &CTFdata[it_redflag];
-			if (data->flaglocated)
-				return;
-
-			CTF_RememberFlagPos (mthing);
-			CTF_SpawnFlag(it_redflag);
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			if (mthing->type == teamInfo->FlagThingNum)
+			{
+				SpawnFlag(mthing, teamInfo->Team);
+				break;
+			}
 		}
 	}
 
 	// [RH] Go dormant as needed
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
+}
+
+void SpawnFlag(mapthing2_t* mthing, team_t flag)
+{
+	if (GetTeamInfo(flag)->FlagData.flaglocated)
+		return;
+
+	CTF_RememberFlagPos(mthing);
+	CTF_SpawnFlag(flag);
 }
 
 

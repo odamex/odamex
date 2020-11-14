@@ -265,9 +265,9 @@ static std::string BaseFileSearchDir(std::string dir, const std::string &file, c
 				}
 				else if (!hash.empty())
 				{
-					Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
-					Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
-					Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
+					Printf (PRINT_WARNING, "WAD at %s does not match required copy\n", local_file.c_str());
+					Printf (PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
+					Printf (PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
 				}
 			}
 		}
@@ -303,9 +303,9 @@ static std::string BaseFileSearchDir(std::string dir, const std::string &file, c
 			}
 			else if (!hash.empty())
 			{
-				Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
-				Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
-				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
+				Printf (PRINT_WARNING, "WAD at %s does not match required copy\n", local_file.c_str());
+				Printf (PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
+				Printf (PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
 	} while (FindNextFile(hFind, &FindFileData));
@@ -610,9 +610,9 @@ void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
 		}
 	}
 
-    // try default patches
-    if (use_default)
-        DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
+	// try default patches
+	if (use_default)
+		DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
 
 	for (size_t i = 0; i < patchfiles.size(); i++)
 		patchhashes.push_back(W_MD5(patchfiles[i]));
@@ -628,7 +628,7 @@ void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
 	}
 
 	if (gamemode == retail_chex && !multiplayer && !chexLoaded)
-		Printf(PRINT_HIGH,"Warning: chex.deh not loaded, experience may differ from the original!\n");
+		Printf(PRINT_WARNING, "Warning: chex.deh not loaded, experience may differ from the original!\n");
 }
 
 
@@ -831,9 +831,7 @@ void D_LoadResourceFiles(
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	GStrings.FreeData();
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings();
 
 	D_DoDefDehackedPatch(newpatchfiles);
 }

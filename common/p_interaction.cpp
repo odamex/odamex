@@ -37,6 +37,10 @@
 #include "g_warmup.h"
 #include "m_wdlstats.h"
 
+#ifdef SERVER_APP
+#include "sv_main.h"
+#endif
+
 extern bool predicting;
 
 EXTERN_CVAR(sv_doubleammo)
@@ -67,16 +71,21 @@ void SV_SpawnMobj(AActor *mobj);
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...);
 void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
-void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
+void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor *special, player_t *player);
-ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
-void SV_SocketTouch(player_t &player, flag_t f);
+ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
+void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, int pain);
+void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
+void SV_SetWinPlayer(byte playerId);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
+
+#ifdef SERVER_APP
+void SV_ShareKeys(card_t card, player_t& player);
+#endif
 
 //
 // GET STUFF
@@ -111,7 +120,8 @@ void P_GiveTeamPoints(player_t* player, int num)
 {
 	if (!warmup.checkscorechange())
 		return;
-	TEAMpoints[player->userinfo.team] += num;
+
+	GetTeamInfo(player->userinfo.team)->Points += num;
 }
 
 //
@@ -175,54 +185,57 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	switch (ammotype)
+	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback || demorecording)
 	{
-        case am_clip:
-            if (player->readyweapon == wp_fist)
-            {
-                if (player->weaponowned[wp_chaingun])
-                {
-                    player->pendingweapon = wp_chaingun;
-                }
-                else
-                {
-                    player->pendingweapon = wp_pistol;
-                }
-            }
-            break;
+		switch (ammotype)
+		{
+		case am_clip:
+			if (player->readyweapon == wp_fist)
+			{
+				if (player->weaponowned[wp_chaingun])
+				{
+					player->pendingweapon = wp_chaingun;
+				}
+				else
+				{
+					player->pendingweapon = wp_pistol;
+				}
+			}
+			break;
 
-	    case am_shell:
-            if (player->readyweapon == wp_fist ||
-                player->readyweapon == wp_pistol)
-            {
-                if (player->weaponowned[wp_shotgun])
-                {
-                    player->pendingweapon = wp_shotgun;
-                }
-            }
-            break;
+		case am_shell:
+			if (player->readyweapon == wp_fist ||
+				player->readyweapon == wp_pistol)
+			{
+				if (player->weaponowned[wp_shotgun])
+				{
+					player->pendingweapon = wp_shotgun;
+				}
+			}
+			break;
 
-	    case am_cell:
-            if (player->readyweapon == wp_fist
-                || player->readyweapon == wp_pistol)
-            {
-                if (player->weaponowned[wp_plasma])
-                {
-                    player->pendingweapon = wp_plasma;
-                }
-            }
-            break;
+		case am_cell:
+			if (player->readyweapon == wp_fist
+				|| player->readyweapon == wp_pistol)
+			{
+				if (player->weaponowned[wp_plasma])
+				{
+					player->pendingweapon = wp_plasma;
+				}
+			}
+			break;
 
-	    case am_misl:
-            if (player->readyweapon == wp_fist)
-            {
-                if (player->weaponowned[wp_missile])
-                {
-                    player->pendingweapon = wp_missile;
-                }
-            }
-	    default:
-            break;
+		case am_misl:
+			if (player->readyweapon == wp_fist)
+			{
+				if (player->weaponowned[wp_missile])
+				{
+					player->pendingweapon = wp_missile;
+				}
+			}
+		default:
+			break;
+		}
 	}
 
 	return IEV_EquipRemove;
@@ -371,6 +384,12 @@ ItemEquipVal P_GiveCard(player_t *player, card_t card)
 
 	if (multiplayer)
 	{
+#ifdef SERVER_APP
+		// Register the key
+		SV_ShareKeys(card, *player);	
+#endif
+
+
 		return IEV_EquipStay;
 	}
 
@@ -450,8 +469,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		return;
 
 	AActor *toucher = player->mo;
-	int sound = 0, msg = 0;
-	bool firstgrab = false;
+	int sound = 0;
+	const OString* msg = NULL;
 	ItemEquipVal val = IEV_EquipRemove;
 
 	// Identify by sprite.
@@ -460,7 +479,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		// armor
 	    case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
-			msg = GOTARMOR;
+			msg = &GOTARMOR;
 			if (val == IEV_EquipRemove)
 				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_GREENARMOR, 0, 0);
@@ -468,7 +487,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 	    case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
-			msg = GOTMEGA;
+			msg = &GOTMEGA;
 			if (val == IEV_EquipRemove)
 				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_BLUEARMOR, 0, 0);
@@ -482,7 +501,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-			msg = GOTHTHBONUS;
+			msg = &GOTHTHBONUS;
 			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_HEALTHBONUS, 0, 0);
             break;
@@ -497,7 +516,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
                 player->armortype = deh.GreenAC;
             }
-			msg = GOTARMBONUS;
+			msg = &GOTARMBONUS;
 			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_ARMORBONUS, 0, 0);
             break;
@@ -509,7 +528,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-			msg = GOTSUPER;
+			msg = &GOTSUPER;
             sound = 1;
 			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_SOULSPHERE, 0, 0);
@@ -519,7 +538,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             player->health = deh.MegasphereHealth;
             player->mo->health = player->health;
             P_GiveArmor(player,deh.BlueAC);
-			msg = GOTMSPHERE;
+			msg = &GOTMSPHERE;
             sound = 1;
 			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 				WDL_PICKUP_MEGASPHERE, 0, 0);
@@ -528,44 +547,44 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		// cards
 	    case SPR_BKEY:
 			val = P_GiveCard(player, it_bluecard);
-			msg = GOTBLUECARD;
+			msg = &GOTBLUECARD;
             sound = 3;
             break;
 
 	    case SPR_YKEY:
             val = P_GiveCard(player, it_yellowcard);
-			msg = GOTYELWCARD;
+			msg = &GOTYELWCARD;
             sound = 3;
             break;
 
 	    case SPR_RKEY:
             val = P_GiveCard(player, it_redcard);
-			msg = GOTREDCARD;
+			msg = &GOTREDCARD;
             sound = 3;
             break;
 
 	    case SPR_BSKU:
             val = P_GiveCard(player, it_blueskull);
-			msg = GOTBLUESKUL;
+			msg = &GOTBLUESKUL;
             sound = 3;
             break;
 
 	    case SPR_YSKU:
             val = P_GiveCard(player, it_yellowskull);
-			msg = GOTYELWSKUL;
+			msg = &GOTYELWSKUL;
             sound = 3;
             break;
 
 	    case SPR_RSKU:
             val = P_GiveCard(player, it_redskull);
-			msg = GOTREDSKUL;
+			msg = &GOTREDSKUL;
             sound = 3;
             break;
 
 		// medikits, heals
 	    case SPR_STIM:
 			val = P_GiveBody(player, 10);
-			msg = GOTSTIM;
+			msg = &GOTSTIM;
 			if (val == IEV_EquipRemove)
 				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
 					WDL_PICKUP_STIMPACK, 0, 0);
@@ -574,11 +593,11 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_MEDI:
             if (player->health < 25)
             {
-				msg = GOTMEDINEED;
+				msg = &GOTMEDINEED;
             }
             else if (player->health < 100)
             {
-                msg = GOTMEDIKIT;
+                msg = &GOTMEDIKIT;
             }
 			val = P_GiveBody(player, 25);
 			if (val == IEV_EquipRemove)
@@ -589,13 +608,13 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		// power ups
 	    case SPR_PINV:
             val = P_GivePower(player, pw_invulnerability);
-			msg = GOTINVUL;
+			msg = &GOTINVUL;
             sound = 1;
             break;
 
 	    case SPR_PSTR:
 			val = P_GivePower(player, pw_strength);
-			msg = GOTBERSERK;
+			msg = &GOTBERSERK;
             if (player->readyweapon != wp_fist)
             {
                 player->pendingweapon = wp_fist;
@@ -608,25 +627,25 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 	    case SPR_PINS:
             val = P_GivePower(player, pw_invisibility);
-			msg = GOTINVIS;
+			msg = &GOTINVIS;
             sound = 1;
             break;
 
 	    case SPR_SUIT:
             val = P_GivePower(player, pw_ironfeet);
-			msg = GOTSUIT;
+			msg = &GOTSUIT;
             sound = 1;
             break;
 
 	    case SPR_PMAP:
 			val = P_GivePower(player, pw_allmap);
-			msg = GOTMAP;
+			msg = &GOTMAP;
             sound = 1;
             break;
 
 	    case SPR_PVIS:
             val = P_GivePower(player, pw_infrared);
-			msg = GOTVISOR;
+			msg = &GOTVISOR;
             sound = 1;
             break;
 
@@ -640,42 +659,42 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
 				val = P_GiveAmmo(player, am_clip, 1);
             }
-			msg = GOTCLIP;
+			msg = &GOTCLIP;
             break;
 
 	    case SPR_AMMO:
 			val = P_GiveAmmo(player, am_clip, 5);
-			msg = GOTCLIPBOX;
+			msg = &GOTCLIPBOX;
             break;
 
 	    case SPR_ROCK:
             val = P_GiveAmmo(player, am_misl, 1);
-			msg = GOTROCKET;
+			msg = &GOTROCKET;
             break;
 
 	    case SPR_BROK:
             val = P_GiveAmmo(player, am_misl, 5);
-			msg = GOTROCKBOX;
+			msg = &GOTROCKBOX;
             break;
 
 	    case SPR_CELL:
             val = P_GiveAmmo(player, am_cell, 1);
-			msg = GOTCELL;
+			msg = &GOTCELL;
             break;
 
 	    case SPR_CELP:
             val = P_GiveAmmo(player, am_cell, 5);
-			msg = GOTCELLBOX;
+			msg = &GOTCELLBOX;
             break;
 
 	    case SPR_SHEL:
             val = P_GiveAmmo(player, am_shell, 1);
-			msg = GOTSHELLS;
+			msg = &GOTSHELLS;
             break;
 
 	    case SPR_SBOX:
 			val = P_GiveAmmo(player, am_shell, 5);
-			msg = GOTSHELLBOX;
+			msg = &GOTSHELLBOX;
             break;
 
 	    case SPR_BPAK:
@@ -691,85 +710,80 @@ void P_GiveSpecial(player_t *player, AActor *special)
             {
                 P_GiveAmmo(player, (ammotype_t)i, 1);
             }
-			msg = GOTBACKPACK;
+			msg = &GOTBACKPACK;
             break;
 
 		// weapons
 	    case SPR_BFUG:
             val = P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED);
-			msg = GOTBFG9000;
+			msg = &GOTBFG9000;
             sound = 2;
             break;
 
 	    case SPR_MGUN:
             val = P_GiveWeapon(player, wp_chaingun, special->flags & MF_DROPPED);
-			msg = GOTCHAINGUN;
+			msg = &GOTCHAINGUN;
             sound = 2;
             break;
 
 	    case SPR_CSAW:
 			val = P_GiveWeapon(player, wp_chainsaw, special->flags & MF_DROPPED);
-			msg = GOTCHAINSAW;
+			msg = &GOTCHAINSAW;
             sound = 2;
             break;
 
 	    case SPR_LAUN:
             val = P_GiveWeapon(player, wp_missile, special->flags & MF_DROPPED);
-			msg = GOTLAUNCHER;
+			msg = &GOTLAUNCHER;
             sound = 2;
             break;
 
 	    case SPR_PLAS:
 			val = P_GiveWeapon(player, wp_plasma, special->flags & MF_DROPPED);
-			msg = GOTPLASMA;
+			msg = &GOTPLASMA;
             sound = 2;
             break;
 
 	    case SPR_SHOT:
             val = P_GiveWeapon(player, wp_shotgun, special->flags & MF_DROPPED);
-			msg = GOTSHOTGUN;
+			msg = &GOTSHOTGUN;
             sound = 2;
             break;
 
 	    case SPR_SGN2:
 			val = P_GiveWeapon(player, wp_supershotgun, special->flags & MF_DROPPED);
-			msg = GOTSHOTGUN2;
+			msg = &GOTSHOTGUN2;
             sound = 2;
             break;
 
-	// [Toke - CTF - Core]
-        case SPR_BFLG: // Player touches the blue flag at its base
-            firstgrab = true;
-			//Fall through to flag touch
-        case SPR_BDWN: // Player touches the blue flag after it's been dropped
-			val = SV_FlagTouch(*player, it_blueflag, firstgrab);
-			sound = -1;
-            break;
-
-        case SPR_BSOK:
-            SV_SocketTouch(*player, it_blueflag);
-            return;
-
-        case SPR_RFLG: // Player touches the red flag at its base
-            firstgrab = true;
-			//Fall through to flag touch
-        case SPR_RDWN: // Player touches the red flag after its been dropped
-			val = SV_FlagTouch(*player, it_redflag, firstgrab);
-			sound = -1;
-            break;
-
-        case SPR_RSOK:
-            SV_SocketTouch(*player, it_redflag);
-            return;
-
         default:
-            Printf(
-                PRINT_HIGH,
-                "P_SpecialThing: Unknown gettable thing %d: %s\n",
-                special->sprite,
-                special->info->name
-            );
-            return;
+		{
+			bool teamItemSuccess = false;
+			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+			{
+				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+				if (teamInfo->FlagSprite == special->sprite || teamInfo->FlagDownSprite == special->sprite)
+				{
+					val = SV_FlagTouch(*player, teamInfo->Team, teamInfo->FlagSprite == special->sprite);
+					sound = -1;
+					teamItemSuccess = true;
+					break;
+				}
+
+				if (teamInfo->FlagSocketSprite == special->sprite)
+				{
+					SV_SocketTouch(*player, teamInfo->Team);
+					return;
+				}
+			}
+
+			if (!teamItemSuccess)
+			{
+				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
+				return;
+			}
+		}
 	}
 
 	if (special->flags & MF_COUNTITEM)
@@ -786,8 +800,8 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	player->bonuscount = BONUSADD;
 	SV_TouchSpecial(special, player);
 
-	if (msg)
-		PickupMessage(toucher, GStrings(msg));
+	if (msg != NULL)
+		PickupMessage(toucher, GStrings(*msg));
 
 	if (val == IEV_EquipRemove)
 		special->Destroy();
@@ -997,7 +1011,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						SV_CTFEvent((flag_t)0, SCORE_BETRAYAL, *splayer);
+						SV_CTFEvent((team_t)0, SCORE_BETRAYAL, *splayer);
 					}
 				}
 				else
@@ -1010,13 +1024,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						if (tplayer->flags[(flag_t)splayer->userinfo.team])
+						if (tplayer->flags[splayer->userinfo.team])
 						{
-							SV_CTFEvent((flag_t)0, SCORE_CARRIERKILL, *splayer);
+							SV_CTFEvent((team_t)0, SCORE_CARRIERKILL, *splayer);
 						}
 						else
 						{
-							SV_CTFEvent((flag_t)0, SCORE_KILL, *splayer);
+							SV_CTFEvent((team_t)0, SCORE_KILL, *splayer);
 						}
 					}
 				}
@@ -1066,7 +1080,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->player->playerstate = PST_DEAD;
 		P_DropWeapon(target->player);
 
-		tplayer->suicide_time = level.time;
+		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
 
 		if (target == consoleplayer().camera)
@@ -1106,6 +1120,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		ClientObituary(target, inflictor, source);
 	}
+
+#ifdef SERVER_APP
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
@@ -1119,20 +1135,21 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
                 "Frag limit hit. Game won by %s!\n",
                 splayer->userinfo.netname.c_str()
             );
+			SV_SetWinPlayer(splayer->id);
             shotclock = TICRATE*2;
 		}
 
 		// [Toke] TeamDM sv_fraglimit
 		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
 		{
-			for (size_t i = 0; i < NUMFLAGS; i++)
+			for (size_t i = 0; i < NUMTEAMS; i++)
 			{
-				if (TEAMpoints[i] >= sv_fraglimit)
+				if (GetTeamInfo((team_t)i)->Points >= sv_fraglimit)
 				{
 					SV_BroadcastPrintf(
                         PRINT_HIGH,
                         "Frag limit hit. %s team wins!\n",
-                        team_names[i]
+						GetTeamInfo((team_t)i)->ColorString.c_str()
                     );
 					shotclock = TICRATE * 2;
 					break;
@@ -1140,6 +1157,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			}
 		}
 	}
+#endif
+
 
 	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
     {
@@ -1200,9 +1219,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved = 0;
-	player_t*   splayer; // shorthand for source->player
-	player_t*   tplayer; // shorthand for target->player
-	fixed_t 	thrust;
+	player_t*   splayer = NULL; // shorthand for source->player
+	player_t*   tplayer = NULL; // shorthand for target->player
 
 	if (!serverside)
     {
@@ -1231,10 +1249,14 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	MeansOfDeath = mod;
-	bool targethasflag = (
-		&idplayer(CTFdata[TEAM_BLUE].flagger) == tplayer ||
-		&idplayer(CTFdata[TEAM_RED].flagger) == tplayer
-	);
+
+	TeamInfo* teamInfo = NULL;
+	bool targethasflag = false;
+	if (tplayer)
+	{
+		teamInfo = GetTeamInfo(tplayer->userinfo.team);
+		targethasflag = &idplayer(teamInfo->FlagData.flagger) == tplayer;
+	}
 
 	if (target->flags & MF_SKULLFLY)
 	{
@@ -1258,9 +1280,9 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	if (inflictor && !(target->flags & MF_NOCLIP) &&
         (!source || !splayer || splayer->readyweapon != wp_chainsaw))
 	{
-		ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
+		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
-		thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
+		fixed_t thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
 
 		// make fall forwards sometimes
 		if (damage < 40
@@ -1282,71 +1304,65 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	{
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
-        {
-            if ((target->subsector->sector->special & 255) == dDamage_End
-                && damage >= target->health)
-            {
-                damage = target->health - 1;
-            }
-        }
+		{
+			if ((target->subsector->sector->special & 255) == dDamage_End
+				&& damage >= target->health)
+			{
+				damage = target->health - 1;
+			}
+		}
 
 		// Below certain threshold,
 		// ignore damage in GOD mode, or with INVUL power.
 		if (damage < 1000 &&
 			((tplayer->cheats & CF_GODMODE) ||
-             tplayer->powers[pw_invulnerability]))
+				tplayer->powers[pw_invulnerability]))
 		{
 			return;
 		}
 
 		// [AM] No damage with sv_friendlyfire (was armor-only)
 		if (!sv_friendlyfire && source && splayer && target != source &&
-			 mod != MOD_TELEFRAG)
+			mod != MOD_TELEFRAG)
 		{
 			if (sv_gametype == GM_COOP ||
-			  ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
-				tplayer->userinfo.team == splayer->userinfo.team))
+				((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+					tplayer->userinfo.team == splayer->userinfo.team))
 			{
 				damage = 0;
 			}
 		}
 
+		int armorDamage = 0;
 		if (tplayer->armortype && !(flags & DMG_NO_ARMOR))
 		{
 			if (tplayer->armortype == deh.GreenAC)
-            {
-				saved = damage / 3;
-            }
+				armorDamage = damage / 3;
 			else
-            {
-				saved = damage / 2;
-            }
+				armorDamage = damage / 2;
 
-			if (tplayer->armorpoints <= saved)
+			if (tplayer->armorpoints <= armorDamage)
 			{
 				// armor is used up
-				saved = tplayer->armorpoints;
+				armorDamage = tplayer->armorpoints;
 				tplayer->armortype = 0;
 			}
-			tplayer->armorpoints -= saved;
-			damage -= saved;
+			tplayer->armorpoints -= armorDamage;
+			damage -= armorDamage;
 		}
 
 		tplayer->health -= damage;		// mirror mobj health here for Dave
 
 		if (tplayer->health <= 0)
-        {
 			tplayer->health = 0;
-        }
 
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
 		tplayer->damagecount += damage;	// add damage after armor / invuln
 
 		if (tplayer->damagecount > 100)
-        {
 			tplayer->damagecount = 100;	// teleport stomp does 10k points...
-        }
-		SV_SendDamagePlayer(tplayer, target->health - damage);
+
+		SV_SendDamagePlayer(tplayer, damage, armorDamage);
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.

@@ -102,11 +102,11 @@ int V_GetTextColor(const char* str)
 		initialized = true;
 	}
 
-	if (str[0] == '\\' && str[1] == 'c' && str[2] < 128)
+	if (str[0] == TEXTCOLOR_ESCAPE && str[1] < 128)
 	{
-		int c = str[2];
+		int c = str[1];
 		if (c == '-')
-			return CR_GRAY;			// use print color
+			return msg2color;		// use print color
 		if (c == '+')
 			return CR_GREEN;		// use print bold color
 		if (c == '*')
@@ -160,7 +160,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	    }
 
 		// [SL] parse color escape codes (\cX)
-		if (use_color_codes && str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (use_color_codes && str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
@@ -168,7 +168,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 
 			trans = translationref_t(Ranges + new_color * 256);
 
-			str += 3;
+			str += 2;
 			continue;
 		}
 
@@ -235,6 +235,9 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
+	if (::hu_font[0] == NULL)
+		return;
+
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
 		normalcolor = CR_RED;
 
@@ -250,11 +253,11 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		if (str[0] == '\0')
 			break;
 
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
 			V_ColorMap = translationref_t(Ranges + new_color * 256);
-			str += 3;	
+			str += 2;	
 			continue;
 		}
 
@@ -292,14 +295,18 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 //
 int V_StringWidth(const byte* str)
 {
+	// Default width without a font loaded is 8.
+	if (::hu_font[0] == NULL)
+		return 8;
+
 	int width = 0;
 	
 	while (*str)
 	{
 		// skip over color markup escape codes
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			str += 3;
+			str += 2;
 			continue;
 		}
 
@@ -336,6 +343,9 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
+	if (::hu_font[0] == NULL)
+		return NULL;
+
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
 
 	const byte* space = NULL;
@@ -349,10 +359,10 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 
 	while (*str)
 	{
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			sprintf(color_code_str, "\\c%c", str[2]);
-			str += 3;
+			sprintf(color_code_str, "\034%c", str[1]);
+			str += 2;
 			continue;
 		}
 
@@ -449,4 +459,3 @@ void V_FreeBrokenLines(brokenlines_t* lines)
 
 
 VERSION_CONTROL (v_text_cpp, "$Id$")
-

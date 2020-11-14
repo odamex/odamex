@@ -100,8 +100,6 @@ int                 repeatCount;
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
-char				endstring[160];
-
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
@@ -461,7 +459,7 @@ enum load_t
 	load_end
 } load_e;
 
-oldmenuitem_t LoadMenu[]=
+static oldmenuitem_t LoadSavegameMenu[]=
 {
 	{1,"", M_LoadSelect,'1'},
 	{1,"", M_LoadSelect,'2'},
@@ -476,7 +474,7 @@ oldmenuitem_t LoadMenu[]=
 oldmenu_t LoadDef =
 {
 	load_end,
-	LoadMenu,
+	LoadSavegameMenu,
 	M_DrawLoad,
 	80,54,
 	0
@@ -531,7 +529,7 @@ BEGIN_COMMAND (menu_save)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
@@ -541,7 +539,7 @@ BEGIN_COMMAND (menu_load)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -560,7 +558,7 @@ BEGIN_COMMAND (quicksave)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
@@ -578,7 +576,7 @@ BEGIN_COMMAND (quickload)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 
@@ -631,7 +629,7 @@ void M_ReadSaveStrings(void)
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
-			LoadMenu[i].status = 0;
+			LoadSavegameMenu[i].status = 0;
 		}
 		else
 		{
@@ -643,7 +641,7 @@ void M_ReadSaveStrings(void)
 				return;
 			}
 			fclose (handle);
-			LoadMenu[i].status = 1;
+			LoadSavegameMenu[i].status = 1;
 		}
 	}
 }
@@ -751,7 +749,7 @@ void M_SaveSelect (int choice)
 	// If on a game console, auto-fill with date and time to save name
 
 #ifndef GCONSOLE
-	if (!LoadMenu[choice].status)
+	if (!LoadSavegameMenu[choice].status)
 #endif
 	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
@@ -1157,18 +1155,18 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM (int choice)
+void M_QuitDOOM(int choice)
 {
+	static std::string endstring;
+
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	sprintf (endstring, "%s\n\n%s",
-		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+	StrFormat(endstring, "%s\n\n%s",
+	          GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings(DOSY));
 
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1430,7 +1428,7 @@ static void M_PlayerSetupDrawer (void)
 		team_t team = D_TeamByName(cl_team.cstring());
 		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : team_names[team]);
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
@@ -1461,29 +1459,20 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	if(choice)
+	int iTeam = (int)team;
+	if (choice)
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_BLUE; break;
-			case TEAM_BLUE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			team = TEAM_NONE; break;
-		}
+		iTeam = ++iTeam % NUMTEAMS;
 	}
 	else
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			case TEAM_BLUE: team = TEAM_NONE; break;
-		}
+		iTeam--;
+		if (iTeam < 0)
+			iTeam = NUMTEAMS - 1;
 	}
+	team = (team_t)iTeam;
 
-	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
+	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
 
 static void M_ChangeGender (int choice)
@@ -1658,6 +1647,10 @@ void M_StopMessage (void)
 //
 int M_StringHeight(char* string)
 {
+	// Default height without a working font is 8.
+	if (::hu_font[0] == NULL)
+		return 8;
+
 	int h;
 	int height = hu_font[0]->height();
 
@@ -1981,7 +1974,7 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	if (messageToPrint)
+	if (messageToPrint && ::hu_font[0] != NULL)
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
@@ -2178,5 +2171,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
-
-

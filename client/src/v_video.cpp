@@ -265,8 +265,13 @@ static bool CheckWideModeAdjustment()
 
 CVAR_FUNC_IMPL (sv_allowwidescreen)
 {
-	if (gamestate != GS_STARTUP && CheckWideModeAdjustment())
-		V_ForceVideoModeAdjustment();
+	if (!I_VideoInitialized() || gamestate == GS_STARTUP)
+		return;
+
+	if (!CheckWideModeAdjustment())
+		return;
+
+	V_ForceVideoModeAdjustment();
 }
 
 
@@ -381,13 +386,13 @@ BEGIN_COMMAND(vid_setmode)
 
 	if (width < 320 || height < 200)
 	{
-		Printf(PRINT_HIGH, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
+		Printf(PRINT_WARNING, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
 		return;
 	}
 
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 	{
-		Printf(PRINT_HIGH, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
+		Printf(PRINT_WARNING, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
 		return;
 	}
 
@@ -916,4 +921,3 @@ static void BuildTransTable(const argb_t* palette_colors)
 
 
 VERSION_CONTROL (v_video_cpp, "$Id$")
-

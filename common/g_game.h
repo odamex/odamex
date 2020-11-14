@@ -70,8 +70,6 @@ void G_AddViewAngle(int yaw);
 void G_AddViewPitch(int pitch);
 bool G_ShouldIgnoreMouseInput();
 
-extern std::vector<level_pwad_info_t> wadlevelinfos;
-extern std::vector<cluster_info_t> wadclusterinfos;
 extern int mapchange;
 
 extern bool timingdemo;
