@@ -637,7 +637,7 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == playerstate_t::PST_DEAD)
+	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
 		return true;
 
 	return false;
