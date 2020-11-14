@@ -16,7 +16,10 @@
 // All other files in your project should not define LAY_IMPLEMENTATION.
 
 #include <stdint.h>
-#include <limits.h>
+
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffffU
+#endif
 
 #ifndef LAY_EXPORT
 #define LAY_EXPORT extern
