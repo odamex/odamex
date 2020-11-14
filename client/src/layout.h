@@ -16,6 +16,7 @@
 // All other files in your project should not define LAY_IMPLEMENTATION.
 
 #include <stdint.h>
+#include <limits.h>
 
 #ifndef LAY_EXPORT
 #define LAY_EXPORT extern
