@@ -113,25 +113,155 @@ static void ClearInventory(AActor* activator)
 	}
 }
 
-static const char* DoomAmmoNames[4] =
-{
-	"Clip", "Shell", "Cell", "RocketAmmo"
+// TODO: HACKY WACKY, need to port classes from ZDOOM 1.23 to make that way cleaner
+struct DoomEntity{
+	const char* Name;
+	mobjtype_t Type;
 };
-static const char* DoomWeaponNames[9] =
+#define NUMMONSTERS 22
+
+static DoomEntity DoomMonsterNames[NUMMONSTERS] = {
+    {"ZombieMan", MT_POSSESSED},  {"ShotgunGuy", MT_SHOTGUY},
+    {"ChaingunGuy", MT_CHAINGUY}, {"DoomImp", MT_TROOP},
+    {"Demon", MT_SERGEANT},       {"Spectre", MT_SHADOWS},
+    {"LostSoul", MT_SKULL},       {"Cacodemon", MT_HEAD},
+    {"HellKnight", MT_KNIGHT},    {"BaronOfHell", MT_BRUISER},
+    {"Arachnotron", MT_BABY},     {"PainElemental", MT_PAIN},
+    {"Revenant", MT_UNDEAD},      {"Fatso", MT_FATSO},
+    {"Archvile", MT_VILE},        {"SpiderMastermind", MT_SPIDER},
+    {"Cyberdemon", MT_CYBORG},    {"CommanderKeen", MT_KEEN},
+    {"WolfensteinSS", MT_WOLFSS}, {"BossBrain", MT_BOSSBRAIN},
+    {"BossTarget", MT_BOSSTARGET}, {"BossEye", MT_BOSSSPIT}};
+
+static DoomEntity DoomAmmoNames[8] = {{"Clip", MT_CLIP},        {"Shell", MT_MISC22},
+                                      {"Cell", MT_MISC20},      {"RocketAmmo", MT_MISC18},
+                                      {"ClipBox", MT_MISC17},   {"ShellBox", MT_MISC23},
+                                      {"RocketBox", MT_MISC19}, {"CellPack", MT_MISC21}};
+
+static DoomEntity DoomWeaponNames[9] = {
+    {"Fist", (mobjtype_t)NULL}, // Default weapon, no entity
+    {"Pistol", (mobjtype_t)NULL}, {"Shotgun", MT_SHOTGUN},
+    {"Chaingun", MT_CHAINGUN},    {"RocketLauncher", MT_MISC27},
+    {"PlasmaRifle", MT_MISC28},   {"BFG9000", MT_MISC25},
+    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN}};
+
+static DoomEntity DoomKeyNames[6] = {{"BlueCard", MT_MISC4},
+                                     {"YellowCard", MT_MISC6},
+                                     {"RedCard", MT_MISC5},
+                                     {"BlueSkull", MT_MISC9},
+                                     {"YellowSkull", MT_MISC7},
+									 {"RedSkull", MT_MISC8}};
+
+static DoomEntity DoomPowerNames[7] = {{"InvulnerabilitySphere", MT_INV},
+                                       {"Berserk", MT_MISC13},
+                                       {"BlurSphere", MT_INS},
+                                       {"RadSuit", MT_MISC14},
+                                       {"Allmap", MT_MISC15},
+                                       {"Infrared", MT_MISC16}};
+
+static DoomEntity DoomHealthArmorNames[9] = {
+    {"HealthBonus", MT_MISC2}, {"ArmorBonus", MT_MISC3}, {"GreenArmor", MT_MISC0},
+    {"BlueArmor", MT_MISC1},   {"Stimpack", MT_MISC10},  {"Medikit", MT_MISC11},
+    {"Soulsphere", MT_MISC12}, {"Megasphere", MT_MEGA},  {"Backpack", MT_MISC24}};
+
+static DoomEntity DoomDecorationNames[60] = {{"BurningBarrel", MT_MISC77},
+                                             {"HangNoGuts", MT_MISC78},
+                                             {"HangBNoBrain", MT_MISC79},
+                                             {"HangTLookingDown", MT_MISC80},
+                                             {"HangTSkull", MT_MISC81},
+                                             {"HangTLookingUp", MT_MISC82},
+                                             {"HangTNoBrain", MT_MISC83},
+                                             {"ColonGibs", MT_MISC84},
+                                             {"SmallBloodPool", MT_MISC85},
+                                             {"BrainStem", MT_MISC86},
+                                             {"TechLamp", MT_MISC29},
+                                             {"TechLamp2", MT_MISC30},
+                                             {"GibbedMarine", MT_MISC68},
+                                             {"GibbedMarineExtra", MT_MISC69},
+                                             {"DeadMarine", MT_MISC62},
+                                             {"DeadZombieMan", MT_MISC63},
+                                             {"DeadShotgunGuy", MT_MISC67},
+                                             {"DeadDoomImp", MT_MISC66},
+                                             {"DeadDemon", MT_MISC64},
+                                             {"DeadCacodemon", MT_MISC61},
+                                             {"DeadLostSoul", MT_MISC65},
+                                             {"Gibs", MT_MISC71},
+                                             {"DeadStick", MT_MISC74},
+                                             {"LiveStick", MT_MISC75},
+                                             {"HeadOnAStick", MT_MISC72},
+                                             {"HeadsOnAStick", MT_MISC70},
+                                             {"HeadCandles", MT_MISC73},
+                                             {"TallGreenColumn", MT_MISC32},
+                                             {"ShortGreenColumn", MT_MISC33},
+                                             {"TallRedColumn", MT_MISC34},
+                                             {"ShortRedColumn", MT_MISC35},
+                                             {"Candlestick", MT_MISC49},
+                                             {"Candelabra", MT_MISC50},
+                                             {"HeartColumn", MT_MISC37},
+                                             {"SkullColumn", MT_MISC36},
+                                             {"EvilEye", MT_MISC38},
+                                             {"FloatingSkull", MT_MISC39},
+                                             {"TorchTree", MT_MISC40},
+                                             {"BlueTorch", MT_MISC41},
+                                             {"GreenTorch", MT_MISC42},
+                                             {"RedTorch", MT_MISC43},
+                                             {"Stalagtite", MT_MISC47},
+                                             {"TechPillar", MT_MISC48},
+                                             {"BloodyTwitch", MT_MISC51},
+                                             {"Meat2", MT_MISC52},
+                                             {"Meat3", MT_MISC53},
+                                             {"Meat4", MT_MISC54},
+                                             {"Meat5", MT_MISC55},
+                                             {"BigTree", MT_MISC76},
+                                             {"ShortBlueTorch", MT_MISC44},
+                                             {"ShortGreenTorch", MT_MISC45},
+                                             {"ShortRedTorch", MT_MISC46},
+                                             {"NonsolidMeat2", MT_MISC56},
+                                             {"NonsolidMeat4", MT_MISC57},
+                                             {"NonsolidMeat3", MT_MISC58},
+                                             {"NonsolidMeat5", MT_MISC59},
+                                             {"NonsolidTwitch", MT_MISC60},
+                                             {"ZBridge", MT_BRIDGE},
+                                             {"Column", MT_MISC31},
+                                             {"ExplosiveBarrel", MT_BARREL}};
+
+extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
+extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
+extern ItemEquipVal P_GivePower(player_t *player, int  power);
+
+mobjtype_t FindWeaponEntity(const char* type)
 {
-	"Fist", "Pistol", "Shotgun", "Chaingun", "RocketLauncher",
-	"PlasmaRifle", "BFG9000", "Chainsaw", "SuperShotgun"
-};
-static const char* DoomKeyNames[6] =
+	int i;
+	for (i = 0; i < 9; i++)
+	{
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
+		{
+			if (DoomWeaponNames[i].Type == NULL)
+			{
+				DPrintf("ACS: LOGIC ERROR - Cannot spawn default weapons!\n");
+				return (mobjtype_t)NULL;
+			}
+			return DoomWeaponNames[i].Type;
+		}
+	}
+
+	return (mobjtype_t)NULL;
+}
+
+mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 {
-	"BlueCard", "YellowCard", "RedCard",
-	"BlueSkull", "YellowSkull", "RedSkull"
-};
-static const char* DoomPowerNames[7] =
-{
-	"InvulnerabilitySphere", "Berserk", "BlurSphere",
-	"RadSuit", "Allmap", "Infrared"
-};
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		if (strcmp(list[i].Name, type) == 0)
+		{
+			return list[i].Type;
+		}
+	}
+
+	return (mobjtype_t)NULL;
+}
 
 static void GiveBackpack(player_t* player)
 {
@@ -157,7 +287,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give ammo
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (strcmp(DoomAmmoNames[i], type) == 0)
+		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
 			SV_SendPlayerInfo(*player);
@@ -168,7 +298,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give weapon
 	for (int i = 0; i < NUMWEAPONS; i++)
 	{
-		if (strcmp(DoomWeaponNames[i], type) == 0)
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -187,7 +317,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give keycard
 	for (int i = 0; i < NUMCARDS; i++)
 	{
-		if (strcmp(DoomKeyNames[i], type) == 0)
+		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -202,7 +332,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	// Give power
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (strcmp(DoomPowerNames[i], type) == 0)
+		if (strcmp(DoomPowerNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -313,6 +443,19 @@ static void TakeAmmo(player_t* player, int ammo, int amount)
 	SV_SendPlayerInfo(*player);
 }
 
+static AActor* SingleActorFromTID(int tid, AActor* defactor)
+{
+	if (tid == 0)
+	{
+		return defactor;
+	}
+	else
+	{
+		FActorIterator iterator(tid);
+		return iterator.Next();
+	}
+}
+
 static void TakeBackpack(player_t* player)
 {
 	if (!player->backpack)
@@ -336,7 +479,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 
 	for (i = 0; i < NUMAMMO; ++i)
 	{
-		if (strcmp(DoomAmmoNames[i], type) == 0)
+		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			TakeAmmo(player, i, amount);
 			return;
@@ -344,7 +487,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 	}
 	for (i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (strcmp(DoomWeaponNames[i], type) == 0)
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			TakeWeapon(player, i);
 			return;
@@ -352,7 +495,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 	}
 	for (i = 0; i < NUMCARDS; ++i)
 	{
-		if (strcmp(DoomKeyNames[i], type) == 0)
+		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			player->cards[i] = 0;
 		}
@@ -389,21 +532,21 @@ static int CheckInventory(AActor* activator, const char* type)
 
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
-		if (strcmp(DoomAmmoNames[i], type) == 0)
+		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			return player->ammo[i];
 		}
 	}
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (strcmp(DoomWeaponNames[i], type) == 0)
+		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			return player->weaponowned[i] ? 1 : 0;
 		}
 	}
 	for (int i = 0; i < NUMCARDS; ++i)
 	{
-		if (strcmp(DoomKeyNames[i], type) == 0)
+		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			return player->cards[i] ? 1 : 0;
 		}
@@ -1764,7 +1907,7 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 		SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, sec - sectors, index);
 }
 
-/*int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
+int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
 {
 	const char* typestr = level.behavior->LookupString(type);
 	if (typestr == NULL)
@@ -1774,12 +1917,33 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 	name[63] = 0;
 	strncpy(name+1, typestr, 62);
 
-	const TypeInfo* info = TypeInfo::FindType(name);
+	//const TypeInfo* info = TypeInfo::FindType(name);
+	mobjtype_t info;
+
+	{
+		// Find an entity through cycles
+		info = FindDoomEntity(typestr, DoomMonsterNames, NUMMONSTERS);
+
+		if (info == (mobjtype_t)NULL)
+			info = FindWeaponEntity(typestr);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomAmmoNames, 8);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomKeyNames, 6);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomPowerNames, 6);
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomHealthArmorNames, 9); // Ch0wW
+		if (info == (mobjtype_t)NULL)
+			info = FindDoomEntity(typestr, DoomDecorationNames, 60); // Ch0wW
+	}
+
 	AActor* actor = NULL;
 
 	if (info != NULL)
 	{
-		actor = Spawn(info, x, y, z);
+		actor = new AActor (x, y, z, info);
+
 		if (actor != NULL)
 		{
 			if (P_TestMobjLocation(actor))
@@ -1796,7 +1960,8 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 			}
 		}
 	}
-	return (int)actor;
+
+	return (int)(actor - (AActor*)0);
 }
 
 int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
@@ -1805,15 +1970,15 @@ int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
 	AActor* aspot;
 	int spawned = 0;
 
-	while ((aspot = iterator.Next()))
-	{
+	while ((aspot = iterator.Next())) {
 		spawned = DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle);
 	}
 	return spawned;
-}*/
+}
 
 void DLevelScript::DoFadeTo(AActor* who, int r, int g, int b, int a, fixed_t time)
 {
+    DPrintf("DoFadeRange now... \n");
 	DoFadeRange(who, 0, 0, 0, -1, r, g, b, a, time);
 }
 
@@ -1961,7 +2126,7 @@ void DLevelScript::RunScript ()
 	{
 		if (++runaway > 500000)
 		{
-			Printf (PRINT_HIGH,"Runaway script %d terminated\n", script);
+			DPrintf ("Runaway script %d terminated\n", script);
 			state = SCRIPT_PleaseRemove;
 			break;
 		}
@@ -1970,7 +2135,8 @@ void DLevelScript::RunScript ()
 		switch (pcd)
 		{
 		default:
-			Printf (PRINT_HIGH,"Unknown P-Code %d in script %d\n", pcd, script);
+			DPrintf("Unknown P-Code %d in script %d\n", pcd, script);
+			continue;
 			// fall through
 		case PCD_TERMINATE:
 			state = SCRIPT_PleaseRemove;
@@ -1984,64 +2150,64 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_PUSHNUMBER:
-			PushToStack (NEXTWORD);
+			PushToStack(NEXTWORD);
 			break;
 
 		case PCD_PUSHBYTE:
-			PushToStack (*(BYTE *)pc);
-			pc = (int *)((BYTE *)pc + 1);
+			PushToStack(*(BYTE*)pc);
+			pc = (int*)((BYTE*)pc + 1);
 			break;
 
 		case PCD_PUSH2BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
 			sp += 2;
-			pc = (int *)((BYTE *)pc + 2);
+			pc = (int*)((BYTE*)pc + 2);
 			break;
 
 		case PCD_PUSH3BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
-			Stack[sp+2] = ((BYTE *)pc)[2];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp + 2] = ((BYTE*)pc)[2];
 			sp += 3;
-			pc = (int *)((BYTE *)pc + 3);
+			pc = (int*)((BYTE*)pc + 3);
 			break;
 
 		case PCD_PUSH4BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
-			Stack[sp+2] = ((BYTE *)pc)[2];
-			Stack[sp+3] = ((BYTE *)pc)[3];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp + 2] = ((BYTE*)pc)[2];
+			Stack[sp + 3] = ((BYTE*)pc)[3];
 			sp += 4;
-			pc = (int *)((BYTE *)pc + 4);
+			pc = (int*)((BYTE*)pc + 4);
 			break;
 
 		case PCD_PUSH5BYTES:
-			Stack[sp] = ((BYTE *)pc)[0];
-			Stack[sp+1] = ((BYTE *)pc)[1];
-			Stack[sp+2] = ((BYTE *)pc)[2];
-			Stack[sp+3] = ((BYTE *)pc)[3];
-			Stack[sp+4] = ((BYTE *)pc)[4];
+			Stack[sp] = ((BYTE*)pc)[0];
+			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp + 2] = ((BYTE*)pc)[2];
+			Stack[sp + 3] = ((BYTE*)pc)[3];
+			Stack[sp + 4] = ((BYTE*)pc)[4];
 			sp += 5;
-			pc = (int *)((BYTE *)pc + 5);
+			pc = (int*)((BYTE*)pc + 5);
 			break;
 
 		case PCD_PUSHBYTES:
-			temp = *(BYTE *)pc;
-			pc = (int *)((BYTE *)pc + temp + 1);
+			temp = *(BYTE*)pc;
+			pc = (int*)((BYTE*)pc + temp + 1);
 			for (temp = -temp; temp; temp++)
 			{
-				PushToStack (*((BYTE *)pc + temp));
+				PushToStack(*((BYTE*)pc + temp));
 			}
 			break;
 
 		case PCD_DUP:
-			Stack[sp] = Stack[sp-1];
+			Stack[sp] = Stack[sp - 1];
 			sp++;
 			break;
 
 		case PCD_SWAP:
-			std::swap(Stack[sp-2], Stack[sp-1]);
+			std::swap(Stack[sp - 2], Stack[sp - 1]);
 			break;
 
 		case PCD_LSPEC1:
@@ -2144,76 +2310,76 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_CALL:
-		case PCD_CALLDISCARD:
-			{
-				int funcnum;
-				int i;
-				ScriptFunction *func;
+		case PCD_CALLDISCARD: {
+			int funcnum;
+			int i;
+			ScriptFunction* func;
 
-				funcnum = NEXTBYTE;
-				func = level.behavior->GetFunction (funcnum);
-				if (func == NULL)
-				{
-					Printf (PRINT_HIGH,"Function %d in script %d out of range\n", funcnum, script);
-					state = SCRIPT_PleaseRemove;
-					break;
-				}
-				if (sp + func->LocalCount + 32 > STACK_SIZE)
-				{ // 32 is the margin for the function's working space
-					Printf (PRINT_HIGH,"Out of stack space in script %d\n", script);
-					state = SCRIPT_PleaseRemove;
-					break;
-				}
-				// The function's first argument is also its first local variable.
-				locals = &Stack[sp - func->ArgCount];
-				// Make space on the stack for any other variables the function uses.
-				for (i = 0; i < func->LocalCount; ++i)
-				{
-					Stack[sp+i] = 0;
-				}
-				sp += i;
-				((CallReturn *)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs (pc);
-				((CallReturn *)&Stack[sp])->ReturnFunction = activeFunction;
-				((CallReturn *)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
-				sp += sizeof(CallReturn)/sizeof(int);
-				pc = level.behavior->Ofs2PC (func->Address);
-				activeFunction = func;
+			funcnum = NEXTBYTE;
+			func = level.behavior->GetFunction(funcnum);
+			if (func == NULL)
+			{
+				Printf(PRINT_HIGH, "Function %d in script %d out of range\n", funcnum,
+				       script);
+				state = SCRIPT_PleaseRemove;
+				break;
 			}
-			break;
+			if (sp + func->LocalCount + 32 > STACK_SIZE)
+			{ // 32 is the margin for the function's working space
+				Printf(PRINT_HIGH, "Out of stack space in script %d\n", script);
+				state = SCRIPT_PleaseRemove;
+				break;
+			}
+			// The function's first argument is also its first local variable.
+			locals = &Stack[sp - func->ArgCount];
+			// Make space on the stack for any other variables the function uses.
+			for (i = 0; i < func->LocalCount; ++i)
+			{
+				Stack[sp + i] = 0;
+			}
+			sp += i;
+			((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
+			((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
+			((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
+			sp += sizeof(CallReturn) / sizeof(int);
+			pc = level.behavior->Ofs2PC(func->Address);
+			activeFunction = func;
+		}
+		break;
 
 		case PCD_RETURNVOID:
-		case PCD_RETURNVAL:
-			{
-				int value;
-				CallReturn *retState;
+		case PCD_RETURNVAL: {
+			int value;
+			CallReturn* retState;
 
-				if (pcd == PCD_RETURNVAL)
-				{
-					value = Stack[--sp];
-				}
-				else
-				{
-					value = 0;
-				}
-				sp -= sizeof(CallReturn)/sizeof(int);
-				retState = (CallReturn *)&Stack[sp];
-				pc = level.behavior->Ofs2PC (retState->ReturnAddress);
-				sp -= activeFunction->ArgCount + activeFunction->LocalCount;
-				activeFunction = retState->ReturnFunction;
-				if (activeFunction == NULL)
-				{
-					locals = localvars;
-				}
-				else
-				{
-					locals = &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
-				}
-				if (!retState->bDiscardResult)
-				{
-					Stack[sp++] = value;
-				}
+			if (pcd == PCD_RETURNVAL)
+			{
+				value = Stack[--sp];
 			}
-			break;
+			else
+			{
+				value = 0;
+			}
+			sp -= sizeof(CallReturn) / sizeof(int);
+			retState = (CallReturn*)&Stack[sp];
+			pc = level.behavior->Ofs2PC(retState->ReturnAddress);
+			sp -= activeFunction->ArgCount + activeFunction->LocalCount;
+			activeFunction = retState->ReturnFunction;
+			if (activeFunction == NULL)
+			{
+				locals = localvars;
+			}
+			else
+			{
+				locals =
+				    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
+			}
+			if (!retState->bDiscardResult)
+			{
+				Stack[sp++] = value;
+			}
+		}
+		break;
 
 		case PCD_ADD:
 			STACK(2) = STACK(2) + STACK(1);
@@ -2231,13 +2397,27 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_DIVIDE:
-			STACK(2) = STACK(2) / STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				STACK(2) = STACK(2) / STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODULUS:
-			STACK(2) = STACK(2) % STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				STACK(2) = STACK(2) % STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_EQ:
@@ -2275,7 +2455,6 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-
 		case PCD_ASSIGNMAPVAR:
 			level.vars[NEXTBYTE] = STACK(1);
 			sp--;
@@ -2292,28 +2471,28 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_ASSIGNMAPARRAY:
-			level.behavior->SetArrayVal (ACS_WorldVars[NEXTBYTE], STACK(2), STACK(1));
+			level.behavior->SetArrayVal(ACS_WorldVars[NEXTBYTE], STACK(2), STACK(1));
 			sp -= 2;
 			break;
 
 		case PCD_PUSHSCRIPTVAR:
-			PushToStack (locals[NEXTBYTE]);
+			PushToStack(locals[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHMAPVAR:
-			PushToStack (level.vars[NEXTBYTE]);
+			PushToStack(level.vars[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHWORLDVAR:
-			PushToStack (ACS_WorldVars[NEXTBYTE]);
+			PushToStack(ACS_WorldVars[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHGLOBALVAR:
-			PushToStack (ACS_GlobalVars[NEXTBYTE]);
+			PushToStack(ACS_GlobalVars[NEXTBYTE]);
 			break;
 
 		case PCD_PUSHMAPARRAY:
-			STACK(1) = level.behavior->GetArrayVal (level.vars[NEXTBYTE], STACK(1));
+			STACK(1) = level.behavior->GetArrayVal(level.vars[NEXTBYTE], STACK(1));
 			break;
 
 		case PCD_ADDSCRIPTVAR:
@@ -2336,15 +2515,14 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ADDMAPARRAY:
-			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) + STACK(1));
-				sp -= 2;
-			}
-			break;
+		case PCD_ADDMAPARRAY: {
+			int a = ACS_WorldVars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) + STACK(1));
+			sp -= 2;
+		}
+		break;
 
 		case PCD_SUBSCRIPTVAR:
 			locals[NEXTBYTE] -= STACK(1);
@@ -2366,15 +2544,14 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_SUBMAPARRAY:
-			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) - STACK(1));
-				sp -= 2;
-			}
-			break;
+		case PCD_SUBMAPARRAY: {
+			int a = ACS_WorldVars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) - STACK(1));
+			sp -= 2;
+		}
+		break;
 
 		case PCD_MULSCRIPTVAR:
 			locals[NEXTBYTE] *= STACK(1);
@@ -2396,72 +2573,139 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_MULMAPARRAY:
+		case PCD_MULMAPARRAY: {
+			int a = ACS_WorldVars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) * STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_DIVSCRIPTVAR:
+			if (STACK(1) == 0)
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) * STACK(1));
-				sp -= 2;
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				locals[NEXTBYTE] /= STACK(1);
+				sp--;
 			}
 			break;
 
-		case PCD_DIVSCRIPTVAR:
-			locals[NEXTBYTE] /= STACK(1);
-			sp--;
-			break;
-
 		case PCD_DIVMAPVAR:
-			level.vars[NEXTBYTE] /= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				level.vars[NEXTBYTE] /= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_DIVWORLDVAR:
-			ACS_WorldVars[NEXTBYTE] /= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				ACS_WorldVars[NEXTBYTE] /= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_DIVGLOBALVAR:
-			ACS_GlobalVars[NEXTBYTE] /= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				ACS_GlobalVars[NEXTBYTE] /= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_DIVMAPARRAY:
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
-				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) / STACK(1));
-				sp -= 2;
+				if (STACK(1) == 0)
+				{
+					state = SCRIPT_DivideBy0;
+				}
+			    else
+			    {
+				    int a = ACS_WorldVars[NEXTBYTE];
+				    int i = STACK(2);
+				    level.behavior->SetArrayVal(
+				        a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
+				    sp -= 2;
+			    }
 			}
 			break;
 
 		case PCD_MODSCRIPTVAR:
-			locals[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				locals[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODMAPVAR:
-			level.vars[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				level.vars[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODWORLDVAR:
-			ACS_WorldVars[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				ACS_WorldVars[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODGLOBALVAR:
-			ACS_GlobalVars[NEXTBYTE] %= STACK(1);
-			sp--;
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				ACS_GlobalVars[NEXTBYTE] %= STACK(1);
+				sp--;
+			}
 			break;
 
 		case PCD_MODMAPARRAY:
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
 			{
 				int a = ACS_WorldVars[NEXTBYTE];
 				int i = STACK(2);
-				level.behavior->SetArrayVal (a, i,
-					level.behavior->GetArrayVal (a, i) % STACK(1));
+				level.behavior->SetArrayVal(a, i,
+											level.behavior->GetArrayVal(a, i) % STACK(1));
 				sp -= 2;
 			}
 			break;
@@ -2883,16 +3127,22 @@ void DLevelScript::RunScript ()
 		case PCD_PLAYERHEALTH:
 			if (activator)
 				PushToStack (activator->health);
+			else
+				PushToStack (0);
 			break;
 
 		case PCD_PLAYERARMORPOINTS:
 			if (activator && activator->player)
 				PushToStack (activator->player->armorpoints);
+			else
+				PushToStack (0);
 			break;
 
 		case PCD_PLAYERFRAGS:
 			if (activator && activator->player)
 				PushToStack (activator->player->fragcount);
+			else
+				PushToStack (0);
 			break;
 
 		case PCD_MUSICCHANGE:
@@ -3010,7 +3260,7 @@ void DLevelScript::RunScript ()
 			G_AirControlChanged ();
 			break;
 
-		/*case PCD_SPAWN:
+		case PCD_SPAWN:
 			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
 			sp -= 5;
 			break;
@@ -3028,7 +3278,7 @@ void DLevelScript::RunScript ()
 		case PCD_SPAWNSPOTDIRECT:
 			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3]));
 			pc += 4;
-			break;*/
+			break;
 
 		case PCD_CLEARINVENTORY:
 			ClearInventory (activator);
@@ -3106,17 +3356,8 @@ void DLevelScript::RunScript ()
 		case PCD_GETACTORY:
 		case PCD_GETACTORZ:
 			{
-				AActor *actor;
+			    AActor *actor = SingleActorFromTID(STACK(1), activator);
 
-				if (STACK(1) == 0)
-				{
-					actor = activator;
-				}
-				else
-				{
-					FActorIterator iterator (STACK(1));
-					actor = iterator.Next ();
-				}
 				if (actor == NULL)
 				{
 					STACK(1) = 0;
@@ -3124,6 +3365,21 @@ void DLevelScript::RunScript ()
 				else
 				{
 					STACK(1) = (&actor->x)[pcd - PCD_GETACTORX];
+				}
+			}
+			break;
+
+		case PCD_GETACTORANGLE:
+			{
+				AActor *actor = SingleActorFromTID (STACK(1), activator);
+
+				if (actor == NULL)
+				{
+					STACK(1) = 0;
+				}
+				else
+				{
+					STACK(1) = actor->angle >> FRACBITS;
 				}
 			}
 			break;
@@ -3279,6 +3535,59 @@ void DLevelScript::RunScript ()
 				PushToStack(activator->tid);
 			break;
 
+		case PCD_GETCVAR: {
+			cvar_t *var, *prev;
+			var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+			if (var == NULL)
+			{
+				STACK(1) = 0;
+			}
+			else
+			{
+				STACK(1) = (int)var->value();
+			}
+		}
+		break;
+
+		case PCD_GETLEVELINFO:
+			switch (STACK(1))
+			{
+			case LEVELINFO_PAR_TIME:
+				STACK(1) = level.partime;
+				break;
+			case LEVELINFO_SUCK_TIME:
+				STACK(1) = 0;	//level.sucktime; -- ToDo?
+				break;
+			case LEVELINFO_CLUSTERNUM:
+				STACK(1) = level.cluster;
+				break;
+			case LEVELINFO_LEVELNUM:
+				STACK(1) = level.levelnum;
+				break;
+			case LEVELINFO_TOTAL_SECRETS:
+				STACK(1) = level.total_secrets;
+				break;
+			case LEVELINFO_FOUND_SECRETS:
+				STACK(1) = level.found_secrets;
+				break;
+			case LEVELINFO_TOTAL_ITEMS:
+				STACK(1) = level.total_items;
+				break;
+			case LEVELINFO_FOUND_ITEMS:
+				STACK(1) = level.found_items;
+				break;
+			case LEVELINFO_TOTAL_MONSTERS:
+				STACK(1) = level.total_monsters;
+				break;
+			case LEVELINFO_KILLED_MONSTERS:
+				STACK(1) = level.killed_monsters;
+				break;
+			default:
+				STACK(1) = 0;
+				break;
+			}
+			break;
+
 		/*case PCD_CHECKWEAPON:
 			if (activator == NULL || activator->player == NULL)
 			{ // Non-players do not have ready weapons
@@ -3328,6 +3637,17 @@ void DLevelScript::RunScript ()
 
 	this->pc = pc;
 	this->sp = sp;
+
+	if (state == SCRIPT_DivideBy0)
+	{
+		DPrintf("Divide by zero in script %d\n", script);
+		state = SCRIPT_PleaseRemove;
+	}
+	else if (state == SCRIPT_ModulusBy0)
+	{
+		DPrintf("Modulus by zero in script %d\n", script);
+		state = SCRIPT_PleaseRemove;
+	}
 
 	if (state == SCRIPT_PleaseRemove)
 	{

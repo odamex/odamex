@@ -32,6 +32,7 @@
 #include "p_lnspec.h"
 #include "w_wad.h"
 #include "v_palette.h"
+#include "c_bind.h"
 
 #include "m_cheat.h"
 #include "c_dispatch.h"
@@ -53,6 +54,8 @@
 #include "am_map.h"
 
 argb_t CL_GetPlayerColor(player_t*);
+
+EXTERN_CVAR(am_followplayer)
 
 // Group palette index and RGB value together:
 typedef struct am_color_s {
@@ -143,20 +146,6 @@ EXTERN_CVAR		(screenblocks)
 
 // drawing stuff
 #define	FB		(screen)
-
-#define AM_PANDOWNKEY	KEY_DOWNARROW
-#define AM_PANUPKEY		KEY_UPARROW
-#define AM_PANRIGHTKEY	KEY_RIGHTARROW
-#define AM_PANLEFTKEY	KEY_LEFTARROW
-#define AM_ZOOMINKEY	KEY_EQUALS
-#define AM_ZOOMINKEY2	0x4e	// DIK_ADD
-#define AM_ZOOMOUTKEY	KEY_MINUS
-#define AM_ZOOMOUTKEY2	0x4a	// DIK_SUBTRACT
-#define AM_GOBIGKEY		0x0b	// DIK_0
-#define AM_FOLLOWKEY	'f'
-#define AM_GRIDKEY		'g'
-#define AM_MARKKEY		'm'
-#define AM_CLEARMARKKEY	'c'
 
 #define AM_NUMMARKPOINTS 10
 
@@ -268,6 +257,7 @@ mline_t thintriangle_guy[] = {
 
 static int 	cheating = 0;
 static int 	grid = 0;
+static int	bigstate = 0;	// Bigmode
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
@@ -286,7 +276,6 @@ static byte *fb;				// pseudo-frame buffer
 static int	amclock;
 
 static mpoint_t	m_paninc;		// how far the window pans each tic (map coords)
-static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
 static fixed_t	ftom_zoommul;	// how far the window zooms in each tic (fb coords)
 
 static fixed_t	m_x, m_y;		// LL x,y where the window is on the map (map coords)
@@ -341,6 +330,12 @@ static BOOL stopped = true;
 
 extern NetDemo netdemo;
 
+void AM_clearMarks();
+void AM_addMark();
+void AM_saveScaleAndLoc();
+void AM_restoreScaleAndLoc();
+void AM_minOutWindowScale();
+
 #define NUMALIASES		3
 #define WALLCOLORS		-1
 #define FDWALLCOLORS	-2
@@ -351,6 +346,43 @@ extern NetDemo netdemo;
 #define NUMWEIGHTS		(1<<WEIGHTBITS)
 #define WEIGHTMASK		(NUMWEIGHTS-1)
 
+BEGIN_COMMAND(am_grid)
+{
+	grid = !grid;
+	Printf(PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
+} END_COMMAND(am_grid)
+
+
+BEGIN_COMMAND(am_setmark)
+{
+	AM_addMark();
+	Printf(PRINT_HIGH, "%s %d\n", GStrings(AMSTR_MARKEDSPOT), markpointnum);
+} END_COMMAND(am_setmark)
+
+BEGIN_COMMAND(am_clearmarks)
+{
+	AM_clearMarks();
+	Printf(PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
+} END_COMMAND(am_clearmarks)
+
+BEGIN_COMMAND(am_big)
+{
+	bigstate = !bigstate;
+	if (bigstate)
+	{
+		AM_saveScaleAndLoc();
+		AM_minOutWindowScale();
+	}
+	else
+		AM_restoreScaleAndLoc();
+} END_COMMAND(am_big)
+
+BEGIN_COMMAND(am_togglefollow)
+{
+	am_followplayer = !am_followplayer;
+	f_oldloc.x = MAXINT;
+	Printf(PRINT_HIGH, "%s\n", am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
+} END_COMMAND(am_togglefollow)
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
 
@@ -398,7 +430,7 @@ void AM_restoreScaleAndLoc(void)
 {
 	m_w = old_m_w;
 	m_h = old_m_h;
-	if (!followplayer)
+	if (!am_followplayer)
 	{
 		m_x = old_m_x;
 		m_y = old_m_y;
@@ -471,7 +503,7 @@ void AM_findMinMaxBoundaries(void)
 void AM_changeWindowLoc(void)
 {
 	if (m_paninc.x || m_paninc.y) {
-		followplayer = 0;
+		am_followplayer.Set(0.0f);
 		f_oldloc.x = MAXINT;
 	}
 
@@ -504,10 +536,6 @@ void AM_initVariables(void)
 
 	f_oldloc.x = MAXINT;
 	amclock = 0;
-
-	m_paninc.x = m_paninc.y = 0;
-	ftom_zoommul = FRACUNIT;
-	mtof_zoommul = FRACUNIT;
 
 	m_w = FTOM(I_GetSurfaceWidth());
 	m_h = FTOM(I_GetSurfaceHeight());
@@ -777,118 +805,48 @@ END_COMMAND (togglemap)
 //
 BOOL AM_Responder (event_t *ev)
 {
-	int rc;
-	static int bigstate = 0;
-
-	rc = false;
-
-	if (automapactive && ev->type == ev_keydown)
+	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
-		rc = true;
-		switch(ev->data1)
+		if (am_followplayer)
 		{
-		case AM_PANRIGHTKEY: // pan right
-			if (!followplayer)
-				m_paninc.x = FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANLEFTKEY: // pan left
-			if (!followplayer)
-				m_paninc.x = -FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANUPKEY: // pan up
-			if (!followplayer)
-				m_paninc.y = FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANDOWNKEY: // pan down
-			if (!followplayer)
-				m_paninc.y = -FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_ZOOMOUTKEY: // zoom out
-		case AM_ZOOMOUTKEY2:
-			mtof_zoommul = M_ZOOMOUT;
-			ftom_zoommul = M_ZOOMIN;
-			break;
-		case AM_ZOOMINKEY: // zoom in
-		case AM_ZOOMINKEY2:
-			mtof_zoommul = M_ZOOMIN;
-			ftom_zoommul = M_ZOOMOUT;
-			break;
-		case AM_GOBIGKEY:
-			bigstate = !bigstate;
-			if (bigstate)
-			{
-				AM_saveScaleAndLoc();
-				AM_minOutWindowScale();
-			}
-			else
-				AM_restoreScaleAndLoc();
-			break;
-		default:
-			switch (ev->data3)
-			{
-			case AM_FOLLOWKEY:
-				followplayer = !followplayer;
-				f_oldloc.x = MAXINT;
-				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
-				break;
-			case AM_GRIDKEY:
-				grid = !grid;
-				Printf (PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
-				break;
-			case AM_MARKKEY:
-				Printf (PRINT_HIGH, "%s %d\n",  GStrings(AMSTR_MARKEDSPOT), markpointnum);
-				AM_addMark();
-				break;
-			case AM_CLEARMARKKEY:
-				AM_clearMarks();
-				Printf (PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
-				break;
-			default:
-				rc = false;
-			}
+			// check for am_pan* and ignore in follow mode
+			std::string defbind = AutomapBindings.Binds[ev->data1];
+			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
+				return false;
 		}
-		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
-		{
-			rc = true;	// [RH] Eat last keypress of cheat sequence
-			cheating = (cheating+1) % 3;
-		}
-	}
-	else if (ev->type == ev_keyup)
-	{
-		rc = false;
-		switch (ev->data1)
-		{
-		case AM_PANRIGHTKEY:
-			if (!followplayer) m_paninc.x = 0;
-			break;
-		case AM_PANLEFTKEY:
-			if (!followplayer) m_paninc.x = 0;
-			break;
-		case AM_PANUPKEY:
-			if (!followplayer) m_paninc.y = 0;
-			break;
-		case AM_PANDOWNKEY:
-			if (!followplayer) m_paninc.y = 0;
-			break;
-		case AM_ZOOMOUTKEY:
-		case AM_ZOOMOUTKEY2:
-		case AM_ZOOMINKEY:
-		case AM_ZOOMINKEY2:
-			mtof_zoommul = FRACUNIT;
-			ftom_zoommul = FRACUNIT;
-			break;
-		}
-	}
 
-	return rc;
+		if (ev->type == ev_keydown)
+		{
+			std::string defbind = Bindings.Binds[ev->data1];
+			// Check for automap, in order not to be stuck
+			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+				return false;
+		}
+
+		bool res = C_DoKey(ev, &AutomapBindings, NULL);
+		if (ev->type == ev_keydown && sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
+		{
+			cheating = (cheating + 1) % 3;
+			return true;
+		}
+		if (res && ev->type == ev_keyup)
+		{
+			// If this is a release event we also need to check if it released a button in the main Bindings
+			// so that that button does not get stuck.
+			std::string defbind = Bindings.Binds[ev->data1];
+
+			// Check for automap, in order not to be stuck
+			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+				return false;
+
+			return (defbind[0] != '+'); // Let G_Responder handle button releases
+		}
+		return res;
+
+		
+	}
+	
+	return false;
 }
 
 
@@ -897,6 +855,22 @@ BOOL AM_Responder (event_t *ev)
 //
 void AM_changeWindowScale (void)
 {
+
+	static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
+
+	if (Actions[ACTION_AUTOMAP_ZOOMOUT]) {
+		mtof_zoommul = M_ZOOMOUT;
+		ftom_zoommul = M_ZOOMIN;
+	}
+	else if (Actions[ACTION_AUTOMAP_ZOOMIN]) {
+		mtof_zoommul = M_ZOOMIN;
+		ftom_zoommul = M_ZOOMOUT;
+	}
+	else {
+		mtof_zoommul = FRACUNIT;
+		ftom_zoommul = FRACUNIT;
+	}
+
 	// Change the scaling multipliers
 	scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -937,11 +911,22 @@ void AM_Ticker (void)
 
 	amclock++;
 
-	if (followplayer)
+	if (am_followplayer) {
 		AM_doFollowPlayer();
+	}
+	else {
+		m_paninc.x = 0;
+		m_paninc.y = 0;
+
+		// pan according to the direction
+		if (Actions[ACTION_AUTOMAP_PANLEFT])m_paninc.x = -FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANRIGHT])m_paninc.x = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANUP])m_paninc.y = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANDOWN])m_paninc.y = -FTOM(F_PANINC);
+	}
 
 	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT)
+	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] || Actions[ACTION_AUTOMAP_ZOOMOUT])
 		AM_changeWindowScale();
 
 	// Change x,y location

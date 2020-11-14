@@ -596,7 +596,7 @@ void G_DoLoadLevel (int position)
 
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 			for (size_t n = 0; n < teamInfo->Starts.size(); n++)
 			{
 				if (G_CheckSpot(consoleplayer(), &teamInfo->Starts[n]))

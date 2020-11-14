@@ -239,7 +239,7 @@ std::string HelpText()
 		}
 
 		StrFormat(str, "%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
-		          joinmsg.c_str(), C_GetKeyStringsFromCommand("+use").c_str());
+		          joinmsg.c_str(), ::Bindings.GetKeynameFromCommand("+use").c_str());
 		return str;
 	}
 
@@ -249,13 +249,13 @@ std::string HelpText()
 		StrFormat(str,
 		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
-		          C_GetKeyStringsFromCommand("+use").c_str(),
+		          ::Bindings.GetKeynameFromCommand("+use").c_str(),
 		          ::levelstate.getJoinTimeLeft());
 		return str;
 	}
 
 	StrFormat(str, "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
-	          C_GetKeyStringsFromCommand("+use").c_str());
+	          ::Bindings.GetKeynameFromCommand("+use").c_str());
 	return str;
 }
 

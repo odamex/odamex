@@ -1736,7 +1736,7 @@ bool M_Responder (event_t* ev)
 	}
 
 
-	cmd = C_GetBinding (ch);
+	cmd = Bindings.GetBind(ch).c_str();
 
 	// Save Game string input
 	// [RH] and Player Name string input

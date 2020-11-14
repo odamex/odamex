@@ -285,7 +285,7 @@ CVAR_FUNC_IMPL (sv_waddownloadcap)
 
 CVAR_FUNC_IMPL(sv_sharekeys)
 {
-	if (var == 1.0f)
+	if (var)
 	{
 		// Refresh it to everyone
 		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
@@ -1873,8 +1873,8 @@ void SV_ClientFullUpdate(player_t &pl)
 void SV_UpdateSecret(int sectornum, player_t &player)
 {
 	SV_BroadcastSector(sectornum);
-	SV_UpdateFrags(player);			// I don't like syncing back all the frags aswell, but whatever.
-	SV_UpdateSecretCount();
+	SV_UpdateFrags(player);			// It now syncs secrets but maybe there's a more elegant solution?
+	SV_UpdateSecretCount(player);
 }
 
 //
@@ -3269,12 +3269,28 @@ void SV_SendPingRequest(client_t* cl)
 	MSG_WriteLong (&cl->reliablebuf, I_MSTime());
 }
 
-void SV_UpdateSecretCount(void)
+void SV_UpdateSecretCount(player_t& player)
 {
+
+	// Don't announce secrets on PvP gamemodes
+	if (sv_gametype != GM_COOP)
+		return;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
 		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
+	}
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+	    if (&*it == &player)
+	        continue;
+
+	    std::ostringstream buf;
+		
+	    buf << player.userinfo.netname << " found a secret!";
+	    SV_MidPrint(buf.str().c_str(), &(*it), 0);
 	}
 }
 

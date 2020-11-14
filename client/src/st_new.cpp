@@ -782,7 +782,7 @@ void LevelStateHUD()
 				StrFormat(str,
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
-				          C_GetKeyStringsFromCommand("ready").c_str());
+				          ::Bindings.GetKeynameFromCommand("ready").c_str());
 			}
 		}
 		else
