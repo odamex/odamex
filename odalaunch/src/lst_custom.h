@@ -25,6 +25,8 @@
 #ifndef LST_CUSTOM_H
 #define LST_CUSTOM_H
 
+#include "odalaunch.h"
+
 #include <wx/listctrl.h>
 #include <wx/sizer.h>
 #include <wx/artprov.h>

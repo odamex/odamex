@@ -24,6 +24,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "net_io.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -35,7 +37,6 @@
 #include <time.h>
 #include <errno.h>
 
-#include "net_io.h"
 #include "net_utils.h"
 #include "net_error.h"
 

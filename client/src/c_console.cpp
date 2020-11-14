@@ -1230,6 +1230,12 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 
 	C_PrintString(printlevel, color_code, sanitized_str.c_str());
 
+#if defined (_WIN32) && defined(_DEBUG)
+	// [AM] Since we don't have stdout/stderr in a non-console Win32 app,
+	//      this outputs the string to the "Output" window.
+	OutputDebugStringA(sanitized_str.c_str());
+#endif
+
 	return len;
 }
 
@@ -1802,7 +1808,7 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
-	const char* cmd = C_GetBinding(ev->data1);
+	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
 	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{

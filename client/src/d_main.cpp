@@ -61,6 +61,7 @@
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
+#include "c_bind.h"
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
@@ -740,6 +741,8 @@ void D_DoomMain()
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	M_LoadDefaults();					// load before initing other systems
+	C_BindingsInit();					// Ch0wW : Initialize bindings
+
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::vector<std::string> newwadfiles, newpatchfiles;
