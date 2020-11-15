@@ -54,6 +54,6 @@ jobs:
       with:
         args: install ninja
     - name: Prepare build
-      run: .\ci\win-mingw.ps1
+      run: .\ci\win-mingw-build.ps1
     - name: Run build
       run: cmake --build .\build-gcc\
