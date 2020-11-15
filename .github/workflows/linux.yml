@@ -10,11 +10,11 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci-build.sh
+      run: bash ci/posix-build.sh
     - name: Run build
       run: cmake --build ./build/
     - name: Prepare artifact
-      run: bash ci-artifact.sh
+      run: bash ci/posix-artifact.sh
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
@@ -27,7 +27,7 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Run build
-      run: bash ci-build-centos.sh
+      run: bash ci/posix-centos-build.sh
   build-sdl12:
     name: Build (SDL 1.2)
     runs-on: ubuntu-latest
@@ -37,6 +37,6 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci-build.sh
+      run: bash ci/posix-build.sh
     - name: Run build
       run: cmake --build ./build/

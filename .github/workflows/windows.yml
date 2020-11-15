@@ -12,11 +12,11 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
-      run: .\ci-build.ps1
+      run: .\ci\win-build.ps1
     - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
-      run: .\ci-artifact.ps1
+      run: .\ci\win-artifact.ps1
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
@@ -31,11 +31,11 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
-      run: .\ci-build-x32.ps1
+      run: .\ci\win-x32-build.ps1
     - name: Run build
       run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
-      run: .\ci-artifact-x32.ps1
+      run: .\ci\win-x32-artifact.ps1
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
@@ -54,6 +54,6 @@ jobs:
       with:
         args: install ninja
     - name: Prepare build
-      run: .\ci-build-mingw.ps1
+      run: .\ci\win-mingw.ps1
     - name: Run build
       run: cmake --build .\build-gcc\
