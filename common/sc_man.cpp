@@ -336,7 +336,7 @@ BOOL SC_GetString (void)
 	else
 	{
 		// Normal string
-		while ((*ScriptPtr > 32) && (strchr ("{}|=,[];", *ScriptPtr) == NULL)
+		while ((*ScriptPtr > 32) && (strchr ("{}|=,[];\"", *ScriptPtr) == NULL)
 			&& (*ScriptPtr != ASCII_COMMENT)
 			&& !(ScriptPtr[0] == CPP_COMMENT && (ScriptPtr < ScriptEndPtr - 1) &&
 			(ScriptPtr[1] == CPP_COMMENT || ScriptPtr[1] == C_COMMENT)))

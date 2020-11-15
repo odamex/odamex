@@ -92,7 +92,15 @@ bool OScanner::munchQuotedString()
 		if (_position[0] == '\n')
 			return false;
 
-		_position += 1;
+		if (checkPair('\\', '"'))
+		{
+			// Found a quote escape, skip past it.
+			_position += 2;
+		}
+		else
+		{
+			_position += 1;
+		}
 	}
 
 	// Ran off the end of the script, this is also a problem.
@@ -118,6 +126,9 @@ void OScanner::munchString()
 			return;
 
 		if (strchr(SINGLE_CHAR_TOKENS, _position[0]) != NULL)
+			return;
+
+		if (_position[0] == '"')
 			return;
 
 		_position += 1;
