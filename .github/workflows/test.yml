@@ -1,0 +1,24 @@
+name: Windows
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build (Visual Studio)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: .\ci\win-build.ps1
+    - name: Run build
+      run: cmake --build .\build\ --config RelWithDebInfo --parallel
+    - name: Prepare artifact
+      run: .\ci\win-artifact.ps1
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x64
+        path: 'build/artifact/*'
