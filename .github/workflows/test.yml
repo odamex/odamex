@@ -3,14 +3,24 @@ name: Windows
 on: [push, pull_request]
 
 jobs:
+  pre_job:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - name: Skip if duplicate
+        id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
   build:
     name: Build (Visual Studio)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
-    - name: Skip if duplicate
-      uses: fkirc/skip-duplicate-actions@master
-      with:
-        github_token: ${{ github.token }}
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Checkout submodules
