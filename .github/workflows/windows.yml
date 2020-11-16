@@ -1,0 +1,93 @@
+name: Windows
+
+on: [push, pull_request]
+
+jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - name: Skip if duplicate
+        id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+  build:
+    name: Build (Visual Studio)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install Python packages
+      uses: BSFishy/pip-action@v1
+      with:
+        packages: |
+          b2sdk
+    - name: Prepare build
+      run: .\ci\win-build.ps1
+    - name: Run build
+      run: cmake --build .\build\ --config RelWithDebInfo --parallel
+    - name: Prepare artifact
+      run: .\ci\win-artifact.ps1
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\build\archive Win-x64
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    - name: Upload artifact to Github
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x64
+        path: 'build/artifact/*'
+  build-x32:
+    name: Build (Visual Studio, 32-bit)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: .\ci\win-x32-build.ps1
+    - name: Run build
+      run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
+    - name: Prepare artifact
+      run: .\ci\win-x32-artifact.ps1
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\build\archive Win-x64
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    - name: Upload artifact to Github
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x32
+        path: 'build-x32/artifact/*'
+  build-mingw:
+    name: Build (MinGW)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install packages
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install ninja
+    - name: Prepare build
+      run: .\ci\win-mingw-build.ps1
+    - name: Run build
+      run: cmake --build .\build-gcc\
