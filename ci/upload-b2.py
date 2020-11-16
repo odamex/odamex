@@ -25,7 +25,7 @@ B2_APP_KEY = os.getenv("B2_APP_KEY")
 B2_BUCKET_ID = os.getenv("B2_BUCKET_ID")
 B2_KEY_ID = os.getenv("B2_KEY_ID")
 
-GIT_COMMIT = os.getenv("GITHUB_SHA").substring(0, 7)
+GIT_COMMIT = os.getenv("GITHUB_SHA")[0: 7]
 GIT_BRANCH = os.getenv("GITHUB_REF").replace("refs/heads/", "")
 
 if __name__ == "__main__":
