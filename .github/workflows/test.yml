@@ -7,6 +7,10 @@ jobs:
     name: Build (Visual Studio)
     runs-on: windows-latest
     steps:
+    - name: Skip if duplicate
+      uses: fkirc/skip-duplicate-actions@master
+      with:
+        github_token: ${{ github.token }}
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Checkout submodules
