@@ -9,6 +9,8 @@ jobs:
     outputs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
