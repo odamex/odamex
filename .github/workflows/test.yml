@@ -23,7 +23,7 @@ jobs:
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
     - name: Upload artifact to B2
-      run: python .\ci\upload-b2.py .\build\archive win-x64
+      run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
         B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}

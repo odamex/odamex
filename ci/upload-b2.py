@@ -25,6 +25,9 @@ B2_APP_KEY = os.getenv("B2_APP_KEY")
 B2_BUCKET_ID = os.getenv("B2_BUCKET_ID")
 B2_KEY_ID = os.getenv("B2_KEY_ID")
 
+GIT_COMMIT = os.getenv("GITHUB_SHA").substring(0, 7)
+GIT_BRANCH = os.getenv("GITHUB_REF").replace("refs/heads/", "")
+
 if __name__ == "__main__":
     src_dir = sys.argv[1]
     dest_dir = sys.argv[2]
@@ -37,4 +40,13 @@ if __name__ == "__main__":
     # Iterate every file in the directory.
     for filename in pathlib.Path(src_dir).iterdir():
         print(f"Uploading {filename}...")
-        bucket.upload_local_file(filename, dest_dir + "/" + filename.name)
+        bucket.upload_local_file(
+            filename,
+            dest_dir + "/" + filename.name,
+            content_type="application/zip",
+            file_infos={
+                "platform": dest_dir,
+                "commit": GIT_COMMIT,
+                "branch": GIT_BRANCH,
+            },
+        )
