@@ -4,9 +4,8 @@ on: [push, pull_request]
 
 jobs:
   pre_job:
-    # continue-on-error: true # Uncomment once integration is finished
+    name: Build Preparation
     runs-on: ubuntu-latest
-    # Map a step output to a job output
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
