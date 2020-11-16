@@ -5,7 +5,7 @@ Set-PSDebug -Trace 1
 $SHORTHASH = "${Env:GITHUB_SHA}".substring(0, 7)
 $SHORTREF = "${Env:GITHUB_REF}".replace("refs/heads/", "").replace("/", "-")
 
-$OUTFILENAME = "Odamex-x64-$SHORTREF-$Env:GITHUB_RUN_ID-$SHORTHASH"
+$OUTFILENAME = "Odamex-x64-$SHORTREF-$Env:GITHUB_RUN_NUMBER-$SHORTHASH"
 
 Set-Location "build"
 New-Item -Name "artifact" -ItemType "directory" | Out-Null
