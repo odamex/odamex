@@ -3964,7 +3964,7 @@ void CL_LocalDemoTic()
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, viewheight, deltaviewheight;
+	fixed_t pitch, viewz, viewheight, deltaviewheight;
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
@@ -3987,6 +3987,7 @@ void CL_LocalDemoTic()
 	momz = MSG_ReadLong();
 	angle = MSG_ReadLong();
 	pitch = MSG_ReadLong();
+	viewz = MSG_ReadLong();
 	viewheight = MSG_ReadLong();
 	deltaviewheight = MSG_ReadLong();
 	jumpTics = MSG_ReadLong();
@@ -4004,6 +4005,7 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
+		clientPlayer->viewz = viewz;
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;
