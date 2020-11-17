@@ -26,13 +26,14 @@ B2_APP_KEY = os.getenv("B2_APP_KEY")
 B2_BUCKET_ID = os.getenv("B2_BUCKET_ID")
 B2_KEY_ID = os.getenv("B2_KEY_ID")
 
-if B2_APP_KEY is None:
-    print("==> B2 credentials are absent, skipping...")
-    sys.exit(0)
-
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_SHA = os.getenv("GITHUB_SHA")
 GITHUB_REF = os.getenv("GITHUB_REF")
+
+# Skip for pull requests
+if GITHUB_EVENT_NAME == "pull_request":
+    print(f"==> Skipping upload for \"{GITHUB_EVENT_NAME}\".")
+    sys.exit(0)
 
 with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
     event_data = json.load(fh)
@@ -40,9 +41,6 @@ with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
 if GITHUB_EVENT_NAME == "push":
     # Commit name
     MESSAGE = event_data['commits'][0]['message']
-elif GITHUB_EVENT_NAME == "pull_request":
-    # PR name
-    MESSAGE = event_data['pull_request']['body']
 else:
     MESSAGE = ""
 
