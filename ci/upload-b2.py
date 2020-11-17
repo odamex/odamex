@@ -14,6 +14,7 @@
 # GNU General Public License for more details.
 #
 
+import json
 import os
 import pathlib
 import sys
@@ -25,8 +26,21 @@ B2_APP_KEY = os.getenv("B2_APP_KEY")
 B2_BUCKET_ID = os.getenv("B2_BUCKET_ID")
 B2_KEY_ID = os.getenv("B2_KEY_ID")
 
-GIT_COMMIT = os.getenv("GITHUB_SHA")[0: 7]
-GIT_BRANCH = os.getenv("GITHUB_REF").replace("refs/heads/", "")
+GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
+GITHUB_SHA = os.getenv("GITHUB_SHA")
+GITHUB_REF = os.getenv("GITHUB_REF")
+
+with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
+    event_data = json.load(fh)
+
+if GITHUB_EVENT_NAME == "push":
+    # Commit name
+    MESSAGE = event_data['commits'][0]['message']
+elif GITHUB_EVENT_NAME == "pull_request":
+    # PR name
+    MESSAGE = event_data['pull_request']['body']
+else:
+    MESSAGE = ""
 
 if __name__ == "__main__":
     src_dir = sys.argv[1]
@@ -46,7 +60,9 @@ if __name__ == "__main__":
             content_type="application/zip",
             file_infos={
                 "platform": dest_dir,
-                "commit": GIT_COMMIT,
-                "branch": GIT_BRANCH,
+                "event_name": GITHUB_EVENT_NAME,
+                "sha": GITHUB_SHA,
+                "ref": GITHUB_REF,
+                "message": MESSAGE,
             },
         )
