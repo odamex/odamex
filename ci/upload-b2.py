@@ -35,6 +35,7 @@ if GITHUB_EVENT_NAME == "pull_request":
     print(f"==> Skipping upload for \"{GITHUB_EVENT_NAME}\".")
     sys.exit(0)
 
+# Load up JSON so we can grab a message
 with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
     event_data = json.load(fh)
 
