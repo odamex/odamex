@@ -20,6 +20,8 @@ printf "GITHUB_SERVER_URL=%s\n" "${GITHUB_SERVER_URL}"
 printf "GITHUB_API_URL=%s\n" "${GITHUB_API_URL}"
 printf "GITHUB_GRAPHQL_URL=%s\n" "${GITHUB_GRAPHQL_URL}"
 
+cat "$GITHUB_EVENT_PATH"
+
 echo "::set-output name=should_skip::true"
 exit 0
 
