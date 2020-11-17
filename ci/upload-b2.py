@@ -26,6 +26,10 @@ B2_APP_KEY = os.getenv("B2_APP_KEY")
 B2_BUCKET_ID = os.getenv("B2_BUCKET_ID")
 B2_KEY_ID = os.getenv("B2_KEY_ID")
 
+if B2_APP_KEY is None:
+    print("==> B2 credentials are absent, skipping...")
+    sys.exit(0)
+
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_SHA = os.getenv("GITHUB_SHA")
 GITHUB_REF = os.getenv("GITHUB_REF")
@@ -53,7 +57,7 @@ if __name__ == "__main__":
 
     # Iterate every file in the directory.
     for filename in pathlib.Path(src_dir).iterdir():
-        print(f"Uploading {filename}...")
+        print(f"==> Uploading {filename}...")
         bucket.upload_local_file(
             filename,
             dest_dir + "/" + filename.name,
