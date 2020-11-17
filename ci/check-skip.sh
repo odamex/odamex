@@ -17,7 +17,7 @@ if [[ $GITHUB_EVENT_NAME != "pull_request" ]]; then
     exit 0
 fi
 
-GITHUB_PR_REPOSITORY="$(cat "$GITHUB_EVENT_PATH" | jq ".pull_request.head.repo.full_name")"
+GITHUB_PR_REPOSITORY="$(cat "$GITHUB_EVENT_PATH" | jq --raw-output ".pull_request.head.repo.full_name")"
 printf "GITHUB_PR_REPOSITORY=%s\n" "${GITHUB_PR_REPOSITORY}"
 
 if [[ $GITHUB_REPOSITORY != $GITHUB_PR_REPOSITORY ]]; then
