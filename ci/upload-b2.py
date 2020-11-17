@@ -41,9 +41,9 @@ with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
 
 if GITHUB_EVENT_NAME == "push":
     # Commit name
-    MESSAGE = event_data['commits'][0]['message']
+    HEAD_MESSAGE = event_data['head_commit']['message']
 else:
-    MESSAGE = ""
+    HEAD_MESSAGE = ""
 
 if __name__ == "__main__":
     src_dir = sys.argv[1]
@@ -66,6 +66,6 @@ if __name__ == "__main__":
                 "event_name": GITHUB_EVENT_NAME,
                 "sha": GITHUB_SHA,
                 "ref": GITHUB_REF,
-                "message": MESSAGE,
+                "head_message": HEAD_MESSAGE,
             },
         )
