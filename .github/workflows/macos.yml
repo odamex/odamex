@@ -3,18 +3,31 @@ name: macOS
 on: [push, pull_request]
 
 jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.check_skip.outputs.should_skip }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+      - name: Check for build skip
+        id: check_skip
+        run: bash ci/check-skip.sh
   build:
     name: Build
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: macos-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci-build.sh
+      run: bash ci/posix-build.sh
     - name: Run build
       run: cmake --build ./build/
     - name: Prepare artifact
-      run: bash ci-artifact.sh
+      run: bash ci/posix-artifact.sh
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
