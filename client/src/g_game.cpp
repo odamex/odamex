@@ -1009,7 +1009,7 @@ void G_Ticker (void)
 				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
 				mobj->flags &= ~MF_SOLID;
 				mobj->flags2 |= MF2_DONTDRAW;
-				consoleplayer().mo = mobj->ptr();
+				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
 				consoleplayer().mo->player = &consoleplayer();
 				G_PlayerReborn(consoleplayer());
 				DPrintf("Did not receive spawn for consoleplayer.\n");

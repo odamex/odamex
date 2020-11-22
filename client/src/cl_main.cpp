@@ -1029,9 +1029,50 @@ BEGIN_COMMAND (spectate)
 }
 END_COMMAND (spectate)
 
-BEGIN_COMMAND (ready) {
-	MSG_WriteMarker(&net_buffer, clc_ready);
-} END_COMMAND (ready)
+BEGIN_COMMAND(ready)
+{
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "ready");
+	MSG_WriteByte(&net_buffer, 0);
+}
+END_COMMAND(ready)
+
+static void NetCmdHelp()
+{
+	Printf(PRINT_HIGH,
+	       "netcmd - Send an arbitrary string command to a server\n\n"
+	       "Common commands:\n"
+	       "  ] netcmd help\n"
+	       "  Check to see if the server has any server-specific netcmd's.\n\n"
+	       "  ] netcmd motd\n"
+	       "  Ask the server for the MOTD.\n\n"
+	       "  ] netcmd ready\n"
+	       "  Set yourself as ready or unready.\n\n"
+	       "  ] netcmd vote <\"yes\"|\"no\">\n"
+	       "  Vote \"yes\" or \"no\" in an ongoing vote.\n");
+}
+
+BEGIN_COMMAND(netcmd)
+{
+	if (argc < 2)
+	{
+		NetCmdHelp();
+		return;
+	}
+
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, argv[1]);
+
+	// Pass additional arguments as separate strings.  Avoids argument
+	// parsing at the opposite end.
+	byte netargc = MIN<size_t>(argc - 2, 0xFF);
+	MSG_WriteByte(&net_buffer, netargc);
+	for (size_t i = 0; i < netargc; i++)
+	{
+		MSG_WriteString(&net_buffer, argv[i + 2]);
+	}
+}
+END_COMMAND(netcmd)
 
 BEGIN_COMMAND (join)
 {
@@ -3925,7 +3966,7 @@ void CL_LocalDemoTic()
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, viewheight, deltaviewheight;
+	fixed_t pitch, viewz, viewheight, deltaviewheight;
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
@@ -3948,6 +3989,7 @@ void CL_LocalDemoTic()
 	momz = MSG_ReadLong();
 	angle = MSG_ReadLong();
 	pitch = MSG_ReadLong();
+	viewz = MSG_ReadLong();
 	viewheight = MSG_ReadLong();
 	deltaviewheight = MSG_ReadLong();
 	jumpTics = MSG_ReadLong();
@@ -3965,6 +4007,7 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
+		clientPlayer->viewz = viewz;
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;

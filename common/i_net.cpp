@@ -982,7 +982,6 @@ void InitNetMessageFormats()
       MSG(clc_cheat,              "x"),
       MSG(clc_cheatpulse,         "x"),
       MSG(clc_callvote,           "x"),
-      MSG(clc_vote,               "x"),
       MSG(clc_maplist,            "x"),
       MSG(clc_getplayerinfo,      "x"),
       MSG(clc_launcher_challenge, "x"),

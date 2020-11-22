@@ -64,7 +64,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
-      --config RelWithDebInfo --target install
+      --config RelWithDebInfo --target install --parallel
     )
   endif()
 
