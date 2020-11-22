@@ -812,8 +812,13 @@ void EAPlayerNames(int x, int y, const float scale,
 		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			int color = CR_GREY;
-			if (player->id == displayplayer().id) {
+			if (player->id == displayplayer().id)
+			{
 				color = CR_GOLD;
+			}
+			else if (g_lives && player->lives <= 0)
+			{
+				color = CR_DARKGRAY;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname.c_str(), color, force_opaque);
@@ -839,6 +844,8 @@ static EColorRange GetTeamPlayerColor(player_t* player)
 		return CR_GREEN;
 	else if (player->id == displayplayer().id)
 		return CR_GOLD;
+	else if (g_lives && player->lives <= 0)
+		return CR_DARKGRAY;
 
 	return CR_GREY;
 }
