@@ -1150,9 +1150,30 @@ void SV_Callvote(player_t &player)
 }
 
 // Handle vote commands from the client.
-void SV_Vote(player_t &player)
+void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 {
-	bool ballot = MSG_ReadBool();
+	if (args.size() < 2)
+	{
+		SV_PlayerPrintf(PRINT_HIGH, player.id,
+		                "Invalid vote, must be \"yes\" or \"no\".\n");
+		return;
+	}
+
+	bool ballot;
+	if (args.at(1) == "yes")
+	{
+		ballot = true;
+	}
+	else if (args.at(1) == "no")
+	{
+		ballot = false;
+	}
+	else
+	{
+		SV_PlayerPrintf(PRINT_HIGH, player.id,
+		                "Invalid vote, must be \"yes\" or \"no\".\n");
+		return;
+	}
 
 	// Is there even a vote going on?
 	if (vote == 0)
@@ -1164,7 +1185,8 @@ void SV_Vote(player_t &player)
 	// Did the player actually change his vote?
 	if (vote->vote(player, ballot))
 	{
-		SV_BroadcastPrintf("%s voted %s.\n", player.userinfo.netname.c_str(), ballot == true ? "Yes" : "No");
+		SV_BroadcastPrintf("%s voted %s.\n", player.userinfo.netname.c_str(),
+		                   ballot == true ? "Yes" : "No");
 		SVC_GlobalVoteUpdate();
 	}
 }

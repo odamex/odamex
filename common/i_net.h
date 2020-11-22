@@ -240,11 +240,10 @@ enum clc_t
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
 	clc_callvote,			// [AM] - Calling a vote
-	clc_vote,				// [AM] - Casting a vote
 	clc_maplist,			// [AM] - Maplist status request.
 	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
 	clc_getplayerinfo,
-	clc_ready,				// [AM] Toggle ready state.
+	clc_netcmd,				// [AM] Send a string command to the server.
 	clc_spy,				// [SL] Tell server to send info about this player
 	clc_privmsg,			// [AM] Targeted chat to a specific player.
 
