@@ -86,6 +86,7 @@ static const patch_t* FlagIconHome[NUMTEAMS];
 static const patch_t* FlagIconReturn[NUMTEAMS];
 static const patch_t* FlagIconTaken[NUMTEAMS];
 static const patch_t* FlagIconDropped[NUMTEAMS];
+static const patch_t* livesicon;
 
 static int		NameUp = -1;
 
@@ -207,6 +208,8 @@ void ST_initNew()
 	CacheHUDPatch(&::line_centerfull, "ODABARCF");
 	CacheHUDPatch(&::line_rightempty, "ODABARRE");
 	CacheHUDPatch(&::line_rightfull, "ODABARRF");
+
+	CacheHUDPatch(&::livesicon, "ODALIVES");
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -514,6 +517,54 @@ static void drawCTF() {
 	}
 }
 
+// [AM] Draw lives tally
+static void drawLives()
+{
+	if (!g_lives)
+	{
+		return;
+	}
+
+	std::string buffer;
+	player_t* plyr = &consoleplayer();
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
+
+	int patchPosY = 61;
+	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
+
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		team_t team = team_t(i);
+		TeamInfo* teamInfo = GetTeamInfo(team);
+		PlayerResults pr = PlayerQuery().onTeam(team).hasLives().execute();
+
+		// Team Lives icons.
+		ptrdiff_t coloroff;
+		if (pr.count > 0)
+			coloroff = static_cast<ptrdiff_t>(teamInfo->TransColor) * 256;
+		else
+			coloroff = static_cast<ptrdiff_t>(CR_GREY) * 256;
+
+		hud::DrawTranslatedPatch(4, patchPosY, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		                         hud::X_LEFT, hud::Y_BOTTOM, ::livesicon,
+		                         ::Ranges + coloroff);
+
+		// Number of players left ingame.
+		StrFormat(buffer, "x%d", pr.count);
+
+		int lives_color = CR_GREY;
+		if (pr.count <= 0)
+			lives_color = CR_DARKGREY;
+
+		int xoff = 4 + ::livesicon->width() + 2;
+		hud::DrawText(xoff, patchPosY, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT,
+		              hud::Y_BOTTOM, buffer.c_str(), lives_color);
+
+		patchPosY -= 18;
+	}
+}
+
 // [AM] Draw netdemo state
 // TODO: This is ripe for commonizing, but I _need_ to get this done soon.
 void drawNetdemo() {
@@ -681,6 +732,9 @@ void OdamexHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+
+	// Draw lives
+	hud::drawLives();
 }
 
 static std::string WinToColorString(const WinInfo& win)
@@ -866,6 +920,9 @@ void SpectatorHUD() {
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+
+	// Draw lives
+	hud::drawLives();
 }
 
 // [AM] Original ZDoom HUD
@@ -930,6 +987,9 @@ void ZDoomHUD() {
 
 		ST_DrawNumRight(I_GetSurfaceWidth() - 25 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
+
+	// Draw lives
+	hud::drawLives();
 
 	// Draw top-right info. (Keys/Frags/Score)
     if (sv_gametype == GM_CTF)
@@ -1024,6 +1084,9 @@ void DoomHUD()
 
 	// Draw CTF scoreboard
 	hud::drawCTF();
+
+	// Draw lives
+	hud::drawLives();
 }
 
 }
