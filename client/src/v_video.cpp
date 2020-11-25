@@ -218,14 +218,7 @@ CVAR_FUNC_IMPL(vid_overscan)
 }
 
 
-CVAR_FUNC_IMPL(vid_320x200)
-{
-	if (gamestate != GS_STARTUP)
-		V_ForceVideoModeAdjustment();
-}
-
-
-CVAR_FUNC_IMPL(vid_640x400)
+CVAR_FUNC_IMPL(vid_emulines)
 {
 	if (gamestate != GS_STARTUP)
 		V_ForceVideoModeAdjustment();
@@ -419,9 +412,6 @@ bool V_UsePillarBox()
 	if (I_IsProtectedResolution(width, height))
 		return false;
 
-	if (vid_320x200 || vid_640x400)
-		return 3 * width > 4 * height;
-
 	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
 		&& (3 * width > 4 * height);
 }
@@ -443,9 +433,6 @@ bool V_UseLetterBox()
 	if (I_IsProtectedResolution(width, height))
 		return false;
 
-	if (vid_320x200 || vid_640x400)
-		return 3 * width <= 4 * height;
-
 	return (vid_widescreen && (serverside || sv_allowwidescreen))
 		&& (3 * width <= 4 * height);
 }
@@ -463,9 +450,6 @@ bool V_UseWidescreen()
 
 	if (I_IsProtectedResolution(width, height))
 		return false;
-
-	if (vid_320x200 || vid_640x400)
-		return 3 * width > 4 * height;
 
 	return (vid_widescreen && (serverside || sv_allowwidescreen))
 		&& (3 * width > 4 * height);

@@ -79,8 +79,7 @@ EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_overscan)
-EXTERN_CVAR(vid_320x200)
-EXTERN_CVAR(vid_640x400)
+EXTERN_CVAR(vid_emulines)
 EXTERN_CVAR(vid_autoadjust)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
@@ -588,7 +587,6 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 
 	// [SL] Determine the size of the matted surface.
 	// A matted surface will be used if pillar-boxing or letter-boxing are used, or
-	// if vid_320x200/vid_640x400 are being used in a wide-screen video mode, or
 	// if vid_overscan is used to create a matte around the entire screen.
 	//
 	// Only vid_overscan creates a matted surface if the video mode is 320x200 or 640x400.
@@ -602,9 +600,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 
 	if (!I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		if (vid_320x200 || vid_640x400)
-			surface_width = surface_height * 4 / 3;
-		else if (V_UsePillarBox())
+		if (V_UsePillarBox())
 			surface_width = surface_height * 4 / 3;
 		else if (V_UseLetterBox())
 			surface_height = surface_width * 9 / 16;
@@ -628,14 +624,9 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	}
 
 	// Create emulated_surface for emulating low resolution modes.
-	if (vid_320x200)
+	if (vid_emulines >= 200)
 	{
-		emulated_surface = new IWindowSurface(320, 200, primary_surface->getPixelFormat());
-		emulated_surface->clear();
-	}
-	else if (vid_640x400)
-	{
-		emulated_surface = new IWindowSurface(640, 400, primary_surface->getPixelFormat());
+		emulated_surface = new IWindowSurface(clamp<uint16_t>(vid_emulines*surface_width/surface_height, 320, MAXWIDTH), clamp<uint16_t>(vid_emulines, 200, MAXHEIGHT), primary_surface->getPixelFormat());
 		emulated_surface->clear();
 	}
 

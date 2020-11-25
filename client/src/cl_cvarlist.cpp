@@ -661,11 +661,8 @@ CVAR_FUNC_DECL(	vid_fullscreen, "0", "Full screen video mode",
 CVAR_FUNC_DECL(	vid_32bpp, "0", "Enable 32-bit color rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_FUNC_DECL(	vid_320x200, "0", "Enable 320x200 video emulation",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-CVAR_FUNC_DECL(	vid_640x400, "0", "Enable 640x400 video emulation",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL( vid_emulines, "0", "Enable video emulation, set to 200 for classic doom",
+				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_filter, "", "Set render scale quality setting for SDL 2.0, one of \"nearest\",\"linear\",\"best\"",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)

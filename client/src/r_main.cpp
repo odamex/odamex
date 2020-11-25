@@ -59,8 +59,7 @@ extern bool r_fakingunderwater;
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
 EXTERN_CVAR (sv_allowwidescreen)
-EXTERN_CVAR (vid_320x200)
-EXTERN_CVAR (vid_640x400)
+EXTERN_CVAR (vid_emulines)
 
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
@@ -165,7 +164,7 @@ void R_ForceViewWindowResize()
 //
 IWindowSurface* R_GetRenderingSurface()
 {
-	if ((vid_320x200 || vid_640x400) && I_GetEmulatedSurface() != NULL)
+	if ((vid_emulines >= 200) && I_GetEmulatedSurface() != NULL)
 		return I_GetEmulatedSurface();
 	else
 		return I_GetPrimarySurface();
@@ -1154,7 +1153,7 @@ static void R_InitViewWindow()
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// using a 320x200/640x400 surface or video mode
-	bool protected_res = vid_320x200 || vid_640x400
+	bool protected_res = (vid_emulines >= 200)
 					|| I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight());
 
 	surface->lock();
@@ -1177,10 +1176,7 @@ static void R_InitViewWindow()
 
 	// calculate the vertical stretching factor to emulate 320x200
 	// it's a 5:4 ratio = (320 / 200) / (4 / 3)
-	if (protected_res)
-		yaspectmul = FRACUNIT;
-	else
-		yaspectmul = 320 * 3 * FRACUNIT / (200 * 4);
+	yaspectmul = 320 * 3 * FRACUNIT / (200 * 4);
 
 	// Calculate FieldOfView and CorrectFieldOfView
 	float desired_fov = 90.0f;
