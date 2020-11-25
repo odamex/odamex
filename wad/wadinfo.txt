@@ -213,6 +213,11 @@ RDWNA0	17	44
 BDWNA0	17	44
 RCARA0	4	68
 
+# Dummies for shareware compatibility
+CELLA0  8       12
+PSTRA0  12      15
+CELPA0  15      20
+
 # List of Floors and Ceilings
 [flats]
 -NOFLAT-
