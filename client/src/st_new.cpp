@@ -533,6 +533,9 @@ static void drawLives()
 	int patchPosY = 61;
 	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
 
+	const hud::x_align_t align = (sv_gametype == GM_CTF) ? hud::X_LEFT : hud::X_RIGHT;
+
+	// Draw one icon and lives set per team.
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
 		team_t team = team_t(i);
@@ -544,11 +547,10 @@ static void drawLives()
 		if (pr.count > 0)
 			coloroff = static_cast<ptrdiff_t>(teamInfo->TransColor) * 256;
 		else
-			coloroff = static_cast<ptrdiff_t>(CR_GREY) * 256;
+			coloroff = static_cast<ptrdiff_t>(CR_DARKGREY) * 256;
 
-		hud::DrawTranslatedPatch(4, patchPosY, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
-		                         hud::X_LEFT, hud::Y_BOTTOM, ::livesicon,
-		                         ::Ranges + coloroff);
+		hud::DrawTranslatedPatch(4, patchPosY, hud_scale, align, hud::Y_BOTTOM, align,
+		                         hud::Y_BOTTOM, ::livesicon, ::Ranges + coloroff);
 
 		// Number of players left ingame.
 		StrFormat(buffer, "x%d", pr.count);
@@ -558,7 +560,7 @@ static void drawLives()
 			lives_color = CR_DARKGREY;
 
 		int xoff = 4 + ::livesicon->width() + 2;
-		hud::DrawText(xoff, patchPosY, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT,
+		hud::DrawText(xoff, patchPosY, hud_scale, align, hud::Y_BOTTOM, align,
 		              hud::Y_BOTTOM, buffer.c_str(), lives_color);
 
 		patchPosY -= 18;
