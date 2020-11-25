@@ -642,13 +642,15 @@ bool G_RoundsShouldEndGame()
 	return false;
 }
 
+typedef std::vector<std::string> StringList;
+
 static void SurvivalHelp()
 {
 	Printf(PRINT_HIGH,
 	       "survival - Configures some settings for a basic game of Survival\n\n"
-	       "Usage:\n"
-	       "  ] survival lives <LIVES>\n"
-	       "  Configure Survival so a player only has <LIVES> lives\n\n");
+	       "Flags:\n"
+	       "  -lives <LIVES>\n"
+	       "    Set number of player lives to LIVES.  Defaults to 3.\n");
 }
 
 BEGIN_COMMAND(survival)
@@ -659,30 +661,77 @@ BEGIN_COMMAND(survival)
 		return;
 	}
 
-	if (stricmp(argv[1], "lives") == 0)
+	std::string buffer;
+	StringList params;
+
+	params.push_back("sv_gametype 0");
+	params.push_back("sv_skill 4");
+	params.push_back("sv_nomonsters 0");
+	params.push_back("sv_forcerespawn 1");
+	params.push_back("g_lives_jointimer 30");
+	params.push_back("g_rounds 0");
+
+	bool lives = false;
+	StringList args = VectorArgs(argc, argv);
+	for (;;)
 	{
-		std::string str;
-		StrFormat(str,
-		          "sv_gametype 0; sv_nomonsters 0; sv_skill 4; g_lives %s; "
-		          "g_lives_jointimer 30",
-		          argv[2]);
-		Printf(PRINT_HIGH, "Configuring Survival...\n%s\n", str.c_str());
-		AddCommandString(str.c_str());
-		return;
+		if (args.empty())
+		{
+			// Ran out of parameters to munch.
+			break;
+		}
+		else if (args.size() == 1)
+		{
+			// All params take a second one.
+			Printf(PRINT_HIGH, "Missing argument for \"%s\"\n", args.front().c_str());
+			SurvivalHelp();
+			return;
+		}
+
+		const std::string& cmd = args.at(0);
+		if (iequals(cmd, "-lives"))
+		{
+			// Set lives.
+			const std::string& value = args.at(1);
+			StrFormat(buffer, "g_lives %s", value.c_str());
+			params.push_back(buffer);
+			lives = true;
+		}
+		else
+		{
+			// Unknown flag.
+			Printf(PRINT_HIGH, "Unknown flag \"%s\"\n", args.front().c_str());
+			SurvivalHelp();
+			return;
+		}
+
+		// Shift param and argument off the front.
+		args.erase(args.begin(), args.begin() + 2);
 	}
 
-	SurvivalHelp();
+	// Defaults.
+	if (lives == false)
+	{
+		params.push_back("g_lives 3");
+	}
+
+	std::string config = JoinStrings(params, "; ");
+	Printf(PRINT_HIGH, "Configuring Survival...\n%s\n", config.c_str());
+	AddCommandString(config.c_str());
+	return;
 }
 END_COMMAND(survival)
 
 static void LMSHelp()
 {
-	Printf(PRINT_HIGH,
-	       "lms - Configures some settings for a basic game of Last Marine Standing\n\n"
-	       "Usage:\n"
-	       "  ] lms wins <ROUNDS>\n"
-	       "  Configure LMS so a player needs to win ROUNDS number of rounds to win the "
-	       "game\n\n");
+	Printf(
+	    PRINT_HIGH,
+	    "lms - Configures some settings for a basic game of Last Marine Standing\n\n"
+	    "Flags:\n"
+	    "  -lives <LIVES>\n"
+	    "    Set number of player lives per round to LIVES.  Defaults to 1.\n"
+	    "  -wins <WINS>\n"
+	    "    Set number of round wins needed to win the game to WINS.  Defaults to 5.\n");
 }
 
 BEGIN_COMMAND(lms)
@@ -693,31 +742,91 @@ BEGIN_COMMAND(lms)
 		return;
 	}
 
-	if (stricmp(argv[1], "wins") == 0)
+	std::string buffer;
+	StringList params;
+	params.push_back("sv_gametype 1");
+	params.push_back("sv_skill 5");
+	params.push_back("sv_nomonsters 1");
+	params.push_back("sv_forcerespawn 1");
+	params.push_back("g_lives_jointimer 0");
+	params.push_back("g_rounds 1");
+
+	bool lives = false, wins = false;
+	StringList args = VectorArgs(argc, argv);
+	for (;;)
 	{
-		std::string str;
-		StrFormat(str,
-		          "sv_gametype 1; sv_nomonsters 1; sv_forcerespawn 1; g_lives 1; "
-		          "g_rounds 1; g_winlimit %s; g_lives_jointimer 0",
-		          argv[2]);
-		Printf(PRINT_HIGH, "Configuring Last Marine Standing...\n%s\n", str.c_str());
-		AddCommandString(str.c_str());
-		return;
+		if (args.empty())
+		{
+			// Ran out of parameters to munch.
+			break;
+		}
+		else if (args.size() == 1)
+		{
+			// All params take a second one.
+			Printf(PRINT_HIGH, "Missing argument for \"%s\"\n", args.front().c_str());
+			LMSHelp();
+			return;
+		}
+
+		const std::string& cmd = args.at(0);
+		if (iequals(cmd, "-lives"))
+		{
+			// Set lives.
+			const std::string& value = args.at(1);
+			StrFormat(buffer, "g_lives %s", value.c_str());
+			params.push_back(buffer);
+			lives = true;
+		}
+		else if (iequals(cmd, "-wins"))
+		{
+			// Set lives.
+			const std::string& value = args.at(1);
+			StrFormat(buffer, "g_winlimit %s", value.c_str());
+			params.push_back(buffer);
+			wins = true;
+		}
+		else
+		{
+			// Unknown flag.
+			Printf(PRINT_HIGH, "Unknown flag \"%s\"\n", args.front().c_str());
+			LMSHelp();
+			return;
+		}
+
+		// Shift param and argument off the front.
+		args.erase(args.begin(), args.begin() + 2);
 	}
 
-	LMSHelp();
+	// Defaults.
+	if (lives == false)
+	{
+		params.push_back("g_lives 1");
+	}
+	if (wins == false)
+	{
+		params.push_back("g_winlimit 5");
+	}
+
+	std::string config = JoinStrings(params, "; ");
+	Printf(PRINT_HIGH, "Configuring Last Marine Standing...\n%s\n", config.c_str());
+	AddCommandString(config.c_str());
+	return;
 }
 END_COMMAND(lms)
 
 static void TLMSHelp()
 {
-	Printf(PRINT_HIGH,
-	       "tlms - Configures some settings for a basic game of Team Last Marine "
-	       "Standing\n\n"
-	       "Usage:\n"
-	       "  ] tlms wins <ROUNDS>\n"
-	       "  Configure TLMS so a player needs to win ROUNDS number of rounds to win the "
-	       "game\n\n");
+	Printf(
+	    PRINT_HIGH,
+	    "tlms - Configures some settings for a basic game of Team Last Marine "
+	    "Standing\n\n"
+	    "Flags:\n"
+	    "  -lives <LIVES>\n"
+	    "    Set number of player lives per round to LIVES.  Defaults to 1.\n"
+	    "  -teams <TEAMS>\n"
+	    "    Set number of teams in play to TEAMS.  Defaults to 2.\n"
+	    "  -wins <WINS>\n"
+	    "    Set number of round wins needed to win the game to WINS.  Defaults to 5.\n");
 }
 
 BEGIN_COMMAND(tlms)
@@ -728,18 +837,86 @@ BEGIN_COMMAND(tlms)
 		return;
 	}
 
-	if (stricmp(argv[1], "wins") == 0)
+	std::string buffer;
+	StringList params;
+	params.push_back("sv_gametype 2");
+	params.push_back("sv_skill 5");
+	params.push_back("sv_nomonsters 1");
+	params.push_back("sv_forcerespawn 1");
+	params.push_back("g_lives_jointimer 0");
+	params.push_back("g_rounds 1");
+
+	bool lives = false, teams = false, wins = false;
+	StringList args = VectorArgs(argc, argv);
+	for (;;)
 	{
-		std::string str;
-		StrFormat(str,
-		          "sv_gametype 2; sv_nomonsters 1; sv_forcerespawn 1; g_lives 1; "
-		          "g_rounds 1; g_winlimit %s; g_lives_jointimer 0",
-		          argv[2]);
-		Printf(PRINT_HIGH, "Configuring Team Last Marine Standing...\n%s\n", str.c_str());
-		AddCommandString(str.c_str());
-		return;
+		if (args.empty())
+		{
+			// Ran out of parameters to munch.
+			break;
+		}
+		else if (args.size() == 1)
+		{
+			// All params take a second one.
+			Printf(PRINT_HIGH, "Missing argument for \"%s\"\n", args.front().c_str());
+			TLMSHelp();
+			return;
+		}
+
+		const std::string& cmd = args.at(0);
+		if (iequals(cmd, "-lives"))
+		{
+			// Set lives.
+			const std::string& value = args.at(1);
+			StrFormat(buffer, "g_lives %s", value.c_str());
+			params.push_back(buffer);
+			lives = true;
+		}
+		else if (iequals(cmd, "-teams"))
+		{
+			// Set teams in play.
+			const std::string& value = args.at(1);
+			StrFormat(buffer, "sv_teamsinplay %s", value.c_str());
+			params.push_back(buffer);
+			teams = true;
+		}
+		else if (iequals(cmd, "-wins"))
+		{
+			// Set winlimit.
+			const std::string& value = args.at(1);
+			StrFormat(buffer, "g_winlimit %s", value.c_str());
+			params.push_back(buffer);
+			wins = true;
+		}
+		else
+		{
+			// Unknown flag.
+			Printf(PRINT_HIGH, "Unknown flag \"%s\"\n", args.front().c_str());
+			TLMSHelp();
+			return;
+		}
+
+		// Shift param and argument off the front.
+		args.erase(args.begin(), args.begin() + 2);
 	}
 
-	TLMSHelp();
+	// Defaults.
+	if (lives == false)
+	{
+		params.push_back("g_lives 1");
+	}
+	if (teams == false)
+	{
+		params.push_back("sv_teamsinplay 2");
+	}
+	if (wins == false)
+	{
+		params.push_back("g_winlimit 5");
+	}
+
+	std::string config = JoinStrings(params, "; ");
+	Printf(PRINT_HIGH, "Configuring Team Last Marine Standing...\n%s\n", config.c_str());
+	AddCommandString(config.c_str());
+	return;
 }
 END_COMMAND(tlms)
