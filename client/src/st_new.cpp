@@ -549,18 +549,18 @@ static void drawLives()
 		else
 			coloroff = static_cast<ptrdiff_t>(CR_DARKGREY) * 256;
 
-		hud::DrawTranslatedPatch(4, patchPosY, hud_scale, align, hud::Y_BOTTOM, align,
+		hud::DrawTranslatedPatch(2, patchPosY, hud_scale, align, hud::Y_BOTTOM, align,
 		                         hud::Y_BOTTOM, ::livesicon, ::Ranges + coloroff);
 
 		// Number of players left ingame.
-		StrFormat(buffer, "x%d", pr.count);
+		StrFormat(buffer, "%d", pr.count);
 
 		int lives_color = CR_GREY;
 		if (pr.count <= 0)
 			lives_color = CR_DARKGREY;
 
-		int xoff = 4 + ::livesicon->width() + 2;
-		hud::DrawText(xoff, patchPosY, hud_scale, align, hud::Y_BOTTOM, align,
+		int xoff = 2 + ::livesicon->width() + 4;
+		hud::DrawText(xoff, patchPosY + 3, hud_scale, align, hud::Y_BOTTOM, align,
 		              hud::Y_BOTTOM, buffer.c_str(), lives_color);
 
 		patchPosY -= 18;
