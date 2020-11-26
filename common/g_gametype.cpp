@@ -845,6 +845,7 @@ BEGIN_COMMAND(tlms)
 	params.push_back("sv_forcerespawn 1");
 	params.push_back("g_lives_jointimer 0");
 	params.push_back("g_rounds 1");
+	params.push_back("sv_friendlyfire 0");
 
 	bool lives = false, teams = false, wins = false;
 	StringList args = VectorArgs(argc, argv);
