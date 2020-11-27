@@ -86,61 +86,80 @@ TeamInfo* GetTeamInfo(team_t team)
 	return &s_Teams[team];
 }
 
-/**
- * @brief Determines the winning team, if there is one. [Toke - teams]
- */
-TeamCount P_TeamQuery(TeamResults* out, unsigned flags)
+static bool cmpScore(TeamInfo* a, TeamInfo* b)
 {
-	TeamCount tc;
-	int maxscore = 0;
+	return a->Points < b->Points;
+}
 
-	// Only teams in play are considered.
-	size_t teams = sv_teamsinplay;
+static bool cmpWins(TeamInfo* a, const TeamInfo* b)
+{
+	return a->RoundWins < b->RoundWins;
+}
 
-	for (size_t i = 0; i < teams; i++)
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+TeamsView TeamQuery::execute()
+{
+	TeamsView results;
+
+	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		tc.total += 1;
-		TeamInfo* team = GetTeamInfo((team_t)i);
+		results.push_back(&::s_Teams[i]);
+	}
 
-		if (out)
+	// Sort our list of players if needed.
+	switch (m_sort)
+	{
+	case SORT_NONE:
+		break;
+	case SORT_SCORE:
+		std::sort(results.rbegin(), results.rend(), cmpScore);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
-			if (flags & TQ_MAXPOINTS)
+			// Since it's sorted, we know the top scoring team is at the front.
+			int top = results.at(0)->Points;
+			for (TeamsView::iterator it = results.begin(); it != results.end();)
 			{
-				if (team->Points > maxscore)
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->Points != top
+				                                         : (*it)->Points == top;
+				if (cmp)
 				{
-					// Maximum score is unique.
-					maxscore = team->Points;
-					out->clear();
-					tc.result = 0;
+					it = results.erase(it);
 				}
-				else if (team->Points < maxscore)
+				else
 				{
-					// We don't care about teams < the maximum
-					continue;
-				}
-			}
-			else if (flags & TQ_MAXWINS)
-			{
-				if (team->RoundWins > maxscore)
-				{
-					// Maximum score is unique.
-					maxscore = team->RoundWins;
-					out->clear();
-					tc.result = 0;
-				}
-				else if (team->RoundWins < maxscore)
-				{
-					// We don't care about teams < the maximum
-					continue;
+					++it;
 				}
 			}
 		}
-
-		out->push_back(team);
-		tc.result += 1;
+		break;
+	case SORT_WINS:
+		std::sort(results.rbegin(), results.rend(), cmpWins);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top winning team is at the front.
+			int top = results.at(0)->RoundWins;
+			for (TeamsView::iterator it = results.begin(); it != results.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->RoundWins != top
+				                                         : (*it)->RoundWins == top;
+				if (cmp)
+				{
+					it = results.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
 	}
 
-	return tc;
+	return results;
 }
 
 std::string V_GetTeamColor(TeamInfo *team)

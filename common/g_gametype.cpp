@@ -398,10 +398,9 @@ void G_TimeCheckEndGame()
 	}
 	else if (G_UsesTeams())
 	{
-		TeamResults tr;
-		P_TeamQuery(&tr, TQ_MAXPOINTS);
+		TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
 
-		if (tr.size() != 1)
+		if (tv.size() != 1)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
@@ -409,8 +408,8 @@ void G_TimeCheckEndGame()
 		else
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
-			                   tr.front()->ColorStringUpper.c_str());
-			::levelstate.setWinner(WinInfo::WIN_TEAM, tr.front()->Team);
+			                   tv.front()->ColorStringUpper.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 		}
 	}
 
@@ -457,11 +456,10 @@ void G_TeamFragsCheckEndGame()
 	if (sv_fraglimit <= 0.0)
 		return;
 
-	TeamResults tr;
-	P_TeamQuery(&tr, TQ_MAXPOINTS);
-	if (!tr.empty())
+	TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
+	if (!tv.empty())
 	{
-		TeamInfo* team = tr.front();
+		TeamInfo* team = tv.front();
 		if (team->Points >= sv_fraglimit)
 		{
 			GiveTeamWins(team->Team, 1);
@@ -485,11 +483,10 @@ void G_TeamScoreCheckEndGame()
 	if (sv_scorelimit <= 0.0)
 		return;
 
-	TeamResults tr;
-	P_TeamQuery(&tr, TQ_MAXPOINTS);
-	if (!tr.empty())
+	TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
+	if (!tv.empty())
 	{
-		TeamInfo* team = tr.front();
+		TeamInfo* team = tv.front();
 		if (team->Points >= sv_scorelimit)
 		{
 			GiveTeamWins(team->Team, 1);
@@ -649,7 +646,7 @@ static void SurvivalHelp()
 	Printf(PRINT_HIGH,
 	       "survival - Configures some settings for a basic game of Survival\n\n"
 	       "Flags:\n"
-	       "  -lives <LIVES>\n"
+	       "  lives <LIVES>\n"
 	       "    Set number of player lives to LIVES.  Defaults to 3.\n");
 }
 
@@ -689,7 +686,7 @@ BEGIN_COMMAND(survival)
 		}
 
 		const std::string& cmd = args.at(0);
-		if (iequals(cmd, "-lives"))
+		if (iequals(cmd, "lives"))
 		{
 			// Set lives.
 			const std::string& value = args.at(1);
@@ -728,9 +725,9 @@ static void LMSHelp()
 	    PRINT_HIGH,
 	    "lms - Configures some settings for a basic game of Last Marine Standing\n\n"
 	    "Flags:\n"
-	    "  -lives <LIVES>\n"
+	    "  lives <LIVES>\n"
 	    "    Set number of player lives per round to LIVES.  Defaults to 1.\n"
-	    "  -wins <WINS>\n"
+	    "  wins <WINS>\n"
 	    "    Set number of round wins needed to win the game to WINS.  Defaults to 5.\n");
 }
 
@@ -769,7 +766,7 @@ BEGIN_COMMAND(lms)
 		}
 
 		const std::string& cmd = args.at(0);
-		if (iequals(cmd, "-lives"))
+		if (iequals(cmd, "lives"))
 		{
 			// Set lives.
 			const std::string& value = args.at(1);
@@ -777,7 +774,7 @@ BEGIN_COMMAND(lms)
 			params.push_back(buffer);
 			lives = true;
 		}
-		else if (iequals(cmd, "-wins"))
+		else if (iequals(cmd, "wins"))
 		{
 			// Set lives.
 			const std::string& value = args.at(1);
@@ -821,11 +818,11 @@ static void TLMSHelp()
 	    "tlms - Configures some settings for a basic game of Team Last Marine "
 	    "Standing\n\n"
 	    "Flags:\n"
-	    "  -lives <LIVES>\n"
+	    "  lives <LIVES>\n"
 	    "    Set number of player lives per round to LIVES.  Defaults to 1.\n"
-	    "  -teams <TEAMS>\n"
+	    "  teams <TEAMS>\n"
 	    "    Set number of teams in play to TEAMS.  Defaults to 2.\n"
-	    "  -wins <WINS>\n"
+	    "  wins <WINS>\n"
 	    "    Set number of round wins needed to win the game to WINS.  Defaults to 5.\n");
 }
 
@@ -865,7 +862,7 @@ BEGIN_COMMAND(tlms)
 		}
 
 		const std::string& cmd = args.at(0);
-		if (iequals(cmd, "-lives"))
+		if (iequals(cmd, "lives"))
 		{
 			// Set lives.
 			const std::string& value = args.at(1);
@@ -873,7 +870,7 @@ BEGIN_COMMAND(tlms)
 			params.push_back(buffer);
 			lives = true;
 		}
-		else if (iequals(cmd, "-teams"))
+		else if (iequals(cmd, "teams"))
 		{
 			// Set teams in play.
 			const std::string& value = args.at(1);
@@ -881,7 +878,7 @@ BEGIN_COMMAND(tlms)
 			params.push_back(buffer);
 			teams = true;
 		}
-		else if (iequals(cmd, "-wins"))
+		else if (iequals(cmd, "wins"))
 		{
 			// Set winlimit.
 			const std::string& value = args.at(1);

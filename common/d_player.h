@@ -460,16 +460,23 @@ class PlayerQuery
 		SORT_WINS,
 	};
 
+	enum SortFilters
+	{
+		SFILTER_NONE,
+		SFILTER_MAX,
+		SFILTER_NOT_MAX,
+	};
+
 	bool m_ready;
 	bool m_lives;
 	team_t m_team;
 	SortTypes m_sort;
-	bool m_filterOnlyTop;
+	SortFilters m_sortFilter;
 
   public:
 	PlayerQuery()
 	    : m_ready(false), m_lives(false), m_team(TEAM_NONE), m_sort(SORT_NONE),
-	      m_filterOnlyTop(false)
+	      m_sortFilter(SFILTER_NONE)
 	{
 	}
 
@@ -530,13 +537,26 @@ class PlayerQuery
 	}
 
 	/**
-	 * @brief Given a sort, filter so only the top item remains.
+	 * @brief Given a sort, filter so only the top item remains.  In the case
+	 *        of a tie, multiple items are returned.
 	 * 
 	 * @return A mutated PlayerQuery to chain off of.
 	 */
 	PlayerQuery& filterSortMax()
 	{
-		m_filterOnlyTop = true;
+		m_sortFilter = SFILTER_MAX;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only things other than the top item
+	 *        remains.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& filterSortNotMax()
+	{
+		m_sortFilter = SFILTER_NOT_MAX;
 		return *this;
 	}
 

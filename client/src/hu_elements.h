@@ -32,7 +32,7 @@ std::string SpyPlayerName(int& color);
 void IntermissionTimer(std::string& str);
 void Warmup(std::string& str, int& color);
 void Timer(std::string& str, int& color);
-std::string PersonalSpread(int& color);
+std::string PersonalSpread();
 std::string PersonalScore(int& color);
 std::string NetdemoElapsed(void);
 std::string NetdemoMaps(void);

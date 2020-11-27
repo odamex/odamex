@@ -193,34 +193,44 @@ PlayerResults PlayerQuery::execute()
 		break;
 	case SORT_FRAGS:
 		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
-		if (m_filterOnlyTop)
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
 			// Since it's sorted, we know the top fragger is at the front.
 			int top = results.players.at(0)->fragcount;
 			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end(); ++it)
+			     it != results.players.end();)
 			{
-				if ((*it)->fragcount != top)
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
+				                                         : (*it)->fragcount == top;
+				if (cmp)
 				{
-					results.players.erase(it, results.players.end());
-					break;
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
 				}
 			}
 		}
 		break;
 	case SORT_WINS:
 		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
-		if (m_filterOnlyTop)
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
 			// Since it's sorted, we know the top winner is at the front.
 			int top = results.players.at(0)->roundwins;
 			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end(); ++it)
+			     it != results.players.end();)
 			{
-				if ((*it)->roundwins != top)
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
+				                                         : (*it)->fragcount == top;
+				if (cmp)
 				{
-					results.players.erase(it, results.players.end());
-					break;
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
 				}
 			}
 		}

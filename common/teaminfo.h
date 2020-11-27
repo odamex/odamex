@@ -83,30 +83,86 @@ struct TeamInfo
 	flagdata FlagData;
 };
 
-struct TeamCount
+/**
+ * @brief A collection of pointers to teams, commonly called a "view".
+ */
+typedef std::vector<TeamInfo*> TeamsView;
+
+class TeamQuery
 {
-	int result;
-	int total;
-	TeamCount() : result(0), total(0)
+	enum SortTypes
+	{
+		SORT_NONE,
+		SORT_SCORE,
+		SORT_WINS,
+	};
+
+	enum SortFilters
+	{
+		SFILTER_NONE,
+		SFILTER_MAX,
+		SFILTER_NOT_MAX,
+	};
+
+	SortTypes m_sort;
+	SortFilters m_sortFilter;
+
+  public:
+	TeamQuery() : m_sort(SORT_NONE), m_sortFilter(SFILTER_NONE)
 	{
 	}
+
+	/**
+	 * @brief Return teams sorted by highest score.
+	 *
+	 * @return A mutated TeamQuery to chain off of.
+	 */
+	TeamQuery& sortScore()
+	{
+		m_sort = SORT_SCORE;
+		return *this;
+	}
+
+	/**
+	 * @brief Return teams sorted by highest wins.
+	 *
+	 * @return A mutated TeamQuery to chain off of.
+	 */
+	TeamQuery& sortWins()
+	{
+		m_sort = SORT_WINS;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only the top item remains.  In the case
+	 *        of a tie, multiple items are returned.
+	 *
+	 * @return A mutated TeamQuery to chain off of.
+	 */
+	TeamQuery& filterSortMax()
+	{
+		m_sortFilter = SFILTER_MAX;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only things other than the top item
+	 *        remains.
+	 *
+	 * @return A mutated TeamQuery to chain off of.
+	 */
+	TeamQuery& filterSortNotMax()
+	{
+		m_sortFilter = SFILTER_NOT_MAX;
+		return *this;
+	}
+
+	TeamsView execute();
 };
-
-typedef std::vector<TeamInfo*> TeamResults;
-
-/**
- * @brief Return teams with the top point count, whatever that may be.
- */
-#define TQ_MAXPOINTS (1 << 0)
-
-/**
- * @brief Return teams with the top win acount, whatever that may be.
- */
-#define TQ_MAXWINS (1 << 1)
 
 void InitTeamInfo();
 TeamInfo* GetTeamInfo(team_t team);
-TeamCount P_TeamQuery(TeamResults* out, unsigned flags);
 std::string V_GetTeamColor(TeamInfo* team);
 std::string V_GetTeamColor(team_t ateam);
 

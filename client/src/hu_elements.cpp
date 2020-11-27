@@ -56,6 +56,7 @@ EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR (g_lives)
+EXTERN_CVAR (g_rounds)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -342,138 +343,126 @@ void IntermissionTimer(std::string& str)
 		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
 }
 
-static int GetWinningTeamPoints(team_t& winningTeam, int& secondPlaceTeamPoints)
+/**
+ * @brief Return a "spread" of personal frags or team points that the current
+ *        player or team is ahead or behind by.
+ * 
+ * @return Colored string to render in the HUD.
+ */
+std::string PersonalSpread()
 {
-	int maxPoints = 0;
-	winningTeam = TEAM_BLUE;
-	secondPlaceTeamPoints = 0;
+	std::string str;
+	player_t& plyr = displayplayer();
 
-	for (int i = 0; i < NUMTEAMS; i++)
+	if (sv_gametype == GM_DM)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		if (teamInfo->Points > maxPoints)
-		{
-			secondPlaceTeamPoints = maxPoints;
+		// Seek the highest number of rounds or frags.
+		PlayerQuery pq = PlayerQuery().filterSortMax();
+		if (g_rounds)
+			pq.sortWins();
+		else
+			pq.sortFrags();
+		PlayerResults max_players = pq.execute();
 
-			maxPoints = teamInfo->Points;
-			winningTeam = (team_t)i;
-		}
-		else if (teamInfo->Points > secondPlaceTeamPoints)
+		if (max_players.count < 1)
 		{
-			secondPlaceTeamPoints = teamInfo->Points;
+			// How did we get here?
+			return TEXTCOLOR_GREY "=0";
 		}
+
+		// The interesting thing changes based on rounds.
+		int top_number = g_rounds ? max_players.players.at(0)->roundwins
+		                          : max_players.players.at(0)->fragcount;
+		int plyr_number = g_rounds ? plyr.roundwins : plyr.fragcount;
+
+		if (max_players.players.size() > 1 && top_number == plyr_number)
+		{
+			// Share the throne with someone else.
+			return TEXTCOLOR_GREY "=0";
+		}
+
+		if (max_players.players.at(0)->id == plyr.id)
+		{
+			// Do a second query without a filter.
+			PlayerQuery pq = PlayerQuery().filterSortNotMax();
+			if (g_rounds)
+				pq.sortWins();
+			else
+				pq.sortFrags();
+			PlayerResults other_players = pq.execute();
+
+			// The interesting thing changes based on rounds.
+			int next_number = g_rounds ? other_players.players.at(0)->roundwins
+			                           : other_players.players.at(0)->fragcount;
+
+			// Player is on top.
+			int diff = plyr_number - next_number;
+			StrFormat(str, TEXTCOLOR_GREEN "+%d", diff);
+			return str;
+		}
+
+		// Player is behind.
+		int diff = top_number - plyr_number;
+		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
+		return str;
 	}
-
-	return maxPoints;
-}
-
-// Return a "spread" of personal frags or team points that the
-// current player or team is ahead or behind by.
-std::string PersonalSpread(int& color) {
-	color = CR_BRICK;
-	player_t *plyr = &displayplayer();
-
-	if (sv_gametype == GM_DM) {
-		// Seek the highest number of frags.
-		byte ingame = 0;
-		size_t maxother = 0;
-		short maxfrags = -32768;
-		for (Players::iterator it = players.begin();it != players.end();++it) {
-			if (!validplayer(*it)) {
-				continue;
-			}
-
-			if (!(it->ingame()) || it->spectator) {
-				continue;
-			}
-
-			if (it->fragcount == maxfrags) {
-				maxother++;
-			}
-
-			if (it->fragcount > maxfrags) {
-				maxfrags = it->fragcount;
-				maxother = 0;
-			}
-
-			ingame += 1;
-		}
-
-		// A spread needs two players to make sense.
-		if (ingame <= 1) {
+	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
+		const TeamInfo& plyr_team = *GetTeamInfo(plyr.userinfo.team);
+		if (plyr_team.Team >= NUMTEAMS)
+		{
+			// Something has gone sideways.
 			return "";
 		}
 
-		// Return the correct spread.
-		if (maxfrags == plyr->fragcount && maxother > 0) {
-			// We have the maximum number of frags but we share the
-			// throne with someone else.  But at least we can take
-			// a little shortcut here.
-			color = CR_GREEN;
-			return "+0";
-		}
-
-		std::ostringstream buffer;
-		if (maxfrags == plyr->fragcount) {
-			// We have the maximum number of frags.  Calculate how
-			// far above the other players we are.
-			short nextfrags = -32768;
-			for (Players::iterator it = players.begin();it != players.end();++it) {
-				if (!validplayer(*it)) {
-					continue;
-				}
-
-				if (!(it->ingame()) || it->spectator) {
-					continue;
-				}
-
-				if (it->id == plyr->id) {
-					continue;
-				}
-
-				if (it->fragcount > nextfrags) {
-					nextfrags = it->fragcount;
-				}
-			}
-
-			color = CR_GREEN;
-			buffer << "+" << maxfrags - nextfrags;
-			return buffer.str();
-		}
-
-		// We are behind the leader.
-		buffer << (plyr->fragcount - maxfrags);
-		return buffer.str();
-	} 
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		std::ostringstream buffer;
-		team_t winningTeam;
-		int secondPlacePoints;
-		int winningPoints = GetWinningTeamPoints(winningTeam, secondPlacePoints);
-
-		int diff;
-		
-		if (plyr->userinfo.team == winningTeam)
-			diff = winningPoints - secondPlacePoints;
-		else			
-			diff = GetTeamInfo(plyr->userinfo.team)->Points - winningPoints;
-
-		if (diff > 0 && plyr->userinfo.team == winningTeam)
-		{
-			color = CR_GREEN;
-			buffer << "+" << winningPoints - secondPlacePoints;
-		}
+		// Seek the highest amount of wins or score.
+		TeamQuery tq = TeamQuery().filterSortMax();
+		if (g_rounds)
+			tq.sortWins();
 		else
-		{
-			if (diff < 0)
-				color = CR_RED;
-			else
-				color = CR_GREY;
+			tq.sortScore();
+		TeamsView max_teams = tq.execute();
 
-			buffer << diff;
+		if (max_teams.size() < 1)
+		{
+			// How did we get here?
+			return TEXTCOLOR_GREY "=0";
 		}
-		return buffer.str();
+
+		// The interesting thing changes based on rounds.
+		int top_number = g_rounds ? max_teams.at(0)->RoundWins : max_teams.at(0)->Points;
+		int plyr_number = g_rounds ? plyr_team.RoundWins : plyr_team.Points;
+
+		if (max_teams.size() > 1 && top_number == plyr_number)
+		{
+			// Share the throne with someone else.
+			return TEXTCOLOR_GREY "=0";
+		}
+
+		if (max_teams.at(0)->Team == plyr_team.Team)
+		{
+			// Do a second query without a filter.
+			tq = TeamQuery().filterSortNotMax();
+			if (g_rounds)
+				tq.sortWins();
+			else
+				tq.sortScore();
+			TeamsView other_teams = tq.execute();
+
+			// The interesting thing changes based on rounds.
+			int next_number =
+			    g_rounds ? other_teams.at(0)->RoundWins : other_teams.at(0)->Points;
+
+			// Player team is on top.
+			int diff = plyr_number - next_number;
+			StrFormat(str, TEXTCOLOR_GREEN "+%d", diff);
+			return str;
+		}
+
+		// Player team is behind.
+		int diff = top_number - plyr_number;
+		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
+		return str;
 	}
 
 	// We're not in an appropriate gamemode.
