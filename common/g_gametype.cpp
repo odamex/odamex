@@ -129,7 +129,7 @@ JoinResult G_CanJoinGameStart()
 		return JOIN_GAMEFULL;
 
 	// Too many people on either team.
-	if (G_UsesTeams() && sv_maxplayersperteam)
+	if (G_IsTeamGame() && sv_maxplayersperteam)
 	{
 		int teamplayers = sv_maxplayersperteam * sv_teamsinplay;
 		if (P_NumPlayersInGame() >= teamplayers)
@@ -182,11 +182,44 @@ bool G_CanTickGameplay()
 }
 
 /**
- * @brief Check if the gametype uses teams.
+ * @brief Check if the gametype is purely player versus environment, where
+ *        the players win and lose as a whole.
  */
-bool G_UsesTeams()
+bool G_IsCoopGame()
+{
+	return sv_gametype == GM_COOP;
+}
+
+/**
+ * @brief Check if the gametype typically has a single winner.
+ */
+bool G_IsFFAGame()
+{
+	return sv_gametype == GM_DM;
+}
+
+/**
+ * @brief Check if the gametype has teams and players can win as a team.
+ */
+bool G_IsTeamGame()
 {
 	return sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF;
+}
+
+/**
+ * @brief Check if the game consists of multiple rounds.
+ */
+bool G_IsRoundsGame()
+{
+	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && g_rounds == true;
+}
+
+/**
+ * @brief Check if the game uses lives.
+*/
+bool G_IsLivesGame()
+{
+	return g_lives > 0;
 }
 
 /**
@@ -279,7 +312,7 @@ void G_AssertValidPlayerCount()
 			valid = false;
 		}
 	}
-	else if (G_UsesTeams())
+	else if (G_IsTeamGame())
 	{
 		// End the game if there's only one team with players in it.
 		int hasplayers = TEAM_NONE;
@@ -396,7 +429,7 @@ void G_TimeCheckEndGame()
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 		}
 	}
-	else if (G_UsesTeams())
+	else if (G_IsTeamGame())
 	{
 		TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
 
@@ -543,7 +576,7 @@ void G_LivesCheckEndGame()
 
 		// Nobody won the game yet - keep going.
 	}
-	else if (G_UsesTeams())
+	else if (G_IsTeamGame())
 	{
 		// If someone has configured TeamDM improperly, just don't do anything.
 		int teamsinplay = sv_teamsinplay.asInt();
@@ -621,7 +654,7 @@ bool G_RoundsShouldEndGame()
 			return true;
 		}
 	}
-	else if (G_UsesTeams())
+	else if (G_IsTeamGame())
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 		{

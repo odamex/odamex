@@ -57,6 +57,7 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR (g_lives)
 EXTERN_CVAR (g_rounds)
+EXTERN_CVAR(g_winlimit)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -354,7 +355,7 @@ std::string PersonalSpread()
 	std::string str;
 	player_t& plyr = displayplayer();
 
-	if (sv_gametype == GM_DM)
+	if (G_IsFFAGame())
 	{
 		// Seek the highest number of rounds or frags.
 		PlayerQuery pq = PlayerQuery().filterSortMax();
@@ -363,6 +364,12 @@ std::string PersonalSpread()
 		else
 			pq.sortFrags();
 		PlayerResults max_players = pq.execute();
+
+		if (max_players.total <= 1)
+		{
+			// With only one player, this is the only reasonable thing to show.
+			return TEXTCOLOR_GREY "=0";
+		}
 
 		if (max_players.count < 1)
 		{
@@ -406,7 +413,7 @@ std::string PersonalSpread()
 		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
 		return str;
 	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	else if (G_IsTeamGame())
 	{
 		const TeamInfo& plyr_team = *GetTeamInfo(plyr.userinfo.team);
 		if (plyr_team.Team >= NUMTEAMS)
@@ -469,35 +476,80 @@ std::string PersonalSpread()
 	return "";
 }
 
-// Return a string that contains the current team score or personal
-// frags of the individual player.  Optionally returns the "limit"
-// as well.
-std::string PersonalScore(int& color) {
-	color = CR_GREY;
-	std::ostringstream buffer;
-	player_t *plyr = &displayplayer();
+/**
+ * @brief Return a string that contains the current team score or personal
+ *        frags of the individual player.  Optionally returns the "limit"
+ *        as well.
+ * 
+ * @return Colorized string to render to the HUD.
+ */
+std::string PersonalScore()
+{
+	std::string str;
+	const player_t& plyr = displayplayer();
 
-	if (sv_gametype == GM_DM) {
-		buffer << plyr->fragcount;
-		if (sv_fraglimit.asInt() > 0) {
-			buffer << "/" << sv_fraglimit.asInt();
-		}
-	} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());		
-		buffer << GetTeamInfo(plyr->userinfo.team)->Points;
-
-		if (sv_gametype == GM_TEAMDM) {
-			if (sv_fraglimit.asInt() > 0) {
-				buffer << "/" << sv_fraglimit.asInt();
+	if (G_IsTeamGame())
+	{
+		const TeamInfo& plyr_team = *GetTeamInfo(plyr.userinfo.team);
+		if (G_IsRoundsGame())
+		{
+			if (g_winlimit)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr_team.RoundWins,
+				          g_winlimit.asInt());
 			}
-		} else {
-			if (sv_scorelimit.asInt() > 0) {
-				buffer << "/" << sv_scorelimit.asInt();
+			else
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.roundwins);
+			}
+		}
+		else
+		{
+			if (G_UsesFraglimit() && sv_fraglimit > 0)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr_team.Points,
+				          sv_fraglimit.asInt());
+			}
+			else if (!G_UsesFraglimit() && sv_scorelimit > 0)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr_team.Points,
+				          sv_scorelimit.asInt());
+			}
+			else
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.fragcount);
+			}
+		}
+	}
+	else if (G_IsFFAGame())
+	{
+		if (G_IsRoundsGame())
+		{
+			if (g_winlimit)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr.roundwins,
+				          g_winlimit.asInt());
+			}
+			else
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.roundwins);
+			}
+		}
+		else
+		{
+			if (sv_fraglimit)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr.fragcount,
+				          sv_fraglimit.asInt());
+			}
+			else
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.fragcount);
 			}
 		}
 	}
 
-	return buffer.str();
+	return str;
 }
 
 // Return the amount of time elapsed in a netdemo.

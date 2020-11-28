@@ -711,11 +711,8 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	hud::DrawText(4, 32, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_UNTRANSLATED);
-	str = hud::PersonalScore(color);
-	hud::DrawText(4, 24, hud_scale,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
 
 	// Draw keys in coop
 	if (sv_gametype == GM_COOP) {

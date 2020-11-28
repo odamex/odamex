@@ -1833,7 +1833,7 @@ void SV_ClientFullUpdate(player_t &pl)
 		SVC_PlayerMembers(cl->reliablebuf, *it, SVC_MSG_ALL);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
-	if (G_UsesTeams())
+	if (G_IsTeamGame())
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
 			SVC_TeamMembers(cl->reliablebuf, static_cast<team_t>(i));
@@ -3832,7 +3832,7 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 void SV_JoinPlayer(player_t& player, bool silent)
 {
 	// Figure out which team the player should be assigned to.
-	if (G_UsesTeams())
+	if (G_IsTeamGame())
 	{
 		bool invalidteam = player.userinfo.team >= sv_teamsinplay;
 		bool toomanyplayers =
