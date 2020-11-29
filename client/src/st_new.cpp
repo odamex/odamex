@@ -59,6 +59,7 @@ static const char* flaghomepatches[NUMTEAMS] = {"FLAGIC2B", "FLAGIC2R", "FLAGIC2
 static const char* flagtakenpatches[NUMTEAMS] = {"FLAGIC3B", "FLAGIC3R", "FLAGIC3G"};
 static const char* flagreturnpatches[NUMTEAMS] = {"FLAGIC4B", "FLAGIC4R", "FLAGIC4G"};
 static const char* flagdroppatches[NUMTEAMS] = {"FLAGIC5B", "FLAGIC5R", "FLAGIC5G"};
+static const char* livespatches[NUMTEAMS] = {"ODALIVEB", "ODALIVER", "ODALIVEG"};
 
 static int widest_num, num_height;
 static const patch_t* medi[ARRAY_LENGTH(::medipatches)];
@@ -86,7 +87,7 @@ static const patch_t* FlagIconHome[NUMTEAMS];
 static const patch_t* FlagIconReturn[NUMTEAMS];
 static const patch_t* FlagIconTaken[NUMTEAMS];
 static const patch_t* FlagIconDropped[NUMTEAMS];
-static const patch_t* livesicon;
+static const patch_t* LivesIcon[NUMTEAMS];
 
 static int		NameUp = -1;
 
@@ -192,6 +193,7 @@ void ST_initNew()
 		CacheHUDPatch(&::FlagIconTaken[i], ::flagtakenpatches[i]);
 		CacheHUDPatch(&::FlagIconReturn[i], ::flagreturnpatches[i]);
 		CacheHUDPatch(&::FlagIconDropped[i], ::flagdroppatches[i]);
+		CacheHUDPatch(&::LivesIcon[i], ::livespatches[i]);
 	}
 
 	::widest_num = widest;
@@ -208,8 +210,6 @@ void ST_initNew()
 	CacheHUDPatch(&::line_centerfull, "ODABARCF");
 	CacheHUDPatch(&::line_rightempty, "ODABARRE");
 	CacheHUDPatch(&::line_rightfull, "ODABARRF");
-
-	CacheHUDPatch(&::livesicon, "ODALIVES");
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -460,67 +460,16 @@ void ST_voteDraw (int y) {
 
 namespace hud {
 
-// [AM] Draw CTF scoreboard
-static void drawCTF() {
-	if (sv_gametype != GM_CTF) {
-		return;
-	}
-
-	player_t *plyr = &consoleplayer();
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
-
-	int patchPosY = 61;
-
-	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
-
-	for (int i = 0; i < sv_teamsinplay; i++)
-	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		const patch_t* drawPatch = FlagIconHome[i];
-
-		switch (teamInfo->FlagData.state)
-		{
-		case flag_carried:
-			if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
-				drawPatch = FlagIconReturn[i];
-			else
-				drawPatch = FlagIconTaken[i];
-			break;
-		case flag_dropped:
-			drawPatch = FlagIconDropped[i];
-			break;
-		default:
-			break;
-		}
-
-		if (drawPatch != NULL)
-		{
-			hud::DrawPatch(4, patchPosY, hud_scale,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				drawPatch);
-		}
-
-		if (!plyr->spectator && plyr->userinfo.team == i)
-		{
-			hud::DrawPatch(4, patchPosY, hud_scale,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				flagiconteam);
-		}
-
-		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
-			screen, teamInfo->Points);
-
-		patchPosY -= 18;
-	}
-}
-
-// [AM] Draw lives tally
-static void drawLives()
+/**
+ * @brief Draw gametype-specific scoreboard, such as flags and lives.
+ */
+static void drawGametype()
 {
-	if (!g_lives)
+	const int SCREEN_BORDER = 4;
+	const int FLAG_ICON_HEIGHT = 18;
+	const int LIVES_HEIGHT = 12;
+
+	if (!G_IsLivesGame() && sv_gametype != GM_CTF)
 	{
 		return;
 	}
@@ -529,41 +478,73 @@ static void drawLives()
 	player_t* plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
+	PlayerResults pr = PlayerQuery().hasLives().execute();
 
-	int patchPosY = 61;
-	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
+	int patchPosY = 43;
 
-	const hud::x_align_t align = (sv_gametype == GM_CTF) ? hud::X_LEFT : hud::X_RIGHT;
+	if (sv_gametype == GM_CTF)
+	{
+		patchPosY += sv_teamsinplay.asInt() * FLAG_ICON_HEIGHT;
+	}
+	if (G_IsLivesGame())
+	{
+		patchPosY += sv_teamsinplay.asInt() * LIVES_HEIGHT;
+	}
 
-	// Draw one icon and lives set per team.
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		team_t team = team_t(i);
-		TeamInfo* teamInfo = GetTeamInfo(team);
-		PlayerResults pr = PlayerQuery().onTeam(team).hasLives().execute();
+		if (sv_gametype == GM_CTF)
+		{
+			patchPosY -= FLAG_ICON_HEIGHT;
 
-		// Team Lives icons.
-		ptrdiff_t coloroff;
-		if (pr.count > 0)
-			coloroff = static_cast<ptrdiff_t>(teamInfo->TransColor) * 256;
-		else
-			coloroff = static_cast<ptrdiff_t>(CR_DARKGREY) * 256;
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			const patch_t* drawPatch = ::FlagIconHome[i];
 
-		hud::DrawTranslatedPatch(2, patchPosY, hud_scale, align, hud::Y_BOTTOM, align,
-		                         hud::Y_BOTTOM, ::livesicon, ::Ranges + coloroff);
+			switch (teamInfo->FlagData.state)
+			{
+			case flag_carried:
+				if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
+					drawPatch = ::FlagIconReturn[i];
+				else
+					drawPatch = ::FlagIconTaken[i];
+				break;
+			case flag_dropped:
+				drawPatch = ::FlagIconDropped[i];
+				break;
+			default:
+				break;
+			}
 
-		// Number of players left ingame.
-		StrFormat(buffer, "%d", pr.count);
+			if (drawPatch != NULL)
+			{
+				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, drawPatch);
+			}
 
-		int lives_color = CR_GREY;
-		if (pr.count <= 0)
-			lives_color = CR_DARKGREY;
+			if (!plyr->spectator && plyr->userinfo.team == i)
+			{
+				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
+				               ::flagiconteam);
+			}
 
-		int xoff = 2 + ::livesicon->width() + 4;
-		hud::DrawText(xoff, patchPosY + 3, hud_scale, align, hud::Y_BOTTOM, align,
-		              hud::Y_BOTTOM, buffer.c_str(), lives_color);
+			ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+			                I_GetSurfaceHeight() - (patchPosY + 17) * yscale, ::screen,
+			                teamInfo->Points);
+		}
 
-		patchPosY -= 18;
+		if (G_IsLivesGame())
+		{
+			patchPosY -= LIVES_HEIGHT;
+			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
+
+			StrFormat(buffer, "%d", pr.teamCount[i]);
+			int color = (i % 2) ? CR_GOLD : CR_GREY;
+			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
+			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
+			              color);
+		}
 	}
 }
 
@@ -720,11 +701,8 @@ void OdamexHUD() {
 		}
 	}
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
-
-	// Draw lives
-	hud::drawLives();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 static std::string WinToColorString(const WinInfo& win)
@@ -902,11 +880,8 @@ void SpectatorHUD() {
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, 0);
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
-
-	// Draw lives
-	hud::drawLives();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 // [AM] Original ZDoom HUD
@@ -972,15 +947,10 @@ void ZDoomHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - 25 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
-	// Draw lives
-	hud::drawLives();
-
 	// Draw top-right info. (Keys/Frags/Score)
-    if (sv_gametype == GM_CTF)
-    {
-		hud::drawCTF();
-    }
-	else if (sv_gametype != GM_COOP)
+	hud::drawGametype();
+
+	if (sv_gametype != GM_COOP)
 	{
 		// Draw frags (in DM)
 		ST_DrawNumRight(I_GetSurfaceWidth() - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
@@ -1034,19 +1004,16 @@ void DoomHUD()
 	if (hud_scale)
 		st_y /= CleanYfac;
 
-	int color;
-	std::string str;
-
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
 		hud::DrawText(0, st_y + 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), color);
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
 	}
 
 	// Draw other player name, if spying
 	hud::DrawText(0, st_y + 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), color);
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
 
 	// Draw targeted player names.
 	hud::EATargets(0, st_y + 20, hud_scale,
@@ -1054,11 +1021,8 @@ void DoomHUD()
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, hud_targetcount);
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
-
-	// Draw lives
-	hud::drawLives();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 }
