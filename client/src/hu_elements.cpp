@@ -199,16 +199,9 @@ static const char *ordinal(int n)
 	}
 }
 
-//// OLD-STYLE "VARIABLES" ////
-//
-// These just populate variables with data based on conditions and don't give
-// you a ton of flexability at the call-site about how they should be drawn.
-//
-// Please don't add any more of these.  If you want to draw something, make
-// a fully-fledged "draw" function where you pass position, alignment, etc.
-// without a useless trampoline back to the parent scope.
-
-// Return a "help" string.
+/**
+ * @brief Return a "help" string.
+ */
 std::string HelpText()
 {
 	std::string str;
@@ -261,41 +254,49 @@ std::string HelpText()
 	return str;
 }
 
-// Return a string that contains the name of the player being spectated,
-// or a blank string if you are looking out of your own viewpoint.
-std::string SpyPlayerName(int& color) {
-	color = CR_GREY;
-	player_t *plyr = &displayplayer();
-
-	if (plyr == &consoleplayer()) {
+/**
+ * @brief Return a string that contains the name of the player being spectated,
+ *        or a blank string if you are looking out of your own viewpoint.
+ */
+std::string SpyPlayerName()
+{
+	const player_t& plyr = displayplayer();
+	if (plyr.id == consoleplayer().id)
+	{
 		return "";
 	}
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());
+	const char* color = TEXTCOLOR_GREY;
+	if (G_IsTeamGame())
+	{
+		color = GetTeamInfo(plyr.userinfo.team)->TextColor.c_str();
 	}
 
-	return plyr->userinfo.netname;
+	std::string str;
+	StrFormat(str, "%s%s", color, plyr.userinfo.netname.c_str());
+	return str;
 }
 
-// Return a string that contains the amount of time left in the map,
-// or a blank string if there is no timer needed.  Can also display
-// warmup information if it exists.
-void Timer(std::string& str, int& color)
+/**
+ * @brief Return a string that contains the amount of time left in the map,
+ *        or a blank string if there is no timer needed.  Can also display
+ *        warmup information if it exists.
+ *
+ * @return Time to render.
+ */
+std::string Timer()
 {
-	color = CR_GREY;
+	const char* color = TEXTCOLOR_NORMAL;
 
 	if (sv_timelimit <= 0.0f)
 	{
-		str = "";
-		return;
+		return "";
 	}
 
 	// Do NOT display if in a lobby
 	if (level.flags & LEVEL_LOBBYSPECIAL)
 	{
-		str = "";
-		return;
+		return "";
 	}
 
 	OTimespan tspan;
@@ -314,20 +315,28 @@ void Timer(std::string& str, int& color)
 	// If we're in the danger zone flip the color.
 	int warning = G_EndingTic() - (60 * TICRATE);
 	if (level.time > warning)
-		color = CR_BRICK;
+	{
+		color = TEXTCOLOR_BRICK;
+	}
 
+	std::string str;
 	if (tspan.hours)
-		StrFormat(str, "%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
+	{
+		StrFormat(str, "%s%02d:%02d:%02d", color, tspan.hours, tspan.minutes,
+		          tspan.seconds);
+	}
 	else
-		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
+	{
+		StrFormat(str, "%s%02d:%02d", color, tspan.minutes, tspan.seconds);
+	}
+	return str;
 }
 
-void IntermissionTimer(std::string& str)
+std::string IntermissionTimer()
 {
 	if (gamestate != GS_INTERMISSION)
 	{
-		str = "";
-		return;
+		return "";
 	}
 
 	int timeleft = level.inttimeleft * TICRATE;
@@ -338,10 +347,16 @@ void IntermissionTimer(std::string& str)
 	OTimespan tspan;
 	TicsToTime(tspan, level.inttimeleft);
 
+	std::string str;
 	if (tspan.hours)
+	{
 		StrFormat(str, "%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
+	}
 	else
+	{
 		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
+	}
+	return str;
 }
 
 /**

@@ -687,19 +687,13 @@ void OdamexHUD() {
 
 	if (hud_timer)
 	{
-		hud::Timer(str, color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
 
 	// Draw targeted player names.
 	hud::EATargets(0, 20, hud_scale,
@@ -886,19 +880,13 @@ void SpectatorHUD() {
 
 	// Draw warmup state or timer
 	if (hud_timer) {
-		hud::Timer(str, color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
 
 	// Draw help text if there's no other player name
 	if (str.empty()) {
@@ -1020,19 +1008,13 @@ void ZDoomHUD() {
 
 	// Draw warmup state or timer
 	if (hud_timer) {
-		hud::Timer(str, color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
 
 	// Draw targeted player names.
 	hud::EATargets(0, 20, hud_scale,
@@ -1058,19 +1040,13 @@ void DoomHUD()
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
-		hud::Timer(str, color);
-		hud::DrawText(0, st_y + 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, st_y + 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), color);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, st_y + 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, st_y + 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), color);
 
 	// Draw targeted player names.
 	hud::EATargets(0, st_y + 20, hud_scale,
