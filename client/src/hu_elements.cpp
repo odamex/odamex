@@ -495,29 +495,29 @@ std::string PersonalScore()
 		{
 			if (g_winlimit)
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr_team.RoundWins,
-				          g_winlimit.asInt());
+				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(),
+				          plyr_team.RoundWins, g_winlimit.asInt());
 			}
 			else
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.roundwins);
+				StrFormat(str, "%s%d", plyr_team.TextColor.c_str(), plyr.roundwins);
 			}
 		}
 		else
 		{
 			if (G_UsesFraglimit() && sv_fraglimit > 0)
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr_team.Points,
+				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(), plyr_team.Points,
 				          sv_fraglimit.asInt());
 			}
 			else if (!G_UsesFraglimit() && sv_scorelimit > 0)
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr_team.Points,
+				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(), plyr_team.Points,
 				          sv_scorelimit.asInt());
 			}
 			else
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.fragcount);
+				StrFormat(str, "%s%d", plyr_team.TextColor.c_str(), plyr.fragcount);
 			}
 		}
 	}
