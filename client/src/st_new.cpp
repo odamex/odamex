@@ -480,6 +480,23 @@ static void drawGametype()
 	int yscale = hud_scale ? CleanYfac : 1;
 	PlayerResults pr = PlayerQuery().hasLives().execute();
 
+	// Total lives pool.
+	int livesPool[NUMTEAMS];
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		livesPool[i] = 0;
+	}
+	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
+	     ++it)
+	{
+		team_t team = (*it)->userinfo.team;
+		if (team >= NUMTEAMS || team < 0)
+		{
+			continue;
+		}
+		livesPool[team] += (*it)->lives;
+	}
+
 	int patchPosY = 43;
 
 	if (sv_gametype == GM_CTF)
@@ -539,7 +556,7 @@ static void drawGametype()
 			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
 
-			StrFormat(buffer, "%d", pr.teamCount[i]);
+			StrFormat(buffer, "%d", livesPool[i]);
 			int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
