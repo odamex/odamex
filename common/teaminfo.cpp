@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <sstream>
 #include "teaminfo.h"
 #include "v_textcolors.h"
