@@ -469,7 +469,7 @@ static void drawGametype()
 	const int FLAG_ICON_HEIGHT = 18;
 	const int LIVES_HEIGHT = 12;
 
-	if (!G_IsLivesGame() && sv_gametype != GM_CTF)
+	if (!G_IsTeamGame())
 	{
 		return;
 	}
@@ -499,37 +499,46 @@ static void drawGametype()
 
 	int patchPosY = 43;
 
-	if (sv_gametype == GM_CTF)
+	bool shouldShowScores = G_IsTeamGame() && !(G_UsesFraglimit() && sv_fraglimit == 0.0);
+	bool shouldShowLives = G_IsLivesGame();
+
+	if (shouldShowScores)
 	{
 		patchPosY += sv_teamsinplay.asInt() * FLAG_ICON_HEIGHT;
 	}
-	if (G_IsLivesGame())
+	if (shouldShowLives)
 	{
 		patchPosY += sv_teamsinplay.asInt() * LIVES_HEIGHT;
 	}
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		if (sv_gametype == GM_CTF)
+		if (shouldShowScores)
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
 
 			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-			const patch_t* drawPatch = ::FlagIconHome[i];
+			const patch_t* drawPatch = ::FlagIconTaken[i];
 
-			switch (teamInfo->FlagData.state)
+			if (sv_gametype == GM_CTF)
 			{
-			case flag_carried:
-				if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
-					drawPatch = ::FlagIconReturn[i];
-				else
-					drawPatch = ::FlagIconTaken[i];
-				break;
-			case flag_dropped:
-				drawPatch = ::FlagIconDropped[i];
-				break;
-			default:
-				break;
+				switch (teamInfo->FlagData.state)
+				{
+				case flag_home:
+					drawPatch = ::FlagIconHome[i];
+					break;
+				case flag_carried:
+					if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
+						drawPatch = ::FlagIconReturn[i];
+					else
+						drawPatch = ::FlagIconTaken[i];
+					break;
+				case flag_dropped:
+					drawPatch = ::FlagIconDropped[i];
+					break;
+				default:
+					break;
+				}
 			}
 
 			if (drawPatch != NULL)
@@ -550,7 +559,7 @@ static void drawGametype()
 			                teamInfo->Points);
 		}
 
-		if (G_IsLivesGame())
+		if (shouldShowLives)
 		{
 			patchPosY -= LIVES_HEIGHT;
 			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
