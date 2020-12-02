@@ -88,7 +88,7 @@ int LevelState::getCountdown() const
 	if (period < 0)
 	{
 		// Time desync at the start of a round, force to maximum.
-		return g_preroundtime.asInt() * TICRATE;
+		return g_preroundtime.asInt();
 	}
 
 	return ceil(period / (float)TICRATE);
