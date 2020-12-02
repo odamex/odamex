@@ -856,6 +856,9 @@ void LevelStateHUD()
 			StrFormat(str, "%s wins the round", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
 			StrFormat(str, "%s team wins the round", WinToColorString(win).c_str());
+		else
+			StrFormat(str, "Next round in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
@@ -866,6 +869,9 @@ void LevelStateHUD()
 			StrFormat(str, "%s wins!", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
 			StrFormat(str, "%s team wins!", WinToColorString(win).c_str());
+		else
+			StrFormat(str, "Intermission in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
 		break;
 	}
 	}
