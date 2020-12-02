@@ -30,8 +30,10 @@
 
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_lives_jointimer)
+EXTERN_CVAR(g_sides)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(g_rounds)
@@ -112,6 +114,22 @@ int LevelState::getJoinTimeLeft() const
 WinInfo LevelState::getWinInfo() const
 {
 	return m_lastWininfo;
+}
+
+/**
+ * @brief Return which team is on defense this round.
+ */
+team_t LevelState::getDefendingTeam() const
+{
+	if (!g_sides || !G_IsTeamGame())
+	{
+		return TEAM_NONE;
+	}
+
+	// Blue always goes first, then red, then so on...
+	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
+	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	return static_cast<team_t>(round0 % teams);
 }
 
 /**
@@ -327,8 +345,7 @@ void LevelState::tic()
 
 			m_roundNumber += 1;
 			setState(LevelState::getStartOfRoundState());
-
-			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
+			printRoundStart();
 			return;
 		}
 		break;
@@ -396,7 +413,7 @@ void LevelState::tic()
 			setState(LevelState::getStartOfRoundState());
 
 			if (g_rounds)
-				SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
+				printRoundStart();
 			else
 				SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
 
@@ -518,6 +535,24 @@ void LevelState::setState(LevelState::States new_state)
 	if (m_setStateCB)
 	{
 		m_setStateCB(serialize());
+	}
+}
+
+/**
+ * @brief Print a message at the start of each round.
+ */
+void LevelState::printRoundStart() const
+{
+	team_t def = getDefendingTeam();
+	if (def != TEAM_NONE)
+	{
+		const TeamInfo& teaminfo = *GetTeamInfo(def);
+		SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started - %s is on defense.\n",
+		                   m_roundNumber, teaminfo.ColorString.c_str());
+	}
+	else
+	{
+		SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
 	}
 }
 

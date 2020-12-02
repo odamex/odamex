@@ -191,6 +191,12 @@ CVAR(g_rounds, "0",
      "game",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH);
 
+CVAR(g_sides, "0",
+     "Turns on offensive vs defensive sides for team-based game modes - "
+     "teams on offense don't have to defend any team objective, teams on defense win "
+     "if time expires, and if rounds are enabled the team on defense changes every round",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR(g_roundlimit, "0",
      "Number of total rounds the game can go on for before the game ends", CVARTYPE_INT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)

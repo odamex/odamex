@@ -25,6 +25,8 @@
 
 #include <string>
 
+#include "teaminfo.h"
+
 enum JoinResult
 {
 	JOIN_OK,
@@ -41,10 +43,12 @@ bool G_CanFireWeapon();
 JoinResult G_CanJoinGame();
 JoinResult G_CanJoinGameStart();
 bool G_CanLivesChange();
+bool G_CanPickupObjective(team_t team);
 bool G_CanReadyToggle();
 bool G_CanScoreChange();
 bool G_CanShowObituary();
 bool G_CanTickGameplay();
+bool G_IsDefendingTeam(team_t team);
 bool G_IsCoopGame();
 bool G_IsFFAGame();
 bool G_IsTeamGame();

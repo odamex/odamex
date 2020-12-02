@@ -29,6 +29,7 @@
 #include "msg_server.h"
 
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_winlimit)
@@ -148,6 +149,20 @@ bool G_CanLivesChange()
 }
 
 /**
+ * @brief Check to see if we're allowed to pick up an objective.
+ *
+ * @param team Team that the objective belongs to.
+ */
+bool G_CanPickupObjective(team_t team)
+{
+	if (g_sides && team != ::levelstate.getDefendingTeam())
+	{
+		return false;
+	}
+	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
  * @brief Check to see if we should allow players to toggle their ready state.
  */
 bool G_CanReadyToggle()
@@ -179,6 +194,17 @@ bool G_CanTickGameplay()
 {
 	return ::levelstate.getState() == LevelState::WARMUP ||
 	       ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if the passed team is on defense.
+ * 
+ * @param team Team to check.
+ * @return True if the team is on defense, or if sides aren't enabled.
+ */
+bool G_IsDefendingTeam(team_t team)
+{
+	return g_sides == false || ::levelstate.getDefendingTeam() == team;
 }
 
 /**
@@ -431,18 +457,29 @@ void G_TimeCheckEndGame()
 	}
 	else if (G_IsTeamGame())
 	{
-		TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
-
-		if (tv.size() != 1)
+		if (g_sides)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
-			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			// Defense always wins in the event of a timeout.
+			const TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
+			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
+			                   ti.ColorStringUpper.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);
 		}
 		else
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
-			                   tv.front()->ColorStringUpper.c_str());
-			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+			TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
+
+			if (tv.size() != 1)
+			{
+				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			}
+			else
+			{
+				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
+				                   tv.front()->ColorStringUpper.c_str());
+				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+			}
 		}
 	}
 

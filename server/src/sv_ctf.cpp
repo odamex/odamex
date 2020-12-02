@@ -42,6 +42,7 @@ EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)
+EXTERN_CVAR (g_sides)
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMTEAMS][NUMFLAGSTATES] =
@@ -246,6 +247,9 @@ ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 	if (!G_CanTickGameplay())
 		return IEV_NotEquipped;
 
+	if (!G_CanPickupObjective(f))
+		return IEV_NotEquipped;
+
 	if(player.userinfo.team == f)
 	{
 		if(GetTeamInfo(f)->FlagData.state == flag_home) // Do nothing.
@@ -428,6 +432,37 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 			break;
 		}
 	}
+}
+
+/**
+ * @brief Determine if this home flag type should be spawned.
+ */
+bool CTF_ShouldSpawnHomeFlag(mobjtype_t type)
+{
+	if (type != MT_BFLG && type != MT_RFLG && type != MT_GFLG)
+	{
+		// Spawn whatever this is.
+		return true;
+	}
+
+	// Alawys spawn defending team flags.
+
+	if (type == MT_BFLG && G_IsDefendingTeam(TEAM_BLUE))
+	{
+		return true;
+	}
+
+	if (type == MT_RFLG && G_IsDefendingTeam(TEAM_RED))
+	{
+		return true;
+	}
+
+	if (type == MT_GFLG && G_IsDefendingTeam(TEAM_GREEN))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 FArchive &operator<< (FArchive &arc, flagdata &flag)

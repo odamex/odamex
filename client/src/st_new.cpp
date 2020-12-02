@@ -520,7 +520,7 @@ static void drawGametype()
 			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 			const patch_t* drawPatch = ::FlagIconTaken[i];
 
-			if (sv_gametype == GM_CTF)
+			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
 			{
 				switch (teamInfo->FlagData.state)
 				{

@@ -80,6 +80,7 @@ class LevelState
 	int getRound() const;
 	int getJoinTimeLeft() const;
 	WinInfo getWinInfo() const;
+	team_t getDefendingTeam() const;
 	void setStateCB(LevelState::SetStateCB cb);
 	void setWinner(WinInfo::WinType type, int id);
 	void reset();
@@ -102,6 +103,7 @@ class LevelState
 
 	static LevelState::States getStartOfRoundState();
 	void setState(LevelState::States new_state);
+	void printRoundStart() const;
 };
 
 struct SerializedLevelState

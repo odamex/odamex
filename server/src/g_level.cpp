@@ -571,13 +571,20 @@ void G_DoResetLevel(bool full_reset)
 	// Set time to the initial tic.
 	level.time = 0;
 
-	// Assign new netids to every non-player actor to make sure we don't have
-	// any weird destruction of any items post-reset.
 	{
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;
 		while ((mo = iterator.Next()))
 		{
+			// In sides-based games, destroy objectives that aren't relevant.
+			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
+			{
+				mo->netid = 0;
+				mo->Destroy();
+			}
+
+			// Assign new netids to every non-player actor to make sure we don't have
+			// any weird destruction of any items post-reset.
 			if (mo->netid && mo->type != MT_PLAYER)
 			{
 				mo->netid = ServerNetID.ObtainNetID();
