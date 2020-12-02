@@ -81,8 +81,10 @@ void InitTeamInfo()
 
 TeamInfo* GetTeamInfo(team_t team)
 {
-	if (team >= NUMTEAMS)
+	if (team < 0 || team >= NUMTEAMS)
+	{
 		return &s_NoTeam;
+	}
 
 	return &s_Teams[team];
 }

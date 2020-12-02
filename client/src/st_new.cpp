@@ -736,22 +736,30 @@ static std::string WinToColorString(const WinInfo& win)
 	std::string buf;
 	if (win.type == WinInfo::WIN_PLAYER)
 	{
-		player_t pl = idplayer(win.id);
+		const player_t& pl = idplayer(win.id);
 		if (pl.userinfo.netname.empty())
+		{
 			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		}
 		else
+		{
 			StrFormat(buf, TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
 			          pl.userinfo.netname.c_str());
+		}
 		return buf;
 	}
 	else if (win.type == WinInfo::WIN_TEAM)
 	{
-		TeamInfo* tm = GetTeamInfo((team_t)win.id);
-		if (tm == NULL)
+		const TeamInfo& tm = *GetTeamInfo((team_t)win.id);
+		if (tm.Team == TEAM_NONE)
+		{
 			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		}
 		else
-			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm->TextColor.c_str(),
-			          tm->ColorString.c_str());
+		{
+			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm.TextColor.c_str(),
+			          tm.ColorString.c_str());
+		}
 		return buf;
 	}
 
