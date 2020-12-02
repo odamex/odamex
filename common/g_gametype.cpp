@@ -629,6 +629,36 @@ void G_LivesCheckEndGame()
 				aliveteams += 1;
 		}
 
+		// [AM] This end-of-game logic branch is necessary becuase otherwise
+		//      going for objectives in CTF would never be worth it.  However,
+		//      side-mode needs a special-case because otherwise in games
+		//      with scorelimit > 1 the offense can just score once and
+		//      turtle.
+		if (aliveteams <= 1 && sv_gametype == GM_CTF && g_sides == false)
+		{
+			const char* teams = aliveteams == 1 ? "one team" : "no teams";
+
+			TeamsView tv = TeamQuery().filterSortMax().sortScore().execute();
+			if (tv.size() == 1)
+			{
+				GiveTeamWins(tv.front()->Team, 1);
+				SV_BroadcastPrintf(
+				    PRINT_HIGH,
+				    "%s team wins for having the highest score with %s left!\n",
+				    tv.front()->ColorString.c_str(), teams);
+				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+				::levelstate.endRound();
+			}
+			else
+			{
+				SV_BroadcastPrintf(PRINT_HIGH,
+				                   "Score is tied with with %s left. Game is a draw!\n",
+				                   teams);
+				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+				::levelstate.endRound();
+			}
+		}
+
 		if (aliveteams == 0 || pr.count == 0)
 		{
 			SV_BroadcastPrintf(PRINT_HIGH, "All teams have run out of lives.\n");
