@@ -84,7 +84,14 @@ int LevelState::getCountdown() const
 	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
 		return 0;
 
-	return ceil((m_countdownDoneTime - ::level.time) / (float)TICRATE);
+	int period = m_countdownDoneTime - ::level.time;
+	if (period < 0)
+	{
+		// Time desync at the start of a round, force to maximum.
+		return g_preroundtime.asInt() * TICRATE;
+	}
+
+	return ceil(period / (float)TICRATE);
 }
 
 /**
