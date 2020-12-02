@@ -39,6 +39,7 @@ std::string V_GetTeamColorPlayer(UserInfo userinfo);
 
 EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (g_ctf_notouchreturn)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)
@@ -262,8 +263,14 @@ ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 			{
 				return SV_FlagGrab(player, f, firstgrab);	
 			}
+			else if (g_ctf_notouchreturn)
+			{
+				return IEV_NotEquipped;
+			}
 			else
+			{
 				SV_FlagReturn(player, f);
+			}
 		}
 	}
 	else // Grabbing enemy flag.

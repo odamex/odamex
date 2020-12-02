@@ -185,6 +185,10 @@ CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "",
 // Game mode options
 // -----------------
 
+CVAR(g_ctf_notouchreturn, "0",
+     "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+
 CVAR(g_rounds, "0",
      "Turns on rounds - if enabled, reaching the gametype's win condition only wins a "
      "single round, and a player or team must win a certain number of rounds to win the "
