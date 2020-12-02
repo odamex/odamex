@@ -72,6 +72,7 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR(g_sides)
 
 extern int mapchange;
 
@@ -808,6 +809,23 @@ void G_DoLoadLevel (int position)
 	P_DoDeferedScripts ();
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
+
+	// [AM] In sides-based games, destroy objectives that aren't relevant.
+	//      Must happen after saving state.
+	if (g_sides && sv_gametype == GM_CTF)
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+		while ((mo = iterator.Next()))
+		{
+			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
+			{
+				mo->netid = 0;
+				mo->Destroy();
+			}
+		}
+	}
+
 	// [AM] Handle warmup init.
 	::levelstate.reset();
 	//	C_FlushDisplay ();
