@@ -569,4 +569,57 @@ BEGIN_COMMAND(forcestart)
 }
 END_COMMAND(forcestart)
 
+static const char* StateToString(LevelState::States state)
+{
+	switch (state)
+	{
+	case LevelState::WARMUP:
+		return "WARMUP";
+	case LevelState::WARMUP_COUNTDOWN:
+		return "WARMUP_COUNTDOWN";
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
+		return "WARMUP_FORCED_COUNTDOWN";
+	case LevelState::PREROUND_COUNTDOWN:
+		return "PREROUND_COUNTDOWN";
+	case LevelState::INGAME:
+		return "INGAME";
+	case LevelState::ENDROUND_COUNTDOWN:
+		return "ENDROUND_COUNTDOWN";
+	case LevelState::ENDGAME_COUNTDOWN:
+		return "ENDGAME_COUNTDOWN";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+static const char* WinTypeToString(WinInfo::WinType type)
+{
+	switch (type)
+	{
+	case WinInfo::WinType::WIN_NOBODY:
+		return "WIN_NOBODY";
+	case WinInfo::WinType::WIN_DRAW:
+		return "WIN_DRAW";
+	case WinInfo::WinType::WIN_PLAYER:
+		return "WIN_PLAYER";
+	case WinInfo::WinType::WIN_TEAM:
+		return "WIN_TEAM";
+	default:
+		return "WIN_UNKNOWN";
+	}
+};
+
+BEGIN_COMMAND(levelstateinfo)
+{
+	SerializedLevelState sls = ::levelstate.serialize();
+	Printf("Current level time: %d\n", ::level.time);
+	Printf("State: %s\n", StateToString(sls.state));
+	Printf("Countdown done time: %d\n", sls.countdown_done_time);
+	Printf("Ingame start time: %d\n", sls.ingame_start_time);
+	Printf("Round number: %d\n", sls.round_number);
+	Printf("Last WinInfo type: %s\n", WinTypeToString(sls.last_wininfo_type));
+	Printf("Last WinInfo ID: %d\n", sls.last_wininfo_id);
+}
+END_COMMAND(levelstateinfo)
+
 VERSION_CONTROL(g_levelstate, "$Id$")
