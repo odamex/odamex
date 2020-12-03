@@ -52,8 +52,10 @@ const std::string& G_GametypeName()
 	static std::string name;
 	if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
-	else if (sv_gametype == GM_COOP)
+	else if (sv_gametype == GM_COOP && ::multiplayer)
 		name = "Cooperative";
+	else if (sv_gametype == GM_COOP)
+		name = "Single-player";
 	else if (sv_gametype == GM_DM && g_lives)
 		name = "Last Marine Standing";
 	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)

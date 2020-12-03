@@ -524,7 +524,7 @@ void HU_Drawer()
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
 
-	if (multiplayer && consoleplayer().camera && !(demoplayback))
+	if (consoleplayer().camera && !(demoplayback))
 	{
 		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES])
 			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator))
@@ -677,7 +677,16 @@ void drawHeader(player_t *player, int y)
 	              hud::X_CENTER, hud::Y_TOP,
 	              str.c_str(), CR_GOLD, true);
 
-	brokenlines_t *hostname = V_BreakLines(192, sv_hostname.cstring());
+	brokenlines_t* hostname = NULL;
+	if (::multiplayer)
+	{
+		hostname = V_BreakLines(192, sv_hostname.cstring());
+	}
+	else
+	{
+		hostname = V_BreakLines(192, "Odamex " DOTVERSIONSTR " - Offline");
+	}
+
 	for (size_t i = 0; i < 2 && hostname[i].width > 0; i++)
 	{
 		hud::DrawText(0, y + 8 * (i + 1), hud_scalescoreboard,
