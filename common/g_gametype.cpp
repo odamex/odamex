@@ -24,6 +24,7 @@
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "d_event.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
 #include "msg_server.h"
@@ -75,10 +76,24 @@ const std::string& G_GametypeName()
 
 /**
  * @brief Check if the round should be allowed to end.
+ * 
+ * @detail This is not an appropriate function to call on level exit.
  */
 bool G_CanEndGame()
 {
-	return ::levelstate.getState() == LevelState::INGAME;
+	// Lobbies never end, they're only exited.
+	if (::level.flags & LEVEL_LOBBYSPECIAL)
+		return false;
+
+	// Can't end the game while the level is being reset.
+	if (::gameaction == ga_fullresetlevel || ::gameaction == ga_resetlevel)
+		return false;
+
+	// Can't end the game if we're ingame.
+	if (::levelstate.getState() != LevelState::INGAME)
+		return false;
+
+	return true;
 }
 
 /**
@@ -420,7 +435,7 @@ void G_TimeCheckEndGame()
 	if (!::serverside || !G_CanEndGame())
 		return;
 
-	if (sv_timelimit <= 0.0 || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
+	if (sv_timelimit <= 0.0)
 		return;
 
 	// Check to see if we have any time left.
