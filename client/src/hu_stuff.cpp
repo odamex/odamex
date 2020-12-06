@@ -1486,7 +1486,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 }
 
 // [AM] Draw low-resolution team gametype scores.
-void drawLowTeamScores(player_t *player, int& y, byte extra_rows) {
+void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	int color;
 	std::string str;
 
@@ -1786,15 +1786,15 @@ void LowScoreboard(player_t *player)
 	hud::drawLowHeader(player, y + 4);
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		y += 15;
-		hud::drawLowTeamScores(player, y, extra_player_rows);
+		hud::drawLowTeamScores(player, y + 15, extra_player_rows);
 	}
 	else
 	{
 		hud::drawLowScores(player, y + 15, extra_player_rows);
 	}
 
-	hud::drawLowSpectators(player, y, extra_spec_rows);
+	hud::drawLowSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
+	                       extra_spec_rows);
 }
 
 }
