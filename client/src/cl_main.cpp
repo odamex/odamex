@@ -63,6 +63,7 @@
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
+#include "i_input.h"
 
 #include <bitset>
 #include <string>
@@ -689,6 +690,7 @@ void CL_StepTics(unsigned int count)
 //
 void CL_DisplayTics()
 {
+	I_GetEvents(true);
 	D_Display();
 }
 

@@ -104,6 +104,9 @@ EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
+extern angle_t			LocalViewAngle;
+extern int				LocalViewPitch;
+
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 BOOL 			respawnmonsters;
@@ -428,7 +431,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(joy_freelook && sv_freelook || consoleplayer().spectator)
+	if (joy_freelook && sv_freelook || consoleplayer().spectator)
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -437,9 +440,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
+	{
 		side += sidemove[speed];
+	}
 	if (Actions[ACTION_MOVELEFT])
+	{
 		side -= sidemove[speed];
+	}
 
 	// buttons
 	// john - only add attack when console up
@@ -493,33 +500,14 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
-	{
-		int val = (int)(float(mousey) * 16.0f * m_pitch);
-		if (invertmouse)
-			look -= val;
-		else
-			look += val;
-	}
-	else if (novert == 0)		// [Toke - Mouse] acts like novert.exe
+	if (!Actions[ACTION_MLOOK] && !cl_mouselook && !sv_freelook && 
+		!consoleplayer().spectator && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
 		forward += (int)(float(mousey) * m_forward);
 	}
 
-	if (sendcenterview)
-	{
-		sendcenterview = false;
-		look = CENTERVIEW;
-	}
-	else
-	{
-		look = clamp(look, -32767, 32767);
-	}
-
 	if (strafe || lookstrafe)
 		side += (int)(float(mousex) * m_side);
-	else
-		cmd->yaw -= (int)(float(mousex) * 8.0f * m_yaw);
 
 	mousex = mousey = 0;
 
@@ -534,7 +522,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	cmd->forwardmove += forward;
 	cmd->sidemove += side;
-	cmd->pitch = look;
 	cmd->upmove = fly;
 
 	// special buttons
@@ -547,21 +534,36 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (sendsave)
 	{
 		sendsave = false;
-		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot<<BTS_SAVESHIFT);
+		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
 	cmd->forwardmove <<= 8;
 	cmd->sidemove <<= 8;
 
-	// [RH] 180-degree turn overrides all other yaws
+	//// [RH] 180-degree turn overrides all other yaws
 	if (turntick)
 	{
 		turntick--;
 		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
 
+	if (sendcenterview)
+	{
+		sendcenterview = false;
+		cmd->pitch = CENTERVIEW;
+	}
+	else
+	{
+		cmd->pitch = look + (LocalViewPitch >> 16);
+	}
+	
+	cmd->yaw = LocalViewAngle >> 16;
+
 	if (!longtics)
-		cmd->yaw = (cmd->yaw +128) & 0xFF00;
+		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
+
+	LocalViewAngle = 0;
+	LocalViewPitch = 0;
 }
 
 
@@ -578,7 +580,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 float G_ZDoomDIMouseScaleX(float x)
 {
-	return (x * 4.0f * mouse_sensitivity);
+	return (x * 4.0 * mouse_sensitivity);
 }
 
 float G_ZDoomDIMouseScaleY(float y)
@@ -607,8 +609,39 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 
 	mousex = (int)fmousex;
 	mousey = (int)fmousey;
+
+	G_AddViewAngle(fmousex * 8.0f * m_yaw);
+	G_AddViewPitch(fmousey * 16.0f * m_pitch);
 }
 
+void G_AddViewAngle(int yaw)
+{
+	if (G_ShouldIgnoreMouseInput())
+		return;
+
+	if (!Actions[ACTION_STRAFE] && !lookstrafe)
+		LocalViewAngle -= yaw << 16;
+}
+
+void G_AddViewPitch(int pitch)
+{
+	if (G_ShouldIgnoreMouseInput())
+		return;
+
+	if (invertmouse)
+		pitch = -pitch;
+
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
+		LocalViewPitch += pitch << 16;
+}
+
+bool G_ShouldIgnoreMouseInput()
+{
+	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+		return true;
+
+	return false;
+}
 
 //
 // G_Responder

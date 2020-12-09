@@ -95,6 +95,8 @@ fixed_t 		viewy;
 fixed_t 		viewz;
 
 angle_t 		viewangle;
+angle_t			LocalViewAngle;
+int				LocalViewPitch;
 
 fixed_t 		viewcos;
 fixed_t 		viewsin;
@@ -861,9 +863,18 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	// [RH] freelook stuff
-	fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
-	R_ViewShear(pitch); 
+	player_t& consolePlayer = consoleplayer();
+
+	if (consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
+	{
+		R_ViewShear(clamp(camera->pitch - LocalViewPitch, -ANG(32), ANG(56)));
+	}
+	else
+	{
+		// Only interpolate if we are spectating
+		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
+		R_ViewShear(pitch);
+	}
 
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;

@@ -36,6 +36,9 @@ static std::vector<fixed_uint_pair> saved_ceilingheight;
 static std::vector<fixed_uint_pair> prev_floorheight;
 static std::vector<fixed_uint_pair> saved_floorheight;
 
+extern angle_t			LocalViewAngle;
+extern int				LocalViewPitch;
+
 //
 // R_InterpolationTicker
 //
@@ -73,6 +76,8 @@ void R_ResetInterpolation()
 	prev_floorheight.clear();
 	saved_ceilingheight.clear();
 	saved_floorheight.clear();
+	LocalViewAngle = 0;
+	LocalViewPitch = 0;
 }
 
 
@@ -156,20 +161,31 @@ void R_EndInterpolation()
 // of the camera. If not using uncapped framerate / interpolation,
 // render_lerp_amount will be FRACUNIT.
 //
+
 void R_InterpolateCamera(fixed_t amount)
 {
 	if (gamestate == GS_LEVEL && camera)
 	{
-		// interpolate amount/FRACUNIT percent between previous value and current value
-		viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
+		player_t& consolePlayer = consoleplayer();
+
+		if (consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
+		{
+			viewangle = camera->angle + LocalViewAngle;
+		}
+		else
+		{
+			// Only interpolate if we are spectating
+			// interpolate amount/FRACUNIT percent between previous value and current value
+			viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
+		}
+
 		viewx = camera->prevx + FixedMul(amount, camera->x - camera->prevx);
 		viewy = camera->prevy + FixedMul(amount, camera->y - camera->prevy);
+
 		if (camera->player)
-			viewz = camera->player->prevviewz +
-					FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
+			viewz = camera->player->prevviewz + FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
 		else
-			viewz = camera->prevz +
-					FixedMul(amount, camera->z - camera->prevz);
+			viewz = camera->prevz + FixedMul(amount, camera->z - camera->prevz);
 	}
 }
 
