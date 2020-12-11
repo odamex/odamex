@@ -440,13 +440,13 @@ CVAR(			idmypos, "0", "Shows current player position on map",
 CVAR(			hud_crosshairdim, "0", "Crosshair transparency",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_crosshairscale, "0", "Crosshair scaling",
+CVAR(			hud_crosshairscale, "1", "Crosshair scaling",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_FUNC_DECL(	hud_crosshaircolor, "ff 00 00", "Crosshair color",
+CVAR_FUNC_DECL(	hud_crosshaircolor, "ff ff ff", "Crosshair color",
                 CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(			hud_crosshairhealth, "0", "Color of crosshair represents health level",
+CVAR(			hud_crosshairhealth, "1", "Color of crosshair represents health level",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE(		hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
@@ -455,10 +455,10 @@ CVAR_RANGE(		hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n
 CVAR_RANGE(		hud_gamemsgtype, "2", "Game message type",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
 
-CVAR(			hud_revealsecrets, "0", "Print HUD message when secrets are discovered",
+CVAR(			hud_revealsecrets, "1", "Print HUD message when secrets are discovered",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_scale, "0", "HUD scaling",
+CVAR(			hud_scale, "1", "HUD scaling",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			hud_scalescoreboard, "0", "Scoreboard scaling",
@@ -476,7 +476,7 @@ CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 CVAR(			hud_timer, "1", "Show the HUD timer",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		hud_transparency, "0.5", "HUD transparency",
+CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
