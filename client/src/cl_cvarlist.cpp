@@ -668,7 +668,7 @@ CVAR(			vid_displayfps, "0", "Display frames per second",
 CVAR(			vid_ticker, "0", "Vanilla Doom frames per second indicator",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_FUNC_DECL(	vid_maxfps, "35", "Maximum framerate (0 indicates unlimited framerate)",
+CVAR_FUNC_DECL(	vid_maxfps, "60", "Maximum framerate (0 indicates unlimited framerate)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_vsync, "0", "Enable/Disable vertical refresh sync (vsync)",
