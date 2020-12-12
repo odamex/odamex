@@ -300,17 +300,19 @@ if(BUILD_CLIENT)
         message(FATAL_ERROR "Unknown platform for SDL 1.2")
       endif()
 
-      # SDL target.
-      add_library(SDL::SDL UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(SDL::SDL PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${SDL_INCLUDE_DIR}"
-        IMPORTED_LOCATION "${SDL_LIBRARY}")
+      # Synthesize SDL target if it doesn't exist.
+      if(NOT TARGET SDL::SDL)
+        add_library(SDL::SDL UNKNOWN IMPORTED GLOBAL)
+        set_target_properties(SDL::SDL PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${SDL_INCLUDE_DIR}"
+          IMPORTED_LOCATION "${SDL_LIBRARY}")
 
-      if(SDLMAIN_LIBRARY)
-        # SDLmain target.
-        add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
-        set_target_properties(SDL::SDLmain PROPERTIES
-          IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+        if(SDLMAIN_LIBRARY)
+          # SDLmain target.
+          add_library(SDL::SDLmain UNKNOWN IMPORTED GLOBAL)
+          set_target_properties(SDL::SDLmain PROPERTIES
+            IMPORTED_LOCATION "${SDLMAIN_LIBRARY}")
+        endif()
       endif()
     endif()
 
