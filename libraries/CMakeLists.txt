@@ -300,8 +300,11 @@ if(BUILD_CLIENT)
         message(FATAL_ERROR "Unknown platform for SDL 1.2")
       endif()
 
-      # Synthesize SDL target if it doesn't exist.
-      if(NOT TARGET SDL::SDL)
+      if(TARGET SDL::SDL)
+        # Ensure that the client can see the target.
+        set_target_properties(SDL::SDL PROPERTIES IMPORTED_GLOBAL True)
+      else()
+        # Synthesize SDL target if it doesn't exist.
         add_library(SDL::SDL UNKNOWN IMPORTED GLOBAL)
         set_target_properties(SDL::SDL PROPERTIES
           INTERFACE_INCLUDE_DIRECTORIES "${SDL_INCLUDE_DIR}"
