@@ -14,7 +14,8 @@ file(GLOB LAUNCH_HEADERS res/*.h src/*.h)
 file(GLOB LAUNCH_SOURCES src/*.cpp)
 
 if(WIN32)
-  set(LAUNCH_WIN32_RESOURCES res/odalaunch.rc)
+  configure_file(res/odalaunch.rc.in "${CMAKE_CURRENT_BINARY_DIR}/res/odalaunch.rc" @ONLY)
+  set(LAUNCH_WIN32_RESOURCES "${CMAKE_CURRENT_BINARY_DIR}/res/odalaunch.rc")
 endif()
 
 # Build Resource Directory

@@ -1,0 +1,35 @@
+// This file is encoded as Windows 1252 to ensure the copyright symbol appears
+
+#include <verrsrc.h>
+
+#define ODALAUNCH_NAME "Odamex Launcher"
+#define ODALAUNCH_DESC "Odamex Launcher"
+#define ODALAUNCH_INTERNAL "odalaunch"
+
+1 ICON "@CMAKE_SOURCE_DIR@/odalaunch/res/odalaunch.ico"
+
+1 VERSIONINFO
+PRODUCTVERSION @PROJECT_RC_VERSION@
+FILEVERSION @PROJECT_RC_VERSION@
+FILETYPE VFT_APP
+{
+  BLOCK "StringFileInfo"
+  {
+    // US English, Windows MultiLingual characterset
+    BLOCK "040904E4"
+    {
+      VALUE "FileVersion", "@PROJECT_VERSION@"
+      VALUE "FileDescription", ODALAUNCH_DESC
+      VALUE "InternalName", ODALAUNCH_INTERNAL
+      VALUE "CompanyName", "@PROJECT_COMPANY@"
+      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright © @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
+      VALUE "ProductName", ODALAUNCH_NAME
+      VALUE "ProductVersion", "@PROJECT_VERSION@"
+    }
+  }
+  BLOCK "VarFileInfo"
+  {
+    // U.S. English, Multilingual
+    VALUE "Translation", 0x0409, 1252
+  }
+}
