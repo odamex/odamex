@@ -5,3 +5,6 @@
 /.vs
 /out
 CMakeSettings.json
+
+# Used when generating the installer.
+/installer/windows/Build*/
