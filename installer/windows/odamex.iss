@@ -29,7 +29,7 @@ UninstallDisplayIcon={app}\odamex.exe
 VersionInfoCompany=Odamex
 EnableDirDoesntExistWarning=true
 DirExistsWarning=no
-MinVersion=0,5.0
+MinVersion=0,6.0
 AllowRootDirectory=True
 ChangesAssociations=Yes
 ArchitecturesInstallIn64BitMode=x64
@@ -64,51 +64,88 @@ Name: base; Description: Base data; Types: full compact custom; Flags: fixed
 Name: client; Description: Odamex Client; Types: full compact custom; Flags: DisableNoUninstallWarning
 Name: server; Description: Odamex Server; Types: full; Flags: DisableNoUninstallWarning
 Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact custom; Flags: DisableNoUninstallWarning
-Name: libs; Description: Libraries (SDL 2.0.12, SDL_Mixer 2.0.4); Types: full compact; Flags: DisableNoUninstallWarning
-
 
 [Files]
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; COMMON FILES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Source: Build64\libraries\SDL2-2.0.12\COPYING.txt; DestDir: {app}\licenses; DestName: COPYING.SDL2.txt;Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\COPYING.txt; DestDir: {app}\licenses; DestName: COPYING.SDL2_mixer.txt;Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.FLAC.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.modplug.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.mpg123.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.ogg-vorbis.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opus.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: Build64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opusfile.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: ..\..\3RD-PARTY-LICENSES; DestDir: {app}; DestName: 3RD-PARTY-LICENSES.txt;Flags: ignoreversion; Components: base
+Source: ..\..\CHANGELOG; DestDir: {app}; DestName: CHANGELOG.txt; Flags: ignoreversion; Components: base
+Source: ..\..\libraries\curl\COPYING; DestDir: {app}\licenses; DestName: COPYING.curl.txt; Flags: ignoreversion; Components: base
+Source: ..\..\libraries\libminiupnpc\LICENSE; DestDir: {app}\licenses; DestName: LICENSE.libminiupnpc.txt; Flags: ignoreversion; Components: base
+Source: ..\..\libraries\libpng\LICENSE; DestDir: {app}\licenses; DestName: LICENSE.libpng.txt; Flags: ignoreversion; Components: base
+Source: ..\..\libraries\portmidi\license.txt; DestDir: {app}\licenses; DestName: license.portmidi.txt; Flags: ignoreversion; Components: base
+Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
+Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
+
+Source: ..\..\config-samples\*; DestDir: {app}\config-samples; Flags: ignoreversion; Components: server
+Source: ..\..\wad\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
+
+; Source: "UninsHs.exe"; DestDir: "{app}"; Flags: restartreplace
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 64-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Source: ..\..\m64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: ..\..\m64\odamex.pdb; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: ..\..\m64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
-Source: ..\..\m64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\smpeg2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
-Source: ..\..\m64\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\odamex.pdb; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build64\client\RelWithDebInfo\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+
+Source: Build64\server\RelWithDebInfo\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
+Source: Build64\server\RelWithDebInfo\odasrv.pdb; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
+
+Source: Build64\odalaunch\RelWithDebInfo\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\odalaunch.pdb; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\wxbase314u_net_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\wxbase314u_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\wxbase314u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\wxmsw314u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\wxmsw314u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build64\odalaunch\RelWithDebInfo\wxmsw314u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 32-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Source: ..\..\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: ..\..\odamex.pdb; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
-Source: ..\..\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\smpeg2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
-Source: ..\..\libmikmod-2.dll; DestDir: {app}; Flags: ignoreversion; Components: libs; Check: not Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\odamex.pdb; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: Build32\client\RelWithDebInfo\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 
-Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
-Source: ..\..\config-samples\*; DestDir: {app}\config-samples; Flags: ignoreversion; Components: server
-Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
-Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
-Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
-Source: ..\..\LICENSE.FLAC.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
-Source: ..\..\LICENSE.mikmod.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
-Source: ..\..\LICENSE.modplug.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
-Source: ..\..\LICENSE.ogg-vorbis.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
-Source: ..\..\LICENSE.smpeg.txt; DestDir: {app}\licenses; Flags: ignoreversion; Components: libs;
-Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
-; Source: "UninsHs.exe"; DestDir: "{app}"; Flags: restartreplace
+Source: Build32\server\RelWithDebInfo\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
+Source: Build32\server\RelWithDebInfo\odasrv.pdb; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
+
+Source: Build32\odalaunch\RelWithDebInfo\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\odalaunch.pdb; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\wxbase314u_net_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\wxbase314u_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\wxbase314u_xml_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\wxmsw314u_core_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\wxmsw314u_html_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: Build32\odalaunch\RelWithDebInfo\wxmsw314u_xrc_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 
 [Dirs]
 ;Name: "{localappdata}\odamex"; Flags: uninsalwaysuninstall

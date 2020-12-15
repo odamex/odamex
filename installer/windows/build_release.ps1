@@ -7,7 +7,7 @@ function Build64 {
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --parallel
+    cmake.exe --build . --config RelWithDebInfo --parallel
 
     Set-Location -Path "${PSScriptRoot}"
 }
@@ -21,7 +21,7 @@ function Build32 {
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --parallel
+    cmake.exe --build . --config RelWithDebInfo --parallel
 
     Set-Location -Path "${PSScriptRoot}"
 }
@@ -30,6 +30,6 @@ function Installer {
     ISCC.exe odamex.iss
 }
 
-Build64
-Build32
-# Installer
+# Build64
+# Build32
+Installer
