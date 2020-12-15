@@ -45,6 +45,7 @@
         #include <shlwapi.h>
 		#include <winsock2.h>
 		#include <mmsystem.h>
+		#include <shlobj_core.h>
     #endif // !_XBOX
 #endif // WIN32
 
@@ -450,40 +451,71 @@ std::string I_GetHomeDir(std::string user = "")
 
 	return home;
 }
+#else
+
 #endif
 
-std::string I_GetUserFileName (const char *file)
+/**
+ * @brief Get the directory that Odamex should write to.
+ * 
+ * @return Write directory.
+ */
+std::string I_GetUserDir()
+{
+#if defined(_XBOX)
+	return "T:" PATHSEP;
+#elif defined(_WIN32)
+	// [AM] Use SHGetKnownFolderPath when we don't feel like supporting
+	//      Windows XP anymore.
+	TCHAR folderPath[MAX_PATH];
+	if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, folderPath)))
+	{
+		std::string path;
+		StrFormat(path, "%s\\My Games\\Odamex", folderPath);
+		return path;
+	}
+	return "";
+#else
+	std::string path = I_GetHomeDir();
+
+	if (path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
+
+	path += ".odamex";
+#endif
+}
+
+std::string I_GetUserFileName(const char* file)
 {
 #if defined(UNIX) && !defined(GEKKO)
 	// return absolute or explicitly relative pathnames unmodified,
 	// so launchers or CLI/console users have control over netdemo placement
-	if (file &&
-		(file[0] == PATHSEPCHAR || // /path/to/file
-		(file[0] == '.' && file[1] == PATHSEPCHAR) || // ./file
-		(file[0] == '.' && file[1] == '.' && file[2] == PATHSEPCHAR))) // ../file
-		return std::string (file);
+	if (file && (file[0] == PATHSEPCHAR ||                     // /path/to/file
+	             (file[0] == '.' && file[1] == PATHSEPCHAR) || // ./file
+	             (file[0] == '.' && file[1] == '.' && file[2] == PATHSEPCHAR))) // ../file
+		return std::string(file);
 
 	std::string path = I_GetHomeDir();
 
-	if(path[path.length() - 1] != PATHSEPCHAR)
+	if (path[path.length() - 1] != PATHSEPCHAR)
 		path += PATHSEP;
 
 	path += ".odamex";
 
 	struct stat info;
-	if (stat (path.c_str(), &info) == -1)
+	if (stat(path.c_str(), &info) == -1)
 	{
-		if (mkdir (path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
+		if (mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
 		{
-			I_FatalError ("Failed to create %s directory:\n%s",
-						  path.c_str(), strerror (errno));
+			I_FatalError("Failed to create %s directory:\n%s", path.c_str(),
+			             strerror(errno));
 		}
 	}
 	else
 	{
 		if (!S_ISDIR(info.st_mode))
 		{
-			I_FatalError ("%s must be a directory", path.c_str());
+			I_FatalError("%s must be a directory", path.c_str());
 		}
 	}
 
@@ -495,19 +527,44 @@ std::string I_GetUserFileName (const char *file)
 	path += PATHSEP;
 	path += file;
 #else
+	// Is absolute path?  If so, stop here.
 	if (!PathIsRelative(file))
-		return std::string (file);
+	{
+		return file;
+	}
 
+	// Has Odamex been installed?
 	std::string path = I_GetBinaryDir();
+	path += PATHSEP "odamex-install.txt";
 
-	if(path[path.length() - 1] != PATHSEPCHAR)
+	if (PathFileExists(path.c_str()))
+	{
+		// Does the user folder exist?
+		std::string userPath = I_GetUserDir();
+		int ok = SHCreateDirectoryEx(NULL, userPath.c_str(), NULL);
+		if (ok == ERROR_SUCCESS || ok == ERROR_ALREADY_EXISTS)
+		{
+			// User directory exists - point to it.
+			userPath += PATHSEP;
+			userPath += file;
+			return userPath;
+		}
+		else
+		{
+			I_FatalError("Failed to create %s directory.\n", userPath.c_str());
+		}
+	}
+
+	// Our path is relative to the binary directory.
+	if (path[path.length() - 1] != PATHSEPCHAR)
+	{
 		path += PATHSEP;
+	}
 
 	path += file;
 #endif
 
 	FixPathSeparator(path);
-
 	return path;
 }
 
