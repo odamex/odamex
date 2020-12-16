@@ -535,7 +535,7 @@ std::string I_GetUserFileName(const char* file)
 
 	// Has Odamex been installed?
 	std::string path = I_GetBinaryDir();
-	path += PATHSEP "odamex-install.txt";
+	path += PATHSEP "odamex-installed.txt";
 
 	if (PathFileExists(path.c_str()))
 	{
