@@ -22,7 +22,6 @@ else
 
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     brew update
-    brew uninstall openssl@1.0.2t
     brew upgrade
     brew install ninja sdl2 sdl2_mixer wxmac
 fi
