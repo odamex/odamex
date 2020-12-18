@@ -44,6 +44,7 @@ bool M_ExtractFileExtension(const std::string& filename, std::string &dest);
 void M_ExtractFileBase (std::string filename, std::string &dest);
 void M_ExtractFileName (std::string filename, std::string &dest);
 std::string M_ExtractFileName(const std::string &filename);
+bool M_IsPathSep(const char ch);
 std::string M_CleanPath(std::string path);
 
 #endif

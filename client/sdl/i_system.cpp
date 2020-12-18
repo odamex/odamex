@@ -90,6 +90,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+#include "m_fileio.h"
 
 #ifdef _XBOX
 	#include "i_xbox.h"
@@ -488,18 +489,30 @@ std::string I_GetUserDir()
 std::string I_GetUserFileName(const char* file)
 {
 #if defined(UNIX) && !defined(GEKKO)
-	// return absolute or explicitly relative pathnames unmodified,
-	// so launchers or CLI/console users have control over netdemo placement
-	if (file && (file[0] == PATHSEPCHAR ||                     // /path/to/file
-	             (file[0] == '.' && file[1] == PATHSEPCHAR) || // ./file
-	             (file[0] == '.' && file[1] == '.' && file[2] == PATHSEPCHAR))) // ../file
-		return std::string(file);
+	// Is absolute path?  If so, stop here.
+	size_t fileLen = strlen(file);
+	if (fileLen >= 1 && M_IsPathSep(file[0))
+	{
+		return file;
+	}
+
+	// Is this an explicitly relative path?  If so, stop here.
+	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
+	{
+		return file;
+	}
+	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
+	{
+		return file;
+	}
 
 	std::string path = I_GetHomeDir();
 
-	if (path[path.length() - 1] != PATHSEPCHAR)
+	// Our path is relative to the binary directory.
+	if (!M_IsPathSep(*(path.end() - 1)))
+	{
 		path += PATHSEP;
-
+	}
 	path += ".odamex";
 
 	struct stat info;
@@ -533,11 +546,22 @@ std::string I_GetUserFileName(const char* file)
 		return file;
 	}
 
+	// Is this an explicitly relative path?  If so, stop here.
+	size_t fileLen = strlen(file);
+	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
+	{
+		return file;
+	}
+	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
+	{
+		return file;
+	}
+
 	// Has Odamex been installed?
 	std::string path = I_GetBinaryDir();
-	path += PATHSEP "odamex-installed.txt";
+	std::string installed = path + PATHSEP "odamex-installed.txt";
 
-	if (PathFileExists(path.c_str()))
+	if (PathFileExists(installed.c_str()))
 	{
 		// Does the user folder exist?
 		std::string userPath = I_GetUserDir();
@@ -547,7 +571,8 @@ std::string I_GetUserFileName(const char* file)
 			// User directory exists - point to it.
 			userPath += PATHSEP;
 			userPath += file;
-			return userPath;
+
+			return M_CleanPath(userPath);
 		}
 		else
 		{
@@ -556,16 +581,14 @@ std::string I_GetUserFileName(const char* file)
 	}
 
 	// Our path is relative to the binary directory.
-	if (path[path.length() - 1] != PATHSEPCHAR)
+	if (!M_IsPathSep(*(path.end() - 1)))
 	{
 		path += PATHSEP;
 	}
-
 	path += file;
 #endif
 
-	FixPathSeparator(path);
-	return path;
+	return M_CleanPath(path);
 }
 
 void I_ExpandHomeDir (std::string &path)
@@ -1181,5 +1204,21 @@ bool I_IsHeadless()
 	return headless;
 }
 
+#if defined(_DEBUG)
+
+BEGIN_COMMAND(debug_userfilename)
+{
+	if (argc < 2)
+	{
+		Printf("debug_userfilename: needs a path to check.\n");
+		return;
+	}
+
+	std::string userfile = I_GetUserFileName(argv[1]);
+	Printf("Resolved to: %s\n", userfile.c_str());
+}
+END_COMMAND(debug_userfilename)
+
+#endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")

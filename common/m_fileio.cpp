@@ -264,17 +264,36 @@ std::string M_ExtractFileName(const std::string &filename) {
 	return result;
 }
 
-#ifdef _WIN32
-
-static bool IsSlash(char c)
+/**
+ * @brief Check to see if a character is a valid path separator.
+ *
+ * @param ch Character to check.
+ *
+ * @return True if the character is a path separator, otherwise false.
+ */
+bool M_IsPathSep(const char ch)
 {
-	return c == '\\' || c == '/';
+	if (ch == PATHSEPCHAR)
+	{
+		return true;
+	}
+
+#if defined(_WIN32) && !defined(_XBOX)
+	// This is not the canonical path separator, but it is valid.
+	if (ch == '/')
+	{
+		return true;
+	}
+#endif
+
+	return false;
 }
 
 // VolumeNameLen returns length of the leading volume name on Windows.
 // It returns 0 elsewhere.
 static size_t VolumeNameLen(std::string path)
 {
+#ifdef _WIN32
 	if (path.size() < 2)
 		return 0;
 
@@ -286,26 +305,26 @@ static size_t VolumeNameLen(std::string path)
 	// is it UNC?
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
 	size_t l = path.length();
-	if (l >= 5 && IsSlash(path.at(0)) && IsSlash(path.at(1)) && !IsSlash(path.at(2)) &&
-	    path.at(2) != '.')
+	if (l >= 5 && M_IsPathSep(path.at(0)) && M_IsPathSep(path.at(1)) &&
+	    !M_IsPathSep(path.at(2)) && path.at(2) != '.')
 	{
 		// first, leading `\\` and next shouldn't be `\`. its server name.
 		for (size_t n = 3; n < l - 1; n++)
 		{
 			// second, next '\' shouldn't be repeated.
-			if (IsSlash(path.at(n)))
+			if (M_IsPathSep(path.at(n)))
 			{
 				n++;
 
 				// third, following something characters. its share name.
-				if (!IsSlash(path.at(n)))
+				if (!M_IsPathSep(path.at(n)))
 				{
 					if (path.at(n) == '.')
 						break;
 
 					for (; n < l; n++)
 					{
-						if (IsSlash(path.at(n)))
+						if (M_IsPathSep(path.at(n)))
 							break;
 					}
 					return n;
@@ -315,37 +334,10 @@ static size_t VolumeNameLen(std::string path)
 		}
 	}
 	return 0;
-}
-
 #else
-
-// VolumeNameLen returns length of the leading volume name on Windows.
-// It returns 0 elsewhere.
-static int VolumeNameLen(std::string path)
-{
 	return 0;
-}
-
 #endif
-
-#ifdef _WIN32
-
-// IsPathSeparator reports whether c is a directory separator character.
-static bool IsPathSeparator(char c)
-{
-	// NOTE: Windows accept / as path separator.
-	return c == '\\' || c == '/';
 }
-
-#else
-
-// IsPathSeparator reports whether c is a directory separator character.
-static bool IsPathSeparator(char c)
-{
-	return PATHSEPCHAR == c;
-}
-
-#endif
 
 // FromSlash returns the result of replacing each slash ('/') character
 // in path with a separator character. Multiple slashes are replaced
@@ -381,7 +373,7 @@ std::string M_CleanPath(std::string path)
 		}
 		return originalPath + ".";
 	}
-	bool rooted = IsPathSeparator(path.at(0));
+	bool rooted = M_IsPathSep(path.at(0));
 
 	// Invariants:
 	//	reading from path; r is index of next byte to process.
@@ -401,18 +393,18 @@ std::string M_CleanPath(std::string path)
 
 	while (r < n)
 	{
-		if (IsPathSeparator(path.at(r)))
+		if (M_IsPathSep(path.at(r)))
 		{
 			// empty path element
 			r += 1;
 		}
-		else if (path.at(r) == '.' && (r + 1 == n || IsPathSeparator(path.at(r + 1))))
+		else if (path.at(r) == '.' && (r + 1 == n || M_IsPathSep(path.at(r + 1))))
 		{
 			// . element
 			r += 1;
 		}
 		else if (path.at(r) == '.' && path.at(r + 1) == '.' &&
-		         (r + 2 == n || IsPathSeparator(path.at(r + 2))))
+		         (r + 2 == n || M_IsPathSep(path.at(r + 2))))
 		{
 			// .. element: remove to last separator
 			r += 2;
@@ -420,7 +412,7 @@ std::string M_CleanPath(std::string path)
 			{
 				// can backtrack
 				size_t w = out.length() - 1;
-				while (w > dotdot && !IsPathSeparator(out.at(w)))
+				while (w > dotdot && !M_IsPathSep(out.at(w)))
 					w -= 1;
 
 				out.resize(w);
@@ -443,7 +435,7 @@ std::string M_CleanPath(std::string path)
 				out.push_back(PATHSEPCHAR);
 
 			// copy element
-			for (; r < n && !IsPathSeparator(path.at(r)); r++)
+			for (; r < n && !M_IsPathSep(path.at(r)); r++)
 				out.push_back(path.at(r));
 		}
 	}
@@ -455,4 +447,4 @@ std::string M_CleanPath(std::string path)
 	return FromSlash(vol + out);
 }
 
-VERSION_CONTROL (m_fileio_cpp, "$Id$")
+VERSION_CONTROL(m_fileio_cpp, "$Id$")
