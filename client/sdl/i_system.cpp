@@ -35,18 +35,18 @@
 
 #include "win32inc.h"
 #ifdef _WIN32
-    #include <io.h>
-    #include <direct.h>
-    #include <process.h>
+#include <direct.h>
+#include <io.h>
+#include <process.h>
 
-    #ifdef _XBOX
-        #include <xtl.h>
-    #else
-        #include <shlwapi.h>
-		#include <winsock2.h>
-		#include <mmsystem.h>
-		#include <shlobj_core.h>
-    #endif // !_XBOX
+#ifdef _XBOX
+#include <xtl.h>
+#else
+#include <shlwapi.h>
+#include <winsock2.h>
+#include <mmsystem.h>
+#include <shlobj.h>
+#endif // !_XBOX
 #endif // WIN32
 
 #ifdef UNIX
@@ -491,7 +491,7 @@ std::string I_GetUserFileName(const char* file)
 #if defined(UNIX) && !defined(GEKKO)
 	// Is absolute path?  If so, stop here.
 	size_t fileLen = strlen(file);
-	if (fileLen >= 1 && M_IsPathSep(file[0))
+	if (fileLen >= 1 && M_IsPathSep(file[0])
 	{
 		return file;
 	}
