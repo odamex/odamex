@@ -961,7 +961,7 @@ float MSG_ReadFloat(void)
 //
 static void InitNetMessageFormats()
 {
-#define SVC_INFO(n) ::svc_info[n] = {n, #n, "x"}
+#define SVC_INFO(n) ::svc_info[ n ] = { n, #n , "x" }
 	SVC_INFO(svc_abort);
 	SVC_INFO(svc_full);
 	SVC_INFO(svc_disconnect);
@@ -1054,7 +1054,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_max);
 #undef SVC_INFO
 
-#define CLC_INFO(n) ::clc_info[n] = {n, #n, "x"}
+#define CLC_INFO(n) ::clc_info[ n ] = { n, #n , "x" }
 	CLC_INFO(clc_abort);
 	CLC_INFO(clc_reserved1);
 	CLC_INFO(clc_disconnect);
