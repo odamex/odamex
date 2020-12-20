@@ -20,7 +20,8 @@ add_definitions(-DSERVER_APP)
 file(GLOB SERVER_SOURCES src/*.cpp src/*.h)
 if(WIN32)
   file(GLOB SERVER_WIN32_SOURCES win32/*.h)
-  list(APPEND SERVER_WIN32_SOURCES win32/server.rc)
+  configure_file(win32/server.rc.in "${CMAKE_CURRENT_BINARY_DIR}/server.rc" @ONLY)
+  list(APPEND SERVER_WIN32_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/server.rc")
 endif()
 
 # Tag source files with correct directories

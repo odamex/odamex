@@ -119,8 +119,7 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s - %s\ncommit %s (%s)\n", DOTVERSIONSTR,
-		       COPYRIGHTSTR, GitHash(), GitBranch());
+		Printf(PRINT_HIGH, "Odamex v%s - %s\n", GitNiceVersion(), COPYRIGHTSTR);
 	}
 	else
 	{

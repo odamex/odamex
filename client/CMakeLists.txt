@@ -36,7 +36,8 @@ set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
 file(GLOB CLIENT_SDL_SOURCES sdl/*.cpp sdl/*.h)
 if(WIN32)
-  list(APPEND CLIENT_SDL_SOURCES sdl/client.rc)
+  configure_file(sdl/client.rc.in "${CMAKE_CURRENT_BINARY_DIR}/client.rc" @ONLY)
+  list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
 
 # Tag source files with correct directories
@@ -189,6 +190,12 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES})
   odamex_target_settings(odamex)
+
+  if(MSVC)
+    # We supply our own manifest, don't use the default one.
+    set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
+  endif()
+
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex odamex-common)
   if(TARGET SDL::SDL)
