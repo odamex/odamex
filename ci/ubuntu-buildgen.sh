@@ -7,25 +7,17 @@ IFS=$'\n\t'
 
 set -x
 
-if [[ $(uname -s) == "Linux" ]]; then
-    # Ubuntu
-    sudo apt update
-    if [[ -z ${USE_SDL12:-} ]]; then
-        sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev \
-            libcurl4-openssl-dev libwxgtk3.0-gtk3-dev deutex
-    else
-        sudo apt install ninja-build libsdl1.2-dev libsdl-mixer1.2-dev \
-            libcurl4-openssl-dev libwxgtk3.0-gtk3-dev deutex
-    fi
+# Install packages
+sudo apt update
+if [[ -z ${USE_SDL12:-} ]]; then
+    sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev \
+        libcurl4-openssl-dev libwxgtk3.0-gtk3-dev deutex
 else
-    # macOS
-
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-    brew update
-    brew upgrade
-    brew install ninja sdl2 sdl2_mixer wxmac
+    sudo apt install ninja-build libsdl1.2-dev libsdl-mixer1.2-dev \
+        libcurl4-openssl-dev libwxgtk3.0-gtk3-dev deutex
 fi
 
+# Generate build
 mkdir -p build && cd build
 if [[ -z ${USE_SDL12:-} ]]; then
     cmake .. -GNinja \

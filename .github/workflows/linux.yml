@@ -23,7 +23,7 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci/posix-build.sh
+      run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
     - name: Prepare artifact
@@ -42,7 +42,7 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Run build
-      run: bash ci/posix-centos-build.sh
+      run: bash ci/centos-buildgen.sh
   build-sdl12:
     name: Build (SDL 1.2)
     needs: pre_job
@@ -54,6 +54,6 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci/posix-build.sh
+      run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
