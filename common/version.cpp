@@ -79,6 +79,21 @@ const char* GitBranch()
 }
 
 /**
+ * @brief Return the number of commits since the first commit.
+ * 
+ * @detail Two branches that are the same distance from the first commit
+ *         can have the same number.
+ */
+const char* GitRevCount()
+{
+#ifdef GIT_REV_COUNT
+	return GIT_REV_COUNT;
+#else
+	return "unknown";
+#endif
+}
+
+/**
  * @brief Return a truncated unambiguous hash.
  */
 const char* GitShortHash()
@@ -104,11 +119,13 @@ const char* GitNiceVersion()
 	{
 		if (!strcmp(GitBranch(), "master"))
 		{
-			StrFormat(version, "%s (%s)", DOTVERSIONSTR, GitShortHash());
+			StrFormat(version, "%s (g%s-%s)", DOTVERSIONSTR, GitShortHash(),
+			          GitRevCount());
 		}
 		else
 		{
-			StrFormat(version, "%s (%s, %s)", DOTVERSIONSTR, GitBranch(), GitShortHash());
+			StrFormat(version, "%s (%s, g%s-%s)", DOTVERSIONSTR, GitBranch(),
+			          GitShortHash(), GitRevCount());
 		}
 	}
 	return version.c_str();
