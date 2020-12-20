@@ -33,11 +33,17 @@ add_definitions(-DCLIENT_APP)
 
 # Client
 set(CLIENT_DIR sdl src)
-file(GLOB CLIENT_HEADERS sdl/*.h src/*.h)
-file(GLOB CLIENT_SOURCES sdl/*.cpp src/*.cpp)
+file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
+file(GLOB CLIENT_SDL_SOURCES sdl/*.cpp sdl/*.h)
 if(WIN32)
-  set(CLIENT_WIN32_RESOURCES sdl/client.rc)
+  list(APPEND CLIENT_SDL_SOURCES sdl/client.rc)
 endif()
+
+# Tag source files with correct directories
+get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
+source_group("Client" FILES ${CLIENT_SOURCES})
+source_group("Common" FILES ${COMMON_SOURCES})
+source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 
 # Platform definitions
 define_platform()
@@ -181,7 +187,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
 
   add_executable(odamex MACOSX_BUNDLE WIN32
-    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES})
   odamex_target_settings(odamex)
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex odamex-common)

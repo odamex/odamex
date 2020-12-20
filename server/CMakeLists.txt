@@ -17,14 +17,17 @@ endif()
 add_definitions(-DSERVER_APP)
 
 # Server
-set(SERVER_DIR src)
-file(GLOB SERVER_HEADERS ${SERVER_DIR}/*.h)
-file(GLOB SERVER_SOURCES ${SERVER_DIR}/*.cpp)
+file(GLOB SERVER_SOURCES src/*.cpp src/*.h)
 if(WIN32)
-  set(SERVER_WIN32_DIR win32)
-  file(GLOB SERVER_WIN32_HEADERS ${SERVER_WIN32_DIR}/*.h)
-  set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
+  file(GLOB SERVER_WIN32_SOURCES win32/*.h)
+  list(APPEND SERVER_WIN32_SOURCES win32/server.rc)
 endif()
+
+# Tag source files with correct directories
+get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
+source_group("Common" FILES ${COMMON_SOURCES})
+source_group("Server" FILES ${SERVER_SOURCES})
+source_group("Win32" FILES ${SERVER_WIN32_SOURCES})
 
 # Platform definitions
 define_platform()
@@ -37,7 +40,6 @@ endif()
 if(WIN32 AND NOT MSVC)
   add_definitions(-DWINVER=0x0500)
 endif()
-include_directories(${SERVER_DIR} ${SERVER_WIN32_DIR})
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
@@ -45,9 +47,12 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 add_executable(odasrv
-  ${SERVER_SOURCES} ${SERVER_HEADERS}
-  ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+  ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
+target_include_directories(odasrv PRIVATE src)
+if(WIN32)
+  target_include_directories(odasrv PRIVATE win32)
+endif()
 target_link_libraries(odasrv jsoncpp odamex-common)
 
 if(USE_MINIUPNP)

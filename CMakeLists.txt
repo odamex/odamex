@@ -39,6 +39,9 @@ set(PROJECT_COMPANY "The Odamex Team")
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Ensure that we can use folders in projects.
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
