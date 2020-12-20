@@ -483,63 +483,35 @@ std::string I_GetUserDir()
 		path += PATHSEP;
 
 	path += ".odamex";
+	return path;
 #endif
 }
 
+/**
+ * @brief Resolve a file name into a user directory.
+ * 
+ * @detail Aboslute and relative paths that begin with "." and ".." should
+ *         be resolved relative to the Odamex binary.  Otherwise, the file
+ *         is resolved relative to a platform and user specific directory
+ *         in their home directory.
+ *
+ *         The resolution process will create a user home directory if it
+ *         doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ * 
+ * @param file Filename to resolve.
+ * @return An absolute path pointing to the resolved file.
+*/
 std::string I_GetUserFileName(const char* file)
 {
-#if defined(UNIX) && !defined(GEKKO)
-	// Is absolute path?  If so, stop here.
-	size_t fileLen = strlen(file);
-	if (fileLen >= 1 && M_IsPathSep(file[0])
-	{
-		return file;
-	}
-
-	// Is this an explicitly relative path?  If so, stop here.
-	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
-	{
-		return file;
-	}
-	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
-	{
-		return file;
-	}
-
-	std::string path = I_GetHomeDir();
-
-	// Our path is relative to the binary directory.
-	if (!M_IsPathSep(*(path.end() - 1)))
-	{
-		path += PATHSEP;
-	}
-	path += ".odamex";
-
-	struct stat info;
-	if (stat(path.c_str(), &info) == -1)
-	{
-		if (mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
-		{
-			I_FatalError("Failed to create %s directory:\n%s", path.c_str(),
-			             strerror(errno));
-		}
-	}
-	else
-	{
-		if (!S_ISDIR(info.st_mode))
-		{
-			I_FatalError("%s must be a directory", path.c_str());
-		}
-	}
-
-	path += PATHSEP;
-	path += file;
-#elif defined(_XBOX)
+#if defined(_XBOX)
 	std::string path = "T:";
 
 	path += PATHSEP;
 	path += file;
-#else
+
+	return M_CleanPath(path);
+#elif defined(_WIN32)
 	// Is absolute path?  If so, stop here.
 	if (!PathIsRelative(file))
 	{
@@ -586,9 +558,56 @@ std::string I_GetUserFileName(const char* file)
 		path += PATHSEP;
 	}
 	path += file;
-#endif
 
 	return M_CleanPath(path);
+#else
+	// Is absolute path?  If so, stop here.
+	size_t fileLen = strlen(file);
+	if (fileLen >= 1 && M_IsPathSep(file[0]))
+	{
+		return file;
+	}
+
+	// Is this an explicitly relative path?  If so, stop here.
+	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
+	{
+		return file;
+	}
+	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
+	{
+		return file;
+	}
+	std::string path = I_GetHomeDir();
+
+	// Our path is relative to the binary directory.
+	if (!M_IsPathSep(*(path.end() - 1)))
+	{
+		path += PATHSEP;
+	}
+	path += ".odamex";
+
+	struct stat info;
+	if (stat(path.c_str(), &info) == -1)
+	{
+		if (mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
+		{
+			I_FatalError("Failed to create %s directory:\n%s", path.c_str(),
+			             strerror(errno));
+		}
+	}
+	else
+	{
+		if (!S_ISDIR(info.st_mode))
+		{
+			I_FatalError("%s must be a directory", path.c_str());
+		}
+	}
+
+	path += PATHSEP;
+	path += file;
+
+	return M_CleanPath(path);
+#endif
 }
 
 void I_ExpandHomeDir (std::string &path)
