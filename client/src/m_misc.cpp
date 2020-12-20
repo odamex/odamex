@@ -221,7 +221,7 @@ std::string M_ExpandTokens(const std::string &str)
 				buffer << level.mapname;
 				break;
 			case 'r':
-				buffer << "r" << GitDescribe();
+				buffer << "g" << GitShortHash();
 				break;
 			case '%':
 				// Literal percent

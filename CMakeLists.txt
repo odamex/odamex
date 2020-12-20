@@ -29,10 +29,10 @@ cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_IN
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
-project(Odamex VERSION 0.8.3)
+project(Odamex VERSION 0.9.0)
 
 set(PROJECT_COPYRIGHT "2006-2020")
-set(PROJECT_RC_VERSION "0,8,3,0")
+set(PROJECT_RC_VERSION "0,9,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Use C++ 98/03 for all targets
@@ -169,8 +169,15 @@ endmacro(define_platform)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
+#
+# Grabs the git hash and branch a few different ways.
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --tags --always)
+get_git_head_revision(HEAD GIT_HASH)
+git_describe(GIT_DESCRIBE --all --long --abbrev=4)
+string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
+  "\\2" GIT_BRANCH "${GIT_DESCRIBE}")
+string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
+  "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
 add_subdirectory(libraries)

@@ -3,14 +3,14 @@
 
 [Setup]
 AppName=Odamex
-AppVersion=0.8.3
-AppVerName=Odamex 0.8.3
+AppVersion=0.9.0
+AppVerName=Odamex 0.9.0
 AppPublisher=Odamex Development Team
 AppPublisherURL=https://odamex.net
 AppSupportURL=https://odamex.net
 AppUpdatesURL=https://odamex.net
-VersionInfoVersion=0.8.3
-VersionInfoProductVersion=0.8.3
+VersionInfoVersion=0.9.0
+VersionInfoProductVersion=0.9.0
 VersionInfoProductName=Odamex Windows Installer
 DefaultDirName={userpf}\odamex
 DefaultGroupName=Odamex

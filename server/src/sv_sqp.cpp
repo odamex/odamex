@@ -89,7 +89,7 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	// TODO: Remove guard before next release
 	QRYNEWINFO(7)
 	{
-		MSG_WriteString(&ml_message, GitDescribe());
+		MSG_WriteString(&ml_message, GitNiceVersion());
 	}
 	else
 		MSG_WriteLong(&ml_message, -1);
