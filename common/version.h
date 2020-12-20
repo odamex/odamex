@@ -57,6 +57,7 @@ public:
 
 const char* GitHash();
 const char* GitBranch();
+const char* GitRevCount();
 const char* GitShortHash();
 const char* GitNiceVersion();
 
