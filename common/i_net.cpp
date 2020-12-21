@@ -956,12 +956,22 @@ float MSG_ReadFloat(void)
     return Float;
 }
 
+#define SVC_INFO(n)                                                                      \
+	::svc_info[n].id = n;                                                                \
+	::svc_info[n].msgName = #n;                                                          \
+	::svc_info[n].msgFormat = "x"
+
+#define CLC_INFO(n) \
+	::clc_info[n].id = n;                                                                \
+	::clc_info[n].msgName = #n;                                                          \
+	::clc_info[n].msgFormat = "x"
+
 //
 // InitNetMessageFormats
 //
 static void InitNetMessageFormats()
 {
-#define SVC_INFO(n) ::svc_info[ n ] = { n, #n , "x" }
+	// Server Messages.
 	SVC_INFO(svc_abort);
 	SVC_INFO(svc_full);
 	SVC_INFO(svc_disconnect);
@@ -1052,9 +1062,8 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_launcher_challenge);
 	SVC_INFO(svc_challenge);
 	SVC_INFO(svc_max);
-#undef SVC_INFO
 
-#define CLC_INFO(n) ::clc_info[ n ] = { n, #n , "x" }
+	// Client Messages.
 	CLC_INFO(clc_abort);
 	CLC_INFO(clc_reserved1);
 	CLC_INFO(clc_disconnect);
@@ -1083,8 +1092,10 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_launcher_challenge);
 	CLC_INFO(clc_challenge);
 	CLC_INFO(clc_max);
-#undef CLC_INFO
 }
+
+#undef SVC_INFO
+#undef CLC_INFO
 
 CVAR_FUNC_IMPL(net_rcvbuf)
 {
