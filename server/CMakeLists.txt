@@ -6,8 +6,6 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
-global_compile_options()
-
 # Server flags. [AM] TODO: Test -O3 again sometime.
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
@@ -29,9 +27,6 @@ get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Common" FILES ${COMMON_SOURCES})
 source_group("Server" FILES ${SERVER_SOURCES})
 source_group("Win32" FILES ${SERVER_WIN32_SOURCES})
-
-# Platform definitions
-define_platform()
 
 # Server definitions
 if(USE_MINIUPNP)
@@ -96,5 +91,3 @@ endif()
 if(BUILD_OR_FAIL AND NOT TARGET odasrv)
   message(FATAL_ERROR "Odasrv target could not be generated")
 endif()
-
-print_cxx_flags()

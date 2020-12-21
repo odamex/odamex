@@ -77,94 +77,17 @@ endif()
 
 # Global compile options as shown in a GUI.
 if(NOT MSVC)
-  set(USE_COLOR_DIAGNOSTICS "No" CACHE STRING
+  set(USE_COLOR_DIAGNOSTICS "No" CACHE BOOL
     "Force the use of color diagnostics, necessary to get color output with Ninja.")
-  set_property(CACHE USE_COLOR_DIAGNOSTICS PROPERTY STRINGS Yes No)
-
-  set(USE_STATIC_STDLIB "No" CACHE STRING
+  set(USE_STATIC_STDLIB "No" CACHE BOOL
     "Statically link against the C and C++ Standard Library.")
-  set_property(CACHE USE_STATIC_STDLIB PROPERTY STRINGS Yes No)
-
-  set(USE_SANITIZE_ADDRESS "No" CACHE STRING
+  set(USE_SANITIZE_ADDRESS "No" CACHE BOOL
     "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
-  set_property(CACHE USE_SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
-endif()
-
-# Global compile options.  Useful defines for any Odamex project.
-macro(global_compile_options)
-  if(NOT MSVC)
-    set(GLOBAL_CXX_FLAGS "-Wall")
-    if(USE_GPROF)
-      set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -p")
-    endif()
-    if(USE_COLOR_DIAGNOSTICS)
-      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -fcolor-diagnostics")
-      else()
-        set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -fdiagnostics-color=always")
-      endif()
-    endif()
-
-    set(CMAKE_CXX_FLAGS_DEBUG "${GLOBAL_CXX_FLAGS} -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${GLOBAL_CXX_FLAGS} -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${GLOBAL_CXX_FLAGS} -g -DNDEBUG -O2")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${GLOBAL_CXX_FLAGS} -DNDEBUG -Os")
-
-    if(USE_STATIC_STDLIB)
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-    endif()
-    if(USE_SANITIZE_ADDRESS)
-      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-    endif()    
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-      add_definitions(-DODAMEX_DEBUG)
-    endif()
-  endif()
-endmacro(global_compile_options)
-
-# Output the G++ CXX flags
-macro(print_cxx_flags)
-  if(NOT MSVC)
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_DEBUG}")
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELEASE}")
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_MINSIZEREL}")
-    endif()
-  endif()
-endmacro(print_cxx_flags)
-
-# jsd: hide warnings about using insecure crt functions:
-if(MSVC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
-
-# Platform definitions
-# [AM] TODO: Eliminate redundant defines
-macro(define_platform)
-  if(APPLE)
-    add_definitions(-DOSX -DUNIX )
-  elseif(SOLARIS)
-    add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
-  elseif(UNIX)
-    add_definitions(-DUNIX)
-    find_package(X11)
-    if(X11_FOUND)
-      add_definitions(-DX11)
-      INCLUDE_DIRECTORIES ( ${X11_INCLUDE_DIR} )
-      LINK_LIBRARIES ( ${X11_LIBRARIES} )
-      MESSAGE ( STATUS " X11_INCLUDE_DIR: " ${X11_INCLUDE_DIR} )
-      MESSAGE ( STATUS " X11_LIBRARIES: " ${X11_LIBRARIES} )
-    endif()
-  endif()
-endmacro(define_platform)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 

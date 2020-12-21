@@ -7,8 +7,6 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
-global_compile_options()
-
 # Client flags
 if(NOT MSVC)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -46,9 +44,6 @@ source_group("Client" FILES ${CLIENT_SOURCES})
 source_group("Common" FILES ${COMMON_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 
-# Platform definitions
-define_platform()
-
 # Client definitions
 include_directories(${CLIENT_DIR})
 
@@ -59,8 +54,11 @@ endif()
 
 # X11 configuration
 if(UNIX AND NOT APPLE)
+  find_package(X11)
   if(X11_FOUND)
-    include_directories(${X11_INCLUDE_DIRS})
+    add_definitions(-DX11)
+    include_directories(${X11_INCLUDE_DIR})
+    link_libraries(${X11_LIBRARIES})
   endif()
 endif()
 
@@ -314,5 +312,3 @@ endif()
 if(BUILD_OR_FAIL AND NOT TARGET odamex)
   message(FATAL_ERROR "Odamex target could not be generated")
 endif()
-
-print_cxx_flags()

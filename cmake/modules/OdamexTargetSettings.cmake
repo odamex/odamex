@@ -1,5 +1,43 @@
-function(odamex_target_settings TARGET)
+function(odamex_target_settings _TARGET)
   set(ODAMEX_DLLS "")
+
+  if(APPLE)
+    target_compile_definitions("${_TARGET}" PRIVATE OSX UNIX)
+  elseif(SOLARIS)
+    target_compile_definitions("${_TARGET}" PRIVATE SOLARIS UNIX BSD_COMP)
+    target_compile_options("${_TARGET}" PRIVATE -gstabs+)
+  elseif(UNIX)
+    target_compile_definitions("${_TARGET}" PRIVATE UNIX)
+  endif()
+
+  if(MSVC)
+    # jsd: hide warnings about using insecure crt functions:
+    target_compile_definitions("${_TARGET}" PRIVATE _CRT_SECURE_NO_WARNINGS)
+  else()
+    target_compile_definitions("${_TARGET}" PRIVATE $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
+    target_compile_options("${_TARGET}" PRIVATE -Wall -Wextra)
+
+    if(USE_GPROF)
+      target_compile_options("${_TARGET}" PRIVATE -p)
+    endif()
+
+    if(USE_COLOR_DIAGNOSTICS)
+      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options("${_TARGET}" PRIVATE -fcolor-diagnostics)
+      else()
+        target_compile_options("${_TARGET}" PRIVATE -fdiagnostics-color=always)
+      endif()
+    endif()
+
+    if(USE_STATIC_STDLIB)
+      target_link_options("${_TARGET}" PRIVATE -static-libgcc -static-libstdc++)
+    endif()
+
+    if(USE_SANITIZE_ADDRESS)
+      target_compile_options("${_TARGET}" PRIVATE
+        -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+    endif()
+  endif()
 
   if(MINGW)
     # MinGW builds require a bunch of extra libraries.

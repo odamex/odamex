@@ -1,8 +1,6 @@
 include(OdalaunchCopyLibs)
 include(OdamexTargetSettings)
 
-global_compile_options()
-
 # API
 set(API_DIR ../odalpapi)
 file(GLOB API_HEADERS ${API_DIR}/*.h ${API_DIR}/threads/*.h)
