@@ -27,7 +27,7 @@ jobs:
     - name: Run build
       run: cmake --build ./build/
     - name: Prepare artifact
-      run: bash ci/posix-artifact.sh
+      run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
