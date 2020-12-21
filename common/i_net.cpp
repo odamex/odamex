@@ -956,15 +956,31 @@ float MSG_ReadFloat(void)
     return Float;
 }
 
-#define SVC_INFO(n)                                                                      \
-	::svc_info[n].id = n;                                                                \
-	::svc_info[n].msgName = #n;                                                          \
-	::svc_info[n].msgFormat = "x"
+/**
+ * @brief Initialize a svc_info member.
+ * 
+ * @detail do-while is used to force a semicolon afterwards.
+ */
+#define SVC_INFO(n)                    \
+	do                                 \
+	{                                  \
+		::svc_info[n].id = n;          \
+		::svc_info[n].msgName = #n;    \
+		::svc_info[n].msgFormat = "x"; \
+	} while (false)
 
-#define CLC_INFO(n) \
-	::clc_info[n].id = n;                                                                \
-	::clc_info[n].msgName = #n;                                                          \
-	::clc_info[n].msgFormat = "x"
+/**
+ * @brief Initialize a clc_info member.
+ *
+ * @detail do-while is used to force a semicolon afterwards.
+ */
+#define CLC_INFO(n)                    \
+	do                                 \
+	{                                  \
+		::clc_info[n].id = n;          \
+		::clc_info[n].msgName = #n;    \
+		::clc_info[n].msgFormat = "x"; \
+	} while (false)
 
 //
 // InitNetMessageFormats

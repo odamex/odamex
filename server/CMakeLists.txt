@@ -50,6 +50,12 @@ endif()
 add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
+
+if(APPLE)
+  # Don't sign this target.
+  set_target_properties(odasrv PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+endif()
+
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)

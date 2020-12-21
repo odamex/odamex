@@ -194,6 +194,9 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   if(MSVC)
     # We supply our own manifest, don't use the default one.
     set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
+  elseif(APPLE)
+    # Don't sign this target.
+    set_target_properties(odamex PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})

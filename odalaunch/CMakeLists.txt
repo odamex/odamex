@@ -64,6 +64,12 @@ if(wxWidgets_FOUND)
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
   odamex_target_settings(odalaunch)
+
+  if(APPLE)
+    # Don't sign this target.
+    set_target_properties(odalaunch PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+  endif()
+
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
   if(WIN32)
