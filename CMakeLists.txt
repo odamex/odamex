@@ -45,35 +45,50 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  set(target_arch "amd64")
+  set(ODAMEX_TARGET_ARCH "amd64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i[3-9]86$")
-  set(target_arch "i386")
+  set(ODAMEX_TARGET_ARCH "i386")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^alpha")
-  set(target_arch "alpha")
+  set(ODAMEX_TARGET_ARCH "alpha")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
-  set(target_arch "arm")
+  set(ODAMEX_TARGET_ARCH "arm")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
-  set(target_arch "ppc64")
+  set(ODAMEX_TARGET_ARCH "ppc64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
-  set(target_arch "ppc")
+  set(ODAMEX_TARGET_ARCH "ppc")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
   # Both flavors can run on the same processor
-  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
+  set(ODAMEX_TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
 else()
-  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+  set(ODAMEX_TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-list(REMOVE_DUPLICATES target_arch)
-message("Using target architecture " ${target_arch})
+list(REMOVE_DUPLICATES ODAMEX_TARGET_ARCH)
+message(STATUS "Target architecture: ${ODAMEX_TARGET_ARCH}")
 
 # Default build type
-if(NOT MSVC)
+if(NOT CMAKE_CONFIGURATION_TYPES)
   if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+  endif()
+  message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+  set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif()
+
+if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
+  # Export compile commands unless we're generating a modern project.
+  if(CMAKE_GENERATOR MATCHES "Make" OR CMAKE_GENERATOR MATCHES "Ninja")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  else()
+    set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
   endif()
 endif()
+message(STATUS "Export Compile Commands: ${CMAKE_EXPORT_COMPILE_COMMANDS}")
+set(CMAKE_EXPORT_COMPILE_COMMANDS "${CMAKE_EXPORT_COMPILE_COMMANDS}" CACHE BOOL
+  "Export compile commands for use in supported editors."
+  FORCE)
 
 # Global compile options as shown in a GUI.
 if(NOT MSVC)
