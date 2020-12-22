@@ -3,7 +3,7 @@ function(odamex_target_settings _TARGET)
 
   if(APPLE)
     target_compile_definitions("${_TARGET}" PRIVATE OSX UNIX)
-    set_target_properties("${__TARGET}" PROPERTIES
+    set_target_properties("${_TARGET}" PROPERTIES
       XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
   elseif(SOLARIS)
     target_compile_definitions("${_TARGET}" PRIVATE SOLARIS UNIX BSD_COMP)
