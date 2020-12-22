@@ -176,7 +176,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
       message(STATUS "Default SIMD flags not touched for AMD64")
-    if(ODAMEX_TARGET_ARCH STREQUAL "i386")
+    elseif(ODAMEX_TARGET_ARCH STREQUAL "i386")
       if(NOT MSVC)
         # Pentium M has SSE2.
         target_compile_definitions(odamex PRIVATE -march=pentium-m)
