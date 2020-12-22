@@ -47,6 +47,8 @@ void I_CloseJoystick();
 std::string I_GetKeyName(int key);
 int I_GetKeyFromName(const std::string& name);
 
+void I_GetEvents(bool mouseOnly);
+
 
 // ============================================================================
 //
@@ -134,6 +136,7 @@ public:
 	{	return mEvents.empty() == false;	}
 
 	virtual void gatherEvents();
+	virtual void gatherMouseEvents();
 	virtual void getEvent(event_t* ev);
 
 	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0; 

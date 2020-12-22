@@ -360,10 +360,13 @@ public:
 		PCD_SETMARINEWEAPON,
 		PCD_SETACTORPROPERTY,
 		PCD_GETACTORPROPERTY,
-// ^ THESE ARE UNUSED YET
+	  // ^ THESE ARE UNUSED YET
 
 		PCD_PLAYERNUMBER,
 		PCD_ACTIVATORTID,
+		PCD_GETCVAR = 255,
+	  /*260*/ PCD_GETACTORANGLE = 260,
+	  PCD_GETLEVELINFO = 265,
 
 		PCODE_COMMAND_COUNT
 	};
@@ -422,6 +425,20 @@ public:
 		BLOCK_EVERYTHING =		2
 	};
 
+	enum
+	{
+		LEVELINFO_PAR_TIME,
+		LEVELINFO_CLUSTERNUM,
+		LEVELINFO_LEVELNUM,
+		LEVELINFO_TOTAL_SECRETS,
+		LEVELINFO_FOUND_SECRETS,
+		LEVELINFO_TOTAL_ITEMS,
+		LEVELINFO_FOUND_ITEMS,
+		LEVELINFO_TOTAL_MONSTERS,
+		LEVELINFO_KILLED_MONSTERS,
+		LEVELINFO_SUCK_TIME
+	};
+
 	enum EScriptState
 	{
 		SCRIPT_Running,
@@ -431,7 +448,9 @@ public:
 		SCRIPT_PolyWait,
 		SCRIPT_ScriptWaitPre,
 		SCRIPT_ScriptWait,
-		SCRIPT_PleaseRemove
+		SCRIPT_PleaseRemove,
+		SCRIPT_DivideBy0,
+		SCRIPT_ModulusBy0,
 	};
 
 	DLevelScript (AActor *who, line_t *where, int num, int *code,
@@ -469,6 +488,10 @@ protected:
 	static void ChangeFlat (int tag, int name, bool floorOrCeiling);
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
+
+	static int DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle);
+	static int DoSpawnSpot (int type, int spot, int tid, int angle);
+
 	static void SetLineBlocking(int lineid, int flags);
 	static void SetLineMonsterBlocking(int lineid, int toggle);
 	static void SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5);

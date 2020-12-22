@@ -630,25 +630,34 @@ void STACK_ARGS I_ShutdownInput()
 //
 // Checks for new input events and posts them to the Doom event queue.
 //
-static void I_GetEvents()
+void I_GetEvents(bool mouseOnly)
 {
-	static bool previously_focused = false;
-	bool currently_focused = I_GetWindow()->isFocused();
-	if (currently_focused && !previously_focused)
-		I_FlushInput();
-	previously_focused = currently_focused;
-
-	I_UpdateGrab();
-	if (I_CanRepeat())
-		I_EnableKeyRepeat();
+	if (mouseOnly)
+	{
+		// D_PostEvent will process mouse events immediately
+		input_subsystem->gatherMouseEvents();
+	}
 	else
-		I_DisableKeyRepeat();
+	{
+		static bool previously_focused = false;
+		bool currently_focused = I_GetWindow()->isFocused();
+		if (currently_focused && !previously_focused)
+			I_FlushInput();
+		previously_focused = currently_focused;
 
-	// Get all of the events from the keboard, mouse, and joystick
-	input_subsystem->gatherEvents();
+		I_UpdateGrab();
+		if (I_CanRepeat())
+			I_EnableKeyRepeat();
+		else
+			I_DisableKeyRepeat();
+
+		// Get all of the events from the keboard, mouse, and joystick
+		input_subsystem->gatherEvents();
+	}
+
+	event_t ev;
 	while (input_subsystem->hasEvent())
 	{
-		event_t ev;
 		input_subsystem->getEvent(&ev);
 		D_PostEvent(&ev);
 	}
@@ -660,7 +669,7 @@ static void I_GetEvents()
 //
 void I_StartTic (void)
 {
-	I_GetEvents();
+	I_GetEvents(false);
 }
 
 
@@ -863,43 +872,38 @@ void IInputSubsystem::repeatEvents()
 //
 void IInputSubsystem::gatherEvents()
 {
-	event_t mouse_motion_event;
-	mouse_motion_event.type = ev_mouse;
-	mouse_motion_event.data1 = mouse_motion_event.data2 = mouse_motion_event.data3 = 0;
-
+	event_t ev;
 	for (InputDeviceList::iterator it = mInputDevices.begin(); it != mInputDevices.end(); ++it)
 	{
 		IInputDevice* device = *it;
 		device->gatherEvents();
 		while (device->hasEvent())
 		{
-			event_t ev;
 			device->getEvent(&ev);
 
 			if (mRepeating)
 				addToEventRepeaters(ev);
 
-			if (ev.type == ev_mouse)
-			{
-				// aggregate all mouse motion into a single event, which is enqueued later
-				mouse_motion_event.data2 += ev.data2;
-				mouse_motion_event.data3 += ev.data3;
-			}
-			else
-			{
-				// default behavior for events: just add it to the queue
-				mEvents.push(ev);
-			}
+			mEvents.push(ev);
 		}
 	}
-	
-	// manually add the aggregated mouse motion event to the queue
-	if (mouse_motion_event.data2 || mouse_motion_event.data3)
-		mEvents.push(mouse_motion_event);
 
 	// Handle repeatable events
 	if (mRepeating)
 		repeatEvents();
+}
+
+void IInputSubsystem::gatherMouseEvents()
+{
+	event_t mouseEvent;
+	if (mMouseInputDevice != NULL)
+		mMouseInputDevice->gatherEvents();
+
+	while (mMouseInputDevice->hasEvent())
+	{
+		mMouseInputDevice->getEvent(&mouseEvent);
+		mEvents.push(mouseEvent);
+	}
 }
 
 

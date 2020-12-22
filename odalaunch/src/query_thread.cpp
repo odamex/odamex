@@ -21,13 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "query_thread.h"
+
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 #include <wx/fileconf.h>
 #include <wx/log.h> 
 
 #include "plat_utils.h"
-#include "query_thread.h"
 #include "oda_defs.h"
 
 int NUM_THREADS;

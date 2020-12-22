@@ -22,18 +22,20 @@ endif()
 # options
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
-option(BUILD_MASTER "Build master server target" 1)
-option(BUILD_ODALAUNCH "Build odalaunch target" 1)
+option(BUILD_LAUNCHER "Build launcher target" 1)
+option(BUILD_MASTER "Build master server target" 0)
+option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 project(Odamex)
 cmake_minimum_required(VERSION 3.1)
 
-set(PROJECT_VERSION 0.8.3)
+set(PROJECT_VERSION 0.9.0)
 set(PROJECT_COPYRIGHT "2006-2020")
 
 # Use C++ 98/03 for all targets
@@ -183,8 +185,15 @@ endmacro(define_platform)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
+#
+# Grabs the git hash and branch a few different ways.
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --tags --always)
+get_git_head_revision(HEAD GIT_HASH)
+git_describe(GIT_DESCRIBE --all --long --abbrev=4)
+string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
+  "\\2" GIT_BRANCH "${GIT_DESCRIBE}")
+string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
+  "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
 add_subdirectory(libraries)
@@ -210,10 +219,10 @@ endif()
 if(BUILD_MASTER)
   add_subdirectory(master)
 endif()
-if(BUILD_ODALAUNCH)
+if(BUILD_LAUNCHER)
   add_subdirectory(odalaunch)
 endif()
-if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER)
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_ODALAUNCH)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 

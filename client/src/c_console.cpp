@@ -1235,6 +1235,12 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 
 	C_PrintString(printlevel, color_code, sanitized_str.c_str());
 
+#if defined (_WIN32) && defined(_DEBUG)
+	// [AM] Since we don't have stdout/stderr in a non-console Win32 app,
+	//      this outputs the string to the "Output" window.
+	OutputDebugStringA(sanitized_str.c_str());
+#endif
+
 	return len;
 }
 
@@ -1586,12 +1592,14 @@ void C_DrawConsole()
 
 	if (ConBottom >= 12)
 	{
+		const char* version = GitNiceVersion();
+
 		// print the Odamex version in gold in the bottom right corner of console
-		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(GitDescribe()),
-		                 ConBottom - 12, GitDescribe(), CR_ORANGE);
+		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version),
+		                 ConBottom - 12, version, CR_ORANGE);
 
 		// Amount of space remaining.
-		int remain = primary_surface_width - 16 - C_StringWidth(GitDescribe());
+		int remain = primary_surface_width - 16 - C_StringWidth(version);
 
 		if (CL_IsDownloading())
 		{

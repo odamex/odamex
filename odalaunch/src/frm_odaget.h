@@ -22,6 +22,8 @@
 #ifndef __FRM_ODAGET__
 #define __FRM_ODAGET__
 
+#include "odalaunch.h"
+
 #include <wx/frame.h>
 #include <wx/gauge.h>
 #include <wx/textctrl.h>
