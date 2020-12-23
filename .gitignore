@@ -8,4 +8,4 @@ CMakeSettings.json
 
 # Used when generating the installer.
 /installer/windows/Build*/
-/installer/windows/Output/
+/installer/windows/Out*/
