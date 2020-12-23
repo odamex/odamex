@@ -1,4 +1,17 @@
+#
+# Copyright (C) 2020 Alex Mayfield.
+#
+
+#
+# These parameters can and should be changed for new versions.
+# 
+
 Set-Variable -Name "OdamexVersion" -Value "0.9.0"
+Set-Variable -Name "OdamexTestSuffix" -Value "-TEST1"
+
+#
+# The actual script follows.
+#
 
 Set-Variable -Name "CommonDir" -Value "${PSScriptRoot}\OutCommon"
 Set-Variable -Name "DebugDir" -Value "${PSScriptRoot}\OutDebug"
@@ -35,6 +48,9 @@ function BuildX86 {
 }
 
 function CopyFiles {
+    Remove-Item -Force -Recurse -Path `
+        "${CommonDir}", "${DebugDir}" , "${X64Dir}", "${X86Dir}"
+
     New-Item -Force -ItemType "directory" -Path "${CommonDir}"
     New-Item -Force -ItemType "directory" -Path "${CommonDir}\config-samples"
     New-Item -Force -ItemType "directory" -Path "${CommonDir}\licenses"
@@ -153,21 +169,25 @@ function CopyFiles {
         -Destination "${DebugDir}\odalaunch.x86.pdb"
 }
 
-function Archives {
+function Outputs {
+    Remove-Item -Force -Recurse -Path "${OutputDir}"
     New-Item  -Force -ItemType "directory" -Path "${OutputDir}"
 
-    7z.exe a "${OutputDir}\odamex-win64-${OdamexVersion}.zip" `
+    # Generate archives
+    7z.exe a `
+        "${OutputDir}\odamex-win64-${OdamexVersion}${OdamexTestSuffix}.zip" `
         "${CommonDir}\*" "${X64Dir}\*"
-    7z.exe a "${OutputDir}\odamex-win32-${OdamexVersion}.zip" `
+    7z.exe a `
+        "${OutputDir}\odamex-win32-${OdamexVersion}${OdamexTestSuffix}.zip" `
         "${CommonDir}\*" "${X86Dir}\*"
-}
 
-function Installer {
-    ISCC.exe odamex.iss
+    # Generate installer
+    ISCC.exe odamex.iss `
+        /DOdamexVersion=${OdamexVersion} `
+        /DOdamexTestSuffix=${OdamexTestSuffix}
 }
 
 #BuildX64
 #BuildX86
-#CopyFiles
-Archives
-Installer
+CopyFiles
+Outputs
