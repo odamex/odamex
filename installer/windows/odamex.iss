@@ -140,6 +140,7 @@ Type: files; Name: {app}\*.log
 Type: dirifempty; Name: {app}
 
 [Registry]
+; .odd file association
 #define OdamexDemoExt ".odd"
 #define OdamexDemoFile OdamexName + "File" + OdamexDemoExt
 
@@ -148,3 +149,8 @@ Root: HKA; Subkey: {#"Software\Classes\" + OdamexDemoFile}; ValueType: string; V
 Root: HKA; Subkey: {#"Software\Classes\" + OdamexDemoFile + "\DefaultIcon"}; ValueType: string; ValueName: ""; ValueData: "{app}\odamex.exe,1"
 Root: HKA; Subkey: {#"Software\Classes\" + OdamexDemoFile + "\shell\open\command"}; ValueType: string; ValueName: ""; ValueData: """{app}\odamex.exe"" ""%1"""
 Root: HKA; Subkey: "Software\Classes\Applications\odamex.exe\SupportedTypes"; ValueType: string; ValueName: {#OdamexDemoExt}; ValueData: "" 
+
+; odamex:// URI scheme
+Root: HKA; Subkey: "Software\Classes\odamex"; ValueType: string; ValueName: ""; ValueData: "URL:Odamex Protocol"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\odamex"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\odamex\Shell\Open\Command"; ValueType: string; ValueName: ""; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey
