@@ -502,7 +502,7 @@ std::string I_GetUserDir()
  * @param file Filename to resolve.
  * @return An absolute path pointing to the resolved file.
 */
-std::string I_GetUserFileName(const char* file)
+std::string I_GetUserFileName(const std::string& file)
 {
 #if defined(_XBOX)
 	std::string path = "T:";
@@ -513,13 +513,13 @@ std::string I_GetUserFileName(const char* file)
 	return M_CleanPath(path);
 #elif defined(_WIN32)
 	// Is absolute path?  If so, stop here.
-	if (!PathIsRelative(file))
+	if (!PathIsRelative(file.c_str()))
 	{
 		return file;
 	}
 
 	// Is this an explicitly relative path?  If so, stop here.
-	size_t fileLen = strlen(file);
+	size_t fileLen = file.length();
 	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
 	{
 		return file;
@@ -533,7 +533,7 @@ std::string I_GetUserFileName(const char* file)
 	std::string path = I_GetBinaryDir();
 	std::string installed = path + PATHSEP "odamex-installed.txt";
 
-	if (PathFileExists(installed.c_str()))
+	if (M_FileExists(installed))
 	{
 		// Does the user folder exist?
 		std::string userPath = I_GetUserDir();
@@ -562,7 +562,7 @@ std::string I_GetUserFileName(const char* file)
 	return M_CleanPath(path);
 #else
 	// Is absolute path?  If so, stop here.
-	size_t fileLen = strlen(file);
+	size_t fileLen = file.length();
 	if (fileLen >= 1 && M_IsPathSep(file[0]))
 	{
 		return file;
@@ -608,6 +608,32 @@ std::string I_GetUserFileName(const char* file)
 
 	return M_CleanPath(path);
 #endif
+}
+
+/**
+ * @brief Check for the existence of a file in a user directory that might
+ *       or might not have an extension. 
+ * 
+ * @param file Filename to find, which might or might not have an extension.
+ * @param ext Extension to append, including the initial period.
+ * @return std::string Found path or an empty string if not found.
+ */
+std::string I_FindUserFileName(const std::string& file, const char* ext)
+{
+	std::string found = I_GetUserFileName(file);
+	if (M_FileExists(found))
+	{
+		return found;
+	}
+	else if (ext != NULL)
+	{
+		found = I_GetUserFileName(std::string(file) + ext);
+		if (M_FileExists(found))
+		{
+			return found;
+		}
+	}
+	return "";
 }
 
 void I_ExpandHomeDir (std::string &path)

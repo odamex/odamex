@@ -60,18 +60,44 @@ SDWORD M_FileLength (FILE *f)
 	return FileSize;
 }
 
-//
-// M_FileExists
-//
-// Checks to see whether a file exists or not
-//
+
+/**
+ * @brief Checks to see whether a file exists or not
+ * 
+ * @param filename Filename to check.
+ */
 bool M_FileExists(const std::string& filename)
 {
-	FILE *f = fopen(filename.c_str(), "r");
-	if (!f)
+	FILE* f = fopen(filename.c_str(), "r");
+	if (f == NULL)
+	{
 		return false;
+	}
+
 	fclose(f);
 	return true;
+}
+
+/**
+ * @brief Checks to see whether a file exists.  If the exact name does not
+ *        exist, try again with the extension.
+ * 
+ * @param filename Filename to check.
+ * @param ext Extension to check as a second try, with the initial period.
+ */
+bool M_FileExistsExt(const std::string& filename, const char* ext)
+{
+	if (M_FileExists(filename))
+	{
+		return true;
+	}
+
+	if (M_FileExists(filename + ext))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 //

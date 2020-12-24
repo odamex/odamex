@@ -443,11 +443,17 @@ BEGIN_COMMAND (exec)
 		return;
 	}
 
-	std::ifstream ifs(argv[1]);
+	std::string found = I_FindUserFileName(argv[1], ".cfg");
+	if (found.empty())
+	{
+		Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);
+		return;
+	}
 
+	std::ifstream ifs(argv[1]);
 	if(ifs.fail())
 	{
-		Printf (PRINT_HIGH, "Could not open \"%s\"\n", argv[1]);
+		Printf(PRINT_WARNING, "Could not open \"%s\"\n", argv[1]);
 		return;
 	}
 
