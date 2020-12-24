@@ -7,14 +7,13 @@
 # 
 
 Set-Variable -Name "OdamexVersion" -Value "0.9.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "-TEST1"
+Set-Variable -Name "OdamexTestSuffix" -Value "-TEST2"
 
 #
 # The actual script follows.
 #
 
 Set-Variable -Name "CommonDir" -Value "${PSScriptRoot}\OutCommon"
-Set-Variable -Name "DebugDir" -Value "${PSScriptRoot}\OutDebug"
 Set-Variable -Name "X64Dir" -Value "${PSScriptRoot}\OutX64"
 Set-Variable -Name "X86Dir" -Value "${PSScriptRoot}\OutX86"
 Set-Variable -Name "OutputDir" -Value "${PSScriptRoot}\Output"
@@ -49,7 +48,7 @@ function BuildX86 {
 
 function CopyFiles {
     Remove-Item -Force -Recurse -Path `
-        "${CommonDir}", "${DebugDir}" , "${X64Dir}", "${X86Dir}"
+        "${CommonDir}", "${X64Dir}", "${X86Dir}"
 
     New-Item -Force -ItemType "directory" -Path "${CommonDir}"
     New-Item -Force -ItemType "directory" -Path "${CommonDir}\config-samples"
@@ -92,8 +91,6 @@ function CopyFiles {
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2-2.0.12\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"
 
-    New-Item -Force -ItemType "directory" -Path "${DebugDir}"
-
     ########################################
     ## 64-BIT FILES
     ########################################
@@ -121,16 +118,6 @@ function CopyFiles {
         "${PSScriptRoot}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 
-    Copy-Item -Force -Path `
-        "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
-        -Destination "${DebugDir}\odamex.x64.pdb"
-    Copy-Item -Force -Path `
-        "${PSScriptRoot}\BuildX64\server\RelWithDebInfo\odasrv.pdb" `
-        -Destination "${DebugDir}\odasrv.x64.pdb"
-    Copy-Item -Force -Path `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.pdb" `
-        -Destination "${DebugDir}\odalaunch.x64.pdb"
-
     ########################################
     ## 32-BIT FILES
     ########################################
@@ -157,16 +144,6 @@ function CopyFiles {
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw314u_xrc_vc14x.dll", `
         "${PSScriptRoot}\BuildX86\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X86Dir}\"
-
-    Copy-Item -Force -Path `
-        "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\odamex.pdb" `
-        -Destination "${DebugDir}\odamex.x86.pdb"
-    Copy-Item -Force -Path `
-        "${PSScriptRoot}\BuildX86\server\RelWithDebInfo\odasrv.pdb" `
-        -Destination "${DebugDir}\odasrv.x86.pdb"
-    Copy-Item -Force -Path `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.pdb" `
-        -Destination "${DebugDir}\odalaunch.x86.pdb"
 }
 
 function Outputs {
@@ -185,9 +162,30 @@ function Outputs {
     ISCC.exe odamex.iss `
         /DOdamexVersion=${OdamexVersion} `
         /DOdamexTestSuffix=${OdamexTestSuffix}
+
+    # Copy pdb files
+    Copy-Item -Force -Path `
+        "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
+        -Destination "${OutputDir}\odamex-x64-${OdamexVersion}.pdb"
+    Copy-Item -Force -Path `
+        "${PSScriptRoot}\BuildX64\server\RelWithDebInfo\odasrv.pdb" `
+        -Destination "${OutputDir}\odasrv-x64-${OdamexVersion}.pdb"
+    Copy-Item -Force -Path `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.pdb" `
+        -Destination "${OutputDir}\odalaunch-x64-${OdamexVersion}.pdb"
+
+    Copy-Item -Force -Path `
+        "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\odamex.pdb" `
+        -Destination "${OutputDir}\odamex-x86-${OdamexVersion}.pdb"
+    Copy-Item -Force -Path `
+        "${PSScriptRoot}\BuildX86\server\RelWithDebInfo\odasrv.pdb" `
+        -Destination "${OutputDir}\odasrv-x86-${OdamexVersion}.pdb"
+    Copy-Item -Force -Path `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.pdb" `
+        -Destination "${OutputDir}\odalaunch-x86-${OdamexVersion}.pdb"
 }
 
-#BuildX64
-#BuildX86
+BuildX64
+BuildX86
 CopyFiles
 Outputs
