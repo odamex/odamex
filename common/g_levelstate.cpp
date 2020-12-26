@@ -596,13 +596,13 @@ static const char* WinTypeToString(WinInfo::WinType type)
 {
 	switch (type)
 	{
-	case WinInfo::WinType::WIN_NOBODY:
+	case WinInfo::WIN_NOBODY:
 		return "WIN_NOBODY";
-	case WinInfo::WinType::WIN_DRAW:
+	case WinInfo::WIN_DRAW:
 		return "WIN_DRAW";
-	case WinInfo::WinType::WIN_PLAYER:
+	case WinInfo::WIN_PLAYER:
 		return "WIN_PLAYER";
-	case WinInfo::WinType::WIN_TEAM:
+	case WinInfo::WIN_TEAM:
 		return "WIN_TEAM";
 	default:
 		return "WIN_UNKNOWN";
