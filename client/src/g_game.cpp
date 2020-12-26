@@ -104,6 +104,9 @@ EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
+extern angle_t			LocalViewAngle;
+extern int				LocalViewPitch;
+
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 BOOL 			respawnmonsters;
@@ -428,7 +431,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if(joy_freelook && sv_freelook || consoleplayer().spectator)
+	if (joy_freelook && sv_freelook || consoleplayer().spectator)
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -437,9 +440,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
+	{
 		side += sidemove[speed];
+	}
 	if (Actions[ACTION_MOVELEFT])
+	{
 		side -= sidemove[speed];
+	}
 
 	// buttons
 	// john - only add attack when console up
@@ -493,33 +500,14 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
-	{
-		int val = (int)(float(mousey) * 16.0f * m_pitch);
-		if (invertmouse)
-			look -= val;
-		else
-			look += val;
-	}
-	else if (novert == 0)		// [Toke - Mouse] acts like novert.exe
+	if (!Actions[ACTION_MLOOK] && !cl_mouselook && !sv_freelook && 
+		!consoleplayer().spectator && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
 		forward += (int)(float(mousey) * m_forward);
 	}
 
-	if (sendcenterview)
-	{
-		sendcenterview = false;
-		look = CENTERVIEW;
-	}
-	else
-	{
-		look = clamp(look, -32767, 32767);
-	}
-
 	if (strafe || lookstrafe)
 		side += (int)(float(mousex) * m_side);
-	else
-		cmd->yaw -= (int)(float(mousex) * 8.0f * m_yaw);
 
 	mousex = mousey = 0;
 
@@ -534,7 +522,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	cmd->forwardmove += forward;
 	cmd->sidemove += side;
-	cmd->pitch = look;
 	cmd->upmove = fly;
 
 	// special buttons
@@ -547,21 +534,36 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (sendsave)
 	{
 		sendsave = false;
-		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot<<BTS_SAVESHIFT);
+		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
 	cmd->forwardmove <<= 8;
 	cmd->sidemove <<= 8;
 
-	// [RH] 180-degree turn overrides all other yaws
+	//// [RH] 180-degree turn overrides all other yaws
 	if (turntick)
 	{
 		turntick--;
 		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
 
+	if (sendcenterview)
+	{
+		sendcenterview = false;
+		cmd->pitch = CENTERVIEW;
+	}
+	else
+	{
+		cmd->pitch = look + (LocalViewPitch >> 16);
+	}
+	
+	cmd->yaw = LocalViewAngle >> 16;
+
 	if (!longtics)
-		cmd->yaw = (cmd->yaw +128) & 0xFF00;
+		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
+
+	LocalViewAngle = 0;
+	LocalViewPitch = 0;
 }
 
 
@@ -578,7 +580,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 float G_ZDoomDIMouseScaleX(float x)
 {
-	return (x * 4.0f * mouse_sensitivity);
+	return (x * 4.0 * mouse_sensitivity);
 }
 
 float G_ZDoomDIMouseScaleY(float y)
@@ -607,8 +609,39 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 
 	mousex = (int)fmousex;
 	mousey = (int)fmousey;
+
+	G_AddViewAngle(fmousex * 8.0f * m_yaw);
+	G_AddViewPitch(fmousey * 16.0f * m_pitch);
 }
 
+void G_AddViewAngle(int yaw)
+{
+	if (G_ShouldIgnoreMouseInput())
+		return;
+
+	if (!Actions[ACTION_STRAFE] && !lookstrafe)
+		LocalViewAngle -= yaw << 16;
+}
+
+void G_AddViewPitch(int pitch)
+{
+	if (G_ShouldIgnoreMouseInput())
+		return;
+
+	if (invertmouse)
+		pitch = -pitch;
+
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
+		LocalViewPitch += pitch << 16;
+}
+
+bool G_ShouldIgnoreMouseInput()
+{
+	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+		return true;
+
+	return false;
+}
 
 //
 // G_Responder
@@ -621,7 +654,7 @@ BOOL G_Responder (event_t *ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = C_GetBinding (ev->data1);
+		const char *cmd = Bindings.GetBind(ev->data1).c_str();
 
 		if (ev->type == ev_keydown)
 		{
@@ -646,11 +679,11 @@ BOOL G_Responder (event_t *ev)
 			}
 			else
 			{
-				return C_DoKey (ev);
+				return C_DoKey (ev, &Bindings, &DoubleBindings);
 			}
 		}
 		if (cmd && cmd[0] == '+')
-			return C_DoKey (ev);
+			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
@@ -679,12 +712,12 @@ BOOL G_Responder (event_t *ev)
 	switch (ev->type)
 	{
 	  case ev_keydown:
-		if (C_DoKey (ev))
+		if (C_DoKey (ev, &Bindings, &DoubleBindings))
 			return true;
 		break;
 
 	  case ev_keyup:
-		C_DoKey (ev);
+		C_DoKey(ev, &Bindings, &DoubleBindings);
 		break;
 
 	  // [Toke - Mouse] New mouse code
@@ -906,8 +939,7 @@ void G_Ticker (void)
 	else if (NET_GetPacket() && !simulated_connection)
 	{
 		// denis - don't accept candy from strangers
-		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
-			&& NET_CompareAdr(serveraddr, net_from))
+		if (gamestate == GS_CONNECTING && NET_CompareAdr(serveraddr, net_from))
 		{
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);
@@ -977,7 +1009,7 @@ void G_Ticker (void)
 				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
 				mobj->flags &= ~MF_SOLID;
 				mobj->flags2 |= MF2_DONTDRAW;
-				consoleplayer().mo = mobj->ptr();
+				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
 				consoleplayer().mo->player = &consoleplayer();
 				G_PlayerReborn(consoleplayer());
 				DPrintf("Did not receive spawn for consoleplayer.\n");
@@ -1060,7 +1092,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMPOWERS; i++)
 		p.powers[i] = false;
-	for (i = 0; i < NUMFLAGS; i++)
+	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
 
@@ -1258,14 +1290,12 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &deathmatchstarts[i]) )
-		{
-			return &deathmatchstarts[i];
-		}
+		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+			return &DeathMatchStarts[i];
 	}
 
 	// [RH] return a spot anyway, since we allow telefragging when a player spawns
-	return &deathmatchstarts[i];
+	return &DeathMatchStarts[i];
 }
 
 void G_DeathMatchSpawnPlayer (player_t &player)
@@ -1276,67 +1306,26 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	if(!serverside || sv_gametype == GM_COOP)
 		return;
 
-	//if (!ctfmode)
+	selections = DeathMatchStarts.size();
+	// [RH] We can get by with just 1 deathmatch start
+	if (selections < 1)
+		I_Error ("No deathmatch starts");
+
+	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
+	spot = SelectRandomDeathmatchSpot (player, selections);
+
+	if (!spot && !playerstarts.empty())
 	{
-		selections = deathmatch_p - deathmatchstarts;
-		// [RH] We can get by with just 1 deathmatch start
-		if (selections < 1)
-			I_Error ("No deathmatch starts");
-
-		// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-		spot = SelectRandomDeathmatchSpot (player, selections);
-
-		if (!spot && !playerstarts.empty())
-		{
-			// no good spot, so the player will probably get stuck
-			spot = &playerstarts[player.id%playerstarts.size()];
-		}
-		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;	// [RH] > 4 players
-		}
-
-
+		// no good spot, so the player will probably get stuck
+		spot = &playerstarts[player.id%playerstarts.size()];
 	}
-	/*else
+	else
 	{
-		selections = 0;
-
-		if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-		{
-			selections = blueteam_p - blueteamstarts;
-
-			if (selections < 1)
-				I_Error ("No blue team starts");
-		}
-
-		if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-		{
-			selections = redteam_p - redteamstarts;
-
-			if (selections < 1)
-				I_Error ("No red team starts");
-		}
-
-		if (selections < 1)
-			I_Error ("No team starts");
-
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
-
-		if (!spot && !playerstarts.empty())
-			spot = &playerstarts[player.id%playerstarts.size()];
-
+		if (player.id < 4)
+			spot->type = player.id+1;
 		else
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;
-		}
-	}*/
+			spot->type = player.id+4001-4;	// [RH] > 4 players
+	}
 
 	P_SpawnPlayer (player, spot);
 }
@@ -1869,8 +1858,8 @@ BEGIN_COMMAND(playdemo)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Cannot play demo because WAD didn't load\n");
-			Printf(PRINT_HIGH, "Use the 'wad' command\n");
+			Printf(PRINT_WARNING, "Cannot play demo because WAD didn't load\n");
+			Printf(PRINT_WARNING, "Use the 'wad' command\n");
 		}
 	}
 	else
@@ -1933,7 +1922,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (bytelen)
 			Z_Free(demobuffer);
 
-		Printf(PRINT_HIGH, "DOOM Demo file too short\n");
+		Printf(PRINT_WARNING, "DOOM Demo file too short\n");
 		gameaction = ga_fullconsole;
 		return;
 	}
@@ -2062,7 +2051,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex " \
+		Printf(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
 		gameaction = ga_nothing;
 	}
@@ -2130,7 +2119,7 @@ void G_CleanupDemo()
 		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 
 		demorecording = false;
-		Printf(PRINT_HIGH, "Demo %s recorded\n", demoname);
+		Printf("Demo %s recorded\n", demoname);
 
 		// reset longtics after demo recording
 		longtics = !(Args.CheckParm("-shorttics"));
@@ -2163,7 +2152,7 @@ BOOL G_CheckDemoStatus (void)
 			if (mo)
 				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
-				Printf(PRINT_HIGH, "demotest:no player\n");
+				Printf(PRINT_WARNING, "demotest:no player\n");
 
 			demotest = false;
 

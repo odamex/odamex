@@ -3,18 +3,31 @@ name: Linux
 on: [push, pull_request]
 
 jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.check_skip.outputs.should_skip }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+      - name: Check for build skip
+        id: check_skip
+        run: bash ci/check-skip.sh
   build-sdl20:
     name: Build (SDL 2.0)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci-build.sh
+      run: bash ci/posix-build.sh
     - name: Run build
       run: cmake --build ./build/
     - name: Prepare artifact
-      run: bash ci-artifact.sh
+      run: bash ci/posix-artifact.sh
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
@@ -22,14 +35,18 @@ jobs:
         path: 'build/artifact/*'
   build-centos:
     name: Build (CentOS)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Run build
-      run: bash ci-build-centos.sh
+      run: bash ci/posix-centos-build.sh
   build-sdl12:
     name: Build (SDL 1.2)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     env:
       USE_SDL12: 1
@@ -37,6 +54,6 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v2
     - name: Prepare build
-      run: bash ci-build.sh
+      run: bash ci/posix-build.sh
     - name: Run build
       run: cmake --build ./build/

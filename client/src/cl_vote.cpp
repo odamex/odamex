@@ -234,28 +234,38 @@ BEGIN_COMMAND(callvote) {
 /**
  * Sends a "yes" vote to the server.
  */
-BEGIN_COMMAND(vote_yes) {
-	if (!connected) {
+BEGIN_COMMAND(vote_yes)
+{
+	if (!connected)
+	{
 		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_vote);
-	MSG_WriteBool(&net_buffer, true);
-} END_COMMAND(vote_yes)
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "vote");
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, "yes");
+}
+END_COMMAND(vote_yes)
 
 /**
  * Sends a "no" vote to the server.
  */
-BEGIN_COMMAND(vote_no) {
-	if (!connected) {
+BEGIN_COMMAND(vote_no)
+{
+	if (!connected)
+	{
 		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_vote);
-	MSG_WriteBool(&net_buffer, false);
-} END_COMMAND(vote_no)
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "vote");
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, "no");
+}
+END_COMMAND(vote_no)
 
 void CL_VoteUpdate(void) {
 	vote_state_t vote_state;

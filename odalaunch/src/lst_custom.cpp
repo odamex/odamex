@@ -24,6 +24,8 @@
 
 #include "lst_custom.h"
 
+#include <sstream>
+
 #include <wx/dcmemory.h>
 #include <wx/settings.h>
 #include <wx/defs.h>
@@ -116,146 +118,189 @@ void wxAdvancedListCtrl::ClearImageList()
 		ImageList->Remove(i);
 }
 
-// [Russell] - These are 2 heavily modified routines of the javascript natural
-// compare by Kristof Coomans (it was easier to follow than the original C
-// version by Martin Pool), their versions were under the ZLIB license (which
-// is compatible with the GPL).
+//  strnatcmp.c -- Perform 'natural order' comparisons of strings in C.
+//  Copyright (C) 2000, 2004 by Martin Pool <mbp sourcefrog net>
 //
-// Original Javascript version by Kristof Coomans
-//      http://sourcefrog.net/projects/natsort/natcompare.js
+//  This software is provided 'as-is', without any express or implied
+//  warranty.  In no event will the authors be held liable for any damages
+//  arising from the use of this software.
 //
-// Do not contact the mentioned authors about my version.
-wxInt32 NaturalCompareWorker(const wxString& String1, const wxString& String2)
+//  Permission is granted to anyone to use this software for any purpose,
+//  including commercial applications, and to alter it and redistribute it
+//  freely, subject to the following restrictions:
+//
+//  1. The origin of this software must not be misrepresented; you must not
+//     claim that you wrote the original software. If you use this software
+//     in a product, an acknowledgment in the product documentation would be
+//     appreciated but is not required.
+//  2. Altered source versions must be plainly marked as such, and must not be
+//     misrepresented as being the original software.
+//  3. This notice may not be removed or altered from any source distribution.
+
+// [AM] The original implementation assumed C strings, so we use this so
+//      we don't blow anything up.
+static wxUniChar SafeAt(const wxString& string, size_t index)
 {
-	wxInt32 Direction = 0;
+	if (index >= string.Len())
+		return '\0';
+	return string.at(index);
+}
 
-	wxChar String1Char, String2Char;
+/**
+ * @brief Unicode-aware isspace.
+ * 
+ * @detail This can't be complete in such a short space, so instead I borrowed
+ *         Golang's definition of a space in the standard Latin-1 space.
+ * 
+ * @param ch Character to check.
+ * @return If the passed character is a space.
+*/
+static bool IsSpace(wxUniChar ch)
+{
+	wxUniChar::value_type cp = ch.GetValue();
+	return cp == '\t' || cp == '\n' || cp == '\v' || cp == '\f' || cp == '\r' ||
+	       cp == ' ' || cp == 0x0085 /* NEL */ || cp == 0x00A0 /* NBSP */;
+}
 
-	for(wxUint32 String1Counter = 0, String2Counter = 0;
-	        String1.Len() > 0 && String2.Len() > 0;
-	        ++String1Counter, ++String2Counter)
+/**
+ * @brief Unicode-aware isdigit.
+ *
+ * @detail This can't be complete in such a short space, so instead I borrowed
+ *         Golang's definition of a digit in the standard Latin-1 space.
+ *
+ * @param ch Character to check.
+ * @return If the passed character is a space.
+ */
+static bool IsDigit(wxUniChar ch)
+{
+	wxUniChar::value_type cp = ch.GetValue();
+	return cp >= '0' && cp <= '9';
+}
+
+static wxInt32 NaturalCompareLeft(const wxString& aString, size_t aIndex,
+                                  const wxString& bString, size_t bIndex)
+{
+	// Compare two left-aligned numbers: the first to have a
+	// different value wins.
+	for (;; aIndex++, bIndex++)
 	{
-		String1Char = String1[String1Counter];
-		String2Char = String2[String2Counter];
+		wxUniChar aChar = SafeAt(aString, aIndex);
+		wxUniChar bChar = SafeAt(bString, bIndex);
 
-		if(!wxIsdigit(String1Char) && !wxIsdigit(String2Char))
-		{
-			return Direction;
-		}
-
-		if(!wxIsdigit(String1Char))
-		{
+		if (!IsDigit(aChar) && !IsDigit(bChar))
+			return 0;
+		if (!IsDigit(aChar))
 			return -1;
-		}
-
-		if(!wxIsdigit(String2Char))
-		{
-			return 1;
-		}
-
-		if(String1Char < String2Char)
-		{
-			if(Direction == 0)
-			{
-				Direction = -1;
-			}
-		}
-
-		if(String1Char > String2Char)
-		{
-			if(Direction == 0)
-			{
-				Direction = 1;
-			}
-		}
-
-		if(String1Char == 0 && String2Char == 0)
-		{
-			return Direction;
-		}
+		if (!IsDigit(bChar))
+			return +1;
+		if (aChar < bChar)
+			return -1;
+		if (aChar > bChar)
+			return +1;
 	}
 
 	return 0;
 }
 
-wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = false)
+static wxInt32 NaturalCompareRight(const wxString& aString, size_t aIndex,
+                                   const wxString& bString, size_t bIndex)
 {
-	wxInt32 StringCounter1 = 0, StringCounter2 = 0;
-	wxInt32 String1Zeroes = 0, String2Zeroes = 0;
-	wxChar String1Char, String2Char;
-	wxInt32 Result;
+	int bias = 0;
 
-	if(!CaseSensitive)
+	// The longest run of digits wins.  That aside, the greatest
+	// value wins, but we can't know that it will until we've scanned
+	// both numbers to know that they have the same magnitude, so we
+	// remember it in BIAS.
+	for (;; aIndex++, bIndex++)
 	{
-		String1.MakeLower();
-		String2.MakeLower();
+		wxUniChar aChar = SafeAt(aString, aIndex);
+		wxUniChar bChar = SafeAt(bString, bIndex);
+
+		if (!IsDigit(aChar) && !IsDigit(bChar))
+			return bias;
+		if (!IsDigit(aChar))
+			return -1;
+		if (!IsDigit(bChar))
+			return +1;
+		if (aChar < bChar)
+		{
+			if (!bias)
+				bias = -1;
+		}
+		else if (aChar > bChar)
+		{
+			if (!bias)
+				bias = +1;
+		}
+		else if (aChar == '\0' && bChar == '\0')
+			return bias;
 	}
 
-	while(true)
+	return 0;
+}
+
+wxInt32 NaturalCompare(wxString aString, wxString bString, bool CaseSensitive = false)
+{
+	if (!CaseSensitive)
 	{
-		String1Zeroes = 0;
-		String2Zeroes = 0;
+		aString.MakeLower();
+		bString.MakeLower();
+	}
 
-		String1Char = String1[StringCounter1];
-		String2Char = String2[StringCounter2];
+	size_t aIndex = 0, bIndex = 0;
+	wxInt32 result = 0;
 
-		// skip past whitespace or zeroes in first string
-		while(wxIsspace(String1Char) || String1Char == '0')
+	for (;;)
+	{
+		wxUniChar aChar = SafeAt(aString, aIndex);
+		wxUniChar bChar = SafeAt(bString, bIndex);
+
+		// skip over leading spaces or zeros
+		while (IsSpace(aChar))
 		{
-			if(String1Char == '0')
+			aIndex += 1;
+			aChar = aString.at(aIndex);
+		}
+
+		while (IsSpace(bChar))
+		{
+			bIndex += 1;
+			bChar = SafeAt(bString, bIndex);
+		}
+
+		// process run of digits
+		if (IsDigit(aChar) && IsDigit(bChar))
+		{
+			bool fractional = (aChar.GetValue() == '0' || bChar.GetValue() == '0');
+
+			// [AM] String views would really help here.
+			if (fractional)
 			{
-				String1Zeroes++;
+				if ((result = NaturalCompareLeft(aString, aIndex, bString, bIndex)) != 0)
+					return result;
 			}
 			else
 			{
-				String1Zeroes = 0;
-			}
-
-			String1Char = String1[++StringCounter1];
-		}
-
-		// skip past whitespace or zeroes in second string
-		while(wxIsspace(String2Char) || String2Char == '0')
-		{
-			if(String2Char == '0')
-			{
-				String2Zeroes++;
-			}
-			else
-			{
-				String2Zeroes = 0;
-			}
-
-			String2Char = String2[++StringCounter2];
-		}
-
-		// We encountered some digits, compare these.
-		if(wxIsdigit(String1Char) && wxIsdigit(String2Char))
-		{
-			if((Result = NaturalCompareWorker(
-			                 String1.Mid(StringCounter1),
-			                 String2.Mid(StringCounter2))) != 0)
-			{
-				return Result;
+				if ((result = NaturalCompareRight(aString, aIndex, bString, bIndex)) != 0)
+					return result;
 			}
 		}
 
-		if((String1Char == 0) && (String2Char == 0))
+		if (aChar == '\0' && bChar == '\0')
 		{
-			return (String1Zeroes - String2Zeroes);
+			// The strings compare the same.  Perhaps the caller
+			// will want to call strcmp to break the tie.
+			return 0;
 		}
 
-		if(String1Char < String2Char)
-		{
+		if (aChar < bChar)
 			return -1;
-		}
-		else if(String1Char > String2Char)
-		{
-			return 1;
-		}
 
-		++StringCounter1;
-		++StringCounter2;
+		if (aChar > bChar)
+			return +1;
+
+		aIndex += 1;
+		bIndex += 1;
 	}
 }
 

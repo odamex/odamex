@@ -198,7 +198,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
     target_link_libraries(odamex SDL2::mixer)
   endif()
-  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})
+  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
@@ -293,6 +293,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT client)
   endif()
+endif()
+
+if(BUILD_OR_FAIL AND NOT TARGET odamex)
+  message(FATAL_ERROR "Odamex target could not be generated")
 endif()
 
 print_cxx_flags()

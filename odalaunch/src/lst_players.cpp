@@ -20,12 +20,13 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "lst_players.h"
+
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/log.h>
 #include <wx/dcmemory.h>
 
-#include "lst_players.h"
 #include "str_utils.h"
 
 using namespace odalpapi;

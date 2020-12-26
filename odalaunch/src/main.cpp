@@ -25,11 +25,10 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "main.h"
 
 // main dialog resource
 #include "xrc_resource.h"
-
-#include "main.h"
 
 #include "net_io.h"
 

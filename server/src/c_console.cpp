@@ -123,15 +123,16 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	if (str[str.length() - 1] != '\n')
 		str += '\n';
 
-	// send to any rcon players
+	// Only allow sending internal messages to RCON players that are PRINT_HIGH
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t* cl = &(it->client);
 
-		if (cl->allow_rcon)
+		// Only allow RCON messages that are PRINT_HIGH
+		if (cl->allow_rcon && printlevel == PRINT_HIGH)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
-			MSG_WriteByte(&cl->reliablebuf, PRINT_MEDIUM);
+			MSG_WriteByte(&cl->reliablebuf, PRINT_WARNING);
 			MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
 		}
 	}
@@ -142,6 +143,18 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 	}
 
 	return PrintString(printlevel, str.c_str());
+}
+
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
+{
+	va_list argptr;
+	int count;
+
+	va_start(argptr, format);
+	count = VPrintf(PRINT_HIGH, format, argptr);
+	va_end(argptr);
+
+	return count;
 }
 
 FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
@@ -163,7 +176,7 @@ FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
 
 	printxormask = 0x80;
 	va_start (argptr, format);
-	count = VPrintf (PRINT_HIGH, format, argptr);
+	count = VPrintf (PRINT_NORCON, format, argptr);
 	va_end (argptr);
 
 	return count;
@@ -177,7 +190,7 @@ FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
 	if (developer || devparm)
 	{
 		va_start (argptr, format);
-		count = VPrintf (PRINT_HIGH, format, argptr);
+		count = VPrintf (PRINT_WARNING, format, argptr);
 		va_end (argptr);
 		return count;
 	}

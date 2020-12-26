@@ -122,6 +122,15 @@ void P_InitSwitchList(void)
 	Z_Free (alphSwitchList);
 }
 
+void P_DestroyButtonThinkers()
+{
+	DActiveButton *button;
+	TThinkerIterator<DActiveButton> iterator;
+
+	while ((button = iterator.Next()))
+		button->Destroy();
+}
+
 //
 // Start a button counting down till it turns off.
 // [RH] Rewritten to remove MAXBUTTONS limit and use temporary soundorgs.

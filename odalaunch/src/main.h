@@ -29,9 +29,11 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include <wx/app.h>
+#include "odalaunch.h"
 
 #include "dlg_main.h"
+
+#include <wx/app.h>
 
 class Application : public wxApp
 {

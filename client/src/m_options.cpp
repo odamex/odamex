@@ -91,6 +91,9 @@ EXTERN_CVAR (r_enemycolor)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
+EXTERN_CVAR (mute_spectators)
+EXTERN_CVAR (mute_enemies)
+
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (hud_targetnames)
@@ -199,6 +202,11 @@ value_t NoYes[2] = {
 value_t OnOff[2] = {
 	{ 0.0, "Off" },
 	{ 1.0, "On" }
+};
+
+value_t HideShow[2] = {
+	{ 0.0, "Hide" },
+	{ 1.0, "Show" }
 };
 
 value_t OffOn[2] = {
@@ -322,7 +330,6 @@ static menuitem_t ControlsItems[] = {
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -335,6 +342,20 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 6"} },
 	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
 	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
+	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
+	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
+	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_setmark"} },
+	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_clearmarks"} },
+	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_big"} },
+	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomin"} },
+	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomout"} },
+	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panup"} },
+	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_pandown"} },
+	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
+	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
@@ -586,12 +607,13 @@ static menuitem_t NetworkItems[] = {
 	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
 	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
-	 { redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ bricktext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Autorecord filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Split every map",				{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
+
+	{ redtext,		" ",							{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
@@ -823,6 +845,9 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
+EXTERN_CVAR(message_showpickups)
+EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR (con_coloredmessages)
 EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
@@ -830,7 +855,6 @@ EXTERN_CVAR (msg2color)
 EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
-EXTERN_CVAR (msglevel)
 
 static value_t TextColors[] =
 {
@@ -857,12 +881,6 @@ static value_t TextColors[] =
 	{ CR_CYAN,		"cyan" }
 };
 
-static value_t MessageLevels[] = {
-	{ 0.0, "Item Pickup" },
-	{ 1.0, "Obituaries" },
-	{ 2.0, "Critical Messages" }
-};
-
 // TODO: Put all language info in one array, auto detect what's in the lump?
 static value_t Languages[] = {
 	{ 0.0, "Auto" },
@@ -873,11 +891,20 @@ static value_t Languages[] = {
 
 static menuitem_t MessagesItems[] = {
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
-	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
-    { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete ,"Game Message Type",    {&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
+	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Hide spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Hide enemies messages",	{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+    { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
+	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
+
+
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
@@ -1296,7 +1323,9 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	for (i = 0; i < numitems; i++, item++)
 	{
 		if (item->type == control)
-			C_GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+		if (item->type == mapcontrol)
+			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
@@ -1547,8 +1576,15 @@ void M_OptDrawer (void)
 
 			case control:
 			{
-				std::string desc = C_NameKeys (item->b.key1, item->c.key2);
+				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+			}
+			break;
+
+			case mapcontrol:
+			{
+				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
@@ -1625,7 +1661,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
-	const char *cmd = C_GetBinding(ch);
+	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1640,7 +1676,10 @@ void M_OptResponder (event_t *ev)
 			if (ch != KEY_ESCAPE)
 #endif
 			{
-				C_ChangeBinding (item->e.command, ch);
+				if (item->type == control)
+					Bindings.ChangeBinding (item->e.command, ch);
+				else if (item->type == mapcontrol)
+					AutomapBindings.ChangeBinding(item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -2108,7 +2147,12 @@ void M_OptResponder (event_t *ev)
 		case KEY_BACKSPACE:
 			if (item->type == control)
 			{
-				C_UnbindACommand (item->e.command);
+				Bindings.UnbindACommand (item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
+			else if (item->type == mapcontrol)
+			{
+				AutomapBindings.UnbindACommand(item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
 			break;
@@ -2152,7 +2196,7 @@ void M_OptResponder (event_t *ev)
 
 				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
-			else if (item->type == control)
+			else if (item->type == control || item->type == mapcontrol)
 			{
 				configuring_controls = true;
 				WaitingForKey = true;

@@ -45,9 +45,6 @@ CVAR(			sv_motd, "Welcome to Odamex", "Message Of The Day to display to clients 
 CVAR(			sv_email, "email@domain.com", "Administrator email address",
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(			sv_website, "http://odamex.net/", "Server or Admin website",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-
 CVAR(			sv_waddownload,	"0", "Allow downloading of WAD files from this server",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
@@ -138,7 +135,7 @@ CVAR(			sv_upnp_externalip, "", "Set to the router IP address",
 // =================
 
 CVAR_RANGE(		sv_teamsinplay, "2", "Teams that are enabled",
-				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
 CVAR(			ctf_manualreturn, "0", "Flags dropped must be returned manually", 
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
@@ -253,4 +250,3 @@ CVAR(sv_download_test, "0", "Experimental download optimization testing",
 // None currently
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
-

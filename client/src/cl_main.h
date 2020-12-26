@@ -47,6 +47,7 @@ extern NetDemo	netdemo;
 extern bool predicting;
 
 void CL_QuitNetGame(void);
+void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect(void);
@@ -58,6 +59,13 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
+void CL_UpdatePlayerQueuePos();
+void CL_ExecuteLineSpecial();
+void CL_ACSExecuteSpecial();
+void CL_LineUpdate();
+void CL_LineSideUpdate();
+void CL_SectorSectorPropertiesUpdate();
+void CL_ThinkerUpdate();
 
 void CL_DisplayTics();
 void CL_RunTics();
@@ -67,4 +75,3 @@ bool CL_SectorIsPredicting(sector_t *sector);
 std::string M_ExpandTokens(const std::string &str);
 
 #endif
-

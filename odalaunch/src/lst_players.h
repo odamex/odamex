@@ -23,6 +23,8 @@
 #ifndef __LST_PLAYERS_H__
 #define __LST_PLAYERS_H__
 
+#include "odalaunch.h"
+
 #include <wx/colour.h>
 #include <wx/bitmap.h>
 

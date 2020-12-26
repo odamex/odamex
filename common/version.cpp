@@ -29,6 +29,7 @@
 #include <sstream>
 #include <memory>
 
+#include "cmdlib.h"
 #include "c_dispatch.h"
 
 typedef std::map<std::string, std::string> source_files_t;
@@ -53,13 +54,64 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 	get_source_files()[file] = ss.str();
 }
 
-const char* GitDescribe()
+/**
+ * @brief Return the current commit hash.
+ */
+const char* GitHash()
 {
-#ifdef GIT_DESCRIBE
-	return GIT_DESCRIBE;
+#ifdef GIT_HASH
+	return GIT_HASH;
 #else
 	return "unknown";
 #endif
+}
+
+/**
+ * @brief Return the current branch name.
+ */
+const char* GitBranch()
+{
+#ifdef GIT_BRANCH
+	return GIT_BRANCH;
+#else
+	return "unknown";
+#endif
+}
+
+/**
+ * @brief Return a truncated unambiguous hash.
+ */
+const char* GitShortHash()
+{
+#ifdef GIT_SHORT_HASH
+	return GIT_SHORT_HASH;
+#else
+	return "unknown";
+#endif
+}
+
+/**
+ * @brief Return the Git version in a format that's good-enough to display
+ *        in most end-user contexts.
+ * 
+ * @return A version string in the format of "version (branch, short hash)".
+ *         On master the branch name is omitted.
+*/
+const char* GitNiceVersion()
+{
+	static std::string version;
+	if (version.empty())
+	{
+		if (!strcmp(GitBranch(), "master"))
+		{
+			StrFormat(version, "%s (%s)", DOTVERSIONSTR, GitShortHash());
+		}
+		else
+		{
+			StrFormat(version, "%s (%s, %s)", DOTVERSIONSTR, GitBranch(), GitShortHash());
+		}
+	}
+	return version.c_str();
 }
 
 BEGIN_COMMAND (version)
@@ -67,7 +119,8 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s (%s) - %s\n", DOTVERSIONSTR, GitDescribe(), COPYRIGHTSTR);
+		Printf(PRINT_HIGH, "Odamex v%s - %s\ncommit %s (%s)\n", DOTVERSIONSTR,
+		       COPYRIGHTSTR, GitHash(), GitBranch());
 	}
 	else
 	{
@@ -75,7 +128,7 @@ BEGIN_COMMAND (version)
 		source_files_t::const_iterator it = get_source_files().find(argv[1]);
 
 		if (it == get_source_files().end())
-			Printf(PRINT_HIGH, "no such file: %s", argv[1]);
+			Printf(PRINT_WARNING, "no such file: %s", argv[1]);
 		else
 			Printf(PRINT_HIGH, "%s", it->second.c_str());
 	}

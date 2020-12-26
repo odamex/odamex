@@ -117,8 +117,8 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf (PRINT_HIGH, "ERROR: %s\n", error.GetMsg().c_str());
-			Printf (PRINT_HIGH, "sleeping for 10 seconds before map reload...");
+			Printf ("ERROR: %s\n", error.GetMsg().c_str());
+			Printf ("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
 			SV_SendDisconnectSignal();
@@ -142,6 +142,7 @@ void D_DoomLoop (void)
 //
 void D_Init()
 {
+	argb_t::setChannels(3, 2, 1, 0);
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
 
