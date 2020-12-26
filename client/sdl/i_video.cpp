@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,21 +25,20 @@
 #include <cstdlib>
 #include <climits>
 #include <string>
+#include <algorithm>
 
 #include "i_video.h"
 #include "v_video.h"
 
 #include "i_system.h"
-#include "c_console.h"
 #include "c_cvars.h"
-#include "c_dispatch.h"
-#include "m_argv.h"
 #include "m_misc.h"
 #include "i_sdlvideo.h"
 #include "i_input.h"
 #include "m_fileio.h"
 
 #include "w_wad.h"
+#include "cmdlib.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -78,6 +77,7 @@ static IWindowSurface* loading_icon_background_surface = NULL;
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_overscan)
 EXTERN_CVAR(vid_320x200)
 EXTERN_CVAR(vid_640x400)
@@ -441,13 +441,17 @@ void IWindowSurface::releaseCanvas(DCanvas* canvas)
 //
 // Returns a string with a text description of the given video mode.
 //
-std::string I_GetVideoModeString(const IVideoMode* mode)
+std::string I_GetVideoModeString(const IVideoMode& mode)
 {
-	char str[50];
-	sprintf(str, "%dx%d %dbpp (%s)", mode->getWidth(), mode->getHeight(), mode->getBitsPerPixel(),
-			mode->isFullScreen() ? "fullscreen" : "windowed");
+	const char window_strs[][25] = {
+		"window",
+		"full screen exclusive",
+		"full screen window"
+	};
 
-	return std::string(str);
+	std::string str;
+	StrFormat(str, "%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
+	return str;
 }
 
 
@@ -457,12 +461,12 @@ std::string I_GetVideoModeString(const IVideoMode* mode)
 // Helper function for I_ValidateVideoMode. Returns true if there is a video
 // mode availible with the desired bpp and screen mode.
 //
-static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
+static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 {
 	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 
 	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		if (it->isFullScreen() == fullscreen && it->getBitsPerPixel() == bpp)
+		if (it->bpp == bpp && it->window_mode == window_mode)
 			return true;
 
 	return false;
@@ -475,41 +479,40 @@ static bool I_IsModeSupported(uint8_t bpp, bool fullscreen)
 // Transforms the given video mode into a mode that is valid for the current
 // video hardware capabilities.
 //
-static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
+static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 {
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	const IVideoMode invalid_mode(0, 0, 0, WINDOW_Windowed);
+	IVideoMode desired_mode = mode;
 
-	uint16_t desired_width = mode->getWidth(), desired_height = mode->getHeight();
-	uint8_t desired_bpp = mode->getBitsPerPixel();
-	bool desired_fullscreen = mode->isFullScreen();
+	desired_mode.width = clamp<uint16_t>(mode.width, 320, MAXWIDTH);
+	desired_mode.height = clamp<uint16_t>(mode.height, 200, MAXHEIGHT);
+	desired_mode.bpp = mode.bpp;
+	desired_mode.window_mode = mode.window_mode;
+
+	// If the user requested a windowed mode, we don't have to worry about
+	// the requested dimensions aligning to an actual video resolution.
+	if (mode.window_mode != WINDOW_Fullscreen || !vid_autoadjust)
+		return desired_mode;
 
 	// Ensure the display type is adhered to
-	if (I_GetVideoCapabilities()->supportsFullScreen() == false)
-		desired_fullscreen = false;
-	else if (I_GetVideoCapabilities()->supportsWindowed() == false)
-		desired_fullscreen = true;
+	if (!I_GetVideoCapabilities()->supportsFullScreen())
+		desired_mode.window_mode = WINDOW_Windowed;
+	else if (!I_GetVideoCapabilities()->supportsWindowed())
+		desired_mode.window_mode = WINDOW_Fullscreen;
 
 	// check if the given bit-depth is supported
-	if (!I_IsModeSupported(desired_bpp, desired_fullscreen))
+	if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
 	{
-		desired_bpp = desired_bpp ^ (32 | 8);			// toggle bpp between 8 and 32
-
-		// check if the new bit-depth is supported
-		if (!I_IsModeSupported(desired_bpp, desired_fullscreen))
-			return IVideoMode(0, 0, 0, false);		// return an invalid video mode
+		// mode is not supported -- check a different bit depth 
+		desired_mode.bpp = desired_mode.bpp ^ (32 | 8);
+		if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
+			return invalid_mode;
 	}
-
-	desired_width = clamp<uint16_t>(desired_width, 320, MAXWIDTH);
-	desired_height = clamp<uint16_t>(desired_height, 200, MAXHEIGHT);
-
-	IVideoMode desired_mode(desired_width, desired_height, desired_bpp, desired_fullscreen);
-
-	if (!desired_fullscreen || !vid_autoadjust)
-		return desired_mode;
 
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
 
+	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (int iteration = 0; iteration < 2; iteration++)
 	{
 		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
@@ -517,13 +520,13 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 			if (*it == desired_mode)		// perfect match?
 				return *it;
 
-			if (it->getBitsPerPixel() == desired_bpp && it->isFullScreen() == desired_fullscreen)
+			if (it->bpp == desired_mode.bpp && it->window_mode == desired_mode.window_mode)
 			{
-				if (iteration == 0 && (it->getWidth() < desired_width || it->getHeight() < desired_height))
+				if (iteration == 0 && (it->width < desired_mode.width || it->height < desired_mode.height))
 					continue;
 
-				unsigned int dist = (it->getWidth() - desired_width) * (it->getWidth() - desired_width)
-						+ (it->getHeight() - desired_height) * (it->getHeight() - desired_height);
+				unsigned int dist = (it->width - desired_mode.width) * (it->width - desired_mode.width)
+						+ (it->height - desired_mode.height) * (it->height - desired_mode.height);
 
 				if (dist < closest_dist)
 				{
@@ -537,7 +540,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 			return *closest_mode;
 	}
 
-	return IVideoMode(0, 0, 0, false);		// return an invalid video mode
+	return invalid_mode;
 }
 
 
@@ -546,16 +549,17 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode* mode)
 //
 // Main function to set the video mode at the hardware level.
 //
-void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, bool vsync)
+void I_SetVideoMode(const IVideoMode& requested_mode)
 {
 	// ensure the requested mode is valid
-	IVideoMode desired_mode(width, height, surface_bpp, fullscreen);
-	IVideoMode mode = I_ValidateVideoMode(&desired_mode);
-	assert(mode.isValid());
+	IVideoMode validated_mode = I_ValidateVideoMode(requested_mode);
+	validated_mode.vsync = bool(vid_vsync.asInt());
+	validated_mode.stretch_mode = std::string(vid_filter);
+	assert(validated_mode.isValid());
 
 	IWindow* window = I_GetWindow();
 
-	window->setMode(mode.getWidth(), mode.getHeight(), mode.getBitsPerPixel(), mode.isFullScreen(), vsync);
+	window->setMode(validated_mode);
 	I_ForceUpdateGrab();
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
@@ -570,9 +574,9 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	I_FreeSurface(emulated_surface);
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
-	if (surface_bpp != mode.getBitsPerPixel())
+	if (requested_mode.bpp != validated_mode.bpp)
 	{
-		const PixelFormat* format = surface_bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
+		const PixelFormat* format = requested_mode.bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
 		converted_surface = new IWindowSurface(surface_width, surface_height, format);
 		primary_surface = converted_surface;
 	}
@@ -639,9 +643,9 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 
 	assert(I_VideoInitialized());
 
-	if (*window->getVideoMode() != desired_mode)
+	if (window->getVideoMode() != requested_mode)
 		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
-						I_GetVideoModeString(&desired_mode).c_str(),
+						I_GetVideoModeString(requested_mode).c_str(),
 						I_GetVideoModeString(window->getVideoMode()).c_str());
 	else
 		DPrintf("I_SetVideoMode: set video mode to %s\n",
@@ -655,11 +659,7 @@ void I_SetVideoMode(int width, int height, int surface_bpp, bool fullscreen, boo
 	if (converted_surface)
 		converted_surface->setPalette(palette);
 
-	// handle the -noblit parameter when playing a LMP demo
-	if (noblit)
-		window->disableRefresh();
-	else
-		window->enableRefresh();
+	window->enableRefresh();
 }
 
 
@@ -706,7 +706,7 @@ void I_InitHardware()
 		#endif
 		assert(video_subsystem != NULL);
 
-		const IVideoMode* native_mode = I_GetVideoCapabilities()->getNativeMode();
+		const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
 		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
 	}
 }
@@ -1061,13 +1061,13 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		// Draws frame time and cumulative fps
-		if (vid_displayfps)
-			V_DrawFPSWidget();
-
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)
 			V_DrawFPSTicker();
+
+		// Draws frame time and cumulative fps
+		if (vid_displayfps)
+			V_DrawFPSWidget();
 
 		// draws a disk loading icon in the lower right corner
 		if (gametic <= loading_icon_expire)
@@ -1104,21 +1104,6 @@ void I_SetPalette(const argb_t* palette)
 
 
 //
-// I_SetWindowSize
-//
-// Resizes the application window to the specified size.
-//
-void I_SetWindowSize(int width, int height)
-{
-	if (I_VideoInitialized())
-	{
-		int bpp = vid_32bpp ? 32 : 8;
-		I_SetVideoMode(width, height, bpp, vid_fullscreen, vid_vsync);
-	}
-}
-
-
-//
 // I_SetWindowCaption
 //
 // Set the window caption.
@@ -1145,6 +1130,17 @@ void I_SetWindowCaption(const std::string& caption)
 void I_SetWindowIcon()
 {
 	I_GetWindow()->setWindowIcon();
+}
+
+
+//
+// I_GetMonitorCount
+//
+int I_GetMonitorCount()
+{
+	if (I_VideoInitialized())
+		return video_subsystem->getMonitorCount();
+	return 0;
 }
 
 

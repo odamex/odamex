@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,8 +23,6 @@
 
 #include <stack>
 #include <iostream>
-#include <map>
-#include <string>
 
 #include "win32inc.h"
 #ifdef _WIN32
@@ -34,15 +32,11 @@
 
 #ifdef UNIX
 #include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
 #endif
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdarg.h>
-#include <math.h>
-#include <time.h>
 
 #include "i_crash.h"
 #include "m_argv.h"
@@ -52,8 +46,6 @@
 #include "z_zone.h"
 #include "errors.h"
 #include "i_net.h"
-#include "sv_main.h"
-#include "m_ostring.h"
 
 using namespace std;
 
@@ -240,7 +232,10 @@ int main (int argc, char **argv)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 
-	    seteuid (getuid ());
+		int r_euid = seteuid (getuid ());
+
+		if(r_euid < 0)
+			perror(NULL);
 
 		Args.SetArgs (argc, argv);
 

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2016 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -205,7 +205,7 @@ void writeBacktrace(int sig, siginfo_t* si)
 	int len = 0;
 
 	// Open a file to write our dump into.
-	len = snprintf(buf, sizeof(buf), "odamex_%d_dump.txt", (long long)time(NULL));
+	len = snprintf(buf, sizeof(buf), "odamex_%lld_dump.txt", (long long)time(NULL));
 	if (len < 0)
 	{
 		return;
@@ -222,28 +222,44 @@ void writeBacktrace(int sig, siginfo_t* si)
 	{
 		return;
 	}
-	write(fd, buf, len);
+	ssize_t writelen = write(fd, buf, len);
+	if (writelen < 1)
+	{
+		printf("writeBacktrace(): failed to write to fd\n");
+	}
 
 	len = snprintf(buf, sizeof(buf), "Errno: %d\n", si->si_errno);
 	if (len < 0)
 	{
 		return;
 	}
-	write(fd, buf, len);
+	writelen = write(fd, buf, len);
+	if (writelen < 1)
+	{
+		printf("writeBacktrace(): failed to write to fd\n");
+	}
 
 	len = snprintf(buf, sizeof(buf), "Signal code: %d\n", si->si_code);
 	if (len < 0)
 	{
 		return;
 	}
-	write(fd, buf, len);
+	writelen = write(fd, buf, len);
+	if (writelen < 1)
+	{
+		printf("writeBacktrace(): failed to write to fd\n");
+	}
 
 	len = snprintf(buf, sizeof(buf), "Fault Address: %p\n", si->si_addr);
 	if (len < 0)
 	{
 		return;
 	}
-	write(fd, buf, len);
+	writelen = write(fd, buf, len);
+	if (writelen < 1)
+	{
+		printf("writeBacktrace(): failed to write to fd\n");
+	}
 
 	// Get backtrace data.
 	void* bt[50];

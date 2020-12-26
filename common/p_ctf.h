@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,6 +56,9 @@ struct flagdata
 	// Integer representation of WHO has each flag (player id)
 	byte flagger;
 	int	pickup_time;
+
+	// True if the flag is currently grabbed for the first time.
+	bool firstgrab;
 
 	// Flag locations
 	int x, y, z;
@@ -126,4 +129,3 @@ FArchive &operator>> (FArchive &arc, flagdata &flag);
 #define	REDCOLOR		176
 
 #endif
-

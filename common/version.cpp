@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
+#include "git_describe.h"
 
 #include <map>
 #include <string>
@@ -29,8 +30,6 @@
 #include <memory>
 
 #include "c_dispatch.h"
-
-static unsigned int last_revision = 0;
 
 typedef std::map<std::string, std::string> source_files_t;
 

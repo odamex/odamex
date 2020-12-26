@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -184,7 +184,7 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	bool		weaponowned[NUMWEAPONS];
+	bool		weaponowned[NUMWEAPONS+1];
 	int			ammo[NUMAMMO];
 	int			maxammo[NUMAMMO];
 
@@ -298,11 +298,12 @@ public:
 		{
 		public:
 			std::string name;
+			std::string md5;
 			unsigned int next_offset;
 
-			download_t() : name(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), next_offset(other.next_offset) {}
-		}download;
+			download_t() : name(""), md5(""), next_offset(0) {}
+			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
+		} download;
 
 		client_t()
 		{

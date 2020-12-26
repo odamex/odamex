@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,27 +22,16 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <sstream>
-#include <string>
 #include <algorithm>
-#include <vector>
-#include <set>
 
-#include "c_console.h"
 #include "c_dispatch.h"
 #include "d_event.h"
-#include "d_main.h"
 #include "doomstat.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "gstrings.h"
 #include "gi.h"
 
 #include "i_system.h"
-#include "m_alloc.h"
-#include "m_fileio.h"
-#include "m_misc.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
@@ -55,15 +44,12 @@
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
-#include "s_sndseq.h"
-#include "sc_man.h"
 #include "sv_main.h"
 #include "sv_maplist.h"
-#include "sv_vote.h"
-#include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "g_warmup.h"
+#include "m_wdlstats.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -224,7 +210,7 @@ void G_ChangeMap() {
 		// when onlcvars (addcommandstring's second param) is true.  Is there a
 		// reason why the mapscripts ahve to be safe mode?
 		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.cstring()/*, true*/);
+			AddCommandString(sv_endmapscript.cstring());
 	}
 }
 
@@ -247,7 +233,7 @@ void G_ChangeMap(size_t index) {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 // Restart the current map.
@@ -260,7 +246,7 @@ void G_RestartMap() {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+		AddCommandString(sv_endmapscript.cstring());
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -303,7 +289,7 @@ void G_DoNewGame (void)
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_startmapscript.cstring()))
-		AddCommandString(sv_startmapscript.cstring()/*,true*/);
+		AddCommandString(sv_startmapscript.cstring());
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -337,11 +323,12 @@ void G_InitNew (const char *mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		for (i = 0; i < wadlevelinfos.size(); i++)
-			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
-
-		for (i = 0; LevelInfos[i].mapname[0]; i++)
-			LevelInfos[i].flags &= ~LEVEL_VISITED;
+		LevelInfos& levels = getLevelInfos();
+		for (size_t i = 0; i < levels.size(); i++)
+		{
+			level_pwad_info_t& level = levels.at(i);
+			level.flags &= ~LEVEL_VISITED;
+		}
 	}
 
 	int old_gametype = sv_gametype.asInt();
@@ -462,6 +449,9 @@ void G_InitNew (const char *mapname)
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog();
+
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
 	//if(old_ctfmode != ctfmode)
 	//	SV_ServerSettingChange();
@@ -478,11 +468,9 @@ void G_ExitLevel (int position, int drawscores)
 	if (drawscores)
         SV_DrawScores();
 	
-	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
-
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*intlimit;  // wait n seconds, default 10
+	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
 
     secretexit = false;
 
@@ -500,11 +488,9 @@ void G_SecretExitLevel (int position, int drawscores)
     if (drawscores)
         SV_DrawScores();
         
-	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
-
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
+	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
@@ -569,6 +555,7 @@ void G_DoResetLevel(bool full_reset)
 				it->flags[i] = false;
 			}
 			CTFdata[i].flagger = 0;
+			CTFdata[i].firstgrab = false;
 			CTFdata[i].state = flag_home;
 		}
 	}
@@ -686,6 +673,8 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	M_StartWDLLog();
 }
 
 //
@@ -717,6 +706,10 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
+	
+	// Reset all keys found
+	for (size_t j = 0; j < NUMCARDS; j++)
+		keysfound[j] = false;
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -741,7 +734,7 @@ void G_DoLoadLevel (int position)
 		if (it->ingame() && it->playerstate == PST_DEAD)
 			it->playerstate = PST_REBORN;
 
-		// [AM] If sv_keepkeys is on, players might still be carrying keys, so
+		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
 		for (size_t j = 0; j < NUMCARDS; j++)
 			it->cards[j] = false;
@@ -853,8 +846,8 @@ void G_DoLoadLevel (int position)
 //
 void G_WorldDone (void)
 {
-	cluster_info_t *nextcluster;
-	cluster_info_t *thiscluster;
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
 
 	//gameaction = ga_worlddone;
 
@@ -862,25 +855,28 @@ void G_WorldDone (void)
 		return;
 
 	const char *finaletext = NULL;
-	thiscluster = FindClusterInfo (level.cluster);
+	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
 //		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme - what should happen on the server?
-		finaletext = thiscluster->exittext;
+		finaletext = thiscluster.exittext;
 	} else {
-		if (!secretexit)
-			nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
-		else
-			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
+		cluster_info_t& nextcluster = (secretexit) ?
+			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
+			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (nextcluster->cluster != level.cluster && sv_gametype == GM_COOP) {
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP)
+		{
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
-			if (nextcluster->entertext) {
+			if (nextcluster.entertext)
+			{
 //				F_StartFinale (nextcluster->messagemusic, nextcluster->finaleflat, nextcluster->entertext); // denis - fixme
-				finaletext = nextcluster->entertext;
-			} else if (thiscluster->exittext) {
+				finaletext = nextcluster.entertext;
+			}
+			else if (thiscluster.exittext)
+			{
 //				F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme
-				finaletext = thiscluster->exittext;
+				finaletext = thiscluster.exittext;
 			}
 		}
 	}

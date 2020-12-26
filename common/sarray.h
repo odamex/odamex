@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -444,8 +444,7 @@ public:
 	//
 	inline const SArrayId getId(const VT& item) const
 	{
-		SlotNumber slot = getSlot(item);
-		assert(slot != NOT_FOUND);
+		assert(getSlot(item) != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
 	}
 

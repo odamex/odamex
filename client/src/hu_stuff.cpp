@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,13 +26,11 @@
 
 #include "doomdef.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "st_stuff.h"
-#include "gstrings.h"
 #include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -42,7 +40,6 @@
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "i_video.h"
-#include "i_input.h"
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
@@ -222,8 +219,14 @@ void HU_Init()
 //
 void STACK_ARGS HU_Shutdown()
 {
-	Z_Free(sbline);
+	Z_ChangeTag(sbline, PU_CACHE);
 	sbline = NULL;
+
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		Z_ChangeTag(hu_font[i], PU_CACHE);
+		hu_font[i] = NULL;
+	}
 }
 
 
@@ -274,9 +277,9 @@ BOOL HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// send a macro
-		if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
+		if (ev->data1 >= KEY_JOY1 && ev->data1 <= KEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data2 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev->data1 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
@@ -305,7 +308,7 @@ BOOL HU_Responder(event_t *ev)
 		return true;
 	}
 
-	int textkey = ev->data2;	// [RH] Use localized keymap
+	int textkey = ev->data3;	// [RH] Use localized keymap
 	if (textkey < ' ' || textkey > '~')		// ASCII only please
 		return false;
 
@@ -405,6 +408,10 @@ static void HU_DrawCrosshair()
 
 static void HU_DrawChatPrompt()
 {
+	// Don't draw the chat prompt without a valid font.
+	if (::hu_font[0] == NULL)
+		return;
+
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// Set up text scaling
@@ -526,9 +533,8 @@ void HU_Drawer()
 
 	if (multiplayer && consoleplayer().camera && !(demoplayback))
 	{
-		if (gamestate != GS_INTERMISSION && 
-			(Actions[ACTION_SHOWSCORES]) 
-			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator) )
+		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES])
+			|| (hud_show_scoreboard_ondeath && displayplayer().health <= 0 && !displayplayer().spectator))
 		{
 			HU_DrawScores(&displayplayer());
 		}
@@ -1849,5 +1855,3 @@ BEGIN_COMMAND (displayscores)
 END_COMMAND (displayscores)
 
 VERSION_CONTROL (hu_stuff_cpp, "$Id$")
-
-

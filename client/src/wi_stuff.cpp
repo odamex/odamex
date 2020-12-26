@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,8 +27,6 @@
 
 #include "z_zone.h"
 #include "m_random.h"
-#include "m_swap.h"
-#include "i_system.h"
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
@@ -227,9 +225,9 @@ static animinfo_t epsd2animinfo[] =
 
 static int NUMANIMS[NUMEPISODES] =
 {
-	sizeof(epsd0animinfo)/sizeof(animinfo_t),
-	sizeof(epsd1animinfo)/sizeof(animinfo_t),
-	sizeof(epsd2animinfo)/sizeof(animinfo_t)
+	ARRAY_LENGTH(epsd0animinfo),
+	ARRAY_LENGTH(epsd1animinfo),
+	ARRAY_LENGTH(epsd2animinfo)
 };
 
 static animinfo_t *anims[NUMEPISODES] =
@@ -846,9 +844,13 @@ void WI_drawShowNextLoc (void)
 		}
 
 		// draw a splat on taken cities.
-		for (i=0; i < NUMMAPS; i++) {
-			if (FindLevelInfo (names[wbs->epsd][i])->flags & LEVEL_VISITED)
+		LevelInfos& levels = getLevelInfos();
+		for (i=0; i < NUMMAPS; i++)
+		{
+			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
+			{
 				WI_drawOnLnode(i, &splat, 1);
+			}
 		}
 
 		// draw flashing ptr
@@ -1383,8 +1385,10 @@ static int WI_CalcWidth (const char *str)
 
 void WI_loadData (void)
 {
+	LevelInfos& levels = getLevelInfos();
+
 	int i, j;
-	char name[9];
+	char name[17];
 	animinfo_t *a;
 
 	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
@@ -1417,7 +1421,7 @@ void WI_loadData (void)
 		else
 		{
 			lnames[i] = NULL;
-			lnametexts[i] = FindLevelInfo (i == 0 ? wbs->current : wbs->next)->level_name;
+			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name;
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
 	}

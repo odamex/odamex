@@ -1,20 +1,26 @@
+include(OdamexCopyLibs)
+include(OdamexCopyWad)
+include(OdamexTargetSettings)
+
 # use unquoted #defines
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
+
+global_compile_options()
 
 # Client flags
 if(NOT MSVC)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
       if(target_arch STREQUAL "i386" OR target_arch STREQUAL "amd64")        
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
       else()
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
       endif()
     else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
       if(APPLE)
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -faltivec")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELASE} -O3 -faltivec")
       endif()
     endif()
   endif()
@@ -22,16 +28,8 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
 endif()
 
-
-global_compile_options()
-
 # #define CLIENT_APP for use in the source code
 add_definitions(-DCLIENT_APP)
-
-# Common
-set(COMMON_DIR ../common)
-file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
-file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp)
 
 # Client
 set(CLIENT_DIR sdl src)
@@ -41,62 +39,15 @@ if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
 
-# git describe
-set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
-
 # Platform definitions
 define_platform()
 
 # Client definitions
-include_directories(${COMMON_DIR} ${CLIENT_DIR})
-
-# Textscreen
-set(TEXTSCREEN_LIBRARY "textscreen")
-set(TEXTSCREEN_DIR ../libraries/textscreen)
-set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
-
-include_directories(${TEXTSCREEN_DIR})
-add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
-message(STATUS "Textscreen will be statically linked.")
+include_directories(${CLIENT_DIR})
 
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)
   list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
-endif()
-
-# SDL configuration
-# try to use SDL 2.0 first but fall back on SDL 1.2 if necessary
-# ignore SDL 2.0 if -DUSE_SDL12=1 is specified
-if(NOT USE_SDL12)
-  find_package(SDL2)
-  find_package(SDL2_mixer)
-  if(SDL2_FOUND AND SDL2_MIXER_FOUND)
-    set(SDL_VERSION "2")
-    message(STATUS "Using SDL library version 2.0.")
-    include_directories(${SDL2_INCLUDE_DIR})
-    include_directories(${SDL2_MIXER_INCLUDE_DIR})
-    set(SDL_LINK_LIBRARIES ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY})
-  endif()
-endif()
-
-if(NOT SDL2_FOUND OR NOT SDL2_MIXER_FOUND)
-  find_package(SDL)
-  find_package(SDL_mixer)
-  if(SDL_FOUND AND SDLMIXER_FOUND)
-    set(SDL_VERSION "1")
-    message(STATUS "Using SDL library version 1.2.")
-    include_directories(${SDL_INCLUDE_DIR})
-    include_directories(${SDL_MIXER_INCLUDE_DIR})
-    set(SDL_LINK_LIBRARIES ${SDL_LIBRARY} ${SDL_MIXER_LIBRARY})
-  else()
-    if(NOT SDL_FOUND)
-      message(WARNING "SDL not found, client target not generated.")
-	endif()
-    if(NOT SDLMIXER_FOUND)
-      message(WARNING "SDL_mixer not found, client target not generated.")
-    endif()
-  endif()
 endif()
 
 # X11 configuration
@@ -107,9 +58,10 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # zlib configuration
-find_package(ZLIB)
+if(NOT USE_INTERNAL_ZLIB)
+  find_package(ZLIB)
+endif()
 if(NOT ZLIB_FOUND)
-  set(USE_INTREE_ZLIB)
   set(ZLIB_LIBRARY "z")
   set(ZLIB_LIBRARIES ${ZLIB_LIBRARY})
   set(ZLIB_DIR ../libraries/zlib/)
@@ -125,9 +77,10 @@ endif()
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 # libpng configuration
-find_package(PNG)
+if(NOT USE_INTERNAL_PNG)
+  find_package(PNG)
+endif()
 if(NOT PNG_FOUND)
-  set(USE_INTREE_LIBPNG)
   set(PNG_LIBRARY "png")
   set(PNG_LIBRARIES ${PNG_LIBRARY})
   set(PNG_DIR ../libraries/libpng/)
@@ -211,14 +164,40 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 # Client target
-if(SDL_VERSION)
-  add_executable(odamex MACOSX_BUNDLE WIN32
-    ${COMMON_SOURCES} ${COMMON_HEADERS}
-    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
-  target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex ${SDL_LINK_LIBRARIES})
+if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
+  # Textscreen
+  set(TEXTSCREEN_LIBRARY "textscreen")
+  set(TEXTSCREEN_DIR ../libraries/textscreen)
+  set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
+  set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 
-  target_link_libraries(odamex ${ZLIB_LIBRARY})
+  include_directories(${TEXTSCREEN_DIR})
+  add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+  if(TARGET SDL::SDL)
+    target_link_libraries(${TEXTSCREEN_LIBRARY} SDL::SDL)
+  else()
+    target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
+  endif()
+  target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
+
+  add_executable(odamex MACOSX_BUNDLE WIN32
+    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
+  odamex_target_settings(odamex)
+  target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
+  target_link_libraries(odamex odamex-common)
+  if(TARGET SDL::SDL)
+    target_link_libraries(odamex SDL::SDL)
+    if(TARGET SDL::SDLmain)
+      target_link_libraries(odamex SDL::SDLmain)
+    endif()
+    target_link_libraries(odamex SDL::mixer)
+  else()
+    target_link_libraries(odamex SDL2::SDL2)
+    if(TARGET SDL2::SDL2main)
+      target_link_libraries(odamex SDL2::SDL2main)
+    endif()
+    target_link_libraries(odamex SDL2::mixer)
+  endif()
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY})
 
   if(ENABLE_PORTMIDI)
@@ -240,6 +219,9 @@ if(SDL_VERSION)
     endif()
   endif()
 
+  odamex_copy_libs(odamex)
+  odamex_copy_wad(odamex)
+
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
@@ -253,7 +235,7 @@ if(SDL_VERSION)
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/wad/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS
     )
 
     set_directory_properties(
@@ -269,13 +251,13 @@ if(SDL_VERSION)
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
-    if(SDL2_FOUND AND SDL2_MIXER_FOUND)
-        string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL2_LIBRARY})
-        string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDL2_MIXER_LIBRARY})
-    else(SDL2_FOUND AND SDL2_MIXER_FOUND)
-        string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
-        string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
-    endif()
+    # if(SDL2_FOUND AND SDL2_MIXER_FOUND)
+    #     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL2_LIBRARY})
+    #     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDL2_MIXER_LIBRARY})
+    # else(SDL2_FOUND AND SDL2_MIXER_FOUND)
+    #     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
+    #     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
+    # endif()
 
     # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})
@@ -312,3 +294,5 @@ if(SDL_VERSION)
       COMPONENT client)
   endif()
 endif()
+
+print_cxx_flags()

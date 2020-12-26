@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -66,12 +66,6 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// Draw the HUD (only if old status bar is not drawn)
-void ST_newDraw (void);
-
-// Called on init
-void ST_loadGraphics (void);
-
 // [ML] HUDified status bar
 void ST_drawStatusBar (void);
 
@@ -105,5 +99,3 @@ bool ST_Responder(event_t* ev);
 
 
 #endif
-
-

@@ -2,7 +2,7 @@
 #
 # Odamex Client-Server demo regression test
 #
-# Copyright (C) 2006-2007 by The Odamex Team.
+# Copyright (C) 2006-2020 by The Odamex Team.
 # Author: Denis Lukianov
 #
 # This script connects a client to a server

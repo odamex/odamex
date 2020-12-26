@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,7 +25,6 @@
 #ifdef UNIX
 #include <ctype.h>
 #include <cstring>
-#include <unistd.h>
 #ifndef O_BINARY
 #define O_BINARY		0
 #endif
@@ -37,10 +36,7 @@
 #define strcmpi	strcasecmp
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <ctype.h>
 
 #include "doomtype.h"
 #include "m_swap.h"
@@ -53,12 +49,9 @@
 
 #include "w_wad.h"
 
-
-#include <string>
 #include <sstream>
 #include <algorithm>
 #include <vector>
-#include <iostream>
 #include <iomanip>
 
 
@@ -232,7 +225,13 @@ std::string W_AddFile(std::string filename)
 	size_t newlumps;
 
 	wadinfo_t header;
-	fread(&header, sizeof(header), 1, handle);
+	size_t readlen = fread(&header, sizeof(header), 1, handle);
+	if ( readlen < 1 )
+	{
+		Printf(PRINT_HIGH, "failed to read %s.\n", filename.c_str());
+		fclose(handle);
+		return "";
+	}
 	header.identification = LELONG(header.identification);
 
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
@@ -265,7 +264,13 @@ std::string W_AddFile(std::string filename)
 
 		fileinfo = new filelump_t[header.numlumps];
 		fseek(handle, header.infotableofs, SEEK_SET);
-		fread(fileinfo, length, 1, handle);
+		readlen = fread(fileinfo, length, 1, handle);
+		if (readlen < 1)
+		{
+			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename.c_str());
+			fclose(handle);
+			return "";
+		}
 
 		// convert from little-endian to target arch and capitalize lump name
 		for (int i = 0; i < header.numlumps; i++)
@@ -555,11 +560,9 @@ int W_CheckNumForName(const char *name, int namespc)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (const char* name)
+int W_GetNumForName(const char* name, int namespc)
 {
-	int	i;
-
-	i = W_CheckNumForName (name);
+	int i = W_CheckNumForName(name, namespc);
 
 	if (i == -1)
 		I_Error ("W_GetNumForName: %s not found!", name);
@@ -810,4 +813,3 @@ void W_Close ()
 }
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")
-

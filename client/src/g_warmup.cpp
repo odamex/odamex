@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +33,11 @@ Warmup::status_t Warmup::get_status()
 // Always allow score changes on the client
 bool Warmup::checkscorechange()
 {
+	// We should be able to refresh the scores if we're not on a warmup game.
+	if (this->status == Warmup::DISABLED)
+		return true;
+
+	// Disallow score changes if the warmup status is not in a match.
 	if (this->status != Warmup::INGAME)
 		return false;
 

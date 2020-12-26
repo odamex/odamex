@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -531,13 +531,15 @@ void Z_DumpHeap(int lowtag, int hightag)
 
 	Z_FreeMemory();
     memblock_t*	block;
-	
-    Printf(PRINT_HIGH, "zone size: %i  location: %p\n", mainzone->size, mainzone);
-	Printf(PRINT_HIGH, "used: %i  free: %i\n", pfree+lsize, efree);
-    Printf(PRINT_HIGH, "tag range: %i to %i\n", lowtag, hightag);
-	
-    for (block = mainzone->blocklist.next ; ; block = block->next)
-    {
+
+	Printf(PRINT_HIGH, "zone size: %" PRIuSIZE "  location: %p\n", mainzone->size,
+	       mainzone);
+	Printf(PRINT_HIGH, "used: %" PRIuSIZE "  free: %" PRIuSIZE "\n", pfree + lsize,
+	       efree);
+	Printf(PRINT_HIGH, "tag range: %i to %i\n", lowtag, hightag);
+
+	for (block = mainzone->blocklist.next;; block = block->next)
+	{
 		char user[30];
 		if (block->user == NULL || block->tag == PU_FREE)
 			sprintf(user, "---");
@@ -565,9 +567,10 @@ void Z_DumpHeap(int lowtag, int hightag)
 			sprintf(tag, "UNKNOWN");
 
 		if (block->tag >= lowtag && block->tag <= hightag)
-			Printf(PRINT_HIGH, "block:%p    size:%9i    user:%-9s    tag:%-s\n",
-				block, block->size, user, tag);
-		
+			Printf(PRINT_HIGH,
+			       "block:%p    size:%9" PRIuSIZE "    user:%-9s    tag:%-s\n", block,
+			       block->size, user, tag);
+
 		if (block->next == &mainzone->blocklist)
 			break;		// all blocks have been hit
 	
@@ -603,23 +606,18 @@ BEGIN_COMMAND (mem)
 	Z_FreeMemory();
 
 	Printf(PRINT_HIGH,
-			"%u blocks:\n"
-			"% 5u used      (%u, %u)\n"
-			" % 5u purgable (%u, %u)\n"
-			" % 5u locked   (%u, %u)\n"
-			"% 5u unused    (%u, %u)\n"
-			"% 5u p-free    (%u, %u)\n",
-			numblocks,
-			usedpblocks+usedlblocks, pfree+lsize,
-			largestpfree > largestlsize ? largestpfree : largestlsize,
-			usedpblocks, pfree, largestpfree,
-			usedlblocks, lsize, largestlsize,
-			usedeblocks, efree, largestefree,
-			usedpblocks + usedeblocks, pfree + efree,
-			largestpfree > largestefree ? largestpfree : largestefree
-			);
+	       "%" PRIuSIZE " blocks:\n"
+	       "%5" PRIuSIZE " used      (%" PRIuSIZE ", %" PRIuSIZE ")\n"
+	       " %5" PRIuSIZE " purgable (%" PRIuSIZE ", %" PRIuSIZE ")\n"
+	       " %5" PRIuSIZE " locked   (%" PRIuSIZE ", %" PRIuSIZE ")\n"
+	       "%5" PRIuSIZE " unused    (%" PRIuSIZE ", %" PRIuSIZE ")\n"
+	       "%5" PRIuSIZE " p-free    (%" PRIuSIZE ", %" PRIuSIZE ")\n",
+	       numblocks, usedpblocks + usedlblocks, pfree + lsize,
+	       largestpfree > largestlsize ? largestpfree : largestlsize, usedpblocks, pfree,
+	       largestpfree, usedlblocks, lsize, largestlsize, usedeblocks, efree,
+	       largestefree, usedpblocks + usedeblocks, pfree + efree,
+	       largestpfree > largestefree ? largestpfree : largestefree);
 }
 END_COMMAND (mem)
 
 VERSION_CONTROL (z_zone_cpp, "$Id$")
-

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,8 +81,8 @@ static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
 #define TIMER_ID_NEWLIST 2
 
 // custom events
-DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
-DEFINE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL)
+wxDEFINE_EVENT(wxEVT_THREAD_MONITOR_SIGNAL, wxCommandEvent);
+wxDEFINE_EVENT(wxEVT_THREAD_WORKER_SIGNAL, wxCommandEvent);
 
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain, wxFrame)

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,18 +22,16 @@
 //-----------------------------------------------------------------------------
 
 
-#include "z_zone.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_spec.h"
-#include "g_level.h"
 #include "s_sound.h"
 
 extern bool predicting;
 
 void P_SetPillarDestroy(DPillar *pillar)
 {
-	if (!pillar)
+	if (!pillar || predicting)
 		return;
 
 	pillar->m_Status = DPillar::destroy;

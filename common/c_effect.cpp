@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,11 +31,8 @@
 #include "g_level.h"
 #include "v_video.h"
 #include "m_random.h"
-#include "r_defs.h"
 #include "r_things.h"
 #include "s_sound.h"
-
-EXTERN_CVAR (cl_rockettrails)
 
 // [RH] particle globals
 int				NumParticles;
@@ -132,57 +129,8 @@ void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, in
 }
 
 void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int updown, int kind)
-{/*
-	int color1, color2, zvel, zspread, zadd;
-
-	switch (kind) {
-		case 0:		// Blood
-			color1 = red;
-			color2 = dred;
-			break;
-		case 1:		// Gunshot
-			color1 = grey3;
-			color2 = grey5;
-			break;
-		case 2:		// Smoke
-			color1 = grey3;
-			color2 = grey1;
-			break;
-		default:
-			return;
-	}
-
-	zvel = -128;
-	zspread = updown ? -6000 : 6000;
-	zadd = (updown == 2) ? -128 : 0;
-
-	for (; count; count--) {
-		particle_t *p = NewParticle ();
-		angle_t an;
-
-		if (!p)
-			break;
-
-		p->ttl = 12;
-		p->fade = FADEFROMTTL(12);
-		p->trans = 255;
-		p->size = 4;
-		p->color = M_Random() & 0x80 ? color1 : color2;
-		p->velz = M_Random () * zvel;
-		p->accz = -FRACUNIT/22;
-		if (kind) {
-			an = (angle + ((M_Random() - 128) << 23)) >> ANGLETOFINESHIFT;
-			p->velx = (M_Random () * finecosine[an]) >> 11;
-			p->vely = (M_Random () * finesine[an]) >> 11;
-			p->accx = p->velx >> 4;
-			p->accy = p->vely >> 4;
-		}
-		p->z = z + (M_Random () + zadd) * zspread;
-		an = (angle + ((M_Random() - 128) << 22)) >> ANGLETOFINESHIFT;
-		p->x = x + (M_Random () & 31)*finecosine[an];
-		p->y = y + (M_Random () & 31)*finesine[an];
-	}
-*/}
+{
+}
 
 //
 // [RH] Particle functions
@@ -280,21 +228,13 @@ void P_RunEffects (void)
 	if (!clientside)
 		return;
 
-	//int pnum = 0;/* = (consoleplayer().camera->subsector->sector - sectors) * numsectors*/;
 	AActor *actor;
 	TThinkerIterator<AActor> iterator;
 
 	while ( (actor = iterator.Next ()) )
 	{
 		if (actor->effects)
-		{
-			// Only run the effect if the mobj is potentially visible
-			//int rnum = pnum + (actor->subsector->sector - sectors);
-			//if (rejectempty || !(rejectmatrix[rnum>>3] & (1 << (rnum & 7))))
-			{
-				P_RunEffect (actor, actor->effects);
-			}
-		}
+			P_RunEffect (actor, actor->effects);
 	}
 }
 
@@ -303,63 +243,6 @@ void P_RunEffect (AActor *actor, int effects)
 	if (!actor || !clientside)
 		return;
 
-	angle_t moveangle = R_PointToAngle2(0,0,actor->momx,actor->momy);
-	particle_t *particle;
-
-	if ((effects & FX_ROCKET) && cl_rockettrails) {
-		// Rocket trail
-
-		fixed_t backx = actor->x - FixedMul (finecosine[(moveangle)>>ANGLETOFINESHIFT], actor->radius*2);
-		fixed_t backy = actor->y - FixedMul (finesine[(moveangle)>>ANGLETOFINESHIFT], actor->radius*2);
-		fixed_t backz = actor->z - (actor->height>>3) * (actor->momz>>16) + (2*actor->height)/3;
-
-		angle_t an = (moveangle + ANG90) >> ANGLETOFINESHIFT;
-		int i, speed;
-
-		particle = JitterParticle (3 + (M_Random() & 31));
-		if (particle) {
-			fixed_t pathdist = M_Random()<<8;
-			particle->x = backx - FixedMul(actor->momx, pathdist);
-			particle->y = backy - FixedMul(actor->momy, pathdist);
-			particle->z = backz - FixedMul(actor->momz, pathdist);
-			speed = (M_Random () - 128) * (FRACUNIT/200);
-			particle->velx += FixedMul (speed, finecosine[an]);
-			particle->vely += FixedMul (speed, finesine[an]);
-			particle->velz -= FRACUNIT/36;
-			particle->accz -= FRACUNIT/20;
-			particle->color = yellow;
-			particle->size = 2;
-		}
-		for (i = 6; i; i--) {
-			particle_t *particle = JitterParticle (3 + (M_Random() & 31));
-			if (particle) {
-				fixed_t pathdist = M_Random()<<8;
-				particle->x = backx - FixedMul(actor->momx, pathdist);
-				particle->y = backy - FixedMul(actor->momy, pathdist);
-				particle->z = backz - FixedMul(actor->momz, pathdist) + (M_Random() << 10);
-				speed = (M_Random () - 128) * (FRACUNIT/200);
-				particle->velx += FixedMul (speed, finecosine[an]);
-				particle->vely += FixedMul (speed, finesine[an]);
-				particle->velz += FRACUNIT/80;
-				particle->accz += FRACUNIT/40;
-				if (M_Random () & 7)
-					particle->color = grey2;
-				else
-					particle->color = grey1;
-				particle->size = 3;
-			} else
-				break;
-		}
-	}
-	if ((effects & FX_GRENADE) && (cl_rockettrails)) {
-		// Grenade trail
-
-		P_DrawSplash2 (6,
-			actor->x - FixedMul (finecosine[(moveangle)>>ANGLETOFINESHIFT], actor->radius*2),
-			actor->y - FixedMul (finesine[(moveangle)>>ANGLETOFINESHIFT], actor->radius*2),
-			actor->z - (actor->height>>3) * (actor->momz>>16) + (2*actor->height)/3,
-			moveangle + ANG180, 2, 2);
-	}
 	if (effects & FX_FOUNTAINMASK) {
 		// Particle fountain
 
@@ -431,6 +314,10 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	if (!length)	// line is 0 length, so nothing to do
 		return;
 
+	// [jsd] fix null reference bug:
+	if (!clientside)
+		return;
+
 	// The railgun's sound is a special case. It gets played from the
 	// point on the slug's trail that is closest to the hearing player.
 	AActor *mo = consoleplayer().camera;
@@ -456,9 +343,6 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 		S_Sound (FLOAT2FIXED(point.x), FLOAT2FIXED(point.y),
 			CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
 	}
-
-	if (!clientside)
-		return;
 
 	M_ScaleVec3(&dir, &dir, ilength);
 	M_PerpendicularVec3(&extend, &dir);

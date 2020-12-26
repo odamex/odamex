@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
-#define NUM_MENU_ITEMS(m)	(sizeof(m)/sizeof(m[0]))
 
 //
 // MENUS
@@ -119,25 +118,25 @@ typedef struct menuitem_s {
 	union {
 		float			  leftval;		/* aka numvalues aka invflag */
 		int				  key1;
-		const char			 *res1;
+		char			 *res1;
 	} b;
 	union {
 		float			  rightval;
 		int				  key2;
-		const char			 *res2;
+		char			 *res2;
 	} c;
 	union {
 		float			  step;
-		const char			 *res3;
+		char			 *res3;
 	} d;
 	union {
-		struct value_s	 *values;
-		const char			 *command;
-        cvarfunc          cfunc;
-        voidfunc          mfunc;
-        intfunc           lfunc;
-		int				  highlight;
-		int				 *flagint;
+		struct value_s		*values;
+		const char		*command;
+        	cvarfunc		cfunc;
+	        voidfunc		mfunc;
+        	intfunc			lfunc;
+		int			highlight;
+		int			*flagint;
 	} e;
 } menuitem_t;
 

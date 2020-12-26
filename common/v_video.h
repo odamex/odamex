@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -461,8 +461,6 @@ void V_MarkRect (int x, int y, int width, int height);
 // should be of the form "rr gg bb" or the name of a color
 // as defined in the X11R6RGB lump.
 argb_t V_GetColorFromString(const std::string& str);
-
-void V_SetResolution(uint16_t width, uint16_t height);
 
 template<>
 forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)

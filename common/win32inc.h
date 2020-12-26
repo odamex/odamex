@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -53,11 +53,6 @@
         #undef DrawText
     #endif
 
-    // LoadMenu macros in winuser.h interfere with m_menu.cpp
-    #ifdef LoadMenu
-        #undef LoadMenu
-    #endif  // LoadMenu
-
     // POSIX functions
 	#include <ctime>
     char * strptime(const char *buf, const char *fmt, struct tm *timeptr);
@@ -78,6 +73,10 @@
     #if defined(_MSC_VER) && _MSC_VER < 1900
         int snprintf(char *s, size_t n, const char *fmt, ...);
         int vsnprintf(char *s, size_t n, const char *fmt, va_list ap);
+    #endif
+
+    #if defined(_MSC_VER) && _MSC_VER < 1800
+        #define va_copy(d,s)((d) = (s))
     #endif
 #endif // WIN32
 

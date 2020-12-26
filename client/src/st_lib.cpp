@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,19 +23,9 @@
 //
 //-----------------------------------------------------------------------------
 
-
-
-#include <ctype.h>
-
-#include "doomdef.h"
-
 #include "z_zone.h"
 #include "v_video.h"
 #include "i_video.h"
-
-#include "m_swap.h"
-
-#include "i_system.h"
 
 #include "w_wad.h"
 
@@ -44,7 +34,6 @@
 #include "r_local.h"
 
 #include "c_cvars.h"
-#include "m_swap.h"
 
 
 //
@@ -128,54 +117,64 @@ void STlib_initNum(st_number_t* n, int x, int y, patch_t** pl, int* num, bool* o
 //
 void STlib_drawNum(st_number_t* n, bool force_refresh)
 {
+	// [jsd]: prevent null references as hard as possible
+	if (n == NULL)
+		return;
+	if (n->num == NULL)
+		return;
+	if (n->on == NULL)
+		return;
+	if (n->p == NULL)
+		return;
+
 	// only draw if the number is different or refresh is forced
-	if ((force_refresh || n->oldnum != *n->num) && *n->on)
+	if (!(force_refresh || n->oldnum != *n->num) || !*n->on)
+		return;
+
+	int 		num = *n->num;
+
+	int 		w = n->p[0]->width();
+	int 		h = n->p[0]->height();
+	int 		x = n->x;
+
+	n->oldnum = *n->num;
+
+	bool negative = num < 0;
+
+	if (negative)
 	{
-		int 		num = *n->num;
+		if (n->maxdigits == 2 && num < -9)
+			num = -9;
+		else if (n->maxdigits == 3 && num < -99)
+			num = -99;
 
-		int 		w = n->p[0]->width();
-		int 		h = n->p[0]->height();
-		int 		x = n->x;
-
-		n->oldnum = *n->num;
-
-		bool negative = num < 0;
-
-		if (negative)
-		{
-			if (n->maxdigits == 2 && num < -9)
-				num = -9;
-			else if (n->maxdigits == 3 && num < -99)
-				num = -99;
-
-			num = -num;
-		}
-
-		// clear the area
-		STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
-
-		// if non-number, do not draw it
-		if (num == 1994)
-			return;
-
-		x = n->x;
-
-		// in the special case of 0, you draw 0
-		if (num == 0)
-			STlib_DrawPatch(x - w, n->y, n->p[0]);
-
-		// draw the new number
-		for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
-		{
-			x -= w;
-			STlib_DrawPatch(x, n->y, n->p[num % 10]);
-			num /= 10;
-		}
-
-		// draw a minus sign if necessary
-		if (negative)
-			STlib_DrawPatch(x - 8, n->y, sttminus);
+		num = -num;
 	}
+
+	// clear the area
+	STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
+
+	// if non-number, do not draw it
+	if (num == ST_DONT_DRAW_NUM)
+		return;
+
+	x = n->x;
+
+	// in the special case of 0, you draw 0
+	if (num == 0)
+		STlib_DrawPatch(x - w, n->y, n->p[0]);
+
+	// draw the new number
+	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
+	{
+		x -= w;
+		STlib_DrawPatch(x, n->y, n->p[num % 10]);
+		num /= 10;
+	}
+
+	// draw a minus sign if necessary
+	if (negative)
+		STlib_DrawPatch(x - 8, n->y, sttminus);
 }
 
 
@@ -269,4 +268,3 @@ void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
 }
 
 VERSION_CONTROL (st_lib_cpp, "$Id$")
-

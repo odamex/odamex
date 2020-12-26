@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in
 // for map changing, etc
-void AddCommandString (const std::string &cmd, bool onlycvar = false);
+void AddCommandString(const std::string &cmd, uint32_t key = 0);
 
 // parse a command string
 const char *ParseString (const char *data);
@@ -52,7 +52,7 @@ class DConsoleCommand : public DObject
 public:
 	DConsoleCommand (const char *name);
 	virtual ~DConsoleCommand ();
-	virtual void Run () = 0;
+	virtual void Run (uint32_t key = 0) = 0;
 	virtual bool IsAlias () { return false; }
 	void PrintCommand () { Printf (PRINT_HIGH, "%s\n", m_Name.c_str()); }
 
@@ -66,7 +66,7 @@ protected:
 	char **argv;
 	char *args;
 
-	friend void C_DoCommand (const char *cmd);
+	friend void C_DoCommand(const char *cmd, uint32_t key);
 };
 
 #define BEGIN_COMMAND(n) \
@@ -74,7 +74,7 @@ protected:
 		public: \
 			Cmd_##n () : DConsoleCommand (#n) {} \
 			Cmd_##n (const char *name) : DConsoleCommand (name) {} \
-			void Run ()
+			void Run (uint32_t key = 0)
 
 #define END_COMMAND(n)		}; \
 	static Cmd_##n Cmd_instance##n;
@@ -86,7 +86,7 @@ class DConsoleAlias : public DConsoleCommand
 public:
 	DConsoleAlias (const char *name, const char *command);
 	virtual ~DConsoleAlias ();
-	virtual void Run ();
+	virtual void Run (uint32_t key = 0);
 	virtual bool IsAlias () { return true; }
 	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name.c_str(), m_Command.c_str()); }
 	void Archive (FILE *f);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,10 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "doomtype.h"
 #include "v_video.h"
 #include "i_video.h"
@@ -32,8 +28,6 @@
 #include "m_swap.h"
 
 #include "i_system.h"
-
-#include "cmdlib.h"
 
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
@@ -524,12 +518,19 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 /*							  */
 /******************************/
 
-//
-// V_DrawWrapper
-// Masks a column based masked pic to the screen.
-//
-void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int y) const
+/**
+ * @brief Masks a column based masked pic to the screen.
+ * 
+ * @param drawer Draw code to use.
+ * @param patch Patch to draw.  Attempting to draw a NULL patch will have no effect.
+ * @param x X coordinate of patch.
+ * @param y Y coordinate of patch.
+ */
+void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int y) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
@@ -575,15 +576,24 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t *patch, int x, int 
 	}
 }
 
-//
-// V_DrawSWrapper
-// Masks a column based masked pic to the screen
-// stretching it to fit the given dimensions.
-//
+
+/**
+ * @brief Masks a column based masked pic to the screen stretching it to fit the given dimensions.
+ * 
+ * @param drawer Draw code to use.
+ * @param patch 
+ * @param x0 
+ * @param y0 
+ * @param destwidth 
+ * @param destheight 
+ */
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
-	if (!patch || patch->width() <= 0 || patch->height() <= 0 ||
+	if (patch == NULL)
+		return;
+
+	if (patch->width() <= 0 || patch->height() <= 0 ||
 	    destwidth <= 0 || destheight <= 0)
 		return;
 
@@ -602,8 +612,15 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
 	//      artifacts since it forces col to roll over to the next real number
 	//      a column-of-real-pixels sooner.
-	int xinc = (patch->width() << FRACBITS) / destwidth + 1;
-	int yinc = (patch->height() << FRACBITS) / destheight + 1;
+	int xinc = (patch->width() << FRACBITS) / destwidth;
+	int yinc = (patch->height() << FRACBITS) / destheight;
+	// [jsd] only adding 1 in cases where scaling is non-integral:
+	if (xinc & (FRACUNIT-1)) {
+		xinc++;
+	}
+	if (yinc & (FRACUNIT-1)) {
+		yinc++;
+	}
 	int xmul = (destwidth << FRACBITS) / patch->width();
 	int ymul = (destheight << FRACBITS) / patch->height();
 
@@ -655,6 +672,9 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 //
 void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (surface_width == 320 && surface_height == 200)
@@ -671,6 +691,9 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 //
 void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
@@ -687,6 +710,9 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 //
 void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	if (CleanXfac == 1 && CleanYfac == 1)
 		DrawWrapper(drawer, patch, x0, y0);
 	else
@@ -713,6 +739,9 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 //
 void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
@@ -872,4 +901,3 @@ void DCanvas::GetTransposedBlock(int x, int y, int width, int height, byte* dest
 }
 
 VERSION_CONTROL (v_draw_cpp, "$Id$")
-

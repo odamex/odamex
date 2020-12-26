@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,7 +24,6 @@
 #include "m_alloc.h"
 
 #include "doomdef.h"
-#include "m_swap.h"
 #include "m_argv.h"
 
 #include "i_system.h"
@@ -36,7 +35,6 @@
 
 #include "c_console.h"
 #include "c_cvars.h"
-#include "c_dispatch.h"
 
 #include "doomstat.h"
 
@@ -670,7 +668,13 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	unsigned int		rot;
 	bool 				flip;
 
-	if (!thing || !thing->subsector || !thing->subsector->sector)
+	if (!thing)
+		return;
+
+	if (!thing->subsector)
+		return;
+
+	if (!thing->subsector->sector)
 		return;
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
@@ -1002,7 +1006,7 @@ void R_DrawPlayerSprites (void)
 	{
 		int centerhack = centery;
 
-		centery = viewheight >> 1;
+		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites
@@ -1222,11 +1226,7 @@ void R_DrawMasked (void)
 			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
 
 	// draw the psprites on top of everything
-	//	but does not draw on side views
-	if (!viewangleoffset)
-	{
-		R_DrawPlayerSprites ();
-	}
+	R_DrawPlayerSprites();
 }
 
 void R_InitParticles (void)

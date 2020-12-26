@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,10 +34,8 @@
 
 #include "doomstat.h"
 #include "c_cvars.h"
-#include "d_player.h"
 
 #include "d_netinf.h"
-#include "gstrings.h"
 
 #include "i_system.h"
 
@@ -782,6 +780,13 @@ BEGIN_COMMAND (help)
     Printf(PRINT_HIGH, "Help: %s - %s\n", var->name(), var->helptext());
 }
 END_COMMAND (help)
+
+// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
+BEGIN_COMMAND(errorout)
+{
+	I_FatalError("errorout was run from the console");
+}
+END_COMMAND(errorout)
 
 // [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
 BEGIN_COMMAND(crashout)
