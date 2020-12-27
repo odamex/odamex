@@ -443,7 +443,11 @@ BEGIN_COMMAND (exec)
 		return;
 	}
 
+#if defined(CLIENT_APP)
 	std::string found = I_FindUserFileName(argv[1], ".cfg");
+#else
+	std::string found = std::string(argv[1]) + ".cfg";
+#endif
 	if (found.empty())
 	{
 		Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);
@@ -1045,4 +1049,3 @@ BEGIN_COMMAND (error)
 END_COMMAND (error)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
-
