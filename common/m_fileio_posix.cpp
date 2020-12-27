@@ -27,7 +27,22 @@
 #error "UNIX is mutually exclusive with _WIN32"
 #endif
 
+#include "m_fileio.h"
+
 #include <string>
+#include <sstream>
+
+#include <pwd.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#if defined(__linux__)
+#include <linux/limits.h>
+#else
+#include <sys/syslimits.h>
+#endif
+
+#include "m_argv.h"
+#include "i_system.h"
 
 std::string M_GetBinaryDir()
 {
@@ -77,7 +92,7 @@ std::string M_GetBinaryDir()
 		return ret.substr(0, slash);
 }
 
-std::string M_GetHomeDir(const std::string& user);
+std::string M_GetHomeDir(const std::string& user)
 {
 	const char* envhome = getenv("HOME");
 	std::string home = envhome ? envhome : "";
@@ -101,7 +116,7 @@ std::string M_GetHomeDir(const std::string& user);
 
 std::string M_GetUserDir()
 {
-	std::string path = I_GetHomeDir();
+	std::string path = M_GetHomeDir();
 
 	if (path[path.length() - 1] != PATHSEPCHAR)
 		path += PATHSEP;
@@ -130,7 +145,7 @@ std::string M_GetUserFileName(const std::string& file)
 	}
 
 	// Our path is relative to the home directory.
-	std::string path = I_GetHomeDir();
+	std::string path = M_GetHomeDir();
 	if (!M_IsPathSep(*(path.end() - 1)))
 	{
 		path += PATHSEP;
