@@ -58,6 +58,8 @@ function CopyFiles {
         -Destination "${CommonDir}\3RD-PARTY-LICENSES.txt"
     Copy-Item -Force -Path "${PSScriptRoot}\..\..\CHANGELOG" `
         -Destination "${CommonDir}\CHANGELOG.txt"
+    Copy-Item -Force -Path "${PSScriptRoot}\..\..\odamex-installed.txt" `
+        -Destination "${CommonDir}"
     Copy-Item -Force -Path "${PSScriptRoot}\..\..\config-samples\*" `
         -Destination "${CommonDir}\config-samples"
     Copy-Item -Force -Path "${PSScriptRoot}\..\..\libraries\curl\COPYING" `
