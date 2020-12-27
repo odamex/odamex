@@ -447,13 +447,13 @@ void V_ScreenShot(std::string filename)
 
 	// If no filename was passed, use the screenshot format variable.
 	if (filename.empty())
-		filename = cl_screenshotname.cstring();
+		filename = cl_screenshotname.str();
 
 	// Expand tokens
-	filename = M_ExpandTokens(filename).c_str();
+	filename = M_ExpandTokens(filename);
 
 	// Turn filename into complete path.
-	std::string pathname = I_GetUserFileName(filename.c_str());
+	std::string pathname = M_GetUserFileName(filename);
 
 	// If the file already exists, append numbers.
 	if (!M_FindFreeName(pathname, extension))

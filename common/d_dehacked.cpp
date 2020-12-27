@@ -1771,12 +1771,12 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		FILE *deh;
 
 		file = patchfile;
-		FixPathSeparator (file);
+		M_FixPathSep (file);
 		M_AppendExtension (file, ".deh");
 
 		if ( !(deh = fopen (file.c_str(), "rb")) ) {
 			file = patchfile;
-			FixPathSeparator (file);
+			M_FixPathSep (file);
 			M_AppendExtension (file, ".bex");
 			deh = fopen (file.c_str(), "rb");
 		}
@@ -1797,7 +1797,7 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (!PatchFile) {
 			// Couldn't find it on disk, try reading it from a lump
 			file = patchfile;
-			FixPathSeparator (file);
+			M_FixPathSep (file);
 			M_ExtractFileBase (file, file);
 			file[8] = 0;
 			lump = W_CheckNumForName (file.c_str());

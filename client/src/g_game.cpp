@@ -1523,7 +1523,7 @@ void G_BuildSaveName(std::string &name, int slot)
 #ifdef _XBOX
 	std::string path = xbox_GetSavePath(name, slot);
 #else
-	std::string path = I_GetUserFileName(name.c_str());
+	std::string path = M_GetUserFileName(name.c_str());
 #endif
 	StrFormat(name, "%s" PATHSEP "odasv%d.ods", path.c_str(), slot);
 }
@@ -1905,7 +1905,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	else
 	{
 		// [RH] Allow for demos not loaded as lumps
-		std::string found = I_FindUserFileName(::defdemoname, ".lmp"); 
+		std::string found = M_FindUserFileName(::defdemoname, ".lmp"); 
 		if (found.empty())
 		{
 			Printf(PRINT_WARNING, "Could not find demo %s\n", ::defdemoname.c_str());

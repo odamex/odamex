@@ -29,16 +29,117 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "m_fileio.h"
+
 #include "z_zone.h"
 
 // unfortunately, we still need you
 #include "cmdlib.h"
+
+#if defined(_WIN32)
+#include <direct.h> // getcwd
+#else
+#include <unistd.h> // getcwd
+#endif
 
 // Simple logging
 std::ofstream LOG;
 
 // Simple file based console input
 std::ifstream CON;
+
+/**
+ * @brief Expand "~" into the user's home directory.
+*/
+void M_ExpandHomeDir(std::string& path)
+{
+	if (!path.length())
+		return;
+
+	if (path[0] != '~')
+		return;
+
+	std::string user;
+
+	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
+	size_t end_pos = path.length();
+
+	if (slash_pos == std::string::npos)
+		slash_pos = end_pos;
+
+	if (path.length() != 1 && slash_pos != 1)
+		user = path.substr(1, slash_pos - 1);
+
+	if (slash_pos != end_pos)
+		slash_pos++;
+
+	path = M_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
+}
+
+/**
+ * @brief Check for the existence of a file in a user directory that might
+ *       or might not have an extension.
+ *
+ * @param file Filename to find, which might or might not have an extension.
+ * @param ext Extension to append, including the initial period.
+ * @return std::string Found path or an empty string if not found.
+ */
+std::string M_FindUserFileName(const std::string& file, const char* ext)
+{
+	std::string found = M_GetUserFileName(file);
+	if (M_FileExists(found))
+	{
+		return found;
+	}
+	else if (ext != NULL)
+	{
+		found = M_GetUserFileName(std::string(file) + ext);
+		if (M_FileExists(found))
+		{
+			return found;
+		}
+	}
+	return "";
+}
+
+/**
+ * @brief Convert all path separators into the platform-specific path
+ *        separator.
+ * 
+ * @detail Technically, POSIX directories can have back-slashes, but this
+ *         function assumes that the path is user input and backslashes
+ *         are incredibly uncommon in directory names.
+ * 
+ * @param path Path to mutate.
+ */
+void M_FixPathSep(std::string& path)
+{
+	// Use the platform appropriate path separator
+	for (size_t i = 0; i < path.length(); i++)
+	{
+		if (path[i] == '\\' || path[i] == '/')
+		{
+			path[i] = PATHSEPCHAR;
+		}
+	}
+}
+
+/**
+ * @brief Get the current working directory.
+ */
+std::string M_GetCWD()
+{
+	char tmp[4096] = {0};
+	std::string ret = "./";
+
+	const char* cwd = getcwd(tmp, sizeof(tmp));
+	if (cwd)
+		ret = cwd;
+
+	M_FixPathSep(ret);
+
+	return ret;
+}
 
 //
 // M_FileLength
@@ -175,7 +276,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 // The extension must contain a . at the beginning
 BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
 {
-    FixPathSeparator(filename);
+    M_FixPathSep(filename);
 
     size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == filename.length())
@@ -207,7 +308,7 @@ BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 void M_ExtractFilePath(const std::string& filename, std::string &dest)
 {
 	dest = filename;
-	FixPathSeparator(dest);
+	M_FixPathSep(dest);
 
 	size_t l = dest.find_last_of(PATHSEPCHAR);
 	if (l == std::string::npos)
@@ -250,7 +351,7 @@ bool M_ExtractFileExtension(const std::string& filename, std::string &dest)
 // .'s won't be removed
 void M_ExtractFileBase (std::string filename, std::string &dest)
 {
-    FixPathSeparator(filename);
+    M_FixPathSep(filename);
 
 	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)
@@ -272,7 +373,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 // Extract the name of a file from a path (name = filename with extension)
 void M_ExtractFileName (std::string filename, std::string &dest)
 {
-    FixPathSeparator(filename);
+    M_FixPathSep(filename);
 
 	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)

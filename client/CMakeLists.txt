@@ -219,7 +219,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   if(WIN32)
-    target_link_libraries(odamex winmm wsock32 Shlwapi)
+    target_link_libraries(odamex winmm wsock32 shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SOLARIS)

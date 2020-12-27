@@ -147,9 +147,6 @@ int __cdecl main(int argc, char *argv[])
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		progdir = I_GetBinaryDir();
-		startdir = I_GetCWD();
-
 		D_DoomMain();
     }
     catch (CDoomError &error)

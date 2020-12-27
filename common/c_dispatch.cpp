@@ -31,6 +31,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "doomstat.h"
 #include "m_alloc.h"
 #include "d_player.h"
@@ -443,11 +444,7 @@ BEGIN_COMMAND (exec)
 		return;
 	}
 
-#if defined(CLIENT_APP)
-	std::string found = I_FindUserFileName(argv[1], ".cfg");
-#else
-	std::string found = std::string(argv[1]) + ".cfg";
-#endif
+	std::string found = M_FindUserFileName(argv[1], ".cfg");
 	if (found.empty())
 	{
 		Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);

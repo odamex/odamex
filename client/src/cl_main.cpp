@@ -1183,7 +1183,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
-	newfilename = I_GetUserFileName(newfilename.c_str());
+	newfilename = M_GetUserFileName(newfilename.c_str());
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
@@ -1202,7 +1202,7 @@ void CL_NetDemoStop()
 
 void CL_NetDemoPlay(const std::string& filename)
 {
-	std::string found = I_FindUserFileName(filename, ".odd");
+	std::string found = M_FindUserFileName(filename, ".odd");
 	if (found.empty())
 	{
 		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());

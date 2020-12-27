@@ -1004,7 +1004,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		std::string tmpname = wadfiles[n];
 		
 		// strip absolute paths, as they present a security risk
-		FixPathSeparator(tmpname);
+		M_FixPathSep(tmpname);
 		size_t slash = tmpname.find_last_of(PATHSEPCHAR);
 		if (slash != std::string::npos)
 			tmpname = tmpname.substr(slash + 1, tmpname.length() - slash);

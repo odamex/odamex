@@ -57,7 +57,7 @@ if(USE_MINIUPNP)
 endif()
 
 if(WIN32)
-  target_link_libraries(odasrv winmm wsock32)
+  target_link_libraries(odasrv winmm wsock32 shlwapi)
 elseif(SOLARIS)
   target_link_libraries(odasrv socket nsl)
 elseif(UNIX)
