@@ -234,7 +234,7 @@ typedef enum {
 #if defined(_MSC_VER)
 #define forceinline __forceinline
 #elif defined(__GNUC__)
-#define forceinline __attribute__((always_inline))
+#define forceinline inline __attribute__((always_inline))
 #else
 #define forceinline inline
 #endif
