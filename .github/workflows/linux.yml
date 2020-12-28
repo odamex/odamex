@@ -25,6 +25,7 @@ jobs:
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
+      uses: ammaraskar/gcc-problem-matcher@master
       run: cmake --build ./build/
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh

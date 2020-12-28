@@ -32,6 +32,7 @@ jobs:
     - name: Prepare build
       run: .\ci\win-buildgen.ps1
     - name: Run build
+      uses: ammaraskar/msvc-problem-matcher@master
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
