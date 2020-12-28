@@ -92,11 +92,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "${CMAKE_EXPORT_COMPILE_COMMANDS}" CACHE BOOL
 
 # Global compile options as shown in a GUI.
 if(NOT MSVC)
-  set(USE_COLOR_DIAGNOSTICS "No" CACHE BOOL
+  set(USE_COLOR_DIAGNOSTICS ON CACHE BOOL
     "Force the use of color diagnostics, necessary to get color output with Ninja.")
-  set(USE_STATIC_STDLIB "No" CACHE BOOL
+  set(USE_STATIC_STDLIB OFF CACHE BOOL
     "Statically link against the C and C++ Standard Library.")
-  set(USE_SANITIZE_ADDRESS "No" CACHE BOOL
+  set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
     "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
 endif()
 
