@@ -31,8 +31,9 @@ jobs:
           b2sdk
     - name: Prepare build
       run: .\ci\win-buildgen.ps1
-    - name: Run build
+    - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
+    - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
