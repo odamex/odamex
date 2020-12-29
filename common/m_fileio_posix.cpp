@@ -32,6 +32,7 @@
 #include <string>
 #include <sstream>
 
+#include <errno.h>
 #include <pwd.h>
 #include <sys/stat.h>
 #include <unistd.h>

@@ -21,12 +21,12 @@ fi
 mkdir -p build && cd build
 if [[ -z ${USE_SDL12:-} ]]; then
     cmake .. -GNinja \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1 \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
 else
     cmake .. -GNinja \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COLOR_DIAGNOSTICS=1 -DUSE_SDL12=1 \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_SDL12=1 \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
 fi
