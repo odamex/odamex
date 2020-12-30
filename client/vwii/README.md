@@ -30,7 +30,7 @@ pacman -Syu
 
 1) Install the portlibs package and CMake :
 ```bash
-pacman -Sy ppc-portlibs cmake
+pacman -Sy cmake ppc-portlibs devkitpro-pkgbuild-helpers
 ```
 
 2) In a separate folder, clone the SDL-Wii github repository :

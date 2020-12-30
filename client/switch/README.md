@@ -2,30 +2,38 @@
 
 Informations required for Odamex on Nintendo Switch.
 
+# IMPORTANT INFO
+- You **NEED** to start the Homebrew with full applet support (= Start the homebrew launcher through an existing application, and NOT the gallery)!
+
 ## Installation
-- Create a folder named **odx_data** to the *root* of the SD Card, and put your IWADs in that specific folder.
-- Add the **odamex** folder containing boot.dol, meta.xml and icon.png to your *sd:/apps* folder
-- Run the game in the Homebrew Channel.
+- Create a folder named **odamex** to the */switch* folder of your microSD Card, and navigate to that folder.
+- Put *odamex.nsp* and your *IWADs/PWADs* (DOOM.WAD, DOOM2.WAD, FREEDOOM2.WAD, ...) to that folder.
 
 #### Known Bugs :
-- Loading times makes the game slightly faster.
+- Loading times makes the game go faster, to keep with uncapped framerates. It could lead to desyncs online until it syncs back after a few seconds. The same behaviour can happen if you go to the home menu, or put the console into sleep mode.
+- When starting the game, the keyboard will suddently appear. This is because of the way we handle the SDL2 keyboard.
+- Custom wad folders aren't supported right now.
 
 ## Building from scratch
 
-### 1) Getting the correct libraries
-You need the latest DevKitPro (build was tested as of November 7th 2020) in order to make it work.
+**This has been built using devkitpro on Windows (using msys2). Linux/MacOSX users may slightly modify the commands if needed.**
 
-- Step 1 : Update everything : 
+Latest compilation has been tested as of December 30th 2020.
+
+### Preparing the environment 
+Make sure you have the latest DevKitPro/msys2 packages:
+
 ```sh
 pacman -Syu 
 ```
 
-- Step 2 : Get all the required libraries :
+### Getting all the required libraries :
+
 ```sh
-pacman -Syu switch-sdl2 switch-curl switch-libvorbis switch-opusfile switch-zlib switch-pkg-config switch-libvorbisidec switch-libogg switch-libopus switch-libpng
+pacman -Sy cmake switch-sdl2 switch-sdl2_mixer switch-curl switch-libvorbis switch-opusfile switch-zlib switch-pkg-config switch-libvorbisidec switch-libogg switch-libopus switch-libpng devkitpro-pkgbuild-helpers
 ```
 
-- Step 3 : We will install a modified SDL2-Mixer that will support Timidity:
+### (optional) - We will build an older SDL2-Mixer version that will support Timidity:
 
 ```sh
 
@@ -47,9 +55,9 @@ make
 make install
 ```
 
-Then replace all of the libSDL2_mixer.a/.la to $DEVKITPRO
+Then replace all of the libSDL2_mixer.a/.la libraries to $DEVKITPRO
 
-- Step 4 :
+### Making the required folders & compiling :
 
 go to your odamex folder. 
 
@@ -58,7 +66,7 @@ mkdir odamex_switch && cd odamex_switch
 
 source $DEVKITPRO/switchvars.sh
 
-cmake -DSWITCH_LIBNX=1 -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/switch.cmake" ../odamex
+cmake -Wno-dev -DSWITCH_LIBNX=1 -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/switch.cmake" ../odamex
 
 make
 ```

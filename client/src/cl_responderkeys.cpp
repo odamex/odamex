@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2015 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //	Common descriptors for commands on the menu.
-//  That way, responders will be way cleaner depending on what platform they are.
+//  This was done to make console ports key handlers easier on the menu/console.
 //
 //-----------------------------------------------------------------------------
 
@@ -253,7 +253,7 @@ bool FResponderKey::IsUnbindKey(int key)
     case PF_WII:
         return keyboard;
     case PF_XBOX:
-        return (key == KEY_JOY9 || keyboard); // START
+        return (key == KEY_JOY9 || keyboard); // ?
     case PF_SWITCH:
         return (key == KEY_JOY3); // X
     default:
@@ -273,9 +273,9 @@ bool FResponderKey::IsSpyNextKey(int key)
     case PF_WII:
         return mouse;
     case PF_XBOX:
-        return (mouse); // TODO : Need to be LEFT
+        return (mouse); // TODO : Need to be RIGHT
     case PF_SWITCH:
-        return (key == KEY_JOY15);   // DPAD-LEFT
+        return (key == KEY_JOY15);   // DPAD-RIGHT
     default:
         break;
     }

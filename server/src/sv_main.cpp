@@ -4122,7 +4122,7 @@ static void HelpCmd(player_t& player)
 	SV_PlayerPrintf(PRINT_HIGH, player.id,
 	                "odasrv v%s\n\n"
 	                "This server has no custom commands\n",
-	                GitDescribe());
+	                GitShortHash());
 }
 
 /**
