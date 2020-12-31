@@ -147,9 +147,6 @@ int __cdecl main(int argc, char *argv[])
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		progdir = I_GetBinaryDir();
-		startdir = I_GetCWD();
-
 		D_DoomMain();
     }
     catch (CDoomError &error)
@@ -272,8 +269,6 @@ int main (int argc, char **argv)
 		signal(SIGINT,  handler);	// killough 3/6/98: allow CTRL-BRK during init
 		signal(SIGABRT, handler);
 
-		progdir = I_GetBinaryDir();
-
 		D_DoomMain();
     }
     catch (CDoomError &error)
@@ -300,4 +295,3 @@ int main (int argc, char **argv)
 #endif
 
 VERSION_CONTROL (i_main_cpp, "$Id$")
-

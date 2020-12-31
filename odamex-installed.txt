@@ -1,0 +1,4 @@
+If this file exists in the same directory as odamex.exe, Odamex will save
+configurations, screenshots, downloaded WAD files, and the like to:
+
+    C:\Users\<USERNAME>\Documents\My Games\Odamex

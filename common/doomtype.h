@@ -231,10 +231,12 @@ typedef enum {
 	PRINT_MAXPRINT
 } printlevel_t;
 
-#ifdef __forceinline
-	#define forceinline __forceinline
+#if defined(_MSC_VER)
+#define forceinline __forceinline
+#elif defined(__GNUC__)
+#define forceinline inline __attribute__((always_inline))
 #else
-	#define forceinline inline
+#define forceinline inline
 #endif
 
 //

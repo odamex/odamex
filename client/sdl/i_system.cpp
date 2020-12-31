@@ -35,17 +35,18 @@
 
 #include "win32inc.h"
 #ifdef _WIN32
-    #include <io.h>
-    #include <direct.h>
-    #include <process.h>
+#include <direct.h>
+#include <io.h>
+#include <process.h>
 
-    #ifdef _XBOX
-        #include <xtl.h>
-    #else
-        #include <shlwapi.h>
-		#include <winsock2.h>
-		#include <mmsystem.h>
-    #endif // !_XBOX
+#ifdef _XBOX
+#include <xtl.h>
+#else
+#include <shlwapi.h>
+#include <winsock2.h>
+#include <mmsystem.h>
+#include <shlobj.h>
+#endif // !_XBOX
 #endif // WIN32
 
 #ifdef UNIX
@@ -89,6 +90,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+#include "m_fileio.h"
 
 #ifdef _XBOX
 	#include "i_xbox.h"
@@ -409,197 +411,6 @@ void I_Init (void)
 {
 	I_InitSound ();
 	I_InitHardware ();
-}
-
-std::string I_GetCWD ()
-{
-	char tmp[4096] = {0};
-	std::string ret = "./";
-
-	const char *cwd = getcwd(tmp, sizeof(tmp));
-
-	if(cwd)
-		ret = cwd;
-
-	FixPathSeparator(ret);
-
-	return ret;
-}
-
-#if defined(UNIX) && !defined(GCONSOLE)
-std::string I_GetHomeDir(std::string user = "")
-{
-	const char *envhome = getenv("HOME");
-	std::string home = envhome ? envhome : "";
-
-	if (!home.length())
-	{
-#ifdef HAVE_PWD_H
-		// try the uid way
-		passwd *p = user.length() ? getpwnam(user.c_str()) : getpwuid(getuid());
-		if(p && p->pw_dir)
-			home = p->pw_dir;
-#endif
-
-		if (!home.length())
-			I_FatalError ("Please set your HOME variable");
-	}
-
-	if(home[home.length() - 1] != PATHSEPCHAR)
-		home += PATHSEP;
-
-	return home;
-}
-#endif
-
-std::string I_GetUserFileName (const char *file)
-{
-#if defined(UNIX) && !defined(GCONSOLE)
-	// return absolute or explicitly relative pathnames unmodified,
-	// so launchers or CLI/console users have control over netdemo placement
-	if (file &&
-		(file[0] == PATHSEPCHAR || // /path/to/file
-		(file[0] == '.' && file[1] == PATHSEPCHAR) || // ./file
-		(file[0] == '.' && file[1] == '.' && file[2] == PATHSEPCHAR))) // ../file
-		return std::string (file);
-
-	std::string path = I_GetHomeDir();
-
-	if(path[path.length() - 1] != PATHSEPCHAR)
-		path += PATHSEP;
-
-	path += ".odamex";
-
-	struct stat info;
-	if (stat (path.c_str(), &info) == -1)
-	{
-		if (mkdir (path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
-		{
-			I_FatalError ("Failed to create %s directory:\n%s",
-						  path.c_str(), strerror (errno));
-		}
-	}
-	else
-	{
-		if (!S_ISDIR(info.st_mode))
-		{
-			I_FatalError ("%s must be a directory", path.c_str());
-		}
-	}
-
-	path += PATHSEP;
-	path += file;
-#elif defined(_XBOX)
-	std::string path = "T:";
-
-	path += PATHSEP;
-	path += file;
-#elif defined(__SWITCH__)
-	std::string path = file;
-#else
-	if (!PathIsRelative(file))
-		return std::string (file);
-
-	std::string path = I_GetBinaryDir();
-
-	if(path[path.length() - 1] != PATHSEPCHAR)
-		path += PATHSEP;
-
-	path += file;
-#endif
-
-	FixPathSeparator(path);
-
-	return path;
-}
-
-void I_ExpandHomeDir (std::string &path)
-{
-#if defined(UNIX) && !defined(GCONSOLE)
-	if(!path.length())
-		return;
-
-	if(path[0] != '~')
-		return;
-
-	std::string user;
-
-	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
-	size_t end_pos = path.length();
-
-	if(slash_pos == std::string::npos)
-		slash_pos = end_pos;
-
-	if(path.length() != 1 && slash_pos != 1)
-		user = path.substr(1, slash_pos - 1);
-
-	if(slash_pos != end_pos)
-		slash_pos++;
-
-	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
-#endif
-}
-
-std::string I_GetBinaryDir()
-{
-	std::string ret;
-
-#ifdef _XBOX
-	// D:\ always corresponds to the binary path whether running from DVD or HDD.
-	ret = "D:\\";
-#elif defined GEKKO
-	ret = "sd:/";
-#elif defined WIN32
-	char tmp[MAX_PATH]; // denis - todo - make separate function
-	GetModuleFileName (NULL, tmp, sizeof(tmp));
-	ret = tmp;
-#elif defined __SWITCH__ 
-	return "./";
-#else
-	if(!Args[0])
-		return "./";
-
-	char realp[PATH_MAX];
-	if(realpath(Args[0], realp))
-		ret = realp;
-	else
-	{
-		// search through $PATH
-		const char *path = getenv("PATH");
-		if(path)
-		{
-			std::stringstream ss(path);
-			std::string segment;
-
-			while(ss)
-			{
-				std::getline(ss, segment, ':');
-
-				if(!segment.length())
-					continue;
-
-				if(segment[segment.length() - 1] != PATHSEPCHAR)
-					segment += PATHSEP;
-				segment += Args[0];
-
-				if(realpath(segment.c_str(), realp))
-				{
-					ret = realp;
-					break;
-				}
-			}
-		}
-	}
-#endif
-
-	FixPathSeparator(ret);
-
-	size_t slash = ret.find_last_of(PATHSEPCHAR);
-
-	if(slash == std::string::npos)
-		return "";
-	else
-		return ret.substr(0, slash);
 }
 
 void I_FinishClockCalibration ()
@@ -1128,5 +939,21 @@ bool I_IsHeadless()
 	return headless;
 }
 
+#if defined(_DEBUG)
+
+BEGIN_COMMAND(debug_userfilename)
+{
+	if (argc < 2)
+	{
+		Printf("debug_userfilename: needs a path to check.\n");
+		return;
+	}
+
+	std::string userfile = M_GetUserFileName(argv[1]);
+	Printf("Resolved to: %s\n", userfile.c_str());
+}
+END_COMMAND(debug_userfilename)
+
+#endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")

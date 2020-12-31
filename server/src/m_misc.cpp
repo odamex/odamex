@@ -58,7 +58,7 @@ std::string M_GetConfigPath(void)
 	if (p)
 		return p;
 
-	return I_GetUserFileName("odasrv.cfg");
+	return M_GetUserFileName("odasrv.cfg");
 }
 
 // [RH] Don't write a config file if M_LoadDefaults hasn't been called.

@@ -31,6 +31,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "doomstat.h"
 #include "m_alloc.h"
 #include "d_player.h"
@@ -444,11 +445,17 @@ BEGIN_COMMAND (exec)
 		return;
 	}
 
-	std::ifstream ifs(argv[1]);
+	std::string found = M_FindUserFileName(argv[1], ".cfg");
+	if (found.empty())
+	{
+		Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);
+		return;
+	}
 
+	std::ifstream ifs(argv[1]);
 	if(ifs.fail())
 	{
-		Printf (PRINT_HIGH, "Could not open \"%s\"\n", argv[1]);
+		Printf(PRINT_WARNING, "Could not open \"%s\"\n", argv[1]);
 		return;
 	}
 
@@ -1040,4 +1047,3 @@ BEGIN_COMMAND (error)
 END_COMMAND (error)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
-

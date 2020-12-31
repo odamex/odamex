@@ -47,10 +47,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-extern std::string progdir, startdir;
-
-void	FixPathSeparator (std::string &path);
-
 int		ParseHex(const char *str);
 int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added

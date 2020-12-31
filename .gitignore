@@ -1,3 +1,4 @@
+.DS_Store
 /build*
 *.vscode
 
@@ -5,3 +6,7 @@
 /.vs
 /out
 CMakeSettings.json
+
+# Used when generating the installer.
+/installer/windows/Build*/
+/installer/windows/Out*/

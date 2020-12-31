@@ -52,10 +52,6 @@ void I_EndRead (void);
 
 // Called by DoomMain.
 void I_Init (void);
-std::string I_GetCWD();
-std::string I_GetBinaryDir();
-std::string I_GetUserFileName (const char *file);
-void I_ExpandHomeDir (std::string &path);
 
 // Called by startup code
 // to get the ammount of memory to malloc

@@ -7,38 +7,20 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
-global_compile_options()
-
-# Client flags
-if(NOT MSVC)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
-      if(target_arch STREQUAL "i386" OR target_arch STREQUAL "amd64")        
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
-      else()
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-      endif()
-    else(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.2)
-      if(APPLE)
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELASE} -O3 -faltivec")
-      endif()
-    endif()
-  endif()
-else()
-  set(CMAKE_CXX_FLAGS_RELEASE "/Ox /Oi /arch:SSE2") 
-endif()
+# Enable default SIMD settings for standard builds.
+option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
 
 # #define CLIENT_APP for use in the source code
 add_definitions(-DCLIENT_APP)
 
 # Client
 set(CLIENT_DIR sdl src)
-file(GLOB CLIENT_HEADERS sdl/*.h src/*.h)
-file(GLOB CLIENT_SOURCES sdl/*.cpp src/*.cpp)
+file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
+file(GLOB CLIENT_SDL_SOURCES sdl/*.cpp sdl/*.h)
 if(WIN32)
-  set(CLIENT_WIN32_RESOURCES sdl/client.rc)
+  configure_file(sdl/client.rc.in "${CMAKE_CURRENT_BINARY_DIR}/client.rc" @ONLY)
+  list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
-
 
 # Include console folders if compiling homebrews
 if (GCONSOLE)
@@ -53,11 +35,12 @@ if (GCONSOLE)
   endif()
 endif()
 
-# git describe
-set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}"\\)
+# Tag source files with correct directories
+get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
+source_group("Client" FILES ${CLIENT_SOURCES})
+source_group("Common" FILES ${COMMON_SOURCES})
+source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 
-# Platform definitions
-define_platform()
 
 # Client definitions
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
@@ -69,8 +52,11 @@ endif()
 
 # X11 configuration
 if(UNIX AND NOT APPLE)
+  find_package(X11)
   if(X11_FOUND)
-    include_directories(${X11_INCLUDE_DIRS})
+    add_definitions(-DX11)
+    include_directories(${X11_INCLUDE_DIR})
+    link_libraries(${X11_LIBRARIES})
   endif()
 endif()
 
@@ -207,8 +193,33 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   add_executable(odamex MACOSX_BUNDLE WIN32
-    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES})
   odamex_target_settings(odamex)
+
+  if(USE_DEFAULT_SIMD)
+    if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
+      message(STATUS "Default SIMD flags not touched for AMD64")
+    elseif(ODAMEX_TARGET_ARCH STREQUAL "i386")
+      if(NOT MSVC)
+        # Pentium M has SSE2.
+        target_compile_definitions(odamex PRIVATE -march=pentium-m)
+      else()
+        target_compile_definitions(odamex PRIVATE /arch:SSE2)
+      endif()
+      message(STATUS "Default SIMD flags set to SSE2")
+    elseif(ODAMEX_TARGET_ARCH MATCHES "ppc")
+      target_compile_definitions(odamex PRIVATE -faltivec)
+      message(STATUS "Default SIMD flags set to AltiVec")
+    endif()
+  else()
+    message(STATUS "Default SIMD flags not used on user request")
+  endif()
+
+  if(MSVC)
+    # We supply our own manifest, don't use the default one.
+    set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
+  endif()
+
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex odamex-common)
   if(TARGET SDL::SDL)
@@ -231,7 +242,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   if(WIN32)
-    target_link_libraries(odamex winmm wsock32 Shlwapi)
+    target_link_libraries(odamex winmm wsock32 shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(SWITCH_LIBNX)
@@ -338,5 +349,3 @@ endif()
 if(BUILD_OR_FAIL AND NOT TARGET odamex)
   message(FATAL_ERROR "Odamex target could not be generated")
 endif()
-
-print_cxx_flags()
