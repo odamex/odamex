@@ -260,7 +260,7 @@ bool FResponderKey::IsUnbindKey(int key)
         break;
     }
 
-    return (keyboard || key == KEY_JOY3);
+    return (keyboard || key == KEY_JOY4);
 }
 
 bool FResponderKey::IsSpyNextKey(int key)
