@@ -35,6 +35,8 @@
 static const int MAX_SDL_EVENTS_PER_TIC = 8192;
 
 EXTERN_CVAR(joy_deadzone)
+EXTERN_CVAR(joy_lefttrigger_deadzone)
+EXTERN_CVAR(joy_righttrigger_deadzone)
 
 // ============================================================================
 //
@@ -1643,16 +1645,55 @@ void ISDL20JoystickInputDevice::gatherEvents()
 			else if (sdl_ev.type == SDL_CONTROLLERAXISMOTION &&
 			         sdl_ev.caxis.which == mJoystickId)
 			{
-				float deadzone = (joy_deadzone * 32767);
-				event_t motion_event(ev_joystick);
-				motion_event.type = ev_joystick;
-				motion_event.data2 = sdl_ev.caxis.axis;
-				if ((sdl_ev.caxis.value >= deadzone) || (sdl_ev.caxis.value <= -deadzone))
+
+				float deadzone;
+				bool bPressed = false;
+
+				if (sdl_ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
 				{
-					motion_event.data3 = sdl_ev.caxis.value;
+					event_t button_event;
+					
+					deadzone = (joy_lefttrigger_deadzone * 32767);
+					
+					if ((sdl_ev.caxis.value >= deadzone) ||
+					    (sdl_ev.caxis.value <= -deadzone)){
+						bPressed = true;	
+					}
+
+					button_event.type = bPressed ? ev_keydown : ev_keyup;
+					button_event.data1 = KEY_JOY20; // LEFT TRIGGER
+					mEvents.push(button_event);
 				}
 
-				mEvents.push(motion_event);
+				else if (sdl_ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
+				{
+					event_t button_event;
+
+					deadzone = (joy_righttrigger_deadzone * 32767);
+
+					if ((sdl_ev.caxis.value >= deadzone) ||
+					    (sdl_ev.caxis.value <= -deadzone)){
+						bPressed = true;
+					}
+
+					button_event.type = bPressed ? ev_keydown : ev_keyup;
+					button_event.data1 = KEY_JOY21;	// RIGHT TRIGGER
+					mEvents.push(button_event);
+				}
+				else
+				{
+					float deadzone = (joy_deadzone * 32767);
+					event_t motion_event(ev_joystick);
+					motion_event.type = ev_joystick;
+					motion_event.data2 = sdl_ev.caxis.axis;
+					if ((sdl_ev.caxis.value >= deadzone) ||
+					    (sdl_ev.caxis.value <= -deadzone)){
+						motion_event.data3 = sdl_ev.caxis.value;
+					}
+
+					mEvents.push(motion_event);
+				}
+
 			}
 		}
 	}
