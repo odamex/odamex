@@ -49,7 +49,8 @@ bool step_mode = false;
 
 void D_ProcessEvents (void); 
 void G_BuildTiccmd (ticcmd_t *cmd); 
-void D_DoAdvanceDemo (void);
+void G_CalculateInterpolatedAngles();
+void D_DoAdvanceDemo(void);
 
 //
 // NetUpdate
@@ -60,6 +61,7 @@ void NetUpdate (void)
 {
 	I_StartTic ();
 	D_ProcessEvents ();
+	G_CalculateInterpolatedAngles();
 	G_BuildTiccmd (&consoleplayer().netcmds[gametic%BACKUPTICS]);
 }
 
