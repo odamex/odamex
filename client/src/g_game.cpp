@@ -506,13 +506,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
-	else
-		{
-			if (Actions[ACTION_FASTTURN])
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_fastsensitivity / 10));
-			//else
-			//	cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
-		}
 
 	if (Actions[ACTION_MLOOK])
 	{
