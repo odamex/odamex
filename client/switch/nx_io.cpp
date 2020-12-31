@@ -24,7 +24,6 @@ void NX_InitializeKeyNameTable(void)
 	key_names[KEY_JOY13] = "DOWN";
 	key_names[KEY_JOY14] = "LEFT";
 	key_names[KEY_JOY15] = "RIGHT";
-	key_names[KEY_JOY16] = "DOWN";
 	key_names[KEY_JOY20] = "LTRIGGER";
 	key_names[KEY_JOY21] = "RTRIGGER";
 }
