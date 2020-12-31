@@ -374,19 +374,31 @@ static void HU_DrawCrosshair()
 		static const byte crosshair_color = 0xB0;
 		if (hud_crosshairhealth)
 		{
-			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 };
-
 			if (camera->health > 75)
-				crosshair_trans[crosshair_color] = health_colors[3];
+			{
+				crosshair_trans[crosshair_color] =
+				    V_BestColor(V_GetDefaultPalette()->basecolors, 0x00, 0xFF, 0x00);
+			}
 			else if (camera->health > 50)
-				crosshair_trans[crosshair_color] = health_colors[2];
+			{
+				crosshair_trans[crosshair_color] =
+				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0xFF, 0x00);
+			}
 			else if (camera->health > 25)
-				crosshair_trans[crosshair_color] = health_colors[1];
+			{
+				crosshair_trans[crosshair_color] =
+				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0x7F, 0x00);
+			}
 			else
-				crosshair_trans[crosshair_color] = health_colors[0];
+			{
+				crosshair_trans[crosshair_color] =
+				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0x00, 0x00);
+			}
 		}
 		else
+		{
 			crosshair_trans[crosshair_color] = crosshair_color_custom;
+		}
 
 		V_ColorMap = translationref_t(crosshair_trans);
 

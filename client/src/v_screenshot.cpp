@@ -29,10 +29,12 @@
 
 #include "doomtype.h"
 #include "cmdlib.h"
+#include "i_system.h"
 #include "i_video.h"
 
 #include "c_dispatch.h"
 #include "m_misc.h"
+#include "m_fileio.h"
 #include "g_game.h"
 
 #ifdef USE_PNG
@@ -436,22 +438,25 @@ static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
 //
 void V_ScreenShot(std::string filename)
 {
-	// is PNG supported?
-	#ifdef USE_PNG
+// is PNG supported?
+#ifdef USE_PNG
 	const std::string extension("png");
-	#else
+#else
 	const std::string extension("bmp");
-	#endif	// USE_PNG
+#endif // USE_PNG
 
 	// If no filename was passed, use the screenshot format variable.
 	if (filename.empty())
-		filename = cl_screenshotname.cstring();
+		filename = cl_screenshotname.str();
 
 	// Expand tokens
-	filename = M_ExpandTokens(filename).c_str();
+	filename = M_ExpandTokens(filename);
+
+	// Turn filename into complete path.
+	std::string pathname = M_GetUserFileName(filename);
 
 	// If the file already exists, append numbers.
-	if (!M_FindFreeName(filename, extension))
+	if (!M_FindFreeName(pathname, extension))
 	{
 		Printf(PRINT_WARNING, "I_ScreenShot: Delete some screenshots\n");
 		return;
@@ -460,23 +465,23 @@ void V_ScreenShot(std::string filename)
 	// Create an SDL_Surface object from our screen buffer
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 
-	#ifdef USE_PNG
-	int result = V_SavePNG(filename, primary_surface); 
+#ifdef USE_PNG
+	int result = V_SavePNG(pathname, primary_surface);
 	if (result != 0)
 	{
 		Printf(PRINT_WARNING, "I_SavePNG Error: Returned error code %d\n", result);
 		return;
 	}
-	#else
-	int result = V_SaveBMP(filename, primary_surface); 
+#else
+	int result = V_SaveBMP(pathname, primary_surface);
 	if (result != 0)
 	{
 		Printf(PRINT_WARNING, "I_SaveBMP Error: Returned error code %d\n", result);
 		return;
 	}
-	#endif	// USE_PNG
+#endif // USE_PNG
 
-	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
+	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename.c_str(), extension.c_str());
 }
 
 

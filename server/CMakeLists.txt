@@ -6,8 +6,6 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
-global_compile_options()
-
 # Server flags. [AM] TODO: Test -O3 again sometime.
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
@@ -17,17 +15,18 @@ endif()
 add_definitions(-DSERVER_APP)
 
 # Server
-set(SERVER_DIR src)
-file(GLOB SERVER_HEADERS ${SERVER_DIR}/*.h)
-file(GLOB SERVER_SOURCES ${SERVER_DIR}/*.cpp)
+file(GLOB SERVER_SOURCES src/*.cpp src/*.h)
 if(WIN32)
-  set(SERVER_WIN32_DIR win32)
-  file(GLOB SERVER_WIN32_HEADERS ${SERVER_WIN32_DIR}/*.h)
-  set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
+  file(GLOB SERVER_WIN32_SOURCES win32/*.h)
+  configure_file(win32/server.rc.in "${CMAKE_CURRENT_BINARY_DIR}/server.rc" @ONLY)
+  list(APPEND SERVER_WIN32_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/server.rc")
 endif()
 
-# Platform definitions
-define_platform()
+# Tag source files with correct directories
+get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
+source_group("Common" FILES ${COMMON_SOURCES})
+source_group("Server" FILES ${SERVER_SOURCES})
+source_group("Win32" FILES ${SERVER_WIN32_SOURCES})
 
 # Server definitions
 if(USE_MINIUPNP)
@@ -37,7 +36,6 @@ endif()
 if(WIN32 AND NOT MSVC)
   add_definitions(-DWINVER=0x0500)
 endif()
-include_directories(${SERVER_DIR} ${SERVER_WIN32_DIR})
 
 # Set up FHS installation path
 if(NOT APPLE AND NOT WIN32)
@@ -45,9 +43,13 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 add_executable(odasrv
-  ${SERVER_SOURCES} ${SERVER_HEADERS}
-  ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+  ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
+
+target_include_directories(odasrv PRIVATE src)
+if(WIN32)
+  target_include_directories(odasrv PRIVATE win32)
+endif()
 target_link_libraries(odasrv jsoncpp odamex-common)
 
 if(USE_MINIUPNP)
@@ -55,7 +57,7 @@ if(USE_MINIUPNP)
 endif()
 
 if(WIN32)
-  target_link_libraries(odasrv winmm wsock32)
+  target_link_libraries(odasrv winmm wsock32 shlwapi)
 elseif(SOLARIS)
   target_link_libraries(odasrv socket nsl)
 elseif(UNIX)
@@ -84,5 +86,3 @@ endif()
 if(BUILD_OR_FAIL AND NOT TARGET odasrv)
   message(FATAL_ERROR "Odasrv target could not be generated")
 endif()
-
-print_cxx_flags()

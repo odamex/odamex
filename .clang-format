@@ -1,5 +1,6 @@
 ---
 BasedOnStyle: Microsoft
+AlignEscapedNewlines: Left
 ColumnLimit: 90
 IndentWidth: 4
 PointerAlignment: Left

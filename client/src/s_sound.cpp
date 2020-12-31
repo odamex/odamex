@@ -383,11 +383,11 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 // Utilizes the sndcurve lump to mimic volume and stereo separation
 // calculations from ZDoom 1.22
 //
-bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
-								fixed_t			x,
-								fixed_t			y,
-								float*			vol,
-								int*			sep)
+// [AM] We always play sounds now - even if they're out of range, since we
+//      might step back in range during the sound.
+//
+static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
+                                   float* vol, int* sep)
 {
 	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
@@ -397,9 +397,11 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 		approx_dist = MIN(approx_dist, MAX_SND_DIST);
 
 	if (approx_dist > MAX_SND_DIST)
-		return false;
-
-	if (approx_dist < MIN_SND_DIST)
+	{
+		*vol = 0;
+		*sep = NORM_SEP;
+	}
+	else if (approx_dist < MIN_SND_DIST)
 	{
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
@@ -420,10 +422,10 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 			angle = angle + (0xffffffff - listener->angle);
 
 		// stereo separation
-		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+		*sep =
+		    NORM_SEP -
+		    (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
-
-	return (*vol > 0.0f);
 }
 
 
@@ -438,11 +440,11 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 // [SL] 2011-05-26 - Changed function parameters to accept x, y instead
 // of a fixed_t* for the sound origin
 //
-bool S_AdjustSoundParamsDoom(	const AActor*	listener,
-								fixed_t			x,
-								fixed_t			y,
-								float*			vol,
-								int*			sep)
+// [AM] We always play sounds now - even if they're out of range, since we
+//      might step back in range during the sound.
+//
+static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
+                                  float* vol, int* sep)
 {
 	static const fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
 	static const fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
@@ -452,16 +454,19 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 		approx_dist = MIN(approx_dist, S_CLIPPING_DIST);
 
 	if (approx_dist > S_CLIPPING_DIST)
-		return false;
-
-	if (approx_dist < S_CLOSE_DIST)
+	{
+		*vol = 0;
+		*sep = NORM_SEP;
+	}
+	else if (approx_dist < S_CLOSE_DIST)
 	{
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
 	else
 	{
-		float attenuation = FIXED2FLOAT(FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
+		float attenuation = FIXED2FLOAT(
+		    FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
 		if (S_UseMap8Volume())
 			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
 		else
@@ -475,10 +480,10 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 			angle = angle + (0xffffffff - listener->angle);
 
 		// stereo separation
-		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+		*sep =
+		    NORM_SEP -
+		    (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
-
-	return (*vol > 0.0f);
 }
 
 
@@ -486,11 +491,8 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 //
 // S_AdjustSoundParams
 //
-bool S_AdjustSoundParams(	const AActor*	listener,
-		  					fixed_t			x,
-		  					fixed_t			y,
-		  					float*			vol,
-		  					int*			sep)
+static bool AdjustSoundParams(const AActor* listener, fixed_t x, fixed_t y, float* vol,
+                              int* sep)
 {
 	*vol = 0.0f;
 	*sep = NORM_SEP;
@@ -499,9 +501,11 @@ bool S_AdjustSoundParams(	const AActor*	listener,
 		return false;
 
 	if (co_zdoomsound)
-		return S_AdjustSoundParamsZDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsZDoom(listener, x, y, vol, sep);
 	else
-		return S_AdjustSoundParamsDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsDoom(listener, x, y, vol, sep);
+
+	return true;
 }
 
 
@@ -609,7 +613,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
   		// Check to see if it is audible, and if not, modify the params
-		if (!S_AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
+		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
 			return;
 	}
 	else
@@ -990,7 +994,7 @@ void S_UpdateSounds (void *listener_p)
 						y = c->y;
 					}
 
-					if (S_AdjustSoundParams(listener, x, y, &volume, &sep))
+					if (AdjustSoundParams(listener, x, y, &volume, &sep))
 						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
 					else
 						S_StopChannel(cnum);

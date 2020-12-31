@@ -212,7 +212,7 @@ std::string W_AddFile(std::string filename)
 	FILE*			handle;
 	filelump_t*		fileinfo;
 
-	FixPathSeparator(filename);
+	M_FixPathSep(filename);
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{

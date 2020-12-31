@@ -1,0 +1,47 @@
+// This file is encoded as Windows 1252 to ensure the copyright symbol appears
+
+#define VFT_APP 0x00000001L
+#define VOS_NT  0x00040000L
+#define VS_FF_DEBUG 0x00000001L
+
+#define ODASRV_DESC "Odamex Server"
+#define ODASRV_EXE "odasrv.exe"
+#define ODASRV_INTERNAL "odasrv"
+#define ODASRV_NAME "Odamex Server"
+
+1 ICON "@CMAKE_SOURCE_DIR@/server/win32/odaserv.ico"
+
+1 VERSIONINFO
+FILEVERSION @PROJECT_RC_VERSION@
+PRODUCTVERSION @PROJECT_RC_VERSION@
+FILEFLAGSMASK 0
+#ifdef _DEBUG
+FILEFLAGS VS_FF_DEBUG
+#else
+FILEFLAGS 0
+#endif
+FILEOS VOS_NT
+FILETYPE VFT_APP
+FILESUBTYPE 0
+{
+  BLOCK "StringFileInfo"
+  {
+    // US English, Windows MultiLingual characterset
+    BLOCK "040904E4"
+    {
+      VALUE "CompanyName", "@PROJECT_COMPANY@"
+      VALUE "FileDescription", ODASRV_DESC
+      VALUE "FileVersion", "@PROJECT_VERSION@"
+      VALUE "InternalName", ODASRV_INTERNAL
+      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright © @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
+      VALUE "OriginalFilename", ODASRV_EXE
+      VALUE "ProductName", ODASRV_NAME
+      VALUE "ProductVersion", "@PROJECT_VERSION@"
+    }
+  }
+  BLOCK "VarFileInfo"
+  {
+    // U.S. English, Multilingual
+    VALUE "Translation", 0x0409, 1252
+  }
+}

@@ -63,7 +63,7 @@ std::string M_GetConfigPath(void)
 	if (p)
 		return p;
 
-	return I_GetUserFileName("odamex.cfg");
+	return M_GetUserFileName("odamex.cfg");
 }
 
 // [RH] Don't write a config file if M_LoadDefaults hasn't been called.

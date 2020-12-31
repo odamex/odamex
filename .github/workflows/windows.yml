@@ -30,7 +30,9 @@ jobs:
         packages: |
           b2sdk
     - name: Prepare build
-      run: .\ci\win-build.ps1
+      run: .\ci\win-buildgen.ps1
+    - name: Turn on problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
     - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
@@ -60,7 +62,7 @@ jobs:
         packages: |
           b2sdk
     - name: Prepare build
-      run: .\ci\win-x32-build.ps1
+      run: .\ci\win-x32-buildgen.ps1
     - name: Run build
       run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
@@ -89,6 +91,6 @@ jobs:
       with:
         args: install ninja
     - name: Prepare build
-      run: .\ci\win-mingw-build.ps1
+      run: .\ci\win-mingw-buildgen.ps1
     - name: Run build
       run: cmake --build .\build-gcc\

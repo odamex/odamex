@@ -59,6 +59,7 @@
 
 #include "doomtype.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "d_main.h"
 #include "i_system.h"
 #include "c_console.h"
@@ -237,10 +238,6 @@ int main(int argc, char *argv[])
 
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
-
-		// Figure out what directory the program resides in.
-		progdir = I_GetBinaryDir();
-		startdir = I_GetCWD();
 
 		D_DoomMain(); // Usually does not return
 
