@@ -1005,7 +1005,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		std::string tmpname = wadfiles[n];
 		
 		// strip absolute paths, as they present a security risk
-		FixPathSeparator(tmpname);
+		M_FixPathSep(tmpname);
 		size_t slash = tmpname.find_last_of(PATHSEPCHAR);
 		if (slash != std::string::npos)
 			tmpname = tmpname.substr(slash + 1, tmpname.length() - slash);
@@ -1463,10 +1463,18 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	// write wad info
 	arc << (byte)(wadfiles.size() - 1);
 	for (size_t i = 1; i < wadfiles.size(); i++)
+	{
 		arc << D_CleanseFileName(wadfiles[i]).c_str();
+		arc << wadhashes[i].c_str();
+	}
+
 	arc << (byte)patchfiles.size();
 	for (size_t i = 0; i < patchfiles.size(); i++)
+	{
 		arc << D_CleanseFileName(patchfiles[i]).c_str();
+		arc << patchhashes[i].c_str();
+	}
+
 	// write map info
 	arc << level.mapname;
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
@@ -1543,7 +1551,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	cvar_t::C_ReadCVars(&vars_p);
 
 	// read wad info
-	std::vector<std::string> newwadfiles, newpatchfiles;
+	std::vector<std::string> newwadfiles, newwadhashes, newpatchfiles, newpatchhashes;
 	byte numwads, numpatches;
 	std::string str;
 
@@ -1552,12 +1560,18 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	{
 		arc >> str;
 		newwadfiles.push_back(D_CleanseFileName(str));
+
+		arc >> str;
+		newwadhashes.push_back(str);
 	}
 	arc >> numpatches;
 	for (size_t i = 0; i < numpatches; i++)
 	{
 		arc >> str;
 		newpatchfiles.push_back(D_CleanseFileName(str));
+
+		arc >> str;
+		newpatchhashes.push_back(str);
 	}
 
 	std::string mapname;
@@ -1591,7 +1605,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	savegamerestore = true;     // Use the player actors in the savegame
 	serverside = false;
 
-	G_LoadWad(newwadfiles, newpatchfiles);
+	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
 
 	G_InitNew(mapname.c_str());
 	displayplayer_id = consoleplayer_id = 1;

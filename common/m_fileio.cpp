@@ -29,16 +29,117 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "m_fileio.h"
+
 #include "z_zone.h"
 
 // unfortunately, we still need you
 #include "cmdlib.h"
+
+#if defined(_WIN32)
+#include <direct.h> // getcwd
+#else
+#include <unistd.h> // getcwd
+#endif
 
 // Simple logging
 std::ofstream LOG;
 
 // Simple file based console input
 std::ifstream CON;
+
+/**
+ * @brief Expand "~" into the user's home directory.
+*/
+void M_ExpandHomeDir(std::string& path)
+{
+	if (!path.length())
+		return;
+
+	if (path[0] != '~')
+		return;
+
+	std::string user;
+
+	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
+	size_t end_pos = path.length();
+
+	if (slash_pos == std::string::npos)
+		slash_pos = end_pos;
+
+	if (path.length() != 1 && slash_pos != 1)
+		user = path.substr(1, slash_pos - 1);
+
+	if (slash_pos != end_pos)
+		slash_pos++;
+
+	path = M_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
+}
+
+/**
+ * @brief Check for the existence of a file in a user directory that might
+ *       or might not have an extension.
+ *
+ * @param file Filename to find, which might or might not have an extension.
+ * @param ext Extension to append, including the initial period.
+ * @return std::string Found path or an empty string if not found.
+ */
+std::string M_FindUserFileName(const std::string& file, const char* ext)
+{
+	std::string found = M_GetUserFileName(file);
+	if (M_FileExists(found))
+	{
+		return found;
+	}
+	else if (ext != NULL)
+	{
+		found = M_GetUserFileName(std::string(file) + ext);
+		if (M_FileExists(found))
+		{
+			return found;
+		}
+	}
+	return "";
+}
+
+/**
+ * @brief Convert all path separators into the platform-specific path
+ *        separator.
+ * 
+ * @detail Technically, POSIX directories can have back-slashes, but this
+ *         function assumes that the path is user input and backslashes
+ *         are incredibly uncommon in directory names.
+ * 
+ * @param path Path to mutate.
+ */
+void M_FixPathSep(std::string& path)
+{
+	// Use the platform appropriate path separator
+	for (size_t i = 0; i < path.length(); i++)
+	{
+		if (path[i] == '\\' || path[i] == '/')
+		{
+			path[i] = PATHSEPCHAR;
+		}
+	}
+}
+
+/**
+ * @brief Get the current working directory.
+ */
+std::string M_GetCWD()
+{
+	char tmp[4096] = {0};
+	std::string ret = "./";
+
+	const char* cwd = getcwd(tmp, sizeof(tmp));
+	if (cwd)
+		ret = cwd;
+
+	M_FixPathSep(ret);
+
+	return ret;
+}
 
 //
 // M_FileLength
@@ -60,18 +161,44 @@ SDWORD M_FileLength (FILE *f)
 	return FileSize;
 }
 
-//
-// M_FileExists
-//
-// Checks to see whether a file exists or not
-//
+
+/**
+ * @brief Checks to see whether a file exists or not
+ * 
+ * @param filename Filename to check.
+ */
 bool M_FileExists(const std::string& filename)
 {
-	FILE *f = fopen(filename.c_str(), "r");
-	if (!f)
+	FILE* f = fopen(filename.c_str(), "r");
+	if (f == NULL)
+	{
 		return false;
+	}
+
 	fclose(f);
 	return true;
+}
+
+/**
+ * @brief Checks to see whether a file exists.  If the exact name does not
+ *        exist, try again with the extension.
+ * 
+ * @param filename Filename to check.
+ * @param ext Extension to check as a second try, with the initial period.
+ */
+bool M_FileExistsExt(const std::string& filename, const char* ext)
+{
+	if (M_FileExists(filename))
+	{
+		return true;
+	}
+
+	if (M_FileExists(filename + ext))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 //
@@ -149,7 +276,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 // The extension must contain a . at the beginning
 BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
 {
-    FixPathSeparator(filename);
+    M_FixPathSep(filename);
 
     size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == filename.length())
@@ -181,7 +308,7 @@ BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 void M_ExtractFilePath(const std::string& filename, std::string &dest)
 {
 	dest = filename;
-	FixPathSeparator(dest);
+	M_FixPathSep(dest);
 
 	size_t l = dest.find_last_of(PATHSEPCHAR);
 	if (l == std::string::npos)
@@ -224,7 +351,7 @@ bool M_ExtractFileExtension(const std::string& filename, std::string &dest)
 // .'s won't be removed
 void M_ExtractFileBase (std::string filename, std::string &dest)
 {
-    FixPathSeparator(filename);
+    M_FixPathSep(filename);
 
 	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)
@@ -246,7 +373,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 // Extract the name of a file from a path (name = filename with extension)
 void M_ExtractFileName (std::string filename, std::string &dest)
 {
-    FixPathSeparator(filename);
+    M_FixPathSep(filename);
 
 	size_t l = filename.find_last_of(PATHSEPCHAR);
 	if(l == std::string::npos)
@@ -264,17 +391,36 @@ std::string M_ExtractFileName(const std::string &filename) {
 	return result;
 }
 
-#ifdef _WIN32
-
-static bool IsSlash(char c)
+/**
+ * @brief Check to see if a character is a valid path separator.
+ *
+ * @param ch Character to check.
+ *
+ * @return True if the character is a path separator, otherwise false.
+ */
+bool M_IsPathSep(const char ch)
 {
-	return c == '\\' || c == '/';
+	if (ch == PATHSEPCHAR)
+	{
+		return true;
+	}
+
+#if defined(_WIN32) && !defined(_XBOX)
+	// This is not the canonical path separator, but it is valid.
+	if (ch == '/')
+	{
+		return true;
+	}
+#endif
+
+	return false;
 }
 
 // VolumeNameLen returns length of the leading volume name on Windows.
 // It returns 0 elsewhere.
 static size_t VolumeNameLen(std::string path)
 {
+#ifdef _WIN32
 	if (path.size() < 2)
 		return 0;
 
@@ -286,26 +432,26 @@ static size_t VolumeNameLen(std::string path)
 	// is it UNC?
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
 	size_t l = path.length();
-	if (l >= 5 && IsSlash(path.at(0)) && IsSlash(path.at(1)) && !IsSlash(path.at(2)) &&
-	    path.at(2) != '.')
+	if (l >= 5 && M_IsPathSep(path.at(0)) && M_IsPathSep(path.at(1)) &&
+	    !M_IsPathSep(path.at(2)) && path.at(2) != '.')
 	{
 		// first, leading `\\` and next shouldn't be `\`. its server name.
 		for (size_t n = 3; n < l - 1; n++)
 		{
 			// second, next '\' shouldn't be repeated.
-			if (IsSlash(path.at(n)))
+			if (M_IsPathSep(path.at(n)))
 			{
 				n++;
 
 				// third, following something characters. its share name.
-				if (!IsSlash(path.at(n)))
+				if (!M_IsPathSep(path.at(n)))
 				{
 					if (path.at(n) == '.')
 						break;
 
 					for (; n < l; n++)
 					{
-						if (IsSlash(path.at(n)))
+						if (M_IsPathSep(path.at(n)))
 							break;
 					}
 					return n;
@@ -315,37 +461,10 @@ static size_t VolumeNameLen(std::string path)
 		}
 	}
 	return 0;
-}
-
 #else
-
-// VolumeNameLen returns length of the leading volume name on Windows.
-// It returns 0 elsewhere.
-static int VolumeNameLen(std::string path)
-{
 	return 0;
-}
-
 #endif
-
-#ifdef _WIN32
-
-// IsPathSeparator reports whether c is a directory separator character.
-static bool IsPathSeparator(char c)
-{
-	// NOTE: Windows accept / as path separator.
-	return c == '\\' || c == '/';
 }
-
-#else
-
-// IsPathSeparator reports whether c is a directory separator character.
-static bool IsPathSeparator(char c)
-{
-	return PATHSEPCHAR == c;
-}
-
-#endif
 
 // FromSlash returns the result of replacing each slash ('/') character
 // in path with a separator character. Multiple slashes are replaced
@@ -381,7 +500,7 @@ std::string M_CleanPath(std::string path)
 		}
 		return originalPath + ".";
 	}
-	bool rooted = IsPathSeparator(path.at(0));
+	bool rooted = M_IsPathSep(path.at(0));
 
 	// Invariants:
 	//	reading from path; r is index of next byte to process.
@@ -401,18 +520,18 @@ std::string M_CleanPath(std::string path)
 
 	while (r < n)
 	{
-		if (IsPathSeparator(path.at(r)))
+		if (M_IsPathSep(path.at(r)))
 		{
 			// empty path element
 			r += 1;
 		}
-		else if (path.at(r) == '.' && (r + 1 == n || IsPathSeparator(path.at(r + 1))))
+		else if (path.at(r) == '.' && (r + 1 == n || M_IsPathSep(path.at(r + 1))))
 		{
 			// . element
 			r += 1;
 		}
 		else if (path.at(r) == '.' && path.at(r + 1) == '.' &&
-		         (r + 2 == n || IsPathSeparator(path.at(r + 2))))
+		         (r + 2 == n || M_IsPathSep(path.at(r + 2))))
 		{
 			// .. element: remove to last separator
 			r += 2;
@@ -420,7 +539,7 @@ std::string M_CleanPath(std::string path)
 			{
 				// can backtrack
 				size_t w = out.length() - 1;
-				while (w > dotdot && !IsPathSeparator(out.at(w)))
+				while (w > dotdot && !M_IsPathSep(out.at(w)))
 					w -= 1;
 
 				out.resize(w);
@@ -443,7 +562,7 @@ std::string M_CleanPath(std::string path)
 				out.push_back(PATHSEPCHAR);
 
 			// copy element
-			for (; r < n && !IsPathSeparator(path.at(r)); r++)
+			for (; r < n && !M_IsPathSep(path.at(r)); r++)
 				out.push_back(path.at(r));
 		}
 	}
@@ -455,4 +574,4 @@ std::string M_CleanPath(std::string path)
 	return FromSlash(vol + out);
 }
 
-VERSION_CONTROL (m_fileio_cpp, "$Id$")
+VERSION_CONTROL(m_fileio_cpp, "$Id$")

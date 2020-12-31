@@ -69,8 +69,6 @@
 
 #include <math.h> // for pow()
 
-#include <sstream>
-
 #define SAVESTRINGSIZE	24
 
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
@@ -84,7 +82,7 @@ void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
 void	G_DoCompleted (void);
 void	G_DoWorldDone (void);
-void	G_DoSaveGame (void);
+void	G_DoSaveGame();
 
 bool	C_DoNetDemoKey(event_t *ev);
 bool	C_DoSpectatorKey(event_t *ev);
@@ -1514,25 +1512,23 @@ void G_SaveGame (int slot, char *description)
 	sendsave = true;
 }
 
-void G_BuildSaveName (std::string &name, int slot)
+/**
+ * @brief Create a filename for a savegame.
+ * 
+ * @param name Output string.
+ * @param slot Slot number.
+ */
+void G_BuildSaveName(std::string &name, int slot)
 {
-    std::stringstream ssName;
-
 #ifdef _XBOX
 	std::string path = xbox_GetSavePath(name, slot);
 #else
-	std::string path = I_GetUserFileName ((const char *)name.c_str());
+	std::string path = M_GetUserFileName(name.c_str());
 #endif
-
-	ssName << path;
-    ssName << "odasv";
-	ssName << slot;
-	ssName << ".ods";
-
-    name = ssName.str();
+	StrFormat(name, "%s" PATHSEP "odasv%d.ods", path.c_str(), slot);
 }
 
-void G_DoSaveGame (void)
+void G_DoSaveGame()
 {
 	std::string name;
 	char *description;
@@ -1909,8 +1905,15 @@ void G_DoPlayDemo(bool justStreamInput)
 	else
 	{
 		// [RH] Allow for demos not loaded as lumps
-		FixPathSeparator(defdemoname);
-		M_AppendExtension(defdemoname, ".lmp");
+		std::string found = M_FindUserFileName(::defdemoname, ".lmp"); 
+		if (found.empty())
+		{
+			Printf(PRINT_WARNING, "Could not find demo %s\n", ::defdemoname.c_str());
+			gameaction = ga_fullconsole;
+			return;
+		}
+		::defdemoname = found;
+
 		bytelen = M_ReadFile(defdemoname, &demobuffer);
 		demo_p = demobuffer;
 	}

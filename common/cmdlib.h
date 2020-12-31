@@ -56,10 +56,6 @@ struct OTimespan
 	OTimespan(): tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
-extern std::string progdir, startdir;
-
-void	FixPathSeparator (std::string &path);
-
 int		ParseHex(const char *str);
 int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added

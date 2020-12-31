@@ -1184,7 +1184,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
-	newfilename = I_GetUserFileName(newfilename.c_str());
+	newfilename = M_GetUserFileName(newfilename.c_str());
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
@@ -1201,29 +1201,16 @@ void CL_NetDemoStop()
 	netdemo.stopPlaying();
 }
 
-void CL_NetDemoPlay(const std::string &filename)
+void CL_NetDemoPlay(const std::string& filename)
 {
-	std::string newfilename;
-
-	std::string dir;
-	M_ExtractFilePath(filename, dir);
-
-	// if no path is supplied, check the default path
-	if (dir.empty())
-		newfilename = I_GetUserFileName(filename.c_str());
-	else
-		newfilename = filename;
-
-	if (!M_FileExists(newfilename))
+	std::string found = M_FindUserFileName(filename, ".odd");
+	if (found.empty())
 	{
-		// try adding .odd to the end of the file name
-		std::string ext;
-		M_ExtractFileExtension(newfilename, ext);
-		if (!iequals(ext, ".odd"))
-			M_AppendExtension(newfilename, ".odd", false);
+		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());
+		return;
 	}
 
-	netdemo.startPlaying(newfilename);
+	netdemo.startPlaying(found);
 }
 
 BEGIN_COMMAND(stopnetdemo)

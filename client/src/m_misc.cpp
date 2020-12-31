@@ -63,7 +63,7 @@ std::string M_GetConfigPath(void)
 	if (p)
 		return p;
 
-	return I_GetUserFileName("odamex.cfg");
+	return M_GetUserFileName("odamex.cfg");
 }
 
 // [RH] Don't write a config file if M_LoadDefaults hasn't been called.
@@ -237,7 +237,7 @@ std::string M_ExpandTokens(const std::string &str)
 				buffer << level.mapname;
 				break;
 			case 'r':
-				buffer << "r" << GitDescribe();
+				buffer << "g" << GitShortHash();
 				break;
 			case '%':
 				// Literal percent

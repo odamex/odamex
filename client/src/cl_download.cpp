@@ -311,8 +311,8 @@ static StringTokens GetDownloadDirs()
 	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
-	dirs.push_back(startdir);
-	dirs.push_back(progdir);
+	dirs.push_back(M_GetUserDir());
+	dirs.push_back(M_GetCWD());
 
 	// Clean up all of the directories before deduping them.
 	StringTokens::iterator it = dirs.begin();

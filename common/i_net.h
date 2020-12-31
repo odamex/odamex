@@ -253,8 +253,8 @@ enum clc_t
 	clc_max = 255
 };
 
-extern msg_info_t clc_info[clc_max];
-extern msg_info_t svc_info[svc_max];
+extern msg_info_t clc_info[clc_max + 1];
+extern msg_info_t svc_info[svc_max + 1];
 
 enum svc_compressed_masks
 {
