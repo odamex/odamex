@@ -37,7 +37,7 @@ bool FResponderKey::IsUpKey(int key)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == KEY_JOY14);    
+            return (key == KEY_JOY12);    
     default:
         break;
     }
@@ -53,7 +53,7 @@ bool FResponderKey::IsDownKey(int key)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == KEY_JOY16);   
+            return (key == KEY_JOY13);   
     default:
         break;
     }
@@ -72,7 +72,7 @@ bool FResponderKey::IsLeftKey(int key)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == KEY_JOY13);   
+            return (key == KEY_JOY14);   
     default:
         break;
     }
@@ -110,7 +110,7 @@ bool FResponderKey::IsPageUpKey(int key)
         case PF_XBOX:
             return (key == KEY_JOY7 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY7);  
+            return (key == KEY_JOY11);  
         default:
             break;
     }
@@ -127,7 +127,7 @@ bool FResponderKey::IsPageDownKey(int key)
         case PF_XBOX:
             return (key == KEY_JOY8 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY8);  
+            return (key == KEY_JOY10);  
     default:
         break;
     }
@@ -148,7 +148,7 @@ bool FResponderKey::IsAcceptKey(int key)
         case PF_WII:
             return (key == KEY_JOY10 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY1);  
+            return (key == KEY_JOY2);  
         default:
             break;
     }
@@ -169,7 +169,7 @@ bool FResponderKey::IsCancelKey(int key)
         case PF_WII:
             return (key == KEY_JOY11 || key == KEY_JOY1 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY2);  
+            return (key == KEY_JOY1);  
         default:
             break;
     }
@@ -187,7 +187,7 @@ bool FResponderKey::IsYesKey(int key)
     case PF_WII:
         return (key == KEY_JOY10 || key == KEY_JOY1); // A | (a)
     case PF_SWITCH:
-            return (key == KEY_JOY1);  
+            return (key == KEY_JOY2);  
     default:
         break;
     }
@@ -235,7 +235,7 @@ bool FResponderKey::IsMenuKey(int key)
     case PF_XBOX:
         return (key == KEY_JOY9 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY11);    // (+)
+            return (key == KEY_JOY7);    // (+)
     default:
         break;
     }
@@ -255,7 +255,7 @@ bool FResponderKey::IsUnbindKey(int key)
     case PF_XBOX:
         return (key == KEY_JOY9 || keyboard); // ?
     case PF_SWITCH:
-        return (key == KEY_JOY3); // X
+        return (key == KEY_JOY4); // X
     default:
         break;
     }

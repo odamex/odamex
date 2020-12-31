@@ -14,15 +14,15 @@ void NX_InitializeKeyNameTable(void)
 	key_names[KEY_JOY2] = "(A)";
 	key_names[KEY_JOY3] = "(Y)";
 	key_names[KEY_JOY4] = "(X)";
-	key_names[KEY_JOY5] = "LNUB";
-	key_names[KEY_JOY6] = "RNUB";
-	key_names[KEY_JOY7] = "LSHOULDER";
-	key_names[KEY_JOY8] = "RSHOULDER";
-
-	key_names[KEY_JOY11] = "(+)";
-	key_names[KEY_JOY12] = "(-)";
-	key_names[KEY_JOY13] = "LEFT";
-	key_names[KEY_JOY14] = "UP";
+	key_names[KEY_JOY5] = "(-)";
+	key_names[KEY_JOY7] = "(+)";
+	key_names[KEY_JOY8] = "LNUB";
+	key_names[KEY_JOY9] = "RNUB";
+	key_names[KEY_JOY10] = "LSHOULDER";
+	key_names[KEY_JOY11] = "RSHOULDER";
+	key_names[KEY_JOY12] = "UP";
+	key_names[KEY_JOY13] = "DOWN";
+	key_names[KEY_JOY14] = "LEFT";
 	key_names[KEY_JOY15] = "RIGHT";
 	key_names[KEY_JOY16] = "DOWN";
 	key_names[KEY_JOY20] = "LTRIGGER";
