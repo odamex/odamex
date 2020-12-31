@@ -383,7 +383,7 @@ void G_CalculateInterpolatedAngles()
 	if (Actions[ACTION_RIGHT])
 		G_AddViewAngle(angleturn[tspeed]);
 	if (Actions[ACTION_LEFT])
-		G_AddViewAngle(angleturn[tspeed]);
+		G_AddViewAngle(-angleturn[tspeed]);
 
 	//// [RH] 180-degree turn overrides all other yaws
 	if (turntick)
