@@ -365,8 +365,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	ticcmd_t* base = I_BaseTiccmd();	// empty or external driver
 	memcpy(cmd, base, sizeof(*cmd));
 
-	bool bJoyTurn = false;	// FIXME - make it better
-
 	int strafe = Actions[ACTION_STRAFE];
 	int speed = Actions[ACTION_SPEED];
 	if (cl_run)
@@ -399,7 +397,6 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 	else
 	{
-		bJoyTurn = true;
 		if (Actions[ACTION_RIGHT])
 			cmd->yaw -= angleturn[tspeed];
 		if (Actions[ACTION_LEFT])
@@ -491,13 +488,10 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
 	else
 		{
-			bJoyTurn = true;
 			if (Actions[ACTION_FASTTURN])
-			    cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-			                (joy_fastsensitivity / 10));
+				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_fastsensitivity / 10));
 			else
-			    cmd->yaw  -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-			                (joy_sensitivity / 10));
+				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
 		}
 
 	if (Actions[ACTION_MLOOK])
@@ -569,8 +563,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		cmd->pitch = look + (LocalViewPitch >> 16);
 	}
 	
-	if (!bJoyTurn)
-		cmd->yaw = LocalViewAngle >> 16;
+	cmd->yaw = LocalViewAngle >> 16;
 
 	if (!longtics)
 		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
