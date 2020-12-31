@@ -42,7 +42,7 @@ bool FResponderKey::IsUpKey(int key)
         break;
     }
 
-    return (key == KEY_HAT1 || key == KEY_UPARROW || key == KEYP_8);
+    return (key == KEY_HAT1 || key == KEY_UPARROW || key == KEYP_8 || key == KEY_JOY12);
 }
 
 //
@@ -58,7 +58,7 @@ bool FResponderKey::IsDownKey(int key)
         break;
     }
 
-    return (key == KEY_HAT3 || key == KEY_DOWNARROW || key == KEYP_2);
+    return (key == KEY_HAT3 || key == KEY_DOWNARROW || key == KEYP_2 || key == KEY_JOY13);
 }
 
 //
@@ -77,7 +77,7 @@ bool FResponderKey::IsLeftKey(int key)
         break;
     }
 
-    return (key == KEY_HAT4 || keyboard);
+    return (key == KEY_HAT4 || keyboard || key == KEY_JOY14);
 }
 
 //
@@ -98,7 +98,7 @@ bool FResponderKey::IsRightKey(int key)
         break;
     }
 
-    return (key == KEY_HAT2 || keyboard);
+    return (key == KEY_HAT2 || keyboard || key == KEY_JOY15);
 }
 
 bool FResponderKey::IsPageUpKey(int key)
@@ -115,7 +115,7 @@ bool FResponderKey::IsPageUpKey(int key)
             break;
     }
 
-    return (keyboard);
+    return (keyboard || key == KEY_JOY10);
 }
 
 bool FResponderKey::IsPageDownKey(int key)
@@ -132,7 +132,7 @@ bool FResponderKey::IsPageDownKey(int key)
         break;
     }
 
-    return (keyboard);
+    return (keyboard || key == KEY_JOY11);
 }
 
 //
@@ -240,7 +240,7 @@ bool FResponderKey::IsMenuKey(int key)
         break;
     }
 
-    return (keyboard);
+    return (keyboard || key == KEY_JOY7);
 }
 
 bool FResponderKey::IsUnbindKey(int key)
@@ -260,7 +260,7 @@ bool FResponderKey::IsUnbindKey(int key)
         break;
     }
 
-    return (keyboard);
+    return (keyboard || key == KEY_JOY3);
 }
 
 bool FResponderKey::IsSpyNextKey(int key)
@@ -280,7 +280,7 @@ bool FResponderKey::IsSpyNextKey(int key)
         break;
     }
 
-    return (mouse);
+    return (mouse || key == KEY_JOY15);
 }
 
 bool FResponderKey::IsSpyPrevKey(int key)
@@ -300,8 +300,8 @@ bool FResponderKey::IsSpyPrevKey(int key)
         break;
     }
 
-    return (mouse);
-}
+    return (mouse || key == KEY_JOY14);
+} 
 
 bool FResponderKey::IsTabulationKey(int key)
 {
