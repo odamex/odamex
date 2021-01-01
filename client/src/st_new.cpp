@@ -67,14 +67,6 @@ static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
 static const patch_t* ammos[ARRAY_LENGTH(::ammopatches)];
 static const patch_t* bigammos[ARRAY_LENGTH(::bigammopatches)];
 static const patch_t* flagiconteam;
-static const patch_t* flagiconbhome;
-static const patch_t* flagiconrhome;
-static const patch_t* flagiconbtakenbyb;
-static const patch_t* flagiconbtakenbyr;
-static const patch_t* flagiconrtakenbyb;
-static const patch_t* flagiconrtakenbyr;
-static const patch_t* flagiconbdropped;
-static const patch_t* flagiconrdropped;
 static const patch_t* line_leftempty;
 static const patch_t* line_leftfull;
 static const patch_t* line_centerempty;
@@ -202,6 +194,7 @@ void ST_initNew()
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
+	CacheHUDPatch(&::flagiconteam, "FLAGIT");
 	CacheHUDPatch(&::line_leftempty, "ODABARLE");
 	CacheHUDPatch(&::line_leftfull, "ODABARLF");
 	CacheHUDPatch(&::line_centerempty, "ODABARCE");
@@ -499,7 +492,7 @@ static void drawGametype()
 
 	int patchPosY = 43;
 
-	bool shouldShowScores = G_IsTeamGame() && !(G_UsesFraglimit() && sv_fraglimit == 0.0);
+	bool shouldShowScores = G_IsTeamGame();
 	bool shouldShowLives = G_IsLivesGame();
 
 	if (shouldShowScores)
@@ -547,7 +540,7 @@ static void drawGametype()
 				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, drawPatch);
 			}
 
-			if (!plyr->spectator && plyr->userinfo.team == i)
+			if (plyr->userinfo.team == i)
 			{
 				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
