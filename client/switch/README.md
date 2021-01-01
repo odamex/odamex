@@ -11,8 +11,10 @@ Informations required for Odamex on Nintendo Switch.
 
 #### Known Bugs :
 - Loading times makes the game go faster, to keep with uncapped framerates. It could lead to desyncs online until it syncs back after a few seconds. The same behaviour can happen if you go to the home menu, or put the console into sleep mode.
-- When starting the game, the keyboard will suddently appear. This is because of the way we handle the SDL2 keyboard.
+- When starting the game, the keyboard will suddently appear. This is because of the way we currently handle the SDL2 keyboard.
 - Custom wad folders aren't supported right now.
+- Partial invisibility is blending in red, not black.
+- Quitting the game may give an error message that could make you unable to start any application, unless restarting the console.
 
 ## Building from scratch
 

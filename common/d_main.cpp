@@ -500,11 +500,21 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	{
 		//[cSc] Add cl_waddownloaddir as default path
 		D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
-		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+
+		// These folders should only work on PC versions
+#ifndef GCONSOLE
+			D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
+			D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
+			D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+#endif
+
 		D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
 		dirs.push_back(M_GetUserDir());
+
+#ifdef __SWITCH__
+		dirs.push_back("./wads");
+#endif
+
 		dirs.push_back(M_GetCWD());
 	}
 

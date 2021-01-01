@@ -101,8 +101,10 @@ std::string M_GetBinaryDir()
 
 std::string M_GetHomeDir(const std::string& user)
 {
+	
 	const char* envhome = getenv("HOME");
 	std::string home = envhome ? envhome : "";
+#ifndef __SWITCH__
 
 	if (!home.length())
 	{
@@ -120,8 +122,9 @@ std::string M_GetHomeDir(const std::string& user)
 
 	if (home[home.length() - 1] != PATHSEPCHAR)
 		home += PATHSEP;
-
+#endif
 	return home;
+
 }
 
 std::string M_GetUserDir()
