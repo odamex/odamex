@@ -352,45 +352,6 @@ END_COMMAND (weapprev)
 
 extern constate_e ConsoleState;
 
-
-// ToDo: REALLY Interpolate the angles for > 35FPS
-// Because it hurts the eyes.
-void G_CalculateInterpolatedAngles() 
-{
-
-	if (Actions[ACTION_FASTTURN])
-		G_AddViewAngle((short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-		                    (joy_fastsensitivity / 10)));
-	else 
-		G_AddViewAngle((short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-	                       (joy_sensitivity / 10)));
-
-	// [RH] only use two stage accelerative turning on the keyboard
-	//		and not the joystick, since we treat the joystick as
-	//		the analog device it is.
-	if ((Actions[ACTION_LEFT]) || (Actions[ACTION_RIGHT]))
-		turnheld += 1;
-	else
-		turnheld = 0;
-
-	int speed = Actions[ACTION_SPEED];
-	int tspeed = speed;
-	if (turnheld < SLOWTURNTICS)
-		tspeed = 2; // slow turn
-
-	if (Actions[ACTION_RIGHT])
-		G_AddViewAngle(angleturn[tspeed]);
-	if (Actions[ACTION_LEFT])
-		G_AddViewAngle(-angleturn[tspeed]);
-
-	//// [RH] 180-degree turn overrides all other yaws
-	if (turntick)
-	{
-		turntick--;
-		G_AddViewAngle((ANG180 / TURN180_TICKS >> 16));
-	}
-}
-
 //
 // G_BuildTiccmd
 // Builds a ticcmd from all of the available inputs
@@ -412,6 +373,18 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
 		AddCommandString("join");
 
+	// [RH] only use two stage accelerative turning on the keyboard
+	//		and not the joystick, since we treat the joystick as
+	//		the analog device it is.
+	if ((Actions[ACTION_LEFT]) || (Actions[ACTION_RIGHT]))
+		turnheld += 1;
+	else
+		turnheld = 0;
+
+	int tspeed = speed;
+	if (turnheld < SLOWTURNTICS)
+		tspeed = 2; 			// slow turn
+
 	// let movement keys cancel each other out
 	if (strafe)
 	{
@@ -419,6 +392,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 			side += sidemove[speed];
 		if (Actions[ACTION_LEFT])
 			side -= sidemove[speed];
+	}
+	else
+	{
+		if (Actions[ACTION_RIGHT])
+			cmd->yaw -= angleturn[tspeed];
+		if (Actions[ACTION_LEFT])
+			cmd->yaw += angleturn[tspeed];
 	}
 
 	// Joystick analog strafing -- Hyper_Eye
@@ -504,6 +484,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
+	else
+		{
+			if (Actions[ACTION_FASTTURN])
+				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_fastsensitivity / 10));
+			else
+				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+		}
 
 	if (Actions[ACTION_MLOOK])
 	{
@@ -556,6 +543,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	cmd->forwardmove <<= 8;
 	cmd->sidemove <<= 8;
+
+	//// [RH] 180-degree turn overrides all other yaws
+	if (turntick)
+	{
+		turntick--;
+		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
+	}
 
 	if (sendcenterview)
 	{
@@ -746,11 +740,8 @@ BOOL G_Responder (event_t *ev)
 				joystrafe = ev->data3;
 			else if(ev->data2 == joy_forwardaxis) // Move
 				joyforward = ev->data3;
-			else if (ev->data2 == joy_turnaxis) // Turn
-			{
-
+			else if(ev->data2 == joy_turnaxis) // Turn
 				joyturn = ev->data3;
-			}
 			else if(ev->data2 == joy_lookaxis) // Look
 				joylook = ev->data3;
 			else
