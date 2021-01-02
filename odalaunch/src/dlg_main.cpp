@@ -21,7 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef UNIX
+#undef UNIX
 #include "dlg_main.h"
+#define UNIX
+#else
+#include "dlg_main.h"
+#endif
 
 #include <algorithm>
 #include <iostream>

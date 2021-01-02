@@ -1,7 +1,5 @@
 include(FindLibAgar)
 
-global_compile_options()
-
 if(NOT MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes")
 endif()

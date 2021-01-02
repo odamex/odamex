@@ -1,14 +1,12 @@
-global_compile_options()
+include(OdamexTargetSettings)
 
 # Master
-file(GLOB MASTER_HEADERS *.h)
-file(GLOB MASTER_SOURCES *.cpp)
-
-# Platform definitions
-define_platform()
+file(GLOB MASTER_SOURCES *.cpp *.h)
 
 # Master target
-add_executable(odamast ${MASTER_SOURCES} ${MASTER_HEADERS})
+add_executable(odamast ${MASTER_SOURCES})
+odamex_target_settings(odamast)
+
 if(WIN32)
   target_link_libraries(odamast wsock32)
 elseif(SOLARIS)

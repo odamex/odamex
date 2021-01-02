@@ -19,7 +19,13 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifdef UNIX
+#undef UNIX
 #include "frm_odaget.h"
+#define UNIX
+#else
+#include "frm_odaget.h"
+#endif
 
 #include <wx/xrc/xmlres.h>
 #include <wx/uri.h>

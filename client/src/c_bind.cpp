@@ -56,7 +56,7 @@ OBinding DefaultBindings[] =
 	{"7", "impulse 7"},
 	{"8", "impulse 8"},
 	{"-", "sizedown"},
-	{"+", "sizeup"},
+	{"=", "sizeup"},
 	{"leftctrl", "+attack"},
 	{"leftalt", "+strafe"},
 	{"leftshift", "+speed"},

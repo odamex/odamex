@@ -63,6 +63,7 @@
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
+#include "i_input.h"
 
 #include <string>
 #include <vector>
@@ -688,6 +689,7 @@ void CL_StepTics(unsigned int count)
 //
 void CL_DisplayTics()
 {
+	I_GetEvents(true);
 	D_Display();
 }
 
@@ -1027,9 +1029,50 @@ BEGIN_COMMAND (spectate)
 }
 END_COMMAND (spectate)
 
-BEGIN_COMMAND (ready) {
-	MSG_WriteMarker(&net_buffer, clc_ready);
-} END_COMMAND (ready)
+BEGIN_COMMAND(ready)
+{
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "ready");
+	MSG_WriteByte(&net_buffer, 0);
+}
+END_COMMAND(ready)
+
+static void NetCmdHelp()
+{
+	Printf(PRINT_HIGH,
+	       "netcmd - Send an arbitrary string command to a server\n\n"
+	       "Common commands:\n"
+	       "  ] netcmd help\n"
+	       "  Check to see if the server has any server-specific netcmd's.\n\n"
+	       "  ] netcmd motd\n"
+	       "  Ask the server for the MOTD.\n\n"
+	       "  ] netcmd ready\n"
+	       "  Set yourself as ready or unready.\n\n"
+	       "  ] netcmd vote <\"yes\"|\"no\">\n"
+	       "  Vote \"yes\" or \"no\" in an ongoing vote.\n");
+}
+
+BEGIN_COMMAND(netcmd)
+{
+	if (argc < 2)
+	{
+		NetCmdHelp();
+		return;
+	}
+
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, argv[1]);
+
+	// Pass additional arguments as separate strings.  Avoids argument
+	// parsing at the opposite end.
+	byte netargc = MIN<size_t>(argc - 2, 0xFF);
+	MSG_WriteByte(&net_buffer, netargc);
+	for (size_t i = 0; i < netargc; i++)
+	{
+		MSG_WriteString(&net_buffer, argv[i + 2]);
+	}
+}
+END_COMMAND(netcmd)
 
 BEGIN_COMMAND (join)
 {
@@ -1140,7 +1183,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
-	newfilename = I_GetUserFileName(newfilename.c_str());
+	newfilename = M_GetUserFileName(newfilename.c_str());
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
@@ -1157,29 +1200,16 @@ void CL_NetDemoStop()
 	netdemo.stopPlaying();
 }
 
-void CL_NetDemoPlay(const std::string &filename)
+void CL_NetDemoPlay(const std::string& filename)
 {
-	std::string newfilename;
-
-	std::string dir;
-	M_ExtractFilePath(filename, dir);
-
-	// if no path is supplied, check the default path
-	if (dir.empty())
-		newfilename = I_GetUserFileName(filename.c_str());
-	else
-		newfilename = filename;
-
-	if (!M_FileExists(newfilename))
+	std::string found = M_FindUserFileName(filename, ".odd");
+	if (found.empty())
 	{
-		// try adding .odd to the end of the file name
-		std::string ext;
-		M_ExtractFileExtension(newfilename, ext);
-		if (!iequals(ext, ".odd"))
-			M_AppendExtension(newfilename, ".odd", false);
+		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());
+		return;
 	}
 
-	netdemo.startPlaying(newfilename);
+	netdemo.startPlaying(found);
 }
 
 BEGIN_COMMAND(stopnetdemo)
@@ -3923,7 +3953,7 @@ void CL_LocalDemoTic()
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, viewheight, deltaviewheight;
+	fixed_t pitch, viewz, viewheight, deltaviewheight;
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
@@ -3946,6 +3976,7 @@ void CL_LocalDemoTic()
 	momz = MSG_ReadLong();
 	angle = MSG_ReadLong();
 	pitch = MSG_ReadLong();
+	viewz = MSG_ReadLong();
 	viewheight = MSG_ReadLong();
 	deltaviewheight = MSG_ReadLong();
 	jumpTics = MSG_ReadLong();
@@ -3963,6 +3994,7 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
+		clientPlayer->viewz = viewz;
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;

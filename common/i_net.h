@@ -191,11 +191,10 @@ enum clc_t
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
 	clc_callvote,			// [AM] - Calling a vote
-	clc_vote,				// [AM] - Casting a vote
 	clc_maplist,			// [AM] - Maplist status request.
 	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
 	clc_getplayerinfo,
-	clc_ready,				// [AM] Toggle ready state.
+	clc_netcmd,				// [AM] Send a string command to the server.
 	clc_spy,				// [SL] Tell server to send info about this player
 	clc_privmsg,			// [AM] Targeted chat to a specific player.
 
@@ -205,8 +204,8 @@ enum clc_t
 	clc_max = 255
 };
 
-extern msg_info_t clc_info[clc_max];
-extern msg_info_t svc_info[svc_max];
+extern msg_info_t clc_info[clc_max + 1];
+extern msg_info_t svc_info[svc_max + 1];
 
 enum svc_compressed_masks
 {

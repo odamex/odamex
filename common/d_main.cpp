@@ -336,8 +336,8 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 		if(!segment.length())
 			continue;
 
-		FixPathSeparator(segment);
-		I_ExpandHomeDir(segment);
+		M_FixPathSep(segment);
+		M_ExpandHomeDir(segment);
 
 		if(segment[segment.length() - 1] != PATHSEPCHAR)
 			segment += PATHSEP;
@@ -490,16 +490,23 @@ static std::string BaseFileSearch(std::string file, std::string ext = "", std::s
 	ext = StdStringToUpper(ext);
 	std::vector<std::string> dirs;
 
-	dirs.push_back(startdir);
-	dirs.push_back(progdir);
-
-	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-	D_AddSearchDir(dirs, getenv("HOME"), separator);
-
-	//[cSc] Add cl_waddownloaddir as default path
-	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), separator);
+	if (file == "ODAMEX.WAD")
+	{
+		// odamex.wad should be expected to be in the binary directory and
+		// noplace else.
+		dirs.push_back(M_GetBinaryDir());
+	}
+	else
+	{
+		//[cSc] Add cl_waddownloaddir as default path
+		D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+		D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
+		D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
+		D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+		D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
+		dirs.push_back(M_GetUserDir());
+		dirs.push_back(M_GetCWD());
+	}
 
 	// [AM] Search additional paths based on platform
 	D_AddPlatformSearchDirs(dirs);
@@ -641,7 +648,7 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 {
 	std::string newname(filename);
 
-	FixPathSeparator(newname);
+	M_FixPathSep(newname);
 	if (ext.length())
 		M_AppendExtension(newname, "." + ext);
 
