@@ -36,9 +36,6 @@ static std::vector<fixed_uint_pair> saved_ceilingheight;
 static std::vector<fixed_uint_pair> prev_floorheight;
 static std::vector<fixed_uint_pair> saved_floorheight;
 
-extern angle_t			LocalViewAngle;
-extern int				LocalViewPitch;
-
 //
 // R_InterpolationTicker
 //
@@ -76,8 +73,12 @@ void R_ResetInterpolation()
 	prev_floorheight.clear();
 	saved_ceilingheight.clear();
 	saved_floorheight.clear();
-	LocalViewAngle = 0;
-	LocalViewPitch = 0;
+	::localview.angle = 0;
+	::localview.setangle = false;
+	::localview.skipangle = false;
+	::localview.pitch = 0;
+	::localview.setpitch = false;
+	::localview.skippitch = false;
 }
 
 
@@ -168,9 +169,10 @@ void R_InterpolateCamera(fixed_t amount)
 	{
 		player_t& consolePlayer = consoleplayer();
 
-		if (LocalViewAngle && consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
+		if (!::localview.skipangle && consolePlayer.id == displayplayer().id &&
+		    consolePlayer.health > 0)
 		{
-			viewangle = camera->angle + LocalViewAngle;
+			viewangle = camera->angle + ::localview.angle;
 		}
 		else
 		{
