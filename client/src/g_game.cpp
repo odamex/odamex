@@ -501,14 +501,17 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 			cmd->impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
 	}
 
-	if (strafe || lookstrafe)
+	if (::joyturn)
 	{
-		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
-	}
-	else
-	{
-		cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-		                    (joy_sensitivity / 10));
+		if (strafe || lookstrafe)
+		{
+			side += (int)(((float)::joyturn / (float)SHRT_MAX) * ::sidemove[speed]);
+		}
+		else
+		{
+			cmd->yaw -= (short)((((float)::joyturn / (float)SHRT_MAX) * ::angleturn[1]) *
+			                    (joy_sensitivity / 10));
+		}
 		::localview.skipangle = true;
 	}
 
