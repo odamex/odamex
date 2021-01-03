@@ -125,6 +125,7 @@ add_subdirectory(libraries)
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER)
   add_subdirectory(common)
+  add_subdirectory(odaproto)
 endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)

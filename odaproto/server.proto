@@ -1,0 +1,815 @@
+/**
+* Odamex's server-to-client protocol.
+*/
+
+syntax="proto3";
+
+package svc;
+
+message Color
+{
+	int32 r = 1;
+	int32 g = 2;
+	int32 b = 3;
+	int32 a = 4;
+}
+
+message Vec2
+{
+	sfixed32 x = 1;
+	sfixed32 y = 2;
+}
+
+message Vec3
+{
+	sfixed32 x = 1;
+	sfixed32 y = 2;
+	sfixed32 z = 3;
+}
+
+message Tic
+{
+	// Bitmask.  Most of the interesting buttons are low bits, so this will
+	// be one byte in 99% of cases.
+	int32 buttons = 1;
+
+	// Usually mouse input in the +/- dozens or hundreds.
+	sint32 pitch = 2;
+
+	// Usually mouse input in the +/- dozens or hundreds.
+	sint32 yaw = 3;
+
+	// Typical values are +/- 12880.
+	sint32 forwardmove = 4;
+
+	// Typical values are +/- 10240.
+	sint32 sidemove = 5;
+
+	// Typical values are +/- 768.
+	sint32 upmove = 6;
+
+	// Impulses are rare.
+	int32 impulse = 7;
+}
+
+// svc_abort, svc_disconnect, svc_full
+message DisconnectMsg
+{
+	string message = 1;
+}
+
+// svc_playerinfo
+message PlayerInfoMsg
+{
+	message PlayerAmmo
+	{
+		int32 ammo = 1;
+		int32 maxammo = 2;
+	}	
+
+	int32 inventory = 1;
+	repeated PlayerAmmo ammo = 2;
+	int32 health = 3;
+	int32 armorpoints = 4;
+	int32 armortype = 5;
+	int32 weapon = 6;
+	repeated int32 powers = 7;
+}
+
+// svc_moveplayer
+message MovePlayerMsg
+{
+	int32 pid = 1;
+	int32 tic = 2;
+	Vec3 pos = 3;
+	sfixed32 angle = 4;
+	sint32 pitch = 5;
+	int32 frame = 6;
+	Vec3 mom = 7;
+	bool invisibility = 8;
+}
+
+// svc_updatelocalplayer
+message UpdateLocalPlayerMsg
+{
+	int32 tic = 1;
+	Vec3 pos = 2;
+	Vec3 mom = 3;
+	int32 waterlevel = 4;
+}
+
+// svc_levellocals
+message LevelLocalsMsg
+{
+	int32 time = 1;
+	int32 total_secrets = 2;
+	int32 total_items = 3;
+	int32 total_monsters = 4;
+	int32 found_secrets = 5;
+	int32 found_items = 6;
+	int32 killed_monsters = 7;
+}
+
+// svc_pingrequest
+message PingRequestMsg
+{
+	uint64 ms_time = 1;
+}
+
+// svc_updateping
+message UpdatePingMsg
+{
+	int32 pid = 1;
+	int32 ping = 2;
+}
+
+// svc_spawnmobj, svc_mobjinfo, svc_corpse
+message SpawnMobjMsg
+{
+	Vec3 pos = 1;
+	fixed32 angle = 2;
+	int32 type = 3;
+	int32 netid = 4;
+	int32 rndindex = 5;
+	int32 state = 6;
+	map<int32, int32> args = 7;
+	Vec3 mom = 8;
+	fixed32 flags = 9;
+	fixed32 flags2 = 10;
+}
+
+// svc_disconnectclient
+message DisconnectClientMsg
+{
+	int32 pid = 1;
+}
+
+// svc_loadmap
+message LoadMapMsg
+{
+	message Resource
+	{
+		string name = 1;
+		string hash = 2;
+	}	
+
+	repeated Resource wadnames = 1;
+	repeated Resource patchnames = 2;
+	string mapname = 3;
+	int32 time = 4;	
+}
+
+// svc_consoleplayer
+message ConsolePlayerMsg
+{
+	int32 pid = 1;
+	string digest = 2;
+}
+
+// svc_mobjspeedangle
+message MobjSpeedAngleMsg
+{
+	int32 netid = 1;
+	fixed32 angle = 2;
+	Vec3 mom = 3;
+}
+
+// svc_explodemissile
+message ExplodeMissileMsg
+{
+	int32 netid = 1;
+}
+
+// svc_removemobj
+message RemoveMobjMsg
+{
+	int32 netid = 1;
+}
+
+// svc_userinfo
+message UserInfoMsg
+{
+	int32 pid = 1;
+	string netname = 2;
+	int32 team = 3;
+	int32 gender = 4;
+	repeated int32 color = 5;
+	uint64 join_time = 6;
+}
+
+// svc_movemobj
+message MoveMobjMsg
+{
+	int32 netid = 1;
+	int32 rndindex = 2;
+	Vec3 pos = 3;
+}
+
+// svc_spawnplayer
+message SpawnPlayerMsg
+{
+	int32 pid = 1;
+	int32 netid = 2;
+	fixed32 angle = 3;
+	Vec3 pos = 4;
+}
+
+// svc_damageplayer
+message DamagePlayerMsg
+{
+	int32 netid = 1;
+	int32 health_damage = 2;
+	int32 armor_damage = 3;
+}
+
+// svc_killmobj
+message KillMobjMsg
+{
+	int32 netid = 1;
+	int32 target_netid = 2;
+	int32 inflictor_netid = 3;
+	int32 target_health = 4;
+	int32 mod = 5;
+	bool joinkill = 6;
+	sint32 lives = 7; // Default is -1.
+}
+
+// svc_fireweapon
+message FireWeaponMsg
+{
+	int32 readyweapon = 1;
+	int32 tic = 2;
+}
+
+// svc_sector
+message SectorMsg
+{
+	int32 sectornum = 1;
+	sfixed32 floor_height = 2;
+	sfixed32 ceiling_height = 3;
+	int32 floorpic = 4;
+	int32 ceilingpic = 5;
+	int32 special = 6;
+}
+
+// svc_print
+message PrintMsg
+{
+	int32 level = 1;
+	string message = 2;
+}
+
+// svc_playermembers
+message PlayerMembersMsg
+{
+	int32 pid = 1;
+	bool spectator = 2;
+	bool ready = 3;
+	sint32 lives = 4;
+	int32 roundwins = 5;
+	int32 points = 6;
+	int32 fragcount = 7;
+	int32 deathcount = 8;
+	int32 killcount = 9;
+	// [AM] Is there any reason we would ever care about itemcount?
+	int32 secretcount = 10;
+}
+
+// svc_teammembers
+message TeamMembersMsg
+{
+	int32 team = 1;
+	int32 points = 2;
+	int32 roundwins = 3;
+}
+
+// svc_activateline
+message ActivateLineMsg
+{
+	int32 lineid = 1;
+	int32 netid = 2;
+	int32 side = 3;
+	int32 activation_type = 4;
+}
+
+// svc_movingsector
+message MovingSectorMsg
+{
+	message Floor
+	{
+		int32 type = 1;
+		int32 status = 2;
+		bool crush = 3;
+		sint32 direction = 4; // Direction is 1 or -1.
+		int32 new_special = 5;
+		int32 texture = 6;
+		sfixed32 floor_dest = 7;
+		int32 speed = 8; // Speed might be fixed_t, but it's also centered on 0.
+		int32 reset_count = 9;
+		sfixed32 org_height = 10; 
+		int32 delay = 11;
+		int32 pause_time = 12;
+		int32 step_time = 13;
+		int32 per_step_time = 14;
+		sfixed32 height = 15;
+		int32 change = 16;
+		sint32 lineid = 17; // Default is -1.
+	}
+
+	message Plat
+	{
+		int32 speed = 1; // Speed might be fixed_t, but it's also centered on 0.
+		sfixed32 low = 2;
+		sfixed32 high = 3;
+		int32 wait = 4;
+		int32 count = 5;
+		int32 status = 6;
+		int32 old_status = 7;
+		bool crush = 8;
+		int32 tag = 9;
+		int32 type = 10;
+		sfixed32 height = 11;
+		sfixed32 lip = 12;
+	}
+
+	message Ceiling
+	{
+		int32 type = 1;
+		sfixed32 bottom_height = 2;
+		sfixed32 top_height = 3;
+		int32 speed = 4; // Speed might be fixed_t, but it's also centered on 0.
+		int32 speed1 = 5; // Speed might be fixed_t, but it's also centered on 0.
+		int32 speed2 = 6; // Speed might be fixed_t, but it's also centered on 0.
+		bool crush = 7;
+		int32 silent = 8;
+		sint32 direction = 9; // Direction is 1 or -1.
+		int32 texture = 10;
+		int32 new_special = 11;
+		int32 tag = 12;
+		int32 old_direction = 13;
+	}
+
+	message Door
+	{
+		int32 type = 1;
+		sfixed32 top_height = 2;
+		int32 speed = 3; // Speed might be fixed_t, but it's also centered on 0.
+		int32 top_wait = 4;
+		int32 top_countdown = 5;
+		int32 status = 6;
+		sint32 line = 7; // Default is -1.
+	}
+
+	message Elevator
+	{
+		int32 type = 1;
+		int32 status = 2;
+		sint32 direction = 3; // Direction is 1 or -1.
+		sfixed32 floor_dest = 4;
+		sfixed32 ceiling_dest = 5;
+		int32 speed = 6;  // Speed might be fixed_t, but it's also centered on 0.
+	}
+
+	message Pillar
+	{
+		int32 type = 1;
+		int32 status = 2;
+		int32 floor_speed = 3;
+		int32 ceiling_speed = 4;
+		sfixed32 floor_target = 5;
+		sfixed32 ceiling_target = 6;
+		bool crush = 7;
+	}
+
+	int32 sectornum = 1;
+	sfixed32 ceiling_height = 2;
+	sfixed32 floor_height = 3;
+	int32 movers = 4;
+	oneof ceiling_mover
+	{
+		Elevator elevator = 5;
+		Pillar pillar = 6;
+		Ceiling ceiling = 7;
+		Door door = 8;
+	}
+	oneof floor_mover
+	{
+		Floor floor = 9;
+		Plat plat = 10;
+	}
+}
+
+// svc_startsound
+message StartSoundMsg
+{
+	int32 netid = 1;
+	Vec2 pos = 2;
+	int32 channel = 3;
+	int32 sfx_id = 4;
+	int32 attenuation = 5;
+}
+
+// svc_reconnect
+message ReconnectMsg
+{
+}
+
+// svc_exitlevel
+message ExitLevelMsg
+{
+}
+
+// svc_touchspecial
+message TouchSpecialMsg
+{
+	int32 netid = 1;
+}
+
+// svc_missedpacket
+message MissedPacketMsg
+{
+	int32 seq = 1;
+	bytes data = 2;
+}
+
+// svc_soundorigin
+message SoundOriginMsg
+{
+	Vec2 pos = 1;
+	int32 channel = 2;
+	int32 sfx_id = 3;
+	int32 attenuation = 4;
+}
+
+// svc_forceteam
+message ForceTeamMsg
+{
+	int32 team = 1;
+}
+
+// svc_switch
+message SwitchMsg
+{
+	int32 line = 1;
+	bool switch_active = 2;
+	int32 special = 3;
+	int32 state = 4;
+	int32 button_texture = 5;
+	int32 timer = 6;
+}
+
+// svc_say
+message SayMsg
+{
+	int32 visibility = 1;
+	int32 pid = 2;
+	string message = 3;	
+}
+
+// svc_ctfevent
+message CTFEventMsg
+{
+	int32 event = 1;
+	int32 team = 2;
+	int32 who_team = 3;
+	int32 who_id = 4;
+	int32 who_points = 5;
+	repeated int32 team_points = 6;
+}
+
+// svc_serversettings
+message ServerSettingsMsg
+{
+	message ServerSetting
+	{
+		string key = 1;
+		string value = 2;
+	}
+	repeated ServerSetting settings = 1;
+}
+
+// svc_connectclient
+message ConnectClientMsg
+{
+	int32 pid = 1;
+}
+
+// svc_midprint
+message MidPrintMsg
+{
+	string msg = 1;
+	int32 msgtime = 2;
+}
+
+// svc_svgametic
+message ServerGameticMsg
+{
+	int32 tic = 1;
+}
+
+// svc_inttimeleft
+message IntermissionTimeleftMsg
+{
+	int32 timeleft = 1;
+}
+
+// svc_fullupdatedone
+message FullUpdateDoneMsg
+{
+}
+
+// svc_railtrail
+message RailTrailMsg
+{
+	Vec3 start = 1;
+	Vec3 end = 2;
+}
+
+// svc_playerstate
+message PlayerStateMsg
+{
+	int32 pid = 1;
+	int32 health = 2;
+	int32 armortype = 3;
+	int32 armorpoints = 4;
+	int32 lives = 5;
+	int32 readyweapon = 6;
+	uint32 cards = 7; // bitfield
+	repeated int32 ammos = 8;
+	int32 pspstate = 9;
+}
+
+// svc_levelstate
+message LevelStateMsg
+{
+	int32 state = 1;
+	int32 countdown_done_time = 2;
+	int32 ingame_start_time = 3;
+	int32 round_number = 4;
+	int32 last_wininfo_type = 5;
+	int32 last_wininfo_id = 6;
+}
+
+// svc_resetmap
+message ResetMapMsg
+{
+}
+
+// svc_playerqueuepos
+message PlayerQueuePosMsg
+{
+	int32 pit = 1;
+	int32 queuepos = 2;	
+}
+
+// svc_fullupdatestart
+message FullUpdateStartMsg
+{
+}
+
+// svc_lineupdate
+message LineUpdateMsg
+{
+	int32 id = 1;
+	int32 flags = 2;
+	int32 lucency = 3;
+}
+
+// svc_sectorproperties
+message SectorPropertiesMsg
+{
+	int32 id = 1;
+	uint32 changes = 2; // bitfield
+	int32 floorpic = 3;
+	int32 ceilingpic = 4;
+	int32 lightlevel = 5;
+	Color color = 6;
+	Color fade = 7;
+	int32 gravity = 8;
+	Vec2 ceiling_offs = 9;
+	Vec2 floor_offs = 10;
+	Vec2 ceiling_scale = 11;
+	Vec2 floor_scale = 12;
+	fixed32 floor_angle = 13;
+	fixed32 ceiling_angle = 14;
+	fixed32 base_ceiling_angle = 15;
+	Vec2 base_ceiling_offs = 17;
+	fixed32 base_floor_angle = 18;
+	Vec2 base_floor_offs = 19;
+}
+
+// svc_linesideupdate
+message LineSideUpdateMsg
+{
+	int32 line = 1;
+	int32 side = 2;
+	uint32 changes = 3; // bitfield
+	int32 toptexture = 4;
+	int32 midtexture = 5;
+	int32 bottomtexture = 6;
+}
+
+// svc_mobjstate
+message MobjStateMsg
+{
+	int32 netid = 1;
+	int32 mostate = 2;
+}
+
+// svc_actor_movedir
+message ActorMovedirMsg
+{
+	int32 netid = 1;
+	int32 movedir = 2;
+	int32 movecount = 3;
+}
+
+// svc_actor_target
+message ActorTargetMsg
+{
+	int32 netid = 1;
+	int32 target = 2;
+}
+
+// svc_actor_tracer
+message ActorTracerMsg
+{
+	int32 netid = 1;
+	int32 tracer_netid = 2;
+}
+
+// svc_damagemobj
+message DamageMobjMsg
+{
+	int32 netid = 1;
+	int32 health = 2;
+	int32 pain = 3;
+}
+
+// svc_executelinespecial
+message ExecuteLineSpecialMsg
+{
+	int32 special = 1;
+	sint32 lineid = 2; // Default is -1.
+	int32 actid = 3;
+	int32 arg0 = 4;
+	int32 arg1 = 5;
+	int32 arg2 = 6;
+	int32 arg3 = 7;
+	int32 arg4 = 8;
+}
+
+// svc_executeacsspecial
+message ExecuteAcsSpecialMsg
+{
+	int32 special = 1;
+	int32 actid = 2;
+	repeated int32 args = 3;
+	string print = 4;
+}
+
+// svc_thinkerupdate
+message ThinkerUpdateMsg
+{
+	message Scroller
+	{
+		int32 type = 1;
+		sfixed32 scroll_x = 2;
+		sfixed32 scroll_y = 3;
+		int32 affectee = 4;
+	}
+
+	message FireFlicker
+	{
+		int32 sector = 1;
+		int32 min_light = 2;
+		int32 max_light = 3;
+	}
+
+	message Flicker
+	{
+		int32 sector = 1;
+		int32 min_light = 2;
+		int32 max_light = 3;	
+	}
+
+	message LightFlash
+	{
+		int32 sector = 1;
+		int32 min_light = 2;
+		int32 max_light = 3;	
+	}
+
+	message Strobe
+	{
+		int32 sector = 1;
+		int32 min_light = 2;
+		int32 max_light = 3;
+		int32 dark_time = 4;
+		int32 bright_time = 5;
+		int32 count = 6;
+	}
+
+	message Glow
+	{
+		int32 sector = 1;
+	}
+
+	message Glow2
+	{
+		int32 sector = 1;
+		int32 start = 2;
+		int32 end = 3;
+		int32 max_tics = 4;
+		bool one_shot = 5;
+	}
+
+	message Phased
+	{
+		int32 sector = 1;
+		int32 base_level = 2;
+		int32 phase = 3;
+	}
+
+	oneof thinker
+	{
+		Scroller scroller = 1;
+		FireFlicker fire_flicker = 2;
+		Flicker flicker = 3;
+		LightFlash light_flash = 4;
+		Strobe strobe = 5;
+		Glow glow = 6;
+		Glow2 glow2 = 7;
+		Phased phased = 8;
+	}
+}
+
+// svc_netdemocap
+message NetdemoCapMsg
+{
+	Tic player_cmd = 1;
+	int32 waterlevel = 2;
+	Vec3 pos = 3;
+	Vec3 mom = 4;
+	fixed32 angle = 5;
+	sint32 pitch = 6;
+	sfixed32 viewz = 7;
+	sfixed32 viewheight = 8;
+	sfixed32 deltaviewheight = 9;
+	int32 jump_tics = 10;
+	int32 reactiontime = 11;
+	int32 readyweapon = 12;
+	int32 pendingweapon = 13;
+}
+
+// svc_netdemostop
+message NetdemoStopMsg
+{
+}
+
+// svc_netdemoloadsnap
+message NetdemoLoadSnapMsg
+{
+}
+
+// svc_vote_update
+message VoteUpdateMsg
+{
+	int32 get_result = 1;
+	string get_votestring = 2;
+	int32 get_countdown = 3;
+	int32 count_yes = 4;
+	int32 calc_yes = 5;
+	int32 count_no = 6;
+	int32 calc_no = 7;
+	int32 count_abs = 8;
+}
+
+// svc_maplist
+message MaplistMsg
+{
+	int32 status = 1;
+}
+
+// svc_maplist_update
+message MaplistUpdateMsg
+{
+	message MaplistEntry
+	{
+		string map = 1;
+		repeated string wads = 2;
+	}
+
+	int32 status = 1;
+	int32 maplist_size = 2;
+	int32 start = 3;
+	repeated MaplistEntry entries = 4;
+}
+
+// svc_maplist_index
+message MaplistIndexMsg
+{
+	int32 count = 1;
+	int32 next_index = 2;
+	int32 this_index = 3;
+}

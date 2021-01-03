@@ -143,6 +143,33 @@ if(BUILD_SERVER)
   endif()
 endif()
 
+### Protocol Buffers ###
+
+if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling Protobuf...")
+
+  # Generate the build.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+    -G "${CMAKE_GENERATOR}"
+    -A "${CMAKE_GENERATOR_PLATFORM}"
+    -T "${CMAKE_GENERATOR_TOOLSET}"
+    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+    "-DCMAKE_LINKER=${CMAKE_LINKER}"
+    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+    "-Dprotobuf_BUILD_TESTS=OFF"
+  )
+
+  # Compile the library.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+    --config RelWithDebInfo --target install --parallel
+  )
+endif()
+
 ### SDL libraries ###
 
 if(BUILD_CLIENT)

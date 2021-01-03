@@ -1,3 +1,7 @@
 [submodule "libraries/curl"]
 	path = libraries/curl
 	url = https://github.com/curl/curl
+[submodule "libraries/protobuf"]
+	path = libraries/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
+	branch = 3.5.x
