@@ -140,7 +140,7 @@ static StringList GametypeArgs(const GametypeParam (&params)[SIZE], size_t argc,
  */
 
 static GametypeParam coopParams[] = {
-    {"g_skill", 4, "skill", "SKILL",
+    {"sv_skill", 4, "skill", "SKILL",
      "Set the skill of the game to SKILL.  Defaults to 4."}};
 
 static void CoopHelp()
@@ -181,7 +181,7 @@ END_COMMAND(coop)
 static GametypeParam survivalParams[] = {
     {"g_lives", 3, "lives", "LIVES",
      "Set number of player lives to LIVES.  Defaults to 3."},
-    {"g_skill", 4, "skill", "SKILL",
+    {"sv_skill", 4, "skill", "SKILL",
      "Set the skill of the game to SKILL.  Defaults to 4."}};
 
 static void SurvivalHelp()
