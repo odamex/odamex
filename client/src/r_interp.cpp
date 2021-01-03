@@ -168,7 +168,7 @@ void R_InterpolateCamera(fixed_t amount)
 	{
 		player_t& consolePlayer = consoleplayer();
 
-		if (consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
+		if (LocalViewAngle && consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
 		{
 			viewangle = camera->angle + LocalViewAngle;
 		}
