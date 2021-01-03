@@ -729,7 +729,6 @@ int WI_drawNum(int n, int x, int y, int digits)
 }
 
 #include "hu_stuff.h"
-extern patch_t *hu_font[HU_FONTSIZE];
 
 void WI_drawPercent (int p, int x, int y, int b = 0)
 {
@@ -1646,5 +1645,3 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 }
 
 VERSION_CONTROL (wi_stuff_cpp, "$Id$")
-
-

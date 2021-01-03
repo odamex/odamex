@@ -27,22 +27,23 @@
 #include "m_random.h"
 #include "p_ctf.h"
 #include "i_system.h"
-#include "g_warmup.h"
+#include "g_gametype.h"
+#include "p_inter.h"
 #include "p_unlag.h"
 #include "v_textcolors.h"
 #include "m_wdlstats.h"
-
+#include "doomstat.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 std::string V_GetTeamColorPlayer(UserInfo userinfo);
 
-extern int shotclock;
-
 EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (g_ctf_notouchreturn)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)
+EXTERN_CVAR (g_sides)
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMTEAMS][NUMFLAGSTATES] =
@@ -76,7 +77,7 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 	if(event == SCORE_NONE)
 		return;
 
-	if(validplayer(who) && warmup.checkscorechange())
+	if(validplayer(who) && G_CanScoreChange())
 		who.points += ctf_points[event];
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -209,8 +210,6 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 	return msg;
 }
 
-extern void P_GiveTeamPoints(player_t* player, int num);
-
 //
 //	[Toke - CTF] SV_FlagScore
 //	Event of a player capturing the flag
@@ -236,13 +235,8 @@ void SV_FlagScore (player_t &player, team_t f)
 
 	CTF_SpawnFlag(f);
 
-	// checks to see if a team won a game		
-	if(GetTeamInfo(player.userinfo.team)->Points >= sv_scorelimit && sv_scorelimit != 0)
-	{
-		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", V_GetTeamColor(player.userinfo.team).c_str());
-		M_CommitWDLLog();
-		shotclock = TICRATE*2;
-	}
+	// checks to see if a team won a game
+	G_TeamScoreCheckEndGame();
 }
 
 //
@@ -251,7 +245,10 @@ void SV_FlagScore (player_t &player, team_t f)
 //
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 {
-	if (shotclock)
+	if (!G_CanTickGameplay())
+		return IEV_NotEquipped;
+
+	if (!G_CanPickupObjective(f))
 		return IEV_NotEquipped;
 
 	if(player.userinfo.team == f)
@@ -266,8 +263,14 @@ ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 			{
 				return SV_FlagGrab(player, f, firstgrab);	
 			}
+			else if (g_ctf_notouchreturn)
+			{
+				return IEV_NotEquipped;
+			}
 			else
+			{
 				SV_FlagReturn(player, f);
+			}
 		}
 	}
 	else // Grabbing enemy flag.
@@ -285,7 +288,7 @@ ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab)
 //
 void SV_SocketTouch (player_t &player, team_t f)
 {
-	if (shotclock)
+	if (!G_CanTickGameplay())
 		return;
 
 	TeamInfo* teamInfo = GetTeamInfo(f);
@@ -315,7 +318,7 @@ void SV_SocketTouch (player_t &player, team_t f)
 //
 void SV_FlagDrop (player_t &player, team_t f)
 {
-	if (shotclock)
+	if (!G_CanTickGameplay())
 		return;
 
 	SV_CTFEvent (f, SCORE_DROP, player);
@@ -340,7 +343,7 @@ void SV_FlagDrop (player_t &player, team_t f)
 //
 void CTF_RunTics (void)
 {
-	if (shotclock || gamestate != GS_LEVEL)
+	if (!G_CanTickGameplay() || gamestate != GS_LEVEL)
 		return;
 
 	for(size_t i = 0; i < NUMTEAMS; i++)
@@ -436,6 +439,37 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 			break;
 		}
 	}
+}
+
+/**
+ * @brief Determine if this home flag type should be spawned.
+ */
+bool CTF_ShouldSpawnHomeFlag(mobjtype_t type)
+{
+	if (type != MT_BFLG && type != MT_RFLG && type != MT_GFLG)
+	{
+		// Spawn whatever this is.
+		return true;
+	}
+
+	// Alawys spawn defending team flags.
+
+	if (type == MT_BFLG && G_IsDefendingTeam(TEAM_BLUE))
+	{
+		return true;
+	}
+
+	if (type == MT_RFLG && G_IsDefendingTeam(TEAM_RED))
+	{
+		return true;
+	}
+
+	if (type == MT_GFLG && G_IsDefendingTeam(TEAM_GREEN))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 FArchive &operator<< (FArchive &arc, flagdata &flag)

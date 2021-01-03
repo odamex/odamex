@@ -628,45 +628,6 @@ void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 	b->WriteChunk((const char *)p, l);
 }
 
-int MSG_WriteVarInt(byte* buf, unsigned int value)
-{
-	int i = 0;
-
-	while (value >= 0x80)
-	{
-		buf[i] = value | 0x80;
-		value >>= 7;
-		i++;
-	}
-
-	buf[i] = value;
-	return i + 1;
-}
-
-int MSG_ReadVarInt(byte* buf, int bufLen, int& bytesRead)
-{
-	int x = 0;
-	int s = 0;
-
-	for (int i = 0; i < bufLen; i++)
-	{
-		if (buf[i] < 0x80)
-		{
-			if (i > 5 || i == 5 && buf[i] > 1)
-				return 0;
-
-			bytesRead += i + 1;
-			return x | buf[i] << s;
-		}
-
-		x |= (buf[i] & 0x7f) << s;
-		s += 7;
-	}
-
-	bytesRead = -1;
-	return 0;
-}
-
 void MSG_WriteShort (buf_t *b, short c)
 {
 	if (simulated_connection)
@@ -680,6 +641,20 @@ void MSG_WriteLong (buf_t *b, int c)
 	if (simulated_connection)
 		return;
 	b->WriteLong(c);
+}
+
+void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
+{
+	if (simulated_connection)
+		return;
+	b->WriteUnVarint(uv);
+}
+
+void MSG_WriteVarint(buf_t* b, int v)
+{
+	if (simulated_connection)
+		return;
+	b->WriteVarint(v);
 }
 
 //
@@ -917,6 +892,16 @@ int MSG_ReadLong (void)
 	return net_message.ReadLong();
 }
 
+unsigned int MSG_ReadUnVarint()
+{
+	return net_message.ReadUnVarint();
+}
+
+int MSG_ReadVarint()
+{
+	return net_message.ReadVarint();
+}
+
 //
 // MSG_ReadBool
 //
@@ -999,7 +984,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_playerinfo);
 	SVC_INFO(svc_moveplayer);
 	SVC_INFO(svc_updatelocalplayer);
-	SVC_INFO(svc_updatesecrets);
+	SVC_INFO(svc_levellocals);
 	SVC_INFO(svc_pingrequest);
 	SVC_INFO(svc_updateping);
 	SVC_INFO(svc_spawnmobj);
@@ -1022,8 +1007,8 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_sector);
 	SVC_INFO(svc_print);
 	SVC_INFO(svc_mobjinfo);
-	SVC_INFO(svc_updatefrags);
-	SVC_INFO(svc_teampoints);
+	SVC_INFO(svc_playermembers);
+	SVC_INFO(svc_teammembers);
 	SVC_INFO(svc_activateline);
 	SVC_INFO(svc_movingsector);
 	SVC_INFO(svc_startsound);
@@ -1045,18 +1030,15 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_updatedeaths);
 	SVC_INFO(svc_ctfevent);
 	SVC_INFO(svc_serversettings);
-	SVC_INFO(svc_spectate);
 	SVC_INFO(svc_connectclient);
-	SVC_INFO(svc_midprint);
+    SVC_INFO(svc_midprint);
 	SVC_INFO(svc_svgametic);
-	SVC_INFO(svc_timeleft);
 	SVC_INFO(svc_inttimeleft);
 	SVC_INFO(svc_mobjtranslation);
 	SVC_INFO(svc_fullupdatedone);
 	SVC_INFO(svc_railtrail);
-	SVC_INFO(svc_readystate);
 	SVC_INFO(svc_playerstate);
-	SVC_INFO(svc_warmupstate);
+	SVC_INFO(svc_levelstate);
 	SVC_INFO(svc_resetmap);
 	SVC_INFO(svc_playerqueuepos);
 	SVC_INFO(svc_fullupdatestart);
@@ -1101,7 +1083,7 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_wantwad);
 	CLC_INFO(clc_kill);
 	CLC_INFO(clc_cheat);
-	CLC_INFO(clc_cheatpulse);
+    CLC_INFO(clc_cheatpulse);
 	CLC_INFO(clc_callvote);
 	CLC_INFO(clc_maplist);
 	CLC_INFO(clc_maplist_update);

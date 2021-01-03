@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "c_dispatch.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "p_local.h"
 
 #define WDLSTATS_VERSION 5
@@ -186,8 +186,7 @@ void M_StartWDLLog()
 	}
 
 	// Ensure that we're not in an invalid warmup state.
-	Warmup::status_t wstatus = ::warmup.get_status();
-	if (wstatus != Warmup::DISABLED && wstatus != Warmup::INGAME)
+	if (::levelstate.getState() != LevelState::INGAME)
 	{
 		// [AM] This is a little too much inside baseball to print about.
 		::wdlstate.recording = false;

@@ -55,8 +55,6 @@
 #include "i_xbox.h"
 #endif
 
-extern patch_t* 	hu_font[HU_FONTSIZE];
-
 // temp for screenblocks (0-9)
 int 				screenSize;
 

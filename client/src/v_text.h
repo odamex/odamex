@@ -27,6 +27,16 @@
 
 #include "doomtype.h"
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
+#include "hu_stuff.h"
+#include "r_defs.h"
+
+extern patch_t* hu_font[HU_FONTSIZE];
+
+void V_TextInit();
+void V_TextShutdown();
+void V_SetFont(const char* fontname);
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
 
 struct brokenlines_s {
 	int width;
@@ -44,4 +54,3 @@ inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_Br
 int V_GetTextColor(const char* str);
 
 #endif //__V_TEXT_H__
-
