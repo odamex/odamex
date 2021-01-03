@@ -30,6 +30,7 @@
 
 #include "win32inc.h"
 
+#include "doomdef.h"
 #include "i_system.h"
 #include "doomtype.h"
 #include "cmdlib.h"
@@ -542,6 +543,48 @@ bool StrToTime(std::string str, time_t &tim) {
 	}
 
 	return true;
+}
+
+/**
+ * @brief Turn the given number of tics into a time.
+ * 
+ * @param str String buffer to write into.
+ * @param time Number of tics to turn into a time.
+ * @param ceil Round up to the nearest second.
+ */
+void TicsToTime(OTimespan& span, int time, bool ceilsec)
+{
+	if (time < 0)
+	{
+		// We do not support negative time, so just zero the struct.
+		span.hours = 0;
+		span.minutes = 0;
+		span.seconds = 0;
+		span.tics = 0;
+		return;
+	}
+
+	if (ceilsec)
+	{
+		if (time > 0)
+		{
+			// This ensures that if two clocks are run side by side and the
+			// normal time is exactly 1 second, the ceiling time is also 1
+			// second.
+			time -= 1;
+		}
+
+		time = time + TICRATE - (time % TICRATE);
+	}
+
+	span.hours = time / (TICRATE * 3600);
+	time -= span.hours * TICRATE * 3600;
+
+	span.minutes = time / (TICRATE * 60);
+	time -= span.minutes * TICRATE * 60;
+
+	span.seconds = time / TICRATE;
+	span.tics = time % TICRATE;
 }
 
 // [SL] Reimplement std::isspace

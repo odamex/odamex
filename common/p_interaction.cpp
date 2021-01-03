@@ -34,8 +34,9 @@
 #include "p_lnspec.h"
 #include "p_ctf.h"
 #include "p_acs.h"
-#include "g_warmup.h"
+#include "g_gametype.h"
 #include "m_wdlstats.h"
+#include "msg_server.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -57,8 +58,8 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
+EXTERN_CVAR(g_lives)
 
-int shotclock = 0;
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -68,7 +69,6 @@ int clipammo[NUMAMMO] = {10, 4, 20, 1};
 
 void AM_Stop(void);
 void SV_SpawnMobj(AActor *mobj);
-void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...);
 void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
@@ -79,7 +79,6 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joi
 void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
-void SV_SetWinPlayer(byte playerId);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 
@@ -87,41 +86,101 @@ void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 void SV_ShareKeys(card_t card, player_t& player);
 #endif
 
+static void PersistPlayerScore(player_t& p, bool lives, bool score)
+{
+	// Only run this on the server.
+	if (!::serverside || ::clientside)
+		return;
+
+	// Don't bother if there's nothing we want to send.
+	if (!(lives || score))
+		return;
+
+	// Either send flags, lives or both.
+	unsigned flags = 0;
+	if (lives)
+		flags |= SVC_PM_LIVES;
+	if (score)
+		flags |= SVC_PM_SCORE;
+
+	// Send this information to everybody.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+		SVC_PlayerMembers(it->client.netbuf, p, flags);
+	}
+}
+
+static void PersistTeamScore(team_t team)
+{
+	// Only run this on the server.
+	if (!::serverside || ::clientside)
+		return;
+
+	// Send this information to everybody.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+		SVC_TeamMembers(it->client.netbuf, team);
+	}
+}
+
 //
 // GET STUFF
 //
 
 // Give frags to a player
-void P_GiveFrags(player_t* player, int num)
+bool P_GiveFrags(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
-		return;
+	if (!G_CanScoreChange())
+		return false;
+
 	player->fragcount += num;
+	return true;
 }
 
 // Give coop kills to a player
-void P_GiveKills(player_t* player, int num)
+bool P_GiveKills(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
-		return;
+	if (!G_CanScoreChange())
+		return false;
+
 	player->killcount += num;
+	return true;
 }
 
 // Give coop kills to a player
-void P_GiveDeaths(player_t* player, int num)
+bool P_GiveDeaths(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
-		return;
+	if (!G_CanScoreChange())
+		return false;
+
 	player->deathcount += num;
+	return true;
 }
 
 // Give a specific number of points to a player's team
-void P_GiveTeamPoints(player_t* player, int num)
+bool P_GiveTeamPoints(player_t* player, int num)
 {
-	if (!warmup.checkscorechange())
-		return;
+	if (!G_CanScoreChange())
+		return false;
 
 	GetTeamInfo(player->userinfo.team)->Points += num;
+	return true;
+}
+
+/**
+ * @brief Give lives to a player...or take them away.
+ */
+bool P_GiveLives(player_t* player, int num)
+{
+	if (!G_CanLivesChange())
+		return false;
+
+	player->lives += num;
+	return true;
 }
 
 //
@@ -930,6 +989,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	player_t *splayer;
 	player_t *tplayer;
 
+	bool sendScore = false;
+	bool sendLives = false;
+	bool sendTeamScore = false;
+
 	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
 	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
@@ -974,10 +1037,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	tplayer = target->player;
 
-	// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
-	// was not being set clientside
 	if (tplayer)
 	{
+		// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
+		// was not being set clientside
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
 	}
 
@@ -988,15 +1051,15 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		// fair to count them toward a player's score.
 		if (target->player && level.time)
 		{
-			if (!joinkill && !shotclock)
+			if (!joinkill)
 			{
 				if (target->player == source->player) // [RH] Cumulative frag count
 				{
-					P_GiveFrags(splayer, -1);
+					sendScore |= P_GiveFrags(splayer, -1);
 					// [Toke] Minus a team frag for suicide
 					if (sv_gametype == GM_TEAMDM)
 					{
-						P_GiveTeamPoints(splayer, -1);
+						sendTeamScore |= P_GiveTeamPoints(splayer, -1);
 					}
 				}
 				// [Toke] Minus a team frag for killing teammate
@@ -1004,10 +1067,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				         (splayer->userinfo.team == tplayer->userinfo.team))
 				{
 					// [Toke - Teamplay || deathz0r - updated]
-					P_GiveFrags(splayer, -1);
+					sendScore |= P_GiveFrags(splayer, -1);
 					if (sv_gametype == GM_TEAMDM)
 					{
-						P_GiveTeamPoints(splayer, -1);
+						sendTeamScore |= P_GiveTeamPoints(splayer, -1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
@@ -1016,11 +1079,11 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				}
 				else
 				{
-					P_GiveFrags(splayer, 1);
+					sendScore |= P_GiveFrags(splayer, 1);
 					// [Toke] Add a team frag
 					if (sv_gametype == GM_TEAMDM)
 					{
-						P_GiveTeamPoints(splayer, 1);
+						sendTeamScore |= P_GiveTeamPoints(splayer, 1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
@@ -1035,16 +1098,22 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 				}
 			}
-			SV_UpdateFrags(*splayer);
+
+			if (sendLives || sendScore)
+				PersistPlayerScore(*splayer, sendLives, sendScore);
+			if (sendTeamScore)
+				PersistTeamScore(splayer->userinfo.team);
 		}
 		// [deathz0r] Stats for co-op scoreboard
 		if (sv_gametype == GM_COOP &&
             ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
-			P_GiveKills(splayer, 1);
-			SV_UpdateFrags(*splayer);
+			if (P_GiveKills(splayer, 1))
+				PersistPlayerScore(*splayer, sendLives, sendScore);
 		}
 	}
+
+	sendScore = sendLives = sendTeamScore = false;
 
 	if (target->player)
 	{
@@ -1052,10 +1121,11 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (sv_gametype == GM_CTF)
 			CTF_CheckFlags(*target->player);
 
-		if (!joinkill && !shotclock)
-		{
-			P_GiveDeaths(tplayer, 1);
-		}
+		if (!joinkill)
+			sendScore |= P_GiveDeaths(tplayer, 1);
+
+		if (!joinkill && tplayer->lives > 0)
+			sendLives |= P_GiveLives(tplayer, -1);
 
 		// Death script execution, care of Skull Tag
 		if (level.behavior != NULL)
@@ -1064,17 +1134,18 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 
 		// count environment kills against you
-		if (!source && !joinkill && !shotclock)
+		if (!source && !joinkill)
 		{
 			// [RH] Cumulative frag count
-			P_GiveFrags(tplayer, -1);
+			sendScore |= P_GiveFrags(tplayer, -1);
 		}
 
 		// [NightFang] - Added this, thought it would be cooler
 		// [Fly] - No, it's not cooler
 		// target->player->cheats = CF_CHASECAM;
 
-		SV_UpdateFrags(*tplayer);
+		if (sendLives || sendScore)
+			PersistPlayerScore(*tplayer, sendLives, sendScore);
 
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
@@ -1121,44 +1192,26 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		ClientObituary(target, inflictor, source);
 	}
 
-#ifdef SERVER_APP
+	// [AM] Save the "out of lives" message until after the obit.
+	if (g_lives && tplayer && tplayer->lives <= 0)
+		SV_BroadcastPrintf(PRINT_HIGH, "%s is out of lives.\n",
+		                   tplayer->userinfo.netname.c_str());
+
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
 		// [Toke] Better sv_fraglimit
-		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= sv_fraglimit && !shotclock)
-		{
-            // [ML] 04/4/06: Added !sv_fragexitswitch
-            SV_BroadcastPrintf(
-                PRINT_HIGH,
-                "Frag limit hit. Game won by %s!\n",
-                splayer->userinfo.netname.c_str()
-            );
-			SV_SetWinPlayer(splayer->id);
-            shotclock = TICRATE*2;
-		}
+		if (sv_gametype == GM_DM)
+			G_FragsCheckEndGame();
 
 		// [Toke] TeamDM sv_fraglimit
-		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
-		{
-			for (size_t i = 0; i < NUMTEAMS; i++)
-			{
-				if (GetTeamInfo((team_t)i)->Points >= sv_fraglimit)
-				{
-					SV_BroadcastPrintf(
-                        PRINT_HIGH,
-                        "Frag limit hit. %s team wins!\n",
-						GetTeamInfo((team_t)i)->ColorString.c_str()
-                    );
-					shotclock = TICRATE * 2;
-					break;
-				}
-			}
-		}
+		if (sv_gametype == GM_TEAMDM)
+			G_TeamFragsCheckEndGame();
 	}
-#endif
 
+	// Check survival endgame
+	if (target->player && level.time)
+		G_LivesCheckEndGame();
 
 	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
     {
@@ -1472,6 +1525,9 @@ void P_PlayerLeavesGame(player_s* player)
 	{
 		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());
 	}
+
+	// Playercount changes can cause end-of-game conditions.
+	G_AssertValidPlayerCount();
 }
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")

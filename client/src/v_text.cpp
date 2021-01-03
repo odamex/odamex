@@ -32,7 +32,9 @@
 #include "hu_stuff.h"
 #include "w_wad.h"
 
+#include "hashtable.h"
 #include "doomstat.h"
+#include "cmdlib.h"
 
 EXTERN_CVAR(msg0color)
 EXTERN_CVAR(msg1color)
@@ -42,12 +44,81 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-extern patch_t *hu_font[HU_FONTSIZE];
+patch_t* hu_font[HU_FONTSIZE];
 
+static patch_t* hu_bigfont[HU_FONTSIZE];
+static patch_t* hu_smallfont[HU_FONTSIZE];
 
 byte *ConChars;
-
 extern byte *Ranges;
+
+/**
+ * @brief Initialize fonts.
+ */
+void V_TextInit()
+{
+	int j, sub;
+	std::string buffer;
+
+	const char *bigfont = "FONTB%02d";
+	const char *smallfont = "STCFN%.3d";
+
+	// Level name font, used between levels, starts at index 1.
+	j = 1;
+	sub = 0;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		StrFormat(buffer, bigfont, j++ - sub);
+
+		// Some letters of this font are missing.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+			::hu_bigfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+		else
+			::hu_bigfont[i] = (patch_t*)W_CacheLumpNum(W_GetNumForName("TNT1A0", ns_sprites), PU_STATIC);
+	}
+
+	// Normal doom chat/message font, starts at index 33.
+	j = HU_FONTSTART;
+	sub = 0;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		StrFormat(buffer, smallfont, j++ - sub);
+		::hu_smallfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+	}
+
+	// Default font is SMALLFONT.
+	V_SetFont("SMALLFONT");
+}
+
+/**
+ * @brief Shut down and free fonts.
+ */
+void V_TextShutdown()
+{
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		::hu_font[i] = NULL;
+
+		Z_ChangeTag(::hu_bigfont[i], PU_CACHE);
+		::hu_bigfont[i] = NULL;
+		Z_ChangeTag(::hu_smallfont[i], PU_CACHE);
+		::hu_smallfont[i] = NULL;
+	}
+}
+
+/**
+ * @brief Set the current font.
+ * 
+ * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
+ */
+void V_SetFont(const char* fontname)
+{
+	if (stricmp(fontname, "BIGFONT") == 0)
+		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
+	else if (stricmp(fontname, "SMALLFONT") == 0)
+		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
+}
 
 int V_TextScaleXAmount()
 {

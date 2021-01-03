@@ -34,7 +34,7 @@
 #include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "gi.h"
 #include "i_system.h"
 #include "i_music.h"
@@ -62,8 +62,6 @@
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void R_ResetInterpolation();
-
-extern int shotclock;
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -105,6 +103,13 @@ void G_DeferedInitNew (char *mapname)
 	gameaction = ga_newgame;
 }
 
+void G_DeferedFullReset() {
+
+}
+
+void G_DeferedReset() {
+
+}
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
@@ -170,8 +175,6 @@ void G_DoNewGame (void)
 	players.push_back(player_t());
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
-
-	warmup.set_client_status(Warmup::DISABLED);		// Ch0wW: disable warmup
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
@@ -258,7 +261,6 @@ void G_InitNew (const char *mapname)
 		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
-		level.timeleft = 0;
 		level.inttimeleft = 0;
 	}
 
@@ -268,12 +270,13 @@ void G_InitNew (const char *mapname)
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
-	shotclock = 0;
 
 	D_SetupUserInfo();
 	
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	::levelstate.reset();
 
 	// [AM}] WDL stats (for testing purposes)
 	M_StartWDLLog();
@@ -312,7 +315,6 @@ static void goOn(int position)
 void G_ExitLevel (int position, int drawscores)
 {
 	secretexit = false;
-	shotclock = 0;
 
 	goOn (position);
 
@@ -328,8 +330,6 @@ void G_SecretExitLevel (int position, int drawscores)
 		secretexit = false;
 	else
 		secretexit = true;
-
-	shotclock = 0;
 
     goOn (position);
 	//gameaction = ga_completed;
@@ -449,7 +449,6 @@ void G_DoCompleted (void)
 		if (!(nextcluster.flags & CLUSTER_HUB) || !(thiscluster.flags & CLUSTER_HUB))
 		{
 			level.time = 0;	// Reset time to zero if not entering/staying in a hub
-			level.timeleft = 0;
 			//level.inttimeleft = 0;
 		}
 
@@ -550,15 +549,9 @@ void G_DoLoadLevel (int position)
 
 		// [AM] If sv_keepkeys|sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
-		for (size_t j = 0; j < NUMCARDS; j++)
-			it->cards[j] = false;
+		P_ClearPlayerCards(*it);
 
-		it->fragcount = 0;
-		it->itemcount = 0;
-		it->secretcount = 0;
-		it->deathcount = 0; // [Toke - Scores - deaths]
-		it->killcount = 0; // [deathz0r] Coop kills
-		it->points = 0;
+		P_ClearPlayerScores(*it, false);
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98

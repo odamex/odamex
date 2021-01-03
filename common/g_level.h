@@ -135,7 +135,6 @@ struct level_locals_t {
 	int				time;
 	int				starttime;
 	int				partime;
-	int				timeleft;
 	unsigned int	inttimeleft;
 
 	level_info_t*	info;

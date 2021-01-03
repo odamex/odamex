@@ -173,6 +173,10 @@ public:
 	bool		cards[NUMCARDS];
 	bool		backpack;
 
+	// [AM] Lives left.
+	int			lives;
+	// [AM] Rounds won in round-based games.
+	int			roundwins;
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
@@ -403,6 +407,168 @@ player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
 
+/**
+ * @brief A collection of pointers to players, commonly called a "view".
+ */
+typedef std::vector<player_t*> PlayersView;
+
+/**
+ * @brief Results of a PlayerQuery.
+*/
+struct PlayerResults
+{
+	/**
+	 * @brief Number of results returned.
+	 */
+	int count;
+
+	/**
+	 * @brief Number of results returned per team.
+	 */
+	int teamCount[NUMTEAMS];
+
+	/**
+	 * @brief Total number of players scanned.
+	 */
+	int total;
+
+	/**
+	 * @brief Total number of players per team.
+	 */
+	int teamTotal[NUMTEAMS];
+
+	/**
+	 * @brief A view containing player pointers that satisfy the query.
+	 */
+	PlayersView players;
+
+	PlayerResults() : count(0), total(0)
+	{
+		for (size_t i = 0; i < ARRAY_LENGTH(teamCount); i++)
+			teamCount[i] = 0;
+		for (size_t i = 0; i < ARRAY_LENGTH(teamTotal); i++)
+			teamTotal[i] = 0;
+	}
+};
+
+class PlayerQuery
+{
+	enum SortTypes
+	{
+		SORT_NONE,
+		SORT_FRAGS,
+		SORT_WINS,
+	};
+
+	enum SortFilters
+	{
+		SFILTER_NONE,
+		SFILTER_MAX,
+		SFILTER_NOT_MAX,
+	};
+
+	bool m_ready;
+	bool m_lives;
+	team_t m_team;
+	SortTypes m_sort;
+	SortFilters m_sortFilter;
+
+  public:
+	PlayerQuery()
+	    : m_ready(false), m_lives(false), m_team(TEAM_NONE), m_sort(SORT_NONE),
+	      m_sortFilter(SFILTER_NONE)
+	{
+	}
+
+	/**
+	 * @brief Check for ready players only.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& isReady()
+	{
+		m_ready = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with lives left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& hasLives()
+	{
+		m_lives = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Filter players by a specific team.
+	 *
+	 * @param team Team to filter by.
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& onTeam(team_t team)
+	{
+		m_team = team;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top frag count, whatever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortFrags()
+	{
+		m_sort = SORT_FRAGS;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top win count, whatever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortWins()
+	{
+		m_sort = SORT_WINS;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only the top item remains.  In the case
+	 *        of a tie, multiple items are returned.
+	 * 
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& filterSortMax()
+	{
+		m_sortFilter = SFILTER_MAX;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only things other than the top item
+	 *        remains.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& filterSortNotMax()
+	{
+		m_sortFilter = SFILTER_NOT_MAX;
+		return *this;
+	}
+
+	PlayerResults execute();
+};
+
+void P_ClearPlayerCards(player_t& p);
+void P_ClearPlayerScores(player_t& p, bool wins);
+size_t P_NumPlayersInGame();
+size_t P_NumReadyPlayersInGame();
+size_t P_NumPlayersOnTeam(team_t team);
+
 extern byte consoleplayer_id;
 extern byte displayplayer_id;
 
@@ -450,6 +616,3 @@ typedef struct wbstartstruct_s
 } wbstartstruct_t;
 
 #endif // __D_PLAYER_H__
-
-
-

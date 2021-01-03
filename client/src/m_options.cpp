@@ -728,6 +728,9 @@ static value_t HUDStyles[] = {
 	{ 1.0, "Odamex" },
 };
 
+static value_t TimerStyles[] = {
+    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+
 static value_t Wipes[] = {
 	{ 0.0, "None" },
 	{ 1.0, "Melt" },
@@ -778,7 +781,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "Display Time Left",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete, "Display Timer",			{&hud_timer},           {3.0}, {0.0},   {0.0},  {TimerStyles} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
 	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
 	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },

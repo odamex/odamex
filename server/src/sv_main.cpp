@@ -60,13 +60,15 @@
 #include "p_unlag.h"
 #include "sv_vote.h"
 #include "sv_maplist.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
+#include "g_gametype.h"
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "m_fileio.h"
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
+#include "msg_server.h"
 
 #include <algorithm>
 #include <sstream>
@@ -92,7 +94,6 @@ extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
-byte s_duelWinPlayerId = 0;
 
 std::set<byte> free_player_ids;
 
@@ -115,6 +116,7 @@ EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_speclosers)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -168,20 +170,18 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 
 			if (normalcount > var)
 			{
+				it->spectator = true;
+				it->playerstate = PST_LIVE;
+				it->joindelay = 0;
+
 				for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-				{
-					MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-					MSG_WriteByte(&pit->client.reliablebuf, it->id);
-					MSG_WriteByte(&pit->client.reliablebuf, true);
-				}
+					SVC_PlayerMembers(pit->client.reliablebuf, *it, SVC_PM_SPECTATOR);
+
 				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
 				MSG_WriteMarker(&it->client.reliablebuf, svc_print);
 				MSG_WriteByte(&it->client.reliablebuf, PRINT_CHAT);
 				MSG_WriteString(&it->client.reliablebuf,
 								"Active player limit reduced. You are now a spectator!\n");
-				it->spectator = true;
-				it->playerstate = PST_LIVE;
-				it->joindelay = 0;
 			}
 		}
 	}
@@ -235,6 +235,9 @@ EXTERN_CVAR (sv_infiniteammo)
 // Teamplay/CTF
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_friendlyfire)
+
+// Survival
+EXTERN_CVAR (g_lives)
 
 // Private server settings
 CVAR_FUNC_IMPL (join_password)
@@ -307,8 +310,6 @@ void SV_ServerSettingChange (void);
 // some doom functions
 size_t P_NumPlayersOnTeam(team_t team);
 size_t P_NumPlayersInGame();
-
-void SV_WinCheck (void);
 
 // [AM] Flip a coin between heads and tails
 BEGIN_COMMAND (coinflip) {
@@ -458,6 +459,14 @@ BEGIN_COMMAND (exit)
 }
 END_COMMAND (exit)
 
+static void SendLevelState(SerializedLevelState sls)
+{
+	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
+		client_t& cl = it->client;
+		SVC_LevelState(cl.reliablebuf, sls);
+	}
+}
 
 //
 // SV_InitNetwork
@@ -490,6 +499,9 @@ void SV_InitNetwork (void)
 	}
 
 	step_mode = Args.CheckParm ("-stepmode");
+
+	// [AM] Set up levelstate so it calls a netmessage broadcast function on change.
+	::levelstate.setStateCB(SendLevelState);
 
 	// Nes - Connect with the master servers. (If valid)
 	SV_InitMasters();
@@ -565,7 +577,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	if (!it->spectator)
 	{
 		P_PlayerLeavesGame(&(*it));
-		SV_UpdatePlayerQueuePositions(&(*it));
+		SV_UpdatePlayerQueuePositions(G_CanJoinGame, &(*it));
 	}
 
 	// remove player awareness from all actors
@@ -836,18 +848,7 @@ void SV_UpdateFrags(player_t &player)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
-
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatefrags);
-		MSG_WriteByte(&cl->reliablebuf, player.id);
-		if (sv_gametype != GM_COOP)
-			MSG_WriteShort(&cl->reliablebuf, player.fragcount);
-		else
-		{
-			MSG_WriteShort(&cl->reliablebuf, player.killcount);
-			MSG_WriteByte(&cl->reliablebuf, player.secretcount);
-		}
-		MSG_WriteShort (&cl->reliablebuf, player.deathcount);
-		MSG_WriteShort(&cl->reliablebuf, player.points);
+		SVC_PlayerMembers(cl->reliablebuf, player, SVC_PM_SCORE);
 	}
 }
 
@@ -1810,6 +1811,9 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
 
+	// Send the player all level locals.
+	SVC_LevelLocals(cl->reliablebuf, ::level, SVC_MSG_ALL);
+
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1821,42 +1825,18 @@ void SV_ClientFullUpdate(player_t &pl)
 			return;
 	}
 
-	// update warmup state
-	SV_SendWarmupState(pl, warmup.get_status(), warmup.get_countdown());
+	// update levelstate
+	SVC_LevelState(cl->reliablebuf, ::levelstate.serialize());
 
-	// update frags/points/.tate./ready
-	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatefrags);
-		MSG_WriteByte(&cl->reliablebuf, it->id);
-		if(sv_gametype != GM_COOP)
-			MSG_WriteShort(&cl->reliablebuf, it->fragcount);
-		else
-		{
-			MSG_WriteShort(&cl->reliablebuf, it->killcount);
-			MSG_WriteByte(&cl->reliablebuf, it->secretcount);
-		}
-		MSG_WriteShort(&cl->reliablebuf, it->deathcount);
-		MSG_WriteShort(&cl->reliablebuf, it->points);
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_spectate);
-		MSG_WriteByte (&cl->reliablebuf, it->id);
-		MSG_WriteByte (&cl->reliablebuf, it->spectator);
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_readystate);
-		MSG_WriteByte (&cl->reliablebuf, it->id);
-		MSG_WriteByte (&cl->reliablebuf, it->ready);
-	}
-
-	MSG_WriteMarker(&cl->reliablebuf, svc_updatesecrets);
-	MSG_WriteByte(&cl->reliablebuf, level.found_secrets);
+	// update all player members
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		SVC_PlayerMembers(cl->reliablebuf, *it, SVC_MSG_ALL);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_teampoints);
-		for (int i = 0;i < NUMTEAMS;i++)
-			MSG_WriteShort(&cl->reliablebuf, GetTeamInfo((team_t)i)->Points);
+		for (int i = 0; i < NUMTEAMS; i++)
+			SVC_TeamMembers(cl->reliablebuf, static_cast<team_t>(i));
 	}
 
 	SV_UpdateHiddenMobj();
@@ -2095,14 +2075,6 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 	return AllowConnect;
 }
 
-void SV_InitPlayerEnterState(player_s* player)
-{
-	player->fragcount = 0;
-	player->killcount = 0;
-	player->points = 0;
-	player->playerstate = PST_ENTER;
-}
-
 //
 //	SV_ConnectClient
 //
@@ -2248,6 +2220,7 @@ void SV_ConnectClient()
 	if (connection_type == 1)
 	{
 		player->playerstate = PST_DOWNLOAD;
+		player->spectator = true;
 		SV_BroadcastUserInfo(*player);
 		SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
@@ -2257,30 +2230,28 @@ void SV_ConnectClient()
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
 			// [SL] 2011-07-30 - clients should consider downloaders as spectators
-			MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-			MSG_WriteByte(&pit->client.reliablebuf, player->id);
-			MSG_WriteByte(&pit->client.reliablebuf, true);
+			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
 		}
 
 		return;
 	}
 
 	SV_BroadcastUserInfo(*player);
-	SV_InitPlayerEnterState(player);
+
+	// Newly connected players get ENTER state.
+	P_ClearPlayerScores(*player, true);
+	player->playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
 		player->spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			MSG_WriteMarker(&pit->client.reliablebuf, svc_spectate);
-			MSG_WriteByte(&pit->client.reliablebuf, player->id);
-			MSG_WriteByte(&pit->client.reliablebuf, player->spectator);
-		}
+			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
 	}
 
 	// Send a map name
-	SV_SendLoadMap(wadfiles, patchfiles, level.mapname, player);
+	SVC_LoadMap(player->client.reliablebuf, ::wadfiles, ::wadhashes, ::patchfiles,
+	            ::patchhashes, level.mapname, level.time);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -2372,7 +2343,7 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
-	SV_UpdatePlayerQueuePositions(&who);
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
 }
 
 //
@@ -2437,42 +2408,6 @@ void SV_ExitLevel()
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		MSG_WriteMarker(&(it->client.reliablebuf), svc_exitlevel);
 }
-
-//
-// SV_SendLoadMap
-//
-// Sends a message to a player telling them to change to the specified WAD
-// and DEH patch files and load a map.
-//
-void SV_SendLoadMap(const std::vector<std::string> &wadnames,
-					const std::vector<std::string> &patchnames,
-					const std::string &mapname, player_t *player)
-{
-	if (!player)
-		return;
-
-	buf_t *buf = &(player->client.reliablebuf);
-	MSG_WriteMarker(buf, svc_loadmap);
-
-	// send list of wads (skip over wadnames[0] == odamex.wad)
-	MSG_WriteByte(buf, MIN<size_t>(wadnames.size() - 1, 255));
-	for (size_t i = 1; i < MIN<size_t>(wadnames.size(), 256); i++)
-	{
-		MSG_WriteString(buf, D_CleanseFileName(wadnames[i], "wad").c_str());
-		MSG_WriteString(buf, wadhashes[i].c_str());
-	}
-
-	// send list of DEH/BEX patches
-	MSG_WriteByte(buf, MIN<size_t>(patchnames.size(), 255));
-	for (size_t i = 0; i < MIN<size_t>(patchnames.size(), 255); i++)
-	{
-		MSG_WriteString(buf, D_CleanseFileName(patchnames[i]).c_str());
-		MSG_WriteString(buf, patchhashes[i].c_str());
-	}
-
-	MSG_WriteString(buf, mapname.c_str());
-}
-
 
 //
 // Comparison functors for sorting vectors of players
@@ -2750,33 +2685,30 @@ BEGIN_COMMAND (showscores)
 }
 END_COMMAND (showscores)
 
-//
-// SV_BroadcastPrintf
-// Sends text to all active clients.
-//
-void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...)
+FORMAT_PRINTF(2, 3)
+void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 {
 	va_list argptr;
-	char string[2048];
-	client_t *cl;
+	std::string string;
+	client_t* cl;
 
-	va_start(argptr, fmt);
-	vsprintf(string, fmt, argptr);
+	va_start(argptr, format);
+	VStrFormat(string, format, argptr);
 	va_end(argptr);
 
-	Printf(level, "%s", string);  // print to the console
+	Printf(printlevel, "%s", string.c_str()); // print to the console
 
 	// Hacky code to display messages as normal ones to clients
-	if (level == PRINT_NORCON)
-		level = PRINT_HIGH;
+	if (printlevel == PRINT_NORCON)
+		printlevel = PRINT_HIGH;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		cl = &(it->client);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, level);
-		MSG_WriteString (&cl->reliablebuf, string);
+		MSG_WriteByte (&cl->reliablebuf, (byte)printlevel);
+		MSG_WriteString (&cl->reliablebuf, string.c_str());
 	}
 }
 
@@ -3346,9 +3278,8 @@ void SV_UpdateSecretCount(player_t& player)
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t* cl = &(it->client);
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatesecrets);
-		MSG_WriteByte(&cl->reliablebuf, level.found_secrets);
+		client_t *cl = &(it->client);
+		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
 	}
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -3484,27 +3415,7 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 	if (!client || !player || !player->mo)
 		return;
 
-	buf_t *buf = &client->netbuf;
-
-	MSG_WriteMarker(buf, svc_playerstate);
-	MSG_WriteByte(buf, player->id);
-	MSG_WriteShort(buf, player->health);
-	MSG_WriteByte(buf, player->armortype);
-	MSG_WriteShort(buf, player->armorpoints);
-
-	MSG_WriteByte(buf, player->readyweapon);
-
-	for (int i = 0; i < NUMAMMO; i++)
-		MSG_WriteShort(buf, player->ammo[i]);
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		pspdef_t *psp = &player->psprites[i];
-		if (psp->state)
-			MSG_WriteByte(buf, psp->state - states);
-		else
-			MSG_WriteByte(buf, 0xFF);
-	}
+	SVC_PlayerState(client->netbuf, *player);
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -3840,6 +3751,9 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+
+	// Team changes can result with not enough players on a team.
+	G_AssertValidPlayerCount();
 }
 
 //
@@ -3886,46 +3800,53 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 		return;
 
 	if (!setting && player.spectator)
+	{
+		// Join delay means they're mashing buttons too fast.
+		if (player.joindelay > 0)
+			return;
+
+		if (G_CanJoinGame() != JOIN_OK)
+		{
+			// Not allowed to join yet - add them to the queue.
+			if (player.QueuePosition == 0)
+				SV_AddPlayerToQueue(&player);
+
+			return;
+		}
 		SV_JoinPlayer(player, silent);
+	}
 	else if (setting && !player.spectator)
 		SV_SpecPlayer(player, silent);
 	else if (setting && player.spectator && player.QueuePosition > 0)
 		SV_RemovePlayerFromQueue(&player);
 }
 
-void SV_JoinPlayer(player_t &player, bool silent)
+/**
+ * @brief Have a player join the game.  Note that this function does no 
+ *        checking against maxplayers or round limits or whatever, that's
+ *        the job of the caller.
+ * 
+ * @param player Player that should join the game.
+ * @param silent True if the join should be done "silently".
+*/
+void SV_JoinPlayer(player_t& player, bool silent)
 {
-	if (player.joindelay > 0)
-		return;
-
-	// Player tried to join on an invalid team
-	if (player.userinfo.team >= sv_teamsinplay && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
+	// Figure out which team the player should be assigned to.
+	if (G_IsTeamGame())
 	{
-		std::string msg;
-		StrFormat(msg, "Cannot join the %s team", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
-		SV_MidPrint(msg.c_str(), &player);
-		return;
-	}
-
-	int numPlayers = P_NumPlayersInGame();
-
-	// During intermission a playere can queue, but don't let them enter the game even if a slot is available
-	if (numPlayers >= sv_maxplayers || gamestate == GS_INTERMISSION)
-	{
-		if (player.QueuePosition == 0)
-			SV_AddPlayerToQueue(&player);
-		return;
-	}
-
-	// Check to make sure we're not exceeding sv_maxplayersperteam.
-	if (sv_maxplayersperteam && (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF))
-	{
-		if (P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam)
+		bool invalidteam = player.userinfo.team >= sv_teamsinplay;
+		bool toomanyplayers =
+		    sv_maxplayersperteam &&
+		    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
+		if (invalidteam || toomanyplayers)
 		{
-			if (SV_GoodTeam() == TEAM_NONE)
+			// If this check fails, our "CanJoin" function didn't do a good-enough
+			// job of scoping out a potential team.
+			team_t newteam = SV_GoodTeam();
+			if (newteam == TEAM_NONE)
 				return;
 
-			SV_ForceSetTeam(player, SV_GoodTeam());
+			SV_ForceSetTeam(player, newteam);
 			SV_CheckTeam(player);
 		}
 	}
@@ -3935,46 +3856,48 @@ void SV_JoinPlayer(player_t &player, bool silent)
 
 	// Warn everyone we're not a spectator anymore.
 	player.spectator = false;
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		MSG_WriteMarker(&it->client.reliablebuf, svc_spectate);
-		MSG_WriteByte(&it->client.reliablebuf, player.id);
-		MSG_WriteByte(&it->client.reliablebuf, player.spectator);
-	}
 
+	// Whatever mobj we had it doesn't matter anymore.
 	if (player.mo)
 		P_KillMobj(NULL, player.mo, NULL, true);
 
-	SV_InitPlayerEnterState(&player);
-	SV_UpdateFrags(player);
+	// Fresh joins get fresh player scores.
+	P_ClearPlayerScores(player, true);
 
-	// [AM] Set player unready if we're in warmup mode.
+	// Ensure our player is in the ENTER state.
+	player.playerstate = PST_ENTER;
+
+	// Set player unready if we're in warmup mode.
 	if (sv_warmup)
 	{
 		SV_SetReady(player, false, true);
 		player.timeout_ready = 0;
 	}
 
+	// Finally, persist info about our freshly-joining player to the world.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		SVC_PlayerMembers(it->client.reliablebuf, player, SVC_MSG_ALL);
+	}
+
 	// Everything is set, now warn everyone the player joined.
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname.c_str());
+			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n",
+			                   player.userinfo.netname.c_str());
 		else
 			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
-				player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
+			                   player.userinfo.netname.c_str(),
+			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_spectate);
-		MSG_WriteByte(&(it->client.reliablebuf), player.id);
-		MSG_WriteByte(&(it->client.reliablebuf), true);
-	}
-
 	// call CTF_CheckFlags _before_ the player becomes a spectator.
 	// Otherwise a flag carrier will drop his flag at (0,0), which
 	// is often right next to one of the bases...
@@ -3987,6 +3910,8 @@ void SV_SpecPlayer(player_t &player, bool silent)
 		G_DoReborn(player);
 
 	player.spectator = true;
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+		SVC_PlayerMembers(it->client.reliablebuf, player, SVC_PM_SPECTATOR);
 
 	// [AM] Set player unready if we're in warmup mode.
 	if (sv_warmup)
@@ -4004,7 +3929,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
 
 	P_PlayerLeavesGame(&player);
-	SV_UpdatePlayerQueuePositions(&player);
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &player);
 }
 
 bool CMD_ForcespecCheck(const std::vector<std::string> &arguments,
@@ -4098,14 +4023,10 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 	if (changed) {
 		// Broadcast the new ready state to all connected players.
 		for (Players::iterator it = players.begin();it != players.end();++it)
-		{
-			MSG_WriteMarker(&(it->client.reliablebuf), svc_readystate);
-			MSG_WriteByte(&(it->client.reliablebuf), player.id);
-			MSG_WriteBool(&(it->client.reliablebuf), setting);
-		}
+			SVC_PlayerMembers(it->client.reliablebuf, player, SVC_PM_READY);
 	}
 
-	warmup.readytoggle();
+	::levelstate.readyToggle();
 }
 
 /**
@@ -4143,7 +4064,7 @@ static void ReadyCmd(player_t &player)
 	}
 
 	// Check to see if warmup will allow us to toggle our ready state.
-	if (!warmup.checkreadytoggle())
+	if (!::G_CanReadyToggle())
 	{
 		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready in the middle of a match!\n");
 		return;
@@ -4296,9 +4217,6 @@ void SV_Cheat(player_t &player)
 
 	player.cheats = cheats;
 }
-
-ItemEquipVal P_GiveWeapon(player_s*, weapontype_t, BOOL);
-ItemEquipVal P_GivePower(player_s*, int);
 
 void SV_CheatPulse(player_t &player)
 {
@@ -4635,127 +4553,27 @@ void SV_ParseCommands(player_t &player)
 	 }
 }
 
-//
-// SV_WinCheck - Checks to see if a game has been won
-//
-void SV_WinCheck (void)
-{
-	if (shotclock)
-	{
-		shotclock--;
-
-		if (!shotclock)
-			G_ExitLevel(0, 1);
-	}
-}
-
 EXTERN_CVAR (sv_waddownloadcap)
 EXTERN_CVAR (sv_download_test)
 
 
-//
-//	SV_WinningTeam					[Toke - teams]
-//
-//	Determines the winning team, if there is one
-//
-team_t SV_WinningTeam (void)
+static void TimeCheck()
 {
-	team_t team = (team_t)0;
-	bool isdraw = false;
-
-	for(size_t i = 1; i < NUMTEAMS; i++)
-	{
-		if(GetTeamInfo((team_t)i)->Points > GetTeamInfo(team)->Points) {
-			team = (team_t)i;
-			isdraw = false;
-		} else if(GetTeamInfo((team_t)i)->Points == GetTeamInfo(team)->Points) {
-			isdraw = true;
-		}
-	}
-
-	if (isdraw)
-		team = TEAM_NONE;
-
-	return team;
-}
-
-//
-//	SV_TimelimitCheck
-//
-void SV_TimelimitCheck()
-{
-	if(!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) //no time limit in lobby
-		return;
-
-	level.timeleft = (int)(sv_timelimit * TICRATE * 60);
-
-	// Don't substract the proper amount of time unless we're actually ingame.
-	if (warmup.checktimeleftadvance())
-		level.timeleft -= level.time;	// in tics
+	G_TimeCheckEndGame();
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
-	if (P_AtInterval(1 * TICRATE))		// every second
+	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
-		{
-			MSG_WriteMarker(&(it->client.netbuf), svc_timeleft);
-			MSG_WriteShort(&(it->client.netbuf), level.timeleft / TICRATE);
-		}
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+			SVC_LevelLocals(it->client.netbuf, level, SVC_LL_TIME);
 	}
-
-	if (level.timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
-		return;
-
-	// LEVEL TIMER
-	if (!players.empty())
-	{
-		if (sv_gametype == GM_DM)
-		{
-			player_t *winplayer = &*(players.begin());
-			bool drawgame = false;
-
-			if (players.size() > 1)
-			{
-				for (Players::iterator it = players.begin();it != players.end();++it)
-				{
-					if (it->fragcount > winplayer->fragcount)
-					{
-						drawgame = false;
-						winplayer = &*it;
-					}
-					else if (it->id != winplayer->id && it->fragcount == winplayer->fragcount)
-					{
-						drawgame = true;
-					}
-				}
-
-				// Need to pick someone for the queue
-				SV_SetWinPlayer(winplayer->id);
-			}
-
-			if (drawgame)
-				SV_BroadcastPrintf ("Time limit hit. Game is a draw!\n");
-			else
-				SV_BroadcastPrintf ( "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname.c_str());
-		} 
-		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		{
-			team_t winteam = SV_WinningTeam ();
-
-			if(winteam == TEAM_NONE)
-				SV_BroadcastPrintf ("Time limit hit. Game is a draw!\n");
-			else
-				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", V_GetTeamColor(winteam).c_str());
-		}
-
-		M_CommitWDLLog();
-	}
-
-	shotclock = TICRATE*2;
 }
 
 void SV_IntermissionTimeCheck()
 {
+	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
+		return;
+
 	level.inttimeleft = mapchange/TICRATE;
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
@@ -4784,9 +4602,8 @@ void SV_GameTics (void)
 	{
 		case GS_LEVEL:
 			SV_RemoveCorpses();
-			warmup.tic();
-			SV_WinCheck();
-			SV_TimelimitCheck();
+			::levelstate.tic();
+			TimeCheck();
 			Vote_Runtic();
 		break;
 		case GS_INTERMISSION:
@@ -5007,19 +4824,91 @@ BEGIN_COMMAND (playerinfo)
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(" time             - %d \n",		player->GameTime);
 	Printf(" spectator        - %d \n",		player->spectator);
-	Printf(" downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
+	if (sv_gametype == GM_COOP)
+	{
+		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);
+	}
+	else
+	{
+		Printf(" frags - %d  deaths - %d  points - %d\n", player->fragcount,
+		       player->deathcount, player->points);
+	}
+	if (g_lives)
+	{
+		Printf(" lives - %d  wins - %d\n", player->lives, player->roundwins);
+	}
 	Printf("--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
 
-BEGIN_COMMAND (playerlist)
+BEGIN_COMMAND(playerlist)
 {
 	bool anybody = false;
 
-	for (Players::reverse_iterator it = players.rbegin();it != players.rend();++it)
+	for (Players::reverse_iterator it = players.rbegin(); it != players.rend(); ++it)
 	{
-		Printf("(%02d): %s - %s - frags:%d - time:%d - ping:%d\n",
-		       it->id, it->userinfo.netname.c_str(), NET_AdrToString(it->client.address), it->fragcount, it->GameTime, it->ping);
+		std::string strMain, strScore;
+		StrFormat(strMain, "(%02d): %s %s - %s - time:%d - ping:%d", it->id,
+		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
+		          NET_AdrToString(it->client.address), it->GameTime, it->ping);
+
+		if (sv_gametype == GM_COOP)
+		{
+			if (g_lives)
+			{
+				// Kills and Lives
+				StrFormat(strScore, " - kills:%d - lives:%d", it->killcount, it->lives);
+			}
+			else
+			{
+				// Kills and Deaths
+				StrFormat(strScore, " - kills:%d - deaths:%d", it->killcount,
+				          it->deathcount);
+			}
+		}
+		else if (sv_gametype == GM_DM)
+		{
+			if (g_lives)
+			{
+				// Wins, Lives, and Frags
+				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
+				          it->lives, it->fragcount);
+			}
+			else
+			{
+				// Frags, Deaths
+				StrFormat(strScore, " - frags:%d - deaths:%d", it->fragcount,
+				          it->deathcount);
+			}
+		}
+		else if (sv_gametype == GM_TEAMDM)
+		{
+			if (g_lives)
+			{
+				// Frags and Lives
+				StrFormat(strScore, " - frags:%d - lives:%d", it->fragcount, it->lives);
+			}
+			else
+			{
+				// Frags
+				StrFormat(strScore, " - frags:%d", it->fragcount);
+			}
+		}
+		else if (sv_gametype == GM_CTF)
+		{
+			if (g_lives)
+			{
+				// Points and Lives
+				StrFormat(strScore, " - points:%d - lives:%d", it->points, it->lives);
+			}
+			else
+			{
+				// Points and Frags
+				StrFormat(strScore, " - points:%d - frags:%d", it->points, it->fragcount);
+			}
+		}
+
+		Printf("%s%s\n", strMain.c_str(), strScore.c_str());
 		anybody = true;
 	}
 
@@ -5029,7 +4918,7 @@ BEGIN_COMMAND (playerlist)
 		return;
 	}
 }
-END_COMMAND (playerlist)
+END_COMMAND(playerlist)
 
 BEGIN_COMMAND (players)
 {
@@ -5090,7 +4979,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		return;
 
 	// Don't print obituaries after the end of a round
-	if (shotclock || gamestate != GS_LEVEL)
+	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
 		return;
 
 	int gender = self->player->userinfo.gender;
@@ -5412,17 +5301,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong (&cl->reliablebuf, target->momy);
 		MSG_WriteLong (&cl->reliablebuf, target->momz);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
-		if (source)
-			MSG_WriteShort(&cl->reliablebuf, source->netid);
-		else
-			MSG_WriteShort(&cl->reliablebuf, 0);
-
-		MSG_WriteShort (&cl->reliablebuf, target->netid);
-		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
-		MSG_WriteShort (&cl->reliablebuf, target->health);
-		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
-		MSG_WriteByte (&cl->reliablebuf, joinkill);
+		SVC_KillMobj(cl->reliablebuf, source, target, inflictor, ::MeansOfDeath, joinkill);
 	}
 }
 
@@ -5481,44 +5360,7 @@ void SV_ExplodeMissile(AActor *mo)
 void SV_SendPlayerInfo(player_t &player)
 {
 	client_t *cl = &player.client;
-
-	MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-	// [AM] 9 weapons, 6 cards, 1 backpack = 16 bits
-	uint16_t booleans = 0;
-	for (int i = 0; i < NUMWEAPONS; i++)
-	{
-		if (player.weaponowned[i])
-			booleans |= (1 << i);
-	}
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		if (player.cards[i])
-			booleans |= (1 << (i + NUMWEAPONS));
-	}
-	if (player.backpack)
-		booleans |= (1 << (NUMWEAPONS + NUMCARDS));
-	MSG_WriteShort(&cl->reliablebuf, booleans);
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
-		MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
-	}
-
-	MSG_WriteByte (&cl->reliablebuf, player.health);
-	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-	MSG_WriteByte (&cl->reliablebuf, player.armortype);
-
-	// If the player has a pending weapon then tell the client it has changed
-	// The client will set the pendingweapon to this weapon if it doesn't match the readyweapon
-	if (player.pendingweapon == wp_nochange)
-		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
-	else
-		MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
-
-	for (int i = 0; i < NUMPOWERS; i++)
-		MSG_WriteShort(&cl->reliablebuf, player.powers[i]);
+	SVC_PlayerInfo(cl->reliablebuf, player);
 }
 
 //
@@ -5540,60 +5382,66 @@ void SV_PreservePlayer(player_t &player)
 void SV_AddPlayerToQueue(player_t* player)
 {
 	player->QueuePosition = 255;
-	SV_UpdatePlayerQueuePositions();
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, NULL);
 }
 
 void SV_RemovePlayerFromQueue(player_t* player)
 {
 	player->joindelay = ReJoinDelay;
-	SV_UpdatePlayerQueuePositions(player);
+	SV_UpdatePlayerQueuePositions(G_CanJoinGame, player);
 }
 
 void SV_UpdatePlayerQueueLevelChange()
 {
-	int queuedPlayerCount = 0;
-	player_t* loserPlayer = NULL;
-	bool isDuel = IsGameModeDuel();
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	if (g_speclosers)
 	{
-		if (isDuel && !it->spectator && it->ingame() && it->id != s_duelWinPlayerId)
-			loserPlayer = &(*it);
+		int queuedPlayerCount = 0;
+		std::vector<player_t*> loserPlayers;
 
-		if (it->QueuePosition > 0)
-			queuedPlayerCount++;
+		WinInfo win = ::levelstate.getWinInfo();
+
+		PlayerResults pr = PlayerQuery().execute();
+		for (PlayersView::iterator it = pr.players.begin(); it != pr.players.end(); ++it)
+		{
+			if (win.type == WinInfo::WIN_PLAYER)
+			{
+				// Boot everybody but the winner.
+				if ((*it)->id != win.id)
+					loserPlayers.push_back(*it);
+			}
+			else if (win.type == WinInfo::WIN_TEAM)
+			{
+				// Boot everybody except the winning team.
+				if ((*it)->userinfo.team != win.id)
+					loserPlayers.push_back(*it);
+			}
+			else
+			{
+				// Draws are just another way of saying there were no winners.
+				loserPlayers.push_back(*it);
+			}
+		}
+
+		for (PlayersView::iterator it = loserPlayers.begin(); it != loserPlayers.end();
+		     ++it)
+		{
+			SV_SetPlayerSpec(**it, true, true);
+			(*it)->joindelay = 0; // Allow this player to queue up immediately without
+			                      // waiting for ReJoinDelay
+		}
 	}
 
-	s_duelWinPlayerId = 0;
-
-	if (queuedPlayerCount > 0)
-	{
-		if (loserPlayer != NULL)
-		{
-			SV_SetPlayerSpec(*loserPlayer, true, true);
-			loserPlayer->joindelay = 0; // Allow this player to queue up immediately without waiting for ReJoinDelay
-		}
-		else
-		{
-			SV_UpdatePlayerQueuePositions();
-		}
-	}
+	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
 }
 
-bool SV_ShouldDequeuePlayer(int playerCount)
-{
-	return gamestate != GS_INTERMISSION && !shotclock && playerCount < sv_maxplayers;
-}
-
-void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
+void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer)
 {
 	int playerCount = 0;
 	int queuePos = 1;
-	bool warmupReset = false;
-	std::vector<player_t*> queued;
-	std::vector<player_t*> queueUpdates;
+	PlayersView queued;
+	PlayersView queueUpdates;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (it->QueuePosition > 0 && disconnectPlayer != &(*it))
 			queued.push_back(&(*it));
@@ -5604,18 +5452,17 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 
 	std::sort(queued.begin(), queued.end(), CompareQueuePosition);
 
-	for(unsigned int i = 0; i < queued.size(); i++)
+	for (size_t i = 0; i < queued.size(); i++)
 	{
-		player_t* p = queued[i];
+		player_t* p = queued.at(i);
 
 		if (p->QueuePosition == 0)
 			continue;
 
-		if (SV_ShouldDequeuePlayer(playerCount))
+		if (joinTest() == JOIN_OK)
 		{
 			p->QueuePosition = 0;
-			SV_SetPlayerSpec(*p, false, true);
-			warmupReset = true;
+			SV_JoinPlayer(*p, true);
 			queueUpdates.push_back(p);
 			playerCount++;
 		}
@@ -5633,14 +5480,14 @@ void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer)
 		queueUpdates.push_back(disconnectPlayer);
 	}
 
-	for (Players::iterator dest = players.begin(); dest != players.end(); ++dest)
+	for (Players::iterator dest = ::players.begin(); dest != ::players.end(); ++dest)
 	{
-		for (unsigned int i = 0; i < queueUpdates.size(); i++)
-			SV_SendPlayerQueuePosition(queueUpdates[i], &(*dest));
+		for (PlayersView::iterator it = queueUpdates.begin(); it != queueUpdates.end();
+		     ++it)
+		{
+			SV_SendPlayerQueuePosition(*it, &(*dest));
+		}
 	}
-
-	if (warmupReset)
-		warmup.reset(level);
 }
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
@@ -5663,12 +5510,6 @@ void SV_SendPlayerQueuePosition(player_t* source, player_t* dest)
 bool CompareQueuePosition(const player_t* p1, const player_t* p2)
 {
 	return p1->QueuePosition < p2->QueuePosition;
-}
-
-void SV_SetWinPlayer(byte playerId)
-{
-	if (IsGameModeDuel())
-		s_duelWinPlayerId = playerId;
 }
 
 void SV_ClearPlayerQueue()
@@ -5707,25 +5548,39 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 	}
 }
 
-// If playerOnly is true and the activator is a player, then it will only be sent to the activating player
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly,
-	int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+//
+// If playerOnly is true and the activator is a player, then it will only be
+// sent to the activating player.
+//
+// [AM] FIXME: Use vargs or a vector or even a ptr/length instead of....this.
+//
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
+                          bool playerOnly, int arg0, int arg1, int arg2, int arg3,
+                          int arg4, int arg5, int arg6, int arg7, int arg8)
 {
-	int length = 0;
-	static byte argBuffer[64];
+	byte argc = 0;
 	player_s* sendPlayer = NULL;
 	if (playerOnly && activator != NULL && activator->player != NULL)
 		sendPlayer = activator->player;
 
-	if (arg0 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg0);
-	if (arg1 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg1);
-	if (arg2 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg2);
-	if (arg3 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg3);
-	if (arg4 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg4);
-	if (arg5 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg5);
-	if (arg6 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg6);
-	if (arg7 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg7);
-	if (arg8 != -1)	length += MSG_WriteVarInt(argBuffer + length, arg8);
+	if (arg0 != -1)
+		argc += 1;
+	if (arg1 != -1)
+		argc += 1;
+	if (arg2 != -1)
+		argc += 1;
+	if (arg3 != -1)
+		argc += 1;
+	if (arg4 != -1)
+		argc += 1;
+	if (arg5 != -1)
+		argc += 1;
+	if (arg6 != -1)
+		argc += 1;
+	if (arg7 != -1)
+		argc += 1;
+	if (arg8 != -1)
+		argc += 1;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -5736,9 +5591,28 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bo
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_executeacsspecial);
 		MSG_WriteByte(&cl->reliablebuf, special);
-		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
-		MSG_WriteByte(&cl->reliablebuf, length);
-		MSG_WriteChunk(&cl->reliablebuf, argBuffer, length);
+		MSG_WriteVarint(&cl->reliablebuf, activator ? activator->netid : 0);
+
+		MSG_WriteByte(&cl->reliablebuf, argc);
+		if (arg0 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg0);
+		if (arg1 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg1);
+		if (arg2 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg2);
+		if (arg3 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg3);
+		if (arg4 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg4);
+		if (arg5 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg5);
+		if (arg6 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg6);
+		if (arg7 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg7);
+		if (arg8 != -1)
+			MSG_WriteVarint(&cl->reliablebuf, arg8);
+
 		if (print)
 			MSG_WriteString(&cl->reliablebuf, print);
 		else

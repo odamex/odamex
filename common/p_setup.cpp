@@ -1808,13 +1808,6 @@ void P_Init (void)
 }
 
 
-// [ML] Do stuff when the timelimit is reset
-// Where else can I put this??
-CVAR_FUNC_IMPL(sv_timelimit)
-{
-	level.timeleft = var * TICRATE * 60;
-}
-
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
 	if (sv_gametype == GM_COOP && var < 10) {

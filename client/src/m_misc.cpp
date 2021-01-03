@@ -157,6 +157,22 @@ void M_LoadDefaults(void)
 	DefaultsLoaded = true;
 }
 
+const char* GetShortGameModeString()
+{
+	if (sv_gametype == GM_COOP)
+		return multiplayer ? "COOP" : "SOLO";
+	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)
+		return "DUEL";
+	else if (sv_gametype == GM_DM)
+		return "DM";
+	else if (sv_gametype == GM_TEAMDM)
+		return "TDM";
+	else if (sv_gametype == GM_CTF)
+		return "CTF";
+
+	return "";
+}
+
 // Expands tokens that could be passed to a filename
 std::string M_ExpandTokens(const std::string &str)
 {

@@ -30,12 +30,12 @@
 #include "actor.h"
 #include "d_player.h"
 #include "i_net.h"
+#include "g_gametype.h"
 
 static const int MaxPacketSize = 600;
 
 #include <json/json.h>
 
-extern int shotclock;
 extern bool keysfound[NUMCARDS];
 
 class client_c
@@ -56,8 +56,6 @@ void SV_DrawScores();
 
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 
-void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
-void SV_BroadcastPrintf(const char* fmt, ...);
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
@@ -115,17 +113,12 @@ void SV_JoinPlayer(player_t &player, bool silent);
 void SV_SpecPlayer(player_t &player, bool silent);
 void SV_SetReady(player_t &player, bool setting, bool silent = false);
 
-void SV_SendLoadMap(const std::vector<std::string> &wadnames,
-                    const std::vector<std::string> &patchnames,
-                    const std::string &mapname, player_t *player);
-
 void SV_AddPlayerToQueue(player_t* player);
 void SV_RemovePlayerFromQueue(player_t* player);
 void SV_UpdatePlayerQueueLevelChange();
-void SV_UpdatePlayerQueuePositions(player_t* disconnectPlayer = NULL);
+void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer);
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect);
 void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);
-void SV_SetWinPlayer(byte playerId);
 void SV_ClearPlayerQueue();
 
 void SV_UpdateSecretCount(player_t & player);
