@@ -27,13 +27,12 @@
 
 namespace hud {
 
-std::string HelpText(void);
-std::string SpyPlayerName(int& color);
-std::string IntermissionTimer(void);
-std::string Warmup(int& color);
-std::string Timer(int& color);
-std::string PersonalSpread(int& color);
-std::string PersonalScore(int& color);
+std::string HelpText();
+std::string SpyPlayerName();
+std::string IntermissionTimer();
+std::string Timer();
+std::string PersonalSpread();
+std::string PersonalScore();
 std::string NetdemoElapsed(void);
 std::string NetdemoMaps(void);
 std::string ClientsSplit(void);
@@ -44,6 +43,7 @@ std::string TeamPlayers(int& color, byte team);
 std::string TeamName(int& color, byte team);
 std::string TeamFrags(int& color, byte team);
 std::string TeamPoints(int& color, byte team);
+void TeamLives(std::string& str, int& color, byte team);
 std::string TeamKD(int& color, byte team);
 std::string TeamPing(int& color, byte team);
 
@@ -75,10 +75,21 @@ void EASpectatorNames(int x, int y, const float scale,
                       const x_align_t x_origin, const y_align_t y_origin,
                       const short padding, short skip, const short limit,
                       const bool force_opaque = false);
-void EAPlayerFrags(int x, int y, const float scale,
-                   const x_align_t x_align, const y_align_t y_align,
-                   const x_align_t x_origin, const y_align_t y_origin,
-                   const short padding, const short limit,
+void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const bool force_opaque);
+void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
+                   const y_align_t y_align, const x_align_t x_origin,
+                   const y_align_t y_origin, const short padding, const short limit,
+                   const bool force_opaque);
+void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const byte team, const bool force_opaque);
+void EAPlayerFrags(int x, int y, const float scale, const x_align_t x_align,
+                   const y_align_t y_align, const x_align_t x_origin,
+                   const y_align_t y_origin, const short padding, const short limit,
                    const bool force_opaque = false);
 void EATeamPlayerFrags(int x, int y, const float scale,
                        const x_align_t x_align, const y_align_t y_align,

@@ -63,6 +63,7 @@ static int		lu_palette;
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
+EXTERN_CVAR(g_lives)
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
@@ -341,6 +342,9 @@ static st_number_t		w_ammo[4];
 // max ammo widgets
 static st_number_t		w_maxammo[4];
 
+// lives widget
+static st_number_t		w_lives;
+
 // number of frags so far in deathmatch
 static int		st_fragscount;
 
@@ -364,6 +368,7 @@ static int		keyboxes[3];
 static int		st_health, st_armor;
 static int		st_ammo[4], st_maxammo[4];
 static int		st_weaponowned[6] = {0}, st_current_ammo;
+static int		st_lives;
 
 // a random number per tick
 static int		st_randomnumber;
@@ -1126,6 +1131,11 @@ void ST_updateWidgets(void)
 		st_maxammo[i] = plyr->maxammo[i];
 	}
 
+	if (g_lives)
+		st_lives = plyr->lives;
+	else
+		st_lives = ST_DONT_DRAW_NUM;
+
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
@@ -1204,6 +1214,8 @@ void ST_drawWidgets(bool force_refresh)
 		STlib_updateMultIcon(&w_keyboxes[i], force_refresh);
 
 	STlib_updateNum(&w_frags, force_refresh);
+
+	STlib_updateNum(&w_lives, force_refresh);
 }
 
 
@@ -1435,7 +1447,6 @@ static void ST_loadData()
 
 static void ST_unloadGraphics()
 {
-
 	int i;
 
 	// unload the numbers, tall and short
@@ -1624,6 +1635,9 @@ void ST_createWidgets(void)
 				  &st_statusbaron,
 				  ST_MAXAMMO3WIDTH);
 
+	// Number of lives (not always rendered)
+	STlib_initNum(&w_lives, ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron,
+	              2);
 }
 
 void ST_Start()

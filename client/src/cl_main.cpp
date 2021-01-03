@@ -59,12 +59,13 @@
 #include "cl_netgraph.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
 #include "i_input.h"
 
+#include <bitset>
 #include <string>
 #include <vector>
 #include <map>
@@ -1456,37 +1457,109 @@ void CL_SetupUserInfo(void)
 	CL_CheckDisplayPlayer();
 }
 
-
-//
-// CL_UpdateFrags
-//
-void CL_UpdateFrags(void)
+/**
+ * @brief Update a player's spectate setting and do any necessary busywork for it.
+ * 
+ * @param player Plyaer to update.
+ * @param spectate New spectate setting.
+*/
+void CL_SpectatePlayer(player_t& player, bool spectate)
 {
-	player_t &p = CL_FindPlayer(MSG_ReadByte());
+	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
+	player.spectator = spectate;
 
-	if(sv_gametype != GM_COOP)
-		p.fragcount = MSG_ReadShort();
+	if (player.spectator && wasalive)
+		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
+
+	// [tm512 2014/04/11] Do as the server does when unspectating a player.
+	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
+	// that are still targeting the spectating player will cause a stack
+	// overflow in P_SetMobjState.
+
+	if (!player.spectator && !wasalive)
+	{
+		if (player.mo)
+			P_KillMobj(NULL, player.mo, NULL, true);
+
+		player.playerstate = PST_REBORN;
+	}
+
+	if (&player == &consoleplayer())
+	{
+		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
+
+		if (player.spectator)
+		{
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
+		}
+		else
+		{
+			displayplayer_id = consoleplayer_id; // get out of spynext
+			player.cheats &= ~CF_FLY;	// remove flying ability
+		}
+
+		CL_RebuildAllPlayerTranslations();
+	}
 	else
 	{
-		p.killcount = MSG_ReadShort();
-		p.secretcount = MSG_ReadByte();
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
-	p.deathcount = MSG_ReadShort();
-	p.points = MSG_ReadShort();
+
+	// GhostlyDeath -- If the player matches our display player...
+	CL_CheckDisplayPlayer();
 }
 
-void CL_UpdateSecrets(void)
+/**
+ * @brief Updates less-vital members of a player struct.
+ */
+void CL_PlayerMembers()
 {
-	level.found_secrets = MSG_ReadByte();
+	player_t& p = CL_FindPlayer(MSG_ReadByte());
+	byte flags = MSG_ReadByte();
+
+	if (flags & SVC_PM_SPECTATOR)
+		CL_SpectatePlayer(p, MSG_ReadBool());
+
+	if (flags & SVC_PM_READY)
+		p.ready = MSG_ReadBool();
+
+	if (flags & SVC_PM_LIVES)
+		p.lives = MSG_ReadVarint();
+
+	if (flags & SVC_PM_SCORE)
+	{
+		p.roundwins = MSG_ReadVarint();
+		p.points = MSG_ReadVarint();
+		p.fragcount = MSG_ReadVarint();
+		p.deathcount = MSG_ReadVarint();
+		p.killcount = MSG_ReadVarint();
+		p.secretcount = MSG_ReadVarint();
+	}
 }
 
 //
 // [deathz0r] Receive team frags/captures
 //
-void CL_TeamPoints (void)
+void CL_TeamMembers()
 {
-	for(size_t i = 0; i < NUMTEAMS; i++)
-		GetTeamInfo((team_t)i)->Points = MSG_ReadShort();
+	team_t team = static_cast<team_t>(MSG_ReadVarint());
+	int points = MSG_ReadVarint();
+	int roundWins = MSG_ReadVarint();
+
+	// Ensure our team is valid.
+	TeamInfo* info = GetTeamInfo(team);
+	if (info->Team >= NUMTEAMS)
+		return;
+
+	info->Points = points;
+	info->RoundWins = roundWins;
 }
 
 //
@@ -2122,18 +2195,21 @@ void CL_UpdatePlayer()
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
-void CL_UpdatePlayerState(void)
+void CL_UpdatePlayerState()
 {
-	byte id				= MSG_ReadByte();
-	short health		= MSG_ReadShort();
-	byte armortype		= MSG_ReadByte();
-	short armorpoints	= MSG_ReadShort();
+	byte id = MSG_ReadByte();
+	int health = MSG_ReadVarint();
+	int armortype = MSG_ReadVarint();
+	int armorpoints = MSG_ReadVarint();
+	int lives = MSG_ReadVarint();
+	weapontype_t weap = static_cast<weapontype_t>(MSG_ReadVarint());
 
-	weapontype_t weap	= static_cast<weapontype_t>(MSG_ReadByte());
+	byte cardByte = MSG_ReadByte();
+	std::bitset<6> cardBits(cardByte);
 
-	short ammo[NUMAMMO];
+	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
-		ammo[i] = MSG_ReadShort();
+		ammo[i] = MSG_ReadVarint();
 
 	statenum_t stnum[NUMPSPRITES];
 	for (int i = 0; i < NUMPSPRITES; i++)
@@ -2145,16 +2221,20 @@ void CL_UpdatePlayerState(void)
 			stnum[i] = static_cast<statenum_t>(n);
 	}
 
-	player_t &player = idplayer(id);
+	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
 
 	player.health = player.mo->health = health;
 	player.armortype = armortype;
 	player.armorpoints = armorpoints;
+	player.lives = lives;
 
 	player.readyweapon = weap;
 	player.pendingweapon = wp_nochange;
+
+	for (int i = 0; i < NUMCARDS; i++)
+		player.cards[i] = cardBits[i];
 
 	if (!player.weaponowned[weap])
 		P_GiveWeapon(&player, weap, false);
@@ -2255,15 +2335,6 @@ void CL_UpdatePing(void)
 	p.ping = MSG_ReadLong();
 }
 
-
-//
-// CL_UpdateTimeLeft
-// Changes the value of level.timeleft
-//
-void CL_UpdateTimeLeft(void)
-{
-	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
-}
 
 //
 // CL_UpdateIntTimeLeft
@@ -2507,12 +2578,11 @@ void CL_SpawnPlayer()
 // CL_PlayerInfo
 // denis - your personal arsenal, as supplied by the server
 //
-void CL_PlayerInfo(void)
+void CL_PlayerInfo()
 {
-	player_t *p = &consoleplayer();
+	player_t* p = &consoleplayer();
 
 	uint16_t booleans = MSG_ReadShort();
-
 	for (int i = 0; i < NUMWEAPONS; i++)
 		p->weaponowned[i] = booleans & 1 << i;
 	for (int i = 0; i < NUMCARDS; i++)
@@ -2521,23 +2591,24 @@ void CL_PlayerInfo(void)
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		p->maxammo[i] = MSG_ReadShort();
-		p->ammo[i] = MSG_ReadShort();
+		p->maxammo[i] = MSG_ReadVarint();
+		p->ammo[i] = MSG_ReadVarint();
 	}
 
-	p->health = MSG_ReadByte();
-	p->armorpoints = MSG_ReadByte();
-	p->armortype = MSG_ReadByte();
+	p->health = MSG_ReadVarint();
+	p->armorpoints = MSG_ReadVarint();
+	p->armortype = MSG_ReadVarint();
+	p->lives = MSG_ReadVarint();
 
-	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	if (newweapon > NUMWEAPONS)	// bad weapon number, choose something else
+	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadVarint());
+	if (newweapon > NUMWEAPONS) // bad weapon number, choose something else
 		newweapon = wp_fist;
 
 	if (newweapon != p->readyweapon)
 		p->pendingweapon = newweapon;
 
 	for (int i = 0; i < NUMPOWERS; i++)
-		p->powers[i] = MSG_ReadShort();
+		p->powers[i] = MSG_ReadVarint();
 }
 
 //
@@ -2691,32 +2762,37 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-void CL_KillMobj(void)
+void CL_KillMobj()
 {
- 	AActor *source = P_FindThingById (MSG_ReadShort() );
-	AActor *target = P_FindThingById (MSG_ReadShort() );
-	AActor *inflictor = P_FindThingById (MSG_ReadShort() );
-	int health = MSG_ReadShort();
+	int srcid = MSG_ReadVarint();
+	int tgtid = MSG_ReadVarint();
+	int infid = MSG_ReadVarint();
+	int health = MSG_ReadVarint();
+	::MeansOfDeath = MSG_ReadVarint();
+	bool joinkill = MSG_ReadBool();
+	int lives = MSG_ReadVarint();
 
-	MeansOfDeath = MSG_ReadLong();
-
-	bool joinkill = ((MSG_ReadByte()) != 0);
+	AActor* source = P_FindThingById(srcid);
+	AActor* target = P_FindThingById(tgtid);
+	AActor* inflictor = P_FindThingById(infid);
 
 	if (!target)
 		return;
 
 	target->health = health;
 
-    if (!serverside && target->flags & MF_COUNTKILL)
+	if (!serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 
 	if (target->player == &consoleplayer())
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
 
-	P_KillMobj (source, target, inflictor, joinkill);
-}
+	if (lives >= 0)
+		target->player->lives = lives;
 
+	P_KillMobj(source, target, inflictor, joinkill);
+}
 
 ///////////////////////////////////////////////////////////
 ///// CL_Fire* called when someone uses a weapon  /////////
@@ -3390,6 +3466,16 @@ void CL_ConsolePlayer(void)
 	digest = MSG_ReadString();
 }
 
+bool IsGameModeFFA()
+{
+	return sv_gametype == GM_DM && sv_maxplayers > 2;
+}
+
+bool IsGameModeDuel()
+{
+	return sv_gametype == GM_DM && sv_maxplayers == 2;
+}
+
 //
 // CL_LoadMap
 //
@@ -3407,21 +3493,22 @@ void CL_LoadMap(void)
 	std::vector<std::string> newwadfiles, newwadhashes;
 	std::vector<std::string> newpatchfiles, newpatchhashes;
 
-	int wadcount = (byte)MSG_ReadByte();
+	size_t wadcount = MSG_ReadUnVarint();
 	while (wadcount--)
 	{
 		newwadfiles.push_back(MSG_ReadString());
 		newwadhashes.push_back(MSG_ReadString());
 	}
 
-	int patchcount = (byte)MSG_ReadByte();
+	size_t patchcount = MSG_ReadUnVarint();
 	while (patchcount--)
 	{
 		newpatchfiles.push_back(MSG_ReadString());
 		newpatchhashes.push_back(MSG_ReadString());
 	}
 
-	const char *mapname = MSG_ReadString ();
+	const char *mapname = MSG_ReadString();
+	int server_level_time = MSG_ReadVarint();
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
@@ -3441,6 +3528,9 @@ void CL_LoadMap(void)
 	S_StopMusic();
 
 	G_InitNew (mapname);
+
+	// [AM] Sync the server's level time with the client.
+	::level.time = server_level_time;
 
 	movingsectors.clear();
 	teleported_players.clear();
@@ -3527,6 +3617,10 @@ void CL_ResetMap()
 
 	P_DestroyButtonThinkers();
 
+	// You don't get to keep cards.  This isn't communicated anywhere else.
+	if (sv_gametype == GM_COOP)
+		P_ClearPlayerCards(consoleplayer());
+
 	// write the map index to the netdemo
 	if (netdemo.isRecording() && recv_full_update)
 		netdemo.writeMapChange();
@@ -3561,84 +3655,42 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-void CL_Spectate()
+// Set local levelstate.
+void CL_LevelState()
 {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-
-	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
-	bool wasspectator = player.spectator;
-	player.spectator = ((MSG_ReadByte()) != 0);
-
-	if (player.spectator && wasalive)
-		P_DisconnectEffect(player.mo);
-	if (player.spectator && player.mo && !wasspectator)
-		P_PlayerLeavesGame(&player);
-
-	// [tm512 2014/04/11] Do as the server does when unspectating a player.
-	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
-	// that are still targeting the spectating player will cause a stack
-	// overflow in P_SetMobjState.
-
-	if (!player.spectator && !wasalive)
-	{
-		if (player.mo)
-			P_KillMobj(NULL, player.mo, NULL, true);
-
-		player.playerstate = PST_REBORN;
-	}
-
-	if (&player == &consoleplayer())
-	{
-		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
-
-		if (player.spectator)
-		{
-			player.playerstate = PST_LIVE;				// Resurrect dead spectators
-			player.cheats |= CF_FLY;					// Make players fly by default
-			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-
-			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
-		}
-		else
-		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
-			player.cheats &= ~CF_FLY;	// remove flying ability
-		}
-
-		CL_RebuildAllPlayerTranslations();
-	}
-	else
-	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
-	}
-
-	// GhostlyDeath -- If the player matches our display player...
-	CL_CheckDisplayPlayer();
+	SerializedLevelState sls;
+	sls.state = static_cast<LevelState::States>(MSG_ReadVarint());
+	sls.countdown_done_time = MSG_ReadVarint();
+	sls.ingame_start_time = MSG_ReadVarint();
+	sls.round_number = MSG_ReadVarint();
+	sls.last_wininfo_type = static_cast<WinInfo::WinType>(MSG_ReadVarint());
+	sls.last_wininfo_id = MSG_ReadVarint();
+	::levelstate.unserialize(sls);
 }
 
-void CL_ReadyState() {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-	player.ready = MSG_ReadBool();
-}
-
-// Set local warmup state.
-void CL_WarmupState()
+// Set level locals.
+void CL_LevelLocals()
 {
-	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
-	if (warmup.get_status() == Warmup::COUNTDOWN ||
-	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
+	byte flags = MSG_ReadByte();
+
+	if (flags & SVC_LL_TIME)
+		::level.time = MSG_ReadVarint();
+
+	if (flags & SVC_LL_TOTALS)
 	{
-		// Read an extra countdown number off the wire
-		short count = MSG_ReadShort();
-		std::ostringstream buffer;
-		buffer << "Match begins in " << count << "...";
-		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
+		::level.total_secrets = MSG_ReadVarint();
+		::level.total_items = MSG_ReadVarint();
+		::level.total_monsters = MSG_ReadVarint();
 	}
-	else
-	{
-		// Clear the midprint in other cases.
-		C_GMidPrint("", CR_GREY, 0);
-	}
+
+	if (flags & SVC_LL_SECRETS)
+		::level.found_secrets = MSG_ReadVarint();
+
+	if (flags & SVC_LL_ITEMS)
+		::level.found_items = MSG_ReadVarint();
+
+	if (flags & SVC_LL_MONSTERS)
+		::level.killed_monsters = MSG_ReadVarint();
 }
 
 // client source (once)
@@ -3656,12 +3708,12 @@ void CL_InitCommands(void)
 	cmds[svc_resetmap]			= &CL_ResetMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
-	cmds[svc_updatefrags]		= &CL_UpdateFrags;
+	cmds[svc_playermembers]		= &CL_PlayerMembers;
 	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
 	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
-	cmds[svc_updatesecrets]		= &CL_UpdateSecrets;
+	cmds[svc_levellocals]		= &CL_LevelLocals;
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
-	cmds[svc_teampoints]		= &CL_TeamPoints;
+	cmds[svc_teammembers]		= &CL_TeamMembers;
 	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
 
 	cmds[svc_updateping]		= &CL_UpdatePing;
@@ -3698,7 +3750,6 @@ void CL_InitCommands(void)
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
-	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
 	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
@@ -3720,9 +3771,7 @@ void CL_InitCommands(void)
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
 
-	cmds[svc_spectate]   		= &CL_Spectate;
-	cmds[svc_readystate]		= &CL_ReadyState;
-	cmds[svc_warmupstate]		= &CL_WarmupState;
+	cmds[svc_levelstate]		= &CL_LevelState;
 
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 
@@ -4273,24 +4322,16 @@ void CL_ExecuteLineSpecial()
 void CL_ACSExecuteSpecial()
 {
 	byte special = MSG_ReadByte();
-	short netid = MSG_ReadShort();
-	byte length = MSG_ReadByte();
-	byte* argBuffer = (byte*)MSG_ReadChunk(length);
-	const char* print = MSG_ReadString();
+	int netid = MSG_ReadVarint();
+	byte count = MSG_ReadByte();
+	if (count >= 8)
+		count = 8;
 
 	static int acsArgs[16];
-	int count = 0, bytesRead = 0;
+	for (unsigned int i = 0; i < count; i++)
+		acsArgs[i] = MSG_ReadVarint();
 
-	while (length > 0 && bytesRead < length && count < 16)
-	{
-		acsArgs[count++] = MSG_ReadVarInt(argBuffer + bytesRead, length, bytesRead);
-
-		if (bytesRead < 0)
-		{
-			count--;
-			break;
-		}
-	}
+	const char* print = MSG_ReadString();
 
 	AActor* activator = P_FindThingById(netid);
 

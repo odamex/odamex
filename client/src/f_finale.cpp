@@ -265,8 +265,6 @@ void F_Ticker (void)
 //
 // F_TextWrite
 //
-extern patch_t *hu_font[HU_FONTSIZE];
-
 
 void F_TextWrite (void)
 {
