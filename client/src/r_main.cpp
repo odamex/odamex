@@ -865,7 +865,7 @@ void R_SetupFrame (player_t *player)
 
 	player_t& consolePlayer = consoleplayer();
 
-	if (consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
+	if (LocalViewPitch && consolePlayer.id == displayplayer().id && consolePlayer.health > 0)
 	{
 		R_ViewShear(clamp(camera->pitch - LocalViewPitch, -ANG(32), ANG(56)));
 	}

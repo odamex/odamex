@@ -558,10 +558,16 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 	else
 	{
+		// [AM] LocalViewPitch is an offset on look.
 		cmd->pitch = look + (LocalViewPitch >> 16);
 	}
 	
-	cmd->yaw = LocalViewAngle >> 16;
+	if (LocalViewAngle)
+	{
+		// [AM] LocalViewAngle is a global angle, only pave over the existing
+		//      yaw if we have local yaw.
+		cmd->yaw = LocalViewAngle >> 16;
+	}
 
 	if (!longtics)
 		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
