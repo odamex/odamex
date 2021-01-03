@@ -4,5 +4,6 @@ find_package(protobuf
   NO_DEFAULT_PATH)
 
 add_library(odaproto STATIC server.proto)
-target_link_libraries(odaproto protobuf::libprotobuf-lite)
+target_include_directories(odaproto PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(odaproto protobuf::libprotobuf)
 protobuf_generate(TARGET odaproto)

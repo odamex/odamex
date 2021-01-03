@@ -72,6 +72,8 @@
 #include <set>
 #include <sstream>
 
+#include "server.pb.h"
+
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif

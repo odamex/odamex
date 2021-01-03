@@ -74,6 +74,8 @@
 #include <sstream>
 #include <vector>
 
+#include "server.pb.h"
+
 extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
 

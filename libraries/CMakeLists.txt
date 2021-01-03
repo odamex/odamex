@@ -146,28 +146,61 @@ endif()
 ### Protocol Buffers ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
-  message(STATUS "Compiling Protobuf...")
+  get_cmake_property(_IS_MULTI_CONFIG GENERATOR_IS_MULTI_CONFIG)
+  if(_IS_MULTI_CONFIG)
+    message(STATUS "Compiling protobuf for multiconfig...")
 
-  # Generate the build.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-    -G "${CMAKE_GENERATOR}"
-    -A "${CMAKE_GENERATOR_PLATFORM}"
-    -T "${CMAKE_GENERATOR_TOOLSET}"
-    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-    "-DCMAKE_LINKER=${CMAKE_LINKER}"
-    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-Dprotobuf_BUILD_TESTS=OFF"
-  )
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-Dprotobuf_BUILD_TESTS=OFF"
+      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF"
+    )
 
-  # Compile the library.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-    --config RelWithDebInfo --target install --parallel
-  )
+    # Compile the library for debug and release.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      --config Debug --target install --parallel
+    )
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      --config RelWithDebInfo --target install --parallel
+    )
+  else()
+    message(STATUS "Compiling protobuf for ${CMAKE_BUILD_TYPE}...")
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-Dprotobuf_BUILD_TESTS=OFF"
+      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF"
+    )
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      --target install --parallel
+    )
+  endif()
 endif()
 
 ### SDL libraries ###

@@ -198,7 +198,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex odamex-common)
+  target_link_libraries(odamex odamex-common odaproto)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
