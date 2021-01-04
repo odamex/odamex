@@ -2580,37 +2580,57 @@ void CL_SpawnPlayer()
 // CL_PlayerInfo
 // denis - your personal arsenal, as supplied by the server
 //
-void CL_PlayerInfo()
+static void PlayerInfo()
 {
+	size_t size = MSG_ReadUnVarint();
+	void* data = MSG_ReadChunk(size);
+
+	svc::PlayerInfoMsg msg;
+	if (!msg.ParseFromArray(data, size))
+	{
+		Printf(PRINT_WARNING, "%s: Could not read message.\n", __FUNCTION__);
+		return;
+	}
+	Printf(PRINT_HIGH, "%s\n", msg.ShortDebugString().c_str());
+
 	player_t* p = &consoleplayer();
 
-	uint16_t booleans = MSG_ReadShort();
+	uint16_t booleans = msg.inventory();
 	for (int i = 0; i < NUMWEAPONS; i++)
+	{
 		p->weaponowned[i] = booleans & 1 << i;
+	}
 	for (int i = 0; i < NUMCARDS; i++)
+	{
 		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
+	}
 	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
 
-	for (int i = 0; i < NUMAMMO; i++)
+	for (int i = 0; i < MIN<int>(NUMAMMO, msg.ammo_size()); i++)
 	{
-		p->maxammo[i] = MSG_ReadVarint();
-		p->ammo[i] = MSG_ReadVarint();
+		p->maxammo[i] = msg.ammo(i).maxammo();
+		p->ammo[i] = msg.ammo(i).ammo();
 	}
 
-	p->health = MSG_ReadVarint();
-	p->armorpoints = MSG_ReadVarint();
-	p->armortype = MSG_ReadVarint();
-	p->lives = MSG_ReadVarint();
+	p->health = msg.health();
+	p->armorpoints = msg.armorpoints();
+	p->armortype = msg.armortype();
+	p->lives = msg.lives();
 
-	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadVarint());
+	weapontype_t newweapon = static_cast<weapontype_t>(msg.weapon());
 	if (newweapon > NUMWEAPONS) // bad weapon number, choose something else
+	{
 		newweapon = wp_fist;
-
+	}
 	if (newweapon != p->readyweapon)
+	{
 		p->pendingweapon = newweapon;
+	}
 
-	for (int i = 0; i < NUMPOWERS; i++)
-		p->powers[i] = MSG_ReadVarint();
+	for (int i = 0; i < MIN<int>(NUMPOWERS, msg.powers_size()); i++)
+	{
+		p->powers[i] = msg.powers(i);
+	}
 }
 
 //
@@ -3708,7 +3728,7 @@ static ServerMessageFunc GetMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_abort, CL_EndGame);
 		SERVER_MSG_FUNC(svc_full, CL_FullGame);
 		SERVER_MSG_FUNC(svc_disconnect, CL_EndGame);
-		SERVER_MSG_FUNC(svc_playerinfo, CL_PlayerInfo);
+		SERVER_MSG_FUNC(svc_playerinfo, PlayerInfo);
 		SERVER_MSG_FUNC(svc_moveplayer, CL_UpdatePlayer);
 		SERVER_MSG_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer);
 		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);

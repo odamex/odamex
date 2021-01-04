@@ -29,12 +29,15 @@
 #include "msg_server.h"
 
 #include "d_main.h"
+#include "server.pb.h"
 
 /**
  * @brief Send information about a player.
  */
 void SVC_PlayerInfo(buf_t& b, player_t& player)
 {
+	svc::PlayerInfoMsg msg;
+
 	MSG_WriteMarker(&b, svc_playerinfo);
 
 	// [AM] 9 weapons, 6 cards, 1 backpack = 16 bits
@@ -42,38 +45,55 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 	for (int i = 0; i < NUMWEAPONS; i++)
 	{
 		if (player.weaponowned[i])
+		{
 			booleans |= (1 << i);
+		}
 	}
 	for (int i = 0; i < NUMCARDS; i++)
 	{
 		if (player.cards[i])
+		{
 			booleans |= (1 << (i + NUMWEAPONS));
+		}
 	}
 	if (player.backpack)
+	{
 		booleans |= (1 << (NUMWEAPONS + NUMCARDS));
-	MSG_WriteShort(&b, booleans);
+	}
+	msg.set_inventory(booleans);
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		MSG_WriteVarint(&b, player.maxammo[i]);
-		MSG_WriteVarint(&b, player.ammo[i]);
+		svc::PlayerInfoMsg_PlayerAmmo* ammo = msg.add_ammo();
+		ammo->set_maxammo(player.maxammo[i]);
+		ammo->set_ammo(player.ammo[i]);
 	}
 
-	MSG_WriteVarint(&b, player.health);
-	MSG_WriteVarint(&b, player.armorpoints);
-	MSG_WriteVarint(&b, player.armortype);
-	MSG_WriteVarint(&b, player.lives);
+	msg.set_health(player.health);
+	msg.set_armorpoints(player.armorpoints);
+	msg.set_armortype(player.armortype);
+	msg.set_lives(player.lives);
 
 	// If the player has a pending weapon then tell the client it has changed
 	// The client will set the pendingweapon to this weapon if it doesn't match the
 	// readyweapon
 	if (player.pendingweapon == wp_nochange)
-		MSG_WriteVarint(&b, player.readyweapon);
+	{
+		msg.set_weapon(player.readyweapon);
+	}
 	else
-		MSG_WriteVarint(&b, player.pendingweapon);
+	{
+		msg.set_weapon(player.pendingweapon);
+	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
-		MSG_WriteVarint(&b, player.powers[i]);
+	{
+		msg.add_powers(player.powers[i]);
+	}
+
+	std::string str = msg.SerializeAsString();
+	MSG_WriteUnVarint(&b, str.size());
+	MSG_WriteChunk(&b, str.data(), str.size());
 }
 
 /**
