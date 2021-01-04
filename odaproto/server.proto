@@ -72,8 +72,9 @@ message PlayerInfoMsg
 	int32 health = 3;
 	int32 armorpoints = 4;
 	int32 armortype = 5;
-	int32 weapon = 6;
-	repeated int32 powers = 7;
+	int32 lives = 6;
+	int32 weapon = 7;
+	repeated int32 powers = 8;
 }
 
 // svc_moveplayer

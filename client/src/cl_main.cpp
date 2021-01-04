@@ -3695,160 +3695,153 @@ void CL_LevelLocals()
 		::level.killed_monsters = MSG_ReadVarint();
 }
 
-// client source (once)
-typedef void (*client_callback)();
-typedef std::map<svc_t, client_callback> cmdmap;
-cmdmap cmds;
+typedef void (*ServerMessageFunc)();
 
-//
-// CL_AllowPackets
-//
-void CL_InitCommands(void)
+#define SERVER_MSG_FUNC(svc, func) \
+	case svc:                      \
+		return func
+
+static ServerMessageFunc GetMessageFunc(svc_t type)
 {
-	cmds[svc_abort]				= &CL_EndGame;
-	cmds[svc_loadmap]			= &CL_LoadMap;
-	cmds[svc_resetmap]			= &CL_ResetMap;
-	cmds[svc_playerinfo]		= &CL_PlayerInfo;
-	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
-	cmds[svc_playermembers]		= &CL_PlayerMembers;
-	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
-	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
-	cmds[svc_levellocals]		= &CL_LevelLocals;
-	cmds[svc_userinfo]			= &CL_SetupUserInfo;
-	cmds[svc_teammembers]		= &CL_TeamMembers;
-	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
-
-	cmds[svc_updateping]		= &CL_UpdatePing;
-	cmds[svc_spawnmobj]			= &CL_SpawnMobj;
-	cmds[svc_mobjspeedangle]	= &CL_SetMobjSpeedAndAngle;
-	cmds[svc_mobjinfo]			= &CL_UpdateMobjInfo;
-	cmds[svc_explodemissile]	= &CL_ExplodeMissile;
-	cmds[svc_removemobj]		= &CL_RemoveMobj;
-
-	cmds[svc_killmobj]			= &CL_KillMobj;
-	cmds[svc_movemobj]			= &CL_MoveMobj;
-	cmds[svc_damagemobj]		= &CL_DamageMobj;
-	cmds[svc_corpse]			= &CL_Corpse;
-	cmds[svc_spawnplayer]		= &CL_SpawnPlayer;
-//	cmds[svc_spawnhiddenplayer]	= &CL_SpawnHiddenPlayer;
-	cmds[svc_damageplayer]		= &CL_DamagePlayer;
-	cmds[svc_firepistol]		= &CL_FirePistol;
-	cmds[svc_fireweapon]		= &CL_FireWeapon;
-
-	cmds[svc_fireshotgun]		= &CL_FireShotgun;
-	cmds[svc_firessg]			= &CL_FireSSG;
-	cmds[svc_firechaingun]		= &CL_FireChainGun;
-	cmds[svc_changeweapon]		= &CL_ChangeWeapon;
-	cmds[svc_railtrail]			= &CL_RailTrail;
-	cmds[svc_connectclient]		= &CL_ConnectClient;
-	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
-	cmds[svc_activateline]		= &CL_ActivateLine;
-	cmds[svc_sector]			= &CL_UpdateSector;
-	cmds[svc_movingsector]		= &CL_UpdateMovingSector;
-	cmds[svc_switch]			= &CL_Switch;
-	cmds[svc_print]				= &CL_Print;
-    cmds[svc_midprint]          = &CL_MidPrint;
-	cmds[svc_say]				= &CL_Say;
-    cmds[svc_pingrequest]       = &CL_SendPingReply;
-	cmds[svc_svgametic]			= &CL_SaveSvGametic;
-	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
-	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
-
-	cmds[svc_startsound]		= &CL_Sound;
-	cmds[svc_soundorigin]		= &CL_SoundOrigin;
-	cmds[svc_mobjstate]			= &CL_SetMobjState;
-	cmds[svc_actor_movedir]		= &CL_Actor_Movedir;
-	cmds[svc_actor_target]		= &CL_Actor_Target;
-	cmds[svc_actor_tracer]		= &CL_Actor_Tracer;
-	cmds[svc_missedpacket]		= &CL_CheckMissedPacket;
-	cmds[svc_forceteam]			= &CL_ForceSetTeam;
-
-	cmds[svc_ctfevent]			= &CL_CTFEvent;
-	cmds[svc_serversettings]	= &CL_GetServerSettings;
-	cmds[svc_disconnect]		= &CL_EndGame;
-	cmds[svc_full]				= &CL_FullGame;
-	cmds[svc_reconnect]			= &CL_Reconnect;
-	cmds[svc_exitlevel]			= &CL_ExitLevel;
-
-	cmds[svc_challenge]			= &CL_Clear;
-	cmds[svc_launcher_challenge]= &CL_Clear;
-
-	cmds[svc_levelstate]		= &CL_LevelState;
-
-	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
-
-	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
-	cmds[svc_netdemostop]       = &CL_NetDemoStop;
-	cmds[svc_netdemoloadsnap]	= &CL_NetDemoLoadSnap;
-	cmds[svc_fullupdatedone]	= &CL_FinishedFullUpdate;
-	cmds[svc_fullupdatestart]	= &CL_StartFullUpdate;
-
-	cmds[svc_vote_update] = &CL_VoteUpdate;
-	cmds[svc_maplist] = &CL_Maplist;
-	cmds[svc_maplist_update] = &CL_MaplistUpdate;
-	cmds[svc_maplist_index] = &CL_MaplistIndex;
-
-	cmds[svc_playerqueuepos] = &CL_UpdatePlayerQueuePos;
-	cmds[svc_executelinespecial] = &CL_ExecuteLineSpecial;
-	cmds[svc_executeacsspecial] = &CL_ACSExecuteSpecial;
-	cmds[svc_lineupdate] = &CL_LineUpdate;
-	cmds[svc_linesideupdate] = &CL_LineSideUpdate;
-	cmds[svc_sectorproperties] = &CL_SectorSectorPropertiesUpdate;
-	cmds[svc_thinkerupdate] = &CL_ThinkerUpdate;
+	switch (type)
+	{
+		SERVER_MSG_FUNC(svc_abort, CL_EndGame);
+		SERVER_MSG_FUNC(svc_full, CL_FullGame);
+		SERVER_MSG_FUNC(svc_disconnect, CL_EndGame);
+		SERVER_MSG_FUNC(svc_playerinfo, CL_PlayerInfo);
+		SERVER_MSG_FUNC(svc_moveplayer, CL_UpdatePlayer);
+		SERVER_MSG_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer);
+		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);
+		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
+		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
+		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
+		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
+		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
+		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
+		SERVER_MSG_FUNC(svc_mobjspeedangle, CL_SetMobjSpeedAndAngle);
+		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
+		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
+		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
+		SERVER_MSG_FUNC(svc_movemobj, CL_MoveMobj);
+		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
+		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
+		SERVER_MSG_FUNC(svc_killmobj, CL_KillMobj);
+		SERVER_MSG_FUNC(svc_firepistol, CL_FirePistol);
+		SERVER_MSG_FUNC(svc_fireshotgun, CL_FireShotgun);
+		SERVER_MSG_FUNC(svc_firessg, CL_FireSSG);
+		SERVER_MSG_FUNC(svc_firechaingun, CL_FireChainGun);
+		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
+		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
+		SERVER_MSG_FUNC(svc_print, CL_Print);
+		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
+		SERVER_MSG_FUNC(svc_playermembers, CL_PlayerMembers);
+		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
+		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
+		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
+		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
+		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
+		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
+		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
+		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
+		SERVER_MSG_FUNC(svc_corpse, CL_Corpse);
+		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
+		SERVER_MSG_FUNC(svc_soundorigin, CL_SoundOrigin);
+		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
+		SERVER_MSG_FUNC(svc_switch, CL_Switch);
+		SERVER_MSG_FUNC(svc_say, CL_Say);
+		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
+		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
+		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
+		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
+		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
+		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
+		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
+		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
+		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
+		SERVER_MSG_FUNC(svc_playerstate, CL_UpdatePlayerState);
+		SERVER_MSG_FUNC(svc_levelstate, CL_LevelState);
+		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
+		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
+		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
+		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
+		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
+		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
+		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
+		SERVER_MSG_FUNC(svc_actor_movedir, CL_Actor_Movedir);
+		SERVER_MSG_FUNC(svc_actor_target, CL_Actor_Target);
+		SERVER_MSG_FUNC(svc_actor_tracer, CL_Actor_Tracer);
+		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
+		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
+		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
+		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
+		SERVER_MSG_FUNC(svc_netdemocap, CL_LocalDemoTic);
+		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
+		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
+		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
+		SERVER_MSG_FUNC(svc_maplist, CL_Maplist);
+		SERVER_MSG_FUNC(svc_maplist_update, CL_MaplistUpdate);
+		SERVER_MSG_FUNC(svc_maplist_index, CL_MaplistIndex);
+		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
+		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
+	default:
+		return NULL;
+	}
 }
+
+#undef SERVER_MSG_FUNC
 
 //
 // CL_ParseCommands
 //
 void CL_ParseCommands(void)
 {
-	std::vector<svc_t>	history;
-	svc_t				cmd = svc_abort;
+	std::vector<svc_t> history;
+	svc_t cmd = svc_abort;
 
-	static bool once = true;
-	if(once)CL_InitCommands();
-	once = false;
-
-	while(connected)
+	while (connected)
 	{
 		size_t byteStart = net_message.BytesRead();
 
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
 
-		if(cmd == (svc_t)-1)
+		if (cmd == (svc_t)-1)
 			break;
 
-		cmdmap::iterator i = cmds.find(cmd);
-		if(i == cmds.end())
+		ServerMessageFunc func = GetMessageFunc(cmd);
+		if (func == NULL)
 		{
 			CL_QuitNetGame();
-			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
+			Printf(PRINT_HIGH,
+			       "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
 
-			for(size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
+			for (size_t j = 0; j < history.size(); j++)
+				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j,
+				       history[j], svc_info[history[j]].getName());
 			Printf(PRINT_HIGH, "\n");
 			break;
 		}
 
-		i->second();
+		func();
 
 		if (net_message.overflowed)
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
-			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed\n",
-					   (int)cmd,
-					   svc_info[cmd].getName());
-			Printf(PRINT_HIGH, "CL_ParseCommands: It was command number %d in the packet\n",
-                                           (int)history.back());
-			for(size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
+			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed\n", (int)cmd,
+			       svc_info[cmd].getName());
+			Printf(PRINT_HIGH,
+			       "CL_ParseCommands: It was command number %d in the packet\n",
+			       (int)history.back());
+			for (size_t j = 0; j < history.size(); j++)
+				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j,
+				       history[j], svc_info[history[j]].getName());
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
 		if (net_message.BytesRead() < byteStart)
-			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n", net_message.BytesRead(), byteStart);
+			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n",
+			       net_message.BytesRead(), byteStart);
 
 		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
 	}
