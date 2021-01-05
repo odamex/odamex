@@ -22,6 +22,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -43,6 +45,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/centos-buildgen.sh
   build-sdl12:
@@ -55,6 +59,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build

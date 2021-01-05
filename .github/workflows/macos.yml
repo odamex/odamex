@@ -22,6 +22,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/macos-buildgen.sh
     - name: Run build
