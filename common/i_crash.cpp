@@ -27,6 +27,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#define CRASH_DIR_LEN 1024
+
 #if defined _WIN32 && !defined _XBOX && defined _MSC_VER
 
 #include <csignal>
@@ -37,8 +39,22 @@
 #include "win32inc.h"
 #include <DbgHelp.h>
 
+// Must be loaded last or else we're missing functions.
+
+#include "doomtype.h"
+#include "m_fileio.h"
+
+/**
+ * @brief An array containing the directory where crashes are written to.
+ */
+static TCHAR gCrashDir[CRASH_DIR_LEN];
+
 // Fucntion pointer for MiniDumpWriteDump.
-typedef BOOL(WINAPI* MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType, CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam, CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam, CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
+typedef BOOL(WINAPI* MINIDUMPWRITEDUMP)(
+    HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
+    CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
+    CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
+    CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
 
 // Write the minidump to a file.
 void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
@@ -52,7 +68,8 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	}
 
 	// Grab the dump function.
-	MINIDUMPWRITEDUMP pMiniDumpWriteDump = (MINIDUMPWRITEDUMP)GetProcAddress(dbghelp, "MiniDumpWriteDump");
+	MINIDUMPWRITEDUMP pMiniDumpWriteDump =
+	    (MINIDUMPWRITEDUMP)GetProcAddress(dbghelp, "MiniDumpWriteDump");
 	if (pMiniDumpWriteDump == NULL)
 	{
 		// We can't access the dumping function - oh well.
@@ -62,10 +79,11 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	// Open a file to write our dump into.
 	SYSTEMTIME dt;
 	GetSystemTime(&dt);
-	char filename[256];
-	sprintf_s(filename, sizeof(filename), "odamex_%4d%02d%02d_%02d%02d%02d.dmp",
-	          dt.wYear, dt.wMonth, dt.wDay, dt.wHour, dt.wMinute, dt.wSecond);
-	HANDLE hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, 0);
+	char filename[CRASH_DIR_LEN];
+	sprintf_s(filename, sizeof(filename), "%s\\odamex_%4d%02d%02d_%02d%02d%02d.dmp",
+	          gCrashDir, dt.wYear, dt.wMonth, dt.wDay, dt.wHour, dt.wMinute, dt.wSecond);
+	HANDLE hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_NEW,
+	                          FILE_ATTRIBUTE_NORMAL, 0);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
 		// We couldn't create a dump file - oh well.
@@ -79,7 +97,8 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	mei.ClientPointers = FALSE;
 
 	// Do the actual dump.
-	pMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory), &mei, 0, 0);
+	pMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile,
+	                   MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory), &mei, 0, 0);
 	CloseHandle(hFile);
 
 	return;
@@ -115,7 +134,8 @@ void purecallCallback()
 	std::abort();
 }
 
-void invalidparamCallback(const wchar_t* expression, const wchar_t* function, const wchar_t* filename, unsigned int line, uintptr_t x)
+void invalidparamCallback(const wchar_t* expression, const wchar_t* function,
+                          const wchar_t* filename, unsigned int line, uintptr_t x)
 {
 	// Exception pointer is located at _pxcptinfoptrs.
 	writeMinidump(static_cast<PEXCEPTION_POINTERS>(_pxcptinfoptrs));
@@ -182,16 +202,55 @@ void I_SetCrashCallbacks()
 	std::signal(SIGSEGV, signalCallback);
 }
 
+void I_SetCrashDir(const char* crashdir)
+{
+	std::string homedir;
+	TCHAR testfile[MAX_PATH];
+
+	// Check to see if our crash dir is too big.
+	size_t len = strlen(crashdir);
+	if (len > CRASH_DIR_LEN)
+	{
+		MessageBox(
+		    NULL,
+		    TEXT("Crash directory is too long.\nPlease pass a correct -crashout param."),
+		    TEXT("Odamex"), MB_ICONERROR);
+		std::abort();
+	}
+
+	// Check to see if we can write to our crash directory.
+	UINT res = GetTempFileName(crashdir, "crash", 0, testfile);
+	if (res == 0 || res == ERROR_BUFFER_OVERFLOW)
+	{
+		MessageBox(NULL,
+		           TEXT("Crash directory is not writable.\nPlease point -crashout to "
+		                "a directory with write permissions."),
+		           TEXT("Odamex"), MB_ICONERROR);
+		std::abort();
+	}
+
+	// We don't need the temporary file anymore.
+	DeleteFile(testfile);
+
+	// Copy the crash directory.
+	memcpy(::gCrashDir, crashdir, len);
+}
+
 #elif defined(UNIX) && !defined(GEKKO)
 
-#include <cstdio>
 #include <csignal>
+#include <cstdio>
 #include <cstring>
 
 #include <execinfo.h>
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
+
+/**
+ * @brief An array containing the directory where crashes are written to.
+ */
+static char gCrashDir[CRASH_DIR_LEN];
 
 // Write a backtrace to a file.
 //
@@ -307,9 +366,19 @@ void I_SetCrashCallbacks()
 	sigaction(SIGBUS, &act, NULL);
 }
 
+void I_SetCrashDir(const char* crashdir)
+{
+	// if (len > )
+}
+
 #else
 
 void I_SetCrashCallbacks()
+{
+	// Not implemented.
+}
+
+void I_SetCrashDir(const char* crashdir, size_t len)
 {
 	// Not implemented.
 }
