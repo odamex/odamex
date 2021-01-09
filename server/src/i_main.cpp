@@ -246,10 +246,22 @@ int main (int argc, char **argv)
 		if(r_euid < 0)
 			perror(NULL);
 
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
+
+		const char* CON_FILE = Args.CheckValue("-confile");
+		if (CON_FILE)
+			CON.open(CON_FILE, std::ios::in);
 
 		/*
 		  killough 1/98:

@@ -17,7 +17,7 @@
 //
 //
 // DESCRIPTION:
-//   Crash handling.
+//   Windows Crash handling.
 //
 //   This document is invaluable for documenting the ways programs compiled
 //   with Visual Studio can die - just don't copy any code from it, the license
@@ -27,9 +27,11 @@
 //
 //-----------------------------------------------------------------------------
 
+#if defined _WIN32 && !defined _XBOX && defined _MSC_VER
+
 #define CRASH_DIR_LEN 1024
 
-#if defined _WIN32 && !defined _XBOX && defined _MSC_VER
+#include "i_crash.h"
 
 #include <csignal>
 #include <cstdio>
@@ -42,6 +44,7 @@
 // Must be loaded last or else we're missing functions.
 
 #include "doomtype.h"
+#include "i_system.h"
 #include "m_fileio.h"
 
 /**
@@ -211,10 +214,8 @@ void I_SetCrashDir(const char* crashdir)
 	size_t len = strlen(crashdir);
 	if (len > CRASH_DIR_LEN)
 	{
-		MessageBox(
-		    NULL,
-		    TEXT("Crash directory is too long.\nPlease pass a correct -crashout param."),
-		    TEXT("Odamex"), MB_ICONERROR);
+		I_FatalError(
+		    "Crash directory is too long.\nPlease pass a correct -crashout param.");
 		std::abort();
 	}
 
@@ -222,10 +223,8 @@ void I_SetCrashDir(const char* crashdir)
 	UINT res = GetTempFileName(crashdir, "crash", 0, testfile);
 	if (res == 0 || res == ERROR_BUFFER_OVERFLOW)
 	{
-		MessageBox(NULL,
-		           TEXT("Crash directory is not writable.\nPlease point -crashout to "
-		                "a directory with write permissions."),
-		           TEXT("Odamex"), MB_ICONERROR);
+		I_FatalError("Crash directory is not writable.\nPlease point -crashout to "
+		             "a directory with write permissions.");
 		std::abort();
 	}
 
@@ -234,153 +233,6 @@ void I_SetCrashDir(const char* crashdir)
 
 	// Copy the crash directory.
 	memcpy(::gCrashDir, crashdir, len);
-}
-
-#elif defined(UNIX) && !defined(GEKKO)
-
-#include <csignal>
-#include <cstdio>
-#include <cstring>
-
-#include <execinfo.h>
-#include <fcntl.h>
-#include <time.h>
-#include <unistd.h>
-
-/**
- * @brief An array containing the directory where crashes are written to.
- */
-static char gCrashDir[CRASH_DIR_LEN];
-
-// Write a backtrace to a file.
-//
-// This is not a "safe" signal handler, but this is used in a process
-// that is already crashing, and is meant to provide as much
-// information as reasonably possible in the potential absence of a
-// core dump.
-void writeBacktrace(int sig, siginfo_t* si)
-{
-	char buf[256];
-	int len = 0;
-
-	// Open a file to write our dump into.
-	len = snprintf(buf, sizeof(buf), "odamex_%lld_dump.txt", (long long)time(NULL));
-	if (len < 0)
-	{
-		return;
-	}
-	int fd = creat(buf, 0644);
-	if (fd == -1)
-	{
-		// We couldn't create a dump file - oh well.
-		return;
-	}
-
-	len = snprintf(buf, sizeof(buf), "Signal number: %d\n", si->si_signo);
-	if (len < 0)
-	{
-		return;
-	}
-	ssize_t writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	len = snprintf(buf, sizeof(buf), "Errno: %d\n", si->si_errno);
-	if (len < 0)
-	{
-		return;
-	}
-	writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	len = snprintf(buf, sizeof(buf), "Signal code: %d\n", si->si_code);
-	if (len < 0)
-	{
-		return;
-	}
-	writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	len = snprintf(buf, sizeof(buf), "Fault Address: %p\n", si->si_addr);
-	if (len < 0)
-	{
-		return;
-	}
-	writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	// Get backtrace data.
-	void* bt[50];
-	size_t size = backtrace(bt, sizeof(bt) / sizeof(void*));
-
-	// Write stack frames to file.
-	backtrace_symbols_fd(bt, size, fd);
-	close(fd);
-}
-
-void sigactionCallback(int sig, siginfo_t* si, void* ctx)
-{
-	// Change our signal handler back to default.
-	struct sigaction act;
-	std::memset(&act, 0, sizeof(act));
-	act.sa_handler = SIG_DFL;
-
-	sigaction(SIGQUIT, &act, NULL);
-	sigaction(SIGILL, &act, NULL);
-	sigaction(SIGABRT, &act, NULL);
-	sigaction(SIGFPE, &act, NULL);
-	sigaction(SIGSEGV, &act, NULL);
-	sigaction(SIGBUS, &act, NULL);
-
-	// Write out the backtrace
-	writeBacktrace(sig, si);
-
-	// Once we're done, re-raise the signal.
-	kill(getpid(), sig);
-}
-
-void I_SetCrashCallbacks()
-{
-	struct sigaction act;
-	std::memset(&act, 0, sizeof(act));
-
-	act.sa_sigaction = &sigactionCallback;
-	act.sa_flags = SA_SIGINFO;
-
-	sigaction(SIGQUIT, &act, NULL);
-	sigaction(SIGILL, &act, NULL);
-	sigaction(SIGABRT, &act, NULL);
-	sigaction(SIGFPE, &act, NULL);
-	sigaction(SIGSEGV, &act, NULL);
-	sigaction(SIGBUS, &act, NULL);
-}
-
-void I_SetCrashDir(const char* crashdir)
-{
-	// if (len > )
-}
-
-#else
-
-void I_SetCrashCallbacks()
-{
-	// Not implemented.
-}
-
-void I_SetCrashDir(const char* crashdir, size_t len)
-{
-	// Not implemented.
 }
 
 #endif
