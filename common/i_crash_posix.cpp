@@ -49,81 +49,69 @@ static char gCrashDir[CRASH_DIR_LEN];
 // that is already crashing, and is meant to provide as much
 // information as reasonably possible in the potential absence of a
 // core dump.
-void writeBacktrace(int sig, siginfo_t* si)
+static void WriteBacktrace(int sig, siginfo_t* si)
 {
-	char buf[CRASH_DIR_LEN];
-	int len = 0;
+	// Generate a timestamp.
+	time_t now = time(NULL);
+	struct tm* local = localtime(&now);
 
-	// Open a file to write our dump into.
-	len = snprintf(buf, sizeof(buf), "%s/odamex_%lld_dump.txt", ::gCrashDir,
-	               (long long)time(NULL));
+	char timebuf[1024];
+	strftime(timebuf, ARRAY_LENGTH(timebuf), "%Y%m%d_%H%M%S", local);
+
+	// Find the spot to write our backtrace.
+	int len = 0;
+	char filename[CRASH_DIR_LEN];
+	len = snprintf(filename, sizeof(filename), "%s/odamex_%s_dump.txt", ::gCrashDir,
+	               timebuf);
 	if (len < 0)
 	{
+		fprintf(stderr, "%s: File path too long.\n", __FUNCTION__);
 		return;
 	}
-	int fd = creat(buf, 0644);
+
+	// Create a file.
+	int fd = creat(filename, 0644);
 	if (fd == -1)
 	{
-		// We couldn't create a dump file - oh well.
+		fprintf(stderr, "%s: File could not be created.\n", __FUNCTION__);
 		return;
 	}
 
-	len = snprintf(buf, sizeof(buf), "Signal number: %d\n", si->si_signo);
+	// Stamp out the header.
+	char buf[1024];
+	len = snprintf(buf, sizeof(buf),
+	               "Signal number: %d\nErrno: %d\nSignal code: %d\nFault Address: %p\n",
+	               si->si_signo, si->si_errno, si->si_code, si->si_addr);
 	if (len < 0)
 	{
+		fprintf(stderr, "%s: Header too long for buffer.\n", __FUNCTION__);
 		return;
 	}
+
+	// Write the header.
 	ssize_t writelen = write(fd, buf, len);
 	if (writelen < 1)
 	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	len = snprintf(buf, sizeof(buf), "Errno: %d\n", si->si_errno);
-	if (len < 0)
-	{
+		fprintf(stderr, "%s: Failed to write to fd.\n", __FUNCTION__);
 		return;
-	}
-	writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	len = snprintf(buf, sizeof(buf), "Signal code: %d\n", si->si_code);
-	if (len < 0)
-	{
-		return;
-	}
-	writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
-	}
-
-	len = snprintf(buf, sizeof(buf), "Fault Address: %p\n", si->si_addr);
-	if (len < 0)
-	{
-		return;
-	}
-	writelen = write(fd, buf, len);
-	if (writelen < 1)
-	{
-		printf("writeBacktrace(): failed to write to fd\n");
 	}
 
 	// Get backtrace data.
 	void* bt[50];
-	size_t size = backtrace(bt, sizeof(bt) / sizeof(void*));
+	size_t size = backtrace(bt, ARRAY_LENGTH(bt));
 
 	// Write stack frames to file.
 	backtrace_symbols_fd(bt, size, fd);
 	close(fd);
+
+	// Tell the user about it.
+	fprintf(stderr, "Wrote \"%s\".\n", filename);
 }
 
-void sigactionCallback(int sig, siginfo_t* si, void* ctx)
+static void SigActionCallback(int sig, siginfo_t* si, void* ctx)
 {
-	fprintf(stderr, "sigactionCallback\n");
+	fprintf(stderr, "Caught Signal %d (%s), dumping crash info...\n", si->si_signo,
+	        strsignal(si->si_signo));
 
 	// Change our signal handler back to default.
 	struct sigaction act;
@@ -138,7 +126,7 @@ void sigactionCallback(int sig, siginfo_t* si, void* ctx)
 	sigaction(SIGBUS, &act, NULL);
 
 	// Write out the backtrace
-	writeBacktrace(sig, si);
+	WriteBacktrace(sig, si);
 
 	// Once we're done, re-raise the signal.
 	kill(getpid(), sig);
@@ -146,12 +134,10 @@ void sigactionCallback(int sig, siginfo_t* si, void* ctx)
 
 void I_SetCrashCallbacks()
 {
-	fprintf(stderr, "I_SetCrashCallbacks\n");
-
 	struct sigaction act;
 	std::memset(&act, 0, sizeof(act));
 
-	act.sa_sigaction = &sigactionCallback;
+	act.sa_sigaction = &SigActionCallback;
 	act.sa_flags = SA_SIGINFO;
 
 	sigaction(SIGQUIT, &act, NULL);

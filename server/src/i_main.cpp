@@ -184,23 +184,6 @@ int __cdecl main(int argc, char *argv[])
 }
 #else
 
-// cleanup handling -- killough:
-static void handler (int s)
-{
-    char buf[64];
-
-    signal(s,SIG_IGN);  // Ignore future instances of this signal.
-
-    strcpy(buf,
-		   s==SIGSEGV ? "Segmentation Violation" :
-		   s==SIGINT  ? "Interrupted by User" :
-		   s==SIGILL  ? "Illegal Instruction" :
-		   s==SIGFPE  ? "Floating Point Exception" :
-		   s==SIGTERM ? "Killed" : "Terminated by signal %s");
-
-    I_FatalError (buf, s);
-}
-
 //
 // daemon_init
 //
@@ -286,12 +269,10 @@ int main (int argc, char **argv)
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		signal(SIGSEGV, handler);
-		signal(SIGTERM, handler);
-		signal(SIGILL,  handler);
-		signal(SIGFPE,  handler);
-		signal(SIGINT,  handler);	// killough 3/6/98: allow CTRL-BRK during init
-		signal(SIGABRT, handler);
+		// [AM] There used to be a signal handler here that attempted to
+		//      shut the server off gracefully.  I'm not sure masking the
+		//      signal is a good idea, and it stomped over the crashlog handler
+		//      I set earlier.
 
 		D_DoomMain();
     }
