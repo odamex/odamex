@@ -5157,6 +5157,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		{
 			gender = attacker->player->userinfo.gender;
 			messagename = GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
+			message = messagename.c_str();
 		}
 		else
 		{
@@ -5202,9 +5203,12 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				messagename = OB_RAILGUN;
 				break;
 			}
+
+			if (!messagename.empty())
+				message = GStrings(messagename);
 		}
-		if (!messagename.empty())
-			message = GStrings(messagename);
+
+
 	}
 
 	if (message && attacker && attacker->player)
