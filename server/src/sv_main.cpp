@@ -406,6 +406,9 @@ void SV_InvalidateClient(player_t &player, const std::string& reason)
 	}
 
 	Printf("%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason.c_str());
+	SV_PlayerPrintf(PRINT_ERROR, player.id,
+	                "The server closed your connection for the following reason: %s.\n",
+	                reason.c_str());
 	SV_DropClient(player);
 }
 
