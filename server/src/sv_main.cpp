@@ -3287,10 +3287,10 @@ void SV_UpdateSecretCount(player_t& player)
 	    if (&*it == &player)
 	        continue;
 
-	    std::ostringstream buf;
-		
-	    buf << player.userinfo.netname << " found a secret!";
-	    SV_MidPrint(buf.str().c_str(), &(*it), 0);
+		client_t* cl = &(it->client);
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_secretevent);
+		MSG_WriteByte(&cl->reliablebuf, it->id);
 	}
 }
 

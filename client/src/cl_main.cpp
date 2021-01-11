@@ -158,6 +158,9 @@ EXTERN_CVAR (cl_forcedownload)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
+
+EXTERN_CVAR (hud_revealsecrets)
+
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
@@ -2960,6 +2963,26 @@ void CL_ClearSectorSnapshots()
 }
 
 //
+// CL_SecretEvent
+// Client interpretation of a secret found by another player
+//
+void CL_SecretEvent()
+{
+	player_t& player = idplayer(MSG_ReadByte());
+
+	// Don't show other secrets if requested
+	if (!hud_revealsecrets || hud_revealsecrets > 2)
+		return;
+
+	std::string buf;
+	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW, player.userinfo.netname, TEXTCOLOR_NORMAL);
+	Printf(buf.c_str());
+
+	if (hud_revealsecrets == 1)
+		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
+}
+
+//
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
 //
@@ -3762,6 +3785,7 @@ void CL_InitCommands(void)
 	cmds[svc_forceteam]			= &CL_ForceSetTeam;
 
 	cmds[svc_ctfevent]			= &CL_CTFEvent;
+	cmds[svc_secretevent]		= &CL_SecretEvent;
 	cmds[svc_serversettings]	= &CL_GetServerSettings;
 	cmds[svc_disconnect]		= &CL_EndGame;
 	cmds[svc_full]				= &CL_FullGame;
