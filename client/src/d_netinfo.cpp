@@ -110,6 +110,13 @@ team_t D_TeamByName (const char *team)
 			return (team_t)i;
 	}
 
+	if (stricmp(team, "0") == 0)
+		return TEAM_BLUE;
+	else if (stricmp(team, "1") == 0)
+		return TEAM_RED;
+	else if (stricmp(team, "2") == 0)
+		return TEAM_GREEN;
+
 	return TEAM_NONE;
 }
 
@@ -151,8 +158,15 @@ void D_SetupUserInfo(void)
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
+	team_t newteam = D_TeamByName(cl_team.cstring());
+	if (newteam == TEAM_NONE){
+		cl_team.RestoreDefault();
+		newteam = TEAM_BLUE;
+	}
+
+
 	coninfo->netname			= netname;
-	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->team				= newteam; // [Toke - Teams]
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
