@@ -2285,7 +2285,7 @@ static void UpdateStuff (void)
 void Reset2Defaults (void)
 {
 	AddCommandString ("unbindall; binddefaults");
-	cvar_t::C_SetCVarsToDefaults(CVAR_ARCHIVE | CVAR_CLIENTARCHIVE);
+	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
 	UpdateStuff();
 }
 
