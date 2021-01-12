@@ -267,4 +267,13 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.last_wininfo_id);
 }
 
+/**
+ * @brief Send information about a player who discovered a secret.
+ */
+void SVC_SecretFound(buf_t& b, int playerid)
+{
+	MSG_WriteMarker(&b, svc_secretevent);
+	MSG_WriteByte(&b, playerid);			// ID of player who discovered it
+}
+
 VERSION_CONTROL(msg_server, "$Id$")
