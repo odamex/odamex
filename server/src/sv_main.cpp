@@ -406,6 +406,9 @@ void SV_InvalidateClient(player_t &player, const std::string& reason)
 	}
 
 	Printf("%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason.c_str());
+	SV_PlayerPrintf(PRINT_ERROR, player.id,
+	                "The server closed your connection for the following reason: %s.\n",
+	                reason.c_str());
 	SV_DropClient(player);
 }
 
@@ -910,11 +913,13 @@ bool SV_SetupUserInfo(player_t &player)
 	team_t old_team = static_cast<team_t>(player.userinfo.team);
 	team_t new_team = static_cast<team_t>(MSG_ReadByte());
 
-	if ((new_team >= NUMTEAMS && new_team != TEAM_NONE) || new_team < 0)
+	if (new_team >= NUMTEAMS || new_team < 0)
 	{
 		SV_InvalidateClient(player, "Team preference is invalid");
 		return false;
 	}
+	if (new_team == TEAM_NONE)
+		new_team = TEAM_BLUE; // Set the default team to the player.
 
 	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
 
@@ -3287,10 +3292,9 @@ void SV_UpdateSecretCount(player_t& player)
 	    if (&*it == &player)
 	        continue;
 
-	    std::ostringstream buf;
-		
-	    buf << player.userinfo.netname << " found a secret!";
-	    SV_MidPrint(buf.str().c_str(), &(*it), 0);
+		client_t* cl = &(it->client);
+
+		SVC_SecretFound(cl->reliablebuf, it->id);
 	}
 }
 
@@ -3737,7 +3741,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 {
 	team_t team = (team_t)MSG_ReadByte();
 
-	if ((team >= NUMTEAMS && team != TEAM_NONE) || team < 0)
+	if (team >= TEAM_NONE || team < 0)
 		return;
 
 	if (team >= sv_teamsinplay)
@@ -5157,6 +5161,7 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		{
 			gender = attacker->player->userinfo.gender;
 			messagename = GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
+			message = messagename.c_str();
 		}
 		else
 		{
@@ -5202,9 +5207,12 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				messagename = OB_RAILGUN;
 				break;
 			}
+
+			if (!messagename.empty())
+				message = GStrings(messagename);
 		}
-		if (!messagename.empty())
-			message = GStrings(messagename);
+
+
 	}
 
 	if (message && attacker && attacker->player)
