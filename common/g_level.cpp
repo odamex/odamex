@@ -1584,9 +1584,10 @@ void G_SetLevelStrings (void)
 		uppercopy(info.finaleflat, GStrings.getIndex(GStrings.toIndex(BGFLATE1) + i));
 	}
 
-	if (::level.info)
+	if (::level.info && ::level.info->level_name)
 	{
-		strncpy(::level.level_name, ::level.info->level_name, 63);
+		strncpy(::level.level_name, ::level.info->level_name,
+		        ARRAY_LENGTH(::level.level_name) - 1);
 	}
 }
 
