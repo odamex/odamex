@@ -27,9 +27,9 @@
 
 #include "i_crash.h"
 
-#include <csignal>
-#include <cstdio>
-#include <cstring>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <execinfo.h>
 #include <fcntl.h>
@@ -115,7 +115,7 @@ static void SigActionCallback(int sig, siginfo_t* si, void* ctx)
 
 	// Change our signal handler back to default.
 	struct sigaction act;
-	std::memset(&act, 0, sizeof(act));
+	memset(&act, 0, sizeof(act));
 	act.sa_handler = SIG_DFL;
 
 	sigaction(SIGQUIT, &act, NULL);
@@ -135,7 +135,7 @@ static void SigActionCallback(int sig, siginfo_t* si, void* ctx)
 void I_SetCrashCallbacks()
 {
 	struct sigaction act;
-	std::memset(&act, 0, sizeof(act));
+	memset(&act, 0, sizeof(act));
 
 	act.sa_sigaction = &SigActionCallback;
 	act.sa_flags = SA_SIGINFO;
@@ -159,7 +159,7 @@ void I_SetCrashDir(const char* crashdir)
 	{
 		I_FatalError(
 		    "Crash directory is too long.\nPlease pass a correct -crashout param.");
-		std::abort();
+		abort();
 	}
 
 	// Check to see if we can write to our crash directory.
@@ -169,7 +169,7 @@ void I_SetCrashDir(const char* crashdir)
 	{
 		I_FatalError("Crash directory is not writable.\nPlease point -crashout to "
 		             "a directory with write permissions.");
-		std::abort();
+		abort();
 	}
 
 	// We don't need the temporary file anymore.

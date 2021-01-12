@@ -33,10 +33,10 @@
 
 #include "i_crash.h"
 
-#include <csignal>
-#include <cstdio>
 #include <exception>
 #include <new.h>
+#include <signal.h>
+#include <stdio.h>
 
 #include "win32inc.h"
 #include <DbgHelp.h>
@@ -120,10 +120,10 @@ void terminateCallback()
 	writeMinidump(static_cast<PEXCEPTION_POINTERS>(_pxcptinfoptrs));
 
 	// Set the standard abort handler.
-	std::signal(SIGABRT, SIG_DFL);
+	signal(SIGABRT, SIG_DFL);
 
 	// Die screaming.
-	std::abort();
+	abort();
 }
 
 void purecallCallback()
@@ -132,10 +132,10 @@ void purecallCallback()
 	writeMinidump(static_cast<PEXCEPTION_POINTERS>(_pxcptinfoptrs));
 
 	// Set the standard abort handler.
-	std::signal(SIGABRT, SIG_DFL);
+	signal(SIGABRT, SIG_DFL);
 
 	// Die screaming.
-	std::abort();
+	abort();
 }
 
 void invalidparamCallback(const wchar_t* expression, const wchar_t* function,
@@ -145,10 +145,10 @@ void invalidparamCallback(const wchar_t* expression, const wchar_t* function,
 	writeMinidump(static_cast<PEXCEPTION_POINTERS>(_pxcptinfoptrs));
 
 	// Set the standard abort handler.
-	std::signal(SIGABRT, SIG_DFL);
+	signal(SIGABRT, SIG_DFL);
 
 	// Die screaming.
-	std::abort();
+	abort();
 }
 
 // [AM] In my testing, memory allocation failures return a dump of size 0.
@@ -161,25 +161,25 @@ int newCallback(size_t)
 	writeMinidump(static_cast<PEXCEPTION_POINTERS>(_pxcptinfoptrs));
 
 	// Set the standard abort handler.
-	std::signal(SIGABRT, SIG_DFL);
+	signal(SIGABRT, SIG_DFL);
 
 	// Die screaming.
-	std::abort();
+	abort();
 }
 
 void signalCallback(int sig)
 {
 	// Set our default signal handlers.
-	std::signal(SIGILL, SIG_DFL);
-	std::signal(SIGABRT, SIG_DFL);
-	std::signal(SIGFPE, SIG_DFL);
-	std::signal(SIGSEGV, SIG_DFL);
+	signal(SIGILL, SIG_DFL);
+	signal(SIGABRT, SIG_DFL);
+	signal(SIGFPE, SIG_DFL);
+	signal(SIGSEGV, SIG_DFL);
 
 	// Exception pointer is located at _pxcptinfoptrs.
 	writeMinidump(static_cast<PEXCEPTION_POINTERS>(_pxcptinfoptrs));
 
 	// Once we're done, bail out.
-	std::abort();
+	abort();
 }
 
 void I_SetCrashCallbacks()
@@ -200,10 +200,10 @@ void I_SetCrashCallbacks()
 	_set_new_handler(newCallback);
 
 	// Old-school UNIX signals.
-	std::signal(SIGILL, signalCallback);
-	std::signal(SIGABRT, signalCallback);
-	std::signal(SIGFPE, signalCallback);
-	std::signal(SIGSEGV, signalCallback);
+	signal(SIGILL, signalCallback);
+	signal(SIGABRT, signalCallback);
+	signal(SIGFPE, signalCallback);
+	signal(SIGSEGV, signalCallback);
 }
 
 void I_SetCrashDir(const char* crashdir)
@@ -217,7 +217,7 @@ void I_SetCrashDir(const char* crashdir)
 	{
 		I_FatalError(
 		    "Crash directory is too long.\nPlease pass a correct -crashout param.");
-		std::abort();
+		abort();
 	}
 
 	// Check to see if we can write to our crash directory.
@@ -226,7 +226,7 @@ void I_SetCrashDir(const char* crashdir)
 	{
 		I_FatalError("Crash directory is not writable.\nPlease point -crashout to "
 		             "a directory with write permissions.");
-		std::abort();
+		abort();
 	}
 
 	// We don't need the temporary file anymore.
