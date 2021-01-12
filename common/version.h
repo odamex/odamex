@@ -24,6 +24,14 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
+#if defined(CLIENT_APP)
+#define GAMEEXE "odamex"
+#elif defined(SERVER_APP)
+#define GAMEEXE "odasrv"
+#else
+#error "Odamex is not client or server"
+#endif
+
 // Lots of different representations for the version number
 #define CONFIGVERSIONSTR "90"
 #define GAMEVER (0*256+90)
