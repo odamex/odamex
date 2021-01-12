@@ -110,11 +110,11 @@ team_t D_TeamByName (const char *team)
 			return (team_t)i;
 	}
 
-	if (stricmp(team, "0") == 0)
+	if (strcmp(team, "0") == 0)
 		return TEAM_BLUE;
-	else if (stricmp(team, "1") == 0)
+	else if (strcmp(team, "1") == 0)
 		return TEAM_RED;
-	else if (stricmp(team, "2") == 0)
+	else if (strcmp(team, "2") == 0)
 		return TEAM_GREEN;
 
 	return TEAM_NONE;

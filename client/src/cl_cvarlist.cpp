@@ -455,7 +455,7 @@ CVAR_RANGE(		hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n
 CVAR_RANGE(		hud_gamemsgtype, "2", "Game message type",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
 
-CVAR(			hud_revealsecrets, "1", "Print a HUD message and|or play a sound when a secret is discovered.",
+CVAR_RANGE(		hud_revealsecrets, "1", "Get a notification if you or another player finds a secret.",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR(			hud_scale, "1", "HUD scaling",

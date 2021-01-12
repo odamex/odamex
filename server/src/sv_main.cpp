@@ -3294,8 +3294,7 @@ void SV_UpdateSecretCount(player_t& player)
 
 		client_t* cl = &(it->client);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_secretevent);
-		MSG_WriteByte(&cl->reliablebuf, it->id);
+		SVC_BroadcastSecretFound(cl->reliablebuf, it->id);
 	}
 }
 
