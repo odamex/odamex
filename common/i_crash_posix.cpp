@@ -56,13 +56,13 @@ static void WriteBacktrace(int sig, siginfo_t* si)
 	struct tm* local = localtime(&now);
 
 	char timebuf[1024];
-	strftime(timebuf, ARRAY_LENGTH(timebuf), "%Y%m%d_%H%M%S", local);
+	strftime(timebuf, ARRAY_LENGTH(timebuf), "%Y%m%dT%H%M%S", local);
 
 	// Find the spot to write our backtrace.
 	int len = 0;
 	char filename[CRASH_DIR_LEN];
-	len = snprintf(filename, sizeof(filename), "%s/odamex_%s_dump.txt", ::gCrashDir,
-	               timebuf);
+	len = snprintf(filename, ARRAY_LENGTH(filename), "%s/%s_g%s_%d_%s_dump.txt",
+	               ::gCrashDir, GAMEEXE, GitShortHash(), getpid(), timebuf);
 	if (len < 0)
 	{
 		fprintf(stderr, "%s: File path too long.\n", __FUNCTION__);

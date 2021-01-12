@@ -83,7 +83,7 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	SYSTEMTIME dt;
 	GetSystemTime(&dt);
 	char filename[CRASH_DIR_LEN];
-	sprintf_s(filename, sizeof(filename), "%s\\%s%s_%u_%4d%02d%02dT%02d%02d%02d.dmp",
+	sprintf_s(filename, sizeof(filename), "%s\\%s_g%s_%u_%4d%02d%02dT%02d%02d%02d.dmp",
 	          ::gCrashDir, GAMEEXE, GitShortHash(), GetCurrentProcessId(), dt.wYear,
 	          dt.wMonth, dt.wDay, dt.wHour, dt.wMinute, dt.wSecond);
 	HANDLE hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_NEW,
