@@ -2975,7 +2975,7 @@ void CL_SecretEvent()
 		return;
 
 	std::string buf;
-	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW, player.userinfo.netname, TEXTCOLOR_NORMAL);
+	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW, player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
 	Printf(buf.c_str());
 
 	if (hud_revealsecrets == 1)

@@ -270,7 +270,7 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 /**
  * @brief Send information about a player who discovered a secret.
  */
-void SVC_BroadcastSecretFound(buf_t& b, int playerid)
+void SVC_SecretFound(buf_t& b, int playerid)
 {
 	MSG_WriteMarker(&b, svc_secretevent);
 	MSG_WriteByte(&b, playerid);			// ID of player who discovered it
