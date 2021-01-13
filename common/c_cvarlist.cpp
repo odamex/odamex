@@ -236,7 +236,7 @@ CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/e
 // -------------------------------------------------------------------------
 
 CVAR(sv_warmup, "0", "Enable a 'warmup mode' before the match starts.", CVARTYPE_BOOL,
-     CVAR_SERVERARCHIVE | CVAR_LATCH)
+     CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
 CVAR_RANGE(sv_warmup_autostart, "1.0",
            "Ratio of players needed for warmup to automatically start the game.",
            CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,

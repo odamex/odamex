@@ -232,7 +232,7 @@ void LevelState::readyToggle()
 
 	// No useful work can be done unless we're either in warmup or taking
 	// part in the normal warmup countdown.
-	if (m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN)
+	if (!(m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN))
 		return;
 
 	// Check to see if we satisfy our autostart setting.
