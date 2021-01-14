@@ -36,7 +36,9 @@ from tkinter import (
 )
 
 ODAMEX_EXE = Path(r"client/Debug/odamex.exe").resolve(strict=True)
+ODAMEX_CWD = Path(r"client").resolve(strict=True)
 ODASRV_EXE = Path(r"server/Debug/odasrv.exe").resolve(strict=True)
+ODASRV_CWD = Path(r"server").resolve(strict=True)
 
 root = Tk()
 
@@ -47,12 +49,12 @@ odasrv_params_sv = StringVar(root)
 
 def run_odamex():
     params = shlex.split(odamex_params_sv.get())
-    subprocess.Popen([ODAMEX_EXE, *params])
+    subprocess.Popen([ODAMEX_EXE, *params], cwd=ODAMEX_CWD)
 
 
 def run_odasrv():
     params = shlex.split(odasrv_params_sv.get())
-    subprocess.Popen([r"wt.exe", ODASRV_EXE, *params])
+    subprocess.Popen([r"wt.exe", ODASRV_EXE, *params], cwd=ODASRV_CWD)
 
 
 paths_f = Frame(root)
