@@ -918,7 +918,7 @@ bool SV_SetupUserInfo(player_t &player)
 		SV_InvalidateClient(player, "Team preference is invalid");
 		return false;
 	}
-	if (new_team == TEAM_NONE)
+	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
 
 	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
@@ -1083,7 +1083,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 //
 void SV_CheckTeam (player_t &player)
 {
-	if (player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay)
+	if (!player.spectator && (player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
 		SV_ForceSetTeam(player, SV_GoodTeam());
 }
 

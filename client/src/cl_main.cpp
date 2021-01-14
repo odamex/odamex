@@ -141,6 +141,8 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_teamsinplay)
+
 EXTERN_CVAR (sv_downloadsites)
 EXTERN_CVAR (cl_downloadsites)
 
@@ -1008,7 +1010,7 @@ END_COMMAND (playerteam)
 BEGIN_COMMAND (changeteams)
 {
 	int iTeam = (int)consoleplayer().userinfo.team;
-	iTeam = ++iTeam % NUMTEAMS;
+	iTeam = ++iTeam % sv_teamsinplay.asInt();
 	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
