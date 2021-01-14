@@ -36,9 +36,9 @@ from tkinter import (
 )
 
 ODAMEX_EXE = Path(r"client/Debug/odamex.exe").resolve(strict=True)
-ODAMEX_CWD = Path(r"client").resolve(strict=True)
+ODAMEX_CWD = Path(r"client/Debug").resolve(strict=True)
 ODASRV_EXE = Path(r"server/Debug/odasrv.exe").resolve(strict=True)
-ODASRV_CWD = Path(r"server").resolve(strict=True)
+ODASRV_CWD = Path(r"server/Debug").resolve(strict=True)
 
 root = Tk()
 
