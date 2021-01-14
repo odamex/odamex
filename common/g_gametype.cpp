@@ -717,37 +717,48 @@ bool G_RoundsShouldEndGame()
 		PlayerResults pr = PlayerQuery().sortWins().filterSortMax().execute();
 		if (pr.count == 1 && g_winlimit && pr.players.front()->roundwins >= g_winlimit)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
+			SV_BroadcastPrintf("Win limit hit. Match won by %s!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			return true;
 		}
 		else if (pr.count == 1 && g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Match won by %s!\n",
+			SV_BroadcastPrintf("Round limit hit. Match won by %s!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			return true;
 		}
 		else if (g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Game is a draw!\n");
+			SV_BroadcastPrintf("Round limit hit. Game is a draw!\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			return true;
 		}
 	}
 	else if (G_IsTeamGame())
 	{
-		for (size_t i = 0; i < NUMTEAMS; i++)
+		TeamsView tv = TeamQuery().sortWins().filterSortMax().execute();
+		if (tv.size() == 1 && ::g_winlimit && tv.front()->RoundWins >= ::g_winlimit)
 		{
-			TeamInfo* team = GetTeamInfo((team_t)i);
-			if (team->RoundWins >= g_winlimit)
-			{
-				SV_BroadcastPrintf("Win limit hit. %s team wins!\n",
-				                   team->ColorString.c_str());
-				::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
-				return true;
-			}
+			SV_BroadcastPrintf("Win limit hit. %s team wins!\n",
+			                   tv.front()->ColorString.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+			return true;
+		}
+		else if (tv.size() == 1 && ::g_roundlimit &&
+		         ::levelstate.getRound() >= ::g_roundlimit)
+		{
+			SV_BroadcastPrintf("Round limit hit. %s team wins!\n",
+			                   tv.front()->ColorString.c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+			return true;
+		}
+		else if (::g_roundlimit && ::levelstate.getRound() >= ::g_roundlimit)
+		{
+			SV_BroadcastPrintf("Round limit hit. Game is a draw!\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			return true;
 		}
 	}
 
