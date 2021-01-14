@@ -24,32 +24,25 @@
 #ifndef __CPLATFORM_H__
 #define __CPLATFORM_H__
 
-struct FResponderKey
-{
-    public:
-
         // Movement Keys
-        bool IsUpKey (int key);
-        bool IsDownKey (int key);
-        bool IsLeftKey (int key);
-        bool IsRightKey (int key);
+bool Key_IsUpKey(int key);
+bool Key_IsDownKey(int key);
+bool Key_IsLeftKey(int key);
+bool Key_IsRightKey(int key);
 
-        bool IsPageUpKey (int key);
-        bool IsPageDownKey (int key);
+bool Key_IsPageUpKey(int key);
+bool Key_IsPageDownKey(int key);
 
-        bool IsAcceptKey(int key);
-        bool IsCancelKey(int key);
-        bool IsMenuKey  (int key);
-        bool IsYesKey (int key);
-        bool IsNoKey (int key);
-        bool IsUnbindKey (int key);
+bool Key_IsAcceptKey(int key);
+bool Key_IsCancelKey(int key);
+bool Key_IsMenuKey(int key);
+bool Key_IsYesKey(int key);
+bool Key_IsNoKey(int key);
+bool Key_IsUnbindKey(int key);
 
-        bool IsSpyPrevKey(int key);
-        bool IsSpyNextKey(int key);
+bool Key_IsSpyPrevKey(int key);
+bool Key_IsSpyNextKey(int key);
 
-        bool IsTabulationKey(int key);
-};
-
-extern FResponderKey keypress;
+bool Key_IsTabulationKey(int key);
 
 #endif //__CPLATFORM_H__

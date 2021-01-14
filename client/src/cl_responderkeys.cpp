@@ -27,12 +27,10 @@
 #include "cl_responderkeys.h"
 #include "i_input.h"
 
-FResponderKey keypress;
-
 //
-// FResponderKey::IsUpKey
+// Key_IsUpKey
 //
-bool FResponderKey::IsUpKey(int key)
+bool Key_IsUpKey(int key)
 {
     switch (platform)
     {
@@ -46,9 +44,9 @@ bool FResponderKey::IsUpKey(int key)
 }
 
 //
-// FResponderKey::IsDownKey
+// Key_IsDownKey
 //
-bool FResponderKey::IsDownKey(int key)
+bool Key_IsDownKey(int key)
 {
     switch (platform)
     {
@@ -62,9 +60,9 @@ bool FResponderKey::IsDownKey(int key)
 }
 
 //
-// FResponderKey::IsLeftKey
+// Key_IsLeftKey
 //
-bool FResponderKey::IsLeftKey(int key)
+bool Key_IsLeftKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_LEFTARROW || key == KEYP_4);
@@ -81,9 +79,9 @@ bool FResponderKey::IsLeftKey(int key)
 }
 
 //
-// FResponderKey::IsRightKey
+// Key_IsRightKey
 //
-bool FResponderKey::IsRightKey(int key)
+bool Key_IsRightKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_RIGHTARROW || key == KEYP_6);
@@ -101,7 +99,7 @@ bool FResponderKey::IsRightKey(int key)
     return (key == KEY_HAT2 || keyboard || key == KEY_JOY15);
 }
 
-bool FResponderKey::IsPageUpKey(int key)
+bool Key_IsPageUpKey(int key)
 {
     bool keyboard = (key == KEY_PGUP);
 
@@ -118,7 +116,7 @@ bool FResponderKey::IsPageUpKey(int key)
     return (keyboard || key == KEY_JOY10);
 }
 
-bool FResponderKey::IsPageDownKey(int key)
+bool Key_IsPageDownKey(int key)
 {
     bool keyboard = (key == KEY_PGDN);
 
@@ -136,9 +134,9 @@ bool FResponderKey::IsPageDownKey(int key)
 }
 
 //
-// FResponderKey::IsAcceptKey
+// Key_IsAcceptKey
 //
-bool FResponderKey::IsAcceptKey(int key)
+bool Key_IsAcceptKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_ENTER || key == KEYP_ENTER);
@@ -157,9 +155,9 @@ bool FResponderKey::IsAcceptKey(int key)
 }
 
 //
-// FResponderKey::IsCancelKey
+// Key_IsCancelKey
 //
-bool FResponderKey::IsCancelKey(int key)
+bool Key_IsCancelKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_ESCAPE);
@@ -178,9 +176,9 @@ bool FResponderKey::IsCancelKey(int key)
 }
 
 //
-// FResponderKey::IsYesKey
+// Key_IsYesKey
 //
-bool FResponderKey::IsYesKey(int key)
+bool Key_IsYesKey(int key)
 {
     switch (platform)
     {
@@ -196,9 +194,9 @@ bool FResponderKey::IsYesKey(int key)
 }
 
 //
-// FResponderKey::IsNoKey
+// Key_IsNoKey
 //
-bool FResponderKey::IsNoKey(int key)
+bool Key_IsNoKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_ESCAPE);
@@ -217,9 +215,9 @@ bool FResponderKey::IsNoKey(int key)
 }
 
 //
-// FResponderKey::IsMenuKey
+// Key_IsMenuKey
 //
-bool FResponderKey::IsMenuKey(int key)
+bool Key_IsMenuKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_ESCAPE);
@@ -243,7 +241,7 @@ bool FResponderKey::IsMenuKey(int key)
     return (keyboard || key == KEY_JOY7);
 }
 
-bool FResponderKey::IsUnbindKey(int key)
+bool Key_IsUnbindKey(int key)
 {
     // Default Keyboard press
     bool keyboard = (key == KEY_BACKSPACE);
@@ -263,7 +261,7 @@ bool FResponderKey::IsUnbindKey(int key)
     return (keyboard || key == KEY_JOY4);
 }
 
-bool FResponderKey::IsSpyNextKey(int key)
+bool Key_IsSpyNextKey(int key)
 {
     // Default Keyboard press
     bool mouse = (key == KEY_MWHEELDOWN);
@@ -283,7 +281,7 @@ bool FResponderKey::IsSpyNextKey(int key)
     return (mouse || key == KEY_JOY15);
 }
 
-bool FResponderKey::IsSpyPrevKey(int key)
+bool Key_IsSpyPrevKey(int key)
 {
     // Default Keyboard press
     bool mouse = (key == KEY_MWHEELUP);
@@ -303,7 +301,7 @@ bool FResponderKey::IsSpyPrevKey(int key)
     return (mouse || key == KEY_JOY14);
 } 
 
-bool FResponderKey::IsTabulationKey(int key)
+bool Key_IsTabulationKey(int key)
 {
     bool keyboard = (key == KEY_TAB);
 

@@ -796,7 +796,7 @@ char	tempstring[80];
 
 void M_QuickSaveResponse(int ch)
 {
-	if (ch == 'y' || keypress.IsYesKey(ch))
+	if (ch == 'y' || Key_IsYesKey(ch))
 	{
 		M_DoSave (quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -843,7 +843,7 @@ void M_QuickSave(void)
 //
 void M_QuickLoadResponse(int ch)
 {
-	if (ch == 'y' || keypress.IsYesKey(ch))
+	if (ch == 'y' || Key_IsYesKey(ch))
 	{
 		M_LoadSelect(quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -976,7 +976,8 @@ void M_DrawEpisode(void)
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y' && !keypress.IsYesKey(ch)) {
+	if (ch != 'y' && !Key_IsYesKey(ch))
+	{
 	    M_ClearMenus ();
 		return;
 	}
@@ -1100,7 +1101,8 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && !keypress.IsYesKey(ch)) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !Key_IsYesKey(ch))
+	{
 	    M_ClearMenus ();
 		return;
 	}
@@ -1131,7 +1133,8 @@ void STACK_ARGS call_terms (void);
 
 void M_QuitResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && !keypress.IsYesKey(ch) ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !Key_IsYesKey(ch))
+	{
 	    M_ClearMenus ();
 		return;
 	}
@@ -1718,7 +1721,7 @@ bool M_Responder (event_t* ev)
 	}
 
 	// Handle Repeat
-	if (keypress.IsLeftKey(ch) || keypress.IsRightKey(ch))
+	if (Key_IsLeftKey(ch) || Key_IsRightKey(ch))
 	{
 		if (repeatKey == ch)
 			repeatCount++;
@@ -1743,13 +1746,13 @@ bool M_Responder (event_t* ev)
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
 		} 
-		else if (keypress.IsCancelKey(ch))
+		else if (Key_IsCancelKey(ch))
 		{
 			genStringEnter = 0;
 			M_ClearMenus();
 			strcpy(&savegamestrings[saveSlot][0], saveOldString);
 		}
-		else if (keypress.IsAcceptKey(ch))
+		else if (Key_IsAcceptKey(ch))
 		{
 			genStringEnter = 0;
 			M_ClearMenus();
@@ -1776,7 +1779,7 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			( !(ch2 == ' ' || keypress.IsMenuKey(ch) || keypress.IsYesKey(ch) || keypress.IsNoKey(ch) || 
+		    (!(ch2 == ' ' || Key_IsMenuKey(ch) || Key_IsYesKey(ch) || Key_IsNoKey(ch) || 
 			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y'))))) 
 			return true;
 
@@ -1805,7 +1808,8 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
-		if (keypress.IsMenuKey(ch)) {
+		if (Key_IsMenuKey(ch))
+		{
 			AddCommandString("menu_main");
 			return true;
 		}
@@ -1824,7 +1828,7 @@ bool M_Responder (event_t* ev)
 
 	// Keys usable within menu
 	{
-		if (keypress.IsDownKey(ch))
+		if (Key_IsDownKey(ch))
 		{
 			do {
 				if (itemOn + 1 > currentMenu->numitems - 1)
@@ -1835,7 +1839,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (keypress.IsUpKey(ch))
+		else if (Key_IsUpKey(ch))
 		{
 			do {
 				if (!itemOn)
@@ -1846,7 +1850,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (keypress.IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -1856,7 +1860,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (keypress.IsRightKey(ch))
+		else if (Key_IsRightKey(ch))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -1866,7 +1870,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (keypress.IsAcceptKey(ch))
+		else if (Key_IsAcceptKey(ch))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status)
@@ -1885,7 +1889,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (keypress.IsCancelKey(ch))
+		else if (Key_IsCancelKey(ch))
 		{
 			// [RH] Escaping now moves back one menu instead of
 			//	  quitting the menu system. Thus, backspace

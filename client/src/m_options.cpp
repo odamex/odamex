@@ -1690,7 +1690,7 @@ void M_OptResponder (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-			if (!keypress.IsMenuKey(ch))
+			if (!Key_IsMenuKey(ch))
 			{
 				if (item->type == control)
 					Bindings.ChangeBinding (item->e.command, ch);
@@ -1712,7 +1712,7 @@ void M_OptResponder (event_t *ev)
 	{
 		if(ev->type == ev_keydown)
 		{
-			if(keypress.IsCancelKey(ch))
+			if (Key_IsCancelKey(ch))
 			{
 				WaitingForAxis = false;
 				CurrentMenu->items[8].label = OldAxisMessage;
@@ -1751,7 +1751,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-		(keypress.IsLeftKey(ch) || keypress.IsRightKey(ch) || keypress.IsAcceptKey(ch))
+	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1774,7 +1774,7 @@ void M_OptResponder (event_t *ev)
 
 	// Handle Keys
 	{
-		if (keypress.IsDownKey(ch))
+		if (Key_IsDownKey(ch))
 		{
 			int modecol;
 
@@ -1812,7 +1812,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (keypress.IsUpKey(ch))
+		else if (Key_IsUpKey(ch))
 		{
 			int modecol;
 
@@ -1852,7 +1852,8 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (keypress.IsPageUpKey(ch)) {
+		else if (Key_IsPageUpKey(ch))
+		{
 			if (CanScrollUp)
 			{
 				CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
@@ -1872,7 +1873,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (keypress.IsPageDownKey(ch)) 
+		else if (Key_IsPageDownKey(ch)) 
 		{
 			if (CanScrollDown)
 			{
@@ -1894,7 +1895,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (keypress.IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch))
 		{
 		switch (item->type)
 		{
@@ -2017,7 +2018,8 @@ void M_OptResponder (event_t *ev)
 			break;
 		}
 		}
-		else if (keypress.IsRightKey(ch)) {
+		else if (Key_IsRightKey(ch))
+		{
 		switch (item->type)
 		{
 		case slider:
@@ -2143,7 +2145,8 @@ void M_OptResponder (event_t *ev)
 			break;
 		}
 		}
-		else if (keypress.IsUnbindKey(ch)) {
+		else if (Key_IsUnbindKey(ch))
+		{
 			if (item->type == control)
 			{
 				Bindings.UnbindACommand (item->e.command);
@@ -2155,7 +2158,8 @@ void M_OptResponder (event_t *ev)
 				item->b.key1 = item->c.key2 = 0;
 			}
 		}
-		else if (keypress.IsAcceptKey(ch)) {
+		else if (Key_IsAcceptKey(ch))
+		{
 			if (CurrentMenu == &ModesMenu)
 			{
 				int width, height;
@@ -2221,7 +2225,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		}
-		else if (keypress.IsCancelKey(ch))
+		else if (Key_IsCancelKey(ch))
 		{
 			CurrentMenu->lastOn = CurrentItem;
 			M_PopMenuStack();

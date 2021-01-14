@@ -1818,7 +1818,7 @@ static bool C_HandleKey(const event_t* ev)
 	int ch = ev->data1;
 	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
-	if (keypress.IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
+	if (Key_IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{
 		// don't eat the Esc key if we're in full console
 		// let it be processed elsewhere (to bring up the menu)
@@ -1855,7 +1855,7 @@ static bool C_HandleKey(const event_t* ev)
 
 	// General keys used by all systems
 	{
-		if (keypress.IsPageUpKey(ch))
+	if (Key_IsPageUpKey(ch))
 		{
 			if ((int)(ConRows) > (int)(ConBottom / 8))
 			{
@@ -1868,7 +1868,7 @@ static bool C_HandleKey(const event_t* ev)
 			}
 			return true;
 		}
-		else if (keypress.IsPageDownKey(ch))
+		else if (Key_IsPageDownKey(ch))
 		{
 			if (KeysShifted)
 				// Move to bottom of console buffer
@@ -1878,7 +1878,7 @@ static bool C_HandleKey(const event_t* ev)
 				ScrollState = SCROLLDN;
 			return true;
 		}
-		else if (keypress.IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch))
 		{
 			if (KeysCtrl)
 				CmdLine.moveCursorLeftWord();
@@ -1886,7 +1886,7 @@ static bool C_HandleKey(const event_t* ev)
 				CmdLine.moveCursorLeft();
 				return true;
 		}
-		else if (keypress.IsRightKey(ch))
+		else if (Key_IsRightKey(ch))
 		{
 			if (KeysCtrl)
 				CmdLine.moveCursorRightWord();
@@ -1894,7 +1894,7 @@ static bool C_HandleKey(const event_t* ev)
 				CmdLine.moveCursorRight();
 			return true;
 		}
-		else if (keypress.IsUpKey(ch))
+		else if (Key_IsUpKey(ch))
 		{
 			// Move to previous entry in the command history
 			History.movePositionUp();
@@ -1904,7 +1904,7 @@ static bool C_HandleKey(const event_t* ev)
 			TabCycleClear();
 			return true;
 		}
-		else if (keypress.IsDownKey(ch))
+		else if (Key_IsDownKey(ch))
 		{
 			// Move to next entry in the command history
 			History.movePositionDown();
@@ -1914,7 +1914,7 @@ static bool C_HandleKey(const event_t* ev)
 			TabCycleClear();
 			return true;
 		}
-		else if (keypress.IsAcceptKey(ch))
+		else if (Key_IsAcceptKey(ch))
 		{
 			// Execute command line (ENTER)
 			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
@@ -1932,7 +1932,7 @@ static bool C_HandleKey(const event_t* ev)
 			TabCycleClear();
 			return true;
 		}
-		else if (keypress.IsTabulationKey(ch))
+		else if (Key_IsTabulationKey(ch))
 		{
 			if (::KeysShifted)
 				TabComplete(TAB_COMPLETE_BACKWARD);
@@ -2022,7 +2022,8 @@ BOOL C_Responder(event_t *ev)
 	if (ev->type == ev_keyup)
 	{
 		// General Keys used by all systems
-		if (keypress.IsPageUpKey(ev->data1) || keypress.IsPageDownKey(ev->data1)) {
+		if (Key_IsPageUpKey(ev->data1) || Key_IsPageDownKey(ev->data1))
+		{
 			ScrollState = SCROLLNO;
 		}
 		else

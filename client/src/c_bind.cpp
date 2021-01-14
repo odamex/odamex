@@ -294,12 +294,12 @@ bool C_DoSpectatorKey (event_t *ev)
 	if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	if (ev->type == ev_keydown && keypress.IsSpyPrevKey(ev->data1))
+	if (ev->type == ev_keydown && Key_IsSpyPrevKey(ev->data1))
 	{
 		AddCommandString("spyprev", ev->data1);
 		return true;
 	}
-	if (ev->type == ev_keydown && keypress.IsSpyNextKey(ev->data1))
+	if (ev->type == ev_keydown && Key_IsSpyNextKey(ev->data1))
 	{
 		AddCommandString("spynext", ev->data1);
 		return true;
