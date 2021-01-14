@@ -118,6 +118,33 @@ std::string M_GetUserDir()
 #endif
 }
 
+std::string M_GetWriteDir()
+{
+#if defined(_XBOX)
+	return "T:" PATHSEP;
+#else
+	// Has Odamex been installed?
+	std::string installed = M_GetBinaryDir() + PATHSEP "odamex-installed.txt";
+	if (M_FileExists(installed))
+	{
+		// Does the user folder exist?
+		std::string userPath = M_GetUserDir();
+		int ok = SHCreateDirectoryEx(NULL, userPath.c_str(), NULL);
+		if (ok == ERROR_SUCCESS || ok == ERROR_ALREADY_EXISTS)
+		{
+			return M_CleanPath(userPath);
+		}
+		else
+		{
+			I_FatalError("Failed to create %s directory.\n", userPath.c_str());
+		}
+	}
+
+	// Our path is relative to the current working directory.
+	return M_CleanPath(M_GetCWD());
+#endif
+}
+
 std::string M_GetUserFileName(const std::string& file)
 {
 #if defined(_XBOX)
@@ -145,36 +172,15 @@ std::string M_GetUserFileName(const std::string& file)
 		return file;
 	}
 
-	// Has Odamex been installed?
-	std::string installed = M_GetBinaryDir() + PATHSEP "odamex-installed.txt";
-	if (M_FileExists(installed))
-	{
-		// Does the user folder exist?
-		std::string userPath = M_GetUserDir();
-		int ok = SHCreateDirectoryEx(NULL, userPath.c_str(), NULL);
-		if (ok == ERROR_SUCCESS || ok == ERROR_ALREADY_EXISTS)
-		{
-			// User directory exists - point to it.
-			userPath += PATHSEP;
-			userPath += file;
-
-			return M_CleanPath(userPath);
-		}
-		else
-		{
-			I_FatalError("Failed to create %s directory.\n", userPath.c_str());
-		}
-	}
-
-	// Our path is relative to the current working directory.
-	std::string path = M_GetCWD();
+	// Direct our path to our write directory.
+	std::string path = M_GetWriteDir();
 	if (!M_IsPathSep(*(path.end() - 1)))
 	{
 		path += PATHSEP;
 	}
 	path += file;
 
-	return M_CleanPath(path);
+	return path;
 #endif
 }
 

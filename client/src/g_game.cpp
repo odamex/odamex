@@ -102,9 +102,6 @@ EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
-extern angle_t			LocalViewAngle;
-extern int				LocalViewPitch;
-
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 BOOL 			respawnmonsters;
@@ -359,6 +356,9 @@ extern constate_e ConsoleState;
 //
 void G_BuildTiccmd(ticcmd_t *cmd)
 {
+	::localview.skipangle = false;
+	::localview.skippitch = false;
+
 	ticcmd_t* base = I_BaseTiccmd();	// empty or external driver
 	memcpy(cmd, base, sizeof(*cmd));
 
@@ -395,18 +395,30 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	else
 	{
 		if (Actions[ACTION_RIGHT])
+		{
 			cmd->yaw -= angleturn[tspeed];
+			::localview.skipangle = true;
+		}
 		if (Actions[ACTION_LEFT])
+		{
 			cmd->yaw += angleturn[tspeed];
+			::localview.skipangle = true;
+		}
 	}
 
 	// Joystick analog strafing -- Hyper_Eye
 	side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
 
 	if (Actions[ACTION_LOOKUP])
+	{
 		look += lookspeed[speed];
+		::localview.skippitch = true;
+	}
 	if (Actions[ACTION_LOOKDOWN])
+	{
 		look -= lookspeed[speed];
+		::localview.skippitch = true;
+	}
 
 	if (Actions[ACTION_MOVEUP])
 		fly += flyspeed[speed];
@@ -416,9 +428,15 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_KLOOK])
 	{
 		if (Actions[ACTION_FORWARD])
+		{
 			look += lookspeed[speed];
+			::localview.skippitch = true;
+		}
 		if (Actions[ACTION_BACK])
+		{
 			look -= lookspeed[speed];
+			::localview.skippitch = true;
+		}
 	}
 	else
 	{
@@ -435,6 +453,8 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
 		else
 			look -= (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+
+		::localview.skippitch = true;
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
@@ -481,10 +501,19 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 			cmd->impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
 	}
 
-	if (strafe || lookstrafe)
-		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
-	else
-		cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
+	if (::joyturn)
+	{
+		if (strafe || lookstrafe)
+		{
+			side += (int)(((float)::joyturn / (float)SHRT_MAX) * ::sidemove[speed]);
+		}
+		else
+		{
+			cmd->yaw -= (short)((((float)::joyturn / (float)SHRT_MAX) * ::angleturn[1]) *
+			                    (joy_sensitivity / 10));
+		}
+		::localview.skipangle = true;
+	}
 
 	if (Actions[ACTION_MLOOK])
 	{
@@ -492,6 +521,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 			look += (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
 		else
 			look -= (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+		::localview.skippitch = true;
 	}
 	else
 	{
@@ -543,6 +573,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	{
 		turntick--;
 		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
+		::localview.skipangle = true;
 	}
 
 	if (sendcenterview)
@@ -553,21 +584,23 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	else
 	{
 		// [AM] LocalViewPitch is an offset on look.
-		cmd->pitch = look + (LocalViewPitch >> 16);
+		cmd->pitch = look + (::localview.pitch >> 16);
 	}
 	
-	if (LocalViewAngle)
+	if (::localview.setangle)
 	{
 		// [AM] LocalViewAngle is a global angle, only pave over the existing
 		//      yaw if we have local yaw.
-		cmd->yaw = LocalViewAngle >> 16;
+		cmd->yaw = ::localview.angle >> 16;
 	}
 
 	if (!longtics)
 		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
 
-	LocalViewAngle = 0;
-	LocalViewPitch = 0;
+	::localview.angle = 0;
+	::localview.setangle = false;
+	::localview.pitch = 0;
+	::localview.setpitch = false;
 }
 
 
@@ -624,7 +657,10 @@ void G_AddViewAngle(int yaw)
 		return;
 
 	if (!Actions[ACTION_STRAFE] && !lookstrafe)
-		LocalViewAngle -= yaw << 16;
+	{
+		localview.angle -= yaw << 16;
+		localview.setangle = true;
+	}
 }
 
 void G_AddViewPitch(int pitch)
@@ -635,8 +671,12 @@ void G_AddViewPitch(int pitch)
 	if (invertmouse)
 		pitch = -pitch;
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) || consoleplayer().spectator)
-		LocalViewPitch += pitch << 16;
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
+	    consoleplayer().spectator)
+	{
+		localview.pitch += pitch << 16;
+		localview.setpitch = true;
+	}
 }
 
 bool G_ShouldIgnoreMouseInput()

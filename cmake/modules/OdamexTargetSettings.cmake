@@ -54,7 +54,9 @@ function(odamex_target_settings _TARGET)
 
   # Add checked compile options - mostly taken from:
   # https://kristerw.blogspot.com/2017/09/useful-gcc-warning-options-not-enabled.html
-  if(NOT MSVC)
+  if(MSVC)
+    checked_add_compile_flag(CHECKED_OPTIONS /wd26812 WD_26812)
+  else()
     checked_add_compile_flag(CHECKED_OPTIONS -Wduplicated-cond W_DUPLICATED_COND)
     checked_add_compile_flag(CHECKED_OPTIONS -Wduplicated-branches W_DUPLICATED_BRANCHES)
     checked_add_compile_flag(CHECKED_OPTIONS -Wrestrict W_RESTRICT)

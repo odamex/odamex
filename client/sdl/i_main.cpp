@@ -111,10 +111,24 @@ int main(int argc, char *argv[])
 #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
+
+		const char* CON_FILE = ::Args.CheckValue("-confile");
+		if (CON_FILE)
+		{
+			CON.open(CON_FILE, std::ios::in);
+		}
 
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])

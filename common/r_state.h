@@ -123,6 +123,15 @@ inline FArchive &operator>> (FArchive &arc, line_t *&line)
 	return arc;
 }
 
+struct LocalView
+{
+	angle_t angle;
+	bool setangle;
+	bool skipangle;
+	int pitch;
+	bool setpitch;
+	bool skippitch;
+};
 
 //
 // POV data.
@@ -132,6 +141,7 @@ extern fixed_t			viewy;
 extern fixed_t			viewz;
 
 extern angle_t			viewangle;
+extern LocalView		localview;
 extern AActor*			camera;		// [RH] camera instead of viewplayer
 
 extern angle_t			clipangle;
