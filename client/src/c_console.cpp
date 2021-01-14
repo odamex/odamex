@@ -2262,7 +2262,9 @@ void C_RevealSecret()
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint("A secret is revealed!");
-	S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
+
+	if (hud_revealsecrets == 1 || hud_revealsecrets == 3)
+		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")

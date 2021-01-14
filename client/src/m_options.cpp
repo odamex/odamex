@@ -902,6 +902,13 @@ static value_t Languages[] = {
 	{ 3.0, "Italian" }
 };
 
+static value_t SecretOptions[] = {
+    {0.0, "Off"}, 
+	{1.0, "On (with sounds)"}, 
+	{2.0, "On (w/o sounds)"}, 
+	{3.0, "Own only"}, 
+};
+
 static menuitem_t MessagesItems[] = {
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
@@ -915,7 +922,7 @@ static menuitem_t MessagesItems[] = {
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
     { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
 	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
-	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
+	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{4.0}, {0.0},   {0.0}, {SecretOptions} },
 
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -2265,7 +2272,7 @@ static void UpdateStuff (void)
 void Reset2Defaults (void)
 {
 	AddCommandString ("unbindall; binddefaults");
-	cvar_t::C_SetCVarsToDefaults(CVAR_ARCHIVE | CVAR_CLIENTARCHIVE);
+	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
 	UpdateStuff();
 }
 

@@ -1215,7 +1215,7 @@ void ST_drawWidgets(bool force_refresh)
 
 	STlib_updateNum(&w_frags, force_refresh);
 
-	STlib_updateNum(&w_lives, force_refresh);
+	STlib_updateNum(&w_lives, true);	// Force refreshing to avoid tens to be hidden by Doomguy's face
 }
 
 

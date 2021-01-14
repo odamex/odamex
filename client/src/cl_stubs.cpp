@@ -50,6 +50,12 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 	Printf(printlevel, "%s", str.c_str());
 }
 
+FORMAT_PRINTF(1, 2)
+void STACK_ARGS SV_BroadcastPrintf(const char* format, ...)
+{
+	SV_BroadcastPrintf(PRINT_HIGH, format);
+}
+
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
