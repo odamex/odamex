@@ -197,6 +197,15 @@ bool G_CanScoreChange()
 }
 
 /**
+ * @brief Check to see if we should show a join timer.
+ */
+bool G_CanShowJoinTimer()
+{
+	return ::g_lives > 0 && ::levelstate.getState() == LevelState::INGAME &&
+	       ::levelstate.getJoinTimeLeft() > 0;
+}
+
+/**
  * @brief Check if obituaries are allowed to be shown.
  */
 bool G_CanShowObituary()

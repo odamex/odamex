@@ -238,8 +238,7 @@ std::string HelpText()
 		return str;
 	}
 
-	if (::levelstate.getState() == LevelState::INGAME &&
-	    ::levelstate.getJoinTimeLeft() > 0)
+	if (G_CanShowJoinTimer())
 	{
 		StrFormat(str,
 		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
