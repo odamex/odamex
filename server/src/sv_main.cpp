@@ -4576,18 +4576,15 @@ static void TimeCheck()
 	}
 }
 
-void SV_IntermissionTimeCheck()
+static void IntermissionTimeCheck()
 {
-	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
-		return;
-
-	level.inttimeleft = mapchange/TICRATE;
+	level.inttimeleft = mapchange / TICRATE;
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
 	// [ML] 2012-2-1 - Copy it for intermission fun
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			MSG_WriteMarker(&(it->client.netbuf), svc_inttimeleft);
 			MSG_WriteShort(&(it->client.netbuf), level.inttimeleft);
@@ -4614,7 +4611,7 @@ void SV_GameTics (void)
 			Vote_Runtic();
 		break;
 		case GS_INTERMISSION:
-			SV_IntermissionTimeCheck();
+			IntermissionTimeCheck();
 		break;
 
 		default:

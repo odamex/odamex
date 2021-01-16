@@ -770,21 +770,23 @@ void drawHeader(player_t *player, int y)
 
 	// Right
 	std::string timer, fraglimit, scorelimit;
-	if (gamestate == GS_INTERMISSION)
-		timer = hud::IntermissionTimer();
-	else
-		timer = hud::Timer();
-
 	StringTokens names, values;
 
-	// Timelimit.
-	if (sv_timelimit > 0.0)
+	if (::gamestate == GS_INTERMISSION)
 	{
-		if (hud_timer == 2 && ::gamestate != GS_INTERMISSION)
+		names.push_back("NEXT MAP IN: ");
+		timer = hud::IntermissionTimer();
+		values.push_back(timer);
+	}
+	else if (sv_timelimit > 0.0)
+	{
+		// Timelimit.
+		if (hud_timer == 2)
 			names.push_back("TIME: ");
 		else
 			names.push_back("TIME LEFT: ");
 
+		timer = hud::Timer();
 		values.push_back(timer);
 	}
 

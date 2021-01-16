@@ -344,7 +344,7 @@ std::string IntermissionTimer()
 		timeleft = 0;
 
 	OTimespan tspan;
-	TicsToTime(tspan, level.inttimeleft);
+	TicsToTime(tspan, timeleft);
 
 	std::string str;
 	if (tspan.hours)
