@@ -648,13 +648,13 @@ CVAR_RANGE(		r_painintensity, "0.5", "Intensity of red pain effect",
 CVAR(			r_viewsize, "0", "Set to the current video resolution",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_defwidth, "640", "",
+CVAR_FUNC_DECL(	vid_defwidth, "1280", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_defheight, "480", "",
+CVAR_FUNC_DECL(	vid_defheight, "720", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
+CVAR_FUNC_DECL(	vid_widescreen, "1", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
