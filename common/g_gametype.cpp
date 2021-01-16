@@ -223,6 +223,16 @@ bool G_CanTickGameplay()
 }
 
 /**
+ * @brief Check to see if level is in specific state.
+ *
+ * @param state Levelstate to check against.
+ */
+bool G_IsLevelState(LevelState::States state)
+{
+	return ::levelstate.getState() == state;
+}
+
+/**
  * @brief Check if the passed team is on defense.
  *
  * @param team Team to check.

@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include "g_levelstate.h"
 #include "teaminfo.h"
 
 enum JoinResult
@@ -49,6 +50,7 @@ bool G_CanScoreChange();
 bool G_CanShowJoinTimer();
 bool G_CanShowObituary();
 bool G_CanTickGameplay();
+bool G_IsLevelState(LevelState::States state);
 bool G_IsDefendingTeam(team_t team);
 bool G_IsCoopGame();
 bool G_IsFFAGame();
