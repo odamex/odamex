@@ -43,6 +43,69 @@ EXTERN_CVAR(g_postroundtime)
 LevelState levelstate;
 
 /**
+ * @brief Countdown getter.
+ */
+int LevelState::getCountdown() const
+{
+	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
+		return 0;
+
+	int period = m_countdownDoneTime - ::level.time;
+	if (period < 0)
+	{
+		// Time desync at the start of a round, force to maximum.
+		return g_preroundtime.asInt();
+	}
+
+	return ceil(period / (float)TICRATE);
+}
+
+/**
+ * @brief Return which team is on defense this round.
+ */
+team_t LevelState::getDefendingTeam() const
+{
+	if (!g_sides || !G_IsTeamGame())
+	{
+		return TEAM_NONE;
+	}
+
+	// Blue always goes first, then red, then so on...
+	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
+	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	return static_cast<team_t>(round0 % teams);
+}
+
+/**
+ * @brief Get ingame start time.
+ */
+int LevelState::getIngameStartTime() const
+{
+	return m_ingameStartTime;
+}
+
+/**
+ * @brief Amount of time left for a player to join the game.
+ */
+int LevelState::getJoinTimeLeft() const
+{
+	if (m_state != LevelState::INGAME)
+		return 0;
+
+	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
+	int left = ceil((end_time - ::level.time) / (float)TICRATE);
+	return MAX(left, 0);
+}
+
+/**
+ * @brief Get the current round number.
+ */
+int LevelState::getRound() const
+{
+	return m_roundNumber;
+}
+
+/**
  * @brief State getter.
  */
 LevelState::States LevelState::getState() const
@@ -77,66 +140,11 @@ const char* LevelState::getStateString() const
 }
 
 /**
- * @brief Countdown getter.
- */
-int LevelState::getCountdown() const
-{
-	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
-		return 0;
-
-	int period = m_countdownDoneTime - ::level.time;
-	if (period < 0)
-	{
-		// Time desync at the start of a round, force to maximum.
-		return g_preroundtime.asInt();
-	}
-
-	return ceil(period / (float)TICRATE);
-}
-
-/**
- * @brief Get the current round number.
- */
-int LevelState::getRound() const
-{
-	return m_roundNumber;
-}
-
-/**
- * @brief Amount of time left for a player to join the game.
- */
-int LevelState::getJoinTimeLeft() const
-{
-	if (m_state != LevelState::INGAME)
-		return 0;
-
-	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
-	int left = ceil((end_time - ::level.time) / (float)TICRATE);
-	return MAX(left, 0);
-}
-
-/**
  * @brief Get the most recent win information.
  */
 WinInfo LevelState::getWinInfo() const
 {
 	return m_lastWininfo;
-}
-
-/**
- * @brief Return which team is on defense this round.
- */
-team_t LevelState::getDefendingTeam() const
-{
-	if (!g_sides || !G_IsTeamGame())
-	{
-		return TEAM_NONE;
-	}
-
-	// Blue always goes first, then red, then so on...
-	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
-	int round0 = MAX(::levelstate.getRound() - 1, 0);
-	return static_cast<team_t>(round0 % teams);
 }
 
 /**
