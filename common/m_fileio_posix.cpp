@@ -140,7 +140,13 @@ std::string M_GetUserDir()
 
 std::string M_GetWriteDir()
 {
-	std::string path = M_GetUserDir();
+	// Our path is relative to the home directory.
+	std::string path = M_GetHomeDir();
+	if (!M_IsPathSep(*(path.end() - 1)))
+	{
+		path += PATHSEP;
+	}
+	path += ".odamex";
 
 	// Create the directory.
 	struct stat info;
@@ -165,6 +171,10 @@ std::string M_GetWriteDir()
 
 std::string M_GetUserFileName(const std::string& file)
 {
+
+#ifdef __SWITCH__
+		std::string path = file;
+#else
 	// Is absolute path?  If so, stop here.
 	size_t fileLen = file.length();
 	if (fileLen >= 1 && M_IsPathSep(file[0]))
