@@ -42,6 +42,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_warmup)
 
 /**
  * @brief Returns a string containing the name of the gametype.
@@ -194,6 +195,22 @@ bool G_CanReadyToggle()
 bool G_CanScoreChange()
 {
 	return ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check if we should show a FIGHT message on INGAME.
+ */
+bool G_CanShowFightMessage()
+{
+	// Multiple rounds should always show them.
+	if (G_IsRoundsGame())
+		return true;
+
+	// Using warmup makes the levelstate HUD show up a bunch.
+	if (::sv_warmup)
+		return true;
+
+	return false;
 }
 
 /**

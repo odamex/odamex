@@ -47,6 +47,7 @@ bool G_CanLivesChange();
 bool G_CanPickupObjective(team_t team);
 bool G_CanReadyToggle();
 bool G_CanScoreChange();
+bool G_CanShowFightMessage();
 bool G_CanShowJoinTimer();
 bool G_CanShowObituary();
 bool G_CanTickGameplay();

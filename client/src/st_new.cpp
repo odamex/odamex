@@ -785,7 +785,10 @@ void LevelStateHUD()
 		StrFormat(str, "Round %d\n", ::levelstate.getRound());
 		break;
 	case LevelState::INGAME:
-		str = "FIGHT\n";
+		if (G_CanShowFightMessage())
+			str = "FIGHT!\n";
+		else
+			str = "";
 		break;
 	case LevelState::ENDROUND_COUNTDOWN:
 		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
