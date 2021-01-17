@@ -3294,7 +3294,7 @@ void SV_UpdateSecretCount(player_t& player)
 
 		client_t* cl = &(it->client);
 
-		SVC_SecretFound(cl->reliablebuf, it->id);
+		SVC_SecretFound(cl->reliablebuf, player.id);
 	}
 }
 
