@@ -202,6 +202,11 @@ bool G_CanScoreChange()
  */
 bool G_CanShowFightMessage()
 {
+	// Don't show a call-to-action when there's nobody ingame to answer.
+	PlayerResults pr = PlayerQuery().execute();
+	if (pr.count <= 0)
+		return false;
+
 	// Multiple rounds should always show them.
 	if (G_IsRoundsGame())
 		return true;
