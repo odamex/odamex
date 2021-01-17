@@ -612,38 +612,38 @@ static int TranslateKey(SDL_Keysym *sym)
 {
     switch(sym->sym)
     {
-        case SDLK_LEFT:        return KEY_LEFTARROW;
-        case SDLK_RIGHT:       return KEY_RIGHTARROW;
-        case SDLK_DOWN:        return KEY_DOWNARROW;
-        case SDLK_UP:          return KEY_UPARROW;
-        case SDLK_ESCAPE:      return KEY_ESCAPE;
-        case SDLK_RETURN:      return KEY_ENTER;
-        case SDLK_TAB:         return KEY_TAB;
-        case SDLK_F1:          return KEY_F1;
-        case SDLK_F2:          return KEY_F2;
-        case SDLK_F3:          return KEY_F3;
-        case SDLK_F4:          return KEY_F4;
-        case SDLK_F5:          return KEY_F5;
-        case SDLK_F6:          return KEY_F6;
-        case SDLK_F7:          return KEY_F7;
-        case SDLK_F8:          return KEY_F8;
-        case SDLK_F9:          return KEY_F9;
-        case SDLK_F10:         return KEY_F10;
-        case SDLK_F11:         return KEY_F11;
-        case SDLK_F12:         return KEY_F12;
+        case SDLK_LEFT:        return OKEY_LEFTARROW;
+        case SDLK_RIGHT:       return OKEY_RIGHTARROW;
+        case SDLK_DOWN:        return OKEY_DOWNARROW;
+        case SDLK_UP:          return OKEY_UPARROW;
+        case SDLK_ESCAPE:      return OKEY_ESCAPE;
+        case SDLK_RETURN:      return OKEY_ENTER;
+        case SDLK_TAB:         return OKEY_TAB;
+        case SDLK_F1:          return OKEY_F1;
+        case SDLK_F2:          return OKEY_F2;
+        case SDLK_F3:          return OKEY_F3;
+        case SDLK_F4:          return OKEY_F4;
+        case SDLK_F5:          return OKEY_F5;
+        case SDLK_F6:          return OKEY_F6;
+        case SDLK_F7:          return OKEY_F7;
+        case SDLK_F8:          return OKEY_F8;
+        case SDLK_F9:          return OKEY_F9;
+        case SDLK_F10:         return OKEY_F10;
+        case SDLK_F11:         return OKEY_F11;
+        case SDLK_F12:         return OKEY_F12;
 
-        case SDLK_BACKSPACE:   return KEY_BACKSPACE;
-        case SDLK_DELETE:      return KEY_DEL;
+        case SDLK_BACKSPACE:   return OKEY_BACKSPACE;
+        case SDLK_DELETE:      return OKEY_DEL;
 
-        case SDLK_PAUSE:       return KEY_PAUSE;
+        case SDLK_PAUSE:       return OKEY_PAUSE;
 
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
-                               return KEY_RSHIFT;
+                               return OKEY_RSHIFT;
 
         case SDLK_LCTRL:
         case SDLK_RCTRL:
-                               return KEY_RCTRL;
+                               return OKEY_RCTRL;
 
         case SDLK_LALT:
         case SDLK_RALT:
@@ -651,24 +651,24 @@ static int TranslateKey(SDL_Keysym *sym)
         case SDLK_LMETA:
         case SDLK_RMETA:
 #endif
-                               return KEY_RALT;
+                               return OKEY_RALT;
 
-        case SDLK_CAPSLOCK:    return KEY_CAPSLOCK;
-        case SDLK_SCROLLOCK:   return KEY_SCRLCK;
+        case SDLK_CAPSLOCK:    return OKEY_CAPSLOCK;
+        case SDLK_SCROLLOCK:   return OKEY_SCRLCK;
 
         case SDLK_HOME:        return OKEY_HOME;
-        case SDLK_INSERT:      return KEY_INS;
-        case SDLK_END:         return KEY_END;
-        case SDLK_PAGEUP:      return KEY_PGUP;
-        case SDLK_PAGEDOWN:    return KEY_PGDN;
+        case SDLK_INSERT:      return OKEY_INS;
+        case SDLK_END:         return OKEY_END;
+        case SDLK_PAGEUP:      return OKEY_PGUP;
+        case SDLK_PAGEDOWN:    return OKEY_PGDN;
 
 #ifdef SDL_HAVE_APP_KEYS
-        case SDLK_APP1:        return KEY_F1;
-        case SDLK_APP2:        return KEY_F2;
-        case SDLK_APP3:        return KEY_F3;
-        case SDLK_APP4:        return KEY_F4;
-        case SDLK_APP5:        return KEY_F5;
-        case SDLK_APP6:        return KEY_F6;
+        case SDLK_APP1:        return OKEY_F1;
+        case SDLK_APP2:        return OKEY_F2;
+        case SDLK_APP3:        return OKEY_F3;
+        case SDLK_APP4:        return OKEY_F4;
+        case SDLK_APP5:        return OKEY_F5;
+        case SDLK_APP6:        return OKEY_F6;
 #endif
 
         default:               break;
@@ -702,24 +702,24 @@ static int TranslateKey(SDL_Keysym *sym)
 
         switch (sym->sym)
         {
-            case SDLK_KP0:         return KEYP_0;
-            case SDLK_KP1:         return KEYP_1;
-            case SDLK_KP2:         return KEYP_2;
-            case SDLK_KP3:         return KEYP_3;
-            case SDLK_KP4:         return KEYP_4;
-            case SDLK_KP5:         return KEYP_5;
-            case SDLK_KP6:         return KEYP_6;
-            case SDLK_KP7:         return KEYP_7;
-            case SDLK_KP8:         return KEYP_8;
-            case SDLK_KP9:         return KEYP_9;
+            case SDLK_KP0:         return OKEYP_0;
+            case SDLK_KP1:         return OKEYP_1;
+            case SDLK_KP2:         return OKEYP_2;
+            case SDLK_KP3:         return OKEYP_3;
+            case SDLK_KP4:         return OKEYP_4;
+            case SDLK_KP5:         return OKEYP_5;
+            case SDLK_KP6:         return OKEYP_6;
+            case SDLK_KP7:         return OKEYP_7;
+            case SDLK_KP8:         return OKEYP_8;
+            case SDLK_KP9:         return OKEYP_9;
 
-            case SDLK_KP_PERIOD:   return KEYP_PERIOD;
-            case SDLK_KP_MULTIPLY: return KEYP_MULTIPLY;
-            case SDLK_KP_PLUS:     return KEYP_PLUS;
-            case SDLK_KP_MINUS:    return KEYP_MINUS;
-            case SDLK_KP_DIVIDE:   return KEYP_DIVIDE;
-            case SDLK_KP_EQUALS:   return KEYP_EQUALS;
-            case SDLK_KP_ENTER:    return KEYP_ENTER;
+            case SDLK_KP_PERIOD:   return OKEYP_PERIOD;
+            case SDLK_KP_MULTIPLY: return OKEYP_MULTIPLY;
+            case SDLK_KP_PLUS:     return OKEYP_PLUS;
+            case SDLK_KP_MINUS:    return OKEYP_MINUS;
+            case SDLK_KP_DIVIDE:   return OKEYP_DIVIDE;
+            case SDLK_KP_EQUALS:   return OKEYP_EQUALS;
+            case SDLK_KP_ENTER:    return OKEYP_ENTER;
 
             default:
                 return tolower(sym->sym);
@@ -739,17 +739,17 @@ static int TranslateKey(SDL_Keysym *sym)
     {
         case SDL_SCANCODE_LCTRL:
         case SDL_SCANCODE_RCTRL:
-            return KEY_RCTRL;
+            return OKEY_RCTRL;
 
         case SDL_SCANCODE_LSHIFT:
         case SDL_SCANCODE_RSHIFT:
-            return KEY_RSHIFT;
+            return OKEY_RSHIFT;
 
         case SDL_SCANCODE_LALT:
-            return KEY_LALT;
+            return OKEY_LALT;
 
         case SDL_SCANCODE_RALT:
-            return KEY_RALT;
+            return OKEY_RALT;
 
         default:
             // Just for I_Endoom
@@ -929,61 +929,61 @@ static const char *SpecialKeyName(int key)
     switch (key)
     {
         case ' ':             return "SPACE";
-        case KEY_RIGHTARROW:  return "RIGHT";
-        case KEY_LEFTARROW:   return "LEFT";
-        case KEY_UPARROW:     return "UP";
-        case KEY_DOWNARROW:   return "DOWN";
-        case KEY_ESCAPE:      return "ESC";
-        case KEY_ENTER:       return "ENTER";
-        case KEY_TAB:         return "TAB";
-        case KEY_F1:          return "F1";
-        case KEY_F2:          return "F2";
-        case KEY_F3:          return "F3";
-        case KEY_F4:          return "F4";
-        case KEY_F5:          return "F5";
-        case KEY_F6:          return "F6";
-        case KEY_F7:          return "F7";
-        case KEY_F8:          return "F8";
-        case KEY_F9:          return "F9";
-        case KEY_F10:         return "F10";
-        case KEY_F11:         return "F11";
-        case KEY_F12:         return "F12";
-        case KEY_BACKSPACE:   return "BKSP";
-        case KEY_PAUSE:       return "PAUSE";
-        case KEY_EQUALS:      return "EQUALS";
+        case OKEY_RIGHTARROW:  return "RIGHT";
+        case OKEY_LEFTARROW:   return "LEFT";
+        case OKEY_UPARROW:     return "UP";
+        case OKEY_DOWNARROW:   return "DOWN";
+        case OKEY_ESCAPE:      return "ESC";
+        case OKEY_ENTER:       return "ENTER";
+        case OKEY_TAB:         return "TAB";
+        case OKEY_F1:          return "F1";
+        case OKEY_F2:          return "F2";
+        case OKEY_F3:          return "F3";
+        case OKEY_F4:          return "F4";
+        case OKEY_F5:          return "F5";
+        case OKEY_F6:          return "F6";
+        case OKEY_F7:          return "F7";
+        case OKEY_F8:          return "F8";
+        case OKEY_F9:          return "F9";
+        case OKEY_F10:         return "F10";
+        case OKEY_F11:         return "F11";
+        case OKEY_F12:         return "F12";
+        case OKEY_BACKSPACE:   return "BKSP";
+        case OKEY_PAUSE:       return "PAUSE";
+        case OKEY_EQUALS:      return "EQUALS";
         case OKEY_MINUS:      return "MINUS";
-        case KEY_RSHIFT:      return "SHIFT";
-        case KEY_RCTRL:       return "CTRL";
-        case KEY_RALT:        return "ALT";
-        case KEY_CAPSLOCK:    return "CAPS";
-        case KEY_SCRLCK:      return "SCRLCK";
+        case OKEY_RSHIFT:      return "SHIFT";
+        case OKEY_RCTRL:       return "CTRL";
+        case OKEY_RALT:        return "ALT";
+        case OKEY_CAPSLOCK:    return "CAPS";
+        case OKEY_SCRLCK:      return "SCRLCK";
 	    case OKEY_HOME:       return "HOME";
-        case KEY_END:         return "END";
-        case KEY_PGUP:        return "PGUP";
-        case KEY_PGDN:        return "PGDN";
-        case KEY_INS:         return "INS";
-        case KEY_DEL:         return "DEL";
+        case OKEY_END:         return "END";
+        case OKEY_PGUP:        return "PGUP";
+        case OKEY_PGDN:        return "PGDN";
+        case OKEY_INS:         return "INS";
+        case OKEY_DEL:         return "DEL";
         // Just for I_Endoom
-        case KEY_PRINT:       return "PRTSC";
+        case OKEY_PRINT:       return "PRTSC";
                  /*
-        case KEYP_0:          return "PAD0";
-        case KEYP_1:          return "PAD1";
-        case KEYP_2:          return "PAD2";
-        case KEYP_3:          return "PAD3";
-        case KEYP_4:          return "PAD4";
-        case KEYP_5:          return "PAD5";
-        case KEYP_6:          return "PAD6";
-        case KEYP_7:          return "PAD7";
-        case KEYP_8:          return "PAD8";
-        case KEYP_9:          return "PAD9";
-        case KEYP_UPARROW:    return "PAD_U";
-        case KEYP_DOWNARROW:  return "PAD_D";
-        case KEYP_LEFTARROW:  return "PAD_L";
-        case KEYP_RIGHTARROW: return "PAD_R";
-        case KEYP_MULTIPLY:   return "PAD*";
-        case KEYP_PLUS:       return "PAD+";
-        case KEYP_MINUS:      return "PAD-";
-        case KEYP_DIVIDE:     return "PAD/";
+        case OKEYP_0:          return "PAD0";
+        case OKEYP_1:          return "PAD1";
+        case OKEYP_2:          return "PAD2";
+        case OKEYP_3:          return "PAD3";
+        case OKEYP_4:          return "PAD4";
+        case OKEYP_5:          return "PAD5";
+        case OKEYP_6:          return "PAD6";
+        case OKEYP_7:          return "PAD7";
+        case OKEYP_8:          return "PAD8";
+        case OKEYP_9:          return "PAD9";
+        case OKEYP_UPARROW:    return "PAD_U";
+        case OKEYP_DOWNARROW:  return "PAD_D";
+        case OKEYP_LEFTARROW:  return "PAD_L";
+        case OKEYP_RIGHTARROW: return "PAD_R";
+        case OKEYP_MULTIPLY:   return "PAD*";
+        case OKEYP_PLUS:       return "PAD+";
+        case OKEYP_MINUS:      return "PAD-";
+        case OKEYP_DIVIDE:     return "PAD/";
                    */
 
         default:              return NULL;

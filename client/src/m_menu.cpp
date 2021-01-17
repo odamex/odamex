@@ -1738,7 +1738,7 @@ bool M_Responder (event_t* ev)
 	// [RH] and Player Name string input
 	if (genStringEnter)
 	{
-		if (ch == KEY_BACKSPACE)
+		if (ch == OKEY_BACKSPACE)
 		{
 			if (saveCharIndex > 0)
 			{
@@ -1800,7 +1800,7 @@ bool M_Responder (event_t* ev)
 
 	// If devparm is set, pressing F1 always takes a screenshot no matter
 	// what it's bound to. (for those who don't bother to read the docs)
-	if (devparm && ch == KEY_F1) {
+	if (devparm && ch == OKEY_F1) {
 		G_ScreenShot (NULL);
 		return true;
 	}
@@ -1900,7 +1900,7 @@ bool M_Responder (event_t* ev)
 		}
 		else
 		{
-			if (ch2 && (ch < KEY_JOY1)) {
+			if (ch2 && (ch < OKEY_JOY1)) {
 				for (i = itemOn + 1; i < currentMenu->numitems; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{

@@ -2233,7 +2233,7 @@ void M_OptResponder (event_t *ev)
 		else
 		{
 #ifdef _XBOX
-		if (ev->data3 == 't' || ev->data1 == KEY_JOY3)
+		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
 #else
 		if (ev->data3 == 't')
 #endif

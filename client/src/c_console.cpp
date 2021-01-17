@@ -1830,7 +1830,7 @@ static bool C_HandleKey(const event_t* ev)
 	}
 
 #ifdef __SWITCH__
-	if (ev->data1 == KEY_JOY3)
+	if (ev->data1 == OKEY_JOY3)
 {
 	char oldtext[64], text[64], fulltext[65];		
 
@@ -1947,31 +1947,31 @@ static bool C_HandleKey(const event_t* ev)
 	case OKEY_HOME:
 		CmdLine.moveCursorHome();
 		return true;
-	case KEY_END:
+	case OKEY_END:
 		CmdLine.moveCursorEnd();
 		return true;		
-	case KEY_BACKSPACE:
+	case OKEY_BACKSPACE:
 		CmdLine.backspace();
 		TabCycleClear();
 		return true;
-	case KEY_DEL:
+	case OKEY_DEL:
 		CmdLine.deleteCharacter();
 		TabCycleClear();
 		return true;
-	case KEY_LALT:
-	case KEY_RALT:
+	case OKEY_LALT:
+	case OKEY_RALT:
 		// Do nothing
 		return true;
-	case KEY_LCTRL:
-	case KEY_RCTRL:
+	case OKEY_LCTRL:
+	case OKEY_RCTRL:
 		KeysCtrl = true;
 		return true;
-	case KEY_LSHIFT:
-	case KEY_RSHIFT:
+	case OKEY_LSHIFT:
+	case OKEY_RSHIFT:
 		// SHIFT was pressed
 		KeysShifted = true;
 		return true;
-	case KEY_MOUSE3:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
 		CmdCompletions.clear();
@@ -2031,12 +2031,12 @@ BOOL C_Responder(event_t *ev)
 			// Keyboard keys only
 			switch (ev->data1)
 			{
-			case KEY_LCTRL:
-			case KEY_RCTRL:
+			case OKEY_LCTRL:
+			case OKEY_RCTRL:
 				KeysCtrl = false;
 				break;
-			case KEY_LSHIFT:
-			case KEY_RSHIFT:
+			case OKEY_LSHIFT:
+			case OKEY_RSHIFT:
 				KeysShifted = false;
 				break;
 			default:

@@ -35,12 +35,12 @@ bool Key_IsUpKey(int key)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == KEY_JOY12);    
+            return (key == OKEY_JOY12);    
     default:
         break;
     }
 
-    return (key == KEY_HAT1 || key == KEY_UPARROW || key == KEYP_8 || key == KEY_JOY12);
+    return (key == OKEY_HAT1 || key == OKEY_UPARROW || key == OKEYP_8 || key == OKEY_JOY12);
 }
 
 //
@@ -51,12 +51,12 @@ bool Key_IsDownKey(int key)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == KEY_JOY13);   
+            return (key == OKEY_JOY13);   
     default:
         break;
     }
 
-    return (key == KEY_HAT3 || key == KEY_DOWNARROW || key == KEYP_2 || key == KEY_JOY13);
+    return (key == OKEY_HAT3 || key == OKEY_DOWNARROW || key == OKEYP_2 || key == OKEY_JOY13);
 }
 
 //
@@ -65,17 +65,17 @@ bool Key_IsDownKey(int key)
 bool Key_IsLeftKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_LEFTARROW || key == KEYP_4);
+    bool keyboard = (key == OKEY_LEFTARROW || key == OKEYP_4);
 
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == KEY_JOY14);   
+            return (key == OKEY_JOY14);   
     default:
         break;
     }
 
-    return (key == KEY_HAT4 || keyboard || key == KEY_JOY14);
+    return (key == OKEY_HAT4 || keyboard || key == OKEY_JOY14);
 }
 
 //
@@ -84,53 +84,53 @@ bool Key_IsLeftKey(int key)
 bool Key_IsRightKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_RIGHTARROW || key == KEYP_6);
+    bool keyboard = (key == OKEY_RIGHTARROW || key == OKEYP_6);
 
     switch (platform)
     {
     case PF_WII:
         return keyboard;
     case PF_SWITCH:
-        return (key == KEY_JOY15);  
+        return (key == OKEY_JOY15);  
     default:
         break;
     }
 
-    return (key == KEY_HAT2 || keyboard || key == KEY_JOY15);
+    return (key == OKEY_HAT2 || keyboard || key == OKEY_JOY15);
 }
 
 bool Key_IsPageUpKey(int key)
 {
-    bool keyboard = (key == KEY_PGUP);
+    bool keyboard = (key == OKEY_PGUP);
 
     switch (platform)
     {
         case PF_XBOX:
-            return (key == KEY_JOY7 || keyboard);
+            return (key == OKEY_JOY7 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY11);  
+            return (key == OKEY_JOY11);  
         default:
             break;
     }
 
-    return (keyboard || key == KEY_JOY10);
+    return (keyboard || key == OKEY_JOY10);
 }
 
 bool Key_IsPageDownKey(int key)
 {
-    bool keyboard = (key == KEY_PGDN);
+    bool keyboard = (key == OKEY_PGDN);
 
     switch (platform)
     {
         case PF_XBOX:
-            return (key == KEY_JOY8 || keyboard);
+            return (key == OKEY_JOY8 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY10);  
+            return (key == OKEY_JOY10);  
     default:
         break;
     }
 
-    return (keyboard || key == KEY_JOY11);
+    return (keyboard || key == OKEY_JOY11);
 }
 
 //
@@ -139,19 +139,19 @@ bool Key_IsPageDownKey(int key)
 bool Key_IsAcceptKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_ENTER || key == KEYP_ENTER);
+    bool keyboard = (key == OKEY_ENTER || key == OKEYP_ENTER);
 
     switch (platform)
     {
         case PF_WII:
-            return (key == KEY_JOY10 || keyboard);
+            return (key == OKEY_JOY10 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY2);  
+            return (key == OKEY_JOY2);  
         default:
             break;
     }
 
-    return key == KEY_JOY1 || keyboard;
+    return key == OKEY_JOY1 || keyboard;
 }
 
 //
@@ -160,19 +160,19 @@ bool Key_IsAcceptKey(int key)
 bool Key_IsCancelKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_ESCAPE);
+    bool keyboard = (key == OKEY_ESCAPE);
 
     switch (platform)
     {
         case PF_WII:
-            return (key == KEY_JOY11 || key == KEY_JOY1 || keyboard);
+            return (key == OKEY_JOY11 || key == OKEY_JOY1 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY1);  
+            return (key == OKEY_JOY1);  
         default:
             break;
     }
 
-    return (key == KEY_JOY2 || keyboard);
+    return (key == OKEY_JOY2 || keyboard);
 }
 
 //
@@ -183,14 +183,14 @@ bool Key_IsYesKey(int key)
     switch (platform)
     {
     case PF_WII:
-        return (key == KEY_JOY10 || key == KEY_JOY1); // A | (a)
+        return (key == OKEY_JOY10 || key == OKEY_JOY1); // A | (a)
     case PF_SWITCH:
-            return (key == KEY_JOY2);  
+            return (key == OKEY_JOY2);  
     default:
         break;
     }
 
-    return (key == KEY_JOY1);
+    return (key == OKEY_JOY1);
 }
 
 //
@@ -199,19 +199,19 @@ bool Key_IsYesKey(int key)
 bool Key_IsNoKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_ESCAPE);
+    bool keyboard = (key == OKEY_ESCAPE);
 
     switch (platform)
     {
     case PF_WII:
-        return (key == KEY_JOY11 || key == KEY_JOY2 || keyboard);
+        return (key == OKEY_JOY11 || key == OKEY_JOY2 || keyboard);
     case PF_SWITCH:
-        return (key == KEY_JOY2); 
+        return (key == OKEY_JOY2); 
    default:
         break;
     }
 
-    return (key == KEY_JOY2 || keyboard);
+    return (key == OKEY_JOY2 || keyboard);
 }
 
 //
@@ -220,51 +220,51 @@ bool Key_IsNoKey(int key)
 bool Key_IsMenuKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_ESCAPE);
+    bool keyboard = (key == OKEY_ESCAPE);
 
     switch (platform)
     {
     case PF_WII:
         // if (I_WhatWiiController() == WIICTRL_WIIMOTE)
-        return (key == KEY_JOY7 || key == KEY_JOY19 || keyboard); // (HOME on Wiimote | START - Pro Controller)
+        return (key == OKEY_JOY7 || key == OKEY_JOY19 || keyboard); // (HOME on Wiimote | START - Pro Controller)
                                                                   /*  else if (I_WhatWiiController() == WIICTRL_GAMECUBE)
-                return (key == KEY_JOY7 || keyboard);                      // Start*/
+                return (key == OKEY_JOY7 || keyboard);                      // Start*/
         break;
     case PF_XBOX:
-        return (key == KEY_JOY9 || keyboard);
+        return (key == OKEY_JOY9 || keyboard);
         case PF_SWITCH:
-            return (key == KEY_JOY7);    // (+)
+            return (key == OKEY_JOY7);    // (+)
     default:
         break;
     }
 
-    return (keyboard || key == KEY_JOY7);
+    return (keyboard || key == OKEY_JOY7);
 }
 
 bool Key_IsUnbindKey(int key)
 {
     // Default Keyboard press
-    bool keyboard = (key == KEY_BACKSPACE);
+    bool keyboard = (key == OKEY_BACKSPACE);
 
     switch (platform)
     {
     case PF_WII:
         return keyboard;
     case PF_XBOX:
-        return (key == KEY_JOY9 || keyboard); // ?
+        return (key == OKEY_JOY9 || keyboard); // ?
     case PF_SWITCH:
-        return (key == KEY_JOY4); // X
+        return (key == OKEY_JOY4); // X
     default:
         break;
     }
 
-    return (keyboard || key == KEY_JOY4);
+    return (keyboard || key == OKEY_JOY4);
 }
 
 bool Key_IsSpyNextKey(int key)
 {
     // Default Keyboard press
-    bool mouse = (key == KEY_MWHEELDOWN);
+    bool mouse = (key == OKEY_MWHEELDOWN);
 
     switch (platform)
     {
@@ -273,18 +273,18 @@ bool Key_IsSpyNextKey(int key)
     case PF_XBOX:
         return (mouse); // TODO : Need to be RIGHT
     case PF_SWITCH:
-        return (key == KEY_JOY15);   // DPAD-RIGHT
+        return (key == OKEY_JOY15);   // DPAD-RIGHT
     default:
         break;
     }
 
-    return (mouse || key == KEY_JOY15);
+    return (mouse || key == OKEY_JOY15);
 }
 
 bool Key_IsSpyPrevKey(int key)
 {
     // Default Keyboard press
-    bool mouse = (key == KEY_MWHEELUP);
+    bool mouse = (key == OKEY_MWHEELUP);
 
     switch (platform)
     {
@@ -293,17 +293,17 @@ bool Key_IsSpyPrevKey(int key)
     case PF_XBOX:
         return (mouse); // TODO : Need to be LEFT
     case PF_SWITCH:
-        return (key == KEY_JOY13);   // DPAD-LEFT
+        return (key == OKEY_JOY13);   // DPAD-LEFT
     default:
         break;
     }
 
-    return (mouse || key == KEY_JOY14);
+    return (mouse || key == OKEY_JOY14);
 } 
 
 bool Key_IsTabulationKey(int key)
 {
-    bool keyboard = (key == KEY_TAB);
+    bool keyboard = (key == OKEY_TAB);
 
     switch (platform)
     {
@@ -324,7 +324,7 @@ bool FResponderKey::IsOSKeyboardKey(int key)
     switch (platform)
     {
     case PF_SWITCH:
-        return KEY_JOY3;
+        return OKEY_JOY3;
     default:
         break;
     }

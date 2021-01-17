@@ -491,21 +491,21 @@ void ISDL12MouseInputDevice::gatherEvents()
 				{
 					ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
 					if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-						ev.data1 = KEY_MOUSE1;
+						ev.data1 = OKEY_MOUSE1;
 					else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-						ev.data1 = KEY_MOUSE2;
+						ev.data1 = OKEY_MOUSE2;
 					else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-						ev.data1 = KEY_MOUSE3;
+						ev.data1 = OKEY_MOUSE3;
 					#if SDL_VERSION_ATLEAST(1, 2, 14)
 					else if (sdl_ev.button.button == SDL_BUTTON_X1)
-						ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+						ev.data1 = OKEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
 					else if (sdl_ev.button.button == SDL_BUTTON_X2)
-						ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+						ev.data1 = OKEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
 					#endif
 					else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
-						ev.data1 = KEY_MWHEELUP;
+						ev.data1 = OKEY_MWHEELUP;
 					else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
-						ev.data1 = KEY_MWHEELDOWN;
+						ev.data1 = OKEY_MWHEELDOWN;
 				}
 
 				mEvents.push(ev);
@@ -687,7 +687,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				sdl_ev.jbutton.which == mJoystickId)
 			{
 				event_t button_event;
-				button_event.data1 = sdl_ev.jbutton.button + KEY_JOY1;
+				button_event.data1 = sdl_ev.jbutton.button + OKEY_JOY1;
 				button_event.type = (sdl_ev.type == SDL_JOYBUTTONDOWN) ? ev_keydown : ev_keyup;
 				mEvents.push(button_event);
 			}
@@ -714,7 +714,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				for (int i = 0; i < 4; i++)
 				{
 					event_t hat_event;
-					hat_event.data1 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
+					hat_event.data1 = (sdl_ev.jhat.hat * 4) + OKEY_HAT1 + i;
 
 					// determine if the flag's state has changed (ignore it if it hasn't)
 					if (!(old_state & flags[i]) && (new_state & flags[i]))
@@ -1453,23 +1453,23 @@ void ISDL20MouseInputDevice::gatherEvents()
 				#endif
 
 				if (direction * sdl_ev.wheel.y > 0)
-					ev.data1 = KEY_MWHEELUP;
+					ev.data1 = OKEY_MWHEELUP;
 				else if (direction * sdl_ev.wheel.y < 0)
-					ev.data1 = KEY_MWHEELDOWN;
+					ev.data1 = OKEY_MWHEELDOWN;
 			}
 			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
 			{
 				ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
 				if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-					ev.data1 = KEY_MOUSE1;
+					ev.data1 = OKEY_MOUSE1;
 				else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-					ev.data1 = KEY_MOUSE2;
+					ev.data1 = OKEY_MOUSE2;
 				else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-					ev.data1 = KEY_MOUSE3;
+					ev.data1 = OKEY_MOUSE3;
 				else if (sdl_ev.button.button == SDL_BUTTON_X1)
-					ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+					ev.data1 = OKEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
 				else if (sdl_ev.button.button == SDL_BUTTON_X2)
-					ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+					ev.data1 = OKEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
 			}
 
 			if (ev.data1)
@@ -1639,7 +1639,7 @@ void ISDL20JoystickInputDevice::gatherEvents()
 				event_t button_event;
 				button_event.type =
 				    (sdl_ev.type == SDL_CONTROLLERBUTTONDOWN) ? ev_keydown : ev_keyup;
-				button_event.data1 = sdl_ev.cbutton.button + KEY_JOY1;
+				button_event.data1 = sdl_ev.cbutton.button + OKEY_JOY1;
 				mEvents.push(button_event);
 			}
 			else if (sdl_ev.type == SDL_CONTROLLERAXISMOTION &&
@@ -1661,7 +1661,7 @@ void ISDL20JoystickInputDevice::gatherEvents()
 					}
 
 					button_event.type = bPressed ? ev_keydown : ev_keyup;
-					button_event.data1 = KEY_JOY20; // LEFT TRIGGER
+					button_event.data1 = OKEY_JOY20; // LEFT TRIGGER
 					mEvents.push(button_event);
 				}
 
@@ -1677,7 +1677,7 @@ void ISDL20JoystickInputDevice::gatherEvents()
 					}
 
 					button_event.type = bPressed ? ev_keydown : ev_keyup;
-					button_event.data1 = KEY_JOY21;	// RIGHT TRIGGER
+					button_event.data1 = OKEY_JOY21;	// RIGHT TRIGGER
 					mEvents.push(button_event);
 				}
 				else
