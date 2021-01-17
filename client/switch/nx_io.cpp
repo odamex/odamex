@@ -10,22 +10,22 @@
 
 void NX_InitializeKeyNameTable(void)
 {
-	key_names[KEY_JOY1] = "(B)";
-	key_names[KEY_JOY2] = "(A)";
-	key_names[KEY_JOY3] = "(Y)";
-	key_names[KEY_JOY4] = "(X)";
-	key_names[KEY_JOY5] = "(-)";
-	key_names[KEY_JOY7] = "(+)";
-	key_names[KEY_JOY8] = "LNUB";
-	key_names[KEY_JOY9] = "RNUB";
-	key_names[KEY_JOY10] = "LSHOULDER";
-	key_names[KEY_JOY11] = "RSHOULDER";
-	key_names[KEY_JOY12] = "UP";
-	key_names[KEY_JOY13] = "DOWN";
-	key_names[KEY_JOY14] = "LEFT";
-	key_names[KEY_JOY15] = "RIGHT";
-	key_names[KEY_JOY20] = "LTRIGGER";
-	key_names[KEY_JOY21] = "RTRIGGER";
+	key_names[OKEY_JOY1] = "(B)";
+	key_names[OKEY_JOY2] = "(A)";
+	key_names[OKEY_JOY3] = "(Y)";
+	key_names[OKEY_JOY4] = "(X)";
+	key_names[OKEY_JOY5] = "(-)";
+	key_names[OKEY_JOY7] = "(+)";
+	key_names[OKEY_JOY8] = "LNUB";
+	key_names[OKEY_JOY9] = "RNUB";
+	key_names[OKEY_JOY10] = "LSHOULDER";
+	key_names[OKEY_JOY11] = "RSHOULDER";
+	key_names[OKEY_JOY12] = "UP";
+	key_names[OKEY_JOY13] = "DOWN";
+	key_names[OKEY_JOY14] = "LEFT";
+	key_names[OKEY_JOY15] = "RIGHT";
+	key_names[OKEY_JOY20] = "LTRIGGER";
+	key_names[OKEY_JOY21] = "RTRIGGER";
 }
 
 void NX_SetKeyboard(char *out, int out_len)
