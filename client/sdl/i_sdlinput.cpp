@@ -696,7 +696,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				float deadzone = (joy_deadzone * 32767);
 				event_t motion_event(ev_joystick);
 				motion_event.data2 = sdl_ev.jaxis.axis;
-				if ((sdl_ev.jaxis.value >= deadzone || (sdl_ev.jaxis.value <= -deadzone))
+				if ((sdl_ev.jaxis.value >= deadzone || (sdl_ev.jaxis.value <= -deadzone)))
 					motion_event.data3 = sdl_ev.jaxis.value;
 				mEvents.push(motion_event);
 			}
