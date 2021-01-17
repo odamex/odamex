@@ -143,6 +143,8 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_teamsinplay)
+
 EXTERN_CVAR (sv_downloadsites)
 EXTERN_CVAR (cl_downloadsites)
 
@@ -1010,7 +1012,7 @@ END_COMMAND (playerteam)
 BEGIN_COMMAND (changeteams)
 {
 	int iTeam = (int)consoleplayer().userinfo.team;
-	iTeam = ++iTeam % NUMTEAMS;
+	iTeam = ++iTeam % sv_teamsinplay.asInt();
 	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
@@ -2216,14 +2218,15 @@ void CL_UpdatePlayerState()
 	for (int i = 0; i < NUMAMMO; i++)
 		ammo[i] = MSG_ReadVarint();
 
-	statenum_t stnum[NUMPSPRITES];
+	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		int n = MSG_ReadByte();
-		if (n == 0xFF)
-			stnum[i] = S_NULL;
-		else
-			stnum[i] = static_cast<statenum_t>(n);
+		unsigned int state = MSG_ReadUnVarint();
+		if (state >= NUMSTATES)
+		{
+			continue;
+		}
+		stnum[i] = static_cast<statenum_t>(state);
 	}
 
 	player_t& player = idplayer(id);

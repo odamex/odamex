@@ -22,6 +22,7 @@ option(BUILD_SERVER "Build server target" 1)
 option(BUILD_LAUNCHER "Build launcher target" 1)
 option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
+option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
@@ -129,6 +130,9 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
 # Libraries
 add_subdirectory(libraries)
 
+# WAD building
+add_subdirectory(wad)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER)
   add_subdirectory(common)
@@ -170,8 +174,6 @@ if(NOT APPLE)
   set(CPACK_COMPONENT_ODALAUNCH_DEPENDS client)
   set(CPACK_COMPONENT_ODALAUNCH_DISPLAY_NAME "Odalaunch Odamex Server Browser and Launcher")
   set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
-
-  add_subdirectory(wad)
 
   file(GLOB CONFIG_SAMPLES config-samples/*.cfg)
   if(WIN32)

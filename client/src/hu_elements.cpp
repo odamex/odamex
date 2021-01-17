@@ -238,8 +238,7 @@ std::string HelpText()
 		return str;
 	}
 
-	if (::levelstate.getState() == LevelState::INGAME &&
-	    ::levelstate.getJoinTimeLeft() > 0)
+	if (G_CanShowJoinTimer())
 	{
 		StrFormat(str,
 		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
@@ -345,7 +344,7 @@ std::string IntermissionTimer()
 		timeleft = 0;
 
 	OTimespan tspan;
-	TicsToTime(tspan, level.inttimeleft);
+	TicsToTime(tspan, timeleft);
 
 	std::string str;
 	if (tspan.hours)

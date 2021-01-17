@@ -17,14 +17,24 @@
 //
 //
 // DESCRIPTION:
-//   Crash handling.
+//   Noop Crash handling.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_CRASH_H__
-#define __I_CRASH_H__
+#if defined _WIN32 && !defined _XBOX && defined _MSC_VER
+#elif defined UNIX && !defined GEKKO
+#else
 
-void I_SetCrashCallbacks();
-void I_SetCrashDir(const char* crashdir);
+#include "i_crash.h"
+
+void I_SetCrashCallbacks()
+{
+	// Not implemented.
+}
+
+void I_SetCrashDir(const char* crashdir)
+{
+	// Not implemented.
+}
 
 #endif
