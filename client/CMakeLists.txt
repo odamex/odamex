@@ -22,12 +22,13 @@ if(WIN32)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
 
-# Include console folders if compiling homebrews
+# Include console folders if compiling 
 if (GCONSOLE)
-  if (SWITCH_LIBNX)
+  if (NSWITCH)
     set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
     file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} switch/*.h)
     file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} switch/*.cpp)
+    odamex_target_settings_nx(CLIENT_DIR GLOB)
   elseif (VWII)
     set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
     file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
@@ -221,6 +222,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
+
   target_link_libraries(odamex odamex-common)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
@@ -245,8 +247,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex winmm wsock32 shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
-  elseif(SWITCH_LIBNX)
-  target_link_libraries(odamex -L$ENV{DEVKITPRO}/libnx/lib -L$ENV{DEVKITPRO}/portlibs/switch/lib)
+  elseif(NSWITCH)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   elseif(VWII)
     # Ch0wW : this is UGLY, please fix it ASAP !!
@@ -327,10 +328,8 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
-  elseif(SWITCH_LIBNX)
-    add_custom_command( TARGET odamex POST_BUILD
-       COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
-       COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.nacp )
+  elseif(NSWITCH)
+    odamex_target_postcompile_nx(odamex)
   elseif(VWII)
     message(${CMAKE_BINARY_DIR})
     add_custom_command( TARGET odamex POST_BUILD

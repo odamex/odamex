@@ -40,7 +40,7 @@ set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Include early required commands for specific systems
-if (SWITCH_LIBNX)
+if (NSWITCH)
 	include("switch.cmake" REQUIRED)  # Nintendo Switch
 elseif(VWII)
   include("wii.cmake" REQUIRED)     # Wii/vWii
@@ -128,14 +128,6 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
 
 # Libraries
 add_subdirectory(libraries)
-
-# We have to include AGAIN this... Why ? I have no idea !
-if(SWITCH_LIBNX)
-   add_definitions(-D__SWITCH__ -DUNIX -D__ARM_NEON__ -DGCONSOLE)
-   include_directories("$ENV{DEVKITPRO}/libnx/include")
-   include_directories("$ENV{PORTLIBS_PREFIX}/include")
-   include_directories("libraries/sse2neon")
-endif()
 
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER)

@@ -18,7 +18,7 @@ Informations required for Odamex on Nintendo Switch.
 
 ## Building from scratch
 
-**This has been built using devkitpro on Windows (using msys2). Linux/MacOSX users may slightly modify the commands if needed.**
+**This has been built using devkitpro on Windows (using msys2). Linux/MacOSX users may need to slightly modify the commands.**
 
 Latest compilation has been tested as of December 30th 2020.
 
@@ -68,7 +68,7 @@ mkdir odamex_switch && cd odamex_switch
 
 source $DEVKITPRO/switchvars.sh
 
-cmake -Wno-dev -DSWITCH_LIBNX=1 -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/switch.cmake" ../odamex
+cmake -Wno-dev -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/switch.cmake" ../odamex
 
 make
 ```

@@ -656,7 +656,7 @@ static int TranslateKey(SDL_Keysym *sym)
         case SDLK_CAPSLOCK:    return KEY_CAPSLOCK;
         case SDLK_SCROLLOCK:   return KEY_SCRLCK;
 
-        case SDLK_HOME:        return KEY_HOME;
+        case SDLK_HOME:        return OKEY_HOME;
         case SDLK_INSERT:      return KEY_INS;
         case SDLK_END:         return KEY_END;
         case SDLK_PAGEUP:      return KEY_PGUP;
@@ -951,13 +951,13 @@ static const char *SpecialKeyName(int key)
         case KEY_BACKSPACE:   return "BKSP";
         case KEY_PAUSE:       return "PAUSE";
         case KEY_EQUALS:      return "EQUALS";
-        case KEY_MINUS:       return "MINUS";
+        case OKEY_MINUS:      return "MINUS";
         case KEY_RSHIFT:      return "SHIFT";
         case KEY_RCTRL:       return "CTRL";
         case KEY_RALT:        return "ALT";
         case KEY_CAPSLOCK:    return "CAPS";
         case KEY_SCRLCK:      return "SCRLCK";
-        case KEY_HOME:        return "HOME";
+	    case OKEY_HOME:       return "HOME";
         case KEY_END:         return "END";
         case KEY_PGUP:        return "PGUP";
         case KEY_PGDN:        return "PGDN";

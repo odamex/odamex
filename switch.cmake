@@ -37,3 +37,18 @@ set (ENABLE_PORTMIDI 0)
 
 # This is a flag meaning we're compiling for a console
 set (GCONSOLE 1)
+
+# Functions & Stuff
+
+function (odamex_target_settings_nx _DIRECTORY _FILES)
+#    set(${_DIRECTORY} ${CLIENT_DIR} switch)  # Nintendo Switch
+#    file(${_FILES} CLIENT_HEADERS ${CLIENT_HEADERS} switch/*.h)
+#    file(${_FILES} CLIENT_SOURCES ${CLIENT_SOURCES} switch/*.cpp)
+    add_definitions("-DUNIX -DGCONSOLE")
+endfunction()
+
+function(odamex_target_postcompile_nx _TARGET)
+    add_custom_command( TARGET ${_TARGET} POST_BUILD
+        COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
+        COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.nacp )
+endfunction()

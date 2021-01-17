@@ -1944,7 +1944,7 @@ static bool C_HandleKey(const event_t* ev)
 
 	switch (ch)
 	{
-	case KEY_HOME:
+	case OKEY_HOME:
 		CmdLine.moveCursorHome();
 		return true;
 	case KEY_END:

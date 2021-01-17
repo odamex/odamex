@@ -158,7 +158,7 @@ static void I_InitializeKeyNameTable()
 	key_names[KEY_LEFTARROW] = "leftarrow";
 	key_names[KEY_RIGHTARROW] = "rightarrow";
 	key_names[KEY_INS] = "ins";
-	key_names[KEY_HOME] = "home";
+	key_names[OKEY_HOME] = "home";
 	key_names[KEY_END] = "end";
 	key_names[KEY_PGUP] = "pgup";
 	key_names[KEY_PGDN] = "pgdn";

@@ -55,14 +55,14 @@
 #define KEY_F14             0x40000069
 #define KEY_F15             0x4000006A
 #define KEY_HELP            0x40000075
-#define KEY_HOME            0x4000004A
+#define OKEY_HOME			0x4000004A
 #define KEY_INS             0x40000049
 #define KEY_LALT            0x400000E2
 #define KEY_LCTRL           0x400000E0
 #define KEY_LEFTARROW       0x40000050
 #define KEY_LSHIFT          0x400000E1
 #define KEY_LWIN            0x400000E3
-#define KEY_MINUS           0x0000002D
+#define OKEY_MINUS          0x0000002D
 #define KEY_NUMLOCK         0x40000053
 #define KEY_PAUSE           0x40000048
 #define KEY_PGDN            0x4000004E
