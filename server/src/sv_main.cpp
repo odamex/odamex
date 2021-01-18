@@ -1043,17 +1043,18 @@ bool SV_SetupUserInfo(player_t &player)
 			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
 	}
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
-		SV_CheckTeam (player);
+		SV_CheckTeam(player);
 
-		if (player.mo && player.userinfo.team != old_team &&
-			player.ingame() && !player.spectator)
+		if (player.mo && player.userinfo.team != old_team && player.ingame() &&
+		    !player.spectator && !G_IsLevelState(LevelState::WARMUP))
 		{
 			// kill player if team is changed
-			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+			P_DamageMobj(player.mo, 0, 0, 1000, 0);
 			SV_BroadcastPrintf("%s switched to the %s team.\n",
-				player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
+			                   player.userinfo.netname.c_str(),
+			                   V_GetTeamColor(player.userinfo.team).c_str());
 		}
 	}
 
@@ -3750,11 +3751,13 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf ("%s has joined the %s team.\n", player.userinfo.netname.c_str(), V_GetTeamColor(team).c_str());
-
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		if (player.mo && player.userinfo.team != old_team)
-			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+	if (G_IsTeamGame() && player.mo && player.userinfo.team != old_team &&
+	    !G_IsLevelState(LevelState::WARMUP))
+	{
+		P_DamageMobj(player.mo, 0, 0, 1000, 0);
+	}
+	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),
+	                   V_GetTeamColor(team).c_str());
 
 	// Team changes can result with not enough players on a team.
 	G_AssertValidPlayerCount();
@@ -4573,18 +4576,15 @@ static void TimeCheck()
 	}
 }
 
-void SV_IntermissionTimeCheck()
+static void IntermissionTimeCheck()
 {
-	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
-		return;
-
-	level.inttimeleft = mapchange/TICRATE;
+	level.inttimeleft = mapchange / TICRATE;
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
 	// [ML] 2012-2-1 - Copy it for intermission fun
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			MSG_WriteMarker(&(it->client.netbuf), svc_inttimeleft);
 			MSG_WriteShort(&(it->client.netbuf), level.inttimeleft);
@@ -4611,7 +4611,7 @@ void SV_GameTics (void)
 			Vote_Runtic();
 		break;
 		case GS_INTERMISSION:
-			SV_IntermissionTimeCheck();
+			IntermissionTimeCheck();
 		break;
 
 		default:

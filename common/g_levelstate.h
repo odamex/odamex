@@ -74,13 +74,14 @@ class LevelState
 	      m_roundNumber(0), m_setStateCB(NULL)
 	{
 	}
+	int getCountdown() const;
+	team_t getDefendingTeam() const;
+	int getIngameStartTime() const;
+	int getJoinTimeLeft() const;
+	int getRound() const;
 	LevelState::States getState() const;
 	const char* getStateString() const;
-	int getCountdown() const;
-	int getRound() const;
-	int getJoinTimeLeft() const;
 	WinInfo getWinInfo() const;
-	team_t getDefendingTeam() const;
 	void setStateCB(LevelState::SetStateCB cb);
 	void setWinner(WinInfo::WinType type, int id);
 	void reset();

@@ -21,7 +21,7 @@ Copy-Item -Path `
     ".\odalaunch\RelWithDebInfo\odalaunch.exe", `
     ".\odalaunch\RelWithDebInfo\odalaunch.pdb", `
     ".\odalaunch\RelWithDebInfo\*.dll", `
-    "..\wad\odamex.wad", `
+    ".\wad\odamex.wad", `
     "C:\Windows\System32\msvcp140.dll", `
     "C:\Windows\System32\vcruntime140.dll", `
     "C:\Windows\System32\vcruntime140_1.dll" `

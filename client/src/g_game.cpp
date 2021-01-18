@@ -396,13 +396,19 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	{
 		if (Actions[ACTION_RIGHT])
 		{
-			cmd->yaw -= angleturn[tspeed];
-			::localview.skipangle = true;
+			if (::angleturn[tspeed] != 0)
+			{
+				cmd->yaw -= ::angleturn[tspeed];
+				::localview.skipangle = true;
+			}
 		}
 		if (Actions[ACTION_LEFT])
 		{
-			cmd->yaw += angleturn[tspeed];
-			::localview.skipangle = true;
+			if (::angleturn[tspeed] != 0)
+			{
+				cmd->yaw += ::angleturn[tspeed];
+				::localview.skipangle = true;
+			}
 		}
 	}
 

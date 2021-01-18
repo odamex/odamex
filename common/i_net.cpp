@@ -319,7 +319,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 
 		v = bind (s, (sockaddr *)&address, sizeof(address));
 
-		if(next > wanted + 16)
+		if(next > wanted + 32)
 		{
 			I_FatalError ("BindToPort: error");
 			return;

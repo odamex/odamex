@@ -105,6 +105,7 @@ int V_TextScaleYAmount();
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_targetcount)
+EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
@@ -783,6 +784,12 @@ void LevelStateHUD()
 	case LevelState::PREROUND_COUNTDOWN:
 		StrFormat(str, "Round %d\n", ::levelstate.getRound());
 		break;
+	case LevelState::INGAME:
+		if (G_CanShowFightMessage())
+			str = "FIGHT!\n";
+		else
+			str = "";
+		break;
 	case LevelState::ENDROUND_COUNTDOWN:
 		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
 		break;
@@ -799,9 +806,35 @@ void LevelStateHUD()
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(str.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
-	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
-	                          surface_height / 4 - h / 2, str.c_str(), CleanYfac,
-	                          CleanYfac);
+	if (::levelstate.getState() == LevelState::INGAME)
+	{
+		// Only render the "FIGHT" message if it's less than 2 seconds in.
+		int tics = ::level.time - ::levelstate.getIngameStartTime();
+		if (tics < TICRATE * 2)
+		{
+			float old = ::hud_transparency;
+			if (tics < TICRATE)
+			{
+				::hud_transparency.ForceSet(1.0);
+			}
+			else if (tics < TICRATE * 2)
+			{
+				tics %= TICRATE;
+				float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+				::hud_transparency.ForceSet(trans);
+			}
+			screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+			                             surface_height / 4 - h / 2, str.c_str(),
+			                             CleanYfac, CleanYfac);
+			::hud_transparency.ForceSet(old);
+		}
+	}
+	else
+	{
+		screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
+		                          surface_height / 4 - h / 2, str.c_str(), CleanYfac,
+		                          CleanYfac);
+	}
 
 	V_SetFont("SMALLFONT");
 

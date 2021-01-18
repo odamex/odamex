@@ -269,6 +269,14 @@ void S_Init (float sfxVolume, float musicVolume)
 	mus_paused = 0;
 }
 
+/**
+ * @brief Run cleanup assuming zone memory has been freed.
+ */
+void S_Deinit()
+{
+	::SoundCurve = NULL;
+	::Channel = NULL;
+}
 
 //
 // Kills playing sounds
@@ -874,6 +882,9 @@ void S_StopAllChannels(void)
 // NULL, then the sound becomes a positioned sound.
 void S_RelinkSound (AActor *from, AActor *to)
 {
+	if (::Channel == NULL)
+		return;
+
 	unsigned int i;
 
 	if (!from)
@@ -933,27 +944,23 @@ void S_ResumeSound (void)
 // Updates music & sounds
 //
 // joek - from choco again
-void S_UpdateSounds (void *listener_p)
+void S_UpdateSounds(void* listener_p)
 {
-	int		cnum;
-	float		volume;
-	int		sep;
-	sfxinfo_t*	sfx;
-	channel_t*	c;
+	if (::Channel == NULL)
+		return;
 
-	AActor *listener = (AActor *)listener_p;
-
-	for (cnum=0 ; cnum < (int)numChannels ; cnum++)
+	AActor* listener = (AActor*)listener_p;
+	for (int cnum = 0; cnum < (int)numChannels; cnum++)
 	{
-		c = &Channel[cnum];
-		sfx = c->sfxinfo;
+		channel_t* c = &Channel[cnum];
+		sfxinfo_t* sfx = c->sfxinfo;
 
 		if (c->sfxinfo)
 		{
 			if (I_SoundIsPlaying(c->handle))
 			{
 				// initialize parameters
-				sep = NORM_SEP;
+				int sep = NORM_SEP;
 
 				float maxvolume;
 				if (Channel[cnum].entchannel == CHAN_ANNOUNCER)
@@ -961,7 +968,7 @@ void S_UpdateSounds (void *listener_p)
 				else
 					maxvolume = snd_sfxvolume;
 
-				volume = maxvolume;
+				float volume = maxvolume;
 
 				if (sfx->link)
 				{
@@ -983,10 +990,10 @@ void S_UpdateSounds (void *listener_p)
 				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)
 				{
 					fixed_t x, y;
-					if (c->pt)		// [SL] 2011-05-29
+					if (c->pt) // [SL] 2011-05-29
 					{
-						x = c->pt[0];	// update the sound coorindates
-						y = c->pt[1];	// for moving actors
+						x = c->pt[0]; // update the sound coorindates
+						y = c->pt[1]; // for moving actors
 					}
 					else
 					{
@@ -1002,17 +1009,17 @@ void S_UpdateSounds (void *listener_p)
 			}
 			else
 			{
-			// if channel is allocated but sound has stopped,
-			// free it
+				// if channel is allocated but sound has stopped,
+				// free it
 				S_StopChannel(cnum);
 			}
 		}
 	}
-    // kill music if it is a single-play && finished
-    // if (	mus_playing
-    //      && !I_QrySongPlaying(mus_playing->handle)
-    //      && !mus_paused )
-    // S_StopMusic();
+	// kill music if it is a single-play && finished
+	// if (	mus_playing
+	//      && !I_QrySongPlaying(mus_playing->handle)
+	//      && !mus_paused )
+	// S_StopMusic();
 }
 
 void S_UpdateMusic()

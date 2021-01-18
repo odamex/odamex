@@ -42,6 +42,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_warmup)
 
 /**
  * @brief Returns a string containing the name of the gametype.
@@ -197,6 +198,36 @@ bool G_CanScoreChange()
 }
 
 /**
+ * @brief Check if we should show a FIGHT message on INGAME.
+ */
+bool G_CanShowFightMessage()
+{
+	// Don't show a call-to-action when there's nobody ingame to answer.
+	PlayerResults pr = PlayerQuery().execute();
+	if (pr.count <= 0)
+		return false;
+
+	// Multiple rounds should always show them.
+	if (G_IsRoundsGame())
+		return true;
+
+	// Using warmup makes the levelstate HUD show up a bunch.
+	if (::sv_warmup)
+		return true;
+
+	return false;
+}
+
+/**
+ * @brief Check to see if we should show a join timer.
+ */
+bool G_CanShowJoinTimer()
+{
+	return ::g_lives > 0 && ::levelstate.getState() == LevelState::INGAME &&
+	       ::levelstate.getJoinTimeLeft() > 0;
+}
+
+/**
  * @brief Check if obituaries are allowed to be shown.
  */
 bool G_CanShowObituary()
@@ -211,6 +242,16 @@ bool G_CanTickGameplay()
 {
 	return ::levelstate.getState() == LevelState::WARMUP ||
 	       ::levelstate.getState() == LevelState::INGAME;
+}
+
+/**
+ * @brief Check to see if level is in specific state.
+ *
+ * @param state Levelstate to check against.
+ */
+bool G_IsLevelState(LevelState::States state)
+{
+	return ::levelstate.getState() == state;
 }
 
 /**
@@ -254,7 +295,8 @@ bool G_IsTeamGame()
  */
 bool G_IsRoundsGame()
 {
-	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && g_rounds == true;
+	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+	       g_rounds == true;
 }
 
 /**
@@ -314,6 +356,10 @@ void G_AssertValidPlayerCount()
 	if (!::serverside)
 		return;
 
+	// We don't need to do anything in non-lives gamemodes.
+	if (!::g_lives)
+		return;
+
 	// In warmup player counts don't matter, and at the end of the game the
 	// check is useless.
 	if (::levelstate.getState() == LevelState::WARMUP ||
@@ -323,17 +369,9 @@ void G_AssertValidPlayerCount()
 	// Cooperative game modes have slightly different logic.
 	if (::sv_gametype == GM_COOP && P_NumPlayersInGame() == 0)
 	{
-		if (::g_lives)
-		{
-			// Survival modes cannot function with no players in the gamne,
-			// so the level must be reset at this point.
-			::levelstate.reset();
-		}
-		else
-		{
-			// Normal coop is pretty casual so in this case we leave it to
-			// sv_emptyreset to reset the level for us.
-		}
+		// Survival modes cannot function with no players in the gamne,
+		// so the level must be reset at this point.
+		::levelstate.reset();
 		return;
 	}
 
