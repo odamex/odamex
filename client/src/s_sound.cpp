@@ -882,6 +882,9 @@ void S_StopAllChannels(void)
 // NULL, then the sound becomes a positioned sound.
 void S_RelinkSound (AActor *from, AActor *to)
 {
+	if (::Channel == NULL)
+		return;
+
 	unsigned int i;
 
 	if (!from)

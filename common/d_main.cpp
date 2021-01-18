@@ -877,7 +877,44 @@ bool D_DoomWadReboot(
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	// Load all the WAD and DEH/BEX files
-	D_LoadResourceFiles(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes); 
+	std::vector<std::string> oldwadfiles = wadfiles;
+	std::vector<std::string> oldpatchfiles = patchfiles;
+	std::vector<std::string> oldwadhashes = wadhashes;
+	std::vector<std::string> oldpatchhashes = patchhashes;
+	std::string failmsg;
+	try
+	{
+		D_LoadResourceFiles(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+	}
+	catch (CRecoverableError& error)
+	{
+		failmsg = error.GetMsg();
+	}
+
+	if (!failmsg.empty())
+	{
+		// Uh oh, loading the new resource set failed for some reason.
+		Printf(PRINT_WARNING,
+		       "Could not load new resource files.\n%s\nReloading previous resource "
+		       "set...\n",
+		       failmsg.c_str());
+		std::string fatalmsg;
+		try
+		{
+			D_LoadResourceFiles(oldwadfiles, oldpatchfiles, oldwadhashes, oldpatchhashes);
+		}
+		catch (CRecoverableError& error)
+		{
+			// Something is seriously wrong.
+			fatalmsg = error.GetMsg();
+		}
+		if (!fatalmsg.empty())
+		{
+			I_FatalError("Failed to load new resource files, then ran into error when "
+			             "loading original resource files:\n%s\n",
+			             fatalmsg.c_str());
+		}
+	}
 
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -889,7 +926,7 @@ bool D_DoomWadReboot(
 
 	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
-	return missingfiles.empty();
+	return missingfiles.empty() && failmsg.empty();
 }
 
 
