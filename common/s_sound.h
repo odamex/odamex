@@ -64,6 +64,7 @@ extern int numsfx;
 //	allocates channel buffer, sets S_sfx lookup.
 //
 void S_Init (float sfxVolume, float musicVolume);
+void S_Deinit();
 
 // Per level startup code.
 // Kills playing sounds at start of level,
