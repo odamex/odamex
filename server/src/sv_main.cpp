@@ -2718,17 +2718,18 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 	}
 }
 
-void SV_BroadcastPrintf(const char* fmt, ...)
+FORMAT_PRINTF(1, 2)
+void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
 {
 	va_list argptr;
 	char string[2048];
 	client_t* cl;
 
 	va_start(argptr, fmt);
-	vsprintf(string, fmt, argptr);
+	vsnprintf(string, sizeof(string), fmt, argptr);
 	va_end(argptr);
 
-	SV_BroadcastPrintf(PRINT_NORCON, string);
+	SV_BroadcastPrintf(PRINT_NORCON, "%s", string);
 }
 
 // GhostlyDeath -- same as above but ONLY for spectators
