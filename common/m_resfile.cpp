@@ -55,16 +55,25 @@ static OResFile ResFileFactory(const std::string& filename)
 /**
  * @brief Resolve an OResFile given a filename.
  *
- * @param filename Filename to search for.
+ * @param path Path to search for.
  * @param ext Extension to search for if missing.
  */
-OResFile M_ResolveResFile(const std::string& filename, const char* ext)
+OResFile M_ResolveResFile(std::string filename, const char* ext)
 {
 	// If someone goes throught the effort of pointing directly to a file
 	// correctly, believe them.
 	if (M_FileExists(filename))
 	{
 		return ResFileFactory(filename);
+	}
+
+	std::string path, basename, strext;
+	filename = M_CleanPath(filename);
+	M_ExtractFilePath(filename, path);
+	M_ExtractFileBase(filename, basename);
+	if (!M_ExtractFileExtension(filename, strext))
+	{
+		strext = ext;
 	}
 
 	// [cSc] Add cl_waddownloaddir as default path
@@ -82,6 +91,15 @@ OResFile M_ResolveResFile(const std::string& filename, const char* ext)
 
 	// Get rid of any dupes.
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
+
+	// And now...we resolve.
+	for (std::vector<std::string>::const_iterator it = dirs.begin(); it != dirs.end();
+	     ++it)
+	{
+		std::string result = M_BaseFileSearchDir(*it, basename, strext);
+		Printf("%s | %s | %s | %s\n", result.c_str(), it->c_str(), basename.c_str(),
+		       strext.c_str());
+	}
 
 	OResFile file;
 	return file;

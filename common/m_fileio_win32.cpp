@@ -37,6 +37,7 @@
 
 #include "cmdlib.h"
 #include "i_system.h"
+#include "w_wad.h"
 
 #ifdef UNIX
 std::string I_GetHomeDir(std::string user = "")
@@ -182,6 +183,59 @@ std::string M_GetUserFileName(const std::string& file)
 
 	return path;
 #endif
+}
+
+std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
+                                const std::string& ext, std::string hash)
+{
+	std::string found;
+	dir = M_CleanPath(dir);
+	hash = StdStringToUpper(hash);
+	std::string dothash;
+	if (!hash.empty())
+		dothash = "." + hash;
+
+	// denis - list files in the directory of interest, case-desensitize
+	// then see if wanted wad is listed
+	std::string all_ext = dir + "*";
+	// all_ext += ext;
+
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+		return "";
+
+	do
+	{
+		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			continue;
+
+		std::string tmp = StdStringToUpper(FindFileData.cFileName);
+
+		if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp ||
+		    (file + ext + dothash) == tmp)
+		{
+			std::string local_file(dir + FindFileData.cFileName);
+			std::string local_hash(W_MD5(local_file));
+
+			if (hash.empty() || hash == local_hash)
+			{
+				found = FindFileData.cFileName;
+				break;
+			}
+			else if (!hash.empty())
+			{
+				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
+				       local_file.c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
+			}
+		}
+	} while (FindNextFile(hFind, &FindFileData));
+
+	FindClose(hFind);
+	return found;
 }
 
 #endif

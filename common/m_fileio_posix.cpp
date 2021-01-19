@@ -178,4 +178,57 @@ std::string M_GetUserFileName(const std::string& file)
 	return M_CleanPath(path);
 }
 
+std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
+                                const std::string& ext, std::string hash)
+{
+	std::string found;
+	dir = M_CleanPath(dir);
+	hash = StdStringToUpper(hash);
+	std::string dothash;
+	if (!hash.empty())
+		dothash = "." + hash;
+
+	// denis - list files in the directory of interest, case-desensitize
+	// then see if wanted wad is listed
+	struct dirent** namelist = 0;
+	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
+
+	for (int i = 0; i < n && namelist[i]; i++)
+	{
+		std::string d_name = namelist[i]->d_name;
+
+		M_Free(namelist[i]);
+
+		if (found.empty())
+		{
+			if (d_name == "." || d_name == "..")
+				continue;
+
+			std::string tmp = StdStringToUpper(d_name);
+
+			if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp ||
+			    (file + ext + dothash) == tmp)
+			{
+				std::string local_file(dir + d_name);
+				std::string local_hash(W_MD5(local_file));
+
+				if (hash.empty() || hash == local_hash)
+				{
+					found = d_name;
+				}
+				else if (!hash.empty())
+				{
+					Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
+					       local_file.c_str());
+					Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
+					Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
+				}
+			}
+		}
+	}
+
+	M_Free(namelist);
+	return found;
+}
+
 #endif

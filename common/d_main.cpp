@@ -336,11 +336,8 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 		if(!segment.length())
 			continue;
 
-		M_FixPathSep(segment);
 		M_ExpandHomeDir(segment);
-
-		if(segment[segment.length() - 1] != PATHSEPCHAR)
-			segment += PATHSEP;
+		segment = M_CleanPath(segment);
 
 		dirs.push_back(segment);
 	}

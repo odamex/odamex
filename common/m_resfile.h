@@ -33,6 +33,6 @@ struct OResFile
 	std::string hash;
 };
 
-OResFile M_ResolveResFile(const std::string& filename, const char* ext);
+OResFile M_ResolveResFile(std::string filename, const char* ext);
 
 #endif // __ORESFILE_H__

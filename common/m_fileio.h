@@ -102,4 +102,18 @@ std::string M_GetWriteDir();
  */
 std::string M_GetUserFileName(const std::string& file);
 
+/**
+ * @brief Attempt to find a file in a directory.
+ * 
+ * @detail This function is OS-specific.
+ * 
+ * @param dir Directory to search.
+ * @param file File to search.
+ * @param ext Extension to search.
+ * @param hash Optional hash to match against.
+ * @return Full path of matched file, or empty string if failed.
+*/
+std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
+                                const std::string& ext, std::string hash = "");
+
 #endif
