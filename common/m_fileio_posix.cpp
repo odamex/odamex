@@ -41,9 +41,12 @@
 #else
 #include <sys/syslimits.h>
 #endif
+#include <dirent.h>
 
-#include "m_argv.h"
+#include "cmdlib.h"
 #include "i_system.h"
+#include "m_argv.h"
+#include "w_wad.h"
 
 std::string M_GetBinaryDir()
 {
@@ -229,6 +232,18 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 
 	M_Free(namelist);
 	return found;
+}
+
+bool M_GetAbsPath(const std::string& path, std::string& out)
+{
+	char buffer[PATH_MAX];
+	char* res = realpath(path.c_str(), buffer);
+	if (res == NULL)
+	{
+		return false;
+	}
+	out = res;
+	return true;
 }
 
 #endif

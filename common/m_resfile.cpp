@@ -72,7 +72,7 @@ bool OResFile::Make(OResFile& out, const std::string& file)
 
 /**
  * @brief Populate an OResFile with an already calculated hash.
- * 
+ *
  * @param out OResFile to populate.
  * @param file File to populate.
  * @param hash Hash to populate with.
@@ -171,13 +171,13 @@ BEGIN_COMMAND(whereis)
 		return;
 
 	OResFile file;
-	if (M_ResolveResFile(file, argv[1], "wad"))
+	if (M_ResolveResFile(file, argv[1], ".wad"))
 	{
-		Printf("\nbasename: %s\nfullpath: %s\nhash: %s\n", file.GetBasename().c_str(),
+		Printf("basename: %s\nfullpath: %s\nhash: %s\n", file.GetBasename().c_str(),
 		       file.GetFullpath().c_str(), file.GetHash().c_str());
 		return;
 	}
-	
+
 	Printf("Could not find location of \"%s\".\n", argv[1]);
 }
 END_COMMAND(whereis)
