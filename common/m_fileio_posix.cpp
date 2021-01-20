@@ -184,48 +184,45 @@ std::string M_GetUserFileName(const std::string& file)
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::string& ext, std::string hash)
 {
-	std::string found;
 	dir = M_CleanPath(dir);
 	hash = StdStringToUpper(hash);
-	std::string dothash;
-	if (!hash.empty())
-		dothash = "." + hash;
+	const std::string cmp_file_ext(StdStringToUpper(file + ext));
+	const std::string cmp_file_ext_hash(cmp_file_ext + "." + hash);
 
 	// denis - list files in the directory of interest, case-desensitize
 	// then see if wanted wad is listed
 	struct dirent** namelist = 0;
 	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
 
+	std::string found;
 	for (int i = 0; i < n && namelist[i]; i++)
 	{
-		std::string d_name = namelist[i]->d_name;
-
+		const std::string d_name = namelist[i]->d_name;
 		M_Free(namelist[i]);
 
-		if (found.empty())
+		if (!found.empty())
+			continue;
+
+		if (d_name == "." || d_name == "..")
+			continue;
+
+		const std::string tmp = StdStringToUpper(d_name);
+		if (tmp == cmp_file_ext || (!hash.empty() && tmp == cmp_file_ext_hash))
 		{
-			if (d_name == "." || d_name == "..")
-				continue;
+			const std::string local_file(dir + PATHSEP + d_name);
+			const std::string local_hash(W_MD5(local_file));
 
-			std::string tmp = StdStringToUpper(d_name);
-
-			if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp ||
-			    (file + ext + dothash) == tmp)
+			if (hash.empty() || hash == local_hash)
 			{
-				std::string local_file(dir + d_name);
-				std::string local_hash(W_MD5(local_file));
-
-				if (hash.empty() || hash == local_hash)
-				{
-					found = d_name;
-				}
-				else if (!hash.empty())
-				{
-					Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
-					       local_file.c_str());
-					Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
-					Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
-				}
+				found = d_name;
+				continue;
+			}
+			else if (!hash.empty())
+			{
+				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
+				       local_file.c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
 	}
