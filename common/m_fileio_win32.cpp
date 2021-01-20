@@ -188,16 +188,14 @@ std::string M_GetUserFileName(const std::string& file)
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::string& ext, std::string hash)
 {
-	std::string found;
 	dir = M_CleanPath(dir);
 	hash = StdStringToUpper(hash);
-	std::string dothash;
-	if (!hash.empty())
-		dothash = "." + hash;
+	const std::string cmp_file_ext(StdStringToUpper(file + ext));
+	const std::string cmp_file_ext_hash(cmp_file_ext + "." + hash);
 
 	// denis - list files in the directory of interest, case-desensitize
 	// then see if wanted wad is listed
-	std::string all_ext = dir + "*";
+	std::string all_ext = dir + PATHSEP "*";
 	// all_ext += ext;
 
 	WIN32_FIND_DATA FindFileData;
@@ -206,18 +204,17 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 	if (hFind == INVALID_HANDLE_VALUE)
 		return "";
 
+	std::string found;
 	do
 	{
 		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
 		std::string tmp = StdStringToUpper(FindFileData.cFileName);
-
-		if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp ||
-		    (file + ext + dothash) == tmp)
+		if (tmp == cmp_file_ext || (!hash.empty() && tmp == cmp_file_ext_hash))
 		{
-			std::string local_file(dir + FindFileData.cFileName);
-			std::string local_hash(W_MD5(local_file));
+			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
+			const std::string local_hash(W_MD5(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -236,6 +233,20 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 
 	FindClose(hFind);
 	return found;
+}
+
+bool M_GetAbsPath(const std::string& path, std::string& out)
+{
+	TCHAR buffer[MAX_PATH];
+	LPSTR* file_part = NULL;
+	DWORD wrote = GetFullPathNameA(path.c_str(), ARRAY_LENGTH(buffer), buffer, file_part);
+	if (wrote == 0)
+	{
+		return false;
+	}
+
+	out = buffer;
+	return true;
 }
 
 #endif

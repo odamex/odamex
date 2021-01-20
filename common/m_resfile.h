@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  A handle that wraps a resource file on disk. 
+//  A handle that wraps a resource file on disk.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,13 +26,30 @@
 #include <string>
 #include <vector>
 
-struct OResFile
+class OResFile
 {
-	std::string basename;
-	std::string fullpath;
-	std::string hash;
+	std::string m_fullpath;
+	std::string m_hash;
+	std::string m_basename;
+
+  public:
+	const std::string& GetFullpath()
+	{
+		return m_fullpath;
+	}
+	const std::string& GetHash()
+	{
+		return m_hash;
+	}
+	const std::string& GetBasename()
+	{
+		return m_basename;
+	}
+	static bool Make(OResFile& out, const std::string& file);
+	static bool MakeWithHash(OResFile& out, const std::string& file,
+	                         const std::string& hash);
 };
 
-OResFile M_ResolveResFile(std::string filename, const char* ext);
+bool M_ResolveResFile(OResFile& out, std::string filename, const char* ext);
 
 #endif // __ORESFILE_H__

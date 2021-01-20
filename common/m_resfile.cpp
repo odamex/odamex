@@ -33,38 +33,90 @@ EXTERN_CVAR(cl_waddownloaddir)
 EXTERN_CVAR(waddirs)
 
 /**
- * @brief Create a OResFile from either a known-good filename or an empty
- *        string to create a "missing" file.
+ * @brief Populate an OResFile.
  *
- * @param filename Correct filename.
- * @return Resolved OResFile.
+ * @param out OResFile to populate.
+ * @param file File to populate.
+ * @return True if the OResFile was populated successfully.
  */
-static OResFile ResFileFactory(const std::string& filename)
+bool OResFile::Make(OResFile& out, const std::string& file)
 {
-	if (!M_FileExists(filename))
+	if (!M_FileExists(file))
 	{
-		// Whoops, missing file.
-		return OResFile();
+		return false;
 	}
 
-	OResFile file;
-	file.hash = W_MD5(filename);
-	return file;
+	std::string fullpath;
+	if (!M_GetAbsPath(file, fullpath))
+	{
+		return false;
+	}
+
+	std::string basename = M_ExtractFileName(fullpath);
+	if (basename.empty())
+	{
+		return false;
+	}
+
+	std::string hash = W_MD5(file);
+	if (hash.empty())
+	{
+		return false;
+	}
+
+	out.m_fullpath = fullpath;
+	out.m_hash = hash;
+	out.m_basename = basename;
+	return true;
+}
+
+/**
+ * @brief Populate an OResFile with an already calculated hash.
+ * 
+ * @param out OResFile to populate.
+ * @param file File to populate.
+ * @param hash Hash to populate with.
+ * @return True if the OResFile was populated successfully.
+ */
+bool OResFile::MakeWithHash(OResFile& out, const std::string& file,
+                            const std::string& hash)
+{
+	if (!M_FileExists(file))
+	{
+		return false;
+	}
+
+	std::string fullpath;
+	if (!M_GetAbsPath(file, fullpath))
+	{
+		return false;
+	}
+
+	std::string basename = M_ExtractFileName(fullpath);
+	if (basename.empty())
+	{
+		return false;
+	}
+
+	out.m_fullpath = fullpath;
+	out.m_hash = hash;
+	out.m_basename = basename;
+	return true;
 }
 
 /**
  * @brief Resolve an OResFile given a filename.
  *
  * @param path Path to search for.
- * @param ext Extension to search for if missing.
+ * @param ext Extension to search for if missing, including the dot.
  */
-OResFile M_ResolveResFile(std::string filename, const char* ext)
+bool M_ResolveResFile(OResFile& out, std::string filename, const char* ext)
 {
 	// If someone goes throught the effort of pointing directly to a file
 	// correctly, believe them.
 	if (M_FileExists(filename))
 	{
-		return ResFileFactory(filename);
+		return OResFile::Make(out, filename);
 	}
 
 	std::string path, basename, strext;
@@ -74,6 +126,10 @@ OResFile M_ResolveResFile(std::string filename, const char* ext)
 	if (!M_ExtractFileExtension(filename, strext))
 	{
 		strext = ext;
+	}
+	else
+	{
+		strext.insert(strext.begin(), '.');
 	}
 
 	// [cSc] Add cl_waddownloaddir as default path
@@ -96,22 +152,32 @@ OResFile M_ResolveResFile(std::string filename, const char* ext)
 	for (std::vector<std::string>::const_iterator it = dirs.begin(); it != dirs.end();
 	     ++it)
 	{
-		std::string result = M_BaseFileSearchDir(*it, basename, strext);
-		Printf("%s | %s | %s | %s\n", result.c_str(), it->c_str(), basename.c_str(),
-		       strext.c_str());
+		const std::string result = M_BaseFileSearchDir(*it, basename, strext);
+		if (!result.empty())
+		{
+			// Found a file.
+			const std::string fullpath = *it + PATHSEP + result;
+			return OResFile::Make(out, fullpath);
+		}
 	}
 
-	OResFile file;
-	return file;
+	// Couldn't find anything.
+	return false;
 }
 
-BEGIN_COMMAND(resolve)
+BEGIN_COMMAND(whereis)
 {
 	if (argc < 2)
 		return;
 
-	OResFile file = M_ResolveResFile(argv[1], "wad");
-	Printf("\nbasename: %s\nfullpath: %s\nhash: %s\n", file.basename.c_str(),
-	       file.fullpath.c_str(), file.hash.c_str());
+	OResFile file;
+	if (M_ResolveResFile(file, argv[1], "wad"))
+	{
+		Printf("\nbasename: %s\nfullpath: %s\nhash: %s\n", file.GetBasename().c_str(),
+		       file.GetFullpath().c_str(), file.GetHash().c_str());
+		return;
+	}
+	
+	Printf("Could not find location of \"%s\".\n", argv[1]);
 }
-END_COMMAND(resolve)
+END_COMMAND(whereis)

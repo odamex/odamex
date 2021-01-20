@@ -108,12 +108,21 @@ std::string M_GetUserFileName(const std::string& file);
  * @detail This function is OS-specific.
  * 
  * @param dir Directory to search.
- * @param file File to search.
- * @param ext Extension to search.
+ * @param file File to search, without extension.
+ * @param ext Extension to search, including initial dot.
  * @param hash Optional hash to match against.
- * @return Full path of matched file, or empty string if failed.
+ * @return Filename of the found file, or empty string if not found.
 */
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::string& ext, std::string hash = "");
+
+/**
+ * @brief Get absolute path from passed path.
+ * 
+ * @param path Path to make absolute.
+ * @param out Resulting path.
+ * @return True if the path was made absolute successfully.
+ */
+bool M_GetAbsPath(const std::string& path, std::string& out);
 
 #endif
