@@ -866,7 +866,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 {
 	// Cheking sizes is a good first approximation.
 
-	if (newwadfiles.size() != ::wadfiles.size() + 1)
+	if (newwadfiles.size() + 1 != ::wadfiles.size())
 	{
 		return false;
 	}
@@ -881,7 +881,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newwadfiles.begin();
-		if (it->getWantedHash() != ::wadfiles.at(idx - 1).getHash())
+		if (it->getWantedHash() != ::wadfiles.at(idx + 1).getHash())
 		{
 			return false;
 		}

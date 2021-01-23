@@ -420,7 +420,7 @@ std::string MD5SUM(std::string in)
 
 bool IsMD5SUM(const std::string& str)
 {
-	if (str.length() != 16)
+	if (str.length() != 32)
 		return false;
 
 	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)

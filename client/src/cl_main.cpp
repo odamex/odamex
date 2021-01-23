@@ -1668,6 +1668,16 @@ static void QuitAndTryDownload(const OWantFile& missing_file)
 	// filled with garbage data.
 	gamestate = GS_FULLCONSOLE;
 
+	if (missing_file.getBasename().empty())
+	{
+		Printf(PRINT_WARNING,
+		       "Tried to download an empty file.  This is probably a bug "
+		       "in the client where an empty file is considered missing.\n",
+		       missing_file.getBasename().c_str());
+		CL_QuitNetGame();
+		return;
+	}
+
 	if (!cl_serverdownload)
 	{
 		// Downloading is disabled client-side
@@ -1732,7 +1742,6 @@ bool CL_PrepareConnect(void)
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
@@ -1749,16 +1758,19 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> newwadnames(server_wads);
-	for (i = 0; i < server_wads; i++)
-		newwadnames[i] = MSG_ReadString();
+	std::vector<std::string> newwadnames;
+	newwadnames.reserve(server_wads);
+	for (byte i = 0; i < server_wads; i++)
+	{
+		newwadnames.push_back(MSG_ReadString());
+	}
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
 	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
 	recv_teamplay_stats |= MSG_ReadBool();	// ctf
 
-	for(i = 0; i < playercount; i++)
+	for (byte i = 0; i < playercount; i++)
 	{
 		MSG_ReadString();
 		MSG_ReadShort();
@@ -1766,13 +1778,24 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	OWantFiles newwadfiles(server_wads);
-	for (i = 0; i < server_wads; i++)
+	OWantFiles newwadfiles;
+	newwadfiles.reserve(server_wads);
+	for (byte i = 0; i < server_wads; i++)
 	{
 		std::string hash = MSG_ReadString();
-		OWantFile::makeWithHash(newwadfiles[i], newwadnames[i], OFILE_WAD, hash);
-		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].getBasename().c_str(),
-		       newwadfiles[i].getWantedHash().c_str());
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       newwadnames.at(i).c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+		newwadfiles.push_back(file);
+
+		Printf("> %s\n   %s\n", file.getBasename().c_str(), file.getWantedHash().c_str());
 	}
 
 	// Download website - needed for HTTP downloading to work.
@@ -1843,11 +1866,23 @@ bool CL_PrepareConnect(void)
 
 	// DEH/BEX Patch files
 	size_t patch_count = MSG_ReadByte();
-	OWantFiles newpatchfiles(patch_count);
 
-	for (i = 0; i < patch_count; ++i)
+	OWantFiles newpatchfiles;
+	newpatchfiles.reserve(patch_count);
+	for (byte i = 0; i < patch_count; ++i)
 	{
-		OWantFile::make(newpatchfiles[i], MSG_ReadString(), OFILE_DEH);
+		OWantFile file;
+		if (!OWantFile::make(newpatchfiles.at(i), MSG_ReadString(), OFILE_DEH))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       newpatchfiles.at(i).getBasename().c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+		newpatchfiles.push_back(file);
+
+		Printf("> %s\n", file.getBasename().c_str());
 	}
 
     // TODO: Allow deh/bex file downloads
@@ -3513,7 +3548,7 @@ bool IsGameModeDuel()
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-void CL_LoadMap(void)
+void CL_LoadMap()
 {
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
@@ -3522,19 +3557,43 @@ void CL_LoadMap(void)
 		netdemo.stopRecording();
 
 	size_t wadcount = MSG_ReadUnVarint();
-	OWantFiles newwadfiles(wadcount);
+	OWantFiles newwadfiles;
+	newwadfiles.reserve(wadcount);
 	for (size_t i = 0; i < wadcount; i++)
 	{
-		OWantFile::makeWithHash(newwadfiles[i], MSG_ReadString(), OFILE_WAD,
-		                        MSG_ReadString());
+		std::string name = MSG_ReadString();
+		std::string hash = MSG_ReadString();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       name.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+		newwadfiles.push_back(file);
 	}
 
 	size_t patchcount = MSG_ReadUnVarint();
-	OWantFiles newpatchfiles(patchcount);
+	OWantFiles newpatchfiles;
+	newpatchfiles.reserve(patchcount);
 	for (size_t i = 0; i < patchcount; i++)
 	{
-		OWantFile::makeWithHash(newpatchfiles[i], MSG_ReadString(), OFILE_DEH,
-		                        MSG_ReadString());
+		std::string name = MSG_ReadString();
+		std::string hash = MSG_ReadString();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted patch \"%s\" that server requested.\n",
+			       name.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+		newpatchfiles.push_back(file);
 	}
 
 	const char *mapname = MSG_ReadString();

@@ -1274,7 +1274,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	// Did we switch IWAD files?
 	if (AddedIWAD && !::wadfiles.empty())
 	{
-		if (newwadfiles.at(0).getBasename() == wadfiles.at(1).getBasename())
+		if (newwadfiles.at(0).getBasename() != wadfiles.at(1).getBasename())
 		{
 			Reboot = true;
 		}
