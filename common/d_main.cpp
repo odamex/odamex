@@ -688,7 +688,8 @@ static bool FindIWAD(OResFile& out)
 }
 
 /**
- * @brief Load files that are assumed to be resolved and in the correct order.
+ * @brief Load files that are assumed to be resolved, in the correct order,
+ *        and complete.
  * 
  * @param newwadfiles New set of WAD files.
  * @param newpatchfiles New set of patch files.
@@ -696,11 +697,16 @@ static bool FindIWAD(OResFile& out)
 static void LoadResolvedFiles(const OResFiles& newwadfiles,
                               const OResFiles& newpatchfiles)
 {
-	::wadfiles.clear();
-	::patchfiles.clear();
+	if (newwadfiles.size() < 2)
+	{
+		I_FatalError("Tried to load resources without an ODAMEX.WAD or an IWAD.");
+	}
+
+	::wadfiles = newwadfiles;
+	::patchfiles = newpatchfiles;
 
 	// Now scan the contents of the IWAD to determine which one it is
-	W_ConfigureGameInfo(newwadfiles.at(1));
+	W_ConfigureGameInfo(::wadfiles.at(1));
 
 	// print info about the IWAD to the console
 	D_PrintIWADIdentity();
@@ -709,7 +715,7 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	I_SetTitleString(D_GetTitleString().c_str());
 
 	::modifiedgame = (::wadfiles.size() > 2) ||
-	                 !newpatchfiles.empty(); // more than odamex.wad and IWAD?
+	                 !::patchfiles.empty(); // more than odamex.wad and IWAD?
 
 	if (::modifiedgame && (::gameinfo.flags & GI_SHAREWARE))
 	{
@@ -717,14 +723,14 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 		    "\nYou cannot load additional WADs with the shareware version. Register!");
 	}
 
-	W_InitMultipleFiles(wadfiles);
+	W_InitMultipleFiles(::wadfiles);
 
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
 	::GStrings.loadStrings();
 
-	DoDefDehackedPatches(patchfiles);
+	DoDefDehackedPatches(::patchfiles);
 }
 
 //
@@ -836,6 +842,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		             "one IWAD is someplace where Odamex can find it.\n");
 	}
 
+	resolved_wads.insert(resolved_wads.begin(), odamex_wad);
+	resolved_wads.insert(resolved_wads.begin() + 1, next_iwad);
 	LoadResolvedFiles(resolved_wads, resolved_patches);
 }
 
