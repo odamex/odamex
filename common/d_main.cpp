@@ -749,7 +749,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	::missingfiles.clear();
 
 	// Resolve wanted wads.
-	OResFiles resolved_wads(newwadfiles.size());
+	OResFiles resolved_wads;
+	resolved_wads.reserve(newwadfiles.size());
 	for (OWantFiles::const_iterator it = newwadfiles.begin(); it != newwadfiles.end();
 	     ++it)
 	{
@@ -765,7 +766,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	}
 
 	// Resolve wanted patches.
-	OResFiles resolved_patches(newpatchfiles.size());
+	OResFiles resolved_patches;
+	resolved_patches.reserve(newpatchfiles.size());
 	for (OWantFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
 	     ++it)
 	{
