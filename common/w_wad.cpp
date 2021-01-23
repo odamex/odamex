@@ -558,7 +558,10 @@ int W_GetNumForName(const char* name, int namespc)
 	int i = W_CheckNumForName(name, namespc);
 
 	if (i == -1)
-		I_Error ("W_GetNumForName: %s not found!", name);
+	{
+		I_Error("W_GetNumForName: %s not found!\n(checked in: %s)", name,
+		        M_ResFilesToString(::wadfiles).c_str());
+	}
 
 	return i;
 }

@@ -177,6 +177,22 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, ofile_t ty
 }
 
 /**
+ * @brief Turn passed list of ResFiles to string.
+ * 
+ * @param files Files to stringify.
+ */
+std::string M_ResFilesToString(const OResFiles& files)
+{
+	std::vector<std::string> strings;
+	strings.reserve(files.size());
+	for (OResFiles::const_iterator it = files.begin(); it != files.end(); ++it)
+	{
+		strings.push_back(it->getBasename());
+	}
+	return JoinStrings(strings, ", ");
+}
+
+/**
  * @brief Return a list of valid extensions for a given file type in order
  *        of priority.
  *
@@ -307,3 +323,22 @@ BEGIN_COMMAND(whereis)
 	Printf("Could not find location of \"%s\".\n", argv[1]);
 }
 END_COMMAND(whereis)
+
+BEGIN_COMMAND(loaded)
+{
+	for (OResFiles::const_iterator it = ::wadfiles.begin(); it != ::wadfiles.end(); ++it)
+	{
+		Printf("%s\n", it->getBasename().c_str());
+		Printf("  PATH: %s\n", it->getFullpath().c_str());
+		Printf("  MD5:  %s\n", it->getHash().c_str());
+	}
+
+	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
+	     ++it)
+	{
+		Printf("%s\n", it->getBasename().c_str());
+		Printf("  PATH: %s\n", it->getFullpath().c_str());
+		Printf("  MD5:  %s\n", it->getHash().c_str());
+	}
+}
+END_COMMAND(loaded)

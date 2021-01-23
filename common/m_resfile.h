@@ -153,6 +153,7 @@ class OWantFile
 };
 typedef std::vector<OWantFile> OWantFiles;
 
+std::string M_ResFilesToString(const OResFiles& files);
 const std::vector<std::string>& M_FileTypeExts(ofile_t type);
 std::vector<std::string> M_FileSearchDirs();
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
