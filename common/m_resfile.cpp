@@ -342,3 +342,15 @@ BEGIN_COMMAND(loaded)
 	}
 }
 END_COMMAND(loaded)
+
+BEGIN_COMMAND(searchdirs)
+{
+	Printf("Search Directories:\n");
+	std::vector<std::string> dirs = M_FileSearchDirs();
+	for (std::vector<std::string>::const_iterator it = dirs.begin(); it != dirs.end();
+	     ++it)
+	{
+		Printf("  %s\n", it->c_str());
+	}
+}
+END_COMMAND(searchdirs)
