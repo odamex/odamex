@@ -108,9 +108,14 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 			// currently loaded WAD files.  Add one to the beginning
 			// of wadfiles, since position 0 stores odamex.wad.
 			maplist_entry.wads.resize(wadfiles.size() - 1);
-			std::copy(wadfiles.begin() + 1, wadfiles.end(),
-					  maplist_entry.wads.begin());
+			for (OResFiles::const_iterator it = wadfiles.begin() + 1;
+			     it != wadfiles.end(); ++it)
+			{
+				size_t idx = it - wadfiles.begin();
+				maplist_entry.wads.push_back(it->getBasename());
+			}
 		} else {
+			// We have a spot above us we can yoink from.
 			maplist_entry.wads.resize(this->maplist[position - 1].wads.size());
 			std::copy(this->maplist[position - 1].wads.begin(),
 					  this->maplist[position - 1].wads.end(),

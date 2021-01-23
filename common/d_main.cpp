@@ -57,6 +57,7 @@
 #include "s_sound.h"
 #include "gi.h"
 #include "w_ident.h"
+#include "m_resfile.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -69,9 +70,9 @@
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_waddownloaddir)
 
-std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
-std::vector<std::string> patchfiles, patchhashes;	// [RH] remove limit on # of loaded wads
-std::vector<std::string> missingfiles, missinghashes;
+OResFiles wadfiles;
+OResFiles patchfiles;
+OWantFiles missingfiles;
 
 bool lastWadRebootSuccess = true;
 extern bool step_mode;
@@ -586,53 +587,47 @@ static void D_PrintIWADIdentity()
 //
 // [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
-void D_DoDefDehackedPatch(const std::vector<std::string> &newpatchfiles)
+static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
 {
 	bool use_default = true;
-
 	if (!newpatchfiles.empty())
 	{
-		for (size_t i = 0; i < newpatchfiles.size(); i++)
+		for (OResFiles::const_iterator it = newpatchfiles.begin();
+		     it != newpatchfiles.end(); ++it)
 		{
-			std::string ext;
-
-			if (M_ExtractFileExtension(newpatchfiles[i], ext))
+			if (DoDehPatch(it->getFullpath().c_str(), false))
 			{
-				std::string f = BaseFileSearch(newpatchfiles[i], ext);
-				if (f.length())
-				{
-					if (DoDehPatch(f.c_str(), false))
-					{
-						std::string Filename;
-						M_ExtractFileName(f, Filename);
-						patchfiles.push_back(Filename);
-					}
-
-					use_default = false;
-				}
+				::patchfiles.push_back(*it);
+				use_default = false;
 			}
 		}
 	}
 
 	// try default patches
 	if (use_default)
-		DoDehPatch(NULL, true);		// See if there's a patch in a PWAD
-
-	for (size_t i = 0; i < patchfiles.size(); i++)
-		patchhashes.push_back(W_MD5(patchfiles[i]));
+	{
+		// See if there's a patch in a PWAD
+		DoDehPatch(NULL, true);
+	}
 
 	// check for ChexQuest
 	bool chexLoaded = false;
-	for (size_t i = 0; i < patchfiles.size(); i++)
+	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
+	     ++it)
 	{
-		std::string base_filename;
-		M_ExtractFileName(patchfiles[i], base_filename);
-		if (iequals(base_filename, "chex.deh"))
+		if (it->getBasename() == "CHEX.DEH")
+		{
 			chexLoaded = true;
+			break;
+		}
 	}
 
-	if (gamemode == retail_chex && !multiplayer && !chexLoaded)
-		Printf(PRINT_WARNING, "Warning: chex.deh not loaded, experience may differ from the original!\n");
+	if (::gamemode == retail_chex && !::multiplayer && !chexLoaded)
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "Warning: chex.deh not loaded, experience may differ from the original!\n");
+	}
 }
 
 
@@ -661,102 +656,76 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 
 
 //
-// D_FindResourceFile
-//
-// Searches for a given file name, and returns the full path to the file if
-// found and matches the supplied hash (or the hash was empty). An empty
-// string is returned if no matching file is found.
-//
-static std::string D_FindResourceFile(const std::string& filename, const std::string& hash = "")
-{
-	// was a path to the file supplied?
-	std::string dir;
-	M_ExtractFilePath(filename, dir);
-
-	std::string ext;
-	M_ExtractFileExtension(filename, ext);
-	if (!ext.empty() && ext[0] != '.')
-		ext = "." + ext;
-
-	std::string base_filename = D_CleanseFileName(filename);
-	if (base_filename.empty())
-		return std::string();
-
-	std::string full_filename;
-
-	// is there an exact match for the filename & hash?
-	if (dir.empty())
-		full_filename = BaseFileSearch(base_filename, ext, hash);
-	else
-	{
-		std::string found = BaseFileSearchDir(dir, base_filename, ext, hash);
-		if (!found.empty())
-		{
-			if (dir[dir.length() - 1] != PATHSEPCHAR)
-				dir += PATHSEP;
-			full_filename = dir + found;
-		}
-	}
-
-	if (!full_filename.empty())
-		return full_filename;
-
-	return std::string();
-}
-
-
-//
 // D_FindIWAD
 //
 // Tries to find an IWAD from a set of known IWAD file names.
 //
-static std::string D_FindIWAD(const std::string& suggestion = "")
+static bool FindIWAD(OResFile& out)
 {
-	if (!suggestion.empty())
-	{
-		std::string full_filename = D_FindResourceFile(suggestion);
-		if (!full_filename.empty() && W_IsIWAD(full_filename))
-			return full_filename;
-	}
-
 	// Search for a pre-defined IWAD from the list above
 	std::vector<OString> filenames = W_GetIWADFilenames();
-	for (size_t i = 0; i < filenames.size(); i++)
+	for (std::vector<OString>::const_iterator it = filenames.begin();
+	     it != filenames.end(); ++it)
 	{
-		std::string full_filename = D_FindResourceFile(filenames[i]);
-		if (!full_filename.empty() && W_IsIWAD(full_filename))
-			return full_filename;
+		// Construct a file.
+		OWantFile wantfile;
+		std::string filename = it->c_str();
+		if (!OWantFile::make(wantfile, filename, OFILE_WAD))
+		{
+			continue;
+		}
+
+		// Resolve the file.
+		if (!M_ResolveWantedFile(out, wantfile))
+		{
+			continue;
+		}
+
+		return W_IsIWAD(out);
 	}
 
-	return std::string();
+	return false;
 }
 
-
-//
-// D_AddResourceFile
-//
-// Searches for a given filename and if found, the full filepath is added
-// to the wadfiles vector. If the filename is not found, the filename is
-// added to the missingfiles vector instead.
-//
-static bool D_AddResourceFile(const std::string& filename, const std::string& hash = "")
+/**
+ * @brief Load files that are assumed to be resolved and in the correct order.
+ * 
+ * @param newwadfiles New set of WAD files.
+ * @param newpatchfiles New set of patch files.
+*/
+static void LoadResolvedFiles(const OResFiles& newwadfiles,
+                              const OResFiles& newpatchfiles)
 {
-	std::string full_filename = D_FindResourceFile(filename, hash);
-	if (!full_filename.empty())
-	{
-		wadfiles.push_back(full_filename);
-		return true;
-	}
-	else
-	{
-		Printf(PRINT_HIGH, "could not find resource file: %s\n", filename.c_str());
-		missingfiles.push_back(filename);
-		if (!hash.empty())
-			missinghashes.push_back(hash);
-		return false;
-	}
-}
+	::wadfiles.clear();
+	::patchfiles.clear();
 
+	// Now scan the contents of the IWAD to determine which one it is
+	W_ConfigureGameInfo(newwadfiles.at(1));
+
+	// print info about the IWAD to the console
+	D_PrintIWADIdentity();
+
+	// set the window title based on which IWAD we're using
+	I_SetTitleString(D_GetTitleString().c_str());
+
+	::modifiedgame = (::wadfiles.size() > 2) ||
+	                 !newpatchfiles.empty(); // more than odamex.wad and IWAD?
+
+	if (::modifiedgame && (::gameinfo.flags & GI_SHAREWARE))
+	{
+		I_FatalError(
+		    "\nYou cannot load additional WADs with the shareware version. Register!");
+	}
+
+	W_InitMultipleFiles(wadfiles);
+
+	// [RH] Initialize localizable strings.
+	// [SL] It is necessary to load the strings here since a dehacked patch
+	// might change the strings
+	::GStrings.loadStrings();
+
+	DoDefDehackedPatches(patchfiles);
+}
 
 //
 // D_LoadResourceFiles
@@ -766,80 +735,161 @@ static bool D_AddResourceFile(const std::string& filename, const std::string& ha
 // of loaded filenames and the missingfiles vector is also filled if
 // applicable.
 //
-void D_LoadResourceFiles(
-	const std::vector<std::string> &newwadfiles,
-	const std::vector<std::string> &newpatchfiles,
-	const std::vector<std::string> &newwadhashes,
-	const std::vector<std::string> &newpatchhashes
-)
+void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles)
 {
-	bool hashcheck = (newwadfiles.size() == newwadhashes.size());
-	bool iwad_provided = false;
+	OResFile odamex_wad;
+	OResFile next_iwad;
 
-	// save the iwad filename & hash from the currently loaded resource file list
-	std::string iwad_filename = wadfiles.size() >= 2 ? wadfiles[1] : "";
-	std::string iwad_hash = wadhashes.size() >= 2 ? wadhashes[1] : "";
+	::missingfiles.clear();
 
-	wadfiles.clear();
-	patchfiles.clear();
-	missingfiles.clear();
-	missinghashes.clear();
-
-	// Provided an IWAD filename?
-	if (newwadfiles.size() >= 1)
+	// Resolve wanted wads.
+	OResFiles resolved_wads(newwadfiles.size());
+	for (OWantFiles::const_iterator it = newwadfiles.begin(); it != newwadfiles.end();
+	     ++it)
 	{
-		std::string hash = hashcheck ? newwadhashes[0] : "";
-		std::string full_filename = D_FindResourceFile(newwadfiles[0], hash);
-		if (W_IsIWAD(full_filename))
+		OResFile file;
+		if (!M_ResolveWantedFile(file, *it))
 		{
-			if (W_IsIWADDeprecated(full_filename))
-					Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", full_filename.c_str());
+			::missingfiles.push_back(*it);
+			Printf(PRINT_WARNING, "Could not resolve resource file \"%s\".",
+			       it->getWantedPath().c_str());
+			continue;
+		}
+		resolved_wads.push_back(file);
+	}
 
-			iwad_provided = true;
-			iwad_filename = full_filename;
-			iwad_hash = hash;
+	// Resolve wanted patches.
+	OResFiles resolved_patches(newpatchfiles.size());
+	for (OWantFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
+	     ++it)
+	{
+		OResFile file;
+		if (!M_ResolveWantedFile(file, *it))
+		{
+			::missingfiles.push_back(*it);
+			Printf(PRINT_WARNING, "Could not resolve patch file \"%s\".",
+			       it->getWantedPath().c_str());
+			continue;
+		}
+		resolved_patches.push_back(file);
+	}
+
+	// ODAMEX.WAD //
+
+	if (::wadfiles.empty())
+	{
+		// If we don't have odamex.wad, resolve it now.
+		OWantFile want_odamex;
+		OWantFile::make(want_odamex, "odamex.wad", OFILE_WAD);
+		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
+		{
+			I_FatalError("Could not resolve \"%s\".  Please ensure this file is "
+			             "someplace where Odamex can find it.\n",
+			             want_odamex.getBasename());
+		}
+	}
+	else
+	{
+		// We already have odamex.wad, just make a copy of it.
+		odamex_wad = ::wadfiles.at(0);
+	}
+
+	// IWAD //
+
+	bool got_next_iwad = false;
+	if (resolved_wads.size() >= 1)
+	{
+		// See if the first WAD we passed was an IWAD.
+		const OResFile& possible_iwad = resolved_wads.at(0);
+		if (W_IsIWAD(possible_iwad))
+		{
+			next_iwad = possible_iwad;
+			got_next_iwad = true;
+			resolved_wads.erase(resolved_wads.begin());
+			if (W_IsIWADDeprecated(next_iwad))
+			{
+				Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the "
+				            "latest version.\n",
+				            next_iwad.getBasename().c_str());
+			}
 		}
 	}
 
-	// Not provided an IWAD filename and an IWAD is not currently loaded?
-	// Try to find *any* IWAD using D_FindIWAD.
-	if (iwad_filename.empty())
+	if (!got_next_iwad && ::wadfiles.size() >= 2)
 	{
-		iwad_filename = D_FindIWAD();
-		iwad_hash.clear();
+		// Reuse the old IWAD.  As an optimization, assume that the location
+		// of the IWAD has not changed on disk.
+		next_iwad = ::wadfiles.at(1);
+		got_next_iwad = true;
 	}
 
-	if (!D_AddResourceFile("odamex.wad"))
-		I_FatalError("Cannot find odamex.wad");
-	if (iwad_filename.empty() || !D_AddResourceFile(iwad_filename, iwad_hash))
-		I_FatalError("Cannot find IWAD (try -waddir)");
+	if (!got_next_iwad)
+	{
+		// Not provided an IWAD filename and an IWAD is not currently loaded?
+		// Try to find *any* IWAD using FindIWAD.
+		got_next_iwad = FindIWAD(next_iwad);
+	}
 
-	for (size_t i = iwad_provided ? 1 : 0; i < newwadfiles.size(); i++)
-		D_AddResourceFile(newwadfiles[i], hashcheck ? newwadhashes[i] : "");
+	if (!got_next_iwad)
+	{
+		I_FatalError("Could not resolve an IWAD file.  Please ensure at least "
+		             "one IWAD is someplace where Odamex can find it.\n");
+	}
 
-	// Now scan the contents of the IWAD to determine which one it is
-	W_ConfigureGameInfo(iwad_filename);
-
-	// print info about the IWAD to the console
-	D_PrintIWADIdentity();
-
-	// set the window title based on which IWAD we're using
-	I_SetTitleString(D_GetTitleString().c_str());
-
-	modifiedgame = (wadfiles.size() > 2) || !newpatchfiles.empty();	// more than odamex.wad and IWAD?
-	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError("\nYou cannot load additional WADs with the shareware version. Register!");
-
-	wadhashes = W_InitMultipleFiles(wadfiles);
-
-	// [RH] Initialize localizable strings.
-	// [SL] It is necessary to load the strings here since a dehacked patch
-	// might change the strings
-	GStrings.loadStrings();
-
-	D_DoDefDehackedPatch(newpatchfiles);
+	LoadResolvedFiles(resolved_wads, resolved_patches);
 }
 
+/**
+ * @brief Check to see if the list of WAD files and patches matches the
+ *        currently loaded files.
+ * 
+ * @detail Note that this relies on the hashes being equal, so if you want
+ *         resources to not be reloaded, ensure the hashes are equal by the
+ *         time they reach this spot.
+ * 
+ * @param newwadfiles WAD files to check.
+ * @param newpatchfiles Patch files to check.
+ * @return True if everything checks out.
+ */
+static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
+                                     const OWantFiles& newpatchfiles)
+{
+	// Cheking sizes is a good first approximation.
+
+	if (newwadfiles.size() != ::wadfiles.size() + 1)
+	{
+		return false;
+	}
+
+	if (newpatchfiles.size() != ::patchfiles.size())
+	{
+		return false;
+	}
+
+	// Check WAD hashes - with an offset because you can't replace odamex.wad.
+	for (OWantFiles::const_iterator it = newwadfiles.begin(); it != newwadfiles.end();
+	     ++it)
+	{
+		size_t idx = it - newwadfiles.begin();
+		if (it->getWantedHash() != ::wadfiles.at(idx - 1).getHash())
+		{
+			return false;
+		}
+	}
+
+	// Check patch hashes.
+	for (OWantFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
+	     ++it)
+	{
+		size_t idx = it - newpatchfiles.begin();
+		if (it->getWantedHash() != ::patchfiles.at(idx).getHash())
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
 
 //
 // D_DoomWadReboot
@@ -850,38 +900,30 @@ void D_LoadResourceFiles(
 // [SL] passing an IWAD as newwadfiles[0] is now optional
 // TODO: hash checking for patchfiles
 //
-bool D_DoomWadReboot(
-	const std::vector<std::string> &newwadfiles,
-	const std::vector<std::string> &newpatchfiles,
-	const std::vector<std::string> &newwadhashes,
-	const std::vector<std::string> &newpatchhashes
-)
+bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles)
 {
 	// already loaded these?
-	if (lastWadRebootSuccess &&	!wadhashes.empty() &&
-		newwadhashes == std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
+	if (::lastWadRebootSuccess && CheckWantedMatchesLoaded(newwadfiles, newpatchfiles))
 	{
-		// fast track if files have not been changed // denis - todo - actually check the file timestamps
-		Printf (PRINT_HIGH, "Currently loaded WADs match server checksum\n\n");
+		// fast track if files have not been changed
+		Printf("Currently loaded resources match server checksums.\n\n");
 		return true;
 	}
 
-	lastWadRebootSuccess = false;
+	::lastWadRebootSuccess = false;
 
 	D_Shutdown();
 
-	gamestate_t oldgamestate = gamestate;
-	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
+	gamestate_t oldgamestate = ::gamestate;
+	::gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	// Load all the WAD and DEH/BEX files
-	std::vector<std::string> oldwadfiles = wadfiles;
-	std::vector<std::string> oldpatchfiles = patchfiles;
-	std::vector<std::string> oldwadhashes = wadhashes;
-	std::vector<std::string> oldpatchhashes = patchhashes;
+	OResFiles oldwadfiles = ::wadfiles;
+	OResFiles oldpatchfiles = ::patchfiles;
 	std::string failmsg;
 	try
 	{
-		D_LoadResourceFiles(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 	}
 	catch (CRecoverableError& error)
 	{
@@ -898,7 +940,7 @@ bool D_DoomWadReboot(
 		std::string fatalmsg;
 		try
 		{
-			D_LoadResourceFiles(oldwadfiles, oldpatchfiles, oldwadhashes, oldpatchhashes);
+			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 		}
 		catch (CRecoverableError& error)
 		{
@@ -914,36 +956,35 @@ bool D_DoomWadReboot(
 	}
 
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	strcpy(::startmap, (::gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
 	D_Init();
 
 	// preserve state
-	lastWadRebootSuccess = missingfiles.empty();
+	::lastWadRebootSuccess = ::missingfiles.empty();
 
-	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
+	::gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
-	return missingfiles.empty() && failmsg.empty();
+	return ::missingfiles.empty() && failmsg.empty();
 }
 
 
 //
-// D_AddCommandLineOptionFiles
+// AddCommandLineOptionFiles
 //
 // Adds the full path of all the file names following the given command line
 // option parameter (eg, "-file") matching the specified extension to the
 // filenames vector.
 //
-static void D_AddCommandLineOptionFiles(
-	std::vector<std::string>& filenames,
-	const std::string& option, const std::string& ext)
+static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option,
+                                      ofile_t type)
 {
-	DArgs files = Args.GatherFiles(option.c_str(), ext.c_str(), true);
+	DArgs files = Args.GatherFiles(option.c_str());
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
-		std::string filename(files.GetArg(i));
-		M_AppendExtension(filename, ext, true);
-		filenames.push_back(filename);
+		OWantFile file;
+		OWantFile::make(file, files.GetArg(i), type);
+		out.push_back(file);
 	}
 
 	files.FlushArgs();
@@ -955,9 +996,9 @@ static void D_AddCommandLineOptionFiles(
 // Add the WAD files specified with -file.
 // Call this from D_DoomMain
 //
-void D_AddWadCommandLineFiles(std::vector<std::string>& filenames)
+void D_AddWadCommandLineFiles(OWantFiles& out)
 {
-	D_AddCommandLineOptionFiles(filenames, "-file", ".WAD");
+	AddCommandLineOptionFiles(out, "-file", OFILE_WAD);
 }
 
 //
@@ -966,10 +1007,9 @@ void D_AddWadCommandLineFiles(std::vector<std::string>& filenames)
 // Adds the DEH/BEX files specified with -deh.
 // Call this from D_DoomMain
 //
-void D_AddDehCommandLineFiles(std::vector<std::string>& filenames)
+void D_AddDehCommandLineFiles(OWantFiles& out)
 {
-	D_AddCommandLineOptionFiles(filenames, "-deh", ".DEH");
-	D_AddCommandLineOptionFiles(filenames, "-deh", ".BEX");
+	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
 }
 
 

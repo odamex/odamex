@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  A handle that wraps a resource file on disk.
+//  A handle that wraps a resolved file on disk.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,6 +26,27 @@
 #include <string>
 #include <vector>
 
+enum ofile_t
+{
+	/**
+	 * @brief Unknown file type.
+	 */
+	OFILE_UNKNOWN,
+
+	/**
+	 * @brief Anything that would be passed as a -file or -iwad parameter.
+	 */
+	OFILE_WAD,
+
+	/**
+	 * @brief Anything that would be passed as a -deh parameter.
+	 */
+	OFILE_DEH,
+};
+
+/**
+ * @brief A handle that wraps a resolved file on disk.
+ */
 class OResFile
 {
 	std::string m_fullpath;
@@ -33,23 +54,107 @@ class OResFile
 	std::string m_basename;
 
   public:
-	const std::string& GetFullpath()
+	bool operator==(const OResFile& other) const
+	{
+		return m_hash == other.m_hash;
+	}
+
+	bool operator!=(const OResFile& other) const
+	{
+		return !(operator==(other));
+	}
+
+	/**
+	 * @brief Get the full absolute path to the file.
+	 */
+	const std::string& getFullpath() const
 	{
 		return m_fullpath;
 	}
-	const std::string& GetHash()
+
+	/**
+	 * @brief Get a unique hash of the file.
+	 */
+	const std::string& getHash() const
 	{
 		return m_hash;
 	}
-	const std::string& GetBasename()
+
+	/**
+	 * @brief Get the base filename, with no path.
+	 */
+	const std::string& getBasename() const
 	{
 		return m_basename;
 	}
-	static bool Make(OResFile& out, const std::string& file);
-	static bool MakeWithHash(OResFile& out, const std::string& file,
+
+	static bool make(OResFile& out, const std::string& file);
+	static bool makeWithHash(OResFile& out, const std::string& file,
 	                         const std::string& hash);
 };
+typedef std::vector<OResFile> OResFiles;
 
-bool M_ResolveResFile(OResFile& out, std::string filename, const char* ext);
+/**
+ * @brief A handle that represents a "wanted" file that may or may not exist.
+ */
+class OWantFile
+{
+	std::string m_wantedpath;
+	ofile_t m_wantedtype;
+	std::string m_wantedhash;
+	std::string m_basename;
+	std::string m_extension;
+
+  public:
+	/**
+	 * @brief Get the original "wanted" path.
+	 */
+	const std::string& getWantedPath() const
+	{
+		return m_wantedpath;
+	}
+
+	/**
+	 * @brief Get the original "wanted" path.
+	 */
+	ofile_t getWantedType() const
+	{
+		return m_wantedtype;
+	}
+
+	/**
+	 * @brief Get the assumed hash of the file, or an empty string if there
+	 *        is no hash.
+	 */
+	const std::string& getWantedHash() const
+	{
+		return m_wantedhash;
+	}
+
+	/**
+	 * @brief Get the base filename of the resource, with no directory.
+	 */
+	const std::string& getBasename() const
+	{
+		return m_basename;
+	}
+
+	/**
+	 * @brief Get the extension of the resource.
+	 */
+	const std::string& getExt() const
+	{
+		return m_extension;
+	}
+
+	static bool make(OWantFile& out, const std::string& file, ofile_t type);
+	static bool makeWithHash(OWantFile& out, const std::string& file, ofile_t type,
+	                         const std::string& hash);
+};
+typedef std::vector<OWantFile> OWantFiles;
+
+const std::vector<std::string>& M_FileTypeExts(ofile_t type);
+std::vector<std::string> M_FileSearchDirs();
+bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
 
 #endif // __ORESFILE_H__

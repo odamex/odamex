@@ -37,6 +37,7 @@
 
 #include "cmdlib.h"
 #include "i_system.h"
+#include "m_ostring.h"
 #include "w_wad.h"
 
 #ifdef UNIX
@@ -186,12 +187,21 @@ std::string M_GetUserFileName(const std::string& file)
 }
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
-                                const std::string& ext, std::string hash)
+                                const std::vector<std::string>& exts,
+                                const std::string& hash)
 {
 	dir = M_CleanPath(dir);
-	hash = StdStringToUpper(hash);
-	const std::string cmp_file_ext(StdStringToUpper(file + ext));
-	const std::string cmp_file_ext_hash(cmp_file_ext + "." + hash);
+	std::vector<OString> cmp_files;
+	for (std::vector<std::string>::const_iterator it = exts.begin(); it != exts.end();
+	     ++it)
+	{
+		if (!hash.empty())
+		{
+			// Filenames with supplied hashes always match first.
+			cmp_files.push_back(StdStringToUpper(file + *it + "." + hash));
+		}
+		cmp_files.push_back(StdStringToUpper(file + *it));
+	}
 
 	// denis - list files in the directory of interest, case-desensitize
 	// then see if wanted wad is listed
@@ -210,8 +220,8 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
-		std::string tmp = StdStringToUpper(FindFileData.cFileName);
-		if (tmp == cmp_file_ext || (!hash.empty() && tmp == cmp_file_ext_hash))
+		OString check = StdStringToUpper(FindFileData.cFileName);
+		if (std::find(cmp_files.begin(), cmp_files.end(), check) != cmp_files.end())
 		{
 			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
 			const std::string local_hash(W_MD5(local_file));

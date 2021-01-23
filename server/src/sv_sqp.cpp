@@ -207,7 +207,8 @@ next:
 
 	for(size_t i = 0; i < patchfiles.size(); ++i)
 	{
-		MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(::patchfiles[i].getBasename()).c_str());
 	}
 
 	// Wad files
@@ -215,8 +216,9 @@ next:
 
 	for(size_t i = 0; i < wadfiles.size(); ++i)
 	{
-		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
-		MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(::wadfiles[i].getBasename(), "wad").c_str());
+		MSG_WriteHexString(&ml_message, ::wadfiles[i].getHash().c_str());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());

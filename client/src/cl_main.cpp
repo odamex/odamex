@@ -1661,10 +1661,8 @@ void CL_RequestConnectInfo(void)
  * @brief Quit the network game while attempting to download a file.
  *
  * @param missing_file Missing file to attempt to download.
- * @param missing_hash Hash of the missing file to download.
  */
-static void QuitAndTryDownload(const std::string& missing_file,
-                               const std::string& missing_hash)
+static void QuitAndTryDownload(const OWantFile& missing_file)
 {
 	// Need to set this here, otherwise we render a frame of wild pointers
 	// filled with garbage data.
@@ -1672,21 +1670,21 @@ static void QuitAndTryDownload(const std::string& missing_file,
 
 	if (!cl_serverdownload)
 	{
-		// Playing a netdemo and unable to download from the server
+		// Downloading is disabled client-side
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
 		       "Options > Network Options to enable downloading.\n",
-		       missing_file.c_str());
+		       missing_file.getBasename().c_str());
 		CL_QuitNetGame();
 		return;
 	}
 
 	if (netdemo.isPlaying())
 	{
-		// Downloading is disabled client-side
+		// Playing a netdemo and unable to download from the server
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
-		       missing_file.c_str());
+		       missing_file.getBasename().c_str());
 		CL_QuitNetGame();
 		return;
 	}
@@ -1696,7 +1694,7 @@ static void QuitAndTryDownload(const std::string& missing_file,
 		// Nobody has any download sites configured.
 		Printf("Unable to find \"%s\".  Both your client and the server have no "
 		       "download sites configured.\n",
-		       missing_file.c_str());
+		       missing_file.getBasename().c_str());
 		CL_QuitNetGame();
 		return;
 	}
@@ -1717,11 +1715,11 @@ static void QuitAndTryDownload(const std::string& missing_file,
 
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
-	       missing_file.c_str());
+	       missing_file.getBasename().c_str());
 	CL_QuitNetGame();
 
 	// Start the download.
-	CL_StartDownload(downloadsites, missing_file, missing_hash, DL_RECONNECT);
+	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
 }
 
 //
@@ -1751,9 +1749,9 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> newwadfiles(server_wads);
-	for(i = 0; i < server_wads; i++)
-		newwadfiles[i] = MSG_ReadString();
+	std::vector<std::string> newwadnames(server_wads);
+	for (i = 0; i < server_wads; i++)
+		newwadnames[i] = MSG_ReadString();
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
@@ -1768,11 +1766,13 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	std::vector<std::string> newwadhashes(server_wads);
-	for(i = 0; i < server_wads; i++)
+	OWantFiles newwadfiles(server_wads);
+	for (i = 0; i < server_wads; i++)
 	{
-		newwadhashes[i] = MSG_ReadString();
-		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
+		std::string hash = MSG_ReadString();
+		OWantFile::makeWithHash(newwadfiles[i], newwadnames[i], OFILE_WAD, hash);
+		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].getBasename().c_str(),
+		       newwadfiles[i].getWantedHash().c_str());
 	}
 
 	// Download website - needed for HTTP downloading to work.
@@ -1841,15 +1841,17 @@ bool CL_PrepareConnect(void)
 
     Printf(PRINT_HIGH, "\n");
 
-    // DEH/BEX Patch files
-    size_t patch_count = MSG_ReadByte();
-	std::vector<std::string> newpatchfiles(patch_count);
+	// DEH/BEX Patch files
+	size_t patch_count = MSG_ReadByte();
+	OWantFiles newpatchfiles(patch_count);
 
-    for (i = 0; i < patch_count; ++i)
-        newpatchfiles[i] = MSG_ReadString();
+	for (i = 0; i < patch_count; ++i)
+	{
+		OWantFile::make(newpatchfiles[i], MSG_ReadString(), OFILE_DEH);
+	}
 
     // TODO: Allow deh/bex file downloads
-	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
+	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
 	if (!ok && missingfiles.empty())
 	{
 		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
@@ -1858,19 +1860,17 @@ bool CL_PrepareConnect(void)
 	}
 	else if (!ok && !missingfiles.empty() || cl_forcedownload)
 	{
-		std::string missing_file, missing_hash;
+		OWantFile missing_file;
 		if (missingfiles.empty())				// cl_forcedownload
 		{
 			missing_file = newwadfiles.back();
-			missing_hash = newwadhashes.back();
 		}
 		else									// client is really missing a file
 		{
 			missing_file = missingfiles.front();
-			missing_hash = missinghashes.front();
 		}
 
-		QuitAndTryDownload(missing_file, missing_hash);
+		QuitAndTryDownload(missing_file);
 		return false;
 	}
 
@@ -3521,21 +3521,20 @@ void CL_LoadMap(void)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
-	std::vector<std::string> newwadfiles, newwadhashes;
-	std::vector<std::string> newpatchfiles, newpatchhashes;
-
 	size_t wadcount = MSG_ReadUnVarint();
-	while (wadcount--)
+	OWantFiles newwadfiles(wadcount);
+	for (size_t i = 0; i < wadcount; i++)
 	{
-		newwadfiles.push_back(MSG_ReadString());
-		newwadhashes.push_back(MSG_ReadString());
+		OWantFile::makeWithHash(newwadfiles[i], MSG_ReadString(), OFILE_WAD,
+		                        MSG_ReadString());
 	}
 
 	size_t patchcount = MSG_ReadUnVarint();
-	while (patchcount--)
+	OWantFiles newpatchfiles(patchcount);
+	for (size_t i = 0; i < patchcount; i++)
 	{
-		newpatchfiles.push_back(MSG_ReadString());
-		newpatchhashes.push_back(MSG_ReadString());
+		OWantFile::makeWithHash(newpatchfiles[i], MSG_ReadString(), OFILE_DEH,
+		                        MSG_ReadString());
 	}
 
 	const char *mapname = MSG_ReadString();
@@ -3543,13 +3542,12 @@ void CL_LoadMap(void)
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
-	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+	G_LoadWad(newwadfiles, newpatchfiles);
 
 	if (!missingfiles.empty())
 	{
-		std::string missing_file = missingfiles.front();
-		std::string missing_hash = missinghashes.front();
-		QuitAndTryDownload(missing_file, missing_hash);
+		OWantFile missing_file = missingfiles.front();
+		QuitAndTryDownload(missing_file);
 		return;
 	}
 

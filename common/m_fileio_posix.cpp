@@ -182,7 +182,8 @@ std::string M_GetUserFileName(const std::string& file)
 }
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
-                                const std::string& ext, std::string hash)
+                                const std::vector<std::string>& exts,
+                                const std::string& hash)
 {
 	dir = M_CleanPath(dir);
 	hash = StdStringToUpper(hash);

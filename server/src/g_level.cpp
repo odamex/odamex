@@ -145,7 +145,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWad(str);
+	G_LoadWadString(str);
 }
 END_COMMAND (wad)
 
@@ -212,7 +212,7 @@ void G_ChangeMap() {
 				}
 				wadstr += C_QuoteString(maplist_entry.wads.at(i));
 			}
-			G_LoadWad(wadstr, maplist_entry.map);
+			G_LoadWadString(wadstr, maplist_entry.map);
 
 			// Set the new map as the current map
 			Maplist::instance().set_index(next_index);
@@ -236,7 +236,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -291,8 +291,7 @@ void G_DoNewGame (void)
 		if(!(it->ingame()))
 			continue;
 
-		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::wadhashes, ::patchfiles,
-		            ::patchhashes, d_mapname, 0);
+		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::patchfiles, d_mapname, 0);
 	}
 
 	sv_curmap.ForceSet(d_mapname);

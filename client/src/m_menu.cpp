@@ -996,16 +996,16 @@ void M_StartGame(int choice)
         {
             // Load No Rest for The Living Externally
             epi = 0;
-            G_LoadWad(str);
+            G_LoadWadString(str);
         }
         else
         {
             // Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
             for (unsigned int i = 2; i < wadfiles.size(); i++)
             {
-                if (iequals(str, M_ExtractFileName(wadfiles[i])))
+                if (iequals(str, wadfiles[i].getBasename()))
                 {
-                    G_LoadWad(wadfiles[1]);
+                    G_LoadWadString(wadfiles[1].getFullpath());
                 }
             }
 
