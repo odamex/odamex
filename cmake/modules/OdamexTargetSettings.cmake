@@ -63,6 +63,7 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS -Wnull-dereference W_NULL_DEREFERENCE)
     checked_add_compile_flag(CHECKED_OPTIONS -Wuseless-cast W_USELESS_CAST)
     checked_add_compile_flag(CHECKED_OPTIONS -Wformat=2 W_FORMAT_2)
+    checked_add_compile_flag(CHECKED_OPTIONS -Wno-unused-parameter W_NO_UNUSED_PARAMETER)
   endif()
   target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
 
