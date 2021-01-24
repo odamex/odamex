@@ -793,7 +793,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		{
 			I_FatalError("Could not resolve \"%s\".  Please ensure this file is "
 			             "someplace where Odamex can find it.\n",
-			             want_odamex.getBasename());
+			             want_odamex.getBasename().c_str());
 		}
 	}
 	else
