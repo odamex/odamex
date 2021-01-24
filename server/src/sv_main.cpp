@@ -4372,7 +4372,7 @@ void SV_WantWad(player_t &player)
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		std::string message;
 		StrFormat(message, "Server: %s is a commercial wad and will not be downloaded\n",
-		          wadfiles[i].getBasename());
+		          wadfiles[i].getBasename().c_str());
 		MSG_WriteString(&cl->reliablebuf, message.c_str());
 
 		SV_DropClient(player);
