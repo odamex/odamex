@@ -344,7 +344,7 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
 {
 	// not a valid sound
-	if (!sfxinfo)
+	if (::Channel == NULL || sfxinfo == NULL)
 		return -1;
 
 	// Sort the sound channels by descending priority levels
@@ -862,6 +862,9 @@ void S_StopSound (fixed_t *pt)
 
 void S_StopSound (fixed_t *pt, int channel)
 {
+	if (::Channel == NULL)
+		return;
+
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo
 			&& Channel[i].pt == pt // denis - fixme - security - wouldn't this cause invalid access elsewhere, if an object was destroyed?
