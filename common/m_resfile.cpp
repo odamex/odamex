@@ -269,8 +269,20 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	// correctly, believe them.
 	if (M_FileExists(wanted.getWantedPath()))
 	{
-		return OResFile::makeWithHash(out, wanted.getWantedPath(),
-		                              wanted.getWantedHash());
+		if (wanted.getWantedHash().empty())
+		{
+			// No hash preference.
+			return OResFile::make(out, wanted.getWantedPath());
+		}
+
+		std::string hash = W_MD5(wanted.getWantedPath());
+		if (wanted.getWantedHash() == hash)
+		{
+			// File matches our hash.
+			return OResFile::makeWithHash(out, wanted.getWantedPath(), hash);
+		}
+
+		// Not a match, keep trying.
 	}
 
 	std::string dir, basename, strext;
