@@ -833,6 +833,9 @@ void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume,
 //
 static void S_StopChannel(unsigned int cnum)
 {
+	if (::Channel == NULL)
+		return;
+
 	if (cnum >= numChannels)
 	{
 		DPrintf("Trying to stop invalid channel %d\n", cnum);
