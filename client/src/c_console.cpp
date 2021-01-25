@@ -110,8 +110,8 @@ static struct NotifyText
 } NotifyStrings[NUMNOTIFIES];
 
 // Default Printlevel
-#define PRINTLEVELS 5 //(5 + 3)
-int PrintColors[PRINTLEVELS+3] = 
+#define PRINTLEVELS 9 //(5 + 3)
+int PrintColors[PRINTLEVELS] = 
 {	CR_RED,		// Pickup
 	CR_GOLD,	// Obituaries
 	CR_GRAY,	// Messages
@@ -120,7 +120,8 @@ int PrintColors[PRINTLEVELS+3] =
 
 	CR_GOLD,	// Server chat
 	CR_YELLOW,	// Warning messages
-	CR_RED		// Critical messages
+	CR_RED,		// Critical messages
+	CR_GOLD,	// Centered Messages
 };	
 
 
