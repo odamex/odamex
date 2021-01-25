@@ -170,7 +170,8 @@ std::string V_GetTeamColor(team_t ateam)
 {
 	std::string buf;
 	TeamInfo* team = GetTeamInfo(ateam);
-	StrFormat(buf, "%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
+	StrFormat(buf, "%s%s%s", team->TextColor.c_str(), team->ColorStringUpper.c_str(),
+	          TEXTCOLOR_NORMAL);
 	return buf;
 }
 
@@ -178,13 +179,14 @@ std::string V_GetTeamColor(UserInfo userinfo)
 {
 	std::string buf;
 	TeamInfo* team = GetTeamInfo(userinfo.team);
-	StrFormat(buf, "%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
+	StrFormat(buf, "%s%s%s", team->TextColor.c_str(), team->ColorStringUpper.c_str(), TEXTCOLOR_NORMAL);
 	return buf;
 }
 
 const std::string TeamInfo::ColorizedTeamName()
 {
 	std::string buf;
-	StrFormat(buf, "%s%s%s", TextColor, ColorStringUpper, TEXTCOLOR_NORMAL);
+	StrFormat(buf, "%s%s%s", TextColor.c_str(), ColorStringUpper.c_str(),
+	          TEXTCOLOR_NORMAL);
 	return buf;
 }
