@@ -2491,7 +2491,7 @@ void SV_DrawScores()
 		else
 			sortedspectators.push_back(&*it);
 
-	Printf("\n");
+	Printf_Bold("\n");
 
 	if (sv_gametype == GM_CTF)
 	{
@@ -2682,7 +2682,7 @@ void SV_DrawScores()
 		}
 	}
 
-	Printf("\n");
+	Printf_Bold("\n");
 }
 
 BEGIN_COMMAND (showscores)
@@ -5656,6 +5656,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
+	byte coloritem = CR_GRAY;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
@@ -5664,9 +5665,26 @@ void SV_ShareKeys(card_t card, player_t &player)
 	// Broadcast the key shared to 
 	gitem_t* item;
 	if (item = FindCardItem(card))
-		SV_BroadcastPrintf(PRINT_HIGH, "%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
+	{
+		switch (card)
+		{
+		case it_bluecard:
+		case it_blueskull:
+			coloritem = CR_BLUE; 
+			break;
+		case it_redcard:
+		case it_redskull:
+			coloritem = CR_RED;
+			break;
+		case it_yellowcard:
+		case it_yellowskull:
+			coloritem = CR_YELLOW;
+			break;
+		}
+	}
+		SV_BroadcastPrintf("%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
 	else
-		SV_BroadcastPrintf(PRINT_HIGH, "%s found a key!\n", player.userinfo.netname.c_str());
+		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
 
 	// Refresh the inventory to everyone
 	// ToDo: If we're the player who picked it, don't refresh our own inventory
