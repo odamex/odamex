@@ -5656,7 +5656,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
-	byte coloritem = CR_GRAY;
+	char* coloritem;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
@@ -5670,19 +5670,23 @@ void SV_ShareKeys(card_t card, player_t &player)
 		{
 		case it_bluecard:
 		case it_blueskull:
-			coloritem = CR_BLUE; 
+			coloritem = TEXTCOLOR_BLUE; 
 			break;
 		case it_redcard:
 		case it_redskull:
-			coloritem = CR_RED;
+			coloritem = TEXTCOLOR_RED;
 			break;
 		case it_yellowcard:
 		case it_yellowskull:
-			coloritem = CR_YELLOW;
+			coloritem = TEXTCOLOR_GOLD;
 			break;
+		default:
+			coloritem = TEXTCOLOR_NORMAL;
 		}
+
+		SV_BroadcastPrintf("%s found the %s%s%s!\n", player.userinfo.netname.c_str(),
+		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
 	}
-		SV_BroadcastPrintf("%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
 	else
 		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
 
