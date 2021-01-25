@@ -511,14 +511,14 @@ public:
 	translationref_t(const palindex_t *table);
 	translationref_t(const palindex_t *table, const int player_id);
 
-	const palindex_t tlate(const byte c) const;
-	const int getPlayerID() const;
+	palindex_t tlate(const byte c) const;
+	int getPlayerID() const;
 	const palindex_t *getTable() const;
 
 	operator bool() const;
 };
 
-forceinline const palindex_t translationref_t::tlate(const byte c) const
+forceinline palindex_t translationref_t::tlate(const byte c) const
 {
 	#if ODAMEX_DEBUG
 	if (m_table == NULL)
@@ -527,7 +527,7 @@ forceinline const palindex_t translationref_t::tlate(const byte c) const
 	return m_table[c];
 }
 
-forceinline const int translationref_t::getPlayerID() const
+forceinline int translationref_t::getPlayerID() const
 {
 	return m_player_id;
 }
@@ -578,8 +578,8 @@ public:
 	palindex_t  index(const byte c) const;
 	argb_t      shade(const byte c) const;
 	const shademap_t *map() const;
-	const int mapnum() const;
-	const byte ramp() const;
+	int mapnum() const;
+	byte ramp() const;
 
 	argb_t tlate(const translationref_t &translation, const byte c) const;
 
@@ -626,7 +626,7 @@ forceinline const shademap_t *shaderef_t::map() const
 	return m_colors;
 }
 
-forceinline const int shaderef_t::mapnum() const
+forceinline int shaderef_t::mapnum() const
 {
 	return m_mapnum;
 }
