@@ -670,15 +670,10 @@ void G_LivesCheckEndGame()
 	}
 	else if (G_IsTeamGame())
 	{
-		// If someone has configured TeamDM improperly, just don't do anything.
-		int teamsinplay = sv_teamsinplay.asInt();
-		if (teamsinplay < 1 || teamsinplay > NUMTEAMS)
-			return;
-
 		// One person alive on a single team is success, nobody alive is a draw.
 		PlayerResults pr = PlayerQuery().hasLives().execute();
 		int aliveteams = 0;
-		for (int i = 0; i < teamsinplay; i++)
+		for (int i = 0; i < sv_teamsinplay.asInt(); i++)
 		{
 			if (pr.teamCount[i] > 0)
 				aliveteams += 1;
