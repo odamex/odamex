@@ -1851,9 +1851,14 @@ bool CL_PrepareConnect(void)
         newpatchfiles[i] = MSG_ReadString();
 
     // TODO: Allow deh/bex file downloads
-	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
-
-	if (!missingfiles.empty() || cl_forcedownload)
+	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
+	if (!ok && missingfiles.empty())
+	{
+		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
+		CL_QuitNetGame();
+		return false;
+	}
+	else if (!ok && !missingfiles.empty() || cl_forcedownload)
 	{
 		std::string missing_file, missing_hash;
 		if (missingfiles.empty())				// cl_forcedownload

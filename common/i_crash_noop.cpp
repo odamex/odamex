@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#if defined _WIN32 && !defined _XBOX && defined _MSC_VER
+#if defined _WIN32 && !defined _XBOX && defined _MSC_VER && !defined _DEBUG
 #elif defined UNIX && !defined GEKKO
 #else
 

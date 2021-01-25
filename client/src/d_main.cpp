@@ -83,6 +83,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "sc_man.h"
 
 #include "w_ident.h"
 
@@ -696,6 +697,7 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
+	S_Deinit();
 	
 	// shutdown automap
 	AM_Stop();
@@ -716,6 +718,8 @@ void STACK_ARGS D_Shutdown()
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();
+
+	SC_Close();
 
 //	Res_ShutdownTextureManager();
 

@@ -343,6 +343,8 @@ static const char *MapInfoTopLevel[] =
 	"clusterdef",
 	"episode",
 	"clearepisodes",
+	"skill",
+	"clearskills",
 	"gameinfo",
 	"intermission",
 	"automap",
@@ -370,6 +372,12 @@ enum
 
 	// clearepisodes
 	MITL_CLEAREPISODES,
+
+	// skill <name>
+	MITL_SKILL,
+
+	// clearskills
+	MITL_CLEARSKILLS,
 
 	// gameinfo // New MAPINFO only
 	MITL_GAMEINFO,
@@ -1184,6 +1192,16 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			break;
 		}
 		case MITL_CLEAREPISODES:
+			// Not implemented
+			break;
+
+		case MITL_SKILL:
+			// Not implemented
+			SC_MustGetString(); // Name
+			ParseMapInfoLower(NULL, NULL, NULL, 0);
+			break;
+
+		case MITL_CLEARSKILLS:
 			// Not implemented
 			break;
 

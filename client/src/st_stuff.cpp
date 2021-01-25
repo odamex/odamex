@@ -1450,38 +1450,43 @@ static void ST_unloadGraphics()
 	int i;
 
 	// unload the numbers, tall and short
-	for (i=0;i<10;i++)
+	for (i = 0; i < 10; i++)
 	{
-		Z_ChangeTag(tallnum[i], PU_CACHE);
-		Z_ChangeTag(shortnum[i], PU_CACHE);
+		Z_Discard(&::tallnum[i]);
+		Z_Discard(&::shortnum[i]);
 	}
+
 	// unload tall percent
-	Z_ChangeTag(tallpercent, PU_CACHE);
+	Z_Discard(&::tallpercent);
 
 	// unload arms background
-	Z_ChangeTag(armsbg, PU_CACHE);
+	Z_Discard(&::armsbg);
 
 	// unload flags background
-	Z_ChangeTag(flagsbg, PU_CACHE);
+	Z_Discard(&::flagsbg);
 
 	// unload gray #'s
-	for (i=0;i<6;i++)
-		Z_ChangeTag(arms[i][0], PU_CACHE);
+	for (i = 0; i < 6; i++)
+	{
+		Z_Discard(&::arms[i][0]);
+	}
 
 	// unload the key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
-		Z_ChangeTag(keys[i], PU_CACHE);
+	for (i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
+	{
+		Z_Discard(&::keys[i]);
+	}
 
-	Z_ChangeTag(sbar, PU_CACHE);
-	Z_ChangeTag(faceback, PU_CACHE);
+	Z_Discard(&::sbar);
+	Z_Discard(&::faceback);
 
-	for (i=0;i<ST_NUMFACES;i++)
-		Z_ChangeTag(faces[i], PU_CACHE);
+	for (i = 0; i < ST_NUMFACES; i++)
+	{
+		Z_Discard(&::faces[i]);
+	}
 
 	// Note: nobody ain't seen no unloading
 	//	 of stminus yet. Dude.
-
-
 }
 
 static void ST_unloadData()

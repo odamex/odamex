@@ -1573,7 +1573,7 @@ void C_DrawConsole()
 		// Non-fullscreen console. Overlay a translucent background.
 		screen->Dim(0, 0, primary_surface_width, ConBottom);
 	}
-	else
+	else if (::background_surface != NULL)
 	{
 		// Fullscreen console. Blit the image in the center of a black background.
 		screen->Clear(0, 0, primary_surface_width, primary_surface_height, argb_t(0, 0, 0));
