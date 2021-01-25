@@ -202,7 +202,7 @@ void LevelState::reset()
 
 		// Don't print "match started" for every game mode.
 		if (g_rounds)
-			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
+			SV_BroadcastPrintf("Round %d has started.\n", m_roundNumber);
 	}
 
 	m_countdownDoneTime = 0;
@@ -272,7 +272,7 @@ void LevelState::readyToggle()
 		if (m_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
-			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
+			SV_BroadcastPrintf("Countdown aborted: Player unreadied.\n");
 		}
 	}
 }
@@ -343,7 +343,7 @@ void LevelState::tic()
 		if (::level.time >= m_countdownDoneTime)
 		{
 			setState(LevelState::INGAME);
-			SV_BroadcastPrintf(PRINT_HIGH, "FIGHT!\n");
+			SV_BroadcastPrintf("FIGHT!\n");
 			return;
 		}
 		break;
@@ -430,7 +430,7 @@ void LevelState::tic()
 			if (g_rounds)
 				printRoundStart();
 			else
-				SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
+				SV_BroadcastPrintf("The match has started.\n");
 
 			return;
 		}
@@ -561,13 +561,13 @@ void LevelState::printRoundStart() const
 	team_t def = getDefendingTeam();
 	if (def != TEAM_NONE)
 	{
-		const TeamInfo& teaminfo = *GetTeamInfo(def);
-		SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started - %s is on defense.\n",
-		                   m_roundNumber, teaminfo.ColorString.c_str());
+		TeamInfo& teaminfo = *GetTeamInfo(def);
+		SV_BroadcastPrintf("Round %d has started - %s is on defense.\n",
+		                   m_roundNumber, teaminfo.ColorizedTeamName().c_str());
 	}
 	else
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
+		SV_BroadcastPrintf("Round %d has started.\n", m_roundNumber);
 	}
 }
 

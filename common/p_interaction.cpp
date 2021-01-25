@@ -1194,7 +1194,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	// [AM] Save the "out of lives" message until after the obit.
 	if (g_lives && tplayer && tplayer->lives <= 0)
-		SV_BroadcastPrintf(PRINT_HIGH, "%s is out of lives.\n",
+		SV_BroadcastPrintf("%s is out of lives.\n",
 		                   tplayer->userinfo.netname.c_str());
 
 	// Check sv_fraglimit.

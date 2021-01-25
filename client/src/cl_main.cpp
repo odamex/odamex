@@ -167,9 +167,8 @@ static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
 void P_DestroyButtonThinkers();
-std::string V_GetTeamColorPlayer(player_t& player);
 
-    //
+//
 // CL_ShadePlayerColor
 //
 // Shades base_color darker using the intensity of shade_color.

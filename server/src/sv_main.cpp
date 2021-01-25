@@ -125,7 +125,7 @@ void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(byte special);
 
 void SV_UpdateShareKeys(player_t& player);
-std::string V_GetTeamColorPlayer(UserInfo userinfo);
+std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -3895,10 +3895,10 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n",
+			SV_BroadcastPrintf("%s joined the game.\n",
 			                   player.userinfo.netname.c_str());
 		else
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
+			SV_BroadcastPrintf("%s joined the game on the %s team.\n",
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}

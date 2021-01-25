@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <sstream>
+#include "cmdlib.h"
 #include "teaminfo.h"
 #include "v_textcolors.h"
 #include "d_player.h"
@@ -165,29 +166,25 @@ TeamsView TeamQuery::execute()
 	return results;
 }
 
-std::string V_GetTeamColor(TeamInfo *team)
-{
-	std::ostringstream buffer;
-	buffer << team->TextColor << team->ColorStringUpper << TEXTCOLOR_NORMAL;
-	return buffer.str();
-}
-
 std::string V_GetTeamColor(team_t ateam)
 {
-	std::ostringstream buffer;
+	std::string buf;
 	TeamInfo* team = GetTeamInfo(ateam);
-	
-	buffer << team->TextColor << team->ColorStringUpper << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
+	StrFormat(buf, "%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
+	return buf;
 }
 
-std::string V_GetTeamColorPlayer(UserInfo userinfo)
+std::string V_GetTeamColor(UserInfo userinfo)
 {
-	std::ostringstream buffer;
+	std::string buf;
 	TeamInfo* team = GetTeamInfo(userinfo.team);
+	StrFormat(buf, "%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
+	return buf;
+}
 
-	buffer << team->TextColor << userinfo.netname << TEXTCOLOR_NORMAL;
-
-	return buffer.str();
+const std::string TeamInfo::ColorizedTeamName()
+{
+	std::string buf;
+	StrFormat(buf, "%s%s%s", TextColor, ColorStringUpper, TEXTCOLOR_NORMAL);
+	return buf;
 }
