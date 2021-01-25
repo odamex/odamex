@@ -934,6 +934,11 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	try
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
+
+		// get skill / episode / map from parms
+		strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+
+		D_Init();
 	}
 	catch (CRecoverableError& error)
 	{
@@ -947,10 +952,18 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		       "Could not load new resource files.\n%s\nReloading previous resource "
 		       "set...\n",
 		       failmsg.c_str());
+
+		D_Shutdown();
+
 		std::string fatalmsg;
 		try
 		{
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
+
+			// get skill / episode / map from parms
+			strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+
+			D_Init();
 		}
 		catch (CRecoverableError& error)
 		{
@@ -964,11 +977,6 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 			             fatalmsg.c_str());
 		}
 	}
-
-	// get skill / episode / map from parms
-	strcpy(::startmap, (::gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-
-	D_Init();
 
 	// preserve state
 	::lastWadRebootSuccess = ::missingfiles.empty();
