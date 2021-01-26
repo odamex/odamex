@@ -233,6 +233,11 @@ GDWNA0	17	44
 GCARA0	4	68
 
 
+# Dummies for shareware compatibility
+CELLA0  8       12
+PSTRA0  12      15
+CELPA0  15      20
+
 # List of Floors and Ceilings
 [flats]
 -NOFLAT-

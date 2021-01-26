@@ -305,11 +305,21 @@ static StringTokens GetDownloadDirs()
 
 	// Add all of the sources.
 	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+
+		// These folders should only work on PC versions
+#ifndef GCONSOLE
 	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+#endif
+
 	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
 	dirs.push_back(M_GetUserDir());
+
+#ifdef __SWITCH__
+	dirs.push_back("./wads");
+#endif
+
 	dirs.push_back(M_GetCWD());
 
 	// Clean up all of the directories before deduping them.

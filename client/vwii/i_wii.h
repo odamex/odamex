@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,10 +40,13 @@
 #define sendto net_sendto
 #define select net_select
 #define ioctl net_ioctl
+#define setsockopt net_setsockopt 
 
 #define PathIsRelative wii_pathisrelative
 #define scandir wii_scandir
 #define alphasort wii_alphasort
+
+#define WII_DATAPATH "sd:/odx_data/"
 
 bool wii_pathisrelative(const char *path);
 
@@ -55,5 +58,7 @@ int wii_scandir(const char *dir, struct  dirent ***namelist,
 							int (*compar)(const struct dirent **, const struct dirent **));
 int wii_alphasort(const struct dirent **a, const struct dirent **b);
 
+// This is added for compatibility with strptime.cpp and cmdlib.cpp
+char * strptime(const char *buf, const char *fmt, struct tm *timeptr);
 
 #endif

@@ -125,7 +125,7 @@ void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(byte special);
 
 void SV_UpdateShareKeys(player_t& player);
-std::string V_GetTeamColorPlayer(UserInfo userinfo);
+std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -2491,7 +2491,7 @@ void SV_DrawScores()
 		else
 			sortedspectators.push_back(&*it);
 
-	Printf("\n");
+	Printf_Bold("\n");
 
 	if (sv_gametype == GM_CTF)
 	{
@@ -2682,7 +2682,7 @@ void SV_DrawScores()
 		}
 	}
 
-	Printf("\n");
+	Printf_Bold("\n");
 }
 
 BEGIN_COMMAND (showscores)
@@ -3296,7 +3296,7 @@ void SV_UpdateSecretCount(player_t& player)
 
 		client_t* cl = &(it->client);
 
-		SVC_SecretFound(cl->reliablebuf, it->id);
+		SVC_SecretFound(cl->reliablebuf, player.id);
 	}
 }
 
@@ -3895,10 +3895,10 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n",
+			SV_BroadcastPrintf("%s joined the game.\n",
 			                   player.userinfo.netname.c_str());
 		else
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
+			SV_BroadcastPrintf("%s joined the game on the %s team.\n",
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
@@ -4051,7 +4051,7 @@ static void HelpCmd(player_t& player)
 	SV_PlayerPrintf(PRINT_HIGH, player.id,
 	                "odasrv v%s\n\n"
 	                "This server has no custom commands\n",
-	                GitNiceVersion());
+	                GitShortHash());
 }
 
 /**
@@ -4821,7 +4821,9 @@ BEGIN_COMMAND (playerinfo)
 	Printf("---------------[player info]----------- \n");
 	Printf(" IP Address       - %s \n",		ip);
 	Printf(" userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(" userinfo.team    - %s \n",		team);
+	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
+		Printf(" userinfo.team    - %s \n", team);
+	}
 	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(" userinfo.color   - %s \n",		color);
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
@@ -5654,6 +5656,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
+	char* coloritem;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
@@ -5662,9 +5665,30 @@ void SV_ShareKeys(card_t card, player_t &player)
 	// Broadcast the key shared to 
 	gitem_t* item;
 	if (item = FindCardItem(card))
-		SV_BroadcastPrintf(PRINT_HIGH, "%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
+	{
+		switch (card)
+		{
+		case it_bluecard:
+		case it_blueskull:
+			coloritem = TEXTCOLOR_BLUE; 
+			break;
+		case it_redcard:
+		case it_redskull:
+			coloritem = TEXTCOLOR_RED;
+			break;
+		case it_yellowcard:
+		case it_yellowskull:
+			coloritem = TEXTCOLOR_GOLD;
+			break;
+		default:
+			coloritem = TEXTCOLOR_NORMAL;
+		}
+
+		SV_BroadcastPrintf("%s found the %s%s%s!\n", player.userinfo.netname.c_str(),
+		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
+	}
 	else
-		SV_BroadcastPrintf(PRINT_HIGH, "%s found a key!\n", player.userinfo.netname.c_str());
+		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
 
 	// Refresh the inventory to everyone
 	// ToDo: If we're the player who picked it, don't refresh our own inventory
