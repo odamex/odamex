@@ -2408,7 +2408,7 @@ void CL_SpawnMobj()
 		CL_SetMobjSpeedAndAngle();
 	}
 
-    if (mo->flags & MF_COUNTKILL)
+    if (!multiplayer && mo->flags & MF_COUNTKILL)
 		level.total_monsters++;
 
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
@@ -2467,7 +2467,7 @@ void CL_Corpse(void)
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
 
-    if (mo->flags & MF_COUNTKILL)
+    if (!multiplayer && mo->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 }
 
@@ -2795,7 +2795,7 @@ void CL_KillMobj()
 
 	target->health = health;
 
-	if (!serverside && target->flags & MF_COUNTKILL)
+	if (!multiplayer && !serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 
 	if (target->player == &consoleplayer())
