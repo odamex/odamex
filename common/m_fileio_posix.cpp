@@ -227,26 +227,31 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
 
 	std::string found;
+	std::vector<OString>::iterator found_it = cmp_files.end();
 	for (int i = 0; i < n && namelist[i]; i++)
 	{
 		const std::string d_name = namelist[i]->d_name;
 		M_Free(namelist[i]);
 
-		if (!found.empty())
+		if (found_it == cmp_files.begin())
 			continue;
 
 		if (d_name == "." || d_name == "..")
 			continue;
 
 		const std::string check = StdStringToUpper(d_name);
-		if (std::find(cmp_files.begin(), cmp_files.end(), check) != cmp_files.end())
+		std::vector<OString>::iterator this_it =
+		    std::find(cmp_files.begin(), cmp_files.end(), check);
+		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + d_name);
 			const std::string local_hash(W_MD5(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
+				// Found a match.
 				found = d_name;
+				found_it = this_it;
 				continue;
 			}
 			else if (!hash.empty())
