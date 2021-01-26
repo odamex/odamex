@@ -3296,7 +3296,7 @@ void SV_UpdateSecretCount(player_t& player)
 
 		client_t* cl = &(it->client);
 
-		SVC_SecretFound(cl->reliablebuf, it->id);
+		SVC_SecretFound(cl->reliablebuf, player.id);
 	}
 }
 
@@ -4051,7 +4051,7 @@ static void HelpCmd(player_t& player)
 	SV_PlayerPrintf(PRINT_HIGH, player.id,
 	                "odasrv v%s\n\n"
 	                "This server has no custom commands\n",
-	                GitNiceVersion());
+	                GitShortHash());
 }
 
 /**

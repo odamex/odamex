@@ -84,6 +84,8 @@
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
 
+gameplatform_t platform;
+
 extern bool step_mode;
 
 // denis - client version (VERSION or other supported)

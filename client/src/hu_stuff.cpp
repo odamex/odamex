@@ -245,12 +245,12 @@ void HU_ReleaseKeyStates()
 //
 BOOL HU_Responder(event_t *ev)
 {
-	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT || ev->data1 == KEY_HAT1)
+	if (ev->data1 == OKEY_RALT || ev->data1 == OKEY_LALT || ev->data1 == OKEY_HAT1)
 	{
 		altdown = (ev->type == ev_keydown);
 		return false;
 	}
-	else if (ev->data1 == KEY_LSHIFT || ev->data1 == KEY_RSHIFT)
+	else if (ev->data1 == OKEY_LSHIFT || ev->data1 == OKEY_RSHIFT)
 	{
 		return false;
 	}
@@ -268,9 +268,9 @@ BOOL HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// send a macro
-		if (ev->data1 >= KEY_JOY1 && ev->data1 <= KEY_JOY10)
+		if (ev->data1 >= OKEY_JOY1 && ev->data1 <= OKEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data1 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev->data1 - OKEY_JOY1]->cstring(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
@@ -281,18 +281,18 @@ BOOL HU_Responder(event_t *ev)
 			return true;
 		}
 	}
-	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER)
+	if (ev->data1 == OKEY_ENTER || ev->data1 == OKEYP_ENTER)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
+	else if (ev->data1 == OKEY_ESCAPE || ev->data1 == OKEY_JOY2)
 	{
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == KEY_BACKSPACE)
+	else if (ev->data1 == OKEY_BACKSPACE)
 	{
 		if (!input_text.empty())
 			input_text.erase(input_text.end() - 1);

@@ -241,6 +241,7 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastsensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
@@ -515,8 +516,12 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		}
 		else
 		{
-			cmd->yaw -= (short)((((float)::joyturn / (float)SHRT_MAX) * ::angleturn[1]) *
-			                    (joy_sensitivity / 10));
+			if (Actions[ACTION_FASTTURN])
+				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
+				                    (joy_fastsensitivity / 10));
+			else
+				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
+				                    (joy_sensitivity / 10));
 		}
 		::localview.skipangle = true;
 	}

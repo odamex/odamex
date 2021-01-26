@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomtype.h"
+#include "c_cvars.h"
 #include "i_sdl.h" 
 #include "i_input.h"
 #include "i_sdlinput.h"
@@ -33,6 +34,9 @@
 
 static const int MAX_SDL_EVENTS_PER_TIC = 8192;
 
+EXTERN_CVAR(joy_deadzone)
+EXTERN_CVAR(joy_lefttrigger_deadzone)
+EXTERN_CVAR(joy_righttrigger_deadzone)
 
 // ============================================================================
 //
@@ -487,21 +491,21 @@ void ISDL12MouseInputDevice::gatherEvents()
 				{
 					ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
 					if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-						ev.data1 = KEY_MOUSE1;
+						ev.data1 = OKEY_MOUSE1;
 					else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-						ev.data1 = KEY_MOUSE2;
+						ev.data1 = OKEY_MOUSE2;
 					else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-						ev.data1 = KEY_MOUSE3;
+						ev.data1 = OKEY_MOUSE3;
 					#if SDL_VERSION_ATLEAST(1, 2, 14)
 					else if (sdl_ev.button.button == SDL_BUTTON_X1)
-						ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+						ev.data1 = OKEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
 					else if (sdl_ev.button.button == SDL_BUTTON_X2)
-						ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+						ev.data1 = OKEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
 					#endif
 					else if (sdl_ev.button.button == SDL_BUTTON_WHEELUP)
-						ev.data1 = KEY_MWHEELUP;
+						ev.data1 = OKEY_MWHEELUP;
 					else if (sdl_ev.button.button == SDL_BUTTON_WHEELDOWN)
-						ev.data1 = KEY_MWHEELDOWN;
+						ev.data1 = OKEY_MWHEELDOWN;
 				}
 
 				mEvents.push(ev);
@@ -683,15 +687,16 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				sdl_ev.jbutton.which == mJoystickId)
 			{
 				event_t button_event;
-				button_event.data1 = sdl_ev.jbutton.button + KEY_JOY1;
+				button_event.data1 = sdl_ev.jbutton.button + OKEY_JOY1;
 				button_event.type = (sdl_ev.type == SDL_JOYBUTTONDOWN) ? ev_keydown : ev_keyup;
 				mEvents.push(button_event);
 			}
 			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
 			{
+				float deadzone = (joy_deadzone * 32767);
 				event_t motion_event(ev_joystick);
 				motion_event.data2 = sdl_ev.jaxis.axis;
-				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
+				if ((sdl_ev.jaxis.value >= deadzone || (sdl_ev.jaxis.value <= -deadzone)))
 					motion_event.data3 = sdl_ev.jaxis.value;
 				mEvents.push(motion_event);
 			}
@@ -709,7 +714,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 				for (int i = 0; i < 4; i++)
 				{
 					event_t hat_event;
-					hat_event.data1 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
+					hat_event.data1 = (sdl_ev.jhat.hat * 4) + OKEY_HAT1 + i;
 
 					// determine if the flag's state has changed (ignore it if it hasn't)
 					if (!(old_state & flags[i]) && (new_state & flags[i]))
@@ -1448,23 +1453,23 @@ void ISDL20MouseInputDevice::gatherEvents()
 				#endif
 
 				if (direction * sdl_ev.wheel.y > 0)
-					ev.data1 = KEY_MWHEELUP;
+					ev.data1 = OKEY_MWHEELUP;
 				else if (direction * sdl_ev.wheel.y < 0)
-					ev.data1 = KEY_MWHEELDOWN;
+					ev.data1 = OKEY_MWHEELDOWN;
 			}
 			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
 			{
 				ev.type = (sdl_ev.type == SDL_MOUSEBUTTONDOWN) ? ev_keydown : ev_keyup;
 				if (sdl_ev.button.button == SDL_BUTTON_LEFT)
-					ev.data1 = KEY_MOUSE1;
+					ev.data1 = OKEY_MOUSE1;
 				else if (sdl_ev.button.button == SDL_BUTTON_RIGHT)
-					ev.data1 = KEY_MOUSE2;
+					ev.data1 = OKEY_MOUSE2;
 				else if (sdl_ev.button.button == SDL_BUTTON_MIDDLE)
-					ev.data1 = KEY_MOUSE3;
+					ev.data1 = OKEY_MOUSE3;
 				else if (sdl_ev.button.button == SDL_BUTTON_X1)
-					ev.data1 = KEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
+					ev.data1 = OKEY_MOUSE4;	// [Xyltol 07/21/2011] - Add support for MOUSE4
 				else if (sdl_ev.button.button == SDL_BUTTON_X2)
-					ev.data1 = KEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
+					ev.data1 = OKEY_MOUSE5;	// [Xyltol 07/21/2011] - Add support for MOUSE5
 			}
 
 			if (ev.data1)
@@ -1500,22 +1505,18 @@ void ISDL20MouseInputDevice::getEvent(event_t* ev)
 // ISDL20JoystickInputDevice::ISDL20JoystickInputDevice
 //
 ISDL20JoystickInputDevice::ISDL20JoystickInputDevice(int id) :
-	mActive(false), mJoystickId(id), mJoystick(NULL),
-	mNumHats(0), mHatStates(NULL)
+	mActive(false), mJoystickId(id), mJoystick(NULL)
 {
-	assert(SDL_WasInit(SDL_INIT_JOYSTICK));
+	assert(SDL_WasInit(SDL_INIT_GAMECONTROLLER));
 	assert(mJoystickId >= 0 && mJoystickId < SDL_NumJoysticks());
 
-	mJoystick = SDL_JoystickOpen(mJoystickId);
+	mJoystick = SDL_GameControllerOpen(mJoystickId);
 	if (mJoystick == NULL)
 		return;
 
-	mNumHats = SDL_JoystickNumHats(mJoystick);
-	mHatStates = new int[mNumHats];
-
 	// This turns on automatic event polling for joysticks so that the state
 	// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
-	SDL_JoystickEventState(SDL_ENABLE);
+	SDL_GameControllerEventState(SDL_ENABLE);
 	
 	resume();
 }
@@ -1528,12 +1529,10 @@ ISDL20JoystickInputDevice::~ISDL20JoystickInputDevice()
 {
 	pause();
 
-	SDL_JoystickEventState(SDL_IGNORE);
+	SDL_GameControllerEventState(SDL_IGNORE);
 
 	if (mJoystick != NULL)
-		SDL_JoystickClose(mJoystick);
-
-	delete [] mHatStates;
+		SDL_GameControllerClose(mJoystick);
 }
 
 
@@ -1554,8 +1553,6 @@ void ISDL20JoystickInputDevice::flushEvents()
 	gatherEvents();
 	while (!mEvents.empty())
 		mEvents.pop();
-	for (int i = 0; i < mNumHats; i++)
-		mHatStates[i] = SDL_HAT_CENTERED;
 }
 
 
@@ -1579,11 +1576,9 @@ void ISDL20JoystickInputDevice::reset()
 void ISDL20JoystickInputDevice::pause()
 {
 	mActive = false;
-	SDL_EventState(SDL_JOYAXISMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_JOYBALLMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_JOYHATMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_IGNORE);
-	SDL_EventState(SDL_JOYBUTTONUP, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERAXISMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERBUTTONUP, SDL_IGNORE);
 }
 
 
@@ -1599,11 +1594,9 @@ void ISDL20JoystickInputDevice::resume()
 {
 	mActive = true;
 	reset();
-	SDL_EventState(SDL_JOYAXISMOTION, SDL_ENABLE);
-	SDL_EventState(SDL_JOYBALLMOTION, SDL_ENABLE);
-	SDL_EventState(SDL_JOYHATMOTION, SDL_ENABLE);
-	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_ENABLE);
-	SDL_EventState(SDL_JOYBUTTONUP, SDL_ENABLE);
+	SDL_EventState(SDL_CONTROLLERAXISMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_CONTROLLERBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_CONTROLLERBUTTONUP, SDL_ENABLE);
 }
 
 
@@ -1628,63 +1621,79 @@ void ISDL20JoystickInputDevice::gatherEvents()
 	int num_events = 0;
 	SDL_Event sdl_events[MAX_SDL_EVENTS_PER_TIC];
 
-	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYBUTTONUP)))
+	while ((num_events = SDL_PeepEvents(sdl_events, MAX_SDL_EVENTS_PER_TIC, SDL_GETEVENT,
+	                                 SDL_CONTROLLERAXISMOTION, SDL_CONTROLLERBUTTONUP)))
 	{
 		for (int i = 0; i < num_events; i++)
 		{
 			const SDL_Event& sdl_ev = sdl_events[i];
 
-			assert(sdl_ev.type == SDL_JOYBUTTONDOWN || sdl_ev.type == SDL_JOYBUTTONUP ||
-					sdl_ev.type == SDL_JOYAXISMOTION || sdl_ev.type == SDL_JOYHATMOTION ||
-					sdl_ev.type == SDL_JOYBALLMOTION);
+			assert(sdl_ev.type == SDL_CONTROLLERBUTTONDOWN ||
+			       sdl_ev.type == SDL_CONTROLLERBUTTONUP ||
+			       sdl_ev.type == SDL_CONTROLLERAXISMOTION);
 
-			if ((sdl_ev.type == SDL_JOYBUTTONDOWN || sdl_ev.type == SDL_JOYBUTTONUP) &&
+			if ((sdl_ev.type == SDL_CONTROLLERBUTTONDOWN ||
+			     sdl_ev.type == SDL_CONTROLLERBUTTONUP) &&
 				sdl_ev.jbutton.which == mJoystickId)
 			{
 				event_t button_event;
-				button_event.type = (sdl_ev.type == SDL_JOYBUTTONDOWN) ? ev_keydown : ev_keyup;
-				button_event.data1 = sdl_ev.jbutton.button + KEY_JOY1;
+				button_event.type =
+				    (sdl_ev.type == SDL_CONTROLLERBUTTONDOWN) ? ev_keydown : ev_keyup;
+				button_event.data1 = sdl_ev.cbutton.button + OKEY_JOY1;
 				mEvents.push(button_event);
 			}
-			else if (sdl_ev.type == SDL_JOYAXISMOTION && sdl_ev.jaxis.which == mJoystickId)
+			else if (sdl_ev.type == SDL_CONTROLLERAXISMOTION &&
+			         sdl_ev.caxis.which == mJoystickId)
 			{
-				event_t motion_event(ev_joystick);
-				motion_event.type = ev_joystick;
-				motion_event.data2 = sdl_ev.jaxis.axis;
-				if ((sdl_ev.jaxis.value >= JOY_DEADZONE) || (sdl_ev.jaxis.value <= -JOY_DEADZONE))
-					motion_event.data3 = sdl_ev.jaxis.value;
-				mEvents.push(motion_event);
-			}
-			else if (sdl_ev.type == SDL_JOYHATMOTION && sdl_ev.jhat.which == mJoystickId)
-			{
-				// [SL] A single SDL joystick hat event indicates on/off for each of the
-				// directional triggers for that hat. We need to create a separate 
-				// ev_keydown or ev_keyup event_t instance for each directional trigger
-				// indicated in this SDL joystick event.
-				assert(sdl_ev.jhat.hat < mNumHats);
-				int new_state = sdl_ev.jhat.value;
-				int old_state = mHatStates[sdl_ev.jhat.hat];
 
-				static const int flags[4] = { SDL_HAT_UP, SDL_HAT_RIGHT, SDL_HAT_DOWN, SDL_HAT_LEFT };
-				for (int i = 0; i < 4; i++)
+				float deadzone;
+				bool bPressed = false;
+
+				if (sdl_ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
 				{
-					event_t hat_event;
-					hat_event.data1 = (sdl_ev.jhat.hat * 4) + KEY_HAT1 + i;
+					event_t button_event;
+					
+					deadzone = (joy_lefttrigger_deadzone * 32767);
+					
+					if ((sdl_ev.caxis.value >= deadzone) ||
+					    (sdl_ev.caxis.value <= -deadzone)){
+						bPressed = true;	
+					}
 
-					// determine if the flag's state has changed (ignore it if it hasn't)
-					if (!(old_state & flags[i]) && (new_state & flags[i]))
-					{
-						hat_event.type = ev_keydown;
-						mEvents.push(hat_event);
-					}
-					else if ((old_state & flags[i]) && !(new_state & flags[i]))
-					{
-						hat_event.type = ev_keyup;
-						mEvents.push(hat_event);
-					}
+					button_event.type = bPressed ? ev_keydown : ev_keyup;
+					button_event.data1 = OKEY_JOY20; // LEFT TRIGGER
+					mEvents.push(button_event);
 				}
 
-				mHatStates[sdl_ev.jhat.hat] = new_state;
+				else if (sdl_ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
+				{
+					event_t button_event;
+
+					deadzone = (joy_righttrigger_deadzone * 32767);
+
+					if ((sdl_ev.caxis.value >= deadzone) ||
+					    (sdl_ev.caxis.value <= -deadzone)){
+						bPressed = true;
+					}
+
+					button_event.type = bPressed ? ev_keydown : ev_keyup;
+					button_event.data1 = OKEY_JOY21;	// RIGHT TRIGGER
+					mEvents.push(button_event);
+				}
+				else
+				{
+					float deadzone = (joy_deadzone * 32767);
+					event_t motion_event(ev_joystick);
+					motion_event.type = ev_joystick;
+					motion_event.data2 = sdl_ev.caxis.axis;
+					if ((sdl_ev.caxis.value >= deadzone) ||
+					    (sdl_ev.caxis.value <= -deadzone)){
+						motion_event.data3 = sdl_ev.caxis.value;
+					}
+
+					mEvents.push(motion_event);
+				}
+
 			}
 		}
 	}
@@ -1719,7 +1728,7 @@ ISDL20InputSubsystem::ISDL20InputSubsystem() :
 	mInputGrabbed(false)
 {
 	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
-	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+	SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 
 	// Tell SDL to ignore events from the input devices
 	// IInputDevice constructors will enable these events when they're initialized.
@@ -1731,11 +1740,9 @@ ISDL20InputSubsystem::ISDL20InputSubsystem() :
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
 
-	SDL_EventState(SDL_JOYAXISMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_JOYBALLMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_JOYHATMOTION, SDL_IGNORE);
-	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_IGNORE);
-	SDL_EventState(SDL_JOYBUTTONUP, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERAXISMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERBUTTONDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERBUTTONUP, SDL_IGNORE);
 
 	grabInput();
 }
@@ -1753,7 +1760,7 @@ ISDL20InputSubsystem::~ISDL20InputSubsystem()
 	if (getJoystickInputDevice())
 		shutdownJoystick(0);
 
-	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+	SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
 
 
@@ -1883,7 +1890,7 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getJoystickDevices() const
 		IInputDeviceInfo& device_info = devices.back();
 		device_info.mId = i;
 		char name[256];
-		sprintf(name, "SDL 2.0 joystick (%s)", SDL_JoystickNameForIndex(i));
+		sprintf(name, "SDL 2.0 joystick (%s)", SDL_GameControllerNameForIndex(i));
 		device_info.mDeviceName = name;
 	}
 
