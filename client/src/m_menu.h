@@ -94,6 +94,7 @@ typedef enum {
 	greenslider,
 	discrete,
 	cdiscrete,
+	svdiscrete,		// Ch0wW : serverside discrete
 	control,
 	mapcontrol,		// Ch0wW : Automap bindings
 	screenres,
