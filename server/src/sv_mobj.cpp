@@ -32,7 +32,6 @@
 #include "sv_main.h"
 #include "p_acs.h"
 
-EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_maxplayers)
 
 void G_PlayerReborn(player_t &player);
