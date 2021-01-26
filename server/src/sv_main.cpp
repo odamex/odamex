@@ -4823,7 +4823,9 @@ BEGIN_COMMAND (playerinfo)
 	Printf("---------------[player info]----------- \n");
 	Printf(" IP Address       - %s \n",		ip);
 	Printf(" userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(" userinfo.team    - %s \n",		team);
+	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
+		Printf(" userinfo.team    - %s \n", team);
+	}
 	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(" userinfo.color   - %s \n",		color);
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
