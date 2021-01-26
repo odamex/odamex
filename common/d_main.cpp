@@ -67,9 +67,6 @@
 #include "i_xbox.h"
 #endif
 
-EXTERN_CVAR (waddirs)
-EXTERN_CVAR (cl_waddownloaddir)
-
 OResFiles wadfiles;
 OResFiles patchfiles;
 OWantFiles missingfiles;
@@ -219,103 +216,6 @@ static char *GetRegistryString(registry_value_t *reg_val)
 
 #endif
 
-//
-// BaseFileSearchDir
-// denis - Check single paths for a given file with a possible extension
-// Case insensitive, but returns actual file name
-//
-static std::string BaseFileSearchDir(std::string dir, const std::string &file, const std::string &ext, std::string hash = "")
-{
-	std::string found;
-
-	if (dir[dir.length() - 1] != PATHSEPCHAR)
-		dir += PATHSEP;
-
-	hash = StdStringToUpper(hash);
-	std::string dothash;
-	if (!hash.empty())
-		dothash = "." + hash;
-
-	// denis - list files in the directory of interest, case-desensitize
-	// then see if wanted wad is listed
-#ifdef UNIX
-	struct dirent **namelist = 0;
-	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
-
-	for (int i = 0; i < n && namelist[i]; i++)
-	{
-		std::string d_name = namelist[i]->d_name;
-
-		M_Free(namelist[i]);
-
-		if (found.empty())
-		{
-			if (d_name == "." || d_name == "..")
-				continue;
-
-			std::string tmp = StdStringToUpper(d_name);
-
-			if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
-			{
-				std::string local_file(dir + d_name);
-				std::string local_hash(W_MD5(local_file));
-
-				if (hash.empty() || hash == local_hash)
-				{
-					found = d_name;
-				}
-				else if (!hash.empty())
-				{
-					Printf (PRINT_WARNING, "WAD at %s does not match required copy\n", local_file.c_str());
-					Printf (PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
-					Printf (PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
-				}
-			}
-		}
-	}
-
-	M_Free(namelist);
-#else
-	std::string all_ext = dir + "*";
-	//all_ext += ext;
-
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-		return "";
-
-	do
-	{
-		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
-
-		std::string tmp = StdStringToUpper(FindFileData.cFileName);
-
-		if (file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
-		{
-			std::string local_file(dir + FindFileData.cFileName);
-			std::string local_hash(W_MD5(local_file));
-
-			if (hash.empty() || hash == local_hash)
-			{
-				found = FindFileData.cFileName;
-				break;
-			}
-			else if (!hash.empty())
-			{
-				Printf (PRINT_WARNING, "WAD at %s does not match required copy\n", local_file.c_str());
-				Printf (PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
-				Printf (PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
-			}
-		}
-	} while (FindNextFile(hFind, &FindFileData));
-
-	FindClose(hFind);
-#endif
-
-	return found;
-}
 
 //
 // D_AddSearchDir
@@ -457,89 +357,6 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
 
 	#endif
-}
-
-//
-// BaseFileSearch
-// denis - Check all paths of interest for a given file with a possible extension
-//
-static std::string BaseFileSearch(std::string file, std::string ext = "", std::string hash = "")
-{
-	#ifdef _WIN32
-		// absolute path?
-		if (file.find(':') != std::string::npos)
-			return file;
-
-		const char separator = ';';
-	#else
-		// absolute path?
-		if (file[0] == PATHSEPCHAR || file[0] == '~')
-			return file;
-
-		const char separator = ':';
-	#endif
-
-    // [Russell] - Bit of a hack. (since BaseFileSearchDir should handle this)
-    // return file if it contains a path already
-	if (M_FileExists(file))
-		return file;
-
-	file = StdStringToUpper(file);
-	ext = StdStringToUpper(ext);
-	std::vector<std::string> dirs;
-
-	if (file == "ODAMEX.WAD")
-	{
-		// odamex.wad should be expected to be in the binary directory and
-		// noplace else.
-		dirs.push_back(M_GetBinaryDir());
-	}
-	else
-	{
-		//[cSc] Add cl_waddownloaddir as default path
-		D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
-
-		// These folders should only work on PC versions
-#ifndef GCONSOLE
-			D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-			D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-			D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
-#endif
-
-		D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
-		dirs.push_back(M_GetUserDir());
-
-#ifdef __SWITCH__
-		dirs.push_back("./wads");
-#endif
-
-		dirs.push_back(M_GetCWD());
-	}
-
-	// [AM] Search additional paths based on platform
-	D_AddPlatformSearchDirs(dirs);
-
-	D_AddSearchDir(dirs, waddirs.cstring(), separator);
-
-	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
-
-	for (size_t i = 0; i < dirs.size(); i++)
-	{
-		std::string found = BaseFileSearchDir(dirs[i], file, ext, hash);
-
-		if (!found.empty())
-		{
-			std::string &dir = dirs[i];
-
-			if (dir[dir.length() - 1] != PATHSEPCHAR)
-				dir += PATHSEP;
-
-			return dir + found;
-		}
-	}
-
-	// Not found
-	return "";
 }
 
 
