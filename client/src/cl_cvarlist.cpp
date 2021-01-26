@@ -279,7 +279,7 @@ CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVA
 CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can be on a team
 CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-CVAR (sv_teamsinplay, "0", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
 
 // Netcode Settings

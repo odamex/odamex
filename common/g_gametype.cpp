@@ -515,9 +515,9 @@ void G_TimeCheckEndGame()
 		if (g_sides)
 		{
 			// Defense always wins in the event of a timeout.
-			const TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
+			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
 			SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
-			                   ti.ColorStringUpper.c_str());
+			                   ti.ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);
 		}
 		else
@@ -532,7 +532,7 @@ void G_TimeCheckEndGame()
 			else
 			{
 				SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
-				                   tv.front()->ColorStringUpper.c_str());
+				                   tv.front()->ColorizedTeamName().c_str());
 				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 			}
 		}
@@ -616,7 +616,7 @@ void G_TeamScoreCheckEndGame()
 		{
 			GiveTeamWins(team->Team, 1);
 			SV_BroadcastPrintf("Score limit hit. %s team wins!\n",
-			                   team->ColorString.c_str());
+			                   team->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			::levelstate.endRound();
 			M_CommitWDLLog();
@@ -670,15 +670,10 @@ void G_LivesCheckEndGame()
 	}
 	else if (G_IsTeamGame())
 	{
-		// If someone has configured TeamDM improperly, just don't do anything.
-		int teamsinplay = sv_teamsinplay.asInt();
-		if (teamsinplay < 1 || teamsinplay > NUMTEAMS)
-			return;
-
 		// One person alive on a single team is success, nobody alive is a draw.
 		PlayerResults pr = PlayerQuery().hasLives().execute();
 		int aliveteams = 0;
-		for (int i = 0; i < teamsinplay; i++)
+		for (int i = 0; i < sv_teamsinplay.asInt(); i++)
 		{
 			if (pr.teamCount[i] > 0)
 				aliveteams += 1;
@@ -699,7 +694,7 @@ void G_LivesCheckEndGame()
 				GiveTeamWins(tv.front()->Team, 1);
 				SV_BroadcastPrintf(
 				    "%s team wins for having the highest score with %s left!\n",
-				    tv.front()->ColorString.c_str(), teams);
+				    tv.front()->ColorizedTeamName().c_str(), teams);
 				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 				::levelstate.endRound();
 			}
@@ -723,7 +718,7 @@ void G_LivesCheckEndGame()
 			team_t team = pr.players.front()->userinfo.team;
 			GiveTeamWins(team, 1);
 			SV_BroadcastPrintf("%s team wins as the last team standing!\n",
-			                   GetTeamInfo(team)->ColorString.c_str());
+			                   GetTeamInfo(team)->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team);
 			::levelstate.endRound();
 		}
@@ -780,7 +775,7 @@ bool G_RoundsShouldEndGame()
 		if (tv.size() == 1 && ::g_winlimit && tv.front()->RoundWins >= ::g_winlimit)
 		{
 			SV_BroadcastPrintf("Win limit hit. %s team wins!\n",
-			                   tv.front()->ColorString.c_str());
+			                   tv.front()->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 			return true;
 		}
@@ -788,7 +783,7 @@ bool G_RoundsShouldEndGame()
 		         ::levelstate.getRound() >= ::g_roundlimit)
 		{
 			SV_BroadcastPrintf("Round limit hit. %s team wins!\n",
-			                   tv.front()->ColorString.c_str());
+			                   tv.front()->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 			return true;
 		}
