@@ -617,6 +617,8 @@ void G_DoResetLevel(bool full_reset)
 		if (sv_gametype == GM_COOP)
 			P_ClearPlayerCards(*it);
 
+		P_ClearPlayerPowerups(*it);
+
 		if (full_reset)
 		{
 			P_ClearPlayerScores(*it, true);
@@ -730,7 +732,7 @@ void G_DoLoadLevel (int position)
 		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
 		//      make sure they're gone.
 		P_ClearPlayerCards(*it);
-
+		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, true);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
