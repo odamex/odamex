@@ -22,14 +22,29 @@ if(WIN32)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
 
+# Include console folders if compiling 
+if (GCONSOLE)
+  if (NSWITCH)
+    set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} switch/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} switch/*.cpp)
+    odamex_target_settings_nx(CLIENT_DIR GLOB)
+  elseif (VWII)
+    set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
+    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
+    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
+  endif()
+endif()
+
 # Tag source files with correct directories
 get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Client" FILES ${CLIENT_SOURCES})
 source_group("Common" FILES ${COMMON_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 
+
 # Client definitions
-include_directories(${CLIENT_DIR})
+include_directories(${COMMON_DIR} ${CLIENT_DIR})
 
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)
@@ -154,20 +169,29 @@ endif()
 
 # Client target
 if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
-  # Textscreen
-  set(TEXTSCREEN_LIBRARY "textscreen")
-  set(TEXTSCREEN_DIR ../libraries/textscreen)
-  set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-  set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
 
-  include_directories(${TEXTSCREEN_DIR})
-  add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+  if (NOT GCONSOLE)
+    # Textscreen
+    set(TEXTSCREEN_LIBRARY "textscreen")
+    set(TEXTSCREEN_DIR ../libraries/textscreen)
+    set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
+    set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
+
+    include_directories(${TEXTSCREEN_DIR})
+    add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+  endif()
+
   if(TARGET SDL::SDL)
     target_link_libraries(${TEXTSCREEN_LIBRARY} SDL::SDL)
   else()
     target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
   endif()
-  target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
+
+  if (NOT GCONSOLE)
+    target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
+  else()
+    include_directories(../common)
+  endif()
 
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES})
@@ -198,6 +222,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
+
   target_link_libraries(odamex odamex-common)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
@@ -222,6 +247,12 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex winmm wsock32 shlwapi)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  elseif(NSWITCH)
+    target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
+  elseif(VWII)
+    # Ch0wW : this is UGLY, please fix it ASAP !!
+    target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
+    target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
@@ -302,7 +333,12 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
         ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
-
+  elseif(NSWITCH)
+    odamex_target_postcompile_nx(odamex)
+  elseif(VWII)
+    message(${CMAKE_BINARY_DIR})
+    add_custom_command( TARGET odamex POST_BUILD
+    COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

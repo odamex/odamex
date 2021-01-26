@@ -2049,7 +2049,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 	}
 
 	if (self->player && multiplayer)
-		SV_BroadcastPrintf(PRINT_HIGH, "%s exited the level.\n",
+		SV_BroadcastPrintf("%s exited the level.\n",
 		                   self->player->userinfo.netname.c_str());
 
 	return true;

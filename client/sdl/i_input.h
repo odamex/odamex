@@ -220,5 +220,7 @@ private:
 	IInputDevice*		mJoystickInputDevice;
 };
 
+typedef OHashTable<int, std::string> KeyNameTable;
+extern KeyNameTable key_names;
 
 #endif  // __I_INPUT_H__

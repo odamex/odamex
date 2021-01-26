@@ -40,6 +40,13 @@ set(PROJECT_COMPANY "The Odamex Team")
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Include early required commands for specific systems
+if (NSWITCH)
+	include("switch.cmake" REQUIRED)  # Nintendo Switch
+elseif(VWII)
+  include("wii.cmake" REQUIRED)     # Wii/vWii
+endif()
+
 # Ensure that we can use folders in projects.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -142,7 +149,7 @@ endif()
 if(BUILD_LAUNCHER)
   add_subdirectory(odalaunch)
 endif()
-if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_ODALAUNCH)
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 

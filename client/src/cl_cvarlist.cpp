@@ -259,9 +259,17 @@ CVAR (joy_forwardaxis, "1", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENAB
 CVAR (joy_turnaxis, "2", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_lookaxis, "3", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE (joy_deadzone, "0.34", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 1.0f)
+
+CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
+					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
+
+CVAR_RANGE(joy_righttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the right trigger (Analog controllers only)",
+					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
 
 CVAR(				show_messages, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -279,7 +287,7 @@ CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVA
 CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can be on a team
 CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-CVAR (sv_teamsinplay, "0", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
 
 // Netcode Settings
@@ -657,7 +665,7 @@ CVAR_FUNC_DECL(	vid_defheight, "720", "",
 CVAR_FUNC_DECL(	vid_widescreen, "1", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
+CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",

@@ -81,6 +81,8 @@ struct TeamInfo
 	int Points;
 	int RoundWins;
 	flagdata FlagData;
+
+	const std::string ColorizedTeamName();
 };
 
 /**
