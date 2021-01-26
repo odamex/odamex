@@ -83,7 +83,6 @@ struct TeamInfo
 	flagdata FlagData;
 
 	const std::string ColorizedTeamName();
-	const std::string ColorizedTeamPlayer(std::string playername);
 };
 
 /**

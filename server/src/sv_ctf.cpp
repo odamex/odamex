@@ -224,7 +224,7 @@ void SV_FlagScore (player_t &player, team_t f)
 	int time_held = I_MSTime() - teamInfo->FlagData.pickup_time;
 
 	SV_BroadcastPrintf("%s has captured the %s flag (held for %s)\n",
-						teamInfo->ColorizedTeamPlayer(player.userinfo.netname).c_str(),
+						player.userinfo.netname.c_str(),
 						teamInfo->ColorizedTeamName().c_str(), 
 						CTF_TimeMSG(time_held));
 

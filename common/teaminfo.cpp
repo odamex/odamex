@@ -190,11 +190,3 @@ const std::string TeamInfo::ColorizedTeamName()
 	          TEXTCOLOR_NORMAL);
 	return buf;
 }
-
-const std::string TeamInfo::ColorizedTeamPlayer(std::string playername)
-{
-	std::string buf;
-	StrFormat(buf, "%s%s%s", TextColor.c_str(), playername.c_str(),
-	          TEXTCOLOR_NORMAL);
-	return buf;
-}
