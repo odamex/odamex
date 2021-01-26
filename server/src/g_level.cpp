@@ -729,8 +729,7 @@ void G_DoLoadLevel (int position)
 		if (it->ingame() && it->playerstate == PST_DEAD)
 			it->playerstate = PST_REBORN;
 
-		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
-		//      make sure they're gone.
+		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, true);
