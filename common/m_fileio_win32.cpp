@@ -215,21 +215,32 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		return "";
 
 	std::string found;
+	std::vector<OString>::iterator found_it = cmp_files.end();
 	do
 	{
 		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
+		// Not only find a match, but check if it is a better match than we
+		// found previously.
 		OString check = StdStringToUpper(FindFileData.cFileName);
-		if (std::find(cmp_files.begin(), cmp_files.end(), check) != cmp_files.end())
+		std::vector<OString>::iterator this_it =
+		    std::find(cmp_files.begin(), cmp_files.end(), check);
+		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
 			const std::string local_hash(W_MD5(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
+				// Found a match.
 				found = FindFileData.cFileName;
-				break;
+				found_it = this_it;
+				if (found_it == cmp_files.begin())
+				{
+					// Found the best possible match, we're done.
+					break;
+				}
 			}
 			else if (!hash.empty())
 			{

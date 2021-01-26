@@ -292,10 +292,14 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		exts.push_back(StdStringToUpper(strext));
+		exts.push_back("." + StdStringToUpper(strext));
 	}
-	const std::vector<std::string>& ftexts = M_FileTypeExts(wanted.getWantedType());
-	exts.insert(exts.end(), ftexts.begin(), ftexts.end());
+	else
+	{
+		const std::vector<std::string>& ftexts = M_FileTypeExts(wanted.getWantedType());
+		exts.insert(exts.end(), ftexts.begin(), ftexts.end());
+	}
+	std::unique(exts.begin(), exts.end());
 
 	// And now...we resolve.
 	const std::vector<std::string> dirs = M_FileSearchDirs();
