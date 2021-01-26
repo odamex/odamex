@@ -40,31 +40,10 @@
 #include "m_ostring.h"
 #include "w_wad.h"
 
-#ifdef UNIX
 std::string I_GetHomeDir(std::string user = "")
 {
-	const char* envhome = getenv("HOME");
-	std::string home = envhome ? envhome : "";
-
-	if (!home.length())
-	{
-#ifdef HAVE_PWD_H
-		// try the uid way
-		passwd* p = user.length() ? getpwnam(user.c_str()) : getpwuid(getuid());
-		if (p && p->pw_dir)
-			home = p->pw_dir;
-#endif
-
-		if (!home.length())
-			I_FatalError("Please set your HOME variable");
-	}
-
-	if (home[home.length() - 1] != PATHSEPCHAR)
-		home += PATHSEP;
-
-	return home;
+	// TODO: Implement
 }
-#endif
 
 std::string M_GetBinaryDir()
 {

@@ -105,30 +105,32 @@ std::string M_GetBinaryDir()
 
 std::string M_GetHomeDir(const std::string& user)
 {
-	
 	const char* envhome = getenv("HOME");
-	std::string home = envhome ? envhome : "";
-#ifndef __SWITCH__
+	std::string home = (envhome != NULL) ? envhome : "";
 
+#ifndef __SWITCH__
 	if (!home.length())
 	{
-
-#ifdef HAVE_PWD_H
 		// try the uid way
 		passwd* p = user.length() ? getpwnam(user.c_str()) : getpwuid(getuid());
 		if (p && p->pw_dir)
+		{
 			home = p->pw_dir;
-#endif
+		}
 
 		if (!home.length())
+		{
 			I_FatalError("Please set your HOME variable");
+		}
 	}
 
 	if (home[home.length() - 1] != PATHSEPCHAR)
+	{
 		home += PATHSEP;
+	}
 #endif
-	return home;
 
+	return home;
 }
 
 std::string M_GetUserDir()
