@@ -64,6 +64,7 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_monstershealth)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
@@ -710,8 +711,15 @@ void AActor::RunThink ()
 	}
 	else
 	{
+		bool respawnmonsters = (sv_skill == sk_nightmare || sv_monstersrespawn);
+
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
+			return;
+
+		// Ch0wW - Let the server handle it alone. 
+		// (CHECKME: Does that interfere with vanilla demos?)
+		if ((multiplayer && clientside && !serverside))
 			return;
 
 		movecount++;

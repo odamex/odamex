@@ -104,7 +104,6 @@ EXTERN_CVAR (chasedemo)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
-BOOL 			respawnmonsters;
 
 BOOL 			paused;
 BOOL 			sendpause;				// send a pause event next tic

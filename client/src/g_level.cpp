@@ -228,11 +228,6 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	if (sv_skill == sk_nightmare || sv_monstersrespawn)
-		respawnmonsters = true;
-	else
-		respawnmonsters = false;
-
 	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{

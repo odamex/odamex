@@ -54,12 +54,10 @@ EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_teamsinplay)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
-BOOL 			respawnmonsters;
 
 BOOL 			paused;
 BOOL 			sendpause;				// send a pause event next tic

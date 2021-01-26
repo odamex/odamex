@@ -67,9 +67,6 @@ extern	BOOL 			autostart;
 // Selected by user.
 EXTERN_CVAR (sv_skill)
 
-// Nightmare mode flag, single player.
-extern	BOOL 			respawnmonsters;
-
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
