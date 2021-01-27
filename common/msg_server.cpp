@@ -249,6 +249,9 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 		unsigned int state = psp->state - states;
 		MSG_WriteUnVarint(&b, state);
 	}
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		MSG_WriteVarint(&b, player.powers[i]);
 }
 
 /**

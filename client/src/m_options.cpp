@@ -55,6 +55,7 @@
 #include "doomstat.h"
 
 #include "m_misc.h"
+#include "cl_demo.h"
 
 // Data.
 #include "m_menu.h"
@@ -76,6 +77,8 @@ extern bool				OptionsActive;
 
 extern int				screenSize;
 extern short			skullAnimCounter;
+
+extern NetDemo netdemo;
 
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
@@ -117,6 +120,7 @@ EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
+EXTERN_CVAR (co_globalsound)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -563,23 +567,23 @@ menu_t SoundMenu = {
  *
  *=======================================*/
 static menuitem_t CompatItems[] ={
-	{bricktext, "Gameplay",                        {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Camera follows killer on death",  {&cl_deathcam},          {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can be walked over/under",  {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can drop off ledges",       {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Engine Compatibility",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "BOOM actor/sector/line checks",   {&co_boomphys},		    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
+	{bricktext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Items can be walked over/under", {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Items can drop off ledges",      {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDoom Sound Response",			{&co_zdoomsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
+    {svdiscrete, "Global Pickup Sounds",			{&co_globalsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
 };
 
 menu_t CompatMenu = {
@@ -820,6 +824,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -910,7 +915,9 @@ static value_t SecretOptions[] = {
 };
 
 static menuitem_t MessagesItems[] = {
+#if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
+#endif
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1544,6 +1551,7 @@ void M_OptDrawer (void)
 			{
 			case discrete:
 			case cdiscrete:
+			case svdiscrete:
 			{
 				int v, vals;
 
@@ -1958,9 +1966,14 @@ void M_OptResponder (event_t *ev)
 		break;
 		case discrete:
 		case cdiscrete:
+		case svdiscrete:
 		{
 			int cur;
 			int numvals;
+
+			if (item->type == svdiscrete &&
+				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				break;
 
 			numvals = (int)item->b.leftval;
 			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
@@ -2081,9 +2094,14 @@ void M_OptResponder (event_t *ev)
 		break;
 		case discrete:
 		case cdiscrete:
+		case svdiscrete:
 		{
 			int cur;
 			int numvals;
+
+			if (item->type == svdiscrete &&
+				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				break;
 
 			numvals = (int)item->b.leftval;
 			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
@@ -2179,10 +2197,14 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
-			else if (item->type == discrete || item->type == cdiscrete)
+			else if (item->type == discrete || item->type == cdiscrete || item->type == svdiscrete)
 			{
 				int cur;
 				int numvals;
+
+				if (item->type == svdiscrete &&
+				    (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+					return;
 
 				numvals = (int)item->b.leftval;
 				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);

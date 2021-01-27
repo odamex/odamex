@@ -1403,6 +1403,9 @@ void A_VileChase (AActor *actor)
 					S_Sound (corpsehit, CHAN_BODY, "vile/raise", 1, ATTN_IDLE);
 					info = corpsehit->info;
 
+					if (serverside)
+						level.total_monsters++;
+
 					P_SetMobjState (corpsehit,info->raisestate, true);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.

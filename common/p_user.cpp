@@ -118,6 +118,17 @@ void P_ClearPlayerCards(player_t& p)
 }
 
 /**
+ * @brief Clear all powerups from a player.
+ *
+ * @param p Player to clear.
+ */
+void P_ClearPlayerPowerups(player_t& p)
+{
+	for (size_t i = 0; i < NUMPOWERS; i++)
+		p.powers[i] = 0;
+}
+
+/**
  * @brief Clear all scores from a player.
  * 
  * @param p Player to clear.

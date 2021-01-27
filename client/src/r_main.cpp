@@ -865,7 +865,7 @@ void R_SetupFrame (player_t *player)
 	player_t& consolePlayer = consoleplayer();
 
 	if (!::localview.skippitch && consolePlayer.id == displayplayer().id &&
-	    consolePlayer.health > 0)
+	    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}

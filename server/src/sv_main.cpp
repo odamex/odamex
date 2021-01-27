@@ -219,12 +219,6 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_maxcorpses)
 
-EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_itemsrespawn)
-EXTERN_CVAR (sv_monstersrespawn)
-EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (sv_nomonsters)
-
 // Action rules
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
