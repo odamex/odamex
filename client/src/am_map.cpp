@@ -1693,7 +1693,7 @@ void AM_Drawer()
 			{
 				sprintf(line, TEXTCOLOR_RED "MONSTERS:"
 								TEXTCOLOR_NORMAL " %d / %d",
-								level.killed_monsters, level.total_monsters);
+								level.killed_monsters, (level.total_monsters+level.respawned_monsters));
 
 				int x, y;
 				int text_width = V_StringWidth(line) * CleanXfac;

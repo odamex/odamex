@@ -39,6 +39,7 @@
 
 #include "d_player.h"
 
+
 extern bool HasBehavior;
 
 EXTERN_CVAR (sv_allowexit)
@@ -85,6 +86,9 @@ void A_Explode (AActor *thing);
 void A_Mushroom (AActor *actor);
 void A_Fall (AActor *actor);
 
+
+void SV_UpdateMonsterRespawnCount();
+void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
 
 //
 // ENEMY THINKING
@@ -1400,11 +1404,19 @@ void A_VileChase (AActor *actor)
 					actor->target = temp;
 
 					P_SetMobjState (actor, S_VILE_HEAL1, true);
-					S_Sound (corpsehit, CHAN_BODY, "vile/raise", 1, ATTN_IDLE);
+
+					if (!clientside)
+						SV_Sound(corpsehit, CHAN_BODY, "vile/raise", ATTN_IDLE);
+					else
+						S_Sound(corpsehit, CHAN_BODY, "vile/raise", 1, ATTN_IDLE);
+
 					info = corpsehit->info;
 
 					if (serverside)
-						level.total_monsters++;
+					{
+						level.respawned_monsters++;
+						SV_UpdateMonsterRespawnCount();
+					}
 
 					P_SetMobjState (corpsehit,info->raisestate, true);
 

@@ -430,8 +430,11 @@ void LevelState::tic()
 			if (g_rounds)
 				printRoundStart();
 			else
-				SV_BroadcastPrintf("The match has started.\n");
+			{
+				SV_BroadcastPrintf ("The %s has started.\n",
+				                   (sv_gametype == GM_COOP) ? "game" : "match");
 
+			}
 			return;
 		}
 		break;

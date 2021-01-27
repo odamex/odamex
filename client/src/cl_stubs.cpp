@@ -88,6 +88,10 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bo
 	int arg4 = -1, int arg5 = -1, int arg6 = -1, int arg7 = -1, int arg8 = -1) {}
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4) {}
 
+void SV_UpdateMonsterRespawnCount() {}
+void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation) {}
+
+
 CVAR_FUNC_IMPL(sv_sharekeys) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")

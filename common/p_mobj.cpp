@@ -55,6 +55,7 @@ void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
+void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
@@ -1704,9 +1705,6 @@ void P_NightmareRespawn (AActor *mobj)
     else
 		z = ONFLOORZ;
 
-	if (serverside)
-		level.total_monsters++;
-
 	// spawn it
 	// inherit attributes from deceased one
 	if(serverside)
@@ -1718,8 +1716,11 @@ void P_NightmareRespawn (AActor *mobj)
 		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
 
-        if (serverside)
-            SV_SpawnMobj(mo);
+		SV_SpawnMobj(mo);
+
+		// Count the respawned_monsters up.
+		level.respawned_monsters++;
+		SV_UpdateMonsterRespawnCount();
 
 		mo->reactiontime = 18;
 	}
