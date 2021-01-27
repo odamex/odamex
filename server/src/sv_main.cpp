@@ -219,12 +219,6 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_maxcorpses)
 
-EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_itemsrespawn)
-EXTERN_CVAR (sv_monstersrespawn)
-EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (sv_nomonsters)
-
 // Action rules
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
@@ -3278,7 +3272,6 @@ void SV_SendPingRequest(client_t* cl)
 
 void SV_UpdateSecretCount(player_t& player)
 {
-
 	// Don't announce secrets on PvP gamemodes
 	if (sv_gametype != GM_COOP)
 		return;
@@ -3297,6 +3290,18 @@ void SV_UpdateSecretCount(player_t& player)
 		client_t* cl = &(it->client);
 
 		SVC_SecretFound(cl->reliablebuf, player.id);
+	}
+}
+
+void SV_UpdateMonsterRespawnCount()
+{
+	if (sv_gametype != GM_COOP)
+		return;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		client_t* cl = &(it->client);
+		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_MONSTER_RESPAWNS);
 	}
 }
 

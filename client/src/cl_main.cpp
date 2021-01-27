@@ -270,7 +270,6 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
-EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -1520,6 +1519,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
 
+	P_ClearPlayerPowerups(player);	// Remove all current powerups
+
 	// GhostlyDeath -- If the player matches our display player...
 	CL_CheckDisplayPlayer();
 }
@@ -2270,6 +2271,10 @@ void CL_UpdatePlayerState()
 		stnum[i] = static_cast<statenum_t>(state);
 	}
 
+	int powerups[NUMPOWERS];
+	for (int i = 0; i < NUMPOWERS; i++)
+		powerups[i] = MSG_ReadVarint();
+
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -2293,6 +2298,10 @@ void CL_UpdatePlayerState()
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		player.powers[i] = powerups[i];
+
 }
 
 //
@@ -2443,7 +2452,7 @@ void CL_SpawnMobj()
 		CL_SetMobjSpeedAndAngle();
 	}
 
-    if (mo->flags & MF_COUNTKILL)
+    if (serverside && mo->flags & MF_COUNTKILL)
 		level.total_monsters++;
 
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
@@ -2501,9 +2510,6 @@ void CL_Corpse(void)
 
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
-
-    if (mo->flags & MF_COUNTKILL)
-		level.killed_monsters++;
 }
 
 //
@@ -3782,6 +3788,9 @@ void CL_LevelLocals()
 
 	if (flags & SVC_LL_MONSTERS)
 		::level.killed_monsters = MSG_ReadVarint();
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		::level.respawned_monsters = MSG_ReadVarint();
 }
 
 // client source (once)

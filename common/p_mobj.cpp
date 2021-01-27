@@ -55,6 +55,7 @@ void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
+void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
@@ -64,6 +65,7 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_monstershealth)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_allowdropoff)
@@ -710,8 +712,15 @@ void AActor::RunThink ()
 	}
 	else
 	{
+		bool respawnmonsters = (sv_skill == sk_nightmare || sv_monstersrespawn);
+
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
+			return;
+
+		// Ch0wW - Let the server handle it alone. 
+		// (CHECKME: Does that interfere with vanilla demos?)
+		if ((multiplayer && clientside && !serverside))
 			return;
 
 		movecount++;
@@ -1707,8 +1716,11 @@ void P_NightmareRespawn (AActor *mobj)
 		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
 
-        if (serverside)
-            SV_SpawnMobj(mo);
+		SV_SpawnMobj(mo);
+
+		// Count the respawned_monsters up.
+		level.respawned_monsters++;
+		SV_UpdateMonsterRespawnCount();
 
 		mo->reactiontime = 18;
 	}
@@ -2547,9 +2559,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
     // [SL] 2011-05-31 - Moved so that clients get right level.total_items, etc
 	if (i == MT_SECRETTRIGGER)
-	{
 		level.total_secrets++;
-	}
 	if (mobjinfo[i].flags & MF_COUNTKILL)
 		level.total_monsters++;
 	if (mobjinfo[i].flags & MF_COUNTITEM)

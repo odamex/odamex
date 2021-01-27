@@ -104,7 +104,6 @@ EXTERN_CVAR (chasedemo)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
-BOOL 			respawnmonsters;
 
 BOOL 			paused;
 BOOL 			sendpause;				// send a pause event next tic
@@ -1140,13 +1139,12 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	}
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
+
 	if (!sv_keepkeys && !sv_sharekeys)
-	{
-		for (i = 0; i < NUMCARDS; i++)
-			p.cards[i] = false;
-	}
-	for (i = 0; i < NUMPOWERS; i++)
-		p.powers[i] = false;
+		P_ClearPlayerCards(p); 
+
+	P_ClearPlayerPowerups(p);
+
 	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
 	p.backpack = false;

@@ -243,13 +243,8 @@ CVAR_RANGE(			cl_weaponpref_pls, "8", "Weapon preference level for plasma rifle"
 CVAR_RANGE(			cl_weaponpref_bfg, "2", "Weapon preference level for BFG9000",
 					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
 
-#ifdef GCONSOLE
 CVAR_FUNC_DECL(		use_joystick, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-#else
-CVAR_FUNC_DECL(		use_joystick, "0", "",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-#endif
 
 CVAR_FUNC_DECL(		joy_active, "0", "Selects the joystick device to use",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
