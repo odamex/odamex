@@ -1401,7 +1401,8 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 		OWantFile file;
 		if (!OWantFile::make(file, ::com_token, OFILE_UNKNOWN))
 		{
-			Printf(PRINT_WARNING, "Could not parse \"%s\" into file, skipping...\n");
+			Printf(PRINT_WARNING, "Could not parse \"%s\" into file, skipping...\n",
+			       ::com_token);
 			continue;
 		}
 
@@ -1413,7 +1414,8 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 			if (!OWantFile::make(file, ::com_token, OFILE_DEH))
 			{
 				Printf(PRINT_WARNING,
-				       "Could not parse \"%s\" into patch file, skipping...\n");
+				       "Could not parse \"%s\" into patch file, skipping...\n",
+				       ::com_token);
 				continue;
 			}
 
@@ -1429,7 +1431,8 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 			if (!OWantFile::make(file, ::com_token, OFILE_WAD))
 			{
 				Printf(PRINT_WARNING,
-				       "Could not parse \"%s\" into WAD file, skipping...\n");
+				       "Could not parse \"%s\" into WAD file, skipping...\n",
+				       ::com_token);
 				continue;
 			}
 
