@@ -573,9 +573,6 @@ void G_DoResetLevel(bool full_reset)
 	G_SerializeLevel(arc, false, true);
 	reset_snapshot->Seek(0, FFile::ESeekSet);
 
-	// Set time to the initial tic.
-	level.time = 0;
-
 	{
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;
@@ -631,6 +628,9 @@ void G_DoResetLevel(bool full_reset)
 	// [SL] always reset the time (for now at least)
 	level.time = 0;
 	level.inttimeleft = mapchange / TICRATE;
+
+	// Reset the respawned monster count
+	level.respawned_monsters = 0;	
 
 	// Send information about the newly reset map.
 	for (it = players.begin(); it != players.end(); ++it)

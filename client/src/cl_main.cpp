@@ -2417,7 +2417,7 @@ void CL_SpawnMobj()
 		CL_SetMobjSpeedAndAngle();
 	}
 
-    if (mo->flags & MF_COUNTKILL)
+    if (serverside && mo->flags & MF_COUNTKILL)
 		level.total_monsters++;
 
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
@@ -3731,6 +3731,9 @@ void CL_LevelLocals()
 
 	if (flags & SVC_LL_MONSTERS)
 		::level.killed_monsters = MSG_ReadVarint();
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		::level.respawned_monsters = MSG_ReadVarint();
 }
 
 // client source (once)

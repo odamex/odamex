@@ -106,6 +106,9 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags)
 
 	if (flags & SVC_LL_MONSTERS)
 		MSG_WriteVarint(&b, locals.killed_monsters);
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		MSG_WriteVarint(&b, locals.respawned_monsters);
 }
 
 /**

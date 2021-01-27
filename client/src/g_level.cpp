@@ -389,7 +389,7 @@ void G_DoCompleted (void)
 		}
 	}
 
-	wminfo.maxkills = level.total_monsters;
+	wminfo.maxkills = (level.total_monsters+level.respawned_monsters);
 	wminfo.maxitems = level.total_items;
 	wminfo.maxsecret = level.total_secrets;
 	wminfo.maxfrags = 0;

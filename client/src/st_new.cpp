@@ -1041,6 +1041,19 @@ void ZDoomHUD() {
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 	}
 
+	if (g_lives)
+	{
+		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
+		int lives_color = CR_GREY;
+		if (plyr->lives <= 0)
+			lives_color = CR_DARKGREY;
+		
+		std::string buf;
+		StrFormat(buf, "x%d", plyr->lives);
+		hud::DrawText(60 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
+	}
+
 	// Draw other player name, if spying
 	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
