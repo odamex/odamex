@@ -40,11 +40,6 @@
 #include "m_ostring.h"
 #include "w_wad.h"
 
-std::string I_GetHomeDir(std::string user = "")
-{
-	// TODO: Implement
-}
-
 std::string M_GetBinaryDir()
 {
 	std::string ret;
