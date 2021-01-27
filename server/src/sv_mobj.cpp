@@ -47,6 +47,8 @@ void P_SetSpectatorFlags(player_t &player)
 		player.mo->flags &= ~MF_SOLID;
 		player.mo->flags2 |= MF2_FLY;
 	}
+
+	P_ClearPlayerPowerups(player);
 }
 
 //

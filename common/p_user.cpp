@@ -125,7 +125,7 @@ void P_ClearPlayerCards(player_t& p)
 void P_ClearPlayerPowerups(player_t& p)
 {
 	for (size_t i = 0; i < NUMPOWERS; i++)
-		p.powers[i] = false;
+		p.powers[i] = 0;
 }
 
 /**
