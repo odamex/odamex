@@ -796,7 +796,7 @@ CVAR_FUNC_IMPL(msg4color)
 
 CVAR_FUNC_IMPL(msgmidcolor)
 {
-	setmsgcolor(PRINTLEVELS, var.cstring());
+	setmsgcolor(PRINTLEVELS-1, var.cstring());
 }
 
 // NES - Activating this locks the scroll position in place when
@@ -2160,7 +2160,7 @@ void C_DrawMid()
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
-			screen->DrawTextStretched(PrintColors[PRINTLEVELS],
+			screen->DrawTextStretched(PrintColors[PRINTLEVELS-1],
 					x - xscale * (MidMsg[i].width / 2),
 					y, (byte *)MidMsg[i].string, xscale, yscale);
 		}
