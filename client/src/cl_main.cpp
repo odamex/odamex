@@ -260,6 +260,9 @@ CVAR_FUNC_IMPL (r_forceteamcolor)
 
 CVAR_FUNC_IMPL (cl_team)
 {
+	if (var.asInt() >= sv_teamsinplay)
+		var.Set(sv_teamsinplay.asInt() - 1);
+	
 	CL_RebuildAllPlayerTranslations();
 }
 
