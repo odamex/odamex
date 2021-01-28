@@ -402,9 +402,12 @@ void G_AssertValidPlayerCount()
 		{
 			if (pr.teamTotal[i] > 0)
 			{
-				// Does more than one team has players?  If so, the game continues.
+				// Does the team has more than one players?  If so, the game continues.
 				if (hasplayers != TEAM_NONE)
+				{
+					G_LivesCheckEndGame();	// Check if Whole team is alive
 					return;
+				}
 				hasplayers = i;
 			}
 		}
