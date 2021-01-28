@@ -416,6 +416,9 @@ void G_AssertValidPlayerCount()
 		valid = false;
 	}
 
+	// Check if we have still players alive
+	G_LivesCheckEndGame();
+
 	// If we haven't signaled an invalid state by now, we're cool.
 	if (valid == true)
 		return;
