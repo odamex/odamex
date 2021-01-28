@@ -480,15 +480,15 @@ void CTF_ReplaceFlagWithWaypoint(AActor* mo)
 {
 	AActor* waypoint = NULL;
 
-	switch (mo->type)
+	switch (::levelstate.getDefendingTeam())
 	{
-	case MT_BFLG:
+	case TEAM_BLUE:
 		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPBFLAG);
 		break;
-	case MT_RFLG:
+	case TEAM_RED:
 		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPRFLAG);
 		break;
-	case MT_GFLG:
+	case TEAM_GREEN:
 		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPGFLAG);
 		break;
 	default:
