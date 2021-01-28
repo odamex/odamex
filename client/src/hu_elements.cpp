@@ -298,24 +298,35 @@ std::string Timer()
 		return "";
 	}
 
+
 	OTimespan tspan;
-	if (hud_timer == 2)
+	if (::levelstate.getState() == LevelState::WARMUP || 
+		::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+		::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN )
 	{
-		// Timer counts up.
-		TicsToTime(tspan, level.time);
-	}
-	else if (hud_timer == 1)
-	{
-		// Timer counts down.
-		int timeleft = G_EndingTic() - level.time;
+		int timeleft = G_EndingTic()-1;
 		TicsToTime(tspan, timeleft, true);
 	}
-
-	// If we're in the danger zone flip the color.
-	int warning = G_EndingTic() - (60 * TICRATE);
-	if (level.time > warning)
+	else
 	{
-		color = TEXTCOLOR_BRICK;
+		if (hud_timer == 2)
+		{
+			// Timer counts up.
+			TicsToTime(tspan, level.time);
+		}
+		else if (hud_timer == 1)
+		{
+			// Timer counts down.
+			int timeleft = G_EndingTic() - level.time;
+			TicsToTime(tspan, timeleft, true);
+		}
+
+		// If we're in the danger zone flip the color.
+		int warning = G_EndingTic() - (60 * TICRATE);
+		if (level.time > warning)
+		{
+			color = TEXTCOLOR_BRICK;
+		}
 	}
 
 	std::string str;
