@@ -1340,7 +1340,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update moveable sectors to clients, OR secret sectors that've been discovered.
-	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK) == 0 && sector->secretsector)
+	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK == 0 && sector->secretsector))
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
