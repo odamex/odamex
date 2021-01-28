@@ -581,8 +581,7 @@ void G_DoResetLevel(bool full_reset)
 			// In sides-based games, destroy objectives that aren't relevant.
 			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
 			{
-				mo->netid = 0;
-				mo->Destroy();
+				CTF_ReplaceFlagWithWaypoint(mo);
 			}
 
 			// Assign new netids to every non-player actor to make sure we don't have
@@ -825,8 +824,7 @@ void G_DoLoadLevel (int position)
 		{
 			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
 			{
-				mo->netid = 0;
-				mo->Destroy();
+				CTF_ReplaceFlagWithWaypoint(mo);
 			}
 		}
 	}

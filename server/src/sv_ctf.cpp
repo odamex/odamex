@@ -476,6 +476,31 @@ bool CTF_ShouldSpawnHomeFlag(mobjtype_t type)
 	return false;
 }
 
+void CTF_ReplaceFlagWithWaypoint(AActor* mo)
+{
+	AActor* waypoint = NULL;
+
+	switch (mo->type)
+	{
+	case MT_BFLG:
+		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPBFLAG);
+		break;
+	case MT_RFLG:
+		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPRFLAG);
+		break;
+	case MT_GFLG:
+		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPGFLAG);
+		break;
+	default:
+		return;
+	}
+
+	SV_SpawnMobj(waypoint);
+
+	mo->netid;
+	mo->Destroy();
+}
+
 FArchive &operator<< (FArchive &arc, flagdata &flag)
 {
 	return arc;
