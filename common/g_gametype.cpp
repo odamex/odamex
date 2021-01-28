@@ -516,6 +516,7 @@ void G_TimeCheckEndGame()
 		{
 			// Defense always wins in the event of a timeout.
 			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
+			GiveTeamWins(ti.Team, 1);
 			SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
 			                   ti.ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);
