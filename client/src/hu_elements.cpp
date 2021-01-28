@@ -932,7 +932,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int color = CR_GREY;
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 			{
 				color = GetTeamPlayerColor(player);
 			}
@@ -966,7 +966,7 @@ void EASpectatorNames(int x, int y, const float scale,
 		if (spectatingPlayer(player)) {
 			if (skip <= 0) {
 				int color = CR_GREY;
-				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+				if (G_IsTeamGame()) {
 					if (player->ready) {
 						color = CR_GREEN;
 					} else if (player->id == displayplayer().id) {
@@ -1479,7 +1479,7 @@ void EATargets(int x, int y, const float scale,
 
 		// Pick a decent color for the player name.
 		int color;
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		if (G_IsTeamGame()) {
 			// In teamgames, we want to use team colors for targets.
 			color = V_GetTextColor(GetTeamInfo(it->userinfo.team)->TextColor.c_str());
 		} else {

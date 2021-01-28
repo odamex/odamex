@@ -36,6 +36,7 @@
 #include "gi.h"
 
 #include "p_snapshot.h"
+#include "g_gametype.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -742,9 +743,9 @@ bool P_AreTeammates(player_t &a, player_t &b)
 	if (a.id == b.id)
 		return false;
 
-	return (sv_gametype == GM_COOP) ||
+	return G_IsCoopGame() ||
 		  ((a.userinfo.team == b.userinfo.team) &&
-		   (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF));
+		   G_IsTeamGame());
 }
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)

@@ -65,6 +65,8 @@
 #include "p_acs.h"
 #include "i_input.h"
 
+#include "g_gametype.h"
+
 #include <bitset>
 #include <string>
 #include <vector>
@@ -200,11 +202,11 @@ argb_t CL_GetPlayerColor(player_t *player)
 	argb_t shade_color = base_color;
 	
 	bool teammate = false;
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		teammate = true;
-	if (sv_gametype == GM_DM)
+	if (G_IsFFAGame())
 		teammate = false;
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		teammate = P_AreTeammates(consoleplayer(), *player);
 		base_color = GetTeamInfo(player->userinfo.team)->Color;
@@ -1002,7 +1004,7 @@ END_COMMAND (rcon_logout)
 
 BEGIN_COMMAND (playerteam)
 {
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
 	else
 		Printf("You need to play a team-based gamemode in order to use this command.\n");
@@ -2081,8 +2083,8 @@ void CL_Say()
 			filtermessage = true;
 
 		if (mute_enemies && !spectator &&
-		    (sv_gametype == GM_DM ||
-		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+		    (G_IsFFAGame() ||
+		    (G_IsTeamGame() &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
 			filtermessage = true;
 	}
