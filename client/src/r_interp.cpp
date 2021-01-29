@@ -26,6 +26,7 @@
 #include "m_fixed.h"
 #include "r_state.h"
 #include "p_local.h"
+#include "cl_demo.h"
 
 #include <vector>
 
@@ -35,6 +36,8 @@ static std::vector<fixed_uint_pair> prev_ceilingheight;
 static std::vector<fixed_uint_pair> saved_ceilingheight;
 static std::vector<fixed_uint_pair> prev_floorheight;
 static std::vector<fixed_uint_pair> saved_floorheight;
+
+extern NetDemo netdemo;
 
 //
 // R_InterpolationTicker
@@ -170,7 +173,8 @@ void R_InterpolateCamera(fixed_t amount)
 		player_t& consolePlayer = consoleplayer();
 
 		if (!::localview.skipangle && consolePlayer.id == displayplayer().id &&
-		    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime)
+		    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime && 
+			(!netdemo.isPlaying() && !demoplayback && !demorecording))
 		{
 			viewangle = camera->angle + ::localview.angle;
 		}

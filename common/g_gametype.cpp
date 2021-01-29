@@ -402,9 +402,12 @@ void G_AssertValidPlayerCount()
 		{
 			if (pr.teamTotal[i] > 0)
 			{
-				// Does more than one team has players?  If so, the game continues.
+				// Does the team has more than one players?  If so, the game continues.
 				if (hasplayers != TEAM_NONE)
+				{
+					G_LivesCheckEndGame();	// Check if Whole team is alive
 					return;
+				}
 				hasplayers = i;
 			}
 		}
@@ -415,6 +418,9 @@ void G_AssertValidPlayerCount()
 			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
 		valid = false;
 	}
+
+	// Check if we have still players alive
+	G_LivesCheckEndGame();
 
 	// If we haven't signaled an invalid state by now, we're cool.
 	if (valid == true)
@@ -516,6 +522,7 @@ void G_TimeCheckEndGame()
 		{
 			// Defense always wins in the event of a timeout.
 			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
+			GiveTeamWins(ti.Team, 1);
 			SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
 			                   ti.ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);

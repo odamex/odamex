@@ -32,6 +32,7 @@
 #include "md5.h"
 #include "p_ctf.h"
 #include "version.h"
+#include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -187,7 +188,7 @@ next:
 		MSG_WriteShort(&ml_message, timeleft);
 	
 	// Teams
-	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if(G_IsTeamGame())
 	{
 		// Team data
 		int teams = sv_teamsinplay.asInt();
@@ -229,7 +230,7 @@ next:
 		for (int i = 3; i >= 0; i--)
 			MSG_WriteByte(&ml_message, it->userinfo.color[i]);
 
-		if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		if(G_IsTeamGame())
 			MSG_WriteByte(&ml_message, it->userinfo.team);
 
 		MSG_WriteShort(&ml_message, it->ping);

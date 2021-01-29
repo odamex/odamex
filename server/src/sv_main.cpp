@@ -1185,7 +1185,7 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 	if(&a == &b)
 		return false;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		if (a.userinfo.team == b.userinfo.team)
 			return true;
@@ -1340,7 +1340,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update moveable sectors to clients, OR secret sectors that've been discovered.
-	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK) == 0 && sector->secretsector)
+	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK == 0 && sector->secretsector))
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
@@ -2307,7 +2307,7 @@ void SV_DisconnectClient(player_t &who)
 			status = "SPECTATOR";
 		else
 		{
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 			{
 				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
 				status += str;
@@ -2989,7 +2989,7 @@ bool SV_Say(player_t &player)
 	{
 		if (spectator)
 			SVC_SpecSay(player, message.c_str());
-		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		else if (G_IsTeamGame())
 			SVC_TeamSay(player, message.c_str());
 		else
 			SVC_Say(player, message.c_str());
@@ -5000,10 +5000,10 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
-	if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+	if (G_IsTeamGame() &&
 		attacker && attacker->player &&
 		self->player->userinfo.team == attacker->player->userinfo.team)
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;

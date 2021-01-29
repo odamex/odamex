@@ -720,7 +720,7 @@ void drawHeader(player_t *player, int y)
 	              hud::ClientsSplit().c_str(), CR_GREEN, true);
 
 	int yOffset = 0;
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) 
+	if (G_IsTeamGame()) 
 	{
 		int xOffset = GetLongestTeamWidth();
 		
@@ -1291,7 +1291,7 @@ void Scoreboard(player_t *player)
 
 	int extraQuadRows = 0;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		height = 100;
 
@@ -1340,7 +1340,7 @@ void Scoreboard(player_t *player)
 	hud::Dim(0, y, HiResolutionWidth, height, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP);
 
 	hud::drawHeader(player, y + 4);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		// Teams after 2 require extra player count in header
 		int teams = sv_teamsinplay - 2;
@@ -1759,7 +1759,7 @@ void LowScoreboard(player_t *player)
 	byte extra_spec_rows = 0;
 	byte extra_player_rows = 0;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		height = 129;
 		// Team scoreboard was designed for 4 players on a team.  If
@@ -1799,14 +1799,11 @@ void LowScoreboard(player_t *player)
 	hud::Dim(0, y, 300, height, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP);
 
 	hud::drawLowHeader(player, y + 4);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
+
+	if (G_IsTeamGame())
 		hud::drawLowTeamScores(player, y + 15, extra_player_rows);
-	}
 	else
-	{
 		hud::drawLowScores(player, y + 15, extra_player_rows);
-	}
 
 	hud::drawLowSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
 	                       extra_spec_rows);

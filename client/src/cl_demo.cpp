@@ -38,6 +38,7 @@
 #include "p_mobj.h"
 #include "g_level.h"
 #include "msg_server.h"
+#include "g_gametype.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1036,7 +1037,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		MSG_WriteLong	(netbuffer, 0);		// sv_scorelimit
 		for (size_t n = 0; n < NUMTEAMS; n++)

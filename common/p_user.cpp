@@ -36,6 +36,7 @@
 #include "gi.h"
 
 #include "p_snapshot.h"
+#include "g_gametype.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -742,9 +743,9 @@ bool P_AreTeammates(player_t &a, player_t &b)
 	if (a.id == b.id)
 		return false;
 
-	return (sv_gametype == GM_COOP) ||
+	return G_IsCoopGame() ||
 		  ((a.userinfo.team == b.userinfo.team) &&
-		   (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF));
+		   G_IsTeamGame());
 }
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
@@ -763,11 +764,19 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 	// A teammate can see their other teammates
 	if (P_AreTeammates(viewer, other))
+	{
+		// If a player has no more lives, don't show him.
+		if (::g_lives && other.lives < 1)
+			return false;
+
 		return true;
+	}
 
 	// A player who is out of lives in LMS can see everyone else
 	if (::sv_gametype == GM_DM && ::g_lives && viewer.lives < 1)
 		return true;
+
+
 
 	return false;
 }

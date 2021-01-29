@@ -390,7 +390,7 @@ void LevelState::tic()
 				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
 				return;
 			}
-			else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			else if (G_IsTeamGame())
 			{
 				// We need at least one person on at least two different teams.
 				int ready = 0;
