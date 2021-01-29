@@ -42,21 +42,19 @@
 #include "hu_stuff.h"
 
 #ifdef _XBOX
-#include "i_xbox.h"
+	#include "i_xbox.h"
+#elif __SWITCH__
+	#include "nx_io.h"
 #endif
 
 #ifdef _WIN32
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
-#define JOY_DEADZONE 6000
-
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool nomouse = false;
 
-
-typedef OHashTable<int, std::string> KeyNameTable;
 KeyNameTable key_names;
 
 //
@@ -67,12 +65,12 @@ KeyNameTable key_names;
 static void I_InitializeKeyNameTable()
 {
 	key_names.clear();
-	key_names[KEY_BACKSPACE] = "backspace";
-	key_names[KEY_TAB] = "tab";
-	key_names[KEY_ENTER] = "enter";
-	key_names[KEY_PAUSE] = "pause";
-	key_names[KEY_ESCAPE] = "escape";
-	key_names[KEY_SPACE] = "space";
+	key_names[OKEY_BACKSPACE] = "backspace";
+	key_names[OKEY_TAB] = "tab";
+	key_names[OKEY_ENTER] = "enter";
+	key_names[OKEY_PAUSE] = "pause";
+	key_names[OKEY_ESCAPE] = "escape";
+	key_names[OKEY_SPACE] = "space";
 	key_names['!'] = "!";
 	key_names['\"'] = "\"";
 	key_names['#'] = "#";
@@ -110,7 +108,7 @@ static void I_InitializeKeyNameTable()
 	key_names['^'] = "^";
 	key_names['_'] = "_";
 	key_names['`'] = "grave";
-	key_names[KEY_TILDE] = "tilde";
+	key_names[OKEY_TILDE] = "tilde";
 	key_names['a'] = "a";
 	key_names['b'] = "b";
 	key_names['c'] = "c";
@@ -137,109 +135,114 @@ static void I_InitializeKeyNameTable()
 	key_names['x'] = "x";
 	key_names['y'] = "y";
 	key_names['z'] = "z";
-	key_names[KEY_DEL] = "del";
-	key_names[KEYP_0] = "kp0";
-	key_names[KEYP_1] = "kp1";
-	key_names[KEYP_2] = "kp2";
-	key_names[KEYP_3] = "kp3";
-	key_names[KEYP_4] = "kp4";
-	key_names[KEYP_5] = "kp5";
-	key_names[KEYP_6] = "kp6";
-	key_names[KEYP_7] = "kp7";
-	key_names[KEYP_8] = "kp8";
-	key_names[KEYP_9] = "kp9";
-	key_names[KEYP_PERIOD] = "kp.";
-	key_names[KEYP_DIVIDE] = "kp/";
-	key_names[KEYP_MULTIPLY] = "kp*";
-	key_names[KEYP_MINUS] = "kp-";
-	key_names[KEYP_PLUS] = "kp+";
-	key_names[KEYP_ENTER] = "kpenter";
-	key_names[KEYP_EQUALS] = "kp=";
-	key_names[KEY_UPARROW] = "uparrow";
-	key_names[KEY_DOWNARROW] = "downarrow";
-	key_names[KEY_LEFTARROW] = "leftarrow";
-	key_names[KEY_RIGHTARROW] = "rightarrow";
-	key_names[KEY_INS] = "ins";
-	key_names[KEY_HOME] = "home";
-	key_names[KEY_END] = "end";
-	key_names[KEY_PGUP] = "pgup";
-	key_names[KEY_PGDN] = "pgdn";
-	key_names[KEY_F1] = "f1";
-	key_names[KEY_F2] = "f2";
-	key_names[KEY_F3] = "f3";
-	key_names[KEY_F4] = "f4";
-	key_names[KEY_F5] = "f5";
-	key_names[KEY_F6] = "f6";
-	key_names[KEY_F7] = "f7";
-	key_names[KEY_F8] = "f8";
-	key_names[KEY_F9] = "f9";
-	key_names[KEY_F10] = "f10";
-	key_names[KEY_F11] = "f11";
-	key_names[KEY_F12] = "f12";
-	key_names[KEY_F13] = "f13";
-	key_names[KEY_F14] = "f14";
-	key_names[KEY_F15] = "f15";
-	key_names[KEY_NUMLOCK] = "numlock";
-	key_names[KEY_CAPSLOCK] = "capslock";
-	key_names[KEY_SCRLCK] = "scroll";
-	key_names[KEY_RSHIFT] = "rightshift";
-	key_names[KEY_LSHIFT] = "leftshift";
-	key_names[KEY_RCTRL] = "rightctrl";
-	key_names[KEY_LCTRL] = "leftctrl";
-	key_names[KEY_RALT] = "rightalt";
-	key_names[KEY_LALT] = "leftalt";
-	key_names[KEY_LWIN] = "lwin";
-	key_names[KEY_RWIN] = "rwin";
-	key_names[KEY_HELP] = "help";
-	key_names[KEY_PRINT] = "print";
-	key_names[KEY_SYSRQ] = "sysrq";
-	key_names[KEY_MOUSE1] = "mouse1";
-	key_names[KEY_MOUSE2] = "mouse2";
-	key_names[KEY_MOUSE3] = "mouse3";
-	key_names[KEY_MOUSE4] = "mouse4";
-	key_names[KEY_MOUSE5] = "mouse5";
-	key_names[KEY_MWHEELDOWN] = "mwheeldown";
-	key_names[KEY_MWHEELUP] = "mwheelup";
-	key_names[KEY_JOY1] = "joy1";
-	key_names[KEY_JOY2] = "joy2";
-	key_names[KEY_JOY3] = "joy3";
-	key_names[KEY_JOY4] = "joy4";
-	key_names[KEY_JOY5] = "joy5";
-	key_names[KEY_JOY6] = "joy6";
-	key_names[KEY_JOY7] = "joy7";
-	key_names[KEY_JOY8] = "joy8";
-	key_names[KEY_JOY9] = "joy9";
-	key_names[KEY_JOY10] = "joy10";
-	key_names[KEY_JOY11] = "joy11";
-	key_names[KEY_JOY12] = "joy12";
-	key_names[KEY_JOY13] = "joy13";
-	key_names[KEY_JOY14] = "joy14";
-	key_names[KEY_JOY15] = "joy15";
-	key_names[KEY_JOY16] = "joy16";
-	key_names[KEY_JOY17] = "joy17";
-	key_names[KEY_JOY18] = "joy18";
-	key_names[KEY_JOY19] = "joy19";
-	key_names[KEY_JOY20] = "joy20";
-	key_names[KEY_JOY21] = "joy21";
-	key_names[KEY_JOY22] = "joy22";
-	key_names[KEY_JOY23] = "joy23";
-	key_names[KEY_JOY24] = "joy24";
-	key_names[KEY_JOY25] = "joy25";
-	key_names[KEY_JOY26] = "joy26";
-	key_names[KEY_JOY27] = "joy27";
-	key_names[KEY_JOY28] = "joy28";
-	key_names[KEY_JOY29] = "joy29";
-	key_names[KEY_JOY30] = "joy30";
-	key_names[KEY_JOY31] = "joy31";
-	key_names[KEY_JOY32] = "joy32";
-	key_names[KEY_HAT1] = "hat1up";
-	key_names[KEY_HAT2] = "hat1right";
-	key_names[KEY_HAT3] = "hat1down";
-	key_names[KEY_HAT4] = "hat1left";
-	key_names[KEY_HAT5] = "hat2up";
-	key_names[KEY_HAT6] = "hat2right";
-	key_names[KEY_HAT7] = "hat2down";
-	key_names[KEY_HAT8] = "hat2left";
+	key_names[OKEY_DEL] = "del";
+	key_names[OKEYP_0] = "kp0";
+	key_names[OKEYP_1] = "kp1";
+	key_names[OKEYP_2] = "kp2";
+	key_names[OKEYP_3] = "kp3";
+	key_names[OKEYP_4] = "kp4";
+	key_names[OKEYP_5] = "kp5";
+	key_names[OKEYP_6] = "kp6";
+	key_names[OKEYP_7] = "kp7";
+	key_names[OKEYP_8] = "kp8";
+	key_names[OKEYP_9] = "kp9";
+	key_names[OKEYP_PERIOD] = "kp.";
+	key_names[OKEYP_DIVIDE] = "kp/";
+	key_names[OKEYP_MULTIPLY] = "kp*";
+	key_names[OKEYP_MINUS] = "kp-";
+	key_names[OKEYP_PLUS] = "kp+";
+	key_names[OKEYP_ENTER] = "kpenter";
+	key_names[OKEYP_EQUALS] = "kp=";
+	key_names[OKEY_UPARROW] = "uparrow";
+	key_names[OKEY_DOWNARROW] = "downarrow";
+	key_names[OKEY_LEFTARROW] = "leftarrow";
+	key_names[OKEY_RIGHTARROW] = "rightarrow";
+	key_names[OKEY_INS] = "ins";
+	key_names[OKEY_HOME] = "home";
+	key_names[OKEY_END] = "end";
+	key_names[OKEY_PGUP] = "pgup";
+	key_names[OKEY_PGDN] = "pgdn";
+	key_names[OKEY_F1] = "f1";
+	key_names[OKEY_F2] = "f2";
+	key_names[OKEY_F3] = "f3";
+	key_names[OKEY_F4] = "f4";
+	key_names[OKEY_F5] = "f5";
+	key_names[OKEY_F6] = "f6";
+	key_names[OKEY_F7] = "f7";
+	key_names[OKEY_F8] = "f8";
+	key_names[OKEY_F9] = "f9";
+	key_names[OKEY_F10] = "f10";
+	key_names[OKEY_F11] = "f11";
+	key_names[OKEY_F12] = "f12";
+	key_names[OKEY_F13] = "f13";
+	key_names[OKEY_F14] = "f14";
+	key_names[OKEY_F15] = "f15";
+	key_names[OKEY_NUMLOCK] = "numlock";
+	key_names[OKEY_CAPSLOCK] = "capslock";
+	key_names[OKEY_SCRLCK] = "scroll";
+	key_names[OKEY_RSHIFT] = "rightshift";
+	key_names[OKEY_LSHIFT] = "leftshift";
+	key_names[OKEY_RCTRL] = "rightctrl";
+	key_names[OKEY_LCTRL] = "leftctrl";
+	key_names[OKEY_RALT] = "rightalt";
+	key_names[OKEY_LALT] = "leftalt";
+	key_names[OKEY_LWIN] = "lwin";
+	key_names[OKEY_RWIN] = "rwin";
+	key_names[OKEY_HELP] = "help";
+	key_names[OKEY_PRINT] = "print";
+	key_names[OKEY_SYSRQ] = "sysrq";
+	key_names[OKEY_MOUSE1] = "mouse1";
+	key_names[OKEY_MOUSE2] = "mouse2";
+	key_names[OKEY_MOUSE3] = "mouse3";
+	key_names[OKEY_MOUSE4] = "mouse4";
+	key_names[OKEY_MOUSE5] = "mouse5";
+	key_names[OKEY_MWHEELDOWN] = "mwheeldown";
+	key_names[OKEY_MWHEELUP] = "mwheelup";
+	key_names[OKEY_JOY1] = "joy1";
+	key_names[OKEY_JOY2] = "joy2";
+	key_names[OKEY_JOY3] = "joy3";
+	key_names[OKEY_JOY4] = "joy4";
+	key_names[OKEY_JOY5] = "joy5";
+	key_names[OKEY_JOY6] = "joy6";
+	key_names[OKEY_JOY7] = "joy7";
+	key_names[OKEY_JOY8] = "joy8";
+	key_names[OKEY_JOY9] = "joy9";
+	key_names[OKEY_JOY10] = "joy10";
+	key_names[OKEY_JOY11] = "joy11";
+	key_names[OKEY_JOY12] = "joy12";
+	key_names[OKEY_JOY13] = "joy13";
+	key_names[OKEY_JOY14] = "joy14";
+	key_names[OKEY_JOY15] = "joy15";
+	key_names[OKEY_JOY16] = "joy16";
+	key_names[OKEY_JOY17] = "joy17";
+	key_names[OKEY_JOY18] = "joy18";
+	key_names[OKEY_JOY19] = "joy19";
+	key_names[OKEY_JOY20] = "joy20";
+	key_names[OKEY_JOY21] = "joy21";
+	key_names[OKEY_JOY22] = "joy22";
+	key_names[OKEY_JOY23] = "joy23";
+	key_names[OKEY_JOY24] = "joy24";
+	key_names[OKEY_JOY25] = "joy25";
+	key_names[OKEY_JOY26] = "joy26";
+	key_names[OKEY_JOY27] = "joy27";
+	key_names[OKEY_JOY28] = "joy28";
+	key_names[OKEY_JOY29] = "joy29";
+	key_names[OKEY_JOY30] = "joy30";
+	key_names[OKEY_JOY31] = "joy31";
+	key_names[OKEY_JOY32] = "joy32";
+	key_names[OKEY_HAT1] = "hat1up";
+	key_names[OKEY_HAT2] = "hat1right";
+	key_names[OKEY_HAT3] = "hat1down";
+	key_names[OKEY_HAT4] = "hat1left";
+	key_names[OKEY_HAT5] = "hat2up";
+	key_names[OKEY_HAT6] = "hat2right";
+	key_names[OKEY_HAT7] = "hat2down";
+	key_names[OKEY_HAT8] = "hat2left";
+
+#ifdef __SWITCH__
+	NX_InitializeKeyNameTable();
+#endif
+
 }
 
 
@@ -791,11 +794,11 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 		return 0;
 
 	int button = ev->data1;
-	if (button == KEY_CAPSLOCK || button == KEY_SCRLCK ||
-		button == KEY_LSHIFT || button == KEY_LCTRL || button == KEY_LALT ||
-		button == KEY_RSHIFT || button == KEY_RCTRL || button == KEY_RALT)
+	if (button == OKEY_CAPSLOCK || button == OKEY_SCRLCK ||
+		button == OKEY_LSHIFT || button == OKEY_LCTRL || button == OKEY_LALT ||
+		button == OKEY_RSHIFT || button == OKEY_RCTRL || button == OKEY_RALT)
 		return 0;
-	else if (button >= KEY_HAT1 && button <= KEY_HAT8)
+	else if (button >= OKEY_HAT1 && button <= OKEY_HAT8)
 		return button;
 	else
 		return 1;

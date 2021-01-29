@@ -71,9 +71,17 @@ std::string M_GetBinaryDir();
 std::string M_GetHomeDir(const std::string& user = "");
 
 /**
- * @brief Get the "user" directory that files are expected to be written into.
+ * @brief Obtain a user-specific path under their home directory that might
+ *        or might not be used as a path to write files into.
  */
 std::string M_GetUserDir();
+
+/**
+ * @brief Get the directory that files such as game config and screenshots
+ *        shall be written into.  If the directory does not exist, it will
+ *        be created.  This function also accounts for portable installations.
+ */
+std::string M_GetWriteDir();
 
 /**
  * @brief Resolve a file name into a user directory.

@@ -47,6 +47,11 @@
 
 std::string M_GetBinaryDir()
 {
+#if defined(GEKKO)
+	ret = "sd:/";
+#elif defined(__SWITCH__)
+	return "./";
+#else
 	std::string ret;
 
 	if (!Args[0])
@@ -91,19 +96,25 @@ std::string M_GetBinaryDir()
 		return "";
 	else
 		return ret.substr(0, slash);
+#endif
 }
 
 std::string M_GetHomeDir(const std::string& user)
 {
+	
 	const char* envhome = getenv("HOME");
 	std::string home = envhome ? envhome : "";
+#ifndef __SWITCH__
 
 	if (!home.length())
 	{
+
+#ifdef HAVE_PWD_H
 		// try the uid way
 		passwd* p = user.length() ? getpwnam(user.c_str()) : getpwuid(getuid());
 		if (p && p->pw_dir)
 			home = p->pw_dir;
+#endif
 
 		if (!home.length())
 			I_FatalError("Please set your HOME variable");
@@ -111,8 +122,9 @@ std::string M_GetHomeDir(const std::string& user)
 
 	if (home[home.length() - 1] != PATHSEPCHAR)
 		home += PATHSEP;
-
+#endif
 	return home;
+
 }
 
 std::string M_GetUserDir()
@@ -126,25 +138,8 @@ std::string M_GetUserDir()
 	return path;
 }
 
-std::string M_GetUserFileName(const std::string& file)
+std::string M_GetWriteDir()
 {
-	// Is absolute path?  If so, stop here.
-	size_t fileLen = file.length();
-	if (fileLen >= 1 && M_IsPathSep(file[0]))
-	{
-		return file;
-	}
-
-	// Is this an explicitly relative path?  If so, stop here.
-	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
-	{
-		return file;
-	}
-	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
-	{
-		return file;
-	}
-
 	// Our path is relative to the home directory.
 	std::string path = M_GetHomeDir();
 	if (!M_IsPathSep(*(path.end() - 1)))
@@ -153,6 +148,7 @@ std::string M_GetUserFileName(const std::string& file)
 	}
 	path += ".odamex";
 
+	// Create the directory.
 	struct stat info;
 	if (stat(path.c_str(), &info) == -1)
 	{
@@ -170,9 +166,37 @@ std::string M_GetUserFileName(const std::string& file)
 		}
 	}
 
+	return path;
+}
+
+std::string M_GetUserFileName(const std::string& file)
+{
+
+#ifdef __SWITCH__
+		std::string path = file;
+#else
+	// Is absolute path?  If so, stop here.
+	size_t fileLen = file.length();
+	if (fileLen >= 1 && M_IsPathSep(file[0]))
+	{
+		return file;
+	}
+
+	// Is this an explicitly relative path?  If so, stop here.
+	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
+	{
+		return file;
+	}
+	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
+	{
+		return file;
+	}
+
+	// Our path is relative to the write directory.
+	std::string path = M_GetWriteDir();
 	path += PATHSEP;
 	path += file;
-
+#endif
 	return M_CleanPath(path);
 }
 

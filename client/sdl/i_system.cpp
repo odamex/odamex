@@ -121,7 +121,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef GCONSOLE
+#if defined(GCONSOLE) && !defined(__SWITCH__)
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;

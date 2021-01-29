@@ -228,11 +228,6 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	if (sv_skill == sk_nightmare || sv_monstersrespawn)
-		respawnmonsters = true;
-	else
-		respawnmonsters = false;
-
 	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
@@ -394,7 +389,7 @@ void G_DoCompleted (void)
 		}
 	}
 
-	wminfo.maxkills = level.total_monsters;
+	wminfo.maxkills = (level.total_monsters+level.respawned_monsters);
 	wminfo.maxitems = level.total_items;
 	wminfo.maxsecret = level.total_secrets;
 	wminfo.maxfrags = 0;
@@ -547,10 +542,9 @@ void G_DoLoadLevel (int position)
 			it->playerstate = PST_ENTER;
 		}
 
-		// [AM] If sv_keepkeys|sv_sharekeys is on, players might still be carrying keys, so
-		//      make sure they're gone.
+		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
-
+		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, false);
 	}
 

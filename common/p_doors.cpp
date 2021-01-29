@@ -97,7 +97,9 @@ void DDoor::RunThink ()
 	switch (m_Status)
 	{
 	case finished:
-		PlayDoorSound();
+
+		if (m_Type != doorOpen)
+			PlayDoorSound();
 		// fall through
 	case destroy:
 		P_SetDoorDestroy(this);
@@ -327,7 +329,6 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
 		if (m_TopHeight != ceilingheight)
 			PlayDoorSound();
-
 		break;
 
 	case doorCloseWaitOpen:

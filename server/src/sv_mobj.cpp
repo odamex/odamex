@@ -32,7 +32,6 @@
 #include "sv_main.h"
 #include "p_acs.h"
 
-EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_maxplayers)
 
 void G_PlayerReborn(player_t &player);
@@ -48,6 +47,8 @@ void P_SetSpectatorFlags(player_t &player)
 		player.mo->flags &= ~MF_SOLID;
 		player.mo->flags2 |= MF2_FLY;
 	}
+
+	P_ClearPlayerPowerups(player);
 }
 
 //

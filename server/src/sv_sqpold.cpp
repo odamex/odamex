@@ -31,6 +31,7 @@
 #include "d_player.h"
 #include "i_system.h"
 #include "p_ctf.h"
+#include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -186,7 +187,7 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, it->fragcount);
 			MSG_WriteLong(&ml_message, it->ping);
 
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 				MSG_WriteByte(&ml_message, it->userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
@@ -199,7 +200,7 @@ void SV_SendServerInfo()
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		MSG_WriteLong(&ml_message, sv_scorelimit.asInt());
 		

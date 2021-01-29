@@ -74,6 +74,11 @@
 #define SVC_LL_MONSTERS (1 << 4)
 
 /**
+ * @brief svc_levellocals: Respawned monsters.
+ */
+#define SVC_LL_MONSTER_RESPAWNS (1 << 5)
+
+/**
  * @brief svc_playermembers: Spectator status.
  */
 #define SVC_PM_SPECTATOR (1 << 0)

@@ -167,6 +167,7 @@ struct level_locals_t {
 
 	int				total_monsters;
 	int				killed_monsters;
+	int				respawned_monsters;	// Ch0wW - Keep track of respawned monsters
 
 	float			gravity;
 	fixed_t			aircontrol;

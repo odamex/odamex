@@ -65,6 +65,8 @@
 #include "p_acs.h"
 #include "i_input.h"
 
+#include "g_gametype.h"
+
 #include <bitset>
 #include <string>
 #include <vector>
@@ -83,6 +85,8 @@
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
+
+gameplatform_t platform;
 
 extern bool step_mode;
 
@@ -141,6 +145,8 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_teamsinplay)
+
 EXTERN_CVAR (sv_downloadsites)
 EXTERN_CVAR (cl_downloadsites)
 
@@ -165,9 +171,8 @@ static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
 void P_DestroyButtonThinkers();
-std::string V_GetTeamColorPlayer(player_t& player);
 
-    //
+//
 // CL_ShadePlayerColor
 //
 // Shades base_color darker using the intensity of shade_color.
@@ -197,11 +202,11 @@ argb_t CL_GetPlayerColor(player_t *player)
 	argb_t shade_color = base_color;
 	
 	bool teammate = false;
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		teammate = true;
-	if (sv_gametype == GM_DM)
+	if (G_IsFFAGame())
 		teammate = false;
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		teammate = P_AreTeammates(consoleplayer(), *player);
 		base_color = GetTeamInfo(player->userinfo.team)->Color;
@@ -255,6 +260,9 @@ CVAR_FUNC_IMPL (r_forceteamcolor)
 
 CVAR_FUNC_IMPL (cl_team)
 {
+	if (var.asInt() >= sv_teamsinplay)
+		var.Set(sv_teamsinplay.asInt() - 1);
+	
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -267,7 +275,6 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
-EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -878,11 +885,13 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
-
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+
+	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
+		Printf(PRINT_HIGH, " userinfo.team    - %s \n",
+		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName().c_str());
+	}
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
@@ -998,7 +1007,7 @@ END_COMMAND (rcon_logout)
 
 BEGIN_COMMAND (playerteam)
 {
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
 	else
 		Printf("You need to play a team-based gamemode in order to use this command.\n");
@@ -1008,7 +1017,7 @@ END_COMMAND (playerteam)
 BEGIN_COMMAND (changeteams)
 {
 	int iTeam = (int)consoleplayer().userinfo.team;
-	iTeam = ++iTeam % NUMTEAMS;
+	iTeam = ++iTeam % sv_teamsinplay.asInt();
 	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
@@ -1515,6 +1524,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
 
+	P_ClearPlayerPowerups(player);	// Remove all current powerups
+
 	// GhostlyDeath -- If the player matches our display player...
 	CL_CheckDisplayPlayer();
 }
@@ -1847,9 +1858,14 @@ bool CL_PrepareConnect(void)
         newpatchfiles[i] = MSG_ReadString();
 
     // TODO: Allow deh/bex file downloads
-	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
-
-	if (!missingfiles.empty() || cl_forcedownload)
+	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
+	if (!ok && missingfiles.empty())
+	{
+		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
+		CL_QuitNetGame();
+		return false;
+	}
+	else if (!ok && !missingfiles.empty() || cl_forcedownload)
 	{
 		std::string missing_file, missing_hash;
 		if (missingfiles.empty())				// cl_forcedownload
@@ -2070,8 +2086,8 @@ void CL_Say()
 			filtermessage = true;
 
 		if (mute_enemies && !spectator &&
-		    (sv_gametype == GM_DM ||
-		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+		    (G_IsFFAGame() ||
+		    (G_IsTeamGame() &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
 			filtermessage = true;
 	}
@@ -2214,15 +2230,20 @@ void CL_UpdatePlayerState()
 	for (int i = 0; i < NUMAMMO; i++)
 		ammo[i] = MSG_ReadVarint();
 
-	statenum_t stnum[NUMPSPRITES];
+	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		int n = MSG_ReadByte();
-		if (n == 0xFF)
-			stnum[i] = S_NULL;
-		else
-			stnum[i] = static_cast<statenum_t>(n);
+		unsigned int state = MSG_ReadUnVarint();
+		if (state >= NUMSTATES)
+		{
+			continue;
+		}
+		stnum[i] = static_cast<statenum_t>(state);
 	}
+
+	int powerups[NUMPOWERS];
+	for (int i = 0; i < NUMPOWERS; i++)
+		powerups[i] = MSG_ReadVarint();
 
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
@@ -2247,6 +2268,10 @@ void CL_UpdatePlayerState()
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		player.powers[i] = powerups[i];
+
 }
 
 //
@@ -2397,7 +2422,7 @@ void CL_SpawnMobj()
 		CL_SetMobjSpeedAndAngle();
 	}
 
-    if (mo->flags & MF_COUNTKILL)
+    if (serverside && mo->flags & MF_COUNTKILL)
 		level.total_monsters++;
 
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
@@ -2455,9 +2480,6 @@ void CL_Corpse(void)
 
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
-
-    if (mo->flags & MF_COUNTKILL)
-		level.killed_monsters++;
 }
 
 //
@@ -3714,6 +3736,9 @@ void CL_LevelLocals()
 
 	if (flags & SVC_LL_MONSTERS)
 		::level.killed_monsters = MSG_ReadVarint();
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		::level.respawned_monsters = MSG_ReadVarint();
 }
 
 // client source (once)

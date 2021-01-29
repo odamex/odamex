@@ -83,6 +83,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "sc_man.h"
 
 #include "w_ident.h"
 
@@ -151,6 +152,23 @@ const char *LOG_FILE;
 
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
+
+void D_SetPlatform(void)
+{
+#ifdef GCONSOLE
+	#ifdef _XBOX
+		platform = PF_XBOX;
+	#elif GEKKO
+		platform = PF_WII;
+	#elif __SWITCH__
+		platform = PF_SWITCH;
+	#else
+		platform = PF_UNKNOWN;
+	#endif
+#else
+	platform = PF_PC;
+#endif
+}
 
 //
 // D_ProcessEvents
@@ -575,6 +593,8 @@ void D_Init()
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
 
+	D_SetPlatform();
+
 	SetLanguageIDs();
 
 	M_ClearRandom();
@@ -677,6 +697,7 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
+	S_Deinit();
 	
 	// shutdown automap
 	AM_Stop();
@@ -698,6 +719,8 @@ void STACK_ARGS D_Shutdown()
 
 	R_Shutdown();
 
+	SC_Close();
+
 //	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();
@@ -712,6 +735,8 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
+
+void C_DoCommand(const char *cmd, uint32_t key);
 
 //
 // D_DoomMain
@@ -739,6 +764,10 @@ void D_DoomMain()
 		I_FatalError("Could not initialize LZO routines");
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
+
+	// Always log by default
+	if (!LOG.is_open())
+		C_DoCommand("logfile", 0);
 
 	M_LoadDefaults();					// load before initing other systems
 	C_BindingsInit();					// Ch0wW : Initialize bindings

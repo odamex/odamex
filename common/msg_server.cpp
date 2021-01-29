@@ -106,6 +106,9 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags)
 
 	if (flags & SVC_LL_MONSTERS)
 		MSG_WriteVarint(&b, locals.killed_monsters);
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		MSG_WriteVarint(&b, locals.respawned_monsters);
 }
 
 /**
@@ -246,11 +249,12 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
-		if (psp->state)
-			MSG_WriteByte(&b, psp->state - states);
-		else
-			MSG_WriteByte(&b, 0xFF);
+		unsigned int state = psp->state - states;
+		MSG_WriteUnVarint(&b, state);
 	}
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		MSG_WriteVarint(&b, player.powers[i]);
 }
 
 /**

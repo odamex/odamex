@@ -245,12 +245,12 @@ void HU_ReleaseKeyStates()
 //
 BOOL HU_Responder(event_t *ev)
 {
-	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT || ev->data1 == KEY_HAT1)
+	if (ev->data1 == OKEY_RALT || ev->data1 == OKEY_LALT || ev->data1 == OKEY_HAT1)
 	{
 		altdown = (ev->type == ev_keydown);
 		return false;
 	}
-	else if (ev->data1 == KEY_LSHIFT || ev->data1 == KEY_RSHIFT)
+	else if (ev->data1 == OKEY_LSHIFT || ev->data1 == OKEY_RSHIFT)
 	{
 		return false;
 	}
@@ -268,9 +268,9 @@ BOOL HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// send a macro
-		if (ev->data1 >= KEY_JOY1 && ev->data1 <= KEY_JOY10)
+		if (ev->data1 >= OKEY_JOY1 && ev->data1 <= OKEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data1 - KEY_JOY1]->cstring(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev->data1 - OKEY_JOY1]->cstring(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
@@ -281,18 +281,18 @@ BOOL HU_Responder(event_t *ev)
 			return true;
 		}
 	}
-	if (ev->data1 == KEY_ENTER || ev->data1 == KEYP_ENTER)
+	if (ev->data1 == OKEY_ENTER || ev->data1 == OKEYP_ENTER)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
+	else if (ev->data1 == OKEY_ESCAPE || ev->data1 == OKEY_JOY2)
 	{
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == KEY_BACKSPACE)
+	else if (ev->data1 == OKEY_BACKSPACE)
 	{
 		if (!input_text.empty())
 			input_text.erase(input_text.end() - 1);
@@ -720,7 +720,7 @@ void drawHeader(player_t *player, int y)
 	              hud::ClientsSplit().c_str(), CR_GREEN, true);
 
 	int yOffset = 0;
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) 
+	if (G_IsTeamGame()) 
 	{
 		int xOffset = GetLongestTeamWidth();
 		
@@ -770,21 +770,23 @@ void drawHeader(player_t *player, int y)
 
 	// Right
 	std::string timer, fraglimit, scorelimit;
-	if (gamestate == GS_INTERMISSION)
-		timer = hud::IntermissionTimer();
-	else
-		timer = hud::Timer();
-
 	StringTokens names, values;
 
-	// Timelimit.
-	if (sv_timelimit > 0.0)
+	if (::gamestate == GS_INTERMISSION)
 	{
-		if (hud_timer == 2 && ::gamestate != GS_INTERMISSION)
+		names.push_back("NEXT MAP IN: ");
+		timer = hud::IntermissionTimer();
+		values.push_back(timer);
+	}
+	else if (sv_timelimit > 0.0)
+	{
+		// Timelimit.
+		if (hud_timer == 2)
 			names.push_back("TIME: ");
 		else
 			names.push_back("TIME LEFT: ");
 
+		timer = hud::Timer();
 		values.push_back(timer);
 	}
 
@@ -1289,7 +1291,7 @@ void Scoreboard(player_t *player)
 
 	int extraQuadRows = 0;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		height = 100;
 
@@ -1338,7 +1340,7 @@ void Scoreboard(player_t *player)
 	hud::Dim(0, y, HiResolutionWidth, height, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP);
 
 	hud::drawHeader(player, y + 4);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		// Teams after 2 require extra player count in header
 		int teams = sv_teamsinplay - 2;
@@ -1757,7 +1759,7 @@ void LowScoreboard(player_t *player)
 	byte extra_spec_rows = 0;
 	byte extra_player_rows = 0;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		height = 129;
 		// Team scoreboard was designed for 4 players on a team.  If
@@ -1797,14 +1799,11 @@ void LowScoreboard(player_t *player)
 	hud::Dim(0, y, 300, height, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP);
 
 	hud::drawLowHeader(player, y + 4);
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
+
+	if (G_IsTeamGame())
 		hud::drawLowTeamScores(player, y + 15, extra_player_rows);
-	}
 	else
-	{
 		hud::drawLowScores(player, y + 15, extra_player_rows);
-	}
 
 	hud::drawLowSpectators(player, y + (height - 14 - (extra_spec_rows * 8)),
 	                       extra_spec_rows);

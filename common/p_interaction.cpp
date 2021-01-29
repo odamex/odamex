@@ -1063,7 +1063,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 					}
 				}
 				// [Toke] Minus a team frag for killing teammate
-				else if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+				else if (G_IsTeamGame() &&
 				         (splayer->userinfo.team == tplayer->userinfo.team))
 				{
 					// [Toke - Teamplay || deathz0r - updated]
@@ -1194,7 +1194,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	// [AM] Save the "out of lives" message until after the obit.
 	if (g_lives && tplayer && tplayer->lives <= 0)
-		SV_BroadcastPrintf(PRINT_HIGH, "%s is out of lives.\n",
+		SV_BroadcastPrintf("%s is out of lives.\n",
 		                   tplayer->userinfo.netname.c_str());
 
 	// Check sv_fraglimit.
@@ -1378,8 +1378,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (!sv_friendlyfire && source && splayer && target != source &&
 			mod != MOD_TELEFRAG)
 		{
-			if (sv_gametype == GM_COOP ||
-				((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+			if (G_IsCoopGame() ||
+				(G_IsTeamGame() &&
 					tplayer->userinfo.team == splayer->userinfo.team))
 			{
 				damage = 0;

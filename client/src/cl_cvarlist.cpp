@@ -243,13 +243,8 @@ CVAR_RANGE(			cl_weaponpref_pls, "8", "Weapon preference level for plasma rifle"
 CVAR_RANGE(			cl_weaponpref_bfg, "2", "Weapon preference level for BFG9000",
 					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
 
-#ifdef GCONSOLE
 CVAR_FUNC_DECL(		use_joystick, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-#else
-CVAR_FUNC_DECL(		use_joystick, "0", "",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-#endif
 
 CVAR_FUNC_DECL(		joy_active, "0", "Selects the joystick device to use",
 					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -259,9 +254,17 @@ CVAR (joy_forwardaxis, "1", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENAB
 CVAR (joy_turnaxis, "2", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_lookaxis, "3", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE (joy_deadzone, "0.34", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 1.0f)
+
+CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
+					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
+
+CVAR_RANGE(joy_righttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the right trigger (Analog controllers only)",
+					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
 
 CVAR(				show_messages, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -279,7 +282,7 @@ CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVA
 CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can be on a team
 CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-CVAR (sv_teamsinplay, "0", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
 
 // Netcode Settings
@@ -648,16 +651,16 @@ CVAR_RANGE(		r_painintensity, "0.5", "Intensity of red pain effect",
 CVAR(			r_viewsize, "0", "Set to the current video resolution",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_defwidth, "640", "",
+CVAR_FUNC_DECL(	vid_defwidth, "1280", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_defheight, "480", "",
+CVAR_FUNC_DECL(	vid_defheight, "720", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_widescreen, "0", "Use wide field-of-view with widescreen video modes",
+CVAR_FUNC_DECL(	vid_widescreen, "1", "Use wide field-of-view with widescreen video modes",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_FUNC_DECL(vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
+CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",

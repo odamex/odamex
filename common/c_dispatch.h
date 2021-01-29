@@ -122,6 +122,9 @@ enum {
 	ACTION_JUMP,
 	ACTION_SHOWSCORES,
 
+	// Joystick actions
+	ACTION_FASTTURN,
+
 	// Automap actions
 	ACTION_AUTOMAP_PANUP,
 	ACTION_AUTOMAP_PANLEFT,

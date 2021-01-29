@@ -125,7 +125,7 @@ void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(byte special);
 
 void SV_UpdateShareKeys(player_t& player);
-std::string V_GetTeamColorPlayer(UserInfo userinfo);
+std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -218,12 +218,6 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_maxcorpses)
-
-EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_itemsrespawn)
-EXTERN_CVAR (sv_monstersrespawn)
-EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (sv_nomonsters)
 
 // Action rules
 EXTERN_CVAR (sv_allowexit)
@@ -918,7 +912,7 @@ bool SV_SetupUserInfo(player_t &player)
 		SV_InvalidateClient(player, "Team preference is invalid");
 		return false;
 	}
-	if (new_team == TEAM_NONE)
+	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
 
 	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
@@ -1043,17 +1037,18 @@ bool SV_SetupUserInfo(player_t &player)
 			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
 	}
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
-		SV_CheckTeam (player);
+		SV_CheckTeam(player);
 
-		if (player.mo && player.userinfo.team != old_team &&
-			player.ingame() && !player.spectator)
+		if (player.mo && player.userinfo.team != old_team && player.ingame() &&
+		    !player.spectator && !G_IsLevelState(LevelState::WARMUP))
 		{
 			// kill player if team is changed
-			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+			P_DamageMobj(player.mo, 0, 0, 1000, 0);
 			SV_BroadcastPrintf("%s switched to the %s team.\n",
-				player.userinfo.netname.c_str(), V_GetTeamColor(player.userinfo.team).c_str());
+			                   player.userinfo.netname.c_str(),
+			                   V_GetTeamColor(player.userinfo.team).c_str());
 		}
 	}
 
@@ -1083,7 +1078,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 //
 void SV_CheckTeam (player_t &player)
 {
-	if (player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay)
+	if (!player.spectator && (player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
 		SV_ForceSetTeam(player, SV_GoodTeam());
 }
 
@@ -1190,7 +1185,7 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 	if(&a == &b)
 		return false;
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		if (a.userinfo.team == b.userinfo.team)
 			return true;
@@ -1345,7 +1340,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update moveable sectors to clients, OR secret sectors that've been discovered.
-	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK) == 0 && sector->secretsector)
+	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK == 0 && sector->secretsector))
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
@@ -2312,7 +2307,7 @@ void SV_DisconnectClient(player_t &who)
 			status = "SPECTATOR";
 		else
 		{
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 			{
 				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
 				status += str;
@@ -2490,7 +2485,7 @@ void SV_DrawScores()
 		else
 			sortedspectators.push_back(&*it);
 
-	Printf("\n");
+	Printf_Bold("\n");
 
 	if (sv_gametype == GM_CTF)
 	{
@@ -2681,7 +2676,7 @@ void SV_DrawScores()
 		}
 	}
 
-	Printf("\n");
+	Printf_Bold("\n");
 }
 
 BEGIN_COMMAND (showscores)
@@ -2717,17 +2712,18 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 	}
 }
 
-void SV_BroadcastPrintf(const char* fmt, ...)
+FORMAT_PRINTF(1, 2)
+void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
 {
 	va_list argptr;
 	char string[2048];
 	client_t* cl;
 
 	va_start(argptr, fmt);
-	vsprintf(string, fmt, argptr);
+	vsnprintf(string, sizeof(string), fmt, argptr);
 	va_end(argptr);
 
-	SV_BroadcastPrintf(PRINT_NORCON, string);
+	SV_BroadcastPrintf(PRINT_NORCON, "%s", string);
 }
 
 // GhostlyDeath -- same as above but ONLY for spectators
@@ -2993,7 +2989,7 @@ bool SV_Say(player_t &player)
 	{
 		if (spectator)
 			SVC_SpecSay(player, message.c_str());
-		else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		else if (G_IsTeamGame())
 			SVC_TeamSay(player, message.c_str());
 		else
 			SVC_Say(player, message.c_str());
@@ -3276,7 +3272,6 @@ void SV_SendPingRequest(client_t* cl)
 
 void SV_UpdateSecretCount(player_t& player)
 {
-
 	// Don't announce secrets on PvP gamemodes
 	if (sv_gametype != GM_COOP)
 		return;
@@ -3294,7 +3289,19 @@ void SV_UpdateSecretCount(player_t& player)
 
 		client_t* cl = &(it->client);
 
-		SVC_SecretFound(cl->reliablebuf, it->id);
+		SVC_SecretFound(cl->reliablebuf, player.id);
+	}
+}
+
+void SV_UpdateMonsterRespawnCount()
+{
+	if (sv_gametype != GM_COOP)
+		return;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		client_t* cl = &(it->client);
+		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_MONSTER_RESPAWNS);
 	}
 }
 
@@ -3750,11 +3757,13 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
 
-	SV_BroadcastPrintf ("%s has joined the %s team.\n", player.userinfo.netname.c_str(), V_GetTeamColor(team).c_str());
-
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		if (player.mo && player.userinfo.team != old_team)
-			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+	if (G_IsTeamGame() && player.mo && player.userinfo.team != old_team &&
+	    !G_IsLevelState(LevelState::WARMUP))
+	{
+		P_DamageMobj(player.mo, 0, 0, 1000, 0);
+	}
+	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),
+	                   V_GetTeamColor(team).c_str());
 
 	// Team changes can result with not enough players on a team.
 	G_AssertValidPlayerCount();
@@ -3891,10 +3900,10 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n",
+			SV_BroadcastPrintf("%s joined the game.\n",
 			                   player.userinfo.netname.c_str());
 		else
-			SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
+			SV_BroadcastPrintf("%s joined the game on the %s team.\n",
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
@@ -4047,7 +4056,7 @@ static void HelpCmd(player_t& player)
 	SV_PlayerPrintf(PRINT_HIGH, player.id,
 	                "odasrv v%s\n\n"
 	                "This server has no custom commands\n",
-	                GitNiceVersion());
+	                GitShortHash());
 }
 
 /**
@@ -4573,18 +4582,15 @@ static void TimeCheck()
 	}
 }
 
-void SV_IntermissionTimeCheck()
+static void IntermissionTimeCheck()
 {
-	if (!sv_timelimit || level.flags & LEVEL_LOBBYSPECIAL) // no time limit in lobby
-		return;
-
-	level.inttimeleft = mapchange/TICRATE;
+	level.inttimeleft = mapchange / TICRATE;
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
 	// [ML] 2012-2-1 - Copy it for intermission fun
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			MSG_WriteMarker(&(it->client.netbuf), svc_inttimeleft);
 			MSG_WriteShort(&(it->client.netbuf), level.inttimeleft);
@@ -4611,7 +4617,7 @@ void SV_GameTics (void)
 			Vote_Runtic();
 		break;
 		case GS_INTERMISSION:
-			SV_IntermissionTimeCheck();
+			IntermissionTimeCheck();
 		break;
 
 		default:
@@ -4822,7 +4828,9 @@ BEGIN_COMMAND (playerinfo)
 	Printf("---------------[player info]----------- \n");
 	Printf(" IP Address       - %s \n",		ip);
 	Printf(" userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(" userinfo.team    - %s \n",		team);
+	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
+		Printf(" userinfo.team    - %s \n", team);
+	}
 	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(" userinfo.color   - %s \n",		color);
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
@@ -4992,10 +5000,10 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
-	if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+	if (G_IsTeamGame() &&
 		attacker && attacker->player &&
 		self->player->userinfo.team == attacker->player->userinfo.team)
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
@@ -5655,6 +5663,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
+	char* coloritem;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
@@ -5663,9 +5672,30 @@ void SV_ShareKeys(card_t card, player_t &player)
 	// Broadcast the key shared to 
 	gitem_t* item;
 	if (item = FindCardItem(card))
-		SV_BroadcastPrintf(PRINT_HIGH, "%s found the %s!\n", player.userinfo.netname.c_str(), item->pickup_name);
+	{
+		switch (card)
+		{
+		case it_bluecard:
+		case it_blueskull:
+			coloritem = TEXTCOLOR_BLUE; 
+			break;
+		case it_redcard:
+		case it_redskull:
+			coloritem = TEXTCOLOR_RED;
+			break;
+		case it_yellowcard:
+		case it_yellowskull:
+			coloritem = TEXTCOLOR_GOLD;
+			break;
+		default:
+			coloritem = TEXTCOLOR_NORMAL;
+		}
+
+		SV_BroadcastPrintf("%s found the %s%s%s!\n", player.userinfo.netname.c_str(),
+		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
+	}
 	else
-		SV_BroadcastPrintf(PRINT_HIGH, "%s found a key!\n", player.userinfo.netname.c_str());
+		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
 
 	// Refresh the inventory to everyone
 	// ToDo: If we're the player who picked it, don't refresh our own inventory
