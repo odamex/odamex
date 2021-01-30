@@ -206,7 +206,7 @@ static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
 	// (maximum frequency, by nyquist)
 
 	float dt = 1.0f / mixer_freq;
-	float rc = 1.0f / (static_cast<float>(M_PI) * samplerate);
+	float rc = 1.0f / (static_cast<float>(PI) * samplerate);
 	float alpha = dt / (rc + dt);
 
 	// Both channels are processed in parallel, hence [i-2]:
