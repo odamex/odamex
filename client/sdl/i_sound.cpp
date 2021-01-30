@@ -62,6 +62,63 @@ CVAR_FUNC_IMPL(snd_samplerate)
 	S_Init(snd_sfxvolume, snd_musicvolume);
 }
 
+#if 0
+
+/**
+ * @brief Write out a WAV file containing sound data.
+ * 
+ * @detail This is an internal debugging function that should be ifdef'ed out
+ *         when not in use.
+ * 
+ * @param filename Output filename.
+ * @param data Data to write.
+ * @param length Total length of data to write. 
+ * @param samplerate Samplerate to put in the header.
+ */
+static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
+{
+	FILE* wav;
+	unsigned int i;
+	unsigned short s;
+
+	wav = fopen(filename, "wb");
+
+	// Header
+
+	fwrite("RIFF", 1, 4, wav);
+	i = LELONG(36 + samplerate);
+	fwrite(&i, 4, 1, wav);
+	fwrite("WAVE", 1, 4, wav);
+
+	// Subchunk 1
+
+	fwrite("fmt ", 1, 4, wav);
+	i = LELONG(16);
+	fwrite(&i, 4, 1, wav); // Length
+	s = LESHORT((short)1);
+	fwrite(&s, 2, 1, wav); // Format (PCM)
+	s = LESHORT((short)2);
+	fwrite(&s, 2, 1, wav); // Channels (2=stereo)
+	i = LELONG(snd_samplerate.asInt());
+	fwrite(&i, 4, 1, wav); // Sample rate
+	i = LELONG(snd_samplerate.asInt() * 2 * 2);
+	fwrite(&i, 4, 1, wav); // Byte rate (samplerate * stereo * 16 bit)
+	s = LESHORT((short)(2 * 2));
+	fwrite(&s, 2, 1, wav); // Block align (stereo * 16 bit)
+	s = LESHORT((short)16);
+	fwrite(&s, 2, 1, wav); // Bits per sample (16 bit)
+
+	// Data subchunk
+
+	fwrite("data", 1, 4, wav);
+	i = LELONG(length);
+	fwrite(&i, 4, 1, wav);        // Data length
+	fwrite(data, 1, length, wav); // Data
+
+	fclose(wav);
+}
+
+#endif
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)
@@ -95,60 +152,69 @@ static bool ConvertibleRatio(int freq1, int freq2)
 
 // Generic sound expansion function for any sample rate
 
-static void ExpandSoundData(byte *data,
-                            int samplerate,
-                            int length,
-                            Mix_Chunk *destination)
+static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
+                            Mix_Chunk* destination)
 {
-    SDL_AudioCVT convertor;
-    
-    if (samplerate <= mixer_freq
-     && ConvertibleRatio(samplerate, mixer_freq)
-     && SDL_BuildAudioCVT(&convertor,
-                          AUDIO_U8, 1, samplerate,
-                          mixer_format, mixer_channels, mixer_freq))
-    {
-        convertor.len = length;
-        convertor.buf = new Uint8[convertor.len * convertor.len_mult];
-        memcpy(convertor.buf, data, length);
+	Sint16* expanded = reinterpret_cast<Sint16*>(destination->abuf);
+	size_t samplecount = length / (bits / 8);
 
-        SDL_ConvertAudio(&convertor);
+	// Generic expansion if conversion does not work:
+	//
+	// SDL's audio conversion only works for rate conversions that are
+	// powers of 2; if the two formats are not in a direct power of 2
+	// ratio, do this naive conversion instead.
 
-        memcpy(destination->abuf, convertor.buf, destination->alen);
-        delete[] convertor.buf;
-    }
-    else
-    {
-        Sint16 *expanded = (Sint16 *) destination->abuf;
-        size_t expanded_length;
-        int expand_ratio;
+	// number of samples in the converted sound
 
-        // Generic expansion if conversion does not work:
-        //
-        // SDL's audio conversion only works for rate conversions that are
-        // powers of 2; if the two formats are not in a direct power of 2
-        // ratio, do this naive conversion instead.
+	size_t expanded_length =
+	    (static_cast<uint64_t>(samplecount) * mixer_freq) / samplerate;
+	size_t expand_ratio = (samplecount << 8) / expanded_length;
 
-        // number of samples in the converted sound
+	for (size_t i = 0; i < expanded_length; ++i)
+	{
+		Sint16 sample;
+		int src;
 
-        expanded_length = (size_t)((int64_t(length) * mixer_freq) / samplerate);
-        expand_ratio = (length << 8) / expanded_length;
+		src = (i * expand_ratio) >> 8;
 
-        for (size_t i = 0; i < expanded_length; ++i)
-        {
-            Sint16 sample;
-            int src;
+		// [crispy] Handle 16 bit audio data
+		if (bits == 16)
+		{
+			sample = data[src * 2] | (data[src * 2 + 1] << 8);
+		}
+		else
+		{
+			sample = data[src] | (data[src] << 8);
+			sample -= 32768;
+		}
 
-            src = (i * expand_ratio) >> 8;
+		// expand mono->stereo
 
-            sample = data[src] | (data[src] << 8);
-            sample -= 32768;
+		expanded[i * 2] = expanded[i * 2 + 1] = sample;
+	}
 
-            // expand 8->16 bits, mono->stereo
+	// Perform a low-pass filter on the upscaled sound to filter
+	// out high-frequency noise from the conversion process.
 
-            expanded[i * 2] = expanded[i * 2 + 1] = sample;
-        }
-    }
+	// Low-pass filter for cutoff frequency f:
+	//
+	// For sampling rate r, dt = 1 / r
+	// rc = 1 / 2*pi*f
+	// alpha = dt / (rc + dt)
+
+	// Filter to the half sample rate of the original sound effect
+	// (maximum frequency, by nyquist)
+
+	float dt = 1.0f / mixer_freq;
+	float rc = 1.0f / (static_cast<float>(M_PI) * samplerate);
+	float alpha = dt / (rc + dt);
+
+	// Both channels are processed in parallel, hence [i-2]:
+
+	for (size_t i = 2; i < expanded_length * 2; ++i)
+	{
+		expanded[i] = (Sint16)(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
+	}
 }
 
 static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
@@ -252,11 +318,7 @@ static void getsfx (struct sfxinfo_struct *sfx)
         = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, &chunk->abuf);
     chunk->volume = MIX_MAX_VOLUME;
 
-    ExpandSoundData((unsigned char *)data + 8, 
-                    samplerate, 
-                    length, 
-                    chunk);
-                    
+    ExpandSoundData((byte*)data + 8, samplerate, 8, length, chunk);
     sfx->data = chunk;
     
     Z_ChangeTag(data, PU_CACHE);
