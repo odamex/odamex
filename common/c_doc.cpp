@@ -43,6 +43,16 @@ static void HTMLHeader(std::string& out, const char* type)
 	    "<head>"
 	    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
 	    "<title>Odamex " DOTVERSIONSTR " %s</title>"
+	    "<style>"
+	    "html {"
+	    "background-color: #2c2c2c;"
+	    "color: rgb(245, 245, 245);"
+	    "font-family: sans-serif;"
+	    "}"
+	    "a {"
+	    "color: #ffa300;"
+	    "}"
+	    "</style>"
 	    "</head>"
 	    "<body>";
 	StrFormat(out, HEADER, type);
