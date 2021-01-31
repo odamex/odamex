@@ -99,6 +99,7 @@ if(BUILD_SERVER)
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
     "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+    "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
   )
 
   # Compile the library - twice.
