@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <algorithm>
+
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -34,7 +36,16 @@
 #define CS_STRING "Odamex Server"
 #endif
 
-static void HTMLHeader(std::string& out, const char* type)
+// A view to a list of Cvars.
+typedef std::vector<cvar_t*> CvarView;
+
+/**
+ * @brief Top part of an HTML document.
+ *
+ * @param out Output buffer to write to.
+ * @param title Title to put in the title tag.
+ */
+static void HTMLHeader(std::string& out, const char* title)
 {
 	std::string buf;
 	const char* HEADER =
@@ -42,7 +53,7 @@ static void HTMLHeader(std::string& out, const char* type)
 	    "<html>"
 	    "<head>"
 	    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
-	    "<title>Odamex " DOTVERSIONSTR " %s</title>"
+	    "<title>%s</title>"
 	    "<style>"
 	    "html {"
 	    "background-color: #2c2c2c;"
@@ -55,15 +66,15 @@ static void HTMLHeader(std::string& out, const char* type)
 	    "</style>"
 	    "</head>"
 	    "<body>";
-	StrFormat(out, HEADER, type);
+	StrFormat(out, HEADER, title);
 }
 
-static void HTMLTitle(std::string& out, const char* type)
-{
-	const char* TITLE = "<h3>Odamex " DOTVERSIONSTR " %s</h3>";
-	StrFormat(out, TITLE, type);
-}
-
+/**
+ * @brief Render cvar information as HTML.
+ *
+ * @param out Output buffer to write to.
+ * @param cvar Cvar to read.
+ */
 static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 {
 	std::vector<std::string> info;
@@ -171,16 +182,44 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 
 	const char* ROW = "<dt><code>%s</code></dt>"
 	                  "<dd>"
-	                  "<p><em>%s</em></p>"
+	                  "<p><small><em>%s</em></small></p>"
 	                  "<p>%s</p>"
 	                  "</dd>";
 	StrFormat(out, ROW, cvar.name(), flagstr.c_str(), cvar.helptext());
 }
 
+/**
+ * @brief Bottom part of an HTML document.
+ *
+ * @param out Output buffer to write to.
+ */
 static void HTMLFooter(std::string& out)
 {
 	out = "</body>"
 	      "</html>";
+}
+
+static bool CvarCmp(const cvar_t* a, const cvar_t* b)
+{
+	return strcmp(a->name(), b->name()) < 0;
+}
+
+/**
+ * @brief Return a "view" of Cvars sorted by name.
+ */
+static CvarView GetSortedCvarView()
+{
+	CvarView view;
+
+	cvar_t* var = GetFirstCvar();
+	while (var != NULL)
+	{
+		view.push_back(var);
+		var = var->GetNext();
+	}
+
+	std::sort(view.begin(), view.end(), CvarCmp);
+	return view;
 }
 
 BEGIN_COMMAND(cvardump)
@@ -202,15 +241,14 @@ BEGIN_COMMAND(cvardump)
 	}
 
 	// First the header.
-	HTMLHeader(buffer, "Console Variables");
+	std::string title;
+	StrFormat(title, "%s %s Console Variables", CS_STRING, DOTVERSIONSTR);
+	HTMLHeader(buffer, title.c_str());
 	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 
-	// Then the title.
-	HTMLTitle(buffer, "Console Variables");
-	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
-
-	// Initial paragraph.
+	// Then the title and initial paragraph.
 	const char* PREAMBLE =
+	    "<h2>%s</h2>"
 	    "<p>"
 	    "These are the console variables known to the " CS_STRING " as of revision %s."
 	    "</p><p>"
@@ -220,19 +258,18 @@ BEGIN_COMMAND(cvardump)
 	    "number with a decimal point in it, like 3.14."
 	    "</p>";
 
-	StrFormat(buffer, PREAMBLE, GitNiceVersion());
+	StrFormat(buffer, PREAMBLE, title.c_str(), GitNiceVersion());
 	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 
 	// Initial tag for cvars.
 	fputs("<dl>", fh);
 
 	// Stamp out our CVars
-	cvar_t* var = GetFirstCvar();
-	while (var != NULL)
+	CvarView view = GetSortedCvarView();
+	for (CvarView::const_iterator it = view.begin(); it != view.end(); ++it)
 	{
-		HTMLCvarRow(buffer, *var);
+		HTMLCvarRow(buffer, **it);
 		fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
-		var = var->GetNext();
 	}
 
 	// Ending tag for cvars.
