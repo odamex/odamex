@@ -141,6 +141,9 @@ if(BUILD_SERVER)
   set(MINIUPNPC_LIBRARY
     "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
 
+  # This must exist before the target is synthesized.
+  file(MAKE_DIRECTORY ${MINIUPNPC_INCLUDE_DIR})
+
   # Generate the build.
   execute_process(COMMAND "${CMAKE_COMMAND}"
     -S "${CMAKE_CURRENT_SOURCE_DIR}/libminiupnpc"
