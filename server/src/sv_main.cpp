@@ -2253,7 +2253,7 @@ void SV_ConnectClient()
 	SV_BroadcastUserInfo(*player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, true);
+	P_ClearPlayerScores(*player, true, true);
 	player->playerstate = PST_ENTER;
 
 	if (!step_mode)
@@ -3866,7 +3866,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		P_KillMobj(NULL, player.mo, NULL, true);
 
 	// Fresh joins get fresh player scores.
-	P_ClearPlayerScores(player, true);
+	P_ClearPlayerScores(player, true, true);
 
 	// Ensure our player is in the ENTER state.
 	player.playerstate = PST_ENTER;

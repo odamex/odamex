@@ -57,7 +57,7 @@ EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
 EXTERN_CVAR (g_lives)
-
+EXTERN_CVAR (g_rounds)
 extern bool predicting, step_mode;
 
 static player_t nullplayer;		// used to indicate 'player not found' when searching
@@ -136,16 +136,22 @@ void P_ClearPlayerPowerups(player_t& p)
  * @param wins True if a player's wins should be cleared as well - should
  *             usually be True unless it's a reset across rounds.
  */
-void P_ClearPlayerScores(player_t& p, bool wins)
+void P_ClearPlayerScores(player_t& p, bool wins, bool force)
 {
-	if (wins)
+	if (wins || force)
 		p.roundwins = 0;
 
 	p.lives = g_lives.asInt();
-	p.fragcount = 0;
+
+	// Reset frags/death if not on rounds
+	if (!g_rounds || force)
+	{
+		p.fragcount = 0;
+		p.deathcount = 0; // [Toke - Scores - deaths]
+	}
+
 	p.itemcount = 0;
 	p.secretcount = 0;
-	p.deathcount = 0; // [Toke - Scores - deaths]
 	p.killcount = 0; // [deathz0r] Coop kills
 	p.points = 0;
 }

@@ -565,7 +565,7 @@ class PlayerQuery
 
 void P_ClearPlayerCards(player_t& p);
 void P_ClearPlayerPowerups(player_t& p);
-void P_ClearPlayerScores(player_t& p, bool wins);
+void P_ClearPlayerScores(player_t& p, bool wins, bool force = false);
 size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
