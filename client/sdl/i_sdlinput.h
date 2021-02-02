@@ -304,10 +304,7 @@ private:
 	EventQueue		mEvents;
 
 	int				mJoystickId;
-	SDL_Joystick*	mJoystick;
-
-	int				mNumHats;
-	int*			mHatStates;
+	SDL_GameController*	mJoystick;
 };
 
 

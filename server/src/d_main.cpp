@@ -260,14 +260,14 @@ void D_DoomMain()
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
 	
-	std::vector<std::string> newwadfiles, newpatchfiles;
+	OWantFiles newwadfiles, newpatchfiles;
 
 	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
 	if (iwad_filename_cstr)
 	{
-		std::string iwad_filename(iwad_filename_cstr);
-		M_AppendExtension(iwad_filename, ".WAD");
-		newwadfiles.push_back(iwad_filename);
+		OWantFile file;
+		OWantFile::make(file, iwad_filename_cstr, OFILE_WAD);
+		newwadfiles.push_back(file);
 	}
 
 	D_AddWadCommandLineFiles(newwadfiles);

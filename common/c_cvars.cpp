@@ -789,10 +789,25 @@ BEGIN_COMMAND(errorout)
 END_COMMAND(errorout)
 
 // [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
+#if defined _WIN32
+
 BEGIN_COMMAND(crashout)
 {
 	std::terminate();
 }
 END_COMMAND(crashout)
+
+#elif defined UNIX
+
+#include <signal.h>
+#include <unistd.h>
+
+BEGIN_COMMAND(crashout)
+{
+	kill(getpid(), SIGSEGV);
+}
+END_COMMAND(crashout)
+
+#endif
 
 VERSION_CONTROL (c_cvars_cpp, "$Id$")

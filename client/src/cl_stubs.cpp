@@ -21,8 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <stdarg.h>
+
 #include "actor.h"
 #include "c_cvars.h"
+#include "cmdlib.h"
 #include "p_ctf.h"
 #include "doomdef.h"
 #include "d_player.h"
@@ -31,7 +34,27 @@
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
 
-void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
+FORMAT_PRINTF(2, 3)
+void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
+{
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+	va_list va;
+	va_start(va, format);
+	VStrFormat(str, format, va);
+	va_end(va);
+
+	Printf(printlevel, "%s", str.c_str());
+}
+
+FORMAT_PRINTF(1, 2)
+void STACK_ARGS SV_BroadcastPrintf(const char* format, ...)
+{
+	SV_BroadcastPrintf(PRINT_HIGH, format);
+}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
@@ -61,12 +84,14 @@ void CTF_RememberFlagPos(mapthing2_t *mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
-void SV_SetWinPlayer(byte playerId) {}
 void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly, int arg0 = -1, int arg1 = -1, int arg2 = -1, int arg3 = -1,
 	int arg4 = -1, int arg5 = -1, int arg6 = -1, int arg7 = -1, int arg8 = -1) {}
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4) {}
 
+void SV_UpdateMonsterRespawnCount() {}
+void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation) {}
+
+
 CVAR_FUNC_IMPL(sv_sharekeys) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
-

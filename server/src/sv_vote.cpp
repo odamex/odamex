@@ -23,7 +23,7 @@
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "d_player.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "sv_main.h"
 #include "sv_maplist.h"
 #include "sv_pickup.h"
@@ -173,7 +173,7 @@ public:
 		if (!Vote::setup_check_cvar())
 			return false;
 
-		if (warmup.get_status() != Warmup::WARMUP)
+		if (::levelstate.getState() != LevelState::WARMUP)
 		{
 			this->error = "Game is not in warmup mode.";
 			return false;
@@ -184,7 +184,7 @@ public:
 	}
 	bool tic()
 	{
-		if (warmup.get_status() != Warmup::WARMUP)
+		if (::levelstate.getState() != LevelState::WARMUP)
 		{
 			this->error = "No need to force start, game is about to start.";
 			return false;
@@ -526,10 +526,10 @@ public:
 	bool exec(void)
 	{
 		// When in warmup mode, we would rather not catch players off guard.
-		warmup.reset(level);
+		::levelstate.reset();
 
 		// Do a countdown-led restart.
-		warmup.restart();
+		::levelstate.restart();
 
 		return true;
 	}

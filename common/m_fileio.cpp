@@ -129,6 +129,10 @@ void M_FixPathSep(std::string& path)
  */
 std::string M_GetCWD()
 {
+#ifdef __SWITCH__
+	return "./";
+#endif
+
 	char tmp[4096] = {0};
 	std::string ret = "./";
 
@@ -140,6 +144,7 @@ std::string M_GetCWD()
 
 	return ret;
 }
+
 
 //
 // M_FileLength

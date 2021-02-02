@@ -63,6 +63,7 @@ static int		lu_palette;
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
+EXTERN_CVAR(g_lives)
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
@@ -341,6 +342,9 @@ static st_number_t		w_ammo[4];
 // max ammo widgets
 static st_number_t		w_maxammo[4];
 
+// lives widget
+static st_number_t		w_lives;
+
 // number of frags so far in deathmatch
 static int		st_fragscount;
 
@@ -364,6 +368,7 @@ static int		keyboxes[3];
 static int		st_health, st_armor;
 static int		st_ammo[4], st_maxammo[4];
 static int		st_weaponowned[6] = {0}, st_current_ammo;
+static int		st_lives;
 
 // a random number per tick
 static int		st_randomnumber;
@@ -1126,6 +1131,11 @@ void ST_updateWidgets(void)
 		st_maxammo[i] = plyr->maxammo[i];
 	}
 
+	if (g_lives)
+		st_lives = plyr->lives;
+	else
+		st_lives = ST_DONT_DRAW_NUM;
+
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
@@ -1204,6 +1214,8 @@ void ST_drawWidgets(bool force_refresh)
 		STlib_updateMultIcon(&w_keyboxes[i], force_refresh);
 
 	STlib_updateNum(&w_frags, force_refresh);
+
+	STlib_updateNum(&w_lives, true);	// Force refreshing to avoid tens to be hidden by Doomguy's face
 }
 
 
@@ -1435,42 +1447,46 @@ static void ST_loadData()
 
 static void ST_unloadGraphics()
 {
-
 	int i;
 
 	// unload the numbers, tall and short
-	for (i=0;i<10;i++)
+	for (i = 0; i < 10; i++)
 	{
-		Z_ChangeTag(tallnum[i], PU_CACHE);
-		Z_ChangeTag(shortnum[i], PU_CACHE);
+		Z_Discard(&::tallnum[i]);
+		Z_Discard(&::shortnum[i]);
 	}
+
 	// unload tall percent
-	Z_ChangeTag(tallpercent, PU_CACHE);
+	Z_Discard(&::tallpercent);
 
 	// unload arms background
-	Z_ChangeTag(armsbg, PU_CACHE);
+	Z_Discard(&::armsbg);
 
 	// unload flags background
-	Z_ChangeTag(flagsbg, PU_CACHE);
+	Z_Discard(&::flagsbg);
 
 	// unload gray #'s
-	for (i=0;i<6;i++)
-		Z_ChangeTag(arms[i][0], PU_CACHE);
+	for (i = 0; i < 6; i++)
+	{
+		Z_Discard(&::arms[i][0]);
+	}
 
 	// unload the key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
-		Z_ChangeTag(keys[i], PU_CACHE);
+	for (i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
+	{
+		Z_Discard(&::keys[i]);
+	}
 
-	Z_ChangeTag(sbar, PU_CACHE);
-	Z_ChangeTag(faceback, PU_CACHE);
+	Z_Discard(&::sbar);
+	Z_Discard(&::faceback);
 
-	for (i=0;i<ST_NUMFACES;i++)
-		Z_ChangeTag(faces[i], PU_CACHE);
+	for (i = 0; i < ST_NUMFACES; i++)
+	{
+		Z_Discard(&::faces[i]);
+	}
 
 	// Note: nobody ain't seen no unloading
 	//	 of stminus yet. Dude.
-
-
 }
 
 static void ST_unloadData()
@@ -1624,6 +1640,9 @@ void ST_createWidgets(void)
 				  &st_statusbaron,
 				  ST_MAXAMMO3WIDTH);
 
+	// Number of lives (not always rendered)
+	STlib_initNum(&w_lives, ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron,
+	              2);
 }
 
 void ST_Start()

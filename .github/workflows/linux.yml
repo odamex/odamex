@@ -59,3 +59,18 @@ jobs:
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+  build-clang:
+    name: Build (Clang)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      CC: /usr/bin/clang
+      CXX: /usr/bin/clang++
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Run build
+      run: cmake --build ./build/

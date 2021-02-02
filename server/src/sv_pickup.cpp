@@ -42,7 +42,7 @@ EXTERN_CVAR(sv_teamsinplay)
 // Distribute X number of players between teams.
 bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// This function shouldn't do anything unless you're in a teamgame.
-	if (!(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)) {
+	if (!G_IsTeamGame()) {
 		error = "Server is not in a team game.";
 		return false;
 	}

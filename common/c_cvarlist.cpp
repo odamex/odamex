@@ -120,9 +120,9 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 					"// 5 - Nightmare",
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
-
-CVAR_RANGE_FUNC_DECL(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
-					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 32768.0f)
+CVAR_RANGE(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
+           CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+           0.0f, 1440.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_intermissionlimit, "10", "Sets the time limit for the intermission to end (in seconds).",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
@@ -181,6 +181,71 @@ CVAR(				sv_coopunassignedvoodoodolls, "1", "",
 					
 CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
 					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
+
+// Game mode options
+// -----------------
+
+CVAR(g_ctf_notouchreturn, "0",
+     "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+
+CVAR(g_rounds, "0",
+     "Turns on rounds - if enabled, reaching the gametype's win condition only wins a "
+     "single round, and a player or team must win a certain number of rounds to win the "
+     "game",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH);
+
+CVAR(g_sides, "0",
+     "Turns on offensive vs defensive sides for team-based game modes - "
+     "teams on offense don't have to defend any team objective, teams on defense win "
+     "if time expires, and if rounds are enabled the team on defense changes every round",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(g_roundlimit, "0",
+     "Number of total rounds the game can go on for before the game ends", CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_lives, "0",
+     "Number of lives a player has before they can no longer respawn - this can result "
+     "in a game loss depending on the gametype",
+     CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
+CVAR(g_lives_jointimer, "0",
+     "When players have limited lives, this is the number of seconds after the round or "
+     "game started that new players can join - if set to zero, players need to queue and "
+     "wait until the next round to join",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_winlimit, "0",
+     "Number of times a round must be won before a player or team wins the game",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_speclosers, "0", "After a game is won, force losing players or teams to spectate",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+
+// Game mode options commonized from the server
+//     At some point, replace "sv_" with "g_"
+// -------------------------------------------------------------------------
+
+CVAR(sv_warmup, "0", "Enable a 'warmup mode' before the match starts.", CVARTYPE_BOOL,
+     CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
+CVAR_RANGE(sv_warmup_autostart, "1.0",
+           "Ratio of players needed for warmup to automatically start the game.",
+           CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,
+           1.0f)
+CVAR_RANGE(sv_countdown, "5",
+           "Number of seconds to wait before starting the game from "
+           "warmup or restarting the game.",
+           CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,
+           60.0f)
 
 // Compatibility options
 // ---------------------------------

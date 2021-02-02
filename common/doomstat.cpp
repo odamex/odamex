@@ -60,46 +60,4 @@ CVAR_FUNC_IMPL (language)
 // Set if homebrew PWAD stuff has been added.
 BOOL			modifiedgame;
 
-bool IsGameModeDuel()
-{
-	return sv_gametype == GM_DM && sv_maxplayers == 2;
-}
-
-bool IsGameModeFFA()
-{
-	return sv_gametype == GM_DM && sv_maxplayers > 2;
-}
-
-const char* GetGameModeString()
-{
-	if (sv_gametype == GM_COOP)
-		return "COOPERATIVE";
-	else if (IsGameModeDuel())
-		return "DUEL";
-	else if (sv_gametype == GM_DM)
-		return "DEATHMATCH";
-	else if (sv_gametype == GM_TEAMDM)
-		return "TEAM DEATHMATCH";
-	else if (sv_gametype == GM_CTF)
-		return "CAPTURE THE FLAG";
-
-	return "";
-}
-
-const char* GetShortGameModeString()
-{
-	if (sv_gametype == GM_COOP)
-		return multiplayer ? "COOP" : "SOLO";
-	else if (IsGameModeDuel())
-		return "DUEL";
-	else if (sv_gametype == GM_DM)
-		return "DM";
-	else if (sv_gametype == GM_TEAMDM)
-		return "TDM";
-	else if (sv_gametype == GM_CTF)
-		return "CTF";
-
-	return "";
-}
-
 VERSION_CONTROL (doomstat_cpp, "$Id$")

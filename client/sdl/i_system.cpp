@@ -50,16 +50,12 @@
 #endif // WIN32
 
 #ifdef UNIX
-	#define HAVE_PWD_H
-	// for getuid and geteuid
-	#include <unistd.h>
-	#include <sys/types.h>
-	#include <limits.h>
-	#include <time.h>
-#endif
-
-#ifdef HAVE_PWD_H
-	#include <pwd.h>
+// for getuid and geteuid
+#include <unistd.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <time.h>
+#include <pwd.h>
 #endif
 
 #include <sstream>
@@ -121,7 +117,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef GCONSOLE
+#if defined(GCONSOLE) && !defined(__SWITCH__)
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;

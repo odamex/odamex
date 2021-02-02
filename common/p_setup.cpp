@@ -1651,7 +1651,7 @@ void P_SetupLevel (char *lumpname, int position)
 {
 	size_t lumpnum;
 
-	level.total_monsters = level.total_items = level.total_secrets =
+	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
 	wminfo.partime = 180;
@@ -1807,13 +1807,6 @@ void P_Init (void)
 	InitTeamInfo();
 }
 
-
-// [ML] Do stuff when the timelimit is reset
-// Where else can I put this??
-CVAR_FUNC_IMPL(sv_timelimit)
-{
-	level.timeleft = var * TICRATE * 60;
-}
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {

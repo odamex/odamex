@@ -43,11 +43,16 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "doomstat.h"
+#include "cl_responderkeys.h"
 #include "cl_download.h"
 
 #include <string>
 #include <list>
 #include <algorithm>
+
+#ifdef __SWITCH__
+#include "nx_io.h"
+#endif
 
 // These functions are standardized in C++11, POSIX standard otherwise
 #if defined(_WIN32) && (__cplusplus <= 199711L)
@@ -110,8 +115,8 @@ static struct NotifyText
 } NotifyStrings[NUMNOTIFIES];
 
 // Default Printlevel
-#define PRINTLEVELS 5 //(5 + 3)
-int PrintColors[PRINTLEVELS+3] = 
+#define PRINTLEVELS 9 //(5 + 3)
+int PrintColors[PRINTLEVELS] = 
 {	CR_RED,		// Pickup
 	CR_GOLD,	// Obituaries
 	CR_GRAY,	// Messages
@@ -120,7 +125,8 @@ int PrintColors[PRINTLEVELS+3] =
 
 	CR_GOLD,	// Server chat
 	CR_YELLOW,	// Warning messages
-	CR_RED		// Critical messages
+	CR_RED,		// Critical messages
+	CR_GOLD,	// Centered Messages
 };	
 
 
@@ -790,7 +796,7 @@ CVAR_FUNC_IMPL(msg4color)
 
 CVAR_FUNC_IMPL(msgmidcolor)
 {
-	setmsgcolor(PRINTLEVELS, var.cstring());
+	setmsgcolor(PRINTLEVELS-1, var.cstring());
 }
 
 // NES - Activating this locks the scroll position in place when
@@ -1568,7 +1574,7 @@ void C_DrawConsole()
 		// Non-fullscreen console. Overlay a translucent background.
 		screen->Dim(0, 0, primary_surface_width, ConBottom);
 	}
-	else
+	else if (::background_surface != NULL)
 	{
 		// Fullscreen console. Blit the image in the center of a black background.
 		screen->Clear(0, 0, primary_surface_width, primary_surface_height, argb_t(0, 0, 0));
@@ -1810,9 +1816,10 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
+	int ch = ev->data1;
 	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
-	if (ev->data1 == KEY_ESCAPE || (cmd && stricmp(cmd, "toggleconsole") == 0))
+	if (Key_IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{
 		// don't eat the Esc key if we're in full console
 		// let it be processed elsewhere (to bring up the menu)
@@ -1823,116 +1830,152 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	}
 
-	switch (ev->data1)
-	{
-	case KEY_TAB:
-		// Try to do tab-completion
-		if (::KeysShifted)
-			TabComplete(TAB_COMPLETE_BACKWARD);
-		else
-			TabComplete(TAB_COMPLETE_FORWARD);
-		return true;
-#ifdef _XBOX
-	case KEY_JOY7: // Left Trigger
+#ifdef __SWITCH__
+	if (ev->data1 == OKEY_JOY3)
+{
+	char oldtext[64], text[64], fulltext[65];		
+
+		strcpy (text, CmdLine.text.c_str());
+
+		// Initiate the console
+		NX_SetKeyboard(text, 64);
+
+		// No action if no text or same as earlier
+		if (!strlen(text) || !strcmp(oldtext, text))
+			return true;
+
+				// add command line text to history
+		History.addString(text);
+		History.resetPosition();
+	
+		Printf(127, "]%s\n", text);
+		AddCommandString(text);
+		CmdLine.clear();
+}
 #endif
-	case KEY_PGUP:
-		if ((int)(ConRows) > (int)(ConBottom/8))
+
+	// General keys used by all systems
+	{
+	if (Key_IsPageUpKey(ch))
+		{
+			if ((int)(ConRows) > (int)(ConBottom / 8))
+			{
+				if (KeysShifted)
+					// Move to top of console buffer
+					RowAdjust = ConRows - ConBottom / 8;
+				else
+					// Start scrolling console buffer up
+					ScrollState = SCROLLUP;
+			}
+			return true;
+		}
+		else if (Key_IsPageDownKey(ch))
 		{
 			if (KeysShifted)
-				// Move to top of console buffer
-				RowAdjust = ConRows - ConBottom/8;
+				// Move to bottom of console buffer
+				RowAdjust = 0;
 			else
-				// Start scrolling console buffer up
-				ScrollState = SCROLLUP;
+				// Start scrolling console buffer down
+				ScrollState = SCROLLDN;
+			return true;
 		}
-		return true;
-#ifdef _XBOX
-	case KEY_JOY8: // Right Trigger
-#endif
-	case KEY_PGDN:
-		if (KeysShifted)
-			// Move to bottom of console buffer
-			RowAdjust = 0;
-		else
-			// Start scrolling console buffer down
-			ScrollState = SCROLLDN;
-		return true;
-	case KEY_HOME:
+		else if (Key_IsLeftKey(ch))
+		{
+			if (KeysCtrl)
+				CmdLine.moveCursorLeftWord();
+			else
+				CmdLine.moveCursorLeft();
+				return true;
+		}
+		else if (Key_IsRightKey(ch))
+		{
+			if (KeysCtrl)
+				CmdLine.moveCursorRightWord();
+			else
+				CmdLine.moveCursorRight();
+			return true;
+		}
+		else if (Key_IsUpKey(ch))
+		{
+			// Move to previous entry in the command history
+			History.movePositionUp();
+			CmdLine.clear();
+			CmdLine.insertString(History.getString());
+			CmdCompletions.clear();
+			TabCycleClear();
+			return true;
+		}
+		else if (Key_IsDownKey(ch))
+		{
+			// Move to next entry in the command history
+			History.movePositionDown();
+			CmdLine.clear();
+			CmdLine.insertString(History.getString());
+			CmdCompletions.clear();
+			TabCycleClear();
+			return true;
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
+			// Execute command line (ENTER)
+			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
+				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
+
+			// add command line text to history
+			History.addString(CmdLine.text);
+			History.resetPosition();
+		
+			Printf(127, "]%s\n", CmdLine.text.c_str());
+			AddCommandString(CmdLine.text.c_str());
+			CmdLine.clear();
+			CmdCompletions.clear();
+
+			TabCycleClear();
+			return true;
+		}
+		else if (Key_IsTabulationKey(ch))
+		{
+			if (::KeysShifted)
+				TabComplete(TAB_COMPLETE_BACKWARD);
+			else
+				TabComplete(TAB_COMPLETE_FORWARD);
+			return true;
+		}
+	}
+
+	switch (ch)
+	{
+	case OKEY_HOME:
 		CmdLine.moveCursorHome();
 		return true;
-	case KEY_END:
+	case OKEY_END:
 		CmdLine.moveCursorEnd();
-		return true;
-	case KEY_LEFTARROW:
-		if (KeysCtrl)
-			CmdLine.moveCursorLeftWord();
-		else
-			CmdLine.moveCursorLeft();
-		return true;
-	case KEY_RIGHTARROW:
-		if (KeysCtrl)
-			CmdLine.moveCursorRightWord();
-		else
-			CmdLine.moveCursorRight();
-		return true;
-	case KEY_BACKSPACE:
+		return true;		
+	case OKEY_BACKSPACE:
 		CmdLine.backspace();
 		TabCycleClear();
 		return true;
-	case KEY_DEL:
+	case OKEY_DEL:
 		CmdLine.deleteCharacter();
 		TabCycleClear();
 		return true;
-	case KEY_LALT:
-	case KEY_RALT:
+	case OKEY_LALT:
+	case OKEY_RALT:
 		// Do nothing
 		return true;
-	case KEY_LCTRL:
-	case KEY_RCTRL:
+	case OKEY_LCTRL:
+	case OKEY_RCTRL:
 		KeysCtrl = true;
 		return true;
-	case KEY_LSHIFT:
-	case KEY_RSHIFT:
+	case OKEY_LSHIFT:
+	case OKEY_RSHIFT:
 		// SHIFT was pressed
 		KeysShifted = true;
 		return true;
-	case KEY_UPARROW:
-		// Move to previous entry in the command history
-		History.movePositionUp();
-		CmdLine.clear();
-		CmdLine.insertString(History.getString());
-		CmdCompletions.clear();
-		TabCycleClear();
-		return true;
-	case KEY_DOWNARROW:
-		// Move to next entry in the command history
-		History.movePositionDown();
-		CmdLine.clear();
-		CmdLine.insertString(History.getString());
-		CmdCompletions.clear();
-		TabCycleClear();
-		return true;
-	case KEY_MOUSE3:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
 		CmdCompletions.clear();
-		TabCycleClear();
-		return true;
-	case KEY_ENTER:
-	case KEYP_ENTER:
-		// Execute command line (ENTER)
-		if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
-			RowAdjust = 0;   // con_scrlock = 0 does it automatically.
-
-		// add command line text to history
-		History.addString(CmdLine.text);
-		History.resetPosition();
-	
-		Printf(127, "]%s\n", CmdLine.text.c_str());
-		AddCommandString(CmdLine.text.c_str());
-		CmdLine.clear();
-		CmdCompletions.clear();
-
 		TabCycleClear();
 		return true;
 	}
@@ -1979,26 +2022,27 @@ BOOL C_Responder(event_t *ev)
 
 	if (ev->type == ev_keyup)
 	{
-		switch (ev->data1)
+		// General Keys used by all systems
+		if (Key_IsPageUpKey(ev->data1) || Key_IsPageDownKey(ev->data1))
 		{
-#ifdef _XBOX
-		case KEY_JOY7: // Left Trigger
-		case KEY_JOY8: // Right Trigger
-#endif
-		case KEY_PGUP:
-		case KEY_PGDN:
 			ScrollState = SCROLLNO;
-			break;
-		case KEY_LCTRL:
-		case KEY_RCTRL:
-			KeysCtrl = false;
-			break;
-		case KEY_LSHIFT:
-		case KEY_RSHIFT:
-			KeysShifted = false;
-			break;
-		default:
-			return false;
+		}
+		else
+		{
+			// Keyboard keys only
+			switch (ev->data1)
+			{
+			case OKEY_LCTRL:
+			case OKEY_RCTRL:
+				KeysCtrl = false;
+				break;
+			case OKEY_LSHIFT:
+			case OKEY_RSHIFT:
+				KeysShifted = false;
+				break;
+			default:
+				return false;
+			}
 		}
 	}
 	else if (ev->type == ev_keydown)
@@ -2116,7 +2160,7 @@ void C_DrawMid()
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
-			screen->DrawTextStretched(PrintColors[PRINTLEVELS],
+			screen->DrawTextStretched(PrintColors[PRINTLEVELS-1],
 					x - xscale * (MidMsg[i].width / 2),
 					y, (byte *)MidMsg[i].string, xscale, yscale);
 		}
@@ -2220,7 +2264,9 @@ void C_RevealSecret()
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint("A secret is revealed!");
-	S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
+
+	if (hud_revealsecrets == 1 || hud_revealsecrets == 3)
+		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
 VERSION_CONTROL (c_console_cpp, "$Id$")

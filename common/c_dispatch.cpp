@@ -70,6 +70,7 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x041c4, ACTION_FORWARD,			"forward" },
 	{ 0x07cfa, ACTION_AUTOMAP_PANUP,	"am_panup" },
 	{ 0x08788, ACTION_LOOKDOWN,			"lookdown" },
+	{ 0x08126, ACTION_FASTTURN,   		"fastturn"},
 	{ 0x088c4, ACTION_MOVELEFT,			"moveleft" },
 	{ 0x088c8, ACTION_MOVEDOWN,			"movedown" },
 	{ 0x0fc5c, ACTION_AUTOMAP_ZOOMIN,	"am_zoomin" },

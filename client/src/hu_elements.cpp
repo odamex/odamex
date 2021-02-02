@@ -31,11 +31,13 @@
 #include "d_netinf.h"
 #include "d_player.h"
 #include "doomstat.h"
-#include "g_warmup.h"
+#include "g_gametype.h"
+#include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"
 #include "v_text.h"
 #include "i_video.h"
+#include "cmdlib.h"
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(player_t*);
@@ -52,9 +54,14 @@ EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxplayersperteam)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR (g_lives)
+EXTERN_CVAR (g_rounds)
+EXTERN_CVAR(g_winlimit)
 
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (sv_allowtargetnames)
+EXTERN_CVAR (hud_timer)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -72,6 +79,10 @@ static bool STACK_ARGS cmpKills(const player_t *arg1, const player_t *arg2) {
 
 static bool STACK_ARGS cmpPoints (const player_t *arg1, const player_t *arg2) {
 	return arg2->points < arg1->points;
+}
+
+static bool STACK_ARGS cmpRoundWins (const player_t *arg1, const player_t *arg2) {
+	return arg2->roundwins < arg1->roundwins;
 }
 
 static bool STACK_ARGS cmpQueue(const player_t *arg1, const player_t *arg2) {
@@ -132,6 +143,11 @@ std::vector<player_t *> sortedPlayers(void) {
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpKills);
 	}
+	else if (sv_gametype == GM_DM && g_lives)
+	{
+		std::sort(inGame.begin(), inGame.end(), cmpFrags);
+		std::sort(inGame.begin(), inGame.end(), cmpRoundWins);
+	}
 	else
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpFrags);
@@ -183,347 +199,382 @@ static const char *ordinal(int n)
 	}
 }
 
-//// OLD-STYLE "VARIABLES" ////
-// Please don't add any more of these.
-
-// Return a "help" string.
+/**
+ * @brief Return a "help" string.
+ */
 std::string HelpText()
 {
-	bool isGameFull = false;
-
-	if (P_NumPlayersInGame() >= sv_maxplayers)
-	{
-		isGameFull = true;
-	}
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		size_t min_players = MAXPLAYERS;
-		for (byte i = 0;i < NUMTEAMS;i++)
-		{
-			size_t players = P_NumPlayersOnTeam((team_t)i);
-			if (players < min_players)
-				min_players = players;
-		}
-
-		if (sv_maxplayersperteam && min_players >= sv_maxplayersperteam)
-			isGameFull = true;
-	}
-
+	std::string str;
 	int queuePos = consoleplayer().QueuePosition;
 
-	if (queuePos > 0)
+	std::string joinmsg;
+	JoinResult join = G_CanJoinGame();
+	switch (join)
 	{
-		std::ostringstream ss;
-		ss << "Waiting to play - " << queuePos << ordinal(queuePos) << " in line";
-		return ss.str();
+	case JOIN_ENDGAME:
+		joinmsg = "Game is ending";
+		break;
+	case JOIN_GAMEFULL:
+		joinmsg = "Game is full";
+		break;
+	case JOIN_JOINTIMER:
+		joinmsg = "Too late to join round";
+		break;
+	default:
+		break;
 	}
 
-	if (isGameFull)
+	if (join != JOIN_OK)
 	{
-		std::string use("Press ");
-		use.append(Bindings.GetKeynameFromCommand("+use"));
-		use.append(" to join the queue");
-		return use;
+		if (queuePos > 0)
+		{
+			StrFormat(str, "%s - " TEXTCOLOR_GREEN "%d%s" TEXTCOLOR_NORMAL " in line",
+			          joinmsg.c_str(), queuePos, ordinal(queuePos));
+			return str;
+		}
+
+		StrFormat(str, "%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
+		          joinmsg.c_str(), ::Bindings.GetKeynameFromCommand("+use").c_str());
+		return str;
 	}
 
-	std::string use("Press ");
-	use.append(Bindings.GetKeynameFromCommand("+use"));
-	use.append(" to join");
-	return use;
+	if (G_CanShowJoinTimer())
+	{
+		StrFormat(str,
+		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
+		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
+		          ::Bindings.GetKeynameFromCommand("+use").c_str(),
+		          ::levelstate.getJoinTimeLeft());
+		return str;
+	}
+
+	StrFormat(str, "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
+	          ::Bindings.GetKeynameFromCommand("+use").c_str());
+	return str;
 }
 
-// Return a string that contains the name of the player being spectated,
-// or a blank string if you are looking out of your own viewpoint.
-std::string SpyPlayerName(int& color) {
-	color = CR_GREY;
-	player_t *plyr = &displayplayer();
-
-	if (plyr == &consoleplayer()) {
+/**
+ * @brief Return a string that contains the name of the player being spectated,
+ *        or a blank string if you are looking out of your own viewpoint.
+ */
+std::string SpyPlayerName()
+{
+	const player_t& plyr = displayplayer();
+	if (plyr.id == consoleplayer().id)
+	{
 		return "";
 	}
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());
+	const char* color = TEXTCOLOR_GREY;
+	if (G_IsTeamGame())
+	{
+		color = GetTeamInfo(plyr.userinfo.team)->TextColor.c_str();
 	}
 
-	return plyr->userinfo.netname;
+	std::string str;
+	StrFormat(str, "%s%s", color, plyr.userinfo.netname.c_str());
+	return str;
 }
 
-// Returns a string that contains the current warmup state.
-std::string Warmup(int& color)
+/**
+ * @brief Return a string that contains the amount of time left in the map,
+ *        or a blank string if there is no timer needed.  Can also display
+ *        warmup information if it exists.
+ *
+ * @return Time to render.
+ */
+std::string Timer()
 {
-	color = CR_GREY;
-	player_t *dp = &displayplayer();
-	player_t *cp = &consoleplayer();
+	const char* color = TEXTCOLOR_NORMAL;
 
-	::Warmup::status_t wstatus = warmup.get_status();
-
-	if (wstatus == ::Warmup::WARMUP)
+	if (sv_timelimit <= 0.0f)
 	{
-		if (dp->spectator)
-			return "Warmup: You are spectating";
-		else if (dp->ready)
-		{
-			color = CR_GREEN;
-			if (dp == cp)
-				return "Warmup: You are ready";
-			else
-				return "Warmup: This player is ready";
-		}
-		else
-		{
-			color = CR_RED;
-			if (dp == cp)
-			{
-				char strReady[64];
-				sprintf(strReady, "Warmup: Press %s to ready up", Bindings.GetKeynameFromCommand("ready").c_str());
-				return strReady;
-			}
-			else
-				return "Warmup: This player is not ready";
-		}
-	}
-	else if (wstatus == ::Warmup::COUNTDOWN || wstatus == ::Warmup::FORCE_COUNTDOWN)
-	{
-		color = CR_GOLD;
-		return "Match is about to start...";
-	}
-	return "";
-}
-
-// Return a string that contains the amount of time left in the map,
-// or a blank string if there is no timer needed.  Can also display
-// warmup information if it exists.
-std::string Timer(int& color)
-{
-	color = CR_GREY;
-
-	if (!multiplayer || !(sv_timelimit > 0.0f))
 		return "";
+	}
 
 	// Do NOT display if in a lobby
 	if (level.flags & LEVEL_LOBBYSPECIAL)
+	{
 		return "";
+	}
 
-	int timeleft = level.timeleft;
 
-	if (timeleft < 0)
-		timeleft = 0;
-
-	uint8_t hours = timeleft / (TICRATE * 3600);
-
-	timeleft -= hours * TICRATE * 3600;
-	uint8_t minutes = timeleft / (TICRATE * 60);
-
-	timeleft -= minutes * TICRATE * 60;
-	uint8_t seconds = timeleft / TICRATE;
-
-	if (hours == 0 && minutes < 1)
-		color = CR_BRICK;
-
-	char str[12];
-	if (hours)
-		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
+	OTimespan tspan;
+	if (::levelstate.getState() == LevelState::WARMUP || 
+		::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+		::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN )
+	{
+		int timeleft = G_EndingTic()-1;
+		TicsToTime(tspan, timeleft, true);
+	}
 	else
-		sprintf(str, "%02d:%02d", minutes, seconds);
+	{
+		if (hud_timer == 2)
+		{
+			// Timer counts up.
+			TicsToTime(tspan, level.time);
+		}
+		else if (hud_timer == 1)
+		{
+			// Timer counts down.
+			int timeleft = G_EndingTic() - level.time;
+			TicsToTime(tspan, timeleft, true);
+		}
 
+		// If we're in the danger zone flip the color.
+		int warning = G_EndingTic() - (60 * TICRATE);
+		if (level.time > warning)
+		{
+			color = TEXTCOLOR_BRICK;
+		}
+	}
+
+	std::string str;
+	if (tspan.hours)
+	{
+		StrFormat(str, "%s%02d:%02d:%02d", color, tspan.hours, tspan.minutes,
+		          tspan.seconds);
+	}
+	else
+	{
+		StrFormat(str, "%s%02d:%02d", color, tspan.minutes, tspan.seconds);
+	}
 	return str;
 }
 
 std::string IntermissionTimer()
 {
 	if (gamestate != GS_INTERMISSION)
+	{
 		return "";
+	}
 
 	int timeleft = level.inttimeleft * TICRATE;
 
 	if (timeleft < 0)
 		timeleft = 0;
 
-	uint8_t hours = timeleft / (TICRATE * 3600);
+	OTimespan tspan;
+	TicsToTime(tspan, timeleft);
 
-	timeleft -= hours * TICRATE * 3600;
-	uint8_t minutes = timeleft / (TICRATE * 60);
-
-	timeleft -= minutes * TICRATE * 60;
-	uint8_t seconds = timeleft / TICRATE;
-
-	char str[12];
-	if (hours)
-		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
+	std::string str;
+	if (tspan.hours)
+	{
+		StrFormat(str, "%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
+	}
 	else
-		sprintf(str, "%02d:%02d", minutes, seconds);
-
+	{
+		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
+	}
 	return str;
 }
 
-static int GetWinningTeamPoints(team_t& winningTeam, int& secondPlaceTeamPoints)
+/**
+ * @brief Return a "spread" of personal frags or team points that the current
+ *        player or team is ahead or behind by.
+ * 
+ * @return Colored string to render in the HUD.
+ */
+std::string PersonalSpread()
 {
-	int maxPoints = 0;
-	winningTeam = TEAM_BLUE;
-	secondPlaceTeamPoints = 0;
+	std::string str;
+	player_t& plyr = displayplayer();
 
-	for (int i = 0; i < NUMTEAMS; i++)
+	if (G_IsFFAGame())
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		if (teamInfo->Points > maxPoints)
-		{
-			secondPlaceTeamPoints = maxPoints;
+		// Seek the highest number of rounds or frags.
+		PlayerQuery pq = PlayerQuery().filterSortMax();
+		if (g_rounds)
+			pq.sortWins();
+		else
+			pq.sortFrags();
+		PlayerResults max_players = pq.execute();
 
-			maxPoints = teamInfo->Points;
-			winningTeam = (team_t)i;
-		}
-		else if (teamInfo->Points > secondPlaceTeamPoints)
+		if (max_players.total <= 1)
 		{
-			secondPlaceTeamPoints = teamInfo->Points;
+			// With only one player, this is the only reasonable thing to show.
+			return TEXTCOLOR_GREY "=0";
 		}
+
+		if (max_players.count < 1)
+		{
+			// How did we get here?
+			return TEXTCOLOR_GREY "=0";
+		}
+
+		// The interesting thing changes based on rounds.
+		int top_number = g_rounds ? max_players.players.at(0)->roundwins
+		                          : max_players.players.at(0)->fragcount;
+		int plyr_number = g_rounds ? plyr.roundwins : plyr.fragcount;
+
+		if (max_players.players.size() > 1 && top_number == plyr_number)
+		{
+			// Share the throne with someone else.
+			return TEXTCOLOR_GREY "=0";
+		}
+
+		if (max_players.players.at(0)->id == plyr.id)
+		{
+			// Do a second query without a filter.
+			PlayerQuery pq = PlayerQuery().filterSortNotMax();
+			if (g_rounds)
+				pq.sortWins();
+			else
+				pq.sortFrags();
+			PlayerResults other_players = pq.execute();
+
+			// The interesting thing changes based on rounds.
+			int next_number = g_rounds ? other_players.players.at(0)->roundwins
+			                           : other_players.players.at(0)->fragcount;
+
+			// Player is on top.
+			int diff = plyr_number - next_number;
+			StrFormat(str, TEXTCOLOR_GREEN "+%d", diff);
+			return str;
+		}
+
+		// Player is behind.
+		int diff = top_number - plyr_number;
+		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
+		return str;
 	}
-
-	return maxPoints;
-}
-
-// Return a "spread" of personal frags or team points that the
-// current player or team is ahead or behind by.
-std::string PersonalSpread(int& color) {
-	color = CR_BRICK;
-	player_t *plyr = &displayplayer();
-
-	if (sv_gametype == GM_DM) {
-		// Seek the highest number of frags.
-		byte ingame = 0;
-		size_t maxother = 0;
-		short maxfrags = -32768;
-		for (Players::iterator it = players.begin();it != players.end();++it) {
-			if (!validplayer(*it)) {
-				continue;
-			}
-
-			if (!(it->ingame()) || it->spectator) {
-				continue;
-			}
-
-			if (it->fragcount == maxfrags) {
-				maxother++;
-			}
-
-			if (it->fragcount > maxfrags) {
-				maxfrags = it->fragcount;
-				maxother = 0;
-			}
-
-			ingame += 1;
-		}
-
-		// A spread needs two players to make sense.
-		if (ingame <= 1) {
+	else if (G_IsTeamGame())
+	{
+		const TeamInfo& plyr_team = *GetTeamInfo(plyr.userinfo.team);
+		if (plyr_team.Team >= NUMTEAMS)
+		{
+			// Something has gone sideways.
 			return "";
 		}
 
-		// Return the correct spread.
-		if (maxfrags == plyr->fragcount && maxother > 0) {
-			// We have the maximum number of frags but we share the
-			// throne with someone else.  But at least we can take
-			// a little shortcut here.
-			color = CR_GREEN;
-			return "+0";
-		}
-
-		std::ostringstream buffer;
-		if (maxfrags == plyr->fragcount) {
-			// We have the maximum number of frags.  Calculate how
-			// far above the other players we are.
-			short nextfrags = -32768;
-			for (Players::iterator it = players.begin();it != players.end();++it) {
-				if (!validplayer(*it)) {
-					continue;
-				}
-
-				if (!(it->ingame()) || it->spectator) {
-					continue;
-				}
-
-				if (it->id == plyr->id) {
-					continue;
-				}
-
-				if (it->fragcount > nextfrags) {
-					nextfrags = it->fragcount;
-				}
-			}
-
-			color = CR_GREEN;
-			buffer << "+" << maxfrags - nextfrags;
-			return buffer.str();
-		}
-
-		// We are behind the leader.
-		buffer << (plyr->fragcount - maxfrags);
-		return buffer.str();
-	} 
-	else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		std::ostringstream buffer;
-		team_t winningTeam;
-		int secondPlacePoints;
-		int winningPoints = GetWinningTeamPoints(winningTeam, secondPlacePoints);
-
-		int diff;
-		
-		if (plyr->userinfo.team == winningTeam)
-			diff = winningPoints - secondPlacePoints;
-		else			
-			diff = GetTeamInfo(plyr->userinfo.team)->Points - winningPoints;
-
-		if (diff > 0 && plyr->userinfo.team == winningTeam)
-		{
-			color = CR_GREEN;
-			buffer << "+" << winningPoints - secondPlacePoints;
-		}
+		// Seek the highest amount of wins or score.
+		TeamQuery tq = TeamQuery().filterSortMax();
+		if (g_rounds)
+			tq.sortWins();
 		else
-		{
-			if (diff < 0)
-				color = CR_RED;
-			else
-				color = CR_GREY;
+			tq.sortScore();
+		TeamsView max_teams = tq.execute();
 
-			buffer << diff;
+		if (max_teams.size() < 1)
+		{
+			// How did we get here?
+			return TEXTCOLOR_GREY "=0";
 		}
-		return buffer.str();
+
+		// The interesting thing changes based on rounds.
+		int top_number = g_rounds ? max_teams.at(0)->RoundWins : max_teams.at(0)->Points;
+		int plyr_number = g_rounds ? plyr_team.RoundWins : plyr_team.Points;
+
+		if (max_teams.size() > 1 && top_number == plyr_number)
+		{
+			// Share the throne with someone else.
+			return TEXTCOLOR_GREY "=0";
+		}
+
+		if (max_teams.at(0)->Team == plyr_team.Team)
+		{
+			// Do a second query without a filter.
+			tq = TeamQuery().filterSortNotMax();
+			if (g_rounds)
+				tq.sortWins();
+			else
+				tq.sortScore();
+			TeamsView other_teams = tq.execute();
+
+			// The interesting thing changes based on rounds.
+			int next_number =
+			    g_rounds ? other_teams.at(0)->RoundWins : other_teams.at(0)->Points;
+
+			// Player team is on top.
+			int diff = plyr_number - next_number;
+			StrFormat(str, TEXTCOLOR_GREEN "+%d", diff);
+			return str;
+		}
+
+		// Player team is behind.
+		int diff = top_number - plyr_number;
+		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
+		return str;
 	}
 
 	// We're not in an appropriate gamemode.
 	return "";
 }
 
-// Return a string that contains the current team score or personal
-// frags of the individual player.  Optionally returns the "limit"
-// as well.
-std::string PersonalScore(int& color) {
-	color = CR_GREY;
-	std::ostringstream buffer;
-	player_t *plyr = &displayplayer();
+/**
+ * @brief Return a string that contains the current team score or personal
+ *        frags of the individual player.  Optionally returns the "limit"
+ *        as well.
+ * 
+ * @return Colorized string to render to the HUD.
+ */
+std::string PersonalScore()
+{
+	std::string str;
+	const player_t& plyr = displayplayer();
 
-	if (sv_gametype == GM_DM) {
-		buffer << plyr->fragcount;
-		if (sv_fraglimit.asInt() > 0) {
-			buffer << "/" << sv_fraglimit.asInt();
-		}
-	} else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
-		color = V_GetTextColor(GetTeamInfo(plyr->userinfo.team)->TextColor.c_str());		
-		buffer << GetTeamInfo(plyr->userinfo.team)->Points;
-
-		if (sv_gametype == GM_TEAMDM) {
-			if (sv_fraglimit.asInt() > 0) {
-				buffer << "/" << sv_fraglimit.asInt();
+	if (G_IsTeamGame())
+	{
+		const TeamInfo& plyr_team = *GetTeamInfo(plyr.userinfo.team);
+		if (G_IsRoundsGame())
+		{
+			if (g_winlimit)
+			{
+				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(),
+				          plyr_team.RoundWins, g_winlimit.asInt());
 			}
-		} else {
-			if (sv_scorelimit.asInt() > 0) {
-				buffer << "/" << sv_scorelimit.asInt();
+			else
+			{
+				StrFormat(str, "%s%d", plyr_team.TextColor.c_str(), plyr.roundwins);
+			}
+		}
+		else
+		{
+			if (G_UsesFraglimit() && sv_fraglimit > 0)
+			{
+				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(), plyr_team.Points,
+				          sv_fraglimit.asInt());
+			}
+			else if (!G_UsesFraglimit() && sv_scorelimit > 0)
+			{
+				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(), plyr_team.Points,
+				          sv_scorelimit.asInt());
+			}
+			else
+			{
+				StrFormat(str, "%s%d", plyr_team.TextColor.c_str(), plyr.fragcount);
+			}
+		}
+	}
+	else if (G_IsFFAGame())
+	{
+		if (G_IsRoundsGame())
+		{
+			if (g_winlimit)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr.roundwins,
+				          g_winlimit.asInt());
+			}
+			else
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.roundwins);
+			}
+		}
+		else
+		{
+			if (sv_fraglimit)
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr.fragcount,
+				          sv_fraglimit.asInt());
+			}
+			else
+			{
+				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.fragcount);
 			}
 		}
 	}
 
-	return buffer.str();
+	return str;
 }
 
 // Return the amount of time elapsed in a netdemo.
@@ -669,6 +720,34 @@ std::string TeamPoints(int& color, byte team) {
 	return buffer.str();
 }
 
+/**
+ * @brief Calculate the number of team lives for the HUD.
+ * 
+ * @param str Output string buffer.
+ * @param color Output color.
+ * @param team Team to construct for.
+*/
+void TeamLives(std::string& str, int& color, byte team)
+{
+	if (team >= NUMTEAMS)
+	{
+		color = CR_GREY;
+		str = "---";
+		return;
+	}
+
+	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
+	color = V_GetTextColor(teamInfo->TextColor.c_str());
+
+	PlayerResults results = PlayerQuery().hasLives().onTeam(static_cast<team_t>(team)).execute();
+	int lives = 0;
+	PlayersView::const_iterator it = results.players.begin();
+	for (; it != results.players.end(); ++it)
+		lives += (*it)->lives;
+
+	StrFormat(str, "%d", lives);
+}
+
 std::string TeamKD(int& color, byte team) {
 	if (CountTeamPlayers(team) == 0) {
 		color = CR_GREY;
@@ -799,8 +878,13 @@ void EAPlayerNames(int x, int y, const float scale,
 		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			int color = CR_GREY;
-			if (player->id == displayplayer().id) {
+			if (player->id == displayplayer().id)
+			{
 				color = CR_GOLD;
+			}
+			else if (g_lives && player->lives <= 0)
+			{
+				color = CR_DARKGRAY;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname.c_str(), color, force_opaque);
@@ -826,6 +910,8 @@ static EColorRange GetTeamPlayerColor(player_t* player)
 		return CR_GREEN;
 	else if (player->id == displayplayer().id)
 		return CR_GOLD;
+	else if (g_lives && player->lives <= 0)
+		return CR_DARKGRAY;
 
 	return CR_GREY;
 }
@@ -846,7 +932,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int color = CR_GREY;
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 			{
 				color = GetTeamPlayerColor(player);
 			}
@@ -880,7 +966,7 @@ void EASpectatorNames(int x, int y, const float scale,
 		if (spectatingPlayer(player)) {
 			if (skip <= 0) {
 				int color = CR_GREY;
-				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+				if (G_IsTeamGame()) {
 					if (player->ready) {
 						color = CR_GREEN;
 					} else if (player->id == displayplayer().id) {
@@ -909,6 +995,93 @@ void EASpectatorNames(int x, int y, const float scale,
 			} else {
 				skip -= 1;
 			}
+		}
+	}
+}
+
+// Draw a list of round wins in the game.  Lines up with player names.
+void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const bool force_opaque)
+{
+	byte drawn = 0;
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
+		// Make sure we're not overrunning our limit.
+		if (limit != 0 && drawn >= limit)
+		{
+			break;
+		}
+
+		player_t* player = sortedPlayers()[i];
+		if (ingamePlayer(player))
+		{
+			std::string buffer;
+			StrFormat(buffer, "%d", player->roundwins);
+
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              buffer.c_str(), CR_GREY, force_opaque);
+			y += 7 + padding;
+			drawn += 1;
+		}
+	}
+}
+
+// Draw a list of lives in the game.  Lines up with player names.
+void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
+                   const y_align_t y_align, const x_align_t x_origin,
+                   const y_align_t y_origin, const short padding, const short limit,
+                   const bool force_opaque)
+{
+	byte drawn = 0;
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
+		// Make sure we're not overrunning our limit.
+		if (limit != 0 && drawn >= limit)
+		{
+			break;
+		}
+
+		player_t* player = sortedPlayers()[i];
+		if (ingamePlayer(player))
+		{
+			std::string buffer;
+			StrFormat(buffer, "%d", player->lives);
+
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              buffer.c_str(), CR_GREY, force_opaque);
+			y += 7 + padding;
+			drawn += 1;
+		}
+	}
+}
+
+// Draw a list of lives on a team.  Lines up with player names.
+void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
+                       const y_align_t y_align, const x_align_t x_origin,
+                       const y_align_t y_origin, const short padding, const short limit,
+                       const byte team, const bool force_opaque)
+{
+	byte drawn = 0;
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
+		// Make sure we're not overrunning our limit.
+		if (limit != 0 && drawn >= limit)
+		{
+			break;
+		}
+
+		player_t* player = sortedPlayers()[i];
+		if (inTeamPlayer(player, team))
+		{
+			std::string buffer;
+			StrFormat(buffer, "%d", player->lives);
+
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              buffer.c_str(), CR_GREY, force_opaque);
+			y += 7 + padding;
+			drawn += 1;
 		}
 	}
 }
@@ -1306,7 +1479,7 @@ void EATargets(int x, int y, const float scale,
 
 		// Pick a decent color for the player name.
 		int color;
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		if (G_IsTeamGame()) {
 			// In teamgames, we want to use team colors for targets.
 			color = V_GetTextColor(GetTeamInfo(it->userinfo.team)->TextColor.c_str());
 		} else {

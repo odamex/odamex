@@ -27,6 +27,7 @@
 
 #include "cmdlib.h"
 #include "doomdef.h"
+#include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
 #include "doomstat.h"
@@ -35,6 +36,7 @@
 #include "gi.h"
 
 #include "p_snapshot.h"
+#include "g_gametype.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -54,6 +56,7 @@ EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
+EXTERN_CVAR (g_lives)
 
 extern bool predicting, step_mode;
 
@@ -104,6 +107,159 @@ bool validplayer(player_t &ref)
 	return true;
 }
 
+/**
+ * @brief Clear all cards from a player.
+ * 
+ * @param p Player to clear.
+*/
+void P_ClearPlayerCards(player_t& p)
+{
+	for (size_t i = 0; i < NUMCARDS; i++)
+		p.cards[i] = false;
+}
+
+/**
+ * @brief Clear all powerups from a player.
+ *
+ * @param p Player to clear.
+ */
+void P_ClearPlayerPowerups(player_t& p)
+{
+	for (size_t i = 0; i < NUMPOWERS; i++)
+		p.powers[i] = 0;
+}
+
+/**
+ * @brief Clear all scores from a player.
+ * 
+ * @param p Player to clear.
+ * @param wins True if a player's wins should be cleared as well - should
+ *             usually be True unless it's a reset across rounds.
+ */
+void P_ClearPlayerScores(player_t& p, bool wins)
+{
+	if (wins)
+		p.roundwins = 0;
+
+	p.lives = g_lives.asInt();
+	p.fragcount = 0;
+	p.itemcount = 0;
+	p.secretcount = 0;
+	p.deathcount = 0; // [Toke - Scores - deaths]
+	p.killcount = 0; // [deathz0r] Coop kills
+	p.points = 0;
+}
+
+static bool cmpFrags(player_t* a, player_t* b)
+{
+	return a->fragcount < b->fragcount;
+}
+
+static bool cmpWins(player_t* a, const player_t* b)
+{
+	return a->roundwins < b->roundwins;
+}
+
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+PlayerResults PlayerQuery::execute()
+{
+	PlayerResults results;
+	int maxscore = 0;
+
+	// Construct a base result set from all ingame players, possibly filtered.
+	for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
+	{
+		if (!it->ingame() || it->spectator)
+			continue;
+
+		results.total += 1;
+		results.teamTotal[it->userinfo.team] += 1;
+
+		if (m_ready && !it->ready)
+			continue;
+
+		if (m_lives && it->lives <= 0)
+			continue;
+
+		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
+			continue;
+
+		results.players.push_back(&*it);
+	}
+
+	// We have no filtered players, we have our totals, there is no more
+	// useful work to be done.
+	if (results.players.size() == 0)
+	{
+		return results;
+	}
+
+	// Sort our list of players if needed.
+	switch (m_sort)
+	{
+	case SORT_NONE:
+		break;
+	case SORT_FRAGS:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->fragcount;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
+				                                         : (*it)->fragcount == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	case SORT_WINS:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top winner is at the front.
+			int top = results.players.at(0)->roundwins;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
+				                                         : (*it)->fragcount == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	}
+
+	// Get the final totals.
+	for (PlayersView::iterator it = results.players.begin(); it != results.players.end();
+	     ++it)
+	{
+		results.count += 1;
+		results.teamCount[(*it)->userinfo.team] += 1;
+	}
+
+	return results;
+}
+
 //
 // P_NumPlayersInGame()
 //
@@ -112,13 +268,7 @@ bool validplayer(player_t &ref)
 //
 size_t P_NumPlayersInGame()
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator)
-			num_players++;
-
-	return num_players;
+	return PlayerQuery().execute().count;
 }
 
 //
@@ -129,13 +279,7 @@ size_t P_NumPlayersInGame()
 //
 size_t P_NumReadyPlayersInGame()
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator && it->ready)
-			num_players++;
-
-	return num_players;
+	return PlayerQuery().isReady().execute().count;
 }
 
 // P_NumPlayersOnTeam()
@@ -143,13 +287,7 @@ size_t P_NumReadyPlayersInGame()
 // Returns the number of active players on a team.  No specs or downloaders.
 size_t P_NumPlayersOnTeam(team_t team)
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator && it->userinfo.team == team)
-			num_players++;
-
-	return num_players;
+	return PlayerQuery().onTeam(team).execute().teamTotal[team];
 }
 
 //
@@ -577,9 +715,24 @@ void P_DeathThink (player_t *player)
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
+		if (player->ingame() &&
+		    ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
+		    ((g_lives && player->lives > 0) || !g_lives))
 		{
 			player->playerstate = PST_REBORN;
+		}
+	}
+
+	if (clientside)
+	{
+		// [AM] If the player runs out of lives in an LMS gamemode, having
+		//      them spectate another player after a beat is expected.
+		if (::g_lives && player->lives < 1 && &consoleplayer() == &displayplayer() &&
+		    level.time >= player->death_time + (TICRATE * 2))
+		{
+			// CL_SpyCycle is located in cl and templated, so we use this
+			// instead.
+			AddCommandString("spynext");
 		}
 	}
 }
@@ -590,9 +743,9 @@ bool P_AreTeammates(player_t &a, player_t &b)
 	if (a.id == b.id)
 		return false;
 
-	return (sv_gametype == GM_COOP) ||
+	return G_IsCoopGame() ||
 		  ((a.userinfo.team == b.userinfo.team) &&
-		   (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF));
+		   G_IsTeamGame());
 }
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
@@ -611,7 +764,19 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 	// A teammate can see their other teammates
 	if (P_AreTeammates(viewer, other))
+	{
+		// If a player has no more lives, don't show him.
+		if (::g_lives && other.lives < 1)
+			return false;
+
 		return true;
+	}
+
+	// A player who is out of lives in LMS can see everyone else
+	if (::sv_gametype == GM_DM && ::g_lives && viewer.lives < 1)
+		return true;
+
+
 
 	return false;
 }
@@ -815,6 +980,8 @@ void player_s::Serialize (FArchive &arc)
 			<< armorpoints
 			<< armortype
 			<< backpack
+			<< lives
+			<< roundwins
 			<< fragcount
 			<< readyweapon
 			<< pendingweapon
@@ -866,6 +1033,8 @@ void player_s::Serialize (FArchive &arc)
 			>> armorpoints
 			>> armortype
 			>> backpack
+			>> lives
+			>> roundwins
 			>> fragcount
 			>> readyweapon
 			>> pendingweapon
@@ -923,6 +1092,8 @@ player_s::player_s() :
 	armorpoints(0),
 	armortype(0),
 	backpack(false),
+	lives(0),
+	roundwins(0),
 	points(0),
 	fragcount(0),
 	deathcount(0),
@@ -1025,6 +1196,9 @@ player_s &player_s::operator =(const player_s &other)
 
 	for(i = 0; i < NUMCARDS; i++)
 		cards[i] = other.cards[i];
+
+	lives = other.lives;
+	roundwins = other.roundwins;
 
 	for(i = 0; i < NUMTEAMS; i++)
 		flags[i] = other.flags[i];

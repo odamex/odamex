@@ -34,6 +34,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "cl_responderkeys.h"
 #include "cmdlib.h"
 
 #include "i_system.h"
@@ -54,6 +55,7 @@
 #include "doomstat.h"
 
 #include "m_misc.h"
+#include "cl_demo.h"
 
 // Data.
 #include "m_menu.h"
@@ -75,6 +77,8 @@ extern bool				OptionsActive;
 
 extern int				screenSize;
 extern short			skullAnimCounter;
+
+extern NetDemo netdemo;
 
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
@@ -116,6 +120,7 @@ EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
+EXTERN_CVAR (co_globalsound)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -145,8 +150,10 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastsensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
+EXTERN_CVAR (joy_deadzone)
 
 // Network Options
 EXTERN_CVAR (cl_interp)
@@ -326,6 +333,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
+	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
@@ -473,13 +481,19 @@ static menuitem_t JoystickItems[] =
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ whitetext	,	"Sensitivity Settings"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
+#ifdef SDL12
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyaxis	,	"Strafe Analog Axis"					, {&joy_strafeaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyaxis	,	"Turn Analog Axis"						, {&joy_turnaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyaxis	,	"Look Analog Axis"						, {&joy_lookaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
+#endif
 };
 
 menu_t JoystickMenu = {
@@ -553,23 +567,23 @@ menu_t SoundMenu = {
  *
  *=======================================*/
 static menuitem_t CompatItems[] ={
-	{bricktext, "Gameplay",                        {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Camera follows killer on death",  {&cl_deathcam},          {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can be walked over/under",  {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can drop off ledges",       {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Engine Compatibility",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "BOOM actor/sector/line checks",   {&co_boomphys},		    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
+	{bricktext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Items can be walked over/under", {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Items can drop off ledges",      {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{bricktext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDoom Sound Response",			{&co_zdoomsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
+    {svdiscrete, "Global Pickup Sounds",			{&co_globalsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
 };
 
 menu_t CompatMenu = {
@@ -728,6 +742,9 @@ static value_t HUDStyles[] = {
 	{ 1.0, "Odamex" },
 };
 
+static value_t TimerStyles[] = {
+    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+
 static value_t Wipes[] = {
 	{ 0.0, "None" },
 	{ 1.0, "Melt" },
@@ -778,7 +795,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "Display Time Left",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
+	{ discrete, "Display Timer",			{&hud_timer},           {3.0}, {0.0},   {0.0},  {TimerStyles} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
 	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
 	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
@@ -807,6 +824,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -889,8 +907,17 @@ static value_t Languages[] = {
 	{ 3.0, "Italian" }
 };
 
+static value_t SecretOptions[] = {
+    {0.0, "Off"}, 
+	{1.0, "On (with sounds)"}, 
+	{2.0, "On (w/o sounds)"}, 
+	{3.0, "Own only"}, 
+};
+
 static menuitem_t MessagesItems[] = {
+#if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
+#endif
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -902,7 +929,7 @@ static menuitem_t MessagesItems[] = {
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
     { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
 	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
-	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
+	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{4.0}, {0.0},   {0.0}, {SecretOptions} },
 
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1524,6 +1551,7 @@ void M_OptDrawer (void)
 			{
 			case discrete:
 			case cdiscrete:
+			case svdiscrete:
 			{
 				int v, vals;
 
@@ -1670,11 +1698,7 @@ void M_OptResponder (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-#ifdef _XBOX
-			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
-#else
-			if (ch != KEY_ESCAPE)
-#endif
+			if (!Key_IsMenuKey(ch))
 			{
 				if (item->type == control)
 					Bindings.ChangeBinding (item->e.command, ch);
@@ -1696,7 +1720,7 @@ void M_OptResponder (event_t *ev)
 	{
 		if(ev->type == ev_keydown)
 		{
-			if(ch == KEY_ESCAPE)
+			if (Key_IsCancelKey(ch))
 			{
 				WaitingForAxis = false;
 				CurrentMenu->items[8].label = OldAxisMessage;
@@ -1735,7 +1759,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-		(ch == KEY_LEFTARROW || ch == KEY_RIGHTARROW || ch == KEY_ENTER)
+	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1756,395 +1780,391 @@ void M_OptResponder (event_t *ev)
 		}
 	}
 
-	switch (ch)
+	// Handle Keys
 	{
-		case KEY_HAT3:
-		case KEY_DOWNARROW:
+		if (Key_IsDownKey(ch))
+		{
+			int modecol;
+
+			if (item->type == screenres)
 			{
-				int modecol;
-
-				if (item->type == screenres)
-				{
-					modecol = item->a.selmode;
-					item->a.selmode = -1;
-				}
-				else
-				{
-					modecol = 0;
-				}
-
-				do
-				{
-					CurrentItem++;
-					if (CanScrollDown && CurrentItem == VisBottom)
-					{
-						CurrentMenu->scrollpos++;
-						VisBottom++;
-					}
-					if (CurrentItem == CurrentMenu->numitems)
-					{
-						CurrentMenu->scrollpos = 0;
-						CurrentItem = 0;
-					}
-				} while (CurrentMenu->items[CurrentItem].type == redtext ||
-						 CurrentMenu->items[CurrentItem].type == whitetext ||
-						 CurrentMenu->items[CurrentItem].type == bricktext ||
-						 (CurrentMenu->items[CurrentItem].type == screenres &&
-						  !CurrentMenu->items[CurrentItem].b.res1));
-
-				if (CurrentMenu->items[CurrentItem].type == screenres)
-					CurrentMenu->items[CurrentItem].a.selmode = modecol;
-
-				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				modecol = item->a.selmode;
+				item->a.selmode = -1;
 			}
-			break;
-
-		case KEY_HAT1:
-		case KEY_UPARROW:
+			else
 			{
-				int modecol;
-
-				if (item->type == screenres)
-				{
-					modecol = item->a.selmode;
-					item->a.selmode = -1;
-				}
-				else
-				{
-					modecol = 0;
-				}
-
-				do
-				{
-					CurrentItem--;
-					if (CanScrollUp &&
-						CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
-					{
-						CurrentMenu->scrollpos--;
-                        if (CurrentMenu->scrollpos < 0)
-                            CurrentMenu->scrollpos = 0;
-					}
-					if (CurrentItem < 0)
-					{
-						CurrentMenu->scrollpos = MAX (0,CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
-						CurrentItem = CurrentMenu->numitems - 1;
-					}
-				} while (CurrentMenu->items[CurrentItem].type == redtext ||
-						 CurrentMenu->items[CurrentItem].type == whitetext ||
-						 CurrentMenu->items[CurrentItem].type == bricktext ||
-						 (CurrentMenu->items[CurrentItem].type == screenres &&
-						  !CurrentMenu->items[CurrentItem].b.res1));
-
-				if (CurrentMenu->items[CurrentItem].type == screenres)
-					CurrentMenu->items[CurrentItem].a.selmode = modecol;
-
-				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				modecol = 0;
 			}
-			break;
 
-		case KEY_PGUP:
+			do
 			{
-				if (CanScrollUp)
+				CurrentItem++;
+				if (CanScrollDown && CurrentItem == VisBottom)
 				{
-					CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					CurrentMenu->scrollpos++;
+					VisBottom++;
+				}
+				if (CurrentItem == CurrentMenu->numitems)
+				{
+					CurrentMenu->scrollpos = 0;
+					CurrentItem = 0;
+				}
+			} while (CurrentMenu->items[CurrentItem].type == redtext ||
+				CurrentMenu->items[CurrentItem].type == whitetext ||
+				CurrentMenu->items[CurrentItem].type == bricktext ||
+				(CurrentMenu->items[CurrentItem].type == screenres &&
+					!CurrentMenu->items[CurrentItem].b.res1));
+
+			if (CurrentMenu->items[CurrentItem].type == screenres)
+				CurrentMenu->items[CurrentItem].a.selmode = modecol;
+
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsUpKey(ch))
+		{
+			int modecol;
+
+			if (item->type == screenres)
+			{
+				modecol = item->a.selmode;
+				item->a.selmode = -1;
+			}
+			else
+			{
+				modecol = 0;
+			}
+
+			do
+			{
+				CurrentItem--;
+				if (CanScrollUp &&
+					CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
+				{
+					CurrentMenu->scrollpos--;
 					if (CurrentMenu->scrollpos < 0)
-					{
 						CurrentMenu->scrollpos = 0;
-					}
-					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-					while (CurrentMenu->items[CurrentItem].type == redtext ||
-						   CurrentMenu->items[CurrentItem].type == whitetext ||
-						   CurrentMenu->items[CurrentItem].type == bricktext ||
-						   (CurrentMenu->items[CurrentItem].type == screenres &&
-							!CurrentMenu->items[CurrentItem].b.res1))
-					{
-						++CurrentItem;
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
-			}
-			break;
-
-		case KEY_PGDN:
-			{
-				if (CanScrollDown)
+				if (CurrentItem < 0)
 				{
-					int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-					CurrentMenu->scrollpos += pagesize;
-					if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+					CurrentMenu->scrollpos = MAX(0, CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
+					CurrentItem = CurrentMenu->numitems - 1;
+				}
+			} while (CurrentMenu->items[CurrentItem].type == redtext ||
+				CurrentMenu->items[CurrentItem].type == whitetext ||
+				CurrentMenu->items[CurrentItem].type == bricktext ||
+				(CurrentMenu->items[CurrentItem].type == screenres &&
+					!CurrentMenu->items[CurrentItem].b.res1));
+
+			if (CurrentMenu->items[CurrentItem].type == screenres)
+				CurrentMenu->items[CurrentItem].a.selmode = modecol;
+
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsPageUpKey(ch))
+		{
+			if (CanScrollUp)
+			{
+				CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+				if (CurrentMenu->scrollpos < 0)
+				{
+					CurrentMenu->scrollpos = 0;
+				}
+				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+				while (CurrentMenu->items[CurrentItem].type == redtext ||
+					CurrentMenu->items[CurrentItem].type == whitetext ||
+					CurrentMenu->items[CurrentItem].type == bricktext ||
+					(CurrentMenu->items[CurrentItem].type == screenres &&
+						!CurrentMenu->items[CurrentItem].b.res1))
+				{
+					++CurrentItem;
+				}
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsPageDownKey(ch)) 
+		{
+			if (CanScrollDown)
+			{
+				int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+				CurrentMenu->scrollpos += pagesize;
+				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+				{
+					CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+				}
+				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+				while (CurrentMenu->items[CurrentItem].type == redtext ||
+					CurrentMenu->items[CurrentItem].type == whitetext ||
+					CurrentMenu->items[CurrentItem].type == bricktext ||
+					(CurrentMenu->items[CurrentItem].type == screenres &&
+						!CurrentMenu->items[CurrentItem].b.res1))
+				{
+					++CurrentItem;
+				}
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsLeftKey(ch))
+		{
+		switch (item->type)
+		{
+		case slider:
+		{
+			float newval = item->a.cvar->value() - item->d.step;
+
+			if (item->b.leftval < item->c.rightval)
+				newval = MAX(newval, item->b.leftval);
+			else
+				newval = MIN(newval, item->b.leftval);
+
+			if (item->e.cfunc)
+				item->e.cfunc(item->a.cvar, newval);
+			else
+				item->a.cvar->Set(newval);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case redslider:
+		case greenslider:
+		case blueslider:
+		{
+			const char* oldcolor = item->a.cvar->cstring();
+			char newcolor[9];
+
+			if (strlen(oldcolor) == 8)
+				memcpy(newcolor, oldcolor, 9);
+			else
+				memcpy(newcolor, "00 00 00", 9);
+
+			argb_t color = V_GetColorFromString(oldcolor);
+			int part = 0;
+
+			if (item->type == redslider)
+				part = color.getr();
+			else if (item->type == greenslider)
+				part = color.getg();
+			else if (item->type == blueslider)
+				part = color.getb();
+
+			if (part > 0x00)
+				part -= 0x11;
+			if (part < 0x00)
+				part = 0x00;
+
+			char singlecolor[3];
+			sprintf(singlecolor, "%02x", part);
+
+			if (item->type == redslider)
+				memcpy(newcolor, singlecolor, 2);
+			else if (item->type == greenslider)
+				memcpy(newcolor + 3, singlecolor, 2);
+			else if (item->type == blueslider)
+				memcpy(newcolor + 6, singlecolor, 2);
+
+			item->a.cvar->Set(newcolor);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case discrete:
+		case cdiscrete:
+		case svdiscrete:
+		{
+			int cur;
+			int numvals;
+
+			if (item->type == svdiscrete &&
+				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				break;
+
+			numvals = (int)item->b.leftval;
+			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			if (--cur < 0)
+				cur = numvals - 1;
+
+			item->a.cvar->Set(item->e.values[cur].value);
+
+			// Hack hack. Rebuild list of resolutions
+			if (item->e.values == Depths)
+				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		case screenres:
+		{
+			int col;
+
+			col = item->a.selmode - 1;
+			if (col < 0)
+			{
+				if (CurrentItem > 0)
+				{
+					if (CurrentMenu->items[CurrentItem - 1].type == screenres)
 					{
-						CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+						item->a.selmode = -1;
+						CurrentMenu->items[--CurrentItem].a.selmode = 2;
 					}
-					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-					while (CurrentMenu->items[CurrentItem].type == redtext ||
-						   CurrentMenu->items[CurrentItem].type == whitetext ||
-						   CurrentMenu->items[CurrentItem].type == bricktext ||
-						   (CurrentMenu->items[CurrentItem].type == screenres &&
-							!CurrentMenu->items[CurrentItem].b.res1))
-					{
-						++CurrentItem;
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
 			}
-			break;
-
-		case KEY_HAT4:
-		case KEY_LEFTARROW:
-			switch (item->type)
+			else
 			{
-				case slider:
-					{
-						float newval = item->a.cvar->value() - item->d.step;
-
-						if (item->b.leftval < item->c.rightval)
-							newval = MAX(newval, item->b.leftval);
-						else
-							newval = MIN(newval, item->b.leftval);
-
-						if (item->e.cfunc)
-							item->e.cfunc (item->a.cvar, newval);
-						else
-							item->a.cvar->Set (newval);
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case redslider:
-				case greenslider:
-				case blueslider:
-					{
-						const char* oldcolor = item->a.cvar->cstring();
-						char newcolor[9];
-
-						if (strlen(oldcolor) == 8)
-							memcpy(newcolor, oldcolor, 9);
-						else
-							memcpy(newcolor, "00 00 00", 9);
-
-						argb_t color = V_GetColorFromString(oldcolor);
-						int part = 0;
-
-						if (item->type == redslider)
-							part = color.getr();
-						else if (item->type == greenslider)
-							part = color.getg();
-						else if (item->type == blueslider)
-							part = color.getb();
-
-						if (part > 0x00)
-							part -= 0x11;
-						if (part < 0x00)
-							part = 0x00;
-
-						char singlecolor[3];
-						sprintf(singlecolor, "%02x", part);
-
-						if (item->type == redslider)
-							memcpy(newcolor, singlecolor, 2);
-						else if (item->type == greenslider)
-							memcpy(newcolor + 3, singlecolor, 2);
-						else if (item->type == blueslider)
-							memcpy(newcolor + 6, singlecolor, 2);
-
-						item->a.cvar->Set(newcolor);
-					}
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case discrete:
-				case cdiscrete:
-					{
-						int cur;
-						int numvals;
-
-						numvals = (int)item->b.leftval;
-						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-						if (--cur < 0)
-							cur = numvals - 1;
-
-						item->a.cvar->Set (item->e.values[cur].value);
-
-						// Hack hack. Rebuild list of resolutions
-						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				case screenres:
-					{
-						int col;
-
-						col = item->a.selmode - 1;
-						if (col < 0)
-						{
-							if (CurrentItem > 0)
-							{
-								if (CurrentMenu->items[CurrentItem - 1].type == screenres)
-								{
-									item->a.selmode = -1;
-									CurrentMenu->items[--CurrentItem].a.selmode = 2;
-								}
-							}
-						}
-						else
-						{
-							item->a.selmode = col;
-						}
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					break;
-
-				case joyactive:
-					{
-						int         numjoy;
-
-						numjoy = I_GetJoystickCount();
-
-						if((int)item->a.cvar->value() > numjoy)
-							item->a.cvar->Set(0.0);
-						else if((int)item->a.cvar->value() > 0)
-							item->a.cvar->Set(item->a.cvar->value() - 1);
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				default:
-					break;
+				item->a.selmode = col;
 			}
-			break;
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		break;
 
-		case KEY_HAT2:
-		case KEY_RIGHTARROW:
-			switch (item->type)
+		case joyactive:
+		{
+			int         numjoy;
+
+			numjoy = I_GetJoystickCount();
+
+			if ((int)item->a.cvar->value() > numjoy)
+				item->a.cvar->Set(0.0);
+			else if ((int)item->a.cvar->value() > 0)
+				item->a.cvar->Set(item->a.cvar->value() - 1);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		default:
+			break;
+		}
+		}
+		else if (Key_IsRightKey(ch))
+		{
+		switch (item->type)
+		{
+		case slider:
+		{
+			float newval = item->a.cvar->value() + item->d.step;
+
+			if (item->b.leftval < item->c.rightval)
+				newval = MIN(newval, item->c.rightval);
+			else
+				newval = MAX(newval, item->c.rightval);
+
+			if (item->e.cfunc)
+				item->e.cfunc(item->a.cvar, newval);
+			else
+				item->a.cvar->Set(newval);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case redslider:
+		case greenslider:
+		case blueslider:
+		{
+			const char* oldcolor = item->a.cvar->cstring();
+			char newcolor[9];
+
+			if (strlen(oldcolor) == 8)
+				memcpy(newcolor, oldcolor, 9);
+			else
+				memcpy(newcolor, "00 00 00", 9);
+
+			argb_t color = V_GetColorFromString(oldcolor);
+			int part = 0;
+
+			if (item->type == redslider)
+				part = color.getr();
+			else if (item->type == greenslider)
+				part = color.getg();
+			else if (item->type == blueslider)
+				part = color.getb();
+
+			if (part < 0xff)
+				part += 0x11;
+			if (part > 0xff)
+				part = 0xff;
+
+			char singlecolor[3];
+			sprintf(singlecolor, "%02x", part);
+
+			if (item->type == redslider)
+				memcpy(newcolor, singlecolor, 2);
+			else if (item->type == greenslider)
+				memcpy(newcolor + 3, singlecolor, 2);
+			else if (item->type == blueslider)
+				memcpy(newcolor + 6, singlecolor, 2);
+
+			item->a.cvar->Set(newcolor);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case discrete:
+		case cdiscrete:
+		case svdiscrete:
+		{
+			int cur;
+			int numvals;
+
+			if (item->type == svdiscrete &&
+				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				break;
+
+			numvals = (int)item->b.leftval;
+			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			if (++cur >= numvals)
+				cur = 0;
+
+			item->a.cvar->Set(item->e.values[cur].value);
+
+			// Hack hack. Rebuild list of resolutions
+			if (item->e.values == Depths)
+				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		case screenres:
+		{
+			int col;
+
+			col = item->a.selmode + 1;
+			if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
 			{
-				case slider:
+				if (CurrentMenu->numitems - 1 > CurrentItem)
+				{
+					if (CurrentMenu->items[CurrentItem + 1].type == screenres)
 					{
-						float newval = item->a.cvar->value() + item->d.step;
-
-						if (item->b.leftval < item->c.rightval)
-							newval = MIN(newval, item->c.rightval);
-						else
-							newval = MAX(newval, item->c.rightval);
-
-						if (item->e.cfunc)
-							item->e.cfunc (item->a.cvar, newval);
-						else
-							item->a.cvar->Set (newval);
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case redslider:
-				case greenslider:
-				case blueslider:
-					{
-						const char* oldcolor = item->a.cvar->cstring();
-						char newcolor[9];
-
-						if (strlen(oldcolor) == 8)
-							memcpy(newcolor, oldcolor, 9);
-						else
-							memcpy(newcolor, "00 00 00", 9);
-
-						argb_t color = V_GetColorFromString(oldcolor);
-						int part = 0;
-
-						if (item->type == redslider)
-							part = color.getr();
-						else if (item->type == greenslider)
-							part = color.getg();
-						else if (item->type == blueslider)
-							part = color.getb();
-
-						if (part < 0xff)
-							part += 0x11;
-						if (part > 0xff)
-							part = 0xff;
-
-						char singlecolor[3];
-						sprintf(singlecolor, "%02x", part);
-
-						if (item->type == redslider)
-							memcpy(newcolor, singlecolor, 2);
-						else if (item->type == greenslider)
-							memcpy(newcolor + 3, singlecolor, 2);
-						else if (item->type == blueslider)
-							memcpy(newcolor + 6, singlecolor, 2);
-
-						item->a.cvar->Set(newcolor);
-					}
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case discrete:
-				case cdiscrete:
-					{
-						int cur;
-						int numvals;
-
-						numvals = (int)item->b.leftval;
-						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-						if (++cur >= numvals)
-							cur = 0;
-
-						item->a.cvar->Set (item->e.values[cur].value);
-
-						// Hack hack. Rebuild list of resolutions
-						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				case screenres:
-					{
-						int col;
-
-						col = item->a.selmode + 1;
-						if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
+						if (CurrentMenu->items[CurrentItem + 1].b.res1)
 						{
-							if (CurrentMenu->numitems - 1 > CurrentItem)
-							{
-								if (CurrentMenu->items[CurrentItem + 1].type == screenres)
-								{
-									if (CurrentMenu->items[CurrentItem + 1].b.res1)
-									{
-										item->a.selmode = -1;
-										CurrentMenu->items[++CurrentItem].a.selmode = 0;
-									}
-								}
-							}
-						}
-						else
-						{
-							item->a.selmode = col;
+							item->a.selmode = -1;
+							CurrentMenu->items[++CurrentItem].a.selmode = 0;
 						}
 					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					break;
-
-				case joyactive:
-					{
-						int         numjoy;
-
-						numjoy = I_GetJoystickCount();
-
-						if((int)item->a.cvar->value() >= numjoy)
-							item->a.cvar->Set(0.0);
-						else if((int)item->a.cvar->value() < (numjoy - 1))
-							item->a.cvar->Set(item->a.cvar->value() + 1);
-
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				default:
-					break;
+				}
 			}
-			break;
+			else
+			{
+				item->a.selmode = col;
+			}
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		break;
 
-#ifdef _XBOX
-		case KEY_JOY9: // Start button
-#endif
-		case KEY_BACKSPACE:
+		case joyactive:
+		{
+			int         numjoy;
+
+			numjoy = I_GetJoystickCount();
+
+			if ((int)item->a.cvar->value() >= numjoy)
+				item->a.cvar->Set(0.0);
+			else if ((int)item->a.cvar->value() < (numjoy - 1))
+				item->a.cvar->Set(item->a.cvar->value() + 1);
+
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		default:
+			break;
+		}
+		}
+		else if (Key_IsUnbindKey(ch))
+		{
 			if (item->type == control)
 			{
 				Bindings.UnbindACommand (item->e.command);
@@ -2155,10 +2175,9 @@ void M_OptResponder (event_t *ev)
 				AutomapBindings.UnbindACommand(item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
-			break;
-
-		case KEY_JOY1:
-		case KEY_ENTER:
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
 			if (CurrentMenu == &ModesMenu)
 			{
 				int width, height;
@@ -2170,91 +2189,95 @@ void M_OptResponder (event_t *ev)
 				}
 
 				M_SetVideoMode(width, height);
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
-			else if (item->type == discrete || item->type == cdiscrete)
+			else if (item->type == discrete || item->type == cdiscrete || item->type == svdiscrete)
 			{
 				int cur;
 				int numvals;
 
+				if (item->type == svdiscrete &&
+				    (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+					return;
+
 				numvals = (int)item->b.leftval;
-				cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
+				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 				if (++cur >= numvals)
 					cur = 0;
 
-				item->a.cvar->Set (item->e.values[cur].value);
+				item->a.cvar->Set(item->e.values[cur].value);
 
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
 					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-
-				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else if (item->type == control || item->type == mapcontrol)
-			{
-				configuring_controls = true;
-				WaitingForKey = true;
-				OldContMessage = CurrentMenu->items[0].label;
-				OldContType = CurrentMenu->items[0].type;
-				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
-				CurrentMenu->items[0].type = redtext;
-			}
-			else if (item->type == listelement)
-			{
-				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				item->e.lfunc (CurrentItem);
-			}
-			else if (item->type == joyaxis)
-			{
-				WaitingForAxis = true;
-				OldAxisMessage = CurrentMenu->items[8].label;
-				OldAxisType = CurrentMenu->items[8].type;
-				CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
-				CurrentMenu->items[8].type = redtext;
-			}
-			else if (item->type == screenres)
-			{
-			}
-			break;
-
-		case KEY_JOY2:
-		case KEY_ESCAPE:
-			CurrentMenu->lastOn = CurrentItem;
-			M_PopMenuStack ();
-			break;
-
-		default:
-#ifdef _XBOX
-			if (ev->data3 == 't' || ev->data1 == KEY_JOY3)
-#else
-			if (ev->data3 == 't')
-#endif
-			{
-				// Test selected resolution
-				if (CurrentMenu == &ModesMenu)
 				{
-					int width, height;
-
-					if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
-					{
-						width = I_GetVideoWidth();
-						height = I_GetVideoHeight();
-					}
-
-					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
-					M_SetVideoMode(width, height);
-
-					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+					configuring_controls = true;
+					WaitingForKey = true;
+					OldContMessage = CurrentMenu->items[0].label;
+					OldContType = CurrentMenu->items[0].type;
+					CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
+					CurrentMenu->items[0].type = redtext;
 				}
+			else if (item->type == listelement)
+				{
+					CurrentMenu->lastOn = CurrentItem;
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+					item->e.lfunc (CurrentItem);
+				}
+			else if (item->type == joyaxis)
+				{
+					WaitingForAxis = true;
+					OldAxisMessage = CurrentMenu->items[8].label;
+					OldAxisType = CurrentMenu->items[8].type;
+					CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
+					CurrentMenu->items[8].type = redtext;
+				}
+			else if (item->type == screenres)
+				{
+				}
+
+			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		}
+		else if (Key_IsCancelKey(ch))
+		{
+			CurrentMenu->lastOn = CurrentItem;
+			M_PopMenuStack();
+		}
+		else
+		{
+#ifdef _XBOX
+		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
+#else
+		if (ev->data3 == 't')
+#endif
+		{
+			// Test selected resolution
+			if (CurrentMenu == &ModesMenu)
+			{
+				int width, height;
+
+				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
+				{
+					width = I_GetVideoWidth();
+					height = I_GetVideoHeight();
+				}
+
+				testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
+				M_SetVideoMode(width, height);
+
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
-			break;
+		}
+		}
 	}
 
 	if (CurrentMenu->refreshfunc)
@@ -2275,7 +2298,7 @@ static void UpdateStuff (void)
 void Reset2Defaults (void)
 {
 	AddCommandString ("unbindall; binddefaults");
-	cvar_t::C_SetCVarsToDefaults(CVAR_ARCHIVE | CVAR_CLIENTARCHIVE);
+	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
 	UpdateStuff();
 }
 

@@ -176,6 +176,9 @@ ODABARCR	0	0
 ODABARCF	0	0
 ODABARRE	0	0
 ODABARRF	0	0
+ODALIVEB	0	0
+ODALIVEG	0	0
+ODALIVER	0	0
 SBLINE	0	0
 
 # List of Sprites
@@ -228,10 +231,18 @@ GFLGH0	2	59
 GSOKA0	16	12
 GDWNA0	17	44
 GCARA0	4	68
+WPBFA0  6   44
+WPBFB0  6   44
+WPRFA0  6   44
+WPRFB0  6   44
+WPGFA0  6   44
+WPGFB0  6   44
 
+# Dummies for shareware compatibility
+CELLA0  8       12
+PSTRA0  12      15
+CELPA0  15      20
 
 # List of Floors and Ceilings
 [flats]
 -NOFLAT-
-
-

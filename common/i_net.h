@@ -42,6 +42,63 @@
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
+
+/**
+ * @brief svc_*: Transmit all possible data.
+ */
+#define SVC_MSG_ALL (0xFF)
+
+/**
+ * @brief svc_levellocals: Level time.
+ */
+#define SVC_LL_TIME (1 << 0)
+
+/**
+ * @brief svc_levellocals: All level stat totals.
+ */
+#define SVC_LL_TOTALS (1 << 1)
+
+/**
+ * @brief svc_levellocals: Found secrets.
+ */
+#define SVC_LL_SECRETS (1 << 2)
+
+/**
+ * @brief svc_levellocals: Found items.
+ */
+#define SVC_LL_ITEMS (1 << 3)
+
+/**
+ * @brief svc_levellocals: Killed monsters.
+ */
+#define SVC_LL_MONSTERS (1 << 4)
+
+/**
+ * @brief svc_levellocals: Respawned monsters.
+ */
+#define SVC_LL_MONSTER_RESPAWNS (1 << 5)
+
+/**
+ * @brief svc_playermembers: Spectator status.
+ */
+#define SVC_PM_SPECTATOR (1 << 0)
+
+/**
+ * @brief svc_playermembers: Ready status.
+ */ 
+#define SVC_PM_READY (1 << 1)
+
+/**
+ * @brief svc_playermembers: Number of lives.
+ */
+#define SVC_PM_LIVES (1 << 2)
+
+/**
+ * @brief svc_playermembers: "Score" members like frags, etc.
+ */
+#define SVC_PM_SCORE (1 << 3)
+
+
 extern int   localport;
 extern int   msg_badread;
 
@@ -65,7 +122,7 @@ enum svc_t
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
-	svc_updatesecrets,		// [byte] - secrets discovered to a client
+	svc_levellocals,		// [AM] Persist one or more level locals
 	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
 	svc_updateping,			// [byte] [byte]
 	svc_spawnmobj,			//
@@ -88,8 +145,8 @@ enum svc_t
 	svc_sector,
 	svc_print,
 	svc_mobjinfo,
-	svc_updatefrags,		// [byte] [short]
-	svc_teampoints,
+	svc_playermembers,
+	svc_teammembers,
 	svc_activateline,
 	svc_movingsector,
 	svc_startsound,
@@ -110,19 +167,17 @@ enum svc_t
 	svc_spawnhiddenplayer,	// [denis] when client can't see player
 	svc_updatedeaths,		// [byte] [short]
 	svc_ctfevent,			// [Toke - CTF] - [int]
+	svc_secretevent,		// [Ch0wW] informs clients of a secret discovered
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
-	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 	svc_connectclient,
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
-	svc_timeleft,
 	svc_inttimeleft,		// [ML] For intermission timer
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
-	svc_readystate,			// [AM] Broadcast ready state to client
 	svc_playerstate,		// [SL] Health, armor, and weapon of a player
-	svc_warmupstate,		// [AM] Broadcast warmup state to client
+	svc_levelstate,			// [AM] Broadcast level state to client
 	svc_resetmap,			// [AM] Server is resetting the map
 	svc_playerqueuepos,     // Notify clients of player queue postion
 	svc_fullupdatestart,	// Inform client the full update has started
@@ -276,6 +331,45 @@ public:
 		}
 	}
 
+	//
+	// Write an unsigned varint to the wire.
+	//
+	// Use these when you want to send an int and are reasonably sure that
+	// the int will usually be small.
+	//
+	// [AM] If you make a change to this, please also duplicate that change
+	//      into varint.c in the tools directory.
+	//
+	// https://developers.google.com/protocol-buffers/docs/encoding#varints
+	//
+	void WriteUnVarint(unsigned int v)
+	{
+		for (;;)
+		{
+			// Our next byte contains 7 bits of the number.
+			int out = v & 0x7F;
+
+			// Any bits left?
+			v >>= 7;
+			if (v == 0)
+			{
+				// We're done, bail after writing this byte.
+				WriteByte(out);
+				return;
+			}
+
+			// Flag the last bit to indicate more is coming.
+			out |= 0x80;
+			WriteByte(out);
+		}
+	}
+
+	void WriteVarint(int v)
+	{
+		// Zig-zag encoding for negative numbers.
+		WriteUnVarint((v << 1) ^ (v >> 31));
+	}
+
 	void WriteString(const char *c)
 	{
 		if(c && *c)
@@ -359,6 +453,57 @@ public:
 				(data[oldpos+1]<<8) +
 				(data[oldpos+2]<<16)+
 				(data[oldpos+3]<<24);
+	}
+
+	//
+	// Read an unsigned varint off the wire.
+	//
+	// [AM] If you make a change to this, please also duplicate that change
+	//      into varint.c in the tools directory.
+	//
+	// https://developers.google.com/protocol-buffers/docs/encoding#varints
+	//
+	unsigned int ReadUnVarint()
+	{
+		unsigned char b;
+		unsigned int out = 0;
+		unsigned int offset = 0;
+
+		for (;;)
+		{
+			// Read part of the variant.
+			b = ReadByte();
+			if (overflowed)
+				return -1;
+
+			// Shove the first seven bits into our output variable.
+			out |= (unsigned int)(b & 0x7F) << offset;
+			offset += 7;
+
+			// Is the flag bit set?
+			if (!(b & 0x80))
+			{
+				// Nope, we're done.
+				return out;
+			}
+
+			if (offset >= 32)
+			{
+				// Our variant int is too big - overflow us.
+				overflowed = true;
+				return -1;
+			}
+		}
+	}
+
+	int ReadVarint()
+	{
+		unsigned int uv = ReadUnVarint();
+		if (overflowed)
+			return -1;
+
+		// Zig-zag encoding for negative numbers.
+		return (uv >> 1) ^ -(uv & 1);
 	}
 
 	const char *ReadString()
@@ -564,14 +709,13 @@ void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
+void MSG_WriteUnVarint(buf_t* b, unsigned int uv);
+void MSG_WriteVarint(buf_t* b, int v);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
-
-int MSG_WriteVarInt(byte* buf, unsigned int value);
-int MSG_ReadVarInt(byte* buf, int buflen, int& bytesRead);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);
@@ -580,6 +724,8 @@ int MSG_ReadByte (void);
 void *MSG_ReadChunk (const size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
+unsigned int MSG_ReadUnVarint();
+int MSG_ReadVarint();
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);

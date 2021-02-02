@@ -35,6 +35,7 @@
 #include "st_stuff.h"
 #include "p_acs.h"
 #include "p_ctf.h"
+#include "g_gametype.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -181,7 +182,7 @@ void P_ShowSpawns(mapthing2_t* mthing)
 			spawn->args[0] = 7; // White
 		}
 
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		if (G_IsTeamGame())
 		{
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{

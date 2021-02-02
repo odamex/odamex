@@ -216,7 +216,7 @@ void R_SetLucentDrawFuncs();
 void R_SetTranslatedDrawFuncs();
 void R_SetTranslatedLucentDrawFuncs();
 
-inline const byte shaderef_t::ramp() const
+inline byte shaderef_t::ramp() const
 {
 	if (m_mapnum >= NUMCOLORMAPS)
 		return 0;

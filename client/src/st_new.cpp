@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include "cmdlib.h"
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
@@ -46,6 +47,9 @@
 #include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_vote.h"
+#include "g_levelstate.h"
+#include "g_gametype.h"
+#include "c_bind.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -55,6 +59,7 @@ static const char* flaghomepatches[NUMTEAMS] = {"FLAGIC2B", "FLAGIC2R", "FLAGIC2
 static const char* flagtakenpatches[NUMTEAMS] = {"FLAGIC3B", "FLAGIC3R", "FLAGIC3G"};
 static const char* flagreturnpatches[NUMTEAMS] = {"FLAGIC4B", "FLAGIC4R", "FLAGIC4G"};
 static const char* flagdroppatches[NUMTEAMS] = {"FLAGIC5B", "FLAGIC5R", "FLAGIC5G"};
+static const char* livespatches[NUMTEAMS] = {"ODALIVEB", "ODALIVER", "ODALIVEG"};
 
 static int widest_num, num_height;
 static const patch_t* medi[ARRAY_LENGTH(::medipatches)];
@@ -62,14 +67,6 @@ static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
 static const patch_t* ammos[ARRAY_LENGTH(::ammopatches)];
 static const patch_t* bigammos[ARRAY_LENGTH(::bigammopatches)];
 static const patch_t* flagiconteam;
-static const patch_t* flagiconbhome;
-static const patch_t* flagiconrhome;
-static const patch_t* flagiconbtakenbyb;
-static const patch_t* flagiconbtakenbyr;
-static const patch_t* flagiconrtakenbyb;
-static const patch_t* flagiconrtakenbyr;
-static const patch_t* flagiconbdropped;
-static const patch_t* flagiconrdropped;
 static const patch_t* line_leftempty;
 static const patch_t* line_leftfull;
 static const patch_t* line_centerempty;
@@ -82,6 +79,7 @@ static const patch_t* FlagIconHome[NUMTEAMS];
 static const patch_t* FlagIconReturn[NUMTEAMS];
 static const patch_t* FlagIconTaken[NUMTEAMS];
 static const patch_t* FlagIconDropped[NUMTEAMS];
+static const patch_t* LivesIcon[NUMTEAMS];
 
 static int		NameUp = -1;
 
@@ -107,9 +105,12 @@ int V_TextScaleYAmount();
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_targetcount)
+EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_warmup)
 
 /**
  * @brief Caches a patch, while also adding to a freelist, where it can be
@@ -185,6 +186,7 @@ void ST_initNew()
 		CacheHUDPatch(&::FlagIconTaken[i], ::flagtakenpatches[i]);
 		CacheHUDPatch(&::FlagIconReturn[i], ::flagreturnpatches[i]);
 		CacheHUDPatch(&::FlagIconDropped[i], ::flagdroppatches[i]);
+		CacheHUDPatch(&::LivesIcon[i], ::livespatches[i]);
 	}
 
 	::widest_num = widest;
@@ -193,6 +195,7 @@ void ST_initNew()
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
+	CacheHUDPatch(&::flagiconteam, "FLAGIT");
 	CacheHUDPatch(&::line_leftempty, "ODABARLE");
 	CacheHUDPatch(&::line_leftfull, "ODABARLF");
 	CacheHUDPatch(&::line_centerempty, "ODABARCE");
@@ -451,60 +454,117 @@ void ST_voteDraw (int y) {
 
 namespace hud {
 
-// [AM] Draw CTF scoreboard
-void drawCTF() {
-	if (sv_gametype != GM_CTF) {
+/**
+ * @brief Draw gametype-specific scoreboard, such as flags and lives.
+ */
+static void drawGametype()
+{
+	const int SCREEN_BORDER = 4;
+	const int FLAG_ICON_HEIGHT = 18;
+	const int LIVES_HEIGHT = 12;
+
+	if (!G_IsTeamGame())
+	{
 		return;
 	}
 
-	player_t *plyr = &consoleplayer();
+	std::string buffer;
+	player_t* plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
+	PlayerResults pr = PlayerQuery().hasLives().execute();
 
-	int patchPosY = 61;
+	// Total lives pool.
+	int livesPool[NUMTEAMS];
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		livesPool[i] = 0;
+	}
+	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
+	     ++it)
+	{
+		team_t team = (*it)->userinfo.team;
+		if (team >= NUMTEAMS || team < 0)
+		{
+			continue;
+		}
+		livesPool[team] += (*it)->lives;
+	}
 
-	patchPosY += (sv_teamsinplay.asInt() - 2) * 18;
+	int patchPosY = 43;
+
+	bool shouldShowScores = G_IsTeamGame();
+	bool shouldShowLives = G_IsLivesGame();
+
+	if (shouldShowScores)
+	{
+		patchPosY += sv_teamsinplay.asInt() * FLAG_ICON_HEIGHT;
+	}
+	if (shouldShowLives)
+	{
+		patchPosY += sv_teamsinplay.asInt() * LIVES_HEIGHT;
+	}
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		const patch_t* drawPatch = FlagIconHome[i];
-
-		switch (teamInfo->FlagData.state)
+		if (shouldShowScores)
 		{
-		case flag_carried:
-			if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
-				drawPatch = FlagIconReturn[i];
-			else
-				drawPatch = FlagIconTaken[i];
-			break;
-		case flag_dropped:
-			drawPatch = FlagIconDropped[i];
-			break;
-		default:
-			break;
+			patchPosY -= FLAG_ICON_HEIGHT;
+
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			const patch_t* drawPatch = ::FlagIconTaken[i];
+
+			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
+			{
+				switch (teamInfo->FlagData.state)
+				{
+				case flag_home:
+					drawPatch = ::FlagIconHome[i];
+					break;
+				case flag_carried:
+					if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
+						drawPatch = ::FlagIconReturn[i];
+					else
+						drawPatch = ::FlagIconTaken[i];
+					break;
+				case flag_dropped:
+					drawPatch = ::FlagIconDropped[i];
+					break;
+				default:
+					break;
+				}
+			}
+
+			if (drawPatch != NULL)
+			{
+				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, drawPatch);
+			}
+
+			if (plyr->userinfo.team == i)
+			{
+				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
+				               ::flagiconteam);
+			}
+
+			ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+			                I_GetSurfaceHeight() - (patchPosY + 17) * yscale, ::screen,
+			                teamInfo->Points);
 		}
 
-		if (drawPatch != NULL)
+		if (shouldShowLives)
 		{
-			hud::DrawPatch(4, patchPosY, hud_scale,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				drawPatch);
+			patchPosY -= LIVES_HEIGHT;
+			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
+
+			StrFormat(buffer, "%d", livesPool[i]);
+			int color = (i % 2) ? CR_GOLD : CR_GREY;
+			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
+			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
+			              color);
 		}
-
-		if (!plyr->spectator && plyr->userinfo.team == i)
-		{
-			hud::DrawPatch(4, patchPosY, hud_scale,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				hud::X_RIGHT, hud::Y_BOTTOM,
-				flagiconteam);
-		}
-
-		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
-			screen, teamInfo->Points);
-
-		patchPosY -= 18;
 	}
 }
 
@@ -546,6 +606,7 @@ void drawNetdemo() {
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
+	std::string buf;
 	player_t *plyr = &displayplayer();
 
 	// TODO: I can probably get rid of these invocations once I put a
@@ -580,6 +641,18 @@ void OdamexHUD() {
 	                     faces[st_faceindex]);
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
 
+	if (g_lives)
+	{
+		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
+		int lives_color = CR_GREY;
+		if (plyr->lives <= 0)
+			lives_color = CR_DARKGREY;
+
+		StrFormat(buf, "x%d", plyr->lives);
+		hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
+	}
+
 	// Draw Ammo
 	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
 	if (ammotype < NUMAMMO) {
@@ -613,30 +686,15 @@ void OdamexHUD() {
 	int color;
 	std::string str;
 
-	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty())
+	if (hud_timer)
 	{
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	}
-	else if (hud_timer)
-	{
-		str = hud::Timer(color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
 
 	// Draw targeted player names.
 	hud::EATargets(0, 20, hud_scale,
@@ -646,16 +704,10 @@ void OdamexHUD() {
 
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
-	str = hud::PersonalSpread(color);
-	hud::DrawText(4, 32, hud_scale,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              str.c_str(), color);
-	str = hud::PersonalScore(color);
-	hud::DrawText(4, 24, hud_scale,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(4, 32, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_UNTRANSLATED);
+	hud::DrawText(4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
 
 	// Draw keys in coop
 	if (sv_gametype == GM_COOP) {
@@ -669,8 +721,193 @@ void OdamexHUD() {
 		}
 	}
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
+	// Draw gametype scoreboard
+	hud::drawGametype();
+}
+
+static std::string WinToColorString(const WinInfo& win)
+{
+	std::string buf;
+	if (win.type == WinInfo::WIN_PLAYER)
+	{
+		const player_t& pl = idplayer(win.id);
+		if (pl.userinfo.netname.empty())
+		{
+			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		}
+		else
+		{
+			StrFormat(buf, TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
+			          pl.userinfo.netname.c_str());
+		}
+		return buf;
+	}
+	else if (win.type == WinInfo::WIN_TEAM)
+	{
+		const TeamInfo& tm = *GetTeamInfo((team_t)win.id);
+		if (tm.Team == TEAM_NONE)
+		{
+			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		}
+		else
+		{
+			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm.TextColor.c_str(),
+			          tm.ColorString.c_str());
+		}
+		return buf;
+	}
+
+	StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+	return buf;
+}
+
+void LevelStateHUD()
+{
+	std::string str;
+
+	// First line...BIGFONT.
+	switch (::levelstate.getState())
+	{
+	case LevelState::WARMUP:
+		if (consoleplayer().spectator)
+		{
+			str = "";
+			break;
+		}
+
+		str = "Warmup";
+		break;
+	case LevelState::WARMUP_COUNTDOWN:
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
+		str = G_GametypeName();
+		break;
+	case LevelState::PREROUND_COUNTDOWN:
+		StrFormat(str, "Round %d\n", ::levelstate.getRound());
+		break;
+	case LevelState::INGAME:
+		if (G_CanShowFightMessage())
+			str = "FIGHT!\n";
+		else
+			str = "";
+		break;
+	case LevelState::ENDROUND_COUNTDOWN:
+		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
+		break;
+	case LevelState::ENDGAME_COUNTDOWN:
+		StrFormat(str, "Match complete\n");
+		break;
+	default:
+		str = "";
+		break;
+	}
+
+	V_SetFont("BIGFONT");
+
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(str.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+	if (::levelstate.getState() == LevelState::INGAME)
+	{
+		// Only render the "FIGHT" message if it's less than 2 seconds in.
+		int tics = ::level.time - ::levelstate.getIngameStartTime();
+		if (tics < TICRATE * 2)
+		{
+			float old = ::hud_transparency;
+			if (tics < TICRATE)
+			{
+				::hud_transparency.ForceSet(1.0);
+			}
+			else if (tics < TICRATE * 2)
+			{
+				tics %= TICRATE;
+				float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+				::hud_transparency.ForceSet(trans);
+			}
+			screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+			                             surface_height / 4 - h / 2, str.c_str(),
+			                             CleanYfac, CleanYfac);
+			::hud_transparency.ForceSet(old);
+		}
+	}
+	else
+	{
+		screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
+		                          surface_height / 4 - h / 2, str.c_str(), CleanYfac,
+		                          CleanYfac);
+	}
+
+	V_SetFont("SMALLFONT");
+
+	// Second line...SMALLFONT.
+	str = "";
+	switch (::levelstate.getState())
+	{
+	case LevelState::WARMUP:
+		if (consoleplayer().spectator)
+			break;
+
+		if (sv_warmup)
+		{
+			if (consoleplayer().ready)
+			{
+				StrFormat(str, "Waiting for other players to ready up...");
+			}
+			else
+			{
+				StrFormat(str,
+				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
+				          " when ready to play",
+				          ::Bindings.GetKeynameFromCommand("ready").c_str());
+			}
+		}
+		else
+		{
+			StrFormat(str, "Waiting for other players to join...");
+		}
+
+		break;
+	case LevelState::WARMUP_COUNTDOWN:
+	case LevelState::WARMUP_FORCED_COUNTDOWN:
+		StrFormat(str, "Match begins in " TEXTCOLOR_GREEN "%d",
+		          ::levelstate.getCountdown());
+		break;
+	case LevelState::PREROUND_COUNTDOWN:
+		StrFormat(str, "Weapons free in " TEXTCOLOR_GREEN "%d",
+		          ::levelstate.getCountdown());
+		break;
+	case LevelState::ENDROUND_COUNTDOWN: {
+		WinInfo win = ::levelstate.getWinInfo();
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(str, "Tied at the end of the round");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(str, "%s wins the round", WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(str, "%s team wins the round", WinToColorString(win).c_str());
+		else
+			StrFormat(str, "Next round in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		break;
+	}
+	case LevelState::ENDGAME_COUNTDOWN: {
+		WinInfo win = ::levelstate.getWinInfo();
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(str, "The game ends in a tie");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(str, "%s wins!", WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(str, "%s team wins!", WinToColorString(win).c_str());
+		else
+			StrFormat(str, "Intermission in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		break;
+	}
+	}
+
+	w = V_StringWidth(str.c_str()) * CleanYfac;
+	h = 8 * CleanYfac;
+	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
+	                          (surface_height / 4 - h / 2) + (12 * CleanYfac),
+	                          str.c_str(), CleanYfac, CleanYfac);
 }
 
 // [AM] Spectator HUD.
@@ -679,26 +916,14 @@ void SpectatorHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty()) {
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	} else if (hud_timer) {
-		str = hud::Timer(color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+	if (hud_timer) {
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
 
 	// Draw help text if there's no other player name
 	if (str.empty()) {
@@ -714,8 +939,8 @@ void SpectatorHUD() {
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, 0);
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 // [AM] Original ZDoom HUD
@@ -782,11 +1007,9 @@ void ZDoomHUD() {
 	}
 
 	// Draw top-right info. (Keys/Frags/Score)
-    if (sv_gametype == GM_CTF)
-    {
-		hud::drawCTF();
-    }
-	else if (sv_gametype != GM_COOP)
+	hud::drawGametype();
+
+	if (sv_gametype != GM_COOP)
 	{
 		// Draw frags (in DM)
 		ST_DrawNumRight(I_GetSurfaceWidth() - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
@@ -813,26 +1036,27 @@ void ZDoomHUD() {
 	std::string str;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty()) {
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	} else if (hud_timer) {
-		str = hud::Timer(color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+	if (hud_timer) {
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+	}
+
+	if (g_lives)
+	{
+		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
+		int lives_color = CR_GREY;
+		if (plyr->lives <= 0)
+			lives_color = CR_DARKGREY;
+		
+		std::string buf;
+		StrFormat(buf, "x%d", plyr->lives);
+		hud::DrawText(60 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
 
 	// Draw targeted player names.
 	hud::EATargets(0, 20, hud_scale,
@@ -852,33 +1076,16 @@ void DoomHUD()
 	if (hud_scale)
 		st_y /= CleanYfac;
 
-	int color;
-	std::string str;
-
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty())
+	if (hud_timer)
 	{
-		hud::DrawText(0, st_y + 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	}
-	else if (hud_timer)
-	{
-		str = hud::Timer(color);
-		hud::DrawText(0, st_y + 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, st_y + 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, st_y + 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, st_y + 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
 
 	// Draw targeted player names.
 	hud::EATargets(0, st_y + 20, hud_scale,
@@ -886,8 +1093,8 @@ void DoomHUD()
 	               hud::X_CENTER, hud::Y_BOTTOM,
 	               1, hud_targetcount);
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 }

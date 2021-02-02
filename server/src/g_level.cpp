@@ -26,6 +26,7 @@
 
 #include "c_dispatch.h"
 #include "d_event.h"
+#include "d_main.h"
 #include "doomstat.h"
 #include "g_level.h"
 #include "g_game.h"
@@ -48,8 +49,10 @@
 #include "sv_maplist.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "m_wdlstats.h"
+#include "msg_server.h"
+#include "g_gametype.h"
 
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
@@ -69,9 +72,9 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR(g_sides)
 
 extern int mapchange;
-extern int shotclock;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
@@ -142,7 +145,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWad(str);
+	G_LoadWadString(str);
 }
 END_COMMAND (wad)
 
@@ -200,7 +203,16 @@ void G_ChangeMap() {
 			maplist_entry_t maplist_entry;
 			Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+			std::string wadstr;
+			for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+			{
+				if (i != 0)
+				{
+					wadstr += " ";
+				}
+				wadstr += C_QuoteString(maplist_entry.wads.at(i));
+			}
+			G_LoadWadString(wadstr, maplist_entry.map);
 
 			// Set the new map as the current map
 			Maplist::instance().set_index(next_index);
@@ -224,7 +236,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -258,9 +270,11 @@ BEGIN_COMMAND (forcenextmap) {
 	G_ChangeMap();
 } END_COMMAND (forcenextmap)
 
-BEGIN_COMMAND (restart) {
-	warmup.restart();
-} END_COMMAND (restart)
+BEGIN_COMMAND(restart)
+{
+	::levelstate.restart();
+}
+END_COMMAND(restart)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
@@ -277,7 +291,7 @@ void G_DoNewGame (void)
 		if(!(it->ingame()))
 			continue;
 
-		SV_SendLoadMap(wadfiles, patchfiles, d_mapname, &*it);
+		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::patchfiles, d_mapname, 0);
 	}
 
 	sv_curmap.ForceSet(d_mapname);
@@ -297,7 +311,7 @@ void G_DoNewGame (void)
 		if (!(it->ingame()))
 			continue;
 
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		if (G_IsTeamGame())
 			SV_CheckTeam(*it);
 		else
 			memcpy(it->userinfo.color, it->prefcolor, 4);
@@ -353,11 +367,6 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	if (sv_skill == sk_nightmare || sv_monstersrespawn)
-		respawnmonsters = true;
-	else
-		respawnmonsters = false;
-
 	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
@@ -389,7 +398,6 @@ void G_InitNew (const char *mapname)
 		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
-		level.timeleft = 0;
 		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
@@ -419,13 +427,13 @@ void G_InitNew (const char *mapname)
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
-	shotclock = 0;
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
 	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange();
+
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog();
 }
@@ -442,7 +450,6 @@ void G_ExitLevel (int position, int drawscores)
         SV_DrawScores();
 	
 	gamestate = GS_INTERMISSION;
-	shotclock = 0;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
 
     secretexit = false;
@@ -462,7 +469,6 @@ void G_SecretExitLevel (int position, int drawscores)
         SV_DrawScores();
         
 	gamestate = GS_INTERMISSION;
-	shotclock = 0;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
@@ -502,11 +508,14 @@ void G_DoSaveResetState()
 	reset_snapshot->Open();
 	FArchive arc(*reset_snapshot);
 	G_SerializeLevel(arc, false, true);
-	arc << level.time;
 }
 
-// [AM] - Reset the state of the level.  Second parameter is true if you want
-//        to zero-out gamestate as well (i.e. resetting scores, RNG, etc.).
+/**
+ * @brief Reset the state of the level.
+ *
+ * @param full_reset True if you want to zero-out between-round gamestate
+ *                   as well.
+ */
 void G_DoResetLevel(bool full_reset)
 {
 	gameaction = ga_nothing;
@@ -517,45 +526,43 @@ void G_DoResetLevel(bool full_reset)
 		return;
 	}
 
-	// Clear CTF state.
+	// Clear teamgame state.
 	Players::iterator it;
-	if (sv_gametype == GM_CTF)
+	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		for (size_t i = 0;i < NUMTEAMS;i++)
-		{
-			for (it = players.begin();it != players.end();++it)
-				it->flags[i] = false;
+		for (it = players.begin(); it != players.end(); ++it)
+			it->flags[i] = false;
 
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-			teamInfo->FlagData.flagger = 0;
-			teamInfo->FlagData.state = flag_home;
-			teamInfo->FlagData.firstgrab = false;
-			teamInfo->Points = 0;
-		}
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.state = flag_home;
+		teamInfo->FlagData.firstgrab = false;
+		teamInfo->Points = 0;
+
+		if (full_reset)
+			teamInfo->RoundWins = 0;
 	}
 
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
 	{
-		AActor* mo;
-		TThinkerIterator<AActor> iterator;
-		while ((mo = iterator.Next()))
+		if (mo->netid && mo->type != MT_PLAYER)
 		{
-			if (mo->netid && mo->type != MT_PLAYER)
-			{
-				ServerNetID.ReleaseNetID(mo->netid);
-				mo->netid = 0;
-			}
+			ServerNetID.ReleaseNetID(mo->netid);
+			mo->netid = 0;
 		}
 	}
 
 	// Tell clients that a map reset is incoming.
-	for (it = players.begin();it != players.end();++it)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
 			continue;
 
-		client_t *cl = &(it->client);
+		client_t* cl = &(it->client);
 		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
 	}
 
@@ -563,17 +570,21 @@ void G_DoResetLevel(bool full_reset)
 	reset_snapshot->Reopen();
 	FArchive arc(*reset_snapshot);
 	G_SerializeLevel(arc, false, true);
-	int level_time;
-	arc >> level_time;
 	reset_snapshot->Seek(0, FFile::ESeekSet);
 
-	// Assign new netids to every non-player actor to make sure we don't have
-	// any weird destruction of any items post-reset.
 	{
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;
 		while ((mo = iterator.Next()))
 		{
+			// In sides-based games, destroy objectives that aren't relevant.
+			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
+			{
+				CTF_ReplaceFlagWithWaypoint(mo);
+			}
+
+			// Assign new netids to every non-player actor to make sure we don't have
+			// any weird destruction of any items post-reset.
 			if (mo->netid && mo->type != MT_PLAYER)
 			{
 				mo->netid = ServerNetID.ObtainNetID();
@@ -581,47 +592,46 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
-	//reset switch activation
+	// reset switch activation
 	for (int i = 0; i < numlines; i++)
 		lines[i].switchactive = false;
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	iquehead = iquetail = 0;
-	// Potentially clear out gamestate as well.
-	if (full_reset)
+
+	// Clear player information.
+	for (it = players.begin(); it != players.end(); ++it)
 	{
-		// Set time to the initial tic
-		level.time = level_time;
-		// Clear global goals.
-		for (size_t i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->Points;
-		// Clear player information.
-		for (it = players.begin();it != players.end();++it)
+		// Don't let players keep cards through a reset.
+		if (sv_gametype == GM_COOP)
+			P_ClearPlayerCards(*it);
+
+		P_ClearPlayerPowerups(*it);
+
+		if (full_reset)
 		{
-			it->fragcount = 0;
-			it->itemcount = 0;
-			it->secretcount = 0;
-			it->deathcount = 0;
-			it->killcount = 0;
-			it->points = 0;
-			it->joindelay = 0;
+			P_ClearPlayerScores(*it, true);
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
 				it->ready = false;
 		}
-		// For predictable first spawns.
-		M_ClearRandom();
+		else
+		{
+			P_ClearPlayerScores(*it, false);
+		}
 	}
 
 	// [SL] always reset the time (for now at least)
 	level.time = 0;
-	level.timeleft = sv_timelimit * TICRATE * 60;
 	level.inttimeleft = mapchange / TICRATE;
 
+	// Reset the respawned monster count
+	level.respawned_monsters = 0;	
+
 	// Send information about the newly reset map.
-	for (it = players.begin();it != players.end();++it)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Player needs to actually be ingame
 		if (!it->ingame())
@@ -629,8 +639,12 @@ void G_DoResetLevel(bool full_reset)
 
 		SV_ClientFullUpdate(*it);
 	}
+
+	// Get queued players in the game.
+	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
+
 	// Force every ingame player to be reborn.
-	for (it = players.begin();it != players.end();++it)
+	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Spectators aren't reborn.
 		if (!it->ingame() || it->spectator)
@@ -672,7 +686,7 @@ void G_DoLoadLevel (int position)
 	G_InitLevelLocals ();
 
 	if (firstmapinit) {
-		Printf (PRINT_HIGH, "--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+		Printf_Bold ("--- %s: \"%s\" ---\n", level.mapname, level.level_name);
 		firstmapinit = false;
 	}
 
@@ -708,17 +722,10 @@ void G_DoLoadLevel (int position)
 		if (it->ingame() && it->playerstate == PST_DEAD)
 			it->playerstate = PST_REBORN;
 
-		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
-		//      make sure they're gone.
-		for (size_t j = 0; j < NUMCARDS; j++)
-			it->cards[j] = false;
-
-		it->fragcount = 0;
-		it->itemcount = 0;
-		it->secretcount = 0;
-		it->deathcount = 0; // [Toke - Scores - deaths]
-		it->killcount = 0; // [deathz0r] Coop kills
-		it->points = 0;
+		// Properly reset Cards, Powerups, and scores.
+		P_ClearPlayerCards(*it);
+		P_ClearPlayerPowerups(*it);
+		P_ClearPlayerScores(*it, true);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
@@ -728,16 +735,12 @@ void G_DoLoadLevel (int position)
 
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
-			{
-				MSG_WriteMarker(&(pit->client.reliablebuf), svc_readystate);
-				MSG_WriteByte(&(pit->client.reliablebuf), it->id);
-				MSG_WriteBool(&(pit->client.reliablebuf), false);
-			}
+				SVC_PlayerMembers(pit->client.reliablebuf, *it, SVC_PM_READY);
 		}
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			GetTeamInfo((team_t)i)->Points = 0;
@@ -809,8 +812,24 @@ void G_DoLoadLevel (int position)
 	P_DoDeferedScripts ();
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
+
+	// [AM] In sides-based games, destroy objectives that aren't relevant.
+	//      Must happen after saving state.
+	if (g_sides && sv_gametype == GM_CTF)
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+		while ((mo = iterator.Next()))
+		{
+			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
+			{
+				CTF_ReplaceFlagWithWaypoint(mo);
+			}
+		}
+	}
+
 	// [AM] Handle warmup init.
-	warmup.reset(level);
+	::levelstate.reset();
 	//	C_FlushDisplay ();
 }
 

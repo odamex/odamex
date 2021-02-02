@@ -28,12 +28,37 @@
 #include <stddef.h>
 
 #include "cmdlib.h"
+#include "doomstat.h"
 #include "errors.h"
 #include "i_system.h"
 #include "m_swap.h"
 #include "oscanner.h"
 #include "stringenums.h"
 #include "w_wad.h"
+
+/**
+ * @brief Map a ZDoom game name to Odamex's internals and returns true if
+ *        the current game is the passed string.
+ * 
+ * @param str String to check against.
+ * @return True if the game matches the passed string, otherwise false.
+ */
+static bool IfGameZDoom(const std::string& str)
+{
+	if (!stricmp(str.c_str(), "doom") && ::gamemode != retail_chex &&
+	    ::gamemode != undetermined)
+	{
+		return true;
+	}
+
+	if (!stricmp(str.c_str(), "chex") && ::gamemode == retail_chex)
+	{
+		return true;
+	}
+
+	// We don't support anything else.
+	return false;
+}
 
 bool StringTable::canSetPassString(int pass, const std::string& name) const
 {
@@ -128,6 +153,23 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 					break;
 				}
 
+				// $ifgame() does not appear to be documented in the wiki,
+				// but it causes the next string to only be set it the game
+				// matches up.
+				bool skip = false;
+				if (os.compareToken("$"))
+				{
+					os.scan();
+					os.assertTokenIs("ifgame");
+					os.scan();
+					os.assertTokenIs("(");
+					os.scan();
+					skip = !IfGameZDoom(os.getToken());
+					os.scan();
+					os.assertTokenIs(")");
+					os.scan();
+				}
+
 				// String name
 				const std::string& name = os.getToken();
 
@@ -160,6 +202,10 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 				}
 
 				replaceEscapes(value);
+				if (skip)
+				{
+					continue;
+				}
 				setPassString(pass, name, value);
 			}
 		}

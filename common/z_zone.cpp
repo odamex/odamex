@@ -63,6 +63,7 @@ public:
 	{
 		for (MemoryBlockTable::iterator it = mMemoryBlockTable.begin(); it != mMemoryBlockTable.end(); ++it)
 			free(it->first);
+		mMemoryBlockTable.clear();
 	}
 
 	void* alloc(size_t size, int tag, void* user)
