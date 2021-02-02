@@ -144,7 +144,7 @@ void P_ClearPlayerScores(player_t& p, bool wins, bool force)
 	p.lives = g_lives.asInt();
 
 	// Reset frags/death if not on rounds
-	if (!g_rounds || force)
+	if (force || G_IsDuelGame() || !G_IsRoundsGame() || !G_IsLivesGame())
 	{
 		p.fragcount = 0;
 		p.deathcount = 0; // [Toke - Scores - deaths]
