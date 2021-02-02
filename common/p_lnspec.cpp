@@ -806,19 +806,26 @@ FUNC(LS_Teleport_NewMap)
 }
 
 FUNC(LS_Teleport)
-// Teleport (tid, tag)
+// Teleport (tid, tag, nosourcefog)
 {
 	if(!it) return false;
 	BOOL result;
 
 	if (HasBehavior)
 		// [AM] Use ZDoom-style teleport for Hexen-format maps
-		result = EV_Teleport(arg0, arg1, TeleportSide, it);
+		result = EV_Teleport(arg0, arg1, arg2, TeleportSide, it, 0);
 	else
 		// [AM] Use Vanilla-style teleport for Doom-format maps
 		result = EV_LineTeleport(ln, TeleportSide, it);
 
 	return result;
+}
+
+FUNC(LS_Teleport_NoStop)
+// Teleport_NoStop(tid, tag, nofog)
+{
+	if (!it) return false;
+	return EV_Teleport(arg0, arg1, arg2, TeleportSide, it, 1);
 }
 
 FUNC(LS_Teleport_NoFog)
@@ -1918,7 +1925,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 151
 	LS_NOP,		// 152
 	LS_NOP,		// 153
-	LS_NOP,		// 154
+	LS_Teleport_NoStop,
 	LS_NOP,		// 155
 	LS_NOP,		// 156
 	LS_NOP,		// 157
