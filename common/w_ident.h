@@ -22,18 +22,21 @@
 //-----------------------------------------------------------------------------
 
 #ifndef __W_IDENT_H__
-#define  __W_IDENT_H__
+#define __W_IDENT_H__
 
-#include "m_ostring.h"
 #include <string>
 
+#include "m_ostring.h"
+#include "m_resfile.h"
+
 void W_SetupFileIdentifiers();
-void W_ConfigureGameInfo(const std::string& iwad_filename);
-bool W_IsIWAD(const std::string& filename);
+void W_ConfigureGameInfo(const OResFile& iwad);
+bool W_IsKnownIWAD(const OWantFile& file);
+bool W_IsIWAD(const OResFile& file);
 bool W_IsFilenameCommercialIWAD(const std::string& filename);
 bool W_IsFilehashCommercialIWAD(const std::string& filename);
 bool W_IsFileCommercialIWAD(const std::string& filename);
-bool W_IsIWADDeprecated(const std::string& filename);
+bool W_IsIWADDeprecated(const OResFile& file);
 std::vector<OString> W_GetIWADFilenames();
 
-#endif	// __W_IDENT_H__
+#endif // __W_IDENT_H__

@@ -50,16 +50,12 @@
 #endif // WIN32
 
 #ifdef UNIX
-	#define HAVE_PWD_H
-	// for getuid and geteuid
-	#include <unistd.h>
-	#include <sys/types.h>
-	#include <limits.h>
-	#include <time.h>
-#endif
-
-#ifdef HAVE_PWD_H
-	#include <pwd.h>
+// for getuid and geteuid
+#include <unistd.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <time.h>
+#include <pwd.h>
 #endif
 
 #include <sstream>

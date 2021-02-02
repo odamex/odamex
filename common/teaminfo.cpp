@@ -27,6 +27,7 @@ void InitTeamInfo()
 	teamInfo->FlagSocketSprite = SPR_BSOK;
 	teamInfo->FlagSprite = SPR_BFLG;
 	teamInfo->FlagDownSprite = SPR_BDWN;
+	teamInfo->FlagWaypointSprite = SPR_WPBF;
 	teamInfo->Points = 0;
 	teamInfo->RoundWins = 0;
 
@@ -44,6 +45,7 @@ void InitTeamInfo()
 	teamInfo->FlagSprite = SPR_RFLG;
 	teamInfo->FlagDownSprite = SPR_RDWN;
 	teamInfo->FlagCarrySprite = SPR_RCAR;
+	teamInfo->FlagWaypointSprite = SPR_WPBF;
 	teamInfo->Points = 0;
 	teamInfo->RoundWins = 0;
 
@@ -61,6 +63,7 @@ void InitTeamInfo()
 	teamInfo->FlagSprite = SPR_GFLG;
 	teamInfo->FlagDownSprite = SPR_GDWN;
 	teamInfo->FlagCarrySprite = SPR_GCAR;
+	teamInfo->FlagWaypointSprite = SPR_WPBF;
 	teamInfo->Points = 0;
 	teamInfo->RoundWins = 0;
 
@@ -76,6 +79,7 @@ void InitTeamInfo()
 	s_NoTeam.FlagSprite = 0;
 	s_NoTeam.FlagDownSprite = 0;
 	s_NoTeam.FlagCarrySprite = 0;
+	s_NoTeam.FlagWaypointSprite = 0;
 	s_NoTeam.Points = 0;
 	s_NoTeam.RoundWins = 0;
 }
