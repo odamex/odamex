@@ -3483,7 +3483,7 @@ void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activa
 	// positions since they cannot be used for interpolation.
 	if (line && (mo && mo->player) &&
 		(line->special == Teleport || line->special == Teleport_NoFog ||
-			line->special == Teleport_Line))
+			line->special == Teleport_NoStop || line->special == Teleport_Line))
 	{
 		teleported_players.insert(mo->player->id);
 

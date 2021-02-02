@@ -1353,6 +1353,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
             {
 				case Teleport:
 				case Teleport_NoFog:
+			    case Teleport_NoStop:
 				case Teleport_Line:
 				break;
 
@@ -1382,6 +1383,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 					case Teleport_NoFog:
 					case Teleport_NewMap:
 					case Teleport_EndGame:
+				    case Teleport_NoStop:
 					case Teleport_Line:
 						break;
 					default:
@@ -1400,6 +1402,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 				case Teleport_NoFog:
 				case Teleport_NewMap:
 				case Teleport_EndGame:
+			    case Teleport_NoStop:
 				case Teleport_Line:
 					return;
 					break;
