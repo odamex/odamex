@@ -77,6 +77,7 @@ struct TeamInfo
 	int FlagSprite;
 	int FlagDownSprite;
 	int FlagCarrySprite;
+	int FlagWaypointSprite;
 
 	int Points;
 	int RoundWins;

@@ -1275,42 +1275,45 @@ void G_ParseMusInfo(void)
 // Determines if the vectors of wad & patch filenames differs from the currently
 // loaded ones and calls D_DoomWadReboot if so.
 //
-bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
-				const std::vector<std::string> &newpatchfiles,
-				const std::vector<std::string> &newwadhashes,
-				const std::vector<std::string> &newpatchhashes,
-				const std::string &mapname)
+bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
+               const std::string& mapname)
 {
 	bool AddedIWAD = false;
 	bool Reboot = false;
-	size_t i, j;
 
 	// Did we pass an IWAD?
-	if (!newwadfiles.empty() && W_IsIWAD(newwadfiles[0]))
+	if (!newwadfiles.empty() && W_IsKnownIWAD(newwadfiles[0]))
+	{
 		AddedIWAD = true;
+	}
 
 	// Check our environment, if the same WADs are used, ignore this command.
 
 	// Did we switch IWAD files?
-	if (AddedIWAD && !wadfiles.empty())
+	if (AddedIWAD && !::wadfiles.empty())
 	{
-		if (!iequals(M_ExtractFileName(newwadfiles[0]), M_ExtractFileName(wadfiles[1])))
+		if (newwadfiles.at(0).getBasename() != wadfiles.at(1).getBasename())
+		{
 			Reboot = true;
+		}
 	}
 
 	// Do the sizes of the WAD lists not match up?
 	if (!Reboot)
 	{
-		if (wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+		if (::wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+		{
 			Reboot = true;
+		}
 	}
 
 	// Do our WAD lists match up exactly?
 	if (!Reboot)
 	{
-		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < newwadfiles.size(); i++, j++)
+		for (size_t i = 2, j = (AddedIWAD ? 1 : 0);
+		     i < ::wadfiles.size() && j < newwadfiles.size(); i++, j++)
 		{
-			if (!iequals(M_ExtractFileName(newwadfiles[j]), M_ExtractFileName(wadfiles[i])))
+			if (!(newwadfiles.at(j).getBasename() == ::wadfiles.at(i).getBasename()))
 			{
 				Reboot = true;
 				break;
@@ -1322,15 +1325,18 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 	if (!Reboot)
 	{
 		if (patchfiles.size() != newpatchfiles.size())
+		{
 			Reboot = true;
+		}
 	}
 
 	// Do our patchfile lists match up exactly?
 	if (!Reboot)
 	{
-		for (i = 0, j = 0; i < patchfiles.size() && j < newpatchfiles.size(); i++, j++)
+		for (size_t i = 0, j = 0; i < ::patchfiles.size() && j < newpatchfiles.size();
+		     i++, j++)
 		{
-			if (!iequals(M_ExtractFileName(newpatchfiles[j]), M_ExtractFileName(patchfiles[i])))
+			if (!(newpatchfiles.at(j).getBasename() == ::patchfiles.at(i).getBasename()))
 			{
 				Reboot = true;
 				break;
@@ -1349,7 +1355,7 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 			G_CheckDemoStatus();
 		}
 #endif
-		D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+		D_DoomWadReboot(newwadfiles, newpatchfiles);
 		if (!missingfiles.empty())
 		{
 			G_DeferedInitNew(startmap);
@@ -1376,45 +1382,70 @@ bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
 const char *ParseString2(const char *data);
 
 //
-// G_LoadWad
+// G_LoadWadString
 //
-// Takes a space-separated string list of wad and patch names, which is parsed
-// into a vector of wad filenames and patch filenames and then calls
-// D_DoomWadReboot.
+// Takes a string of random wads and patches, which is sorted through and
+// trampolined to the implementation of G_LoadWad.
 //
-bool G_LoadWad(const std::string &str, const std::string &mapname)
+bool G_LoadWadString(const std::string& str, const std::string& mapname)
 {
-	std::vector<std::string> newwadfiles;
-	std::vector<std::string> newpatchfiles;
-	std::vector<std::string> nohashes;	// intentionally empty
+	const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
+	const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
 
-	const char *data = str.c_str();
+	OWantFiles newwadfiles;
+	OWantFiles newpatchfiles;
 
+	const char* data = str.c_str();
 	for (size_t argv = 0; (data = ParseString2(data)); argv++)
 	{
-		std::string ext;
-
-		if (argv == 0 && W_IsIWAD(com_token))
+		OWantFile file;
+		if (!OWantFile::make(file, ::com_token, OFILE_UNKNOWN))
 		{
-			// Add an IWAD
-			std::string iwad_name(com_token);
-
-			// The first argument in the string can be the name of an IWAD
-			// with the WAD extension omitted
-			M_AppendExtension(iwad_name, ".wad");
-
-			newwadfiles.push_back(iwad_name);
+			Printf(PRINT_WARNING, "Could not parse \"%s\" into file, skipping...\n",
+			       ::com_token);
+			continue;
 		}
-		else if (M_ExtractFileExtension(com_token, ext))
+
+		// Does this look like a DeHackEd patch?
+		bool is_deh =
+		    std::find(deh_exts.begin(), deh_exts.end(), file.getExt()) != deh_exts.end();
+		if (is_deh)
 		{
-			if (iequals(ext, "wad") && !W_IsIWAD(com_token))
-				newwadfiles.push_back(com_token);
-			else if (iequals(ext, "deh") || iequals(ext, "bex"))
-				newpatchfiles.push_back(com_token);		// Patch file
+			if (!OWantFile::make(file, ::com_token, OFILE_DEH))
+			{
+				Printf(PRINT_WARNING,
+				       "Could not parse \"%s\" into patch file, skipping...\n",
+				       ::com_token);
+				continue;
+			}
+
+			newpatchfiles.push_back(file);
+			continue;
 		}
+
+		// Does this look like a WAD file?
+		bool is_wad =
+		    std::find(wad_exts.begin(), wad_exts.end(), file.getExt()) != wad_exts.end();
+		if (is_wad)
+		{
+			if (!OWantFile::make(file, ::com_token, OFILE_WAD))
+			{
+				Printf(PRINT_WARNING,
+				       "Could not parse \"%s\" into WAD file, skipping...\n",
+				       ::com_token);
+				continue;
+			}
+
+			newwadfiles.push_back(file);
+			continue;
+		}
+
+		// Just push the unknown file into the resource list.
+		newwadfiles.push_back(file);
+		continue;
 	}
 
-	return G_LoadWad(newwadfiles, newpatchfiles, nohashes, nohashes, mapname);
+	return G_LoadWad(newwadfiles, newpatchfiles, mapname);
 }
 
 

@@ -46,7 +46,7 @@ static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CV
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (sv_maxplayers)
 
-extern std::vector<std::string> wadfiles;
+extern OResFiles wadfiles;
 
 /**
  * Get configuration file path.  This file contains commands to set all
@@ -227,10 +227,10 @@ std::string M_ExpandTokens(const std::string &str)
 			case 'w':
 				if (wadfiles.size() == 2) {
 					// We're playing an IWAD map
-					buffer << M_ExtractFileName(wadfiles[1]);
+					buffer << wadfiles[1].getBasename();
 				} else if (wadfiles.size() > 2) {
 					// We're playing a PWAD map
-					buffer << M_ExtractFileName(wadfiles[2]);
+					buffer << wadfiles[2].getBasename();
 				}
 				break;
 			case 'm':

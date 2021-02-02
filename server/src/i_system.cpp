@@ -47,14 +47,11 @@
 #endif
 
 #ifdef UNIX
-#define HAVE_PWD_H
-
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <pwd.h>
 #include <unistd.h>
 #include <limits.h>
-
 #endif
 
 #include "errors.h"

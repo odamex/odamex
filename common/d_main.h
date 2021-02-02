@@ -25,11 +25,12 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
-#include "doomstat.h"
-#include "d_event.h"
-
 #include <vector>
 #include <string>
+
+#include "doomstat.h"
+#include "d_event.h"
+#include "m_resfile.h"
 
 //
 // D_DoomMain()
@@ -39,21 +40,10 @@
 //
 void D_DoomMain(void);
 
-void D_LoadResourceFiles(
-	const std::vector<std::string>& newwadfiles,
-	const std::vector<std::string>& newpatchfiles,
-	const std::vector<std::string>& newwadhashes = std::vector<std::string>(),
-	const std::vector<std::string>& newpatchhashes = std::vector<std::string>()
-);
+void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
+bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 
-bool D_DoomWadReboot(
-	const std::vector<std::string>& newwadfiles,
-	const std::vector<std::string>& newpatchfiles,
-	const std::vector<std::string>& newwadhashes = std::vector<std::string>(),
-	const std::vector<std::string>& newpatchhashes = std::vector<std::string>()
-);
-
-// Called by IO functions when input is detected.
+    // Called by IO functions when input is detected.
 void D_PostEvent(const event_t* ev);
 
 //
@@ -69,20 +59,20 @@ void D_DisplayTicker(void);
 extern const char *D_DrawIcon;
 
 void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator);
-void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files = std::vector<std::string>());
+void D_AddPlatformSearchDirs(std::vector<std::string>& dirs);
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
 
-extern std::vector<std::string> wadfiles, wadhashes;
-extern std::vector<std::string> patchfiles, patchhashes;
-extern std::vector<std::string> missingfiles, missinghashes;
+extern OResFiles wadfiles;
+extern OResFiles patchfiles;
+extern OWantFiles missingfiles;
 
 extern bool capfps;
 extern float maxfps;
 void STACK_ARGS D_ClearTaskSchedulers();
 void D_RunTics(void (*sim_func)(), void(*display_func)());
 
-void D_AddWadCommandLineFiles(std::vector<std::string>& filenames);
-void D_AddDehCommandLineFiles(std::vector<std::string>& filenames);
+void D_AddWadCommandLineFiles(OWantFiles& out);
+void D_AddDehCommandLineFiles(OWantFiles& out);
 
 std::string D_GetTitleString();
 

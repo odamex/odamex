@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "otransfer.h"
+#include "m_resfile.h"
 
 /**
  * @brief Set if the client should reconnect to the last server upon completion
@@ -39,8 +40,7 @@ typedef std::vector<std::string> Websites;
 void CL_DownloadInit();
 void CL_DownloadShutdown();
 bool CL_IsDownloading();
-bool CL_StartDownload(const Websites& url, const std::string& filename,
-                      const std::string& hash, unsigned flags);
+bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned flags);
 bool CL_StopDownload();
 void CL_DownloadTick();
 std::string CL_DownloadFilename();

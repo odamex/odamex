@@ -119,7 +119,11 @@ int main(int argc, char *argv[])
 #endif
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#if defined(__has_feature)
+#if !__has_feature(address_sanitizer)
 	I_SetCrashCallbacks();
+#endif
+#endif
 
 	try
 	{

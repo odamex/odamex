@@ -2264,8 +2264,8 @@ void SV_ConnectClient()
 	}
 
 	// Send a map name
-	SVC_LoadMap(player->client.reliablebuf, ::wadfiles, ::wadhashes, ::patchfiles,
-	            ::patchhashes, level.mapname, level.time);
+	SVC_LoadMap(player->client.reliablebuf, ::wadfiles, ::patchfiles, level.mapname,
+	            level.time);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -4347,11 +4347,8 @@ void SV_WantWad(player_t &player)
 	std::string filename;
 	for (i = 0; i < wadfiles.size(); i++)
 	{
-		filename = D_CleanseFileName(wadfiles[i]);
-		//DPrintf("wads[%d] = {name: \"%s\", hash: \"%s\"}\n", i,
-		//		filename.c_str(), wadhashes[i].c_str()
-		//);
-		if (filename == request && (md5.empty() || wadhashes[i] == md5))
+		filename = wadfiles[i].getBasename();
+		if (filename == request && (md5.empty() || wadfiles[i].getHash() == md5))
 			break;
 	}
 
@@ -4369,19 +4366,20 @@ void SV_WantWad(player_t &player)
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-		char message[256];	
-		sprintf(message, "Server: %s is a commercial wad and will not be downloaded\n",
-				D_CleanseFileName(wadfiles[i]).c_str());
-		MSG_WriteString(&cl->reliablebuf, message);
+		std::string message;
+		StrFormat(message, "Server: %s is a commercial wad and will not be downloaded\n",
+		          wadfiles[i].getBasename().c_str());
+		MSG_WriteString(&cl->reliablebuf, message.c_str());
 
 		SV_DropClient(player);
 		return;
 	}
 
-	if (player.playerstate != PST_DOWNLOAD || cl->download.name != wadfiles[i])
+	if (player.playerstate != PST_DOWNLOAD ||
+	    cl->download.name != wadfiles[i].getBasename())
 		Printf("> client %d is downloading %s\n", player.id, filename.c_str());
 
-	cl->download.name = wadfiles[i];
+	cl->download.name = wadfiles[i].getBasename();
 	cl->download.md5 = md5;
 	cl->download.next_offset = next_offset;
 	player.playerstate = PST_DOWNLOAD;

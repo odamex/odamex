@@ -134,7 +134,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	C_HideConsole();
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWad(str);
+	G_LoadWadString(str);
 
 	D_StartTitle ();
 	CL_QuitNetGame();

@@ -699,7 +699,7 @@ void P_TranslateTeleportThings (void)
 	for (i = 0; i < numlines; i++)
 	{
 		if (lines[i].special == Teleport ||
-			lines[i].special == Teleport_NoFog)
+			lines[i].special == Teleport_NoFog || lines[i].special == Teleport_NoStop)
 		{
 			// The sector tag hash table hasn't been set up yet,
 			// so we need to use this linear search.
