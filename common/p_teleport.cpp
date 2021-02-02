@@ -147,7 +147,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 //
 // TELEPORTATION
 //
-BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
+BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop)
 {
 	AActor *m;
 	unsigned	an;
@@ -196,21 +196,37 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 		player->viewz = thing->z + thing->player->viewheight;
 
 	// spawn teleport fog at source and destination
+	// [RK] but account for nosourcefog and nostop fog arguments
 	if(serverside && !(player && player->spectator))
 	{
-		S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		if (arg0 == 0)
+			S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		
 		an = m->angle >> ANGLETOFINESHIFT;
 		// emit sound at new spot
-		S_Sound (new AActor (m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		// [RK] reduce the fog flicker during no stop
+		if (nostop == 1)
+			S_Sound(new AActor(m->x+5*finecosine[an], m->y+5*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		else
+			S_Sound(new AActor(m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 	}
 
 	// don't move for a bit
+	// [RK] except for nostop teleports
 	if (player && !player->spectator)
-		thing->reactiontime = 18;
+	{
+		if (nostop == 1)
+			thing->reactiontime = 0;
+		else
+			thing->reactiontime = 18;
+	}
 
 	thing->momx = thing->momy = thing->momz = 0;
 	thing->angle = m->angle;
-	thing->pitch = 0;
+	
+	// [RK] we keep the player's pitch if it's a no stop teleport
+	if(nostop == 0)
+		thing->pitch = 0;
 
 	return true;
 }

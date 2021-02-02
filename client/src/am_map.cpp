@@ -1330,6 +1330,7 @@ void AM_drawWalls(void)
 			{
 				if ((lines[i].special == Teleport ||
 					lines[i].special == Teleport_NoFog ||
+				    lines[i].special == Teleport_NoStop ||
 					lines[i].special == Teleport_Line) &&
 					(am_usecustomcolors || viewactive))
 				{ // teleporters
