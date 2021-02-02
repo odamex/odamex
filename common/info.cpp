@@ -58,9 +58,8 @@ const char *sprnames[NUMSPRITES+1] = {
 	"GIB0","GIB1","GIB2","GIB3","GIB4","GIB5","GIB6","GIB7","UNKN",
 
 	//	[Toke - CTF]
-	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR",
-	"GSOK","GFLG","GDWN","GCAR","TLGL",
-	0
+	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR", "GSOK", "GFLG",
+	"GDWN","GCAR","TLGL","WPBF","WPRF","WPGF",0
 };
 
 class player_s;
@@ -1292,6 +1291,13 @@ state_t	states[NUMSTATES] = {
 	{SPR_TLGL,32770,4,NULL,S_BRIDGE4,0,0},	// S_BRIDGE3
 	{SPR_TLGL,32771,4,NULL,S_BRIDGE5,0,0},	// S_BRIDGE4
 	{SPR_TLGL,32772,4,NULL,S_BRIDGE1,0,0},	// S_BRIDGE5
+
+	{SPR_WPBF,0,1,NULL,S_WPBF2,0,0}, // S_WPBF1 - Waypoint Blue Flag
+	{SPR_WPBF,1,1,NULL,S_WPBF1,0,0}, // S_WPBF2
+	{SPR_WPRF,0,1,NULL,S_WPRF2,0,0}, // S_WPRF1 - Waypoint Red Flag
+	{SPR_WPRF,1,1,NULL,S_WPRF1,0,0}, // S_WPRF2
+	{SPR_WPGF,0,1,NULL,S_WPGF2,0,0}, // S_WPGF1 - Waypoint Green Flag
+	{SPR_WPGF,1,1,NULL,S_WPGF1,0,0}, // S_WPGF2
 
 	{ SPR_TNT1,0,1,A_Raise,S_NOWEAPON,0,0 },    //    S_NOWEAPONUP
 	{ SPR_TNT1,0,1,A_Lower,S_NOWEAPON,0,0 },    //S_NOWEAPONDOWN
@@ -7044,8 +7050,93 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0x10000,
 	"MT_GCAR"
 	},
-
+	{                  // MT_WPBFLAG
+		-1,            // doomednum
+		S_WPBF1,       // spawnstate
+		1000,          // spawnhealth
+		S_NULL,        // seestate
+		NULL,          // seesound
+		8,             // reactiontime
+		NULL,          // attacksound
+		S_NULL,        // painstate
+		0,             // painchance
+		NULL,          // painsound
+		S_NULL,        // meleestate
+		S_NULL,        // missilestate
+		S_NULL,        // deathstate
+		S_NULL,        // xdeathstate
+		NULL,          // deathsound
+		0,             // speed
+		20 * FRACUNIT, // radius
+		16 * FRACUNIT, // height
+		16 * FRACUNIT, // cdheight
+		100,           // mass
+		0,             // damage
+		NULL,          // activesound
+		0,             // flags
+		0,             // flags2
+		S_NULL,        // raisestate
+		0xC000,
+		"MT_WPBFLAG"
+	},
+	{                  // MT_WPRFLAG
+		-1,            // doomednum
+		S_WPRF1,       // spawnstate
+		1000,          // spawnhealth
+		S_NULL,        // seestate
+		NULL,          // seesound
+		8,             // reactiontime
+		NULL,          // attacksound
+		S_NULL,        // painstate
+		0,             // painchance
+		NULL,          // painsound
+		S_NULL,        // meleestate
+		S_NULL,        // missilestate
+		S_NULL,        // deathstate
+		S_NULL,        // xdeathstate
+		NULL,          // deathsound
+		0,             // speed
+		20 * FRACUNIT, // radius
+		16 * FRACUNIT, // height
+		16 * FRACUNIT, // cdheight
+		100,           // mass
+		0,             // damage
+		NULL,          // activesound
+		0,             // flags
+		0,             // flags2
+		S_NULL,        // raisestate
+		0xC000,
+		"MT_WPRFLAG"
+	},
+	{                  // MT_WPGFLAG
+		-1,            // doomednum
+		S_WPGF1,       // spawnstate
+		1000,          // spawnhealth
+		S_NULL,        // seestate
+		NULL,          // seesound
+		8,             // reactiontime
+		NULL,          // attacksound
+		S_NULL,        // painstate
+		0,             // painchance
+		NULL,          // painsound
+		S_NULL,        // meleestate
+		S_NULL,        // missilestate
+		S_NULL,        // deathstate
+		S_NULL,        // xdeathstate
+		NULL,          // deathsound
+		0,             // speed
+		20 * FRACUNIT, // radius
+		16 * FRACUNIT, // height
+		16 * FRACUNIT, // cdheight
+		100,           // mass
+		0,             // damage
+		NULL,          // activesound
+		0,             // flags
+		0,             // flags2
+		S_NULL,        // raisestate
+		0xC000,
+		"MT_WPGFLAG"
+	}
 };
 
 VERSION_CONTROL (info_cpp, "$Id$")
-

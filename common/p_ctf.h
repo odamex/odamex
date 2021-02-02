@@ -64,6 +64,7 @@ void CTF_CheckFlags(player_t &player);
 void CTF_Sound(team_t f, team_t t, flag_score_t event);
 void CTF_Message(team_t f, team_t t, flag_score_t event);
 bool CTF_ShouldSpawnHomeFlag(mobjtype_t type);
+void CTF_ReplaceFlagWithWaypoint(AActor* mo);
 
 FArchive &operator<< (FArchive &arc, flagdata &flag);
 FArchive &operator>> (FArchive &arc, flagdata &flag);

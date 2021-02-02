@@ -221,7 +221,13 @@ set(ODAWAD_SOURCES
   sprites/tlgld0.gif
   sprites/tlgle0.gif
   sprites/tnt1a0.gif
-  sprites/unkna0.gif)
+  sprites/unkna0.gif
+  sprites/wpbfa0.gif
+  sprites/wpbfb0.gif
+  sprites/wpgfa0.gif
+  sprites/wpgfb0.gif
+  sprites/wprfa0.gif
+  sprites/wprfb0.gif)
 
 if(USE_INTERNAL_DEUTEX)
   if(WIN32)

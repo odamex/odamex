@@ -209,7 +209,11 @@ typedef enum
 	SPR_GCAR,
 	
 	SPR_TLGL,
-	
+
+	SPR_WPBF,
+	SPR_WPRF,
+	SPR_WPGF,
+
 	NUMSPRITES
 
 } spritenum_t;
@@ -1327,6 +1331,14 @@ typedef enum
 	S_BRIDGE3,
 	S_BRIDGE4,
 	S_BRIDGE5,
+
+	S_WPBF1, // Waypoint - Blue flag
+	S_WPBF2,
+	S_WPRF1, // Waypoint - Red flag
+	S_WPRF2,
+	S_WPGF1, // Waypoint - Green flag
+	S_WPGF2,
+
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,
 	S_NOWEAPON,
@@ -1579,6 +1591,10 @@ typedef enum {
 	MT_GDWN,
 	MT_GCAR,
 
+	MT_WPBFLAG,
+	MT_WPRFLAG,
+	MT_WPGFLAG,
+
 	// FIXME: Has no info.cpp entry.
 	MT_MUSICCHANGE,
 
@@ -1643,6 +1659,3 @@ inline FArchive &operator>> (FArchive &arc, mobjinfo_t *&info)
 }
 
 #endif	// __INFO_H__
-
-
-
