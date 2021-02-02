@@ -1,14 +1,17 @@
 # Build libraries.
 #
-# Here we prefer use of ExternalProject to add_subdirectory.  ExternalProject
-# builds the library exactly the way we want it without polluting the parent
-# CMake cache.
+# Here we use execute_process and file(DOWNLOAD) to download and compile
+# libraries as we need them.  Some stuff to remember:
 #
-# Some stuff to remember about ExternalProject
+# - C libraries can cross Debug/Release boundaries, but C++ libraries can't.
+#   You'll need to be able to select the proper debug vs release library in
+#   multi-config builds - see JsonCpp for an example.
+# - Xcode does not like it when CMake passes --parallel with no parameter.
 #
-# - BUILD_BYPRODUCTS is necessary for Ninja to pick up on the dependency.
-# - In custom build steps, be explicit about both DEPENDEES and DEPENDERS or
-#   else the build step might not be executed after a clean.
+
+# Parallel processor count - needed by Xcode.
+include(ProcessorCount)
+ProcessorCount(PARALLEL_PROC_COUNT)
 
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -56,15 +59,14 @@ if(BUILD_CLIENT)
       "-DCMAKE_USE_LIBSSH2=OFF"
       "-DCMAKE_USE_WINSSL=${_COMPILE_CURL_WINSSL}"
       "-DCURL_ZLIB=OFF"
-      "-DHTTP_ONLY=ON"
-    )
+      "-DHTTP_ONLY=ON")
     unset(_COMPILE_CURL_WINSSL)
 
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
-      --config RelWithDebInfo --target install --parallel
-    )
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT})
   endif()
 
   find_package(CURL)
@@ -99,25 +101,26 @@ if(BUILD_SERVER)
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
     "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
-  )
+    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
 
-  # Compile the library - twice.
+  # Compile the library.
   get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(IS_MULTI_CONFIG)
+    # Debug and Release are not compatible, so build both.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config Debug --target install --parallel
-    )
+      --config Debug --target install
+      --parallel ${PARALLEL_PROC_COUNT})
     execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config RelWithDebInfo --target install --parallel
-    )
+    --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
+    --config RelWithDebInfo --target install
+    --parallel ${PARALLEL_PROC_COUNT})
   else()
+    # Single config uses the passed build type.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --target install --parallel
-    )
+      --config ${CMAKE_BUILD_TYPE} --target install
+      --parallel ${PARALLEL_PROC_COUNT})
   endif()
 
   # Synthesize an imported target that can be linked against.
@@ -159,14 +162,12 @@ if(BUILD_SERVER)
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
     "-DUPNPC_BUILD_SHARED=No"
-    "-DUPNPC_BUILD_TESTS=No"
-  )
+    "-DUPNPC_BUILD_TESTS=No")
 
   # Compile the library.
   execute_process(COMMAND "${CMAKE_COMMAND}"
     --build "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    --config RelWithDebInfo --target install --parallel
-  )
+    --config RelWithDebInfo --target install --parallel ${PARALLEL_PROC_COUNT})
 
   # Synthesize an imported target that can be linked against.
   add_library(upnpc-static STATIC IMPORTED GLOBAL)
