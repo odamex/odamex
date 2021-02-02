@@ -131,11 +131,9 @@ bool CL_IsDownloading()
  *
  * @param urls Website to download from, without the WAD at the end.
  * @param filename Filename of the WAD to download.
- * @param hash Hash of the file to download.
  * @param flags DL_* flags to set for the download process.
  */
-bool CL_StartDownload(const Websites& urls, const std::string& filename,
-                      const std::string& hash, unsigned flags)
+bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned flags)
 {
 	if (::dlstate.state != STATE_READY)
 	{
@@ -170,13 +168,13 @@ bool CL_StartDownload(const Websites& urls, const std::string& filename,
 		return false;
 	}
 
-	if (W_IsFilenameCommercialIWAD(filename))
+	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
 		return false;
 	}
 
-	if (W_IsFilehashCommercialIWAD(hash))
+	if (W_IsFilehashCommercialIWAD(filename.getWantedHash()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
 		return false;
@@ -186,8 +184,8 @@ bool CL_StartDownload(const Websites& urls, const std::string& filename,
 	::dlstate.checkurls = checkurls;
 
 	// Assign the other params to the download state.
-	::dlstate.filename = filename;
-	::dlstate.hash = hash;
+	::dlstate.filename = filename.getBasename();
+	::dlstate.hash = filename.getWantedHash();
 	::dlstate.flags = flags;
 
 	// Start the checking bit on the next tick.
@@ -500,7 +498,9 @@ BEGIN_COMMAND(download)
 		std::random_shuffle(clientsites.begin(), clientsites.end());
 
 		// Attach the website to the file and download it.
-		CL_StartDownload(clientsites, std::string(argv[2]), "", 0);
+		OWantFile file;
+		OWantFile::make(file, argv[2], OFILE_UNKNOWN);
+		CL_StartDownload(clientsites, file, 0);
 		return;
 	}
 

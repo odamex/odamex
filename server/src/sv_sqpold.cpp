@@ -172,7 +172,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message, numwads - 1);
 
 	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
+		MSG_WriteString(&ml_message, wadfiles[i].getBasename().c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
@@ -195,7 +195,7 @@ void SV_SendServerInfo()
 	}
 
 	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, wadhashes[i].c_str());
+		MSG_WriteString(&ml_message, ::wadfiles[i].getHash().c_str());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
@@ -276,8 +276,11 @@ void SV_SendServerInfo()
 
     MSG_WriteByte(&ml_message, patchfiles.size());
     
-    for (size_t i = 0; i < patchfiles.size(); ++i)
-        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
+	for (size_t i = 0; i < patchfiles.size(); ++i)
+	{
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(patchfiles[i].getBasename()).c_str());
+	}
 
 	NET_SendPacket(ml_message, net_from);
 }

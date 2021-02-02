@@ -49,6 +49,7 @@ function(odamex_target_settings _TARGET)
     if(USE_SANITIZE_ADDRESS)
       target_compile_options("${_TARGET}" PRIVATE
         -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+      target_link_options("${_TARGET}" PRIVATE -fsanitize=address)
     endif()
   endif()
 

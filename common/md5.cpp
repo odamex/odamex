@@ -418,5 +418,21 @@ std::string MD5SUM(std::string in)
 	return MD5SUM(in.c_str(), in.length());
 }
 
+bool IsMD5SUM(const std::string& str)
+{
+	if (str.length() != 32)
+		return false;
+
+	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+	{
+		if (*it >= '0' && *it <= '9')
+			continue;
+		if (*it >= 'A' && *it <= 'F')
+			continue;
+		return false;
+	}
+	return true;
+}
+
 VERSION_CONTROL (md5_cpp, "$Id$")
 

@@ -41,9 +41,13 @@
 #else
 #include <sys/syslimits.h>
 #endif
+#include <dirent.h>
 
-#include "m_argv.h"
+#include "cmdlib.h"
 #include "i_system.h"
+#include "m_argv.h"
+#include "m_ostring.h"
+#include "w_wad.h"
 
 std::string M_GetBinaryDir()
 {
@@ -101,30 +105,32 @@ std::string M_GetBinaryDir()
 
 std::string M_GetHomeDir(const std::string& user)
 {
-	
 	const char* envhome = getenv("HOME");
-	std::string home = envhome ? envhome : "";
-#ifndef __SWITCH__
+	std::string home = (envhome != NULL) ? envhome : "";
 
+#ifndef __SWITCH__
 	if (!home.length())
 	{
-
-#ifdef HAVE_PWD_H
 		// try the uid way
 		passwd* p = user.length() ? getpwnam(user.c_str()) : getpwuid(getuid());
 		if (p && p->pw_dir)
+		{
 			home = p->pw_dir;
-#endif
+		}
 
 		if (!home.length())
+		{
 			I_FatalError("Please set your HOME variable");
+		}
 	}
 
 	if (home[home.length() - 1] != PATHSEPCHAR)
+	{
 		home += PATHSEP;
+	}
 #endif
-	return home;
 
+	return home;
 }
 
 std::string M_GetUserDir()
@@ -198,6 +204,82 @@ std::string M_GetUserFileName(const std::string& file)
 	path += file;
 #endif
 	return M_CleanPath(path);
+}
+
+std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
+                                const std::vector<std::string>& exts,
+                                const std::string& hash)
+{
+	dir = M_CleanPath(dir);
+	std::vector<OString> cmp_files;
+	for (std::vector<std::string>::const_iterator it = exts.begin(); it != exts.end();
+	     ++it)
+	{
+		if (!hash.empty())
+		{
+			// Filenames with supplied hashes always match first.
+			cmp_files.push_back(StdStringToUpper(file + *it + "." + hash));
+		}
+		cmp_files.push_back(StdStringToUpper(file + *it));
+	}
+
+	// denis - list files in the directory of interest, case-desensitize
+	// then see if wanted wad is listed
+	struct dirent** namelist = 0;
+	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
+
+	std::string found;
+	std::vector<OString>::iterator found_it = cmp_files.end();
+	for (int i = 0; i < n && namelist[i]; i++)
+	{
+		const std::string d_name = namelist[i]->d_name;
+		M_Free(namelist[i]);
+
+		if (found_it == cmp_files.begin())
+			continue;
+
+		if (d_name == "." || d_name == "..")
+			continue;
+
+		const std::string check = StdStringToUpper(d_name);
+		std::vector<OString>::iterator this_it =
+		    std::find(cmp_files.begin(), cmp_files.end(), check);
+		if (this_it < found_it)
+		{
+			const std::string local_file(dir + PATHSEP + d_name);
+			const std::string local_hash(W_MD5(local_file));
+
+			if (hash.empty() || hash == local_hash)
+			{
+				// Found a match.
+				found = d_name;
+				found_it = this_it;
+				continue;
+			}
+			else if (!hash.empty())
+			{
+				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
+				       local_file.c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
+			}
+		}
+	}
+
+	M_Free(namelist);
+	return found;
+}
+
+bool M_GetAbsPath(const std::string& path, std::string& out)
+{
+	char buffer[PATH_MAX];
+	char* res = realpath(path.c_str(), buffer);
+	if (res == NULL)
+	{
+		return false;
+	}
+	out = res;
+	return true;
 }
 
 #endif

@@ -28,6 +28,7 @@
 #include "doomtype.h"
 #include "z_zone.h"
 #include "r_defs.h"
+#include "m_resfile.h"
 
 #include <string>
 #include <vector>
@@ -37,7 +38,9 @@
 #define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))
 
 // [RH] Remove limit on number of WAD files
-extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
+extern OResFiles wadfiles;
+extern OResFiles patchfiles;
+extern OWantFiles missingfiles;
 
 //
 // TYPES
@@ -90,7 +93,7 @@ extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
 std::string W_MD5(std::string filename);
-std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filenames);
+void W_InitMultipleFiles(const OResFiles& filenames);
 
 int		W_CheckNumForName (const char *name, int ns = ns_global);
 int		W_GetNumForName (const char *name, int ns = ns_global);

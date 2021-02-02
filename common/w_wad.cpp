@@ -458,37 +458,32 @@ void W_MergeLumps (const char *start, const char *end, int space)
 // The name searcher looks backwards, so a later file
 //  does override all earlier ones.
 //
-std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filenames)
+void W_InitMultipleFiles(const OResFiles& files)
 {
-	size_t		size, i;
+	// open all the files, load headers, and count lumps
+	// will be realloced as lumps are added
+	::numlumps = 0;
 
-    // open all the files, load headers, and count lumps
-    // will be realloced as lumps are added
-	numlumps = 0;
-
-	M_Free(lumpinfo);
-
-	std::vector<std::string> hashes(filenames);
+	M_Free(::lumpinfo);
+	::lumpinfo = NULL;
 
 	// open each file once, load headers, and count lumps
-	int j = 0;
 	std::vector<std::string> loaded;
-	for(i = 0; i < filenames.size(); i++)
+	for (size_t i = 0; i < files.size(); i++)
 	{
-		if(std::find(loaded.begin(), loaded.end(), filenames[i].c_str()) == loaded.end())
+		if (std::find(loaded.begin(), loaded.end(), files.at(i).getHash()) ==
+		    loaded.end())
 		{
-			hashes[j++] = W_AddFile(filenames[i].c_str());
-			loaded.push_back(filenames[i].c_str());
+			std::string hash = W_AddFile(files.at(i).getFullpath());
+			loaded.push_back(files.at(i).getHash());
 		}
 	}
-	filenames = loaded;
-	hashes.resize(j);
 
 	if (!numlumps)
 		I_Error ("W_InitFiles: no files found");
 
 	// [RH] Set namespace markers to global for everything
-	for (i = 0; i < numlumps; i++)
+	for (size_t i = 0; i < numlumps; i++)
 		lumpinfo[i].namespc = ns_global;
 
 	// [RH] Merge sprite and flat groups.
@@ -501,7 +496,7 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
     // set up caching
 	M_Free(lumpcache);
 
-	size = numlumps * sizeof(*lumpcache);
+	size_t size = numlumps * sizeof(*lumpcache);
 	lumpcache = (void **)Malloc (size);
 
 	if (!lumpcache)
@@ -513,8 +508,6 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 	W_HashLumps();
 
 	stdisk_lumpnum = W_GetNumForName("STDISK");
-
-	return hashes;
 }
 
 //
@@ -565,7 +558,10 @@ int W_GetNumForName(const char* name, int namespc)
 	int i = W_CheckNumForName(name, namespc);
 
 	if (i == -1)
-		I_Error ("W_GetNumForName: %s not found!", name);
+	{
+		I_Error("W_GetNumForName: %s not found!\n(checked in: %s)", name,
+		        M_ResFilesToString(::wadfiles).c_str());
+	}
 
 	return i;
 }
