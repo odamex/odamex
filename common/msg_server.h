@@ -38,16 +38,14 @@
 
 void SVC_PlayerInfo(buf_t& b, player_t& player);
 void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags);
-void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
-                 const std::vector<std::string>& wadhashes,
-                 const std::vector<std::string>& patchnames,
-                 const std::vector<std::string>& patchhashes, const std::string& mapname,
-                 int time);
+void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
+                 const std::string& mapname, int time);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);
 void SVC_TeamMembers(buf_t& b, team_t team);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
+void SVC_SecretFound(buf_t& b, int playerid);
 
 #endif

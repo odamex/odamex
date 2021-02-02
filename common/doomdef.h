@@ -69,6 +69,20 @@ enum baseapp_t
 
 extern baseapp_t baseapp;
 
+// 
+// Environment Platform
+// 
+enum gameplatform_t 
+{
+	PF_PC,
+	PF_XBOX,
+	PF_WII,			//	Wii/vWii
+	PF_SWITCH,		// 	Nintendo Switch
+	PF_UNKNOWN,		//	Unknown platform yet
+};
+
+extern gameplatform_t platform;
+
 //
 // Global parameters/defines.
 //

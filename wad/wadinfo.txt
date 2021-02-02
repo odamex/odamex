@@ -231,10 +231,18 @@ GFLGH0	2	59
 GSOKA0	16	12
 GDWNA0	17	44
 GCARA0	4	68
+WPBFA0  6   44
+WPBFB0  6   44
+WPRFA0  6   44
+WPRFB0  6   44
+WPGFA0  6   44
+WPGFB0  6   44
 
+# Dummies for shareware compatibility
+CELLA0  8       12
+PSTRA0  12      15
+CELPA0  15      20
 
 # List of Floors and Ceilings
 [flats]
 -NOFLAT-
-
-

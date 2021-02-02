@@ -37,6 +37,7 @@
 #include "d_player.h"
 #include "i_input.h"
 #include "hashtable.h"
+#include "cl_responderkeys.h"
 
 extern NetDemo netdemo;
 
@@ -92,10 +93,15 @@ OBinding DefaultBindings[] =
 	{"mouse3", "+forward"},
 	{"mouse4", "+jump"},		// <- So is this <- change to jump
 	{"mouse5", "+speed"},		// <- new for +speed
-	{"joy1", "+attack"},
-	{"joy2", "+strafe"},
-	{"joy3", "+speed"},
-	{"joy4", "+use"},
+	{"joy1", "+jump"},
+	{"joy2", "+use"},
+	{"joy5", "+showscores"},
+	{"joy8", "togglemap"},
+	{"joy9", "ready"},
+	{"joy10", "weapprev"},
+	{"joy11", "weapnext"},
+	{"joy20", "+use"},
+	{"joy21", "+attack"},
 	{"mwheelup", "weapprev"},
 	{"mwheeldown", "weapnext"},
 #endif
@@ -293,12 +299,12 @@ bool C_DoSpectatorKey (event_t *ev)
 	if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELUP)
+	if (ev->type == ev_keydown && Key_IsSpyPrevKey(ev->data1))
 	{
 		AddCommandString("spyprev", ev->data1);
 		return true;
 	}
-	if (ev->type == ev_keydown && ev->data1 == KEY_MWHEELDOWN)
+	if (ev->type == ev_keydown && Key_IsSpyNextKey(ev->data1))
 	{
 		AddCommandString("spynext", ev->data1);
 		return true;

@@ -28,6 +28,7 @@
 #include "doomtype.h"
 #include "doomdef.h"
 #include "m_fixed.h"
+#include "m_resfile.h"
 
 #include <string>
 #include <vector>
@@ -167,6 +168,7 @@ struct level_locals_t {
 
 	int				total_monsters;
 	int				killed_monsters;
+	int				respawned_monsters;	// Ch0wW - Keep track of respawned monsters
 
 	float			gravity;
 	fixed_t			aircontrol;
@@ -282,13 +284,9 @@ extern bool unnatural_level_progression;
 
 void P_RemoveDefereds (void);
 
-bool G_LoadWad(	const std::vector<std::string> &newwadfiles,
-				const std::vector<std::string> &newpatchfiles,
-				const std::vector<std::string> &newwadhashes = std::vector<std::string>(),
-				const std::vector<std::string> &newpatchhashes = std::vector<std::string>(),
-				const std::string &mapname = "");
-
-bool G_LoadWad(const std::string &str, const std::string &mapname = "");
+bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
+               const std::string& mapname = "");
+bool G_LoadWadString(const std::string& str, const std::string& mapname = "");
 
 LevelInfos& getLevelInfos();
 ClusterInfos& getClusterInfos();

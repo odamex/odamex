@@ -43,6 +43,69 @@ EXTERN_CVAR(g_postroundtime)
 LevelState levelstate;
 
 /**
+ * @brief Countdown getter.
+ */
+int LevelState::getCountdown() const
+{
+	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
+		return 0;
+
+	int period = m_countdownDoneTime - ::level.time;
+	if (period < 0)
+	{
+		// Time desync at the start of a round, force to maximum.
+		return g_preroundtime.asInt();
+	}
+
+	return ceil(period / (float)TICRATE);
+}
+
+/**
+ * @brief Return which team is on defense this round.
+ */
+team_t LevelState::getDefendingTeam() const
+{
+	if (!g_sides || !G_IsTeamGame())
+	{
+		return TEAM_NONE;
+	}
+
+	// Blue always goes first, then red, then so on...
+	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
+	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	return static_cast<team_t>(round0 % teams);
+}
+
+/**
+ * @brief Get ingame start time.
+ */
+int LevelState::getIngameStartTime() const
+{
+	return m_ingameStartTime;
+}
+
+/**
+ * @brief Amount of time left for a player to join the game.
+ */
+int LevelState::getJoinTimeLeft() const
+{
+	if (m_state != LevelState::INGAME)
+		return 0;
+
+	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
+	int left = ceil((end_time - ::level.time) / (float)TICRATE);
+	return MAX(left, 0);
+}
+
+/**
+ * @brief Get the current round number.
+ */
+int LevelState::getRound() const
+{
+	return m_roundNumber;
+}
+
+/**
  * @brief State getter.
  */
 LevelState::States LevelState::getState() const
@@ -77,66 +140,11 @@ const char* LevelState::getStateString() const
 }
 
 /**
- * @brief Countdown getter.
- */
-int LevelState::getCountdown() const
-{
-	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
-		return 0;
-
-	int period = m_countdownDoneTime - ::level.time;
-	if (period < 0)
-	{
-		// Time desync at the start of a round, force to maximum.
-		return g_preroundtime.asInt();
-	}
-
-	return ceil(period / (float)TICRATE);
-}
-
-/**
- * @brief Get the current round number.
- */
-int LevelState::getRound() const
-{
-	return m_roundNumber;
-}
-
-/**
- * @brief Amount of time left for a player to join the game.
- */
-int LevelState::getJoinTimeLeft() const
-{
-	if (m_state != LevelState::INGAME)
-		return 0;
-
-	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
-	int left = ceil((end_time - ::level.time) / (float)TICRATE);
-	return MAX(left, 0);
-}
-
-/**
  * @brief Get the most recent win information.
  */
 WinInfo LevelState::getWinInfo() const
 {
 	return m_lastWininfo;
-}
-
-/**
- * @brief Return which team is on defense this round.
- */
-team_t LevelState::getDefendingTeam() const
-{
-	if (!g_sides || !G_IsTeamGame())
-	{
-		return TEAM_NONE;
-	}
-
-	// Blue always goes first, then red, then so on...
-	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
-	int round0 = MAX(::levelstate.getRound() - 1, 0);
-	return static_cast<team_t>(round0 % teams);
 }
 
 /**
@@ -194,7 +202,7 @@ void LevelState::reset()
 
 		// Don't print "match started" for every game mode.
 		if (g_rounds)
-			SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
+			SV_BroadcastPrintf("Round %d has started.\n", m_roundNumber);
 	}
 
 	m_countdownDoneTime = 0;
@@ -232,7 +240,7 @@ void LevelState::readyToggle()
 
 	// No useful work can be done unless we're either in warmup or taking
 	// part in the normal warmup countdown.
-	if (m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN)
+	if (!(m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN))
 		return;
 
 	// Check to see if we satisfy our autostart setting.
@@ -264,7 +272,7 @@ void LevelState::readyToggle()
 		if (m_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
-			SV_BroadcastPrintf(PRINT_HIGH, "Countdown aborted: Player unreadied.\n");
+			SV_BroadcastPrintf("Countdown aborted: Player unreadied.\n");
 		}
 	}
 }
@@ -335,7 +343,7 @@ void LevelState::tic()
 		if (::level.time >= m_countdownDoneTime)
 		{
 			setState(LevelState::INGAME);
-			SV_BroadcastPrintf(PRINT_HIGH, "FIGHT!\n");
+			SV_BroadcastPrintf("FIGHT!\n");
 			return;
 		}
 		break;
@@ -382,7 +390,7 @@ void LevelState::tic()
 				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
 				return;
 			}
-			else if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			else if (G_IsTeamGame())
 			{
 				// We need at least one person on at least two different teams.
 				int ready = 0;
@@ -422,8 +430,11 @@ void LevelState::tic()
 			if (g_rounds)
 				printRoundStart();
 			else
-				SV_BroadcastPrintf(PRINT_HIGH, "The match has started.\n");
+			{
+				SV_BroadcastPrintf ("The %s has started.\n",
+				                   (sv_gametype == GM_COOP) ? "game" : "match");
 
+			}
 			return;
 		}
 		break;
@@ -553,13 +564,13 @@ void LevelState::printRoundStart() const
 	team_t def = getDefendingTeam();
 	if (def != TEAM_NONE)
 	{
-		const TeamInfo& teaminfo = *GetTeamInfo(def);
-		SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started - %s is on defense.\n",
-		                   m_roundNumber, teaminfo.ColorString.c_str());
+		TeamInfo& teaminfo = *GetTeamInfo(def);
+		SV_BroadcastPrintf("Round %d has started - %s is on defense.\n",
+		                   m_roundNumber, teaminfo.ColorizedTeamName().c_str());
 	}
 	else
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "Round %d has started.\n", m_roundNumber);
+		SV_BroadcastPrintf("Round %d has started.\n", m_roundNumber);
 	}
 }
 

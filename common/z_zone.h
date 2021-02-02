@@ -55,6 +55,7 @@ size_t 	Z_FreeMemory (void);
 // Don't use these, use the macros instead!
 void*   Z_Malloc2 (size_t size, int tag, void *user, const char *file, int line);
 void    Z_Free2 (void *ptr, const char *file, int line);
+void    Z_Discard2 (void** ptr, const char* file, int line);
 void	Z_ChangeTag2 (void *ptr, int tag, const char* file, int line);
 void	Z_ChangeOwner2 (void *ptr, void* user, const char* file, int line);
 
@@ -72,6 +73,28 @@ inline void Z_ChangeTag2(const void *ptr, int tag, const char* file, int line)
 {
 	Z_ChangeTag2(const_cast<void *>(ptr), tag, file, line);
 }
+
+/**
+ * @brief Discard a piece of memory from the heap without freeing it.
+ *
+ * @param ptr A pointer to the pointer we want to discard.  The pointer must
+ *            point to something, but the pointed-to-pointer can be null,
+ *            in which case nothing happens.
+ * @param file Filename passed in from __FILE__ macro.
+ * @param line Line number passed in from __LINE__ macro.
+ */
+template <typename P>
+inline void Z_Discard2(P ptr, const char* file, int line)
+{
+	if (*ptr == NULL)
+	{
+		return;
+	}
+
+	Z_ChangeTag2(*ptr, PU_CACHE, file, line);
+	*ptr = NULL;
+}
+
 //
 // This is used to get the local FILE:LINE info from CPP
 // prior to really calling the function in question.
@@ -84,6 +107,7 @@ inline void Z_ChangeTag2(const void *ptr, int tag, const char* file, int line)
 
 #define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
 #define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
+#define Z_Discard(p) Z_Discard2(p,__FILE__,__LINE__)
 #define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
 #define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
 

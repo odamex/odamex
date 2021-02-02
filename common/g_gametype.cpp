@@ -42,6 +42,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_warmup)
 
 /**
  * @brief Returns a string containing the name of the gametype.
@@ -76,7 +77,7 @@ const std::string& G_GametypeName()
 
 /**
  * @brief Check if the round should be allowed to end.
- * 
+ *
  * @detail This is not an appropriate function to call on level exit.
  */
 bool G_CanEndGame()
@@ -197,6 +198,36 @@ bool G_CanScoreChange()
 }
 
 /**
+ * @brief Check if we should show a FIGHT message on INGAME.
+ */
+bool G_CanShowFightMessage()
+{
+	// Don't show a call-to-action when there's nobody ingame to answer.
+	PlayerResults pr = PlayerQuery().execute();
+	if (pr.count <= 0)
+		return false;
+
+	// Multiple rounds should always show them.
+	if (G_IsRoundsGame())
+		return true;
+
+	// Using warmup makes the levelstate HUD show up a bunch.
+	if (::sv_warmup)
+		return true;
+
+	return false;
+}
+
+/**
+ * @brief Check to see if we should show a join timer.
+ */
+bool G_CanShowJoinTimer()
+{
+	return ::g_lives > 0 && ::levelstate.getState() == LevelState::INGAME &&
+	       ::levelstate.getJoinTimeLeft() > 0;
+}
+
+/**
  * @brief Check if obituaries are allowed to be shown.
  */
 bool G_CanShowObituary()
@@ -214,8 +245,18 @@ bool G_CanTickGameplay()
 }
 
 /**
+ * @brief Check to see if level is in specific state.
+ *
+ * @param state Levelstate to check against.
+ */
+bool G_IsLevelState(LevelState::States state)
+{
+	return ::levelstate.getState() == state;
+}
+
+/**
  * @brief Check if the passed team is on defense.
- * 
+ *
  * @param team Team to check.
  * @return True if the team is on defense, or if sides aren't enabled.
  */
@@ -254,12 +295,13 @@ bool G_IsTeamGame()
  */
 bool G_IsRoundsGame()
 {
-	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && g_rounds == true;
+	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+	       g_rounds == true;
 }
 
 /**
  * @brief Check if the game uses lives.
-*/
+ */
 bool G_IsLivesGame()
 {
 	return g_lives > 0;
@@ -314,6 +356,10 @@ void G_AssertValidPlayerCount()
 	if (!::serverside)
 		return;
 
+	// We don't need to do anything in non-lives gamemodes.
+	if (!::g_lives)
+		return;
+
 	// In warmup player counts don't matter, and at the end of the game the
 	// check is useless.
 	if (::levelstate.getState() == LevelState::WARMUP ||
@@ -323,17 +369,9 @@ void G_AssertValidPlayerCount()
 	// Cooperative game modes have slightly different logic.
 	if (::sv_gametype == GM_COOP && P_NumPlayersInGame() == 0)
 	{
-		if (::g_lives)
-		{
-			// Survival modes cannot function with no players in the gamne,
-			// so the level must be reset at this point.
-			::levelstate.reset();
-		}
-		else
-		{
-			// Normal coop is pretty casual so in this case we leave it to
-			// sv_emptyreset to reset the level for us.
-		}
+		// Survival modes cannot function with no players in the gamne,
+		// so the level must be reset at this point.
+		::levelstate.reset();
 		return;
 	}
 
@@ -364,9 +402,12 @@ void G_AssertValidPlayerCount()
 		{
 			if (pr.teamTotal[i] > 0)
 			{
-				// Does more than one team has players?  If so, the game continues.
+				// Does the team has more than one players?  If so, the game continues.
 				if (hasplayers != TEAM_NONE)
+				{
+					G_LivesCheckEndGame();	// Check if Whole team is alive
 					return;
+				}
 				hasplayers = i;
 			}
 		}
@@ -377,6 +418,9 @@ void G_AssertValidPlayerCount()
 			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
 		valid = false;
 	}
+
+	// Check if we have still players alive
+	G_LivesCheckEndGame();
 
 	// If we haven't signaled an invalid state by now, we're cool.
 	if (valid == true)
@@ -462,12 +506,12 @@ void G_TimeCheckEndGame()
 		}
 		else if (pr.count >= 2)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			SV_BroadcastPrintf("Time limit hit. Game is a draw!\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 		}
 		else
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game won by %s!\n",
+			SV_BroadcastPrintf("Time limit hit. Game won by %s!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 		}
@@ -477,9 +521,10 @@ void G_TimeCheckEndGame()
 		if (g_sides)
 		{
 			// Defense always wins in the event of a timeout.
-			const TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
-			SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
-			                   ti.ColorStringUpper.c_str());
+			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
+			GiveTeamWins(ti.Team, 1);
+			SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
+			                   ti.ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);
 		}
 		else
@@ -488,13 +533,13 @@ void G_TimeCheckEndGame()
 
 			if (tv.size() != 1)
 			{
-				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+				SV_BroadcastPrintf("Time limit hit. Game is a draw!\n");
 				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			}
 			else
 			{
-				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. %s team wins!\n",
-				                   tv.front()->ColorStringUpper.c_str());
+				SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
+				                   tv.front()->ColorizedTeamName().c_str());
 				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 			}
 		}
@@ -524,7 +569,7 @@ void G_FragsCheckEndGame()
 			GiveWins(*top, 1);
 
 			// [ML] 04/4/06: Added !sv_fragexitswitch
-			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. Game won by %s!\n",
+			SV_BroadcastPrintf("Frag limit hit. Game won by %s!\n",
 			                   top->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, top->id);
 			::levelstate.endRound();
@@ -550,7 +595,7 @@ void G_TeamFragsCheckEndGame()
 		if (team->Points >= sv_fraglimit)
 		{
 			GiveTeamWins(team->Team, 1);
-			SV_BroadcastPrintf(PRINT_HIGH, "Frag limit hit. %s team wins!\n",
+			SV_BroadcastPrintf("Frag limit hit. %s team wins!\n",
 			                   team->ColorString.c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			::levelstate.endRound();
@@ -577,8 +622,8 @@ void G_TeamScoreCheckEndGame()
 		if (team->Points >= sv_scorelimit)
 		{
 			GiveTeamWins(team->Team, 1);
-			SV_BroadcastPrintf(PRINT_HIGH, "Score limit hit. %s team wins!\n",
-			                   team->ColorString.c_str());
+			SV_BroadcastPrintf("Score limit hit. %s team wins!\n",
+			                   team->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			::levelstate.endRound();
 			M_CommitWDLLog();
@@ -604,7 +649,7 @@ void G_LivesCheckEndGame()
 		PlayerResults pr = PlayerQuery().hasLives().execute();
 		if (pr.count == 0)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
+			SV_BroadcastPrintf("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
 			::levelstate.endRound();
 		}
@@ -615,14 +660,14 @@ void G_LivesCheckEndGame()
 		PlayerResults pr = PlayerQuery().hasLives().execute();
 		if (pr.count == 0)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "All players have run out of lives.\n");
+			SV_BroadcastPrintf("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			::levelstate.endRound();
 		}
 		else if (pr.count == 1)
 		{
 			GiveWins(*pr.players.front(), 1);
-			SV_BroadcastPrintf(PRINT_HIGH, "%s wins as the last player standing!\n",
+			SV_BroadcastPrintf("%s wins as the last player standing!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			::levelstate.endRound();
@@ -632,15 +677,10 @@ void G_LivesCheckEndGame()
 	}
 	else if (G_IsTeamGame())
 	{
-		// If someone has configured TeamDM improperly, just don't do anything.
-		int teamsinplay = sv_teamsinplay.asInt();
-		if (teamsinplay < 1 || teamsinplay > NUMTEAMS)
-			return;
-
 		// One person alive on a single team is success, nobody alive is a draw.
 		PlayerResults pr = PlayerQuery().hasLives().execute();
 		int aliveteams = 0;
-		for (int i = 0; i < teamsinplay; i++)
+		for (int i = 0; i < sv_teamsinplay.asInt(); i++)
 		{
 			if (pr.teamCount[i] > 0)
 				aliveteams += 1;
@@ -660,16 +700,14 @@ void G_LivesCheckEndGame()
 			{
 				GiveTeamWins(tv.front()->Team, 1);
 				SV_BroadcastPrintf(
-				    PRINT_HIGH,
 				    "%s team wins for having the highest score with %s left!\n",
-				    tv.front()->ColorString.c_str(), teams);
+				    tv.front()->ColorizedTeamName().c_str(), teams);
 				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 				::levelstate.endRound();
 			}
 			else
 			{
-				SV_BroadcastPrintf(PRINT_HIGH,
-				                   "Score is tied with with %s left. Game is a draw!\n",
+				SV_BroadcastPrintf("Score is tied with with %s left. Game is a draw!\n",
 				                   teams);
 				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 				::levelstate.endRound();
@@ -678,7 +716,7 @@ void G_LivesCheckEndGame()
 
 		if (aliveteams == 0 || pr.count == 0)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "All teams have run out of lives.\n");
+			SV_BroadcastPrintf("All teams have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			::levelstate.endRound();
 		}
@@ -686,8 +724,8 @@ void G_LivesCheckEndGame()
 		{
 			team_t team = pr.players.front()->userinfo.team;
 			GiveTeamWins(team, 1);
-			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins as the last team standing!\n",
-			                   GetTeamInfo(team)->ColorString.c_str());
+			SV_BroadcastPrintf("%s team wins as the last team standing!\n",
+			                   GetTeamInfo(team)->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team);
 			::levelstate.endRound();
 		}
@@ -719,37 +757,48 @@ bool G_RoundsShouldEndGame()
 		PlayerResults pr = PlayerQuery().sortWins().filterSortMax().execute();
 		if (pr.count == 1 && g_winlimit && pr.players.front()->roundwins >= g_winlimit)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. Match won by %s!\n",
+			SV_BroadcastPrintf("Win limit hit. Match won by %s!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			return true;
 		}
 		else if (pr.count == 1 && g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Match won by %s!\n",
+			SV_BroadcastPrintf("Round limit hit. Match won by %s!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			return true;
 		}
 		else if (g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "Round limit hit. Game is a draw!\n");
+			SV_BroadcastPrintf("Round limit hit. Game is a draw!\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			return true;
 		}
 	}
 	else if (G_IsTeamGame())
 	{
-		for (size_t i = 0; i < NUMTEAMS; i++)
+		TeamsView tv = TeamQuery().sortWins().filterSortMax().execute();
+		if (tv.size() == 1 && ::g_winlimit && tv.front()->RoundWins >= ::g_winlimit)
 		{
-			TeamInfo* team = GetTeamInfo((team_t)i);
-			if (team->RoundWins >= g_winlimit)
-			{
-				SV_BroadcastPrintf(PRINT_HIGH, "Win limit hit. %s team wins!\n",
-				                   team->ColorString.c_str());
-				::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
-				return true;
-			}
+			SV_BroadcastPrintf("Win limit hit. %s team wins!\n",
+			                   tv.front()->ColorizedTeamName().c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+			return true;
+		}
+		else if (tv.size() == 1 && ::g_roundlimit &&
+		         ::levelstate.getRound() >= ::g_roundlimit)
+		{
+			SV_BroadcastPrintf("Round limit hit. %s team wins!\n",
+			                   tv.front()->ColorizedTeamName().c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+			return true;
+		}
+		else if (::g_roundlimit && ::levelstate.getRound() >= ::g_roundlimit)
+		{
+			SV_BroadcastPrintf("Round limit hit. Game is a draw!\n");
+			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			return true;
 		}
 	}
 

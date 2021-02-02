@@ -196,6 +196,10 @@ int V_GetTextColor(const char* str)
 //
 void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes) const
 {
+	// Don't try and print a string without conchars loaded.
+	if (::ConChars == NULL)
+		return;
+
 	if (default_color < 0)
 		default_color = CR_GRAY;
 

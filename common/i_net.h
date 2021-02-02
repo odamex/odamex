@@ -74,6 +74,11 @@
 #define SVC_LL_MONSTERS (1 << 4)
 
 /**
+ * @brief svc_levellocals: Respawned monsters.
+ */
+#define SVC_LL_MONSTER_RESPAWNS (1 << 5)
+
+/**
  * @brief svc_playermembers: Spectator status.
  */
 #define SVC_PM_SPECTATOR (1 << 0)
@@ -162,6 +167,7 @@ enum svc_t
 	svc_spawnhiddenplayer,	// [denis] when client can't see player
 	svc_updatedeaths,		// [byte] [short]
 	svc_ctfevent,			// [Toke - CTF] - [int]
+	svc_secretevent,		// [Ch0wW] informs clients of a secret discovered
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
 	svc_connectclient,
     svc_midprint,

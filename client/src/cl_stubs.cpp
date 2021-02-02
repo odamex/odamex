@@ -50,6 +50,12 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 	Printf(printlevel, "%s", str.c_str());
 }
 
+FORMAT_PRINTF(1, 2)
+void STACK_ARGS SV_BroadcastPrintf(const char* format, ...)
+{
+	SV_BroadcastPrintf(PRINT_HIGH, format);
+}
+
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
@@ -81,6 +87,10 @@ void SV_SendPackets(void) {}
 void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly, int arg0 = -1, int arg1 = -1, int arg2 = -1, int arg3 = -1,
 	int arg4 = -1, int arg5 = -1, int arg6 = -1, int arg7 = -1, int arg8 = -1) {}
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4) {}
+
+void SV_UpdateMonsterRespawnCount() {}
+void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation) {}
+
 
 CVAR_FUNC_IMPL(sv_sharekeys) {}
 

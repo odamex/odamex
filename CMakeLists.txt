@@ -22,6 +22,7 @@ option(BUILD_SERVER "Build server target" 1)
 option(BUILD_LAUNCHER "Build launcher target" 1)
 option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
+option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
@@ -38,6 +39,13 @@ set(PROJECT_COMPANY "The Odamex Team")
 # Use C++ 98/03 for all targets
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Include early required commands for specific systems
+if (NSWITCH)
+	include("switch.cmake" REQUIRED)  # Nintendo Switch
+elseif(VWII)
+  include("wii.cmake" REQUIRED)     # Wii/vWii
+endif()
 
 # Ensure that we can use folders in projects.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -122,6 +130,9 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
 # Libraries
 add_subdirectory(libraries)
 
+# WAD building
+add_subdirectory(wad)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER)
   add_subdirectory(common)
@@ -139,7 +150,7 @@ endif()
 if(BUILD_LAUNCHER)
   add_subdirectory(odalaunch)
 endif()
-if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_ODALAUNCH)
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 
@@ -164,8 +175,6 @@ if(NOT APPLE)
   set(CPACK_COMPONENT_ODALAUNCH_DEPENDS client)
   set(CPACK_COMPONENT_ODALAUNCH_DISPLAY_NAME "Odalaunch Odamex Server Browser and Launcher")
   set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
-
-  add_subdirectory(wad)
 
   file(GLOB CONFIG_SAMPLES config-samples/*.cfg)
   if(WIN32)

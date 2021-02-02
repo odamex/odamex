@@ -31,6 +31,7 @@
 #include "d_player.h"
 #include "i_system.h"
 #include "p_ctf.h"
+#include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -171,7 +172,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message, numwads - 1);
 
 	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
+		MSG_WriteString(&ml_message, wadfiles[i].getBasename().c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
@@ -186,7 +187,7 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, it->fragcount);
 			MSG_WriteLong(&ml_message, it->ping);
 
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 				MSG_WriteByte(&ml_message, it->userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
@@ -194,12 +195,12 @@ void SV_SendServerInfo()
 	}
 
 	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, wadhashes[i].c_str());
+		MSG_WriteString(&ml_message, ::wadfiles[i].getHash().c_str());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		MSG_WriteLong(&ml_message, sv_scorelimit.asInt());
 		
@@ -275,8 +276,11 @@ void SV_SendServerInfo()
 
     MSG_WriteByte(&ml_message, patchfiles.size());
     
-    for (size_t i = 0; i < patchfiles.size(); ++i)
-        MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
+	for (size_t i = 0; i < patchfiles.size(); ++i)
+	{
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(patchfiles[i].getBasename()).c_str());
+	}
 
 	NET_SendPacket(ml_message, net_from);
 }

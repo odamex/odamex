@@ -126,17 +126,17 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags)
 
 	if (flags & SVC_LL_MONSTERS)
 		MSG_WriteVarint(&b, locals.killed_monsters);
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		MSG_WriteVarint(&b, locals.respawned_monsters);
 }
 
 /**
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.
  */
-void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
-                 const std::vector<std::string>& wadhashes,
-                 const std::vector<std::string>& patchnames,
-                 const std::vector<std::string>& patchhashes, const std::string& mapname,
-                 int time)
+void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
+                 const std::string& mapname, int time)
 {
 	MSG_WriteMarker(&b, svc_loadmap);
 
@@ -145,8 +145,8 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
 	MSG_WriteUnVarint(&b, wadcount);
 	for (size_t i = 1; i < wadcount + 1; i++)
 	{
-		MSG_WriteString(&b, D_CleanseFileName(wadnames[i], "wad").c_str());
-		MSG_WriteString(&b, wadhashes[i].c_str());
+		MSG_WriteString(&b, wadnames[i].getBasename().c_str());
+		MSG_WriteString(&b, wadnames[i].getHash().c_str());
 	}
 
 	// send list of DEH/BEX patches
@@ -154,8 +154,8 @@ void SVC_LoadMap(buf_t& b, const std::vector<std::string>& wadnames,
 	MSG_WriteUnVarint(&b, patchcount);
 	for (size_t i = 0; i < patchcount; i++)
 	{
-		MSG_WriteString(&b, D_CleanseFileName(patchnames[i]).c_str());
-		MSG_WriteString(&b, patchhashes[i].c_str());
+		MSG_WriteString(&b, patchnames[i].getBasename().c_str());
+		MSG_WriteString(&b, patchnames[i].getHash().c_str());
 	}
 
 	MSG_WriteString(&b, mapname.c_str());
@@ -266,11 +266,12 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
-		if (psp->state)
-			MSG_WriteByte(&b, psp->state - states);
-		else
-			MSG_WriteByte(&b, 0xFF);
+		unsigned int state = psp->state - states;
+		MSG_WriteUnVarint(&b, state);
 	}
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		MSG_WriteVarint(&b, player.powers[i]);
 }
 
 /**
@@ -285,6 +286,15 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.round_number);
 	MSG_WriteVarint(&b, sls.last_wininfo_type);
 	MSG_WriteVarint(&b, sls.last_wininfo_id);
+}
+
+/**
+ * @brief Send information about a player who discovered a secret.
+ */
+void SVC_SecretFound(buf_t& b, int playerid)
+{
+	MSG_WriteMarker(&b, svc_secretevent);
+	MSG_WriteByte(&b, playerid);			// ID of player who discovered it
 }
 
 VERSION_CONTROL(msg_server, "$Id$")

@@ -238,8 +238,7 @@ std::string HelpText()
 		return str;
 	}
 
-	if (::levelstate.getState() == LevelState::INGAME &&
-	    ::levelstate.getJoinTimeLeft() > 0)
+	if (G_CanShowJoinTimer())
 	{
 		StrFormat(str,
 		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
@@ -299,24 +298,35 @@ std::string Timer()
 		return "";
 	}
 
+
 	OTimespan tspan;
-	if (hud_timer == 2)
+	if (::levelstate.getState() == LevelState::WARMUP || 
+		::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+		::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN )
 	{
-		// Timer counts up.
-		TicsToTime(tspan, level.time);
-	}
-	else if (hud_timer == 1)
-	{
-		// Timer counts down.
-		int timeleft = G_EndingTic() - level.time;
+		int timeleft = G_EndingTic()-1;
 		TicsToTime(tspan, timeleft, true);
 	}
-
-	// If we're in the danger zone flip the color.
-	int warning = G_EndingTic() - (60 * TICRATE);
-	if (level.time > warning)
+	else
 	{
-		color = TEXTCOLOR_BRICK;
+		if (hud_timer == 2)
+		{
+			// Timer counts up.
+			TicsToTime(tspan, level.time);
+		}
+		else if (hud_timer == 1)
+		{
+			// Timer counts down.
+			int timeleft = G_EndingTic() - level.time;
+			TicsToTime(tspan, timeleft, true);
+		}
+
+		// If we're in the danger zone flip the color.
+		int warning = G_EndingTic() - (60 * TICRATE);
+		if (level.time > warning)
+		{
+			color = TEXTCOLOR_BRICK;
+		}
 	}
 
 	std::string str;
@@ -345,7 +355,7 @@ std::string IntermissionTimer()
 		timeleft = 0;
 
 	OTimespan tspan;
-	TicsToTime(tspan, level.inttimeleft);
+	TicsToTime(tspan, timeleft);
 
 	std::string str;
 	if (tspan.hours)
@@ -922,7 +932,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int color = CR_GREY;
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 			{
 				color = GetTeamPlayerColor(player);
 			}
@@ -956,7 +966,7 @@ void EASpectatorNames(int x, int y, const float scale,
 		if (spectatingPlayer(player)) {
 			if (skip <= 0) {
 				int color = CR_GREY;
-				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+				if (G_IsTeamGame()) {
 					if (player->ready) {
 						color = CR_GREEN;
 					} else if (player->id == displayplayer().id) {
@@ -1469,7 +1479,7 @@ void EATargets(int x, int y, const float scale,
 
 		// Pick a decent color for the player name.
 		int color;
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
+		if (G_IsTeamGame()) {
 			// In teamgames, we want to use team colors for targets.
 			color = V_GetTextColor(GetTeamInfo(it->userinfo.team)->TextColor.c_str());
 		} else {

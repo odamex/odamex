@@ -38,13 +38,14 @@
 #include "p_mobj.h"
 #include "g_level.h"
 #include "msg_server.h"
+#include "g_gametype.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
-extern std::vector<std::string> wadfiles, wadhashes;
+extern OResFiles wadfiles;
 
 argb_t CL_GetPlayerColor(player_t*);
 
@@ -1002,15 +1003,8 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	for (size_t n = 1; n < numwads; n++)
 	{
-		std::string tmpname = wadfiles[n];
-		
-		// strip absolute paths, as they present a security risk
-		M_FixPathSep(tmpname);
-		size_t slash = tmpname.find_last_of(PATHSEPCHAR);
-		if (slash != std::string::npos)
-			tmpname = tmpname.substr(slash + 1, tmpname.length() - slash);
-
-		MSG_WriteString	(netbuffer, tmpname.c_str());
+		// Don't use absolute paths, as they present a security risk.
+		MSG_WriteString(netbuffer, ::wadfiles[n].getBasename().c_str());
 	}
 		
 	MSG_WriteBool	(netbuffer, 0);		// deathmatch?
@@ -1032,11 +1026,11 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	// MD5 hash sums for all the wadfiles on the server
 	for (size_t n = 1; n < numwads; n++)
-		MSG_WriteString	(netbuffer, wadhashes[n].c_str());
+		MSG_WriteString(netbuffer, ::wadfiles[n].getHash().c_str());
 
 	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		MSG_WriteLong	(netbuffer, 0);		// sv_scorelimit
 		for (size_t n = 0; n < NUMTEAMS; n++)
@@ -1156,8 +1150,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	SVC_PlayerMembers(*netbuffer, consoleplayer(), SVC_PM_SPECTATOR);
 
 	// Server sends wads & map name
-	SVC_LoadMap(*netbuffer, wadfiles, wadhashes, patchfiles, patchhashes, level.mapname,
-	            level.time);
+	SVC_LoadMap(*netbuffer, wadfiles, patchfiles, level.mapname, level.time);
 
 	// Server spawns the player
 	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
@@ -1464,15 +1457,15 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	arc << (byte)(wadfiles.size() - 1);
 	for (size_t i = 1; i < wadfiles.size(); i++)
 	{
-		arc << D_CleanseFileName(wadfiles[i]).c_str();
-		arc << wadhashes[i].c_str();
+		arc << D_CleanseFileName(::wadfiles[i].getBasename()).c_str();
+		arc << ::wadfiles[i].getHash().c_str();
 	}
 
 	arc << (byte)patchfiles.size();
 	for (size_t i = 0; i < patchfiles.size(); i++)
 	{
-		arc << D_CleanseFileName(patchfiles[i]).c_str();
-		arc << patchhashes[i].c_str();
+		arc << D_CleanseFileName(::patchfiles[i].getBasename()).c_str();
+		arc << ::patchfiles[i].getHash().c_str();
 	}
 
 	// write map info
@@ -1551,27 +1544,30 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	cvar_t::C_ReadCVars(&vars_p);
 
 	// read wad info
-	std::vector<std::string> newwadfiles, newwadhashes, newpatchfiles, newpatchhashes;
+	OWantFiles newwadfiles, newpatchfiles;
 	byte numwads, numpatches;
-	std::string str;
+	std::string res, hash;
 
 	arc >> numwads;
 	for (size_t i = 0; i < numwads; i++)
 	{
-		arc >> str;
-		newwadfiles.push_back(D_CleanseFileName(str));
+		arc >> res;
+		arc >> hash;
 
-		arc >> str;
-		newwadhashes.push_back(str);
+		OWantFile want;
+		OWantFile::makeWithHash(want, res, OFILE_WAD, hash);
+		newwadfiles.push_back(want);
 	}
+
 	arc >> numpatches;
 	for (size_t i = 0; i < numpatches; i++)
 	{
-		arc >> str;
-		newpatchfiles.push_back(D_CleanseFileName(str));
+		arc >> res;
+		arc >> hash;
 
-		arc >> str;
-		newpatchhashes.push_back(str);
+		OWantFile want;
+		OWantFile::makeWithHash(want, res, OFILE_DEH, hash);
+		newpatchfiles.push_back(want);
 	}
 
 	std::string mapname;
@@ -1605,7 +1601,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	savegamerestore = true;     // Use the player actors in the savegame
 	serverside = false;
 
-	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+	G_LoadWad(newwadfiles, newpatchfiles);
 
 	G_InitNew(mapname.c_str());
 	displayplayer_id = consoleplayer_id = 1;

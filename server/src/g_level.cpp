@@ -145,7 +145,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWad(str);
+	G_LoadWadString(str);
 }
 END_COMMAND (wad)
 
@@ -203,7 +203,16 @@ void G_ChangeMap() {
 			maplist_entry_t maplist_entry;
 			Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+			std::string wadstr;
+			for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+			{
+				if (i != 0)
+				{
+					wadstr += " ";
+				}
+				wadstr += C_QuoteString(maplist_entry.wads.at(i));
+			}
+			G_LoadWadString(wadstr, maplist_entry.map);
 
 			// Set the new map as the current map
 			Maplist::instance().set_index(next_index);
@@ -227,7 +236,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWad(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -282,8 +291,7 @@ void G_DoNewGame (void)
 		if(!(it->ingame()))
 			continue;
 
-		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::wadhashes, ::patchfiles,
-		            ::patchhashes, d_mapname, 0);
+		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::patchfiles, d_mapname, 0);
 	}
 
 	sv_curmap.ForceSet(d_mapname);
@@ -303,7 +311,7 @@ void G_DoNewGame (void)
 		if (!(it->ingame()))
 			continue;
 
-		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		if (G_IsTeamGame())
 			SV_CheckTeam(*it);
 		else
 			memcpy(it->userinfo.color, it->prefcolor, 4);
@@ -358,11 +366,6 @@ void G_InitNew (const char *mapname)
 	{
 		I_Error ("Could not find map %s\n", mapname);
 	}
-
-	if (sv_skill == sk_nightmare || sv_monstersrespawn)
-		respawnmonsters = true;
-	else
-		respawnmonsters = false;
 
 	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
@@ -569,9 +572,6 @@ void G_DoResetLevel(bool full_reset)
 	G_SerializeLevel(arc, false, true);
 	reset_snapshot->Seek(0, FFile::ESeekSet);
 
-	// Set time to the initial tic.
-	level.time = 0;
-
 	{
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;
@@ -580,8 +580,7 @@ void G_DoResetLevel(bool full_reset)
 			// In sides-based games, destroy objectives that aren't relevant.
 			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
 			{
-				mo->netid = 0;
-				mo->Destroy();
+				CTF_ReplaceFlagWithWaypoint(mo);
 			}
 
 			// Assign new netids to every non-player actor to make sure we don't have
@@ -608,6 +607,8 @@ void G_DoResetLevel(bool full_reset)
 		if (sv_gametype == GM_COOP)
 			P_ClearPlayerCards(*it);
 
+		P_ClearPlayerPowerups(*it);
+
 		if (full_reset)
 		{
 			P_ClearPlayerScores(*it, true);
@@ -625,6 +626,9 @@ void G_DoResetLevel(bool full_reset)
 	// [SL] always reset the time (for now at least)
 	level.time = 0;
 	level.inttimeleft = mapchange / TICRATE;
+
+	// Reset the respawned monster count
+	level.respawned_monsters = 0;	
 
 	// Send information about the newly reset map.
 	for (it = players.begin(); it != players.end(); ++it)
@@ -682,7 +686,7 @@ void G_DoLoadLevel (int position)
 	G_InitLevelLocals ();
 
 	if (firstmapinit) {
-		Printf (PRINT_HIGH, "--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+		Printf_Bold ("--- %s: \"%s\" ---\n", level.mapname, level.level_name);
 		firstmapinit = false;
 	}
 
@@ -718,10 +722,9 @@ void G_DoLoadLevel (int position)
 		if (it->ingame() && it->playerstate == PST_DEAD)
 			it->playerstate = PST_REBORN;
 
-		// [AM] If sv_keepkeys or sv_sharekeys is on, players might still be carrying keys, so
-		//      make sure they're gone.
+		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
-
+		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, true);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
@@ -737,7 +740,7 @@ void G_DoLoadLevel (int position)
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			GetTeamInfo((team_t)i)->Points = 0;
@@ -820,8 +823,7 @@ void G_DoLoadLevel (int position)
 		{
 			if (mo->netid && !CTF_ShouldSpawnHomeFlag(mo->type))
 			{
-				mo->netid = 0;
-				mo->Destroy();
+				CTF_ReplaceFlagWithWaypoint(mo);
 			}
 		}
 	}

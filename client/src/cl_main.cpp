@@ -65,6 +65,8 @@
 #include "p_acs.h"
 #include "i_input.h"
 
+#include "g_gametype.h"
+
 #include <bitset>
 #include <string>
 #include <vector>
@@ -85,6 +87,8 @@
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
+
+gameplatform_t platform;
 
 extern bool step_mode;
 
@@ -143,6 +147,8 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_teamsinplay)
+
 EXTERN_CVAR (sv_downloadsites)
 EXTERN_CVAR (cl_downloadsites)
 
@@ -160,13 +166,15 @@ EXTERN_CVAR (cl_forcedownload)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
+
+EXTERN_CVAR (hud_revealsecrets)
+
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
 void P_DestroyButtonThinkers();
-std::string V_GetTeamColorPlayer(player_t& player);
 
-    //
+//
 // CL_ShadePlayerColor
 //
 // Shades base_color darker using the intensity of shade_color.
@@ -196,11 +204,11 @@ argb_t CL_GetPlayerColor(player_t *player)
 	argb_t shade_color = base_color;
 	
 	bool teammate = false;
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		teammate = true;
-	if (sv_gametype == GM_DM)
+	if (G_IsFFAGame())
 		teammate = false;
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		teammate = P_AreTeammates(consoleplayer(), *player);
 		base_color = GetTeamInfo(player->userinfo.team)->Color;
@@ -254,6 +262,9 @@ CVAR_FUNC_IMPL (r_forceteamcolor)
 
 CVAR_FUNC_IMPL (cl_team)
 {
+	if (var.asInt() >= sv_teamsinplay)
+		var.Set(sv_teamsinplay.asInt() - 1);
+	
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -266,7 +277,6 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
-EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
@@ -877,11 +887,13 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
-
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+
+	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
+		Printf(PRINT_HIGH, " userinfo.team    - %s \n",
+		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName().c_str());
+	}
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
@@ -997,7 +1009,7 @@ END_COMMAND (rcon_logout)
 
 BEGIN_COMMAND (playerteam)
 {
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
 	else
 		Printf("You need to play a team-based gamemode in order to use this command.\n");
@@ -1007,7 +1019,7 @@ END_COMMAND (playerteam)
 BEGIN_COMMAND (changeteams)
 {
 	int iTeam = (int)consoleplayer().userinfo.team;
-	iTeam = ++iTeam % NUMTEAMS;
+	iTeam = ++iTeam % sv_teamsinplay.asInt();
 	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
@@ -1514,6 +1526,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 	}
 
+	P_ClearPlayerPowerups(player);	// Remove all current powerups
+
 	// GhostlyDeath -- If the player matches our display player...
 	CL_CheckDisplayPlayer();
 }
@@ -1658,32 +1672,40 @@ void CL_RequestConnectInfo(void)
  * @brief Quit the network game while attempting to download a file.
  *
  * @param missing_file Missing file to attempt to download.
- * @param missing_hash Hash of the missing file to download.
  */
-static void QuitAndTryDownload(const std::string& missing_file,
-                               const std::string& missing_hash)
+static void QuitAndTryDownload(const OWantFile& missing_file)
 {
 	// Need to set this here, otherwise we render a frame of wild pointers
 	// filled with garbage data.
 	gamestate = GS_FULLCONSOLE;
 
+	if (missing_file.getBasename().empty())
+	{
+		Printf(PRINT_WARNING,
+		       "Tried to download an empty file.  This is probably a bug "
+		       "in the client where an empty file is considered missing.\n",
+		       missing_file.getBasename().c_str());
+		CL_QuitNetGame();
+		return;
+	}
+
 	if (!cl_serverdownload)
 	{
-		// Playing a netdemo and unable to download from the server
+		// Downloading is disabled client-side
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
 		       "Options > Network Options to enable downloading.\n",
-		       missing_file.c_str());
+		       missing_file.getBasename().c_str());
 		CL_QuitNetGame();
 		return;
 	}
 
 	if (netdemo.isPlaying())
 	{
-		// Downloading is disabled client-side
+		// Playing a netdemo and unable to download from the server
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
-		       missing_file.c_str());
+		       missing_file.getBasename().c_str());
 		CL_QuitNetGame();
 		return;
 	}
@@ -1693,7 +1715,7 @@ static void QuitAndTryDownload(const std::string& missing_file,
 		// Nobody has any download sites configured.
 		Printf("Unable to find \"%s\".  Both your client and the server have no "
 		       "download sites configured.\n",
-		       missing_file.c_str());
+		       missing_file.getBasename().c_str());
 		CL_QuitNetGame();
 		return;
 	}
@@ -1714,11 +1736,11 @@ static void QuitAndTryDownload(const std::string& missing_file,
 
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
-	       missing_file.c_str());
+	       missing_file.getBasename().c_str());
 	CL_QuitNetGame();
 
 	// Start the download.
-	CL_StartDownload(downloadsites, missing_file, missing_hash, DL_RECONNECT);
+	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
 }
 
 //
@@ -1731,7 +1753,6 @@ bool CL_PrepareConnect(void)
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
@@ -1748,16 +1769,19 @@ bool CL_PrepareConnect(void)
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	std::vector<std::string> newwadfiles(server_wads);
-	for(i = 0; i < server_wads; i++)
-		newwadfiles[i] = MSG_ReadString();
+	std::vector<std::string> newwadnames;
+	newwadnames.reserve(server_wads);
+	for (byte i = 0; i < server_wads; i++)
+	{
+		newwadnames.push_back(MSG_ReadString());
+	}
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
 	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
 	recv_teamplay_stats |= MSG_ReadBool();	// ctf
 
-	for(i = 0; i < playercount; i++)
+	for (byte i = 0; i < playercount; i++)
 	{
 		MSG_ReadString();
 		MSG_ReadShort();
@@ -1765,11 +1789,24 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	std::vector<std::string> newwadhashes(server_wads);
-	for(i = 0; i < server_wads; i++)
+	OWantFiles newwadfiles;
+	newwadfiles.reserve(server_wads);
+	for (byte i = 0; i < server_wads; i++)
 	{
-		newwadhashes[i] = MSG_ReadString();
-		Printf(PRINT_HIGH, "> %s\n   %s\n", newwadfiles[i].c_str(), newwadhashes[i].c_str());
+		std::string hash = MSG_ReadString();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       newwadnames.at(i).c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+		newwadfiles.push_back(file);
+
+		Printf("> %s\n   %s\n", file.getBasename().c_str(), file.getWantedHash().c_str());
 	}
 
 	// Download website - needed for HTTP downloading to work.
@@ -1838,31 +1875,48 @@ bool CL_PrepareConnect(void)
 
     Printf(PRINT_HIGH, "\n");
 
-    // DEH/BEX Patch files
-    size_t patch_count = MSG_ReadByte();
-	std::vector<std::string> newpatchfiles(patch_count);
+	// DEH/BEX Patch files
+	size_t patch_count = MSG_ReadByte();
 
-    for (i = 0; i < patch_count; ++i)
-        newpatchfiles[i] = MSG_ReadString();
+	OWantFiles newpatchfiles;
+	newpatchfiles.reserve(patch_count);
+	for (byte i = 0; i < patch_count; ++i)
+	{
+		OWantFile file;
+		if (!OWantFile::make(newpatchfiles.at(i), MSG_ReadString(), OFILE_DEH))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       newpatchfiles.at(i).getBasename().c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+		newpatchfiles.push_back(file);
+
+		Printf("> %s\n", file.getBasename().c_str());
+	}
 
     // TODO: Allow deh/bex file downloads
-	D_DoomWadReboot(newwadfiles, newpatchfiles, newwadhashes);
-
-	if (!missingfiles.empty() || cl_forcedownload)
+	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
+	if (!ok && missingfiles.empty())
 	{
-		std::string missing_file, missing_hash;
+		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
+		CL_QuitNetGame();
+		return false;
+	}
+	else if (!ok && !missingfiles.empty() || cl_forcedownload)
+	{
+		OWantFile missing_file;
 		if (missingfiles.empty())				// cl_forcedownload
 		{
 			missing_file = newwadfiles.back();
-			missing_hash = newwadhashes.back();
 		}
 		else									// client is really missing a file
 		{
 			missing_file = missingfiles.front();
-			missing_hash = missinghashes.front();
 		}
 
-		QuitAndTryDownload(missing_file, missing_hash);
+		QuitAndTryDownload(missing_file);
 		return false;
 	}
 
@@ -2069,8 +2123,8 @@ void CL_Say()
 			filtermessage = true;
 
 		if (mute_enemies && !spectator &&
-		    (sv_gametype == GM_DM ||
-		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+		    (G_IsFFAGame() ||
+		    (G_IsTeamGame() &&
 		     player.userinfo.team != consoleplayer().userinfo.team)))
 			filtermessage = true;
 	}
@@ -2213,15 +2267,20 @@ void CL_UpdatePlayerState()
 	for (int i = 0; i < NUMAMMO; i++)
 		ammo[i] = MSG_ReadVarint();
 
-	statenum_t stnum[NUMPSPRITES];
+	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		int n = MSG_ReadByte();
-		if (n == 0xFF)
-			stnum[i] = S_NULL;
-		else
-			stnum[i] = static_cast<statenum_t>(n);
+		unsigned int state = MSG_ReadUnVarint();
+		if (state >= NUMSTATES)
+		{
+			continue;
+		}
+		stnum[i] = static_cast<statenum_t>(state);
 	}
+
+	int powerups[NUMPOWERS];
+	for (int i = 0; i < NUMPOWERS; i++)
+		powerups[i] = MSG_ReadVarint();
 
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
@@ -2246,6 +2305,10 @@ void CL_UpdatePlayerState()
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(&player, i, stnum[i]);
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		player.powers[i] = powerups[i];
+
 }
 
 //
@@ -2396,7 +2459,7 @@ void CL_SpawnMobj()
 		CL_SetMobjSpeedAndAngle();
 	}
 
-    if (mo->flags & MF_COUNTKILL)
+    if (serverside && mo->flags & MF_COUNTKILL)
 		level.total_monsters++;
 
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
@@ -2454,9 +2517,6 @@ void CL_Corpse(void)
 
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
-
-    if (mo->flags & MF_COUNTKILL)
-		level.killed_monsters++;
 }
 
 //
@@ -2982,6 +3042,26 @@ void CL_ClearSectorSnapshots()
 }
 
 //
+// CL_SecretEvent
+// Client interpretation of a secret found by another player
+//
+void CL_SecretEvent()
+{
+	player_t& player = idplayer(MSG_ReadByte());
+
+	// Don't show other secrets if requested
+	if (!hud_revealsecrets || hud_revealsecrets > 2)
+		return;
+
+	std::string buf;
+	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW, player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
+	Printf(buf.c_str());
+
+	if (hud_revealsecrets == 1)
+		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
+}
+
+//
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
 //
@@ -3425,7 +3505,7 @@ void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activa
 	// positions since they cannot be used for interpolation.
 	if (line && (mo && mo->player) &&
 		(line->special == Teleport || line->special == Teleport_NoFog ||
-			line->special == Teleport_Line))
+			line->special == Teleport_NoStop || line->special == Teleport_Line))
 	{
 		teleported_players.insert(mo->player->id);
 
@@ -3504,7 +3584,7 @@ bool IsGameModeDuel()
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-void CL_LoadMap(void)
+void CL_LoadMap()
 {
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
@@ -3512,21 +3592,44 @@ void CL_LoadMap(void)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
-	std::vector<std::string> newwadfiles, newwadhashes;
-	std::vector<std::string> newpatchfiles, newpatchhashes;
-
 	size_t wadcount = MSG_ReadUnVarint();
-	while (wadcount--)
+	OWantFiles newwadfiles;
+	newwadfiles.reserve(wadcount);
+	for (size_t i = 0; i < wadcount; i++)
 	{
-		newwadfiles.push_back(MSG_ReadString());
-		newwadhashes.push_back(MSG_ReadString());
+		std::string name = MSG_ReadString();
+		std::string hash = MSG_ReadString();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       name.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+		newwadfiles.push_back(file);
 	}
 
 	size_t patchcount = MSG_ReadUnVarint();
-	while (patchcount--)
+	OWantFiles newpatchfiles;
+	newpatchfiles.reserve(patchcount);
+	for (size_t i = 0; i < patchcount; i++)
 	{
-		newpatchfiles.push_back(MSG_ReadString());
-		newpatchhashes.push_back(MSG_ReadString());
+		std::string name = MSG_ReadString();
+		std::string hash = MSG_ReadString();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted patch \"%s\" that server requested.\n",
+			       name.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+		newpatchfiles.push_back(file);
 	}
 
 	const char *mapname = MSG_ReadString();
@@ -3534,13 +3637,12 @@ void CL_LoadMap(void)
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
-	G_LoadWad(newwadfiles, newpatchfiles, newwadhashes, newpatchhashes);
+	G_LoadWad(newwadfiles, newpatchfiles);
 
 	if (!missingfiles.empty())
 	{
-		std::string missing_file = missingfiles.front();
-		std::string missing_hash = missinghashes.front();
-		QuitAndTryDownload(missing_file, missing_hash);
+		OWantFile missing_file = missingfiles.front();
+		QuitAndTryDownload(missing_file);
 		return;
 	}
 
@@ -3713,6 +3815,9 @@ void CL_LevelLocals()
 
 	if (flags & SVC_LL_MONSTERS)
 		::level.killed_monsters = MSG_ReadVarint();
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+		::level.respawned_monsters = MSG_ReadVarint();
 }
 
 typedef void (*ServerMessageFunc)();
@@ -3726,83 +3831,84 @@ static ServerMessageFunc GetMessageFunc(svc_t type)
 	switch (type)
 	{
 		SERVER_MSG_FUNC(svc_abort, CL_EndGame);
-		SERVER_MSG_FUNC(svc_full, CL_FullGame);
-		SERVER_MSG_FUNC(svc_disconnect, CL_EndGame);
+		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
+		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
 		SERVER_MSG_FUNC(svc_playerinfo, PlayerInfo);
+		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
+		SERVER_MSG_FUNC(svc_playermembers, CL_PlayerMembers);
 		SERVER_MSG_FUNC(svc_moveplayer, CL_UpdatePlayer);
 		SERVER_MSG_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer);
 		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);
-		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
+		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
+		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
+		SERVER_MSG_FUNC(svc_playerstate, CL_UpdatePlayerState);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
 		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
-		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
-		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
-		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
 		SERVER_MSG_FUNC(svc_mobjspeedangle, CL_SetMobjSpeedAndAngle);
+		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
 		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
-		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
+		SERVER_MSG_FUNC(svc_killmobj, CL_KillMobj);
 		SERVER_MSG_FUNC(svc_movemobj, CL_MoveMobj);
+		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
+		SERVER_MSG_FUNC(svc_corpse, CL_Corpse);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
-		SERVER_MSG_FUNC(svc_killmobj, CL_KillMobj);
 		SERVER_MSG_FUNC(svc_firepistol, CL_FirePistol);
+		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_fireshotgun, CL_FireShotgun);
 		SERVER_MSG_FUNC(svc_firessg, CL_FireSSG);
 		SERVER_MSG_FUNC(svc_firechaingun, CL_FireChainGun);
-		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
-		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
-		SERVER_MSG_FUNC(svc_print, CL_Print);
-		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
-		SERVER_MSG_FUNC(svc_playermembers, CL_PlayerMembers);
-		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
-		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
-		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
-		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
-		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
-		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
-		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
 		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
-		SERVER_MSG_FUNC(svc_corpse, CL_Corpse);
-		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
-		SERVER_MSG_FUNC(svc_soundorigin, CL_SoundOrigin);
-		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
-		SERVER_MSG_FUNC(svc_switch, CL_Switch);
-		SERVER_MSG_FUNC(svc_say, CL_Say);
-		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
-		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
-		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
-		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
-		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
-		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
-		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
-		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
 		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
-		SERVER_MSG_FUNC(svc_playerstate, CL_UpdatePlayerState);
-		SERVER_MSG_FUNC(svc_levelstate, CL_LevelState);
-		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
-		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
-		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
-		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
-		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
-		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
+		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
+		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
+		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
+		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
+		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
+		SERVER_MSG_FUNC(svc_switch, CL_Switch);
+		SERVER_MSG_FUNC(svc_print, CL_Print);
+		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
+		SERVER_MSG_FUNC(svc_say, CL_Say);
+		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
+		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
+		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
+		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
+		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
+		SERVER_MSG_FUNC(svc_soundorigin, CL_SoundOrigin);
 		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
 		SERVER_MSG_FUNC(svc_actor_movedir, CL_Actor_Movedir);
 		SERVER_MSG_FUNC(svc_actor_target, CL_Actor_Target);
 		SERVER_MSG_FUNC(svc_actor_tracer, CL_Actor_Tracer);
-		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
-		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
-		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
-		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
+		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
+		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
+		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
+		SERVER_MSG_FUNC(svc_secretevent, CL_SecretEvent);
+		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
+		SERVER_MSG_FUNC(svc_disconnect, CL_EndGame);
+		SERVER_MSG_FUNC(svc_full, CL_FullGame);
+		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
+		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
+		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
+		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
+		SERVER_MSG_FUNC(svc_levelstate, CL_LevelState);
+		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
 		SERVER_MSG_FUNC(svc_netdemocap, CL_LocalDemoTic);
 		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
 		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
+		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
+		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
 		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
 		SERVER_MSG_FUNC(svc_maplist, CL_Maplist);
 		SERVER_MSG_FUNC(svc_maplist_update, CL_MaplistUpdate);
 		SERVER_MSG_FUNC(svc_maplist_index, CL_MaplistIndex);
-		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
-		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
+		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
+		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
+		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
+		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
+		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
+		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
+		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
 	default:
 		return NULL;
 	}

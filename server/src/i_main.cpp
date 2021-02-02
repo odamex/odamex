@@ -46,6 +46,7 @@
 #include "z_zone.h"
 #include "errors.h"
 #include "i_net.h"
+#include "m_fileio.h"
 
 using namespace std;
 
@@ -125,7 +126,18 @@ int __cdecl main(int argc, char *argv[])
         #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
+
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
 
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
@@ -172,23 +184,6 @@ int __cdecl main(int argc, char *argv[])
 }
 #else
 
-// cleanup handling -- killough:
-static void handler (int s)
-{
-    char buf[64];
-
-    signal(s,SIG_IGN);  // Ignore future instances of this signal.
-
-    strcpy(buf,
-		   s==SIGSEGV ? "Segmentation Violation" :
-		   s==SIGINT  ? "Interrupted by User" :
-		   s==SIGILL  ? "Illegal Instruction" :
-		   s==SIGFPE  ? "Floating Point Exception" :
-		   s==SIGTERM ? "Killed" : "Terminated by signal %s");
-
-    I_FatalError (buf, s);
-}
-
 //
 // daemon_init
 //
@@ -222,7 +217,11 @@ void daemon_init(void)
 int main (int argc, char **argv)
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#if defined(__has_feature)
+#if !__has_feature(address_sanitizer)
 	I_SetCrashCallbacks();
+#endif
+#endif
 
     try
     {
@@ -234,10 +233,22 @@ int main (int argc, char **argv)
 		if(r_euid < 0)
 			perror(NULL);
 
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
+
+		const char* CON_FILE = Args.CheckValue("-confile");
+		if (CON_FILE)
+			CON.open(CON_FILE, std::ios::in);
 
 		/*
 		  killough 1/98:
@@ -262,12 +273,10 @@ int main (int argc, char **argv)
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		signal(SIGSEGV, handler);
-		signal(SIGTERM, handler);
-		signal(SIGILL,  handler);
-		signal(SIGFPE,  handler);
-		signal(SIGINT,  handler);	// killough 3/6/98: allow CTRL-BRK during init
-		signal(SIGABRT, handler);
+		// [AM] There used to be a signal handler here that attempted to
+		//      shut the server off gracefully.  I'm not sure masking the
+		//      signal is a good idea, and it stomped over the crashlog handler
+		//      I set earlier.
 
 		D_DoomMain();
     }

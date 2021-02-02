@@ -77,10 +77,13 @@ struct TeamInfo
 	int FlagSprite;
 	int FlagDownSprite;
 	int FlagCarrySprite;
+	int FlagWaypointSprite;
 
 	int Points;
 	int RoundWins;
 	flagdata FlagData;
+
+	const std::string ColorizedTeamName();
 };
 
 /**

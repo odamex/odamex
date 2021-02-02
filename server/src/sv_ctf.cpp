@@ -35,7 +35,7 @@
 #include "doomstat.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
-std::string V_GetTeamColorPlayer(UserInfo userinfo);
+std::string V_GetTeamColor(UserInfo userinfo);
 
 EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR (sv_scorelimit)
@@ -157,17 +157,17 @@ ItemEquipVal SV_FlagGrab (player_t &player, team_t f, bool firstgrab)
 	if (player.userinfo.team != f){
 		if (firstgrab) {
 			teamInfo->FlagData.firstgrab = true;
-			SV_BroadcastPrintf(PRINT_HIGH, "%s has taken the %s flag!\n", player.userinfo.netname.c_str(), V_GetTeamColor(teamInfo).c_str());
+			SV_BroadcastPrintf("%s has taken the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
 			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, 0, 0, 0);
 		} else {
 			teamInfo->FlagData.firstgrab = false;
-			SV_BroadcastPrintf ("%s picked up the %s flag!\n", player.userinfo.netname.c_str(), V_GetTeamColor(teamInfo).c_str());
+			SV_BroadcastPrintf ("%s picked up the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 			SV_CTFEvent (f, SCORE_GRAB, player);
 			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, 0, 0, 0);
 		}
 	} else {
-		SV_BroadcastPrintf ("%s is recovering the %s flag!\n", player.userinfo.netname.c_str(), V_GetTeamColor(teamInfo).c_str());
+		SV_BroadcastPrintf ("%s is recovering the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
 
@@ -223,7 +223,11 @@ void SV_FlagScore (player_t &player, team_t f)
 	TeamInfo* teamInfo = GetTeamInfo(f);
 	int time_held = I_MSTime() - teamInfo->FlagData.pickup_time;
 
-	SV_BroadcastPrintf(PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", V_GetTeamColorPlayer(player.userinfo).c_str(), V_GetTeamColor(GetTeamInfo(f)).c_str(), CTF_TimeMSG(time_held));
+	SV_BroadcastPrintf("%s has captured the %s flag (held for %s)\n",
+						player.userinfo.netname.c_str(),
+						teamInfo->ColorizedTeamName().c_str(), 
+						CTF_TimeMSG(time_held));
+
 	if (teamInfo->FlagData.firstgrab)
 		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, 0, 0, 0);
 	else
@@ -364,7 +368,7 @@ void CTF_RunTics (void)
 
 		SV_CTFEvent (teamInfo->Team, SCORE_RETURN, idplayer(0));
 
-		SV_BroadcastPrintf ("%s flag returned.\n", V_GetTeamColor(teamInfo).c_str());
+		SV_BroadcastPrintf ("%s flag returned.\n", teamInfo->ColorizedTeamName().c_str());
 
 		CTF_SpawnFlag(teamInfo->Team);
 	}
@@ -470,6 +474,31 @@ bool CTF_ShouldSpawnHomeFlag(mobjtype_t type)
 	}
 
 	return false;
+}
+
+void CTF_ReplaceFlagWithWaypoint(AActor* mo)
+{
+	AActor* waypoint = NULL;
+
+	switch (::levelstate.getDefendingTeam())
+	{
+	case TEAM_BLUE:
+		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPBFLAG);
+		break;
+	case TEAM_RED:
+		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPRFLAG);
+		break;
+	case TEAM_GREEN:
+		waypoint = new AActor(mo->x, mo->y, mo->z, MT_WPGFLAG);
+		break;
+	default:
+		return;
+	}
+
+	SV_SpawnMobj(waypoint);
+
+	mo->netid;
+	mo->Destroy();
 }
 
 FArchive &operator<< (FArchive &arc, flagdata &flag)

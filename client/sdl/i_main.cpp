@@ -38,6 +38,9 @@
 // for getuid and geteuid
 #include <unistd.h>
 #include <sys/types.h>
+#ifdef __SWITCH__
+#include "nx_system.h"
+#endif
 #endif
 
 #include <new>
@@ -94,27 +97,66 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-#ifdef GCONSOLE
+#ifdef __SWITCH__
+void STACK_ARGS nx_early_init (void)
+{
+	socketInitializeDefault();
+#ifdef ODAMEX_DEBUG
+	nxlinkStdio();
+#endif
+}
+void STACK_ARGS nx_early_deinit (void)
+{
+	socketExit();
+}
+#endif
+
+
+#if defined GCONSOLE && !defined __SWITCH__ 
 int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#if defined(__has_feature)
+#if !__has_feature(address_sanitizer)
 	I_SetCrashCallbacks();
+#endif
+#endif
 
 	try
 	{
-#if defined(UNIX) && !defined(GEKKO)
+
+#if defined(__SWITCH__)
+		nx_early_init();
+		atterm(nx_early_deinit);
+#endif
+
+#if defined(UNIX) && !defined(GCONSOLE)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
+
+		const char* CON_FILE = ::Args.CheckValue("-confile");
+		if (CON_FILE)
+		{
+			CON.open(CON_FILE, std::ios::in);
+		}
 
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])

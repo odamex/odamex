@@ -32,6 +32,7 @@
 #include "md5.h"
 #include "p_ctf.h"
 #include "version.h"
+#include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -187,7 +188,7 @@ next:
 		MSG_WriteShort(&ml_message, timeleft);
 	
 	// Teams
-	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if(G_IsTeamGame())
 	{
 		// Team data
 		int teams = sv_teamsinplay.asInt();
@@ -207,7 +208,8 @@ next:
 
 	for(size_t i = 0; i < patchfiles.size(); ++i)
 	{
-		MSG_WriteString(&ml_message, D_CleanseFileName(patchfiles[i]).c_str());
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(::patchfiles[i].getBasename()).c_str());
 	}
 
 	// Wad files
@@ -215,8 +217,9 @@ next:
 
 	for(size_t i = 0; i < wadfiles.size(); ++i)
 	{
-		MSG_WriteString(&ml_message, D_CleanseFileName(wadfiles[i], "wad").c_str());
-		MSG_WriteHexString(&ml_message, wadhashes[i].c_str());
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(::wadfiles[i].getBasename(), "wad").c_str());
+		MSG_WriteHexString(&ml_message, ::wadfiles[i].getHash().c_str());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());
@@ -229,7 +232,7 @@ next:
 		for (int i = 3; i >= 0; i--)
 			MSG_WriteByte(&ml_message, it->userinfo.color[i]);
 
-		if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		if(G_IsTeamGame())
 			MSG_WriteByte(&ml_message, it->userinfo.team);
 
 		MSG_WriteShort(&ml_message, it->ping);
