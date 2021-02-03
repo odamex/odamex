@@ -152,8 +152,14 @@ BOOL PIT_StompThing (AActor *thing)
 	}
 
 	// monsters don't stomp things except on boss level
-	if (StompAlwaysFrags) {
-		P_DamageMobj (thing, tmthing, tmthing, 10000, MOD_TELEFRAG);
+	if (StompAlwaysFrags)
+	{
+		// [AM] Surprise, avatars telefrag players who try to telefrag it!
+		//      Not your lucky day, I suppose.
+		if (thing->type == MT_AVATAR && tmthing->player)
+			P_DamageMobj(tmthing, thing, thing, 10000, MOD_TELEFRAG);
+		else
+			P_DamageMobj(thing, tmthing, tmthing, 10000, MOD_TELEFRAG);
 		return true;
 	}
 	return false;
