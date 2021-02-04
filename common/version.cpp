@@ -22,7 +22,10 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
+
+#ifndef ODAMEX_NO_GITVER
 #include "git_describe.h"
+#endif
 
 #include <map>
 #include <string>
@@ -52,6 +55,18 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 	ss << id << " " << l << " " << t << " " << d << " " << p.substr(e == std::string::npos ? 0 : e + 1);
 
 	get_source_files()[file] = ss.str();
+}
+
+/**
+ * @brief Return true if ODAMEX_NO_GIT_VERSION is set.
+ */
+static bool NoGitVersion()
+{
+#ifdef ODAMEX_NO_GITVER
+	return true;
+#else
+	return false;
+#endif
 }
 
 /**
@@ -117,7 +132,11 @@ const char* GitNiceVersion()
 	static std::string version;
 	if (version.empty())
 	{
-		if (!strcmp(GitBranch(), "master"))
+		if (NoGitVersion())
+		{
+			version = DOTVERSIONSTR;
+		}
+		else if (!strcmp(GitBranch(), "master"))
 		{
 			StrFormat(version, "%s (g%s-%s)", DOTVERSIONSTR, GitShortHash(),
 			          GitRevCount());
