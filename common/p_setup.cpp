@@ -50,6 +50,7 @@
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
+void P_SpawnAvatars();
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 void P_TranslateTeleportThings (void);
@@ -599,6 +600,8 @@ void P_LoadThings (int lump)
 
 		P_SpawnMapThing (&mt2, 0);
 	}
+
+	P_SpawnAvatars();
 
 	Z_Free (data);
 }

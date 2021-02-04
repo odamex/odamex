@@ -38,6 +38,8 @@
 #include "p_mobj.h"
 #include "p_ctf.h"
 #include "gi.h"
+#include "g_gametype.h"
+
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -2659,6 +2661,31 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
 }
+
+/**
+ * @brief Spawn all avatars.  Must have spawned other items first.
+ * 
+ * @detail An avatar is an mobj that attempts to take the place of a voodoo
+ *         doll in multiplayer.  Instead of pretending to be any player in
+ *         particular, it is a mere mobj, but with special handling in order
+ *         to make any effects that would normally target a player target
+ *         all ingame players instead.
+ */
+void P_SpawnAvatars()
+{
+	if (clientside || !G_IsCoopGame())
+	{
+		// Voodoo dolls are handled in local games.
+		return;
+	}
+
+	for (std::vector<mapthing2_t>::iterator it = ::voodoostarts.begin();
+	     it != ::voodoostarts.end(); ++it)
+	{
+		new AActor(it->x << FRACBITS, it->y << FRACBITS, it->z << FRACBITS, MT_AVATAR);
+	}
+}
+
 
 void SpawnFlag(mapthing2_t* mthing, team_t flag)
 {
