@@ -43,7 +43,6 @@ EXTERN_CVAR (g_ctf_notouchreturn)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)
-EXTERN_CVAR (g_sides)
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMTEAMS][NUMFLAGSTATES] =

@@ -30,7 +30,6 @@
 
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_lives_jointimer)
-EXTERN_CVAR(g_sides)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_teamsinplay)
@@ -65,7 +64,7 @@ int LevelState::getCountdown() const
  */
 team_t LevelState::getDefendingTeam() const
 {
-	if (!g_sides || !G_IsTeamGame())
+	if (!G_IsSidesGame())
 	{
 		return TEAM_NONE;
 	}

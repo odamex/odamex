@@ -72,7 +72,6 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
-EXTERN_CVAR(g_sides)
 
 extern int mapchange;
 
@@ -815,7 +814,7 @@ void G_DoLoadLevel (int position)
 
 	// [AM] In sides-based games, destroy objectives that aren't relevant.
 	//      Must happen after saving state.
-	if (g_sides && sv_gametype == GM_CTF)
+	if (G_IsSidesGame())
 	{
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;

@@ -59,6 +59,7 @@ bool G_IsDuelGame();
 bool G_IsTeamGame();
 bool G_IsRoundsGame();
 bool G_IsLivesGame();
+bool G_IsSidesGame();
 bool G_UsesWinlimit();
 bool G_UsesRoundlimit();
 bool G_UsesScorelimit();
