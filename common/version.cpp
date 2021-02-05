@@ -129,6 +129,12 @@ const char* GitShortHash()
 */
 const char* GitNiceVersion()
 {
+#ifdef NDEBUG
+	const char* debug = "";
+#else
+	const char* debug = ", Debug Build";
+#endif
+
 	static std::string version;
 	if (version.empty())
 	{
@@ -138,13 +144,13 @@ const char* GitNiceVersion()
 		}
 		else if (!strcmp(GitBranch(), "master"))
 		{
-			StrFormat(version, "%s (g%s-%s)", DOTVERSIONSTR, GitShortHash(),
-			          GitRevCount());
+			StrFormat(version, "%s (g%s-%s%s)", DOTVERSIONSTR, GitShortHash(),
+			          GitRevCount(), debug);
 		}
 		else
 		{
-			StrFormat(version, "%s (%s, g%s-%s)", DOTVERSIONSTR, GitBranch(),
-			          GitShortHash(), GitRevCount());
+			StrFormat(version, "%s (%s, g%s-%s%s)", DOTVERSIONSTR, GitBranch(),
+			          GitShortHash(), GitRevCount(), debug);
 		}
 	}
 	return version.c_str();
