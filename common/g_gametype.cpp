@@ -308,6 +308,14 @@ bool G_IsLivesGame()
 }
 
 /**
+ * @brief Check if the game uses sides.
+ */
+bool G_IsSidesGame()
+{
+	return ::g_sides && G_IsTeamGame();
+}
+
+/**
  * @brief Check if the gametype uses winlimit.
  */
 bool G_UsesWinlimit()
@@ -518,7 +526,7 @@ void G_TimeCheckEndGame()
 	}
 	else if (G_IsTeamGame())
 	{
-		if (g_sides)
+		if (G_IsSidesGame())
 		{
 			// Defense always wins in the event of a timeout.
 			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
@@ -691,7 +699,7 @@ void G_LivesCheckEndGame()
 		//      side-mode needs a special-case because otherwise in games
 		//      with scorelimit > 1 the offense can just score once and
 		//      turtle.
-		if (aliveteams <= 1 && sv_gametype == GM_CTF && g_sides == false)
+		if (aliveteams <= 1 && sv_gametype == GM_CTF && !G_IsSidesGame())
 		{
 			const char* teams = aliveteams == 1 ? "one team" : "no teams";
 

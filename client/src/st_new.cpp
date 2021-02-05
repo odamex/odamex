@@ -786,9 +786,27 @@ void LevelStateHUD()
 		break;
 	case LevelState::INGAME:
 		if (G_CanShowFightMessage())
-			str = "FIGHT!\n";
+		{
+			if (G_IsSidesGame())
+			{
+				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+				{
+					str = "DEFEND!\n";
+				}
+				else
+				{
+					str = "CAPTURE!\n";
+				}
+			}
+			else
+			{
+				str = "FIGHT!\n";
+			}
+		}
 		else
+		{
 			str = "";
+		}
 		break;
 	case LevelState::ENDROUND_COUNTDOWN:
 		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
