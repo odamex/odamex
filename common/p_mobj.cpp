@@ -70,7 +70,6 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_monstershealth)
 EXTERN_CVAR(co_fixweaponimpacts)
-EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
 EXTERN_CVAR(sv_teamsinplay)
@@ -597,7 +596,7 @@ void P_MoveActor(AActor *mo)
 	// [RH] Be more restrictive to avoid pushing monsters/players down steps
 	if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) && (mo->z > mo->dropoffz) &&
 		 (mo->health <= 0 || (mo->flags & MF_COUNTKILL && mo->z - mo->dropoffz > 24*FRACUNIT)) &&
-		  co_allowdropoff)
+	    P_AllowDropOff())
 	{
 		P_ApplyTorque(mo);   // Apply torque
 	}

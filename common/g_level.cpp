@@ -57,6 +57,8 @@
 
 level_locals_t level;			// info about current level
 
+EXTERN_CVAR(co_allowdropoff)
+
 //
 // LevelInfos methods
 //
@@ -327,6 +329,7 @@ enum EMIType
 	MITYPE_STRING,
 	MITYPE_CSTRING,
 	MITYPE_CLUSTERSTRING,
+	MITYPE_SETCOMPATFLAG,
 };
 
 struct MapInfoHandler
@@ -439,6 +442,11 @@ static const char *MapInfoMapLevel[] =
 	"par",
 	"sucktime",
 	"translator",
+	"compat_shorttex",
+	"compat_limitpain",
+    "compat_dropoff",
+	"compat_trace",
+	"compat_boomscroll",
 	NULL
 };
 
@@ -540,6 +548,16 @@ MapInfoHandler MapHandlers[] =
 	{ MITYPE_EATNEXT, 0, 0 },
 	// translator <value>
 	{ MITYPE_EATNEXT, 0, 0 },
+	// compat_shorttex <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_limitpain <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_dropoff <value>
+    {MITYPE_SETCOMPATFLAG, LEVEL_COMPAT_DROPOFF, 0},
+    // compat_trace <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_boomscroll <value>
+    {MITYPE_EATNEXT, 0, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -943,6 +961,31 @@ static void ParseMapInfoLower(
 			break;
 		}
 
+		case MITYPE_SETCOMPATFLAG: 
+		{
+			int set;
+			if (newMapinfoStack > 0)
+			{
+				SC_MustGetStringName("=");
+				SC_MustGetNumber();
+				set = sc_Number;
+			}
+			else
+			{
+				SC_MustGetNumber();
+				set = sc_Number;
+			}
+
+			if (set)
+			{
+				flags |= handler->data1;
+			}
+			else
+			{
+				flags &= ~handler->data1;
+			}
+		}
+		break;
 		case MITYPE_CSTRING:
 			if (newMapinfoStack > 0)
 			{
@@ -2106,6 +2149,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
+	flags += (info.flags & LEVEL_COMPAT_DROPOFF ? "COMPAT_DROPOFF" : "");
 
 	if (flags.length() > 0)
 	{
@@ -3294,6 +3338,13 @@ ClusterInfos& getClusterInfos()
 {
 	static ClusterInfos ci(IWADClusterInfos);
 	return ci;
+}
+
+
+// P_AllowDropOff()
+bool P_AllowDropOff()
+{
+	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
 }
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

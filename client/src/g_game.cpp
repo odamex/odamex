@@ -98,7 +98,6 @@ EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
-EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
