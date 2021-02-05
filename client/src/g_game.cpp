@@ -537,8 +537,8 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if (!Actions[ACTION_MLOOK] && !cl_mouselook && !sv_freelook && 
-		!consoleplayer().spectator && novert == 0)		// [Toke - Mouse] acts like novert.exe
+	if (!consoleplayer().spectator 
+		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
 		forward += (int)(float(mousey) * m_forward);
 	}
