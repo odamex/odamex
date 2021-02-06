@@ -101,7 +101,7 @@ void R_CacheSprite (spritedef_t *sprite)
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
-		for (int r = 0; r < 8; r++)
+		for (int r = 0; r < 16; r++)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
@@ -127,7 +127,8 @@ void R_CacheSprite (spritedef_t *sprite)
 //
 static void R_InstallSpriteLump (int lump, unsigned frame, unsigned rot, BOOL flipped)
 {
-	unsigned rotation = rot;// (rot >= 0 && rot <= 9 ? rot : (rot >= 17 ? rot - 7 : 17));
+	rot += '0';
+	unsigned rotation = (rot >= '0' && rot <= '9' ? rot - '0' : (rot >= 'A' ? rot - 'A' + 10 : 17)); //rot;// (rot >= 0 && rot <= 9 ? rot : (rot >= 17 ? rot - 7 : 17));
 	
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
 	{
@@ -727,7 +728,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	}
 
 #ifdef RANGECHECK
-	if ((unsigned)thing->sprite >= (unsigned)numsprites)
+	if (static_cast<unsigned>(thing->sprite) >= static_cast<unsigned>(numsprites))
 	{
 		DPrintf ("R_ProjectSprite: invalid sprite number %i\n", thing->sprite);
 		return;
@@ -754,7 +755,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		// choose a different rotation based on player view
 		if (sprframe->lump[0] == sprframe->lump[1])
 		{
-			rot = (ang - thing->angle + (angle_t)(ANG45 / 2) * 9) >> 29;
+			rot = (ang - thing->angle + (angle_t)(ANG45 / 2) * 9) >> 28;
 		}
 		else
 		{
@@ -762,7 +763,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		}
 		
 		lump = sprframe->lump[rot];
-		flip = static_cast<BOOL>(sprframe->flip[rot]);
+		flip = static_cast<BOOL>(sprframe->flip[rot] & (1 << rot));
 	}
 	else
 	{
