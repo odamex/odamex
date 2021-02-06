@@ -208,13 +208,15 @@ static void R_InstallSprite (const char *name, int num)
 				if (sprtemp[frame].lump[rotation + 1] == -1)
 				{
 					sprtemp[frame].lump[rotation + 1] = sprtemp[frame].lump[rotation];
+					sprtemp[frame].flip[rotation + 1] = sprtemp[frame].flip[rotation];
 					sprtemp[frame].width[rotation + 1] = SPRITE_NEEDS_INFO;
 				}
 				
 				if (sprtemp[frame].lump[rotation] == -1)
 				{
 					sprtemp[frame].lump[rotation] = sprtemp[frame].lump[rotation + 1];
-					sprtemp[frame].width[rotation + 1] = SPRITE_NEEDS_INFO;
+					sprtemp[frame].flip[rotation] = sprtemp[frame].flip[rotation + 1];
+					sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
 				}
 			}
 
@@ -763,13 +765,13 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		}
 		
 		lump = sprframe->lump[rot];
-		flip = static_cast<BOOL>(sprframe->flip[rot] & (1 << rot));
+		flip = static_cast<bool>(sprframe->flip[rot] & (1 << rot));
 	}
 	else
 	{
 		// use single rotation for all views
 		lump = sprframe->lump[rot = 0];
-		flip = static_cast<BOOL>(sprframe->flip[0]);
+		flip = static_cast<bool>(sprframe->flip[0]);
 	}
 
 	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
