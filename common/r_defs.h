@@ -610,10 +610,10 @@ struct spriteframe_s
     //  we might as well insert the same name eight times.
 	bool	rotate;
 
-    // Lump to use for view angles 0-7.
+    // Lump to use for view angles 0-15.
     short	lump[16];
 
-    // Flip bit (1 = flip) to use for view angles 0-7.
+    // Flip bit (1 = flip) to use for view angles 0-15.
     byte	flip[16];
 
 	// [RH] Move some data out of spritewidth, spriteoffset,
