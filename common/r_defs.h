@@ -611,16 +611,16 @@ struct spriteframe_s
 	bool	rotate;
 
     // Lump to use for view angles 0-7.
-    short	lump[8];
+    short	lump[16];
 
     // Flip bit (1 = flip) to use for view angles 0-7.
-    byte	flip[8];
+    byte	flip[16];
 
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
-	fixed_t		width[8];
-	fixed_t		topoffset[8];
-	fixed_t		offset[8];
+	fixed_t		width[16];
+	fixed_t		topoffset[16];
+	fixed_t		offset[16];
 };
 typedef struct spriteframe_s spriteframe_t;
 
