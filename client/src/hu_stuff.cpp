@@ -479,105 +479,6 @@ static void HU_DrawChatPrompt()
 							scaledxfac, scaledyfac);
 }
 
-#include "gui_element.h"
-
-// Set of random names to choose from.
-static const char* names[] = {
-    "[UD]AceOfSpades", "[UD]AlexMax", "[UD]deathz0r", "[UD]HeX",
-    "[UD]KBlair",      "[UD]Ralhpis", "[UD]RottKing", "[UD]Xen",
-};
-
-OGUIContext ctx;
-
-typedef std::vector<player_t*> PlayerView;
-
-static DGUIElement* ScoreboardHeader()
-{
-	// Left header.
-	DGUIContainer* headerLeft = new DGUIContainer(::ctx);
-	headerLeft->contain(LAY_FLEX | LAY_COLUMN);
-	headerLeft->behave(LAY_LEFT);
-
-	headerLeft->push_back(new DGUIText(::ctx, "CLIENTS: " TEXTCOLOR_GREEN "N/A"));
-	headerLeft->push_back(new DGUIText(::ctx, "PLAYERS: " TEXTCOLOR_GREEN "N/A"));
-
-	// Middle header.
-	DGUIContainer* headerMid = new DGUIContainer(::ctx);
-	headerMid->contain(LAY_FLEX | LAY_COLUMN);
-	headerMid->behave(LAY_MIDDLE);
-
-	headerMid->push_back(new DGUIText(::ctx, TEXTCOLOR_GOLD "CAPTURE THE FLAG"));
-	headerMid->push_back(new DGUIText(::ctx, "[NJ] FUNCRUSHER || CAPTURE THE FLAG"));
-
-	// Right header.
-	DGUIContainer* headerRight = new DGUIContainer(::ctx);
-	headerRight->contain(LAY_FLEX | LAY_COLUMN);
-	headerRight->behave(LAY_RIGHT);
-
-	headerRight->push_back(new DGUIText(::ctx, "TIME LEFT: " TEXTCOLOR_GREEN "N/A"));
-	headerRight->push_back(new DGUIText(::ctx, "FRAGLIMIT: " TEXTCOLOR_GREEN "N/A"));
-	headerRight->push_back(new DGUIText(::ctx, "SCORELIMIT: " TEXTCOLOR_GREEN "N/A"));
-
-	// Header as a whole.
-	DGUIContainer* root = new DGUIContainer(::ctx);
-	root->contain(LAY_FLEX | LAY_ROW);
-
-	root->push_back(headerLeft);
-	root->push_back(headerMid);
-	root->push_back(headerRight);
-
-	return root;
-}
-
-static DGUIElement* ScoreboardPlayers(/*const PlayerView& view*/)
-{
-	DGUIContainer* root = new DGUIContainer(::ctx);
-	root->contain(LAY_FLEX | LAY_COLUMN);
-
-	for (size_t i = 0; i < ARRAY_LENGTH(::names); i++)
-	{
-		root->push_back(new DGUIText(::ctx, ::names[i]));
-	}
-	return root;
-}
-
-static DGUIElement* ScoreboardSpecs()
-{
-	DGUIContainer* root = new DGUIContainer(::ctx);
-	root->contain(LAY_FLEX | LAY_WRAP);
-	root->behave(LAY_FILL);
-
-	for (size_t i = 0; i < ARRAY_LENGTH(::names); i++)
-	{
-		root->push_back(new DGUIText(::ctx, ::names[i]));
-	}
-
-	DGUIFlat* dim = new DGUIFlat(::ctx, "SLIME13");
-	dim->behave(LAY_FILL);
-	dim->push_back(root);
-	return dim;
-}
-
-static void TestLayout()
-{
-	// Scoreboard as a whole.
-	DGUIContainer* scoreboard = new DGUIContainer(::ctx);
-	scoreboard->contain(LAY_FLEX | LAY_COLUMN);
-	scoreboard->size(320 - 16, 0);
-
-	scoreboard->push_back(ScoreboardHeader());
-	scoreboard->push_back(ScoreboardPlayers());
-	scoreboard->push_back(ScoreboardSpecs());
-
-	DGUIFlat scorebg(::ctx, "FLOOR4_8");
-	scorebg.push_back(scoreboard);
-
-	scorebg.layout();
-	lay_run_context(::ctx.layoutAddr());
-	scorebg.render();
-	lay_reset_context(::ctx.layoutAddr());
-}
-
 //
 // HU_Drawer
 //
@@ -609,8 +510,6 @@ void HU_Drawer()
 
 		hud::LevelStateHUD();
 	}
-
-	TestLayout();
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
