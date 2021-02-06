@@ -127,8 +127,16 @@ void R_CacheSprite (spritedef_t *sprite)
 //
 static void R_InstallSpriteLump (int lump, unsigned frame, unsigned rot, BOOL flipped)
 {
-	rot += '0';
-	unsigned rotation = (rot >= '0' && rot <= '9' ? rot - '0' : (rot >= 'A' ? rot - 'A' + 10 : 17)); //rot;// (rot >= 0 && rot <= 9 ? rot : (rot >= 17 ? rot - 7 : 17));
+	unsigned rotation;
+
+	if (rot >= 0 && rot <= 9)
+	{
+		rotation = rot;
+	}
+	else
+	{
+		rotation = (rot >= 17) ? rot - 7 : 17;
+	}
 	
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
 	{
@@ -765,7 +773,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		}
 		
 		lump = sprframe->lump[rot];
-		flip = static_cast<bool>(sprframe->flip[rot] & (1 << rot));
+		flip = static_cast<bool>(sprframe->flip[rot]);
 	}
 	else
 	{
