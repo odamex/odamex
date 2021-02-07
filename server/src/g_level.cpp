@@ -610,7 +610,7 @@ void G_DoResetLevel(bool full_reset)
 
 		if (full_reset)
 		{
-			P_ClearPlayerScores(*it, true, true);
+			P_ClearPlayerScores(*it, true);
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
@@ -724,7 +724,7 @@ void G_DoLoadLevel (int position)
 		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, true, true);
+		P_ClearPlayerScores(*it, true);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
