@@ -55,7 +55,6 @@ bool G_IsLevelState(LevelState::States state);
 bool G_IsDefendingTeam(team_t team);
 bool G_IsCoopGame();
 bool G_IsFFAGame();
-bool G_IsDuelGame();
 bool G_IsTeamGame();
 bool G_IsRoundsGame();
 bool G_IsLivesGame();

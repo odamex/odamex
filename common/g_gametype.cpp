@@ -283,14 +283,6 @@ bool G_IsFFAGame()
 }
 
 /**
- * @brief Check if the gametype typically has a single winner.
- */
-bool G_IsDuelGame()
-{
-	return sv_gametype == GM_DM && sv_maxplayers == 2;
-}
-
-/**
  * @brief Check if the gametype has teams and players can win as a team.
  */
 bool G_IsTeamGame()
