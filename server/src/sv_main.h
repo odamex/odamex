@@ -115,7 +115,7 @@ void SV_SetReady(player_t &player, bool setting, bool silent = false);
 
 void SV_AddPlayerToQueue(player_t* player);
 void SV_RemovePlayerFromQueue(player_t* player);
-void SV_UpdatePlayerQueueLevelChange();
+void SV_UpdatePlayerQueueLevelChange(const WinInfo& win);
 void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer);
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect);
 void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);

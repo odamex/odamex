@@ -608,6 +608,8 @@ static const char* WinTypeToString(WinInfo::WinType type)
 	{
 	case WinInfo::WIN_NOBODY:
 		return "WIN_NOBODY";
+	case WinInfo::WIN_EVERYBODY:
+		return "WIN_EVERYBODY";
 	case WinInfo::WIN_DRAW:
 		return "WIN_DRAW";
 	case WinInfo::WIN_PLAYER:

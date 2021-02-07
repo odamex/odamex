@@ -5405,43 +5405,69 @@ void SV_RemovePlayerFromQueue(player_t* player)
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, player);
 }
 
-void SV_UpdatePlayerQueueLevelChange()
+void SV_UpdatePlayerQueueLevelChange(const WinInfo& win)
 {
-	if (g_speclosers)
+	if (::g_speclosers)
 	{
 		int queuedPlayerCount = 0;
 		std::vector<player_t*> loserPlayers;
 
-		WinInfo win = ::levelstate.getWinInfo();
-
 		PlayerResults pr = PlayerQuery().execute();
 		for (PlayersView::iterator it = pr.players.begin(); it != pr.players.end(); ++it)
 		{
-			if (win.type == WinInfo::WIN_PLAYER)
+			switch (win.type)
 			{
+			case WinInfo::WIN_PLAYER:
 				// Boot everybody but the winner.
 				if ((*it)->id != win.id)
 					loserPlayers.push_back(*it);
-			}
-			else if (win.type == WinInfo::WIN_TEAM)
-			{
+				break;
+			case WinInfo::WIN_TEAM:
 				// Boot everybody except the winning team.
 				if ((*it)->userinfo.team != win.id)
 					loserPlayers.push_back(*it);
-			}
-			else
-			{
+				break;
+			case WinInfo::WIN_DRAW:
+			case WinInfo::WIN_NOBODY:
 				// Draws are just another way of saying there were no winners.
 				loserPlayers.push_back(*it);
+				break;
+			default:
+				// Everyone won, or something strange happened.
+				break;
 			}
+
+			// NOBODY/UNKNOWN should default to never touching the queue.
 		}
 
+		std::vector<std::string> names;
 		for (PlayersView::iterator it = loserPlayers.begin(); it != loserPlayers.end();
 		     ++it)
 		{
 			SV_SetPlayerSpec(**it, true, true);
-			(*it)->joindelay = 0; // Allow this player to queue up immediately without
-			                      // waiting for ReJoinDelay
+			names.push_back((*it)->userinfo.netname);
+
+			// Allow this player to queue up immediately without waiting for
+			// ReJoinDelay
+			(*it)->joindelay = 0;
+		}
+
+		if (names.size() > 2)
+		{
+			names.back() = std::string("and ") + names.back();
+			SV_BroadcastPrintf("%s lost the last game and were forced to spectate.\n",
+			                   JoinStrings(names, ", ").c_str());
+		}
+		else if (names.size() == 2)
+		{
+			SV_BroadcastPrintf(
+			    "%s and %s lost the last game and were forced to spectate.\n",
+			    names.at(0).c_str(), names.at(1).c_str());
+		}
+		else if (names.size() == 1)
+		{
+			SV_BroadcastPrintf("%s lost the last game and was forced to spectate.\n",
+			                   names.at(0).c_str());
 		}
 	}
 
@@ -5476,7 +5502,7 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		if (joinTest() == JOIN_OK)
 		{
 			p->QueuePosition = 0;
-			SV_JoinPlayer(*p, true);
+			SV_JoinPlayer(*p, false);
 			queueUpdates.push_back(p);
 			playerCount++;
 		}
