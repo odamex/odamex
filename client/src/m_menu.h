@@ -97,6 +97,7 @@ typedef enum {
 	svdiscrete,		// Ch0wW : serverside discrete
 	control,
 	mapcontrol,		// Ch0wW : Automap bindings
+	netdemocontrol,	// Ch0wW : Netdemo bindings
 	screenres,
 	bitflag,
 	listelement,

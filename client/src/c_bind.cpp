@@ -166,8 +166,7 @@ OBinding DefaultAutomapBindings[] =
 	{ NULL, NULL }
 };
 
-OKeyBindings Bindings, DoubleBindings, AutomapBindings;
-OKeyBindings NetDemoBindings;
+OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
 
 struct KeyState
 {
@@ -555,6 +554,7 @@ void C_BindingsInit(void)
 	Bindings.SetBindingType("bind");
 	DoubleBindings.SetBindingType("doublebind");
 	AutomapBindings.SetBindingType("ambind");
+	NetDemoBindings.SetBindingType("netdemobind");
 }
 
 // Bind default bindings
@@ -562,6 +562,7 @@ void C_BindDefaults(void)
 {
 	Bindings.SetBinds(DefaultBindings);
 	AutomapBindings.SetBinds(DefaultAutomapBindings);
+	NetDemoBindings.SetBinds(DefaultNetDemoBindings);
 }
 
 
@@ -642,6 +643,36 @@ BEGIN_COMMAND(unambind)
 	}
 }
 END_COMMAND(unambind)
+
+// NetDemoBind command
+BEGIN_COMMAND(netdemobind)
+{
+	AutomapBindings.BindAKey(argc, argv, "Current netdemomap bindings: ");
+}
+END_COMMAND(netdemobind)
+
+BEGIN_COMMAND(unnetdemobind)
+{
+	if (argc < 2)
+	{
+		Printf(PRINT_WARNING,
+		       "Unbinds a netdemo key. \"all\" unbinds every existing netdemo key.\n");
+		Printf(PRINT_WARNING, "Usage: unnetdemobind <key>\n");
+		return;
+	}
+
+	if (argc > 1)
+	{
+
+		std::string lostr = StdStringToLower(argv[1]);
+
+		if (iequals(lostr, "all"))
+			NetDemoBindings.UnbindAll();
+		else
+			NetDemoBindings.UnbindKey(argv[1]);
+	}
+}
+END_COMMAND(unnetdemobind)
 
 // Other commands
 BEGIN_COMMAND(binddefaults)
