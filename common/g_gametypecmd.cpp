@@ -260,6 +260,49 @@ BEGIN_COMMAND(dm)
 }
 END_COMMAND(dm)
 
+static GametypeParam duelParams[] = {
+    {"sv_fraglimit", 50, "frags", "FRAGLIMIT",
+     "Set number of frags needed to win to FRAGLIMIT.  Defaults to 50."}};
+
+static void DuelHelp()
+{
+	Printf(PRINT_HIGH, "duel - Configures some settings for a basic Duel\n");
+	GametypeHelp(::duelParams);
+}
+
+BEGIN_COMMAND(duel)
+{
+	if (argc < 2)
+	{
+		DuelHelp();
+		return;
+	}
+
+	std::string buffer;
+	StringList params = GametypeArgs(::dmParams, argc, argv);
+	if (params.empty())
+	{
+		DuelHelp();
+		return;
+	}
+
+	params.push_back("g_lives 0");
+	params.push_back("g_rounds 0");
+	params.push_back("g_winnerstays 1");
+	params.push_back("sv_forcerespawn 1");
+	params.push_back("sv_forcerespawntime 10");
+	params.push_back("sv_gametype 1");
+	params.push_back("sv_nomonsters 1");
+	params.push_back("sv_skill 5");
+	params.push_back("sv_warmup 1");
+	params.push_back("sv_warmup_autostart 0");
+
+	std::string config = JoinStrings(params, "; ");
+	Printf(PRINT_HIGH, "Configuring Duel...\n%s\n", config.c_str());
+	AddCommandString(config.c_str());
+}
+END_COMMAND(duel)
+
 static GametypeParam lmsParams[] = {
     {"g_lives", 1, "lives", "LIVES",
      "Set number of player lives per round to LIVES.  Defaults to 1."},
