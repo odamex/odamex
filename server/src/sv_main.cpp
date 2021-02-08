@@ -1339,8 +1339,8 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 {
 	sector_t* sector = &sectors[sectornum];
 
-	// Only update moveable sectors to clients, OR secret sectors that've been discovered.
-	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK == 0 && sector->secretsector))
+	// Only update moveable sectors to clients
+	if (sector != NULL && sector->moveable)
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
@@ -1872,9 +1872,23 @@ void SV_ClientFullUpdate(player_t &pl)
 //===========================
 void SV_UpdateSecret(int sectornum, player_t &player)
 {
-	SV_BroadcastSector(sectornum);
-	SV_UpdateFrags(player);			// It now syncs secrets but maybe there's a more elegant solution?
-	SV_UpdateSecretCount(player);
+	// Don't announce secrets on PvP gamemodes
+	if (sv_gametype != GM_COOP)
+		return;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		client_t* cl = &(it->client);
+
+		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
+		SVC_PlayerMembers(cl->reliablebuf, player, SVC_PM_SCORE);
+
+		if (&*it == &player)
+			continue;
+
+		SVC_SecretFound(cl->reliablebuf, player.id, sectornum);
+	}
+
 }
 
 //
@@ -3268,29 +3282,6 @@ void SV_SendPingRequest(client_t* cl)
 
 	MSG_WriteMarker (&cl->reliablebuf, svc_pingrequest);
 	MSG_WriteLong (&cl->reliablebuf, I_MSTime());
-}
-
-void SV_UpdateSecretCount(player_t& player)
-{
-	// Don't announce secrets on PvP gamemodes
-	if (sv_gametype != GM_COOP)
-		return;
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		client_t *cl = &(it->client);
-		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
-	}
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-	    if (&*it == &player)
-	        continue;
-
-		client_t* cl = &(it->client);
-
-		SVC_SecretFound(cl->reliablebuf, player.id);
-	}
 }
 
 void SV_UpdateMonsterRespawnCount()

@@ -88,7 +88,6 @@ msecnode_t* sector_list = NULL;		// phares 3/16/98
 // [SL] 2012-03-07 - Sectors that can change floor/ceiling height
 std::set<short>	movable_sectors;
 
-EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomphys)				// [ML] Roll-up of various compat options
@@ -1105,7 +1104,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 		}
 
 		// killough 3/15/98: Allow certain objects to drop off
-		if (!(co_allowdropoff && dropoff) &&
+		if (!(P_AllowDropOff() && dropoff) &&
 			!(thing->flags & (MF_DROPOFF|MF_FLOAT|MF_MISSILE)) &&
 			  tmfloorz - tmdropoffz > 24*FRACUNIT &&
 			!(thing->flags2 & MF2_BLASTED))

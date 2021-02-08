@@ -3026,6 +3026,14 @@ void CL_ClearSectorSnapshots()
 void CL_SecretEvent()
 {
 	player_t& player = idplayer(MSG_ReadByte());
+	unsigned short sectornum = (unsigned short)MSG_ReadShort();
+	short special = MSG_ReadShort();
+
+	if (!sectors || sectornum >= numsectors)
+		return;
+
+	sector_t* sector = &sectors[sectornum];
+	sector->special = special;
 
 	// Don't show other secrets if requested
 	if (!hud_revealsecrets || hud_revealsecrets > 2)
