@@ -116,7 +116,7 @@ EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(g_speclosers)
+EXTERN_CVAR(g_winnerstays)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -5407,7 +5407,7 @@ void SV_RemovePlayerFromQueue(player_t* player)
 
 void SV_UpdatePlayerQueueLevelChange(const WinInfo& win)
 {
-	if (::g_speclosers)
+	if (::g_winnerstays)
 	{
 		int queuedPlayerCount = 0;
 		std::vector<player_t*> loserPlayers;

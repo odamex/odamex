@@ -221,7 +221,7 @@ CVAR(g_winlimit, "0",
      "Number of times a round must be won before a player or team wins the game",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(g_speclosers, "0", "After a game is won, force losing players or teams to spectate",
+CVAR(g_winnerstays, "0", "After a match winners stay in the game, losers get spectated.",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
