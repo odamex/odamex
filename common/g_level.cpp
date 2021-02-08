@@ -1233,9 +1233,9 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 // Parses the MAPINFO lumps of all loaded WADs and generates
 // data for wadlevelinfos and wadclusterinfos.
 //
-void G_ParseMapInfo (void)
+void G_ParseMapInfo ()
 {
-	BOOL found_zmapinfo = false;
+	bool found_zmapinfo = false;
 
 	int lump = -1;
 	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
@@ -1252,6 +1252,18 @@ void G_ParseMapInfo (void)
 
 	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	{
+		ParseMapInfoLump(lump, "MAPINFO");
+	}
+
+	// If ZMAPINFO exists, we don't parse a normal MAPINFO
+	if (found_zmapinfo == true)
+	{
+		return;
+	}
+
+	lump = -1;
+	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
 	{
 		ParseMapInfoLump(lump, "MAPINFO");
 	}
