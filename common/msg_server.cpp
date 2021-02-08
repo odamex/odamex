@@ -204,6 +204,8 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 		MSG_WriteVarint(&b, player.killcount);
 		// [AM] Is there any reason we would ever care about itemcount?
 		MSG_WriteVarint(&b, player.secretcount);
+		MSG_WriteVarint(&b, player.totalpoints);
+		MSG_WriteVarint(&b, player.totaldeaths);
 	}
 }
 

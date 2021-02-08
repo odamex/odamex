@@ -138,6 +138,10 @@ bool P_GiveFrags(player_t* player, int num)
 		return false;
 
 	player->fragcount += num;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame() && !(sv_gametype == GM_CTF))
+		player->totalpoints += num;
+
 	return true;
 }
 
@@ -158,6 +162,10 @@ bool P_GiveDeaths(player_t* player, int num)
 		return false;
 
 	player->deathcount += num;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+		player->totaldeaths += num;
+
 	return true;
 }
 
@@ -181,6 +189,30 @@ bool P_GiveLives(player_t* player, int num)
 
 	player->lives += num;
 	return true;
+}
+
+int P_GetFragCount(const player_t* player)
+{
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+		return player->totalpoints;
+
+	return player->fragcount;
+}
+
+int P_GetPointCount(const player_t* player)
+{
+	if (G_IsRoundsGame())
+		return player->totalpoints;
+
+	return player->points;
+}
+
+int P_GetDeathCount(const player_t* player)
+{
+	if (G_IsRoundsGame())
+		return player->totaldeaths;
+
+	return player->deathcount;
 }
 
 //

@@ -76,8 +76,13 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 	if(event == SCORE_NONE)
 		return;
 
-	if(validplayer(who) && G_CanScoreChange())
-		who.points += ctf_points[event];
+	if (validplayer(who) && G_CanScoreChange())
+	{
+		if (G_IsRoundsGame())
+			who.totalpoints += ctf_points[event];
+		else
+			who.points += ctf_points[event];
+	}
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -94,7 +99,11 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 		if(validplayer(who))
 		{
 			MSG_WriteByte (&cl->reliablebuf, who.id);
-			MSG_WriteLong (&cl->reliablebuf, who.points);
+
+			if (G_IsRoundsGame())
+				MSG_WriteVarint(&cl->reliablebuf, who.totalpoints);
+			else
+				MSG_WriteVarint(&cl->reliablebuf, who.points);
 		}
 		else
 		{

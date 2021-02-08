@@ -1555,6 +1555,8 @@ void CL_PlayerMembers()
 		p.deathcount = MSG_ReadVarint();
 		p.killcount = MSG_ReadVarint();
 		p.secretcount = MSG_ReadVarint();
+		p.totalpoints = MSG_ReadVarint();
+		p.totaldeaths = MSG_ReadVarint();
 	}
 }
 
