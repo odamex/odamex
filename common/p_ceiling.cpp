@@ -441,40 +441,42 @@ manual_ceiling:
 		// set texture/type change properties
 		if (change & 3)		// if a texture change is indicated
 		{
-			if (change & 4)	// if a numeric model change
+			if (change & 4) // if a numeric model change
 			{
-				sector_t* sec = NULL;
-
-				//jff 5/23/98 find model with floor at target height if target
-				//is a floor type
-				sec = (type == DCeiling::ceilRaiseToHighest ||
-					   type == DCeiling::ceilRaiseToFloor ||
-					   type == DCeiling::ceilLowerToHighest ||
-					   type == DCeiling::ceilLowerToFloor) ?
-					P_FindModelFloorSector(targheight, sec) :
-					P_FindModelCeilingSector(targheight, sec);
-				if (sec)
+				// jff 5/23/98 find model with floor at target height if target
+				// is a floor type
+				sector_t* found = NULL;
+				if (type == DCeiling::ceilRaiseToFloor ||
+				    type == DCeiling::ceilLowerToFloor)
 				{
-					ceiling->m_Texture = sec->ceilingpic;
+					found = P_FindModelFloorSector(targheight, sec);
+				}
+				else
+				{
+					found = P_FindModelCeilingSector(targheight, sec);
+				}
+
+				if (found != NULL)
+				{
+					ceiling->m_Texture = found->ceilingpic;
 					switch (change & 3)
 					{
-						case 1:		// type is zeroed
-							ceiling->m_NewSpecial = 0;
-							ceiling->m_Type = DCeiling::genCeilingChg0;
-							break;
-						case 2:		// type is copied
-							ceiling->m_NewSpecial = sec->special;
-							ceiling->m_Type = DCeiling::genCeilingChgT;
-							break;
-						case 3:		// type is left alone
-							ceiling->m_Type = DCeiling::genCeilingChg;
-							break;
+					case 1: // type is zeroed
+						ceiling->m_NewSpecial = 0;
+						ceiling->m_Type = DCeiling::genCeilingChg0;
+						break;
+					case 2: // type is copied
+						ceiling->m_NewSpecial = found->special;
+						ceiling->m_Type = DCeiling::genCeilingChgT;
+						break;
+					case 3: // type is left alone
+						ceiling->m_Type = DCeiling::genCeilingChg;
+						break;
 					}
 				}
 			}
-			else if (line)	// else if a trigger model change
+			else if (line != NULL) // else if a trigger model change
 			{
-
 				ceiling->m_Texture = line->frontsector->ceilingpic;
 				switch (change & 3)
 				{

@@ -427,11 +427,15 @@ void G_InitNew (const char *mapname)
 	demoplayback = false;
 	viewactive = true;
 
+	// Make a copy of our previous winner so we can service the queue properly
+	// after loading the level.
+	WinInfo info = ::levelstate.getWinInfo();
+
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
-	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
-		SV_UpdatePlayerQueueLevelChange();
+	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
+		SV_UpdatePlayerQueueLevelChange(info);
 
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog();
