@@ -31,6 +31,10 @@
 #include "g_game.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "i_system.h"
+#include "w_wad.h"
+#include "z_zone.h"
+//#include "../../server/src/sv_pch.h"
 
 // TODO: Add episodes
 //void M_AddEpisode(const char *map, char *def);
@@ -543,12 +547,16 @@ static int ParseMapEntry(Scanner &scanner, MapEntry *val)
 //
 // -----------------------------------------------
 
-int ParseUMapInfo(const unsigned char *buffer, size_t length, umapinfo_errorfunc err)
+int ParseUMapInfo(int lump, const char* lumpname)
 {
-	Scanner scanner((const char*)buffer, length);
+	//const unsigned char *buffer, size_t length, umapinfo_errorfunc err
+	
+	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
+	
+	Scanner scanner((const char*)buffer, W_LumpLength(lump));
 	unsigned int i;
 
-	Scanner::SetErrorCallback(err);
+	Scanner::SetErrorCallback(I_Error);
 
 
 	while (scanner.TokensLeft())

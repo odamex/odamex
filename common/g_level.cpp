@@ -47,6 +47,7 @@
 #include "r_sky.h"
 #include "s_sound.h"
 #include "sc_man.h"
+#include "umapinfo.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "w_ident.h"
@@ -1265,7 +1266,7 @@ void G_ParseMapInfo ()
 	lump = -1;
 	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
 	{
-		ParseMapInfoLump(lump, "MAPINFO");
+		ParseUMapInfo(lump, "MAPINFO");
 	}
 }
 
