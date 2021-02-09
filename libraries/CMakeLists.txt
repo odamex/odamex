@@ -185,8 +185,13 @@ if(BUILD_CLIENT)
     # Set vars so the finder can find them.
     set(PNG_PNG_INCLUDE_DIR
       "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-    set(PNG_LIBRARY
-      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
+    if(NOT MSVC)
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16${libsuffix}")
+    else()
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
+    endif()
 
     # Generate the build.
     execute_process(COMMAND "${CMAKE_COMMAND}"
@@ -200,7 +205,9 @@ if(BUILD_CLIENT)
       "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
       "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
       "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local")
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-DPNG_SHARED=OFF"
+      "-DPNG_TESTS=OFF")
 
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
