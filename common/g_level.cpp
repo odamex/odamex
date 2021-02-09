@@ -1236,17 +1236,29 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 //
 void G_ParseMapInfo ()
 {
-	bool found_zmapinfo = false;
+	bool found_mapinfo = false;
 
 	int lump = -1;
 	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
 	{
-		found_zmapinfo = true;
+		found_mapinfo = true;
 		ParseMapInfoLump(lump, "ZMAPINFO");
 	}
 
 	// If ZMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_zmapinfo == true)
+	if (found_mapinfo == true)
+	{
+		return;
+	}
+
+	lump = -1;
+	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
+	{
+		ParseUMapInfo(lump, "UMAPINFO");
+	}
+
+	// If UMAPINFO exists, we don't parse a normal MAPINFO
+	if (found_mapinfo == true)
 	{
 		return;
 	}
@@ -1256,21 +1268,9 @@ void G_ParseMapInfo ()
 	{
 		ParseMapInfoLump(lump, "MAPINFO");
 	}
-
-	// If ZMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_zmapinfo == true)
-	{
-		return;
-	}
-
-	lump = -1;
-	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
-	{
-		ParseUMapInfo(lump, "MAPINFO");
-	}
 }
 
-void P_RemoveDefereds (void)
+void P_RemoveDefereds ()
 {
 	::getLevelInfos().zapDeferreds();
 }
