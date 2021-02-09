@@ -495,7 +495,8 @@ protected:
 	static void SetLineBlocking(int lineid, int flags);
 	static void SetLineMonsterBlocking(int lineid, int toggle);
 	static void SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
-	static void ActivateLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4);
+	static void ActivateLineSpecial(byte special, line_t* line, AActor* activator,
+	                                int arg0, int arg1, int arg2, int arg3, int arg4);
 	static void ChangeMusic(byte pcd, AActor* activator, int index, int loop);
 	static void StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation);
 	static void StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation);
