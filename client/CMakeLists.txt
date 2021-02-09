@@ -203,10 +203,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  if(TARGET ZLIB::ZLIB AND TARGET PNG::PNG)
-    target_compile_definitions(odamex PUBLIC USE_PNG)
-    target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
-  endif()
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

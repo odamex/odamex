@@ -13,6 +13,9 @@
 include(ProcessorCount)
 ProcessorCount(PARALLEL_PROC_COUNT)
 
+# Set our prefix path, so inter-dependencies are picked up on.
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
 set(libsuffix "${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -196,8 +199,8 @@ if(BUILD_CLIENT)
       "-DCMAKE_LINKER=${CMAKE_LINKER}"
       "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
       "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local")
-    unset(_COMPILE_CURL_WINSSL)
 
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
@@ -206,7 +209,12 @@ if(BUILD_CLIENT)
       --parallel ${PARALLEL_PROC_COUNT})
   endif()
 
+  message(STATUS "Setting ZLIB_INCLUDE_DIR...")
+  set(ZLIB_INCLUDE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
+
   find_package(PNG)
+  message(STATUS "Target???")
   if(TARGET PNG::PNG)
     set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
   endif()
