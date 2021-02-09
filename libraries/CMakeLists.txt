@@ -34,7 +34,7 @@ if(BUILD_CLIENT)
     set(ZLIB_INCLUDE_DIR
       "${CMAKE_CURRENT_BINARY_DIR}/local/include")
     set(ZLIB_LIBRARY
-      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/zlibstatic${libsuffix}")
+      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
 
     # Generate the build.
     execute_process(COMMAND "${CMAKE_COMMAND}"
@@ -209,12 +209,10 @@ if(BUILD_CLIENT)
       --parallel ${PARALLEL_PROC_COUNT})
   endif()
 
-  message(STATUS "Setting ZLIB_INCLUDE_DIR...")
   set(ZLIB_INCLUDE_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
 
   find_package(PNG)
-  message(STATUS "Target???")
   if(TARGET PNG::PNG)
     set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
   endif()
