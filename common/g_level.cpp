@@ -47,7 +47,6 @@
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
-#include "sc_man.h"
 #include "umapinfo.h"
 #include "v_video.h"
 #include "w_wad.h"
@@ -56,6 +55,8 @@
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
+
+#define G_NOMATCH (-1)			// used for MatchString
 
 level_locals_t level;			// info about current level
 
@@ -134,7 +135,7 @@ level_pwad_info_t& LevelInfos::create()
 }
 
 // Find a levelinfo by mapname
-level_pwad_info_t& LevelInfos::findByName(char* mapname)
+level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 {
 	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
 	{
@@ -335,60 +336,6 @@ struct MapInfoHandler
 {
     EMIType type;
     DWORD data1, data2;
-};
-
-static const char *MapInfoTopLevel[] =
-{
-	"map",
-	"defaultmap",
-	"cluster",
-	"clusterdef",
-	"episode",
-	"clearepisodes",
-	"skill",
-	"clearskills",
-	"gameinfo",
-	"intermission",
-	"automap",
-	NULL
-};
-
-enum
-{
-	// map <maplump> <nice name>
-	// map <maplump> lookup <keyword>
-	MITL_MAP,
-
-	// defaultmap
-	MITL_DEFAULTMAP,
-
-	// cluster <value>
-	MITL_CLUSTER,
-
-	// clusterdef <value>
-	MITL_CLUSTERDEF,
-
-	// episode <maplump>
-	// episode <maplump> teaser <maplump> // New MAPINFO only
-	MITL_EPISODE,
-
-	// clearepisodes
-	MITL_CLEAREPISODES,
-
-	// skill <name>
-	MITL_SKILL,
-
-	// clearskills
-	MITL_CLEARSKILLS,
-
-	// gameinfo // New MAPINFO only
-	MITL_GAMEINFO,
-
-	// intermission // New MAPINFO only
-	MITL_INTERMISSION,
-
-	// automap // New MAPINFO only
-	MITL_AUTOMAP
 };
 
 static const char *MapInfoMapLevel[] =
@@ -617,19 +564,19 @@ static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 // Assumes that you have munched the last parameter you know how to handle,
 // but have not yet munched a comma.
 //
-static void SkipUnknownParams()
+static void SkipUnknownParams(OScanner &os)
 {
 	// Every loop, try to burn a comma.
-	while (SC_GetString())
+	while (os.scan())
 	{
-		if (!SC_Compare(","))
+		if (!os.compareToken(","))
 		{
-			SC_UnGet();
+			os.unScan();
 			return;
 		}
 
 		// Burn the parameter.
-		SC_GetString();
+		os.scan();
 	}
 }
 
@@ -637,17 +584,17 @@ static void SkipUnknownParams()
 // Assumes that you have already munched the unknown type name, and just need
 // to much parameters, if any.
 //
-static void SkipUnknownType()
+static void SkipUnknownType(OScanner &os)
 {
-	SC_GetString();
-	if (!SC_Compare("="))
+	os.scan();
+	if (!os.compareToken("="))
 	{
-		SC_UnGet();
+		os.unScan();
 		return;
 	}
 
-	SC_GetString(); // Get the first parameter
-	SkipUnknownParams();
+	os.scan(); // Get the first parameter
+	SkipUnknownParams(os);
 }
 
 //
@@ -655,19 +602,19 @@ static void SkipUnknownType()
 //
 // This function does not work with old-school ZDoom MAPINFO.
 //
-static void SkipUnknownBlock()
+static void SkipUnknownBlock(OScanner &os)
 {
 	int stack = 0;
 
-	while (SC_GetString())
+	while (os.scan())
 	{
-		if (SC_Compare("{"))
+		if (os.compareToken("{"))
 		{
 			// Found another block
 			stack++;
 			continue;
 		}
-		else if (SC_Compare("}"))
+		else if (os.compareToken("}"))
 		{
 			stack--;
 			if (stack <= 0)
@@ -675,6 +622,118 @@ static void SkipUnknownBlock()
 				// Done with all blocks
 				break;
 			}
+		}
+	}
+}
+
+namespace
+{
+	bool ContainsMapInfoTopLevel(OScanner &os)
+	{
+		return os.compareToken("map") ||
+			os.compareToken("defaultmap") ||
+			os.compareToken("cluster") ||
+			os.compareToken("clusterdef") ||
+			os.compareToken("episode") ||
+			os.compareToken("clearepisodes") ||
+			os.compareToken("skill") ||
+			os.compareToken("clearskills") ||
+			os.compareToken("gameinfo") ||
+			os.compareToken("intermission") ||
+			os.compareToken("automap");
+	}
+}
+
+namespace
+{
+	int MatchString(OScanner &os, const char** strings)
+	{
+		if (strings == NULL)
+		{
+			return G_NOMATCH;
+		}
+
+		for (int i = 0; *strings != NULL; i++)
+		{
+			if (os.compareToken(*strings++))
+			{
+				return i;
+			}
+		}
+
+		return G_NOMATCH;
+	}
+
+	// return token as int
+	int GetTokenAsInt(OScanner &os)
+	{
+		char *stopper;
+		
+		if (os.compareToken("MAXINT"))
+		{
+			return MAXINT;
+		}
+
+		const int num = strtol(os.getToken().c_str(), &stopper, 0);
+		
+		if (*stopper != 0)
+		{
+			I_Error("Bad numeric constant \"%s\".", os.getToken().c_str());
+		}
+
+		return num;
+	}
+
+	// return token as float
+	float GetTokenAsFloat(OScanner &os)
+	{
+		char *stopper;
+
+		const double num = strtod(os.getToken().c_str(), &stopper);
+
+		if (*stopper != 0)
+		{
+			I_Error("Bad numeric constant \"%s\".", os.getToken().c_str());
+		}
+
+		return static_cast<float>(num);
+	}
+
+	void MustGetString(OScanner &os)
+	{
+		if (!os.scan())
+		{
+			I_Error("Missing string (unexpected end of file).");
+		}
+	}
+
+	void MustGetStringName(OScanner &os, const char *name)
+	{
+		MustGetString(os);
+		if (os.compareToken(name) == false)
+		{
+			// TODO: Was SC_ScriptError
+			I_Error("Expected '%s', got '%s'.", name, os.getToken());
+		}
+	}
+
+	void MustGetNumber(OScanner &os)
+	{
+		MustGetString(os);
+		if (IsNum(os.getToken().c_str()) == false)
+		{
+			// TODO: Was SC_ScriptError
+			I_Error("Missing integer (unexpected end of file).");
+		}
+	}
+	
+	void MustGetFloat(OScanner &os)
+	{
+		MustGetString(os);
+		if (IsRealNum(os.getToken().c_str()) == false)
+		{
+			// TODO: Was SC_ScriptError
+			I_Error("Missing floating-point number (unexpected end of file).");
 		}
 	}
 }
@@ -688,7 +747,7 @@ static void SkipUnknownBlock()
 // done by passing in a strings pointer, and leaving the others NULL.
 //
 static void ParseMapInfoLower(
-	MapInfoHandler* handlers, const char** strings, tagged_info_t* tinfo, DWORD flags
+	MapInfoHandler* handlers, const char** strings, tagged_info_t* tinfo, DWORD flags, OScanner &os
 )
 {
 	// 0 if old mapinfo, positive number if new MAPINFO, the exact
@@ -702,15 +761,15 @@ static void ParseMapInfoLower(
 		info = reinterpret_cast<byte*>(tinfo->level);
 	}
 
-	while (SC_GetString())
+	while (os.scan())
 	{
-		if (SC_Compare("{"))
+		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
 			newMapinfoStack++;
 			continue;
 		}
-		else if (SC_Compare("}"))
+		else if (os.compareToken("}"))
 		{
 			newMapinfoStack--;
 			if (newMapinfoStack <= 0)
@@ -722,31 +781,33 @@ static void ParseMapInfoLower(
 
 		if (
 			newMapinfoStack <= 0 &&
-			SC_MatchString(MapInfoTopLevel) != SC_NOMATCH &&
+			!ContainsMapInfoTopLevel(os) &&
 			// "cluster" is a valid map block type and is also
 			// a valid top-level type.
-			!SC_Compare("cluster")
+			!os.compareToken("cluster")
 		)
 		{
 			// Old-style MAPINFO is done
-			SC_UnGet();
+			os.unScan();
 			break;
 		}
 
-		int entry = SC_MatchString(strings);
-		if (entry == SC_NOMATCH)
+		const int entry = MatchString(os, strings);
+		if (entry == G_NOMATCH)
 		{
 			if (newMapinfoStack <= 0)
 			{
 				// Old MAPINFO is up a creek, we need to be
 				// able to parse all types even if we can't
 				// do anything with them.
-				SC_ScriptError("Unknown MAPINFO token \"%s\"", sc_String);
+				//
+				// TODO: was previously SC_ScriptError, if that matters
+				I_Error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
 			}
 
 			// New MAPINFO is capable of skipping past unknown
 			// types.
-			SkipUnknownType();
+			SkipUnknownType(os);
 			continue;
 		}
 
@@ -760,41 +821,41 @@ static void ParseMapInfoLower(
 		case MITYPE_EATNEXT:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
+			MustGetString(os);
 			break;
 
 		case MITYPE_INT:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetNumber();
-			*((int*)(info + handler->data1)) = sc_Number;
+			MustGetNumber(os);
+			*((int*)(info + handler->data1)) = GetTokenAsInt(os);
 			break;
 
 		case MITYPE_FLOAT:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetFloat();
-			*((float*)(info + handler->data1)) = sc_Float;
+			MustGetFloat(os);
+			*((float*)(info + handler->data1)) = GetTokenAsFloat(os);
 			break;
 
 		case MITYPE_COLOR:
 		{
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
-			argb_t color(V_GetColorFromString(sc_String));
+			MustGetString(os);
+			argb_t color(V_GetColorFromString(os.getToken()));
 			uint8_t* ptr = (uint8_t*)(info + handler->data1);
 			ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
 			break;
@@ -802,50 +863,54 @@ static void ParseMapInfoLower(
 		case MITYPE_MAPNAME:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
-			if (IsNum(sc_String))
+			MustGetString(os);
+			
+			char map_name[9];
+			strncpy(map_name, os.getToken().c_str(), 8);
+			
+			if (IsNum(map_name))
 			{
-				int map = atoi(sc_String);
-				sprintf(sc_String, "MAP%02d", map);
+				int map = std::atoi(map_name);
+				sprintf(map_name, "MAP%02d", map);
 			}
-			strncpy((char*)(info + handler->data1), sc_String, 8);
+			strncpy((char*)(info + handler->data1), map_name, 8);
 			break;
 
 		case MITYPE_LUMPNAME:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
-			uppercopy((char*)(info + handler->data1), sc_String);
+			MustGetString(os);
+			uppercopy((char*)(info + handler->data1), os.getToken().c_str());
 			break;
 
 
 		case MITYPE_$LUMPNAME:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
-			if (sc_String[0] == '$')
+			MustGetString(os);
+			if (os.getToken()[0] == '$')
 			{
 				// It is possible to pass a DeHackEd string
 				// prefixed by a $.
-				const OString& s = GStrings(sc_String + 1);
+				const OString& s = GStrings(os.getToken().c_str() + 1);
 				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
+					I_Error("Unknown lookup string \"%s\"", s.c_str());
 				}
 				uppercopy((char*)(info + handler->data1), s.c_str());
 			}
 			else
 			{
-				uppercopy((char*)(info + handler->data1), sc_String);
+				uppercopy((char*)(info + handler->data1), os.getToken().c_str());
 			}
 			break;
 
@@ -853,18 +918,18 @@ static void ParseMapInfoLower(
 		{
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
-			if (sc_String[0] == '$')
+			MustGetString(os);
+			if (os.getToken()[0] == '$')
 			{
 				// It is possible to pass a DeHackEd string
 				// prefixed by a $.
-				const OString& s = GStrings(sc_String + 1);
+				const OString& s = GStrings(os.getToken().c_str() + 1);
 				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
+					I_Error("Unknown lookup string \"%s\"", s.c_str());
 				}
 
 				// Music lumps in the stringtable do not begin
@@ -875,23 +940,23 @@ static void ParseMapInfoLower(
 			}
 			else
 			{
-				uppercopy((char*)(info + handler->data1), sc_String);
+				uppercopy((char*)(info + handler->data1), os.getToken().c_str());
 			}
 			break;
 		}
 		case MITYPE_SKY:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
-				SC_MustGetString(); // Texture name
-				uppercopy((char*)(info + handler->data1), sc_String);
-				SkipUnknownParams();
+				MustGetStringName(os, "=");
+				MustGetString(os); // Texture name
+				uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+				SkipUnknownParams(os);
 			}
 			else
 			{
-				SC_MustGetString();	// get texture name;
-				uppercopy((char*)(info + handler->data1), sc_String);
-				SC_MustGetFloat();		// get scroll speed
+				MustGetString(os);	// get texture name;
+				uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+				MustGetFloat(os);		// get scroll speed
 				//if (HexenHack)
 				//{
 				//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
@@ -914,15 +979,15 @@ static void ParseMapInfoLower(
 		case MITYPE_CLUSTER:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetNumber();
-			*((int*)(info + handler->data1)) = sc_Number;
+			MustGetNumber(os);
+			*((int*)(info + handler->data1)) = GetTokenAsInt(os);
 			if (HexenHack)
 			{
 				ClusterInfos& clusters = getClusterInfos();
-				cluster_info_t& clusterH = clusters.findByCluster(sc_Number);
+				cluster_info_t& clusterH = clusters.findByCluster(GetTokenAsInt(os));
 				if (clusterH.cluster != 0)
 				{
 					clusterH.flags |= CLUSTER_HUB;
@@ -936,23 +1001,23 @@ static void ParseMapInfoLower(
 
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
+			MustGetString(os);
 			free(*text);
-			*text = strdup(sc_String);
+			*text = strdup(os.getToken().c_str());
 			break;
 		}
 
 		case MITYPE_CSTRING:
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
+				MustGetStringName(os, "=");
 			}
 
-			SC_MustGetString();
-			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
+			MustGetString(os);
+			strncpy((char*)(info + handler->data1), os.getToken().c_str(), handler->data2);
 			*((char*)(info + handler->data1 + handler->data2)) = '\0';
 			break;
 		case MITYPE_CLUSTERSTRING:
@@ -961,16 +1026,16 @@ static void ParseMapInfoLower(
 
 			if (newMapinfoStack > 0)
 			{
-				SC_MustGetStringName("=");
-				SC_MustGetString();
-				if (SC_Compare("lookup"))
+				MustGetStringName(os, "=");
+				MustGetString(os);
+				if (os.compareToken("lookup"))
 				{
-					SC_MustGetStringName(",");
-					SC_MustGetString();
-					const OString& s = GStrings(sc_String);
+					MustGetStringName(os, ",");
+					MustGetString(os);
+					const OString& s = GStrings(os.getToken());
 					if (s.empty())
 					{
-						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+						I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 					}
 					free(*text);
 					*text = strdup(s.c_str());
@@ -979,15 +1044,15 @@ static void ParseMapInfoLower(
 				{
 					// One line per string.
 					std::string ctext;
-					SC_UnGet();
+					os.unScan();
 					do
 					{
-						SC_MustGetString();
-						ctext += sc_String;
+						MustGetString(os);
+						ctext += os.getToken();
 						ctext += "\n";
-						SC_GetString();
-					} while (SC_Compare(","));
-					SC_UnGet();
+						os.scan();
+					} while (os.compareToken(","));
+					os.unScan();
 
 					// Trim trailing newline.
 					if (ctext.length() > 0)
@@ -1001,14 +1066,14 @@ static void ParseMapInfoLower(
 			}
 			else
 			{
-				SC_MustGetString();
-				if (SC_Compare("lookup"))
+				MustGetString(os);
+				if (os.compareToken("lookup"))
 				{
-					SC_MustGetString();
-					const OString& s = GStrings(sc_String);
+					MustGetString(os);
+					const OString& s = GStrings(os.getToken());
 					if (s.empty())
 					{
-						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+						I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 					}
 
 					free(*text);
@@ -1017,7 +1082,7 @@ static void ParseMapInfoLower(
 				else
 				{
 					free(*text);
-					*text = strdup(sc_String);
+					*text = strdup(os.getToken().c_str());
 				}
 			}
 			break;
@@ -1074,58 +1139,69 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 	DWORD levelflags;
 
 	SetLevelDefaults (&defaultinfo);
-	SC_OpenLumpNum (lump, lumpname);
 
-	while (SC_GetString ())
+	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
+	
+	OScannerConfig config = { // TODO: Confirm how to handle semicolons
+		lumpname, // lumpName
+		false,      // semiComments
+		true,       // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+	while (os.scan())
 	{
-		switch (SC_MustMatchString (MapInfoTopLevel))
-		{
-		case MITL_DEFAULTMAP:
+		if (os.compareToken("defaultmap"))
 		{
 			SetLevelDefaults(&defaultinfo);
 			tagged_info_t tinfo;
 			tinfo.tag = tagged_info_t::LEVEL;
 			tinfo.level = &defaultinfo;
-			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0);
-			break;
+			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0, os);
 		}
-		case MITL_MAP:
+		else if (os.compareToken("map"))
 		{
 			levelflags = defaultinfo.flags;
-			SC_MustGetString ();
-			if (IsNum (sc_String))
-			{	// MAPNAME is a number, assume a Hexen wad
-				int map = atoi (sc_String);
-				sprintf (sc_String, "MAP%02d", map);
+			MustGetString(os);
+
+			char map_name[9];
+			strncpy(map_name, os.getToken().c_str(), 8);
+			
+			if (IsNum(map_name))
+			{
+				// MAPNAME is a number, assume a Hexen wad
+				int map = std::atoi(map_name);
+				
+				sprintf(map_name, "MAP%02d", map);
 				SKYFLATNAME[5] = 0;
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences
 				levelflags |= LEVEL_NOINTERMISSION
-							| LEVEL_EVENLIGHTING
-							| LEVEL_SNDSEQTOTALCTRL;
+					| LEVEL_EVENLIGHTING
+					| LEVEL_SNDSEQTOTALCTRL;
 			}
 
 			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(sc_String).exists()) ?
-				levels.findByName(sc_String) :
+			level_pwad_info_t& info = (levels.findByName(map_name).exists()) ?
+				levels.findByName(map_name) :
 				levels.create();
 
 			// Free the level name string before we pave over it.
 			free(info.level_name);
 
 			info = defaultinfo;
-			uppercopy(info.mapname, sc_String);
+			uppercopy(info.mapname, map_name);
 
 			// Map name.
-			SC_MustGetString();
-			if (SC_Compare("lookup"))
+			MustGetString(os);
+			if (os.compareToken("lookup"))
 			{
-				SC_MustGetString();
-				const OString& s = GStrings(sc_String);
+				MustGetString(os);
+				const OString& s = GStrings(os.getToken());
 				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 				}
 				free(info.level_name);
 				info.level_name = strdup(s.c_str());
@@ -1133,13 +1209,13 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			else
 			{
 				free(info.level_name);
-				info.level_name = strdup(sc_String);
+				info.level_name = strdup(os.getToken().c_str());
 			}
 
 			tagged_info_t tinfo;
 			tinfo.tag = tagged_info_t::LEVEL;
 			tinfo.level = &info;
-			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
+			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags, os);
 
 			// If the level info was parsed and no levelnum was applied,
 			// try and synthesize one from the level name.
@@ -1147,45 +1223,42 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			{
 				MapNameToLevelNum(info);
 			}
-			break;
 		}
-		case MITL_CLUSTER:
-		case MITL_CLUSTERDEF:
+		else if (os.compareToken("cluster") || os.compareToken("clusterdef"))
 		{
-			SC_MustGetNumber();
+			MustGetNumber(os);
 
 			// Find the cluster.
-			cluster_info_t& info = (clusters.findByCluster(sc_Number).cluster != 0) ?
-				clusters.findByCluster(sc_Number) :
+			cluster_info_t& info = (clusters.findByCluster(GetTokenAsInt(os)).cluster != 0) ?
+				clusters.findByCluster(GetTokenAsInt(os)) :
 				clusters.create();
 
-			info.cluster = sc_Number;
+			info.cluster = GetTokenAsInt(os);
 			tagged_info_t tinfo;
 			tinfo.tag = tagged_info_t::CLUSTER;
 			tinfo.cluster = &info;
-			ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, &tinfo, 0);
-			break;
+			ParseMapInfoLower(ClusterHandlers, MapInfoClusterLevel, &tinfo, 0, os);
 		}
-		case MITL_EPISODE:
+		else if (os.compareToken("episode"))
 		{
 			// Not implemented
-			SC_MustGetString(); // Map lump
-			SC_GetString();
-			if (SC_Compare("teaser"))
+			MustGetString(os); // Map lump
+			os.scan();
+			if (os.compareToken("teaser"))
 			{
-				SC_MustGetString(); // Teaser lump
+				MustGetString(os); // Teaser lump
 			}
 			else
 			{
-				SC_UnGet();
+				os.unScan();
 			}
 
-			SC_MustGetString();
-			if (SC_Compare("{"))
+			MustGetString(os);
+			if (os.compareToken("{"))
 			{
 				// If we encounter an episode block in new MAPINFO, we can just
 				// eat the entire block.
-				SkipUnknownBlock();
+				SkipUnknownBlock(os);
 			}
 			else
 			{
@@ -1194,45 +1267,44 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				tagged_info_t tinfo;
 				tinfo.tag = tagged_info_t::EPISODE;
 				tinfo.episode = NULL;
-				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
+				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0, os);
 			}
-			break;
 		}
-		case MITL_CLEAREPISODES:
+		else if (os.compareToken("clearepisodes"))
+		{
 			// Not implemented
-			break;
-
-		case MITL_SKILL:
+		}
+		else if (os.compareToken("skill"))
+		{
 			// Not implemented
-			SC_MustGetString(); // Name
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		case MITL_CLEARSKILLS:
+			MustGetString(os); // Name
+			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+		}
+		else if (os.compareToken("clearskills"))
+		{
 			// Not implemented
-			break;
-
-		case MITL_GAMEINFO:
+		}
+		else if (os.compareToken("gameinfo"))
+		{
 			// Not implemented
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		case MITL_INTERMISSION:
+			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+		}
+		else if (os.compareToken("intermission"))
+		{
 			// Not implemented
-			SC_MustGetString(); // Name
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		case MITL_AUTOMAP:
+			MustGetString(os); // Name
+			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+		}
+		else if (os.compareToken("automap"))
+		{
 			// Not implemented
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		default:
-			SC_ScriptError("Unimplemented top-level type \"%s\"", sc_String);
+			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+		}
+		else
+		{
+			I_Error("Unimplemented top-level type \"%s\"", os.getToken().c_str());
 		}
 	}
-	SC_Close ();
 }
 
 //
