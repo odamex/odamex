@@ -84,6 +84,26 @@ void InitTeamInfo()
 	s_NoTeam.RoundWins = 0;
 }
 
+void TeamInfo_ResetScores(bool fullreset)
+{
+	// Clear teamgame state.
+	Players::iterator it;
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		for (it = players.begin(); it != players.end(); ++it)
+			it->flags[i] = false;
+
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.state = flag_home;
+		teamInfo->FlagData.firstgrab = false;
+		teamInfo->Points = 0;
+
+		if (fullreset)
+			teamInfo->RoundWins = 0;
+	}
+}
+
 TeamInfo* GetTeamInfo(team_t team)
 {
 	if (team < 0 || team >= NUMTEAMS)

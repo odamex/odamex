@@ -136,18 +136,27 @@ void P_ClearPlayerPowerups(player_t& p)
  * @param wins True if a player's wins should be cleared as well - should
  *             usually be True unless it's a reset across rounds.
  */
-void P_ClearPlayerScores(player_t& p, bool wins)
+void P_ClearPlayerScores(player_t& p, byte flags)
 {
-	if (wins)
+	if (flags & SCORES_CLEAR_WINS)
 		p.roundwins = 0;
 
-	p.lives = g_lives.asInt();
-	p.fragcount = 0;
-	p.itemcount = 0;
-	p.secretcount = 0;
-	p.deathcount = 0; // [Toke - Scores - deaths]
-	p.killcount = 0; // [deathz0r] Coop kills
-	p.points = 0;
+	if (flags & SCORES_CLEAR_POINTS)
+	{
+		p.lives = g_lives.asInt();
+		p.fragcount = 0;
+		p.itemcount = 0;
+		p.secretcount = 0;
+		p.deathcount = 0; // [Toke - Scores - deaths]
+		p.killcount = 0;  // [deathz0r] Coop kills
+		p.points = 0;
+	}
+
+	if (flags & SCORES_CLEAR_TOTALPOINTS)
+	{
+		p.totalpoints = 0;
+		p.totaldeaths = 0;
+	}
 }
 
 static bool cmpFrags(player_t* a, player_t* b)
@@ -1209,6 +1218,8 @@ player_s &player_s::operator =(const player_s &other)
 	fragcount = other.fragcount;
 	deathcount = other.deathcount;
 	killcount = other.killcount;
+	totalpoints = other.totalpoints;
+	totaldeaths = other.totaldeaths;
 
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;

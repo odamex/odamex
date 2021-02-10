@@ -2253,7 +2253,7 @@ void SV_ConnectClient()
 	SV_BroadcastUserInfo(*player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, true);
+	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
 	player->playerstate = PST_ENTER;
 
 	if (!step_mode)
@@ -2430,6 +2430,11 @@ struct compare_player_frags
 {
 	bool operator()(const player_t* arg1, const player_t* arg2) const
 	{
+		if (!G_IsDuelGame() && G_IsRoundsGame())
+		{
+			return arg2->totalpoints < arg1->totalpoints;
+		}
+
 		return arg2->fragcount < arg1->fragcount;
 	}
 };
@@ -2446,6 +2451,11 @@ struct compare_player_points
 {
 	bool operator()(const player_t* arg1, const player_t* arg2) const
 	{
+		if (G_IsRoundsGame())
+		{
+			return arg2->totalpoints < arg1->totalpoints;
+		}
+
 		return arg2->points < arg1->points;
 	}
 };
@@ -2471,12 +2481,27 @@ static float SV_CalculateKillDeathRatio(const player_t* player)
 
 static float SV_CalculateFragDeathRatio(const player_t* player)
 {
-	if (player->fragcount <= 0)	// Copied from HU_DMScores1.
-		return 0.0f;
-	else if (player->fragcount >= 1 && player->deathcount == 0)
-		return float(player->fragcount);
+
+	int frags = 0;
+	int deaths = 0;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+	{
+		frags = player->totalpoints;
+		deaths = player->totaldeaths;
+	}
 	else
-		return float(player->fragcount) / float(player->deathcount);
+	{
+		frags = player->fragcount;
+		deaths = player->deathcount;
+	}
+
+	if (frags <= 0) // Copied from HU_DMScores1.
+		return 0.0f;
+	else if (frags >= 1 && deaths == 0)
+		return float(frags);
+	else
+		return float(frags) / float(deaths);
 }
 
 //
@@ -2546,9 +2571,9 @@ void SV_DrawScores()
 							itplayer->id,
 							NET_AdrToString(itplayer->client.address),
 							itplayer->userinfo.netname.c_str(),
-							itplayer->points,
+							P_GetPointCount(itplayer),
 							//itplayer->captures,
-							itplayer->fragcount,
+					        P_GetFragCount(itplayer),
 							itplayer->GameTime / 60);
 				}
 			}
@@ -2600,8 +2625,8 @@ void SV_DrawScores()
 							itplayer->id,
 							NET_AdrToString(itplayer->client.address),
 							itplayer->userinfo.netname.c_str(),
-							itplayer->fragcount,
-							itplayer->deathcount,
+							P_GetFragCount(itplayer),
+							P_GetDeathCount(itplayer),
 							SV_CalculateFragDeathRatio(itplayer),
 							itplayer->GameTime / 60);
 				}
@@ -2641,8 +2666,8 @@ void SV_DrawScores()
 					itplayer->id,
 					NET_AdrToString(itplayer->client.address),
 					itplayer->userinfo.netname.c_str(),
-					itplayer->fragcount,
-					itplayer->deathcount,
+					P_GetFragCount(itplayer),
+					P_GetDeathCount(itplayer),
 					SV_CalculateFragDeathRatio(itplayer),
 					itplayer->GameTime / 60);
 		}
@@ -3866,7 +3891,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		P_KillMobj(NULL, player.mo, NULL, true);
 
 	// Fresh joins get fresh player scores.
-	P_ClearPlayerScores(player, true);
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
 
 	// Ensure our player is in the ENTER state.
 	player.playerstate = PST_ENTER;
@@ -4845,9 +4870,26 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND(playerlist)
 {
 	bool anybody = false;
+	int frags = 0;
+	int deaths = 0;
+	int points = 0;
 
 	for (Players::reverse_iterator it = players.rbegin(); it != players.rend(); ++it)
 	{
+
+		if (G_IsRoundsGame() && !G_IsDuelGame())
+		{
+			frags = it->totalpoints;
+			deaths = it->totaldeaths;
+			points = it->totalpoints;
+		}
+		else
+		{
+			frags = it->fragcount;
+			deaths = it->deathcount;
+			points = it->points;
+		}
+
 		std::string strMain, strScore;
 		StrFormat(strMain, "(%02d): %s %s - %s - time:%d - ping:%d", it->id,
 		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
@@ -4873,13 +4915,12 @@ BEGIN_COMMAND(playerlist)
 			{
 				// Wins, Lives, and Frags
 				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
-				          it->lives, it->fragcount);
+				          it->lives, frags);
 			}
 			else
 			{
 				// Frags, Deaths
-				StrFormat(strScore, " - frags:%d - deaths:%d", it->fragcount,
-				          it->deathcount);
+				StrFormat(strScore, " - frags:%d - deaths:%d", frags, deaths);
 			}
 		}
 		else if (sv_gametype == GM_TEAMDM)
@@ -4887,12 +4928,12 @@ BEGIN_COMMAND(playerlist)
 			if (g_lives)
 			{
 				// Frags and Lives
-				StrFormat(strScore, " - frags:%d - lives:%d", it->fragcount, it->lives);
+				StrFormat(strScore, " - frags:%d - lives:%d", frags, it->lives);
 			}
 			else
 			{
 				// Frags
-				StrFormat(strScore, " - frags:%d", it->fragcount);
+				StrFormat(strScore, " - frags:%d", frags);
 			}
 		}
 		else if (sv_gametype == GM_CTF)
@@ -4900,12 +4941,13 @@ BEGIN_COMMAND(playerlist)
 			if (g_lives)
 			{
 				// Points and Lives
-				StrFormat(strScore, " - points:%d - lives:%d", it->points, it->lives);
+				StrFormat(strScore, " - points:%d - lives:%d", points, it->lives);
 			}
 			else
 			{
 				// Points and Frags
-				StrFormat(strScore, " - points:%d - frags:%d", it->points, it->fragcount);
+				// Special case here: frags will only be from the current round, not global.
+				StrFormat(strScore, " - points:%d - frags:%d", points, it->fragcount);
 			}
 		}
 
