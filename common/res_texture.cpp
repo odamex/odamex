@@ -39,7 +39,7 @@
 #include "res_texture.h"
 #include "v_video.h"
 
-#ifdef USE_PNG
+#ifdef CLIENT_APP
 	#define PNG_SKIP_SETJMP_CHECK
 	#include <setjmp.h>		// used for error handling by libpng
 
@@ -78,7 +78,7 @@
 		#  endif
 		#endif
 	#endif	// PNG_LIBPNG_VER < 10400
-#endif	// USE_PNG
+#endif	// CLIENT_APP
 
 
 TextureManager texturemanager;
@@ -1611,6 +1611,3 @@ const Texture* TextureManager::getTexture(texhandle_t handle)
 
 
 VERSION_CONTROL (res_texture_cpp, "$Id$")
-
-
-

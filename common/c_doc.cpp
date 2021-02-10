@@ -222,7 +222,7 @@ static CvarView GetSortedCvarView()
 	return view;
 }
 
-BEGIN_COMMAND(cvardump)
+BEGIN_COMMAND(cvardoc)
 {
 	std::string buffer;
 	std::string path = M_GetWriteDir();
@@ -230,7 +230,12 @@ BEGIN_COMMAND(cvardump)
 	{
 		path += PATHSEP;
 	}
-	path += "cvardoc.html";
+
+#ifdef CLIENT_APP
+	path += "odamex_cvardoc.html";
+#else
+	path += "odasrv_cvardoc.html";
+#endif
 
 	// Try and open a file in our write directory.
 	FILE* fh = fopen(path.c_str(), "wt+");
@@ -285,4 +290,4 @@ BEGIN_COMMAND(cvardump)
 	// Success!
 	Printf("Wrote %ld bytes to \"%s\"\n", bytes, path.c_str());
 }
-END_COMMAND(cvardump)
+END_COMMAND(cvardoc)

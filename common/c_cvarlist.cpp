@@ -173,14 +173,6 @@ CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",
      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
-					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
-					
-CVAR(				sv_coopunassignedvoodoodolls, "1", "", 
-					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
-					
-CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
-					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
 
 // Game mode options
 // -----------------

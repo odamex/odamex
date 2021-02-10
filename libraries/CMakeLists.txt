@@ -13,6 +13,9 @@
 include(ProcessorCount)
 ProcessorCount(PARALLEL_PROC_COUNT)
 
+# Set our prefix path, so inter-dependencies are picked up on.
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
 set(libsuffix "${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -20,6 +23,45 @@ set(dllprefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
 set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+
+### zlib ###
+
+if(BUILD_CLIENT)
+  if(USE_INTERNAL_ZLIB)
+    message(STATUS "Compiling internal ZLIB...")
+
+    # Set vars so the finder can find them.
+    set(ZLIB_INCLUDE_DIR
+      "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    set(ZLIB_LIBRARY
+      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/zlib"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local")
+    unset(_COMPILE_CURL_WINSSL)
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+  endif()
+
+  find_package(ZLIB)
+  if(TARGET ZLIB::ZLIB)
+    set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_GLOBAL True)
+  endif()
+endif()
 
 ### libcurl ###
 
@@ -132,6 +174,55 @@ if(BUILD_SERVER)
     IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
     MAP_IMPORTED_CONFIG_MINSIZEREL Release
     MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+endif()
+
+### libpng ###
+
+if(BUILD_CLIENT)
+  if(USE_INTERNAL_PNG)
+    message(STATUS "Compiling internal libpng...")
+
+    # Set vars so the finder can find them.
+    set(PNG_PNG_INCLUDE_DIR
+      "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    if(NOT MSVC)
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16${libsuffix}")
+    else()
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
+    endif()
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/libpng"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-DPNG_SHARED=OFF"
+      "-DPNG_TESTS=OFF")
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+  endif()
+
+  set(ZLIB_INCLUDE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
+
+  find_package(PNG)
+  if(TARGET PNG::PNG)
+    set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
+  endif()
 endif()
 
 ### MiniUPnPc ###

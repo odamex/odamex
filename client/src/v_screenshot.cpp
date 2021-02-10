@@ -37,46 +37,44 @@
 #include "m_fileio.h"
 #include "g_game.h"
 
-#ifdef USE_PNG
-	#define PNG_SKIP_SETJMP_CHECK
-	#include <setjmp.h>		// used for error handling by libpng
+#define PNG_SKIP_SETJMP_CHECK
+#include <setjmp.h>		// used for error handling by libpng
 
-	#include <zlib.h>
-	#include <png.h>
+#include <zlib.h>
+#include <png.h>
 
-	#if (PNG_LIBPNG_VER < 10400)
-		// [SL] add data types to support versions of libpng prior to 1.4.0
+#if (PNG_LIBPNG_VER < 10400)
+	// [SL] add data types to support versions of libpng prior to 1.4.0
 
-		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
-		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
-		 * to png_alloc_size_t are not necessary; in fact, it is recommended
-		 * not to use them at all so that the compiler can complain when something
-		 * turns out to be problematic.
-		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
-		 * png_uint_32) should be explicitly applied; however, we do not expect
-		 * to encounter practical situations that require such conversions.
-		 */
+	/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
+		* and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
+		* to png_alloc_size_t are not necessary; in fact, it is recommended
+		* not to use them at all so that the compiler can complain when something
+		* turns out to be problematic.
+		* Casts in the other direction (from png_alloc_size_t to png_size_t or
+		* png_uint_32) should be explicitly applied; however, we do not expect
+		* to encounter practical situations that require such conversions.
+		*/
 
-		#if defined(__TURBOC__) && !defined(__FLAT__)
-		   typedef unsigned long png_alloc_size_t;
-		#else
-		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
-			 typedef unsigned long    png_alloc_size_t;
-		#  else
-			 /* This is an attempt to detect an old Windows system where (int) is
-			  * actually 16 bits, in that case png_malloc must have an argument with a
-			  * bigger size to accomodate the requirements of the library.
-			  */
-		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
-				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
-			   typedef DWORD         png_alloc_size_t;
-		#    else
-			   typedef png_size_t    png_alloc_size_t;
-		#    endif
-		#  endif
-		#endif
-	#endif	// PNG_LIBPNG_VER < 10400
-#endif	// USE_PNG
+	#if defined(__TURBOC__) && !defined(__FLAT__)
+		typedef unsigned long png_alloc_size_t;
+	#else
+	#  if defined(_MSC_VER) && defined(MAXSEG_64K)
+			typedef unsigned long    png_alloc_size_t;
+	#  else
+			/* This is an attempt to detect an old Windows system where (int) is
+			* actually 16 bits, in that case png_malloc must have an argument with a
+			* bigger size to accomodate the requirements of the library.
+			*/
+	#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
+			(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
+			typedef DWORD         png_alloc_size_t;
+	#    else
+			typedef png_size_t    png_alloc_size_t;
+	#    endif
+	#  endif
+	#endif
+#endif	// PNG_LIBPNG_VER < 10400
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -99,8 +97,6 @@ BEGIN_COMMAND(screenshot)
 }
 END_COMMAND(screenshot)
 
-
-#ifdef USE_PNG	// was libpng included in the build?
 
 //
 // V_SetPNGPalette
@@ -376,59 +372,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	return 0;
 }
 
-#endif	// USE_PNG
-
-
-#ifndef USE_PNG	// not using libpng?
-//
-// V_SaveBMP
-//
-// Converts the surface to BMP format and saves it to filename.
-// Note: this uses SDL 1.2 for writing to BMP format and may be deprecated
-// in the future.
-//
-static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
-{
-	surface->lock();
-	
-	SDL_Surface* sdlsurface = SDL_CreateRGBSurfaceFrom(surface->getBuffer(),
-								surface->getWidth(), surface->getHeight(),
-								surface->getBitsPerPixel(), surface->getPitch(),
-								0, 0, 0, 0);
-
-	surface->unlock();
-
-	if (sdlsurface == NULL)
-	{
-		Printf(PRINT_WARNING, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
-		return -1;
-	}
-
-	if (surface->getBitsPerPixel() == 8)
-	{
-		const argb_t* palette = surface->getPalette();
-		SDL_Color colors[256];
-
-		for (int i = 0; i < 256; i ++, palette++)
-		{
-			colors[i].r = palette->getr();
-			colors[i].g = palette->getg();
-			colors[i].b = palette->getb();
-			colors[i].unused = 0;
-		}
-
-		SDL_SetColors(sdlsurface, colors, 0, 256);
-	}
-
-	int result = SDL_SaveBMP(sdlsurface, filename.c_str());
-
-	if (result != 0)
-		Printf(PRINT_WARNING, "SDL_SaveBMP failed: %s\n", SDL_GetError());
-
-	return result;
-}
-#endif	// !USE_PNG
-
 
 //
 // V_ScreenShot
@@ -438,12 +381,7 @@ static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
 //
 void V_ScreenShot(std::string filename)
 {
-// is PNG supported?
-#ifdef USE_PNG
 	const std::string extension("png");
-#else
-	const std::string extension("bmp");
-#endif // USE_PNG
 
 	// If no filename was passed, use the screenshot format variable.
 	if (filename.empty())
@@ -465,21 +403,12 @@ void V_ScreenShot(std::string filename)
 	// Create an SDL_Surface object from our screen buffer
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 
-#ifdef USE_PNG
 	int result = V_SavePNG(pathname, primary_surface);
 	if (result != 0)
 	{
 		Printf(PRINT_WARNING, "I_SavePNG Error: Returned error code %d\n", result);
 		return;
 	}
-#else
-	int result = V_SaveBMP(pathname, primary_surface);
-	if (result != 0)
-	{
-		Printf(PRINT_WARNING, "I_SaveBMP Error: Returned error code %d\n", result);
-		return;
-	}
-#endif // USE_PNG
 
 	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename.c_str(), extension.c_str());
 }

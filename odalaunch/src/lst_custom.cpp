@@ -259,7 +259,7 @@ wxInt32 NaturalCompare(wxString aString, wxString bString, bool CaseSensitive = 
 		while (IsSpace(aChar))
 		{
 			aIndex += 1;
-			aChar = aString.at(aIndex);
+			aChar = SafeAt(aString, aIndex);
 		}
 
 		while (IsSpace(bChar))

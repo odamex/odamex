@@ -168,6 +168,8 @@ struct ServerInfo_t
 	uint8_t                  VersionPatch;
 	uint8_t                  MaxClients; // Launcher specific: Maximum clients
 	uint8_t                  MaxPlayers; // Launcher specific: Maximum players
+	uint16_t                 Lives;
+	uint16_t                 Sides;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets

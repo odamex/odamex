@@ -763,9 +763,14 @@ static std::string WinToColorString(const WinInfo& win)
 
 void LevelStateHUD()
 {
-	std::string str;
+	// Don't bother with levelstate information in lobbies.
+	if (::level.flags & LEVEL_LOBBYSPECIAL)
+	{
+		return;
+	}
 
 	// First line...BIGFONT.
+	std::string str;
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP:

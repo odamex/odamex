@@ -5594,7 +5594,8 @@ void SV_ClearPlayerQueue()
 		SV_SendPlayerQueuePositions(&(*it), false);
 }
 
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4)
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+                               int arg1, int arg2, int arg3, int arg4)
 {
 	if (P_LineSpecialMovesSector(special))
 		return;
@@ -5613,11 +5614,11 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 		else
 			MSG_WriteShort(&cl->reliablebuf, 0xFFFF);
 		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
-		MSG_WriteByte(&cl->reliablebuf, arg0);
-		MSG_WriteByte(&cl->reliablebuf, arg1);
-		MSG_WriteByte(&cl->reliablebuf, arg2);
-		MSG_WriteByte(&cl->reliablebuf, arg3);
-		MSG_WriteByte(&cl->reliablebuf, arg4);
+		MSG_WriteVarint(&cl->reliablebuf, arg0);
+		MSG_WriteVarint(&cl->reliablebuf, arg1);
+		MSG_WriteVarint(&cl->reliablebuf, arg2);
+		MSG_WriteVarint(&cl->reliablebuf, arg3);
+		MSG_WriteVarint(&cl->reliablebuf, arg4);
 	}
 }
 
