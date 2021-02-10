@@ -342,19 +342,6 @@ namespace
 		if (pMap) *pMap = map;
 		return !strcmp(mapuname, lumpname);
 	}
-
-	void WriteArrayString(char *ptr, const char *str, size_t length)
-	{
-		for (size_t i = 0; i < length; ++i)
-		{
-			ptr[i] = str[i];
-
-			if (str[i] == '\0')
-			{
-				break;
-			}
-		}
-	}
 }
 
 // TODO: Remove this function and replace it with g_level equivalent when merging files
@@ -597,7 +584,7 @@ static int ParseMapEntry(Scanner &scanner, level_pwad_info_t *val)
 		return 0;
 	}
 
-	WriteArrayString(val->mapname, scanner.string, 9);
+	strncpy(val->mapname, scanner.string, 8);
 	
 	scanner.MustGetToken('{');
 	while(!scanner.CheckToken('}'))
@@ -624,8 +611,6 @@ int ParseUMapInfo(int lump, const char* lumpname)
 	unsigned int i;
 
 	Scanner::SetErrorCallback(I_Error);
-
-	
 
 	while (scanner.TokensLeft())
 	{
