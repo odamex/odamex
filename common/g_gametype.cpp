@@ -68,6 +68,8 @@ const std::string& G_GametypeName()
 		name = "Team Last Marine Standing";
 	else if (sv_gametype == GM_TEAMDM)
 		name = "Team Deathmatch";
+	else if (sv_gametype == GM_CTF && g_sides)
+		name = "Attack & Defend CTF";
 	else if (sv_gametype == GM_CTF && g_lives)
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
