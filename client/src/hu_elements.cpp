@@ -1093,6 +1093,8 @@ void EAPlayerFrags(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
+	int frags = 0;
+
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
@@ -1100,6 +1102,16 @@ void EAPlayerFrags(int x, int y, const float scale,
 		}
 
 		player_t* player = sortedPlayers()[i];
+
+		if (G_IsRoundsGame() && !G_IsDuelGame())
+		{
+			frags = player->totalpoints;
+		}
+		else
+		{
+			frags = player->fragcount;
+		}
+
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;
 			buffer << player->fragcount;
@@ -1119,6 +1131,8 @@ void EATeamPlayerFrags(int x, int y, const float scale,
                        const short padding, const short limit,
                        const byte team, const bool force_opaque) {
 	byte drawn = 0;
+	int frags = 0;
+
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
@@ -1126,9 +1140,20 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 		}
 
 		player_t* player = sortedPlayers()[i];
+
+		if (G_IsRoundsGame())
+		{
+			frags = player->totalpoints;
+		}
+		else
+		{
+			frags = player->fragcount;
+		}
+
+
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
-			buffer << player->fragcount;
+			buffer << frags;
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
@@ -1171,16 +1196,27 @@ void EAPlayerDeaths(int x, int y, const float scale,
                     const short padding, const short limit,
                     const bool force_opaque) {
 	byte drawn = 0;
+	int deaths = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
-
 		player_t* player = sortedPlayers()[i];
+
+		if (G_IsRoundsGame() && !G_IsDuelGame())
+		{
+			deaths = player->totaldeaths;
+		}
+		else
+		{
+			deaths = player->deathcount;
+		}
+
+
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;
-			buffer << player->deathcount;
+			buffer << deaths;
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
@@ -1197,6 +1233,8 @@ void EATeamPlayerPoints(int x, int y, const float scale,
                         const short padding, const short limit,
                         const byte team, const bool force_opaque) {
 	byte drawn = 0;
+	int points = 0;
+
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
@@ -1204,9 +1242,19 @@ void EATeamPlayerPoints(int x, int y, const float scale,
 		}
 
 		player_t* player = sortedPlayers()[i];
+
+		if (G_IsRoundsGame())
+		{
+			points = player->totalpoints;
+		}
+		else
+		{
+			points = player->points;
+		}
+
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
-			buffer << player->points;
+			buffer << points;
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);

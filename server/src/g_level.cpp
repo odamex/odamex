@@ -530,21 +530,7 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// Clear teamgame state.
-	Players::iterator it;
-	for (size_t i = 0; i < NUMTEAMS; i++)
-	{
-		for (it = players.begin(); it != players.end(); ++it)
-			it->flags[i] = false;
-
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		teamInfo->FlagData.flagger = 0;
-		teamInfo->FlagData.state = flag_home;
-		teamInfo->FlagData.firstgrab = false;
-		teamInfo->Points = 0;
-
-		if (full_reset)
-			teamInfo->RoundWins = 0;
-	}
+	TeamInfo_ResetScores(full_reset);
 
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
@@ -560,6 +546,7 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// Tell clients that a map reset is incoming.
+	Players::iterator it;
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
@@ -614,7 +601,7 @@ void G_DoResetLevel(bool full_reset)
 
 		if (full_reset)
 		{
-			P_ClearPlayerScores(*it, true);
+			P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
@@ -622,7 +609,7 @@ void G_DoResetLevel(bool full_reset)
 		}
 		else
 		{
-			P_ClearPlayerScores(*it, false);
+			P_ClearPlayerScores(*it, SCORES_CLEAR_POINTS);
 		}
 	}
 
@@ -728,7 +715,7 @@ void G_DoLoadLevel (int position)
 		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, true);
+		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
@@ -742,12 +729,9 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	// [deathz0r] It's a smart idea to reset the team points
+	// Reset Team Scores
 	if (G_IsTeamGame())
-	{
-		for (size_t i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->Points = 0;
-	}
+		TeamInfo_ResetScores();
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
 	// any nodes in the freelist are gone by now, cleared

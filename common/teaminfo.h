@@ -165,6 +165,7 @@ class TeamQuery
 };
 
 void InitTeamInfo();
+void TeamInfo_ResetScores(bool fullreset = true);
 TeamInfo* GetTeamInfo(team_t team);
 std::string V_GetTeamColor(TeamInfo* team);
 std::string V_GetTeamColor(team_t ateam);
