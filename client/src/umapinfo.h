@@ -21,11 +21,6 @@
 #ifndef __UMAPINFO_H
 #define __UMAPINFO_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 struct BossAction
 {
 	int type;
@@ -33,6 +28,7 @@ struct BossAction
 	int tag;
 };
 
+#if 0
 struct MapEntry
 {
 	char *mapname;
@@ -57,6 +53,7 @@ struct MapEntry
 	struct MapProperty *properties;
 	struct BossAction *bossactions;
 };
+#endif
 
 struct MapList
 {
@@ -68,10 +65,5 @@ extern struct MapList Maps;
 
 int ParseUMapInfo(int lump, const char* lumpname);
 void FreeMapList();
-struct MapProperty *FindProperty(struct MapEntry *map, const char *name);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

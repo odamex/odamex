@@ -39,6 +39,7 @@
 #include "m_alloc.h"
 #include "m_fileio.h"
 #include "minilzo.h"
+#include "oscanner.h"
 #include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
@@ -1039,6 +1040,31 @@ static void ParseMapInfoLower(
 	}
 }
 
+static void MapNameToLevelNum(level_pwad_info_t &info)
+{
+	if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
+	{
+		// Convert a char into its equivalent integer.
+		int e = info.mapname[1] - '0';
+		int m = info.mapname[3] - '0';
+		if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
+		{
+			// Copypasted from the ZDoom wiki.
+			info.levelnum = (e - 1) * 10 + m;
+		}
+	}
+	else if (strnicmp(info.mapname, "MAP", 3) == 0)
+	{
+		// Try and turn the trailing digits after the "MAP" into a
+		// level number.
+		int mapnum = atoi(info.mapname + 3);
+		if (mapnum >= 0 && mapnum <= 99)
+		{
+			info.levelnum = mapnum;
+		}
+	}
+}
+
 static void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -1119,27 +1145,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			// try and synthesize one from the level name.
 			if (info.levelnum == 0)
 			{
-				if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
-				{
-					// Convert a char into its equivalent integer.
-					int e = info.mapname[1] - '0';
-					int m = info.mapname[3] - '0';
-					if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
-					{
-						// Copypasted from the ZDoom wiki.
-						info.levelnum = (e - 1) * 10 + m;
-					}
-				}
-				else if (strnicmp(info.mapname, "MAP", 3) == 0)
-				{
-					// Try and turn the trailing digits after the "MAP" into a
-					// level number.
-					int mapnum = atoi(info.mapname + 3);
-					if (mapnum >= 0 && mapnum <= 99)
-					{
-						info.levelnum = mapnum;
-					}
-				}
+				MapNameToLevelNum(info);
 			}
 			break;
 		}

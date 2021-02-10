@@ -207,6 +207,8 @@ static const char * const ActorNames[] =
 
 static void FreeMap(MapEntry *mape)
 {
+
+#if 0
 	if (mape->mapname) free(mape->mapname);
 	if (mape->levelname) free(mape->levelname);
 	if (mape->intertext) free(mape->intertext);
@@ -216,11 +218,13 @@ static void FreeMap(MapEntry *mape)
 	mape->propertycount = 0;
 	mape->mapname = NULL;
 	mape->properties = NULL;
+#endif
 }
 
 
 void FreeMapList()
 {
+#if 0
 	unsigned i;
 	
 	for(i = 0; i < Maps.mapcount; i++)
@@ -230,6 +234,7 @@ void FreeMapList()
 	free(Maps.maps);
 	Maps.maps = NULL;
 	Maps.mapcount = 0;
+#endif
 }
 
 
@@ -337,13 +342,52 @@ namespace
 		if (pMap) *pMap = map;
 		return !strcmp(mapuname, lumpname);
 	}
+
+	void WriteArrayString(char *ptr, const char *str, size_t length)
+	{
+		for (size_t i = 0; i < length; ++i)
+		{
+			ptr[i] = str[i];
+
+			if (str[i] == '\0')
+			{
+				break;
+			}
+		}
+	}
 }
 
-static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
+// TODO: Remove this function and replace it with g_level equivalent when merging files
+static void MapNameToLevelNum(level_pwad_info_t *info)
+{
+	if (info->mapname[0] == 'E' && info->mapname[2] == 'M')
+	{
+		// Convert a char into its equivalent integer.
+		int e = info->mapname[1] - '0';
+		int m = info->mapname[3] - '0';
+		if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
+		{
+			// Copypasted from the ZDoom wiki.
+			info->levelnum = (e - 1) * 10 + m;
+		}
+	}
+	else if (strnicmp(info->mapname, "MAP", 3) == 0)
+	{
+		// Try and turn the trailing digits after the "MAP" into a
+		// level number.
+		int mapnum = atoi(info->mapname + 3);
+		if (mapnum >= 0 && mapnum <= 99)
+		{
+			info->levelnum = mapnum;
+		}
+	}
+}
+
+static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 {
 	// find the next line with content.
 	// this line is no property.
-	
+
 	scanner.MustGetToken(TK_Identifier);
 	char *pname = strdup(scanner.string);
 	scanner.MustGetToken('=');
@@ -351,7 +395,7 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 	if (!stricmp(pname, "levelname"))
 	{
 		scanner.MustGetToken(TK_StringConst);
-		ReplaceString(&mape->levelname, scanner.string);
+		ReplaceString(&mape->level_name, scanner.string);
 	}
 	else if (!stricmp(pname, "next"))
 	{
@@ -364,8 +408,8 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 	}
 	else if (!stricmp(pname, "nextsecret"))
 	{
-		ParseLumpName(scanner, mape->nextsecret);
-		if (!G_ValidateMapName(mape->nextsecret, NULL, NULL))
+		ParseLumpName(scanner, mape->secretmap);
+		if (!G_ValidateMapName(mape->secretmap, NULL, NULL))
 		{
 			scanner.ErrorF("Invalid map name %s", mape->nextmap);
 			return 0;
@@ -373,16 +417,17 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 	}
 	else if (!stricmp(pname, "levelpic"))
 	{
-		ParseLumpName(scanner, mape->levelpic);
+		ParseLumpName(scanner, mape->pname);
 	}
 	else if (!stricmp(pname, "skytexture"))
 	{
-		ParseLumpName(scanner, mape->skytexture);
+		ParseLumpName(scanner, mape->skypic);
 	}
 	else if (!stricmp(pname, "music"))
 	{
 		ParseLumpName(scanner, mape->music);
 	}
+#if 0
 	else if (!stricmp(pname, "endpic"))
 	{
 		ParseLumpName(scanner, mape->endpic);
@@ -413,16 +458,21 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 	{
 		ParseLumpName(scanner, mape->enterpic);
 	}
+#endif
 	else if (!stricmp(pname, "nointermission"))
 	{
 		scanner.MustGetToken(TK_BoolConst);
-		mape->nointermission = scanner.boolean;
+		if (scanner.boolean)
+		{
+			mape->flags |= LEVEL_NOINTERMISSION;
+		}
 	}
 	else if (!stricmp(pname, "partime"))
 	{
 		scanner.MustGetInteger();
 		mape->partime = TICRATE * scanner.number;
 	}
+#if 0
 	else if (!stricmp(pname, "intertext"))
 	{
 		char *lname = ParseMultiString(scanner, 1);
@@ -496,6 +546,7 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 
 		}
 	}
+#endif
 	else
 	{
 		do
@@ -509,6 +560,9 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 		} while (scanner.CheckToken(','));
 	}
 	free(pname);
+
+	MapNameToLevelNum(mape);
+	
 	return 1;
 }
 
@@ -518,11 +572,22 @@ static int ParseStandardProperty(Scanner &scanner, MapEntry *mape)
 //
 // -----------------------------------------------
 
-static int ParseMapEntry(Scanner &scanner, MapEntry *val)
+// TODO: Replace this function with the SetLevelDefaults in g_level when merging umapinfo into g_level
+static void SetLevelDefaults(level_pwad_info_t *levelinfo)
 {
-	val->mapname = NULL;
-	val->propertycount = 0;
-	val->properties = NULL;
+	memset(levelinfo, 0, sizeof(*levelinfo));
+	levelinfo->snapshot = NULL;
+	levelinfo->outsidefog_color[0] = 255;
+	levelinfo->outsidefog_color[1] = 0;
+	levelinfo->outsidefog_color[2] = 0;
+	levelinfo->outsidefog_color[3] = 0;
+	strncpy(levelinfo->fadetable, "COLORMAP", 8);
+}
+
+static int ParseMapEntry(Scanner &scanner, level_pwad_info_t *val)
+{
+	level_pwad_info_t defaultinfo;
+	SetLevelDefaults(&defaultinfo);
 
 	scanner.MustGetIdentifier("map");
 	scanner.MustGetToken(TK_Identifier);
@@ -532,12 +597,14 @@ static int ParseMapEntry(Scanner &scanner, MapEntry *val)
 		return 0;
 	}
 
-	ReplaceString(&val->mapname, scanner.string);
+	WriteArrayString(val->mapname, scanner.string, 9);
+	
 	scanner.MustGetToken('{');
 	while(!scanner.CheckToken('}'))
 	{
 		ParseStandardProperty(scanner, val);
 	}
+
 	return 1;
 }
 
@@ -558,15 +625,19 @@ int ParseUMapInfo(int lump, const char* lumpname)
 
 	Scanner::SetErrorCallback(I_Error);
 
+	
 
 	while (scanner.TokensLeft())
 	{
-		MapEntry parsed = { 0 };
+		level_pwad_info_t parsed = { 0 };
+		
 		ParseMapEntry(scanner, &parsed);
 
 		// Set default level progression here to simplify the checks elsewhere. Doing this lets us skip all normal code for this if nothing has been defined.
+#if 0
 		if (parsed.endpic[0])
 		{
+
 			parsed.nextmap[0] = parsed.nextsecret[0] = 0;
 			if (parsed.endpic[0] == '!') parsed.endpic[0] = 0;
 		}
@@ -589,7 +660,9 @@ int ParseUMapInfo(int lump, const char* lumpname)
 					sprintf(parsed.nextmap, "E%dM%d", ep, map);
 			}
 		}
+#endif
 
+#if 0
 		// Does this property already exist? If yes, replace it.
 		for(i = 0; i < Maps.mapcount; i++)
 		{
@@ -607,13 +680,8 @@ int ParseUMapInfo(int lump, const char* lumpname)
 			Maps.maps = (MapEntry*)realloc(Maps.maps, sizeof(MapEntry)*Maps.mapcount);
 			Maps.maps[Maps.mapcount-1] = parsed;
 		}
+#endif
 		
 	}
 	return 1;
-}
-
-
-MapProperty *FindProperty(MapEntry *map, const char *name)
-{
-	return NULL;
 }
