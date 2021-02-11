@@ -177,6 +177,11 @@ CVAR(sv_downloadsites, "",
 // Game mode options
 // -----------------
 
+CVAR(g_gametypename, "",
+     "A custom name for the gametype.  If blank, a default name is used based on "
+     "currently set cvars.",
+     CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
 CVAR(g_ctf_notouchreturn, "0",
      "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)

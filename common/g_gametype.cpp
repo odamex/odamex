@@ -29,6 +29,7 @@
 #include "m_wdlstats.h"
 #include "msg_server.h"
 
+EXTERN_CVAR(g_gametypename)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_roundlimit)
@@ -52,7 +53,9 @@ EXTERN_CVAR(sv_warmup)
 const std::string& G_GametypeName()
 {
 	static std::string name;
-	if (sv_gametype == GM_COOP && g_lives)
+	if (!g_gametypename.str().empty())
+		name = g_gametypename;
+	else if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP && ::multiplayer)
 		name = "Cooperative";
