@@ -54,7 +54,7 @@ const std::string& G_GametypeName()
 {
 	static std::string name;
 	if (!g_gametypename.str().empty())
-		name = g_gametypename;
+		name = g_gametypename.str();
 	else if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP && ::multiplayer)
