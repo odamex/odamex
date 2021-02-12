@@ -1,14 +1,20 @@
 # Build libraries.
 #
-# Here we prefer use of ExternalProject to add_subdirectory.  ExternalProject
-# builds the library exactly the way we want it without polluting the parent
-# CMake cache.
+# Here we use execute_process and file(DOWNLOAD) to download and compile
+# libraries as we need them.  Some stuff to remember:
 #
-# Some stuff to remember about ExternalProject
+# - C libraries can cross Debug/Release boundaries, but C++ libraries can't.
+#   You'll need to be able to select the proper debug vs release library in
+#   multi-config builds - see JsonCpp for an example.
+# - Xcode does not like it when CMake passes --parallel with no parameter.
 #
-# - BUILD_BYPRODUCTS is necessary for Ninja to pick up on the dependency.
-# - In custom build steps, be explicit about both DEPENDEES and DEPENDERS or
-#   else the build step might not be executed after a clean.
+
+# Parallel processor count - needed by Xcode.
+include(ProcessorCount)
+ProcessorCount(PARALLEL_PROC_COUNT)
+
+# Set our prefix path, so inter-dependencies are picked up on.
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
 
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -16,8 +22,46 @@ set(libsuffix "${CMAKE_STATIC_LIBRARY_SUFFIX}")
 set(dllprefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
 set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
-include(ExternalProject)
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+
+### zlib ###
+
+if(BUILD_CLIENT)
+  if(USE_INTERNAL_ZLIB)
+    message(STATUS "Compiling internal ZLIB...")
+
+    # Set vars so the finder can find them.
+    set(ZLIB_INCLUDE_DIR
+      "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    set(ZLIB_LIBRARY
+      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/zlib"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local")
+    unset(_COMPILE_CURL_WINSSL)
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+  endif()
+
+  find_package(ZLIB)
+  if(TARGET ZLIB::ZLIB)
+    set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_GLOBAL True)
+  endif()
+endif()
 
 ### libcurl ###
 
@@ -57,15 +101,14 @@ if(BUILD_CLIENT)
       "-DCMAKE_USE_LIBSSH2=OFF"
       "-DCMAKE_USE_WINSSL=${_COMPILE_CURL_WINSSL}"
       "-DCURL_ZLIB=OFF"
-      "-DHTTP_ONLY=ON"
-    )
+      "-DHTTP_ONLY=ON")
     unset(_COMPILE_CURL_WINSSL)
 
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
-      --config RelWithDebInfo --target install --parallel
-    )
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT})
   endif()
 
   find_package(CURL)
@@ -80,61 +123,145 @@ endif()
 ### JsonCpp ###
 
 if(BUILD_SERVER)
+  message(STATUS "Compiling JsonCpp...")
+
   # Figure out the correct library path to attach to our imported target
-  set(JSONCPP_LIBRARY
+  set(JSONCPP_LIBRARY_DEBUG
+    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncppd${libsuffix}")
+  set(JSONCPP_LIBRARY_RELEASE
     "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncpp${libsuffix}")
 
-  # Build the library as an ExternalProject.
-  ExternalProject_Add(jsoncpp-project
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp"
-    CMAKE_ARGS
-    "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+  # Generate the build.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
+    -G "${CMAKE_GENERATOR}"
+    -A "${CMAKE_GENERATOR_PLATFORM}"
+    -T "${CMAKE_GENERATOR_TOOLSET}"
+    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
     "-DCMAKE_LINKER=${CMAKE_LINKER}"
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib"  # Without this, CentOS installs into lib64
-    BUILD_BYPRODUCTS ${JSONCPP_LIBRARY}
-    EXCLUDE_FROM_ALL ON)
+    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
+
+  # Compile the library.
+  get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(IS_MULTI_CONFIG)
+    # Debug and Release are not compatible, so build both.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
+      --config Debug --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
+    --config RelWithDebInfo --target install
+    --parallel ${PARALLEL_PROC_COUNT})
+  else()
+    # Single config uses the passed build type.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
+      --config ${CMAKE_BUILD_TYPE} --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+  endif()
 
   # Synthesize an imported target that can be linked against.
   add_library(jsoncpp STATIC IMPORTED GLOBAL)
-  add_dependencies(jsoncpp jsoncpp-project)
   set_target_properties(jsoncpp PROPERTIES
     INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
     INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
-    IMPORTED_LOCATION ${JSONCPP_LIBRARY})
+    IMPORTED_LOCATION_DEBUG ${JSONCPP_LIBRARY_DEBUG}
+    IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
+    MAP_IMPORTED_CONFIG_MINSIZEREL Release
+    MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+endif()
+
+### libpng ###
+
+if(BUILD_CLIENT)
+  if(USE_INTERNAL_PNG)
+    message(STATUS "Compiling internal libpng...")
+
+    # Set vars so the finder can find them.
+    set(PNG_PNG_INCLUDE_DIR
+      "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    if(NOT MSVC)
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16${libsuffix}")
+    else()
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
+    endif()
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/libpng"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-DPNG_SHARED=OFF"
+      "-DPNG_TESTS=OFF")
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+  endif()
+
+  set(ZLIB_INCLUDE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
+
+  find_package(PNG)
+  if(TARGET PNG::PNG)
+    set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
+  endif()
 endif()
 
 ### MiniUPnPc ###
 
 if(BUILD_SERVER)
+  message(STATUS "Compiling MiniUPnPc...")
+
   # Figure out the correct library path to attach to our imported target
+  set(MINIUPNPC_INCLUDE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc")
   set(MINIUPNPC_LIBRARY
     "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
 
-  # Build the library as an ExternalProject.
-  ExternalProject_Add(miniupnpc-project
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libminiupnpc"
-    CMAKE_ARGS
+  # This must exist before the target is synthesized.
+  file(MAKE_DIRECTORY ${MINIUPNPC_INCLUDE_DIR})
+
+  # Generate the build.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/libminiupnpc"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
+    -G "${CMAKE_GENERATOR}"
+    -A "${CMAKE_GENERATOR_PLATFORM}"
+    -T "${CMAKE_GENERATOR_TOOLSET}"
     "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
     "-DCMAKE_LINKER=${CMAKE_LINKER}"
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
     "-DUPNPC_BUILD_SHARED=No"
-    "-DUPNPC_BUILD_TESTS=No"
-    BUILD_BYPRODUCTS ${MINIUPNPC_LIBRARY}
-    EXCLUDE_FROM_ALL ON)
+    "-DUPNPC_BUILD_TESTS=No")
 
-  # Ensure the destination include directory exists, or else CMake complains.
-  set(MINIUPNPC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc")
-  file(MAKE_DIRECTORY "${MINIUPNPC_INCLUDE_DIR}")
+  # Compile the library.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
+    --config RelWithDebInfo --target install --parallel ${PARALLEL_PROC_COUNT})
 
   # Synthesize an imported target that can be linked against.
   add_library(upnpc-static STATIC IMPORTED GLOBAL)
-  add_dependencies(upnpc-static miniupnpc-project)
   set_target_properties(upnpc-static PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${MINIUPNPC_INCLUDE_DIR}"
     IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})

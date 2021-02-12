@@ -1,6 +1,13 @@
 [submodule "libraries/curl"]
 	path = libraries/curl
 	url = https://github.com/curl/curl
+[submodule "libraries/zlib"]
+	path = libraries/zlib
+	url = https://github.com/madler/zlib.git
+	ignore = dirty
+[submodule "libraries/libpng"]
+	path = libraries/libpng
+	url = https://github.com/glennrp/libpng.git
 [submodule "libraries/protobuf"]
 	path = libraries/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git

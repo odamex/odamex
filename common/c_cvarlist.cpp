@@ -173,17 +173,14 @@ CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",
      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
-					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
-					
-CVAR(				sv_coopunassignedvoodoodolls, "1", "", 
-					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
-					
-CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
-					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
 
 // Game mode options
 // -----------------
+
+CVAR(g_gametypename, "",
+     "A custom name for the gametype.  If blank, a default name is used based on "
+     "currently set cvars.",
+     CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
 CVAR(g_ctf_notouchreturn, "0",
      "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
@@ -221,7 +218,7 @@ CVAR(g_winlimit, "0",
      "Number of times a round must be won before a player or team wins the game",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(g_speclosers, "0", "After a game is won, force losing players or teams to spectate",
+CVAR(g_winnerstays, "0", "After a match winners stay in the game, losers get spectated.",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",

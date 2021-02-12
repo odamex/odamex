@@ -61,46 +61,6 @@ if(UNIX AND NOT APPLE)
   endif()
 endif()
 
-# zlib configuration
-if(NOT USE_INTERNAL_ZLIB)
-  find_package(ZLIB)
-endif()
-if(NOT ZLIB_FOUND)
-  set(ZLIB_LIBRARY "z")
-  set(ZLIB_LIBRARIES ${ZLIB_LIBRARY})
-  set(ZLIB_DIR ../libraries/zlib/)
-  set(ZLIB_INCLUDE_DIR ${ZLIB_DIR})
-  set(ZLIB_INCLUDE_DIRS ${ZLIB_DIR})
-  file(GLOB ZLIB_HEADERS ${ZLIB_DIR}/*.h)
-  file(GLOB ZLIB_SOURCES ${ZLIB_DIR}/*.c)
-  include_directories(${ZLIB_DIR})
-  add_library(${ZLIB_LIBRARY} STATIC ${ZLIB_SOURCES} ${ZLIB_HEADERS})
-  message(STATUS "zlib will be built and staticaly linked when compiling the client application.")
-endif()
-
-include_directories(${ZLIB_INCLUDE_DIRS})
-
-# libpng configuration
-if(NOT USE_INTERNAL_PNG)
-  find_package(PNG)
-endif()
-if(NOT PNG_FOUND)
-  set(PNG_LIBRARY "png")
-  set(PNG_LIBRARIES ${PNG_LIBRARY})
-  set(PNG_DIR ../libraries/libpng/)
-  set(PNG_INCLUDE_DIR ${PNG_DIR})
-  set(PNG_INCLUDE_DIRS ${PNG_DIR})
-  file(GLOB PNG_HEADERS ${PNG_DIR}/*.h)
-  file(GLOB PNG_SOURCES ${PNG_DIR}/*.c)
-  include_directories(${LIBPNG_DIR})
-  add_library(${PNG_LIBRARY} STATIC ${PNG_SOURCES} ${PNG_HEADERS})
-  message(STATUS "libpng will be built and staticaly linked when compiling the client application.")
-  add_definitions(-DUSE_PNG)
-endif()
-
-include_directories(${PNG_INCLUDE_DIRS})
-add_definitions(-DUSE_PNG)
-
 # PortMidi configuration
 
 # PortMidi
@@ -241,6 +201,8 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
+
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

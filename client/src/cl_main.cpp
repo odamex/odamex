@@ -1557,6 +1557,8 @@ void CL_PlayerMembers()
 		p.deathcount = MSG_ReadVarint();
 		p.killcount = MSG_ReadVarint();
 		p.secretcount = MSG_ReadVarint();
+		p.totalpoints = MSG_ReadVarint();
+		p.totaldeaths = MSG_ReadVarint();
 	}
 }
 
@@ -3048,6 +3050,14 @@ void CL_ClearSectorSnapshots()
 void CL_SecretEvent()
 {
 	player_t& player = idplayer(MSG_ReadByte());
+	unsigned short sectornum = (unsigned short)MSG_ReadShort();
+	short special = MSG_ReadShort();
+
+	if (!sectors || sectornum >= numsectors)
+		return;
+
+	sector_t* sector = &sectors[sectornum];
+	sector->special = special;
 
 	// Don't show other secrets if requested
 	if (!hud_revealsecrets || hud_revealsecrets > 2)
@@ -3498,7 +3508,8 @@ void CL_Switch()
 }
 
 void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activationType,
-	byte special = 0, byte arg0 = 0, byte arg1 = 0, byte arg2 = 0, byte arg3 = 0, byte arg4 = 0)
+                  byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
+                  int arg3 = 0, int arg4 = 0)
 {
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
@@ -4424,11 +4435,11 @@ void CL_ExecuteLineSpecial()
 	byte special = MSG_ReadByte();
 	uint16_t lineid = MSG_ReadShort();
 	AActor* activator = P_FindThingById(MSG_ReadShort());
-	byte arg0 = MSG_ReadByte();
-	byte arg1 = MSG_ReadByte();
-	byte arg2 = MSG_ReadByte();
-	byte arg3 = MSG_ReadByte();
-	byte arg4 = MSG_ReadByte();
+	int arg0 = MSG_ReadVarint();
+	int arg1 = MSG_ReadVarint();
+	int arg2 = MSG_ReadVarint();
+	int arg3 = MSG_ReadVarint();
+	int arg4 = MSG_ReadVarint();
 
 	if (lineid != 0xFFFF && lineid > numlines)
 		return;

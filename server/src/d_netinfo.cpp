@@ -29,6 +29,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
+#include "v_textcolors.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.
@@ -76,7 +77,7 @@ bool SetServerVar (const char *name, const char *value)
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 {
 	SetServerVar (cvar->name(), (char *)value);
-
+	SV_BroadcastPrintf("%s%s has been modified to %s!\n", TEXTCOLOR_YELLOW, cvar->name(), (char*)value);
 	SV_ServerSettingChange ();
 }
 

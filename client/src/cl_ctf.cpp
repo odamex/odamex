@@ -34,6 +34,7 @@
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "v_text.h"
+#include "g_gametype.h"
 
 static int tintglow = 0;
 
@@ -99,12 +100,17 @@ void CL_CTFEvent (void)
 	team_t flag = (team_t)MSG_ReadByte();
 	team_t team = (team_t)MSG_ReadByte();
 	player_t &player = idplayer(MSG_ReadByte());
-	int points = MSG_ReadLong();
+	int points = MSG_ReadVarint();
 
 	TeamInfo* teamInfo = GetTeamInfo(flag);
 
-	if(validplayer(player))
-		player.points = points;
+	if (validplayer(player))
+	{
+		if (G_IsRoundsGame())
+			player.totalpoints = points;
+		else
+			player.points = points;
+	}
 
 	for(size_t i = 0; i < NUMTEAMS; i++)
 		GetTeamInfo((team_t)i)->Points = MSG_ReadLong ();

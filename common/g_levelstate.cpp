@@ -30,7 +30,6 @@
 
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_lives_jointimer)
-EXTERN_CVAR(g_sides)
 EXTERN_CVAR(sv_countdown)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_teamsinplay)
@@ -65,7 +64,7 @@ int LevelState::getCountdown() const
  */
 team_t LevelState::getDefendingTeam() const
 {
-	if (!g_sides || !G_IsTeamGame())
+	if (!G_IsSidesGame())
 	{
 		return TEAM_NONE;
 	}
@@ -238,6 +237,10 @@ void LevelState::readyToggle()
 	if (!sv_warmup)
 		return;
 
+	// Lobbies can't be readied up in.
+	if (::level.flags & LEVEL_LOBBYSPECIAL)
+		return;
+
 	// No useful work can be done unless we're either in warmup or taking
 	// part in the normal warmup countdown.
 	if (!(m_state == LevelState::WARMUP || m_state == LevelState::WARMUP_COUNTDOWN))
@@ -373,6 +376,12 @@ void LevelState::tic()
 		}
 		break;
 	case LevelState::WARMUP: {
+		if (::level.flags & LEVEL_LOBBYSPECIAL)
+		{
+			// Lobby maps stay in warmup mode forever.
+			return;
+		}
+
 		if (!sv_warmup)
 		{
 			// We are in here for gametype reasons.  Auto-start once we
@@ -431,9 +440,8 @@ void LevelState::tic()
 				printRoundStart();
 			else
 			{
-				SV_BroadcastPrintf ("The %s has started.\n",
+				SV_BroadcastPrintf("The %s has started.\n",
 				                   (sv_gametype == GM_COOP) ? "game" : "match");
-
 			}
 			return;
 		}
@@ -565,8 +573,8 @@ void LevelState::printRoundStart() const
 	if (def != TEAM_NONE)
 	{
 		TeamInfo& teaminfo = *GetTeamInfo(def);
-		SV_BroadcastPrintf("Round %d has started - %s is on defense.\n",
-		                   m_roundNumber, teaminfo.ColorizedTeamName().c_str());
+		SV_BroadcastPrintf("Round %d has started - %s is on defense.\n", m_roundNumber,
+		                   teaminfo.ColorizedTeamName().c_str());
 	}
 	else
 	{
@@ -609,6 +617,8 @@ static const char* WinTypeToString(WinInfo::WinType type)
 	{
 	case WinInfo::WIN_NOBODY:
 		return "WIN_NOBODY";
+	case WinInfo::WIN_EVERYBODY:
+		return "WIN_EVERYBODY";
 	case WinInfo::WIN_DRAW:
 		return "WIN_DRAW";
 	case WinInfo::WIN_PLAYER:

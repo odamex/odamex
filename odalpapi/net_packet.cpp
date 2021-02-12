@@ -205,6 +205,8 @@ void Server::ResetData()
 	Info.CurrentMap = "";
 	Info.TimeLeft = 0;
 	Info.TimeLimit = 0;
+	Info.Lives = 0;
+	Info.Sides = 0;
 
 	Ping = 0;
 }
@@ -318,6 +320,14 @@ bool Server::ReadCvars()
 		{
 			// Add this to the cvar list as well
 			Info.TimeLimit = Cvar.ui16;
+		}
+		else if (Cvar.Name == "g_lives")
+		{
+			Info.Lives = Cvar.ui16;
+		}
+		else if(Cvar.Name == "g_sides")
+		{
+			Info.Sides = Cvar.ui16;
 		}
 
 		Info.Cvars.push_back(Cvar);

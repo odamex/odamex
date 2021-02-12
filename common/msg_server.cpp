@@ -224,6 +224,8 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 		MSG_WriteVarint(&b, player.killcount);
 		// [AM] Is there any reason we would ever care about itemcount?
 		MSG_WriteVarint(&b, player.secretcount);
+		MSG_WriteVarint(&b, player.totalpoints);
+		MSG_WriteVarint(&b, player.totaldeaths);
 	}
 }
 
@@ -288,13 +290,24 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.last_wininfo_id);
 }
 
+#include "p_lnspec.h"
+#include "p_local.h"
+
 /**
  * @brief Send information about a player who discovered a secret.
  */
-void SVC_SecretFound(buf_t& b, int playerid)
+void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 {
-	MSG_WriteMarker(&b, svc_secretevent);
-	MSG_WriteByte(&b, playerid);			// ID of player who discovered it
+	sector_t* sector = &sectors[sectornum];
+
+	// Only update secret sectors that've been discovered.
+	if (sector != NULL && (!(sector->special & SECRET_MASK) && sector->secretsector))
+	{
+		MSG_WriteMarker(&b, svc_secretevent);
+		MSG_WriteByte(&b, playerid); // ID of player who discovered it
+		MSG_WriteShort(&b, sectornum);
+		MSG_WriteShort(&b, sector->special);
+	}
 }
 
 VERSION_CONTROL(msg_server, "$Id$")

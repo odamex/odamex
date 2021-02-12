@@ -129,7 +129,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		client_t* cl = &(it->client);
 
 		// Only allow RCON messages that are PRINT_HIGH
-		if (cl->allow_rcon && printlevel == PRINT_HIGH)
+		if (cl->allow_rcon && printlevel == PRINT_HIGH || printlevel == PRINT_WARNING || printlevel == PRINT_ERROR)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
 			MSG_WriteByte(&cl->reliablebuf, PRINT_WARNING);

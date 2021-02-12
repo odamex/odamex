@@ -545,7 +545,7 @@ void G_DoLoadLevel (int position)
 		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, false);
+		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
