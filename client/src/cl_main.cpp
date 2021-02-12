@@ -2653,7 +2653,6 @@ static void PlayerInfo()
 		Printf(PRINT_WARNING, "%s: Could not read message.\n", __FUNCTION__);
 		return;
 	}
-	Printf(PRINT_HIGH, "%s\n", msg.ShortDebugString().c_str());
 
 	player_t* p = &consoleplayer();
 
@@ -3761,16 +3760,6 @@ void CL_ResetMap()
 		netdemo.writeMapChange();
 }
 
-void CL_EndGame()
-{
-	Host_EndGame ("\nServer disconnected\n");
-}
-
-void CL_FullGame()
-{
-	Host_EndGame ("Server is full\n");
-}
-
 void CL_ExitLevel()
 {
 	gameaction = ga_completed;
@@ -3779,9 +3768,34 @@ void CL_ExitLevel()
 		netdemo.writeIntermission();
 }
 
-void CL_Noop()
+static void Noop()
 {
 	// Nothing to see here. Move along.
+}
+
+static void Disconnect()
+{
+	size_t size = MSG_ReadUnVarint();
+	void* data = MSG_ReadChunk(size);
+
+	svc::DisconnectMsg msg;
+	if (!msg.ParseFromArray(data, size))
+	{
+		Printf(PRINT_WARNING, "%s: Could not read message.\n", __FUNCTION__);
+		return;
+	}
+
+	std::string buffer;
+	if (!msg.message().empty())
+	{
+		StrFormat(buffer, "Disconnected from server: %s", msg.message().c_str());
+	}
+	else
+	{
+		StrFormat(buffer, "Disconnected from server\n");
+	}
+
+	Host_EndGame(buffer.c_str());
 }
 
 void CL_Clear()
@@ -3841,7 +3855,8 @@ static ServerMessageFunc GetMessageFunc(svc_t type)
 {
 	switch (type)
 	{
-		SERVER_MSG_FUNC(svc_abort, CL_EndGame);
+		SERVER_MSG_FUNC(svc_noop, Noop);
+		SERVER_MSG_FUNC(svc_disconnect, Disconnect);
 		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
 		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
 		SERVER_MSG_FUNC(svc_playerinfo, PlayerInfo);
@@ -3896,8 +3911,6 @@ static ServerMessageFunc GetMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
 		SERVER_MSG_FUNC(svc_secretevent, CL_SecretEvent);
 		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
-		SERVER_MSG_FUNC(svc_disconnect, CL_EndGame);
-		SERVER_MSG_FUNC(svc_full, CL_FullGame);
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
 		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
@@ -3933,7 +3946,7 @@ static ServerMessageFunc GetMessageFunc(svc_t type)
 void CL_ParseCommands(void)
 {
 	std::vector<svc_t> history;
-	svc_t cmd = svc_abort;
+	svc_t cmd = svc_noop;
 
 	while (connected)
 	{

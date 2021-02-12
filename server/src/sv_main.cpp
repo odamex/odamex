@@ -2077,7 +2077,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		MSG_WriteString(&cl->reliablebuf,
                         (const char *)FormattedString.str().c_str());
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
+		SVC_Disconnect(cl->reliablebuf);
 
 		SV_SendPacket(*it);
 
@@ -2127,11 +2127,10 @@ void SV_ConnectClient()
 	{
 		Printf("%s disconnected (server full).\n", NET_AdrToString (net_from));
 
-		static buf_t smallbuf(16);
+		static buf_t smallbuf(1024);
 		MSG_WriteLong(&smallbuf, 0);
-		MSG_WriteMarker(&smallbuf, svc_full);
+		SVC_Disconnect(smallbuf, "Server is full\n");
 		NET_SendPacket(smallbuf, net_from);
-
 		return;
 	}
 
@@ -2370,7 +2369,7 @@ void SV_DropClient(player_t &who)
 {
 	client_t *cl = &who.client;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
+	SVC_Disconnect(cl->reliablebuf);
 
 	SV_SendPacket(who);
 
@@ -2386,7 +2385,7 @@ void SV_SendDisconnectSignal()
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
+		SVC_Disconnect(cl->reliablebuf, "Shutting down\n");
 		SV_SendPacket(*it);
 
 		if (it->mo)

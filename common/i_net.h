@@ -115,10 +115,8 @@ struct msg_info_t
 // network messages
 enum svc_t
 {
-	svc_abort,
-	svc_full,
+	svc_noop,
 	svc_disconnect,
-	svc_reserved3,
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]

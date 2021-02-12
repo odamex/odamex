@@ -977,10 +977,8 @@ float MSG_ReadFloat(void)
 static void InitNetMessageFormats()
 {
 	// Server Messages.
-	SVC_INFO(svc_abort);
-	SVC_INFO(svc_full);
+	SVC_INFO(svc_noop);
 	SVC_INFO(svc_disconnect);
-	SVC_INFO(svc_reserved3);
 	SVC_INFO(svc_playerinfo);
 	SVC_INFO(svc_moveplayer);
 	SVC_INFO(svc_updatelocalplayer);

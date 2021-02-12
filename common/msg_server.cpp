@@ -31,14 +31,27 @@
 #include "d_main.h"
 #include "server.pb.h"
 
+void SVC_Disconnect(buf_t& b, const char* message)
+{
+	svc::DisconnectMsg msg;
+	if (message != NULL)
+	{
+		msg.set_message(message);
+	}
+
+	std::string str = msg.SerializeAsString();
+
+	MSG_WriteMarker(&b, svc_disconnect);
+	MSG_WriteUnVarint(&b, str.size());
+	MSG_WriteChunk(&b, str.data(), str.size());
+}
+
 /**
  * @brief Send information about a player.
  */
 void SVC_PlayerInfo(buf_t& b, player_t& player)
 {
 	svc::PlayerInfoMsg msg;
-
-	MSG_WriteMarker(&b, svc_playerinfo);
 
 	// [AM] 9 weapons, 6 cards, 1 backpack = 16 bits
 	uint16_t booleans = 0;
@@ -92,6 +105,8 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 	}
 
 	std::string str = msg.SerializeAsString();
+
+	MSG_WriteMarker(&b, svc_playerinfo);
 	MSG_WriteUnVarint(&b, str.size());
 	MSG_WriteChunk(&b, str.data(), str.size());
 }
