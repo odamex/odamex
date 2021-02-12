@@ -34,7 +34,6 @@
 #include "i_system.h"
 #include "w_wad.h"
 #include "z_zone.h"
-//#include "../../server/src/sv_pch.h"
 
 // TODO: Add episodes
 //void M_AddEpisode(const char *map, char *def);
@@ -344,7 +343,7 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	if (!stricmp(pname, "levelname"))
 	{
 		scanner.MustGetToken(TK_StringConst);
-		ReplaceString(&mape->level_name, scanner.string);
+		mape->level_name = strdup(scanner.string);
 	}
 	else if (!stricmp(pname, "next"))
 	{
@@ -536,7 +535,7 @@ static void SetLevelDefaults(level_pwad_info_t *levelinfo)
 	strncpy(levelinfo->fadetable, "COLORMAP", 8);
 }
 
-int ParseUMapInfo(int lump, const char* lumpname)
+void ParseUMapInfo(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
@@ -555,8 +554,8 @@ int ParseUMapInfo(int lump, const char* lumpname)
 		scanner.MustGetToken(TK_Identifier);
 		if (!G_ValidateMapName(scanner.string, NULL, NULL))
 		{
-			scanner.ErrorF("Invalid map name %s", scanner.string);
-			return 0;
+			// TODO: should display line number of error
+			I_Error("Invalid map name %s", scanner.string);
 		}
 
 		// Find the level.
@@ -605,5 +604,4 @@ int ParseUMapInfo(int lump, const char* lumpname)
 		}
 #endif
 	}
-	return 1;
 }

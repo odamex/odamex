@@ -63,7 +63,7 @@ struct MapList
 
 extern struct MapList Maps;
 
-int ParseUMapInfo(int lump, const char* lumpname);
+void ParseUMapInfo(int lump, const char* lumpname);
 void FreeMapList();
 
 #endif
