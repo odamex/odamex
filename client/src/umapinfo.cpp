@@ -202,44 +202,6 @@ static const char * const ActorNames[] =
 
 // -----------------------------------------------
 //
-//
-// -----------------------------------------------
-
-static void FreeMap(MapEntry *mape)
-{
-
-#if 0
-	if (mape->mapname) free(mape->mapname);
-	if (mape->levelname) free(mape->levelname);
-	if (mape->intertext) free(mape->intertext);
-	if (mape->intertextsecret) free(mape->intertextsecret);
-	if (mape->properties) free(mape->properties);
-	if (mape->bossactions) free(mape->bossactions);
-	mape->propertycount = 0;
-	mape->mapname = NULL;
-	mape->properties = NULL;
-#endif
-}
-
-
-void FreeMapList()
-{
-#if 0
-	unsigned i;
-	
-	for(i = 0; i < Maps.mapcount; i++)
-	{
-		FreeMap(&Maps.maps[i]);
-	}
-	free(Maps.maps);
-	Maps.maps = NULL;
-	Maps.mapcount = 0;
-#endif
-}
-
-
-// -----------------------------------------------
-//
 // Parses a set of string and concatenates them
 //
 // -----------------------------------------------
@@ -482,13 +444,16 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	{
 		ParseLumpName(scanner, mape->intermusic);
 	}
+#endif
 	else if (!stricmp(pname, "episode"))
 	{
+		// Not implemented
 		char *lname = ParseMultiString(scanner, 1);
 		if (!lname) return 0;
-		// TODO: Add episodes
-		//M_AddEpisode(mape->mapname, lname);
+		
+		// would add episode after parsing here
 	}
+#if 0
 	else if (!stricmp(pname, "bossaction"))
 	{
 		scanner.MustGetToken(TK_Identifier);
@@ -577,7 +542,6 @@ int ParseUMapInfo(int lump, const char* lumpname)
 	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
-
 	SetLevelDefaults(&defaultinfo);
 	
 	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);

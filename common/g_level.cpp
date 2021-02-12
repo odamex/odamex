@@ -1136,8 +1136,6 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
-	DWORD levelflags;
-
 	SetLevelDefaults (&defaultinfo);
 
 	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
@@ -1161,7 +1159,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 		}
 		else if (os.compareToken("map"))
 		{
-			levelflags = defaultinfo.flags;
+			DWORD levelflags = defaultinfo.flags;
 			MustGetString(os);
 
 			char map_name[9];
