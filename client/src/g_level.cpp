@@ -651,7 +651,6 @@ void G_WorldDone (void)
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
 	options.music = thiscluster.messagemusic;
-	options.music = thiscluster.exittext;
 	if (thiscluster.finalepic[0] != '\0')
 	{
 		options.pic = &thiscluster.finalepic[0];
