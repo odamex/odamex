@@ -243,8 +243,8 @@ PlayerResults PlayerQuery::execute()
 			for (PlayersView::iterator it = results.players.begin();
 			     it != results.players.end();)
 			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
-				                                         : (*it)->fragcount == top;
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->roundwins != top
+				                                         : (*it)->roundwins == top;
 				if (cmp)
 				{
 					it = results.players.erase(it);
