@@ -555,11 +555,11 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 
 // -----------------------------------------------
 //
-// Parses a complete map entry
+// Parses a complete UMAPINFO lump
 //
 // -----------------------------------------------
 
-// TODO: Replace this function with the SetLevelDefaults in g_level when merging umapinfo into g_level
+// TODO: remove when merging
 static void SetLevelDefaults(level_pwad_info_t *levelinfo)
 {
 	memset(levelinfo, 0, sizeof(*levelinfo));
@@ -571,102 +571,75 @@ static void SetLevelDefaults(level_pwad_info_t *levelinfo)
 	strncpy(levelinfo->fadetable, "COLORMAP", 8);
 }
 
-static int ParseMapEntry(Scanner &scanner, level_pwad_info_t *val)
-{
-	level_pwad_info_t defaultinfo;
-	SetLevelDefaults(&defaultinfo);
-
-	scanner.MustGetIdentifier("map");
-	scanner.MustGetToken(TK_Identifier);
-	if (!G_ValidateMapName(scanner.string, NULL, NULL))
-	{
-		scanner.ErrorF("Invalid map name %s", scanner.string);
-		return 0;
-	}
-
-	strncpy(val->mapname, scanner.string, 8);
-	
-	scanner.MustGetToken('{');
-	while(!scanner.CheckToken('}'))
-	{
-		ParseStandardProperty(scanner, val);
-	}
-
-	return 1;
-}
-
-// -----------------------------------------------
-//
-// Parses a complete UMAPINFO lump
-//
-// -----------------------------------------------
-
 int ParseUMapInfo(int lump, const char* lumpname)
 {
-	//const unsigned char *buffer, size_t length, umapinfo_errorfunc err
+	LevelInfos& levels = getLevelInfos();
+	ClusterInfos& clusters = getClusterInfos();
+
+	level_pwad_info_t defaultinfo;
+
+	SetLevelDefaults(&defaultinfo);
 	
 	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
 	
 	Scanner scanner((const char*)buffer, W_LumpLength(lump));
-	unsigned int i;
-
 	Scanner::SetErrorCallback(I_Error);
 
 	while (scanner.TokensLeft())
 	{
-		level_pwad_info_t parsed = { 0 };
+		scanner.MustGetIdentifier("map");
+		scanner.MustGetToken(TK_Identifier);
+		if (!G_ValidateMapName(scanner.string, NULL, NULL))
+		{
+			scanner.ErrorF("Invalid map name %s", scanner.string);
+			return 0;
+		}
+
+		// Find the level.
+		level_pwad_info_t &info = (levels.findByName(scanner.string).exists()) ?
+			levels.findByName(scanner.string) :
+			levels.create();
 		
-		ParseMapEntry(scanner, &parsed);
+		// Free the level name string before we pave over it.
+		free(info.level_name);
+
+		info = defaultinfo;
+		uppercopy(info.mapname, scanner.string);
+
+		scanner.MustGetToken('{');
+		while (!scanner.CheckToken('}'))
+		{
+			ParseStandardProperty(scanner, &info);
+		}
 
 		// Set default level progression here to simplify the checks elsewhere. Doing this lets us skip all normal code for this if nothing has been defined.
 #if 0
-		if (parsed.endpic[0])
+		if (info.endpic[0])
 		{
 
-			parsed.nextmap[0] = parsed.nextsecret[0] = 0;
-			if (parsed.endpic[0] == '!') parsed.endpic[0] = 0;
+			info.nextmap[0] = info.nextsecret[0] = 0;
+			if (info.endpic[0] == '!') info.endpic[0] = 0;
 		}
-		else if (!parsed.nextmap[0] && !parsed.endpic[0])
+		else if (!info.nextmap[0] && !info.endpic[0])
 		{
-			if (!stricmp(parsed.mapname, "MAP30")) strcpy(parsed.endpic, "$CAST");
-			else if (!stricmp(parsed.mapname, "E1M8"))  strcpy(parsed.endpic, gamemode == retail? "CREDIT" : "HELP2");
-			else if (!stricmp(parsed.mapname, "E2M8"))  strcpy(parsed.endpic, "VICTORY");
-			else if (!stricmp(parsed.mapname, "E3M8"))  strcpy(parsed.endpic, "$BUNNY");
-			else if (!stricmp(parsed.mapname, "E4M8"))  strcpy(parsed.endpic, "ENDPIC");
-			else if (gamemission == chex && !stricmp(parsed.mapname, "E1M5"))  strcpy(parsed.endpic, "CREDIT");
+			if (!stricmp(info.mapname, "MAP30")) strcpy(info.endpic, "$CAST");
+			else if (!stricmp(info.mapname, "E1M8"))  strcpy(info.endpic, gamemode == retail? "CREDIT" : "HELP2");
+			else if (!stricmp(info.mapname, "E2M8"))  strcpy(info.endpic, "VICTORY");
+			else if (!stricmp(info.mapname, "E3M8"))  strcpy(info.endpic, "$BUNNY");
+			else if (!stricmp(info.mapname, "E4M8"))  strcpy(info.endpic, "ENDPIC");
+			else if (gamemission == chex && !stricmp(info.mapname, "E1M5"))  strcpy(info.endpic, "CREDIT");
 			else
 			{
 				int ep, map;
-				G_ValidateMapName(parsed.mapname, &ep, &map);
+				G_ValidateMapName(info.mapname, &ep, &map);
 				map++;
 				if (gamemode == commercial)
-					sprintf(parsed.nextmap, "MAP%02d", map);
+					sprintf(info.nextmap, "MAP%02d", map);
 				else
-					sprintf(parsed.nextmap, "E%dM%d", ep, map);
+					sprintf(info.nextmap, "E%dM%d", ep, map);
 			}
 		}
 #endif
-
-#if 0
-		// Does this property already exist? If yes, replace it.
-		for(i = 0; i < Maps.mapcount; i++)
-		{
-			if (!strcmp(parsed.mapname, Maps.maps[i].mapname))
-			{
-				FreeMap(&Maps.maps[i]);
-				Maps.maps[i] = parsed;
-				break;
-			}
-		}
-		// Not found so create a new one.
-		if (i == Maps.mapcount)
-		{
-			Maps.mapcount++;
-			Maps.maps = (MapEntry*)realloc(Maps.maps, sizeof(MapEntry)*Maps.mapcount);
-			Maps.maps[Maps.mapcount-1] = parsed;
-		}
-#endif
-		
 	}
 	return 1;
 }

@@ -712,7 +712,7 @@ namespace
 		MustGetString(os);
 		if (os.compareToken(name) == false)
 		{
-			// TODO: Was SC_ScriptError
+			// TODO: was previously SC_ScriptError, less information is printed now
 			I_Error("Expected '%s', got '%s'.", name, os.getToken());
 		}
 	}
@@ -722,7 +722,7 @@ namespace
 		MustGetString(os);
 		if (IsNum(os.getToken().c_str()) == false)
 		{
-			// TODO: Was SC_ScriptError
+			// TODO: was previously SC_ScriptError, less information is printed now
 			I_Error("Missing integer (unexpected end of file).");
 		}
 	}
@@ -732,7 +732,7 @@ namespace
 		MustGetString(os);
 		if (IsRealNum(os.getToken().c_str()) == false)
 		{
-			// TODO: Was SC_ScriptError
+			// TODO: was previously SC_ScriptError, less information is printed now
 			I_Error("Missing floating-point number (unexpected end of file).");
 		}
 	}
@@ -781,7 +781,7 @@ static void ParseMapInfoLower(
 
 		if (
 			newMapinfoStack <= 0 &&
-			!ContainsMapInfoTopLevel(os) &&
+			ContainsMapInfoTopLevel(os) &&
 			// "cluster" is a valid map block type and is also
 			// a valid top-level type.
 			!os.compareToken("cluster")
@@ -801,7 +801,7 @@ static void ParseMapInfoLower(
 				// able to parse all types even if we can't
 				// do anything with them.
 				//
-				// TODO: was previously SC_ScriptError, if that matters
+				// TODO: was previously SC_ScriptError, less information is printed now
 				I_Error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
 			}
 
@@ -1142,7 +1142,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 
 	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
 	
-	OScannerConfig config = { // TODO: Confirm how to handle semicolons
+	OScannerConfig config = {
 		lumpname, // lumpName
 		false,      // semiComments
 		true,       // cComments
