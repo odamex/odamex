@@ -77,6 +77,11 @@ set(ODAWAD_SOURCES
   graphics/fontb56.gif
   graphics/fontb57.gif
   graphics/fontb58.gif
+  graphics/fontb59.gif
+  graphics/fontb60.gif
+  graphics/fontb61.gif
+  graphics/fontb62.gif
+  graphics/fontb63.gif
   graphics/gslide.gif
   graphics/litlcurs.gif
   graphics/litldn.gif

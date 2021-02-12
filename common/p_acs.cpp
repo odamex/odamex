@@ -67,9 +67,12 @@ struct FBehavior::ArrayInfo
 #include "gi.h"
 
 void SV_SendPlayerInfo(player_t &player);
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print, bool playerOnly, int arg0 = -1, int arg1 = -1, int arg2 = -1, int arg3 = -1,
-	int arg4 = -1, int arg5 = -1, int arg6 = -1, int arg7 = -1, int arg8 = -1);
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4);
+void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
+                          bool playerOnly, int arg0 = -1, int arg1 = -1, int arg2 = -1,
+                          int arg3 = -1, int arg4 = -1, int arg5 = -1, int arg6 = -1,
+                          int arg7 = -1, int arg8 = -1);
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+                               int arg1, int arg2, int arg3, int arg4);
 
 static void DoClearInv(player_t* player)
 {
@@ -1789,7 +1792,8 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 		SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, lineid, special, arg1, arg2, arg3, arg4, arg5);
 }
 
-void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4)
+void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator,
+                                       int arg0, int arg1, int arg2, int arg3, int arg4)
 {
 	LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
 

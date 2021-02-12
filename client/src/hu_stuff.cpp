@@ -1838,6 +1838,11 @@ struct compare_player_frags
 {
 	bool operator()(const player_t* arg1, const player_t* arg2) const
 	{
+		if (!G_IsDuelGame() && G_IsRoundsGame())
+		{
+			return arg2->totalpoints < arg1->totalpoints;
+		}
+
 		return arg2->fragcount < arg1->fragcount;
 	}
 };
@@ -1854,6 +1859,11 @@ struct compare_player_points
 {
 	bool operator()(const player_t* arg1, const player_t* arg2) const
 	{
+		if (G_IsRoundsGame())
+		{
+			return arg2->totalpoints < arg1->totalpoints;
+		}
+
 		return arg2->points < arg1->points;
 	}
 };
@@ -1879,12 +1889,28 @@ static float HU_CalculateKillDeathRatio(const player_t* player)
 
 static float HU_CalculateFragDeathRatio(const player_t* player)
 {
-	if (player->fragcount <= 0)	// Copied from HU_DMScores1.
-		return 0.0f;
-	else if (player->fragcount >= 1 && player->deathcount == 0)
-		return float(player->fragcount);
+
+	int frags = 0;
+	int deaths = 0;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+	{	
+		frags = player->totalpoints;
+		deaths = player->totaldeaths;
+	}
 	else
-		return float(player->fragcount) / float(player->deathcount);
+	{
+		frags = player->fragcount;
+		deaths = player->deathcount;
+	}
+
+
+	if (frags <= 0)	// Copied from HU_DMScores1.
+		return 0.0f;
+	else if (frags >= 1 && deaths == 0)
+		return float(frags);
+	else
+		return float(frags) / float(deaths);
 }
 
 //
@@ -1901,6 +1927,8 @@ void HU_ConsoleScores(player_t *player)
 	typedef std::list<const player_t*> PlayerPtrList;
 	PlayerPtrList sortedplayers;
 	PlayerPtrList sortedspectators;
+
+	int points, deaths;
 
 	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
 		if (it->ingame() && !it->spectator)
@@ -1953,6 +1981,12 @@ void HU_ConsoleScores(player_t *player)
 				const player_t* itplayer = *it;
 				if (itplayer->userinfo.team == team_num)
 				{
+
+					if (G_IsRoundsGame())
+					{
+						points = itplayer->totalpoints;
+					}
+
 					sprintf(str, "%-15s %-6d N/A  %-5d %4d\n",
 							itplayer->userinfo.netname.c_str(),
 							itplayer->points,

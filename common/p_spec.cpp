@@ -1326,7 +1326,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 	if(thing)
 	{
 		//	Triggers that other things can activate
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
                 && !(GET_SPAC(line->flags) == SPAC_MCROSS))
@@ -1375,7 +1375,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 				return;
 
 			// And spectators should only trigger teleporters
-			if (thing->player->spectator)
+			if (thing->player && thing->player->spectator)
 			{
 				switch (line->special)
 				{
@@ -1439,7 +1439,8 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
+		if (!thing->player && thing->type != MT_AVATAR &&
+		    !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
 
@@ -1496,7 +1497,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 			return false;
 
 		// Switches that other things can activate.
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			// not for monsters?
 			if (!(line->flags & ML_MONSTERSCANACTIVATE))
@@ -1557,7 +1558,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 			return false;
 
 		// Switches that other things can activate.
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			// not for monsters?
 			if (!(line->flags & ML_MONSTERSCANACTIVATE))

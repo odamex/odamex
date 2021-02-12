@@ -29,6 +29,7 @@
 #include "m_wdlstats.h"
 #include "msg_server.h"
 
+EXTERN_CVAR(g_gametypename)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_roundlimit)
@@ -52,7 +53,9 @@ EXTERN_CVAR(sv_warmup)
 const std::string& G_GametypeName()
 {
 	static std::string name;
-	if (sv_gametype == GM_COOP && g_lives)
+	if (!g_gametypename.str().empty())
+		name = g_gametypename.str();
+	else if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP && ::multiplayer)
 		name = "Cooperative";
@@ -68,6 +71,8 @@ const std::string& G_GametypeName()
 		name = "Team Last Marine Standing";
 	else if (sv_gametype == GM_TEAMDM)
 		name = "Team Deathmatch";
+	else if (sv_gametype == GM_CTF && g_sides)
+		name = "Attack & Defend CTF";
 	else if (sv_gametype == GM_CTF && g_lives)
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
@@ -283,6 +288,14 @@ bool G_IsFFAGame()
 }
 
 /**
+ * @brief Check if the gametype is made for Duels.
+ */
+bool G_IsDuelGame()
+{
+	return sv_gametype == GM_DM && sv_maxplayers == 2;
+}
+
+/**
  * @brief Check if the gametype has teams and players can win as a team.
  */
 bool G_IsTeamGame()
@@ -305,6 +318,14 @@ bool G_IsRoundsGame()
 bool G_IsLivesGame()
 {
 	return g_lives > 0;
+}
+
+/**
+ * @brief Check if the game uses sides.
+ */
+bool G_IsSidesGame()
+{
+	return ::g_sides && G_IsTeamGame();
 }
 
 /**
@@ -518,7 +539,7 @@ void G_TimeCheckEndGame()
 	}
 	else if (G_IsTeamGame())
 	{
-		if (g_sides)
+		if (G_IsSidesGame())
 		{
 			// Defense always wins in the event of a timeout.
 			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
@@ -691,7 +712,7 @@ void G_LivesCheckEndGame()
 		//      side-mode needs a special-case because otherwise in games
 		//      with scorelimit > 1 the offense can just score once and
 		//      turtle.
-		if (aliveteams <= 1 && sv_gametype == GM_CTF && g_sides == false)
+		if (aliveteams <= 1 && sv_gametype == GM_CTF && !G_IsSidesGame())
 		{
 			const char* teams = aliveteams == 1 ? "one team" : "no teams";
 

@@ -116,7 +116,7 @@ EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
-EXTERN_CVAR(g_speclosers)
+EXTERN_CVAR(g_winnerstays)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -1339,8 +1339,8 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 {
 	sector_t* sector = &sectors[sectornum];
 
-	// Only update moveable sectors to clients, OR secret sectors that've been discovered.
-	if (sector != NULL && sector->moveable || (sector->special & SECRET_MASK == 0 && sector->secretsector))
+	// Only update moveable sectors to clients
+	if (sector != NULL && sector->moveable)
 	{
 		MSG_WriteMarker(&cl->reliablebuf, svc_sector);
 		MSG_WriteShort(&cl->reliablebuf, sectornum);
@@ -1872,9 +1872,23 @@ void SV_ClientFullUpdate(player_t &pl)
 //===========================
 void SV_UpdateSecret(int sectornum, player_t &player)
 {
-	SV_BroadcastSector(sectornum);
-	SV_UpdateFrags(player);			// It now syncs secrets but maybe there's a more elegant solution?
-	SV_UpdateSecretCount(player);
+	// Don't announce secrets on PvP gamemodes
+	if (sv_gametype != GM_COOP)
+		return;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		client_t* cl = &(it->client);
+
+		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
+		SVC_PlayerMembers(cl->reliablebuf, player, SVC_PM_SCORE);
+
+		if (&*it == &player)
+			continue;
+
+		SVC_SecretFound(cl->reliablebuf, player.id, sectornum);
+	}
+
 }
 
 //
@@ -2239,7 +2253,7 @@ void SV_ConnectClient()
 	SV_BroadcastUserInfo(*player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, true);
+	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
 	player->playerstate = PST_ENTER;
 
 	if (!step_mode)
@@ -2416,6 +2430,11 @@ struct compare_player_frags
 {
 	bool operator()(const player_t* arg1, const player_t* arg2) const
 	{
+		if (!G_IsDuelGame() && G_IsRoundsGame())
+		{
+			return arg2->totalpoints < arg1->totalpoints;
+		}
+
 		return arg2->fragcount < arg1->fragcount;
 	}
 };
@@ -2432,6 +2451,11 @@ struct compare_player_points
 {
 	bool operator()(const player_t* arg1, const player_t* arg2) const
 	{
+		if (G_IsRoundsGame())
+		{
+			return arg2->totalpoints < arg1->totalpoints;
+		}
+
 		return arg2->points < arg1->points;
 	}
 };
@@ -2457,12 +2481,27 @@ static float SV_CalculateKillDeathRatio(const player_t* player)
 
 static float SV_CalculateFragDeathRatio(const player_t* player)
 {
-	if (player->fragcount <= 0)	// Copied from HU_DMScores1.
-		return 0.0f;
-	else if (player->fragcount >= 1 && player->deathcount == 0)
-		return float(player->fragcount);
+
+	int frags = 0;
+	int deaths = 0;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+	{
+		frags = player->totalpoints;
+		deaths = player->totaldeaths;
+	}
 	else
-		return float(player->fragcount) / float(player->deathcount);
+	{
+		frags = player->fragcount;
+		deaths = player->deathcount;
+	}
+
+	if (frags <= 0) // Copied from HU_DMScores1.
+		return 0.0f;
+	else if (frags >= 1 && deaths == 0)
+		return float(frags);
+	else
+		return float(frags) / float(deaths);
 }
 
 //
@@ -2532,9 +2571,9 @@ void SV_DrawScores()
 							itplayer->id,
 							NET_AdrToString(itplayer->client.address),
 							itplayer->userinfo.netname.c_str(),
-							itplayer->points,
+							P_GetPointCount(itplayer),
 							//itplayer->captures,
-							itplayer->fragcount,
+					        P_GetFragCount(itplayer),
 							itplayer->GameTime / 60);
 				}
 			}
@@ -2586,8 +2625,8 @@ void SV_DrawScores()
 							itplayer->id,
 							NET_AdrToString(itplayer->client.address),
 							itplayer->userinfo.netname.c_str(),
-							itplayer->fragcount,
-							itplayer->deathcount,
+							P_GetFragCount(itplayer),
+							P_GetDeathCount(itplayer),
 							SV_CalculateFragDeathRatio(itplayer),
 							itplayer->GameTime / 60);
 				}
@@ -2627,8 +2666,8 @@ void SV_DrawScores()
 					itplayer->id,
 					NET_AdrToString(itplayer->client.address),
 					itplayer->userinfo.netname.c_str(),
-					itplayer->fragcount,
-					itplayer->deathcount,
+					P_GetFragCount(itplayer),
+					P_GetDeathCount(itplayer),
 					SV_CalculateFragDeathRatio(itplayer),
 					itplayer->GameTime / 60);
 		}
@@ -3270,29 +3309,6 @@ void SV_SendPingRequest(client_t* cl)
 	MSG_WriteLong (&cl->reliablebuf, I_MSTime());
 }
 
-void SV_UpdateSecretCount(player_t& player)
-{
-	// Don't announce secrets on PvP gamemodes
-	if (sv_gametype != GM_COOP)
-		return;
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		client_t *cl = &(it->client);
-		SVC_LevelLocals(cl->reliablebuf, ::level, SVC_LL_SECRETS);
-	}
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-	    if (&*it == &player)
-	        continue;
-
-		client_t* cl = &(it->client);
-
-		SVC_SecretFound(cl->reliablebuf, player.id);
-	}
-}
-
 void SV_UpdateMonsterRespawnCount()
 {
 	if (sv_gametype != GM_COOP)
@@ -3875,7 +3891,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		P_KillMobj(NULL, player.mo, NULL, true);
 
 	// Fresh joins get fresh player scores.
-	P_ClearPlayerScores(player, true);
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
 
 	// Ensure our player is in the ENTER state.
 	player.playerstate = PST_ENTER;
@@ -4854,9 +4870,26 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND(playerlist)
 {
 	bool anybody = false;
+	int frags = 0;
+	int deaths = 0;
+	int points = 0;
 
 	for (Players::reverse_iterator it = players.rbegin(); it != players.rend(); ++it)
 	{
+
+		if (G_IsRoundsGame() && !G_IsDuelGame())
+		{
+			frags = it->totalpoints;
+			deaths = it->totaldeaths;
+			points = it->totalpoints;
+		}
+		else
+		{
+			frags = it->fragcount;
+			deaths = it->deathcount;
+			points = it->points;
+		}
+
 		std::string strMain, strScore;
 		StrFormat(strMain, "(%02d): %s %s - %s - time:%d - ping:%d", it->id,
 		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
@@ -4882,13 +4915,12 @@ BEGIN_COMMAND(playerlist)
 			{
 				// Wins, Lives, and Frags
 				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
-				          it->lives, it->fragcount);
+				          it->lives, frags);
 			}
 			else
 			{
 				// Frags, Deaths
-				StrFormat(strScore, " - frags:%d - deaths:%d", it->fragcount,
-				          it->deathcount);
+				StrFormat(strScore, " - frags:%d - deaths:%d", frags, deaths);
 			}
 		}
 		else if (sv_gametype == GM_TEAMDM)
@@ -4896,12 +4928,12 @@ BEGIN_COMMAND(playerlist)
 			if (g_lives)
 			{
 				// Frags and Lives
-				StrFormat(strScore, " - frags:%d - lives:%d", it->fragcount, it->lives);
+				StrFormat(strScore, " - frags:%d - lives:%d", frags, it->lives);
 			}
 			else
 			{
 				// Frags
-				StrFormat(strScore, " - frags:%d", it->fragcount);
+				StrFormat(strScore, " - frags:%d", frags);
 			}
 		}
 		else if (sv_gametype == GM_CTF)
@@ -4909,12 +4941,13 @@ BEGIN_COMMAND(playerlist)
 			if (g_lives)
 			{
 				// Points and Lives
-				StrFormat(strScore, " - points:%d - lives:%d", it->points, it->lives);
+				StrFormat(strScore, " - points:%d - lives:%d", points, it->lives);
 			}
 			else
 			{
 				// Points and Frags
-				StrFormat(strScore, " - points:%d - frags:%d", it->points, it->fragcount);
+				// Special case here: frags will only be from the current round, not global.
+				StrFormat(strScore, " - points:%d - frags:%d", points, it->fragcount);
 			}
 		}
 
@@ -5405,43 +5438,69 @@ void SV_RemovePlayerFromQueue(player_t* player)
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, player);
 }
 
-void SV_UpdatePlayerQueueLevelChange()
+void SV_UpdatePlayerQueueLevelChange(const WinInfo& win)
 {
-	if (g_speclosers)
+	if (::g_winnerstays)
 	{
 		int queuedPlayerCount = 0;
 		std::vector<player_t*> loserPlayers;
 
-		WinInfo win = ::levelstate.getWinInfo();
-
 		PlayerResults pr = PlayerQuery().execute();
 		for (PlayersView::iterator it = pr.players.begin(); it != pr.players.end(); ++it)
 		{
-			if (win.type == WinInfo::WIN_PLAYER)
+			switch (win.type)
 			{
+			case WinInfo::WIN_PLAYER:
 				// Boot everybody but the winner.
 				if ((*it)->id != win.id)
 					loserPlayers.push_back(*it);
-			}
-			else if (win.type == WinInfo::WIN_TEAM)
-			{
+				break;
+			case WinInfo::WIN_TEAM:
 				// Boot everybody except the winning team.
 				if ((*it)->userinfo.team != win.id)
 					loserPlayers.push_back(*it);
-			}
-			else
-			{
+				break;
+			case WinInfo::WIN_DRAW:
+			case WinInfo::WIN_NOBODY:
 				// Draws are just another way of saying there were no winners.
 				loserPlayers.push_back(*it);
+				break;
+			default:
+				// Everyone won, or something strange happened.
+				break;
 			}
+
+			// NOBODY/UNKNOWN should default to never touching the queue.
 		}
 
+		std::vector<std::string> names;
 		for (PlayersView::iterator it = loserPlayers.begin(); it != loserPlayers.end();
 		     ++it)
 		{
 			SV_SetPlayerSpec(**it, true, true);
-			(*it)->joindelay = 0; // Allow this player to queue up immediately without
-			                      // waiting for ReJoinDelay
+			names.push_back((*it)->userinfo.netname);
+
+			// Allow this player to queue up immediately without waiting for
+			// ReJoinDelay
+			(*it)->joindelay = 0;
+		}
+
+		if (names.size() > 2)
+		{
+			names.back() = std::string("and ") + names.back();
+			SV_BroadcastPrintf("%s lost the last game and were forced to spectate.\n",
+			                   JoinStrings(names, ", ").c_str());
+		}
+		else if (names.size() == 2)
+		{
+			SV_BroadcastPrintf(
+			    "%s and %s lost the last game and were forced to spectate.\n",
+			    names.at(0).c_str(), names.at(1).c_str());
+		}
+		else if (names.size() == 1)
+		{
+			SV_BroadcastPrintf("%s lost the last game and was forced to spectate.\n",
+			                   names.at(0).c_str());
 		}
 	}
 
@@ -5476,7 +5535,7 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		if (joinTest() == JOIN_OK)
 		{
 			p->QueuePosition = 0;
-			SV_JoinPlayer(*p, true);
+			SV_JoinPlayer(*p, false);
 			queueUpdates.push_back(p);
 			playerCount++;
 		}
@@ -5535,7 +5594,8 @@ void SV_ClearPlayerQueue()
 		SV_SendPlayerQueuePositions(&(*it), false);
 }
 
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, byte arg0, byte arg1, byte arg2, byte arg3, byte arg4)
+void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+                               int arg1, int arg2, int arg3, int arg4)
 {
 	if (P_LineSpecialMovesSector(special))
 		return;
@@ -5554,11 +5614,11 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, by
 		else
 			MSG_WriteShort(&cl->reliablebuf, 0xFFFF);
 		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
-		MSG_WriteByte(&cl->reliablebuf, arg0);
-		MSG_WriteByte(&cl->reliablebuf, arg1);
-		MSG_WriteByte(&cl->reliablebuf, arg2);
-		MSG_WriteByte(&cl->reliablebuf, arg3);
-		MSG_WriteByte(&cl->reliablebuf, arg4);
+		MSG_WriteVarint(&cl->reliablebuf, arg0);
+		MSG_WriteVarint(&cl->reliablebuf, arg1);
+		MSG_WriteVarint(&cl->reliablebuf, arg2);
+		MSG_WriteVarint(&cl->reliablebuf, arg3);
+		MSG_WriteVarint(&cl->reliablebuf, arg4);
 	}
 }
 

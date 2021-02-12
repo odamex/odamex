@@ -763,9 +763,14 @@ static std::string WinToColorString(const WinInfo& win)
 
 void LevelStateHUD()
 {
-	std::string str;
+	// Don't bother with levelstate information in lobbies.
+	if (::level.flags & LEVEL_LOBBYSPECIAL)
+	{
+		return;
+	}
 
 	// First line...BIGFONT.
+	std::string str;
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP:
@@ -786,9 +791,27 @@ void LevelStateHUD()
 		break;
 	case LevelState::INGAME:
 		if (G_CanShowFightMessage())
-			str = "FIGHT!\n";
+		{
+			if (G_IsSidesGame())
+			{
+				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+				{
+					str = "DEFEND!\n";
+				}
+				else
+				{
+					str = "CAPTURE!\n";
+				}
+			}
+			else
+			{
+				str = "FIGHT!\n";
+			}
+		}
 		else
+		{
 			str = "";
+		}
 		break;
 	case LevelState::ENDROUND_COUNTDOWN:
 		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());

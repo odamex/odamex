@@ -34,11 +34,12 @@ struct WinInfo
 {
 	enum WinType
 	{
-		WIN_UNKNOWN, // Not sure what happened here.
-		WIN_NOBODY,  // Everybody lost the game.
-		WIN_DRAW,    // Tie at the end of the game.
-		WIN_PLAYER,  // A single player won the game.
-		WIN_TEAM     // A team won the game.
+		WIN_UNKNOWN,   // Not sure what happened here.
+		WIN_NOBODY,    // Everybody lost the game (probably PvE).
+		WIN_EVERYBODY, // Everybody won the game (probably PvE).
+		WIN_DRAW,      // Tie at the end of the game.
+		WIN_PLAYER,    // A single player won the game.
+		WIN_TEAM       // A team won the game.
 	};
 
 	WinType type;

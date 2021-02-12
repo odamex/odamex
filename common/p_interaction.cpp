@@ -138,6 +138,10 @@ bool P_GiveFrags(player_t* player, int num)
 		return false;
 
 	player->fragcount += num;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame() && !(sv_gametype == GM_CTF))
+		player->totalpoints += num;
+
 	return true;
 }
 
@@ -158,6 +162,10 @@ bool P_GiveDeaths(player_t* player, int num)
 		return false;
 
 	player->deathcount += num;
+
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+		player->totaldeaths += num;
+
 	return true;
 }
 
@@ -181,6 +189,30 @@ bool P_GiveLives(player_t* player, int num)
 
 	player->lives += num;
 	return true;
+}
+
+int P_GetFragCount(const player_t* player)
+{
+	if (G_IsRoundsGame() && !G_IsDuelGame())
+		return player->totalpoints;
+
+	return player->fragcount;
+}
+
+int P_GetPointCount(const player_t* player)
+{
+	if (G_IsRoundsGame())
+		return player->totalpoints;
+
+	return player->points;
+}
+
+int P_GetDeathCount(const player_t* player)
+{
+	if (G_IsRoundsGame())
+		return player->totaldeaths;
+
+	return player->deathcount;
 }
 
 //
@@ -887,15 +919,24 @@ void P_GiveSpecial(player_t *player, AActor *special)
 //
 void P_TouchSpecialThing(AActor *special, AActor *toucher)
 {
-	if (!toucher || !toucher->player || toucher->player->spectator || !special ) // [Toke - fix99]
+	// Somebody passed null pointers. [Toke - fix99]
+	if (!toucher || !special)
 		return;
 
-    if (predicting)
-        return;
+	// Spectators shouldn't be able to touch things.
+	if (toucher->player && toucher->player->spectator)
+		return;
 
-    // Dead thing touching.
-    // Can happen with a sliding player corpse.
-    if (toucher->health <= 0)
+	// Touchers that aren't players or avatars need not apply.
+	if (!toucher->player && toucher->type != MT_AVATAR)
+		return;
+
+	if (predicting)
+		return;
+
+	// Dead thing touching.
+	// Can happen with a sliding player corpse.
+	if (toucher->health <= 0)
 		return;
 
 	// out of reach?
@@ -909,7 +950,18 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
 		return;
 
-	P_GiveSpecial(toucher->player, special);
+	if (toucher->type == MT_AVATAR)
+	{
+		PlayersView pr = PlayerQuery().execute().players;
+		for (PlayersView::iterator it = pr.begin(); it != pr.end(); ++it)
+		{
+			P_GiveSpecial(*it, special);
+		}
+	}
+	else if (toucher->player)
+	{
+		P_GiveSpecial(toucher->player, special);
+	}
 }
 
 
