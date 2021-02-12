@@ -297,10 +297,12 @@ if(BUILD_CLIENT OR BUILD_SERVER)
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
       --config Debug --target install --parallel
+      --parallel ${PARALLEL_PROC_COUNT}
     )
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
       --config RelWithDebInfo --target install --parallel
+      --parallel ${PARALLEL_PROC_COUNT}
     )
   else()
     message(STATUS "Compiling protobuf for ${CMAKE_BUILD_TYPE}...")
