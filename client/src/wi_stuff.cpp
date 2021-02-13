@@ -661,7 +661,7 @@ void WI_updateAnimatedBack (void)
 
 void WI_drawAnimatedBack()
 {
-	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0 && !is_custom_interpic)
 	{
 		DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -1231,6 +1231,22 @@ void WI_updateStats(void)
 	{
 	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
+		// check if incoming level has enterpic
+		if (level.enterpic[0] != '\0')
+		{
+			// free previous surface
+			I_FreeSurface(background_surface);
+			
+			// new background
+			const patch_t* bg_patch = W_CachePatch(level.enterpic);
+			background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+			DCanvas* canvas = background_surface->getDefaultCanvas();
+
+			background_surface->lock();
+			canvas->DrawPatch(bg_patch, 0, 0);
+			background_surface->unlock();
+		}
+		
 	    if ((gameinfo.flags & GI_MAPxx))
 		WI_initNoState();
 	    else
