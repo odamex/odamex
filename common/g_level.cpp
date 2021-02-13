@@ -2080,6 +2080,9 @@ void G_InitLevelLocals()
 		V_RefreshColormaps();
 	}
 
+	strncpy(::level.exitpic, info.exitpic, 8);
+	strncpy(::level.enterpic, info.enterpic, 8);
+
 	movingsectors.clear();
 }
 

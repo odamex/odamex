@@ -398,6 +398,7 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 		if (scanner.boolean) strcpy(mape->endpic, "!");
 		else strcpy(mape->endpic, "-");
 	}
+#endif
 	else if (!stricmp(pname, "exitpic"))
 	{
 		ParseLumpName(scanner, mape->exitpic);
@@ -406,7 +407,6 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	{
 		ParseLumpName(scanner, mape->enterpic);
 	}
-#endif
 	else if (!stricmp(pname, "nointermission"))
 	{
 		scanner.MustGetToken(TK_BoolConst);

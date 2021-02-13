@@ -359,6 +359,8 @@ static const char*		lnametexts[2];
 
 static IWindowSurface*	background_surface;
 
+static bool is_custom_interpic;
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_newintermission)
 EXTERN_CVAR (cl_autoscreenshot)
@@ -834,7 +836,7 @@ void WI_drawShowNextLoc (void)
 	// draw animated background
 	WI_drawAnimatedBack();
 
-	if (gamemode != commercial && gamemode != commercial_bfg)
+	if (gamemode != commercial && gamemode != commercial_bfg && !is_custom_interpic)
 	{
 		if (wbs->epsd > 2)
 		{
@@ -1385,12 +1387,18 @@ static int WI_CalcWidth (const char *str)
 void WI_loadData (void)
 {
 	LevelInfos& levels = getLevelInfos();
+	is_custom_interpic = false;
 
 	int i, j;
 	char name[17];
 	animinfo_t *a;
 
-	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+	if (level.exitpic[0] != '\0')
+	{
+		is_custom_interpic = true;
+		strcpy(name, level.exitpic);
+	}
+	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");
 	else
 		sprintf(name, "WIMAP%d", wbs->epsd);
@@ -1436,7 +1444,7 @@ void WI_loadData (void)
 		// splat
 		splat = W_CachePatch ("WISPLAT", PU_STATIC);
 
-		if (wbs->epsd < 3)
+		if (wbs->epsd < 3 && !is_custom_interpic)
 		{
 			for (j=0;j<NUMANIMS[wbs->epsd];j++)
 			{

@@ -125,6 +125,10 @@ struct level_pwad_info_t
 	float			gravity;
 	float			aircontrol;
 
+	// The following are necessary for UMAPINFO compatibility
+	char			exitpic[9];
+	char			enterpic[9];
+
 	BOOL exists() const
 	{
 		return this->mapname[0] != '\0';
@@ -177,6 +181,10 @@ struct level_locals_t {
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
+
+	// The following are used for UMAPINFO
+	char			 exitpic[8];
+	char			 enterpic[8];
 };
 
 #define CLUSTER_HUB            0x00000001u
