@@ -103,7 +103,7 @@ level_pwad_info_t& LevelInfos::at(size_t i)
 void LevelInfos::clear()
 {
 	// Free all strings.
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		free(it->level_name);
 		it->level_name = NULL;
@@ -116,7 +116,7 @@ void LevelInfos::clear()
 // Clear all stored snapshots
 void LevelInfos::clearSnapshots()
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		if (it->snapshot)
 		{
@@ -137,7 +137,7 @@ level_pwad_info_t& LevelInfos::create()
 // Find a levelinfo by mapname
 level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		if (stricmp(mapname, it->mapname) == 0)
 		{
@@ -150,7 +150,7 @@ level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 // Find a levelinfo by mapnum
 level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname) != -1)
 		{
@@ -169,7 +169,7 @@ size_t LevelInfos::size()
 // Zap all deferred ACS scripts
 void LevelInfos::zapDeferreds()
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		acsdefered_t* def = it->defered;
 		while (def) {
@@ -247,7 +247,7 @@ cluster_info_t& ClusterInfos::at(size_t i)
 void ClusterInfos::clear()
 {
 	// Free all strings.
-	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		free(it->exittext);
 		it->exittext = NULL;
@@ -268,7 +268,7 @@ cluster_info_t& ClusterInfos::create()
 // Find a clusterinfo by mapname
 cluster_info_t& ClusterInfos::findByCluster(int i)
 {
-	for (_ClusterInfoArray::iterator it = _infos.begin();it != _infos.end();it++)
+	for (_ClusterInfoArray::iterator it = _infos.begin();it != _infos.end();++it)
 	{
 		if (it->cluster == i)
 		{
@@ -279,7 +279,7 @@ cluster_info_t& ClusterInfos::findByCluster(int i)
 }
 
 // Number of info entries.
-size_t ClusterInfos::size()
+size_t ClusterInfos::size() const
 {
 	return _infos.size();
 }
@@ -1971,7 +1971,7 @@ void G_InitLevelLocals()
 	//NormalLight.maps = shaderef_t(&DefaultPalette->maps, 0);
 
 	level.gravity = sv_gravity;
-	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+	level.aircontrol = static_cast<fixed_t>(sv_aircontrol * 65536.f);
 	G_AirControlChanged();
 
 	// clear all ACS variables

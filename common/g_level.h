@@ -233,7 +233,7 @@ public:
 	void clear();
 	cluster_info_t& create();
 	cluster_info_t& findByCluster(int i);
-	size_t size();
+	size_t size() const;
 };
 
 extern int ACS_WorldVars[NUM_WORLDVARS];

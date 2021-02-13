@@ -456,19 +456,19 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	else if (!stricmp(pname, "bossaction"))
 	{
 		scanner.MustGetToken(TK_Identifier);
-		int classnum, special, tag;
+		
 		if (!stricmp(scanner.string, "clear"))
 		{
 			// mark level free of boss actions
-			classnum = special = tag = -1;
 			if (mape->bossactions) free(mape->bossactions);
 			mape->bossactions = NULL;
 			mape->numbossactions = -1;
 		}
 		else
 		{
-			int i;
-			for (i = 0; ActorNames[i]; i++)
+			int special, tag;
+			
+			for (int i = 0; ActorNames[i]; i++)
 			{
 				if (!stricmp(scanner.string, ActorNames[i])) break;
 			}
