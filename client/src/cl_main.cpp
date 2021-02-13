@@ -2642,18 +2642,8 @@ void CL_SpawnPlayer()
 // CL_PlayerInfo
 // denis - your personal arsenal, as supplied by the server
 //
-static void PlayerInfo()
+static void PlayerInfo(const svc::PlayerInfoMsg& msg)
 {
-	size_t size = MSG_ReadUnVarint();
-	void* data = MSG_ReadChunk(size);
-
-	svc::PlayerInfoMsg msg;
-	if (!msg.ParseFromArray(data, size))
-	{
-		Printf(PRINT_WARNING, "%s: Could not read message.\n", __FUNCTION__);
-		return;
-	}
-
 	player_t* p = &consoleplayer();
 
 	uint16_t booleans = msg.inventory();
@@ -3860,82 +3850,82 @@ static bool CallMessageFunc(svc_t type)
 	{
 		SERVER_MSG_FUNC(svc_noop, Noop);
 		SERVER_PROTO_FUNC(svc_disconnect, Disconnect, svc::DisconnectMsg);
-		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
-		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
-		SERVER_MSG_FUNC(svc_playerinfo, PlayerInfo);
-		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
-		SERVER_MSG_FUNC(svc_playermembers, CL_PlayerMembers);
+		SERVER_PROTO_FUNC(svc_playerinfo, PlayerInfo, svc::PlayerInfoMsg);
 		SERVER_MSG_FUNC(svc_moveplayer, CL_UpdatePlayer);
 		SERVER_MSG_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer);
 		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);
-		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
-		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
-		SERVER_MSG_FUNC(svc_playerstate, CL_UpdatePlayerState);
+		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
 		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
+		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
+		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
+		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
 		SERVER_MSG_FUNC(svc_mobjspeedangle, CL_SetMobjSpeedAndAngle);
-		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
 		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
-		SERVER_MSG_FUNC(svc_killmobj, CL_KillMobj);
+		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
 		SERVER_MSG_FUNC(svc_movemobj, CL_MoveMobj);
-		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
-		SERVER_MSG_FUNC(svc_corpse, CL_Corpse);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
+		SERVER_MSG_FUNC(svc_killmobj, CL_KillMobj);
 		SERVER_MSG_FUNC(svc_firepistol, CL_FirePistol);
-		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_fireshotgun, CL_FireShotgun);
 		SERVER_MSG_FUNC(svc_firessg, CL_FireSSG);
 		SERVER_MSG_FUNC(svc_firechaingun, CL_FireChainGun);
-		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
-		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
-		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
-		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
-		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
+		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
-		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
-		SERVER_MSG_FUNC(svc_switch, CL_Switch);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
-		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
-		SERVER_MSG_FUNC(svc_say, CL_Say);
-		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
-		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
-		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
-		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
+		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
+		SERVER_MSG_FUNC(svc_playermembers, CL_PlayerMembers);
+		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
+		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
+		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
 		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
+		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
+		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
+		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
+		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
+		SERVER_MSG_FUNC(svc_corpse, CL_Corpse);
+		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_MSG_FUNC(svc_soundorigin, CL_SoundOrigin);
+		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
+		SERVER_MSG_FUNC(svc_switch, CL_Switch);
+		SERVER_MSG_FUNC(svc_say, CL_Say);
+		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
+		SERVER_MSG_FUNC(svc_secretevent, CL_SecretEvent);
+		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
+		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
+		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
+		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
+		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
+		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
+		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
+		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
+		SERVER_MSG_FUNC(svc_playerstate, CL_UpdatePlayerState);
+		SERVER_MSG_FUNC(svc_levelstate, CL_LevelState);
+		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
+		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
+		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
+		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
+		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
+		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
 		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
 		SERVER_MSG_FUNC(svc_actor_movedir, CL_Actor_Movedir);
 		SERVER_MSG_FUNC(svc_actor_target, CL_Actor_Target);
 		SERVER_MSG_FUNC(svc_actor_tracer, CL_Actor_Tracer);
-		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
-		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
-		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
-		SERVER_MSG_FUNC(svc_secretevent, CL_SecretEvent);
-		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
-		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
-		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
-		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
-		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
-		SERVER_MSG_FUNC(svc_levelstate, CL_LevelState);
-		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
+		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
+		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
+		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
+		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
 		SERVER_MSG_FUNC(svc_netdemocap, CL_LocalDemoTic);
 		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
 		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
-		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
-		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
 		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
 		SERVER_MSG_FUNC(svc_maplist, CL_Maplist);
 		SERVER_MSG_FUNC(svc_maplist_update, CL_MaplistUpdate);
 		SERVER_MSG_FUNC(svc_maplist_index, CL_MaplistIndex);
-		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
-		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
-		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
-		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
-		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
-		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
-		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
+		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
+		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
 	default:
 		return false;
 	}
