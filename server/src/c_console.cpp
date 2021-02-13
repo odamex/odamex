@@ -33,6 +33,7 @@
 #include "sv_main.h"
 #include "doomstat.h"
 #include "gi.h"
+#include "v_textcolors.h"
 
 #include <string>
 
@@ -129,11 +130,15 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		client_t* cl = &(it->client);
 
 		// Only allow RCON messages that are PRINT_HIGH
-		if (cl->allow_rcon && printlevel == PRINT_HIGH || printlevel == PRINT_WARNING || printlevel == PRINT_ERROR)
+		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
+		                       printlevel == PRINT_ERROR))
 		{
+			std::string buf;
+			StrFormat(buf, TEXTCOLOR_GOLD "[SV]" TEXTCOLOR_NORMAL " %s", str.c_str());
+
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
-			MSG_WriteByte(&cl->reliablebuf, PRINT_WARNING);
-			MSG_WriteString(&cl->reliablebuf, (char*)str.c_str());
+			MSG_WriteByte(&cl->reliablebuf, printlevel);
+			MSG_WriteString(&cl->reliablebuf, buf.c_str());
 		}
 	}
 
