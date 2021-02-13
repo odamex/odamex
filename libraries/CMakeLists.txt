@@ -289,21 +289,19 @@ if(BUILD_CLIENT OR BUILD_SERVER)
       "-DCMAKE_LINKER=${CMAKE_LINKER}"
       "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
       "-Dprotobuf_BUILD_TESTS=OFF"
-      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF"
-    )
+      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
 
     # Compile the library for debug and release.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
       --config Debug --target install --parallel
-      --parallel ${PARALLEL_PROC_COUNT}
-    )
+      --parallel ${PARALLEL_PROC_COUNT})
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
       --config RelWithDebInfo --target install --parallel
-      --parallel ${PARALLEL_PROC_COUNT}
-    )
+      --parallel ${PARALLEL_PROC_COUNT})
   else()
     message(STATUS "Compiling protobuf for ${CMAKE_BUILD_TYPE}...")
 
@@ -320,15 +318,14 @@ if(BUILD_CLIENT OR BUILD_SERVER)
       "-DCMAKE_LINKER=${CMAKE_LINKER}"
       "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
       "-Dprotobuf_BUILD_TESTS=OFF"
-      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF"
-    )
+      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
 
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --target install --parallel
-    )
+      --target install --parallel ${PARALLEL_PROC_COUNT})
   endif()
 endif()
 
