@@ -3773,18 +3773,8 @@ static void Noop()
 	// Nothing to see here. Move along.
 }
 
-static void Disconnect()
+static void Disconnect(const svc::DisconnectMsg& msg)
 {
-	size_t size = MSG_ReadUnVarint();
-	void* data = MSG_ReadChunk(size);
-
-	svc::DisconnectMsg msg;
-	if (!msg.ParseFromArray(data, size))
-	{
-		Printf(PRINT_WARNING, "%s: Could not read message.\n", __FUNCTION__);
-		return;
-	}
-
 	std::string buffer;
 	if (!msg.message().empty())
 	{
@@ -3845,18 +3835,31 @@ void CL_LevelLocals()
 		::level.respawned_monsters = MSG_ReadVarint();
 }
 
-typedef void (*ServerMessageFunc)();
-
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
-		return func
+		func();                    \
+		return true;
 
-static ServerMessageFunc GetMessageFunc(svc_t type)
+#define SERVER_PROTO_FUNC(svc, func, proto)                               \
+	case svc: {                                                           \
+		size_t size = MSG_ReadUnVarint();                                 \
+		void* data = MSG_ReadChunk(size);                                 \
+		proto msg;                                                        \
+		if (!msg.ParseFromArray(data, size))                              \
+		{                                                                 \
+			Printf(PRINT_WARNING, "%s: Could not read message.\n", #svc); \
+			return false;                                                 \
+		}                                                                 \
+		func(msg);                                                        \
+		return true;                                                      \
+	}
+
+static bool CallMessageFunc(svc_t type)
 {
 	switch (type)
 	{
 		SERVER_MSG_FUNC(svc_noop, Noop);
-		SERVER_MSG_FUNC(svc_disconnect, Disconnect);
+		SERVER_PROTO_FUNC(svc_disconnect, Disconnect, svc::DisconnectMsg);
 		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
 		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
 		SERVER_MSG_FUNC(svc_playerinfo, PlayerInfo);
@@ -3934,7 +3937,7 @@ static ServerMessageFunc GetMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
 		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
 	default:
-		return NULL;
+		return false;
 	}
 }
 
@@ -3958,8 +3961,7 @@ void CL_ParseCommands(void)
 		if (cmd == (svc_t)-1)
 			break;
 
-		ServerMessageFunc func = GetMessageFunc(cmd);
-		if (func == NULL)
+		if (!CallMessageFunc(cmd))
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH,
@@ -3971,8 +3973,6 @@ void CL_ParseCommands(void)
 			Printf(PRINT_HIGH, "\n");
 			break;
 		}
-
-		func();
 
 		if (net_message.overflowed)
 		{
