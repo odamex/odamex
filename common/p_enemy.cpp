@@ -1987,13 +1987,15 @@ void A_BossDeath (AActor *actor)
 			}
 		}
 
-		maplinedef_t mld;
 		ba = level.bossactions->begin();
 
 		for (; ba != level.bossactions->end(); ++ba)
 		{
 			if (ba->type == actor->type)
 			{
+				// TODO: Rather than calculate in this function, could have line_t
+				//       precalculated when UMAPINFO is parsed
+				maplinedef_t mld;
 				mld.special = static_cast<short>(ba->special);
 				mld.tag = static_cast<short>(ba->tag);
 
