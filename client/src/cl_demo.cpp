@@ -37,7 +37,7 @@
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "g_level.h"
-#include "msg_server.h"
+#include "svc_message.h"
 #include "g_gametype.h"
 
 EXTERN_CVAR(sv_maxclients)

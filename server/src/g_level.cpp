@@ -51,7 +51,7 @@
 #include "z_zone.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
-#include "msg_server.h"
+#include "svc_message.h"
 #include "g_gametype.h"
 
 
