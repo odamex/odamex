@@ -83,7 +83,7 @@ message MovePlayerMsg
 	int32 pid = 1;
 	int32 tic = 2;
 	Vec3 pos = 3;
-	sfixed32 angle = 4;
+	fixed32 angle = 4;
 	sint32 pitch = 5;
 	int32 frame = 6;
 	Vec3 mom = 7;

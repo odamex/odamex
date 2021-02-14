@@ -2179,78 +2179,6 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 		teleported_players.erase(player->id);
 }
 
-void CL_UpdatePlayer()
-{
-	byte who = MSG_ReadByte();
-	player_t *p = &idplayer(who);
-
-	MSG_ReadLong();	// Read and ignore for now
-
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-
-	angle_t angle = MSG_ReadShort() << FRACBITS;
-	angle_t pitch = MSG_ReadShort() << FRACBITS;
-
-	int frame = MSG_ReadByte();
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
-
-	int invisibility = MSG_ReadByte();
-
-	if	(!validplayer(*p) || !p->mo)
-		return;
-
-	// Mark the gametic this update arrived in for prediction code
-	p->tic = gametic;
-
-	// GhostlyDeath -- Servers will never send updates on spectators
-	if (p->spectator && (p != &consoleplayer()))
-		p->spectator = 0;
-
-	// [Russell] - hack, read and set invisibility flag
-	p->powers[pw_invisibility] = invisibility;
-	if (p->powers[pw_invisibility])
-		p->mo->flags |= MF_SHADOW;
-	else
-		p->mo->flags &= ~MF_SHADOW;
-
-	// This is a very bright frame. Looks cool :)
-	if (frame == PLAYER_FULLBRIGHTFRAME)
-		frame = 32773;
-
-	// denis - fixme - security
-	if(!p->mo->sprite || (p->mo->frame&FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
-		return;
-
-	p->last_received = gametic;
-	last_player_update = gametic;
-
-	// [SL] 2012-02-21 - Save the position information to a snapshot
-	int snaptime = last_svgametic;
-	PlayerSnapshot newsnap(snaptime);
-	newsnap.setAuthoritative(true);
-
-	newsnap.setX(x);
-	newsnap.setY(y);
-	newsnap.setZ(z);
-	newsnap.setMomX(momx);
-	newsnap.setMomY(momy);
-	newsnap.setMomZ(momz);
-	newsnap.setAngle(angle);
-	newsnap.setPitch(pitch);
-	newsnap.setFrame(frame);
-
-	// Mark the snapshot as continuous unless the player just teleported
-	// and lerping should be disabled
-	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
-	CL_ClearPlayerJustTeleported(p);
-
-	p->snapshots.addSnapshot(newsnap);
-}
-
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
 void CL_UpdatePlayerState()
@@ -2636,52 +2564,6 @@ void CL_SpawnPlayer()
 	newsnap.setContinuous(false);
 	p->snapshots.clearSnapshots();
 	p->snapshots.addSnapshot(newsnap);
-}
-
-//
-// CL_PlayerInfo
-// denis - your personal arsenal, as supplied by the server
-//
-static void PlayerInfo(const svc::PlayerInfoMsg& msg)
-{
-	player_t* p = &consoleplayer();
-
-	uint16_t booleans = msg.inventory();
-	for (int i = 0; i < NUMWEAPONS; i++)
-	{
-		p->weaponowned[i] = booleans & 1 << i;
-	}
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
-	}
-	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
-
-	for (int i = 0; i < MIN<int>(NUMAMMO, msg.ammo_size()); i++)
-	{
-		p->maxammo[i] = msg.ammo(i).maxammo();
-		p->ammo[i] = msg.ammo(i).ammo();
-	}
-
-	p->health = msg.health();
-	p->armorpoints = msg.armorpoints();
-	p->armortype = msg.armortype();
-	p->lives = msg.lives();
-
-	weapontype_t newweapon = static_cast<weapontype_t>(msg.weapon());
-	if (newweapon > NUMWEAPONS) // bad weapon number, choose something else
-	{
-		newweapon = wp_fist;
-	}
-	if (newweapon != p->readyweapon)
-	{
-		p->pendingweapon = newweapon;
-	}
-
-	for (int i = 0; i < MIN<int>(NUMPOWERS, msg.powers_size()); i++)
-	{
-		p->powers[i] = msg.powers(i);
-	}
 }
 
 //
@@ -3758,26 +3640,6 @@ void CL_ExitLevel()
 		netdemo.writeIntermission();
 }
 
-static void Noop()
-{
-	// Nothing to see here. Move along.
-}
-
-static void Disconnect(const svc::DisconnectMsg& msg)
-{
-	std::string buffer;
-	if (!msg.message().empty())
-	{
-		StrFormat(buffer, "Disconnected from server: %s", msg.message().c_str());
-	}
-	else
-	{
-		StrFormat(buffer, "Disconnected from server\n");
-	}
-
-	Host_EndGame(buffer.c_str());
-}
-
 void CL_Clear()
 {
 	size_t left = MSG_BytesLeft();
@@ -3825,6 +3687,150 @@ void CL_LevelLocals()
 		::level.respawned_monsters = MSG_ReadVarint();
 }
 
+/**
+ * @brief svc_noop - Nothing to see here. Move along.
+ */
+static void Noop()
+{
+}
+
+/**
+ * @brief svc_disconnect - Disconnect a client from the server.
+ */
+static void Disconnect(const svc::DisconnectMsg& msg)
+{
+	std::string buffer;
+	if (!msg.message().empty())
+	{
+		StrFormat(buffer, "Disconnected from server: %s", msg.message().c_str());
+	}
+	else
+	{
+		StrFormat(buffer, "Disconnected from server\n");
+	}
+
+	Host_EndGame(buffer.c_str());
+}
+
+/**
+ * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
+ */
+static void PlayerInfo(const svc::PlayerInfoMsg& msg)
+{
+	player_t* p = &consoleplayer();
+
+	uint16_t booleans = msg.inventory();
+	for (int i = 0; i < NUMWEAPONS; i++)
+	{
+		p->weaponowned[i] = booleans & 1 << i;
+	}
+	for (int i = 0; i < NUMCARDS; i++)
+	{
+		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
+	}
+	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
+
+	for (int i = 0; i < MIN<int>(NUMAMMO, msg.ammo_size()); i++)
+	{
+		p->maxammo[i] = msg.ammo(i).maxammo();
+		p->ammo[i] = msg.ammo(i).ammo();
+	}
+
+	p->health = msg.health();
+	p->armorpoints = msg.armorpoints();
+	p->armortype = msg.armortype();
+	p->lives = msg.lives();
+
+	weapontype_t newweapon = static_cast<weapontype_t>(msg.weapon());
+	if (newweapon > NUMWEAPONS) // bad weapon number, choose something else
+	{
+		newweapon = wp_fist;
+	}
+	if (newweapon != p->readyweapon)
+	{
+		p->pendingweapon = newweapon;
+	}
+
+	for (int i = 0; i < MIN<int>(NUMPOWERS, msg.powers_size()); i++)
+	{
+		p->powers[i] = msg.powers(i);
+	}
+}
+
+/**
+ * @brief svc_moveplayer - Move a player.
+ */
+static void MovePlayer(const svc::MovePlayerMsg& msg)
+{
+	byte who = msg.pid();
+	player_t* p = &idplayer(who);
+
+	fixed_t x = msg.pos().x();
+	fixed_t y = msg.pos().y();
+	fixed_t z = msg.pos().z();
+
+	angle_t angle = msg.angle();
+	angle_t pitch = msg.pitch();
+
+	int frame = msg.frame();
+	fixed_t momx = msg.mom().x();
+	fixed_t momy = msg.mom().y();
+	fixed_t momz = msg.mom().z();
+
+	int invisibility = msg.invisibility();
+
+	if (!validplayer(*p) || !p->mo)
+		return;
+
+	// Mark the gametic this update arrived in for prediction code
+	p->tic = gametic;
+
+	// GhostlyDeath -- Servers will never send updates on spectators
+	if (p->spectator && (p != &consoleplayer()))
+		p->spectator = 0;
+
+	// [Russell] - hack, read and set invisibility flag
+	p->powers[pw_invisibility] = invisibility;
+	if (p->powers[pw_invisibility])
+		p->mo->flags |= MF_SHADOW;
+	else
+		p->mo->flags &= ~MF_SHADOW;
+
+	// This is a very bright frame. Looks cool :)
+	if (frame == PLAYER_FULLBRIGHTFRAME)
+		frame = 32773;
+
+	// denis - fixme - security
+	if (!p->mo->sprite ||
+	    (p->mo->frame & FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
+		return;
+
+	p->last_received = gametic;
+	last_player_update = gametic;
+
+	// [SL] 2012-02-21 - Save the position information to a snapshot
+	int snaptime = last_svgametic;
+	PlayerSnapshot newsnap(snaptime);
+	newsnap.setAuthoritative(true);
+
+	newsnap.setX(x);
+	newsnap.setY(y);
+	newsnap.setZ(z);
+	newsnap.setMomX(momx);
+	newsnap.setMomY(momy);
+	newsnap.setMomZ(momz);
+	newsnap.setAngle(angle);
+	newsnap.setPitch(pitch);
+	newsnap.setFrame(frame);
+
+	// Mark the snapshot as continuous unless the player just teleported
+	// and lerping should be disabled
+	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
+	CL_ClearPlayerJustTeleported(p);
+
+	p->snapshots.addSnapshot(newsnap);
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3851,7 +3857,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_noop, Noop);
 		SERVER_PROTO_FUNC(svc_disconnect, Disconnect, svc::DisconnectMsg);
 		SERVER_PROTO_FUNC(svc_playerinfo, PlayerInfo, svc::PlayerInfoMsg);
-		SERVER_MSG_FUNC(svc_moveplayer, CL_UpdatePlayer);
+		SERVER_PROTO_FUNC(svc_moveplayer, MovePlayer, svc::MovePlayerMsg);
 		SERVER_MSG_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer);
 		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);
 		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);

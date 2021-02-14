@@ -29,7 +29,25 @@
 #include "msg_server.h"
 
 #include "d_main.h"
+#include "p_lnspec.h"
+#include "p_local.h"
 #include "server.pb.h"
+
+/**
+ * @brief Write a protocol buffer message to the wire.
+ * 
+ * @param b Buffer to write to.
+ * @param svc Message header.
+ * @param msg Protobuf message to send.
+ */
+static void WriteProto(buf_t& b, const svc_t svc, const google::protobuf::Message& msg)
+{
+	std::string str = msg.SerializeAsString();
+
+	MSG_WriteMarker(&b, svc);
+	MSG_WriteUnVarint(&b, str.size());
+	MSG_WriteChunk(&b, str.data(), str.size());
+}
 
 void SVC_Disconnect(buf_t& b, const char* message)
 {
@@ -39,11 +57,7 @@ void SVC_Disconnect(buf_t& b, const char* message)
 		msg.set_message(message);
 	}
 
-	std::string str = msg.SerializeAsString();
-
-	MSG_WriteMarker(&b, svc_disconnect);
-	MSG_WriteUnVarint(&b, str.size());
-	MSG_WriteChunk(&b, str.data(), str.size());
+	WriteProto(b, svc_disconnect, msg);
 }
 
 /**
@@ -104,11 +118,51 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 		msg.add_powers(player.powers[i]);
 	}
 
-	std::string str = msg.SerializeAsString();
+	WriteProto(b, svc_playerinfo, msg);
+}
 
-	MSG_WriteMarker(&b, svc_playerinfo);
-	MSG_WriteUnVarint(&b, str.size());
-	MSG_WriteChunk(&b, str.data(), str.size());
+/**
+ * @brief Change the location of a player.
+ */
+void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
+{
+	svc::MovePlayerMsg msg;
+
+	msg.set_pid(player.id); // player number
+
+	// [SL] 2011-09-14 - the most recently processed ticcmd from the
+	// client we're sending this message to.
+	msg.set_tic(tic);
+
+	svc::Vec3* pos = msg.mutable_pos();
+	pos->set_x(player.mo->x);
+	pos->set_y(player.mo->y);
+	pos->set_z(player.mo->z);
+
+	msg.set_angle(player.mo->angle);
+	msg.set_pitch(player.mo->pitch);
+
+	if (player.mo->frame == 32773)
+	{
+		msg.set_frame(PLAYER_FULLBRIGHTFRAME);
+	}
+	else
+	{
+		msg.set_frame(player.mo->frame);
+	}
+
+	// write velocity
+	svc::Vec3* mom = msg.mutable_mom();
+	mom->set_x(player.mo->momx);
+	mom->set_y(player.mo->momy);
+	mom->set_z(player.mo->momz);
+
+	// [Russell] - hack, tell the client about the partial
+	// invisibility power of another player.. (cheaters can disable
+	// this but its all we have for now)
+	msg.set_invisibility(player.powers[pw_invisibility] > 0);
+
+	WriteProto(b, svc_moveplayer, msg);
 }
 
 /**
@@ -304,9 +358,6 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	MSG_WriteVarint(&b, sls.last_wininfo_type);
 	MSG_WriteVarint(&b, sls.last_wininfo_id);
 }
-
-#include "p_lnspec.h"
-#include "p_local.h"
 
 /**
  * @brief Send information about a player who discovered a secret.

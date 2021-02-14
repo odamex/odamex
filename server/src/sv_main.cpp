@@ -3494,44 +3494,7 @@ void SV_WriteCommands(void)
 			if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
 				continue;
 
-			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
-			MSG_WriteByte(&cl->netbuf, pit->id); // player number
-
-			// [SL] 2011-09-14 - the most recently processed ticcmd from the
-			// client we're sending this message to.
-			MSG_WriteLong(&cl->netbuf, it->tic);
-
-			MSG_WriteLong(&cl->netbuf, pit->mo->x);
-			MSG_WriteLong(&cl->netbuf, pit->mo->y);
-			MSG_WriteLong(&cl->netbuf, pit->mo->z);
-
-			if (GAMEVER > 60)
-			{
-				MSG_WriteShort(&cl->netbuf, pit->mo->angle >> FRACBITS);
-				MSG_WriteShort(&cl->netbuf, pit->mo->pitch >> FRACBITS);
-			}
-			else
-			{
-				MSG_WriteLong(&cl->netbuf, pit->mo->angle);
-			}
-
-			if (pit->mo->frame == 32773)
-				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
-			else
-				MSG_WriteByte(&cl->netbuf, pit->mo->frame);
-
-			// write velocity
-			MSG_WriteLong(&cl->netbuf, pit->mo->momx);
-			MSG_WriteLong(&cl->netbuf, pit->mo->momy);
-			MSG_WriteLong(&cl->netbuf, pit->mo->momz);
-
-			// [Russell] - hack, tell the client about the partial
-			// invisibility power of another player.. (cheaters can disable
-			// this but its all we have for now)
-			if (GAMEVER > 60)
-				MSG_WriteByte(&cl->netbuf, pit->powers[pw_invisibility]);
-			else
-				MSG_WriteLong(&cl->netbuf, pit->powers[pw_invisibility]);
+			SVC_MovePlayer(cl->netbuf, *pit, it->tic);
 		}
 
 		// [SL] Send client info about player he is spying on

@@ -38,6 +38,7 @@
 
 void SVC_Disconnect(buf_t& b, const char* message = NULL);
 void SVC_PlayerInfo(buf_t& b, player_t& player);
+void SVC_MovePlayer(buf_t& b, player_t& player, const int tic);
 void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags);
 void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
 				 const std::string& mapname, int time);
