@@ -43,6 +43,7 @@ class			DGUIDim;
 class			DGUIFlat;
 class			DGUIPatch;
 class			DGUIText;
+class			DGUIParagraph;
 class		DSeqNode;
 class			DSeqActorNode;
 class			DSeqSectorNode;

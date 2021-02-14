@@ -50,6 +50,7 @@
 #include "g_levelstate.h"
 #include "g_gametype.h"
 #include "c_bind.h"
+#include "gui_element.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -452,6 +453,26 @@ void ST_voteDraw (int y) {
 			   (I_GetSurfaceWidth() >> 1), y, xscale * 40, false, true);
 }
 
+/**
+ * @brief Draw the chat window.
+ */
+void HU_ChatWindow()
+{
+	OGUIContext ctx;
+
+	DGUIParagraph* text =
+	    new DGUIParagraph(ctx, "[UD]AlexMax: We can do better than interfaces from 1997");
+
+	DGUIDim dim(ctx, "00 00 00", 0.75);
+	dim.size(200, 200);
+	dim.push_back(text);
+
+	dim.layout();
+	lay_run_context(ctx.layoutAddr());
+	dim.render();
+	lay_reset_context(ctx.layoutAddr());
+}
+
 namespace hud {
 
 /**
@@ -720,6 +741,9 @@ void OdamexHUD() {
 			}
 		}
 	}
+
+	// Draw the chat window.
+	HU_ChatWindow();
 
 	// Draw gametype scoreboard
 	hud::drawGametype();

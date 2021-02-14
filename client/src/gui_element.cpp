@@ -1,10 +1,28 @@
 
 #include "gui_element.h"
 
+#include "cmdlib.h"
 #include "v_text.h"
 #include "v_textcolors.h"
 #include "v_video.h"
 #include "w_wad.h"
+
+/**
+ * @brief Draw a debug box around the given layout ID.
+ *
+ * @param ctx Context.
+ * @param id Layout ID.
+ */
+void DrawDebugBox(OGUIContext& ctx, lay_id id, const char* color, const char* border)
+{
+	lay_vec4 vec = lay_get_rect(ctx.layoutAddr(), id);
+	::screen->Dim(vec[0], vec[1], vec[2], vec[3], border, 1.0);
+	if (vec[2] - 2 <= 0 || vec[3] - 2 <= 0)
+	{
+		return;
+	}
+	::screen->Dim(vec[0] + 1, vec[1] + 1, vec[2] - 2, vec[3] - 2, color, 1.0);
+}
 
 /*
  * Base abstract element.
@@ -277,4 +295,80 @@ void DGUIText::render()
 	// Draw text sourced at the upper-left corner of our layout item.
 	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
 	::screen->DrawText(CR_GREY, vec[0], vec[1], m_text.c_str());
+}
+
+IMPLEMENT_CLASS(DGUIParagraph, DGUIElement)
+
+/**
+ * @brief Chop the text into individual words with an element for each one.
+ *
+ * @param text Text to contain in the paragraph element.
+ */
+void DGUIParagraph::updateText(const std::string& text)
+{
+	m_text = text;
+	m_children.clear();
+
+	StringTokens tokens = TokenizeString(text, " ");
+	for (StringTokens::const_iterator it = tokens.begin(); it != tokens.end(); ++it)
+	{
+		m_children.push_back(DGUIText(m_ctx, *it));
+	}
+}
+
+DGUIParagraph::DGUIParagraph(OGUIContext& ctx, const std::string& text) : DGUIElement(ctx)
+{
+	updateText(text);
+}
+
+void DGUIParagraph::layout()
+{
+	// Hardcode these flags so the text flows as expected.
+	m_containFlags = LAY_ROW | LAY_FLEX | LAY_WRAP | LAY_START;
+	m_behaveFlags = LAY_FILL;
+
+	DGUIElement::layout();
+
+	// Lay out text elements - they are a vector of like-kinded text
+	// elements that were not allocated with "new", so we can't use
+	// layoutElements.
+	lay_id lastID = LAY_INVALID_ID;
+	for (std::vector<DGUIText>::iterator it = m_children.begin(); it != m_children.end();
+	     ++it)
+	{
+		it->layout();
+		lay_id iterID = it->getID();
+
+		// Words should have a right margin.
+		lay_set_margins_ltrb(m_ctx.layoutAddr(), it->getID(), 0, 0, 4, 0);
+
+		// This next bit is recommended by the library docs.
+		if (lastID == LAY_INVALID_ID)
+		{
+			// Establish parent-child item relationship.
+			lay_insert(m_ctx.layoutAddr(), m_layoutID, iterID);
+		}
+		else
+		{
+			// Append this child after previous one.
+			lay_append(m_ctx.layoutAddr(), lastID, iterID);
+		}
+
+		lastID = iterID;
+	}
+}
+
+void DGUIParagraph::render()
+{
+	if (m_layoutID == LAY_INVALID_ID)
+		return;
+
+	// Render text elements - they are a vector of like-kinded text
+	// elements that were not allocated with "new", so we can't use
+	// renderElements.
+	for (std::vector<DGUIText>::iterator it = m_children.begin(); it != m_children.end();
+	     ++it)
+	{
+		it->render();
+	}
 }

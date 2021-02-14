@@ -1384,6 +1384,7 @@ static void C_DrawNotifyText()
 	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || menuactive)
 		return;
 
+	// [AM] FIXME: Just for testing.
 	V_SetFont("DIGFONT");
 
 	int ypos = 0;

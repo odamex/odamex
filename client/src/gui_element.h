@@ -303,4 +303,22 @@ class DGUIText : public DGUIElement
 	void render();
 };
 
+/**
+ * @brief Wraps a paragraph drawer, consisting of many text elements that
+ *        are capable of wrapping.
+ */
+class DGUIParagraph : public DGUIElement
+{
+	DECLARE_CLASS(DGUIParagraph, DGUIElement)
+	std::string m_text;
+	std::vector<DGUIText> m_children;
+
+	void updateText(const std::string& text);
+  public:
+	DGUIParagraph(OGUIContext& ctx, const std::string& text);
+	void layout();
+	void render();
+};
+
+
 #endif

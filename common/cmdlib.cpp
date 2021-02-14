@@ -336,14 +336,20 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 }
 
 // Tokenize a string
-StringTokens TokenizeString(const std::string& str, const std::string& delim) {
+StringTokens TokenizeString(const std::string& str, const std::string& delim)
+{
 	StringTokens tokens;
 	size_t delimPos = 0;
 	size_t prevDelim = 0;
 
-	while (delimPos != std::string::npos) {
+	while (delimPos != std::string::npos)
+	{
 		delimPos = str.find(delim, prevDelim);
-		tokens.push_back(str.substr(prevDelim, delimPos - prevDelim));
+		std::string found = str.substr(prevDelim, delimPos - prevDelim);
+		if (!found.empty())
+		{
+			tokens.push_back(found);
+		}
 		prevDelim = delimPos + 1;
 	}
 
