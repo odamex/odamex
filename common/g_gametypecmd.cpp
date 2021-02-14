@@ -145,11 +145,11 @@ static GametypeParam coopParams[] = {
 
 static void CoopHelp()
 {
-	Printf("gm_coop - Configures some settings for a basic Cooperative game\n");
+	Printf("game_coop - Configures some settings for a basic Cooperative game\n");
 	GametypeHelp(::coopParams);
 }
 
-BEGIN_COMMAND(gm_coop)
+BEGIN_COMMAND(game_coop)
 {
 	if (argc < 2)
 	{
@@ -176,7 +176,7 @@ BEGIN_COMMAND(gm_coop)
 	Printf("Configuring Cooperative...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_coop)
+END_COMMAND(game_coop)
 
 static GametypeParam survivalParams[] = {
     {"g_lives", 3, "lives", "LIVES",
@@ -186,11 +186,11 @@ static GametypeParam survivalParams[] = {
 
 static void SurvivalHelp()
 {
-	Printf("gm_survival - Configures some settings for a basic game of Survival\n");
+	Printf("game_survival - Configures some settings for a basic game of Survival\n");
 	GametypeHelp(::survivalParams);
 }
 
-BEGIN_COMMAND(gm_survival)
+BEGIN_COMMAND(game_survival)
 {
 	if (argc < 2)
 	{
@@ -216,7 +216,7 @@ BEGIN_COMMAND(gm_survival)
 	Printf("Configuring Survival...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_survival)
+END_COMMAND(game_survival)
 
 static GametypeParam dmParams[] = {
     {"sv_fraglimit", 30, "frags", "FRAGLIMIT",
@@ -226,11 +226,11 @@ static GametypeParam dmParams[] = {
 
 static void DMHelp()
 {
-	Printf("gm_dm - Configures some settings for a basic game of Deathmatch\n");
+	Printf("game_dm - Configures some settings for a basic game of Deathmatch\n");
 	GametypeHelp(::dmParams);
 }
 
-BEGIN_COMMAND(gm_dm)
+BEGIN_COMMAND(game_dm)
 {
 	if (argc < 2)
 	{
@@ -257,7 +257,7 @@ BEGIN_COMMAND(gm_dm)
 	Printf("Configuring Deathmatch...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_dm)
+END_COMMAND(game_dm)
 
 static GametypeParam duelParams[] = {
     {"sv_fraglimit", 50, "frags", "FRAGLIMIT",
@@ -265,11 +265,11 @@ static GametypeParam duelParams[] = {
 
 static void DuelHelp()
 {
-	Printf("gm_duel - Configures some settings for a basic Duel\n");
+	Printf("game_duel - Configures some settings for a basic Duel\n");
 	GametypeHelp(::duelParams);
 }
 
-BEGIN_COMMAND(gm_duel)
+BEGIN_COMMAND(game_duel)
 {
 	if (argc < 2)
 	{
@@ -300,7 +300,7 @@ BEGIN_COMMAND(gm_duel)
 	Printf("Configuring Duel...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_duel)
+END_COMMAND(game_duel)
 
 static GametypeParam lmsParams[] = {
     {"g_lives", 1, "lives", "LIVES",
@@ -311,11 +311,11 @@ static GametypeParam lmsParams[] = {
 static void LMSHelp()
 {
 	Printf(
-	    "gm_lms - Configures some settings for a basic game of Last Marine Standing\n");
+	    "game_lms - Configures some settings for a basic game of Last Marine Standing\n");
 	GametypeHelp(::lmsParams);
 }
 
-BEGIN_COMMAND(gm_lms)
+BEGIN_COMMAND(game_lms)
 {
 	if (argc < 2)
 	{
@@ -342,7 +342,7 @@ BEGIN_COMMAND(gm_lms)
 	Printf("Configuring Last Marine Standing...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_lms)
+END_COMMAND(game_lms)
 
 static GametypeParam tdmParams[] = {
     {"sv_fraglimit", 50, "frags", "FRAGLIMIT",
@@ -352,11 +352,11 @@ static GametypeParam tdmParams[] = {
 
 static void TDMHelp()
 {
-	Printf("gm_tdm - Configures some settings for a basic game of Team Deathmatch\n");
+	Printf("game_tdm - Configures some settings for a basic game of Team Deathmatch\n");
 	GametypeHelp(::tdmParams);
 }
 
-BEGIN_COMMAND(gm_tdm)
+BEGIN_COMMAND(game_tdm)
 {
 	if (argc < 2)
 	{
@@ -384,7 +384,7 @@ BEGIN_COMMAND(gm_tdm)
 	Printf("Configuring Team Deathmatch...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_tdm)
+END_COMMAND(game_tdm)
 
 static GametypeParam tlmsParams[] = {
     {"g_lives", 1, "lives", "LIVES",
@@ -396,12 +396,12 @@ static GametypeParam tlmsParams[] = {
 
 static void TLMSHelp()
 {
-	Printf("gm_tlms - Configures some settings for a basic game of Team Last Marine "
+	Printf("game_tlms - Configures some settings for a basic game of Team Last Marine "
 	       "Standing\n");
 	GametypeHelp(::tlmsParams);
 }
 
-BEGIN_COMMAND(gm_tlms)
+BEGIN_COMMAND(game_tlms)
 {
 	if (argc < 2)
 	{
@@ -429,7 +429,7 @@ BEGIN_COMMAND(gm_tlms)
 	Printf("Configuring Team Last Marine Standing...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_tlms)
+END_COMMAND(game_tlms)
 
 static GametypeParam ctfParams[] = {
     {"sv_scorelimit", 5, "score", "SCORELIMIT",
@@ -441,11 +441,11 @@ static GametypeParam ctfParams[] = {
 
 static void CTFHelp()
 {
-	Printf("gm_ctf - Configures some settings for a basic game of Capture the Flag\n");
+	Printf("game_ctf - Configures some settings for a basic game of Capture the Flag\n");
 	GametypeHelp(::ctfParams);
 }
 
-BEGIN_COMMAND(gm_ctf)
+BEGIN_COMMAND(game_ctf)
 {
 	if (argc < 2)
 	{
@@ -473,4 +473,4 @@ BEGIN_COMMAND(gm_ctf)
 	Printf("Configuring Capture the Flag...\n%s\n", config.c_str());
 	AddCommandString(config.c_str());
 }
-END_COMMAND(gm_ctf)
+END_COMMAND(game_ctf)

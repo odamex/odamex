@@ -895,7 +895,7 @@ void LevelStateHUD()
 		          ::levelstate.getCountdown());
 		break;
 	case LevelState::PREROUND_COUNTDOWN:
-		StrFormat(str, "Weapons free in " TEXTCOLOR_GREEN "%d",
+		StrFormat(str, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
 	case LevelState::ENDROUND_COUNTDOWN: {
