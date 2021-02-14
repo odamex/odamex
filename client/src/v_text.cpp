@@ -48,6 +48,7 @@ patch_t* hu_font[HU_FONTSIZE];
 
 static patch_t* hu_bigfont[HU_FONTSIZE];
 static patch_t* hu_smallfont[HU_FONTSIZE];
+static patch_t* hu_digfont[HU_FONTSIZE];
 
 byte *ConChars;
 extern byte *Ranges;
@@ -57,18 +58,15 @@ extern byte *Ranges;
  */
 void V_TextInit()
 {
-	int j, sub;
 	std::string buffer;
 
-	const char *bigfont = "FONTB%02d";
-	const char *smallfont = "STCFN%.3d";
-
 	// Level name font, used between levels, starts at index 1.
-	j = 1;
-	sub = 0;
+	const char* bigfont = "FONTB%02d";
+
+	int j = 1;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, bigfont, j++ - sub);
+		StrFormat(buffer, bigfont, j++);
 
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
@@ -79,12 +77,40 @@ void V_TextInit()
 	}
 
 	// Normal doom chat/message font, starts at index 33.
+
+	const char* smallfont = "STCFN%.3d";
 	j = HU_FONTSTART;
-	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, smallfont, j++ - sub);
+		StrFormat(buffer, smallfont, j++);
 		::hu_smallfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+	}
+
+	const char* digfont = "DIG%02d";
+	const char* digfont_literal = "DIG%c";
+
+	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
+	// and numbers are themselves, other characters are their ASCII values.
+	j = HU_FONTSTART;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+		{
+			StrFormat(buffer, digfont_literal, j++);
+		}
+		else
+		{
+			StrFormat(buffer, digfont, j++);
+		}
+
+		if (W_FindLump(buffer.c_str(), -1) != -1)
+		{
+			::hu_digfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+		}
+		else
+		{
+			::hu_digfont[i] = W_CachePatch("SBLINE", PU_STATIC);
+		}
 	}
 
 	// Default font is SMALLFONT.
@@ -104,6 +130,8 @@ void V_TextShutdown()
 		::hu_bigfont[i] = NULL;
 		Z_ChangeTag(::hu_smallfont[i], PU_CACHE);
 		::hu_smallfont[i] = NULL;
+		Z_ChangeTag(::hu_digfont[i], PU_CACHE);
+		::hu_digfont[i] = NULL;
 	}
 }
 
@@ -118,6 +146,8 @@ void V_SetFont(const char* fontname)
 		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
 	else if (stricmp(fontname, "SMALLFONT") == 0)
 		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
+	else if (stricmp(fontname, "DIGFONT") == 0)
+		memcpy(::hu_font, ::hu_digfont, sizeof(::hu_digfont));
 }
 
 int V_TextScaleXAmount()
