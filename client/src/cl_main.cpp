@@ -2242,47 +2242,6 @@ void CL_UpdatePlayerState()
 }
 
 //
-// CL_UpdateLocalPlayer
-//
-void CL_UpdateLocalPlayer(void)
-{
-	player_t &p = consoleplayer();
-
-	// The server has processed the ticcmd that the local client sent
-	// during the the tic referenced below
-	p.tic = MSG_ReadLong();
-
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
-
-	byte waterlevel = MSG_ReadByte();
-
-	int snaptime = last_svgametic;
-	PlayerSnapshot newsnapshot(snaptime);
-	newsnapshot.setAuthoritative(true);
-	newsnapshot.setX(x);
-	newsnapshot.setY(y);
-	newsnapshot.setZ(z);
-	newsnapshot.setMomX(momx);
-	newsnapshot.setMomY(momy);
-	newsnapshot.setMomZ(momz);
-	newsnapshot.setWaterLevel(waterlevel);
-
-	// Mark the snapshot as continuous unless the player just teleported
-	// and lerping should be disabled
-	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
-	CL_ClearPlayerJustTeleported(&p);
-
-	consoleplayer().snapshots.addSnapshot(newsnapshot);
-}
-
-
-//
 // CL_SaveSvGametic
 //
 // Receives the server's gametic at the time the packet was sent.  It will be
@@ -3831,6 +3790,43 @@ static void MovePlayer(const svc::MovePlayerMsg& msg)
 	p->snapshots.addSnapshot(newsnap);
 }
 
+static void UpdateLocalPlayer(const svc::UpdateLocalPlayerMsg& msg)
+{
+	player_t& p = consoleplayer();
+
+	// The server has processed the ticcmd that the local client sent
+	// during the the tic referenced below
+	p.tic = msg.tic();
+
+	fixed_t x = msg.pos().x();
+	fixed_t y = msg.pos().y();
+	fixed_t z = msg.pos().z();
+
+	fixed_t momx = msg.mom().x();
+	fixed_t momy = msg.mom().y();
+	fixed_t momz = msg.mom().z();
+
+	byte waterlevel = msg.waterlevel();
+
+	int snaptime = last_svgametic;
+	PlayerSnapshot newsnapshot(snaptime);
+	newsnapshot.setAuthoritative(true);
+	newsnapshot.setX(x);
+	newsnapshot.setY(y);
+	newsnapshot.setZ(z);
+	newsnapshot.setMomX(momx);
+	newsnapshot.setMomY(momy);
+	newsnapshot.setMomZ(momz);
+	newsnapshot.setWaterLevel(waterlevel);
+
+	// Mark the snapshot as continuous unless the player just teleported
+	// and lerping should be disabled
+	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
+	CL_ClearPlayerJustTeleported(&p);
+
+	consoleplayer().snapshots.addSnapshot(newsnapshot);
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3858,7 +3854,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_disconnect, Disconnect, svc::DisconnectMsg);
 		SERVER_PROTO_FUNC(svc_playerinfo, PlayerInfo, svc::PlayerInfoMsg);
 		SERVER_PROTO_FUNC(svc_moveplayer, MovePlayer, svc::MovePlayerMsg);
-		SERVER_MSG_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer);
+		SERVER_PROTO_FUNC(svc_updatelocalplayer, UpdateLocalPlayer,
+		                  svc::UpdateLocalPlayerMsg);
 		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);
 		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);

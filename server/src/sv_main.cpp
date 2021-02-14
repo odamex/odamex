@@ -3701,21 +3701,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	}
 
 	// client player will update his position if packets were missed
-	MSG_WriteMarker (&cl->netbuf, svc_updatelocalplayer);
-
-	// client-tic of the most recently processed ticcmd for this client
-	MSG_WriteLong (&cl->netbuf, player.tic);
-
-	MSG_WriteLong (&cl->netbuf, mo->x);
-	MSG_WriteLong (&cl->netbuf, mo->y);
-	MSG_WriteLong (&cl->netbuf, mo->z);
-
-	MSG_WriteLong (&cl->netbuf, mo->momx);
-	MSG_WriteLong (&cl->netbuf, mo->momy);
-	MSG_WriteLong (&cl->netbuf, mo->momz);
-
-    MSG_WriteByte (&cl->netbuf, mo->waterlevel);
-
+	SVC_UpdateLocalPlayer(cl->netbuf, *mo, player.tic);
     SV_UpdateMovingSectors(player);
 }
 

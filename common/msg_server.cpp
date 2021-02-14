@@ -166,6 +166,32 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 }
 
 /**
+ * @brief Send the local player position for a client.
+ */
+void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
+{
+	// client player will update his position if packets were missed
+	svc::UpdateLocalPlayerMsg msg;
+
+	// client-tic of the most recently processed ticcmd for this client
+	msg.set_tic(tic);
+
+	svc::Vec3* pos = msg.mutable_pos();
+	pos->set_x(mo.x);
+	pos->set_y(mo.y);
+	pos->set_z(mo.z);
+
+	svc::Vec3* mom = msg.mutable_mom();
+	mom->set_x(mo.momx);
+	mom->set_y(mo.momy);
+	mom->set_z(mo.momz);
+
+	msg.set_waterlevel(mo.waterlevel);
+
+	WriteProto(b, svc_updatelocalplayer, msg);
+}
+
+/**
  * @brief Persist level locals to the client.
  *
  * @param b Buffer to write to.
