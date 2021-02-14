@@ -715,6 +715,14 @@ void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 
+template <typename MSG>
+void MSG_WriteProto(buf_t* b, MSG msg)
+{
+	std::string str = msg.SerializeAsString();
+	MSG_WriteUnVarint(b, str.size());
+	MSG_WriteChunk(b, str.data(), str.size());
+}
+
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);
 
@@ -727,6 +735,18 @@ int MSG_ReadVarint();
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);
+
+template <typename MSG>
+bool MSG_ReadProto(MSG& msg)
+{
+	size_t size = MSG_ReadUnVarint();
+	void* data = MSG_ReadChunk(size);
+	if (!msg.ParseFromArray(data, size))
+	{
+		return false;
+	}
+	return true;
+}
 
 size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
 

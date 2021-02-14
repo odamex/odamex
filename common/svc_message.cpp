@@ -34,22 +34,6 @@
 #include "p_local.h"
 #include "server.pb.h"
 
-/**
- * @brief Write a protocol buffer message to the wire.
- * 
- * @param b Buffer to write to.
- * @param svc Message header.
- * @param msg Protobuf message to send.
- */
-static void WriteProto(buf_t& b, const svc_t svc, const google::protobuf::Message& msg)
-{
-	std::string str = msg.SerializeAsString();
-
-	MSG_WriteMarker(&b, svc);
-	MSG_WriteUnVarint(&b, str.size());
-	MSG_WriteChunk(&b, str.data(), str.size());
-}
-
 void SVC_Disconnect(buf_t& b, const char* message)
 {
 	svc::DisconnectMsg msg;
@@ -58,7 +42,8 @@ void SVC_Disconnect(buf_t& b, const char* message)
 		msg.set_message(message);
 	}
 
-	WriteProto(b, svc_disconnect, msg);
+	MSG_WriteMarker(&b, svc_disconnect);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -119,7 +104,8 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 		msg.add_powers(player.powers[i]);
 	}
 
-	WriteProto(b, svc_playerinfo, msg);
+	MSG_WriteMarker(&b, svc_playerinfo);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -163,7 +149,8 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 	// this but its all we have for now)
 	msg.set_invisibility(player.powers[pw_invisibility] > 0);
 
-	WriteProto(b, svc_moveplayer, msg);
+	MSG_WriteMarker(&b, svc_moveplayer);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -189,7 +176,8 @@ void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
 
 	msg.set_waterlevel(mo.waterlevel);
 
-	WriteProto(b, svc_updatelocalplayer, msg);
+	MSG_WriteMarker(&b, svc_updatelocalplayer);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -237,7 +225,8 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
 		msg.set_respawned_monsters(locals.respawned_monsters);
 	}
 
-	WriteProto(b, svc_levellocals, msg);
+	MSG_WriteMarker(&b, svc_levellocals);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -247,7 +236,8 @@ void SVC_PingRequest(buf_t& b)
 {
 	svc::PingRequestMsg msg;
 	msg.set_ms_time(I_MSTime());
-	WriteProto(b, svc_pingrequest, msg);
+	MSG_WriteMarker(&b, svc_pingrequest);
+	MSG_WriteProto(&b, msg);
 }
 
 /**

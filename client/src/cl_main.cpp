@@ -3843,10 +3843,8 @@ static void PingRequest(const svc::PingRequestMsg& msg)
 
 #define SERVER_PROTO_FUNC(svc, func, proto)                               \
 	case svc: {                                                           \
-		size_t size = MSG_ReadUnVarint();                                 \
-		void* data = MSG_ReadChunk(size);                                 \
 		proto msg;                                                        \
-		if (!msg.ParseFromArray(data, size))                              \
+		if (!MSG_ReadProto(msg))                                          \
 		{                                                                 \
 			Printf(PRINT_WARNING, "%s: Could not read message.\n", #svc); \
 			return false;                                                 \
