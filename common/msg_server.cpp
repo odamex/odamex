@@ -29,6 +29,7 @@
 #include "msg_server.h"
 
 #include "d_main.h"
+#include "i_system.h"
 #include "p_lnspec.h"
 #include "p_local.h"
 #include "server.pb.h"
@@ -237,6 +238,16 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
 	}
 
 	WriteProto(b, svc_levellocals, msg);
+}
+
+/**
+ * @brief Send the server's current time in MS to the client.
+ */
+void SVC_PingRequest(buf_t& b)
+{
+	svc::PingRequestMsg msg;
+	msg.set_ms_time(I_MSTime());
+	WriteProto(b, svc_pingrequest, msg);
 }
 
 /**

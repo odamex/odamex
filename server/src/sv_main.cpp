@@ -3306,8 +3306,7 @@ void SV_SendPingRequest(client_t* cl)
 	if (!P_AtInterval(100))
 		return;
 
-	MSG_WriteMarker (&cl->reliablebuf, svc_pingrequest);
-	MSG_WriteLong (&cl->reliablebuf, I_MSTime());
+	SVC_PingRequest(cl->reliablebuf);
 }
 
 void SV_UpdateMonsterRespawnCount()

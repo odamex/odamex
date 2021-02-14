@@ -2265,21 +2265,6 @@ void CL_SaveSvGametic(void)
 }
 
 //
-// CL_SendPingReply
-//
-// Replies to a server's ping request
-//
-// [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
-// for clarity since it sends timestamps, not gametics.
-//
-void CL_SendPingReply(void)
-{
-	int svtimestamp = MSG_ReadLong();
-	MSG_WriteMarker (&net_buffer, clc_pingreply);
-	MSG_WriteLong (&net_buffer, svtimestamp);
-}
-
-//
 // CL_UpdatePing
 // Update ping value
 //
@@ -3837,6 +3822,20 @@ static void LevelLocals(const svc::LevelLocalsMsg& msg)
 	}
 }
 
+//
+// CL_SendPingReply
+//
+// Replies to a server's ping request
+//
+// [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
+// for clarity since it sends timestamps, not gametics.
+//
+static void PingRequest(const svc::PingRequestMsg& msg)
+{
+	MSG_WriteMarker(&net_buffer, clc_pingreply);
+	MSG_WriteLong(&net_buffer, msg.ms_time());
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3867,7 +3866,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_updatelocalplayer, UpdateLocalPlayer,
 		                  svc::UpdateLocalPlayerMsg);
 		SERVER_PROTO_FUNC(svc_levellocals, LevelLocals, svc::LevelLocalsMsg);
-		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
+		SERVER_PROTO_FUNC(svc_pingrequest, PingRequest, svc::PingRequestMsg);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
 		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
 		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
