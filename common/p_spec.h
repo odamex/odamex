@@ -205,7 +205,7 @@ void	P_UpdateSpecials (void);
 // when needed
 void    P_CrossSpecialLine (int linenum, int side, AActor* thing);
 void    P_ShootSpecialLine (AActor* thing, line_t* line);
-bool    P_UseSpecialLine (AActor* thing, line_t* line, int side);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
 void    P_PlayerInSpecialSector (player_t *player);

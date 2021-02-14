@@ -23,7 +23,6 @@
 #include <ctype.h>
 #include <assert.h>
 #include "cmdlib.h"
-//#include "g_level.h"
 #include "umapinfo.h"
 #include "scanner.h"
 
@@ -32,13 +31,12 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "i_system.h"
+#include "p_setup.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
 // TODO: Add episodes
 //void M_AddEpisode(const char *map, char *def);
-
-MapList Maps;
 
 
 //==========================================================================
@@ -147,7 +145,7 @@ static const char * const ActorNames[] =
 	"ShortBlueTorch",
 	"ShortGreenTorch",
 	"ShortRedTorch",
-	"Slalagtite",
+	"Stalagtite",
 	"TechPillar",
 	"CandleStick",
 	"Candelabra",
@@ -215,16 +213,15 @@ static char *ParseMultiString(Scanner &scanner, int error)
 		{
 			return strdup("-");	// this was explicitly deleted to override the default.
 		}
-		else
-		{
-			scanner.ErrorF("Either 'clear' or string constant expected");
-		}
+
+		scanner.ErrorF("Either 'clear' or string constant expected");
 	}
 	
 	do
 	{
 		scanner.MustGetToken(TK_StringConst);
-		if (build == NULL) build = strdup(scanner.string);
+		if (build == NULL)
+			build = strdup(scanner.string);
 		else
 		{
 			size_t newlen = strlen(build) + strlen(scanner.string) + 2; // strlen for both the existing text and the new line, plus room for one \n and one \0
@@ -452,7 +449,6 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 		
 		// would add episode after parsing here
 	}
-#if 0
 	else if (!stricmp(pname, "bossaction"))
 	{
 		scanner.MustGetToken(TK_Identifier);
@@ -460,17 +456,17 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 		if (!stricmp(scanner.string, "clear"))
 		{
 			// mark level free of boss actions
-			if (mape->bossactions) free(mape->bossactions);
-			mape->bossactions = NULL;
-			mape->numbossactions = -1;
+			mape->bossactions.clear();
+			mape->bossactions_donothing = true;
 		}
 		else
 		{
-			int special, tag;
-			
-			for (int i = 0; ActorNames[i]; i++)
+			int i;
+
+			for (i = 0; ActorNames[i]; i++)
 			{
-				if (!stricmp(scanner.string, ActorNames[i])) break;
+				if (!stricmp(scanner.string, ActorNames[i]))
+					break;
 			}
 			if (ActorNames[i] == NULL)
 			{
@@ -480,29 +476,33 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 
 			scanner.MustGetToken(',');
 			scanner.MustGetInteger();
-			special = scanner.number;
+			const int special = scanner.number;
 			scanner.MustGetToken(',');
 			scanner.MustGetInteger();
-			tag = scanner.number;
+			const int tag = scanner.number;
 			// allow no 0-tag specials here, unless a level exit.
 			if (tag != 0 || special == 11 || special == 51 || special == 52 || special == 124)
 			{
-				if (mape->numbossactions == -1) mape->numbossactions = 1;
-				else mape->numbossactions++;
-				mape->bossactions = (struct BossAction *)realloc(mape->bossactions, sizeof(struct BossAction) * mape->numbossactions);
-				mape->bossactions[mape->numbossactions - 1].type = i;
-				mape->bossactions[mape->numbossactions - 1].special = special;
-				mape->bossactions[mape->numbossactions - 1].tag = tag;
+				if (mape->bossactions_donothing == true)
+					mape->bossactions_donothing = false;
+
+				BossAction new_bossaction;
+
+				new_bossaction.type = i;
+				new_bossaction.special = special;
+				new_bossaction.tag = tag;
+
+				mape->bossactions.push_back(new_bossaction);
 			}
 
 		}
 	}
-#endif
 	else
 	{
 		do
 		{
-			if (!scanner.CheckFloat()) scanner.GetNextToken();
+			if (!scanner.CheckFloat())
+				scanner.GetNextToken();
 			if (scanner.token > TK_BoolConst) 
 			{
 				scanner.Error(TK_Identifier);

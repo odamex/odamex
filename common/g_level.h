@@ -71,6 +71,7 @@
 
 struct acsdefered_s;
 class FBehavior;
+struct BossAction;
 
 struct level_info_t {
 	char			mapname[9];
@@ -128,7 +129,9 @@ struct level_pwad_info_t
 	// The following are necessary for UMAPINFO compatibility
 	char			exitpic[9];
 	char			enterpic[9];
-
+	std::vector<BossAction> bossactions;
+	bool			bossactions_donothing;
+	
 	BOOL exists() const
 	{
 		return this->mapname[0] != '\0';
@@ -183,12 +186,23 @@ struct level_locals_t {
 	SDWORD			vars[NUM_MAPVARS];
 
 	// The following are used for UMAPINFO
-	char			 exitpic[8];
-	char			 enterpic[8];
+	char			exitpic[8];
+	char			enterpic[8];
+
+	std::vector<BossAction> *bossactions;
+	bool			bossactions_donothing;
+	
 };
 
 #define CLUSTER_HUB            0x00000001u
 #define CLUSTER_EXITTEXTISLUMP 0x00000002u
+
+struct BossAction
+{
+	int type;
+	int special;
+	int tag;
+};
 
 struct cluster_info_t {
 	int				cluster;

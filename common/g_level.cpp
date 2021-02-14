@@ -43,6 +43,7 @@
 #include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
+#include "p_setup.h"
 #include "p_unlag.h"
 #include "r_data.h"
 #include "r_sky.h"
@@ -2083,6 +2084,9 @@ void G_InitLevelLocals()
 	strncpy(::level.exitpic, info.exitpic, 8);
 	strncpy(::level.enterpic, info.enterpic, 8);
 
+	level.bossactions = &info.bossactions;
+	level.bossactions_donothing = info.bossactions_donothing;
+	
 	movingsectors.clear();
 }
 

@@ -2632,7 +2632,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
 
-    P_UseSpecialLine (usething, in->d.line, side);
+    P_UseSpecialLine (usething, in->d.line, side, false);
 
 	//WAS can't use more than one special line in a row
 	//jff 3/21/98 NOW multiple use allowed with enabling line flag

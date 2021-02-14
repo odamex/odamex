@@ -21,49 +21,6 @@
 #ifndef __UMAPINFO_H
 #define __UMAPINFO_H
 
-struct BossAction
-{
-	int type;
-	int special;
-	int tag;
-};
-
-#if 0
-struct MapEntry
-{
-	char *mapname;
-	char *levelname;
-	char *intertext;
-	char *intertextsecret;
-	char levelpic[9];
-	char nextmap[9];
-	char nextsecret[9];
-	char music[9];
-	char skytexture[9];
-	char endpic[9];
-	char exitpic[9];
-	char enterpic[9];
-	char interbackdrop[9];
-	char intermusic[9];
-	int partime;
-	int nointermission;
-	int numbossactions;
-
-	unsigned int propertycount;
-	struct MapProperty *properties;
-	struct BossAction *bossactions;
-};
-#endif
-
-struct MapList
-{
-	unsigned int mapcount;
-	struct MapEntry *maps;
-};
-
-extern struct MapList Maps;
-
 void ParseUMapInfo(int lump, const char* lumpname);
-void FreeMapList();
 
 #endif

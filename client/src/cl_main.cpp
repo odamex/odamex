@@ -3507,7 +3507,7 @@ void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activa
 		break;
 	case LineUse:
 		if (line)
-			P_UseSpecialLine(mo, line, side);
+			P_UseSpecialLine(mo, line, side, false);
 		break;
 	case LineShoot:
 		if (line)

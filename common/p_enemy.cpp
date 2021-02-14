@@ -38,6 +38,7 @@
 #include "p_mobj.h"
 
 #include "d_player.h"
+#include "p_setup.h"
 
 
 extern bool HasBehavior;
@@ -370,7 +371,7 @@ BOOL P_Move (AActor *actor)
 			// if the special is not a door
 			// that can be opened,
 			// return false
-			if (P_UseSpecialLine (actor, ld, 0) ||
+			if (P_UseSpecialLine (actor, ld, 0, false) ||
 				P_PushSpecialLine (actor, ld, 0))
 				good = true;
 		}
@@ -1945,6 +1946,69 @@ void A_Explode (AActor *thing)
 //
 void A_BossDeath (AActor *actor)
 {
+	// custom boss actions for UMAPINFO
+	if (level.bossactions_donothing)
+		return;
+	
+	if (!level.bossactions->empty())
+	{
+		// make sure there is a player alive for victory
+		Players::const_iterator it = players.begin();
+		for (; it != players.end(); ++it)
+		{
+			if (it->ingame() && it->health > 0)
+				break;
+		}
+
+		if (it == players.end())
+			return; // no one left alive, so do not end game
+
+		std::vector<BossAction>::const_iterator ba = level.bossactions->begin();
+		
+		// see if the BossAction applies to this type
+		for (; ba != level.bossactions->end(); ++ba)
+		{
+			if (ba->type == actor->type)
+				break;
+		}
+		if (ba == level.bossactions->end())
+			return;
+
+		// scan the remaining thinkers to see if all bosses are dead
+		TThinkerIterator<AActor> iterator;
+		AActor* other;
+
+		while ((other = iterator.Next()))
+		{
+			if (other != actor && other->type == actor->type && other->health > 0)
+			{
+				// other boss not dead
+				return;
+			}
+		}
+
+		maplinedef_t mld;
+		ba = level.bossactions->begin();
+
+		for (; ba != level.bossactions->end(); ++ba)
+		{
+			if (ba->type == actor->type)
+			{
+				mld.special = static_cast<short>(ba->special);
+				mld.tag = static_cast<short>(ba->tag);
+
+				line_t ld;
+
+				P_TranslateLineDef(&ld, &mld);
+				
+				if (!P_UseSpecialLine(actor, &ld, 0, true))
+					P_CrossSpecialLine(ld.special, 0, actor);
+			}
+		}
+
+		return;
+	}
+	
 	// [RH] These all depend on the presence of level flags now
 	//		rather than being hard-coded to specific levels.
 
