@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 
 #include <bitset>
 
-#include "msg_server.h"
+#include "svc_message.h"
 
 #include "d_main.h"
 
@@ -290,4 +290,4 @@ void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 	}
 }
 
-VERSION_CONTROL(msg_server, "$Id$")
+VERSION_CONTROL(svc_message, "$Id$")

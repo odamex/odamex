@@ -68,7 +68,7 @@
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
-#include "msg_server.h"
+#include "svc_message.h"
 
 #include <algorithm>
 #include <sstream>

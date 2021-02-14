@@ -36,7 +36,7 @@
 #include "p_acs.h"
 #include "g_gametype.h"
 #include "m_wdlstats.h"
-#include "msg_server.h"
+#include "svc_message.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"

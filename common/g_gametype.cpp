@@ -27,7 +27,7 @@
 #include "d_event.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
-#include "msg_server.h"
+#include "svc_message.h"
 
 EXTERN_CVAR(g_gametypename)
 EXTERN_CVAR(g_lives)

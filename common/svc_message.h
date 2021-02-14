@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,8 +24,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_MSG_H__
-#define __SV_MSG_H__
+#ifndef __SV_MESSAGE_H__
+#define __SV_MESSAGE_H__
 
 #include <string>
 #include <vector>
@@ -48,4 +48,4 @@ void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
 void SVC_SecretFound(buf_t& b, int playerid, int sectornum);
 
-#endif
+#endif // __SV_MESSAGE_H__
