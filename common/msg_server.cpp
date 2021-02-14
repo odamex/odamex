@@ -198,32 +198,45 @@ void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
  * @param locals Level locals struct to send.
  * @param flags SVC_LL_* bit flags to designate what gets sent.
  */
-void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, byte flags)
+void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
 {
-	MSG_WriteMarker(&b, svc_levellocals);
-	MSG_WriteByte(&b, flags);
+	svc::LevelLocalsMsg msg;
+
+	msg.set_flags(flags);
 
 	if (flags & SVC_LL_TIME)
-		MSG_WriteVarint(&b, locals.time);
+	{
+		msg.set_time(locals.time);
+	}
 
 	if (flags & SVC_LL_TOTALS)
 	{
-		MSG_WriteVarint(&b, locals.total_secrets);
-		MSG_WriteVarint(&b, locals.total_items);
-		MSG_WriteVarint(&b, locals.total_monsters);
+		msg.set_total_secrets(locals.total_secrets);
+		msg.set_total_items(locals.total_items);
+		msg.set_total_monsters(locals.total_monsters);
 	}
 
 	if (flags & SVC_LL_SECRETS)
-		MSG_WriteVarint(&b, locals.found_secrets);
+	{
+		msg.set_found_secrets(locals.found_secrets);
+	}
 
 	if (flags & SVC_LL_ITEMS)
-		MSG_WriteVarint(&b, locals.found_items);
+	{
+		msg.set_found_items(locals.found_items);
+	}
 
 	if (flags & SVC_LL_MONSTERS)
-		MSG_WriteVarint(&b, locals.killed_monsters);
+	{
+		msg.set_killed_monsters(locals.killed_monsters);
+	}
 
 	if (flags & SVC_LL_MONSTER_RESPAWNS)
-		MSG_WriteVarint(&b, locals.respawned_monsters);
+	{
+		msg.set_respawned_monsters(locals.respawned_monsters);
+	}
+
+	WriteProto(b, svc_levellocals, msg);
 }
 
 /**

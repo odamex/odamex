@@ -3618,34 +3618,6 @@ void CL_LevelState()
 	::levelstate.unserialize(sls);
 }
 
-// Set level locals.
-void CL_LevelLocals()
-{
-	byte flags = MSG_ReadByte();
-
-	if (flags & SVC_LL_TIME)
-		::level.time = MSG_ReadVarint();
-
-	if (flags & SVC_LL_TOTALS)
-	{
-		::level.total_secrets = MSG_ReadVarint();
-		::level.total_items = MSG_ReadVarint();
-		::level.total_monsters = MSG_ReadVarint();
-	}
-
-	if (flags & SVC_LL_SECRETS)
-		::level.found_secrets = MSG_ReadVarint();
-
-	if (flags & SVC_LL_ITEMS)
-		::level.found_items = MSG_ReadVarint();
-
-	if (flags & SVC_LL_MONSTERS)
-		::level.killed_monsters = MSG_ReadVarint();
-
-	if (flags & SVC_LL_MONSTER_RESPAWNS)
-		::level.respawned_monsters = MSG_ReadVarint();
-}
-
 /**
  * @brief svc_noop - Nothing to see here. Move along.
  */
@@ -3827,6 +3799,44 @@ static void UpdateLocalPlayer(const svc::UpdateLocalPlayerMsg& msg)
 	consoleplayer().snapshots.addSnapshot(newsnapshot);
 }
 
+// Set level locals.
+static void LevelLocals(const svc::LevelLocalsMsg& msg)
+{
+	uint32_t flags = msg.flags();
+
+	if (flags & SVC_LL_TIME)
+	{
+		::level.time = msg.time();
+	}
+
+	if (flags & SVC_LL_TOTALS)
+	{
+		::level.total_secrets = msg.total_secrets();
+		::level.total_items = msg.total_items();
+		::level.total_monsters = msg.total_monsters();
+	}
+
+	if (flags & SVC_LL_SECRETS)
+	{
+		::level.found_secrets = msg.found_secrets();
+	}
+
+	if (flags & SVC_LL_ITEMS)
+	{
+		::level.found_items = msg.found_items();
+	}
+
+	if (flags & SVC_LL_MONSTERS)
+	{
+		::level.killed_monsters = msg.killed_monsters();
+	}
+
+	if (flags & SVC_LL_MONSTER_RESPAWNS)
+	{
+		::level.respawned_monsters = msg.respawned_monsters();
+	}
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3856,7 +3866,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_moveplayer, MovePlayer, svc::MovePlayerMsg);
 		SERVER_PROTO_FUNC(svc_updatelocalplayer, UpdateLocalPlayer,
 		                  svc::UpdateLocalPlayerMsg);
-		SERVER_MSG_FUNC(svc_levellocals, CL_LevelLocals);
+		SERVER_PROTO_FUNC(svc_levellocals, LevelLocals, svc::LevelLocalsMsg);
 		SERVER_MSG_FUNC(svc_pingrequest, CL_SendPingReply);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
 		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);

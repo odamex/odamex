@@ -102,13 +102,15 @@ message UpdateLocalPlayerMsg
 // svc_levellocals
 message LevelLocalsMsg
 {
-	int32 time = 1;
-	int32 total_secrets = 2;
-	int32 total_items = 3;
-	int32 total_monsters = 4;
-	int32 found_secrets = 5;
-	int32 found_items = 6;
-	int32 killed_monsters = 7;
+	uint32 flags = 1;
+	int32 time = 2;
+	int32 total_secrets = 3;
+	int32 total_items = 4;
+	int32 total_monsters = 5;
+	int32 found_secrets = 6;
+	int32 found_items = 7;
+	int32 killed_monsters = 8;
+	int32 respawned_monsters = 9;
 }
 
 // svc_pingrequest
