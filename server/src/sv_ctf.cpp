@@ -108,7 +108,7 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 		else
 		{
 			MSG_WriteByte (&cl->reliablebuf, 0);
-			MSG_WriteLong (&cl->reliablebuf, 0);
+			MSG_WriteVarint(&cl->reliablebuf, 0);
 		}
 
 		for(size_t j = 0; j < NUMTEAMS; j++)
