@@ -793,7 +793,7 @@ void LevelStateHUD()
 		return;
 	}
 
-	// First line...BIGFONT.
+	// First line...FONT_BIGFONT.
 	std::string str;
 	switch (::levelstate.getState())
 	{
@@ -848,7 +848,7 @@ void LevelStateHUD()
 		break;
 	}
 
-	V_SetFont("BIGFONT");
+	V_SetFont(FONT_BIGFONT);
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(str.c_str()) * CleanYfac;
@@ -883,9 +883,9 @@ void LevelStateHUD()
 		                          CleanYfac);
 	}
 
-	V_SetFont("SMALLFONT");
+	V_SetFont(FONT_SMALLFONT);
 
-	// Second line...SMALLFONT.
+	// Second line...FONT_SMALLFONT.
 	str = "";
 	switch (::levelstate.getState())
 	{

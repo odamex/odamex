@@ -1385,7 +1385,7 @@ static void C_DrawNotifyText()
 		return;
 
 	// [AM] FIXME: Just for testing.
-	V_SetFont("DIGFONT");
+	V_SetFont(FONT_DIGFONT);
 
 	int ypos = 0;
 	for (int i = 0; i < NUMNOTIFIES; i++)
@@ -1407,7 +1407,7 @@ static void C_DrawNotifyText()
 		}
 	}
 
-	V_SetFont("SMALLFONT");
+	V_SetFont(FONT_SMALLFONT);
 }
 
 

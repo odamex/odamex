@@ -44,77 +44,158 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-patch_t* hu_font[HU_FONTSIZE];
+static OFont* hu_font;
 
-static patch_t* hu_bigfont[HU_FONTSIZE];
-static patch_t* hu_smallfont[HU_FONTSIZE];
-static patch_t* hu_digfont[HU_FONTSIZE];
+byte* ConChars;
+extern byte* Ranges;
 
-byte *ConChars;
-extern byte *Ranges;
+OFont::OFont()
+{
+	for (size_t i = 0; i < HU_FONTSIZE; i++)
+	{
+		m_font[i] = NULL;
+	}
+}
+
+OFont::~OFont()
+{
+	for (size_t i = 0; i < HU_FONTSIZE; i++)
+	{
+		if (m_font[i] == NULL)
+		{
+			continue;
+		}
+		Z_ChangeTag(m_font[i], PU_CACHE);
+		m_font[i] = NULL;
+	}
+}
+
+class OSmallFont : public OFont
+{
+  public:
+	void load()
+	{
+		std::string buffer;
+
+		// Normal doom chat/message font, starts at index 33.
+		const char* smallfont = "STCFN%.3d";
+
+		int j = HU_FONTSTART;
+		for (int i = 0; i < HU_FONTSIZE; i++)
+		{
+			StrFormat(buffer, smallfont, j++);
+
+			// Some letters of this font might be missing.
+			int num = W_CheckNumForName(buffer.c_str());
+			if (num != -1)
+			{
+				m_font[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+			}
+			else
+			{
+				m_font[i] = (patch_t*)W_CacheLumpNum(
+				    W_GetNumForName("TNT1A0", ns_sprites), PU_STATIC);
+			}
+		}
+	}
+};
+
+class OBigFont : public OFont
+{
+  public:
+	void load()
+	{
+		std::string buffer;
+
+		// Level name font, used between levels, starts at index 1.
+		const char* bigfont = "FONTB%02d";
+
+		int j = 1;
+		for (int i = 0; i < HU_FONTSIZE; i++)
+		{
+			StrFormat(buffer, bigfont, j++);
+
+			// Some letters of this font are missing.
+			int num = W_CheckNumForName(buffer.c_str());
+			if (num != -1)
+			{
+				m_font[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+			}
+			else
+			{
+				m_font[i] = (patch_t*)W_CacheLumpNum(
+				    W_GetNumForName("TNT1A0", ns_sprites), PU_STATIC);
+			}
+		}
+	}
+};
+
+class ODigFont : public OFont
+{
+  public:
+	void load()
+	{
+		std::string buffer;
+
+		const char* digfont = "DIG%02d";
+		const char* digfont_literal = "DIG%c";
+
+		// BOOM "Dig" font, way more complicated than it needed to be.  Letters
+		// and numbers are themselves, other characters are their ASCII values.
+		int j = HU_FONTSTART;
+		for (int i = 0; i < HU_FONTSIZE; i++)
+		{
+			if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+			{
+				StrFormat(buffer, digfont_literal, j++);
+			}
+			else
+			{
+				StrFormat(buffer, digfont, j++);
+			}
+
+			// Some letters of this font might be missing.
+			int num = W_CheckNumForName(buffer.c_str());
+			if (num != -1)
+			{
+				m_font[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+			}
+			else
+			{
+				m_font[i] = (patch_t*)W_CacheLumpNum(
+				    W_GetNumForName("TNT1A0", ns_sprites), PU_STATIC);
+			}
+		}
+	}
+};
+
+static OBigFont* hu_bigfont;
+static OSmallFont* hu_smallfont;
+static ODigFont* hu_digfont;
 
 /**
  * @brief Initialize fonts.
  */
 void V_TextInit()
 {
-	std::string buffer;
-
-	// Level name font, used between levels, starts at index 1.
-	const char* bigfont = "FONTB%02d";
-
-	int j = 1;
-	for (int i = 0; i < HU_FONTSIZE; i++)
+	if (hu_bigfont == NULL)
 	{
-		StrFormat(buffer, bigfont, j++);
-
-		// Some letters of this font are missing.
-		int num = W_CheckNumForName(buffer.c_str());
-		if (num != -1)
-			::hu_bigfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
-		else
-			::hu_bigfont[i] = (patch_t*)W_CacheLumpNum(W_GetNumForName("TNT1A0", ns_sprites), PU_STATIC);
+		::hu_bigfont = new OBigFont();
+		::hu_bigfont->load();
+	}
+	if (hu_smallfont == NULL)
+	{
+		::hu_smallfont = new OSmallFont();
+		::hu_smallfont->load();
+	}
+	if (hu_digfont == NULL)
+	{
+		::hu_digfont = new ODigFont();
+		::hu_digfont->load();
 	}
 
-	// Normal doom chat/message font, starts at index 33.
-
-	const char* smallfont = "STCFN%.3d";
-	j = HU_FONTSTART;
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		StrFormat(buffer, smallfont, j++);
-		::hu_smallfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
-	}
-
-	const char* digfont = "DIG%02d";
-	const char* digfont_literal = "DIG%c";
-
-	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
-	// and numbers are themselves, other characters are their ASCII values.
-	j = HU_FONTSTART;
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
-		{
-			StrFormat(buffer, digfont_literal, j++);
-		}
-		else
-		{
-			StrFormat(buffer, digfont, j++);
-		}
-
-		if (W_FindLump(buffer.c_str(), -1) != -1)
-		{
-			::hu_digfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
-		}
-		else
-		{
-			::hu_digfont[i] = W_CachePatch("SBLINE", PU_STATIC);
-		}
-	}
-
-	// Default font is SMALLFONT.
-	V_SetFont("SMALLFONT");
+	// Default font is FONT_SMALLFONT.
+	V_SetFont(FONT_SMALLFONT);
 }
 
 /**
@@ -122,32 +203,64 @@ void V_TextInit()
  */
 void V_TextShutdown()
 {
-	for (int i = 0; i < HU_FONTSIZE; i++)
+	if (hu_bigfont != NULL)
 	{
-		::hu_font[i] = NULL;
-
-		Z_ChangeTag(::hu_bigfont[i], PU_CACHE);
-		::hu_bigfont[i] = NULL;
-		Z_ChangeTag(::hu_smallfont[i], PU_CACHE);
-		::hu_smallfont[i] = NULL;
-		Z_ChangeTag(::hu_digfont[i], PU_CACHE);
-		::hu_digfont[i] = NULL;
+		delete ::hu_bigfont;
+		::hu_bigfont = NULL;
+	}
+	if (hu_smallfont != NULL)
+	{
+		delete ::hu_smallfont;
+		::hu_smallfont = NULL;
+	}
+	if (hu_digfont != NULL)
+	{
+		delete ::hu_digfont;
+		::hu_digfont = NULL;
 	}
 }
 
 /**
  * @brief Set the current font.
- * 
- * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
  */
-void V_SetFont(const char* fontname)
+void V_SetFont(font_e font)
 {
-	if (stricmp(fontname, "BIGFONT") == 0)
-		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
-	else if (stricmp(fontname, "SMALLFONT") == 0)
-		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
-	else if (stricmp(fontname, "DIGFONT") == 0)
-		memcpy(::hu_font, ::hu_digfont, sizeof(::hu_digfont));
+	switch (font)
+	{
+	case FONT_SMALLFONT:
+		::hu_font = ::hu_smallfont;
+		break;
+	case FONT_BIGFONT:
+		::hu_font = ::hu_bigfont;
+		break;
+	case FONT_DIGFONT:
+		::hu_font = ::hu_bigfont;
+		break;
+	}
+}
+
+/**
+ * @brief Get the current global font.
+ */
+OFont* V_GetFont()
+{
+	return ::hu_font;
+}
+
+/**
+ * @brief Get a font by name.
+ */
+OFont* V_GetFont(font_e font)
+{
+	switch (font)
+	{
+	case FONT_SMALLFONT:
+		return ::hu_smallfont;
+	case FONT_BIGFONT:
+		return ::hu_bigfont;
+	case FONT_DIGFONT:
+		return ::hu_bigfont;
+	}
 }
 
 int V_TextScaleXAmount()
@@ -340,7 +453,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
-	if (::hu_font[0] == NULL)
+	if (::hu_font == NULL)
 		return;
 
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
@@ -374,22 +487,21 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			continue;
 		}
 
-		int c = toupper(str[0]) - HU_FONTSTART;
+		int c = toupper(str[0]);
 		str++;
 
-		if (c < 0 || c >= HU_FONTSIZE)
+		if (c < HU_FONTSTART || c > HU_FONTEND)
 		{
-			cx += 4 * scaley;
+			cx += ::hu_font->spaceWidth() * scaley;
 			continue;
 		}
 
-		int w = hu_font[c]->width() * scalex;
+		int w = ::hu_font->at(c)->width() * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
-        DrawSWrapper(drawer, hu_font[c], cx, cy,
-                        hu_font[c]->width() * scalex,
-                        hu_font[c]->height() * scaley);
+		DrawSWrapper(drawer, ::hu_font->at(c), cx, cy, ::hu_font->at(c)->width() * scalex,
+		             ::hu_font->at(c)->height() * scaley);
 
 		cx += w;
 	}
@@ -401,7 +513,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 int V_StringWidth(const byte* str)
 {
 	// Default width without a font loaded is 8.
-	if (::hu_font[0] == NULL)
+	if (::hu_font == NULL)
 		return 8;
 
 	int width = 0;
@@ -415,11 +527,15 @@ int V_StringWidth(const byte* str)
 			continue;
 		}
 
-		int c = toupper((*str++) & 0x7f) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE)
-			width += 4;
+		int c = toupper((*str++) & 0x7f);
+		if (c < HU_FONTSTART || c > HU_FONTEND)
+		{
+			width += ::hu_font->spaceWidth();
+		}
 		else
-			width += hu_font[c]->width();
+		{
+			width += ::hu_font->at(c)->width();
+		}
 	}
 
 	return width;
@@ -448,7 +564,9 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
-	if (::hu_font[0] == NULL)
+	OFont* font = V_GetFont();
+
+	if (font == NULL)
 		return NULL;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
@@ -486,10 +604,14 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 			lastWasSpace = false;
 		}
 
-		if (c < HU_FONTSTART || c >= HU_FONTSTART + HU_FONTSIZE)
-			nw = 4;
+		if (c < HU_FONTSTART || c > HU_FONTEND)
+		{
+			nw = font->spaceWidth();
+		}
 		else
-			nw = hu_font[c - HU_FONTSTART]->width();
+		{
+			nw = font->at(c)->width();
+		}
 
 		if (w + nw > maxwidth || c == '\n')
 		{

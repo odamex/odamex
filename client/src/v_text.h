@@ -30,11 +30,65 @@
 #include "hu_stuff.h"
 #include "r_defs.h"
 
-extern patch_t* hu_font[HU_FONTSIZE];
+enum font_e
+{
+	FONT_SMALLFONT,
+	FONT_BIGFONT,
+	FONT_DIGFONT,
+};
+
+class OFont
+{
+  protected:
+	patch_t* m_font[HU_FONTSIZE];
+
+  public:
+	OFont();
+	virtual ~OFont();
+
+	/**
+	 * @brief Override this method to load the font.
+	 */
+	virtual void load() = 0;
+
+	/**
+	 * @brief Get the correct patch for a given unicode codepoint.
+	 *
+	 * @param cp Codepoint to look up.
+	 * @return Patch that should be rendered.
+	 */
+	patch_t* at(int cp)
+	{
+		cp -= HU_FONTSTART;
+		clamp(cp, 0, HU_FONTSIZE - 1);
+		return m_font[cp];
+	}
+
+	/**
+	 * @brief Return a reasonable line height for the font.
+	 * 
+	 * @detail It is a reasonable expectation that an M is in the font and
+	 *         that it extends from the cap height to the baseline.
+	 */
+	int lineHeight()
+	{
+		return at('M')->height();
+	}
+
+	/**
+	 * @brief Return a reasonable width of a space.
+	 */
+	int spaceWidth()
+	{
+		return 4;
+	}
+};
 
 void V_TextInit();
 void V_TextShutdown();
-void V_SetFont(const char* fontname);
+void V_SetFont(font_e font);
+OFont* V_GetFont();
+OFont* V_GetFont(font_e font);
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 

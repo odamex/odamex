@@ -1681,12 +1681,13 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && hu_font[0] != NULL)
+	OFont* font = V_GetFont(FONT_SMALLFONT);
+	if (!(viewactive && am_overlay < 2) && font != NULL)
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;
 
-		int text_height = (hu_font[0]->height() + 1) * CleanYfac;
+		int text_height = (font->lineHeight() + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (sv_gametype == GM_COOP)

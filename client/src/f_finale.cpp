@@ -268,8 +268,9 @@ void F_Ticker (void)
 
 void F_TextWrite (void)
 {
-	// Don't draw text without a working font.
-	if (::hu_font[0] == NULL)
+	// Don't draw text without a working smallfont.
+	OFont* font = V_GetFont(FONT_SMALLFONT);
+	if (font == NULL)
 		return;
 
 	// erase the entire screen to a tiled background
@@ -324,17 +325,17 @@ void F_TextWrite (void)
 			continue;
 		}
 
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c > HU_FONTSIZE)
+		c = toupper(c);
+		if (c < HU_FONTSTART || c > HU_FONTEND)
 		{
-			cx += 4;
+			cx += font->spaceWidth();
 			continue;
 		}
 
-		int w = hu_font[c]->width();
+		int w = font->at(c)->width();
 		if (cx + w > width)
 			break;
-		screen->DrawPatchClean(hu_font[c], cx, cy);
+		screen->DrawPatchClean(font->at(c), cx, cy);
 		cx += w;
 	}
 
