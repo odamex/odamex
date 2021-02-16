@@ -50,9 +50,6 @@ CVAR_FUNC_IMPL (language)
 	// FIXME: This only handles PWAD patches for now.
 	DoDehPatch(NULL, true);
 
-	// Set default level strings based on those DeHackEd patches.
-	G_SetLevelStrings();
-
 	// MAPINFO comes last, because it overrides default level strings.
 	G_ParseMapInfo();
 }

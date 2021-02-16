@@ -288,8 +288,6 @@ void G_InitLevelLocals (void);
 
 void G_AirControlChanged ();
 
-void G_SetLevelStrings (void);
-
 char *CalcMapName (int episode, int level);
 
 void G_ParseMapInfo (void);

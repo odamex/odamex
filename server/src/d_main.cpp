@@ -182,7 +182,6 @@ void D_Init()
 	{
 		clusters.addDefaults();
 	}
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();

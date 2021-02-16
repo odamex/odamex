@@ -49,6 +49,7 @@
 #include "r_data.h"
 #include "r_sky.h"
 #include "s_sound.h"
+#include "stringenums.h"
 #include "umapinfo.h"
 #include "v_video.h"
 #include "w_wad.h"
@@ -525,34 +526,6 @@ MapInfoHandler ClusterHandlers[] =
 	{ MITYPE_$LUMPNAME, cioffset(finalepic), 0 },
 };
 
-static const char* MapInfoEpisodeLevel[] =
-{
-	"name",
-	"lookup",
-	"picname",
-	"key",
-	"remove",
-	"noskillmenu",
-	"optional",
-	NULL
-};
-
-MapInfoHandler EpisodeHandlers[] =
-{
-	// name <nice name>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// lookup <keyword>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// picname <piclump>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// remove
-	{ MITYPE_IGNORE, 0, 0 },
-	// noskillmenu
-	{ MITYPE_IGNORE, 0, 0 },
-	// optional
-	{ MITYPE_IGNORE, 0, 0 }
-};
-
 static void SetLevelDefaults (level_pwad_info_t *levelinfo)
 {
 	memset (levelinfo, 0, sizeof(*levelinfo));
@@ -616,7 +589,6 @@ static void SkipUnknownBlock(OScanner &os)
 		{
 			// Found another block
 			stack++;
-			continue;
 		}
 		else if (os.compareToken("}"))
 		{
@@ -1136,7 +1108,7 @@ static void MapNameToLevelNum(level_pwad_info_t &info)
 
 static void ParseEpisodeInfo(OScanner &os)
 {
-	bool newMapinfo = 0;
+	bool new_mapinfo = 0;
 	char map[9];
 	std::string pic;
 	bool picisgfx = false;
@@ -1169,7 +1141,7 @@ static void ParseEpisodeInfo(OScanner &os)
 	if (os.compareToken("{"))
 	{
 		// Detected new-style MAPINFO
-		newMapinfo = true;
+		new_mapinfo = true;
 	}
 	
 	MustGetString(os);
@@ -1182,7 +1154,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("}"))
 		{
-			if (newMapinfo == false)
+			if (new_mapinfo == false)
 			{
 				I_Error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
 			}
@@ -1193,7 +1165,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("name"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1203,7 +1175,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("lookup"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1213,7 +1185,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("picname"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1223,7 +1195,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("key"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1232,7 +1204,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("remove"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1240,7 +1212,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("noskillmenu"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1248,7 +1220,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("optional"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1256,7 +1228,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("extended"))
 		{
-			if (newMapinfo == true)
+			if (new_mapinfo == true)
 			{
 				MustGetStringName(os, "=");
 			}
@@ -1476,28 +1448,32 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 //
 void G_ParseMapInfo ()
 {
-	bool found_mapinfo = false;
-	int lump = -1;
+	const char* baseinfoname = NULL;
 
-	// TODO: Currently this just sets the episode definitions. Eventually this should load
-	// MAPINFO files with the data in them
 	switch (gamemission)
 	{
-	case chex:
-	case commercial_freedoom:
 	case doom:
-
+		baseinfoname = "_D1NFO";
 		break;
-	case pack_plut:
-
+	case doom2:
+		baseinfoname = "_D2NFO";
 		break;
 	case pack_tnt:
-
+		baseinfoname = "_TNTNFO";
 		break;
-	default:
-
+	case pack_plut:
+		baseinfoname = "_PLUTNFO";
+		break;
+	case chex:
+		baseinfoname = "_CHEXNFO";
 		break;
 	}
+
+	int lump = W_GetNumForName(baseinfoname);
+	ParseMapInfoLump(lump, baseinfoname);
+	
+	bool found_mapinfo = false;
+	lump = -1;
 	
 	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
 	{
@@ -1801,154 +1777,6 @@ char *CalcMapName (int episode, int level)
 	}
 	return lumpname;
 }
-
-void G_SetDefaultEpisode()
-{
-#if 0
-	if (gameinfo.flags & GI_MAPxx)
-	{
-		if (gamemode == commercial_bfg)
-		{
-			M_SetupNextMenu(&ExpDef);
-		}
-		else
-		{
-			M_SetupNextMenu(&NewDef);
-		}
-	}
-	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
-	{
-		M_SetupNextMenu(&NewDef);
-	}
-	else if (gamemode == retail || gamemode == retail_bfg)
-	{
-		EpiDef.numitems = ep_end;
-		M_SetupNextMenu(&EpiDef);
-	}
-	else
-	{
-		EpiDef.numitems = ep4;
-		M_SetupNextMenu(&EpiDef);
-	}
-#endif
-}
-
-void G_SetLevelStrings (void)
-{
-	char temp[9] = "";
-	LevelInfos& levels = getLevelInfos();
-	ClusterInfos& clusters = getClusterInfos();
-
-	// Plutonia and TNT take the place of Doom 2.
-	int hustart, txtstart;
-	if (gamemission == pack_plut)
-	{
-		hustart = GStrings.toIndex(PHUSTR_1);
-		txtstart = GStrings.toIndex(P1TEXT);
-	}
-	else if (gamemission == pack_tnt)
-	{
-		hustart = GStrings.toIndex(THUSTR_1);
-		txtstart = GStrings.toIndex(T1TEXT);
-	}
-	else
-	{
-		hustart = GStrings.toIndex(HUSTR_1);
-		txtstart = GStrings.toIndex(C1TEXT);
-	}
-
-	// Loop through levels and assign any DeHackEd or otherwise dynamic text.
-	for (size_t i = 0; i < levels.size(); i++)
-	{
-		level_pwad_info_t& info = levels.at(i);
-
-		// Level name
-		int level_name;
-		int muslump;
-		if (info.cluster <= 4)
-		{
-			// Doom 1
-			int offset = info.levelnum - 1 - (info.cluster - 1);
-			if (offset >= 0 && offset < 36)
-			{
-				level_name = GStrings.toIndex(HUSTR_E1M1) + offset;
-				muslump = GStrings.toIndex(MUSIC_E1M1) + offset;
-			}
-			else
-			{
-				level_name = GStrings.toIndex(HUSTR_E1M1);
-				muslump = GStrings.toIndex(MUSIC_E1M1);
-			}
-		}
-		else
-		{
-			// Doom 2 + Expansions
-			int offset = (info.levelnum - 1);
-			if (offset >= 0 && offset < 32)
-			{
-				level_name = hustart + offset;
-				muslump = GStrings.toIndex(MUSIC_RUNNIN) + offset;
-			}
-			else
-			{
-				level_name = GStrings.toIndex(HUSTR_1);
-				muslump = GStrings.toIndex(MUSIC_RUNNIN);
-			}
-		}
-
-		free(info.level_name);
-		info.level_name = strdup(GStrings.getIndex(level_name));
-	}
-
-	// Loop through clusters and assign any DeHackEd or otherwise dynamic text.
-	for (size_t i = 0; i < clusters.size(); i++)
-	{
-		cluster_info_t& info = clusters.at(i);
-		if (info.cluster <= 4)
-		{
-			// Doom 1
-
-			// Cluster music is all the same.
-			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
-			uppercopy(info.messagemusic, temp);
-
-			// Exit text at end of episode.
-			free(info.exittext);
-			info.exittext =
-			    strdup(GStrings.getIndex(GStrings.toIndex(E1TEXT) + info.cluster - 1));
-		}
-		else if (info.cluster <= 8)
-		{
-			// Doom 2 + Expansions, Normal progression
-			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(info.messagemusic, temp);
-
-			// Exit text between clusters.
-			free(info.exittext);
-			info.exittext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
-		}
-		else if (info.cluster <= 10)
-		{
-			// Doom 2 + Expansions, Secret progression
-			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(info.messagemusic, temp);
-
-			// Enter text before secret maps.
-			free(info.entertext);
-			info.entertext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
-		}
-
-		// Cluster background flat.
-		uppercopy(info.finaleflat, GStrings.getIndex(GStrings.toIndex(BGFLATE1) + i));
-	}
-
-	if (::level.info && ::level.info->level_name)
-	{
-		strncpy(::level.level_name, ::level.info->level_name,
-		        ARRAY_LENGTH(::level.level_name) - 1);
-	}
-}
-
 
 void G_AirControlChanged ()
 {
