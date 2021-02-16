@@ -1171,7 +1171,6 @@ static void ParseEpisodeInfo(OScanner &os)
 			}
 			MustGetString(os);
 			pic = os.getToken();
-			picisgfx = false;
 		}
 		else if (os.compareToken("lookup"))
 		{
@@ -1204,34 +1203,18 @@ static void ParseEpisodeInfo(OScanner &os)
 		}
 		else if (os.compareToken("remove"))
 		{
-			if (new_mapinfo == true)
-			{
-				MustGetStringName(os, "=");
-			}
 			remove = true;
 		}
 		else if (os.compareToken("noskillmenu"))
 		{
-			if (new_mapinfo == true)
-			{
-				MustGetStringName(os, "=");
-			}
 			noskillmenu = true;
 		}
 		else if (os.compareToken("optional"))
 		{
-			if (new_mapinfo == true)
-			{
-				MustGetStringName(os, "=");
-			}
 			optional = true;
 		}
 		else if (os.compareToken("extended"))
 		{
-			if (new_mapinfo == true)
-			{
-				MustGetStringName(os, "=");
-			}
 			extended = true;
 		}
 		else
