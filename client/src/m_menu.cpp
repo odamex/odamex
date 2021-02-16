@@ -34,7 +34,9 @@
 #include "w_wad.h"
 #include "r_local.h"
 #include "hu_stuff.h"
+#include "g_episode.h"
 #include "g_game.h"
+#include "g_level.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "doomstat.h"
@@ -46,7 +48,6 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "cl_responderkeys.h"
-#include "g_level.h"
 
 #include "gi.h"
 #include "m_fileio.h"
@@ -242,30 +243,26 @@ oldmenu_t MainDef =
 //
 // EPISODE SELECT
 //
-enum episodes_t
-{
-	ep1,
-	ep2,
-	ep3,
-	ep4,
-	ep_end
-} episodes_e;
 
-oldmenuitem_t EpisodeMenu[]=
+oldmenuitem_t EpisodeMenu[MAX_EPISODES] =
 {
-	{1,"M_EPI1", M_Episode,'k'},
-	{1,"M_EPI2", M_Episode,'t'},
-	{1,"M_EPI3", M_Episode,'i'},
-	{1,"M_EPI4", M_Episode,'t'}
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0}
 };
 
 oldmenu_t EpiDef =
 {
-	ep4,	 			// # of menu items
+	0,
 	EpisodeMenu,		// oldmenuitem_t ->
 	M_DrawEpisode,		// drawing routine ->
 	48,63,				// x,y
-	ep1 				// lastOn
+	0	 				// lastOn
 };
 
 //
@@ -922,19 +919,40 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 // M_DrawMainMenu
 //
-void M_DrawMainMenu (void)
+void M_DrawMainMenu()
 {
 	screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
 }
 
-void M_DrawNewGame(void)
+void M_DrawNewGame()
 {
 	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_NEWG"), 96, 14);
 	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SKILL"), 54, 38);
 }
 
+namespace
+{
+	void SetupEpisodeList()
+	{
+		for (int i = 0; i < episodenum; ++i)
+		{
+			if (EpisodeInfos[i].fulltext)
+			{
+				// Not implemented
+			}
+			else
+			{
+				strncpy(EpisodeMenu[i].name, EpisodeInfos[i].name.c_str(), 8);
+			}
+
+			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
+		}
+	}
+}
+
 void M_NewGame(int choice)
 {
+#if 0
 	if (gameinfo.flags & GI_MAPxx)
     {
         if (gamemode == commercial_bfg)
@@ -960,16 +978,32 @@ void M_NewGame(int choice)
 		EpiDef.numitems = ep4;
 		M_SetupNextMenu(&EpiDef);
 	}
-
+#endif
+	EpiDef.numitems = episodenum;
+	
+	if (episodenum > 4)
+	{
+		EpiDef.y -= LINEHEIGHT;
+	}
+	
+	if (episodenum > 1)
+	{
+		SetupEpisodeList();
+		M_SetupNextMenu(&EpiDef);
+	}
+	else
+	{
+		M_SetupNextMenu(&NewDef);
+	}
 }
 
 
 //
 //		M_Episode
 //
-int 	epi;
+int epi;
 
-void M_DrawEpisode(void)
+void M_DrawEpisode()
 {
 	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, 38);
 }
@@ -987,7 +1021,7 @@ void M_VerifyNightmare(int ch)
 
 void M_StartGame(int choice)
 {
-	sv_skill.Set ((float)(choice+1));
+	sv_skill.Set (static_cast<float>(choice + 1));
 	sv_gametype = GM_COOP;
 
     if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
@@ -1016,7 +1050,7 @@ void M_StartGame(int choice)
     }
     else
     {
-        G_DeferedInitNew (CalcMapName (epi+1, 1));
+        G_DeferedInitNew (EpisodeMaps[epi]);
     }
 
     M_ClearMenus ();
@@ -1044,7 +1078,11 @@ void M_Episode (int choice)
 	}
 
 	epi = choice;
-	M_SetupNextMenu(&NewDef);
+
+	if (EpisodeInfos[epi].noskillmenu)
+		M_StartGame(2); // TODO: Implement defaultskillmenu
+	else
+		M_SetupNextMenu(&NewDef);
 }
 
 void M_Expansion (int choice)

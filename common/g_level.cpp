@@ -31,6 +31,7 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
+#include "g_episode.h"
 #include "g_level.h"
 #include "g_game.h"
 #include "gstrings.h"
@@ -60,6 +61,8 @@
 #define G_NOMATCH (-1)			// used for MatchString
 
 level_locals_t level;			// info about current level
+
+
 
 //
 // LevelInfos methods
@@ -1131,6 +1134,193 @@ static void MapNameToLevelNum(level_pwad_info_t &info)
 	}
 }
 
+static void ParseEpisodeInfo(OScanner &os)
+{
+	bool newMapinfo = 0;
+	char map[9];
+	std::string pic;
+	bool picisgfx = false;
+	bool remove = false;
+	char key = 0;
+	bool noskillmenu = false;
+	bool optional = false;
+	bool extended = false;
+	
+	MustGetString(os); // Map lump
+	uppercopy(map, os.getToken().c_str());
+	map[8] = 0;
+	
+	MustGetString(os);
+	if (os.compareToken("teaser"))
+	{
+		// Teaser lump
+		MustGetString(os);
+		if (gameinfo.flags & GI_SHAREWARE)
+		{
+			uppercopy(map, os.getToken().c_str());
+		}
+		MustGetString(os);
+	}
+	else
+	{
+		os.unScan();
+	}
+
+	if (os.compareToken("{"))
+	{
+		// Detected new-style MAPINFO
+		newMapinfo = true;
+	}
+	
+	MustGetString(os);
+	while (os.scan())
+	{
+		if (os.compareToken("{"))
+		{
+			// Detected new-style MAPINFO
+			I_Error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+		}
+		else if (os.compareToken("}"))
+		{
+			if (newMapinfo == false)
+			{
+				I_Error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			}
+			else
+			{
+				break;
+			}
+		}
+		else if (os.compareToken("name"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			MustGetString(os);
+			pic = os.getToken();
+			picisgfx = false;
+		}
+		else if (os.compareToken("lookup"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			MustGetString(os);
+			
+			// Not implemented
+		}
+		else if (os.compareToken("picname"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			MustGetString(os);
+			pic = os.getToken();
+			picisgfx = true;
+		}
+		else if (os.compareToken("key"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			MustGetString(os);
+			key = os.getToken()[0];
+		}
+		else if (os.compareToken("remove"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			remove = true;
+		}
+		else if (os.compareToken("noskillmenu"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			noskillmenu = true;
+		}
+		else if (os.compareToken("optional"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			optional = true;
+		}
+		else if (os.compareToken("extended"))
+		{
+			if (newMapinfo == true)
+			{
+				MustGetStringName(os, "=");
+			}
+			extended = true;
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
+
+	int i;
+	for (i = 0; i < episodenum; ++i)
+	{
+		if (strncmp(EpisodeMaps[i], map, 8) == 0)
+			break;
+	}
+
+	if (remove)
+	{
+		// If the remove property is given for an episode, remove it.
+		if (i < episodenum)
+		{
+			if (i + 1 < episodenum)
+			{
+				memmove(&EpisodeMaps[i], &EpisodeMaps[i + 1],
+					sizeof(EpisodeMaps[0]) * (episodenum - i - 1));
+				memmove(&EpisodeInfos[i], &EpisodeInfos[i + 1],
+					sizeof(EpisodeInfos[0]) * (episodenum - i - 1));
+			}
+			episodenum--;
+		}
+	}
+	else
+	{
+		if (pic.empty())
+		{
+			pic = copystring(map);
+			picisgfx = false;
+		}
+
+		if (i == episodenum)
+		{
+			if (episodenum == MAX_EPISODES)
+			{
+				i = episodenum - 1;
+			}
+			else
+			{
+				i = episodenum++;
+			}
+		}
+
+		EpisodeInfos[i].name = pic;
+		EpisodeInfos[i].key = tolower(key);
+		EpisodeInfos[i].fulltext = !picisgfx;
+		EpisodeInfos[i].noskillmenu = noskillmenu;
+		EpisodeInfos[i].optional = optional;
+		EpisodeInfos[i].extended = extended;
+		strncpy(EpisodeMaps[i], map, 8);
+	}
+}
+
 static void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -1240,38 +1430,11 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 		}
 		else if (os.compareToken("episode"))
 		{
-			// Not implemented
-			MustGetString(os); // Map lump
-			os.scan();
-			if (os.compareToken("teaser"))
-			{
-				MustGetString(os); // Teaser lump
-			}
-			else
-			{
-				os.unScan();
-			}
-
-			MustGetString(os);
-			if (os.compareToken("{"))
-			{
-				// If we encounter an episode block in new MAPINFO, we can just
-				// eat the entire block.
-				SkipUnknownBlock(os);
-			}
-			else
-			{
-				// If we encounter an episode block in old MAPINFO, we have to
-				// parse it and just not do anything with it.
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::EPISODE;
-				tinfo.episode = NULL;
-				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0, os);
-			}
+			ParseEpisodeInfo(os);
 		}
 		else if (os.compareToken("clearepisodes"))
 		{
-			// Not implemented
+			episodenum = 0;
 		}
 		else if (os.compareToken("skill"))
 		{
@@ -1314,8 +1477,28 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 void G_ParseMapInfo ()
 {
 	bool found_mapinfo = false;
-
 	int lump = -1;
+
+	// TODO: Currently this just sets the episode definitions. Eventually this should load
+	// MAPINFO files with the data in them
+	switch (gamemission)
+	{
+	case chex:
+	case commercial_freedoom:
+	case doom:
+
+		break;
+	case pack_plut:
+
+		break;
+	case pack_tnt:
+
+		break;
+	default:
+
+		break;
+	}
+	
 	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
 	{
 		found_mapinfo = true;
@@ -1344,6 +1527,11 @@ void G_ParseMapInfo ()
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
 		ParseMapInfoLump(lump, "MAPINFO");
+	}
+
+	if (episodenum == 0)
+	{
+		I_FatalError("You cannot use clearepisodes in a MAPINFO if you do not define any new episodes after it.");
 	}
 }
 
@@ -1612,6 +1800,37 @@ char *CalcMapName (int episode, int level)
 		lumpname[4] = 0;
 	}
 	return lumpname;
+}
+
+void G_SetDefaultEpisode()
+{
+#if 0
+	if (gameinfo.flags & GI_MAPxx)
+	{
+		if (gamemode == commercial_bfg)
+		{
+			M_SetupNextMenu(&ExpDef);
+		}
+		else
+		{
+			M_SetupNextMenu(&NewDef);
+		}
+	}
+	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
+	{
+		M_SetupNextMenu(&NewDef);
+	}
+	else if (gamemode == retail || gamemode == retail_bfg)
+	{
+		EpiDef.numitems = ep_end;
+		M_SetupNextMenu(&EpiDef);
+	}
+	else
+	{
+		EpiDef.numitems = ep4;
+		M_SetupNextMenu(&EpiDef);
+	}
+#endif
 }
 
 void G_SetLevelStrings (void)
