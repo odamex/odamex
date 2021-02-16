@@ -169,8 +169,8 @@ class ODigFont : public OFont
 	}
 };
 
-static OBigFont* hu_bigfont;
 static OSmallFont* hu_smallfont;
+static OBigFont* hu_bigfont;
 static ODigFont* hu_digfont;
 
 /**
@@ -178,15 +178,15 @@ static ODigFont* hu_digfont;
  */
 void V_TextInit()
 {
-	if (hu_bigfont == NULL)
-	{
-		::hu_bigfont = new OBigFont();
-		::hu_bigfont->load();
-	}
 	if (hu_smallfont == NULL)
 	{
 		::hu_smallfont = new OSmallFont();
 		::hu_smallfont->load();
+	}
+	if (hu_bigfont == NULL)
+	{
+		::hu_bigfont = new OBigFont();
+		::hu_bigfont->load();
 	}
 	if (hu_digfont == NULL)
 	{
@@ -203,15 +203,15 @@ void V_TextInit()
  */
 void V_TextShutdown()
 {
-	if (hu_bigfont != NULL)
-	{
-		delete ::hu_bigfont;
-		::hu_bigfont = NULL;
-	}
 	if (hu_smallfont != NULL)
 	{
 		delete ::hu_smallfont;
 		::hu_smallfont = NULL;
+	}
+	if (hu_bigfont != NULL)
+	{
+		delete ::hu_bigfont;
+		::hu_bigfont = NULL;
 	}
 	if (hu_digfont != NULL)
 	{
@@ -234,7 +234,7 @@ void V_SetFont(font_e font)
 		::hu_font = ::hu_bigfont;
 		break;
 	case FONT_DIGFONT:
-		::hu_font = ::hu_bigfont;
+		::hu_font = ::hu_digfont;
 		break;
 	}
 }
