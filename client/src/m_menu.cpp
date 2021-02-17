@@ -954,54 +954,34 @@ namespace
 
 void M_NewGame(int choice)
 {
-#if 0
-	if (gameinfo.flags & GI_MAPxx)
+	if (gamemode == commercial_bfg)
     {
-        if (gamemode == commercial_bfg)
-        {
-            M_SetupNextMenu(&ExpDef);
-        }
-        else
-        {
-            M_SetupNextMenu(&NewDef);
-        }
+        M_SetupNextMenu(&ExpDef);
     }
-	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
-    {
-        M_SetupNextMenu(&NewDef);
-    }
-    else if (gamemode == retail || gamemode == retail_bfg)
-	{
-	    EpiDef.numitems = ep_end;
-	    M_SetupNextMenu(&EpiDef);
-	}
 	else
 	{
-		EpiDef.numitems = ep4;
-		M_SetupNextMenu(&EpiDef);
-	}
-#endif
-	EpiDef.numitems = episodenum;
+		EpiDef.numitems = episodenum;
 
-	// Set up episode menu positioning
-	EpiDef.x = 48;
-	EpiDef.y = 63;
-	
-	if (episodenum > 4)
-	{
-		EpiDef.y -= LINEHEIGHT;
-	}
+		// Set up episode menu positioning
+		EpiDef.x = 48;
+		EpiDef.y = 63;
 
-	epi = 0;
-	
-	if (episodenum > 1)
-	{
-		SetupEpisodeList();
-		M_SetupNextMenu(&EpiDef);
-	}
-	else
-	{
-		M_SetupNextMenu(&NewDef);
+		if (episodenum > 4)
+		{
+			EpiDef.y -= LINEHEIGHT;
+		}
+
+		epi = 0;
+
+		if (episodenum > 1)
+		{
+			SetupEpisodeList();
+			M_SetupNextMenu(&EpiDef);
+		}
+		else
+		{
+			M_SetupNextMenu(&NewDef);
+		}
 	}
 }
 

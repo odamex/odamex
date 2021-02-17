@@ -1433,6 +1433,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 void G_ParseMapInfo ()
 {
 	const char* baseinfoname = NULL;
+	int lump;
 
 	switch (gamemission)
 	{
@@ -1441,6 +1442,12 @@ void G_ParseMapInfo ()
 		break;
 	case doom2:
 		baseinfoname = "_D2NFO";
+		if (gamemode == commercial_bfg)
+		{
+			lump = W_GetNumForName(baseinfoname);
+			ParseMapInfoLump(lump, baseinfoname);
+			baseinfoname = "_BFGNFO";
+		}
 		break;
 	case pack_tnt:
 		baseinfoname = "_TNTNFO";
@@ -1453,7 +1460,7 @@ void G_ParseMapInfo ()
 		break;
 	}
 
-	int lump = W_GetNumForName(baseinfoname);
+	lump = W_GetNumForName(baseinfoname);
 	ParseMapInfoLump(lump, baseinfoname);
 	
 	bool found_mapinfo = false;
