@@ -422,7 +422,7 @@ static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
 		for (OResFiles::const_iterator it = newpatchfiles.begin();
 		     it != newpatchfiles.end(); ++it)
 		{
-			if (DoDehPatch(it->getFullpath().c_str(), false))
+			if (D_DoDehPatch(it->getFullpath().c_str(), false))
 			{
 				use_default = false;
 			}
@@ -433,7 +433,7 @@ static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
 	if (use_default)
 	{
 		// See if there's a patch in a PWAD
-		DoDehPatch(NULL, true);
+		D_DoDehPatch(NULL, true);
 	}
 
 	// check for ChexQuest

@@ -658,7 +658,7 @@ static void BackupData (void)
 	BackedUpData = true;
 }
 
-void UndoDehPatch ()
+void D_UndoDehPatch()
 {
 	int i;
 
@@ -1732,7 +1732,7 @@ static int DoInclude (int dummy)
 	savepversion = pversion;
 	including = true;
 
-	DoDehPatch (com_token, false);
+	D_DoDehPatch (com_token, false);
 
 	DPrintf ("Done with include\n");
 	PatchFile = savepatchfile;
@@ -1746,74 +1746,40 @@ endinclude:
 	return GetLine();
 }
 
-bool DoDehPatch (const char *patchfile, BOOL autoloading)
+bool D_DoDehPatch(const char* patchfile, bool autoloading)
 {
 	int cont;
-	int lump;
 	std::string file;
 
-	BackupData ();
-	PatchFile = NULL;
+	BackupData();
+	::PatchFile = NULL;
 
-	lump = W_CheckNumForName ("DEHACKED");
+	int lump = W_CheckNumForName("DEHACKED");
 
-	if (lump >= 0 && autoloading) {
+	if (lump >= 0 && autoloading)
+	{
 		// Execute the DEHACKED lump as a patch.
-		filelen = W_LumpLength (lump);
-		if ( (PatchFile = new char[filelen + 1]) ) {
-			W_ReadLump (lump, PatchFile);
-		} else {
-			DPrintf ("Not enough memory to apply patch\n");
+		::filelen = W_LumpLength(lump);
+		::PatchFile = new char[::filelen + 1];
+		W_ReadLump(lump, ::PatchFile);
+	}
+	else if (patchfile)
+	{
+		// Try to use patchfile as a patch.
+		FILE* fh = fopen(patchfile, "rb+");
+		if (fh == NULL)
+		{
+			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
 			return false;
 		}
-	} else if (patchfile) {
-		// Try to use patchfile as a patch.
-		FILE *deh;
 
-		file = patchfile;
-		M_FixPathSep (file);
-		M_AppendExtension (file, ".deh");
+		::filelen = M_FileLength(fh);
+		::PatchFile = new char[::filelen + 1];
 
-		if ( !(deh = fopen (file.c_str(), "rb")) ) {
-			file = patchfile;
-			M_FixPathSep (file);
-			M_AppendExtension (file, ".bex");
-			deh = fopen (file.c_str(), "rb");
-		}
-
-		if (deh) {
-			filelen = M_FileLength (deh);
-			if ( (PatchFile = new char[filelen + 1]) ) {
-				size_t readlen = fread (PatchFile, 1, filelen, deh);
-				if ( readlen < 1 || readlen < filelen ) {
-					DPrintf ("Failed to read patch\n");
-					fclose (deh);
-					return false;
-				}
-				fclose (deh);
-			}
-		}
-
-		if (!PatchFile) {
-			// Couldn't find it on disk, try reading it from a lump
-			file = patchfile;
-			M_FixPathSep (file);
-			M_ExtractFileBase (file, file);
-			file[8] = 0;
-			lump = W_CheckNumForName (file.c_str());
-			if (lump >= 0) {
-				filelen = W_LumpLength (lump);
-				if ( (PatchFile = new char[filelen + 1]) ) {
-					W_ReadLump (lump, PatchFile);
-				} else {
-					DPrintf ("Not enough memory to apply patch\n");
-					return false;
-				}
-			}
-		}
-
-		if (!PatchFile) {
-			Printf (PRINT_HIGH, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
+		size_t read = fread(::PatchFile, 1, filelen, fh);
+		if (read < filelen)
+		{
+			DPrintf("Could not read file\n");
 			return false;
 		}
 	} else {
