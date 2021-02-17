@@ -1831,7 +1831,7 @@ bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 			if (patchfile)
 			{
 				Printf(PRINT_WARNING, "\"%s\" is not a DeHackEd patch file\n",
-				       patchfile->getBasename());
+				       patchfile->getBasename().c_str());
 			}
 			else
 			{
