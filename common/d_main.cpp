@@ -424,7 +424,6 @@ static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
 		{
 			if (DoDehPatch(it->getFullpath().c_str(), false))
 			{
-				::patchfiles.push_back(*it);
 				use_default = false;
 			}
 		}
