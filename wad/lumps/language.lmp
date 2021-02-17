@@ -532,17 +532,17 @@ PD_ALL3 = "You need all three keys to open this door";
 PD_ALL6 = "You need all six keys to open this door";
 
 // MBF (BOOM?) narration backgrounds
-BGFLATE1 = "FLOOR4_8";
-BGFLATE2 = "SFLR6_1";
-BGFLATE3 = "MFLR8_4";
-BGFLATE4 = "MFLR8_3";
-BGFLAT06 = "SLIME16";
-BGFLAT11 = "RROCK14";
-BGFLAT20 = "RROCK07";
-BGFLAT30 = "RROCK17";
-BGFLAT15 = "RROCK13";
-BGFLAT31 = "RROCK19";
-BGCASTCALL = "BOSSBACK";
+bgflatE1 = "FLOOR4_8";
+bgflatE2 = "SFLR6_1";
+bgflatE3 = "MFLR8_4";
+bgflatE4 = "MFLR8_3";
+bgflat06 = "SLIME16";
+bgflat11 = "RROCK14";
+bgflat20 = "RROCK07";
+bgflat30 = "RROCK17";
+bgflat15 = "RROCK13";
+bgflat31 = "RROCK19";
+bgcastcall = "BOSSBACK";
 
 // Gameflow messages
 TXT_FRAGLIMIT = "Fraglimit hit.";

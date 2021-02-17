@@ -34,8 +34,6 @@ struct EpisodeInfo
 	char key;
 	bool fulltext;
 	bool noskillmenu;
-	bool optional;
-	bool extended;
 };
 
 extern char EpisodeMaps[MAX_EPISODES][8];

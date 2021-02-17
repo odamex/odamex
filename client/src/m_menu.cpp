@@ -76,7 +76,7 @@ int 				messageLastMenuActive;
 bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
-void	CL_SendUserInfo(void);
+void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
@@ -264,6 +264,8 @@ oldmenu_t EpiDef =
 	48,63,				// x,y
 	0	 				// lastOn
 };
+
+int epi;
 
 //
 // EXPANSION SELECT (DOOM2 BFG)
@@ -980,11 +982,17 @@ void M_NewGame(int choice)
 	}
 #endif
 	EpiDef.numitems = episodenum;
+
+	// Set up episode menu positioning
+	EpiDef.x = 48;
+	EpiDef.y = 63;
 	
 	if (episodenum > 4)
 	{
 		EpiDef.y -= LINEHEIGHT;
 	}
+
+	epi = 0;
 	
 	if (episodenum > 1)
 	{
@@ -1001,7 +1009,6 @@ void M_NewGame(int choice)
 //
 //		M_Episode
 //
-int epi;
 
 void M_DrawEpisode()
 {

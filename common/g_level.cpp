@@ -880,7 +880,7 @@ static void ParseMapInfoLower(
 				const OString& s = GStrings(os.getToken().c_str() + 1);
 				if (s.empty())
 				{
-					I_Error("Unknown lookup string \"%s\"", s.c_str());
+					I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 				}
 				uppercopy((char*)(info + handler->data1), s.c_str());
 			}
@@ -1170,7 +1170,10 @@ static void ParseEpisodeInfo(OScanner &os)
 				MustGetStringName(os, "=");
 			}
 			MustGetString(os);
-			pic = os.getToken();
+			if (picisgfx == false)
+			{
+				pic = os.getToken();
+			}
 		}
 		else if (os.compareToken("lookup"))
 		{
@@ -1231,7 +1234,7 @@ static void ParseEpisodeInfo(OScanner &os)
 			break;
 	}
 
-	if (remove)
+	if (remove || (optional && W_CheckNumForName(map) == -1) || (extended && W_CheckNumForName("EXTENDED") != -1))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)
@@ -1270,8 +1273,6 @@ static void ParseEpisodeInfo(OScanner &os)
 		EpisodeInfos[i].key = tolower(key);
 		EpisodeInfos[i].fulltext = !picisgfx;
 		EpisodeInfos[i].noskillmenu = noskillmenu;
-		EpisodeInfos[i].optional = optional;
-		EpisodeInfos[i].extended = extended;
 		strncpy(EpisodeMaps[i], map, 8);
 	}
 }
