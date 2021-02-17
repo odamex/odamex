@@ -48,7 +48,7 @@ CVAR_FUNC_IMPL (language)
 
 	// Reapply DeHackEd patches on top of these strings.
 	// FIXME: This only handles PWAD patches for now.
-	DoDehPatch(NULL, true);
+	D_DoDehPatch(NULL, true);
 
 	// Set default level strings based on those DeHackEd patches.
 	G_SetLevelStrings();
