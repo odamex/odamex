@@ -438,7 +438,7 @@ static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
 
 	// check for ChexQuest
 	bool chexLoaded = false;
-	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
+	for (OResFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
 	     ++it)
 	{
 		if (it->getBasename() == "CHEX.DEH")
