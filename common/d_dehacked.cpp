@@ -1702,39 +1702,56 @@ static int PatchStrings (int dummy)
 	return result;
 }
 
-static int DoInclude (int dummy)
+static int DoInclude(int dummy)
 {
-	char *data;
+	char* data;
 	int savedversion, savepversion;
 	char *savepatchfile, *savepatchpt;
+	OWantFile want;
+	OResFile res;
 
-	if (including) {
-		DPrintf ("Sorry, can't nest includes\n");
+	if (including)
+	{
+		DPrintf("Sorry, can't nest includes\n");
 		goto endinclude;
 	}
 
-	data = COM_Parse (Line2);
-	if (!stricmp (com_token, "notext")) {
+	data = COM_Parse(Line2);
+	if (!stricmp(com_token, "notext"))
+	{
 		includenotext = true;
-		data = COM_Parse (data);
+		data = COM_Parse(data);
 	}
 
-	if (!com_token[0]) {
+	if (!com_token[0])
+	{
 		includenotext = false;
-		DPrintf ("Include directive is missing filename\n");
+		DPrintf("Include directive is missing filename\n");
 		goto endinclude;
 	}
 
-	DPrintf ("Including %s\n", com_token);
+	DPrintf("Including %s\n", com_token);
 	savepatchfile = PatchFile;
 	savepatchpt = PatchPt;
 	savedversion = dversion;
 	savepversion = pversion;
 	including = true;
 
-	D_DoDehPatch (com_token, false);
+	if (!OWantFile::make(want, com_token, OFILE_DEH))
+	{
+		Printf(PRINT_WARNING, "Could not find BEX include \"%s\"\n", com_token);
+		goto endinclude;
+	}
 
-	DPrintf ("Done with include\n");
+	if (!M_ResolveWantedFile(res, want))
+	{
+		Printf(PRINT_WARNING, "Could not resolve BEX include \"%s\"\n", com_token);
+		goto endinclude;
+	}
+
+	D_DoDehPatch(&res, false);
+
+	DPrintf("Done with include\n");
 	PatchFile = savepatchfile;
 	PatchPt = savepatchpt;
 	dversion = savedversion;
@@ -1746,7 +1763,14 @@ endinclude:
 	return GetLine();
 }
 
-bool D_DoDehPatch(const char* patchfile, bool autoloading)
+/**
+ * @brief Attempt to load a DeHackEd file.
+ * 
+ * @param patchfile File to attempt to load.
+ * @param autoloading 
+ * @return 
+*/
+bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 {
 	int cont;
 	std::string file;
@@ -1766,7 +1790,7 @@ bool D_DoDehPatch(const char* patchfile, bool autoloading)
 	else if (patchfile)
 	{
 		// Try to use patchfile as a patch.
-		FILE* fh = fopen(patchfile, "rb+");
+		FILE* fh = fopen(patchfile->getFullpath().c_str(), "rb+");
 		if (fh == NULL)
 		{
 			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n", file.c_str());

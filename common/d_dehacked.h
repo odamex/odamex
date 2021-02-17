@@ -25,8 +25,10 @@
 #ifndef __D_DEHACK_H__
 #define __D_DEHACK_H__
 
+#include "m_resfile.h"
+
 void D_UndoDehPatch();
-bool D_DoDehPatch(const char* patchfile, bool autoloading);
+bool D_DoDehPatch(const OResFile* patchfile, bool autoloading);
 
 #endif //__D_DEHACK_H__
 

@@ -422,7 +422,7 @@ static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
 		for (OResFiles::const_iterator it = newpatchfiles.begin();
 		     it != newpatchfiles.end(); ++it)
 		{
-			if (D_DoDehPatch(it->getFullpath().c_str(), false))
+			if (D_DoDehPatch(&*it, false))
 			{
 				use_default = false;
 			}
