@@ -1772,9 +1772,6 @@ endinclude:
 */
 bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 {
-	int cont;
-	std::string file;
-
 	BackupData();
 	::PatchFile = NULL;
 
@@ -1793,7 +1790,8 @@ bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 		FILE* fh = fopen(patchfile->getFullpath().c_str(), "rb+");
 		if (fh == NULL)
 		{
-			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
+			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n",
+			       patchfile->getBasename().c_str());
 			return false;
 		}
 
@@ -1806,71 +1804,94 @@ bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 			DPrintf("Could not read file\n");
 			return false;
 		}
-	} else {
+	}
+	else
+	{
 		// Nothing to do.
 		return false;
 	}
 
 	// End file with a NULL for our parser
-	PatchFile[filelen] = 0;
+	::PatchFile[::filelen] = 0;
 
-	dversion = pversion = -1;
+	::dversion = pversion = -1;
 
-	cont = 0;
-	if (!strncmp (PatchFile, "Patch File for DeHackEd v", 25)) {
-		PatchPt = strchr (PatchFile, '\n');
-		while ((cont = GetLine()) == 1) {
-				 CHECKKEY ("Doom version", dversion)
-			else CHECKKEY ("Patch format", pversion)
+	int cont = 0;
+	if (!strncmp(::PatchFile, "Patch File for DeHackEd v", 25))
+	{
+		::PatchPt = strchr(::PatchFile, '\n');
+		while ((cont = GetLine()) == 1)
+		{
+			CHECKKEY("Doom version", ::dversion)
+			else CHECKKEY("Patch format", ::pversion)
 		}
-		if (!cont || dversion == -1 || pversion == -1) {
-			delete[] PatchFile;
-			Printf (PRINT_HIGH, "\"%s\" is not a DeHackEd patch file\n", file.c_str());
+		if (!cont || ::dversion == -1 || ::pversion == -1)
+		{
+			delete[] ::PatchFile;
+			if (patchfile)
+			{
+				Printf(PRINT_WARNING, "\"%s\" is not a DeHackEd patch file\n",
+				       patchfile->getBasename());
+			}
+			else
+			{
+				Printf(PRINT_WARNING, "\"DEHACKED\" is not a DeHackEd patch lump\n");
+			}
 			return false;
 		}
-	} else {
-		DPrintf ("Patch does not have DeHackEd signature. Assuming .bex\n");
-		dversion = 19;
-		pversion = 6;
-		PatchPt = PatchFile;
+	}
+	else
+	{
+		DPrintf("Patch does not have DeHackEd signature. Assuming .bex\n");
+		::dversion = 19;
+		::pversion = 6;
+		::PatchPt = ::PatchFile;
 		while ((cont = GetLine()) == 1)
 			;
 	}
 
-	if (pversion != 6) {
-		DPrintf ("DeHackEd patch version is %d.\nUnexpected results may occur.\n", pversion);
+	if (::pversion != 6)
+	{
+		DPrintf("DeHackEd patch version is %d.\nUnexpected results may occur.\n",
+		        ::pversion);
 	}
 
-	if (dversion == 16)
-		dversion = 0;
-	else if (dversion == 17)
-		dversion = 2;
-	else if (dversion == 19)
-		dversion = 3;
-	else if (dversion == 20)
-		dversion = 1;
-	else if (dversion == 21)
-		dversion = 4;
-	else {
-		DPrintf ("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
-		dversion = 3;
+	if (::dversion == 16)
+		::dversion = 0;
+	else if (::dversion == 17)
+		::dversion = 2;
+	else if (::dversion == 19)
+		::dversion = 3;
+	else if (::dversion == 20)
+		::dversion = 1;
+	else if (::dversion == 21)
+		::dversion = 4;
+	else
+	{
+		DPrintf("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
+		::dversion = 3;
 	}
 
-	do {
-		if (cont == 1) {
-			DPrintf ("Key %s encountered out of context\n", Line1);
+	do
+	{
+		if (cont == 1)
+		{
+			DPrintf("Key %s encountered out of context\n", ::Line1);
 			cont = 0;
-		} else if (cont == 2)
-			cont = HandleMode (Line1, atoi (Line2));
+		}
+		else if (cont == 2)
+		{
+			cont = HandleMode(::Line1, atoi(::Line2));
+		}
 	} while (cont);
 
-	delete[] PatchFile;
-	if (autoloading)
-		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
-	else
-		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
+	delete[] ::PatchFile;
+	::PatchFile = NULL;
 
-    return true;
+	if (patchfile)
+		Printf("adding %s\n (DeHackEd patch)", patchfile->getFullpath().c_str());
+
+	return true;
 }
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
