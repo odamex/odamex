@@ -226,9 +226,8 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap, "EndGame", 7) ||
-				(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))  	// [ML] Chex mode: game is over
-				{																	// after E1M5
+				if (!strncmp (level.nextmap, "EndGame", 7))
+				{
 					if (level.nextmap[7] == 'C')
 					{
 						F_StartCast ();
