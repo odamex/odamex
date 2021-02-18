@@ -992,7 +992,14 @@ void M_NewGame(int choice)
 
 void M_DrawEpisode()
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, 38);
+	int y = 38;
+
+	if (episodenum > 4)
+	{
+		y -= (LINEHEIGHT * (episodenum - 4));
+	}
+		
+	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, y);
 }
 
 void M_VerifyNightmare(int ch)
