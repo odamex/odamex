@@ -1889,9 +1889,124 @@ bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 	::PatchFile = NULL;
 
 	if (patchfile)
-		Printf("adding %s\n (DeHackEd patch)", patchfile->getFullpath().c_str());
+	{
+		Printf("adding %s\n", patchfile->getFullpath().c_str());
+	}
+	else
+	{
+		Printf("adding DEHACKED lump\n");
+	}
+	Printf(" (DeHackEd patch)\n");
 
 	return true;
 }
+
+#include "c_dispatch.h"
+
+static const char* ActionPtrString(actionf_p1 func)
+{
+	int i = 0;
+	while (::CodePtrs[i].name != NULL && ::CodePtrs[i].func != func)
+	{
+		i++;
+	}
+
+	if (::CodePtrs[i].name == NULL)
+	{
+		return "NULL";
+	}
+
+	return ::CodePtrs[i].name;
+}
+
+static void PrintState(int index)
+{
+	if (index < 0 || index >= NUMSTATES)
+		return;
+
+	// Print this state.
+	state_t& state = ::states[index];
+	Printf("%4d | s:%s f:%d t:%d a:%s m1:%d m2:%d\n", index, ::sprnames[state.sprite],
+	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
+	       state.misc2);
+}
+
+BEGIN_COMMAND(stateinfo)
+{
+	if (argc < 2)
+	{
+		Printf("Must pass one or two state indexes. (0 to %d)\n", NUMSTATES - 1);
+		return;
+	}
+
+	int index1 = atoi(argv[1]);
+	if (index1 < 0 || index1 >= NUMSTATES)
+	{
+		Printf("Not a valid index.\n");
+		return;
+	}
+	int index2 = index1;
+
+	if (argc == 3)
+	{
+		index2 = atoi(argv[2]);
+		if (index2 < 0 || index2 >= NUMSTATES)
+		{
+			Printf("Not a valid index.\n");
+			return;
+		}
+	}
+
+	// Swap arguments if need be.
+	if (index2 < index1)
+	{
+		int tmp = index1;
+		index1 = index2;
+		index2 = tmp;
+	}
+
+	for (int i = index1; i <= index2; i++)
+	{
+		PrintState(i);
+	}
+}
+END_COMMAND(stateinfo)
+
+BEGIN_COMMAND(playstate)
+{
+	if (argc < 2)
+	{
+		Printf("Must pass state index. (0 to %d)\n", NUMSTATES - 1);
+		return;
+	}
+
+	int index = atoi(argv[1]);
+	if (index < 0 || index >= NUMSTATES)
+	{
+		Printf("Not a valid index.\n");
+		return;
+	}
+
+	OHashTable<int, bool> visited;
+	for (;;)
+	{
+		// Check if we looped back, and exit if so.
+		OHashTable<int, bool>::iterator it = visited.find(index);
+		if (it != visited.end())
+		{
+			Printf("Looped back to %d\n", index);
+			return;
+		}
+
+		PrintState(index);
+
+		// Mark as visited.
+		visited.insert(std::pair<int, bool>(index, true));
+
+		// Next state.
+		index = ::states[index].nextstate;
+	}
+}
+END_COMMAND(playstate)
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
