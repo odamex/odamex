@@ -669,10 +669,10 @@ void D_UndoDehPatch()
 //		OrgSfxNames[i] = S_sfx[i].name;
 
 	for (i = 0; i < NUMSPRITES; i++)
-		OrgSprNames[i] = sprnames[i];
+		::sprnames[i] = ::OrgSprNames[i];
 
 	for (i = 0; i < NUMSTATES; i++)
-		OrgActionPtrs[i] = states[i].action;
+		::states[i].action = ::OrgActionPtrs[i];
 
 	memcpy(states, backupStates, sizeof(states));
 
