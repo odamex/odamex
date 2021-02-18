@@ -30,13 +30,11 @@
 #include "g_game.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "g_episode.h"
 #include "i_system.h"
 #include "p_setup.h"
 #include "w_wad.h"
 #include "z_zone.h"
-
-// TODO: Add episodes
-//void M_AddEpisode(const char *map, char *def);
 
 
 //==========================================================================
@@ -443,11 +441,36 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 #endif
 	else if (!stricmp(pname, "episode"))
 	{
-		// Not implemented
-		char *lname = ParseMultiString(scanner, 1);
-		if (!lname) return 0;
+		int epi;
+		int num;
 		
-		// would add episode after parsing here
+		char *lname = ParseMultiString(scanner, 1);
+		if (!lname)
+			return 0;
+		
+		if (*lname == '-') // means "clear"
+		{
+			episodenum = 0;
+		}
+		else
+		{
+			const char* gfx = std::strtok(lname, "\n");
+			const char* txt = std::strtok(NULL, "\n");
+			const char* alpha = std::strtok(NULL, "\n");
+
+			if (episodenum >= 8)
+			{
+				return 0;
+			}
+
+			G_ValidateMapName(scanner.string, &epi, &num);
+			strncpy(EpisodeMaps[episodenum], mape->mapname, 8);
+			EpisodeInfos[episodenum].name = gfx;
+			EpisodeInfos[episodenum].fulltext = false;
+			EpisodeInfos[episodenum].noskillmenu = false;
+			EpisodeInfos[episodenum].key = alpha ? *alpha : 0;
+			++episodenum;
+		}
 	}
 	else if (!stricmp(pname, "bossaction"))
 	{

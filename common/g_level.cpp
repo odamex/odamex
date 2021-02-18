@@ -1004,9 +1004,8 @@ static void ParseMapInfoLower(
 			{
 				MustGetStringName(os, "=");
 				MustGetString(os);
-				if (os.compareToken("lookup"))
+				if (os.compareToken("lookup,"))
 				{
-					MustGetStringName(os, ",");
 					MustGetString(os);
 					const OString& s = GStrings(os.getToken());
 					if (s.empty())
@@ -1234,7 +1233,7 @@ static void ParseEpisodeInfo(OScanner &os)
 			break;
 	}
 
-	if (remove || (optional && W_CheckNumForName(map) == -1) || (extended && W_CheckNumForName("EXTENDED") != -1))
+	if (remove || (optional && W_CheckNumForName(map) == -1) || (extended && W_CheckNumForName("EXTENDED") == -1))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)
