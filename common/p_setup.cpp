@@ -45,6 +45,7 @@
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
+#include "g_gametype.h"
 
 #include "p_setup.h"
 
@@ -63,6 +64,8 @@ void P_InvertPlane(plane_t *plane);
 
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
+
+EXTERN_CVAR(g_coopthingfilter)
 
 //
 // MAP related Lookup tables.
@@ -589,7 +592,17 @@ void P_LoadThings (int lump)
 		// [RH] Need to translate the spawn flags to Hexen format.
 		short flags = LESHORT(mt->options);
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
-		if (flags & BTF_NOTSINGLE)			mt2.flags &= ~MTF_SINGLE;
+		if (flags & BTF_NOTSINGLE)
+		{
+			if (G_IsCoopGame())
+			{ 
+				if ((g_coopthingfilter.asInt() == 1 && mt2.flags & IT_WEAPON) ||
+				    (g_coopthingfilter.asInt() == 2))
+					mt2.flags &= ~MTF_COOPERATIVE;
+			}
+			else
+				mt2.flags &= ~MTF_SINGLE;
+		}
 		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
 		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
 
