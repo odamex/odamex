@@ -628,18 +628,6 @@ void D_Init()
 
 	HU_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();

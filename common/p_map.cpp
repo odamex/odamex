@@ -1142,7 +1142,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			int side = P_PointOnLineSide (thing->x, thing->y, ld);
 			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld-lines, oldside, thing);
+				P_CrossSpecialLine (ld-lines, oldside, thing, false);
 		}
 	}
 
