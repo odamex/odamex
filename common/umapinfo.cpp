@@ -373,29 +373,60 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	else if (!stricmp(pname, "endpic"))
 	{
 		ParseLumpName(scanner, mape->endpic);
+		strncpy(mape->nextmap, "EndGame1", 8);
+		mape->nextmap[8] = '\0';
 	}
-#if 0
 	else if (!stricmp(pname, "endcast"))
 	{
 		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean) strcpy(mape->endpic, "$CAST");
-		else strcpy(mape->endpic, "-");
+		if (scanner.boolean)
+			strncpy(mape->nextmap, "EndGameC", 8);
+		else
+			strcpy(mape->endpic, "\0");
 	}
 	else if (!stricmp(pname, "endbunny"))
 	{
 		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean) strcpy(mape->endpic, "$BUNNY");
-		else strcpy(mape->endpic, "-");
+		if (scanner.boolean)
+			strncpy(mape->nextmap, "EndGame3", 8);
+		else
+			strcpy(mape->endpic, "\0");
 	}
 	else if (!stricmp(pname, "endgame"))
 	{
 		scanner.MustGetToken(TK_BoolConst);
 		if (scanner.boolean)
-			strcpy(mape->endpic, "!");
+		{
+			if (gamemission == doom)
+			{
+				if (mape->mapname[1] == '1')
+				{
+					strncpy(mape->nextmap, "EndGame1", 8);
+				}
+				else if (mape->mapname[1] == '2')
+				{
+					strncpy(mape->nextmap, "EndGame2", 8);
+				}
+				else if (mape->mapname[1] == '3')
+				{
+					strncpy(mape->nextmap, "EndGame3", 8);
+				}
+				else
+				{
+					strncpy(mape->nextmap, "EndGame4", 8);
+				}
+			}
+			else // Doom 2 cast call
+			{
+				strncpy(mape->nextmap, "EndGameC", 8);
+			}
+			strcpy(mape->endpic, "\0");
+		}
 		else
-			strcpy(mape->endpic, "-");
+		{
+			strcpy(mape->endpic, "\0");
+		}
 	}
-#endif
 	else if (!stricmp(pname, "exitpic"))
 	{
 		ParseLumpName(scanner, mape->exitpic);

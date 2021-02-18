@@ -2122,8 +2122,13 @@ void G_InitLevelLocals()
 	strncpy(::level.enterpic, info.enterpic, 8);
 	strncpy(::level.endpic, info.endpic, 8);
 
-	level.bossactions = &info.bossactions;
-	level.bossactions_donothing = info.bossactions_donothing;
+	::level.intertext = info.intertext;
+	::level.intertextsecret = info.intertextsecret;
+	strncpy(::level.interbackdrop, info.interbackdrop, 8);
+	strncpy(::level.intermusic, info.intermusic, 8);
+	
+	::level.bossactions = &info.bossactions;
+	::level.bossactions_donothing = info.bossactions_donothing;
 	
 	movingsectors.clear();
 }

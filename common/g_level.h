@@ -130,6 +130,11 @@ struct level_pwad_info_t
 	char			exitpic[9];
 	char			enterpic[9];
 	char			endpic[9];
+
+	std::string		intertext;
+	std::string		intertextsecret;
+	char			interbackdrop[9];
+	char			intermusic[9];
 	
 	std::vector<BossAction> bossactions;
 	bool			bossactions_donothing;
@@ -192,6 +197,11 @@ struct level_locals_t {
 	char			enterpic[8];
 	char			endpic[8];
 
+	std::string		intertext;
+	std::string		intertextsecret;
+	char			interbackdrop[9];
+	char			intermusic[9];
+	
 	std::vector<BossAction> *bossactions;
 	bool			bossactions_donothing;
 	

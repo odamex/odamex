@@ -370,6 +370,12 @@ void G_DoCompleted (void)
 	else
 	{
 		wminfo.next[0] = 0;
+
+		if (level.endpic[0] && level.flags & LEVEL_NOINTERMISSION)
+		{
+			gameaction = ga_victory;
+			return;
+		}
 		if (secretexit)
 		{
 			if (W_CheckNumForName (level.secretmap) != -1)
