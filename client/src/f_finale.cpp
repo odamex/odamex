@@ -882,8 +882,12 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage1), 0, 0);
+				{
+					char* page = (level.endpic[0] != '\0') ? level.endpic : gameinfo.finalePage1;
+
+					screen->DrawPatchIndirect(W_CachePatch(page), 0, 0);
 					break;
+				}
 				case '2':
 					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
 					break;

@@ -1412,7 +1412,7 @@ void WI_loadData (void)
 	if (level.exitpic[0] != '\0')
 	{
 		is_custom_interpic = true;
-		strcpy(name, level.exitpic);
+		strncpy(name, level.exitpic, 8);
 	}
 	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");

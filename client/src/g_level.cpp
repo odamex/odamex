@@ -662,7 +662,7 @@ void G_WorldDone (void)
 	}
 	options.text = thiscluster.exittext;
 
-	if (!strncmp(level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp(level.nextmap, "E1M6", 4)))
+	if (!strncmp(level.nextmap, "EndGame", 7))
 	{
 		AM_Stop();
 		F_StartFinale(options);

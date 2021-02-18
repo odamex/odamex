@@ -129,6 +129,8 @@ struct level_pwad_info_t
 	// The following are necessary for UMAPINFO compatibility
 	char			exitpic[9];
 	char			enterpic[9];
+	char			endpic[9];
+	
 	std::vector<BossAction> bossactions;
 	bool			bossactions_donothing;
 	
@@ -188,6 +190,7 @@ struct level_locals_t {
 	// The following are used for UMAPINFO
 	char			exitpic[8];
 	char			enterpic[8];
+	char			endpic[8];
 
 	std::vector<BossAction> *bossactions;
 	bool			bossactions_donothing;

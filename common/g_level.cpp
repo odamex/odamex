@@ -2120,6 +2120,7 @@ void G_InitLevelLocals()
 
 	strncpy(::level.exitpic, info.exitpic, 8);
 	strncpy(::level.enterpic, info.enterpic, 8);
+	strncpy(::level.endpic, info.endpic, 8);
 
 	level.bossactions = &info.bossactions;
 	level.bossactions_donothing = info.bossactions_donothing;

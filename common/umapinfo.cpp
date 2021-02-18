@@ -370,11 +370,11 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	{
 		ParseLumpName(scanner, mape->music);
 	}
-#if 0
 	else if (!stricmp(pname, "endpic"))
 	{
 		ParseLumpName(scanner, mape->endpic);
 	}
+#if 0
 	else if (!stricmp(pname, "endcast"))
 	{
 		scanner.MustGetToken(TK_BoolConst);
@@ -390,8 +390,10 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	else if (!stricmp(pname, "endgame"))
 	{
 		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean) strcpy(mape->endpic, "!");
-		else strcpy(mape->endpic, "-");
+		if (scanner.boolean)
+			strcpy(mape->endpic, "!");
+		else
+			strcpy(mape->endpic, "-");
 	}
 #endif
 	else if (!stricmp(pname, "exitpic"))
