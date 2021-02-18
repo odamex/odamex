@@ -397,30 +397,7 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 		scanner.MustGetToken(TK_BoolConst);
 		if (scanner.boolean)
 		{
-			if (gamemission == doom)
-			{
-				if (mape->mapname[1] == '1')
-				{
-					strncpy(mape->nextmap, "EndGame1", 8);
-				}
-				else if (mape->mapname[1] == '2')
-				{
-					strncpy(mape->nextmap, "EndGame2", 8);
-				}
-				else if (mape->mapname[1] == '3')
-				{
-					strncpy(mape->nextmap, "EndGame3", 8);
-				}
-				else
-				{
-					strncpy(mape->nextmap, "EndGame4", 8);
-				}
-			}
-			else // Doom 2 cast call
-			{
-				strncpy(mape->nextmap, "EndGameC", 8);
-			}
-			strcpy(mape->endpic, "\0");
+			strcpy(mape->endpic, "!");
 		}
 		else
 		{
@@ -448,19 +425,18 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 		scanner.MustGetInteger();
 		mape->partime = TICRATE * scanner.number;
 	}
-#if 0
 	else if (!stricmp(pname, "intertext"))
 	{
 		char *lname = ParseMultiString(scanner, 1);
-		if (!lname) return 0;
-		if (mape->intertext != NULL) free(mape->intertext);
+		if (!lname)
+			return 0;
 		mape->intertext = lname;
 	}
 	else if (!stricmp(pname, "intertextsecret"))
 	{
 		char *lname = ParseMultiString(scanner, 1);
-		if (!lname) return 0;
-		if (mape->intertextsecret != NULL) free(mape->intertextsecret);
+		if (!lname)
+			return 0;
 		mape->intertextsecret = lname;
 	}
 	else if (!stricmp(pname, "interbackdrop"))
@@ -471,9 +447,14 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	{
 		ParseLumpName(scanner, mape->intermusic);
 	}
-#endif
 	else if (!stricmp(pname, "episode"))
 	{
+		if (!episodes_modified && gamemode == commercial)
+		{
+			episodenum = 0;
+			episodes_modified = true;
+		}
+		
 		int epi;
 		int num;
 		
@@ -632,21 +613,38 @@ void ParseUMapInfo(int lump, const char* lumpname)
 		}
 
 		// Set default level progression here to simplify the checks elsewhere. Doing this lets us skip all normal code for this if nothing has been defined.
-#if 0
-		if (info.endpic[0])
+		if (!info.nextmap[0] && !info.endpic[0])
 		{
-
-			info.nextmap[0] = info.nextsecret[0] = 0;
-			if (info.endpic[0] == '!') info.endpic[0] = 0;
-		}
-		else if (!info.nextmap[0] && !info.endpic[0])
-		{
-			if (!stricmp(info.mapname, "MAP30")) strcpy(info.endpic, "$CAST");
-			else if (!stricmp(info.mapname, "E1M8"))  strcpy(info.endpic, gamemode == retail? "CREDIT" : "HELP2");
-			else if (!stricmp(info.mapname, "E2M8"))  strcpy(info.endpic, "VICTORY");
-			else if (!stricmp(info.mapname, "E3M8"))  strcpy(info.endpic, "$BUNNY");
-			else if (!stricmp(info.mapname, "E4M8"))  strcpy(info.endpic, "ENDPIC");
-			else if (gamemission == chex && !stricmp(info.mapname, "E1M5"))  strcpy(info.endpic, "CREDIT");
+			if (!stricmp(info.mapname, "MAP30"))
+			{
+				strcpy(info.endpic, "$CAST");
+				strncpy(info.nextmap, "EndGameC", 8);
+			}
+			else if (!stricmp(info.mapname, "E1M8"))
+			{
+				strcpy(info.endpic, gamemode == retail ? "CREDIT" : "HELP2");
+				strncpy(info.nextmap, "EndGameC", 8);
+			}
+			else if (!stricmp(info.mapname, "E2M8"))
+			{
+				strcpy(info.endpic, "VICTORY");
+				strncpy(info.nextmap, "EndGame2", 8);
+			}
+			else if (!stricmp(info.mapname, "E3M8"))
+			{
+				strcpy(info.endpic, "$BUNNY");
+				strncpy(info.nextmap, "EndGame3", 8);
+			}
+			else if (!stricmp(info.mapname, "E4M8"))
+			{
+				strcpy(info.endpic, "ENDPIC");
+				strncpy(info.nextmap, "EndGame4", 8);
+			}
+			else if (gamemission == chex && !stricmp(info.mapname, "E1M5"))
+			{
+				strcpy(info.endpic, "CREDIT");
+				strncpy(info.nextmap, "EndGame1", 8);
+			}
 			else
 			{
 				int ep, map;
@@ -658,6 +656,5 @@ void ParseUMapInfo(int lump, const char* lumpname)
 					sprintf(info.nextmap, "E%dM%d", ep, map);
 			}
 		}
-#endif
 	}
 }

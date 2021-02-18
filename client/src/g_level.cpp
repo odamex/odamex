@@ -640,7 +640,7 @@ void G_DoLoadLevel (int position)
 //
 // G_WorldDone
 //
-void G_WorldDone (void)
+void G_WorldDone()
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
@@ -656,9 +656,13 @@ void G_WorldDone (void)
 
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
-	options.music = thiscluster.messagemusic;
-	options.music = thiscluster.exittext;
-	if (thiscluster.finalepic[0] != '\0')
+	//options.music = thiscluster.messagemusic;
+	options.music = (level.intermusic[0]) ? level.intermusic : thiscluster.exittext;
+	if (level.interbackdrop[0] != '\0')
+	{
+		options.flat = &level.interbackdrop[0];
+	}
+	else if (thiscluster.finalepic[0] != '\0')
 	{
 		options.pic = &thiscluster.finalepic[0];
 	}
@@ -666,7 +670,15 @@ void G_WorldDone (void)
 	{
 		options.flat = &thiscluster.finaleflat[0];
 	}
-	options.text = thiscluster.exittext;
+	
+	if (secretexit)
+	{
+		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;
+	}
+	else
+	{
+		options.text = (!level.intertext.empty()) ? level.intertext.c_str() : thiscluster.exittext;
+	}
 
 	if (!strncmp(level.nextmap, "EndGame", 7))
 	{
@@ -716,8 +728,5 @@ void G_WorldDone (void)
 		}
 	}
 }
-
-
-
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

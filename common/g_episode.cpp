@@ -26,3 +26,4 @@
 char EpisodeMaps[MAX_EPISODES][8];
 EpisodeInfo EpisodeInfos[MAX_EPISODES];
 byte episodenum = 0;
+bool episodes_modified = false;

@@ -1390,6 +1390,8 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareToken("clearepisodes"))
 		{
 			episodenum = 0;
+			// Set this for UMAPINFOs sake (UMAPINFO doesn't consider Doom 2's episode a real episode)
+			episodes_modified = false;
 		}
 		else if (os.compareToken("skill"))
 		{

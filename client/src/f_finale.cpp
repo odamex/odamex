@@ -164,10 +164,12 @@ void F_StartFinale(finale_options_t& options)
 
 	if (options.text == NULL)
 	{
-		::finaletext = "In the quiet following your last battle, you suddenly \n"
-			"get the feeling that something is...missing.  Like there was \n"
-			"supposed to be intermission text here, but somehow it couldn't \n"
-			"be found.\n\nNo matter.  You ready your weapon and continue on \n"
+		::finaletext = "In the quiet following your last battle,\n"
+			"you suddenly get the feeling that something is\n"
+			"...missing.  Like there was supposed to be intermission\n"
+			" text here, but somehow it couldn't be found.\n"
+			"\n"
+			"No matter.  You ready your weapon and continue on \n"
 			"into the chaos.";
 	}
 	else

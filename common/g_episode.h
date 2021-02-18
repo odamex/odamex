@@ -39,5 +39,6 @@ struct EpisodeInfo
 extern char EpisodeMaps[MAX_EPISODES][8];
 extern EpisodeInfo EpisodeInfos[MAX_EPISODES];
 extern byte episodenum;
+extern bool episodes_modified; // Used by UMAPINFO only
 
 #endif
