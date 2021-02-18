@@ -203,7 +203,7 @@ void	P_SpawnSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor* thing);
+void    P_CrossSpecialLine (int linenum, int side, AActor* thing, bool bossaction);
 void    P_ShootSpecialLine (AActor* thing, line_t* line);
 bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);

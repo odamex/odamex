@@ -2004,7 +2004,7 @@ void A_BossDeath (AActor *actor)
 				P_TranslateLineDef(&ld, &mld);
 				
 				if (!P_UseSpecialLine(actor, &ld, 0, true))
-					P_CrossSpecialLine(ld.special, 0, actor);
+					P_CrossSpecialLine(ld, 0, actor, true);
 			}
 		}
 
