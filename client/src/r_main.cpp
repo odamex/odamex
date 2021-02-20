@@ -323,9 +323,9 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 // right endpoint is rclip percent of the way between the left and right
 // endpoints
 //
-void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+void R_ClipLine(const Vec2<fixed_t>* in1, const Vec2<fixed_t>* in2, 
 				int32_t lclip, int32_t rclip,
-				v2fixed_t* out1, v2fixed_t* out2)
+				Vec2<fixed_t>* out1, Vec2<fixed_t>* out2)
 {
 	const fixed_t dx = in2->x - in1->x;
 	const fixed_t dy = in2->y - in1->y;
@@ -339,9 +339,9 @@ void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2,
 
 void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 				int32_t lclip, int32_t rclip,
-				v2fixed_t* out1, v2fixed_t* out2)
+				Vec2<fixed_t>* out1, Vec2<fixed_t>* out2)
 {
-	R_ClipLine((const v2fixed_t*)in1, (const v2fixed_t*)in2, lclip, rclip, out1, out2);
+	R_ClipLine((const Vec2<fixed_t>*)in1, (const Vec2<fixed_t>*)in2, lclip, rclip, out1, out2);
 }
 
 //
@@ -357,10 +357,10 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 //
 // Returns false if the line is entirely clipped.
 //
-bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
+bool R_ClipLineToFrustum(const Vec2<fixed_t>* v1, const Vec2<fixed_t>* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
 	static const int32_t CLIPUNIT = 1 << 30;
-	v2fixed_t p1 = *v1, p2 = *v2;
+	Vec2<fixed_t> p1 = *v1, p2 = *v2;
 
 	lclip = 0;
 	rclip = CLIPUNIT; 
@@ -499,10 +499,10 @@ static inline void R_DrawPixel(int x, int y, byte color)
 //
 // Draws a colored line between the two endpoints given in world coordinates.
 //
-void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
+void R_DrawLine(const Vec3<fixed_t>* inpt1, const Vec3<fixed_t>* inpt2, byte color)
 {
 	// convert from world-space to camera-space
-	v3fixed_t pt1, pt2;
+	Vec3<fixed_t> pt1, pt2;
 	R_RotatePoint(inpt1->x - viewx, inpt1->y - viewy, ANG90 - viewangle, pt1.x, pt1.y);
 	R_RotatePoint(inpt2->x - viewx, inpt2->y - viewy, ANG90 - viewangle, pt2.x, pt2.y);
 	pt1.z = inpt1->z - viewz;
@@ -518,10 +518,10 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 	// convert from camera-space to screen-space
 	int lclip, rclip;
 
-	if (!R_ClipLineToFrustum((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, NEARCLIP, lclip, rclip))
+	if (!R_ClipLineToFrustum((Vec2<fixed_t>*)&pt1, (Vec2<fixed_t>*)&pt2, NEARCLIP, lclip, rclip))
 		return;
 
-	R_ClipLine((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, lclip, rclip, (v2fixed_t*)&pt1, (v2fixed_t*)&pt2);
+	R_ClipLine((Vec2<fixed_t>*)&pt1, (Vec2<fixed_t>*)&pt2, lclip, rclip, (Vec2<fixed_t>*)&pt1, (Vec2<fixed_t>*)&pt2);
 
 	int x1 = clamp(R_ProjectPointX(pt1.x, pt1.y), 0, viewwidth - 1);
 	int x2 = clamp(R_ProjectPointX(pt2.x, pt2.y), 0, viewwidth - 1);

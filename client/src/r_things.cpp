@@ -532,7 +532,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	fixed_t tx, ty, t1xold;
 	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
 
-	v2fixed_t t1, t2;
+	Vec2<fixed_t> t1, t2;
 	t1.x = t1xold = tx - sideoffs;
 	t2.x = t1.x + width;
 	t1.y = t2.y = ty;
@@ -628,7 +628,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 
 void R_DrawHitBox(AActor* thing)
 {
-	v3fixed_t vertices[8];
+	Vec3<fixed_t> vertices[8];
 	const byte color = 0x80;
 
 	// bottom front left

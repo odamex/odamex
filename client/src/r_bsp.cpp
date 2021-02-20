@@ -449,7 +449,7 @@ void R_AddLine (seg_t *line)
 
 	// translate the line seg endpoints from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
-	v2fixed_t t1, t2;
+	Vec2<fixed_t> t1, t2;
 	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
 
@@ -472,7 +472,7 @@ void R_AddLine (seg_t *line)
 
 	// clip the line seg endpoints in world-space
 	// and store in (w1.x, w1.y) and (w2.x, w2.y)
-	v2fixed_t w1, w2;
+	Vec2<fixed_t> w1, w2;
 	R_ClipLine(line->v1, line->v2, lclip, rclip, &w1, &w2);
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
@@ -580,7 +580,7 @@ static const int checkcoord[12][4] = // killough -- static const
 static bool R_CheckBBox(const fixed_t *bspcoord)
 {
 	const fixed_t clipdist = 0;
-	v2fixed_t t1, t2;
+	Vec2<fixed_t> t1, t2;
 
 	// Find the corners of the box that define the edges from current viewpoint
 	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
@@ -599,7 +599,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	v2fixed_t box_pts[4][2];
+	Vec2<fixed_t> box_pts[4][2];
 	// top line of box
 	box_pts[0][0].x = t1.x;	box_pts[0][0].y = t1.y;	box_pts[0][1].x = t2.x;	box_pts[0][1].y = t1.y;
 	// bottom line of box
@@ -614,8 +614,8 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	// will project onto the screen.
 	for (int i = 0; i < 4; i++)
 	{
-		v2fixed_t p1 = box_pts[i][0];
-		v2fixed_t p2 = box_pts[i][1];
+		Vec2<fixed_t> p1 = box_pts[i][0];
+		Vec2<fixed_t> p2 = box_pts[i][1];
 		
 		if (R_PointOnLine(0, 0, p1.x, p1.y, p2.x, p2.y))
 			return true;

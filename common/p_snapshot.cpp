@@ -504,12 +504,12 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 //
 // ============================================================================
 
-static fixed_t P_PositionDifference(const v3fixed_t &a, const v3fixed_t &b)
+static fixed_t P_PositionDifference(const Vec3<fixed_t> &a, const Vec3<fixed_t> &b)
 {
-	v3fixed_t diff;
-	M_SubVec3Fixed(&diff, &b, &a);
+	Vec3<fixed_t> diff;
+	M_SubVec3Fixed(diff, b, a);
 
-	return M_LengthVec3Fixed(&diff);
+	return M_LengthVec3Fixed(diff);
 }
 
 //
@@ -523,11 +523,11 @@ ActorSnapshot P_ExtrapolateActorPosition(const ActorSnapshot &from, float amount
 	if (amount_fixed <= 0)
 		return from;
 	
-	v3fixed_t velocity, pos_new;
-	M_SetVec3Fixed(&pos_new, from.getX(), from.getY(), from.getZ());
-	M_SetVec3Fixed(&velocity, from.getMomX(), from.getMomY(), from.getMomZ());
-	M_ScaleVec3Fixed(&velocity, &velocity, amount_fixed);
-	M_AddVec3Fixed(&pos_new, &pos_new, &velocity);
+	Vec3<fixed_t> velocity, pos_new;
+	M_SetVec3Fixed(pos_new, from.getX(), from.getY(), from.getZ());
+	M_SetVec3Fixed(velocity, from.getMomX(), from.getMomY(), from.getMomZ());
+	M_ScaleVec3Fixed(velocity, velocity, amount_fixed);
+	M_AddVec3Fixed(pos_new, pos_new, velocity);
 			
 	ActorSnapshot newsnapshot(from);
 	newsnapshot.setAuthoritative(false);
@@ -568,9 +568,9 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 		return from;
 
 	// Calculate the distance between the positions
-	v3fixed_t pos_from, pos_to;
-	M_SetVec3Fixed(&pos_from, from.getX(), from.getY(), from.getZ());
-	M_SetVec3Fixed(&pos_to, to.getX(), to.getY(), to.getZ());
+	Vec3<fixed_t> pos_from, pos_to;
+	M_SetVec3Fixed(pos_from, from.getX(), from.getY(), from.getZ());
+	M_SetVec3Fixed(pos_to, to.getX(), to.getY(), to.getZ());
 	fixed_t pos_delta = P_PositionDifference(pos_from, pos_to);
 
 	#ifdef _SNAPSHOT_DEBUG_
@@ -590,10 +590,10 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 	}
 
 	// Calculate the interpolated position between pos_from and pos_to
-	v3fixed_t pos_new;
-	M_SubVec3Fixed(&pos_new, &pos_to, &pos_from);
-	M_ScaleVec3Fixed(&pos_new, &pos_new, amount_fixed);
-	M_AddVec3Fixed(&pos_new, &pos_new, &pos_from);
+	Vec3<fixed_t> pos_new;
+	M_SubVec3Fixed(pos_new, pos_to, pos_from);
+	M_ScaleVec3Fixed(pos_new, pos_new, amount_fixed);
+	M_AddVec3Fixed(pos_new, pos_new, pos_from);
 	
 	#ifdef _SNAPSHOT_DEBUG_
 	DPrintf("Lerp: %d, Lerping to position (delta %d)\n",

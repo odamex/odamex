@@ -1982,12 +1982,12 @@ bool P_ShootLine(intercept_t* in)
 	if (precise && sec1->floorpic == skyflatnum && z < floorheight1)
 		return false;
 
-	v3fixed_t lineorg, linedir, puffpos;
+	Vec3<fixed_t> lineorg, linedir, puffpos;
 
 	// set origin vector for the bullet
-	M_SetVec3Fixed(&lineorg, trace.x, trace.y, shootz);
+	M_SetVec3Fixed(lineorg, trace.x, trace.y, shootz);
 	// set direction vector for the bullet
-	M_SetVec3Fixed(&linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));
+	M_SetVec3Fixed(linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));
 
 	if (precise && z > ceilingheight1)
 	{
@@ -2276,7 +2276,7 @@ static struct SRailHit {
 	AActor *hitthing;
 	fixed_t x,y,z;
 } *RailHits;
-static v3double_t RailEnd;
+static Vec3<double> RailEnd;
 
 BOOL PTR_RailTraverse (intercept_t *in)
 {
@@ -2303,9 +2303,9 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		fixed_t crossy = trace.y + FixedMul (trace.dy, in->frac);
 
 		// [SL] 2012-04-18 - origin and direction vectors for the shot
-		v3fixed_t lineorg, linedir;
-		M_SetVec3Fixed(&lineorg, trace.x, trace.y, shootz);
-		M_SetVec3Fixed(&linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));
+		Vec3<fixed_t> lineorg, linedir;
+		M_SetVec3Fixed(lineorg, trace.x, trace.y, shootz);
+		M_SetVec3Fixed(linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));
 
 		frac = in->frac;
 		z = shootz + FixedMul (aimslope, FixedMul (frac, attackrange));
@@ -2351,12 +2351,12 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		if (z < floorheight) {
 			// [SL] 2012-04-18 - Calculate where the the tracer intersects
 			// with the floor plane
-			v3fixed_t pt = P_LinePlaneIntersection(floorplane, lineorg, linedir);
+			Vec3<fixed_t> pt = P_LinePlaneIntersection(floorplane, lineorg, linedir);
 			x = pt.x;  y = pt.y;  z = pt.z;
 		} else if (z > ceilingheight) {
 			// [SL] 2012-04-18 - Calculate where the the tracer intersects
 			// with the ceiling plane
-			v3fixed_t pt = P_LinePlaneIntersection(ceilingplane, lineorg, linedir);
+			Vec3<fixed_t> pt = P_LinePlaneIntersection(ceilingplane, lineorg, linedir);
 			x = pt.x;  y = pt.y;  z = pt.z;
 		} else {
 			x = trace.x + FixedMul(trace.dx, frac);
@@ -2368,7 +2368,7 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		}
 
 		// Save final position of rail shot.
-		M_SetVec3(&RailEnd, x, y, z);
+		M_SetVec3(RailEnd, x, y, z);
 
 		// don't go any farther
 		return false;
@@ -2424,7 +2424,7 @@ BOOL PTR_RailTraverse (intercept_t *in)
 
 void P_RailAttack (AActor *source, int damage, int offset)
 {
-	v3double_t start, end;
+	Vec3<double> start, end;
 
 	int angleidx = (source->angle - ANG90) >> ANGLETOFINESHIFT;
 	fixed_t x1 = source->x + offset*finecosine[angleidx];
@@ -2440,15 +2440,15 @@ void P_RailAttack (AActor *source, int damage, int offset)
 	shootthing = source;
 	NumRailHits = 0;
 
-	M_SetVec3(&start, x1, y1, shootz);
+	M_SetVec3(start, x1, y1, shootz);
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse))
 	{
 		// Nothing hit, so just shoot the air
-		M_AngleToVec3(&end, source->angle, source->pitch);
+		M_AngleToVec3(end, source->angle, source->pitch);
 
-		M_ScaleVec3(&end, &end, 8192.0);
-		M_AddVec3(&end, &start, &end);
+		M_ScaleVec3(end, end, 8192.0);
+		M_AddVec3(end, start, end);
 	}
 	else
 	{
@@ -3483,12 +3483,11 @@ fixed_t P_CeilingHeight(const sector_t *sector)
 // of the plane.  In that case, a vector with the value MAXINT for all
 // components is returned.
 //
-v3fixed_t P_LinePlaneIntersection(const plane_t *plane,
-									const v3fixed_t &lineorg,
-									const v3fixed_t &linedir)
+Vec3<fixed_t> P_LinePlaneIntersection(const plane_t* plane, const Vec3<fixed_t>& lineorg,
+                                  const Vec3<fixed_t>& linedir)
 {
-	v3fixed_t pt;
-	M_SetVec3Fixed(&pt, MAXINT, MAXINT, MAXINT);	// marks as invalid
+	Vec3<fixed_t> pt;
+	M_SetVec3Fixed(pt, MAXINT, MAXINT, MAXINT);	// marks as invalid
 
 	if (!plane)		// sanity check
 		return pt;
@@ -3506,9 +3505,9 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane,
 		return pt;
 
 	fixed_t t = FixedDiv(numer, denom);
-	M_SetVec3Fixed(&pt, lineorg.x + FixedMul(t, linedir.x),
-						lineorg.y + FixedMul(t, linedir.y),
-						lineorg.z + FixedMul(t, linedir.z));
+	M_SetVec3Fixed(pt, lineorg.x + FixedMul(t, linedir.x),
+	               lineorg.y + FixedMul(t, linedir.y),
+	               lineorg.z + FixedMul(t, linedir.z));
 
 	return pt;
 }

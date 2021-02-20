@@ -266,8 +266,9 @@ bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointAbovePlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointBelowPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 
-struct v3fixed_t;
-v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
+
+Vec3<fixed_t> P_LinePlaneIntersection(const plane_t* plane, const Vec3<fixed_t>& lineorg,
+                                      const Vec3<fixed_t>& linedir);
 
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);

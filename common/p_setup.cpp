@@ -1895,13 +1895,13 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 	fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
 	fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
 
-	v3float_t p, v1, v2, cross;
-	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
-	M_SetVec3f(&v1, line->dx, line->dy, 0);
-	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
+	Vec3<float> p, v1, v2, cross;
+	M_SetVec3f(p, line->v1->x, line->v1->y, destheight);
+	M_SetVec3f(v1, line->dx, line->dy, 0);
+	M_SetVec3f(v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
 
-	M_CrossProductVec3f(&cross, &v1, &v2);
-	M_NormalizeVec3f(&cross, &cross);
+	M_CrossProductVec3f(cross, v1, v2);
+	M_NormalizeVec3f(cross, cross);
 
 	// Fix backward normals
 	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false))

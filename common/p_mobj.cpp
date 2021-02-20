@@ -2119,14 +2119,14 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (co_zdoomphys)
 	{
-		v3float_t velocity;
+		Vec3<float> velocity;
 		float speed = FIXED2FLOAT (th->info->speed);
 
 		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
 		velocity.z = FIXED2FLOAT (slope);
 
-		M_NormalizeVec3f(&velocity, &velocity);
+		M_NormalizeVec3f(velocity, velocity);
 
 		th->momx = FLOAT2FIXED (velocity.x * speed);
 		th->momy = FLOAT2FIXED (velocity.y * speed);
