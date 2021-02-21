@@ -947,18 +947,9 @@ namespace
 		return str;
 	}
 
-	// this function exists because stricmp wasn't working for this one case
 	bool UpperCompareToken(OScanner& os, const char* str)
 	{
-		char p[64];
-		char q[64];
-
-		uppercopy(p, os.getToken().c_str());
-		uppercopy(q, str);
-
-		bool result = (strcmp(p, q) != 0) ? false : true;
-
-		return result;
+		return stricmp(os.getToken().c_str(), str) == 0;
 	}
 
 	// used for munching the strings in UMAPINFO
@@ -1775,7 +1766,7 @@ static void ParseEpisodeInfo(OScanner &os)
 	map[8] = 0;
 	
 	MustGetString(os);
-	if (os.compareToken("teaser"))
+	if (UpperCompareToken(os, "teaser"))
 	{
 		// Teaser lump
 		MustGetString(os);
@@ -1815,7 +1806,7 @@ static void ParseEpisodeInfo(OScanner &os)
 				break;
 			}
 		}
-		else if (os.compareToken("name"))
+		else if (UpperCompareToken(os, "name"))
 		{
 			if (new_mapinfo == true)
 			{
@@ -1827,7 +1818,7 @@ static void ParseEpisodeInfo(OScanner &os)
 				pic = os.getToken();
 			}
 		}
-		else if (os.compareToken("lookup"))
+		else if (UpperCompareToken(os, "lookup"))
 		{
 			if (new_mapinfo == true)
 			{
@@ -1837,7 +1828,7 @@ static void ParseEpisodeInfo(OScanner &os)
 			
 			// Not implemented
 		}
-		else if (os.compareToken("picname"))
+		else if (UpperCompareToken(os, "picname"))
 		{
 			if (new_mapinfo == true)
 			{
@@ -1847,7 +1838,7 @@ static void ParseEpisodeInfo(OScanner &os)
 			pic = os.getToken();
 			picisgfx = true;
 		}
-		else if (os.compareToken("key"))
+		else if (UpperCompareToken(os, "key"))
 		{
 			if (new_mapinfo == true)
 			{
@@ -1856,19 +1847,19 @@ static void ParseEpisodeInfo(OScanner &os)
 			MustGetString(os);
 			key = os.getToken()[0];
 		}
-		else if (os.compareToken("remove"))
+		else if (UpperCompareToken(os, "remove"))
 		{
 			remove = true;
 		}
-		else if (os.compareToken("noskillmenu"))
+		else if (UpperCompareToken(os, "noskillmenu"))
 		{
 			noskillmenu = true;
 		}
-		else if (os.compareToken("optional"))
+		else if (UpperCompareToken(os, "optional"))
 		{
 			optional = true;
 		}
-		else if (os.compareToken("extended"))
+		else if (UpperCompareToken(os, "extended"))
 		{
 			extended = true;
 		}
@@ -1929,6 +1920,86 @@ static void ParseEpisodeInfo(OScanner &os)
 	}
 }
 
+static void ParseGameInfo(OScanner &os)
+{
+	MustGetStringName(os, "{");
+
+	while (os.scan())
+	{
+		if (UpperCompareToken(os, "{"))
+		{
+			// Detected new-style MAPINFO
+			I_Error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+		}
+		else if (UpperCompareToken(os, "}"))
+		{
+			break;
+		}
+		else if (UpperCompareToken(os, "advisorytime"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			gameinfo.advisoryTime = GetTokenAsFloat(os);
+		}
+		else if (UpperCompareToken(os, "chatsound"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			strncpy(gameinfo.chatSound, os.getToken().c_str(), 16);
+		}
+		else if (UpperCompareToken(os, "pagetime"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			gameinfo.pageTime = GetTokenAsFloat(os);
+		}
+		else if (UpperCompareToken(os, "finaleflat"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			strncpy(gameinfo.finaleFlat, os.getToken().c_str(), 8);
+		}
+		else if (UpperCompareToken(os, "finalemusic"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			strncpy(gameinfo.finaleMusic, os.getToken().c_str(), 8);
+		}
+		else if (UpperCompareToken(os, "titlemusic"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			strncpy(gameinfo.titleMusic, os.getToken().c_str(), 8);
+		}
+		else if (UpperCompareToken(os, "titlepage"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			strncpy(gameinfo.titlePage, os.getToken().c_str(), 8);
+		}
+		else if (UpperCompareToken(os, "titletime"))
+		{
+			MustGetStringName(os, "=");
+			os.scan();
+
+			gameinfo.titleTime = GetTokenAsFloat(os);
+		}
+		else
+		{
+			// Game info property is not implemented
+			MustGetStringName(os, "=");
+			os.scan();
+		}
+	}
+}
+
 static void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -1948,7 +2019,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 
 	while (os.scan())
 	{
-		if (os.compareToken("defaultmap"))
+		if (UpperCompareToken(os,"defaultmap"))
 		{
 			SetLevelDefaults(&defaultinfo);
 			tagged_info_t tinfo;
@@ -1956,7 +2027,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			tinfo.level = &defaultinfo;
 			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0, os);
 		}
-		else if (os.compareToken("map"))
+		else if (UpperCompareToken(os, "map"))
 		{
 			DWORD levelflags = defaultinfo.flags;
 			MustGetString(os);
@@ -2021,7 +2092,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				MapNameToLevelNum(info);
 			}
 		}
-		else if (os.compareToken("cluster") || os.compareToken("clusterdef"))
+		else if (UpperCompareToken(os, "cluster") || UpperCompareToken(os, "clusterdef"))
 		{
 			MustGetInt(os);
 
@@ -2036,38 +2107,37 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			tinfo.cluster = &info;
 			ParseMapInfoLower(ClusterHandlers, MapInfoClusterLevel, &tinfo, 0, os);
 		}
-		else if (os.compareToken("episode"))
+		else if (UpperCompareToken(os, "episode"))
 		{
 			ParseEpisodeInfo(os);
 		}
-		else if (os.compareToken("clearepisodes"))
+		else if (UpperCompareToken(os, "clearepisodes"))
 		{
 			episodenum = 0;
 			// Set this for UMAPINFOs sake (UMAPINFO doesn't consider Doom 2's episode a real episode)
 			episodes_modified = false;
 		}
-		else if (os.compareToken("skill"))
+		else if (UpperCompareToken(os, "skill"))
 		{
 			// Not implemented
 			MustGetString(os); // Name
 			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
 		}
-		else if (os.compareToken("clearskills"))
+		else if (UpperCompareToken(os, "clearskills"))
 		{
 			// Not implemented
 		}
-		else if (os.compareToken("gameinfo"))
+		else if (UpperCompareToken(os, "gameinfo"))
 		{
-			// Not implemented
-			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+			ParseGameInfo(os);
 		}
-		else if (os.compareToken("intermission"))
+		else if (UpperCompareToken(os, "intermission"))
 		{
 			// Not implemented
 			MustGetString(os); // Name
 			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
 		}
-		else if (os.compareToken("automap"))
+		else if (UpperCompareToken(os, "automap"))
 		{
 			// Not implemented
 			ParseMapInfoLower(NULL, NULL, NULL, 0, os);
