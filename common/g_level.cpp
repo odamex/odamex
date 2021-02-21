@@ -874,7 +874,7 @@ namespace
 		if (os.compareToken(name) == false)
 		{
 			// TODO: was previously SC_ScriptError, less information is printed now
-			I_Error("Expected '%s', got '%s'.", name, os.getToken());
+			I_Error("Expected '%s', got '%s'.", name, os.getToken().c_str());
 		}
 	}
 
