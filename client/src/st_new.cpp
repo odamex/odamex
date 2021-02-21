@@ -453,23 +453,32 @@ void ST_voteDraw (int y) {
 			   (I_GetSurfaceWidth() >> 1), y, xscale * 40, false, true);
 }
 
+#include "c_console.h"
+
 /**
  * @brief Draw the chat window.
  */
 void HU_ChatWindow()
 {
+	const Chatlog& log = C_GetChatLog();
+
 	OFont* font = V_GetFont(FONT_DIGFONT);
 	FontParams params(*font);
-	params.color(CR_GREEN)->lineHeight(font->lineHeight() * 2);
+	params.color(CR_GREY);
 	OGUIContext ctx;
 
-	DGUIParagraph* text = new DGUIParagraph(
-	    ctx, "[UD]AlexMax: We can do better than interfaces from 1997", params);
-
 	DGUIDim dim(ctx, "00 00 00", 0.75);
-	dim.size(200, 200);
-	dim.push_back(text);
+	dim.contain(LAY_FLEX | LAY_COLUMN);
+	dim.size(300, 0);
 
+	for (size_t i = 0; i < 10; i++)
+	{
+		if (i >= log.size())
+			break;
+
+		DGUIParagraph* text = new DGUIParagraph(ctx, log.at(i).line, params);
+		dim.push_back(text);
+	}
 	dim.layout();
 	lay_run_context(ctx.layoutAddr());
 	dim.render();

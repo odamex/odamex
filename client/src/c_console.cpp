@@ -102,6 +102,8 @@ EXTERN_CVAR(message_showobituaries)
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
 
+Chatlog chatlog;
+
 #define NUMNOTIFIES 4
 
 int V_TextScaleXAmount();
@@ -1077,6 +1079,32 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	}
 }
 
+/**
+ * @brief Add a chat string to a buffer where the chat window can display it.
+ * 
+ * @param printlevel Print level of message.
+ * @param source Actual message.
+ */
+void C_AddChatString(printlevel_t printlevel, const std::string& source)
+{
+	const size_t HISTORY_SIZE = 4096;
+
+	ChatLine chatline = {printlevel, source};
+	::chatlog.push_front(chatline);
+	if (::chatlog.size() > HISTORY_SIZE)
+	{
+		::chatlog.resize(HISTORY_SIZE);
+	}
+}
+
+/**
+ * @brief Get the chatlog buffer.
+ */
+const Chatlog& C_GetChatLog()
+{
+	return ::chatlog;
+}
+
 //
 // C_PrintStringStdOut
 //
@@ -1110,8 +1138,11 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	if (printlevel == PRINT_OBITUARY && !message_showobituaries)
 		return 0;
 
-	if (I_VideoInitialized() && !midprinting)
+	if (printlevel == PRINT_PICKUP && I_VideoInitialized() && !midprinting)
 		C_AddNotifyString(printlevel, color_code, outline);
+
+	if (printlevel != PRINT_PICKUP)
+		C_AddChatString(static_cast<printlevel_t>(printlevel), outline);
 
 	// Revert filtered chat to a normal chat to display to the console
 	if (printlevel == PRINT_FILTERCHAT)

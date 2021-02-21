@@ -43,6 +43,14 @@ typedef enum cstate_t {
 
 extern constate_e	ConsoleState;
 
+struct ChatLine
+{
+	printlevel_t level;
+	std::string line;
+};
+
+typedef std::deque<ChatLine> Chatlog;
+
 // Initialize the console
 void C_InitConsole();
 void STACK_ARGS C_ShutdownConsole();
@@ -62,6 +70,8 @@ int PrintString (int printlevel, const char *string);
 int STACK_ARGS Printf_Bold (const char *format, ...);
 
 void C_AddNotifyString (int printlevel, const char *s);
+void C_AddChatString(printlevel_t printlevel, const std::string& source);
+const Chatlog& C_GetChatLog();
 void C_DrawConsole (void);
 void C_ToggleConsole (void);
 void C_FullConsole (void);
