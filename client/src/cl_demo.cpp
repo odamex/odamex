@@ -721,6 +721,9 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 
 void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
+	if (type == NetDemo::msg_snapshot)
+		Printf("Wrote snapshot: %zu\n", size);
+
 	message_header_t msgheader;
 	memset(&msgheader, 0, sizeof(msgheader));
 	
@@ -784,11 +787,10 @@ void NetDemo::writeMessages()
 
 	if (atSnapshotInterval())
 	{
-		size_t length;
-		writeSnapshotData(snapbuf, length);
+		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
 			
-		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 
 	if (connected)
@@ -1337,21 +1339,19 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	netdemo_message_t type;
 	uint32_t len = 0, tic = 0;
 	readMessageHeader(type, len, tic);
+	
+	// Clear the snapshot buffer and read into it.
+	snapbuf.clear();
+	snapbuf.resize(len);
 
-	if (len > NetDemo::MAX_SNAPSHOT_SIZE)
-	{
-		fatalError("Snapshot too large to read");
-		return;
-	}
-		
-	size_t cnt = fread(snapbuf, 1, len, demofp);
+	size_t cnt = fread(snapbuf.data(), 1, len, demofp);
 	if (cnt < len)
 	{
 		fatalError("Unable to read snapshot from data file");
 		return;
 	}
 
-	readSnapshotData(snapbuf, len);
+	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
 }
 
@@ -1407,12 +1407,11 @@ void NetDemo::writeMapChange()
 {
 	if (connected && gamestate == GS_LEVEL)
 	{
-		size_t length;
-		writeSnapshotData(snapbuf, length);
+		writeSnapshotData(snapbuf);
 		writeMapIndexEntry();
 		writeSnapshotIndexEntry();
 		
-		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 }
 
@@ -1420,11 +1419,10 @@ void NetDemo::writeIntermission()
 {
 	if (connected && gamestate == GS_INTERMISSION)
 	{
-		size_t length;
-		writeSnapshotData(snapbuf, length);
+		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
 		
-		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 }
 
@@ -1436,7 +1434,7 @@ void NetDemo::writeIntermission()
 //   writing the connection sequence at the start of a netdemo.
 //
 
-void NetDemo::writeSnapshotData(byte *buf, size_t &length)
+void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 {
 	G_SnapshotLevel();
 
@@ -1499,9 +1497,9 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 
 	arc.Close();
 
-	// get the size of the snapshot data	
-	length = memfile.Length();
-	memfile.WriteToBuffer(buf, NetDemo::MAX_SNAPSHOT_SIZE);
+	// Resize the snapshot buffer to hold our snapshot size.
+	buf.resize(memfile.Length());
+	memfile.WriteToBuffer(buf.data(), buf.size());
 			
     if (level.info->snapshot != NULL)
     {
@@ -1511,7 +1509,7 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 }
 
 
-void NetDemo::readSnapshotData(byte *buf, size_t length)
+void NetDemo::readSnapshotData(std::vector<byte>& buf)
 {
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
@@ -1531,8 +1529,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	
 	FLZOMemFile memfile;
 	
-	length = 0;
-	memfile.Open(buf);		// open for reading
+	memfile.Open(buf.data()); // open for reading
 
 	FArchive arc(memfile);
 
