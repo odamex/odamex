@@ -30,14 +30,89 @@
 
 #include "doomtype.h"
 #include "v_palette.h"
+#include "v_textcolors.h"
 #include "doomdef.h"
+#include "m_vectors.h"
 
 // Needed because we are refering to patches.
 #include "r_data.h"
 
 class IWindowSurface;
+class OFont;
 
 extern int CleanXfac, CleanYfac;
+
+class FontParams
+{
+	OFont& m_font;
+	int m_lineHeight;
+	EColorRange m_color;
+	float m_opacity;
+	Vec2<int> m_targetRes;
+
+  public:
+	FontParams(OFont& font)
+	    : m_font(font), m_lineHeight(0), m_color(CR_UNTRANSLATED), m_opacity(1.0f),
+	      m_targetRes(Vec2<int>(0, 0))
+	{
+	}
+
+	const OFont& getFont() const
+	{
+		return m_font;
+	}
+
+	FontParams* lineHeight(int height)
+	{
+		m_lineHeight = height;
+		return this;
+	}
+
+	int getLineHeight() const
+	{
+		return m_lineHeight;
+	}
+
+	FontParams* color(EColorRange color)
+	{
+		if (color < 0 || color >= NUM_TEXT_COLORS)
+		{
+			m_color = CR_UNTRANSLATED;
+		}
+		else
+		{
+			m_color = color;
+		}
+		return this;
+	}
+
+	const EColorRange getColor() const
+	{
+		return m_color;
+	}
+
+	FontParams* opacity(float opacity)
+	{
+		m_opacity = clamp(opacity, 0.0f, 1.0f);
+		return this;
+	}
+
+	float getOpacity() const
+	{
+		return m_opacity;
+	}
+
+	FontParams* targetRes(const Vec2<int>& targetRes)
+	{
+		m_targetRes = targetRes;
+		return this;
+	}
+
+	const Vec2<int>& getTargetRes() const
+	{
+		return m_targetRes;
+	}
+};
 
 //
 // VIDEO
@@ -103,7 +178,9 @@ public:
 	// Output a line of text using the console font
 	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true) const;
 
-	// Output some text with wad heads-up font
+	// Output some text with wad heads-up font (located in v_text.cpp)
+	void DrawText(const char* string, Vec2<int> pos, const FontParams& params) const;
+
 	inline void DrawText (int normalcolor, int x, int y, const byte *string) const;
 	inline void DrawTextLuc (int normalcolor, int x, int y, const byte *string) const;
 	inline void DrawTextClean (int normalcolor, int x, int y, const byte *string) const;		// Does not adjust x and y

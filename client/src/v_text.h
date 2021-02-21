@@ -29,6 +29,9 @@
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
+#include "m_vectors.h"
+
+class FontParams;
 
 enum font_e
 {
@@ -57,7 +60,7 @@ class OFont
 	 * @param cp Codepoint to look up.
 	 * @return Patch that should be rendered.
 	 */
-	patch_t* at(int cp)
+	patch_t* at(int cp) const
 	{
 		cp -= HU_FONTSTART;
 		clamp(cp, 0, HU_FONTSIZE - 1);
@@ -70,7 +73,7 @@ class OFont
 	 * @detail It is a reasonable expectation that an M is in the font and
 	 *         that it extends from the cap height to the baseline.
 	 */
-	int lineHeight()
+	int lineHeight() const
 	{
 		return at('M')->height();
 	}
@@ -78,7 +81,7 @@ class OFont
 	/**
 	 * @brief Return a reasonable width of a space.
 	 */
-	int spaceWidth()
+	int spaceWidth() const
 	{
 		return 4;
 	}
@@ -106,5 +109,7 @@ void V_FreeBrokenLines (brokenlines_t *lines);
 inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, (const byte *)str); }
 
 int V_GetTextColor(const char* str);
+
+Vec2<int> V_TextExtent(const char* string, const FontParams& params);
 
 #endif //__V_TEXT_H__

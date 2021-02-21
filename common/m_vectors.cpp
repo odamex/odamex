@@ -244,6 +244,17 @@ void M_SubVec3Fixed(Vec3<fixed_t>& dest, const Vec3<fixed_t>& v1, const Vec3<fix
 }
 
 //
+// M_MulVec2f
+//
+// Multiply v1 by v2 component-wise.  Stores in dest.
+//
+void M_MulVec2f(Vec2<float>& dest, const Vec2<float>& v1, const Vec2<float>& v2)
+{
+	dest.x = v1.x * v2.x;
+	dest.y = v1.y * v2.y;
+}
+
+//
 // M_LengthVec3f
 //
 // Returns the length of a given vector (relative to the origin).  Taken from

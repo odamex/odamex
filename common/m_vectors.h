@@ -148,6 +148,8 @@ void M_SubVec2Fixed(Vec2<fixed_t>& dest, const Vec2<fixed_t>& v1,
 void M_SubVec3Fixed(Vec3<fixed_t>& dest, const Vec3<fixed_t>& v1,
                     const Vec3<fixed_t>& v2);
 
+void M_MulVec2f(Vec2<float>& dest, const Vec2<float>& v1, const Vec2<float>& v2);
+
 //
 // M_LengthVec3f
 //
@@ -252,5 +254,34 @@ void M_RotatePointAroundVector(Vec3<double>& dest, const Vec3<double>& dir,
 //
 void M_TranslateVec3f(Vec3<float>& vec, const Vec3<float>& origin, angle_t ang);
 void M_TranslateVec3(Vec3<double>& vec, const Vec3<double>& origin, angle_t ang);
+
+/**
+ * Check if point is inside rectangle.
+ *
+ * The two points on the rectangle can be passed using any orientation.
+ *
+ * @param p Point to check.
+ * @param a Origin point of rectangle.
+ * @param b Opposite point of rectangle.
+ */
+template <typename T>
+bool M_PointInRect(Vec2<T> p, Vec2<T> a, Vec2<T> b)
+{
+	const T minX = MIN(a.x, b.x);
+	const T maxX = MAX(a.x, b.x);
+	const T minY = MIN(a.y, b.y);
+	const T maxY = MAX(a.y, b.y);
+
+	if (p.x < minX || p.x > maxX)
+	{
+		return false;
+	}
+	if (p.y < minY || p.y > maxY)
+	{
+		return false;
+	}
+
+	return true;
+}
 
 #endif //__M_VECTORS_H__

@@ -440,6 +440,204 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 // Write a string using the hu_font
 //
 
+/**
+ * @brief Draw a line of text using a composed set of parameters.
+ * 
+ * @detail This function gives you much more flexability over the scale of
+ *         the font, but in return it will ignore newlines, since reflowing
+ *         text is the job of the caller.
+ * 
+ *         If you update this method, please update V_TextSize to match.
+ * 
+ * @param string Null-terminated string to draw.
+ * @param pos Upper left position of the string to draw.
+ * @param params Parameters to use for drawing.
+ */
+void DCanvas::DrawText(const char* string, Vec2<int> pos, const FontParams& params) const
+{
+	const OFont& font = params.getFont();
+	int lineHeight = params.getLineHeight();
+	EColorRange color = params.getColor();
+	float opacity = params.getOpacity();
+	Vec2<int> targetRes = params.getTargetRes();
+
+	// Scale starts at 1.
+	Vec2<float> scale(1.0f, 1.0f);
+
+	// Tune line height into a scale and scale both dirs by it.
+	if (lineHeight == 0)
+	{
+		lineHeight = font.lineHeight();
+	}
+	M_MulVec2f(scale, scale,
+	           Vec2<float>(static_cast<float>(lineHeight) / font.lineHeight(),
+	                       static_cast<float>(lineHeight) / font.lineHeight()));
+
+	// Turn our target resolution into a scale and scale both dirs by it.
+	if (targetRes.x == 0)
+	{
+		targetRes.x = I_GetSurfaceWidth();
+	}
+	else
+	{
+		targetRes.x = clamp(targetRes.x, 320, I_GetSurfaceWidth());
+	}
+
+	if (targetRes.y == 0)
+	{
+		targetRes.y = I_GetSurfaceHeight();
+	}
+	else
+	{
+		targetRes.y = clamp(targetRes.y, 200, I_GetSurfaceHeight());
+	}
+	M_MulVec2f(scale, scale,
+	           Vec2<float>(static_cast<float>(targetRes.x) / I_GetSurfaceWidth(),
+	                       static_cast<float>(targetRes.y) / I_GetSurfaceHeight()));
+
+	::V_ColorMap = translationref_t(::Ranges + color * 256);
+
+	Vec2<int> current = pos;
+
+	const char* str = string;
+	for (;;)
+	{
+		// End of the string.
+		if (str[0] == '\0')
+			break;
+
+		// Parse a translation.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			int new_color = V_GetTextColor(str);
+			::V_ColorMap = translationref_t(::Ranges + new_color * 256);
+			str += 2;
+			continue;
+		}
+
+		char ch = toupper(str[0]);
+		str++;
+
+		// Detect if we need to skip past a space.  Unlike the old drawer,
+		// we do not handle newlines automatically.
+		if (ch < HU_FONTSTART || ch > HU_FONTEND)
+		{
+			current.x += font.spaceWidth() * scale.y;
+			continue;
+		}
+
+		// Width and height of the final patch.
+		int width = font.at(ch)->width() * scale.x;
+		int height = font.at(ch)->height() * scale.y;
+
+		// Extent of the screen.
+		Vec2<int> screentl(0, 0);
+		Vec2<int> screenbr(I_GetSurfaceWidth(), I_GetSurfaceHeight());
+
+		// Check if the extent of the patch is in-bounds.
+		bool inside =
+		    M_PointInRect(Vec2<int>(current.x, current.y), screentl, screenbr) &&
+		    M_PointInRect(Vec2<int>(current.x + width, current.y + height), screentl,
+		                  screenbr);
+
+		if (inside)
+		{
+			DrawSWrapper(DCanvas::EWrapper_Translated, ::hu_font->at(ch), current.x,
+			             current.y, width, height);
+			current.x += width;
+		}
+	}
+}
+
+/**
+ * @brief Measure how large the text would be given the passed parameters.
+ * 
+ * @detail The origin is assumed to be at (0, 0) and does not take into account
+ *         any sort of truncation due to running off the end of the screen.
+ * 
+ * @param string Null-terminated string to draw.
+ * @param params Parameters to use for drawing.
+ */
+Vec2<int> V_TextExtent(const char* string, const FontParams& params)
+{
+	const OFont& font = params.getFont();
+	int lineHeight = params.getLineHeight();
+	EColorRange color = params.getColor();
+	float opacity = params.getOpacity();
+	Vec2<int> targetRes = params.getTargetRes();
+
+	// Scale starts at 1.
+	Vec2<float> scale(1.0f, 1.0f);
+
+	// Tune line height into a scale and scale both dirs by it.
+	if (lineHeight == 0)
+	{
+		lineHeight = font.lineHeight();
+	}
+	M_MulVec2f(scale, scale,
+	           Vec2<float>(static_cast<float>(lineHeight) / font.lineHeight(),
+	                       static_cast<float>(lineHeight) / font.lineHeight()));
+
+	// Turn our target resolution into a scale and scale both dirs by it.
+	if (targetRes.x == 0)
+	{
+		targetRes.x = I_GetSurfaceWidth();
+	}
+	else
+	{
+		targetRes.x = clamp(targetRes.x, 320, I_GetSurfaceWidth());
+	}
+
+	if (targetRes.y == 0)
+	{
+		targetRes.y = I_GetSurfaceHeight();
+	}
+	else
+	{
+		targetRes.y = clamp(targetRes.y, 200, I_GetSurfaceHeight());
+	}
+	M_MulVec2f(scale, scale,
+	           Vec2<float>(static_cast<float>(targetRes.x) / I_GetSurfaceWidth(),
+	                       static_cast<float>(targetRes.y) / I_GetSurfaceHeight()));
+
+	Vec2<int> extent(0, 0);
+
+	const char* str = string;
+	for (;;)
+	{
+		// End of the string.
+		if (str[0] == '\0')
+			break;
+
+		// Parse a translation.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		char ch = toupper(str[0]);
+		str++;
+
+		// Detect if we need to skip past a space.  Unlike the old drawer,
+		// we do not handle newlines automatically.
+		if (ch < HU_FONTSTART || ch > HU_FONTEND)
+		{
+			extent.x += font.spaceWidth() * scale.y;
+			continue;
+		}
+
+		// Width and height of the final patch.
+		int width = font.at(ch)->width() * scale.x;
+		int height = font.at(ch)->height() * scale.y;
+
+		extent.x += width;
+		extent.y = MAX(extent.y, height);
+	}
+
+	return extent;
+}
+
 void DCanvas::TextWrapper(EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
 	TextSWrapper(drawer, normalcolor, x, y, string, 1, 1);
