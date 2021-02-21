@@ -148,14 +148,14 @@ bool R_CheckProjectionX(int &x1, int &x2);
 bool R_CheckProjectionY(int &y1, int &y2);
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
-bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip);
+bool R_ClipLineToFrustum(const Vec2<fixed_t>* v1, const Vec2<fixed_t>* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip);
 
-void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+void R_ClipLine(const Vec2<fixed_t>* in1, const Vec2<fixed_t>* in2, 
 				int32_t lclip, int32_t rclip,
-				v2fixed_t* out1, v2fixed_t* out2);
+				Vec2<fixed_t>* out1, Vec2<fixed_t>* out2);
 void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 				int32_t lclip, int32_t rclip,
-				v2fixed_t* out1, v2fixed_t* out2);
+				Vec2<fixed_t>* out1, Vec2<fixed_t>* out2);
 
 subsector_t*
 R_PointInSubsector
@@ -271,6 +271,6 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 }
 
 
-void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);
+void R_DrawLine(const Vec3<fixed_t>* inpt1, const Vec3<fixed_t>* inpt2, byte color);
 
 #endif // __R_MAIN_H__

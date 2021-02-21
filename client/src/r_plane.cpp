@@ -106,7 +106,7 @@ static fixed_t			pl_viewsin, pl_viewcos;
 static fixed_t			pl_viewxtrans, pl_viewytrans;
 static fixed_t			pl_xstepscale, pl_ystepscale;
 
-v3float_t				a, b, c;
+Vec3<float>				a, b, c;
 float					ixscale, iyscale;
 
 //
@@ -134,14 +134,14 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 		return;
 
 	// center of the view plane
-	v3float_t s;
+	Vec3<float> s;
 	s.x = x1 - centerx;
 	s.y = y - centery + 1.0f;
 	s.z = xfoc; 
 
-	dspan.iu = M_DotProductVec3f(&s, &a) * flatwidth;
-	dspan.iv = M_DotProductVec3f(&s, &b) * flatheight;
-	dspan.id = M_DotProductVec3f(&s, &c);
+	dspan.iu = M_DotProductVec3f(s, a) * flatwidth;
+	dspan.iv = M_DotProductVec3f(s, b) * flatheight;
+	dspan.id = M_DotProductVec3f(s, c);
 	
 	dspan.iustep = a.x * flatwidth;
 	dspan.ivstep = b.x * flatheight;
@@ -439,8 +439,8 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	const float scaledflatwidth = flatwidth * FIXED2FLOAT(pl->xscale);
 	const float scaledflatheight = flatheight * FIXED2FLOAT(pl->yscale);
 
-	v3float_t p, t, s, viewpos;
-	M_SetVec3f(&viewpos, viewx, viewy, viewz);
+	Vec3<float> p, t, s, viewpos;
+	M_SetVec3f(viewpos, viewx, viewy, viewz);
 
 	// [SL] optimize when the texture rotation angle is zero (most of the time)
 	// This eliminates several multiplies and improves visibile accuracy as the
@@ -492,21 +492,21 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
 	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
-	M_TranslateVec3f(&p, &viewpos, rotation);
-	M_TranslateVec3f(&t, &viewpos, rotation);
-	M_TranslateVec3f(&s, &viewpos, rotation);
+	M_TranslateVec3f(p, viewpos, rotation);
+	M_TranslateVec3f(t, viewpos, rotation);
+	M_TranslateVec3f(s, viewpos, rotation);
 	
 	// Subtract p from t and s, making t and s into direction vectors
-	M_SubVec3f(&t, &t, &p);
-	M_SubVec3f(&s, &s, &p);
+	M_SubVec3f(t, t, p);
+	M_SubVec3f(s, s, p);
 	
-	M_CrossProductVec3f(&a, &p, &s);
-	M_CrossProductVec3f(&b, &t, &p);
-	M_CrossProductVec3f(&c, &t, &s);
+	M_CrossProductVec3f(a, p, s);
+	M_CrossProductVec3f(b, t, p);
+	M_CrossProductVec3f(c, t, s);
 
-	M_ScaleVec3f(&a, &a, 0.5f);
-	M_ScaleVec3f(&b, &b, 0.5f);
-	M_ScaleVec3f(&c, &c, 0.5f);
+	M_ScaleVec3f(a, a, 0.5f);
+	M_ScaleVec3f(b, b, 0.5f);
+	M_ScaleVec3f(c, c, 0.5f);
 
 	a.y *= ifocratio;
 	b.y *= ifocratio;

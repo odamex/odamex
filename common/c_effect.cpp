@@ -299,16 +299,16 @@ void P_ThinkParticles (void)
 }
 
 
-void P_DrawRailTrail(v3double_t &start, v3double_t &end)
+void P_DrawRailTrail(Vec3<double>& start, Vec3<double>& end)
 {
 	if (!clientside)
 		return;
 
-	v3double_t step, dir, pos, extend, point;
+	Vec3<double> step, dir, pos, extend, point;
 
-	M_SubVec3(&dir, &end, &start);
+	M_SubVec3(dir, end, start);
 
-	double length = M_LengthVec3(&dir);
+	double length = M_LengthVec3(dir);
 	int steps = (int)(length*0.3333);
 
 	if (!length)	// line is 0 length, so nothing to do
@@ -336,18 +336,18 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 		double r = ((start.y - FIXED2FLOAT(mo->y)) * (-dir.y) -
 				(start.x - FIXED2FLOAT(mo->x)) * (dir.x)) * ilength * ilength;
 
-		M_ScaleVec3(&point, &dir, r);
-		M_AddVec3(&point, &start, &point);
+		M_ScaleVec3(point, dir, r);
+		M_AddVec3(point, start, point);
 		point.z = start.z;
 
 		S_Sound (FLOAT2FIXED(point.x), FLOAT2FIXED(point.y),
 			CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
 	}
 
-	M_ScaleVec3(&dir, &dir, ilength);
-	M_PerpendicularVec3(&extend, &dir);
-	M_ScaleVec3(&extend, &extend, 3.0);
-	M_ScaleVec3(&step, &dir, 3.0);
+	M_ScaleVec3(dir, dir, ilength);
+	M_PerpendicularVec3(extend, dir);
+	M_ScaleVec3(extend, extend, 3.0);
+	M_ScaleVec3(step, dir, 3.0);
 
 	pos = start;
 
@@ -363,20 +363,20 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 		p->fade = FADEFROMTTL(35);
 		p->size = 3;
 
-		v3double_t tempvec;
-		M_RotatePointAroundVector(&tempvec, &dir, &extend, deg);
+		Vec3<double> tempvec;
+		M_RotatePointAroundVector(tempvec, dir, extend, deg);
 
 		p->velx = FLOAT2FIXED(tempvec.x)>>4;
 		p->vely = FLOAT2FIXED(tempvec.y)>>4;
 		p->velz = FLOAT2FIXED(tempvec.z)>>4;
-		M_AddVec3(&tempvec, &tempvec, &pos);
+		M_AddVec3(tempvec, tempvec, pos);
 		deg += 14;
 		if (deg >= 360)
 			deg -= 360;
 		p->x = FLOAT2FIXED(tempvec.x);
 		p->y = FLOAT2FIXED(tempvec.y);
 		p->z = FLOAT2FIXED(tempvec.z);
-		M_AddVec3(&pos, &pos, &step);
+		M_AddVec3(pos, pos, step);
 
 		int rand = M_Random();
 
@@ -403,7 +403,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 		p->y = FLOAT2FIXED(pos.y);
 		p->z = FLOAT2FIXED(pos.z);
 		p->accz -= FRACUNIT/4096;
-		M_AddVec3(&pos, &pos, &step);
+		M_AddVec3(pos, pos, step);
 
 		int rand = M_Random();
 

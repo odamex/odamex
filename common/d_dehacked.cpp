@@ -658,7 +658,7 @@ static void BackupData (void)
 	BackedUpData = true;
 }
 
-void UndoDehPatch ()
+void D_UndoDehPatch()
 {
 	int i;
 
@@ -669,10 +669,10 @@ void UndoDehPatch ()
 //		OrgSfxNames[i] = S_sfx[i].name;
 
 	for (i = 0; i < NUMSPRITES; i++)
-		OrgSprNames[i] = sprnames[i];
+		::sprnames[i] = ::OrgSprNames[i];
 
 	for (i = 0; i < NUMSTATES; i++)
-		OrgActionPtrs[i] = states[i].action;
+		::states[i].action = ::OrgActionPtrs[i];
 
 	memcpy(states, backupStates, sizeof(states));
 
@@ -1702,39 +1702,56 @@ static int PatchStrings (int dummy)
 	return result;
 }
 
-static int DoInclude (int dummy)
+static int DoInclude(int dummy)
 {
-	char *data;
+	char* data;
 	int savedversion, savepversion;
 	char *savepatchfile, *savepatchpt;
+	OWantFile want;
+	OResFile res;
 
-	if (including) {
-		DPrintf ("Sorry, can't nest includes\n");
+	if (including)
+	{
+		DPrintf("Sorry, can't nest includes\n");
 		goto endinclude;
 	}
 
-	data = COM_Parse (Line2);
-	if (!stricmp (com_token, "notext")) {
+	data = COM_Parse(Line2);
+	if (!stricmp(com_token, "notext"))
+	{
 		includenotext = true;
-		data = COM_Parse (data);
+		data = COM_Parse(data);
 	}
 
-	if (!com_token[0]) {
+	if (!com_token[0])
+	{
 		includenotext = false;
-		DPrintf ("Include directive is missing filename\n");
+		DPrintf("Include directive is missing filename\n");
 		goto endinclude;
 	}
 
-	DPrintf ("Including %s\n", com_token);
+	DPrintf("Including %s\n", com_token);
 	savepatchfile = PatchFile;
 	savepatchpt = PatchPt;
 	savedversion = dversion;
 	savepversion = pversion;
 	including = true;
 
-	DoDehPatch (com_token, false);
+	if (!OWantFile::make(want, com_token, OFILE_DEH))
+	{
+		Printf(PRINT_WARNING, "Could not find BEX include \"%s\"\n", com_token);
+		goto endinclude;
+	}
 
-	DPrintf ("Done with include\n");
+	if (!M_ResolveWantedFile(res, want))
+	{
+		Printf(PRINT_WARNING, "Could not resolve BEX include \"%s\"\n", com_token);
+		goto endinclude;
+	}
+
+	D_DoDehPatch(&res, false);
+
+	DPrintf("Done with include\n");
 	PatchFile = savepatchfile;
 	PatchPt = savepatchpt;
 	dversion = savedversion;
@@ -1746,141 +1763,250 @@ endinclude:
 	return GetLine();
 }
 
-bool DoDehPatch (const char *patchfile, BOOL autoloading)
+/**
+ * @brief Attempt to load a DeHackEd file.
+ * 
+ * @param patchfile File to attempt to load.
+ * @param autoloading 
+ * @return 
+*/
+bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 {
-	int cont;
-	int lump;
-	std::string file;
+	BackupData();
+	::PatchFile = NULL;
 
-	BackupData ();
-	PatchFile = NULL;
+	int lump = W_CheckNumForName("DEHACKED");
 
-	lump = W_CheckNumForName ("DEHACKED");
-
-	if (lump >= 0 && autoloading) {
+	if (lump >= 0 && autoloading)
+	{
 		// Execute the DEHACKED lump as a patch.
-		filelen = W_LumpLength (lump);
-		if ( (PatchFile = new char[filelen + 1]) ) {
-			W_ReadLump (lump, PatchFile);
-		} else {
-			DPrintf ("Not enough memory to apply patch\n");
-			return false;
-		}
-	} else if (patchfile) {
+		::filelen = W_LumpLength(lump);
+		::PatchFile = new char[::filelen + 1];
+		W_ReadLump(lump, ::PatchFile);
+	}
+	else if (patchfile)
+	{
 		// Try to use patchfile as a patch.
-		FILE *deh;
-
-		file = patchfile;
-		M_FixPathSep (file);
-		M_AppendExtension (file, ".deh");
-
-		if ( !(deh = fopen (file.c_str(), "rb")) ) {
-			file = patchfile;
-			M_FixPathSep (file);
-			M_AppendExtension (file, ".bex");
-			deh = fopen (file.c_str(), "rb");
-		}
-
-		if (deh) {
-			filelen = M_FileLength (deh);
-			if ( (PatchFile = new char[filelen + 1]) ) {
-				size_t readlen = fread (PatchFile, 1, filelen, deh);
-				if ( readlen < 1 || readlen < filelen ) {
-					DPrintf ("Failed to read patch\n");
-					fclose (deh);
-					return false;
-				}
-				fclose (deh);
-			}
-		}
-
-		if (!PatchFile) {
-			// Couldn't find it on disk, try reading it from a lump
-			file = patchfile;
-			M_FixPathSep (file);
-			M_ExtractFileBase (file, file);
-			file[8] = 0;
-			lump = W_CheckNumForName (file.c_str());
-			if (lump >= 0) {
-				filelen = W_LumpLength (lump);
-				if ( (PatchFile = new char[filelen + 1]) ) {
-					W_ReadLump (lump, PatchFile);
-				} else {
-					DPrintf ("Not enough memory to apply patch\n");
-					return false;
-				}
-			}
-		}
-
-		if (!PatchFile) {
-			Printf (PRINT_HIGH, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
+		FILE* fh = fopen(patchfile->getFullpath().c_str(), "rb+");
+		if (fh == NULL)
+		{
+			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n",
+			       patchfile->getBasename().c_str());
 			return false;
 		}
-	} else {
+
+		::filelen = M_FileLength(fh);
+		::PatchFile = new char[::filelen + 1];
+
+		size_t read = fread(::PatchFile, 1, filelen, fh);
+		if (read < filelen)
+		{
+			DPrintf("Could not read file\n");
+			return false;
+		}
+	}
+	else
+	{
 		// Nothing to do.
 		return false;
 	}
 
 	// End file with a NULL for our parser
-	PatchFile[filelen] = 0;
+	::PatchFile[::filelen] = 0;
 
-	dversion = pversion = -1;
+	::dversion = pversion = -1;
 
-	cont = 0;
-	if (!strncmp (PatchFile, "Patch File for DeHackEd v", 25)) {
-		PatchPt = strchr (PatchFile, '\n');
-		while ((cont = GetLine()) == 1) {
-				 CHECKKEY ("Doom version", dversion)
-			else CHECKKEY ("Patch format", pversion)
+	int cont = 0;
+	if (!strncmp(::PatchFile, "Patch File for DeHackEd v", 25))
+	{
+		::PatchPt = strchr(::PatchFile, '\n');
+		while ((cont = GetLine()) == 1)
+		{
+			CHECKKEY("Doom version", ::dversion)
+			else CHECKKEY("Patch format", ::pversion)
 		}
-		if (!cont || dversion == -1 || pversion == -1) {
-			delete[] PatchFile;
-			Printf (PRINT_HIGH, "\"%s\" is not a DeHackEd patch file\n", file.c_str());
+		if (!cont || ::dversion == -1 || ::pversion == -1)
+		{
+			delete[] ::PatchFile;
+			if (patchfile)
+			{
+				Printf(PRINT_WARNING, "\"%s\" is not a DeHackEd patch file\n",
+				       patchfile->getBasename().c_str());
+			}
+			else
+			{
+				Printf(PRINT_WARNING, "\"DEHACKED\" is not a DeHackEd patch lump\n");
+			}
 			return false;
 		}
-	} else {
-		DPrintf ("Patch does not have DeHackEd signature. Assuming .bex\n");
-		dversion = 19;
-		pversion = 6;
-		PatchPt = PatchFile;
+	}
+	else
+	{
+		DPrintf("Patch does not have DeHackEd signature. Assuming .bex\n");
+		::dversion = 19;
+		::pversion = 6;
+		::PatchPt = ::PatchFile;
 		while ((cont = GetLine()) == 1)
 			;
 	}
 
-	if (pversion != 6) {
-		DPrintf ("DeHackEd patch version is %d.\nUnexpected results may occur.\n", pversion);
+	if (::pversion != 6)
+	{
+		DPrintf("DeHackEd patch version is %d.\nUnexpected results may occur.\n",
+		        ::pversion);
 	}
 
-	if (dversion == 16)
-		dversion = 0;
-	else if (dversion == 17)
-		dversion = 2;
-	else if (dversion == 19)
-		dversion = 3;
-	else if (dversion == 20)
-		dversion = 1;
-	else if (dversion == 21)
-		dversion = 4;
-	else {
-		DPrintf ("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
-		dversion = 3;
+	if (::dversion == 16)
+		::dversion = 0;
+	else if (::dversion == 17)
+		::dversion = 2;
+	else if (::dversion == 19)
+		::dversion = 3;
+	else if (::dversion == 20)
+		::dversion = 1;
+	else if (::dversion == 21)
+		::dversion = 4;
+	else
+	{
+		DPrintf("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
+		::dversion = 3;
 	}
 
-	do {
-		if (cont == 1) {
-			DPrintf ("Key %s encountered out of context\n", Line1);
+	do
+	{
+		if (cont == 1)
+		{
+			DPrintf("Key %s encountered out of context\n", ::Line1);
 			cont = 0;
-		} else if (cont == 2)
-			cont = HandleMode (Line1, atoi (Line2));
+		}
+		else if (cont == 2)
+		{
+			cont = HandleMode(::Line1, atoi(::Line2));
+		}
 	} while (cont);
 
-	delete[] PatchFile;
-	if (autoloading)
-		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
-	else
-		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
+	delete[] ::PatchFile;
+	::PatchFile = NULL;
 
-    return true;
+	if (patchfile)
+	{
+		Printf("adding %s\n", patchfile->getFullpath().c_str());
+	}
+	else
+	{
+		Printf("adding DEHACKED lump\n");
+	}
+	Printf(" (DeHackEd patch)\n");
+
+	return true;
 }
+
+#include "c_dispatch.h"
+
+static const char* ActionPtrString(actionf_p1 func)
+{
+	int i = 0;
+	while (::CodePtrs[i].name != NULL && ::CodePtrs[i].func != func)
+	{
+		i++;
+	}
+
+	if (::CodePtrs[i].name == NULL)
+	{
+		return "NULL";
+	}
+
+	return ::CodePtrs[i].name;
+}
+
+static void PrintState(int index)
+{
+	if (index < 0 || index >= NUMSTATES)
+		return;
+
+	// Print this state.
+	state_t& state = ::states[index];
+	Printf("%4d | s:%s f:%d t:%d a:%s m1:%d m2:%d\n", index, ::sprnames[state.sprite],
+	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
+	       state.misc2);
+}
+
+BEGIN_COMMAND(stateinfo)
+{
+	if (argc < 2)
+	{
+		Printf("Must pass one or two state indexes. (0 to %d)\n", NUMSTATES - 1);
+		return;
+	}
+
+	int index1 = atoi(argv[1]);
+	if (index1 < 0 || index1 >= NUMSTATES)
+	{
+		Printf("Not a valid index.\n");
+		return;
+	}
+	int index2 = index1;
+
+	if (argc == 3)
+	{
+		index2 = atoi(argv[2]);
+		if (index2 < 0 || index2 >= NUMSTATES)
+		{
+			Printf("Not a valid index.\n");
+			return;
+		}
+	}
+
+	// Swap arguments if need be.
+	if (index2 < index1)
+	{
+		int tmp = index1;
+		index1 = index2;
+		index2 = tmp;
+	}
+
+	for (int i = index1; i <= index2; i++)
+	{
+		PrintState(i);
+	}
+}
+END_COMMAND(stateinfo)
+
+BEGIN_COMMAND(playstate)
+{
+	if (argc < 2)
+	{
+		Printf("Must pass state index. (0 to %d)\n", NUMSTATES - 1);
+		return;
+	}
+
+	int index = atoi(argv[1]);
+	if (index < 0 || index >= NUMSTATES)
+	{
+		Printf("Not a valid index.\n");
+		return;
+	}
+
+	OHashTable<int, bool> visited;
+	for (;;)
+	{
+		// Check if we looped back, and exit if so.
+		OHashTable<int, bool>::iterator it = visited.find(index);
+		if (it != visited.end())
+		{
+			Printf("Looped back to %d\n", index);
+			return;
+		}
+
+		PrintState(index);
+
+		// Mark as visited.
+		visited.insert(std::pair<int, bool>(index, true));
+
+		// Next state.
+		index = ::states[index].nextstate;
+	}
+}
+END_COMMAND(playstate)
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")

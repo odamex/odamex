@@ -704,7 +704,7 @@ void STACK_ARGS D_Shutdown()
 
 	DThinker::DestroyAllThinkers();
 
-	UndoDehPatch();
+	D_UndoDehPatch();
 
 	// close all open WAD files
 	W_Close();

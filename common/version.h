@@ -38,7 +38,7 @@
 
 #define DOTVERSIONSTR "0.9.0"
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2020 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
@@ -67,6 +67,7 @@ const char* GitHash();
 const char* GitBranch();
 const char* GitRevCount();
 const char* GitShortHash();
-const char* GitNiceVersion();
+const char* NiceVersionDetails();
+const char* NiceVersion();
 
 #endif //__VERSION_H__

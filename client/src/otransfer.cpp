@@ -144,7 +144,7 @@ size_t OTransferCheck::curlWrite(void* data, size_t size, size_t nmemb, void* us
  */
 void OTransferCheck::setURL(const std::string& src)
 {
-	curl_easy_setopt(_curl, CURLOPT_URL, src.c_str());
+	curl_easy_setopt(m_curl, CURLOPT_URL, src.c_str());
 }
 
 /**
@@ -154,37 +154,37 @@ void OTransferCheck::setURL(const std::string& src)
  */
 bool OTransferCheck::start()
 {
-	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
-	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
-	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
-	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
-	// curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
-	curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
-	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
-	curl_multi_add_handle(_curlm, _curl);
+	curl_easy_setopt(m_curl, CURLOPT_FAILONERROR, 1L);
+	curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT, 5L);
+	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
+	// curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
+	// curl_easy_setopt(m_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+	curl_easy_setopt(m_curl, CURLOPT_NOBODY, 1L);
+	curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, OTransferCheck::curlWrite);
+	curl_multi_add_handle(m_curlm, m_curl);
 
 	int running;
-	curl_multi_perform(_curlm, &running);
+	curl_multi_perform(m_curlm, &running);
 	if (running < 1)
 	{
 		// Transfer isn't running right after we enabled it, error out.
 		int queuelen;
-		CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+		CURLMsg* msg = curl_multi_info_read(m_curlm, &queuelen);
 		if (msg == NULL)
 		{
-			_errproc("CURL reports no info");
+			m_errorProc("CURL reports no info");
 			return false;
 		}
 
 		CURLcode code = msg->data.result;
 		if (code != CURLE_OK)
 		{
-			_errproc(curl_easy_strerror(code));
+			m_errorProc(curl_easy_strerror(code));
 			return false;
 		}
 
-		_errproc("CURL isn't running the transfer with no error");
+		m_errorProc("CURL isn't running the transfer with no error");
 		return false;
 	}
 
@@ -196,7 +196,7 @@ bool OTransferCheck::start()
  */
 void OTransferCheck::stop()
 {
-	curl_multi_remove_handle(_curlm, _curl);
+	curl_multi_remove_handle(m_curlm, m_curl);
 }
 
 /**
@@ -208,42 +208,42 @@ void OTransferCheck::stop()
 bool OTransferCheck::tick()
 {
 	int running;
-	curl_multi_perform(_curlm, &running);
+	curl_multi_perform(m_curlm, &running);
 	if (running > 0)
 		return true;
 
 	// We're done.  Was the transfer successful, or an error?
 	int queuelen;
-	CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+	CURLMsg* msg = curl_multi_info_read(m_curlm, &queuelen);
 	if (msg == NULL)
 	{
-		_errproc("CURL reports no info");
+		m_errorProc("CURL reports no info");
 		return false;
 	}
 
 	CURLcode code = msg->data.result;
 	if (code != CURLE_OK)
 	{
-		_errproc(curl_easy_strerror(code));
+		m_errorProc(curl_easy_strerror(code));
 		return false;
 	}
 
 	// A successful transfer.  Populate the info struct.
 	OTransferInfo info = OTransferInfo();
-	if (!info.hydrate(_curl))
+	if (!info.hydrate(m_curl))
 	{
-		_errproc("Info struct could not be populated");
+		m_errorProc("Info struct could not be populated");
 		return false;
 	}
 
 	// Make sure we didn't find an HTML file - those are only okay on redirects.
 	if (stricmp(info.contentType.c_str(), "text/html") == 0)
 	{
-		_errproc("Only found an HTML file");
+		m_errorProc("Only found an HTML file");
 		return false;
 	}
 
-	_doneproc(info);
+	m_doneProc(info);
 	return false;
 }
 
@@ -257,8 +257,8 @@ bool OTransferCheck::tick()
 int OTransfer::curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
                             double ulnow)
 {
-	static_cast<OTransfer*>(clientp)->_progress.dltotal = dltotal;
-	static_cast<OTransfer*>(clientp)->_progress.dlnow = dlnow;
+	static_cast<OTransfer*>(clientp)->m_progress.dltotal = dltotal;
+	static_cast<OTransfer*>(clientp)->m_progress.dlnow = dlnow;
 	return 0;
 }
 
@@ -271,7 +271,7 @@ int OTransfer::curlProgress(void* clientp, double dltotal, double dlnow, double 
  */
 void OTransfer::setURL(const std::string& src)
 {
-	curl_easy_setopt(_curl, CURLOPT_URL, src.c_str());
+	curl_easy_setopt(m_curl, CURLOPT_URL, src.c_str());
 }
 
 /**
@@ -283,14 +283,14 @@ void OTransfer::setURL(const std::string& src)
 int OTransfer::setOutputFile(const std::string& dest)
 {
 	// We download to the partial file and move it later.
-	_filename = dest;
-	_filepart = dest + ".part";
+	m_filename = dest;
+	m_filePart = dest + ".part";
 
-	_file = fopen(_filepart.c_str(), "wb+");
-	if (_file == NULL)
+	m_file = fopen(m_filePart.c_str(), "wb+");
+	if (m_file == NULL)
 		return errno;
 
-	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, _file);
+	curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, m_file);
 	return 0;
 }
 
@@ -301,7 +301,7 @@ int OTransfer::setOutputFile(const std::string& dest)
  */
 void OTransfer::setHash(const std::string& hash)
 {
-	_expectHash = hash;
+	m_expectHash = hash;
 }
 
 /**
@@ -311,38 +311,38 @@ void OTransfer::setHash(const std::string& hash)
  */
 bool OTransfer::start()
 {
-	curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);
-	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
-	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
-	curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
-	curl_easy_setopt(_curl, CURLOPT_PROGRESSDATA, this);
-	curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, curlHeader);
-	// curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
-	// curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
-	curl_multi_add_handle(_curlm, _curl);
+	curl_easy_setopt(m_curl, CURLOPT_FAILONERROR, 1L);
+	curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT, 5L);
+	curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
+	curl_easy_setopt(m_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
+	curl_easy_setopt(m_curl, CURLOPT_PROGRESSDATA, this);
+	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
+	// curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
+	// curl_easy_setopt(m_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
+	curl_multi_add_handle(m_curlm, m_curl);
 
 	int running;
-	curl_multi_perform(_curlm, &running);
+	curl_multi_perform(m_curlm, &running);
 	if (running < 1)
 	{
 		// Transfer isn't running right after we enabled it, error out.
 		int queuelen;
-		CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+		CURLMsg* msg = curl_multi_info_read(m_curlm, &queuelen);
 		if (msg == NULL)
 		{
-			_errproc("CURL reports no info");
+			m_errorProc("CURL reports no info");
 			return false;
 		}
 
 		CURLcode code = msg->data.result;
 		if (code != CURLE_OK)
 		{
-			_errproc(curl_easy_strerror(code));
+			m_errorProc(curl_easy_strerror(code));
 			return false;
 		}
 
-		_errproc("CURL isn't running the transfer with no error");
+		m_errorProc("CURL isn't running the transfer with no error");
 		return false;
 	}
 
@@ -354,7 +354,7 @@ bool OTransfer::start()
  */
 void OTransfer::stop()
 {
-	curl_multi_remove_handle(_curlm, _curl);
+	curl_multi_remove_handle(m_curlm, m_curl);
 }
 
 /**
@@ -366,81 +366,82 @@ void OTransfer::stop()
 bool OTransfer::tick()
 {
 	int running;
-	curl_multi_perform(_curlm, &running);
+	curl_multi_perform(m_curlm, &running);
 	if (running > 0)
 		return true;
 
 	// We're done.  Was the transfer successful, or an error?
 	int queuelen;
-	CURLMsg* msg = curl_multi_info_read(_curlm, &queuelen);
+	CURLMsg* msg = curl_multi_info_read(m_curlm, &queuelen);
 	if (msg == NULL)
 	{
-		_errproc("CURL reports no info");
+		m_errorProc("CURL reports no info");
 		return false;
 	}
 
 	CURLcode code = msg->data.result;
 	if (code != CURLE_OK)
 	{
-		_errproc(curl_easy_strerror(code));
+		m_errorProc(curl_easy_strerror(code));
 		return false;
 	}
 
 	// A successful transfer.  Populate the info struct.
 	OTransferInfo info = OTransferInfo();
-	if (!info.hydrate(_curl))
+	if (!info.hydrate(m_curl))
 	{
-		_errproc("Info struct could not be populated");
+		m_errorProc("Info struct could not be populated");
 		return false;
 	}
 
 	// Make sure we didn't download an HTML file - those are only okay on redirects.
 	if (stricmp(info.contentType.c_str(), "text/html") == 0)
 	{
-		_errproc("Accidentally downloaded an HTML file");
+		m_errorProc("Accidentally downloaded an HTML file");
 		return false;
 	}
 
 	// Close the file so we can rename it.
-	fclose(_file);
-	_file = NULL;
+	fclose(m_file);
+	m_file = NULL;
 
 	// Verify that the file is what the server wants and is not a renamed
 	// commercial IWAD.
-	std::string actualHash = W_MD5(_filepart);
+	std::string actualHash = W_MD5(m_filePart);
 	if (W_IsFilehashCommercialIWAD(actualHash))
 	{
-		remove(_filepart.c_str());
-		_errproc("Accidentally downloaded a commercial IWAD - file removed");
+		remove(m_filePart.c_str());
+		m_errorProc("Accidentally downloaded a commercial IWAD - file removed");
 		return false;
 	}
-	else if (!_expectHash.empty() && _expectHash != actualHash)
+	else if (!m_expectHash.empty() && m_expectHash != actualHash)
 	{
-		remove(_filepart.c_str());
-		_errproc("Downloaded file is not the same as the server's file - file removed");
+		remove(m_filePart.c_str());
+		m_errorProc(
+		    "Downloaded file is not the same as the server's file - file removed");
 		return false;
 	}
 
-	int ok = rename(_filepart.c_str(), _filename.c_str());
+	int ok = rename(m_filePart.c_str(), m_filename.c_str());
 	if (ok != 0)
 	{
 		std::string buf;
-		StrFormat(buf, "File %s could not be renamed to %s - %s", _filepart.c_str(),
-		          _filename.c_str(), strerror(errno));
-		_errproc(buf.c_str());
+		StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
+		          m_filename.c_str(), strerror(errno));
+		m_errorProc(buf.c_str());
 		return false;
 	}
 
-	_doneproc(info);
+	m_doneProc(info);
 	return false;
 }
 
 std::string OTransfer::getFilename() const
 {
-	return _filename;
+	return m_filename;
 }
 
 OTransferProgress OTransfer::getProgress() const
 {
-	return _progress;
+	return m_progress;
 }

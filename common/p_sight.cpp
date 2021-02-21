@@ -509,11 +509,11 @@ bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boo
 	// w = r scaled by the radius of mobj t2
 	// thereby, "t2->[x,y] + or - w[x,y]" gives you the edges of t2 from t1's point of view
 	// this function used to only check the middle of t2
-	v3double_t d, r, w;
-	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, 0);
-	M_NormalizeVec3(&d, &d);
-	M_SetVec3(&r, -d.y, d.x, 0.0);
-	M_ScaleVec3(&w, &r, FIXED2FLOAT(t2->radius));
+	Vec3<double> d, r, w;
+	M_SetVec3(d, t1->x - t2->x, t1->y - t2->y, 0);
+	M_NormalizeVec3(d, d);
+	M_SetVec3(r, -d.y, d.x, 0.0);
+	M_ScaleVec3(w, r, FIXED2FLOAT(t2->radius));
 
 	return P_SightPathTraverse (t1->x, t1->y, t2->x, t2->y)
 		|| P_SightPathTraverse(t1->x, t1->y, t2->x + FLOAT2FIXED(w.x), t2->y + FLOAT2FIXED(w.y))
@@ -911,11 +911,11 @@ bool P_CheckSightEdgesDoom
 // w = r scaled by the radius of mobj t2
 // thereby, "t2->[x,y] + or - w[x,y]" gives you the edges of t2 from t1's point of view
 // this function used to only check the middle of t2
-	v3double_t d, r, w;
-	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, 0);
-	M_NormalizeVec3(&d, &d);
-	M_SetVec3(&r, -d.y, d.x, 0.0);
-	M_ScaleVec3(&w, &r, FIXED2FLOAT(t2->radius) + radius_boost);
+	Vec3<double> d, r, w;
+	M_SetVec3(d, t1->x - t2->x, t1->y - t2->y, 0);
+	M_NormalizeVec3(d, d);
+	M_SetVec3(r, -d.y, d.x, 0.0);
+	M_ScaleVec3(w, r, FIXED2FLOAT(t2->radius) + radius_boost);
 
 	bool contact = false;
 

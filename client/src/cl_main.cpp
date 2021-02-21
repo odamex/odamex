@@ -2737,7 +2737,7 @@ void CL_ExplodeMissile(void)
 //
 void CL_RailTrail()
 {
-	v3double_t start, end;
+	Vec3<double> start, end;
 
 	start.x = double(MSG_ReadShort());
 	start.y = double(MSG_ReadShort());
@@ -4277,12 +4277,12 @@ void CL_SimulatePlayers()
 
 				PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
 
-				v3fixed_t offset;
-				M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
-										prevsnap.getY() - player->mo->y,
-										prevsnap.getZ() - player->mo->z);
+				Vec3<fixed_t> offset;
+				M_SetVec3Fixed(offset, prevsnap.getX() - player->mo->x,
+				               prevsnap.getY() - player->mo->y,
+				               prevsnap.getZ() - player->mo->z);
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
+				fixed_t dist = M_LengthVec3Fixed(offset);
 				if (dist > 2 * FRACUNIT)
 				{
 					#ifdef _SNAPSHOT_DEBUG_
@@ -4291,7 +4291,7 @@ void CL_SimulatePlayers()
 					#endif	// _SNAPSHOT_DEBUG_
 
 					static const fixed_t correction_amount = FRACUNIT * 0.80f;
-					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
+					M_ScaleVec3Fixed(offset, offset, correction_amount);
 
 					// Apply a smoothing offset to the current snapshot
 					snap.setX(snap.getX() - offset.x);
