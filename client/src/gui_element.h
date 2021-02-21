@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "dobject.h"
+#include "v_video.h"
 
 /**
  * @brief Class for managing construction and destruction of layout contexts.
@@ -318,9 +319,10 @@ class DGUIText : public DGUIElement
 {
 	DECLARE_CLASS(DGUIText, DGUIElement)
 	std::string m_text;
+	FontParams m_params;
 
   public:
-	DGUIText(OGUIContext& ctx, const std::string& text);
+	DGUIText(OGUIContext& ctx, const std::string& text, const FontParams& params);
 	void layout();
 	void render();
 };
@@ -334,13 +336,14 @@ class DGUIParagraph : public DGUIElement
 	DECLARE_CLASS(DGUIParagraph, DGUIElement)
 	std::string m_text;
 	std::vector<DGUIText> m_children;
+	FontParams m_params;
 
 	void updateText(const std::string& text);
+
   public:
-	DGUIParagraph(OGUIContext& ctx, const std::string& text);
+	DGUIParagraph(OGUIContext& ctx, const std::string& text, const FontParams& params);
 	void layout();
 	void render();
 };
-
 
 #endif

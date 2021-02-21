@@ -259,7 +259,7 @@ OFont* V_GetFont(font_e font)
 	case FONT_BIGFONT:
 		return ::hu_bigfont;
 	case FONT_DIGFONT:
-		return ::hu_bigfont;
+		return ::hu_digfont;
 	}
 }
 
@@ -542,7 +542,7 @@ void DCanvas::DrawText(const char* string, Vec2<int> pos, const FontParams& para
 
 		if (inside)
 		{
-			DrawSWrapper(DCanvas::EWrapper_Translated, ::hu_font->at(ch), current.x,
+			DrawSWrapper(DCanvas::EWrapper_Translated, font.at(ch), current.x,
 			             current.y, width, height);
 			current.x += width;
 		}

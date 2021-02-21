@@ -458,10 +458,13 @@ void ST_voteDraw (int y) {
  */
 void HU_ChatWindow()
 {
+	OFont* font = V_GetFont(FONT_DIGFONT);
+	FontParams params(*font);
+	params.color(CR_GREEN)->lineHeight(font->lineHeight() * 2);
 	OGUIContext ctx;
 
-	DGUIParagraph* text =
-	    new DGUIParagraph(ctx, "[UD]AlexMax: We can do better than interfaces from 1997");
+	DGUIParagraph* text = new DGUIParagraph(
+	    ctx, "[UD]AlexMax: We can do better than interfaces from 1997", params);
 
 	DGUIDim dim(ctx, "00 00 00", 0.75);
 	dim.size(200, 200);

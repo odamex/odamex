@@ -289,23 +289,19 @@ void DGUIPatch::render()
 
 IMPLEMENT_CLASS(DGUIText, DGUIElement)
 
-DGUIText::DGUIText(OGUIContext& ctx, const std::string& text)
-    : DGUIElement(ctx), m_text(text)
+DGUIText::DGUIText(OGUIContext& ctx, const std::string& text, const FontParams& params)
+    : DGUIElement(ctx), m_text(text), m_params(params)
 {
 }
 
 void DGUIText::layout()
 {
-	// [AM] TODO: Introduce font height checker later.
-	const int FONT_HEIGHT = 7;
-
 	// Default layout is fine...mostly.  We override the size later.
 	DGUIElement::layout();
 
 	// Set the width and height of our text.
-	int width = V_StringWidth(m_text.c_str());
-	int height = FONT_HEIGHT;
-	lay_set_size_xy(m_ctx.layoutAddr(), m_layoutID, width, height);
+	Vec2<int> extent = V_TextExtent(m_text.c_str(), m_params);
+	lay_set_size_xy(m_ctx.layoutAddr(), m_layoutID, extent.x, extent.y);
 }
 
 void DGUIText::render()
@@ -315,7 +311,7 @@ void DGUIText::render()
 
 	// Draw text sourced at the upper-left corner of our layout item.
 	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
-	::screen->DrawText(CR_GREY, vec[0], vec[1], m_text.c_str());
+	::screen->DrawText(m_text.c_str(), Vec2<int>(vec[0], vec[1]), m_params);
 }
 
 IMPLEMENT_CLASS(DGUIParagraph, DGUIElement)
@@ -333,11 +329,13 @@ void DGUIParagraph::updateText(const std::string& text)
 	StringTokens tokens = TokenizeString(text, " ");
 	for (StringTokens::const_iterator it = tokens.begin(); it != tokens.end(); ++it)
 	{
-		m_children.push_back(DGUIText(m_ctx, *it));
+		m_children.push_back(DGUIText(m_ctx, *it, m_params));
 	}
 }
 
-DGUIParagraph::DGUIParagraph(OGUIContext& ctx, const std::string& text) : DGUIElement(ctx)
+DGUIParagraph::DGUIParagraph(OGUIContext& ctx, const std::string& text,
+                             const FontParams& params)
+    : DGUIElement(ctx), m_params(params)
 {
 	updateText(text);
 }
@@ -350,6 +348,8 @@ void DGUIParagraph::layout()
 
 	DGUIElement::layout();
 
+	Vec2<int> spacing = V_TextExtent(" ", m_params);
+
 	// Lay out text elements - they are a vector of like-kinded text
 	// elements that were not allocated with "new", so we can't use
 	// layoutElements.
@@ -361,7 +361,7 @@ void DGUIParagraph::layout()
 		lay_id iterID = it->getID();
 
 		// Words should have a right margin.
-		lay_set_margins_ltrb(m_ctx.layoutAddr(), it->getID(), 0, 0, 4, 0);
+		lay_set_margins_ltrb(m_ctx.layoutAddr(), it->getID(), 0, 0, spacing.x, 0);
 
 		// This next bit is recommended by the library docs.
 		if (lastID == LAY_INVALID_ID)
