@@ -21,6 +21,6 @@
 #ifndef __UMAPINFO_H
 #define __UMAPINFO_H
 
-void ParseUMapInfo(int lump, const char* lumpname);
+void ParseUMapInfoLump(int lump, const char* lumpname);
 
 #endif

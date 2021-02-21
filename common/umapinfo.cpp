@@ -24,7 +24,7 @@
 #include <assert.h>
 #include "cmdlib.h"
 #include "umapinfo.h"
-#include "scanner.h"
+#include "oscanner.h"
 
 #include "m_misc.h"
 #include "g_game.h"
@@ -201,33 +201,207 @@ static const char * const ActorNames[] =
 //
 // -----------------------------------------------
 
-static char *ParseMultiString(Scanner &scanner, int error)
+
+namespace
+{
+	// return token as int
+	int GetTokenAsInt(OScanner& os)
+	{
+		// fix for parser reading in commas
+		std::string str = os.getToken();
+
+		if (str[str.length() - 1] == ',')
+		{
+			str[str.length() - 1] = '\0';
+		}
+		
+		char* stopper;
+
+		//if (os.compareToken("MAXINT"))
+		if (str == "MAXINT")
+		{
+			return MAXINT;
+		}
+
+		const int num = strtol(str.c_str(), &stopper, 0);
+
+		if (*stopper != 0)
+		{
+			I_Error("Bad numeric constant \"%s\".", str.c_str());
+		}
+
+		return num;
+	}
+
+	// return token as float
+	float GetTokenAsFloat(OScanner& os)
+	{
+		// fix for parser reading in commas
+		std::string str = os.getToken();
+
+		if (str[str.length() - 1] == ',')
+		{
+			str[str.length() - 1] = '\0';
+		}
+		
+		char* stopper;
+
+		const double num = strtod(str.c_str(), &stopper);
+
+		if (*stopper != 0)
+		{
+			I_Error("Bad numeric constant \"%s\".", str.c_str());
+		}
+
+		return static_cast<float>(num);
+	}
+
+	// return token as bool
+	bool GetTokenAsBool(OScanner &os)
+	{
+		return os.compareToken("true");
+	}
+
+	void MustGetString(OScanner& os)
+	{
+		if (!os.scan())
+		{
+			I_Error("Missing string (unexpected end of file).");
+		}
+	}
+
+	void MustGetStringName(OScanner& os, const char* name)
+	{
+		MustGetString(os);
+		if (os.compareToken(name) == false)
+		{
+			// TODO: was previously SC_ScriptError, less information is printed now
+			I_Error("Expected '%s', got '%s'.", name, os.getToken());
+		}
+	}
+
+	void MustGetNumber(OScanner& os)
+	{
+		MustGetString(os);
+
+		// fix for parser reading in commas
+		std::string str = os.getToken();
+		
+		if (str[str.length() - 1] == ',')
+		{
+			str[str.length() - 1] = '\0';
+		}
+		
+		if (IsNum(str.c_str()) == false)
+		{
+			I_Error("Missing integer (unexpected end of file).");
+		}
+	}
+
+	void MustGetFloat(OScanner& os)
+	{
+		MustGetString(os);
+
+		// fix for parser reading in commas
+		std::string str = os.getToken();
+
+		if (str[str.length() - 1] == ',')
+		{
+			str[str.length() - 1] = '\0';
+		}
+		
+		if (IsRealNum(str.c_str()) == false)
+		{
+			I_Error("Missing floating-point number (unexpected end of file).");
+		}
+	}
+
+	void MustGetBool(OScanner& os)
+	{
+		MustGetString(os);
+		if (!os.compareToken("true") && !os.compareToken("false"))
+		{
+			I_Error("Missing boolean (unexpected end of file).");
+		}
+	}
+
+	bool IsIdentifier(OScanner& os)
+	{
+		char ch = os.getToken()[0];
+		
+		return (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
+	}
+
+	void MustGetIdentifier(OScanner& os)
+	{
+		MustGetString(os);
+		if (!IsIdentifier(os))
+		{
+			I_Error("Expected identifier (unexpected end of file).");
+		}
+	}
+
+	char* M_Strupr(char* str)
+	{
+		char* p;
+		for (p = str; *p; p++)
+			*p = toupper(*p);
+		return str;
+	}
+
+	bool UpperCompareToken(OScanner &os, const char *str)
+	{
+		char p[64];
+		char q[64];
+
+		uppercopy(p, os.getToken().c_str());
+		uppercopy(q, str);
+
+		bool result = (strcmp(p, q) != 0) ? false : true;
+
+		return result;
+	}
+}
+
+// TODO: remove everything above
+
+// used for munching the strings in UMAPINFO
+static char *ParseMultiString(OScanner &os, int error)
 {
 	char *build = NULL;
-	
-	if (scanner.CheckToken(TK_Identifier))
+
+	os.scan();
+	// TODO: properly identify identifiers so clear can be separated from regular strings
+	//if (IsIdentifier(os))
 	{
-		if (!stricmp(scanner.string, "clear"))
+		if (os.compareToken("clear"))
 		{
 			return strdup("-");	// this was explicitly deleted to override the default.
 		}
 
-		scanner.ErrorF("Either 'clear' or string constant expected");
+		//I_Error("Either 'clear' or string constant expected");
 	}
+	os.unScan();
 	
 	do
 	{
-		scanner.MustGetToken(TK_StringConst);
+		MustGetString(os);
+		std::string test1 = os.getToken();
+		
 		if (build == NULL)
-			build = strdup(scanner.string);
+			build = strdup(os.getToken().c_str());
 		else
 		{
-			size_t newlen = strlen(build) + strlen(scanner.string) + 2; // strlen for both the existing text and the new line, plus room for one \n and one \0
+			size_t newlen = strlen(build) + os.getToken().length() + 2; // strlen for both the existing text and the new line, plus room for one \n and one \0
 			build = (char*)realloc(build, newlen); // Prepare the destination memory for the below strcats
 			strcat(build, "\n"); // Replace the existing text's \0 terminator with a \n
-			strcat(build, scanner.string); // Concatenate the new line onto the existing text
+			strcat(build, os.getToken().c_str()); // Concatenate the new line onto the existing text
 		}
-	} while (scanner.CheckToken(','));
+		os.scan();
+		std::string test2 = os.getToken();
+	} while (os.compareToken(","));
+	os.unScan();
+	
 	return build;
 }
 
@@ -237,26 +411,15 @@ static char *ParseMultiString(Scanner &scanner, int error)
 //
 // -----------------------------------------------
 
-namespace
+static int ParseLumpName(OScanner& os, char *buffer)
 {
-	char* M_Strupr(char* str)
+	MustGetString(os);
+	if (strlen(os.getToken().c_str()) > 8)
 	{
-		char* p;
-		for (p = str; *p; p++)
-			*p = toupper(*p);
-		return str;
-	}
-}
-
-static int ParseLumpName(Scanner &scanner, char *buffer)
-{
-	scanner.MustGetToken(TK_StringConst);
-	if (strlen(scanner.string) > 8)
-	{
-		scanner.ErrorF("String too long. Maximum size is 8 characters.");
+		I_Error("String too long. Maximum size is 8 characters.");
 		return 0;
 	}
-	strncpy(buffer, scanner.string, 8);
+	strncpy(buffer, os.getToken().c_str(), 8);
 	buffer[8] = 0;
 	M_Strupr(buffer);
 	return 1;
@@ -326,76 +489,79 @@ static void MapNameToLevelNum(level_pwad_info_t *info)
 	}
 }
 
-static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
+static int ParseStandardProperty(OScanner& os, level_pwad_info_t *mape)
 {
 	// find the next line with content.
 	// this line is no property.
 
-	scanner.MustGetToken(TK_Identifier);
-	char *pname = strdup(scanner.string);
-	scanner.MustGetToken('=');
+	if (!IsIdentifier(os))
+	{
+		I_Error("Expected identifier");
+	}
+	char *pname = strdup(os.getToken().c_str());
+	MustGetStringName(os, "=");
 
 	if (!stricmp(pname, "levelname"))
 	{
-		scanner.MustGetToken(TK_StringConst);
-		mape->level_name = strdup(scanner.string);
+		MustGetString(os);
+		mape->level_name = strdup(os.getToken().c_str());
 	}
 	else if (!stricmp(pname, "next"))
 	{
-		ParseLumpName(scanner, mape->nextmap);
+		ParseLumpName(os, mape->nextmap);
 		if (!G_ValidateMapName(mape->nextmap, NULL, NULL))
 		{
-			scanner.ErrorF("Invalid map name %s.", mape->nextmap);
+			I_Error("Invalid map name %s.", mape->nextmap);
 			return 0;
 		}
 	}
 	else if (!stricmp(pname, "nextsecret"))
 	{
-		ParseLumpName(scanner, mape->secretmap);
+		ParseLumpName(os, mape->secretmap);
 		if (!G_ValidateMapName(mape->secretmap, NULL, NULL))
 		{
-			scanner.ErrorF("Invalid map name %s", mape->nextmap);
+			I_Error("Invalid map name %s", mape->nextmap);
 			return 0;
 		}
 	}
 	else if (!stricmp(pname, "levelpic"))
 	{
-		ParseLumpName(scanner, mape->pname);
+		ParseLumpName(os, mape->pname);
 	}
 	else if (!stricmp(pname, "skytexture"))
 	{
-		ParseLumpName(scanner, mape->skypic);
+		ParseLumpName(os, mape->skypic);
 	}
 	else if (!stricmp(pname, "music"))
 	{
-		ParseLumpName(scanner, mape->music);
+		ParseLumpName(os, mape->music);
 	}
 	else if (!stricmp(pname, "endpic"))
 	{
-		ParseLumpName(scanner, mape->endpic);
+		ParseLumpName(os, mape->endpic);
 		strncpy(mape->nextmap, "EndGame1", 8);
 		mape->nextmap[8] = '\0';
 	}
 	else if (!stricmp(pname, "endcast"))
 	{
-		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean)
+		MustGetBool(os);
+		if (GetTokenAsBool(os))
 			strncpy(mape->nextmap, "EndGameC", 8);
 		else
 			strcpy(mape->endpic, "\0");
 	}
 	else if (!stricmp(pname, "endbunny"))
 	{
-		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean)
+		MustGetBool(os);
+		if (GetTokenAsBool(os))
 			strncpy(mape->nextmap, "EndGame3", 8);
 		else
 			strcpy(mape->endpic, "\0");
 	}
 	else if (!stricmp(pname, "endgame"))
 	{
-		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean)
+		MustGetBool(os);
+		if (GetTokenAsBool(os))
 		{
 			strcpy(mape->endpic, "!");
 		}
@@ -406,46 +572,46 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	}
 	else if (!stricmp(pname, "exitpic"))
 	{
-		ParseLumpName(scanner, mape->exitpic);
+		ParseLumpName(os, mape->exitpic);
 	}
 	else if (!stricmp(pname, "enterpic"))
 	{
-		ParseLumpName(scanner, mape->enterpic);
+		ParseLumpName(os, mape->enterpic);
 	}
 	else if (!stricmp(pname, "nointermission"))
 	{
-		scanner.MustGetToken(TK_BoolConst);
-		if (scanner.boolean)
+		MustGetBool(os);
+		if (GetTokenAsBool(os))
 		{
 			mape->flags |= LEVEL_NOINTERMISSION;
 		}
 	}
 	else if (!stricmp(pname, "partime"))
 	{
-		scanner.MustGetInteger();
-		mape->partime = TICRATE * scanner.number;
+		MustGetNumber(os);
+		mape->partime = TICRATE * GetTokenAsInt(os);
 	}
 	else if (!stricmp(pname, "intertext"))
 	{
-		char *lname = ParseMultiString(scanner, 1);
+		char *lname = ParseMultiString(os, 1);
 		if (!lname)
 			return 0;
 		mape->intertext = lname;
 	}
 	else if (!stricmp(pname, "intertextsecret"))
 	{
-		char *lname = ParseMultiString(scanner, 1);
+		char *lname = ParseMultiString(os, 1);
 		if (!lname)
 			return 0;
 		mape->intertextsecret = lname;
 	}
 	else if (!stricmp(pname, "interbackdrop"))
 	{
-		ParseLumpName(scanner, mape->interbackdrop);
+		ParseLumpName(os, mape->interbackdrop);
 	}
 	else if (!stricmp(pname, "intermusic"))
 	{
-		ParseLumpName(scanner, mape->intermusic);
+		ParseLumpName(os, mape->intermusic);
 	}
 	else if (!stricmp(pname, "episode"))
 	{
@@ -455,10 +621,7 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 			episodes_modified = true;
 		}
 		
-		int epi;
-		int num;
-		
-		char *lname = ParseMultiString(scanner, 1);
+		char *lname = ParseMultiString(os, 1);
 		if (!lname)
 			return 0;
 		
@@ -477,7 +640,6 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 				return 0;
 			}
 
-			G_ValidateMapName(scanner.string, &epi, &num);
 			strncpy(EpisodeMaps[episodenum], mape->mapname, 8);
 			EpisodeInfos[episodenum].name = gfx;
 			EpisodeInfos[episodenum].fulltext = false;
@@ -488,9 +650,9 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	}
 	else if (!stricmp(pname, "bossaction"))
 	{
-		scanner.MustGetToken(TK_Identifier);
+		MustGetIdentifier(os);
 		
-		if (!stricmp(scanner.string, "clear"))
+		if (!stricmp(os.getToken().c_str(), "clear"))
 		{
 			// mark level free of boss actions
 			mape->bossactions.clear();
@@ -500,23 +662,28 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 		{
 			int i;
 
+			// remove comma from token
+			std::string actor_name = os.getToken();
+			actor_name[actor_name.length() - 1] = '\0';
+			
 			for (i = 0; ActorNames[i]; i++)
 			{
-				if (!stricmp(scanner.string, ActorNames[i]))
+				if (!stricmp(actor_name.c_str(), ActorNames[i]))
 					break;
 			}
 			if (ActorNames[i] == NULL)
 			{
-				scanner.ErrorF("Unknown thing type %s", scanner.string);
+				I_Error("Unknown thing type %s", os.getToken().c_str());
 				return 0;
 			}
 
-			scanner.MustGetToken(',');
-			scanner.MustGetInteger();
-			const int special = scanner.number;
-			scanner.MustGetToken(',');
-			scanner.MustGetInteger();
-			const int tag = scanner.number;
+			// skip comma token
+			//MustGetStringName(os, ",");
+			MustGetNumber(os);
+			const int special = GetTokenAsInt(os);
+			//MustGetStringName(os, ",");
+			MustGetNumber(os);
+			const int tag = GetTokenAsInt(os);
 			// allow no 0-tag specials here, unless a level exit.
 			if (tag != 0 || special == 11 || special == 51 || special == 52 || special == 124)
 			{
@@ -538,18 +705,13 @@ static int ParseStandardProperty(Scanner &scanner, level_pwad_info_t *mape)
 	{
 		do
 		{
-			if (!scanner.CheckFloat())
-				scanner.GetNextToken();
-			if (scanner.token > TK_BoolConst) 
-			{
-				scanner.Error(TK_Identifier);
-			}
-			
-		} while (scanner.CheckToken(','));
+			if (!IsRealNum(os.getToken().c_str()))
+				os.scan();
+
+		} while (os.compareToken(","));
 	}
 	free(pname);
-
-	MapNameToLevelNum(mape);
+	os.scan();
 	
 	return 1;
 }
@@ -572,44 +734,54 @@ static void SetLevelDefaults(level_pwad_info_t *levelinfo)
 	strncpy(levelinfo->fadetable, "COLORMAP", 8);
 }
 
-void ParseUMapInfo(int lump, const char* lumpname)
+void ParseUMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
-	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
 	SetLevelDefaults(&defaultinfo);
 	
 	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
-	
-	Scanner scanner((const char*)buffer, W_LumpLength(lump));
-	Scanner::SetErrorCallback(I_Error);
 
-	while (scanner.TokensLeft())
+	OScannerConfig config = {
+		lumpname, // lumpName
+		false,      // semiComments
+		true,       // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+	while (os.scan())
 	{
-		scanner.MustGetIdentifier("map");
-		scanner.MustGetToken(TK_Identifier);
-		if (!G_ValidateMapName(scanner.string, NULL, NULL))
+		if (!UpperCompareToken(os, "map"))
+		{
+			I_Error("Expected map definition, got %s", os.getToken().c_str());
+		}
+
+		MustGetIdentifier(os);
+		if (!G_ValidateMapName(os.getToken().c_str(), NULL, NULL))
 		{
 			// TODO: should display line number of error
-			I_Error("Invalid map name %s", scanner.string);
+			I_Error("Invalid map name %s", os.getToken().c_str());
 		}
 
 		// Find the level.
-		level_pwad_info_t &info = (levels.findByName(scanner.string).exists()) ?
-			levels.findByName(scanner.string) :
+		level_pwad_info_t &info = (levels.findByName(os.getToken()).exists()) ?
+			levels.findByName(os.getToken()) :
 			levels.create();
 		
 		// Free the level name string before we pave over it.
 		free(info.level_name);
 
 		info = defaultinfo;
-		uppercopy(info.mapname, scanner.string);
+		uppercopy(info.mapname, os.getToken().c_str());
 
-		scanner.MustGetToken('{');
-		while (!scanner.CheckToken('}'))
+		MapNameToLevelNum(&info);
+
+		MustGetStringName(os, "{");
+		os.scan();
+		while (!os.compareToken("}"))
 		{
-			ParseStandardProperty(scanner, &info);
+			ParseStandardProperty(os, &info);
 		}
 
 		// Set default level progression here to simplify the checks elsewhere. Doing this lets us skip all normal code for this if nothing has been defined.

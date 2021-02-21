@@ -152,6 +152,18 @@ level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 	return _empty;
 }
 
+level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	{
+		if (mapname == it->mapname)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
 // Find a levelinfo by mapnum
 level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
@@ -1482,7 +1494,7 @@ void G_ParseMapInfo ()
 	lump = -1;
 	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
 	{
-		ParseUMapInfo(lump, "UMAPINFO");
+		ParseUMapInfoLump(lump, "UMAPINFO");
 	}
 
 	// If UMAPINFO exists, we don't parse a normal MAPINFO

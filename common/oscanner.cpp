@@ -24,11 +24,13 @@
 
 #include "version.h"
 
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "i_system.h"
+
 
 #define SINGLE_CHAR_TOKENS "$();=[]{}"
 
@@ -84,6 +86,13 @@ bool OScanner::munchQuotedString()
 {
 	while (_position < _scriptEnd)
 	{
+		// Found an escape character quotation mark in string.
+		if (_position[0] == '\\' && _position + 1 < _scriptEnd && _position[1] == '"')
+		{
+			_removeEscapeCharacter = true;
+			_position += 2;
+		}
+		
 		// Found ending quote.
 		if (_position[0] == '"')
 			return true;
@@ -132,11 +141,33 @@ void OScanner::munchString()
 void OScanner::pushToken(const char* string, size_t length)
 {
 	_token.assign(string, length);
+
+	if (_removeEscapeCharacter)
+	{
+		size_t pos = 0;
+		do
+		{
+			pos = _token.find("\\\"", pos);
+			
+			if (pos == std::string::npos)
+				break;
+
+			_token.replace(pos, 2, "\"");
+			pos += 2;
+		} while (true);
+
+		_removeEscapeCharacter = false;
+	}
 }
 
 void OScanner::pushToken(const std::string& string)
 {
 	_token = string;
+
+	if (_removeEscapeCharacter)
+	{
+		
+	}
 }
 
 //

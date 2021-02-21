@@ -249,6 +249,7 @@ public:
 	void clear();
 	void clearSnapshots();
 	level_pwad_info_t& findByName(const char* mapname);
+	level_pwad_info_t& findByName(const std::string& mapname);
 	level_pwad_info_t& findByNum(int levelnum);
 	size_t size();
 	void zapDeferreds();
