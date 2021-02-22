@@ -74,7 +74,7 @@
 #include <set>
 #include <sstream>
 
-#include "server.pb.h"
+#include <server.pb.h>
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -3404,137 +3404,6 @@ bool IsGameModeDuel()
 	return sv_gametype == GM_DM && sv_maxplayers == 2;
 }
 
-//
-// CL_LoadMap
-//
-// Read wad & deh filenames and map name from the server and loads
-// the appropriate wads & map.
-//
-void CL_LoadMap()
-{
-	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
-	forcenetdemosplit = false;
-
-	if (splitnetdemo)
-		netdemo.stopRecording();
-
-	size_t wadcount = MSG_ReadUnVarint();
-	OWantFiles newwadfiles;
-	newwadfiles.reserve(wadcount);
-	for (size_t i = 0; i < wadcount; i++)
-	{
-		std::string name = MSG_ReadString();
-		std::string hash = MSG_ReadString();
-
-		OWantFile file;
-		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
-		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       name.c_str());
-			CL_QuitNetGame();
-			return;
-		}
-		newwadfiles.push_back(file);
-	}
-
-	size_t patchcount = MSG_ReadUnVarint();
-	OWantFiles newpatchfiles;
-	newpatchfiles.reserve(patchcount);
-	for (size_t i = 0; i < patchcount; i++)
-	{
-		std::string name = MSG_ReadString();
-		std::string hash = MSG_ReadString();
-
-		OWantFile file;
-		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
-		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted patch \"%s\" that server requested.\n",
-			       name.c_str());
-			CL_QuitNetGame();
-			return;
-		}
-		newpatchfiles.push_back(file);
-	}
-
-	const char *mapname = MSG_ReadString();
-	int server_level_time = MSG_ReadVarint();
-
-	// Load the specified WAD and DEH files and change the level.
-	// if any WADs are missing, reconnect to begin downloading.
-	G_LoadWad(newwadfiles, newpatchfiles);
-
-	if (!missingfiles.empty())
-	{
-		OWantFile missing_file = missingfiles.front();
-		QuitAndTryDownload(missing_file);
-		return;
-	}
-
-	// [SL] 2012-12-02 - Force the music to stop when the new map uses
-	// the same music lump name that is currently playing. Otherwise,
-	// the music from the old wad continues to play...
-	S_StopMusic();
-
-	G_InitNew (mapname);
-
-	// [AM] Sync the server's level time with the client.
-	::level.time = server_level_time;
-
-	movingsectors.clear();
-	teleported_players.clear();
-
-	CL_ClearSectorSnapshots();
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		it->snapshots.clearSnapshots();
-
-	// reset the world_index (force it to sync)
-	CL_ResyncWorldIndex();
-	last_svgametic = 0;
-
-	CTF_CheckFlags(consoleplayer());
-
-	gameaction = ga_nothing;
-
-	// Autorecord netdemo or continue recording in a new file
-	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
-	{
-		std::string filename;
-
-		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
-		|| (IsGameModeFFA() && cl_autorecord_deathmatch)
-		|| (IsGameModeDuel() && cl_autorecord_duel)
-		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
-		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
-
-		size_t param = Args.CheckParm("-netrecord");
-		if (param && Args.GetArg(param + 1))
-			filename = Args.GetArg(param + 1);
-
-		if (((splitnetdemo || cl_autorecord) && bCanAutorecord) || param)
-		{
-			if (filename.empty())
-				filename = CL_GenerateNetDemoFileName();
-			else
-				filename = CL_GenerateNetDemoFileName(filename);
-
-			// NOTE(jsd): Presumably a warning is already printed.
-			if (filename.empty())
-			{
-				netdemo.stopRecording();
-				return;
-			}
-
-			netdemo.startRecording(filename);
-		}
-	}
-
-	// write the map index to the netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
-}
-
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -3836,6 +3705,137 @@ static void PingRequest(const svc::PingRequestMsg& msg)
 	MSG_WriteLong(&net_buffer, msg.ms_time());
 }
 
+//
+// LoadMap
+//
+// Read wad & deh filenames and map name from the server and loads
+// the appropriate wads & map.
+//
+void LoadMap(const svc::LoadMapMsg& msg)
+{
+	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
+	forcenetdemosplit = false;
+
+	if (splitnetdemo)
+		netdemo.stopRecording();
+
+	size_t wadcount = msg.wadnames_size();
+	OWantFiles newwadfiles;
+	newwadfiles.reserve(wadcount);
+	for (size_t i = 0; i < wadcount; i++)
+	{
+		std::string name = msg.wadnames().Get(i).name();
+		std::string hash = msg.wadnames().Get(i).hash();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       name.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+		newwadfiles.push_back(file);
+	}
+
+	size_t patchcount = msg.patchnames_size();
+	OWantFiles newpatchfiles;
+	newpatchfiles.reserve(patchcount);
+	for (size_t i = 0; i < patchcount; i++)
+	{
+		std::string name = msg.patchnames().Get(i).name();
+		std::string hash = msg.patchnames().Get(i).hash();
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted patch \"%s\" that server requested.\n",
+			       name.c_str());
+			CL_QuitNetGame();
+			return;
+		}
+		newpatchfiles.push_back(file);
+	}
+
+	std::string mapname = msg.mapname();
+	int server_level_time = msg.time();
+
+	// Load the specified WAD and DEH files and change the level.
+	// if any WADs are missing, reconnect to begin downloading.
+	G_LoadWad(newwadfiles, newpatchfiles);
+
+	if (!missingfiles.empty())
+	{
+		OWantFile missing_file = missingfiles.front();
+		QuitAndTryDownload(missing_file);
+		return;
+	}
+
+	// [SL] 2012-12-02 - Force the music to stop when the new map uses
+	// the same music lump name that is currently playing. Otherwise,
+	// the music from the old wad continues to play...
+	S_StopMusic();
+
+	G_InitNew(mapname.c_str());
+
+	// [AM] Sync the server's level time with the client.
+	::level.time = server_level_time;
+
+	movingsectors.clear();
+	teleported_players.clear();
+
+	CL_ClearSectorSnapshots();
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		it->snapshots.clearSnapshots();
+
+	// reset the world_index (force it to sync)
+	CL_ResyncWorldIndex();
+	last_svgametic = 0;
+
+	CTF_CheckFlags(consoleplayer());
+
+	gameaction = ga_nothing;
+
+	// Autorecord netdemo or continue recording in a new file
+	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
+	{
+		std::string filename;
+
+		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) ||
+		                      (IsGameModeFFA() && cl_autorecord_deathmatch) ||
+		                      (IsGameModeDuel() && cl_autorecord_duel) ||
+		                      (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm) ||
+		                      (sv_gametype == GM_CTF && cl_autorecord_ctf);
+
+		size_t param = Args.CheckParm("-netrecord");
+		if (param && Args.GetArg(param + 1))
+			filename = Args.GetArg(param + 1);
+
+		if (((splitnetdemo || cl_autorecord) && bCanAutorecord) || param)
+		{
+			if (filename.empty())
+				filename = CL_GenerateNetDemoFileName();
+			else
+				filename = CL_GenerateNetDemoFileName(filename);
+
+			// NOTE(jsd): Presumably a warning is already printed.
+			if (filename.empty())
+			{
+				netdemo.stopRecording();
+				return;
+			}
+
+			netdemo.startRecording(filename);
+		}
+	}
+
+	// write the map index to the netdemo
+	if (netdemo.isRecording())
+		netdemo.writeMapChange();
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3868,7 +3868,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
 		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
 		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
-		SERVER_MSG_FUNC(svc_loadmap, CL_LoadMap);
+		SERVER_PROTO_FUNC(svc_loadmap, LoadMap, svc::LoadMapMsg);
 		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
 		SERVER_MSG_FUNC(svc_mobjspeedangle, CL_SetMobjSpeedAndAngle);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);

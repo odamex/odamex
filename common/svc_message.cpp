@@ -247,28 +247,31 @@ void SVC_PingRequest(buf_t& b)
 void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
                  const std::string& mapname, int time)
 {
-	MSG_WriteMarker(&b, svc_loadmap);
+	svc::LoadMapMsg msg;
 
 	// send list of wads (skip over wadnames[0] == odamex.wad)
 	size_t wadcount = wadnames.size() - 1;
-	MSG_WriteUnVarint(&b, wadcount);
 	for (size_t i = 1; i < wadcount + 1; i++)
 	{
-		MSG_WriteString(&b, wadnames[i].getBasename().c_str());
-		MSG_WriteString(&b, wadnames[i].getHash().c_str());
+		svc::LoadMapMsg_Resource* wad = msg.add_wadnames();
+		wad->set_name(wadnames[i].getBasename());
+		wad->set_hash(wadnames[i].getHash());
 	}
 
 	// send list of DEH/BEX patches
 	size_t patchcount = patchnames.size();
-	MSG_WriteUnVarint(&b, patchcount);
 	for (size_t i = 0; i < patchcount; i++)
 	{
-		MSG_WriteString(&b, patchnames[i].getBasename().c_str());
-		MSG_WriteString(&b, patchnames[i].getHash().c_str());
+		svc::LoadMapMsg_Resource* patch = msg.add_patchnames();
+		patch->set_name(patchnames[i].getBasename());
+		patch->set_hash(patchnames[i].getHash());
 	}
 
-	MSG_WriteString(&b, mapname.c_str());
-	MSG_WriteVarint(&b, time);
+	msg.set_mapname(mapname);
+	msg.set_time(time);
+
+	MSG_WriteMarker(&b, svc_loadmap);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
