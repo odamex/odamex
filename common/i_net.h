@@ -135,10 +135,6 @@ enum svc_t
 	svc_spawnplayer,
 	svc_damageplayer,
 	svc_killmobj,
-	svc_firepistol,			// [byte] - playernum
-	svc_fireshotgun,		// [byte] - playernum
-	svc_firessg,			// [byte] - playernum
-	svc_firechaingun,		// [byte] - playernum
 	svc_fireweapon,			// [byte]
 	svc_sector,
 	svc_print,

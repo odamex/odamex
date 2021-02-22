@@ -2682,75 +2682,6 @@ void CL_FireWeapon (void)
 }
 
 //
-// CL_FirePistol
-//
-void CL_FirePistol(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON, "weapons/pistol", 1, ATTN_NORM);
-}
-
-//
-// CL_FireShotgun
-//
-void CL_FireShotgun(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON,  "weapons/shotgf", 1, ATTN_NORM);
-}
-
-//
-// CL_FireSSG
-//
-void CL_FireSSG(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON, "weapons/sshotf", 1, ATTN_NORM);
-}
-
-
-//
-// CL_FireChainGun
-//
-void CL_FireChainGun(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON, "weapons/chngun", 1, ATTN_NORM);
-}
-
-//
 // CL_ChangeWeapon
 // [ML] From Zdaemon .99
 //
@@ -3878,10 +3809,6 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, KillMobj, svc::KillMobjMsg);
-		SERVER_MSG_FUNC(svc_firepistol, CL_FirePistol);
-		SERVER_MSG_FUNC(svc_fireshotgun, CL_FireShotgun);
-		SERVER_MSG_FUNC(svc_firessg, CL_FireSSG);
-		SERVER_MSG_FUNC(svc_firechaingun, CL_FireChainGun);
 		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
