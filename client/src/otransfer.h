@@ -60,26 +60,26 @@ typedef void (*OTransferErrorProc)(const char* msg);
  */
 class OTransferCheck
 {
-	OTransferDoneProc _doneproc;
-	OTransferErrorProc _errproc;
-	CURLM* _curlm;
-	CURL* _curl;
+	OTransferDoneProc m_doneProc;
+	OTransferErrorProc m_errorProc;
+	CURLM* m_curlm;
+	CURL* m_curl;
 
 	OTransferCheck(const OTransferCheck&);
 	static size_t curlWrite(void* data, size_t size, size_t nmemb, void* userp);
 
   public:
 	OTransferCheck(OTransferDoneProc done, OTransferErrorProc err)
-	    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()),
-	      _curl(curl_easy_init())
+	    : m_doneProc(done), m_errorProc(err), m_curlm(curl_multi_init()),
+	      m_curl(curl_easy_init())
 	{
 	}
 
 	~OTransferCheck()
 	{
-		curl_multi_remove_handle(_curlm, _curl);
-		curl_easy_cleanup(_curl);
-		curl_multi_cleanup(_curlm);
+		curl_multi_remove_handle(m_curlm, m_curl);
+		curl_easy_cleanup(m_curl);
+		curl_multi_cleanup(m_curlm);
 	}
 
 	void setURL(const std::string& src);
@@ -93,15 +93,15 @@ class OTransferCheck
  */
 class OTransfer
 {
-	OTransferDoneProc _doneproc;
-	OTransferErrorProc _errproc;
-	CURLM* _curlm;
-	CURL* _curl;
-	FILE* _file;
-	OTransferProgress _progress;
-	std::string _filename;
-	std::string _filepart;
-	std::string _expectHash;
+	OTransferDoneProc m_doneProc;
+	OTransferErrorProc m_errorProc;
+	CURLM* m_curlm;
+	CURL* m_curl;
+	FILE* m_file;
+	OTransferProgress m_progress;
+	std::string m_filename;
+	std::string m_filePart;
+	std::string m_expectHash;
 
 	OTransfer(const OTransfer&);
 	static int curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
@@ -109,23 +109,23 @@ class OTransfer
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
-	    : _doneproc(done), _errproc(err), _curlm(curl_multi_init()),
-	      _curl(curl_easy_init()), _file(NULL), _progress(OTransferProgress()),
-	      _filename(""), _filepart(""), _expectHash("")
+	    : m_doneProc(done), m_errorProc(err), m_curlm(curl_multi_init()),
+	      m_curl(curl_easy_init()), m_file(NULL), m_progress(OTransferProgress()),
+	      m_filename(""), m_filePart(""), m_expectHash("")
 	{
 	}
 
 	~OTransfer()
 	{
-		if (_file != NULL)
-			fclose(_file);
-		curl_multi_remove_handle(_curlm, _curl);
-		curl_easy_cleanup(_curl);
-		curl_multi_cleanup(_curlm);
+		if (m_file != NULL)
+			fclose(m_file);
+		curl_multi_remove_handle(m_curlm, m_curl);
+		curl_easy_cleanup(m_curl);
+		curl_multi_cleanup(m_curlm);
 
 		// Delete partial file if it exists.
-		if (_filepart.length() > 0)
-			remove(_filepart.c_str());
+		if (m_filePart.length() > 0)
+			remove(m_filePart.c_str());
 	}
 
 	void setURL(const std::string& src);

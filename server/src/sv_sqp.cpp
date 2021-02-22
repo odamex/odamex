@@ -90,10 +90,13 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	// TODO: Remove guard before next release
 	QRYNEWINFO(7)
 	{
-		MSG_WriteString(&ml_message, GitNiceVersion());
+		// Send the detailed version - version number was in PROTOCOL_VERSION.
+		MSG_WriteString(&ml_message, NiceVersionDetails());
 	}
 	else
+	{
 		MSG_WriteLong(&ml_message, -1);
+	}
 
 	cvar_t* var = GetFirstCvar();
 

@@ -1,6 +1,8 @@
 # 3.9 needed for GENERATOR_IS_MULTI_CONFIG
 cmake_minimum_required(VERSION 3.9)
 
+project(Odamex VERSION 0.9.0)
+
 include(CMakeDependentOption)
 
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
@@ -31,9 +33,7 @@ cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_IN
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
-project(Odamex VERSION 0.9.0)
-
-set(PROJECT_COPYRIGHT "2006-2020")
+set(PROJECT_COPYRIGHT "2006-2021")
 set(PROJECT_RC_VERSION "0,9,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 

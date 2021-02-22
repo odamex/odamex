@@ -137,7 +137,7 @@ bool OWantFile::make(OWantFile& out, const std::string& file, ofile_t type)
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
 	out.m_basename = StdStringToUpper(basename);
-	out.m_extension = StdStringToUpper(extension);
+	out.m_extension = std::string(".") + StdStringToUpper(extension);
 	return true;
 }
 

@@ -1593,7 +1593,7 @@ void C_DrawConsole()
 
 	if (ConBottom >= 12)
 	{
-		const char* version = GitNiceVersion();
+		const char* version = NiceVersion();
 
 		// print the Odamex version in gold in the bottom right corner of console
 		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version),
