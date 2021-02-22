@@ -321,18 +321,25 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
  */
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 {
-	MSG_WriteMarker(&b, svc_playermembers);
-	MSG_WriteByte(&b, player.id);
-	MSG_WriteByte(&b, flags);
+	svc::PlayerMembersMsg msg;
+
+	msg.set_pid(player.id);
+	msg.set_flags(flags);
 
 	if (flags & SVC_PM_SPECTATOR)
-		MSG_WriteBool(&b, player.spectator);
+	{
+		msg.set_spectator(player.spectator);
+	}
 
 	if (flags & SVC_PM_READY)
-		MSG_WriteBool(&b, player.ready);
+	{
+		msg.set_ready(player.ready);
+	}
 
 	if (flags & SVC_PM_LIVES)
-		MSG_WriteVarint(&b, player.lives);
+	{
+		msg.set_lives(player.lives);
+	}
 
 	if (flags & SVC_PM_SCORE)
 	{
@@ -340,16 +347,19 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 		//      what we send based on game modes.  There's less room for
 		//      breakage when adding game modes, and we have varints now,
 		//      which means we're probably saving bandwidth anyway.
-		MSG_WriteVarint(&b, player.roundwins);
-		MSG_WriteVarint(&b, player.points);
-		MSG_WriteVarint(&b, player.fragcount);
-		MSG_WriteVarint(&b, player.deathcount);
-		MSG_WriteVarint(&b, player.killcount);
+		msg.set_roundwins(player.roundwins);
+		msg.set_points(player.points);
+		msg.set_fragcount(player.fragcount);
+		msg.set_deathcount(player.deathcount);
+		msg.set_killcount(player.killcount);
 		// [AM] Is there any reason we would ever care about itemcount?
-		MSG_WriteVarint(&b, player.secretcount);
-		MSG_WriteVarint(&b, player.totalpoints);
-		MSG_WriteVarint(&b, player.totaldeaths);
+		msg.set_secretcount(player.secretcount);
+		msg.set_totalpoints(player.totalpoints);
+		msg.set_totaldeaths(player.totaldeaths);
 	}
+
+	MSG_WriteMarker(&b, svc_playermembers);
+	MSG_WriteProto(&b, msg);
 }
 
 /**

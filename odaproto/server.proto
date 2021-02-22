@@ -266,16 +266,19 @@ message PrintMsg
 message PlayerMembersMsg
 {
 	int32 pid = 1;
-	bool spectator = 2;
-	bool ready = 3;
-	sint32 lives = 4;
-	int32 roundwins = 5;
-	int32 points = 6;
-	int32 fragcount = 7;
-	int32 deathcount = 8;
-	int32 killcount = 9;
+	uint32 flags = 2;
+	bool spectator = 3;
+	bool ready = 4;
+	sint32 lives = 5;
+	int32 roundwins = 6;
+	int32 points = 7;
+	int32 fragcount = 8;
+	int32 deathcount = 9;
+	int32 killcount = 10;
 	// [AM] Is there any reason we would ever care about itemcount?
-	int32 secretcount = 10;
+	int32 secretcount = 11;
+	int32 totalpoints = 12;
+	int32 totaldeaths = 13;
 }
 
 // svc_teammembers

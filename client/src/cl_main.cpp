@@ -1532,36 +1532,6 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	CL_CheckDisplayPlayer();
 }
 
-/**
- * @brief Updates less-vital members of a player struct.
- */
-void CL_PlayerMembers()
-{
-	player_t& p = CL_FindPlayer(MSG_ReadByte());
-	byte flags = MSG_ReadByte();
-
-	if (flags & SVC_PM_SPECTATOR)
-		CL_SpectatePlayer(p, MSG_ReadBool());
-
-	if (flags & SVC_PM_READY)
-		p.ready = MSG_ReadBool();
-
-	if (flags & SVC_PM_LIVES)
-		p.lives = MSG_ReadVarint();
-
-	if (flags & SVC_PM_SCORE)
-	{
-		p.roundwins = MSG_ReadVarint();
-		p.points = MSG_ReadVarint();
-		p.fragcount = MSG_ReadVarint();
-		p.deathcount = MSG_ReadVarint();
-		p.killcount = MSG_ReadVarint();
-		p.secretcount = MSG_ReadVarint();
-		p.totalpoints = MSG_ReadVarint();
-		p.totaldeaths = MSG_ReadVarint();
-	}
-}
-
 //
 // [deathz0r] Receive team frags/captures
 //
@@ -3605,7 +3575,7 @@ static void PingRequest(const svc::PingRequestMsg& msg)
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-void LoadMap(const svc::LoadMapMsg& msg)
+static void LoadMap(const svc::LoadMapMsg& msg)
 {
 	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
 	forcenetdemosplit = false;
@@ -3735,7 +3705,7 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-void KillMobj(const svc::KillMobjMsg& msg)
+static void KillMobj(const svc::KillMobjMsg& msg)
 {
 	int srcid = msg.source_netid();
 	int tgtid = msg.target_netid();
@@ -3765,6 +3735,42 @@ void KillMobj(const svc::KillMobjMsg& msg)
 		target->player->lives = lives;
 
 	P_KillMobj(source, target, inflictor, joinkill);
+}
+
+/**
+ * @brief Updates less-vital members of a player struct.
+ */
+static void PlayerMembers(const svc::PlayerMembersMsg& msg)
+{
+	player_t& p = CL_FindPlayer(msg.pid());
+	byte flags = msg.flags();
+
+	if (flags & SVC_PM_SPECTATOR)
+	{
+		CL_SpectatePlayer(p, msg.spectator());
+	}
+
+	if (flags & SVC_PM_READY)
+	{
+		p.ready = msg.ready();
+	}
+
+	if (flags & SVC_PM_LIVES)
+	{
+		p.lives = msg.lives();
+	}
+
+	if (flags & SVC_PM_SCORE)
+	{
+		p.roundwins = msg.roundwins();
+		p.points = msg.points();
+		p.fragcount = msg.fragcount();
+		p.deathcount = msg.deathcount();
+		p.killcount = msg.killcount();
+		p.secretcount = msg.secretcount();
+		p.totalpoints = msg.totalpoints();
+		p.totaldeaths = msg.totaldeaths();
+	}
 }
 
 #define SERVER_MSG_FUNC(svc, func) \
@@ -3813,7 +3819,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
 		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
-		SERVER_MSG_FUNC(svc_playermembers, CL_PlayerMembers);
+		SERVER_PROTO_FUNC(svc_playermembers, PlayerMembers, svc::PlayerMembersMsg);
 		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
 		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
 		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
