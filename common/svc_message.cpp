@@ -367,12 +367,16 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
  */
 void SVC_TeamMembers(buf_t& b, team_t team)
 {
+	svc::TeamMembersMsg msg;
+
 	TeamInfo* info = GetTeamInfo(team);
 
+	msg.set_team(team);
+	msg.set_points(info->Points);
+	msg.set_roundwins(info->RoundWins);
+
 	MSG_WriteMarker(&b, svc_teammembers);
-	MSG_WriteVarint(&b, team);
-	MSG_WriteVarint(&b, info->Points);
-	MSG_WriteVarint(&b, info->RoundWins);
+	MSG_WriteProto(&b, msg);
 }
 
 /**

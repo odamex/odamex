@@ -1533,24 +1533,6 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 }
 
 //
-// [deathz0r] Receive team frags/captures
-//
-void CL_TeamMembers()
-{
-	team_t team = static_cast<team_t>(MSG_ReadVarint());
-	int points = MSG_ReadVarint();
-	int roundWins = MSG_ReadVarint();
-
-	// Ensure our team is valid.
-	TeamInfo* info = GetTeamInfo(team);
-	if (info->Team >= NUMTEAMS)
-		return;
-
-	info->Points = points;
-	info->RoundWins = roundWins;
-}
-
-//
 // CL_MoveMobj
 //
 void CL_MoveMobj(void)
@@ -3773,6 +3755,25 @@ static void PlayerMembers(const svc::PlayerMembersMsg& msg)
 	}
 }
 
+//
+// [deathz0r] Receive team frags/captures
+//
+static void TeamMembers(const svc::TeamMembersMsg& msg)
+{
+	team_t team = static_cast<team_t>(msg.team());
+	int points = msg.points();
+	int roundWins = msg.roundwins();
+
+	// Ensure our team is valid.
+	TeamInfo* info = GetTeamInfo(team);
+	if (info->Team >= NUMTEAMS)
+		return;
+
+	info->Points = points;
+	info->RoundWins = roundWins;
+}
+
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3820,7 +3821,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_print, CL_Print);
 		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
 		SERVER_PROTO_FUNC(svc_playermembers, PlayerMembers, svc::PlayerMembersMsg);
-		SERVER_MSG_FUNC(svc_teammembers, CL_TeamMembers);
+		SERVER_PROTO_FUNC(svc_teammembers, TeamMembers, svc::TeamMembersMsg);
 		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
 		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
 		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
