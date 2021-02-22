@@ -721,9 +721,6 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 
 void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
-	if (type == NetDemo::msg_snapshot)
-		Printf("Wrote snapshot: %zu\n", size);
-
 	message_header_t msgheader;
 	memset(&msgheader, 0, sizeof(msgheader));
 	
