@@ -228,10 +228,10 @@ message DamagePlayerMsg
 // svc_killmobj
 message KillMobjMsg
 {
-	int32 netid = 1;
+	int32 source_netid = 1;
 	int32 target_netid = 2;
 	int32 inflictor_netid = 3;
-	int32 target_health = 4;
+	int32 health = 4;
 	int32 mod = 5;
 	bool joinkill = 6;
 	sint32 lives = 7; // Default is -1.

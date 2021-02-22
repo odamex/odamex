@@ -2656,43 +2656,6 @@ void CL_DamagePlayer(void)
 	}
 }
 
-extern int MeansOfDeath;
-
-//
-// CL_KillMobj
-//
-void CL_KillMobj()
-{
-	int srcid = MSG_ReadVarint();
-	int tgtid = MSG_ReadVarint();
-	int infid = MSG_ReadVarint();
-	int health = MSG_ReadVarint();
-	::MeansOfDeath = MSG_ReadVarint();
-	bool joinkill = MSG_ReadBool();
-	int lives = MSG_ReadVarint();
-
-	AActor* source = P_FindThingById(srcid);
-	AActor* target = P_FindThingById(tgtid);
-	AActor* inflictor = P_FindThingById(infid);
-
-	if (!target)
-		return;
-
-	target->health = health;
-
-	if (!serverside && target->flags & MF_COUNTKILL)
-		level.killed_monsters++;
-
-	if (target->player == &consoleplayer())
-		for (size_t i = 0; i < MAXSAVETICS; i++)
-			localcmds[i].clear();
-
-	if (lives >= 0)
-		target->player->lives = lives;
-
-	P_KillMobj(source, target, inflictor, joinkill);
-}
-
 ///////////////////////////////////////////////////////////
 ///// CL_Fire* called when someone uses a weapon  /////////
 ///////////////////////////////////////////////////////////
@@ -3836,6 +3799,43 @@ void LoadMap(const svc::LoadMapMsg& msg)
 		netdemo.writeMapChange();
 }
 
+extern int MeansOfDeath;
+
+//
+// CL_KillMobj
+//
+void KillMobj(const svc::KillMobjMsg& msg)
+{
+	int srcid = msg.source_netid();
+	int tgtid = msg.target_netid();
+	int infid = msg.inflictor_netid();
+	int health = msg.health();
+	::MeansOfDeath = msg.mod();
+	bool joinkill = msg.joinkill();
+	int lives = msg.lives();
+
+	AActor* source = P_FindThingById(srcid);
+	AActor* target = P_FindThingById(tgtid);
+	AActor* inflictor = P_FindThingById(infid);
+
+	if (!target)
+		return;
+
+	target->health = health;
+
+	if (!serverside && target->flags & MF_COUNTKILL)
+		level.killed_monsters++;
+
+	if (target->player == &consoleplayer())
+		for (size_t i = 0; i < MAXSAVETICS; i++)
+			localcmds[i].clear();
+
+	if (lives >= 0)
+		target->player->lives = lives;
+
+	P_KillMobj(source, target, inflictor, joinkill);
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -3877,7 +3877,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_movemobj, CL_MoveMobj);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
-		SERVER_MSG_FUNC(svc_killmobj, CL_KillMobj);
+		SERVER_PROTO_FUNC(svc_killmobj, KillMobj, svc::KillMobjMsg);
 		SERVER_MSG_FUNC(svc_firepistol, CL_FirePistol);
 		SERVER_MSG_FUNC(svc_fireshotgun, CL_FireShotgun);
 		SERVER_MSG_FUNC(svc_firessg, CL_FireSSG);

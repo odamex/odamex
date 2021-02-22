@@ -280,25 +280,36 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill)
 {
-	MSG_WriteMarker(&b, svc_killmobj);
+	svc::KillMobjMsg msg;
 
 	if (source)
-		MSG_WriteVarint(&b, source->netid);
+	{
+		msg.set_source_netid(source->netid);
+	}
 	else
-		MSG_WriteVarint(&b, 0);
+	{
+		msg.set_source_netid(0);
+	}
 
-	MSG_WriteVarint(&b, target->netid);
-	MSG_WriteVarint(&b, inflictor ? inflictor->netid : 0);
-	MSG_WriteVarint(&b, target->health);
-	MSG_WriteVarint(&b, mod);
-	MSG_WriteBool(&b, joinkill);
+	msg.set_target_netid(target->netid);
+	msg.set_inflictor_netid(inflictor ? inflictor->netid : 0);
+	msg.set_health(target->health);
+	msg.set_mod(mod);
+	msg.set_joinkill(joinkill);
 
 	// [AM] Confusingly, we send the lives _before_ we take it away, so
 	//      the lives logic can live in the kill function.
 	if (target->player)
-		MSG_WriteVarint(&b, target->player->lives);
+	{
+		msg.set_lives(target->player->lives);
+	}
 	else
-		MSG_WriteVarint(&b, -1);
+	{
+		msg.set_lives(-1);
+	}
+
+	MSG_WriteMarker(&b, svc_killmobj);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
