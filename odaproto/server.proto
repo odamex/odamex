@@ -542,7 +542,8 @@ message PlayerStateMsg
 	int32 readyweapon = 6;
 	uint32 cards = 7; // bitfield
 	repeated int32 ammos = 8;
-	int32 pspstate = 9;
+	repeated uint32 pspstate = 9;
+	repeated int32 powers = 10;
 }
 
 // svc_levelstate

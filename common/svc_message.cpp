@@ -384,33 +384,41 @@ void SVC_TeamMembers(buf_t& b, team_t team)
  */
 void SVC_PlayerState(buf_t& b, player_t& player)
 {
-	MSG_WriteMarker(&b, svc_playerstate);
+	svc::PlayerStateMsg msg;
 
-	MSG_WriteByte(&b, player.id);
-	MSG_WriteVarint(&b, player.health);
-	MSG_WriteVarint(&b, player.armortype);
-	MSG_WriteVarint(&b, player.armorpoints);
-	MSG_WriteVarint(&b, player.lives);
-	MSG_WriteVarint(&b, player.readyweapon);
+	msg.set_pid(player.id);
+	msg.set_health(player.health);
+	msg.set_armortype(player.armortype);
+	msg.set_armorpoints(player.armorpoints);
+	msg.set_lives(player.lives);
+	msg.set_readyweapon(player.readyweapon);
 
 	std::bitset<6> cardBits;
 	for (int i = 0; i < NUMCARDS; i++)
+	{
 		cardBits.set(i, player.cards[i]);
-
-	MSG_WriteByte(&b, cardBits.to_ulong());
+	}
+	msg.set_cards(cardBits.to_ulong());
 
 	for (int i = 0; i < NUMAMMO; i++)
-		MSG_WriteVarint(&b, player.ammo[i]);
+	{
+		msg.add_ammos(player.ammo[i]);
+	}
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
 		unsigned int state = psp->state - states;
-		MSG_WriteUnVarint(&b, state);
+		msg.add_pspstate(state);
 	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
-		MSG_WriteVarint(&b, player.powers[i]);
+	{
+		msg.add_powers(player.powers[i]);
+	}
+
+	MSG_WriteMarker(&b, svc_playerstate);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -418,13 +426,17 @@ void SVC_PlayerState(buf_t& b, player_t& player)
  */
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 {
+	svc::LevelStateMsg msg;
+
+	msg.set_state(sls.state);
+	msg.set_countdown_done_time(sls.countdown_done_time);
+	msg.set_ingame_start_time(sls.ingame_start_time);
+	msg.set_round_number(sls.round_number);
+	msg.set_last_wininfo_type(sls.last_wininfo_type);
+	msg.set_last_wininfo_id(sls.last_wininfo_id);
+
 	MSG_WriteMarker(&b, svc_levelstate);
-	MSG_WriteVarint(&b, sls.state);
-	MSG_WriteVarint(&b, sls.countdown_done_time);
-	MSG_WriteVarint(&b, sls.ingame_start_time);
-	MSG_WriteVarint(&b, sls.round_number);
-	MSG_WriteVarint(&b, sls.last_wininfo_type);
-	MSG_WriteVarint(&b, sls.last_wininfo_id);
+	MSG_WriteProto(&b, msg);
 }
 
 /**
@@ -435,6 +447,7 @@ void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update secret sectors that've been discovered.
+	// [AM} FIXME: This function should not contain this kind of logic.
 	if (sector != NULL && (!(sector->special & SECRET_MASK) && sector->secretsector))
 	{
 		MSG_WriteMarker(&b, svc_secretevent);

@@ -2133,66 +2133,6 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
-void CL_UpdatePlayerState()
-{
-	byte id = MSG_ReadByte();
-	int health = MSG_ReadVarint();
-	int armortype = MSG_ReadVarint();
-	int armorpoints = MSG_ReadVarint();
-	int lives = MSG_ReadVarint();
-	weapontype_t weap = static_cast<weapontype_t>(MSG_ReadVarint());
-
-	byte cardByte = MSG_ReadByte();
-	std::bitset<6> cardBits(cardByte);
-
-	int ammo[NUMAMMO];
-	for (int i = 0; i < NUMAMMO; i++)
-		ammo[i] = MSG_ReadVarint();
-
-	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		unsigned int state = MSG_ReadUnVarint();
-		if (state >= NUMSTATES)
-		{
-			continue;
-		}
-		stnum[i] = static_cast<statenum_t>(state);
-	}
-
-	int powerups[NUMPOWERS];
-	for (int i = 0; i < NUMPOWERS; i++)
-		powerups[i] = MSG_ReadVarint();
-
-	player_t& player = idplayer(id);
-	if (!validplayer(player) || !player.mo)
-		return;
-
-	player.health = player.mo->health = health;
-	player.armortype = armortype;
-	player.armorpoints = armorpoints;
-	player.lives = lives;
-
-	player.readyweapon = weap;
-	player.pendingweapon = wp_nochange;
-
-	for (int i = 0; i < NUMCARDS; i++)
-		player.cards[i] = cardBits[i];
-
-	if (!player.weaponowned[weap])
-		P_GiveWeapon(&player, weap, false);
-
-	for (int i = 0; i < NUMAMMO; i++)
-		player.ammo[i] = ammo[i];
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(&player, i, stnum[i]);
-
-	for (int i = 0; i < NUMPOWERS; i++)
-		player.powers[i] = powerups[i];
-
-}
-
 //
 // CL_SaveSvGametic
 //
@@ -3305,19 +3245,6 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-// Set local levelstate.
-void CL_LevelState()
-{
-	SerializedLevelState sls;
-	sls.state = static_cast<LevelState::States>(MSG_ReadVarint());
-	sls.countdown_done_time = MSG_ReadVarint();
-	sls.ingame_start_time = MSG_ReadVarint();
-	sls.round_number = MSG_ReadVarint();
-	sls.last_wininfo_type = static_cast<WinInfo::WinType>(MSG_ReadVarint());
-	sls.last_wininfo_id = MSG_ReadVarint();
-	::levelstate.unserialize(sls);
-}
-
 /**
  * @brief svc_noop - Nothing to see here. Move along.
  */
@@ -3361,10 +3288,18 @@ static void PlayerInfo(const svc::PlayerInfoMsg& msg)
 	}
 	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
 
-	for (int i = 0; i < MIN<int>(NUMAMMO, msg.ammo_size()); i++)
+	for (int i = 0; i < NUMAMMO; i++)
 	{
-		p->maxammo[i] = msg.ammo(i).maxammo();
-		p->ammo[i] = msg.ammo(i).ammo();
+		if (i < msg.ammo_size())
+		{
+			p->maxammo[i] = msg.ammo(i).maxammo();
+			p->ammo[i] = msg.ammo(i).ammo();
+		}
+		else
+		{
+			p->maxammo[i] = 0;
+			p->ammo[i] = 0;
+		}
 	}
 
 	p->health = msg.health();
@@ -3382,9 +3317,16 @@ static void PlayerInfo(const svc::PlayerInfoMsg& msg)
 		p->pendingweapon = newweapon;
 	}
 
-	for (int i = 0; i < MIN<int>(NUMPOWERS, msg.powers_size()); i++)
+	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		p->powers[i] = msg.powers(i);
+		if (i < msg.powers_size())
+		{
+			p->powers[i] = msg.powers(i);
+		}
+		else
+		{
+			p->powers[i] = 0;
+		}
 	}
 }
 
@@ -3773,6 +3715,101 @@ static void TeamMembers(const svc::TeamMembersMsg& msg)
 	info->RoundWins = roundWins;
 }
 
+static void PlayerState(const svc::PlayerStateMsg& msg)
+{
+	byte id = msg.pid();
+	int health = msg.health();
+	int armortype = msg.armortype();
+	int armorpoints = msg.armorpoints();
+	int lives = msg.lives();
+	weapontype_t weap = static_cast<weapontype_t>(msg.readyweapon());
+
+	byte cardByte = msg.cards();
+	std::bitset<6> cardBits(cardByte);
+
+	int ammo[NUMAMMO];
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		if (i < msg.ammos_size())
+		{
+			ammo[i] = msg.ammos().Get(i);
+		}
+		else
+		{
+			ammo[i] = 0;
+		}
+	}
+
+	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		if (i < msg.pspstate_size())
+		{
+			unsigned int state = msg.pspstate().Get(i);
+			if (state >= NUMSTATES)
+			{
+				continue;
+			}
+			stnum[i] = static_cast<statenum_t>(state);
+		}
+	}
+
+	int powerups[NUMPOWERS];
+	for (int i = 0; i < NUMPOWERS; i++)
+	{
+		if (i < msg.powers_size())
+		{
+			powerups[i] = msg.powers().Get(i);
+		}
+		else
+		{
+			powerups[i] = 0;
+		}
+	}
+
+	player_t& player = idplayer(id);
+	if (!validplayer(player) || !player.mo)
+		return;
+
+	player.health = player.mo->health = health;
+	player.armortype = armortype;
+	player.armorpoints = armorpoints;
+	player.lives = lives;
+
+	player.readyweapon = weap;
+	player.pendingweapon = wp_nochange;
+
+	for (int i = 0; i < NUMCARDS; i++)
+		player.cards[i] = cardBits[i];
+
+	if (!player.weaponowned[weap])
+		P_GiveWeapon(&player, weap, false);
+
+	for (int i = 0; i < NUMAMMO; i++)
+		player.ammo[i] = ammo[i];
+
+	for (int i = 0; i < NUMPSPRITES; i++)
+		P_SetPsprite(&player, i, stnum[i]);
+
+	for (int i = 0; i < NUMPOWERS; i++)
+		player.powers[i] = powerups[i];
+}
+
+/**
+ * @brief Set local levelstate.
+ */
+static void LevelStateHandler(const svc::LevelStateMsg& msg)
+{
+	// Set local levelstate.
+	SerializedLevelState sls;
+	sls.state = static_cast<LevelState::States>(msg.state());
+	sls.countdown_done_time = msg.countdown_done_time();
+	sls.ingame_start_time = msg.ingame_start_time();
+	sls.round_number = msg.round_number();
+	sls.last_wininfo_type = static_cast<WinInfo::WinType>(msg.last_wininfo_type());
+	sls.last_wininfo_id = msg.last_wininfo_id();
+	::levelstate.unserialize(sls);
+}
 
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
@@ -3845,8 +3882,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
 		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
 		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
-		SERVER_MSG_FUNC(svc_playerstate, CL_UpdatePlayerState);
-		SERVER_MSG_FUNC(svc_levelstate, CL_LevelState);
+		SERVER_PROTO_FUNC(svc_playerstate, PlayerState, svc::PlayerStateMsg);
+		SERVER_PROTO_FUNC(svc_levelstate, LevelStateHandler, svc::LevelStateMsg);
 		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
 		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
 		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
