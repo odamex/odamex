@@ -617,4 +617,81 @@ void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 	}
 }
 
+void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
+{
+	svc::ThinkerUpdateMsg msg;
+
+	if (thinker->IsA(RUNTIME_CLASS(DScroller)))
+	{
+		DScroller* scroller = static_cast<DScroller*>(thinker);
+		svc::ThinkerUpdateMsg_Scroller* smsg = msg.mutable_scroller();
+		smsg->set_type(scroller->GetType());
+		smsg->set_scroll_x(scroller->GetScrollX());
+		smsg->set_scroll_y(scroller->GetScrollY());
+		smsg->set_affectee(scroller->GetAffectee());
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DFireFlicker)))
+	{
+		DFireFlicker* fireFlicker = static_cast<DFireFlicker*>(thinker);
+		svc::ThinkerUpdateMsg_FireFlicker* ffmsg = msg.mutable_fire_flicker();
+		ffmsg->set_sector(fireFlicker->GetSector() - sectors);
+		ffmsg->set_min_light(fireFlicker->GetMinLight());
+		ffmsg->set_max_light(fireFlicker->GetMaxLight());
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DFlicker)))
+	{
+		DFlicker* flicker = static_cast<DFlicker*>(thinker);
+		svc::ThinkerUpdateMsg_Flicker* fmsg = msg.mutable_flicker();
+		fmsg->set_sector(flicker->GetSector() - sectors);
+		fmsg->set_min_light(flicker->GetMinLight());
+		fmsg->set_max_light(flicker->GetMaxLight());
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DLightFlash)))
+	{
+		DLightFlash* lightFlash = static_cast<DLightFlash*>(thinker);
+		svc::ThinkerUpdateMsg_LightFlash* lfmsg = msg.mutable_light_flash();
+		lfmsg->set_sector(lightFlash->GetSector() - sectors);
+		lfmsg->set_min_light(lightFlash->GetMinLight());
+		lfmsg->set_max_light(lightFlash->GetMaxLight());
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DStrobe)))
+	{
+		DStrobe* strobe = static_cast<DStrobe*>(thinker);
+		svc::ThinkerUpdateMsg_Strobe* smsg = msg.mutable_strobe();
+		smsg->set_sector(strobe->GetSector() - sectors);
+		smsg->set_min_light(strobe->GetMinLight());
+		smsg->set_max_light(strobe->GetMaxLight());
+		smsg->set_dark_time(strobe->GetDarkTime());
+		smsg->set_bright_time(strobe->GetBrightTime());
+		smsg->set_count(strobe->GetCount());
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DGlow)))
+	{
+		DGlow* glow = static_cast<DGlow*>(thinker);
+		svc::ThinkerUpdateMsg_Glow* gmsg = msg.mutable_glow();
+		gmsg->set_sector(glow->GetSector() - sectors);
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DGlow2)))
+	{
+		DGlow2* glow2 = static_cast<DGlow2*>(thinker);
+		svc::ThinkerUpdateMsg_Glow2* gmsg = msg.mutable_glow2();
+		gmsg->set_sector(glow2->GetSector() - sectors);
+		gmsg->set_start(glow2->GetStart());
+		gmsg->set_end(glow2->GetEnd());
+		gmsg->set_max_tics(glow2->GetMaxTics());
+		gmsg->set_one_shot(glow2->GetOneShot());
+	}
+	else if (thinker->IsA(RUNTIME_CLASS(DPhased)))
+	{
+		DPhased* phased = static_cast<DPhased*>(thinker);
+		svc::ThinkerUpdateMsg_Phased* pmsg = msg.mutable_phased();
+		pmsg->set_sector(phased->GetSector() - sectors);
+		pmsg->set_base_level(phased->GetBaseLevel());
+		pmsg->set_phase(phased->GetPhase());
+	}
+
+	MSG_WriteMarker(&b, svc_thinkerupdate);
+	MSG_WriteProto(&b, msg);
+}
+
 VERSION_CONTROL(svc_message, "$Id$")

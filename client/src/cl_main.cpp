@@ -3155,7 +3155,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
 		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
 		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
-		SERVER_MSG_FUNC(svc_thinkerupdate, CL_ThinkerUpdate);
+		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate, svc::ThinkerUpdateMsg);
 		SERVER_MSG_FUNC(svc_netdemocap, CL_LocalDemoTic);
 		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
 		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
@@ -3908,110 +3908,6 @@ void CL_SectorSectorPropertiesUpdate()
 		default:
 			break;
 		}
-	}
-}
-
-void CL_ThinkerUpdate()
-{
-	ThinkerType type = (ThinkerType)MSG_ReadByte();
-
-	switch (type)
-	{
-	case TT_Scroller: {
-		DScroller::EScrollType scrollType = (DScroller::EScrollType)MSG_ReadByte();
-		fixed_t dx = MSG_ReadLong();
-		fixed_t dy = MSG_ReadLong();
-		int affectee = MSG_ReadLong();
-		if (numsides <= 0 || numsectors <= 0)
-			break;
-		if (affectee < 0)
-			break;
-		if (scrollType == DScroller::sc_side && affectee > numsides)
-			break;
-		if (scrollType != DScroller::sc_side && affectee > numsectors)
-			break;
-
-		new DScroller(scrollType, dx, dy, -1, affectee, 0);
-	}
-	break;
-	case TT_FireFlicker: {
-		short secnum = MSG_ReadShort();
-		int min = MSG_ReadShort();
-		int max = MSG_ReadShort();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-			new DFireFlicker(&sectors[secnum], max, min);
-	}
-	break;
-	case TT_Flicker: {
-		short secnum = MSG_ReadShort();
-		int min = MSG_ReadShort();
-		int max = MSG_ReadShort();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-			new DFlicker(&sectors[secnum], max, min);
-	}
-	break;
-	case TT_LightFlash: {
-		short secnum = MSG_ReadShort();
-		int min = MSG_ReadShort();
-		int max = MSG_ReadShort();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-			new DLightFlash(&sectors[secnum], min, max);
-	}
-	break;
-	case TT_Strobe: {
-		short secnum = MSG_ReadShort();
-		int min = MSG_ReadShort();
-		int max = MSG_ReadShort();
-		int dark = MSG_ReadShort();
-		int bright = MSG_ReadShort();
-		int count = MSG_ReadByte();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-		{
-			DStrobe* strobe = new DStrobe(&sectors[secnum], max, min, bright, dark);
-			strobe->SetCount(count);
-		}
-	}
-	break;
-	case TT_Glow: {
-		short secnum = MSG_ReadShort();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-			new DGlow(&sectors[secnum]);
-	}
-	break;
-	case TT_Glow2: {
-		short secnum = MSG_ReadShort();
-		int start = MSG_ReadShort();
-		int end = MSG_ReadShort();
-		int tics = MSG_ReadShort();
-		bool oneShot = MSG_ReadByte();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-			new DGlow2(&sectors[secnum], start, end, tics, oneShot);
-	}
-	break;
-	case TT_Phased: {
-		short secnum = MSG_ReadShort();
-		int base = MSG_ReadShort();
-		int phase = MSG_ReadByte();
-		if (numsectors <= 0)
-			break;
-		if (secnum < numsectors)
-			new DPhased(&sectors[secnum], base, phase);
-	}
-	break;
-	default:
-		break;
 	}
 }
 

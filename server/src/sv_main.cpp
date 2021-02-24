@@ -1578,97 +1578,59 @@ void SV_LineStateUpdate(client_t *cl)
 void SV_ThinkerUpdate(client_t* cl)
 {
 	TThinkerIterator<DScroller> scrollIter;
-	TThinkerIterator<DFireFlicker> fireIter;
-	TThinkerIterator<DFlicker> flickerIter;
-	TThinkerIterator<DLightFlash> lightFlashIter;
-	TThinkerIterator<DStrobe> strobeIter;
-	TThinkerIterator<DGlow>	glowIter;
-	TThinkerIterator<DGlow2> glow2Iter;
-	TThinkerIterator<DPhased> phasedIter;
-
-	DScroller *scroller;
-	DFireFlicker* fireFlicker;
-	DFlicker* flicker;
-	DLightFlash* lightFlash;
-	DStrobe* strobe;
-	DGlow* glow;
-	DGlow2* glow2;
-	DPhased* phased;
-
+	DScroller* scroller;
 	while ((scroller = scrollIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_Scroller);
-		MSG_WriteByte(&cl->reliablebuf, scroller->GetType());
-		MSG_WriteLong(&cl->reliablebuf, scroller->GetScrollX());
-		MSG_WriteLong(&cl->reliablebuf, scroller->GetScrollY());
-		MSG_WriteLong(&cl->reliablebuf, scroller->GetAffectee());
+		SVC_ThinkerUpdate(cl->reliablebuf, scroller);
 	}
 
+	TThinkerIterator<DFireFlicker> fireIter;
+	DFireFlicker* fireFlicker;
 	while ((fireFlicker = fireIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_FireFlicker);
-		MSG_WriteShort(&cl->reliablebuf, fireFlicker->GetSector() - sectors);
-		MSG_WriteShort(&cl->reliablebuf, fireFlicker->GetMinLight());
-		MSG_WriteShort(&cl->reliablebuf, fireFlicker->GetMaxLight());
+		SVC_ThinkerUpdate(cl->reliablebuf, fireFlicker);
 	}
 
+	TThinkerIterator<DFlicker> flickerIter;
+	DFlicker* flicker;
 	while ((flicker = flickerIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_Flicker);
-		MSG_WriteShort(&cl->reliablebuf, flicker->GetSector() - sectors);
-		MSG_WriteShort(&cl->reliablebuf, flicker->GetMinLight());
-		MSG_WriteShort(&cl->reliablebuf, flicker->GetMaxLight());
+		SVC_ThinkerUpdate(cl->reliablebuf, flicker);
 	}
 
+	TThinkerIterator<DLightFlash> lightFlashIter;
+	DLightFlash* lightFlash;
 	while ((lightFlash = lightFlashIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_LightFlash);
-		MSG_WriteShort(&cl->reliablebuf, lightFlash->GetSector() - sectors);
-		MSG_WriteShort(&cl->reliablebuf, lightFlash->GetMinLight());
-		MSG_WriteShort(&cl->reliablebuf, lightFlash->GetMaxLight());
+		SVC_ThinkerUpdate(cl->reliablebuf, lightFlash);
 	}
 
+	TThinkerIterator<DStrobe> strobeIter;
+	DStrobe* strobe;
 	while ((strobe = strobeIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_Strobe);
-		MSG_WriteShort(&cl->reliablebuf, strobe->GetSector() - sectors);
-		MSG_WriteShort(&cl->reliablebuf, strobe->GetMinLight());
-		MSG_WriteShort(&cl->reliablebuf, strobe->GetMaxLight());
-		MSG_WriteShort(&cl->reliablebuf, strobe->GetDarkTime());
-		MSG_WriteShort(&cl->reliablebuf, strobe->GetBrightTime());
-		MSG_WriteByte(&cl->reliablebuf, strobe->GetCount());
+		SVC_ThinkerUpdate(cl->reliablebuf, strobe);
 	}
 
+	TThinkerIterator<DGlow> glowIter;
+	DGlow* glow;
 	while ((glow = glowIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_Glow);
-		MSG_WriteShort(&cl->reliablebuf, glow->GetSector() - sectors);
+		SVC_ThinkerUpdate(cl->reliablebuf, glow);
 	}
 
+	TThinkerIterator<DGlow2> glow2Iter;
+	DGlow2* glow2;
 	while ((glow2 = glow2Iter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_Glow2);
-		MSG_WriteShort(&cl->reliablebuf, glow2->GetSector() - sectors);
-		MSG_WriteShort(&cl->reliablebuf, glow2->GetStart());
-		MSG_WriteShort(&cl->reliablebuf, glow2->GetEnd());
-		MSG_WriteShort(&cl->reliablebuf, glow2->GetMaxTics());
-		MSG_WriteByte(&cl->reliablebuf, glow2->GetOneShot());
+		SVC_ThinkerUpdate(cl->reliablebuf, glow2);
 	}
 
+	TThinkerIterator<DPhased> phasedIter;
+	DPhased* phased;
 	while ((phased = phasedIter.Next()))
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_thinkerupdate);
-		MSG_WriteByte(&cl->reliablebuf, TT_Phased);
-		MSG_WriteShort(&cl->reliablebuf, phased->GetSector() - sectors);
-		MSG_WriteShort(&cl->reliablebuf, phased->GetBaseLevel());
-		MSG_WriteByte(&cl->reliablebuf, phased->GetPhase());
+		SVC_ThinkerUpdate(cl->reliablebuf, phased);
 	}
 }
 

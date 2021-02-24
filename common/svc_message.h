@@ -52,5 +52,6 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
 void SVC_SecretFound(buf_t& b, int playerid, int sectornum);
+void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker);
 
 #endif // __SV_MESSAGE_H__

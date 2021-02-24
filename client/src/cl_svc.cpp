@@ -812,3 +812,109 @@ void CL_LevelState(const svc::LevelStateMsg& msg)
 	sls.last_wininfo_id = msg.last_wininfo_id();
 	::levelstate.unserialize(sls);
 }
+
+/**
+ * @brief Update a thinker.
+ */
+void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
+{
+	switch (msg.thinker_case())
+	{
+	case svc::ThinkerUpdateMsg::kScroller: {
+		DScroller::EScrollType scrollType =
+		    static_cast<DScroller::EScrollType>(msg.scroller().type());
+		fixed_t dx = msg.scroller().scroll_x();
+		fixed_t dy = msg.scroller().scroll_y();
+		int affectee = msg.scroller().affectee();
+		if (numsides <= 0 || numsectors <= 0)
+			break;
+		if (affectee < 0)
+			break;
+		if (scrollType == DScroller::sc_side && affectee > numsides)
+			break;
+		if (scrollType != DScroller::sc_side && affectee > numsectors)
+			break;
+
+		new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kFireFlicker: {
+		short secnum = msg.fire_flicker().sector();
+		int min = msg.fire_flicker().min_light();
+		int max = msg.fire_flicker().max_light();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+			new DFireFlicker(&sectors[secnum], max, min);
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kFlicker: {
+		short secnum = msg.flicker().sector();
+		int min = msg.flicker().min_light();
+		int max = msg.flicker().max_light();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+			new DFlicker(&sectors[secnum], max, min);
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kLightFlash: {
+		short secnum = msg.light_flash().sector();
+		int min = msg.light_flash().min_light();
+		int max = msg.light_flash().max_light();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+			new DLightFlash(&sectors[secnum], min, max);
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kStrobe: {
+		short secnum = msg.strobe().sector();
+		int min = msg.strobe().min_light();
+		int max = msg.strobe().max_light();
+		int dark = msg.strobe().dark_time();
+		int bright = msg.strobe().bright_time();
+		int count = msg.strobe().count();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+		{
+			DStrobe* strobe = new DStrobe(&sectors[secnum], max, min, bright, dark);
+			strobe->SetCount(count);
+		}
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kGlow: {
+		short secnum = msg.glow().sector();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+			new DGlow(&sectors[secnum]);
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kGlow2: {
+		short secnum = msg.glow2().sector();
+		int start = msg.glow2().start();
+		int end = msg.glow2().end();
+		int tics = msg.glow2().max_tics();
+		bool oneShot = msg.glow2().one_shot();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+			new DGlow2(&sectors[secnum], start, end, tics, oneShot);
+		break;
+	}
+	case svc::ThinkerUpdateMsg::kPhased: {
+		short secnum = msg.phased().sector();
+		int base = msg.phased().base_level();
+		int phase = msg.phased().phase();
+		if (numsectors <= 0)
+			break;
+		if (secnum < numsectors)
+			new DPhased(&sectors[secnum], base, phase);
+		break;
+	}
+	default:
+		break;
+	}
+}
