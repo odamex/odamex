@@ -31,6 +31,7 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
+#include "g_gametype.h"
 #include "g_level.h"
 #include "g_levelstate.h"
 #include "m_argv.h"
@@ -318,8 +319,6 @@ void CL_PingRequest(const svc::PingRequestMsg& msg)
 	MSG_WriteMarker(&net_buffer, clc_pingreply);
 	MSG_WriteLong(&net_buffer, msg.ms_time());
 }
-
-#include "g_gametype.h"
 
 //
 // LoadMap
