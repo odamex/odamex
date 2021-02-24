@@ -2712,160 +2712,6 @@ void CL_UpdateSector(void)
 }
 
 //
-// CL_UpdateMovingSector
-// Updates floorheight and ceilingheight of a sector.
-//
-void CL_UpdateMovingSector(void)
-{
-	unsigned short sectornum = (unsigned short)MSG_ReadShort();
-
-    fixed_t ceilingheight = MSG_ReadShort() << FRACBITS;
-    fixed_t floorheight = MSG_ReadShort() << FRACBITS;
-
-	byte movers = MSG_ReadByte();
-	movertype_t ceiling_mover = static_cast<movertype_t>(movers & 0x0F);
-	movertype_t floor_mover = static_cast<movertype_t>((movers & 0xF0) >> 4);
-
-	if (ceiling_mover == SEC_ELEVATOR)
-		floor_mover = SEC_INVALID;
-	if (ceiling_mover == SEC_PILLAR)
-		floor_mover = SEC_INVALID;
-
-	SectorSnapshot snap(last_svgametic);
-
-	snap.setCeilingHeight(ceilingheight);
-	snap.setFloorHeight(floorheight);
-
-	if (floor_mover == SEC_FLOOR)
-	{
-		// Floors/Stairbuilders
-		snap.setFloorMoverType(SEC_FLOOR);
-		snap.setFloorType(static_cast<DFloor::EFloor>(MSG_ReadByte()));
-		snap.setFloorStatus(MSG_ReadByte());
-		snap.setFloorCrush(MSG_ReadBool());
-		snap.setFloorDirection(char(MSG_ReadByte()));
-		snap.setFloorSpecial(MSG_ReadShort());
-		snap.setFloorTexture(MSG_ReadShort());
-		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setFloorSpeed(MSG_ReadLong());
-		snap.setResetCounter(MSG_ReadLong());
-		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
-		snap.setDelay(MSG_ReadLong());
-		snap.setPauseTime(MSG_ReadLong());
-		snap.setStepTime(MSG_ReadLong());
-		snap.setPerStepTime(MSG_ReadLong());
-		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
-		snap.setFloorChange(MSG_ReadByte());
-
-		int LineIndex = MSG_ReadLong();
-
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setFloorLine(NULL);
-		else
-			snap.setFloorLine(&lines[LineIndex]);
-	}
-
-	if (floor_mover == SEC_PLAT)
-	{
-		// Platforms/Lifts
-		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(MSG_ReadLong());
-		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
-		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
-		snap.setFloorWait(MSG_ReadLong());
-		snap.setFloorCounter(MSG_ReadLong());
-		snap.setFloorStatus(MSG_ReadByte());
-		snap.setOldFloorStatus(MSG_ReadByte());
-		snap.setFloorCrush(MSG_ReadBool());
-		snap.setFloorTag(MSG_ReadShort());
-		snap.setFloorType(MSG_ReadByte());
-		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
-		snap.setFloorLip(MSG_ReadShort() << FRACBITS);
-	}
-
-	if (ceiling_mover == SEC_CEILING)
-	{
-		// Ceilings / Crushers
-		snap.setCeilingMoverType(SEC_CEILING);
-		snap.setCeilingType(MSG_ReadByte());
-		snap.setCeilingLow(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setCrusherSpeed1(MSG_ReadLong());
-		snap.setCrusherSpeed2(MSG_ReadLong());
-		snap.setCeilingCrush(MSG_ReadBool());
-		snap.setSilent(MSG_ReadBool());
-		snap.setCeilingDirection(char(MSG_ReadByte()));
-		snap.setCeilingTexture(MSG_ReadShort());
-		snap.setCeilingSpecial(MSG_ReadShort());
-		snap.setCeilingTag(MSG_ReadShort());
-		snap.setCeilingOldDirection(char(MSG_ReadByte()));
-    }
-
-	if (ceiling_mover == SEC_DOOR)
-	{
-		// Doors
-		snap.setCeilingMoverType(SEC_DOOR);
-		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
-		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setCeilingWait(MSG_ReadLong());
-		snap.setCeilingCounter(MSG_ReadLong());
-		snap.setCeilingStatus(MSG_ReadByte());
-
-		int LineIndex = MSG_ReadLong();
-
-		// If the moving sector's line is -1, it is likely a type 666 door
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setCeilingLine(NULL);
-		else
-			snap.setCeilingLine(&lines[LineIndex]);
-	}
-
-	if (ceiling_mover == SEC_ELEVATOR)
-    {
-		// Elevators
-		snap.setCeilingMoverType(SEC_ELEVATOR);
-		snap.setFloorMoverType(SEC_ELEVATOR);
-		snap.setCeilingType(static_cast<DElevator::EElevator>(MSG_ReadByte()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(MSG_ReadByte());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setCeilingDirection(char(MSG_ReadByte()));
-		snap.setFloorDirection(snap.getCeilingDirection());
-		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setFloorSpeed(snap.getCeilingSpeed());
-	}
-
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		// Pillars
-		snap.setCeilingMoverType(SEC_PILLAR);
-		snap.setFloorMoverType(SEC_PILLAR);
-		snap.setCeilingType(static_cast<DPillar::EPillar>(MSG_ReadByte()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(MSG_ReadByte());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(MSG_ReadLong());
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingCrush(MSG_ReadBool());
-		snap.setFloorCrush(snap.getCeilingCrush());
-	}
-
-	if (!sectors || sectornum >= numsectors)
-		return;
-
-	snap.setSector(&sectors[sectornum]);
-
-	sector_snaps[sectornum].addSnapshot(snap);
-}
-
-
-//
 // CL_CheckMissedPacket
 //
 void CL_CheckMissedPacket(void)
@@ -3715,6 +3561,177 @@ static void TeamMembers(const svc::TeamMembersMsg& msg)
 	info->RoundWins = roundWins;
 }
 
+//
+// CL_UpdateMovingSector
+// Updates floorheight and ceilingheight of a sector.
+//
+static void MovingSector(const svc::MovingSectorMsg& msg)
+{
+	int sectornum = msg.sectornum();
+
+	fixed_t ceilingheight = msg.ceiling_height();
+	fixed_t floorheight = msg.floor_height();
+
+	uint32_t movers = msg.movers();
+	movertype_t ceiling_mover = static_cast<movertype_t>(movers & BIT_MASK(0, 3));
+	movertype_t floor_mover = static_cast<movertype_t>((movers & BIT_MASK(4, 7)) >> 4);
+
+	if (ceiling_mover == SEC_ELEVATOR)
+	{
+		floor_mover = SEC_INVALID;
+	}
+	if (ceiling_mover == SEC_PILLAR)
+	{
+		floor_mover = SEC_INVALID;
+	}
+
+	SectorSnapshot snap(last_svgametic);
+
+	snap.setCeilingHeight(ceilingheight);
+	snap.setFloorHeight(floorheight);
+
+	if (floor_mover == SEC_FLOOR)
+	{
+		const svc::MovingSectorMsg_Snapshot& floor = msg.floor_mover();
+
+		// Floors/Stairbuilders
+		snap.setFloorMoverType(SEC_FLOOR);
+		snap.setFloorType(static_cast<DFloor::EFloor>(floor.floor_type()));
+		snap.setFloorStatus(floor.floor_status());
+		snap.setFloorCrush(floor.floor_crush());
+		snap.setFloorDirection(floor.floor_dir());
+		snap.setFloorSpecial(floor.floor_speed());
+		snap.setFloorTexture(floor.floor_tex());
+		snap.setFloorDestination(floor.floor_dest());
+		snap.setFloorSpeed(floor.floor_speed());
+		snap.setResetCounter(floor.reset_counter());
+		snap.setOrgHeight(floor.orig_height());
+		snap.setDelay(floor.delay());
+		snap.setPauseTime(floor.pause_time());
+		snap.setStepTime(floor.step_time());
+		snap.setPerStepTime(floor.per_step_time());
+		snap.setFloorOffset(floor.floor_offset());
+		snap.setFloorChange(floor.floor_change());
+
+		int LineIndex = floor.floor_line();
+
+		if (!lines || LineIndex >= numlines || LineIndex < 0)
+			snap.setFloorLine(NULL);
+		else
+			snap.setFloorLine(&lines[LineIndex]);
+	}
+
+	if (floor_mover == SEC_PLAT)
+	{
+		const svc::MovingSectorMsg_Snapshot& floor = msg.floor_mover();
+
+		// Platforms/Lifts
+		snap.setFloorMoverType(SEC_PLAT);
+		snap.setFloorSpeed(floor.floor_speed());
+		snap.setFloorLow(floor.floor_low());
+		snap.setFloorHigh(floor.floor_high());
+		snap.setFloorWait(floor.floor_wait());
+		snap.setFloorCounter(floor.floor_counter());
+		snap.setFloorStatus(floor.floor_status());
+		snap.setOldFloorStatus(floor.floor_old_status());
+		snap.setFloorCrush(floor.floor_crush());
+		snap.setFloorTag(floor.floor_tag());
+		snap.setFloorType(floor.floor_type());
+		snap.setFloorOffset(floor.floor_offset());
+		snap.setFloorLip(floor.floor_lip());
+	}
+
+	if (ceiling_mover == SEC_CEILING)
+	{
+		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+
+		// Ceilings / Crushers
+		snap.setCeilingMoverType(SEC_CEILING);
+		snap.setCeilingType(ceil.ceil_type());
+		snap.setCeilingLow(ceil.ceil_low());
+		snap.setCeilingHigh(ceil.ceil_high());
+		snap.setCeilingSpeed(ceil.ceil_speed());
+		snap.setCrusherSpeed1(ceil.crusher_speed_1());
+		snap.setCrusherSpeed2(ceil.crusher_speed_2());
+		snap.setCeilingCrush(ceil.ceil_crush());
+		snap.setSilent(ceil.silent());
+		snap.setCeilingDirection(ceil.ceil_dir());
+		snap.setCeilingTexture(ceil.ceil_tex());
+		snap.setCeilingSpecial(ceil.ceil_new_special());
+		snap.setCeilingTag(ceil.ceil_tag());
+		snap.setCeilingOldDirection(ceil.ceil_old_dir());
+	}
+
+	if (ceiling_mover == SEC_DOOR)
+	{
+		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+
+		// Doors
+		snap.setCeilingMoverType(SEC_DOOR);
+		snap.setCeilingType(static_cast<DDoor::EVlDoor>(ceil.ceil_type()));
+		snap.setCeilingHigh(ceil.ceil_height());
+		snap.setCeilingSpeed(ceil.ceil_speed());
+		snap.setCeilingWait(ceil.ceil_wait());
+		snap.setCeilingCounter(ceil.ceil_counter());
+		snap.setCeilingStatus(ceil.ceil_status());
+
+		int LineIndex = ceil.ceil_line();
+
+		// If the moving sector's line is -1, it is likely a type 666 door
+		if (!lines || LineIndex >= numlines || LineIndex < 0)
+			snap.setCeilingLine(NULL);
+		else
+			snap.setCeilingLine(&lines[LineIndex]);
+	}
+
+	if (ceiling_mover == SEC_ELEVATOR)
+	{
+		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+
+		// Elevators
+		snap.setCeilingMoverType(SEC_ELEVATOR);
+		snap.setFloorMoverType(SEC_ELEVATOR);
+		snap.setCeilingType(static_cast<DElevator::EElevator>(ceil.ceil_type()));
+		snap.setFloorType(snap.getCeilingType());
+		snap.setCeilingStatus(ceil.ceil_status());
+		snap.setFloorStatus(snap.getCeilingStatus());
+		snap.setCeilingDirection(ceil.ceil_dir());
+		snap.setFloorDirection(snap.getCeilingDirection());
+		snap.setFloorDestination(ceil.floor_dest());
+		snap.setCeilingDestination(ceil.ceil_dest());
+		snap.setCeilingSpeed(ceil.ceil_speed());
+		snap.setFloorSpeed(snap.getCeilingSpeed());
+	}
+
+	if (ceiling_mover == SEC_PILLAR)
+	{
+		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+
+		// Pillars
+		snap.setCeilingMoverType(SEC_PILLAR);
+		snap.setFloorMoverType(SEC_PILLAR);
+		snap.setCeilingType(static_cast<DPillar::EPillar>(ceil.ceil_type()));
+		snap.setFloorType(snap.getCeilingType());
+		snap.setCeilingStatus(ceil.ceil_status());
+		snap.setFloorStatus(snap.getCeilingStatus());
+		snap.setFloorSpeed(ceil.floor_speed());
+		snap.setCeilingSpeed(ceil.ceil_speed());
+		snap.setFloorDestination(ceil.floor_dest());
+		snap.setCeilingDestination(ceil.ceil_dest());
+		snap.setCeilingCrush(ceil.ceil_crush());
+		snap.setFloorCrush(snap.getCeilingCrush());
+	}
+
+	if (!sectors || sectornum >= numsectors)
+	{
+		return;
+	}
+
+	snap.setSector(&sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
 static void PlayerState(const svc::PlayerStateMsg& msg)
 {
 	byte id = msg.pid();
@@ -3860,7 +3877,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_playermembers, PlayerMembers, svc::PlayerMembersMsg);
 		SERVER_PROTO_FUNC(svc_teammembers, TeamMembers, svc::TeamMembersMsg);
 		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
-		SERVER_MSG_FUNC(svc_movingsector, CL_UpdateMovingSector);
+		SERVER_PROTO_FUNC(svc_movingsector, MovingSector, svc::MovingSectorMsg);
 		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);

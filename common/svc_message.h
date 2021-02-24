@@ -48,6 +48,7 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 				  bool joinkill);
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);
 void SVC_TeamMembers(buf_t& b, team_t team);
+void SVC_MovingSector(buf_t& b, const sector_t& sector);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
 void SVC_SecretFound(buf_t& b, int playerid, int sectornum);

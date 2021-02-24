@@ -301,108 +301,62 @@ message ActivateLineMsg
 // svc_movingsector
 message MovingSectorMsg
 {
-	message Floor
+	message Snapshot
 	{
-		int32 type = 1;
-		int32 status = 2;
-		bool crush = 3;
-		sint32 direction = 4; // Direction is 1 or -1.
-		int32 new_special = 5;
-		int32 texture = 6;
-		sfixed32 floor_dest = 7;
-		int32 speed = 8; // Speed might be fixed_t, but it's also centered on 0.
-		int32 reset_count = 9;
-		sfixed32 org_height = 10; 
-		int32 delay = 11;
-		int32 pause_time = 12;
-		int32 step_time = 13;
-		int32 per_step_time = 14;
-		sfixed32 height = 15;
-		int32 change = 16;
-		sint32 lineid = 17; // Default is -1.
-	}
-
-	message Plat
-	{
-		int32 speed = 1; // Speed might be fixed_t, but it's also centered on 0.
-		sfixed32 low = 2;
-		sfixed32 high = 3;
-		int32 wait = 4;
-		int32 count = 5;
-		int32 status = 6;
-		int32 old_status = 7;
-		bool crush = 8;
-		int32 tag = 9;
-		int32 type = 10;
-		sfixed32 height = 11;
-		sfixed32 lip = 12;
-	}
-
-	message Ceiling
-	{
-		int32 type = 1;
-		sfixed32 bottom_height = 2;
-		sfixed32 top_height = 3;
-		int32 speed = 4; // Speed might be fixed_t, but it's also centered on 0.
-		int32 speed1 = 5; // Speed might be fixed_t, but it's also centered on 0.
-		int32 speed2 = 6; // Speed might be fixed_t, but it's also centered on 0.
-		bool crush = 7;
-		int32 silent = 8;
-		sint32 direction = 9; // Direction is 1 or -1.
-		int32 texture = 10;
-		int32 new_special = 11;
-		int32 tag = 12;
-		int32 old_direction = 13;
-	}
-
-	message Door
-	{
-		int32 type = 1;
-		sfixed32 top_height = 2;
-		int32 speed = 3; // Speed might be fixed_t, but it's also centered on 0.
-		int32 top_wait = 4;
-		int32 top_countdown = 5;
-		int32 status = 6;
-		sint32 line = 7; // Default is -1.
-	}
-
-	message Elevator
-	{
-		int32 type = 1;
-		int32 status = 2;
-		sint32 direction = 3; // Direction is 1 or -1.
-		sfixed32 floor_dest = 4;
-		sfixed32 ceiling_dest = 5;
-		int32 speed = 6;  // Speed might be fixed_t, but it's also centered on 0.
-	}
-
-	message Pillar
-	{
-		int32 type = 1;
-		int32 status = 2;
-		int32 floor_speed = 3;
-		int32 ceiling_speed = 4;
-		sfixed32 floor_target = 5;
-		sfixed32 ceiling_target = 6;
-		bool crush = 7;
+		int32 ceil_type = 1;
+		int32 floor_type = 2;
+		int32 ceil_tag = 3;
+		int32 floor_tag = 4;
+		sint32 ceil_line = 5; // Default is -1
+		sint32 floor_line = 6; // Default is -1
+		sfixed32 ceil_height = 7;
+		sfixed32 floor_height = 8;
+		int32 ceil_speed = 9; // Speed might be fixed_t, but it's also centered on 0.
+		int32 floor_speed = 10; // Speed might be fixed_t, but it's also centered on 0.
+		sfixed32 ceil_dest = 11;
+		sfixed32 floor_dest = 12;
+		sint32 ceil_dir = 13; // Direction is 1 or -1.
+		sint32 floor_dir = 14; // Direction is 1 or -1.
+		sint32 ceil_old_dir = 15; // Direction is 1 or -1.
+		sint32 floor_old_dir = 16; // Direction is 1 or -1.
+		int32 ceil_tex = 17;
+		int32 floor_tex = 18;
+		int32 ceil_new_special = 19;
+		int32 floor_new_special = 20;
+		sfixed32 ceil_low = 21;
+		sfixed32 ceil_high = 22;
+		sfixed32 floor_low = 23;
+		sfixed32 floor_high = 24;
+		bool ceil_crush = 25;
+		bool floor_crush = 26;
+		bool silent = 27;
+		int32 ceil_wait = 28;
+		int32 floor_wait = 29;
+		int32 ceil_counter = 30;
+		int32 floor_counter = 31;
+		int32 reset_counter = 32;
+		int32 ceil_status = 33;
+		int32 floor_status = 34;
+		int32 floor_old_status = 35;
+		int32 crusher_speed_1 = 36; // Speed might be fixed_t, but it's also centered on 0.
+		int32 crusher_speed_2 = 37; // Speed might be fixed_t, but it's also centered on 0.
+		int32 step_time = 38;
+		int32 per_step_time = 39;
+		int32 pause_time = 40;
+		sfixed32 orig_height = 41; // Type is int, but is actually a fixed_t.
+		int32 delay = 42;
+		sfixed32 floor_lip = 43;
+		sfixed32 floor_offset = 44;
+		int32 ceil_change = 45;
+		int32 floor_change = 46;
 	}
 
 	int32 sectornum = 1;
 	sfixed32 ceiling_height = 2;
 	sfixed32 floor_height = 3;
-	int32 movers = 4;
-	oneof ceiling_mover
-	{
-		Elevator elevator = 5;
-		Pillar pillar = 6;
-		Ceiling ceiling = 7;
-		Door door = 8;
-	}
-	oneof floor_mover
-	{
-		Floor floor = 9;
-		Plat plat = 10;
-	}
+	uint32 movers = 4;
+	Snapshot ceiling_mover = 5;
+	Snapshot floor_mover = 6;
 }
 
 // svc_startsound

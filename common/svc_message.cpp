@@ -379,6 +379,166 @@ void SVC_TeamMembers(buf_t& b, team_t team)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_MovingSector(buf_t& b, const sector_t& sector)
+{
+	svc::MovingSectorMsg msg;
+
+	ptrdiff_t sectornum = &sector - sectors;
+
+	// Determine which moving planes are in this sector - governs which
+	// fields to send to the other side.
+	movertype_t floor_mover = SEC_INVALID, ceiling_mover = SEC_INVALID;
+
+	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+	{
+		ceiling_mover = SEC_CEILING;
+	}
+	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+	{
+		ceiling_mover = SEC_DOOR;
+	}
+	if (sector.floordata && sector.floordata->IsA(RUNTIME_CLASS(DFloor)))
+	{
+		floor_mover = SEC_FLOOR;
+	}
+	if (sector.floordata && sector.floordata->IsA(RUNTIME_CLASS(DPlat)))
+	{
+		floor_mover = SEC_PLAT;
+	}
+	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+	{
+		ceiling_mover = SEC_ELEVATOR;
+		floor_mover = SEC_INVALID;
+	}
+	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+	{
+		ceiling_mover = SEC_PILLAR;
+		floor_mover = SEC_INVALID;
+	}
+
+	// no moving planes?  skip it.
+	if (ceiling_mover == SEC_INVALID && floor_mover == SEC_INVALID)
+	{
+		return;
+	}
+
+	// Create bitfield to denote moving planes in this sector
+	byte movers = byte(ceiling_mover) | (byte(floor_mover) << 4);
+
+	msg.set_sectornum(sectornum);
+	msg.set_ceiling_height(P_CeilingHeight(&sector));
+	msg.set_floor_height(P_FloorHeight(&sector));
+	msg.set_movers(movers);
+
+	if (ceiling_mover == SEC_ELEVATOR)
+	{
+		DElevator* Elevator = static_cast<DElevator*>(sector.ceilingdata);
+
+		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		ceil->set_ceil_type(Elevator->m_Type);
+		ceil->set_ceil_status(Elevator->m_Status);
+		ceil->set_ceil_dir(Elevator->m_Direction);
+		ceil->set_floor_dest(Elevator->m_FloorDestHeight);
+		ceil->set_ceil_dest(Elevator->m_CeilingDestHeight);
+		ceil->set_ceil_speed(Elevator->m_Speed);
+	}
+
+	if (ceiling_mover == SEC_PILLAR)
+	{
+		DPillar* Pillar = static_cast<DPillar*>(sector.ceilingdata);
+
+		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		ceil->set_ceil_type(Pillar->m_Type);
+		ceil->set_ceil_status(Pillar->m_Status);
+		ceil->set_floor_speed(Pillar->m_FloorSpeed);
+		ceil->set_ceil_speed(Pillar->m_CeilingSpeed);
+		ceil->set_floor_dest(Pillar->m_FloorTarget);
+		ceil->set_ceil_dest(Pillar->m_CeilingTarget);
+		ceil->set_ceil_crush(Pillar->m_Crush);
+	}
+
+	if (ceiling_mover == SEC_CEILING)
+	{
+		DCeiling* Ceiling = static_cast<DCeiling*>(sector.ceilingdata);
+
+		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		ceil->set_ceil_type(Ceiling->m_Type);
+		ceil->set_ceil_low(Ceiling->m_BottomHeight);
+		ceil->set_ceil_high(Ceiling->m_TopHeight);
+		ceil->set_ceil_speed(Ceiling->m_Speed);
+		ceil->set_crusher_speed_1(Ceiling->m_Speed1);
+		ceil->set_crusher_speed_2(Ceiling->m_Speed2);
+		ceil->set_ceil_crush(Ceiling->m_Crush);
+		ceil->set_silent(Ceiling->m_Silent);
+		ceil->set_ceil_dir(Ceiling->m_Direction);
+		ceil->set_ceil_tex(Ceiling->m_Texture);
+		ceil->set_ceil_new_special(Ceiling->m_NewSpecial);
+		ceil->set_ceil_tag(Ceiling->m_Tag);
+		ceil->set_ceil_old_dir(Ceiling->m_OldDirection);
+	}
+
+	if (ceiling_mover == SEC_DOOR)
+	{
+		DDoor* Door = static_cast<DDoor*>(sector.ceilingdata);
+
+		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		ceil->set_ceil_type(Door->m_Type);
+		ceil->set_ceil_height(Door->m_TopHeight);
+		ceil->set_ceil_speed(Door->m_Speed);
+		ceil->set_ceil_wait(Door->m_TopWait);
+		ceil->set_ceil_counter(Door->m_TopCountdown);
+		ceil->set_ceil_status(Door->m_Status);
+		// Check for an invalid m_Line (doors triggered by tag 666)
+		ceil->set_ceil_line(Door->m_Line ? (Door->m_Line - lines) : -1);
+	}
+
+	if (floor_mover == SEC_FLOOR)
+	{
+		DFloor* Floor = static_cast<DFloor*>(sector.floordata);
+
+		svc::MovingSectorMsg_Snapshot* floor = msg.mutable_floor_mover();
+		floor->set_floor_type(Floor->m_Type);
+		floor->set_floor_status(Floor->m_Status);
+		floor->set_floor_crush(Floor->m_Crush);
+		floor->set_floor_dir(Floor->m_Direction);
+		floor->set_floor_speed(Floor->m_NewSpecial);
+		floor->set_floor_tex(Floor->m_Texture);
+		floor->set_floor_dest(Floor->m_FloorDestHeight);
+		floor->set_floor_speed(Floor->m_Speed);
+		floor->set_reset_counter(Floor->m_ResetCount);
+		floor->set_orig_height(Floor->m_OrgHeight);
+		floor->set_delay(Floor->m_Delay);
+		floor->set_pause_time(Floor->m_PauseTime);
+		floor->set_step_time(Floor->m_StepTime);
+		floor->set_per_step_time(Floor->m_PerStepTime);
+		floor->set_floor_offset(Floor->m_Height);
+		floor->set_floor_change(Floor->m_Change);
+		floor->set_floor_line(Floor->m_Line ? (Floor->m_Line - lines) : -1);
+	}
+
+	if (floor_mover == SEC_PLAT)
+	{
+		DPlat* Plat = static_cast<DPlat*>(sector.floordata);
+
+		svc::MovingSectorMsg_Snapshot* floor = msg.mutable_floor_mover();
+		floor->set_floor_speed(Plat->m_Speed);
+		floor->set_floor_low(Plat->m_Low);
+		floor->set_floor_high(Plat->m_High);
+		floor->set_floor_wait(Plat->m_Wait);
+		floor->set_floor_counter(Plat->m_Count);
+		floor->set_floor_status(Plat->m_Status);
+		floor->set_floor_old_status(Plat->m_OldStatus);
+		floor->set_floor_crush(Plat->m_Crush);
+		floor->set_floor_tag(Plat->m_Tag);
+		floor->set_floor_type(Plat->m_Type);
+		floor->set_floor_offset(Plat->m_Height);
+		floor->set_floor_lip(Plat->m_Lip);
+	}
+
+	MSG_WriteMarker(&b, svc_movingsector);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Send information about a player
  */
