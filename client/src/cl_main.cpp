@@ -3146,7 +3146,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
 		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
 		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
-		SERVER_MSG_FUNC(svc_sectorproperties, CL_SectorSectorPropertiesUpdate);
+		SERVER_PROTO_FUNC(svc_sectorproperties, CL_SectorProperties, svc::SectorPropertiesMsg);
 		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
 		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
 		SERVER_MSG_FUNC(svc_actor_movedir, CL_Actor_Movedir);
@@ -3823,88 +3823,6 @@ void CL_LineSideUpdate()
 		case SDPC_TexBottom:
 			currentSidedef->bottomtexture = MSG_ReadShort();
 			break;
-		default:
-			break;
-		}
-	}
-}
-
-void CL_SectorSectorPropertiesUpdate()
-{
-	uint16_t secnum = MSG_ReadShort();
-	int changes = MSG_ReadShort();
-
-	sector_t* sector;
-	sector_t empty;
-
-	if (secnum > -1 && secnum < numsectors)
-	{
-		sector = &sectors[secnum];
-	}
-	else
-	{
-		sector = &empty;
-		extern dyncolormap_t NormalLight;
-		empty.colormap = &NormalLight;
-	}
-
-	for (int i = 0, prop = 1; prop < SPC_Max; i++)
-	{
-		prop = 1 << i;
-		if ((prop & changes) == 0)
-			continue;
-
-		switch (prop)
-		{
-		case SPC_FlatPic:
-			sector->floorpic = MSG_ReadShort();
-			sector->ceilingpic = MSG_ReadShort();
-			break;
-		case SPC_LightLevel:
-			sector->lightlevel = MSG_ReadShort();
-			break;
-		case SPC_Color:
-		{
-			byte r = MSG_ReadByte();
-			byte g = MSG_ReadByte();
-			byte b = MSG_ReadByte();
-			sector->colormap = GetSpecialLights(r, g, b,
-				sector->colormap->fade.getr(), sector->colormap->fade.getg(), sector->colormap->fade.getb());
-		}
-			break;
-		case SPC_Fade:
-		{
-			byte r = MSG_ReadByte();
-			byte g = MSG_ReadByte();
-			byte b = MSG_ReadByte();
-			sector->colormap = GetSpecialLights(sector->colormap->color.getr(), sector->colormap->color.getg(), sector->colormap->color.getb(),
-				r, g, b);
-		}
-			break;
-		case SPC_Gravity:
-			*(int*)&sector->gravity = MSG_ReadLong();
-			break;
-		case SPC_Panning:
-			sector->ceiling_xoffs = MSG_ReadLong();
-			sector->ceiling_yoffs = MSG_ReadLong();
-			sector->floor_xoffs = MSG_ReadLong();
-			sector->floor_yoffs = MSG_ReadLong();
-			break;
-		case SPC_Scale:
-			sector->ceiling_xscale = MSG_ReadLong();
-			sector->ceiling_yscale = MSG_ReadLong();
-			sector->floor_xscale = MSG_ReadLong();
-			sector->floor_yscale = MSG_ReadLong();
-			break;
-		case SPC_Rotation:
-			sector->floor_angle = MSG_ReadLong();
-			sector->ceiling_angle = MSG_ReadLong();
-			break;
-		case SPC_AlignBase:
-			sector->base_ceiling_angle = MSG_ReadLong();
-			sector->base_ceiling_yoffs = MSG_ReadLong();
-			sector->base_floor_angle = MSG_ReadLong();
-			sector->base_floor_yoffs = MSG_ReadLong();
 		default:
 			break;
 		}

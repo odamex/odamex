@@ -39,6 +39,7 @@ class TeamMembersMsg;
 class MovingSectorMsg;
 class PlayerStateMsg;
 class LevelStateMsg;
+class SectorPropertiesMsg;
 class ThinkerUpdateMsg;
 }
 
@@ -56,6 +57,7 @@ void CL_TeamMembers(const svc::TeamMembersMsg& msg);
 void CL_MovingSector(const svc::MovingSectorMsg& msg);
 void CL_PlayerState(const svc::PlayerStateMsg& msg);
 void CL_LevelState(const svc::LevelStateMsg& msg);
+void CL_SectorProperties(const svc::SectorPropertiesMsg& msg);
 void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg);
 
 #endif // __CLSVC_H__

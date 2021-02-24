@@ -552,7 +552,7 @@ void CL_TeamMembers(const svc::TeamMembersMsg& msg)
 //
 void CL_MovingSector(const svc::MovingSectorMsg& msg)
 {
-	int sectornum = msg.sectornum();
+	int sectornum = msg.sector();
 
 	fixed_t ceilingheight = msg.ceiling_height();
 	fixed_t floorheight = msg.floor_height();
@@ -811,6 +811,91 @@ void CL_LevelState(const svc::LevelStateMsg& msg)
 	sls.last_wininfo_type = static_cast<WinInfo::WinType>(msg.last_wininfo_type());
 	sls.last_wininfo_id = msg.last_wininfo_id();
 	::levelstate.unserialize(sls);
+}
+
+/**
+ * @brief Update sector properties dynamically.
+ */
+void CL_SectorProperties(const svc::SectorPropertiesMsg& msg)
+{
+	int secnum = msg.sector();
+	uint32_t changes = msg.changes();
+
+	sector_t* sector;
+	sector_t empty;
+
+	if (secnum > -1 && secnum < numsectors)
+	{
+		sector = &sectors[secnum];
+	}
+	else
+	{
+		sector = &empty;
+		extern dyncolormap_t NormalLight;
+		empty.colormap = &NormalLight;
+	}
+
+	for (int i = 0, prop = 1; prop < SPC_Max; i++)
+	{
+		prop = 1 << i;
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SPC_FlatPic:
+			sector->floorpic = msg.floorpic();
+			sector->ceilingpic = msg.ceilingpic();
+			break;
+		case SPC_LightLevel:
+			sector->lightlevel = msg.lightlevel();
+			break;
+		case SPC_Color: {
+			byte r = msg.color().r();
+			byte g = msg.color().g();
+			byte b = msg.color().b();
+			sector->colormap = GetSpecialLights(r, g, b, sector->colormap->fade.getr(),
+			                                    sector->colormap->fade.getg(),
+			                                    sector->colormap->fade.getb());
+			break;
+		}
+		case SPC_Fade: {
+			byte r = msg.color().r();
+			byte g = msg.color().g();
+			byte b = msg.color().b();
+			sector->colormap = GetSpecialLights(sector->colormap->color.getr(),
+			                                    sector->colormap->color.getg(),
+			                                    sector->colormap->color.getb(), r, g, b);
+			break;
+		}
+		case SPC_Gravity:
+			*(int*)&sector->gravity = msg.gravity();
+			break;
+		case SPC_Panning:
+			sector->ceiling_xoffs = msg.ceiling_offs().x();
+			sector->ceiling_yoffs = msg.ceiling_offs().y();
+			sector->floor_xoffs = msg.floor_offs().x();
+			sector->floor_yoffs = msg.floor_offs().y();
+			break;
+		case SPC_Scale:
+			sector->ceiling_xscale = msg.ceiling_scale().x();
+			sector->ceiling_yscale = msg.ceiling_scale().y();
+			sector->floor_xscale = msg.floor_scale().x();
+			sector->floor_yscale = msg.floor_scale().y();
+			break;
+		case SPC_Rotation:
+			sector->floor_angle = msg.floor_angle();
+			sector->ceiling_angle = msg.ceiling_angle();
+			break;
+		case SPC_AlignBase:
+			sector->base_ceiling_angle = msg.base_ceiling_angle();
+			sector->base_ceiling_yoffs = msg.base_ceiling_offs().y();
+			sector->base_floor_angle = msg.floor_angle();
+			sector->base_floor_yoffs = msg.floor_offs().y();
+		default:
+			break;
+		}
+	}
 }
 
 /**

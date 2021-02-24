@@ -1370,68 +1370,11 @@ void SV_UpdateSectors(client_t* cl)
 	{
 		SV_UpdateSector(cl, sectornum);
 
-		sector_s* sector = &sectors[sectornum];
-		if (!sector->SectorChanges)
+		sector_t& sector = ::sectors[sectornum];
+		if (!sector.SectorChanges)
 			continue;
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_sectorproperties);
-		MSG_WriteShort(&cl->reliablebuf, sectornum);
-		MSG_WriteShort(&cl->reliablebuf, sector->SectorChanges);
-
-		for (int i = 0, prop = 1; prop < SPC_Max; i++)
-		{
-			prop = 1 << i;
-			if ((prop & sector->SectorChanges) == 0)
-				continue;
-
-			switch (prop)
-			{
-			case SPC_FlatPic:
-				MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
-				MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
-				break;
-			case SPC_LightLevel:
-				MSG_WriteShort(&cl->reliablebuf, sector->lightlevel);
-				break;
-			case SPC_Color:
-				MSG_WriteByte(&cl->reliablebuf, sector->colormap->color.getr());
-				MSG_WriteByte(&cl->reliablebuf, sector->colormap->color.getg());
-				MSG_WriteByte(&cl->reliablebuf, sector->colormap->color.getb());
-				break;
-			case SPC_Fade:
-				MSG_WriteByte(&cl->reliablebuf, sector->colormap->fade.getr());
-				MSG_WriteByte(&cl->reliablebuf, sector->colormap->fade.getg());
-				MSG_WriteByte(&cl->reliablebuf, sector->colormap->fade.getb());
-				break;
-			case SPC_Gravity:
-				MSG_WriteLong(&cl->reliablebuf, sector->gravity);
-				break;
-			case SPC_Panning:
-				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_xoffs);
-				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_yoffs);
-				MSG_WriteLong(&cl->reliablebuf, sector->floor_xoffs);
-				MSG_WriteLong(&cl->reliablebuf, sector->floor_yoffs);
-				break;
-			case SPC_Scale:
-				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_xscale);
-				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_yscale);
-				MSG_WriteLong(&cl->reliablebuf, sector->floor_xscale);
-				MSG_WriteLong(&cl->reliablebuf, sector->floor_yscale);
-				break;
-			case SPC_Rotation:
-				MSG_WriteLong(&cl->reliablebuf, sector->floor_angle);
-				MSG_WriteLong(&cl->reliablebuf, sector->ceiling_angle);
-				break;
-			case SPC_AlignBase:
-				MSG_WriteLong(&cl->reliablebuf, sector->base_ceiling_angle);
-				MSG_WriteLong(&cl->reliablebuf, sector->base_ceiling_yoffs);
-				MSG_WriteLong(&cl->reliablebuf, sector->base_floor_angle);
-				MSG_WriteLong(&cl->reliablebuf, sector->base_floor_yoffs);
-				break;
-			default:
-				break;
-			}
-		}
+		SVC_SectorProperties(cl->reliablebuf, sector);
 	}
 }
 

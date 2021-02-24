@@ -247,7 +247,7 @@ message FireWeaponMsg
 // svc_sector
 message SectorMsg
 {
-	int32 sectornum = 1;
+	int32 sector = 1;
 	sfixed32 floor_height = 2;
 	sfixed32 ceiling_height = 3;
 	int32 floorpic = 4;
@@ -351,7 +351,7 @@ message MovingSectorMsg
 		int32 floor_change = 46;
 	}
 
-	int32 sectornum = 1;
+	int32 sector = 1;
 	sfixed32 ceiling_height = 2;
 	sfixed32 floor_height = 3;
 	uint32 movers = 4;
@@ -539,7 +539,7 @@ message LineUpdateMsg
 // svc_sectorproperties
 message SectorPropertiesMsg
 {
-	int32 id = 1;
+	int32 sector = 1;
 	uint32 changes = 2; // bitfield
 	int32 floorpic = 3;
 	int32 ceilingpic = 4;
