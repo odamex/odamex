@@ -104,7 +104,7 @@ void CL_Disconnect(const svc::DisconnectMsg& msg)
 		StrFormat(buffer, "Disconnected from server\n");
 	}
 
-	Printf("%s", msg);
+	Printf("%s", msg.message().c_str());
 	CL_QuitNetGame();
 }
 
