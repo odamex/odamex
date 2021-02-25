@@ -34,6 +34,22 @@
 #include "p_local.h"
 #include "server.pb.h"
 
+/**
+ * @brief Pack an array of booleans into a bitfield.
+ */
+static uint32_t PackBoolArray(const bool* bools, size_t count)
+{
+	uint32_t out = 0;
+	for (size_t i = 0; i < count; i++)
+	{
+		if (bools[i])
+		{
+			out |= (1 << i);
+		}
+	}
+	return out;
+}
+
 void SVC_Disconnect(buf_t& b, const char* message)
 {
 	svc::DisconnectMsg msg;
@@ -53,55 +69,30 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 {
 	svc::PlayerInfoMsg msg;
 
-	// [AM] 9 weapons, 6 cards, 1 backpack = 16 bits
-	uint16_t booleans = 0;
-	for (int i = 0; i < NUMWEAPONS; i++)
-	{
-		if (player.weaponowned[i])
-		{
-			booleans |= (1 << i);
-		}
-	}
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		if (player.cards[i])
-		{
-			booleans |= (1 << (i + NUMWEAPONS));
-		}
-	}
-	if (player.backpack)
-	{
-		booleans |= (1 << (NUMWEAPONS + NUMCARDS));
-	}
-	msg.set_inventory(booleans);
+	uint32_t packedweapons = PackBoolArray(player.weaponowned, NUMWEAPONS);
+	msg.mutable_player()->set_weaponowned(packedweapons);
+
+	uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+	msg.mutable_player()->set_cards(packedweapons);
+
+	msg.mutable_player()->set_backpack(player.backpack);
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		svc::PlayerInfoMsg_PlayerAmmo* ammo = msg.add_ammo();
-		ammo->set_maxammo(player.maxammo[i]);
-		ammo->set_ammo(player.ammo[i]);
+		msg.mutable_player()->add_ammo(player.ammo[i]);
+		msg.mutable_player()->add_maxammo(player.maxammo[i]);
 	}
 
-	msg.set_health(player.health);
-	msg.set_armorpoints(player.armorpoints);
-	msg.set_armortype(player.armortype);
-	msg.set_lives(player.lives);
-
-	// If the player has a pending weapon then tell the client it has changed
-	// The client will set the pendingweapon to this weapon if it doesn't match the
-	// readyweapon
-	if (player.pendingweapon == wp_nochange)
-	{
-		msg.set_weapon(player.readyweapon);
-	}
-	else
-	{
-		msg.set_weapon(player.pendingweapon);
-	}
+	msg.mutable_player()->set_health(player.health);
+	msg.mutable_player()->set_armorpoints(player.armorpoints);
+	msg.mutable_player()->set_armortype(player.armortype);
+	msg.mutable_player()->set_lives(player.lives);
+	msg.mutable_player()->set_readyweapon(player.readyweapon);
+	msg.mutable_player()->set_pendingweapon(player.pendingweapon);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		msg.add_powers(player.powers[i]);
+		msg.mutable_player()->add_powers(player.powers[i]);
 	}
 
 	MSG_WriteMarker(&b, svc_playerinfo);

@@ -27,6 +27,38 @@ message Vec3
 	sfixed32 z = 3;
 }
 
+message Actor
+{
+	uint32 netid = 1;
+	Vec3 pos = 2;
+	fixed32 angle = 3;
+	int32 frame = 4;
+	fixed32 pitch = 5;
+	Vec3 mom = 6;
+	uint32 movedir = 7;
+	int32 movecount = 8;
+	int32 targetid = 9;
+	int32 tracerid = 10;
+	uint32 rndindex = 11;
+}
+
+message Player
+{
+	uint32 playerid = 1;
+	int32 health = 2;
+	int32 armorpoints = 3;
+	int32 armortype = 4;
+	repeated int32 powers = 5;
+	uint32 cards = 6;
+	bool backpack = 7;
+	int32 lives = 8;
+	int32 pendingweapon = 9;
+	int32 readyweapon = 10;
+	uint32 weaponowned = 11;
+	repeated int32 ammo = 12;
+	repeated int32 maxammo = 13;
+}
+
 message Tic
 {
 	// Bitmask.  Most of the interesting buttons are low bits, so this will
@@ -61,20 +93,7 @@ message DisconnectMsg
 // svc_playerinfo
 message PlayerInfoMsg
 {
-	message PlayerAmmo
-	{
-		int32 ammo = 1;
-		int32 maxammo = 2;
-	}	
-
-	int32 inventory = 1;
-	repeated PlayerAmmo ammo = 2;
-	int32 health = 3;
-	int32 armorpoints = 4;
-	int32 armortype = 5;
-	int32 lives = 6;
-	int32 weapon = 7;
-	repeated int32 powers = 8;
+	Player player = 1;
 }
 
 // svc_moveplayer

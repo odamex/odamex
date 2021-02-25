@@ -72,6 +72,17 @@ void P_SetPsprite(player_t* player, int position, statenum_t stnum);
 void CL_SpectatePlayer(player_t& player, bool spectate);
 
 /**
+ * @brief Unpack a bitfield into an array of booleans.
+ */
+static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
+{
+	for (size_t i = 0; i < count; i++)
+	{
+		bools[i] = in & BIT(i);
+	}
+}
+
+/**
  * @brief svc_noop - Nothing to see here. Move along.
  */
 void CL_Noop()
@@ -102,57 +113,55 @@ void CL_Disconnect(const svc::DisconnectMsg& msg)
  */
 void CL_PlayerInfo(const svc::PlayerInfoMsg& msg)
 {
-	player_t* p = &consoleplayer();
+	player_t& p = consoleplayer();
 
-	uint16_t booleans = msg.inventory();
-	for (int i = 0; i < NUMWEAPONS; i++)
-	{
-		p->weaponowned[i] = booleans & 1 << i;
-	}
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
-	}
-	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
+	uint32_t weaponowned = msg.player().weaponowned();
+	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
+
+	uint32_t cards = msg.player().cards();
+	UnpackBoolArray(p.cards, NUMCARDS, cards);
+
+	p.backpack = msg.player().backpack();
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (i < msg.ammo_size())
-		{
-			p->maxammo[i] = msg.ammo(i).maxammo();
-			p->ammo[i] = msg.ammo(i).ammo();
-		}
+		if (i < msg.player().ammo_size())
+			p.ammo[i] = msg.player().ammo(i);
 		else
-		{
-			p->maxammo[i] = 0;
-			p->ammo[i] = 0;
-		}
+			p.ammo[i] = 0;
+
+		if (i < msg.player().maxammo_size())
+			p.maxammo[i] = msg.player().maxammo(i);
+		else
+			p.maxammo[i] = 0;
 	}
 
-	p->health = msg.health();
-	p->armorpoints = msg.armorpoints();
-	p->armortype = msg.armortype();
-	p->lives = msg.lives();
 
-	weapontype_t newweapon = static_cast<weapontype_t>(msg.weapon());
-	if (newweapon > NUMWEAPONS) // bad weapon number, choose something else
+	p.health = msg.player().health();
+	p.armorpoints = msg.player().armorpoints();
+	p.armortype = msg.player().armortype();
+	p.lives = msg.player().lives();
+
+	weapontype_t pending = static_cast<weapontype_t>(msg.player().pendingweapon());
+	if (pending != wp_nochange && pending < NUMWEAPONS)
 	{
-		newweapon = wp_fist;
+		p.pendingweapon = pending;
 	}
-	if (newweapon != p->readyweapon)
+	weapontype_t readyweapon = static_cast<weapontype_t>(msg.player().readyweapon());
+	if (readyweapon != p.readyweapon && readyweapon < NUMWEAPONS)
 	{
-		p->pendingweapon = newweapon;
+		p.pendingweapon = readyweapon;
 	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (i < msg.powers_size())
+		if (i < msg.player().powers_size())
 		{
-			p->powers[i] = msg.powers(i);
+			p.powers[i] = msg.player().powers(i);
 		}
 		else
 		{
-			p->powers[i] = 0;
+			p.powers[i] = 0;
 		}
 	}
 }
