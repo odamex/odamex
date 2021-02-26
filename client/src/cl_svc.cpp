@@ -170,22 +170,24 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
  */
 void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
 {
-	byte who = msg.pid();
+	byte who = msg.player().playerid();
 	player_t* p = &idplayer(who);
 
-	fixed_t x = msg.pos().x();
-	fixed_t y = msg.pos().y();
-	fixed_t z = msg.pos().z();
+	fixed_t x = msg.actor().pos().x();
+	fixed_t y = msg.actor().pos().y();
+	fixed_t z = msg.actor().pos().z();
 
-	angle_t angle = msg.angle();
-	angle_t pitch = msg.pitch();
+	angle_t angle = msg.actor().angle();
+	angle_t pitch = msg.actor().pitch();
 
 	int frame = msg.frame();
-	fixed_t momx = msg.mom().x();
-	fixed_t momy = msg.mom().y();
-	fixed_t momz = msg.mom().z();
+	fixed_t momx = msg.actor().mom().x();
+	fixed_t momy = msg.actor().mom().y();
+	fixed_t momz = msg.actor().mom().z();
 
-	int invisibility = msg.invisibility();
+	int invisibility = 0;
+	if (msg.player().powers_size() >= pw_invisibility)
+		invisibility = msg.player().powers().Get(pw_invisibility);
 
 	if (!validplayer(*p) || !p->mo)
 		return;

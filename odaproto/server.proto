@@ -23,14 +23,10 @@ message PlayerInfo
 // svc_moveplayer
 message MovePlayer
 {
-	int32 pid = 1;
-	int32 tic = 2;
-	Vec3 pos = 3;
-	fixed32 angle = 4;
-	sint32 pitch = 5;
-	int32 frame = 6;
-	Vec3 mom = 7;
-	bool invisibility = 8;
+	int32 tic = 1;
+	int32 frame = 2;
+	Player player = 3;
+	Actor actor = 4;
 }
 
 // svc_updatelocalplayer

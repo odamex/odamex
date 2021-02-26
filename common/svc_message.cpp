@@ -106,19 +106,22 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 {
 	odaproto::svc::MovePlayer msg;
 
-	msg.set_pid(player.id); // player number
+	odaproto::Actor* act = msg.mutable_actor();
+	odaproto::Player* pl = msg.mutable_player();
+
+	pl->set_playerid(player.id); // player number
 
 	// [SL] 2011-09-14 - the most recently processed ticcmd from the
 	// client we're sending this message to.
 	msg.set_tic(tic);
 
-	odaproto::Vec3* pos = msg.mutable_pos();
+	odaproto::Vec3* pos = act->mutable_pos();
 	pos->set_x(player.mo->x);
 	pos->set_y(player.mo->y);
 	pos->set_z(player.mo->z);
 
-	msg.set_angle(player.mo->angle);
-	msg.set_pitch(player.mo->pitch);
+	act->set_angle(player.mo->angle);
+	act->set_pitch(player.mo->pitch);
 
 	if (player.mo->frame == 32773)
 	{
@@ -130,7 +133,7 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 	}
 
 	// write velocity
-	odaproto::Vec3* mom = msg.mutable_mom();
+	odaproto::Vec3* mom = act->mutable_mom();
 	mom->set_x(player.mo->momx);
 	mom->set_y(player.mo->momy);
 	mom->set_z(player.mo->momz);
@@ -138,7 +141,8 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 	// [Russell] - hack, tell the client about the partial
 	// invisibility power of another player.. (cheaters can disable
 	// this but its all we have for now)
-	msg.set_invisibility(player.powers[pw_invisibility] > 0);
+	pl->mutable_powers()->Resize(pw_invisibility + 1, 0);
+	pl->set_powers(pw_invisibility, player.powers[pw_invisibility]);
 
 	MSG_WriteMarker(&b, svc_moveplayer);
 	MSG_WriteProto(&b, msg);
