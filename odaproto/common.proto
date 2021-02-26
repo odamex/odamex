@@ -45,6 +45,14 @@ message Actor
 
 message Player
 {
+	message Psp
+	{
+		int32 statenum = 1;
+		int32 tics = 2;
+		sfixed32 sx = 3;
+		sfixed32 sy = 4;
+	}
+
 	uint32 playerid = 1;
 	int32 health = 2;
 	int32 armorpoints = 3;
@@ -58,6 +66,7 @@ message Player
 	uint32 weaponowned = 11;
 	repeated int32 ammo = 12;
 	repeated int32 maxammo = 13;
+	repeated Psp psprites = 14;
 }
 
 message Tic

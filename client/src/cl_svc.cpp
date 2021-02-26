@@ -729,22 +729,22 @@ void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 {
-	byte id = msg.pid();
-	int health = msg.health();
-	int armortype = msg.armortype();
-	int armorpoints = msg.armorpoints();
-	int lives = msg.lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg.readyweapon());
+	byte id = msg.player().playerid();
+	int health = msg.player().health();
+	int armortype = msg.player().armortype();
+	int armorpoints = msg.player().armorpoints();
+	int lives = msg.player().lives();
+	weapontype_t weap = static_cast<weapontype_t>(msg.player().readyweapon());
 
-	byte cardByte = msg.cards();
+	byte cardByte = msg.player().cards();
 	std::bitset<6> cardBits(cardByte);
 
 	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (i < msg.ammos_size())
+		if (i < msg.player().ammo_size())
 		{
-			ammo[i] = msg.ammos().Get(i);
+			ammo[i] = msg.player().ammo().Get(i);
 		}
 		else
 		{
@@ -755,9 +755,9 @@ void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		if (i < msg.pspstate_size())
+		if (i < msg.player().psprites_size())
 		{
-			unsigned int state = msg.pspstate().Get(i);
+			unsigned int state = msg.player().psprites().Get(i).statenum();
 			if (state >= NUMSTATES)
 			{
 				continue;
@@ -769,9 +769,9 @@ void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 	int powerups[NUMPOWERS];
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (i < msg.powers_size())
+		if (i < msg.player().powers_size())
 		{
-			powerups[i] = msg.powers().Get(i);
+			powerups[i] = msg.player().powers().Get(i);
 		}
 		else
 		{

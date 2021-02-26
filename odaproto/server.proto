@@ -425,16 +425,7 @@ message RailTrail
 // svc_playerstate
 message PlayerState
 {
-	int32 pid = 1;
-	int32 health = 2;
-	int32 armortype = 3;
-	int32 armorpoints = 4;
-	int32 lives = 5;
-	int32 readyweapon = 6;
-	uint32 cards = 7; // bitfield
-	repeated int32 ammos = 8;
-	repeated uint32 pspstate = 9;
-	repeated int32 powers = 10;
+	Player player = 1;
 }
 
 // svc_levelstate

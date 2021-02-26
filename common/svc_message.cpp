@@ -32,6 +32,7 @@
 #include "i_system.h"
 #include "p_lnspec.h"
 #include "p_local.h"
+#include "common.pb.h"
 #include "server.pb.h"
 
 /**
@@ -542,35 +543,38 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 {
 	odaproto::svc::PlayerState msg;
 
-	msg.set_pid(player.id);
-	msg.set_health(player.health);
-	msg.set_armortype(player.armortype);
-	msg.set_armorpoints(player.armorpoints);
-	msg.set_lives(player.lives);
-	msg.set_readyweapon(player.readyweapon);
+	odaproto::Player* pl = msg.mutable_player();
+
+	pl->set_playerid(player.id);
+	pl->set_health(player.health);
+	pl->set_armortype(player.armortype);
+	pl->set_armorpoints(player.armorpoints);
+	pl->set_lives(player.lives);
+	pl->set_readyweapon(player.readyweapon);
 
 	std::bitset<6> cardBits;
 	for (int i = 0; i < NUMCARDS; i++)
 	{
 		cardBits.set(i, player.cards[i]);
 	}
-	msg.set_cards(cardBits.to_ulong());
+	pl->set_cards(cardBits.to_ulong());
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		msg.add_ammos(player.ammo[i]);
+		pl->add_ammo(player.ammo[i]);
 	}
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
 		unsigned int state = psp->state - states;
-		msg.add_pspstate(state);
+		odaproto::Player_Psp* plpsp = pl->add_psprites();
+		plpsp->set_statenum(state);
 	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		msg.add_powers(player.powers[i]);
+		pl->add_powers(player.powers[i]);
 	}
 
 	MSG_WriteMarker(&b, svc_playerstate);
