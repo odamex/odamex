@@ -249,15 +249,15 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
 	// during the the tic referenced below
 	p.tic = msg.tic();
 
-	fixed_t x = msg.pos().x();
-	fixed_t y = msg.pos().y();
-	fixed_t z = msg.pos().z();
+	fixed_t x = msg.actor().pos().x();
+	fixed_t y = msg.actor().pos().y();
+	fixed_t z = msg.actor().pos().z();
 
-	fixed_t momx = msg.mom().x();
-	fixed_t momy = msg.mom().y();
-	fixed_t momz = msg.mom().z();
+	fixed_t momx = msg.actor().mom().x();
+	fixed_t momy = msg.actor().mom().y();
+	fixed_t momz = msg.actor().mom().z();
 
-	byte waterlevel = msg.waterlevel();
+	byte waterlevel = msg.actor().waterlevel();
 
 	int snaptime = ::last_svgametic;
 	PlayerSnapshot newsnapshot(snaptime);

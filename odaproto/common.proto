@@ -39,7 +39,8 @@ message Actor
 	int32 movecount = 8;
 	int32 targetid = 9;
 	int32 tracerid = 10;
-	uint32 rndindex = 11;
+	int32 waterlevel = 11;
+	uint32 rndindex = 12;
 }
 
 message Player

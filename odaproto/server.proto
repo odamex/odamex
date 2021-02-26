@@ -33,9 +33,7 @@ message MovePlayer
 message UpdateLocalPlayer
 {
 	int32 tic = 1;
-	Vec3 pos = 2;
-	Vec3 mom = 3;
-	int32 waterlevel = 4;
+	Actor actor = 2;
 }
 
 // svc_levellocals
