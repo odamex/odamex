@@ -46,57 +46,57 @@
 /**
  * @brief svc_*: Transmit all possible data.
  */
-#define SVC_MSG_ALL (0xFF)
+#define SVC_MSG_ALL BIT_MASK(0, 7)
 
 /**
  * @brief svc_levellocals: Level time.
  */
-#define SVC_LL_TIME (1 << 0)
+#define SVC_LL_TIME BIT(0)
 
 /**
  * @brief svc_levellocals: All level stat totals.
  */
-#define SVC_LL_TOTALS (1 << 1)
+#define SVC_LL_TOTALS BIT(1)
 
 /**
  * @brief svc_levellocals: Found secrets.
  */
-#define SVC_LL_SECRETS (1 << 2)
+#define SVC_LL_SECRETS BIT(2)
 
 /**
  * @brief svc_levellocals: Found items.
  */
-#define SVC_LL_ITEMS (1 << 3)
+#define SVC_LL_ITEMS BIT(3)
 
 /**
  * @brief svc_levellocals: Killed monsters.
  */
-#define SVC_LL_MONSTERS (1 << 4)
+#define SVC_LL_MONSTERS BIT(4)
 
 /**
  * @brief svc_levellocals: Respawned monsters.
  */
-#define SVC_LL_MONSTER_RESPAWNS (1 << 5)
+#define SVC_LL_MONSTER_RESPAWNS BIT(5)
 
 /**
  * @brief svc_playermembers: Spectator status.
  */
-#define SVC_PM_SPECTATOR (1 << 0)
+#define SVC_PM_SPECTATOR BIT(0)
 
 /**
  * @brief svc_playermembers: Ready status.
  */ 
-#define SVC_PM_READY (1 << 1)
+#define SVC_PM_READY BIT(1)
 
 /**
  * @brief svc_playermembers: Number of lives.
  */
-#define SVC_PM_LIVES (1 << 2)
+#define SVC_PM_LIVES BIT(2)
 
 /**
  * @brief svc_playermembers: "Score" members like frags, etc.
  */
-#define SVC_PM_SCORE (1 << 3)
+#define SVC_PM_SCORE BIT(3)
 
 
 extern int   localport;
