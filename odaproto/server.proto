@@ -4,100 +4,24 @@
 
 syntax="proto3";
 
-package svc;
+import "common.proto";
 
-message Color
-{
-	int32 r = 1;
-	int32 g = 2;
-	int32 b = 3;
-	int32 a = 4;
-}
-
-message Vec2
-{
-	sfixed32 x = 1;
-	sfixed32 y = 2;
-}
-
-message Vec3
-{
-	sfixed32 x = 1;
-	sfixed32 y = 2;
-	sfixed32 z = 3;
-}
-
-message Actor
-{
-	uint32 netid = 1;
-	Vec3 pos = 2;
-	fixed32 angle = 3;
-	int32 frame = 4;
-	fixed32 pitch = 5;
-	Vec3 mom = 6;
-	uint32 movedir = 7;
-	int32 movecount = 8;
-	int32 targetid = 9;
-	int32 tracerid = 10;
-	uint32 rndindex = 11;
-}
-
-message Player
-{
-	uint32 playerid = 1;
-	int32 health = 2;
-	int32 armorpoints = 3;
-	int32 armortype = 4;
-	repeated int32 powers = 5;
-	uint32 cards = 6;
-	bool backpack = 7;
-	int32 lives = 8;
-	int32 pendingweapon = 9;
-	int32 readyweapon = 10;
-	uint32 weaponowned = 11;
-	repeated int32 ammo = 12;
-	repeated int32 maxammo = 13;
-}
-
-message Tic
-{
-	// Bitmask.  Most of the interesting buttons are low bits, so this will
-	// be one byte in 99% of cases.
-	int32 buttons = 1;
-
-	// Usually mouse input in the +/- dozens or hundreds.
-	sint32 pitch = 2;
-
-	// Usually mouse input in the +/- dozens or hundreds.
-	sint32 yaw = 3;
-
-	// Typical values are +/- 12880.
-	sint32 forwardmove = 4;
-
-	// Typical values are +/- 10240.
-	sint32 sidemove = 5;
-
-	// Typical values are +/- 768.
-	sint32 upmove = 6;
-
-	// Impulses are rare.
-	int32 impulse = 7;
-}
+package odaproto.svc;
 
 // svc_abort, svc_disconnect, svc_full
-message DisconnectMsg
+message Disconnect
 {
 	string message = 1;
 }
 
 // svc_playerinfo
-message PlayerInfoMsg
+message PlayerInfo
 {
 	Player player = 1;
 }
 
 // svc_moveplayer
-message MovePlayerMsg
+message MovePlayer
 {
 	int32 pid = 1;
 	int32 tic = 2;
@@ -110,7 +34,7 @@ message MovePlayerMsg
 }
 
 // svc_updatelocalplayer
-message UpdateLocalPlayerMsg
+message UpdateLocalPlayer
 {
 	int32 tic = 1;
 	Vec3 pos = 2;
@@ -119,7 +43,7 @@ message UpdateLocalPlayerMsg
 }
 
 // svc_levellocals
-message LevelLocalsMsg
+message LevelLocals
 {
 	uint32 flags = 1;
 	int32 time = 2;
@@ -133,20 +57,20 @@ message LevelLocalsMsg
 }
 
 // svc_pingrequest
-message PingRequestMsg
+message PingRequest
 {
 	uint64 ms_time = 1;
 }
 
 // svc_updateping
-message UpdatePingMsg
+message UpdatePing
 {
 	int32 pid = 1;
 	int32 ping = 2;
 }
 
 // svc_spawnmobj, svc_mobjinfo, svc_corpse
-message SpawnMobjMsg
+message SpawnMobj
 {
 	Vec3 pos = 1;
 	fixed32 angle = 2;
@@ -161,13 +85,13 @@ message SpawnMobjMsg
 }
 
 // svc_disconnectclient
-message DisconnectClientMsg
+message DisconnectClient
 {
 	int32 pid = 1;
 }
 
 // svc_loadmap
-message LoadMapMsg
+message LoadMap
 {
 	message Resource
 	{
@@ -182,14 +106,14 @@ message LoadMapMsg
 }
 
 // svc_consoleplayer
-message ConsolePlayerMsg
+message ConsolePlayer
 {
 	int32 pid = 1;
 	string digest = 2;
 }
 
 // svc_mobjspeedangle
-message MobjSpeedAngleMsg
+message MobjSpeedAngle
 {
 	int32 netid = 1;
 	fixed32 angle = 2;
@@ -197,19 +121,19 @@ message MobjSpeedAngleMsg
 }
 
 // svc_explodemissile
-message ExplodeMissileMsg
+message ExplodeMissile
 {
 	int32 netid = 1;
 }
 
 // svc_removemobj
-message RemoveMobjMsg
+message RemoveMobj
 {
 	int32 netid = 1;
 }
 
 // svc_userinfo
-message UserInfoMsg
+message UserInfo
 {
 	int32 pid = 1;
 	string netname = 2;
@@ -220,7 +144,7 @@ message UserInfoMsg
 }
 
 // svc_movemobj
-message MoveMobjMsg
+message MoveMobj
 {
 	int32 netid = 1;
 	int32 rndindex = 2;
@@ -228,7 +152,7 @@ message MoveMobjMsg
 }
 
 // svc_spawnplayer
-message SpawnPlayerMsg
+message SpawnPlayer
 {
 	int32 pid = 1;
 	int32 netid = 2;
@@ -237,7 +161,7 @@ message SpawnPlayerMsg
 }
 
 // svc_damageplayer
-message DamagePlayerMsg
+message DamagePlayer
 {
 	int32 netid = 1;
 	int32 health_damage = 2;
@@ -245,7 +169,7 @@ message DamagePlayerMsg
 }
 
 // svc_killmobj
-message KillMobjMsg
+message KillMobj
 {
 	int32 source_netid = 1;
 	int32 target_netid = 2;
@@ -257,14 +181,14 @@ message KillMobjMsg
 }
 
 // svc_fireweapon
-message FireWeaponMsg
+message FireWeapon
 {
 	int32 readyweapon = 1;
 	int32 tic = 2;
 }
 
 // svc_sector
-message SectorMsg
+message Sector
 {
 	int32 sector = 1;
 	sfixed32 floor_height = 2;
@@ -275,14 +199,14 @@ message SectorMsg
 }
 
 // svc_print
-message PrintMsg
+message Print
 {
 	int32 level = 1;
 	string message = 2;
 }
 
 // svc_playermembers
-message PlayerMembersMsg
+message PlayerMembers
 {
 	int32 pid = 1;
 	uint32 flags = 2;
@@ -301,7 +225,7 @@ message PlayerMembersMsg
 }
 
 // svc_teammembers
-message TeamMembersMsg
+message TeamMembers
 {
 	int32 team = 1;
 	int32 points = 2;
@@ -309,7 +233,7 @@ message TeamMembersMsg
 }
 
 // svc_activateline
-message ActivateLineMsg
+message ActivateLine
 {
 	int32 lineid = 1;
 	int32 netid = 2;
@@ -318,7 +242,7 @@ message ActivateLineMsg
 }
 
 // svc_movingsector
-message MovingSectorMsg
+message MovingSector
 {
 	message Snapshot
 	{
@@ -379,7 +303,7 @@ message MovingSectorMsg
 }
 
 // svc_startsound
-message StartSoundMsg
+message StartSound
 {
 	int32 netid = 1;
 	Vec2 pos = 2;
@@ -389,30 +313,30 @@ message StartSoundMsg
 }
 
 // svc_reconnect
-message ReconnectMsg
+message Reconnect
 {
 }
 
 // svc_exitlevel
-message ExitLevelMsg
+message ExitLevel
 {
 }
 
 // svc_touchspecial
-message TouchSpecialMsg
+message TouchSpecial
 {
 	int32 netid = 1;
 }
 
 // svc_missedpacket
-message MissedPacketMsg
+message MissedPacket
 {
 	int32 seq = 1;
 	bytes data = 2;
 }
 
 // svc_soundorigin
-message SoundOriginMsg
+message SoundOrigin
 {
 	Vec2 pos = 1;
 	int32 channel = 2;
@@ -421,13 +345,13 @@ message SoundOriginMsg
 }
 
 // svc_forceteam
-message ForceTeamMsg
+message ForceTeam
 {
 	int32 team = 1;
 }
 
 // svc_switch
-message SwitchMsg
+message Switch
 {
 	int32 line = 1;
 	bool switch_active = 2;
@@ -438,7 +362,7 @@ message SwitchMsg
 }
 
 // svc_say
-message SayMsg
+message Say
 {
 	int32 visibility = 1;
 	int32 pid = 2;
@@ -446,7 +370,7 @@ message SayMsg
 }
 
 // svc_ctfevent
-message CTFEventMsg
+message CTFEvent
 {
 	int32 event = 1;
 	int32 team = 2;
@@ -457,7 +381,7 @@ message CTFEventMsg
 }
 
 // svc_serversettings
-message ServerSettingsMsg
+message ServerSettings
 {
 	message ServerSetting
 	{
@@ -468,44 +392,44 @@ message ServerSettingsMsg
 }
 
 // svc_connectclient
-message ConnectClientMsg
+message ConnectClient
 {
 	int32 pid = 1;
 }
 
 // svc_midprint
-message MidPrintMsg
+message MidPrint
 {
 	string msg = 1;
 	int32 msgtime = 2;
 }
 
 // svc_svgametic
-message ServerGameticMsg
+message ServerGametic
 {
 	int32 tic = 1;
 }
 
 // svc_inttimeleft
-message IntermissionTimeleftMsg
+message IntermissionTimeleft
 {
 	int32 timeleft = 1;
 }
 
 // svc_fullupdatedone
-message FullUpdateDoneMsg
+message FullUpdateDone
 {
 }
 
 // svc_railtrail
-message RailTrailMsg
+message RailTrail
 {
 	Vec3 start = 1;
 	Vec3 end = 2;
 }
 
 // svc_playerstate
-message PlayerStateMsg
+message PlayerState
 {
 	int32 pid = 1;
 	int32 health = 2;
@@ -520,7 +444,7 @@ message PlayerStateMsg
 }
 
 // svc_levelstate
-message LevelStateMsg
+message LevelState
 {
 	int32 state = 1;
 	int32 countdown_done_time = 2;
@@ -531,24 +455,24 @@ message LevelStateMsg
 }
 
 // svc_resetmap
-message ResetMapMsg
+message ResetMap
 {
 }
 
 // svc_playerqueuepos
-message PlayerQueuePosMsg
+message PlayerQueuePos
 {
 	int32 pit = 1;
 	int32 queuepos = 2;	
 }
 
 // svc_fullupdatestart
-message FullUpdateStartMsg
+message FullUpdateStart
 {
 }
 
 // svc_lineupdate
-message LineUpdateMsg
+message LineUpdate
 {
 	int32 id = 1;
 	int32 flags = 2;
@@ -556,7 +480,7 @@ message LineUpdateMsg
 }
 
 // svc_sectorproperties
-message SectorPropertiesMsg
+message SectorProperties
 {
 	int32 sector = 1;
 	uint32 changes = 2; // bitfield
@@ -579,7 +503,7 @@ message SectorPropertiesMsg
 }
 
 // svc_linesideupdate
-message LineSideUpdateMsg
+message LineSideUpdate
 {
 	int32 line = 1;
 	int32 side = 2;
@@ -590,14 +514,14 @@ message LineSideUpdateMsg
 }
 
 // svc_mobjstate
-message MobjStateMsg
+message MobjState
 {
 	int32 netid = 1;
 	int32 mostate = 2;
 }
 
 // svc_actor_movedir
-message ActorMovedirMsg
+message ActorMovedir
 {
 	int32 netid = 1;
 	int32 movedir = 2;
@@ -605,21 +529,21 @@ message ActorMovedirMsg
 }
 
 // svc_actor_target
-message ActorTargetMsg
+message ActorTarget
 {
 	int32 netid = 1;
 	int32 target = 2;
 }
 
 // svc_actor_tracer
-message ActorTracerMsg
+message ActorTracer
 {
 	int32 netid = 1;
 	int32 tracer_netid = 2;
 }
 
 // svc_damagemobj
-message DamageMobjMsg
+message DamageMobj
 {
 	int32 netid = 1;
 	int32 health = 2;
@@ -627,7 +551,7 @@ message DamageMobjMsg
 }
 
 // svc_executelinespecial
-message ExecuteLineSpecialMsg
+message ExecuteLineSpecial
 {
 	int32 special = 1;
 	sint32 lineid = 2; // Default is -1.
@@ -640,7 +564,7 @@ message ExecuteLineSpecialMsg
 }
 
 // svc_executeacsspecial
-message ExecuteAcsSpecialMsg
+message ExecuteAcsSpecial
 {
 	int32 special = 1;
 	int32 actid = 2;
@@ -649,7 +573,7 @@ message ExecuteAcsSpecialMsg
 }
 
 // svc_thinkerupdate
-message ThinkerUpdateMsg
+message ThinkerUpdate
 {
 	message Scroller
 	{
@@ -725,7 +649,7 @@ message ThinkerUpdateMsg
 }
 
 // svc_netdemocap
-message NetdemoCapMsg
+message NetdemoCap
 {
 	Tic player_cmd = 1;
 	int32 waterlevel = 2;
@@ -743,17 +667,17 @@ message NetdemoCapMsg
 }
 
 // svc_netdemostop
-message NetdemoStopMsg
+message NetdemoStop
 {
 }
 
 // svc_netdemoloadsnap
-message NetdemoLoadSnapMsg
+message NetdemoLoadSnap
 {
 }
 
 // svc_vote_update
-message VoteUpdateMsg
+message VoteUpdate
 {
 	int32 get_result = 1;
 	string get_votestring = 2;
@@ -766,13 +690,13 @@ message VoteUpdateMsg
 }
 
 // svc_maplist
-message MaplistMsg
+message Maplist
 {
 	int32 status = 1;
 }
 
 // svc_maplist_update
-message MaplistUpdateMsg
+message MaplistUpdate
 {
 	message MaplistEntry
 	{
@@ -787,7 +711,7 @@ message MaplistUpdateMsg
 }
 
 // svc_maplist_index
-message MaplistIndexMsg
+message MaplistIndex
 {
 	int32 count = 1;
 	int32 next_index = 2;

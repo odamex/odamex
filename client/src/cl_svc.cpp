@@ -92,7 +92,7 @@ void CL_Noop()
 /**
  * @brief svc_disconnect - Disconnect a client from the server.
  */
-void CL_Disconnect(const svc::DisconnectMsg& msg)
+void CL_Disconnect(const odaproto::svc::Disconnect& msg)
 {
 	std::string buffer;
 	if (!msg.message().empty())
@@ -111,7 +111,7 @@ void CL_Disconnect(const svc::DisconnectMsg& msg)
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
  */
-void CL_PlayerInfo(const svc::PlayerInfoMsg& msg)
+void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
 {
 	player_t& p = consoleplayer();
 
@@ -135,7 +135,6 @@ void CL_PlayerInfo(const svc::PlayerInfoMsg& msg)
 		else
 			p.maxammo[i] = 0;
 	}
-
 
 	p.health = msg.player().health();
 	p.armorpoints = msg.player().armorpoints();
@@ -169,7 +168,7 @@ void CL_PlayerInfo(const svc::PlayerInfoMsg& msg)
 /**
  * @brief svc_moveplayer - Move a player.
  */
-void CL_MovePlayer(const svc::MovePlayerMsg& msg)
+void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
 {
 	byte who = msg.pid();
 	player_t* p = &idplayer(who);
@@ -240,7 +239,7 @@ void CL_MovePlayer(const svc::MovePlayerMsg& msg)
 	p->snapshots.addSnapshot(newsnap);
 }
 
-void CL_UpdateLocalPlayer(const svc::UpdateLocalPlayerMsg& msg)
+void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
 {
 	player_t& p = consoleplayer();
 
@@ -278,7 +277,7 @@ void CL_UpdateLocalPlayer(const svc::UpdateLocalPlayerMsg& msg)
 }
 
 // Set level locals.
-void CL_LevelLocals(const svc::LevelLocalsMsg& msg)
+void CL_LevelLocals(const odaproto::svc::LevelLocals& msg)
 {
 	uint32_t flags = msg.flags();
 
@@ -323,7 +322,7 @@ void CL_LevelLocals(const svc::LevelLocalsMsg& msg)
 // [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
 // for clarity since it sends timestamps, not gametics.
 //
-void CL_PingRequest(const svc::PingRequestMsg& msg)
+void CL_PingRequest(const odaproto::svc::PingRequest& msg)
 {
 	MSG_WriteMarker(&net_buffer, clc_pingreply);
 	MSG_WriteLong(&net_buffer, msg.ms_time());
@@ -335,7 +334,7 @@ void CL_PingRequest(const svc::PingRequestMsg& msg)
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-void CL_LoadMap(const svc::LoadMapMsg& msg)
+void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 {
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
@@ -469,7 +468,7 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-void CL_KillMobj(const svc::KillMobjMsg& msg)
+void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 {
 	int srcid = msg.source_netid();
 	int tgtid = msg.target_netid();
@@ -504,7 +503,7 @@ void CL_KillMobj(const svc::KillMobjMsg& msg)
 /**
  * @brief Updates less-vital members of a player struct.
  */
-void CL_PlayerMembers(const svc::PlayerMembersMsg& msg)
+void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg)
 {
 	player_t& p = CL_FindPlayer(msg.pid());
 	byte flags = msg.flags();
@@ -540,7 +539,7 @@ void CL_PlayerMembers(const svc::PlayerMembersMsg& msg)
 //
 // [deathz0r] Receive team frags/captures
 //
-void CL_TeamMembers(const svc::TeamMembersMsg& msg)
+void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
 {
 	team_t team = static_cast<team_t>(msg.team());
 	int points = msg.points();
@@ -559,7 +558,7 @@ void CL_TeamMembers(const svc::TeamMembersMsg& msg)
 // CL_UpdateMovingSector
 // Updates floorheight and ceilingheight of a sector.
 //
-void CL_MovingSector(const svc::MovingSectorMsg& msg)
+void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 {
 	int sectornum = msg.sector();
 
@@ -586,7 +585,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 
 	if (floor_mover == SEC_FLOOR)
 	{
-		const svc::MovingSectorMsg_Snapshot& floor = msg.floor_mover();
+		const odaproto::svc::MovingSector_Snapshot& floor = msg.floor_mover();
 
 		// Floors/Stairbuilders
 		snap.setFloorMoverType(SEC_FLOOR);
@@ -617,7 +616,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 
 	if (floor_mover == SEC_PLAT)
 	{
-		const svc::MovingSectorMsg_Snapshot& floor = msg.floor_mover();
+		const odaproto::svc::MovingSector_Snapshot& floor = msg.floor_mover();
 
 		// Platforms/Lifts
 		snap.setFloorMoverType(SEC_PLAT);
@@ -637,7 +636,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 
 	if (ceiling_mover == SEC_CEILING)
 	{
-		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
 
 		// Ceilings / Crushers
 		snap.setCeilingMoverType(SEC_CEILING);
@@ -658,7 +657,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 
 	if (ceiling_mover == SEC_DOOR)
 	{
-		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
 
 		// Doors
 		snap.setCeilingMoverType(SEC_DOOR);
@@ -680,7 +679,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 
 	if (ceiling_mover == SEC_ELEVATOR)
 	{
-		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
 
 		// Elevators
 		snap.setCeilingMoverType(SEC_ELEVATOR);
@@ -699,7 +698,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 
 	if (ceiling_mover == SEC_PILLAR)
 	{
-		const svc::MovingSectorMsg_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
 
 		// Pillars
 		snap.setCeilingMoverType(SEC_PILLAR);
@@ -726,7 +725,7 @@ void CL_MovingSector(const svc::MovingSectorMsg& msg)
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
-void CL_PlayerState(const svc::PlayerStateMsg& msg)
+void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 {
 	byte id = msg.pid();
 	int health = msg.health();
@@ -809,7 +808,7 @@ void CL_PlayerState(const svc::PlayerStateMsg& msg)
 /**
  * @brief Set local levelstate.
  */
-void CL_LevelState(const svc::LevelStateMsg& msg)
+void CL_LevelState(const odaproto::svc::LevelState& msg)
 {
 	// Set local levelstate.
 	SerializedLevelState sls;
@@ -825,7 +824,7 @@ void CL_LevelState(const svc::LevelStateMsg& msg)
 /**
  * @brief Update sector properties dynamically.
  */
-void CL_SectorProperties(const svc::SectorPropertiesMsg& msg)
+void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 {
 	int secnum = msg.sector();
 	uint32_t changes = msg.changes();
@@ -910,11 +909,11 @@ void CL_SectorProperties(const svc::SectorPropertiesMsg& msg)
 /**
  * @brief Update a thinker.
  */
-void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
+void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 {
 	switch (msg.thinker_case())
 	{
-	case svc::ThinkerUpdateMsg::kScroller: {
+	case odaproto::svc::ThinkerUpdate::kScroller: {
 		DScroller::EScrollType scrollType =
 		    static_cast<DScroller::EScrollType>(msg.scroller().type());
 		fixed_t dx = msg.scroller().scroll_x();
@@ -932,7 +931,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 		new DScroller(scrollType, dx, dy, -1, affectee, 0);
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kFireFlicker: {
+	case odaproto::svc::ThinkerUpdate::kFireFlicker: {
 		short secnum = msg.fire_flicker().sector();
 		int min = msg.fire_flicker().min_light();
 		int max = msg.fire_flicker().max_light();
@@ -942,7 +941,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 			new DFireFlicker(&sectors[secnum], max, min);
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kFlicker: {
+	case odaproto::svc::ThinkerUpdate::kFlicker: {
 		short secnum = msg.flicker().sector();
 		int min = msg.flicker().min_light();
 		int max = msg.flicker().max_light();
@@ -952,7 +951,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 			new DFlicker(&sectors[secnum], max, min);
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kLightFlash: {
+	case odaproto::svc::ThinkerUpdate::kLightFlash: {
 		short secnum = msg.light_flash().sector();
 		int min = msg.light_flash().min_light();
 		int max = msg.light_flash().max_light();
@@ -962,7 +961,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 			new DLightFlash(&sectors[secnum], min, max);
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kStrobe: {
+	case odaproto::svc::ThinkerUpdate::kStrobe: {
 		short secnum = msg.strobe().sector();
 		int min = msg.strobe().min_light();
 		int max = msg.strobe().max_light();
@@ -978,7 +977,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 		}
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kGlow: {
+	case odaproto::svc::ThinkerUpdate::kGlow: {
 		short secnum = msg.glow().sector();
 		if (numsectors <= 0)
 			break;
@@ -986,7 +985,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 			new DGlow(&sectors[secnum]);
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kGlow2: {
+	case odaproto::svc::ThinkerUpdate::kGlow2: {
 		short secnum = msg.glow2().sector();
 		int start = msg.glow2().start();
 		int end = msg.glow2().end();
@@ -998,7 +997,7 @@ void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg)
 			new DGlow2(&sectors[secnum], start, end, tics, oneShot);
 		break;
 	}
-	case svc::ThinkerUpdateMsg::kPhased: {
+	case odaproto::svc::ThinkerUpdate::kPhased: {
 		short secnum = msg.phased().sector();
 		int base = msg.phased().base_level();
 		int phase = msg.phased().phase();

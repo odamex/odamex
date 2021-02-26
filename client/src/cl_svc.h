@@ -24,40 +24,45 @@
 #ifndef __CLSVC_H__
 #define __CLSVC_H__
 
+namespace odaproto
+{
 namespace svc
 {
-class DisconnectMsg;
-class PlayerInfoMsg;
-class MovePlayerMsg;
-class UpdateLocalPlayerMsg;
-class LevelLocalsMsg;
-class PingRequestMsg;
-class LoadMapMsg;
-class KillMobjMsg;
-class PlayerMembersMsg;
-class TeamMembersMsg;
-class MovingSectorMsg;
-class PlayerStateMsg;
-class LevelStateMsg;
-class SectorPropertiesMsg;
-class ThinkerUpdateMsg;
-}
+class Disconnect;
+class PlayerInfo;
+class MovePlayer;
+class UpdateLocalPlayer;
+class LevelLocals;
+class PingRequest;
+class LoadMap;
+class KillMobj;
+class PlayerMembers;
+class TeamMembers;
+class MovingSector;
+class PlayerState;
+class LevelState;
+class SectorProperties;
+class ThinkerUpdate;
+
+} // namespace svc
+
+} // namespace odaproto
 
 void CL_Noop();
-void CL_Disconnect(const svc::DisconnectMsg& msg);
-void CL_PlayerInfo(const svc::PlayerInfoMsg& msg);
-void CL_MovePlayer(const svc::MovePlayerMsg& msg);
-void CL_UpdateLocalPlayer(const svc::UpdateLocalPlayerMsg& msg);
-void CL_LevelLocals(const svc::LevelLocalsMsg& msg);
-void CL_PingRequest(const svc::PingRequestMsg& msg);
-void CL_LoadMap(const svc::LoadMapMsg& msg);
-void CL_KillMobj(const svc::KillMobjMsg& msg);
-void CL_PlayerMembers(const svc::PlayerMembersMsg& msg);
-void CL_TeamMembers(const svc::TeamMembersMsg& msg);
-void CL_MovingSector(const svc::MovingSectorMsg& msg);
-void CL_PlayerState(const svc::PlayerStateMsg& msg);
-void CL_LevelState(const svc::LevelStateMsg& msg);
-void CL_SectorProperties(const svc::SectorPropertiesMsg& msg);
-void CL_ThinkerUpdate(const svc::ThinkerUpdateMsg& msg);
+void CL_Disconnect(const odaproto::svc::Disconnect& msg);
+void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg);
+void CL_MovePlayer(const odaproto::svc::MovePlayer& msg);
+void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg);
+void CL_LevelLocals(const odaproto::svc::LevelLocals& msg);
+void CL_PingRequest(const odaproto::svc::PingRequest& msg);
+void CL_LoadMap(const odaproto::svc::LoadMap& msg);
+void CL_KillMobj(const odaproto::svc::KillMobj& msg);
+void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg);
+void CL_TeamMembers(const odaproto::svc::TeamMembers& msg);
+void CL_MovingSector(const odaproto::svc::MovingSector& msg);
+void CL_PlayerState(const odaproto::svc::PlayerState& msg);
+void CL_LevelState(const odaproto::svc::LevelState& msg);
+void CL_SectorProperties(const odaproto::svc::SectorProperties& msg);
+void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg);
 
 #endif // __CLSVC_H__

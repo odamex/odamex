@@ -52,7 +52,7 @@ static uint32_t PackBoolArray(const bool* bools, size_t count)
 
 void SVC_Disconnect(buf_t& b, const char* message)
 {
-	svc::DisconnectMsg msg;
+	odaproto::svc::Disconnect msg;
 	if (message != NULL)
 	{
 		msg.set_message(message);
@@ -67,7 +67,7 @@ void SVC_Disconnect(buf_t& b, const char* message)
  */
 void SVC_PlayerInfo(buf_t& b, player_t& player)
 {
-	svc::PlayerInfoMsg msg;
+	odaproto::svc::PlayerInfo msg;
 
 	uint32_t packedweapons = PackBoolArray(player.weaponowned, NUMWEAPONS);
 	msg.mutable_player()->set_weaponowned(packedweapons);
@@ -104,7 +104,7 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
  */
 void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 {
-	svc::MovePlayerMsg msg;
+	odaproto::svc::MovePlayer msg;
 
 	msg.set_pid(player.id); // player number
 
@@ -112,7 +112,7 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 	// client we're sending this message to.
 	msg.set_tic(tic);
 
-	svc::Vec3* pos = msg.mutable_pos();
+	odaproto::Vec3* pos = msg.mutable_pos();
 	pos->set_x(player.mo->x);
 	pos->set_y(player.mo->y);
 	pos->set_z(player.mo->z);
@@ -130,7 +130,7 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 	}
 
 	// write velocity
-	svc::Vec3* mom = msg.mutable_mom();
+	odaproto::Vec3* mom = msg.mutable_mom();
 	mom->set_x(player.mo->momx);
 	mom->set_y(player.mo->momy);
 	mom->set_z(player.mo->momz);
@@ -150,17 +150,17 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
 {
 	// client player will update his position if packets were missed
-	svc::UpdateLocalPlayerMsg msg;
+	odaproto::svc::UpdateLocalPlayer msg;
 
 	// client-tic of the most recently processed ticcmd for this client
 	msg.set_tic(tic);
 
-	svc::Vec3* pos = msg.mutable_pos();
+	odaproto::Vec3* pos = msg.mutable_pos();
 	pos->set_x(mo.x);
 	pos->set_y(mo.y);
 	pos->set_z(mo.z);
 
-	svc::Vec3* mom = msg.mutable_mom();
+	odaproto::Vec3* mom = msg.mutable_mom();
 	mom->set_x(mo.momx);
 	mom->set_y(mo.momy);
 	mom->set_z(mo.momz);
@@ -180,7 +180,7 @@ void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
  */
 void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
 {
-	svc::LevelLocalsMsg msg;
+	odaproto::svc::LevelLocals msg;
 
 	msg.set_flags(flags);
 
@@ -225,7 +225,7 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
  */
 void SVC_PingRequest(buf_t& b)
 {
-	svc::PingRequestMsg msg;
+	odaproto::svc::PingRequest msg;
 	msg.set_ms_time(I_MSTime());
 	MSG_WriteMarker(&b, svc_pingrequest);
 	MSG_WriteProto(&b, msg);
@@ -238,13 +238,13 @@ void SVC_PingRequest(buf_t& b)
 void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
                  const std::string& mapname, int time)
 {
-	svc::LoadMapMsg msg;
+	odaproto::svc::LoadMap msg;
 
 	// send list of wads (skip over wadnames[0] == odamex.wad)
 	size_t wadcount = wadnames.size() - 1;
 	for (size_t i = 1; i < wadcount + 1; i++)
 	{
-		svc::LoadMapMsg_Resource* wad = msg.add_wadnames();
+		odaproto::svc::LoadMap_Resource* wad = msg.add_wadnames();
 		wad->set_name(wadnames[i].getBasename());
 		wad->set_hash(wadnames[i].getHash());
 	}
@@ -253,7 +253,7 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
 	size_t patchcount = patchnames.size();
 	for (size_t i = 0; i < patchcount; i++)
 	{
-		svc::LoadMapMsg_Resource* patch = msg.add_patchnames();
+		odaproto::svc::LoadMap_Resource* patch = msg.add_patchnames();
 		patch->set_name(patchnames[i].getBasename());
 		patch->set_hash(patchnames[i].getHash());
 	}
@@ -271,7 +271,7 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill)
 {
-	svc::KillMobjMsg msg;
+	odaproto::svc::KillMobj msg;
 
 	if (source)
 	{
@@ -312,7 +312,7 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
  */
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 {
-	svc::PlayerMembersMsg msg;
+	odaproto::svc::PlayerMembers msg;
 
 	msg.set_pid(player.id);
 	msg.set_flags(flags);
@@ -358,7 +358,7 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
  */
 void SVC_TeamMembers(buf_t& b, team_t team)
 {
-	svc::TeamMembersMsg msg;
+	odaproto::svc::TeamMembers msg;
 
 	TeamInfo* info = GetTeamInfo(team);
 
@@ -372,7 +372,7 @@ void SVC_TeamMembers(buf_t& b, team_t team)
 
 void SVC_MovingSector(buf_t& b, const sector_t& sector)
 {
-	svc::MovingSectorMsg msg;
+	odaproto::svc::MovingSector msg;
 
 	ptrdiff_t sectornum = &sector - sectors;
 
@@ -425,7 +425,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	{
 		DElevator* Elevator = static_cast<DElevator*>(sector.ceilingdata);
 
-		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
 		ceil->set_ceil_type(Elevator->m_Type);
 		ceil->set_ceil_status(Elevator->m_Status);
 		ceil->set_ceil_dir(Elevator->m_Direction);
@@ -438,7 +438,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	{
 		DPillar* Pillar = static_cast<DPillar*>(sector.ceilingdata);
 
-		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
 		ceil->set_ceil_type(Pillar->m_Type);
 		ceil->set_ceil_status(Pillar->m_Status);
 		ceil->set_floor_speed(Pillar->m_FloorSpeed);
@@ -452,7 +452,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	{
 		DCeiling* Ceiling = static_cast<DCeiling*>(sector.ceilingdata);
 
-		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
 		ceil->set_ceil_type(Ceiling->m_Type);
 		ceil->set_ceil_low(Ceiling->m_BottomHeight);
 		ceil->set_ceil_high(Ceiling->m_TopHeight);
@@ -472,7 +472,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	{
 		DDoor* Door = static_cast<DDoor*>(sector.ceilingdata);
 
-		svc::MovingSectorMsg_Snapshot* ceil = msg.mutable_ceiling_mover();
+		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
 		ceil->set_ceil_type(Door->m_Type);
 		ceil->set_ceil_height(Door->m_TopHeight);
 		ceil->set_ceil_speed(Door->m_Speed);
@@ -487,7 +487,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	{
 		DFloor* Floor = static_cast<DFloor*>(sector.floordata);
 
-		svc::MovingSectorMsg_Snapshot* floor = msg.mutable_floor_mover();
+		odaproto::svc::MovingSector_Snapshot* floor = msg.mutable_floor_mover();
 		floor->set_floor_type(Floor->m_Type);
 		floor->set_floor_status(Floor->m_Status);
 		floor->set_floor_crush(Floor->m_Crush);
@@ -511,7 +511,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	{
 		DPlat* Plat = static_cast<DPlat*>(sector.floordata);
 
-		svc::MovingSectorMsg_Snapshot* floor = msg.mutable_floor_mover();
+		odaproto::svc::MovingSector_Snapshot* floor = msg.mutable_floor_mover();
 		floor->set_floor_speed(Plat->m_Speed);
 		floor->set_floor_low(Plat->m_Low);
 		floor->set_floor_high(Plat->m_High);
@@ -535,7 +535,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
  */
 void SVC_PlayerState(buf_t& b, player_t& player)
 {
-	svc::PlayerStateMsg msg;
+	odaproto::svc::PlayerState msg;
 
 	msg.set_pid(player.id);
 	msg.set_health(player.health);
@@ -577,7 +577,7 @@ void SVC_PlayerState(buf_t& b, player_t& player)
  */
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 {
-	svc::LevelStateMsg msg;
+	odaproto::svc::LevelState msg;
 
 	msg.set_state(sls.state);
 	msg.set_countdown_done_time(sls.countdown_done_time);
@@ -610,7 +610,7 @@ void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 
 void SVC_SectorProperties(buf_t& b, sector_t& sector)
 {
-	svc::SectorPropertiesMsg msg;
+	odaproto::svc::SectorProperties msg;
 
 	msg.set_sector(&sector - ::sectors);
 	msg.set_changes(sector.SectorChanges);
@@ -631,14 +631,14 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 			msg.set_lightlevel(sector.lightlevel);
 			break;
 		case SPC_Color: {
-			svc::Color* color = msg.mutable_color();
+			odaproto::Color* color = msg.mutable_color();
 			color->set_r(sector.colormap->color.getr());
 			color->set_g(sector.colormap->color.getg());
 			color->set_b(sector.colormap->color.getb());
 			break;
 		}
 		case SPC_Fade: {
-			svc::Color* color = msg.mutable_fade();
+			odaproto::Color* color = msg.mutable_fade();
 			color->set_r(sector.colormap->fade.getr());
 			color->set_g(sector.colormap->fade.getg());
 			color->set_b(sector.colormap->fade.getb());
@@ -648,21 +648,21 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 			msg.set_gravity(sector.gravity);
 			break;
 		case SPC_Panning: {
-			svc::Vec2* mc = msg.mutable_ceiling_offs();
+			odaproto::Vec2* mc = msg.mutable_ceiling_offs();
 			mc->set_x(sector.ceiling_xoffs);
 			mc->set_y(sector.ceiling_yoffs);
 
-			svc::Vec2* mf = msg.mutable_floor_offs();
+			odaproto::Vec2* mf = msg.mutable_floor_offs();
 			mf->set_x(sector.floor_xoffs);
 			mf->set_y(sector.floor_yoffs);
 			break;
 		}
 		case SPC_Scale: {
-			svc::Vec2* cs = msg.mutable_ceiling_scale();
+			odaproto::Vec2* cs = msg.mutable_ceiling_scale();
 			cs->set_x(sector.ceiling_xscale);
 			cs->set_y(sector.ceiling_yscale);
 
-			svc::Vec2* fs = msg.mutable_floor_scale();
+			odaproto::Vec2* fs = msg.mutable_floor_scale();
 			fs->set_x(sector.floor_xscale);
 			fs->set_y(sector.floor_yscale);
 			break;
@@ -688,12 +688,12 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 
 void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 {
-	svc::ThinkerUpdateMsg msg;
+	odaproto::svc::ThinkerUpdate msg;
 
 	if (thinker->IsA(RUNTIME_CLASS(DScroller)))
 	{
 		DScroller* scroller = static_cast<DScroller*>(thinker);
-		svc::ThinkerUpdateMsg_Scroller* smsg = msg.mutable_scroller();
+		odaproto::svc::ThinkerUpdate_Scroller* smsg = msg.mutable_scroller();
 		smsg->set_type(scroller->GetType());
 		smsg->set_scroll_x(scroller->GetScrollX());
 		smsg->set_scroll_y(scroller->GetScrollY());
@@ -702,7 +702,7 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DFireFlicker)))
 	{
 		DFireFlicker* fireFlicker = static_cast<DFireFlicker*>(thinker);
-		svc::ThinkerUpdateMsg_FireFlicker* ffmsg = msg.mutable_fire_flicker();
+		odaproto::svc::ThinkerUpdate_FireFlicker* ffmsg = msg.mutable_fire_flicker();
 		ffmsg->set_sector(fireFlicker->GetSector() - sectors);
 		ffmsg->set_min_light(fireFlicker->GetMinLight());
 		ffmsg->set_max_light(fireFlicker->GetMaxLight());
@@ -710,7 +710,7 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DFlicker)))
 	{
 		DFlicker* flicker = static_cast<DFlicker*>(thinker);
-		svc::ThinkerUpdateMsg_Flicker* fmsg = msg.mutable_flicker();
+		odaproto::svc::ThinkerUpdate_Flicker* fmsg = msg.mutable_flicker();
 		fmsg->set_sector(flicker->GetSector() - sectors);
 		fmsg->set_min_light(flicker->GetMinLight());
 		fmsg->set_max_light(flicker->GetMaxLight());
@@ -718,7 +718,7 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DLightFlash)))
 	{
 		DLightFlash* lightFlash = static_cast<DLightFlash*>(thinker);
-		svc::ThinkerUpdateMsg_LightFlash* lfmsg = msg.mutable_light_flash();
+		odaproto::svc::ThinkerUpdate_LightFlash* lfmsg = msg.mutable_light_flash();
 		lfmsg->set_sector(lightFlash->GetSector() - sectors);
 		lfmsg->set_min_light(lightFlash->GetMinLight());
 		lfmsg->set_max_light(lightFlash->GetMaxLight());
@@ -726,7 +726,7 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DStrobe)))
 	{
 		DStrobe* strobe = static_cast<DStrobe*>(thinker);
-		svc::ThinkerUpdateMsg_Strobe* smsg = msg.mutable_strobe();
+		odaproto::svc::ThinkerUpdate_Strobe* smsg = msg.mutable_strobe();
 		smsg->set_sector(strobe->GetSector() - sectors);
 		smsg->set_min_light(strobe->GetMinLight());
 		smsg->set_max_light(strobe->GetMaxLight());
@@ -737,13 +737,13 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DGlow)))
 	{
 		DGlow* glow = static_cast<DGlow*>(thinker);
-		svc::ThinkerUpdateMsg_Glow* gmsg = msg.mutable_glow();
+		odaproto::svc::ThinkerUpdate_Glow* gmsg = msg.mutable_glow();
 		gmsg->set_sector(glow->GetSector() - sectors);
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DGlow2)))
 	{
 		DGlow2* glow2 = static_cast<DGlow2*>(thinker);
-		svc::ThinkerUpdateMsg_Glow2* gmsg = msg.mutable_glow2();
+		odaproto::svc::ThinkerUpdate_Glow2* gmsg = msg.mutable_glow2();
 		gmsg->set_sector(glow2->GetSector() - sectors);
 		gmsg->set_start(glow2->GetStart());
 		gmsg->set_end(glow2->GetEnd());
@@ -753,7 +753,7 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DPhased)))
 	{
 		DPhased* phased = static_cast<DPhased*>(thinker);
-		svc::ThinkerUpdateMsg_Phased* pmsg = msg.mutable_phased();
+		odaproto::svc::ThinkerUpdate_Phased* pmsg = msg.mutable_phased();
 		pmsg->set_sector(phased->GetSector() - sectors);
 		pmsg->set_base_level(phased->GetBaseLevel());
 		pmsg->set_phase(phased->GetPhase());

@@ -3091,17 +3091,17 @@ static bool CallMessageFunc(svc_t type)
 	switch (type)
 	{
 		SERVER_MSG_FUNC(svc_noop, CL_Noop);
-		SERVER_PROTO_FUNC(svc_disconnect, CL_Disconnect, svc::DisconnectMsg);
-		SERVER_PROTO_FUNC(svc_playerinfo, CL_PlayerInfo, svc::PlayerInfoMsg);
-		SERVER_PROTO_FUNC(svc_moveplayer, CL_MovePlayer, svc::MovePlayerMsg);
+		SERVER_PROTO_FUNC(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
+		SERVER_PROTO_FUNC(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
+		SERVER_PROTO_FUNC(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
 		SERVER_PROTO_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer,
-		                  svc::UpdateLocalPlayerMsg);
-		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, svc::LevelLocalsMsg);
-		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, svc::PingRequestMsg);
+		                  odaproto::svc::UpdateLocalPlayer);
+		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
+		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
 		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
 		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
-		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, svc::LoadMapMsg);
+		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
 		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
 		SERVER_MSG_FUNC(svc_mobjspeedangle, CL_SetMobjSpeedAndAngle);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
@@ -3110,15 +3110,16 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_movemobj, CL_MoveMobj);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
-		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, svc::KillMobjMsg);
+		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
 		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
-		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers, svc::PlayerMembersMsg);
-		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, svc::TeamMembersMsg);
+		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
+		                  odaproto::svc::PlayerMembers);
+		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
 		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
-		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, svc::MovingSectorMsg);
+		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
 		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
@@ -3140,13 +3141,14 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
 		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
 		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
-		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, svc::PlayerStateMsg);
-		SERVER_PROTO_FUNC(svc_levelstate, CL_LevelState, svc::LevelStateMsg);
+		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
+		SERVER_PROTO_FUNC(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
 		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
 		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
 		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
 		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
-		SERVER_PROTO_FUNC(svc_sectorproperties, CL_SectorProperties, svc::SectorPropertiesMsg);
+		SERVER_PROTO_FUNC(svc_sectorproperties, CL_SectorProperties,
+		                  odaproto::svc::SectorProperties);
 		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
 		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
 		SERVER_MSG_FUNC(svc_actor_movedir, CL_Actor_Movedir);
@@ -3155,7 +3157,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
 		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
 		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
-		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate, svc::ThinkerUpdateMsg);
+		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
+		                  odaproto::svc::ThinkerUpdate);
 		SERVER_MSG_FUNC(svc_netdemocap, CL_LocalDemoTic);
 		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
 		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
