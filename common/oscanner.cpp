@@ -144,17 +144,15 @@ void OScanner::pushToken(const char* string, size_t length)
 
 	if (_removeEscapeCharacter)
 	{
-		size_t pos = 0;
-		do
+		size_t pos = _token.find("\\\"", 0);
+		
+		while (pos != std::string::npos)
 		{
-			pos = _token.find("\\\"", pos);
-			
-			if (pos == std::string::npos)
-				break;
-
 			_token.replace(pos, 2, "\"");
 			pos += 2;
-		} while (true);
+			
+			pos = _token.find("\\\"", pos);
+		}
 
 		_removeEscapeCharacter = false;
 	}
