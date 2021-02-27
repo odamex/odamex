@@ -694,17 +694,6 @@ static const char* const ActorNames[] =
 	NULL
 };
 
-static void SetLevelDefaults(level_pwad_info_t *levelinfo)
-{
-	memset (levelinfo, 0, sizeof(*levelinfo));
-	levelinfo->snapshot = NULL;
-	levelinfo->outsidefog_color[0] = 255; 
-	levelinfo->outsidefog_color[1] = 0; 
-	levelinfo->outsidefog_color[2] = 0; 
-	levelinfo->outsidefog_color[3] = 0; 
-	strncpy(levelinfo->fadetable, "COLORMAP", 8);
-}
-
 //
 // Assumes that you have munched the last parameter you know how to handle,
 // but have not yet munched a comma.
