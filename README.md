@@ -6,9 +6,9 @@
 
 Odamex is a modification of DOOM to allow players to compete with each other over the Internet using a client/server architecture. Thanks to the source code release of DOOM by id Software in December 1997, there have been many modifications that enhanced DOOM in various ways. These modifications are known as "source ports", as early modifications mainly ported DOOM to other platforms and operating systems such as Windows and Macintosh.
 
-Odamex is based on the CSDoom 0.62 source code originally created by Sergey Makovkin, which is based on the ZDoom 1.22 source code created by Randy Heit.
+Odamex is based on the CSDoom 0.62 source code originally created by Sergey Makovkin, which is based on the ZDoom 1.22 source code created by Marisa Heit.
 
-## Major features
+## Features
 Odamex supports the following features:
 * Full Client/Server multiplayer architecture with network compensation features (unlagged, client interpolation and prediction)
 * Support for up to 255 players
@@ -26,7 +26,7 @@ Odamex supports the following features:
 * Several additional music formats, such as MOD and OGG
 * In-Engine WAD downloader
 * Allow on-the-fly WAD loading
-* A 32-bit Color depth|true color renderer
+* A 32-bit Color depth/true color renderer
 * Full Widescreen support
 * Ultra high resolution support (up to 8K)
 * Uncapped and raised framerate
@@ -48,16 +48,16 @@ git submodule update
 Odamex requires `cmake` as well as the following libraries:
 * [SDL 2.0](https://www.libsdl.org/download-2.0.php)
 * [SDL2-Mixer](https://libsdl.org/projects/SDL_mixer/)
+* [cURL](https://curl.se/)
+* [libPNG](http://www.libpng.org/pub/png/libpng.html)
+* [zlib](https://zlib.net/)
 * [wxWidgets](https://www.wxwidgets.org/downloads/) for the launcher
-* (optional) libPNG
-* (optional) cURL
-* (optional) zlib
 
 Please check [this page](https://odamex.net/wiki/How_to_build_from_source) for further informations on how to compile Odamex for your platform.
 
-## Bug Reporting & Contributing
+## Contributing to the project
 
-If you discovered an oddity, game-breaking bugs or would like to propose new features for Odamex, you can use the [GitHub's Issues](https://github.com/odamex/odamex/issues) page. 
+Please report any oddity, physics inaccuracies, bugs or game-breaking glitches to our [issues page](https://github.com/odamex/odamex/issues). You can also submit patches as a Pull Request.
 
 Before submitting a pull request, please make sure it follows [our coding standards](https://odamex.net/wiki/Coding_standard)!
 
@@ -65,7 +65,7 @@ For historical purposes, you can also view [our bugtracker's archive](https://od
 
 ## Website
 Please visit the following websites for more information about the development of the port and our community: 
-* [**Odamex official website**](https://odamex.net)
+* [**Odamex Website**](https://odamex.net)
 * [Forums](https://odamex.net/boards/)
 * [Twitter](https://twitter.com/odamex)
 
