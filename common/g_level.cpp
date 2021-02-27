@@ -160,7 +160,6 @@ void LevelInfos::clearSnapshots()
 level_pwad_info_t& LevelInfos::create()
 {
 	_infos.push_back(level_pwad_info_t());
-	_infos.back() = _empty;
 	return _infos.back();
 }
 
