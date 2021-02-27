@@ -1444,7 +1444,7 @@ void WI_loadData (void)
 		else
 		{
 			lnames[i] = NULL;
-			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name;
+			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
 	}

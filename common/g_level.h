@@ -76,7 +76,7 @@ struct BossAction;
 struct level_info_t {
 	char			mapname[9];
 	int				levelnum;
-	char*			level_name;
+	std::string		level_name;
 	char			pname[9];
 	char			nextmap[9];
 	char			secretmap[9];
@@ -99,7 +99,7 @@ struct level_pwad_info_t
 	// level_info_t
 	char			mapname[9];
 	int				levelnum;
-	char*			level_name;
+	std::string		level_name;
 	char			pname[9];
 	char			nextmap[9];
 	char			secretmap[9];

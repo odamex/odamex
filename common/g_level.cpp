@@ -106,12 +106,6 @@ level_pwad_info_t& LevelInfos::at(size_t i)
 // Clear all cluster definitions
 void LevelInfos::clear()
 {
-	// Free all strings.
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
-	{
-		free(it->level_name);
-		it->level_name = NULL;
-	}
 	clearSnapshots();
 	zapDeferreds();
 	_infos.clear();
@@ -201,7 +195,7 @@ void LevelInfos::zapDeferreds()
 level_pwad_info_t LevelInfos::_empty = {
 	"",   // mapname
 	0,    // levelnum
-	NULL, // level_name
+	"", // level_name
 	"",   // pname
 	"",   // nextmap
 	"",   // secretmap
@@ -1319,7 +1313,7 @@ namespace
 				levels.create();
 
 			// Free the level name string before we pave over it.
-			free(info.level_name);
+			info.level_name.clear();
 
 			info = defaultinfo;
 			uppercopy(info.mapname, os.getToken().c_str());
@@ -2056,7 +2050,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				levels.create();
 
 			// Free the level name string before we pave over it.
-			free(info.level_name);
+			info.level_name.clear();
 
 			info = defaultinfo;
 			uppercopy(info.mapname, map_name);
@@ -2071,12 +2065,10 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				{
 					I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 				}
-				free(info.level_name);
 				info.level_name = strdup(s.c_str());
 			}
 			else
 			{
-				free(info.level_name);
 				info.level_name = strdup(os.getToken().c_str());
 			}
 
@@ -2776,17 +2768,19 @@ void G_InitLevelLocals()
 	::level.levelnum = info.levelnum;
 
 	// Only copy the level name if there's a valid level name to be copied.
-	if (info.level_name != NULL)
+	if (!info.level_name.empty())
 	{
 		// Get rid of initial lump name or level number.
-		char* begin = NULL;
+		std::string begin;
 		if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
 		{
 			std::string search;
 			StrFormat(search, "E%cM%c: ", info.mapname[1], info.mapname[3]);
-			begin = strstr(info.level_name, search.c_str());
-			if (begin != NULL)
-				begin += search.length();
+
+			const std::size_t pos = info.level_name.find(search);
+
+			if (pos != std::string::npos)
+				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
 		}
@@ -2794,13 +2788,16 @@ void G_InitLevelLocals()
 		{
 			std::string search;
 			StrFormat(search, "%u: ", info.levelnum);
-			begin = strstr(info.level_name, search.c_str());
-			if (begin != NULL)
-				begin += search.length();
+			
+			const std::size_t pos = info.level_name.find(search);
+
+			if (pos != std::string::npos)
+				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
 		}
-		strncpy(::level.level_name, begin, ARRAY_LENGTH(::level.level_name) - 1);
+		
+		strncpy(::level.level_name, begin.c_str(), ARRAY_LENGTH(::level.level_name) - 1);
 	}
 	else
 	{
@@ -2936,7 +2933,7 @@ BEGIN_COMMAND(mapinfo)
 
 	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname);
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
-	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name);
+	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name.c_str());
 	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname);
 	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap);
 	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap);
