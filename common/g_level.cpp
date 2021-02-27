@@ -62,7 +62,39 @@
 
 level_locals_t level;			// info about current level
 
+//
+// level_pwad_info_t methods
+//
 
+level_pwad_info_t::level_pwad_info_t()
+	: mapname("")
+	, levelnum(0)
+	, level_name("")
+	, pname("")
+	, nextmap("")
+	, secretmap("")
+	, partime(0)
+	, skypic("")
+	, music("")
+	, flags(0)
+	, cluster(0)
+	, snapshot(NULL)
+	, defered(NULL)
+	//, fadeto_color(0, 0, 0, 0)
+	//, outsidefog_color({ 0xFF, 0, 0, 0 })
+	, fadetable("COLORMAP")
+	, skypic2("")
+	, gravity(0.0f)
+	, aircontrol(0.0f)
+{
+	for (int i = 0; i < 4; ++i)
+		fadeto_color[i] = 0;
+	
+	// outsidefog_color, 0xFF000000 is special token signaling to not handle it specially
+	outsidefog_color[0] = 0xFF;
+	for (int i = 1; i < 4; ++i)
+		outsidefog_color[i] = 0;
+}
 
 //
 // LevelInfos methods
@@ -192,27 +224,7 @@ void LevelInfos::zapDeferreds()
 }
 
 // Empty levelinfo.
-level_pwad_info_t LevelInfos::_empty = {
-	"",   // mapname
-	0,    // levelnum
-	"", // level_name
-	"",   // pname
-	"",   // nextmap
-	"",   // secretmap
-	0,    // partime
-	"",   // skypic
-	"",   // music
-	0,    // flags
-	0,    // cluster
-	NULL, // snapshot
-	NULL, // defered
-	{ 0, 0, 0, 0 },    // fadeto_color
-	{ 0xFF, 0, 0, 0 }, // outsidefog_color, 0xFF000000 is special token signaling to not handle it specially
-	"COLORMAP",        // fadetable
-	"",   // skypic2
-	0.0,  // gravity
-	0.0,  // aircontrol
-};
+level_pwad_info_t LevelInfos::_empty = {};
 
 //
 // ClusterInfos methods
@@ -1286,7 +1298,6 @@ namespace
 		LevelInfos& levels = getLevelInfos();
 
 		level_pwad_info_t defaultinfo;
-		SetLevelDefaults(&defaultinfo);
 
 		const char* buffer = (char*)W_CacheLumpNum(lump, PU_STATIC);
 
@@ -1315,9 +1326,6 @@ namespace
 			level_pwad_info_t& info = (levels.findByName(os.getToken()).exists()) ?
 				levels.findByName(os.getToken()) :
 				levels.create();
-
-			// Free the level name string before we pave over it.
-			info.level_name.clear();
 
 			info = defaultinfo;
 			uppercopy(info.mapname, os.getToken().c_str());
@@ -2004,7 +2012,6 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
-	SetLevelDefaults (&defaultinfo);
 
 	const char *buffer = (char *)W_CacheLumpNum(lump, PU_STATIC);
 	
@@ -2019,7 +2026,6 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 	{
 		if (UpperCompareToken(os,"defaultmap"))
 		{
-			SetLevelDefaults(&defaultinfo);
 			tagged_info_t tinfo;
 			tinfo.tag = tagged_info_t::LEVEL;
 			tinfo.level = &defaultinfo;
@@ -2052,9 +2058,6 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			level_pwad_info_t& info = (levels.findByName(map_name).exists()) ?
 				levels.findByName(map_name) :
 				levels.create();
-
-			// Free the level name string before we pave over it.
-			info.level_name.clear();
 
 			info = defaultinfo;
 			uppercopy(info.mapname, map_name);
