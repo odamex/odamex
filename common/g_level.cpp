@@ -224,7 +224,7 @@ void LevelInfos::zapDeferreds()
 }
 
 // Empty levelinfo.
-level_pwad_info_t LevelInfos::_empty = {};
+level_pwad_info_t LevelInfos::_empty{};
 
 //
 // ClusterInfos methods
