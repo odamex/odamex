@@ -2850,7 +2850,7 @@ void CL_KillMobj()
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
 
-	if (lives >= 0)
+	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
 	P_KillMobj(source, target, inflictor, joinkill);
