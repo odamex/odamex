@@ -682,7 +682,7 @@ static const char* const ActorNames[] =
 	NULL
 };
 
-static void SetLevelDefaults (level_pwad_info_t *levelinfo)
+static void SetLevelDefaults(level_pwad_info_t *levelinfo)
 {
 	memset (levelinfo, 0, sizeof(*levelinfo));
 	levelinfo->snapshot = NULL;
@@ -935,8 +935,7 @@ namespace
 
 	char* M_Strupr(char* str)
 	{
-		char* p;
-		for (p = str; *p; p++)
+		for (char* p = str; *p; p++)
 			*p = toupper(*p);
 		return str;
 	}
@@ -1004,24 +1003,29 @@ namespace
 		char lumpname[9], mapuname[9];
 		int epi = -1, map = -1;
 
-		if (strlen(mapname) > 8) return 0;
+		if (strlen(mapname) > 8)
+			return 0;
 		strncpy(mapuname, mapname, 8);
 		mapuname[8] = 0;
 		M_Strupr(mapuname);
 
 		if (gamemode != commercial)
 		{
-			if (sscanf(mapuname, "E%dM%d", &epi, &map) != 2) return 0;
+			if (sscanf(mapuname, "E%dM%d", &epi, &map) != 2)
+				return 0;
 			snprintf(lumpname, 9, "E%dM%d", epi, map);
 		}
 		else
 		{
-			if (sscanf(mapuname, "MAP%d", &map) != 1) return 0;
+			if (sscanf(mapuname, "MAP%d", &map) != 1)
+				return 0;
 			snprintf(lumpname, 9, "MAP%02d", map);
 			epi = 1;
 		}
-		if (pEpi) *pEpi = epi;
-		if (pMap) *pMap = map;
+		if (pEpi)
+			*pEpi = epi;
+		if (pMap)
+			*pMap = map;
 		return !strcmp(mapuname, lumpname);
 	}
 
@@ -1269,7 +1273,7 @@ namespace
 		{
 			// Try and turn the trailing digits after the "MAP" into a
 			// level number.
-			int mapnum = atoi(info.mapname + 3);
+			int mapnum = std::atoi(info.mapname + 3);
 			if (mapnum >= 0 && mapnum <= 99)
 			{
 				info.levelnum = mapnum;
@@ -1408,7 +1412,7 @@ static void ParseMapInfoLower(
 			newMapinfoStack++;
 			continue;
 		}
-		else if (os.compareToken("}"))
+		if (os.compareToken("}"))
 		{
 			newMapinfoStack--;
 			if (newMapinfoStack <= 0)
@@ -2146,7 +2150,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 // Parses the MAPINFO lumps of all loaded WADs and generates
 // data for wadlevelinfos and wadclusterinfos.
 //
-void G_ParseMapInfo ()
+void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
 	int lump;
@@ -2218,14 +2222,14 @@ void G_ParseMapInfo ()
 	}
 }
 
-void P_RemoveDefereds ()
+void P_RemoveDefereds()
 {
 	::getLevelInfos().zapDeferreds();
 }
 
 // [ML] Not sure where to put this for now...
 // 	G_ParseMusInfo
-void G_ParseMusInfo(void)
+void G_ParseMusInfo()
 {
 	// Nothing yet...
 }
@@ -2327,7 +2331,9 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	if (mapname.length())
 	{
 		if (W_CheckNumForName(mapname.c_str()) != -1)
-            G_DeferedInitNew((char *)mapname.c_str());
+		{
+			G_DeferedInitNew((char*)mapname.c_str());
+		}
         else
         {
             Printf_Bold("map %s not found, loading start map instead", mapname.c_str());
@@ -2466,7 +2472,7 @@ BEGIN_COMMAND (map)
 }
 END_COMMAND (map)
 
-char *CalcMapName (int episode, int level)
+char *CalcMapName(int episode, int level)
 {
 	static char lumpname[9];
 
@@ -2485,7 +2491,7 @@ char *CalcMapName (int episode, int level)
 	return lumpname;
 }
 
-void G_AirControlChanged ()
+void G_AirControlChanged()
 {
 	if (level.aircontrol <= 256)
 	{
@@ -2558,7 +2564,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 }
 
 // Archives the current level
-void G_SnapshotLevel ()
+void G_SnapshotLevel()
 {
 	delete level.info->snapshot;
 
@@ -2572,7 +2578,7 @@ void G_SnapshotLevel ()
 
 // Unarchives the current level based on its snapshot
 // The level should have already been loaded and setup.
-void G_UnSnapshotLevel (bool hubLoad)
+void G_UnSnapshotLevel(bool hubLoad)
 {
 	if (level.info->snapshot == NULL)
 		return;
@@ -2588,18 +2594,18 @@ void G_UnSnapshotLevel (bool hubLoad)
 	level.info->snapshot = NULL;
 }
 
-void G_ClearSnapshots (void)
+void G_ClearSnapshots()
 {
 	getLevelInfos().clearSnapshots();
 }
 
-static void writeSnapShot (FArchive &arc, level_info_t *i)
+static void writeSnapShot(FArchive &arc, level_info_t *i)
 {
 	arc.Write (i->mapname, 8);
 	i->snapshot->Serialize (arc);
 }
 
-void G_SerializeSnapshots (FArchive &arc)
+void G_SerializeSnapshots(FArchive &arc)
 {
 	LevelInfos& levels = getLevelInfos();
 
@@ -2640,7 +2646,7 @@ void G_SerializeSnapshots (FArchive &arc)
 	}
 }
 
-static void writeDefereds (FArchive &arc, level_info_t *i)
+static void writeDefereds(FArchive &arc, level_info_t *i)
 {
 	arc.Write (i->mapname, 8);
 	arc << i->defered;
@@ -2689,9 +2695,9 @@ void P_SerializeACSDefereds(FArchive &arc)
 	}
 }
 
-static int		startpos;	// [RH] Support for multiple starts per level
+static int startpos;	// [RH] Support for multiple starts per level
 
-void G_DoWorldDone (void)
+void G_DoWorldDone()
 {
 	gamestate = GS_LEVEL;
 	if (wminfo.next[0] == 0) {

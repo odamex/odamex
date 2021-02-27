@@ -278,45 +278,45 @@ extern int ACS_GlobalVars[NUM_GLOBALVARS];
 extern BOOL savegamerestore;
 extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
-void G_InitNew (const char *mapname);
-void G_ChangeMap (void);
-void G_ChangeMap (size_t index);
-void G_RestartMap (void);
+void G_InitNew(const char *mapname);
+void G_ChangeMap();
+void G_ChangeMap(size_t index);
+void G_RestartMap();
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
 // but a warp test can start elsewhere
-void G_DeferedInitNew (char *mapname);
+void G_DeferedInitNew(char *mapname);
 
 // Map reset functions
 void G_DeferedFullReset();
 void G_DeferedReset();
 
-void G_ExitLevel (int position, int drawscores);
-void G_SecretExitLevel (int position, int drawscores);
+void G_ExitLevel(int position, int drawscores);
+void G_SecretExitLevel(int position, int drawscores);
 
-void G_DoLoadLevel (int position);
-void G_DoResetLevel (bool full_reset);
+void G_DoLoadLevel(int position);
+void G_DoResetLevel(bool full_reset);
 
-void G_InitLevelLocals (void);
+void G_InitLevelLocals();
 
-void G_AirControlChanged ();
+void G_AirControlChanged();
 
-char *CalcMapName (int episode, int level);
+char *CalcMapName(int episode, int level);
 
-void G_ParseMapInfo (void);
-void G_ParseMusInfo (void);
+void G_ParseMapInfo();
+void G_ParseMusInfo();
 
-void G_ClearSnapshots (void);
-void G_SnapshotLevel (void);
-void G_UnSnapshotLevel (bool keepPlayers);
-void G_SerializeSnapshots (FArchive &arc);
+void G_ClearSnapshots();
+void G_SnapshotLevel();
+void G_UnSnapshotLevel(bool keepPlayers);
+void G_SerializeSnapshots(FArchive &arc);
 
 void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
 extern bool unnatural_level_progression;
 
-void P_RemoveDefereds (void);
+void P_RemoveDefereds();
 
 bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
                const std::string& mapname = "");
