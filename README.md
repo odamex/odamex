@@ -53,6 +53,11 @@ Odamex requires `cmake` as well as the following libraries:
 * [zlib](https://zlib.net/)
 * [wxWidgets](https://www.wxwidgets.org/downloads/) for the launcher
 
+`cURL`, `libPNG` and `zlib` are automatically included as submodules.
+
+On Windows, all libraries are automatically downloaded if not found. 
+On \*nix/MacOSX, you will need to download through your package manager `libsdl2-dev`, `libsdl2-mixer-dev` and `libwxgtk3.0-dev`.
+
 Please check [this page](https://odamex.net/wiki/How_to_build_from_source) for further informations on how to compile Odamex for your platform.
 
 ## Contributing to the project
@@ -63,10 +68,12 @@ Before submitting a pull request, please make sure it follows [our coding standa
 
 For historical purposes, you can also view [our bugtracker's archive](https://odamex.net/bugs/).
 
-## Website
+## External Links
 Please visit the following websites for more information about the development of the port and our community: 
 * [**Odamex Website**](https://odamex.net)
+* [Wiki](https://odamex.net/wiki/Main_Page)
 * [Forums](https://odamex.net/boards/)
+* [Discord](https://discord.gg/aMUzcZE)
 * [Twitter](https://twitter.com/odamex)
 
 
