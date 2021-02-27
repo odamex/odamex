@@ -2889,26 +2889,7 @@ void SV_UpdateMissiles(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteByte (&cl->netbuf, mo->rndindex);
-			MSG_WriteLong (&cl->netbuf, mo->x);
-			MSG_WriteLong (&cl->netbuf, mo->y);
-			MSG_WriteLong (&cl->netbuf, mo->z);
-
-			MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteLong (&cl->netbuf, mo->angle);
-			MSG_WriteLong (&cl->netbuf, mo->momx);
-			MSG_WriteLong (&cl->netbuf, mo->momy);
-			MSG_WriteLong (&cl->netbuf, mo->momz);
-
-			if (mo->tracer)
-			{
-				MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
-				MSG_WriteShort(&cl->netbuf, mo->netid);
-				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
-			}
+			SVC_UpdateMobj(cl->netbuf, *mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE | SVC_UM_TRACER);
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
@@ -2961,28 +2942,9 @@ void SV_UpdateMonsters(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteMarker(&cl->netbuf, svc_movemobj);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteByte(&cl->netbuf, mo->rndindex);
-			MSG_WriteLong(&cl->netbuf, mo->x);
-			MSG_WriteLong(&cl->netbuf, mo->y);
-			MSG_WriteLong(&cl->netbuf, mo->z);
-
-			MSG_WriteMarker(&cl->netbuf, svc_mobjspeedangle);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteLong(&cl->netbuf, mo->angle);
-			MSG_WriteLong(&cl->netbuf, mo->momx);
-			MSG_WriteLong(&cl->netbuf, mo->momy);
-			MSG_WriteLong(&cl->netbuf, mo->momz);
-
-			MSG_WriteMarker(&cl->netbuf, svc_actor_movedir);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteByte(&cl->netbuf, mo->movedir);
-			MSG_WriteLong(&cl->netbuf, mo->movecount);
-
-			MSG_WriteMarker(&cl->netbuf, svc_actor_target);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteShort(&cl->netbuf, mo->target->netid);
+			SVC_UpdateMobj(cl->netbuf, *mo,
+			               SVC_UM_POS_RND | SVC_UM_MOM_ANGLE | SVC_UM_MOVEDIR |
+			                   SVC_UM_TARGET);
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -3008,9 +2970,7 @@ void SV_ActorTarget(AActor *actor)
 		if(!SV_IsPlayerAllowedToSee(*it, actor))
 			continue;
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_actor_target);
-		MSG_WriteShort (&cl->reliablebuf, actor->netid);
-		MSG_WriteShort (&cl->reliablebuf, actor->target ? actor->target->netid : 0);
+		SVC_UpdateMobj(cl->reliablebuf, *actor, SVC_UM_TARGET);
 	}
 }
 
@@ -3026,9 +2986,7 @@ void SV_ActorTracer(AActor *actor)
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_actor_tracer);
-		MSG_WriteShort (&cl->reliablebuf, actor->netid);
-		MSG_WriteShort (&cl->reliablebuf, actor->tracer ? actor->tracer->netid : 0);
+		SVC_UpdateMobj(cl->reliablebuf, *actor, SVC_UM_TRACER);
 	}
 }
 
@@ -5016,19 +4974,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		MSG_WriteShort(&cl->reliablebuf, target->health);
 		MSG_WriteByte(&cl->reliablebuf, pain);
 
-		MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-		MSG_WriteShort (&cl->netbuf, target->netid);
-		MSG_WriteByte (&cl->netbuf, target->rndindex);
-		MSG_WriteLong (&cl->netbuf, target->x);
-		MSG_WriteLong (&cl->netbuf, target->y);
-		MSG_WriteLong (&cl->netbuf, target->z);
-
-		MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
-		MSG_WriteShort(&cl->netbuf, target->netid);
-		MSG_WriteLong (&cl->netbuf, target->angle);
-		MSG_WriteLong (&cl->netbuf, target->momx);
-		MSG_WriteLong (&cl->netbuf, target->momy);
-		MSG_WriteLong (&cl->netbuf, target->momz);
+		SVC_UpdateMobj(cl->netbuf, *target, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE);
 	}
 }
 
@@ -5046,7 +4992,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 			continue;
 
 		// send death location first
-		MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
+		//MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
 		MSG_WriteShort(&cl->reliablebuf, target->netid);
 		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
 
@@ -5063,7 +5009,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong(&cl->reliablebuf, target->y + yoffs);
 		MSG_WriteLong(&cl->reliablebuf, target->z + zoffs);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
+		//MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
 		MSG_WriteShort(&cl->reliablebuf, target->netid);
 		MSG_WriteLong (&cl->reliablebuf, target->angle);
 		MSG_WriteLong (&cl->reliablebuf, target->momx);
@@ -5109,12 +5055,7 @@ void SV_ExplodeMissile(AActor *mo)
 		if (!SV_IsPlayerAllowedToSee(*it, mo))
 			continue;
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_movemobj);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
-		MSG_WriteByte (&cl->reliablebuf, mo->rndindex);
-		MSG_WriteLong (&cl->reliablebuf, mo->x);
-		MSG_WriteLong (&cl->reliablebuf, mo->y);
-		MSG_WriteLong (&cl->reliablebuf, mo->z);
+		SVC_UpdateMobj(cl->reliablebuf, *mo, SVC_UM_POS_RND);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
 		MSG_WriteShort(&cl->reliablebuf, mo->netid);

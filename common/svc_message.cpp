@@ -272,6 +272,55 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
 }
 
 /**
+ * @brief Move a mobj to a new location.  If it's a player, it will update
+ *        the client's snapshot.
+ */
+void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags)
+{
+	odaproto::svc::UpdateMobj msg;
+	odaproto::Actor* act = msg.mutable_actor();
+
+	msg.set_flags(flags);
+
+	if (flags & SVC_UM_POS_RND)
+	{
+		odaproto::Vec3* pos = act->mutable_pos();
+		pos->set_x(mobj.x);
+		pos->set_y(mobj.y);
+		pos->set_z(mobj.z);
+		act->set_rndindex(mobj.rndindex);
+	}
+
+	if (flags & SVC_UM_MOM_ANGLE)
+	{
+		odaproto::Vec3* mom = act->mutable_mom();
+		mom->set_x(mobj.momx);
+		mom->set_y(mobj.momy);
+		mom->set_z(mobj.momz);
+		act->set_angle(mobj.angle);
+	}
+
+	if (flags & SVC_UM_MOVEDIR)
+	{
+		act->set_movedir(mobj.movedir);
+		act->set_movecount(mobj.movecount);
+	}
+
+	if (flags & SVC_UM_TARGET)
+	{
+		act->set_targetid(mobj.target ? mobj.target->netid : 0);
+	}
+
+	if (flags & SVC_UM_TRACER)
+	{
+		act->set_tracerid(mobj.target ? mobj.target->netid : 0);
+	}
+
+	MSG_WriteMarker(&b, svc_updatemobj);
+	MSG_WriteProto(&b, msg);
+}
+
+/**
  * @brief Kill a mobj.
  */
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,

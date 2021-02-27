@@ -465,6 +465,84 @@ void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 		netdemo.writeMapChange();
 }
 
+void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
+{
+	int netid = msg.actor().netid();
+	AActor* mo = P_FindThingById(netid);
+
+	if (!mo)
+		return;
+
+	fixed_t x = msg.actor().pos().x();
+	fixed_t y = msg.actor().pos().y();
+	fixed_t z = msg.actor().pos().z();
+	byte rndindex = msg.actor().rndindex();
+	fixed_t momx = msg.actor().mom().x();
+	fixed_t momy = msg.actor().mom().y();
+	fixed_t momz = msg.actor().mom().z();
+	angle_t angle = msg.actor().angle();
+	byte movedir = msg.actor().movedir();
+	int movecount = msg.actor().movecount();
+
+	if (mo->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+
+		if (msg.flags() & SVC_UM_POS_RND)
+		{
+			newsnap.setX(x);
+			newsnap.setY(y);
+			newsnap.setZ(z);
+		}
+
+		if (msg.flags() & SVC_UM_MOM_ANGLE)
+		{
+			newsnap.setMomX(momx);
+			newsnap.setMomY(momy);
+			newsnap.setMomZ(momz);
+		}
+
+		mo->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		if (msg.flags() & SVC_UM_POS_RND)
+		{
+			CL_MoveThing(mo, x, y, z);
+			mo->rndindex = rndindex;
+		}
+
+		if (msg.flags() & SVC_UM_MOM_ANGLE)
+		{
+			mo->angle = angle;
+			mo->momx = momx;
+			mo->momy = momy;
+			mo->momz = momz;
+		}
+	}
+
+	if (msg.flags() & SVC_UM_MOVEDIR)
+	{
+		mo->movedir = movedir;
+		mo->movecount = movecount;
+	}
+
+	if (msg.flags() & SVC_UM_TARGET)
+	{
+		AActor* target = P_FindThingById(msg.actor().targetid());
+		mo->target = target->ptr();
+	}
+
+	if (msg.flags() & SVC_UM_TRACER)
+	{
+		AActor* tracer = P_FindThingById(msg.actor().tracerid());
+		mo->tracer = tracer->ptr();
+	}
+}
+
 extern int MeansOfDeath;
 
 //

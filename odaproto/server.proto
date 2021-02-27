@@ -106,14 +106,6 @@ message ConsolePlayer
 	string digest = 2;
 }
 
-// svc_mobjspeedangle
-message MobjSpeedAngle
-{
-	int32 netid = 1;
-	fixed32 angle = 2;
-	Vec3 mom = 3;
-}
-
 // svc_explodemissile
 message ExplodeMissile
 {
@@ -137,12 +129,11 @@ message UserInfo
 	uint64 join_time = 6;
 }
 
-// svc_movemobj
-message MoveMobj
+// svc_updatemobj
+message UpdateMobj
 {
-	int32 netid = 1;
-	int32 rndindex = 2;
-	Vec3 pos = 3;
+	uint32 flags = 1;
+	Actor actor = 2;
 }
 
 // svc_spawnplayer
@@ -503,28 +494,6 @@ message MobjState
 {
 	int32 netid = 1;
 	int32 mostate = 2;
-}
-
-// svc_actor_movedir
-message ActorMovedir
-{
-	int32 netid = 1;
-	int32 movedir = 2;
-	int32 movecount = 3;
-}
-
-// svc_actor_target
-message ActorTarget
-{
-	int32 netid = 1;
-	int32 target = 2;
-}
-
-// svc_actor_tracer
-message ActorTracer
-{
-	int32 netid = 1;
-	int32 tracer_netid = 2;
 }
 
 // svc_damagemobj

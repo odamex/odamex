@@ -989,11 +989,10 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_disconnectclient);
 	SVC_INFO(svc_loadmap);
 	SVC_INFO(svc_consoleplayer);
-	SVC_INFO(svc_mobjspeedangle);
 	SVC_INFO(svc_explodemissile);
 	SVC_INFO(svc_removemobj);
 	SVC_INFO(svc_userinfo);
-	SVC_INFO(svc_movemobj);
+	SVC_INFO(svc_updatemobj);
 	SVC_INFO(svc_spawnplayer);
 	SVC_INFO(svc_damageplayer);
 	SVC_INFO(svc_killmobj);
@@ -1040,9 +1039,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_sectorproperties);
 	SVC_INFO(svc_linesideupdate);
 	SVC_INFO(svc_mobjstate);
-	SVC_INFO(svc_actor_movedir);
-	SVC_INFO(svc_actor_target);
-	SVC_INFO(svc_actor_tracer);
 	SVC_INFO(svc_damagemobj);
 	SVC_INFO(svc_executelinespecial);
 	SVC_INFO(svc_executeacsspecial);

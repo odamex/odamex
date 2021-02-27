@@ -79,6 +79,31 @@
 #define SVC_LL_MONSTER_RESPAWNS BIT(5)
 
 /**
+ * @brief svc_updatemobj: Supply mobj position and random index.
+ */
+#define SVC_UM_POS_RND BIT(0)
+
+/**
+ * @brief svc_updatemobj: Supply mobj momentum and angle.
+ */
+#define SVC_UM_MOM_ANGLE BIT(1)
+
+/**
+ * @brief svc_updatemobj: Supply movedir and movecount.
+ */
+#define SVC_UM_MOVEDIR BIT(2)
+
+/**
+ * @brief svc_updatemobj: Supply target.
+ */
+#define SVC_UM_TARGET BIT(3)
+
+/**
+ * @brief svc_updatemobj: Supply tracer.
+ */
+#define SVC_UM_TRACER BIT(4)
+
+/**
  * @brief svc_playermembers: Spectator status.
  */
 #define SVC_PM_SPECTATOR BIT(0)
@@ -127,11 +152,10 @@ enum svc_t
 	svc_disconnectclient,
 	svc_loadmap,
 	svc_consoleplayer,
-	svc_mobjspeedangle,
 	svc_explodemissile,		// [short] - netid
 	svc_removemobj,
 	svc_userinfo,
-	svc_movemobj,			// [short] [byte] [int] [int] [int]
+	svc_updatemobj,
 	svc_spawnplayer,
 	svc_damageplayer,
 	svc_killmobj,
@@ -179,9 +203,6 @@ enum svc_t
 	svc_sectorproperties,
 	svc_linesideupdate,
 	svc_mobjstate,
-	svc_actor_movedir,
-	svc_actor_target,
-	svc_actor_tracer,
 	svc_damagemobj,
 	svc_executelinespecial,
 	svc_executeacsspecial,

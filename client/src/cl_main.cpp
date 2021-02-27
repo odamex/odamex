@@ -318,7 +318,6 @@ void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
-void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
@@ -1521,46 +1520,6 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 }
 
 //
-// CL_MoveMobj
-//
-void CL_MoveMobj(void)
-{
-	AActor  *mo;
-	int      netid;
-	fixed_t  x, y, z;
-
-	netid = MSG_ReadShort();
-	mo = P_FindThingById (netid);
-
-	byte rndindex = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-
-	if (!mo)
-		return;
-
-	if (mo->player)
-	{
-		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
-		PlayerSnapshot newsnap(snaptime);
-		newsnap.setAuthoritative(true);
-
-		newsnap.setX(x);
-		newsnap.setY(y);
-		newsnap.setZ(z);
-
-		mo->player->snapshots.addSnapshot(newsnap);
-	}
-	else
-	{
-		CL_MoveThing (mo, x, y, z);
-		mo->rndindex = rndindex;
-	}
-}
-
-//
 // CL_DamageMobj
 //
 void CL_DamageMobj()
@@ -2210,7 +2169,7 @@ void CL_SpawnMobj()
 		AActor *target = P_FindThingById(MSG_ReadShort());
 		if(target)
 			mo->target = target->ptr();
-		CL_SetMobjSpeedAndAngle();
+		//CL_SetMobjSpeedAndAngle();
 	}
 
     if (serverside && mo->flags & MF_COUNTKILL)
@@ -2388,47 +2347,6 @@ void CL_SpawnPlayer()
 	newsnap.setContinuous(false);
 	p->snapshots.clearSnapshots();
 	p->snapshots.addSnapshot(newsnap);
-}
-
-//
-// CL_SetMobjSpeedAndAngle
-//
-void CL_SetMobjSpeedAndAngle(void)
-{
-	AActor *mo;
-	int     netid;
-
-	netid = MSG_ReadShort();
-	mo = P_FindThingById(netid);
-
-	angle_t angle = MSG_ReadLong();
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
-
-	if (!mo)
-		return;
-
-	if (mo->player)
-	{
-		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
-		PlayerSnapshot newsnap(snaptime);
-		newsnap.setAuthoritative(true);
-
-		newsnap.setMomX(momx);
-		newsnap.setMomY(momy);
-		newsnap.setMomZ(momz);
-
-		mo->player->snapshots.addSnapshot(newsnap);
-	}
-	else
-	{
-		mo->angle = angle;
-		mo->momx = momx;
-		mo->momy = momy;
-		mo->momz = momz;
-	}
 }
 
 //
@@ -2857,50 +2775,6 @@ void CL_ForceSetTeam (void)
 }
 
 //
-// CL_Actor_Movedir
-//
-void CL_Actor_Movedir()
-{
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	BYTE movedir = MSG_ReadByte();
-    SDWORD movecount = MSG_ReadLong();
-
-	if (!actor || movedir >= 8)
-		return;
-
-	actor->movedir = movedir;
-	actor->movecount = movecount;
-}
-
-//
-// CL_Actor_Target
-//
-void CL_Actor_Target()
-{
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *target = P_FindThingById (MSG_ReadShort());
-
-	if (!actor || !target)
-		return;
-
-	actor->target = target->ptr();
-}
-
-//
-// CL_Actor_Tracer
-//
-void CL_Actor_Tracer()
-{
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *tracer = P_FindThingById (MSG_ReadShort());
-
-	if (!actor || !tracer)
-		return;
-
-	actor->tracer = tracer->ptr();
-}
-
-//
 // CL_MobjTranslation
 //
 void CL_MobjTranslation()
@@ -3103,11 +2977,10 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
 		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
 		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
-		SERVER_MSG_FUNC(svc_mobjspeedangle, CL_SetMobjSpeedAndAngle);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
 		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
 		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
-		SERVER_MSG_FUNC(svc_movemobj, CL_MoveMobj);
+		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
@@ -3151,9 +3024,6 @@ static bool CallMessageFunc(svc_t type)
 		                  odaproto::svc::SectorProperties);
 		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
 		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
-		SERVER_MSG_FUNC(svc_actor_movedir, CL_Actor_Movedir);
-		SERVER_MSG_FUNC(svc_actor_target, CL_Actor_Target);
-		SERVER_MSG_FUNC(svc_actor_tracer, CL_Actor_Tracer);
 		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
 		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
 		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
