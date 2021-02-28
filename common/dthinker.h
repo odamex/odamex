@@ -73,7 +73,7 @@ public:
 	static void RunThinkers ();
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
-	static void SerializeAll (FArchive &arc, bool keepPlayers, bool noStorePlayers);
+	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
 	bool WasDestroyed();
 

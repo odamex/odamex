@@ -1703,7 +1703,7 @@ void G_AirControlChanged ()
 // playerstate.  Third parameter is true if you want to handle playerstate
 // yourself (map resets), just make sure you set it the same for both
 // serialization and unserialization.
-void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
+void G_SerializeLevel(FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
 	{
@@ -1721,7 +1721,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 
-		if (!noStorePlayers)
+		if (!arc.IsReset())
 			arc << playernum;
 	}
 	else
@@ -1740,17 +1740,17 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
 
-		if (!noStorePlayers)
+		if (!arc.IsReset())
 		{
 			arc >> playernum;
 			players.resize(playernum);
 		}
 	}
 
-	if (!hubLoad && !noStorePlayers)
+	if (!hubLoad && !arc.IsReset())
 		P_SerializePlayers(arc);
 
-	P_SerializeThinkers(arc, hubLoad, noStorePlayers);
+	P_SerializeThinkers(arc, hubLoad);
 	P_SerializeWorld(arc);
 	P_SerializePolyobjs(arc);
 	P_SerializeSounds(arc);
@@ -1766,7 +1766,7 @@ void G_SnapshotLevel ()
 
 	FArchive arc (*level.info->snapshot);
 
-	G_SerializeLevel (arc, false, false);
+	G_SerializeLevel(arc, false);
 }
 
 // Unarchives the current level based on its snapshot
@@ -1780,7 +1780,7 @@ void G_UnSnapshotLevel (bool hubLoad)
 	FArchive arc (*level.info->snapshot);
 	if (hubLoad)
 		arc.SetHubTravel (); // denis - hexen?
-	G_SerializeLevel (arc, hubLoad, false);
+	G_SerializeLevel(arc, hubLoad);
 	arc.Close ();
 	// No reason to keep the snapshot around once the level's been entered.
 	delete level.info->snapshot;
