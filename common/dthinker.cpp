@@ -270,5 +270,13 @@ void DThinker::operator delete (void *mem)
 	Z_Free (mem);
 }
 
-VERSION_CONTROL (dthinker_cpp, "$Id$")
+bool P_ThinkerIsPlayerType(DThinker* thinker)
+{
+	if (thinker == NULL)
+		return false;
 
+	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
+	       static_cast<AActor*>(thinker)->type == MT_PLAYER;
+}
+
+VERSION_CONTROL (dthinker_cpp, "$Id$")

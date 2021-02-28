@@ -127,5 +127,6 @@ public:
 	}
 };
 
-#endif //__DTHINKER_H__
+bool P_ThinkerIsPlayerType(DThinker* thinker);
 
+#endif //__DTHINKER_H__

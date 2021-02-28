@@ -561,13 +561,4 @@ public:
 	}
 };
 
-inline bool P_ThinkerIsPlayerType(DThinker* thinker)
-{
-	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
-	       static_cast<AActor*>(thinker)->type == MT_PLAYER;
-}
-
 #endif
-
-
-
