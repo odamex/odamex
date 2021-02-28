@@ -640,9 +640,6 @@ void G_DoResetLevel(bool full_reset)
 		if (!it->ingame() || it->spectator)
 			continue;
 
-		// Destroy the attached mobj, otherwise we leave a ghost.
-		it->mo->Destroy();
-
 		// Set the respawning machinery in motion
 		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
 
