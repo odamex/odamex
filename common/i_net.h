@@ -79,6 +79,16 @@
 #define SVC_LL_MONSTER_RESPAWNS BIT(5)
 
 /**
+ * @brief svc_spawnmobj: Persist flags.
+ */
+#define SVC_SM_FLAGS BIT(0)
+
+/**
+ * @brief svc_spawnmobj: Run corpse logic.
+ */
+#define SVC_SM_CORPSE BIT(1)
+
+/**
  * @brief svc_updatemobj: Supply mobj position and random index.
  */
 #define SVC_UM_POS_RND BIT(0)
@@ -162,7 +172,6 @@ enum svc_t
 	svc_fireweapon,			// [byte]
 	svc_sector,
 	svc_print,
-	svc_mobjinfo,
 	svc_playermembers,
 	svc_teammembers,
 	svc_activateline,
@@ -173,7 +182,6 @@ enum svc_t
 	svc_touchspecial,
 	svc_changeweapon,
 	svc_reserved42,
-	svc_corpse,
 	svc_missedpacket,
 	svc_soundorigin,
 	svc_reserved46,

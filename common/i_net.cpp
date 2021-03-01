@@ -999,7 +999,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_fireweapon);
 	SVC_INFO(svc_sector);
 	SVC_INFO(svc_print);
-	SVC_INFO(svc_mobjinfo);
 	SVC_INFO(svc_playermembers);
 	SVC_INFO(svc_teammembers);
 	SVC_INFO(svc_activateline);
@@ -1010,7 +1009,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_touchspecial);
 	SVC_INFO(svc_changeweapon);
 	SVC_INFO(svc_reserved42);
-	SVC_INFO(svc_corpse);
 	SVC_INFO(svc_missedpacket);
 	SVC_INFO(svc_soundorigin);
 	SVC_INFO(svc_reserved46);
