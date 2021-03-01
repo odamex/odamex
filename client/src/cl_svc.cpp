@@ -27,6 +27,7 @@
 
 #include "server.pb.h"
 
+#include "c_effect.h"
 #include "cl_main.h"
 #include "cmdlib.h"
 #include "d_main.h"
@@ -35,6 +36,7 @@
 #include "g_level.h"
 #include "g_levelstate.h"
 #include "m_argv.h"
+#include "m_random.h"
 #include "m_resfile.h"
 #include "p_ctf.h"
 #include "p_inter.h"
@@ -328,6 +330,131 @@ void CL_PingRequest(const odaproto::svc::PingRequest& msg)
 {
 	MSG_WriteMarker(&net_buffer, clc_pingreply);
 	MSG_WriteLong(&net_buffer, msg.ms_time());
+}
+
+//
+// CL_SpawnMobj
+//
+void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
+{
+	fixed_t x = msg.actor().pos().x();
+	fixed_t y = msg.actor().pos().y();
+	fixed_t z = msg.actor().pos().z();
+	angle_t angle = msg.actor().angle();
+
+	mobjtype_t type = static_cast<mobjtype_t>(msg.actor().type());
+	size_t netid = msg.actor().netid();
+	byte rndindex = msg.actor().rndindex();
+	statenum_t state = static_cast<statenum_t>(msg.actor().statenum());
+
+	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
+		return;
+
+	P_ClearId(netid);
+
+	AActor* mo = new AActor(x, y, z, type);
+
+	// denis - puff hack
+	if (mo->type == MT_PUFF)
+	{
+		mo->momz = FRACUNIT;
+		mo->tics -= M_Random() & 3;
+		if (mo->tics < 1)
+			mo->tics = 1;
+	}
+
+	mo->angle = angle;
+	P_SetThingId(mo, netid);
+	mo->rndindex = rndindex;
+
+	if (state >= S_NULL && state < NUMSTATES)
+	{
+		P_SetMobjState(mo, state);
+	}
+
+	if (mo->flags & MF_MISSILE)
+	{
+		AActor* target = P_FindThingById(msg.target_netid());
+		if (target)
+		{
+			mo->target = target->ptr();
+		}
+
+		mo->momx = msg.actor().mom().x();
+		mo->momx = msg.actor().mom().x();
+		mo->momx = msg.actor().mom().x();
+		mo->angle = msg.actor().angle();
+	}
+
+	if (serverside && mo->flags & MF_COUNTKILL)
+	{
+		level.total_monsters++;
+	}
+
+	if (connected && (mo->flags & MF_MISSILE) && mo->info->seesound)
+	{
+		S_Sound(mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
+	}
+
+	if (mo->type == MT_IFOG)
+	{
+		S_Sound(mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+	}
+
+	if (mo->type == MT_TFOG)
+	{
+		if (level.time) // don't play sound on first tic of the level
+		{
+			S_Sound(mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		}
+	}
+
+	if (type == MT_FOUNTAIN)
+	{
+		if (msg.args_size() >= 1)
+			mo->effects = msg.args().Get(0) << FX_FOUNTAINSHIFT;
+	}
+
+	if (type == MT_ZDOOMBRIDGE)
+	{
+		if (msg.args_size() >= 1)
+			mo->radius = msg.args().Get(0) << FRACBITS;
+		if (msg.args_size() >= 2)
+			mo->height = msg.args().Get(1) << FRACBITS;
+	}
+
+	if (msg.flags() & SVC_SM_FLAGS)
+	{
+		mo->flags = msg.actor().flags();
+	}
+
+	if (msg.flags() & SVC_SM_CORPSE)
+	{
+		int frame = msg.actor().frame();
+		int tics = msg.actor().tics();
+
+		if (tics == 0xFF)
+			tics = -1;
+
+		// already spawned as gibs?
+		if (!mo || mo->state - states == S_GIBS)
+			return;
+
+		if ((frame & FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
+			return;
+
+		mo->frame = frame;
+		mo->tics = tics;
+
+		// from P_KillMobj
+		mo->flags &= ~(MF_SHOOTABLE | MF_FLOAT | MF_SKULLFLY);
+		mo->flags |= MF_CORPSE | MF_DROPOFF;
+		mo->height >>= 2;
+		mo->flags &= ~MF_SOLID;
+
+		if (mo->player)
+			mo->player->playerstate = PST_DEAD;
+	}
 }
 
 //

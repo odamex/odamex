@@ -42,6 +42,7 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic);
 void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic);
 void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags);
 void SVC_PingRequest(buf_t& b);
+void SVC_SpawnMobj(buf_t& b, AActor* mo);
 void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
                  const std::string& mapname, int time);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,

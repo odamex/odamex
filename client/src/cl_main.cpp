@@ -2125,114 +2125,6 @@ void CL_UpdateIntTimeLeft(void)
 
 
 //
-// CL_SpawnMobj
-//
-void CL_SpawnMobj()
-{
-	AActor  *mo;
-
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-	angle_t angle = MSG_ReadLong();
-
-	unsigned short type = MSG_ReadShort();
-	unsigned short netid = MSG_ReadShort();
-	byte rndindex = MSG_ReadByte();
-	SWORD state = MSG_ReadShort();
-
-	if(type >= NUMMOBJTYPES)
-		return;
-
-	P_ClearId(netid);
-
-	mo = new AActor (x, y, z, (mobjtype_t)type);
-
-	// denis - puff hack
-	if(mo->type == MT_PUFF)
-	{
-		mo->momz = FRACUNIT;
-		mo->tics -= M_Random () & 3;
-		if (mo->tics < 1)
-			mo->tics = 1;
-	}
-
-	mo->angle = angle;
-	P_SetThingId(mo, netid);
-	mo->rndindex = rndindex;
-
-	if (state < NUMSTATES)
-		P_SetMobjState(mo, (statenum_t)state);
-
-	if(mo->flags & MF_MISSILE)
-	{
-		AActor *target = P_FindThingById(MSG_ReadShort());
-		if(target)
-			mo->target = target->ptr();
-		//CL_SetMobjSpeedAndAngle();
-	}
-
-    if (serverside && mo->flags & MF_COUNTKILL)
-		level.total_monsters++;
-
-	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
-		S_Sound (mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
-
-	if (mo->type == MT_IFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
-
-	if (mo->type == MT_TFOG)
-	{
-		if (level.time)	// don't play sound on first tic of the level
-			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-	}
-
-	if (type == MT_FOUNTAIN)
-	{
-		mo->effects = int(MSG_ReadByte()) << FX_FOUNTAINSHIFT;
-	}
-
-	if (type == MT_ZDOOMBRIDGE)
-	{
-		mo->radius = int(MSG_ReadByte()) << FRACBITS;
-		mo->height = int(MSG_ReadByte()) << FRACBITS;
-	}
-}
-
-//
-// CL_Corpse
-// Called after killed thing is created.
-//
-void CL_Corpse(void)
-{
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	int frame = MSG_ReadByte();
-	int tics = MSG_ReadByte();
-
-	if(tics == 0xFF)
-		tics = -1;
-
-	// already spawned as gibs?
-	if (!mo || mo->state - states == S_GIBS)
-		return;
-
-	if((frame&FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
-		return;
-
-	mo->frame = frame;
-	mo->tics = tics;
-
-	// from P_KillMobj
-	mo->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
-	mo->flags |= MF_CORPSE|MF_DROPOFF;
-	mo->height >>= 2;
-	mo->flags &= ~MF_SOLID;
-
-	if (mo->player)
-		mo->player->playerstate = PST_DEAD;
-}
-
-//
 // CL_TouchSpecialThing
 //
 void CL_TouchSpecialThing (void)
@@ -2382,24 +2274,6 @@ void CL_RailTrail()
 	end.z = double(MSG_ReadShort());
 
 	P_DrawRailTrail(start, end);
-}
-
-//
-// CL_UpdateMobjInfo
-//
-void CL_UpdateMobjInfo(void)
-{
-	int netid = MSG_ReadShort();
-	int flags = MSG_ReadLong();
-	//int flags2 = MSG_ReadLong();
-
-	AActor *mo = P_FindThingById(netid);
-
-	if (!mo)
-		return;
-
-	mo->flags = flags;
-	//mo->flags2 = flags2;
 }
 
 
@@ -2973,7 +2847,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
 		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
 		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
-		SERVER_MSG_FUNC(svc_spawnmobj, CL_SpawnMobj);
+		SERVER_PROTO_FUNC(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
 		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
 		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
 		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
@@ -2987,7 +2861,6 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
-		SERVER_MSG_FUNC(svc_mobjinfo, CL_UpdateMobjInfo);
 		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
 		                  odaproto::svc::PlayerMembers);
 		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
@@ -2998,7 +2871,6 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
 		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
 		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
-		SERVER_MSG_FUNC(svc_corpse, CL_Corpse);
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_MSG_FUNC(svc_soundorigin, CL_SoundOrigin);
 		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);

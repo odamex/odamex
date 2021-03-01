@@ -238,6 +238,69 @@ void SVC_PingRequest(buf_t& b)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_SpawnMobj(buf_t& b, AActor* mo)
+{
+	odaproto::svc::SpawnMobj msg;
+	odaproto::Actor* actor = msg.mutable_actor();
+	odaproto::Vec3* pos = actor->mutable_pos();
+
+	uint32_t flags = 0;
+
+	pos->set_x(mo->x);
+	pos->set_y(mo->y);
+	pos->set_z(mo->z);
+
+	actor->set_angle(mo->angle);
+
+	actor->set_type(mo->type);
+	actor->set_netid(mo->netid);
+	actor->set_rndindex(mo->rndindex);
+	actor->set_statenum(mo->state - states); // denis - sending state fixes monster ghosts appearing under doors
+
+	if (mo->type == MT_FOUNTAIN)
+	{
+		msg.add_args(mo->args[0]);
+	}
+
+	if (mo->type == MT_ZDOOMBRIDGE)
+	{
+		msg.add_args(mo->args[0]);
+		msg.add_args(mo->args[1]);
+	}
+
+	// denis - check type as that is what the client will be spawning
+	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) 
+	{
+		msg.set_target_netid(mo->target ? mo->target->netid : 0);
+		actor->set_angle(mo->angle);
+		actor->mutable_mom()->set_x(mo->momx);
+		actor->mutable_mom()->set_y(mo->momy);
+		actor->mutable_mom()->set_z(mo->momz);
+	}
+	else
+	{
+		if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
+		{
+			flags |= SVC_SM_FLAGS;
+			actor->set_flags(mo->flags);
+		}
+	}
+
+	// animating corpses
+	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
+	{
+		// This sets off some additional logic on the client.
+		flags |= SVC_SM_CORPSE;
+		actor->set_frame(mo->frame);
+		actor->set_tics(mo->tics);
+	}
+
+	msg.set_flags(flags);
+
+	MSG_WriteMarker(&b, svc_spawnmobj);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.

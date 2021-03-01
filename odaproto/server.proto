@@ -66,16 +66,10 @@ message UpdatePing
 // svc_spawnmobj, svc_mobjinfo, svc_corpse
 message SpawnMobj
 {
-	Vec3 pos = 1;
-	fixed32 angle = 2;
-	int32 type = 3;
-	int32 netid = 4;
-	int32 rndindex = 5;
-	int32 state = 6;
-	map<int32, int32> args = 7;
-	Vec3 mom = 8;
-	fixed32 flags = 9;
-	fixed32 flags2 = 10;
+	uint32 flags = 1;
+	Actor actor = 2;
+	int32 target_netid = 3;
+	repeated int32 args = 4;
 }
 
 // svc_disconnectclient

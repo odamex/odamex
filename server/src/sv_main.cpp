@@ -1129,53 +1129,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	if (!mo)
 		return;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_spawnmobj);
-	MSG_WriteLong(&cl->reliablebuf, mo->x);
-	MSG_WriteLong(&cl->reliablebuf, mo->y);
-	MSG_WriteLong(&cl->reliablebuf, mo->z);
-	MSG_WriteLong(&cl->reliablebuf, mo->angle);
-
-	MSG_WriteShort(&cl->reliablebuf, mo->type);
-	MSG_WriteShort(&cl->reliablebuf, mo->netid);
-	MSG_WriteByte(&cl->reliablebuf, mo->rndindex);
-	MSG_WriteShort(&cl->reliablebuf, (mo->state - states)); // denis - sending state fixes monster ghosts appearing under doors
-
-	if (mo->type == MT_FOUNTAIN)
-		MSG_WriteByte(&cl->reliablebuf, mo->args[0]);
-
-	if (mo->type == MT_ZDOOMBRIDGE)
-	{
-		MSG_WriteByte(&cl->reliablebuf, mo->args[0]);
-		MSG_WriteByte(&cl->reliablebuf, mo->args[1]);
-	}
-
-	if(mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) // denis - check type as that is what the client will be spawning
-	{
-		MSG_WriteShort (&cl->reliablebuf, mo->target ? mo->target->netid : 0);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
-		MSG_WriteLong (&cl->reliablebuf, mo->angle);
-		MSG_WriteLong (&cl->reliablebuf, mo->momx);
-		MSG_WriteLong (&cl->reliablebuf, mo->momy);
-		MSG_WriteLong (&cl->reliablebuf, mo->momz);
-	}
-	else
-	{
-		if(mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
-		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_mobjinfo);
-			MSG_WriteShort(&cl->reliablebuf, mo->netid);
-			MSG_WriteLong(&cl->reliablebuf, mo->flags);
-		}
-	}
-
-	// animating corpses
-	if((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
-	{
-		MSG_WriteMarker (&cl->reliablebuf, svc_corpse);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
-		MSG_WriteByte (&cl->reliablebuf, mo->frame);
-		MSG_WriteByte (&cl->reliablebuf, mo->tics);
-	}
+	SVC_SpawnMobj(cl->reliablebuf, mo);
 }
 
 //

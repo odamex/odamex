@@ -35,12 +35,16 @@ message Actor
 	int32 frame = 4;
 	fixed32 pitch = 5;
 	Vec3 mom = 6;
-	uint32 movedir = 7;
-	int32 movecount = 8;
-	int32 targetid = 9;
-	int32 tracerid = 10;
-	int32 waterlevel = 11;
-	uint32 rndindex = 12;
+	int32 type = 7;
+	int32 tics = 8;
+	int32 statenum = 9;
+	fixed32 flags = 10;
+	uint32 movedir = 11;
+	int32 movecount = 12;
+	int32 targetid = 13;
+	int32 tracerid = 14;
+	int32 waterlevel = 15;
+	uint32 rndindex = 16;
 }
 
 message Player
