@@ -181,15 +181,11 @@ enum svc_t
 	svc_exitlevel,
 	svc_touchspecial,
 	svc_changeweapon,
-	svc_reserved42,
 	svc_missedpacket,
 	svc_soundorigin,
-	svc_reserved46,
-	svc_reserved47,
 	svc_forceteam,			// [Toke] Allows server to change a clients team setting.
 	svc_switch,
 	svc_say,				// [AM] Similar to a broadcast print except we know who said it.
-	svc_reserved51,
 	svc_spawnhiddenplayer,	// [denis] when client can't see player
 	svc_updatedeaths,		// [byte] [short]
 	svc_ctfevent,			// [Toke - CTF] - [int]

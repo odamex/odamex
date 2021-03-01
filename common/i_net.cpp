@@ -1008,15 +1008,11 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_exitlevel);
 	SVC_INFO(svc_touchspecial);
 	SVC_INFO(svc_changeweapon);
-	SVC_INFO(svc_reserved42);
 	SVC_INFO(svc_missedpacket);
 	SVC_INFO(svc_soundorigin);
-	SVC_INFO(svc_reserved46);
-	SVC_INFO(svc_reserved47);
 	SVC_INFO(svc_forceteam);
 	SVC_INFO(svc_switch);
 	SVC_INFO(svc_say);
-	SVC_INFO(svc_reserved51);
 	SVC_INFO(svc_spawnhiddenplayer);
 	SVC_INFO(svc_updatedeaths);
 	SVC_INFO(svc_ctfevent);
