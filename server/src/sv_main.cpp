@@ -4991,31 +4991,6 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		if (!SV_IsPlayerAllowedToSee(*it, target))
 			continue;
 
-		// send death location first
-		//MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
-		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
-
-		// [SL] 2012-12-26 - Get real position since this actor is at
-		// a reconciled position with sv_unlag 1
-		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
-		if (target->player)
-		{
-			Unlag::getInstance().getReconciliationOffset(
-					target->player->id, xoffs, yoffs, zoffs);
-		}
-
-		MSG_WriteLong(&cl->reliablebuf, target->x + xoffs);
-		MSG_WriteLong(&cl->reliablebuf, target->y + yoffs);
-		MSG_WriteLong(&cl->reliablebuf, target->z + zoffs);
-
-		//MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
-		MSG_WriteLong (&cl->reliablebuf, target->angle);
-		MSG_WriteLong (&cl->reliablebuf, target->momx);
-		MSG_WriteLong (&cl->reliablebuf, target->momy);
-		MSG_WriteLong (&cl->reliablebuf, target->momz);
-
 		SVC_KillMobj(cl->reliablebuf, source, target, inflictor, ::MeansOfDeath, joinkill);
 	}
 }

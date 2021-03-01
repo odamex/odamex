@@ -32,6 +32,7 @@
 #include "i_system.h"
 #include "p_lnspec.h"
 #include "p_local.h"
+#include "p_unlag.h"
 #include "common.pb.h"
 #include "server.pb.h"
 
@@ -327,6 +328,7 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
                   bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
+	odaproto::Actor* tgt = msg.mutable_target();
 
 	if (source)
 	{
@@ -337,7 +339,6 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 		msg.set_source_netid(0);
 	}
 
-	msg.set_target_netid(target->netid);
 	msg.set_inflictor_netid(inflictor ? inflictor->netid : 0);
 	msg.set_health(target->health);
 	msg.set_mod(mod);
@@ -353,6 +354,31 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 	{
 		msg.set_lives(-1);
 	}
+
+	// send death location first
+	tgt->set_netid(target->netid);
+	tgt->set_rndindex(target->rndindex);
+
+	// [SL] 2012-12-26 - Get real position since this actor is at
+	// a reconciled position with sv_unlag 1
+	fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+	if (target->player)
+	{
+		Unlag::getInstance().getReconciliationOffset(target->player->id, xoffs, yoffs,
+		                                             zoffs);
+	}
+
+	odaproto::Vec3* tgtpos = tgt->mutable_pos();
+	tgtpos->set_x(target->x + xoffs);
+	tgtpos->set_y(target->y + yoffs);
+	tgtpos->set_z(target->z + zoffs);
+
+	tgt->set_angle(target->angle);
+
+	odaproto::Vec3* tgtmom = tgt->mutable_mom();
+	tgtmom->set_x(target->momx);
+	tgtmom->set_y(target->momy);
+	tgtmom->set_z(target->momz);
 
 	MSG_WriteMarker(&b, svc_killmobj);
 	MSG_WriteProto(&b, msg);

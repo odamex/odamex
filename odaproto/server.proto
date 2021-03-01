@@ -157,7 +157,7 @@ message DamagePlayer
 message KillMobj
 {
 	int32 source_netid = 1;
-	int32 target_netid = 2;
+	Actor target = 2;
 	int32 inflictor_netid = 3;
 	int32 health = 4;
 	int32 mod = 5;

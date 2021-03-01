@@ -496,10 +496,12 @@ void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 			newsnap.setX(x);
 			newsnap.setY(y);
 			newsnap.setZ(z);
+			mo->rndindex = rndindex;
 		}
 
 		if (msg.flags() & SVC_UM_MOM_ANGLE)
 		{
+			newsnap.setAngle(angle);
 			newsnap.setMomX(momx);
 			newsnap.setMomY(momy);
 			newsnap.setMomZ(momz);
@@ -551,7 +553,7 @@ extern int MeansOfDeath;
 void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 {
 	int srcid = msg.source_netid();
-	int tgtid = msg.target_netid();
+	int tgtid = msg.target().netid();
 	int infid = msg.inflictor_netid();
 	int health = msg.health();
 	::MeansOfDeath = msg.mod();
@@ -564,6 +566,38 @@ void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 
 	if (!target)
 		return;
+
+	// This used to be bundled with a svc_movemobj and svc_mobjspeedangle,
+	// so emulate them here.
+	target->rndindex = msg.target().rndindex();
+
+	if (target->player)
+	{
+		// [SL] 2013-07-21 - Save the position information to a snapshot
+		int snaptime = last_svgametic;
+		PlayerSnapshot newsnap(snaptime);
+		newsnap.setAuthoritative(true);
+
+		newsnap.setX(msg.target().pos().x());
+		newsnap.setY(msg.target().pos().y());
+		newsnap.setZ(msg.target().pos().z());
+		newsnap.setAngle(msg.target().angle());
+		newsnap.setMomX(msg.target().mom().x());
+		newsnap.setMomY(msg.target().mom().y());
+		newsnap.setMomZ(msg.target().mom().z());
+
+		target->player->snapshots.addSnapshot(newsnap);
+	}
+	else
+	{
+		target->x = msg.target().pos().x();
+		target->y = msg.target().pos().y();
+		target->z = msg.target().pos().z();
+		target->angle = msg.target().angle();
+		target->momx = msg.target().mom().x();
+		target->momy = msg.target().mom().y();
+		target->momz = msg.target().mom().z();
+	}
 
 	target->health = health;
 
