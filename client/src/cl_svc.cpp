@@ -572,9 +572,9 @@ void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 
 	if (target->player == &consoleplayer())
 		for (size_t i = 0; i < MAXSAVETICS; i++)
-			::localcmds[i].clear();
+			localcmds[i].clear();
 
-	if (lives >= 0)
+	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
 	P_KillMobj(source, target, inflictor, joinkill);

@@ -507,10 +507,11 @@ void FLZOMemFile::WriteToBuffer(void* buf, size_t length) const
 //
 //============================================
 
-FArchive::FArchive(FFile& file)
+FArchive::FArchive(FFile& file, uint32_t flags)
 {
 	int i;
 
+	m_Reset = flags & FA_RESET;
 	m_HubTravel = false;
 	m_File = &file;
 	m_MaxObjectCount = m_ObjectCount = 0;

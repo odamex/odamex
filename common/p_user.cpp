@@ -969,6 +969,84 @@ void P_PlayerThink (player_t *player)
 	}
 }
 
+#define CASE_STR(str) case str : return #str
+
+const char* PlayerState(size_t state)
+{
+	statenum_t st = static_cast<statenum_t>(state);
+
+	switch (st)
+	{
+		CASE_STR(S_PLAY);
+		CASE_STR(S_PLAY_RUN1);
+		CASE_STR(S_PLAY_RUN2);
+		CASE_STR(S_PLAY_RUN3);
+		CASE_STR(S_PLAY_RUN4);
+		CASE_STR(S_PLAY_ATK1);
+		CASE_STR(S_PLAY_ATK2);
+		CASE_STR(S_PLAY_PAIN);
+		CASE_STR(S_PLAY_PAIN2);
+		CASE_STR(S_PLAY_DIE1);
+		CASE_STR(S_PLAY_DIE2);
+		CASE_STR(S_PLAY_DIE3);
+		CASE_STR(S_PLAY_DIE4);
+		CASE_STR(S_PLAY_DIE5);
+		CASE_STR(S_PLAY_DIE6);
+		CASE_STR(S_PLAY_DIE7);
+		CASE_STR(S_PLAY_XDIE1);
+		CASE_STR(S_PLAY_XDIE2);
+		CASE_STR(S_PLAY_XDIE3);
+		CASE_STR(S_PLAY_XDIE4);
+		CASE_STR(S_PLAY_XDIE5);
+		CASE_STR(S_PLAY_XDIE6);
+		CASE_STR(S_PLAY_XDIE7);
+		CASE_STR(S_PLAY_XDIE8);
+		CASE_STR(S_PLAY_XDIE9);
+	default:
+		return "Unknown";
+	}
+}
+
+#define STATE_NUM(mo) (mo -> state - states)
+
+BEGIN_COMMAND(cheat_players)
+{
+	Printf("== PLAYERS ==");
+
+	int dead = 0;
+
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+
+		if (mo->type == MT_PLAYER)
+		{
+			if (STATE_NUM(mo) == S_PLAY_DIE7 || STATE_NUM(mo) == S_PLAY_XDIE9)
+			{
+				dead += 1;
+				continue;
+			}
+
+			if (mo->player)
+			{
+				Printf("%.3u: %s\n", mo->player->id,
+				       mo->player->userinfo.netname.c_str());
+			}
+			else
+			{
+				Printf("???: ???\n");
+			}
+			Printf("State: %s\n", PlayerState(mo->state - states));
+			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			       FIXED2FLOAT(mo->z));
+		}
+	}
+
+	Printf("== Skipped %d dead players ==\n", dead);
+}
+END_COMMAND(cheat_players)
+
 void player_s::Serialize (FArchive &arc)
 {
 	size_t i;

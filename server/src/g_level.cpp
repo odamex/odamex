@@ -496,7 +496,7 @@ void G_DoCompleted()
 			G_PlayerFinishLevel(*it);
 }
 
-extern void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers);
+extern void G_SerializeLevel(FArchive &arc, bool hubLoad);
 
 // [AM] - Save the state of the level that can be reset to
 void G_DoSaveResetState()
@@ -509,8 +509,8 @@ void G_DoSaveResetState()
 	}
 	reset_snapshot = new FLZOMemFile;
 	reset_snapshot->Open();
-	FArchive arc(*reset_snapshot);
-	G_SerializeLevel(arc, false, true);
+	FArchive arc(*reset_snapshot, FA_RESET);
+	G_SerializeLevel(arc, false);
 }
 
 /**
@@ -558,8 +558,8 @@ void G_DoResetLevel(bool full_reset)
 
 	// Unserialize saved snapshot
 	reset_snapshot->Reopen();
-	FArchive arc(*reset_snapshot);
-	G_SerializeLevel(arc, false, true);
+	FArchive arc(*reset_snapshot, FA_RESET);
+	G_SerializeLevel(arc, false);
 	reset_snapshot->Seek(0, FFile::ESeekSet);
 
 	{
@@ -639,9 +639,6 @@ void G_DoResetLevel(bool full_reset)
 		// Spectators aren't reborn.
 		if (!it->ingame() || it->spectator)
 			continue;
-
-		// Destroy the attached mobj, otherwise we leave a ghost.
-		it->mo->Destroy();
 
 		// Set the respawning machinery in motion
 		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;

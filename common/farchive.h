@@ -30,6 +30,8 @@
 
 #include <string>
 
+#define FA_RESET (1 << 0)
+
 class DObject;
 
 class FFile
@@ -134,12 +136,13 @@ private:
 class FArchive
 {
 public:
-	FArchive(FFile& file);
+	FArchive(FFile& file, uint32_t flags = 0);
 	virtual ~FArchive();
 
 	inline bool IsLoading() const { return m_Loading; }
 	inline bool IsStoring() const { return m_Storing; }
 	inline bool IsPeristent() const { return m_Persistent; }
+	inline bool IsReset() const { return m_Reset; }
 
 	void SetHubTravel() { m_HubTravel = true; }
 
@@ -215,6 +218,7 @@ protected:
 	bool m_Loading;			// extracting objects?
 	bool m_Storing;			// inserting objects?
 	bool m_HubTravel;		// travelling inside a hub?
+	bool m_Reset;			// reset state?
 	FFile* m_File;			// unerlying file object
 	DWORD m_ObjectCount;	// # of objects currently serialized
 	DWORD m_MaxObjectCount;
