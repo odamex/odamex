@@ -1225,10 +1225,10 @@ void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
 	int linenum = msg.linenum();
 	AActor* activator = P_FindThingById(msg.activator_netid());
 	int arg0 = msg.arg0();
-	int arg1 = msg.arg0();
-	int arg2 = msg.arg0();
-	int arg3 = msg.arg0();
-	int arg4 = msg.arg0();
+	int arg1 = msg.arg1();
+	int arg2 = msg.arg2();
+	int arg3 = msg.arg3();
+	int arg4 = msg.arg4();
 
 	if (linenum != -1 && linenum >= ::numlines)
 		return;
