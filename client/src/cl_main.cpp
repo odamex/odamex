@@ -294,7 +294,6 @@ void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 
-void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -2836,7 +2835,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
 		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
 		                  odaproto::svc::ThinkerUpdate);
-		SERVER_MSG_FUNC(svc_netdemocap, CL_LocalDemoTic);
+		SERVER_PROTO_FUNC(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
 		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
 		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
@@ -3049,62 +3048,6 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
         default:
         break;
     }
-}
-
-void CL_LocalDemoTic()
-{
-	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, viewz, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
-	byte waterlevel;
-
-	clientPlayer->cmd.clear();
-	clientPlayer->cmd.buttons = MSG_ReadByte();
-	clientPlayer->cmd.impulse = MSG_ReadByte();
-	clientPlayer->cmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.pitch = MSG_ReadShort();
-
-	waterlevel = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-	momx = MSG_ReadLong();
-	momy = MSG_ReadLong();
-	momz = MSG_ReadLong();
-	angle = MSG_ReadLong();
-	pitch = MSG_ReadLong();
-	viewz = MSG_ReadLong();
-	viewheight = MSG_ReadLong();
-	deltaviewheight = MSG_ReadLong();
-	jumpTics = MSG_ReadLong();
-	reactiontime = MSG_ReadLong();
-	clientPlayer->readyweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	clientPlayer->pendingweapon = static_cast<weapontype_t>(MSG_ReadByte());
-
-	if(clientPlayer->mo)
-	{
-		clientPlayer->mo->x = x;
-		clientPlayer->mo->y = y;
-		clientPlayer->mo->z = z;
-		clientPlayer->mo->momx = momx;
-		clientPlayer->mo->momy = momy;
-		clientPlayer->mo->momz = momz;
-		clientPlayer->mo->angle = angle;
-		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewz = viewz;
-		clientPlayer->viewheight = viewheight;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->jumpTics = jumpTics;
-		clientPlayer->mo->reactiontime = reactiontime;
-		clientPlayer->mo->waterlevel = waterlevel;
-	}
-
 }
 
 void CL_RemoveCompletedMovingSectors()

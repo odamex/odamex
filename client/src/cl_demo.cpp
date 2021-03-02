@@ -691,31 +691,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 
 	AActor *mo = player->mo;
 
-	MSG_WriteByte(netbuffer, svc_netdemocap);
-	MSG_WriteByte(netbuffer, player->cmd.buttons);
-	MSG_WriteByte(netbuffer, player->cmd.impulse);
-	MSG_WriteShort(netbuffer, player->cmd.yaw);
-	MSG_WriteShort(netbuffer, player->cmd.forwardmove);
-	MSG_WriteShort(netbuffer, player->cmd.sidemove);
-	MSG_WriteShort(netbuffer, player->cmd.upmove);
-	MSG_WriteShort(netbuffer, player->cmd.pitch);
-
-	MSG_WriteByte(netbuffer, mo->waterlevel);
-	MSG_WriteLong(netbuffer, mo->x);
-	MSG_WriteLong(netbuffer, mo->y);
-	MSG_WriteLong(netbuffer, mo->z);
-	MSG_WriteLong(netbuffer, mo->momx);
-	MSG_WriteLong(netbuffer, mo->momy);
-	MSG_WriteLong(netbuffer, mo->momz);
-	MSG_WriteLong(netbuffer, mo->angle);
-	MSG_WriteLong(netbuffer, mo->pitch);
-	MSG_WriteLong(netbuffer, player->viewz);
-	MSG_WriteLong(netbuffer, player->viewheight);
-	MSG_WriteLong(netbuffer, player->deltaviewheight);
-	MSG_WriteLong(netbuffer, player->jumpTics);
-	MSG_WriteLong(netbuffer, mo->reactiontime);
-	MSG_WriteByte(netbuffer, player->readyweapon);
-	MSG_WriteByte(netbuffer, player->pendingweapon);
+	SVC_NetdemoCap(*netbuffer, player);
 }
 
 

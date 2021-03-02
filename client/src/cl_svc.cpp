@@ -1345,3 +1345,52 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 }
+
+void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
+{
+	player_t* clientPlayer = &consoleplayer();
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, viewz, viewheight, deltaviewheight;
+	angle_t angle;
+	int jumpTics, reactiontime;
+	byte waterlevel;
+
+	clientPlayer->cmd.clear();
+	clientPlayer->cmd.unserialize(msg.player_cmd());
+
+	waterlevel = msg.actor().waterlevel();
+	x = msg.actor().pos().x();
+	y = msg.actor().pos().y();
+	z = msg.actor().pos().z();
+	momx = msg.actor().mom().x();
+	momy = msg.actor().mom().y();
+	momz = msg.actor().mom().z();
+	angle = msg.actor().angle();
+	pitch = msg.actor().pitch();
+	viewz = msg.player().viewz();
+	viewheight = msg.player().viewheight();
+	deltaviewheight = msg.player().deltaviewheight();
+	jumpTics = msg.player().jumptics();
+	reactiontime = msg.actor().reactiontime();
+	clientPlayer->readyweapon = static_cast<weapontype_t>(msg.player().readyweapon());
+	clientPlayer->pendingweapon = static_cast<weapontype_t>(msg.player().pendingweapon());
+
+	if (clientPlayer->mo)
+	{
+		clientPlayer->mo->x = x;
+		clientPlayer->mo->y = y;
+		clientPlayer->mo->z = z;
+		clientPlayer->mo->momx = momx;
+		clientPlayer->mo->momy = momy;
+		clientPlayer->mo->momz = momz;
+		clientPlayer->mo->angle = angle;
+		clientPlayer->mo->pitch = pitch;
+		clientPlayer->viewz = viewz;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->jumpTics = jumpTics;
+		clientPlayer->mo->reactiontime = reactiontime;
+		clientPlayer->mo->waterlevel = waterlevel;
+	}
+}

@@ -942,4 +942,35 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_NetdemoCap(buf_t& b, player_t* player)
+{
+	odaproto::svc::NetdemoCap msg;
+	odaproto::Actor* act = msg.mutable_actor();
+	odaproto::Player* play = msg.mutable_player();
+
+	AActor* mo = player->mo;
+
+	player->cmd.serialize(*msg.mutable_player_cmd());
+
+	act->set_waterlevel(mo->waterlevel);
+	act->mutable_pos()->set_x(mo->x);
+	act->mutable_pos()->set_y(mo->y);
+	act->mutable_pos()->set_z(mo->z);
+	act->mutable_mom()->set_x(mo->momx);
+	act->mutable_mom()->set_y(mo->momy);
+	act->mutable_mom()->set_z(mo->momz);
+	act->set_angle(mo->angle);
+	act->set_pitch(mo->pitch);
+	play->set_viewz(player->viewz);
+	play->set_viewheight(player->viewheight);
+	play->set_deltaviewheight(player->deltaviewheight);
+	play->set_jumptics(player->jumpTics);
+	act->set_reactiontime(mo->reactiontime);
+	play->set_readyweapon(player->readyweapon);
+	play->set_pendingweapon(player->pendingweapon);
+
+	MSG_WriteByte(&b, svc_netdemocap);
+	MSG_WriteProto(&b, msg);
+}
+
 VERSION_CONTROL(svc_message, "$Id$")

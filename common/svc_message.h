@@ -63,5 +63,6 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector);
 void SVC_ExecuteLineSpecial(buf_t& b, byte special, line_t* line, AActor* mo,
                             const int (&args)[5]);
 void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker);
+void SVC_NetdemoCap(buf_t& b, player_t* player);
 
 #endif // __SV_MESSAGE_H__

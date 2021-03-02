@@ -42,9 +42,10 @@ message Actor
 	uint32 movedir = 11;
 	int32 movecount = 12;
 	int32 targetid = 13;
-	int32 tracerid = 14;
-	int32 waterlevel = 15;
-	uint32 rndindex = 16;
+	int32 reactiontime = 14;
+	int32 tracerid = 15;
+	int32 waterlevel = 16;
+	uint32 rndindex = 17;
 }
 
 message Player
@@ -58,42 +59,21 @@ message Player
 	}
 
 	uint32 playerid = 1;
-	int32 health = 2;
-	int32 armorpoints = 3;
-	int32 armortype = 4;
-	repeated int32 powers = 5;
-	uint32 cards = 6;
-	bool backpack = 7;
-	int32 lives = 8;
-	int32 pendingweapon = 9;
-	int32 readyweapon = 10;
-	uint32 weaponowned = 11;
-	repeated int32 ammo = 12;
-	repeated int32 maxammo = 13;
-	repeated Psp psprites = 14;
-}
-
-message Tic
-{
-	// Bitmask.  Most of the interesting buttons are low bits, so this will
-	// be one byte in 99% of cases.
-	int32 buttons = 1;
-
-	// Usually mouse input in the +/- dozens or hundreds.
-	sint32 pitch = 2;
-
-	// Usually mouse input in the +/- dozens or hundreds.
-	sint32 yaw = 3;
-
-	// Typical values are +/- 12880.
-	sint32 forwardmove = 4;
-
-	// Typical values are +/- 10240.
-	sint32 sidemove = 5;
-
-	// Typical values are +/- 768.
-	sint32 upmove = 6;
-
-	// Impulses are rare.
-	int32 impulse = 7;
+	sfixed32 viewz = 2;
+	sfixed32 viewheight = 3;
+	sfixed32 deltaviewheight = 4;
+	int32 health = 5;
+	int32 armorpoints = 6;
+	int32 armortype = 7;
+	repeated int32 powers = 8;
+	uint32 cards = 9;
+	bool backpack = 10;
+	int32 lives = 11;
+	int32 pendingweapon = 12;
+	int32 readyweapon = 13;
+	uint32 weaponowned = 14;
+	repeated int32 ammo = 15;
+	repeated int32 maxammo = 16;
+	repeated Psp psprites = 17;
+	int32 jumptics = 18;
 }

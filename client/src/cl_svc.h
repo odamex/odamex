@@ -47,6 +47,7 @@ class LevelState;
 class SectorProperties;
 class ExecuteLineSpecial;
 class ThinkerUpdate;
+class NetdemoCap;
 
 } // namespace svc
 
@@ -72,5 +73,6 @@ void CL_LevelState(const odaproto::svc::LevelState& msg);
 void CL_SectorProperties(const odaproto::svc::SectorProperties& msg);
 void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg);
 void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg);
+void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg);
 
 #endif // __CLSVC_H__

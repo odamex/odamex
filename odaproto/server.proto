@@ -599,19 +599,9 @@ message ThinkerUpdate
 // svc_netdemocap
 message NetdemoCap
 {
-	Tic player_cmd = 1;
-	int32 waterlevel = 2;
-	Vec3 pos = 3;
-	Vec3 mom = 4;
-	fixed32 angle = 5;
-	sint32 pitch = 6;
-	sfixed32 viewz = 7;
-	sfixed32 viewheight = 8;
-	sfixed32 deltaviewheight = 9;
-	int32 jump_tics = 10;
-	int32 reactiontime = 11;
-	int32 readyweapon = 12;
-	int32 pendingweapon = 13;
+	bytes player_cmd = 1;
+	Player player = 2;
+	Actor actor = 3;
 }
 
 // svc_netdemostop
