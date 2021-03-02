@@ -60,7 +60,6 @@ void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
 void CL_UpdatePlayerQueuePos();
-void CL_ExecuteLineSpecial();
 void CL_ACSExecuteSpecial();
 void CL_LineUpdate();
 void CL_LineSideUpdate();

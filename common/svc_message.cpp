@@ -514,6 +514,20 @@ void SVC_TeamMembers(buf_t& b, team_t team)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_ActivateLine(buf_t& b, line_t* line, AActor* mo, int side,
+                      LineActivationType type)
+{
+	odaproto::svc::ActivateLine msg;
+
+	msg.set_linenum(line ? line - ::lines : -1);
+	msg.set_activator_netid(mo ? mo->netid : 0);
+	msg.set_side(side);
+	msg.set_activation_type(type);
+
+	MSG_WriteMarker(&b, svc_activateline);
+	MSG_WriteProto(&b, msg);
+}
+
 void SVC_MovingSector(buf_t& b, const sector_t& sector)
 {
 	odaproto::svc::MovingSector msg;
@@ -830,6 +844,24 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 	}
 
 	MSG_WriteMarker(&b, svc_sectorproperties);
+	MSG_WriteProto(&b, msg);
+}
+
+void SVC_ExecuteLineSpecial(buf_t& b, byte special, line_t* line, AActor* mo,
+                            const int (&args)[5])
+{
+	odaproto::svc::ExecuteLineSpecial msg;
+
+	msg.set_special(special);
+	msg.set_linenum(line ? line - ::lines : -1);
+	msg.set_activator_netid(mo ? mo->netid : 0);
+	msg.set_arg0(args[0]);
+	msg.set_arg1(args[1]);
+	msg.set_arg2(args[2]);
+	msg.set_arg3(args[3]);
+	msg.set_arg4(args[4]);
+
+	MSG_WriteMarker(&b, svc_executelinespecial);
 	MSG_WriteProto(&b, msg);
 }
 

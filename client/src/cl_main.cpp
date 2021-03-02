@@ -2690,72 +2690,6 @@ void CL_Switch()
 	lines[l].special = special;
 }
 
-void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activationType,
-                  byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
-                  int arg3 = 0, int arg4 = 0)
-{
-	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
-	// the set of recently teleported players.  This is used to flush past
-	// positions since they cannot be used for interpolation.
-	if (line && (mo && mo->player) &&
-		(line->special == Teleport || line->special == Teleport_NoFog ||
-			line->special == Teleport_NoStop || line->special == Teleport_Line))
-	{
-		teleported_players.insert(mo->player->id);
-
-		// [SL] 2012-03-21 - Server takes care of moving players that teleport.
-		// Don't allow client to process it since it screws up interpolation.
-		return;
-	}
-
-	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
-	// need to create moving sectors on their own in response to svc_activateline
-	if (line && P_LineSpecialMovesSector(line->special))
-		return;
-
-	s_SpecialFromServer = true;
-
-	switch (activationType)
-	{
-	case LineCross:
-		if (line)
-			P_CrossSpecialLine(line - lines, side, mo);
-		break;
-	case LineUse:
-		if (line)
-			P_UseSpecialLine(mo, line, side);
-		break;
-	case LineShoot:
-		if (line)
-			P_ShootSpecialLine(mo, line);
-		break;
-	case LinePush:
-		if (line)
-			P_PushSpecialLine(mo, line, side);
-		break;
-	case LineACS:
-		LineSpecials[special](line, mo, arg0, arg1, arg2, arg3, arg4);
-		break;
-	default:
-		break;
-	}
-
-	s_SpecialFromServer = false;
-}
-
-void CL_ActivateLine(void)
-{
-	unsigned linenum = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte side = MSG_ReadByte();
-	LineActivationType activationType = (LineActivationType)MSG_ReadByte();
-
-	if (!lines || linenum >= (unsigned)numlines)
-		return;
-
-	ActivateLine(mo, &lines[linenum], side, activationType);
-}
-
 void CL_ConsolePlayer(void)
 {
 	displayplayer_id = consoleplayer_id = MSG_ReadByte();
@@ -2864,7 +2798,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
 		                  odaproto::svc::PlayerMembers);
 		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
-		SERVER_MSG_FUNC(svc_activateline, CL_ActivateLine);
+		SERVER_PROTO_FUNC(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
 		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
 		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
@@ -2897,7 +2831,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
 		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
 		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
-		SERVER_MSG_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial);
+		SERVER_PROTO_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial,
+		                  odaproto::svc::ExecuteLineSpecial);
 		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
 		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
 		                  odaproto::svc::ThinkerUpdate);
@@ -3415,27 +3350,6 @@ void CL_UpdatePlayerQueuePos()
 	}
 
 	player.QueuePosition = queuePos;
-}
-
-void CL_ExecuteLineSpecial()
-{
-	byte special = MSG_ReadByte();
-	uint16_t lineid = MSG_ReadShort();
-	AActor* activator = P_FindThingById(MSG_ReadShort());
-	int arg0 = MSG_ReadVarint();
-	int arg1 = MSG_ReadVarint();
-	int arg2 = MSG_ReadVarint();
-	int arg3 = MSG_ReadVarint();
-	int arg4 = MSG_ReadVarint();
-
-	if (lineid != 0xFFFF && lineid > numlines)
-		return;
-
-	line_s* line = NULL;
-	if (lineid != 0xFFFF)
-		line = &lines[lineid];
-
-	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
 }
 
 void CL_ACSExecuteSpecial()

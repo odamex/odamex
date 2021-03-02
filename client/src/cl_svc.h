@@ -40,10 +40,12 @@ class UpdateMobj;
 class KillMobj;
 class PlayerMembers;
 class TeamMembers;
+class ActivateLine;
 class MovingSector;
 class PlayerState;
 class LevelState;
 class SectorProperties;
+class ExecuteLineSpecial;
 class ThinkerUpdate;
 
 } // namespace svc
@@ -63,10 +65,12 @@ void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg);
 void CL_KillMobj(const odaproto::svc::KillMobj& msg);
 void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg);
 void CL_TeamMembers(const odaproto::svc::TeamMembers& msg);
+void CL_ActivateLine(const odaproto::svc::ActivateLine& msg);
 void CL_MovingSector(const odaproto::svc::MovingSector& msg);
 void CL_PlayerState(const odaproto::svc::PlayerState& msg);
 void CL_LevelState(const odaproto::svc::LevelState& msg);
 void CL_SectorProperties(const odaproto::svc::SectorProperties& msg);
+void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg);
 void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg);
 
 #endif // __CLSVC_H__

@@ -214,8 +214,8 @@ message TeamMembers
 // svc_activateline
 message ActivateLine
 {
-	int32 lineid = 1;
-	int32 netid = 2;
+	int32 linenum = 1;
+	uint32 activator_netid = 2;
 	int32 side = 3;
 	int32 activation_type = 4;
 }
@@ -502,8 +502,8 @@ message DamageMobj
 message ExecuteLineSpecial
 {
 	int32 special = 1;
-	sint32 lineid = 2; // Default is -1.
-	int32 actid = 3;
+	sint32 linenum = 2; // Default is -1.
+	uint32 activator_netid = 3;
 	int32 arg0 = 4;
 	int32 arg1 = 5;
 	int32 arg2 = 6;

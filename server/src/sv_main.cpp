@@ -4628,8 +4628,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType act
 	if (P_LineSpecialMovesSector(line->special))
 		return;
 
-	int l = line - lines;
-
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (!(it->ingame()))
@@ -4637,11 +4635,7 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType act
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_activateline);
-		MSG_WriteLong (&cl->reliablebuf, l);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
-		MSG_WriteByte (&cl->reliablebuf, side);
-		MSG_WriteByte (&cl->reliablebuf, activationType);
+		SVC_ActivateLine(cl->reliablebuf, line, mo, side, activationType);
 	}
 }
 
@@ -5199,18 +5193,8 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 
 		client_t* cl = &it->client;
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_executelinespecial);
-		MSG_WriteByte(&cl->reliablebuf, special);
-		if (line)
-			MSG_WriteShort(&cl->reliablebuf, line - lines);
-		else
-			MSG_WriteShort(&cl->reliablebuf, 0xFFFF);
-		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
-		MSG_WriteVarint(&cl->reliablebuf, arg0);
-		MSG_WriteVarint(&cl->reliablebuf, arg1);
-		MSG_WriteVarint(&cl->reliablebuf, arg2);
-		MSG_WriteVarint(&cl->reliablebuf, arg3);
-		MSG_WriteVarint(&cl->reliablebuf, arg4);
+		int args[5] = { arg0, arg1, arg2, arg3, arg4 };
+		SVC_ExecuteLineSpecial(cl->reliablebuf, special, line, activator, args);
 	}
 }
 

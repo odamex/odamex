@@ -30,11 +30,14 @@
 #include <string>
 #include <vector>
 
+#include "r_state.h"
+
 #include "actor.h"
 #include "d_player.h"
 #include "g_level.h"
 #include "g_levelstate.h"
 #include "i_net.h"
+#include "p_spec.h"
 
 void SVC_Disconnect(buf_t& b, const char* message = NULL);
 void SVC_PlayerInfo(buf_t& b, player_t& player);
@@ -50,11 +53,15 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags);
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);
 void SVC_TeamMembers(buf_t& b, team_t team);
+void SVC_ActivateLine(buf_t& b, line_t* line, AActor* mo, int side,
+                      LineActivationType type);
 void SVC_MovingSector(buf_t& b, const sector_t& sector);
 void SVC_PlayerState(buf_t& b, player_t& player);
 void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
 void SVC_SecretFound(buf_t& b, int playerid, int sectornum);
 void SVC_SectorProperties(buf_t& b, sector_t& sector);
+void SVC_ExecuteLineSpecial(buf_t& b, byte special, line_t* line, AActor* mo,
+                            const int (&args)[5]);
 void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker);
 
 #endif // __SV_MESSAGE_H__

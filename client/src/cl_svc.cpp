@@ -40,6 +40,7 @@
 #include "m_resfile.h"
 #include "p_ctf.h"
 #include "p_inter.h"
+#include "p_lnspec.h"
 #include "p_mobj.h"
 #include "r_state.h"
 #include "s_sound.h"
@@ -82,6 +83,63 @@ static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
 	{
 		bools[i] = in & BIT(i);
 	}
+}
+
+/**
+ * @brief Common code for activating a line.
+ */
+static void ActivateLine(AActor* mo, line_s* line, byte side,
+                         LineActivationType activationType, byte special = 0,
+                         int arg0 = 0, int arg1 = 0, int arg2 = 0, int arg3 = 0,
+                         int arg4 = 0)
+{
+	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
+	// the set of recently teleported players.  This is used to flush past
+	// positions since they cannot be used for interpolation.
+	if (line && (mo && mo->player) &&
+	    (line->special == Teleport || line->special == Teleport_NoFog ||
+	     line->special == Teleport_NoStop || line->special == Teleport_Line))
+	{
+		teleported_players.insert(mo->player->id);
+
+		// [SL] 2012-03-21 - Server takes care of moving players that teleport.
+		// Don't allow client to process it since it screws up interpolation.
+		return;
+	}
+
+	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
+	// need to create moving sectors on their own in response to svc_activateline
+	if (line && P_LineSpecialMovesSector(line->special))
+		return;
+
+	s_SpecialFromServer = true;
+
+	switch (activationType)
+	{
+	case LineCross:
+		if (line)
+			P_CrossSpecialLine(line - lines, side, mo);
+		break;
+	case LineUse:
+		if (line)
+			P_UseSpecialLine(mo, line, side);
+		break;
+	case LineShoot:
+		if (line)
+			P_ShootSpecialLine(mo, line);
+		break;
+	case LinePush:
+		if (line)
+			P_PushSpecialLine(mo, line, side);
+		break;
+	case LineACS:
+		LineSpecials[special](line, mo, arg0, arg1, arg2, arg3, arg4);
+		break;
+	default:
+		break;
+	}
+
+	s_SpecialFromServer = false;
 }
 
 /**
@@ -795,6 +853,20 @@ void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
 	info->RoundWins = roundWins;
 }
 
+void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
+{
+	int linenum = msg.linenum();
+	AActor* mo = P_FindThingById(msg.activator_netid());
+	byte side = msg.side();
+	LineActivationType activationType =
+	    static_cast < LineActivationType>(msg.activation_type());
+
+	if (!::lines || linenum >= ::numlines || linenum < 0)
+		return;
+
+	ActivateLine(mo, &::lines[linenum], side, activationType);
+}
+
 //
 // CL_UpdateMovingSector
 // Updates floorheight and ceilingheight of a sector.
@@ -1145,6 +1217,27 @@ void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 			break;
 		}
 	}
+}
+
+void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
+{
+	byte special = msg.special();
+	int linenum = msg.linenum();
+	AActor* activator = P_FindThingById(msg.activator_netid());
+	int arg0 = msg.arg0();
+	int arg1 = msg.arg0();
+	int arg2 = msg.arg0();
+	int arg3 = msg.arg0();
+	int arg4 = msg.arg0();
+
+	if (linenum != -1 && linenum >= ::numlines)
+		return;
+
+	line_s* line = NULL;
+	if (linenum != -1)
+		line = &::lines[linenum];
+
+	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
 }
 
 /**
