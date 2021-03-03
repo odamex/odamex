@@ -605,42 +605,6 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	} while (it != sentinal);
 }
 
-//
-// CL_DisconnectClient
-//
-void CL_DisconnectClient(void)
-{
-	player_t &player = idplayer(MSG_ReadByte());
-	if (players.empty() || !validplayer(player))
-		return;
-
-	if (player.mo)
-	{
-		P_DisconnectEffect(player.mo);
-
-		// [AM] Destroying the player mobj is not our responsibility.  However, we do want to
-		//      make sure that the mobj->player doesn't point to an invalid player.
-		player.mo->player = NULL;
-	}
-
-	// Remove the player from the players list.
-	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		if (it->id == player.id)
-		{
-			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
-			if (!it->spectator)
-				P_PlayerLeavesGame(&(*it));
-			players.erase(it);
-			break;
-		}
-	}
-
-	// if this was our displayplayer, update camera
-	CL_CheckDisplayPlayer();
-}
-
 extern BOOL advancedemo;
 QWORD nextstep = 0;
 int canceltics = 0;
@@ -2770,7 +2734,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
 		SERVER_PROTO_FUNC(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
 		SERVER_PROTO_FUNC(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
-		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
+		SERVER_PROTO_FUNC(svc_disconnectclient, CL_DisconnectClient,
+		                  odaproto::svc::DisconnectClient);
 		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
 		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);

@@ -53,6 +53,7 @@ EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 
@@ -63,6 +64,7 @@ extern NetCommand localcmds[MAXSAVETICS];
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 
+void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(player_t* player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);
@@ -71,6 +73,7 @@ std::string CL_GenerateNetDemoFileName(
 bool CL_PlayerJustTeleported(player_t* player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
+void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
 void CL_SpectatePlayer(player_t& player, bool spectate);
 
@@ -397,6 +400,9 @@ void CL_PingRequest(const odaproto::svc::PingRequest& msg)
 void CL_UpdatePing(const odaproto::svc::UpdatePing& msg)
 {
 	player_t& p = idplayer(msg.pid());
+	if (!validplayer(p))
+		return;
+
 	p.ping = msg.ping();
 }
 
@@ -523,6 +529,42 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
 	}
+}
+
+//
+// CL_DisconnectClient
+//
+void CL_DisconnectClient(const odaproto::svc::DisconnectClient& msg)
+{
+	player_t& player = idplayer(msg.pid());
+	if (players.empty() || !validplayer(player))
+		return;
+
+	if (player.mo)
+	{
+		P_DisconnectEffect(player.mo);
+
+		// [AM] Destroying the player mobj is not our responsibility.  However, we do want
+		//      to make sure that the mobj->player doesn't point to an invalid player.
+		player.mo->player = NULL;
+	}
+
+	// Remove the player from the players list.
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (it->id == player.id)
+		{
+			if (::cl_disconnectalert && &player != &consoleplayer())
+				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
+			if (!it->spectator)
+				P_PlayerLeavesGame(&(*it));
+			players.erase(it);
+			break;
+		}
+	}
+
+	// if this was our displayplayer, update camera
+	CL_CheckDisplayPlayer();
 }
 
 //
@@ -869,7 +911,7 @@ void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
 	AActor* mo = P_FindThingById(msg.activator_netid());
 	byte side = msg.side();
 	LineActivationType activationType =
-	    static_cast < LineActivationType>(msg.activation_type());
+	    static_cast<LineActivationType>(msg.activation_type());
 
 	if (!::lines || linenum >= ::numlines || linenum < 0)
 		return;

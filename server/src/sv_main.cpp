@@ -2031,9 +2031,8 @@ void SV_DisconnectClient(player_t &who)
 	// tell others clients about it
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-	   client_t &cl = it->client;
-	   MSG_WriteMarker(&cl.reliablebuf, svc_disconnectclient);
-	   MSG_WriteByte(&cl.reliablebuf, who.id);
+		client_t &cl = it->client;
+		SVC_DisconnectClient(cl.reliablebuf, who);
 	}
 
 	Maplist_Disconnect(who);

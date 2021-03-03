@@ -314,6 +314,16 @@ void SVC_SpawnMobj(buf_t& b, AActor* mo)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_DisconnectClient(buf_t& b, player_t& player)
+{
+	odaproto::svc::DisconnectClient msg;
+
+	msg.set_pid(player.id);
+
+	MSG_WriteMarker(&b, svc_disconnectclient);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.
