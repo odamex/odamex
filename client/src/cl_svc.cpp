@@ -57,6 +57,7 @@ EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 
+extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
@@ -700,6 +701,12 @@ void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 	// write the map index to the netdemo
 	if (netdemo.isRecording())
 		netdemo.writeMapChange();
+}
+
+void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
+{
+	::displayplayer_id = ::consoleplayer_id = msg.pid();
+	::digest = msg.digest();
 }
 
 void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)

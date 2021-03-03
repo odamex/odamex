@@ -2642,12 +2642,6 @@ void CL_Switch()
 	lines[l].special = special;
 }
 
-void CL_ConsolePlayer(void)
-{
-	displayplayer_id = consoleplayer_id = MSG_ReadByte();
-	digest = MSG_ReadString();
-}
-
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -2737,7 +2731,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_disconnectclient, CL_DisconnectClient,
 		                  odaproto::svc::DisconnectClient);
 		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
-		SERVER_MSG_FUNC(svc_consoleplayer, CL_ConsolePlayer);
+		SERVER_PROTO_FUNC(svc_consoleplayer, CL_ConsolePlayer,
+		                  odaproto::svc::ConsolePlayer);
 		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
 		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
 		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);

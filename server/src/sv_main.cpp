@@ -1947,9 +1947,7 @@ void SV_ConnectClient()
 	}
 
 	// send consoleplayer number
-	MSG_WriteMarker(&cl->reliablebuf, svc_consoleplayer);
-	MSG_WriteByte(&cl->reliablebuf, player->id);
-	MSG_WriteString(&cl->reliablebuf, cl->digest.c_str());
+	SVC_ConsolePlayer(cl->reliablebuf, *player, cl->digest);
 	SV_SendPacket(*player);
 
 	// [Toke] send server settings

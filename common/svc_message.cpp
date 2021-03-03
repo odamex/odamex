@@ -358,6 +358,17 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_ConsolePlayer(buf_t& b, player_t& player, const std::string& digest)
+{
+	odaproto::svc::ConsolePlayer msg;
+
+	msg.set_pid(player.id);
+	msg.set_digest(digest);
+
+	MSG_WriteMarker(&b, svc_consoleplayer);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Move a mobj to a new location.  If it's a player, it will update
  *        the client's snapshot.

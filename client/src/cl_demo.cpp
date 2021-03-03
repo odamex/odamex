@@ -1075,6 +1075,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 //		MSG_WriteString(netbuffer, patchfiles[n].c_str());
 }
 
+#include "svc_message.h"
 
 //
 // writeConnectionSequence()
@@ -1089,9 +1090,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteLong	(netbuffer, 0);
 	
 	// Server sends our player id and digest
-	MSG_WriteMarker	(netbuffer, svc_consoleplayer);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, digest.c_str());
+	SVC_ConsolePlayer(*netbuffer, consoleplayer(), digest);
 
 	// our userinfo
 	MSG_WriteMarker	(netbuffer, svc_userinfo);
