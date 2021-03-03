@@ -1075,8 +1075,6 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 //		MSG_WriteString(netbuffer, patchfiles[n].c_str());
 }
 
-#include "svc_message.h"
-
 //
 // writeConnectionSequence()
 //
