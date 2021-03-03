@@ -391,6 +391,16 @@ void CL_PingRequest(const odaproto::svc::PingRequest& msg)
 }
 
 //
+// CL_UpdatePing
+// Update ping value
+//
+void CL_UpdatePing(const odaproto::svc::UpdatePing& msg)
+{
+	player_t& p = idplayer(msg.pid());
+	p.ping = msg.ping();
+}
+
+//
 // CL_SpawnMobj
 //
 void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)

@@ -3032,9 +3032,7 @@ void SV_UpdatePing(client_t* cl)
 		if (!(it->ingame()))
 			continue;
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_updateping);
-		MSG_WriteByte(&cl->reliablebuf, it->id);  // player
-		MSG_WriteLong(&cl->reliablebuf, it->ping);
+		SVC_UpdatePing(cl->reliablebuf, *it);
 	}
 }
 

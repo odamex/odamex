@@ -233,8 +233,21 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
 void SVC_PingRequest(buf_t& b)
 {
 	odaproto::svc::PingRequest msg;
+
 	msg.set_ms_time(I_MSTime());
+
 	MSG_WriteMarker(&b, svc_pingrequest);
+	MSG_WriteProto(&b, msg);
+}
+
+void SVC_UpdatePing(buf_t& b, player_t& player)
+{
+	odaproto::svc::UpdatePing msg;
+
+	msg.set_pid(player.id);
+	msg.set_ping(player.ping);
+
+	MSG_WriteMarker(&b, svc_updateping);
 	MSG_WriteProto(&b, msg);
 }
 

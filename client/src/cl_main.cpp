@@ -2103,17 +2103,6 @@ void CL_SaveSvGametic(void)
 }
 
 //
-// CL_UpdatePing
-// Update ping value
-//
-void CL_UpdatePing(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-	p.ping = MSG_ReadLong();
-}
-
-
-//
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //
@@ -2779,7 +2768,7 @@ static bool CallMessageFunc(svc_t type)
 		                  odaproto::svc::UpdateLocalPlayer);
 		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
 		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
-		SERVER_MSG_FUNC(svc_updateping, CL_UpdatePing);
+		SERVER_PROTO_FUNC(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
 		SERVER_PROTO_FUNC(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
 		SERVER_MSG_FUNC(svc_disconnectclient, CL_DisconnectClient);
 		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
