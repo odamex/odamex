@@ -1281,6 +1281,8 @@ BEGIN_COMMAND(netff)
 {
 	if (netdemo.isPlaying())
 		netdemo.nextSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.nextTic();
 }
 END_COMMAND(netff)
 

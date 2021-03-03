@@ -50,11 +50,11 @@ extern OResFiles wadfiles;
 argb_t CL_GetPlayerColor(player_t*);
 
 
-NetDemo::NetDemo() :
-	state(st_stopped), oldstate(st_stopped), filename(""),
-	demofp(NULL)
+NetDemo::NetDemo()
+    : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
+      pause_netdemotic(0)
 {
-    memset(&header, 0, sizeof(header));
+	memset(&header, 0, sizeof(header));
 }
 
 NetDemo::~NetDemo()
@@ -128,6 +128,7 @@ void NetDemo::cleanUp()
 	snapshot_index.clear();
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
+	netdemotic = pause_netdemotic = 0;
 }
 
 /**
@@ -742,6 +743,11 @@ bool NetDemo::atSnapshotInterval()
 void NetDemo::ticker()
 {
 	netdemotic++;
+	if (netdemotic == pause_netdemotic)
+	{
+		pause_netdemotic = netdemotic - 1;
+		pause();
+	}
 }
 
 //
@@ -1210,6 +1216,19 @@ int NetDemo::getCurrentMapIndex() const
 	return header.map_index_size - 1;
 }
 
+//
+// nextTic()
+//
+//		Advance to the next gametic.
+//
+void NetDemo::nextTic()
+{
+	if (!isPaused())
+		return;
+
+	pause_netdemotic = netdemotic + 1;
+	resume();
+}
 
 //
 // nextSnapshot()
