@@ -532,6 +532,10 @@ void G_DoResetLevel(bool full_reset)
 	// Clear teamgame state.
 	TeamInfo_ResetScores(full_reset);
 
+	// Reset all keys found
+	for (size_t j = 0; j < NUMCARDS; j++)
+		keysfound[j] = false;
+
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
 	AActor* mo;
