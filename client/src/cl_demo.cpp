@@ -747,6 +747,7 @@ void NetDemo::ticker()
 	{
 		pause_netdemotic = netdemotic - 1;
 		pause();
+		::paused = true;
 	}
 }
 
@@ -1228,6 +1229,7 @@ void NetDemo::nextTic()
 
 	pause_netdemotic = netdemotic + 1;
 	resume();
+	::paused = false;
 }
 
 //
