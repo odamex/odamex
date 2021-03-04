@@ -2699,6 +2699,31 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
+Protos protos;
+
+static void RecordProto(google::protobuf::Message* msg)
+{
+	static int protostic;
+
+	if (!::netdemo.isPlaying() && !::netdemo.isPaused())
+	{
+		return;
+	}
+
+	if (protostic != ::level.time)
+	{
+		::protos.clear();
+		protostic = ::level.time;
+	}
+
+	::protos.push_back({msg->GetTypeName(), msg->DebugString()});
+}
+
+const Protos& CL_GetTicProtos()
+{
+	return ::protos;
+}
+
 #define SERVER_MSG_FUNC(svc, func) \
 	case svc:                      \
 		func();                    \
@@ -2712,6 +2737,7 @@ void CL_Clear()
 			Printf(PRINT_WARNING, "%s: Could not read message.\n", #svc); \
 			return false;                                                 \
 		}                                                                 \
+		RecordProto(&msg);                                                \
 		func(msg);                                                        \
 		return true;                                                      \
 	}

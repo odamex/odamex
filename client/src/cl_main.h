@@ -71,4 +71,12 @@ bool CL_SectorIsPredicting(sector_t *sector);
 
 std::string M_ExpandTokens(const std::string &str);
 
+struct Proto
+{
+	std::string name;
+	std::string data;
+};
+typedef std::vector<Proto> Protos;
+const Protos& CL_GetTicProtos();
+
 #endif

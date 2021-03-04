@@ -34,6 +34,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "cl_demo.h"
+#include "cl_main.h"
 #include "d_items.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -602,6 +603,23 @@ void drawNetdemo() {
 	}
 	ST_DrawBar(color, netdemo.calculateTimeElapsed(), netdemo.calculateTotalTime(),
 	           2 * xscale, I_GetSurfaceHeight() - 46 * yscale, 72 * xscale);
+
+	if (netdemo.isPaused())
+	{
+		int y = 7 * 5;
+
+		// Only show protocol messages when paused.
+		const Protos& protos = CL_GetTicProtos();
+		for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+		{
+			hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			              it->name.c_str(), CR_GOLD, true);
+			y += V_StringHeight(it->name.c_str());
+			hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			              it->data.c_str(), CR_WHITE, true);
+			y += V_StringHeight(it->data.c_str());
+		}
+	}
 }
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work

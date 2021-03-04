@@ -46,6 +46,7 @@ typedef struct brokenlines_s brokenlines_t;
 
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+int V_StringHeight(const char* str);
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
