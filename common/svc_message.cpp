@@ -389,6 +389,26 @@ void SVC_RemoveMobj(buf_t& b, AActor& mobj)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_UserInfo(buf_t& b, player_t& player, int64_t time)
+{
+	odaproto::svc::UserInfo msg;
+
+	msg.set_pid(player.id);
+	msg.set_netname(player.userinfo.netname);
+	msg.set_team(player.userinfo.team);
+	msg.set_gender(player.userinfo.gender);
+
+	for (size_t i = 0; i < ARRAY_LENGTH(player.userinfo.color); i++)
+	{
+		msg.mutable_color()->Add(player.userinfo.color[i]);
+	}
+
+	msg.set_join_time(time);
+
+	MSG_WriteMarker(&b, svc_userinfo);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Move a mobj to a new location.  If it's a player, it will update
  *        the client's snapshot.

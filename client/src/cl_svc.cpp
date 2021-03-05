@@ -739,6 +739,41 @@ void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
 	P_ClearId(netid);
 }
 
+//
+// CL_SetupUserInfo
+//
+void CL_UserInfo(const odaproto::svc::UserInfo& msg)
+{
+	player_t* p = &CL_FindPlayer(msg.pid());
+
+	p->userinfo.netname = msg.netname();
+
+	p->userinfo.team = static_cast<team_t>(msg.team());
+	if (p->userinfo.team < 0 || p->userinfo.team >= NUMTEAMS)
+		p->userinfo.team = TEAM_BLUE;
+
+	p->userinfo.gender = static_cast<gender_t>(msg.gender());
+	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
+		p->userinfo.gender = GENDER_NEUTER;
+
+	for (size_t i = 0; i < p->userinfo.color[i]; i++)
+	{
+		if (i < msg.color_size())
+			p->userinfo.color[i] = msg.color().Get(i);
+		else
+			p->userinfo.color[i] = 0;
+	}
+
+	p->GameTime = msg.join_time();
+
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+
+	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
+	// to the other team?
+	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
+	CL_CheckDisplayPlayer();
+}
+
 void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 {
 	int netid = msg.actor().netid();

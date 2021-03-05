@@ -120,7 +120,7 @@ message UserInfo
 	int32 team = 3;
 	int32 gender = 4;
 	repeated int32 color = 5;
-	uint64 join_time = 6;
+	sint64 join_time = 6;
 }
 
 // svc_updatemobj

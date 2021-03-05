@@ -26,6 +26,7 @@
 #define __I_CLMAIN_H__
 
 #include "i_net.h"
+#include "d_player.h"
 #include "d_ticcmd.h"
 #include "r_defs.h"
 #include "cl_demo.h"
@@ -68,6 +69,7 @@ void CL_DisplayTics();
 void CL_RunTics();
 
 bool CL_SectorIsPredicting(sector_t *sector);
+argb_t CL_GetPlayerColor(player_t* player);
 
 std::string M_ExpandTokens(const std::string &str);
 

@@ -1392,37 +1392,6 @@ player_t &CL_FindPlayer(size_t id)
 	return *p;
 }
 
-//
-// CL_SetupUserInfo
-//
-void CL_SetupUserInfo(void)
-{
-	byte who = MSG_ReadByte();
-	player_t *p = &CL_FindPlayer(who);
-
-	p->userinfo.netname = MSG_ReadString();
-	p->userinfo.team	= (team_t)MSG_ReadByte();
-	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-
-	for (int i = 3; i >= 0; i--)
-		p->userinfo.color[i] = MSG_ReadByte();
-
-	// [SL] place holder for deprecated skins
-	MSG_ReadString();
-
-	p->GameTime			= MSG_ReadShort();
-
-	if(p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
-
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
-
-	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
-	// to the other team?
-	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
-	CL_CheckDisplayPlayer();
-}
-
 /**
  * @brief Update a player's spectate setting and do any necessary busywork for it.
  * 
@@ -2732,7 +2701,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_explodemissile, CL_ExplodeMissile,
 		                  odaproto::svc::ExplodeMissile);
 		SERVER_PROTO_FUNC(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
-		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
+		SERVER_PROTO_FUNC(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
 		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);

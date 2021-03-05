@@ -47,9 +47,6 @@ extern std::string server_host;
 extern std::string digest;
 extern OResFiles wadfiles;
 
-argb_t CL_GetPlayerColor(player_t*);
-
-
 NetDemo::NetDemo()
     : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
       pause_netdemotic(0)
@@ -1098,17 +1095,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	SVC_ConsolePlayer(*netbuffer, consoleplayer(), digest);
 
 	// our userinfo
-	MSG_WriteMarker	(netbuffer, svc_userinfo);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
-	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
-	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
-
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(netbuffer, consoleplayer().userinfo.color[i]);
-
-	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
-	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
+	SVC_UserInfo(*netbuffer, consoleplayer(), consoleplayer().GameTime);
 	
 	// Server sends its settings
 	MSG_WriteMarker	(netbuffer, svc_serversettings);

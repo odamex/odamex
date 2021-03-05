@@ -858,19 +858,7 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 {
 	player_t *p = &player;
 
-	MSG_WriteMarker	(&cl->reliablebuf, svc_userinfo);
-	MSG_WriteByte	(&cl->reliablebuf, p->id);
-	MSG_WriteString (&cl->reliablebuf, p->userinfo.netname.c_str());
-	MSG_WriteByte	(&cl->reliablebuf, p->userinfo.team);
-	MSG_WriteLong	(&cl->reliablebuf, p->userinfo.gender);
-
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&cl->reliablebuf, p->userinfo.color[i]);
-
-	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&cl->reliablebuf, "");
-
-	MSG_WriteShort	(&cl->reliablebuf, time(NULL) - p->JoinTime);
+	SVC_UserInfo(cl->reliablebuf, *p, time(NULL) - p->JoinTime);
 }
 
 /**
