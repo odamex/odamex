@@ -291,6 +291,7 @@ BEGIN_COMMAND(game_duel)
 	params.push_back("sv_forcerespawn 1");
 	params.push_back("sv_forcerespawntime 10");
 	params.push_back("sv_gametype 1");
+	params.push_back("sv_maxplayers 2");
 	params.push_back("sv_nomonsters 1");
 	params.push_back("sv_skill 5");
 	params.push_back("sv_warmup 1");
