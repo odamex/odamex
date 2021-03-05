@@ -369,6 +369,16 @@ void SVC_ConsolePlayer(buf_t& b, player_t& player, const std::string& digest)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_ExplodeMissile(buf_t& b, AActor& mobj)
+{
+	odaproto::svc::ExplodeMissile msg;
+
+	msg.set_netid(mobj.netid);
+
+	MSG_WriteMarker(&b, svc_explodemissile);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Move a mobj to a new location.  If it's a player, it will update
  *        the client's snapshot.

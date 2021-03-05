@@ -2195,23 +2195,6 @@ void CL_SpawnPlayer()
 	p->snapshots.addSnapshot(newsnap);
 }
 
-//
-// CL_ExplodeMissile
-//
-void CL_ExplodeMissile(void)
-{
-    AActor *mo;
-	int     netid;
-
-	netid = MSG_ReadShort();
-	mo = P_FindThingById(netid);
-
-	if (!mo)
-		return;
-
-	P_ExplodeMissile(mo);
-}
-
 
 //
 // CL_RailTrail
@@ -2761,7 +2744,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
 		SERVER_PROTO_FUNC(svc_consoleplayer, CL_ConsolePlayer,
 		                  odaproto::svc::ConsolePlayer);
-		SERVER_MSG_FUNC(svc_explodemissile, CL_ExplodeMissile);
+		SERVER_PROTO_FUNC(svc_explodemissile, CL_ExplodeMissile,
+		                  odaproto::svc::ExplodeMissile);
 		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
 		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
 		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);

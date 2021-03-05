@@ -74,6 +74,7 @@ std::string CL_GenerateNetDemoFileName(
 bool CL_PlayerJustTeleported(player_t* player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
+void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
 void CL_SpectatePlayer(player_t& player, bool spectate);
@@ -707,6 +708,21 @@ void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
 {
 	::displayplayer_id = ::consoleplayer_id = msg.pid();
 	::digest = msg.digest();
+}
+
+//
+// CL_ExplodeMissile
+//
+void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
+{
+	int netid = msg.netid();
+
+	AActor* mo = P_FindThingById(netid);
+
+	if (!mo)
+		return;
+
+	P_ExplodeMissile(mo);
 }
 
 void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)

@@ -4974,9 +4974,7 @@ void SV_ExplodeMissile(AActor *mo)
 			continue;
 
 		SVC_UpdateMobj(cl->reliablebuf, *mo, SVC_UM_POS_RND);
-
-		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
-		MSG_WriteShort(&cl->reliablebuf, mo->netid);
+		SVC_ExplodeMissile(cl->reliablebuf, *mo);
 	}
 }
 
