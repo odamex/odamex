@@ -2077,43 +2077,6 @@ void CL_RailTrail()
 	P_DrawRailTrail(start, end);
 }
 
-
-//
-// CL_DamagePlayer
-//
-void CL_DamagePlayer(void)
-{
-	int netid = MSG_ReadShort();
-	int healthDamage = MSG_ReadShort();
-	int armorDamage = MSG_ReadByte();
-
-	AActor* actor = P_FindThingById(netid);
-
-	if (!actor || !actor->player)
-		return;
-
-	player_t *p = actor->player;
-	p->health -= healthDamage;
-	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
-
-	if (p->health < 0)
-		p->health = 0;
-	if (p->armorpoints < 0)
-		p->armorpoints = 0;
-
-	if (healthDamage > 0)
-	{
-		p->damagecount += healthDamage;
-
-		if (p->damagecount > 100)
-			p->damagecount = 100;
-
-		if(p->mo->info->painstate)
-			P_SetMobjState(p->mo, p->mo->info->painstate);
-	}
-}
-
 ///////////////////////////////////////////////////////////
 ///// CL_Fire* called when someone uses a weapon  /////////
 ///////////////////////////////////////////////////////////
@@ -2599,7 +2562,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
 		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
 		SERVER_PROTO_FUNC(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
-		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
+		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);

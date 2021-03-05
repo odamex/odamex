@@ -4877,10 +4877,7 @@ void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_damageplayer);
-		MSG_WriteShort(&cl->reliablebuf, player->mo->netid);
-		MSG_WriteShort(&cl->reliablebuf, healthDamage);
-		MSG_WriteByte(&cl->reliablebuf, armorDamage);
+		SVC_DamagePlayer(cl->reliablebuf, *player, healthDamage, armorDamage);
 	}
 }
 

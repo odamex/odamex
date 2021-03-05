@@ -953,6 +953,42 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
 	p->snapshots.addSnapshot(newsnap);
 }
 
+//
+// CL_DamagePlayer
+//
+void CL_DamagePlayer(const odaproto::svc::DamagePlayer& msg)
+{
+	int netid = msg.netid();
+	int healthDamage = msg.health_damage();
+	int armorDamage = msg.armor_damage();
+
+	AActor* actor = P_FindThingById(netid);
+
+	if (!actor || !actor->player)
+		return;
+
+	player_t* p = actor->player;
+	p->health -= healthDamage;
+	p->mo->health = p->health;
+	p->armorpoints -= armorDamage;
+
+	if (p->health < 0)
+		p->health = 0;
+	if (p->armorpoints < 0)
+		p->armorpoints = 0;
+
+	if (healthDamage > 0)
+	{
+		p->damagecount += healthDamage;
+
+		if (p->damagecount > 100)
+			p->damagecount = 100;
+
+		if (p->mo->info->painstate)
+			P_SetMobjState(p->mo, p->mo->info->painstate);
+	}
+}
+
 extern int MeansOfDeath;
 
 //

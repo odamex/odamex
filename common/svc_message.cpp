@@ -483,6 +483,18 @@ void SVC_SpawnPlayer(buf_t& b, player_t& player)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_DamagePlayer(buf_t& b, player_t& player, int health, int armor)
+{
+	odaproto::svc::DamagePlayer msg;
+
+	msg.set_netid(player.mo->netid);
+	msg.set_health_damage(health);
+	msg.set_armor_damage(armor);
+
+	MSG_WriteMarker(&b, svc_damageplayer);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Kill a mobj.
  */
