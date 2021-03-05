@@ -52,6 +52,7 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
                  const std::string& mapname, int time);
 void SVC_ConsolePlayer(buf_t& b, player_t& player, const std::string& digest);
 void SVC_ExplodeMissile(buf_t& b, AActor& mobj);
+void SVC_RemoveMobj(buf_t& b, AActor& mobj);
 void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);

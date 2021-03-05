@@ -2215,21 +2215,6 @@ void CL_RailTrail()
 
 
 //
-// CL_RemoveMobj
-//
-void CL_RemoveMobj(void)
-{
-	int netid = MSG_ReadShort();
-
-	AActor *mo = P_FindThingById(netid);
-	if (mo && mo->player && mo->player->id == displayplayer_id)
-		displayplayer_id = consoleplayer_id;
-
-	P_ClearId(netid);
-}
-
-
-//
 // CL_DamagePlayer
 //
 void CL_DamagePlayer(void)
@@ -2746,7 +2731,7 @@ static bool CallMessageFunc(svc_t type)
 		                  odaproto::svc::ConsolePlayer);
 		SERVER_PROTO_FUNC(svc_explodemissile, CL_ExplodeMissile,
 		                  odaproto::svc::ExplodeMissile);
-		SERVER_MSG_FUNC(svc_removemobj, CL_RemoveMobj);
+		SERVER_PROTO_FUNC(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
 		SERVER_MSG_FUNC(svc_userinfo, CL_SetupUserInfo);
 		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
 		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);

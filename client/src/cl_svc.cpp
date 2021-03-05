@@ -725,6 +725,20 @@ void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
 	P_ExplodeMissile(mo);
 }
 
+//
+// CL_RemoveMobj
+//
+void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
+{
+	int netid = msg.netid();
+
+	AActor* mo = P_FindThingById(netid);
+	if (mo && mo->player && mo->player->id == ::displayplayer_id)
+		::displayplayer_id = ::consoleplayer_id;
+
+	P_ClearId(netid);
+}
+
 void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 {
 	int netid = msg.actor().netid();

@@ -1185,8 +1185,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	{
 		mo->players_aware.unset(player.id);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_removemobj);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		SVC_RemoveMobj(cl->reliablebuf, *mo);
 
 		return true;
 	}
@@ -4949,11 +4948,10 @@ void SV_SendDestroyActor(AActor *mo)
 			{
 				client_t *cl = &(it->client);
 
-            	// denis - todo - need a queue for destroyed (lost awareness)
-            	// objects, as a flood of destroyed things could easily overflow a
-            	// buffer
-				MSG_WriteMarker(&cl->reliablebuf, svc_removemobj);
-				MSG_WriteShort(&cl->reliablebuf, mo->netid);
+				// denis - todo - need a queue for destroyed (lost awareness)
+				// objects, as a flood of destroyed things could easily overflow a
+				// buffer
+				SVC_RemoveMobj(cl->reliablebuf, *mo);
 			}
 		}
 	}

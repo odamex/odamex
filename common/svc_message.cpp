@@ -379,6 +379,16 @@ void SVC_ExplodeMissile(buf_t& b, AActor& mobj)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_RemoveMobj(buf_t& b, AActor& mobj)
+{
+	odaproto::svc::RemoveMobj msg;
+
+	msg.set_netid(mobj.netid);
+
+	MSG_WriteMarker(&b, svc_removemobj);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Move a mobj to a new location.  If it's a player, it will update
  *        the client's snapshot.
