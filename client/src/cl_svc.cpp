@@ -448,7 +448,7 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 		P_SetMobjState(mo, state);
 	}
 
-	if (mo->flags & MF_MISSILE)
+	if (msg.flags() & SVC_SM_MISSILE)
 	{
 		AActor* target = P_FindThingById(msg.target_netid());
 		if (target)
@@ -457,8 +457,8 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 		}
 
 		mo->momx = msg.actor().mom().x();
-		mo->momx = msg.actor().mom().x();
-		mo->momx = msg.actor().mom().x();
+		mo->momy = msg.actor().mom().y();
+		mo->momz = msg.actor().mom().z();
 		mo->angle = msg.actor().angle();
 	}
 

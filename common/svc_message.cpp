@@ -284,19 +284,17 @@ void SVC_SpawnMobj(buf_t& b, AActor* mo)
 	// denis - check type as that is what the client will be spawning
 	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) 
 	{
+		flags |= SVC_SM_MISSILE;
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
 		actor->set_angle(mo->angle);
 		actor->mutable_mom()->set_x(mo->momx);
 		actor->mutable_mom()->set_y(mo->momy);
 		actor->mutable_mom()->set_z(mo->momz);
 	}
-	else
+	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
 	{
-		if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
-		{
-			flags |= SVC_SM_FLAGS;
-			actor->set_flags(mo->flags);
-		}
+		flags |= SVC_SM_FLAGS;
+		actor->set_flags(mo->flags);
 	}
 
 	// animating corpses
