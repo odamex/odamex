@@ -311,7 +311,6 @@ void R_InterpolationTicker();
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
-void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
@@ -2062,110 +2061,6 @@ void CL_TouchSpecialThing (void)
 
 
 //
-// CL_SpawnPlayer
-//
-void CL_SpawnPlayer()
-{
-	byte		playernum;
-	player_t	*p;
-	AActor		*mobj;
-	fixed_t		x = 0, y = 0, z = 0;
-	unsigned short netid;
-	angle_t		angle = 0;
-	int			i;
-
-	playernum = MSG_ReadByte();
-	netid = MSG_ReadShort();
-	p = &CL_FindPlayer(playernum);
-
-	angle = MSG_ReadLong();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-
-	P_ClearId(netid);
-
-	// first disassociate the corpse
-	if (p->mo)
-	{
-		p->mo->player = NULL;
-		p->mo->health = 0;
-	}
-
-	G_PlayerReborn (*p);
-
-	mobj = new AActor (x, y, z, MT_PLAYER);
-
-	mobj->momx = mobj->momy = mobj->momz = 0;
-
-	// set color translations for player sprites
-	mobj->translation = translationref_t(translationtables + 256*playernum, playernum);
-	mobj->angle = angle;
-	mobj->pitch = 0;
-	mobj->player = p;
-	mobj->health = p->health;
-	P_SetThingId(mobj, netid);
-
-	p->mo = p->camera = mobj->ptr();
-	p->fov = 90.0f;
-	p->playerstate = PST_LIVE;
-	p->refire = 0;
-	p->damagecount = 0;
-	p->bonuscount = 0;
-	p->extralight = 0;
-	p->fixedcolormap = 0;
-
-	p->xviewshift = 0;
-	p->viewheight = VIEWHEIGHT;
-
-	p->attacker = AActor::AActorPtr();
-	p->viewz = z + VIEWHEIGHT;
-
-	// spawn a teleport fog
-	// tfog = new AActor (x, y, z, MT_TFOG);
-
-	// setup gun psprite
-	P_SetupPsprites (p);
-
-	// give all cards in death match mode
-	if(sv_gametype != GM_COOP)
-		for (i = 0; i < NUMCARDS; i++)
-			p->cards[i] = true;
-
-	if(p->id == consoleplayer_id)
-	{
-		// denis - if this concerns the local player, restart the status bar
-		ST_Start ();
-
-		// [SL] 2012-04-23 - Clear predicted sectors
-		movingsectors.clear();
-	}
-
-	if (p->id == displayplayer().id)
-	{
-		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
-		// about players/sectors jumping to new positions when the displayplayer spawns
-		CL_ResyncWorldIndex();
-	}
-
-	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
-	{
-		if (p->deathcount)
-			level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
-		else
-			level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
-	}
-
-	int snaptime = last_svgametic;
-	PlayerSnapshot newsnap(snaptime, p);
-	newsnap.setAuthoritative(true);
-	newsnap.setContinuous(false);
-	p->snapshots.clearSnapshots();
-	p->snapshots.addSnapshot(newsnap);
-}
-
-
-//
 // CL_RailTrail
 //
 void CL_RailTrail()
@@ -2703,7 +2598,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
 		SERVER_PROTO_FUNC(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
 		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
-		SERVER_MSG_FUNC(svc_spawnplayer, CL_SpawnPlayer);
+		SERVER_PROTO_FUNC(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SERVER_MSG_FUNC(svc_damageplayer, CL_DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);

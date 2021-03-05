@@ -55,6 +55,7 @@ void SVC_ExplodeMissile(buf_t& b, AActor& mobj);
 void SVC_RemoveMobj(buf_t& b, AActor& mobj);
 void SVC_UserInfo(buf_t& b, player_t& player, int64_t time);
 void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags);
+void SVC_SpawnPlayer(buf_t& b, player_t& player);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);

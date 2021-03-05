@@ -30,6 +30,7 @@
 #include "c_effect.h"
 #include "cl_main.h"
 #include "cmdlib.h"
+#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
 #include "g_gametype.h"
@@ -38,12 +39,14 @@
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_resfile.h"
+#include "p_acs.h"
 #include "p_ctf.h"
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_mobj.h"
 #include "r_state.h"
 #include "s_sound.h"
+#include "st_stuff.h"
 
 // Extern data from other files.
 
@@ -74,6 +77,7 @@ std::string CL_GenerateNetDemoFileName(
 bool CL_PlayerJustTeleported(player_t* player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
+void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
@@ -852,6 +856,101 @@ void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 		AActor* tracer = P_FindThingById(msg.actor().tracerid());
 		mo->tracer = tracer->ptr();
 	}
+}
+
+//
+// CL_SpawnPlayer
+//
+void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
+{
+	size_t playernum = msg.pid();
+	size_t netid = msg.actor().netid();
+	player_t* p = &CL_FindPlayer(playernum);
+
+	angle_t angle = msg.actor().angle();
+	fixed_t x = msg.actor().pos().x();
+	fixed_t y = msg.actor().pos().y();
+	fixed_t z = msg.actor().pos().z();
+
+	P_ClearId(netid);
+
+	// first disassociate the corpse
+	if (p->mo)
+	{
+		p->mo->player = NULL;
+		p->mo->health = 0;
+	}
+
+	G_PlayerReborn(*p);
+
+	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
+
+	mobj->momx = mobj->momy = mobj->momz = 0;
+
+	// set color translations for player sprites
+	mobj->translation = translationref_t(translationtables + 256 * playernum, playernum);
+	mobj->angle = angle;
+	mobj->pitch = 0;
+	mobj->player = p;
+	mobj->health = p->health;
+	P_SetThingId(mobj, netid);
+
+	p->mo = p->camera = mobj->ptr();
+	p->fov = 90.0f;
+	p->playerstate = PST_LIVE;
+	p->refire = 0;
+	p->damagecount = 0;
+	p->bonuscount = 0;
+	p->extralight = 0;
+	p->fixedcolormap = 0;
+
+	p->xviewshift = 0;
+	p->viewheight = VIEWHEIGHT;
+
+	p->attacker = AActor::AActorPtr();
+	p->viewz = z + VIEWHEIGHT;
+
+	// spawn a teleport fog
+	// tfog = new AActor (x, y, z, MT_TFOG);
+
+	// setup gun psprite
+	P_SetupPsprites(p);
+
+	// give all cards in death match mode
+	if (sv_gametype != GM_COOP)
+		for (size_t i = 0; i < NUMCARDS; i++)
+			p->cards[i] = true;
+
+	if (p->id == consoleplayer_id)
+	{
+		// denis - if this concerns the local player, restart the status bar
+		ST_Start();
+
+		// [SL] 2012-04-23 - Clear predicted sectors
+		movingsectors.clear();
+	}
+
+	if (p->id == displayplayer().id)
+	{
+		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
+		// about players/sectors jumping to new positions when the displayplayer spawns
+		CL_ResyncWorldIndex();
+	}
+
+	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	{
+		if (p->deathcount)
+			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		else
+			::level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
+	}
+
+	int snaptime = last_svgametic;
+	PlayerSnapshot newsnap(snaptime, p);
+	newsnap.setAuthoritative(true);
+	newsnap.setContinuous(false);
+	p->snapshots.clearSnapshots();
+	p->snapshots.addSnapshot(newsnap);
 }
 
 extern int MeansOfDeath;

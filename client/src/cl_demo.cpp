@@ -1119,27 +1119,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	SVC_LoadMap(*netbuffer, wadfiles, patchfiles, level.mapname, level.time);
 
 	// Server spawns the player
-	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	if (consoleplayer().mo)
-	{
-		MSG_WriteShort	(netbuffer, consoleplayer().mo->netid);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->angle);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->x);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->y);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->z);
-	}
-	else
-	{
-		// The client hasn't yet received his own position from the server
-		// This happens with cl_autorecord
-		// Just fake a position for now
-		MSG_WriteShort	(netbuffer, MAXSHORT);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-	}
+	SVC_SpawnPlayer(*netbuffer, consoleplayer());
 }
 
 

@@ -1187,13 +1187,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		}
 		else
 		{
-			MSG_WriteMarker (&cl->reliablebuf, svc_spawnplayer);
-			MSG_WriteByte (&cl->reliablebuf, mo->player->id);
-			MSG_WriteShort (&cl->reliablebuf, mo->netid);
-			MSG_WriteLong (&cl->reliablebuf, mo->angle);
-			MSG_WriteLong (&cl->reliablebuf, mo->x);
-			MSG_WriteLong (&cl->reliablebuf, mo->y);
-			MSG_WriteLong (&cl->reliablebuf, mo->z);
+			SVC_SpawnPlayer(cl->reliablebuf, *mo->player);
 		}
 
 		return true;

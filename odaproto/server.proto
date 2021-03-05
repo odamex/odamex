@@ -134,9 +134,7 @@ message UpdateMobj
 message SpawnPlayer
 {
 	int32 pid = 1;
-	int32 netid = 2;
-	fixed32 angle = 3;
-	Vec3 pos = 4;
+	Actor actor = 2;
 }
 
 // svc_damageplayer

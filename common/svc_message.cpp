@@ -456,6 +456,33 @@ void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_SpawnPlayer(buf_t& b, player_t& player)
+{
+	odaproto::svc::SpawnPlayer msg;
+
+	msg.set_pid(player.id);
+
+	odaproto::Actor* act = msg.mutable_actor();
+	if (player.mo)
+	{
+		act->set_netid(player.mo->netid);
+		act->set_angle(player.mo->angle);
+		act->mutable_pos()->set_x(player.mo->x);
+		act->mutable_pos()->set_y(player.mo->y);
+		act->mutable_pos()->set_z(player.mo->z);
+	}
+	else
+	{
+		// The client hasn't yet received his own position from the server
+		// This happens with cl_autorecord
+		// Just fake a position for now
+		act->set_netid(MAXSHORT);
+	}
+
+	MSG_WriteMarker(&b, svc_spawnplayer);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Kill a mobj.
  */
