@@ -83,7 +83,7 @@ int             iquetail;
 NetIDHandler ServerNetID;
 
 // denis - fast netid lookup
-typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
+typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
 IMPLEMENT_SERIAL(AActor, DThinker)
@@ -258,7 +258,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	rndindex = M_Random();
 
 	if (multiplayer && serverside)
-		netid = ServerNetID.ObtainNetID();
+		netid = ::ServerNetID.obtainNetID();
 
 	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
@@ -336,6 +336,7 @@ void P_AnimationTick(AActor *mo)
 //
 void P_ClearAllNetIds()
 {
+	ServerNetID.resetNetIDs();
 	actor_by_netid.clear();
 }
 
@@ -343,7 +344,7 @@ void P_ClearAllNetIds()
 // P_FindThingById
 // denis - fast netid lookup
 //
-AActor* P_FindThingById(size_t id)
+AActor* P_FindThingById(uint32_t id)
 {
 	netid_map_t::iterator i = actor_by_netid.find(id);
 
@@ -356,7 +357,7 @@ AActor* P_FindThingById(size_t id)
 //
 // P_SetThingId
 //
-void P_SetThingId(AActor *mo, size_t newnetid)
+void P_SetThingId(AActor *mo, uint32_t newnetid)
 {
 	mo->netid = newnetid;
 	actor_by_netid[newnetid] = mo->ptr();
@@ -366,7 +367,7 @@ void P_SetThingId(AActor *mo, size_t newnetid)
 //
 // P_ClearId
 //
-void P_ClearId(size_t id)
+void P_ClearId(uint32_t id)
 {
     AActor *mo = P_FindThingById(id);
 
