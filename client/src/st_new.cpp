@@ -829,34 +829,36 @@ void LevelStateHUD()
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(str.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
+
+	float oldtrans = ::hud_transparency;
 	if (::levelstate.getState() == LevelState::INGAME)
 	{
 		// Only render the "FIGHT" message if it's less than 2 seconds in.
 		int tics = ::level.time - ::levelstate.getIngameStartTime();
-		if (tics < TICRATE * 2)
+		if (tics < TICRATE)
 		{
-			float old = ::hud_transparency;
-			if (tics < TICRATE)
-			{
-				::hud_transparency.ForceSet(1.0);
-			}
-			else if (tics < TICRATE * 2)
-			{
-				tics %= TICRATE;
-				float trans = static_cast<float>(TICRATE - tics) / TICRATE;
-				::hud_transparency.ForceSet(trans);
-			}
-			screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-			                             surface_height / 4 - h / 2, str.c_str(),
-			                             CleanYfac, CleanYfac);
-			::hud_transparency.ForceSet(old);
+			::hud_transparency.ForceSet(1.0);
+		}
+		else if (tics < TICRATE * 2)
+		{
+			tics %= TICRATE;
+			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			::hud_transparency.ForceSet(trans);
+		}
+		else
+		{
+			::hud_transparency.ForceSet(0.0);
 		}
 	}
 	else
 	{
-		screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
-		                          surface_height / 4 - h / 2, str.c_str(), CleanYfac,
-		                          CleanYfac);
+		::hud_transparency.ForceSet(1.0);
+	}
+	if (::hud_transparency > 0.0f)
+	{
+		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                             surface_height / 4 - h / 2, str.c_str(), CleanYfac,
+		                             CleanYfac);
 	}
 
 	V_SetFont("SMALLFONT");
@@ -898,6 +900,26 @@ void LevelStateHUD()
 		StrFormat(str, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
+	case LevelState::INGAME:
+		if (G_CanShowFightMessage())
+		{
+			if (G_IsSidesGame())
+			{
+				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+				{
+					str = TEXTCOLOR_GOLD "Defend the flag!\n";
+				}
+				else
+				{
+					str = TEXTCOLOR_GREEN "Capture the flag!\n";
+				}
+			}
+		}
+		else
+		{
+			str = "";
+		}
+		break;
 	case LevelState::ENDROUND_COUNTDOWN: {
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
@@ -928,9 +950,14 @@ void LevelStateHUD()
 
 	w = V_StringWidth(str.c_str()) * CleanYfac;
 	h = 8 * CleanYfac;
-	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
-	                          (surface_height / 4 - h / 2) + (12 * CleanYfac),
-	                          str.c_str(), CleanYfac, CleanYfac);
+	if (::hud_transparency > 0.0f)
+	{
+		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                             (surface_height / 4 - h / 2) + (12 * CleanYfac),
+		                             str.c_str(), CleanYfac, CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
 }
 
 // [AM] Spectator HUD.
