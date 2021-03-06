@@ -639,8 +639,7 @@ void G_DoResetLevel(bool full_reset)
 	// Force every ingame player to be reborn.
 	for (it = players.begin(); it != players.end(); ++it)
 	{
-		// Spectators aren't reborn.
-		if (!it->ingame() || it->spectator)
+		if (!it->ingame())
 			continue;
 
 		// Set the respawning machinery in motion
