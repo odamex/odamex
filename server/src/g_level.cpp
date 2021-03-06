@@ -799,6 +799,9 @@ void G_DoLoadLevel (int position)
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
 
+	// [AM] Handle levelstate init (before we handle per-round init).
+	::levelstate.reset();
+
 	// [AM] In sides-based games, destroy objectives that aren't relevant.
 	//      Must happen after saving state.
 	if (G_IsSidesGame())
@@ -814,8 +817,6 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	// [AM] Handle warmup init.
-	::levelstate.reset();
 	//	C_FlushDisplay ();
 }
 

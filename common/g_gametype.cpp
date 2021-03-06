@@ -363,7 +363,7 @@ bool G_UsesFraglimit()
 /**
  * @brief Calculate the tic that the level ends on.
  */
-int G_EndingTic()
+int G_GetEndingTic()
 {
 	return sv_timelimit * 60 * TICRATE + 1;
 }
@@ -504,7 +504,7 @@ void G_TimeCheckEndGame()
 		return;
 
 	// Check to see if we have any time left.
-	if (G_EndingTic() > level.time)
+	if (G_GetEndingTic() > level.time)
 		return;
 
 	// If nobody is in the game, just end the game and move on.
