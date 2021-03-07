@@ -39,6 +39,7 @@
 #include "p_ctf.h"
 #include "gi.h"
 #include "g_gametype.h"
+#include "c_dispatch.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -2722,5 +2723,47 @@ bool P_VisibleToPlayers(AActor *mo)
 
 	return false;
 }
+
+BEGIN_COMMAND(cheat_mobjs)
+{
+	if (argc < 2)
+	{
+		Printf("Missing MT_* mobj type\n");
+		return;
+	}
+
+	const char* mobj_type = argv[1];
+	ptrdiff_t mobj_index = -1;
+
+	for (size_t i = 0; i < ARRAY_LENGTH(::mobjinfo); i++)
+	{
+		if (stricmp(::mobjinfo[i].name, mobj_type) == 0)
+		{
+			mobj_index = i;
+			break;
+		}
+	}
+
+	if (mobj_index < 0)
+	{
+		Printf("Unknown MT_* mobj type\n");
+		return;
+	}
+
+	Printf("== %s ==", mobj_type);
+
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		if (mo->type == mobj_index)
+		{
+			Printf("ID: %d\n", mo->netid);
+			Printf("  %.1f, %.1f, %.1f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			       FIXED2FLOAT(mo->z));
+		}
+	}
+}
+END_COMMAND(cheat_mobjs)
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

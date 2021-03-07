@@ -6205,7 +6205,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	},
 	
 			// [Toke - CTF] Red Socket
-	{		// MT_BSOK
+	{		// MT_RSOK
 	5131,		// doomednum
 	S_RSOK,		// spawnstate
 	1000,		// spawnhealth
@@ -6232,7 +6232,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// flags2
 	S_NULL,		// raisestate
 	0x10000,
-	"MT_BSOK"
+	"MT_RSOK"
 	},
 	
 	// Nes - Reserve 5132 for Neutral Socket

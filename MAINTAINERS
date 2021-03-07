@@ -1,6 +1,7 @@
-This code is maintained on http://odamex.net/svn/root
-Post bugs to http://odamex.net/bugs
-IRC irc.oftc.net #odamex
+This code is maintained on https://github.com/odamex/odamex
+Post bugs to https://github.com/odamex/odamex/issues
+IRC: irc.oftc.net #odamex
+DISCORD: https://discord.gg/bvvMJMS
 
 Sean: sean@odamex.net (lead coder) <- patches
 Manc: mike@odamex.net (services and odamex.net website admin, project manager) <- patches
@@ -8,6 +9,9 @@ Ralphis: ralphis@odamex.net (project manager)
 Russell: russell@odamex.net (launcher coder, coder) <- patches
 Hyper_Eye: mwoodj@huntsvegas.org (coder, osx and xbox package manager)
 deathz0r: deathz0r@odamex.net (documentation, testing and code cleanups)
+Ch0wW: ch0ww@baseq.fr (documentation, testing and code cleanups)
 
-Portions of the save/load game system code not already present provided by randy from 
+Portions of the save/load game system code not already present provided by Marisa from 
 zdoom 1.22 relicensed under the GNU/GPL v2.
+
+An archive of our old bug tracker system is available at http://odamex.net/bugs
