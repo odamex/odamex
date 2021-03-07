@@ -67,6 +67,8 @@ static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
 static const patch_t* ammos[ARRAY_LENGTH(::ammopatches)];
 static const patch_t* bigammos[ARRAY_LENGTH(::bigammopatches)];
 static const patch_t* flagiconteam;
+static const patch_t* flagiconteamoffense;
+static const patch_t* flagiconteamdefense;
 static const patch_t* line_leftempty;
 static const patch_t* line_leftfull;
 static const patch_t* line_centerempty;
@@ -196,6 +198,9 @@ void ST_initNew()
 		NameUp = level.time + 2 * TICRATE;
 
 	CacheHUDPatch(&::flagiconteam, "FLAGIT");
+	CacheHUDPatch(&::flagiconteamoffense, "FLAGITO");
+	CacheHUDPatch(&::flagiconteamdefense, "FLAGITD");
+
 	CacheHUDPatch(&::line_leftempty, "ODABARLE");
 	CacheHUDPatch(&::line_leftfull, "ODABARLF");
 	CacheHUDPatch(&::line_centerempty, "ODABARCE");
@@ -543,9 +548,17 @@ static void drawGametype()
 
 			if (plyr->userinfo.team == i)
 			{
+				const patch_t* itpatch = ::flagiconteam;
+				if (G_IsSidesGame())
+				{
+					// Sides games show offense/defense.
+					if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+						itpatch = ::flagiconteamdefense;
+					else
+						itpatch = ::flagiconteamoffense;
+				}
 				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
-				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
-				               ::flagiconteam);
+				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
 			}
 
 			ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
