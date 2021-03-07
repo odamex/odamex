@@ -1458,9 +1458,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 void CL_DamageMobj()
 {
 	AActor  *mo;
-	int      netid, health, pain;
+	int      health, pain;
+	uint32_t netid;
 
-	netid = MSG_ReadShort();
+	netid = MSG_ReadUnVarint();
 	health = MSG_ReadShort();
 	pain = MSG_ReadByte();
 
@@ -2051,7 +2052,7 @@ void CL_UpdateIntTimeLeft(void)
 //
 void CL_TouchSpecialThing (void)
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
+	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
 
 	if(!consoleplayer().mo || !mo)
 		return;
@@ -2126,7 +2127,7 @@ void CL_ChangeWeapon (void)
 //
 void CL_Sound(void)
 {
-	int netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 	int x = MSG_ReadLong();
 	int y = MSG_ReadLong();
 	byte channel = MSG_ReadByte();
@@ -2371,7 +2372,7 @@ void CL_StartFullUpdate()
 //
 void CL_SetMobjState()
 {
-	AActor *mo = P_FindThingById (MSG_ReadShort() );
+	AActor *mo = P_FindThingById (MSG_ReadUnVarint() );
 	SWORD s = MSG_ReadShort();
 
 	if (!mo || s >= NUMSTATES)
@@ -2402,7 +2403,7 @@ void CL_ForceSetTeam (void)
 //
 void CL_MobjTranslation()
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
+	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
 	byte table = MSG_ReadByte();
 
 	if (!mo)
@@ -3071,7 +3072,7 @@ void CL_UpdatePlayerQueuePos()
 void CL_ACSExecuteSpecial()
 {
 	byte special = MSG_ReadByte();
-	int netid = MSG_ReadVarint();
+	uint32_t netid = MSG_ReadUnVarint();
 	byte count = MSG_ReadByte();
 	if (count >= 8)
 		count = 8;

@@ -685,9 +685,9 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
 		if(mo)
-			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 		else
-			MSG_WriteShort (&cl->netbuf, 0);
+			MSG_WriteUnVarint(&cl->netbuf, 0);
 		MSG_WriteLong (&cl->netbuf, x);
 		MSG_WriteLong (&cl->netbuf, y);
 		MSG_WriteByte (&cl->netbuf, channel);
@@ -721,9 +721,9 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 
 	MSG_WriteMarker (&cl->netbuf, svc_startsound);
 	if (mo == NULL)
-		MSG_WriteShort (&cl->netbuf, 0);
+		MSG_WriteUnVarint(&cl->netbuf, 0);
 	else
-		MSG_WriteShort (&cl->netbuf, mo->netid);
+		MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 	MSG_WriteLong (&cl->netbuf, x);
 	MSG_WriteLong (&cl->netbuf, y);
 	MSG_WriteByte (&cl->netbuf, channel);
@@ -762,7 +762,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 		cl = &(it->client);
 
 		MSG_WriteMarker(&cl->netbuf, svc_startsound);
-		MSG_WriteShort(&cl->netbuf, mo->netid);
+		MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 		MSG_WriteLong(&cl->netbuf, mo->x);
 		MSG_WriteLong(&cl->netbuf, mo->y);
 		MSG_WriteByte(&cl->netbuf, channel);
@@ -798,7 +798,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 			MSG_WriteMarker(&cl->netbuf, svc_startsound);
 			// Set netid to 0 since it's not a sound originating from any player's location
-			MSG_WriteShort(&cl->netbuf, 0); // netid
+			MSG_WriteUnVarint(&cl->netbuf, 0); // netid
 			MSG_WriteLong(&cl->netbuf, 0); // x
 			MSG_WriteLong(&cl->netbuf, 0); // y
 			MSG_WriteByte(&cl->netbuf, channel);
@@ -2844,7 +2844,7 @@ void SV_UpdateMobjState(AActor *mo)
 			statenum_t mostate = (statenum_t)(mo->state - states);
 
 			MSG_WriteMarker(&cl->reliablebuf, svc_mobjstate);
-			MSG_WriteShort(&cl->reliablebuf, mo->netid);
+			MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 			MSG_WriteShort(&cl->reliablebuf, (short)mostate);
 		}
 	}
@@ -3035,7 +3035,7 @@ void SV_UpdateDeadPlayers()
 				client_t *cl = &clients[i];
 
 				MSG_WriteMarker (&cl->reliablebuf, svc_mobjframe);
-				MSG_WriteShort (&cl->reliablebuf, mo->netid);
+				MSG_WriteUnVarint (&cl->reliablebuf, mo->netid);
 				MSG_WriteByte (&cl->reliablebuf, mo->frame);
 			}
 
@@ -4260,7 +4260,7 @@ void SV_TouchSpecial(AActor *special, player_t *player)
         return;
 
     MSG_WriteMarker(&cl->reliablebuf, svc_touchspecial);
-    MSG_WriteShort(&cl->reliablebuf, special->netid);
+    MSG_WriteUnVarint(&cl->reliablebuf, special->netid);
 }
 
 void SV_PlayerTimes (void)
@@ -4891,7 +4891,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_damagemobj);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, target->netid);
 		MSG_WriteShort(&cl->reliablebuf, target->health);
 		MSG_WriteByte(&cl->reliablebuf, pain);
 
@@ -4934,10 +4934,6 @@ void SV_SendDestroyActor(AActor *mo)
 			}
 		}
 	}
-
-	// AActor no longer active. NetID released.
-	if (mo->netid)
-		ServerNetID.ReleaseNetID( mo->netid );
 }
 
 // Missile exploded so tell clients about it
@@ -5211,7 +5207,7 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_executeacsspecial);
 		MSG_WriteByte(&cl->reliablebuf, special);
-		MSG_WriteVarint(&cl->reliablebuf, activator ? activator->netid : 0);
+		MSG_WriteUnVarint(&cl->reliablebuf, activator ? activator->netid : 0);
 
 		MSG_WriteByte(&cl->reliablebuf, argc);
 		if (arg0 != -1)

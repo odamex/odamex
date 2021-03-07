@@ -540,7 +540,6 @@ void G_DoResetLevel(bool full_reset)
 	{
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
-			ServerNetID.ReleaseNetID(mo->netid);
 			mo->netid = 0;
 		}
 	}
@@ -577,7 +576,7 @@ void G_DoResetLevel(bool full_reset)
 			// any weird destruction of any items post-reset.
 			if (mo->netid && mo->type != MT_PLAYER)
 			{
-				mo->netid = ServerNetID.ObtainNetID();
+				mo->netid = ::ServerNetID.obtainNetID();
 			}
 		}
 	}
@@ -750,7 +749,6 @@ void G_DoLoadLevel (int position)
 			actor->touching_sectorlist = NULL;
 
 			// denis - clear every actor netid so that they don't announce their destruction to clients
-			ServerNetID.ReleaseNetID(actor->netid);
 			actor->netid = 0;
 		}
 	}

@@ -55,7 +55,7 @@ static int Stack[STACK_SIZE];
 
 static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
-AActor* P_FindThingById(size_t id);
+AActor* P_FindThingById(uint32_t id);
 
 struct FBehavior::ArrayInfo
 {
