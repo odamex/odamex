@@ -200,8 +200,8 @@ void LevelState::reset()
 		setState(LevelState::getStartOfRoundState());
 
 		// Don't print "match started" for every game mode.
-		if (g_rounds)
-			SV_BroadcastPrintf("Round %d has started.\n", m_roundNumber);
+		if (::g_rounds)
+			printRoundStart();
 	}
 
 	m_countdownDoneTime = 0;

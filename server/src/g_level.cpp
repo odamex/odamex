@@ -532,6 +532,10 @@ void G_DoResetLevel(bool full_reset)
 	// Clear teamgame state.
 	TeamInfo_ResetScores(full_reset);
 
+	// Reset all keys found
+	for (size_t j = 0; j < NUMCARDS; j++)
+		keysfound[j] = false;
+
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
 	AActor* mo;
@@ -635,8 +639,7 @@ void G_DoResetLevel(bool full_reset)
 	// Force every ingame player to be reborn.
 	for (it = players.begin(); it != players.end(); ++it)
 	{
-		// Spectators aren't reborn.
-		if (!it->ingame() || it->spectator)
+		if (!it->ingame())
 			continue;
 
 		// Set the respawning machinery in motion
@@ -795,6 +798,9 @@ void G_DoLoadLevel (int position)
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
 
+	// [AM] Handle levelstate init (before we handle per-round init).
+	::levelstate.reset();
+
 	// [AM] In sides-based games, destroy objectives that aren't relevant.
 	//      Must happen after saving state.
 	if (G_IsSidesGame())
@@ -810,8 +816,6 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	// [AM] Handle warmup init.
-	::levelstate.reset();
 	//	C_FlushDisplay ();
 }
 
