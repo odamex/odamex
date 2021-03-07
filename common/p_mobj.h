@@ -56,7 +56,7 @@
 
 #include "i_system.h"
 
-#define MAX_NETID UINT32_MAX
+#define MAX_NETID 0xFFFFFFFF
 
 class NetIDHandler
 {
