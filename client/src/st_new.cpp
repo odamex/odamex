@@ -907,7 +907,7 @@ void LevelStateHUD()
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					str = TEXTCOLOR_GOLD "Defend the flag!\n";
+					str = TEXTCOLOR_YELLOW "Defend the flag!\n";
 				}
 				else
 				{
