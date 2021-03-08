@@ -848,11 +848,11 @@ void LevelStateHUD()
 	{
 		// Only render the "FIGHT" message if it's less than 2 seconds in.
 		int tics = ::level.time - ::levelstate.getIngameStartTime();
-		if (tics < TICRATE)
+		if (tics < TICRATE * 2)
 		{
 			::hud_transparency.ForceSet(1.0);
 		}
-		else if (tics < TICRATE * 2)
+		else if (tics < TICRATE * 3)
 		{
 			tics %= TICRATE;
 			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
