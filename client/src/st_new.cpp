@@ -112,6 +112,7 @@ EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
 
 /**
@@ -460,6 +461,29 @@ void ST_voteDraw (int y) {
 namespace hud {
 
 /**
+ * @brief Sometimes we want the HUD to show round wins and not current round points.
+ */
+static bool TeamHUDShowsRoundWins()
+{
+	// If it's not a rounds game, obviously don't show it.
+	if (!G_IsRoundsGame())
+		return false;
+
+	// If score is a wincon and it's 1, we don't want to display the in-round
+	// score since it's always 0-0 except past the end.
+	if (G_UsesScorelimit() && ::sv_scorelimit.asInt() == 1)
+		return true;
+
+	// In TLMS if there's no fraglimit there's no reason to display frags
+	// since team frags are usually an alterantive win condition for when
+	// time runs out.
+	if (G_IsLivesGame() && G_UsesFraglimit() && ::sv_fraglimit.asInt() == 0)
+		return true;
+
+	return false;
+}
+
+/**
  * @brief Draw gametype-specific scoreboard, such as flags and lives.
  */
 static void drawGametype()
@@ -561,9 +585,18 @@ static void drawGametype()
 				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
 			}
 
-			ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
-			                I_GetSurfaceHeight() - (patchPosY + 17) * yscale, ::screen,
-			                teamInfo->Points);
+			if (TeamHUDShowsRoundWins())
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->RoundWins);
+			}
+			else
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->Points);
+			}
 		}
 
 		if (shouldShowLives)
