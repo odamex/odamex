@@ -501,24 +501,6 @@ static void drawGametype()
 	player_t* plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	PlayerResults pr = PlayerQuery().hasLives().execute();
-
-	// Total lives pool.
-	int livesPool[NUMTEAMS];
-	for (size_t i = 0; i < NUMTEAMS; i++)
-	{
-		livesPool[i] = 0;
-	}
-	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
-	     ++it)
-	{
-		team_t team = (*it)->userinfo.team;
-		if (team >= NUMTEAMS || team < 0)
-		{
-			continue;
-		}
-		livesPool[team] += (*it)->lives;
-	}
 
 	int patchPosY = 43;
 
@@ -536,11 +518,11 @@ static void drawGametype()
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 		if (shouldShowScores)
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
 
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 			const patch_t* drawPatch = ::FlagIconTaken[i];
 
 			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
@@ -605,7 +587,7 @@ static void drawGametype()
 			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
 
-			StrFormat(buffer, "%d", livesPool[i]);
+			StrFormat(buffer, "%d", teamInfo->LivesPool());
 			int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
