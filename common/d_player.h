@@ -462,6 +462,7 @@ class PlayerQuery
 	{
 		SORT_NONE,
 		SORT_FRAGS,
+		SORT_LIVES,
 		SORT_WINS,
 	};
 
@@ -527,6 +528,17 @@ class PlayerQuery
 	PlayerQuery& sortFrags()
 	{
 		m_sort = SORT_FRAGS;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top lives count, whomever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortLives()
+	{
+		m_sort = SORT_LIVES;
 		return *this;
 	}
 

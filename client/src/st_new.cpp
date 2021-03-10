@@ -113,6 +113,7 @@ EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
 
 /**
@@ -461,6 +462,29 @@ void ST_voteDraw (int y) {
 namespace hud {
 
 /**
+ * @brief Sometimes we want the HUD to show round wins and not current round points.
+ */
+static bool TeamHUDShowsRoundWins()
+{
+	// If it's not a rounds game, obviously don't show it.
+	if (!G_IsRoundsGame())
+		return false;
+
+	// If score is a wincon and it's 1, we don't want to display the in-round
+	// score since it's always 0-0 except past the end.
+	if (G_UsesScorelimit() && ::sv_scorelimit.asInt() == 1)
+		return true;
+
+	// In TLMS if there's no fraglimit there's no reason to display frags
+	// since team frags are usually an alterantive win condition for when
+	// time runs out.
+	if (G_IsLivesGame() && G_UsesFraglimit() && ::sv_fraglimit.asInt() == 0)
+		return true;
+
+	return false;
+}
+
+/**
  * @brief Draw gametype-specific scoreboard, such as flags and lives.
  */
 static void drawGametype()
@@ -478,24 +502,6 @@ static void drawGametype()
 	player_t* plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	PlayerResults pr = PlayerQuery().hasLives().execute();
-
-	// Total lives pool.
-	int livesPool[NUMTEAMS];
-	for (size_t i = 0; i < NUMTEAMS; i++)
-	{
-		livesPool[i] = 0;
-	}
-	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
-	     ++it)
-	{
-		team_t team = (*it)->userinfo.team;
-		if (team >= NUMTEAMS || team < 0)
-		{
-			continue;
-		}
-		livesPool[team] += (*it)->lives;
-	}
 
 	int patchPosY = 43;
 
@@ -513,11 +519,11 @@ static void drawGametype()
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 		if (shouldShowScores)
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
 
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 			const patch_t* drawPatch = ::FlagIconTaken[i];
 
 			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
@@ -562,9 +568,18 @@ static void drawGametype()
 				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
 			}
 
-			ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
-			                I_GetSurfaceHeight() - (patchPosY + 17) * yscale, ::screen,
-			                teamInfo->Points);
+			if (TeamHUDShowsRoundWins())
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->RoundWins);
+			}
+			else
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->Points);
+			}
 		}
 
 		if (shouldShowLives)
@@ -573,7 +588,7 @@ static void drawGametype()
 			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
 
-			StrFormat(buffer, "%d", livesPool[i]);
+			StrFormat(buffer, "%d", teamInfo->LivesPool());
 			int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
@@ -866,11 +881,11 @@ void LevelStateHUD()
 	{
 		// Only render the "FIGHT" message if it's less than 2 seconds in.
 		int tics = ::level.time - ::levelstate.getIngameStartTime();
-		if (tics < TICRATE)
+		if (tics < TICRATE * 2)
 		{
 			::hud_transparency.ForceSet(1.0);
 		}
-		else if (tics < TICRATE * 2)
+		else if (tics < TICRATE * 3)
 		{
 			tics %= TICRATE;
 			float trans = static_cast<float>(TICRATE - tics) / TICRATE;

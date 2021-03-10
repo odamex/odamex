@@ -164,6 +164,11 @@ static bool cmpFrags(player_t* a, player_t* b)
 	return a->fragcount < b->fragcount;
 }
 
+static bool cmpLives(player_t* a, player_t* b)
+{
+	return a->lives < b->lives;
+}
+
 static bool cmpWins(player_t* a, const player_t* b)
 {
 	return a->roundwins < b->roundwins;
@@ -223,6 +228,28 @@ PlayerResults PlayerQuery::execute()
 			{
 				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
 				                                         : (*it)->fragcount == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	case SORT_LIVES:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpLives);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->lives;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->lives != top
+				                                         : (*it)->lives == top;
 				if (cmp)
 				{
 					it = results.players.erase(it);

@@ -143,7 +143,7 @@ std::vector<player_t *> sortedPlayers(void) {
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpKills);
 	}
-	else if (sv_gametype == GM_DM && g_lives)
+	else if (sv_gametype == GM_DM && G_IsRoundsGame())
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpFrags);
 		std::sort(inGame.begin(), inGame.end(), cmpRoundWins);
