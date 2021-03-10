@@ -164,15 +164,11 @@ message FireWeapon
 	int32 servertic = 2;
 }
 
-// svc_sector
-message Sector
+// svc_updatesector
+message UpdateSector
 {
-	int32 sector = 1;
-	sfixed32 floor_height = 2;
-	sfixed32 ceiling_height = 3;
-	int32 floorpic = 4;
-	int32 ceilingpic = 5;
-	int32 special = 6;
+	int32 sectornum = 1;
+	Sector sector = 2;
 }
 
 // svc_print
@@ -450,24 +446,9 @@ message LineUpdate
 // svc_sectorproperties
 message SectorProperties
 {
-	int32 sector = 1;
+	int32 sectornum = 1;
 	uint32 changes = 2; // bitfield
-	int32 floorpic = 3;
-	int32 ceilingpic = 4;
-	int32 lightlevel = 5;
-	Color color = 6;
-	Color fade = 7;
-	int32 gravity = 8;
-	Vec2 ceiling_offs = 9;
-	Vec2 floor_offs = 10;
-	Vec2 ceiling_scale = 11;
-	Vec2 floor_scale = 12;
-	fixed32 floor_angle = 13;
-	fixed32 ceiling_angle = 14;
-	fixed32 base_ceiling_angle = 15;
-	Vec2 base_ceiling_offs = 17;
-	fixed32 base_floor_angle = 18;
-	Vec2 base_floor_offs = 19;
+	Sector sector = 3;
 }
 
 // svc_linesideupdate

@@ -896,8 +896,9 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;
 
-	msg.set_sector(&sector - ::sectors);
+	msg.set_sectornum(&sector - ::sectors);
 	msg.set_changes(sector.SectorChanges);
+	odaproto::Sector* secmsg = msg.mutable_sector();
 
 	for (int i = 0, prop = 1; prop < SPC_Max; i++)
 	{
@@ -908,58 +909,58 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			msg.set_floorpic(sector.floorpic);
-			msg.set_ceilingpic(sector.ceilingpic);
+			secmsg->set_floorpic(sector.floorpic);
+			secmsg->set_ceilingpic(sector.ceilingpic);
 			break;
 		case SPC_LightLevel:
-			msg.set_lightlevel(sector.lightlevel);
+			secmsg->set_lightlevel(sector.lightlevel);
 			break;
 		case SPC_Color: {
-			odaproto::Color* color = msg.mutable_color();
+			odaproto::Color* color = secmsg->mutable_colormap()->mutable_color();
 			color->set_r(sector.colormap->color.getr());
 			color->set_g(sector.colormap->color.getg());
 			color->set_b(sector.colormap->color.getb());
 			break;
 		}
 		case SPC_Fade: {
-			odaproto::Color* color = msg.mutable_fade();
+			odaproto::Color* color = secmsg->mutable_colormap()->mutable_fade();
 			color->set_r(sector.colormap->fade.getr());
 			color->set_g(sector.colormap->fade.getg());
 			color->set_b(sector.colormap->fade.getb());
 			break;
 		}
 		case SPC_Gravity:
-			msg.set_gravity(sector.gravity);
+			secmsg->set_gravity(sector.gravity);
 			break;
 		case SPC_Panning: {
-			odaproto::Vec2* mc = msg.mutable_ceiling_offs();
+			odaproto::Vec2* mc = secmsg->mutable_ceiling_offs();
 			mc->set_x(sector.ceiling_xoffs);
 			mc->set_y(sector.ceiling_yoffs);
 
-			odaproto::Vec2* mf = msg.mutable_floor_offs();
+			odaproto::Vec2* mf = secmsg->mutable_floor_offs();
 			mf->set_x(sector.floor_xoffs);
 			mf->set_y(sector.floor_yoffs);
 			break;
 		}
 		case SPC_Scale: {
-			odaproto::Vec2* cs = msg.mutable_ceiling_scale();
+			odaproto::Vec2* cs = secmsg->mutable_ceiling_scale();
 			cs->set_x(sector.ceiling_xscale);
 			cs->set_y(sector.ceiling_yscale);
 
-			odaproto::Vec2* fs = msg.mutable_floor_scale();
+			odaproto::Vec2* fs = secmsg->mutable_floor_scale();
 			fs->set_x(sector.floor_xscale);
 			fs->set_y(sector.floor_yscale);
 			break;
 		}
 		case SPC_Rotation:
-			msg.set_floor_angle(sector.floor_angle);
-			msg.set_ceiling_angle(sector.ceiling_angle);
+			secmsg->set_floor_angle(sector.floor_angle);
+			secmsg->set_ceiling_angle(sector.ceiling_angle);
 			break;
 		case SPC_AlignBase:
-			msg.set_base_ceiling_angle(sector.base_ceiling_angle);
-			msg.mutable_base_ceiling_offs()->set_y(sector.base_ceiling_yoffs);
-			msg.set_base_floor_angle(sector.base_floor_angle);
-			msg.mutable_base_floor_offs()->set_y(sector.base_floor_yoffs);
+			secmsg->set_base_ceiling_angle(sector.base_ceiling_angle);
+			secmsg->set_base_ceiling_yoffs(sector.base_ceiling_yoffs);
+			secmsg->set_base_floor_angle(sector.base_floor_angle);
+			secmsg->set_base_floor_yoffs(sector.base_floor_yoffs);
 			break;
 		default:
 			break;

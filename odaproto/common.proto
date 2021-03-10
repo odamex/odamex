@@ -77,3 +77,31 @@ message Player
 	repeated Psp psprites = 17;
 	int32 jumptics = 18;
 }
+
+message Sector
+{
+	message Colormap
+	{
+		Color color = 1;
+		Color fade = 2;
+	}
+
+	sfixed32 floor_height = 1;
+	sfixed32 ceiling_height = 2;
+	int32 floorpic = 3;
+	int32 ceilingpic = 4;
+	int32 lightlevel = 5;
+	int32 special = 6;
+	Vec2 floor_offs = 7;
+	Vec2 ceiling_offs = 8;
+	Vec2 floor_scale = 9;
+	Vec2 ceiling_scale = 10;
+	fixed32 floor_angle = 11;
+	fixed32 ceiling_angle = 12;
+	float gravity = 13;
+	Colormap colormap = 14;
+	sfixed32 base_ceiling_angle = 15;
+	sfixed32 base_ceiling_yoffs = 16;
+	sfixed32 base_floor_angle = 17;
+	sfixed32 base_floor_yoffs = 18;
+}

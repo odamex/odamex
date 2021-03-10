@@ -175,7 +175,7 @@ enum svc_t
 	svc_damageplayer,
 	svc_killmobj,
 	svc_fireweapon,			// [byte]
-	svc_sector,
+	svc_updatesector,
 	svc_print,
 	svc_playermembers,
 	svc_teammembers,

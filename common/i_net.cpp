@@ -997,7 +997,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_damageplayer);
 	SVC_INFO(svc_killmobj);
 	SVC_INFO(svc_fireweapon);
-	SVC_INFO(svc_sector);
+	SVC_INFO(svc_updatesector);
 	SVC_INFO(svc_print);
 	SVC_INFO(svc_playermembers);
 	SVC_INFO(svc_teammembers);

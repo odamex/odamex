@@ -1428,7 +1428,7 @@ void CL_LevelState(const odaproto::svc::LevelState& msg)
  */
 void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 {
-	int secnum = msg.sector();
+	int secnum = msg.sectornum();
 	uint32_t changes = msg.changes();
 
 	sector_t* sector;
@@ -1454,54 +1454,54 @@ void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			sector->floorpic = msg.floorpic();
-			sector->ceilingpic = msg.ceilingpic();
+			sector->floorpic = msg.sector().floorpic();
+			sector->ceilingpic = msg.sector().ceilingpic();
 			break;
 		case SPC_LightLevel:
-			sector->lightlevel = msg.lightlevel();
+			sector->lightlevel = msg.sector().lightlevel();
 			break;
 		case SPC_Color: {
-			byte r = msg.color().r();
-			byte g = msg.color().g();
-			byte b = msg.color().b();
+			byte r = msg.sector().colormap().color().r();
+			byte g = msg.sector().colormap().color().g();
+			byte b = msg.sector().colormap().color().b();
 			sector->colormap = GetSpecialLights(r, g, b, sector->colormap->fade.getr(),
 			                                    sector->colormap->fade.getg(),
 			                                    sector->colormap->fade.getb());
 			break;
 		}
 		case SPC_Fade: {
-			byte r = msg.color().r();
-			byte g = msg.color().g();
-			byte b = msg.color().b();
+			byte r = msg.sector().colormap().fade().r();
+			byte g = msg.sector().colormap().fade().g();
+			byte b = msg.sector().colormap().fade().b();
 			sector->colormap = GetSpecialLights(sector->colormap->color.getr(),
 			                                    sector->colormap->color.getg(),
 			                                    sector->colormap->color.getb(), r, g, b);
 			break;
 		}
 		case SPC_Gravity:
-			*(int*)&sector->gravity = msg.gravity();
+			*(int*)&sector->gravity = msg.sector().gravity();
 			break;
 		case SPC_Panning:
-			sector->ceiling_xoffs = msg.ceiling_offs().x();
-			sector->ceiling_yoffs = msg.ceiling_offs().y();
-			sector->floor_xoffs = msg.floor_offs().x();
-			sector->floor_yoffs = msg.floor_offs().y();
+			sector->ceiling_xoffs = msg.sector().ceiling_offs().x();
+			sector->ceiling_yoffs = msg.sector().ceiling_offs().y();
+			sector->floor_xoffs = msg.sector().floor_offs().x();
+			sector->floor_yoffs = msg.sector().floor_offs().y();
 			break;
 		case SPC_Scale:
-			sector->ceiling_xscale = msg.ceiling_scale().x();
-			sector->ceiling_yscale = msg.ceiling_scale().y();
-			sector->floor_xscale = msg.floor_scale().x();
-			sector->floor_yscale = msg.floor_scale().y();
+			sector->ceiling_xscale = msg.sector().ceiling_scale().x();
+			sector->ceiling_yscale = msg.sector().ceiling_scale().y();
+			sector->floor_xscale = msg.sector().floor_scale().x();
+			sector->floor_yscale = msg.sector().floor_scale().y();
 			break;
 		case SPC_Rotation:
-			sector->floor_angle = msg.floor_angle();
-			sector->ceiling_angle = msg.ceiling_angle();
+			sector->floor_angle = msg.sector().floor_angle();
+			sector->ceiling_angle = msg.sector().ceiling_angle();
 			break;
 		case SPC_AlignBase:
-			sector->base_ceiling_angle = msg.base_ceiling_angle();
-			sector->base_ceiling_yoffs = msg.base_ceiling_offs().y();
-			sector->base_floor_angle = msg.floor_angle();
-			sector->base_floor_yoffs = msg.floor_offs().y();
+			sector->base_ceiling_angle = msg.sector().base_ceiling_angle();
+			sector->base_ceiling_yoffs = msg.sector().base_ceiling_yoffs();
+			sector->base_floor_angle = msg.sector().base_floor_angle();
+			sector->base_floor_yoffs = msg.sector().base_floor_yoffs();
 		default:
 			break;
 		}

@@ -2541,7 +2541,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
-		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
+		SERVER_MSG_FUNC(svc_updatesector, CL_UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
 		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
 		                  odaproto::svc::PlayerMembers);
