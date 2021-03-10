@@ -1893,37 +1893,6 @@ void CL_TryToConnect(DWORD server_token)
 
 EXTERN_CVAR (show_messages)
 
-//
-// CL_Print
-//
-void CL_Print (void)
-{
-	byte level = MSG_ReadByte();
-	const char *str = MSG_ReadString();
-
-	// Disallow getting NORCON messages
-	if (level == PRINT_NORCON)
-		return;
-
-	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
-	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);	
-	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
-	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
-	else
-		Printf(level, "%s", str);
-
-	if (show_messages)
-	{
-		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-		else if (level == PRINT_TEAMCHAT)
-			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-	}
-}
-
 // Print a message in the middle of the screen
 void CL_MidPrint (void)
 {
@@ -2503,7 +2472,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
 		SERVER_PROTO_FUNC(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
-		SERVER_MSG_FUNC(svc_print, CL_Print);
+		SERVER_PROTO_FUNC(svc_print, CL_Print, odaproto::svc::Print);
 		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
 		                  odaproto::svc::PlayerMembers);
 		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);

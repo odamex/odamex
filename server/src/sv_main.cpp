@@ -138,10 +138,8 @@ CVAR_FUNC_IMPL (sv_maxclients)
 	{
 		if (count <= 0)
 		{
-			MSG_WriteMarker(&(it->client.reliablebuf), svc_print);
-			MSG_WriteByte(&(it->client.reliablebuf), PRINT_CHAT);
-			MSG_WriteString(&(it->client.reliablebuf),
-			                "Client limit reduced. Please try connecting again later.\n");
+			SVC_Print(it->client.reliablebuf, PRINT_CHAT,
+			          "Client limit reduced. Please try connecting again later.\n");
 			SV_DropClient(*it);
 			it = SV_RemoveDisconnectedPlayer(it);
 		}
@@ -180,10 +178,8 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 					SVC_PlayerMembers(pit->client.reliablebuf, *it, SVC_PM_SPECTATOR);
 
 				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
-				MSG_WriteMarker(&it->client.reliablebuf, svc_print);
-				MSG_WriteByte(&it->client.reliablebuf, PRINT_CHAT);
-				MSG_WriteString(&it->client.reliablebuf,
-								"Active player limit reduced. You are now a spectator!\n");
+				SVC_Print(it->client.reliablebuf, PRINT_CHAT,
+				          "Active player limit reduced. You are now a spectator!\n");
 			}
 		}
 	}
@@ -1774,10 +1770,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_print);
-		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf,
-                        (const char *)FormattedString.str().c_str());
+		SVC_Print(cl->reliablebuf, PRINT_HIGH, FormattedString.str());
 
 		SVC_Disconnect(cl->reliablebuf);
 
@@ -1912,9 +1905,8 @@ void SV_ConnectClient()
 	{
 		Printf("%s disconnected (password failed).\n", NET_AdrToString(net_from));
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_print);
-		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf, "Server is passworded, no password specified or bad password.\n");
+		SVC_Print(cl->reliablebuf, PRINT_HIGH,
+		          "Server is passworded, no password specified or bad password.\n");
 
 		SV_SendPacket(*player);
 		SV_DropClient(*player);
@@ -2445,9 +2437,7 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 	{
 		cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, (byte)printlevel);
-		MSG_WriteString (&cl->reliablebuf, string.c_str());
+		SVC_Print(cl->reliablebuf, static_cast<printlevel_t>(printlevel), string);
 	}
 }
 
@@ -2485,9 +2475,7 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 		bool spectator = it->spectator || !it->ingame();
 		if (spectator)
 		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_print);
-			MSG_WriteByte(&cl->reliablebuf, level);
-			MSG_WriteString(&cl->reliablebuf, string);
+			SVC_Print(cl->reliablebuf, static_cast<printlevel_t>(level), string);
 		}
 	}
 }
@@ -2502,9 +2490,7 @@ void STACK_ARGS SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...)
 	vsprintf(string, fmt, argptr);
 	va_end(argptr);
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_print);
-	MSG_WriteByte(&cl->reliablebuf, level);
-	MSG_WriteString(&cl->reliablebuf, string);
+	SVC_Print(cl->reliablebuf, static_cast<printlevel_t>(level), string);
 }
 
 // Print directly to a specific player.
@@ -2518,9 +2504,7 @@ void STACK_ARGS SV_PlayerPrintf(int level, int player_id, const char *fmt, ...)
 	va_end(argptr);
 
 	client_t* cl = &idplayer(player_id).client;
-	MSG_WriteMarker(&cl->reliablebuf, svc_print);
-	MSG_WriteByte(&cl->reliablebuf, level);
-	MSG_WriteString(&cl->reliablebuf, string);
+	SVC_Print(cl->reliablebuf, static_cast<printlevel_t>(level), string);
 }
 
 void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
@@ -2553,9 +2537,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_print);
-		MSG_WriteByte(&cl->reliablebuf, level);
-		MSG_WriteString(&cl->reliablebuf, string);
+		SVC_Print(cl->reliablebuf, static_cast<printlevel_t>(level), string);
 	}
 }
 
@@ -3814,9 +3796,7 @@ void SV_RConPassword (player_t &player)
 	else
 	{
 		Printf(PRINT_HIGH, "RCON login failure from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString (&cl->reliablebuf, "Bad password\n");
+		SVC_Print(cl->reliablebuf, PRINT_HIGH, "Bad password\n");
 	}
 }
 
@@ -3936,9 +3916,7 @@ void SV_WantWad(player_t &player)
 		MSG_ReadString();
 		MSG_ReadLong();
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_print);
-		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf, "Server: Downloading is disabled\n");
+		SVC_Print(cl->reliablebuf, PRINT_HIGH, "Server: Downloading is disabled\n");
 
 		SV_DropClient(player);
 		return;
@@ -3983,9 +3961,7 @@ void SV_WantWad(player_t &player)
 
 	if (i == wadfiles.size())
 	{
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString (&cl->reliablebuf, "Server: Bad wad request\n");
+		SVC_Print(cl->reliablebuf, PRINT_HIGH, "Server: Bad wad request\n");
 		SV_DropClient(player);
 		return;
 	}
@@ -3993,12 +3969,11 @@ void SV_WantWad(player_t &player)
 	// denis - do not download commercial wads
 	if (W_IsIWAD(wadfiles[i]))
 	{
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		std::string message;
 		StrFormat(message, "Server: %s is a commercial wad and will not be downloaded\n",
 		          wadfiles[i].getBasename().c_str());
-		MSG_WriteString(&cl->reliablebuf, message.c_str());
+
+		SVC_Print(cl->reliablebuf, PRINT_HIGH, message);
 
 		SV_DropClient(player);
 		return;

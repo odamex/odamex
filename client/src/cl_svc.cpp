@@ -30,12 +30,13 @@
 #include "c_effect.h"
 #include "cl_main.h"
 #include "cmdlib.h"
-#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
+#include "doomstat.h"
 #include "g_gametype.h"
 #include "g_level.h"
 #include "g_levelstate.h"
+#include "gi.h"
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_resfile.h"
@@ -47,6 +48,7 @@
 #include "r_state.h"
 #include "s_sound.h"
 #include "st_stuff.h"
+#include "v_textcolors.h"
 
 // Extern data from other files.
 
@@ -59,6 +61,7 @@ EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
+EXTERN_CVAR(show_messages)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -1124,6 +1127,41 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
 
 	SectorSnapshot snap(last_svgametic, sector);
 	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+//
+// CL_Print
+//
+void CL_Print(const odaproto::svc::Print& msg)
+{
+	printlevel_t level = static_cast<printlevel_t>(msg.level());
+	std::string str = msg.message();
+
+	// Protect against out of bounds print levels.
+	if (level < 0 || level >= PRINT_MAXPRINT)
+		return;
+
+	// Disallow getting NORCON messages
+	if (level == PRINT_NORCON)
+		return;
+
+	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
+	if (level == PRINT_CHAT)
+		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str.c_str());
+	else if (level == PRINT_TEAMCHAT)
+		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str.c_str());
+	else if (level == PRINT_SERVERCHAT)
+		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str.c_str());
+	else
+		Printf(level, "%s", str.c_str());
+
+	if (::show_messages)
+	{
+		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
+			S_Sound(CHAN_INTERFACE, ::gameinfo.chatSound, 1, ATTN_NONE);
+		else if (level == PRINT_TEAMCHAT)
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+	}
 }
 
 /**

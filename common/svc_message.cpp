@@ -586,6 +586,17 @@ void SVC_UpdateSector(buf_t& b, sector_t& sector)
 	MSG_WriteProto(&b, msg);
 }
 
+void SVC_Print(buf_t& b, printlevel_t level, const std::string& str)
+{
+	odaproto::svc::Print msg;
+
+	msg.set_level(level);
+	msg.set_message(str);
+
+	MSG_WriteMarker(&b, svc_print);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Persist player information to the client that is less vital.
  *
