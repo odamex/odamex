@@ -1088,6 +1088,44 @@ void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
 	}
 }
 
+//
+// CL_UpdateSector
+// Updates floorheight and ceilingheight of a sector.
+//
+void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
+{
+	int sectornum = msg.sectornum();
+	fixed_t floorheight = msg.sector().floor_height();
+	fixed_t ceilingheight = msg.sector().ceiling_height();
+	int floorpic = msg.sector().floorpic();
+	int ceilingpic = msg.sector().ceilingpic();
+	int special = msg.sector().special();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+	sector_t* sector = &::sectors[sectornum];
+	P_SetCeilingHeight(sector, ceilingheight);
+	P_SetFloorHeight(sector, floorheight);
+
+	if (floorpic >= ::numflats)
+		floorpic = ::numflats;
+
+	sector->floorpic = floorpic;
+
+	if (ceilingpic >= ::numflats)
+		ceilingpic = ::numflats;
+
+	sector->ceilingpic = ceilingpic;
+	sector->special = special;
+	sector->moveable = true;
+
+	P_ChangeSector(sector, false);
+
+	SectorSnapshot snap(last_svgametic, sector);
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
 /**
  * @brief Updates less-vital members of a player struct.
  */
@@ -1317,12 +1355,10 @@ void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 		snap.setFloorCrush(snap.getCeilingCrush());
 	}
 
-	if (!sectors || sectornum >= numsectors)
-	{
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
-	}
 
-	snap.setSector(&sectors[sectornum]);
+	snap.setSector(&::sectors[sectornum]);
 
 	sector_snaps[sectornum].addSnapshot(snap);
 }
@@ -1434,9 +1470,9 @@ void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 	sector_t* sector;
 	sector_t empty;
 
-	if (secnum > -1 && secnum < numsectors)
+	if (secnum > -1 && secnum < ::numsectors)
 	{
-		sector = &sectors[secnum];
+		sector = &::sectors[secnum];
 	}
 	else
 	{
@@ -1542,13 +1578,13 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		fixed_t dx = msg.scroller().scroll_x();
 		fixed_t dy = msg.scroller().scroll_y();
 		int affectee = msg.scroller().affectee();
-		if (numsides <= 0 || numsectors <= 0)
+		if (::numsides <= 0 || ::numsectors <= 0)
 			break;
 		if (affectee < 0)
 			break;
-		if (scrollType == DScroller::sc_side && affectee > numsides)
+		if (scrollType == DScroller::sc_side && affectee > ::numsides)
 			break;
-		if (scrollType != DScroller::sc_side && affectee > numsectors)
+		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
 
 		new DScroller(scrollType, dx, dy, -1, affectee, 0);
@@ -1558,30 +1594,30 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		short secnum = msg.fire_flicker().sector();
 		int min = msg.fire_flicker().min_light();
 		int max = msg.fire_flicker().max_light();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
-			new DFireFlicker(&sectors[secnum], max, min);
+		if (secnum < ::numsectors)
+			new DFireFlicker(&::sectors[secnum], max, min);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kFlicker: {
 		short secnum = msg.flicker().sector();
 		int min = msg.flicker().min_light();
 		int max = msg.flicker().max_light();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
-			new DFlicker(&sectors[secnum], max, min);
+		if (secnum < ::numsectors)
+			new DFlicker(&::sectors[secnum], max, min);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kLightFlash: {
 		short secnum = msg.light_flash().sector();
 		int min = msg.light_flash().min_light();
 		int max = msg.light_flash().max_light();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
-			new DLightFlash(&sectors[secnum], min, max);
+		if (secnum < ::numsectors)
+			new DLightFlash(&::sectors[secnum], min, max);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kStrobe: {
@@ -1591,21 +1627,21 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		int dark = msg.strobe().dark_time();
 		int bright = msg.strobe().bright_time();
 		int count = msg.strobe().count();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
+		if (secnum < ::numsectors)
 		{
-			DStrobe* strobe = new DStrobe(&sectors[secnum], max, min, bright, dark);
+			DStrobe* strobe = new DStrobe(&::sectors[secnum], max, min, bright, dark);
 			strobe->SetCount(count);
 		}
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kGlow: {
 		short secnum = msg.glow().sector();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
-			new DGlow(&sectors[secnum]);
+		if (secnum < ::numsectors)
+			new DGlow(&::sectors[secnum]);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kGlow2: {
@@ -1614,20 +1650,20 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		int end = msg.glow2().end();
 		int tics = msg.glow2().max_tics();
 		bool oneShot = msg.glow2().one_shot();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
-			new DGlow2(&sectors[secnum], start, end, tics, oneShot);
+		if (secnum < ::numsectors)
+			new DGlow2(&::sectors[secnum], start, end, tics, oneShot);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kPhased: {
 		short secnum = msg.phased().sector();
 		int base = msg.phased().base_level();
 		int phase = msg.phased().phase();
-		if (numsectors <= 0)
+		if (::numsectors <= 0)
 			break;
-		if (secnum < numsectors)
-			new DPhased(&sectors[secnum], base, phase);
+		if (secnum < ::numsectors)
+			new DPhased(&::sectors[secnum], base, phase);
 		break;
 	}
 	default:

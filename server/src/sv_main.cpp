@@ -1279,13 +1279,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	// Only update moveable sectors to clients
 	if (sector != NULL && sector->moveable)
 	{
-		MSG_WriteMarker(&cl->reliablebuf, svc_updatesector);
-		MSG_WriteShort(&cl->reliablebuf, sectornum);
-		MSG_WriteShort(&cl->reliablebuf, P_FloorHeight(sector) >> FRACBITS);
-		MSG_WriteShort(&cl->reliablebuf, P_CeilingHeight(sector) >> FRACBITS);
-		MSG_WriteShort(&cl->reliablebuf, sector->floorpic);
-		MSG_WriteShort(&cl->reliablebuf, sector->ceilingpic);
-		MSG_WriteShort(&cl->reliablebuf, sector->special);
+		SVC_UpdateSector(cl->reliablebuf, *sector);
 	}
 }
 

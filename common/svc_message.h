@@ -60,6 +60,7 @@ void SVC_DamagePlayer(buf_t& b, player_t& player, int health, int armor);
 void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
                   bool joinkill);
 void SVC_FireWeapon(buf_t& b, player_t& player);
+void SVC_UpdateSector(buf_t& b, sector_t& sector);
 void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);
 void SVC_TeamMembers(buf_t& b, team_t team);
 void SVC_ActivateLine(buf_t& b, line_t* line, AActor* mo, int side,

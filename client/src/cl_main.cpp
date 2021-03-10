@@ -2178,45 +2178,6 @@ void CL_SecretEvent()
 }
 
 //
-// CL_UpdateSector
-// Updates floorheight and ceilingheight of a sector.
-//
-void CL_UpdateSector(void)
-{
-	unsigned short sectornum = (unsigned short)MSG_ReadShort();
-	unsigned short floorheight = MSG_ReadShort();
-	unsigned short ceilingheight = MSG_ReadShort();
-
-	unsigned short fp = MSG_ReadShort();
-	unsigned short cp = MSG_ReadShort();
-	short special = MSG_ReadShort();
-
-	if (!sectors || sectornum >= numsectors)
-		return;
-
-	sector_t *sector = &sectors[sectornum];
-	P_SetCeilingHeight(sector, ceilingheight << FRACBITS);
-	P_SetFloorHeight(sector, floorheight << FRACBITS);
-
-	if(fp >= numflats)
-		fp = numflats;
-
-	sector->floorpic = fp;
-
-	if(cp >= numflats)
-		cp = numflats;
-
-	sector->ceilingpic = cp;
-	sector->special = special;
-	sector->moveable = true;
-
-	P_ChangeSector(sector, false);
-
-	SectorSnapshot snap(last_svgametic, sector);
-	sector_snaps[sectornum].addSnapshot(snap);
-}
-
-//
 // CL_CheckMissedPacket
 //
 void CL_CheckMissedPacket(void)
@@ -2541,7 +2502,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
-		SERVER_MSG_FUNC(svc_updatesector, CL_UpdateSector);
+		SERVER_PROTO_FUNC(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
 		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
 		                  odaproto::svc::PlayerMembers);

@@ -558,7 +558,6 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 	MSG_WriteProto(&b, msg);
 }
 
-
 void SVC_FireWeapon(buf_t& b, player_t& player)
 {
 	odaproto::svc::FireWeapon msg;
@@ -567,6 +566,23 @@ void SVC_FireWeapon(buf_t& b, player_t& player)
 	msg.set_servertic(player.tic);
 
 	MSG_WriteMarker(&b, svc_fireweapon);
+	MSG_WriteProto(&b, msg);
+}
+
+void SVC_UpdateSector(buf_t& b, sector_t& sector)
+{
+	odaproto::svc::UpdateSector msg;
+
+	msg.set_sectornum(&sector - ::sectors);
+	odaproto::Sector* secmsg = msg.mutable_sector();
+
+	secmsg->set_floor_height(P_FloorHeight(&sector));
+	secmsg->set_ceiling_height(P_CeilingHeight(&sector));
+	secmsg->set_floorpic(sector.floorpic);
+	secmsg->set_ceilingpic(sector.ceilingpic);
+	secmsg->set_special(sector.special);
+
+	MSG_WriteMarker(&b, svc_updatesector);
 	MSG_WriteProto(&b, msg);
 }
 
@@ -655,7 +671,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 {
 	odaproto::svc::MovingSector msg;
 
-	ptrdiff_t sectornum = &sector - sectors;
+	ptrdiff_t sectornum = &sector - ::sectors;
 
 	// Determine which moving planes are in this sector - governs which
 	// fields to send to the other side.
@@ -879,7 +895,7 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
  */
 void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 {
-	sector_t* sector = &sectors[sectornum];
+	sector_t* sector = &::sectors[sectornum];
 
 	// Only update secret sectors that've been discovered.
 	// [AM} FIXME: This function should not contain this kind of logic.
