@@ -2078,31 +2078,6 @@ void CL_RailTrail()
 	P_DrawRailTrail(start, end);
 }
 
-///////////////////////////////////////////////////////////
-///// CL_Fire* called when someone uses a weapon  /////////
-///////////////////////////////////////////////////////////
-
-// [tm512] attempt at squashing weapon desyncs.
-// The server will send us what weapon we fired, and if that
-// doesn't match the weapon we have up at the moment, fix it
-// and request that we get a full update of playerinfo - apr 14 2012
-void CL_FireWeapon (void)
-{
-	player_t *p = &consoleplayer ();
-	weapontype_t firedweap = (weapontype_t) MSG_ReadByte ();
-	int servertic = MSG_ReadLong ();
-
-	if (firedweap != p->readyweapon)
-	{
-		DPrintf("CL_FireWeapon: weapon misprediction\n");
-		A_ForceWeaponFire(p->mo, firedweap, servertic);
-
-		// Request the player's ammo status from the server
-		MSG_WriteMarker (&net_buffer, clc_getplayerinfo);
-	}
-
-}
-
 //
 // CL_ChangeWeapon
 // [ML] From Zdaemon .99
@@ -2565,7 +2540,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
-		SERVER_MSG_FUNC(svc_fireweapon, CL_FireWeapon);
+		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
 		SERVER_MSG_FUNC(svc_sector, CL_UpdateSector);
 		SERVER_MSG_FUNC(svc_print, CL_Print);
 		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,

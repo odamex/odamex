@@ -1058,6 +1058,36 @@ void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 	P_KillMobj(source, target, inflictor, joinkill);
 }
 
+///////////////////////////////////////////////////////////
+///// CL_Fire* called when someone uses a weapon  /////////
+///////////////////////////////////////////////////////////
+
+// [tm512] attempt at squashing weapon desyncs.
+// The server will send us what weapon we fired, and if that
+// doesn't match the weapon we have up at the moment, fix it
+// and request that we get a full update of playerinfo - apr 14 2012
+void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
+{
+	player_t* p = &consoleplayer();
+
+	weapontype_t firedweap = static_cast < weapontype_t>(msg.readyweapon());
+	if (firedweap < 0 || firedweap > wp_nochange)
+	{
+		Printf("CL_FireWeapon: unknown weapon %d\n", firedweap);
+		return;
+	}
+	int servertic = msg.servertic();
+
+	if (firedweap != p->readyweapon)
+	{
+		DPrintf("CL_FireWeapon: weapon misprediction\n");
+		A_ForceWeaponFire(p->mo, firedweap, servertic);
+
+		// Request the player's ammo status from the server
+		MSG_WriteMarker(&net_buffer, clc_getplayerinfo);
+	}
+}
+
 /**
  * @brief Updates less-vital members of a player struct.
  */

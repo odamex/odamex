@@ -558,6 +558,18 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 	MSG_WriteProto(&b, msg);
 }
 
+
+void SVC_FireWeapon(buf_t& b, player_t& player)
+{
+	odaproto::svc::FireWeapon msg;
+
+	msg.set_readyweapon(player.readyweapon);
+	msg.set_servertic(player.tic);
+
+	MSG_WriteMarker(&b, svc_fireweapon);
+	MSG_WriteProto(&b, msg);
+}
+
 /**
  * @brief Persist player information to the client that is less vital.
  *

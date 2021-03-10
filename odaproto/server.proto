@@ -161,7 +161,7 @@ message KillMobj
 message FireWeapon
 {
 	int32 readyweapon = 1;
-	int32 tic = 2;
+	int32 servertic = 2;
 }
 
 // svc_sector
