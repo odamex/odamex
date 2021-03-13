@@ -2417,7 +2417,10 @@ static void RecordProto(google::protobuf::Message* msg)
 		protostic = ::level.time;
 	}
 
-	::protos.push_back({msg->GetTypeName(), msg->DebugString()});
+	Proto proto;
+	proto.name = msg->GetTypeName();
+	proto.data = msg->DebugString();
+	::protos.push_back(proto);
 }
 
 const Protos& CL_GetTicProtos()
