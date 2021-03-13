@@ -294,6 +294,14 @@ enum svc_compressed_masks
 	minilzo_mask = 8
 };
 
+namespace google
+{
+namespace protobuf
+{
+class Message;
+}
+} // namespace google
+
 typedef struct
 {
    byte    ip[4];
@@ -740,14 +748,7 @@ void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
-
-template <typename MSG>
-void MSG_WriteProto(buf_t* b, MSG msg)
-{
-	std::string str = msg.SerializeAsString();
-	MSG_WriteUnVarint(b, str.size());
-	MSG_WriteChunk(b, str.data(), str.size());
-}
+void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);

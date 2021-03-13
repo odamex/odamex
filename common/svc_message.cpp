@@ -28,13 +28,12 @@
 
 #include "svc_message.h"
 
+#include "common.pb.h"
 #include "d_main.h"
 #include "i_system.h"
 #include "p_lnspec.h"
 #include "p_local.h"
 #include "p_unlag.h"
-#include "common.pb.h"
-#include "server.pb.h"
 
 /**
  * @brief Pack an array of booleans into a bitfield.
@@ -52,22 +51,22 @@ static uint32_t PackBoolArray(const bool* bools, size_t count)
 	return out;
 }
 
-void SVC_Disconnect(buf_t& b, const char* message)
+odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 {
 	odaproto::svc::Disconnect msg;
+
 	if (message != NULL)
 	{
 		msg.set_message(message);
 	}
 
-	MSG_WriteMarker(&b, svc_disconnect);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Send information about a player.
  */
-void SVC_PlayerInfo(buf_t& b, player_t& player)
+odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
@@ -97,14 +96,13 @@ void SVC_PlayerInfo(buf_t& b, player_t& player)
 		msg.mutable_player()->add_powers(player.powers[i]);
 	}
 
-	MSG_WriteMarker(&b, svc_playerinfo);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Change the location of a player.
  */
-void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
+odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic)
 {
 	odaproto::svc::MovePlayer msg;
 
@@ -146,17 +144,17 @@ void SVC_MovePlayer(buf_t& b, player_t& player, const int tic)
 	pl->mutable_powers()->Resize(pw_invisibility + 1, 0);
 	pl->set_powers(pw_invisibility, player.powers[pw_invisibility]);
 
-	MSG_WriteMarker(&b, svc_moveplayer);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Send the local player position for a client.
  */
-void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(AActor& mo, const int tic)
 {
-	// client player will update his position if packets were missed
 	odaproto::svc::UpdateLocalPlayer msg;
+
+	// client player will update his position if packets were missed
 	odaproto::Actor* act = msg.mutable_actor();
 
 	// client-tic of the most recently processed ticcmd for this client
@@ -174,8 +172,7 @@ void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
 
 	act->set_waterlevel(mo.waterlevel);
 
-	MSG_WriteMarker(&b, svc_updatelocalplayer);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
@@ -185,7 +182,7 @@ void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic)
  * @param locals Level locals struct to send.
  * @param flags SVC_LL_* bit flags to designate what gets sent.
  */
-void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
+odaproto::svc::LevelLocals SVC_LevelLocals(const level_locals_t& locals, uint32_t flags)
 {
 	odaproto::svc::LevelLocals msg;
 
@@ -223,37 +220,35 @@ void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags)
 		msg.set_respawned_monsters(locals.respawned_monsters);
 	}
 
-	MSG_WriteMarker(&b, svc_levellocals);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Send the server's current time in MS to the client.
  */
-void SVC_PingRequest(buf_t& b)
+odaproto::svc::PingRequest SVC_PingRequest()
 {
 	odaproto::svc::PingRequest msg;
 
 	msg.set_ms_time(I_MSTime());
 
-	MSG_WriteMarker(&b, svc_pingrequest);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_UpdatePing(buf_t& b, player_t& player)
+odaproto::svc::UpdatePing SVC_UpdatePing(player_t& player)
 {
 	odaproto::svc::UpdatePing msg;
 
 	msg.set_pid(player.id);
 	msg.set_ping(player.ping);
 
-	MSG_WriteMarker(&b, svc_updateping);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_SpawnMobj(buf_t& b, AActor* mo)
+odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 {
 	odaproto::svc::SpawnMobj msg;
+
 	odaproto::Actor* actor = msg.mutable_actor();
 	odaproto::Vec3* pos = actor->mutable_pos();
 
@@ -268,7 +263,9 @@ void SVC_SpawnMobj(buf_t& b, AActor* mo)
 	actor->set_type(mo->type);
 	actor->set_netid(mo->netid);
 	actor->set_rndindex(mo->rndindex);
-	actor->set_statenum(mo->state - states); // denis - sending state fixes monster ghosts appearing under doors
+	actor->set_statenum(
+	    mo->state -
+	    states); // denis - sending state fixes monster ghosts appearing under doors
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -282,7 +279,7 @@ void SVC_SpawnMobj(buf_t& b, AActor* mo)
 	}
 
 	// denis - check type as that is what the client will be spawning
-	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) 
+	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
 	{
 		flags |= SVC_SM_MISSILE;
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
@@ -308,26 +305,24 @@ void SVC_SpawnMobj(buf_t& b, AActor* mo)
 
 	msg.set_flags(flags);
 
-	MSG_WriteMarker(&b, svc_spawnmobj);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_DisconnectClient(buf_t& b, player_t& player)
+odaproto::svc::DisconnectClient SVC_DisconnectClient(player_t& player)
 {
 	odaproto::svc::DisconnectClient msg;
 
 	msg.set_pid(player.id);
 
-	MSG_WriteMarker(&b, svc_disconnectclient);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.
  */
-void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
-                 const std::string& mapname, int time)
+odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& patchnames,
+                                   const std::string& mapname, int time)
 {
 	odaproto::svc::LoadMap msg;
 
@@ -352,42 +347,39 @@ void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchname
 	msg.set_mapname(mapname);
 	msg.set_time(time);
 
-	MSG_WriteMarker(&b, svc_loadmap);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_ConsolePlayer(buf_t& b, player_t& player, const std::string& digest)
+odaproto::svc::ConsolePlayer SVC_ConsolePlayer(player_t& player,
+                                               const std::string& digest)
 {
 	odaproto::svc::ConsolePlayer msg;
 
 	msg.set_pid(player.id);
 	msg.set_digest(digest);
 
-	MSG_WriteMarker(&b, svc_consoleplayer);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_ExplodeMissile(buf_t& b, AActor& mobj)
+odaproto::svc::ExplodeMissile SVC_ExplodeMissile(AActor& mobj)
 {
 	odaproto::svc::ExplodeMissile msg;
 
 	msg.set_netid(mobj.netid);
 
-	MSG_WriteMarker(&b, svc_explodemissile);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_RemoveMobj(buf_t& b, AActor& mobj)
+odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj)
 {
 	odaproto::svc::RemoveMobj msg;
 
 	msg.set_netid(mobj.netid);
 
-	MSG_WriteMarker(&b, svc_removemobj);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_UserInfo(buf_t& b, player_t& player, int64_t time)
+odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 {
 	odaproto::svc::UserInfo msg;
 
@@ -403,17 +395,17 @@ void SVC_UserInfo(buf_t& b, player_t& player, int64_t time)
 
 	msg.set_join_time(time);
 
-	MSG_WriteMarker(&b, svc_userinfo);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Move a mobj to a new location.  If it's a player, it will update
  *        the client's snapshot.
  */
-void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags)
+odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags)
 {
 	odaproto::svc::UpdateMobj msg;
+
 	odaproto::Actor* act = msg.mutable_actor();
 
 	msg.set_flags(flags);
@@ -452,11 +444,10 @@ void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags)
 		act->set_tracerid(mobj.target ? mobj.target->netid : 0);
 	}
 
-	MSG_WriteMarker(&b, svc_updatemobj);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_SpawnPlayer(buf_t& b, player_t& player)
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 {
 	odaproto::svc::SpawnPlayer msg;
 
@@ -479,11 +470,10 @@ void SVC_SpawnPlayer(buf_t& b, player_t& player)
 		act->set_netid(MAXSHORT);
 	}
 
-	MSG_WriteMarker(&b, svc_spawnplayer);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_DamagePlayer(buf_t& b, player_t& player, int health, int armor)
+odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, int health, int armor)
 {
 	odaproto::svc::DamagePlayer msg;
 
@@ -491,17 +481,17 @@ void SVC_DamagePlayer(buf_t& b, player_t& player, int health, int armor)
 	msg.set_health_damage(health);
 	msg.set_armor_damage(armor);
 
-	MSG_WriteMarker(&b, svc_damageplayer);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Kill a mobj.
  */
-void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
-                  bool joinkill)
+odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inflictor,
+                                     int mod, bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
+
 	odaproto::Actor* tgt = msg.mutable_target();
 
 	if (source)
@@ -554,22 +544,20 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 	tgtmom->set_y(target->momy);
 	tgtmom->set_z(target->momz);
 
-	MSG_WriteMarker(&b, svc_killmobj);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_FireWeapon(buf_t& b, player_t& player)
+odaproto::svc::FireWeapon SVC_FireWeapon(player_t& player)
 {
 	odaproto::svc::FireWeapon msg;
 
 	msg.set_readyweapon(player.readyweapon);
 	msg.set_servertic(player.tic);
 
-	MSG_WriteMarker(&b, svc_fireweapon);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_UpdateSector(buf_t& b, sector_t& sector)
+odaproto::svc::UpdateSector SVC_UpdateSector(sector_t& sector)
 {
 	odaproto::svc::UpdateSector msg;
 
@@ -582,19 +570,17 @@ void SVC_UpdateSector(buf_t& b, sector_t& sector)
 	secmsg->set_ceilingpic(sector.ceilingpic);
 	secmsg->set_special(sector.special);
 
-	MSG_WriteMarker(&b, svc_updatesector);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_Print(buf_t& b, printlevel_t level, const std::string& str)
+odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str)
 {
 	odaproto::svc::Print msg;
 
 	msg.set_level(level);
 	msg.set_message(str);
 
-	MSG_WriteMarker(&b, svc_print);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
@@ -604,7 +590,7 @@ void SVC_Print(buf_t& b, printlevel_t level, const std::string& str)
  * @param player Player to send information about.
  * @param flags SVC_PM_* flags to designate what gets sent.
  */
-void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
+odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 {
 	odaproto::svc::PlayerMembers msg;
 
@@ -643,14 +629,13 @@ void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags)
 		msg.set_totaldeaths(player.totaldeaths);
 	}
 
-	MSG_WriteMarker(&b, svc_playermembers);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * Persist mutable team information to the client.
  */
-void SVC_TeamMembers(buf_t& b, team_t team)
+odaproto::svc::TeamMembers SVC_TeamMembers(team_t team)
 {
 	odaproto::svc::TeamMembers msg;
 
@@ -660,12 +645,11 @@ void SVC_TeamMembers(buf_t& b, team_t team)
 	msg.set_points(info->Points);
 	msg.set_roundwins(info->RoundWins);
 
-	MSG_WriteMarker(&b, svc_teammembers);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_ActivateLine(buf_t& b, line_t* line, AActor* mo, int side,
-                      LineActivationType type)
+odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
+                                             LineActivationType type)
 {
 	odaproto::svc::ActivateLine msg;
 
@@ -674,11 +658,10 @@ void SVC_ActivateLine(buf_t& b, line_t* line, AActor* mo, int side,
 	msg.set_side(side);
 	msg.set_activation_type(type);
 
-	MSG_WriteMarker(&b, svc_activateline);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_MovingSector(buf_t& b, const sector_t& sector)
+odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 {
 	odaproto::svc::MovingSector msg;
 
@@ -718,7 +701,7 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 	// no moving planes?  skip it.
 	if (ceiling_mover == SEC_INVALID && floor_mover == SEC_INVALID)
 	{
-		return;
+		return msg;
 	}
 
 	// Create bitfield to denote moving planes in this sector
@@ -834,14 +817,13 @@ void SVC_MovingSector(buf_t& b, const sector_t& sector)
 		floor->set_floor_lip(Plat->m_Lip);
 	}
 
-	MSG_WriteMarker(&b, svc_movingsector);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Send information about a player
  */
-void SVC_PlayerState(buf_t& b, player_t& player)
+odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 {
 	odaproto::svc::PlayerState msg;
 
@@ -879,14 +861,13 @@ void SVC_PlayerState(buf_t& b, player_t& player)
 		pl->add_powers(player.powers[i]);
 	}
 
-	MSG_WriteMarker(&b, svc_playerstate);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
  * @brief Send information about the server's LevelState to the client.
  */
-void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
+odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls)
 {
 	odaproto::svc::LevelState msg;
 
@@ -897,8 +878,7 @@ void SVC_LevelState(buf_t& b, const SerializedLevelState& sls)
 	msg.set_last_wininfo_type(sls.last_wininfo_type);
 	msg.set_last_wininfo_id(sls.last_wininfo_id);
 
-	MSG_WriteMarker(&b, svc_levelstate);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 /**
@@ -919,7 +899,7 @@ void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
 	}
 }
 
-void SVC_SectorProperties(buf_t& b, sector_t& sector)
+odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;
 
@@ -994,12 +974,11 @@ void SVC_SectorProperties(buf_t& b, sector_t& sector)
 		}
 	}
 
-	MSG_WriteMarker(&b, svc_sectorproperties);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_ExecuteLineSpecial(buf_t& b, byte special, line_t* line, AActor* mo,
-                            const int (&args)[5])
+odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
+                                                         AActor* mo, const int (&args)[5])
 {
 	odaproto::svc::ExecuteLineSpecial msg;
 
@@ -1012,11 +991,10 @@ void SVC_ExecuteLineSpecial(buf_t& b, byte special, line_t* line, AActor* mo,
 	msg.set_arg3(args[3]);
 	msg.set_arg4(args[4]);
 
-	MSG_WriteMarker(&b, svc_executelinespecial);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
+odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 {
 	odaproto::svc::ThinkerUpdate msg;
 
@@ -1089,13 +1067,13 @@ void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker)
 		pmsg->set_phase(phased->GetPhase());
 	}
 
-	MSG_WriteMarker(&b, svc_thinkerupdate);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
-void SVC_NetdemoCap(buf_t& b, player_t* player)
+odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player)
 {
 	odaproto::svc::NetdemoCap msg;
+
 	odaproto::Actor* act = msg.mutable_actor();
 	odaproto::Player* play = msg.mutable_player();
 
@@ -1120,8 +1098,7 @@ void SVC_NetdemoCap(buf_t& b, player_t* player)
 	play->set_readyweapon(player->readyweapon);
 	play->set_pendingweapon(player->pendingweapon);
 
-	MSG_WriteByte(&b, svc_netdemocap);
-	MSG_WriteProto(&b, msg);
+	return msg;
 }
 
 VERSION_CONTROL(svc_message, "$Id$")

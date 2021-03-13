@@ -108,7 +108,7 @@ static void PersistPlayerScore(player_t& p, bool lives, bool score)
 	{
 		if (!it->ingame())
 			continue;
-		SVC_PlayerMembers(it->client.netbuf, p, flags);
+		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -123,7 +123,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!it->ingame())
 			continue;
-		SVC_TeamMembers(it->client.netbuf, team);
+		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
 	}
 }
 

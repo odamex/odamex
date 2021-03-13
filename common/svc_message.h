@@ -24,11 +24,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_MESSAGE_H__
-#define __SV_MESSAGE_H__
+#ifndef __SVCMESSAGE_H__
+#define __SVCMESSAGE_H__
 
 #include <string>
 #include <vector>
+
+#include "server.pb.h"
 
 #include "r_state.h"
 
@@ -39,41 +41,43 @@
 #include "i_net.h"
 #include "p_spec.h"
 
-void SVC_Disconnect(buf_t& b, const char* message = NULL);
-void SVC_PlayerInfo(buf_t& b, player_t& player);
-void SVC_MovePlayer(buf_t& b, player_t& player, const int tic);
-void SVC_UpdateLocalPlayer(buf_t& b, AActor& mo, const int tic);
-void SVC_LevelLocals(buf_t& b, const level_locals_t& locals, uint32_t flags);
-void SVC_PingRequest(buf_t& b);
-void SVC_UpdatePing(buf_t& b, player_t& player);
-void SVC_SpawnMobj(buf_t& b, AActor* mo);
-void SVC_DisconnectClient(buf_t& b, player_t& player);
-void SVC_LoadMap(buf_t& b, const OResFiles& wadnames, const OResFiles& patchnames,
-                 const std::string& mapname, int time);
-void SVC_ConsolePlayer(buf_t& b, player_t& player, const std::string& digest);
-void SVC_ExplodeMissile(buf_t& b, AActor& mobj);
-void SVC_RemoveMobj(buf_t& b, AActor& mobj);
-void SVC_UserInfo(buf_t& b, player_t& player, int64_t time);
-void SVC_UpdateMobj(buf_t& b, AActor& mobj, uint32_t flags);
-void SVC_SpawnPlayer(buf_t& b, player_t& player);
-void SVC_DamagePlayer(buf_t& b, player_t& player, int health, int armor);
-void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, int mod,
-                  bool joinkill);
-void SVC_FireWeapon(buf_t& b, player_t& player);
-void SVC_UpdateSector(buf_t& b, sector_t& sector);
-void SVC_Print(buf_t& b, printlevel_t level, const std::string& str);
-void SVC_PlayerMembers(buf_t& b, player_t& player, byte flags);
-void SVC_TeamMembers(buf_t& b, team_t team);
-void SVC_ActivateLine(buf_t& b, line_t* line, AActor* mo, int side,
-                      LineActivationType type);
-void SVC_MovingSector(buf_t& b, const sector_t& sector);
-void SVC_PlayerState(buf_t& b, player_t& player);
-void SVC_LevelState(buf_t& b, const SerializedLevelState& sls);
+odaproto::svc::Disconnect SVC_Disconnect(const char* message = NULL);
+odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player);
+odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic);
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(AActor& mo, const int tic);
+odaproto::svc::LevelLocals SVC_LevelLocals(const level_locals_t& locals, uint32_t flags);
+odaproto::svc::PingRequest SVC_PingRequest();
+odaproto::svc::UpdatePing SVC_UpdatePing(player_t& player);
+odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo);
+odaproto::svc::DisconnectClient SVC_DisconnectClient(player_t& player);
+odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& patchnames,
+                                   const std::string& mapname, int time);
+odaproto::svc::ConsolePlayer SVC_ConsolePlayer(player_t& player,
+                                               const std::string& digest);
+odaproto::svc::ExplodeMissile SVC_ExplodeMissile(AActor& mobj);
+odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj);
+odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time);
+odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags);
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player);
+odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, int health, int armor);
+odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inflictor,
+                                     int mod, bool joinkill);
+odaproto::svc::FireWeapon SVC_FireWeapon(player_t& player);
+odaproto::svc::UpdateSector SVC_UpdateSector(sector_t& sector);
+odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str);
+odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags);
+odaproto::svc::TeamMembers SVC_TeamMembers(team_t team);
+odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
+                                             LineActivationType type);
+odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector);
+odaproto::svc::PlayerState SVC_PlayerState(player_t& player);
+odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
 void SVC_SecretFound(buf_t& b, int playerid, int sectornum);
-void SVC_SectorProperties(buf_t& b, sector_t& sector);
-void SVC_ExecuteLineSpecial(buf_t& b, byte special, line_t* line, AActor* mo,
-                            const int (&args)[5]);
-void SVC_ThinkerUpdate(buf_t& b, DThinker* thinker);
-void SVC_NetdemoCap(buf_t& b, player_t* player);
+odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
+odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
+                                                         AActor* mo,
+                                                         const int (&args)[5]);
+odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker);
+odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
-#endif // __SV_MESSAGE_H__
+#endif // __SVCMESSAGE_H__

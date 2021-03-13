@@ -24,45 +24,7 @@
 #ifndef __CLSVC_H__
 #define __CLSVC_H__
 
-namespace odaproto
-{
-namespace svc
-{
-class Disconnect;
-class PlayerInfo;
-class MovePlayer;
-class UpdateLocalPlayer;
-class LevelLocals;
-class PingRequest;
-class UpdatePing;
-class SpawnMobj;
-class DamagePlayer;
-class DisconnectClient;
-class LoadMap;
-class ConsolePlayer;
-class ExplodeMissile;
-class RemoveMobj;
-class UserInfo;
-class UpdateMobj;
-class SpawnPlayer;
-class KillMobj;
-class FireWeapon;
-class UpdateSector;
-class Print;
-class PlayerMembers;
-class TeamMembers;
-class ActivateLine;
-class MovingSector;
-class PlayerState;
-class LevelState;
-class SectorProperties;
-class ExecuteLineSpecial;
-class ThinkerUpdate;
-class NetdemoCap;
-
-} // namespace svc
-
-} // namespace odaproto
+#include "svc_protofwd.h"
 
 void CL_Noop();
 void CL_Disconnect(const odaproto::svc::Disconnect& msg);

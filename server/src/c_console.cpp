@@ -134,7 +134,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
 		                       printlevel == PRINT_ERROR))
 		{
-			SVC_Print(cl->reliablebuf, PRINT_WARNING, str);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, str));
 		}
 	}
 

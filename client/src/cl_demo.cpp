@@ -689,7 +689,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 
 	AActor *mo = player->mo;
 
-	SVC_NetdemoCap(*netbuffer, player);
+	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
 }
 
 
@@ -1092,10 +1092,10 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteLong	(netbuffer, 0);
 	
 	// Server sends our player id and digest
-	SVC_ConsolePlayer(*netbuffer, consoleplayer(), digest);
+	MSG_WriteSVC(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
 
 	// our userinfo
-	SVC_UserInfo(*netbuffer, consoleplayer(), consoleplayer().GameTime);
+	MSG_WriteSVC(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
 	
 	// Server sends its settings
 	MSG_WriteMarker	(netbuffer, svc_serversettings);
@@ -1113,13 +1113,13 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, 2);		// end of server settings marker
 
 	// Server tells everyone if we're a spectator
-	SVC_PlayerMembers(*netbuffer, consoleplayer(), SVC_PM_SPECTATOR);
+	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
-	SVC_LoadMap(*netbuffer, wadfiles, patchfiles, level.mapname, level.time);
+	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname, level.time));
 
 	// Server spawns the player
-	SVC_SpawnPlayer(*netbuffer, consoleplayer());
+	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));
 }
 
 

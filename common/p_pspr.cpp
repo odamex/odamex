@@ -453,7 +453,7 @@ void P_FireWeapon(player_t* player)
 	// that they can fix any weapon desyncs that they get - apr 14 2012
 	if (serverside && !clientside)
 	{
-		SVC_FireWeapon(player->client.reliablebuf, *player);
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_FireWeapon(*player));
 	}
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);

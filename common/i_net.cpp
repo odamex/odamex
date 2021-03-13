@@ -74,12 +74,15 @@ typedef int SOCKET;
 #define SETSOCKOPTCAST(x) ((const void *)(x))
 #endif
 
+#include <google/protobuf/message.h>
+
 #include "doomtype.h"
 
 #include "i_system.h"
 
 #include "doomstat.h"
 #include "i_net.h"
+#include "svc_map.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -626,6 +629,24 @@ void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 	if (simulated_connection)
 		return;
 	b->WriteChunk((const char *)p, l);
+}
+
+void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+		return;
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	b->WriteByte(header);
+	b->WriteUnVarint(buffer.size());
+	b->WriteChunk(buffer.data(), buffer.size());
+	Printf("%s [%s] %s\n", ::svc_info[header].getName(),
+	       msg.GetDescriptor()->full_name().c_str(),
+	       msg.ShortDebugString().c_str());
 }
 
 void MSG_WriteShort (buf_t *b, short c)
