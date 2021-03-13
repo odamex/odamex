@@ -641,6 +641,15 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 		return;
 
 	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_noop)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find svc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
 	b->WriteByte(header);
 	b->WriteUnVarint(buffer.size());
 	b->WriteChunk(buffer.data(), buffer.size());

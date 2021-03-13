@@ -40,6 +40,7 @@ static void MapProto(const google::protobuf::Descriptor* desc, svc_t msg)
  */
 static void InitMap()
 {
+	MapProto(odaproto::svc::Disconnect::descriptor(), svc_disconnect);
 	MapProto(odaproto::svc::PlayerInfo::descriptor(), svc_playerinfo);
 	MapProto(odaproto::svc::MovePlayer::descriptor(), svc_moveplayer);
 	MapProto(odaproto::svc::UpdateLocalPlayer::descriptor(), svc_updatelocalplayer);
