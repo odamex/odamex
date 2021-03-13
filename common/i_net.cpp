@@ -644,9 +644,6 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 	b->WriteByte(header);
 	b->WriteUnVarint(buffer.size());
 	b->WriteChunk(buffer.data(), buffer.size());
-	Printf("%s [%s] %s\n", ::svc_info[header].getName(),
-	       msg.GetDescriptor()->full_name().c_str(),
-	       msg.ShortDebugString().c_str());
 }
 
 void MSG_WriteShort (buf_t *b, short c)
