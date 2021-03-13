@@ -72,7 +72,7 @@ odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
 odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector);
 odaproto::svc::PlayerState SVC_PlayerState(player_t& player);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
-void SVC_SecretFound(buf_t& b, int playerid, int sectornum);
+odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector);
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo,

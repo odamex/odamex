@@ -56,6 +56,7 @@ class PlayerMembers;
 class TeamMembers;
 class ActivateLine;
 class MovingSector;
+class SecretEvent;
 class PlayerState;
 class LevelState;
 class SectorProperties;

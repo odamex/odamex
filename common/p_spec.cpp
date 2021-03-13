@@ -1600,7 +1600,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 
 #ifdef SERVER_APP
-void SV_UpdateSecret(int sectornum, player_t &player);
+void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
 //
@@ -1740,8 +1740,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			sector->special &= ~SECRET_MASK;
 	
 #ifdef SERVER_APP
-			int sectornum = sector - sectors;
-			SV_UpdateSecret(sectornum, *player);	// Update the sector to all clients so that they don't discover an already found secret.
+			SV_UpdateSecret(*sector, *player);	// Update the sector to all clients so that they don't discover an already found secret.
 #else
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();		// Display the secret revealed message

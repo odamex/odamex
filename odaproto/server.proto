@@ -353,6 +353,14 @@ message CTFEvent
 	repeated int32 team_points = 6;
 }
 
+// svc_secretevent
+message SecretEvent
+{
+	int32 pid = 1;
+	int32 sectornum = 2;
+	Sector sector = 3;
+}
+
 // svc_serversettings
 message ServerSettings
 {

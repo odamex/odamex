@@ -77,7 +77,7 @@ static void InitMap()
 	// svc_spawnhiddenplayer
 	// svc_updatedeaths
 	MapProto(odaproto::svc::CTFEvent::descriptor(), svc_ctfevent);
-	// svc_secretevent
+	MapProto(odaproto::svc::SecretEvent::descriptor(), svc_secretevent);
 	MapProto(odaproto::svc::ServerSettings::descriptor(), svc_serversettings);
 	MapProto(odaproto::svc::ConnectClient::descriptor(), svc_connectclient);
 	MapProto(odaproto::svc::MidPrint::descriptor(), svc_midprint);

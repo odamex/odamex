@@ -884,19 +884,15 @@ odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls)
 /**
  * @brief Send information about a player who discovered a secret.
  */
-void SVC_SecretFound(buf_t& b, int playerid, int sectornum)
+odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector)
 {
-	sector_t* sector = &::sectors[sectornum];
+	odaproto::svc::SecretEvent msg;
 
-	// Only update secret sectors that've been discovered.
-	// [AM} FIXME: This function should not contain this kind of logic.
-	if (sector != NULL && (!(sector->special & SECRET_MASK) && sector->secretsector))
-	{
-		MSG_WriteMarker(&b, svc_secretevent);
-		MSG_WriteByte(&b, playerid); // ID of player who discovered it
-		MSG_WriteShort(&b, sectornum);
-		MSG_WriteShort(&b, sector->special);
-	}
+	msg.set_pid(player.id);
+	msg.set_sectornum(&sector - ::sectors);
+	msg.mutable_sector()->set_special(sector.special);
+
+	return msg;
 }
 
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)

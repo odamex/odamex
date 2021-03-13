@@ -61,6 +61,7 @@ EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
+EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(show_messages)
 
 extern std::string digest;
@@ -1073,7 +1074,7 @@ void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
 {
 	player_t* p = &consoleplayer();
 
-	weapontype_t firedweap = static_cast < weapontype_t>(msg.readyweapon());
+	weapontype_t firedweap = static_cast<weapontype_t>(msg.readyweapon());
 	if (firedweap < 0 || firedweap > wp_nochange)
 	{
 		Printf("CL_FireWeapon: unknown weapon %d\n", firedweap);
@@ -1399,6 +1400,35 @@ void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 	snap.setSector(&::sectors[sectornum]);
 
 	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+//
+// CL_SecretEvent
+// Client interpretation of a secret found by another player
+//
+void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
+{
+	player_t& player = idplayer(msg.pid());
+	size_t sectornum = msg.sectornum();
+	short special = msg.sector().special();
+
+	if (!::sectors || sectornum >= numsectors)
+		return;
+
+	sector_t* sector = &::sectors[sectornum];
+	sector->special = special;
+
+	// Don't show other secrets if requested
+	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
+		return;
+
+	std::string buf;
+	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
+	          player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
+	Printf(buf.c_str());
+
+	if (::hud_revealsecrets == 1)
+		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
 void CL_PlayerState(const odaproto::svc::PlayerState& msg)

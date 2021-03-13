@@ -1583,7 +1583,7 @@ void SV_ClientFullUpdate(player_t &pl)
 // SV_UpdateSecret
 // Updates a sector to a client and the number of secrets found.
 //===========================
-void SV_UpdateSecret(int sectornum, player_t &player)
+void SV_UpdateSecret(sector_t& sector, player_t &player)
 {
 	// Don't announce secrets on PvP gamemodes
 	if (sv_gametype != GM_COOP)
@@ -1599,9 +1599,9 @@ void SV_UpdateSecret(int sectornum, player_t &player)
 		if (&*it == &player)
 			continue;
 
-		SVC_SecretFound(cl->reliablebuf, player.id, sectornum);
+		if (!(sector.special & SECRET_MASK) && sector.secretsector)
+			MSG_WriteSVC(&cl->reliablebuf, SVC_SecretEvent(player, sector));
 	}
-
 }
 
 //

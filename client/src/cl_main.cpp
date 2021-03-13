@@ -2119,34 +2119,6 @@ void CL_ClearSectorSnapshots()
 }
 
 //
-// CL_SecretEvent
-// Client interpretation of a secret found by another player
-//
-void CL_SecretEvent()
-{
-	player_t& player = idplayer(MSG_ReadByte());
-	unsigned short sectornum = (unsigned short)MSG_ReadShort();
-	short special = MSG_ReadShort();
-
-	if (!sectors || sectornum >= numsectors)
-		return;
-
-	sector_t* sector = &sectors[sectornum];
-	sector->special = special;
-
-	// Don't show other secrets if requested
-	if (!hud_revealsecrets || hud_revealsecrets > 2)
-		return;
-
-	std::string buf;
-	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW, player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf(buf.c_str());
-
-	if (hud_revealsecrets == 1)
-		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
-}
-
-//
 // CL_CheckMissedPacket
 //
 void CL_CheckMissedPacket(void)
@@ -2492,7 +2464,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_switch, CL_Switch);
 		SERVER_MSG_FUNC(svc_say, CL_Say);
 		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
-		SERVER_MSG_FUNC(svc_secretevent, CL_SecretEvent);
+		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
 		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
 		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
 		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
