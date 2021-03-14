@@ -1361,8 +1361,6 @@ void SV_SendGametic(client_t* cl)
 	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
 }
 
-short P_GetButtonTexture(line_t* line);
-
 void SV_LineStateUpdate(client_t *cl)
 {
 	for (int lineNum = 0; lineNum < numlines; lineNum++)
@@ -4552,13 +4550,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-		MSG_WriteLong(&cl->reliablebuf, l);
-		MSG_WriteByte(&cl->reliablebuf, line->switchactive);
-		MSG_WriteByte(&cl->reliablebuf, line->special);
-		MSG_WriteByte(&cl->reliablebuf, state);
-		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(line));
-		MSG_WriteLong(&cl->reliablebuf, time);
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(*line, state, time));
 	}
 }
 

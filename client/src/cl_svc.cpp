@@ -69,6 +69,7 @@ extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
 extern NetCommand localcmds[MAXSAVETICS];
+extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 
@@ -81,11 +82,12 @@ std::string CL_GenerateNetDemoFileName(
 bool CL_PlayerJustTeleported(player_t* player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
+void CL_SpectatePlayer(player_t& player, bool spectate);
 void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
-void CL_SpectatePlayer(player_t& player, bool spectate);
+void P_SetButtonTexture(line_t* line, short texture);
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -1438,6 +1440,40 @@ void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
 		return;
 
 	P_GiveSpecial(&consoleplayer(), mo);
+}
+
+//
+// CL_Switch
+// denis - switch state and timing
+// Note: this will also be called for doors
+void CL_Switch(const odaproto::svc::Switch& msg)
+{
+	int l = msg.linenum();
+	byte switchactive = msg.switch_active();
+	byte special = msg.special();
+	unsigned int state = msg.state(); // DActiveButton::EWhere
+	short texture = msg.button_texture();
+	unsigned int time = msg.timer();
+
+	if (!::lines || l < 0 || l >= ::numlines || state >= 3)
+		return;
+
+	// denis - fixme - security
+	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive)
+	{
+		// only playsound if we've received the full update from
+		// the server (not setting up the map from the server)
+		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL,
+		                      recv_full_update);
+	}
+
+	// Only accept texture change from server while receiving the full update
+	// - this is to fix warmup switch desyncs
+	if (!recv_full_update && texture)
+	{
+		P_SetButtonTexture(&lines[l], texture);
+	}
+	lines[l].special = special;
 }
 
 //

@@ -321,12 +321,12 @@ message ForceTeam
 // svc_switch
 message Switch
 {
-	int32 line = 1;
+	int32 linenum = 1;
 	bool switch_active = 2;
-	int32 special = 3;
-	int32 state = 4;
+	uint32 special = 3;
+	uint32 state = 4;
 	int32 button_texture = 5;
-	int32 timer = 6;
+	uint32 timer = 6;
 }
 
 // svc_say

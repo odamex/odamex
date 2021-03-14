@@ -2216,31 +2216,6 @@ void CL_MobjTranslation()
 		mo->translation = translationref_t(translationtables + 256 * table);
 }
 
-void P_SetButtonTexture(line_t* line, short texture);
-//
-// CL_Switch
-// denis - switch state and timing
-// Note: this will also be called for doors
-void CL_Switch()
-{
-	unsigned l = MSG_ReadLong();
-	byte switchactive = MSG_ReadByte();
-	byte special = MSG_ReadByte();
-	byte state = MSG_ReadByte(); //DActiveButton::EWhere
-	short texture = MSG_ReadShort();
-	unsigned time = MSG_ReadLong();
-
-	if (!lines || l >= (unsigned)numlines || state >= 3)
-		return;
-
-	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
-		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
-
-	if (!recv_full_update && texture) // Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
-		P_SetButtonTexture(&lines[l], texture);
-	lines[l].special = special;
-}
-
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
@@ -2383,7 +2358,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
-		SERVER_MSG_FUNC(svc_switch, CL_Switch);
+		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
 		SERVER_MSG_FUNC(svc_say, CL_Say);
 		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
 		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);

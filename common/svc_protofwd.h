@@ -58,6 +58,7 @@ class ActivateLine;
 class MovingSector;
 class PlaySound;
 class TouchSpecial;
+class Switch;
 class SecretEvent;
 class PlayerState;
 class LevelState;

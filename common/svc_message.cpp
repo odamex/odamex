@@ -901,6 +901,20 @@ odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls)
 	return msg;
 }
 
+odaproto::svc::Switch SVC_Switch(line_t& line, uint32_t state, uint32_t timer)
+{
+	odaproto::svc::Switch msg;
+
+	msg.set_linenum(&line - ::lines);
+	msg.set_switch_active(line.switchactive);
+	msg.set_special(line.special);
+	msg.set_state(state);
+	msg.set_button_texture(P_GetButtonTexture(&line));
+	msg.set_timer(timer);
+
+	return msg;
+}
+
 /**
  * @brief Send information about a player who discovered a secret.
  */
