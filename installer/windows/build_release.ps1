@@ -74,6 +74,8 @@ function CopyFiles {
         -Destination "${CommonDir}\LICENSE.txt"
     Copy-Item -Force -Path "${PSScriptRoot}\..\..\MAINTAINERS" `
         -Destination "${CommonDir}\MAINTAINERS.txt"
+    Copy-Item -Force -Path "${PSScriptRoot}\..\..\README" `
+        -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\wad\odamex.wad", `
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2_mixer-2.0.4\COPYING.txt" `

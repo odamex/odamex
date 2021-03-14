@@ -8,18 +8,21 @@ Odamex is a modification of DOOM to allow players to compete with each other ove
 
 Odamex is based on the CSDoom 0.62 source code originally created by Sergey Makovkin, which is based on the ZDoom 1.22 source code created by Marisa Heit.
 
-## Features
+Features
+--------
+
 Odamex supports the following features:
+
 * Full Client/Server multiplayer architecture with network compensation features (unlagged, client interpolation and prediction)
 * Support for up to 255 players
 * Various compatibility settings, to emulate vanilla Doom, Boom, or ZDoom physics and fixes
 * Playback and recording of vanilla demos
 * A fully-featured client netdemo record system with playback control
-* Removal of most vanilla Doom Static limits.
+* Removal of most vanilla Doom Static limits
 * Support for most Boom and MBF mapping features
 * The traditional old-school style of Deathmatch and a Cooperative mode, but also other game modes such as Team Deathmatch and Capture the Flag
-* Support for Survival, Last Man Standing, Last Team Standing, LMS CTF, 3-WAY CTF, and Attack & Defend game modes.
-* Competitive-ready features, such as a warmup mode, round system, player queue, or playercolor overriding.
+* Support for Survival, Last Man Standing, Last Team Standing, LMS CTF, 3-WAY CTF, and Attack & Defend game modes
+* Competitive-ready features, such as a warmup mode, round system, player queue, or playercolor overriding
 * Several modern ZDoom additions, such as slopes, LANGUAGEv2 or MAPINFOv2 lump support
 * An array of editing features, including the Hexen map format, DeHackEd and BEX patch support and ACS up to ZDoom 1.23
 * Native Joystick support
@@ -30,52 +33,64 @@ Odamex supports the following features:
 * Full Widescreen support
 * Ultra high resolution support (up to 8K)
 * Uncapped and raised framerate
-* Takes advantage of widely used libraries to port it to new devices with ease.
+* Takes advantage of widely used libraries to port it to new devices with ease
 
-## Compilation instructions
+Compilation instructions
+------------------------
 
 Clone the repositories, with all submodules:
-```git
-git clone https://github.com/odamex/odamex.git --recurse-submodules
-```
 
-if you downloaded the zip, use these commands on the git directory :
-```git
-git submodule init 
-git submodule update
-```
+    git clone https://github.com/odamex/odamex.git --recurse-submodules
+
+If you downloaded the zip, use these commands on the git directory:
+
+    git submodule init 
+    git submodule update
 
 Odamex requires `cmake` as well as the following libraries:
+
 * [SDL 2.0](https://www.libsdl.org/download-2.0.php)
 * [SDL2-Mixer](https://libsdl.org/projects/SDL_mixer/)
 * [cURL](https://curl.se/)
 * [libPNG](http://www.libpng.org/pub/png/libpng.html)
 * [zlib](https://zlib.net/)
-* [wxWidgets](https://www.wxwidgets.org/downloads/) for the launcher
+* [wxWidgets](https://www.wxwidgets.org/downloads/) (for the launcher)
 
 `cURL`, `libPNG` and `zlib` are automatically included as submodules.
 
-On Windows, all libraries are automatically downloaded if not found. 
-On \*nix/MacOSX, you will need to download through your package manager `libsdl2-dev`, `libsdl2-mixer-dev` and `libwxgtk3.0-dev`.
+On Windows, all libraries are automatically downloaded if not found.  On \*nix/MacOSX, you will need to download through your package manager `libsdl2-dev`, `libsdl2-mixer-dev` and `libwxgtk3.0-dev`.
 
-Please check [this page](https://odamex.net/wiki/How_to_build_from_source) for further informations on how to compile Odamex for your platform.
+Please check [this page][1] for further informations on how to compile Odamex for your platform.
 
-## Contributing to the project
+[1]: https://odamex.net/wiki/How_to_build_from_source
 
-Please report any oddity, physics inaccuracies, bugs or game-breaking glitches to our [issues page](https://github.com/odamex/odamex/issues). You can also submit patches as a Pull Request.
+Contributing to the project
+---------------------------
 
-Before submitting a pull request, please make sure it follows [our coding standards](https://odamex.net/wiki/Coding_standard)!
+Please report any oddity, physics inaccuracies, bugs or game-breaking glitches to our [issues page][2]. You can also submit patches as a Pull Request.
 
-For historical purposes, you can also view [our bugtracker's archive](https://odamex.net/bugs/).
+[2]: https://github.com/odamex/odamex/issues
 
-## External Links
+Before submitting a pull request, please make sure it follows [our coding standards][3]!
+
+[3]: https://odamex.net/wiki/Coding_standard
+
+For historical purposes, you can also view [our bugtracker's archive][4].
+
+[4]: https://odamex.net/bugs/
+
+External Links
+--------------
+
 Please visit the following websites for more information about the development of the port and our community: 
+
 * [**Odamex Website**](https://odamex.net)
 * [Wiki](https://odamex.net/wiki/Main_Page)
 * [Forums](https://odamex.net/boards/)
 * [Discord](https://discord.gg/aMUzcZE)
 * [Twitter](https://twitter.com/odamex)
 
+License
+-------
 
-## License
 Odamex is released under the GNU General Public License v2. Please read [`LICENSE`](LICENSE) for further details regarding the license.
