@@ -846,6 +846,15 @@ odaproto::svc::PlaySound SVC_PlaySound(PlaySoundType& type, int channel, int sfx
 	return msg;
 }
 
+odaproto::svc::TouchSpecial SVC_TouchSpecial(AActor* mo)
+{
+	odaproto::svc::TouchSpecial msg;
+
+	msg.set_netid(mo->netid);
+
+	return msg;
+}
+
 /**
  * @brief Send information about a player
  */

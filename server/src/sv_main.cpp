@@ -4223,8 +4223,7 @@ void SV_TouchSpecial(AActor *special, player_t *player)
     if (cl == NULL || special == NULL)
         return;
 
-    MSG_WriteMarker(&cl->reliablebuf, svc_touchspecial);
-    MSG_WriteUnVarint(&cl->reliablebuf, special->netid);
+	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
 }
 
 void SV_PlayerTimes (void)

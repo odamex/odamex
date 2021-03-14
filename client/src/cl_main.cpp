@@ -2015,21 +2015,6 @@ void CL_UpdateIntTimeLeft(void)
 	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
 }
 
-
-//
-// CL_TouchSpecialThing
-//
-void CL_TouchSpecialThing (void)
-{
-	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
-
-	if(!consoleplayer().mo || !mo)
-		return;
-
-	P_GiveSpecial(&consoleplayer(), mo);
-}
-
-
 //
 // CL_RailTrail
 //
@@ -2413,7 +2398,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
-		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
+		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
 		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);

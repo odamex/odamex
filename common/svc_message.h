@@ -109,6 +109,7 @@ odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
 odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector);
 odaproto::svc::PlaySound SVC_PlaySound(PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation);
+odaproto::svc::TouchSpecial SVC_TouchSpecial(AActor* mo);
 odaproto::svc::PlayerState SVC_PlayerState(player_t& player);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
 odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector);

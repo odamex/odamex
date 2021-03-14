@@ -1434,6 +1434,16 @@ void CL_PlaySound(const odaproto::svc::PlaySound& msg)
 	}
 }
 
+void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
+{
+	AActor* mo = P_FindThingById(msg.netid());
+
+	if (!consoleplayer().mo || !mo)
+		return;
+
+	P_GiveSpecial(&consoleplayer(), mo);
+}
+
 //
 // CL_SecretEvent
 // Client interpretation of a secret found by another player

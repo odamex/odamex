@@ -57,6 +57,7 @@ class TeamMembers;
 class ActivateLine;
 class MovingSector;
 class PlaySound;
+class TouchSpecial;
 class SecretEvent;
 class PlayerState;
 class LevelState;
