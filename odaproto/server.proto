@@ -275,14 +275,18 @@ message MovingSector
 	Snapshot floor_mover = 6;
 }
 
-// svc_startsound
-message StartSound
+// svc_playsound
+message PlaySound
 {
-	int32 netid = 1;
-	Vec2 pos = 2;
+	oneof source {
+		int32 netid = 1;
+		Vec2 pos = 2;
+	};
+
 	int32 channel = 3;
-	int32 sfx_id = 4;
-	int32 attenuation = 5;
+	int32 sfxid = 4;
+	float volume = 5;
+	int32 attenuation = 6;
 }
 
 // svc_reconnect
@@ -306,15 +310,6 @@ message MissedPacket
 {
 	int32 seq = 1;
 	bytes data = 2;
-}
-
-// svc_soundorigin
-message SoundOrigin
-{
-	Vec2 pos = 1;
-	int32 channel = 2;
-	int32 sfx_id = 3;
-	int32 attenuation = 4;
 }
 
 // svc_forceteam

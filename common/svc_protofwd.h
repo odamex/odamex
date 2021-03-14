@@ -56,6 +56,7 @@ class PlayerMembers;
 class TeamMembers;
 class ActivateLine;
 class MovingSector;
+class PlaySound;
 class SecretEvent;
 class PlayerState;
 class LevelState;

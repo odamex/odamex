@@ -2065,49 +2065,6 @@ void CL_ChangeWeapon (void)
 		player->pendingweapon = newweapon;
 }
 
-
-//
-// CL_Sound
-//
-void CL_Sound(void)
-{
-	uint32_t netid = MSG_ReadUnVarint();
-	int x = MSG_ReadLong();
-	int y = MSG_ReadLong();
-	byte channel = MSG_ReadByte();
-	byte sfx_id = MSG_ReadByte();
-	byte attenuation = MSG_ReadByte();
-	byte vol = MSG_ReadByte();
-
-	AActor *mo = P_FindThingById (netid);
-
-	float volume = vol/(float)255;
-
-	if(mo)
-		S_SoundID (mo, channel, sfx_id, volume, attenuation); // play at thing location
-	else
-		S_SoundID (x, y, channel, sfx_id, volume, attenuation); // play at approximate thing location
-}
-
-void CL_SoundOrigin(void)
-{
-	int x = MSG_ReadLong();
-	int y = MSG_ReadLong();
-	byte channel = MSG_ReadByte();
-	byte sfx_id = MSG_ReadByte();
-	byte attenuation = MSG_ReadByte();
-	byte vol = MSG_ReadByte();
-
-	float volume = vol/(float)255;
-
-	AActor *mo = consoleplayer().mo;
-
-	if(!mo)
-		return;
-
-	S_SoundID (x, y, channel, sfx_id, volume, attenuation);
-}
-
 //
 // CL_ClearSectorSnapshots
 //
@@ -2453,13 +2410,12 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
 		SERVER_PROTO_FUNC(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
 		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
-		SERVER_MSG_FUNC(svc_startsound, CL_Sound);
+		SERVER_PROTO_FUNC(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
 		SERVER_MSG_FUNC(svc_touchspecial, CL_TouchSpecialThing);
 		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
-		SERVER_MSG_FUNC(svc_soundorigin, CL_SoundOrigin);
 		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
 		SERVER_MSG_FUNC(svc_switch, CL_Switch);
 		SERVER_MSG_FUNC(svc_say, CL_Say);

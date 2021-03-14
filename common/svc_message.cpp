@@ -820,6 +820,32 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 	return msg;
 }
 
+odaproto::svc::PlaySound SVC_PlaySound(PlaySoundType& type, int channel, int sfx_id,
+                                       float volume, int attenuation)
+{
+	odaproto::svc::PlaySound msg;
+
+	msg.set_channel(channel);
+	msg.set_sfxid(sfx_id);
+	msg.set_volume(volume);
+	msg.set_attenuation(attenuation);
+
+	switch (type.tag)
+	{
+	case PlaySoundType::PS_NONE:
+		break;
+	case PlaySoundType::PS_MOBJ:
+		msg.set_netid(type.data.mo->netid);
+		break;
+	case PlaySoundType::PS_POS:
+		msg.mutable_pos()->set_x(type.data.pos.x);
+		msg.mutable_pos()->set_y(type.data.pos.y);
+		break;
+	}
+
+	return msg;
+}
+
 /**
  * @brief Send information about a player
  */

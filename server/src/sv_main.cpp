@@ -687,19 +687,9 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &(it->client);
 
-		MSG_WriteMarker (&cl->netbuf, svc_startsound);
-		if(mo)
-			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
-		else
-			MSG_WriteUnVarint(&cl->netbuf, 0);
-		MSG_WriteLong (&cl->netbuf, x);
-		MSG_WriteLong (&cl->netbuf, y);
-		MSG_WriteByte (&cl->netbuf, channel);
-		MSG_WriteByte (&cl->netbuf, sfx_id);
-		MSG_WriteByte (&cl->netbuf, attenuation);
-		MSG_WriteByte (&cl->netbuf, 255); // client calculates volume on its own
+		MSG_WriteSVC(&cl->netbuf,
+		             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, attenuation, 255));
 	}
-
 }
 
 void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
@@ -723,17 +713,8 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteMarker (&cl->netbuf, svc_startsound);
-	if (mo == NULL)
-		MSG_WriteUnVarint(&cl->netbuf, 0);
-	else
-		MSG_WriteUnVarint(&cl->netbuf, mo->netid);
-	MSG_WriteLong (&cl->netbuf, x);
-	MSG_WriteLong (&cl->netbuf, y);
-	MSG_WriteByte (&cl->netbuf, channel);
-	MSG_WriteByte (&cl->netbuf, sfx_id);
-	MSG_WriteByte (&cl->netbuf, attenuation);
-	MSG_WriteByte (&cl->netbuf, 255);		// client calculates volume on its own
+	MSG_WriteSVC(&cl->netbuf,
+	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, attenuation, 255));
 }
 
 //
@@ -765,14 +746,8 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 		cl = &(it->client);
 
-		MSG_WriteMarker(&cl->netbuf, svc_startsound);
-		MSG_WriteUnVarint(&cl->netbuf, mo->netid);
-		MSG_WriteLong(&cl->netbuf, mo->x);
-		MSG_WriteLong(&cl->netbuf, mo->y);
-		MSG_WriteByte(&cl->netbuf, channel);
-		MSG_WriteByte(&cl->netbuf, sfx_id);
-		MSG_WriteByte(&cl->netbuf, attenuation);
-		MSG_WriteByte(&cl->netbuf, 255); // client calculates volume on its own
+		MSG_WriteSVC(&cl->netbuf,
+		             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, attenuation, 255));
 	}
 }
 
@@ -800,15 +775,8 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			cl = &(it->client);
 
-			MSG_WriteMarker(&cl->netbuf, svc_startsound);
-			// Set netid to 0 since it's not a sound originating from any player's location
-			MSG_WriteUnVarint(&cl->netbuf, 0); // netid
-			MSG_WriteLong(&cl->netbuf, 0); // x
-			MSG_WriteLong(&cl->netbuf, 0); // y
-			MSG_WriteByte(&cl->netbuf, channel);
-			MSG_WriteByte(&cl->netbuf, sfx_id);
-			MSG_WriteByte(&cl->netbuf, attenuation);
-			MSG_WriteByte(&cl->netbuf, 255); // client calculates volume on its own
+			MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
+			                                        attenuation, 255));
 		}
 	}
 }
@@ -833,13 +801,8 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &(it->client);
 
-		MSG_WriteMarker(&cl->netbuf, svc_soundorigin);
-		MSG_WriteLong(&cl->netbuf, x);
-		MSG_WriteLong(&cl->netbuf, y);
-		MSG_WriteByte(&cl->netbuf, channel);
-		MSG_WriteByte(&cl->netbuf, sfx_id);
-		MSG_WriteByte(&cl->netbuf, attenuation);
-		MSG_WriteByte(&cl->netbuf, 255); // client calculates volume on its own
+		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
+		                                        attenuation, 255));
 	}
 }
 

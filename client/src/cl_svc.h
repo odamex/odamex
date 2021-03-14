@@ -52,6 +52,7 @@ void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg);
 void CL_TeamMembers(const odaproto::svc::TeamMembers& msg);
 void CL_ActivateLine(const odaproto::svc::ActivateLine& msg);
 void CL_MovingSector(const odaproto::svc::MovingSector& msg);
+void CL_PlaySound(const odaproto::svc::PlaySound& msg);
 void CL_SecretEvent(const odaproto::svc::SecretEvent& msg);
 void CL_PlayerState(const odaproto::svc::PlayerState& msg);
 void CL_LevelState(const odaproto::svc::LevelState& msg);

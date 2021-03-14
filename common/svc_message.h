@@ -41,6 +41,43 @@
 #include "i_net.h"
 #include "p_spec.h"
 
+/**
+ * @brief Call the constructor according to the PlaySound invocation you
+ *        want to send.
+ */
+struct PlaySoundType
+{
+	enum tag_e
+	{
+		PS_NONE,
+		PS_MOBJ,
+		PS_POS
+	};
+	tag_e tag;
+
+	union {
+		AActor* mo;
+		struct
+		{
+			fixed_t x, y;
+		} pos;
+	} data;
+
+	PlaySoundType() : tag(PS_NONE)
+	{
+		data.mo = NULL;
+	}
+	PlaySoundType(AActor* mo) : tag(PS_MOBJ)
+	{
+		data.mo = mo;
+	}
+	PlaySoundType(fixed_t x, fixed_t y) : tag(PS_POS)
+	{
+		data.pos.x = x;
+		data.pos.y = y;
+	}
+};
+
 odaproto::svc::Disconnect SVC_Disconnect(const char* message = NULL);
 odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player);
 odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic);
@@ -70,6 +107,8 @@ odaproto::svc::TeamMembers SVC_TeamMembers(team_t team);
 odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
                                              LineActivationType type);
 odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector);
+odaproto::svc::PlaySound SVC_PlaySound(PlaySoundType& type, int channel, int sfx_id,
+                                       float volume, int attenuation);
 odaproto::svc::PlayerState SVC_PlayerState(player_t& player);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
 odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector);

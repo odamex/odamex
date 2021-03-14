@@ -1030,13 +1030,12 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_teammembers);
 	SVC_INFO(svc_activateline);
 	SVC_INFO(svc_movingsector);
-	SVC_INFO(svc_startsound);
+	SVC_INFO(svc_playsound);
 	SVC_INFO(svc_reconnect);
 	SVC_INFO(svc_exitlevel);
 	SVC_INFO(svc_touchspecial);
 	SVC_INFO(svc_changeweapon);
 	SVC_INFO(svc_missedpacket);
-	SVC_INFO(svc_soundorigin);
 	SVC_INFO(svc_forceteam);
 	SVC_INFO(svc_switch);
 	SVC_INFO(svc_say);

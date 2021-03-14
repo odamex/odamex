@@ -65,13 +65,12 @@ static void InitMap()
 	MapProto(odaproto::svc::TeamMembers::descriptor(), svc_teammembers);
 	MapProto(odaproto::svc::ActivateLine::descriptor(), svc_activateline);
 	MapProto(odaproto::svc::MovingSector::descriptor(), svc_movingsector);
-	MapProto(odaproto::svc::StartSound::descriptor(), svc_startsound);
+	MapProto(odaproto::svc::PlaySound::descriptor(), svc_playsound);
 	MapProto(odaproto::svc::Reconnect::descriptor(), svc_reconnect);
 	MapProto(odaproto::svc::ExitLevel::descriptor(), svc_exitlevel);
 	MapProto(odaproto::svc::TouchSpecial::descriptor(), svc_touchspecial);
 	// svc_changeweapon
 	MapProto(odaproto::svc::MissedPacket::descriptor(), svc_missedpacket);
-	MapProto(odaproto::svc::SoundOrigin::descriptor(), svc_soundorigin);
 	MapProto(odaproto::svc::ForceTeam::descriptor(), svc_forceteam);
 	MapProto(odaproto::svc::Switch::descriptor(), svc_switch);
 	MapProto(odaproto::svc::Say::descriptor(), svc_say);

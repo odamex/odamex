@@ -1403,6 +1403,38 @@ void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 }
 
 //
+// CL_Sound
+//
+void CL_PlaySound(const odaproto::svc::PlaySound& msg)
+{
+	int channel = msg.channel();
+	int sfx_id = msg.sfxid();
+	float volume = msg.volume();
+	int attenuation = msg.attenuation();
+
+	switch (msg.source_case())
+	{
+	case odaproto::svc::PlaySound::SOURCE_NOT_SET:
+		S_SoundID(channel, sfx_id, volume, attenuation);
+		return;
+	case odaproto::svc::PlaySound::kNetid: {
+		// play at thing location
+		AActor* mo = P_FindThingById(msg.netid());
+		if (!mo)
+			return;
+
+		S_SoundID(mo, channel, sfx_id, volume, attenuation);
+		return;
+	}
+	case odaproto::svc::PlaySound::kPos: {
+		// play at approximate thing location
+		S_SoundID(msg.pos().x(), msg.pos().y(), channel, sfx_id, volume, attenuation);
+		return;
+	}
+	}
+}
+
+//
 // CL_SecretEvent
 // Client interpretation of a secret found by another player
 //
