@@ -1,6 +1,6 @@
 ===============================================================================
-                              Odamex v0.9.0 README                             
-                               http://odamex.net/                              
+                              Odamex v0.9.0 README
+                               https://odamex.net
 ===============================================================================
 
 Odamex is a modification of DOOM to allow players to compete with each other
@@ -56,7 +56,7 @@ Clone the repositories, with all submodules:
 
 If you downloaded the zip, use these commands on the git directory:
 
-    git submodule init 
+    git submodule init
     git submodule update
 
 Odamex requires `cmake` as well as the following libraries:
@@ -100,7 +100,7 @@ External Links
 --------------
 
 Please visit the following websites for more information about the development
-of the port and our community: 
+of the port and our community:
 
 * Odamex Website: <https://odamex.net>
 * Wiki: <https://odamex.net/wiki/Main_Page>

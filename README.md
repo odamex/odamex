@@ -44,7 +44,7 @@ Clone the repositories, with all submodules:
 
 If you downloaded the zip, use these commands on the git directory:
 
-    git submodule init 
+    git submodule init
     git submodule update
 
 Odamex requires `cmake` as well as the following libraries:
@@ -82,7 +82,7 @@ For historical purposes, you can also view [our bugtracker's archive][4].
 External Links
 --------------
 
-Please visit the following websites for more information about the development of the port and our community: 
+Please visit the following websites for more information about the development of the port and our community:
 
 * [**Odamex Website**](https://odamex.net)
 * [Wiki](https://odamex.net/wiki/Main_Page)
