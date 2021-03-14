@@ -405,10 +405,10 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags)
 {
 	odaproto::svc::UpdateMobj msg;
+	msg.set_flags(flags);
 
 	odaproto::Actor* act = msg.mutable_actor();
-
-	msg.set_flags(flags);
+	act->set_netid(mobj.netid);
 
 	if (flags & SVC_UM_POS_RND)
 	{
@@ -494,15 +494,7 @@ odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inf
 
 	odaproto::Actor* tgt = msg.mutable_target();
 
-	if (source)
-	{
-		msg.set_source_netid(source->netid);
-	}
-	else
-	{
-		msg.set_source_netid(0);
-	}
-
+	msg.set_source_netid(source ? source->netid : 0);
 	msg.set_inflictor_netid(inflictor ? inflictor->netid : 0);
 	msg.set_health(target->health);
 	msg.set_mod(mod);
@@ -510,14 +502,7 @@ odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inf
 
 	// [AM] Confusingly, we send the lives _before_ we take it away, so
 	//      the lives logic can live in the kill function.
-	if (target->player)
-	{
-		msg.set_lives(target->player->lives);
-	}
-	else
-	{
-		msg.set_lives(-1);
-	}
+	msg.set_lives(target->player ? target->player->lives : -1);
 
 	// send death location first
 	tgt->set_netid(target->netid);

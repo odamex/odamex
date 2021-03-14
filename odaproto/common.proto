@@ -41,9 +41,9 @@ message Actor
 	fixed32 flags = 10;
 	uint32 movedir = 11;
 	int32 movecount = 12;
-	int32 targetid = 13;
+	uint32 targetid = 13;
 	int32 reactiontime = 14;
-	int32 tracerid = 15;
+	uint32 tracerid = 15;
 	int32 waterlevel = 16;
 	uint32 rndindex = 17;
 }

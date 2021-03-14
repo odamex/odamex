@@ -427,7 +427,7 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 	angle_t angle = msg.actor().angle();
 
 	mobjtype_t type = static_cast<mobjtype_t>(msg.actor().type());
-	size_t netid = msg.actor().netid();
+	uint32_t netid = msg.actor().netid();
 	byte rndindex = msg.actor().rndindex();
 	statenum_t state = static_cast<statenum_t>(msg.actor().statenum());
 
@@ -723,9 +723,7 @@ void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
 //
 void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
 {
-	int netid = msg.netid();
-
-	AActor* mo = P_FindThingById(netid);
+	AActor* mo = P_FindThingById(msg.netid());
 
 	if (!mo)
 		return;
@@ -738,7 +736,7 @@ void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
 //
 void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
 {
-	int netid = msg.netid();
+	uint32_t netid = msg.netid();
 
 	AActor* mo = P_FindThingById(netid);
 	if (mo && mo->player && mo->player->id == ::displayplayer_id)
@@ -784,9 +782,7 @@ void CL_UserInfo(const odaproto::svc::UserInfo& msg)
 
 void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 {
-	int netid = msg.actor().netid();
-	AActor* mo = P_FindThingById(netid);
-
+	AActor* mo = P_FindThingById(msg.actor().netid());
 	if (!mo)
 		return;
 
@@ -962,7 +958,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
 //
 void CL_DamagePlayer(const odaproto::svc::DamagePlayer& msg)
 {
-	int netid = msg.netid();
+	uint32_t netid = msg.netid();
 	int healthDamage = msg.health_damage();
 	int armorDamage = msg.armor_damage();
 
@@ -1000,9 +996,9 @@ extern int MeansOfDeath;
 //
 void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 {
-	int srcid = msg.source_netid();
-	int tgtid = msg.target().netid();
-	int infid = msg.inflictor_netid();
+	uint32_t srcid = msg.source_netid();
+	uint32_t tgtid = msg.target().netid();
+	uint32_t infid = msg.inflictor_netid();
 	int health = msg.health();
 	::MeansOfDeath = msg.mod();
 	bool joinkill = msg.joinkill();

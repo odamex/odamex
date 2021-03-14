@@ -68,7 +68,7 @@ message SpawnMobj
 {
 	uint32 flags = 1;
 	Actor actor = 2;
-	int32 target_netid = 3;
+	uint32 target_netid = 3;
 	repeated int32 args = 4;
 }
 
@@ -103,13 +103,13 @@ message ConsolePlayer
 // svc_explodemissile
 message ExplodeMissile
 {
-	int32 netid = 1;
+	uint32 netid = 1;
 }
 
 // svc_removemobj
 message RemoveMobj
 {
-	int32 netid = 1;
+	uint32 netid = 1;
 }
 
 // svc_userinfo
@@ -140,7 +140,7 @@ message SpawnPlayer
 // svc_damageplayer
 message DamagePlayer
 {
-	int32 netid = 1;
+	uint32 netid = 1;
 	int32 health_damage = 2;
 	int32 armor_damage = 3;
 }
@@ -148,9 +148,9 @@ message DamagePlayer
 // svc_killmobj
 message KillMobj
 {
-	int32 source_netid = 1;
+	uint32 source_netid = 1;
 	Actor target = 2;
-	int32 inflictor_netid = 3;
+	uint32 inflictor_netid = 3;
 	int32 health = 4;
 	int32 mod = 5;
 	bool joinkill = 6;
@@ -279,7 +279,7 @@ message MovingSector
 message PlaySound
 {
 	oneof source {
-		int32 netid = 1;
+		uint32 netid = 1;
 		Vec2 pos = 2;
 	};
 
@@ -302,7 +302,7 @@ message ExitLevel
 // svc_touchspecial
 message TouchSpecial
 {
-	int32 netid = 1;
+	uint32 netid = 1;
 }
 
 // svc_missedpacket
