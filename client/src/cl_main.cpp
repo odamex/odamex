@@ -2033,24 +2033,6 @@ void CL_RailTrail()
 }
 
 //
-// CL_ChangeWeapon
-// [ML] From Zdaemon .99
-//
-void CL_ChangeWeapon (void)
-{
-	player_t *player = &consoleplayer();
-	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
-
-	// ensure that the client has the weapon
-	player->weaponowned[newweapon] = true;
-
-	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
-	// have that weapon up.
-	if (player->readyweapon != newweapon)
-		player->pendingweapon = newweapon;
-}
-
-//
 // CL_ClearSectorSnapshots
 //
 // Removes all sector snapshots at the start of a map, etc
@@ -2399,7 +2381,6 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
 		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
-		SERVER_MSG_FUNC(svc_changeweapon, CL_ChangeWeapon);
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
 		SERVER_MSG_FUNC(svc_switch, CL_Switch);

@@ -1034,7 +1034,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_reconnect);
 	SVC_INFO(svc_exitlevel);
 	SVC_INFO(svc_touchspecial);
-	SVC_INFO(svc_changeweapon);
 	SVC_INFO(svc_missedpacket);
 	SVC_INFO(svc_forceteam);
 	SVC_INFO(svc_switch);
