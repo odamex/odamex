@@ -1,4 +1,4 @@
-![Odamex](https://github.com/odamex/odamex/blob/development/media/logo_128.png?raw=true)
+![Odamex](https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png?raw=true)
 
 | Windows Build Status | Mac Build Status | Linux Build Status | Join our Discord! |
 | -------------------- | ---------------- | ------------------ | ----------------- |
