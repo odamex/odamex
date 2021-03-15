@@ -144,7 +144,7 @@ const char* NiceVersionDetails()
 				version = "Debug Build";
 			}
 		}
-		else if (!strcmp(GitBranch(), "master"))
+		else if (!strcmp(GitBranch(), "stable"))
 		{
 			// Master branch is omitted.
 			StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
