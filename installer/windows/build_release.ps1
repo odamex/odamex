@@ -7,7 +7,7 @@
 # 
 
 Set-Variable -Name "OdamexVersion" -Value "0.9.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "-TEST2"
+Set-Variable -Name "OdamexTestSuffix" -Value "-RC3"
 
 #
 # The actual script follows.
@@ -157,10 +157,12 @@ function Outputs {
     # Generate archives
     7z.exe a `
         "${OutputDir}\odamex-win64-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X64Dir}\*"
+        "${CommonDir}\*" "${X64Dir}\*" `
+        "-x!${CommonDir}\odamex-installed.txt"
     7z.exe a `
         "${OutputDir}\odamex-win32-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X86Dir}\*"
+        "${CommonDir}\*" "${X86Dir}\*" `
+        "-x!${CommonDir}\odamex-installed.txt"
 
     # Generate installer
     ISCC.exe odamex.iss `
