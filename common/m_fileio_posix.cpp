@@ -275,7 +275,7 @@ bool M_GetAbsPath(const std::string& path, std::string& out)
 
 #ifdef __SWITCH__
 	std::string res;
-	StrFormat(res, "/switch/odamex/%s", path.c_str());
+	StrFormat(res, "%s", path.c_str());
 	out = res;
 	return true;
 #else

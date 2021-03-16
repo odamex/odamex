@@ -55,12 +55,6 @@ function (odamex_target_settings_nx _DIRECTORY _FILES)
 endfunction()
 
 macro(odamex_target_postcompile_nx source)
-  #set(VITA_ELF_CREATE_FLAGS "${VITA_ELF_CREATE_FLAGS}" CACHE STRING "vita-elf-create flags")
-  #set(VITA_MAKE_FSELF_FLAGS "${VITA_MAKE_FSELF_FLAGS}" CACHE STRING "vita-make-fself flags")
-
-  #set(oneValueArgs CONFIG)
-  #cmake_parse_arguments(vita_create_self "${options}" "${oneValueArgs}" "" ${ARGN})
-
   # NACP
   add_custom_command(OUTPUT ${source}.nacp
     COMMAND ${NACP_TOOL} --create ${APP_TITLE} ${APP_AUTHOR} ${APP_VERSION} ${source}.nacp
@@ -73,9 +67,5 @@ macro(odamex_target_postcompile_nx source)
     DEPENDS ${source}.nacp
     COMMENT "Creating NRO ${source}.nro"
   )
-  #add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target}.nro
-  #  COMMAND ${VITA_MAKE_FSELF} ${VITA_MAKE_FSELF_FLAGS} ${source}.velf ${target}
-  #  DEPENDS ${source}
-  #)
   add_custom_target(NRO ALL DEPENDS ${source}.nacp ${source}.nro)
 endmacro(switch_create_nro)
