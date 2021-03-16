@@ -38,7 +38,7 @@ set (ENABLE_PORTMIDI 0)
 # This is a flag meaning we're compiling for a console
 set (GCONSOLE 1)
 
-# Functions & Stuff
+# NACP info
 set (APP_TITLE "Odamex for Nintendo Switch")
 set (APP_AUTHOR "The Odamex Team")
 set (APP_VERSION "0.9.0")
@@ -54,18 +54,20 @@ function (odamex_target_settings_nx _DIRECTORY _FILES)
     add_definitions("-DUNIX -DGCONSOLE")
 endfunction()
 
+
+# Create a function for post-compiling Odamex.
 macro(odamex_target_postcompile_nx source)
-  # NACP
+  # Generate NACP
   add_custom_command(OUTPUT ${source}.nacp
     COMMAND ${NACP_TOOL} --create ${APP_TITLE} ${APP_AUTHOR} ${APP_VERSION} ${source}.nacp
     DEPENDS ${source}
-    COMMENT "Creating NACP ${source}"
+    COMMENT "Generating NACP info for ${source}"
   )
   # NRO
   add_custom_command(OUTPUT ${source}.nro
     COMMAND ${ELF2NRO_TOOL} ${source} ${CMAKE_BINARY_DIR}/${source}.nro --icon=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.jpg --nacp=${source}.nacp
     DEPENDS ${source}.nacp
-    COMMENT "Creating NRO ${source}.nro"
+    COMMENT "Generating NRO ${source}.nro"
   )
   add_custom_target(NRO ALL DEPENDS ${source}.nacp ${source}.nro)
 endmacro(switch_create_nro)
