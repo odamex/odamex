@@ -39,6 +39,13 @@ set (ENABLE_PORTMIDI 0)
 set (GCONSOLE 1)
 
 # Functions & Stuff
+set (APP_TITLE "Odamex for Nintendo Switch")
+set (APP_AUTHOR "The Odamex Team")
+set (APP_VERSION "0.9.0")
+
+# Compiler stuff
+set(NACP_TOOL "${DEVKITPRO}/tools/bin/nacptool"  CACHE PATH "nacp-tool")
+set(ELF2NRO_TOOL "${DEVKITPRO}/tools/bin/elf2nro"  CACHE PATH "elf2nro")
 
 function (odamex_target_settings_nx _DIRECTORY _FILES)
 #    set(${_DIRECTORY} ${CLIENT_DIR} switch)  # Nintendo Switch
@@ -47,8 +54,28 @@ function (odamex_target_settings_nx _DIRECTORY _FILES)
     add_definitions("-DUNIX -DGCONSOLE")
 endfunction()
 
-function(odamex_target_postcompile_nx _TARGET)
-    add_custom_command( TARGET ${_TARGET} POST_BUILD
-        COMMAND aarch64-none-elf-strip -o ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/client/odamex
-        COMMAND elf2nro ${CMAKE_BINARY_DIR}/odamex_stripped.elf ${CMAKE_BINARY_DIR}/odamex.nro --icon=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.jpg --nacp=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.nacp )
-endfunction()
+macro(odamex_target_postcompile_nx source)
+  #set(VITA_ELF_CREATE_FLAGS "${VITA_ELF_CREATE_FLAGS}" CACHE STRING "vita-elf-create flags")
+  #set(VITA_MAKE_FSELF_FLAGS "${VITA_MAKE_FSELF_FLAGS}" CACHE STRING "vita-make-fself flags")
+
+  #set(oneValueArgs CONFIG)
+  #cmake_parse_arguments(vita_create_self "${options}" "${oneValueArgs}" "" ${ARGN})
+
+  # NACP
+  add_custom_command(OUTPUT ${source}.nacp
+    COMMAND ${NACP_TOOL} --create ${APP_TITLE} ${APP_AUTHOR} ${APP_VERSION} ${source}.nacp
+    DEPENDS ${source}
+    COMMENT "Creating NACP ${source}"
+  )
+  # NRO
+  add_custom_command(OUTPUT ${source}.nro
+    COMMAND ${ELF2NRO_TOOL} ${source} ${CMAKE_BINARY_DIR}/${source}.nro --icon=${CMAKE_SOURCE_DIR}/client/switch/assets/odamex.jpg --nacp=${source}.nacp
+    DEPENDS ${source}.nacp
+    COMMENT "Creating NRO ${source}.nro"
+  )
+  #add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target}.nro
+  #  COMMAND ${VITA_MAKE_FSELF} ${VITA_MAKE_FSELF_FLAGS} ${source}.velf ${target}
+  #  DEPENDS ${source}
+  #)
+  add_custom_target(NRO ALL DEPENDS ${source}.nacp ${source}.nro)
+endmacro(switch_create_nro)

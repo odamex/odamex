@@ -272,6 +272,13 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 
 bool M_GetAbsPath(const std::string& path, std::string& out)
 {
+
+#ifdef __SWITCH__
+	std::string res;
+	StrFormat(res, "/switch/odamex/%s", path.c_str());
+	out = res;
+	return true;
+#else
 	char buffer[PATH_MAX];
 	char* res = realpath(path.c_str(), buffer);
 	if (res == NULL)
@@ -280,6 +287,7 @@ bool M_GetAbsPath(const std::string& path, std::string& out)
 	}
 	out = res;
 	return true;
+#endif
 }
 
 #endif
