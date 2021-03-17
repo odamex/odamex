@@ -2545,10 +2545,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 		if (spectator || it->userinfo.team != player.userinfo.team)
 			continue;
 
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
-		MSG_WriteByte(&(it->client.reliablebuf), 1);
-		MSG_WriteByte(&(it->client.reliablebuf), player.id);
-		MSG_WriteString(&(it->client.reliablebuf), message);
+		MSG_WriteSVC(&it->client.reliablebuf, SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2576,10 +2573,7 @@ void SVC_SpecSay(player_t &player, const char* message)
 		if (!spectator)
 			continue;
 
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
-		MSG_WriteByte(&(it->client.reliablebuf), 1);
-		MSG_WriteByte(&(it->client.reliablebuf), player.id);
-		MSG_WriteString(&(it->client.reliablebuf), message);
+		MSG_WriteSVC(&it->client.reliablebuf, SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2602,10 +2596,7 @@ void SVC_Say(player_t &player, const char* message)
 		if (!validplayer(*it))
 			continue;
 
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_say);
-		MSG_WriteByte(&(it->client.reliablebuf), 0);
-		MSG_WriteByte(&(it->client.reliablebuf), player.id);
-		MSG_WriteString(&(it->client.reliablebuf), message);
+		MSG_WriteSVC(&it->client.reliablebuf, SVC_Say(false, player.id, message));
 	}
 }
 
@@ -2625,19 +2616,13 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n",
 				player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), message);
 
-	MSG_WriteMarker(&dplayer.client.reliablebuf, svc_say);
-	MSG_WriteByte(&dplayer.client.reliablebuf, 1);
-	MSG_WriteByte(&dplayer.client.reliablebuf, player.id);
-	MSG_WriteString(&dplayer.client.reliablebuf, message);
+	MSG_WriteSVC(&dplayer.client.reliablebuf, SVC_Say(true, player.id, message));
 
 	// [AM] Send a duplicate message to the sender, so he knows the message
 	//      went through.
 	if (player.id != dplayer.id)
 	{
-		MSG_WriteMarker(&player.client.reliablebuf, svc_say);
-		MSG_WriteByte(&player.client.reliablebuf, 1);
-		MSG_WriteByte(&player.client.reliablebuf, player.id);
-		MSG_WriteString(&player.client.reliablebuf, message);
+		MSG_WriteSVC(&player.client.reliablebuf, SVC_Say(true, player.id, message));
 	}
 }
 

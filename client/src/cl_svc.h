@@ -56,6 +56,7 @@ void CL_PlaySound(const odaproto::svc::PlaySound& msg);
 void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg);
 void CL_ForceTeam(const odaproto::svc::ForceTeam& msg);
 void CL_Switch(const odaproto::svc::Switch& msg);
+void CL_Say(const odaproto::svc::Say& msg);
 void CL_SecretEvent(const odaproto::svc::SecretEvent& msg);
 void CL_PlayerState(const odaproto::svc::PlayerState& msg);
 void CL_LevelState(const odaproto::svc::LevelState& msg);

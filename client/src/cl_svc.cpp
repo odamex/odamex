@@ -63,6 +63,8 @@ EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_team)
 EXTERN_CVAR(hud_revealsecrets)
+EXTERN_CVAR(mute_enemies)
+EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
 
 extern std::string digest;
@@ -1494,6 +1496,81 @@ void CL_Switch(const odaproto::svc::Switch& msg)
 		P_SetButtonTexture(&lines[l], texture);
 	}
 	lines[l].special = special;
+}
+
+/**
+ * Handle the svc_say server message, which contains a message from another
+ * client with a player id attached to it.
+ */
+void CL_Say(const odaproto::svc::Say& msg)
+{
+	bool message_visibility = msg.visibility();
+	byte player_id = msg.pid();
+	std::string message = msg.message();
+
+	bool filtermessage = false;
+
+	player_t& player = idplayer(player_id);
+
+	if (!validplayer(player))
+	{
+		return;
+	}
+
+	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
+
+	if (consoleplayer().id != player.id)
+	{
+		if (spectator && ::mute_spectators)
+		{
+			filtermessage = true;
+		}
+
+		if (::mute_enemies && !spectator &&
+		    (G_IsFFAGame() ||
+		     (G_IsTeamGame() && player.userinfo.team != consoleplayer().userinfo.team)))
+		{
+			filtermessage = true;
+		}
+	}
+
+	const char* name = player.userinfo.netname.c_str();
+
+	if (message_visibility == 0)
+	{
+		if (strnicmp(message.c_str(), "/me ", 4) == 0)
+		{
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name,
+			       message.substr(4, message.length() - 4).c_str());
+		}
+		else
+		{
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
+			       message.c_str());
+		}
+
+		if (::show_messages && !filtermessage)
+		{
+			S_Sound(CHAN_INTERFACE, ::gameinfo.chatSound, 1, ATTN_NONE);
+		}
+	}
+	else if (message_visibility == 1)
+	{
+		if (strnicmp(message.c_str(), "/me ", 4) == 0)
+		{
+			Printf(PRINT_TEAMCHAT, "* %s %s\n", name,
+			       message.substr(4, message.length() - 4).c_str());
+		}
+		else
+		{
+			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message.c_str());
+		}
+
+		if (::show_messages)
+		{
+			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+		}
+	}
 }
 
 //

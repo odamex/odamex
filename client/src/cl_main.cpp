@@ -1902,62 +1902,6 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
-/**
- * Handle the svc_say server message, which contains a message from another
- * client with a player id attached to it.
- */
-void CL_Say()
-{
-	byte message_visibility = MSG_ReadByte();
-	byte player_id = MSG_ReadByte();
-	const char* message = MSG_ReadString();
-
-	bool filtermessage = false;
-
-	player_t &player = idplayer(player_id);
-
-	if (!validplayer(player))
-		return;
-
-	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
-
-	if (consoleplayer().id != player.id)
-	{
-		if (spectator && mute_spectators)
-			filtermessage = true;
-
-		if (mute_enemies && !spectator &&
-		    (G_IsFFAGame() ||
-		    (G_IsTeamGame() &&
-		     player.userinfo.team != consoleplayer().userinfo.team)))
-			filtermessage = true;
-	}
-
-	const char* name = player.userinfo.netname.c_str();
-
-	if (message_visibility == 0)
-	{
-		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
-		else
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message);
-
-		if (show_messages && !filtermessage)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-	}
-	else if (message_visibility == 1)
-	{
-		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
-		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
-
-		if (show_messages)
-			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-	}
-}
-
 //
 // CL_PlayerJustTeleported
 //
@@ -2342,7 +2286,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
 		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
-		SERVER_MSG_FUNC(svc_say, CL_Say);
+		SERVER_PROTO_FUNC(svc_say, CL_Say, odaproto::svc::Say);
 		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
 		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
 		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);

@@ -924,6 +924,18 @@ odaproto::svc::Switch SVC_Switch(line_t& line, uint32_t state, uint32_t timer)
 	return msg;
 }
 
+odaproto::svc::Say SVC_Say(const bool visibility, const byte pid,
+                           const std::string& message)
+{
+	odaproto::svc::Say msg;
+
+	msg.set_visibility(visibility);
+	msg.set_pid(pid);
+	msg.set_message(message);
+
+	return msg;
+}
+
 /**
  * @brief Send information about a player who discovered a secret.
  */

@@ -60,6 +60,7 @@ class PlaySound;
 class TouchSpecial;
 class ForceTeam;
 class Switch;
+class Say;
 class SecretEvent;
 class PlayerState;
 class LevelState;
