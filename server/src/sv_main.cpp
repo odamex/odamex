@@ -1020,11 +1020,10 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 {
 	client_t *cl = &who.client;
 
-	MSG_WriteMarker (&cl->reliablebuf, svc_forceteam);
-
 	who.userinfo.team = team;
 	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
-	MSG_WriteShort (&cl->reliablebuf, team);
+
+	MSG_WriteSVC(&cl->reliablebuf, SVC_ForceTeam(team));
 }
 
 //

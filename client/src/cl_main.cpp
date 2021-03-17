@@ -2182,23 +2182,6 @@ void CL_SetMobjState()
 	P_SetMobjState (mo, (statenum_t)s);
 }
 
-// ---------------------------------------------------------------------------------------------------------
-//	CL_ForceSetTeam
-//	Allows server to force set a players team setting
-// ---------------------------------------------------------------------------------------------------------
-
-void CL_ForceSetTeam (void)
-{
-	unsigned int t = MSG_ReadShort ();
-
-	if(t < NUMTEAMS || t == TEAM_NONE)
-		consoleplayer().userinfo.team = (team_t)t;
-
-	// Setting the cl_team will send a playerinfo packet back to the server.
-	// Unfortunately, this is unavoidable until we rework the team system.
-	cl_team.Set(GetTeamInfo(consoleplayer().userinfo.team)->ColorStringUpper.c_str());
-}
-
 //
 // CL_MobjTranslation
 //
@@ -2357,7 +2340,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
 		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
 		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
-		SERVER_MSG_FUNC(svc_forceteam, CL_ForceSetTeam);
+		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
 		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
 		SERVER_MSG_FUNC(svc_say, CL_Say);
 		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);

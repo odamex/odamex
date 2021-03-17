@@ -901,6 +901,15 @@ odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls)
 	return msg;
 }
 
+odaproto::svc::ForceTeam SVC_ForceTeam(team_t team)
+{
+	odaproto::svc::ForceTeam msg;
+
+	msg.set_team(team);
+
+	return msg;
+}
+
 odaproto::svc::Switch SVC_Switch(line_t& line, uint32_t state, uint32_t timer)
 {
 	odaproto::svc::Switch msg;

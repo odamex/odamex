@@ -61,6 +61,7 @@ EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
+EXTERN_CVAR(cl_team)
 EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(show_messages)
 
@@ -1440,6 +1441,25 @@ void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
 		return;
 
 	P_GiveSpecial(&consoleplayer(), mo);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+//	CL_ForceSetTeam
+//	Allows server to force set a players team setting
+// ---------------------------------------------------------------------------------------------------------
+
+void CL_ForceTeam(const odaproto::svc::ForceTeam& msg)
+{
+	team_t t = static_cast<team_t>(msg.team());
+
+	if (t < NUMTEAMS || t == TEAM_NONE)
+	{
+		consoleplayer().userinfo.team = t;
+	}
+
+	// Setting the cl_team will send a playerinfo packet back to the server.
+	// Unfortunately, this is unavoidable until we rework the team system.
+	cl_team.Set(GetTeamInfo(consoleplayer().userinfo.team)->ColorStringUpper.c_str());
 }
 
 //
