@@ -397,6 +397,13 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
 	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netpause"} },
+    { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netff"}},
+    { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netrew"}},
+    { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netnextmap"}},
+	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netprevmap"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
     { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },
 	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },
@@ -405,6 +412,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
 	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
 	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+
 };
 
 menu_t ControlsMenu = {
@@ -1353,6 +1361,8 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
 		if (item->type == mapcontrol)
 			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
+		if (item->type == netdemocontrol)
+			NetDemoBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
@@ -1616,6 +1626,13 @@ void M_OptDrawer (void)
 			}
 			break;
 
+			case netdemocontrol:
+			{
+				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+			}
+			break;
+
 			case bitflag:
 			{
 				value_t *value;
@@ -1704,6 +1721,8 @@ void M_OptResponder (event_t *ev)
 					Bindings.ChangeBinding (item->e.command, ch);
 				else if (item->type == mapcontrol)
 					AutomapBindings.ChangeBinding(item->e.command, ch);
+				else if (item->type == netdemocontrol)
+					NetDemoBindings.ChangeBinding(item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -2175,6 +2194,11 @@ void M_OptResponder (event_t *ev)
 				AutomapBindings.UnbindACommand(item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
+			else if (item->type == netdemocontrol)
+			{
+				NetDemoBindings.UnbindACommand(item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
@@ -2182,7 +2206,8 @@ void M_OptResponder (event_t *ev)
 			{
 				int width, height;
 
-				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
+				if (!(item->type == screenres &&
+				      GetSelectedSize(CurrentItem, &width, &height)))
 				{
 					width = I_GetVideoWidth();
 					height = I_GetVideoHeight();
@@ -2197,7 +2222,8 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
-			else if (item->type == discrete || item->type == cdiscrete || item->type == svdiscrete)
+			else if (item->type == discrete || item->type == cdiscrete ||
+			         item->type == svdiscrete)
 			{
 				int cur;
 				int numvals;
@@ -2216,36 +2242,36 @@ void M_OptResponder (event_t *ev)
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
 					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
-			else if (item->type == control || item->type == mapcontrol)
-				{
-					configuring_controls = true;
-					WaitingForKey = true;
-					OldContMessage = CurrentMenu->items[0].label;
-					OldContType = CurrentMenu->items[0].type;
-					CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
-					CurrentMenu->items[0].type = redtext;
-				}
+			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
+			{
+				configuring_controls = true;
+				WaitingForKey = true;
+				OldContMessage = CurrentMenu->items[0].label;
+				OldContType = CurrentMenu->items[0].type;
+				CurrentMenu->items[0].label =
+				    "Press new key for control or ESC to cancel";
+				CurrentMenu->items[0].type = redtext;
+			}
 			else if (item->type == listelement)
-				{
-					CurrentMenu->lastOn = CurrentItem;
-					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-					item->e.lfunc (CurrentItem);
-				}
+			{
+				CurrentMenu->lastOn = CurrentItem;
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				item->e.lfunc(CurrentItem);
+			}
 			else if (item->type == joyaxis)
-				{
-					WaitingForAxis = true;
-					OldAxisMessage = CurrentMenu->items[8].label;
-					OldAxisType = CurrentMenu->items[8].type;
-					CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
-					CurrentMenu->items[8].type = redtext;
-				}
+			{
+				WaitingForAxis = true;
+				OldAxisMessage = CurrentMenu->items[8].label;
+				OldAxisType = CurrentMenu->items[8].type;
+				CurrentMenu->items[8].label =
+				    "Activate desired analog axis or ESC to cancel";
+				CurrentMenu->items[8].type = redtext;
+			}
 			else if (item->type == screenres)
-				{
-				}
-
-			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+			{
+			}
 		}
 		else if (Key_IsCancelKey(ch))
 		{

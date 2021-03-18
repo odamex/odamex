@@ -136,23 +136,37 @@ void P_ClearPlayerPowerups(player_t& p)
  * @param wins True if a player's wins should be cleared as well - should
  *             usually be True unless it's a reset across rounds.
  */
-void P_ClearPlayerScores(player_t& p, bool wins)
+void P_ClearPlayerScores(player_t& p, byte flags)
 {
-	if (wins)
+	if (flags & SCORES_CLEAR_WINS)
 		p.roundwins = 0;
 
-	p.lives = g_lives.asInt();
-	p.fragcount = 0;
-	p.itemcount = 0;
-	p.secretcount = 0;
-	p.deathcount = 0; // [Toke - Scores - deaths]
-	p.killcount = 0; // [deathz0r] Coop kills
-	p.points = 0;
+	if (flags & SCORES_CLEAR_POINTS)
+	{
+		p.lives = g_lives.asInt();
+		p.fragcount = 0;
+		p.itemcount = 0;
+		p.secretcount = 0;
+		p.deathcount = 0; // [Toke - Scores - deaths]
+		p.killcount = 0;  // [deathz0r] Coop kills
+		p.points = 0;
+	}
+
+	if (flags & SCORES_CLEAR_TOTALPOINTS)
+	{
+		p.totalpoints = 0;
+		p.totaldeaths = 0;
+	}
 }
 
 static bool cmpFrags(player_t* a, player_t* b)
 {
 	return a->fragcount < b->fragcount;
+}
+
+static bool cmpLives(player_t* a, player_t* b)
+{
+	return a->lives < b->lives;
 }
 
 static bool cmpWins(player_t* a, const player_t* b)
@@ -225,6 +239,28 @@ PlayerResults PlayerQuery::execute()
 			}
 		}
 		break;
+	case SORT_LIVES:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpLives);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->lives;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->lives != top
+				                                         : (*it)->lives == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
 	case SORT_WINS:
 		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
@@ -234,8 +270,8 @@ PlayerResults PlayerQuery::execute()
 			for (PlayersView::iterator it = results.players.begin();
 			     it != results.players.end();)
 			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
-				                                         : (*it)->fragcount == top;
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->roundwins != top
+				                                         : (*it)->roundwins == top;
 				if (cmp)
 				{
 					it = results.players.erase(it);
@@ -960,6 +996,84 @@ void P_PlayerThink (player_t *player)
 	}
 }
 
+#define CASE_STR(str) case str : return #str
+
+const char* PlayerState(size_t state)
+{
+	statenum_t st = static_cast<statenum_t>(state);
+
+	switch (st)
+	{
+		CASE_STR(S_PLAY);
+		CASE_STR(S_PLAY_RUN1);
+		CASE_STR(S_PLAY_RUN2);
+		CASE_STR(S_PLAY_RUN3);
+		CASE_STR(S_PLAY_RUN4);
+		CASE_STR(S_PLAY_ATK1);
+		CASE_STR(S_PLAY_ATK2);
+		CASE_STR(S_PLAY_PAIN);
+		CASE_STR(S_PLAY_PAIN2);
+		CASE_STR(S_PLAY_DIE1);
+		CASE_STR(S_PLAY_DIE2);
+		CASE_STR(S_PLAY_DIE3);
+		CASE_STR(S_PLAY_DIE4);
+		CASE_STR(S_PLAY_DIE5);
+		CASE_STR(S_PLAY_DIE6);
+		CASE_STR(S_PLAY_DIE7);
+		CASE_STR(S_PLAY_XDIE1);
+		CASE_STR(S_PLAY_XDIE2);
+		CASE_STR(S_PLAY_XDIE3);
+		CASE_STR(S_PLAY_XDIE4);
+		CASE_STR(S_PLAY_XDIE5);
+		CASE_STR(S_PLAY_XDIE6);
+		CASE_STR(S_PLAY_XDIE7);
+		CASE_STR(S_PLAY_XDIE8);
+		CASE_STR(S_PLAY_XDIE9);
+	default:
+		return "Unknown";
+	}
+}
+
+#define STATE_NUM(mo) (mo -> state - states)
+
+BEGIN_COMMAND(cheat_players)
+{
+	Printf("== PLAYERS ==");
+
+	int dead = 0;
+
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+
+		if (mo->type == MT_PLAYER)
+		{
+			if (STATE_NUM(mo) == S_PLAY_DIE7 || STATE_NUM(mo) == S_PLAY_XDIE9)
+			{
+				dead += 1;
+				continue;
+			}
+
+			if (mo->player)
+			{
+				Printf("%.3u: %s\n", mo->player->id,
+				       mo->player->userinfo.netname.c_str());
+			}
+			else
+			{
+				Printf("???: ???\n");
+			}
+			Printf("State: %s\n", PlayerState(mo->state - states));
+			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			       FIXED2FLOAT(mo->z));
+		}
+	}
+
+	Printf("== Skipped %d dead players ==\n", dead);
+}
+END_COMMAND(cheat_players)
+
 void player_s::Serialize (FArchive &arc)
 {
 	size_t i;
@@ -1209,6 +1323,8 @@ player_s &player_s::operator =(const player_s &other)
 	fragcount = other.fragcount;
 	deathcount = other.deathcount;
 	killcount = other.killcount;
+	totalpoints = other.totalpoints;
+	totaldeaths = other.totaldeaths;
 
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;

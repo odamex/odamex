@@ -95,6 +95,9 @@ public:
 	operator const std::string& () const { return m_String; }
 	unsigned int flags() const { return m_Flags; }
     cvartype_t type() const { return m_Type; }
+	const std::string& getDefault() const { return m_Default; }
+	float getMinValue() const { return m_MinValue; }
+	float getMaxValue() const { return m_MaxValue; }
 
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding

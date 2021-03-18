@@ -43,7 +43,6 @@ EXTERN_CVAR (g_ctf_notouchreturn)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)
-EXTERN_CVAR (g_sides)
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMTEAMS][NUMFLAGSTATES] =
@@ -77,8 +76,13 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 	if(event == SCORE_NONE)
 		return;
 
-	if(validplayer(who) && G_CanScoreChange())
-		who.points += ctf_points[event];
+	if (validplayer(who) && G_CanScoreChange())
+	{
+		if (G_IsRoundsGame())
+			who.totalpoints += ctf_points[event];
+		else
+			who.points += ctf_points[event];
+	}
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -95,12 +99,16 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 		if(validplayer(who))
 		{
 			MSG_WriteByte (&cl->reliablebuf, who.id);
-			MSG_WriteLong (&cl->reliablebuf, who.points);
+
+			if (G_IsRoundsGame())
+				MSG_WriteVarint(&cl->reliablebuf, who.totalpoints);
+			else
+				MSG_WriteVarint(&cl->reliablebuf, who.points);
 		}
 		else
 		{
 			MSG_WriteByte (&cl->reliablebuf, 0);
-			MSG_WriteLong (&cl->reliablebuf, 0);
+			MSG_WriteVarint(&cl->reliablebuf, 0);
 		}
 
 		for(size_t j = 0; j < NUMTEAMS; j++)

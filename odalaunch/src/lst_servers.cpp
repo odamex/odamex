@@ -436,47 +436,31 @@ void LstOdaServerList::AddServerToList(const Server& s,
 
 	SetItem(li);
 
-	// Game type column
-	switch(s.Info.GameType)
-	{
-	case GT_Cooperative:
-	{
-		// Detect a single player server
-		if(s.Info.MaxPlayers > 1)
-			GameType = "Cooperative";
-		else
-			GameType = "Single Player";
-	}
-	break;
-
-	case GT_Deathmatch:
-	{
-		// Detect a 'duel' server
-		if(s.Info.MaxPlayers < 3)
-			GameType = "Duel";
-		else
-			GameType = "Deathmatch";
-	}
-	break;
-
-	case GT_TeamDeathmatch:
-	{
+	// Game Type Column
+	if (s.Info.GameType == GT_Cooperative && s.Info.Lives)
+		GameType = "Survival";
+	else if (s.Info.GameType == GT_Cooperative && s.Info.MaxPlayers <= 1)
+		GameType = "Single-player";
+	else if (s.Info.GameType == GT_Cooperative)
+		GameType = "Cooperative";
+	else if (s.Info.GameType == GT_Deathmatch && s.Info.Lives)
+		GameType = "Last Marine Standing";
+	else if (s.Info.GameType == GT_Deathmatch && s.Info.MaxPlayers <= 2)
+		GameType = "Duel";
+	else if (s.Info.GameType == GT_Deathmatch)
+		GameType = "Deathmatch";
+	else if (s.Info.GameType == GT_TeamDeathmatch && s.Info.Lives)
+		GameType = "Team Last Marine Standing";
+	else if (s.Info.GameType == GT_TeamDeathmatch)
 		GameType = "Team Deathmatch";
-	}
-	break;
-
-	case GT_CaptureTheFlag:
-	{
+	else if (s.Info.GameType == GT_CaptureTheFlag && s.Info.Sides)
+		GameType = "Attack & Defend CTF";
+	else if (s.Info.GameType == GT_CaptureTheFlag && s.Info.Lives)
+		GameType = "LMS Capture The Flag";
+	else if (s.Info.GameType == GT_CaptureTheFlag)
 		GameType = "Capture The Flag";
-	}
-	break;
-
-	default:
-	{
+	else
 		GameType = "Unknown";
-	}
-	break;
-	}
 
 	li.m_col = serverlist_field_type;
 	li.m_text = GameType;

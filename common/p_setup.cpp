@@ -46,10 +46,12 @@
 #include "v_palette.h"
 #include "c_console.h"
 
+#include "p_mobj.h"
 #include "p_setup.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
+void P_SpawnAvatars();
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 void P_TranslateTeleportThings (void);
@@ -599,6 +601,8 @@ void P_LoadThings (int lump)
 
 		P_SpawnMapThing (&mt2, 0);
 	}
+
+	P_SpawnAvatars();
 
 	Z_Free (data);
 }
@@ -1684,6 +1688,9 @@ void P_SetupLevel (char *lumpname, int position)
 	DThinker::DestroyAllThinkers ();
 	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
+
+	// [AM] Every new level starts with fresh netids.
+	P_ClearAllNetIds();
 
 	// UNUSED W_Profile ();
 

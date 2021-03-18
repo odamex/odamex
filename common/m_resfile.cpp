@@ -137,7 +137,7 @@ bool OWantFile::make(OWantFile& out, const std::string& file, ofile_t type)
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
 	out.m_basename = StdStringToUpper(basename);
-	out.m_extension = StdStringToUpper(extension);
+	out.m_extension = std::string(".") + StdStringToUpper(extension);
 	return true;
 }
 
@@ -246,6 +246,10 @@ std::vector<std::string> M_FileSearchDirs()
 	dirs.push_back(M_GetUserDir());
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());
+
+	#ifdef __SWITCH__
+	dirs.push_back("./wads");
+	#endif
 
 	// [AM] Search additional paths based on platform
 	D_AddPlatformSearchDirs(dirs);

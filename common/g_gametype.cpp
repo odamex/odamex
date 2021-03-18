@@ -27,8 +27,9 @@
 #include "d_event.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
-#include "msg_server.h"
+#include "svc_message.h"
 
+EXTERN_CVAR(g_gametypename)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_roundlimit)
@@ -52,7 +53,9 @@ EXTERN_CVAR(sv_warmup)
 const std::string& G_GametypeName()
 {
 	static std::string name;
-	if (sv_gametype == GM_COOP && g_lives)
+	if (!g_gametypename.str().empty())
+		name = g_gametypename.str();
+	else if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP && ::multiplayer)
 		name = "Cooperative";
@@ -68,6 +71,8 @@ const std::string& G_GametypeName()
 		name = "Team Last Marine Standing";
 	else if (sv_gametype == GM_TEAMDM)
 		name = "Team Deathmatch";
+	else if (sv_gametype == GM_CTF && g_sides)
+		name = "Attack & Defend CTF";
 	else if (sv_gametype == GM_CTF && g_lives)
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
@@ -283,6 +288,14 @@ bool G_IsFFAGame()
 }
 
 /**
+ * @brief Check if the gametype is made for Duels.
+ */
+bool G_IsDuelGame()
+{
+	return sv_gametype == GM_DM && sv_maxplayers == 2;
+}
+
+/**
  * @brief Check if the gametype has teams and players can win as a team.
  */
 bool G_IsTeamGame()
@@ -305,6 +318,14 @@ bool G_IsRoundsGame()
 bool G_IsLivesGame()
 {
 	return g_lives > 0;
+}
+
+/**
+ * @brief Check if the game uses sides.
+ */
+bool G_IsSidesGame()
+{
+	return ::g_sides && G_IsTeamGame();
 }
 
 /**
@@ -342,7 +363,7 @@ bool G_UsesFraglimit()
 /**
  * @brief Calculate the tic that the level ends on.
  */
-int G_EndingTic()
+int G_GetEndingTic()
 {
 	return sv_timelimit * 60 * TICRATE + 1;
 }
@@ -405,7 +426,7 @@ void G_AssertValidPlayerCount()
 				// Does the team has more than one players?  If so, the game continues.
 				if (hasplayers != TEAM_NONE)
 				{
-					G_LivesCheckEndGame();	// Check if Whole team is alive
+					G_LivesCheckEndGame(); // Check if Whole team is alive
 					return;
 				}
 				hasplayers = i;
@@ -483,7 +504,7 @@ void G_TimeCheckEndGame()
 		return;
 
 	// Check to see if we have any time left.
-	if (G_EndingTic() > level.time)
+	if (G_GetEndingTic() > level.time)
 		return;
 
 	// If nobody is in the game, just end the game and move on.
@@ -496,51 +517,109 @@ void G_TimeCheckEndGame()
 
 	if (sv_gametype == GM_DM)
 	{
-		PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
-		if (pr.count == 0)
+		if (G_IsLivesGame() && ::sv_fraglimit.asInt() == 0)
 		{
-			// Something has seriously gone sideways...
-			::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
-			::levelstate.endRound();
-			return;
-		}
-		else if (pr.count >= 2)
-		{
-			SV_BroadcastPrintf("Time limit hit. Game is a draw!\n");
-			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
-		}
-		else
-		{
-			SV_BroadcastPrintf("Time limit hit. Game won by %s!\n",
-			                   pr.players.front()->userinfo.netname.c_str());
-			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
-		}
-	}
-	else if (G_IsTeamGame())
-	{
-		if (g_sides)
-		{
-			// Defense always wins in the event of a timeout.
-			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
-			GiveTeamWins(ti.Team, 1);
-			SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
-			                   ti.ColorizedTeamName().c_str());
-			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);
-		}
-		else
-		{
-			TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
-
-			if (tv.size() != 1)
+			// If fraglimit isn't set, our win condition is number of lives left.
+			PlayerResults pr = PlayerQuery().sortLives().filterSortMax().execute();
+			if (pr.count == 0)
 			{
-				SV_BroadcastPrintf("Time limit hit. Game is a draw!\n");
+				// Something has seriously gone sideways...
+				::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
+				::levelstate.endRound();
+				return;
+			}
+			else if (pr.count >= 2)
+			{
+				SV_BroadcastPrintf(
+				    "Time limit hit. Game is a draw on tied lives left!\n");
 				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			}
 			else
 			{
-				SV_BroadcastPrintf("Time limit hit. %s team wins!\n",
-				                   tv.front()->ColorizedTeamName().c_str());
-				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+				SV_BroadcastPrintf("Time limit hit. Game won by %s on lives left!\n",
+				                   pr.players.front()->userinfo.netname.c_str());
+				::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
+			}
+		}
+		else
+		{
+			// We have a fraglimit, that's our wincon.
+			PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+			if (pr.count == 0)
+			{
+				// Something has seriously gone sideways...
+				::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
+				::levelstate.endRound();
+				return;
+			}
+			else if (pr.count >= 2)
+			{
+				SV_BroadcastPrintf("Time limit hit. Game is a draw on tied frags!\n");
+				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			}
+			else
+			{
+				SV_BroadcastPrintf("Time limit hit. Game won by %s on frags!\n",
+				                   pr.players.front()->userinfo.netname.c_str());
+				::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
+			}
+		}
+	}
+	else if (G_IsTeamGame())
+	{
+		if (G_IsSidesGame())
+		{
+			// Defense always wins in the event of a timeout.
+			TeamInfo& ti = *GetTeamInfo(::levelstate.getDefendingTeam());
+			GiveTeamWins(ti.Team, 1);
+			SV_BroadcastPrintf(
+			    "Time limit hit. %s team wins on successful defense!\n",
+			    ti.ColorizedTeamName().c_str());
+			::levelstate.setWinner(WinInfo::WIN_TEAM, ti.Team);
+		}
+		else
+		{
+			const char* limittype = G_UsesScorelimit() ? "score" : "frags";
+
+			if (G_IsLivesGame() &&
+			    ((!G_UsesScorelimit() && ::sv_fraglimit.asInt() == 0) ||
+			     (G_UsesScorelimit() && ::sv_scorelimit.asInt() == 0)))
+			{
+				// If wincon isn't set, our win condition is number of lives left.
+				TeamsView tv = TeamQuery().sortLives().filterSortMax().execute();
+
+				if (tv.size() != 1)
+				{
+					SV_BroadcastPrintf("Time limit hit. Game is a draw on tied %s!\n",
+					                   limittype);
+					::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+				}
+				else
+				{
+					SV_BroadcastPrintf("Time limit hit. %s team wins on %s!\n",
+					                   tv.front()->ColorizedTeamName().c_str(),
+					                   limittype);
+					::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+				}
+			}
+			else
+			{
+				// We have a fraglimit or scorelimit, that's our wincon.
+				TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
+
+				if (tv.size() != 1)
+				{
+					SV_BroadcastPrintf("Time limit hit. Game is a draw on tied %s!\n",
+					                   limittype);
+					::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+				}
+				else
+				{
+					SV_BroadcastPrintf("Time limit hit. %s team wins on %s!\n",
+					                   tv.front()->ColorizedTeamName().c_str(),
+					                   limittype);
+					::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+				}
 			}
 		}
 	}
@@ -691,7 +770,7 @@ void G_LivesCheckEndGame()
 		//      side-mode needs a special-case because otherwise in games
 		//      with scorelimit > 1 the offense can just score once and
 		//      turtle.
-		if (aliveteams <= 1 && sv_gametype == GM_CTF && g_sides == false)
+		if (aliveteams <= 1 && sv_gametype == GM_CTF && !G_IsSidesGame())
 		{
 			const char* teams = aliveteams == 1 ? "one team" : "no teams";
 

@@ -6205,7 +6205,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	},
 	
 			// [Toke - CTF] Red Socket
-	{		// MT_BSOK
+	{		// MT_RSOK
 	5131,		// doomednum
 	S_RSOK,		// spawnstate
 	1000,		// spawnhealth
@@ -6232,7 +6232,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// flags2
 	S_NULL,		// raisestate
 	0x10000,
-	"MT_BSOK"
+	"MT_RSOK"
 	},
 	
 	// Nes - Reserve 5132 for Neutral Socket
@@ -7136,7 +7136,36 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		S_NULL,        // raisestate
 		0xC000,
 		"MT_WPGFLAG"
-	}
+	},
+	{                   // MT_AVATAR
+		-1,             // doomednum
+		S_PLAY,         // spawnstate
+		100,            // spawnhealth
+		S_PLAY_RUN1,    // seestate
+		NULL,           // seesound
+		0,              // reactiontime
+		NULL,           // a ttacksound
+		S_PLAY_PAIN,    // painstate
+		255,            // painchance
+		"*pain100_1",   // painsound
+		S_NULL,         // meleestate
+		S_PLAY_ATK1,    // missilestate
+		S_PLAY_DIE1,    // deathstate
+		S_PLAY_XDIE1,   // xdeathstate
+		"*death1",      // deathsound
+		0,              // speed
+		16*FRACUNIT,    // radius
+		56*FRACUNIT,    // height
+		56*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH, // flags
+		MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,                     // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_AVATAR"
+	},
 };
 
 VERSION_CONTROL (info_cpp, "$Id$")

@@ -187,6 +187,11 @@ public:
 	int			deathcount;
 	int			killcount, itemcount, secretcount;		// for intermission
 
+	// Total points/frags that aren't reset after rounds. Used for LMS/TLMS/LMSCTF.
+	int totalpoints;
+	// Total Deaths that are seen only on Rounds without lives.
+	int totaldeaths;	
+
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
@@ -457,6 +462,7 @@ class PlayerQuery
 	{
 		SORT_NONE,
 		SORT_FRAGS,
+		SORT_LIVES,
 		SORT_WINS,
 	};
 
@@ -526,6 +532,17 @@ class PlayerQuery
 	}
 
 	/**
+	 * @brief Return players with the top lives count, whomever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortLives()
+	{
+		m_sort = SORT_LIVES;
+		return *this;
+	}
+
+	/**
 	 * @brief Return players with the top win count, whatever that may be.
 	 *
 	 * @return A mutated PlayerQuery to chain off of.
@@ -563,9 +580,17 @@ class PlayerQuery
 	PlayerResults execute();
 };
 
+enum
+{
+	SCORES_CLEAR_WINS = (1<<0),
+	SCORES_CLEAR_POINTS = (1<<1),
+	SCORES_CLEAR_TOTALPOINTS = (1<<2),
+	SCORES_CLEAR_ALL = (0xFF),
+};
+
 void P_ClearPlayerCards(player_t& p);
 void P_ClearPlayerPowerups(player_t& p);
-void P_ClearPlayerScores(player_t& p, bool wins);
+void P_ClearPlayerScores(player_t& p, byte flags);
 size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);

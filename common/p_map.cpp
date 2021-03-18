@@ -88,7 +88,6 @@ msecnode_t* sector_list = NULL;		// phares 3/16/98
 // [SL] 2012-03-07 - Sectors that can change floor/ceiling height
 std::set<short>	movable_sectors;
 
-EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomphys)				// [ML] Roll-up of various compat options
@@ -152,8 +151,14 @@ BOOL PIT_StompThing (AActor *thing)
 	}
 
 	// monsters don't stomp things except on boss level
-	if (StompAlwaysFrags) {
-		P_DamageMobj (thing, tmthing, tmthing, 10000, MOD_TELEFRAG);
+	if (StompAlwaysFrags)
+	{
+		// [AM] Surprise, avatars telefrag players who try to telefrag it!
+		//      Not your lucky day, I suppose.
+		if (thing->type == MT_AVATAR && tmthing->player)
+			P_DamageMobj(tmthing, thing, thing, 10000, MOD_TELEFRAG);
+		else
+			P_DamageMobj(thing, tmthing, tmthing, 10000, MOD_TELEFRAG);
 		return true;
 	}
 	return false;
@@ -1099,7 +1104,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 		}
 
 		// killough 3/15/98: Allow certain objects to drop off
-		if (!(co_allowdropoff && dropoff) &&
+		if (!(P_AllowDropOff() && dropoff) &&
 			!(thing->flags & (MF_DROPOFF|MF_FLOAT|MF_MISSILE)) &&
 			  tmfloorz - tmdropoffz > 24*FRACUNIT &&
 			!(thing->flags2 & MF2_BLASTED))

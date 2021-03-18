@@ -84,8 +84,8 @@ private:
 	void writeLauncherSequence(buf_t *netbuffer);
 	void writeConnectionSequence(buf_t *netbuffer);
 	
-	void readSnapshotData(byte *buf, size_t length);
-	void writeSnapshotData(byte *buf, size_t &length);
+	void readSnapshotData(std::vector<byte>& buf);
+	void writeSnapshotData(std::vector<byte>& buf);
 	
 	void writeSnapshotIndexEntry();
 	void writeMapIndexEntry();
@@ -129,8 +129,6 @@ private:
 
 	static const uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
-	static const size_t MAX_SNAPSHOT_SIZE = 131072;
-	
 	netdemo_state_t		state;
 	netdemo_state_t		oldstate;	// used when unpausing
 	std::string			filename;
@@ -142,7 +140,7 @@ private:
 	std::vector<netdemo_index_entry_t> snapshot_index;
 	std::vector<netdemo_index_entry_t> map_index;
 	
-	byte				snapbuf[NetDemo::MAX_SNAPSHOT_SIZE];
+	std::vector<byte>	snapbuf;
 	int					netdemotic;
 };
 

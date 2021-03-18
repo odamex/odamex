@@ -398,32 +398,40 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		if (change & 4)
 		{
 			// Numeric model change
-			sector_t *tmpsec;
+			sector_t* found = NULL;
+			if (floortype == DFloor::floorRaiseToLowestCeiling ||
+			    floortype == DFloor::floorLowerToLowestCeiling ||
+			    floortype == DFloor::floorRaiseToCeiling ||
+			    floortype == DFloor::floorLowerToCeiling)
+			{
+				P_FindModelCeilingSector(m_FloorDestHeight, sec);
+			}
+			else
+			{
+				P_FindModelFloorSector(m_FloorDestHeight, sec);
+			}
 
-			tmpsec = (floortype == DFloor::floorRaiseToLowestCeiling ||
-				   floortype == DFloor::floorLowerToLowestCeiling ||
-				   floortype == DFloor::floorRaiseToCeiling ||
-				   floortype == DFloor::floorLowerToCeiling) ?
-					 P_FindModelCeilingSector (m_FloorDestHeight, sec) :
-					 P_FindModelFloorSector (m_FloorDestHeight, sec);
-
-			if (tmpsec) {
-				m_Texture = tmpsec->floorpic;
-				switch (change & 3) {
-					case 1:
-						m_NewSpecial = 0;
-						m_Type = DFloor::genFloorChg0;
-						break;
-					case 2:
-						m_NewSpecial = tmpsec->special;
-						m_Type = DFloor::genFloorChgT;
-						break;
-					case 3:
-						m_Type = DFloor::genFloorChg;
-						break;
+			if (found != NULL)
+			{
+				m_Texture = found->floorpic;
+				switch (change & 3)
+				{
+				case 1:
+					m_NewSpecial = 0;
+					m_Type = DFloor::genFloorChg0;
+					break;
+				case 2:
+					m_NewSpecial = found->special;
+					m_Type = DFloor::genFloorChgT;
+					break;
+				case 3:
+					m_Type = DFloor::genFloorChg;
+					break;
 				}
 			}
-		} else if (line) {
+		}
+		else if (line != NULL)
+		{
 			// Trigger model change
 			m_Texture = line->frontsector->floorpic;
 

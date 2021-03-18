@@ -59,6 +59,7 @@
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
+void CL_ClearSectorSnapshots();
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void R_ResetInterpolation();
@@ -551,7 +552,7 @@ void G_DoLoadLevel (int position)
 		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, false);
+		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
@@ -575,6 +576,9 @@ void G_DoLoadLevel (int position)
 
  	SN_StopAllSequences (); // denis - todo - equivalent?
 	P_SetupLevel (level.mapname, position);
+
+	// [AM] Prevent holding onto stale snapshots.
+	CL_ClearSectorSnapshots();
 
 	// [SL] 2011-09-18 - Find an alternative start if the single player start
 	// point is not availible.

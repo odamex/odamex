@@ -19,6 +19,8 @@ set(ODAWAD_SOURCES
   graphics/flagic5g.gif
   graphics/flagic5r.gif
   graphics/flagit.gif
+  graphics/flagito.gif
+  graphics/flagitd.gif
   graphics/fontb01.gif
   graphics/fontb02.gif
   graphics/fontb03.gif
@@ -77,6 +79,11 @@ set(ODAWAD_SOURCES
   graphics/fontb56.gif
   graphics/fontb57.gif
   graphics/fontb58.gif
+  graphics/fontb59.gif
+  graphics/fontb60.gif
+  graphics/fontb61.gif
+  graphics/fontb62.gif
+  graphics/fontb63.gif
   graphics/gslide.gif
   graphics/litlcurs.gif
   graphics/litldn.gif

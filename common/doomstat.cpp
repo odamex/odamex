@@ -48,7 +48,7 @@ CVAR_FUNC_IMPL (language)
 
 	// Reapply DeHackEd patches on top of these strings.
 	// FIXME: This only handles PWAD patches for now.
-	DoDehPatch(NULL, true);
+	D_DoDehPatch(NULL, true);
 
 	// MAPINFO comes last, because it overrides default level strings.
 	G_ParseMapInfo();

@@ -507,10 +507,11 @@ void FLZOMemFile::WriteToBuffer(void* buf, size_t length) const
 //
 //============================================
 
-FArchive::FArchive(FFile& file)
+FArchive::FArchive(FFile& file, uint32_t flags)
 {
 	int i;
 
+	m_Reset = flags & FA_RESET;
 	m_HubTravel = false;
 	m_File = &file;
 	m_MaxObjectCount = m_ObjectCount = 0;
@@ -576,9 +577,12 @@ void FArchive::Close()
 
 void FArchive::WriteCount(DWORD count)
 {
+	// [AM] Hoisted out of loop due to MSVC/ASan detecting as
+	//      use-after-scope.
+	byte out = 0;
 	do
 	{
-		byte out = count & 0x7f;
+		out = count & 0x7f;
 		if (count >= 0x80)
 			out |= 0x80;
 		Write(&out, sizeof(byte));

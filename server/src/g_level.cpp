@@ -51,7 +51,7 @@
 #include "z_zone.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
-#include "msg_server.h"
+#include "svc_message.h"
 #include "g_gametype.h"
 
 
@@ -72,7 +72,6 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
-EXTERN_CVAR(g_sides)
 
 extern int mapchange;
 
@@ -428,11 +427,15 @@ void G_InitNew (const char *mapname)
 	demoplayback = false;
 	viewactive = true;
 
+	// Make a copy of our previous winner so we can service the queue properly
+	// after loading the level.
+	WinInfo info = ::levelstate.getWinInfo();
+
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
-	if (serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
-		SV_UpdatePlayerQueueLevelChange();
+	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
+		SV_UpdatePlayerQueueLevelChange(info);
 
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog();
@@ -493,7 +496,7 @@ void G_DoCompleted()
 			G_PlayerFinishLevel(*it);
 }
 
-extern void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers);
+extern void G_SerializeLevel(FArchive &arc, bool hubLoad);
 
 // [AM] - Save the state of the level that can be reset to
 void G_DoSaveResetState()
@@ -506,8 +509,8 @@ void G_DoSaveResetState()
 	}
 	reset_snapshot = new FLZOMemFile;
 	reset_snapshot->Open();
-	FArchive arc(*reset_snapshot);
-	G_SerializeLevel(arc, false, true);
+	FArchive arc(*reset_snapshot, FA_RESET);
+	G_SerializeLevel(arc, false);
 }
 
 /**
@@ -527,21 +530,11 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// Clear teamgame state.
-	Players::iterator it;
-	for (size_t i = 0; i < NUMTEAMS; i++)
-	{
-		for (it = players.begin(); it != players.end(); ++it)
-			it->flags[i] = false;
+	TeamInfo_ResetScores(full_reset);
 
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		teamInfo->FlagData.flagger = 0;
-		teamInfo->FlagData.state = flag_home;
-		teamInfo->FlagData.firstgrab = false;
-		teamInfo->Points = 0;
-
-		if (full_reset)
-			teamInfo->RoundWins = 0;
-	}
+	// Reset all keys found
+	for (size_t j = 0; j < NUMCARDS; j++)
+		keysfound[j] = false;
 
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
@@ -551,12 +544,12 @@ void G_DoResetLevel(bool full_reset)
 	{
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
-			ServerNetID.ReleaseNetID(mo->netid);
 			mo->netid = 0;
 		}
 	}
 
 	// Tell clients that a map reset is incoming.
+	Players::iterator it;
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
@@ -568,8 +561,8 @@ void G_DoResetLevel(bool full_reset)
 
 	// Unserialize saved snapshot
 	reset_snapshot->Reopen();
-	FArchive arc(*reset_snapshot);
-	G_SerializeLevel(arc, false, true);
+	FArchive arc(*reset_snapshot, FA_RESET);
+	G_SerializeLevel(arc, false);
 	reset_snapshot->Seek(0, FFile::ESeekSet);
 
 	{
@@ -587,7 +580,7 @@ void G_DoResetLevel(bool full_reset)
 			// any weird destruction of any items post-reset.
 			if (mo->netid && mo->type != MT_PLAYER)
 			{
-				mo->netid = ServerNetID.ObtainNetID();
+				mo->netid = ::ServerNetID.obtainNetID();
 			}
 		}
 	}
@@ -611,7 +604,7 @@ void G_DoResetLevel(bool full_reset)
 
 		if (full_reset)
 		{
-			P_ClearPlayerScores(*it, true);
+			P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 
 			// [AM] Only touch ready state if warmup mode is enabled.
 			if (sv_warmup)
@@ -619,7 +612,7 @@ void G_DoResetLevel(bool full_reset)
 		}
 		else
 		{
-			P_ClearPlayerScores(*it, false);
+			P_ClearPlayerScores(*it, SCORES_CLEAR_POINTS);
 		}
 	}
 
@@ -646,12 +639,8 @@ void G_DoResetLevel(bool full_reset)
 	// Force every ingame player to be reborn.
 	for (it = players.begin(); it != players.end(); ++it)
 	{
-		// Spectators aren't reborn.
-		if (!it->ingame() || it->spectator)
+		if (!it->ingame())
 			continue;
-
-		// Destroy the attached mobj, otherwise we leave a ghost.
-		it->mo->Destroy();
 
 		// Set the respawning machinery in motion
 		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
@@ -725,7 +714,7 @@ void G_DoLoadLevel (int position)
 		// Properly reset Cards, Powerups, and scores.
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, true);
+		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
@@ -739,12 +728,9 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	// [deathz0r] It's a smart idea to reset the team points
+	// Reset Team Scores
 	if (G_IsTeamGame())
-	{
-		for (size_t i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->Points = 0;
-	}
+		TeamInfo_ResetScores();
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
 	// any nodes in the freelist are gone by now, cleared
@@ -766,7 +752,6 @@ void G_DoLoadLevel (int position)
 			actor->touching_sectorlist = NULL;
 
 			// denis - clear every actor netid so that they don't announce their destruction to clients
-			ServerNetID.ReleaseNetID(actor->netid);
 			actor->netid = 0;
 		}
 	}
@@ -813,9 +798,12 @@ void G_DoLoadLevel (int position)
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
 
+	// [AM] Handle levelstate init (before we handle per-round init).
+	::levelstate.reset();
+
 	// [AM] In sides-based games, destroy objectives that aren't relevant.
 	//      Must happen after saving state.
-	if (g_sides && sv_gametype == GM_CTF)
+	if (G_IsSidesGame())
 	{
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;
@@ -828,8 +816,6 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	// [AM] Handle warmup init.
-	::levelstate.reset();
 	//	C_FlushDisplay ();
 }
 

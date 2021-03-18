@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(JSONCPP LANGUAGES CXX)
 
+set(CMAKE_DEBUG_POSTFIX "d")
+
 set(JSONCPP_SOURCES
   jsoncpp.cpp
   json/json.h

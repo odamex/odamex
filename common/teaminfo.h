@@ -84,6 +84,7 @@ struct TeamInfo
 	flagdata FlagData;
 
 	const std::string ColorizedTeamName();
+	int LivesPool();
 };
 
 /**
@@ -96,6 +97,7 @@ class TeamQuery
 	enum SortTypes
 	{
 		SORT_NONE,
+		SORT_LIVES,
 		SORT_SCORE,
 		SORT_WINS,
 	};
@@ -113,6 +115,17 @@ class TeamQuery
   public:
 	TeamQuery() : m_sort(SORT_NONE), m_sortFilter(SFILTER_NONE)
 	{
+	}
+
+	/**
+	 * @brief Return teams sorted by greatest number of total lives.
+	 *
+	 * @return A mutated TeamQuery to chain off of.
+	 */
+	TeamQuery& sortLives()
+	{
+		m_sort = SORT_LIVES;
+		return *this;
 	}
 
 	/**
@@ -165,6 +178,7 @@ class TeamQuery
 };
 
 void InitTeamInfo();
+void TeamInfo_ResetScores(bool fullreset = true);
 TeamInfo* GetTeamInfo(team_t team);
 std::string V_GetTeamColor(TeamInfo* team);
 std::string V_GetTeamColor(team_t ateam);

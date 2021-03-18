@@ -22,7 +22,10 @@
 //-----------------------------------------------------------------------------
 
 #include "version.h"
+
+#ifndef ODAMEX_NO_GITVER
 #include "git_describe.h"
+#endif
 
 #include <map>
 #include <string>
@@ -55,6 +58,18 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 }
 
 /**
+ * @brief Return true if ODAMEX_NO_GIT_VERSION is set.
+ */
+static bool NoGitVersion()
+{
+#ifdef ODAMEX_NO_GITVER
+	return true;
+#else
+	return false;
+#endif
+}
+
+/**
  * @brief Return the current commit hash.
  */
 const char* GitHash()
@@ -62,7 +77,7 @@ const char* GitHash()
 #ifdef GIT_HASH
 	return GIT_HASH;
 #else
-	return "unknown";
+	return "";
 #endif
 }
 
@@ -74,7 +89,7 @@ const char* GitBranch()
 #ifdef GIT_BRANCH
 	return GIT_BRANCH;
 #else
-	return "unknown";
+	return "";
 #endif
 }
 
@@ -89,7 +104,7 @@ const char* GitRevCount()
 #ifdef GIT_REV_COUNT
 	return GIT_REV_COUNT;
 #else
-	return "unknown";
+	return "";
 #endif
 }
 
@@ -101,31 +116,65 @@ const char* GitShortHash()
 #ifdef GIT_SHORT_HASH
 	return GIT_SHORT_HASH;
 #else
-	return "unknown";
+	return "";
 #endif
 }
 
 /**
- * @brief Return the Git version in a format that's good-enough to display
+ * @brief Return version details in a format that's good-enough to display
  *        in most end-user contexts.
- * 
- * @return A version string in the format of "version (branch, short hash)".
- *         On master the branch name is omitted.
-*/
-const char* GitNiceVersion()
+ */
+const char* NiceVersionDetails()
+{
+#ifdef NDEBUG
+	const char* debug = "";
+#else
+	const char* debug = ", Debug Build";
+#endif
+
+	static std::string version;
+	if (version.empty())
+	{
+		if (NoGitVersion())
+		{
+			// Without a git version, the only useful info we know is if
+			// this is a debug build.
+			if (debug[0] != '\0')
+			{
+				version = "Debug Build";
+			}
+		}
+		else if (!strcmp(GitBranch(), "stable"))
+		{
+			// Master branch is omitted.
+			StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
+		}
+		else
+		{
+			// Other branches are written in.
+			StrFormat(version, "%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
+			          debug);
+		}
+	}
+	return version.c_str();
+}
+
+/**
+ * @brief Return a "full" version string, starting with the version number
+ *        and putting appropriate details in parenthesis.
+ */
+const char* NiceVersion()
 {
 	static std::string version;
 	if (version.empty())
 	{
-		if (!strcmp(GitBranch(), "master"))
+		if (NoGitVersion())
 		{
-			StrFormat(version, "%s (g%s-%s)", DOTVERSIONSTR, GitShortHash(),
-			          GitRevCount());
+			version = DOTVERSIONSTR;
 		}
 		else
 		{
-			StrFormat(version, "%s (%s, g%s-%s)", DOTVERSIONSTR, GitBranch(),
-			          GitShortHash(), GitRevCount());
+			StrFormat(version, "%s (%s)", DOTVERSIONSTR, NiceVersionDetails());
 		}
 	}
 	return version.c_str();
@@ -136,7 +185,7 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s - %s\n", GitNiceVersion(), COPYRIGHTSTR);
+		Printf(PRINT_HIGH, "Odamex v%s - %s\n", NiceVersion(), COPYRIGHTSTR);
 	}
 	else
 	{

@@ -98,7 +98,6 @@ EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
-EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
@@ -538,8 +537,8 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if (!Actions[ACTION_MLOOK] && !cl_mouselook && !sv_freelook && 
-		!consoleplayer().spectator && novert == 0)		// [Toke - Mouse] acts like novert.exe
+	if (!consoleplayer().spectator 
+		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
 		forward += (int)(float(mousey) * m_forward);
 	}
@@ -1159,7 +1158,9 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.weaponowned[wp_pistol] = true;
 	p.weaponowned[NUMWEAPONS] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
-	p.cheats = 0;						// Reset cheat flags
+
+	if (!p.spectator)
+		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
 	p.tic = 0;

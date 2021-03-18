@@ -101,7 +101,9 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 int __cdecl main(int argc, char *argv[])
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#ifdef NDEBUG
 	I_SetCrashCallbacks();
+#endif
 
     try
     {
@@ -217,10 +219,8 @@ void daemon_init(void)
 int main (int argc, char **argv)
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
-#if defined(__has_feature)
-#if !__has_feature(address_sanitizer)
+#ifdef NDEBUG
 	I_SetCrashCallbacks();
-#endif
 #endif
 
     try

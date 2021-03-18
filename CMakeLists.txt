@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.1)
+# 3.9 needed for GENERATOR_IS_MULTI_CONFIG
+cmake_minimum_required(VERSION 3.9)
+
+project(Odamex VERSION 0.9.0)
 
 include(CMakeDependentOption)
 
@@ -30,9 +33,7 @@ cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_IN
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
-project(Odamex VERSION 0.9.0)
-
-set(PROJECT_COPYRIGHT "2006-2020")
+set(PROJECT_COPYRIGHT "2006-2021")
 set(PROJECT_RC_VERSION "0,9,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
@@ -117,13 +118,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 # git describe
 #
 # Grabs the git hash and branch a few different ways.
+include(GetGitBranch)
 include(GetGitRevisionDescription)
 include(GetGitRevisionNumber)
 get_git_head_revision(HEAD GIT_HASH)
 git_describe(GIT_DESCRIBE --all --long --abbrev=4)
 git_rev_count(HEAD GIT_REV_COUNT)
-string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
-  "\\2" GIT_BRANCH "${GIT_DESCRIBE}")
+git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
