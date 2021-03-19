@@ -33,10 +33,10 @@
 #endif
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "90"
-#define GAMEVER (0*256+90)
+#define CONFIGVERSIONSTR "200"
+#define GAMEVER (2*256+0)
 
-#define DOTVERSIONSTR "0.9.0"
+#define DOTVERSIONSTR "2.0.0"
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
 
@@ -50,7 +50,7 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.
-#define SAVESIG "ODAMEXSAVE090   "	// Needs to be exactly 16 chars long
+#define SAVESIG "ODAMEXSAVE200   "	// Needs to be exactly 16 chars long
 
 #define NETDEMOVER 3
 
