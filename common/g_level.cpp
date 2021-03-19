@@ -3072,4 +3072,10 @@ ClusterInfos& getClusterInfos()
 	return ci;
 }
 
+// P_AllowDropOff()
+bool P_AllowDropOff()
+{
+	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
+}
+
 VERSION_CONTROL (g_level_cpp, "$Id$")
