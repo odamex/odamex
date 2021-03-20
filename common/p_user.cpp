@@ -794,12 +794,13 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (!other.mo || other.spectator)
 		return false;
 
-	// Demo-watchers and spectators can view anybody.
-	if (demo || viewer.spectator)
+	// Demo-watchers can view anybody.
+	if (demo)
 		return true;
 
-	// A teammate can see their other teammates
-	if (P_AreTeammates(viewer, other))
+	// A teammate can see their other teammates.
+	// Spectators see anyone with one slight restriction.
+	if (P_AreTeammates(viewer, other) || viewer.spectator)
 	{
 		// If a player has no more lives, don't show him.
 		if (::g_lives && other.lives < 1)
