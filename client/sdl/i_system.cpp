@@ -568,16 +568,37 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	abort();
 }
 
-void STACK_ARGS I_Error (const char *error, ...)
+void STACK_ARGS I_Error(const char* error, ...)
 {
 	va_list argptr;
 	char errortext[MAX_ERRORTEXT];
+	char messagetext[MAX_ERRORTEXT];
 
-	va_start (argptr, error);
-	vsprintf (errortext, error, argptr);
-	va_end (argptr);
+	va_start(argptr, error);
+	vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+	va_end(argptr);
 
-	throw CRecoverableError (errortext);
+	if (!has_exited)
+	{
+		throw CRecoverableError(errortext);
+	}
+
+	// Recursive atterm, we've used up all our chances.
+	if (SDL_GetError()[0] != '\0')
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
+		         errortext, SDL_GetError());
+	}
+	else
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\n", errortext);
+	}
+
+	I_ErrorMessageBox(messagetext);
+
+	abort();
 }
 
 void STACK_ARGS I_Warning(const char *warning, ...)
@@ -958,7 +979,7 @@ bool I_IsHeadless()
 	return headless;
 }
 
-const char* ODAMEX_ERROR_TITLE = "Odamex " DOTVERSIONSTR " Error";
+const char* ODAMEX_ERROR_TITLE = "Odamex " DOTVERSIONSTR " Fatal Error";
 
 #if defined(SDL20)
 
