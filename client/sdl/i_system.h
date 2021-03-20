@@ -123,6 +123,13 @@ void I_FinishClockCalibration ();
 
 std::string I_GetClipboardText();
 
+/**
+ * @brief Show an error message box.
+ *
+ * @param message Contents of the message box.
+ */
+void I_ErrorMessageBox(const char* message);
+
 // Directory searching routines
 
 typedef struct _finddata_t findstate_t;
