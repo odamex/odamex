@@ -1791,12 +1791,11 @@ bool CL_PrepareConnect(void)
 	}
 
 	OWantFiles newwadfiles;
-	newwadfiles.reserve(server_wads);
+	newwadfiles.resize(server_wads);
 	for (byte i = 0; i < server_wads; i++)
 	{
+		OWantFile& file = newwadfiles.at(i);
 		std::string hash = MSG_ReadString();
-
-		OWantFile file;
 		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
 		{
 			Printf(PRINT_WARNING,
@@ -1805,7 +1804,6 @@ bool CL_PrepareConnect(void)
 			CL_QuitNetGame();
 			return false;
 		}
-		newwadfiles.push_back(file);
 
 		Printf("> %s\n   %s\n", file.getBasename().c_str(), file.getWantedHash().c_str());
 	}
@@ -1880,19 +1878,19 @@ bool CL_PrepareConnect(void)
 	size_t patch_count = MSG_ReadByte();
 
 	OWantFiles newpatchfiles;
-	newpatchfiles.reserve(patch_count);
+	newpatchfiles.resize(patch_count);
 	for (byte i = 0; i < patch_count; ++i)
 	{
-		OWantFile file;
-		if (!OWantFile::make(newpatchfiles.at(i), MSG_ReadString(), OFILE_DEH))
+		OWantFile& file = newpatchfiles.at(i);
+		std::string filename = MSG_ReadString();
+		if (!OWantFile::make(file, filename, OFILE_DEH))
 		{
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       newpatchfiles.at(i).getBasename().c_str());
+			       filename.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
-		newpatchfiles.push_back(file);
 
 		Printf("> %s\n", file.getBasename().c_str());
 	}
