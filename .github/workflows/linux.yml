@@ -35,16 +35,6 @@ jobs:
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
-  build-centos:
-    name: Build (CentOS)
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-    - name: Run build
-      run: bash ci/centos-buildgen.sh
   build-sdl12:
     name: Build (SDL 1.2)
     needs: pre_job
@@ -74,3 +64,23 @@ jobs:
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+  build-centos:
+    name: Build (CentOS 7)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Run build
+      run: bash ci/centos-buildgen.sh
+  build-ubuntu-bionic:
+    name: Build (Ubuntu 18.04 LTS)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Run build
+      run: bash ci/ubuntu-bionic-buildgen.sh
