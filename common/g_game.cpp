@@ -25,6 +25,7 @@
 
 #include "cmdlib.h"
 #include "c_dispatch.h"
+#include "doomstat.h"
 
 void G_PlayerRebornInventory(player_t& p);
 
@@ -49,6 +50,7 @@ struct spawnInventory_t
 	int health;
 	int armorpoints;
 	int armortype;
+	weapontype_t readyweapon;
 	bool weaponowned[NUMWEAPONS];
 	int ammo[NUMAMMO];
 	int maxammo[NUMAMMO];
@@ -56,7 +58,8 @@ struct spawnInventory_t
 	bool backpack;
 
 	spawnInventory_t()
-	    : health(0), armorpoints(0), armortype(0), berserk(false), backpack(false)
+	    : health(100), armorpoints(0), armortype(0), readyweapon(NUMWEAPONS),
+	      berserk(false), backpack(false)
 	{
 		ArrayInit(weaponowned, false);
 		ArrayInit(ammo, 0);
@@ -71,6 +74,23 @@ struct spawnInventory_t
 		ArrayCopy(ammo, other.ammo);
 		ArrayCopy(maxammo, other.maxammo);
 	}
+
+	/**
+	 * @brief Set to default settings.
+	 */
+	void setDefault()
+	{
+		health = deh.StartHealth;
+		armorpoints = 0;
+		armortype = 0;
+		readyweapon = wp_pistol;
+		ArrayInit(weaponowned, false);
+		ArrayInit(ammo, 0);
+		ammo[0] = deh.StartBullets;
+		ArrayCopy(maxammo, ::maxammo);
+		berserk = false;
+		backpack = false;
+	}
 };
 
 spawnInventory_t gSpawnInv;
@@ -80,9 +100,15 @@ CVAR_FUNC_IMPL(g_spawninv)
 	// Split value into comma-separated tokens.
 	const std::string& str = var.str();
 	StringTokens tok = TokenizeString(str, ",");
-	for (StringTokens::const_iterator it = tok.begin(); it != tok.end(); ++it)
+	for (StringTokens::iterator it = tok.begin(); it != tok.end(); ++it)
 	{
-		
+		TrimString(*it);
+		std::string token = StdStringToLower(*it);
+		if (token == "default")
+		{
+			// Set the default settings.
+			::gSpawnInv.setDefault();
+		}
 	}
 }
 
@@ -107,6 +133,7 @@ BEGIN_COMMAND(spawninv)
 
 	if (!stricmp(argv[1], "info"))
 	{
+		// Information about our currently-set spawn inventory.
 		Printf("g_spawninv: %s\n", g_spawninv.cstring());
 
 		Printf("Health: %d\n", ::gSpawnInv.health);
@@ -114,6 +141,11 @@ BEGIN_COMMAND(spawninv)
 			Printf("Green Armor: %d\n", ::gSpawnInv.armorpoints);
 		else if (::gSpawnInv.armortype == 2)
 			Printf("Blue Armor: %d\n", ::gSpawnInv.armorpoints);
+
+		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon >= NUMWEAPONS)
+			Printf("Ready Weapon: None\n");
+		else
+			Printf("Ready Weapon: %s\n", ::weaponnames[::gSpawnInv.readyweapon]);
 
 		StringTokens weapons;
 		for (size_t i = 0; i < ARRAY_LENGTH(::gSpawnInv.weaponowned); i++)
