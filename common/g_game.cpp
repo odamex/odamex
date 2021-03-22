@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,16 +18,17 @@
 //
 // DESCRIPTION:
 //   Game functions that are common between the client and server.
-// 
+//
 //-----------------------------------------------------------------------------
 
 #include "g_game.h"
 
-#include "cmdlib.h"
 #include "c_dispatch.h"
+#include "cmdlib.h"
 #include "doomstat.h"
 
 void G_PlayerRebornInventory(player_t& p);
+void G_SetupDefaultInv();
 
 extern const char* weaponnames[];
 
@@ -59,6 +60,7 @@ static char WeaponTypeChar(int type)
 
 struct spawnInventory_t
 {
+	bool isdefault;
 	int health;
 	int armorpoints;
 	int armortype;
@@ -69,115 +71,101 @@ struct spawnInventory_t
 	bool backpack;
 
 	spawnInventory_t()
-	    : health(100), armorpoints(0), armortype(0), readyweapon(NUMWEAPONS),
-	      berserk(false), backpack(false)
+	    : isdefault(false), health(100), armorpoints(0), armortype(0),
+	      readyweapon(NUMWEAPONS), berserk(false), backpack(false)
 	{
 		ArrayInit(weaponowned, false);
 		ArrayInit(ammo, 0);
 	}
 
 	spawnInventory_t(const spawnInventory_t& other)
-	    : health(other.health), armorpoints(other.armorpoints),
-	      armortype(other.armortype), berserk(other.berserk), backpack(other.backpack)
+	    : isdefault(other.isdefault), health(other.health),
+	      armorpoints(other.armorpoints), armortype(other.armortype),
+	      berserk(other.berserk), backpack(other.backpack)
 	{
 		ArrayCopy(weaponowned, other.weaponowned);
 		ArrayCopy(ammo, other.ammo);
 	}
-
-	/**
-	 * @brief Set to default settings.
-	 */
-	void setDefault()
-	{
-		health = deh.StartHealth;
-		armorpoints = 0;
-		armortype = 0;
-		readyweapon = wp_pistol;
-		ArrayInit(weaponowned, false);
-		weaponowned[wp_fist] = true;
-		weaponowned[wp_pistol] = true;
-		ArrayInit(ammo, 0);
-		ammo[0] = deh.StartBullets;
-		berserk = false;
-		backpack = false;
-	}
-
-	/**
-	 * @brief Serialize the spawn inventory to a string.
-	 */
-	std::string serialize()
-	{
-		StringTokens params;
-		std::string buf;
-
-		StrFormat(buf, "health:%d", health);
-		params.push_back(buf);
-
-		if (armortype > 0 && armortype <= 2 && armorpoints > 0)
-		{
-			if (armortype == 1)
-				StrFormat(buf, "armor1:%d", health);
-			else if (armortype == 2)
-				StrFormat(buf, "armor2:%d", health);
-
-			params.push_back(buf);
-		}
-
-		if (readyweapon != NUMWEAPONS)
-		{
-			StrFormat(buf, "rweapon:%c", WeaponTypeChar(readyweapon));
-			params.push_back(buf);
-		}
-
-		std::string weapons;
-		for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
-		{
-			if (weaponowned[i])
-				weapons += WeaponTypeChar(i);
-		}
-		if (!weapons.empty())
-		{
-			StrFormat(buf, "weapons:%s", weapons.c_str());
-			params.push_back(buf);
-		}
-
-		if (ammo[0] > 0)
-		{
-			StrFormat(buf, "bullets:%d", ammo[0]);
-			params.push_back(buf);
-		}
-
-		if (ammo[1] > 0)
-		{
-			StrFormat(buf, "shells:%d", ammo[1]);
-			params.push_back(buf);
-		}
-
-		if (ammo[2] > 0)
-		{
-			StrFormat(buf, "rockets:%d", ammo[2]);
-			params.push_back(buf);
-		}
-
-		if (ammo[3] > 0)
-		{
-			StrFormat(buf, "cells:%d", ammo[3]);
-			params.push_back(buf);
-		}
-
-		if (berserk)
-			params.push_back("berserk");
-		if (backpack)
-			params.push_back("backpack");
-
-		return JoinStrings(params, " ");
-	}
 };
 
+spawnInventory_t gDefaultInv;
 spawnInventory_t gSpawnInv;
+
+/**
+ * @brief Serialize the spawn inventory to a string.
+ */
+static std::string SpawnInvSerialize(const spawnInventory_t& inv)
+{
+	StringTokens params;
+	std::string buf;
+
+	StrFormat(buf, "health:%d", inv.health);
+	params.push_back(buf);
+
+	if (inv.armortype > 0 && inv.armortype <= 2 && inv.armorpoints > 0)
+	{
+		if (inv.armortype == 1)
+			StrFormat(buf, "armor1:%d", inv.health);
+		else if (inv.armortype == 2)
+			StrFormat(buf, "armor2:%d", inv.health);
+
+		params.push_back(buf);
+	}
+
+	if (inv.readyweapon != NUMWEAPONS)
+	{
+		StrFormat(buf, "rweapon:%c", WeaponTypeChar(inv.readyweapon));
+		params.push_back(buf);
+	}
+
+	std::string weapons;
+	for (size_t i = 0; i < ARRAY_LENGTH(inv.weaponowned); i++)
+	{
+		if (inv.weaponowned[i])
+			weapons += WeaponTypeChar(i);
+	}
+	if (!weapons.empty())
+	{
+		StrFormat(buf, "weapons:%s", weapons.c_str());
+		params.push_back(buf);
+	}
+
+	if (inv.ammo[0] > 0)
+	{
+		StrFormat(buf, "bullets:%d", inv.ammo[0]);
+		params.push_back(buf);
+	}
+
+	if (inv.ammo[1] > 0)
+	{
+		StrFormat(buf, "shells:%d", inv.ammo[1]);
+		params.push_back(buf);
+	}
+
+	if (inv.ammo[2] > 0)
+	{
+		StrFormat(buf, "rockets:%d", inv.ammo[2]);
+		params.push_back(buf);
+	}
+
+	if (inv.ammo[3] > 0)
+	{
+		StrFormat(buf, "cells:%d", inv.ammo[3]);
+		params.push_back(buf);
+	}
+
+	if (inv.berserk)
+		params.push_back("berserk");
+	if (inv.backpack)
+		params.push_back("backpack");
+
+	return JoinStrings(params, " ");
+}
 
 CVAR_FUNC_IMPL(g_spawninv)
 {
+	G_SetupDefaultInv();
+
 	// Split value into comma-separated tokens.
 	const std::string& str = var.str();
 	StringTokens tok = TokenizeString(str, ",");
@@ -188,7 +176,7 @@ CVAR_FUNC_IMPL(g_spawninv)
 		if (token == "default")
 		{
 			// Set the default settings.
-			::gSpawnInv.setDefault();
+			::gSpawnInv = ::gDefaultInv;
 		}
 	}
 }
@@ -216,7 +204,7 @@ BEGIN_COMMAND(spawninv)
 	{
 		// Information about our currently-set spawn inventory.
 		Printf("g_spawninv: %s\n", g_spawninv.cstring());
-		Printf("serialized: %s\n", ::gSpawnInv.serialize().c_str());
+		Printf("serialized: %s\n", SpawnInvSerialize(::gSpawnInv).c_str());
 
 		Printf("Health: %d\n", ::gSpawnInv.health);
 		if (::gSpawnInv.armortype == 1)
@@ -260,7 +248,25 @@ BEGIN_COMMAND(spawninv)
 }
 END_COMMAND(spawninv)
 
+/**
+ * @brief Assign settings for a "default" cleared inventory.
+ */
+void G_SetupDefaultInv()
+{
+	::gDefaultInv.isdefault = false;
+	::gDefaultInv.health = deh.StartHealth;
+	::gDefaultInv.armorpoints = 0;
+	::gDefaultInv.armortype = 0;
+	::gDefaultInv.readyweapon = wp_pistol;
+	ArrayInit(::gDefaultInv.weaponowned, false);
+	::gDefaultInv.weaponowned[wp_fist] = true;
+	::gDefaultInv.weaponowned[wp_pistol] = true;
+	ArrayInit(::gDefaultInv.ammo, 0);
+	::gDefaultInv.ammo[0] = deh.StartBullets;
+	::gDefaultInv.berserk = false;
+	::gDefaultInv.backpack = false;
+}
+
 void G_PlayerRebornInventory(player_t& p)
 {
-
 }
