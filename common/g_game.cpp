@@ -105,9 +105,9 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 	if (inv.armortype > 0 && inv.armortype <= 2 && inv.armorpoints > 0)
 	{
 		if (inv.armortype == 1)
-			StrFormat(buf, "armor1:%d", inv.health);
+			StrFormat(buf, "armor1:%d", inv.armorpoints);
 		else if (inv.armortype == 2)
-			StrFormat(buf, "armor2:%d", inv.health);
+			StrFormat(buf, "armor2:%d", inv.armorpoints);
 
 		params.push_back(buf);
 	}
