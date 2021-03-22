@@ -45,6 +45,18 @@ void ArrayCopy(A1& dst, const A2& src)
 		dst[i] = src[i];
 }
 
+static char WeaponTypeChar(int type)
+{
+	if (type >= wp_fist && type <= wp_bfg)
+		return '1' + type;
+	else if (type == wp_chainsaw)
+		return 'A';
+	else if (type == wp_supershotgun)
+		return 'C';
+
+	return ' ';
+}
+
 struct spawnInventory_t
 {
 	int health;
@@ -53,7 +65,6 @@ struct spawnInventory_t
 	weapontype_t readyweapon;
 	bool weaponowned[NUMWEAPONS];
 	int ammo[NUMAMMO];
-	int maxammo[NUMAMMO];
 	bool berserk;
 	bool backpack;
 
@@ -63,7 +74,6 @@ struct spawnInventory_t
 	{
 		ArrayInit(weaponowned, false);
 		ArrayInit(ammo, 0);
-		ArrayInit(maxammo, 0);
 	}
 
 	spawnInventory_t(const spawnInventory_t& other)
@@ -72,7 +82,6 @@ struct spawnInventory_t
 	{
 		ArrayCopy(weaponowned, other.weaponowned);
 		ArrayCopy(ammo, other.ammo);
-		ArrayCopy(maxammo, other.maxammo);
 	}
 
 	/**
@@ -85,11 +94,83 @@ struct spawnInventory_t
 		armortype = 0;
 		readyweapon = wp_pistol;
 		ArrayInit(weaponowned, false);
+		weaponowned[wp_fist] = true;
+		weaponowned[wp_pistol] = true;
 		ArrayInit(ammo, 0);
 		ammo[0] = deh.StartBullets;
-		ArrayCopy(maxammo, ::maxammo);
 		berserk = false;
 		backpack = false;
+	}
+
+	/**
+	 * @brief Serialize the spawn inventory to a string.
+	 */
+	std::string serialize()
+	{
+		StringTokens params;
+		std::string buf;
+
+		StrFormat(buf, "health:%d", health);
+		params.push_back(buf);
+
+		if (armortype > 0 && armortype <= 2 && armorpoints > 0)
+		{
+			if (armortype == 1)
+				StrFormat(buf, "armor1:%d", health);
+			else if (armortype == 2)
+				StrFormat(buf, "armor2:%d", health);
+
+			params.push_back(buf);
+		}
+
+		if (readyweapon != NUMWEAPONS)
+		{
+			StrFormat(buf, "rweapon:%c", WeaponTypeChar(readyweapon));
+			params.push_back(buf);
+		}
+
+		std::string weapons;
+		for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
+		{
+			if (weaponowned[i])
+				weapons += WeaponTypeChar(i);
+		}
+		if (!weapons.empty())
+		{
+			StrFormat(buf, "weapons:%s", weapons.c_str());
+			params.push_back(buf);
+		}
+
+		if (ammo[0] > 0)
+		{
+			StrFormat(buf, "bullets:%d", ammo[0]);
+			params.push_back(buf);
+		}
+
+		if (ammo[1] > 0)
+		{
+			StrFormat(buf, "shells:%d", ammo[1]);
+			params.push_back(buf);
+		}
+
+		if (ammo[2] > 0)
+		{
+			StrFormat(buf, "rockets:%d", ammo[2]);
+			params.push_back(buf);
+		}
+
+		if (ammo[3] > 0)
+		{
+			StrFormat(buf, "cells:%d", ammo[3]);
+			params.push_back(buf);
+		}
+
+		if (berserk)
+			params.push_back("berserk");
+		if (backpack)
+			params.push_back("backpack");
+
+		return JoinStrings(params, " ");
 	}
 };
 
@@ -135,6 +216,7 @@ BEGIN_COMMAND(spawninv)
 	{
 		// Information about our currently-set spawn inventory.
 		Printf("g_spawninv: %s\n", g_spawninv.cstring());
+		Printf("serialized: %s\n", ::gSpawnInv.serialize().c_str());
 
 		Printf("Health: %d\n", ::gSpawnInv.health);
 		if (::gSpawnInv.armortype == 1)
@@ -160,8 +242,7 @@ BEGIN_COMMAND(spawninv)
 
 		for (size_t i = 0; i < NUMAMMO; i++)
 		{
-			Printf("%s: %d/%d\n", ammonames[i], ::gSpawnInv.ammo[i],
-			       ::gSpawnInv.maxammo[i]);
+			Printf("%s: %d\n", ammonames[i], ::gSpawnInv.ammo[i]);
 		}
 
 		StringTokens other;
