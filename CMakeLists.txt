@@ -1,5 +1,18 @@
-# 3.9 needed for GENERATOR_IS_MULTI_CONFIG
-cmake_minimum_required(VERSION 3.9)
+# CMake 3.13 needed for -S and -B params in library compilation.
+#
+# Note that if you are running Linux, there are many ways to get newer
+# versions of CMake.
+# 
+# - Kitware offers binary downloads direct from their website, which you can
+#   extract to /usr/local or ~/.local.
+# - Ubuntu LTS users can install the CMake snap, and Kitware also runs an
+#   official Ubuntu CMake apt repository.
+# - Debian users can get a new version through backports.
+# - CentOS users can get a new version through EPEL.
+# - If you have Python installed, you can install CMake through pip.
+#
+
+cmake_minimum_required(VERSION 3.13)
 
 project(Odamex VERSION 0.9.0)
 
