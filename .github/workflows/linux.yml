@@ -74,13 +74,3 @@ jobs:
       uses: actions/checkout@v2
     - name: Run build
       run: bash ci/centos-buildgen.sh
-  build-ubuntu-bionic:
-    name: Build (Ubuntu 18.04 LTS)
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-    - name: Run build
-      run: bash ci/ubuntu-bionic-buildgen.sh
