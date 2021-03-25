@@ -209,7 +209,7 @@ static std::string InvBackpackStr(const spawnInventory_t& inv)
  */
 static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 {
-	inv.health = atoi(value.c_str());
+	inv.health = MAX(1, atoi(value.c_str()));
 }
 
 /**
@@ -218,7 +218,7 @@ static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 static void InvSetArmor(spawnInventory_t& inv, const int type, const std::string& value)
 {
 	inv.armortype = type;
-	inv.armorpoints = atoi(value.c_str());
+	inv.armorpoints = MAX(0, atoi(value.c_str()));
 }
 
 /**
@@ -266,7 +266,7 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 static void InvSetAmmo(spawnInventory_t& inv, const size_t type, const std::string& value)
 {
 	assert(type < ARRAY_LENGTH(inv.ammo));
-	inv.ammo[type] = atoi(value.c_str());
+	inv.ammo[type] = MAX(0, atoi(value.c_str()));
 }
 
 static void InvSetBerserk(spawnInventory_t& inv, const std::string& value)
