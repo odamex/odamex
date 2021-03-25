@@ -322,7 +322,7 @@ CVAR_FUNC_IMPL(g_spawninv)
 
 	// Split value into comma-separated tokens.
 	const std::string& str = var.str();
-	StringTokens tok = TokenizeString(str, ",");
+	StringTokens tok = TokenizeString(str, " ");
 	for (StringTokens::iterator it = tok.begin(); it != tok.end(); ++it)
 	{
 		TrimString(*it);
