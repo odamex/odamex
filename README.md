@@ -47,20 +47,22 @@ If you downloaded the zip, use these commands on the git directory:
     git submodule init
     git submodule update
 
-Odamex requires `cmake` as well as the following libraries:
+Odamex requires the following tools and libraries:
 
+* [CMake](https://cmake.org/download/) 3.13 or later
 * [SDL 2.0](https://www.libsdl.org/download-2.0.php)
 * [SDL2-Mixer](https://libsdl.org/projects/SDL_mixer/)
 * [cURL](https://curl.se/)
 * [libPNG](http://www.libpng.org/pub/png/libpng.html)
 * [zlib](https://zlib.net/)
+* [DeuTex](https://github.com/Doom-Utils/deutex/releases/) (for building the WAD)
 * [wxWidgets](https://www.wxwidgets.org/downloads/) (for the launcher)
 
-`cURL`, `libPNG` and `zlib` are automatically included as submodules.
+`cURL`, `libPNG` and `zlib` are automatically included in-tree as submodules.
 
 On Windows, all libraries are automatically downloaded if not found.  On \*nix/MacOSX, you will need to download through your package manager `libsdl2-dev`, `libsdl2-mixer-dev` and `libwxgtk3.0-dev`.
 
-Please check [this page][1] for further informations on how to compile Odamex for your platform.
+Please check [this page][1] for further instructions on how to compile Odamex for your platform.
 
 [1]: https://odamex.net/wiki/How_to_build_from_source
 
