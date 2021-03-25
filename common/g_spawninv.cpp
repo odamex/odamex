@@ -98,7 +98,7 @@ static const bool StrBoolean(const char* check)
 /**
  * @brief Turn a weapon type index into its character representation.
  */
-static char WeaponTypeToChar(const int type)
+static char WeaponTypeToChar(const weapontype_t type)
 {
 	if (type >= wp_fist && type <= wp_bfg)
 		return '1' + type;
@@ -171,7 +171,7 @@ static std::string InvWeaponsStr(const spawnInventory_t& inv)
 		if (!inv.weaponowned[i])
 			continue;
 
-		rvo += WeaponTypeToChar(i);
+		rvo += WeaponTypeToChar(static_cast<weapontype_t>(i));
 	}
 	return rvo;
 }
@@ -263,9 +263,13 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 /**
  * @brief Set the ammo count of a given type from a string.
  */
-static void InvSetAmmo(spawnInventory_t& inv, const size_t type, const std::string& value)
+static void InvSetAmmo(spawnInventory_t& inv, const ammotype_t type,
+                       const std::string& value)
 {
-	assert(type < ARRAY_LENGTH(inv.ammo));
+	if (type < am_cell || type >= NUMAMMO)
+	{
+		return;
+	}
 	inv.ammo[type] = MAX(0, atoi(value.c_str()));
 }
 
@@ -325,25 +329,25 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 		params.push_back(buf);
 	}
 
-	if (inv.ammo[0] > 0)
+	if (inv.ammo[am_clip] > 0)
 	{
 		StrFormat(buf, "bullets:%s", InvAmmoStr(inv, 0).c_str());
 		params.push_back(buf);
 	}
 
-	if (inv.ammo[1] > 0)
+	if (inv.ammo[am_shell] > 0)
 	{
 		StrFormat(buf, "shells:%s", InvAmmoStr(inv, 1).c_str());
 		params.push_back(buf);
 	}
 
-	if (inv.ammo[2] > 0)
+	if (inv.ammo[am_misl] > 0)
 	{
 		StrFormat(buf, "rockets:%s", InvAmmoStr(inv, 2).c_str());
 		params.push_back(buf);
 	}
 
-	if (inv.ammo[3] > 0)
+	if (inv.ammo[am_cell] > 0)
 	{
 		StrFormat(buf, "cells:%s", InvAmmoStr(inv, 3).c_str());
 		params.push_back(buf);
@@ -370,7 +374,7 @@ static void SetupDefaultInv()
 	::gDefaultInv.weaponowned[wp_fist] = true;
 	::gDefaultInv.weaponowned[wp_pistol] = true;
 	ArrayInit(::gDefaultInv.ammo, 0);
-	::gDefaultInv.ammo[0] = deh.StartBullets;
+	::gDefaultInv.ammo[am_clip] = deh.StartBullets;
 	::gDefaultInv.berserk = false;
 	::gDefaultInv.backpack = false;
 }
@@ -481,19 +485,19 @@ CVAR_FUNC_IMPL(g_spawninv)
 			}
 			else if (key == "bullets")
 			{
-				InvSetAmmo(inv, 0, value);
+				InvSetAmmo(inv, am_clip, value);
 			}
 			else if (key == "shells")
 			{
-				InvSetAmmo(inv, 1, value);
+				InvSetAmmo(inv, am_shell, value);
 			}
 			else if (key == "rockets")
 			{
-				InvSetAmmo(inv, 2, value);
+				InvSetAmmo(inv, am_misl, value);
 			}
 			else if (key == "cells")
 			{
-				InvSetAmmo(inv, 3, value);
+				InvSetAmmo(inv, am_cell, value);
 			}
 			else
 			{
@@ -625,19 +629,19 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 	}
 	else if (iequals(cmd, "bullets"))
 	{
-		InvSetAmmo(::gSpawnInv, 0, param);
+		InvSetAmmo(::gSpawnInv, am_clip, param);
 	}
 	else if (iequals(cmd, "shells"))
 	{
-		InvSetAmmo(::gSpawnInv, 1, param);
+		InvSetAmmo(::gSpawnInv, am_shell, param);
 	}
 	else if (iequals(cmd, "rockets"))
 	{
-		InvSetAmmo(::gSpawnInv, 2, param);
+		InvSetAmmo(::gSpawnInv, am_misl, param);
 	}
 	else if (iequals(cmd, "cells"))
 	{
-		InvSetAmmo(::gSpawnInv, 3, param);
+		InvSetAmmo(::gSpawnInv, am_cell, param);
 	}
 	else if (iequals(cmd, "berserk"))
 	{
