@@ -29,70 +29,11 @@
 #include "cmdlib.h"
 #include "doomstat.h"
 
-void G_SetupDefaultInv();
-
 extern const char* weaponnames[];
 
 /**
- * @brief Convert a string form of a boolean to an actual boolean.
- * 
- * @detail Working with C strings is _much_ faster here.
- * 
- * @param check String to check.
- * @return True if string is a boolean.
+ * @brief Container for a spawn inventory.
  */
-static const bool StrBoolean(const char* check)
-{
-	size_t len = strlen(check);
-	if (len == 0)
-		return false;
-
-	if (len == 1 && check[0] == '1')
-		return true;
-
-	if (check[0] == 'T' || check[0] == 't')
-		return true;
-
-	if (check[0] == 'Y' || check[0] == 'y')
-		return true;
-
-	if (check[0] == 'O' || check[0] == 'o')
-	{
-		if (len >= 2 && (check[1] == 'N' || check[1] == 'n'))
-			return true;
-	}
-
-	return false;
-}
-
-static char WeaponTypeToChar(const int type)
-{
-	if (type >= wp_fist && type <= wp_bfg)
-		return '1' + type;
-	else if (type == wp_chainsaw)
-		return 'a';
-	else if (type == wp_supershotgun)
-		return 'c';
-	else if (type == NUMWEAPONS)
-		return 'x';
-
-	return '?';
-}
-
-static int WeaponTypeFromChar(const char ch)
-{
-	if (ch >= '1' && ch <= '7')
-		return ch - '1';
-	else if (ch == 'a')
-		return wp_chainsaw;
-	else if (ch == 'c')
-		return wp_supershotgun;
-	else if (ch == 'x')
-		return NUMWEAPONS;
-
-	return MININT; // best chance of loud and obvious crash
-}
-
 struct spawnInventory_t
 {
 	int health;
@@ -120,121 +61,223 @@ struct spawnInventory_t
 		ArrayCopy(weaponowned, other.weaponowned);
 		ArrayCopy(ammo, other.ammo);
 	}
-
-	std::string getHealth() const
-	{
-		std::string rvo;
-		StrFormat(rvo, "%d", health);
-		return rvo;
-	}
-
-	std::string getArmorPoints() const
-	{
-		std::string rvo;
-		StrFormat(rvo, "%d", armorpoints);
-		return rvo;
-	}
-
-	std::string getReadyWeapon() const
-	{
-		std::string rvo;
-		StrFormat(rvo, "%c", WeaponTypeToChar(readyweapon));
-		return rvo;
-	}
-
-	std::string getWeapons() const
-	{
-		std::string rvo;
-		rvo.reserve(ARRAY_LENGTH(weaponowned));
-		for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
-		{
-			if (!weaponowned[i])
-				continue;
-
-			rvo += WeaponTypeToChar(i);
-		}
-		return rvo;
-	}
-
-	std::string getAmmo(const size_t i) const
-	{
-		assert(i < NUMAMMO);
-
-		std::string rvo;
-		StrFormat(rvo, "%d", ammo[i]);
-		return rvo;
-	}
-
-	std::string getBerserk() const
-	{
-		return berserk ? "Yes" : "No";
-	}
-
-	std::string getBackpack() const
-	{
-		return backpack ? "Yes" : "No";
-	}
-
-	void setHealth(const std::string& value)
-	{
-		health = atoi(value.c_str());
-	}
-
-	void setArmor(const size_t i, const std::string& value)
-	{
-		armortype = i;
-		armorpoints = atoi(value.c_str());
-	}
-
-	bool setReadyWeapon(const std::string& value)
-	{
-		if (value.empty())
-			return false;
-
-		int weap = WeaponTypeFromChar(value.at(0));
-		if (weap == MININT)
-			return false;
-
-		readyweapon = static_cast<weapontype_t>(weap);
-		return true;
-	}
-
-	bool setWeapons(const std::string& value)
-	{
-		// Check our input string first.
-		bool newowned[NUMWEAPONS];
-		ArrayInit(newowned, false);
-
-		for (std::string::const_iterator it = value.begin(); it != value.end(); ++it)
-		{
-			int owned = WeaponTypeFromChar(*it);
-			if (owned == MAXINT)
-				return false;
-
-			newowned[owned] = true;
-		}
-
-		// Commit our new weapons.
-		ArrayCopy(weaponowned, newowned);
-		return true;
-	}
-
-	void setAmmo(const size_t i, const std::string& value)
-	{
-		assert(i < NUMAMMO);
-		ammo[i] = atoi(value.c_str());
-	}
-
-	void setBerserk(const std::string& value)
-	{
-		berserk = StrBoolean(value.c_str());
-	}
-
-	void setBackpack(const std::string& value)
-	{
-		backpack = StrBoolean(value.c_str());
-	}
 };
+
+/**
+ * @brief Convert a string form of a boolean to an actual boolean.
+ *
+ * @detail Working with C strings is _much_ faster here.
+ *
+ * @param check String to check.
+ * @return True if string is a boolean.
+ */
+static const bool StrBoolean(const char* check)
+{
+	size_t len = strlen(check);
+	if (len == 0)
+		return false;
+
+	if (len == 1 && check[0] == '1')
+		return true;
+
+	if (check[0] == 'T' || check[0] == 't')
+		return true;
+
+	if (check[0] == 'Y' || check[0] == 'y')
+		return true;
+
+	if (check[0] == 'O' || check[0] == 'o')
+	{
+		if (len >= 2 && (check[1] == 'N' || check[1] == 'n'))
+			return true;
+	}
+
+	return false;
+}
+
+/**
+ * @brief Turn a weapon type index into its character representation.
+ */
+static char WeaponTypeToChar(const int type)
+{
+	if (type >= wp_fist && type <= wp_bfg)
+		return '1' + type;
+	else if (type == wp_chainsaw)
+		return 'a';
+	else if (type == wp_supershotgun)
+		return 'c';
+	else if (type == NUMWEAPONS)
+		return 'x';
+
+	return '?';
+}
+
+/**
+ * @brief Turn a weapon character into its type index.
+ */
+static int WeaponTypeFromChar(const char ch)
+{
+	if (ch >= '1' && ch <= '7')
+		return ch - '1';
+	else if (ch == 'A' || ch == 'a')
+		return wp_chainsaw;
+	else if (ch == 'C' || ch == 'c')
+		return wp_supershotgun;
+	else if (ch == 'X' || ch == 'x')
+		return NUMWEAPONS;
+
+	return MININT; // best chance of loud and obvious crash
+}
+
+/**
+ * @brief Turn Health into a string.
+ */
+static std::string InvHealthStr(const spawnInventory_t& inv)
+{
+	std::string rvo;
+	StrFormat(rvo, "%d", inv.health);
+	return rvo;
+}
+
+/**
+ * @brief Turn armor points into a string.
+ */
+static std::string InvArmorPointsStr(const spawnInventory_t& inv)
+{
+	std::string rvo;
+	StrFormat(rvo, "%d", inv.armorpoints);
+	return rvo;
+}
+
+/**
+ * @brief Turn ready weapon into a string.
+ */
+static std::string InvReadyWeaponStr(const spawnInventory_t& inv)
+{
+	std::string rvo;
+	StrFormat(rvo, "%c", WeaponTypeToChar(inv.readyweapon));
+	return rvo;
+}
+
+/**
+ * @brief Weapons to string.
+ */
+static std::string InvWeaponsStr(const spawnInventory_t& inv)
+{
+	std::string rvo;
+	rvo.reserve(ARRAY_LENGTH(inv.weaponowned));
+	for (size_t i = 0; i < ARRAY_LENGTH(inv.weaponowned); i++)
+	{
+		if (!inv.weaponowned[i])
+			continue;
+
+		rvo += WeaponTypeToChar(i);
+	}
+	return rvo;
+}
+
+/**
+ * @brief Ammo index to string.
+ */
+static std::string InvAmmoStr(const spawnInventory_t& inv, const size_t i)
+{
+	assert(i < NUMAMMO);
+
+	std::string rvo;
+	StrFormat(rvo, "%d", inv.ammo[i]);
+	return rvo;
+}
+
+/**
+ * @brief Berserk status to string.
+ */
+static std::string InvBerserkStr(const spawnInventory_t& inv)
+{
+	return inv.berserk ? "Yes" : "No";
+}
+
+/**
+ * @brief Backpack status to a string.
+ */
+static std::string InvBackpackStr(const spawnInventory_t& inv)
+{
+	return inv.backpack ? "Yes" : "No";
+}
+
+/**
+ * @brief Set health from a string.
+ */
+static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
+{
+	inv.health = atoi(value.c_str());
+}
+
+/**
+ * @brief Set armor of a given type from a string.
+ */
+static void InvSetArmor(spawnInventory_t& inv, const int type, const std::string& value)
+{
+	inv.armortype = type;
+	inv.armorpoints = atoi(value.c_str());
+}
+
+/**
+ * @brief Set the ready weapon from a string.
+ */
+static bool InvSetReadyWeapon(spawnInventory_t& inv, const std::string& value)
+{
+	if (value.empty())
+		return false;
+
+	int weap = WeaponTypeFromChar(value.at(0));
+	if (weap == MININT)
+		return false;
+
+	inv.readyweapon = static_cast<weapontype_t>(weap);
+	return true;
+}
+
+/**
+ * @brief Set the weapon inventory from a string.
+ */
+static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
+{
+	// Check our input string first.
+	bool newowned[NUMWEAPONS];
+	ArrayInit(newowned, false);
+
+	for (std::string::const_iterator it = value.begin(); it != value.end(); ++it)
+	{
+		int owned = WeaponTypeFromChar(*it);
+		if (owned == MININT)
+			return false;
+
+		newowned[owned] = true;
+	}
+
+	// Commit our new weapons.
+	ArrayCopy(inv.weaponowned, newowned);
+	return true;
+}
+
+/**
+ * @brief Set the ammo count of a given type from a string.
+ */
+static void InvSetAmmo(spawnInventory_t& inv, const size_t type, const std::string& value)
+{
+	assert(type < ARRAY_LENGTH(inv.ammo));
+	inv.ammo[type] = atoi(value.c_str());
+}
+
+static void InvSetBerserk(spawnInventory_t& inv, const std::string& value)
+{
+	inv.berserk = StrBoolean(value.c_str());
+}
+
+static void InvSetBackpack(spawnInventory_t& inv, const std::string& value)
+{
+	inv.backpack = StrBoolean(value.c_str());
+}
 
 /**
  * @brief A reasonable "default" inventory.
@@ -257,52 +300,52 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 	StringTokens params;
 	std::string buf;
 
-	StrFormat(buf, "health:%s", inv.getHealth().c_str());
+	StrFormat(buf, "health:%s", InvHealthStr(inv).c_str());
 	params.push_back(buf);
 
 	if (inv.armortype > 0 && inv.armortype <= 2 && inv.armorpoints > 0)
 	{
 		if (inv.armortype == 1)
-			StrFormat(buf, "armor1:%s", inv.getArmorPoints().c_str());
+			StrFormat(buf, "armor1:%s", InvArmorPointsStr(inv).c_str());
 		else if (inv.armortype == 2)
-			StrFormat(buf, "armor2:%s", inv.getArmorPoints().c_str());
+			StrFormat(buf, "armor2:%s", InvArmorPointsStr(inv).c_str());
 
 		params.push_back(buf);
 	}
 
 	if (inv.readyweapon != NUMWEAPONS)
 	{
-		StrFormat(buf, "rweapon:%s", inv.getReadyWeapon().c_str());
+		StrFormat(buf, "rweapon:%s", InvReadyWeaponStr(inv).c_str());
 		params.push_back(buf);
 	}
 
-	if (!inv.getWeapons().empty())
+	if (!InvWeaponsStr(inv).empty())
 	{
-		StrFormat(buf, "weapons:%s", inv.getWeapons().c_str());
+		StrFormat(buf, "weapons:%s", InvWeaponsStr(inv).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[0] > 0)
 	{
-		StrFormat(buf, "bullets:%s", inv.getAmmo(0).c_str());
+		StrFormat(buf, "bullets:%s", InvAmmoStr(inv, 0).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[1] > 0)
 	{
-		StrFormat(buf, "shells:%s", inv.getAmmo(1).c_str());
+		StrFormat(buf, "shells:%s", InvAmmoStr(inv, 1).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[2] > 0)
 	{
-		StrFormat(buf, "rockets:%s", inv.getAmmo(2).c_str());
+		StrFormat(buf, "rockets:%s", InvAmmoStr(inv, 2).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[3] > 0)
 	{
-		StrFormat(buf, "cells:%s", inv.getAmmo(3).c_str());
+		StrFormat(buf, "cells:%s", InvAmmoStr(inv, 3).c_str());
 		params.push_back(buf);
 	}
 
@@ -314,9 +357,27 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 	return JoinStrings(params, " ");
 }
 
+/**
+ * @brief Assign settings for a "default" cleared inventory.
+ */
+static void SetupDefaultInv()
+{
+	::gDefaultInv.health = deh.StartHealth;
+	::gDefaultInv.armorpoints = 0;
+	::gDefaultInv.armortype = 0;
+	::gDefaultInv.readyweapon = wp_pistol;
+	ArrayInit(::gDefaultInv.weaponowned, false);
+	::gDefaultInv.weaponowned[wp_fist] = true;
+	::gDefaultInv.weaponowned[wp_pistol] = true;
+	ArrayInit(::gDefaultInv.ammo, 0);
+	::gDefaultInv.ammo[0] = deh.StartBullets;
+	::gDefaultInv.berserk = false;
+	::gDefaultInv.backpack = false;
+}
+
 CVAR_FUNC_IMPL(g_spawninv)
 {
-	G_SetupDefaultInv();
+	SetupDefaultInv();
 
 	spawnInventory_t inv;
 
@@ -384,19 +445,19 @@ CVAR_FUNC_IMPL(g_spawninv)
 
 			if (key == "health")
 			{
-				inv.setHealth(value);
+				InvSetHealth(inv, value);
 			}
 			else if (key == "armor1")
 			{
-				inv.setArmor(1, value);
+				InvSetArmor(inv, 1, value);
 			}
 			else if (key == "armor2")
 			{
-				inv.setArmor(2, value);
+				InvSetArmor(inv, 2, value);
 			}
 			else if (key == "rweapon")
 			{
-				if (!inv.setReadyWeapon(value))
+				if (!InvSetReadyWeapon(inv, value))
 				{
 					Printf(PRINT_WARNING,
 					       "g_spawninv: Unknown value for parameter \"%s\", falling back "
@@ -408,7 +469,7 @@ CVAR_FUNC_IMPL(g_spawninv)
 			}
 			else if (key == "weapons")
 			{
-				if (!inv.setWeapons(value))
+				if (!InvSetWeapons(inv, value))
 				{
 					Printf(PRINT_WARNING,
 					       "g_spawninv: Unknown value for parameter \"%s\", falling back "
@@ -420,19 +481,19 @@ CVAR_FUNC_IMPL(g_spawninv)
 			}
 			else if (key == "bullets")
 			{
-				inv.setAmmo(0, value);
+				InvSetAmmo(inv, 0, value);
 			}
 			else if (key == "shells")
 			{
-				inv.setAmmo(1, value);
+				InvSetAmmo(inv, 1, value);
 			}
 			else if (key == "rockets")
 			{
-				inv.setAmmo(2, value);
+				InvSetAmmo(inv, 2, value);
 			}
 			else if (key == "cells")
 			{
-				inv.setAmmo(3, value);
+				InvSetAmmo(inv, 3, value);
 			}
 			else
 			{
@@ -469,7 +530,8 @@ static void SpawninvHelp()
 	Printf("  cells <CELLS>\n");
 	Printf("  berserk <Y/N>\n");
 	Printf("  backpack <Y/N>\n");
-	Printf("Inventory commands show an explanation of their parameter if you omit it.\n");
+	Printf("    Inventory commands show an explanation of their parameter if you omit "
+	       "it.\n");
 }
 
 static void SpawninvCommandHelp(const char* cmd)
@@ -543,47 +605,47 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 {
 	if (iequals(cmd, "health"))
 	{
-		::gSpawnInv.setHealth(param);
+		InvSetHealth(::gSpawnInv, param);
 	}
 	else if (iequals(cmd, "armor1"))
 	{
-		::gSpawnInv.setArmor(1, param);
+		InvSetArmor(::gSpawnInv, 1, param);
 	}
 	else if (iequals(cmd, "armor2"))
 	{
-		::gSpawnInv.setArmor(2, param);
+		InvSetArmor(::gSpawnInv, 2, param);
 	}
 	else if (iequals(cmd, "rweapon"))
 	{
-		::gSpawnInv.setReadyWeapon(param);
+		InvSetReadyWeapon(::gSpawnInv, param);
 	}
 	else if (iequals(cmd, "weapons"))
 	{
-		::gSpawnInv.setWeapons(param);
+		InvSetWeapons(::gSpawnInv, param);
 	}
 	else if (iequals(cmd, "bullets"))
 	{
-		::gSpawnInv.setAmmo(0, param);
+		InvSetAmmo(::gSpawnInv, 0, param);
 	}
 	else if (iequals(cmd, "shells"))
 	{
-		::gSpawnInv.setAmmo(1, param);
+		InvSetAmmo(::gSpawnInv, 1, param);
 	}
 	else if (iequals(cmd, "rockets"))
 	{
-		::gSpawnInv.setAmmo(2, param);
+		InvSetAmmo(::gSpawnInv, 2, param);
 	}
 	else if (iequals(cmd, "cells"))
 	{
-		::gSpawnInv.setAmmo(3, param);
+		InvSetAmmo(::gSpawnInv, 3, param);
 	}
 	else if (iequals(cmd, "berserk"))
 	{
-		::gSpawnInv.setBerserk(param);
+		InvSetBerserk(::gSpawnInv, param);
 	}
 	else if (iequals(cmd, "backpack"))
 	{
-		::gSpawnInv.setBackpack(param);
+		InvSetBackpack(::gSpawnInv, param);
 	}
 	else
 	{
@@ -661,21 +723,3 @@ BEGIN_COMMAND(spawninv)
 	SpawninvHelp();
 }
 END_COMMAND(spawninv)
-
-/**
- * @brief Assign settings for a "default" cleared inventory.
- */
-void G_SetupDefaultInv()
-{
-	::gDefaultInv.health = deh.StartHealth;
-	::gDefaultInv.armorpoints = 0;
-	::gDefaultInv.armortype = 0;
-	::gDefaultInv.readyweapon = wp_pistol;
-	ArrayInit(::gDefaultInv.weaponowned, false);
-	::gDefaultInv.weaponowned[wp_fist] = true;
-	::gDefaultInv.weaponowned[wp_pistol] = true;
-	ArrayInit(::gDefaultInv.ammo, 0);
-	::gDefaultInv.ammo[0] = deh.StartBullets;
-	::gDefaultInv.berserk = false;
-	::gDefaultInv.backpack = false;
-}
