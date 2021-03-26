@@ -48,6 +48,7 @@
 #include "gi.h"
 #include "cl_demo.h"
 #include "c_console.h"
+#include "g_gametype.h"
 
 #include "p_ctf.h"
 
@@ -1131,11 +1132,6 @@ void ST_updateWidgets(void)
 		st_maxammo[i] = plyr->maxammo[i];
 	}
 
-	if (g_lives)
-		st_lives = plyr->lives;
-	else
-		st_lives = ST_DONT_DRAW_NUM;
-
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
@@ -1169,6 +1165,11 @@ void ST_updateWidgets(void)
 		st_fragscount = GetTeamInfo(plyr->userinfo.team)->Points; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
+
+	if (G_IsLivesGame())
+		st_lives = plyr->lives;
+	else
+		st_lives = ST_DONT_DRAW_NUM;
 
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
@@ -1215,7 +1216,9 @@ void ST_drawWidgets(bool force_refresh)
 
 	STlib_updateNum(&w_frags, force_refresh);
 
-	STlib_updateNum(&w_lives, true);	// Force refreshing to avoid tens to be hidden by Doomguy's face
+	STlib_updateNum(&w_lives, true, G_IsLivesGame() ? true : false); // Force refreshing to avoid tens
+		                                                 // to be hidden by Doomguy's face
+
 }
 
 
