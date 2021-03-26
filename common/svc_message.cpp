@@ -805,7 +805,7 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 	return msg;
 }
 
-odaproto::svc::PlaySound SVC_PlaySound(PlaySoundType& type, int channel, int sfx_id,
+odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation)
 {
 	odaproto::svc::PlaySound msg;

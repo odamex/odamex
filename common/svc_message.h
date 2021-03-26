@@ -107,7 +107,7 @@ odaproto::svc::TeamMembers SVC_TeamMembers(team_t team);
 odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
                                              LineActivationType type);
 odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector);
-odaproto::svc::PlaySound SVC_PlaySound(PlaySoundType& type, int channel, int sfx_id,
+odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation);
 odaproto::svc::TouchSpecial SVC_TouchSpecial(AActor* mo);
 odaproto::svc::PlayerState SVC_PlayerState(player_t& player);
