@@ -36,6 +36,7 @@ extern const char* weaponnames[];
  */
 struct spawnInventory_t
 {
+	bool isdefault;
 	int health;
 	int armorpoints;
 	int armortype;
@@ -46,17 +47,17 @@ struct spawnInventory_t
 	bool backpack;
 
 	spawnInventory_t()
-	    : health(100), armorpoints(0), armortype(0), readyweapon(NUMWEAPONS),
-	      berserk(false), backpack(false)
+	    : isdefault(false), health(100), armorpoints(0), armortype(0),
+	      readyweapon(NUMWEAPONS), berserk(false), backpack(false)
 	{
 		ArrayInit(weaponowned, false);
 		ArrayInit(ammo, 0);
 	}
 
 	spawnInventory_t(const spawnInventory_t& other)
-	    : health(other.health), armorpoints(other.armorpoints),
-	      armortype(other.armortype), readyweapon(other.readyweapon),
-	      berserk(other.berserk), backpack(other.backpack)
+	    : isdefault(other.isdefault), health(other.health),
+	      armorpoints(other.armorpoints), armortype(other.armortype),
+	      readyweapon(other.readyweapon), berserk(other.berserk), backpack(other.backpack)
 	{
 		ArrayCopy(weaponowned, other.weaponowned);
 		ArrayCopy(ammo, other.ammo);
@@ -210,6 +211,7 @@ static std::string InvBackpackStr(const spawnInventory_t& inv)
 static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 {
 	inv.health = MAX(1, atoi(value.c_str()));
+	inv.isdefault = true;
 }
 
 /**
@@ -219,6 +221,7 @@ static void InvSetArmor(spawnInventory_t& inv, const int type, const std::string
 {
 	inv.armortype = type;
 	inv.armorpoints = MAX(0, atoi(value.c_str()));
+	inv.isdefault = true;
 }
 
 /**
@@ -234,6 +237,8 @@ static bool InvSetReadyWeapon(spawnInventory_t& inv, const std::string& value)
 		return false;
 
 	inv.readyweapon = static_cast<weapontype_t>(weap);
+	inv.isdefault = true;
+
 	return true;
 }
 
@@ -257,6 +262,8 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 
 	// Commit our new weapons.
 	ArrayCopy(inv.weaponowned, newowned);
+	inv.isdefault = true;
+
 	return true;
 }
 
@@ -266,21 +273,24 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 static void InvSetAmmo(spawnInventory_t& inv, const ammotype_t type,
                        const std::string& value)
 {
-	if (type < am_cell || type >= NUMAMMO)
+	if (type < am_clip || type >= NUMAMMO)
 	{
 		return;
 	}
 	inv.ammo[type] = MAX(0, atoi(value.c_str()));
+	inv.isdefault = true;
 }
 
 static void InvSetBerserk(spawnInventory_t& inv, const std::string& value)
 {
 	inv.berserk = StrBoolean(value.c_str());
+	inv.isdefault = true;
 }
 
 static void InvSetBackpack(spawnInventory_t& inv, const std::string& value)
 {
 	inv.backpack = StrBoolean(value.c_str());
+	inv.isdefault = true;
 }
 
 /**
@@ -366,7 +376,8 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
  */
 static void SetupDefaultInv()
 {
-	::gDefaultInv.health = deh.StartHealth;
+	::gDefaultInv.isdefault = true;
+	::gDefaultInv.health = deh.StartHealth; // [RH] Used to be MAXHEALTH
 	::gDefaultInv.armorpoints = 0;
 	::gDefaultInv.armortype = 0;
 	::gDefaultInv.readyweapon = wp_pistol;
@@ -374,7 +385,7 @@ static void SetupDefaultInv()
 	::gDefaultInv.weaponowned[wp_fist] = true;
 	::gDefaultInv.weaponowned[wp_pistol] = true;
 	ArrayInit(::gDefaultInv.ammo, 0);
-	::gDefaultInv.ammo[am_clip] = deh.StartBullets;
+	::gDefaultInv.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	::gDefaultInv.berserk = false;
 	::gDefaultInv.backpack = false;
 }
@@ -406,11 +417,11 @@ CVAR_FUNC_IMPL(g_spawninv)
 		}
 		else if (token == "berserk")
 		{
-			inv.berserk = true;
+			InvSetBerserk(inv, "Y");
 		}
 		else if (token == "backpack")
 		{
-			inv.backpack = true;
+			InvSetBackpack(inv, "Y");
 		}
 		else
 		{
@@ -727,3 +738,38 @@ BEGIN_COMMAND(spawninv)
 	SpawninvHelp();
 }
 END_COMMAND(spawninv)
+
+/**
+ * @brief Give players their spawn inventory.
+ *
+ *       This function touches health, armor, ready/pending weapon, owned
+ *       weapons, starting ammo, berserk power, and if it gives you a backpack
+ *       it sets your backpack flag and double your current maxammo.
+ */
+void G_GiveSpawnInventory(player_t& player)
+{
+	const int BERSERK_NORED = 64 * 12;
+
+	spawnInventory_t& inv = ::gSpawnInv;
+
+	player.health = inv.health;
+	player.armorpoints = inv.armorpoints;
+	player.armortype = inv.armortype;
+	player.readyweapon = player.pendingweapon = inv.readyweapon;
+	ArrayCopy(player.weaponowned, inv.weaponowned);
+	ArrayCopy(player.ammo, inv.ammo);
+
+	if (inv.berserk)
+	{
+		player.powers[pw_strength] = BERSERK_NORED;
+	}
+
+	if (inv.backpack)
+	{
+		player.backpack = true;
+		for (size_t i = 0; i < ARRAY_LENGTH(player.maxammo); i++)
+		{
+			player.maxammo[i] *= 2;
+		}
+	}
+}

@@ -24,4 +24,8 @@
 #ifndef __G_SPAWNINV_H__
 #define __G_SPAWNINV_H__
 
+#include "d_player.h"
+
+void G_GiveSpawnInventory(player_t& player);
+
 #endif
