@@ -8,3 +8,6 @@
 [submodule "libraries/libpng"]
 	path = libraries/libpng
 	url = https://github.com/glennrp/libpng.git
+[submodule "libraries/fltk"]
+	path = libraries/fltk
+	url = https://github.com/fltk/fltk

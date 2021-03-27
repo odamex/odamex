@@ -120,6 +120,51 @@ if(BUILD_CLIENT)
   endif()
 endif()
 
+### FLTK ###
+
+if(BUILD_SERVER)
+  message(STATUS "Compiling FLTK...")
+
+  # Generate the build.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/fltk"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/fltk-build"
+    -G "${CMAKE_GENERATOR}"
+    -A "${CMAKE_GENERATOR_PLATFORM}"
+    -T "${CMAKE_GENERATOR_TOOLSET}"
+    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+    "-DCMAKE_LINKER=${CMAKE_LINKER}"
+    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
+
+  # Compile the library.
+  get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(IS_MULTI_CONFIG)
+    # Debug and Release are not compatible, so build both.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/fltk-build"
+      --config Debug --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/fltk-build"
+    --config RelWithDebInfo --target install
+    --parallel ${PARALLEL_PROC_COUNT})
+  else()
+    # Single config uses the passed build type.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/fltk-build"
+      --config ${CMAKE_BUILD_TYPE} --target install
+      --parallel ${PARALLEL_PROC_COUNT})
+  endif()
+
+  find_package(FLTK CONFIG)
+  if(TARGET fltk)
+    set_target_properties(fltk PROPERTIES IMPORTED_GLOBAL True)
+  endif()
+endif()
+
 ### JsonCpp ###
 
 if(BUILD_SERVER)
