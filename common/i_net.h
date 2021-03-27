@@ -42,6 +42,10 @@
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
 #define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
+/**
+ * @brief Compression is enabled for this packet
+ */
+#define SVF_COMPRESSED BIT(0)
 
 /**
  * @brief svc_*: Transmit all possible data.

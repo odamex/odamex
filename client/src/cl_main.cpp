@@ -292,7 +292,7 @@ void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
-void CL_Decompress(int sequence);
+void CL_Decompress();
 
 void CL_NetDemoStop(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
@@ -1764,7 +1764,7 @@ bool CL_PrepareConnect(void)
 //
 //  Connecting to a server...
 //
-bool CL_Connect(void)
+bool CL_Connect()
 {
 	players.clear();
 
@@ -1782,7 +1782,11 @@ bool CL_Connect(void)
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-	CL_Decompress(0);
+	byte flags = MSG_ReadByte();
+	if (flags & SVF_COMPRESSED)
+	{
+		CL_Decompress();
+	}
 	CL_ParseCommands();
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
@@ -2014,44 +2018,31 @@ void CL_CheckMissedPacket(void)
 // [Russell] - reason this was failing is because of huffman routines, so just
 // use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
 // if 0'd sections
-void CL_Decompress(int sequence)
+void CL_Decompress()
 {
-	if(!MSG_BytesLeft() || MSG_NextByte() != svc_compressed)
+	if(!MSG_BytesLeft())
 		return;
-	else
-		MSG_ReadByte();
 
-	byte method = MSG_ReadByte();
-
-#if 0
-	if(method & adaptive_mask)
-		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
-	else
-	{
-		// otherwise compressed packets can still contain codec updates
-		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
-	}
-#endif
-
-	if(method & minilzo_mask)
-		MSG_DecompressMinilzo();
-#if 0
-	if(method & adaptive_record_mask)
-		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
-#endif
+	MSG_DecompressMinilzo();
 }
 
 //
 // CL_ReadPacketHeader
 //
-void CL_ReadPacketHeader(void)
+void CL_ReadPacketHeader()
 {
-	unsigned int sequence = MSG_ReadLong();
+	// Packet sequence number.
+	uint32_t sequence = MSG_ReadLong();
 
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, sequence);
 
-	CL_Decompress(sequence);
+	// Flag bits.
+	byte flags = MSG_ReadByte();
+	if (flags & SVF_COMPRESSED)
+	{
+		CL_Decompress();
+	}
 
 	packetseq[packetnum] = sequence;
 	packetnum++;
