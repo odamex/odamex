@@ -616,6 +616,10 @@ static void SpawninvCommandHelp(const char* cmd)
 		       "inventory item.\n");
 		Printf("  It does not double \"spawninv\" ammo counts.\n");
 	}
+	else
+	{
+		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", cmd);
+	}
 }
 
 static void SpawninvCommand(const std::string& cmd, const std::string& param)
@@ -666,7 +670,7 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "Unknown command \"%s\".", param.c_str());
+		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", param.c_str());
 		return;
 	}
 
