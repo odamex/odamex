@@ -180,7 +180,7 @@ static std::string InvWeaponsStr(const spawnInventory_t& inv)
 /**
  * @brief Ammo index to string.
  */
-static std::string InvAmmoStr(const spawnInventory_t& inv, const size_t i)
+static std::string InvAmmoStr(const spawnInventory_t& inv, const ammotype_t i)
 {
 	assert(i < NUMAMMO);
 
@@ -211,7 +211,7 @@ static std::string InvBackpackStr(const spawnInventory_t& inv)
 static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 {
 	inv.health = MAX(1, atoi(value.c_str()));
-	inv.isdefault = true;
+	inv.isdefault = false;
 }
 
 /**
@@ -221,7 +221,7 @@ static void InvSetArmor(spawnInventory_t& inv, const int type, const std::string
 {
 	inv.armortype = type;
 	inv.armorpoints = MAX(0, atoi(value.c_str()));
-	inv.isdefault = true;
+	inv.isdefault = false;
 }
 
 /**
@@ -237,7 +237,7 @@ static bool InvSetReadyWeapon(spawnInventory_t& inv, const std::string& value)
 		return false;
 
 	inv.readyweapon = static_cast<weapontype_t>(weap);
-	inv.isdefault = true;
+	inv.isdefault = false;
 
 	return true;
 }
@@ -262,7 +262,7 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 
 	// Commit our new weapons.
 	ArrayCopy(inv.weaponowned, newowned);
-	inv.isdefault = true;
+	inv.isdefault = false;
 
 	return true;
 }
@@ -278,19 +278,19 @@ static void InvSetAmmo(spawnInventory_t& inv, const ammotype_t type,
 		return;
 	}
 	inv.ammo[type] = MAX(0, atoi(value.c_str()));
-	inv.isdefault = true;
+	inv.isdefault = false;
 }
 
 static void InvSetBerserk(spawnInventory_t& inv, const std::string& value)
 {
 	inv.berserk = StrBoolean(value.c_str());
-	inv.isdefault = true;
+	inv.isdefault = false;
 }
 
 static void InvSetBackpack(spawnInventory_t& inv, const std::string& value)
 {
 	inv.backpack = StrBoolean(value.c_str());
-	inv.isdefault = true;
+	inv.isdefault = false;
 }
 
 /**
@@ -341,25 +341,25 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 
 	if (inv.ammo[am_clip] > 0)
 	{
-		StrFormat(buf, "bullets:%s", InvAmmoStr(inv, 0).c_str());
+		StrFormat(buf, "bullets:%s", InvAmmoStr(inv, am_clip).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_shell] > 0)
 	{
-		StrFormat(buf, "shells:%s", InvAmmoStr(inv, 1).c_str());
+		StrFormat(buf, "shells:%s", InvAmmoStr(inv, am_shell).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_misl] > 0)
 	{
-		StrFormat(buf, "rockets:%s", InvAmmoStr(inv, 2).c_str());
+		StrFormat(buf, "rockets:%s", InvAmmoStr(inv, am_misl).c_str());
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_cell] > 0)
 	{
-		StrFormat(buf, "cells:%s", InvAmmoStr(inv, 3).c_str());
+		StrFormat(buf, "cells:%s", InvAmmoStr(inv, am_cell).c_str());
 		params.push_back(buf);
 	}
 
