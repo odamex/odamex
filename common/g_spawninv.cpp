@@ -180,12 +180,14 @@ static std::string InvWeaponsStr(const spawnInventory_t& inv)
 /**
  * @brief Ammo index to string.
  */
-static std::string InvAmmoStr(const spawnInventory_t& inv, const ammotype_t i)
+static std::string InvAmmoStr(const spawnInventory_t& inv, const ammotype_t type)
 {
-	assert(i < NUMAMMO);
-
+	if (type < am_clip || type >= NUMAMMO)
+	{
+		return "";
+	}
 	std::string rvo;
-	StrFormat(rvo, "%d", inv.ammo[i]);
+	StrFormat(rvo, "%d", inv.ammo[type]);
 	return rvo;
 }
 
