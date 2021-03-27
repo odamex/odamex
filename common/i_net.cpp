@@ -1069,7 +1069,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist);
 	SVC_INFO(svc_maplist_update);
 	SVC_INFO(svc_maplist_index);
-	SVC_INFO(svc_compressed);
 	SVC_INFO(svc_launcher_challenge);
 	SVC_INFO(svc_challenge);
 	SVC_INFO(svc_max);

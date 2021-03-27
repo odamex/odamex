@@ -229,9 +229,6 @@ enum svc_t
 	svc_maplist_update = 156, // [AM] - Send the entire maplist to the client in chunks.
 	svc_maplist_index = 157, // [AM] - Send the current and next map index to the client.
 
-	// for compressed packets
-	svc_compressed = 200,
-
 	// for when launcher packets go astray
 	svc_launcher_challenge = 212,
 	svc_challenge = 163,
@@ -287,14 +284,6 @@ enum clc_t
 
 extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t svc_info[svc_max + 1];
-
-enum svc_compressed_masks
-{
-	adaptive_mask = 1,
-	adaptive_select_mask = 2,
-	adaptive_record_mask = 4,
-	minilzo_mask = 8
-};
 
 namespace google
 {

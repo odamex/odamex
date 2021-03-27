@@ -106,7 +106,6 @@ static void InitMap()
 	MapProto(odaproto::svc::Maplist::descriptor(), svc_maplist);
 	MapProto(odaproto::svc::MaplistUpdate::descriptor(), svc_maplist_update);
 	MapProto(odaproto::svc::MaplistIndex::descriptor(), svc_maplist_index);
-	// svc_compressed
 	// svc_launcher_challenge
 	// svc_challenge
 }
