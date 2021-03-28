@@ -1582,9 +1582,20 @@ void EATargets(int x, int y, const float scale,
 			std::string nameplate;
 			if (P_AreTeammates(*Targets[i].PlayPtr, consoleplayer()))
 			{
-				StrFormat(nameplate, "%s +%d",
-				          Targets[i].PlayPtr->userinfo.netname.c_str(),
-				          Targets[i].PlayPtr->health);
+				int health = Targets[i].PlayPtr->health;
+
+				const char* color;
+				if (health < 25)
+					color = TEXTCOLOR_RED;
+				else if (health < 50)
+					color = TEXTCOLOR_GOLD;
+				else if (health < 100)
+					color = TEXTCOLOR_GREEN;
+				else
+					color = TEXTCOLOR_BLUE;
+
+				StrFormat(nameplate, "%s %s+%d",
+				          Targets[i].PlayPtr->userinfo.netname.c_str(), color, health);
 			}
 			else
 			{
