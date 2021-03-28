@@ -53,7 +53,7 @@ void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect(void);
 void CL_ParseCommands(void);
-void CL_ReadPacketHeader();
+bool CL_ReadPacketHeader();
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);

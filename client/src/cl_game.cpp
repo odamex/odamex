@@ -959,7 +959,8 @@ void G_Ticker (void)
 			last_received = gametic;
 			noservermsgs = false;
 
-			CL_ReadPacketHeader();
+			if (!CL_ReadPacketHeader())
+				continue;
 
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);

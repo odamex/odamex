@@ -120,8 +120,8 @@ BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-int       packetseq[256];
-byte      packetnum;
+const static size_t PACKET_SEQ_MASK = 0xFF;
+static int packetseq[256];
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -1768,8 +1768,7 @@ bool CL_Connect()
 {
 	players.clear();
 
-	memset(packetseq, -1, sizeof(packetseq) );
-	packetnum = 0;
+	memset(packetseq, -1, sizeof(packetseq));
 
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
@@ -2000,14 +1999,28 @@ void CL_Decompress()
 	MSG_DecompressMinilzo();
 }
 
-//
-// CL_ReadPacketHeader
-//
-void CL_ReadPacketHeader()
+/**
+ * @brief Read the header of the packet and prepare the rest of it for reading.
+ * 
+ * @return False if the packet was scuttled, otherwise true.
+ */
+bool CL_ReadPacketHeader()
 {
 	// Packet sequence number.
 	int sequence = MSG_ReadLong();
+	int oldsequence = ::packetseq[sequence & PACKET_SEQ_MASK];
 
+	if (sequence == oldsequence)
+	{
+		// Duplicate packet, burn it and return early.
+		SZ_Clear(&::net_message);
+		return false;
+	}
+
+	// Not a dupe, keep it in our array of known received packets.
+	::packetseq[sequence & PACKET_SEQ_MASK] = sequence;
+
+	// Send an ACK to the server.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, sequence);
 
@@ -2018,10 +2031,8 @@ void CL_ReadPacketHeader()
 		CL_Decompress();
 	}
 
-	packetseq[packetnum] = sequence;
-	packetnum++;
-
 	netgraph.addPacketIn();
+	return true;
 }
 
 void CL_GetServerSettings(void)
