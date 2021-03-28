@@ -189,7 +189,6 @@ enum svc_t
 	svc_reconnect,
 	svc_exitlevel,
 	svc_touchspecial,
-	svc_missedpacket,
 	svc_forceteam,			// [Toke] Allows server to change a clients team setting.
 	svc_switch,
 	svc_say,				// [AM] Similar to a broadcast print except we know who said it.

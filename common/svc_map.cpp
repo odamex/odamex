@@ -70,7 +70,6 @@ static void InitMap()
 	MapProto(odaproto::svc::ExitLevel::descriptor(), svc_exitlevel);
 	MapProto(odaproto::svc::TouchSpecial::descriptor(), svc_touchspecial);
 	// svc_changeweapon
-	MapProto(odaproto::svc::MissedPacket::descriptor(), svc_missedpacket);
 	MapProto(odaproto::svc::ForceTeam::descriptor(), svc_forceteam);
 	MapProto(odaproto::svc::Switch::descriptor(), svc_switch);
 	MapProto(odaproto::svc::Say::descriptor(), svc_say);

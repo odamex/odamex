@@ -46,6 +46,7 @@ buf_t sendd(MAX_UDP_PACKET);
 const static size_t PACKET_FLAG_INDEX = sizeof(uint32_t);
 const static size_t PACKET_MESSAGE_INDEX = PACKET_FLAG_INDEX + 1;
 const static size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
+const static size_t PACKET_OLD_MASK = 0xFF;
 
 //
 // CompressPacket
@@ -154,23 +155,24 @@ bool SV_SendPacket(player_t &pl)
 
 	// save the reliable message 
 	// it will be retransmited, if it's missed
+	client_t::oldPacket_t& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
 
-	// the end of the buffer is reached
-	if (cl->relpackets.cursize + cl->reliablebuf.cursize >= cl->relpackets.maxsize())
-		cl->relpackets.cursize = 0;
-
-	// copy the beginning and the size of a packet to the buffer
-	cl->packetbegin[cl->packetnum] = cl->relpackets.cursize;
-	cl->packetsize[cl->packetnum] = cl->reliablebuf.cursize;
-	cl->packetseq[cl->packetnum] = cl->sequence;
-
+	old.data.clear();
 	if (cl->reliablebuf.cursize)
-		SZ_Write (&cl->relpackets, cl->reliablebuf.data, cl->reliablebuf.cursize);
-
+	{
+		// copy the reliable data into the buffer.
+		old.sequence = cl->sequence;
+		SZ_Write(&old.data, cl->reliablebuf.data, cl->reliablebuf.cursize);
+	}
+	else
+	{
+		old.sequence = -1;
+	}
 
 	cl->packetnum++; // packetnum will never be more than 255
 	                 // because sizeof(packetnum) == 1. Don't need
 	                 // to use &0xff. Cool, eh? ;-)
+
 	// copy sequence
 	MSG_WriteLong(&sendd, cl->sequence++);
 	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
@@ -219,6 +221,43 @@ bool SV_SendPacket(player_t &pl)
 	return true;
 }
 
+/**
+ * @brief Send an old reliable packet with old data on the wire.
+ * 
+ * @param pl Player to send to.
+ * @param sequence Sequence number to send.  This assumss
+*/
+static void SendOldPacket(player_t& pl, const int sequence)
+{
+	// Send buffer.
+	static buf_t send(MAX_UDP_PACKET);
+	send.clear();
+
+	client_t& cl = pl.client;
+	client_t::oldPacket_t& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
+
+	// This is a lot simpler than a fresh send.  Just send the data we have
+	// have saved out.
+
+	MSG_WriteLong(&send, old.sequence);
+	MSG_WriteByte(&send, 0); // Flags, filled out later.
+
+	// copy the reliable message to the packet
+	if (old.data.cursize)
+	{
+		SZ_Write(&send, old.data.data, old.data.cursize);
+		cl.reliable_bps += old.data.cursize;
+	}
+
+	// compress the packet, but not the sequence id
+	if (send.size() > PACKET_HEADER_SIZE)
+	{
+		CompressPacket(send, PACKET_HEADER_SIZE, &cl);
+	}
+
+	NET_SendPacket(send, cl.address);
+}
+
 //
 // SV_AcknowledgePacket
 //
@@ -239,14 +278,7 @@ void SV_AcknowledgePacket(player_t &player)
 			int  n;
 			bool needfullupdate = true;
 
-			for (n=0; n<256; n++)
-				if (cl->packetseq[n] == seq)
-				{
-					needfullupdate = false;
-					break;
-				}
-
-			if  (needfullupdate)
+			if (cl->oldpackets[seq & PACKET_OLD_MASK].sequence != seq)
 			{
 				// do full update
 				DPrintf("need full update\n");
@@ -254,24 +286,7 @@ void SV_AcknowledgePacket(player_t &player)
 				return;
 			}
 
-			MSG_WriteMarker(&cl->reliablebuf, svc_missedpacket);
-			MSG_WriteLong(&cl->reliablebuf, seq);
-			MSG_WriteShort(&cl->reliablebuf, cl->packetsize[n]);
-			if (cl->packetsize[n])
-				SZ_Write (&cl->reliablebuf, cl->relpackets.data, 
-					cl->packetbegin[n], cl->packetsize[n]);
-
-			if (cl->reliablebuf.overflowed)
-			{
-				// do full update
-				DPrintf("reliablebuf overflowed, need full update\n");
-				cl->last_sequence = sequence;
-				return;
-			}
-
-			if (cl->reliablebuf.cursize > MaxPacketSize)
-				SV_SendPacket(player);
-
+			SendOldPacket(player, seq);
 		}
 	}
 

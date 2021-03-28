@@ -1988,32 +1988,6 @@ void CL_ClearSectorSnapshots()
 	sector_snaps.clear();
 }
 
-//
-// CL_CheckMissedPacket
-//
-void CL_CheckMissedPacket(void)
-{
-	int    sequence;
-	short  size;
-
-	sequence = MSG_ReadLong();
-	size = MSG_ReadShort();
-
-	for (int n=0; n<256; n++)
-	{
-		// skip a duplicated packet
-		if (packetseq[n] == sequence)
-		{
-            MSG_ReadChunk(size);
-
-			#ifdef _DEBUG
-                Printf (PRINT_WARNING, "warning: duplicate packet\n");
-			#endif
-			return;
-		}
-	}
-}
-
 // Decompress the packet sequence
 // [Russell] - reason this was failing is because of huffman routines, so just
 // use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
@@ -2032,7 +2006,7 @@ void CL_Decompress()
 void CL_ReadPacketHeader()
 {
 	// Packet sequence number.
-	uint32_t sequence = MSG_ReadLong();
+	int sequence = MSG_ReadLong();
 
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, sequence);
@@ -2272,7 +2246,6 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
 		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
 		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
-		SERVER_MSG_FUNC(svc_missedpacket, CL_CheckMissedPacket);
 		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
 		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
 		SERVER_PROTO_FUNC(svc_say, CL_Say, odaproto::svc::Say);

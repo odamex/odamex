@@ -1817,11 +1817,12 @@ void SV_ConnectClient()
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
-	SZ_Clear(&cl->relpackets);
-
-	memset(cl->packetseq, -1, sizeof(cl->packetseq));
-	memset(cl->packetbegin, 0, sizeof(cl->packetbegin));
-	memset(cl->packetsize, 0, sizeof(cl->packetsize));
+	
+	for (size_t i = 0; i < ARRAY_LENGTH(cl->oldpackets); i++)
+	{
+		cl->oldpackets[i].sequence = -1;
+		SZ_Clear(&cl->oldpackets[i].data);
+	}
 
 	cl->sequence = 0;
 	cl->last_sequence = -1;
