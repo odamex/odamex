@@ -1562,20 +1562,36 @@ void EATargets(int x, int y, const float scale,
 
 	// [AM] New ElementArray drawing function
 	byte drawn = 0;
-	for (size_t i = 0;i < Targets.size();i++) {
+	for (size_t i = 0; i < Targets.size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
+		{
 			break;
 		}
 
-		if (Targets[i].PlayPtr == &(consoleplayer())) {
+		if (Targets[i].PlayPtr == &(consoleplayer()))
+		{
 			// You're looking at yourself.
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              "You", Targets[i].Color);
-		} else {
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              Targets[i].PlayPtr->userinfo.netname.c_str(),
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",
 			              Targets[i].Color);
+		}
+		else
+		{
+			// Figure out if we should be showing this player's health.
+			std::string nameplate;
+			if (P_AreTeammates(*Targets[i].PlayPtr, consoleplayer()))
+			{
+				StrFormat(nameplate, "%s +%d",
+				          Targets[i].PlayPtr->userinfo.netname.c_str(),
+				          Targets[i].PlayPtr->health);
+			}
+			else
+			{
+				nameplate = Targets[i].PlayPtr->userinfo.netname;
+			}
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              nameplate.c_str(), Targets[i].Color);
 		}
 
 		y += 7 + padding;
