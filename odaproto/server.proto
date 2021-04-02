@@ -337,15 +337,29 @@ message Say
 	string message = 3;	
 }
 
+// svc_ctfrefresh
+message CTFRefresh
+{
+	message TeamInfo
+	{
+		int32 points = 1;
+		int32 flag_state = 2;
+		int32 flag_flagger = 3;
+	}
+
+	bool full = 1;
+	repeated TeamInfo team_info = 2;
+}
+
 // svc_ctfevent
 message CTFEvent
 {
 	int32 event = 1;
-	int32 team = 2;
+	int32 flagger = 2;
 	int32 who_team = 3;
 	int32 who_id = 4;
 	int32 who_points = 5;
-	repeated int32 team_points = 6;
+	int32 who_totalpoints = 6;
 }
 
 // svc_secretevent

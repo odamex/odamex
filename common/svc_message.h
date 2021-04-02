@@ -39,6 +39,7 @@
 #include "g_level.h"
 #include "g_levelstate.h"
 #include "i_net.h"
+#include "p_ctf.h"
 #include "p_spec.h"
 
 /**
@@ -116,6 +117,9 @@ odaproto::svc::ForceTeam SVC_ForceTeam(team_t team);
 odaproto::svc::Switch SVC_Switch(line_t& line, uint32_t state, uint32_t timer);
 odaproto::svc::Say SVC_Say(const bool visibility, const byte pid,
                            const std::string& message);
+odaproto::svc::CTFRefresh SVC_CTFRefresh(const TeamsView& teams, const bool full);
+odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t flagger,
+                                     const player_t& who);
 odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector);
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,

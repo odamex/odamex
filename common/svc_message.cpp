@@ -30,6 +30,7 @@
 
 #include "common.pb.h"
 #include "d_main.h"
+#include "g_gametype.h"
 #include "i_system.h"
 #include "p_lnspec.h"
 #include "p_local.h"
@@ -932,6 +933,54 @@ odaproto::svc::Say SVC_Say(const bool visibility, const byte pid,
 	msg.set_visibility(visibility);
 	msg.set_pid(pid);
 	msg.set_message(message);
+
+	return msg;
+}
+
+odaproto::svc::CTFRefresh SVC_CTFRefresh(const TeamsView& teams, const bool full)
+{
+	odaproto::svc::CTFRefresh msg;
+
+	msg.set_full(full);
+
+	for (TeamsView::const_iterator it = teams.begin(); it != teams.end(); ++it)
+	{
+		odaproto::svc::CTFRefresh_TeamInfo* info = msg.add_team_info();
+
+		info->set_points((*it)->Points);
+
+		if (full)
+		{
+			info->set_flag_state((*it)->FlagData.state);
+			info->set_flag_flagger((*it)->FlagData.flagger);
+		}
+	}
+
+	return msg;
+}
+
+odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t flagger,
+                                     const player_t& who)
+{
+	odaproto::svc::CTFEvent msg;
+
+	msg.set_event(event);
+	msg.set_flagger(flagger);
+
+	// [AM] FIXME: validplayer shouldn't need a const I don't think...
+	if (validplayer(const_cast<player_t&>(who)))
+	{
+		msg.set_who_team(who.userinfo.team);
+		msg.set_who_id(who.id);
+		if (G_IsRoundsGame())
+		{
+			msg.set_who_totalpoints(who.totalpoints);
+		}
+		else
+		{
+			msg.set_who_points(who.points);
+		}
+	}
 
 	return msg;
 }
