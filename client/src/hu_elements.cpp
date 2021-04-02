@@ -1590,13 +1590,15 @@ void EATargets(int x, int y, const float scale,
 				if (health < 25)
 					color = TEXTCOLOR_RED;
 				else if (health < 50)
+					color = TEXTCOLOR_ORANGE;
+				else if (health < 75)
 					color = TEXTCOLOR_GOLD;
-				else if (health < 100)
+				else if (health < 110)
 					color = TEXTCOLOR_GREEN;
 				else
-					color = TEXTCOLOR_BLUE;
+					color = TEXTCOLOR_LIGHTBLUE;
 
-				StrFormat(nameplate, "%s %s+%d",
+				StrFormat(nameplate, "%s %s%d",
 				          Targets[i].PlayPtr->userinfo.netname.c_str(), color, health);
 			}
 			else
