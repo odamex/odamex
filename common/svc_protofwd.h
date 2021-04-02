@@ -64,6 +64,7 @@ class Say;
 class CTFRefresh;
 class CTFEvent;
 class SecretEvent;
+class ServerSettings;
 class PlayerState;
 class LevelState;
 class SectorProperties;

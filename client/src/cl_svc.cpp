@@ -45,6 +45,7 @@
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_mobj.h"
+#include "r_sky.h"
 #include "r_state.h"
 #include "s_sound.h"
 #include "st_stuff.h"
@@ -1745,6 +1746,37 @@ void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
+}
+
+void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
+{
+	cvar_t *var = NULL, *prev = NULL;
+
+	std::string CvarKey = msg.key();
+	std::string CvarValue = msg.value();
+
+	var = cvar_t::FindCVar(CvarKey.c_str(), &prev);
+
+	// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
+	if (var)
+	{
+		if (var->flags() & CVAR_SERVERINFO)
+			var->Set(CvarValue.c_str());
+	}
+	else
+	{
+		// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+		// for cleanup on program termination
+		// [AM] We have no way of telling of cvars are CVAR_NOENABLEDISABLE,
+		//      so let's set it on all cvars.
+		var = new cvar_t(CvarKey.c_str(), NULL, "", CVARTYPE_NONE,
+		                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
+		                     CVAR_NOENABLEDISABLE);
+		var->Set(CvarValue.c_str());
+	}
+
+	// Nes - update the skies in case sv_freelook is changed.
+	R_InitSkyMap();
 }
 
 void CL_PlayerState(const odaproto::svc::PlayerState& msg)

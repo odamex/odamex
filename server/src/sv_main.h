@@ -54,6 +54,7 @@ void SV_SendReconnectSignal();
 void SV_ExitLevel();
 void SV_DrawScores();
 
+void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);

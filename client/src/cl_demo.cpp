@@ -1098,19 +1098,15 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteSVC(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
 	
 	// Server sends its settings
-	MSG_WriteMarker	(netbuffer, svc_serversettings);
 	cvar_t *var = GetFirstCvar();
 	while (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteByte	(netbuffer, 1);
-			MSG_WriteString	(netbuffer,	var->name());
-			MSG_WriteString	(netbuffer,	var->cstring());
+			MSG_WriteSVC(netbuffer, SVC_ServerSettings(*var));
 		}
 		var = var->GetNext();
 	}
-	MSG_WriteByte	(netbuffer, 2);		// end of server settings marker
 
 	// Server tells everyone if we're a spectator
 	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));

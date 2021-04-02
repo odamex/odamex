@@ -60,6 +60,7 @@ void CL_Say(const odaproto::svc::Say& msg);
 void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg);
 void CL_CTFEvent(const odaproto::svc::CTFEvent& msg);
 void CL_SecretEvent(const odaproto::svc::SecretEvent& msg);
+void CL_ServerSettings(const odaproto::svc::ServerSettings& msg);
 void CL_PlayerState(const odaproto::svc::PlayerState& msg);
 void CL_LevelState(const odaproto::svc::LevelState& msg);
 void CL_SectorProperties(const odaproto::svc::SectorProperties& msg);

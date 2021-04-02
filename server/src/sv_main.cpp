@@ -304,8 +304,7 @@ void SV_UpdateConsolePlayer(player_t &player);
 void SV_CheckTeam (player_t & playernum);
 team_t SV_GoodTeam (void);
 
-void SV_SendServerSettings (player_t &pl);
-void SV_ServerSettingChange (void);
+static void SendServerSettings(player_t& pl);
 
 // some doom functions
 size_t P_NumPlayersOnTeam(team_t team);
@@ -1567,35 +1566,33 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 }
 
 //
-//	SV_SendServerSettings
+//	SendServerSettings
 //
 //	Sends server setting info
 //
 
 void SV_SendPackets(void);
 
-void SV_SendServerSettings (player_t &pl)
+static void SendServerSettings(player_t& pl)
 {
-	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO stuff only
-	cvar_t *var = GetFirstCvar();
+	client_t* cl = &pl.client;
 
-    client_t *cl = &pl.client;
+	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO
+	// stuff only
+	cvar_t* var = GetFirstCvar();
 
 	while (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-            if ((cl->reliablebuf.cursize + 1 + 1 + (strlen(var->name()) + 1) + (strlen(var->cstring()) + 1) + 1) >= 512)
-                SV_SendPacket(pl);
+			odaproto::svc::ServerSettings settings = SVC_ServerSettings(*var);
 
-            MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
+			if (settings.ByteSizeLong() > MAX_UDP_SIZE - cl->reliablebuf.size())
+			{
+				SV_SendPacket(pl);
+			}
 
-            MSG_WriteByte(&cl->reliablebuf, 1); // TODO: REMOVE IN 0.7
-
-			MSG_WriteString(&cl->reliablebuf, var->name());
-			MSG_WriteString(&cl->reliablebuf, var->cstring());
-
-            MSG_WriteByte(&cl->reliablebuf, 2); // TODO: REMOVE IN 0.7
+			MSG_WriteSVC(&cl->reliablebuf, settings);
 		}
 
 		var = var->GetNext();
@@ -1607,13 +1604,17 @@ void SV_SendServerSettings (player_t &pl)
 //
 //	Sends server settings to clients when changed
 //
-void SV_ServerSettingChange (void)
+void SV_ServerSettingChange()
 {
 	if (gamestate != GS_LEVEL)
+	{
 		return;
+	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		SV_SendServerSettings(*it);
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		SendServerSettings(*it);
+	}
 }
 
 // SV_CheckClientVersion
@@ -1896,7 +1897,7 @@ void SV_ConnectClient()
 	SV_SendPacket(*player);
 
 	// [Toke] send server settings
-	SV_SendServerSettings(*player);
+	SendServerSettings(*player);
 
 	cl->displaydisconnect = true;
 

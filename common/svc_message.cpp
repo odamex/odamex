@@ -999,6 +999,16 @@ odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector)
 	return msg;
 }
 
+odaproto::svc::ServerSettings SVC_ServerSettings(const cvar_t& var)
+{
+	odaproto::svc::ServerSettings msg;
+
+	msg.set_key(var.name());
+	msg.set_value(var.str());
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;

@@ -373,12 +373,8 @@ message SecretEvent
 // svc_serversettings
 message ServerSettings
 {
-	message ServerSetting
-	{
-		string key = 1;
-		string value = 2;
-	}
-	repeated ServerSetting settings = 1;
+	string key = 1;
+	string value = 2;
 }
 
 // svc_connectclient

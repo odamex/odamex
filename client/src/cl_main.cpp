@@ -289,8 +289,6 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
 void CL_PlayerTimes (void);
-void CL_GetServerSettings(void);
-void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress();
 
@@ -298,9 +296,6 @@ void CL_NetDemoStop(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
-
-//	[Toke - CTF]
-void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
 void D_Display(void);
@@ -2035,41 +2030,6 @@ bool CL_ReadPacketHeader()
 	return true;
 }
 
-void CL_GetServerSettings(void)
-{
-	cvar_t *var = NULL, *prev = NULL;
-
-	// TODO: REMOVE IN 0.7 - We don't need this loop anymore
-	while (MSG_ReadByte() != 2)
-	{
-		std::string CvarName = MSG_ReadString();
-		std::string CvarValue = MSG_ReadString();
-
-		var = cvar_t::FindCVar(CvarName.c_str(), &prev);
-
-		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
-		if (var)
-		{
-			if (var->flags() & CVAR_SERVERINFO)
-				var->Set(CvarValue.c_str());
-		}
-		else
-		{
-			// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
-			// for cleanup on program termination
-			// [AM] We have no way of telling of cvars are CVAR_NOENABLEDISABLE,
-			//      so let's set it on all cvars.
-			var = new cvar_t(CvarName.c_str(), NULL, "", CVARTYPE_NONE,
-			                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
-			                 CVAR_NOENABLEDISABLE);
-			var->Set(CvarValue.c_str());
-		}
-	}
-
-	// Nes - update the skies in case sv_freelook is changed.
-	R_InitSkyMap();
-}
-
 //
 // CL_FinishedFullUpdate
 //
@@ -2265,7 +2225,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
 		SERVER_PROTO_FUNC(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
 		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
-		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
+		SERVER_PROTO_FUNC(svc_serversettings, CL_ServerSettings,
+		                  odaproto::svc::ServerSettings);
 		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
 		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
 		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);

@@ -30,8 +30,14 @@
 
 #include <string>
 
-// Max packet size to send and receive, in bytes
-#define	MAX_UDP_PACKET 8192
+// Default buffer size for a UDP packet.
+// This constant seems to be used as a default buffer size and should
+// probably not be considered a reasonable MTU.
+#define MAX_UDP_PACKET 8192
+
+// Maximum safe size for a packet transmitted over UDP.
+// This number comes from Steamworks and seems to be a reasonable default.
+#define MAX_UDP_SIZE   1200
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
