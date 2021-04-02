@@ -194,7 +194,8 @@ enum svc_t
 	svc_say,				// [AM] Similar to a broadcast print except we know who said it.
 	svc_spawnhiddenplayer,	// [denis] when client can't see player
 	svc_updatedeaths,		// [byte] [short]
-	svc_ctfevent,			// [Toke - CTF] - [int]
+	svc_ctfrefresh,			// [Toke - CTF]
+	svc_ctfevent,			// [Toke - CTF]
 	svc_secretevent,		// [Ch0wW] informs clients of a secret discovered
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
 	svc_connectclient,

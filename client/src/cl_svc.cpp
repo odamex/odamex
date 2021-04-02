@@ -1573,6 +1573,136 @@ void CL_Say(const odaproto::svc::Say& msg)
 	}
 }
 
+void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
+{
+	size_t i;
+
+	// clear player flags client may have imagined
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (size_t j = 0; j < NUMTEAMS; j++)
+			it->flags[j] = false;
+
+	for (i = 0; i < NUMTEAMS; i++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.flagger = 0;
+		teamInfo->FlagData.state = (flag_state_t)MSG_ReadByte();
+		byte flagger = MSG_ReadByte();
+
+		if (teamInfo->FlagData.state == flag_carried)
+		{
+			player_t& player = idplayer(flagger);
+
+			if (validplayer(player))
+				CTF_CarryFlag(player, (team_t)i);
+		}
+	}
+}
+
+void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
+{
+	// Range checking on events.
+	if (msg.event() <= SCORE_REFRESH || msg.event() >= NUM_CTF_SCORE)
+	{
+		return;
+	}
+	if (msg.target_team() < 0 || msg.target_team() > TEAM_NONE ||
+	    msg.target_team() == NUMTEAMS)
+	{
+		return;
+	}
+	if (msg.player_team() < 0 || msg.player_team() > TEAM_NONE ||
+	    msg.player_team() == NUMTEAMS)
+	{
+		return;
+	}
+
+	// Convert our data to proper types.
+	flag_score_t event = static_cast<flag_score_t>(msg.event());
+	team_t target_team = static_cast<team_t>(msg.target_team());
+	player_t& player = idplayer(msg.player_id());
+	team_t player_team = static_cast<team_t>(msg.player_team());
+	TeamInfo* target_teaminfo = GetTeamInfo(target_team);
+
+	// If our player is valid, assign passed points to them.
+	if (validplayer(player))
+	{
+		if (G_IsRoundsGame())
+		{
+			player.totalpoints = msg.player_totalpoints();
+		}
+		else
+		{
+			player.points = msg.player_points();
+		}
+	}
+
+	switch (event)
+	{
+	default:
+	case SCORE_NONE:
+	case SCORE_REFRESH:
+	case SCORE_KILL:
+	case SCORE_BETRAYAL:
+	case SCORE_CARRIERKILL:
+		break;
+
+	case SCORE_GRAB:
+	case SCORE_FIRSTGRAB:
+	case SCORE_MANUALRETURN:
+		if (validplayer(player))
+		{
+			CTF_CarryFlag(player, target_team);
+			if (player.id == displayplayer().id)
+				player.bonuscount = BONUSADD;
+		}
+		break;
+
+	case SCORE_CAPTURE:
+		if (validplayer(player))
+		{
+			player.flags[target_team] = 0;
+		}
+
+		target_teaminfo->FlagData.flagger = 0;
+		target_teaminfo->FlagData.state = flag_home;
+		if (target_teaminfo->FlagData.actor)
+			target_teaminfo->FlagData.actor->Destroy();
+		break;
+
+	case SCORE_RETURN:
+		if (validplayer(player))
+		{
+			player.flags[target_team] = 0;
+		}
+
+		target_teaminfo->FlagData.flagger = 0;
+		target_teaminfo->FlagData.state = flag_home;
+		if (target_teaminfo->FlagData.actor)
+			target_teaminfo->FlagData.actor->Destroy();
+		break;
+
+	case SCORE_DROP:
+		if (validplayer(player))
+		{
+			player.flags[target_team] = 0;
+		}
+
+		target_teaminfo->FlagData.flagger = 0;
+		target_teaminfo->FlagData.state = flag_dropped;
+		if (target_teaminfo->FlagData.actor)
+			target_teaminfo->FlagData.actor->Destroy();
+		break;
+	}
+
+	// [AM] Play CTF sound, moved from server.
+	CTF_Sound(target_team, player_team, event);
+
+	// [AM] Show CTF message.
+	CTF_Message(target_team, player_team, event);
+}
+
 //
 // CL_SecretEvent
 // Client interpretation of a secret found by another player

@@ -61,6 +61,8 @@ class TouchSpecial;
 class ForceTeam;
 class Switch;
 class Say;
+class CTFRefresh;
+class CTFEvent;
 class SecretEvent;
 class PlayerState;
 class LevelState;

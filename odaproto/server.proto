@@ -355,11 +355,11 @@ message CTFRefresh
 message CTFEvent
 {
 	int32 event = 1;
-	int32 flagger = 2;
-	int32 who_team = 3;
-	int32 who_id = 4;
-	int32 who_points = 5;
-	int32 who_totalpoints = 6;
+	int32 target_team = 2;
+	int32 player_team = 3;
+	int32 player_id = 4;
+	int32 player_points = 5;
+	int32 player_totalpoints = 6;
 }
 
 // svc_secretevent

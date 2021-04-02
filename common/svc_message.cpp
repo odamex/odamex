@@ -959,26 +959,26 @@ odaproto::svc::CTFRefresh SVC_CTFRefresh(const TeamsView& teams, const bool full
 	return msg;
 }
 
-odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t flagger,
-                                     const player_t& who)
+odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t target,
+                                     const player_t& player)
 {
 	odaproto::svc::CTFEvent msg;
 
 	msg.set_event(event);
-	msg.set_flagger(flagger);
+	msg.set_target_team(target);
 
 	// [AM] FIXME: validplayer shouldn't need a const I don't think...
-	if (validplayer(const_cast<player_t&>(who)))
+	if (validplayer(const_cast<player_t&>(player)))
 	{
-		msg.set_who_team(who.userinfo.team);
-		msg.set_who_id(who.id);
+		msg.set_player_team(player.userinfo.team);
+		msg.set_player_id(player.id);
 		if (G_IsRoundsGame())
 		{
-			msg.set_who_totalpoints(who.totalpoints);
+			msg.set_player_totalpoints(player.totalpoints);
 		}
 		else
 		{
-			msg.set_who_points(who.points);
+			msg.set_player_points(player.points);
 		}
 	}
 

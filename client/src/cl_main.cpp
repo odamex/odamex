@@ -2260,7 +2260,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
 		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
 		SERVER_PROTO_FUNC(svc_say, CL_Say, odaproto::svc::Say);
-		SERVER_MSG_FUNC(svc_ctfevent, CL_CTFEvent);
+		SERVER_PROTO_FUNC(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
+		SERVER_PROTO_FUNC(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
 		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
 		SERVER_MSG_FUNC(svc_serversettings, CL_GetServerSettings);
 		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
