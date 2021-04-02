@@ -284,7 +284,6 @@ EXTERN_CVAR (sv_allowtargetnames)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
@@ -463,25 +462,6 @@ void CL_Reconnect(void)
 
 std::string spyplayername;
 void CL_CheckDisplayPlayer(void);
-
-//
-// CL_ConnectClient
-//
-void CL_ConnectClient(void)
-{
-	player_t &player = idplayer(MSG_ReadByte());
-
-	CL_CheckDisplayPlayer();
-
-	if (!cl_connectalert)
-		return;
-
-	// GhostlyDeath <August 1, 2008> -- Play connect sound
-	if (&player == &consoleplayer())
-		return;
-
-	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
-}
 
 //
 // CL_CheckDisplayPlayer
@@ -2227,7 +2207,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
 		SERVER_PROTO_FUNC(svc_serversettings, CL_ServerSettings,
 		                  odaproto::svc::ServerSettings);
-		SERVER_MSG_FUNC(svc_connectclient, CL_ConnectClient);
+		SERVER_PROTO_FUNC(svc_connectclient, CL_ConnectClient,
+		                  odaproto::svc::ConnectClient);
 		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
 		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
 		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);

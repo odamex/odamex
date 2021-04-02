@@ -1009,6 +1009,15 @@ odaproto::svc::ServerSettings SVC_ServerSettings(const cvar_t& var)
 	return msg;
 }
 
+odaproto::svc::ConnectClient SVC_ConnectClient(const player_t& player)
+{
+	odaproto::svc::ConnectClient msg;
+
+	msg.set_pid(player.id);
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;

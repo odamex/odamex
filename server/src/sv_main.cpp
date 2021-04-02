@@ -1955,8 +1955,7 @@ void SV_ConnectClient()
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteMarker(&pit->client.reliablebuf, svc_connectclient);
-		MSG_WriteByte(&pit->client.reliablebuf, player->id);
+		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(*player));
 	}
 
 	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions

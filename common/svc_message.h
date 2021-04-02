@@ -122,6 +122,7 @@ odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t targ
                                      const player_t& player);
 odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector);
 odaproto::svc::ServerSettings SVC_ServerSettings(const cvar_t& var);
+odaproto::svc::ConnectClient SVC_ConnectClient(const player_t& player);
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo,

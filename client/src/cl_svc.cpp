@@ -59,6 +59,7 @@ EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
@@ -1777,6 +1778,25 @@ void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
 
 	// Nes - update the skies in case sv_freelook is changed.
 	R_InitSkyMap();
+}
+
+//
+// CL_ConnectClient
+//
+void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
+{
+	player_t& player = idplayer(msg.pid());
+
+	CL_CheckDisplayPlayer();
+
+	if (!::cl_connectalert)
+		return;
+
+	// GhostlyDeath <August 1, 2008> -- Play connect sound
+	if (&player == &consoleplayer())
+		return;
+
+	S_Sound(CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
 }
 
 void CL_PlayerState(const odaproto::svc::PlayerState& msg)

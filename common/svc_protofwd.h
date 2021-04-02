@@ -65,6 +65,7 @@ class CTFRefresh;
 class CTFEvent;
 class SecretEvent;
 class ServerSettings;
+class ConnectClient;
 class PlayerState;
 class LevelState;
 class SectorProperties;

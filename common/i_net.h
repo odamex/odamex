@@ -203,7 +203,7 @@ enum svc_t
 	svc_ctfrefresh,			// [Toke - CTF]
 	svc_ctfevent,			// [Toke - CTF]
 	svc_secretevent,		// [Ch0wW] informs clients of a secret discovered
-	svc_serversettings,		// 55 [Toke] - informs clients of server settings
+	svc_serversettings,		// [Toke] - informs clients of server settings
 	svc_connectclient,
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
