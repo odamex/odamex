@@ -1575,27 +1575,42 @@ void CL_Say(const odaproto::svc::Say& msg)
 
 void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
 {
-	size_t i;
-
 	// clear player flags client may have imagined
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		for (size_t j = 0; j < NUMTEAMS; j++)
-			it->flags[j] = false;
-
-	for (i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		teamInfo->FlagData.flagger = 0;
-		teamInfo->FlagData.flagger = 0;
-		teamInfo->FlagData.state = (flag_state_t)MSG_ReadByte();
-		byte flagger = MSG_ReadByte();
-
-		if (teamInfo->FlagData.state == flag_carried)
+		for (size_t i = 0; i < NUMTEAMS; i++)
 		{
-			player_t& player = idplayer(flagger);
+			it->flags[i] = false;
+		}
+	}
 
-			if (validplayer(player))
-				CTF_CarryFlag(player, (team_t)i);
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		team_t team = static_cast<team_t>(i);
+		TeamInfo* teamInfo = GetTeamInfo(team);
+
+		if (i < msg.team_info_size())
+		{
+			const odaproto::svc::CTFRefresh_TeamInfo& info = msg.team_info().Get(i);
+
+			flag_state_t state = static_cast<flag_state_t>(info.flag_state());
+			if (state < flag_home || state >= NUMFLAGSTATES)
+			{
+				continue;
+			}
+
+			teamInfo->Points = info.points();
+			teamInfo->FlagData.flagger = 0;
+			teamInfo->FlagData.state = state;
+
+			if (teamInfo->FlagData.state == flag_carried)
+			{
+				player_t& player = idplayer(info.flag_flagger());
+				if (validplayer(player))
+				{
+					CTF_CarryFlag(player, team);
+				}
+			}
 		}
 	}
 }

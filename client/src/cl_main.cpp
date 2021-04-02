@@ -2191,7 +2191,9 @@ static void RecordProto(google::protobuf::Message* msg)
 
 	Proto proto;
 	proto.name = msg->GetTypeName();
+	proto.size = msg->ByteSizeLong();
 	proto.data = msg->DebugString();
+	proto.shortdata = msg->ShortDebugString();
 	::protos.push_back(proto);
 }
 
@@ -2306,52 +2308,62 @@ static bool CallMessageFunc(svc_t type)
 //
 // CL_ParseCommands
 //
-void CL_ParseCommands(void)
+void CL_ParseCommands()
 {
 	std::vector<svc_t> history;
-	svc_t cmd = svc_noop;
-
 	while (connected)
 	{
-		size_t byteStart = net_message.BytesRead();
+		if (::net_message.BytesLeftToRead() == 0)
+		{
+			break;
+		}
 
-		cmd = (svc_t)MSG_ReadByte();
+		size_t byteStart = ::net_message.BytesRead();
+		svc_t cmd = static_cast<svc_t>(MSG_ReadByte());
 		history.push_back(cmd);
 
-		if (cmd == (svc_t)-1)
-			break;
-
-		if (!CallMessageFunc(cmd))
+		if (cmd < svc_noop || cmd >= svc_max || !CallMessageFunc(cmd))
 		{
 			CL_QuitNetGame();
-			Printf(PRINT_HIGH,
-			       "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
+			Printf("CL_ParseCommands: Unknown server message %d following: \n",
+			       static_cast<int>(cmd));
 
 			for (size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j,
-				       history[j], svc_info[history[j]].getName());
-			Printf(PRINT_HIGH, "\n");
+			{
+				Printf("  message #%d [%d %s]\n", j, history[j],
+				       ::svc_info[history[j]].getName());
+			}
 			break;
 		}
 
 		if (net_message.overflowed)
 		{
 			CL_QuitNetGame();
-			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
-			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed\n", (int)cmd,
-			       svc_info[cmd].getName());
-			Printf(PRINT_HIGH,
-			       "CL_ParseCommands: It was command number %d in the packet\n",
-			       (int)history.back());
+			Printf("CL_ParseCommands: Bad server message\n");
+			Printf("  %d(%s) overflowed\n", static_cast<int>(cmd),
+			       ::svc_info[cmd].getName());
+			Printf("  It was command number %d in the packet\n",
+			       static_cast<int>(history.back()));
 			for (size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j,
-				       history[j], svc_info[history[j]].getName());
+			{
+				Printf("    message #%d [%d %s]\n", j, history[j],
+				       ::svc_info[history[j]].getName());
+			}
+
+			if (!::protos.empty())
+			{
+				Printf("  Last Protobuf: %s (%" PRIuSIZE " bytes)",
+				       ::protos.back().name.c_str(), ::protos.back().size);
+				Printf("    Data: %s", ::protos.back().shortdata.c_str());
+			}
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
 		if (net_message.BytesRead() < byteStart)
-			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n",
+		{
+			Printf("CL_ParseCommands: end byte (%d) < start byte (%d)\n",
 			       net_message.BytesRead(), byteStart);
+		}
 
 		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
 	}

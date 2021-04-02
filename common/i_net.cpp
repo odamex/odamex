@@ -1039,6 +1039,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_say);
 	SVC_INFO(svc_spawnhiddenplayer);
 	SVC_INFO(svc_updatedeaths);
+	SVC_INFO(svc_ctfrefresh);
 	SVC_INFO(svc_ctfevent);
 	SVC_INFO(svc_serversettings);
 	SVC_INFO(svc_connectclient);

@@ -1513,6 +1513,8 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	SV_UpdateHiddenMobj();
+	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
+		return;
 
 	// update flags
 	if (sv_gametype == GM_CTF)

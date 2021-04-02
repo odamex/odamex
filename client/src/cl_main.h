@@ -76,7 +76,9 @@ std::string M_ExpandTokens(const std::string &str);
 struct Proto
 {
 	std::string name;
+	size_t size;
 	std::string data;
+	std::string shortdata;
 };
 typedef std::vector<Proto> Protos;
 const Protos& CL_GetTicProtos();
