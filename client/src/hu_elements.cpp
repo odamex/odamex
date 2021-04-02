@@ -1505,11 +1505,6 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
-	if (!consoleplayer().spectator && !sv_allowtargetnames) {
-		// The server doesn't want us to use target names.
-		return;
-	}
-
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
@@ -1524,6 +1519,13 @@ void EATargets(int x, int y, const float scale,
 
 		if (!P_ActorInFOV(displayplayer().mo, it->mo, 45.0f, 512 * FRACUNIT))
 			continue;
+
+		// The server doesn't want us to see enemy target names.
+		if (!sv_allowtargetnames && !consoleplayer().spectator &&
+		    !P_AreTeammates(displayplayer(), *it))
+		{
+			continue;
+		}
 
 		// Pick a decent color for the player name.
 		int color;
