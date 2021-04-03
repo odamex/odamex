@@ -441,6 +441,9 @@ bool OTransfer::tick()
 		ok = rename(m_filePart.c_str(), fallback.c_str());
 		if (ok != 0)
 		{
+			// Something is seriously wrong with our writable directory.
+			m_shouldCheckAgain = false;
+
 			std::string buf;
 			StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
 			          m_filename.c_str(), strerror(errno));
@@ -455,8 +458,14 @@ bool OTransfer::tick()
 		Printf("Saved to location \"%s\".\n", m_filename.c_str());
 	}
 
+	m_shouldCheckAgain = false;
 	m_doneProc(info);
 	return false;
+}
+
+bool OTransfer::shouldCheckAgain() const
+{
+	return m_shouldCheckAgain;
 }
 
 std::string OTransfer::getFilename() const

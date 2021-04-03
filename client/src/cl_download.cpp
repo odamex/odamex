@@ -407,8 +407,26 @@ static void TickDownload()
 
 	if (!::dlstate.transfer->tick())
 	{
-		// Transfer is done ticking - clean it up.
-		::dlstate.Ready();
+		if (::dlstate.transfer->shouldCheckAgain())
+		{
+			// Check the next site.
+			::dlstate.state = STATE_CHECKING;
+			::dlstate.checkfails = 0;
+			::dlstate.checkurlidx += 1;
+			if (::dlstate.checkurlidx >= ::dlstate.checkurls.size())
+			{
+				// No more base URL's to check - our luck has run out.
+				Printf(PRINT_WARNING, "Download failed, no sites have %s for download.\n",
+				       ::dlstate.checkfilename.c_str());
+				::dlstate.Ready();
+			}
+		}
+		else
+		{
+			// Either we are done or encountered an error that is indicitive
+			// of an issue that we can't hope to recover from.
+			::dlstate.Ready();
+		}
 	}
 }
 
