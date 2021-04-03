@@ -645,18 +645,12 @@ void SV_GetPackets()
 	}
 }
 
-
 // Print a midscreen message to a client
-void SV_MidPrint (const char *msg, player_t *p, int msgtime)
+void SV_MidPrint(const char* msg, player_t* p, int msgtime)
 {
-    client_t *cl = &p->client;
+	client_t* cl = &p->client;
 
-    MSG_WriteMarker(&cl->reliablebuf, svc_midprint);
-    MSG_WriteString(&cl->reliablebuf, msg);
-    if (msgtime)
-        MSG_WriteShort(&cl->reliablebuf, msgtime);
-    else
-        MSG_WriteShort(&cl->reliablebuf, 0);
+	MSG_WriteSVC(&cl->reliablebuf, SVC_MidPrint(msg, msgtime));
 }
 
 //

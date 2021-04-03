@@ -1869,15 +1869,6 @@ void CL_TryToConnect(DWORD server_token)
 
 EXTERN_CVAR (show_messages)
 
-// Print a message in the middle of the screen
-void CL_MidPrint (void)
-{
-    const char *str = MSG_ReadString();
-    int msgtime = MSG_ReadShort();
-
-    C_MidPrint(str,NULL,msgtime);
-}
-
 //
 // CL_PlayerJustTeleported
 //
@@ -2209,7 +2200,7 @@ static bool CallMessageFunc(svc_t type)
 		                  odaproto::svc::ServerSettings);
 		SERVER_PROTO_FUNC(svc_connectclient, CL_ConnectClient,
 		                  odaproto::svc::ConnectClient);
-		SERVER_MSG_FUNC(svc_midprint, CL_MidPrint);
+		SERVER_PROTO_FUNC(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
 		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
 		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
 		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);

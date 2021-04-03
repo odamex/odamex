@@ -386,8 +386,8 @@ message ConnectClient
 // svc_midprint
 message MidPrint
 {
-	string msg = 1;
-	int32 msgtime = 2;
+	string message = 1;
+	int32 time = 2;
 }
 
 // svc_svgametic

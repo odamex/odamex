@@ -1018,6 +1018,16 @@ odaproto::svc::ConnectClient SVC_ConnectClient(const player_t& player)
 	return msg;
 }
 
+odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
+{
+	odaproto::svc::MidPrint msg;
+
+	msg.set_message(message);
+	msg.set_time(time);
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;

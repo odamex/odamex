@@ -66,6 +66,7 @@ class CTFEvent;
 class SecretEvent;
 class ServerSettings;
 class ConnectClient;
+class MidPrint;
 class PlayerState;
 class LevelState;
 class SectorProperties;

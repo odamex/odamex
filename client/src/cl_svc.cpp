@@ -27,6 +27,7 @@
 
 #include "server.pb.h"
 
+#include "c_console.h"
 #include "c_effect.h"
 #include "cl_main.h"
 #include "cmdlib.h"
@@ -1797,6 +1798,12 @@ void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
 		return;
 
 	S_Sound(CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
+}
+
+// Print a message in the middle of the screen
+void CL_MidPrint(const odaproto::svc::MidPrint& msg)
+{
+	C_MidPrint(msg.message().c_str(), NULL, msg.time());
 }
 
 void CL_PlayerState(const odaproto::svc::PlayerState& msg)
