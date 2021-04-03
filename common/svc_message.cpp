@@ -1028,6 +1028,23 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
+odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t& end)
+{
+	odaproto::svc::RailTrail msg;
+
+	odaproto::Vec3* stmsg = msg.mutable_start();
+	stmsg->set_x(DOUBLE2FIXED(start.x));
+	stmsg->set_y(DOUBLE2FIXED(start.y));
+	stmsg->set_z(DOUBLE2FIXED(start.z));
+
+	odaproto::Vec3* edmsg = msg.mutable_end();
+	edmsg->set_x(DOUBLE2FIXED(end.x));
+	edmsg->set_y(DOUBLE2FIXED(end.y));
+	edmsg->set_z(DOUBLE2FIXED(end.z));
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;

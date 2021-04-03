@@ -1806,6 +1806,24 @@ void CL_MidPrint(const odaproto::svc::MidPrint& msg)
 	C_MidPrint(msg.message().c_str(), NULL, msg.time());
 }
 
+//
+// CL_RailTrail
+//
+void CL_RailTrail(const odaproto::svc::RailTrail& msg)
+{
+	v3double_t start, end;
+
+	start.x = FIXED2DOUBLE(msg.start().x());
+	start.y = FIXED2DOUBLE(msg.start().y());
+	start.z = FIXED2DOUBLE(msg.start().z());
+
+	end.x = FIXED2DOUBLE(msg.end().x());
+	end.y = FIXED2DOUBLE(msg.end().y());
+	end.z = FIXED2DOUBLE(msg.end().z());
+
+	P_DrawRailTrail(start, end);
+}
+
 void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 {
 	byte id = msg.player().playerid();

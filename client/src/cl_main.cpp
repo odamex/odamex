@@ -1927,23 +1927,6 @@ void CL_UpdateIntTimeLeft(void)
 }
 
 //
-// CL_RailTrail
-//
-void CL_RailTrail()
-{
-	v3double_t start, end;
-
-	start.x = double(MSG_ReadShort());
-	start.y = double(MSG_ReadShort());
-	start.z = double(MSG_ReadShort());
-	end.x = double(MSG_ReadShort());
-	end.y = double(MSG_ReadShort());
-	end.z = double(MSG_ReadShort());
-
-	P_DrawRailTrail(start, end);
-}
-
-//
 // CL_ClearSectorSnapshots
 //
 // Removes all sector snapshots at the start of a map, etc
@@ -2205,7 +2188,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
 		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
 		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
-		SERVER_MSG_FUNC(svc_railtrail, CL_RailTrail);
+		SERVER_PROTO_FUNC(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
 		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
 		SERVER_PROTO_FUNC(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
 		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
