@@ -504,12 +504,12 @@ message ExecuteLineSpecial
 }
 
 // svc_executeacsspecial
-message ExecuteAcsSpecial
+message ExecuteACSSpecial
 {
 	int32 special = 1;
-	int32 actid = 2;
-	repeated int32 args = 3;
-	string print = 4;
+	int32 activator_netid = 2;
+	string print = 3;
+	repeated sint32 args = 4;
 }
 
 // svc_thinkerupdate

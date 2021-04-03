@@ -68,6 +68,7 @@ void CL_PlayerState(const odaproto::svc::PlayerState& msg);
 void CL_LevelState(const odaproto::svc::LevelState& msg);
 void CL_SectorProperties(const odaproto::svc::SectorProperties& msg);
 void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg);
+void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial& msg);
 void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg);
 void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg);
 

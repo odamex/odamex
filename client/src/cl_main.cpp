@@ -2202,7 +2202,8 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
 		SERVER_PROTO_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial,
 		                  odaproto::svc::ExecuteLineSpecial);
-		SERVER_MSG_FUNC(svc_executeacsspecial, CL_ACSExecuteSpecial);
+		SERVER_PROTO_FUNC(svc_executeacsspecial, CL_ExecuteACSSpecial,
+		                  odaproto::svc::ExecuteACSSpecial);
 		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
 		                  odaproto::svc::ThinkerUpdate);
 		SERVER_PROTO_FUNC(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
@@ -2673,91 +2674,6 @@ void CL_UpdatePlayerQueuePos()
 	}
 
 	player.QueuePosition = queuePos;
-}
-
-void CL_ACSExecuteSpecial()
-{
-	byte special = MSG_ReadByte();
-	uint32_t netid = MSG_ReadUnVarint();
-	byte count = MSG_ReadByte();
-	if (count >= 8)
-		count = 8;
-
-	static int acsArgs[16];
-	for (unsigned int i = 0; i < count; i++)
-		acsArgs[i] = MSG_ReadVarint();
-
-	const char* print = MSG_ReadString();
-
-	AActor* activator = P_FindThingById(netid);
-
-	switch (special)
-	{
-	case DLevelScript::PCD_CLEARINVENTORY:
-		DLevelScript::ACS_ClearInventory(activator);
-		break;
-
-	case DLevelScript::PCD_SETLINETEXTURE:
-		DLevelScript::ACS_SetLineTexture(acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_ENDPRINT:
-	case DLevelScript::PCD_ENDPRINTBOLD:
-		DLevelScript::ACS_Print(special, activator, print);
-		break;
-
-	case DLevelScript::PCD_SETMUSIC:
-	case DLevelScript::PCD_SETMUSICDIRECT:
-	case DLevelScript::PCD_LOCALSETMUSIC:
-	case DLevelScript::PCD_LOCALSETMUSICDIRECT:
-		DLevelScript::ACS_ChangeMusic(special, activator, acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_SECTORSOUND:
-	case DLevelScript::PCD_AMBIENTSOUND:
-	case DLevelScript::PCD_LOCALAMBIENTSOUND:
-	case DLevelScript::PCD_ACTIVATORSOUND:
-	case DLevelScript::PCD_THINGSOUND:
-		DLevelScript::ACS_StartSound(special, activator, acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_SETLINEBLOCKING:
-		DLevelScript::ACS_SetLineBlocking(acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_SETLINEMONSTERBLOCKING:
-		DLevelScript::ACS_SetLineMonsterBlocking(acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_SETLINESPECIAL:
-		DLevelScript::ACS_SetLineSpecial(acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_SETTHINGSPECIAL:
-		DLevelScript::ACS_SetThingSpecial(acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_FADERANGE:
-		DLevelScript::ACS_FadeRange(activator, acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_CANCELFADE:
-		DLevelScript::ACS_CancelFade(activator);
-		break;
-
-	case DLevelScript::PCD_CHANGEFLOOR:
-	case DLevelScript::PCD_CHANGECEILING:
-		DLevelScript::ACS_ChangeFlat(special, acsArgs, count);
-		break;
-
-	case DLevelScript::PCD_SOUNDSEQUENCE:
-		DLevelScript::ACS_SoundSequence(acsArgs, count);
-		break;
-
-	default:
-		Printf(PRINT_HIGH, "Invalid ACS special: %d", special);
-		break;
-	}
 }
 
 void CL_LineUpdate()

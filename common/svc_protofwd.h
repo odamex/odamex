@@ -72,6 +72,7 @@ class PlayerState;
 class LevelState;
 class SectorProperties;
 class ExecuteLineSpecial;
+class ExecuteACSSpecial;
 class ThinkerUpdate;
 class NetdemoCap;
 } // namespace svc

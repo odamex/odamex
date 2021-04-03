@@ -97,7 +97,7 @@ static void InitMap()
 	MapProto(odaproto::svc::MobjState::descriptor(), svc_mobjstate);
 	MapProto(odaproto::svc::DamageMobj::descriptor(), svc_damagemobj);
 	MapProto(odaproto::svc::ExecuteLineSpecial::descriptor(), svc_executelinespecial);
-	MapProto(odaproto::svc::ExecuteAcsSpecial::descriptor(), svc_executeacsspecial);
+	MapProto(odaproto::svc::ExecuteACSSpecial::descriptor(), svc_executeacsspecial);
 	MapProto(odaproto::svc::ThinkerUpdate::descriptor(), svc_thinkerupdate);
 	MapProto(odaproto::svc::NetdemoCap::descriptor(), svc_netdemocap);
 	MapProto(odaproto::svc::NetdemoStop::descriptor(), svc_netdemostop);

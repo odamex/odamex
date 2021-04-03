@@ -1140,6 +1140,39 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* l
 	return msg;
 }
 
+/**
+ * @brief Execute an ACS special on the client.
+ * 
+ * @param special Special ID.
+ * @param activator Activator pointer, NULL if no activator.
+ * @param print String to send to client, NULL if no string.
+ * @param args Arguments to pass to the client.
+ */
+odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
+                                                       const AActor* activator,
+                                                       const char* print,
+                                                       const std::vector<int>& args)
+{
+	odaproto::svc::ExecuteACSSpecial msg;
+
+	msg.set_special(special);
+	if (activator != NULL)
+	{
+		msg.set_activator_netid(activator->netid);
+	}
+	if (print != NULL)
+	{
+		msg.set_print(print);
+	}
+
+	for (std::vector<int>::const_iterator it = args.begin(); it != args.end(); ++it)
+	{
+		msg.add_args(*it);
+	}
+
+	return msg;
+}
+
 odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 {
 	odaproto::svc::ThinkerUpdate msg;

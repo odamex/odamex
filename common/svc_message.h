@@ -129,6 +129,10 @@ odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo,
                                                          const int (&args)[5]);
+odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
+                                                       const AActor* activator,
+                                                       const char* print,
+                                                       const std::vector<int>& args);
 odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
