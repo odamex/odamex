@@ -2336,19 +2336,19 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-#define SERVER_MSG_FUNC(svc, func) \
-	case svc:                      \
-		func();                    \
+#define SV_MSG(svc, func) \
+	case svc:             \
+		func();           \
 		return PRES_OK;
 
-#define SERVER_PROTO_FUNC(svc, func, proto) \
-	case svc: {                             \
-		proto msg;                          \
-		if (!MSG_ReadProto(msg))            \
-			return PRES_BAD_DECODE;         \
-		RecordProto(svc, &msg);             \
-		func(msg);                          \
-		return PRES_OK;                     \
+#define SV_PROTO(svc, func, proto)  \
+	case svc: {                     \
+		proto msg;                  \
+		if (!MSG_ReadProto(msg))    \
+			return PRES_BAD_DECODE; \
+		RecordProto(svc, &msg);     \
+		func(msg);                  \
+		return PRES_OK;             \
 	}
 
 extern void CL_FinishedFullUpdate();
@@ -2370,83 +2370,73 @@ parseResult_e CL_ParseCommand()
 
 	switch (cmd)
 	{
-		SERVER_MSG_FUNC(svc_noop, CL_Noop);
-		SERVER_PROTO_FUNC(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
-		SERVER_PROTO_FUNC(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
-		SERVER_PROTO_FUNC(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
-		SERVER_PROTO_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer,
-		                  odaproto::svc::UpdateLocalPlayer);
-		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
-		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
-		SERVER_PROTO_FUNC(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
-		SERVER_PROTO_FUNC(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
-		SERVER_PROTO_FUNC(svc_disconnectclient, CL_DisconnectClient,
-		                  odaproto::svc::DisconnectClient);
-		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
-		SERVER_PROTO_FUNC(svc_consoleplayer, CL_ConsolePlayer,
-		                  odaproto::svc::ConsolePlayer);
-		SERVER_PROTO_FUNC(svc_explodemissile, CL_ExplodeMissile,
-		                  odaproto::svc::ExplodeMissile);
-		SERVER_PROTO_FUNC(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
-		SERVER_PROTO_FUNC(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
-		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
-		SERVER_PROTO_FUNC(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
-		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
-		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
-		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
-		SERVER_PROTO_FUNC(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
-		SERVER_PROTO_FUNC(svc_print, CL_Print, odaproto::svc::Print);
-		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
-		                  odaproto::svc::PlayerMembers);
-		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
-		SERVER_PROTO_FUNC(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
-		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
-		SERVER_PROTO_FUNC(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
-		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
-		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
-		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
-		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
-		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
-		SERVER_PROTO_FUNC(svc_say, CL_Say, odaproto::svc::Say);
-		SERVER_PROTO_FUNC(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
-		SERVER_PROTO_FUNC(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
-		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
-		SERVER_PROTO_FUNC(svc_serversettings, CL_ServerSettings,
-		                  odaproto::svc::ServerSettings);
-		SERVER_PROTO_FUNC(svc_connectclient, CL_ConnectClient,
-		                  odaproto::svc::ConnectClient);
-		SERVER_PROTO_FUNC(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
-		SERVER_PROTO_FUNC(svc_servergametic, CL_ServerGametic,
-		                  odaproto::svc::ServerGametic);
-		SERVER_PROTO_FUNC(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
-		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
-		SERVER_PROTO_FUNC(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
-		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
-		SERVER_PROTO_FUNC(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
-		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
-		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
-		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
-		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
-		SERVER_PROTO_FUNC(svc_sectorproperties, CL_SectorProperties,
-		                  odaproto::svc::SectorProperties);
-		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
-		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
-		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
-		SERVER_PROTO_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial,
-		                  odaproto::svc::ExecuteLineSpecial);
-		SERVER_PROTO_FUNC(svc_executeacsspecial, CL_ExecuteACSSpecial,
-		                  odaproto::svc::ExecuteACSSpecial);
-		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
-		                  odaproto::svc::ThinkerUpdate);
-		SERVER_PROTO_FUNC(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
-		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
-		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
-		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
-		SERVER_MSG_FUNC(svc_maplist, CL_Maplist);
-		SERVER_MSG_FUNC(svc_maplist_update, CL_MaplistUpdate);
-		SERVER_MSG_FUNC(svc_maplist_index, CL_MaplistIndex);
-		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
-		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
+		/* clang-format off */
+		SV_MSG(svc_noop, CL_Noop);
+		SV_PROTO(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
+		SV_PROTO(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
+		SV_PROTO(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
+		SV_PROTO(svc_updatelocalplayer, CL_UpdateLocalPlayer, odaproto::svc::UpdateLocalPlayer);
+		SV_PROTO(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
+		SV_PROTO(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
+		SV_PROTO(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
+		SV_PROTO(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
+		SV_PROTO(svc_disconnectclient, CL_DisconnectClient, odaproto::svc::DisconnectClient);
+		SV_PROTO(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
+		SV_PROTO(svc_consoleplayer, CL_ConsolePlayer, odaproto::svc::ConsolePlayer);
+		SV_PROTO(svc_explodemissile, CL_ExplodeMissile, odaproto::svc::ExplodeMissile);
+		SV_PROTO(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
+		SV_PROTO(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
+		SV_PROTO(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
+		SV_PROTO(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
+		SV_PROTO(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
+		SV_PROTO(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
+		SV_PROTO(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
+		SV_PROTO(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
+		SV_PROTO(svc_print, CL_Print, odaproto::svc::Print);
+		SV_PROTO(svc_playermembers, CL_PlayerMembers, odaproto::svc::PlayerMembers);
+		SV_PROTO(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
+		SV_PROTO(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
+		SV_PROTO(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
+		SV_PROTO(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
+		SV_MSG(svc_reconnect, CL_Reconnect);
+		SV_MSG(svc_exitlevel, CL_ExitLevel);
+		SV_PROTO(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
+		SV_PROTO(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
+		SV_PROTO(svc_switch, CL_Switch, odaproto::svc::Switch);
+		SV_PROTO(svc_say, CL_Say, odaproto::svc::Say);
+		SV_PROTO(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
+		SV_PROTO(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
+		SV_PROTO(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
+		SV_PROTO(svc_serversettings, CL_ServerSettings, odaproto::svc::ServerSettings);
+		SV_PROTO(svc_connectclient, CL_ConnectClient, odaproto::svc::ConnectClient);
+		SV_PROTO(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
+		SV_PROTO(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
+		SV_PROTO(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
+		SV_MSG(svc_fullupdatedone, CL_FinishedFullUpdate);
+		SV_PROTO(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
+		SV_PROTO(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
+		SV_PROTO(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
+		SV_MSG(svc_resetmap, CL_ResetMap);
+		SV_MSG(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
+		SV_MSG(svc_fullupdatestart, CL_StartFullUpdate);
+		SV_MSG(svc_lineupdate, CL_LineUpdate);
+		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
+		SV_MSG(svc_linesideupdate, CL_LineSideUpdate);
+		SV_MSG(svc_mobjstate, CL_SetMobjState);
+		SV_MSG(svc_damagemobj, CL_DamageMobj);
+		SV_PROTO(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);
+		SV_PROTO(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);
+		SV_PROTO(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);
+		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
+		SV_MSG(svc_netdemostop, CL_NetDemoStop);
+		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
+		SV_MSG(svc_vote_update, CL_VoteUpdate);
+		SV_MSG(svc_maplist, CL_Maplist);
+		SV_MSG(svc_maplist_update, CL_MaplistUpdate);
+		SV_MSG(svc_maplist_index, CL_MaplistIndex);
+		SV_MSG(svc_launcher_challenge, CL_Clear);
+		SV_MSG(svc_challenge, CL_Clear);
+		/* clang-format on */
 	default:
 		return PRES_UNKNOWN_HEADER;
 	}
