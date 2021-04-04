@@ -1209,6 +1209,17 @@ odaproto::svc::MobjState SVC_MobjState(AActor* mo)
 	return msg;
 }
 
+odaproto::svc::DamageMobj SVC_DamageMobj(AActor* target, const int pain)
+{
+	odaproto::svc::DamageMobj msg;
+
+	msg.set_netid(target->netid);
+	msg.set_health(target->health);
+	msg.set_pain(pain);
+
+	return msg;
+}
+
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo, const int (&args)[5])
 {

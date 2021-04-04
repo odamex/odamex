@@ -4793,11 +4793,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_damagemobj);
-		MSG_WriteUnVarint(&cl->reliablebuf, target->netid);
-		MSG_WriteShort(&cl->reliablebuf, target->health);
-		MSG_WriteByte(&cl->reliablebuf, pain);
-
+		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
 		MSG_WriteSVC(&cl->netbuf,
 		             SVC_UpdateMobj(*target, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE));
 	}

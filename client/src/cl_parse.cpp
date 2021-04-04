@@ -2179,6 +2179,26 @@ static void CL_SetMobjState(const odaproto::svc::MobjState& msg)
 	P_SetMobjState(mo, static_cast<statenum_t>(s));
 }
 
+//
+// CL_DamageMobj
+//
+static void CL_DamageMobj(const odaproto::svc::DamageMobj& msg)
+{
+	uint32_t netid = msg.netid();
+	int health = msg.health();
+	int pain = msg.pain();
+
+	AActor* mo = P_FindThingById(netid);
+
+	if (mo == NULL)
+		return;
+
+	mo->health = health;
+
+	if (pain < mo->info->painchance)
+		P_SetMobjState(mo, mo->info->painstate);
+}
+
 static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
 {
 	byte special = msg.special();
@@ -2485,7 +2505,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_DamageMobj();
 extern void CL_NetDemoStop();
 extern void CL_NetDemoLoadSnap();
 extern void CL_VoteUpdate();
@@ -2553,7 +2572,7 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
 		SV_PROTO(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
 		SV_PROTO(svc_mobjstate, CL_SetMobjState, odaproto::svc::MobjState);
-		SV_MSG(svc_damagemobj, CL_DamageMobj);
+		SV_PROTO(svc_damagemobj, CL_DamageMobj, odaproto::svc::DamageMobj);
 		SV_PROTO(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);
 		SV_PROTO(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);
 		SV_PROTO(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);

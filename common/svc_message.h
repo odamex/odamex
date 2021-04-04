@@ -132,6 +132,7 @@ odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line);
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
 odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int sideNum);
 odaproto::svc::MobjState SVC_MobjState(AActor* mo);
+odaproto::svc::DamageMobj SVC_DamageMobj(AActor* target, const int pain);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo,
                                                          const int (&args)[5]);

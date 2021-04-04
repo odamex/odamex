@@ -1426,30 +1426,6 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	CL_CheckDisplayPlayer();
 }
 
-//
-// CL_DamageMobj
-//
-void CL_DamageMobj()
-{
-	AActor  *mo;
-	int      health, pain;
-	uint32_t netid;
-
-	netid = MSG_ReadUnVarint();
-	health = MSG_ReadShort();
-	pain = MSG_ReadByte();
-
-	mo = P_FindThingById (netid);
-
-	if (!mo)
-		return;
-
-	mo->health = health;
-
-	if(pain < mo->info->painchance)
-		P_SetMobjState(mo, mo->info->painstate);
-}
-
 int connecttimeout = 0;
 
 //
