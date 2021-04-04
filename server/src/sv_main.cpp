@@ -2755,11 +2755,8 @@ void SV_UpdateMobjState(AActor *mo)
 		if (SV_IsPlayerAllowedToSee(*it, mo))
 		{
 			client_t *cl = &(it->client);
-			statenum_t mostate = (statenum_t)(mo->state - states);
 
-			MSG_WriteMarker(&cl->reliablebuf, svc_mobjstate);
-			MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
-			MSG_WriteShort(&cl->reliablebuf, (short)mostate);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
 		}
 	}
 }

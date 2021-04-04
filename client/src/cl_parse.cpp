@@ -2165,6 +2165,20 @@ static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate& msg)
 	}
 }
 
+//
+// CL_SetMobjState
+//
+static void CL_SetMobjState(const odaproto::svc::MobjState& msg)
+{
+	AActor* mo = P_FindThingById(msg.netid());
+	int s = msg.mostate();
+
+	if (mo == NULL || s < 0 || s >= NUMSTATES)
+		return;
+
+	P_SetMobjState(mo, static_cast<statenum_t>(s));
+}
+
 static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
 {
 	byte special = msg.special();
@@ -2471,7 +2485,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_SetMobjState();
 extern void CL_DamageMobj();
 extern void CL_NetDemoStop();
 extern void CL_NetDemoLoadSnap();
@@ -2539,7 +2552,7 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
 		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
 		SV_PROTO(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
-		SV_MSG(svc_mobjstate, CL_SetMobjState);
+		SV_PROTO(svc_mobjstate, CL_SetMobjState, odaproto::svc::MobjState);
 		SV_MSG(svc_damagemobj, CL_DamageMobj);
 		SV_PROTO(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);
 		SV_PROTO(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);

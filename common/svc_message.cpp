@@ -1197,6 +1197,18 @@ odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int s
 	return msg;
 }
 
+odaproto::svc::MobjState SVC_MobjState(AActor* mo)
+{
+	odaproto::svc::MobjState msg;
+
+	statenum_t mostate = static_cast<statenum_t>(mo->state - states);
+
+	msg.set_netid(mo->netid);
+	msg.set_mostate(mostate);
+
+	return msg;
+}
+
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo, const int (&args)[5])
 {

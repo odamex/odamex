@@ -1951,20 +1951,6 @@ bool CL_ReadPacketHeader()
 	return true;
 }
 
-//
-// CL_SetMobjState
-//
-void CL_SetMobjState()
-{
-	AActor *mo = P_FindThingById (MSG_ReadUnVarint() );
-	SWORD s = MSG_ReadShort();
-
-	if (!mo || s >= NUMSTATES)
-		return;
-
-	P_SetMobjState (mo, (statenum_t)s);
-}
-
 void CL_Clear()
 {
 	size_t left = MSG_BytesLeft();
