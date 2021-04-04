@@ -1349,8 +1349,8 @@ void SV_UpdateMovingSectors(player_t &player)
 // send only the least significant byte to save bandwidth.
 void SV_SendGametic(client_t* cl)
 {
-	MSG_WriteMarker	(&cl->netbuf, svc_svgametic);
-	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
+	byte tic = static_cast<byte>(gametic & 0xFF);
+	MSG_WriteSVC(&cl->netbuf, SVC_ServerGametic(tic));
 }
 
 void SV_LineStateUpdate(client_t *cl)

@@ -1895,29 +1895,6 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
 //
-// CL_SaveSvGametic
-//
-// Receives the server's gametic at the time the packet was sent.  It will be
-// sent back to the server with the next cmd.
-//
-// [SL] 2011-05-11
-void CL_SaveSvGametic(void)
-{
-	byte t = MSG_ReadByte();
-
-	int newtic = (last_svgametic & 0xFFFFFF00) + t;
-
-	if (last_svgametic > newtic + 127)
-		newtic += 256;
-
-	last_svgametic = newtic;
-
-	#ifdef _WORLD_INDEX_DEBUG_
-	Printf(PRINT_HIGH, "Gametic %i, received world index %i\n", gametic, last_svgametic);
-	#endif	// _WORLD_INDEX_DEBUG_
-}
-
-//
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //
@@ -2184,7 +2161,7 @@ static bool CallMessageFunc(svc_t type)
 		SERVER_PROTO_FUNC(svc_connectclient, CL_ConnectClient,
 		                  odaproto::svc::ConnectClient);
 		SERVER_PROTO_FUNC(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
-		SERVER_MSG_FUNC(svc_svgametic, CL_SaveSvGametic);
+		SERVER_PROTO_FUNC(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
 		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
 		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
 		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);

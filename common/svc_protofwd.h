@@ -67,6 +67,7 @@ class SecretEvent;
 class ServerSettings;
 class ConnectClient;
 class MidPrint;
+class ServerGametic;
 class RailTrail;
 class PlayerState;
 class LevelState;

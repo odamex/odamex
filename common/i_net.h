@@ -206,7 +206,7 @@ enum svc_t
 	svc_serversettings,		// [Toke] - informs clients of server settings
 	svc_connectclient,
     svc_midprint,
-	svc_svgametic,			// [SL] 2011-05-11 - [byte]
+	svc_servergametic,		// [SL] 2011-05-11
 	svc_inttimeleft,		// [ML] For intermission timer
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over

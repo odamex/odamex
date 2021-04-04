@@ -1028,6 +1028,15 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
+odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic)
+{
+	odaproto::svc::ServerGametic msg;
+
+	msg.set_tic(tic);
+
+	return msg;
+}
+
 odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t& end)
 {
 	odaproto::svc::RailTrail msg;

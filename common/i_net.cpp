@@ -1044,7 +1044,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_serversettings);
 	SVC_INFO(svc_connectclient);
     SVC_INFO(svc_midprint);
-	SVC_INFO(svc_svgametic);
+	SVC_INFO(svc_servergametic);
 	SVC_INFO(svc_inttimeleft);
 	SVC_INFO(svc_mobjtranslation);
 	SVC_INFO(svc_fullupdatedone);
