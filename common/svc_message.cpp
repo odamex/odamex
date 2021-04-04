@@ -1073,6 +1073,17 @@ odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t
 	return msg;
 }
 
+odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line)
+{
+	odaproto::svc::LineUpdate msg;
+
+	msg.set_linenum(&line - ::lines);
+	msg.set_flags(line.flags);
+	msg.set_lucency(line.lucency);
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;
@@ -1151,6 +1162,41 @@ odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 	return msg;
 }
 
+odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int sideNum)
+{
+	odaproto::svc::LineSideUpdate msg;
+
+	side_t* currentSideDef = sides + line.sidenum[sideNum];
+
+	msg.set_linenum(&line - ::lines);
+	msg.set_side(sideNum);
+	msg.set_changes(currentSideDef->SidedefChanges);
+
+	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
+	{
+		prop = BIT(i);
+		if ((prop & currentSideDef->SidedefChanges) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SDPC_TexTop:
+			msg.set_toptexture(currentSideDef->toptexture);
+			break;
+		case SDPC_TexMid:
+			msg.set_midtexture(currentSideDef->midtexture);
+			break;
+		case SDPC_TexBottom:
+			msg.set_bottomtexture(currentSideDef->bottomtexture);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return msg;
+}
+
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo, const int (&args)[5])
 {
@@ -1170,7 +1216,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* l
 
 /**
  * @brief Execute an ACS special on the client.
- * 
+ *
  * @param special Special ID.
  * @param activator Activator pointer, NULL if no activator.
  * @param print String to send to client, NULL if no string.

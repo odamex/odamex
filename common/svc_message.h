@@ -128,7 +128,9 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic);
 odaproto::svc::IntTimeLeft SVC_IntTimeLeft(const unsigned int timeleft);
 odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t& end);
+odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line);
 odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector);
+odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int sideNum);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
                                                          AActor* mo,
                                                          const int (&args)[5]);

@@ -60,9 +60,6 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect();
-void CL_ACSExecuteSpecial();
-void CL_LineUpdate();
-void CL_LineSideUpdate();
 
 void CL_DisplayTics();
 void CL_RunTics();

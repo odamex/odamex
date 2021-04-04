@@ -426,9 +426,9 @@ message PlayerQueuePos
 // svc_lineupdate
 message LineUpdate
 {
-	int32 id = 1;
+	int32 linenum = 1;
 	int32 flags = 2;
-	int32 lucency = 3;
+	uint32 lucency = 3;
 }
 
 // svc_sectorproperties
@@ -442,7 +442,7 @@ message SectorProperties
 // svc_linesideupdate
 message LineSideUpdate
 {
-	int32 line = 1;
+	int32 linenum = 1;
 	int32 side = 2;
 	uint32 changes = 3; // bitfield
 	int32 toptexture = 4;

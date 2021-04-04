@@ -2417,57 +2417,6 @@ void CL_SimulateWorld()
 	world_index = world_index + 1 + drift_correction;
 }
 
-void CL_LineUpdate()
-{
-	uint16_t id = MSG_ReadShort();
-	short flags = MSG_ReadShort();
-	byte lucency = MSG_ReadByte();
-
-	if (id < numlines)
-	{
-		line_t* line = &lines[id];
-		line->flags = flags;
-		line->lucency = lucency;
-	}
-}
-
-void CL_LineSideUpdate()
-{
-	uint16_t id = MSG_ReadShort();
-	byte side = MSG_ReadByte();
-	int changes = MSG_ReadByte();
-
-	side_t* currentSidedef;
-	side_t empty;
-
-	if (id < numlines && side < 2 && lines[id].sidenum[side] != R_NOSIDE)
-		currentSidedef = sides + lines[id].sidenum[side];
-	else
-		currentSidedef = &empty;
-
-	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
-	{
-		prop = 1 << i;
-		if ((prop & changes) == 0)
-			continue;
-
-		switch (prop)
-		{
-		case SDPC_TexTop:
-			currentSidedef->toptexture = MSG_ReadShort();
-			break;
-		case SDPC_TexMid:
-			currentSidedef->midtexture = MSG_ReadShort();
-			break;
-		case SDPC_TexBottom:
-			currentSidedef->bottomtexture = MSG_ReadShort();
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType) {}
 

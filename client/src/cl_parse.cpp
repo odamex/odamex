@@ -2038,6 +2038,20 @@ static void CL_StartFullUpdate()
 	::recv_full_update = false;
 }
 
+static void CL_LineUpdate(const odaproto::svc::LineUpdate& msg)
+{
+	int linenum = msg.linenum();
+	short flags = msg.flags();
+	byte lucency = msg.lucency();
+
+	if (linenum < 0 || linenum >= ::numlines)
+		return;
+
+	line_t* line = &lines[linenum];
+	line->flags = flags;
+	line->lucency = lucency;
+}
+
 /**
  * @brief Update sector properties dynamically.
  */
@@ -2046,19 +2060,10 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 	int secnum = msg.sectornum();
 	uint32_t changes = msg.changes();
 
-	sector_t* sector;
-	sector_t empty;
+	if (secnum < 0 || secnum >= ::numsectors)
+		return;
 
-	if (secnum > -1 && secnum < ::numsectors)
-	{
-		sector = &::sectors[secnum];
-	}
-	else
-	{
-		sector = &empty;
-		extern dyncolormap_t NormalLight;
-		empty.colormap = &NormalLight;
-	}
+	sector_t* sector = &::sectors[secnum];
 
 	for (int i = 0, prop = 1; prop < SPC_Max; i++)
 	{
@@ -2117,6 +2122,43 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 			sector->base_ceiling_yoffs = msg.sector().base_ceiling_yoffs();
 			sector->base_floor_angle = msg.sector().base_floor_angle();
 			sector->base_floor_yoffs = msg.sector().base_floor_yoffs();
+		default:
+			break;
+		}
+	}
+}
+
+static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate& msg)
+{
+	int linenum = msg.linenum();
+	int side = msg.side();
+	uint32_t changes = msg.changes();
+
+	if (linenum < 0 || linenum >= ::numlines)
+		return;
+
+	if (side < 0 || side >= 2 || lines[linenum].sidenum[side] != R_NOSIDE)
+		return;
+
+	side_t* currentSidedef = sides + lines[linenum].sidenum[side];
+
+	for (int i = 0, prop = 1; prop < SDPC_Max; i++)
+	{
+		prop = BIT(i);
+		if ((prop & changes) == 0)
+			continue;
+
+		switch (prop)
+		{
+		case SDPC_TexTop:
+			currentSidedef->toptexture = msg.toptexture();
+			break;
+		case SDPC_TexMid:
+			currentSidedef->midtexture = msg.midtexture();
+			break;
+		case SDPC_TexBottom:
+			currentSidedef->bottomtexture = msg.bottomtexture();
+			break;
 		default:
 			break;
 		}
@@ -2494,9 +2536,9 @@ parseResult_e CL_ParseCommand()
 		SV_MSG(svc_resetmap, CL_ResetMap);
 		SV_PROTO(svc_playerqueuepos, CL_PlayerQueuePos, odaproto::svc::PlayerQueuePos);
 		SV_MSG(svc_fullupdatestart, CL_StartFullUpdate);
-		SV_MSG(svc_lineupdate, CL_LineUpdate);
+		SV_PROTO(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
 		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
-		SV_MSG(svc_linesideupdate, CL_LineSideUpdate);
+		SV_PROTO(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
 		SV_MSG(svc_mobjstate, CL_SetMobjState);
 		SV_MSG(svc_damagemobj, CL_DamageMobj);
 		SV_PROTO(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);

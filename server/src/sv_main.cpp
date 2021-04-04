@@ -1361,10 +1361,7 @@ void SV_LineStateUpdate(client_t *cl)
 
 		if (line->PropertiesChanged)
 		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_lineupdate);
-			MSG_WriteShort(&cl->reliablebuf, lineNum);
-			MSG_WriteShort(&cl->reliablebuf, line->flags);
-			MSG_WriteByte(&cl->reliablebuf, line->lucency);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_LineUpdate(*line));
 		}
 
 		if (!line->SidedefChanged)
@@ -1378,32 +1375,7 @@ void SV_LineStateUpdate(client_t *cl)
 				if (!currentSideDef->SidedefChanges)
 					continue;
 
-				MSG_WriteMarker(&cl->reliablebuf, svc_linesideupdate);
-				MSG_WriteShort(&cl->reliablebuf, lineNum);
-				MSG_WriteByte(&cl->reliablebuf, sideNum);
-				MSG_WriteByte(&cl->reliablebuf, currentSideDef->SidedefChanges);
-
-				for (int i = 0, prop = 1; prop < SDPC_Max; i++)
-				{
-					prop = 1 << i;
-					if ((prop & currentSideDef->SidedefChanges) == 0)
-						continue;
-
-					switch (prop)
-					{
-					case SDPC_TexTop:
-						MSG_WriteShort(&cl->reliablebuf, currentSideDef->toptexture);
-						break;
-					case SDPC_TexMid:
-						MSG_WriteShort(&cl->reliablebuf, currentSideDef->midtexture);
-						break;
-					case SDPC_TexBottom:
-						MSG_WriteShort(&cl->reliablebuf, currentSideDef->bottomtexture);
-						break;
-					default:
-						break;
-					}
-				}
+				MSG_WriteSVC(&cl->reliablebuf, SVC_LineSideUpdate(*line, sideNum));
 			}
 		}
 	}
