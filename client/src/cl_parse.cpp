@@ -1438,6 +1438,14 @@ static void CL_PlaySound(const odaproto::svc::PlaySound& msg)
 	}
 }
 
+static void CL_ExitLevel()
+{
+	gameaction = ga_completed;
+
+	if (netdemo.isRecording())
+		netdemo.writeIntermission();
+}
+
 static void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
 {
 	AActor* mo = P_FindThingById(msg.netid());
@@ -2343,7 +2351,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;                     \
 	}
 
-extern void CL_ExitLevel();
 extern void CL_FinishedFullUpdate();
 extern void CL_ResetMap();
 extern void CL_StartFullUpdate();

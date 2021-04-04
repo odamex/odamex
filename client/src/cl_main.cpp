@@ -2023,14 +2023,6 @@ void CL_ResetMap()
 		netdemo.writeMapChange();
 }
 
-void CL_ExitLevel()
-{
-	gameaction = ga_completed;
-
-	if (netdemo.isRecording())
-		netdemo.writeIntermission();
-}
-
 void CL_Clear()
 {
 	size_t left = MSG_BytesLeft();
