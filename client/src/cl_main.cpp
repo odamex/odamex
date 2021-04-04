@@ -173,7 +173,6 @@ EXTERN_CVAR (hud_revealsecrets)
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
-void P_DestroyButtonThinkers();
 
 //
 // CL_ShadePlayerColor
@@ -1953,22 +1952,6 @@ bool CL_ReadPacketHeader()
 }
 
 //
-// CL_FinishedFullUpdate
-//
-// Takes care of any business that needs to be done once the client has a full
-// view of the game world.
-//
-void CL_FinishedFullUpdate()
-{
-	recv_full_update = true;
-}
-
-void CL_StartFullUpdate()
-{
-	recv_full_update = false;
-}
-
-//
 // CL_SetMobjState
 //
 void CL_SetMobjState()
@@ -1980,47 +1963,6 @@ void CL_SetMobjState()
 		return;
 
 	P_SetMobjState (mo, (statenum_t)s);
-}
-
-void CL_ResetMap()
-{
-	// Destroy every actor with a netid that isn't a player.  We're going to
-	// get the contents of the map with a full update later on anyway.
-	AActor* mo;
-	TThinkerIterator<AActor> iterator;
-	while ((mo = iterator.Next()))
-	{
-		if (mo->netid && mo->type != MT_PLAYER)
-		{
-			mo->Destroy();
-		}
-	}
-
-	//destroy all moving sector effects and sounds
-	for (int i = 0; i < numsectors; i++)
-	{
-		if (sectors[i].floordata)
-		{
-			S_StopSound(sectors[i].soundorg);
-			sectors[i].floordata->Destroy();
-		}
-
-		if (sectors[i].ceilingdata)
-		{
-			S_StopSound(sectors[i].soundorg);
-			sectors[i].ceilingdata->Destroy();
-		}
-	}
-
-	P_DestroyButtonThinkers();
-
-	// You don't get to keep cards.  This isn't communicated anywhere else.
-	if (sv_gametype == GM_COOP)
-		P_ClearPlayerCards(consoleplayer());
-
-	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
-		netdemo.writeMapChange();
 }
 
 void CL_Clear()

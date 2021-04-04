@@ -90,6 +90,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
 void CL_SpectatePlayer(player_t& player, bool spectate);
 void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
+void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
@@ -1847,6 +1848,17 @@ static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
 }
 
 //
+// CL_FinishedFullUpdate
+//
+// Takes care of any business that needs to be done once the client has a full
+// view of the game world.
+//
+static void CL_FinishedFullUpdate()
+{
+	::recv_full_update = true;
+}
+
+//
 // CL_RailTrail
 //
 static void CL_RailTrail(const odaproto::svc::RailTrail& msg)
@@ -1958,6 +1970,52 @@ static void CL_LevelState(const odaproto::svc::LevelState& msg)
 	sls.last_wininfo_type = static_cast<WinInfo::WinType>(msg.last_wininfo_type());
 	sls.last_wininfo_id = msg.last_wininfo_id();
 	::levelstate.unserialize(sls);
+}
+
+static void CL_ResetMap()
+{
+	// Destroy every actor with a netid that isn't a player.  We're going to
+	// get the contents of the map with a full update later on anyway.
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		if (mo->netid && mo->type != MT_PLAYER)
+		{
+			mo->Destroy();
+		}
+	}
+
+	// destroy all moving sector effects and sounds
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].floordata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].floordata->Destroy();
+		}
+
+		if (sectors[i].ceilingdata)
+		{
+			S_StopSound(sectors[i].soundorg);
+			sectors[i].ceilingdata->Destroy();
+		}
+	}
+
+	P_DestroyButtonThinkers();
+
+	// You don't get to keep cards.  This isn't communicated anywhere else.
+	if (sv_gametype == GM_COOP)
+		P_ClearPlayerCards(consoleplayer());
+
+	// write the map index to the netdemo
+	if (netdemo.isRecording() && recv_full_update)
+		netdemo.writeMapChange();
+}
+
+static void CL_StartFullUpdate()
+{
+	::recv_full_update = false;
 }
 
 /**
@@ -2351,9 +2409,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_FinishedFullUpdate();
-extern void CL_ResetMap();
-extern void CL_StartFullUpdate();
 extern void CL_SetMobjState();
 extern void CL_DamageMobj();
 extern void CL_NetDemoStop();
