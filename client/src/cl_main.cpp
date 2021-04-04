@@ -66,7 +66,7 @@
 #include "i_input.h"
 
 #include "g_gametype.h"
-#include "cl_svc.h"
+#include "cl_parse.h"
 
 #include <bitset>
 #include <string>
@@ -2054,148 +2054,21 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-Protos protos;
-
-static void RecordProto(google::protobuf::Message* msg)
+static std::string SVCName(byte header)
 {
-	static int protostic;
-
-	if (!::netdemo.isPlaying() && !::netdemo.isPaused())
+	std::string svc = ::svc_info[header].getName();
+	if (svc.empty())
 	{
-		return;
+		StrFormat(svc, "svc_%u", header);
 	}
-
-	if (protostic != ::level.time)
-	{
-		::protos.clear();
-		protostic = ::level.time;
-	}
-
-	Proto proto;
-	proto.name = msg->GetTypeName();
-	proto.size = msg->ByteSizeLong();
-	proto.data = msg->DebugString();
-	proto.shortdata = msg->ShortDebugString();
-	::protos.push_back(proto);
+	return svc;
 }
-
-const Protos& CL_GetTicProtos()
-{
-	return ::protos;
-}
-
-#define SERVER_MSG_FUNC(svc, func) \
-	case svc:                      \
-		func();                    \
-		return true;
-
-#define SERVER_PROTO_FUNC(svc, func, proto)                               \
-	case svc: {                                                           \
-		proto msg;                                                        \
-		if (!MSG_ReadProto(msg))                                          \
-		{                                                                 \
-			Printf(PRINT_WARNING, "%s: Could not read message.\n", #svc); \
-			return false;                                                 \
-		}                                                                 \
-		RecordProto(&msg);                                                \
-		func(msg);                                                        \
-		return true;                                                      \
-	}
-
-static bool CallMessageFunc(svc_t type)
-{
-	switch (type)
-	{
-		SERVER_MSG_FUNC(svc_noop, CL_Noop);
-		SERVER_PROTO_FUNC(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
-		SERVER_PROTO_FUNC(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
-		SERVER_PROTO_FUNC(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
-		SERVER_PROTO_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer,
-		                  odaproto::svc::UpdateLocalPlayer);
-		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
-		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
-		SERVER_PROTO_FUNC(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
-		SERVER_PROTO_FUNC(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
-		SERVER_PROTO_FUNC(svc_disconnectclient, CL_DisconnectClient,
-		                  odaproto::svc::DisconnectClient);
-		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
-		SERVER_PROTO_FUNC(svc_consoleplayer, CL_ConsolePlayer,
-		                  odaproto::svc::ConsolePlayer);
-		SERVER_PROTO_FUNC(svc_explodemissile, CL_ExplodeMissile,
-		                  odaproto::svc::ExplodeMissile);
-		SERVER_PROTO_FUNC(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
-		SERVER_PROTO_FUNC(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
-		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
-		SERVER_PROTO_FUNC(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
-		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
-		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
-		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
-		SERVER_PROTO_FUNC(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
-		SERVER_PROTO_FUNC(svc_print, CL_Print, odaproto::svc::Print);
-		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
-		                  odaproto::svc::PlayerMembers);
-		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
-		SERVER_PROTO_FUNC(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
-		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
-		SERVER_PROTO_FUNC(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
-		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
-		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
-		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
-		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
-		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
-		SERVER_PROTO_FUNC(svc_say, CL_Say, odaproto::svc::Say);
-		SERVER_PROTO_FUNC(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
-		SERVER_PROTO_FUNC(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
-		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
-		SERVER_PROTO_FUNC(svc_serversettings, CL_ServerSettings,
-		                  odaproto::svc::ServerSettings);
-		SERVER_PROTO_FUNC(svc_connectclient, CL_ConnectClient,
-		                  odaproto::svc::ConnectClient);
-		SERVER_PROTO_FUNC(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
-		SERVER_PROTO_FUNC(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
-		SERVER_PROTO_FUNC(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
-		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
-		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
-		SERVER_PROTO_FUNC(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
-		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
-		SERVER_PROTO_FUNC(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
-		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
-		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
-		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
-		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
-		SERVER_PROTO_FUNC(svc_sectorproperties, CL_SectorProperties,
-		                  odaproto::svc::SectorProperties);
-		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
-		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
-		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
-		SERVER_PROTO_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial,
-		                  odaproto::svc::ExecuteLineSpecial);
-		SERVER_PROTO_FUNC(svc_executeacsspecial, CL_ExecuteACSSpecial,
-		                  odaproto::svc::ExecuteACSSpecial);
-		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
-		                  odaproto::svc::ThinkerUpdate);
-		SERVER_PROTO_FUNC(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
-		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
-		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
-		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
-		SERVER_MSG_FUNC(svc_maplist, CL_Maplist);
-		SERVER_MSG_FUNC(svc_maplist_update, CL_MaplistUpdate);
-		SERVER_MSG_FUNC(svc_maplist_index, CL_MaplistIndex);
-		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
-		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
-	default:
-		return false;
-	}
-}
-
-#undef SERVER_MSG_FUNC
 
 //
 // CL_ParseCommands
 //
 void CL_ParseCommands()
 {
-	std::vector<svc_t> history;
 	while (connected)
 	{
 		if (::net_message.BytesLeftToRead() == 0)
@@ -2204,53 +2077,58 @@ void CL_ParseCommands()
 		}
 
 		size_t byteStart = ::net_message.BytesRead();
-		svc_t cmd = static_cast<svc_t>(MSG_ReadByte());
-		history.push_back(cmd);
-
-		if (cmd < svc_noop || cmd >= svc_max || !CallMessageFunc(cmd))
+		parseResult_e res = CL_ParseCommand();
+		if (res != PRES_OK || ::net_message.overflowed)
 		{
 			CL_QuitNetGame();
-			Printf("CL_ParseCommands: Unknown server message %d following: \n",
-			       static_cast<int>(cmd));
+			const Protos& protos = CL_GetTicProtos();
 
-			for (size_t j = 0; j < history.size(); j++)
+			std::string err;
+			if (res == PRES_UNKNOWN_HEADER)
 			{
-				Printf("  message #%d [%d %s]\n", j, history[j],
-				       ::svc_info[history[j]].getName());
+				err = "Unknown message header";
 			}
-			break;
-		}
-
-		if (net_message.overflowed)
-		{
-			CL_QuitNetGame();
-			Printf("CL_ParseCommands: Bad server message\n");
-			Printf("  %d(%s) overflowed\n", static_cast<int>(cmd),
-			       ::svc_info[cmd].getName());
-			Printf("  It was command number %d in the packet\n",
-			       static_cast<int>(history.back()));
-			for (size_t j = 0; j < history.size(); j++)
+			else if (res == PRES_BAD_DECODE)
 			{
-				Printf("    message #%d [%d %s]\n", j, history[j],
-				       ::svc_info[history[j]].getName());
+				err = "Could not decode message";
+			}
+			else if (::net_message.overflowed)
+			{
+				err = "Message overflowed";
+			}
+			else
+			{
+				err = "Unknown error";
 			}
 
-			if (!::protos.empty())
+			if (!protos.empty())
 			{
-				Printf("  Last Protobuf: %s (%" PRIuSIZE " bytes)",
-				       ::protos.back().name.c_str(), ::protos.back().size);
-				Printf("    Data: %s", ::protos.back().shortdata.c_str());
+				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
+
+				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+				{
+					char latest = (it == protos.end() - 1) ? '>' : ' ';
+					ptrdiff_t idx = it - protos.begin() + 1;
+					std::string svc = SVCName(it->header);
+					size_t siz = it->size;
+					Printf(PRINT_WARNING, "%c %2" PRIdSIZE " [%s] %" PRIuSIZE "b\n",
+					       latest, idx, svc.c_str(), siz);
+				}
+			}
+			else
+			{
+				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
 			}
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
-		if (net_message.BytesRead() < byteStart)
+		if (::net_message.BytesRead() < byteStart)
 		{
 			Printf("CL_ParseCommands: end byte (%d) < start byte (%d)\n",
-			       net_message.BytesRead(), byteStart);
+			       ::net_message.BytesRead(), byteStart);
 		}
 
-		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
+		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
 	}
 }
 

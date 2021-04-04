@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "cl_svc.h"
+#include "cl_parse.h"
 
 #include <bitset>
 
@@ -166,14 +166,14 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 /**
  * @brief svc_noop - Nothing to see here. Move along.
  */
-void CL_Noop()
+static void CL_Noop()
 {
 }
 
 /**
  * @brief svc_disconnect - Disconnect a client from the server.
  */
-void CL_Disconnect(const odaproto::svc::Disconnect& msg)
+static void CL_Disconnect(const odaproto::svc::Disconnect& msg)
 {
 	std::string buffer;
 	if (!msg.message().empty())
@@ -192,7 +192,7 @@ void CL_Disconnect(const odaproto::svc::Disconnect& msg)
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
  */
-void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
+static void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
 {
 	player_t& p = consoleplayer();
 
@@ -249,7 +249,7 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
 /**
  * @brief svc_moveplayer - Move a player.
  */
-void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
+static void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
 {
 	byte who = msg.player().playerid();
 	player_t* p = &idplayer(who);
@@ -322,7 +322,7 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
 	p->snapshots.addSnapshot(newsnap);
 }
 
-void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
+static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
 {
 	player_t& p = consoleplayer();
 
@@ -360,7 +360,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
 }
 
 // Set level locals.
-void CL_LevelLocals(const odaproto::svc::LevelLocals& msg)
+static void CL_LevelLocals(const odaproto::svc::LevelLocals& msg)
 {
 	uint32_t flags = msg.flags();
 
@@ -405,7 +405,7 @@ void CL_LevelLocals(const odaproto::svc::LevelLocals& msg)
 // [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
 // for clarity since it sends timestamps, not gametics.
 //
-void CL_PingRequest(const odaproto::svc::PingRequest& msg)
+static void CL_PingRequest(const odaproto::svc::PingRequest& msg)
 {
 	MSG_WriteMarker(&net_buffer, clc_pingreply);
 	MSG_WriteLong(&net_buffer, msg.ms_time());
@@ -415,7 +415,7 @@ void CL_PingRequest(const odaproto::svc::PingRequest& msg)
 // CL_UpdatePing
 // Update ping value
 //
-void CL_UpdatePing(const odaproto::svc::UpdatePing& msg)
+static void CL_UpdatePing(const odaproto::svc::UpdatePing& msg)
 {
 	player_t& p = idplayer(msg.pid());
 	if (!validplayer(p))
@@ -427,7 +427,7 @@ void CL_UpdatePing(const odaproto::svc::UpdatePing& msg)
 //
 // CL_SpawnMobj
 //
-void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
+static void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 {
 	fixed_t x = msg.actor().pos().x();
 	fixed_t y = msg.actor().pos().y();
@@ -552,7 +552,7 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 //
 // CL_DisconnectClient
 //
-void CL_DisconnectClient(const odaproto::svc::DisconnectClient& msg)
+static void CL_DisconnectClient(const odaproto::svc::DisconnectClient& msg)
 {
 	player_t& player = idplayer(msg.pid());
 	if (players.empty() || !validplayer(player))
@@ -591,7 +591,7 @@ void CL_DisconnectClient(const odaproto::svc::DisconnectClient& msg)
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-void CL_LoadMap(const odaproto::svc::LoadMap& msg)
+static void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 {
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
@@ -720,7 +720,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 		netdemo.writeMapChange();
 }
 
-void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
+static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
 {
 	::displayplayer_id = ::consoleplayer_id = msg.pid();
 	::digest = msg.digest();
@@ -729,7 +729,7 @@ void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
 //
 // CL_ExplodeMissile
 //
-void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
+static void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
 {
 	AActor* mo = P_FindThingById(msg.netid());
 
@@ -742,7 +742,7 @@ void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
 //
 // CL_RemoveMobj
 //
-void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
+static void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
 {
 	uint32_t netid = msg.netid();
 
@@ -756,7 +756,7 @@ void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
 //
 // CL_SetupUserInfo
 //
-void CL_UserInfo(const odaproto::svc::UserInfo& msg)
+static void CL_UserInfo(const odaproto::svc::UserInfo& msg)
 {
 	player_t* p = &CL_FindPlayer(msg.pid());
 
@@ -788,7 +788,7 @@ void CL_UserInfo(const odaproto::svc::UserInfo& msg)
 	CL_CheckDisplayPlayer();
 }
 
-void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
+static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 {
 	AActor* mo = P_FindThingById(msg.actor().netid());
 	if (!mo)
@@ -869,7 +869,7 @@ void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 //
 // CL_SpawnPlayer
 //
-void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
+static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
 {
 	size_t playernum = msg.pid();
 	size_t netid = msg.actor().netid();
@@ -964,7 +964,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
 //
 // CL_DamagePlayer
 //
-void CL_DamagePlayer(const odaproto::svc::DamagePlayer& msg)
+static void CL_DamagePlayer(const odaproto::svc::DamagePlayer& msg)
 {
 	uint32_t netid = msg.netid();
 	int healthDamage = msg.health_damage();
@@ -1002,7 +1002,7 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-void CL_KillMobj(const odaproto::svc::KillMobj& msg)
+static void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 {
 	uint32_t srcid = msg.source_netid();
 	uint32_t tgtid = msg.target().netid();
@@ -1074,7 +1074,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 // The server will send us what weapon we fired, and if that
 // doesn't match the weapon we have up at the moment, fix it
 // and request that we get a full update of playerinfo - apr 14 2012
-void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
+static void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
 {
 	player_t* p = &consoleplayer();
 
@@ -1100,7 +1100,7 @@ void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
 //
-void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
+static void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
 {
 	int sectornum = msg.sectornum();
 	fixed_t floorheight = msg.sector().floor_height();
@@ -1137,7 +1137,7 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
 //
 // CL_Print
 //
-void CL_Print(const odaproto::svc::Print& msg)
+static void CL_Print(const odaproto::svc::Print& msg)
 {
 	printlevel_t level = static_cast<printlevel_t>(msg.level());
 	std::string str = msg.message();
@@ -1172,7 +1172,7 @@ void CL_Print(const odaproto::svc::Print& msg)
 /**
  * @brief Updates less-vital members of a player struct.
  */
-void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg)
+static void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg)
 {
 	player_t& p = CL_FindPlayer(msg.pid());
 	byte flags = msg.flags();
@@ -1208,7 +1208,7 @@ void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg)
 //
 // [deathz0r] Receive team frags/captures
 //
-void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
+static void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
 {
 	team_t team = static_cast<team_t>(msg.team());
 	int points = msg.points();
@@ -1223,7 +1223,7 @@ void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
 	info->RoundWins = roundWins;
 }
 
-void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
+static void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
 {
 	int linenum = msg.linenum();
 	AActor* mo = P_FindThingById(msg.activator_netid());
@@ -1241,7 +1241,7 @@ void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
 // CL_UpdateMovingSector
 // Updates floorheight and ceilingheight of a sector.
 //
-void CL_MovingSector(const odaproto::svc::MovingSector& msg)
+static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 {
 	int sectornum = msg.sector();
 
@@ -1409,7 +1409,7 @@ void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 //
 // CL_Sound
 //
-void CL_PlaySound(const odaproto::svc::PlaySound& msg)
+static void CL_PlaySound(const odaproto::svc::PlaySound& msg)
 {
 	int channel = msg.channel();
 	int sfx_id = msg.sfxid();
@@ -1438,7 +1438,7 @@ void CL_PlaySound(const odaproto::svc::PlaySound& msg)
 	}
 }
 
-void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
+static void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
 {
 	AActor* mo = P_FindThingById(msg.netid());
 
@@ -1453,7 +1453,7 @@ void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
 //	Allows server to force set a players team setting
 // ---------------------------------------------------------------------------------------------------------
 
-void CL_ForceTeam(const odaproto::svc::ForceTeam& msg)
+static void CL_ForceTeam(const odaproto::svc::ForceTeam& msg)
 {
 	team_t t = static_cast<team_t>(msg.team());
 
@@ -1471,7 +1471,7 @@ void CL_ForceTeam(const odaproto::svc::ForceTeam& msg)
 // CL_Switch
 // denis - switch state and timing
 // Note: this will also be called for doors
-void CL_Switch(const odaproto::svc::Switch& msg)
+static void CL_Switch(const odaproto::svc::Switch& msg)
 {
 	int l = msg.linenum();
 	byte switchactive = msg.switch_active();
@@ -1505,7 +1505,7 @@ void CL_Switch(const odaproto::svc::Switch& msg)
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
  */
-void CL_Say(const odaproto::svc::Say& msg)
+static void CL_Say(const odaproto::svc::Say& msg)
 {
 	bool message_visibility = msg.visibility();
 	byte player_id = msg.pid();
@@ -1576,7 +1576,7 @@ void CL_Say(const odaproto::svc::Say& msg)
 	}
 }
 
-void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
+static void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
 {
 	// clear player flags client may have imagined
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -1618,7 +1618,7 @@ void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
 	}
 }
 
-void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
+static void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
 {
 	// Range checking on events.
 	if (msg.event() <= SCORE_REFRESH || msg.event() >= NUM_CTF_SCORE)
@@ -1725,7 +1725,7 @@ void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
 // CL_SecretEvent
 // Client interpretation of a secret found by another player
 //
-void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
+static void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
 {
 	player_t& player = idplayer(msg.pid());
 	size_t sectornum = msg.sectornum();
@@ -1750,7 +1750,7 @@ void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
-void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
+static void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
 {
 	cvar_t *var = NULL, *prev = NULL;
 
@@ -1784,7 +1784,7 @@ void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
 //
 // CL_ConnectClient
 //
-void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
+static void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
 {
 	player_t& player = idplayer(msg.pid());
 
@@ -1801,7 +1801,7 @@ void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
 }
 
 // Print a message in the middle of the screen
-void CL_MidPrint(const odaproto::svc::MidPrint& msg)
+static void CL_MidPrint(const odaproto::svc::MidPrint& msg)
 {
 	C_MidPrint(msg.message().c_str(), NULL, msg.time());
 }
@@ -1813,7 +1813,7 @@ void CL_MidPrint(const odaproto::svc::MidPrint& msg)
 // sent back to the server with the next cmd.
 //
 // [SL] 2011-05-11
-void CL_ServerGametic(const odaproto::svc::ServerGametic& msg)
+static void CL_ServerGametic(const odaproto::svc::ServerGametic& msg)
 {
 	byte t = msg.tic();
 
@@ -1833,7 +1833,7 @@ void CL_ServerGametic(const odaproto::svc::ServerGametic& msg)
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //
-void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
+static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
 {
 	::level.inttimeleft = msg.timeleft(); // convert from seconds to tics
 }
@@ -1841,7 +1841,7 @@ void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
 //
 // CL_RailTrail
 //
-void CL_RailTrail(const odaproto::svc::RailTrail& msg)
+static void CL_RailTrail(const odaproto::svc::RailTrail& msg)
 {
 	v3double_t start, end;
 
@@ -1856,7 +1856,7 @@ void CL_RailTrail(const odaproto::svc::RailTrail& msg)
 	P_DrawRailTrail(start, end);
 }
 
-void CL_PlayerState(const odaproto::svc::PlayerState& msg)
+static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 {
 	byte id = msg.player().playerid();
 	int health = msg.player().health();
@@ -1939,7 +1939,7 @@ void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 /**
  * @brief Set local levelstate.
  */
-void CL_LevelState(const odaproto::svc::LevelState& msg)
+static void CL_LevelState(const odaproto::svc::LevelState& msg)
 {
 	// Set local levelstate.
 	SerializedLevelState sls;
@@ -1955,7 +1955,7 @@ void CL_LevelState(const odaproto::svc::LevelState& msg)
 /**
  * @brief Update sector properties dynamically.
  */
-void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
+static void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 {
 	int secnum = msg.sectornum();
 	uint32_t changes = msg.changes();
@@ -2037,7 +2037,7 @@ void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 	}
 }
 
-void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
+static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
 {
 	byte special = msg.special();
 	int linenum = msg.linenum();
@@ -2058,7 +2058,7 @@ void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
 	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
 }
 
-void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial& msg)
+static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial& msg)
 {
 	byte special = msg.special();
 	uint32_t netid = msg.activator_netid();
@@ -2143,7 +2143,7 @@ void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial& msg)
 /**
  * @brief Update a thinker.
  */
-void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
+static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 {
 	switch (msg.thinker_case())
 	{
@@ -2246,7 +2246,7 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 	}
 }
 
-void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
+static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 {
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
@@ -2293,4 +2293,158 @@ void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 		clientPlayer->mo->reactiontime = reactiontime;
 		clientPlayer->mo->waterlevel = waterlevel;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Everything below this line is not a message parsing funciton.
+//-----------------------------------------------------------------------------
+
+Protos protos;
+
+static void RecordProto(const svc_t header, google::protobuf::Message* msg)
+{
+	static int protostic;
+
+	if (protostic != ::level.time)
+	{
+		::protos.clear();
+		protostic = ::level.time;
+	}
+
+	Proto proto;
+	proto.header = header;
+	if (msg)
+	{
+		proto.name = msg->GetTypeName();
+		proto.size = msg->ByteSizeLong();
+		proto.data = msg->DebugString();
+		proto.shortdata = msg->ShortDebugString();
+	}
+	::protos.push_back(proto);
+}
+
+const Protos& CL_GetTicProtos()
+{
+	return ::protos;
+}
+
+#define SERVER_MSG_FUNC(svc, func) \
+	case svc:                      \
+		func();                    \
+		return PRES_OK;
+
+#define SERVER_PROTO_FUNC(svc, func, proto) \
+	case svc: {                             \
+		proto msg;                          \
+		if (!MSG_ReadProto(msg))            \
+			return PRES_BAD_DECODE;         \
+		RecordProto(svc, &msg);             \
+		func(msg);                          \
+		return PRES_OK;                     \
+	}
+
+extern void CL_ExitLevel();
+extern void CL_MobjTranslation();
+extern void CL_FinishedFullUpdate();
+extern void CL_ResetMap();
+extern void CL_StartFullUpdate();
+extern void CL_SetMobjState();
+extern void CL_DamageMobj();
+extern void CL_NetDemoStop();
+extern void CL_NetDemoLoadSnap();
+extern void CL_VoteUpdate();
+extern void CL_Maplist();
+extern void CL_MaplistUpdate();
+extern void CL_MaplistIndex();
+extern void CL_Clear();
+
+parseResult_e CL_ParseCommand()
+{
+	byte cmd = MSG_ReadByte();
+
+	switch (cmd)
+	{
+		SERVER_MSG_FUNC(svc_noop, CL_Noop);
+		SERVER_PROTO_FUNC(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
+		SERVER_PROTO_FUNC(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
+		SERVER_PROTO_FUNC(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
+		SERVER_PROTO_FUNC(svc_updatelocalplayer, CL_UpdateLocalPlayer,
+		                  odaproto::svc::UpdateLocalPlayer);
+		SERVER_PROTO_FUNC(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
+		SERVER_PROTO_FUNC(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
+		SERVER_PROTO_FUNC(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
+		SERVER_PROTO_FUNC(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
+		SERVER_PROTO_FUNC(svc_disconnectclient, CL_DisconnectClient,
+		                  odaproto::svc::DisconnectClient);
+		SERVER_PROTO_FUNC(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
+		SERVER_PROTO_FUNC(svc_consoleplayer, CL_ConsolePlayer,
+		                  odaproto::svc::ConsolePlayer);
+		SERVER_PROTO_FUNC(svc_explodemissile, CL_ExplodeMissile,
+		                  odaproto::svc::ExplodeMissile);
+		SERVER_PROTO_FUNC(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
+		SERVER_PROTO_FUNC(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
+		SERVER_PROTO_FUNC(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
+		SERVER_PROTO_FUNC(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
+		SERVER_PROTO_FUNC(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
+		SERVER_PROTO_FUNC(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
+		SERVER_PROTO_FUNC(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
+		SERVER_PROTO_FUNC(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
+		SERVER_PROTO_FUNC(svc_print, CL_Print, odaproto::svc::Print);
+		SERVER_PROTO_FUNC(svc_playermembers, CL_PlayerMembers,
+		                  odaproto::svc::PlayerMembers);
+		SERVER_PROTO_FUNC(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
+		SERVER_PROTO_FUNC(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
+		SERVER_PROTO_FUNC(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
+		SERVER_PROTO_FUNC(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
+		SERVER_MSG_FUNC(svc_reconnect, CL_Reconnect);
+		SERVER_MSG_FUNC(svc_exitlevel, CL_ExitLevel);
+		SERVER_PROTO_FUNC(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
+		SERVER_PROTO_FUNC(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
+		SERVER_PROTO_FUNC(svc_switch, CL_Switch, odaproto::svc::Switch);
+		SERVER_PROTO_FUNC(svc_say, CL_Say, odaproto::svc::Say);
+		SERVER_PROTO_FUNC(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
+		SERVER_PROTO_FUNC(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
+		SERVER_PROTO_FUNC(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
+		SERVER_PROTO_FUNC(svc_serversettings, CL_ServerSettings,
+		                  odaproto::svc::ServerSettings);
+		SERVER_PROTO_FUNC(svc_connectclient, CL_ConnectClient,
+		                  odaproto::svc::ConnectClient);
+		SERVER_PROTO_FUNC(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
+		SERVER_PROTO_FUNC(svc_servergametic, CL_ServerGametic,
+		                  odaproto::svc::ServerGametic);
+		SERVER_PROTO_FUNC(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
+		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
+		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
+		SERVER_PROTO_FUNC(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
+		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
+		SERVER_PROTO_FUNC(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
+		SERVER_MSG_FUNC(svc_resetmap, CL_ResetMap);
+		SERVER_MSG_FUNC(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
+		SERVER_MSG_FUNC(svc_fullupdatestart, CL_StartFullUpdate);
+		SERVER_MSG_FUNC(svc_lineupdate, CL_LineUpdate);
+		SERVER_PROTO_FUNC(svc_sectorproperties, CL_SectorProperties,
+		                  odaproto::svc::SectorProperties);
+		SERVER_MSG_FUNC(svc_linesideupdate, CL_LineSideUpdate);
+		SERVER_MSG_FUNC(svc_mobjstate, CL_SetMobjState);
+		SERVER_MSG_FUNC(svc_damagemobj, CL_DamageMobj);
+		SERVER_PROTO_FUNC(svc_executelinespecial, CL_ExecuteLineSpecial,
+		                  odaproto::svc::ExecuteLineSpecial);
+		SERVER_PROTO_FUNC(svc_executeacsspecial, CL_ExecuteACSSpecial,
+		                  odaproto::svc::ExecuteACSSpecial);
+		SERVER_PROTO_FUNC(svc_thinkerupdate, CL_ThinkerUpdate,
+		                  odaproto::svc::ThinkerUpdate);
+		SERVER_PROTO_FUNC(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
+		SERVER_MSG_FUNC(svc_netdemostop, CL_NetDemoStop);
+		SERVER_MSG_FUNC(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
+		SERVER_MSG_FUNC(svc_vote_update, CL_VoteUpdate);
+		SERVER_MSG_FUNC(svc_maplist, CL_Maplist);
+		SERVER_MSG_FUNC(svc_maplist_update, CL_MaplistUpdate);
+		SERVER_MSG_FUNC(svc_maplist_index, CL_MaplistIndex);
+		SERVER_MSG_FUNC(svc_launcher_challenge, CL_Clear);
+		SERVER_MSG_FUNC(svc_challenge, CL_Clear);
+	default:
+		return PRES_UNKNOWN_HEADER;
+	}
+
+	return PRES_OK;
 }

@@ -47,6 +47,7 @@
 #include "hu_elements.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
+#include "cl_parse.h"
 #include "cl_vote.h"
 #include "g_levelstate.h"
 #include "g_gametype.h"
