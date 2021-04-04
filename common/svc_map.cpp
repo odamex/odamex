@@ -66,15 +66,10 @@ static void InitMap()
 	MapProto(odaproto::svc::ActivateLine::descriptor(), svc_activateline);
 	MapProto(odaproto::svc::MovingSector::descriptor(), svc_movingsector);
 	MapProto(odaproto::svc::PlaySound::descriptor(), svc_playsound);
-	MapProto(odaproto::svc::Reconnect::descriptor(), svc_reconnect);
-	MapProto(odaproto::svc::ExitLevel::descriptor(), svc_exitlevel);
 	MapProto(odaproto::svc::TouchSpecial::descriptor(), svc_touchspecial);
-	// svc_changeweapon
 	MapProto(odaproto::svc::ForceTeam::descriptor(), svc_forceteam);
 	MapProto(odaproto::svc::Switch::descriptor(), svc_switch);
 	MapProto(odaproto::svc::Say::descriptor(), svc_say);
-	// svc_spawnhiddenplayer
-	// svc_updatedeaths
 	MapProto(odaproto::svc::CTFRefresh::descriptor(), svc_ctfrefresh);
 	MapProto(odaproto::svc::CTFEvent::descriptor(), svc_ctfevent);
 	MapProto(odaproto::svc::SecretEvent::descriptor(), svc_secretevent);
@@ -83,13 +78,10 @@ static void InitMap()
 	MapProto(odaproto::svc::MidPrint::descriptor(), svc_midprint);
 	MapProto(odaproto::svc::ServerGametic::descriptor(), svc_servergametic);
 	MapProto(odaproto::svc::IntTimeLeft::descriptor(), svc_inttimeleft);
-	MapProto(odaproto::svc::FullUpdateDone::descriptor(), svc_fullupdatedone);
 	MapProto(odaproto::svc::RailTrail::descriptor(), svc_railtrail);
 	MapProto(odaproto::svc::PlayerState::descriptor(), svc_playerstate);
 	MapProto(odaproto::svc::LevelState::descriptor(), svc_levelstate);
-	MapProto(odaproto::svc::ResetMap::descriptor(), svc_resetmap);
 	MapProto(odaproto::svc::PlayerQueuePos::descriptor(), svc_playerqueuepos);
-	MapProto(odaproto::svc::FullUpdateStart::descriptor(), svc_fullupdatestart);
 	MapProto(odaproto::svc::LineUpdate::descriptor(), svc_lineupdate);
 	MapProto(odaproto::svc::SectorProperties::descriptor(), svc_sectorproperties);
 	MapProto(odaproto::svc::LineUpdate::descriptor(), svc_linesideupdate);
@@ -99,14 +91,10 @@ static void InitMap()
 	MapProto(odaproto::svc::ExecuteACSSpecial::descriptor(), svc_executeacsspecial);
 	MapProto(odaproto::svc::ThinkerUpdate::descriptor(), svc_thinkerupdate);
 	MapProto(odaproto::svc::NetdemoCap::descriptor(), svc_netdemocap);
-	MapProto(odaproto::svc::NetdemoStop::descriptor(), svc_netdemostop);
-	MapProto(odaproto::svc::NetdemoLoadSnap::descriptor(), svc_netdemoloadsnap);
 	MapProto(odaproto::svc::VoteUpdate::descriptor(), svc_vote_update);
 	MapProto(odaproto::svc::Maplist::descriptor(), svc_maplist);
 	MapProto(odaproto::svc::MaplistUpdate::descriptor(), svc_maplist_update);
 	MapProto(odaproto::svc::MaplistIndex::descriptor(), svc_maplist_index);
-	// svc_launcher_challenge
-	// svc_challenge
 }
 
 svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
