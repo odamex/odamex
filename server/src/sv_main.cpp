@@ -4157,8 +4157,7 @@ static void IntermissionTimeCheck()
 	{
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			MSG_WriteMarker(&(it->client.netbuf), svc_inttimeleft);
-			MSG_WriteShort(&(it->client.netbuf), level.inttimeleft);
+			MSG_WriteSVC(&(it->client.netbuf), SVC_IntTimeLeft(level.inttimeleft));
 		}
 	}
 }

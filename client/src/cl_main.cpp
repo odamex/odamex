@@ -1895,15 +1895,6 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 
 //
-// CL_UpdateIntTimeLeft
-// Changes the value of level.inttimeleft
-//
-void CL_UpdateIntTimeLeft(void)
-{
-	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
-}
-
-//
 // CL_ClearSectorSnapshots
 //
 // Removes all sector snapshots at the start of a map, etc
@@ -2162,7 +2153,7 @@ static bool CallMessageFunc(svc_t type)
 		                  odaproto::svc::ConnectClient);
 		SERVER_PROTO_FUNC(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
 		SERVER_PROTO_FUNC(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
-		SERVER_MSG_FUNC(svc_inttimeleft, CL_UpdateIntTimeLeft);
+		SERVER_PROTO_FUNC(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
 		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
 		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
 		SERVER_PROTO_FUNC(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);

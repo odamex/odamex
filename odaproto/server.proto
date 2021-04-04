@@ -397,7 +397,7 @@ message ServerGametic
 }
 
 // svc_inttimeleft
-message IntermissionTimeleft
+message IntTimeLeft
 {
 	int32 timeleft = 1;
 }

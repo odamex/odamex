@@ -68,6 +68,7 @@ class ServerSettings;
 class ConnectClient;
 class MidPrint;
 class ServerGametic;
+class IntTimeLeft;
 class RailTrail;
 class PlayerState;
 class LevelState;

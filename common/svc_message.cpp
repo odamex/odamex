@@ -1037,6 +1037,15 @@ odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic)
 	return msg;
 }
 
+odaproto::svc::IntTimeLeft SVC_IntTimeLeft(const unsigned int timeleft)
+{
+	odaproto::svc::IntTimeLeft msg;
+
+	msg.set_timeleft(timeleft);
+
+	return msg;
+}
+
 odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t& end)
 {
 	odaproto::svc::RailTrail msg;

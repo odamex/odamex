@@ -1830,6 +1830,15 @@ void CL_ServerGametic(const odaproto::svc::ServerGametic& msg)
 }
 
 //
+// CL_UpdateIntTimeLeft
+// Changes the value of level.inttimeleft
+//
+void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
+{
+	::level.inttimeleft = msg.timeleft(); // convert from seconds to tics
+}
+
+//
 // CL_RailTrail
 //
 void CL_RailTrail(const odaproto::svc::RailTrail& msg)
