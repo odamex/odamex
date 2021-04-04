@@ -1046,7 +1046,6 @@ static void InitNetMessageFormats()
     SVC_INFO(svc_midprint);
 	SVC_INFO(svc_servergametic);
 	SVC_INFO(svc_inttimeleft);
-	SVC_INFO(svc_mobjtranslation);
 	SVC_INFO(svc_fullupdatedone);
 	SVC_INFO(svc_railtrail);
 	SVC_INFO(svc_playerstate);

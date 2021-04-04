@@ -1982,23 +1982,6 @@ void CL_SetMobjState()
 	P_SetMobjState (mo, (statenum_t)s);
 }
 
-//
-// CL_MobjTranslation
-//
-void CL_MobjTranslation()
-{
-	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
-	byte table = MSG_ReadByte();
-
-	if (!mo)
-		return;
-
-	if (table <= MAXPLAYERS)
-		mo->translation = translationref_t(translationtables + 256 * table, table);
-	else
-		mo->translation = translationref_t(translationtables + 256 * table);
-}
-
 void CL_ResetMap()
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to

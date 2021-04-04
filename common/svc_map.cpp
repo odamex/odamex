@@ -83,7 +83,6 @@ static void InitMap()
 	MapProto(odaproto::svc::MidPrint::descriptor(), svc_midprint);
 	MapProto(odaproto::svc::ServerGametic::descriptor(), svc_servergametic);
 	MapProto(odaproto::svc::IntTimeLeft::descriptor(), svc_inttimeleft);
-	// svc_mobjtranslation
 	MapProto(odaproto::svc::FullUpdateDone::descriptor(), svc_fullupdatedone);
 	MapProto(odaproto::svc::RailTrail::descriptor(), svc_railtrail);
 	MapProto(odaproto::svc::PlayerState::descriptor(), svc_playerstate);

@@ -2344,7 +2344,6 @@ const Protos& CL_GetTicProtos()
 	}
 
 extern void CL_ExitLevel();
-extern void CL_MobjTranslation();
 extern void CL_FinishedFullUpdate();
 extern void CL_ResetMap();
 extern void CL_StartFullUpdate();
@@ -2413,7 +2412,6 @@ parseResult_e CL_ParseCommand()
 		SERVER_PROTO_FUNC(svc_servergametic, CL_ServerGametic,
 		                  odaproto::svc::ServerGametic);
 		SERVER_PROTO_FUNC(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
-		SERVER_MSG_FUNC(svc_mobjtranslation, CL_MobjTranslation);
 		SERVER_MSG_FUNC(svc_fullupdatedone, CL_FinishedFullUpdate);
 		SERVER_PROTO_FUNC(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
 		SERVER_PROTO_FUNC(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
