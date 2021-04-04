@@ -113,6 +113,7 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 odaproto::svc::TouchSpecial SVC_TouchSpecial(AActor* mo);
 odaproto::svc::PlayerState SVC_PlayerState(player_t& player);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
+odaproto::svc::PlayerQueuePos SVC_PlayerQueuePos(const player_t& source);
 odaproto::svc::ForceTeam SVC_ForceTeam(team_t team);
 odaproto::svc::Switch SVC_Switch(line_t& line, uint32_t state, uint32_t timer);
 odaproto::svc::Say SVC_Say(const bool visibility, const byte pid,

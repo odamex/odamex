@@ -2417,28 +2417,6 @@ void CL_SimulateWorld()
 	world_index = world_index + 1 + drift_correction;
 }
 
-void CL_UpdatePlayerQueuePos()
-{
-	player_t &player = idplayer(MSG_ReadByte());
-	byte queuePos = MSG_ReadByte();
-
-	if (player.id == consoleplayer_id)
-	{
-		if (queuePos > 0 && player.QueuePosition == 0)
-		{
-			std::ostringstream ss;
-			ss << "Position in line to play: " << (int)queuePos << "\n";
-			Printf(PRINT_HIGH, ss.str().c_str());
-		}
-		else if (player.spectator && queuePos == 0 && player.QueuePosition > 0)
-		{
-			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
-		}
-	}
-
-	player.QueuePosition = queuePos;
-}
-
 void CL_LineUpdate()
 {
 	uint16_t id = MSG_ReadShort();

@@ -902,6 +902,16 @@ odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls)
 	return msg;
 }
 
+odaproto::svc::PlayerQueuePos SVC_PlayerQueuePos(const player_t& source)
+{
+	odaproto::svc::PlayerQueuePos msg;
+
+	msg.set_pid(source.id);
+	msg.set_queuepos(source.QueuePosition);
+
+	return msg;
+}
+
 odaproto::svc::ForceTeam SVC_ForceTeam(team_t team)
 {
 	odaproto::svc::ForceTeam msg;

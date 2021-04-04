@@ -419,7 +419,7 @@ message LevelState
 // svc_playerqueuepos
 message PlayerQueuePos
 {
-	int32 pit = 1;
+	int32 pid = 1;
 	int32 queuepos = 2;	
 }
 

@@ -5063,9 +5063,7 @@ void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 
 void SV_SendPlayerQueuePosition(player_t* source, player_t* dest)
 {
-	MSG_WriteMarker(&(dest->client.reliablebuf), svc_playerqueuepos);
-	MSG_WriteByte(&(dest->client.reliablebuf), source->id);
-	MSG_WriteByte(&(dest->client.reliablebuf), source->QueuePosition);
+	MSG_WriteSVC(&(dest->client.reliablebuf), SVC_PlayerQueuePos(*source));
 }
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2)

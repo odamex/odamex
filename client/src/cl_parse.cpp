@@ -2013,6 +2013,26 @@ static void CL_ResetMap()
 		netdemo.writeMapChange();
 }
 
+static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos& msg)
+{
+	player_t& player = idplayer(msg.pid());
+	byte queuePos = msg.queuepos();
+
+	if (player.id == consoleplayer_id)
+	{
+		if (queuePos > 0 && player.QueuePosition == 0)
+		{
+			Printf(PRINT_HIGH, "Position in line to play: %u\n", queuePos);
+		}
+		else if (player.spectator && queuePos == 0 && player.QueuePosition > 0)
+		{
+			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
+		}
+	}
+
+	player.QueuePosition = queuePos;
+}
+
 static void CL_StartFullUpdate()
 {
 	::recv_full_update = false;
@@ -2472,7 +2492,7 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
 		SV_PROTO(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
 		SV_MSG(svc_resetmap, CL_ResetMap);
-		SV_MSG(svc_playerqueuepos, CL_UpdatePlayerQueuePos);
+		SV_PROTO(svc_playerqueuepos, CL_PlayerQueuePos, odaproto::svc::PlayerQueuePos);
 		SV_MSG(svc_fullupdatestart, CL_StartFullUpdate);
 		SV_MSG(svc_lineupdate, CL_LineUpdate);
 		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
