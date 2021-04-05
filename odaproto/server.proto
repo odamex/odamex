@@ -563,25 +563,17 @@ message ThinkerUpdate
 	}
 }
 
-// svc_netdemocap
-message NetdemoCap
-{
-	bytes player_cmd = 1;
-	Player player = 2;
-	Actor actor = 3;
-}
-
 // svc_vote_update
 message VoteUpdate
 {
-	int32 get_result = 1;
-	string get_votestring = 2;
-	int32 get_countdown = 3;
-	int32 count_yes = 4;
-	int32 calc_yes = 5;
-	int32 count_no = 6;
-	int32 calc_no = 7;
-	int32 count_abs = 8;
+	int32 result = 1;
+	string votestring = 2;
+	int32 countdown = 3;
+	int32 yes = 4;
+	int32 yes_needed = 5;
+	int32 no = 6;
+	int32 no_needed = 7;
+	int32 abs = 8;
 }
 
 // svc_maplist
@@ -611,4 +603,12 @@ message MaplistIndex
 	int32 count = 1;
 	int32 next_index = 2;
 	int32 this_index = 3;
+}
+
+// svc_netdemocap
+message NetdemoCap
+{
+	bytes player_cmd = 1;
+	Player player = 2;
+	Actor actor = 3;
 }

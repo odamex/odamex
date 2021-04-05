@@ -1346,6 +1346,22 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	return msg;
 }
 
+odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state)
+{
+	odaproto::svc::VoteUpdate msg;
+
+	msg.set_result(state.result);
+	msg.set_votestring(state.votestring);
+	msg.set_countdown(state.countdown);
+	msg.set_yes(state.yes);
+	msg.set_yes_needed(state.yes_needed);
+	msg.set_no(state.no);
+	msg.set_no_needed(state.no_needed);
+	msg.set_abs(state.abs);
+
+	return msg;
+}
+
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player)
 {
 	odaproto::svc::NetdemoCap msg;

@@ -35,6 +35,7 @@
 #include "r_state.h"
 
 #include "actor.h"
+#include "c_vote.h"
 #include "d_player.h"
 #include "g_level.h"
 #include "g_levelstate.h"
@@ -141,6 +142,7 @@ odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const char* print,
                                                        const std::vector<int>& args);
 odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker);
+odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 #endif // __SVCMESSAGE_H__

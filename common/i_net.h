@@ -223,16 +223,15 @@ enum svc_t
 	svc_executelinespecial,
 	svc_executeacsspecial,
 	svc_thinkerupdate,
-		
+	svc_vote_update,    // [AM] - Send the latest voting state to the client.
+	svc_maplist,        // [AM] - Return a maplist status.
+	svc_maplist_update, // [AM] - Send the entire maplist to the client in chunks.
+	svc_maplist_index,  // [AM] - Send the current and next map index to the client.
+
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
 	svc_netdemostop = 101,
 	svc_netdemoloadsnap = 102,
-
-	svc_vote_update = 150, // [AM] - Send the latest voting state to the client.
-	svc_maplist = 155, // [AM] - Return a maplist status.
-	svc_maplist_update = 156, // [AM] - Send the entire maplist to the client in chunks.
-	svc_maplist_index = 157, // [AM] - Send the current and next map index to the client.
 
 	// for when launcher packets go astray
 	svc_launcher_challenge = 212,

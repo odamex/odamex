@@ -31,6 +31,7 @@
 #include "c_dispatch.h"
 #include "c_effect.h"
 #include "cl_main.h"
+#include "cl_vote.h"
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
@@ -2409,6 +2410,26 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 	}
 }
 
+static void CL_VoteUpdate(const odaproto::svc::VoteUpdate& msg)
+{
+	vote_result_t result = static_cast<vote_result_t>(msg.result());
+
+	if (result < 0 || result >= NUMVOTERESULTS)
+		return;
+
+	vote_state_t vote_state;
+	vote_state.result = result;
+	vote_state.votestring = msg.votestring();
+	vote_state.countdown = msg.countdown();
+	vote_state.yes = msg.yes();
+	vote_state.yes_needed = msg.yes_needed();
+	vote_state.no = msg.no();
+	vote_state.no_needed = msg.no_needed();
+	vote_state.abs = msg.abs();
+
+	VoteState::instance().set(vote_state);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2516,7 +2537,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_VoteUpdate();
 extern void CL_Maplist();
 extern void CL_MaplistUpdate();
 extern void CL_MaplistIndex();
@@ -2585,13 +2605,13 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);
 		SV_PROTO(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);
 		SV_PROTO(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);
-		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
-		SV_MSG(svc_netdemostop, CL_NetDemoStop);
-		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
-		SV_MSG(svc_vote_update, CL_VoteUpdate);
+		SV_PROTO(svc_vote_update, CL_VoteUpdate, odaproto::svc::VoteUpdate);
 		SV_MSG(svc_maplist, CL_Maplist);
 		SV_MSG(svc_maplist_update, CL_MaplistUpdate);
 		SV_MSG(svc_maplist_index, CL_MaplistIndex);
+		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
+		SV_MSG(svc_netdemostop, CL_NetDemoStop);
+		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
 		SV_MSG(svc_launcher_challenge, CL_Clear);
 		SV_MSG(svc_challenge, CL_Clear);
 		/* clang-format on */

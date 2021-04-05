@@ -90,11 +90,11 @@ static void InitMap()
 	MapProto(odaproto::svc::ExecuteLineSpecial::descriptor(), svc_executelinespecial);
 	MapProto(odaproto::svc::ExecuteACSSpecial::descriptor(), svc_executeacsspecial);
 	MapProto(odaproto::svc::ThinkerUpdate::descriptor(), svc_thinkerupdate);
-	MapProto(odaproto::svc::NetdemoCap::descriptor(), svc_netdemocap);
 	MapProto(odaproto::svc::VoteUpdate::descriptor(), svc_vote_update);
 	MapProto(odaproto::svc::Maplist::descriptor(), svc_maplist);
 	MapProto(odaproto::svc::MaplistUpdate::descriptor(), svc_maplist_update);
 	MapProto(odaproto::svc::MaplistIndex::descriptor(), svc_maplist_index);
+	MapProto(odaproto::svc::NetdemoCap::descriptor(), svc_netdemocap);
 }
 
 svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
