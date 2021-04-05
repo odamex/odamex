@@ -290,7 +290,6 @@ void CL_PlayerTimes (void);
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress();
 
-void CL_NetDemoStop(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
@@ -1133,11 +1132,6 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	return newfilename;
 }
 
-void CL_NetDemoStop()
-{
-	netdemo.stopPlaying();
-}
-
 void CL_NetDemoPlay(const std::string& filename)
 {
 	std::string found = M_FindUserFileName(filename, ".odd");
@@ -1279,11 +1273,6 @@ BEGIN_COMMAND(netprevmap)
 		netdemo.prevMap();
 }
 END_COMMAND(netprevmap)
-
-void CL_NetDemoLoadSnap()
-{
-	AddCommandString("netprevmap");
-}
 
 //
 // CL_MoveThing

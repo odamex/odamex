@@ -28,6 +28,7 @@
 #include "server.pb.h"
 
 #include "c_console.h"
+#include "c_dispatch.h"
 #include "c_effect.h"
 #include "cl_main.h"
 #include "cmdlib.h"
@@ -2457,6 +2458,16 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 	}
 }
 
+static void CL_NetDemoStop()
+{
+	::netdemo.stopPlaying();
+}
+
+static void CL_NetDemoLoadSnap()
+{
+	AddCommandString("netprevmap");
+}
+
 //-----------------------------------------------------------------------------
 // Everything below this line is not a message parsing funciton.
 //-----------------------------------------------------------------------------
@@ -2505,8 +2516,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_NetDemoStop();
-extern void CL_NetDemoLoadSnap();
 extern void CL_VoteUpdate();
 extern void CL_Maplist();
 extern void CL_MaplistUpdate();
