@@ -35,6 +35,7 @@
 #include "m_fileio.h"
 #include "m_strindex.h"
 #include "sv_main.h"
+#include "svc_message.h"
 #include "w_wad.h"
 
 //////// MAPLIST METHODS ////////
@@ -511,72 +512,20 @@ void SVC_MaplistIndex(player_t &player) {
 	}
 }
 
-#include "server.pb.h"
-#include "assert.h"
-
-odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
-                                               const maplist_qrows_t* maplist)
-{
-	odaproto::svc::MaplistUpdate msg;
-	msg.set_status(status);
-
-	if (status == MAPLIST_OUTDATED)
-	{
-		assert(maplist != NULL && "Maplist pointer must be non-null");
-
-		// In order to cut down on bandwidth, this message uses mappings of
-		// strings to unique ID's to save bandwidth.  Some of these mappings
-		// are already known on the receiving end.
-		OStringIndexer indexer = OStringIndexer::maplistFactory();
-
-		for (maplist_qrows_t::const_iterator it = maplist->begin(); it != maplist->end();
-		     ++it)
-		{
-			// Create a row and add an indexed map to it.
-			odaproto::svc::MaplistUpdate::Row* row = msg.add_maplist();
-			const std::string& map = it->second->map;
-			const uint32_t mapidx = indexer.getIndex(map);
-			row->set_map(mapidx);
-
-			for (std::vector<std::string>::iterator itr = it->second->wads.begin();
-			     itr != it->second->wads.end(); ++itr)
-			{
-				// Push an indexed WAD into the message.
-				std::string filename = D_CleanseFileName(*itr);
-				const uint32_t wadidx = indexer.getIndex(filename);
-				row->add_wads(wadidx);
-			}
-		}
-
-		// Populate the dictionary.
-		for (OStringIndexer::Indexes::const_iterator it = indexer.indexes.begin();
-		     it != indexer.indexes.end(); ++it)
-		{
-			if (!indexer.shouldTransmit(it->second))
-				continue;
-
-			typedef google::protobuf::MapPair<uint32_t, std::string> DictPair;
-			msg.mutable_dict()->insert(DictPair(it->second, it->first));
-		}
-	}
-
-	return msg;
-}
-
 // Send a full maplist update to a specific player
-void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
+void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	client_t *cl = &player.client;
 
 	switch (status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
-		DPrintf("SVC_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
-		DPrintf("SVC_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
 		break;
 	default:
 		// Invalid statuses
@@ -655,18 +604,18 @@ void SV_MaplistUpdate(player_t &player) {
 
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {
-		SVC_MaplistUpdate(player, MAPLIST_EMPTY);
+		SV_MaplistUpdate(player, MAPLIST_EMPTY);
 		return;
 	}
 
 	// If the player requested the maplist update too soon, say so
 	if (!Maplist::instance().pid_timeout(player.id)) {
-		SVC_MaplistUpdate(player, MAPLIST_THROTTLED);
+		SV_MaplistUpdate(player, MAPLIST_THROTTLED);
 		return;
 	}
 
 	// Send them an update
-	SVC_MaplistUpdate(player, MAPLIST_OUTDATED);
+	SV_MaplistUpdate(player, MAPLIST_OUTDATED);
 }
 
 //////// EVENTS ////////

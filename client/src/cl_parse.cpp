@@ -30,7 +30,9 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_effect.h"
+#include "c_maplist.h"
 #include "cl_main.h"
+#include "cl_maplist.h"
 #include "cl_vote.h"
 #include "cmdlib.h"
 #include "d_main.h"
@@ -43,6 +45,7 @@
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_resfile.h"
+#include "m_strindex.h"
 #include "p_acs.h"
 #include "p_ctf.h"
 #include "p_inter.h"
@@ -2429,10 +2432,6 @@ static void CL_VoteUpdate(const odaproto::svc::VoteUpdate& msg)
 
 	VoteState::instance().set(vote_state);
 }
-
-#include "c_maplist.h"
-#include "cl_maplist.h"
-#include "m_strindex.h"
 
 // Got a packet that contains a chunk of the maplist.
 static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)

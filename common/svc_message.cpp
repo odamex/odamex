@@ -32,6 +32,7 @@
 #include "d_main.h"
 #include "g_gametype.h"
 #include "i_system.h"
+#include "m_strindex.h"
 #include "p_lnspec.h"
 #include "p_local.h"
 #include "p_unlag.h"
@@ -1358,6 +1359,55 @@ odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state)
 	msg.set_no(state.no);
 	msg.set_no_needed(state.no_needed);
 	msg.set_abs(state.abs);
+
+	return msg;
+}
+
+odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
+                                               const maplist_qrows_t* maplist)
+{
+	odaproto::svc::MaplistUpdate msg;
+	msg.set_status(status);
+
+	if (status == MAPLIST_OUTDATED)
+	{
+		assert(maplist != NULL && "Maplist pointer must be non-null");
+
+		// In order to cut down on bandwidth, this message uses mappings of
+		// strings to unique ID's to save bandwidth.  Some of these mappings
+		// are already known on the receiving end.
+		OStringIndexer indexer = OStringIndexer::maplistFactory();
+
+		for (maplist_qrows_t::const_iterator it = maplist->begin(); it != maplist->end();
+		     ++it)
+		{
+			// Create a row and add an indexed map to it.
+			odaproto::svc::MaplistUpdate::Row* row = msg.add_maplist();
+			const std::string& map = it->second->map;
+			const uint32_t mapidx = indexer.getIndex(map);
+			row->set_map(mapidx);
+
+			for (std::vector<std::string>::iterator itr = it->second->wads.begin();
+			     itr != it->second->wads.end(); ++itr)
+			{
+				// Push an indexed WAD into the message.
+				std::string filename = D_CleanseFileName(*itr);
+				const uint32_t wadidx = indexer.getIndex(filename);
+				row->add_wads(wadidx);
+			}
+		}
+
+		// Populate the dictionary.
+		for (OStringIndexer::Indexes::const_iterator it = indexer.indexes.begin();
+		     it != indexer.indexes.end(); ++it)
+		{
+			if (!indexer.shouldTransmit(it->second))
+				continue;
+
+			typedef google::protobuf::MapPair<uint32_t, std::string> DictPair;
+			msg.mutable_dict()->insert(DictPair(it->second, it->first));
+		}
+	}
 
 	return msg;
 }
