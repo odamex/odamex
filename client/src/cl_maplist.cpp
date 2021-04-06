@@ -54,7 +54,7 @@ void MaplistCache::invalidate() {
 }
 
 // Return the entire maplist.
-bool MaplistCache::query(query_result_t &result) {
+bool MaplistCache::query(maplist_qrows_t &result) {
 	// Check to see if the query should fail and pass an error.
 	if (this->status != MAPLIST_OK) {
 		return false;
@@ -70,7 +70,7 @@ bool MaplistCache::query(query_result_t &result) {
 
 // Run a query on the maplist and return a list of all matching entries.
 bool MaplistCache::query(const std::vector<std::string> &query,
-						 query_result_t &result) {
+						 maplist_qrows_t &result) {
 	// Check to see if the query should fail and pass an error.
 	if (this->status != MAPLIST_OK) {
 		return false;
@@ -182,7 +182,7 @@ void MaplistCache::ev_tic() {
 		// our callbacks and get things over with.
 		for (std::vector<deferred_query_t>::iterator it = this->deferred_queries.begin();
 			 it != this->deferred_queries.end();++it) {
-			query_result_t query_result;
+			maplist_qrows_t query_result;
 			this->query(it->query, query_result);
 			it->callback(query_result);
 		}
@@ -387,40 +387,6 @@ void CL_MaplistIndex(void) {
 	}
 }
 
-// Got a packet that contains a chunk of the maplist.
-void CL_MaplistUpdate(void) {
-	// The update status might require us to bail out.
-	maplist_status_t status = (maplist_status_t)MSG_ReadByte();
-	DPrintf("CL_MaplistUpdate: Status %d\n", status);
-	if (!MaplistCache::instance().update_status_handler(status)) {
-		return;
-	}
-
-	size_t maplist_size = MSG_ReadShort();
-	DPrintf("CL_MaplistUpdate: Size %d\n", maplist_size);
-
-	// If we've gotten this far, set the destination maplist size.
-	MaplistCache::instance().set_size(maplist_size);
-
-	size_t starting_index = MSG_ReadShort();
-	for (size_t i = starting_index;i < maplist_size;i++) {
-		maplist_entry_t maplist_entry;
-		maplist_entry.map = MSG_ReadString();
-
-		size_t wads_size = MSG_ReadShort();
-		for (size_t j = 0;j < wads_size;j++) {
-			maplist_entry.wads.push_back(MSG_ReadString());
-		}
-
-		MaplistCache::instance().set_cache_entry(i, maplist_entry);
-
-		if (!MSG_ReadBool()) {
-			// We have reached the end of the packet.
-			break;
-		}
-	}
-}
-
 // Handle tic-by-tic maintenance of the various maplist functionality.
 void Maplist_Runtic() {
 	MaplistCache::instance().ev_tic();
@@ -429,12 +395,12 @@ void Maplist_Runtic() {
 //////// CONSOLE COMMANDS ////////
 
 // Clientside maplist query callback.
-void CMD_MaplistCallback(const query_result_t &result) {
+void CMD_MaplistCallback(const maplist_qrows_t &result) {
 	// Rip through the result set and print it
 	size_t this_index = 0, next_index = 0;
 	bool show_this_map = MaplistCache::instance().get_this_index(this_index);
 	MaplistCache::instance().get_next_index(next_index);
-	for (query_result_t::const_iterator it = result.begin();it != result.end();++it) {
+	for (maplist_qrows_t::const_iterator it = result.begin();it != result.end();++it) {
 		char flag = ' ';
 		if (show_this_map && it->first == this_index) {
 			flag = '*';

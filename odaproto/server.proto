@@ -585,16 +585,15 @@ message Maplist
 // svc_maplist_update
 message MaplistUpdate
 {
-	message MaplistEntry
+	message Row
 	{
-		string map = 1;
-		repeated string wads = 2;
+		uint32 map = 1;
+		repeated uint32 wads = 2;
 	}
 
 	int32 status = 1;
-	int32 maplist_size = 2;
-	int32 start = 3;
-	repeated MaplistEntry entries = 4;
+	map<uint32, string> dict = 2;
+	repeated Row maplist = 3;
 }
 
 // svc_maplist_index

@@ -2430,6 +2430,51 @@ static void CL_VoteUpdate(const odaproto::svc::VoteUpdate& msg)
 	VoteState::instance().set(vote_state);
 }
 
+#include "c_maplist.h"
+#include "cl_maplist.h"
+#include "m_strindex.h"
+
+// Got a packet that contains a chunk of the maplist.
+static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)
+{
+	// The update status might require us to bail out.
+	maplist_status_t status = static_cast<maplist_status_t>(msg.status());
+	if (status < 0 || status >= NUM_MAPLIST_STATUS)
+		return;
+
+	// Some statuses require an early out.
+	if (!MaplistCache::instance().update_status_handler(status))
+		return;
+
+	OStringIndexer indexer = OStringIndexer::maplistFactory();
+
+	// Parse our dictionary first.
+	google::protobuf::Map<uint32_t, std::string>::const_iterator it;
+	for (it = msg.dict().begin(); it != msg.dict().end(); ++it)
+	{
+		indexer.setIndex(it->first, it->second);
+	}
+
+	// Load our maps into the local cache.
+	MaplistCache::instance().set_size(msg.maplist().size());
+
+	for (int i = 0; i < msg.maplist().size(); i++)
+	{
+		const odaproto::svc::MaplistUpdate::Row& row = msg.maplist().Get(i);
+		const std::string& map = indexer.getString(row.map());
+
+		maplist_entry_t maplist_entry;
+		maplist_entry.map = map;
+		for (int j = 0; j < row.wads_size(); j++)
+		{
+			const std::string& wad = indexer.getString(row.wads().Get(j));
+			maplist_entry.wads.push_back(wad);
+		}
+
+		MaplistCache::instance().set_cache_entry(i, maplist_entry);
+	}
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2538,7 +2583,6 @@ const Protos& CL_GetTicProtos()
 	}
 
 extern void CL_Maplist();
-extern void CL_MaplistUpdate();
 extern void CL_MaplistIndex();
 extern void CL_Clear();
 
@@ -2607,7 +2651,7 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);
 		SV_PROTO(svc_vote_update, CL_VoteUpdate, odaproto::svc::VoteUpdate);
 		SV_MSG(svc_maplist, CL_Maplist);
-		SV_MSG(svc_maplist_update, CL_MaplistUpdate);
+		SV_PROTO(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
 		SV_MSG(svc_maplist_index, CL_MaplistIndex);
 		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop);

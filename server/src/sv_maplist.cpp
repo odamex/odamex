@@ -30,8 +30,10 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "g_level.h"
+#include "hashtable.h"
 #include "i_system.h"
 #include "m_fileio.h"
+#include "m_strindex.h"
 #include "sv_main.h"
 #include "w_wad.h"
 
@@ -509,6 +511,58 @@ void SVC_MaplistIndex(player_t &player) {
 	}
 }
 
+#include "server.pb.h"
+#include "assert.h"
+
+odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
+                                               const maplist_qrows_t* maplist)
+{
+	odaproto::svc::MaplistUpdate msg;
+	msg.set_status(status);
+
+	if (status == MAPLIST_OUTDATED)
+	{
+		assert(maplist != NULL && "Maplist pointer must be non-null");
+
+		// In order to cut down on bandwidth, this message uses mappings of
+		// strings to unique ID's to save bandwidth.  Some of these mappings
+		// are already known on the receiving end.
+		OStringIndexer indexer = OStringIndexer::maplistFactory();
+
+		for (maplist_qrows_t::const_iterator it = maplist->begin(); it != maplist->end();
+		     ++it)
+		{
+			// Create a row and add an indexed map to it.
+			odaproto::svc::MaplistUpdate::Row* row = msg.add_maplist();
+			const std::string& map = it->second->map;
+			const uint32_t mapidx = indexer.getIndex(map);
+			row->set_map(mapidx);
+
+			for (std::vector<std::string>::iterator itr = it->second->wads.begin();
+			     itr != it->second->wads.end(); ++itr)
+			{
+				// Push an indexed WAD into the message.
+				std::string filename = D_CleanseFileName(*itr);
+				const uint32_t wadidx = indexer.getIndex(filename);
+				row->add_wads(wadidx);
+			}
+		}
+
+		// Populate the dictionary.
+		for (OStringIndexer::Indexes::const_iterator it = indexer.indexes.begin();
+		     it != indexer.indexes.end(); ++it)
+		{
+			if (!indexer.shouldTransmit(it->second))
+				continue;
+
+			typedef google::protobuf::MapPair<uint32_t, std::string> DictPair;
+			msg.mutable_dict()->insert(DictPair(it->second, it->first));
+		}
+	}
+
+	return msg;
+}
+
 // Send a full maplist update to a specific player
 void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
 	client_t *cl = &player.client;
@@ -518,8 +572,7 @@ void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
 		DPrintf("SVC_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
-		MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update);
-		MSG_WriteByte(&cl->reliablebuf, status);
+		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
@@ -530,48 +583,16 @@ void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
 		return;
 	}
 
-	std::vector<std::pair<size_t, maplist_entry_t*> > maplist;
+	maplist_qrows_t maplist;
 	Maplist::instance().query(maplist);
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update); // new packet
-	MSG_WriteByte(&cl->reliablebuf, MAPLIST_OUTDATED);
-	MSG_WriteShort(&cl->reliablebuf, maplist.size()); // total size
-	MSG_WriteShort(&cl->reliablebuf, 0); // starting index
-	for (std::vector<std::pair<size_t, maplist_entry_t*> >::iterator it = maplist.begin(); it != maplist.end(); ++it)
-	{
-		MSG_WriteString(&cl->reliablebuf, it->second->map.c_str());
-		MSG_WriteShort(&cl->reliablebuf, it->second->wads.size());
-		for (std::vector<std::string>::iterator itr = it->second->wads.begin(); itr != it->second->wads.end(); ++itr)
-		{
-			std::string filename = D_CleanseFileName(*itr);
-			MSG_WriteString(&cl->reliablebuf, filename.c_str());
-		}
+	odaproto::svc::MaplistUpdate update = SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist);
 
-		// If we're at the end of the maplist, we don't want to continue the
-		// message any longer and we don't need to start a new packet, so we
-		// need this check before the fragmenting logic below.
-		if (it == maplist.end() - 1)
-		{
-			MSG_WriteBool(&cl->reliablebuf, false); // end packet for good
-			break;
-		}
+	// Attempt to make room on the wire if we're running out.
+	if (cl->reliablebuf.size() + update.ByteSizeLong() >= MAX_UDP_SIZE)
+		SV_SendPacket(player);
 
-		// This message could get huge, so send it
-		// when it grows to a specific size.
-		if (cl->reliablebuf.cursize >= 1024)
-		{
-			MSG_WriteBool(&cl->reliablebuf, false); // end packet
-			SV_SendPacket(player);
-			MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update); // new packet
-			MSG_WriteByte(&cl->reliablebuf, MAPLIST_OUTDATED);
-			MSG_WriteShort(&cl->reliablebuf, maplist.size()); // total size
-			MSG_WriteShort(&cl->reliablebuf, it->first + 1); // next index
-		}
-		else
-		{
-			MSG_WriteBool(&cl->reliablebuf, true); // continue packet
-		}
-	}
+	MSG_WriteSVC(&cl->reliablebuf, update);
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);
@@ -792,7 +813,7 @@ BEGIN_COMMAND (gotomap) {
 	}
 
 	// Query the maplist
-	query_result_t result;
+	maplist_qrows_t result;
 	if (!Maplist::instance().query(arguments, result)) {
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
 		return;
@@ -815,7 +836,7 @@ BEGIN_COMMAND (gotomap) {
 } END_COMMAND (gotomap)
 
 bool CMD_Randmap(std::string &error) {
-	query_result_t result;
+	maplist_qrows_t result;
 	if (!Maplist::instance().query(result)) {
 		error = Maplist::instance().get_error();
 		return false;
