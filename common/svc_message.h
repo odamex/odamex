@@ -144,8 +144,11 @@ odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const std::vector<int>& args);
 odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker);
 odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state);
+odaproto::svc::Maplist SVC_Maplist(const maplist_status_t status);
 odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
                                                const maplist_qrows_t* maplist);
+odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this_index,
+                                             const size_t next_index);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 #endif // __SVCMESSAGE_H__

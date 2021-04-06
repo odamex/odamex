@@ -47,6 +47,4 @@ public:
 	bool get(vote_state_t &vote_state);
 };
 
-void CL_VoteUpdate(void);
-
 #endif

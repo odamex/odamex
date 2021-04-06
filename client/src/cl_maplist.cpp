@@ -366,27 +366,6 @@ void MaplistCache::set_cache_entry(const size_t index, const maplist_entry_t &ma
 
 //////// SERVER COMMANDS ////////
 
-// Got a packet that contains the maplist status
-void CL_Maplist() {
-	maplist_status_t status = (maplist_status_t)MSG_ReadByte();
-	DPrintf("CL_Maplist: Status %d\n", status);
-	MaplistCache::instance().status_handler(status);
-}
-
-// Got a packet that contains the next and current index.
-void CL_MaplistIndex(void) {
-	byte count = MSG_ReadByte();
-	DPrintf("CL_MaplistIndex: Count %d\n", count);
-	if (count > 0) {
-		MaplistCache::instance().set_next_index(MSG_ReadShort());
-		if (count > 1) {
-			MaplistCache::instance().set_this_index(MSG_ReadShort());
-		} else {
-			MaplistCache::instance().unset_this_index();
-		}
-	}
-}
-
 // Handle tic-by-tic maintenance of the various maplist functionality.
 void Maplist_Runtic() {
 	MaplistCache::instance().ev_tic();

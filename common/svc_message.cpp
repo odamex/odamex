@@ -1363,6 +1363,15 @@ odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state)
 	return msg;
 }
 
+odaproto::svc::Maplist SVC_Maplist(const maplist_status_t status)
+{
+	odaproto::svc::Maplist msg;
+
+	msg.set_status(status);
+
+	return msg;
+}
+
 odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
                                                const maplist_qrows_t* maplist)
 {
@@ -1406,6 +1415,24 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
 
 			typedef google::protobuf::MapPair<uint32_t, std::string> DictPair;
 			msg.mutable_dict()->insert(DictPair(it->second, it->first));
+		}
+	}
+
+	return msg;
+}
+
+odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this_index,
+                                             const size_t next_index)
+{
+	odaproto::svc::MaplistIndex msg;
+
+	msg.set_count(count);
+	if (count > 0)
+	{
+		msg.set_next_index(next_index);
+		if (count > 1)
+		{
+			msg.set_this_index(this_index);
 		}
 	}
 

@@ -86,7 +86,6 @@ public:
 
 void CL_Maplist(void);
 void CL_MaplistIndex(void);
-void CL_MaplistUpdate(void);
 
 void Maplist_Runtic(void);
 

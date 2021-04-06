@@ -2433,6 +2433,17 @@ static void CL_VoteUpdate(const odaproto::svc::VoteUpdate& msg)
 	VoteState::instance().set(vote_state);
 }
 
+// Got a packet that contains the maplist status
+static void CL_Maplist(const odaproto::svc::Maplist& msg)
+{
+	// The update status might require us to bail out.
+	maplist_status_t status = static_cast<maplist_status_t>(msg.status());
+	if (status < 0 || status >= NUM_MAPLIST_STATUS)
+		return;
+
+	MaplistCache::instance().status_handler(status);
+}
+
 // Got a packet that contains a chunk of the maplist.
 static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)
 {
@@ -2471,6 +2482,23 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)
 		}
 
 		MaplistCache::instance().set_cache_entry(i, maplist_entry);
+	}
+}
+
+// Got a packet that contains the next and current index.
+static void CL_MaplistIndex(const odaproto::svc::MaplistIndex& msg)
+{
+	if (msg.count() > 0)
+	{
+		MaplistCache::instance().set_next_index(msg.next_index());
+		if (msg.count() > 1)
+		{
+			MaplistCache::instance().set_this_index(msg.this_index());
+		}
+		else
+		{
+			MaplistCache::instance().unset_this_index();
+		}
 	}
 }
 
@@ -2581,8 +2609,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_Maplist();
-extern void CL_MaplistIndex();
 extern void CL_Clear();
 
 parseResult_e CL_ParseCommand()
@@ -2649,9 +2675,9 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);
 		SV_PROTO(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);
 		SV_PROTO(svc_vote_update, CL_VoteUpdate, odaproto::svc::VoteUpdate);
-		SV_MSG(svc_maplist, CL_Maplist);
+		SV_PROTO(svc_maplist, CL_Maplist, odaproto::svc::Maplist);
 		SV_PROTO(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
-		SV_MSG(svc_maplist_index, CL_MaplistIndex);
+		SV_PROTO(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
