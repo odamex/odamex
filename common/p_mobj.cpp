@@ -40,6 +40,7 @@
 #include "gi.h"
 #include "g_gametype.h"
 #include "c_dispatch.h"
+#include "p_dwish.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -2560,6 +2561,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 	}
 
+	int oldtype = i;
+	if (P_IsDWMode())
+	{
+		// All monsters are turned into monster spawn points.
+		if (i == MT_SKULL || (::mobjinfo[i].flags & MF_COUNTKILL))
+		{
+			i = MT_MONSTERSPAWN;
+		}
+	}
+
     // [SL] 2011-05-31 - Moved so that clients get right level.total_items, etc
 	if (i == MT_SECRETTRIGGER)
 		level.total_secrets++;
@@ -2585,6 +2596,13 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		z = ONFLOORZ;
 
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
+
+	if (i == MT_MONSTERSPAWN)
+	{
+		// Make sure we catalog monster spawns.
+		mobj->health = oldtype; // Health is the monster ID
+		P_AddDWSpawnPoint(mobj);
+	}
 
 	if (z == ONFLOORZ)
 		mobj->z += mthing->z << FRACBITS;

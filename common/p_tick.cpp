@@ -27,6 +27,7 @@
 #include "c_console.h"
 #include "doomstat.h"
 #include "p_unlag.h"
+#include "p_dwish.h"
 
 //
 // P_AtInterval
@@ -57,6 +58,9 @@ void P_Ticker (void)
 		&& players.begin()->viewz != 1)
 		return;
 #endif
+
+	if (serverside)
+		P_RunDWTics();
 
 	if (clientside)
 		P_ThinkParticles ();	// [RH] make the particles think
