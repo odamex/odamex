@@ -64,6 +64,10 @@ struct spawnInventory_t
 	}
 };
 
+// Berserk time that prevents showing any red.  If you want to show a teensy
+// bit of red, you're going to need to send the player's powers on map change.
+const int INV_BERSERK_TIME = 64 * 12;
+
 /**
  * @brief Convert a string form of a boolean to an actual boolean.
  *
@@ -754,8 +758,6 @@ END_COMMAND(spawninv)
  */
 void G_GiveSpawnInventory(player_t& player)
 {
-	const int BERSERK_NORED = 64 * 12;
-
 	spawnInventory_t& inv = ::gSpawnInv;
 
 	player.health = inv.health;
@@ -767,7 +769,7 @@ void G_GiveSpawnInventory(player_t& player)
 
 	if (inv.berserk)
 	{
-		player.powers[pw_strength] = BERSERK_NORED;
+		player.powers[pw_strength] = INV_BERSERK_TIME;
 	}
 
 	if (inv.backpack)
@@ -777,5 +779,20 @@ void G_GiveSpawnInventory(player_t& player)
 		{
 			player.maxammo[i] *= 2;
 		}
+	}
+}
+
+/**
+ * @brief Give players their between-level inventory.
+ *
+ *       This function only touches powers that are lost between levels.
+ */
+void G_GiveBetweenInventory(player_t& player)
+{
+	spawnInventory_t& inv = ::gSpawnInv;
+
+	if (inv.berserk)
+	{
+		player.powers[pw_strength] = INV_BERSERK_TIME;
 	}
 }
