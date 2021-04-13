@@ -65,6 +65,8 @@ EXTERN_CVAR(sv_callvote_fraglimit)
 EXTERN_CVAR(sv_callvote_scorelimit)
 EXTERN_CVAR(sv_callvote_timelimit)
 
+static void SV_GlobalVoteUpdate();
+
 // Vote class goes here
 Vote *vote = 0;
 
@@ -888,8 +890,6 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player)
 	SV_BroadcastPrintf("%s has called a vote for %s.\n", player.userinfo.netname.c_str(), this->get_votestring().c_str());
 	return true;
 }
-
-void SV_GlobalVoteUpdate();
 
 // Pass or fail the vote.  Most of the time this method adheres to the result
 // of the check method, but can also be used to 'force pass' or 'force fail' a
