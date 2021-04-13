@@ -100,10 +100,8 @@ void V_TextShutdown()
 	{
 		::hu_font[i] = NULL;
 
-		Z_ChangeTag(::hu_bigfont[i], PU_CACHE);
-		::hu_bigfont[i] = NULL;
-		Z_ChangeTag(::hu_smallfont[i], PU_CACHE);
-		::hu_smallfont[i] = NULL;
+		Z_Discard(&::hu_bigfont[i]);
+		Z_Discard(&::hu_smallfont[i]);
 	}
 }
 

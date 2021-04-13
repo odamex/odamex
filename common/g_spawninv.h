@@ -17,8 +17,16 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Game functions that are common between the client and server.
+//   Spawn inventory.
 //
 //-----------------------------------------------------------------------------
 
-#include "g_game.h"
+#ifndef __G_SPAWNINV_H__
+#define __G_SPAWNINV_H__
+
+#include "d_player.h"
+
+void G_GiveSpawnInventory(player_t& player);
+void G_GiveBetweenInventory(player_t& player);
+
+#endif
