@@ -80,7 +80,7 @@ void SV_CTFEvent(team_t f, flag_score_t event, player_t& who)
 		return;
 	}
 
-	TeamsView& tv = TeamQuery().execute();
+	const TeamsView& tv = TeamQuery().execute();
 	if (validplayer(who) && G_CanScoreChange())
 	{
 		if (G_IsRoundsGame())
