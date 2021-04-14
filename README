@@ -1,255 +1,117 @@
 ===============================================================================
                               Odamex v0.9.0 README
-                              http://odamex.net/
-                                 Authored by:
-                            Dean "deathz0r" Joseph
-                            Alex "AlexMax" Mayfield
-                            Ralph "Ralphis" Vickers
-                        Revision date: November 8, 2020
+                               https://odamex.net
 ===============================================================================
-
-Table of contents:
-	1. Introduction
-		1.1 What is Odamex?
-		1.2 Features at a Glance
-
-	2. Installation
-		2.1 Requirements
-		2.2 Installation - binary download
-		2.3 Installation - source download
-
-	3. Setting up Odamex*
-		3.1 Client
-		3.2 Server
-		3.3 Launcher
-		3.4 Master
-
-	4. Gamemodes
-		4.1 Cooperative
-		4.2 Head to Head
-		4.3 Free for All
-		4.4 Team Deathmatch
-		4.5 Capture the Flag
-
-	5. Reference*
-		5.1 Odamex client configuration
-		5.2 Odamex server configuration
-		5.3 Console commands
-
-	6. Frequently Asked Questions
-		6.1 Frequently Asked Questions*
-		6.2 If you still need help...
-
-* Coming soon
-===============================================================================
-
-Section 1: Introduction
-
-1.1 - What is Odamex?
 
 Odamex is a modification of DOOM to allow players to compete with each other
-over the Internet using the client/server architecture. Thanks to the source
-code release of DOOM by id Software in December 1997, there have been many
+over the Internet using a client/server architecture. Thanks to the source code
+release of DOOM by id Software in December 1997, there have been many
 modifications that enhanced DOOM in various ways. These modifications are known
 as "source ports", as early modifications mainly ported DOOM to other platforms
 and operating systems such as Windows and Macintosh.
 
-Odamex is based on the CSDoom 0.62 source code originally created by Sergey 
-Makovkin, which is based on the ZDoom 1.22 source code created by Randy Heit.
+Odamex is based on the CSDoom 0.62 source code originally created by Sergey
+Makovkin, which is based on the ZDoom 1.22 source code created by Marisa Heit.
 
-Odamex is released under the GNU General Public License v2. Please read 
-LICENSES for further details regarding the license.
+Features
+--------
 
+Odamex supports the following features:
 
-1.2 - Features at a Glance
+ * Full Client/Server multiplayer architecture with network compensation
+   features (unlagged, client interpolation and prediction)
+ * Support for up to 255 players
+ * Various compatibility settings, to emulate vanilla Doom, Boom, or ZDoom
+   physics and fixes
+ * Playback and recording of vanilla demos
+ * A fully-featured client netdemo record system with playback control
+ * Removal of most vanilla Doom Static limits
+ * Support for most Boom and MBF mapping features
+ * The traditional old-school style of Deathmatch and a Cooperative mode, but
+   also other game modes such as Team Deathmatch and Capture the Flag
+ * Support for Survival, Last Man Standing, Last Team Standing, LMS CTF,
+   3-WAY CTF, and Attack & Defend game modes.
+ * Competitive-ready features, such as a warmup mode, round system, player
+   queue, or playercolor overriding
+ * Several modern ZDoom additions, such as slopes, LANGUAGEv2 or MAPINFOv2
+   lump support
+ * An array of editing features, including the Hexen map format, DeHackEd and
+   BEX patch support and ACS up to ZDoom 1.23
+ * Native Joystick support
+ * Several additional music formats, such as MOD and OGG
+ * In-Engine WAD downloader
+ * Allow on-the-fly WAD loading
+ * A 32-bit Color depth/true color renderer
+ * Full Widescreen support
+ * Ultra high resolution support (up to 8K)
+ * Uncapped and raised framerate
+ * Takes advantage of widely used libraries to port it to new devices with ease
 
-Odamex features:
+Compilation instructions
+------------------------
 
- * The popular ZDoom 1.22 core engine and CSDoom 0.62 core net code
- * Compatibility with many major operating systems, including Windows, Linux,
-   FreeBSD and Mac OSX
- * Core gameplay modeled on the original doom2.exe
- * Accurate playback of doom2.exe demo files
- * Streamlined WAD loading, allowing the server and clients to load WAD files
-   on the fly without needing to restart the client or server
- * Compatibility with Boom, MBF and CTF Standard maps
- * Deathmatch, Cooperative, Team Deathmatch and CTF gametypes
- * Jumping, Mouselook and other non-standard features available as server-side
-   options
- * A spectator mode, allowing players to watch games already in-play
- * Comprehensive cheat and exploit countermeasures
- * An open source code base licensed under the GPL, available for anyone to
-   examine, compile, or modify to their liking
+Clone the repositories, with all submodules:
 
-===============================================================================
+    git clone https://github.com/odamex/odamex.git --recurse-submodules
 
-Section 2: Installation
+If you downloaded the zip, use these commands on the git directory:
 
-2.1 - Requirements
+    git submodule init
+    git submodule update
 
-Odamex requires the following in order to operate:
+Odamex requires the following tools and libraries:
 
-	* A Pentium-compatible or PowerPC microprocessor
-	* 32MB of RAM
-	* An Internet connection
-	* 3MB of hard disk space
+* CMake 3.13 or later: <https://cmake.org/download/>
+* SDL 2.0: <https://www.libsdl.org/download-2.0.php>
+* SDL2-Mixer: <https://libsdl.org/projects/SDL_mixer/>
+* cURL: <https://curl.se/>
+* libPNG: <http://www.libpng.org/pub/png/libpng.html>
+* zlib: <https://zlib.net/>
+* DeuTex (for building the WAD): <https://github.com/Doom-Utils/deutex/releases/>
+* wxWidgets (for the launcher): <https://www.wxwidgets.org/downloads/>
 
+`cURL`, `libPNG` and `zlib` are automatically included in-tree as submodules.
 
-2.2 - Installation - binary download
+On Windows, all libraries are automatically downloaded if not found.  On
+*nix/MacOSX, you will need to download through your package manager
+`libsdl2-dev`, `libsdl2-mixer-dev` and `libwxgtk3.0-dev`.
 
-Binary downloads of Odamex are available from 
-http://sourceforge.net/projects/odamex/files/Odamex/. 
-There are currently binaries available for Windows and MacOS X platforms.
+Please check this page for further instructions on how to compile Odamex
+for your platform.
 
-For Windows, run the provided installer. If you choose the archived version, 
-extract the contents of odamex-win32-0.4.4.zip to a desired location, add a 
-Doom or Doom II IWAD and run odamex.exe.
+<https://odamex.net/wiki/How_to_build_from_source>
 
-For MacOS, TBA
+Contributing to the project
+---------------------------
 
-For Linux, TBA
+Please report any oddity, physics inaccuracies, bugs or game-breaking glitches
+to our issues page. You can also submit patches as a Pull Request.
 
-For BSD, TBA
+<https://github.com/odamex/odamex/issues>
 
+Before submitting a pull request, please make sure it follows our coding
+standards!
 
-2.3 - Installation - source download
+<https://odamex.net/wiki/Coding_standard>
 
-The source code of release versions are available from http://odamex.net. If
-you are interested in the bleeding edge development of Odamex, you can access
-the SVN repository at http://odamex.net/svn/root with anonymous read access.
-Be warned however that it might be incompatible with current release versions,
-and stability is not guaranteed.
+For historical purposes, you can also view our bugtracker's archive.
 
-The following libraries are required:
-	
-	* SDL v1.2.9+ (http://libsdl.org/)
-	* SDL_mixer v1.2.6+ (http://libsdl.org/projects/SDL_mixer/)
+<https://odamex.net/bugs/>
 
-For Windows, you will need Microsoft Visual C++ 8 or later, or
-MingW32 (http://mingw.org/), Codeblocks (http://codeblocks.org/) or any other
-program that can be used to assist compiling Odamex with MingW. There is a
-Codeblocks project available for Odamex compilation. Other compiler platforms
-can make use of the CMake to generate platform-specific project files.
+External Links
+--------------
 
-For MacOS, you can use CMake to generate a makefile for use with gcc.
+Please visit the following websites for more information about the development
+of the port and our community:
 
-For Linux, you can use CMake to generate a makefile for use with gcc.
+* Odamex Website: <https://odamex.net>
+* Wiki: <https://odamex.net/wiki/Main_Page>
+* Forums: <https://odamex.net/boards/>
+* Discord: <https://discord.gg/aMUzcZE>
+* Twitter: <https://twitter.com/odamex>
 
-For BSD, you can use CMake to generate a makefile for use with gcc.
+License
+-------
 
-For additional information on generating a project makefile using CMake, please
-see the wiki entry at http://odamex.net/wiki/Compiling_using_CMake.
-
-===============================================================================
-
-Section 3: Setting up Odamex*
-
-===============================================================================
-
-Section 4: Gamemodes
-
-4.1 - Cooperative
-
-If going against other players isn't your style, then you can always battle
-against the monsters with other players on single-player maps. In cooperative
-games, players work together to complete the level and any existing subsequent
-ones. When a player dies, he or she starts back at the beginning of the map
-without any keys, items, or weapons that he or she may have acquired on that
-same level, unless the server has such settings that allow for players to keep
-their keys, items, and weapons upon respawning. 
-
-4.2 - Head to Head
-
-If you'd like to be given a break and shift your focus from fighting a plethora
-of players at once onto battling a single individual, then Head to Head would 
-be the perfect choice. Head to Head, commonly referred to as 1-on-1 or dueling,
-is a variant of deathmatch where the amount of players playing simultaneously
-is limited to only two, hence the name "Head to Head". The objective is the
-same -- to rack up the highest quantity of kills, yet only against one
-adversary. This game mode particularly allows for high competition among
-individuals and many tournaments center on this game mode. 
-
-4.3 - Free for All
-
-Free For All, otherwise known simply as deathmatch (DM) or referred to by its
-acronym as FFA, is a game mode where the objective is to attain the highest
-amount of frags and reach the set fraglimit, while facing one or more players.
-It is the most basic and played game mode.
-
-4.4 - Team Deathmatch
-
-This is the ideal game mode if you would like to still fight a horde of players
-yet have some allies back you up. Team Deathmatch is a team-based variant of
-deathmatch where players are divided into teams determined by color;
-traditionally blue and red teams. The goal is overall the same, yet a whole
-team must achieve a higher amount of kills than another team.
-
-4.5 - Capture the Flag
-
-A highly popular and addictive game mode, Capture the Flag, or CTF, draws
-attention to strategic and team-based gameplay. Capture the Flag, like Team
-Deathmatch, is a team-based game mode, where two teams, most commonly
-distinguished by the colors red and blue, fight each other. However, the
-objective is not to rack up the highest amount of frags.
-
-Each team has a base with a flag in it that is of the same color as the team to
-which it belongs (e.g. the red flag belongs to the red team). One team has to
-capture the flag of the other team while it is still in possession of its own
-flag (e.g. the blue team has to capture the red team's flag while it still has
-its own flag and vice versa). 
-
-Then, the team has to bring the enemy flag to its base to where its own flag is
-to score a point (the blue team takes the red flag and brings it back to its
-own base to where its own flag is situated, so it can score). If the team's
-flag had already been taken, then it cannot score until its flag had been
-returned (if the red team had already taken the blue flag while the blue team
-has the red flag, then the blue team cannot score unless its flag is returned
-and vice versa). To return one's team's flag, the person who is holding the
-flag has to be killed and the flag must be touched by the team to which it
-belongs.
-
-===============================================================================
-
-Section 5: Reference*
-
-===============================================================================
-
-Section 6: Frequently Asked Questions
-
-6.1 - Frequently Asked Questions*
-
-6.2 - If you still need help...
-
-If you still have questions that are not answered in this documentation, there
-are several different resources at your disposal that may help you find the
-answer you are looking for.
-
-Much of the documentation in this manual has been taken directly from
-http://odamex.net, the official homepage of Odamex. You may find more
-information by checking the wiki or bug tracker, both of which can be accessed
-from the main page.
-
-If you prefer a more direct method of speaking with the development team there
-are multiple methods in which you can make contact. Through the website, you
-can create an account and post to the public message boards.
-
-For a more speedy reply, you may want to consider using IRC to contact the team
-on irc.oftc.net #odamex. IRC stands for Internet Relay Chat. By using an IRC
-client to connect to a certain server and channel, you can communicate with the
-development team and other fans of Odamex in real time. However, knowing the
-ins and outs of IRC is beyond the scope of this document.
-
-Some recommended IRC clients are:
-
- *mIRC (http://www.mirc.com/)
-  Windows client (GUI, Shareware).
- *X-Chat (http://www.xchat.org/)
-  Windows/UNIX client (GUI, Open Source) 
- *irssi (http://www.irssi.org/)
-  Windows/UNIX client (Terminal, Open Source)
-
-Online based IRC clients: 
-
- *netsplit.de (http://irc.netsplit.de/webchat/?net=OFTC&room=%23odamex)
-  Web/browser-based client (Java) 
-===============================================================================
+Odamex is released under the GNU General Public License v2. Please read
+LICENSE for further details regarding the license.

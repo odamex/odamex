@@ -151,12 +151,12 @@ void SVC_KillMobj(buf_t& b, AActor* source, AActor* target, AActor* inflictor, i
 	MSG_WriteMarker(&b, svc_killmobj);
 
 	if (source)
-		MSG_WriteVarint(&b, source->netid);
+		MSG_WriteUnVarint(&b, source->netid);
 	else
-		MSG_WriteVarint(&b, 0);
+		MSG_WriteUnVarint(&b, 0);
 
-	MSG_WriteVarint(&b, target->netid);
-	MSG_WriteVarint(&b, inflictor ? inflictor->netid : 0);
+	MSG_WriteUnVarint(&b, target->netid);
+	MSG_WriteUnVarint(&b, inflictor ? inflictor->netid : 0);
 	MSG_WriteVarint(&b, target->health);
 	MSG_WriteVarint(&b, mod);
 	MSG_WriteBool(&b, joinkill);

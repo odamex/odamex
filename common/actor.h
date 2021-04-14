@@ -458,7 +458,7 @@ public:
 	AActor *FindGoal (int tid, int kind) const;
 	static AActor *FindGoal (const AActor *first, int tid, int kind);
 
-	int             netid;          // every object has its own netid
+	uint32_t		netid;          // every object has its own netid
 	short			tid;			// thing identifier
 
 private:
@@ -561,8 +561,4 @@ public:
 	}
 };
 
-
 #endif
-
-
-

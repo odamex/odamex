@@ -55,7 +55,7 @@ static int Stack[STACK_SIZE];
 
 static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
-AActor* P_FindThingById(size_t id);
+AActor* P_FindThingById(uint32_t id);
 
 struct FBehavior::ArrayInfo
 {
@@ -1343,14 +1343,21 @@ void DLevelScript::Serialize (FArchive &arc)
 
 	if (arc.IsStoring ())
 	{
-		arc << next << prev
-			<< script
-			<< sp
-			<< state
-			<< statedata
-			<< activator
-			<< activationline
-			<< lineSide;
+		arc << next;
+		arc << prev;
+		arc << script;
+		arc << sp;
+		arc << state;
+		arc << statedata;
+
+		// [AM] We don't want player activators to be saved
+		if (arc.IsReset() && P_ThinkerIsPlayerType(activator))
+			arc << (AActor*)NULL;
+		else
+			arc << activator;
+
+		arc << activationline;
+		arc << lineSide;
 			
 		for (i = 0; i < LOCAL_SIZE; i++)
 			arc << localvars[i];

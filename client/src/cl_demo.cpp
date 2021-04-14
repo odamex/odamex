@@ -1156,7 +1156,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().id);
 	if (consoleplayer().mo)
 	{
-		MSG_WriteShort	(netbuffer, consoleplayer().mo->netid);
+		MSG_WriteUnVarint(netbuffer, consoleplayer().mo->netid);
 		MSG_WriteLong	(netbuffer, consoleplayer().mo->angle);
 		MSG_WriteLong	(netbuffer, consoleplayer().mo->x);
 		MSG_WriteLong	(netbuffer, consoleplayer().mo->y);
@@ -1167,7 +1167,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 		// The client hasn't yet received his own position from the server
 		// This happens with cl_autorecord
 		// Just fake a position for now
-		MSG_WriteShort	(netbuffer, MAXSHORT);
+		MSG_WriteUnVarint(netbuffer, 0);
 		MSG_WriteLong	(netbuffer, 0);
 		MSG_WriteLong	(netbuffer, 0);
 		MSG_WriteLong	(netbuffer, 0);

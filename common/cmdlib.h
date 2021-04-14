@@ -117,4 +117,37 @@ void StripColorCodes(std::string& str);
 uint32_t CRC32(const uint8_t* buf, uint32_t len);
 uint32_t Log2(uint32_t n);
 
+/**
+ * @brief Initialize an array with a specific value.
+ * 
+ * @tparam A Array type to initialize.
+ * @tparam T Value type to initialize with.
+ * @param dst Array to initialize.
+ * @param val Value to initialize with.
+ */
+template <typename A, typename T>
+static void ArrayInit(A& dst, const T& val)
+{
+	for (size_t i = 0; i < ARRAY_LENGTH(dst); i++)
+		dst[i] = val;
+}
+
+/**
+ * @brief Copy the complete contents of an array from one to the other.
+ * 
+ * @detail Both params are templated in case the destination's type doesn't
+ *         line up 100% with the source.
+ * 
+ * @tparam A1 Destination array type.
+ * @tparam A2 Source array type.
+ * @param dst Destination array to write to.
+ * @param src Source array to write from.
+ */
+template <typename A1, typename A2>
+static void ArrayCopy(A1& dst, const A2& src)
+{
+	for (size_t i = 0; i < ARRAY_LENGTH(src); i++)
+		dst[i] = src[i];
+}
+
 #endif

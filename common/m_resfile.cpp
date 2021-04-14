@@ -247,6 +247,10 @@ std::vector<std::string> M_FileSearchDirs()
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());
 
+	#ifdef __SWITCH__
+	dirs.push_back("./wads");
+	#endif
+
 	// [AM] Search additional paths based on platform
 	D_AddPlatformSearchDirs(dirs);
 

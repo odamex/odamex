@@ -114,6 +114,11 @@ TeamInfo* GetTeamInfo(team_t team)
 	return &s_Teams[team];
 }
 
+static bool cmpLives(TeamInfo* a, TeamInfo* b)
+{
+	return a->LivesPool() < b->LivesPool();
+}
+
 static bool cmpScore(TeamInfo* a, TeamInfo* b)
 {
 	return a->Points < b->Points;
@@ -142,6 +147,27 @@ TeamsView TeamQuery::execute()
 	switch (m_sort)
 	{
 	case SORT_NONE:
+		break;
+	case SORT_LIVES:
+		std::sort(results.rbegin(), results.rend(), cmpLives);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top scoring team is at the front.
+			int top = results.at(0)->LivesPool();
+			for (TeamsView::iterator it = results.begin(); it != results.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->LivesPool() != top
+				                                         : (*it)->LivesPool() == top;
+				if (cmp)
+				{
+					it = results.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
 		break;
 	case SORT_SCORE:
 		std::sort(results.rbegin(), results.rend(), cmpScore);
@@ -213,4 +239,22 @@ const std::string TeamInfo::ColorizedTeamName()
 	StrFormat(buf, "%s%s%s", TextColor.c_str(), ColorStringUpper.c_str(),
 	          TEXTCOLOR_NORMAL);
 	return buf;
+}
+
+int TeamInfo::LivesPool()
+{
+	int pool = 0;
+	PlayerResults pr = PlayerQuery().hasLives().execute();
+
+	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
+	     ++it)
+	{
+		team_t team = (*it)->userinfo.team;
+		if (team != Team)
+			continue;
+
+		pool += (*it)->lives;
+	}
+
+	return pool;
 }

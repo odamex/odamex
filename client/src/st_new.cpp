@@ -67,6 +67,8 @@ static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
 static const patch_t* ammos[ARRAY_LENGTH(::ammopatches)];
 static const patch_t* bigammos[ARRAY_LENGTH(::bigammopatches)];
 static const patch_t* flagiconteam;
+static const patch_t* flagiconteamoffense;
+static const patch_t* flagiconteamdefense;
 static const patch_t* line_leftempty;
 static const patch_t* line_leftfull;
 static const patch_t* line_centerempty;
@@ -110,6 +112,7 @@ EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
 
 /**
@@ -196,6 +199,9 @@ void ST_initNew()
 		NameUp = level.time + 2 * TICRATE;
 
 	CacheHUDPatch(&::flagiconteam, "FLAGIT");
+	CacheHUDPatch(&::flagiconteamoffense, "FLAGITO");
+	CacheHUDPatch(&::flagiconteamdefense, "FLAGITD");
+
 	CacheHUDPatch(&::line_leftempty, "ODABARLE");
 	CacheHUDPatch(&::line_leftfull, "ODABARLF");
 	CacheHUDPatch(&::line_centerempty, "ODABARCE");
@@ -455,6 +461,29 @@ void ST_voteDraw (int y) {
 namespace hud {
 
 /**
+ * @brief Sometimes we want the HUD to show round wins and not current round points.
+ */
+static bool TeamHUDShowsRoundWins()
+{
+	// If it's not a rounds game, obviously don't show it.
+	if (!G_IsRoundsGame())
+		return false;
+
+	// If score is a wincon and it's 1, we don't want to display the in-round
+	// score since it's always 0-0 except past the end.
+	if (G_UsesScorelimit() && ::sv_scorelimit.asInt() == 1)
+		return true;
+
+	// In TLMS if there's no fraglimit there's no reason to display frags
+	// since team frags are usually an alterantive win condition for when
+	// time runs out.
+	if (G_IsLivesGame() && G_UsesFraglimit() && ::sv_fraglimit.asInt() == 0)
+		return true;
+
+	return false;
+}
+
+/**
  * @brief Draw gametype-specific scoreboard, such as flags and lives.
  */
 static void drawGametype()
@@ -472,24 +501,6 @@ static void drawGametype()
 	player_t* plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	PlayerResults pr = PlayerQuery().hasLives().execute();
-
-	// Total lives pool.
-	int livesPool[NUMTEAMS];
-	for (size_t i = 0; i < NUMTEAMS; i++)
-	{
-		livesPool[i] = 0;
-	}
-	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
-	     ++it)
-	{
-		team_t team = (*it)->userinfo.team;
-		if (team >= NUMTEAMS || team < 0)
-		{
-			continue;
-		}
-		livesPool[team] += (*it)->lives;
-	}
 
 	int patchPosY = 43;
 
@@ -507,11 +518,11 @@ static void drawGametype()
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 		if (shouldShowScores)
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
 
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 			const patch_t* drawPatch = ::FlagIconTaken[i];
 
 			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
@@ -543,14 +554,31 @@ static void drawGametype()
 
 			if (plyr->userinfo.team == i)
 			{
+				const patch_t* itpatch = ::flagiconteam;
+				if (G_IsSidesGame())
+				{
+					// Sides games show offense/defense.
+					if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+						itpatch = ::flagiconteamdefense;
+					else
+						itpatch = ::flagiconteamoffense;
+				}
 				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
-				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
-				               ::flagiconteam);
+				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
 			}
 
-			ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
-			                I_GetSurfaceHeight() - (patchPosY + 17) * yscale, ::screen,
-			                teamInfo->Points);
+			if (TeamHUDShowsRoundWins())
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->RoundWins);
+			}
+			else
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->Points);
+			}
 		}
 
 		if (shouldShowLives)
@@ -559,7 +587,7 @@ static void drawGametype()
 			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
 
-			StrFormat(buffer, "%d", livesPool[i]);
+			StrFormat(buffer, "%d", teamInfo->LivesPool());
 			int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
@@ -829,34 +857,36 @@ void LevelStateHUD()
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(str.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
+
+	float oldtrans = ::hud_transparency;
 	if (::levelstate.getState() == LevelState::INGAME)
 	{
 		// Only render the "FIGHT" message if it's less than 2 seconds in.
 		int tics = ::level.time - ::levelstate.getIngameStartTime();
 		if (tics < TICRATE * 2)
 		{
-			float old = ::hud_transparency;
-			if (tics < TICRATE)
-			{
-				::hud_transparency.ForceSet(1.0);
-			}
-			else if (tics < TICRATE * 2)
-			{
-				tics %= TICRATE;
-				float trans = static_cast<float>(TICRATE - tics) / TICRATE;
-				::hud_transparency.ForceSet(trans);
-			}
-			screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-			                             surface_height / 4 - h / 2, str.c_str(),
-			                             CleanYfac, CleanYfac);
-			::hud_transparency.ForceSet(old);
+			::hud_transparency.ForceSet(1.0);
+		}
+		else if (tics < TICRATE * 3)
+		{
+			tics %= TICRATE;
+			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			::hud_transparency.ForceSet(trans);
+		}
+		else
+		{
+			::hud_transparency.ForceSet(0.0);
 		}
 	}
 	else
 	{
-		screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
-		                          surface_height / 4 - h / 2, str.c_str(), CleanYfac,
-		                          CleanYfac);
+		::hud_transparency.ForceSet(1.0);
+	}
+	if (::hud_transparency > 0.0f)
+	{
+		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                             surface_height / 4 - h / 2, str.c_str(), CleanYfac,
+		                             CleanYfac);
 	}
 
 	V_SetFont("SMALLFONT");
@@ -898,6 +928,26 @@ void LevelStateHUD()
 		StrFormat(str, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
+	case LevelState::INGAME:
+		if (G_CanShowFightMessage())
+		{
+			if (G_IsSidesGame())
+			{
+				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+				{
+					str = TEXTCOLOR_YELLOW "Defend the flag!\n";
+				}
+				else
+				{
+					str = TEXTCOLOR_GREEN "Capture the flag!\n";
+				}
+			}
+		}
+		else
+		{
+			str = "";
+		}
+		break;
 	case LevelState::ENDROUND_COUNTDOWN: {
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
@@ -928,9 +978,14 @@ void LevelStateHUD()
 
 	w = V_StringWidth(str.c_str()) * CleanYfac;
 	h = 8 * CleanYfac;
-	screen->DrawTextStretched(CR_GREY, surface_width / 2 - w / 2,
-	                          (surface_height / 4 - h / 2) + (12 * CleanYfac),
-	                          str.c_str(), CleanYfac, CleanYfac);
+	if (::hud_transparency > 0.0f)
+	{
+		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                             (surface_height / 4 - h / 2) + (12 * CleanYfac),
+		                             str.c_str(), CleanYfac, CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
 }
 
 // [AM] Spectator HUD.

@@ -143,7 +143,7 @@ std::vector<player_t *> sortedPlayers(void) {
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpKills);
 	}
-	else if (sv_gametype == GM_DM && g_lives)
+	else if (sv_gametype == GM_DM && G_IsRoundsGame())
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpFrags);
 		std::sort(inGame.begin(), inGame.end(), cmpRoundWins);
@@ -304,7 +304,7 @@ std::string Timer()
 		::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
 		::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN )
 	{
-		int timeleft = G_EndingTic()-1;
+		int timeleft = G_GetEndingTic()-1;
 		TicsToTime(tspan, timeleft, true);
 	}
 	else
@@ -317,12 +317,12 @@ std::string Timer()
 		else if (hud_timer == 1)
 		{
 			// Timer counts down.
-			int timeleft = G_EndingTic() - level.time;
+			int timeleft = G_GetEndingTic() - level.time;
 			TicsToTime(tspan, timeleft, true);
 		}
 
 		// If we're in the danger zone flip the color.
-		int warning = G_EndingTic() - (60 * TICRATE);
+		int warning = G_GetEndingTic() - (60 * TICRATE);
 		if (level.time > warning)
 		{
 			color = TEXTCOLOR_BRICK;
@@ -1141,7 +1141,7 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 
 		player_t* player = sortedPlayers()[i];
 
-		if (G_IsRoundsGame())
+		if (G_IsRoundsGame() && G_IsLivesGame())
 		{
 			frags = player->totalpoints;
 		}

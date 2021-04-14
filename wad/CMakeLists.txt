@@ -19,6 +19,8 @@ set(ODAWAD_SOURCES
   graphics/flagic5g.gif
   graphics/flagic5r.gif
   graphics/flagit.gif
+  graphics/flagito.gif
+  graphics/flagitd.gif
   graphics/fontb01.gif
   graphics/fontb02.gif
   graphics/fontb03.gif
