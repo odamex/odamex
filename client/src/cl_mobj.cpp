@@ -36,6 +36,7 @@
 #include "p_acs.h"
 #include "p_ctf.h"
 #include "g_gametype.h"
+#include "g_spawninv.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -142,6 +143,10 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		for (int i = 0; i < NUMCARDS; i++)
 			player.cards[i] = true;
 	}
+
+	// Give any other between-level inventory.
+	if (!player.spectator)
+		G_GiveBetweenInventory(player);
 
 	if (consoleplayer().camera == player.mo)
 		ST_Start();	// wake up the status bar
