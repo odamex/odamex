@@ -28,6 +28,9 @@
 #include "doomdata.h"
 
 void P_AddDWSpawnPoint(AActor* mo);
+void P_AddHealthPool(AActor* mo);
+void P_RemoveHealthPool(AActor* mo);
+
 void P_RunDWTics();
 bool P_IsDWMode();
 

@@ -254,7 +254,8 @@ typedef enum
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ			= 1 << 0		// ignore snapshot z this tic
+	MFO_NOSNAPZ			= 1 << 0,		// ignore snapshot z this tic
+	MFO_HEALTHPOOL		= 1 << 1,		// added to global health pool
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A

@@ -37,6 +37,7 @@
 #include "g_gametype.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "p_dwish.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -1217,6 +1218,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		target->health = 0;
 	}
+
+	P_RemoveHealthPool(target);
 
     if (target->health < -target->info->spawnhealth
         && target->info->xdeathstate)
