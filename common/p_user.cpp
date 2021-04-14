@@ -794,12 +794,13 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (!other.mo || other.spectator)
 		return false;
 
-	// Demo-watchers and spectators can view anybody.
-	if (demo || viewer.spectator)
+	// Demo-watchers can view anybody.
+	if (demo)
 		return true;
 
-	// A teammate can see their other teammates
-	if (P_AreTeammates(viewer, other))
+	// A teammate can see their other teammates.
+	// Spectators see anyone with one slight restriction.
+	if (P_AreTeammates(viewer, other) || viewer.spectator)
 	{
 		// If a player has no more lives, don't show him.
 		if (::g_lives && other.lives < 1)
@@ -1252,37 +1253,25 @@ player_s::player_s() :
 	client(player_s::client_t())
 {
 	cmd.clear();
-	for (size_t i = 0; i < ARRAY_LENGTH(powers); i++)
-		powers[i] = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(cards); i++)
-		cards[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(flags); i++)
-		flags[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
-		weaponowned[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(ammo); i++)
-		ammo[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(maxammo); i++)
-		maxammo[i] = false;
+	ArrayInit(powers, 0);
+	ArrayInit(cards, false);
+	ArrayInit(flags, false);
+	ArrayInit(weaponowned, false);
+	ArrayInit(ammo, false);
+	ArrayInit(maxammo, false);
 
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
 	pspdef_t zeropsp = { NULL, 0, 0, 0 };
-	for (size_t i = 0; i < ARRAY_LENGTH(psprites); i++)
-		psprites[i] = zeropsp;
-	for (size_t i = 0; i < ARRAY_LENGTH(oldvelocity); i++)
-		oldvelocity[i] = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(prefcolor); i++)
-		prefcolor[i] = 0;
+	ArrayInit(psprites, zeropsp);
+	ArrayInit(oldvelocity, 0);
+	ArrayInit(prefcolor, 0);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
 
-	for (size_t i = 0; i < ARRAY_LENGTH(netcmds); i++)
-	{
-		netcmds[i] = ticcmd_t();
-	}
+	ArrayInit(netcmds, ticcmd_t());
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1305,17 +1294,13 @@ player_s &player_s::operator =(const player_s &other)
 	armorpoints = other.armorpoints;
 	armortype = other.armortype;
 
-	for(i = 0; i < NUMPOWERS; i++)
-		powers[i] = other.powers[i];
-
-	for(i = 0; i < NUMCARDS; i++)
-		cards[i] = other.cards[i];
+	ArrayCopy(powers, other.powers);
+	ArrayCopy(cards, other.cards);
 
 	lives = other.lives;
 	roundwins = other.roundwins;
 
-	for(i = 0; i < NUMTEAMS; i++)
-		flags[i] = other.flags[i];
+	ArrayCopy(flags, other.flags);
 
 	points = other.points;
 	backpack = other.backpack;
@@ -1329,12 +1314,9 @@ player_s &player_s::operator =(const player_s &other)
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;
 
-	for(i = 0; i < NUMWEAPONS; i++)
-		weaponowned[i] = other.weaponowned[i];
-	for(i = 0; i < NUMAMMO; i++)
-		ammo[i] = other.ammo[i];
-	for(i = 0; i < NUMAMMO; i++)
-		maxammo[i] = other.maxammo[i];
+	ArrayCopy(weaponowned, other.weaponowned);
+	ArrayCopy(ammo, other.ammo);
+	ArrayCopy(maxammo, other.maxammo);
 
 	attackdown = other.attackdown;
 	usedown = other.usedown;
@@ -1353,14 +1335,13 @@ player_s &player_s::operator =(const player_s &other)
 
 	xviewshift = other.xviewshift;
 
-	for(i = 0; i < NUMPSPRITES; i++)
-		psprites[i] = other.psprites[i];
+	ArrayCopy(psprites, other.psprites);
 
     jumpTics = other.jumpTics;
 
 	death_time = other.death_time;
 
-	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
+	ArrayCopy(oldvelocity, other.oldvelocity);
 
 	camera = other.camera;
 	air_finished = other.air_finished;
@@ -1382,10 +1363,8 @@ player_s &player_s::operator =(const player_s &other)
 	ready = other.ready;
 	timeout_ready = other.timeout_ready;
 
-	memcpy(prefcolor, other.prefcolor, 4);
-
-	for(i = 0; i < BACKUPTICS; i++)
-		netcmds[i] = other.netcmds[i];
+	ArrayCopy(prefcolor, other.prefcolor);
+	ArrayCopy(netcmds, other.netcmds);
 
     LastMessage.Time = other.LastMessage.Time;
 	LastMessage.Message = other.LastMessage.Message;

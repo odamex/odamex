@@ -182,6 +182,12 @@ CVAR(g_gametypename, "",
      "currently set cvars.",
      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
+CVAR_FUNC_DECL(g_spawninv, "default",
+               "The default inventory a player should spawn with.  See the \"spawninv\" "
+               "console command.",
+               CVARTYPE_STRING,
+               CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
 CVAR(g_ctf_notouchreturn, "0",
      "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
