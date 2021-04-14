@@ -198,10 +198,7 @@ typedef uint64_t			dtime_t;
 /**
  * @brief Returns a bitfield with a specific bit set.
  */
-static inline uint32_t BIT(uint32_t a)
-{
-    return 1U << a;
-}
+#define BIT(a) (1U << (a))
 
 /**
  * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
