@@ -40,6 +40,7 @@
 #include "g_game.h"
 #include "g_level.h"
 #include "sv_main.h"
+#include "g_spawninv.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -238,8 +239,6 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	{
 		for (i = 0; i < NUMCARDS; i++)
 			p.cards[i] = keysfound[i];
-
-		SV_SendPlayerInfo(p);
 	}
 
 	for (i = 0; i < NUMPOWERS; i++)
@@ -248,23 +247,19 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.flags[i] = false;
 	p.backpack = false;
 
+	G_GiveSpawnInventory(p);
+
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
-	p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
-	p.armortype = 0;
-	p.armorpoints = 0;
-	p.readyweapon = p.pendingweapon = wp_pistol;
-	p.weaponowned[wp_fist] = true;
-	p.weaponowned[wp_pistol] = true;
 	p.weaponowned[NUMWEAPONS] = true;
-	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 
 	if (!p.spectator)
 		p.cheats = 0; // Reset cheat flags
 
-
 	p.death_time = 0;
 	p.tic = 0;
+
+	SV_SendPlayerInfo(p);
 }
 
 //
