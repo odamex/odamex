@@ -78,6 +78,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/centos-buildgen.sh
   build-ubuntu-bionic:
@@ -88,5 +90,7 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/ubuntu-bionic-buildgen.sh
