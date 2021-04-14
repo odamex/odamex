@@ -23,6 +23,8 @@
 
 #include "p_dwish.h"
 
+#include <math.h>
+
 #include "c_dispatch.h"
 #include "d_player.h"
 #include "doomstat.h"
