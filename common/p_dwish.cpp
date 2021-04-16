@@ -264,7 +264,7 @@ class HordeState
 			return true;
 		}
 		case DS_RELAX: {
-			Printf("RELAX | a:%d < max:%d?\n", aliveHealth,
+			Printf("RELAX | a:%d < min:%d?\n", aliveHealth,
 			       m_roundState.getDefine().minGlobalHealth);
 			if (aliveHealth < m_roundState.getDefine().minGlobalHealth)
 			{
@@ -448,12 +448,14 @@ BEGIN_COMMAND(horde_round)
 	if (argc < 2)
 	{
 		Printf("horde_round <ROUND_NUMBER>\n");
+		return;
 	}
 
 	int round = atoi(argv[1]);
 	if (round < 1 || round > 3)
 	{
 		Printf("Round must be between 1-3.\n");
+		return;
 	}
 
 	::gDirector.getRoundState().setRound(round);
