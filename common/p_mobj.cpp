@@ -2340,7 +2340,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 
 		DeathMatchStarts.push_back(*mthing);
-		return;
+
+		// If we're in a horde mode, spawn a thing.
+		if (!P_IsHordeMode())
+			return;
 	}
 
 	if (sv_teamspawns)
@@ -2483,6 +2486,13 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
+	// [AM] If we're this far and we found a deathmatch spawn, it's a horde
+	//      mode spawn.
+	if (mthing->type == 11)
+	{
+		i = MT_MONSTERSPAWN;
+	}
+
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing->type >= 14001 && mthing->type <= 14064)
@@ -2566,16 +2576,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 	}
 
-	int oldtype = i;
-	if (P_IsDWMode())
-	{
-		// All monsters are turned into monster spawn points.
-		if (i == MT_SKULL || (::mobjinfo[i].flags & MF_COUNTKILL))
-		{
-			i = MT_MONSTERSPAWN;
-		}
-	}
-
     // [SL] 2011-05-31 - Moved so that clients get right level.total_items, etc
 	if (i == MT_SECRETTRIGGER)
 		level.total_secrets++;
@@ -2605,8 +2605,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i == MT_MONSTERSPAWN)
 	{
 		// Make sure we catalog monster spawns.
-		mobj->health = oldtype; // Health is the monster ID
-		P_AddDWSpawnPoint(mobj);
+		P_AddHordeSpawnPoint(mobj);
 	}
 
 	if (z == ONFLOORZ)

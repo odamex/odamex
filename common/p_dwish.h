@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  "Death Wish" game mode.
+//  "Horde" game mode.
 //
 //-----------------------------------------------------------------------------
 
@@ -27,11 +27,11 @@
 #include "actor.h"
 #include "doomdata.h"
 
-void P_AddDWSpawnPoint(AActor* mo);
+void P_AddHordeSpawnPoint(AActor* mo);
 void P_AddHealthPool(AActor* mo);
 void P_RemoveHealthPool(AActor* mo);
 
-void P_RunDWTics();
-bool P_IsDWMode();
+void P_RunHordeTics();
+bool P_IsHordeMode();
 
 #endif // __G_DEATHWISH__
