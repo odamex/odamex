@@ -28,6 +28,7 @@
 #include "c_dispatch.h"
 #include "d_player.h"
 #include "doomstat.h"
+#include "doomtype.h"
 #include "m_random.h"
 #include "m_vectors.h"
 #include "p_local.h"
@@ -35,6 +36,11 @@
 #include "s_sound.h"
 
 bool P_LookForPlayers(AActor* actor, bool allaround);
+
+const int SPAWN_GROUND = MTF_EASY;
+const int SPAWN_AIR = MTF_NORMAL;
+const int SPAWN_BOSS = MTF_HARD;
+const int SPAWN_AMBUSH = MTF_AMBUSH;
 
 struct roundDefine_t
 {
@@ -130,8 +136,8 @@ static const mobjTypes_t& GatherMonsters()
 			if (i == MT_DOGS || i == MT_WOLFSS)
 				continue;
 
-			// Is this a monster?
-			if (!(::mobjinfo[i].flags & MF_COUNTKILL))
+			// Is this a monster? [AM] FIXME: Ditto.
+			if (!(::mobjinfo[i].flags & MF_COUNTKILL) && i != MT_SKULL)
 				continue;
 
 			// Does this monster have any attacks?  (Skips keen)
@@ -165,7 +171,7 @@ static const mobjTypes_t& GatherMonsters()
 	return all;
 }
 
-static recipe_t GetSpawnRecipe(const HordeRoundState& roundState)
+static recipe_t GetSpawnRecipe(const HordeRoundState& roundState, int flags)
 {
 	recipe_t result;
 	mobjTypes_t types;
@@ -176,13 +182,25 @@ static recipe_t GetSpawnRecipe(const HordeRoundState& roundState)
 	for (mobjTypes_t::const_iterator it = all.begin(); it != all.end(); ++it)
 	{
 		const mobjinfo_t& info = ::mobjinfo[*it];
-		if (info.spawnhealth <= 0 || info.spawnhealth > define.monsterHealth)
+		if (info.spawnhealth <= 0 || info.spawnhealth > define.bossHealth)
+			continue;
+
+		// Translate mobj flags into bitfield we can compare against.
+		int mflags = 0;
+		if (info.flags & (MF_NOGRAVITY | MF_FLOAT))
+			mflags |= ::SPAWN_AIR;
+		else
+			mflags |= ::SPAWN_GROUND;
+		if (info.spawnhealth > define.monsterHealth)
+			mflags |= ::SPAWN_BOSS;
+
+		if (!(mflags & flags))
 			continue;
 
 		types.push_back(*it);
 	}
 
-	size_t resultIdx = P_Random() % types.size();
+	size_t resultIdx = P_RandomInt(types.size());
 	result.type = types.at(resultIdx);
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
@@ -443,8 +461,8 @@ void P_AddHealthPool(AActor* mo)
 	if (mo->oflags & MFO_HEALTHPOOL)
 		return;
 
-	// Counts as a monster?  (Lost souls don't)
-	if (!(mo->flags & MF_COUNTKILL))
+	// Counts as a monster?
+	if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
 		return;
 
 	// Mark as part of the health pool for cleanup later
@@ -493,7 +511,7 @@ void P_RunHordeTics()
 				continue;
 
 			const recipe::recipe_t recipe =
-			    recipe::GetSpawnRecipe(::gDirector.getRoundState());
+			    recipe::GetSpawnRecipe(::gDirector.getRoundState(), spawn->mo->special1);
 			spawn::SpawnMonster(*spawn, recipe, player, false);
 		}
 	}

@@ -111,6 +111,9 @@ int P_Random();
 
 // [AM] RNG's that use xoshiro128** and not Doom's random table.
 
+uint32_t M_RandomInt(const uint32_t range);
+uint32_t P_RandomInt(const uint32_t range);
+
 float M_RandomFloat();
 float P_RandomFloat();
 

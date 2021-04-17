@@ -158,6 +158,44 @@ static uint32_t XOS128StarStar(uint32_t (&s)[4])
 }
 
 /**
+ * @brief Return a random integer that is not tied to game state.
+ *
+ * @param range One past the maximum number you want to roll.
+ * @return A random integer in the given range.
+ */
+uint32_t M_RandomInt(const uint32_t range)
+{
+	const uint32_t t = (-range) % range;
+	for (;;)
+	{
+		const uint32_t r = XOS128StarStar(::g_rngState);
+		if (r >= t)
+		{
+			return r % range;
+		}
+	}
+}
+
+/**
+ * @brief Return a random integer that is tied to game state.
+ *
+ * @param range One past the maximum number you want to roll.
+ * @return A random integer in the given range.
+ */
+uint32_t P_RandomInt(const uint32_t range)
+{
+	const uint32_t t = (-range) % range;
+	for (;;)
+	{
+		const uint32_t r = XOS128StarStar(::g_prngState);
+		if (r >= t)
+		{
+			return r % range;
+		}
+	}
+}
+
+/**
  * @brief Return a random floating point number that is not tied to game state.
  * 
  * @return A random float in the half-open range of [0.0, 1.0).
