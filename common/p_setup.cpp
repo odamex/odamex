@@ -45,6 +45,7 @@
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
+#include "p_dwish.h"
 
 #include "p_mobj.h"
 #include "p_setup.h"
@@ -565,6 +566,7 @@ void P_LoadThings (int lump)
 	mapthing_t *mt = (mapthing_t *)data;
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
+	P_ClearHordeSpawnPoints();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();

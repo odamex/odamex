@@ -27,6 +27,7 @@
 #include "actor.h"
 #include "doomdata.h"
 
+void P_ClearHordeSpawnPoints();
 void P_AddHordeSpawnPoint(AActor* mo);
 void P_AddHealthPool(AActor* mo);
 void P_RemoveHealthPool(AActor* mo);

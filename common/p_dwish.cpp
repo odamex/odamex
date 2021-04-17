@@ -448,6 +448,11 @@ class HordeState
 
 static bool DEBUG_enabled;
 
+void P_ClearHordeSpawnPoints()
+{
+	spawn::spawns.clear();
+}
+
 void P_AddHordeSpawnPoint(AActor* mo)
 {
 	spawn::SpawnPoint sp;
@@ -524,6 +529,7 @@ bool P_IsHordeMode()
 
 BEGIN_COMMAND(horde_on)
 {
+	AddCommandString("sv_itemsrespawn 1");
 	::DEBUG_enabled = true;
 }
 END_COMMAND(horde_on)
