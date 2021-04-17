@@ -44,49 +44,35 @@ const int SPAWN_AMBUSH = MTF_AMBUSH;
 
 struct roundDefine_t
 {
-	int spawns;          // Number of spawns for this round.
-	int monsterHealth;   // Maximum health of a single monster spawn.
-	int bossHealth;      // Maximum health of a single "boss" monster spawn.
-	int minGroupHealth;  // Minimum health of a group of monsters to spawn.
-	int maxGroupHealth;  // Maximum health of a group of monsters to spawn.
-	int minGlobalHealth; // Lower bound on the amount of health in the map at once, aside
-	                     // from round end.
-	int maxGlobalHealth; // Upper bound on the amount of health in the map at once.
+	int monsterHealth;  // Maximum health of a single monster spawn.
+	int bossHealth;     // Maximum health of a single "boss" monster spawn.
+	int minGroupHealth; // Minimum health of a group of monsters to spawn.
+	int maxGroupHealth; // Maximum health of a group of monsters to spawn.
+	int minTotalHealth; // Lower bound on the amount of health in the map at once, aside
+	                    // from round end.
+	int maxTotalHealth; // Upper bound on the amount of health in the map at once.
+	int goalHealth;     // Base target health to win the round.
+
+	roundDefine_t(int monsterHealth, int bossHealth, int minGroupHealth,
+	              int maxGroupHealth, int minTotalHealth, int maxTotalHealth,
+	              int goalHealth)
+	    : monsterHealth(monsterHealth), bossHealth(bossHealth),
+	      minGroupHealth(minGroupHealth), maxGroupHealth(maxGroupHealth),
+	      minTotalHealth(minTotalHealth), maxTotalHealth(maxTotalHealth),
+	      goalHealth(goalHealth)
+	{
+	}
 };
 
 class HordeRoundState
 {
 	const roundDefine_t ROUND_DEFINES[3] = {
 	    // Round 1
-	    {
-	        20,   // spawns
-	        150,  // monsterHealth
-	        150,  // bossHealth
-	        150,  // minGroupHealth
-	        300,  // maxGroupHealth
-	        600,  // minGlobalHealth
-	        1200, // maxGlobalHealth
-	    },
+	    roundDefine_t(150, 150, 150, 300, 600, 1200, 2400),
 	    // Round 2
-	    {
-	        30,   // spawns
-	        600,  // monsterHealth
-	        700,  // bossHealth
-	        600,  // minGroupHealth
-	        1200, // maxGroupHealth
-	        2000, // minGlobalHealth
-	        4800, // maxGlobalHealth
-	    },
+	    roundDefine_t(600, 700, 600, 1200, 2000, 4800, 9600),
 	    // Round 3
-	    {
-	        40,   // spawns
-	        1000, // monsterHealth
-	        4000, // bossHealth
-	        1000, // minGroupHealth
-	        2000, // maxGroupHealth
-	        4000, // minGlobalHealth
-	        8000, // maxGlobalHealth
-	    }};
+	    roundDefine_t(1000, 4000, 1000, 2000, 4000, 8000, 16000)};
 
 	int m_round; // 0-indexed
 
@@ -204,8 +190,9 @@ static recipe_t GetSpawnRecipe(const HordeRoundState& roundState, int flags)
 	result.type = types.at(resultIdx);
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
-	const int upper = MAX(define.maxGroupHealth / ::mobjinfo[resultIdx].spawnstate, 1);
-	const int lower = MAX(define.minGlobalHealth / ::mobjinfo[resultIdx].spawnstate, 1);
+	const int health = ::mobjinfo[types.at(resultIdx)].spawnhealth;
+	const int upper = MAX(define.maxGroupHealth / health, 1);
+	const int lower = MAX(define.minGroupHealth / health, 1);
 	if (upper == lower)
 	{
 		// Only one possibility.
@@ -213,7 +200,7 @@ static recipe_t GetSpawnRecipe(const HordeRoundState& roundState, int flags)
 		return result;
 	}
 
-	result.count = (P_Random() % upper - lower) + lower;
+	result.count = P_RandomInt(upper - lower) + lower;
 	return result;
 }
 }; // namespace recipe
@@ -308,16 +295,19 @@ static SpawnPoint* GetSpawnCandidate(player_t* player)
  * @brief Spawn a monster.
  *
  * @param point Spawn point of the monster.
- * @param type Thing type.
+ * @param recipe Recipe of a monster to spawn.
+ * @param offset Offset from the spawn point to spawn at.
  * @param player Player to target.
  * @param ambush True if the spawn should be an out-of-sight ambush without
  *               a teleport flash.
+ * @return Number of successful spawns,
  */
-static bool SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
-                         player_t* player, const bool ambush)
+static int SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
+                        const v2fixed_t offset, player_t* player, const bool ambush)
 {
 	// Spawn the monster - possibly.
-	AActor* mo = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, recipe.type);
+	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
+	                        recipe.type);
 	if (mo)
 	{
 		if (P_TestMobjLocation(mo))
@@ -354,7 +344,7 @@ static bool SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recip
 				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
 				S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 			}
-			return true;
+			return 1;
 		}
 		else
 		{
@@ -362,7 +352,56 @@ static bool SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recip
 			mo->Destroy();
 		}
 	}
-	return false;
+	return 0;
+}
+
+/**
+ * @brief Spawn multiple monsters close to each other.
+ *
+ * @param point Spawn point of the monster.
+ * @param recipe Recipe of a monster to spawn.
+ * @param player Player to target.
+ * @param ambush True if the spawn should be an out-of-sight ambush without
+ *               a teleport flash.
+ * @return Number of successful spawns.
+ */
+static int SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
+                             player_t* player, const bool ambush)
+{
+	int ok = 0;
+
+	// We might need the radius.
+	fixed_t rad = ::mobjinfo[recipe.type].radius;
+
+	int count = clamp(recipe.count, 1, 4);
+	if (count == 4)
+	{
+		// A big square.
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), player, ambush);
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), player, ambush);
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad), player, ambush);
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, rad), player, ambush);
+		return ok;
+	}
+	else if (count == 3)
+	{
+		// A wedge.
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), player, ambush);
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), player, ambush);
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(0, rad), player, ambush);
+		return ok;
+	}
+	else if (count == 2)
+	{
+		// Next to each other.
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0), player, ambush);
+		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, 0), player, ambush);
+		return ok;
+	}
+
+	// All by themselves :(
+	ok += SpawnMonster(spawn, recipe, v2fixed_t(0, 0), player, ambush);
+	return ok;
 }
 
 } // namespace spawn
@@ -422,8 +461,8 @@ class HordeState
 			setState(DS_PRESSURE);
 		case DS_PRESSURE: {
 			Printf("PRESSURE | a:%d > max:%d?\n", aliveHealth,
-			       m_roundState.getDefine().maxGlobalHealth);
-			if (aliveHealth > m_roundState.getDefine().maxGlobalHealth)
+			       m_roundState.getDefine().maxTotalHealth);
+			if (aliveHealth > m_roundState.getDefine().maxTotalHealth)
 			{
 				setState(DS_RELAX);
 				return false;
@@ -432,8 +471,8 @@ class HordeState
 		}
 		case DS_RELAX: {
 			Printf("RELAX | a:%d < min:%d?\n", aliveHealth,
-			       m_roundState.getDefine().minGlobalHealth);
-			if (aliveHealth < m_roundState.getDefine().minGlobalHealth)
+			       m_roundState.getDefine().minTotalHealth);
+			if (aliveHealth < m_roundState.getDefine().minTotalHealth)
 			{
 				setState(DS_PRESSURE);
 				return true;
@@ -517,7 +556,7 @@ void P_RunHordeTics()
 
 			const recipe::recipe_t recipe =
 			    recipe::GetSpawnRecipe(::gDirector.getRoundState(), spawn->mo->special1);
-			spawn::SpawnMonster(*spawn, recipe, player, false);
+			spawn::SpawnMonsterCount(*spawn, recipe, player, false);
 		}
 	}
 }
