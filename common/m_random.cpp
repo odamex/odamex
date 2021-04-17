@@ -119,6 +119,66 @@ int M_Random()
 	return (rndtable[++rndindex]);
 }
 
+//
+// xoshiro128** 1.1
+// Written in 2018 by David Blackman and Sebastiano Vigna (vigna@acm.org)
+// https://creativecommons.org/publicdomain/zero/1.0/
+//
+
+static uint32_t g_rngState[4];
+static uint32_t g_prngState[4];
+
+static uint32_t ROTL(const uint32_t x, int k)
+{
+	return (x << k) | (x >> (32 - k));
+}
+
+/**
+ * @brief Run one iteration of xoshiro128**.
+ * 
+ * @param s State.  Must not be zero.
+ * @return A random number.
+ */
+static uint32_t XOS128StarStar(uint32_t (&s)[4])
+{
+	const uint32_t result = ROTL(s[1] * 5, 7) * 9;
+
+	const uint32_t t = s[1] << 9;
+
+	s[2] ^= s[0];
+	s[3] ^= s[1];
+	s[1] ^= s[2];
+	s[0] ^= s[3];
+
+	s[2] ^= t;
+
+	s[3] = ROTL(s[3], 11);
+
+	return result;
+}
+
+/**
+ * @brief Return a random floating point number that is not tied to game state.
+ * 
+ * @return A random float in the half-open range of [0.0, 1.0).
+ */
+float M_RandomFloat()
+{
+	uint32_t n = XOS128StarStar(::g_rngState);
+	return static_cast<float>(n) / (static_cast<float>(UINT_MAX) + 1.0f);
+}
+
+/**
+ * @brief Return a random floating point number that is tied to game state.
+ * 
+ * @return A random float in the half-open range of [0.0, 1.0).
+ */
+float P_RandomFloat()
+{
+	uint32_t n = XOS128StarStar(::g_prngState);
+	return static_cast<float>(n) / (static_cast<float>(UINT_MAX) + 1.0f);
+}
+
 // Initialize all the seeds
 //
 // This initialization method is critical to maintaining demo sync.
@@ -126,23 +186,29 @@ int M_Random()
 // are added they must be added to end of pr_class_t list. killough
 //
 
-void M_ClearRandom (void)
+void M_ClearRandom()
 {
-	rndindex = prndindex = 0;
+	::rndindex = ::prndindex = 0;
+
+	// Doom's release date run through two iterations of SplitMix64.
+	::g_rngState[0] = ::g_prngState[0] = 0xdcd14231;
+	::g_rngState[1] = ::g_prngState[1] = 0x78706a11;
+	::g_rngState[2] = ::g_prngState[2] = 0x9f065d64;
+	::g_rngState[3] = ::g_prngState[3] = 0x3bfe09e1;
 }
 
-void P_SerializeRNGState (FArchive &arc)
+void P_SerializeRNGState(FArchive& arc)
 {
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
-		arc << prndindex;
+		arc << ::prndindex << ::g_prngState[0] << ::g_prngState[1] << ::g_prngState[2]
+		    << ::g_prngState[3];
 	}
 	else
 	{
-		arc >> prndindex;
+		arc >> ::prndindex >> ::g_prngState[0] >> ::g_prngState[1] >> ::g_prngState[2] >>
+		    ::g_prngState[3];
 	}
 }
 
-
-VERSION_CONTROL (m_random_cpp, "$Id$")
-
+VERSION_CONTROL(m_random_cpp, "$Id$")

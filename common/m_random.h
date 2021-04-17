@@ -109,6 +109,11 @@ typedef enum {
 int M_Random();
 int P_Random();
 
+// [AM] RNG's that use xoshiro128** and not Doom's random table.
+
+float M_RandomFloat();
+float P_RandomFloat();
+
 // As P_Random, but used by the play simulation, one per actor
 int P_Random(AActor *actor);
 

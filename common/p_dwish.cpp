@@ -101,7 +101,7 @@ class HordeRoundState
 	}
 };
 
-namespace spawner
+namespace recipe
 {
 struct recipe_t
 {
@@ -165,7 +165,7 @@ static const mobjTypes_t& GatherMonsters()
 	return all;
 }
 
-static recipe_t GetSpawn(const HordeRoundState& roundState)
+static recipe_t GetSpawnRecipe(const HordeRoundState& roundState)
 {
 	recipe_t result;
 	mobjTypes_t types;
@@ -198,7 +198,156 @@ static recipe_t GetSpawn(const HordeRoundState& roundState)
 	result.count = (P_Random() % upper - lower) + lower;
 	return result;
 }
-}; // namespace spawner
+}; // namespace recipe
+
+namespace spawn
+{
+struct SpawnPoint
+{
+	AActor::AActorPtr mo;
+};
+typedef std::vector<SpawnPoint> SpawnPoints;
+
+struct SpawnPointWeight
+{
+	SpawnPoint* spawn;
+	float score;
+};
+typedef std::vector<SpawnPointWeight> SpawnPointWeights;
+
+static SpawnPoints spawns;
+
+static bool CmpWeights(const SpawnPointWeight& a, const SpawnPointWeight& b)
+{
+	return a.score > b.score;
+}
+
+/**
+ * @brief Get a spawn point to place a monster at.
+ */
+static SpawnPoint* GetSpawnCandidate(player_t* player)
+{
+	float totalScore = 0.0f;
+
+	SpawnPointWeights weights;
+	for (SpawnPoints::iterator sit = spawns.begin(); sit != spawns.end(); ++sit)
+	{
+		SpawnPointWeight weight;
+		weight.spawn = &*sit;
+
+		int dist = P_AproxDistance2(sit->mo, player->mo) >> FRACBITS;
+		bool visible = P_CheckSight(sit->mo, player->mo);
+
+		// Base score is based on distance.
+		float score;
+		if (dist < 128)
+			score = 0.25f; // Try not to spawn close by.
+		else if (dist < 1024)
+			score = 1.0f;
+		else if (dist < 2048)
+			score = 0.5f;
+		else if (dist < 3072)
+			score = 0.25f;
+		else
+			score = 0.125f;
+
+		// Having LoS gives a bonus.
+		score *= visible ? 1.25f : 1.0f;
+		weight.score = score;
+		totalScore += score;
+
+		weights.push_back(weight);
+	}
+
+	// Did we find any spawns?
+	if (weights.empty())
+		return NULL;
+
+	// Sort by weights.
+	std::sort(weights.begin(), weights.end(), CmpWeights);
+	float choice = P_RandomFloat() * totalScore;
+
+	SpawnPointWeights::const_iterator it = weights.begin();
+	for (; it != weights.end(); ++it)
+	{
+		// If our choice number is less than the score, we found our spawn.
+		if (choice < it->score)
+			break;
+
+		// Since scores origin at 0.0 we subtract the current score from our
+		// choice so the next comparison lines up.
+		choice -= it->score;
+	}
+
+	// This should not happen unless we were careless with our math.
+	if (it == weights.end())
+		return NULL;
+
+	return it->spawn;
+}
+
+/**
+ * @brief Spawn a monster.
+ *
+ * @param point Spawn point of the monster.
+ * @param type Thing type.
+ * @param player Player to target.
+ * @param ambush True if the spawn should be an out-of-sight ambush without
+ *               a teleport flash.
+ */
+static bool SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
+                         player_t* player, const bool ambush)
+{
+	// Spawn the monster - possibly.
+	AActor* mo = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, recipe.type);
+	if (mo)
+	{
+		if (P_TestMobjLocation(mo))
+		{
+			P_AddHealthPool(mo);
+
+			// Don't respawn
+			mo->flags |= MF_DROPPED;
+
+			// This monster wakes up hating you and knows where you live.
+			mo->target = player->mo->ptr();
+			P_SetMobjState(mo, mo->info->seestate, true);
+
+			// Play the see sound if we have one and it's not an ambush.
+			if (!ambush && mo->info->seesound)
+			{
+				char sound[MAX_SNDNAME];
+
+				strcpy(sound, mo->info->seesound);
+
+				if (sound[strlen(sound) - 1] == '1')
+				{
+					sound[strlen(sound) - 1] = P_Random(mo) % 3 + '1';
+					if (S_FindSound(sound) == -1)
+						sound[strlen(sound) - 1] = '1';
+				}
+
+				S_Sound(mo, CHAN_VOICE, sound, 1, ATTN_NORM);
+			}
+
+			if (!ambush)
+			{
+				// Spawn a teleport fog if it's not an ambush.
+				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+				S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+			}
+			return true;
+		}
+		else
+		{
+			// Spawn blocked.
+			mo->Destroy();
+		}
+	}
+	return false;
+}
+
+} // namespace spawn
 
 class HordeState
 {
@@ -279,21 +428,13 @@ class HordeState
 	}
 } gDirector;
 
-struct SpawnPoint
-{
-	AActor::AActorPtr mo;
-};
-typedef std::vector<SpawnPoint> SpawnPoints;
-typedef std::vector<SpawnPoint*> SpawnPointView;
-
-static SpawnPoints gSpawns;
 static bool DEBUG_enabled;
 
 void P_AddHordeSpawnPoint(AActor* mo)
 {
-	SpawnPoint sp;
+	spawn::SpawnPoint sp;
 	sp.mo = mo->self;
-	::gSpawns.push_back(sp);
+	spawn::spawns.push_back(sp);
 }
 
 void P_AddHealthPool(AActor* mo)
@@ -319,68 +460,6 @@ void P_RemoveHealthPool(AActor* mo)
 		return;
 
 	::gDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
-}
-
-/**
- * @brief Spawn a monster.
- *
- * @param point Spawn point of the monster.
- * @param type Thing type.
- * @param ambush True if the spawn should be an out-of-sight ambush without
- *               a teleport flash.
- */
-static bool HordeSpawn(SpawnPoint& spawn, const mobjtype_t type, const bool ambush)
-{
-	// Spawn the monster - possibly.
-	AActor* mo = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, type);
-	if (mo)
-	{
-		if (P_TestMobjLocation(mo))
-		{
-			// Don't respawn
-			mo->flags |= MF_DROPPED;
-
-			P_AddHealthPool(mo);
-			if (P_LookForPlayers(mo, true))
-			{
-				// Play the see sound if we have one and it's not an ambush.
-				if (!ambush && mo->info->seesound)
-				{
-					char sound[MAX_SNDNAME];
-
-					strcpy(sound, mo->info->seesound);
-
-					if (sound[strlen(sound) - 1] == '1')
-					{
-						sound[strlen(sound) - 1] = P_Random(mo) % 3 + '1';
-						if (S_FindSound(sound) == -1)
-							sound[strlen(sound) - 1] = '1';
-					}
-
-					S_Sound(mo, CHAN_VOICE, sound, 1, ATTN_NORM);
-				}
-
-				// If monster has a target (which they should by now)
-				// force them to start chasing them immediately.
-				if (mo->target)
-					P_SetMobjState(mo, mo->info->seestate, true);
-			}
-
-			if (!ambush)
-			{
-				// Spawn a teleport fog if it's not an ambush.
-				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
-				S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-			}
-			return true;
-		}
-		else
-		{
-			// Spawn blocked.
-			mo->Destroy();
-		}
-	}
-	return false;
 }
 
 void P_RunHordeTics()
@@ -409,25 +488,13 @@ void P_RunHordeTics()
 			if (player->health <= 0)
 				continue;
 
-			// Spawn monsters at visible spawn points.
-			SpawnPointView view;
-			for (SpawnPoints::iterator sit = ::gSpawns.begin(); sit != ::gSpawns.end();
-			     ++sit)
-			{
-				if (P_CheckSight(sit->mo, player->mo))
-				{
-					view.push_back(&*sit);
-				}
-			}
-
-			if (view.empty())
+			spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(player);
+			if (spawn == NULL)
 				continue;
 
-			size_t idx = P_Random() % view.size();
-			SpawnPoint& spawn = *view.at(idx);
-
-			spawner::recipe_t recipe = spawner::GetSpawn(::gDirector.getRoundState());
-			HordeSpawn(spawn, recipe.type, false);
+			const recipe::recipe_t recipe =
+			    recipe::GetSpawnRecipe(::gDirector.getRoundState());
+			spawn::SpawnMonster(*spawn, recipe, player, false);
 		}
 	}
 }
