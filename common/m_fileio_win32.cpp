@@ -172,7 +172,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (!hash.empty())
 		{
 			// Filenames with supplied hashes always match first.
-			cmp_files.push_back(StdStringToUpper(file + *it + "." + hash));
+			cmp_files.push_back(StdStringToUpper(file + "." + hash.substr(0, 6) + *it));
 		}
 		cmp_files.push_back(StdStringToUpper(file + *it));
 	}
