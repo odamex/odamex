@@ -293,7 +293,8 @@ void FLZOFile::Implode()
 		}
 		else
 		{
-			DPrintf("LZOFile shrunk from %u to %u bytes\n", input_len, compressed_len);
+			// A comment inside LZO says "lzo_uint must match size_t".
+			DPrintf("LZOFile shrunk from %u to %" PRIuSIZE" bytes\n", input_len, compressed_len);
 		}
 	}
 
@@ -1042,4 +1043,3 @@ FArchive &operator>> (FArchive &arc, player_s *&p)
 }
 
 VERSION_CONTROL (farchive_cpp, "$Id$")
-
