@@ -217,6 +217,8 @@ struct SpawnPointWeight
 {
 	SpawnPoint* spawn;
 	float score;
+	int dist;
+	bool visible;
 };
 typedef std::vector<SpawnPointWeight> SpawnPointWeights;
 
@@ -243,12 +245,17 @@ static SpawnPoint* GetSpawnCandidate(player_t* player)
 		int dist = P_AproxDistance2(sit->mo, player->mo) >> FRACBITS;
 		bool visible = P_CheckSight(sit->mo, player->mo);
 
+		weight.dist = dist;
+		weight.visible = visible;
+
 		// Base score is based on distance.
 		float score;
-		if (dist < 128)
-			score = 0.25f; // Try not to spawn close by.
-		else if (dist < 1024)
+		if (dist < 192)
+			score = 0.125f; // Try not to spawn close by.
+		else if (dist < 512)
 			score = 1.0f;
+		else if (dist < 1024)
+			score = 0.75f;
 		else if (dist < 2048)
 			score = 0.5f;
 		else if (dist < 3072)
@@ -256,8 +263,9 @@ static SpawnPoint* GetSpawnCandidate(player_t* player)
 		else
 			score = 0.125f;
 
-		// Having LoS gives a bonus.
-		score *= visible ? 1.25f : 1.0f;
+		// Having LoS gives a significant bonus, because intuitively there
+		// are many more spanws in a map you can't see vs those you can.
+		score *= visible ? 1.0f : 0.5f;
 		weight.score = score;
 		totalScore += score;
 
@@ -408,20 +416,13 @@ static int SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& r
 
 class HordeState
 {
-	enum state_e
-	{
-		DS_STARTING,
-		DS_PRESSURE,
-		DS_RELAX,
-	};
-
-	state_e m_state;
+	hordeState_e m_state;
 	int m_stateTime;
 	HordeRoundState m_roundState;
 	int m_spawnedHealth;
 	int m_killedHealth;
 
-	void setState(const state_e state)
+	void setState(const hordeState_e state)
 	{
 		m_state = state;
 		m_stateTime = ::gametic;
@@ -430,10 +431,24 @@ class HordeState
   public:
 	void reset()
 	{
-		setState(DS_STARTING);
+		setState(HS_STARTING);
 		m_roundState.setRound(1);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
+	}
+
+	/**
+	 * @brief Returns health, like for the HUD.
+	 */
+	hordeInfo_t info() const
+	{
+		hordeInfo_t info;
+		info.state = m_state;
+		info.round = m_roundState.getRound();
+		info.spawned = m_spawnedHealth;
+		info.killed = m_killedHealth;
+		info.goal = m_roundState.getDefine().goalHealth;
+		return info;
 	}
 
 	void addSpawnHealth(const int health)
@@ -457,35 +472,36 @@ class HordeState
 
 		switch (m_state)
 		{
-		case DS_STARTING:
-			setState(DS_PRESSURE);
-		case DS_PRESSURE: {
-			Printf("PRESSURE | a:%d > max:%d?\n", aliveHealth,
-			       m_roundState.getDefine().maxTotalHealth);
+		case HS_STARTING:
+			setState(HS_PRESSURE);
+		case HS_PRESSURE: {
 			if (aliveHealth > m_roundState.getDefine().maxTotalHealth)
 			{
-				setState(DS_RELAX);
+				setState(HS_RELAX);
 				return false;
 			}
 			return true;
 		}
-		case DS_RELAX: {
-			Printf("RELAX | a:%d < min:%d?\n", aliveHealth,
-			       m_roundState.getDefine().minTotalHealth);
+		case HS_RELAX: {
 			if (aliveHealth < m_roundState.getDefine().minTotalHealth)
 			{
-				setState(DS_PRESSURE);
+				setState(HS_PRESSURE);
 				return true;
 			}
 			return false;
 		}
 		default:
-			return 0;
+			return false;
 		}
 	}
 } gDirector;
 
 static bool DEBUG_enabled;
+
+hordeInfo_t P_HordeInfo()
+{
+	return ::gDirector.info();
+}
 
 void P_ClearHordeSpawnPoints()
 {
@@ -558,6 +574,11 @@ void P_RunHordeTics()
 			    recipe::GetSpawnRecipe(::gDirector.getRoundState(), spawn->mo->special1);
 			spawn::SpawnMonsterCount(*spawn, recipe, player, false);
 		}
+	}
+	else
+	{
+		// Pick a monster that the player can't see right now and teleport
+		// them close to the player.
 	}
 }
 

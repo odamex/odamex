@@ -50,6 +50,7 @@
 #include "g_levelstate.h"
 #include "g_gametype.h"
 #include "c_bind.h"
+#include "p_dwish.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -787,6 +788,43 @@ static std::string WinToColorString(const WinInfo& win)
 
 	StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 	return buf;
+}
+
+void HordeHUD()
+{
+	if (!P_IsHordeMode())
+		return;
+
+	hordeInfo_t info = P_HordeInfo();
+
+	const char* stateString;
+	switch (info.state)
+	{
+	case HS_STARTING:
+		stateString = "STARTING";
+		break;
+	case HS_PRESSURE:
+		stateString = "PRESSURE";
+		break;
+	case HS_RELAX:
+		stateString = "RELAX";
+		break;
+	default:
+		stateString = "???";
+		break;
+	}
+
+	hud::DrawText(0, 12, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              stateString, CR_GREEN, true);
+
+	std::string buf;
+	StrFormat(buf, "Round %d\n", info.round);
+	hud::DrawText(0, 20, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              buf.c_str(), CR_GREEN, true);
+
+	StrFormat(buf, "s:%d k:%d g:%d\n", info.spawned, info.killed, info.goal);
+	hud::DrawText(0, 28, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
+	              buf.c_str(), CR_GREEN, true);
 }
 
 void LevelStateHUD()

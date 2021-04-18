@@ -27,6 +27,23 @@
 #include "actor.h"
 #include "doomdata.h"
 
+enum hordeState_e
+{
+	HS_STARTING,
+	HS_PRESSURE,
+	HS_RELAX,
+};
+
+struct hordeInfo_t
+{
+	hordeState_e state;
+	int round;
+	int spawned;
+	int killed;
+	int goal;
+};
+
+hordeInfo_t P_HordeInfo();
 void P_ClearHordeSpawnPoints();
 void P_AddHordeSpawnPoint(AActor* mo);
 void P_AddHealthPool(AActor* mo);

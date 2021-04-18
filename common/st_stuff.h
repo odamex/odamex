@@ -76,6 +76,9 @@ void drawNetdemo();
 // [ML] New Odamex fullscreen HUD
 void OdamexHUD(void);
 
+// [AM] HUD for horde.
+void HordeHUD();
+
 // [AM] HUD for showing level state
 void LevelStateHUD();
 
