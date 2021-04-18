@@ -167,24 +167,24 @@ enum svc_t
 {
 	svc_noop,
 	svc_disconnect,
-	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
-	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
-	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
-	svc_levellocals,		// [AM] Persist one or more level locals
-	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
-	svc_updateping,			// [byte] [byte]
-	svc_spawnmobj,			//
+	svc_playerinfo, // weapons, ammo, maxammo, raisedweapon for local player
+	svc_moveplayer,
+	svc_updatelocalplayer,
+	svc_levellocals, // [AM] Persist one or more level locals
+	svc_pingrequest, // [SL] 2011-05-11 timestamp
+	svc_updateping,
+	svc_spawnmobj,
 	svc_disconnectclient,
 	svc_loadmap,
 	svc_consoleplayer,
-	svc_explodemissile,		// [short] - netid
+	svc_explodemissile,
 	svc_removemobj,
 	svc_userinfo,
 	svc_updatemobj,
 	svc_spawnplayer,
 	svc_damageplayer,
 	svc_killmobj,
-	svc_fireweapon,			// [byte]
+	svc_fireweapon,
 	svc_updatesector,
 	svc_print,
 	svc_playermembers,
@@ -195,27 +195,28 @@ enum svc_t
 	svc_reconnect,
 	svc_exitlevel,
 	svc_touchspecial,
-	svc_forceteam,			// [Toke] Allows server to change a clients team setting.
+	svc_forceteam, // [Toke] Allows server to change a clients team setting.
 	svc_switch,
-	svc_say,				// [AM] Similar to a broadcast print except we know who said it.
-	svc_spawnhiddenplayer,	// [denis] when client can't see player
-	svc_updatedeaths,		// [byte] [short]
-	svc_ctfrefresh,			// [Toke - CTF]
-	svc_ctfevent,			// [Toke - CTF]
-	svc_secretevent,		// [Ch0wW] informs clients of a secret discovered
-	svc_serversettings,		// [Toke] - informs clients of server settings
+	svc_say, // [AM] Similar to a broadcast print except we know who said it.
+	svc_spawnhiddenplayer, // [denis] when client can't see player
+	svc_updatedeaths,
+	svc_ctfrefresh,     // [Toke - CTF]
+	svc_ctfevent,       // [Toke - CTF]
+	svc_secretevent,    // [Ch0wW] informs clients of a secret discovered
+	svc_serversettings, // [Toke] - informs clients of server settings
 	svc_connectclient,
-    svc_midprint,
-	svc_servergametic,		// [SL] 2011-05-11
-	svc_inttimeleft,		// [ML] For intermission timer
-	svc_fullupdatedone,		// [SL] Inform client the full update is over
-	svc_railtrail,			// [SL] Draw railgun trail and play sound
-	svc_playerstate,		// [SL] Health, armor, and weapon of a player
-	svc_levelstate,			// [AM] Broadcast level state to client
-	svc_resetmap,			// [AM] Server is resetting the map
-	svc_playerqueuepos,     // Notify clients of player queue postion
-	svc_fullupdatestart,	// Inform client the full update has started
-	svc_lineupdate,			// Sync client with any line property changes - e.g. SetLineTexture, SetLineBlocking, SetLineSpecial, etc.
+	svc_midprint,
+	svc_servergametic,   // [SL] 2011-05-11
+	svc_inttimeleft,     // [ML] For intermission timer
+	svc_fullupdatedone,  // [SL] Inform client the full update is over
+	svc_railtrail,       // [SL] Draw railgun trail and play sound
+	svc_playerstate,     // [SL] Health, armor, and weapon of a player
+	svc_levelstate,      // [AM] Broadcast level state to client
+	svc_resetmap,        // [AM] Server is resetting the map
+	svc_playerqueuepos,  // Notify clients of player queue postion
+	svc_fullupdatestart, // Inform client the full update has started
+	svc_lineupdate, // Sync client with any line property changes - e.g. SetLineTexture,
+	                // SetLineBlocking, SetLineSpecial, etc.
 	svc_sectorproperties,
 	svc_linesideupdate,
 	svc_mobjstate,
@@ -223,21 +224,16 @@ enum svc_t
 	svc_executelinespecial,
 	svc_executeacsspecial,
 	svc_thinkerupdate,
-	svc_vote_update,    // [AM] - Send the latest voting state to the client.
-	svc_maplist,        // [AM] - Return a maplist status.
-	svc_maplist_update, // [AM] - Send the entire maplist to the client in chunks.
-	svc_maplist_index,  // [AM] - Send the current and next map index to the client.
-
-	// netdemos - NullPoint
-	svc_netdemocap = 100,
-	svc_netdemostop = 101,
-	svc_netdemoloadsnap = 102,
-
-	// for when launcher packets go astray
-	svc_launcher_challenge = 212,
-	svc_challenge = 163,
-	svc_max = 255
+	svc_vote_update,       // [AM] - Send the latest voting state to the client.
+	svc_maplist,           // [AM] - Return a maplist status.
+	svc_maplist_update,    // [AM] - Send the entire maplist to the client in chunks.
+	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
+	svc_netdemocap = 100,  // netdemos - NullPoint
+	svc_netdemostop = 101, // netdemos - NullPoint
+	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
+
+static const size_t svc_max = 255;
 
 enum ThinkerType
 {
@@ -258,33 +254,31 @@ enum clc_t
 	clc_reserved1,
 	clc_disconnect,
 	clc_say,
-	clc_move,			// send cmds
-	clc_userinfo,		// send userinfo
-	clc_pingreply,		// [SL] 2011-05-11 - [long: timestamp]
+	clc_move,      // send cmds
+	clc_userinfo,  // send userinfo
+	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,
 	clc_ack,
 	clc_rcon,
 	clc_rcon_password,
-	clc_changeteam,		// [NightFang] - Change your team [Toke - Teams] Made this actualy work
+	clc_changeteam, // [NightFang] - Change your team
+	                // [Toke - Teams] Made this actualy work
 	clc_ctfcommand,
-	clc_spectate,			// denis - [byte:state]
-	clc_wantwad,			// denis - string:name, string:hash
-	clc_kill,				// denis - suicide
-	clc_cheat,				// denis - god, pumpkins, etc
-    clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
-	clc_callvote,			// [AM] - Calling a vote
-	clc_maplist,			// [AM] - Maplist status request.
-	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
+	clc_spectate,       // denis
+	clc_wantwad,        // denis - name, hash
+	clc_kill,           // denis - suicide
+	clc_cheat,          // denis - god, pumpkins, etc
+	clc_cheatpulse,     // Russell - one off cheats (idkfa, idfa etc)
+	clc_callvote,       // [AM] - Calling a vote
+	clc_maplist,        // [AM] - Maplist status request.
+	clc_maplist_update, // [AM] - Request the entire maplist from the server.
 	clc_getplayerinfo,
-	clc_netcmd,				// [AM] Send a string command to the server.
-	clc_spy,				// [SL] Tell server to send info about this player
-	clc_privmsg,			// [AM] Targeted chat to a specific player.
-
-	// for when launcher packets go astray
-	clc_launcher_challenge = 212,
-	clc_challenge = 163,
-	clc_max = 255
+	clc_netcmd,  // [AM] Send a string command to the server.
+	clc_spy,     // [SL] Tell server to send info about this player
+	clc_privmsg, // [AM] Targeted chat to a specific player.
 };
+
+static const size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t svc_info[svc_max + 1];

@@ -4035,20 +4035,6 @@ void SV_ParseCommands(player_t &player)
             }
 			break;
 
-		case clc_launcher_challenge:
-			MSG_ReadByte();
-			MSG_ReadByte();
-			MSG_ReadByte();
-			SV_SendServerInfo();
-			break;
-
-		case clc_challenge:
-			{
-				size_t len = MSG_BytesLeft();
-				MSG_ReadChunk(len);
-			}
-			break;
-
 		case clc_wantwad:
 			SV_WantWad(player);
 			break;

@@ -1068,8 +1068,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist);
 	SVC_INFO(svc_maplist_update);
 	SVC_INFO(svc_maplist_index);
-	SVC_INFO(svc_launcher_challenge);
-	SVC_INFO(svc_challenge);
 	SVC_INFO(svc_max);
 
 	// Client Messages.
@@ -1098,8 +1096,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_netcmd);
 	CLC_INFO(clc_spy);
 	CLC_INFO(clc_privmsg);
-	CLC_INFO(clc_launcher_challenge);
-	CLC_INFO(clc_challenge);
 	CLC_INFO(clc_max);
 }
 

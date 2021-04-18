@@ -2681,8 +2681,6 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
-		SV_MSG(svc_launcher_challenge, CL_Clear);
-		SV_MSG(svc_challenge, CL_Clear);
 		/* clang-format on */
 	default:
 		return PRES_UNKNOWN_HEADER;
