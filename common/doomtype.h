@@ -128,7 +128,7 @@
 
 // Max pos 32-bit int.
 #ifndef MAXINT
-	#define MAXINT			((int)0x7fffffff)
+	#define MAXINT			(0x7fffffff)
 #endif
 
 #ifndef MAXLONG
