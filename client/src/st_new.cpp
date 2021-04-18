@@ -809,6 +809,9 @@ void HordeHUD()
 	case HS_RELAX:
 		stateString = "RELAX";
 		break;
+	case HS_BOSS:
+		stateString = "BOSS";
+		break;
 	default:
 		stateString = "???";
 		break;

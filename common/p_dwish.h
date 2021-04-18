@@ -32,6 +32,7 @@ enum hordeState_e
 	HS_STARTING,
 	HS_PRESSURE,
 	HS_RELAX,
+	HS_BOSS,
 };
 
 struct hordeInfo_t

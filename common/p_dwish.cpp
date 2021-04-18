@@ -93,6 +93,112 @@ class HordeRoundState
 	}
 };
 
+class HordeState
+{
+	hordeState_e m_state;
+	int m_stateTime;
+	HordeRoundState m_roundState;
+	int m_spawnedHealth;
+	int m_killedHealth;
+
+	void setState(const hordeState_e state)
+	{
+		m_state = state;
+		m_stateTime = ::gametic;
+	}
+
+  public:
+	void reset()
+	{
+		setState(HS_STARTING);
+		m_roundState.setRound(1);
+		m_spawnedHealth = 0;
+		m_killedHealth = 0;
+	}
+
+	/**
+	 * @brief Returns health, like for the HUD.
+	 */
+	hordeInfo_t info() const
+	{
+		hordeInfo_t info;
+		info.state = m_state;
+		info.round = m_roundState.getRound();
+		info.spawned = m_spawnedHealth;
+		info.killed = m_killedHealth;
+		info.goal = m_roundState.getDefine().goalHealth;
+		return info;
+	}
+
+	void addSpawnHealth(const int health)
+	{
+		m_spawnedHealth += health;
+	}
+
+	void addKilledHealth(const int health)
+	{
+		m_killedHealth += health;
+	}
+
+	HordeRoundState& getRoundState()
+	{
+		return m_roundState;
+	}
+
+	const HordeRoundState& getRoundState() const
+	{
+		return m_roundState;
+	}
+
+	void stateSwitch()
+	{
+		const roundDefine_t& define = m_roundState.getDefine();
+		int aliveHealth = m_spawnedHealth - m_killedHealth;
+
+		switch (m_state)
+		{
+		case HS_STARTING:
+			setState(HS_PRESSURE);
+		case HS_PRESSURE: {
+			if (m_killedHealth > define.goalHealth)
+			{
+				setState(HS_BOSS);
+				return;
+			}
+			else if (aliveHealth > define.maxTotalHealth)
+			{
+				setState(HS_RELAX);
+				return;
+			}
+			return;
+		}
+		case HS_RELAX: {
+			if (m_killedHealth > define.goalHealth)
+			{
+				setState(HS_BOSS);
+				return;
+			}
+			else if (aliveHealth < define.minTotalHealth)
+			{
+				setState(HS_PRESSURE);
+				return;
+			}
+			return;
+		case HS_BOSS: {
+			return;
+		}
+		}
+		default:
+			return;
+		}
+	}
+
+	hordeState_e getState()
+	{
+		return m_state;
+	}
+} gDirector;
+
 namespace recipe
 {
 struct recipe_t
@@ -157,18 +263,18 @@ static const mobjTypes_t& GatherMonsters()
 	return all;
 }
 
-static recipe_t GetSpawnRecipe(const HordeRoundState& roundState, int flags)
+static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
+                               const int maxMonsterHealth)
 {
 	recipe_t result;
 	mobjTypes_t types;
 
 	// Figure out which monster we want to spawn.
-	const roundDefine_t& define = roundState.getDefine();
 	const mobjTypes_t& all = GatherMonsters();
 	for (mobjTypes_t::const_iterator it = all.begin(); it != all.end(); ++it)
 	{
 		const mobjinfo_t& info = ::mobjinfo[*it];
-		if (info.spawnhealth <= 0 || info.spawnhealth > define.bossHealth)
+		if (info.spawnhealth > maxMonsterHealth)
 			continue;
 
 		// Translate mobj flags into bitfield we can compare against.
@@ -414,88 +520,6 @@ static int SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& r
 
 } // namespace spawn
 
-class HordeState
-{
-	hordeState_e m_state;
-	int m_stateTime;
-	HordeRoundState m_roundState;
-	int m_spawnedHealth;
-	int m_killedHealth;
-
-	void setState(const hordeState_e state)
-	{
-		m_state = state;
-		m_stateTime = ::gametic;
-	}
-
-  public:
-	void reset()
-	{
-		setState(HS_STARTING);
-		m_roundState.setRound(1);
-		m_spawnedHealth = 0;
-		m_killedHealth = 0;
-	}
-
-	/**
-	 * @brief Returns health, like for the HUD.
-	 */
-	hordeInfo_t info() const
-	{
-		hordeInfo_t info;
-		info.state = m_state;
-		info.round = m_roundState.getRound();
-		info.spawned = m_spawnedHealth;
-		info.killed = m_killedHealth;
-		info.goal = m_roundState.getDefine().goalHealth;
-		return info;
-	}
-
-	void addSpawnHealth(const int health)
-	{
-		m_spawnedHealth += health;
-	}
-
-	void addKilledHealth(const int health)
-	{
-		m_killedHealth += health;
-	}
-
-	HordeRoundState& getRoundState()
-	{
-		return m_roundState;
-	}
-
-	bool shouldSpawn()
-	{
-		int aliveHealth = m_spawnedHealth - m_killedHealth;
-
-		switch (m_state)
-		{
-		case HS_STARTING:
-			setState(HS_PRESSURE);
-		case HS_PRESSURE: {
-			if (aliveHealth > m_roundState.getDefine().maxTotalHealth)
-			{
-				setState(HS_RELAX);
-				return false;
-			}
-			return true;
-		}
-		case HS_RELAX: {
-			if (aliveHealth < m_roundState.getDefine().minTotalHealth)
-			{
-				setState(HS_PRESSURE);
-				return true;
-			}
-			return false;
-		}
-		default:
-			return false;
-		}
-	}
-} gDirector;
-
 static bool DEBUG_enabled;
 
 hordeInfo_t P_HordeInfo()
@@ -553,9 +577,14 @@ void P_RunHordeTics()
 	if (!P_AtInterval(TICRATE))
 		return;
 
+	// Switch states?
+	::gDirector.stateSwitch();
+
 	// Should we spawn a monster?
-	if (::gDirector.shouldSpawn())
+	switch (::gDirector.getState())
 	{
+	case HS_PRESSURE: {
+		// Spawn a monster near every player.
 		PlayerResults pr = PlayerQuery().execute();
 		PlayersView::const_iterator it;
 		for (it = pr.players.begin(); it != pr.players.end(); ++it)
@@ -570,15 +599,19 @@ void P_RunHordeTics()
 			if (spawn == NULL)
 				continue;
 
+			const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
 			const recipe::recipe_t recipe =
-			    recipe::GetSpawnRecipe(::gDirector.getRoundState(), spawn->mo->special1);
+			    recipe::GetSpawnRecipe(define, spawn->mo->special1, define.monsterHealth);
 			spawn::SpawnMonsterCount(*spawn, recipe, player, false);
 		}
 	}
-	else
-	{
+	case HS_RELAX: {
 		// Pick a monster that the player can't see right now and teleport
 		// them close to the player.
+	}
+	case HS_BOSS: {
+		// Spawn a boss if we don't have one, and
+	}
 	}
 }
 
