@@ -45,7 +45,7 @@
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
-#include "p_dwish.h"
+#include "p_horde.h"
 
 #include "p_mobj.h"
 #include "p_setup.h"

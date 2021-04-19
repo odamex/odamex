@@ -50,7 +50,7 @@
 #include "g_levelstate.h"
 #include "g_gametype.h"
 #include "c_bind.h"
-#include "p_dwish.h"
+#include "p_horde.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};

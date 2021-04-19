@@ -40,7 +40,7 @@
 #include "gi.h"
 #include "g_gametype.h"
 #include "c_dispatch.h"
-#include "p_dwish.h"
+#include "p_horde.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -385,8 +385,6 @@ void P_ClearId(uint32_t id)
 
 	mo->Destroy();
 }
-
-#include "p_dwish.h"
 
 //
 // P_RemoveMobj

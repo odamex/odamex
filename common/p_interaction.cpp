@@ -37,7 +37,7 @@
 #include "g_gametype.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
-#include "p_dwish.h"
+#include "p_horde.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"

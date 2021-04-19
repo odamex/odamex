@@ -21,8 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_DWISH__
-#define __P_DWISH__
+#ifndef __P_HORDE__
+#define __P_HORDE__
 
 #include "actor.h"
 #include "doomdata.h"

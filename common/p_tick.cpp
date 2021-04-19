@@ -27,7 +27,7 @@
 #include "c_console.h"
 #include "doomstat.h"
 #include "p_unlag.h"
-#include "p_dwish.h"
+#include "p_horde.h"
 
 //
 // P_AtInterval

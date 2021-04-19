@@ -17,11 +17,11 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  "Death Wish" game mode.
+//  "Horde" game mode.
 //
 //-----------------------------------------------------------------------------
 
-#include "p_dwish.h"
+#include "p_horde.h"
 
 #include <math.h>
 
