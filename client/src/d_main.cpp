@@ -366,17 +366,20 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf (PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
+			Printf(PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
 
-			CL_QuitNetGame ();
+			// [AM] In case an error is caused by a console command.
+			C_ClearCommand();
 
-			G_ClearSnapshots ();
+			CL_QuitNetGame();
+
+			G_ClearSnapshots();
 
 			DThinker::DestroyAllThinkers();
 
-			players.clear();
+			::players.clear();
 
-			gameaction = ga_fullconsole;
+			::gameaction = ga_fullconsole;
 		}
 	}
 }

@@ -53,6 +53,8 @@ void STACK_ARGS C_ShutdownConsoleBackground();
 void C_InitConCharsFont();
 void STACK_ARGS C_ShutdownConCharsFont();
 
+void C_ClearCommand();
+
 // Adjust the console for a new screen mode
 void C_NewModeAdjust (void);
 
