@@ -973,7 +973,8 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		// [AM] A slightly different heruistic that doesn't involve global state.
 		if (cycle_counter++ > MOBJ_CYCLE_LIMIT)
 		{
-			I_Error("P_SetMobjState: Infinite state cycle detected!");
+			I_Error("P_SetMobjState: Infinite state cycle detected for %s at state %d.",
+			        mobj->info->name, state);
 		}
 	} while (!mobj->tics);
 
