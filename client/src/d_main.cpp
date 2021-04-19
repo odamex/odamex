@@ -366,17 +366,20 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf (PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
+			Printf(PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
 
-			CL_QuitNetGame ();
+			// [AM] In case an error is caused by a console command.
+			C_ClearCommand();
 
-			G_ClearSnapshots ();
+			CL_QuitNetGame();
+
+			G_ClearSnapshots();
 
 			DThinker::DestroyAllThinkers();
 
-			players.clear();
+			::players.clear();
 
-			gameaction = ga_fullconsole;
+			::gameaction = ga_fullconsole;
 		}
 	}
 }
@@ -603,7 +606,7 @@ void D_Init()
 	bool use_zone = !Args.CheckParm("-nozone");
 	Z_Init(use_zone);
 	if (first_time)
-		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+		Printf(PRINT_HIGH, "Z_Init: Heapsize: %" PRIuSIZE " megabytes\n", got_heapsize);
 
 	// Load palette and set up colormaps
 	V_Init();

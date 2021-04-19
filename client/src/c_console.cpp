@@ -901,6 +901,11 @@ static int C_StringWidth(const char* str)
 	return width;
 }
 
+void C_ClearCommand()
+{
+	::CmdLine.clear();
+	::CmdCompletions.clear();
+}
 
 //
 // C_InitConsoleBackground
