@@ -46,6 +46,7 @@
 #include "v_palette.h"
 #include "c_console.h"
 #include "p_horde.h"
+#include "g_gametype.h"
 
 #include "p_mobj.h"
 #include "p_setup.h"
@@ -1819,7 +1820,7 @@ void P_Init (void)
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (sv_gametype == GM_COOP && var < 10) {
+	if (G_IsCoopGame() && var < 10) {
 		var.Set(10.0);	// Force to 10 seconds minimum
 	} else if (var < 1) {
 		var.RestoreDefault();

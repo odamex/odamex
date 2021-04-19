@@ -77,6 +77,10 @@ const std::string& G_GametypeName()
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
 		name = "Capture The Flag";
+	else if (sv_gametype == GM_HORDE && g_lives)
+		name = "Horde Survival";
+	else if (sv_gametype == GM_HORDE)
+		name = "Horde";
 	return name;
 }
 
@@ -276,7 +280,7 @@ bool G_IsDefendingTeam(team_t team)
  */
 bool G_IsCoopGame()
 {
-	return sv_gametype == GM_COOP;
+	return sv_gametype == GM_COOP || sv_gametype == GM_HORDE;
 }
 
 /**
@@ -388,7 +392,7 @@ void G_AssertValidPlayerCount()
 		return;
 
 	// Cooperative game modes have slightly different logic.
-	if (::sv_gametype == GM_COOP && P_NumPlayersInGame() == 0)
+	if (G_IsCoopGame() && P_NumPlayersInGame() == 0)
 	{
 		// Survival modes cannot function with no players in the gamne,
 		// so the level must be reset at this point.
@@ -722,7 +726,7 @@ void G_LivesCheckEndGame()
 	if (!g_lives || !G_CanEndGame())
 		return;
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		// Everybody losing their lives in coop is a failure.
 		PlayerResults pr = PlayerQuery().hasLives().execute();
@@ -828,7 +832,7 @@ bool G_RoundsShouldEndGame()
 
 	// Coop doesn't have rounds to speak of - though perhaps in the future
 	// rounds might be used to limit the number of tries a map is attempted.
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		return true;
 
 	if (sv_gametype == GM_DM)

@@ -196,6 +196,7 @@ void ST_initNew()
 	::widest_num = widest;
 	::num_height = ::tallnum[0]->height();
 
+	// [AM] FIXME: What does this do, exactly?
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
@@ -739,7 +740,7 @@ void OdamexHUD() {
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
 
 	// Draw keys in coop
-	if (sv_gametype == GM_COOP) {
+	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
 				hud::DrawPatch(4 + (i * 10), 24, hud_scale,
@@ -1128,7 +1129,7 @@ void ZDoomHUD() {
 	// Draw top-right info. (Keys/Frags/Score)
 	hud::drawGametype();
 
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 	{
 		// Draw frags (in DM)
 		ST_DrawNumRight(I_GetSurfaceWidth() - (2 * xscale), 2 * yscale, screen, plyr->fragcount);

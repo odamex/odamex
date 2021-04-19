@@ -178,7 +178,7 @@ void LevelState::reset()
 		// Lobbies are all warmup, all the time.
 		setState(LevelState::WARMUP);
 	}
-	else if (g_lives && sv_gametype != GM_COOP)
+	else if (g_lives && !G_IsCoopGame())
 	{
 		// We need a warmup state when playing competitive survival modes,
 		// so people have a safe period of time to switch teams and join
@@ -294,7 +294,7 @@ void LevelState::endRound()
 		else
 			setState(LevelState::ENDROUND_COUNTDOWN);
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		// A normal coop exit bypasses LevelState completely, so if we're
 		// here, the mission was a failure and needs to be restarted.
@@ -387,7 +387,7 @@ void LevelState::tic()
 			// We are in here for gametype reasons.  Auto-start once we
 			// have enough players.
 			PlayerResults pr = PlayerQuery().execute();
-			if (sv_gametype == GM_COOP && pr.count >= 1)
+			if (G_IsCoopGame() && pr.count >= 1)
 			{
 				// Coop needs one player.
 				setState(LevelState::WARMUP_FORCED_COUNTDOWN);
@@ -441,7 +441,7 @@ void LevelState::tic()
 			else
 			{
 				SV_BroadcastPrintf("The %s has started.\n",
-				                   (sv_gametype == GM_COOP) ? "game" : "match");
+				                   G_IsCoopGame() ? "game" : "match");
 			}
 			return;
 		}

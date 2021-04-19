@@ -290,6 +290,7 @@ EXTERN_CVAR (cl_autorecord_deathmatch)
 EXTERN_CVAR (cl_autorecord_duel)
 EXTERN_CVAR (cl_autorecord_teamdm)
 EXTERN_CVAR (cl_autorecord_ctf)
+EXTERN_CVAR (cl_autorecord_horde)
 EXTERN_CVAR (cl_splitnetdemos)
 
 void CL_PlayerTimes (void);
@@ -905,7 +906,7 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats || sv_gametype == GM_COOP)
+    if (sv_allowcheats || G_IsCoopGame())
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
         Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
@@ -2599,7 +2600,7 @@ void CL_SpawnPlayer()
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if(sv_gametype != GM_COOP)
+	if(!G_IsCoopGame())
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 
@@ -3663,11 +3664,14 @@ void CL_LoadMap()
 	{
 		std::string filename;
 
-		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
-		|| (IsGameModeFFA() && cl_autorecord_deathmatch)
-		|| (IsGameModeDuel() && cl_autorecord_duel)
-		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
-		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
+		const bool shouldRecCoop = ::sv_gametype == GM_COOP && ::cl_autorecord_coop;
+		const bool shouldRecDM = IsGameModeFFA() && ::cl_autorecord_deathmatch;
+		const bool shouldRecDuel = IsGameModeDuel() && ::cl_autorecord_duel;
+		const bool shouldRecTeamDM = ::sv_gametype == GM_TEAMDM && ::cl_autorecord_teamdm;
+		const bool shouldRecCTF = ::sv_gametype == GM_CTF && ::cl_autorecord_ctf;
+		const bool shouldRecHorde = ::sv_gametype == GM_HORDE && ::cl_autorecord_horde;
+		const bool bCanAutorecord = shouldRecCoop || shouldRecDM || shouldRecDuel ||
+		                            shouldRecTeamDM || shouldRecCTF || shouldRecHorde;
 
 		size_t param = Args.CheckParm("-netrecord");
 		if (param && Args.GetArg(param + 1))
@@ -3729,7 +3733,7 @@ void CL_ResetMap()
 	P_DestroyButtonThinkers();
 
 	// You don't get to keep cards.  This isn't communicated anywhere else.
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		P_ClearPlayerCards(consoleplayer());
 
 	// write the map index to the netdemo

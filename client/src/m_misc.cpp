@@ -169,6 +169,8 @@ const char* GetShortGameModeString()
 		return "TDM";
 	else if (sv_gametype == GM_CTF)
 		return "CTF";
+	else if (sv_gametype == GM_HORDE)
+		return "HORDE";
 
 	return "";
 }

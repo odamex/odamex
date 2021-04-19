@@ -979,10 +979,6 @@ void D_DoomMain()
 			// single player warp (like in g_level)
 			serverside = true;
 			sv_allowexit = "1";
-			sv_freelook = "1";
-			sv_allowjump = "1";
-			sv_allowredscreen = "1";
-			sv_gametype = GM_COOP;
 
 			players.clear();
 			players.push_back(player_t());

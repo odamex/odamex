@@ -1689,7 +1689,7 @@ void AM_Drawer()
 		int text_height = (hu_font[0]->height() + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
 			if (am_showmonsters)
 			{

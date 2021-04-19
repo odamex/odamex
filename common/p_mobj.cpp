@@ -2419,7 +2419,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (clientside && sv_gametype == GM_COOP && (validplayer(p) && p.ingame()))
+		if (clientside && G_IsCoopGame() && (validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
 			return;
@@ -2439,7 +2439,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
@@ -2547,7 +2547,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (!G_IsCoopGame() && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode

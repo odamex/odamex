@@ -139,7 +139,7 @@ std::vector<player_t *> sortedPlayers(void) {
 		}
 	}
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpKills);
 	}

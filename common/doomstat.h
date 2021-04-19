@@ -80,6 +80,7 @@ EXTERN_CVAR (sv_maxplayers)
 #define GM_DM		1.0f
 #define GM_TEAMDM	2.0f
 #define GM_CTF		3.0f
+#define GM_HORDE	4.0f
 
 
 // -------------------------

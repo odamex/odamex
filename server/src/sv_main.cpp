@@ -1192,10 +1192,12 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 		else
 			return false;
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
+	{
 		return true;
+	}
 
-	else return false;
+	return false;
 }
 
 //
@@ -1873,7 +1875,7 @@ void SV_ClientFullUpdate(player_t &pl)
 void SV_UpdateSecret(int sectornum, player_t &player)
 {
 	// Don't announce secrets on PvP gamemodes
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -2335,7 +2337,7 @@ void SV_DisconnectClient(player_t &who)
 			}
 
 			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (sv_gametype == GM_COOP)
+			if (G_IsCoopGame())
 				sprintf(str, "%d KILLS, ", who.killcount);
 			else
 				sprintf(str, "%d FRAGS, ", who.fragcount);
@@ -2674,7 +2676,7 @@ void SV_DrawScores()
 
 	}
 
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		compare_player_kills comparison_functor;
 		sortedplayers.sort(comparison_functor);
@@ -3061,7 +3063,7 @@ bool SV_PrivMsg(player_t &player)
 		return true;
 
 	// In competitive gamemodes, don't allow spectators to message players.
-	if (sv_gametype != GM_COOP && player.spectator && !dplayer.spectator)
+	if (!G_IsCoopGame() && player.spectator && !dplayer.spectator)
 		return true;
 
 	// Flood protection
@@ -3311,7 +3313,7 @@ void SV_SendPingRequest(client_t* cl)
 
 void SV_UpdateMonsterRespawnCount()
 {
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -4509,7 +4511,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_kill:
 			if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
-               (sv_allowcheats || sv_gametype == GM_COOP))
+               (sv_allowcheats || G_IsCoopGame()))
             {
 				SV_Suicide (player);
             }
@@ -4850,7 +4852,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(" time             - %d \n",		player->GameTime);
 	Printf(" spectator        - %d \n",		player->spectator);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);
 	}
@@ -4895,9 +4897,9 @@ BEGIN_COMMAND(playerlist)
 		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
 		          NET_AdrToString(it->client.address), it->GameTime, it->ping);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Kills and Lives
 				StrFormat(strScore, " - kills:%d - lives:%d", it->killcount, it->lives);
@@ -4911,7 +4913,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_DM)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Wins, Lives, and Frags
 				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
@@ -4925,7 +4927,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_TEAMDM)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Frags and Lives
 				StrFormat(strScore, " - frags:%d - lives:%d", frags, it->lives);
@@ -4938,7 +4940,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_CTF)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Points and Lives
 				StrFormat(strScore, " - points:%d - lives:%d", points, it->lives);

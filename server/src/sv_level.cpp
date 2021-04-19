@@ -597,7 +597,7 @@ void G_DoResetLevel(bool full_reset)
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Don't let players keep cards through a reset.
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 			P_ClearPlayerCards(*it);
 
 		P_ClearPlayerPowerups(*it);

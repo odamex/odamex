@@ -366,7 +366,7 @@ ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (sv_gametype != GM_COOP)
+		if (!G_IsCoopGame())
 		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
 		}
@@ -1158,7 +1158,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				PersistTeamScore(splayer->userinfo.team);
 		}
 		// [deathz0r] Stats for co-op scoreboard
-		if (sv_gametype == GM_COOP &&
+		if (G_IsCoopGame() &&
             ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
 			if (P_GiveKills(splayer, 1))

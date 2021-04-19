@@ -500,7 +500,7 @@ BOOL CheckCheatmode (void)
 	if (sv_skill == sk_nightmare && !multiplayer)
         return true;
 
-	if ((multiplayer || sv_gametype != GM_COOP) && !sv_allowcheats)
+	if ((::multiplayer || !G_IsCoopGame()) && !::sv_allowcheats)
 	{
 		Printf (PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 		return true;
@@ -1155,10 +1155,10 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && sv_gametype == GM_COOP;
+	st_armson = st_statusbaron && G_IsCoopGame();
 
 	// used by w_frags widget
-	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
+	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
 	//	[Toke - CTF]
 	if (sv_gametype == GM_CTF)
@@ -1190,10 +1190,10 @@ void ST_Ticker()
 void ST_drawWidgets(bool force_refresh)
 {
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && sv_gametype == GM_COOP;
+	st_armson = st_statusbaron && G_IsCoopGame();
 
 	// used by w_frags widget
-	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
+	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
 	STlib_updateNum(&w_ready, force_refresh);
 
@@ -1248,7 +1248,7 @@ static void ST_refreshBackground()
 	{
 		stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		stbar_canvas->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
 	}

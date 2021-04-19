@@ -617,15 +617,8 @@ void P_RunHordeTics()
 
 bool P_IsHordeMode()
 {
-	return ::DEBUG_enabled;
+	return sv_gametype == GM_HORDE;
 }
-
-BEGIN_COMMAND(horde_on)
-{
-	AddCommandString("sv_itemsrespawn 1");
-	::DEBUG_enabled = true;
-}
-END_COMMAND(horde_on)
 
 BEGIN_COMMAND(horde_round)
 {

@@ -862,9 +862,9 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_LEFT, hud::Y_TOP,
 	              "Name", CR_GREY, true);
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
@@ -881,7 +881,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
@@ -929,9 +929,9 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	                   hud::X_LEFT, hud::Y_TOP,
 	                   1, limit, true);
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
@@ -948,7 +948,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::EAPlayerRoundWins(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
@@ -1386,9 +1386,9 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              "Name", CR_GREY, true);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "KIL", CR_GREY, true);
@@ -1405,7 +1405,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WIN", CR_GREY, true);
@@ -1451,9 +1451,9 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	                   hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_LEFT, hud::Y_TOP,
 	                   1, limit, true);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
@@ -1470,7 +1470,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::EAPlayerRoundWins(22, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
@@ -2104,13 +2104,16 @@ void HU_ConsoleScores(player_t *player)
 
 	}
 
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsLivesGame())
 	{
 		compare_player_kills comparison_functor;
 		sortedplayers.sort(comparison_functor);
 
 		Printf_Bold("\n--------------------------------------\n");
-		Printf_Bold("             COOPERATIVE\n");
+		if (sv_gametype == GM_COOP)
+			Printf_Bold("             COOPERATIVE\n");
+		else
+			Printf_Bold("                HORDE\n");
 		Printf_Bold("Name            Kills Deaths  K/D Time\n");
 		Printf_Bold("--------------------------------------\n");
 
