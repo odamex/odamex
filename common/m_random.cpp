@@ -28,6 +28,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomstat.h"
+#include "doomtype.h"
 #include "m_random.h"
 #include "farchive.h"
 
