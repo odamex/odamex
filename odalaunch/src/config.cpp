@@ -41,7 +41,6 @@ wxFileName GetWriteDir()
 		wxFileName userPath(wxStandardPaths::Get().GetDocumentsDir(), "");
 		userPath.AppendDir("My Games");
 		userPath.AppendDir("Odamex");
-		OutputDebugStringA(userPath.GetFullPath());
 		if (userPath.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL))
 		{
 			return userPath;
