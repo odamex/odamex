@@ -788,7 +788,11 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
 	// Viewers can always spy themselves.
 	if (viewer.id == other.id)
+	{
+		if (G_IsLivesGame() && viewer.lives < 1)
+			return false;
 		return true;
+	}
 
 	// You cannot view those without bodies or spectators.
 	if (!other.mo || other.spectator)
