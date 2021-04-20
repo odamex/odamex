@@ -72,6 +72,7 @@
 #include "query_thread.h"
 #include "str_utils.h"
 
+#include "config.h"
 #include "md5.h"
 
 using namespace odalpapi;
@@ -213,7 +214,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	}
 
 	{
-		wxFileConfig ConfigInfo;
+		ODALAUNCH_CONFIG(ConfigInfo);
 
 		ConfigInfo.Read(GETLISTONSTART, &GetListOnStart,
 		                ODA_UIGETLISTONSTART);
@@ -307,7 +308,7 @@ dlgMain::~dlgMain()
 
 void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
 	bool WindowMaximized;
 
@@ -376,7 +377,7 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	}
     
 	// Save the UI layout and shut it all down
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 
 	ConfigInfo.Write("MainWindowWidth", GetSize().GetWidth());
 	ConfigInfo.Write("MainWindowHeight", GetSize().GetHeight());
@@ -465,7 +466,7 @@ void dlgMain::LoadMasterServers()
 	// set up the master server information
 	wxCmdLineParser CmdLineParser(wxTheApp->argc, wxTheApp->argv);
 	wxString MasterAddress;
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	int i = 0;
 	wxString Key, Val;
 
@@ -556,7 +557,7 @@ void dlgMain::GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver)
 // manually connect to a server
 void dlgMain::OnManualConnect(wxCommandEvent& event)
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 ServerTimeout;
 	Server tmp_server;
 	odalpapi::BufferedSocket Socket;
@@ -772,7 +773,7 @@ void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal,
 
 bool dlgMain::MonThrGetMasterList()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 MasterTimeout;
 	wxInt32 RetryCount;
 	bool UseBroadcast;
@@ -812,7 +813,7 @@ bool dlgMain::MonThrGetMasterList()
 
 void dlgMain::MonThrGetServerList()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 ServerTimeout;
 	wxInt32 RetryCount;
 	size_t ServerCount;
@@ -895,7 +896,7 @@ void dlgMain::MonThrGetServerList()
 
 void dlgMain::MonThrGetSingleServer()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 ServerTimeout;
 	wxInt32 RetryCount;
     odalpapi::BufferedSocket Socket;
@@ -1022,7 +1023,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 		ThisServer.ResetData();
 
 		{
-			wxFileConfig ConfigInfo;
+			ODALAUNCH_CONFIG(ConfigInfo);
 
 			ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
 			                ODA_UISHOWBLOCKEDSERVERS);
@@ -1064,7 +1065,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 		wxString SoundFile;
 
 		{
-			wxFileConfig ConfigInfo;
+			ODALAUNCH_CONFIG(ConfigInfo);
 			bool PS;
 
 			ConfigInfo.Read(POLFLASHTBAR, &FlashTaskbar,
@@ -1143,7 +1144,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 		ThisServer.ResetData();
 
 		{
-			wxFileConfig ConfigInfo;
+			ODALAUNCH_CONFIG(ConfigInfo);
 
 			ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
 			                ODA_UISHOWBLOCKEDSERVERS);
@@ -1200,7 +1201,7 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 
 	// Restart the ART
 	{
-		wxFileConfig ConfigInfo;
+		ODALAUNCH_CONFIG(ConfigInfo);
 
 		ConfigInfo.Read(ARTENABLE, &m_UseRefreshTimer,
 		                ODA_UIARTENABLE);
@@ -1258,7 +1259,7 @@ void dlgMain::OnQuickLaunch(wxCommandEvent& event)
 	wxString OdamexDirectory, DelimWadPaths;
 
 	{
-		wxFileConfig ConfigInfo;
+		ODALAUNCH_CONFIG(ConfigInfo);
 
 		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
 		                OdaGetInstallDir());
@@ -1333,7 +1334,7 @@ void dlgMain::OnLaunch(wxCommandEvent& event)
 	wxString OdamexDirectory, DelimWadPaths;
 
 	{
-		wxFileConfig ConfigInfo;
+		ODALAUNCH_CONFIG(ConfigInfo);
 
 		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
 		                OdaGetInstallDir());
@@ -1458,7 +1459,7 @@ void dlgMain::OnServerListClick(wxListEvent& event)
 void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
                          const wxString& waddirs, const wxString& Password)
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 
 	// Supresses wx error popup under windows, regardless if wxExecute fails or
 	// not

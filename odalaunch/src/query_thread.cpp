@@ -28,6 +28,7 @@
 #include <wx/fileconf.h>
 #include <wx/log.h> 
 
+#include "config.h"
 #include "plat_utils.h"
 #include "oda_defs.h"
 
@@ -154,7 +155,7 @@ int QueryThread::GetIdealThreadCount()
 
 	// TODO: Replace with a better system
 	{
-        wxFileConfig ConfigInfo;
+        ODALAUNCH_CONFIG(ConfigInfo);
 
         ConfigInfo.Read(QRYTHREADMULTIPLIER, &ThreadMul, ODA_THRMULVAL);
         ConfigInfo.Read(QRYTHREADMAXIMUM, &ThreadMax, ODA_THRMAXVAL);

@@ -31,6 +31,7 @@
 #include <wx/tokenzr.h>
 #include <wx/dirdlg.h>
 
+#include "config.h"
 #include "str_utils.h"
 #include "net_utils.h"
 
@@ -330,7 +331,7 @@ void dlgServers::OnButtonMoveServerDown(wxCommandEvent& event)
 
 void dlgServers::SaveSettings()
 {
-	wxFileConfig fc;
+	ODALAUNCH_CONFIG(fc);
 
 	fc.SetPath("/CustomServers");
 	fc.Write("NumberOfServers", (wxInt32)SERVER_LIST->GetCount());
@@ -363,7 +364,7 @@ void dlgServers::SaveSettings()
 
 void dlgServers::LoadSettings()
 {
-	wxFileConfig fc;
+	ODALAUNCH_CONFIG(fc);
 
 	fc.SetPath("/CustomServers");
 

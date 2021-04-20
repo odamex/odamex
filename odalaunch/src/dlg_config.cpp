@@ -36,6 +36,7 @@
 #include <wx/recguard.h>
 
 #include "main.h"
+#include "config.h"
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
@@ -447,10 +448,11 @@ void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
 
 // TODO: Design a cleaner system for loading/saving these settings
 
+
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 
 	// Allow $ in directory names
 	ConfigInfo.SetExpandEnvVars(false);
@@ -551,7 +553,7 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 
 	// Allow $ in directory names
 	ConfigInfo.SetExpandEnvVars(false);

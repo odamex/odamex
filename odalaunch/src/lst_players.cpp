@@ -27,6 +27,7 @@
 #include <wx/log.h>
 #include <wx/dcmemory.h>
 
+#include "config.h"
 #include "str_utils.h"
 
 using namespace odalpapi;
@@ -94,7 +95,7 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 	DeleteAllColumns();
 	ClearImageList();
 
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
 	// Read from the global configuration
@@ -170,7 +171,7 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 
 LstOdaPlayerList::~LstOdaPlayerList()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 	wxListItem li;
 

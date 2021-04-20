@@ -27,6 +27,7 @@
 #include <wx/clipbrd.h>
 #include <wx/dataobj.h>
 
+#include "config.h"
 #include "str_utils.h"
 #include "oda_defs.h"
 
@@ -136,7 +137,7 @@ void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)
 
 void LstOdaServerList::SetupServerListColumns()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 WidthAttr, WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap,
 	        WidthType, WidthIwad, WidthAddress;
 
@@ -222,7 +223,7 @@ void LstOdaServerList::SetupServerListColumns()
 
 LstOdaServerList::~LstOdaServerList()
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 WidthAttr, WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap,
 	        WidthType, WidthIwad, WidthAddress;
 
@@ -310,7 +311,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
                                        bool insert,
                                        bool IsCustomServer)
 {
-	wxFileConfig ConfigInfo;
+	ODALAUNCH_CONFIG(ConfigInfo);
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 	bool LineHighlight;
 	wxString HighlightColour;
