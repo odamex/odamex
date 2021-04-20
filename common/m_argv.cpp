@@ -392,7 +392,7 @@ void M_FindResponseFile (void)
 			delete[] file;
 		
 			// DISPLAY ARGS
-			Printf (PRINT_HIGH,"%d command-line args:\n", Args.NumArgs ());
+			Printf("%" PRIuSIZE " command-line args:\n", Args.NumArgs());
 			for (size_t k = 1; k < Args.NumArgs (); k++)
 				Printf (PRINT_HIGH,"%s\n", Args.GetArg (k));
 
@@ -502,4 +502,3 @@ int M_GetParmValue(const char* name)
 }
 
 VERSION_CONTROL (m_argv_cpp, "$Id$")
-

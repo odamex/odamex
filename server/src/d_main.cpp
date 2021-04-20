@@ -157,7 +157,7 @@ void D_Init()
 	bool use_zone = !Args.CheckParm("-nozone");
 	Z_Init(use_zone);
 	if (first_time)
-		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+		Printf(PRINT_HIGH, "Z_Init: Heapsize: %" PRIuSIZE " megabytes\n", got_heapsize);
 
 	// Load palette and set up colormaps
 	V_InitPalette("PLAYPAL");
