@@ -64,8 +64,10 @@ void cht_GetParam (cheatseq_t *cht, char *buffer);
 // [RH] Functions that actually perform the cheating
 class player_s;
 void cht_DoCheat (player_s *player, int cheat);
-void cht_Give (player_s *player, const char *item);
+void cht_GiveTo (player_s *player, const char *item);
 void cht_Suicide (player_s *player);
+
+bool CHEAT_AreCheatsEnabled();
 
 #endif
 

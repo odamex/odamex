@@ -49,6 +49,7 @@
 #include "cl_demo.h"
 #include "c_console.h"
 #include "g_gametype.h"
+#include "m_cheat.h"
 
 #include "p_ctf.h"
 
@@ -486,31 +487,6 @@ CVAR_FUNC_IMPL (st_scale)
 
 EXTERN_CVAR (sv_allowcheats)
 
-// Checks whether cheats are enabled or not, returns true if they're NOT enabled
-// and false if they ARE enabled (stupid huh? not my work [Russell])
-BOOL CheckCheatmode (void)
-{
-	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
-	// back a netdemo
-	if (simulated_connection)
-		return true;
-
-	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
-	// are disabled
-	if (sv_skill == sk_nightmare && !multiplayer)
-        return true;
-
-	if ((multiplayer || sv_gametype != GM_COOP) && !sv_allowcheats)
-	{
-		Printf (PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
 bool ST_Responder (event_t *ev)
@@ -543,7 +519,7 @@ bool ST_Responder (event_t *ev)
         // 'dqd' cheat for toggleable god mode
         if (cht_CheckCheat(&cheat_god, key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             // [Russell] - give full health
@@ -560,7 +536,7 @@ bool ST_Responder (event_t *ev)
         // 'fa' cheat for killer fucking arsenal
         else if (cht_CheckCheat(&cheat_ammonokey, key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
@@ -585,7 +561,7 @@ bool ST_Responder (event_t *ev)
         // 'kfa' cheat for key full ammo
         else if (cht_CheckCheat(&cheat_ammo, key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
@@ -613,7 +589,7 @@ bool ST_Responder (event_t *ev)
         // doom 2/final can have idclip
         else if (cht_CheckCheat(&cheat_noclip, key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             if (gamemode != shareware && gamemode != registered &&
@@ -628,7 +604,7 @@ bool ST_Responder (event_t *ev)
         }
         else if (cht_CheckCheat(&cheat_commercial_noclip, key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             if (gamemode != commercial && gamemode != commercial_bfg)
@@ -645,7 +621,7 @@ bool ST_Responder (event_t *ev)
         {
             if (cht_CheckCheat(&cheat_powerup[i], key))
             {
-                if (CheckCheatmode ())
+				if (!CHEAT_AreCheatsEnabled())
                     return false;
 
                 Printf(PRINT_HIGH, "Power-up toggled\n");
@@ -667,7 +643,7 @@ bool ST_Responder (event_t *ev)
         // 'behold' power-up menu
         if (cht_CheckCheat(&cheat_powerup[6], key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
@@ -677,7 +653,7 @@ bool ST_Responder (event_t *ev)
         // 'choppers' invulnerability & chainsaw
         else if (cht_CheckCheat(&cheat_choppers, key))
         {
-            if (CheckCheatmode ())
+			if (!CHEAT_AreCheatsEnabled())
                 return false;
 
             Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
@@ -735,15 +711,10 @@ bool ST_Responder (event_t *ev)
 // Console cheats
 BEGIN_COMMAND (god)
 {
-	if (CheckCheatmode ())
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_GODMODE;
-
-	if (consoleplayer().cheats & CF_GODMODE)
-		Printf(PRINT_HIGH, "Degreelessness mode on\n");
-	else
-		Printf(PRINT_HIGH, "Degreelessness mode off\n");
+	cht_DoCheat(&consoleplayer(), CHT_GOD);
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -752,15 +723,10 @@ END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (CheckCheatmode () || connected)
+	if (!CHEAT_AreCheatsEnabled() || connected)
 		return;
 
-	consoleplayer().cheats ^= CF_NOTARGET;
-
-	if (consoleplayer().cheats & CF_NOTARGET)
-		Printf(PRINT_HIGH, "Notarget on\n");
-	else
-		Printf(PRINT_HIGH, "Notarget off\n");
+	cht_DoCheat(&consoleplayer(), CHT_NOTARGET);
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -769,15 +735,10 @@ END_COMMAND (notarget)
 
 BEGIN_COMMAND (fly)
 {
-	if (!consoleplayer().spectator && CheckCheatmode ())
+	if (!consoleplayer().spectator && !CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_FLY;
-
-	if (consoleplayer().cheats & CF_FLY)
-		Printf(PRINT_HIGH, "Fly mode on\n");
-	else
-		Printf(PRINT_HIGH, "Fly mode off\n");
+	cht_DoCheat(&consoleplayer(), CHT_FLY);
 
 	if (!consoleplayer().spectator)
 	{
@@ -789,15 +750,10 @@ END_COMMAND (fly)
 
 BEGIN_COMMAND (noclip)
 {
-	if (CheckCheatmode ())
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_NOCLIP;
-
-	if (consoleplayer().cheats & CF_NOCLIP)
-		Printf(PRINT_HIGH, "No clipping mode on\n");
-	else
-		Printf(PRINT_HIGH, "No clipping mode off\n");
+	cht_DoCheat(&consoleplayer(), CHT_NOCLIP);
 
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
@@ -825,7 +781,7 @@ BEGIN_COMMAND (chase)
 	}
 	else
 	{
-		if (CheckCheatmode ())
+		if (!CHEAT_AreCheatsEnabled())
 			return;
 
 		consoleplayer().cheats ^= CF_CHASECAM;
@@ -879,29 +835,28 @@ END_COMMAND (idmus)
 
 BEGIN_COMMAND (give)
 {
-	if (CheckCheatmode ())
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
 	if (argc < 2)
 		return;
 
-	std::string name = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+	std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
 	if (name.length())
 	{
-		//Net_WriteByte (DEM_GIVECHEAT);
-		//Net_WriteString (name.c_str());
-		// todo
+		cht_GiveTo(&consoleplayer(), name.c_str());
+		//cht.SendGiveCheatToServer(name.c_str());
 	}
 }
 END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if (CheckCheatmode () || !m_Instigator)
+	if (!CHEAT_AreCheatsEnabled() || !m_Instigator)
 		return;
 
 	if (argc != 2)
-		Printf(PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
+		Printf(PRINT_HIGH, "FOV is %g\n", m_Instigator->player->fov);
 	else
 	{
 		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);

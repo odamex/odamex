@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "g_gametype.h"
 #include "m_cheat.h"
 #include "d_player.h"
 #include "doomstat.h"
@@ -33,6 +34,9 @@
 #include "d_items.h"
 #include "p_local.h"
 
+extern bool simulated_connection;
+EXTERN_CVAR(sv_allowcheats)
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
@@ -40,6 +44,29 @@
 static int				firsttime = 1;
 static unsigned char	cheat_xlate_table[256];
 
+
+// Checks if all the conditions to enable cheats are met.
+bool CHEAT_AreCheatsEnabled()
+{
+	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
+	// back a netdemo
+	if (simulated_connection)
+		return false;
+
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
+	// are disabled
+	if (!multiplayer && sv_skill == sk_nightmare)
+		return false;
+
+	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
+	{
+		Printf(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
+		                      "enable this command.\n");
+		return false;
+	}
+
+	return true;
+}
 
 //
 // Called in st_stuff module, which handles the input.
@@ -120,45 +147,32 @@ void cht_DoCheat (player_t *player, int cheat)
 			}
 		case CHT_GOD:
 			player->cheats ^= CF_GODMODE;
-			if (player->cheats & CF_GODMODE)
-				msg = GStrings(STSTR_DQDON);
-			else
-				msg = GStrings(STSTR_DQDOFF);
+		    msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
+		                                        : GStrings(STSTR_DQDOFF);
 			break;
 
 		case CHT_NOCLIP:
 			player->cheats ^= CF_NOCLIP;
-			if (player->cheats & CF_NOCLIP)
-				msg = GStrings(STSTR_NCON);
-			else
-				msg = GStrings(STSTR_NCOFF);
+		    msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON)
+		                                       : GStrings(STSTR_NCOFF);
 			break;
 
 		case CHT_FLY:
 			player->cheats ^= CF_FLY;
-			if (player->cheats & CF_FLY)
-				msg = "You feel lighter";
-			else
-				msg = "Gravity weighs you down";
+		    msg = (player->cheats & CF_FLY) ? "You feel lighter"
+		                                    : "Gravity weighs you down";
 			break;
 
 		case CHT_NOTARGET:
-			if (!multiplayer)
-			{
-				player->cheats ^= CF_NOTARGET;
-				if (player->cheats & CF_NOTARGET)
-					msg = "notarget ON";
-				else
-					msg = "notarget OFF";
-			}
+			player->cheats ^= CF_NOTARGET;
+		    msg = (player->cheats & CF_NOTARGET) ? "notarget ON" 
+				                                 : "notarget OFF";
 			break;
 
 		case CHT_CHASECAM:
 			player->cheats ^= CF_CHASECAM;
-			if (player->cheats & CF_CHASECAM)
-				msg = "chasecam ON";
-			else
-				msg = "chasecam OFF";
+			msg = (player->cheats & CF_CHASECAM) ? "chasecam ON" 
+				                                 : "chasecam OFF";
 			break;
 
 		case CHT_CHAINSAW:
@@ -168,19 +182,19 @@ void cht_DoCheat (player_t *player, int cheat)
 			break;
 
 		case CHT_IDKFA:
-			cht_Give (player, "backpack");
-			cht_Give (player, "weapons");
-			cht_Give (player, "ammo");
-			cht_Give (player, "keys");
+			cht_GiveTo (player, "backpack");
+		    cht_GiveTo (player, "weapons");
+		    cht_GiveTo (player, "ammo");
+		    cht_GiveTo (player, "keys");
 			player->armorpoints = deh.KFAArmor;
 			player->armortype = deh.KFAAC;
 			msg = GStrings(STSTR_KFAADDED);
 			break;
 
 		case CHT_IDFA:
-			cht_Give (player, "backpack");
-			cht_Give (player, "weapons");
-			cht_Give (player, "ammo");
+		    cht_GiveTo (player, "backpack");
+		    cht_GiveTo (player, "weapons");
+		    cht_GiveTo (player, "ammo");
 			player->armorpoints = deh.FAArmor;
 			player->armortype = deh.FAAC;
 			msg = GStrings(STSTR_FAADDED);
@@ -247,7 +261,7 @@ void cht_DoCheat (player_t *player, int cheat)
 		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
 }
 
-void cht_Give (player_t *player, const char *name)
+void cht_GiveTo (player_t *player, const char *name)
 {
 	BOOL giveall;
 	int i;
