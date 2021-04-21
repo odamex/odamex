@@ -305,22 +305,23 @@ static const mobjTypes_t& GatherMonsters()
 /**
  * @brief Get a recipe of monsters to spawn.
  *
+ * @param out Recipe to write to.
  * @param define Round information to use.
  * @param flags Spawn flag classifications to allow.
  * @param healthLeft Amount of health left in the group.
- * @return Recipe for monsters.
  */
-static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
-                               const int healthLeft)
+static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int flags,
+                           const int healthLeft)
 {
 	if (!flags)
 	{
 		I_FatalError("Tried to spawn with no spawn flags - this is a bug.");
 	}
 
+	const bool wantGround = flags & ::SPAWN_GROUND;
+	const bool wantAir = flags & ::SPAWN_AIR;
 	const bool wantBoss = flags & ::SPAWN_BOSS;
 
-	recipe_t result;
 	mobjTypes_t types;
 
 	// Figure out which monster we want to spawn.
@@ -342,14 +343,18 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
 		if (info.spawnhealth > define.monsterHealth)
 			mflags |= ::SPAWN_BOSS;
 
-		if (!(mflags | flags))
+		if (!(mflags & flags))
 			continue;
 
 		types.push_back(*it);
 	}
 
+	// No valid monsters can be spawned at this point.
+	if (types.empty())
+		return false;
+
 	size_t resultIdx = P_RandomInt(types.size());
-	result.type = types.at(resultIdx);
+	out.type = types.at(resultIdx);
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
 	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
@@ -359,12 +364,12 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
 	if (upper == lower)
 	{
 		// Only one possibility.
-		result.count = upper;
-		return result;
+		out.count = upper;
+		return true;
 	}
 
-	result.count = P_RandomInt(upper - lower) + lower;
-	return result;
+	out.count = P_RandomInt(upper - lower) + lower;
+	return true;
 }
 }; // namespace recipe
 
@@ -405,7 +410,7 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 	for (SpawnPoints::iterator sit = spawns.begin(); sit != spawns.end(); ++sit)
 	{
 		// For boss spawns, filter out non-boss points.
-		if (boss && !(sit->mo->special1 & ::SPAWN_BOSS))
+		if (boss && !(sit->mo->health & ::SPAWN_BOSS))
 			continue;
 
 		SpawnPointWeight weight;
@@ -693,11 +698,15 @@ void P_RunHordeTics()
 			spawn::SpawnPoint* spawn =
 			    spawn::GetSpawnCandidate(target, ::SPAWN_GROUND | ::SPAWN_AIR);
 			if (spawn == NULL)
-				break;
+				continue;
 
 			// Spawn some monsters.
-			const recipe::recipe_t recipe = recipe::GetSpawnRecipe(
-			    define, ::SPAWN_GROUND | ::SPAWN_AIR, pressureHealth - spawned);
+			recipe::recipe_t recipe;
+			const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->mo->health,
+			                                       pressureHealth - spawned);
+			if (!ok)
+				continue;
+
 			AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, 0);
 			for (AActors::iterator it = actors.begin(); it != actors.end(); ++it)
 			{
@@ -727,10 +736,14 @@ void P_RunHordeTics()
 			break;
 
 		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
-		const recipe::recipe_t recipe =
-		    recipe::GetSpawnRecipe(define, ::SPAWN_BOSS, define.maxGroupHealth);
-		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, ::SPAWN_BOSS);
 
+		recipe::recipe_t recipe;
+		const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->mo->health,
+		                                       define.maxGroupHealth);
+		if (!ok)
+			break;
+
+		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, ::SPAWN_BOSS);
 		::gDirector.setBosses(actors);
 		break;
 	}

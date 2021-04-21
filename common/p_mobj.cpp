@@ -2448,7 +2448,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// check for apropriate skill level
 	// [AM] Unless it's a mapthing related to horde mode, in which case the
 	//      flags can take on new meanings.
-	if (i != 11)
+	if (mthing->type != 11)
 	{
 		if (sv_skill == sk_baby)
 			bit = 1;
@@ -2623,10 +2623,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->special1 = mthing->z << FRACBITS;
 	}
 
-	// [AM] Monster spanwers translate their thing flags into the special field.
+	// [AM] Monster spanwers translate their thing flags into the health field.
 	if (mobj->type == MT_MONSTERSPAWN)
 	{
-		mobj->special1 = mthing->flags;
+		mobj->health = mthing->flags;
 	}
 
 	// [RH] Set the thing's special
