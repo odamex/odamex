@@ -52,32 +52,50 @@ struct roundDefine_t
 	int bossHealth;     // Maximum health of a single "boss" monster spawn.
 	int minGroupHealth; // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth; // Maximum health of a group of monsters to spawn.
+	int pressureHealth; // Minimum amount of health to spawn per second during pressure.
 	int minTotalHealth; // Lower bound on the amount of health in the map at once, aside
 	                    // from round end.
 	int maxTotalHealth; // Upper bound on the amount of health in the map at once.
 	int goalHealth;     // Base target health to win the round.
-
-	roundDefine_t(int monsterHealth, int bossHealth, int minGroupHealth,
-	              int maxGroupHealth, int minTotalHealth, int maxTotalHealth,
-	              int goalHealth)
-	    : monsterHealth(monsterHealth), bossHealth(bossHealth),
-	      minGroupHealth(minGroupHealth), maxGroupHealth(maxGroupHealth),
-	      minTotalHealth(minTotalHealth), maxTotalHealth(maxTotalHealth),
-	      goalHealth(goalHealth)
-	{
-	}
 };
+
+const roundDefine_t ROUND_DEFINES[3] = {
+    // Round 1
+    {
+        150,  // monsterHealth
+        150,  // bossHealth
+        80,   // minGroupHealth
+        300,  // maxGroupHealth
+        150,  // pressureHealth
+        600,  // minTotalHealth
+        1200, // maxTotalHealth
+        2400, // goalHealth
+    },
+    // Round 2
+    {
+        600,  // monsterHealth
+        700,  // bossHealth
+        120,  // minGroupHealth
+        1200, // maxGroupHealth
+        600,  // pressureHealth
+        2000, // minTotalHealth
+        4800, // maxTotalHealth
+        9600, // goalHealth
+    },
+    // Round 3
+    {
+        1000,  // monsterHealth
+        4000,  // bossHealth
+        120,   // minGroupHealth
+        2000,  // maxGroupHealth
+        1000,  // pressureHealth
+        4000,  // minTotalHealth
+        8000,  // maxTotalHealth
+        16000, // goalHealth
+    }};
 
 class HordeRoundState
 {
-	const roundDefine_t ROUND_DEFINES[3] = {
-	    // Round 1 - Troopers to Demons
-	    roundDefine_t(150, 150, 80, 300, 600, 1200, 2400),
-	    // Round 2 - Chaingunners to Mancubi, Arch-Vile as a boss
-	    roundDefine_t(600, 700, 280, 1200, 2000, 4800, 9600),
-	    // Round 3 - Chaingunners to Barons, Cyb/Spider as a boss
-	    roundDefine_t(1000, 4000, 280, 2000, 4000, 8000, 16000)};
-
 	int m_round; // 0-indexed
 
   public:
@@ -468,7 +486,7 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
  * @param target Player to target.
  * @param flags SPAWN_BOSS spawns boss monster, SPAWN_AMBUSH spawns monster
  *              without a spawn flash or see sound.
- * @return Actor pointer we just spawned.
+ * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
 static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
                             const v2fixed_t offset, player_t* target, const int flags)
@@ -476,7 +494,6 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 	const bool boss = flags & ::SPAWN_BOSS;
 	const bool ambush = flags & ::SPAWN_AMBUSH;
 
-	// Spawn the monster - possibly.
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
 	if (mo)
@@ -581,14 +598,15 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 		Printf(PRINT_WARNING, "Tried to spawn %d %s.\n", recipe.count, mobjname);
 	}
 
-	std::remove(ok.begin(), ok.end(), static_cast<AActor*>(NULL));
-	if (recipe.count != ok.size())
+	// Remove unspawned actors - probably spawnblocked.
+	AActors ret;
+	for (AActors::iterator it = ok.begin(); it != ok.end(); ++it)
 	{
-		Printf(PRINT_WARNING, "Wanted to spawn %d %s, only spawned %d.\n", recipe.count,
-		       mobjname, ok.size());
+		if ((*it) != NULL)
+			ret.push_back(*it);
 	}
 
-	return ok;
+	return ret;
 }
 
 } // namespace spawn
@@ -657,22 +675,35 @@ void P_RunHordeTics()
 	switch (::gDirector.getState())
 	{
 	case HS_PRESSURE: {
-		// Spawn a monster near every player.
-		PlayerResults pr = PlayerQuery().hasHealth().execute();
-		PlayersView::const_iterator it;
-		for (it = pr.players.begin(); it != pr.players.end(); ++it)
-		{
-			player_t* target = *it;
+		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
 
+		// Limit to 16 loops so we don't get stuck forever.
+		int spawned = 0;
+		for (size_t i = 0; i < 16; i++)
+		{
+			if (spawned >= define.pressureHealth)
+				continue;
+
+			// Pick the unlucky SOB who is about to get spawned near.
+			PlayerResults pr = PlayerQuery().hasHealth().execute();
+			if (!pr.count)
+				break;
+			player_t* target = pr.players.at(P_RandomInt(pr.count));
+
+			// Choose a spawn point.
 			spawn::SpawnPoint* spawn =
 			    spawn::GetSpawnCandidate(target, ::SPAWN_GROUND | ::SPAWN_AIR);
 			if (spawn == NULL)
 				break;
 
-			const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
+			// Spawn some monsters.
 			const recipe::recipe_t recipe =
 			    recipe::GetSpawnRecipe(define, ::SPAWN_GROUND | ::SPAWN_AIR);
-			spawn::SpawnMonsterCount(*spawn, recipe, target, 0);
+			AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, 0);
+			for (AActors::iterator it = actors.begin(); it != actors.end(); ++it)
+			{
+				spawned += (*it)->health;
+			}
 		}
 	}
 	case HS_RELAX: {
@@ -688,7 +719,6 @@ void P_RunHordeTics()
 		PlayerResults pr = PlayerQuery().hasHealth().execute();
 		if (!pr.count)
 			break;
-
 		player_t* target = pr.players.at(P_RandomInt(pr.count));
 
 		spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(target, ::SPAWN_BOSS);
