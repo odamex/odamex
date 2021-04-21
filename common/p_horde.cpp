@@ -52,7 +52,6 @@ struct roundDefine_t
 	int bossHealth;     // Maximum health of a single "boss" monster spawn.
 	int minGroupHealth; // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth; // Maximum health of a group of monsters to spawn.
-	int pressureHealth; // Minimum amount of health to spawn per second during pressure.
 	int minTotalHealth; // Lower bound on the amount of health in the map at once, aside
 	                    // from round end.
 	int maxTotalHealth; // Upper bound on the amount of health in the map at once.
@@ -64,9 +63,8 @@ const roundDefine_t ROUND_DEFINES[3] = {
     {
         150,  // monsterHealth
         150,  // bossHealth
-        80,   // minGroupHealth
+        150,  // minGroupHealth
         300,  // maxGroupHealth
-        150,  // pressureHealth
         600,  // minTotalHealth
         1200, // maxTotalHealth
         2400, // goalHealth
@@ -75,9 +73,8 @@ const roundDefine_t ROUND_DEFINES[3] = {
     {
         600,  // monsterHealth
         700,  // bossHealth
-        120,  // minGroupHealth
+        600,  // minGroupHealth
         1200, // maxGroupHealth
-        600,  // pressureHealth
         2000, // minTotalHealth
         4800, // maxTotalHealth
         9600, // goalHealth
@@ -86,9 +83,8 @@ const roundDefine_t ROUND_DEFINES[3] = {
     {
         1000,  // monsterHealth
         4000,  // bossHealth
-        120,   // minGroupHealth
+        1000,  // minGroupHealth
         2000,  // maxGroupHealth
-        1000,  // pressureHealth
         4000,  // minTotalHealth
         8000,  // maxTotalHealth
         16000, // goalHealth
@@ -311,9 +307,11 @@ static const mobjTypes_t& GatherMonsters()
  *
  * @param define Round information to use.
  * @param flags Spawn flag classifications to allow.
+ * @param healthLeft Amount of health left in the group.
  * @return Recipe for monsters.
  */
-static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags)
+static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
+                               const int healthLeft)
 {
 	if (!flags)
 	{
@@ -330,10 +328,6 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags)
 	for (mobjTypes_t::const_iterator it = all.begin(); it != all.end(); ++it)
 	{
 		const mobjinfo_t& info = ::mobjinfo[*it];
-
-		// We can only spawn four monsters at once - don't pull any punches.
-		if (info.spawnhealth * 4 < define.minGroupHealth)
-			continue;
 
 		// Make sure health is OK.
 		if (info.spawnhealth > (wantBoss ? define.bossHealth : define.monsterHealth))
@@ -358,8 +352,9 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags)
 	result.type = types.at(resultIdx);
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
+	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
 	const int health = ::mobjinfo[types.at(resultIdx)].spawnhealth;
-	const int upper = clamp(define.maxGroupHealth / health, 1, 4);
+	const int upper = clamp(maxHealth, 1, 4);
 	const int lower = clamp(define.minGroupHealth / health, 1, 4);
 	if (upper == lower)
 	{
@@ -677,11 +672,15 @@ void P_RunHordeTics()
 	case HS_PRESSURE: {
 		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
 
+		const int pressureHealth =
+		    P_RandomInt(define.maxGroupHealth - define.minGroupHealth) +
+		    define.minGroupHealth;
+
 		// Limit to 16 loops so we don't get stuck forever.
 		int spawned = 0;
-		for (size_t i = 0; i < 16; i++)
+		for (int i = 0; i < 16; i++)
 		{
-			if (spawned >= define.pressureHealth)
+			if (spawned >= pressureHealth)
 				continue;
 
 			// Pick the unlucky SOB who is about to get spawned near.
@@ -697,8 +696,8 @@ void P_RunHordeTics()
 				break;
 
 			// Spawn some monsters.
-			const recipe::recipe_t recipe =
-			    recipe::GetSpawnRecipe(define, ::SPAWN_GROUND | ::SPAWN_AIR);
+			const recipe::recipe_t recipe = recipe::GetSpawnRecipe(
+			    define, ::SPAWN_GROUND | ::SPAWN_AIR, pressureHealth - spawned);
 			AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, 0);
 			for (AActors::iterator it = actors.begin(); it != actors.end(); ++it)
 			{
@@ -726,7 +725,8 @@ void P_RunHordeTics()
 			break;
 
 		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
-		const recipe::recipe_t recipe = recipe::GetSpawnRecipe(define, ::SPAWN_BOSS);
+		const recipe::recipe_t recipe =
+		    recipe::GetSpawnRecipe(define, ::SPAWN_BOSS, define.maxGroupHealth);
 		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, ::SPAWN_BOSS);
 
 		::gDirector.setBosses(actors);
