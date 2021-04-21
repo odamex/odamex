@@ -204,7 +204,7 @@ uint32_t P_RandomInt(const uint32_t range)
 float M_RandomFloat()
 {
 	uint32_t n = XOS128StarStar(::g_rngState);
-	return static_cast<float>(n) / (static_cast<float>(UINT_MAX) + 1.0f);
+	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
 }
 
 /**
@@ -215,7 +215,7 @@ float M_RandomFloat()
 float P_RandomFloat()
 {
 	uint32_t n = XOS128StarStar(::g_prngState);
-	return static_cast<float>(n) / (static_cast<float>(UINT_MAX) + 1.0f);
+	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
 }
 
 // Initialize all the seeds

@@ -704,10 +704,12 @@ void P_RunHordeTics()
 				spawned += (*it)->health;
 			}
 		}
+		break;
 	}
 	case HS_RELAX: {
 		// Pick a monster that the player can't see right now and teleport
 		// them close to the player.
+		break;
 	}
 	case HS_BOSS: {
 		// Do we already have bosses spawned?
@@ -730,6 +732,7 @@ void P_RunHordeTics()
 		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, ::SPAWN_BOSS);
 
 		::gDirector.setBosses(actors);
+		break;
 	}
 	}
 }
