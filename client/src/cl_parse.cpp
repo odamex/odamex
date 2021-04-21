@@ -250,6 +250,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
 			p.powers[i] = 0;
 		}
 	}
+
+	if (!p.spectator)
+		p.cheats = msg.player().cheats();
 }
 
 /**
@@ -1209,6 +1212,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg)
 		p.totalpoints = msg.totalpoints();
 		p.totaldeaths = msg.totaldeaths();
 	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!p.spectator)
+			p.cheats = msg.cheats();
+	}
 }
 
 //
@@ -1933,6 +1942,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 		}
 	}
 
+	uint32_t cheats = msg.player().cheats();
+
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -1959,6 +1970,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	if (!player.spectator)
+		player.cheats = cheats;
 }
 
 /**

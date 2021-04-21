@@ -148,6 +148,10 @@
  */
 #define SVC_PM_SCORE BIT(3)
 
+/**
+ * @brief svc_playermembers: Cheats & flags.
+ */
+#define SVC_PM_CHEATS BIT(4)
 
 extern int   localport;
 extern int   msg_badread;

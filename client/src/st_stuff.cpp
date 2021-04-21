@@ -715,21 +715,17 @@ BEGIN_COMMAND (god)
 		return;
 
 	cht_DoCheat(&consoleplayer(), CHT_GOD);
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	CL_SendCheat(CHT_GOD);
 }
 END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (!CHEAT_AreCheatsEnabled() || connected)
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
 	cht_DoCheat(&consoleplayer(), CHT_NOTARGET);
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	CL_SendCheat(CHT_NOTARGET);
 }
 END_COMMAND (notarget)
 
@@ -742,8 +738,7 @@ BEGIN_COMMAND (fly)
 
 	if (!consoleplayer().spectator)
 	{
-		MSG_WriteMarker(&net_buffer, clc_cheat);
-		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+		CL_SendCheat(CHT_FLY);
 	}
 }
 END_COMMAND (fly)
@@ -754,9 +749,7 @@ BEGIN_COMMAND (noclip)
 		return;
 
 	cht_DoCheat(&consoleplayer(), CHT_NOCLIP);
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	CL_SendCheat(CHT_NOCLIP);
 }
 END_COMMAND (noclip)
 
@@ -784,10 +777,8 @@ BEGIN_COMMAND (chase)
 		if (!CHEAT_AreCheatsEnabled())
 			return;
 
-		consoleplayer().cheats ^= CF_CHASECAM;
-
-		MSG_WriteMarker(&net_buffer, clc_cheat);
-		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+		cht_DoCheat(&consoleplayer(), CHT_CHASECAM);
+		
 	}
 }
 END_COMMAND (chase)

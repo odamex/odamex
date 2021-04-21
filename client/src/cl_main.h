@@ -61,6 +61,9 @@ void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect();
 
+void CL_SendCheat(int cheats);
+void CL_SendGiveCheat(const char* item);
+
 void CL_DisplayTics();
 void CL_RunTics();
 

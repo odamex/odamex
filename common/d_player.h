@@ -205,7 +205,7 @@ public:
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
-	int			cheats;
+	uint32_t cheats;
 
 	// Refired shots are less accurate.
 	short		refire;

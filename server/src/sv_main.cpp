@@ -69,6 +69,7 @@
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "m_cheat.h"
 
 #include <algorithm>
 #include <sstream>
@@ -3764,12 +3765,46 @@ void SV_Suicide(player_t &player)
 //
 void SV_Cheat(player_t &player)
 {
-	byte cheats = MSG_ReadByte();
+	byte cheatType = MSG_ReadByte();
+	
+	if (cheatType == 0)
+	{
+		unsigned int cheat = MSG_ReadShort();
 
-	if(!sv_allowcheats)
-		return;
+		if (!CHEAT_AreCheatsEnabled())
+			return;
 
-	player.cheats = cheats;
+		int oldCheats = player.cheats;
+		cht_DoCheat(&player, cheat);
+
+		if (player.cheats != oldCheats)
+		{
+			Printf_Bold("SENDING CHEATS of value %d!\n", player.cheats);
+
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
+			{
+				client_t* cl = &it->client;
+				SV_SendPlayerStateUpdate(cl, &player);
+			}
+		}
+
+	}
+	else if (cheatType == 1)
+	{
+		const char* wantcmd = MSG_ReadString();
+
+		if (!CHEAT_AreCheatsEnabled())
+			return;
+
+		cht_GiveTo(&player, wantcmd);
+
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t* cl = &it->client;
+			SV_SendPlayerStateUpdate(cl, &player);
+		}
+
+	}
 }
 
 void SV_CheatPulse(player_t &player)

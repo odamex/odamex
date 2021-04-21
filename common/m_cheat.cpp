@@ -146,12 +146,19 @@ void cht_DoCheat (player_t *player, int cheat)
 				player->health = deh.GodHealth;
 			}
 		case CHT_GOD:
+
+			if (player->health <= 0 || !player || player->spectator)
+			    return;
+
 			player->cheats ^= CF_GODMODE;
 		    msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
 		                                        : GStrings(STSTR_DQDOFF);
 			break;
 
 		case CHT_NOCLIP:
+			if (player->health <= 0 || !player || player->spectator)
+			    return;
+
 			player->cheats ^= CF_NOCLIP;
 		    msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON)
 		                                       : GStrings(STSTR_NCOFF);
