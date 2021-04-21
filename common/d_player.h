@@ -474,6 +474,7 @@ class PlayerQuery
 	};
 
 	bool m_ready;
+	bool m_health;
 	bool m_lives;
 	team_t m_team;
 	SortTypes m_sort;
@@ -481,8 +482,8 @@ class PlayerQuery
 
   public:
 	PlayerQuery()
-	    : m_ready(false), m_lives(false), m_team(TEAM_NONE), m_sort(SORT_NONE),
-	      m_sortFilter(SFILTER_NONE)
+	    : m_ready(false), m_health(false), m_lives(false), m_team(TEAM_NONE),
+	      m_sort(SORT_NONE), m_sortFilter(SFILTER_NONE)
 	{
 	}
 
@@ -494,6 +495,17 @@ class PlayerQuery
 	PlayerQuery& isReady()
 	{
 		m_ready = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with health left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& hasHealth()
+	{
+		m_health = true;
 		return *this;
 	}
 

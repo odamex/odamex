@@ -196,6 +196,9 @@ PlayerResults PlayerQuery::execute()
 		if (m_ready && !it->ready)
 			continue;
 
+		if (m_health && it->health <= 0)
+			continue;
+
 		if (m_lives && it->lives <= 0)
 			continue;
 

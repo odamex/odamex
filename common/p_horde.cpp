@@ -26,9 +26,11 @@
 #include <math.h>
 
 #include "c_dispatch.h"
+#include "c_effect.h"
 #include "d_player.h"
 #include "doomstat.h"
 #include "doomtype.h"
+#include "i_system.h"
 #include "m_random.h"
 #include "m_vectors.h"
 #include "p_local.h"
@@ -36,6 +38,8 @@
 #include "s_sound.h"
 
 bool P_LookForPlayers(AActor* actor, bool allaround);
+
+typedef std::vector<AActor*> AActors;
 
 const int SPAWN_GROUND = MTF_EASY;
 const int SPAWN_AIR = MTF_NORMAL;
@@ -67,12 +71,12 @@ struct roundDefine_t
 class HordeRoundState
 {
 	const roundDefine_t ROUND_DEFINES[3] = {
-	    // Round 1
-	    roundDefine_t(150, 150, 150, 300, 600, 1200, 2400),
-	    // Round 2
-	    roundDefine_t(600, 700, 600, 1200, 2000, 4800, 9600),
-	    // Round 3
-	    roundDefine_t(1000, 4000, 1000, 2000, 4000, 8000, 16000)};
+	    // Round 1 - Troopers to Demons
+	    roundDefine_t(150, 150, 80, 300, 600, 1200, 2400),
+	    // Round 2 - Chaingunners to Mancubi, Arch-Vile as a boss
+	    roundDefine_t(600, 700, 280, 1200, 2000, 4800, 9600),
+	    // Round 3 - Chaingunners to Barons, Cyb/Spider as a boss
+	    roundDefine_t(1000, 4000, 280, 2000, 4000, 8000, 16000)};
 
 	int m_round; // 0-indexed
 
@@ -100,6 +104,7 @@ class HordeState
 	HordeRoundState m_roundState;
 	int m_spawnedHealth;
 	int m_killedHealth;
+	AActors m_bosses;
 
 	void setState(const hordeState_e state)
 	{
@@ -150,6 +155,16 @@ class HordeState
 		return m_roundState;
 	}
 
+	bool hasBosses() const
+	{
+		return !m_bosses.empty();
+	}
+
+	void setBosses(AActors& bosses)
+	{
+		m_bosses = bosses;
+	}
+
 	void stateSwitch()
 	{
 		const roundDefine_t& define = m_roundState.getDefine();
@@ -185,6 +200,16 @@ class HordeState
 			}
 			return;
 		case HS_BOSS: {
+			size_t alive = 0;
+			for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
+			{
+				if ((*it)->health > 0)
+					alive += 1;
+			}
+			if (!alive)
+			{
+				Printf("YOU WIN!\n");
+			}
 			return;
 		}
 		}
@@ -263,9 +288,22 @@ static const mobjTypes_t& GatherMonsters()
 	return all;
 }
 
-static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
-                               const int maxMonsterHealth)
+/**
+ * @brief Get a recipe of monsters to spawn.
+ *
+ * @param define Round information to use.
+ * @param flags Spawn flag classifications to allow.
+ * @return Recipe for monsters.
+ */
+static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags)
 {
+	if (!flags)
+	{
+		I_FatalError("Tried to spawn with no spawn flags - this is a bug.");
+	}
+
+	const bool wantBoss = flags & ::SPAWN_BOSS;
+
 	recipe_t result;
 	mobjTypes_t types;
 
@@ -274,7 +312,13 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
 	for (mobjTypes_t::const_iterator it = all.begin(); it != all.end(); ++it)
 	{
 		const mobjinfo_t& info = ::mobjinfo[*it];
-		if (info.spawnhealth > maxMonsterHealth)
+
+		// We can only spawn four monsters at once - don't pull any punches.
+		if (info.spawnhealth * 4 < define.minGroupHealth)
+			continue;
+
+		// Make sure health is OK.
+		if (info.spawnhealth > (wantBoss ? define.bossHealth : define.monsterHealth))
 			continue;
 
 		// Translate mobj flags into bitfield we can compare against.
@@ -286,7 +330,7 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
 		if (info.spawnhealth > define.monsterHealth)
 			mflags |= ::SPAWN_BOSS;
 
-		if (!(mflags & flags))
+		if (!(mflags | flags))
 			continue;
 
 		types.push_back(*it);
@@ -297,8 +341,8 @@ static recipe_t GetSpawnRecipe(const roundDefine_t& define, const int flags,
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
 	const int health = ::mobjinfo[types.at(resultIdx)].spawnhealth;
-	const int upper = MAX(define.maxGroupHealth / health, 1);
-	const int lower = MAX(define.minGroupHealth / health, 1);
+	const int upper = clamp(define.maxGroupHealth / health, 1, 4);
+	const int lower = clamp(define.minGroupHealth / health, 1, 4);
 	if (upper == lower)
 	{
 		// Only one possibility.
@@ -338,13 +382,19 @@ static bool CmpWeights(const SpawnPointWeight& a, const SpawnPointWeight& b)
 /**
  * @brief Get a spawn point to place a monster at.
  */
-static SpawnPoint* GetSpawnCandidate(player_t* player)
+static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 {
+	const bool boss = flags & ::SPAWN_BOSS;
+
 	float totalScore = 0.0f;
 
 	SpawnPointWeights weights;
 	for (SpawnPoints::iterator sit = spawns.begin(); sit != spawns.end(); ++sit)
 	{
+		// For boss spawns, filter out non-boss points.
+		if (boss && !(sit->mo->special1 & ::SPAWN_BOSS))
+			continue;
+
 		SpawnPointWeight weight;
 		weight.spawn = &*sit;
 
@@ -380,7 +430,11 @@ static SpawnPoint* GetSpawnCandidate(player_t* player)
 
 	// Did we find any spawns?
 	if (weights.empty())
+	{
+		Printf(PRINT_WARNING, "Could not find a spawn point (boss:%s).\n",
+		       boss ? "y" : "n");
 		return NULL;
+	}
 
 	// Sort by weights.
 	std::sort(weights.begin(), weights.end(), CmpWeights);
@@ -411,14 +465,17 @@ static SpawnPoint* GetSpawnCandidate(player_t* player)
  * @param point Spawn point of the monster.
  * @param recipe Recipe of a monster to spawn.
  * @param offset Offset from the spawn point to spawn at.
- * @param player Player to target.
- * @param ambush True if the spawn should be an out-of-sight ambush without
- *               a teleport flash.
- * @return Number of successful spawns,
+ * @param target Player to target.
+ * @param flags SPAWN_BOSS spawns boss monster, SPAWN_AMBUSH spawns monster
+ *              without a spawn flash or see sound.
+ * @return Actor pointer we just spawned.
  */
-static int SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
-                        const v2fixed_t offset, player_t* player, const bool ambush)
+static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
+                            const v2fixed_t offset, player_t* target, const int flags)
 {
+	const bool boss = flags & ::SPAWN_BOSS;
+	const bool ambush = flags & ::SPAWN_AMBUSH;
+
 	// Spawn the monster - possibly.
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
@@ -431,8 +488,14 @@ static int SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe
 			// Don't respawn
 			mo->flags |= MF_DROPPED;
 
+			if (boss)
+			{
+				// Purple is the noblest shroud.
+				mo->effects = FX_PURPLEFOUNTAIN;
+			}
+
 			// This monster wakes up hating you and knows where you live.
-			mo->target = player->mo->ptr();
+			mo->target = target->mo->ptr();
 			P_SetMobjState(mo, mo->info->seestate, true);
 
 			// Play the see sound if we have one and it's not an ambush.
@@ -458,7 +521,7 @@ static int SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe
 				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
 				S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 			}
-			return 1;
+			return mo;
 		}
 		else
 		{
@@ -466,7 +529,7 @@ static int SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe
 			mo->Destroy();
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 /**
@@ -474,47 +537,57 @@ static int SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe
  *
  * @param point Spawn point of the monster.
  * @param recipe Recipe of a monster to spawn.
- * @param player Player to target.
- * @param ambush True if the spawn should be an out-of-sight ambush without
- *               a teleport flash.
- * @return Number of successful spawns.
+ * @param target Player to target.
+ * @param flags Flags to pass to SpawnMonster.
+ * @return Actors spawned by this function.  Can be discarded.
  */
-static int SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
-                             player_t* player, const bool ambush)
+static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
+                                 player_t* target, const int flags)
 {
-	int ok = 0;
+	AActors ok;
+	const char* mobjname = ::mobjinfo[recipe.type].name;
 
 	// We might need the radius.
 	fixed_t rad = ::mobjinfo[recipe.type].radius;
 
-	int count = clamp(recipe.count, 1, 4);
-	if (count == 4)
+	if (recipe.count == 4)
 	{
 		// A big square.
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), player, ambush);
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), player, ambush);
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad), player, ambush);
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, rad), player, ambush);
-		return ok;
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad), target, flags));
 	}
-	else if (count == 3)
+	else if (recipe.count == 3)
 	{
 		// A wedge.
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), player, ambush);
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), player, ambush);
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(0, rad), player, ambush);
-		return ok;
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad), target, flags));
 	}
-	else if (count == 2)
+	else if (recipe.count == 2)
 	{
 		// Next to each other.
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0), player, ambush);
-		ok += SpawnMonster(spawn, recipe, v2fixed_t(rad, 0), player, ambush);
-		return ok;
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0), target, flags));
+	}
+	else if (recipe.count == 1)
+	{
+		// All by themselves :(
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0), target, flags));
+	}
+	else
+	{
+		Printf(PRINT_WARNING, "Tried to spawn %d %s.\n", recipe.count, mobjname);
 	}
 
-	// All by themselves :(
-	ok += SpawnMonster(spawn, recipe, v2fixed_t(0, 0), player, ambush);
+	std::remove(ok.begin(), ok.end(), static_cast<AActor*>(NULL));
+	if (recipe.count != ok.size())
+	{
+		Printf(PRINT_WARNING, "Wanted to spawn %d %s, only spawned %d.\n", recipe.count,
+		       mobjname, ok.size());
+	}
+
 	return ok;
 }
 
@@ -585,24 +658,21 @@ void P_RunHordeTics()
 	{
 	case HS_PRESSURE: {
 		// Spawn a monster near every player.
-		PlayerResults pr = PlayerQuery().execute();
+		PlayerResults pr = PlayerQuery().hasHealth().execute();
 		PlayersView::const_iterator it;
 		for (it = pr.players.begin(); it != pr.players.end(); ++it)
 		{
-			player_t* player = *it;
+			player_t* target = *it;
 
-			// Do not consider dead players.
-			if (player->health <= 0)
-				continue;
-
-			spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(player);
+			spawn::SpawnPoint* spawn =
+			    spawn::GetSpawnCandidate(target, ::SPAWN_GROUND | ::SPAWN_AIR);
 			if (spawn == NULL)
-				continue;
+				break;
 
 			const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
 			const recipe::recipe_t recipe =
-			    recipe::GetSpawnRecipe(define, spawn->mo->special1, define.monsterHealth);
-			spawn::SpawnMonsterCount(*spawn, recipe, player, false);
+			    recipe::GetSpawnRecipe(define, ::SPAWN_GROUND | ::SPAWN_AIR);
+			spawn::SpawnMonsterCount(*spawn, recipe, target, 0);
 		}
 	}
 	case HS_RELAX: {
@@ -610,7 +680,26 @@ void P_RunHordeTics()
 		// them close to the player.
 	}
 	case HS_BOSS: {
-		// Spawn a boss if we don't have one, and
+		// Do we already have bosses spawned?
+		if (::gDirector.hasBosses())
+			break;
+
+		// Spawn a boss if we don't have one near a living player.
+		PlayerResults pr = PlayerQuery().hasHealth().execute();
+		if (!pr.count)
+			break;
+
+		player_t* target = pr.players.at(P_RandomInt(pr.count));
+
+		spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(target, ::SPAWN_BOSS);
+		if (spawn == NULL)
+			break;
+
+		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
+		const recipe::recipe_t recipe = recipe::GetSpawnRecipe(define, ::SPAWN_BOSS);
+		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, ::SPAWN_BOSS);
+
+		::gDirector.setBosses(actors);
 	}
 	}
 }
