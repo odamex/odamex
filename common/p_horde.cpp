@@ -143,8 +143,6 @@ class HordeState
 
 		setState(HS_STARTING);
 		m_roundState.setRound(m_roundState.getRound() + 1);
-		m_spawnedHealth = 0;
-		m_killedHealth = 0;
 	}
 
 	/**
@@ -234,7 +232,7 @@ class HordeState
 			}
 			if (!alive)
 			{
-				Printf("YOU WIN!\n");
+				next();
 			}
 			return;
 		}
