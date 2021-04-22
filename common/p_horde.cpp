@@ -41,10 +41,8 @@ bool P_LookForPlayers(AActor* actor, bool allaround);
 
 typedef std::vector<AActor*> AActors;
 
-const int SPAWN_GROUND = MTF_EASY;
-const int SPAWN_AIR = MTF_NORMAL;
-const int SPAWN_BOSS = MTF_HARD;
-const int SPAWN_AMBUSH = MTF_AMBUSH;
+const int SPAWN_BOSS = BIT(0);
+const int SPAWN_AMBUSH = BIT(1);
 
 struct roundDefine_t
 {
@@ -131,6 +129,20 @@ class HordeState
 	{
 		setState(HS_STARTING);
 		m_roundState.setRound(1);
+		m_spawnedHealth = 0;
+		m_killedHealth = 0;
+	}
+
+	void next()
+	{
+		if (m_roundState.getRound() >= ARRAY_LENGTH(ROUND_DEFINES))
+		{
+			G_ExitLevel(0, 1);
+			return;
+		}
+
+		setState(HS_STARTING);
+		m_roundState.setRound(m_roundState.getRound() + 1);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
 	}
@@ -310,16 +322,9 @@ static const mobjTypes_t& GatherMonsters()
  * @param flags Spawn flag classifications to allow.
  * @param healthLeft Amount of health left in the group.
  */
-static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int flags,
-                           const int healthLeft)
+static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int type,
+                           const int flags, const int healthLeft)
 {
-	if (!flags)
-	{
-		I_FatalError("Tried to spawn with no spawn flags - this is a bug.");
-	}
-
-	const bool wantGround = flags & ::SPAWN_GROUND;
-	const bool wantAir = flags & ::SPAWN_AIR;
 	const bool wantBoss = flags & ::SPAWN_BOSS;
 
 	mobjTypes_t types;
@@ -334,16 +339,17 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 		if (info.spawnhealth > (wantBoss ? define.bossHealth : define.monsterHealth))
 			continue;
 
-		// Translate mobj flags into bitfield we can compare against.
-		int mflags = 0;
-		if (info.flags & (MF_NOGRAVITY | MF_FLOAT))
-			mflags |= ::SPAWN_AIR;
-		else
-			mflags |= ::SPAWN_GROUND;
-		if (info.spawnhealth > define.monsterHealth)
-			mflags |= ::SPAWN_BOSS;
+		// Boss spawns have to spawn things with boss health.
+		if (type == ::TTYPE_HORDE_BOSS && info.spawnhealth <= define.monsterHealth)
+			continue;
 
-		if (!(mflags & flags))
+		// Flying spawns have to spawn flying monsters.
+		if (type == ::TTYPE_HORDE_FLYING && !(info.flags & (MF_NOGRAVITY | MF_FLOAT)))
+			continue;
+
+		// Snipers have to have a ranged attack.
+		if (type == ::TTYPE_HORDE_SNIPER &&
+		    (info.missilestate == S_NULL || *it == MT_SKULL))
 			continue;
 
 		types.push_back(*it);
@@ -378,6 +384,7 @@ namespace spawn
 struct SpawnPoint
 {
 	AActor::AActorPtr mo;
+	int type;
 };
 typedef std::vector<SpawnPoint> SpawnPoints;
 
@@ -410,7 +417,7 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 	for (SpawnPoints::iterator sit = spawns.begin(); sit != spawns.end(); ++sit)
 	{
 		// For boss spawns, filter out non-boss points.
-		if (boss && !(sit->mo->health & ::SPAWN_BOSS))
+		if (boss && !(sit->type != TTYPE_HORDE_BOSS))
 			continue;
 
 		SpawnPointWeight weight;
@@ -606,6 +613,16 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 			ret.push_back(*it);
 	}
 
+	// If we're blocked and tried to spawn more than 1 monster, try spawning
+	// just one as a fallback.
+	if (ret.empty() && recipe.count > 1)
+	{
+		ok.clear();
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0), target, flags));
+		if (*ok.begin() != NULL)
+			ok.clear();
+	}
+
 	return ret;
 }
 
@@ -623,10 +640,11 @@ void P_ClearHordeSpawnPoints()
 	spawn::spawns.clear();
 }
 
-void P_AddHordeSpawnPoint(AActor* mo)
+void P_AddHordeSpawnPoint(AActor* mo, const int type)
 {
 	spawn::SpawnPoint sp;
 	sp.mo = mo->self;
+	sp.type = type;
 	spawn::spawns.push_back(sp);
 }
 
@@ -695,14 +713,13 @@ void P_RunHordeTics()
 			player_t* target = pr.players.at(P_RandomInt(pr.count));
 
 			// Choose a spawn point.
-			spawn::SpawnPoint* spawn =
-			    spawn::GetSpawnCandidate(target, ::SPAWN_GROUND | ::SPAWN_AIR);
+			spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(target, 0);
 			if (spawn == NULL)
 				continue;
 
 			// Spawn some monsters.
 			recipe::recipe_t recipe;
-			const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->mo->health,
+			const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->type, 0,
 			                                       pressureHealth - spawned);
 			if (!ok)
 				continue;
@@ -738,7 +755,7 @@ void P_RunHordeTics()
 		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
 
 		recipe::recipe_t recipe;
-		const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->mo->health,
+		const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->type, ::SPAWN_BOSS,
 		                                       define.maxGroupHealth);
 		if (!ok)
 			break;
@@ -753,6 +770,11 @@ void P_RunHordeTics()
 bool P_IsHordeMode()
 {
 	return sv_gametype == GM_HORDE;
+}
+
+bool P_IsHordeThing(const int type)
+{
+	return type >= TTYPE_HORDE_MONSTER && type <= TTYPE_HORDE_SNIPER;
 }
 
 BEGIN_COMMAND(horde_round)

@@ -2338,10 +2338,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 
 		DeathMatchStarts.push_back(*mthing);
-
-		// If we're in a horde mode, spawn a thing.
-		if (!P_IsHordeMode())
-			return;
+		return;
 	}
 
 	if (sv_teamspawns)
@@ -2446,20 +2443,15 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// check for apropriate skill level
-	// [AM] Unless it's a mapthing related to horde mode, in which case the
-	//      flags can take on new meanings.
-	if (mthing->type != 11)
-	{
-		if (sv_skill == sk_baby)
-			bit = 1;
-		else if (sv_skill == sk_nightmare)
-			bit = 4;
-		else
-			bit = 1 << (sv_skill.asInt() - 2);
+	if (sv_skill == sk_baby)
+		bit = 1;
+	else if (sv_skill == sk_nightmare)
+		bit = 4;
+	else
+		bit = 1 << (sv_skill.asInt() - 2);
 
-		if (!(mthing->flags & bit))
-			return;
-	}
+	if (!(mthing->flags & bit))
+		return;
 
 	// [RH] sound sequence overrides
 	if (mthing->type >= 1400 && mthing->type < 1410)
@@ -2489,9 +2481,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	// [AM] If we're this far and we found a deathmatch spawn, it's a horde
-	//      mode spawn.
-	if (mthing->type == 11)
+	if (P_IsHordeThing(mthing->type))
 	{
 		i = MT_MONSTERSPAWN;
 	}
@@ -2608,7 +2598,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i == MT_MONSTERSPAWN)
 	{
 		// Make sure we catalog monster spawns.
-		P_AddHordeSpawnPoint(mobj);
+		P_AddHordeSpawnPoint(mobj, mthing->type);
 	}
 
 	if (z == ONFLOORZ)
@@ -2621,12 +2611,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{ // Seed random starting index for bobbing motion
 		mobj->health = M_Random();
 		mobj->special1 = mthing->z << FRACBITS;
-	}
-
-	// [AM] Monster spanwers translate their thing flags into the health field.
-	if (mobj->type == MT_MONSTERSPAWN)
-	{
-		mobj->health = mthing->flags;
 	}
 
 	// [RH] Set the thing's special
