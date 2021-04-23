@@ -447,6 +447,7 @@ static const char *MapInfoMapLevel[] =
     "compat_dropoff",
 	"compat_trace",
 	"compat_boomscroll",
+	"compat_sectorsounds",
 	NULL
 };
 
@@ -557,6 +558,8 @@ MapInfoHandler MapHandlers[] =
     // compat_trace <value>
     {MITYPE_EATNEXT, 0, 0},
     // compat_boomscroll <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_sectorsounds <value>
     {MITYPE_EATNEXT, 0, 0},
 };
 
