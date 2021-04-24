@@ -44,48 +44,97 @@ typedef std::vector<AActor*> AActors;
 const int SPAWN_BOSS = BIT(0);
 const int SPAWN_AMBUSH = BIT(1);
 
+enum roundMonsterType_e
+{
+	RM_NULL,
+	RM_NORMAL,
+	RM_BOSS,
+	RM_BOSSONLY,
+};
+
+struct roundMonster_t
+{
+	roundMonsterType_e monster;
+	mobjtype_t mobj;
+	float frequency;
+};
+
 struct roundDefine_t
 {
-	int monsterHealth;  // Maximum health of a single monster spawn.
-	int bossHealth;     // Maximum health of a single "boss" monster spawn.
-	int minGroupHealth; // Minimum health of a group of monsters to spawn.
-	int maxGroupHealth; // Maximum health of a group of monsters to spawn.
+	const roundMonster_t* monsters; // Monsters we can spawn this round.
+	int minGroupHealth;             // Minimum health of a group of monsters to spawn.
+	int maxGroupHealth;             // Maximum health of a group of monsters to spawn.
 	int minTotalHealth; // Lower bound on the amount of health in the map at once, aside
 	                    // from round end.
 	int maxTotalHealth; // Upper bound on the amount of health in the map at once.
 	int goalHealth;     // Base target health to win the round.
 };
 
+const roundMonster_t R1_MONSTERS[] = {
+    // Round 1 - Knee Deep in the Dead
+    {RM_NORMAL, MT_POSSESSED, 1.0f},
+    {RM_NORMAL, MT_SHOTGUY, 1.0f},
+    {RM_NORMAL, MT_TROOP, 1.0f},
+    {RM_NORMAL, MT_SERGEANT, 1.0f},
+    {RM_NORMAL, MT_SHADOWS, 1.0f},
+    {RM_BOSSONLY, MT_BRUISER, 1.0f},
+    {RM_NULL}};
+
+const roundMonster_t R2_MONSTERS[] = {
+    // Round 2 - The Crusher
+    {RM_NORMAL, MT_POSSESSED, 1.0f},
+    {RM_NORMAL, MT_SHOTGUY, 1.0f},
+    {RM_NORMAL, MT_CHAINGUY, 1.0f},
+    {RM_NORMAL, MT_TROOP, 1.0f},
+    {RM_NORMAL, MT_SKULL, 1.0f},
+    {RM_NORMAL, MT_SERGEANT, 1.0f},
+    {RM_NORMAL, MT_SHADOWS, 1.0f},
+    {RM_NORMAL, MT_UNDEAD, 1.0f},
+    {RM_NORMAL, MT_KNIGHT, 1.0f},
+    {RM_BOSSONLY, MT_SPIDER, 1.0f},
+    {RM_NULL}};
+
+const roundMonster_t R3_MONSTERS[] = {
+    // Round 3 - Go 2 It
+    {RM_NORMAL, MT_CHAINGUY, 1.0f},
+    {RM_NORMAL, MT_SERGEANT, 1.0f},
+    {RM_NORMAL, MT_UNDEAD, 1.0f},
+    {RM_NORMAL, MT_PAIN, 1.0f},
+    {RM_NORMAL, MT_BRUISER, 1.0f},
+    {RM_NORMAL, MT_BABY, 1.0f},
+    {RM_NORMAL, MT_FATSO, 1.0f},
+    {RM_NORMAL, MT_VILE, 1.0f},
+    {RM_BOSS, MT_CYBORG, 0.25f},
+    {RM_BOSSONLY, MT_SPIDER, 1.0f},
+    {RM_NULL}};
+
 const roundDefine_t ROUND_DEFINES[3] = {
     // Round 1
     {
-        150,  // monsterHealth
-        150,  // bossHealth
-        150,  // minGroupHealth
-        300,  // maxGroupHealth
-        600,  // minTotalHealth
-        1200, // maxTotalHealth
-        2400, // goalHealth
+        R1_MONSTERS, // monsters
+        150,         // minGroupHealth
+        300,         // maxGroupHealth
+        600,         // minTotalHealth
+        1200,        // maxTotalHealth
+        2400,        // goalHealth
     },
     // Round 2
     {
-        600,  // monsterHealth
-        700,  // bossHealth
-        600,  // minGroupHealth
-        1200, // maxGroupHealth
-        2000, // minTotalHealth
-        4800, // maxTotalHealth
-        9600, // goalHealth
+        R2_MONSTERS, // monsters
+        600,         // minGroupHealth
+        1200,        // maxGroupHealth
+        2000,        // minTotalHealth
+        4800,        // maxTotalHealth
+        9600,        // goalHealth
     },
     // Round 3
     {
-        1000,  // monsterHealth
-        4000,  // bossHealth
-        1000,  // minGroupHealth
-        2000,  // maxGroupHealth
-        4000,  // minTotalHealth
-        8000,  // maxTotalHealth
-        16000, // goalHealth
+        R3_MONSTERS, // monsters
+        1000,        // minGroupHealth
+        2000,        // maxGroupHealth
+        4000,        // minTotalHealth
+        8000,        // maxTotalHealth
+        16000,       // goalHealth
     }};
 
 class HordeRoundState
@@ -256,62 +305,6 @@ struct recipe_t
 	int count;
 };
 
-typedef std::vector<mobjtype_t> mobjTypes_t;
-
-static bool CmpHealth(const mobjtype_t& a, const mobjtype_t& b)
-{
-	return ::mobjinfo[a].height < ::mobjinfo[b].height;
-}
-
-static const mobjTypes_t& GatherMonsters()
-{
-	// [AM] FIXME: This will break on WAD reload, this is just "for now".
-	static mobjTypes_t all;
-
-	if (all.empty())
-	{
-		for (size_t i = 0; i < ARRAY_LENGTH(::mobjinfo); i++)
-		{
-			// [AM] FIXME: Don't hardcode mobj exceptions, this basically makes
-			//             that mobj unusable even when using DEH/BEX.
-			if (i == MT_DOGS || i == MT_WOLFSS)
-				continue;
-
-			// Is this a monster? [AM] FIXME: Ditto.
-			if (!(::mobjinfo[i].flags & MF_COUNTKILL) && i != MT_SKULL)
-				continue;
-
-			// Does this monster have any attacks?  (Skips keen)
-			if (::mobjinfo[i].missilestate == S_NULL &&
-			    ::mobjinfo[i].meleestate == S_NULL)
-				continue;
-
-			// Is this monster a flying monster?
-			if (::mobjinfo[i].flags & (MF_FLOAT | MF_NOGRAVITY))
-			{
-				// Monster is a flying monster.
-				all.push_back(static_cast<mobjtype_t>(i));
-			}
-			else if (::mobjinfo[i].missilestate == S_NULL &&
-			         ::mobjinfo[i].meleestate != S_NULL)
-			{
-				// Monster is melee-only monster.
-				all.push_back(static_cast<mobjtype_t>(i));
-			}
-			else
-			{
-				// Monster is a ranged monster.
-				all.push_back(static_cast<mobjtype_t>(i));
-			}
-		}
-
-		// Sort monsters by health.
-		std::sort(all.begin(), all.end(), CmpHealth);
-	}
-
-	return all;
-}
-
 /**
  * @brief Get a recipe of monsters to spawn.
  *
@@ -325,20 +318,23 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 {
 	const bool wantBoss = flags & ::SPAWN_BOSS;
 
-	mobjTypes_t types;
+	std::vector<const roundMonster_t*> monsters;
 
 	// Figure out which monster we want to spawn.
-	const mobjTypes_t& all = GatherMonsters();
-	for (mobjTypes_t::const_iterator it = all.begin(); it != all.end(); ++it)
+	for (size_t i = 0;; i++)
 	{
-		const mobjinfo_t& info = ::mobjinfo[*it];
+		const roundMonster_t& roundMon = define.monsters[i];
+		if (roundMon.monster == RM_NULL)
+			break;
 
-		// Make sure health is OK.
-		if (info.spawnhealth > (wantBoss ? define.bossHealth : define.monsterHealth))
+		const mobjinfo_t& info = ::mobjinfo[roundMon.mobj];
+
+		// Boss spawns have to spawn boss things.
+		if (type == ::TTYPE_HORDE_BOSS && roundMon.monster == RM_NORMAL)
 			continue;
 
-		// Boss spawns have to spawn things with boss health.
-		if (type == ::TTYPE_HORDE_BOSS && info.spawnhealth <= define.monsterHealth)
+		// Non-boss spawns have to spawn non-boss things.
+		if (type != ::TTYPE_HORDE_BOSS && roundMon.monster == RM_BOSSONLY)
 			continue;
 
 		// Flying spawns have to spawn flying monsters.
@@ -347,25 +343,25 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 
 		// Snipers have to have a ranged attack.
 		if (type == ::TTYPE_HORDE_SNIPER &&
-		    (info.missilestate == S_NULL || *it == MT_SKULL))
+		    (info.missilestate == S_NULL || roundMon.mobj == MT_SKULL))
 			continue;
 
-		types.push_back(*it);
+		monsters.push_back(&roundMon);
 	}
 
 	// No valid monsters can be spawned at this point.
-	if (types.empty())
+	if (monsters.empty())
 		return false;
 
-	size_t resultIdx = P_RandomInt(types.size());
-	out.type = types.at(resultIdx);
+	size_t resultIdx = P_RandomInt(monsters.size());
+	out.type = monsters.at(resultIdx)->mobj;
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
 	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
-	const int health = ::mobjinfo[types.at(resultIdx)].spawnhealth;
+	const int health = ::mobjinfo[monsters.at(resultIdx)->mobj].spawnhealth;
 	const int upper = clamp(maxHealth, 1, 4);
 	const int lower = clamp(define.minGroupHealth / health, 1, 4);
-	if (upper == lower)
+	if (upper <= lower)
 	{
 		// Only one possibility.
 		out.count = upper;
@@ -414,8 +410,10 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 	SpawnPointWeights weights;
 	for (SpawnPoints::iterator sit = spawns.begin(); sit != spawns.end(); ++sit)
 	{
-		// For boss spawns, filter out non-boss points.
-		if (boss && !(sit->type != TTYPE_HORDE_BOSS))
+		// Don't spawn bosses at non-boss spawns.
+		if (boss && sit->type != TTYPE_HORDE_BOSS)
+			continue;
+		else if (!boss && sit->type == TTYPE_HORDE_BOSS)
 			continue;
 
 		SpawnPointWeight weight;
@@ -673,6 +671,9 @@ void P_RemoveHealthPool(AActor* mo)
 
 void P_RunHordeTics()
 {
+	if (::sv_gametype != GM_HORDE)
+		return;
+
 	// Move this function to tick inside someplace that can be paused.
 	if (::paused)
 		return;
