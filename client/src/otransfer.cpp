@@ -24,6 +24,7 @@
 
 #include "cmdlib.h"
 #include "i_system.h"
+#include "m_fileio.h"
 #include "w_ident.h"
 #include "w_wad.h"
 
@@ -425,15 +426,46 @@ bool OTransfer::tick()
 	int ok = rename(m_filePart.c_str(), m_filename.c_str());
 	if (ok != 0)
 	{
-		std::string buf;
-		StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
-		          m_filename.c_str(), strerror(errno));
-		m_errorProc(buf.c_str());
-		return false;
+		// See if we can write a file with a partial hash.
+		std::string path, base, ext, fallback;
+		M_ExtractFilePath(m_filename, path);
+		M_ExtractFileBase(m_filename, base);
+		if (M_ExtractFileExtension(m_filename, ext))
+		{
+			ext = std::string(".") + ext;
+		}
+		StrFormat(fallback, "%s%s%s.%s%s", path.c_str(), PATHSEP, base.c_str(),
+		          actualHash.substr(0, 6).c_str(), ext.c_str());
+
+		// Try one more time.
+		ok = rename(m_filePart.c_str(), fallback.c_str());
+		if (ok != 0)
+		{
+			// Something is seriously wrong with our writable directory.
+			m_shouldCheckAgain = false;
+
+			std::string buf;
+			StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
+			          m_filename.c_str(), strerror(errno));
+			m_errorProc(buf.c_str());
+			return false;
+		}
+
+		Printf("Saved to fallback location \"%s\".\n", fallback.c_str());
+	}
+	else
+	{
+		Printf("Saved to location \"%s\".\n", m_filename.c_str());
 	}
 
+	m_shouldCheckAgain = false;
 	m_doneProc(info);
 	return false;
+}
+
+bool OTransfer::shouldCheckAgain() const
+{
+	return m_shouldCheckAgain;
 }
 
 std::string OTransfer::getFilename() const

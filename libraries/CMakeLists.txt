@@ -141,7 +141,7 @@ if(BUILD_SERVER)
     "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
     "-DCMAKE_LINKER=${CMAKE_LINKER}"
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
 
@@ -161,8 +161,7 @@ if(BUILD_SERVER)
     # Single config uses the passed build type.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config ${CMAKE_BUILD_TYPE} --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --target install --parallel ${PARALLEL_PROC_COUNT})
   endif()
 
   # Synthesize an imported target that can be linked against.
@@ -170,6 +169,7 @@ if(BUILD_SERVER)
   set_target_properties(jsoncpp PROPERTIES
     INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
     INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
+    IMPORTED_LOCATION ${JSONCPP_LIBRARY_RELEASE}
     IMPORTED_LOCATION_DEBUG ${JSONCPP_LIBRARY_DEBUG}
     IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
     MAP_IMPORTED_CONFIG_MINSIZEREL Release
