@@ -56,7 +56,7 @@ struct roundMonster_t
 {
 	roundMonsterType_e monster;
 	mobjtype_t mobj;
-	float frequency;
+	float chance;
 };
 
 struct roundDefine_t
@@ -353,12 +353,24 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 	if (monsters.empty())
 		return false;
 
-	size_t resultIdx = P_RandomInt(monsters.size());
-	out.type = monsters.at(resultIdx)->mobj;
+	for (size_t i = 0; i < 8; i++)
+	{
+		size_t resultIdx = P_RandomInt(monsters.size());
+		out.type = monsters.at(resultIdx)->mobj;
+
+		// Chance is 100%?
+		if (monsters.at(resultIdx)->chance == 1.0f)
+			break;
+
+		// Chance is within bounds of a random number?
+		float chance = P_RandomFloat();
+		if (monsters.at(resultIdx)->chance >= chance)
+			break;
+	}
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
 	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
-	const int health = ::mobjinfo[monsters.at(resultIdx)->mobj].spawnhealth;
+	const int health = ::mobjinfo[out.type].spawnhealth;
 	const int upper = clamp(maxHealth, 1, 4);
 	const int lower = clamp(define.minGroupHealth / health, 1, 4);
 	if (upper <= lower)
