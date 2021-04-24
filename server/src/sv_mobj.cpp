@@ -31,6 +31,7 @@
 #include "m_vectors.h"
 #include "sv_main.h"
 #include "p_acs.h"
+#include "g_spawninv.h"
 
 EXTERN_CVAR(sv_maxplayers)
 
@@ -130,6 +131,10 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		for (int i = 0; i < NUMCARDS; i++)
 			player.cards[i] = true;
 	}
+
+	// Give any other between-level inventory.
+	if (!player.spectator)
+		G_GiveBetweenInventory(player);
 
 	if (serverside)
 	{

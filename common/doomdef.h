@@ -69,6 +69,33 @@ enum baseapp_t
 
 extern baseapp_t baseapp;
 
+// [AM] These macros exist so function calls to CL/SV functions can exist
+//      without having to create a stub for them.
+
+#if defined(CLIENT_APP)
+/**
+ * @brief The passed expression only appears on the client.
+ */
+#define CLIENT_ONLY(expr) expr
+#else
+/**
+ * @brief The passed expression only appears on the client.
+ */
+#define CLIENT_ONLY(expr)
+#endif
+
+#if defined(SERVER_APP)
+/**
+ * @brief The passed expression only appears on the server.
+ */
+#define SERVER_ONLY(expr) expr
+#else
+/**
+ * @brief The passed expression only appears on the server.
+ */
+#define SERVER_ONLY(expr)
+#endif
+
 // 
 // Environment Platform
 // 

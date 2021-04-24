@@ -92,8 +92,6 @@ static char *Line1, *Line2;
 static int	 dversion, pversion;
 static BOOL  including, includenotext;
 
-static const char *unknown_str = "Unknown key %s encountered in %s %d.\n";
-
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
 // Written by Greg Lewis, gregl@umich.edu.
@@ -584,6 +582,11 @@ static size_t filelen = 0;	// Be quiet, gcc
 
 #define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == (int)filelen)
 
+static void PrintUnknown(const char* key, const char* loc, const size_t idx)
+{
+	DPrintf("Unknown key %s encountered in %s (%" PRIuSIZE ").\n", key, loc, idx);
+}
+
 static int HandleMode (const char *mode, int num)
 {
 	int i = 0;
@@ -1005,10 +1008,10 @@ static int PatchThing (int thingy)
 	thingNum--;
 	if (thingNum < NUMMOBJTYPES) {
 		info = &mobjinfo[thingNum];
-		DPrintf ("Thing %d\n", thingNum);
+		DPrintf("Thing %" PRIuSIZE "\n", thingNum);
 	} else {
 		info = &dummy;
-		DPrintf ("Thing %d out of range.\n", thingNum + 1);
+		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum + 1);
 	}
 
 	while ((result = GetLine ()) == 1) {
@@ -1083,7 +1086,10 @@ static int PatchThing (int thingy)
 				if (v2changed)
 					info->flags2 = value2;
 			}
-			else DPrintf (unknown_str, Line1, "Thing", thingNum);
+			else
+			{
+				PrintUnknown(Line1, "Thing", thingNum);
+			}
 		} else if (!stricmp (Line1, "Height")) {
 			hadHeight = true;
 		}
@@ -1127,7 +1133,7 @@ static int PatchSound (int soundNum)
 		else CHECKKEY ("Zero 2",			info->data)
 		else CHECKKEY ("Zero 3",			info->usefulness)
 		else CHECKKEY ("Zero 4",			info->lumpnum)
-		else DPrintf (unknown_str, Line1, "Sound", soundNum);
+		else PrintUnknown(Line1, "Sound", soundNum);
 		*/
 	}
 /*
@@ -1176,7 +1182,7 @@ static int PatchFrame (int frameNum)
 
 	while ((result = GetLine ()) == 1)
 		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			DPrintf (unknown_str, Line1, "Frame", frameNum);
+			PrintUnknown(Line1, "Frame", frameNum);
 
 	return result;
 }
@@ -1196,7 +1202,8 @@ static int PatchSprite (int sprNum)
 	while ((result = GetLine ()) == 1) {
 		if (!stricmp ("Offset", Line1))
 			offset = atoi (Line2);
-		else DPrintf (unknown_str, Line1, "Sprite", sprNum);
+		else
+			PrintUnknown(Line1, "Sprite", sprNum);
 	}
 
 	if (offset > 0 && sprNum != -1) {
@@ -1234,7 +1241,7 @@ static int PatchAmmo (int ammoNum)
 	while ((result = GetLine ()) == 1) {
 			 CHECKKEY ("Max ammo", *max)
 		else CHECKKEY ("Per ammo", *per)
-		else DPrintf (unknown_str, Line1, "Ammo", ammoNum);
+		else PrintUnknown(Line1, "Ammo", ammoNum);
 	}
 
 	return result;
@@ -1267,7 +1274,7 @@ static int PatchWeapon (int weapNum)
 
 	while ((result = GetLine ()) == 1)
 		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			DPrintf (unknown_str, Line1, "Weapon", weapNum);
+			PrintUnknown(Line1, "Weapon", weapNum);
 
 	return result;
 }
@@ -1299,7 +1306,10 @@ static int PatchPointer (int ptrNum)
 		    else
                 states[codepconv[ptrNum]].action = OrgActionPtrs[i];
 		}
-		else DPrintf (unknown_str, Line1, "Pointer", ptrNum);
+		else
+		{
+			PrintUnknown(Line1, "Pointer", ptrNum);
+		}
 	}
 	return result;
 }

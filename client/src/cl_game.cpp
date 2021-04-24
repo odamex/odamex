@@ -62,6 +62,7 @@
 #include "cl_demo.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
+#include "g_spawninv.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1148,16 +1149,11 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.flags[i] = false;
 	p.backpack = false;
 
+	G_GiveSpawnInventory(p);
+
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
-	p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
-	p.armortype = 0;
-	p.armorpoints = 0;
-	p.readyweapon = p.pendingweapon = wp_pistol;
-	p.weaponowned[wp_fist] = true;
-	p.weaponowned[wp_pistol] = true;
 	p.weaponowned[NUMWEAPONS] = true;
-	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 
 	if (!p.spectator)
 		p.cheats = 0; // Reset cheat flags

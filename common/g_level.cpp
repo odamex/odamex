@@ -404,6 +404,7 @@ static const char *MapInfoMapLevel[] =
     "compat_dropoff",
 	"compat_trace",
 	"compat_boomscroll",
+	"compat_sectorsounds",
 	NULL
 };
 
@@ -514,6 +515,8 @@ MapInfoHandler MapHandlers[] =
     // compat_trace <value>
     {MITYPE_EATNEXT, 0, 0},
     // compat_boomscroll <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_sectorsounds <value>
     {MITYPE_EATNEXT, 0, 0},
 };
 
@@ -2904,7 +2907,7 @@ BEGIN_COMMAND(mapinfo)
 	LevelInfos& levels = getLevelInfos();
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf(PRINT_HIGH, "%u maps found\n", levels.size());
+		Printf(PRINT_HIGH, "%" PRIuSIZE " maps found\n", levels.size());
 		return;
 	}
 

@@ -31,6 +31,7 @@
 	#include <mach/clock.h>
 	#include <mach/mach.h>
 	#include <Carbon/Carbon.h>
+	#include <CoreFoundation/CoreFoundation.h>
 #endif
 
 #include "win32inc.h"
@@ -507,54 +508,97 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-NORETURN void STACK_ARGS I_FatalError (const char *error, ...)
+NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 {
 	char errortext[MAX_ERRORTEXT];
+	char messagetext[MAX_ERRORTEXT];
+
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
 
-	if (!alreadyThrown)		// ignore all but the first message -- killough
+	if (!alreadyThrown) // ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
 		va_list argptr;
-		va_start (argptr, error);
-		int index = vsprintf (errortext, error, argptr);
-		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
-		va_end (argptr);
+		va_start(argptr, error);
+		int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+		if (SDL_GetError()[0] != '\0')
+		{
+			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\nLast SDL Error:\n%s\n",
+			         errortext, SDL_GetError());
+			SDL_ClearError();
+		}
+		else
+		{
+			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\n", errortext);
+		}
+		va_end(argptr);
 
-		throw CFatalError (errortext);
+		throw CFatalError(messagetext);
 	}
 
-	if (!has_exited)	// If it hasn't exited yet, exit now -- killough
+	if (!has_exited) // If it hasn't exited yet, exit now -- killough
 	{
-		has_exited = 1;	// Prevent infinitely recursive exits -- killough
+		has_exited = 1; // Prevent infinitely recursive exits -- killough
 
 		call_terms();
 
 		exit(EXIT_FAILURE);
 	}
 
-	// Something has seriously gone sideways.
+	// Recursive atterm, we've used up all our chances.
 	va_list argptr;
 	va_start(argptr, error);
-	fprintf(stderr, "Recursive I_FatalError detected!\r\nError = ");
-	vfprintf(stderr, error, argptr);
-	fprintf(stderr, "\r\nSDL_GetError = %s\r\n", SDL_GetError());
+	int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+	if (SDL_GetError()[0] != '\0')
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
+		         errortext, SDL_GetError());
+	}
+	else
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\n", errortext);
+	}
 	va_end(argptr);
+
+	I_ErrorMessageBox(messagetext);
 
 	abort();
 }
 
-void STACK_ARGS I_Error (const char *error, ...)
+void STACK_ARGS I_Error(const char* error, ...)
 {
 	va_list argptr;
 	char errortext[MAX_ERRORTEXT];
+	char messagetext[MAX_ERRORTEXT];
 
-	va_start (argptr, error);
-	vsprintf (errortext, error, argptr);
-	va_end (argptr);
+	va_start(argptr, error);
+	vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+	va_end(argptr);
 
-	throw CRecoverableError (errortext);
+	if (!has_exited)
+	{
+		throw CRecoverableError(errortext);
+	}
+
+	// Recursive atterm, we've used up all our chances.
+	if (SDL_GetError()[0] != '\0')
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
+		         errortext, SDL_GetError());
+	}
+	else
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\n", errortext);
+	}
+
+	I_ErrorMessageBox(messagetext);
+
+	abort();
 }
 
 void STACK_ARGS I_Warning(const char *warning, ...)
@@ -934,6 +978,42 @@ bool I_IsHeadless()
 
 	return headless;
 }
+
+const char* ODAMEX_ERROR_TITLE = "Odamex " DOTVERSIONSTR " Fatal Error";
+
+#if defined(SDL20)
+
+void I_ErrorMessageBox(const char* message)
+{
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ODAMEX_ERROR_TITLE, message, NULL);
+}
+
+#elif defined(WIN32) && !defined(_XBOX)
+
+void I_ErrorMessageBox(const char* message)
+{
+	MessageBoxA(NULL, message, ODAMEX_ERROR_TITLE, MB_OK);
+}
+
+#elif OSX
+
+void I_ErrorMessageBox(const char* message)
+{
+	CFStringRef macErrorMessage =
+	    CFStringCreateWithCString(NULL, message, kCFStringEncodingMacRoman);
+	CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR(ODAMEX_ERROR_TITLE),
+	                               macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
+	CFRelease(macErrorMessage);
+}
+
+#else
+
+void I_ErrorMessageBox(const char* message)
+{
+	fprintf(stderr, "%s\n%s\n", ODAMEX_ERROR_TITLE, message);
+}
+
+#endif
 
 #if defined(_DEBUG)
 
