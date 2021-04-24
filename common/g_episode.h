@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: 
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
@@ -17,27 +17,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Setup a game, startup stuff.
-//
+//   Episode data for defining new episodes.
+// 
 //-----------------------------------------------------------------------------
 
+#ifndef __G_EPISODE__
+#define __G_EPISODE__
 
-#ifndef __P_SETUP__
-#define __P_SETUP__
+#include "doomdef.h"
 
+#define MAX_EPISODES 8
 
+struct EpisodeInfo
+{
+	std::string name;
+	char key;
+	bool fulltext;
+	bool noskillmenu;
+};
 
-// NOT called by W_Ticker. Fixme.
-//
-// [RH] The only parameter used is mapname, so I removed playermask and skill.
-//		On September 1, 1998, I added the position to indicate which set
-//		of single-player start spots should be spawned in the level.
-void P_SetupLevel (char *mapname, int position);
-
-// Called by startup code.
-void P_Init (void);
-
-void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
+extern char EpisodeMaps[MAX_EPISODES][8];
+extern EpisodeInfo EpisodeInfos[MAX_EPISODES];
+extern byte episodenum;
+extern bool episodes_modified; // Used by UMAPINFO only
 
 #endif
-

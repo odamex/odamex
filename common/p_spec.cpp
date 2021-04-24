@@ -1316,14 +1316,14 @@ void P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
+void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(thing, line))
+	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	if(thing)
+	if(!bossaction && thing)
 	{
 		//	Triggers that other things can activate
 		if (!thing->player && thing->type != MT_AVATAR)
@@ -1341,10 +1341,10 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 				case MT_TROOPSHOT:
 				case MT_HEADSHOT:
 				case MT_BRUISERSHOT:
-					return;
-					break;
+				return;
 
-				default: break;
+				default:
+				break;
 			}
 
             // This breaks the ability for the eyes to activate the silent teleporter lines
@@ -1410,7 +1410,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 			}
 		}
 	}
-
+	
 	TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1467,9 +1467,9 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
-bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
+bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
-	if (!P_CanActivateSpecials(thing, line))
+	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1485,11 +1485,10 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 
 		default:
 			return false;
-			break;
 		}
 	}
 
-	if(thing)
+	if(!bossaction && thing)
 	{
 		if ((GET_SPAC(line->flags) != SPAC_USE) &&
 			(GET_SPAC(line->flags) != SPAC_PUSH) &&
@@ -1515,7 +1514,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 				return false;
 		}
 	}
-
+	
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],

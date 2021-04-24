@@ -3512,11 +3512,11 @@ void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activa
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo);
+			P_CrossSpecialLine(line - lines, side, mo, false);
 		break;
 	case LineUse:
 		if (line)
-			P_UseSpecialLine(mo, line, side);
+			P_UseSpecialLine(mo, line, side, false);
 		break;
 	case LineShoot:
 		if (line)

@@ -359,6 +359,8 @@ static const char*		lnametexts[2];
 
 static IWindowSurface*	background_surface;
 
+static bool is_custom_interpic;
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_newintermission)
 EXTERN_CVAR (cl_autoscreenshot)
@@ -659,7 +661,7 @@ void WI_updateAnimatedBack (void)
 
 void WI_drawAnimatedBack()
 {
-	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0)
+	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0 && !is_custom_interpic)
 	{
 		DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -834,7 +836,7 @@ void WI_drawShowNextLoc (void)
 	// draw animated background
 	WI_drawAnimatedBack();
 
-	if (gamemode != commercial && gamemode != commercial_bfg)
+	if (gamemode != commercial && gamemode != commercial_bfg && !is_custom_interpic)
 	{
 		if (wbs->epsd > 2)
 		{
@@ -1229,6 +1231,22 @@ void WI_updateStats(void)
 	{
 	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
+		// check if incoming level has enterpic
+		if (level.enterpic[0] != '\0')
+		{
+			// free previous surface
+			I_FreeSurface(background_surface);
+			
+			// new background
+			const patch_t* bg_patch = W_CachePatch(level.enterpic);
+			background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+			DCanvas* canvas = background_surface->getDefaultCanvas();
+
+			background_surface->lock();
+			canvas->DrawPatch(bg_patch, 0, 0);
+			background_surface->unlock();
+		}
+		
 	    if ((gameinfo.flags & GI_MAPxx))
 		WI_initNoState();
 	    else
@@ -1385,12 +1403,18 @@ static int WI_CalcWidth (const char *str)
 void WI_loadData (void)
 {
 	LevelInfos& levels = getLevelInfos();
+	is_custom_interpic = false;
 
 	int i, j;
 	char name[17];
 	animinfo_t *a;
 
-	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+	if (level.exitpic[0] != '\0')
+	{
+		is_custom_interpic = true;
+		strncpy(name, level.exitpic, 8);
+	}
+	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");
 	else
 		sprintf(name, "WIMAP%d", wbs->epsd);
@@ -1420,7 +1444,7 @@ void WI_loadData (void)
 		else
 		{
 			lnames[i] = NULL;
-			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name;
+			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
 	}
@@ -1436,7 +1460,7 @@ void WI_loadData (void)
 		// splat
 		splat = W_CachePatch ("WISPLAT", PU_STATIC);
 
-		if (wbs->epsd < 3)
+		if (wbs->epsd < 3 && !is_custom_interpic)
 		{
 			for (j=0;j<NUMANIMS[wbs->epsd];j++)
 			{
