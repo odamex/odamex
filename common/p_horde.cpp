@@ -165,6 +165,7 @@ class HordeState
 	HordeRoundState m_roundState;
 	int m_spawnedHealth;
 	int m_killedHealth;
+	int m_roundStartHealth;
 	AActors m_bosses;
 
 	void setState(const hordeState_e state)
@@ -180,6 +181,7 @@ class HordeState
 		m_roundState.setRound(1);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
+		m_roundStartHealth = 0;
 	}
 
 	void next()
@@ -192,6 +194,7 @@ class HordeState
 
 		setState(HS_STARTING);
 		m_roundState.setRound(m_roundState.getRound() + 1);
+		setStartHealth();
 	}
 
 	/**
@@ -204,7 +207,7 @@ class HordeState
 		info.round = m_roundState.getRound();
 		info.spawned = m_spawnedHealth;
 		info.killed = m_killedHealth;
-		info.goal = m_roundState.getDefine().goalHealth;
+		info.goal = m_roundState.getDefine().goalHealth + m_roundStartHealth;
 		return info;
 	}
 
@@ -238,6 +241,11 @@ class HordeState
 		m_bosses = bosses;
 	}
 
+	void setStartHealth()
+	{
+		m_roundStartHealth = m_killedHealth;
+	}
+
 	void stateSwitch()
 	{
 		const roundDefine_t& define = m_roundState.getDefine();
@@ -248,7 +256,7 @@ class HordeState
 		case HS_STARTING:
 			setState(HS_PRESSURE);
 		case HS_PRESSURE: {
-			if (m_killedHealth > define.goalHealth)
+			if (m_killedHealth > define.goalHealth + m_roundStartHealth)
 			{
 				setState(HS_BOSS);
 				return;
@@ -261,7 +269,7 @@ class HordeState
 			return;
 		}
 		case HS_RELAX: {
-			if (m_killedHealth > define.goalHealth)
+			if (m_killedHealth > define.goalHealth + m_roundStartHealth)
 			{
 				setState(HS_BOSS);
 				return;
@@ -804,5 +812,6 @@ BEGIN_COMMAND(horde_round)
 	}
 
 	::gDirector.getRoundState().setRound(round);
+	::gDirector.setStartHealth();
 }
 END_COMMAND(horde_round)
