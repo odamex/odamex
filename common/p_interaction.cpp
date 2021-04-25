@@ -1468,6 +1468,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		return;
     }
 
+	// [AM] Target is invulnerable to infighting from any non-player source.
+	if (source && source->player == NULL && target->oflags & MFO_INFIGHTINVUL)
+	{
+		return;
+	}
+
 	MeansOfDeath = mod;
 
 	TeamInfo* teamInfo = NULL;
@@ -1658,11 +1664,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		target->reactiontime = 0;			// we're awake now...
 
-		if ((!target->threshold || target->type == MT_VILE)
-			 && source && source != target
-			 && source->type != MT_VILE)
+		if ((!target->threshold || target->type == MT_VILE) && source &&
+		    source != target && source->type != MT_VILE &&
+		    !(source->oflags & MFO_INFIGHTINVUL))
 		{
 			// if not intent on another player, chase after this one
+			// [AM] Infight invul monsters will never provoke attacks.
 
 			// killough 2/15/98: remember last enemy, to prevent
 			// sleeping early; 2/21/98: Place priority on players

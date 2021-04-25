@@ -24,6 +24,7 @@
 #include "p_horde.h"
 
 #include <math.h>
+#include <algorithm>
 
 #include "c_dispatch.h"
 #include "c_effect.h"
@@ -533,8 +534,6 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 	{
 		if (P_TestMobjLocation(mo))
 		{
-			P_AddHealthPool(mo);
-
 			// Don't respawn
 			mo->flags |= MF_DROPPED;
 
@@ -542,7 +541,13 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 			{
 				// Purple is the noblest shroud.
 				mo->effects = FX_PURPLEFOUNTAIN;
+
+				// Set flags as a boss.
+				mo->oflags = MFO_INFIGHTINVUL;
 			}
+
+			// Add (possibly adjusted) health to pool.
+			P_AddHealthPool(mo);
 
 			// This monster wakes up hating you and knows where you live.
 			mo->target = target->mo->ptr();
@@ -826,6 +831,9 @@ void P_RunHordeTics()
 				AActor* pack =
 				    new AActor(point.mo->x, point.mo->y, point.mo->z, MT_CAREPACK);
 				point.mo->target = pack->ptr();
+
+				// Don't respawn the usual way.
+				pack->flags |= MF_DROPPED;
 			}
 		}
 	}
