@@ -825,7 +825,7 @@ BOOL AM_Responder (event_t *ev)
 		}
 
 		bool res = C_DoKey(ev, &AutomapBindings, NULL);
-		if (ev->type == ev_keydown && sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
+		if (ev->type == ev_keydown && G_IsCoopGame() && cht_CheckCheat(&cheat_amap, (char)ev->data3))
 		{
 			cheating = (cheating + 1) % 3;
 			return true;
