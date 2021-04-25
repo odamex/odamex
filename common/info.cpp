@@ -7198,6 +7198,35 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		0x10000,
 		"MT_MONSTERSPAWN"
 	},
+	{                   // MT_CAREPACK
+		-1,             // doomednum
+		S_BPAK,         // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		20*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SPECIAL,     // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_CAREPACK"
+	},
 };
 
 VERSION_CONTROL (info_cpp, "$Id$")

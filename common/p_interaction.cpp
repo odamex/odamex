@@ -533,6 +533,109 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 	player->powers[power] = 1;
 	return IEV_EquipRemove;
 }
+
+/**
+ * @brief Give the player a care package.
+ * 
+ * @detail A care package gives you a small collection of items based on what
+ *         you're already holding.
+ */
+static void P_GiveCarePack(player_t* player)
+{
+	const bool hasBulletWeap =
+	    player->weaponowned[wp_pistol] || player->weaponowned[wp_chaingun];
+	const bool hasShellWeap =
+	    player->weaponowned[wp_shotgun] || player->weaponowned[wp_supershotgun];
+	const bool hasMissileWeap = player->weaponowned[wp_missile];
+	const bool hasCellWeap =
+	    player->weaponowned[wp_plasma] || player->weaponowned[wp_bfg];
+
+	// We get "blocks" of inventory to give out.
+	int blocks = 4;
+
+	// Players who are extremely low on health always get an initial health
+	// boost.
+	if (blocks >= 1 && player->mo->health < 25)
+	{
+		P_GiveBody(player, 25);
+		blocks -= 1;
+		Printf("CARE: Critical Health\n");
+	}
+
+	// Players who are extremely low on ammo for a weapon they are holding
+	// always get ammo for that weapon.
+	if (blocks >= 1 && hasBulletWeap && player->ammo[am_clip] < ::clipammo[am_clip] * 2)
+	{
+		P_GiveAmmo(player, am_clip, 5);
+		blocks -= 1;
+		Printf("CARE: Critical Clip\n");
+	}
+	if (blocks >= 1 && hasShellWeap && player->ammo[am_shell] < ::clipammo[am_shell] * 2)
+	{
+		P_GiveAmmo(player, am_shell, 5);
+		blocks -= 1;
+		Printf("CARE: Critical Shells\n");
+	}
+	if (blocks >= 1 && hasMissileWeap && player->ammo[am_misl] < ::clipammo[am_misl] * 2)
+	{
+		P_GiveAmmo(player, am_misl, 5);
+		blocks -= 1;
+		Printf("CARE: Critical Rockets\n");
+	}
+	if (blocks >= 1 && hasCellWeap && player->ammo[am_cell] < ::clipammo[am_cell] * 2)
+	{
+		P_GiveAmmo(player, am_cell, 5);
+		blocks -= 1;
+		Printf("CARE: Critical Cells\n");
+	}
+
+	// Players who have less than 100 health at this point get another health pack.
+	if (blocks >= 1 && player->mo->health < 100)
+	{
+		P_GiveBody(player, 25);
+		blocks -= 1;
+		Printf("CARE: Health\n");
+	}
+
+	// Give the player a missing weapon - just one.
+	if (blocks >= 1)
+	{
+		const weapontype_t* weapons = P_RoundWeapons();
+		for (size_t i = 0;; i++)
+		{
+			if (weapons[i] == wp_nochange)
+				break;
+
+			if (!player->weaponowned[weapons[i]])
+			{
+				P_GiveWeapon(player, weapons[i], false);
+				blocks -= 1;
+				Printf("CARE: Weapon\n");
+				break;
+			}
+		}
+	}
+
+	// Always give out a backpack full of ammo - that's always appreciated.
+	if (blocks >= 1)
+	{
+		for (int i = 0; i < NUMAMMO; i++)
+		{
+			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+		}
+		blocks -= 1;
+		Printf("CARE: Backpack\n");
+	}
+
+	// Does the player have armor?  If not, give it to them.
+	if (blocks >= 1 && player->armorpoints <= 25)
+	{
+		P_GiveArmor(player, 1);
+		blocks -= 1;
+		Printf("CARE: Armor\n");
+	}
+}
+
 static bool P_SpecialIsWeapon(AActor *special)
 {
 	if (!special)
@@ -789,21 +892,30 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			msg = &GOTSHELLBOX;
             break;
 
-	    case SPR_BPAK:
-            if (!player->backpack)
-            {
-                for (int i=0 ; i<NUMAMMO ; i++)
-                {
-                    player->maxammo[i] *= 2;
-                }
-                player->backpack = true;
-            }
-            for (int i=0 ; i<NUMAMMO ; i++)
-            {
-                P_GiveAmmo(player, (ammotype_t)i, 1);
-            }
-			msg = &GOTBACKPACK;
-            break;
+		case SPR_BPAK:
+			if (special->type == MT_CAREPACK)
+			{
+				// Care package.  What does it contian?
+				P_GiveCarePack(player);
+			}
+			else
+			{
+				// Normal backpack.
+				if (!player->backpack)
+				{
+					for (int i = 0; i < NUMAMMO; i++)
+					{
+						player->maxammo[i] *= 2;
+					}
+					player->backpack = true;
+				}
+				for (int i = 0; i < NUMAMMO; i++)
+				{
+					P_GiveAmmo(player, (ammotype_t)i, 1);
+				}
+				msg = &GOTBACKPACK;
+			}
+			break;
 
 		// weapons
 	    case SPR_BFUG:

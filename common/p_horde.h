@@ -27,8 +27,8 @@
 #include "actor.h"
 #include "doomdata.h"
 
-static const int TTYPE_HORDE_MONSTER = 5301;
-static const int TTYPE_HORDE_ITEM = 5302;
+static const int TTYPE_HORDE_ITEM = 5301;
+static const int TTYPE_HORDE_MONSTER = 5302;
 static const int TTYPE_HORDE_BOSS = 5303;
 static const int TTYPE_HORDE_FLYING = 5304;
 static const int TTYPE_HORDE_SNIPER = 5305;
@@ -58,5 +58,6 @@ void P_RemoveHealthPool(AActor* mo);
 void P_RunHordeTics();
 bool P_IsHordeMode();
 bool P_IsHordeThing(const int type);
+const weapontype_t* P_RoundWeapons();
 
 #endif // __G_DEATHWISH__

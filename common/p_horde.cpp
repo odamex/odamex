@@ -61,6 +61,7 @@ struct roundMonster_t
 
 struct roundDefine_t
 {
+	const weapontype_t* weapons;    // Weapons we can spawn this round.
 	const roundMonster_t* monsters; // Monsters we can spawn this round.
 	int minGroupHealth;             // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth;             // Maximum health of a group of monsters to spawn.
@@ -70,6 +71,7 @@ struct roundDefine_t
 	int goalHealth;     // Base target health to win the round.
 };
 
+const weapontype_t R1_WEAPONS[] = {wp_shotgun, wp_chaingun, wp_missile, wp_nochange};
 const roundMonster_t R1_MONSTERS[] = {
     // Round 1 - Knee Deep in the Dead
     {RM_NORMAL, MT_POSSESSED, 1.0f},
@@ -80,6 +82,8 @@ const roundMonster_t R1_MONSTERS[] = {
     {RM_BOSSONLY, MT_BRUISER, 1.0f},
     {RM_NULL}};
 
+const weapontype_t R2_WEAPONS[] = {wp_shotgun, wp_chaingun, wp_supershotgun,
+                                   wp_missile, wp_plasma,   wp_nochange};
 const roundMonster_t R2_MONSTERS[] = {
     // Round 2 - The Crusher
     {RM_NORMAL, MT_POSSESSED, 1.0f},
@@ -94,6 +98,8 @@ const roundMonster_t R2_MONSTERS[] = {
     {RM_BOSSONLY, MT_SPIDER, 1.0f},
     {RM_NULL}};
 
+const weapontype_t R3_WEAPONS[] = {wp_shotgun, wp_chaingun, wp_supershotgun, wp_missile,
+                                   wp_plasma,  wp_bfg,      wp_nochange};
 const roundMonster_t R3_MONSTERS[] = {
     // Round 3 - Go 2 It
     {RM_NORMAL, MT_CHAINGUY, 1.0f},
@@ -111,6 +117,7 @@ const roundMonster_t R3_MONSTERS[] = {
 const roundDefine_t ROUND_DEFINES[3] = {
     // Round 1
     {
+        R1_WEAPONS,  // weapons
         R1_MONSTERS, // monsters
         150,         // minGroupHealth
         300,         // maxGroupHealth
@@ -120,6 +127,7 @@ const roundDefine_t ROUND_DEFINES[3] = {
     },
     // Round 2
     {
+        R2_WEAPONS,  // weapons
         R2_MONSTERS, // monsters
         600,         // minGroupHealth
         1200,        // maxGroupHealth
@@ -129,6 +137,7 @@ const roundDefine_t ROUND_DEFINES[3] = {
     },
     // Round 3
     {
+        R3_WEAPONS,  // weapons
         R3_MONSTERS, // monsters
         1000,        // minGroupHealth
         2000,        // maxGroupHealth
@@ -410,7 +419,8 @@ struct SpawnPointWeight
 };
 typedef std::vector<SpawnPointWeight> SpawnPointWeights;
 
-static SpawnPoints spawns;
+static SpawnPoints itemSpawns;
+static SpawnPoints monsterSpawns;
 
 static bool CmpWeights(const SpawnPointWeight& a, const SpawnPointWeight& b)
 {
@@ -427,7 +437,8 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 	float totalScore = 0.0f;
 
 	SpawnPointWeights weights;
-	for (SpawnPoints::iterator sit = spawns.begin(); sit != spawns.end(); ++sit)
+	for (SpawnPoints::iterator sit = monsterSpawns.begin(); sit != monsterSpawns.end();
+	     ++sit)
 	{
 		// Don't spawn bosses at non-boss spawns.
 		if (boss && sit->type != TTYPE_HORDE_BOSS)
@@ -652,7 +663,8 @@ hordeInfo_t P_HordeInfo()
 
 void P_ClearHordeSpawnPoints()
 {
-	spawn::spawns.clear();
+	spawn::itemSpawns.clear();
+	spawn::monsterSpawns.clear();
 }
 
 void P_AddHordeSpawnPoint(AActor* mo, const int type)
@@ -660,7 +672,14 @@ void P_AddHordeSpawnPoint(AActor* mo, const int type)
 	spawn::SpawnPoint sp;
 	sp.mo = mo->self;
 	sp.type = type;
-	spawn::spawns.push_back(sp);
+	if (type == ::TTYPE_HORDE_ITEM)
+	{
+		spawn::itemSpawns.push_back(sp);
+	}
+	else
+	{
+		spawn::monsterSpawns.push_back(sp);
+	}
 }
 
 void P_AddHealthPool(AActor* mo)
@@ -783,6 +802,18 @@ void P_RunHordeTics()
 		break;
 	}
 	}
+
+	// Should we spawn an item?
+	{
+		// Select a random spot.
+		spawn::SpawnPoint& point =
+		    spawn::itemSpawns.at(P_RandomInt(spawn::itemSpawns.size()));
+		if (point.mo->target == NULL)
+		{
+			AActor* pack = new AActor(point.mo->x, point.mo->y, point.mo->z, MT_CAREPACK);
+			point.mo->target = pack->ptr();
+		}
+	}
 }
 
 bool P_IsHordeMode()
@@ -792,7 +823,22 @@ bool P_IsHordeMode()
 
 bool P_IsHordeThing(const int type)
 {
-	return type >= TTYPE_HORDE_MONSTER && type <= TTYPE_HORDE_SNIPER;
+	return type >= TTYPE_HORDE_ITEM && type <= TTYPE_HORDE_SNIPER;
+}
+
+const weapontype_t* P_RoundWeapons()
+{
+	if (sv_gametype == GM_HORDE)
+	{
+		return ::gDirector.getRoundState().getDefine().weapons;
+	}
+	else
+	{
+		const weapontype_t weapons[] = {wp_shotgun, wp_chaingun, wp_supershotgun,
+		                                wp_missile, wp_plasma,   wp_bfg,
+		                                wp_nochange};
+		return weapons;
+	}
 }
 
 BEGIN_COMMAND(horde_round)

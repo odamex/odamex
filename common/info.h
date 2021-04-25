@@ -1596,6 +1596,7 @@ typedef enum {
 	MT_WPGFLAG,
 	MT_AVATAR,
 	MT_MONSTERSPAWN,
+	MT_CAREPACK,
 
 	// FIXME: Has no info.cpp entry.
 	MT_MUSICCHANGE,
