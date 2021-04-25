@@ -805,13 +805,28 @@ void P_RunHordeTics()
 
 	// Should we spawn an item?
 	{
-		// Select a random spot.
-		spawn::SpawnPoint& point =
-		    spawn::itemSpawns.at(P_RandomInt(spawn::itemSpawns.size()));
-		if (point.mo->target == NULL)
+		// Find all empty points.
+		spawn::SpawnPoints emptys;
+		for (spawn::SpawnPoints::iterator it = spawn::itemSpawns.begin();
+		     it != spawn::itemSpawns.end(); ++it)
 		{
-			AActor* pack = new AActor(point.mo->x, point.mo->y, point.mo->z, MT_CAREPACK);
-			point.mo->target = pack->ptr();
+			if (it->mo->target == NULL)
+			{
+				emptys.push_back(*it);
+			}
+		}
+
+		// Items should exist at around half of our points.
+		if (emptys.size() > spawn::itemSpawns.size() / 2)
+		{
+			// Select a random spot.
+			spawn::SpawnPoint& point = emptys.at(P_RandomInt(emptys.size()));
+			if (point.mo->target == NULL)
+			{
+				AActor* pack =
+				    new AActor(point.mo->x, point.mo->y, point.mo->z, MT_CAREPACK);
+				point.mo->target = pack->ptr();
+			}
 		}
 	}
 }
