@@ -45,7 +45,6 @@ struct hordeInfo_t
 {
 	hordeState_e state;
 	int round;
-	int spawned;
 	int killed;
 	int goal;
 };

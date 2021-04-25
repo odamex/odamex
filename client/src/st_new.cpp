@@ -826,8 +826,15 @@ void HordeHUD()
 	hud::DrawText(0, 20, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              buf.c_str(), CR_GREEN, true);
 
-	StrFormat(buf, "t:%d k:%d g:%d\n", info.spawned - info.killed, info.killed,
-	          info.goal);
+	float pct = static_cast<float>(info.killed) / info.goal;
+	char bar[17];
+	for (size_t i = 0; i < 16; i++)
+	{
+		bar[i] = pct > (i / 15.0f) ? '#' : '-';
+	}
+	bar[16] = '\0';
+
+	StrFormat(buf, "[%s]\n", bar);
 	hud::DrawText(0, 28, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              buf.c_str(), CR_GREEN, true);
 }

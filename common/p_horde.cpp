@@ -205,8 +205,7 @@ class HordeState
 		hordeInfo_t info;
 		info.state = m_state;
 		info.round = m_roundState.getRound();
-		info.spawned = m_spawnedHealth;
-		info.killed = m_killedHealth;
+		info.killed = m_killedHealth - m_roundStartHealth;
 		info.goal = m_roundState.getDefine().goalHealth + m_roundStartHealth;
 		return info;
 	}
