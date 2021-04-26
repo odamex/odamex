@@ -692,45 +692,39 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 // that their TIDs be set to the tags of their containing sectors. We
 // do that after the rest of the level has been loaded.
 
-void P_TranslateTeleportThings (void)
+void P_TranslateTeleportThings()
 {
-	int i, j;
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
 
-	for (i = 0; i < numlines; i++)
+	bool found = false;
+	while ((mo = iterator.Next()))
 	{
-		if (lines[i].special == Teleport ||
-			lines[i].special == Teleport_NoFog || lines[i].special == Teleport_NoStop)
+		// not a teleportman
+		if (mo->type != MT_TELEPORTMAN && mo->type != MT_TELEPORTMAN2)
+			continue;
+
+		// wrong tag
+		if (mo->subsector->sector->tag != 0)
+			continue;
+
+		mo->tid = 1;
+		found = true;
+	}
+
+	if (found)
+	{
+		for (int i = 0; i < ::numlines; i++)
 		{
-			// The sector tag hash table hasn't been set up yet,
-			// so we need to use this linear search.
-			for (j = 0; j < numsectors; j++)
+			if (::lines[i].special == Teleport)
 			{
-				if (sectors[j].tag == lines[i].args[0])
-				{
-					AActor *other;
-					TThinkerIterator<AActor> iterator;
-
-					while ( (other = iterator.Next ()) )
-					{
-						// not a teleportman
-						if (other->type != MT_TELEPORTMAN && other->type != MT_TELEPORTMAN2)
-							continue;
-
-						// wrong sector
-						if (other->subsector->sector - sectors != j)
-							continue;
-
-						// It's a teleportman, so set it's tid to match
-						// the sector's tag.
-						other->tid = lines[i].args[0];
-						other->AddToHash ();
-
-						// We only bother with the first teleportman
-						break;
-					}
-					if (other)
-						break;
-				}
+				if (::lines[i].args[1] == 0)
+					::lines[i].args[0] = 1;
+			}
+			else if (::lines[i].special == Teleport_NoFog)
+			{
+				if (::lines[i].args[2] == 0)
+					::lines[i].args[0] = 1;
 			}
 		}
 	}
