@@ -172,7 +172,7 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 /**
  * @brief svc_noop - Nothing to see here. Move along.
  */
-static void CL_Noop()
+static void CL_Noop(const odaproto::svc::Noop& msg)
 {
 }
 
@@ -1444,7 +1444,12 @@ static void CL_PlaySound(const odaproto::svc::PlaySound& msg)
 	}
 }
 
-static void CL_ExitLevel()
+static void CL_Reconnect(const odaproto::svc::Reconnect& msg)
+{
+	CL_Reconnect();
+}
+
+static void CL_ExitLevel(const odaproto::svc::ExitLevel& msg)
 {
 	gameaction = ga_completed;
 
@@ -1853,12 +1858,12 @@ static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
 }
 
 //
-// CL_FinishedFullUpdate
+// CL_FullUpdateDone
 //
 // Takes care of any business that needs to be done once the client has a full
 // view of the game world.
 //
-static void CL_FinishedFullUpdate()
+static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone& msg)
 {
 	::recv_full_update = true;
 }
@@ -1977,7 +1982,7 @@ static void CL_LevelState(const odaproto::svc::LevelState& msg)
 	::levelstate.unserialize(sls);
 }
 
-static void CL_ResetMap()
+static void CL_ResetMap(const odaproto::svc::ResetMap& msg)
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -2038,7 +2043,7 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos& msg)
 	player.QueuePosition = queuePos;
 }
 
-static void CL_StartFullUpdate()
+static void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart& msg)
 {
 	::recv_full_update = false;
 }
@@ -2551,12 +2556,12 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 	}
 }
 
-static void CL_NetDemoStop()
+static void CL_NetDemoStop(const odaproto::svc::NetDemoStop& msg)
 {
 	::netdemo.stopPlaying();
 }
 
-static void CL_NetDemoLoadSnap()
+static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap& msg)
 {
 	AddCommandString("netprevmap");
 }
@@ -2594,11 +2599,6 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-#define SV_MSG(svc, func) \
-	case svc:             \
-		func();           \
-		return PRES_OK;
-
 #define SV_PROTO(svc, func, proto)  \
 	case svc: {                     \
 		proto msg;                  \
@@ -2618,7 +2618,7 @@ parseResult_e CL_ParseCommand()
 	switch (cmd)
 	{
 		/* clang-format off */
-		SV_MSG(svc_noop, CL_Noop);
+		SV_PROTO(svc_noop, CL_Noop, odaproto::svc::Noop);
 		SV_PROTO(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_PROTO(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
 		SV_PROTO(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
@@ -2645,8 +2645,8 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
 		SV_PROTO(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
 		SV_PROTO(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
-		SV_MSG(svc_reconnect, CL_Reconnect);
-		SV_MSG(svc_exitlevel, CL_ExitLevel);
+		SV_PROTO(svc_reconnect, CL_Reconnect, odaproto::svc::Reconnect);
+		SV_PROTO(svc_exitlevel, CL_ExitLevel, odaproto::svc::ExitLevel);
 		SV_PROTO(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
 		SV_PROTO(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
 		SV_PROTO(svc_switch, CL_Switch, odaproto::svc::Switch);
@@ -2659,13 +2659,13 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
 		SV_PROTO(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
 		SV_PROTO(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
-		SV_MSG(svc_fullupdatedone, CL_FinishedFullUpdate);
+		SV_PROTO(svc_fullupdatedone, CL_FullUpdateDone, odaproto::svc::FullUpdateDone);
 		SV_PROTO(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
 		SV_PROTO(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
 		SV_PROTO(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
-		SV_MSG(svc_resetmap, CL_ResetMap);
+		SV_PROTO(svc_resetmap, CL_ResetMap, odaproto::svc::ResetMap);
 		SV_PROTO(svc_playerqueuepos, CL_PlayerQueuePos, odaproto::svc::PlayerQueuePos);
-		SV_MSG(svc_fullupdatestart, CL_StartFullUpdate);
+		SV_PROTO(svc_fullupdatestart, CL_FullUpdateStart, odaproto::svc::FullUpdateStart);
 		SV_PROTO(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
 		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
 		SV_PROTO(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
@@ -2679,8 +2679,8 @@ parseResult_e CL_ParseCommand()
 		SV_PROTO(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
 		SV_PROTO(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
-		SV_MSG(svc_netdemostop, CL_NetDemoStop);
-		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap);
+		SV_PROTO(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
+		SV_PROTO(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
 		/* clang-format on */
 	default:
 		return PRES_UNKNOWN_HEADER;

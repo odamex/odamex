@@ -557,7 +557,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(it->client);
-		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
+		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot

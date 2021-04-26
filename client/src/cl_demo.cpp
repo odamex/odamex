@@ -460,7 +460,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeMessages();
 		
 		SZ_Clear(&tempbuf);
-		MSG_WriteMarker(&tempbuf, svc_netdemoloadsnap);
+		MSG_WriteSVC(&tempbuf, odaproto::svc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
 	}

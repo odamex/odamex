@@ -30,7 +30,7 @@
 typedef OHashTable<const void*, svc_t> SVCMap;
 SVCMap svcmap;
 
-static void MapProto(const google::protobuf::Descriptor* desc, svc_t msg)
+static void MapProto(const svc_t msg, const google::protobuf::Descriptor* desc)
 {
 	::svcmap.insert(SVCMap::value_type(desc, msg));
 }
@@ -40,61 +40,69 @@ static void MapProto(const google::protobuf::Descriptor* desc, svc_t msg)
  */
 static void InitMap()
 {
-	MapProto(odaproto::svc::Disconnect::descriptor(), svc_disconnect);
-	MapProto(odaproto::svc::PlayerInfo::descriptor(), svc_playerinfo);
-	MapProto(odaproto::svc::MovePlayer::descriptor(), svc_moveplayer);
-	MapProto(odaproto::svc::UpdateLocalPlayer::descriptor(), svc_updatelocalplayer);
-	MapProto(odaproto::svc::LevelLocals::descriptor(), svc_levellocals);
-	MapProto(odaproto::svc::PingRequest::descriptor(), svc_pingrequest);
-	MapProto(odaproto::svc::UpdatePing::descriptor(), svc_updateping);
-	MapProto(odaproto::svc::SpawnMobj::descriptor(), svc_spawnmobj);
-	MapProto(odaproto::svc::DisconnectClient::descriptor(), svc_disconnectclient);
-	MapProto(odaproto::svc::LoadMap::descriptor(), svc_loadmap);
-	MapProto(odaproto::svc::ConsolePlayer::descriptor(), svc_consoleplayer);
-	MapProto(odaproto::svc::ExplodeMissile::descriptor(), svc_explodemissile);
-	MapProto(odaproto::svc::RemoveMobj::descriptor(), svc_removemobj);
-	MapProto(odaproto::svc::UserInfo::descriptor(), svc_userinfo);
-	MapProto(odaproto::svc::UpdateMobj::descriptor(), svc_updatemobj);
-	MapProto(odaproto::svc::SpawnPlayer::descriptor(), svc_spawnplayer);
-	MapProto(odaproto::svc::DamagePlayer::descriptor(), svc_damageplayer);
-	MapProto(odaproto::svc::KillMobj::descriptor(), svc_killmobj);
-	MapProto(odaproto::svc::FireWeapon::descriptor(), svc_fireweapon);
-	MapProto(odaproto::svc::UpdateSector::descriptor(), svc_updatesector);
-	MapProto(odaproto::svc::Print::descriptor(), svc_print);
-	MapProto(odaproto::svc::PlayerMembers::descriptor(), svc_playermembers);
-	MapProto(odaproto::svc::TeamMembers::descriptor(), svc_teammembers);
-	MapProto(odaproto::svc::ActivateLine::descriptor(), svc_activateline);
-	MapProto(odaproto::svc::MovingSector::descriptor(), svc_movingsector);
-	MapProto(odaproto::svc::PlaySound::descriptor(), svc_playsound);
-	MapProto(odaproto::svc::TouchSpecial::descriptor(), svc_touchspecial);
-	MapProto(odaproto::svc::ForceTeam::descriptor(), svc_forceteam);
-	MapProto(odaproto::svc::Switch::descriptor(), svc_switch);
-	MapProto(odaproto::svc::Say::descriptor(), svc_say);
-	MapProto(odaproto::svc::CTFRefresh::descriptor(), svc_ctfrefresh);
-	MapProto(odaproto::svc::CTFEvent::descriptor(), svc_ctfevent);
-	MapProto(odaproto::svc::SecretEvent::descriptor(), svc_secretevent);
-	MapProto(odaproto::svc::ServerSettings::descriptor(), svc_serversettings);
-	MapProto(odaproto::svc::ConnectClient::descriptor(), svc_connectclient);
-	MapProto(odaproto::svc::MidPrint::descriptor(), svc_midprint);
-	MapProto(odaproto::svc::ServerGametic::descriptor(), svc_servergametic);
-	MapProto(odaproto::svc::IntTimeLeft::descriptor(), svc_inttimeleft);
-	MapProto(odaproto::svc::RailTrail::descriptor(), svc_railtrail);
-	MapProto(odaproto::svc::PlayerState::descriptor(), svc_playerstate);
-	MapProto(odaproto::svc::LevelState::descriptor(), svc_levelstate);
-	MapProto(odaproto::svc::PlayerQueuePos::descriptor(), svc_playerqueuepos);
-	MapProto(odaproto::svc::LineUpdate::descriptor(), svc_lineupdate);
-	MapProto(odaproto::svc::SectorProperties::descriptor(), svc_sectorproperties);
-	MapProto(odaproto::svc::LineUpdate::descriptor(), svc_linesideupdate);
-	MapProto(odaproto::svc::MobjState::descriptor(), svc_mobjstate);
-	MapProto(odaproto::svc::DamageMobj::descriptor(), svc_damagemobj);
-	MapProto(odaproto::svc::ExecuteLineSpecial::descriptor(), svc_executelinespecial);
-	MapProto(odaproto::svc::ExecuteACSSpecial::descriptor(), svc_executeacsspecial);
-	MapProto(odaproto::svc::ThinkerUpdate::descriptor(), svc_thinkerupdate);
-	MapProto(odaproto::svc::VoteUpdate::descriptor(), svc_vote_update);
-	MapProto(odaproto::svc::Maplist::descriptor(), svc_maplist);
-	MapProto(odaproto::svc::MaplistUpdate::descriptor(), svc_maplist_update);
-	MapProto(odaproto::svc::MaplistIndex::descriptor(), svc_maplist_index);
-	MapProto(odaproto::svc::NetdemoCap::descriptor(), svc_netdemocap);
+	MapProto(svc_noop, odaproto::svc::Noop::descriptor());
+	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
+	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
+	MapProto(svc_moveplayer, odaproto::svc::MovePlayer::descriptor());
+	MapProto(svc_updatelocalplayer, odaproto::svc::UpdateLocalPlayer::descriptor());
+	MapProto(svc_levellocals, odaproto::svc::LevelLocals::descriptor());
+	MapProto(svc_pingrequest, odaproto::svc::PingRequest::descriptor());
+	MapProto(svc_updateping, odaproto::svc::UpdatePing::descriptor());
+	MapProto(svc_spawnmobj, odaproto::svc::SpawnMobj::descriptor());
+	MapProto(svc_disconnectclient, odaproto::svc::DisconnectClient::descriptor());
+	MapProto(svc_loadmap, odaproto::svc::LoadMap::descriptor());
+	MapProto(svc_consoleplayer, odaproto::svc::ConsolePlayer::descriptor());
+	MapProto(svc_explodemissile, odaproto::svc::ExplodeMissile::descriptor());
+	MapProto(svc_removemobj, odaproto::svc::RemoveMobj::descriptor());
+	MapProto(svc_userinfo, odaproto::svc::UserInfo::descriptor());
+	MapProto(svc_updatemobj, odaproto::svc::UpdateMobj::descriptor());
+	MapProto(svc_spawnplayer, odaproto::svc::SpawnPlayer::descriptor());
+	MapProto(svc_damageplayer, odaproto::svc::DamagePlayer::descriptor());
+	MapProto(svc_killmobj, odaproto::svc::KillMobj::descriptor());
+	MapProto(svc_fireweapon, odaproto::svc::FireWeapon::descriptor());
+	MapProto(svc_updatesector, odaproto::svc::UpdateSector::descriptor());
+	MapProto(svc_print, odaproto::svc::Print::descriptor());
+	MapProto(svc_playermembers, odaproto::svc::PlayerMembers::descriptor());
+	MapProto(svc_teammembers, odaproto::svc::TeamMembers::descriptor());
+	MapProto(svc_activateline, odaproto::svc::ActivateLine::descriptor());
+	MapProto(svc_movingsector, odaproto::svc::MovingSector::descriptor());
+	MapProto(svc_playsound, odaproto::svc::PlaySound::descriptor());
+	MapProto(svc_reconnect, odaproto::svc::Reconnect::descriptor());
+	MapProto(svc_exitlevel, odaproto::svc::ExitLevel::descriptor());
+	MapProto(svc_touchspecial, odaproto::svc::TouchSpecial::descriptor());
+	MapProto(svc_forceteam, odaproto::svc::ForceTeam::descriptor());
+	MapProto(svc_switch, odaproto::svc::Switch::descriptor());
+	MapProto(svc_say, odaproto::svc::Say::descriptor());
+	MapProto(svc_ctfrefresh, odaproto::svc::CTFRefresh::descriptor());
+	MapProto(svc_ctfevent, odaproto::svc::CTFEvent::descriptor());
+	MapProto(svc_secretevent, odaproto::svc::SecretEvent::descriptor());
+	MapProto(svc_serversettings, odaproto::svc::ServerSettings::descriptor());
+	MapProto(svc_connectclient, odaproto::svc::ConnectClient::descriptor());
+	MapProto(svc_midprint, odaproto::svc::MidPrint::descriptor());
+	MapProto(svc_servergametic, odaproto::svc::ServerGametic::descriptor());
+	MapProto(svc_inttimeleft, odaproto::svc::IntTimeLeft::descriptor());
+	MapProto(svc_fullupdatedone, odaproto::svc::FullUpdateDone::descriptor());
+	MapProto(svc_railtrail, odaproto::svc::RailTrail::descriptor());
+	MapProto(svc_playerstate, odaproto::svc::PlayerState::descriptor());
+	MapProto(svc_levelstate, odaproto::svc::LevelState::descriptor());
+	MapProto(svc_resetmap, odaproto::svc::ResetMap::descriptor());
+	MapProto(svc_playerqueuepos, odaproto::svc::PlayerQueuePos::descriptor());
+	MapProto(svc_fullupdatestart, odaproto::svc::FullUpdateStart::descriptor());
+	MapProto(svc_lineupdate, odaproto::svc::LineUpdate::descriptor());
+	MapProto(svc_sectorproperties, odaproto::svc::SectorProperties::descriptor());
+	MapProto(svc_linesideupdate, odaproto::svc::LineUpdate::descriptor());
+	MapProto(svc_mobjstate, odaproto::svc::MobjState::descriptor());
+	MapProto(svc_damagemobj, odaproto::svc::DamageMobj::descriptor());
+	MapProto(svc_executelinespecial, odaproto::svc::ExecuteLineSpecial::descriptor());
+	MapProto(svc_executeacsspecial, odaproto::svc::ExecuteACSSpecial::descriptor());
+	MapProto(svc_thinkerupdate, odaproto::svc::ThinkerUpdate::descriptor());
+	MapProto(svc_vote_update, odaproto::svc::VoteUpdate::descriptor());
+	MapProto(svc_maplist, odaproto::svc::Maplist::descriptor());
+	MapProto(svc_maplist_update, odaproto::svc::MaplistUpdate::descriptor());
+	MapProto(svc_maplist_index, odaproto::svc::MaplistIndex::descriptor());
+	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
+	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
+	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
 }
 
 svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)

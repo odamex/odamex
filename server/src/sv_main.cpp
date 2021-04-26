@@ -1447,7 +1447,7 @@ void SV_ClientFullUpdate(player_t &pl)
 {
 	client_t *cl = &pl.client;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
+	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateStart());
 
 	// Send the player all level locals.
 	MSG_WriteSVC(&cl->reliablebuf, SVC_LevelLocals(::level, SVC_MSG_ALL));
@@ -1501,7 +1501,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
 		return;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
+	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateDone());
 
 	SV_SendPacket(pl);
 }
@@ -1911,7 +1911,9 @@ void SV_ConnectClient()
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
-		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
+	{
+		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ExitLevel());
+	}
 
 	G_DoReborn(*player);
 	SV_ClientFullUpdate(*player);
@@ -2043,7 +2045,7 @@ void SV_SendReconnectSignal()
 	// tell others clients about it
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_reconnect);
+		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::Reconnect());
 		SV_SendPacket(*it);
 
 		if (it->mo)
@@ -2060,7 +2062,9 @@ void SV_SendReconnectSignal()
 void SV_ExitLevel()
 {
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_exitlevel);
+	{
+		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::ExitLevel());
+	}
 }
 
 //
