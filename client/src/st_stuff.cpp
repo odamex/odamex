@@ -836,7 +836,7 @@ BEGIN_COMMAND (give)
 	if (name.length())
 	{
 		cht_GiveTo(&consoleplayer(), name.c_str());
-		//cht.SendGiveCheatToServer(name.c_str());
+		CL_SendGiveCheat(name.c_str());
 	}
 }
 END_COMMAND (give)
