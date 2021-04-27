@@ -1721,7 +1721,12 @@ bool CL_Connect()
 	simulated_connection = netdemo.isPlaying();
 
 	byte flags = MSG_ReadByte();
-	if (flags & SVF_COMPRESSED)
+	if (flags & SVF_UNUSED_MASK)
+	{
+		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		CL_QuitNetGame();
+	}
+	else if (flags & SVF_COMPRESSED)
 	{
 		CL_Decompress();
 	}
@@ -1907,7 +1912,12 @@ bool CL_ReadPacketHeader()
 
 	// Flag bits.
 	byte flags = MSG_ReadByte();
-	if (flags & SVF_COMPRESSED)
+	if (flags & SVF_UNUSED_MASK)
+	{
+		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		CL_QuitNetGame();
+	}
+	else if (flags & SVF_COMPRESSED)
 	{
 		CL_Decompress();
 	}

@@ -54,6 +54,11 @@
 #define SVF_COMPRESSED BIT(0)
 
 /**
+ * @brief Unused flags - if any of these are set, we have a problem.
+ */
+#define SVF_UNUSED_MASK BIT_MASK(1, 7)
+
+/**
  * @brief svc_*: Transmit all possible data.
  */
 #define SVC_MSG_ALL BIT_MASK(0, 7)
