@@ -491,8 +491,10 @@ CVAR(			hud_heldflag_flash, "1", "Enables the flashes around the flag border.",
 CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
+CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A

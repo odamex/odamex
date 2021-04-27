@@ -106,6 +106,7 @@ PathFreeList freelist;
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
+EXTERN_CVAR(hud_demoprotos)
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_targetcount)
@@ -598,6 +599,36 @@ static void drawGametype()
 	}
 }
 
+size_t proto_selected;
+
+/**
+ * @brief Draw protocol buffer packets
+ */
+void drawProtos()
+{
+	const Protos& protos = CL_GetTicProtos();
+	if (protos.size() == 0)
+		return;
+
+	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
+
+	// Starting y is five rows from the top.
+	int y = 7 * 5;
+
+	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+	{
+		hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+		              it->name.c_str(), CR_GOLD, true);
+		y += V_StringHeight(it->name.c_str());
+		if (proto_selected == (it - protos.begin()))
+		{
+			hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			              it->data.c_str(), CR_WHITE, true);
+			y += V_StringHeight(it->data.c_str());
+		}
+	}
+}
+
 // [AM] Draw netdemo state
 // TODO: This is ripe for commonizing, but I _need_ to get this done soon.
 void drawNetdemo() {
@@ -633,21 +664,9 @@ void drawNetdemo() {
 	ST_DrawBar(color, netdemo.calculateTimeElapsed(), netdemo.calculateTotalTime(),
 	           2 * xscale, I_GetSurfaceHeight() - 46 * yscale, 72 * xscale);
 
-	if (netdemo.isPaused())
+	if (netdemo.isPaused() && ::hud_demoprotos)
 	{
-		int y = 7 * 5;
-
-		// Only show protocol messages when paused.
-		const Protos& protos = CL_GetTicProtos();
-		for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
-		{
-			hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
-			              it->name.c_str(), CR_GOLD, true);
-			y += V_StringHeight(it->name.c_str());
-			hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
-			              it->data.c_str(), CR_WHITE, true);
-			y += V_StringHeight(it->data.c_str());
-		}
+		drawProtos();
 	}
 }
 
@@ -1195,5 +1214,21 @@ void DoomHUD()
 }
 
 }
+
+#include "c_dispatch.h"
+
+BEGIN_COMMAND(netprotoup)
+{
+	if (hud::proto_selected > 0)
+		hud::proto_selected -= 1;
+}
+END_COMMAND(netprotoup)
+
+BEGIN_COMMAND(netprotodown)
+{
+	// Rely on clamp in drawer
+	hud::proto_selected += 1;
+}
+END_COMMAND(netprotodown)
 
 VERSION_CONTROL (st_new_cpp, "$Id$")

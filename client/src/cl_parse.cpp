@@ -2739,5 +2739,6 @@ parseError_e CL_ParseCommand()
 		return PERR_UNKNOWN_HEADER;
 	}
 
+	RecordProto(static_cast<svc_t>(cmd), msg);
 	return PERR_OK;
 }
