@@ -1089,8 +1089,11 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
 	// The packet sequence id
-	MSG_WriteLong	(netbuffer, 0);
-	
+	MSG_WriteLong(netbuffer, 0);
+
+	// Flags for our fake packet (none)
+	MSG_WriteByte(netbuffer, 0);
+
 	// Server sends our player id and digest
 	MSG_WriteSVC(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
 
