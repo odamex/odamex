@@ -55,6 +55,7 @@
 #include "r_state.h"
 #include "s_sound.h"
 #include "st_stuff.h"
+#include "svc_map.h"
 #include "v_textcolors.h"
 
 // Extern data from other files.
@@ -172,68 +173,68 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 /**
  * @brief svc_noop - Nothing to see here. Move along.
  */
-static void CL_Noop(const odaproto::svc::Noop& msg)
+static void CL_Noop(const odaproto::svc::Noop* msg)
 {
 }
 
 /**
  * @brief svc_disconnect - Disconnect a client from the server.
  */
-static void CL_Disconnect(const odaproto::svc::Disconnect& msg)
+static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 {
 	std::string buffer;
-	if (!msg.message().empty())
+	if (!msg->message().empty())
 	{
-		StrFormat(buffer, "Disconnected from server: %s", msg.message().c_str());
+		StrFormat(buffer, "Disconnected from server: %s", msg->message().c_str());
 	}
 	else
 	{
 		StrFormat(buffer, "Disconnected from server\n");
 	}
 
-	Printf("%s", msg.message().c_str());
+	Printf("%s", msg->message().c_str());
 	CL_QuitNetGame();
 }
 
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
  */
-static void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
+static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& p = consoleplayer();
 
-	uint32_t weaponowned = msg.player().weaponowned();
+	uint32_t weaponowned = msg->player().weaponowned();
 	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
 
-	uint32_t cards = msg.player().cards();
+	uint32_t cards = msg->player().cards();
 	UnpackBoolArray(p.cards, NUMCARDS, cards);
 
-	p.backpack = msg.player().backpack();
+	p.backpack = msg->player().backpack();
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (i < msg.player().ammo_size())
-			p.ammo[i] = msg.player().ammo(i);
+		if (i < msg->player().ammo_size())
+			p.ammo[i] = msg->player().ammo(i);
 		else
 			p.ammo[i] = 0;
 
-		if (i < msg.player().maxammo_size())
-			p.maxammo[i] = msg.player().maxammo(i);
+		if (i < msg->player().maxammo_size())
+			p.maxammo[i] = msg->player().maxammo(i);
 		else
 			p.maxammo[i] = 0;
 	}
 
-	p.health = msg.player().health();
-	p.armorpoints = msg.player().armorpoints();
-	p.armortype = msg.player().armortype();
-	p.lives = msg.player().lives();
+	p.health = msg->player().health();
+	p.armorpoints = msg->player().armorpoints();
+	p.armortype = msg->player().armortype();
+	p.lives = msg->player().lives();
 
-	weapontype_t pending = static_cast<weapontype_t>(msg.player().pendingweapon());
+	weapontype_t pending = static_cast<weapontype_t>(msg->player().pendingweapon());
 	if (pending != wp_nochange && pending < NUMWEAPONS)
 	{
 		p.pendingweapon = pending;
 	}
-	weapontype_t readyweapon = static_cast<weapontype_t>(msg.player().readyweapon());
+	weapontype_t readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
 	if (readyweapon != p.readyweapon && readyweapon < NUMWEAPONS)
 	{
 		p.pendingweapon = readyweapon;
@@ -241,9 +242,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (i < msg.player().powers_size())
+		if (i < msg->player().powers_size())
 		{
-			p.powers[i] = msg.player().powers(i);
+			p.powers[i] = msg->player().powers(i);
 		}
 		else
 		{
@@ -255,26 +256,26 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo& msg)
 /**
  * @brief svc_moveplayer - Move a player.
  */
-static void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
+static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 {
-	byte who = msg.player().playerid();
+	byte who = msg->player().playerid();
 	player_t* p = &idplayer(who);
 
-	fixed_t x = msg.actor().pos().x();
-	fixed_t y = msg.actor().pos().y();
-	fixed_t z = msg.actor().pos().z();
+	fixed_t x = msg->actor().pos().x();
+	fixed_t y = msg->actor().pos().y();
+	fixed_t z = msg->actor().pos().z();
 
-	angle_t angle = msg.actor().angle();
-	angle_t pitch = msg.actor().pitch();
+	angle_t angle = msg->actor().angle();
+	angle_t pitch = msg->actor().pitch();
 
-	int frame = msg.frame();
-	fixed_t momx = msg.actor().mom().x();
-	fixed_t momy = msg.actor().mom().y();
-	fixed_t momz = msg.actor().mom().z();
+	int frame = msg->frame();
+	fixed_t momx = msg->actor().mom().x();
+	fixed_t momy = msg->actor().mom().y();
+	fixed_t momz = msg->actor().mom().z();
 
 	int invisibility = 0;
-	if (msg.player().powers_size() >= pw_invisibility)
-		invisibility = msg.player().powers().Get(pw_invisibility);
+	if (msg->player().powers_size() >= pw_invisibility)
+		invisibility = msg->player().powers().Get(pw_invisibility);
 
 	if (!validplayer(*p) || !p->mo)
 		return;
@@ -328,23 +329,23 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer& msg)
 	p->snapshots.addSnapshot(newsnap);
 }
 
-static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
+static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 {
 	player_t& p = consoleplayer();
 
 	// The server has processed the ticcmd that the local client sent
 	// during the the tic referenced below
-	p.tic = msg.tic();
+	p.tic = msg->tic();
 
-	fixed_t x = msg.actor().pos().x();
-	fixed_t y = msg.actor().pos().y();
-	fixed_t z = msg.actor().pos().z();
+	fixed_t x = msg->actor().pos().x();
+	fixed_t y = msg->actor().pos().y();
+	fixed_t z = msg->actor().pos().z();
 
-	fixed_t momx = msg.actor().mom().x();
-	fixed_t momy = msg.actor().mom().y();
-	fixed_t momz = msg.actor().mom().z();
+	fixed_t momx = msg->actor().mom().x();
+	fixed_t momy = msg->actor().mom().y();
+	fixed_t momz = msg->actor().mom().z();
 
-	byte waterlevel = msg.actor().waterlevel();
+	byte waterlevel = msg->actor().waterlevel();
 
 	int snaptime = ::last_svgametic;
 	PlayerSnapshot newsnapshot(snaptime);
@@ -366,40 +367,40 @@ static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer& msg)
 }
 
 // Set level locals.
-static void CL_LevelLocals(const odaproto::svc::LevelLocals& msg)
+static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 {
-	uint32_t flags = msg.flags();
+	uint32_t flags = msg->flags();
 
 	if (flags & SVC_LL_TIME)
 	{
-		::level.time = msg.time();
+		::level.time = msg->time();
 	}
 
 	if (flags & SVC_LL_TOTALS)
 	{
-		::level.total_secrets = msg.total_secrets();
-		::level.total_items = msg.total_items();
-		::level.total_monsters = msg.total_monsters();
+		::level.total_secrets = msg->total_secrets();
+		::level.total_items = msg->total_items();
+		::level.total_monsters = msg->total_monsters();
 	}
 
 	if (flags & SVC_LL_SECRETS)
 	{
-		::level.found_secrets = msg.found_secrets();
+		::level.found_secrets = msg->found_secrets();
 	}
 
 	if (flags & SVC_LL_ITEMS)
 	{
-		::level.found_items = msg.found_items();
+		::level.found_items = msg->found_items();
 	}
 
 	if (flags & SVC_LL_MONSTERS)
 	{
-		::level.killed_monsters = msg.killed_monsters();
+		::level.killed_monsters = msg->killed_monsters();
 	}
 
 	if (flags & SVC_LL_MONSTER_RESPAWNS)
 	{
-		::level.respawned_monsters = msg.respawned_monsters();
+		::level.respawned_monsters = msg->respawned_monsters();
 	}
 }
 
@@ -411,39 +412,39 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals& msg)
 // [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
 // for clarity since it sends timestamps, not gametics.
 //
-static void CL_PingRequest(const odaproto::svc::PingRequest& msg)
+static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
 	MSG_WriteMarker(&net_buffer, clc_pingreply);
-	MSG_WriteLong(&net_buffer, msg.ms_time());
+	MSG_WriteLong(&net_buffer, msg->ms_time());
 }
 
 //
 // CL_UpdatePing
 // Update ping value
 //
-static void CL_UpdatePing(const odaproto::svc::UpdatePing& msg)
+static void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
 {
-	player_t& p = idplayer(msg.pid());
+	player_t& p = idplayer(msg->pid());
 	if (!validplayer(p))
 		return;
 
-	p.ping = msg.ping();
+	p.ping = msg->ping();
 }
 
 //
 // CL_SpawnMobj
 //
-static void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
+static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 {
-	fixed_t x = msg.actor().pos().x();
-	fixed_t y = msg.actor().pos().y();
-	fixed_t z = msg.actor().pos().z();
-	angle_t angle = msg.actor().angle();
+	fixed_t x = msg->actor().pos().x();
+	fixed_t y = msg->actor().pos().y();
+	fixed_t z = msg->actor().pos().z();
+	angle_t angle = msg->actor().angle();
 
-	mobjtype_t type = static_cast<mobjtype_t>(msg.actor().type());
-	uint32_t netid = msg.actor().netid();
-	byte rndindex = msg.actor().rndindex();
-	statenum_t state = static_cast<statenum_t>(msg.actor().statenum());
+	mobjtype_t type = static_cast<mobjtype_t>(msg->actor().type());
+	uint32_t netid = msg->actor().netid();
+	byte rndindex = msg->actor().rndindex();
+	statenum_t state = static_cast<statenum_t>(msg->actor().statenum());
 
 	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
 		return;
@@ -470,18 +471,18 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 		P_SetMobjState(mo, state);
 	}
 
-	if (msg.flags() & SVC_SM_MISSILE)
+	if (msg->flags() & SVC_SM_MISSILE)
 	{
-		AActor* target = P_FindThingById(msg.target_netid());
+		AActor* target = P_FindThingById(msg->target_netid());
 		if (target)
 		{
 			mo->target = target->ptr();
 		}
 
-		mo->momx = msg.actor().mom().x();
-		mo->momy = msg.actor().mom().y();
-		mo->momz = msg.actor().mom().z();
-		mo->angle = msg.actor().angle();
+		mo->momx = msg->actor().mom().x();
+		mo->momy = msg->actor().mom().y();
+		mo->momz = msg->actor().mom().z();
+		mo->angle = msg->actor().angle();
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
@@ -509,27 +510,27 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 
 	if (type == MT_FOUNTAIN)
 	{
-		if (msg.args_size() >= 1)
-			mo->effects = msg.args().Get(0) << FX_FOUNTAINSHIFT;
+		if (msg->args_size() >= 1)
+			mo->effects = msg->args().Get(0) << FX_FOUNTAINSHIFT;
 	}
 
 	if (type == MT_ZDOOMBRIDGE)
 	{
-		if (msg.args_size() >= 1)
-			mo->radius = msg.args().Get(0) << FRACBITS;
-		if (msg.args_size() >= 2)
-			mo->height = msg.args().Get(1) << FRACBITS;
+		if (msg->args_size() >= 1)
+			mo->radius = msg->args().Get(0) << FRACBITS;
+		if (msg->args_size() >= 2)
+			mo->height = msg->args().Get(1) << FRACBITS;
 	}
 
-	if (msg.flags() & SVC_SM_FLAGS)
+	if (msg->flags() & SVC_SM_FLAGS)
 	{
-		mo->flags = msg.actor().flags();
+		mo->flags = msg->actor().flags();
 	}
 
-	if (msg.flags() & SVC_SM_CORPSE)
+	if (msg->flags() & SVC_SM_CORPSE)
 	{
-		int frame = msg.actor().frame();
-		int tics = msg.actor().tics();
+		int frame = msg->actor().frame();
+		int tics = msg->actor().tics();
 
 		if (tics == 0xFF)
 			tics = -1;
@@ -558,9 +559,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj& msg)
 //
 // CL_DisconnectClient
 //
-static void CL_DisconnectClient(const odaproto::svc::DisconnectClient& msg)
+static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 {
-	player_t& player = idplayer(msg.pid());
+	player_t& player = idplayer(msg->pid());
 	if (players.empty() || !validplayer(player))
 		return;
 
@@ -597,7 +598,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient& msg)
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-static void CL_LoadMap(const odaproto::svc::LoadMap& msg)
+static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
@@ -606,13 +607,13 @@ static void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
-	size_t wadcount = msg.wadnames_size();
+	size_t wadcount = msg->wadnames_size();
 	OWantFiles newwadfiles;
 	newwadfiles.reserve(wadcount);
 	for (size_t i = 0; i < wadcount; i++)
 	{
-		std::string name = msg.wadnames().Get(i).name();
-		std::string hash = msg.wadnames().Get(i).hash();
+		std::string name = msg->wadnames().Get(i).name();
+		std::string hash = msg->wadnames().Get(i).hash();
 
 		OWantFile file;
 		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
@@ -626,13 +627,13 @@ static void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 		newwadfiles.push_back(file);
 	}
 
-	size_t patchcount = msg.patchnames_size();
+	size_t patchcount = msg->patchnames_size();
 	OWantFiles newpatchfiles;
 	newpatchfiles.reserve(patchcount);
 	for (size_t i = 0; i < patchcount; i++)
 	{
-		std::string name = msg.patchnames().Get(i).name();
-		std::string hash = msg.patchnames().Get(i).hash();
+		std::string name = msg->patchnames().Get(i).name();
+		std::string hash = msg->patchnames().Get(i).hash();
 
 		OWantFile file;
 		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
@@ -646,8 +647,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 		newpatchfiles.push_back(file);
 	}
 
-	std::string mapname = msg.mapname();
-	int server_level_time = msg.time();
+	std::string mapname = msg->mapname();
+	int server_level_time = msg->time();
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
@@ -726,18 +727,18 @@ static void CL_LoadMap(const odaproto::svc::LoadMap& msg)
 		netdemo.writeMapChange();
 }
 
-static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer& msg)
+static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
 {
-	::displayplayer_id = ::consoleplayer_id = msg.pid();
-	::digest = msg.digest();
+	::displayplayer_id = ::consoleplayer_id = msg->pid();
+	::digest = msg->digest();
 }
 
 //
 // CL_ExplodeMissile
 //
-static void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
+static void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile* msg)
 {
-	AActor* mo = P_FindThingById(msg.netid());
+	AActor* mo = P_FindThingById(msg->netid());
 
 	if (!mo)
 		return;
@@ -748,9 +749,9 @@ static void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile& msg)
 //
 // CL_RemoveMobj
 //
-static void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
+static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 {
-	uint32_t netid = msg.netid();
+	uint32_t netid = msg->netid();
 
 	AActor* mo = P_FindThingById(netid);
 	if (mo && mo->player && mo->player->id == ::displayplayer_id)
@@ -762,29 +763,29 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj& msg)
 //
 // CL_SetupUserInfo
 //
-static void CL_UserInfo(const odaproto::svc::UserInfo& msg)
+static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
-	player_t* p = &CL_FindPlayer(msg.pid());
+	player_t* p = &CL_FindPlayer(msg->pid());
 
-	p->userinfo.netname = msg.netname();
+	p->userinfo.netname = msg->netname();
 
-	p->userinfo.team = static_cast<team_t>(msg.team());
+	p->userinfo.team = static_cast<team_t>(msg->team());
 	if (p->userinfo.team < 0 || p->userinfo.team >= NUMTEAMS)
 		p->userinfo.team = TEAM_BLUE;
 
-	p->userinfo.gender = static_cast<gender_t>(msg.gender());
+	p->userinfo.gender = static_cast<gender_t>(msg->gender());
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
 	for (size_t i = 0; i < p->userinfo.color[i]; i++)
 	{
-		if (i < msg.color_size())
-			p->userinfo.color[i] = msg.color().Get(i);
+		if (i < msg->color_size())
+			p->userinfo.color[i] = msg->color().Get(i);
 		else
 			p->userinfo.color[i] = 0;
 	}
 
-	p->GameTime = msg.join_time();
+	p->GameTime = msg->join_time();
 
 	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
 
@@ -794,22 +795,22 @@ static void CL_UserInfo(const odaproto::svc::UserInfo& msg)
 	CL_CheckDisplayPlayer();
 }
 
-static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
+static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 {
-	AActor* mo = P_FindThingById(msg.actor().netid());
+	AActor* mo = P_FindThingById(msg->actor().netid());
 	if (!mo)
 		return;
 
-	fixed_t x = msg.actor().pos().x();
-	fixed_t y = msg.actor().pos().y();
-	fixed_t z = msg.actor().pos().z();
-	byte rndindex = msg.actor().rndindex();
-	fixed_t momx = msg.actor().mom().x();
-	fixed_t momy = msg.actor().mom().y();
-	fixed_t momz = msg.actor().mom().z();
-	angle_t angle = msg.actor().angle();
-	byte movedir = msg.actor().movedir();
-	int movecount = msg.actor().movecount();
+	fixed_t x = msg->actor().pos().x();
+	fixed_t y = msg->actor().pos().y();
+	fixed_t z = msg->actor().pos().z();
+	byte rndindex = msg->actor().rndindex();
+	fixed_t momx = msg->actor().mom().x();
+	fixed_t momy = msg->actor().mom().y();
+	fixed_t momz = msg->actor().mom().z();
+	angle_t angle = msg->actor().angle();
+	byte movedir = msg->actor().movedir();
+	int movecount = msg->actor().movecount();
 
 	if (mo->player)
 	{
@@ -818,7 +819,7 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
-		if (msg.flags() & SVC_UM_POS_RND)
+		if (msg->flags() & SVC_UM_POS_RND)
 		{
 			newsnap.setX(x);
 			newsnap.setY(y);
@@ -826,7 +827,7 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 			mo->rndindex = rndindex;
 		}
 
-		if (msg.flags() & SVC_UM_MOM_ANGLE)
+		if (msg->flags() & SVC_UM_MOM_ANGLE)
 		{
 			newsnap.setAngle(angle);
 			newsnap.setMomX(momx);
@@ -838,13 +839,13 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 	}
 	else
 	{
-		if (msg.flags() & SVC_UM_POS_RND)
+		if (msg->flags() & SVC_UM_POS_RND)
 		{
 			CL_MoveThing(mo, x, y, z);
 			mo->rndindex = rndindex;
 		}
 
-		if (msg.flags() & SVC_UM_MOM_ANGLE)
+		if (msg->flags() & SVC_UM_MOM_ANGLE)
 		{
 			mo->angle = angle;
 			mo->momx = momx;
@@ -853,21 +854,21 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 		}
 	}
 
-	if (msg.flags() & SVC_UM_MOVEDIR)
+	if (msg->flags() & SVC_UM_MOVEDIR)
 	{
 		mo->movedir = movedir;
 		mo->movecount = movecount;
 	}
 
-	if (msg.flags() & SVC_UM_TARGET)
+	if (msg->flags() & SVC_UM_TARGET)
 	{
-		AActor* target = P_FindThingById(msg.actor().targetid());
+		AActor* target = P_FindThingById(msg->actor().targetid());
 		mo->target = target->ptr();
 	}
 
-	if (msg.flags() & SVC_UM_TRACER)
+	if (msg->flags() & SVC_UM_TRACER)
 	{
-		AActor* tracer = P_FindThingById(msg.actor().tracerid());
+		AActor* tracer = P_FindThingById(msg->actor().tracerid());
 		mo->tracer = tracer->ptr();
 	}
 }
@@ -875,16 +876,16 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj& msg)
 //
 // CL_SpawnPlayer
 //
-static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
+static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 {
-	size_t playernum = msg.pid();
-	size_t netid = msg.actor().netid();
+	size_t playernum = msg->pid();
+	size_t netid = msg->actor().netid();
 	player_t* p = &CL_FindPlayer(playernum);
 
-	angle_t angle = msg.actor().angle();
-	fixed_t x = msg.actor().pos().x();
-	fixed_t y = msg.actor().pos().y();
-	fixed_t z = msg.actor().pos().z();
+	angle_t angle = msg->actor().angle();
+	fixed_t x = msg->actor().pos().x();
+	fixed_t y = msg->actor().pos().y();
+	fixed_t z = msg->actor().pos().z();
 
 	P_ClearId(netid);
 
@@ -970,11 +971,11 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer& msg)
 //
 // CL_DamagePlayer
 //
-static void CL_DamagePlayer(const odaproto::svc::DamagePlayer& msg)
+static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 {
-	uint32_t netid = msg.netid();
-	int healthDamage = msg.health_damage();
-	int armorDamage = msg.armor_damage();
+	uint32_t netid = msg->netid();
+	int healthDamage = msg->health_damage();
+	int armorDamage = msg->armor_damage();
 
 	AActor* actor = P_FindThingById(netid);
 
@@ -1008,15 +1009,15 @@ extern int MeansOfDeath;
 //
 // CL_KillMobj
 //
-static void CL_KillMobj(const odaproto::svc::KillMobj& msg)
+static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 {
-	uint32_t srcid = msg.source_netid();
-	uint32_t tgtid = msg.target().netid();
-	uint32_t infid = msg.inflictor_netid();
-	int health = msg.health();
-	::MeansOfDeath = msg.mod();
-	bool joinkill = msg.joinkill();
-	int lives = msg.lives();
+	uint32_t srcid = msg->source_netid();
+	uint32_t tgtid = msg->target().netid();
+	uint32_t infid = msg->inflictor_netid();
+	int health = msg->health();
+	::MeansOfDeath = msg->mod();
+	bool joinkill = msg->joinkill();
+	int lives = msg->lives();
 
 	AActor* source = P_FindThingById(srcid);
 	AActor* target = P_FindThingById(tgtid);
@@ -1027,7 +1028,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 
 	// This used to be bundled with a svc_movemobj and svc_mobjspeedangle,
 	// so emulate them here.
-	target->rndindex = msg.target().rndindex();
+	target->rndindex = msg->target().rndindex();
 
 	if (target->player)
 	{
@@ -1036,25 +1037,25 @@ static void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
-		newsnap.setX(msg.target().pos().x());
-		newsnap.setY(msg.target().pos().y());
-		newsnap.setZ(msg.target().pos().z());
-		newsnap.setAngle(msg.target().angle());
-		newsnap.setMomX(msg.target().mom().x());
-		newsnap.setMomY(msg.target().mom().y());
-		newsnap.setMomZ(msg.target().mom().z());
+		newsnap.setX(msg->target().pos().x());
+		newsnap.setY(msg->target().pos().y());
+		newsnap.setZ(msg->target().pos().z());
+		newsnap.setAngle(msg->target().angle());
+		newsnap.setMomX(msg->target().mom().x());
+		newsnap.setMomY(msg->target().mom().y());
+		newsnap.setMomZ(msg->target().mom().z());
 
 		target->player->snapshots.addSnapshot(newsnap);
 	}
 	else
 	{
-		target->x = msg.target().pos().x();
-		target->y = msg.target().pos().y();
-		target->z = msg.target().pos().z();
-		target->angle = msg.target().angle();
-		target->momx = msg.target().mom().x();
-		target->momy = msg.target().mom().y();
-		target->momz = msg.target().mom().z();
+		target->x = msg->target().pos().x();
+		target->y = msg->target().pos().y();
+		target->z = msg->target().pos().z();
+		target->angle = msg->target().angle();
+		target->momx = msg->target().mom().x();
+		target->momy = msg->target().mom().y();
+		target->momz = msg->target().mom().z();
 	}
 
 	target->health = health;
@@ -1080,17 +1081,17 @@ static void CL_KillMobj(const odaproto::svc::KillMobj& msg)
 // The server will send us what weapon we fired, and if that
 // doesn't match the weapon we have up at the moment, fix it
 // and request that we get a full update of playerinfo - apr 14 2012
-static void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
+static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 {
 	player_t* p = &consoleplayer();
 
-	weapontype_t firedweap = static_cast<weapontype_t>(msg.readyweapon());
+	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
 	if (firedweap < 0 || firedweap > wp_nochange)
 	{
 		Printf("CL_FireWeapon: unknown weapon %d\n", firedweap);
 		return;
 	}
-	int servertic = msg.servertic();
+	int servertic = msg->servertic();
 
 	if (firedweap != p->readyweapon)
 	{
@@ -1106,14 +1107,14 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon& msg)
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
 //
-static void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
+static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 {
-	int sectornum = msg.sectornum();
-	fixed_t floorheight = msg.sector().floor_height();
-	fixed_t ceilingheight = msg.sector().ceiling_height();
-	int floorpic = msg.sector().floorpic();
-	int ceilingpic = msg.sector().ceilingpic();
-	int special = msg.sector().special();
+	int sectornum = msg->sectornum();
+	fixed_t floorheight = msg->sector().floor_height();
+	fixed_t ceilingheight = msg->sector().ceiling_height();
+	int floorpic = msg->sector().floorpic();
+	int ceilingpic = msg->sector().ceilingpic();
+	int special = msg->sector().special();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
@@ -1143,10 +1144,10 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector& msg)
 //
 // CL_Print
 //
-static void CL_Print(const odaproto::svc::Print& msg)
+static void CL_Print(const odaproto::svc::Print* msg)
 {
-	printlevel_t level = static_cast<printlevel_t>(msg.level());
-	std::string str = msg.message();
+	printlevel_t level = static_cast<printlevel_t>(msg->level());
+	std::string str = msg->message();
 
 	// Protect against out of bounds print levels.
 	if (level < 0 || level >= PRINT_MAXPRINT)
@@ -1178,47 +1179,47 @@ static void CL_Print(const odaproto::svc::Print& msg)
 /**
  * @brief Updates less-vital members of a player struct.
  */
-static void CL_PlayerMembers(const odaproto::svc::PlayerMembers& msg)
+static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 {
-	player_t& p = CL_FindPlayer(msg.pid());
-	byte flags = msg.flags();
+	player_t& p = CL_FindPlayer(msg->pid());
+	byte flags = msg->flags();
 
 	if (flags & SVC_PM_SPECTATOR)
 	{
-		CL_SpectatePlayer(p, msg.spectator());
+		CL_SpectatePlayer(p, msg->spectator());
 	}
 
 	if (flags & SVC_PM_READY)
 	{
-		p.ready = msg.ready();
+		p.ready = msg->ready();
 	}
 
 	if (flags & SVC_PM_LIVES)
 	{
-		p.lives = msg.lives();
+		p.lives = msg->lives();
 	}
 
 	if (flags & SVC_PM_SCORE)
 	{
-		p.roundwins = msg.roundwins();
-		p.points = msg.points();
-		p.fragcount = msg.fragcount();
-		p.deathcount = msg.deathcount();
-		p.killcount = msg.killcount();
-		p.secretcount = msg.secretcount();
-		p.totalpoints = msg.totalpoints();
-		p.totaldeaths = msg.totaldeaths();
+		p.roundwins = msg->roundwins();
+		p.points = msg->points();
+		p.fragcount = msg->fragcount();
+		p.deathcount = msg->deathcount();
+		p.killcount = msg->killcount();
+		p.secretcount = msg->secretcount();
+		p.totalpoints = msg->totalpoints();
+		p.totaldeaths = msg->totaldeaths();
 	}
 }
 
 //
 // [deathz0r] Receive team frags/captures
 //
-static void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
+static void CL_TeamMembers(const odaproto::svc::TeamMembers* msg)
 {
-	team_t team = static_cast<team_t>(msg.team());
-	int points = msg.points();
-	int roundWins = msg.roundwins();
+	team_t team = static_cast<team_t>(msg->team());
+	int points = msg->points();
+	int roundWins = msg->roundwins();
 
 	// Ensure our team is valid.
 	TeamInfo* info = GetTeamInfo(team);
@@ -1229,13 +1230,13 @@ static void CL_TeamMembers(const odaproto::svc::TeamMembers& msg)
 	info->RoundWins = roundWins;
 }
 
-static void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
+static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 {
-	int linenum = msg.linenum();
-	AActor* mo = P_FindThingById(msg.activator_netid());
-	byte side = msg.side();
+	int linenum = msg->linenum();
+	AActor* mo = P_FindThingById(msg->activator_netid());
+	byte side = msg->side();
 	LineActivationType activationType =
-	    static_cast<LineActivationType>(msg.activation_type());
+	    static_cast<LineActivationType>(msg->activation_type());
 
 	if (!::lines || linenum >= ::numlines || linenum < 0)
 		return;
@@ -1247,14 +1248,14 @@ static void CL_ActivateLine(const odaproto::svc::ActivateLine& msg)
 // CL_UpdateMovingSector
 // Updates floorheight and ceilingheight of a sector.
 //
-static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
+static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
 {
-	int sectornum = msg.sector();
+	int sectornum = msg->sector();
 
-	fixed_t ceilingheight = msg.ceiling_height();
-	fixed_t floorheight = msg.floor_height();
+	fixed_t ceilingheight = msg->ceiling_height();
+	fixed_t floorheight = msg->floor_height();
 
-	uint32_t movers = msg.movers();
+	uint32_t movers = msg->movers();
 	movertype_t ceiling_mover = static_cast<movertype_t>(movers & BIT_MASK(0, 3));
 	movertype_t floor_mover = static_cast<movertype_t>((movers & BIT_MASK(4, 7)) >> 4);
 
@@ -1274,7 +1275,7 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 	if (floor_mover == SEC_FLOOR)
 	{
-		const odaproto::svc::MovingSector_Snapshot& floor = msg.floor_mover();
+		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
 
 		// Floors/Stairbuilders
 		snap.setFloorMoverType(SEC_FLOOR);
@@ -1305,7 +1306,7 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 	if (floor_mover == SEC_PLAT)
 	{
-		const odaproto::svc::MovingSector_Snapshot& floor = msg.floor_mover();
+		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
 
 		// Platforms/Lifts
 		snap.setFloorMoverType(SEC_PLAT);
@@ -1325,7 +1326,7 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 	if (ceiling_mover == SEC_CEILING)
 	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
 
 		// Ceilings / Crushers
 		snap.setCeilingMoverType(SEC_CEILING);
@@ -1346,7 +1347,7 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 	if (ceiling_mover == SEC_DOOR)
 	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
 
 		// Doors
 		snap.setCeilingMoverType(SEC_DOOR);
@@ -1368,7 +1369,7 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 	if (ceiling_mover == SEC_ELEVATOR)
 	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
 
 		// Elevators
 		snap.setCeilingMoverType(SEC_ELEVATOR);
@@ -1387,7 +1388,7 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 
 	if (ceiling_mover == SEC_PILLAR)
 	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg.ceiling_mover();
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
 
 		// Pillars
 		snap.setCeilingMoverType(SEC_PILLAR);
@@ -1415,21 +1416,21 @@ static void CL_MovingSector(const odaproto::svc::MovingSector& msg)
 //
 // CL_Sound
 //
-static void CL_PlaySound(const odaproto::svc::PlaySound& msg)
+static void CL_PlaySound(const odaproto::svc::PlaySound* msg)
 {
-	int channel = msg.channel();
-	int sfx_id = msg.sfxid();
-	float volume = msg.volume();
-	int attenuation = msg.attenuation();
+	int channel = msg->channel();
+	int sfx_id = msg->sfxid();
+	float volume = msg->volume();
+	int attenuation = msg->attenuation();
 
-	switch (msg.source_case())
+	switch (msg->source_case())
 	{
 	case odaproto::svc::PlaySound::SOURCE_NOT_SET:
 		S_SoundID(channel, sfx_id, volume, attenuation);
 		return;
 	case odaproto::svc::PlaySound::kNetid: {
 		// play at thing location
-		AActor* mo = P_FindThingById(msg.netid());
+		AActor* mo = P_FindThingById(msg->netid());
 		if (!mo)
 			return;
 
@@ -1438,18 +1439,18 @@ static void CL_PlaySound(const odaproto::svc::PlaySound& msg)
 	}
 	case odaproto::svc::PlaySound::kPos: {
 		// play at approximate thing location
-		S_SoundID(msg.pos().x(), msg.pos().y(), channel, sfx_id, volume, attenuation);
+		S_SoundID(msg->pos().x(), msg->pos().y(), channel, sfx_id, volume, attenuation);
 		return;
 	}
 	}
 }
 
-static void CL_Reconnect(const odaproto::svc::Reconnect& msg)
+static void CL_Reconnect(const odaproto::svc::Reconnect* msg)
 {
 	CL_Reconnect();
 }
 
-static void CL_ExitLevel(const odaproto::svc::ExitLevel& msg)
+static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
 {
 	gameaction = ga_completed;
 
@@ -1457,9 +1458,9 @@ static void CL_ExitLevel(const odaproto::svc::ExitLevel& msg)
 		netdemo.writeIntermission();
 }
 
-static void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
+static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 {
-	AActor* mo = P_FindThingById(msg.netid());
+	AActor* mo = P_FindThingById(msg->netid());
 
 	if (!consoleplayer().mo || !mo)
 		return;
@@ -1472,9 +1473,9 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial& msg)
 //	Allows server to force set a players team setting
 // ---------------------------------------------------------------------------------------------------------
 
-static void CL_ForceTeam(const odaproto::svc::ForceTeam& msg)
+static void CL_ForceTeam(const odaproto::svc::ForceTeam* msg)
 {
-	team_t t = static_cast<team_t>(msg.team());
+	team_t t = static_cast<team_t>(msg->team());
 
 	if (t < NUMTEAMS || t == TEAM_NONE)
 	{
@@ -1490,14 +1491,14 @@ static void CL_ForceTeam(const odaproto::svc::ForceTeam& msg)
 // CL_Switch
 // denis - switch state and timing
 // Note: this will also be called for doors
-static void CL_Switch(const odaproto::svc::Switch& msg)
+static void CL_Switch(const odaproto::svc::Switch* msg)
 {
-	int l = msg.linenum();
-	byte switchactive = msg.switch_active();
-	byte special = msg.special();
-	unsigned int state = msg.state(); // DActiveButton::EWhere
-	short texture = msg.button_texture();
-	unsigned int time = msg.timer();
+	int l = msg->linenum();
+	byte switchactive = msg->switch_active();
+	byte special = msg->special();
+	unsigned int state = msg->state(); // DActiveButton::EWhere
+	short texture = msg->button_texture();
+	unsigned int time = msg->timer();
 
 	if (!::lines || l < 0 || l >= ::numlines || state >= 3)
 		return;
@@ -1524,11 +1525,11 @@ static void CL_Switch(const odaproto::svc::Switch& msg)
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
  */
-static void CL_Say(const odaproto::svc::Say& msg)
+static void CL_Say(const odaproto::svc::Say* msg)
 {
-	bool message_visibility = msg.visibility();
-	byte player_id = msg.pid();
-	std::string message = msg.message();
+	bool message_visibility = msg->visibility();
+	byte player_id = msg->pid();
+	std::string message = msg->message();
 
 	bool filtermessage = false;
 
@@ -1595,7 +1596,7 @@ static void CL_Say(const odaproto::svc::Say& msg)
 	}
 }
 
-static void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
+static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 {
 	// clear player flags client may have imagined
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -1611,9 +1612,9 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
 		team_t team = static_cast<team_t>(i);
 		TeamInfo* teamInfo = GetTeamInfo(team);
 
-		if (i < msg.team_info_size())
+		if (i < msg->team_info_size())
 		{
-			const odaproto::svc::CTFRefresh_TeamInfo& info = msg.team_info().Get(i);
+			const odaproto::svc::CTFRefresh_TeamInfo& info = msg->team_info().Get(i);
 
 			flag_state_t state = static_cast<flag_state_t>(info.flag_state());
 			if (state < flag_home || state >= NUMFLAGSTATES)
@@ -1637,29 +1638,29 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh& msg)
 	}
 }
 
-static void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
+static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 {
 	// Range checking on events.
-	if (msg.event() <= SCORE_REFRESH || msg.event() >= NUM_CTF_SCORE)
+	if (msg->event() <= SCORE_REFRESH || msg->event() >= NUM_CTF_SCORE)
 	{
 		return;
 	}
-	if (msg.target_team() < 0 || msg.target_team() > TEAM_NONE ||
-	    msg.target_team() == NUMTEAMS)
+	if (msg->target_team() < 0 || msg->target_team() > TEAM_NONE ||
+	    msg->target_team() == NUMTEAMS)
 	{
 		return;
 	}
-	if (msg.player_team() < 0 || msg.player_team() > TEAM_NONE ||
-	    msg.player_team() == NUMTEAMS)
+	if (msg->player_team() < 0 || msg->player_team() > TEAM_NONE ||
+	    msg->player_team() == NUMTEAMS)
 	{
 		return;
 	}
 
 	// Convert our data to proper types.
-	flag_score_t event = static_cast<flag_score_t>(msg.event());
-	team_t target_team = static_cast<team_t>(msg.target_team());
-	player_t& player = idplayer(msg.player_id());
-	team_t player_team = static_cast<team_t>(msg.player_team());
+	flag_score_t event = static_cast<flag_score_t>(msg->event());
+	team_t target_team = static_cast<team_t>(msg->target_team());
+	player_t& player = idplayer(msg->player_id());
+	team_t player_team = static_cast<team_t>(msg->player_team());
 	TeamInfo* target_teaminfo = GetTeamInfo(target_team);
 
 	// If our player is valid, assign passed points to them.
@@ -1667,11 +1668,11 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
 	{
 		if (G_IsRoundsGame())
 		{
-			player.totalpoints = msg.player_totalpoints();
+			player.totalpoints = msg->player_totalpoints();
 		}
 		else
 		{
-			player.points = msg.player_points();
+			player.points = msg->player_points();
 		}
 	}
 
@@ -1744,11 +1745,11 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent& msg)
 // CL_SecretEvent
 // Client interpretation of a secret found by another player
 //
-static void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
+static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 {
-	player_t& player = idplayer(msg.pid());
-	size_t sectornum = msg.sectornum();
-	short special = msg.sector().special();
+	player_t& player = idplayer(msg->pid());
+	size_t sectornum = msg->sectornum();
+	short special = msg->sector().special();
 
 	if (!::sectors || sectornum >= numsectors)
 		return;
@@ -1769,12 +1770,12 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent& msg)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
-static void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
+static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 {
 	cvar_t *var = NULL, *prev = NULL;
 
-	std::string CvarKey = msg.key();
-	std::string CvarValue = msg.value();
+	std::string CvarKey = msg->key();
+	std::string CvarValue = msg->value();
 
 	var = cvar_t::FindCVar(CvarKey.c_str(), &prev);
 
@@ -1803,9 +1804,9 @@ static void CL_ServerSettings(const odaproto::svc::ServerSettings& msg)
 //
 // CL_ConnectClient
 //
-static void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
+static void CL_ConnectClient(const odaproto::svc::ConnectClient* msg)
 {
-	player_t& player = idplayer(msg.pid());
+	player_t& player = idplayer(msg->pid());
 
 	CL_CheckDisplayPlayer();
 
@@ -1820,9 +1821,9 @@ static void CL_ConnectClient(const odaproto::svc::ConnectClient& msg)
 }
 
 // Print a message in the middle of the screen
-static void CL_MidPrint(const odaproto::svc::MidPrint& msg)
+static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 {
-	C_MidPrint(msg.message().c_str(), NULL, msg.time());
+	C_MidPrint(msg->message().c_str(), NULL, msg->time());
 }
 
 //
@@ -1832,9 +1833,9 @@ static void CL_MidPrint(const odaproto::svc::MidPrint& msg)
 // sent back to the server with the next cmd.
 //
 // [SL] 2011-05-11
-static void CL_ServerGametic(const odaproto::svc::ServerGametic& msg)
+static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	byte t = msg.tic();
+	byte t = msg->tic();
 
 	int newtic = (::last_svgametic & 0xFFFFFF00) + t;
 
@@ -1852,9 +1853,9 @@ static void CL_ServerGametic(const odaproto::svc::ServerGametic& msg)
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //
-static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
+static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
 {
-	::level.inttimeleft = msg.timeleft(); // convert from seconds to tics
+	::level.inttimeleft = msg->timeleft(); // convert from seconds to tics
 }
 
 //
@@ -1863,7 +1864,7 @@ static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft& msg)
 // Takes care of any business that needs to be done once the client has a full
 // view of the game world.
 //
-static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone& msg)
+static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone* msg)
 {
 	::recv_full_update = true;
 }
@@ -1871,39 +1872,39 @@ static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone& msg)
 //
 // CL_RailTrail
 //
-static void CL_RailTrail(const odaproto::svc::RailTrail& msg)
+static void CL_RailTrail(const odaproto::svc::RailTrail* msg)
 {
 	v3double_t start, end;
 
-	start.x = FIXED2DOUBLE(msg.start().x());
-	start.y = FIXED2DOUBLE(msg.start().y());
-	start.z = FIXED2DOUBLE(msg.start().z());
+	start.x = FIXED2DOUBLE(msg->start().x());
+	start.y = FIXED2DOUBLE(msg->start().y());
+	start.z = FIXED2DOUBLE(msg->start().z());
 
-	end.x = FIXED2DOUBLE(msg.end().x());
-	end.y = FIXED2DOUBLE(msg.end().y());
-	end.z = FIXED2DOUBLE(msg.end().z());
+	end.x = FIXED2DOUBLE(msg->end().x());
+	end.y = FIXED2DOUBLE(msg->end().y());
+	end.z = FIXED2DOUBLE(msg->end().z());
 
 	P_DrawRailTrail(start, end);
 }
 
-static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
+static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 {
-	byte id = msg.player().playerid();
-	int health = msg.player().health();
-	int armortype = msg.player().armortype();
-	int armorpoints = msg.player().armorpoints();
-	int lives = msg.player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg.player().readyweapon());
+	byte id = msg->player().playerid();
+	int health = msg->player().health();
+	int armortype = msg->player().armortype();
+	int armorpoints = msg->player().armorpoints();
+	int lives = msg->player().lives();
+	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
 
-	byte cardByte = msg.player().cards();
+	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
 
 	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (i < msg.player().ammo_size())
+		if (i < msg->player().ammo_size())
 		{
-			ammo[i] = msg.player().ammo().Get(i);
+			ammo[i] = msg->player().ammo().Get(i);
 		}
 		else
 		{
@@ -1914,9 +1915,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		if (i < msg.player().psprites_size())
+		if (i < msg->player().psprites_size())
 		{
-			unsigned int state = msg.player().psprites().Get(i).statenum();
+			unsigned int state = msg->player().psprites().Get(i).statenum();
 			if (state >= NUMSTATES)
 			{
 				continue;
@@ -1928,9 +1929,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 	int powerups[NUMPOWERS];
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (i < msg.player().powers_size())
+		if (i < msg->player().powers_size())
 		{
-			powerups[i] = msg.player().powers().Get(i);
+			powerups[i] = msg->player().powers().Get(i);
 		}
 		else
 		{
@@ -1969,20 +1970,20 @@ static void CL_PlayerState(const odaproto::svc::PlayerState& msg)
 /**
  * @brief Set local levelstate.
  */
-static void CL_LevelState(const odaproto::svc::LevelState& msg)
+static void CL_LevelState(const odaproto::svc::LevelState* msg)
 {
 	// Set local levelstate.
 	SerializedLevelState sls;
-	sls.state = static_cast<LevelState::States>(msg.state());
-	sls.countdown_done_time = msg.countdown_done_time();
-	sls.ingame_start_time = msg.ingame_start_time();
-	sls.round_number = msg.round_number();
-	sls.last_wininfo_type = static_cast<WinInfo::WinType>(msg.last_wininfo_type());
-	sls.last_wininfo_id = msg.last_wininfo_id();
+	sls.state = static_cast<LevelState::States>(msg->state());
+	sls.countdown_done_time = msg->countdown_done_time();
+	sls.ingame_start_time = msg->ingame_start_time();
+	sls.round_number = msg->round_number();
+	sls.last_wininfo_type = static_cast<WinInfo::WinType>(msg->last_wininfo_type());
+	sls.last_wininfo_id = msg->last_wininfo_id();
 	::levelstate.unserialize(sls);
 }
 
-static void CL_ResetMap(const odaproto::svc::ResetMap& msg)
+static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -2023,10 +2024,10 @@ static void CL_ResetMap(const odaproto::svc::ResetMap& msg)
 		netdemo.writeMapChange();
 }
 
-static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos& msg)
+static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 {
-	player_t& player = idplayer(msg.pid());
-	byte queuePos = msg.queuepos();
+	player_t& player = idplayer(msg->pid());
+	byte queuePos = msg->queuepos();
 
 	if (player.id == consoleplayer_id)
 	{
@@ -2043,16 +2044,16 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos& msg)
 	player.QueuePosition = queuePos;
 }
 
-static void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart& msg)
+static void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart* msg)
 {
 	::recv_full_update = false;
 }
 
-static void CL_LineUpdate(const odaproto::svc::LineUpdate& msg)
+static void CL_LineUpdate(const odaproto::svc::LineUpdate* msg)
 {
-	int linenum = msg.linenum();
-	short flags = msg.flags();
-	byte lucency = msg.lucency();
+	int linenum = msg->linenum();
+	short flags = msg->flags();
+	byte lucency = msg->lucency();
 
 	if (linenum < 0 || linenum >= ::numlines)
 		return;
@@ -2065,10 +2066,10 @@ static void CL_LineUpdate(const odaproto::svc::LineUpdate& msg)
 /**
  * @brief Update sector properties dynamically.
  */
-static void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
+static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 {
-	int secnum = msg.sectornum();
-	uint32_t changes = msg.changes();
+	int secnum = msg->sectornum();
+	uint32_t changes = msg->changes();
 
 	if (secnum < 0 || secnum >= ::numsectors)
 		return;
@@ -2084,65 +2085,65 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties& msg)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			sector->floorpic = msg.sector().floorpic();
-			sector->ceilingpic = msg.sector().ceilingpic();
+			sector->floorpic = msg->sector().floorpic();
+			sector->ceilingpic = msg->sector().ceilingpic();
 			break;
 		case SPC_LightLevel:
-			sector->lightlevel = msg.sector().lightlevel();
+			sector->lightlevel = msg->sector().lightlevel();
 			break;
 		case SPC_Color: {
-			byte r = msg.sector().colormap().color().r();
-			byte g = msg.sector().colormap().color().g();
-			byte b = msg.sector().colormap().color().b();
+			byte r = msg->sector().colormap().color().r();
+			byte g = msg->sector().colormap().color().g();
+			byte b = msg->sector().colormap().color().b();
 			sector->colormap = GetSpecialLights(r, g, b, sector->colormap->fade.getr(),
 			                                    sector->colormap->fade.getg(),
 			                                    sector->colormap->fade.getb());
 			break;
 		}
 		case SPC_Fade: {
-			byte r = msg.sector().colormap().fade().r();
-			byte g = msg.sector().colormap().fade().g();
-			byte b = msg.sector().colormap().fade().b();
+			byte r = msg->sector().colormap().fade().r();
+			byte g = msg->sector().colormap().fade().g();
+			byte b = msg->sector().colormap().fade().b();
 			sector->colormap = GetSpecialLights(sector->colormap->color.getr(),
 			                                    sector->colormap->color.getg(),
 			                                    sector->colormap->color.getb(), r, g, b);
 			break;
 		}
 		case SPC_Gravity:
-			*(int*)&sector->gravity = msg.sector().gravity();
+			*(int*)&sector->gravity = msg->sector().gravity();
 			break;
 		case SPC_Panning:
-			sector->ceiling_xoffs = msg.sector().ceiling_offs().x();
-			sector->ceiling_yoffs = msg.sector().ceiling_offs().y();
-			sector->floor_xoffs = msg.sector().floor_offs().x();
-			sector->floor_yoffs = msg.sector().floor_offs().y();
+			sector->ceiling_xoffs = msg->sector().ceiling_offs().x();
+			sector->ceiling_yoffs = msg->sector().ceiling_offs().y();
+			sector->floor_xoffs = msg->sector().floor_offs().x();
+			sector->floor_yoffs = msg->sector().floor_offs().y();
 			break;
 		case SPC_Scale:
-			sector->ceiling_xscale = msg.sector().ceiling_scale().x();
-			sector->ceiling_yscale = msg.sector().ceiling_scale().y();
-			sector->floor_xscale = msg.sector().floor_scale().x();
-			sector->floor_yscale = msg.sector().floor_scale().y();
+			sector->ceiling_xscale = msg->sector().ceiling_scale().x();
+			sector->ceiling_yscale = msg->sector().ceiling_scale().y();
+			sector->floor_xscale = msg->sector().floor_scale().x();
+			sector->floor_yscale = msg->sector().floor_scale().y();
 			break;
 		case SPC_Rotation:
-			sector->floor_angle = msg.sector().floor_angle();
-			sector->ceiling_angle = msg.sector().ceiling_angle();
+			sector->floor_angle = msg->sector().floor_angle();
+			sector->ceiling_angle = msg->sector().ceiling_angle();
 			break;
 		case SPC_AlignBase:
-			sector->base_ceiling_angle = msg.sector().base_ceiling_angle();
-			sector->base_ceiling_yoffs = msg.sector().base_ceiling_yoffs();
-			sector->base_floor_angle = msg.sector().base_floor_angle();
-			sector->base_floor_yoffs = msg.sector().base_floor_yoffs();
+			sector->base_ceiling_angle = msg->sector().base_ceiling_angle();
+			sector->base_ceiling_yoffs = msg->sector().base_ceiling_yoffs();
+			sector->base_floor_angle = msg->sector().base_floor_angle();
+			sector->base_floor_yoffs = msg->sector().base_floor_yoffs();
 		default:
 			break;
 		}
 	}
 }
 
-static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate& msg)
+static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
 {
-	int linenum = msg.linenum();
-	int side = msg.side();
-	uint32_t changes = msg.changes();
+	int linenum = msg->linenum();
+	int side = msg->side();
+	uint32_t changes = msg->changes();
 
 	if (linenum < 0 || linenum >= ::numlines)
 		return;
@@ -2161,13 +2162,13 @@ static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate& msg)
 		switch (prop)
 		{
 		case SDPC_TexTop:
-			currentSidedef->toptexture = msg.toptexture();
+			currentSidedef->toptexture = msg->toptexture();
 			break;
 		case SDPC_TexMid:
-			currentSidedef->midtexture = msg.midtexture();
+			currentSidedef->midtexture = msg->midtexture();
 			break;
 		case SDPC_TexBottom:
-			currentSidedef->bottomtexture = msg.bottomtexture();
+			currentSidedef->bottomtexture = msg->bottomtexture();
 			break;
 		default:
 			break;
@@ -2178,10 +2179,10 @@ static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate& msg)
 //
 // CL_SetMobjState
 //
-static void CL_SetMobjState(const odaproto::svc::MobjState& msg)
+static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 {
-	AActor* mo = P_FindThingById(msg.netid());
-	int s = msg.mostate();
+	AActor* mo = P_FindThingById(msg->netid());
+	int s = msg->mostate();
 
 	if (mo == NULL || s < 0 || s >= NUMSTATES)
 		return;
@@ -2192,11 +2193,11 @@ static void CL_SetMobjState(const odaproto::svc::MobjState& msg)
 //
 // CL_DamageMobj
 //
-static void CL_DamageMobj(const odaproto::svc::DamageMobj& msg)
+static void CL_DamageMobj(const odaproto::svc::DamageMobj* msg)
 {
-	uint32_t netid = msg.netid();
-	int health = msg.health();
-	int pain = msg.pain();
+	uint32_t netid = msg->netid();
+	int health = msg->health();
+	int pain = msg->pain();
 
 	AActor* mo = P_FindThingById(netid);
 
@@ -2209,16 +2210,16 @@ static void CL_DamageMobj(const odaproto::svc::DamageMobj& msg)
 		P_SetMobjState(mo, mo->info->painstate);
 }
 
-static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
+static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 {
-	byte special = msg.special();
-	int linenum = msg.linenum();
-	AActor* activator = P_FindThingById(msg.activator_netid());
-	int arg0 = msg.arg0();
-	int arg1 = msg.arg1();
-	int arg2 = msg.arg2();
-	int arg3 = msg.arg3();
-	int arg4 = msg.arg4();
+	byte special = msg->special();
+	int linenum = msg->linenum();
+	AActor* activator = P_FindThingById(msg->activator_netid());
+	int arg0 = msg->arg0();
+	int arg1 = msg->arg1();
+	int arg2 = msg->arg2();
+	int arg3 = msg->arg3();
+	int arg4 = msg->arg4();
 
 	if (linenum != -1 && linenum >= ::numlines)
 		return;
@@ -2230,16 +2231,16 @@ static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial& msg)
 	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
 }
 
-static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial& msg)
+static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
 {
-	byte special = msg.special();
-	uint32_t netid = msg.activator_netid();
-	std::string print = msg.print();
-	byte count = msg.args().size();
+	byte special = msg->special();
+	uint32_t netid = msg->activator_netid();
+	std::string print = msg->print();
+	byte count = msg->args().size();
 
 	int acsArgs[16];
 	ArrayInit(acsArgs, 0);
-	std::copy(msg.args().begin(), msg.args().end(), acsArgs);
+	std::copy(msg->args().begin(), msg->args().end(), acsArgs);
 
 	AActor* activator = P_FindThingById(netid);
 
@@ -2315,16 +2316,16 @@ static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial& msg)
 /**
  * @brief Update a thinker.
  */
-static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
+static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 {
-	switch (msg.thinker_case())
+	switch (msg->thinker_case())
 	{
 	case odaproto::svc::ThinkerUpdate::kScroller: {
 		DScroller::EScrollType scrollType =
-		    static_cast<DScroller::EScrollType>(msg.scroller().type());
-		fixed_t dx = msg.scroller().scroll_x();
-		fixed_t dy = msg.scroller().scroll_y();
-		int affectee = msg.scroller().affectee();
+		    static_cast<DScroller::EScrollType>(msg->scroller().type());
+		fixed_t dx = msg->scroller().scroll_x();
+		fixed_t dy = msg->scroller().scroll_y();
+		int affectee = msg->scroller().affectee();
 		if (::numsides <= 0 || ::numsectors <= 0)
 			break;
 		if (affectee < 0)
@@ -2338,9 +2339,9 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kFireFlicker: {
-		short secnum = msg.fire_flicker().sector();
-		int min = msg.fire_flicker().min_light();
-		int max = msg.fire_flicker().max_light();
+		short secnum = msg->fire_flicker().sector();
+		int min = msg->fire_flicker().min_light();
+		int max = msg->fire_flicker().max_light();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2348,9 +2349,9 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kFlicker: {
-		short secnum = msg.flicker().sector();
-		int min = msg.flicker().min_light();
-		int max = msg.flicker().max_light();
+		short secnum = msg->flicker().sector();
+		int min = msg->flicker().min_light();
+		int max = msg->flicker().max_light();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2358,9 +2359,9 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kLightFlash: {
-		short secnum = msg.light_flash().sector();
-		int min = msg.light_flash().min_light();
-		int max = msg.light_flash().max_light();
+		short secnum = msg->light_flash().sector();
+		int min = msg->light_flash().min_light();
+		int max = msg->light_flash().max_light();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2368,12 +2369,12 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kStrobe: {
-		short secnum = msg.strobe().sector();
-		int min = msg.strobe().min_light();
-		int max = msg.strobe().max_light();
-		int dark = msg.strobe().dark_time();
-		int bright = msg.strobe().bright_time();
-		int count = msg.strobe().count();
+		short secnum = msg->strobe().sector();
+		int min = msg->strobe().min_light();
+		int max = msg->strobe().max_light();
+		int dark = msg->strobe().dark_time();
+		int bright = msg->strobe().bright_time();
+		int count = msg->strobe().count();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2384,7 +2385,7 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kGlow: {
-		short secnum = msg.glow().sector();
+		short secnum = msg->glow().sector();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2392,11 +2393,11 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kGlow2: {
-		short secnum = msg.glow2().sector();
-		int start = msg.glow2().start();
-		int end = msg.glow2().end();
-		int tics = msg.glow2().max_tics();
-		bool oneShot = msg.glow2().one_shot();
+		short secnum = msg->glow2().sector();
+		int start = msg->glow2().start();
+		int end = msg->glow2().end();
+		int tics = msg->glow2().max_tics();
+		bool oneShot = msg->glow2().one_shot();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2404,9 +2405,9 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kPhased: {
-		short secnum = msg.phased().sector();
-		int base = msg.phased().base_level();
-		int phase = msg.phased().phase();
+		short secnum = msg->phased().sector();
+		int base = msg->phased().base_level();
+		int phase = msg->phased().phase();
 		if (::numsectors <= 0)
 			break;
 		if (secnum < ::numsectors)
@@ -2418,31 +2419,31 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate& msg)
 	}
 }
 
-static void CL_VoteUpdate(const odaproto::svc::VoteUpdate& msg)
+static void CL_VoteUpdate(const odaproto::svc::VoteUpdate* msg)
 {
-	vote_result_t result = static_cast<vote_result_t>(msg.result());
+	vote_result_t result = static_cast<vote_result_t>(msg->result());
 
 	if (result < 0 || result >= NUMVOTERESULTS)
 		return;
 
 	vote_state_t vote_state;
 	vote_state.result = result;
-	vote_state.votestring = msg.votestring();
-	vote_state.countdown = msg.countdown();
-	vote_state.yes = msg.yes();
-	vote_state.yes_needed = msg.yes_needed();
-	vote_state.no = msg.no();
-	vote_state.no_needed = msg.no_needed();
-	vote_state.abs = msg.abs();
+	vote_state.votestring = msg->votestring();
+	vote_state.countdown = msg->countdown();
+	vote_state.yes = msg->yes();
+	vote_state.yes_needed = msg->yes_needed();
+	vote_state.no = msg->no();
+	vote_state.no_needed = msg->no_needed();
+	vote_state.abs = msg->abs();
 
 	VoteState::instance().set(vote_state);
 }
 
 // Got a packet that contains the maplist status
-static void CL_Maplist(const odaproto::svc::Maplist& msg)
+static void CL_Maplist(const odaproto::svc::Maplist* msg)
 {
 	// The update status might require us to bail out.
-	maplist_status_t status = static_cast<maplist_status_t>(msg.status());
+	maplist_status_t status = static_cast<maplist_status_t>(msg->status());
 	if (status < 0 || status >= NUM_MAPLIST_STATUS)
 		return;
 
@@ -2450,10 +2451,10 @@ static void CL_Maplist(const odaproto::svc::Maplist& msg)
 }
 
 // Got a packet that contains a chunk of the maplist.
-static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)
+static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
 {
 	// The update status might require us to bail out.
-	maplist_status_t status = static_cast<maplist_status_t>(msg.status());
+	maplist_status_t status = static_cast<maplist_status_t>(msg->status());
 	if (status < 0 || status >= NUM_MAPLIST_STATUS)
 		return;
 
@@ -2465,17 +2466,17 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)
 
 	// Parse our dictionary first.
 	google::protobuf::Map<uint32_t, std::string>::const_iterator it;
-	for (it = msg.dict().begin(); it != msg.dict().end(); ++it)
+	for (it = msg->dict().begin(); it != msg->dict().end(); ++it)
 	{
 		indexer.setIndex(it->first, it->second);
 	}
 
 	// Load our maps into the local cache.
-	MaplistCache::instance().set_size(msg.maplist().size());
+	MaplistCache::instance().set_size(msg->maplist().size());
 
-	for (int i = 0; i < msg.maplist().size(); i++)
+	for (int i = 0; i < msg->maplist().size(); i++)
 	{
-		const odaproto::svc::MaplistUpdate::Row& row = msg.maplist().Get(i);
+		const odaproto::svc::MaplistUpdate::Row& row = msg->maplist().Get(i);
 		const std::string& map = indexer.getString(row.map());
 
 		maplist_entry_t maplist_entry;
@@ -2491,14 +2492,14 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate& msg)
 }
 
 // Got a packet that contains the next and current index.
-static void CL_MaplistIndex(const odaproto::svc::MaplistIndex& msg)
+static void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
 {
-	if (msg.count() > 0)
+	if (msg->count() > 0)
 	{
-		MaplistCache::instance().set_next_index(msg.next_index());
-		if (msg.count() > 1)
+		MaplistCache::instance().set_next_index(msg->next_index());
+		if (msg->count() > 1)
 		{
-			MaplistCache::instance().set_this_index(msg.this_index());
+			MaplistCache::instance().set_this_index(msg->this_index());
 		}
 		else
 		{
@@ -2507,7 +2508,7 @@ static void CL_MaplistIndex(const odaproto::svc::MaplistIndex& msg)
 	}
 }
 
-static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
+static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
@@ -2518,24 +2519,25 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 	byte waterlevel;
 
 	clientPlayer->cmd.clear();
-	clientPlayer->cmd.unserialize(msg.player_cmd());
+	clientPlayer->cmd.unserialize(msg->player_cmd());
 
-	waterlevel = msg.actor().waterlevel();
-	x = msg.actor().pos().x();
-	y = msg.actor().pos().y();
-	z = msg.actor().pos().z();
-	momx = msg.actor().mom().x();
-	momy = msg.actor().mom().y();
-	momz = msg.actor().mom().z();
-	angle = msg.actor().angle();
-	pitch = msg.actor().pitch();
-	viewz = msg.player().viewz();
-	viewheight = msg.player().viewheight();
-	deltaviewheight = msg.player().deltaviewheight();
-	jumpTics = msg.player().jumptics();
-	reactiontime = msg.actor().reactiontime();
-	clientPlayer->readyweapon = static_cast<weapontype_t>(msg.player().readyweapon());
-	clientPlayer->pendingweapon = static_cast<weapontype_t>(msg.player().pendingweapon());
+	waterlevel = msg->actor().waterlevel();
+	x = msg->actor().pos().x();
+	y = msg->actor().pos().y();
+	z = msg->actor().pos().z();
+	momx = msg->actor().mom().x();
+	momy = msg->actor().mom().y();
+	momz = msg->actor().mom().z();
+	angle = msg->actor().angle();
+	pitch = msg->actor().pitch();
+	viewz = msg->player().viewz();
+	viewheight = msg->player().viewheight();
+	deltaviewheight = msg->player().deltaviewheight();
+	jumpTics = msg->player().jumptics();
+	reactiontime = msg->actor().reactiontime();
+	clientPlayer->readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
+	clientPlayer->pendingweapon =
+	    static_cast<weapontype_t>(msg->player().pendingweapon());
 
 	if (clientPlayer->mo)
 	{
@@ -2556,12 +2558,12 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap& msg)
 	}
 }
 
-static void CL_NetDemoStop(const odaproto::svc::NetDemoStop& msg)
+static void CL_NetDemoStop(const odaproto::svc::NetDemoStop* msg)
 {
 	::netdemo.stopPlaying();
 }
 
-static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap& msg)
+static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
 {
 	AddCommandString("netprevmap");
 }
@@ -2599,90 +2601,143 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-#define SV_PROTO(svc, func, proto)  \
-	case svc: {                     \
-		proto msg;                  \
-		if (!MSG_ReadProto(msg))    \
-			return PRES_BAD_DECODE; \
-		RecordProto(svc, &msg);     \
-		func(msg);                  \
-		return PRES_OK;             \
+/**
+ * @brief Given a message type and buffer, return a decoded message in "out".
+ *
+ * @param out Output message - will not be modified unless successful.
+ * @param cmd Command to parse out.
+ * @param buffer Buffer to parse, not including the header or initial size.
+ * @param size Length of the buffer to parse.
+ * @return Error condition, or OK (0) if successful.
+ */
+parseError_e CL_ParseMessage(google::protobuf::Message*& out, const byte cmd,
+                             const void* buffer, const size_t size)
+{
+	// A message factory + Descriptor gives us the proper message.
+	google::protobuf::MessageFactory* factory =
+	    google::protobuf::MessageFactory::generated_factory();
+	const google::protobuf::Descriptor* desc = SVC_ResolveHeader(static_cast<svc_t>(cmd));
+	if (desc == NULL)
+	{
+		return PERR_UNKNOWN_HEADER;
 	}
 
-parseResult_e CL_ParseCommand()
+	// Can we get the mssage prototype from the descriptor?
+	const google::protobuf::Message* defmsg = factory->GetPrototype(desc);
+	if (defmsg == NULL)
+	{
+		return PERR_UNKNOWN_MESSAGE;
+	}
+
+	// Allocated with "new" - can't be null, and we own it.
+	google::protobuf::Message* msg = defmsg->New();
+	if (!msg->ParseFromArray(buffer, size))
+	{
+		return PERR_BAD_DECODE;
+	}
+
+	out = msg;
+	return PERR_OK;
+}
+
+#define SV_MSG(header, func, type)           \
+	case header:                             \
+		func(static_cast<const type*>(msg)); \
+		break
+
+/**
+ * @brief Read a server message off the wire.
+ */
+parseError_e CL_ParseCommand()
 {
+	// What type of message we have.
 	byte cmd = MSG_ReadByte();
 
+	// Size of the message.
+	size_t size = MSG_ReadUnVarint();
+
+	// The message itself.
+	void* data = MSG_ReadChunk(size);
+
+	// Turn the message into a protobuf.
+	google::protobuf::Message* msg = NULL;
+	parseError_e err = CL_ParseMessage(msg, cmd, data, size);
+	if (err)
+	{
+		return err;
+	}
+
+	// Run the proper message function.
 	switch (cmd)
 	{
 		/* clang-format off */
-		SV_PROTO(svc_noop, CL_Noop, odaproto::svc::Noop);
-		SV_PROTO(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
-		SV_PROTO(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
-		SV_PROTO(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
-		SV_PROTO(svc_updatelocalplayer, CL_UpdateLocalPlayer, odaproto::svc::UpdateLocalPlayer);
-		SV_PROTO(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
-		SV_PROTO(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
-		SV_PROTO(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
-		SV_PROTO(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
-		SV_PROTO(svc_disconnectclient, CL_DisconnectClient, odaproto::svc::DisconnectClient);
-		SV_PROTO(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
-		SV_PROTO(svc_consoleplayer, CL_ConsolePlayer, odaproto::svc::ConsolePlayer);
-		SV_PROTO(svc_explodemissile, CL_ExplodeMissile, odaproto::svc::ExplodeMissile);
-		SV_PROTO(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
-		SV_PROTO(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
-		SV_PROTO(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
-		SV_PROTO(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
-		SV_PROTO(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
-		SV_PROTO(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
-		SV_PROTO(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
-		SV_PROTO(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
-		SV_PROTO(svc_print, CL_Print, odaproto::svc::Print);
-		SV_PROTO(svc_playermembers, CL_PlayerMembers, odaproto::svc::PlayerMembers);
-		SV_PROTO(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
-		SV_PROTO(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
-		SV_PROTO(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
-		SV_PROTO(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
-		SV_PROTO(svc_reconnect, CL_Reconnect, odaproto::svc::Reconnect);
-		SV_PROTO(svc_exitlevel, CL_ExitLevel, odaproto::svc::ExitLevel);
-		SV_PROTO(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
-		SV_PROTO(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
-		SV_PROTO(svc_switch, CL_Switch, odaproto::svc::Switch);
-		SV_PROTO(svc_say, CL_Say, odaproto::svc::Say);
-		SV_PROTO(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
-		SV_PROTO(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
-		SV_PROTO(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
-		SV_PROTO(svc_serversettings, CL_ServerSettings, odaproto::svc::ServerSettings);
-		SV_PROTO(svc_connectclient, CL_ConnectClient, odaproto::svc::ConnectClient);
-		SV_PROTO(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
-		SV_PROTO(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
-		SV_PROTO(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
-		SV_PROTO(svc_fullupdatedone, CL_FullUpdateDone, odaproto::svc::FullUpdateDone);
-		SV_PROTO(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
-		SV_PROTO(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
-		SV_PROTO(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
-		SV_PROTO(svc_resetmap, CL_ResetMap, odaproto::svc::ResetMap);
-		SV_PROTO(svc_playerqueuepos, CL_PlayerQueuePos, odaproto::svc::PlayerQueuePos);
-		SV_PROTO(svc_fullupdatestart, CL_FullUpdateStart, odaproto::svc::FullUpdateStart);
-		SV_PROTO(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
-		SV_PROTO(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
-		SV_PROTO(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
-		SV_PROTO(svc_mobjstate, CL_SetMobjState, odaproto::svc::MobjState);
-		SV_PROTO(svc_damagemobj, CL_DamageMobj, odaproto::svc::DamageMobj);
-		SV_PROTO(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);
-		SV_PROTO(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);
-		SV_PROTO(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);
-		SV_PROTO(svc_vote_update, CL_VoteUpdate, odaproto::svc::VoteUpdate);
-		SV_PROTO(svc_maplist, CL_Maplist, odaproto::svc::Maplist);
-		SV_PROTO(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
-		SV_PROTO(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
-		SV_PROTO(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
-		SV_PROTO(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
-		SV_PROTO(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
+		SV_MSG(svc_noop, CL_Noop, odaproto::svc::Noop);
+		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
+		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
+		SV_MSG(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
+		SV_MSG(svc_updatelocalplayer, CL_UpdateLocalPlayer, odaproto::svc::UpdateLocalPlayer);
+		SV_MSG(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
+		SV_MSG(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
+		SV_MSG(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
+		SV_MSG(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
+		SV_MSG(svc_disconnectclient, CL_DisconnectClient, odaproto::svc::DisconnectClient);
+		SV_MSG(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
+		SV_MSG(svc_consoleplayer, CL_ConsolePlayer, odaproto::svc::ConsolePlayer);
+		SV_MSG(svc_explodemissile, CL_ExplodeMissile, odaproto::svc::ExplodeMissile);
+		SV_MSG(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
+		SV_MSG(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
+		SV_MSG(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
+		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
+		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
+		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
+		SV_MSG(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
+		SV_MSG(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
+		SV_MSG(svc_print, CL_Print, odaproto::svc::Print);
+		SV_MSG(svc_playermembers, CL_PlayerMembers, odaproto::svc::PlayerMembers);
+		SV_MSG(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
+		SV_MSG(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
+		SV_MSG(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
+		SV_MSG(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
+		SV_MSG(svc_reconnect, CL_Reconnect, odaproto::svc::Reconnect);
+		SV_MSG(svc_exitlevel, CL_ExitLevel, odaproto::svc::ExitLevel);
+		SV_MSG(svc_touchspecial, CL_TouchSpecial, odaproto::svc::TouchSpecial);
+		SV_MSG(svc_forceteam, CL_ForceTeam, odaproto::svc::ForceTeam);
+		SV_MSG(svc_switch, CL_Switch, odaproto::svc::Switch);
+		SV_MSG(svc_say, CL_Say, odaproto::svc::Say);
+		SV_MSG(svc_ctfrefresh, CL_CTFRefresh, odaproto::svc::CTFRefresh);
+		SV_MSG(svc_ctfevent, CL_CTFEvent, odaproto::svc::CTFEvent);
+		SV_MSG(svc_secretevent, CL_SecretEvent, odaproto::svc::SecretEvent);
+		SV_MSG(svc_serversettings, CL_ServerSettings, odaproto::svc::ServerSettings);
+		SV_MSG(svc_connectclient, CL_ConnectClient, odaproto::svc::ConnectClient);
+		SV_MSG(svc_midprint, CL_MidPrint, odaproto::svc::MidPrint);
+		SV_MSG(svc_servergametic, CL_ServerGametic, odaproto::svc::ServerGametic);
+		SV_MSG(svc_inttimeleft, CL_IntTimeLeft, odaproto::svc::IntTimeLeft);
+		SV_MSG(svc_fullupdatedone, CL_FullUpdateDone, odaproto::svc::FullUpdateDone);
+		SV_MSG(svc_railtrail, CL_RailTrail, odaproto::svc::RailTrail);
+		SV_MSG(svc_playerstate, CL_PlayerState, odaproto::svc::PlayerState);
+		SV_MSG(svc_levelstate, CL_LevelState, odaproto::svc::LevelState);
+		SV_MSG(svc_resetmap, CL_ResetMap, odaproto::svc::ResetMap);
+		SV_MSG(svc_playerqueuepos, CL_PlayerQueuePos, odaproto::svc::PlayerQueuePos);
+		SV_MSG(svc_fullupdatestart, CL_FullUpdateStart, odaproto::svc::FullUpdateStart);
+		SV_MSG(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
+		SV_MSG(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
+		SV_MSG(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
+		SV_MSG(svc_mobjstate, CL_SetMobjState, odaproto::svc::MobjState);
+		SV_MSG(svc_damagemobj, CL_DamageMobj, odaproto::svc::DamageMobj);
+		SV_MSG(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);
+		SV_MSG(svc_executeacsspecial, CL_ExecuteACSSpecial, odaproto::svc::ExecuteACSSpecial);
+		SV_MSG(svc_thinkerupdate, CL_ThinkerUpdate, odaproto::svc::ThinkerUpdate);
+		SV_MSG(svc_vote_update, CL_VoteUpdate, odaproto::svc::VoteUpdate);
+		SV_MSG(svc_maplist, CL_Maplist, odaproto::svc::Maplist);
+		SV_MSG(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
+		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
+		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
+		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
+		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
 		/* clang-format on */
 	default:
-		return PRES_UNKNOWN_HEADER;
+		return PERR_UNKNOWN_HEADER;
 	}
 
-	return PRES_OK;
+	return PERR_OK;
 }

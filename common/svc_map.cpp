@@ -27,12 +27,16 @@
 #include "hashtable.h"
 #include "i_net.h"
 
-typedef OHashTable<const void*, svc_t> SVCMap;
-SVCMap svcmap;
+typedef OHashTable<int, const google::protobuf::Descriptor*> SVCHeaderMap;
+typedef OHashTable<const void*, svc_t> SVCDescMap;
 
-static void MapProto(const svc_t msg, const google::protobuf::Descriptor* desc)
+SVCHeaderMap g_SVCHeaderMap;
+SVCDescMap g_SVCDescMap;
+
+static void MapProto(const svc_t header, const google::protobuf::Descriptor* desc)
 {
-	::svcmap.insert(SVCMap::value_type(desc, msg));
+	::g_SVCHeaderMap.insert(SVCHeaderMap::value_type(header, desc));
+	::g_SVCDescMap.insert(SVCDescMap::value_type(desc, header));
 }
 
 /**
@@ -105,15 +109,38 @@ static void InitMap()
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
 }
 
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
+/**
+ * @brief Given a packet header, return the message Descriptor, or NULL if
+ *        the header is invalid.
+ */
+const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header)
 {
-	if (::svcmap.empty())
+	if (::g_SVCHeaderMap.empty())
 	{
 		InitMap();
 	}
 
-	SVCMap::iterator it = ::svcmap.find(desc);
-	if (it == ::svcmap.end())
+	SVCHeaderMap::iterator it = ::g_SVCHeaderMap.find(static_cast<svc_t>(header));
+	if (it == ::g_SVCHeaderMap.end())
+	{
+		return NULL;
+	}
+	return static_cast<const google::protobuf::Descriptor*>(it->second);
+}
+
+/**
+ * @brief Given a message Descriptor, return the packet header, or svc_noop
+ *        if the descriptor is invalid.
+ */
+svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
+{
+	if (::g_SVCDescMap.empty())
+	{
+		InitMap();
+	}
+
+	SVCDescMap::iterator it = ::g_SVCDescMap.find(desc);
+	if (it == ::g_SVCDescMap.end())
 	{
 		return svc_noop;
 	}

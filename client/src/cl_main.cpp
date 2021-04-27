@@ -1945,18 +1945,22 @@ void CL_ParseCommands()
 		}
 
 		size_t byteStart = ::net_message.BytesRead();
-		parseResult_e res = CL_ParseCommand();
-		if (res != PRES_OK || ::net_message.overflowed)
+		parseError_e res = CL_ParseCommand();
+		if (res != PERR_OK || ::net_message.overflowed)
 		{
 			CL_QuitNetGame();
 			const Protos& protos = CL_GetTicProtos();
 
 			std::string err;
-			if (res == PRES_UNKNOWN_HEADER)
+			if (res == PERR_UNKNOWN_HEADER)
 			{
 				err = "Unknown message header";
 			}
-			else if (res == PRES_BAD_DECODE)
+			else if (res == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (res == PERR_BAD_DECODE)
 			{
 				err = "Could not decode message";
 			}

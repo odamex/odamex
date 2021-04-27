@@ -29,11 +29,12 @@
 
 #include "doomtype.h"
 
-enum parseResult_e
+enum parseError_e
 {
-	PRES_OK,
-	PRES_UNKNOWN_HEADER,
-	PRES_BAD_DECODE
+	PERR_OK,
+	PERR_UNKNOWN_HEADER,
+	PERR_UNKNOWN_MESSAGE,
+	PERR_BAD_DECODE
 };
 
 struct Proto
@@ -48,6 +49,6 @@ struct Proto
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-parseResult_e CL_ParseCommand();
+parseError_e CL_ParseCommand();
 
 #endif // __CL_PARSE_H__
