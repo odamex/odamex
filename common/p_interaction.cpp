@@ -59,6 +59,7 @@ EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sl_allowitemdrop)
 
 int MeansOfDeath;
 
@@ -1275,7 +1276,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// during the death frame of a thing.
 	mobjtype_t item = (mobjtype_t)0;
 
-	switch (target->type)
+	/*switch (target->type)
 	{
         case MT_WOLFSS:
         case MT_POSSESSED:
@@ -1292,6 +1293,68 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
         default:
             return;
+	}*/
+
+	switch (target->type)
+	{
+        case MT_WOLFSS:
+        case MT_POSSESSED:
+            item = MT_CLIP;
+            break;
+
+        case MT_SHOTGUY:
+            item = MT_SHOTGUN;
+            break;
+
+        case MT_CHAINGUY:
+            item = MT_CHAINGUN;
+            break;
+
+		//
+		// sapientlion - If player killed themselves or were killed by the other player,
+		// spawn a weapon (which they were helding moments before death) on top of their remains.
+		//
+		case MT_PLAYER:
+
+			switch(target->player->readyweapon)
+			{
+				case wp_pistol:
+				item = MT_CLIP;
+				break;
+				
+				case wp_shotgun:
+				item = MT_SHOTGUN;
+				break;
+
+				case wp_chaingun:
+				item = MT_CHAINGUN;
+				break;
+
+				case wp_missile:
+				item = MT_MISC27; // Rocket launcher.
+				break;
+
+				case wp_plasma:
+				item = MT_MISC28; // Plasma gun.
+				break;
+
+				case wp_bfg:
+				item = MT_BFG;
+				break;
+
+				case wp_chainsaw:
+				item = MT_MISC26; // Chainsaw.
+				break;
+
+				case wp_supershotgun:
+				item = MT_SUPERSHOTGUN;
+				break;
+			}
+
+			break;
+
+        default:
+            return;
 	}
 
 	if (!item)
@@ -1300,11 +1363,22 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
     }
 
 	// denis - dropped things will spawn serverside
-	if (serverside)
+	/*if (serverside)
 	{
 		mo = new AActor(target->x, target->y, ONFLOORZ, item);
 		mo->flags |= MF_DROPPED;	// special versions of items
 		SV_SpawnMobj(mo);
+	}*/
+
+	//
+	// sapientlion - Item drop implementation.
+	// Can be easily enabled and disabled by entering sl_allowitemdrop.
+	//
+	if(serverside && sl_allowitemdrop)
+	{
+		AActor* dropped_item = new AActor(target->x, target->y, ONFLOORZ, item);
+		dropped_item->flags |= MF_DROPPED;
+		SV_SpawnMobj(dropped_item);
 	}
 }
 
