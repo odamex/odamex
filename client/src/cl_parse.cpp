@@ -2586,12 +2586,20 @@ static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 
 	Proto proto;
 	proto.header = header;
+	proto.name = ::svc_info[(byte)header].getName();
 	if (msg)
 	{
-		proto.name = msg->GetTypeName();
 		proto.size = msg->ByteSizeLong();
 		proto.data = msg->DebugString();
-		proto.shortdata = msg->ShortDebugString();
+
+		// Replace braces in debug string - we don't have that char in the font.
+		for (size_t i = 0; i < proto.data.size(); i++)
+		{
+			if (proto.data[i] == '{')
+				proto.data[i] = '(';
+			else if (proto.data[i] == '}')
+				proto.data[i] = ')';
+		}
 	}
 	::protos.push_back(proto);
 }

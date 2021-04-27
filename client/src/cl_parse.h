@@ -43,7 +43,6 @@ struct Proto
 	std::string name;
 	size_t size;
 	std::string data;
-	std::string shortdata;
 };
 
 typedef std::vector<Proto> Protos;
