@@ -2609,8 +2609,6 @@ const Protos& CL_GetTicProtos()
 		return PRES_OK;             \
 	}
 
-extern void CL_Clear();
-
 parseResult_e CL_ParseCommand()
 {
 	byte cmd = MSG_ReadByte();
