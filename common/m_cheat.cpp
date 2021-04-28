@@ -26,6 +26,7 @@
 #include <math.h>
 
 #include "g_gametype.h"
+
 #include "m_cheat.h"
 #include "d_player.h"
 #include "doomstat.h"
@@ -37,12 +38,109 @@
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
 
+#ifdef CLIENT_APP
+#include "cl_main.h"
+#include "c_dispatch.h"
+extern bool automapactive;
+#endif
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
 
 static int				firsttime = 1;
 static unsigned char	cheat_xlate_table[256];
+
+//-------------
+// THESE ARE MAINLY FOR THE CLIENT
+// Smashing Pumpkins Into Small Piles Of Putrid Debris.
+bool CHEAT_AutoMap(cheatseq_t* cheat)
+{
+#ifdef CLIENT_APP
+	if (automapactive)
+	{
+		if (!multiplayer || sv_gametype == GM_COOP)
+			// cht.AutoMapCheat = (cht.AutoMapCheat + 1) % 3;
+			Printf("AAAAA\n");
+		return true;
+	}
+#endif
+	return false;
+}
+
+bool CHEAT_ChangeLevel(cheatseq_t* cheat)
+{
+#ifdef CLIENT_APP
+	char buf[16];
+
+	// [ML] Chex mode: always set the episode number to 1.
+	// FIXME: This is probably a horrible hack, it sure looks like one at least
+	if (gamemode == retail_chex)
+		sprintf(buf, "1%c", cheat->Args[1]);
+
+	snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
+	AddCommandString(buf);
+#endif
+	return true;
+}
+
+bool CHEAT_IdMyPos(cheatseq_t* cheat)
+{
+#ifdef CLIENT_APP
+	C_DoCommand("toggle idmypos", 0);
+#endif
+	return true;
+}
+
+bool CHEAT_BeholdMenu(cheatseq_t* cheat)
+{
+#ifdef CLIENT_APP
+	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
+#endif
+	return false;
+}
+
+bool CHEAT_ChangeMusic(cheatseq_t* cheat)
+{
+#ifdef CLIENT_APP
+	char buf[9] = "idmus xx";
+
+	buf[6] = cheat->Args[0];
+	buf[7] = cheat->Args[1];
+	C_DoCommand(buf, 0);
+#endif
+	return true;
+}
+
+//
+// Sets clientside the new cheat flag
+// and also requests its new status serverside
+//
+bool CHEAT_SetGeneric(cheatseq_t* cheat)
+{
+#ifdef CLIENT_APP
+	if (!CHEAT_AreCheatsEnabled())
+		return true;
+
+	//if (multiplayer)
+	// return true;
+
+	if (cheat->Args[0] == CHT_NOCLIP)
+	{
+		if (cheat->Args[1] == 0 && gamemode != shareware && gamemode != registered &&
+		    gamemode != retail && gamemode != retail_bfg)
+			return true;
+		else if (cheat->Args[1] == 1 && gamemode != commercial &&
+		         gamemode != commercial_bfg)
+			return true;
+	}
+
+	cht_DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
+	CL_SendCheat((ECheatFlags)cheat->Args[0]);
+
+#endif
+	return true;
+}
 
 
 // Checks if all the conditions to enable cheats are met.
@@ -68,69 +166,43 @@ bool CHEAT_AreCheatsEnabled()
 	return true;
 }
 
-//
-// Called in st_stuff module, which handles the input.
-// Returns a 1 if the cheat was successful, 0 if failed.
-//
-int cht_CheckCheat (cheatseq_t *cht, char key)
-{
-	int i;
-	int rc = 0;
-
-	if (firsttime)
-	{
-		firsttime = 0;
-		for (i = 0; i < 256; i++)
-			cheat_xlate_table[i] = (unsigned char)SCRAMBLE(i);
-	}
-
-	if (!cht->p)
-		cht->p = cht->sequence; // initialize if first time
-
-	if (*cht->p == 0)
-		*(cht->p++) = key;
-	else if (cheat_xlate_table[(unsigned char)tolower(key)] == *cht->p)
-		cht->p++;
-	else
-		cht->p = cht->sequence;
-
-	if (*cht->p == 1)
-		cht->p++;
-	else if (*cht->p == 0xff) // end of sequence character
-	{
-		cht->p = cht->sequence;
-		rc = 1;
-	}
-
-	return rc;
-}
-
-void cht_GetParam (cheatseq_t *cht, char *buffer)
-{
-
-	unsigned char *p, c;
-
-	p = cht->sequence;
-	while (*(p++) != 1);
-	
-	do
-	{
-		c = *p;
-		*(buffer++) = c;
-		*(p++) = 0;
-	}
-	while (c && *p!=0xff );
-
-	if (*p==0xff)
-		*buffer = 0;
-
-}
-
 extern void A_PainDie(AActor *);
 
 // [RH] Actually handle the cheat. The cheat code in st_stuff.c now just
 // writes some bytes to the network data stream, and the network code
 // later calls us.
+
+bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
+{
+	if (cheat->Pos == NULL)
+	{
+		cheat->Pos = cheat->Sequence;
+		cheat->CurrentArg = 0;
+	}
+	if (*cheat->Pos == 0)
+	{
+		*eat = true;
+		cheat->Args[cheat->CurrentArg++] = key;
+		cheat->Pos++;
+	}
+	else if (key == *cheat->Pos)
+	{
+		cheat->Pos++;
+	}
+	else
+	{
+		cheat->Pos = cheat->Sequence;
+		cheat->CurrentArg = 0;
+	}
+	if (*cheat->Pos == 0xff)
+	{
+		cheat->Pos = cheat->Sequence;
+		cheat->CurrentArg = 0;
+		return true;
+	}
+	return false;
+}
+
 
 void cht_DoCheat (player_t *player, int cheat)
 {

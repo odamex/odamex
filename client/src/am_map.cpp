@@ -262,7 +262,9 @@ static int	bigstate = 0;	// Bigmode
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
-static bool	automapactive = false;
+
+
+bool	automapactive = false;
 
 // location of window on screen
 static int	f_x;
@@ -704,6 +706,7 @@ void AM_clearMarks(void)
 void AM_LevelInit(void)
 {
 	leveljuststarted = 0;
+	cheating = 0;			// force-reset IDDT after loading a map
 
 	AM_clearMarks();
 
@@ -825,11 +828,6 @@ BOOL AM_Responder (event_t *ev)
 		}
 
 		bool res = C_DoKey(ev, &AutomapBindings, NULL);
-		if (ev->type == ev_keydown && sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
-		{
-			cheating = (cheating + 1) % 3;
-			return true;
-		}
 		if (res && ev->type == ev_keyup)
 		{
 			// If this is a release event we also need to check if it released a button in the main Bindings
