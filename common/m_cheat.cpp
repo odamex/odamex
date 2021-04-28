@@ -51,12 +51,12 @@ extern bool automapactive;
 static int				firsttime = 1;
 static unsigned char	cheat_xlate_table[256];
 
+#ifdef CLIENT_APP
 //-------------
 // THESE ARE MAINLY FOR THE CLIENT
 // Smashing Pumpkins Into Small Piles Of Putrid Debris.
 bool CHEAT_AutoMap(cheatseq_t* cheat)
 {
-#ifdef CLIENT_APP
 	if (automapactive)
 	{
 		if (!multiplayer || sv_gametype == GM_COOP)
@@ -64,51 +64,47 @@ bool CHEAT_AutoMap(cheatseq_t* cheat)
 			Printf("AAAAA\n");
 		return true;
 	}
-#endif
 	return false;
 }
 
 bool CHEAT_ChangeLevel(cheatseq_t* cheat)
 {
-#ifdef CLIENT_APP
 	char buf[16];
+
+	// What were you trying to achieve?
+	if (multiplayer)
+		return false;
 
 	// [ML] Chex mode: always set the episode number to 1.
 	// FIXME: This is probably a horrible hack, it sure looks like one at least
 	if (gamemode == retail_chex)
-		sprintf(buf, "1%c", cheat->Args[1]);
-
-	snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
+		snprintf(buf, sizeof(buf), "map 1%c", cheat->Args[1]);
+	else
+		snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
+	
 	AddCommandString(buf);
-#endif
 	return true;
 }
 
 bool CHEAT_IdMyPos(cheatseq_t* cheat)
 {
-#ifdef CLIENT_APP
 	C_DoCommand("toggle idmypos", 0);
-#endif
 	return true;
 }
 
 bool CHEAT_BeholdMenu(cheatseq_t* cheat)
 {
-#ifdef CLIENT_APP
 	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
-#endif
 	return false;
 }
 
 bool CHEAT_ChangeMusic(cheatseq_t* cheat)
 {
-#ifdef CLIENT_APP
 	char buf[9] = "idmus xx";
 
 	buf[6] = cheat->Args[0];
 	buf[7] = cheat->Args[1];
 	C_DoCommand(buf, 0);
-#endif
 	return true;
 }
 
@@ -118,7 +114,6 @@ bool CHEAT_ChangeMusic(cheatseq_t* cheat)
 //
 bool CHEAT_SetGeneric(cheatseq_t* cheat)
 {
-#ifdef CLIENT_APP
 	if (!CHEAT_AreCheatsEnabled())
 		return true;
 
@@ -135,38 +130,11 @@ bool CHEAT_SetGeneric(cheatseq_t* cheat)
 			return true;
 	}
 
-	cht_DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
+	CHEAT_DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
 	CL_SendCheat((ECheatFlags)cheat->Args[0]);
 
-#endif
 	return true;
 }
-
-
-// Checks if all the conditions to enable cheats are met.
-bool CHEAT_AreCheatsEnabled()
-{
-	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
-	// back a netdemo
-	if (simulated_connection)
-		return false;
-
-	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
-	// are disabled
-	if (!multiplayer && sv_skill == sk_nightmare)
-		return false;
-
-	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
-	{
-		Printf(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
-		                      "enable this command.\n");
-		return false;
-	}
-
-	return true;
-}
-
-extern void A_PainDie(AActor *);
 
 // [RH] Actually handle the cheat. The cheat code in st_stuff.c now just
 // writes some bytes to the network data stream, and the network code
@@ -202,9 +170,34 @@ bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 	}
 	return false;
 }
+#endif
 
+// Checks if all the conditions to enable cheats are met.
+bool CHEAT_AreCheatsEnabled()
+{
+	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
+	// back a netdemo
+	if (simulated_connection)
+		return false;
 
-void cht_DoCheat (player_t *player, int cheat)
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
+	// are disabled
+	if (!multiplayer && sv_skill == sk_nightmare)
+		return false;
+
+	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
+	{
+		Printf(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
+		                      "enable this command.\n");
+		return false;
+	}
+
+	return true;
+}
+
+extern void A_PainDie(AActor*);
+
+void CHEAT_DoCheat(player_t* player, int cheat)
 {
 	const char *msg = "";
 	char msgbuild[32];

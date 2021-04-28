@@ -3775,7 +3775,7 @@ void SV_Cheat(player_t &player)
 			return;
 
 		int oldCheats = player.cheats;
-		cht_DoCheat(&player, cheat);
+		CHEAT_DoCheat(&player, cheat);
 
 		if (player.cheats != oldCheats)
 		{
@@ -3805,80 +3805,6 @@ void SV_Cheat(player_t &player)
 		}
 
 	}
-}
-
-void SV_CheatPulse(player_t &player)
-{
-    byte cheats = MSG_ReadByte();
-    int i;
-
-    if (!sv_allowcheats)
-    {
-        if (cheats == 3)
-            MSG_ReadByte();
-
-        return;
-    }
-
-    if (cheats == 1)
-    {
-        player.armorpoints = deh.FAArmor;
-        player.armortype = deh.FAAC;
-
-        weapontype_t pendweap = player.pendingweapon;
-
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        return;
-    }
-
-    if (cheats == 2)
-    {
-        player.armorpoints = deh.KFAArmor;
-        player.armortype = deh.KFAAC;
-
-        weapontype_t pendweap = player.pendingweapon;
-
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        for (i=0; i<NUMCARDS; i++)
-            player.cards[i] = true;
-
-        return;
-    }
-
-    if (cheats == 3)
-    {
-        byte power = MSG_ReadByte();
-
-        if (!player.powers[power])
-            P_GivePower(&player, power);
-        else if (power != pw_strength)
-            player.powers[power] = 1;
-        else
-            player.powers[power] = 0;
-
-        return;
-    }
-
-    if (cheats == 4)
-    {
-        player.weaponowned[wp_chainsaw] = true;
-
-        return;
-    }
 }
 
 void SV_WantWad(player_t &player)
@@ -4077,10 +4003,6 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
-
-        case clc_cheatpulse:
-            SV_CheatPulse(player);
-            break;
 
 		case clc_abort:
 			Printf("Client abort.\n");

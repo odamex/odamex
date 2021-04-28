@@ -271,8 +271,7 @@ enum clc_t
 	clc_spectate,       // denis
 	clc_wantwad,        // denis - name, hash
 	clc_kill,           // denis - suicide
-	clc_cheat,          // denis - god, pumpkins, etc
-	clc_cheatpulse,     // Russell - one off cheats (idkfa, idfa etc)
+	clc_cheat,          // denis - handle cheat codes.
 	clc_callvote,       // [AM] - Calling a vote
 	clc_maplist,        // [AM] - Maplist status request.
 	clc_maplist_update, // [AM] - Request the entire maplist from the server.

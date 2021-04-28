@@ -559,7 +559,9 @@ static const struct {
 	{ "Ammo",		PatchAmmo },
 	{ "Weapon",		PatchWeapon },
 	{ "Pointer",	PatchPointer },
+#if 0
 	{ "Cheat",		PatchCheats },
+#endif
 	{ "Misc",		PatchMisc },
 	{ "Text",		PatchText },
 	// These appear in .bex files
@@ -575,7 +577,11 @@ static const struct {
 static int HandleMode (const char *mode, int num);
 static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize = 0);
 static void BackupData (void);
+
+#if 0
 static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval);
+#endif
+
 static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
@@ -687,6 +693,7 @@ void D_UndoDehPatch()
 	deh = backupDeh;
 }
 
+#if 0
 static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)
 {
 	while (*cheatseq != 0xff && *cheatseq != 1 && *newcheat) {
@@ -702,6 +709,7 @@ static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)
 
 	*cheatseq = 0xff;
 }
+#endif
 
 static BOOL ReadChars (char **stuff, int size)
 {
@@ -1304,6 +1312,7 @@ static int PatchPointer (int ptrNum)
 	return result;
 }
 
+#if 0
 static int PatchCheats (int dummy)
 {
 	static const struct {
@@ -1346,6 +1355,7 @@ static int PatchCheats (int dummy)
 	}
 	return result;
 }
+#endif
 
 static int PatchMisc (int dummy)
 {

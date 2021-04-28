@@ -553,7 +553,7 @@ BEGIN_COMMAND (god)
 	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	cht_DoCheat(&consoleplayer(), CHT_GOD);
+	CHEAT_DoCheat(&consoleplayer(), CHT_GOD);
 	CL_SendCheat(CHT_GOD);
 }
 END_COMMAND (god)
@@ -563,7 +563,7 @@ BEGIN_COMMAND (notarget)
 	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	cht_DoCheat(&consoleplayer(), CHT_NOTARGET);
+	CHEAT_DoCheat(&consoleplayer(), CHT_NOTARGET);
 	CL_SendCheat(CHT_NOTARGET);
 }
 END_COMMAND (notarget)
@@ -573,7 +573,7 @@ BEGIN_COMMAND (fly)
 	if (!consoleplayer().spectator && !CHEAT_AreCheatsEnabled())
 		return;
 
-	cht_DoCheat(&consoleplayer(), CHT_FLY);
+	CHEAT_DoCheat(&consoleplayer(), CHT_FLY);
 
 	if (!consoleplayer().spectator)
 	{
@@ -587,7 +587,7 @@ BEGIN_COMMAND (noclip)
 	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	cht_DoCheat(&consoleplayer(), CHT_NOCLIP);
+	CHEAT_DoCheat(&consoleplayer(), CHT_NOCLIP);
 	CL_SendCheat(CHT_NOCLIP);
 }
 END_COMMAND (noclip)
@@ -616,7 +616,7 @@ BEGIN_COMMAND (chase)
 		if (!CHEAT_AreCheatsEnabled())
 			return;
 
-		cht_DoCheat(&consoleplayer(), CHT_CHASECAM);
+		CHEAT_DoCheat(&consoleplayer(), CHT_CHASECAM);
 		
 	}
 }
