@@ -277,6 +277,9 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(			co_vileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 
 
 	// ZDoom-compatibility changes
