@@ -29,15 +29,35 @@
 // CHEAT SEQUENCE PACKAGE
 //
 
-#if 0
-// Now unused code - left only for DEHacked
-#define SCRAMBLE(a) \
-((((a)&1)<<7) + (((a)&2)<<5) + ((a)&4) + (((a)&8)<<1) \
- + (((a)&16)>>1) + ((a)&32) + (((a)&64)>>5) + (((a)&128)>>7))
+#ifdef CLIENT_APP
+
+struct cheatseq_t
+{
+	unsigned char* Sequence;
+	unsigned char* Pos;
+	unsigned char DontCheck;
+	unsigned char CurrentArg;
+	unsigned char Args[2];
+	bool (*Handler)(cheatseq_t*);
+};
+
+// keycheat handlers
+bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat);
+
+bool CHEAT_AutoMap(cheatseq_t* cheat);
+bool CHEAT_ChangeLevel(cheatseq_t* cheat);
+bool CHEAT_IdMyPos(cheatseq_t* cheat);
+bool CHEAT_BeholdMenu(cheatseq_t* cheat);
+bool CHEAT_ChangeMusic(cheatseq_t* cheat);
+bool CHEAT_SetGeneric(cheatseq_t* cheat);
 #endif
 
 #define COUNT_CHEATS(l) (sizeof(l) / sizeof(l[0]))
 
+
+//
+// CHEAT TYPES
+//
 enum ECheatFlags
 {
 	CHT_GOD = 0,
@@ -61,33 +81,14 @@ enum ECheatFlags
 // [RH] Functions that actually perform the cheating
 class player_s;
 void CHEAT_DoCheat (player_s *player, int cheat);
-void cht_GiveTo (player_s *player, const char *item);
-void cht_Suicide (player_s *player);
+void CHEAT_GiveTo (player_s *player, const char *item);
+
+// Heretic code (unused)
+#if 0
+void CHEAT_Suicide (player_s *player);
+#endif
 
 bool CHEAT_AreCheatsEnabled();
-
-#ifdef CLIENT_APP
-
-struct cheatseq_t
-{
-	unsigned char* Sequence;
-	unsigned char* Pos;
-	unsigned char DontCheck;
-	unsigned char CurrentArg;
-	unsigned char Args[2];
-	bool (*Handler)(cheatseq_t*);
-};
-
-// keycheat handlers
-bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat);
-
-bool CHEAT_AutoMap(cheatseq_t* cheat);
-bool CHEAT_ChangeLevel(cheatseq_t* cheat);
-bool CHEAT_IdMyPos(cheatseq_t* cheat);
-bool CHEAT_BeholdMenu(cheatseq_t* cheat);
-bool CHEAT_ChangeMusic(cheatseq_t* cheat);
-bool CHEAT_SetGeneric(cheatseq_t* cheat);
-#endif
 
 #endif
 

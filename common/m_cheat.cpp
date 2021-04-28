@@ -170,6 +170,20 @@ bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 	}
 	return false;
 }
+
+BEGIN_COMMAND(mdk)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (multiplayer && sv_gametype != GM_COOP)
+		return;
+
+	CHEAT_DoCheat(&consoleplayer(), CHT_MASSACRE);
+	CL_SendCheat(CHT_MASSACRE);
+}
+END_COMMAND(mdk)
+
 #endif
 
 // Checks if all the conditions to enable cheats are met.
@@ -197,13 +211,20 @@ bool CHEAT_AreCheatsEnabled()
 
 extern void A_PainDie(AActor*);
 
-void CHEAT_DoCheat(player_t* player, int cheat)
+void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 {
 	const char *msg = "";
 	char msgbuild[32];
 
+	if (player->health <= 0 || !player)
+		return;
+
 	switch (cheat) {
 		case CHT_IDDQD:
+
+			if (player->spectator)
+			    return;
+
 			if (!(player->cheats & CF_GODMODE)) {
 				if (player->mo)
 					player->mo->health = deh.GodHealth;
@@ -212,7 +233,7 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 			}
 		case CHT_GOD:
 
-			if (player->health <= 0 || !player || player->spectator)
+			if (player->spectator)
 			    return;
 
 			player->cheats ^= CF_GODMODE;
@@ -221,8 +242,8 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 			break;
 
 		case CHT_NOCLIP:
-			if (player->health <= 0 || !player || player->spectator)
-			    return;
+			if (player->spectator)
+			    silentmsg = true;
 
 			player->cheats ^= CF_NOCLIP;
 		    msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON)
@@ -236,37 +257,54 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 			break;
 
 		case CHT_NOTARGET:
+
+			if (player->spectator)
+			    return;
+
 			player->cheats ^= CF_NOTARGET;
 		    msg = (player->cheats & CF_NOTARGET) ? "notarget ON" 
 				                                 : "notarget OFF";
 			break;
 
 		case CHT_CHASECAM:
+
+			if (player->spectator)
+			    return;
+
 			player->cheats ^= CF_CHASECAM;
 			msg = (player->cheats & CF_CHASECAM) ? "chasecam ON" 
 				                                 : "chasecam OFF";
 			break;
 
 		case CHT_CHAINSAW:
+
+			if (player->spectator)
+			    return;
+
 			player->weaponowned[wp_chainsaw] = true;
 			player->powers[pw_invulnerability] = true;
 			msg = GStrings(STSTR_CHOPPERS);
 			break;
 
 		case CHT_IDKFA:
-			cht_GiveTo (player, "backpack");
-		    cht_GiveTo (player, "weapons");
-		    cht_GiveTo (player, "ammo");
-		    cht_GiveTo (player, "keys");
+
+			if (player->spectator)
+			    return;
+
+		    CHEAT_GiveTo(player, "all");
 			player->armorpoints = deh.KFAArmor;
 			player->armortype = deh.KFAAC;
 			msg = GStrings(STSTR_KFAADDED);
 			break;
 
 		case CHT_IDFA:
-		    cht_GiveTo (player, "backpack");
-		    cht_GiveTo (player, "weapons");
-		    cht_GiveTo (player, "ammo");
+
+			if (player->spectator)
+			    return;
+
+		    CHEAT_GiveTo(player, "backpack");
+		    CHEAT_GiveTo(player, "weapons");
+		    CHEAT_GiveTo(player, "ammo");
 			player->armorpoints = deh.FAArmor;
 			player->armortype = deh.FAAC;
 			msg = GStrings(STSTR_FAADDED);
@@ -279,6 +317,9 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 		case CHT_BEHOLDA:
 		case CHT_BEHOLDL:
 			{
+				if (player->spectator)
+					return;
+
 				int i = cheat - CHT_BEHOLDV;
 
 				if (!player->powers[i])
@@ -289,6 +330,7 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 					player->powers[i] = 0;
 			}
 			msg = GStrings(STSTR_BEHOLDX);
+
 			break;
 
 		case CHT_MASSACRE:
@@ -302,6 +344,9 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 				int killcount = 0;
 				AActor *actor;
 				TThinkerIterator<AActor> iterator;
+
+				if (multiplayer && !player->client.allow_rcon)
+			        return;
 
 				while ( (actor = iterator.Next ()) )
 				{
@@ -333,7 +378,7 @@ void CHEAT_DoCheat(player_t* player, int cheat)
 		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
 }
 
-void cht_GiveTo (player_t *player, const char *name)
+void CHEAT_GiveTo(player_t* player, const char* name)
 {
 	BOOL giveall;
 	int i;
@@ -448,13 +493,16 @@ void cht_GiveTo (player_t *player, const char *name)
 	}
 }
 
-void cht_Suicide (player_t *plyr)
+// Heretic cheat code (unused!)
+#if 0
+void CHEAT_Suicide(player_t* plyr)
 {
 	plyr->mo->flags |= MF_SHOOTABLE;
 	while (plyr->health > 0)
 		P_DamageMobj (plyr->mo, plyr->mo, plyr->mo, 10000, MOD_SUICIDE);
 	plyr->mo->flags &= ~MF_SHOOTABLE;
 }
+#endif
 
 VERSION_CONTROL (m_cheat_cpp, "$Id$")
 

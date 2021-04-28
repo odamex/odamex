@@ -3796,7 +3796,7 @@ void SV_Cheat(player_t &player)
 		if (!CHEAT_AreCheatsEnabled())
 			return;
 
-		cht_GiveTo(&player, wantcmd);
+		CHEAT_GiveTo(&player, wantcmd);
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
