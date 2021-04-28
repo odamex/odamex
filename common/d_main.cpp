@@ -409,43 +409,28 @@ static void D_PrintIWADIdentity()
 }
 
 
-//
-// D_DoDefDehackedPatch
-//
-// [Russell] - Change the meaning, this will load multiple patch files if
-//             specified
-static void DoDefDehackedPatches(const OResFiles& newpatchfiles)
+/**
+ * @brief Load all found DEH patches, as well as all found DEHACKED lumps.
+ */
+void D_LoadResolvedPatches()
 {
-	bool use_default = true;
-	if (!newpatchfiles.empty())
-	{
-		for (OResFiles::const_iterator it = newpatchfiles.begin();
-		     it != newpatchfiles.end(); ++it)
-		{
-			if (D_DoDehPatch(&*it, false))
-			{
-				use_default = false;
-			}
-		}
-	}
-
-	// try default patches
-	if (use_default)
-	{
-		// See if there's a patch in a PWAD
-		D_DoDehPatch(NULL, true);
-	}
-
-	// check for ChexQuest
+	// Load external patch files first.
 	bool chexLoaded = false;
-	for (OResFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
+	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
 	     ++it)
 	{
 		if (it->getBasename() == "CHEX.DEH")
 		{
 			chexLoaded = true;
-			break;
 		}
+		D_DoDehPatch(&*it, -1);
+	}
+
+	// Check WAD files for lumps.
+	int lump = -1;
+	while ((lump = W_FindLump("DEHACKED", lump)) != -1)
+	{
+		D_DoDehPatch(NULL, lump);
 	}
 
 	if (::gamemode == retail_chex && !::multiplayer && !chexLoaded)
@@ -554,9 +539,10 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	::GStrings.loadStrings();
+	::GStrings.loadStrings(false);
 
-	DoDefDehackedPatches(::patchfiles);
+	// Apply DEH patches.
+	D_LoadResolvedPatches();
 }
 
 //
