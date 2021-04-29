@@ -1642,7 +1642,9 @@ bool CL_PrepareConnect(void)
 			gameversiontosend = 40;
 		}
 
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+		int major, minor, patch;
+		BREAKVER(gameversion, major, minor, patch);
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
 	}
 
     Printf(PRINT_HIGH, "\n");

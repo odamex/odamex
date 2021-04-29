@@ -1587,58 +1587,49 @@ void SV_ServerSettingChange()
 bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 {
 	int GameVer = 0;
-	char VersionStr[20];
-	char OurVersionStr[20];
-	memset(VersionStr, 0, sizeof(VersionStr));
-	memset(OurVersionStr, 0, sizeof(VersionStr));
+	std::string VersionStr;
+	std::string OurVersionStr(DOTVERSIONSTR);
 	bool AllowConnect = true;
-	int majorver = 0;
-	int minorver = 0;
-	int releasever = 0;
-	int MAJORVER = GAMEVER / 256;
-	int MINORVER = (GAMEVER % 256) / 10;
-	int RELEASEVER = (GAMEVER % 256) % 10;
-
-	if ((GAMEVER % 256) % 10)
-		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
-	else
-		sprintf(OurVersionStr, "%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10);
+	int cl_major = 0;
+	int cl_minor = 0;
+	int cl_patch = 0;
+	int sv_major, sv_minor, sv_patch;
+	BREAKVER(GAMEVER, sv_major, sv_minor, sv_patch);
 
 	switch (cl->version)
 	{
-		case 65:
-			GameVer = MSG_ReadLong();
-			cl->majorversion = GameVer / 256;
-			cl->minorversion = GameVer % 256;
-			if ((GameVer % 256) % 10)
-				sprintf(VersionStr, "%i.%i.%i", cl->majorversion, cl->minorversion / 10, cl->minorversion % 10);
-			else
-				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
+	case 65:
+		GameVer = MSG_ReadLong();
 
-			majorver = GameVer / 256;
-			minorver = (GameVer % 256) / 10;
-			releasever = (GameVer % 256) % 10;
+		cl_major = VERMAJ(GameVer);
+		cl_minor = VERMIN(GameVer);
+		cl_patch = VERPATCH(GameVer);
 
-			if ((majorver == MAJORVER) &&
-				(minorver == MINORVER) &&
-				(releasever >= RELEASEVER))
-				AllowConnect = true;
-			else
-				AllowConnect = false;
-			break;
-		case 64:
-			sprintf(VersionStr, "0.2a or 0.3");
-			break;
-		case 63:
-			sprintf(VersionStr, "Pre-0.2");
-			break;
-		case 62:
-			sprintf(VersionStr, "0.1a");
-			break;
-		default:
-			sprintf(VersionStr, "Unknown");
-			break;
+		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
+		cl->majorversion = cl_major;
+		cl->minorversion = cl_minor;
+
+		// Major and minor versions must be identical, client is allowed
+		// to have a newer patch.
+		if ((cl_major == sv_major) && (cl_minor == sv_minor) &&
+		    (cl_patch >= sv_patch))
+			AllowConnect = true;
+		else
+			AllowConnect = false;
+		break;
+	case 64:
+		VersionStr = "0.2a or 0.3";
+		break;
+	case 63:
+		VersionStr = "Pre-0.2";
+		break;
+	case 62:
+		VersionStr = "0.1a";
+		break;
+	default:
+		VersionStr = "Unknown";
+		break;
 	}
 
 	// GhostlyDeath -- removes the constant AllowConnects above
@@ -1662,19 +1653,20 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
             std::endl;
 
 		// GhostlyDeath -- Check to see if it's older or not
-		if (cl->majorversion < (GAMEVER / 256))
+		if (cl->majorversion < sv_major)
+		{
 			older = true;
+		}
+		else if (cl->majorversion > sv_major)
+		{
+			older = false;
+		}
 		else
 		{
-			if (cl->majorversion > (GAMEVER / 256))
+			if (cl->minorversion < sv_minor)
+				older = true;
+			else if (cl->minorversion > sv_minor)
 				older = false;
-			else
-			{
-				if (cl->minorversion < (GAMEVER % 256))
-					older = true;
-				else if (cl->minorversion > (GAMEVER % 256))
-					older = false;
-			}
 		}
 
 		// GhostlyDeath -- Print message depending on older or newer
@@ -1721,8 +1713,8 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		// GhostlyDeath -- And we tell the server
 		Printf("%s -- Version mismatch (%s != %s)\n",
                 NET_AdrToString(net_from),
-                VersionStr,
-                OurVersionStr);
+                VersionStr.c_str(),
+                OurVersionStr.c_str());
 	}
 
 	return AllowConnect;

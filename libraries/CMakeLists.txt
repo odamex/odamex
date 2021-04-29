@@ -226,8 +226,9 @@ if(BUILD_CLIENT)
 endif()
 
 ### MiniUPnPc ###
-
-if(BUILD_SERVER)
+if(BUILD_SERVER AND NOT USE_MINIUPNP)
+  message(STATUS "Skipping MiniUPnPc...")
+elseif(BUILD_SERVER AND USE_MINIUPNP)
   message(STATUS "Compiling MiniUPnPc...")
 
   # Figure out the correct library path to attach to our imported target
