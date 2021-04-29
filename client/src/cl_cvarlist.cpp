@@ -440,6 +440,10 @@ CVAR(			idmypos, "0", "Shows current player position on map",
 
 // Heads up display
 // ----------------
+CVAR(hud_bigfont, "0",
+     "Use BIGFONT for certain HUD items - intended as a stopgap feature for streamers",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			hud_crosshairdim, "0", "Crosshair transparency",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

@@ -105,6 +105,7 @@ int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
 EXTERN_CVAR(hud_scale)
+EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
@@ -502,7 +503,7 @@ static void drawGametype()
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
-	int patchPosY = 43;
+	int patchPosY = ::hud_bigfont ? 53 : 43;
 
 	bool shouldShowScores = G_IsTeamGame();
 	bool shouldShowLives = G_IsLivesGame();
@@ -713,29 +714,44 @@ void OdamexHUD() {
 
 	int color;
 	std::string str;
+	int iy = 4;
 
-	if (hud_timer)
+	if (::hud_timer)
 	{
+		if (::hud_bigfont)
+			V_SetFont("BIGFONT");
+
 		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
 	}
 
 	// Draw other player name, if spying
-	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
+	iy += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, hud_targetcount);
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, hud_targetcount);
+	iy += V_LineHeight() + 1;
 
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
-	hud::DrawText(4, 32, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_UNTRANSLATED);
+	if (::hud_bigfont)
+		V_SetFont("BIGFONT");
+
+	hud::DrawText(4, 24 + V_LineHeight() + 1, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(),
+	              CR_UNTRANSLATED);
 	hud::DrawText(4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
+
+	if (::hud_bigfont)
+		V_SetFont("SMALLFONT");
 
 	// Draw keys in coop
 	if (sv_gametype == GM_COOP) {
@@ -989,33 +1005,35 @@ void LevelStateHUD()
 }
 
 // [AM] Spectator HUD.
-void SpectatorHUD() {
+void SpectatorHUD()
+{
 	int color;
-	std::string str;
+	int iy = 4;
 
 	// Draw warmup state or timer
-	if (hud_timer) {
-		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	if (::hud_timer)
+	{
+		if (::hud_bigfont)
+		{
+			V_SetFont("BIGFONT");
+		}
+
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
 	}
 
-	// Draw other player name, if spying
-	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
-
-	// Draw help text if there's no other player name
-	if (str.empty()) {
-		hud::DrawText(0, 12, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::HelpText().c_str(), CR_GREY);
-	}
+	// Draw help text - spy player name is handled elsewhere.
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
+	iy += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, 0);
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, 0);
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
