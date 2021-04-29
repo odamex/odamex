@@ -39,8 +39,6 @@
 #include "hashtable.h"
 #include "cl_responderkeys.h"
 
-#include "g_gametype.h"
-
 extern NetDemo netdemo;
 
 /* Most of these bindings are equivalent
@@ -291,9 +289,9 @@ bool C_DoNetDemoKey (event_t *ev)
 //
 // C_DoSpectatorKey
 //
-// [SL] 2012-09-14 - Handles the hard-coded key bindings used while spectating, 
-// dead-spectating on lives mode or during NetDemo playback.  Returns false if 
-// the key pressed is not bound to any spectating command such as spynext.
+// [SL] 2012-09-14 - Handles the hard-coded key bindings used while spectating
+// or during NetDemo playback.  Returns false if the key pressed is not
+// bound to any spectating command such as spynext.
 //
 bool C_DoSpectatorKey (event_t *ev)
 {

@@ -447,6 +447,7 @@ static const char *MapInfoMapLevel[] =
     "compat_dropoff",
 	"compat_trace",
 	"compat_boomscroll",
+	"compat_sectorsounds",
 	NULL
 };
 
@@ -557,6 +558,8 @@ MapInfoHandler MapHandlers[] =
     // compat_trace <value>
     {MITYPE_EATNEXT, 0, 0},
     // compat_boomscroll <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_sectorsounds <value>
     {MITYPE_EATNEXT, 0, 0},
 };
 
@@ -1991,14 +1994,24 @@ void G_InitLevelLocals()
 			else
 				begin = info.level_name;
 		}
-		strncpy(::level.level_name, begin, ARRAY_LENGTH(::level.level_name) - 1);
+
+		if (begin != NULL)
+		{
+			std::string level_name(begin);
+			TrimString(level_name);
+			strncpy(::level.level_name, level_name.c_str(),
+			        ARRAY_LENGTH(::level.level_name) - 1);
+		}
+		else
+		{
+			strncpy(::level.level_name, "Untitled Level",
+			        ARRAY_LENGTH(::level.level_name) - 1);
+		}
 	}
 	else
 	{
-		strncpy(
-			::level.level_name, "Untitled Level",
-			ARRAY_LENGTH(::level.level_name) - 1
-		);
+		strncpy(::level.level_name, "Untitled Level",
+		        ARRAY_LENGTH(::level.level_name) - 1);
 	}
 
 	strncpy(::level.nextmap, info.nextmap, 8);
