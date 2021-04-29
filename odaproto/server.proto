@@ -146,9 +146,9 @@ message SpawnPlayer
 message DamagePlayer
 {
 	uint32 netid = 1;
-	int32 inflictorid = 2;
-	int32 health_damage = 3;
-	int32 armor_damage = 4;
+	int32 health_damage = 2;
+	int32 armor_damage = 3;
+	int32 inflictorid = 4;
 }
 
 // svc_killmobj
