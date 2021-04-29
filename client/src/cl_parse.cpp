@@ -475,9 +475,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	{
 		AActor* target = P_FindThingById(msg->target_netid());
 		if (target)
-		{
 			mo->target = target->ptr();
-		}
+		else
+			mo->target = AActor::AActorPtr();
 
 		mo->momx = msg->actor().mom().x();
 		mo->momy = msg->actor().mom().y();
@@ -863,13 +863,19 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	if (msg->flags() & SVC_UM_TARGET)
 	{
 		AActor* target = P_FindThingById(msg->actor().targetid());
-		mo->target = target->ptr();
+		if (target)
+			mo->target = target->ptr();
+		else
+			mo->target = AActor::AActorPtr();
 	}
 
 	if (msg->flags() & SVC_UM_TRACER)
 	{
 		AActor* tracer = P_FindThingById(msg->actor().tracerid());
-		mo->tracer = tracer->ptr();
+		if (tracer)
+			mo->tracer = tracer->ptr();
+		else
+			mo->tracer = AActor::AActorPtr();
 	}
 }
 
