@@ -164,7 +164,7 @@ void D_Init()
 	R_InitColormaps();
 
 	// [RH] Initialize localizable strings.
-	GStrings.loadStrings();
+	::GStrings.loadStrings(false);
 
 	// init the renderer
 	if (first_time)

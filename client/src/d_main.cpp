@@ -615,9 +615,6 @@ void D_Init()
 //		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
 //	Res_InitTextureManager();
 
-	// [RH] Initialize localizable strings.
-	GStrings.loadStrings();
-
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
