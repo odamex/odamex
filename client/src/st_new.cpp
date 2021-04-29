@@ -615,15 +615,30 @@ void drawProtos()
 	// Starting y is five rows from the top.
 	int y = 7 * 5;
 
+	const double scale = 0.75;
+	const int indent = V_StringWidth(" >");
+
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
-		hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+		bool selected = proto_selected == (it - protos.begin());
+
+		if (selected)
+		{
+			// Draw arrow
+			hud::DrawText(0, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			              " >", CR_GOLD, true);
+		}
+
+		// Draw name
+		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
 		              it->name.c_str(), CR_GOLD, true);
 		y += V_StringHeight(it->name.c_str());
-		if (proto_selected == (it - protos.begin()))
+
+		if (selected)
 		{
-			hud::DrawText(2, y, 0.0, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
-			              it->data.c_str(), CR_WHITE, true);
+			// Draw data
+			hud::DrawText(indent, y, 0.75, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
+			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
 			y += V_StringHeight(it->data.c_str());
 		}
 	}

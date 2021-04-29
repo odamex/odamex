@@ -2600,6 +2600,7 @@ static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 			else if (proto.data[i] == '}')
 				proto.data[i] = ')';
 		}
+		TrimStringEnd(proto.data);
 	}
 	::protos.push_back(proto);
 }
