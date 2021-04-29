@@ -594,15 +594,6 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void SV_SendPackets(void);
 
-void MSG_WriteMarker (buf_t *b, svc_t c)
-{
-	//[Spleen] final check to prevent huge packets from being sent to players
-	if (b->cursize > 600)
-		SV_SendPackets();
-
-	b->WriteByte((byte)c);
-}
-
 //
 // MSG_WriteMarker
 //
@@ -638,7 +629,13 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 
 	static std::string buffer;
 	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
 		return;
+	}
 
 	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
@@ -649,6 +646,12 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 		       msg.GetDescriptor()->full_name().c_str());
 		return;
 	}
+
+#if 0
+	Printf("%s (%d)\n, %s\n",
+		::svc_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString().c_str());
+#endif
 
 	b->WriteByte(header);
 	b->WriteUnVarint(buffer.size());

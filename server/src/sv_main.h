@@ -89,7 +89,6 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 
 extern std::vector<std::string> wadnames;
-void MSG_WriteMarker (buf_t *b, svc_t c);
 
 void SV_SendPlayerInfo(player_t& player);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
