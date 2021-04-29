@@ -99,7 +99,7 @@ odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj);
 odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time);
 odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags);
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player);
-odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, int health, int armor);
+odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor *inflictor, int health, int armor);
 odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inflictor,
                                      int mod, bool joinkill);
 odaproto::svc::FireWeapon SVC_FireWeapon(player_t& player);
