@@ -361,7 +361,7 @@ CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
 // Experimental settings (all categories)
 // =======================================
 
-CVAR(				sl_allowitemdrop, "1", "Enable/disable item drop from actors.",
+CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop from players.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
