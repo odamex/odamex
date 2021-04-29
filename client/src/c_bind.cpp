@@ -37,6 +37,7 @@
 #include "d_player.h"
 #include "i_input.h"
 #include "hashtable.h"
+#include "g_gametype.h"
 #include "cl_responderkeys.h"
 
 extern NetDemo netdemo;
