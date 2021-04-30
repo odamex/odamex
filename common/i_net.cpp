@@ -637,6 +637,11 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 		return;
 	}
 
+	// Do we actaully have room for this upcoming message?
+	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+		SV_SendPackets();
+
 	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
 	{
