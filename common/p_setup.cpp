@@ -260,7 +260,7 @@ void P_LoadSubsectors(int lump)
 	if (!W_LumpLength(lump))
 	{
 		I_Error(
-		    "P_LoadSegs: SSECTORS lump is empty - levels without nodes are not supported.");
+		    "P_LoadSubsectors: SSECTORS lump is empty - levels without nodes are not supported.");
 	}
 
 	byte *data;
@@ -394,7 +394,7 @@ void P_LoadNodes (int lump)
 	if (!W_LumpLength(lump))
 	{
 		I_Error(
-		    "P_LoadSegs: NODES lump is empty - levels without nodes are not supported.");
+		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
 	byte*		data;
