@@ -4755,14 +4755,14 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 }
 
-void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage)
+void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_DamagePlayer(*player, healthDamage, armorDamage));
+		             SVC_DamagePlayer(*player, inflictor, healthDamage, armorDamage));
 	}
 }
 

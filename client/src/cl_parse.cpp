@@ -980,10 +980,12 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 {
 	uint32_t netid = msg->netid();
+	uint32_t attackerid = msg->inflictorid();
 	int healthDamage = msg->health_damage();
 	int armorDamage = msg->armor_damage();
 
 	AActor* actor = P_FindThingById(netid);
+	AActor* attacker = P_FindThingById(attackerid);
 
 	if (!actor || !actor->player)
 		return;
@@ -992,6 +994,9 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	p->health -= healthDamage;
 	p->mo->health = p->health;
 	p->armorpoints -= armorDamage;
+
+	if (attacker != NULL)
+		p->attacker = attacker->ptr();
 
 	if (p->health < 0)
 		p->health = 0;

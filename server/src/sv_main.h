@@ -92,7 +92,7 @@ extern std::vector<std::string> wadnames;
 
 void SV_SendPlayerInfo(player_t& player);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
+void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(AActor *mo);
