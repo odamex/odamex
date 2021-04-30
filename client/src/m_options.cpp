@@ -105,6 +105,7 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
+EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
@@ -801,6 +802,7 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Bigger font in HUD",       {&hud_bigfont},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
 	{ discrete, "Display Timer",			{&hud_timer},           {3.0}, {0.0},   {0.0},  {TimerStyles} },
