@@ -37,6 +37,7 @@
 #include "d_player.h"
 #include "i_input.h"
 #include "hashtable.h"
+#include "g_gametype.h"
 #include "cl_responderkeys.h"
 
 extern NetDemo netdemo;
@@ -297,8 +298,17 @@ bool C_DoNetDemoKey (event_t *ev)
 //
 bool C_DoSpectatorKey (event_t *ev)
 {
-	if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
+	if (G_IsLivesGame())
+	{
+		if (!consoleplayer().spectator && consoleplayer().lives > 0 &&
+		    !netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
+	}
+	else
+	{
+		if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
+		return false;
+	}
 
 	if (ev->type == ev_keydown && Key_IsSpyPrevKey(ev->data1))
 	{
