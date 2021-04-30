@@ -1459,8 +1459,6 @@ void SV_ClientFullUpdate(player_t &pl)
 			SV_AwarenessUpdate(pl, it->mo);
 
 		SV_SendUserInfo(*it, cl);
-		if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-			return;
 	}
 
 	// update levelstate
@@ -1478,28 +1476,18 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	SV_UpdateHiddenMobj();
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	// update flags
 	if (sv_gametype == GM_CTF)
 		CTF_Connect(pl);
 
 	SV_UpdateSectors(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	P_UpdateButtons(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	SV_LineStateUpdate(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	SV_ThinkerUpdate(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateDone());
 

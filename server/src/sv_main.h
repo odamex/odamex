@@ -32,8 +32,6 @@
 #include "i_net.h"
 #include "g_gametype.h"
 
-static const int MaxPacketSize = 600;
-
 #include <json/json.h>
 
 extern bool keysfound[NUMCARDS];
