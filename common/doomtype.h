@@ -322,6 +322,19 @@ forceinline T clamp (const T in, const T min, const T max)
 	return in <= min ? min : in >= max ? max : in;
 }
 
+/**
+ * @brief Do a linear interpolation between two values.
+ * 
+ * @param a First value.
+ * @param a Second value.
+ * @param f Fraction to lerp by, in the closed range [0, 1].
+ */
+template <typename T>
+forceinline T lerp(const T a, const T b, const T f)
+{
+	return a + f * (b - a);
+}
+
 //
 // ARRAY_LENGTH
 //
