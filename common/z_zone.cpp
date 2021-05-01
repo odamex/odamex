@@ -43,7 +43,7 @@ struct OFileLine
 		return rvo;
 	}
 
-	const char* shortFile()
+	const char* shortFile() const
 	{
 		const char* ret = file;
 		for (size_t i = 0; file[i] != '\0'; i++)
@@ -135,8 +135,9 @@ class OZone
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
-			I_Error(__FUNCTION__ ": Could not allocate %" PRI_SIZE_PREFIX "u bytes.\n",
-			        size);
+			I_Error(__FUNCTION__ ": Could not allocate %" PRI_SIZE_PREFIX
+			                     "u bytes at %s:%i.\n",
+			        size, info.shortFile(), info.line);
 		}
 
 		// Construct the memory block.
@@ -163,18 +164,23 @@ class OZone
 	{
 		if (tag == PU_FREE)
 		{
-			I_Error(__FUNCTION__ ": cannot change a tag to PU_FREE");
+			I_Error(__FUNCTION__ ": Tried to change a tag to PU_FREE at %s:%i.",
+			        info.shortFile(), info.line);
 		}
 
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error(__FUNCTION__ ": pointer does not exist in the heap");
+			I_Error(__FUNCTION__ ": Address 0x%p is not tracked by zone at %s:%i.",
+			        it->first, info.shortFile(), info.line);
 		}
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
 		{
-			I_Error(__FUNCTION__ ": an owner is required for purgable blocks");
+			I_Error(__FUNCTION__ ": Found purgable block without an owner at %s:%i, "
+			                     "allocated at %s:%i.",
+			        info.shortFile(), info.line, it->second.fileLine.shortFile(),
+			        it->second.fileLine.line);
 		}
 
 		it->second.tag = tag;
@@ -193,7 +199,8 @@ class OZone
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error(__FUNCTION__ ": pointer does not exist in the heap");
+			I_Error(__FUNCTION__ ": Address 0x%p is not tracked by zone at %s:%i.",
+			        it->first, info.shortFile(), info.line);
 		}
 
 		dealloc(it);
