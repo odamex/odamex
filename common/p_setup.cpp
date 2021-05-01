@@ -1704,7 +1704,7 @@ void P_SetupLevel (char *lumpname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
-	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.

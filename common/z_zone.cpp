@@ -78,7 +78,7 @@ class OZone
 {
 	struct MemoryBlockInfo
 	{
-		int tag;            // PU_* tag
+		zoneTag_e tag;      // PU_* tag
 		void** user;        // Pointer owner
 		OFileLine fileLine; // __FILE__, __LINE__
 	};
@@ -121,7 +121,7 @@ class OZone
 		m_heap.clear();
 	}
 
-	void* alloc(size_t size, int tag, void* user, const OFileLine& info)
+	void* alloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
 	{
 		// This is implementation-defined behavior with malloc, so passing
 		// back NULL is the behavior we choose.
@@ -159,7 +159,7 @@ class OZone
 		return ptr;
 	}
 
-	void changeTag(void* ptr, int tag, const OFileLine& info)
+	void changeTag(void* ptr, zoneTag_e tag, const OFileLine& info)
 	{
 		if (tag == PU_FREE)
 		{
@@ -358,7 +358,8 @@ void Z_Free2(void* ptr, const char* file, int line)
 #define MINFRAGMENT	64
 #define ALIGN		8
 
-void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
+void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
+                const int line)
 {
 	if (!use_zone)
 	{
@@ -467,7 +468,7 @@ void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 //
 // Z_FreeTags
 //
-void Z_FreeTags(int lowtag, int hightag)
+void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 {
 	if (!use_zone)
 	{
@@ -528,7 +529,7 @@ void Z_CheckHeap()
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
+void Z_ChangeTag2(void* ptr, zoneTag_e tag, const char* file, int line)
 {
 	if (!use_zone)
 	{
@@ -638,7 +639,7 @@ size_t Z_FreeMemory()
 // Z_DumpHeap
 // Note: TFileDumpHeap( stdout ) ?
 //
-void Z_DumpHeap(int lowtag, int hightag)
+void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag)
 {
 	if (!use_zone)
 		return;
@@ -711,7 +712,7 @@ BEGIN_COMMAND (dumpheap)
 			hi = atoi(argv[2]);
 	}
 
-	Z_DumpHeap(lo, hi);
+	Z_DumpHeap(static_cast<zoneTag_e>(lo), static_cast<zoneTag_e>(hi));
 }
 END_COMMAND (dumpheap)
 
