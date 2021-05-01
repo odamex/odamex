@@ -529,7 +529,7 @@ void Z_CheckHeap()
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2(void* ptr, zoneTag_e tag, const char* file, int line)
+void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line)
 {
 	if (!use_zone)
 	{
