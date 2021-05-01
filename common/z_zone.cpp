@@ -35,10 +35,14 @@ static bool use_zone = true;
 struct OFileLine
 {
 	const char* file;
-	const int line;
-	OFileLine(const char* file, const int line) : file(file), line(line)
+	int line;
+
+	static OFileLine create(const char* file, const int line)
 	{
+		OFileLine rvo = {file, line};
+		return rvo;
 	}
+
 	const char* shortFile()
 	{
 		const char* ret = file;
@@ -52,7 +56,8 @@ struct OFileLine
 		return ret;
 	}
 };
-#define FILELINE OFileLine(__FILE__, __LINE__)
+
+#define FILELINE OFileLine::create(__FILE__, __LINE__)
 
 //
 // OZone
@@ -73,10 +78,9 @@ class OZone
 {
 	struct MemoryBlockInfo
 	{
-		int tag;          // PU_* tag
-		void** user;      // Pointer owner
-		const char* file; // __FILE__
-		int line;         // __LINE__
+		int tag;            // PU_* tag
+		void** user;        // Pointer owner
+		OFileLine fileLine; // __FILE__, __LINE__
 	};
 
 	typedef OHashTable<void*, MemoryBlockInfo> MemoryBlockTable;
@@ -140,16 +144,17 @@ class OZone
 		block.tag = tag;
 		block.user = static_cast<void**>(user);
 
+		// Store the allocating function.  12 byte overhead per allocation,
+		// but the information we get while debugging is priceless.
+		OFileLine fileline = OFileLine::create(info.file, info.line);
+		block.fileLine.file = fileline.file;
+		block.fileLine.line = fileline.line;
+
 		m_heap.insert(std::make_pair(ptr, block));
 		if (block.user != NULL)
 		{
 			*block.user = ptr;
 		}
-
-		// Store the allocating function.  12 byte overhead per allocation,
-		// but the information we get while debugging is priceless.
-		block.file = info.file;
-		block.line = info.line;
 
 		return ptr;
 	}
@@ -290,7 +295,7 @@ void Z_Free2(void* ptr, const char* file, int line)
 {
 	if (!use_zone)
 	{
-		g_zone.deallocPtr(ptr, OFileLine(file, line));
+		g_zone.deallocPtr(ptr, OFileLine::create(file, line));
 		return;
 	}
 
@@ -357,7 +362,7 @@ void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 {
 	if (!use_zone)
 	{
-		return g_zone.alloc(size, tag, user, OFileLine(file, line));
+		return g_zone.alloc(size, tag, user, OFileLine::create(file, line));
 	}
 
 	#ifdef ODAMEX_DEBUG
@@ -527,7 +532,7 @@ void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
 {
 	if (!use_zone)
 	{
-		return ::g_zone.changeTag(ptr, tag, OFileLine(file, line));
+		return ::g_zone.changeTag(ptr, tag, OFileLine::create(file, line));
 	}
 
 	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
@@ -548,7 +553,7 @@ void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
 {
 	if (!use_zone)
 	{
-		return ::g_zone.changeOwner(ptr, user, OFileLine(file, line));
+		return ::g_zone.changeOwner(ptr, user, OFileLine::create(file, line));
 	}
 
 	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
