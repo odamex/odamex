@@ -156,7 +156,7 @@ int __cdecl main(int argc, char *argv[])
         // Don't call this on windows!
 		//atexit (call_terms);
 
-		Z_Init();
+		Z_Init(false);
 
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
@@ -268,7 +268,7 @@ int main (int argc, char **argv)
 
         // Don't use this on other platforms either
 		//atexit (call_terms);
-		Z_Init();					// 1/18/98 killough: start up memory stuff first
+		Z_Init(false);					// 1/18/98 killough: start up memory stuff first
 
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);

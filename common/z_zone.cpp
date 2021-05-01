@@ -32,8 +32,30 @@
 
 static bool use_zone = true;
 
+struct OFileLine
+{
+	const char* file;
+	const int line;
+	OFileLine(const char* file, const int line) : file(file), line(line)
+	{
+	}
+	const char* shortFile()
+	{
+		const char* ret = file;
+		for (size_t i = 0; file[i] != '\0'; i++)
+		{
+			if (file[i] == PATHSEPCHAR)
+			{
+				ret = file + i + 1;
+			}
+		}
+		return ret;
+	}
+};
+#define FILELINE OFileLine(__FILE__, __LINE__)
+
 //
-// FauxZone
+// OZone
 //
 // A memory system that mimics a lot of the Zone system's behaviors but is more
 // friendly to memory analysis tools like valgrind.
@@ -47,67 +69,147 @@ static bool use_zone = true;
 // set to NULL, the memory will be freed, and the block will be removed from
 // the hash table.
 //
-class FauxZone
+class OZone
 {
-public:
-	FauxZone() :
-		mMemoryBlockTable(4096)
-	{ }
+	struct MemoryBlockInfo
+	{
+		int tag;          // PU_* tag
+		void** user;      // Pointer owner
+		const char* file; // __FILE__
+		int line;         // __LINE__
+	};
 
-	~FauxZone()
+	typedef OHashTable<void*, MemoryBlockInfo> MemoryBlockTable;
+	MemoryBlockTable m_heap;
+
+	void dealloc(MemoryBlockTable::iterator& block)
+	{
+		if (block->second.user)
+		{
+			*block->second.user = NULL;
+		}
+
+		void* imFree = block->first;
+
+		free(imFree);
+		m_heap.erase(block);
+	}
+
+  public:
+	OZone() : m_heap(4096)
+	{
+	}
+
+	~OZone()
 	{
 		clear();
 	}
 
 	void clear()
 	{
-		for (MemoryBlockTable::iterator it = mMemoryBlockTable.begin(); it != mMemoryBlockTable.end(); ++it)
-			free(it->first);
-		mMemoryBlockTable.clear();
+		// Free the memory first.
+		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
+		{
+			dealloc(it);
+		}
+
+		// Now clear the heap.
+		m_heap.clear();
 	}
 
-	void* alloc(size_t size, int tag, void* user)
+	void* alloc(size_t size, int tag, void* user, const OFileLine& info)
 	{
-		void* ptr = (void*)(new unsigned char[size]);
+		// This is implementation-defined behavior with malloc, so passing
+		// back NULL is the behavior we choose.
+		if (size == 0)
+		{
+			return NULL;
+		}
 
+		// Our interface is malloc-like, so we use malloc and not new.
+		void* ptr = malloc(size);
+		if (ptr == NULL)
+		{
+			// Don't format these bytes, the byte formatter allocates.
+			I_Error(__FUNCTION__ ": Could not allocate %" PRI_SIZE_PREFIX "u bytes.\n",
+			        size);
+		}
+
+		// Construct the memory block.
 		MemoryBlockInfo block;
 		block.tag = tag;
-		block.user = (void**)user;
+		block.user = static_cast<void**>(user);
 
-		mMemoryBlockTable.insert(std::make_pair(ptr, block));
+		m_heap.insert(std::make_pair(ptr, block));
 		if (block.user != NULL)
+		{
 			*block.user = ptr;
+		}
+
+		// Store the allocating function.  12 byte overhead per allocation,
+		// but the information we get while debugging is priceless.
+		block.file = info.file;
+		block.line = info.line;
+
 		return ptr;
 	}
 
-	void free(void* ptr)
+	void changeTag(void* ptr, int tag, const OFileLine& info)
 	{
-		if (ptr != NULL)
+		if (tag == PU_FREE)
 		{
-			MemoryBlockTable::iterator it = mMemoryBlockTable.find(ptr);
-			if (it != mMemoryBlockTable.end())
-			{
-				if (it->second.user)
-					*it->second.user = NULL;
-				delete [] (unsigned char*)it->first;
-				mMemoryBlockTable.erase(it);
-			}
+			I_Error(__FUNCTION__ ": cannot change a tag to PU_FREE");
 		}
+
+		MemoryBlockTable::iterator it = m_heap.find(ptr);
+		if (it == m_heap.end())
+		{
+			I_Error(__FUNCTION__ ": pointer does not exist in the heap");
+		}
+
+		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
+		{
+			I_Error(__FUNCTION__ ": an owner is required for purgable blocks");
+		}
+
+		it->second.tag = tag;
 	}
 
-private:
-	struct MemoryBlockInfo
+	void changeOwner(void* ptr, void* user, const OFileLine& info)
 	{
-		int tag;
-		void** user;
-	};
+		I_Error(__FUNCTION__ ": not implemented");
+	}
 
-	typedef OHashTable<void*, MemoryBlockInfo> MemoryBlockTable;
-	MemoryBlockTable mMemoryBlockTable;
-};
+	void deallocPtr(void* ptr, const OFileLine& info)
+	{
+		if (ptr == NULL)
+			return;
 
-static FauxZone faux_zone;
+		MemoryBlockTable::iterator it = m_heap.find(ptr);
+		if (it == m_heap.end())
+		{
+			I_Error(__FUNCTION__ ": pointer does not exist in the heap");
+		}
 
+		dealloc(it);
+	}
+
+	/**
+	 * Dealloc all members
+	 */
+	void deallocTags(const int lowtag, const int hightag)
+	{
+		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
+		{
+			if (it->second.tag < lowtag || it->second.tag > hightag)
+			{
+				continue;
+			}
+
+			dealloc(it);
+		}
+	}
+} g_zone;
 
 
 //
@@ -144,7 +246,7 @@ static size_t zonesize;
 void STACK_ARGS Z_Close()
 {
 	M_Free(mainzone);
-	faux_zone.clear();
+	g_zone.clear();
 }
 
 //
@@ -188,7 +290,7 @@ void Z_Free2(void* ptr, const char* file, int line)
 {
 	if (!use_zone)
 	{
-		faux_zone.free(ptr);
+		g_zone.deallocPtr(ptr, OFileLine(file, line));
 		return;
 	}
 
@@ -255,7 +357,7 @@ void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 {
 	if (!use_zone)
 	{
-		return faux_zone.alloc(size, tag, user);
+		return g_zone.alloc(size, tag, user, OFileLine(file, line));
 	}
 
 	#ifdef ODAMEX_DEBUG
@@ -363,7 +465,9 @@ void* Z_Malloc2(size_t size, int tag, void* user, const char* file, int line)
 void Z_FreeTags(int lowtag, int hightag)
 {
 	if (!use_zone)
-		return;
+	{
+		return ::g_zone.deallocTags(lowtag, hightag);
+	}
 
 	#ifdef ODAMEX_DEBUG
 	Z_CheckHeap();
@@ -422,7 +526,9 @@ void Z_CheckHeap()
 void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
 {
 	if (!use_zone)
-		return;
+	{
+		return ::g_zone.changeTag(ptr, tag, OFileLine(file, line));
+	}
 
 	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
 	if (block->id != ZONEID)
@@ -441,8 +547,10 @@ void Z_ChangeTag2(void* ptr, int tag, const char* file, int line)
 void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
 {
 	if (!use_zone)
-		return;
-	
+	{
+		return ::g_zone.changeOwner(ptr, user, OFileLine(file, line));
+	}
+
 	memblock_t*	block = (memblock_t*)((byte*)ptr - sizeof(memblock_t));
 	if (block->id != ZONEID)
 		I_Error("Z_ChangeOwner: block does not have a proper ID at %s:%i", file, line);

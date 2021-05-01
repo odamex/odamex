@@ -155,7 +155,7 @@ void D_Init()
 
 	// start the Zone memory manager
 	bool use_zone = !Args.CheckParm("-nozone");
-	Z_Init(use_zone);
+	Z_Init(false);
 	if (first_time)
 		Printf(PRINT_HIGH, "Z_Init: Heapsize: %" PRIuSIZE " megabytes\n", got_heapsize);
 
