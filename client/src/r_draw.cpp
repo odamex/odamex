@@ -209,36 +209,22 @@ argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
 
+#include "v_color.h"
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
-	const palindex_t start_index = 0xB0;
-	const palindex_t end_index = 0xBF;
-	const int index_range = end_index - start_index + 1;
+	const argb_t* baseColors = V_GetDefaultPalette()->basecolors;
+	palindex_t* dest = static_cast<palindex_t*>(::Ranges) + color_num * 256;
 
-	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
+	OGradient grad = V_ColorGradient(start_color, end_color, 256);
 
-	for (int index = 0; index < start_index; index++)
-		dest[index] = index;
-	for (int index = end_index + 1; index < 256; index++)
-		dest[index] = index;	
-
-	int r_diff = end_color.getr() - start_color.getr();
-	int g_diff = end_color.getg() - start_color.getg();
-	int b_diff = end_color.getb() - start_color.getb();
-
-	for (palindex_t index = start_index; index <= end_index; index++)
+	for (int index = 0; index < 256; index++)
 	{
-		int i = index - start_index;
-
-		int r = start_color.getr() + i * r_diff / index_range;
-		int g = start_color.getg() + i * g_diff / index_range;
-		int b = start_color.getb() + i * b_diff / index_range;
-
-		dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
+		// Index for gradient is the brightest channel.
+		byte gi = MAX(MAX(baseColors[index].getr(), baseColors[index].getg()),
+		              baseColors[index].getb());
+		dest[index] = V_BestColor2(baseColors, grad.at(0xFF - gi));
 	}
-
-	dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[end_index];
 }
 
 //

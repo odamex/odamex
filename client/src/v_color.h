@@ -28,7 +28,8 @@
 
 typedef std::vector<argb_t> OGradient;
 
-double V_ColorDistance(const argb_t& e1, const argb_t& e2);
+float V_ColorDistance(const argb_t& e1, const argb_t& e2);
+palindex_t V_BestColor2(const argb_t* palette, const argb_t& color);
 byte V_ColorToGrey(const argb_t& color);
 OGradient V_ColorGradient(const argb_t& start, const argb_t& end, const size_t len);
 void V_DebugGradient(const argb_t& a, const argb_t& b, const size_t len, const int y);

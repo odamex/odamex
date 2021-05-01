@@ -37,23 +37,51 @@ struct rgbLinear_t
  *
  * @sa https://stackoverflow.com/a/40950076/91642
  */
-double V_ColorDistance(const argb_t& e1, const argb_t& e2)
+float V_ColorDistance(const argb_t& e1, const argb_t& e2)
 {
-	int e1r = e1.getr();
-	int e1g = e1.getg();
-	int e1b = e1.getb();
+	const int e1r = e1.getr();
+	const int e1g = e1.getg();
+	const int e1b = e1.getb();
 
-	int e2r = e2.getr();
-	int e2g = e2.getg();
-	int e2b = e2.getb();
+	const int e2r = e2.getr();
+	const int e2g = e2.getg();
+	const int e2b = e2.getb();
 
-	int rmean = (e1r + e2r) / 2;
-	int r = e1r - e2r;
-	int g = e1g - e2g;
-	int b = e1b - e2b;
+	const int rmean = (e1r + e2r) / 2;
+	const int r = e1r - e2r;
+	const int g = e1g - e2g;
+	const int b = e1b - e2b;
 
 	return sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g +
 	            (((767 - rmean) * b * b) >> 8));
+}
+
+/**
+ * @brief Find the closest palette index given a palette and color to compare.
+ */
+palindex_t V_BestColor2(const argb_t* palette, const argb_t& color)
+{
+	float bestDist = INFINITY;
+	int bestColor = 0;
+
+	for (int i = 0; i < 256; i++)
+	{
+		argb_t palColor(palette[i]);
+
+		float dist = V_ColorDistance(color, palColor);
+		if (dist < bestDist)
+		{
+			if (dist == 0.0f)
+			{
+				return i; // perfect match
+			}
+
+			bestDist = dist;
+			bestColor = i;
+		}
+	}
+
+	return bestColor;
 }
 
 /**
