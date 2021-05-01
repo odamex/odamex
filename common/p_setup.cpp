@@ -169,6 +169,12 @@ void P_LoadVertexes (int lump)
 
 void P_LoadSegs (int lump)
 {
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
+	}
+
 	int  i;
 	byte *data;
 
@@ -249,8 +255,14 @@ void P_LoadSegs (int lump)
 //
 // P_LoadSubsectors
 //
-void P_LoadSubsectors (int lump)
+void P_LoadSubsectors(int lump)
 {
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadSubsectors: SSECTORS lump is empty - levels without nodes are not supported.");
+	}
+
 	byte *data;
 	int i;
 
@@ -379,6 +391,12 @@ void P_LoadSectors (int lump)
 //
 void P_LoadNodes (int lump)
 {
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
+	}
+
 	byte*		data;
 	int 		i;
 	int 		j;
