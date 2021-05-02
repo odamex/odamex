@@ -1001,7 +1001,7 @@ void G_Ticker (void)
 
 			int type = MSG_ReadLong();
 
-			if(type == CHALLENGE)
+			if(type == MSG_CHALLENGE)
 			{
 				CL_PrepareConnect();
 			}

@@ -1708,13 +1708,74 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 	return AllowConnect;
 }
 
+/**
+ * @brief Disconnect an older client using the older protocol.
+ */
+static void SV_DisconnectOldClient()
+{
+	int cl_version = MSG_ReadShort();
+	byte connection_type = MSG_ReadByte();
+	std::string VersionStr;
+
+	switch (cl_version)
+	{
+	case VERSION: {
+		int GameVer = MSG_ReadLong();
+
+		int cl_major = VERMAJ(GameVer);
+		int cl_minor = VERMIN(GameVer);
+		int cl_patch = VERPATCH(GameVer);
+
+		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
+		break;
+	}
+	case 64:
+		VersionStr = "0.2a or 0.3";
+		break;
+	case 63:
+		VersionStr = "Pre-0.2";
+		break;
+	case 62:
+		VersionStr = "0.1a";
+		break;
+	default:
+		VersionStr = "Unknown";
+		break;
+	}
+
+	std::string buf;
+	StrFormat(buf,
+	          "Your version of Odamex %s does not match the server %s.\nFor updates, "
+	          "visit http://odamex.net/\n",
+	          VersionStr.c_str(), DOTVERSIONSTR);
+
+	// Send using the old protocol mechanism without relying on any defines
+	const byte old_svc_disconnect = 2;
+	const byte old_svc_print = 28;
+	const int old_PRINT_HIGH = 2;
+
+	static buf_t smallbuf(1024);
+
+	MSG_WriteLong(&smallbuf, 0);
+
+	MSG_WriteByte(&smallbuf, old_svc_print);
+	MSG_WriteByte(&smallbuf, old_PRINT_HIGH);
+	MSG_WriteString(&smallbuf, buf.c_str());
+
+	MSG_WriteByte(&smallbuf, old_svc_disconnect);
+
+	NET_SendPacket(smallbuf, ::net_from);
+
+	Printf("%s disconnected (old version).\n", NET_AdrToString(::net_from));
+}
+
+void G_DoReborn(player_t& playernum);
+
 //
 //	SV_ConnectClient
 //
 //	Called when a client connects
 //
-void G_DoReborn (player_t &playernum);
-
 void SV_ConnectClient()
 {
 	int challenge = MSG_ReadLong();
@@ -1729,13 +1790,20 @@ void SV_ConnectClient()
 		return;
 	}
 
-	if (challenge != CHALLENGE)
+	if (challenge != PROTO_CHALLENGE && challenge != MSG_CHALLENGE)
 		return;
 
 	if (!SV_IsValidToken(MSG_ReadLong()))
 		return;
 
 	Printf("%s is trying to connect...\n", NET_AdrToString (net_from));
+
+	// Show old challenges the door only after we've validated their token.
+	if (challenge == MSG_CHALLENGE)
+	{
+		SV_DisconnectOldClient();
+		return;
+	}
 
 	// find an open slot
 	Players::iterator it = SV_GetFreeClient();

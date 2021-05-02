@@ -37,16 +37,17 @@
 
 // Maximum safe size for a packet transmitted over UDP.
 // This number comes from Steamworks and seems to be a reasonable default.
-#define MAX_UDP_SIZE   1200
+#define MAX_UDP_SIZE 1200
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
 
 #define PLAYER_FULLBRIGHTFRAME 70
 
-#define CHALLENGE 5560020  // challenge
-#define LAUNCHER_CHALLENGE 777123  // csdl challenge
-#define VERSION 65	// GhostlyDeath -- this should remain static from now on
+#define PROTO_CHALLENGE -5560020  // Signals challenger wants protobufs.
+#define MSG_CHALLENGE 5560020     // Signals challenger wants MSG protocol.
+#define LAUNCHER_CHALLENGE 777123 // csdl challenge
+#define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
 /**
  * @brief Compression is enabled for this packet

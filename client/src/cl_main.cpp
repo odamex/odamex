@@ -1811,7 +1811,7 @@ void CL_TryToConnect(DWORD server_token)
 		Printf("challenging %s\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
+		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
 		MSG_WriteLong(&net_buffer, server_token); // confirm server token
 		MSG_WriteShort(&net_buffer, version); // send client version
 		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
