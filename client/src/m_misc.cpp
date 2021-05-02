@@ -173,7 +173,7 @@ void M_LoadDefaults(void)
 		}
 
 		if (updated)
-			Printf(__FUNCTION__ ": Updating old defaults.");
+			Printf("%s: Updating old defaults.\n", __FUNCTION__);
 	}
 
 	AddCommandString("alias ? help");	
