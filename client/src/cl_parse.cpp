@@ -621,7 +621,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
 			       name.c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
 		newwadfiles.push_back(file);
@@ -641,7 +641,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted patch \"%s\" that server requested.\n",
 			       name.c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
 		newpatchfiles.push_back(file);

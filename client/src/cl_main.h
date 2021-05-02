@@ -47,11 +47,19 @@ extern NetDemo	netdemo;
 
 extern bool predicting;
 
-void CL_QuitNetGame(void);
+enum netQuitReason_e
+{
+	NQ_NONE,       // Don't print a message.
+	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the client.
+	NQ_ABORT,      // Connection attempt was aborted
+	NQ_PROTO,      // Encountered something unexpected in the protocol
+};
+
+void CL_QuitNetGame(const netQuitReason_e reason = NQ_NONE);
 void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
-bool CL_PrepareConnect(void);
+bool CL_PrepareConnect();
 void CL_ParseCommands(void);
 bool CL_ReadPacketHeader();
 void CL_SendCmd(void);

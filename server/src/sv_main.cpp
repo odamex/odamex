@@ -1586,12 +1586,9 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 	switch (cl->version)
 	{
-	case 65:
+	case VERSION:
 		GameVer = MSG_ReadLong();
-
-		cl_major = VERMAJ(GameVer);
-		cl_minor = VERMIN(GameVer);
-		cl_patch = VERPATCH(GameVer);
+		BREAKVER(GameVer, cl_major, cl_minor, cl_patch);
 
 		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
@@ -1600,8 +1597,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 		// Major and minor versions must be identical, client is allowed
 		// to have a newer patch.
-		if ((cl_major == sv_major) && (cl_minor == sv_minor) &&
-		    (cl_patch >= sv_patch))
+		if (VersionCompat(GAMEVER, GameVer) == 0)
 			AllowConnect = true;
 		else
 			AllowConnect = false;
@@ -1621,88 +1617,35 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 	}
 
 	// GhostlyDeath -- removes the constant AllowConnects above
-	if (cl->version != 65)
+	if (cl->version != VERSION)
 		AllowConnect = false;
 
 	// GhostlyDeath -- boot em
 	if (!AllowConnect)
 	{
-		std::ostringstream FormattedString;
-		bool older = false;
-
-		// GhostlyDeath -- Version Mismatch message
-
-        FormattedString <<
-            std::endl <<
-            "Your version of Odamex " <<
-            VersionStr <<
-            " does not match the server " <<
-            OurVersionStr <<
-            std::endl;
-
-		// GhostlyDeath -- Check to see if it's older or not
-		if (cl->majorversion < sv_major)
+		std::string msg = VersionMessage(GAMEVER, GameVer, ::sv_email.cstring());
+		if (msg.empty())
 		{
-			older = true;
-		}
-		else if (cl->majorversion > sv_major)
-		{
-			older = false;
-		}
-		else
-		{
-			if (cl->minorversion < sv_minor)
-				older = true;
-			else if (cl->minorversion > sv_minor)
-				older = false;
-		}
-
-		// GhostlyDeath -- Print message depending on older or newer
-		if (older)
-		{
-			FormattedString <<
-                "For updates, visit http://odamex.net/" <<
-                std::endl;
-		}
-		else
-        {
-			FormattedString <<
-                "If a new version just came out, " <<
-                "give server administrators time to update their servers." <<
-                std::endl;
-        }
-
-		// GhostlyDeath -- email address set?
-		if (*(sv_email.cstring()))
-		{
-			char emailbuf[100];
-			memset(emailbuf, 0, sizeof(emailbuf));
-			const char* in = sv_email.cstring();
-			char* out = emailbuf;
-
-			for (int i = 0; i < 100 && *in; i++, in++, out++)
-				*out = *in;
-
-			FormattedString <<
-                "If problems persist, contact the server administrator at " <<
-                emailbuf <<
-                std::endl;
+			// Failsafe.
+			StrFormat(
+			    msg,
+			    "Your version of Odamex does not match the server %s.\nFor updates, "
+			    "visit https://odamex.net/\n",
+			    DOTVERSIONSTR);
 		}
 
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_HIGH, FormattedString.str()));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, msg));
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Disconnect());
 
 		SV_SendPacket(*it);
 
 		// GhostlyDeath -- And we tell the server
-		Printf("%s -- Version mismatch (%s != %s)\n",
-                NET_AdrToString(net_from),
-                VersionStr.c_str(),
-                OurVersionStr.c_str());
+		Printf("%s disconnected (version mismatch %s).\n", NET_AdrToString(::net_from),
+		       VersionStr.c_str());
 	}
 
 	return AllowConnect;
@@ -1717,37 +1660,29 @@ static void SV_DisconnectOldClient()
 	byte connection_type = MSG_ReadByte();
 	std::string VersionStr;
 
-	switch (cl_version)
+	int GameVer = 0;
+	if (cl_version == VERSION)
 	{
-	case VERSION: {
-		int GameVer = MSG_ReadLong();
-
-		int cl_major = VERMAJ(GameVer);
-		int cl_minor = VERMIN(GameVer);
-		int cl_patch = VERPATCH(GameVer);
-
-		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
-		break;
+		GameVer = MSG_ReadLong();
 	}
-	case 64:
-		VersionStr = "0.2a or 0.3";
-		break;
-	case 63:
-		VersionStr = "Pre-0.2";
-		break;
-	case 62:
-		VersionStr = "0.1a";
-		break;
-	default:
-		VersionStr = "Unknown";
-		break;
+	else
+	{
+		// Assume anything older is 0.3.0.
+		GameVer = MAKEVER(0, 3, 0);
 	}
 
-	std::string buf;
-	StrFormat(buf,
-	          "Your version of Odamex %s does not match the server %s.\nFor updates, "
-	          "visit http://odamex.net/\n",
-	          VersionStr.c_str(), DOTVERSIONSTR);
+	int cl_maj, cl_min, cl_pat;
+	BREAKVER(GameVer, cl_maj, cl_min, cl_pat);
+
+	std::string msg = VersionMessage(GAMEVER, GameVer, ::sv_email.cstring());
+	if (msg.empty())
+	{
+		// Failsafe.
+		StrFormat(msg,
+		          "Your version of Odamex does not match the server %s.\nFor updates, "
+		          "visit https://odamex.net/\n",
+		          DOTVERSIONSTR);
+	}
 
 	// Send using the old protocol mechanism without relying on any defines
 	const byte old_svc_disconnect = 2;
@@ -1760,13 +1695,14 @@ static void SV_DisconnectOldClient()
 
 	MSG_WriteByte(&smallbuf, old_svc_print);
 	MSG_WriteByte(&smallbuf, old_PRINT_HIGH);
-	MSG_WriteString(&smallbuf, buf.c_str());
+	MSG_WriteString(&smallbuf, msg.c_str());
 
 	MSG_WriteByte(&smallbuf, old_svc_disconnect);
 
 	NET_SendPacket(smallbuf, ::net_from);
 
-	Printf("%s disconnected (old version).\n", NET_AdrToString(::net_from));
+	Printf("%s disconnected (version mismatch %d.%d.%d).\n", NET_AdrToString(::net_from),
+	       cl_maj, cl_min, cl_pat);
 }
 
 void G_DoReborn(player_t& playernum);

@@ -363,7 +363,7 @@ void CL_ResyncWorldIndex()
 	world_index_accum = 0.0f;
 }
 
-void CL_QuitNetGame(void)
+void CL_QuitNetGame(const netQuitReason_e reason)
 {
 	if(connected)
 	{
@@ -429,6 +429,21 @@ void CL_QuitNetGame(void)
 	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
+
+	switch (reason)
+	{
+	default: // Also NQ_NONE
+		break;
+	case NQ_DISCONNECT:
+		Printf("Disconnected from server\n");
+		break;
+	case NQ_ABORT:
+		Printf("Connection attempt aborted\n");
+		break;
+	case NQ_PROTO:
+		Printf("Disconnected from server: Unrecoverable protocol error\n");
+		break;
+	}
 }
 
 
@@ -1459,7 +1474,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		       "Tried to download an empty file.  This is probably a bug "
 		       "in the client where an empty file is considered missing.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1470,7 +1485,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
 		       "Options > Network Options to enable downloading.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1480,7 +1495,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1490,7 +1505,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		Printf("Unable to find \"%s\".  Both your client and the server have no "
 		       "download sites configured.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1521,7 +1536,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 // [denis] CL_PrepareConnect
 // Process server info and switch to the right wads...
 //
-bool CL_PrepareConnect(void)
+bool CL_PrepareConnect()
 {
 	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
@@ -1574,7 +1589,7 @@ bool CL_PrepareConnect(void)
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
 			       newwadnames.at(i).c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
@@ -1645,6 +1660,22 @@ bool CL_PrepareConnect(void)
 		int major, minor, patch;
 		BREAKVER(gameversion, major, minor, patch);
 		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
+
+		std::string msg = VersionMessage(::gameversion, GAMEVER, NULL);
+		if (!msg.empty())
+		{
+			Printf(PRINT_WARNING, "%s", msg.c_str());
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+	}
+	else
+	{
+		// [AM] Not worth sorting out what version it actually is.
+		std::string msg = VersionMessage(MAKEVER(0, 3, 0), GAMEVER, NULL);
+		Printf(PRINT_WARNING, "%s", msg.c_str());
+		CL_QuitNetGame(NQ_ABORT);
+		return false;
 	}
 
     Printf(PRINT_HIGH, "\n");
@@ -1663,7 +1694,7 @@ bool CL_PrepareConnect(void)
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
 			       filename.c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
@@ -1675,7 +1706,7 @@ bool CL_PrepareConnect(void)
 	if (!ok && missingfiles.empty())
 	{
 		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
 	else if (!ok && !missingfiles.empty() || cl_forcedownload)
@@ -1726,7 +1757,7 @@ bool CL_Connect()
 	if (flags & SVF_UNUSED_MASK)
 	{
 		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_PROTO);
 	}
 	else if (flags & SVF_COMPRESSED)
 	{
@@ -1917,7 +1948,7 @@ bool CL_ReadPacketHeader()
 	if (flags & SVF_UNUSED_MASK)
 	{
 		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_PROTO);
 	}
 	else if (flags & SVF_COMPRESSED)
 	{
@@ -1960,7 +1991,6 @@ void CL_ParseCommands()
 		parseError_e res = CL_ParseCommand();
 		if (res != PERR_OK || ::net_message.overflowed)
 		{
-			CL_QuitNetGame();
 			const Protos& protos = CL_GetTicProtos();
 
 			std::string err;
@@ -2003,6 +2033,8 @@ void CL_ParseCommands()
 			{
 				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
 			}
+
+			CL_QuitNetGame(NQ_PROTO);
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
