@@ -29,6 +29,7 @@
 #include "doomdef.h"
 #include "c_dispatch.h"
 #include "hashtable.h"
+#include "cmdlib.h"
 
 static bool use_zone = true;
 
@@ -59,6 +60,27 @@ struct OFileLine
 
 #define FILELINE OFileLine::create(__FILE__, __LINE__)
 
+#define CASE_STR(x) \
+	case x:         \
+		return #x
+
+static const char* TagStr(const zoneTag_e tag)
+{
+	switch (tag)
+	{
+		CASE_STR(PU_FREE);
+		CASE_STR(PU_STATIC);
+		CASE_STR(PU_SOUND);
+		CASE_STR(PU_MUSIC);
+		CASE_STR(PU_LEVEL);
+		CASE_STR(PU_LEVSPEC);
+		CASE_STR(PU_LEVACS);
+		CASE_STR(PU_PURGELEVEL);
+		CASE_STR(PU_CACHE);
+		default: return "UNKNOWN";
+	}
+}
+
 //
 // OZone
 //
@@ -79,6 +101,7 @@ class OZone
 	struct MemoryBlockInfo
 	{
 		zoneTag_e tag;      // PU_* tag
+		uint32_t size;      // Size of allocation: 32-bit to save space
 		void** user;        // Pointer owner
 		OFileLine fileLine; // __FILE__, __LINE__
 	};
@@ -143,6 +166,7 @@ class OZone
 		MemoryBlockInfo block;
 		block.tag = tag;
 		block.user = static_cast<void**>(user);
+		block.size = size > UINT_MAX ? UINT_MAX : static_cast<uint32_t>(size);
 
 		// Store the allocating function.  12 byte overhead per allocation,
 		// but the information we get while debugging is priceless.
@@ -220,6 +244,27 @@ class OZone
 
 			dealloc(it);
 		}
+	}
+
+	void dump()
+	{
+		size_t total = 0;
+		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
+		{
+			total += it->second.size;
+			Printf("0x%p | size:%" PRIuSIZE " tag:%s user:0x%p %s:%d\n", it->first,
+			       it->second.size, TagStr(it->second.tag), it->second.user,
+			       it->second.fileLine.shortFile(), it->second.fileLine.line);
+		}
+
+		std::string buf;
+		Printf("  allocation count: %" PRIuSIZE "\n", m_heap.size());
+
+		StrFormatBytes(buf, total);
+		Printf("  allocs size: %s\n", buf.c_str());
+
+		StrFormatBytes(buf, m_heap.size() * sizeof(MemoryBlockInfo));
+		Printf("  blocks size: %s\n", buf.c_str());
 	}
 } g_zone;
 
@@ -649,7 +694,10 @@ size_t Z_FreeMemory()
 void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag)
 {
 	if (!use_zone)
+	{
+		::g_zone.dump();
 		return;
+	}
 
 	Z_FreeMemory();
     memblock_t*	block;
