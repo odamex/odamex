@@ -135,9 +135,8 @@ class OZone
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
-			I_Error(__FUNCTION__ ": Could not allocate %" PRI_SIZE_PREFIX
-			                     "u bytes at %s:%i.\n",
-			        size, info.shortFile(), info.line);
+			I_Error("%s: Could not allocate %" PRI_SIZE_PREFIX "u bytes at %s:%i.",
+			        __FUNCTION__, size, info.shortFile(), info.line);
 		}
 
 		// Construct the memory block.
@@ -164,23 +163,23 @@ class OZone
 	{
 		if (tag == PU_FREE)
 		{
-			I_Error(__FUNCTION__ ": Tried to change a tag to PU_FREE at %s:%i.",
+			I_Error("%s: Tried to change a tag to PU_FREE at %s:%i.", __FUNCTION__,
 			        info.shortFile(), info.line);
 		}
 
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error(__FUNCTION__ ": Address 0x%p is not tracked by zone at %s:%i.",
+			I_Error("%s: Address 0x%p is not tracked by zone at %s:%i.", __FUNCTION__,
 			        it->first, info.shortFile(), info.line);
 		}
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
 		{
-			I_Error(__FUNCTION__ ": Found purgable block without an owner at %s:%i, "
-			                     "allocated at %s:%i.",
-			        info.shortFile(), info.line, it->second.fileLine.shortFile(),
-			        it->second.fileLine.line);
+			I_Error("%s: Found purgable block without an owner at %s:%i, "
+			        "allocated at %s:%i.",
+			        __FUNCTION__, info.shortFile(), info.line,
+			        it->second.fileLine.shortFile(), it->second.fileLine.line);
 		}
 
 		it->second.tag = tag;
@@ -188,7 +187,8 @@ class OZone
 
 	void changeOwner(void* ptr, void* user, const OFileLine& info)
 	{
-		I_Error(__FUNCTION__ ": not implemented");
+		// [AM] Nothing calls this as far as I know.
+		I_Error("%s: not implemented", __FUNCTION__);
 	}
 
 	void deallocPtr(void* ptr, const OFileLine& info)
@@ -199,7 +199,7 @@ class OZone
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error(__FUNCTION__ ": Address 0x%p is not tracked by zone at %s:%i.",
+			I_Error("%s: Address 0x%p is not tracked by zone at %s:%i.", __FUNCTION__,
 			        it->first, info.shortFile(), info.line);
 		}
 
