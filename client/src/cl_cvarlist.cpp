@@ -290,8 +290,8 @@ CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_S
 
 CVAR(cl_downloadsites,
      "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
-     "http://grandpachuck.org/files/wads/ http://ts.chaosunleashed.net/ "
-     "https://wads.doomleague.org/ http://files.funcrusher.net/wads/",
+     "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
+     "http://files.funcrusher.net/wads/",
      "A list of websites to download WAD files from.  These websites are used if the "
      "server doesn't provide any websites to download files from, or the file can't be "
      "found on any of their sites.  The list of sites is separated by spaces.  These "
