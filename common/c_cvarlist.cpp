@@ -332,6 +332,9 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(deb_disconnect, "0", "Show source file:line where a disconnect happens",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_FUNC_DECL(		language, "auto", "Language to use for ingame strings",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 

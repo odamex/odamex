@@ -117,6 +117,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
+EXTERN_CVAR(deb_disconnect)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -2366,7 +2367,8 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 
 	SV_DisconnectClient(who);
 
-	Printf("  (%s:%d)\n", file, line); // [AM] Not It
+	if (::deb_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 //

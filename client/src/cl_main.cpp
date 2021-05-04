@@ -166,6 +166,7 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(deb_disconnect)
 
 static argb_t enemycolor, teamcolor;
 
@@ -451,7 +452,8 @@ void CL_QuitNetGame2(const char* file, const int line)
 
 	cvar_t::C_RestoreCVars();
 
-	Printf("  (%s:%d)\n", file, line);
+	if (::deb_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 
