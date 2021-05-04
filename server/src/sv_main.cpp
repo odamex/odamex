@@ -2366,7 +2366,7 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 
 	SV_DisconnectClient(who);
 
-	Printf("  (%s:%d)\n", file, line);
+	Printf("  (%s:%d)\n", file, line); // [AM] Not It
 }
 
 //

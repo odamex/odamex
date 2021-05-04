@@ -384,7 +384,7 @@ void Host_EndGame(const char *msg)
 	CL_QuitNetGame();
 }
 
-void CL_QuitNetGame(void)
+void CL_QuitNetGame2(const char* file, const int line)
 {
 	if(connected)
 	{
@@ -450,6 +450,8 @@ void CL_QuitNetGame(void)
 	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
+
+	Printf("  (%s:%d)\n", file, line);
 }
 
 
