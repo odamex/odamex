@@ -2356,7 +2356,7 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient(player_t &who)
+void SV_DropClient2(player_t &who, const char* file, const int line)
 {
 	client_t *cl = &who.client;
 
@@ -2365,6 +2365,8 @@ void SV_DropClient(player_t &who)
 	SV_SendPacket(who);
 
 	SV_DisconnectClient(who);
+
+	Printf("  (%s:%d)\n", file, line);
 }
 
 //

@@ -70,7 +70,8 @@ void SV_RunTics();
 void SV_ParseCommands(player_t &player);
 void SV_UpdateFrags (player_t &player);
 void SV_RemoveCorpses (void);
-void SV_DropClient(player_t &who);
+#define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
+void SV_DropClient2(player_t& who, const char* file, const int line);
 void SV_PlayerTriedToCheat(player_t &player);
 void SV_ActorTarget(AActor *actor);
 void SV_ActorTracer(AActor *actor);
