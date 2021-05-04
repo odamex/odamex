@@ -97,7 +97,7 @@ odaproto::svc::ConsolePlayer SVC_ConsolePlayer(player_t& player,
 odaproto::svc::ExplodeMissile SVC_ExplodeMissile(AActor& mobj);
 odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj);
 odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time);
-odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags);
+odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj);
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player);
 odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor *inflictor, int health, int armor);
 odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inflictor,

@@ -28,6 +28,7 @@
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
+#include "m_vectors.h"
 
 // We need the thinker_t stuff.
 #include "dthinker.h"
@@ -269,6 +270,63 @@ typedef enum
 #define OVERDRIVE 6
 #define MAXGEAR (OVERDRIVE+16)
 
+// [AM] Baseline info about actor
+struct baseline_t
+{
+	AActor* mo;
+
+	v3fixed_t pos;
+	static const uint32_t POSBIT = BIT(0);
+
+	angle_t angle;
+	static const uint32_t ANGLEBIT = BIT(1);
+
+	int frame;
+	static const uint32_t FRAMEBIT = BIT(2);
+
+	uint32_t effects;
+	static const uint32_t EFFECTSBIT = BIT(3);
+
+	fixed_t radius;
+	static const uint32_t RADIUSBIT = BIT(4);
+
+	fixed_t height;
+	static const uint32_t HEIGHTBIT = BIT(5);
+
+	v3fixed_t mom;
+	static const uint32_t MOMBIT = BIT(6);
+
+	mobjtype_t type;
+	static const uint32_t TYPEBIT = BIT(7);
+
+	int tics;
+	static const uint32_t TICSBIT = BIT(8);
+
+	statenum_t stateenum;
+	static const uint32_t STATEBIT = BIT(9);
+
+	int flags;
+	static const uint32_t FLAGSBIT = BIT(10);
+
+	byte movedir;
+	static const uint32_t MOVEDIRBIT = BIT(11);
+
+	int movecount;
+	static const uint32_t MOVECOUNTBIT = BIT(12);
+
+	uint32_t target_id;
+	static const uint32_t TARGETBIT = BIT(13);
+
+	uint32_t tracer_id;
+	static const uint32_t TRACERBIT = BIT(14);
+
+	unsigned char rndindex;
+	static const uint32_t RNDINDEXBIT = BIT(15);
+
+	void set(AActor* mo);
+	uint32_t diffBits();
+};
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -448,6 +506,8 @@ public:
 	int             oldframe;
 
 	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
+
+	baseline_t baseline; // [AM] Baseline info of spawned mobj.
 
 	// ThingIDs
 	static void ClearTIDHashes ();

@@ -2721,9 +2721,7 @@ void SV_UpdateMissiles(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(
-			    &cl->netbuf,
-			    SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE | SVC_UM_TRACER));
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
@@ -2773,9 +2771,7 @@ void SV_UpdateMonsters(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(&cl->netbuf,
-			             SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE |
-			                                     SVC_UM_MOVEDIR | SVC_UM_TARGET));
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -2801,7 +2797,7 @@ void SV_ActorTarget(AActor *actor)
 		if(!SV_IsPlayerAllowedToSee(*it, actor))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor, SVC_UM_TARGET));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -2817,7 +2813,7 @@ void SV_ActorTracer(AActor *actor)
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor, SVC_UM_TRACER));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -4768,8 +4764,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
-		MSG_WriteSVC(&cl->netbuf,
-		             SVC_UpdateMobj(*target, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE));
+		MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
 	}
 }
 
@@ -4821,7 +4816,7 @@ void SV_ExplodeMissile(AActor *mo)
 		if (!SV_IsPlayerAllowedToSee(*it, mo))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo, SVC_UM_POS_RND));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
 		MSG_WriteSVC(&cl->reliablebuf, SVC_ExplodeMissile(*mo));
 	}
 }

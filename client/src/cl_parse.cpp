@@ -436,61 +436,95 @@ static void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
 //
 static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 {
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
-	angle_t angle = msg->actor().angle();
+	const odaproto::Actor& actor = msg->actor();
 
-	mobjtype_t type = static_cast<mobjtype_t>(msg->actor().type());
-	uint32_t netid = msg->actor().netid();
-	byte rndindex = msg->actor().rndindex();
-	statenum_t state = static_cast<statenum_t>(msg->actor().statenum());
-
-	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
+	// Make sure the server isn't sending us nonsense.
+	int type = actor.type();
+	if (type < 0 || type >= NUMMOBJTYPES)
+	{
+		Printf(PRINT_WARNING, "Server tried to spawn unknown mobj type %d.\n", type);
 		return;
+	}
+
+	int stateenum = actor.statenum();
+	if (stateenum < 0 || stateenum >= NUMSTATES)
+	{
+		Printf(PRINT_WARNING, "Server tried to spawn mobj with unknown state %d.\n",
+		       stateenum);
+		return;
+	}
+
+	// Netid of the actor - not part of the baseline.
+	uint32_t netid = actor.netid();
+
+	// Read the entire baseline off the wire.
+	baseline_t baseline;
+	memset(&baseline, 0x0, sizeof(baseline));
+
+	baseline.pos.x = actor.pos().x();
+	baseline.pos.y = actor.pos().y();
+	baseline.pos.z = actor.pos().z();
+	baseline.angle = actor.angle();
+	baseline.frame = actor.frame();
+	baseline.effects = actor.effects();
+	baseline.radius = actor.radius();
+	baseline.height = actor.height();
+	baseline.mom.x = actor.mom().x();
+	baseline.mom.y = actor.mom().y();
+	baseline.mom.z = actor.mom().z();
+	baseline.type = static_cast<mobjtype_t>(actor.type());
+	baseline.tics = actor.tics();
+	baseline.stateenum = static_cast<statenum_t>(actor.statenum());
+	baseline.flags = actor.flags();
+	baseline.movedir = actor.movedir();
+	baseline.movecount = actor.movecount();
+	baseline.target_id = actor.targetid();
+	baseline.tracer_id = actor.tracerid();
+	baseline.rndindex = actor.rndindex();
+
+	// Now we do the work of spawning the object.
 
 	P_ClearId(netid);
 
-	AActor* mo = new AActor(x, y, z, type);
-
-	// denis - puff hack
-	if (mo->type == MT_PUFF)
-	{
-		mo->momz = FRACUNIT;
-		mo->tics -= M_Random() & 3;
-		if (mo->tics < 1)
-			mo->tics = 1;
-	}
-
-	mo->angle = angle;
+	AActor* mo =
+	    new AActor(baseline.pos.x, baseline.pos.y, baseline.pos.z, baseline.type);
 	P_SetThingId(mo, netid);
-	mo->rndindex = rndindex;
+	mo->baseline = baseline;
 
-	if (state >= S_NULL && state < NUMSTATES)
+	// Set the other baseline fields on fresh actor.
+	mo->angle = baseline.angle;
+	mo->frame = baseline.frame;
+	mo->effects = baseline.effects;
+	mo->radius = baseline.radius;
+	mo->height = baseline.height;
+	mo->momx = baseline.mom.x;
+	mo->momy = baseline.mom.y;
+	mo->momz = baseline.mom.z;
+	mo->tics = baseline.tics;
+	mo->state = &::states[baseline.stateenum];
+	mo->flags = baseline.flags;
+	mo->movedir = baseline.movedir;
+	mo->movecount = baseline.movecount;
+	mo->rndindex = baseline.rndindex;
+
+	AActor* target = P_FindThingById(baseline.target_id);
+	if (target)
+		mo->target = target->ptr();
+	else
+		mo->target = AActor::AActorPtr();
+
+	AActor* tracer = P_FindThingById(baseline.tracer_id);
+	if (tracer)
+		mo->tracer = tracer->ptr();
+	else
+		mo->tracer = AActor::AActorPtr();
+
+	if (::serverside && mo->flags & MF_COUNTKILL)
 	{
-		P_SetMobjState(mo, state);
+		::level.total_monsters++;
 	}
 
-	if (msg->flags() & SVC_SM_MISSILE)
-	{
-		AActor* target = P_FindThingById(msg->target_netid());
-		if (target)
-			mo->target = target->ptr();
-		else
-			mo->target = AActor::AActorPtr();
-
-		mo->momx = msg->actor().mom().x();
-		mo->momy = msg->actor().mom().y();
-		mo->momz = msg->actor().mom().z();
-		mo->angle = msg->actor().angle();
-	}
-
-	if (serverside && mo->flags & MF_COUNTKILL)
-	{
-		level.total_monsters++;
-	}
-
-	if (connected && (mo->flags & MF_MISSILE) && mo->info->seesound)
+	if (::connected && (mo->flags & MF_MISSILE) && mo->info->seesound)
 	{
 		S_Sound(mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
 	}
@@ -502,57 +536,10 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (mo->type == MT_TFOG)
 	{
-		if (level.time) // don't play sound on first tic of the level
+		if (::level.time) // don't play sound on first tic of the level
 		{
 			S_Sound(mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 		}
-	}
-
-	if (type == MT_FOUNTAIN)
-	{
-		if (msg->args_size() >= 1)
-			mo->effects = msg->args().Get(0) << FX_FOUNTAINSHIFT;
-	}
-
-	if (type == MT_ZDOOMBRIDGE)
-	{
-		if (msg->args_size() >= 1)
-			mo->radius = msg->args().Get(0) << FRACBITS;
-		if (msg->args_size() >= 2)
-			mo->height = msg->args().Get(1) << FRACBITS;
-	}
-
-	if (msg->flags() & SVC_SM_FLAGS)
-	{
-		mo->flags = msg->actor().flags();
-	}
-
-	if (msg->flags() & SVC_SM_CORPSE)
-	{
-		int frame = msg->actor().frame();
-		int tics = msg->actor().tics();
-
-		if (tics == 0xFF)
-			tics = -1;
-
-		// already spawned as gibs?
-		if (!mo || mo->state - states == S_GIBS)
-			return;
-
-		if ((frame & FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
-			return;
-
-		mo->frame = frame;
-		mo->tics = tics;
-
-		// from P_KillMobj
-		mo->flags &= ~(MF_SHOOTABLE | MF_FLOAT | MF_SKULLFLY);
-		mo->flags |= MF_CORPSE | MF_DROPOFF;
-		mo->height >>= 2;
-		mo->flags &= ~MF_SOLID;
-
-		if (mo->player)
-			mo->player->playerstate = PST_DEAD;
 	}
 }
 
@@ -799,83 +786,215 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 {
 	AActor* mo = P_FindThingById(msg->actor().netid());
 	if (!mo)
+	{
+		Printf(PRINT_WARNING, "Server tried to update unknown mobj id %d\n",
+		       msg->actor().netid());
 		return;
+	}
 
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
-	byte rndindex = msg->actor().rndindex();
-	fixed_t momx = msg->actor().mom().x();
-	fixed_t momy = msg->actor().mom().y();
-	fixed_t momz = msg->actor().mom().z();
-	angle_t angle = msg->actor().angle();
-	byte movedir = msg->actor().movedir();
-	int movecount = msg->actor().movecount();
+	// Unpack the update or use the baseline for each field.
+
+	uint32_t flags = msg->flags();
+	if (flags & baseline_t::POSBIT)
+	{
+		mo->x = msg->actor().pos().x();
+		mo->y = msg->actor().pos().y();
+		mo->z = msg->actor().pos().z();
+	}
+	else
+	{
+		mo->x = mo->baseline.pos.x;
+		mo->y = mo->baseline.pos.y;
+		mo->z = mo->baseline.pos.z;
+	}
+
+	if (flags & baseline_t::ANGLEBIT)
+	{
+		mo->angle = msg->actor().angle();
+	}
+	else
+	{
+		mo->angle = mo->baseline.angle;
+	}
+
+	if (flags & baseline_t::FRAMEBIT)
+	{
+		mo->frame = msg->actor().frame();
+	}
+	else
+	{
+		mo->frame = mo->baseline.frame;
+	}
+
+	if (flags & baseline_t::EFFECTSBIT)
+	{
+		mo->effects = msg->actor().effects();
+	}
+	else
+	{
+		mo->effects = mo->baseline.effects;
+	}
+
+	if (flags & baseline_t::RADIUSBIT)
+	{
+		mo->radius = msg->actor().radius();
+	}
+	else
+	{
+		mo->radius = mo->baseline.radius;
+	}
+
+	if (flags & baseline_t::HEIGHTBIT)
+	{
+		mo->height = msg->actor().height();
+	}
+	else
+	{
+		mo->height = mo->baseline.height;
+	}
+
+	if (flags & baseline_t::MOMBIT)
+	{
+		mo->momx = msg->actor().mom().x();
+		mo->momy = msg->actor().mom().y();
+		mo->momz = msg->actor().mom().z();
+	}
+	else
+	{
+		mo->momx = mo->baseline.mom.x;
+		mo->momy = mo->baseline.mom.y;
+		mo->momz = mo->baseline.mom.z;
+	}
+
+	int wantType;
+	if (flags & baseline_t::TYPEBIT)
+	{
+		wantType = msg->actor().type();
+	}
+	else
+	{
+		wantType = mo->baseline.type;
+	}
+
+	if (flags & baseline_t::TICSBIT)
+	{
+		mo->tics = msg->actor().tics();
+	}
+	else
+	{
+		mo->tics = mo->baseline.tics;
+	}
+
+	int wantState;
+	if (flags & baseline_t::STATEBIT)
+	{
+		wantState = msg->actor().statenum();
+	}
+	else
+	{
+		wantState = mo->baseline.stateenum;
+	}
+
+	if (flags & baseline_t::FLAGSBIT)
+	{
+		mo->tics = msg->actor().flags();
+	}
+	else
+	{
+		mo->tics = mo->baseline.flags;
+	}
+
+	if (flags & baseline_t::MOVEDIRBIT)
+	{
+		mo->movedir = msg->actor().movedir();
+	}
+	else
+	{
+		mo->movedir = mo->baseline.movedir;
+	}
+
+	if (flags & baseline_t::MOVEDIRBIT)
+	{
+		mo->movecount = msg->actor().movecount();
+	}
+	else
+	{
+		mo->movecount = mo->baseline.movecount;
+	}
+
+	uint32_t wantTarget;
+	if (flags & baseline_t::TARGETBIT)
+	{
+		wantTarget = msg->actor().targetid();
+	}
+	else
+	{
+		wantTarget = mo->baseline.target_id;
+	}
+
+	uint32_t wantTracer;
+	if (flags & baseline_t::TRACERBIT)
+	{
+		wantTracer = msg->actor().tracerid();
+	}
+	else
+	{
+		wantTracer = mo->baseline.tracer_id;
+	}
+
+	if (flags & baseline_t::RNDINDEXBIT)
+	{
+		mo->rndindex = msg->actor().rndindex();
+	}
+	else
+	{
+		mo->rndindex = mo->baseline.rndindex;
+	}
+
+	// Fix incoming values
+
+	if (wantType < 0 || wantType >= NUMMOBJTYPES)
+	{
+		Printf(PRINT_WARNING, "Server tried to update unknown mobj type %d.\n", wantType);
+		return;
+	}
+	mo->type = static_cast<mobjtype_t>(wantType);
+
+	if (wantState < 0 || wantState >= NUMSTATES)
+	{
+		Printf(PRINT_WARNING, "Server tried to update mobj with unknown state %d.\n",
+		       wantState);
+		return;
+	}
+	mo->state = &::states[wantState];
+
+	AActor* target = P_FindThingById(wantTarget);
+	if (target)
+	{
+		mo->target = target->ptr();
+	}
+	else
+	{
+		mo->target = AActor::AActorPtr();
+	}
+
+	AActor* tracer = P_FindThingById(wantTracer);
+	if (tracer)
+	{
+		mo->tracer = tracer->ptr();
+	}
+	else
+	{
+		mo->tracer = AActor::AActorPtr();
+	}
 
 	if (mo->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
+		int snaptime = ::last_svgametic;
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
-
-		if (msg->flags() & SVC_UM_POS_RND)
-		{
-			newsnap.setX(x);
-			newsnap.setY(y);
-			newsnap.setZ(z);
-			mo->rndindex = rndindex;
-		}
-
-		if (msg->flags() & SVC_UM_MOM_ANGLE)
-		{
-			newsnap.setAngle(angle);
-			newsnap.setMomX(momx);
-			newsnap.setMomY(momy);
-			newsnap.setMomZ(momz);
-		}
-
 		mo->player->snapshots.addSnapshot(newsnap);
-	}
-	else
-	{
-		if (msg->flags() & SVC_UM_POS_RND)
-		{
-			CL_MoveThing(mo, x, y, z);
-			mo->rndindex = rndindex;
-		}
-
-		if (msg->flags() & SVC_UM_MOM_ANGLE)
-		{
-			mo->angle = angle;
-			mo->momx = momx;
-			mo->momy = momy;
-			mo->momz = momz;
-		}
-	}
-
-	if (msg->flags() & SVC_UM_MOVEDIR)
-	{
-		mo->movedir = movedir;
-		mo->movecount = movecount;
-	}
-
-	if (msg->flags() & SVC_UM_TARGET)
-	{
-		AActor* target = P_FindThingById(msg->actor().targetid());
-		if (target)
-			mo->target = target->ptr();
-		else
-			mo->target = AActor::AActorPtr();
-	}
-
-	if (msg->flags() & SVC_UM_TRACER)
-	{
-		AActor* tracer = P_FindThingById(msg->actor().tracerid());
-		if (tracer)
-			mo->tracer = tracer->ptr();
-		else
-			mo->tracer = AActor::AActorPtr();
 	}
 }
 

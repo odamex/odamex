@@ -95,46 +95,6 @@
 #define SVC_LL_MONSTER_RESPAWNS BIT(5)
 
 /**
- * @brief svc_spawnmobj: Missile flags.
- */
-#define SVC_SM_MISSILE BIT(0)
-
-/**
- * @brief svc_spawnmobj: Persist flags.
- */
-#define SVC_SM_FLAGS BIT(1)
-
-/**
- * @brief svc_spawnmobj: Run corpse logic.
- */
-#define SVC_SM_CORPSE BIT(2)
-
-/**
- * @brief svc_updatemobj: Supply mobj position and random index.
- */
-#define SVC_UM_POS_RND BIT(0)
-
-/**
- * @brief svc_updatemobj: Supply mobj momentum and angle.
- */
-#define SVC_UM_MOM_ANGLE BIT(1)
-
-/**
- * @brief svc_updatemobj: Supply movedir and movecount.
- */
-#define SVC_UM_MOVEDIR BIT(2)
-
-/**
- * @brief svc_updatemobj: Supply target.
- */
-#define SVC_UM_TARGET BIT(3)
-
-/**
- * @brief svc_updatemobj: Supply tracer.
- */
-#define SVC_UM_TRACER BIT(4)
-
-/**
  * @brief svc_playermembers: Spectator status.
  */
 #define SVC_PM_SPECTATOR BIT(0)

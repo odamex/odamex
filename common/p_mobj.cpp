@@ -86,6 +86,108 @@ NetIDHandler ServerNetID;
 typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+/**
+ * @brief Set the baseline from the actor.
+ */
+void baseline_t::set(AActor* mobj)
+{
+	mo = mobj;
+	pos.x = mobj->x;
+	pos.y = mobj->y;
+	pos.z = mobj->z;
+	angle = mobj->angle;
+	frame = mobj->frame;
+	effects = mobj->effects;
+	radius = mobj->radius;
+	height = mobj->height;
+	mom.x = mobj->momx;
+	mom.y = mobj->momy;
+	mom.z = mobj->momz;
+	type = mobj->type;
+	tics = mobj->tics;
+	stateenum = static_cast<statenum_t>(mobj->state - ::states);
+	flags = mobj->flags;
+	target_id = mobj->target ? mobj->target->netid : 0;
+	tracer_id = mobj->tracer ? mobj->tracer->netid : 0;
+	rndindex = mobj->rndindex;
+}
+
+/**
+ * @brief Generate the proper bits for a diff between the actor and the
+ *        baseline.
+ */
+uint32_t baseline_t::diffBits()
+{
+	uint32_t bits = 0;
+
+	if (pos.x != mo->x || pos.y != mo->y || pos.z != mo->z)
+	{
+		bits |= POSBIT;
+	}
+	if (angle != mo->angle)
+	{
+		bits |= ANGLEBIT;
+	}
+	if (frame != mo->frame)
+	{
+		bits |= FRAMEBIT;
+	}
+	if (effects != mo->effects)
+	{
+		bits |= EFFECTSBIT;
+	}
+	if (radius != mo->radius)
+	{
+		bits |= RADIUSBIT;
+	}
+	if (height != mo->height)
+	{
+		bits |= HEIGHTBIT;
+	}
+	if (mom.x != mo->momx || mom.y != mo->momy || mom.z != mo->momz)
+	{
+		bits |= MOMBIT;
+	}
+	if (type != mo->type)
+	{
+		bits |= TYPEBIT;
+	}
+	if (tics != mo->tics)
+	{
+		bits |= TICSBIT;
+	}
+	if (stateenum != mo->state - ::states)
+	{
+		bits |= STATEBIT;
+	}
+	if (flags != mo->flags)
+	{
+		bits |= FLAGSBIT;
+	}
+	if (movedir != mo->movedir)
+	{
+		bits |= MOVEDIRBIT;
+	}
+	if (movecount != mo->movecount)
+	{
+		bits |= MOVECOUNTBIT;
+	}
+	if (target_id != (mo->target ? mo->target->netid : 0))
+	{
+		bits |= TARGETBIT;
+	}
+	if (tracer_id != (mo->tracer ? mo->tracer->netid : 0))
+	{
+		bits |= TRACERBIT;
+	}
+	if (rndindex != mo->rndindex)
+	{
+		bits |= RNDINDEXBIT;
+	}
+
+	return bits;
+}
+
 IMPLEMENT_SERIAL(AActor, DThinker)
 
 AActor::~AActor ()
@@ -307,6 +409,17 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 
 	spawnpoint.type = 0;
 	memset(args, 0, sizeof(args));
+
+	// Setup a "baseline" state so we can send data down to clients in a
+	// consistent fashion.
+	if (!::clientside)
+	{
+		baseline.set(this);
+	}
+	else
+	{
+		memset(&baseline, 0x00, sizeof(baseline));
+	}
 }
 
 

@@ -249,63 +249,52 @@ odaproto::svc::UpdatePing SVC_UpdatePing(player_t& player)
 
 odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 {
+	// [AM] We send the entire relevant mobj as a baseline, so future updates
+	//      can infer original data from missing fields.
+
 	odaproto::svc::SpawnMobj msg;
 
 	odaproto::Actor* actor = msg.mutable_actor();
-	odaproto::Vec3* pos = actor->mutable_pos();
-
-	uint32_t flags = 0;
-
-	pos->set_x(mo->x);
-	pos->set_y(mo->y);
-	pos->set_z(mo->z);
-
-	actor->set_angle(mo->angle);
-
-	actor->set_type(mo->type);
 	actor->set_netid(mo->netid);
-	actor->set_rndindex(mo->rndindex);
-	actor->set_statenum(
-	    mo->state -
-	    states); // denis - sending state fixes monster ghosts appearing under doors
 
-	if (mo->type == MT_FOUNTAIN)
-	{
-		msg.add_args(mo->args[0]);
-	}
+	odaproto::Vec3* pos = actor->mutable_pos();
+	pos->set_x(mo->baseline.pos.x);
+	pos->set_y(mo->baseline.pos.y);
+	pos->set_z(mo->baseline.pos.z);
 
-	if (mo->type == MT_ZDOOMBRIDGE)
-	{
-		msg.add_args(mo->args[0]);
-		msg.add_args(mo->args[1]);
-	}
+	actor->set_angle(mo->baseline.angle);
 
-	// denis - check type as that is what the client will be spawning
-	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
-	{
-		flags |= SVC_SM_MISSILE;
-		msg.set_target_netid(mo->target ? mo->target->netid : 0);
-		actor->set_angle(mo->angle);
-		actor->mutable_mom()->set_x(mo->momx);
-		actor->mutable_mom()->set_y(mo->momy);
-		actor->mutable_mom()->set_z(mo->momz);
-	}
-	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
-	{
-		flags |= SVC_SM_FLAGS;
-		actor->set_flags(mo->flags);
-	}
+	actor->set_frame(mo->baseline.frame);
 
-	// animating corpses
-	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
-	{
-		// This sets off some additional logic on the client.
-		flags |= SVC_SM_CORPSE;
-		actor->set_frame(mo->frame);
-		actor->set_tics(mo->tics);
-	}
+	actor->set_effects(mo->baseline.effects);
 
-	msg.set_flags(flags);
+	actor->set_radius(mo->baseline.radius);
+
+	actor->set_height(mo->baseline.height);
+
+	odaproto::Vec3* mom = actor->mutable_mom();
+	mom->set_x(mo->baseline.mom.x);
+	mom->set_y(mo->baseline.mom.y);
+	mom->set_z(mo->baseline.mom.z);
+
+	actor->set_type(mo->baseline.type);
+
+	actor->set_tics(mo->baseline.tics);
+
+	// denis - sending state fixes monster ghosts appearing under doors
+	actor->set_statenum(mo->baseline.stateenum); 
+
+	actor->set_flags(mo->baseline.flags);
+
+	actor->set_movedir(mo->baseline.movedir);
+
+	actor->set_movecount(mo->baseline.movecount);
+
+	actor->set_targetid(mo->baseline.target_id);
+
+	actor->set_tracerid(mo->baseline.tracer_id);
+
+	actor->set_rndindex(mo->baseline.rndindex);
 
 	return msg;
 }
@@ -404,46 +393,90 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
  * @brief Move a mobj to a new location.  If it's a player, it will update
  *        the client's snapshot.
  */
-odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags)
+odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
 {
 	odaproto::svc::UpdateMobj msg;
+
+	uint32_t flags = mobj.baseline.diffBits();
 	msg.set_flags(flags);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	act->set_netid(mobj.netid);
 
-	if (flags & SVC_UM_POS_RND)
+	if (flags & baseline_t::POSBIT)
 	{
 		odaproto::Vec3* pos = act->mutable_pos();
 		pos->set_x(mobj.x);
 		pos->set_y(mobj.y);
 		pos->set_z(mobj.z);
-		act->set_rndindex(mobj.rndindex);
 	}
 
-	if (flags & SVC_UM_MOM_ANGLE)
+	if (flags & baseline_t::ANGLEBIT)
 	{
-		odaproto::Vec3* mom = act->mutable_mom();
-		mom->set_x(mobj.momx);
-		mom->set_y(mobj.momy);
-		mom->set_z(mobj.momz);
 		act->set_angle(mobj.angle);
 	}
 
-	if (flags & SVC_UM_MOVEDIR)
+	if (flags & baseline_t::FRAMEBIT)
 	{
-		act->set_movedir(mobj.movedir);
-		act->set_movecount(mobj.movecount);
+		act->set_frame(mobj.frame);
 	}
 
-	if (flags & SVC_UM_TARGET)
+	if (flags & baseline_t::EFFECTSBIT)
+	{
+		act->set_effects(mobj.effects);
+	}
+
+	if (flags & baseline_t::RADIUSBIT)
+	{
+		act->set_radius(mobj.radius);
+	}
+
+	if (flags & baseline_t::HEIGHTBIT)
+	{
+		act->set_height(mobj.height);
+	}
+
+	if (flags & baseline_t::MOMBIT)
+	{
+		odaproto::Vec3* mom = act->mutable_pos();
+		mom->set_x(mobj.momx);
+		mom->set_y(mobj.momy);
+		mom->set_z(mobj.momz);
+	}
+
+	if (flags & baseline_t::TYPEBIT)
+	{
+		act->set_type(mobj.type);
+	}
+
+	if (flags & baseline_t::TICSBIT)
+	{
+		act->set_tics(mobj.tics);
+	}
+
+	if (flags & baseline_t::STATEBIT)
+	{
+		act->set_statenum(mobj.state - ::states);
+	}
+
+	if (flags & baseline_t::FLAGSBIT)
+	{
+		act->set_flags(mobj.flags);
+	}
+
+	if (flags & baseline_t::TARGETBIT)
 	{
 		act->set_targetid(mobj.target ? mobj.target->netid : 0);
 	}
 
-	if (flags & SVC_UM_TRACER)
+	if (flags & baseline_t::TRACERBIT)
 	{
-		act->set_tracerid(mobj.target ? mobj.target->netid : 0);
+		act->set_tracerid(mobj.tracer ? mobj.tracer->netid : 0);
+	}
+
+	if (flags & baseline_t::RNDINDEXBIT)
+	{
+		act->set_rndindex(mobj.rndindex);
 	}
 
 	return msg;
