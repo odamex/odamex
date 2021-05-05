@@ -2216,69 +2216,58 @@ void SV_ConnectClient()
 	MSG_WriteByte(&cl->reliablebuf, player->id);
 	MSG_WriteString(&cl->reliablebuf, cl->digest.c_str());
 	SV_SendPacket(*player);
+}
+
+void SV_ConnectClient2(player_t& player)
+{
+	client_t* cl = &player.client;
 
 	// [Toke] send server settings
-	SV_SendServerSettings(*player);
+	SV_SendServerSettings(player);
 
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
 	cl->download.md5 = "";
-	if (connection_type == 1)
-	{
-		player->playerstate = PST_DOWNLOAD;
-		player->spectator = true;
-		SV_BroadcastUserInfo(*player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
-		// send the client the scores and list of other clients
-		SV_ClientFullUpdate(*player);
-
-		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			// [SL] 2011-07-30 - clients should consider downloaders as spectators
-			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
-		}
-
-		return;
-	}
-
-	SV_BroadcastUserInfo(*player);
+	SV_BroadcastUserInfo(player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
-	player->playerstate = PST_ENTER;
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
+	player.playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
-		player->spectator = true;
+		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
+			SVC_PlayerMembers(pit->client.reliablebuf, player, SVC_PM_SPECTATOR);
 	}
 
 	// Send a map name
-	SVC_LoadMap(player->client.reliablebuf, ::wadfiles, ::patchfiles, level.mapname,
+	SVC_LoadMap(player.client.reliablebuf, ::wadfiles, ::patchfiles, level.mapname,
 	            level.time);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
 
-	G_DoReborn(*player);
-	SV_ClientFullUpdate(*player);
+	G_DoReborn(player);
+	SV_ClientFullUpdate(player);
 
-	SV_BroadcastPrintf("%s has connected.\n", player->userinfo.netname.c_str());
+	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
 		MSG_WriteMarker(&pit->client.reliablebuf, svc_connectclient);
-		MSG_WriteByte(&pit->client.reliablebuf, player->id);
+		MSG_WriteByte(&pit->client.reliablebuf, player.id);
 	}
 
-	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
+	// Notify this player of other player's queue positions
+	SV_SendPlayerQueuePositions(&player, true); 
+
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
 //

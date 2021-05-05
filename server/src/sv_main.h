@@ -61,6 +61,7 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
 void SV_CheckTimeouts (void);
 void SV_ConnectClient(void);
+void SV_ConnectClient2(player_t& player);
 void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
 bool SV_SendPacket(player_t &pl);
