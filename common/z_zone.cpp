@@ -166,7 +166,7 @@ class OZone
 		MemoryBlockInfo block;
 		block.tag = tag;
 		block.user = static_cast<void**>(user);
-		block.size = size > UINT_MAX ? UINT_MAX : static_cast<uint32_t>(size);
+		block.size = size > MAXUINT ? MAXUINT : static_cast<uint32_t>(size);
 
 		// Store the allocating function.  12 byte overhead per allocation,
 		// but the information we get while debugging is priceless.
