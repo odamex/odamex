@@ -156,7 +156,7 @@ int __cdecl main(int argc, char *argv[])
         // Don't call this on windows!
 		//atexit (call_terms);
 
-		Z_Init(false);
+		Z_Init();
 
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
