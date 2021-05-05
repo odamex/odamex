@@ -47,12 +47,10 @@ enum zoneTag_e
 	PU_CACHE = 101,          // Generic purge-anytime tag.
 };
 
-void Z_Init(bool use_zone = true);
+void Z_Init();
 void Z_Close();
 void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag);
 void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag);
-void Z_CheckHeap();
-size_t Z_FreeMemory();
 
 // Don't use these, use the macros instead!
 void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
