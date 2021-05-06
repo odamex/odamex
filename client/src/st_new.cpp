@@ -629,9 +629,16 @@ void drawProtos()
 			              " >", CR_GOLD, true);
 		}
 
+		// Give each protocol header its own unique color.
+		int rowColor = it->header % (NUM_TEXT_COLORS - 2);
+		if (rowColor >= CR_WHITE)
+			rowColor++;
+		if (rowColor >= CR_UNTRANSLATED)
+			rowColor++;
+
 		// Draw name
 		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
-		              it->name.c_str(), CR_GOLD, true);
+		              it->name.c_str(), rowColor, true);
 		y += V_StringHeight(it->name.c_str());
 
 		if (selected)
