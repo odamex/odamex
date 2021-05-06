@@ -436,14 +436,32 @@ static void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
 //
 static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 {
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
-	angle_t angle = msg->actor().angle();
+	// Read baseline
 
-	mobjtype_t type = static_cast<mobjtype_t>(msg->actor().type());
+	baseline_t base;
+	{
+		const odaproto::Vec3& pos = msg->actor().pos();
+		base.pos.x = pos.x();
+		base.pos.y = pos.y();
+		base.pos.z = pos.z();
+	}
+	{
+		const odaproto::Vec3& mom = msg->actor().mom();
+		base.mom.x = mom.x();
+		base.mom.y = mom.y();
+		base.mom.z = mom.z();
+	}
+	base.angle = msg->actor().angle();
+	base.targetid = msg->actor().targetid();
+	base.tracerid = msg->actor().tracerid();
+	base.movecount = msg->actor().movecount();
+	base.movedir = msg->actor().movedir();
+	base.rndindex = msg->actor().rndindex();
+
+	// Read other fields
+
 	uint32_t netid = msg->actor().netid();
-	byte rndindex = msg->actor().rndindex();
+	mobjtype_t type = static_cast<mobjtype_t>(msg->actor().type());
 	statenum_t state = static_cast<statenum_t>(msg->actor().statenum());
 
 	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
@@ -451,7 +469,38 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	P_ClearId(netid);
 
-	AActor* mo = new AActor(x, y, z, type);
+	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
+	mo->baseline = base;
+
+	P_SetThingId(mo, netid);
+
+	// Assign baseline data to spawned mobj
+
+	mo->momx = base.mom.x;
+	mo->momy = base.mom.y;
+	mo->momz = base.mom.z;
+	mo->angle = base.angle;
+	AActor* target = P_FindThingById(base.targetid);
+	if (target)
+	{
+		mo->target = target->ptr();
+	}
+	else
+	{
+		mo->target = AActor::AActorPtr();
+	}
+	AActor* tracer = P_FindThingById(base.tracerid);
+	if (tracer)
+	{
+		mo->tracer = tracer->ptr();
+	}
+	else
+	{
+		mo->tracer = AActor::AActorPtr();
+	}
+	mo->movecount = base.movecount;
+	mo->movedir = base.movedir;
+	mo->rndindex = base.rndindex;
 
 	// denis - puff hack
 	if (mo->type == MT_PUFF)
@@ -462,27 +511,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->tics = 1;
 	}
 
-	mo->angle = angle;
-	P_SetThingId(mo, netid);
-	mo->rndindex = rndindex;
-
 	if (state >= S_NULL && state < NUMSTATES)
 	{
 		P_SetMobjState(mo, state);
-	}
-
-	if (msg->flags() & SVC_SM_MISSILE)
-	{
-		AActor* target = P_FindThingById(msg->target_netid());
-		if (target)
-			mo->target = target->ptr();
-		else
-			mo->target = AActor::AActorPtr();
-
-		mo->momx = msg->actor().mom().x();
-		mo->momy = msg->actor().mom().y();
-		mo->momz = msg->actor().mom().z();
-		mo->angle = msg->actor().angle();
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
@@ -801,16 +832,58 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	if (!mo)
 		return;
 
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
-	byte rndindex = msg->actor().rndindex();
-	fixed_t momx = msg->actor().mom().x();
-	fixed_t momy = msg->actor().mom().y();
-	fixed_t momz = msg->actor().mom().z();
-	angle_t angle = msg->actor().angle();
-	byte movedir = msg->actor().movedir();
-	int movecount = msg->actor().movecount();
+	uint32_t flags = msg->flags();
+
+	baseline_t update = mo->baseline;
+	if (flags & baseline_t::POSX)
+	{
+		update.pos.x = msg->actor().pos().x();
+	}
+	if (flags & baseline_t::POSY)
+	{
+		update.pos.y = msg->actor().pos().y();
+	}
+	if (flags & baseline_t::POSZ)
+	{
+		update.pos.z = msg->actor().pos().z();
+	}
+	if (flags & baseline_t::ANGLE)
+	{
+		update.angle = msg->actor().angle();
+	}
+	if (flags & baseline_t::MOVEDIR)
+	{
+		update.movedir = msg->actor().movedir();
+	}
+	if (flags & baseline_t::MOVECOUNT)
+	{
+		update.movecount = msg->actor().movecount();
+	}
+	if (flags & baseline_t::RNDINDEX)
+	{
+		update.rndindex = msg->actor().rndindex();
+	}
+	if (flags & baseline_t::TARGET)
+	{
+		update.targetid = msg->actor().targetid();
+	}
+	if (flags & baseline_t::TRACER)
+	{
+		update.tracerid = msg->actor().tracerid();
+	}
+
+	if (flags & baseline_t::MOMX)
+	{
+		update.mom.x = msg->actor().mom().x();
+	}
+	if (flags & baseline_t::MOMY)
+	{
+		update.mom.y = msg->actor().mom().y();
+	}
+	if (flags & baseline_t::MOMZ)
+	{
+		update.mom.z = msg->actor().mom().z();
+	}
 
 	if (mo->player)
 	{
@@ -819,64 +892,40 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
-		if (msg->flags() & SVC_UM_POS_RND)
-		{
-			newsnap.setX(x);
-			newsnap.setY(y);
-			newsnap.setZ(z);
-			mo->rndindex = rndindex;
-		}
-
-		if (msg->flags() & SVC_UM_MOM_ANGLE)
-		{
-			newsnap.setAngle(angle);
-			newsnap.setMomX(momx);
-			newsnap.setMomY(momy);
-			newsnap.setMomZ(momz);
-		}
+		newsnap.setX(update.pos.x);
+		newsnap.setY(update.pos.y);
+		newsnap.setZ(update.pos.z);
+		newsnap.setAngle(update.angle);
+		newsnap.setMomX(update.mom.x);
+		newsnap.setMomY(update.mom.y);
+		newsnap.setMomZ(update.mom.z);
 
 		mo->player->snapshots.addSnapshot(newsnap);
 	}
 	else
 	{
-		if (msg->flags() & SVC_UM_POS_RND)
-		{
-			CL_MoveThing(mo, x, y, z);
-			mo->rndindex = rndindex;
-		}
-
-		if (msg->flags() & SVC_UM_MOM_ANGLE)
-		{
-			mo->angle = angle;
-			mo->momx = momx;
-			mo->momy = momy;
-			mo->momz = momz;
-		}
+		CL_MoveThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		mo->angle = update.angle;
+		mo->momx = update.mom.x;
+		mo->momy = update.mom.y;
+		mo->momz = update.mom.z;
 	}
 
-	if (msg->flags() & SVC_UM_MOVEDIR)
-	{
-		mo->movedir = movedir;
-		mo->movecount = movecount;
-	}
+	mo->rndindex = update.rndindex;
+	mo->movedir = update.movedir;
+	mo->movecount = update.movecount;
 
-	if (msg->flags() & SVC_UM_TARGET)
-	{
-		AActor* target = P_FindThingById(msg->actor().targetid());
-		if (target)
-			mo->target = target->ptr();
-		else
-			mo->target = AActor::AActorPtr();
-	}
+	AActor* target = P_FindThingById(update.targetid);
+	if (target)
+		mo->target = target->ptr();
+	else
+		mo->target = AActor::AActorPtr();
 
-	if (msg->flags() & SVC_UM_TRACER)
-	{
-		AActor* tracer = P_FindThingById(msg->actor().tracerid());
-		if (tracer)
-			mo->tracer = tracer->ptr();
-		else
-			mo->tracer = AActor::AActorPtr();
-	}
+	AActor* tracer = P_FindThingById(update.tracerid);
+	if (tracer)
+		mo->tracer = tracer->ptr();
+	else
+		mo->tracer = AActor::AActorPtr();
 }
 
 //

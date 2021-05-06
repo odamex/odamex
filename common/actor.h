@@ -28,6 +28,7 @@
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
+#include "m_vectors.h"
 
 // We need the thinker_t stuff.
 #include "dthinker.h"
@@ -269,6 +270,32 @@ typedef enum
 #define OVERDRIVE 6
 #define MAXGEAR (OVERDRIVE+16)
 
+struct baseline_t
+{
+	v3fixed_t pos;
+	v3fixed_t mom;
+	angle_t angle;
+	uint32_t targetid;
+	uint32_t tracerid;
+	int movecount;
+	byte movedir;
+	byte rndindex;
+
+	// Flags are a varint, so order from most to least likely.
+	static const uint32_t POSX = BIT(0);
+	static const uint32_t POSY = BIT(1);
+	static const uint32_t POSZ = BIT(2);
+	static const uint32_t ANGLE = BIT(3);
+	static const uint32_t MOVEDIR = BIT(4);
+	static const uint32_t MOVECOUNT = BIT(5);
+	static const uint32_t RNDINDEX = BIT(6);
+	static const uint32_t TARGET = BIT(7);
+	static const uint32_t TRACER = BIT(8);
+	static const uint32_t MOMX = BIT(9);
+	static const uint32_t MOMY = BIT(10);
+	static const uint32_t MOMZ = BIT(11);
+};
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -460,6 +487,8 @@ public:
 
 	uint32_t		netid;          // every object has its own netid
 	short			tid;			// thing identifier
+	baseline_t		baseline;		// Baseline data for mobj sent to clients
+	bool			baseline_set;	// Have we set our baseline yet?
 
 private:
 	static const size_t TIDHashSize = 256;
