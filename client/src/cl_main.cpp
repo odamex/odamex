@@ -2099,6 +2099,8 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
+EXTERN_CVAR(cl_chatsounds)
+
 /**
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
@@ -2141,7 +2143,10 @@ void CL_Say()
 			       message);
 
 		if (show_messages && !filtermessage)
+		{	
+			if (cl_chatsounds == 1)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		}
 	}
 	else if (message_visibility == 1)
 	{
@@ -2150,7 +2155,7 @@ void CL_Say()
 		else
 			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
 
-		if (show_messages)
+		if (show_messages && cl_chatsounds)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }

@@ -539,7 +539,15 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
+static value_t ChatSndType[] = {
+	{ 0.0,			"Disabled" },
+	{ 1.0,			"Enabled" },
+	{ 2.0,			"Teamchat only" }
+};
+
 static float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
+
+EXTERN_CVAR(cl_chatsounds)
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -555,7 +563,9 @@ static menuitem_t SoundItems[] = {
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
 	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
 	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} },
+    { discrete  ,	"Chat sounds"						, {&cl_chatsounds},		{3.0},			{0.0},		{0.0},		{ChatSndType}},
+
  };
 
 menu_t SoundMenu = {
