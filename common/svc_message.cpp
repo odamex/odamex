@@ -433,7 +433,7 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
 	{
 		pos->set_z(mobj.z);
 	}
-	if (flags & baseline_t::POSZ)
+	if (flags & baseline_t::ANGLE)
 	{
 		act->set_angle(mobj.angle);
 	}
