@@ -29,6 +29,8 @@
 #include "cmdlib.h"
 #include "doomstat.h"
 
+EXTERN_CVAR(g_spawninv);
+
 extern const char* weaponnames[];
 
 /**
@@ -396,14 +398,20 @@ static void SetupDefaultInv()
 	::gDefaultInv.backpack = false;
 }
 
-CVAR_FUNC_IMPL(g_spawninv)
+/**
+ * @brief Setup the default and actual spawn inventory.
+ *
+ * @details This must be called after either the default or actual spawn
+ *          inventory changes.  DeHackEd can change the default spawninv.
+ */
+void G_SetupSpawnInventory()
 {
 	SetupDefaultInv();
 
 	spawnInventory_t inv;
 
 	// Split value into comma-separated tokens.
-	const std::string& str = var.str();
+	const std::string& str = ::g_spawninv.str();
 	StringTokens tok = TokenizeString(str, " ");
 	for (StringTokens::iterator it = tok.begin(); it != tok.end(); ++it)
 	{
@@ -530,6 +538,11 @@ CVAR_FUNC_IMPL(g_spawninv)
 
 	// Commit our new inventory settings.
 	::gSpawnInv = inv;
+}
+
+CVAR_FUNC_IMPL(g_spawninv)
+{
+	G_SetupSpawnInventory();
 }
 
 static void SpawninvHelp()
@@ -732,6 +745,11 @@ BEGIN_COMMAND(spawninv)
 		if (!other.empty())
 			Printf("Other: %s\n", JoinStrings(other, ", ").c_str());
 
+		return;
+	}
+	else if (!stricmp(argv[1], "default"))
+	{
+		::g_spawninv.ForceSet("default");
 		return;
 	}
 	else if (argc == 2)
