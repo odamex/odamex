@@ -115,8 +115,6 @@ static bool wiping_screen = false;
 
 char startmap[8];
 BOOL autostart;
-BOOL autorecord;
-std::string demorecordfile;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
@@ -890,20 +888,6 @@ void D_DoomMain()
 	// shorttics (quantize yaw like recording a vanilla demo)
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
-
-#if 0
-	// Record a vanilla demo
-	p = Args.CheckParm("-record");
-	if (p && p < Args.NumArgs() - 1)
-	{
-		autorecord = true;
-		autostart = true;
-		demorecordfile = Args.GetArg(p + 1);
-
-		// extended vanilla demo format
-		longtics = Args.CheckParm("-longtics");
-	}
-#endif
 
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm("-playdemo");
