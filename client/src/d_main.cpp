@@ -105,7 +105,6 @@ void D_DoomLoop (void);
 
 extern int testingmode;
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
@@ -892,6 +891,7 @@ void D_DoomMain()
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
 
+#if 0
 	// Record a vanilla demo
 	p = Args.CheckParm("-record");
 	if (p && p < Args.NumArgs() - 1)
@@ -903,6 +903,7 @@ void D_DoomMain()
 		// extended vanilla demo format
 		longtics = Args.CheckParm("-longtics");
 	}
+#endif
 
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm("-playdemo");
@@ -991,8 +992,6 @@ void D_DoomMain()
 		}
 
 		G_InitNew(startmap);
-		if (autorecord)
-			G_RecordDemo(startmap, demorecordfile);
 	}
 	else if (gamestate != GS_CONNECTING)
 	{

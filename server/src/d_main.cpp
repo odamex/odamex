@@ -93,7 +93,6 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 

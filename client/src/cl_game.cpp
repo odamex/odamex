@@ -189,7 +189,6 @@ CVAR_FUNC_IMPL(cl_mouselook)
 }
 
 char			demoname[256];
-BOOL 			demorecording;
 BOOL 			demoplayback;
 
 extern bool		simulated_connection;
@@ -324,10 +323,6 @@ END_COMMAND (turn180)
 weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
-	// FIXME : Find a way to properly write this to the vanilla demo file.
-	if (demorecording)
-		return;
-
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -336,10 +331,6 @@ END_COMMAND (weapnext)
 
 BEGIN_COMMAND (weapprev)
 {
-	// FIXME : Find a way to properly write this to the vanilla demo file.
-	if (demorecording)
-		return;
-
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
 	if (newweapon != wp_nochange)
 		Impulse = int(newweapon) + 50;
@@ -481,7 +472,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		cmd->buttons |= BT_USE;
 
 	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
-	if (Actions[ACTION_JUMP] && !demorecording)
+	if (Actions[ACTION_JUMP])
 		cmd->buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
@@ -940,8 +931,6 @@ void G_Ticker (void)
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
-	if (demorecording)
-		G_WriteDemoTiccmd(); // read in all player commands
 
 	if(netdemo.isPlaying())
 	{
@@ -1689,6 +1678,7 @@ void G_ReadDemoTiccmd()
 	}
 }
 
+#if 0
 //
 // G_WriteDemoTiccmd
 //
@@ -1827,7 +1817,7 @@ bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname)
 
     return true;
 }
-
+#endif
 
 //
 // G_PlayDemo
@@ -1845,6 +1835,7 @@ void G_DeferedPlayDemo (const char *name, bool bIsSingleDemo)
 	gameaction = ga_playdemo;
 }
 
+#if 0
 static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 {
 	if (argc > 2)
@@ -1876,18 +1867,7 @@ static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
 				ver == LMP_DOOM_1_9_1 ? "longtics" : "vanilla");
 	}
 }
-
-BEGIN_COMMAND(recordvanilla)
-{
-	G_RecordCommand(argc, argv, LMP_DOOM_1_9);
-}
-END_COMMAND(recordvanilla)
-
-BEGIN_COMMAND(recordlongtics)
-{
-	G_RecordCommand(argc, argv, LMP_DOOM_1_9_1);
-}
-END_COMMAND(recordlongtics)
+#endif
 
 BEGIN_COMMAND(stopdemo)
 {
@@ -2162,24 +2142,6 @@ void G_CleanupDemo()
 
 		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
 	}
-
-	if (demorecording)
-	{
-		if (recorddemo_fp) {
-			fputc(DEMOSTOP, recorddemo_fp);
-			fclose(recorddemo_fp);
-			recorddemo_fp = NULL;
-		}
-
-		cvar_t::C_RestoreCVars();		// [RH] Restore cvars demo might have changed
-
-		demorecording = false;
-		Printf("Demo %s recorded\n", demoname);
-
-		// reset longtics after demo recording
-		longtics = !(Args.CheckParm("-shorttics"));
-	}
-
 }
 
 
@@ -2244,11 +2206,6 @@ BOOL G_CheckDemoStatus (void)
 
 		D_AdvanceDemo ();
 		return true;
-	}
-
-	if (demorecording)
-	{
-		G_CleanupDemo();
 	}
 
 	return false;
