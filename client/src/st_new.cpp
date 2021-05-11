@@ -62,26 +62,26 @@ static const char* flagdroppatches[NUMTEAMS] = {"FLAGIC5B", "FLAGIC5R", "FLAGIC5
 static const char* livespatches[NUMTEAMS] = {"ODALIVEB", "ODALIVER", "ODALIVEG"};
 
 static int widest_num, num_height;
-static const patch_t* medi[ARRAY_LENGTH(::medipatches)];
-static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
+static lumpHandle_t medi[ARRAY_LENGTH(::medipatches)];
+static lumpHandle_t armors[ARRAY_LENGTH(::armorpatches)];
 static lumpHandle_t ammos[ARRAY_LENGTH(::ammopatches)];
 static lumpHandle_t bigammos[ARRAY_LENGTH(::bigammopatches)];
-static const patch_t* flagiconteam;
-static const patch_t* flagiconteamoffense;
-static const patch_t* flagiconteamdefense;
-static const patch_t* line_leftempty;
-static const patch_t* line_leftfull;
-static const patch_t* line_centerempty;
-static const patch_t* line_centerleft;
-static const patch_t* line_centerright;
-static const patch_t* line_centerfull;
-static const patch_t* line_rightempty;
-static const patch_t* line_rightfull;
-static const patch_t* FlagIconHome[NUMTEAMS];
-static const patch_t* FlagIconReturn[NUMTEAMS];
-static const patch_t* FlagIconTaken[NUMTEAMS];
-static const patch_t* FlagIconDropped[NUMTEAMS];
-static const patch_t* LivesIcon[NUMTEAMS];
+static lumpHandle_t flagiconteam;
+static lumpHandle_t flagiconteamoffense;
+static lumpHandle_t flagiconteamdefense;
+static lumpHandle_t line_leftempty;
+static lumpHandle_t line_leftfull;
+static lumpHandle_t line_centerempty;
+static lumpHandle_t line_centerleft;
+static lumpHandle_t line_centerright;
+static lumpHandle_t line_centerfull;
+static lumpHandle_t line_rightempty;
+static lumpHandle_t line_rightfull;
+static lumpHandle_t FlagIconHome[NUMTEAMS];
+static lumpHandle_t FlagIconReturn[NUMTEAMS];
+static lumpHandle_t FlagIconTaken[NUMTEAMS];
+static lumpHandle_t FlagIconDropped[NUMTEAMS];
+static lumpHandle_t LivesIcon[NUMTEAMS];
 
 static int		NameUp = -1;
 
@@ -173,10 +173,10 @@ void ST_initNew()
 	}
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::medipatches); i++)
-		CacheHUDSprite(&::medi[i], ::medipatches[i]);
+		::medi[i] = W_CachePatchHandle(::medipatches[i], PU_STATIC, ns_sprites);
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::armorpatches); i++)
-		CacheHUDSprite(&::armors[i], ::armorpatches[i]);
+		::armors[i] = W_CachePatchHandle(::armorpatches[i], PU_STATIC, ns_sprites);
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::ammopatches); i++)
 	{
@@ -186,11 +186,11 @@ void ST_initNew()
 
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		CacheHUDPatch(&::FlagIconHome[i], ::flaghomepatches[i]);
-		CacheHUDPatch(&::FlagIconTaken[i], ::flagtakenpatches[i]);
-		CacheHUDPatch(&::FlagIconReturn[i], ::flagreturnpatches[i]);
-		CacheHUDPatch(&::FlagIconDropped[i], ::flagdroppatches[i]);
-		CacheHUDPatch(&::LivesIcon[i], ::livespatches[i]);
+		::FlagIconHome[i] = W_CachePatchHandle(::flaghomepatches[i], PU_STATIC);
+		::FlagIconTaken[i] = W_CachePatchHandle(::flagtakenpatches[i], PU_STATIC);
+		::FlagIconReturn[i] = W_CachePatchHandle(::flagreturnpatches[i], PU_STATIC);
+		::FlagIconDropped[i] = W_CachePatchHandle(::flagdroppatches[i], PU_STATIC);
+		::LivesIcon[i] = W_CachePatchHandle(::livespatches[i], PU_STATIC);
 	}
 
 	::widest_num = widest;
@@ -199,18 +199,18 @@ void ST_initNew()
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
-	CacheHUDPatch(&::flagiconteam, "FLAGIT");
-	CacheHUDPatch(&::flagiconteamoffense, "FLAGITO");
-	CacheHUDPatch(&::flagiconteamdefense, "FLAGITD");
+	::flagiconteam = W_CachePatchHandle("FLAGIT", PU_STATIC);
+	::flagiconteamoffense = W_CachePatchHandle("FLAGITO", PU_STATIC);
+	::flagiconteamdefense = W_CachePatchHandle("FLAGITD", PU_STATIC);
 
-	CacheHUDPatch(&::line_leftempty, "ODABARLE");
-	CacheHUDPatch(&::line_leftfull, "ODABARLF");
-	CacheHUDPatch(&::line_centerempty, "ODABARCE");
-	CacheHUDPatch(&::line_centerleft, "ODABARCL");
-	CacheHUDPatch(&::line_centerright, "ODABARCR");
-	CacheHUDPatch(&::line_centerfull, "ODABARCF");
-	CacheHUDPatch(&::line_rightempty, "ODABARRE");
-	CacheHUDPatch(&::line_rightfull, "ODABARRF");
+	::line_leftempty = W_CachePatchHandle("ODABARLE", PU_STATIC);
+	::line_leftfull = W_CachePatchHandle("ODABARLF", PU_STATIC);
+	::line_centerempty = W_CachePatchHandle("ODABARCE", PU_STATIC);
+	::line_centerleft = W_CachePatchHandle("ODABARCL", PU_STATIC);
+	::line_centerright = W_CachePatchHandle("ODABARCR", PU_STATIC);
+	::line_centerfull = W_CachePatchHandle("ODABARCF", PU_STATIC);
+	::line_rightempty = W_CachePatchHandle("ODABARRE", PU_STATIC);
+	::line_rightfull = W_CachePatchHandle("ODABARRF", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -322,45 +322,45 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 		if (!reverse) {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == 0) {
-					linepatch = line_leftempty;
+					linepatch = W_ResolvePatchHandle(line_leftempty);
 				} else {
-					linepatch = line_leftfull;
+					linepatch = W_ResolvePatchHandle(line_leftfull);
 				}
 			} else if (i == bar_width - 1 && !cutright) {
 				if (bar_filled == bar_width) {
-					linepatch = line_rightfull;
+					linepatch = W_ResolvePatchHandle(line_rightfull);
 				} else {
-					linepatch = line_rightempty;
+					linepatch = W_ResolvePatchHandle(line_rightempty);
 				}
 			} else {
 				if (i == bar_filled - 1) {
-					linepatch = line_centerleft;
+					linepatch = W_ResolvePatchHandle(line_centerleft);
 				} else if (i < bar_filled) {
-					linepatch = line_centerfull;
+					linepatch = W_ResolvePatchHandle(line_centerfull);
 				} else {
-					linepatch = line_centerempty;
+					linepatch = W_ResolvePatchHandle(line_centerempty);
 				}
 			}
 		} else {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == bar_width) {
-					linepatch = line_leftfull;
+					linepatch = W_ResolvePatchHandle(line_leftfull);
 				} else {
-					linepatch = line_leftempty;
+					linepatch = W_ResolvePatchHandle(line_leftempty);
 				}
 			} else if (i == bar_width - 1 && !cutright) {
 				if (bar_filled == 0) {
-					linepatch = line_rightempty;
+					linepatch = W_ResolvePatchHandle(line_rightempty);
 				} else {
-					linepatch = line_rightfull;
+					linepatch = W_ResolvePatchHandle(line_rightfull);
 				}
 			} else {
 				if (i == (bar_width - bar_filled)) {
-					linepatch = line_centerright;
+					linepatch = W_ResolvePatchHandle(line_centerright);
 				} else if (i >= (bar_width - bar_filled)) {
-					linepatch = line_centerfull;
+					linepatch = W_ResolvePatchHandle(line_centerfull);
 				} else {
-					linepatch = line_centerempty;
+					linepatch = W_ResolvePatchHandle(line_centerempty);
 				}
 			}
 		}
@@ -524,23 +524,23 @@ static void drawGametype()
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
 
-			const patch_t* drawPatch = ::FlagIconTaken[i];
+			const patch_t* drawPatch = W_ResolvePatchHandle(::FlagIconTaken[i]);
 
 			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
 			{
 				switch (teamInfo->FlagData.state)
 				{
 				case flag_home:
-					drawPatch = ::FlagIconHome[i];
+					drawPatch = W_ResolvePatchHandle(::FlagIconHome[i]);
 					break;
 				case flag_carried:
 					if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
-						drawPatch = ::FlagIconReturn[i];
+						drawPatch = W_ResolvePatchHandle(::FlagIconReturn[i]);
 					else
-						drawPatch = ::FlagIconTaken[i];
+						drawPatch = W_ResolvePatchHandle(::FlagIconTaken[i]);
 					break;
 				case flag_dropped:
-					drawPatch = ::FlagIconDropped[i];
+					drawPatch = W_ResolvePatchHandle(::FlagIconDropped[i]);
 					break;
 				default:
 					break;
@@ -555,14 +555,14 @@ static void drawGametype()
 
 			if (plyr->userinfo.team == i)
 			{
-				const patch_t* itpatch = ::flagiconteam;
+				const patch_t* itpatch = W_ResolvePatchHandle(::flagiconteam);
 				if (G_IsSidesGame())
 				{
 					// Sides games show offense/defense.
 					if (G_IsDefendingTeam(consoleplayer().userinfo.team))
-						itpatch = ::flagiconteamdefense;
+						itpatch = W_ResolvePatchHandle(::flagiconteamdefense);
 					else
-						itpatch = ::flagiconteamoffense;
+						itpatch = W_ResolvePatchHandle(::flagiconteamoffense);
 				}
 				hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 				               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
@@ -586,7 +586,8 @@ static void drawGametype()
 		{
 			patchPosY -= LIVES_HEIGHT;
 			hud::DrawPatch(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
-			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, ::LivesIcon[i]);
+			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
+			               W_ResolvePatchHandle(::LivesIcon[i]));
 
 			StrFormat(buffer, "%d", teamInfo->LivesPool());
 			int color = (i % 2) ? CR_GOLD : CR_GREY;
@@ -647,9 +648,9 @@ void OdamexHUD() {
 
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
-		const patch_t *current_armor = armors[1];
+		const patch_t* current_armor = W_ResolvePatchHandle(armors[1]);
 		if (plyr->armortype == 1) {
-			current_armor = armors[0];
+			current_armor = W_ResolvePatchHandle(armors[0]);
 		}
 
 		if (current_armor) {
@@ -1051,13 +1052,13 @@ void ZDoomHUD() {
 
 	// Draw health
 	{
-		const patch_t *curr_powerup = medi[0];
+		const patch_t* curr_powerup = W_ResolvePatchHandle(medi[0]);
 		int xPos = 20;
 		int yPos = 2;
 
 		if (plyr->powers[pw_strength])
 		{
-			curr_powerup = medi[1];
+			curr_powerup = W_ResolvePatchHandle(medi[1]);
 			xPos -= 1;	// the x position of the Berzerk is 1 pixel to the right compared to the Medikit.
 			yPos += 4;	// the y position of the Berzerk is slightly lowered by 4. So make it the same y position as the medikit.
 		}
@@ -1073,9 +1074,9 @@ void ZDoomHUD() {
 	// Draw armor
 	if (plyr->armortype && plyr->armorpoints)
 	{
-		const patch_t *current_armor = armors[1];
+		const patch_t* current_armor = W_ResolvePatchHandle(armors[1]);
 		if(plyr->armortype == 1)
-			current_armor = armors[0];
+			current_armor = W_ResolvePatchHandle(armors[0]);
 
 		if (current_armor)
 		{
@@ -1084,8 +1085,9 @@ void ZDoomHUD() {
 			else
 				screen->DrawLucentPatch (current_armor, 20, y - 4);
 		}
-		ST_DrawNum (40*xscale, y - (armors[0]->height()+3)*yscale,
-					 screen, plyr->armorpoints);
+		ST_DrawNum(40 * xscale,
+		           y - (W_ResolvePatchHandle(armors[0])->height() + 3) * yscale, screen,
+		           plyr->armorpoints);
 	}
 
 	// Draw ammo
