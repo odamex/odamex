@@ -63,6 +63,8 @@
 lumpinfo_t*		lumpinfo;
 size_t			numlumps;
 size_t			handleGen; // incremented by numlumps on W_Close
+size_t			HANDLE_GEN_MASK = BIT_MASK(0, 2);
+size_t			HANDLE_GEN_BITS = 3;
 
 void**			lumpcache;
 
@@ -517,7 +519,8 @@ void W_InitMultipleFiles(const OResFiles& files)
 lumpHandle_t W_LumpToHandle(const unsigned lump)
 {
 	lumpHandle_t rvo;
-	rvo.id = ::handleGen + lump;
+	size_t id = static_cast<size_t>(lump) << HANDLE_GEN_BITS;
+	rvo.id = id | ::handleGen;
 	return rvo;
 }
 
@@ -526,8 +529,13 @@ lumpHandle_t W_LumpToHandle(const unsigned lump)
  */
 int W_HandleToLump(const lumpHandle_t handle)
 {
-	const int lump = handle.id - ::handleGen;
-	if (lump < 0 || lump >= ::numlumps)
+	size_t gen = handle.id & HANDLE_GEN_MASK;
+	if (gen != ::handleGen)
+	{
+		return -1;
+	}
+	const unsigned lump = handle.id >> HANDLE_GEN_BITS;
+	if (lump >= ::numlumps)
 	{
 		return -1;
 	}
@@ -854,7 +862,7 @@ void W_Close ()
 		lump_p++;
 	}
 
-	::handleGen += numlumps;
+	::handleGen = (::handleGen + 1) & HANDLE_GEN_MASK;
 }
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")
