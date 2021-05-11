@@ -62,9 +62,15 @@
 // Location of each lump on disk.
 lumpinfo_t*		lumpinfo;
 size_t			numlumps;
-size_t			handleGen; // incremented by numlumps on W_Close
-size_t			HANDLE_GEN_MASK = BIT_MASK(0, 2);
-size_t			HANDLE_GEN_BITS = 3;
+
+// Generation of handle.
+// Takes up the first three bits of the handle id.  Starts at 1, increments
+// every time we unload the current set of WAD files, and eventually wraps
+// around from 7 to 1.  We skip 0 so a handle id of 0 can be considered NULL
+// and part of no generation.
+size_t handleGen = 1;
+size_t HANDLE_GEN_MASK = BIT_MASK(0, 2);
+size_t HANDLE_GEN_BITS = 3;
 
 void**			lumpcache;
 
@@ -863,6 +869,11 @@ void W_Close ()
 	}
 
 	::handleGen = (::handleGen + 1) & HANDLE_GEN_MASK;
+	if (::handleGen == 0)
+	{
+		// 0 is reserved for the NULL handle.
+		::handleGen += 1;
+	}
 }
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")

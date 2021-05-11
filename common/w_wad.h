@@ -91,6 +91,21 @@ typedef enum {
 struct lumpHandle_t
 {
 	size_t id;
+	lumpHandle_t() : id(0)
+	{
+	}
+	void clear()
+	{
+		id = 0;
+	}
+	bool empty() const
+	{
+		return id == 0;
+	}
+	bool operator==(const lumpHandle_t& other)
+	{
+		return id == other.id;
+	}
 };
 
 extern	void**		lumpcache;
