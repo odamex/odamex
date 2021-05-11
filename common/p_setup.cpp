@@ -1768,7 +1768,7 @@ void P_SetupLevel (char *lumpname, int position)
 	P_GroupLines ();
 
 	// [SL] don't move seg vertices if compatibility is cruical
-	if (!demoplayback && !demorecording)
+	if (!demoplayback)
 		P_RemoveSlimeTrails();
 
 	P_SetupSlopes();

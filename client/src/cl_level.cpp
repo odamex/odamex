@@ -452,7 +452,7 @@ void G_DoCompleted (void)
 		{
 			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
 			{
-				if (!multiplayer || demoplayback || demorecording)
+				if (!multiplayer || demoplayback)
 				{
 					// Normal progression
 					G_WorldDone();

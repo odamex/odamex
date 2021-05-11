@@ -105,7 +105,6 @@ void D_DoomLoop (void);
 
 extern int testingmode;
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
@@ -116,8 +115,6 @@ static bool wiping_screen = false;
 
 char startmap[8];
 BOOL autostart;
-BOOL autorecord;
-std::string demorecordfile;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
@@ -891,18 +888,6 @@ void D_DoomMain()
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
 
-	// Record a vanilla demo
-	p = Args.CheckParm("-record");
-	if (p && p < Args.NumArgs() - 1)
-	{
-		autorecord = true;
-		autostart = true;
-		demorecordfile = Args.GetArg(p + 1);
-
-		// extended vanilla demo format
-		longtics = Args.CheckParm("-longtics");
-	}
-
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm("-playdemo");
 	// Hack to check for +playdemo command, since if you just add it normally
@@ -990,8 +975,6 @@ void D_DoomMain()
 		}
 
 		G_InitNew(startmap);
-		if (autorecord)
-			G_RecordDemo(startmap, demorecordfile);
 	}
 	else if (gamestate != GS_CONNECTING)
 	{
