@@ -64,8 +64,8 @@ static const char* livespatches[NUMTEAMS] = {"ODALIVEB", "ODALIVER", "ODALIVEG"}
 static int widest_num, num_height;
 static const patch_t* medi[ARRAY_LENGTH(::medipatches)];
 static const patch_t* armors[ARRAY_LENGTH(::armorpatches)];
-static const patch_t* ammos[ARRAY_LENGTH(::ammopatches)];
-static const patch_t* bigammos[ARRAY_LENGTH(::bigammopatches)];
+static lumpHandle_t ammos[ARRAY_LENGTH(::ammopatches)];
+static lumpHandle_t bigammos[ARRAY_LENGTH(::bigammopatches)];
 static const patch_t* flagiconteam;
 static const patch_t* flagiconteamoffense;
 static const patch_t* flagiconteamdefense;
@@ -180,8 +180,8 @@ void ST_initNew()
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::ammopatches); i++)
 	{
-		CacheHUDSprite(&::ammos[i], ::ammopatches[i]);
-		CacheHUDSprite(&::bigammos[i], ::bigammopatches[i]);
+		::ammos[i] = W_CachePatchHandle(::ammopatches[i], PU_STATIC, ns_sprites);
+		::bigammos[i] = W_CachePatchHandle(::bigammopatches[i], PU_STATIC, ns_sprites);
 	}
 
 	for (size_t i = 0; i < NUMTEAMS; i++)
@@ -688,9 +688,9 @@ void OdamexHUD() {
 		const patch_t *ammopatch;
 		// Use big ammo if the player has a backpack.
 		if (plyr->backpack) {
-			ammopatch = bigammos[ammotype];
+			ammopatch = W_ResolvePatchHandle(bigammos[ammotype]);
 		} else {
-			ammopatch = ammos[ammotype];
+			ammopatch = W_ResolvePatchHandle(ammos[ammotype]);
 		}
 
 		// Draw ammo.  We have a 16x16 box to the right of the ammo where the
@@ -1091,7 +1091,8 @@ void ZDoomHUD() {
 	// Draw ammo
 	if (ammotype < NUMAMMO)
 	{
-		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammotype];
+		const patch_t* ammopatch =
+		    W_ResolvePatchHandle(ammos[weaponinfo[plyr->readyweapon].ammotype]);
 
 		if (hud_scale)
 			screen->DrawLucentPatchCleanNoMove(ammopatch,

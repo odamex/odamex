@@ -88,12 +88,19 @@ typedef enum {
 	ns_colormaps,
 } namespace_t;
 
+struct lumpHandle_t
+{
+	size_t id;
+};
+
 extern	void**		lumpcache;
 extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
 std::string W_MD5(std::string filename);
 void W_InitMultipleFiles(const OResFiles& filenames);
+lumpHandle_t W_LumpToHandle(const unsigned lump);
+int W_HandleToLump(const lumpHandle_t handle);
 
 int		W_CheckNumForName (const char *name, int ns = ns_global);
 int		W_GetNumForName (const char *name, int ns = ns_global);
@@ -106,6 +113,9 @@ void *W_CacheLumpNum (unsigned lump, int tag);
 void *W_CacheLumpName (const char *name, int tag);
 patch_t* W_CachePatch (unsigned lump, int tag = PU_CACHE);
 patch_t* W_CachePatch (const char *name, int tag = PU_CACHE);
+lumpHandle_t W_CachePatchHandle(const char* name, const int tag = PU_CACHE,
+                                int ns = ns_global);
+patch_t* W_ResolvePatchHandle(const lumpHandle_t lump);
 
 void	W_Profile (const char *fname);
 

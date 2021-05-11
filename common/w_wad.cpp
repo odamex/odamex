@@ -62,6 +62,7 @@
 // Location of each lump on disk.
 lumpinfo_t*		lumpinfo;
 size_t			numlumps;
+size_t			handleGen; // incremented by numlumps on W_Close
 
 void**			lumpcache;
 
@@ -510,6 +511,29 @@ void W_InitMultipleFiles(const OResFiles& files)
 	stdisk_lumpnum = W_GetNumForName("STDISK");
 }
 
+/**
+ * @brief Return a handle for a given lump.
+ */
+lumpHandle_t W_LumpToHandle(const unsigned lump)
+{
+	lumpHandle_t rvo;
+	rvo.id = ::handleGen + lump;
+	return rvo;
+}
+
+/**
+ * @brief Return a lump for a given handle, or -1 if the handle is invalid.
+ */
+int W_HandleToLump(const lumpHandle_t handle)
+{
+	const int lump = handle.id - ::handleGen;
+	if (lump < 0 || lump >= ::numlumps)
+	{
+		return -1;
+	}
+	return lump;
+}
+
 //
 // W_CheckNumForName
 // Returns -1 if name not found.
@@ -758,6 +782,29 @@ patch_t* W_CachePatch(const char* name, int tag)
 	// denis - todo - would be good to replace non-existant patches with a default '404' patch
 }
 
+lumpHandle_t W_CachePatchHandle(const char* name, const int tag, const int ns)
+{
+	int lumpNum = W_GetNumForName(name, ns);
+	W_CachePatch(lumpNum, tag);
+	return W_LumpToHandle(lumpNum);
+}
+
+/**
+ * @brief Resolve a handle into a patch_t, or an empty patch if the
+ *        lump was missing or from a previous generation.
+ */
+patch_t* W_ResolvePatchHandle(const lumpHandle_t lump)
+{
+	int lumpnum = W_HandleToLump(lump);
+	if (lumpnum == -1)
+	{
+		static patch_t empty;
+		memset(&empty, 0, sizeof(patch_t));
+		return &empty;
+	}
+	return static_cast<patch_t*>(lumpcache[lumpnum]);
+}
+
 //
 // W_FindLump
 //
@@ -806,6 +853,8 @@ void W_Close ()
 		}
 		lump_p++;
 	}
+
+	::handleGen += numlumps;
 }
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")
