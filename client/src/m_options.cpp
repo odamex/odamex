@@ -2003,7 +2003,7 @@ void M_OptResponder (event_t *ev)
 			int numvals;
 
 			if (item->type == svdiscrete &&
-				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
 			numvals = (int)item->b.leftval;
@@ -2131,7 +2131,7 @@ void M_OptResponder (event_t *ev)
 			int numvals;
 
 			if (item->type == svdiscrete &&
-				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
 			numvals = (int)item->b.leftval;
@@ -2241,7 +2241,7 @@ void M_OptResponder (event_t *ev)
 				int numvals;
 
 				if (item->type == svdiscrete &&
-				    (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				    (multiplayer || demoplayback || netdemo.isPlaying()))
 					return;
 
 				numvals = (int)item->b.leftval;
