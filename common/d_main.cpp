@@ -51,6 +51,7 @@
 #include "c_console.h"
 #include "i_system.h"
 #include "g_game.h"
+#include "g_spawninv.h"
 #include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"
@@ -439,6 +440,9 @@ void D_LoadResolvedPatches()
 		    PRINT_WARNING,
 		    "Warning: chex.deh not loaded, experience may differ from the original!\n");
 	}
+
+	// Re-apply spawninv settings with our new DEH settings.
+	G_SetupSpawnInventory();
 }
 
 
