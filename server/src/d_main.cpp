@@ -153,10 +153,9 @@ void D_Init()
 	srand(time(NULL));
 
 	// start the Zone memory manager
-	bool use_zone = !Args.CheckParm("-nozone");
-	Z_Init(use_zone);
+	Z_Init();
 	if (first_time)
-		Printf(PRINT_HIGH, "Z_Init: Heapsize: %" PRIuSIZE " megabytes\n", got_heapsize);
+		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Load palette and set up colormaps
 	V_InitPalette("PLAYPAL");

@@ -606,7 +606,6 @@ void G_DoLoadLevel (int position)
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
-	Z_CheckHeap ();
 
 	// clear cmd building stuff // denis - todo - could we get rid of this?
 	Impulse = 0;
