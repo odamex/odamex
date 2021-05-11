@@ -130,6 +130,9 @@
 #ifndef MAXINT
 	#define MAXINT			(0x7fffffff)
 #endif
+#ifndef MAXUINT
+	#define MAXUINT			(0xffffffff)
+#endif
 
 #ifndef MAXLONG
 	#ifndef ALPHA

@@ -1704,7 +1704,7 @@ void P_SetupLevel (char *lumpname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
-	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.
@@ -1768,7 +1768,7 @@ void P_SetupLevel (char *lumpname, int position)
 	P_GroupLines ();
 
 	// [SL] don't move seg vertices if compatibility is cruical
-	if (!demoplayback && !demorecording)
+	if (!demoplayback)
 		P_RemoveSlimeTrails();
 
 	P_SetupSlopes();
