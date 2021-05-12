@@ -317,7 +317,7 @@ static fixed_t scale_mtof = (fixed_t)INITSCALEMTOF;
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 static fixed_t scale_ftom;
 
-static patch_t *marknums[10]; // numbers used for marking by the automap
+static lumpHandle_t marknums[10]; // numbers used for marking by the automap
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0; // next point to be assigned
 
@@ -670,7 +670,7 @@ void AM_loadPics(void)
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatch (namebuf, PU_STATIC);
+		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 }
 
@@ -680,11 +680,7 @@ void AM_unloadPics(void)
 
 	for (i = 0; i < 10; i++)
 	{
-		if (marknums[i])
-		{
-			Z_ChangeTag (marknums[i], PU_CACHE);
-			marknums[i] = NULL;
-		}
+		marknums[i].clear();
 	}
 }
 
@@ -1620,7 +1616,9 @@ void AM_drawMarks (void)
 			fy = CYMTOF(pt.y) - 3;
 
 			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-				FB->DrawPatchCleanNoMove (marknums[i], fx, fy);
+			{
+				FB->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
+			}
 		}
 	}
 }
