@@ -85,12 +85,12 @@ static lumpHandle_t LivesIcon[NUMTEAMS];
 
 static int		NameUp = -1;
 
-extern patch_t	*sttminus;
-extern patch_t	*tallnum[10];
-extern patch_t	*faces[];
-extern int		st_faceindex;
-extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
-extern byte		*Ranges;
+extern lumpHandle_t sttminus;
+extern lumpHandle_t tallnum[10];
+extern lumpHandle_t faces[];
+extern int st_faceindex;
+extern lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
+extern byte* Ranges;
 
 extern NetDemo netdemo;
 
@@ -116,46 +116,9 @@ EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
 
-/**
- * @brief Caches a patch, while also adding to a freelist, where it can be
- *        cleaned up in one fell swoop. 
- * 
- * @param patch Destination pointer to write to.
- * @param lump Lump name to cache.
- */
-static void CacheHUDPatch(const patch_t** patch, const char* lump)
-{
-	*patch = W_CachePatch(lump, PU_STATIC);
-	::freelist.push_back(patch);
-}
-
-/**
- * @brief Cache a patch from a sprite, which needs a special lookup.
- * 
- * @param patch Destination pointer to write to.
- * @param lump Lump name to cache.
- */
-static void CacheHUDSprite(const patch_t** patch, const char* lump)
-{
-	*patch = W_CachePatch(W_GetNumForName(lump, ns_sprites), PU_STATIC);
-	::freelist.push_back(patch);
-}
-
-/**
- * @brief In addition to unloading our patches we need to ensure the pointers
- *        are NULL, so we don't dereference a stale patch on WAD change by
- *        accident.
- */
 void ST_unloadNew()
 {
-	PathFreeList::iterator it = ::freelist.begin();
-	for (; it != ::freelist.end(); ++it)
-	{
-		if (**it != NULL)
-			Z_ChangeTag(**it, PU_CACHE);
-		**it = NULL;
-	}
-	::freelist.clear();
+	// Do nothing - let our handles stale on their own.
 }
 
 void ST_initNew()
@@ -168,8 +131,9 @@ void ST_initNew()
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::tallnum); i++)
 	{
-		if (::tallnum[i]->width() > widest)
-			widest = ::tallnum[i]->width();
+		patch_t* talli = W_ResolvePatchHandle(::tallnum[i]);
+		if (talli->width() > widest)
+			widest = talli->width();
 	}
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::medipatches); i++)
@@ -194,7 +158,7 @@ void ST_initNew()
 	}
 
 	::widest_num = widest;
-	::num_height = ::tallnum[0]->height();
+	::num_height = W_ResolvePatchHandle(::tallnum[0])->height();
 
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
@@ -216,18 +180,19 @@ void ST_initNew()
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
+	patch_t* minus = W_ResolvePatchHandle(sttminus);
 
 	if (num < 0)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentPatchCleanNoMove (sttminus, x, y);
-			x += CleanXfac * sttminus->width();
+			scrn->DrawLucentPatchCleanNoMove(minus, x, y);
+			x += CleanXfac * minus->width();
 		}
 		else
 		{
-			scrn->DrawLucentPatch (sttminus, x, y);
-			x += sttminus->width();
+			scrn->DrawLucentPatch(minus, x, y);
+			x += minus->width();
 		}
 		num = -num;
 	}
@@ -239,15 +204,16 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (*d >= '0' && *d <= '9')
 		{
+			patch_t* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
 			if (hud_scale)
 			{
-				scrn->DrawLucentPatchCleanNoMove (tallnum[*d - '0'], x, y);
-				x += CleanXfac * tallnum[*d - '0']->width();
+				scrn->DrawLucentPatchCleanNoMove(numpatch, x, y);
+				x += CleanXfac * numpatch->width();
 			}
 			else
 			{
-				scrn->DrawLucentPatch (tallnum[*d - '0'], x, y);
-				x += tallnum[*d - '0']->width();
+				scrn->DrawLucentPatch(numpatch, x, y);
+				x += numpatch->width();
 			}
 		}
 		d++;
@@ -260,11 +226,11 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	int xscale = hud_scale ? CleanXfac : 1;
 
 	do {
-		x -= tallnum[d%10]->width() * xscale;
+		x -= W_ResolvePatchHandle(tallnum[d % 10])->width() * xscale;
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= sttminus->width() * xscale;
+		x -= W_ResolvePatchHandle(sttminus)->width() * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -665,10 +631,9 @@ void OdamexHUD() {
 
 	// Draw Doomguy.  Vertically scaled to an area two pixels above and
 	// below the health number, and horizontally centered below the armor.
-	hud::DrawPatchScaled(48 + 2 + 10, 2, 20, 20, hud_scale,
-	                     hud::X_LEFT, hud::Y_BOTTOM,
+	hud::DrawPatchScaled(48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 	                     hud::X_CENTER, hud::Y_BOTTOM,
-	                     faces[st_faceindex]);
+	                     W_ResolvePatchHandle(faces[st_faceindex]));
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
 
 	if (g_lives)
@@ -758,10 +723,9 @@ void OdamexHUD() {
 	if (sv_gametype == GM_COOP) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(4 + (i * 10), 24, hud_scale,
+				hud::DrawPatch(4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
-				               hud::X_RIGHT, hud::Y_BOTTOM,
-				               keys[i]);
+				               W_ResolvePatchHandle(keys[i]));
 			}
 		}
 	}
@@ -1121,10 +1085,17 @@ void ZDoomHUD() {
 		{
 			if (plyr->cards[i])
 			{
+				patch_t* keysi = W_ResolvePatchHandle(keys[i]);
+
 				if (hud_scale)
-					screen->DrawLucentPatchCleanNoMove(keys[i], I_GetSurfaceWidth() - 10*CleanXfac, y);
+				{
+					screen->DrawLucentPatchCleanNoMove(
+					    keysi, I_GetSurfaceWidth() - 10 * CleanXfac, y);
+				}
 				else
-					screen->DrawLucentPatch(keys[i], I_GetSurfaceWidth() - 10, y);
+				{
+					screen->DrawLucentPatch(keysi, I_GetSurfaceWidth() - 10, y);
+				}
 
 				y += (8 + (i < 3 ? 0 : 2)) * yscale;
 			}

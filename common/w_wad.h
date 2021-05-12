@@ -128,6 +128,7 @@ void *W_CacheLumpNum (unsigned lump, int tag);
 void *W_CacheLumpName (const char *name, int tag);
 patch_t* W_CachePatch (unsigned lump, int tag = PU_CACHE);
 patch_t* W_CachePatch (const char *name, int tag = PU_CACHE);
+lumpHandle_t W_CachePatchHandle(const int lumpNum, const int tag);
 lumpHandle_t W_CachePatchHandle(const char* name, const int tag = PU_CACHE,
                                 int ns = ns_global);
 patch_t* W_ResolvePatchHandle(const lumpHandle_t lump);

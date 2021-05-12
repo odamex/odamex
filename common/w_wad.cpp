@@ -69,8 +69,8 @@ size_t			numlumps;
 // around from 7 to 1.  We skip 0 so a handle id of 0 can be considered NULL
 // and part of no generation.
 size_t handleGen = 1;
-size_t HANDLE_GEN_MASK = BIT_MASK(0, 2);
-size_t HANDLE_GEN_BITS = 3;
+const size_t HANDLE_GEN_MASK = BIT_MASK(0, 2);
+const size_t HANDLE_GEN_BITS = 3;
 
 void**			lumpcache;
 
@@ -796,11 +796,21 @@ patch_t* W_CachePatch(const char* name, int tag)
 	// denis - todo - would be good to replace non-existant patches with a default '404' patch
 }
 
-lumpHandle_t W_CachePatchHandle(const char* name, const int tag, const int ns)
+/**
+ * @brief Cache a patch by lump number and return a handle to it.
+ */
+lumpHandle_t W_CachePatchHandle(const int lumpNum, const int tag)
 {
-	int lumpNum = W_GetNumForName(name, ns);
 	W_CachePatch(lumpNum, tag);
 	return W_LumpToHandle(lumpNum);
+}
+
+/**
+ * @brief Cache a patch by name and namespace and return a handle to it.
+ */
+lumpHandle_t W_CachePatchHandle(const char* name, const int tag, const int ns)
+{
+	return W_CachePatchHandle(W_GetNumForName(name, ns), tag);
 }
 
 /**
