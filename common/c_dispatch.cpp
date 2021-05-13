@@ -990,7 +990,7 @@ BEGIN_COMMAND(logfile)
 	}
 
 	::LOG_FILE = (argc > 1 ? argv[1] : default_logname);
-	::LOG.open(::LOG_FILE, std::ios::app);
+	::LOG.open(::LOG_FILE.c_str(), std::ios::app);
 
 	if (!::LOG.is_open())
 	{
