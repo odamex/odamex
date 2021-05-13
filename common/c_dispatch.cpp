@@ -967,38 +967,46 @@ BEGIN_COMMAND (dumpactors)
 }
 END_COMMAND (dumpactors)
 
-BEGIN_COMMAND (logfile)
+BEGIN_COMMAND(logfile)
 {
 	time_t rawtime;
-	struct tm * timeinfo;
-	const char* DEFAULT_LOG_FILE = (serverside ? "odasrv.log" : "odamex.log");
+	struct tm* timeinfo;
+	const std::string default_logname =
+	    M_GetUserFileName(::serverside ? "odasrv.log" : "odamex.log");
 
-	if (LOG.is_open()) {
-		if ((argc == 1 && LOG_FILE == DEFAULT_LOG_FILE) || (argc > 1 && LOG_FILE == argv[1])) {
-			Printf (PRINT_HIGH, "Log file %s already in use\n", LOG_FILE);
+	if (::LOG.is_open())
+	{
+		if ((argc == 1 && ::LOG_FILE == default_logname) ||
+		    (argc > 1 && ::LOG_FILE == argv[1]))
+		{
+			Printf("Log file %s already in use\n", ::LOG_FILE.c_str());
 			return;
 		}
 
-    	time (&rawtime);
-    	timeinfo = localtime (&rawtime);
-    	Printf (PRINT_HIGH, "Log file %s closed on %s\n", LOG_FILE, asctime (timeinfo));
-		LOG.close();
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		Printf("Log file %s closed on %s\n", ::LOG_FILE.c_str(), asctime(timeinfo));
+		::LOG.close();
 	}
 
-	LOG_FILE = (argc > 1 ? argv[1] : DEFAULT_LOG_FILE);
-	LOG.open (LOG_FILE, std::ios::app);
+	::LOG_FILE = (argc > 1 ? argv[1] : default_logname);
+	::LOG.open(::LOG_FILE, std::ios::app);
 
-	if (!LOG.is_open())
-		Printf (PRINT_HIGH, "Unable to create logfile: %s\n", LOG_FILE);
-	else {
-		time (&rawtime);
-    	timeinfo = localtime (&rawtime);
-    	LOG.flush();
-    	LOG << std::endl;
-		Printf (PRINT_HIGH, "Logging in file %s started %s\n", LOG_FILE, asctime (timeinfo));
-    }
+	if (!::LOG.is_open())
+	{
+		Printf(PRINT_HIGH, "Unable to create logfile: %s\n", ::LOG_FILE.c_str());
+	}
+	else
+	{
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		::LOG.flush();
+		::LOG << std::endl;
+		Printf(PRINT_HIGH, "Logging in file %s started %s\n", ::LOG_FILE.c_str(),
+		       asctime(timeinfo));
+	}
 }
-END_COMMAND (logfile)
+END_COMMAND(logfile)
 
 BEGIN_COMMAND (stoplog)
 {

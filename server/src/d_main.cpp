@@ -101,7 +101,7 @@ char startmap[8];
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 
-const char *LOG_FILE;
+std::string LOG_FILE;
 
 //
 // D_DoomLoop
