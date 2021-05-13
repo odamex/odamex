@@ -116,8 +116,10 @@ std::string M_GetWriteDir()
 		}
 	}
 
-	// Our path is relative to the current working directory.
-	return M_CleanPath(M_GetCWD());
+	// Our path is relative to the binary directory.
+	// [AM] Don't change this back to CWD because this means your write dir
+	//      depends on where you launch it from, which is not great.
+	return M_CleanPath(M_GetBinaryDir());
 #endif
 }
 
