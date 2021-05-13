@@ -228,7 +228,10 @@ CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/e
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE(g_coopthingfilter, "0.0",
-     "Removes cooperative things of the map.\nValues: 1 - Only Coop weapons.\n 2 - All Coop things.",
+     "Removes cooperative things of the map. Values are:\n" \ 
+     "// 0 - All Coop things are retained (default).\n" \ 
+     "// 1 - Only Coop weapons are removed.\n" \
+     "// 2 - All Coop things are removed.",
       CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 // Game mode options commonized from the server
