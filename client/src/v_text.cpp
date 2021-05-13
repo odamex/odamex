@@ -100,10 +100,8 @@ void V_TextShutdown()
 	{
 		::hu_font[i] = NULL;
 
-		Z_ChangeTag(::hu_bigfont[i], PU_CACHE);
-		::hu_bigfont[i] = NULL;
-		Z_ChangeTag(::hu_smallfont[i], PU_CACHE);
-		::hu_smallfont[i] = NULL;
+		Z_Discard(&::hu_bigfont[i]);
+		Z_Discard(&::hu_smallfont[i]);
 	}
 }
 
@@ -414,6 +412,13 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	strncpy(line->string + prefix_len, (char*)start, string - start);
 	line->string[string - start + prefix_len] = 0;
 	line->width = V_StringWidth(line->string);
+}
+
+int V_LineHeight()
+{
+	if (::hu_font[0] == ::hu_bigfont[0])
+		return 12;
+	return 7;
 }
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)

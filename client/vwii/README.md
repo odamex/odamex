@@ -1,4 +1,4 @@
-![Odamex](https://github.com/odamex/odamex/blob/development/media/logo_128.png?raw=true)
+![Odamex](https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png?raw=true)
 
 Informations required for Odamex on Nintendo Wii.
 

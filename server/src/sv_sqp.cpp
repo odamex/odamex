@@ -90,10 +90,13 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	// TODO: Remove guard before next release
 	QRYNEWINFO(7)
 	{
-		MSG_WriteString(&ml_message, GitNiceVersion());
+		// Send the detailed version - version number was in PROTOCOL_VERSION.
+		MSG_WriteString(&ml_message, NiceVersionDetails());
 	}
 	else
+	{
 		MSG_WriteLong(&ml_message, -1);
+	}
 
 	cvar_t* var = GetFirstCvar();
 
@@ -347,8 +350,8 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Override other packet types for older enquirer version response
-	if(VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
-	        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+	if (VERMAJ(EqVersion) < VERMAJ(GAMEVER) ||
+	    (VERMAJ(EqVersion) <= VERMAJ(GAMEVER) && VERMIN(EqVersion) < VERMIN(GAMEVER)))
 	{
 		RePacketType = 2;
 	}

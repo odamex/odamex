@@ -102,6 +102,7 @@ class OTransfer
 	std::string m_filename;
 	std::string m_filePart;
 	std::string m_expectHash;
+	bool m_shouldCheckAgain;
 
 	OTransfer(const OTransfer&);
 	static int curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
@@ -111,7 +112,7 @@ class OTransfer
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
 	    : m_doneProc(done), m_errorProc(err), m_curlm(curl_multi_init()),
 	      m_curl(curl_easy_init()), m_file(NULL), m_progress(OTransferProgress()),
-	      m_filename(""), m_filePart(""), m_expectHash("")
+	      m_filename(""), m_filePart(""), m_expectHash(""), m_shouldCheckAgain(true)
 	{
 	}
 
@@ -134,6 +135,7 @@ class OTransfer
 	bool start();
 	void stop();
 	bool tick();
+	bool shouldCheckAgain() const;
 	std::string getFilename() const;
 	OTransferProgress getProgress() const;
 };

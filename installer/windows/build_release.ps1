@@ -6,8 +6,8 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "OdamexVersion" -Value "0.9.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "-TEST2"
+Set-Variable -Name "OdamexVersion" -Value "0.9.1"
+Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #
 # The actual script follows.
@@ -74,7 +74,9 @@ function CopyFiles {
         -Destination "${CommonDir}\LICENSE.txt"
     Copy-Item -Force -Path "${PSScriptRoot}\..\..\MAINTAINERS" `
         -Destination "${CommonDir}\MAINTAINERS.txt"
-    Copy-Item -Force -Path "${PSScriptRoot}\..\..\wad\odamex.wad" `
+    Copy-Item -Force -Path "${PSScriptRoot}\..\..\README" `
+        -Destination "${CommonDir}\README.txt"
+    Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\wad\odamex.wad", `
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2_mixer-2.0.4\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
@@ -155,10 +157,12 @@ function Outputs {
     # Generate archives
     7z.exe a `
         "${OutputDir}\odamex-win64-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X64Dir}\*"
+        "${CommonDir}\*" "${X64Dir}\*" `
+        "-x!${CommonDir}\odamex-installed.txt"
     7z.exe a `
         "${OutputDir}\odamex-win32-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X86Dir}\*"
+        "${CommonDir}\*" "${X86Dir}\*" `
+        "-x!${CommonDir}\odamex-installed.txt"
 
     # Generate installer
     ISCC.exe odamex.iss `

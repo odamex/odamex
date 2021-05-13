@@ -225,7 +225,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 	}
 }
 
-void StringTable::loadStringsLump(int lump, const char* lumpname)
+void StringTable::loadStringsLump(const int lump, const char* lumpname, const bool engOnly)
 {
 	// Can't use Z_Malloc this early, so we use raw new/delete.
 	size_t len = W_LumpLength(lump);
@@ -237,25 +237,28 @@ void StringTable::loadStringsLump(int lump, const char* lumpname)
 	// by a string in an earlier pass from another lump.
 	int pass = 1;
 
-	// Load language-specific strings.
-	for (size_t i = 0; i < ARRAY_LENGTH(LanguageIDs); i++)
+	if (!engOnly)
 	{
-		// Deconstruct code into something less confusing.
-		char code[4];
-		UNMAKE_ID(code, LanguageIDs[i]);
+		// Load language-specific strings.
+		for (size_t i = 0; i < ARRAY_LENGTH(::LanguageIDs); i++)
+		{
+			// Deconstruct code into something less confusing.
+			char code[4];
+			UNMAKE_ID(code, ::LanguageIDs[i]);
 
-		// Language codes are up to three letters long.
-		code[3] = '\0';
+			// Language codes are up to three letters long.
+			code[3] = '\0';
 
-		// Try the full language code (enu).
-		loadLanguage(code, true, pass++, languageLump, len);
+			// Try the full language code (enu).
+			loadLanguage(code, true, pass++, languageLump, len);
 
-		// Try the partial language code (en).
-		code[2] = '\0';
-		loadLanguage(code, true, pass++, languageLump, len);
+			// Try the partial language code (en).
+			code[2] = '\0';
+			loadLanguage(code, true, pass++, languageLump, len);
 
-		// Try an inexact match for all languages in the same family (en_).
-		loadLanguage(code, false, pass++, languageLump, len);
+			// Try an inexact match for all languages in the same family (en_).
+			loadLanguage(code, false, pass++, languageLump, len);
+		}
 	}
 
 	// Load string defaults.
@@ -338,7 +341,7 @@ bool StringTable::hasString(const OString& name) const
 //
 // Load strings from all LANGUAGE lumps in all loaded WAD files.
 //
-void StringTable::loadStrings()
+void StringTable::loadStrings(const bool engOnly)
 {
 	clearStrings();
 	prepareIndexes();
@@ -348,7 +351,7 @@ void StringTable::loadStrings()
 	lump = -1;
 	while ((lump = W_FindLump("LANGUAGE", lump)) != -1)
 	{
-		loadStringsLump(lump, "LANGUAGE");
+		loadStringsLump(lump, "LANGUAGE", engOnly);
 	}
 }
 

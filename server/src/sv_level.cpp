@@ -496,7 +496,7 @@ void G_DoCompleted()
 			G_PlayerFinishLevel(*it);
 }
 
-extern void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers);
+extern void G_SerializeLevel(FArchive &arc, bool hubLoad);
 
 // [AM] - Save the state of the level that can be reset to
 void G_DoSaveResetState()
@@ -509,8 +509,8 @@ void G_DoSaveResetState()
 	}
 	reset_snapshot = new FLZOMemFile;
 	reset_snapshot->Open();
-	FArchive arc(*reset_snapshot);
-	G_SerializeLevel(arc, false, true);
+	FArchive arc(*reset_snapshot, FA_RESET);
+	G_SerializeLevel(arc, false);
 }
 
 /**
@@ -532,6 +532,10 @@ void G_DoResetLevel(bool full_reset)
 	// Clear teamgame state.
 	TeamInfo_ResetScores(full_reset);
 
+	// Reset all keys found
+	for (size_t j = 0; j < NUMCARDS; j++)
+		keysfound[j] = false;
+
 	// Clear netids of every non-player actor so we don't spam the
 	// destruction message of actors to clients.
 	AActor* mo;
@@ -540,7 +544,6 @@ void G_DoResetLevel(bool full_reset)
 	{
 		if (mo->netid && mo->type != MT_PLAYER)
 		{
-			ServerNetID.ReleaseNetID(mo->netid);
 			mo->netid = 0;
 		}
 	}
@@ -558,8 +561,8 @@ void G_DoResetLevel(bool full_reset)
 
 	// Unserialize saved snapshot
 	reset_snapshot->Reopen();
-	FArchive arc(*reset_snapshot);
-	G_SerializeLevel(arc, false, true);
+	FArchive arc(*reset_snapshot, FA_RESET);
+	G_SerializeLevel(arc, false);
 	reset_snapshot->Seek(0, FFile::ESeekSet);
 
 	{
@@ -577,7 +580,7 @@ void G_DoResetLevel(bool full_reset)
 			// any weird destruction of any items post-reset.
 			if (mo->netid && mo->type != MT_PLAYER)
 			{
-				mo->netid = ServerNetID.ObtainNetID();
+				mo->netid = ::ServerNetID.obtainNetID();
 			}
 		}
 	}
@@ -636,12 +639,8 @@ void G_DoResetLevel(bool full_reset)
 	// Force every ingame player to be reborn.
 	for (it = players.begin(); it != players.end(); ++it)
 	{
-		// Spectators aren't reborn.
-		if (!it->ingame() || it->spectator)
+		if (!it->ingame())
 			continue;
-
-		// Destroy the attached mobj, otherwise we leave a ghost.
-		it->mo->Destroy();
 
 		// Set the respawning machinery in motion
 		it->playerstate = full_reset ? PST_ENTER : PST_REBORN;
@@ -753,7 +752,6 @@ void G_DoLoadLevel (int position)
 			actor->touching_sectorlist = NULL;
 
 			// denis - clear every actor netid so that they don't announce their destruction to clients
-			ServerNetID.ReleaseNetID(actor->netid);
 			actor->netid = 0;
 		}
 	}
@@ -788,7 +786,6 @@ void G_DoLoadLevel (int position)
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 
 	gameaction = ga_nothing;
-	Z_CheckHeap ();
 
 	paused = false;
 
@@ -799,6 +796,9 @@ void G_DoLoadLevel (int position)
 	P_DoDeferedScripts ();
 	// [AM] Save the state of the level on the first tic.
 	G_DoSaveResetState();
+
+	// [AM] Handle levelstate init (before we handle per-round init).
+	::levelstate.reset();
 
 	// [AM] In sides-based games, destroy objectives that aren't relevant.
 	//      Must happen after saving state.
@@ -815,8 +815,6 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	// [AM] Handle warmup init.
-	::levelstate.reset();
 	//	C_FlushDisplay ();
 }
 

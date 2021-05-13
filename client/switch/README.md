@@ -1,4 +1,4 @@
-![Odamex](https://github.com/odamex/odamex/blob/development/media/logo_128.png?raw=true)
+![Odamex](https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png?raw=true)
 
 Informations required for Odamex on Nintendo Switch.
 
@@ -7,7 +7,12 @@ Informations required for Odamex on Nintendo Switch.
 
 ## Installation
 - Create a folder named **odamex** to the */switch* folder of your microSD Card, and navigate to that folder.
-- Put *odamex.nsp* and your *IWADs/PWADs* (DOOM.WAD, DOOM2.WAD, FREEDOOM2.WAD, ...) to that folder.
+- Put *odamex.nro* and *odamex.wad* to that folder.
+
+## Where to add your wads?
+There are several ways to add your *IWADs/PWADs* (DOOM.WAD, DOOM2.WAD, FREEDOOM2.WAD, ...):
+- By putting them inside `/switch/odamex` or `/switch/odamex/wads` ;
+- By putting them in a folder named `.odamex`, located in the **root** of your sd card;
 
 #### Known Bugs :
 - Loading times makes the game go faster, to keep with uncapped framerates. It could lead to desyncs online until it syncs back after a few seconds. The same behaviour can happen if you go to the home menu, or put the console into sleep mode.

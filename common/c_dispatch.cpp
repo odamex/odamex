@@ -69,8 +69,8 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x02315, ACTION_STRAFE,			"strafe" },
 	{ 0x041c4, ACTION_FORWARD,			"forward" },
 	{ 0x07cfa, ACTION_AUTOMAP_PANUP,	"am_panup" },
-	{ 0x08788, ACTION_LOOKDOWN,			"lookdown" },
 	{ 0x08126, ACTION_FASTTURN,   		"fastturn"},
+    { 0x08788, ACTION_LOOKDOWN,			"lookdown"},
 	{ 0x088c4, ACTION_MOVELEFT,			"moveleft" },
 	{ 0x088c8, ACTION_MOVEDOWN,			"movedown" },
 	{ 0x0fc5c, ACTION_AUTOMAP_ZOOMIN,	"am_zoomin" },
@@ -962,7 +962,7 @@ BEGIN_COMMAND (dumpactors)
 	Printf (PRINT_HIGH, "Actors at level.time == %d:\n", level.time);
 	while ( (mo = iterator.Next ()) )
 	{
-		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %d tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
+		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %" PRIdSIZE " tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
 	}
 }
 END_COMMAND (dumpactors)

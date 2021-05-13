@@ -218,7 +218,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (!hash.empty())
 		{
 			// Filenames with supplied hashes always match first.
-			cmp_files.push_back(StdStringToUpper(file + *it + "." + hash));
+			cmp_files.push_back(StdStringToUpper(file + "." + hash.substr(0, 6) + *it));
 		}
 		cmp_files.push_back(StdStringToUpper(file + *it));
 	}
@@ -272,6 +272,13 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 
 bool M_GetAbsPath(const std::string& path, std::string& out)
 {
+
+#ifdef __SWITCH__
+	std::string res;
+	StrFormat(res, "%s", path.c_str());
+	out = res;
+	return true;
+#else
 	char buffer[PATH_MAX];
 	char* res = realpath(path.c_str(), buffer);
 	if (res == NULL)
@@ -280,6 +287,7 @@ bool M_GetAbsPath(const std::string& path, std::string& out)
 	}
 	out = res;
 	return true;
+#endif
 }
 
 #endif

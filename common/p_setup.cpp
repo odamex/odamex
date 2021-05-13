@@ -47,6 +47,7 @@
 #include "c_console.h"
 #include "g_gametype.h"
 
+#include "p_mobj.h"
 #include "p_setup.h"
 
 void SV_PreservePlayer(player_t &player);
@@ -171,6 +172,12 @@ void P_LoadVertexes (int lump)
 
 void P_LoadSegs (int lump)
 {
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
+	}
+
 	int  i;
 	byte *data;
 
@@ -251,8 +258,14 @@ void P_LoadSegs (int lump)
 //
 // P_LoadSubsectors
 //
-void P_LoadSubsectors (int lump)
+void P_LoadSubsectors(int lump)
 {
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadSubsectors: SSECTORS lump is empty - levels without nodes are not supported.");
+	}
+
 	byte *data;
 	int i;
 
@@ -381,6 +394,12 @@ void P_LoadSectors (int lump)
 //
 void P_LoadNodes (int lump)
 {
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
+	}
+
 	byte*		data;
 	int 		i;
 	int 		j;
@@ -1698,8 +1717,11 @@ void P_SetupLevel (char *lumpname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
-	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
+
+	// [AM] Every new level starts with fresh netids.
+	P_ClearAllNetIds();
 
 	// UNUSED W_Profile ();
 
@@ -1759,7 +1781,7 @@ void P_SetupLevel (char *lumpname, int position)
 	P_GroupLines ();
 
 	// [SL] don't move seg vertices if compatibility is cruical
-	if (!demoplayback && !demorecording)
+	if (!demoplayback)
 		P_RemoveSlimeTrails();
 
 	P_SetupSlopes();

@@ -73,7 +73,7 @@ public:
 	static void RunThinkers ();
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
-	static void SerializeAll (FArchive &arc, bool keepPlayers, bool noStorePlayers);
+	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
 	bool WasDestroyed();
 
@@ -127,5 +127,6 @@ public:
 	}
 };
 
-#endif //__DTHINKER_H__
+bool P_ThinkerIsPlayerType(DThinker* thinker);
 
+#endif //__DTHINKER_H__

@@ -441,9 +441,6 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	if (demorecording)
-		G_CleanupDemo();	// Cleanup in case of a vanilla demo
-
 	demoplayback = false;
 
 	// Reset the palette to default
@@ -1584,10 +1581,10 @@ void CL_TeamMembers()
 void CL_MoveMobj(void)
 {
 	AActor  *mo;
-	int      netid;
+	uint32_t netid;
 	fixed_t  x, y, z;
 
-	netid = MSG_ReadShort();
+	netid = MSG_ReadUnVarint();
 	mo = P_FindThingById (netid);
 
 	byte rndindex = MSG_ReadByte();
@@ -1624,9 +1621,10 @@ void CL_MoveMobj(void)
 void CL_DamageMobj()
 {
 	AActor  *mo;
-	int      netid, health, pain;
+	uint32_t netid;
+	int health, pain;
 
-	netid = MSG_ReadShort();
+	netid = MSG_ReadUnVarint();
 	health = MSG_ReadShort();
 	pain = MSG_ReadByte();
 
@@ -1790,12 +1788,11 @@ bool CL_PrepareConnect(void)
 	}
 
 	OWantFiles newwadfiles;
-	newwadfiles.reserve(server_wads);
+	newwadfiles.resize(server_wads);
 	for (byte i = 0; i < server_wads; i++)
 	{
+		OWantFile& file = newwadfiles.at(i);
 		std::string hash = MSG_ReadString();
-
-		OWantFile file;
 		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
 		{
 			Printf(PRINT_WARNING,
@@ -1804,7 +1801,6 @@ bool CL_PrepareConnect(void)
 			CL_QuitNetGame();
 			return false;
 		}
-		newwadfiles.push_back(file);
 
 		Printf("> %s\n   %s\n", file.getBasename().c_str(), file.getWantedHash().c_str());
 	}
@@ -1870,7 +1866,9 @@ bool CL_PrepareConnect(void)
 			gameversiontosend = 40;
 		}
 
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+		int major, minor, patch;
+		BREAKVER(gameversion, major, minor, patch);
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
 	}
 
     Printf(PRINT_HIGH, "\n");
@@ -1879,19 +1877,19 @@ bool CL_PrepareConnect(void)
 	size_t patch_count = MSG_ReadByte();
 
 	OWantFiles newpatchfiles;
-	newpatchfiles.reserve(patch_count);
+	newpatchfiles.resize(patch_count);
 	for (byte i = 0; i < patch_count; ++i)
 	{
-		OWantFile file;
-		if (!OWantFile::make(newpatchfiles.at(i), MSG_ReadString(), OFILE_DEH))
+		OWantFile& file = newpatchfiles.at(i);
+		std::string filename = MSG_ReadString();
+		if (!OWantFile::make(file, filename, OFILE_DEH))
 		{
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       newpatchfiles.at(i).getBasename().c_str());
+			       filename.c_str());
 			CL_QuitNetGame();
 			return false;
 		}
-		newpatchfiles.push_back(file);
 
 		Printf("> %s\n", file.getBasename().c_str());
 	}
@@ -2098,6 +2096,8 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
+EXTERN_CVAR(cl_chatsounds)
+
 /**
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
@@ -2140,7 +2140,10 @@ void CL_Say()
 			       message);
 
 		if (show_messages && !filtermessage)
+		{	
+			if (cl_chatsounds == 1)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		}
 	}
 	else if (message_visibility == 1)
 	{
@@ -2149,7 +2152,7 @@ void CL_Say()
 		else
 			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
 
-		if (show_messages)
+		if (show_messages && cl_chatsounds)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
@@ -2424,7 +2427,7 @@ void CL_SpawnMobj()
 	angle_t angle = MSG_ReadLong();
 
 	unsigned short type = MSG_ReadShort();
-	unsigned short netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 	byte rndindex = MSG_ReadByte();
 	SWORD state = MSG_ReadShort();
 
@@ -2453,7 +2456,7 @@ void CL_SpawnMobj()
 
 	if(mo->flags & MF_MISSILE)
 	{
-		AActor *target = P_FindThingById(MSG_ReadShort());
+		AActor* target = P_FindThingById(MSG_ReadUnVarint());
 		if(target)
 			mo->target = target->ptr();
 		CL_SetMobjSpeedAndAngle();
@@ -2492,7 +2495,7 @@ void CL_SpawnMobj()
 //
 void CL_Corpse(void)
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
+	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
 	int frame = MSG_ReadByte();
 	int tics = MSG_ReadByte();
 
@@ -2524,7 +2527,7 @@ void CL_Corpse(void)
 //
 void CL_TouchSpecialThing (void)
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
+	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
 
 	if(!consoleplayer().mo || !mo)
 		return;
@@ -2542,12 +2545,12 @@ void CL_SpawnPlayer()
 	player_t	*p;
 	AActor		*mobj;
 	fixed_t		x = 0, y = 0, z = 0;
-	unsigned short netid;
+	uint32_t	netid;
 	angle_t		angle = 0;
 	int			i;
 
 	playernum = MSG_ReadByte();
-	netid = MSG_ReadShort();
+	netid = MSG_ReadUnVarint();
 	p = &CL_FindPlayer(playernum);
 
 	angle = MSG_ReadLong();
@@ -2679,9 +2682,8 @@ void CL_PlayerInfo()
 void CL_SetMobjSpeedAndAngle(void)
 {
 	AActor *mo;
-	int     netid;
 
-	netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 	mo = P_FindThingById(netid);
 
 	angle_t angle = MSG_ReadLong();
@@ -2720,9 +2722,9 @@ void CL_SetMobjSpeedAndAngle(void)
 void CL_ExplodeMissile(void)
 {
     AActor *mo;
-	int     netid;
+	uint32_t netid;
 
-	netid = MSG_ReadShort();
+	netid = MSG_ReadUnVarint();
 	mo = P_FindThingById(netid);
 
 	if (!mo)
@@ -2754,7 +2756,7 @@ void CL_RailTrail()
 //
 void CL_UpdateMobjInfo(void)
 {
-	int netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 	int flags = MSG_ReadLong();
 	//int flags2 = MSG_ReadLong();
 
@@ -2773,7 +2775,7 @@ void CL_UpdateMobjInfo(void)
 //
 void CL_RemoveMobj(void)
 {
-	int netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 
 	AActor *mo = P_FindThingById(netid);
 	if (mo && mo->player && mo->player->id == displayplayer_id)
@@ -2788,7 +2790,7 @@ void CL_RemoveMobj(void)
 //
 void CL_DamagePlayer(void)
 {
-	int netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 	int healthDamage = MSG_ReadShort();
 	int armorDamage = MSG_ReadByte();
 
@@ -2826,9 +2828,9 @@ extern int MeansOfDeath;
 //
 void CL_KillMobj()
 {
-	int srcid = MSG_ReadVarint();
-	int tgtid = MSG_ReadVarint();
-	int infid = MSG_ReadVarint();
+	uint32_t srcid = MSG_ReadUnVarint();
+	uint32_t tgtid = MSG_ReadUnVarint();
+	uint32_t infid = MSG_ReadUnVarint();
 	int health = MSG_ReadVarint();
 	::MeansOfDeath = MSG_ReadVarint();
 	bool joinkill = MSG_ReadBool();
@@ -2850,7 +2852,7 @@ void CL_KillMobj()
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
 
-	if (lives >= 0)
+	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
 	P_KillMobj(source, target, inflictor, joinkill);
@@ -2974,7 +2976,7 @@ void CL_ChangeWeapon (void)
 //
 void CL_Sound(void)
 {
-	int netid = MSG_ReadShort();
+	uint32_t netid = MSG_ReadUnVarint();
 	int x = MSG_ReadLong();
 	int y = MSG_ReadLong();
 	byte channel = MSG_ReadByte();
@@ -3373,7 +3375,7 @@ void CL_StartFullUpdate()
 //
 void CL_SetMobjState()
 {
-	AActor *mo = P_FindThingById (MSG_ReadShort() );
+	AActor *mo = P_FindThingById (MSG_ReadUnVarint() );
 	SWORD s = MSG_ReadShort();
 
 	if (!mo || s >= NUMSTATES)
@@ -3404,7 +3406,7 @@ void CL_ForceSetTeam (void)
 //
 void CL_Actor_Movedir()
 {
-	AActor *actor = P_FindThingById (MSG_ReadShort());
+	AActor* actor = P_FindThingById(MSG_ReadUnVarint());
 	BYTE movedir = MSG_ReadByte();
     SDWORD movecount = MSG_ReadLong();
 
@@ -3420,8 +3422,8 @@ void CL_Actor_Movedir()
 //
 void CL_Actor_Target()
 {
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *target = P_FindThingById (MSG_ReadShort());
+	AActor* actor = P_FindThingById(MSG_ReadUnVarint());
+	AActor* target = P_FindThingById(MSG_ReadUnVarint());
 
 	if (!actor || !target)
 		return;
@@ -3434,8 +3436,8 @@ void CL_Actor_Target()
 //
 void CL_Actor_Tracer()
 {
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *tracer = P_FindThingById (MSG_ReadShort());
+	AActor* actor = P_FindThingById(MSG_ReadUnVarint());
+	AActor* tracer = P_FindThingById(MSG_ReadUnVarint());
 
 	if (!actor || !tracer)
 		return;
@@ -3448,7 +3450,7 @@ void CL_Actor_Tracer()
 //
 void CL_MobjTranslation()
 {
-	AActor *mo = P_FindThingById(MSG_ReadShort());
+	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
 	byte table = MSG_ReadByte();
 
 	if (!mo)
@@ -3541,7 +3543,7 @@ void ActivateLine(AActor* mo, line_s* line, byte side, LineActivationType activa
 void CL_ActivateLine(void)
 {
 	unsigned linenum = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
+	AActor* mo = P_FindThingById(MSG_ReadUnVarint());
 	byte side = MSG_ReadByte();
 	LineActivationType activationType = (LineActivationType)MSG_ReadByte();
 
@@ -4419,7 +4421,7 @@ void CL_ExecuteLineSpecial()
 {
 	byte special = MSG_ReadByte();
 	uint16_t lineid = MSG_ReadShort();
-	AActor* activator = P_FindThingById(MSG_ReadShort());
+	AActor* activator = P_FindThingById(MSG_ReadUnVarint());
 	int arg0 = MSG_ReadVarint();
 	int arg1 = MSG_ReadVarint();
 	int arg2 = MSG_ReadVarint();
@@ -4439,7 +4441,7 @@ void CL_ExecuteLineSpecial()
 void CL_ACSExecuteSpecial()
 {
 	byte special = MSG_ReadByte();
-	int netid = MSG_ReadVarint();
+	uint32_t netid = MSG_ReadUnVarint();
 	byte count = MSG_ReadByte();
 	if (count >= 8)
 		count = 8;

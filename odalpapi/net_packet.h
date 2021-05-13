@@ -43,7 +43,18 @@
 #include "typedefs.h"
 #include "threads/mutex_factory.h"
 
-#define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
+/**
+ * @brief Construct a packed integer from major, minor and patch version
+ *        numbers.
+ *
+ * @param major Major version number.
+ * @param minor Minor version number - must be between 0 and 25.
+ * @param patch Patch version number - must be between 0 and 9.
+ */
+#define MAKEVER(major, minor, patch) ((major)*256 + ((minor)*10) + (patch))
+
+// [AM] TODO: Bring over other macros from Odamex proper.
+
 #define DISECTVERSION(V,MAJOR,MINOR,PATCH) \
 { \
     MAJOR = (V / 256); \
@@ -55,7 +66,7 @@
 #define VERSIONMINOR(V) ((V % 256) / 10)
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
-#define VERSION (0*256+90)
+#define VERSION (MAKEVER(0, 9, 1))
 #define PROTOCOL_VERSION 8
 
 #define TAG_ID 0xAD0

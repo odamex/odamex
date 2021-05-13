@@ -263,7 +263,7 @@ BEGIN_COMMAND(cvardoc)
 	    "number with a decimal point in it, like 3.14."
 	    "</p>";
 
-	StrFormat(buffer, PREAMBLE, title.c_str(), GitNiceVersion());
+	StrFormat(buffer, PREAMBLE, title.c_str(), NiceVersion());
 	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 
 	// Initial tag for cvars.
