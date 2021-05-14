@@ -145,7 +145,7 @@ EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 
-const char *LOG_FILE;
+std::string LOG_FILE;
 
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();

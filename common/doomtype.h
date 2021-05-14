@@ -26,6 +26,9 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+// Standard libc/STL includes we use in countless places
+#include <string>
+
 #include "version.h"
 #include "errors.h"
 
@@ -248,7 +251,7 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 #include <fstream>
 
 extern std::ofstream LOG;
-extern const char *LOG_FILE; //  Default is "odamex.log"
+extern std::string LOG_FILE; //  Default is "odamex.log"
 
 extern std::ifstream CON;
 
