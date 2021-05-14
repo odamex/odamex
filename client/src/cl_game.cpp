@@ -1005,6 +1005,9 @@ void G_Ticker (void)
 				// we are already connected to this server, quit first
 				MSG_WriteMarker(&net_buffer, clc_disconnect);
 				NET_SendPacket(net_buffer, serveraddr);
+
+				Printf(PRINT_WARNING,
+				       "Got unknown challenge %d while connecting, disconnecting.\n", type);
 			}
 		}
 	}
