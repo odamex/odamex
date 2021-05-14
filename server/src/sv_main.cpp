@@ -1091,11 +1091,9 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	int teamcount = NUMTEAMS;
-	if (sv_gametype != GM_CTF && sv_teamsinplay >= 0 &&
-	    sv_teamsinplay <= NUMTEAMS)
-		teamcount = sv_teamsinplay;
+	int teamcount = sv_teamsinplay;
 
+	// Unsure how this can be triggered?
 	if (teamcount == 0)
 	{
 		I_Error ("Teamplay is set and no teams are enabled!\n");
