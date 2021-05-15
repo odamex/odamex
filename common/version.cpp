@@ -132,6 +132,8 @@ const char* NiceVersionDetails()
 	const char* debug = ", Debug Build";
 #endif
 
+	const char RELEASE_PREFIX[] = "release";
+
 	static std::string version;
 	if (version.empty())
 	{
@@ -144,9 +146,9 @@ const char* NiceVersionDetails()
 				version = "Debug Build";
 			}
 		}
-		else if (!strcmp(GitBranch(), "stable"))
+		else if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
 		{
-			// Master branch is omitted.
+			// "Release" branch is omitted.
 			StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
 		}
 		else
