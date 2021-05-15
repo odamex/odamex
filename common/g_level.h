@@ -63,6 +63,7 @@ enum OLevelFlags : unsigned int
 	LEVEL_FREELOOK_YES = 0x00020000,
 
 	LEVEL_COMPAT_DROPOFF = 0x00040000,
+	LEVEL_COMPAT_NOPASSOVER = 0x00080000,
 
 	LEVEL_STARTLIGHTNING = 0x01000000,	// Automatically start lightning
 	LEVEL_FILTERSTARTS = 0x02000000,	// Apply mapthing filtering to player starts
@@ -71,6 +72,7 @@ enum OLevelFlags : unsigned int
 	LEVEL_DEFINEDINMAPINFO = 0x20000000, // Level was defined in a MAPINFO lump
 	LEVEL_CHANGEMAPCHEAT = 0x40000000,	// Don't display cluster messages
 	LEVEL_VISITED = 0x80000000,			// Used for intermission map
+
 
 };
 
@@ -302,6 +304,7 @@ LevelInfos& getLevelInfos();
 ClusterInfos& getClusterInfos();
 
 // Compatibility flags
-bool P_AllowDropOff();
+const bool P_AllowDropOff();
+const bool P_AllowPassover();
 
 #endif //__G_LEVEL_H__

@@ -58,6 +58,7 @@
 level_locals_t level;			// info about current level
 
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(co_realactorheight)
 
 //
 // LevelInfos methods
@@ -448,6 +449,7 @@ static const char *MapInfoMapLevel[] =
 	"compat_trace",
 	"compat_boomscroll",
 	"compat_sectorsounds",
+	"compat_nopassover",
 	NULL
 };
 
@@ -561,6 +563,8 @@ MapInfoHandler MapHandlers[] =
     {MITYPE_EATNEXT, 0, 0},
     // compat_sectorsounds <value>
     {MITYPE_EATNEXT, 0, 0},
+    // compat_nopassover <value>
+    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -3355,9 +3359,16 @@ ClusterInfos& getClusterInfos()
 
 
 // P_AllowDropOff()
-bool P_AllowDropOff()
+const bool P_AllowDropOff()
 {
 	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
 }
 
-VERSION_CONTROL (g_level_cpp, "$Id$")
+const bool P_AllowPassover()
+{
+	if (level.flags & LEVEL_COMPAT_NOPASSOVER)
+		return false;
+
+	return co_realactorheight;
+}
+    VERSION_CONTROL (g_level_cpp, "$Id$")
