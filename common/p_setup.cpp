@@ -613,8 +613,9 @@ void P_LoadThings (int lump)
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
-			if (G_IsCoopGame())
+			if (multiplayer && G_IsCoopGame())
 			{ 
+				
 				if ((g_coopthingfilter.asInt() == 1 && mt2.flags & IT_WEAPON) ||
 				    (g_coopthingfilter.asInt() == 2))
 					mt2.flags &= ~MTF_COOPERATIVE;
