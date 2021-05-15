@@ -60,6 +60,9 @@ EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
 EXTERN_CVAR(g_lives)
 
+// sapientlion - experimental
+EXTERN_CVAR(sv_weapondrop)
+
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -276,7 +279,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback || demorecording)
+	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback)
 	{
 		switch (ammotype)
 		{
@@ -1289,6 +1292,58 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
         case MT_CHAINGUY:
             item = MT_CHAINGUN;
             break;
+
+		//
+		// sapientlion - if player killed themselves or were killed by the other
+		// player(s), spawn a weapon (which they were helding moments before death) on
+		// top of their remains.
+		//
+		// TODO add current ammo.
+		//
+	    case MT_PLAYER:
+
+			if(sv_weapondrop)
+			{
+			    switch (target->player->readyweapon)
+			    {
+			    case wp_pistol:
+				    item = MT_CLIP;
+				    break;
+
+			    case wp_shotgun:
+				    item = MT_SHOTGUN;
+				    break;
+
+			    case wp_chaingun:
+				    item = MT_CHAINGUN;
+				    break;
+
+			    case wp_missile:
+				    item = MT_MISC27; // Rocket launcher.
+				    break;
+
+			    case wp_plasma:
+				    item = MT_MISC28; // Plasma gun.
+				    break;
+
+			    case wp_bfg:
+				    item = MT_BFG;
+				    break;
+
+			    case wp_chainsaw:
+				    item = MT_MISC26; // Chainsaw.
+				    break;
+
+			    case wp_supershotgun:
+				    item = MT_SUPERSHOTGUN;
+				    break;
+
+			    default:
+				    return;
+			    }
+		    }
+
+			break;
 
         default:
             return;

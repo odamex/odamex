@@ -68,7 +68,12 @@
 	}
 
 // Lots of different representations for the version number
+
+// Used by configuration files.  upversion.py will update thie field
+// deterministically and unambiguously so newer versions always compare
+// greater.
 #define CONFIGVERSIONSTR "200"
+
 #define DOTVERSIONSTR "2.0.0"
 #define GAMEVER (MAKEVER(2, 0, 0))
 
@@ -83,8 +88,10 @@
 
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
-// earlier than this version.
-#define SAVESIG "ODAMEXSAVE200   "	// Needs to be exactly 16 chars long
+// earlier than this version.  Needs to be exactly 16 chars long.
+// 
+// upversion.py will update thie field deterministically and unambiguously.
+#define SAVESIG "ODAMEXSAVE200   "
 
 #define NETDEMOVER 3
 
