@@ -205,13 +205,13 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 	// TODO: Replace this before next release
 	if (In.Info.VersionRevStr.empty())
     {
-        Revision = wxString::Format("%u", In.Info.VersionRevision);
+        Revision = wxString::Format(" (r%u)", In.Info.VersionRevision);
     }
     else
-        Revision = wxString::Format("%s", In.Info.VersionRevStr);
+        Revision = wxString::Format(" (%s)", In.Info.VersionRevStr);
 	
 	// Version
-	InsertLine("Version", wxString::Format("%u.%u.%u-r%s",
+	InsertLine("Version", wxString::Format("%u.%u.%u%s",
 	           In.Info.VersionMajor,
 	           In.Info.VersionMinor,
 	           In.Info.VersionPatch,
