@@ -1834,6 +1834,8 @@ void G_DoPlayDemo(bool justStreamInput)
 			}
 		}
 
+		demoplayback = true;
+
 		if (!justStreamInput)
 		{
 			player_t &con = idplayer(who + 1);
@@ -1889,12 +1891,9 @@ void G_DoPlayDemo(bool justStreamInput)
 			}
 
 			sv_respawnsuper.Set(0.0f);
-			G_InitNew(mapname);
 
 			usergame = false;
 		}
-
-		demoplayback = true;
 
 		// Set up the colors and names for the demo players
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -1911,6 +1910,10 @@ void G_DoPlayDemo(bool justStreamInput)
 			sprintf(tmpname, "Player %i", it->id);
 			it->userinfo.netname = tmpname;
 		}
+
+		if (!justStreamInput)
+			G_InitNew(mapname);
+
 	}
 	else
 	{
