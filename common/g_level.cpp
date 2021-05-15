@@ -617,6 +617,8 @@ MapInfoHandler EpisodeHandlers[] =
 	{ MITYPE_EATNEXT, 0, 0 },
 	// picname <piclump>
 	{ MITYPE_EATNEXT, 0, 0 },
+    // key
+    { MITYPE_EATNEXT, 0, 0 },
 	// remove
 	{ MITYPE_IGNORE, 0, 0 },
 	// noskillmenu
@@ -1213,7 +1215,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 		{
 			// Not implemented
 			SC_MustGetString(); // Map lump
-			SC_GetString();
+
 			if (SC_Compare("teaser"))
 			{
 				SC_MustGetString(); // Teaser lump
