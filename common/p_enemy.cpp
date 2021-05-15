@@ -46,7 +46,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
-EXTERN_CVAR (co_vileghosts)
+EXTERN_CVAR (co_novileghosts)
 
 enum dirtype_t
 {
@@ -1422,7 +1422,7 @@ void A_VileChase (AActor *actor)
 					P_SetMobjState (corpsehit,info->raisestate, true);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
-					if ((co_vileghosts)) {
+					if ((co_novileghosts)) {
 						corpsehit->height = P_ThingInfoHeight(info);	// [RH] Use real mobj height
 						corpsehit->radius = info->radius;	// [RH] Use real radius
 					} else {
