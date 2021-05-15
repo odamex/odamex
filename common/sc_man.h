@@ -42,6 +42,7 @@ void SC_MustGetStringName (const char *name);
 BOOL SC_GetNumber (void);
 void SC_MustGetNumber (void);
 BOOL SC_GetFloat (void);
+const bool SC_CheckFloat();
 void SC_MustGetFloat (void);
 void SC_UnGet (void);
 //boolean SC_Check(void);

@@ -916,7 +916,9 @@ static void ParseMapInfoLower(
 			{
 				SC_MustGetString();	// get texture name;
 				uppercopy((char*)(info + handler->data1), sc_String);
-				SC_GetFloat();		// get scroll speed
+
+				SC_CheckFloat();
+
 				//if (HexenHack)
 				//{
 				//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
