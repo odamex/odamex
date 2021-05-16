@@ -442,6 +442,9 @@ static const char *MapInfoMapLevel[] =
 	"intermusic",
 	"par",
 	"sucktime",
+    "enterpic",
+    "exitpic",
+    "interpic"
 	"translator",
 	"compat_shorttex",
 	"compat_limitpain",
@@ -549,6 +552,12 @@ MapInfoHandler MapHandlers[] =
 	{ MITYPE_EATNEXT, 0, 0 },
 	// sucktime <value>
 	{ MITYPE_EATNEXT, 0, 0 },
+	// enterpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
+	// exitpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
+	// interpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
 	// translator <value>
 	{ MITYPE_EATNEXT, 0, 0 },
 	// compat_shorttex <value>
