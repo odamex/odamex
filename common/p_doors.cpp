@@ -410,6 +410,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					{
 						// go back up
 						door->m_Status = DDoor::reopening;
+						door->PlayDoorSound();
 						return true;
 					}
 					else if (GET_SPAC(line->flags) == SPAC_PUSH)
@@ -424,6 +425,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					{
 						// go back down
 						door->m_Status = DDoor::closing;
+						door->PlayDoorSound();
 						return true;
 					}
 				}
