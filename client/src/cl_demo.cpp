@@ -603,9 +603,9 @@ bool NetDemo::stopRecording()
 	// write any remaining messages that have been captured
 	writeMessages();
 
-	// write the end-of-demo marker
-	byte marker = svc_netdemostop;
-	writeChunk(&marker, sizeof(marker), NetDemo::msg_packet);
+	// write the end-of-demo marker - header + size
+	byte stopdata[2] = {svc_netdemostop, 0};
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
 
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
