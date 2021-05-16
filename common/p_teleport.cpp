@@ -327,7 +327,8 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 // [RH] Changed to find destination by tid rather than sector
 //
 
-BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
+BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+                       int side, AActor* thing)
 {
 	AActor    *m;
 
@@ -339,10 +340,10 @@ BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
 	if (thing->flags & MF_MISSILE || !line)
 		return false;
 
-	// [AM] TODO: Change this to use SelectTeleDest.
-	if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN)))
-		if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN2)))
-			return false;
+	// [AM] Use modern ZDoom teleport destination selection.
+	m = SelectTeleDest(tid, tag);
+	if (m == NULL)
+		return false;
 
 	// Height of thing above ground, in case of mid-air teleports:
 	fixed_t z = thing->z - thing->floorz;

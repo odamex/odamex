@@ -81,6 +81,12 @@ int PrintString(int printlevel, char const* str)
 	printf("%s", sanitized_str.c_str());
 	fflush(stdout);
 
+	if (LOG.is_open())
+	{
+		LOG << sanitized_str;
+		LOG.flush();
+	}
+
 	return sanitized_str.length();
 }
 

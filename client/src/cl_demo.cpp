@@ -659,7 +659,7 @@ bool NetDemo::stopPlaying()
 {
 	state = NetDemo::st_stopped;
 	SZ_Clear(&net_message);
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (demofp)
 	{

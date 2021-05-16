@@ -487,7 +487,7 @@ void STACK_ARGS I_Quit (void)
 
 	G_ClearSnapshots ();
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	M_SaveDefaults();
 

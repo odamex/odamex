@@ -393,13 +393,13 @@ std::string PersonalSpread()
 		if (max_players.total <= 1)
 		{
 			// With only one player, this is the only reasonable thing to show.
-			return TEXTCOLOR_GREY "=0";
+			return TEXTCOLOR_GREY "+0";
 		}
 
 		if (max_players.count < 1)
 		{
 			// How did we get here?
-			return TEXTCOLOR_GREY "=0";
+			return TEXTCOLOR_GREY "+0";
 		}
 
 		// The interesting thing changes based on rounds.
@@ -410,7 +410,7 @@ std::string PersonalSpread()
 		if (max_players.players.size() > 1 && top_number == plyr_number)
 		{
 			// Share the throne with someone else.
-			return TEXTCOLOR_GREY "=0";
+			return TEXTCOLOR_GREY "+0";
 		}
 
 		if (max_players.players.at(0)->id == plyr.id)
@@ -458,7 +458,7 @@ std::string PersonalSpread()
 		if (max_teams.size() < 1)
 		{
 			// How did we get here?
-			return TEXTCOLOR_GREY "=0";
+			return TEXTCOLOR_GREY "+0";
 		}
 
 		// The interesting thing changes based on rounds.
@@ -468,7 +468,7 @@ std::string PersonalSpread()
 		if (max_teams.size() > 1 && top_number == plyr_number)
 		{
 			// Share the throne with someone else.
-			return TEXTCOLOR_GREY "=0";
+			return TEXTCOLOR_GREY "+0";
 		}
 
 		if (max_teams.at(0)->Team == plyr_team.Team)

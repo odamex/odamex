@@ -174,7 +174,7 @@ void R_InterpolateCamera(fixed_t amount)
 
 		if (!::localview.skipangle && consolePlayer.id == displayplayer().id &&
 		    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime && 
-			(!netdemo.isPlaying() && !demoplayback && !demorecording))
+			(!netdemo.isPlaying() && !demoplayback))
 		{
 			viewangle = camera->angle + ::localview.angle;
 		}

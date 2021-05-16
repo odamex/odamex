@@ -829,10 +829,12 @@ FUNC(LS_Teleport_NoStop)
 }
 
 FUNC(LS_Teleport_NoFog)
-// Teleport_NoFog (tid)
+// Teleport_NoFog (tid, useangle, tag, keepheight)
 {
-	if(!it) return false;
-	return EV_SilentTeleport (arg0, ln, TeleportSide, it);
+	if(!it)
+		return false;
+
+	return EV_SilentTeleport(arg0, arg1, arg2, arg3, ln, TeleportSide, it);
 }
 
 FUNC(LS_Teleport_EndGame)

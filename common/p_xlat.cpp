@@ -716,15 +716,21 @@ void P_TranslateTeleportThings()
 	{
 		for (int i = 0; i < ::numlines; i++)
 		{
+			// Transfer the tag to the proper argument slot.
 			if (::lines[i].special == Teleport)
 			{
-				if (::lines[i].args[1] == 0)
-					::lines[i].args[0] = 1;
+				::lines[i].args[1] = ::lines[i].args[0];
+				::lines[i].args[0] = 0;
 			}
 			else if (::lines[i].special == Teleport_NoFog)
 			{
-				if (::lines[i].args[2] == 0)
-					::lines[i].args[0] = 1;
+				::lines[i].args[2] = ::lines[i].args[0];
+				::lines[i].args[0] = 0;
+			}
+			else if (::lines[i].special == Teleport_NoStop)
+			{
+				::lines[i].args[1] = ::lines[i].args[0];
+				::lines[i].args[0] = 0;
 			}
 		}
 	}

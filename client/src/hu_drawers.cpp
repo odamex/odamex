@@ -183,7 +183,7 @@ void DrawText(int x, int y, const float scale,
 
 	// Calculate width and height of string
 	unsigned short w = V_StringWidth(str);
-	unsigned short h = 7;
+	unsigned short h = V_LineHeight();
 
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
