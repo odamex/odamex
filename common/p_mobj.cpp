@@ -2003,6 +2003,12 @@ bool P_CheckMissileSpawn (AActor* th)
 	th->y += th->momy>>1;
 	th->z += th->momz>>1;
 
+	// [AM] Bake in the baseline.
+	if (!::clientside)
+	{
+		P_SetMobjBaseline(*th);
+	}
+
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
