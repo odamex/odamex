@@ -291,6 +291,12 @@ void SV_AcknowledgePacket(player_t &player)
 	}
 
 	cl->last_sequence = sequence;
+
+	if (cl->last_sequence == 0)
+	{
+		// [AM] Finish our connection sequence.
+		SV_ConnectClient2(player);
+	}
 }
 
 VERSION_CONTROL (sv_rproto_cpp, "$Id$")

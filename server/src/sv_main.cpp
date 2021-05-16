@@ -119,6 +119,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
+EXTERN_CVAR(debug_disconnect)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -523,6 +524,7 @@ Players::iterator SV_GetFreeClient(void)
 	}
 
 	players.push_back(player_t());
+	players.back().playerstate = PST_CONTACT;
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
@@ -1037,11 +1039,9 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	int teamcount = NUMTEAMS;
-	if (sv_gametype != GM_CTF && sv_teamsinplay >= 0 &&
-	    sv_teamsinplay <= NUMTEAMS)
-		teamcount = sv_teamsinplay;
+	int teamcount = sv_teamsinplay;
 
+	// Unsure how this can be triggered?
 	if (teamcount == 0)
 	{
 		I_Error ("Teamplay is set and no teams are enabled!\n");
@@ -1845,6 +1845,15 @@ void SV_ConnectClient()
 	// send consoleplayer number
 	MSG_WriteSVC(&cl->reliablebuf, SVC_ConsolePlayer(*player, cl->digest));
 	SV_SendPacket(*player);
+}
+
+void SV_ConnectClient2(player_t& player)
+{
+	client_t* cl = &player.client;
+
+	// [AM] FIXME: I don't know if it's safe to set players as PST_ENTER
+	//             this early.
+	player.playerstate = PST_LIVE;
 
 	// [Toke] send server settings
 	SendServerSettings(*player);
@@ -1853,35 +1862,16 @@ void SV_ConnectClient()
 
 	cl->download.name = "";
 	cl->download.md5 = "";
-	if (connection_type == 1)
-	{
-		player->playerstate = PST_DOWNLOAD;
-		player->spectator = true;
-		SV_BroadcastUserInfo(*player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
-		// send the client the scores and list of other clients
-		SV_ClientFullUpdate(*player);
-
-		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			// [SL] 2011-07-30 - clients should consider downloaders as spectators
-			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(*player, SVC_PM_SPECTATOR));
-		}
-
-		return;
-	}
-
-	SV_BroadcastUserInfo(*player);
+	SV_BroadcastUserInfo(player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
-	player->playerstate = PST_ENTER;
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
+	player.playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
-		player->spectator = true;
+		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
 			MSG_WriteSVC(&pit->client.reliablebuf,
@@ -1899,10 +1889,10 @@ void SV_ConnectClient()
 		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ExitLevel());
 	}
 
-	G_DoReborn(*player);
-	SV_ClientFullUpdate(*player);
+	G_DoReborn(player);
+	SV_ClientFullUpdate(player);
 
-	SV_BroadcastPrintf("%s has connected.\n", player->userinfo.netname.c_str());
+	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
@@ -1910,9 +1900,11 @@ void SV_ConnectClient()
 		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(*player));
 	}
 
-	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
+	// Notify this player of other player's queue positions
+	SV_SendPlayerQueuePositions(&player, true); 
+
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
 //
@@ -1990,7 +1982,7 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient(player_t &who)
+void SV_DropClient2(player_t &who, const char* file, const int line)
 {
 	client_t *cl = &who.client;
 
@@ -1999,6 +1991,9 @@ void SV_DropClient(player_t &who)
 	SV_SendPacket(who);
 
 	SV_DisconnectClient(who);
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 //
@@ -2985,7 +2980,9 @@ void SV_SendPackets()
 	Players::iterator it = begin;
 	do
 	{
-		SV_SendPacket(*it);
+		// [AM] Don't send packets to players who haven't acked packet 0
+		if (it->playerstate != PST_CONTACT)
+			SV_SendPacket(*it);
 
 		++it;
 		if (it == players.end())

@@ -1020,7 +1020,8 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 //
 BOOL EV_Teleport (int tid, int tag, int arg0, int side, AActor *thing, int nostop);
 BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
-BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
+BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+                       int side, AActor* thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
 

@@ -1157,12 +1157,8 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 //
 static void CL_Print(const odaproto::svc::Print* msg)
 {
-	printlevel_t level = static_cast<printlevel_t>(msg->level());
-	std::string str = msg->message();
-
-	// Protect against out of bounds print levels.
-	if (level < 0 || level >= PRINT_MAXPRINT)
-		return;
+	byte level = MSG_ReadByte();
+	const char *str = MSG_ReadString();
 
 	// Disallow getting NORCON messages
 	if (level == PRINT_NORCON)
@@ -1170,18 +1166,18 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str.c_str());
+		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);	
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str.c_str());
+		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str.c_str());
+		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
 	else
-		Printf(level, "%s", str.c_str());
+		Printf(level, "%s", str);
 
-	if (::show_messages)
+	if (show_messages)
 	{
 		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, ::gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
@@ -1538,72 +1534,56 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
  */
 static void CL_Say(const odaproto::svc::Say* msg)
 {
-	bool message_visibility = msg->visibility();
-	byte player_id = msg->pid();
-	std::string message = msg->message();
+	byte message_visibility = MSG_ReadByte();
+	byte player_id = MSG_ReadByte();
+	const char* message = MSG_ReadString();
 
 	bool filtermessage = false;
 
-	player_t& player = idplayer(player_id);
+	player_t &player = idplayer(player_id);
 
 	if (!validplayer(player))
-	{
 		return;
-	}
 
 	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
 
 	if (consoleplayer().id != player.id)
 	{
-		if (spectator && ::mute_spectators)
-		{
+		if (spectator && mute_spectators)
 			filtermessage = true;
-		}
 
-		if (::mute_enemies && !spectator &&
+		if (mute_enemies && !spectator &&
 		    (G_IsFFAGame() ||
-		     (G_IsTeamGame() && player.userinfo.team != consoleplayer().userinfo.team)))
-		{
+		    (G_IsTeamGame() &&
+		     player.userinfo.team != consoleplayer().userinfo.team)))
 			filtermessage = true;
-		}
 	}
 
 	const char* name = player.userinfo.netname.c_str();
 
 	if (message_visibility == 0)
 	{
-		if (strnicmp(message.c_str(), "/me ", 4) == 0)
-		{
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name,
-			       message.substr(4, message.length() - 4).c_str());
-		}
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
 		else
-		{
 			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message.c_str());
-		}
+			       message);
 
-		if (::show_messages && !filtermessage)
-		{
-			S_Sound(CHAN_INTERFACE, ::gameinfo.chatSound, 1, ATTN_NONE);
+		if (show_messages && !filtermessage)
+		{	
+			if (cl_chatsounds == 1)
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		}
 	}
 	else if (message_visibility == 1)
 	{
-		if (strnicmp(message.c_str(), "/me ", 4) == 0)
-		{
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name,
-			       message.substr(4, message.length() - 4).c_str());
-		}
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
 		else
-		{
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message.c_str());
-		}
+			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
 
-		if (::show_messages)
-		{
+		if (show_messages && cl_chatsounds)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-		}
 	}
 }
 
