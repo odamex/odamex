@@ -1019,10 +1019,12 @@ static void ParseMapInfoLower(
 				{
 					SC_MustGetStringName(",");
 					SC_MustGetString();
-					const OString& s = GStrings(sc_String);
+					OString s = GStrings(sc_String);
+					
 					if (s.empty())
 					{
-						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+						s = sc_String;
+						//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
 					free(*text);
 					*text = strdup(s.c_str());
@@ -1057,10 +1059,11 @@ static void ParseMapInfoLower(
 				if (SC_Compare("lookup"))
 				{
 					SC_MustGetString();
-					const OString& s = GStrings(sc_String);
+					OString s = GStrings(sc_String);
 					if (s.empty())
 					{
-						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+						s = sc_String;
+						//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
 
 					free(*text);
@@ -1149,10 +1152,11 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			if (SC_Compare("lookup"))
 			{
 				SC_MustGetString();
-				const OString& s = GStrings(sc_String);
+				OString s = GStrings(sc_String);
 				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					s = sc_String;
+					//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 				}
 				free(info.level_name);
 				info.level_name = strdup(s.c_str());
