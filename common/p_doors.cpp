@@ -321,8 +321,6 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	case doorClose:
 		m_Status = closing;
 		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
-		Printf_Bold("CEIL. HEIGHT: %d | LOWEST: %d", FIXED2INT(ceilingheight),
-		            FIXED2INT(m_TopHeight));
 		PlayDoorSound();
 		break;
 
@@ -330,8 +328,6 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	case doorRaise:
 		m_Status = opening;
 		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
-		Printf_Bold("CEIL. HEIGHT: %d | LOWEST: %d", FIXED2INT(ceilingheight),
-		            FIXED2INT(m_TopHeight));
 		if (m_TopHeight != ceilingheight)
 			PlayDoorSound();
 		break;
