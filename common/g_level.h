@@ -304,7 +304,7 @@ LevelInfos& getLevelInfos();
 ClusterInfos& getClusterInfos();
 
 // Compatibility flags
-const bool P_AllowDropOff();
-const bool P_AllowPassover();
+bool P_AllowDropOff();
+bool P_AllowPassover();
 
 #endif //__G_LEVEL_H__

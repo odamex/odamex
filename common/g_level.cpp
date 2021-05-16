@@ -3376,16 +3376,17 @@ ClusterInfos& getClusterInfos()
 
 
 // P_AllowDropOff()
-const bool P_AllowDropOff()
+bool P_AllowDropOff()
 {
 	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
 }
 
-const bool P_AllowPassover()
+bool P_AllowPassover()
 {
 	if (level.flags & LEVEL_COMPAT_NOPASSOVER)
 		return false;
 
 	return co_realactorheight;
 }
-    VERSION_CONTROL (g_level_cpp, "$Id$")
+
+VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -448,7 +448,7 @@ BOOL SC_GetFloat (void)
 	}
 }
 
-const bool SC_CheckFloat()
+bool SC_CheckFloat()
 {
 	char* stopper;
 
