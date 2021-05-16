@@ -367,7 +367,7 @@ void CL_ResyncWorldIndex()
 void Host_EndGame(const char *msg)
 {
     Printf("%s", msg);
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
@@ -436,7 +436,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	switch (reason)
 	{
-	default: // Also NQ_NONE
+	default: // Also NQ_SILENT
 		break;
 	case NQ_DISCONNECT:
 		Printf("Disconnected from server\n");
@@ -736,7 +736,7 @@ BEGIN_COMMAND (connect)
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (argc > 1)
 	{
@@ -773,7 +773,7 @@ END_COMMAND (connect)
 
 BEGIN_COMMAND (disconnect)
 {
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 END_COMMAND (disconnect)
 
@@ -1235,7 +1235,7 @@ BEGIN_COMMAND(netplay)
  		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 	connected = false;
 
 	std::string filename = argv[1];
@@ -1533,7 +1533,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
 	       missing_file.getBasename().c_str());
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	// Start the download.
 	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);

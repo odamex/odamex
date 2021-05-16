@@ -1856,7 +1856,7 @@ void SV_ConnectClient2(player_t& player)
 	player.playerstate = PST_LIVE;
 
 	// [Toke] send server settings
-	SendServerSettings(*player);
+	SendServerSettings(player);
 
 	cl->displaydisconnect = true;
 
@@ -1875,12 +1875,12 @@ void SV_ConnectClient2(player_t& player)
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
 			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(*player, SVC_PM_SPECTATOR));
+			             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 		}
 	}
 
 	// Send a map name
-	MSG_WriteSVC(&player->client.reliablebuf,
+	MSG_WriteSVC(&player.client.reliablebuf,
 	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname, level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
@@ -1897,7 +1897,7 @@ void SV_ConnectClient2(player_t& player)
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(*player));
+		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(player));
 	}
 
 	// Notify this player of other player's queue positions

@@ -66,6 +66,7 @@ EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
@@ -193,7 +194,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 	}
 
 	Printf("%s", msg->message().c_str());
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 
 /**
@@ -1157,8 +1158,8 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 //
 static void CL_Print(const odaproto::svc::Print* msg)
 {
-	byte level = MSG_ReadByte();
-	const char *str = MSG_ReadString();
+	byte level = msg->level();
+	const char* str = msg->message().c_str();
 
 	// Disallow getting NORCON messages
 	if (level == PRINT_NORCON)
@@ -1166,7 +1167,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);	
+		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_TEAMCHAT)
 		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
@@ -1534,13 +1535,13 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
  */
 static void CL_Say(const odaproto::svc::Say* msg)
 {
-	byte message_visibility = MSG_ReadByte();
-	byte player_id = MSG_ReadByte();
-	const char* message = MSG_ReadString();
+	byte message_visibility = msg->visibility();
+	byte player_id = msg->pid();
+	const char* message = msg->message().c_str();
 
 	bool filtermessage = false;
 
-	player_t &player = idplayer(player_id);
+	player_t& player = idplayer(player_id);
 
 	if (!validplayer(player))
 		return;
@@ -1554,8 +1555,7 @@ static void CL_Say(const odaproto::svc::Say* msg)
 
 		if (mute_enemies && !spectator &&
 		    (G_IsFFAGame() ||
-		    (G_IsTeamGame() &&
-		     player.userinfo.team != consoleplayer().userinfo.team)))
+		     (G_IsTeamGame() && player.userinfo.team != consoleplayer().userinfo.team)))
 			filtermessage = true;
 	}
 
@@ -1564,15 +1564,16 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name,
+			       &message[4]);
 		else
 			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
 			       message);
 
 		if (show_messages && !filtermessage)
-		{	
+		{
 			if (cl_chatsounds == 1)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		}
 	}
 	else if (message_visibility == 1)

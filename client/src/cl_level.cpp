@@ -138,7 +138,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	G_LoadWadString(str);
 
 	D_StartTitle ();
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
 	currentmusic = gameinfo.titleMusic;
 	
@@ -165,7 +165,7 @@ void G_DoNewGame (void)
 		D_SetupUserInfo ();
 	}
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	multiplayer = false;
 
