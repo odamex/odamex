@@ -151,7 +151,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 		case -1:
 			// DOWN
 			lastpos = P_FloorHeight(m_Sector);
-			if (lastpos - speed <= dest)
+			if (lastpos - speed < dest)
 			{
 				P_ChangeFloorHeight(m_Sector, dest - lastpos);
 				flag = P_ChangeSector (m_Sector, crush);
@@ -193,7 +193,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 					dest = h;
 			}
 
-			if (lastpos + speed >= dest)
+			if (lastpos + speed > dest)
 			{
 				P_ChangeFloorHeight(m_Sector, dest - lastpos);
 				flag = P_ChangeSector (m_Sector, crush);
@@ -244,7 +244,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 					dest = h;
 			}
 
-			if (lastpos - speed <= dest)
+			if (lastpos - speed < dest)
 			{
 				P_SetCeilingHeight(m_Sector, dest);
 				flag = P_ChangeSector (m_Sector, crush);
@@ -278,7 +278,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			// UP
 			lastpos = P_CeilingHeight(m_Sector);
 
-			if (lastpos + speed >= dest)
+			if (lastpos + speed > dest)
 			{
 				P_SetCeilingHeight(m_Sector, dest);
 				flag = P_ChangeSector (m_Sector, crush);
