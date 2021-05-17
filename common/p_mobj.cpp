@@ -515,7 +515,7 @@ void P_MoveActor(AActor *mo)
 	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (co_realactorheight && (mo->flags2 & MF2_PASSMOBJ))
+		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj(mo)))
 			{
@@ -913,8 +913,7 @@ void AActor::Serialize (FArchive &arc)
 //
 int P_ThingInfoHeight(mobjinfo_t *mi)
 {
-   return
-      (co_realactorheight && mi->cdheight ?
+   return (P_AllowPassover() && mi->cdheight ?
        mi->cdheight : mi->height);
 }
 
