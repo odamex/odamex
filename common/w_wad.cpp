@@ -799,7 +799,7 @@ patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 /**
  * @brief Cache a patch by lump number and return a handle to it.
  */
-lumpHandle_t W_CachePatchHandle(const int lumpNum, const int tag)
+lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag)
 {
 	W_CachePatch(lumpNum, tag);
 	return W_LumpToHandle(lumpNum);
@@ -808,7 +808,7 @@ lumpHandle_t W_CachePatchHandle(const int lumpNum, const int tag)
 /**
  * @brief Cache a patch by name and namespace and return a handle to it.
  */
-lumpHandle_t W_CachePatchHandle(const char* name, const int tag, const int ns)
+lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag, const int ns)
 {
 	return W_CachePatchHandle(W_GetNumForName(name, ns), tag);
 }
