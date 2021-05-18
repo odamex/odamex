@@ -700,7 +700,7 @@ void W_GetLumpName (char *to, unsigned  lump)
 //
 // W_CacheLumpNum
 //
-void* W_CacheLumpNum(unsigned int lump, int tag)
+void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 {
 	if ((unsigned)lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
@@ -731,7 +731,7 @@ void* W_CacheLumpNum(unsigned int lump, int tag)
 //
 // W_CacheLumpName
 //
-void* W_CacheLumpName(const char* name, int tag)
+void* W_CacheLumpName(const char* name, const zoneTag_e tag)
 {
 	return W_CacheLumpNum (W_GetNumForName(name), tag);
 }
@@ -746,7 +746,7 @@ void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
 // patch from the standard Doom format of posts with 1-byte lengths and offsets
 // to a new format for posts that uses 2-byte lengths and offsets.
 //
-patch_t* W_CachePatch(unsigned lumpnum, int tag)
+patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 {
 	if (lumpnum >= numlumps)
 		I_Error ("W_CachePatch: %u >= numlumps", lumpnum);
@@ -790,7 +790,7 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 	return (patch_t*)lumpcache[lumpnum];
 }
 
-patch_t* W_CachePatch(const char* name, int tag)
+patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 {
 	return W_CachePatch(W_GetNumForName(name), tag);
 	// denis - todo - would be good to replace non-existant patches with a default '404' patch

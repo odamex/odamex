@@ -68,9 +68,14 @@
 	}
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "90"
-#define DOTVERSIONSTR "0.9.0"
-#define GAMEVER (MAKEVER(0, 9, 0))
+
+// Used by configuration files.  upversion.py will update thie field
+// deterministically and unambiguously so newer versions always compare
+// greater.
+#define CONFIGVERSIONSTR "91"
+
+#define DOTVERSIONSTR "0.9.1"
+#define GAMEVER (MAKEVER(0, 9, 1))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
 
@@ -83,8 +88,10 @@
 
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
-// earlier than this version.
-#define SAVESIG "ODAMEXSAVE090   "	// Needs to be exactly 16 chars long
+// earlier than this version.  Needs to be exactly 16 chars long.
+// 
+// upversion.py will update thie field deterministically and unambiguously.
+#define SAVESIG "ODAMEXSAVE091   "
 
 #define NETDEMOVER 3
 
