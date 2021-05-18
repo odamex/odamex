@@ -762,7 +762,7 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 
 int V_LineHeight()
 {
-	if (::hu_font[0] == ::hu_bigfont[0])
+	if (::hu_font == ::hu_bigfont)
 		return 12;
 	return 7;
 }

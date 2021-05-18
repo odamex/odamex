@@ -752,14 +752,14 @@ void OdamexHUD() {
 	if (::hud_timer)
 	{
 		if (::hud_bigfont)
-			V_SetFont("BIGFONT");
+			V_SetFont(FONT_BIGFONT);
 
 		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
+			V_SetFont(FONT_SMALLFONT);
 	}
 
 	// Draw other player name, if spying
@@ -775,7 +775,7 @@ void OdamexHUD() {
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
 	if (::hud_bigfont)
-		V_SetFont("BIGFONT");
+		V_SetFont(FONT_BIGFONT);
 
 	hud::DrawText(4, 24 + V_LineHeight() + 1, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(),
@@ -784,7 +784,7 @@ void OdamexHUD() {
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
 
 	if (::hud_bigfont)
-		V_SetFont("SMALLFONT");
+		V_SetFont(FONT_SMALLFONT);
 
 	// Draw keys in coop
 	if (sv_gametype == GM_COOP) {
@@ -1050,16 +1050,14 @@ void SpectatorHUD()
 	if (::hud_timer)
 	{
 		if (::hud_bigfont)
-		{
-			V_SetFont("BIGFONT");
-		}
+			V_SetFont(FONT_BIGFONT);
 
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
+			V_SetFont(FONT_SMALLFONT);
 	}
 
 	// Draw help text - spy player name is handled elsewhere.
