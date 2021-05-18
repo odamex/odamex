@@ -130,9 +130,6 @@ extern level_locals_t level;
 extern	BOOL			usergame;
 
 extern	BOOL			demoplayback;
-extern	BOOL			demorecording;
-extern	BOOL			autorecord;
-extern	std::string		demorecordfile;
 
 // Quit after playing a demo from cmdline.
 extern	BOOL			singledemo;

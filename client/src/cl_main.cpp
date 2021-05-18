@@ -166,6 +166,7 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(debug_disconnect)
 
 static argb_t enemycolor, teamcolor;
 
@@ -385,7 +386,7 @@ void Host_EndGame(const char *msg)
 	CL_QuitNetGame();
 }
 
-void CL_QuitNetGame(void)
+void CL_QuitNetGame2(const char* file, const int line)
 {
 	if(connected)
 	{
@@ -442,15 +443,15 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	if (demorecording)
-		G_CleanupDemo();	// Cleanup in case of a vanilla demo
-
 	demoplayback = false;
 
 	// Reset the palette to default
 	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 
@@ -1660,7 +1661,7 @@ void CL_RequestConnectInfo(void)
 	{
 		connecttimeout = 140;
 
-		Printf(PRINT_HIGH, "connecting to %s\n", NET_AdrToString(serveraddr));
+		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
@@ -1767,9 +1768,8 @@ bool CL_PrepareConnect(void)
 	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
-	Printf(PRINT_HIGH, "\n");
-	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
-	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
+	Printf("Found server at %s.\n\n", NET_AdrToString(::serveraddr));
+	Printf("> Hostname: %s\n", server_host.c_str());
 
 	std::vector<std::string> newwadnames;
 	newwadnames.reserve(server_wads);
@@ -1826,10 +1826,9 @@ bool CL_PrepareConnect(void)
 		}
 	}
 
+	Printf("> Map: %s\n", server_map.c_str());
+
 	version = MSG_ReadShort();
-
-	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
-
 	if(version > VERSION)
 		version = VERSION;
 	if(version < 62)
@@ -1870,10 +1869,10 @@ bool CL_PrepareConnect(void)
 			gameversiontosend = 40;
 		}
 
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+		int major, minor, patch;
+		BREAKVER(gameversion, major, minor, patch);
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
 	}
-
-    Printf(PRINT_HIGH, "\n");
 
 	// DEH/BEX Patch files
 	size_t patch_count = MSG_ReadByte();
@@ -1896,7 +1895,8 @@ bool CL_PrepareConnect(void)
 		Printf("> %s\n", file.getBasename().c_str());
 	}
 
-    // TODO: Allow deh/bex file downloads
+	// TODO: Allow deh/bex file downloads
+	Printf("\n");
 	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
 	if (!ok && missingfiles.empty())
 	{
@@ -1938,8 +1938,12 @@ bool CL_Connect(void)
 	memset(packetseq, -1, sizeof(packetseq) );
 	packetnum = 0;
 
+	// [AM] This needs to go out ASAP so the server can start sending us
+	//      messages.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
+	NET_SendPacket(::net_buffer, ::serveraddr);
+	Printf("Requesting server state...\n");
 
 	compressor.reset();
 
@@ -2026,7 +2030,7 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf("challenging %s\n", NET_AdrToString(serveraddr));
+		Printf("Joining server...\n");
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
@@ -2098,6 +2102,8 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
+EXTERN_CVAR(cl_chatsounds)
+
 /**
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
@@ -2140,7 +2146,10 @@ void CL_Say()
 			       message);
 
 		if (show_messages && !filtermessage)
+		{	
+			if (cl_chatsounds == 1)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		}
 	}
 	else if (message_visibility == 1)
 	{
@@ -2149,7 +2158,7 @@ void CL_Say()
 		else
 			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
 
-		if (show_messages)
+		if (show_messages && cl_chatsounds)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }

@@ -519,7 +519,7 @@ void P_MoveActor(AActor *mo)
 	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (co_realactorheight && (mo->flags2 & MF2_PASSMOBJ))
+		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj(mo)))
 			{
@@ -917,12 +917,20 @@ void AActor::Serialize (FArchive &arc)
 //
 int P_ThingInfoHeight(mobjinfo_t *mi)
 {
-   return
-      (co_realactorheight && mi->cdheight ?
+   return (P_AllowPassover() && mi->cdheight ?
        mi->cdheight : mi->height);
 }
 
 extern void SV_UpdateMobjState(AActor *mo);
+
+// Use a heuristic approach to detect infinite state cycles: Count the number
+// of times the loop in P_SetMobjState() executes and exit with an error once
+// an arbitrary very large limit is reached.
+//
+// [AM] Taken from Crispy Doom, with a smaller limit - 10,000 iterations
+//      still seems like a lot to me.
+
+#define MOBJ_CYCLE_LIMIT 10000
 
 // P_SetMobjState
 //
@@ -930,14 +938,7 @@ extern void SV_UpdateMobjState(AActor *mo);
 bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 {
 	state_t* st;
-
-	// denis - prevent harmful state cycles
-	static unsigned int callstack;
-	if(callstack++ > 16)
-	{
-		callstack = 0;
-		I_Error("P_SetMobjState: callstack depth exceeded bounds");
-	}
+	int cycle_counter = 0;
 
 	do
 	{
@@ -950,8 +951,6 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		{
 			mobj->state = (state_t *) S_NULL;
 			mobj->Destroy();
-
-			callstack--;
 			return false;
 		}
 
@@ -972,9 +971,16 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 			st->action(mobj);
 
 		state = st->nextstate;
+
+		// denis - prevent harmful state cycle
+		// [AM] A slightly different heruistic that doesn't involve global state.
+		if (cycle_counter++ > MOBJ_CYCLE_LIMIT)
+		{
+			I_Error("P_SetMobjState: Infinite state cycle detected for %s at state %d.",
+			        mobj->info->name, state);
+		}
 	} while (!mobj->tics);
 
-	callstack--;
 	return true;
 }
 

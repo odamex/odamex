@@ -68,7 +68,7 @@ class StringTable
 	void clearStrings();
 	void loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
 	                  size_t lumpLen);
-	void loadStringsLump(int lump, const char* lumpname);
+	void loadStringsLump(const int lump, const char* lumpname, const bool engOnly);
 	void prepareIndexes();
 	void replaceEscapes(std::string& str);
 
@@ -133,7 +133,7 @@ class StringTable
 
 	void dumpStrings();
 	bool hasString(const OString& name) const;
-	void loadStrings();
+	void loadStrings(const bool engOnly);
 	const OString& matchString(const OString& string) const;
 	void setString(const OString& name, const OString& string);
 	void setPassString(int pass, const OString& name, const OString& string);

@@ -46,7 +46,8 @@ extern NetDemo	netdemo;
 
 extern bool predicting;
 
-void CL_QuitNetGame(void);
+#define CL_QuitNetGame() CL_QuitNetGame2(__FILE__, __LINE__)
+void CL_QuitNetGame2(const char* file, const int line);
 void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);

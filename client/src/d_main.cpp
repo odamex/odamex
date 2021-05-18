@@ -105,7 +105,6 @@ void D_DoomLoop (void);
 
 extern int testingmode;
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
@@ -116,8 +115,6 @@ static bool wiping_screen = false;
 
 char startmap[8];
 BOOL autostart;
-BOOL autorecord;
-std::string demorecordfile;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
@@ -148,7 +145,7 @@ EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 
-const char *LOG_FILE;
+std::string LOG_FILE;
 
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
@@ -603,10 +600,9 @@ void D_Init()
 	M_ClearRandom();
 
 	// start the Zone memory manager
-	bool use_zone = !Args.CheckParm("-nozone");
-	Z_Init(use_zone);
+	Z_Init();
 	if (first_time)
-		Printf(PRINT_HIGH, "Z_Init: Heapsize: %" PRIuSIZE " megabytes\n", got_heapsize);
+		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Load palette and set up colormaps
 	V_Init();
@@ -614,9 +610,6 @@ void D_Init()
 //	if (first_time)
 //		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
 //	Res_InitTextureManager();
-
-	// [RH] Initialize localizable strings.
-	GStrings.loadStrings();
 
 	// init the renderer
 	if (first_time)
@@ -895,18 +888,6 @@ void D_DoomMain()
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
 
-	// Record a vanilla demo
-	p = Args.CheckParm("-record");
-	if (p && p < Args.NumArgs() - 1)
-	{
-		autorecord = true;
-		autostart = true;
-		demorecordfile = Args.GetArg(p + 1);
-
-		// extended vanilla demo format
-		longtics = Args.CheckParm("-longtics");
-	}
-
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm("-playdemo");
 	// Hack to check for +playdemo command, since if you just add it normally
@@ -990,8 +971,6 @@ void D_DoomMain()
 		}
 
 		G_InitNew(startmap);
-		if (autorecord)
-			G_RecordDemo(startmap, demorecordfile);
 	}
 	else if (gamestate != GS_CONNECTING)
 	{

@@ -28,7 +28,6 @@
 #include "m_resfile.h"
 
 void D_UndoDehPatch();
-bool D_DoDehPatch(const OResFile* patchfile, bool autoloading);
+bool D_DoDehPatch(const OResFile* patchfile, const int lump);
 
 #endif //__D_DEHACK_H__
-
