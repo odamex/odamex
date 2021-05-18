@@ -30,6 +30,7 @@
 
 #include "dobject.h"
 #include "v_video.h"
+#include "w_wad.h"
 
 /**
  * @brief Class for managing construction and destruction of layout contexts.
@@ -305,9 +306,10 @@ class DGUIPatch : public DGUIElement
 {
 	DECLARE_CLASS(DGUIPatch, DGUIElement)
 	std::string m_patchLump;
+	namespace_t m_namespace;
 
   public:
-	DGUIPatch(OGUIContext& ctx);
+	DGUIPatch(OGUIContext& ctx, const std::string& patchLump, const namespace_t ns);
 	void layout();
 	void render();
 };

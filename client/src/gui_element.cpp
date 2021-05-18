@@ -262,9 +262,23 @@ void DGUIFlat::push_back(DGUIElement* ele)
 
 IMPLEMENT_CLASS(DGUIPatch, DGUIElement)
 
+DGUIPatch::DGUIPatch(OGUIContext& ctx, const std::string& patchLump, const namespace_t ns)
+    : DGUIElement(ctx), m_patchLump(patchLump), m_namespace(ns)
+{
+}
+
 void DGUIPatch::layout()
 {
 	DGUIElement::layout();
+
+	// Find the patch to render.
+	int index = W_CheckNumForName(m_patchLump.c_str(), m_namespace);
+	if (index)
+	{
+		// Set the width and height of our patch.
+		patch_t* patch = (patch_t*)W_CacheLumpNum(index, PU_CACHE);
+		lay_set_size_xy(m_ctx.layoutAddr(), m_layoutID, patch->width(), patch->height());
+	}
 }
 
 void DGUIPatch::render()
@@ -273,7 +287,7 @@ void DGUIPatch::render()
 		return;
 
 	// Find the flat to render.
-	int index = W_CheckNumForName(m_patchLump.c_str(), ns_global);
+	int index = W_CheckNumForName(m_patchLump.c_str(), m_namespace);
 	if (index)
 	{
 		// Only attempt to render the flat if it was found.
