@@ -262,23 +262,22 @@ void DGUIFlat::push_back(DGUIElement* ele)
 
 IMPLEMENT_CLASS(DGUIPatch, DGUIElement)
 
-DGUIPatch::DGUIPatch(OGUIContext& ctx, const std::string& patchLump, const namespace_t ns)
-    : DGUIElement(ctx), m_patchLump(patchLump), m_namespace(ns)
+DGUIPatch::DGUIPatch(OGUIContext& ctx, const patch_t* patch)
+    : DGUIElement(ctx), m_patch(patch), m_offset(0, 0)
 {
+}
+
+void DGUIPatch::offset(Vec2<int> offset)
+{
+	m_offset = offset;
 }
 
 void DGUIPatch::layout()
 {
 	DGUIElement::layout();
 
-	// Find the patch to render.
-	int index = W_CheckNumForName(m_patchLump.c_str(), m_namespace);
-	if (index)
-	{
-		// Set the width and height of our patch.
-		patch_t* patch = (patch_t*)W_CacheLumpNum(index, PU_CACHE);
-		lay_set_size_xy(m_ctx.layoutAddr(), m_layoutID, patch->width(), patch->height());
-	}
+	// Set the width and height of our patch.
+	lay_set_size_xy(m_ctx.layoutAddr(), m_layoutID, m_patch->width(), m_patch->height());
 }
 
 void DGUIPatch::render()
@@ -286,15 +285,9 @@ void DGUIPatch::render()
 	if (m_layoutID == LAY_INVALID_ID)
 		return;
 
-	// Find the flat to render.
-	int index = W_CheckNumForName(m_patchLump.c_str(), m_namespace);
-	if (index)
-	{
-		// Only attempt to render the flat if it was found.
-		patch_t* patch = (patch_t*)W_CacheLumpNum(index, PU_CACHE);
-		lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
-		::screen->DrawPatch(patch, vec[0], vec[1]);
-	}
+	// Only attempt to render the flat if it was found.
+	lay_vec4 vec = lay_get_rect(m_ctx.layoutAddr(), m_layoutID);
+	::screen->DrawPatch(m_patch, vec[0] + m_offset.x, vec[1] + m_offset.y);
 }
 
 /*

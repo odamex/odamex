@@ -305,11 +305,12 @@ class DGUIFlat : public DGUIElement
 class DGUIPatch : public DGUIElement
 {
 	DECLARE_CLASS(DGUIPatch, DGUIElement)
-	std::string m_patchLump;
-	namespace_t m_namespace;
+	const patch_t* m_patch;
+	Vec2<int> m_offset;
 
   public:
-	DGUIPatch(OGUIContext& ctx, const std::string& patchLump, const namespace_t ns);
+	DGUIPatch(OGUIContext& ctx, const patch_t* patch);
+	void offset(Vec2<int> offset);
 	void layout();
 	void render();
 };

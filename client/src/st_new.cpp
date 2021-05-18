@@ -492,6 +492,43 @@ void HU_ChatWindow()
 	lay_reset_context(ctx.layoutAddr());
 }
 
+void HU_FullscreenHUD()
+{
+	player_t& player = displayplayer();
+
+	OGUIContext ctx;
+	DGUIContainer con(ctx);
+
+	// Draw Armor if the player has any
+	if (player.armortype && player.armorpoints)
+	{
+		const patch_t* current_armor = ::armors[1];
+		if (player.armortype == 1)
+		{
+			current_armor = ::armors[0];
+		}
+
+		if (current_armor)
+		{
+			DGUIPatch* armor = new DGUIPatch(ctx, current_armor);
+			armor->offset(
+			    Vec2<int>(current_armor->leftoffset(), current_armor->topoffset()));
+			con.push_back(armor);
+
+			// Draw Armor type.  Vertically centered against armor number.
+			//hud::DrawPatchScaled(48 + 2 + 10, 32, 20, 20, hud_scale, hud::X_LEFT,
+			//                     hud::Y_BOTTOM, hud::X_CENTER, hud::Y_MIDDLE,
+			//                     current_armor);
+		}
+		//ST_DrawNumRight(48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
+	}
+
+	con.layout();
+	lay_run_context(ctx.layoutAddr());
+	con.render();
+	lay_reset_context(ctx.layoutAddr());
+}
+
 namespace hud {
 
 /**
@@ -668,6 +705,9 @@ void drawNetdemo() {
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
+	HU_FullscreenHUD();
+	return;
+
 	std::string buf;
 	player_t *plyr = &displayplayer();
 
