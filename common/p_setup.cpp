@@ -613,6 +613,7 @@ void P_LoadThings (int lump)
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
+			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{ 
 				if ((g_coopthingfilter.asInt() == 1 && mt2.flags & IT_WEAPON) ||
@@ -620,6 +621,7 @@ void P_LoadThings (int lump)
 					mt2.flags &= ~MTF_COOPERATIVE;
 			}
 			else
+			#endif
 				mt2.flags &= ~MTF_SINGLE;
 		}
 		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
