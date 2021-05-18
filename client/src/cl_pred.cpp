@@ -32,7 +32,6 @@
 
 #include "p_snapshot.h"
 
-EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
 

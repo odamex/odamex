@@ -237,7 +237,8 @@ CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Value
 	"// 0 - All Coop things are retained (default).\n" \
 	"// 1 - Only Coop weapons are removed.\n" \
         "// 2 - All Coop things are removed.",
-	CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+           CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
+           0.0f, 2.0f)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
@@ -280,6 +281,9 @@ CVAR_RANGE(sv_countdown, "5",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 

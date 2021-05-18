@@ -448,6 +448,31 @@ BOOL SC_GetFloat (void)
 	}
 }
 
+bool SC_CheckFloat()
+{
+	char* stopper;
+
+	if (SC_GetString())
+	{
+		if (sc_String[0] == 0)
+		{
+			SC_UnGet();
+			return false;
+		}
+		sc_Float = (float)strtod(sc_String, &stopper);
+		if (*stopper != 0)
+		{
+			SC_UnGet();
+			return false;
+		}
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 
 //
 // SC_MustGetFloat

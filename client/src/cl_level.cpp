@@ -264,7 +264,6 @@ void G_InitNew (const char *mapname)
 
 	usergame = true;				// will be set false if a demo
 	paused = false;
-	demoplayback = false;
 	viewactive = true;
 
 	D_SetupUserInfo();

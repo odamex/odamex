@@ -202,16 +202,17 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 	InsertColumn(srvdetails_field_name, "", wxLIST_FORMAT_LEFT, 150);
 	InsertColumn(srvdetails_field_value, "", wxLIST_FORMAT_LEFT, 150);
 
-	// TODO: Replace this before next release
-	if (In.Info.VersionRevStr.empty())
-    {
-        Revision = wxString::Format("%u", In.Info.VersionRevision);
-    }
-    else
-        Revision = wxString::Format("%s", In.Info.VersionRevStr);
+	if (!In.Info.VersionRevStr.empty())
+	{
+		Revision = wxString::Format(" (%s)", In.Info.VersionRevStr);
+	}
+	else if (In.Info.VersionRevision != 0)
+	{
+		Revision = wxString::Format(" (r%u)", In.Info.VersionRevision);
+	}
 	
 	// Version
-	InsertLine("Version", wxString::Format("%u.%u.%u-r%s",
+	InsertLine("Version", wxString::Format("%u.%u.%u%s",
 	           In.Info.VersionMajor,
 	           In.Info.VersionMinor,
 	           In.Info.VersionPatch,
