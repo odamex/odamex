@@ -253,9 +253,8 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
 
-	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-
-	return line->frontsector;
+	return line->frontsector == sec ? (line->backsector != sec ? line->backsector : NULL)
+	                                : line->frontsector;
 }
 
 
