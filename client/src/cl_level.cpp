@@ -59,6 +59,7 @@
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
+void CL_ClearSectorSnapshots();
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void R_ResetInterpolation();
@@ -263,7 +264,6 @@ void G_InitNew (const char *mapname)
 
 	usergame = true;				// will be set false if a demo
 	paused = false;
-	demoplayback = false;
 	viewactive = true;
 
 	D_SetupUserInfo();
@@ -451,7 +451,7 @@ void G_DoCompleted (void)
 		{
 			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
 			{
-				if (!multiplayer || demoplayback || demorecording)
+				if (!multiplayer || demoplayback)
 				{
 					// Normal progression
 					G_WorldDone();
@@ -570,6 +570,9 @@ void G_DoLoadLevel (int position)
  	SN_StopAllSequences (); // denis - todo - equivalent?
 	P_SetupLevel (level.mapname, position);
 
+	// [AM] Prevent holding onto stale snapshots.
+	CL_ClearSectorSnapshots();
+
 	// [SL] 2011-09-18 - Find an alternative start if the single player start
 	// point is not availible.
 	if (!multiplayer && !consoleplayer().mo && consoleplayer().ingame())
@@ -602,7 +605,6 @@ void G_DoLoadLevel (int position)
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
-	Z_CheckHeap ();
 
 	// clear cmd building stuff // denis - todo - could we get rid of this?
 	Impulse = 0;

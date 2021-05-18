@@ -1,7 +1,20 @@
-# 3.9 needed for GENERATOR_IS_MULTI_CONFIG
-cmake_minimum_required(VERSION 3.9)
+# CMake 3.13 needed for -S and -B params in library compilation.
+#
+# Note that if you are running Linux, there are many ways to get newer
+# versions of CMake.
+# 
+# - Kitware offers binary downloads direct from their website, which you can
+#   extract to /usr/local or ~/.local.
+# - Ubuntu LTS users can install the CMake snap, and Kitware also runs an
+#   official Ubuntu CMake apt repository.
+# - Debian users can get a new version through backports.
+# - CentOS users can get a new version through EPEL.
+# - If you have Python installed, you can install CMake through pip.
+#
 
-project(Odamex VERSION 0.9.0)
+cmake_minimum_required(VERSION 3.13)
+
+project(Odamex VERSION 0.9.1)
 
 include(CMakeDependentOption)
 
@@ -34,7 +47,7 @@ cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 set(PROJECT_COPYRIGHT "2006-2021")
-set(PROJECT_RC_VERSION "0,9,0,0")
+set(PROJECT_RC_VERSION "0,9,1,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Use C++ 98/03 for all targets
@@ -118,13 +131,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 # git describe
 #
 # Grabs the git hash and branch a few different ways.
+include(GetGitBranch)
 include(GetGitRevisionDescription)
 include(GetGitRevisionNumber)
 get_git_head_revision(HEAD GIT_HASH)
 git_describe(GIT_DESCRIBE --all --long --abbrev=4)
 git_rev_count(HEAD GIT_REV_COUNT)
-string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
-  "\\2" GIT_BRANCH "${GIT_DESCRIBE}")
+git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 

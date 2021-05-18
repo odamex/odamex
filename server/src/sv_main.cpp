@@ -117,6 +117,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
+EXTERN_CVAR(debug_disconnect)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -518,6 +519,7 @@ Players::iterator SV_GetFreeClient(void)
 	}
 
 	players.push_back(player_t());
+	players.back().playerstate = PST_CONTACT;
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
@@ -683,9 +685,9 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
 		if(mo)
-			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 		else
-			MSG_WriteShort (&cl->netbuf, 0);
+			MSG_WriteUnVarint(&cl->netbuf, 0);
 		MSG_WriteLong (&cl->netbuf, x);
 		MSG_WriteLong (&cl->netbuf, y);
 		MSG_WriteByte (&cl->netbuf, channel);
@@ -719,9 +721,9 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 
 	MSG_WriteMarker (&cl->netbuf, svc_startsound);
 	if (mo == NULL)
-		MSG_WriteShort (&cl->netbuf, 0);
+		MSG_WriteUnVarint(&cl->netbuf, 0);
 	else
-		MSG_WriteShort (&cl->netbuf, mo->netid);
+		MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 	MSG_WriteLong (&cl->netbuf, x);
 	MSG_WriteLong (&cl->netbuf, y);
 	MSG_WriteByte (&cl->netbuf, channel);
@@ -760,7 +762,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 		cl = &(it->client);
 
 		MSG_WriteMarker(&cl->netbuf, svc_startsound);
-		MSG_WriteShort(&cl->netbuf, mo->netid);
+		MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 		MSG_WriteLong(&cl->netbuf, mo->x);
 		MSG_WriteLong(&cl->netbuf, mo->y);
 		MSG_WriteByte(&cl->netbuf, channel);
@@ -796,7 +798,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 			MSG_WriteMarker(&cl->netbuf, svc_startsound);
 			// Set netid to 0 since it's not a sound originating from any player's location
-			MSG_WriteShort(&cl->netbuf, 0); // netid
+			MSG_WriteUnVarint(&cl->netbuf, 0); // netid
 			MSG_WriteLong(&cl->netbuf, 0); // x
 			MSG_WriteLong(&cl->netbuf, 0); // y
 			MSG_WriteByte(&cl->netbuf, channel);
@@ -1089,11 +1091,9 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	int teamcount = NUMTEAMS;
-	if (sv_gametype != GM_CTF && sv_teamsinplay >= 0 &&
-	    sv_teamsinplay <= NUMTEAMS)
-		teamcount = sv_teamsinplay;
+	int teamcount = sv_teamsinplay;
 
+	// Unsure how this can be triggered?
 	if (teamcount == 0)
 	{
 		I_Error ("Teamplay is set and no teams are enabled!\n");
@@ -1134,7 +1134,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	MSG_WriteLong(&cl->reliablebuf, mo->angle);
 
 	MSG_WriteShort(&cl->reliablebuf, mo->type);
-	MSG_WriteShort(&cl->reliablebuf, mo->netid);
+	MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 	MSG_WriteByte(&cl->reliablebuf, mo->rndindex);
 	MSG_WriteShort(&cl->reliablebuf, (mo->state - states)); // denis - sending state fixes monster ghosts appearing under doors
 
@@ -1149,8 +1149,8 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 
 	if(mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) // denis - check type as that is what the client will be spawning
 	{
-		MSG_WriteShort (&cl->reliablebuf, mo->target ? mo->target->netid : 0);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		MSG_WriteUnVarint (&cl->reliablebuf, mo->target ? mo->target->netid : 0);
+		MSG_WriteUnVarint (&cl->reliablebuf, mo->netid);
 		MSG_WriteLong (&cl->reliablebuf, mo->angle);
 		MSG_WriteLong (&cl->reliablebuf, mo->momx);
 		MSG_WriteLong (&cl->reliablebuf, mo->momy);
@@ -1161,7 +1161,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 		if(mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
 		{
 			MSG_WriteMarker(&cl->reliablebuf, svc_mobjinfo);
-			MSG_WriteShort(&cl->reliablebuf, mo->netid);
+			MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 			MSG_WriteLong(&cl->reliablebuf, mo->flags);
 		}
 	}
@@ -1170,7 +1170,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	if((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_corpse);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 		MSG_WriteByte (&cl->reliablebuf, mo->frame);
 		MSG_WriteByte (&cl->reliablebuf, mo->tics);
 	}
@@ -1230,7 +1230,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		mo->players_aware.unset(player.id);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_removemobj);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 
 		return true;
 	}
@@ -1246,7 +1246,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		{
 			MSG_WriteMarker (&cl->reliablebuf, svc_spawnplayer);
 			MSG_WriteByte (&cl->reliablebuf, mo->player->id);
-			MSG_WriteShort (&cl->reliablebuf, mo->netid);
+			MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 			MSG_WriteLong (&cl->reliablebuf, mo->angle);
 			MSG_WriteLong (&cl->reliablebuf, mo->x);
 			MSG_WriteLong (&cl->reliablebuf, mo->y);
@@ -1945,58 +1945,49 @@ void SV_ServerSettingChange (void)
 bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 {
 	int GameVer = 0;
-	char VersionStr[20];
-	char OurVersionStr[20];
-	memset(VersionStr, 0, sizeof(VersionStr));
-	memset(OurVersionStr, 0, sizeof(VersionStr));
+	std::string VersionStr;
+	std::string OurVersionStr(DOTVERSIONSTR);
 	bool AllowConnect = true;
-	int majorver = 0;
-	int minorver = 0;
-	int releasever = 0;
-	int MAJORVER = GAMEVER / 256;
-	int MINORVER = (GAMEVER % 256) / 10;
-	int RELEASEVER = (GAMEVER % 256) % 10;
-
-	if ((GAMEVER % 256) % 10)
-		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
-	else
-		sprintf(OurVersionStr, "%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10);
+	int cl_major = 0;
+	int cl_minor = 0;
+	int cl_patch = 0;
+	int sv_major, sv_minor, sv_patch;
+	BREAKVER(GAMEVER, sv_major, sv_minor, sv_patch);
 
 	switch (cl->version)
 	{
-		case 65:
-			GameVer = MSG_ReadLong();
-			cl->majorversion = GameVer / 256;
-			cl->minorversion = GameVer % 256;
-			if ((GameVer % 256) % 10)
-				sprintf(VersionStr, "%i.%i.%i", cl->majorversion, cl->minorversion / 10, cl->minorversion % 10);
-			else
-				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
+	case 65:
+		GameVer = MSG_ReadLong();
 
-			majorver = GameVer / 256;
-			minorver = (GameVer % 256) / 10;
-			releasever = (GameVer % 256) % 10;
+		cl_major = VERMAJ(GameVer);
+		cl_minor = VERMIN(GameVer);
+		cl_patch = VERPATCH(GameVer);
 
-			if ((majorver == MAJORVER) &&
-				(minorver == MINORVER) &&
-				(releasever >= RELEASEVER))
-				AllowConnect = true;
-			else
-				AllowConnect = false;
-			break;
-		case 64:
-			sprintf(VersionStr, "0.2a or 0.3");
-			break;
-		case 63:
-			sprintf(VersionStr, "Pre-0.2");
-			break;
-		case 62:
-			sprintf(VersionStr, "0.1a");
-			break;
-		default:
-			sprintf(VersionStr, "Unknown");
-			break;
+		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
+		cl->majorversion = cl_major;
+		cl->minorversion = cl_minor;
+
+		// Major and minor versions must be identical, client is allowed
+		// to have a newer patch.
+		if ((cl_major == sv_major) && (cl_minor == sv_minor) &&
+		    (cl_patch >= sv_patch))
+			AllowConnect = true;
+		else
+			AllowConnect = false;
+		break;
+	case 64:
+		VersionStr = "0.2a or 0.3";
+		break;
+	case 63:
+		VersionStr = "Pre-0.2";
+		break;
+	case 62:
+		VersionStr = "0.1a";
+		break;
+	default:
+		VersionStr = "Unknown";
+		break;
 	}
 
 	// GhostlyDeath -- removes the constant AllowConnects above
@@ -2020,19 +2011,20 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
             std::endl;
 
 		// GhostlyDeath -- Check to see if it's older or not
-		if (cl->majorversion < (GAMEVER / 256))
+		if (cl->majorversion < sv_major)
+		{
 			older = true;
+		}
+		else if (cl->majorversion > sv_major)
+		{
+			older = false;
+		}
 		else
 		{
-			if (cl->majorversion > (GAMEVER / 256))
+			if (cl->minorversion < sv_minor)
+				older = true;
+			else if (cl->minorversion > sv_minor)
 				older = false;
-			else
-			{
-				if (cl->minorversion < (GAMEVER % 256))
-					older = true;
-				else if (cl->minorversion > (GAMEVER % 256))
-					older = false;
-			}
 		}
 
 		// GhostlyDeath -- Print message depending on older or newer
@@ -2082,8 +2074,8 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		// GhostlyDeath -- And we tell the server
 		Printf("%s -- Version mismatch (%s != %s)\n",
                 NET_AdrToString(net_from),
-                VersionStr,
-                OurVersionStr);
+                VersionStr.c_str(),
+                OurVersionStr.c_str());
 	}
 
 	return AllowConnect;
@@ -2223,69 +2215,62 @@ void SV_ConnectClient()
 	MSG_WriteByte(&cl->reliablebuf, player->id);
 	MSG_WriteString(&cl->reliablebuf, cl->digest.c_str());
 	SV_SendPacket(*player);
+}
+
+void SV_ConnectClient2(player_t& player)
+{
+	client_t* cl = &player.client;
+
+	// [AM] FIXME: I don't know if it's safe to set players as PST_ENTER
+	//             this early.
+	player.playerstate = PST_LIVE;
 
 	// [Toke] send server settings
-	SV_SendServerSettings(*player);
+	SV_SendServerSettings(player);
 
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
 	cl->download.md5 = "";
-	if (connection_type == 1)
-	{
-		player->playerstate = PST_DOWNLOAD;
-		player->spectator = true;
-		SV_BroadcastUserInfo(*player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
-		// send the client the scores and list of other clients
-		SV_ClientFullUpdate(*player);
-
-		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			// [SL] 2011-07-30 - clients should consider downloaders as spectators
-			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
-		}
-
-		return;
-	}
-
-	SV_BroadcastUserInfo(*player);
+	SV_BroadcastUserInfo(player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
-	player->playerstate = PST_ENTER;
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
+	player.playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
-		player->spectator = true;
+		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-			SVC_PlayerMembers(pit->client.reliablebuf, *player, SVC_PM_SPECTATOR);
+			SVC_PlayerMembers(pit->client.reliablebuf, player, SVC_PM_SPECTATOR);
 	}
 
 	// Send a map name
-	SVC_LoadMap(player->client.reliablebuf, ::wadfiles, ::patchfiles, level.mapname,
+	SVC_LoadMap(player.client.reliablebuf, ::wadfiles, ::patchfiles, level.mapname,
 	            level.time);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
 
-	G_DoReborn(*player);
-	SV_ClientFullUpdate(*player);
+	G_DoReborn(player);
+	SV_ClientFullUpdate(player);
 
-	SV_BroadcastPrintf("%s has connected.\n", player->userinfo.netname.c_str());
+	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
 		MSG_WriteMarker(&pit->client.reliablebuf, svc_connectclient);
-		MSG_WriteByte(&pit->client.reliablebuf, player->id);
+		MSG_WriteByte(&pit->client.reliablebuf, player.id);
 	}
 
-	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
+	// Notify this player of other player's queue positions
+	SV_SendPlayerQueuePositions(&player, true); 
+
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
 //
@@ -2364,7 +2349,7 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient(player_t &who)
+void SV_DropClient2(player_t &who, const char* file, const int line)
 {
 	client_t *cl = &who.client;
 
@@ -2373,6 +2358,9 @@ void SV_DropClient(player_t &who)
 	SV_SendPacket(who);
 
 	SV_DisconnectClient(who);
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 //
@@ -3116,14 +3104,14 @@ void SV_UpdateMissiles(player_t &pl)
 			client_t *cl = &pl.client;
 
 			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->rndindex);
 			MSG_WriteLong (&cl->netbuf, mo->x);
 			MSG_WriteLong (&cl->netbuf, mo->y);
 			MSG_WriteLong (&cl->netbuf, mo->z);
 
 			MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 			MSG_WriteLong (&cl->netbuf, mo->angle);
 			MSG_WriteLong (&cl->netbuf, mo->momx);
 			MSG_WriteLong (&cl->netbuf, mo->momy);
@@ -3132,8 +3120,8 @@ void SV_UpdateMissiles(player_t &pl)
 			if (mo->tracer)
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
-				MSG_WriteShort(&cl->netbuf, mo->netid);
-				MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
+				MSG_WriteUnVarint(&cl->netbuf, mo->netid);
+				MSG_WriteUnVarint(&cl->netbuf, mo->tracer->netid);
 			}
 
             if (cl->netbuf.cursize >= 1024)
@@ -3157,7 +3145,7 @@ void SV_UpdateMobjState(AActor *mo)
 			statenum_t mostate = (statenum_t)(mo->state - states);
 
 			MSG_WriteMarker(&cl->reliablebuf, svc_mobjstate);
-			MSG_WriteShort(&cl->reliablebuf, mo->netid);
+			MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 			MSG_WriteShort(&cl->reliablebuf, (short)mostate);
 		}
 	}
@@ -3188,27 +3176,27 @@ void SV_UpdateMonsters(player_t &pl)
 			client_t *cl = &pl.client;
 
 			MSG_WriteMarker(&cl->netbuf, svc_movemobj);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 			MSG_WriteByte(&cl->netbuf, mo->rndindex);
 			MSG_WriteLong(&cl->netbuf, mo->x);
 			MSG_WriteLong(&cl->netbuf, mo->y);
 			MSG_WriteLong(&cl->netbuf, mo->z);
 
 			MSG_WriteMarker(&cl->netbuf, svc_mobjspeedangle);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 			MSG_WriteLong(&cl->netbuf, mo->angle);
 			MSG_WriteLong(&cl->netbuf, mo->momx);
 			MSG_WriteLong(&cl->netbuf, mo->momy);
 			MSG_WriteLong(&cl->netbuf, mo->momz);
 
 			MSG_WriteMarker(&cl->netbuf, svc_actor_movedir);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
 			MSG_WriteByte(&cl->netbuf, mo->movedir);
 			MSG_WriteLong(&cl->netbuf, mo->movecount);
 
 			MSG_WriteMarker(&cl->netbuf, svc_actor_target);
-			MSG_WriteShort(&cl->netbuf, mo->netid);
-			MSG_WriteShort(&cl->netbuf, mo->target->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->netid);
+			MSG_WriteUnVarint(&cl->netbuf, mo->target->netid);
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -3235,8 +3223,8 @@ void SV_ActorTarget(AActor *actor)
 			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_actor_target);
-		MSG_WriteShort (&cl->reliablebuf, actor->netid);
-		MSG_WriteShort (&cl->reliablebuf, actor->target ? actor->target->netid : 0);
+		MSG_WriteUnVarint(&cl->reliablebuf, actor->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, actor->target ? actor->target->netid : 0);
 	}
 }
 
@@ -3253,8 +3241,8 @@ void SV_ActorTracer(AActor *actor)
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_actor_tracer);
-		MSG_WriteShort (&cl->reliablebuf, actor->netid);
-		MSG_WriteShort (&cl->reliablebuf, actor->tracer ? actor->tracer->netid : 0);
+		MSG_WriteUnVarint(&cl->reliablebuf, actor->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, actor->tracer ? actor->tracer->netid : 0);
 	}
 }
 
@@ -3374,7 +3362,7 @@ void SV_UpdateDeadPlayers()
 				client_t *cl = &clients[i];
 
 				MSG_WriteMarker (&cl->reliablebuf, svc_mobjframe);
-				MSG_WriteShort (&cl->reliablebuf, mo->netid);
+				MSG_WriteUnVarint (&cl->reliablebuf, mo->netid);
 				MSG_WriteByte (&cl->reliablebuf, mo->frame);
 			}
 
@@ -3425,7 +3413,9 @@ void SV_SendPackets()
 	Players::iterator it = begin;
 	do
 	{
-		SV_SendPacket(*it);
+		// [AM] Don't send packets to players who haven't acked packet 0
+		if (it->playerstate != PST_CONTACT)
+			SV_SendPacket(*it);
 
 		++it;
 		if (it == players.end())
@@ -4650,7 +4640,7 @@ void SV_TouchSpecial(AActor *special, player_t *player)
         return;
 
     MSG_WriteMarker(&cl->reliablebuf, svc_touchspecial);
-    MSG_WriteShort(&cl->reliablebuf, special->netid);
+    MSG_WriteUnVarint(&cl->reliablebuf, special->netid);
 }
 
 void SV_PlayerTimes (void)
@@ -5005,7 +4995,7 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType act
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_activateline);
 		MSG_WriteLong (&cl->reliablebuf, l);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 		MSG_WriteByte (&cl->reliablebuf, side);
 		MSG_WriteByte (&cl->reliablebuf, activationType);
 	}
@@ -5274,7 +5264,7 @@ void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage)
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_damageplayer);
-		MSG_WriteShort(&cl->reliablebuf, player->mo->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, player->mo->netid);
 		MSG_WriteShort(&cl->reliablebuf, healthDamage);
 		MSG_WriteByte(&cl->reliablebuf, armorDamage);
 	}
@@ -5290,19 +5280,19 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_damagemobj);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, target->netid);
 		MSG_WriteShort(&cl->reliablebuf, target->health);
 		MSG_WriteByte(&cl->reliablebuf, pain);
 
 		MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-		MSG_WriteShort (&cl->netbuf, target->netid);
+		MSG_WriteUnVarint(&cl->netbuf, target->netid);
 		MSG_WriteByte (&cl->netbuf, target->rndindex);
 		MSG_WriteLong (&cl->netbuf, target->x);
 		MSG_WriteLong (&cl->netbuf, target->y);
 		MSG_WriteLong (&cl->netbuf, target->z);
 
 		MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
-		MSG_WriteShort(&cl->netbuf, target->netid);
+		MSG_WriteUnVarint(&cl->netbuf, target->netid);
 		MSG_WriteLong (&cl->netbuf, target->angle);
 		MSG_WriteLong (&cl->netbuf, target->momx);
 		MSG_WriteLong (&cl->netbuf, target->momy);
@@ -5325,7 +5315,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 
 		// send death location first
 		MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, target->netid);
 		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
 
 		// [SL] 2012-12-26 - Get real position since this actor is at
@@ -5342,7 +5332,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong(&cl->reliablebuf, target->z + zoffs);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
-		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, target->netid);
 		MSG_WriteLong (&cl->reliablebuf, target->angle);
 		MSG_WriteLong (&cl->reliablebuf, target->momx);
 		MSG_WriteLong (&cl->reliablebuf, target->momy);
@@ -5367,14 +5357,10 @@ void SV_SendDestroyActor(AActor *mo)
             	// objects, as a flood of destroyed things could easily overflow a
             	// buffer
 				MSG_WriteMarker(&cl->reliablebuf, svc_removemobj);
-				MSG_WriteShort(&cl->reliablebuf, mo->netid);
+				MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 			}
 		}
 	}
-
-	// AActor no longer active. NetID released.
-	if (mo->netid)
-		ServerNetID.ReleaseNetID( mo->netid );
 }
 
 // Missile exploded so tell clients about it
@@ -5388,14 +5374,14 @@ void SV_ExplodeMissile(AActor *mo)
 			continue;
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_movemobj);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 		MSG_WriteByte (&cl->reliablebuf, mo->rndindex);
 		MSG_WriteLong (&cl->reliablebuf, mo->x);
 		MSG_WriteLong (&cl->reliablebuf, mo->y);
 		MSG_WriteLong (&cl->reliablebuf, mo->z);
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
-		MSG_WriteShort(&cl->reliablebuf, mo->netid);
+		MSG_WriteUnVarint(&cl->reliablebuf, mo->netid);
 	}
 }
 
@@ -5613,7 +5599,7 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 			MSG_WriteShort(&cl->reliablebuf, line - lines);
 		else
 			MSG_WriteShort(&cl->reliablebuf, 0xFFFF);
-		MSG_WriteShort(&cl->reliablebuf, activator ? activator->netid : 0);
+		MSG_WriteUnVarint(&cl->reliablebuf, activator ? activator->netid : 0);
 		MSG_WriteVarint(&cl->reliablebuf, arg0);
 		MSG_WriteVarint(&cl->reliablebuf, arg1);
 		MSG_WriteVarint(&cl->reliablebuf, arg2);
@@ -5665,7 +5651,7 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_executeacsspecial);
 		MSG_WriteByte(&cl->reliablebuf, special);
-		MSG_WriteVarint(&cl->reliablebuf, activator ? activator->netid : 0);
+		MSG_WriteUnVarint(&cl->reliablebuf, activator ? activator->netid : 0);
 
 		MSG_WriteByte(&cl->reliablebuf, argc);
 		if (arg0 != -1)

@@ -1,13 +1,16 @@
 #
 # Copyright (C) 2020 Alex Mayfield.
 #
+# If you double-clicked on the script expecting to run it, you need to right
+# click Run With Powershell instead.
+#
 
 #
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "OdamexVersion" -Value "0.9.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "-TEST2"
+Set-Variable -Name "OdamexVersion" -Value "0.9.1"
+Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #
 # The actual script follows.
@@ -74,7 +77,9 @@ function CopyFiles {
         -Destination "${CommonDir}\LICENSE.txt"
     Copy-Item -Force -Path "${PSScriptRoot}\..\..\MAINTAINERS" `
         -Destination "${CommonDir}\MAINTAINERS.txt"
-    Copy-Item -Force -Path "${PSScriptRoot}\..\..\wad\odamex.wad" `
+    Copy-Item -Force -Path "${PSScriptRoot}\..\..\README" `
+        -Destination "${CommonDir}\README.txt"
+    Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\wad\odamex.wad", `
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2_mixer-2.0.4\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
@@ -155,17 +160,21 @@ function Outputs {
     # Generate archives
     7z.exe a `
         "${OutputDir}\odamex-win64-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X64Dir}\*"
+        "${CommonDir}\*" "${X64Dir}\*" `
+        "-x!${CommonDir}\odamex-installed.txt"
     7z.exe a `
         "${OutputDir}\odamex-win32-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X86Dir}\*"
+        "${CommonDir}\*" "${X86Dir}\*" `
+        "-x!${CommonDir}\odamex-installed.txt"
 
     # Generate installer
     ISCC.exe odamex.iss `
         /DOdamexVersion=${OdamexVersion} `
         /DOdamexTestSuffix=${OdamexTestSuffix}
+}
 
-    # Copy pdb files
+function ZipDebug {
+    # Copy pdb files into zip.  DO NOT THROW THESE AWAY!
     Copy-Item -Force -Path `
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
         -Destination "${OutputDir}\odamex-x64-${OdamexVersion}.pdb"
@@ -185,9 +194,35 @@ function Outputs {
     Copy-Item -Force -Path `
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.pdb" `
         -Destination "${OutputDir}\odalaunch-x86-${OdamexVersion}.pdb"
+
+    7z.exe a `
+        "${OutputDir}\odamex-debug-pdb-${OdamexVersion}.zip" `
+        "${OutputDir}\*.pdb"
+
+    Remove-Item -Force -Path "${OutputDir}\*.pdb"
 }
 
+# Ensure we have the proper executables in the PATH
+echo "Checking for CMake..."
+Get-Command cmake.exe -ErrorAction Stop
+
+echo "Checking for 7zip..."
+Get-Command 7z.exe -ErrorAction Stop
+
+echo "Checking for Inno Setup Command-Line Compiler..."
+Get-Command ISCC.exe -ErrorAction Stop
+
+echo "Building 64-bit..."
 BuildX64
+
+echo "Building 32-bit..."
 BuildX86
+
+echo "Copying files..."
 CopyFiles
+
+echo "Generating output..."
 Outputs
+
+echo "Copying PDB's into ZIP..."
+ZipDebug

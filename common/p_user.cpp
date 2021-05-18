@@ -164,6 +164,11 @@ static bool cmpFrags(player_t* a, player_t* b)
 	return a->fragcount < b->fragcount;
 }
 
+static bool cmpLives(player_t* a, player_t* b)
+{
+	return a->lives < b->lives;
+}
+
 static bool cmpWins(player_t* a, const player_t* b)
 {
 	return a->roundwins < b->roundwins;
@@ -223,6 +228,28 @@ PlayerResults PlayerQuery::execute()
 			{
 				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
 				                                         : (*it)->fragcount == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	case SORT_LIVES:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpLives);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->lives;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->lives != top
+				                                         : (*it)->lives == top;
 				if (cmp)
 				{
 					it = results.players.erase(it);
@@ -767,12 +794,13 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (!other.mo || other.spectator)
 		return false;
 
-	// Demo-watchers and spectators can view anybody.
-	if (demo || viewer.spectator)
+	// Demo-watchers can view anybody.
+	if (demo)
 		return true;
 
-	// A teammate can see their other teammates
-	if (P_AreTeammates(viewer, other))
+	// A teammate can see their other teammates.
+	// Spectators see anyone with one slight restriction.
+	if (P_AreTeammates(viewer, other) || viewer.spectator)
 	{
 		// If a player has no more lives, don't show him.
 		if (::g_lives && other.lives < 1)
@@ -873,8 +901,7 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 
-			if ((gameinfo.flags & GI_MAPxx)
-				&& newweapon == wp_shotgun
+			if (newweapon == wp_shotgun
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
 			{
@@ -968,6 +995,84 @@ void P_PlayerThink (player_t *player)
 		P_DamageMobj (player->mo, NULL, NULL, 2 + 2*((level.time-player->air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
 	}
 }
+
+#define CASE_STR(str) case str : return #str
+
+const char* PlayerState(size_t state)
+{
+	statenum_t st = static_cast<statenum_t>(state);
+
+	switch (st)
+	{
+		CASE_STR(S_PLAY);
+		CASE_STR(S_PLAY_RUN1);
+		CASE_STR(S_PLAY_RUN2);
+		CASE_STR(S_PLAY_RUN3);
+		CASE_STR(S_PLAY_RUN4);
+		CASE_STR(S_PLAY_ATK1);
+		CASE_STR(S_PLAY_ATK2);
+		CASE_STR(S_PLAY_PAIN);
+		CASE_STR(S_PLAY_PAIN2);
+		CASE_STR(S_PLAY_DIE1);
+		CASE_STR(S_PLAY_DIE2);
+		CASE_STR(S_PLAY_DIE3);
+		CASE_STR(S_PLAY_DIE4);
+		CASE_STR(S_PLAY_DIE5);
+		CASE_STR(S_PLAY_DIE6);
+		CASE_STR(S_PLAY_DIE7);
+		CASE_STR(S_PLAY_XDIE1);
+		CASE_STR(S_PLAY_XDIE2);
+		CASE_STR(S_PLAY_XDIE3);
+		CASE_STR(S_PLAY_XDIE4);
+		CASE_STR(S_PLAY_XDIE5);
+		CASE_STR(S_PLAY_XDIE6);
+		CASE_STR(S_PLAY_XDIE7);
+		CASE_STR(S_PLAY_XDIE8);
+		CASE_STR(S_PLAY_XDIE9);
+	default:
+		return "Unknown";
+	}
+}
+
+#define STATE_NUM(mo) (mo -> state - states)
+
+BEGIN_COMMAND(cheat_players)
+{
+	Printf("== PLAYERS ==");
+
+	int dead = 0;
+
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+
+		if (mo->type == MT_PLAYER)
+		{
+			if (STATE_NUM(mo) == S_PLAY_DIE7 || STATE_NUM(mo) == S_PLAY_XDIE9)
+			{
+				dead += 1;
+				continue;
+			}
+
+			if (mo->player)
+			{
+				Printf("%.3u: %s\n", mo->player->id,
+				       mo->player->userinfo.netname.c_str());
+			}
+			else
+			{
+				Printf("???: ???\n");
+			}
+			Printf("State: %s\n", PlayerState(mo->state - states));
+			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			       FIXED2FLOAT(mo->z));
+		}
+	}
+
+	Printf("== Skipped %d dead players ==\n", dead);
+}
+END_COMMAND(cheat_players)
 
 void player_s::Serialize (FArchive &arc)
 {
@@ -1147,37 +1252,25 @@ player_s::player_s() :
 	client(player_s::client_t())
 {
 	cmd.clear();
-	for (size_t i = 0; i < ARRAY_LENGTH(powers); i++)
-		powers[i] = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(cards); i++)
-		cards[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(flags); i++)
-		flags[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
-		weaponowned[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(ammo); i++)
-		ammo[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(maxammo); i++)
-		maxammo[i] = false;
+	ArrayInit(powers, 0);
+	ArrayInit(cards, false);
+	ArrayInit(flags, false);
+	ArrayInit(weaponowned, false);
+	ArrayInit(ammo, false);
+	ArrayInit(maxammo, false);
 
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
 	pspdef_t zeropsp = { NULL, 0, 0, 0 };
-	for (size_t i = 0; i < ARRAY_LENGTH(psprites); i++)
-		psprites[i] = zeropsp;
-	for (size_t i = 0; i < ARRAY_LENGTH(oldvelocity); i++)
-		oldvelocity[i] = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(prefcolor); i++)
-		prefcolor[i] = 0;
+	ArrayInit(psprites, zeropsp);
+	ArrayInit(oldvelocity, 0);
+	ArrayInit(prefcolor, 0);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
 
-	for (size_t i = 0; i < ARRAY_LENGTH(netcmds); i++)
-	{
-		netcmds[i] = ticcmd_t();
-	}
+	ArrayInit(netcmds, ticcmd_t());
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1200,17 +1293,13 @@ player_s &player_s::operator =(const player_s &other)
 	armorpoints = other.armorpoints;
 	armortype = other.armortype;
 
-	for(i = 0; i < NUMPOWERS; i++)
-		powers[i] = other.powers[i];
-
-	for(i = 0; i < NUMCARDS; i++)
-		cards[i] = other.cards[i];
+	ArrayCopy(powers, other.powers);
+	ArrayCopy(cards, other.cards);
 
 	lives = other.lives;
 	roundwins = other.roundwins;
 
-	for(i = 0; i < NUMTEAMS; i++)
-		flags[i] = other.flags[i];
+	ArrayCopy(flags, other.flags);
 
 	points = other.points;
 	backpack = other.backpack;
@@ -1224,12 +1313,9 @@ player_s &player_s::operator =(const player_s &other)
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;
 
-	for(i = 0; i < NUMWEAPONS; i++)
-		weaponowned[i] = other.weaponowned[i];
-	for(i = 0; i < NUMAMMO; i++)
-		ammo[i] = other.ammo[i];
-	for(i = 0; i < NUMAMMO; i++)
-		maxammo[i] = other.maxammo[i];
+	ArrayCopy(weaponowned, other.weaponowned);
+	ArrayCopy(ammo, other.ammo);
+	ArrayCopy(maxammo, other.maxammo);
 
 	attackdown = other.attackdown;
 	usedown = other.usedown;
@@ -1248,14 +1334,13 @@ player_s &player_s::operator =(const player_s &other)
 
 	xviewshift = other.xviewshift;
 
-	for(i = 0; i < NUMPSPRITES; i++)
-		psprites[i] = other.psprites[i];
+	ArrayCopy(psprites, other.psprites);
 
     jumpTics = other.jumpTics;
 
 	death_time = other.death_time;
 
-	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
+	ArrayCopy(oldvelocity, other.oldvelocity);
 
 	camera = other.camera;
 	air_finished = other.air_finished;
@@ -1277,10 +1362,8 @@ player_s &player_s::operator =(const player_s &other)
 	ready = other.ready;
 	timeout_ready = other.timeout_ready;
 
-	memcpy(prefcolor, other.prefcolor, 4);
-
-	for(i = 0; i < BACKUPTICS; i++)
-		netcmds[i] = other.netcmds[i];
+	ArrayCopy(prefcolor, other.prefcolor);
+	ArrayCopy(netcmds, other.netcmds);
 
     LastMessage.Time = other.LastMessage.Time;
 	LastMessage.Message = other.LastMessage.Message;

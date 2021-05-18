@@ -760,6 +760,13 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	line->width = V_StringWidth(line->string);
 }
 
+int V_LineHeight()
+{
+	if (::hu_font[0] == ::hu_bigfont[0])
+		return 12;
+	return 7;
+}
+
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
 	OFont* font = V_GetFont();

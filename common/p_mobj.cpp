@@ -39,6 +39,7 @@
 #include "p_ctf.h"
 #include "gi.h"
 #include "g_gametype.h"
+#include "c_dispatch.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -82,7 +83,7 @@ int             iquetail;
 NetIDHandler ServerNetID;
 
 // denis - fast netid lookup
-typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
+typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
 IMPLEMENT_SERIAL(AActor, DThinker)
@@ -257,7 +258,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	rndindex = M_Random();
 
 	if (multiplayer && serverside)
-		netid = ServerNetID.ObtainNetID();
+		netid = ::ServerNetID.obtainNetID();
 
 	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
@@ -335,6 +336,7 @@ void P_AnimationTick(AActor *mo)
 //
 void P_ClearAllNetIds()
 {
+	ServerNetID.resetNetIDs();
 	actor_by_netid.clear();
 }
 
@@ -342,7 +344,7 @@ void P_ClearAllNetIds()
 // P_FindThingById
 // denis - fast netid lookup
 //
-AActor* P_FindThingById(size_t id)
+AActor* P_FindThingById(uint32_t id)
 {
 	netid_map_t::iterator i = actor_by_netid.find(id);
 
@@ -355,7 +357,7 @@ AActor* P_FindThingById(size_t id)
 //
 // P_SetThingId
 //
-void P_SetThingId(AActor *mo, size_t newnetid)
+void P_SetThingId(AActor *mo, uint32_t newnetid)
 {
 	mo->netid = newnetid;
 	actor_by_netid[newnetid] = mo->ptr();
@@ -365,7 +367,7 @@ void P_SetThingId(AActor *mo, size_t newnetid)
 //
 // P_ClearId
 //
-void P_ClearId(size_t id)
+void P_ClearId(uint32_t id)
 {
     AActor *mo = P_FindThingById(id);
 
@@ -513,7 +515,7 @@ void P_MoveActor(AActor *mo)
 	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (co_realactorheight && (mo->flags2 & MF2_PASSMOBJ))
+		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj(mo)))
 			{
@@ -911,12 +913,20 @@ void AActor::Serialize (FArchive &arc)
 //
 int P_ThingInfoHeight(mobjinfo_t *mi)
 {
-   return
-      (co_realactorheight && mi->cdheight ?
+   return (P_AllowPassover() && mi->cdheight ?
        mi->cdheight : mi->height);
 }
 
 extern void SV_UpdateMobjState(AActor *mo);
+
+// Use a heuristic approach to detect infinite state cycles: Count the number
+// of times the loop in P_SetMobjState() executes and exit with an error once
+// an arbitrary very large limit is reached.
+//
+// [AM] Taken from Crispy Doom, with a smaller limit - 10,000 iterations
+//      still seems like a lot to me.
+
+#define MOBJ_CYCLE_LIMIT 10000
 
 // P_SetMobjState
 //
@@ -924,14 +934,7 @@ extern void SV_UpdateMobjState(AActor *mo);
 bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 {
 	state_t* st;
-
-	// denis - prevent harmful state cycles
-	static unsigned int callstack;
-	if(callstack++ > 16)
-	{
-		callstack = 0;
-		I_Error("P_SetMobjState: callstack depth exceeded bounds");
-	}
+	int cycle_counter = 0;
 
 	do
 	{
@@ -944,8 +947,6 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		{
 			mobj->state = (state_t *) S_NULL;
 			mobj->Destroy();
-
-			callstack--;
 			return false;
 		}
 
@@ -966,9 +967,16 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 			st->action(mobj);
 
 		state = st->nextstate;
+
+		// denis - prevent harmful state cycle
+		// [AM] A slightly different heruistic that doesn't involve global state.
+		if (cycle_counter++ > MOBJ_CYCLE_LIMIT)
+		{
+			I_Error("P_SetMobjState: Infinite state cycle detected for %s at state %d.",
+			        mobj->info->name, state);
+		}
 	} while (!mobj->tics);
 
-	callstack--;
 	return true;
 }
 
@@ -2722,5 +2730,47 @@ bool P_VisibleToPlayers(AActor *mo)
 
 	return false;
 }
+
+BEGIN_COMMAND(cheat_mobjs)
+{
+	if (argc < 2)
+	{
+		Printf("Missing MT_* mobj type\n");
+		return;
+	}
+
+	const char* mobj_type = argv[1];
+	ptrdiff_t mobj_index = -1;
+
+	for (size_t i = 0; i < ARRAY_LENGTH(::mobjinfo); i++)
+	{
+		if (stricmp(::mobjinfo[i].name, mobj_type) == 0)
+		{
+			mobj_index = i;
+			break;
+		}
+	}
+
+	if (mobj_index < 0)
+	{
+		Printf("Unknown MT_* mobj type\n");
+		return;
+	}
+
+	Printf("== %s ==", mobj_type);
+
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		if (mo->type == mobj_index)
+		{
+			Printf("ID: %d\n", mo->netid);
+			Printf("  %.1f, %.1f, %.1f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			       FIXED2FLOAT(mo->z));
+		}
+	}
+}
+END_COMMAND(cheat_mobjs)
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

@@ -69,8 +69,8 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x02315, ACTION_STRAFE,			"strafe" },
 	{ 0x041c4, ACTION_FORWARD,			"forward" },
 	{ 0x07cfa, ACTION_AUTOMAP_PANUP,	"am_panup" },
-	{ 0x08788, ACTION_LOOKDOWN,			"lookdown" },
 	{ 0x08126, ACTION_FASTTURN,   		"fastturn"},
+    { 0x08788, ACTION_LOOKDOWN,			"lookdown"},
 	{ 0x088c4, ACTION_MOVELEFT,			"moveleft" },
 	{ 0x088c8, ACTION_MOVEDOWN,			"movedown" },
 	{ 0x0fc5c, ACTION_AUTOMAP_ZOOMIN,	"am_zoomin" },
@@ -962,43 +962,51 @@ BEGIN_COMMAND (dumpactors)
 	Printf (PRINT_HIGH, "Actors at level.time == %d:\n", level.time);
 	while ( (mo = iterator.Next ()) )
 	{
-		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %d tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
+		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %" PRIdSIZE " tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
 	}
 }
 END_COMMAND (dumpactors)
 
-BEGIN_COMMAND (logfile)
+BEGIN_COMMAND(logfile)
 {
 	time_t rawtime;
-	struct tm * timeinfo;
-	const char* DEFAULT_LOG_FILE = (serverside ? "odasrv.log" : "odamex.log");
+	struct tm* timeinfo;
+	const std::string default_logname =
+	    M_GetUserFileName(::serverside ? "odasrv.log" : "odamex.log");
 
-	if (LOG.is_open()) {
-		if ((argc == 1 && LOG_FILE == DEFAULT_LOG_FILE) || (argc > 1 && LOG_FILE == argv[1])) {
-			Printf (PRINT_HIGH, "Log file %s already in use\n", LOG_FILE);
+	if (::LOG.is_open())
+	{
+		if ((argc == 1 && ::LOG_FILE == default_logname) ||
+		    (argc > 1 && ::LOG_FILE == argv[1]))
+		{
+			Printf("Log file %s already in use\n", ::LOG_FILE.c_str());
 			return;
 		}
 
-    	time (&rawtime);
-    	timeinfo = localtime (&rawtime);
-    	Printf (PRINT_HIGH, "Log file %s closed on %s\n", LOG_FILE, asctime (timeinfo));
-		LOG.close();
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		Printf("Log file %s closed on %s\n", ::LOG_FILE.c_str(), asctime(timeinfo));
+		::LOG.close();
 	}
 
-	LOG_FILE = (argc > 1 ? argv[1] : DEFAULT_LOG_FILE);
-	LOG.open (LOG_FILE, std::ios::app);
+	::LOG_FILE = (argc > 1 ? argv[1] : default_logname);
+	::LOG.open(::LOG_FILE.c_str(), std::ios::app);
 
-	if (!LOG.is_open())
-		Printf (PRINT_HIGH, "Unable to create logfile: %s\n", LOG_FILE);
-	else {
-		time (&rawtime);
-    	timeinfo = localtime (&rawtime);
-    	LOG.flush();
-    	LOG << std::endl;
-		Printf (PRINT_HIGH, "Logging in file %s started %s\n", LOG_FILE, asctime (timeinfo));
-    }
+	if (!::LOG.is_open())
+	{
+		Printf(PRINT_HIGH, "Unable to create logfile: %s\n", ::LOG_FILE.c_str());
+	}
+	else
+	{
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		::LOG.flush();
+		::LOG << std::endl;
+		Printf(PRINT_HIGH, "Logging in file %s started %s\n", ::LOG_FILE.c_str(),
+		       asctime(timeinfo));
+	}
 }
-END_COMMAND (logfile)
+END_COMMAND(logfile)
 
 BEGIN_COMMAND (stoplog)
 {
@@ -1008,7 +1016,7 @@ BEGIN_COMMAND (stoplog)
 	if (LOG.is_open()) {
 		time (&rawtime);
     	timeinfo = localtime (&rawtime);
-		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE, asctime (timeinfo));
+		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE.c_str(), asctime (timeinfo));
 		LOG.close();
 	}
 }

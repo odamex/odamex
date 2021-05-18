@@ -58,6 +58,7 @@
 level_locals_t level;			// info about current level
 
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(co_realactorheight)
 
 //
 // LevelInfos methods
@@ -441,12 +442,17 @@ static const char *MapInfoMapLevel[] =
 	"intermusic",
 	"par",
 	"sucktime",
+    "enterpic",
+    "exitpic",
+    "interpic"
 	"translator",
 	"compat_shorttex",
 	"compat_limitpain",
     "compat_dropoff",
 	"compat_trace",
 	"compat_boomscroll",
+	"compat_sectorsounds",
+	"compat_nopassover",
 	NULL
 };
 
@@ -546,6 +552,12 @@ MapInfoHandler MapHandlers[] =
 	{ MITYPE_EATNEXT, 0, 0 },
 	// sucktime <value>
 	{ MITYPE_EATNEXT, 0, 0 },
+	// enterpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
+	// exitpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
+	// interpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
 	// translator <value>
 	{ MITYPE_EATNEXT, 0, 0 },
 	// compat_shorttex <value>
@@ -558,6 +570,10 @@ MapInfoHandler MapHandlers[] =
     {MITYPE_EATNEXT, 0, 0},
     // compat_boomscroll <value>
     {MITYPE_EATNEXT, 0, 0},
+    // compat_sectorsounds <value>
+    {MITYPE_EATNEXT, 0, 0},
+    // compat_nopassover <value>
+    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -610,6 +626,8 @@ MapInfoHandler EpisodeHandlers[] =
 	{ MITYPE_EATNEXT, 0, 0 },
 	// picname <piclump>
 	{ MITYPE_EATNEXT, 0, 0 },
+    // key
+    { MITYPE_EATNEXT, 0, 0 },
 	// remove
 	{ MITYPE_IGNORE, 0, 0 },
 	// noskillmenu
@@ -907,7 +925,9 @@ static void ParseMapInfoLower(
 			{
 				SC_MustGetString();	// get texture name;
 				uppercopy((char*)(info + handler->data1), sc_String);
-				SC_MustGetFloat();		// get scroll speed
+
+				SC_CheckFloat();
+
 				//if (HexenHack)
 				//{
 				//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
@@ -1008,10 +1028,12 @@ static void ParseMapInfoLower(
 				{
 					SC_MustGetStringName(",");
 					SC_MustGetString();
-					const OString& s = GStrings(sc_String);
+					OString s = GStrings(sc_String);
+					
 					if (s.empty())
 					{
-						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+						s = sc_String;
+						//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
 					free(*text);
 					*text = strdup(s.c_str());
@@ -1046,10 +1068,11 @@ static void ParseMapInfoLower(
 				if (SC_Compare("lookup"))
 				{
 					SC_MustGetString();
-					const OString& s = GStrings(sc_String);
+					OString s = GStrings(sc_String);
 					if (s.empty())
 					{
-						SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+						s = sc_String;
+						//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 					}
 
 					free(*text);
@@ -1138,10 +1161,11 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 			if (SC_Compare("lookup"))
 			{
 				SC_MustGetString();
-				const OString& s = GStrings(sc_String);
+				OString s = GStrings(sc_String);
 				if (s.empty())
 				{
-					SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
+					s = sc_String;
+					//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
 				}
 				free(info.level_name);
 				info.level_name = strdup(s.c_str());
@@ -1206,7 +1230,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 		{
 			// Not implemented
 			SC_MustGetString(); // Map lump
-			SC_GetString();
+
 			if (SC_Compare("teaser"))
 			{
 				SC_MustGetString(); // Teaser lump
@@ -1703,7 +1727,7 @@ void G_AirControlChanged ()
 // playerstate.  Third parameter is true if you want to handle playerstate
 // yourself (map resets), just make sure you set it the same for both
 // serialization and unserialization.
-void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
+void G_SerializeLevel(FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
 	{
@@ -1721,7 +1745,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 
-		if (!noStorePlayers)
+		if (!arc.IsReset())
 			arc << playernum;
 	}
 	else
@@ -1740,17 +1764,17 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad, bool noStorePlayers)
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
 
-		if (!noStorePlayers)
+		if (!arc.IsReset())
 		{
 			arc >> playernum;
 			players.resize(playernum);
 		}
 	}
 
-	if (!hubLoad && !noStorePlayers)
+	if (!hubLoad && !arc.IsReset())
 		P_SerializePlayers(arc);
 
-	P_SerializeThinkers(arc, hubLoad, noStorePlayers);
+	P_SerializeThinkers(arc, hubLoad);
 	P_SerializeWorld(arc);
 	P_SerializePolyobjs(arc);
 	P_SerializeSounds(arc);
@@ -1766,7 +1790,7 @@ void G_SnapshotLevel ()
 
 	FArchive arc (*level.info->snapshot);
 
-	G_SerializeLevel (arc, false, false);
+	G_SerializeLevel(arc, false);
 }
 
 // Unarchives the current level based on its snapshot
@@ -1780,7 +1804,7 @@ void G_UnSnapshotLevel (bool hubLoad)
 	FArchive arc (*level.info->snapshot);
 	if (hubLoad)
 		arc.SetHubTravel (); // denis - hexen?
-	G_SerializeLevel (arc, hubLoad, false);
+	G_SerializeLevel(arc, hubLoad);
 	arc.Close ();
 	// No reason to keep the snapshot around once the level's been entered.
 	delete level.info->snapshot;
@@ -1991,14 +2015,24 @@ void G_InitLevelLocals()
 			else
 				begin = info.level_name;
 		}
-		strncpy(::level.level_name, begin, ARRAY_LENGTH(::level.level_name) - 1);
+
+		if (begin != NULL)
+		{
+			std::string level_name(begin);
+			TrimString(level_name);
+			strncpy(::level.level_name, level_name.c_str(),
+			        ARRAY_LENGTH(::level.level_name) - 1);
+		}
+		else
+		{
+			strncpy(::level.level_name, "Untitled Level",
+			        ARRAY_LENGTH(::level.level_name) - 1);
+		}
 	}
 	else
 	{
-		strncpy(
-			::level.level_name, "Untitled Level",
-			ARRAY_LENGTH(::level.level_name) - 1
-		);
+		strncpy(::level.level_name, "Untitled Level",
+		        ARRAY_LENGTH(::level.level_name) - 1);
 	}
 
 	strncpy(::level.nextmap, info.nextmap, 8);
@@ -2064,7 +2098,7 @@ BEGIN_COMMAND(mapinfo)
 	LevelInfos& levels = getLevelInfos();
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf(PRINT_HIGH, "%u maps found\n", levels.size());
+		Printf(PRINT_HIGH, "%" PRIuSIZE " maps found\n", levels.size());
 		return;
 	}
 
@@ -3345,6 +3379,14 @@ ClusterInfos& getClusterInfos()
 bool P_AllowDropOff()
 {
 	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
+}
+
+bool P_AllowPassover()
+{
+	if (level.flags & LEVEL_COMPAT_NOPASSOVER)
+		return false;
+
+	return co_realactorheight;
 }
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

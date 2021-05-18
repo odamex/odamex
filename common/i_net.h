@@ -403,7 +403,7 @@ public:
 			overflowed = true;
 			return -1;
 		}
-		return (unsigned char)data[readpos++];
+		return data[readpos++];
 	}
 
 	int NextByte()
@@ -413,7 +413,7 @@ public:
 			overflowed = true;
 			return -1;
 		}
-		return (unsigned char)data[readpos];
+		return data[readpos];
 	}
 
 	byte *ReadChunk(size_t size)
@@ -503,7 +503,7 @@ public:
 			return -1;
 
 		// Zig-zag encoding for negative numbers.
-		return (uv >> 1) ^ -(uv & 1);
+		return (uv >> 1) ^ (0U - (uv & 1));
 	}
 
 	const char *ReadString()

@@ -214,8 +214,7 @@ void HU_Init()
 //
 void STACK_ARGS HU_Shutdown()
 {
-	Z_ChangeTag(sbline, PU_CACHE);
-	sbline = NULL;
+	Z_Discard(&::sbline);
 
 	V_TextShutdown();
 }

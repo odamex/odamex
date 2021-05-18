@@ -38,6 +38,8 @@ enum JoinResult
 
 typedef JoinResult(*JoinTest)();
 
+// Query functions
+
 const std::string& G_GametypeName();
 bool G_CanEndGame();
 bool G_CanFireWeapon();
@@ -64,7 +66,10 @@ bool G_UsesWinlimit();
 bool G_UsesRoundlimit();
 bool G_UsesScorelimit();
 bool G_UsesFraglimit();
-int G_EndingTic();
+int G_GetEndingTic();
+
+// Mutating functions
+
 void G_AssertValidPlayerCount();
 void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();

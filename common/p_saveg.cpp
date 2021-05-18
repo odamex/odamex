@@ -266,9 +266,9 @@ void P_SerializeWorld (FArchive &arc)
 //
 // P_ArchiveThinkers
 //
-void P_SerializeThinkers (FArchive &arc, bool hubLoad, bool noStorePlayers)
+void P_SerializeThinkers (FArchive &arc, bool hubLoad)
 {
-	DThinker::SerializeAll (arc, hubLoad, noStorePlayers);
+	DThinker::SerializeAll (arc, hubLoad);
 }
 
 //
