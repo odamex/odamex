@@ -1597,7 +1597,7 @@ void G_DoSaveGame()
 
 	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);
-	fwrite (level.mapname, 8, 1, stdfile);
+	fwrite (level.mapname.c_str(), 8, 1, stdfile);
 
 	FLZOFile savefile (stdfile, FFile::EWriting, true);
 	FArchive arc (savefile);

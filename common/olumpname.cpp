@@ -213,3 +213,18 @@ bool operator==(const OLumpName& lhs, const std::string& rhs)
 {
 	return !stricmp(lhs._data, rhs.data());
 }
+
+bool operator!=(const OLumpName& lhs, const OLumpName& rhs)
+{
+	return stricmp(lhs._data, rhs._data);
+}
+
+bool operator!=(const OLumpName& lhs, const char* rhs)
+{
+	return stricmp(lhs._data, rhs);
+}
+
+bool operator!=(const OLumpName& lhs, const std::string& rhs)
+{
+	return stricmp(lhs._data, rhs.data());
+}

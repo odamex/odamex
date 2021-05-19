@@ -268,7 +268,7 @@ void G_InitNew (const char *mapname)
 
 	D_SetupUserInfo();
 	
-	strncpy (level.mapname, mapname, 8);
+	level.mapname = mapname;
 	G_DoLoadLevel (0);
 
 	::levelstate.reset();
@@ -346,25 +346,26 @@ void G_DoCompleted (void)
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
-		getLevelInfos().findByName(level.mapname).flags |= LEVEL_VISITED;
+		getLevelInfos().findByName(level.mapname.c_str()).flags |= LEVEL_VISITED;
 	}
 
 	AM_Stop();
 
 	// [ML] Chex mode: they didn't even show the intermission screen
 	// after the fifth level - I checked.
-	if (gamemode == retail_chex && !strncmp(level.mapname,"E1M5",4)) {
+	if (gamemode == retail_chex && level.mapname == "E1M5")
+	{
 		G_WorldDone();
 		return;
 	}
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
 	strncpy (wminfo.lname0, level.info->pname, 8);
-	strncpy (wminfo.current, level.mapname, 8);
+	strncpy (wminfo.current, level.mapname.c_str(), 8);
 
 	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
-		strncpy (wminfo.next, level.mapname, 8);
+		strncpy (wminfo.next, level.mapname.c_str(), 8);
 		strncpy (wminfo.lname1, level.info->pname, 8);
 	}
 	else
@@ -574,7 +575,7 @@ void G_DoLoadLevel (int position)
 	}
 
  	SN_StopAllSequences (); // denis - todo - equivalent?
-	P_SetupLevel (level.mapname, position);
+	P_SetupLevel (level.mapname.c_str(), position);
 
 	// [AM] Prevent holding onto stale snapshots.
 	CL_ClearSectorSnapshots();

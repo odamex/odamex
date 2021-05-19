@@ -69,6 +69,9 @@ class OLumpName
 	friend bool operator==(const OLumpName& lhs, const OLumpName& rhs);
 	friend bool operator==(const OLumpName& lhs, const char* rhs);
 	friend bool operator==(const OLumpName& lhs, const std::string& rhs);
+	friend bool operator!=(const OLumpName& lhs, const OLumpName& rhs);
+	friend bool operator!=(const OLumpName& lhs, const char* rhs);
+	friend bool operator!=(const OLumpName& lhs, const std::string& rhs);
 };
 
 #endif // __OLUMPNAME_H__

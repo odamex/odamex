@@ -1042,7 +1042,7 @@ BEGIN_COMMAND (puke)
 				}
 			}
 		}
-		P_StartScript (m_Instigator, NULL, script, level.mapname, 0, arg0, arg1, arg2, false);
+		P_StartScript (m_Instigator, NULL, script, level.mapname.c_str(), 0, arg0, arg1, arg2, false);
 	}
 }
 END_COMMAND (puke)

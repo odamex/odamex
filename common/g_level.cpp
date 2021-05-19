@@ -2737,12 +2737,15 @@ static int startpos;	// [RH] Support for multiple starts per level
 void G_DoWorldDone()
 {
 	gamestate = GS_LEVEL;
-	if (wminfo.next[0] == 0) {
+	if (wminfo.next[0] == 0)
+	{
 		// Don't die if no next map is given,
 		// just repeat the current one.
 		Printf (PRINT_WARNING, "No next map specified.\n");
-	} else {
-		strncpy (level.mapname, wminfo.next, 8);
+	}
+	else
+	{
+		level.mapname = wminfo.next;
 	}
 	G_DoLoadLevel (startpos);
 	startpos = 0;
@@ -2776,7 +2779,7 @@ void G_InitLevelLocals()
 	memset(level.vars, 0, sizeof(level.vars));
 
 	// Get our canonical level data.
-	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname);
+	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname.c_str());
 
 	// [ML] 5/11/06 - Remove sky scrolling and sky2
 	// [SL] 2012-03-19 - Add sky2 back

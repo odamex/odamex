@@ -152,8 +152,6 @@ struct level_pwad_info_t
 	
 	std::vector<BossAction> bossactions;
 	bool			bossactions_donothing;
-
-	OLumpName		mapname_new;
 	
 	bool exists() const
 	{
@@ -172,7 +170,7 @@ struct level_locals_t {
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	char			mapname[8];				// the server name (base1, etc)
+	OLumpName		mapname;                // the server name (base1, etc)
 	char			nextmap[8];				// go here when sv_fraglimit is hit
 	char			secretmap[8];			// map to go to when used secret exit
 
