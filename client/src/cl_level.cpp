@@ -502,12 +502,12 @@ void G_DoLoadLevel (int position)
 
     Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
                  "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-                 "%s: \"%s\"\n\n", level.mapname, level.level_name);
+                 "%s: \"%s\"\n\n", level.mapname.c_str(), level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
 
-	bool demoscreen = (gamestate == GS_DEMOSCREEN);
+	const bool demoscreen = (gamestate == GS_DEMOSCREEN);
 
 	gamestate = GS_LEVEL;
 
