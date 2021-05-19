@@ -91,10 +91,6 @@ OLumpName& OLumpName::operator=(const std::string& other)
 	return *this;
 }
 
-// iterators
-
-// todo
-
 // capacity
 
 size_t OLumpName::size() const

@@ -42,13 +42,6 @@ class OLumpName
 	OLumpName& operator=(const OLumpName& other);
 	OLumpName& operator=(const char* other);
 	OLumpName& operator=(const std::string& other);
-
-	// iterators
-	// 
-	// WARNING: If you use any of the non-const iterators, the uppercase guarantee
-	//			will no longer apply! You can edit the char's to be whatever you
-	//			want at that point. Be careful!
-	// todo
 	
 	// capacity
 	size_t size() const;
