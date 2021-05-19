@@ -63,6 +63,7 @@
 level_locals_t level;			// info about current level
 
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(co_realactorheight)
 
 //
 // LevelInfos methods
@@ -398,6 +399,9 @@ static const char *MapInfoMapLevel[] =
 	"intermusic",
 	"par",
 	"sucktime",
+    "enterpic",
+    "exitpic",
+    "interpic"
 	"translator",
 	"compat_shorttex",
 	"compat_limitpain",
@@ -405,6 +409,7 @@ static const char *MapInfoMapLevel[] =
 	"compat_trace",
 	"compat_boomscroll",
 	"compat_sectorsounds",
+	"compat_nopassover",
 	NULL
 };
 
@@ -504,6 +509,12 @@ MapInfoHandler MapHandlers[] =
 	{ MITYPE_EATNEXT, 0, 0 },
 	// sucktime <value>
 	{ MITYPE_EATNEXT, 0, 0 },
+	// enterpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
+	// exitpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
+	// interpic <$pic>
+    { MITYPE_EATNEXT, 0, 0 },
 	// translator <value>
 	{ MITYPE_EATNEXT, 0, 0 },
 	// compat_shorttex <value>
@@ -518,6 +529,8 @@ MapInfoHandler MapHandlers[] =
     {MITYPE_EATNEXT, 0, 0},
     // compat_sectorsounds <value>
     {MITYPE_EATNEXT, 0, 0},
+    // compat_nopassover <value>
+    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -2351,7 +2364,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	{
 		if (W_CheckNumForName(mapname.c_str()) != -1)
 		{
-			G_DeferedInitNew((char*)mapname.c_str());
+			G_DeferedInitNew((char*)mapname.c_str()); // TODO: this seems wrong
 		}
         else
         {
@@ -2510,8 +2523,9 @@ char *CalcMapName(int episode, int level)
 	return lumpname;
 }
 
-void G_AirControlChanged()
+void G_SetLevelStrings()
 {
+void G_AirControlChanged()
 	if (level.aircontrol <= 256)
 	{
 		level.airfriction = FRACUNIT;
@@ -2793,6 +2807,7 @@ void G_InitLevelLocals()
 	::level.levelnum = info.levelnum;
 
 	// Only copy the level name if there's a valid level name to be copied.
+	
 	if (!info.level_name.empty())
 	{
 		// Get rid of initial lump name or level number.
@@ -2820,16 +2835,24 @@ void G_InitLevelLocals()
 				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
+		}		
+		if (begin.empty())
+		{
+			std::string level_name(begin);
+			TrimString(level_name);
+			strncpy(::level.level_name, level_name.c_str(),
+			        ARRAY_LENGTH(::level.level_name) - 1);
 		}
-		
-		strncpy(::level.level_name, begin.c_str(), ARRAY_LENGTH(::level.level_name) - 1);
+		else
+		{
+			strncpy(::level.level_name, "Untitled Level",
+			        ARRAY_LENGTH(::level.level_name) - 1);
+		}
 	}
 	else
 	{
-		strncpy(
-			::level.level_name, "Untitled Level",
-			ARRAY_LENGTH(::level.level_name) - 1
-		);
+		strncpy(::level.level_name, "Untitled Level",
+		        ARRAY_LENGTH(::level.level_name) - 1);
 	}
 
 	strncpy(::level.nextmap, info.nextmap, 8);
@@ -3079,6 +3102,14 @@ ClusterInfos& getClusterInfos()
 bool P_AllowDropOff()
 {
 	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
+}
+
+bool P_AllowPassover()
+{
+	if (level.flags & LEVEL_COMPAT_NOPASSOVER)
+		return false;
+
+	return co_realactorheight;
 }
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

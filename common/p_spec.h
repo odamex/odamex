@@ -253,9 +253,8 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
 
-	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-
-	return line->frontsector;
+	return line->frontsector == sec ? (line->backsector != sec ? line->backsector : NULL)
+	                                : line->frontsector;
 }
 
 
@@ -1019,7 +1018,8 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 //
 BOOL EV_Teleport (int tid, int tag, int arg0, int side, AActor *thing, int nostop);
 BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
-BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
+BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+                       int side, AActor* thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
 

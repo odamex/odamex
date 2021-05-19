@@ -92,6 +92,9 @@ static char *Line1, *Line2;
 static int	 dversion, pversion;
 static BOOL  including, includenotext;
 
+// English strings for DeHackEd replacement.
+static StringTable ENGStrings;
+
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
 // Written by Greg Lewis, gregl@umich.edu.
@@ -1614,7 +1617,7 @@ static int PatchText (int oldSize)
 		goto donewithtext;
 	
 	// Search through most other texts
-	name = &GStrings.matchString(oldStr);
+	name = &ENGStrings.matchString(oldStr);
 	if (name != NULL && !name->empty())
 	{
 		GStrings.setString(*name, newStr);
@@ -1760,7 +1763,7 @@ static int DoInclude(int dummy)
 		goto endinclude;
 	}
 
-	D_DoDehPatch(&res, false);
+	D_DoDehPatch(&res, -1);
 
 	DPrintf("Done with include\n");
 	PatchFile = savepatchfile;
@@ -1777,18 +1780,15 @@ endinclude:
 /**
  * @brief Attempt to load a DeHackEd file.
  * 
- * @param patchfile File to attempt to load.
- * @param autoloading 
- * @return 
-*/
-bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
+ * @param patchfile File to attempt to load, NULL if not a file.
+ * @param lump Lump index to load, -1 if not a lump.
+ */
+bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 {
 	BackupData();
 	::PatchFile = NULL;
 
-	int lump = W_CheckNumForName("DEHACKED");
-
-	if (lump >= 0 && autoloading)
+	if (lump >= 0)
 	{
 		// Execute the DEHACKED lump as a patch.
 		::filelen = W_LumpLength(lump);
@@ -1821,6 +1821,9 @@ bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 		// Nothing to do.
 		return false;
 	}
+
+	// Load english strings to match against.
+	::ENGStrings.loadStrings(true);
 
 	// End file with a NULL for our parser
 	::PatchFile[::filelen] = 0;

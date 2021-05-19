@@ -1,12 +1,15 @@
 #
 # Copyright (C) 2020 Alex Mayfield.
 #
+# If you double-clicked on the script expecting to run it, you need to right
+# click Run With Powershell instead.
+#
 
 #
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "OdamexVersion" -Value "2.0.0"
+Set-Variable -Name "OdamexVersion" -Value "0.9.1"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #
@@ -168,8 +171,10 @@ function Outputs {
     ISCC.exe odamex.iss `
         /DOdamexVersion=${OdamexVersion} `
         /DOdamexTestSuffix=${OdamexTestSuffix}
+}
 
-    # Copy pdb files
+function ZipDebug {
+    # Copy pdb files into zip.  DO NOT THROW THESE AWAY!
     Copy-Item -Force -Path `
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
         -Destination "${OutputDir}\odamex-x64-${OdamexVersion}.pdb"
@@ -189,9 +194,35 @@ function Outputs {
     Copy-Item -Force -Path `
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.pdb" `
         -Destination "${OutputDir}\odalaunch-x86-${OdamexVersion}.pdb"
+
+    7z.exe a `
+        "${OutputDir}\odamex-debug-pdb-${OdamexVersion}.zip" `
+        "${OutputDir}\*.pdb"
+
+    Remove-Item -Force -Path "${OutputDir}\*.pdb"
 }
 
+# Ensure we have the proper executables in the PATH
+echo "Checking for CMake..."
+Get-Command cmake.exe -ErrorAction Stop
+
+echo "Checking for 7zip..."
+Get-Command 7z.exe -ErrorAction Stop
+
+echo "Checking for Inno Setup Command-Line Compiler..."
+Get-Command ISCC.exe -ErrorAction Stop
+
+echo "Building 64-bit..."
 BuildX64
+
+echo "Building 32-bit..."
 BuildX86
+
+echo "Copying files..."
 CopyFiles
+
+echo "Generating output..."
 Outputs
+
+echo "Copying PDB's into ZIP..."
+ZipDebug

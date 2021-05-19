@@ -27,7 +27,7 @@
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
-#include "d_dehacked.h"
+#include "d_main.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
@@ -44,11 +44,10 @@ CVAR_FUNC_IMPL (language)
 	}
 
 	// Reload LANGUAGE strings.
-	GStrings.loadStrings();
+	::GStrings.loadStrings(false);
 
 	// Reapply DeHackEd patches on top of these strings.
-	// FIXME: This only handles PWAD patches for now.
-	D_DoDehPatch(NULL, true);
+	D_LoadResolvedPatches();
 
 	// MAPINFO comes last, because it overrides default level strings.
 	G_ParseMapInfo();

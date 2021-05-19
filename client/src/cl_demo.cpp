@@ -457,14 +457,15 @@ bool NetDemo::startRecording(const std::string &filename)
 		capture(&tempbuf);
 		writeMessages();
 
-		// Record any additional messages (usually a full update if auto-recording))
-		capture(&net_message);
-		writeMessages();
-		
 		SZ_Clear(&tempbuf);
 		MSG_WriteMarker(&tempbuf, svc_netdemoloadsnap);
 		capture(&tempbuf);
 		writeMessages();
+
+		// Record any additional messages (usually a full update if auto-recording))
+		// Do not write this message immediately because it needs to be written after
+		// the map snapshot.
+		capture(&net_message);
 	}
 
 	return true;

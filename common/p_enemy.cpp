@@ -45,8 +45,8 @@ extern bool HasBehavior;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (co_novileghosts)
 
 enum dirtype_t
 {
@@ -194,7 +194,7 @@ BOOL P_CheckMeleeRange (AActor *actor)
 		return true;
 
 	// [RH] Don't melee things too far above or below actor.
-	if (co_realactorheight)
+	if (P_AllowPassover())
 	{
 		if (pl->z > actor->z + actor->height)
 			return false;
@@ -1422,11 +1422,11 @@ void A_VileChase (AActor *actor)
 					P_SetMobjState (corpsehit,info->raisestate, true);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
-					if ((demoplayback || demorecording)) {
-						corpsehit->height <<= 2;
-					} else {
+					if ((co_novileghosts)) {
 						corpsehit->height = P_ThingInfoHeight(info);	// [RH] Use real mobj height
 						corpsehit->radius = info->radius;	// [RH] Use real radius
+					} else {
+						corpsehit->height <<= 2;
 					}
 
 					corpsehit->flags = info->flags;

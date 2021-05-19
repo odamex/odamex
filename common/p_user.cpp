@@ -788,11 +788,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
 	// Viewers can always spy themselves.
 	if (viewer.id == other.id)
-	{
-		if (G_IsLivesGame() && viewer.lives < 1)
-			return false;
 		return true;
-	}
 
 	// You cannot view those without bodies or spectators.
 	if (!other.mo || other.spectator)
@@ -905,8 +901,7 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 
-			if ((gameinfo.flags & GI_MAPxx)
-				&& newweapon == wp_shotgun
+			if (newweapon == wp_shotgun
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
 			{
