@@ -2504,7 +2504,7 @@ BEGIN_COMMAND (map)
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
+		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname.c_str(), level.level_name);
 	}
 }
 END_COMMAND (map)
@@ -2986,7 +2986,7 @@ BEGIN_COMMAND(mapinfo)
 
 	level_pwad_info_t& info = *infoptr;
 
-	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname);
+	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname.c_str());
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
 	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name.c_str());
 	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname);
