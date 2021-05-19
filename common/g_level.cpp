@@ -2523,9 +2523,8 @@ char *CalcMapName(int episode, int level)
 	return lumpname;
 }
 
-void G_SetLevelStrings()
-{
 void G_AirControlChanged()
+{
 	if (level.aircontrol <= 256)
 	{
 		level.airfriction = FRACUNIT;
@@ -2836,7 +2835,7 @@ void G_InitLevelLocals()
 			else
 				begin = info.level_name;
 		}		
-		if (begin.empty())
+		if (!begin.empty())
 		{
 			std::string level_name(begin);
 			TrimString(level_name);
