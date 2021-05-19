@@ -23,8 +23,8 @@
 
 #include "p_horde.h"
 
-#include <math.h>
 #include <algorithm>
+#include <math.h>
 
 #include "c_dispatch.h"
 #include "c_effect.h"
@@ -147,6 +147,23 @@ const roundDefine_t ROUND_DEFINES[3] = {
         16000,       // goalHealth
     }};
 
+static const char* HordeStateStr(const hordeState_e state)
+{
+	switch (state)
+	{
+	case HS_STARTING:
+		return "HS_STARTING";
+	case HS_PRESSURE:
+		return "HS_PRESSURE";
+	case HS_RELAX:
+		return "HS_RELAX";
+	case HS_BOSS:
+		return "HS_BOSS";
+	default:
+		return "UNKNOWN";
+	}
+}
+
 class HordeRoundState
 {
 	int m_round; // 0-indexed
@@ -259,13 +276,18 @@ class HordeState
 	{
 		const roundDefine_t& define = m_roundState.getDefine();
 		int aliveHealth = m_spawnedHealth - m_killedHealth;
+		int goalHealth = define.goalHealth + m_roundStartHealth;
 
 		switch (m_state)
 		{
-		case HS_STARTING:
+		case HS_STARTING: {
+			// Do anything that we would need to do upon starting any round.
+			m_bosses.clear();
 			setState(HS_PRESSURE);
+			// fallthrough
+		}
 		case HS_PRESSURE: {
-			if (m_killedHealth > define.goalHealth + m_roundStartHealth)
+			if (m_killedHealth > goalHealth)
 			{
 				setState(HS_BOSS);
 				return;
@@ -278,7 +300,7 @@ class HordeState
 			return;
 		}
 		case HS_RELAX: {
-			if (m_killedHealth > define.goalHealth + m_roundStartHealth)
+			if (m_killedHealth > goalHealth)
 			{
 				setState(HS_BOSS);
 				return;
