@@ -2369,7 +2369,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	{
 		if (W_CheckNumForName(mapname.c_str()) != -1)
 		{
-			G_DeferedInitNew((char*)mapname.c_str()); // TODO: this seems wrong
+			G_DeferedInitNew(mapname.c_str());
 		}
         else
         {
@@ -2483,7 +2483,7 @@ BEGIN_COMMAND (map)
 			else
 			{ // Success
 				unnatural_level_progression = true;
-				G_DeferedInitNew (mapname);
+				G_DeferedInitNew(mapname);
 			}
 
 		}
@@ -2498,7 +2498,7 @@ BEGIN_COMMAND (map)
 			{
 				unnatural_level_progression = true;
 				uppercopy(mapname, argv[1]); // uppercase the mapname
-				G_DeferedInitNew (mapname);
+				G_DeferedInitNew(mapname);
 			}
 		}
 	}

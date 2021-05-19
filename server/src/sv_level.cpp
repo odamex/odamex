@@ -100,7 +100,7 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+void G_DeferedInitNew (const char *mapname)
 {
 	strncpy (d_mapname, mapname, 8);
 	gameaction = ga_newgame;
@@ -159,7 +159,7 @@ std::string G_NextMap(void) {
 	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
-		next = level.mapname;
+		next = level.mapname.c_str();
 	} else if (secretexit && W_CheckNumForName(level.secretmap) != -1) {
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap;
@@ -196,7 +196,7 @@ void G_ChangeMap() {
 		if (!Maplist::instance().get_next_index(next_index)) {
 			// We don't have a maplist, so grab the next 'natural' map lump.
 			std::string next = G_NextMap();
-			G_DeferedInitNew((char *)next.c_str());
+			G_DeferedInitNew(next.c_str());
 		}
 		else {
 			maplist_entry_t maplist_entry;
@@ -251,7 +251,7 @@ void G_ChangeMap(size_t index) {
 // Restart the current map.
 void G_RestartMap() {
 	// Restart the current map.
-	G_DeferedInitNew(level.mapname);
+	G_DeferedInitNew(level.mapname.c_str());
 
 	// run script at the end of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
@@ -431,7 +431,7 @@ void G_InitNew (const char *mapname)
 	// after loading the level.
 	WinInfo info = ::levelstate.getWinInfo();
 
-	strncpy (level.mapname, mapname, 8);
+	level.mapname = mapname;
 	G_DoLoadLevel (0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
@@ -767,7 +767,7 @@ void G_DoLoadLevel (int position)
 			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
 
-	P_SetupLevel (level.mapname, position);
+	P_SetupLevel (level.mapname.c_str(), position);
 
 	// Nes - CTF Post flag setup
 	if (sv_gametype == GM_CTF)

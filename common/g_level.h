@@ -300,7 +300,7 @@ void G_RestartMap();
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
 // but a warp test can start elsewhere
-void G_DeferedInitNew(char *mapname);
+void G_DeferedInitNew(const char *mapname);
 
 // Map reset functions
 void G_DeferedFullReset();

@@ -97,7 +97,7 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+void G_DeferedInitNew (const char *mapname)
 {
 	G_CleanupDemo();
 	strncpy (d_mapname, mapname, 8);

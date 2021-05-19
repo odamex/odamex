@@ -368,8 +368,8 @@ void D_DoomMain()
 		strncpy(startmap, Args.GetArg(p + 1), 8);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-
-	strncpy(level.mapname, startmap, sizeof(level.mapname));
+	
+	level.mapname = startmap;
 
 	G_ChangeMap();
 
