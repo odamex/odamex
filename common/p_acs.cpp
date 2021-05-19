@@ -3800,7 +3800,7 @@ static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int scri
 			def->playernum = -1;
 		}
 		i.defered = def;
-		DPrintf ("Script %d on map %s defered\n", script, i.mapname);
+		DPrintf ("Script %d on map %s defered\n", script, i.mapname.c_str());
 	}
 }
 
