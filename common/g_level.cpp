@@ -794,40 +794,6 @@ static void SkipUnknownBlock(OScanner &os)
 // the way sc_man did things before
 namespace
 {
-	bool ContainsMapInfoTopLevel(OScanner &os)
-	{
-		return os.compareToken("map") ||
-			os.compareToken("defaultmap") ||
-			os.compareToken("cluster") ||
-			os.compareToken("clusterdef") ||
-			os.compareToken("episode") ||
-			os.compareToken("clearepisodes") ||
-			os.compareToken("skill") ||
-			os.compareToken("clearskills") ||
-			os.compareToken("gameinfo") ||
-			os.compareToken("intermission") ||
-			os.compareToken("automap");
-	}
-
-	// [DE] lazy copy from sc_man
-	int MatchString(OScanner &os, const char** strings)
-	{
-		if (strings == NULL)
-		{
-			return G_NOMATCH;
-		}
-
-		for (int i = 0; *strings != NULL; i++)
-		{
-			if (os.compareToken(*strings++))
-			{
-				return i;
-			}
-		}
-
-		return G_NOMATCH;
-	}
-
 	// return token as int
 	int GetTokenAsInt(OScanner& os)
 	{
@@ -880,29 +846,13 @@ namespace
 		return static_cast<float>(num);
 	}
 
-	// return token as bool
-	bool GetTokenAsBool(OScanner& os)
-	{
-		return os.compareToken("true");
-	}
-
 	void MustGetString(OScanner& os)
 	{
 		if (!os.scan())
 		{
 			I_Error("Missing string (unexpected end of file).");
 		}
-	}
-
-	void MustGetStringName(OScanner& os, const char* name)
-	{
-		MustGetString(os);
-		if (os.compareToken(name) == false)
-		{
-			// TODO: was previously SC_ScriptError, less information is printed now
-			I_Error("Expected '%s', got '%s'.", name, os.getToken().c_str());
-		}
-	}
+    }
 
 	void MustGetInt(OScanner& os)
 	{
@@ -940,15 +890,6 @@ namespace
 		}
 	}
 
-	void MustGetBool(OScanner& os)
-	{
-		MustGetString(os);
-		if (!os.compareToken("true") && !os.compareToken("false"))
-		{
-			I_Error("Missing boolean (unexpected end of file).");
-		}
-	}
-
 	bool IsIdentifier(OScanner& os)
 	{
 		char ch = os.getToken()[0];
@@ -977,6 +918,65 @@ namespace
 		return stricmp(os.getToken().c_str(), str) == 0;
 	}
 
+	// [DE] lazy copy from sc_man
+    int MatchString(OScanner& os, const char** strings)
+    {
+	    if (strings == NULL)
+	    {
+		    return G_NOMATCH;
+	    }
+
+	    for (int i = 0; *strings != NULL; i++)
+	    {
+		    if (UpperCompareToken(os, *strings++))
+		    {
+			    return i;
+		    }
+	    }
+
+	    return G_NOMATCH;
+    }
+
+	bool ContainsMapInfoTopLevel(OScanner& os)
+    {
+	    return UpperCompareToken(os, "map") ||
+			   UpperCompareToken(os, "defaultmap") ||
+	           UpperCompareToken(os, "cluster") ||
+			   UpperCompareToken(os, "clusterdef") ||
+	           UpperCompareToken(os, "episode") ||
+	           UpperCompareToken(os, "clearepisodes") ||
+			   UpperCompareToken(os, "skill") ||
+	           UpperCompareToken(os, "clearskills") ||
+	           UpperCompareToken(os, "gameinfo") ||
+	           UpperCompareToken(os, "intermission") ||
+			   UpperCompareToken(os, "automap");
+    }
+
+	// return token as bool
+    bool GetTokenAsBool(OScanner& os)
+    {
+	    return UpperCompareToken(os, "true");
+    }
+
+    void MustGetBool(OScanner& os)
+    {
+	    MustGetString(os);
+	    if (!UpperCompareToken(os, "true") && !UpperCompareToken(os, "false"))
+	    {
+		    I_Error("Missing boolean (unexpected end of file).");
+	    }
+    }
+
+    void MustGetStringName(OScanner& os, const char* name)
+    {
+	    MustGetString(os);
+	    if (UpperCompareToken(os, name) == false)
+	    {
+		    // TODO: was previously SC_ScriptError, less information is printed now
+		    I_Error("Expected '%s', got '%s'.", name, os.getToken().c_str());
+	    }
+    }
+
 	// used for munching the strings in UMAPINFO
 	char* ParseMultiString(OScanner& os, int error)
 	{
@@ -986,7 +986,7 @@ namespace
 		// TODO: properly identify identifiers so clear can be separated from regular strings
 		//if (IsIdentifier(os))
 		{
-			if (os.compareToken("clear"))
+		    if (UpperCompareToken(os, "clear"))
 			{
 				return strdup("-");	// this was explicitly deleted to override the default.
 			}
@@ -1421,7 +1421,8 @@ namespace
 // to parse the block anyway, even if you throw away the values.  This is
 // done by passing in a strings pointer, and leaving the others NULL.
 //
-static void ParseMapInfoLower(
+static void ParseMapInfoLower
+(
 	MapInfoHandler* handlers, const char** strings, tagged_info_t* tinfo, DWORD flags, OScanner &os
 )
 {
@@ -1459,7 +1460,7 @@ static void ParseMapInfoLower(
 			ContainsMapInfoTopLevel(os) &&
 			// "cluster" is a valid map block type and is also
 			// a valid top-level type.
-			!os.compareToken("cluster")
+		    !UpperCompareToken(os, "cluster")
 		)
 		{
 			// Old-style MAPINFO is done
@@ -1703,7 +1704,7 @@ static void ParseMapInfoLower(
 			{
 				MustGetStringName(os, "=");
 				MustGetString(os);
-				if (os.compareToken("lookup,"))
+				if (UpperCompareToken(os, "lookup,"))
 				{
 					MustGetString(os);
 					const OString& s = GStrings(os.getToken());
@@ -1741,7 +1742,7 @@ static void ParseMapInfoLower(
 			else
 			{
 				MustGetString(os);
-				if (os.compareToken("lookup"))
+				if (UpperCompareToken(os, "lookup"))
 				{
 					MustGetString(os);
 					const OString& s = GStrings(os.getToken());
@@ -2093,7 +2094,7 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 
 			// Map name.
 			MustGetString(os);
-			if (os.compareToken("lookup"))
+			if (UpperCompareToken(os, "lookup"))
 			{
 				MustGetString(os);
 				const OString& s = GStrings(os.getToken());

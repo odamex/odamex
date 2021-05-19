@@ -2044,7 +2044,7 @@ void A_BossDeath (AActor *actor)
 	TThinkerIterator<AActor> iterator;
 	AActor *other;
 
-	while ( (other = iterator.Next ()) )
+	while ((other = iterator.Next()))
 	{
 		if (other != actor && other->type == actor->type && other->health > 0)
 		{
@@ -2058,13 +2058,13 @@ void A_BossDeath (AActor *actor)
 	{
 		if (actor->type == MT_FATSO)
 		{
-			EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 			return;
 		}
 
 		if (actor->type == MT_BABY)
 		{
-			EV_DoFloor (DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
 			return;
 		}
 	}
@@ -2073,11 +2073,11 @@ void A_BossDeath (AActor *actor)
 		switch (level.flags & LEVEL_SPECACTIONSMASK)
 		{
 			case LEVEL_SPECLOWERFLOOR:
-				EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+				EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 				return;
 
 			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+				EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
 				return;
 		}
 	}
