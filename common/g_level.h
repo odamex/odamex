@@ -29,6 +29,7 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "m_resfile.h"
+#include "olumpname.h"
 
 #include <string>
 #include <vector>
@@ -85,8 +86,9 @@ struct acsdefered_s;
 class FBehavior;
 struct BossAction;
 
-struct level_info_t {
-	char			mapname[9];
+struct level_info_t
+{
+	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
 	char			pname[9];
@@ -100,16 +102,16 @@ struct level_info_t {
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
 
-	BOOL exists() const
+	bool exists() const
 	{
-		return this->mapname[0] != '\0';
+		return !this->mapname.empty();
 	}
 };
 
 struct level_pwad_info_t
 {
 	// level_info_t
-	char			mapname[9];
+	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
 	char			pname[9];
@@ -150,10 +152,12 @@ struct level_pwad_info_t
 	
 	std::vector<BossAction> bossactions;
 	bool			bossactions_donothing;
+
+	OLumpName		mapname_new;
 	
-	BOOL exists() const
+	bool exists() const
 	{
-		return this->mapname[0] != '\0';
+		return !this->mapname.empty();
 	}
 };
 

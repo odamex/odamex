@@ -1022,7 +1022,7 @@ BEGIN_COMMAND (stoplog)
 }
 END_COMMAND (stoplog)
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 
 BEGIN_COMMAND (puke)

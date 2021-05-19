@@ -138,7 +138,7 @@ level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 {
 	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
-		if (stricmp(mapname, it->mapname) == 0)
+		if (it->mapname == mapname)
 		{
 			return *it;
 		}
@@ -150,7 +150,7 @@ level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 {
 	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
-		if (mapname == it->mapname)
+		if (it->mapname == mapname)
 		{
 			return *it;
 		}
@@ -163,7 +163,7 @@ level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
 	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
-		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname) != -1)
+		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname.c_str()) != -1)
 		{
 			return *it;
 		}
@@ -196,7 +196,7 @@ void LevelInfos::zapDeferreds()
 level_pwad_info_t LevelInfos::_empty = {
 	"",   // mapname
 	0,    // levelnum
-	"", // level_name
+	"",   // level_name
 	"",   // pname
 	"",   // nextmap
 	"",   // secretmap
@@ -213,7 +213,14 @@ level_pwad_info_t LevelInfos::_empty = {
 	"",   // skypic2
 	0.0,  // gravity
 	0.0,  // aircontrol
-};
+    "",	  // exitpic
+	"",	  // enterpic
+	"",	  // endpic
+    "",   // intertext
+    "",   // intertextsecret
+    "",   // interbackdrop
+    "",   // intermusic
+	};
 
 //
 // ClusterInfos methods
@@ -1212,7 +1219,7 @@ namespace
 					return 0;
 				}
 
-				strncpy(EpisodeMaps[episodenum], mape->mapname, 8);
+				strncpy(EpisodeMaps[episodenum], mape->mapname.c_str(), 8);
 				EpisodeInfos[episodenum].name = gfx;
 				EpisodeInfos[episodenum].fulltext = false;
 				EpisodeInfos[episodenum].noskillmenu = false;
@@ -1293,19 +1300,19 @@ namespace
 		if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
 		{
 			// Convert a char into its equivalent integer.
-			int e = info.mapname[1] - '0';
-			int m = info.mapname[3] - '0';
+			const int e = info.mapname[1] - '0';
+			const int m = info.mapname[3] - '0';
 			if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
 			{
 				// Copypasted from the ZDoom wiki.
 				info.levelnum = (e - 1) * 10 + m;
 			}
 		}
-		else if (strnicmp(info.mapname, "MAP", 3) == 0)
+		else if (strnicmp(info.mapname.c_str(), "MAP", 3) == 0)
 		{
 			// Try and turn the trailing digits after the "MAP" into a
 			// level number.
-			int mapnum = std::atoi(info.mapname + 3);
+			int mapnum = std::atoi(info.mapname.c_str() + 3);
 			if (mapnum >= 0 && mapnum <= 99)
 			{
 				info.levelnum = mapnum;
@@ -1352,7 +1359,7 @@ namespace
 			info.level_name.clear();
 
 			info = defaultinfo;
-			uppercopy(info.mapname, os.getToken().c_str());
+			info.mapname = os.getToken();
 
 			MapNameToLevelNum(info);
 
@@ -1367,32 +1374,32 @@ namespace
 			// Doing this lets us skip all normal code for this if nothing has been defined.
 			if (!info.nextmap[0] && !info.endpic[0])
 			{
-				if (!stricmp(info.mapname, "MAP30"))
+				if (info.mapname == "MAP30")
 				{
 					strcpy(info.endpic, "$CAST");
 					strncpy(info.nextmap, "EndGameC", 8);
 				}
-				else if (!stricmp(info.mapname, "E1M8"))
+				else if (info.mapname == "E1M8")
 				{
 					strcpy(info.endpic, gamemode == retail ? "CREDIT" : "HELP2");
 					strncpy(info.nextmap, "EndGameC", 8);
 				}
-				else if (!stricmp(info.mapname, "E2M8"))
+				else if (info.mapname == "E2M8")
 				{
 					strcpy(info.endpic, "VICTORY");
 					strncpy(info.nextmap, "EndGame2", 8);
 				}
-				else if (!stricmp(info.mapname, "E3M8"))
+				else if (info.mapname == "E3M8")
 				{
 					strcpy(info.endpic, "$BUNNY");
 					strncpy(info.nextmap, "EndGame3", 8);
 				}
-				else if (!stricmp(info.mapname, "E4M8"))
+				else if (info.mapname == "E4M8")
 				{
 					strcpy(info.endpic, "ENDPIC");
 					strncpy(info.nextmap, "EndGame4", 8);
 				}
-				else if (gamemission == chex && !stricmp(info.mapname, "E1M5"))
+				else if (gamemission == chex && info.mapname == "E1M5")
 				{
 					strcpy(info.endpic, "CREDIT");
 					strncpy(info.nextmap, "EndGame1", 8);
@@ -1400,7 +1407,7 @@ namespace
 				else
 				{
 					int ep, map;
-					ValidateMapName(info.mapname, &ep, &map);
+					ValidateMapName(info.mapname.c_str(), &ep, &map);
 					map++;
 					if (gamemode == commercial)
 						sprintf(info.nextmap, "MAP%02d", map);
@@ -2086,11 +2093,8 @@ static void ParseMapInfoLump(int lump, const char* lumpname)
 				levels.findByName(map_name) :
 				levels.create();
 
-			// Free the level name string before we pave over it.
-			info.level_name.clear();
-
 			info = defaultinfo;
-			uppercopy(info.mapname, map_name);
+			info.mapname = map_name;
 
 			// Map name.
 			MustGetString(os);
@@ -2634,7 +2638,7 @@ void G_ClearSnapshots()
 
 static void writeSnapShot(FArchive &arc, level_info_t *i)
 {
-	arc.Write (i->mapname, 8);
+	arc.Write (i->mapname.c_str(), 8);
 	i->snapshot->Serialize (arc);
 }
 
@@ -2654,7 +2658,7 @@ void G_SerializeSnapshots(FArchive &arc)
 		}
 
 		// Signal end of snapshots
-		arc << (char)0;
+		arc << static_cast<char>(0);
 	}
 	else
 	{
@@ -2681,7 +2685,7 @@ void G_SerializeSnapshots(FArchive &arc)
 
 static void writeDefereds(FArchive &arc, level_info_t *i)
 {
-	arc.Write (i->mapname, 8);
+	arc.Write (i->mapname.c_str(), 8);
 	arc << i->defered;
 }
 
@@ -2824,7 +2828,7 @@ void G_InitLevelLocals()
 			else
 				begin = info.level_name;
 		}
-		else if (strstr(info.mapname, "MAP") == &info.mapname[0])
+		else if (strstr(info.mapname.c_str(), "MAP") == &info.mapname[0])
 		{
 			std::string search;
 			StrFormat(search, "%u: ", info.levelnum);

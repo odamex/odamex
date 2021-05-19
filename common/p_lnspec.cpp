@@ -797,7 +797,7 @@ FUNC(LS_Teleport_NewMap)
 
 		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
 		{
-			strncpy(level.nextmap, info.mapname, 8);
+			strncpy(level.nextmap, info.mapname.c_str(), 8);
 			G_ExitLevel(arg1, 1);
 			return true;
 		}
@@ -1058,7 +1058,7 @@ FUNC(LS_ACS_Execute)
 	if (arg1 == 0 || !info.exists())
 		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 0);
 
-	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 0);
+	return P_StartScript(it, ln, arg0, info.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 0);
 }
 
 FUNC(LS_ACS_ExecuteAlways)
@@ -1073,7 +1073,7 @@ FUNC(LS_ACS_ExecuteAlways)
 	if (arg1 == 0 || !info.exists())
 		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 1);
 
-	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 1);
+	return P_StartScript(it, ln, arg0, info.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 1);
 }
 
 FUNC(LS_ACS_LockedExecute)
@@ -1100,7 +1100,7 @@ FUNC(LS_ACS_Suspend)
 	if (arg1 == 0 || !info.exists())
 		P_SuspendScript(arg0, ::level.mapname);
 	else
-		P_SuspendScript(arg0, info.mapname);
+		P_SuspendScript(arg0, info.mapname.c_str());
 
 	return true;
 }
@@ -1116,7 +1116,7 @@ FUNC(LS_ACS_Terminate)
 	if (arg1 == 0 || !info.exists())
 		P_TerminateScript(arg0, ::level.mapname);
 	else
-		P_TerminateScript(arg0, info.mapname);
+		P_TerminateScript(arg0, info.mapname.c_str());
 
 	return true;
 }
