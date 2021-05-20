@@ -117,7 +117,11 @@ class OZone
 		void* imFree = block->first;
 
 		free(imFree);
-		return m_heap.erase(block);
+
+		MemoryBlockTable::iterator next = block;
+		++next;
+		m_heap.erase(block);
+		return next;
 	}
 
   public:
