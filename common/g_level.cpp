@@ -1033,25 +1033,35 @@ namespace
 		return 1;
 	}
 
-	int ValidateMapName(const char* mapname, int* pEpi, int* pMap)
+	int ParseOLumpName(OScanner& os, OLumpName& buffer)
+    {
+	    MustGetString(os);
+	    if (strlen(os.getToken().c_str()) > 8)
+	    {
+		    I_Error("String too long. Maximum size is 8 characters.");
+		    return 0;
+	    }
+	    buffer = os.getToken();
+	    return 1;
+    }
+
+	int ValidateMapName(const char* mapname, int* pEpi = NULL, int* pMap = NULL)
 	{
 		// Check if the given map name can be expressed as a gameepisode/gamemap pair and be reconstructed from it.
-		char lumpname[9], mapuname[9];
+	    char lumpname[9];
 		int epi = -1, map = -1;
 		
-		strncpy(mapuname, mapname, 8);
-		mapuname[8] = 0;
-		M_Strupr(mapuname);
+		const OLumpName mapuname = mapname;
 
 		if (gamemode != commercial)
 		{
-			if (sscanf(mapuname, "E%dM%d", &epi, &map) != 2)
+			if (sscanf(mapuname.c_str(), "E%dM%d", &epi, &map) != 2)
 				return 0;
 			snprintf(lumpname, 9, "E%dM%d", epi, map);
 		}
 		else
 		{
-			if (sscanf(mapuname, "MAP%d", &map) != 1)
+			if (sscanf(mapuname.c_str(), "MAP%d", &map) != 1)
 				return 0;
 			snprintf(lumpname, 9, "MAP%02d", map);
 			epi = 1;
@@ -1060,7 +1070,7 @@ namespace
 			*pEpi = epi;
 		if (pMap)
 			*pMap = map;
-		return !strcmp(mapuname, lumpname);
+		return !strcmp(mapuname.c_str(), lumpname);
 	}
 
 	int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
@@ -1083,7 +1093,7 @@ namespace
 		else if (!stricmp(pname, "next"))
 		{
 			ParseLumpName(os, mape->nextmap);
-			if (!ValidateMapName(mape->nextmap, NULL, NULL))
+			if (!ValidateMapName(mape->nextmap))
 			{
 				I_Error("Invalid map name %s.", mape->nextmap);
 				return 0;
@@ -1092,7 +1102,7 @@ namespace
 		else if (!stricmp(pname, "nextsecret"))
 		{
 			ParseLumpName(os, mape->secretmap);
-			if (!ValidateMapName(mape->secretmap, NULL, NULL))
+			if (!ValidateMapName(mape->secretmap))
 			{
 				I_Error("Invalid map name %s", mape->nextmap);
 				return 0;
@@ -1112,7 +1122,7 @@ namespace
 		}
 		else if (!stricmp(pname, "endpic"))
 		{
-			ParseLumpName(os, mape->endpic);
+			ParseOLumpName(os, mape->endpic);
 			strncpy(mape->nextmap, "EndGame1", 8);
 			mape->nextmap[8] = '\0';
 		}
@@ -1122,7 +1132,7 @@ namespace
 			if (GetTokenAsBool(os))
 				strncpy(mape->nextmap, "EndGameC", 8);
 			else
-				strcpy(mape->endpic, "\0");
+				mape->endpic.clear();
 		}
 		else if (!stricmp(pname, "endbunny"))
 		{
@@ -1130,27 +1140,27 @@ namespace
 			if (GetTokenAsBool(os))
 				strncpy(mape->nextmap, "EndGame3", 8);
 			else
-				strcpy(mape->endpic, "\0");
+			    mape->endpic.clear();
 		}
 		else if (!stricmp(pname, "endgame"))
 		{
 			MustGetBool(os);
 			if (GetTokenAsBool(os))
 			{
-				strcpy(mape->endpic, "!");
+			    mape->endpic = "!";
 			}
 			else
 			{
-				strcpy(mape->endpic, "\0");
+			    mape->endpic.clear();
 			}
 		}
 		else if (!stricmp(pname, "exitpic"))
 		{
-			ParseLumpName(os, mape->exitpic);
+			ParseOLumpName(os, mape->exitpic);
 		}
 		else if (!stricmp(pname, "enterpic"))
 		{
-			ParseLumpName(os, mape->enterpic);
+			ParseOLumpName(os, mape->enterpic);
 		}
 		else if (!stricmp(pname, "nointermission"))
 		{
@@ -1342,11 +1352,10 @@ namespace
 			}
 
 			MustGetIdentifier(os);
-		    if (os.getToken().length() > 8)
+		    if (os.getToken().length() > 8 || !ValidateMapName(os.getToken().c_str()))
 		    {
 			    I_Error("Invalid map name %s", os.getToken().c_str());
 		    }
-		    ValidateMapName(os.getToken().c_str(), NULL, NULL);
 
 			// Find the level.
 			level_pwad_info_t& info = (levels.findByName(os.getToken()).exists()) ?
@@ -1378,32 +1387,32 @@ namespace
 			{
 				if (info.mapname == "MAP30")
 				{
-					strcpy(info.endpic, "$CAST");
+					info.endpic = "$CAST";
 					strncpy(info.nextmap, "EndGameC", 8);
 				}
 				else if (info.mapname == "E1M8")
 				{
-					strcpy(info.endpic, gamemode == retail ? "CREDIT" : "HELP2");
+					info.endpic = gamemode == retail ? "CREDIT" : "HELP2";
 					strncpy(info.nextmap, "EndGameC", 8);
 				}
 				else if (info.mapname == "E2M8")
 				{
-					strcpy(info.endpic, "VICTORY");
+					info.endpic = "VICTORY";
 					strncpy(info.nextmap, "EndGame2", 8);
 				}
 				else if (info.mapname == "E3M8")
 				{
-					strcpy(info.endpic, "$BUNNY");
+					info.endpic = "$BUNNY";
 					strncpy(info.nextmap, "EndGame3", 8);
 				}
 				else if (info.mapname == "E4M8")
 				{
-					strcpy(info.endpic, "ENDPIC");
+					info.endpic = "ENDPIC";
 					strncpy(info.nextmap, "EndGame4", 8);
 				}
 				else if (gamemission == chex && info.mapname == "E1M5")
 				{
-					strcpy(info.endpic, "CREDIT");
+					info.endpic = "CREDIT";
 					strncpy(info.nextmap, "EndGame1", 8);
 				}
 				else
@@ -1792,7 +1801,7 @@ static void ParseMapInfoLower
 static void ParseEpisodeInfo(OScanner &os)
 {
 	bool new_mapinfo = 0;
-	char map[9];
+	OLumpName map;
 	std::string pic;
 	bool picisgfx = false;
 	bool remove = false;
@@ -1802,8 +1811,7 @@ static void ParseEpisodeInfo(OScanner &os)
 	bool extended = false;
 	
 	MustGetString(os); // Map lump
-	uppercopy(map, os.getToken().c_str());
-	map[8] = 0;
+	map = os.getToken();
 	
 	MustGetString(os);
 	if (UpperCompareToken(os, "teaser"))
@@ -1812,7 +1820,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		MustGetString(os);
 		if (gameinfo.flags & GI_SHAREWARE)
 		{
-			uppercopy(map, os.getToken().c_str());
+			map = os.getToken();
 		}
 		MustGetString(os);
 	}
@@ -1913,11 +1921,11 @@ static void ParseEpisodeInfo(OScanner &os)
 	int i;
 	for (i = 0; i < episodenum; ++i)
 	{
-		if (strncmp(EpisodeMaps[i], map, 8) == 0)
+		if (map == EpisodeMaps[i])
 			break;
 	}
 
-	if (remove || (optional && W_CheckNumForName(map) == -1) || (extended && W_CheckNumForName("EXTENDED") == -1))
+	if (remove || (optional && W_CheckNumForName(map.c_str()) == -1) || (extended && W_CheckNumForName("EXTENDED") == -1))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)
@@ -1936,7 +1944,7 @@ static void ParseEpisodeInfo(OScanner &os)
 	{
 		if (pic.empty())
 		{
-			pic = copystring(map);
+			pic = map.c_str();
 			picisgfx = false;
 		}
 
@@ -1956,7 +1964,7 @@ static void ParseEpisodeInfo(OScanner &os)
 		EpisodeInfos[i].key = tolower(key);
 		EpisodeInfos[i].fulltext = !picisgfx;
 		EpisodeInfos[i].noskillmenu = noskillmenu;
-		strncpy(EpisodeMaps[i], map, 8);
+		strncpy(EpisodeMaps[i], map.c_str(), 8);
 	}
 }
 
@@ -2899,9 +2907,9 @@ void G_InitLevelLocals()
 		V_RefreshColormaps();
 	}
 
-	strncpy(::level.exitpic, info.exitpic, 8);
-	strncpy(::level.enterpic, info.enterpic, 8);
-	strncpy(::level.endpic, info.endpic, 8);
+	strncpy(::level.exitpic, info.exitpic.c_str(), 8);
+	strncpy(::level.enterpic, info.enterpic.c_str(), 8);
+	strncpy(::level.endpic, info.endpic.c_str(), 8);
 
 	::level.intertext = info.intertext;
 	::level.intertextsecret = info.intertextsecret;

@@ -142,9 +142,9 @@ struct level_pwad_info_t
 	float			aircontrol;
 
 	// The following are necessary for UMAPINFO compatibility
-	char			exitpic[9];
-	char			enterpic[9];
-	char			endpic[9];
+	OLumpName exitpic;
+	OLumpName enterpic;
+	OLumpName endpic;
 
 	std::string		intertext;
 	std::string		intertextsecret;
