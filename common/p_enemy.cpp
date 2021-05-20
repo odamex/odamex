@@ -1963,7 +1963,7 @@ void A_BossDeath (AActor *actor)
 		if (it == players.end())
 			return; // no one left alive, so do not end game
 
-		std::vector<BossAction>::const_iterator ba = level.bossactions->begin();
+		std::vector<OBossAction>::const_iterator ba = level.bossactions->begin();
 		
 		// see if the BossAction applies to this type
 		for (; ba != level.bossactions->end(); ++ba)

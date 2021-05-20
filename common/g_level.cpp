@@ -1267,7 +1267,7 @@ namespace
 					if (mape->bossactions_donothing == true)
 						mape->bossactions_donothing = false;
 
-					BossAction new_bossaction;
+					OBossAction new_bossaction;
 
 					new_bossaction.type = i;
 					new_bossaction.special = special;

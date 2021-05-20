@@ -30,6 +30,7 @@
 #include "m_fixed.h"
 #include "m_resfile.h"
 #include "olumpname.h"
+#include "r_defs.h" // line_t
 
 #include <string>
 #include <vector>
@@ -84,7 +85,7 @@ enum OLevelFlags : unsigned int
 
 struct acsdefered_s;
 class FBehavior;
-struct BossAction;
+struct OBossAction;
 
 struct level_info_t
 {
@@ -150,7 +151,7 @@ struct level_pwad_info_t
 	char			interbackdrop[9];
 	char			intermusic[9];
 	
-	std::vector<BossAction> bossactions;
+	std::vector<OBossAction> bossactions;
 	bool			bossactions_donothing;
 	
 	bool exists() const
@@ -216,7 +217,7 @@ struct level_locals_t {
 	char			interbackdrop[9];
 	char			intermusic[9];
 	
-	std::vector<BossAction> *bossactions;
+	std::vector<OBossAction> *bossactions;
 	bool			bossactions_donothing;
 	
 };
@@ -224,10 +225,11 @@ struct level_locals_t {
 #define CLUSTER_HUB            0x00000001u
 #define CLUSTER_EXITTEXTISLUMP 0x00000002u
 
-struct BossAction
+struct OBossAction
 {
 	int type;
 	int special;
+	line_t ld;
 	int tag;
 };
 
