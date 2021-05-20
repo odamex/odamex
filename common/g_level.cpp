@@ -34,19 +34,15 @@
 #include "g_game.h"
 #include "gi.h"
 #include "i_system.h"
-#include "m_fileio.h"
 #include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
-#include "p_setup.h"
 #include "p_unlag.h"
 #include "r_data.h"
 #include "r_sky.h"
-#include "s_sound.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "w_ident.h"
-#include "z_zone.h"
 
 level_locals_t level;			// info about current level
 

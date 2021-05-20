@@ -65,6 +65,7 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
+#include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
 
