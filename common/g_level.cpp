@@ -1191,11 +1191,11 @@ namespace
 		}
 		else if (!stricmp(pname, "interbackdrop"))
 		{
-			ParseLumpName(os, mape->interbackdrop);
+			ParseOLumpName(os, mape->interbackdrop);
 		}
 		else if (!stricmp(pname, "intermusic"))
 		{
-			ParseLumpName(os, mape->intermusic);
+			ParseOLumpName(os, mape->intermusic);
 		}
 		else if (!stricmp(pname, "episode"))
 		{
@@ -2913,8 +2913,8 @@ void G_InitLevelLocals()
 
 	::level.intertext = info.intertext;
 	::level.intertextsecret = info.intertextsecret;
-	strncpy(::level.interbackdrop, info.interbackdrop, 8);
-	strncpy(::level.intermusic, info.intermusic, 8);
+	::level.interbackdrop = info.interbackdrop;
+	::level.intermusic = info.intermusic;
 	
 	::level.bossactions = &info.bossactions;
 	::level.bossactions_donothing = info.bossactions_donothing;

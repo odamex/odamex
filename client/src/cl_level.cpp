@@ -660,10 +660,10 @@ void G_WorldDone()
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
 	//options.music = thiscluster.messagemusic;
-	options.music = (level.intermusic[0]) ? level.intermusic : thiscluster.exittext;
-	if (level.interbackdrop[0] != '\0')
+	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.exittext;
+	if (!level.interbackdrop.empty())
 	{
-		options.flat = &level.interbackdrop[0];
+		options.flat = level.interbackdrop.c_str();
 	}
 	else if (thiscluster.finalepic[0] != '\0')
 	{

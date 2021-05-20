@@ -148,8 +148,8 @@ struct level_pwad_info_t
 
 	std::string		intertext;
 	std::string		intertextsecret;
-	char			interbackdrop[9];
-	char			intermusic[9];
+	OLumpName		interbackdrop;
+	OLumpName		intermusic;
 	
 	std::vector<OBossAction> bossactions;
 	bool			bossactions_donothing;
@@ -214,8 +214,8 @@ struct level_locals_t {
 
 	std::string		intertext;
 	std::string		intertextsecret;
-	char			interbackdrop[9];
-	char			intermusic[9];
+	OLumpName		interbackdrop;
+	OLumpName		intermusic;
 	
 	std::vector<OBossAction> *bossactions;
 	bool			bossactions_donothing;
