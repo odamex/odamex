@@ -372,7 +372,7 @@ void G_DoCompleted (void)
 	{
 		wminfo.next[0] = 0;
 
-		if (level.endpic[0] && level.flags & LEVEL_NOINTERMISSION)
+		if (!level.endpic.empty() && level.flags & LEVEL_NOINTERMISSION)
 		{
 			gameaction = ga_victory;
 			return;

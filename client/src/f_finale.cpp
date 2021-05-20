@@ -884,7 +884,7 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					char* page = (level.endpic[0] != '\0') ? level.endpic : gameinfo.finalePage1;
+					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage1;
 
 					screen->DrawPatchIndirect(W_CachePatch(page), 0, 0);
 					break;

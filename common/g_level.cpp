@@ -2907,9 +2907,9 @@ void G_InitLevelLocals()
 		V_RefreshColormaps();
 	}
 
-	strncpy(::level.exitpic, info.exitpic.c_str(), 8);
-	strncpy(::level.enterpic, info.enterpic.c_str(), 8);
-	strncpy(::level.endpic, info.endpic.c_str(), 8);
+	::level.exitpic = info.exitpic;
+	::level.enterpic = info.enterpic;
+	::level.endpic = info.endpic;
 
 	::level.intertext = info.intertext;
 	::level.intertextsecret = info.intertextsecret;

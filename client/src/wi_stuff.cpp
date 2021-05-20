@@ -1238,7 +1238,7 @@ void WI_updateStats(void)
 			I_FreeSurface(background_surface);
 			
 			// new background
-			const patch_t* bg_patch = W_CachePatch(level.enterpic);
+			const patch_t* bg_patch = W_CachePatch(level.enterpic.c_str());
 			background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 			DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -1412,7 +1412,7 @@ void WI_loadData (void)
 	if (level.exitpic[0] != '\0')
 	{
 		is_custom_interpic = true;
-		strncpy(name, level.exitpic, 8);
+		strncpy(name, level.exitpic.c_str(), 8);
 	}
 	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");

@@ -142,9 +142,9 @@ struct level_pwad_info_t
 	float			aircontrol;
 
 	// The following are necessary for UMAPINFO compatibility
-	OLumpName exitpic;
-	OLumpName enterpic;
-	OLumpName endpic;
+	OLumpName		exitpic;
+	OLumpName		enterpic;
+	OLumpName		endpic;
 
 	std::string		intertext;
 	std::string		intertextsecret;
@@ -208,9 +208,9 @@ struct level_locals_t {
 	SDWORD			vars[NUM_MAPVARS];
 
 	// The following are used for UMAPINFO
-	char			exitpic[8];
-	char			enterpic[8];
-	char			endpic[8];
+	OLumpName		exitpic;
+	OLumpName		enterpic;
+	OLumpName		endpic;
 
 	std::string		intertext;
 	std::string		intertextsecret;
