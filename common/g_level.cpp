@@ -1041,9 +1041,7 @@ namespace
 		// Check if the given map name can be expressed as a gameepisode/gamemap pair and be reconstructed from it.
 		char lumpname[9], mapuname[9];
 		int epi = -1, map = -1;
-
-		if (strlen(mapname) > 8)
-			return 0;
+		
 		strncpy(mapuname, mapname, 8);
 		mapuname[8] = 0;
 		M_Strupr(mapuname);
@@ -1344,11 +1342,11 @@ namespace
 			}
 
 			MustGetIdentifier(os);
-			if (!ValidateMapName(os.getToken().c_str(), NULL, NULL))
-			{
-				// TODO: should display line number of error
-				I_Error("Invalid map name %s", os.getToken().c_str());
-			}
+		    if (os.getToken().length() > 8)
+		    {
+			    I_Error("Invalid map name %s", os.getToken().c_str());
+		    }
+		    ValidateMapName(os.getToken().c_str(), NULL, NULL);
 
 			// Find the level.
 			level_pwad_info_t& info = (levels.findByName(os.getToken()).exists()) ?
@@ -1359,6 +1357,10 @@ namespace
 			info.level_name.clear();
 
 			info = defaultinfo;
+		    if (os.getToken().length() > 8)
+		    {
+			    I_Error("Invalid map name %s", os.getToken().c_str());
+		    }
 			info.mapname = os.getToken();
 
 			MapNameToLevelNum(info);
@@ -2215,6 +2217,8 @@ void G_ParseMapInfo()
 	case chex:
 		baseinfoname = "_CHEXNFO";
 		break;
+	default:
+		break;
 	}
 
 	lump = W_GetNumForName(baseinfoname);
@@ -2606,9 +2610,9 @@ void G_SnapshotLevel()
 	delete level.info->snapshot;
 
 	level.info->snapshot = new FLZOMemFile;
-	level.info->snapshot->Open ();
+	level.info->snapshot->Open();
 
-	FArchive arc (*level.info->snapshot);
+	FArchive arc(*level.info->snapshot);
 
 	G_SerializeLevel(arc, false);
 }
