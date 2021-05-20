@@ -28,6 +28,7 @@
 #include "i_system.h"
 #include "p_acs.h"
 #include "d_main.h"
+#include "g_mapinfo.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;

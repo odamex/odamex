@@ -83,6 +83,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "g_mapinfo.h"
 #include "sc_man.h"
 
 #include "w_ident.h"

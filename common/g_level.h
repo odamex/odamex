@@ -75,13 +75,7 @@ enum OLevelFlags : unsigned int
 	LEVEL_CHANGEMAPCHEAT = 0x40000000,	// Don't display cluster messages
 	LEVEL_VISITED = 0x80000000,			// Used for intermission map
 
-
 };
-
-
-
-
-
 
 struct acsdefered_s;
 class FBehavior;
@@ -290,7 +284,6 @@ extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
 
 extern BOOL savegamerestore;
-extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew(const char *mapname);
 void G_ChangeMap();
@@ -318,7 +311,6 @@ void G_AirControlChanged();
 
 char *CalcMapName(int episode, int level);
 
-void G_ParseMapInfo();
 void G_ParseMusInfo();
 
 void G_ClearSnapshots();
