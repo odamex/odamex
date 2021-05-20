@@ -228,9 +228,7 @@ struct level_locals_t {
 struct OBossAction
 {
 	int type;
-	int special;
 	line_t ld;
-	int tag;
 };
 
 struct cluster_info_t {

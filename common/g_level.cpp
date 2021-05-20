@@ -1269,9 +1269,12 @@ namespace
 
 					OBossAction new_bossaction;
 
+					maplinedef_t mld;
+				    mld.special = static_cast<short>(special);
+				    mld.tag = static_cast<short>(tag);
+				    P_TranslateLineDef(&new_bossaction.ld, &mld);
+					
 					new_bossaction.type = i;
-					new_bossaction.special = special;
-					new_bossaction.tag = tag;
 
 					mape->bossactions.push_back(new_bossaction);
 				}

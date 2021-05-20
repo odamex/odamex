@@ -1963,7 +1963,7 @@ void A_BossDeath (AActor *actor)
 		if (it == players.end())
 			return; // no one left alive, so do not end game
 
-		std::vector<OBossAction>::const_iterator ba = level.bossactions->begin();
+		std::vector<OBossAction>::iterator ba = level.bossactions->begin();
 		
 		// see if the BossAction applies to this type
 		for (; ba != level.bossactions->end(); ++ba)
@@ -1993,17 +1993,7 @@ void A_BossDeath (AActor *actor)
 		{
 			if (ba->type == actor->type)
 			{
-				// TODO: Rather than calculate in this function, could have line_t
-				//       precalculated when UMAPINFO is parsed
-				maplinedef_t mld;
-				mld.special = static_cast<short>(ba->special);
-				mld.tag = static_cast<short>(ba->tag);
-
-				line_t ld;
-
-				P_TranslateLineDef(&ld, &mld);
-				
-				if (!P_UseSpecialLine(actor, &ld, 0, true))
+				if (!P_UseSpecialLine(actor, &ba->ld, 0, true))
 					P_CrossSpecialLine(0, 0, actor, true);
 			}
 		}
