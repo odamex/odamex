@@ -1235,6 +1235,521 @@ namespace
 		// do nothing
 	}
 
+	///////////////////////////////////////////////////////////
+	/// MapInfo type functions
+
+	// Eats the next block and does nothing with the data
+	void MIType_EatNext(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<std::string>(os, doEquals);
+    }
+
+	// Sets the inputted data as an int
+    void MIType_Int(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<int>(os, doEquals);
+
+	    //*((int*)(info + handler->data1)) = GetToken<int>(os);
+    }
+
+	// Sets the inputted data as a float
+    void MIType_Float(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<float>(os, doEquals);
+
+	    //*((float*)(info + handler->data1)) = GetToken<float>(os);
+    }
+
+	// Sets the inputted data as a color
+    void MIType_Color(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<std::string>(os, doEquals);
+
+	    /*argb_t color(V_GetColorFromString(os.getToken()));
+	    uint8_t* ptr = (uint8_t*)(info + handler->data1);
+	    ptr[0] = color.geta();
+	    ptr[1] = color.getr();
+	    ptr[2] = color.getg();
+	    ptr[3] = color.getb();*/
+    }
+
+	// Sets the inputted data as an OLumpName map name
+    void MIType_MapName(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<OLumpName>(os, doEquals);
+
+	    char map_name[9];
+	    strncpy(map_name, os.getToken().c_str(), 8);
+
+	    if (IsNum(map_name))
+	    {
+		    int map = std::atoi(map_name);
+		    sprintf(map_name, "MAP%02d", map);
+	    }
+
+	    //*(OLumpName*)(info + handler->data1) = map_name;
+    }
+
+	// Sets the inputted data as an OLumpName
+    void MIType_LumpName(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<OLumpName>(os, doEquals);
+
+	    //*(OLumpName*)(info + handler->data1) = os.getToken();
+    }
+
+	// Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
+    void MIType_$LumpName(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<std::string>(os, doEquals);
+
+	    OLumpName temp;
+	    if (os.getToken()[0] == '$')
+	    {
+		    // It is possible to pass a DeHackEd string
+		    // prefixed by a $.
+		    const OString& s = GStrings(os.getToken().c_str() + 1);
+		    if (s.empty())
+		    {
+			    I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+		    }
+		    temp = s;
+	    }
+	    else
+	    {
+		    temp = os.getToken();
+	    }
+
+	    //*(OLumpName*)(info + handler->data1) = temp;
+    }
+
+	// Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName (Music variant)
+    void MIType_MusicLumpName(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<std::string>(os, doEquals);
+
+	    OLumpName temp;
+	    if (os.getToken()[0] == '$')
+	    {
+		    // It is possible to pass a DeHackEd string
+		    // prefixed by a $.
+		    const OString& s = GStrings(os.getToken().c_str() + 1);
+		    if (s.empty())
+		    {
+			    I_Error("Unknown lookup string \"%s\"", s.c_str());
+		    }
+
+		    // Music lumps in the stringtable do not begin
+		    // with a D_, so we must add it.
+		    char lumpname[9];
+		    snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
+		    temp = lumpname;
+	    }
+	    else
+	    {
+		    temp = os.getToken();
+	    }
+
+	    //*(OLumpName*)(info + handler->data1) = temp;
+    }
+
+	// Sets the sky texture with an OLumpName
+    void MIType_Sky(OScanner& os, bool doEquals)
+    {
+	    if (doEquals)
+		{
+			MustGetStringName(os, "=");
+			MustGetString(os); // Texture name
+		    //*(OLumpName*)(info + handler->data1) = os.getToken();
+			SkipUnknownParams(os);
+		}
+		else
+		{
+			MustGetString(os); // get texture name;
+		    //*(OLumpName*)(info + handler->data1) = os.getToken();
+			MustGet<float>(os); // get scroll speed
+			/*if (HexenHack)
+			{
+				*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+			}
+			 else
+			{
+				*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
+			}*/
+		}
+    }
+
+	// Sets a flag
+    void MIType_SetFlag(OScanner& os, bool doEquals)
+    {
+	    // flags |= handler->data1;
+    }
+
+	// Sets an SC flag
+    void MIType_SCFlags(OScanner& os, bool doEquals)
+    {
+	    // flags = (flags & handler->data2) | handler->data1;
+    }
+
+	// Sets a cluster
+    void MIType_Cluster(OScanner& os, bool doEquals)
+    {
+	    ParseMapinfoHelper<int>(os, doEquals);
+
+	    //*((int*)(info + handler->data1)) = GetToken<int>(os);
+	    if (HexenHack)
+	    {
+		    ClusterInfos& clusters = getClusterInfos();
+		    cluster_info_t& clusterH = clusters.findByCluster(GetToken<int>(os));
+		    if (clusterH.cluster != 0)
+		    {
+			    clusterH.flags |= CLUSTER_HUB;
+		    }
+	    }
+    }
+
+	// Sets a cluster string
+    void MIType_ClusterString(OScanner& os, bool doEquals)
+    {
+	    char** text = NULL; // (char**)(info + handler->data1);
+	    return;
+		
+	    if (doEquals)
+	    {
+		    MustGetStringName(os, "=");
+		    MustGetString(os);
+		    if (UpperCompareToken(os, "lookup,"))
+		    {
+			    MustGetString(os);
+			    const OString& s = GStrings(os.getToken());
+			    if (s.empty())
+			    {
+				    I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+			    }
+			    free(*text);
+			    *text = strdup(s.c_str());
+		    }
+		    else
+		    {
+			    // One line per string.
+			    std::string ctext;
+			    os.unScan();
+			    do
+			    {
+				    MustGetString(os);
+				    ctext += os.getToken();
+				    ctext += "\n";
+				    os.scan();
+			    } while (os.compareToken(","));
+			    os.unScan();
+
+			    // Trim trailing newline.
+			    if (ctext.length() > 0)
+			    {
+				    ctext.resize(ctext.length() - 1);
+			    }
+
+			    free(*text);
+			    *text = strdup(ctext.c_str());
+		    }
+	    }
+	    else
+	    {
+		    MustGetString(os);
+		    if (UpperCompareToken(os, "lookup"))
+		    {
+			    MustGetString(os);
+			    const OString& s = GStrings(os.getToken());
+			    if (s.empty())
+			    {
+				    I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+			    }
+
+			    free(*text);
+			    *text = strdup(s.c_str());
+		    }
+		    else
+		    {
+			    free(*text);
+			    *text = strdup(os.getToken().c_str());
+		    }
+	    }
+    }
+
+	// Sets a compatibility flag
+    void MIType_SetCompatFlag(OScanner& os, bool doEquals)
+    {
+	    // todo
+    }
+
+	typedef std::list<std::pair<const char*, void(*)(OScanner&, bool)>> MapInfoData;
+
+	MapInfoData MapInfoMapContent =
+	{
+		{"levelnum",				  MIType_Int},
+		{"next",					  MIType_MapName},
+        {"secretnext",				  MIType_MapName},
+		{"cluster",					  MIType_Cluster},
+		{"sky1",					  MIType_Sky},
+		{"sky2",					  MIType_Sky},
+		{"fade",					  MIType_Color},
+		{"outsidefog",				  MIType_Color},
+        {"titlepatch",				  MIType_LumpName},
+		{"par",						  MIType_Int},
+        {"music",					  MIType_MusicLumpName},
+		{"nointermission",			  MIType_SetFlag},
+		{"doublesky",				  MIType_SetFlag},
+		{"nosoundclipping",			  MIType_SetFlag},
+		{"allowmonstertelefrags",	  MIType_SetFlag},
+		{"map07special",			  MIType_SetFlag},
+		{"baronspecial",			  MIType_SetFlag},
+		{"cyberdemonspecial",		  MIType_SetFlag},
+		{"spidermastermindspecial",	  MIType_SetFlag},
+		{"specialaction_exitlevel",	  MIType_SCFlags},
+		{"specialaction_opendoor",	  MIType_SCFlags},
+		{"specialaction_lowerfloor",  MIType_SCFlags},
+		{"lightning",				  NULL},
+		{"fadetable",				  MIType_LumpName},
+		{"evenlighting",			  MIType_SetFlag},
+		{"noautosequences",			  MIType_SetFlag},
+		{"forcenoskystretch",		  MIType_SetFlag},
+		{"allowfreelook",			  MIType_SCFlags},
+		{"nofreelook",				  MIType_SCFlags},
+		{"allowjump",				  MIType_SCFlags},
+		{"nojump",					  MIType_SCFlags},
+		{"cdtrack",					  MIType_EatNext},
+		{"cd_start_track",			  MIType_EatNext},
+		{"cd_end1_track",			  MIType_EatNext},
+		{"cd_end2_track",			  MIType_EatNext},
+		{"cd_end3_track",			  MIType_EatNext},
+		{"cd_intermission_track",	  MIType_EatNext},
+		{"cd_title_track",			  MIType_EatNext},
+		{"warptrans",				  MIType_EatNext},
+		{"gravity",					  MIType_Float},
+		{"aircontrol",				  MIType_Float},
+		{"islobby",					  MIType_SetFlag},
+		{"lobby",					  MIType_SetFlag},
+		{"nocrouch",				  NULL},
+		{"intermusic",				  MIType_EatNext},
+		{"par",						  MIType_EatNext},
+		{"sucktime",				  MIType_EatNext},
+	    {"enterpic",				  MIType_EatNext},
+	    {"exitpic",					  MIType_EatNext},
+	    {"interpic",				  MIType_EatNext},
+		{"translator",				  MIType_EatNext},
+		{"compat_shorttex",			  MIType_EatNext},
+		{"compat_limitpain",		  MIType_EatNext},
+	    {"compat_dropoff",			  MIType_SetCompatFlag},
+		{"compat_trace",			  MIType_EatNext},
+		{"compat_boomscroll",		  MIType_EatNext},
+		{"compat_sectorsounds",		  MIType_EatNext},
+		{"compat_nopassover", 		  MIType_SetFlag},
+	};
+
+	MapInfoHandler MapHandlers2[] =
+	{
+		// levelnum <levelnum>
+		{ MITYPE_INT, lioffset(levelnum), 0 },
+		// next <maplump>
+		{ MITYPE_MAPNAME, lioffset(nextmap), 0 },
+		// secretnext <maplump>
+		{ MITYPE_MAPNAME, lioffset(secretmap), 0 },
+		// cluster <number>
+		{ MITYPE_CLUSTER, lioffset(cluster), 0 },
+		// sky1 <texture> <scrollspeed>
+		{ MITYPE_SKY, lioffset(skypic), 0 },
+		// sky2 <texture> <scrollspeed>
+		{ MITYPE_SKY, lioffset(skypic2), 0 },
+		// fade <color>
+		{ MITYPE_COLOR, lioffset(fadeto_color), 0 },
+		// outsidefog <color>
+		{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
+		// titlepatch <patch>
+		{ MITYPE_OLUMPNAME, lioffset(pname), 0 },
+		// par <partime>
+		{ MITYPE_INT, lioffset(partime), 0 },
+		// music <musiclump>
+		{ MITYPE_MUSICLUMPNAME, lioffset(music), 0 },
+		// nointermission
+		{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
+		// doublesky
+		{ MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0 },
+		// nosoundclipping
+		{ MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0 },
+		// allowmonstertelefrags
+		{ MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0 },
+		// map07special
+		{ MITYPE_SETFLAG, LEVEL_MAP07SPECIAL, 0 },
+		// baronspecial
+		{ MITYPE_SETFLAG, LEVEL_BRUISERSPECIAL, 0 },
+		// cyberdemonspecial
+		{ MITYPE_SETFLAG, LEVEL_CYBORGSPECIAL, 0 },
+		// spidermastermindspecial
+		{ MITYPE_SETFLAG, LEVEL_SPIDERSPECIAL, 0 },
+		// specialaction_exitlevel
+		{ MITYPE_SCFLAGS, 0, ~LEVEL_SPECACTIONSMASK },
+		// specialaction_opendoor
+		{ MITYPE_SCFLAGS, LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
+		// specialaction_lowerfloor
+		{ MITYPE_SCFLAGS, LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
+		// lightning
+		{ MITYPE_IGNORE, 0, 0 },
+		// fadetable <colormap>
+		{ MITYPE_OLUMPNAME, lioffset(fadetable), 0 },
+		// evenlighting
+		{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
+		// noautosequences
+		{ MITYPE_SETFLAG, LEVEL_SNDSEQTOTALCTRL, 0 },
+		// forcenoskystretch
+		{ MITYPE_SETFLAG, LEVEL_FORCENOSKYSTRETCH, 0 },
+		// allowfreelook
+		{ MITYPE_SCFLAGS, LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
+		// nofreelook
+		{ MITYPE_SCFLAGS, LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
+		// allowjump
+		{ MITYPE_SCFLAGS, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
+		// nojump
+		{ MITYPE_SCFLAGS, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+		// cdtrack <track number>
+		{ MITYPE_EATNEXT, 0, 0 },
+		// cd_start_track ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// cd_end1_track ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// cd_end2_track ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// cd_end3_track ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// cd_intermission_track ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// cd_title_track ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// warptrans ???
+		{ MITYPE_EATNEXT, 0, 0 },
+		// gravity <amount>
+		{ MITYPE_FLOAT, lioffset(gravity), 0 },
+		// aircontrol <amount>
+		{ MITYPE_FLOAT, lioffset(aircontrol), 0 },
+		// islobby
+		{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+		// lobby
+		{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+		// nocrouch
+		{ MITYPE_IGNORE, 0, 0 },
+		// intermusic <musicname>
+		{ MITYPE_EATNEXT, 0, 0 },
+		// par <partime>
+		{ MITYPE_EATNEXT, 0, 0 },
+		// sucktime <value>
+		{ MITYPE_EATNEXT, 0, 0 },
+		// enterpic <$pic>
+	    { MITYPE_EATNEXT, 0, 0 },
+		// exitpic <$pic>
+	    { MITYPE_EATNEXT, 0, 0 },
+		// interpic <$pic>
+	    { MITYPE_EATNEXT, 0, 0 },
+		// translator <value>
+		{ MITYPE_EATNEXT, 0, 0 },
+		// compat_shorttex <value>
+	    {MITYPE_EATNEXT, 0, 0},
+	    // compat_limitpain <value>
+	    {MITYPE_EATNEXT, 0, 0},
+	    // compat_dropoff <value>
+	    {MITYPE_SETCOMPATFLAG, LEVEL_COMPAT_DROPOFF, 0},
+	    // compat_trace <value>
+	    {MITYPE_EATNEXT, 0, 0},
+	    // compat_boomscroll <value>
+	    {MITYPE_EATNEXT, 0, 0},
+	    // compat_sectorsounds <value>
+	    {MITYPE_EATNEXT, 0, 0},
+	    // compat_nopassover <value>
+	    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
+	};
+
+	//
+    // Parse a MAPINFO block
+    //
+    // NULL pointers can be passed if the block is unimplemented.  However, if
+    // the block you want to stub out is compatible with old MAPINFO, you need
+    // to parse the block anyway, even if you throw away the values.  This is
+    // done by passing in a strings pointer, and leaving the others NULL.
+    //
+    void ParseMapInfoLower_New(OScanner& os)
+	{
+	    // 0 if old mapinfo, positive number if new MAPINFO, the exact
+	    // number represents current brace depth.
+	    int newMapinfoStack = 0;
+
+		while (os.scan())
+	    {
+		    if (os.compareToken("{"))
+		    {
+			    // Detected new-style MAPINFO
+			    newMapinfoStack++;
+			    continue;
+		    }
+		    if (os.compareToken("}"))
+		    {
+			    newMapinfoStack--;
+			    if (newMapinfoStack <= 0)
+			    {
+				    // MAPINFO block is done
+				    break;
+			    }
+		    }
+
+		    if (newMapinfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
+		        // "cluster" is a valid map block type and is also
+		        // a valid top-level type.
+		        !UpperCompareToken(os, "cluster"))
+		    {
+			    // Old-style MAPINFO is done
+			    os.unScan();
+			    break;
+		    }
+
+			// find the matching string and use its corresponding function
+			MapInfoData::iterator it = MapInfoMapContent.begin();
+			for (; it != MapInfoMapContent.end(); ++it)
+			{
+			    if (UpperCompareToken(os, it->first))
+			    {
+				    if (it->second)
+				    {
+					    it->second(os, newMapinfoStack > 0);
+				    }
+			    }
+			}
+			
+			if (it == MapInfoMapContent.end())
+			{
+				if (newMapinfoStack <= 0)
+				{
+					// Old MAPINFO is up a creek, we need to be
+					// able to parse all types even if we can't
+					// do anything with them.
+					//
+					I_Error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
+				}
+	
+				// New MAPINFO is capable of skipping past unknown
+				// types.
+				SkipUnknownType(os);
+			}
+	    }
+
+    	// TODO: is this necessary?
+    	/*switch (tinfo->tag)
+	    {
+	    case tagged_info_t::LEVEL:
+		    tinfo->level->flags = flags;
+		    break;
+	    case tagged_info_t::CLUSTER:
+		    tinfo->cluster->flags = flags;
+		    break;
+	    }*/
+	}
+
 	//
 	// Parse a MAPINFO block
 	//
