@@ -1353,6 +1353,7 @@ namespace
 					int map = std::atoi(map_name);
 					sprintf(map_name, "MAP%02d", map);
 				}
+				
 				*(OLumpName*)(info + handler->data1) = map_name;
 				break;
 	
@@ -1616,11 +1617,8 @@ namespace
 			}
 			else if (UpperCompareToken(os, "name"))
 			{
-				if (new_mapinfo == true)
-				{
-					MustGetStringName(os, "=");
-				}
-				MustGetString(os);
+				ParseMapinfoHelper<std::string>(os, new_mapinfo);
+				
 				if (picisgfx == false)
 				{
 					pic = os.getToken();
@@ -1628,31 +1626,21 @@ namespace
 			}
 			else if (UpperCompareToken(os, "lookup"))
 			{
-				if (new_mapinfo == true)
-				{
-					MustGetStringName(os, "=");
-				}
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, new_mapinfo);
 	
 				// Not implemented
 			}
 			else if (UpperCompareToken(os, "picname"))
 			{
-				if (new_mapinfo == true)
-				{
-					MustGetStringName(os, "=");
-				}
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, new_mapinfo);
+				
 				pic = os.getToken();
 				picisgfx = true;
 			}
 			else if (UpperCompareToken(os, "key"))
 			{
-				if (new_mapinfo == true)
-				{
-					MustGetStringName(os, "=");
-				}
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, new_mapinfo);
+				
 				key = os.getToken()[0];
 			}
 			else if (UpperCompareToken(os, "remove"))
