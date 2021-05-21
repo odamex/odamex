@@ -869,7 +869,7 @@ namespace
 			ParseOLumpName(os, mape->nextmap);
 			if (!ValidateMapName(mape->nextmap.c_str()))
 			{
-				I_Error("Invalid map name %s.", mape->nextmap);
+				I_Error("Invalid map name %s.", mape->nextmap.c_str());
 				return 0;
 			}
 		}
@@ -878,7 +878,7 @@ namespace
 			ParseOLumpName(os, mape->secretmap);
 			if (!ValidateMapName(mape->secretmap.c_str()))
 			{
-				I_Error("Invalid map name %s", mape->nextmap);
+				I_Error("Invalid map name %s", mape->nextmap.c_str());
 				return 0;
 			}
 		}
