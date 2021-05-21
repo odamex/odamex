@@ -812,25 +812,6 @@ namespace
 		return build;
 	}
 	
-	char* M_Strupr(char* str)
-    {
-	    for (char* p = str; *p; p++)
-		    *p = toupper(*p);
-	    return str;
-    }
-
-	void ParseLumpName(OScanner& os, char* buffer)
-	{
-		MustGetString(os);
-		if (os.getToken().length() > 8)
-		{
-			I_Error("String too long. Maximum size is 8 characters.");
-		}
-		strncpy(buffer, os.getToken().c_str(), 8);
-		buffer[8] = 0;
-		M_Strupr(buffer);
-	}
-	
 	void ParseOLumpName(OScanner& os, OLumpName& buffer)
 	{
 		MustGet<OLumpName>(os);
@@ -907,7 +888,7 @@ namespace
 		}
 		else if (!stricmp(pname, "skytexture"))
 		{
-			ParseLumpName(os, mape->skypic);
+			ParseOLumpName(os, mape->skypic);
 		}
 		else if (!stricmp(pname, "music"))
 		{
@@ -1419,13 +1400,13 @@ namespace
 				{
 					MustGetStringName(os, "=");
 					MustGetString(os); // Texture name
-					uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+				    *(OLumpName*)(info + handler->data1) = os.getToken();
 					SkipUnknownParams(os);
 				}
 				else
 				{
 					MustGetString(os); // get texture name;
-					uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+				    *(OLumpName*)(info + handler->data1) = os.getToken();
 					MustGet<float>(os); // get scroll speed
 					// if (HexenHack)
 					//{

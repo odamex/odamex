@@ -833,7 +833,7 @@ void G_InitLevelLocals()
 	// [ML] 5/11/06 - Remove sky scrolling and sky2
 	// [SL] 2012-03-19 - Add sky2 back
 	::level.info = (level_info_t*)&info;
-	strncpy(::level.skypic2, info.skypic2, 8);
+	::level.skypic2 = info.skypic2;
 	memcpy(::level.fadeto_color, info.fadeto_color, 4);
 	
 	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
@@ -914,10 +914,10 @@ void G_InitLevelLocals()
 	::level.nextmap = info.nextmap;
 	::level.secretmap = info.secretmap;
 	::level.music = info.music;
-	strncpy(::level.skypic, info.skypic, 8);
+	::level.skypic = info.skypic;
 	if (!::level.skypic2[0])
 	{
-			strncpy(::level.skypic2, ::level.skypic, 8);
+			::level.skypic2 =::level.skypic.c_str();
 	}
 
 	if (::level.flags & LEVEL_JUMP_YES)
@@ -1042,7 +1042,7 @@ BEGIN_COMMAND(mapinfo)
 	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap.c_str());
 	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap.c_str());
 	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
-	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic);
+	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic.c_str());
 	Printf(PRINT_HIGH, "Music: %s\n", info.music.c_str());
 
 	// Stringify the set level flags.

@@ -90,7 +90,7 @@ struct level_info_t
 	OLumpName		nextmap;
 	OLumpName		secretmap;
 	int				partime;
-	char			skypic[9];
+	OLumpName		skypic;
 	OLumpName		music;
 	DWORD			flags;
 	int				cluster;
@@ -113,7 +113,7 @@ struct level_pwad_info_t
 	OLumpName		nextmap;
 	OLumpName		secretmap;
 	int				partime;
-	char			skypic[9];
+	OLumpName		skypic;
 	OLumpName		music;
 	DWORD			flags;
 	int				cluster;
@@ -131,7 +131,7 @@ struct level_pwad_info_t
 	byte			outsidefog_color[4];
 
 	OLumpName		fadetable;
-	char			skypic2[9];
+	OLumpName		skypic2;
 	float			gravity;
 	float			aircontrol;
 
@@ -180,8 +180,8 @@ struct level_locals_t {
 	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
 
 	OLumpName		music;
-	char			skypic[8];
-	char			skypic2[8];
+	OLumpName		skypic;
+	OLumpName		skypic2;
 
 	int				total_secrets;
 	int				found_secrets;
