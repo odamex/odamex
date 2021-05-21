@@ -142,6 +142,18 @@ level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 	return _empty;
 }
 
+level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	{
+		if (it->mapname == mapname)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
 // Find a levelinfo by mapnum
 level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
@@ -816,7 +828,7 @@ void G_InitLevelLocals()
 	memset(level.vars, 0, sizeof(level.vars));
 
 	// Get our canonical level data.
-	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname.c_str());
+	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname);
 
 	// [ML] 5/11/06 - Remove sky scrolling and sky2
 	// [SL] 2012-03-19 - Add sky2 back
@@ -842,7 +854,7 @@ void G_InitLevelLocals()
 	}
 	if (info.aircontrol != 0.f)
 	{
-		::level.aircontrol = (fixed_t)(info.aircontrol * 65536.f);
+		::level.aircontrol = static_cast<fixed_t>(info.aircontrol * 65536.f);
 	}
 
 	::level.partime = info.partime;
@@ -899,8 +911,8 @@ void G_InitLevelLocals()
 		        ARRAY_LENGTH(::level.level_name) - 1);
 	}
 
-	strncpy(::level.nextmap, info.nextmap, 8);
-	strncpy(::level.secretmap, info.secretmap, 8);
+	::level.nextmap = info.nextmap;
+	::level.secretmap = info.secretmap;
 	strncpy(::level.music, info.music, 8);
 	strncpy(::level.skypic, info.skypic, 8);
 	if (!::level.skypic2[0])
@@ -1027,8 +1039,8 @@ BEGIN_COMMAND(mapinfo)
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
 	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name.c_str());
 	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname);
-	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap);
-	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap);
+	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap.c_str());
+	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap.c_str());
 	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
 	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic);
 	Printf(PRINT_HIGH, "Music: %s\n", info.music);

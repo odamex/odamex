@@ -797,7 +797,7 @@ FUNC(LS_Teleport_NewMap)
 
 		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
 		{
-			strncpy(level.nextmap, info.mapname.c_str(), 8);
+			level.nextmap = info.mapname;
 			G_ExitLevel(arg1, 1);
 			return true;
 		}
@@ -842,7 +842,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
-		strncpy (level.nextmap, "EndGameC", 8);
+		level.nextmap = "EndGameC";
 		G_ExitLevel (0, 1);
 		return true;
 	}

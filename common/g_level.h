@@ -87,8 +87,8 @@ struct level_info_t
 	int				levelnum;
 	std::string		level_name;
 	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
+	OLumpName		nextmap;
+	OLumpName		secretmap;
 	int				partime;
 	char			skypic[9];
 	char			music[9];
@@ -110,8 +110,8 @@ struct level_pwad_info_t
 	int				levelnum;
 	std::string		level_name;
 	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
+	OLumpName		nextmap;
+	OLumpName		secretmap;
 	int				partime;
 	char			skypic[9];
 	char			music[9];
@@ -166,8 +166,8 @@ struct level_locals_t {
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
 	OLumpName		mapname;                // the server name (base1, etc)
-	char			nextmap[8];				// go here when sv_fraglimit is hit
-	char			secretmap[8];			// map to go to when used secret exit
+	OLumpName		nextmap;				// go here when sv_fraglimit is hit
+	OLumpName		secretmap;				// map to go to when used secret exit
 
 	DWORD			flags;
 
@@ -258,6 +258,7 @@ public:
 	void clearSnapshots();
 	level_pwad_info_t& findByName(const char* mapname);
 	level_pwad_info_t& findByName(const std::string& mapname);
+	level_pwad_info_t& findByName(const OLumpName& mapname);
 	level_pwad_info_t& findByNum(int levelnum);
 	size_t size();
 	void zapDeferreds();

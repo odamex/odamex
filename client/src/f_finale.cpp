@@ -228,7 +228,7 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap, "EndGame", 7))
+				if (!strncmp (level.nextmap.c_str(), "EndGame", 7))
 				{
 					if (level.nextmap[7] == 'C')
 					{

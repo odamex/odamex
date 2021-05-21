@@ -346,7 +346,7 @@ void G_DoCompleted (void)
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
-		getLevelInfos().findByName(level.mapname.c_str()).flags |= LEVEL_VISITED;
+		getLevelInfos().findByName(level.mapname).flags |= LEVEL_VISITED;
 	}
 
 	AM_Stop();
@@ -379,9 +379,9 @@ void G_DoCompleted (void)
 		}
 		if (secretexit)
 		{
-			if (W_CheckNumForName (level.secretmap) != -1)
+			if (W_CheckNumForName (level.secretmap.c_str()) != -1)
 			{
-				strncpy(wminfo.next, level.secretmap, 8);
+				strncpy(wminfo.next, level.secretmap.c_str(), 8);
 				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname, 8);
 			}
 			else
@@ -391,7 +391,7 @@ void G_DoCompleted (void)
 		}
 		if (!wminfo.next[0])
 		{
-			strncpy(wminfo.next, level.nextmap, 8);
+			strncpy(wminfo.next, level.nextmap.c_str(), 8);
 			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname, 8);
 		}
 	}
@@ -456,7 +456,7 @@ void G_DoCompleted (void)
 
 		if (sv_gametype == GM_COOP)
 		{
-			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
+			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap.c_str(), "EndGame", 7) == 0)
 			{
 				if (!multiplayer || demoplayback)
 				{
@@ -683,7 +683,7 @@ void G_WorldDone()
 		options.text = (!level.intertext.empty()) ? level.intertext.c_str() : thiscluster.exittext;
 	}
 
-	if (!strncmp(level.nextmap, "EndGame", 7))
+	if (!strncmp(level.nextmap.c_str(), "EndGame", 7))
 	{
 		AM_Stop();
 		F_StartFinale(options);

@@ -69,6 +69,7 @@ namespace
 		MITYPE_COLOR,
 		MITYPE_MAPNAME,
 		MITYPE_LUMPNAME,
+		MITYPE_OLUMPNAME,
 		MITYPE_$LUMPNAME,
 		MITYPE_MUSICLUMPNAME,
 		MITYPE_SKY,
@@ -149,7 +150,7 @@ namespace
 		"compat_nopassover",
 		NULL
 	};
-	
+
 	MapInfoHandler MapHandlers[] =
 	{
 		// levelnum <levelnum>
@@ -531,8 +532,24 @@ namespace
 	// in for
 	// the way sc_man did things before
 
-	// return token as int
-	int GetTokenAsInt(OScanner& os)
+	bool UpperCompareToken(OScanner& os, const char* str)
+    {
+	    return stricmp(os.getToken().c_str(), str) == 0;
+    }
+
+	//////////////////////////////////////////////////////////////////////
+	/// GetToken
+
+	template <typename T>
+    T GetToken(OScanner& os)
+	{
+	    throw std::runtime_error(
+	        "Templated function GetToken templated with non-existant specialized type!");
+	}
+
+    // return token as int
+	template <>
+	int GetToken<int>(OScanner& os)
 	{
 		// fix for parser reading in commas
 		std::string str = os.getToken();
@@ -561,7 +578,8 @@ namespace
 	}
 	
 	// return token as float
-	float GetTokenAsFloat(OScanner& os)
+	template <>
+	float GetToken<float>(OScanner& os)
 	{
 		// fix for parser reading in commas
 		std::string str = os.getToken();
@@ -582,18 +600,40 @@ namespace
 	
 		return static_cast<float>(num);
 	}
-	
-	void MustGetString(OScanner& os)
+
+	// return token as bool
+	template <>
+	bool GetToken<bool>(OScanner& os)
+    {
+	    return UpperCompareToken(os, "true");
+    }
+
+	//////////////////////////////////////////////////////////////////////
+    /// MustGet
+
+	// ensure token is string
+    void MustGetString(OScanner& os)
+    {
+	    if (!os.scan())
+	    {
+		    I_Error("Missing string (unexpected end of file).");
+	    }
+    }
+
+	template <typename T>
+    void MustGet(OScanner &os)
 	{
-		if (!os.scan())
-		{
-			I_Error("Missing string (unexpected end of file).");
-		}
+	    throw std::runtime_error("Templated function MustGet templated with non-existant specialized type!");
 	}
-	
-	void MustGetInt(OScanner& os)
+
+	// ensure token is int
+	template <>
+	void MustGet<int>(OScanner& os)
 	{
-		MustGetString(os);
+	    if (!os.scan())
+	    {
+		    I_Error("Missing integer (unexpected end of file).");
+	    }
 	
 		// fix for parser reading in commas
 		std::string str = os.getToken();
@@ -608,10 +648,15 @@ namespace
 			I_Error("Missing integer (unexpected end of file).");
 		}
 	}
-	
-	void MustGetFloat(OScanner& os)
+
+	// ensure token is float
+	template <>
+	void MustGet<float>(OScanner& os)
 	{
-		MustGetString(os);
+	    if (!os.scan())
+	    {
+		    I_Error("Missing floating-point number (unexpected end of file).");
+	    }
 	
 		// fix for parser reading in commas
 		std::string str = os.getToken();
@@ -627,9 +672,48 @@ namespace
 		}
 	}
 
+	// ensure token is bool
+	template <>
+	void MustGet<bool>(OScanner& os)
+    {
+	    MustGetString(os);
+	    if (!UpperCompareToken(os, "true") && !UpperCompareToken(os, "false"))
+	    {
+		    I_Error("Missing boolean (unexpected end of file).");
+	    }
+    }
+
+	// ensure token is std::string
+	template <>
+    void MustGet<std::string>(OScanner& os)
+    {
+	    if (!os.scan())
+	    {
+		    I_Error("Missing string (unexpected end of file).");
+	    }
+    }
+
+    // ensure token is OLumpName
+    template <>
+    void MustGet<OLumpName>(OScanner& os)
+    {
+	    if (!os.scan())
+	    {
+		    I_Error("Missing lump name (unexpected end of file).");
+	    }
+
+		if (os.getToken().length() > 8)
+	    {
+		    I_Error("Lump name too long. Maximum size is 8 characters.");
+	    }
+    }
+
+	//////////////////////////////////////////////////////////////////////
+    /// Misc
+
 	bool IsIdentifier(OScanner& os)
 	{
-		char ch = os.getToken()[0];
+		const char ch = os.getToken()[0];
 	
 		return (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
 	}
@@ -641,18 +725,6 @@ namespace
 		{
 			I_Error("Expected identifier (unexpected end of file).");
 		}
-	}
-	
-	char* M_Strupr(char* str)
-	{
-		for (char* p = str; *p; p++)
-			*p = toupper(*p);
-		return str;
-	}
-	
-	bool UpperCompareToken(OScanner& os, const char* str)
-	{
-		return stricmp(os.getToken().c_str(), str) == 0;
 	}
 	
 	// [DE] lazy copy from sc_man
@@ -676,27 +748,17 @@ namespace
 	
 	bool ContainsMapInfoTopLevel(OScanner& os)
 	{
-		return UpperCompareToken(os, "map") || UpperCompareToken(os, "defaultmap") ||
-		       UpperCompareToken(os, "cluster") || UpperCompareToken(os, "clusterdef") ||
-		       UpperCompareToken(os, "episode") || UpperCompareToken(os, "clearepisodes") ||
-		       UpperCompareToken(os, "skill") || UpperCompareToken(os, "clearskills") ||
-		       UpperCompareToken(os, "gameinfo") || UpperCompareToken(os, "intermission") ||
+		return UpperCompareToken(os, "map") ||
+			   UpperCompareToken(os, "defaultmap") ||
+		       UpperCompareToken(os, "cluster") ||
+			   UpperCompareToken(os, "clusterdef") ||
+		       UpperCompareToken(os, "episode") ||
+			   UpperCompareToken(os, "clearepisodes") ||
+		       UpperCompareToken(os, "skill") ||
+			   UpperCompareToken(os, "clearskills") ||
+		       UpperCompareToken(os, "gameinfo") ||
+			   UpperCompareToken(os, "intermission") ||
 		       UpperCompareToken(os, "automap");
-	}
-	
-	// return token as bool
-	bool GetTokenAsBool(OScanner& os)
-	{
-		return UpperCompareToken(os, "true");
-	}
-	
-	void MustGetBool(OScanner& os)
-	{
-		MustGetString(os);
-		if (!UpperCompareToken(os, "true") && !UpperCompareToken(os, "false"))
-		{
-			I_Error("Missing boolean (unexpected end of file).");
-		}
 	}
 	
 	void MustGetStringName(OScanner& os, const char* name)
@@ -751,10 +813,17 @@ namespace
 		return build;
 	}
 	
+	char* M_Strupr(char* str)
+    {
+	    for (char* p = str; *p; p++)
+		    *p = toupper(*p);
+	    return str;
+    }
+
 	int ParseLumpName(OScanner& os, char* buffer)
 	{
 		MustGetString(os);
-		if (strlen(os.getToken().c_str()) > 8)
+		if (os.getToken().length() > 8)
 		{
 			I_Error("String too long. Maximum size is 8 characters.");
 			return 0;
@@ -767,13 +836,9 @@ namespace
 	
 	int ParseOLumpName(OScanner& os, OLumpName& buffer)
 	{
-		MustGetString(os);
-		if (strlen(os.getToken().c_str()) > 8)
-		{
-			I_Error("String too long. Maximum size is 8 characters.");
-			return 0;
-		}
+		MustGet<OLumpName>(os);
 		buffer = os.getToken();
+		
 		return 1;
 	}
 	
@@ -825,8 +890,8 @@ namespace
 		}
 		else if (!stricmp(pname, "next"))
 		{
-			ParseLumpName(os, mape->nextmap);
-			if (!ValidateMapName(mape->nextmap))
+			ParseOLumpName(os, mape->nextmap);
+			if (!ValidateMapName(mape->nextmap.c_str()))
 			{
 				I_Error("Invalid map name %s.", mape->nextmap);
 				return 0;
@@ -834,8 +899,8 @@ namespace
 		}
 		else if (!stricmp(pname, "nextsecret"))
 		{
-			ParseLumpName(os, mape->secretmap);
-			if (!ValidateMapName(mape->secretmap))
+			ParseOLumpName(os, mape->secretmap);
+			if (!ValidateMapName(mape->secretmap.c_str()))
 			{
 				I_Error("Invalid map name %s", mape->nextmap);
 				return 0;
@@ -856,29 +921,28 @@ namespace
 		else if (!stricmp(pname, "endpic"))
 		{
 			ParseOLumpName(os, mape->endpic);
-			strncpy(mape->nextmap, "EndGame1", 8);
-			mape->nextmap[8] = '\0';
+			mape->nextmap = "EndGame1";
 		}
 		else if (!stricmp(pname, "endcast"))
 		{
-			MustGetBool(os);
-			if (GetTokenAsBool(os))
-				strncpy(mape->nextmap, "EndGameC", 8);
+			MustGet<bool>(os);
+		    if (GetToken<bool>(os))
+				mape->nextmap = "EndGameC";
 			else
 				mape->endpic.clear();
 		}
 		else if (!stricmp(pname, "endbunny"))
 		{
-			MustGetBool(os);
-			if (GetTokenAsBool(os))
-				strncpy(mape->nextmap, "EndGame3", 8);
+			MustGet<bool>(os);
+		    if (GetToken<bool>(os))
+				mape->nextmap = "EndGame3";
 			else
 				mape->endpic.clear();
 		}
 		else if (!stricmp(pname, "endgame"))
 		{
-			MustGetBool(os);
-			if (GetTokenAsBool(os))
+			MustGet<bool>(os);
+		    if (GetToken<bool>(os))
 			{
 				mape->endpic = "!";
 			}
@@ -897,16 +961,16 @@ namespace
 		}
 		else if (!stricmp(pname, "nointermission"))
 		{
-			MustGetBool(os);
-			if (GetTokenAsBool(os))
+			MustGet<bool>(os);
+			if (GetToken<bool>(os))
 			{
 				mape->flags |= LEVEL_NOINTERMISSION;
 			}
 		}
 		else if (!stricmp(pname, "partime"))
 		{
-			MustGetInt(os);
-			mape->partime = TICRATE * GetTokenAsInt(os);
+			MustGet<int>(os);
+			mape->partime = TICRATE * GetToken<int>(os);
 		}
 		else if (!stricmp(pname, "intertext"))
 		{
@@ -996,11 +1060,11 @@ namespace
 	
 				// skip comma token
 				// MustGetStringName(os, ",");
-				MustGetInt(os);
-				const int special = GetTokenAsInt(os);
+				MustGet<int>(os);
+				const int special = GetToken<int>(os);
 				// MustGetStringName(os, ",");
-				MustGetInt(os);
-				const int tag = GetTokenAsInt(os);
+				MustGet<int>(os);
+				const int tag = GetToken<int>(os);
 				// allow no 0-tag specials here, unless a level exit.
 				if (tag != 0 || special == 11 || special == 51 || special == 52 ||
 				    special == 124)
@@ -1121,46 +1185,64 @@ namespace
 				if (info.mapname == "MAP30")
 				{
 					info.endpic = "$CAST";
-					strncpy(info.nextmap, "EndGameC", 8);
+					info.nextmap = "EndGameC";
 				}
 				else if (info.mapname == "E1M8")
 				{
 					info.endpic = gamemode == retail ? "CREDIT" : "HELP2";
-					strncpy(info.nextmap, "EndGameC", 8);
+					info.nextmap = "EndGameC";
 				}
 				else if (info.mapname == "E2M8")
 				{
 					info.endpic = "VICTORY";
-					strncpy(info.nextmap, "EndGame2", 8);
+					info.nextmap = "EndGame2";
 				}
 				else if (info.mapname == "E3M8")
 				{
 					info.endpic = "$BUNNY";
-					strncpy(info.nextmap, "EndGame3", 8);
+					info.nextmap = "EndGame3";
 				}
 				else if (info.mapname == "E4M8")
 				{
 					info.endpic = "ENDPIC";
-					strncpy(info.nextmap, "EndGame4", 8);
+					info.nextmap = "EndGame4";
 				}
 				else if (gamemission == chex && info.mapname == "E1M5")
 				{
 					info.endpic = "CREDIT";
-					strncpy(info.nextmap, "EndGame1", 8);
+					info.nextmap = "EndGame1";
 				}
 				else
 				{
+				    char arr[9] = "";
 					int ep, map;
 					ValidateMapName(info.mapname.c_str(), &ep, &map);
 					map++;
 					if (gamemode == commercial)
-						sprintf(info.nextmap, "MAP%02d", map);
+					{
+						sprintf(arr, "MAP%02d", map);
+					}
 					else
-						sprintf(info.nextmap, "E%dM%d", ep, map);
+					{
+					    sprintf(arr, "E%dM%d", ep, map);
+					}
+					info.nextmap = arr;
 				}
 			}
 		}
 	}
+
+	
+	template <typename T>
+    void ParseMapinfoHelper(OScanner& os, int newMapinfoStack)
+    {
+	    if (newMapinfoStack > 0)
+	    {
+		    MustGetStringName(os, "=");
+	    }
+
+	    MustGet<T>(os);
+    }
 
 	//
 	// Parse a MAPINFO block
@@ -1238,41 +1320,25 @@ namespace
 				break;
 	
 			case MITYPE_EATNEXT:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+				
 				break;
 	
 			case MITYPE_INT:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetInt(os);
-				*((int*)(info + handler->data1)) = GetTokenAsInt(os);
+			    ParseMapinfoHelper<int>(os, newMapinfoStack);
+				
+				*((int*)(info + handler->data1)) = GetToken<int>(os);
 				break;
 	
 			case MITYPE_FLOAT:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetFloat(os);
-				*((float*)(info + handler->data1)) = GetTokenAsFloat(os);
+			    ParseMapinfoHelper<float>(os, newMapinfoStack);
+				
+				*((float*)(info + handler->data1)) = GetToken<float>(os);
 				break;
 	
 			case MITYPE_COLOR: {
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+				
 				argb_t color(V_GetColorFromString(os.getToken()));
 				uint8_t* ptr = (uint8_t*)(info + handler->data1);
 				ptr[0] = color.geta();
@@ -1282,12 +1348,7 @@ namespace
 				break;
 			}
 			case MITYPE_MAPNAME:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
 	
 				char map_name[9];
 				strncpy(map_name, os.getToken().c_str(), 8);
@@ -1297,26 +1358,24 @@ namespace
 					int map = std::atoi(map_name);
 					sprintf(map_name, "MAP%02d", map);
 				}
-				strncpy((char*)(info + handler->data1), map_name, 8);
+				*(OLumpName*)(info + handler->data1) = map_name;
 				break;
 	
 			case MITYPE_LUMPNAME:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
+				
 				uppercopy((char*)(info + handler->data1), os.getToken().c_str());
 				break;
+
+		    case MITYPE_OLUMPNAME:
+			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
+
+			    uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+			    break;
 	
 			case MITYPE_$LUMPNAME:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+				
 				if (os.getToken()[0] == '$')
 				{
 					// It is possible to pass a DeHackEd string
@@ -1335,12 +1394,8 @@ namespace
 				break;
 	
 			case MITYPE_MUSICLUMPNAME: {
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+				
 				if (os.getToken()[0] == '$')
 				{
 					// It is possible to pass a DeHackEd string
@@ -1375,7 +1430,7 @@ namespace
 				{
 					MustGetString(os); // get texture name;
 					uppercopy((char*)(info + handler->data1), os.getToken().c_str());
-					MustGetFloat(os); // get scroll speed
+					MustGet<float>(os); // get scroll speed
 					// if (HexenHack)
 					//{
 					//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
@@ -1397,17 +1452,13 @@ namespace
 				break;
 	
 			case MITYPE_CLUSTER:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetInt(os);
-				*((int*)(info + handler->data1)) = GetTokenAsInt(os);
+			    ParseMapinfoHelper<int>(os, newMapinfoStack);
+				
+				*((int*)(info + handler->data1)) = GetToken<int>(os);
 				if (HexenHack)
 				{
 					ClusterInfos& clusters = getClusterInfos();
-					cluster_info_t& clusterH = clusters.findByCluster(GetTokenAsInt(os));
+					cluster_info_t& clusterH = clusters.findByCluster(GetToken<int>(os));
 					if (clusterH.cluster != 0)
 					{
 						clusterH.flags |= CLUSTER_HUB;
@@ -1416,30 +1467,22 @@ namespace
 				break;
 	
 			case MITYPE_STRING: {
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+
 				char** text = (char**)(info + handler->data1);
-	
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
 				free(*text);
 				*text = strdup(os.getToken().c_str());
 				break;
 			}
 	
 			case MITYPE_CSTRING:
-				if (newMapinfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-				}
-	
-				MustGetString(os);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+				
 				strncpy((char*)(info + handler->data1), os.getToken().c_str(),
 				        handler->data2);
 				*((char*)(info + handler->data1 + handler->data2)) = '\0';
 				break;
+				
 			case MITYPE_CLUSTERSTRING: {
 				char** text = (char**)(info + handler->data1);
 	
@@ -1526,7 +1569,7 @@ namespace
 
 	void ParseEpisodeInfo(OScanner& os)
 	{
-		bool new_mapinfo = 0;
+		int new_mapinfo = false; // is int instead of bool for template purposes
 		OLumpName map;
 		std::string pic;
 		bool picisgfx = false;
@@ -1718,7 +1761,7 @@ namespace
 				MustGetStringName(os, "=");
 				os.scan();
 	
-				gameinfo.advisoryTime = GetTokenAsFloat(os);
+				gameinfo.advisoryTime = GetToken<float>(os);
 			}
 			else if (UpperCompareToken(os, "chatsound"))
 			{
@@ -1732,7 +1775,7 @@ namespace
 				MustGetStringName(os, "=");
 				os.scan();
 	
-				gameinfo.pageTime = GetTokenAsFloat(os);
+				gameinfo.pageTime = GetToken<float>(os);
 			}
 			else if (UpperCompareToken(os, "finaleflat"))
 			{
@@ -1767,7 +1810,7 @@ namespace
 				MustGetStringName(os, "=");
 				os.scan();
 	
-				gameinfo.titleTime = GetTokenAsFloat(os);
+				gameinfo.titleTime = GetToken<float>(os);
 			}
 			else
 			{
@@ -1866,15 +1909,15 @@ namespace
 			}
 			else if (UpperCompareToken(os, "cluster") || UpperCompareToken(os, "clusterdef"))
 			{
-				MustGetInt(os);
+				MustGet<int>(os);
 	
 				// Find the cluster.
 				cluster_info_t& info =
-				    (clusters.findByCluster(GetTokenAsInt(os)).cluster != 0)
-				        ? clusters.findByCluster(GetTokenAsInt(os))
+				    (clusters.findByCluster(GetToken<int>(os)).cluster != 0)
+				        ? clusters.findByCluster(GetToken<int>(os))
 				        : clusters.create();
 	
-				info.cluster = GetTokenAsInt(os);
+				info.cluster = GetToken<int>(os);
 				tagged_info_t tinfo;
 				tinfo.tag = tagged_info_t::CLUSTER;
 				tinfo.cluster = &info;
