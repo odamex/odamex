@@ -68,7 +68,6 @@ namespace
 		MITYPE_FLOAT,
 		MITYPE_COLOR,
 		MITYPE_MAPNAME,
-		MITYPE_LUMPNAME,
 		MITYPE_OLUMPNAME,
 		MITYPE_$LUMPNAME,
 		MITYPE_MUSICLUMPNAME,
@@ -170,7 +169,7 @@ namespace
 		// outsidefog <color>
 		{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
 		// titlepatch <patch>
-		{ MITYPE_LUMPNAME, lioffset(pname), 0 },
+		{ MITYPE_OLUMPNAME, lioffset(pname), 0 },
 		// par <partime>
 		{ MITYPE_INT, lioffset(partime), 0 },
 		// music <musiclump>
@@ -200,7 +199,7 @@ namespace
 		// lightning
 		{ MITYPE_IGNORE, 0, 0 },
 		// fadetable <colormap>
-		{ MITYPE_LUMPNAME, lioffset(fadetable), 0 },
+		{ MITYPE_OLUMPNAME, lioffset(fadetable), 0 },
 		// evenlighting
 		{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
 		// noautosequences
@@ -460,7 +459,7 @@ namespace
 		levelinfo->outsidefog_color[1] = 0;
 		levelinfo->outsidefog_color[2] = 0;
 		levelinfo->outsidefog_color[3] = 0;
-		strncpy(levelinfo->fadetable, "COLORMAP", 8);
+		levelinfo->fadetable = "COLORMAP";
 	}
 	
 	//
@@ -820,26 +819,22 @@ namespace
 	    return str;
     }
 
-	int ParseLumpName(OScanner& os, char* buffer)
+	void ParseLumpName(OScanner& os, char* buffer)
 	{
 		MustGetString(os);
 		if (os.getToken().length() > 8)
 		{
 			I_Error("String too long. Maximum size is 8 characters.");
-			return 0;
 		}
 		strncpy(buffer, os.getToken().c_str(), 8);
 		buffer[8] = 0;
 		M_Strupr(buffer);
-		return 1;
 	}
 	
-	int ParseOLumpName(OScanner& os, OLumpName& buffer)
+	void ParseOLumpName(OScanner& os, OLumpName& buffer)
 	{
 		MustGet<OLumpName>(os);
 		buffer = os.getToken();
-		
-		return 1;
 	}
 	
 	int ValidateMapName(const char* mapname, int* pEpi = NULL, int* pMap = NULL)
@@ -908,7 +903,7 @@ namespace
 		}
 		else if (!stricmp(pname, "levelpic"))
 		{
-			ParseLumpName(os, mape->pname);
+			ParseOLumpName(os, mape->pname);
 		}
 		else if (!stricmp(pname, "skytexture"))
 		{
@@ -1361,16 +1356,10 @@ namespace
 				*(OLumpName*)(info + handler->data1) = map_name;
 				break;
 	
-			case MITYPE_LUMPNAME:
+			case MITYPE_OLUMPNAME:
 			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
 				
-				uppercopy((char*)(info + handler->data1), os.getToken().c_str());
-				break;
-
-		    case MITYPE_OLUMPNAME:
-			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
-
-			    uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+				*(OLumpName*)(info + handler->data1) = os.getToken();
 			    break;
 	
 			case MITYPE_$LUMPNAME:

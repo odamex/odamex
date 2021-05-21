@@ -360,13 +360,13 @@ void G_DoCompleted (void)
 	}
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
-	strncpy (wminfo.lname0, level.info->pname, 8);
+	strncpy (wminfo.lname0, level.info->pname.c_str(), 8);
 	strncpy (wminfo.current, level.mapname.c_str(), 8);
 
 	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
 		strncpy (wminfo.next, level.mapname.c_str(), 8);
-		strncpy (wminfo.lname1, level.info->pname, 8);
+		strncpy (wminfo.lname1, level.info->pname.c_str(), 8);
 	}
 	else
 	{
@@ -382,7 +382,7 @@ void G_DoCompleted (void)
 			if (W_CheckNumForName (level.secretmap.c_str()) != -1)
 			{
 				strncpy(wminfo.next, level.secretmap.c_str(), 8);
-				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname, 8);
+				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname.c_str(), 8);
 			}
 			else
 			{
@@ -392,7 +392,7 @@ void G_DoCompleted (void)
 		if (!wminfo.next[0])
 		{
 			strncpy(wminfo.next, level.nextmap.c_str(), 8);
-			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname, 8);
+			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname.c_str(), 8);
 		}
 	}
 

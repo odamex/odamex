@@ -86,7 +86,7 @@ struct level_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
-	char			pname[9];
+	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
 	int				partime;
@@ -109,7 +109,7 @@ struct level_pwad_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
-	char			pname[9];
+	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
 	int				partime;
@@ -130,7 +130,7 @@ struct level_pwad_info_t
 	byte			fadeto_color[4];
 	byte			outsidefog_color[4];
 
-	char			fadetable[9];
+	OLumpName		fadetable;
 	char			skypic2[9];
 	float			gravity;
 	float			aircontrol;
@@ -234,7 +234,7 @@ struct cluster_info_t {
 	int				flags;
 	char			finalepic[9];
 
-	BOOL exists() const
+	bool exists() const
 	{
 		return this->cluster != 0;
 	}

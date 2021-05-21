@@ -842,7 +842,7 @@ void G_InitLevelLocals()
 	}
 	else
 	{
-		R_ForceDefaultColormap(info.fadetable);
+		R_ForceDefaultColormap(info.fadetable.c_str());
 	}
 
 	memcpy(::level.outsidefog_color, info.outsidefog_color, 4);
@@ -1038,7 +1038,7 @@ BEGIN_COMMAND(mapinfo)
 	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname.c_str());
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
 	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name.c_str());
-	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname);
+	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname.c_str());
 	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap.c_str());
 	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap.c_str());
 	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
