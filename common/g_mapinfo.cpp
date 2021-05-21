@@ -1363,33 +1363,33 @@ namespace
 				*(OLumpName*)(info + handler->data1) = os.getToken();
 			    break;
 	
-			case MITYPE_$LUMPNAME:
+			case MITYPE_$LUMPNAME: {
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+
+			    OLumpName temp;
+			    if (os.getToken()[0] == '$')
+			    {
+				    // It is possible to pass a DeHackEd string
+				    // prefixed by a $.
+				    const OString& s = GStrings(os.getToken().c_str() + 1);
+				    if (s.empty())
+				    {
+					    I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+				    }
+				    temp = s;
+			    }
+			    else
+			    {
+				    temp = os.getToken();
+			    }
+
+			    uppercopy((char*)(info + handler->data1), temp.c_str());
+			    break;
+		    }
+			case MITYPE_MUSICLUMPNAME: {
 			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
 
 				OLumpName temp;
-				
-				if (os.getToken()[0] == '$')
-				{
-					// It is possible to pass a DeHackEd string
-					// prefixed by a $.
-					const OString& s = GStrings(os.getToken().c_str() + 1);
-					if (s.empty())
-					{
-						I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
-					}
-					temp = s;
-				}
-				else
-				{
-					temp = os.getToken();
-				}
-
-				uppercopy((char*)(info + handler->data1), temp.c_str());
-				break;
-	
-			case MITYPE_MUSICLUMPNAME: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
-				
 				if (os.getToken()[0] == '$')
 				{
 					// It is possible to pass a DeHackEd string
@@ -1404,12 +1404,14 @@ namespace
 					// with a D_, so we must add it.
 					char lumpname[9];
 					snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-					uppercopy((char*)(info + handler->data1), lumpname);
+					temp = lumpname;
 				}
 				else
 				{
-					uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+				    temp = os.getToken();
 				}
+
+				uppercopy((char*)(info + handler->data1), temp.c_str());
 				break;
 			}
 			case MITYPE_SKY:
