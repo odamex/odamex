@@ -284,6 +284,11 @@ void SdlMixerMusicSystem::_UnregisterSong()
 		
 	mRegisteredSong.Track = NULL;
 	mRegisteredSong.Data = NULL;
+	if (mRegisteredSong.Mem != NULL)
+	{
+		mem_fclose(mRegisteredSong.Mem);
+		mRegisteredSong.Mem = NULL;
+	}
 }
 
 //
@@ -299,16 +304,20 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	if (S_MusicIsMus(data, length))
 	{
 		MEMFILE *mus = mem_fopen_read(data, length);
-		MEMFILE *midi = mem_fopen_write();
+		mRegisteredSong.Mem = mem_fopen_write();
 	
-		int result = mus2mid(mus, midi);
+		int result = mus2mid(mus, mRegisteredSong.Mem);
 		if (result == 0)
-			mRegisteredSong.Data = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
+		{
+			mRegisteredSong.Data = SDL_RWFromMem(mem_fgetbuf(mRegisteredSong.Mem),
+			                                     mem_fsize(mRegisteredSong.Mem));
+		}
 		else
+		{
 			Printf(PRINT_WARNING, "MUS is not valid\n");
+		}
 
 		mem_fclose(mus);
-		mem_fclose(midi);		
 	}
 	else
 	{
