@@ -1220,6 +1220,12 @@ namespace
 	    MustGet<T>(os);
     }
 
+	template <>
+    void ParseMapinfoHelper<void>(OScanner& os, int newMapinfoStack)
+	{
+		// do nothing
+	}
+
 	//
 	// Parse a MAPINFO block
 	//
