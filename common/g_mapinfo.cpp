@@ -542,8 +542,7 @@ namespace
 	template <typename T>
     T GetToken(OScanner& os)
 	{
-	    throw std::runtime_error(
-	        "Templated function GetToken templated with non-existant specialized type!");
+	    I_FatalError("Templated function GetToken templated with non-existant specialized type!");
 	}
 
     // return token as int
@@ -622,7 +621,7 @@ namespace
 	template <typename T>
     void MustGet(OScanner &os)
 	{
-	    throw std::runtime_error("Templated function MustGet templated with non-existant specialized type!");
+	    I_FatalError("Templated function MustGet templated with non-existant specialized type!");
 	}
 
 	// ensure token is int
