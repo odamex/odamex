@@ -97,7 +97,7 @@ struct level_info_t
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
 
-	bool exists() const
+	BOOL exists() const
 	{
 		return !this->mapname.empty();
 	}
@@ -148,7 +148,7 @@ struct level_pwad_info_t
 	std::vector<OBossAction> bossactions;
 	bool			bossactions_donothing;
 	
-	bool exists() const
+	BOOL exists() const
 	{
 		return !this->mapname.empty();
 	}
@@ -228,13 +228,13 @@ struct OBossAction
 struct cluster_info_t {
 	int				cluster;
 	OLumpName		messagemusic;
-	char			finaleflat[9];
+	OLumpName		finaleflat;
 	char*			exittext;
 	char*			entertext;
 	int				flags;
-	char			finalepic[9];
+	OLumpName		finalepic;
 
-	bool exists() const
+	BOOL exists() const
 	{
 		return this->cluster != 0;
 	}

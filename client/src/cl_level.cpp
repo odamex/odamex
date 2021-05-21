@@ -665,7 +665,7 @@ void G_WorldDone()
 	{
 		options.flat = level.interbackdrop.c_str();
 	}
-	else if (thiscluster.finalepic[0] != '\0')
+	else if (!thiscluster.finalepic.empty())
 	{
 		options.pic = &thiscluster.finalepic[0];
 	}
@@ -702,7 +702,7 @@ void G_WorldDone()
 			{
 				// All of our options need to be from the next cluster.
 				options.music = nextcluster.messagemusic.c_str();
-				if (nextcluster.finalepic[0] != '\0')
+				if (!nextcluster.finalepic.empty())
 				{
 					options.pic = &nextcluster.finalepic[0];
 				}

@@ -35,7 +35,7 @@
 #include "w_wad.h"
 
 /// Globals
-bool HexenHack;
+BOOL HexenHack;
 
 namespace
 {
@@ -1383,7 +1383,7 @@ namespace
 				    temp = os.getToken();
 			    }
 
-			    uppercopy((char*)(info + handler->data1), temp.c_str());
+			    *(OLumpName*)(info + handler->data1) = temp;
 			    break;
 		    }
 			case MITYPE_MUSICLUMPNAME: {

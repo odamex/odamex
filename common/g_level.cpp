@@ -1106,7 +1106,7 @@ BEGIN_COMMAND(clusterinfo)
 
 	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
 	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic.c_str());
-	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat);
+	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat.c_str());
 	if (info.exittext)
 	{
 		Printf(PRINT_HIGH, "- = Exit Text = -\n%s\n- = = = -\n", info.exittext);
