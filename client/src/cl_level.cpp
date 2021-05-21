@@ -701,7 +701,7 @@ void G_WorldDone()
 			if (nextcluster.entertext)
 			{
 				// All of our options need to be from the next cluster.
-				options.music = nextcluster.messagemusic;
+				options.music = nextcluster.messagemusic.c_str();
 				if (nextcluster.finalepic[0] != '\0')
 				{
 					options.pic = &nextcluster.finalepic[0];

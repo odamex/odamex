@@ -911,7 +911,7 @@ namespace
 		}
 		else if (!stricmp(pname, "music"))
 		{
-			ParseLumpName(os, mape->music);
+			ParseOLumpName(os, mape->music);
 		}
 		else if (!stricmp(pname, "endpic"))
 		{
@@ -1411,7 +1411,7 @@ namespace
 				    temp = os.getToken();
 				}
 
-				uppercopy((char*)(info + handler->data1), temp.c_str());
+				*(OLumpName*)(info + handler->data1) = temp;
 				break;
 			}
 			case MITYPE_SKY:

@@ -913,7 +913,7 @@ void G_InitLevelLocals()
 
 	::level.nextmap = info.nextmap;
 	::level.secretmap = info.secretmap;
-	strncpy(::level.music, info.music, 8);
+	::level.music = info.music;
 	strncpy(::level.skypic, info.skypic, 8);
 	if (!::level.skypic2[0])
 	{
@@ -1043,7 +1043,7 @@ BEGIN_COMMAND(mapinfo)
 	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap.c_str());
 	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
 	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic);
-	Printf(PRINT_HIGH, "Music: %s\n", info.music);
+	Printf(PRINT_HIGH, "Music: %s\n", info.music.c_str());
 
 	// Stringify the set level flags.
 	std::string flags;
@@ -1105,7 +1105,7 @@ BEGIN_COMMAND(clusterinfo)
 	}
 
 	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
-	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic);
+	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic.c_str());
 	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat);
 	if (info.exittext)
 	{

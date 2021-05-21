@@ -91,7 +91,7 @@ struct level_info_t
 	OLumpName		secretmap;
 	int				partime;
 	char			skypic[9];
-	char			music[9];
+	OLumpName		music;
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -114,7 +114,7 @@ struct level_pwad_info_t
 	OLumpName		secretmap;
 	int				partime;
 	char			skypic[9];
-	char			music[9];
+	OLumpName		music;
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -179,7 +179,7 @@ struct level_locals_t {
 	byte			fadeto_color[4];		// The color the palette fades to (usually black)
 	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
 
-	char			music[8];
+	OLumpName		music;
 	char			skypic[8];
 	char			skypic2[8];
 
@@ -227,7 +227,7 @@ struct OBossAction
 
 struct cluster_info_t {
 	int				cluster;
-	char			messagemusic[9];
+	OLumpName		messagemusic;
 	char			finaleflat[9];
 	char*			exittext;
 	char*			entertext;

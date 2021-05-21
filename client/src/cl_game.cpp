@@ -904,7 +904,7 @@ void G_Ticker (void)
 
 			if (gamestate != GS_STARTUP)
 			{
-				level.music[0] = '\0';
+				level.music.clear();
 				S_Start();
 				SN_StopAllSequences();
 				R_ExitLevel();
