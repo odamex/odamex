@@ -1365,6 +1365,8 @@ namespace
 	
 			case MITYPE_$LUMPNAME:
 			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+
+				OLumpName temp;
 				
 				if (os.getToken()[0] == '$')
 				{
@@ -1375,12 +1377,14 @@ namespace
 					{
 						I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 					}
-					uppercopy((char*)(info + handler->data1), s.c_str());
+					temp = s;
 				}
 				else
 				{
-					uppercopy((char*)(info + handler->data1), os.getToken().c_str());
+					temp = os.getToken();
 				}
+
+				uppercopy((char*)(info + handler->data1), temp.c_str());
 				break;
 	
 			case MITYPE_MUSICLUMPNAME: {
