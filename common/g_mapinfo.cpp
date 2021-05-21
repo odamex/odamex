@@ -606,6 +606,20 @@ namespace
 	    return UpperCompareToken(os, "true");
     }
 
+	// return token as std::string
+	template <>
+    std::string GetToken<std::string>(OScanner& os)
+	{
+	    return os.getToken();
+	}
+
+	// return token as OLumpName
+    template <>
+    OLumpName GetToken<OLumpName>(OScanner& os)
+    {
+	    return os.getToken();
+    }
+
 	//////////////////////////////////////////////////////////////////////
     /// MustGet
 
@@ -817,24 +831,22 @@ namespace
 		buffer = os.getToken();
 	}
 	
-	int ValidateMapName(const char* mapname, int* pEpi = NULL, int* pMap = NULL)
+	int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
 	{
 		// Check if the given map name can be expressed as a gameepisode/gamemap pair and be
 		// reconstructed from it.
 		char lumpname[9];
 		int epi = -1, map = -1;
 	
-		const OLumpName mapuname = mapname;
-	
 		if (gamemode != commercial)
 		{
-			if (sscanf(mapuname.c_str(), "E%dM%d", &epi, &map) != 2)
+		    if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
 				return 0;
 			snprintf(lumpname, 9, "E%dM%d", epi, map);
 		}
 		else
 		{
-			if (sscanf(mapuname.c_str(), "MAP%d", &map) != 1)
+		    if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
 				return 0;
 			snprintf(lumpname, 9, "MAP%02d", map);
 			epi = 1;
@@ -843,7 +855,7 @@ namespace
 			*pEpi = epi;
 		if (pMap)
 			*pMap = map;
-		return !strcmp(mapuname.c_str(), lumpname);
+	    return !strcmp(mapname.c_str(), lumpname);
 	}
 	
 	int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
@@ -1123,26 +1135,24 @@ namespace
 				I_Error("Expected map definition, got %s", os.getToken().c_str());
 			}
 	
-			MustGetIdentifier(os);
-			if (os.getToken().length() > 8 || !ValidateMapName(os.getToken().c_str()))
+			MustGet<OLumpName>(os);
+		    OLumpName mapname = GetToken<OLumpName>(os);
+			
+			if (!ValidateMapName(mapname))
 			{
-				I_Error("Invalid map name %s", os.getToken().c_str());
+			    I_Error("Invalid map name %s", mapname.c_str());
 			}
 	
 			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(os.getToken()).exists())
-			                              ? levels.findByName(os.getToken())
+		    level_pwad_info_t& info = (levels.findByName(mapname).exists())
+		                                  ? levels.findByName(mapname)
 			                              : levels.create();
 	
 			// Free the level name string before we pave over it.
 			info.level_name.clear();
 	
 			info = defaultinfo;
-			if (os.getToken().length() > 8)
-			{
-				I_Error("Invalid map name %s", os.getToken().c_str());
-			}
-			info.mapname = os.getToken();
+			info.mapname = mapname;
 	
 			MapNameToLevelNum(info);
 	
@@ -1209,9 +1219,9 @@ namespace
 
 	
 	template <typename T>
-    void ParseMapinfoHelper(OScanner& os, int newMapinfoStack)
+    void ParseMapinfoHelper(OScanner& os, bool doEquals)
     {
-	    if (newMapinfoStack > 0)
+	    if (doEquals)
 	    {
 		    MustGetStringName(os, "=");
 	    }
@@ -1220,7 +1230,7 @@ namespace
     }
 
 	template <>
-    void ParseMapinfoHelper<void>(OScanner& os, int newMapinfoStack)
+    void ParseMapinfoHelper<void>(OScanner& os, bool doEquals)
 	{
 		// do nothing
 	}
@@ -1301,24 +1311,24 @@ namespace
 				break;
 	
 			case MITYPE_EATNEXT:
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
 				
 				break;
 	
 			case MITYPE_INT:
-			    ParseMapinfoHelper<int>(os, newMapinfoStack);
+			    ParseMapinfoHelper<int>(os, newMapinfoStack > 0);
 				
 				*((int*)(info + handler->data1)) = GetToken<int>(os);
 				break;
 	
 			case MITYPE_FLOAT:
-			    ParseMapinfoHelper<float>(os, newMapinfoStack);
+			    ParseMapinfoHelper<float>(os, newMapinfoStack > 0);
 				
 				*((float*)(info + handler->data1)) = GetToken<float>(os);
 				break;
 	
 			case MITYPE_COLOR: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
 				
 				argb_t color(V_GetColorFromString(os.getToken()));
 				uint8_t* ptr = (uint8_t*)(info + handler->data1);
@@ -1329,7 +1339,7 @@ namespace
 				break;
 			}
 			case MITYPE_MAPNAME:
-			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
+			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack > 0);
 	
 				char map_name[9];
 				strncpy(map_name, os.getToken().c_str(), 8);
@@ -1344,13 +1354,13 @@ namespace
 				break;
 	
 			case MITYPE_OLUMPNAME:
-			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack);
+			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack > 0);
 				
 				*(OLumpName*)(info + handler->data1) = os.getToken();
 			    break;
 	
 			case MITYPE_$LUMPNAME: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
 
 			    OLumpName temp;
 			    if (os.getToken()[0] == '$')
@@ -1373,7 +1383,7 @@ namespace
 			    break;
 		    }
 			case MITYPE_MUSICLUMPNAME: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
 
 				OLumpName temp;
 				if (os.getToken()[0] == '$')
@@ -1434,7 +1444,7 @@ namespace
 				break;
 	
 			case MITYPE_CLUSTER:
-			    ParseMapinfoHelper<int>(os, newMapinfoStack);
+			    ParseMapinfoHelper<int>(os, newMapinfoStack > 0);
 				
 				*((int*)(info + handler->data1)) = GetToken<int>(os);
 				if (HexenHack)
@@ -1449,7 +1459,7 @@ namespace
 				break;
 	
 			case MITYPE_STRING: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
 
 				char** text = (char**)(info + handler->data1);
 				free(*text);
@@ -1458,7 +1468,7 @@ namespace
 			}
 	
 			case MITYPE_CSTRING:
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack);
+			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
 				
 				strncpy((char*)(info + handler->data1), os.getToken().c_str(),
 				        handler->data2);
