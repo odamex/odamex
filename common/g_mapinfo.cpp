@@ -1232,7 +1232,7 @@ namespace
 	};
 
 	// container holding all MapInfoData types
-	typedef std::list<MapInfoData> MapInfoDataContainer;
+	typedef std::vector<MapInfoData> MapInfoDataContainer;
 
 	// base class for MapInfoData; also used when there's no data to process (unimplemented blocks)
 	template <typename T>
@@ -1241,11 +1241,17 @@ namespace
 	    MapInfoDataContainer mapInfoDataContainer;
 		
 	    MapInfoDataSetter()
+			: mapInfoDataContainer()
 	    {
-		    mapInfoDataContainer = {
-		    };
 	    }
     };
+
+// macro to make up for lack of initializer lists in C++98
+#define ENTRY1(x1) mapInfoDataContainer.push_back(MapInfoData(x1));
+#define ENTRY2(x1, x2) mapInfoDataContainer.push_back(MapInfoData(x1, x2));
+#define ENTRY3(x1, x2, x3) mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3));
+#define ENTRY4(x1, x2, x3, x4) mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4));
+#define ENTRY5(x1, x2, x3, x4, x5) mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4, x5));
 
 	// level_pwad_info_t
 	template <>
@@ -1255,66 +1261,66 @@ namespace
 		
 	    MapInfoDataSetter(level_pwad_info_t& ref)
 	    {
-		    mapInfoDataContainer = {
-				MapInfoData("levelnum",					&MIType_Int,			&ref.levelnum),
-				MapInfoData("next",						&MIType_MapName,		&ref.nextmap),
-			    MapInfoData("secretnext",				&MIType_MapName,		&ref.secretmap),
-				MapInfoData("cluster",					&MIType_Cluster,		&ref.cluster),
-				MapInfoData("sky1",						&MIType_Sky,			&ref.skypic),
-				MapInfoData("sky2",						&MIType_Sky,			&ref.skypic2),
-				MapInfoData("fade",						&MIType_Color,			&ref.fadeto_color),
-				MapInfoData("outsidefog",				&MIType_Color,			&ref.outsidefog_color),
-			    MapInfoData("titlepatch",				&MIType_LumpName,		&ref.pname),
-				MapInfoData("par",						&MIType_Int,			&ref.partime),
-			    MapInfoData("music",					&MIType_MusicLumpName,	&ref.music),
-				MapInfoData("nointermission",			&MIType_SetFlag,		&ref.flags,				LEVEL_NOINTERMISSION),
-				MapInfoData("doublesky",				&MIType_SetFlag,		&ref.flags,				LEVEL_DOUBLESKY),
-				MapInfoData("nosoundclipping",			&MIType_SetFlag,		&ref.flags,				LEVEL_NOSOUNDCLIPPING),
-				MapInfoData("allowmonstertelefrags",	&MIType_SetFlag,		&ref.flags,				LEVEL_MONSTERSTELEFRAG),
-				MapInfoData("map07special",				&MIType_SetFlag,		&ref.flags,				LEVEL_MAP07SPECIAL),
-				MapInfoData("baronspecial",				&MIType_SetFlag,		&ref.flags,				LEVEL_BRUISERSPECIAL),
-				MapInfoData("cyberdemonspecial",		&MIType_SetFlag,		&ref.flags,				LEVEL_CYBORGSPECIAL),
-				MapInfoData("spidermastermindspecial",	&MIType_SetFlag,		&ref.flags,				LEVEL_SPIDERSPECIAL),
-				MapInfoData("specialaction_exitlevel",	&MIType_SCFlags,		&ref.flags,				0,							~LEVEL_SPECACTIONSMASK),
-				MapInfoData("specialaction_opendoor",	&MIType_SCFlags,		&ref.flags,				LEVEL_SPECOPENDOOR,			~LEVEL_SPECACTIONSMASK),
-				MapInfoData("specialaction_lowerfloor", &MIType_SCFlags,		&ref.flags,				LEVEL_SPECLOWERFLOOR,		~LEVEL_SPECACTIONSMASK),
-				MapInfoData("lightning"),
-				MapInfoData("fadetable",				&MIType_LumpName,		&ref.fadetable),
-				MapInfoData("evenlighting",				&MIType_SetFlag,		&ref.flags,				LEVEL_EVENLIGHTING),
-				MapInfoData("noautosequences",			&MIType_SetFlag,		&ref.flags,				LEVEL_SNDSEQTOTALCTRL),
-				MapInfoData("forcenoskystretch",		&MIType_SetFlag,		&ref.flags,				LEVEL_FORCENOSKYSTRETCH),
-				MapInfoData("allowfreelook",			&MIType_SCFlags,		&ref.flags,				LEVEL_FREELOOK_YES,			~LEVEL_FREELOOK_NO),
-				MapInfoData("nofreelook",				&MIType_SCFlags,		&ref.flags,				LEVEL_FREELOOK_NO,			~LEVEL_FREELOOK_YES),
-				MapInfoData("allowjump",				&MIType_SCFlags,		&ref.flags,				LEVEL_JUMP_YES,				~LEVEL_JUMP_NO),
-				MapInfoData("nojump",					&MIType_SCFlags,		&ref.flags,				LEVEL_JUMP_NO,				~LEVEL_JUMP_YES),
-				MapInfoData("cdtrack",					&MIType_EatNext),
-				MapInfoData("cd_start_track",			&MIType_EatNext),
-				MapInfoData("cd_end1_track",			&MIType_EatNext),
-				MapInfoData("cd_end2_track",			&MIType_EatNext),
-				MapInfoData("cd_end3_track",			&MIType_EatNext),
-				MapInfoData("cd_intermission_track",	&MIType_EatNext),
-				MapInfoData("cd_title_track",			&MIType_EatNext),
-				MapInfoData("warptrans",				&MIType_EatNext),
-				MapInfoData("gravity",					&MIType_Float,			&ref.gravity),
-				MapInfoData("aircontrol",				&MIType_Float,			&ref.aircontrol),
-				MapInfoData("islobby",					&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL),
-				MapInfoData("lobby",					&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL),
-				MapInfoData("nocrouch"),
-				MapInfoData("intermusic",				&MIType_EatNext),
-				MapInfoData("par",						&MIType_EatNext),
-				MapInfoData("sucktime",					&MIType_EatNext),
-			    MapInfoData("enterpic",					&MIType_EatNext),
-			    MapInfoData("exitpic",					&MIType_EatNext),
-			    MapInfoData("interpic",					&MIType_EatNext),
-				MapInfoData("translator",				&MIType_EatNext),
-				MapInfoData("compat_shorttex",			&MIType_EatNext),
-				MapInfoData("compat_limitpain",			&MIType_EatNext),
-			    MapInfoData("compat_dropoff",			&MIType_SetFlag,		&ref.flags,				LEVEL_COMPAT_DROPOFF),
-				MapInfoData("compat_trace",				&MIType_EatNext),
-				MapInfoData("compat_boomscroll",		&MIType_EatNext),
-				MapInfoData("compat_sectorsounds",		&MIType_EatNext),
-				MapInfoData("compat_nopassover", 		&MIType_SetFlag,		&ref.flags,				LEVEL_COMPAT_NOPASSOVER),
-			};
+		    mapInfoDataContainer.reserve(70); // [DE] some random number, i'm not counting all these
+	    	
+			ENTRY3("levelnum",					&MIType_Int,			&ref.levelnum)
+			ENTRY3("next",						&MIType_MapName,		&ref.nextmap)
+			ENTRY3("secretnext",				&MIType_MapName,		&ref.secretmap)
+			ENTRY3("cluster",					&MIType_Cluster,		&ref.cluster)
+			ENTRY3("sky1",						&MIType_Sky,			&ref.skypic)
+			ENTRY3("sky2",						&MIType_Sky,			&ref.skypic2)
+			ENTRY3("fade",						&MIType_Color,			&ref.fadeto_color)
+			ENTRY3("outsidefog",				&MIType_Color,			&ref.outsidefog_color)
+			ENTRY3("titlepatch",				&MIType_LumpName,		&ref.pname)
+			ENTRY3("par",						&MIType_Int,			&ref.partime)
+			ENTRY3("music",						&MIType_MusicLumpName,	&ref.music)
+			ENTRY4("nointermission",			&MIType_SetFlag,		&ref.flags,				LEVEL_NOINTERMISSION)
+			ENTRY4("doublesky",					&MIType_SetFlag,		&ref.flags,				LEVEL_DOUBLESKY)
+			ENTRY4("nosoundclipping",			&MIType_SetFlag,		&ref.flags,				LEVEL_NOSOUNDCLIPPING)
+			ENTRY4("allowmonstertelefrags",		&MIType_SetFlag,		&ref.flags,				LEVEL_MONSTERSTELEFRAG)
+			ENTRY4("map07special",				&MIType_SetFlag,		&ref.flags,				LEVEL_MAP07SPECIAL)
+			ENTRY4("baronspecial",				&MIType_SetFlag,		&ref.flags,				LEVEL_BRUISERSPECIAL)
+			ENTRY4("cyberdemonspecial",			&MIType_SetFlag,		&ref.flags,				LEVEL_CYBORGSPECIAL)
+			ENTRY4("spidermastermindspecial",	&MIType_SetFlag,		&ref.flags,				LEVEL_SPIDERSPECIAL)
+			ENTRY5("specialaction_exitlevel",	&MIType_SCFlags,		&ref.flags,				0,							~LEVEL_SPECACTIONSMASK)
+			ENTRY5("specialaction_opendoor",	&MIType_SCFlags,		&ref.flags,				LEVEL_SPECOPENDOOR,			~LEVEL_SPECACTIONSMASK)
+			ENTRY5("specialaction_lowerfloor",	&MIType_SCFlags,		&ref.flags,				LEVEL_SPECLOWERFLOOR,		~LEVEL_SPECACTIONSMASK)
+			ENTRY1("lightning")
+			ENTRY3("fadetable",					&MIType_LumpName,		&ref.fadetable)
+			ENTRY4("evenlighting",				&MIType_SetFlag,		&ref.flags,				LEVEL_EVENLIGHTING)
+			ENTRY4("noautosequences",			&MIType_SetFlag,		&ref.flags,				LEVEL_SNDSEQTOTALCTRL)
+			ENTRY4("forcenoskystretch",			&MIType_SetFlag,		&ref.flags,				LEVEL_FORCENOSKYSTRETCH)
+			ENTRY5("allowfreelook",				&MIType_SCFlags,		&ref.flags,				LEVEL_FREELOOK_YES,			~LEVEL_FREELOOK_NO)
+			ENTRY5("nofreelook",				&MIType_SCFlags,		&ref.flags,				LEVEL_FREELOOK_NO,			~LEVEL_FREELOOK_YES)
+			ENTRY5("allowjump",					&MIType_SCFlags,		&ref.flags,				LEVEL_JUMP_YES,				~LEVEL_JUMP_NO)
+			ENTRY5("nojump",					&MIType_SCFlags,		&ref.flags,				LEVEL_JUMP_NO,				~LEVEL_JUMP_YES)
+			ENTRY2("cdtrack",					&MIType_EatNext)
+			ENTRY2("cd_start_track",			&MIType_EatNext)
+			ENTRY2("cd_end1_track",				&MIType_EatNext)
+			ENTRY2("cd_end2_track",				&MIType_EatNext)
+			ENTRY2("cd_end3_track",				&MIType_EatNext)
+			ENTRY2("cd_intermission_track",		&MIType_EatNext)
+			ENTRY2("cd_title_track",			&MIType_EatNext)
+			ENTRY2("warptrans",					&MIType_EatNext)
+			ENTRY3("gravity",					&MIType_Float,			&ref.gravity)
+			ENTRY3("aircontrol",				&MIType_Float,			&ref.aircontrol)
+			ENTRY4("islobby",					&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL)
+			ENTRY4("lobby",						&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL)
+			ENTRY1("nocrouch")
+			ENTRY2("intermusic",				&MIType_EatNext)
+			ENTRY2("par",						&MIType_EatNext)
+			ENTRY2("sucktime",					&MIType_EatNext)
+			ENTRY2("enterpic",					&MIType_EatNext)
+			ENTRY2("exitpic",					&MIType_EatNext)
+			ENTRY2("interpic",					&MIType_EatNext)
+			ENTRY2("translator",				&MIType_EatNext)
+			ENTRY2("compat_shorttex",			&MIType_EatNext)
+			ENTRY2("compat_limitpain",			&MIType_EatNext)
+			ENTRY4("compat_dropoff",			&MIType_SetFlag,		&ref.flags,				LEVEL_COMPAT_DROPOFF)
+			ENTRY2("compat_trace",				&MIType_EatNext)
+			ENTRY2("compat_boomscroll",			&MIType_EatNext)
+			ENTRY2("compat_sectorsounds",		&MIType_EatNext)
+			ENTRY4("compat_nopassover", 		&MIType_SetFlag,		&ref.flags,				LEVEL_COMPAT_NOPASSOVER)
 	    }
 	};
 
@@ -1326,15 +1332,15 @@ namespace
 
 	    MapInfoDataSetter(cluster_info_t &ref)
 	    {
-		    mapInfoDataContainer = {
-		    	MapInfoData("entertext",		MIType_ClusterString,	&ref.entertext),
-				MapInfoData("exittext",			MIType_ClusterString,	&ref.exittext),
-				MapInfoData("exittextislump",	MIType_SetFlag,			&ref.flags,			CLUSTER_EXITTEXTISLUMP),
-				MapInfoData("music",			MIType_MusicLumpName,	&ref.messagemusic),
-				MapInfoData("flat",				MIType_$LumpName,		&ref.finaleflat),
-				MapInfoData("hub",				MIType_SetFlag,			&ref.flags,			CLUSTER_HUB),
-				MapInfoData("pic",				MIType_$LumpName,		&ref.finalepic),
-		    };
+		    mapInfoDataContainer.reserve(7);
+	    	
+		    ENTRY3("entertext",			&MIType_ClusterString,	&ref.entertext)
+			ENTRY3("exittext",			&MIType_ClusterString,	&ref.exittext)
+			ENTRY4("exittextislump",	&MIType_SetFlag,		&ref.flags,			CLUSTER_EXITTEXTISLUMP)
+			ENTRY3("music",				&MIType_MusicLumpName,	&ref.messagemusic)
+			ENTRY3("flat",				&MIType_$LumpName,		&ref.finaleflat)
+			ENTRY4("hub",				&MIType_SetFlag,		&ref.flags,			CLUSTER_HUB)
+			ENTRY3("pic",				&MIType_$LumpName,		&ref.finalepic)
 	    }
     };
 
