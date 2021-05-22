@@ -78,196 +78,12 @@ namespace
 		MITYPE_STRING,
 		MITYPE_CSTRING,
 		MITYPE_CLUSTERSTRING,
-		MITYPE_SETCOMPATFLAG,
 	};
 	
 	struct MapInfoHandler
 	{
 	    EMIType type;
 	    DWORD data1, data2;
-	};
-	
-	const char *MapInfoMapLevel[] =
-	{
-		"levelnum",
-		"next",
-		"secretnext",
-		"cluster",
-		"sky1",
-		"sky2",
-		"fade",
-		"outsidefog",
-		"titlepatch",
-		"par",
-		"music",
-		"nointermission",
-		"doublesky",
-		"nosoundclipping",
-		"allowmonstertelefrags",
-		"map07special",
-		"baronspecial",
-		"cyberdemonspecial",
-		"spidermastermindspecial",
-		"specialaction_exitlevel",
-		"specialaction_opendoor",
-		"specialaction_lowerfloor",
-		"lightning",
-		"fadetable",
-		"evenlighting",
-		"noautosequences",
-		"forcenoskystretch",
-		"allowfreelook",
-		"nofreelook",
-		"allowjump",
-		"nojump",
-		"cdtrack",
-		"cd_start_track",
-		"cd_end1_track",
-		"cd_end2_track",
-		"cd_end3_track",
-		"cd_intermission_track",
-		"cd_title_track",
-		"warptrans",
-		"gravity",
-		"aircontrol",
-		"islobby",
-		"lobby",
-		"nocrouch",
-		"intermusic",
-		"par",
-		"sucktime",
-	    "enterpic",
-	    "exitpic",
-	    "interpic"
-		"translator",
-		"compat_shorttex",
-		"compat_limitpain",
-	    "compat_dropoff",
-		"compat_trace",
-		"compat_boomscroll",
-		"compat_sectorsounds",
-		"compat_nopassover",
-		NULL
-	};
-
-	MapInfoHandler MapHandlers[] =
-	{
-		// levelnum <levelnum>
-		{ MITYPE_INT, lioffset(levelnum), 0 },
-		// next <maplump>
-		{ MITYPE_MAPNAME, lioffset(nextmap), 0 },
-		// secretnext <maplump>
-		{ MITYPE_MAPNAME, lioffset(secretmap), 0 },
-		// cluster <number>
-		{ MITYPE_CLUSTER, lioffset(cluster), 0 },
-		// sky1 <texture> <scrollspeed>
-		{ MITYPE_SKY, lioffset(skypic), 0 },
-		// sky2 <texture> <scrollspeed>
-		{ MITYPE_SKY, lioffset(skypic2), 0 },
-		// fade <color>
-		{ MITYPE_COLOR, lioffset(fadeto_color), 0 },
-		// outsidefog <color>
-		{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
-		// titlepatch <patch>
-		{ MITYPE_OLUMPNAME, lioffset(pname), 0 },
-		// par <partime>
-		{ MITYPE_INT, lioffset(partime), 0 },
-		// music <musiclump>
-		{ MITYPE_MUSICLUMPNAME, lioffset(music), 0 },
-		// nointermission
-		{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
-		// doublesky
-		{ MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0 },
-		// nosoundclipping
-		{ MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0 },
-		// allowmonstertelefrags
-		{ MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0 },
-		// map07special
-		{ MITYPE_SETFLAG, LEVEL_MAP07SPECIAL, 0 },
-		// baronspecial
-		{ MITYPE_SETFLAG, LEVEL_BRUISERSPECIAL, 0 },
-		// cyberdemonspecial
-		{ MITYPE_SETFLAG, LEVEL_CYBORGSPECIAL, 0 },
-		// spidermastermindspecial
-		{ MITYPE_SETFLAG, LEVEL_SPIDERSPECIAL, 0 },
-		// specialaction_exitlevel
-		{ MITYPE_SCFLAGS, 0, ~LEVEL_SPECACTIONSMASK },
-		// specialaction_opendoor
-		{ MITYPE_SCFLAGS, LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
-		// specialaction_lowerfloor
-		{ MITYPE_SCFLAGS, LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
-		// lightning
-		{ MITYPE_IGNORE, 0, 0 },
-		// fadetable <colormap>
-		{ MITYPE_OLUMPNAME, lioffset(fadetable), 0 },
-		// evenlighting
-		{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
-		// noautosequences
-		{ MITYPE_SETFLAG, LEVEL_SNDSEQTOTALCTRL, 0 },
-		// forcenoskystretch
-		{ MITYPE_SETFLAG, LEVEL_FORCENOSKYSTRETCH, 0 },
-		// allowfreelook
-		{ MITYPE_SCFLAGS, LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
-		// nofreelook
-		{ MITYPE_SCFLAGS, LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
-		// allowjump
-		{ MITYPE_SCFLAGS, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-		// nojump
-		{ MITYPE_SCFLAGS, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-		// cdtrack <track number>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_start_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_end1_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_end2_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_end3_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_intermission_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_title_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// warptrans ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// gravity <amount>
-		{ MITYPE_FLOAT, lioffset(gravity), 0 },
-		// aircontrol <amount>
-		{ MITYPE_FLOAT, lioffset(aircontrol), 0 },
-		// islobby
-		{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
-		// lobby
-		{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
-		// nocrouch
-		{ MITYPE_IGNORE, 0, 0 },
-		// intermusic <musicname>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// par <partime>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// sucktime <value>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// enterpic <$pic>
-	    { MITYPE_EATNEXT, 0, 0 },
-		// exitpic <$pic>
-	    { MITYPE_EATNEXT, 0, 0 },
-		// interpic <$pic>
-	    { MITYPE_EATNEXT, 0, 0 },
-		// translator <value>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// compat_shorttex <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_limitpain <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_dropoff <value>
-	    {MITYPE_SETCOMPATFLAG, LEVEL_COMPAT_DROPOFF, 0},
-	    // compat_trace <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_boomscroll <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_sectorsounds <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_nopassover <value>
-	    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
 	};
 	
 	const char *MapInfoClusterLevel[] =
@@ -1487,13 +1303,13 @@ namespace
 	//////////////////////////////////////////////////////////////////////
     /// MapInfoData
 
-	typedef void (*MITypeFunction)(OScanner&, bool, void*, unsigned int, unsigned int);
+	typedef void (*MITypeFunctionPtr)(OScanner&, bool, void*, unsigned int, unsigned int);
 
 	// data structure containing all of the information needed to set a value from mapinfo
 	struct MapInfoData
 	{
 	    const char* name;
-	    MITypeFunction fn;
+	    MITypeFunctionPtr fn;
 	    void* data;
 	    unsigned int flags;
 	    unsigned int flags2;
@@ -1501,7 +1317,7 @@ namespace
 		MapInfoData
 		(
 			const char* _name,
-			MITypeFunction _fn = NULL,
+			MITypeFunctionPtr _fn = NULL,
 			void* _data = NULL,
 			unsigned int _flags = 0,
 			unsigned int _flags2 = 0
@@ -1514,15 +1330,15 @@ namespace
 	// container holding all MapInfoData types
 	typedef std::list<MapInfoData> MapInfoDataContainer;
 
-	// base class for MapInfoData
-	template <typename T>
+	// base class for MapInfoData; also used when there's no data to process (unimplemented blocks)
+	template <typename T = void>
 	struct MapInfoDataSetter
     {
 	    MapInfoDataContainer mapInfoDataContainer;
 		
-	    MapInfoDataSetter(T&)
+	    MapInfoDataSetter()
+		    : mapInfoDataContainer()
 	    {
-		    I_FatalError("MapInfoDataSetter templated with undefined parameter");
 	    }
     };
 
@@ -1605,7 +1421,7 @@ namespace
     // to parse the block anyway, even if you throw away the values.  This is
     // done by passing in a strings pointer, and leaving the others NULL.
     //
-	template <typename T>
+	template <typename T = void>
     void ParseMapInfoLower_New(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 	{
 	    // 0 if old mapinfo, positive number if new MAPINFO, the exact
@@ -1671,17 +1487,6 @@ namespace
 				SkipUnknownType(os);
 			}
 	    }
-
-    	// TODO: is this necessary?
-    	/*switch (tinfo->tag)
-	    {
-	    case tagged_info_t::LEVEL:
-		    tinfo->level->flags = flags;
-		    break;
-	    case tagged_info_t::CLUSTER:
-		    tinfo->cluster->flags = flags;
-		    break;
-	    }*/
 	}
 
 	//
@@ -2008,6 +1813,7 @@ namespace
 		}
 	}
 
+	// todo: parse episode info like the others?
 	void ParseEpisodeInfo(OScanner& os)
 	{
 		int new_mapinfo = false; // is int instead of bool for template purposes
@@ -2271,14 +2077,13 @@ namespace
 			if (UpperCompareToken(os, "defaultmap"))
 			{
 				SetLevelDefaults(&defaultinfo);
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::LEVEL;
-				tinfo.level = &defaultinfo;
-				ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0, os);
+				
+				MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
+				ParseMapInfoLower_New<level_pwad_info_t>(os, defaultsetter);
 			}
 			else if (UpperCompareToken(os, "map"))
 			{
-				DWORD levelflags = defaultinfo.flags;
+				DWORD &levelflags = defaultinfo.flags;
 				MustGetString(os);
 	
 				char map_name[9];
@@ -2287,7 +2092,7 @@ namespace
 				if (IsNum(map_name))
 				{
 					// MAPNAME is a number, assume a Hexen wad
-					int map = std::atoi(map_name);
+					const int map = std::atoi(map_name);
 	
 					sprintf(map_name, "MAP%02d", map);
 					SKYFLATNAME[5] = 0;
@@ -2322,14 +2127,9 @@ namespace
 				{
 					info.level_name = strdup(os.getToken().c_str());
 				}
-	
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::LEVEL;
-				tinfo.level = &info;
 
 				MapInfoDataSetter<level_pwad_info_t> setter(info);
 				ParseMapInfoLower_New<level_pwad_info_t>(os, setter);
-				//ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags, os);
 	
 				// If the level info was parsed and no levelnum was applied,
 				// try and synthesize one from the level name.
@@ -2369,7 +2169,9 @@ namespace
 			{
 				// Not implemented
 				MustGetString(os); // Name
-				ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+
+				MapInfoDataSetter<> setter;
+				ParseMapInfoLower_New<>(os, setter);
 			}
 			else if (UpperCompareToken(os, "clearskills"))
 			{
@@ -2383,12 +2185,15 @@ namespace
 			{
 				// Not implemented
 				MustGetString(os); // Name
-				ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+
+				MapInfoDataSetter<> setter;
+			    ParseMapInfoLower_New<>(os, setter);
 			}
 			else if (UpperCompareToken(os, "automap"))
 			{
 				// Not implemented
-				ParseMapInfoLower(NULL, NULL, NULL, 0, os);
+				MapInfoDataSetter<> setter;
+			    ParseMapInfoLower_New<>(os, setter);
 			}
 			else
 			{
