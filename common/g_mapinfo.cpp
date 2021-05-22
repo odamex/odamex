@@ -1344,6 +1344,27 @@ namespace
 	    }
     };
 
+	// gameinfo_t
+	template <>
+	struct MapInfoDataSetter<gameinfo_t>
+	{
+	    MapInfoDataContainer mapInfoDataContainer;
+
+	    MapInfoDataSetter()
+	    {
+		    mapInfoDataContainer.reserve(7);
+
+		    ENTRY3("advisorytime",		&MIType_Float,		&gameinfo.advisoryTime)
+		    //ENTRY3("chatsound",			)
+		    ENTRY3("pagetime",			&MIType_Float,		&gameinfo.pageTime)
+		    ENTRY3("finaleflat",		&MIType_LumpName,	&gameinfo.finaleFlat)
+		    ENTRY3("finalemusic",		&MIType_$LumpName,	&gameinfo.finaleMusic)
+		    ENTRY3("titlemusic",		&MIType_$LumpName,	&gameinfo.titleMusic)
+		    ENTRY3("titlepage",			&MIType_LumpName,	&gameinfo.titlePage)
+		    ENTRY3("titletime",			&MIType_Float,		&gameinfo.titleTime)
+	    }
+	};
+
 	//
     // Parse a MAPINFO block
     //
@@ -1581,87 +1602,6 @@ namespace
 		}
 	}
 
-	void ParseGameInfo(OScanner& os)
-	{
-		MustGetStringName(os, "{");
-	
-		while (os.scan())
-		{
-			if (UpperCompareToken(os, "{"))
-			{
-				// Detected new-style MAPINFO
-				I_Error(
-				    "Detected incorrectly placed curly brace in MAPINFO episode definiton");
-			}
-			else if (UpperCompareToken(os, "}"))
-			{
-				break;
-			}
-			else if (UpperCompareToken(os, "advisorytime"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				gameinfo.advisoryTime = GetToken<float>(os);
-			}
-			else if (UpperCompareToken(os, "chatsound"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				strncpy(gameinfo.chatSound, os.getToken().c_str(), 16);
-			}
-			else if (UpperCompareToken(os, "pagetime"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				gameinfo.pageTime = GetToken<float>(os);
-			}
-			else if (UpperCompareToken(os, "finaleflat"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				strncpy(gameinfo.finaleFlat, os.getToken().c_str(), 8);
-			}
-			else if (UpperCompareToken(os, "finalemusic"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				strncpy(gameinfo.finaleMusic, os.getToken().c_str(), 8);
-			}
-			else if (UpperCompareToken(os, "titlemusic"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				strncpy(gameinfo.titleMusic, os.getToken().c_str(), 8);
-			}
-			else if (UpperCompareToken(os, "titlepage"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				strncpy(gameinfo.titlePage, os.getToken().c_str(), 8);
-			}
-			else if (UpperCompareToken(os, "titletime"))
-			{
-				MustGetStringName(os, "=");
-				os.scan();
-	
-				gameinfo.titleTime = GetToken<float>(os);
-			}
-			else
-			{
-				// Game info property is not implemented
-				MustGetStringName(os, "=");
-				os.scan();
-			}
-		}
-	}
-
 	void ParseMapInfoLump(int lump, const char* lumpname)
 	{
 		LevelInfos& levels = getLevelInfos();
@@ -1785,7 +1725,8 @@ namespace
 			}
 			else if (UpperCompareToken(os, "gameinfo"))
 			{
-				ParseGameInfo(os);
+			    MapInfoDataSetter<gameinfo_t> setter;
+			    ParseMapInfoLower<gameinfo_t>(os, setter);
 			}
 			else if (UpperCompareToken(os, "intermission"))
 			{

@@ -460,9 +460,9 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage;
+            pagename = gameinfo.titlePage.c_str();
             
-            currentmusic = gameinfo.titleMusic;
+            currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
 
@@ -490,8 +490,8 @@ void D_DoAdvanceDemo (void)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;
-                pagename = gameinfo.titlePage;
-                currentmusic = gameinfo.titleMusic;
+                pagename = gameinfo.titlePage.c_str();
+                currentmusic = gameinfo.titleMusic.c_str();
                 
                 S_StartMusic(currentmusic.c_str());
             }

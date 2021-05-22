@@ -131,7 +131,7 @@ void F_StartFinale(finale_options_t& options)
 
 	if (options.music == NULL)
 	{
-		::currentmusic = ::gameinfo.finaleMusic;
+		::currentmusic = ::gameinfo.finaleMusic.c_str();
 		S_ChangeMusic(
 			::currentmusic.c_str(),
 			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
@@ -159,7 +159,7 @@ void F_StartFinale(finale_options_t& options)
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
-		::finalelump = gameinfo.finaleFlat;
+		::finalelump = gameinfo.finaleFlat.c_str();
 	}
 
 	if (options.text)

@@ -140,7 +140,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	D_StartTitle ();
 	CL_QuitNetGame();
 	S_StopMusic();
-	currentmusic = gameinfo.titleMusic;
+	currentmusic = gameinfo.titleMusic.c_str();
 	
 	S_StartMusic(currentmusic.c_str());
 }
