@@ -39,83 +39,6 @@ BOOL HexenHack;
 
 namespace
 {
-	#define lioffset(x) offsetof(level_pwad_info_t, x)
-	#define cioffset(x) offsetof(cluster_info_t, x)
-	
-	#define G_NOMATCH (-1) // used for MatchString
-
-	// A tagged union that represents all possible infos that we can pass to
-	// the "lower" MAPINFO parser.
-	struct tagged_info_t {
-		enum tags {
-			LEVEL,
-			CLUSTER,
-			EPISODE,
-		};
-		tags tag;
-		union {
-			level_pwad_info_t* level;
-			cluster_info_t* cluster;
-			void* episode;
-		};
-	};
-	
-	enum EMIType
-	{
-		MITYPE_IGNORE,
-		MITYPE_EATNEXT,
-		MITYPE_INT,
-		MITYPE_FLOAT,
-		MITYPE_COLOR,
-		MITYPE_MAPNAME,
-		MITYPE_OLUMPNAME,
-		MITYPE_$LUMPNAME,
-		MITYPE_MUSICLUMPNAME,
-		MITYPE_SKY,
-		MITYPE_SETFLAG,
-		MITYPE_SCFLAGS,
-		MITYPE_CLUSTER,
-		MITYPE_STRING,
-		MITYPE_CSTRING,
-		MITYPE_CLUSTERSTRING,
-	};
-	
-	struct MapInfoHandler
-	{
-	    EMIType type;
-	    DWORD data1, data2;
-	};
-	
-	const char *MapInfoClusterLevel[] =
-	{
-		"entertext",
-		"exittext",
-		"exittextislump",
-		"music",
-		"flat",
-		"hub",
-		"pic",
-		NULL
-	};
-	
-	MapInfoHandler ClusterHandlers[] =
-	{
-		// entertext <message>
-		{ MITYPE_CLUSTERSTRING, cioffset(entertext), 0 },
-		// exittext <message>
-		{ MITYPE_CLUSTERSTRING, cioffset(exittext), 0 },
-		// exittextislump
-		{ MITYPE_SETFLAG, CLUSTER_EXITTEXTISLUMP, 0 },
-		// messagemusic <musiclump>
-		{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
-		// flat <flatlump>
-		{ MITYPE_$LUMPNAME, cioffset(finaleflat), 0 },
-		// hub
-		{ MITYPE_SETFLAG, CLUSTER_HUB, 0 },
-		// pic <graphiclump>
-		{ MITYPE_$LUMPNAME, cioffset(finalepic), 0 },
-	};
-	
 	// [DE] used for UMAPINFO's boss actions
 	const char* const ActorNames[] =
 	{
@@ -553,25 +476,6 @@ namespace
 		{
 			I_Error("Expected identifier (unexpected end of file).");
 		}
-	}
-	
-	// [DE] lazy copy from sc_man
-	int MatchString(OScanner& os, const char** strings)
-	{
-		if (strings == NULL)
-		{
-			return G_NOMATCH;
-		}
-	
-		for (int i = 0; *strings != NULL; i++)
-		{
-			if (UpperCompareToken(os, *strings++))
-			{
-				return i;
-			}
-		}
-	
-		return G_NOMATCH;
 	}
 	
 	bool ContainsMapInfoTopLevel(OScanner& os)
@@ -1337,8 +1241,9 @@ namespace
 	    MapInfoDataContainer mapInfoDataContainer;
 		
 	    MapInfoDataSetter()
-		    : mapInfoDataContainer()
 	    {
+		    mapInfoDataContainer = {
+		    };
 	    }
     };
 
@@ -1413,6 +1318,26 @@ namespace
 	    }
 	};
 
+	// cluster_info_t
+	template <>
+    struct MapInfoDataSetter<cluster_info_t>
+    {
+	    MapInfoDataContainer mapInfoDataContainer;
+
+	    MapInfoDataSetter(cluster_info_t &ref)
+	    {
+		    mapInfoDataContainer = {
+		    	MapInfoData("entertext",		MIType_ClusterString,	&ref.entertext),
+				MapInfoData("exittext",			MIType_ClusterString,	&ref.exittext),
+				MapInfoData("exittextislump",	MIType_SetFlag,			&ref.flags,			CLUSTER_EXITTEXTISLUMP),
+				MapInfoData("music",			MIType_MusicLumpName,	&ref.messagemusic),
+				MapInfoData("flat",				MIType_$LumpName,		&ref.finaleflat),
+				MapInfoData("hub",				MIType_SetFlag,			&ref.flags,			CLUSTER_HUB),
+				MapInfoData("pic",				MIType_$LumpName,		&ref.finalepic),
+		    };
+	    }
+    };
+
 	//
     // Parse a MAPINFO block
     //
@@ -1422,7 +1347,7 @@ namespace
     // done by passing in a strings pointer, and leaving the others NULL.
     //
 	template <typename T = void>
-    void ParseMapInfoLower_New(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
+    void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 	{
 	    // 0 if old mapinfo, positive number if new MAPINFO, the exact
 	    // number represents current brace depth.
@@ -1489,331 +1414,7 @@ namespace
 	    }
 	}
 
-	//
-	// Parse a MAPINFO block
-	//
-	// NULL pointers can be passed if the block is unimplemented.  However, if
-	// the block you want to stub out is compatible with old MAPINFO, you need
-	// to parse the block anyway, even if you throw away the values.  This is
-	// done by passing in a strings pointer, and leaving the others NULL.
-	//
-	void ParseMapInfoLower(MapInfoHandler* handlers, const char** strings,
-	                              tagged_info_t* tinfo, DWORD flags, OScanner& os)
-	{
-		// 0 if old mapinfo, positive number if new MAPINFO, the exact
-		// number represents current brace depth.
-		int newMapInfoStack = 0;
-	
-		byte* info = NULL;
-		if (tinfo)
-		{
-			// The union pointer is always the same, regardless of the tag.
-			info = reinterpret_cast<byte*>(tinfo->level);
-		}
-	
-		while (os.scan())
-		{
-			if (os.compareToken("{"))
-			{
-				// Detected new-style MAPINFO
-				newMapInfoStack++;
-				continue;
-			}
-			if (os.compareToken("}"))
-			{
-				newMapInfoStack--;
-				if (newMapInfoStack <= 0)
-				{
-					// MAPINFO block is done
-					break;
-				}
-			}
-	
-			if (newMapInfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
-			    // "cluster" is a valid map block type and is also
-			    // a valid top-level type.
-			    !UpperCompareToken(os, "cluster"))
-			{
-				// Old-style MAPINFO is done
-				os.unScan();
-				break;
-			}
-	
-			const int entry = MatchString(os, strings);
-			if (entry == G_NOMATCH)
-			{
-				if (newMapInfoStack <= 0)
-				{
-					// Old MAPINFO is up a creek, we need to be
-					// able to parse all types even if we can't
-					// do anything with them.
-					//
-					I_Error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
-				}
-	
-				// New MAPINFO is capable of skipping past unknown
-				// types.
-				SkipUnknownType(os);
-				continue;
-			}
-	
-			MapInfoHandler* handler = handlers + entry;
-	
-			switch (handler->type)
-			{
-			case MITYPE_IGNORE:
-				break;
-	
-			case MITYPE_EATNEXT:
-			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
-				
-				break;
-	
-			case MITYPE_INT:
-			    ParseMapInfoHelper<int>(os, newMapInfoStack > 0);
-				
-				*((int*)(info + handler->data1)) = GetToken<int>(os);
-				break;
-	
-			case MITYPE_FLOAT:
-			    ParseMapInfoHelper<float>(os, newMapInfoStack > 0);
-				
-				*((float*)(info + handler->data1)) = GetToken<float>(os);
-				break;
-	
-			case MITYPE_COLOR: {
-			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
-				
-				argb_t color(V_GetColorFromString(os.getToken()));
-				uint8_t* ptr = (uint8_t*)(info + handler->data1);
-				ptr[0] = color.geta();
-				ptr[1] = color.getr();
-				ptr[2] = color.getg();
-				ptr[3] = color.getb();
-				break;
-			}
-			case MITYPE_MAPNAME:
-			    ParseMapInfoHelper<OLumpName>(os, newMapInfoStack > 0);
-	
-				char map_name[9];
-				strncpy(map_name, os.getToken().c_str(), 8);
-	
-				if (IsNum(map_name))
-				{
-					int map = std::atoi(map_name);
-					sprintf(map_name, "MAP%02d", map);
-				}
-				
-				*(OLumpName*)(info + handler->data1) = map_name;
-				break;
-	
-			case MITYPE_OLUMPNAME:
-			    ParseMapInfoHelper<OLumpName>(os, newMapInfoStack > 0);
-				
-				*(OLumpName*)(info + handler->data1) = os.getToken();
-			    break;
-	
-			case MITYPE_$LUMPNAME: {
-			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
-
-			    OLumpName temp;
-			    if (os.getToken()[0] == '$')
-			    {
-				    // It is possible to pass a DeHackEd string
-				    // prefixed by a $.
-				    const OString& s = GStrings(os.getToken().c_str() + 1);
-				    if (s.empty())
-				    {
-					    I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
-				    }
-				    temp = s;
-			    }
-			    else
-			    {
-				    temp = os.getToken();
-			    }
-
-			    *(OLumpName*)(info + handler->data1) = temp;
-			    break;
-		    }
-			case MITYPE_MUSICLUMPNAME: {
-			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
-
-				OLumpName temp;
-				if (os.getToken()[0] == '$')
-				{
-					// It is possible to pass a DeHackEd string
-					// prefixed by a $.
-					const OString& s = GStrings(os.getToken().c_str() + 1);
-					if (s.empty())
-					{
-						I_Error("Unknown lookup string \"%s\"", s.c_str());
-					}
-	
-					// Music lumps in the stringtable do not begin
-					// with a D_, so we must add it.
-					char lumpname[9];
-					snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-					temp = lumpname;
-				}
-				else
-				{
-				    temp = os.getToken();
-				}
-
-				*(OLumpName*)(info + handler->data1) = temp;
-				break;
-			}
-			case MITYPE_SKY:
-				if (newMapInfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-					MustGetString(os); // Texture name
-				    *(OLumpName*)(info + handler->data1) = os.getToken();
-					SkipUnknownParams(os);
-				}
-				else
-				{
-					MustGetString(os); // get texture name;
-				    *(OLumpName*)(info + handler->data1) = os.getToken();
-					MustGet<float>(os); // get scroll speed
-					// if (HexenHack)
-					//{
-					//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
-					//}
-					// else
-					//{
-					//	*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float *
-					//65536.0f);
-					//}
-				}
-				break;
-	
-			case MITYPE_SETFLAG:
-				flags |= handler->data1;
-				break;
-	
-			case MITYPE_SCFLAGS:
-				flags = (flags & handler->data2) | handler->data1;
-				break;
-	
-			case MITYPE_CLUSTER:
-			    ParseMapInfoHelper<int>(os, newMapInfoStack > 0);
-				
-				*((int*)(info + handler->data1)) = GetToken<int>(os);
-				if (HexenHack)
-				{
-					ClusterInfos& clusters = getClusterInfos();
-					cluster_info_t& clusterH = clusters.findByCluster(GetToken<int>(os));
-					if (clusterH.cluster != 0)
-					{
-						clusterH.flags |= CLUSTER_HUB;
-					}
-				}
-				break;
-	
-			case MITYPE_STRING: {
-			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
-
-				char** text = (char**)(info + handler->data1);
-				free(*text);
-				*text = strdup(os.getToken().c_str());
-				break;
-			}
-	
-			case MITYPE_CSTRING:
-			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
-				
-				strncpy((char*)(info + handler->data1), os.getToken().c_str(),
-				        handler->data2);
-				*((char*)(info + handler->data1 + handler->data2)) = '\0';
-				break;
-				
-			case MITYPE_CLUSTERSTRING: {
-				char** text = (char**)(info + handler->data1);
-	
-				if (newMapInfoStack > 0)
-				{
-					MustGetStringName(os, "=");
-					MustGetString(os);
-					if (UpperCompareToken(os, "lookup,"))
-					{
-						MustGetString(os);
-						const OString& s = GStrings(os.getToken());
-						if (s.empty())
-						{
-							I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
-						}
-						free(*text);
-						*text = strdup(s.c_str());
-					}
-					else
-					{
-						// One line per string.
-						std::string ctext;
-						os.unScan();
-						do
-						{
-							MustGetString(os);
-							ctext += os.getToken();
-							ctext += "\n";
-							os.scan();
-						} while (os.compareToken(","));
-						os.unScan();
-	
-						// Trim trailing newline.
-						if (ctext.length() > 0)
-						{
-							ctext.resize(ctext.length() - 1);
-						}
-	
-						free(*text);
-						*text = strdup(ctext.c_str());
-					}
-				}
-				else
-				{
-					MustGetString(os);
-					if (UpperCompareToken(os, "lookup"))
-					{
-						MustGetString(os);
-						const OString& s = GStrings(os.getToken());
-						if (s.empty())
-						{
-							I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
-						}
-	
-						free(*text);
-						*text = strdup(s.c_str());
-					}
-					else
-					{
-						free(*text);
-						*text = strdup(os.getToken().c_str());
-					}
-				}
-				break;
-			}
-			}
-		}
-	
-		if (tinfo == NULL)
-		{
-			return;
-		}
-	
-		switch (tinfo->tag)
-		{
-		case tagged_info_t::LEVEL:
-			tinfo->level->flags = flags;
-			break;
-		case tagged_info_t::CLUSTER:
-			tinfo->cluster->flags = flags;
-			break;
-		}
-	}
-
-	// todo: parse episode info like the others?
+	// todo: parse episode info like the others? (but how?)
 	void ParseEpisodeInfo(OScanner& os)
 	{
 		int new_mapinfo = false; // is int instead of bool for template purposes
@@ -2063,7 +1664,7 @@ namespace
 		level_pwad_info_t defaultinfo;
 		SetLevelDefaults(&defaultinfo);
 	
-		const char* buffer = (char*)W_CacheLumpNum(lump, PU_STATIC);
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 	
 		OScannerConfig config = {
 		    lumpname, // lumpName
@@ -2079,7 +1680,7 @@ namespace
 				SetLevelDefaults(&defaultinfo);
 				
 				MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
-				ParseMapInfoLower_New<level_pwad_info_t>(os, defaultsetter);
+				ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
 			}
 			else if (UpperCompareToken(os, "map"))
 			{
@@ -2129,7 +1730,7 @@ namespace
 				}
 
 				MapInfoDataSetter<level_pwad_info_t> setter(info);
-				ParseMapInfoLower_New<level_pwad_info_t>(os, setter);
+				ParseMapInfoLower<level_pwad_info_t>(os, setter);
 	
 				// If the level info was parsed and no levelnum was applied,
 				// try and synthesize one from the level name.
@@ -2149,10 +1750,9 @@ namespace
 				        : clusters.create();
 	
 				info.cluster = GetToken<int>(os);
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::CLUSTER;
-				tinfo.cluster = &info;
-				ParseMapInfoLower(ClusterHandlers, MapInfoClusterLevel, &tinfo, 0, os);
+
+				MapInfoDataSetter<cluster_info_t> setter(info);
+			    ParseMapInfoLower<cluster_info_t>(os, setter);
 			}
 			else if (UpperCompareToken(os, "episode"))
 			{
@@ -2171,7 +1771,7 @@ namespace
 				MustGetString(os); // Name
 
 				MapInfoDataSetter<> setter;
-				ParseMapInfoLower_New<>(os, setter);
+				ParseMapInfoLower<>(os, setter);
 			}
 			else if (UpperCompareToken(os, "clearskills"))
 			{
@@ -2187,13 +1787,13 @@ namespace
 				MustGetString(os); // Name
 
 				MapInfoDataSetter<> setter;
-			    ParseMapInfoLower_New<>(os, setter);
+			    ParseMapInfoLower<>(os, setter);
 			}
 			else if (UpperCompareToken(os, "automap"))
 			{
 				// Not implemented
 				MapInfoDataSetter<> setter;
-			    ParseMapInfoLower_New<>(os, setter);
+			    ParseMapInfoLower<>(os, setter);
 			}
 			else
 			{
