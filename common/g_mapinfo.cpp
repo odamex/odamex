@@ -1219,7 +1219,7 @@ namespace
 
 	
 	template <typename T>
-    void ParseMapinfoHelper(OScanner& os, bool doEquals)
+    void ParseMapInfoHelper(OScanner& os, bool doEquals)
     {
 	    if (doEquals)
 	    {
@@ -1230,53 +1230,59 @@ namespace
     }
 
 	template <>
-    void ParseMapinfoHelper<void>(OScanner& os, bool doEquals)
+    void ParseMapInfoHelper<void>(OScanner& os, bool doEquals)
 	{
 		// do nothing
 	}
 
-	///////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////
 	/// MapInfo type functions
 
 	// Eats the next block and does nothing with the data
-	void MIType_EatNext(OScanner& os, bool doEquals)
+    void MIType_EatNext(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
     {
-	    ParseMapinfoHelper<std::string>(os, doEquals);
+	    ParseMapInfoHelper<std::string>(os, doEquals);
     }
 
 	// Sets the inputted data as an int
-    void MIType_Int(OScanner& os, bool doEquals)
+    void MIType_Int(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                    unsigned int flags2)
     {
-	    ParseMapinfoHelper<int>(os, doEquals);
+	    ParseMapInfoHelper<int>(os, doEquals);
 
-	    //*((int*)(info + handler->data1)) = GetToken<int>(os);
+	    *static_cast<int*>(data) = GetToken<int>(os);
     }
 
 	// Sets the inputted data as a float
-    void MIType_Float(OScanner& os, bool doEquals)
+    void MIType_Float(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
     {
-	    ParseMapinfoHelper<float>(os, doEquals);
+	    ParseMapInfoHelper<float>(os, doEquals);
 
-	    //*((float*)(info + handler->data1)) = GetToken<float>(os);
+	    *static_cast<float*>(data) = GetToken<float>(os);
     }
 
 	// Sets the inputted data as a color
-    void MIType_Color(OScanner& os, bool doEquals)
+    void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
     {
-	    ParseMapinfoHelper<std::string>(os, doEquals);
+	    ParseMapInfoHelper<std::string>(os, doEquals);
 
-	    /*argb_t color(V_GetColorFromString(os.getToken()));
-	    uint8_t* ptr = (uint8_t*)(info + handler->data1);
+	    argb_t color(V_GetColorFromString(os.getToken()));
+	    uint8_t* ptr = static_cast<uint8_t*>(data);
 	    ptr[0] = color.geta();
 	    ptr[1] = color.getr();
 	    ptr[2] = color.getg();
-	    ptr[3] = color.getb();*/
+	    ptr[3] = color.getb();
     }
 
 	// Sets the inputted data as an OLumpName map name
-    void MIType_MapName(OScanner& os, bool doEquals)
+    void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
     {
-	    ParseMapinfoHelper<OLumpName>(os, doEquals);
+	    ParseMapInfoHelper<OLumpName>(os, doEquals);
 
 	    char map_name[9];
 	    strncpy(map_name, os.getToken().c_str(), 8);
@@ -1287,23 +1293,24 @@ namespace
 		    sprintf(map_name, "MAP%02d", map);
 	    }
 
-	    //*(OLumpName*)(info + handler->data1) = map_name;
+	    *static_cast<OLumpName*>(data) = map_name;
     }
 
 	// Sets the inputted data as an OLumpName
-    void MIType_LumpName(OScanner& os, bool doEquals)
+    void MIType_LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                         unsigned int flags2)
     {
-	    ParseMapinfoHelper<OLumpName>(os, doEquals);
+	    ParseMapInfoHelper<OLumpName>(os, doEquals);
 
-	    //*(OLumpName*)(info + handler->data1) = os.getToken();
+	    *static_cast<OLumpName*>(data) = os.getToken();
     }
 
 	// Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
-    void MIType_$LumpName(OScanner& os, bool doEquals)
+    void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                          unsigned int flags2)
     {
-	    ParseMapinfoHelper<std::string>(os, doEquals);
-
-	    OLumpName temp;
+	    ParseMapInfoHelper<std::string>(os, doEquals);
+		
 	    if (os.getToken()[0] == '$')
 	    {
 		    // It is possible to pass a DeHackEd string
@@ -1313,20 +1320,19 @@ namespace
 		    {
 			    I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
 		    }
-		    temp = s;
+		    *static_cast<OLumpName*>(data) = s;
 	    }
 	    else
 	    {
-		    temp = os.getToken();
+		    *static_cast<OLumpName*>(data) = os.getToken();
 	    }
-
-	    //*(OLumpName*)(info + handler->data1) = temp;
     }
 
 	// Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName (Music variant)
-    void MIType_MusicLumpName(OScanner& os, bool doEquals)
+    void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                              unsigned int flags2)
     {
-	    ParseMapinfoHelper<std::string>(os, doEquals);
+	    ParseMapInfoHelper<std::string>(os, doEquals);
 
 	    OLumpName temp;
 	    if (os.getToken()[0] == '$')
@@ -1343,30 +1349,29 @@ namespace
 		    // with a D_, so we must add it.
 		    char lumpname[9];
 		    snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-		    temp = lumpname;
+		    *static_cast<OLumpName*>(data) = lumpname;
 	    }
 	    else
 	    {
-		    temp = os.getToken();
+		    *static_cast<OLumpName*>(data) = os.getToken();
 	    }
-
-	    //*(OLumpName*)(info + handler->data1) = temp;
     }
 
 	// Sets the sky texture with an OLumpName
-    void MIType_Sky(OScanner& os, bool doEquals)
+    void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                    unsigned int flags2)
     {
 	    if (doEquals)
 		{
 			MustGetStringName(os, "=");
 			MustGetString(os); // Texture name
-		    //*(OLumpName*)(info + handler->data1) = os.getToken();
+		    *static_cast<OLumpName*>(data) = os.getToken();
 			SkipUnknownParams(os);
 		}
 		else
 		{
 			MustGetString(os); // get texture name;
-		    //*(OLumpName*)(info + handler->data1) = os.getToken();
+		    *static_cast<OLumpName*>(data) = os.getToken();
 			MustGet<float>(os); // get scroll speed
 			/*if (HexenHack)
 			{
@@ -1380,23 +1385,26 @@ namespace
     }
 
 	// Sets a flag
-    void MIType_SetFlag(OScanner& os, bool doEquals)
+    void MIType_SetFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
     {
-	    // flags |= handler->data1;
+	    *static_cast<DWORD *>(data) |= flags;
     }
 
 	// Sets an SC flag
-    void MIType_SCFlags(OScanner& os, bool doEquals)
+    void MIType_SCFlags(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
     {
-	    // flags = (flags & handler->data2) | handler->data1;
+	    *static_cast<DWORD*>(data) = (*static_cast<DWORD *>(data) & flags2) | flags;
     }
 
 	// Sets a cluster
-    void MIType_Cluster(OScanner& os, bool doEquals)
+    void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
     {
-	    ParseMapinfoHelper<int>(os, doEquals);
+	    ParseMapInfoHelper<int>(os, doEquals);
 
-	    //*((int*)(info + handler->data1)) = GetToken<int>(os);
+	    *static_cast<int*>(data) = GetToken<int>(os);
 	    if (HexenHack)
 	    {
 		    ClusterInfos& clusters = getClusterInfos();
@@ -1409,10 +1417,10 @@ namespace
     }
 
 	// Sets a cluster string
-    void MIType_ClusterString(OScanner& os, bool doEquals)
+    void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                              unsigned int flags2)
     {
-	    char** text = NULL; // (char**)(info + handler->data1);
-	    return;
+	    char** text = static_cast<char**>(data);
 		
 	    if (doEquals)
 	    {
@@ -1476,194 +1484,117 @@ namespace
 	    }
     }
 
-	// Sets a compatibility flag
-    void MIType_SetCompatFlag(OScanner& os, bool doEquals)
-    {
-	    // todo
-    }
+	//////////////////////////////////////////////////////////////////////
+    /// MapInfoData
 
-	typedef std::list<std::pair<const char*, void(*)(OScanner&, bool)>> MapInfoData;
+	typedef void (*MITypeFunction)(OScanner&, bool, void*, unsigned int, unsigned int);
 
-	MapInfoData MapInfoMapContent =
+	// data structure containing all of the information needed to set a value from mapinfo
+	struct MapInfoData
 	{
-		{"levelnum",				  MIType_Int},
-		{"next",					  MIType_MapName},
-        {"secretnext",				  MIType_MapName},
-		{"cluster",					  MIType_Cluster},
-		{"sky1",					  MIType_Sky},
-		{"sky2",					  MIType_Sky},
-		{"fade",					  MIType_Color},
-		{"outsidefog",				  MIType_Color},
-        {"titlepatch",				  MIType_LumpName},
-		{"par",						  MIType_Int},
-        {"music",					  MIType_MusicLumpName},
-		{"nointermission",			  MIType_SetFlag},
-		{"doublesky",				  MIType_SetFlag},
-		{"nosoundclipping",			  MIType_SetFlag},
-		{"allowmonstertelefrags",	  MIType_SetFlag},
-		{"map07special",			  MIType_SetFlag},
-		{"baronspecial",			  MIType_SetFlag},
-		{"cyberdemonspecial",		  MIType_SetFlag},
-		{"spidermastermindspecial",	  MIType_SetFlag},
-		{"specialaction_exitlevel",	  MIType_SCFlags},
-		{"specialaction_opendoor",	  MIType_SCFlags},
-		{"specialaction_lowerfloor",  MIType_SCFlags},
-		{"lightning",				  NULL},
-		{"fadetable",				  MIType_LumpName},
-		{"evenlighting",			  MIType_SetFlag},
-		{"noautosequences",			  MIType_SetFlag},
-		{"forcenoskystretch",		  MIType_SetFlag},
-		{"allowfreelook",			  MIType_SCFlags},
-		{"nofreelook",				  MIType_SCFlags},
-		{"allowjump",				  MIType_SCFlags},
-		{"nojump",					  MIType_SCFlags},
-		{"cdtrack",					  MIType_EatNext},
-		{"cd_start_track",			  MIType_EatNext},
-		{"cd_end1_track",			  MIType_EatNext},
-		{"cd_end2_track",			  MIType_EatNext},
-		{"cd_end3_track",			  MIType_EatNext},
-		{"cd_intermission_track",	  MIType_EatNext},
-		{"cd_title_track",			  MIType_EatNext},
-		{"warptrans",				  MIType_EatNext},
-		{"gravity",					  MIType_Float},
-		{"aircontrol",				  MIType_Float},
-		{"islobby",					  MIType_SetFlag},
-		{"lobby",					  MIType_SetFlag},
-		{"nocrouch",				  NULL},
-		{"intermusic",				  MIType_EatNext},
-		{"par",						  MIType_EatNext},
-		{"sucktime",				  MIType_EatNext},
-	    {"enterpic",				  MIType_EatNext},
-	    {"exitpic",					  MIType_EatNext},
-	    {"interpic",				  MIType_EatNext},
-		{"translator",				  MIType_EatNext},
-		{"compat_shorttex",			  MIType_EatNext},
-		{"compat_limitpain",		  MIType_EatNext},
-	    {"compat_dropoff",			  MIType_SetCompatFlag},
-		{"compat_trace",			  MIType_EatNext},
-		{"compat_boomscroll",		  MIType_EatNext},
-		{"compat_sectorsounds",		  MIType_EatNext},
-		{"compat_nopassover", 		  MIType_SetFlag},
+	    const char* name;
+	    MITypeFunction fn;
+	    void* data;
+	    unsigned int flags;
+	    unsigned int flags2;
+
+		MapInfoData
+		(
+			const char* _name,
+			MITypeFunction _fn = NULL,
+			void* _data = NULL,
+			unsigned int _flags = 0,
+			unsigned int _flags2 = 0
+		)
+	        : name(_name), fn(_fn), data(_data), flags(_flags), flags2(_flags2)
+	    {
+	    }
 	};
 
-	MapInfoHandler MapHandlers2[] =
+	// container holding all MapInfoData types
+	typedef std::list<MapInfoData> MapInfoDataContainer;
+
+	// base class for MapInfoData
+	template <typename T>
+	struct MapInfoDataSetter
+    {
+	    MapInfoDataContainer mapInfoDataContainer;
+		
+	    MapInfoDataSetter(T&)
+	    {
+		    I_FatalError("MapInfoDataSetter templated with undefined parameter");
+	    }
+    };
+
+	// level_pwad_info_t
+	template <>
+	struct MapInfoDataSetter<level_pwad_info_t>
 	{
-		// levelnum <levelnum>
-		{ MITYPE_INT, lioffset(levelnum), 0 },
-		// next <maplump>
-		{ MITYPE_MAPNAME, lioffset(nextmap), 0 },
-		// secretnext <maplump>
-		{ MITYPE_MAPNAME, lioffset(secretmap), 0 },
-		// cluster <number>
-		{ MITYPE_CLUSTER, lioffset(cluster), 0 },
-		// sky1 <texture> <scrollspeed>
-		{ MITYPE_SKY, lioffset(skypic), 0 },
-		// sky2 <texture> <scrollspeed>
-		{ MITYPE_SKY, lioffset(skypic2), 0 },
-		// fade <color>
-		{ MITYPE_COLOR, lioffset(fadeto_color), 0 },
-		// outsidefog <color>
-		{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
-		// titlepatch <patch>
-		{ MITYPE_OLUMPNAME, lioffset(pname), 0 },
-		// par <partime>
-		{ MITYPE_INT, lioffset(partime), 0 },
-		// music <musiclump>
-		{ MITYPE_MUSICLUMPNAME, lioffset(music), 0 },
-		// nointermission
-		{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
-		// doublesky
-		{ MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0 },
-		// nosoundclipping
-		{ MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0 },
-		// allowmonstertelefrags
-		{ MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0 },
-		// map07special
-		{ MITYPE_SETFLAG, LEVEL_MAP07SPECIAL, 0 },
-		// baronspecial
-		{ MITYPE_SETFLAG, LEVEL_BRUISERSPECIAL, 0 },
-		// cyberdemonspecial
-		{ MITYPE_SETFLAG, LEVEL_CYBORGSPECIAL, 0 },
-		// spidermastermindspecial
-		{ MITYPE_SETFLAG, LEVEL_SPIDERSPECIAL, 0 },
-		// specialaction_exitlevel
-		{ MITYPE_SCFLAGS, 0, ~LEVEL_SPECACTIONSMASK },
-		// specialaction_opendoor
-		{ MITYPE_SCFLAGS, LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
-		// specialaction_lowerfloor
-		{ MITYPE_SCFLAGS, LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
-		// lightning
-		{ MITYPE_IGNORE, 0, 0 },
-		// fadetable <colormap>
-		{ MITYPE_OLUMPNAME, lioffset(fadetable), 0 },
-		// evenlighting
-		{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
-		// noautosequences
-		{ MITYPE_SETFLAG, LEVEL_SNDSEQTOTALCTRL, 0 },
-		// forcenoskystretch
-		{ MITYPE_SETFLAG, LEVEL_FORCENOSKYSTRETCH, 0 },
-		// allowfreelook
-		{ MITYPE_SCFLAGS, LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
-		// nofreelook
-		{ MITYPE_SCFLAGS, LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
-		// allowjump
-		{ MITYPE_SCFLAGS, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-		// nojump
-		{ MITYPE_SCFLAGS, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-		// cdtrack <track number>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_start_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_end1_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_end2_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_end3_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_intermission_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// cd_title_track ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// warptrans ???
-		{ MITYPE_EATNEXT, 0, 0 },
-		// gravity <amount>
-		{ MITYPE_FLOAT, lioffset(gravity), 0 },
-		// aircontrol <amount>
-		{ MITYPE_FLOAT, lioffset(aircontrol), 0 },
-		// islobby
-		{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
-		// lobby
-		{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
-		// nocrouch
-		{ MITYPE_IGNORE, 0, 0 },
-		// intermusic <musicname>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// par <partime>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// sucktime <value>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// enterpic <$pic>
-	    { MITYPE_EATNEXT, 0, 0 },
-		// exitpic <$pic>
-	    { MITYPE_EATNEXT, 0, 0 },
-		// interpic <$pic>
-	    { MITYPE_EATNEXT, 0, 0 },
-		// translator <value>
-		{ MITYPE_EATNEXT, 0, 0 },
-		// compat_shorttex <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_limitpain <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_dropoff <value>
-	    {MITYPE_SETCOMPATFLAG, LEVEL_COMPAT_DROPOFF, 0},
-	    // compat_trace <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_boomscroll <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_sectorsounds <value>
-	    {MITYPE_EATNEXT, 0, 0},
-	    // compat_nopassover <value>
-	    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
+	    MapInfoDataContainer mapInfoDataContainer;
+		
+	    MapInfoDataSetter(level_pwad_info_t& ref)
+	    {
+		    mapInfoDataContainer = {
+				MapInfoData("levelnum",					&MIType_Int,			&ref.levelnum),
+				MapInfoData("next",						&MIType_MapName,		&ref.nextmap),
+			    MapInfoData("secretnext",				&MIType_MapName,		&ref.secretmap),
+				MapInfoData("cluster",					&MIType_Cluster,		&ref.cluster),
+				MapInfoData("sky1",						&MIType_Sky,			&ref.skypic),
+				MapInfoData("sky2",						&MIType_Sky,			&ref.skypic2),
+				MapInfoData("fade",						&MIType_Color,			&ref.fadeto_color),
+				MapInfoData("outsidefog",				&MIType_Color,			&ref.outsidefog_color),
+			    MapInfoData("titlepatch",				&MIType_LumpName,		&ref.pname),
+				MapInfoData("par",						&MIType_Int,			&ref.partime),
+			    MapInfoData("music",					&MIType_MusicLumpName,	&ref.music),
+				MapInfoData("nointermission",			&MIType_SetFlag,		&ref.flags,				LEVEL_NOINTERMISSION),
+				MapInfoData("doublesky",				&MIType_SetFlag,		&ref.flags,				LEVEL_DOUBLESKY),
+				MapInfoData("nosoundclipping",			&MIType_SetFlag,		&ref.flags,				LEVEL_NOSOUNDCLIPPING),
+				MapInfoData("allowmonstertelefrags",	&MIType_SetFlag,		&ref.flags,				LEVEL_MONSTERSTELEFRAG),
+				MapInfoData("map07special",				&MIType_SetFlag,		&ref.flags,				LEVEL_MAP07SPECIAL),
+				MapInfoData("baronspecial",				&MIType_SetFlag,		&ref.flags,				LEVEL_BRUISERSPECIAL),
+				MapInfoData("cyberdemonspecial",		&MIType_SetFlag,		&ref.flags,				LEVEL_CYBORGSPECIAL),
+				MapInfoData("spidermastermindspecial",	&MIType_SetFlag,		&ref.flags,				LEVEL_SPIDERSPECIAL),
+				MapInfoData("specialaction_exitlevel",	&MIType_SCFlags,		&ref.flags,				0,							~LEVEL_SPECACTIONSMASK),
+				MapInfoData("specialaction_opendoor",	&MIType_SCFlags,		&ref.flags,				LEVEL_SPECOPENDOOR,			~LEVEL_SPECACTIONSMASK),
+				MapInfoData("specialaction_lowerfloor", &MIType_SCFlags,		&ref.flags,				LEVEL_SPECLOWERFLOOR,		~LEVEL_SPECACTIONSMASK),
+				MapInfoData("lightning"),
+				MapInfoData("fadetable",				&MIType_LumpName,		&ref.fadetable),
+				MapInfoData("evenlighting",				&MIType_SetFlag,		&ref.flags,				LEVEL_EVENLIGHTING),
+				MapInfoData("noautosequences",			&MIType_SetFlag,		&ref.flags,				LEVEL_SNDSEQTOTALCTRL),
+				MapInfoData("forcenoskystretch",		&MIType_SetFlag,		&ref.flags,				LEVEL_FORCENOSKYSTRETCH),
+				MapInfoData("allowfreelook",			&MIType_SCFlags,		&ref.flags,				LEVEL_FREELOOK_YES,			~LEVEL_FREELOOK_NO),
+				MapInfoData("nofreelook",				&MIType_SCFlags,		&ref.flags,				LEVEL_FREELOOK_NO,			~LEVEL_FREELOOK_YES),
+				MapInfoData("allowjump",				&MIType_SCFlags,		&ref.flags,				LEVEL_JUMP_YES,				~LEVEL_JUMP_NO),
+				MapInfoData("nojump",					&MIType_SCFlags,		&ref.flags,				LEVEL_JUMP_NO,				~LEVEL_JUMP_YES),
+				MapInfoData("cdtrack",					&MIType_EatNext),
+				MapInfoData("cd_start_track",			&MIType_EatNext),
+				MapInfoData("cd_end1_track",			&MIType_EatNext),
+				MapInfoData("cd_end2_track",			&MIType_EatNext),
+				MapInfoData("cd_end3_track",			&MIType_EatNext),
+				MapInfoData("cd_intermission_track",	&MIType_EatNext),
+				MapInfoData("cd_title_track",			&MIType_EatNext),
+				MapInfoData("warptrans",				&MIType_EatNext),
+				MapInfoData("gravity",					&MIType_Float,			&ref.gravity),
+				MapInfoData("aircontrol",				&MIType_Float,			&ref.aircontrol),
+				MapInfoData("islobby",					&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL),
+				MapInfoData("lobby",					&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL),
+				MapInfoData("nocrouch"),
+				MapInfoData("intermusic",				&MIType_EatNext),
+				MapInfoData("par",						&MIType_EatNext),
+				MapInfoData("sucktime",					&MIType_EatNext),
+			    MapInfoData("enterpic",					&MIType_EatNext),
+			    MapInfoData("exitpic",					&MIType_EatNext),
+			    MapInfoData("interpic",					&MIType_EatNext),
+				MapInfoData("translator",				&MIType_EatNext),
+				MapInfoData("compat_shorttex",			&MIType_EatNext),
+				MapInfoData("compat_limitpain",			&MIType_EatNext),
+			    MapInfoData("compat_dropoff",			&MIType_SetFlag,		&ref.flags,				LEVEL_COMPAT_DROPOFF),
+				MapInfoData("compat_trace",				&MIType_EatNext),
+				MapInfoData("compat_boomscroll",		&MIType_EatNext),
+				MapInfoData("compat_sectorsounds",		&MIType_EatNext),
+				MapInfoData("compat_nopassover", 		&MIType_SetFlag,		&ref.flags,				LEVEL_COMPAT_NOPASSOVER),
+			};
+	    }
 	};
 
 	//
@@ -1674,31 +1605,32 @@ namespace
     // to parse the block anyway, even if you throw away the values.  This is
     // done by passing in a strings pointer, and leaving the others NULL.
     //
-    void ParseMapInfoLower_New(OScanner& os)
+	template <typename T>
+    void ParseMapInfoLower_New(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 	{
 	    // 0 if old mapinfo, positive number if new MAPINFO, the exact
 	    // number represents current brace depth.
-	    int newMapinfoStack = 0;
+	    int newMapInfoStack = 0;
 
 		while (os.scan())
 	    {
 		    if (os.compareToken("{"))
 		    {
 			    // Detected new-style MAPINFO
-			    newMapinfoStack++;
+			    newMapInfoStack++;
 			    continue;
 		    }
 		    if (os.compareToken("}"))
 		    {
-			    newMapinfoStack--;
-			    if (newMapinfoStack <= 0)
+			    newMapInfoStack--;
+			    if (newMapInfoStack <= 0)
 			    {
 				    // MAPINFO block is done
 				    break;
 			    }
 		    }
 
-		    if (newMapinfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
+		    if (newMapInfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
 		        // "cluster" is a valid map block type and is also
 		        // a valid top-level type.
 		        !UpperCompareToken(os, "cluster"))
@@ -1708,22 +1640,24 @@ namespace
 			    break;
 		    }
 
+			MapInfoDataContainer& mapInfoDataContainer = mapInfoDataSetter.mapInfoDataContainer;
+
 			// find the matching string and use its corresponding function
-			MapInfoData::iterator it = MapInfoMapContent.begin();
-			for (; it != MapInfoMapContent.end(); ++it)
+		    MapInfoDataContainer::iterator it = mapInfoDataContainer.begin();
+		    for (; it != mapInfoDataContainer.end(); ++it)
 			{
-			    if (UpperCompareToken(os, it->first))
+			    if (UpperCompareToken(os, it->name))
 			    {
-				    if (it->second)
+				    if (it->fn)
 				    {
-					    it->second(os, newMapinfoStack > 0);
+					    it->fn(os, newMapInfoStack > 0, it->data, it->flags, it->flags2);
 				    }
 			    }
 			}
 			
-			if (it == MapInfoMapContent.end())
+			if (it == mapInfoDataContainer.end())
 			{
-				if (newMapinfoStack <= 0)
+				if (newMapInfoStack <= 0)
 				{
 					// Old MAPINFO is up a creek, we need to be
 					// able to parse all types even if we can't
@@ -1763,7 +1697,7 @@ namespace
 	{
 		// 0 if old mapinfo, positive number if new MAPINFO, the exact
 		// number represents current brace depth.
-		int newMapinfoStack = 0;
+		int newMapInfoStack = 0;
 	
 		byte* info = NULL;
 		if (tinfo)
@@ -1777,20 +1711,20 @@ namespace
 			if (os.compareToken("{"))
 			{
 				// Detected new-style MAPINFO
-				newMapinfoStack++;
+				newMapInfoStack++;
 				continue;
 			}
 			if (os.compareToken("}"))
 			{
-				newMapinfoStack--;
-				if (newMapinfoStack <= 0)
+				newMapInfoStack--;
+				if (newMapInfoStack <= 0)
 				{
 					// MAPINFO block is done
 					break;
 				}
 			}
 	
-			if (newMapinfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
+			if (newMapInfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
 			    // "cluster" is a valid map block type and is also
 			    // a valid top-level type.
 			    !UpperCompareToken(os, "cluster"))
@@ -1803,7 +1737,7 @@ namespace
 			const int entry = MatchString(os, strings);
 			if (entry == G_NOMATCH)
 			{
-				if (newMapinfoStack <= 0)
+				if (newMapInfoStack <= 0)
 				{
 					// Old MAPINFO is up a creek, we need to be
 					// able to parse all types even if we can't
@@ -1826,24 +1760,24 @@ namespace
 				break;
 	
 			case MITYPE_EATNEXT:
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
 				
 				break;
 	
 			case MITYPE_INT:
-			    ParseMapinfoHelper<int>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<int>(os, newMapInfoStack > 0);
 				
 				*((int*)(info + handler->data1)) = GetToken<int>(os);
 				break;
 	
 			case MITYPE_FLOAT:
-			    ParseMapinfoHelper<float>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<float>(os, newMapInfoStack > 0);
 				
 				*((float*)(info + handler->data1)) = GetToken<float>(os);
 				break;
 	
 			case MITYPE_COLOR: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
 				
 				argb_t color(V_GetColorFromString(os.getToken()));
 				uint8_t* ptr = (uint8_t*)(info + handler->data1);
@@ -1854,7 +1788,7 @@ namespace
 				break;
 			}
 			case MITYPE_MAPNAME:
-			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<OLumpName>(os, newMapInfoStack > 0);
 	
 				char map_name[9];
 				strncpy(map_name, os.getToken().c_str(), 8);
@@ -1869,13 +1803,13 @@ namespace
 				break;
 	
 			case MITYPE_OLUMPNAME:
-			    ParseMapinfoHelper<OLumpName>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<OLumpName>(os, newMapInfoStack > 0);
 				
 				*(OLumpName*)(info + handler->data1) = os.getToken();
 			    break;
 	
 			case MITYPE_$LUMPNAME: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
 
 			    OLumpName temp;
 			    if (os.getToken()[0] == '$')
@@ -1898,7 +1832,7 @@ namespace
 			    break;
 		    }
 			case MITYPE_MUSICLUMPNAME: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
 
 				OLumpName temp;
 				if (os.getToken()[0] == '$')
@@ -1926,7 +1860,7 @@ namespace
 				break;
 			}
 			case MITYPE_SKY:
-				if (newMapinfoStack > 0)
+				if (newMapInfoStack > 0)
 				{
 					MustGetStringName(os, "=");
 					MustGetString(os); // Texture name
@@ -1959,7 +1893,7 @@ namespace
 				break;
 	
 			case MITYPE_CLUSTER:
-			    ParseMapinfoHelper<int>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<int>(os, newMapInfoStack > 0);
 				
 				*((int*)(info + handler->data1)) = GetToken<int>(os);
 				if (HexenHack)
@@ -1974,7 +1908,7 @@ namespace
 				break;
 	
 			case MITYPE_STRING: {
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
 
 				char** text = (char**)(info + handler->data1);
 				free(*text);
@@ -1983,7 +1917,7 @@ namespace
 			}
 	
 			case MITYPE_CSTRING:
-			    ParseMapinfoHelper<std::string>(os, newMapinfoStack > 0);
+			    ParseMapInfoHelper<std::string>(os, newMapInfoStack > 0);
 				
 				strncpy((char*)(info + handler->data1), os.getToken().c_str(),
 				        handler->data2);
@@ -1993,7 +1927,7 @@ namespace
 			case MITYPE_CLUSTERSTRING: {
 				char** text = (char**)(info + handler->data1);
 	
-				if (newMapinfoStack > 0)
+				if (newMapInfoStack > 0)
 				{
 					MustGetStringName(os, "=");
 					MustGetString(os);
@@ -2134,7 +2068,7 @@ namespace
 			}
 			else if (UpperCompareToken(os, "name"))
 			{
-				ParseMapinfoHelper<std::string>(os, new_mapinfo);
+				ParseMapInfoHelper<std::string>(os, new_mapinfo);
 				
 				if (picisgfx == false)
 				{
@@ -2143,20 +2077,20 @@ namespace
 			}
 			else if (UpperCompareToken(os, "lookup"))
 			{
-			    ParseMapinfoHelper<std::string>(os, new_mapinfo);
+			    ParseMapInfoHelper<std::string>(os, new_mapinfo);
 	
 				// Not implemented
 			}
 			else if (UpperCompareToken(os, "picname"))
 			{
-			    ParseMapinfoHelper<std::string>(os, new_mapinfo);
+			    ParseMapInfoHelper<std::string>(os, new_mapinfo);
 				
 				pic = os.getToken();
 				picisgfx = true;
 			}
 			else if (UpperCompareToken(os, "key"))
 			{
-			    ParseMapinfoHelper<std::string>(os, new_mapinfo);
+			    ParseMapInfoHelper<std::string>(os, new_mapinfo);
 				
 				key = os.getToken()[0];
 			}
@@ -2392,7 +2326,10 @@ namespace
 				tagged_info_t tinfo;
 				tinfo.tag = tagged_info_t::LEVEL;
 				tinfo.level = &info;
-				ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags, os);
+
+				MapInfoDataSetter<level_pwad_info_t> setter(info);
+				ParseMapInfoLower_New<level_pwad_info_t>(os, setter);
+				//ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags, os);
 	
 				// If the level info was parsed and no levelnum was applied,
 				// try and synthesize one from the level name.
