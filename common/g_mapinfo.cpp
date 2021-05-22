@@ -1308,7 +1308,7 @@ namespace
 			ENTRY4("lobby",						&MIType_SetFlag,		&ref.flags,				LEVEL_LOBBYSPECIAL)
 			ENTRY1("nocrouch")
 			ENTRY2("intermusic",				&MIType_EatNext)
-			ENTRY2("par",						&MIType_Int,			&ref.partime)
+			ENTRY3("par",						&MIType_Int,			&ref.partime)
 			ENTRY2("sucktime",					&MIType_EatNext)
 			ENTRY3("enterpic",					&MIType_LumpName,		&ref.enterpic) // todo: add intermission script support
 			ENTRY3("exitpic",					&MIType_LumpName,		&ref.exitpic)  // todo: add intermission script support
