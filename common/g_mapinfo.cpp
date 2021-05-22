@@ -1310,8 +1310,8 @@ namespace
 			ENTRY2("intermusic",				&MIType_EatNext)
 			ENTRY2("par",						&MIType_EatNext)
 			ENTRY2("sucktime",					&MIType_EatNext)
-			ENTRY2("enterpic",					&MIType_LumpName,		&ref.enterpic) // todo: add intermission script support
-			ENTRY2("exitpic",					&MIType_LumpName,		&ref.exitpic)  // todo: add intermission script support
+			ENTRY3("enterpic",					&MIType_LumpName,		&ref.enterpic) // todo: add intermission script support
+			ENTRY3("exitpic",					&MIType_LumpName,		&ref.exitpic)  // todo: add intermission script support
 			ENTRY2("interpic",					&MIType_EatNext)
 			ENTRY2("translator",				&MIType_EatNext)
 			ENTRY2("compat_shorttex",			&MIType_EatNext)
