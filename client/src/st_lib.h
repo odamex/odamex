@@ -65,7 +65,7 @@ struct st_number_s
 	bool*	on;
 
 	// list of patches for 0-9
-	patch_t**	p;
+	lumpHandle_t* p;
 
 	// user data
 	int data;
@@ -83,7 +83,7 @@ struct st_percent_s
 	st_number_t 		n;
 
 	// percent sign graphic
-	patch_t*			p;
+	lumpHandle_t p;
 
 };
 typedef struct st_percent_s st_percent_t;
@@ -107,7 +107,7 @@ struct st_multicon_s
 	bool*				on;
 
 	// list of icons
-	patch_t**			p;
+	lumpHandle_t* p;
 
 	// user data
 	int 				data;
@@ -136,7 +136,7 @@ struct st_binicon_s
 	bool*			on;
 
 
-	patch_t*			p;		// icon
+	lumpHandle_t		p;		// icon
 	int 				data;	// user data
 
 };
@@ -161,7 +161,7 @@ STlib_initNum
 ( st_number_t*			n,
   int					x,
   int					y,
-  patch_t** 			pl,
+  lumpHandle_t*			pl,
   int*					num,
   bool*				on,
   int					maxdigits );
@@ -175,10 +175,10 @@ STlib_initPercent
 ( st_percent_t* 		p,
   int					x,
   int					y,
-  patch_t** 			pl,
+  lumpHandle_t*			pl,
   int*					num,
   bool*				on,
-  patch_t*				percent );
+  lumpHandle_t			percent );
 
 
 void
@@ -193,7 +193,7 @@ STlib_initMultIcon
 ( st_multicon_t*		mi,
   int					x,
   int					y,
-  patch_t** 			il,
+  lumpHandle_t*			il,
   int*					inum,
   bool*				on );
 
@@ -209,7 +209,7 @@ STlib_initBinIcon
 ( st_binicon_t* 		b,
   int					x,
   int					y,
-  patch_t*				i,
+  lumpHandle_t			i,
   bool*				val,
   bool*				on );
 

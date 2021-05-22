@@ -282,39 +282,39 @@ static bool			st_armson;
 static bool			st_fragson;
 
 // main bar left
-static patch_t* 		sbar;
+static lumpHandle_t sbar;
 
 // 0-9, tall numbers
 // [RH] no longer static
-patch_t*		 		tallnum[10];
+lumpHandle_t tallnum[10];
 
 // tall % sign
 // [RH] no longer static
-patch_t*		 		tallpercent;
+lumpHandle_t tallpercent;
 
 // 0-9, short, yellow (,different!) numbers
-static patch_t* 		shortnum[10];
+static lumpHandle_t shortnum[10];
 
 // 3 key-cards, 3 skulls, [RH] 3 combined
-patch_t* 				keys[NUMCARDS+NUMCARDS/2];
+lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 
 // face status patches [RH] no longer static
-patch_t* 				faces[ST_NUMFACES];
+lumpHandle_t faces[ST_NUMFACES];
 
 // face background
-static patch_t* 		faceback;
+static lumpHandle_t faceback;
 
 // classic face background
-static patch_t*			faceclassic[4];
+static lumpHandle_t faceclassic[4];
 
  // main bar right
-static patch_t* 		armsbg;
+static lumpHandle_t armsbg;
 
 // score/flags
-static patch_t* 		flagsbg;
+static lumpHandle_t flagsbg;
 
 // weapon ownership patches
-static patch_t* 		arms[6][2];
+static lumpHandle_t arms[6][2];
 
 // ready-weapon widget
 static st_number_t		w_ready;
@@ -1242,15 +1242,15 @@ static void ST_refreshBackground()
 	stbar_surface->lock();
 
 	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-	stbar_canvas->DrawPatch(sbar, 0, 0);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar), 0, 0);
 
 	if (sv_gametype == GM_CTF)
 	{
-		stbar_canvas->DrawPatch(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX, ST_FLAGSBGY);
 	}
 	else if (sv_gametype == GM_COOP)
 	{
-		stbar_canvas->DrawPatch(armsbg, ST_ARMSBGX, ST_ARMSBGY);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX, ST_ARMSBGY);
 	}
 
 	if (multiplayer)
@@ -1260,11 +1260,13 @@ static void ST_refreshBackground()
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
 			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-			stbar_canvas->DrawTranslatedPatch(faceback, ST_FX, ST_FY);
+			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX,
+			                                  ST_FY);
 		}
 		else
 		{
-			stbar_canvas->DrawPatch(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
+			stbar_canvas->DrawPatch(
+			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX, ST_FY);
 		}
 	}
 
@@ -1335,7 +1337,7 @@ void ST_Drawer()
 }
 
 
-static patch_t *LoadFaceGraphic (char *name, int namespc)
+static lumpHandle_t LoadFaceGraphic(char* name, int namespc)
 {
 	char othername[9];
 	int lump;
@@ -1347,7 +1349,7 @@ static patch_t *LoadFaceGraphic (char *name, int namespc)
 		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
 		lump = W_GetNumForName (othername);
 	}
-	return W_CachePatch (lump, PU_STATIC);
+	return W_CachePatchHandle(lump, PU_STATIC);
 }
 
 static void ST_loadGraphics()
@@ -1363,28 +1365,28 @@ static void ST_loadGraphics()
 	for (i=0;i<10;i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 
 		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
-	tallpercent = W_CachePatch("STTPRCNT", PU_STATIC);
+	tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
 
 	// key cards
 	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = W_CachePatch(namebuf, PU_STATIC);
+		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
 	// arms background
-	armsbg = W_CachePatch("STARMS", PU_STATIC);
+	armsbg = W_CachePatchHandle("STARMS", PU_STATIC);
 
 	// flags background
-	flagsbg = W_CachePatch("STFLAGS", PU_STATIC);
+	flagsbg = W_CachePatchHandle("STFLAGS", PU_STATIC);
 
 	// arms ownership widgets
 	for (i=0;i<6;i++)
@@ -1392,7 +1394,7 @@ static void ST_loadGraphics()
 		sprintf(namebuf, "STGNUM%d", i+2);
 
 		// gray #
-		arms[i][0] = W_CachePatch(namebuf, PU_STATIC);
+		arms[i][0] = W_CachePatchHandle(namebuf, PU_STATIC);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1401,16 +1403,16 @@ static void ST_loadGraphics()
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = W_CachePatch("STFBANY", PU_STATIC);
+	faceback = W_CachePatchHandle("STFBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(namebuf, "STFB%d", i);
-		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
+		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = W_CachePatch("STBAR", PU_STATIC);
+	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
 
 	// face states
 	facenum = 0;
@@ -1455,37 +1457,37 @@ static void ST_unloadGraphics()
 	// unload the numbers, tall and short
 	for (i = 0; i < 10; i++)
 	{
-		Z_Discard(&::tallnum[i]);
-		Z_Discard(&::shortnum[i]);
+		::tallnum[i].clear();
+		::shortnum[i].clear();
 	}
 
 	// unload tall percent
-	Z_Discard(&::tallpercent);
+	::tallpercent.clear();
 
 	// unload arms background
-	Z_Discard(&::armsbg);
+	::armsbg.clear();
 
 	// unload flags background
-	Z_Discard(&::flagsbg);
+	::flagsbg.clear();
 
 	// unload gray #'s
 	for (i = 0; i < 6; i++)
 	{
-		Z_Discard(&::arms[i][0]);
+		::arms[i][0].clear();
 	}
 
 	// unload the key cards
 	for (i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		Z_Discard(&::keys[i]);
+		::keys[i].clear();
 	}
 
-	Z_Discard(&::sbar);
-	Z_Discard(&::faceback);
+	::sbar.clear();
+	::faceback.clear();
 
 	for (i = 0; i < ST_NUMFACES; i++)
 	{
-		Z_Discard(&::faces[i]);
+		::faces[i].clear();
 	}
 
 	// Note: nobody ain't seen no unloading
