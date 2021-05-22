@@ -1235,7 +1235,7 @@ namespace
 	typedef std::list<MapInfoData> MapInfoDataContainer;
 
 	// base class for MapInfoData; also used when there's no data to process (unimplemented blocks)
-	template <typename T = void>
+	template <typename T>
 	struct MapInfoDataSetter
     {
 	    MapInfoDataContainer mapInfoDataContainer;
@@ -1346,7 +1346,7 @@ namespace
     // to parse the block anyway, even if you throw away the values.  This is
     // done by passing in a strings pointer, and leaving the others NULL.
     //
-	template <typename T = void>
+	template <typename T>
     void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 	{
 	    // 0 if old mapinfo, positive number if new MAPINFO, the exact
@@ -1770,8 +1770,8 @@ namespace
 				// Not implemented
 				MustGetString(os); // Name
 
-				MapInfoDataSetter<> setter;
-				ParseMapInfoLower<>(os, setter);
+				MapInfoDataSetter<void> setter;
+				ParseMapInfoLower<void>(os, setter);
 			}
 			else if (UpperCompareToken(os, "clearskills"))
 			{
@@ -1786,14 +1786,14 @@ namespace
 				// Not implemented
 				MustGetString(os); // Name
 
-				MapInfoDataSetter<> setter;
-			    ParseMapInfoLower<>(os, setter);
+				MapInfoDataSetter<void> setter;
+			    ParseMapInfoLower<void>(os, setter);
 			}
 			else if (UpperCompareToken(os, "automap"))
 			{
 				// Not implemented
-				MapInfoDataSetter<> setter;
-			    ParseMapInfoLower<>(os, setter);
+				MapInfoDataSetter<void> setter;
+			    ParseMapInfoLower<void>(os, setter);
 			}
 			else
 			{
