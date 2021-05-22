@@ -833,7 +833,7 @@ void G_WorldDone (void)
 
 	const char *finaletext = NULL;
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
-	if (!strncmp (level.nextmap.c_str(), "EndGame", 7)) {
+	if (!strnicmp (level.nextmap.c_str(), "EndGame", 7)) {
 //		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme - what should happen on the server?
 		finaletext = thiscluster.exittext;
 	} else {

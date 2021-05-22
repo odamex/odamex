@@ -162,7 +162,11 @@ void F_StartFinale(finale_options_t& options)
 		::finalelump = gameinfo.finaleFlat;
 	}
 
-	if (options.text == NULL)
+	if (options.text)
+	{
+		::finaletext = options.text;
+	}
+	else
 	{
 		::finaletext = "In the quiet following your last battle,\n"
 			"you suddenly get the feeling that something is\n"
@@ -171,10 +175,6 @@ void F_StartFinale(finale_options_t& options)
 			"\n"
 			"No matter.  You ready your weapon and continue on \n"
 			"into the chaos.";
-	}
-	else
-	{
-		::finaletext = options.text;
 	}
 
 	::finalestage = 0;
@@ -228,7 +228,7 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap.c_str(), "EndGame", 7))
+				if (!strnicmp (level.nextmap.c_str(), "EndGame", 7))
 				{
 					if (level.nextmap[7] == 'C')
 					{

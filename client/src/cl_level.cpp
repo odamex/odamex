@@ -659,8 +659,8 @@ void G_WorldDone()
 
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
-	//options.music = thiscluster.messagemusic;
-	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.exittext;
+	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
+	
 	if (!level.interbackdrop.empty())
 	{
 		options.flat = level.interbackdrop.c_str();
@@ -683,7 +683,7 @@ void G_WorldDone()
 		options.text = (!level.intertext.empty()) ? level.intertext.c_str() : thiscluster.exittext;
 	}
 
-	if (!strncmp(level.nextmap.c_str(), "EndGame", 7))
+	if (!strnicmp(level.nextmap.c_str(), "EndGame", 7))
 	{
 		AM_Stop();
 		F_StartFinale(options);
