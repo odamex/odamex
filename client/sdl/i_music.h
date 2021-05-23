@@ -24,13 +24,17 @@
 #define __I_MUSIC_H__
 
 #include <SDL_mixer.h>
-#include "doomstat.h"
 
-typedef struct
+#include "doomstat.h"
+#include "m_memio.h"
+
+struct MusicHandler_t
 {
-    Mix_Music *Track;
-    SDL_RWops *Data;
-} MusicHandler_t;
+	Mix_Music* Track;
+	SDL_RWops* Data;
+	MEMFILE* Mem;
+	MusicHandler_t() : Track(NULL), Data(NULL), Mem(NULL) { }
+};
 
 typedef enum
 {
