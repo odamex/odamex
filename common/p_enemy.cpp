@@ -2309,12 +2309,10 @@ void A_Gibify(AActor *mo) // denis - squash thing
 //
 // A small set of highly-sought-after code pointers
 //
-
 void A_Spawn(AActor* mo)
 {
 	// Partial integration of A_Spawn.
 	// ToDo: Currently missing MBF's MF_FRIEND flag support!
-
 	if (mo->state->misc1)
 	{
 		AActor* newmobj;
@@ -2359,10 +2357,8 @@ void A_PlaySound(AActor* mo)
 
 void A_RandomJump(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, mo->state->misc1);
-	*/
+		P_SetMobjState(mo, (statenum_t)mo->state->misc1);
 }
 
 //
