@@ -106,11 +106,11 @@ const roundMonster_t R3_MONSTERS[] = {
     {RM_NORMAL, MT_CHAINGUY, 1.0f},
     {RM_NORMAL, MT_SERGEANT, 1.0f},
     {RM_NORMAL, MT_UNDEAD, 1.0f},
-    {RM_NORMAL, MT_PAIN, 1.0f},
+    {RM_NORMAL, MT_PAIN, 0.25f},
     {RM_NORMAL, MT_BRUISER, 1.0f},
     {RM_NORMAL, MT_BABY, 1.0f},
     {RM_NORMAL, MT_FATSO, 1.0f},
-    {RM_NORMAL, MT_VILE, 1.0f},
+    {RM_NORMAL, MT_VILE, 0.25f},
     {RM_BOSS, MT_CYBORG, 0.25f},
     {RM_BOSSONLY, MT_SPIDER, 1.0f},
     {RM_NULL}};
@@ -377,12 +377,18 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 			continue;
 
 		// Flying spawns have to spawn flying monsters.
-		if (type == ::TTYPE_HORDE_FLYING && !(info.flags & (MF_NOGRAVITY | MF_FLOAT)))
+		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
+		if (type == ::TTYPE_HORDE_FLYING && !isFlying)
 			continue;
 
-		// Snipers have to have a ranged attack.
+		// Snipers have to:
+		// - Have a ranged attack.
+		// - Not be flying.
+		// - Not be a boss monster for this round.
+		// - Be skinny enough to fit in a 64x64 square.
 		if (type == ::TTYPE_HORDE_SNIPER &&
-		    (info.missilestate == S_NULL || roundMon.mobj == MT_SKULL))
+		    (info.missilestate == S_NULL || isFlying || roundMon.monster != RM_NORMAL ||
+		     info.radius > (32 << FRACBITS)))
 			continue;
 
 		monsters.push_back(&roundMon);
@@ -408,6 +414,16 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 	}
 
 	// Figure out how many monsters we can spawn of our given type - at least one.
+	if (type == ::TTYPE_HORDE_SNIPER)
+	{
+		// ...unless it's a sniper, then we only spawn a single monster.
+		// If we spawn more, then monsters tend to get stuck on thin 64x64
+		// towers.  FIXME: Would be nice to detect if it's safe to spawn
+		// bigger monsters like Mancubi.
+		out.count = 1;
+		return true;
+	}
+
 	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
 	const int health = ::mobjinfo[out.type].spawnhealth;
 	const int upper = clamp(maxHealth, 1, 4);
@@ -847,7 +863,8 @@ void P_RunHordeTics()
 		if (emptys.size() > spawn::itemSpawns.size() / 2)
 		{
 			// Select a random spot.
-			spawn::SpawnPoint& point = emptys.at(P_RandomInt(emptys.size()));
+			size_t idx = P_RandomInt(emptys.size());
+			spawn::SpawnPoint& point = emptys.at(idx);
 			if (point.mo->target == NULL)
 			{
 				AActor* pack =
@@ -856,6 +873,10 @@ void P_RunHordeTics()
 
 				// Don't respawn the usual way.
 				pack->flags |= MF_DROPPED;
+
+				// Play the item respawn sound, so people can listen for it.
+				AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
+				S_Sound(pack, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 			}
 		}
 	}
