@@ -227,6 +227,8 @@ void DFloor::RunThink ()
 				}
 			}
 		}
+
+		P_SetFloorDestroy(this);
 	}
 }
 
