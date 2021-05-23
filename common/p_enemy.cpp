@@ -1646,7 +1646,14 @@ void A_Mushroom (AActor *actor)
 
 	A_Explode (actor);	// First make normal explosion
 
-	if(serverside)
+	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+	//
+	// THIS CODE BELOW CRASHES BECAUSE OF THINKERS!
+	// IT'S A SERIOUS BUG TO FIX!!
+	//
+	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+
+	/*if(serverside)
 	{
         // Now launch mushroom cloud
         for (i = -n; i <= n; i += 8)
@@ -1667,7 +1674,7 @@ void A_Mushroom (AActor *actor)
                 }
             }
         }
-	}
+	}*/
 }
 
 
