@@ -2342,11 +2342,10 @@ void A_Face(AActor* mo)
 
 void A_Scratch(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	mo->target && (A_FaceTarget(mo), P_CheckMeleeRange(mo)) ?
-		mo->state->misc2 ? S_StartSound(mo, mo->state->misc2) : (void)0,
+	mo->target && (A_FaceTarget(mo), P_CheckMeleeRange(mo)) ? mo->state->misc2 ? S_Sound(mo, CHAN_BODY, SoundMap[mo->state->misc2], 1, ATTN_NORM)
+	              : (void)0,
 		P_DamageMobj(mo->target, mo, mo, mo->state->misc1) : (void)0;
-	*/
+	
 }
 
 void A_PlaySound(AActor* mo)
