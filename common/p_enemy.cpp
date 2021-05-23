@@ -38,6 +38,7 @@
 #include "p_mobj.h"
 
 #include "d_player.h"
+#include "d_dehacked.h"
 
 
 extern bool HasBehavior;
@@ -2350,9 +2351,22 @@ void A_Scratch(AActor* mo)
 
 void A_PlaySound(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	S_StartSound(mo->state->misc2 ? NULL : mo, mo->state->misc1);
-	*/
+	// Play the sound from the SoundMap
+
+	int sndmap = mo->state->misc1;
+
+	if (sndmap >= sizeof(SoundMap))
+	{
+		DPrintf("Warning: Sound ID is beyond the array of the Sound Map!\n");
+		sndmap = 0;
+	}
+
+	S_Sound(
+		(mo->state->misc2 ? NULL : mo),
+		CHAN_BODY, 
+		SoundMap[mo->state->misc1],
+		1,
+		ATTN_NORM);
 }
 
 void A_RandomJump(AActor* mo)
