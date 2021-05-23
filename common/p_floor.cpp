@@ -334,8 +334,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 
 	case DFloor::floorLowerByTexture:
 		m_Direction = -1;
-		m_FloorDestHeight = floorheight -
-			P_FindShortestTextureAround (sec);
+		m_FloorDestHeight = floorheight - P_FindShortestTextureAround (sec);
 		break;
 
 	case DFloor::floorLowerToCeiling:
@@ -366,8 +365,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 
 	case DFloor::floorLowerAndChange:
 		m_Direction = -1;
-		m_FloorDestHeight =
-			P_FindLowestFloorSurrounding (sec);
+		m_FloorDestHeight = P_FindLowestFloorSurrounding (sec);
 		m_Texture = sec->floorpic;
 		// jff 1/24/98 make sure m_NewSpecial gets initialized
 		// in case no surrounding sector is at floordestheight
@@ -404,11 +402,11 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			    floortype == DFloor::floorRaiseToCeiling ||
 			    floortype == DFloor::floorLowerToCeiling)
 			{
-				P_FindModelCeilingSector(m_FloorDestHeight, sec);
+				found = P_FindModelCeilingSector(m_FloorDestHeight, sec);
 			}
 			else
 			{
-				P_FindModelFloorSector(m_FloorDestHeight, sec);
+				found = P_FindModelFloorSector(m_FloorDestHeight, sec);
 			}
 
 			if (found != NULL)
