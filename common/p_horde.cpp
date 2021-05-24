@@ -619,7 +619,9 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 	// We might need the radius.
 	fixed_t rad = ::mobjinfo[recipe.type].radius;
 
-	if (recipe.count == 4)
+	const int count = spawn.type == ::TTYPE_HORDE_SNIPER ? 1 : recipe.count;
+
+	if (count == 4)
 	{
 		// A big square.
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
@@ -627,20 +629,20 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad)));
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad)));
 	}
-	else if (recipe.count == 3)
+	else if (count == 3)
 	{
 		// A wedge.
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad)));
 	}
-	else if (recipe.count == 2)
+	else if (count == 2)
 	{
 		// Next to each other.
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0)));
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0)));
 	}
-	else if (recipe.count == 1)
+	else if (count == 1)
 	{
 		// All by themselves :(
 		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0)));
