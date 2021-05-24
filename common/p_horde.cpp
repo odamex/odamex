@@ -42,9 +42,6 @@ bool P_LookForPlayers(AActor* actor, bool allaround);
 
 typedef std::vector<AActor*> AActors;
 
-const int SPAWN_BOSS = BIT(0);
-const int SPAWN_AMBUSH = BIT(1);
-
 enum roundMonsterType_e
 {
 	RM_NULL,
@@ -342,6 +339,7 @@ struct recipe_t
 {
 	mobjtype_t type;
 	int count;
+	bool isBoss;
 };
 
 /**
@@ -349,14 +347,13 @@ struct recipe_t
  *
  * @param out Recipe to write to.
  * @param define Round information to use.
- * @param flags Spawn flag classifications to allow.
+ * @param type Spawn thing type.
  * @param healthLeft Amount of health left in the group.
+ * @param wantBoss Caller wants a boss.
  */
-static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int type,
-                           const int flags, const int healthLeft)
+static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define,
+                           const int healthLeft, const bool wantBoss)
 {
-	const bool wantBoss = flags & ::SPAWN_BOSS;
-
 	std::vector<const roundMonster_t*> monsters;
 
 	// Figure out which monster we want to spawn.
@@ -369,26 +366,11 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 		const mobjinfo_t& info = ::mobjinfo[roundMon.mobj];
 
 		// Boss spawns have to spawn boss things.
-		if (type == ::TTYPE_HORDE_BOSS && roundMon.monster == RM_NORMAL)
+		if (wantBoss && roundMon.monster == RM_NORMAL)
 			continue;
 
 		// Non-boss spawns have to spawn non-boss things.
-		if (type != ::TTYPE_HORDE_BOSS && roundMon.monster == RM_BOSSONLY)
-			continue;
-
-		// Flying spawns have to spawn flying monsters.
-		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
-		if (type == ::TTYPE_HORDE_FLYING && !isFlying)
-			continue;
-
-		// Snipers have to:
-		// - Have a ranged attack.
-		// - Not be flying.
-		// - Not be a boss monster for this round.
-		// - Be skinny enough to fit in a 64x64 square.
-		if (type == ::TTYPE_HORDE_SNIPER &&
-		    (info.missilestate == S_NULL || isFlying || roundMon.monster != RM_NORMAL ||
-		     info.radius > (32 << FRACBITS)))
+		if (!wantBoss && roundMon.monster == RM_BOSSONLY)
 			continue;
 
 		monsters.push_back(&roundMon);
@@ -398,44 +380,45 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define, const int
 	if (monsters.empty())
 		return false;
 
-	for (size_t i = 0; i < 8; i++)
+	// Randomly select a monster to spawn.
+	mobjtype_t outType = static_cast<mobjtype_t>(-1);
+	bool outIsBoss = false;
+	for (size_t i = 0; i < 16; i++)
 	{
 		size_t resultIdx = P_RandomInt(monsters.size());
-		out.type = monsters.at(resultIdx)->mobj;
+		outType = monsters.at(resultIdx)->mobj;
+		outIsBoss = monsters.at(resultIdx)->monster != RM_NORMAL;
 
 		// Chance is 100%?
 		if (monsters.at(resultIdx)->chance == 1.0f)
 			break;
 
 		// Chance is within bounds of a random number?
-		float chance = P_RandomFloat();
+		const float chance = P_RandomFloat();
 		if (monsters.at(resultIdx)->chance >= chance)
 			break;
 	}
 
-	// Figure out how many monsters we can spawn of our given type - at least one.
-	if (type == ::TTYPE_HORDE_SNIPER)
-	{
-		// ...unless it's a sniper, then we only spawn a single monster.
-		// If we spawn more, then monsters tend to get stuck on thin 64x64
-		// towers.  FIXME: Would be nice to detect if it's safe to spawn
-		// bigger monsters like Mancubi.
-		out.count = 1;
-		return true;
-	}
-
+	int outCount = 1;
 	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
-	const int health = ::mobjinfo[out.type].spawnhealth;
+	const int health = ::mobjinfo[outType].spawnhealth;
 	const int upper = clamp(maxHealth, 1, 4);
 	const int lower = clamp(define.minGroupHealth / health, 1, 4);
 	if (upper <= lower)
 	{
 		// Only one possibility.
-		out.count = upper;
-		return true;
+		outCount = upper;
+	}
+	else
+	{
+		// Randomly select a possibility.
+		outCount = P_RandomInt(upper - lower) + lower;
 	}
 
-	out.count = P_RandomInt(upper - lower) + lower;
+	out.type = outType;
+	out.count = outCount;
+	out.isBoss = outIsBoss;
+
 	return true;
 }
 }; // namespace recipe
@@ -469,10 +452,8 @@ static bool CmpWeights(const SpawnPointWeight& a, const SpawnPointWeight& b)
 /**
  * @brief Get a spawn point to place a monster at.
  */
-static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
+static SpawnPoint* GetSpawnCandidate(const recipe::recipe_t& recipe)
 {
-	const bool boss = flags & ::SPAWN_BOSS;
-
 	float totalScore = 0.0f;
 
 	SpawnPointWeights weights;
@@ -480,38 +461,39 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 	     ++sit)
 	{
 		// Don't spawn bosses at non-boss spawns.
-		if (boss && sit->type != TTYPE_HORDE_BOSS)
+		if (recipe.isBoss && sit->type != ::TTYPE_HORDE_BOSS)
 			continue;
-		else if (!boss && sit->type == TTYPE_HORDE_BOSS)
+		else if (!recipe.isBoss && sit->type == ::TTYPE_HORDE_BOSS)
+			continue;
+
+		mobjinfo_t& info = ::mobjinfo[recipe.type];
+
+		// Flying spawns have to spawn flying monsters.
+		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
+		if (sit->type == ::TTYPE_HORDE_FLYING && !isFlying)
+			continue;
+
+		// Snipers have to:
+		// - Have a ranged attack.
+		// - Not be flying.
+		// - Not be a boss monster for this round.
+		// - Be skinny enough to fit in a 64x64 square.
+		if (sit->type == ::TTYPE_HORDE_SNIPER &&
+		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
+		     info.radius > (32 << FRACBITS)))
 			continue;
 
 		SpawnPointWeight weight;
 		weight.spawn = &*sit;
 
-		int dist = P_AproxDistance2(sit->mo, player->mo) >> FRACBITS;
-		bool visible = P_CheckSight(sit->mo, player->mo);
+		// [AM] During development we used to have a complicated spawn system
+		//      that spawned near players, but this resulted in it being
+		//      easy to exploit.
 
-		weight.dist = dist;
-		weight.visible = visible;
-
-		// Base score is based on distance.
-		float score;
-		if (dist < 192)
-			score = 0.125f; // Try not to spawn close by.
-		else if (dist < 512)
-			score = 1.0f;
-		else if (dist < 1024)
+		float score = 1.0f;
+		if (sit->type == ::TTYPE_HORDE_SNIPER || sit->type == ::TTYPE_HORDE_FLYING)
 			score = 0.75f;
-		else if (dist < 2048)
-			score = 0.5f;
-		else if (dist < 3072)
-			score = 0.25f;
-		else
-			score = 0.125f;
 
-		// Having LoS gives a significant bonus, because intuitively there
-		// are many more spanws in a map you can't see vs those you can.
-		score *= visible ? 1.0f : 0.5f;
 		weight.score = score;
 		totalScore += score;
 
@@ -522,7 +504,7 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
 	if (weights.empty())
 	{
 		Printf(PRINT_WARNING, "Could not find a spawn point (boss:%s).\n",
-		       boss ? "y" : "n");
+		       recipe.isBoss ? "y" : "n");
 		return NULL;
 	}
 
@@ -556,16 +538,11 @@ static SpawnPoint* GetSpawnCandidate(player_t* player, const int flags)
  * @param recipe Recipe of a monster to spawn.
  * @param offset Offset from the spawn point to spawn at.
  * @param target Player to target.
- * @param flags SPAWN_BOSS spawns boss monster, SPAWN_AMBUSH spawns monster
- *              without a spawn flash or see sound.
  * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
 static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
-                            const v2fixed_t offset, player_t* target, const int flags)
+                            const v2fixed_t offset)
 {
-	const bool boss = flags & ::SPAWN_BOSS;
-	const bool ambush = flags & ::SPAWN_AMBUSH;
-
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
 	if (mo)
@@ -575,7 +552,7 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 			// Don't respawn
 			mo->flags |= MF_DROPPED;
 
-			if (boss)
+			if (recipe.isBoss)
 			{
 				// Purple is the noblest shroud.
 				mo->effects = FX_PURPLEFOUNTAIN;
@@ -587,12 +564,17 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 			// Add (possibly adjusted) health to pool.
 			P_AddHealthPool(mo);
 
-			// This monster wakes up hating you and knows where you live.
-			mo->target = target->mo->ptr();
-			P_SetMobjState(mo, mo->info->seestate, true);
+			// This monster wakes up hating a random player.
+			PlayerResults targets = PlayerQuery().hasHealth().execute();
+			if (targets.count > 0)
+			{
+				const size_t idx = P_RandomInt(targets.count);
+				mo->target = targets.players.at(idx)->mo->ptr();
+				P_SetMobjState(mo, mo->info->seestate, true);
+			}
 
-			// Play the see sound if we have one and it's not an ambush.
-			if (!ambush && mo->info->seesound)
+			// Play the see sound if we have one.
+			if (mo->info->seesound)
 			{
 				char sound[MAX_SNDNAME];
 
@@ -608,12 +590,9 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 				S_Sound(mo, CHAN_VOICE, sound, 1, ATTN_NORM);
 			}
 
-			if (!ambush)
-			{
-				// Spawn a teleport fog if it's not an ambush.
-				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
-				S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-			}
+			// Spawn a teleport fog if it's not an ambush.
+			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+			S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 			return mo;
 		}
 		else
@@ -630,12 +609,9 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
  *
  * @param point Spawn point of the monster.
  * @param recipe Recipe of a monster to spawn.
- * @param target Player to target.
- * @param flags Flags to pass to SpawnMonster.
  * @return Actors spawned by this function.  Can be discarded.
  */
-static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
-                                 player_t* target, const int flags)
+static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe)
 {
 	AActors ok;
 	const char* mobjname = ::mobjinfo[recipe.type].name;
@@ -646,28 +622,28 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 	if (recipe.count == 4)
 	{
 		// A big square.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), target, flags));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), target, flags));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad), target, flags));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad)));
 	}
 	else if (recipe.count == 3)
 	{
 		// A wedge.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), target, flags));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), target, flags));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad)));
 	}
 	else if (recipe.count == 2)
 	{
 		// Next to each other.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0), target, flags));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0)));
 	}
 	else if (recipe.count == 1)
 	{
 		// All by themselves :(
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0)));
 	}
 	else
 	{
@@ -687,7 +663,7 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 	if (ret.empty() && recipe.count > 1)
 	{
 		ok.clear();
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0), target, flags));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0)));
 		if (*ok.begin() != NULL)
 			ok.clear();
 	}
@@ -786,25 +762,19 @@ void P_RunHordeTics()
 			if (spawned >= pressureHealth)
 				continue;
 
-			// Pick the unlucky SOB who is about to get spawned near.
-			PlayerResults pr = PlayerQuery().hasHealth().execute();
-			if (!pr.count)
-				break;
-			player_t* target = pr.players.at(P_RandomInt(pr.count));
-
-			// Choose a spawn point.
-			spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(target, 0);
-			if (spawn == NULL)
-				continue;
-
-			// Spawn some monsters.
+			// Pick a recipe for some monsters.
 			recipe::recipe_t recipe;
-			const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->type, 0,
-			                                       pressureHealth - spawned);
+			const bool ok =
+			    recipe::GetSpawnRecipe(recipe, define, pressureHealth - spawned, false);
 			if (!ok)
 				continue;
 
-			AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, 0);
+			// Choose a spawn point.
+			spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(recipe);
+			if (spawn == NULL)
+				continue;
+
+			AActors actors = spawn::SpawnMonsterCount(*spawn, recipe);
 			for (AActors::iterator it = actors.begin(); it != actors.end(); ++it)
 			{
 				spawned += (*it)->health;
@@ -818,29 +788,25 @@ void P_RunHordeTics()
 		break;
 	}
 	case HS_BOSS: {
+		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
+
 		// Do we already have bosses spawned?
 		if (::gDirector.hasBosses())
 			break;
 
-		// Spawn a boss if we don't have one near a living player.
-		PlayerResults pr = PlayerQuery().hasHealth().execute();
-		if (!pr.count)
-			break;
-		player_t* target = pr.players.at(P_RandomInt(pr.count));
-
-		spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(target, ::SPAWN_BOSS);
-		if (spawn == NULL)
-			break;
-
-		const roundDefine_t& define = ::gDirector.getRoundState().getDefine();
-
+		// Pick a recipe for some monsters.
 		recipe::recipe_t recipe;
-		const bool ok = recipe::GetSpawnRecipe(recipe, define, spawn->type, ::SPAWN_BOSS,
-		                                       define.maxGroupHealth);
+		const bool ok =
+		    recipe::GetSpawnRecipe(recipe, define, define.maxGroupHealth, true);
 		if (!ok)
 			break;
 
-		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe, target, ::SPAWN_BOSS);
+		// Spawn a boss if we don't have one.
+		spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(recipe);
+		if (spawn == NULL)
+			break;
+
+		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe);
 		::gDirector.setBosses(actors);
 		break;
 	}
