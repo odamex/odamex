@@ -38,6 +38,10 @@
 #include "p_tick.h"
 #include "s_sound.h"
 
+EXTERN_CVAR(g_horde_mintotalhp)
+EXTERN_CVAR(g_horde_maxtotalhp)
+EXTERN_CVAR(g_horde_goalhp)
+
 bool P_LookForPlayers(AActor* actor, bool allaround);
 
 typedef std::vector<AActor*> AActors;
@@ -59,14 +63,23 @@ struct roundMonster_t
 
 struct roundDefine_t
 {
+	const char* name;               // Name of the round.
 	const weapontype_t* weapons;    // Weapons we can spawn this round.
 	const roundMonster_t* monsters; // Monsters we can spawn this round.
 	int minGroupHealth;             // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth;             // Maximum health of a group of monsters to spawn.
-	int minTotalHealth; // Lower bound on the amount of health in the map at once, aside
-	                    // from round end.
-	int maxTotalHealth; // Upper bound on the amount of health in the map at once.
-	int goalHealth;     // Base target health to win the round.
+	int minTotalHealth() const
+	{
+		return static_cast<float>(maxGroupHealth) * ::g_horde_mintotalhp;
+	}
+	int maxTotalHealth() const
+	{
+		return static_cast<float>(maxGroupHealth) * ::g_horde_maxtotalhp;
+	}
+	int goalHealth() const
+	{
+		return static_cast<float>(maxGroupHealth) * ::g_horde_goalhp;
+	}
 };
 
 const weapontype_t R1_WEAPONS[] = {wp_shotgun, wp_chaingun, wp_missile, wp_nochange};
@@ -115,33 +128,27 @@ const roundMonster_t R3_MONSTERS[] = {
 const roundDefine_t ROUND_DEFINES[3] = {
     // Round 1
     {
-        R1_WEAPONS,  // weapons
-        R1_MONSTERS, // monsters
-        150,         // minGroupHealth
-        300,         // maxGroupHealth
-        600,         // minTotalHealth
-        1200,        // maxTotalHealth
-        2400,        // goalHealth
+        "Knee deep in the dead", // name
+        R1_WEAPONS,              // weapons
+        R1_MONSTERS,             // monsters
+        150,                     // minGroupHealth
+        300,                     // maxGroupHealth
     },
     // Round 2
     {
-        R2_WEAPONS,  // weapons
-        R2_MONSTERS, // monsters
-        600,         // minGroupHealth
-        1200,        // maxGroupHealth
-        2000,        // minTotalHealth
-        4800,        // maxTotalHealth
-        9600,        // goalHealth
+        "The Crusher", // name
+        R2_WEAPONS,    // weapons
+        R2_MONSTERS,   // monsters
+        600,           // minGroupHealth
+        1200,          // maxGroupHealth
     },
     // Round 3
     {
+        "Go 2 It",   // name
         R3_WEAPONS,  // weapons
         R3_MONSTERS, // monsters
         1000,        // minGroupHealth
         2000,        // maxGroupHealth
-        4000,        // minTotalHealth
-        8000,        // maxTotalHealth
-        16000,       // goalHealth
     }};
 
 static const char* HordeStateStr(const hordeState_e state)
@@ -173,7 +180,7 @@ class HordeRoundState
 
 	const roundDefine_t& getDefine() const
 	{
-		return ROUND_DEFINES[m_round];
+		return ::ROUND_DEFINES[m_round];
 	}
 
 	void setRound(const int round)
@@ -229,8 +236,9 @@ class HordeState
 		hordeInfo_t info;
 		info.state = m_state;
 		info.round = m_roundState.getRound();
+		info.alive = m_spawnedHealth - m_killedHealth;
 		info.killed = m_killedHealth - m_roundStartHealth;
-		info.goal = m_roundState.getDefine().goalHealth;
+		info.goal = m_roundState.getDefine().goalHealth();
 		return info;
 	}
 
@@ -273,7 +281,7 @@ class HordeState
 	{
 		const roundDefine_t& define = m_roundState.getDefine();
 		int aliveHealth = m_spawnedHealth - m_killedHealth;
-		int goalHealth = define.goalHealth + m_roundStartHealth;
+		int goalHealth = define.goalHealth() + m_roundStartHealth;
 
 		switch (m_state)
 		{
@@ -289,7 +297,7 @@ class HordeState
 				setState(HS_BOSS);
 				return;
 			}
-			else if (aliveHealth > define.maxTotalHealth)
+			else if (aliveHealth > define.maxTotalHealth())
 			{
 				setState(HS_RELAX);
 				return;
@@ -302,7 +310,7 @@ class HordeState
 				setState(HS_BOSS);
 				return;
 			}
-			else if (aliveHealth < define.minTotalHealth)
+			else if (aliveHealth < define.minTotalHealth())
 			{
 				setState(HS_PRESSURE);
 				return;
@@ -875,7 +883,7 @@ const weapontype_t* P_RoundWeapons()
 	}
 }
 
-BEGIN_COMMAND(horde_round)
+BEGIN_COMMAND(horderound)
 {
 	if (argc < 2)
 	{
@@ -893,4 +901,43 @@ BEGIN_COMMAND(horde_round)
 	::gDirector.getRoundState().setRound(round);
 	::gDirector.setStartHealth();
 }
-END_COMMAND(horde_round)
+END_COMMAND(horderound)
+
+BEGIN_COMMAND(hordeinfo)
+{
+	const HordeRoundState& state = ::gDirector.getRoundState();
+	const roundDefine_t& define = state.getDefine();
+
+	Printf("[Define: %s]\n", define.name);
+	Printf("Min Group Health: %d\n", define.minGroupHealth);
+	Printf("Max Group Health: %d\n", define.maxGroupHealth);
+	Printf("Min Total Health: %d = %d * %s\n", define.minTotalHealth(),
+	       define.maxGroupHealth, ::g_horde_mintotalhp.cstring());
+	Printf("Max Total Health: %d = %d * %s\n", define.maxTotalHealth(),
+	       define.maxGroupHealth, ::g_horde_maxtotalhp.cstring());
+	Printf("Goal Health: %d = %d * %s\n", define.goalHealth(), define.maxGroupHealth,
+	       ::g_horde_goalhp.cstring());
+
+	const char* stateStr = NULL;
+	switch (::gDirector.info().state)
+	{
+	case HS_STARTING:
+		stateStr = "Starting";
+		break;
+	case HS_PRESSURE:
+		stateStr = "Pressure";
+		break;
+	case HS_RELAX:
+		stateStr = "Relax";
+		break;
+	case HS_BOSS:
+		stateStr = "Boss";
+		break;
+	}
+
+	Printf("[Round: %d]\n", state.getRound());
+	Printf("State: %s\n", stateStr);
+	Printf("Alive Health: %d\n", ::gDirector.info().alive);
+	Printf("Killed Health: %d\n", ::gDirector.info().killed);
+}
+END_COMMAND(hordeinfo)
