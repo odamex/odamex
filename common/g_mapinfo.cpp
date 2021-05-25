@@ -1266,6 +1266,7 @@ namespace
 			ENTRY3("levelnum",					&MIType_Int,			&ref.levelnum)
 			ENTRY3("next",						&MIType_MapName,		&ref.nextmap)
 			ENTRY3("secretnext",				&MIType_MapName,		&ref.secretmap)
+			ENTRY3("secret",					&MIType_MapName,		&ref.secretmap)
 			ENTRY3("cluster",					&MIType_Cluster,		&ref.cluster)
 			ENTRY3("sky1",						&MIType_Sky,			&ref.skypic)
 			ENTRY3("sky2",						&MIType_Sky,			&ref.skypic2)
