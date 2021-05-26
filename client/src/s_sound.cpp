@@ -417,10 +417,8 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	else
 	{
 		float attenuation = float(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
-		if (S_UseMap8Volume())
-			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
-		else
-			*vol = snd_sfxvolume * attenuation;
+		
+		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -475,10 +473,14 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 	{
 		float attenuation = FIXED2FLOAT(
 		    FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
-		if (S_UseMap8Volume())
-			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
-		else
-			*vol = snd_sfxvolume * attenuation;
+
+		// HACKY STUFF: We want to leave the attenuation, but not to make everything LOUDER.
+		// On MAP 8, Doom makes a minimum volume of sounds which is 15/128 (0.192).
+		// We then set that value as the strict minimum for those maps.
+		if (S_UseMap8Volume() && attenuation < 0.192)
+			attenuation = 0.192;
+
+		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
