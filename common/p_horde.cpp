@@ -355,12 +355,10 @@ struct recipe_t
  *
  * @param out Recipe to write to.
  * @param define Round information to use.
- * @param type Spawn thing type.
- * @param healthLeft Amount of health left in the group.
  * @param wantBoss Caller wants a boss.
  */
 static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define,
-                           const int healthLeft, const bool wantBoss)
+                           const bool wantBoss)
 {
 	std::vector<const roundMonster_t*> monsters;
 
@@ -407,11 +405,10 @@ static bool GetSpawnRecipe(recipe_t& out, const roundDefine_t& define,
 			break;
 	}
 
-	int outCount = 1;
-	const int maxHealth = MIN(define.maxGroupHealth, healthLeft);
+	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
-	const int upper = clamp(maxHealth, 1, 4);
-	const int lower = clamp(define.minGroupHealth / health, 1, 4);
+	const int upper = MAX(define.maxGroupHealth / health, 1);
+	const int lower = MAX(define.minGroupHealth / health, 1);
 	if (upper <= lower)
 	{
 		// Only one possibility.
@@ -457,6 +454,11 @@ static bool CmpWeights(const SpawnPointWeight& a, const SpawnPointWeight& b)
 	return a.score > b.score;
 }
 
+static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
+{
+	return a.dist < b.dist;
+}
+
 /**
  * @brief Get a spawn point to place a monster at.
  */
@@ -488,7 +490,7 @@ static SpawnPoint* GetSpawnCandidate(const recipe::recipe_t& recipe)
 		// - Be skinny enough to fit in a 64x64 square.
 		if (sit->type == ::TTYPE_HORDE_SNIPER &&
 		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
-		     info.radius > (32 << FRACBITS)))
+		     info.radius > (32 * FRACUNIT)))
 			continue;
 
 		SpawnPointWeight weight;
@@ -617,17 +619,16 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
  *
  * @param point Spawn point of the monster.
  * @param recipe Recipe of a monster to spawn.
+ * @param count Number of monsters to spawn on the point.
  * @return Actors spawned by this function.  Can be discarded.
  */
-static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe)
+static AActors SpawnMonsterGroup(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe,
+                                 const int count)
 {
 	AActors ok;
-	const char* mobjname = ::mobjinfo[recipe.type].name;
 
-	// We might need the radius.
-	fixed_t rad = ::mobjinfo[recipe.type].radius;
-
-	const int count = spawn.type == ::TTYPE_HORDE_SNIPER ? 1 : recipe.count;
+	const fixed_t rad = ::mobjinfo[recipe.type].radius;
+	const char* name = ::mobjinfo[recipe.type].name;
 
 	if (count == 4)
 	{
@@ -657,7 +658,7 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "Tried to spawn %d %s.\n", recipe.count, mobjname);
+		Printf(PRINT_WARNING, "Invalid spawn count %d of %s.\n", count, name);
 	}
 
 	// Remove unspawned actors - probably spawnblocked.
@@ -665,20 +666,79 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 	for (AActors::iterator it = ok.begin(); it != ok.end(); ++it)
 	{
 		if ((*it) != NULL)
+		{
 			ret.push_back(*it);
+		}
 	}
 
-	// If we're blocked and tried to spawn more than 1 monster, try spawning
-	// just one as a fallback.
-	if (ret.empty() && recipe.count > 1)
+	if (ret.size() < count)
 	{
-		ok.clear();
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0)));
-		if (*ok.begin() != NULL)
-			ok.clear();
+		Printf(PRINT_WARNING, "Spawned %" PRIuSIZE "/%d of type %s (%f, %f).\n",
+		       ret.size(), count, name, FIXED2FLOAT(spawn.mo->x),
+		       FIXED2FLOAT(spawn.mo->y));
 	}
 
 	return ret;
+}
+
+/**
+ * @brief Spawn multiple monsters close to each other.
+ *
+ * @param point Spawn point of the monster.
+ * @param recipe Recipe of a monster to spawn.
+ * @return Actors spawned by this function.  Can be discarded.
+ */
+static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_t& recipe)
+{
+	AActors ok;
+
+	SpawnPointWeights weights;
+	for (SpawnPoints::iterator it = ::spawn::monsterSpawns.begin();
+	     it != ::spawn::monsterSpawns.end(); ++it)
+	{
+		if (it->type != spawn.type)
+			continue;
+
+		SpawnPointWeight spw = {0};
+		spw.spawn = &*it;
+		spw.dist = P_AproxDistance2(it->mo, spawn.mo);
+		weights.push_back(spw);
+	}
+
+	// Sort by distance.
+	std::sort(weights.begin(), weights.end(), CmpDist);
+
+	// Ensure we only spawn as many monsters as can fit in the spawn.
+	// Snipers must fit in a 64x64 square, bosses must fit in a 256x256 square,
+	// everything else must fit in a 128x128 square.
+	const int rad = ::mobjinfo[recipe.type].radius >> FRACBITS;
+	int maxGroupSize = 4;
+	if (spawn.type == ::TTYPE_HORDE_SNIPER ||
+	    (spawn.type == ::TTYPE_HORDE_BOSS && rad * 2 > 128) || rad * 2 > 64)
+	{
+		// We can only fit one monster per spawn point.
+		maxGroupSize = 1;
+	}
+
+	//Printf("Spawning %d of type %s\n", recipe.count, ::mobjinfo[recipe.type].name);
+
+	// Place monsters in spawn points in order of approx distance.
+	for (SpawnPointWeights::iterator it = weights.begin(); it != weights.end(); ++it)
+	{
+		const int left = recipe.count - ok.size();
+		if (left < 1)
+			break;
+
+		if (it->dist > (1024 * FRACUNIT))
+			continue;
+
+		int groupIter = clamp(left, 1, maxGroupSize);
+
+		AActors okIter = SpawnMonsterGroup(*it->spawn, recipe, groupIter);
+		ok.insert(ok.end(), okIter.begin(), okIter.end());
+	}
+
+	return ok;
 }
 
 } // namespace spawn
@@ -765,31 +825,25 @@ void P_RunHordeTics()
 		    P_RandomInt(define.maxGroupHealth - define.minGroupHealth) +
 		    define.minGroupHealth;
 
-		// Limit to 16 loops so we don't get stuck forever.
-		int spawned = 0;
-		for (int i = 0; i < 16; i++)
+		// Pick a recipe for some monsters.
+		recipe::recipe_t recipe;
+		const bool ok = recipe::GetSpawnRecipe(recipe, define, false);
+		if (!ok)
 		{
-			if (spawned >= pressureHealth)
-				continue;
-
-			// Pick a recipe for some monsters.
-			recipe::recipe_t recipe;
-			const bool ok =
-			    recipe::GetSpawnRecipe(recipe, define, pressureHealth - spawned, false);
-			if (!ok)
-				continue;
-
-			// Choose a spawn point.
-			spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(recipe);
-			if (spawn == NULL)
-				continue;
-
-			AActors actors = spawn::SpawnMonsterCount(*spawn, recipe);
-			for (AActors::iterator it = actors.begin(); it != actors.end(); ++it)
-			{
-				spawned += (*it)->health;
-			}
+			Printf("%s: No recipe for non-boss monster.\n", __FUNCTION__);
+			break;
 		}
+
+		// Choose a spawn point.
+		spawn::SpawnPoint* spawn = spawn::GetSpawnCandidate(recipe);
+		if (spawn == NULL)
+		{
+			Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
+			       ::mobjinfo[recipe.type].name);
+			break;
+		}
+
+		spawn::SpawnMonsterCount(*spawn, recipe);
 		break;
 	}
 	case HS_RELAX: {
@@ -806,8 +860,7 @@ void P_RunHordeTics()
 
 		// Pick a recipe for some monsters.
 		recipe::recipe_t recipe;
-		const bool ok =
-		    recipe::GetSpawnRecipe(recipe, define, define.maxGroupHealth, true);
+		const bool ok = recipe::GetSpawnRecipe(recipe, define, true);
 		if (!ok)
 			break;
 
