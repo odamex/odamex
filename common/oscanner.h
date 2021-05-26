@@ -57,7 +57,8 @@ class OScanner
   public:
 	OScanner(const OScannerConfig& config)
 	    : _config(config), _scriptStart(NULL), _scriptEnd(NULL), _position(NULL),
-	      _lineNumber(0), _token(""), _unScan(false), _removeEscapeCharacter(false){}
+	      _lineNumber(0), _token(""), _unScan(false), _removeEscapeCharacter(false),
+		  _isQuotedString(false){}
 
 	static OScanner openBuffer(const OScannerConfig& config, const char* start,
 	                           const char* end);
