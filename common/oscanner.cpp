@@ -117,6 +117,9 @@ void OScanner::munchString()
 			return;
 
 		// There are some tokens that can end the string without whitespace.
+		if (_position[0] == '"')
+			return;
+		
 		if (_config.semiComments && _position[0] == ';')
 			return;
 
