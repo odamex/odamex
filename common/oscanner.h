@@ -42,8 +42,6 @@ class OScanner
 	int _lineNumber;
 	std::string _token;
 	bool _unScan;
-	bool _removeEscapeCharacter;
-	bool _isQuotedString;
 
 	bool checkPair(char a, char b);
 	void skipWhitespace();
@@ -57,7 +55,7 @@ class OScanner
   public:
 	OScanner(const OScannerConfig& config)
 	    : _config(config), _scriptStart(NULL), _scriptEnd(NULL), _position(NULL),
-	      _lineNumber(0), _token(""), _unScan(false), _removeEscapeCharacter(false){}
+	      _lineNumber(0), _token(""), _unScan(false){};
 
 	static OScanner openBuffer(const OScannerConfig& config, const char* start,
 	                           const char* end);
@@ -67,7 +65,6 @@ class OScanner
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	void error(const char* message);
-	bool isQuotedString() const;
 };
 
 #endif // __OSCANNER_H__
