@@ -269,7 +269,7 @@ void F_Ticker (void)
 void F_TextWrite (void)
 {
 	// Don't draw text without a working font.
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return;
 
 	// erase the entire screen to a tiled background
@@ -331,10 +331,12 @@ void F_TextWrite (void)
 			continue;
 		}
 
-		int w = hu_font[c]->width();
+		patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+
+		int w = ch->width();
 		if (cx + w > width)
 			break;
-		screen->DrawPatchClean(hu_font[c], cx, cy);
+		screen->DrawPatchClean(ch, cx, cy);
 		cx += w;
 	}
 

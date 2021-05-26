@@ -515,7 +515,7 @@ void P_MoveActor(AActor *mo)
 	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (co_realactorheight && (mo->flags2 & MF2_PASSMOBJ))
+		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj(mo)))
 			{
@@ -913,8 +913,7 @@ void AActor::Serialize (FArchive &arc)
 //
 int P_ThingInfoHeight(mobjinfo_t *mi)
 {
-   return
-      (co_realactorheight && mi->cdheight ?
+   return (P_AllowPassover() && mi->cdheight ?
        mi->cdheight : mi->height);
 }
 
@@ -2539,25 +2538,31 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
-	if (!multiplayer)
 	{
 		switch (i)
 		{
-			case MT_CHAINGUN:
-			case MT_SHOTGUN:
-			case MT_SUPERSHOTGUN:
-			case MT_MISC25: 		// BFG
-			case MT_MISC26: 		// chainsaw
-			case MT_MISC27: 		// rocket launcher
-			case MT_MISC28: 		// plasma gun
-				if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
+		case MT_CHAINGUN:
+		case MT_SHOTGUN:
+		case MT_SUPERSHOTGUN:
+		case MT_MISC25: // BFG
+		case MT_MISC26: // chainsaw
+		case MT_MISC27: // rocket launcher
+		case MT_MISC28: // plasma gun
+			if (!multiplayer)
+			{
+				if ((mthing->flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
 					return;
-				break;
-			default:
-				break;
+			}
+			else
+			{
+				if ((mthing->flags & (MTF_FILTER_COOPWPN)))
+					return;
+			}
+			break;
+		default:
+			break;
 		}
 	}
-
 	// [csDoom] don't spawn any monsters
 	if (sv_nomonsters || !serverside)
 	{

@@ -74,7 +74,7 @@ void WI_unloadData(void);
 
 // NET GAME STUFF
 #define NG_STATSY				50
-#define NG_STATSX				(32 + star->width()/2 + 32*!dofrags)
+#define NG_STATSX				(32 + pStar->width()/2 + 32*!dofrags)
 
 #define NG_SPACINGX 			64
 
@@ -274,7 +274,7 @@ static std::vector<int> cnt_kills_c;	// = cnt_kills
 static std::vector<int> cnt_items_c;	// = cnt_items
 static std::vector<int> cnt_secret_c;	// = cnt_secret
 static std::vector<int> cnt_frags_c;	// = cnt_frags
-static patch_t*			faceclassic[4];
+static lumpHandle_t		faceclassic[4];
 static int dofrags;
 static int ng_state;
 
@@ -309,49 +309,49 @@ static int			cnt_pause;
 //static patch_t* 		sbborder;
 
 // You Are Here graphic
-static patch_t* 		yah[2];
+static lumpHandle_t		yah[2];
 
 // splat
-static patch_t* 		splat;
+static lumpHandle_t		splat;
 
 // %, : graphics
-static patch_t*			percent;
-static patch_t*			colon;
+static lumpHandle_t		percent;
+static lumpHandle_t		colon;
 
 // 0-9 graphic
-static patch_t* 		num[10];
+static lumpHandle_t		num[10];
 
 // minus sign
-static patch_t* 		wiminus;
+static lumpHandle_t		wiminus;
 
 // "Finished!" graphics
-static patch_t* 		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
+static lumpHandle_t		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
 // [Nes] Re-added for singleplayer
 
 // "Entering" graphic
-static patch_t* 		entering;
+static lumpHandle_t		entering;
 
  // "Kills", "Items", "Secrets"
-static patch_t*			kills;
-static patch_t*			secret;
-static patch_t*			items;
-static patch_t* 		frags;
-static patch_t*			scrt;
+static lumpHandle_t		kills;
+static lumpHandle_t		secret;
+static lumpHandle_t		items;
+static lumpHandle_t		frags;
+static lumpHandle_t		scrt;
 
 // Time sucks.
-static patch_t*			timepatch;
-static patch_t*			par;
-static patch_t*			sucks;
+static lumpHandle_t		timepatch;
+static lumpHandle_t		par;
+static lumpHandle_t		sucks;
 
 // "Total", your face, your dead face
-static patch_t* 		total;
-static patch_t* 		star;
-static patch_t* 		bstar;
+static lumpHandle_t		total;
+static lumpHandle_t		star;
+static lumpHandle_t		bstar;
 
-static patch_t* 		p;		// [RH] Only one
+static lumpHandle_t		p; // [RH] Only one
 
  // Name graphics of each level (centered)
-static patch_t*			lnames[2];
+static lumpHandle_t		lnames[2];
 
 // [RH] Info to dynamically generate the level name graphics
 static int				lnamewidths[2];
@@ -462,16 +462,17 @@ void WI_drawLF (void)
 {
 	int y;
 
-	if (!lnames[0] && !lnamewidths[0])
+	if (lnames[0].empty() && !lnamewidths[0])
 		return;
 
 	y = WI_TITLEY;
 
-	if (lnames[0])
+	if (!lnames[0].empty())
 	{
 		// draw <LevelName>
-		screen->DrawPatchClean (lnames[0], (320 - lnames[0]->width())/2, y);
-		y += (5*lnames[0]->height())/4;
+		patch_t* lnames0 = W_ResolvePatchHandle(lnames[0]);
+		screen->DrawPatchClean(lnames0, (320 - lnames0->width()) / 2, y);
+		y += (5 * lnames0->height()) / 4;
 	}
 	else
 	{
@@ -481,7 +482,10 @@ void WI_drawLF (void)
 
 	// draw "Finished!"
 	//if (!multiplayer || sv_maxplayers <= 1)
-		screen->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
+	patch_t* fin = W_ResolvePatchHandle(finished);
+
+	// (Removed) Dan - Causes GUI Issues |FIX-ME|
+	screen->DrawPatchClean(fin, (320 - fin->width()) / 2, y);
 }
 
 
@@ -491,21 +495,24 @@ void WI_drawEL (void)
 {
 	int y = WI_TITLEY;
 
-	if (!lnames[1] && !lnamewidths[1])
+	if (lnames[1].empty() && !lnamewidths[1])
 		return;
 
 	y = WI_TITLEY;
 
+	patch_t* ent = W_ResolvePatchHandle(entering);
+	patch_t* lnames1 = W_ResolvePatchHandle(lnames[1]);
+
 	// draw "Entering"
-	screen->DrawPatchClean (entering, (320 - entering->width())/2, y);
+	screen->DrawPatchClean(ent, (320 - ent->width()) / 2, y);
 
 	// [RH] Changed to adjust by height of entering patch instead of title
-	y += (5*entering->height())/4;
+	y += (5 * ent->height()) / 4;
 
-	if (lnames[1])
+	if (lnames1)
 	{
 		// draw level
-		screen->DrawPatchClean (lnames[1], (320 - lnames[1]->width())/2, y);
+		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
 	}
 	else
 	{
@@ -539,9 +546,8 @@ int WI_MapToIndex (char *map)
 //
 // [Russell] - Modified for odamex, fixes a crash with certain pwads at
 // intermission change
-void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
+void WI_drawOnLnode (int n, lumpHandle_t* c, int numpatches)
 {
-
 	int 	i;
 	int 	left;
 	int 	top;
@@ -552,10 +558,12 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 	i = 0;
 	do
 	{
-		left = lnodes[wbs->epsd][n].x - c[i]->leftoffset();
-		top = lnodes[wbs->epsd][n].y - c[i]->topoffset();
-		right = left + c[i]->width();
-		bottom = top + c[i]->height();
+		patch_t* ch = W_ResolvePatchHandle(c[i]);
+
+		left = lnodes[wbs->epsd][n].x - ch->leftoffset();
+		top = lnodes[wbs->epsd][n].y - ch->topoffset();
+		right = left + ch->width();
+		bottom = top + ch->height();
 
 		if (left >= 0 && right < WI_GetWidth() &&
             top >= 0 && bottom < WI_GetHeight())
@@ -570,7 +578,8 @@ void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 
 	if (fits && i < numpatches) // haleyjd: bug fix
 	{
-		screen->DrawPatchIndirect(c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
+		patch_t* ch = W_ResolvePatchHandle(c[i]);
+		screen->DrawPatchIndirect(ch, lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
 	}
 	else
 	{
@@ -680,7 +689,7 @@ void WI_drawAnimatedBack()
 
 int WI_drawNum(int n, int x, int y, int digits)
 {
-    int		fontwidth = num[0]->width();
+    int		fontwidth = W_ResolvePatchHandle(num[0])->width();
     int		neg;
     int		temp;
 
@@ -717,13 +726,13 @@ int WI_drawNum(int n, int x, int y, int digits)
 	while (digits--)
 	{
 		x -= fontwidth;
-		screen->DrawPatchClean(num[ n % 10 ], x, y);
+		screen->DrawPatchClean(W_ResolvePatchHandle(num[n % 10]), x, y);
 		n /= 10;
 	}
 
 	// draw a minus sign if necessary
 	if (neg)
-		screen->DrawPatchClean(wiminus, x -= 8, y);
+		screen->DrawPatchClean(W_ResolvePatchHandle(wiminus), x -= 8, y);
 
 	return x;
 }
@@ -735,7 +744,7 @@ void WI_drawPercent (int p, int x, int y, int b = 0)
     if (p < 0)
 		return;
 
-	screen->DrawPatchClean (percent, x, y);
+	screen->DrawPatchClean(W_ResolvePatchHandle(percent), x, y);
 	if (b == 0)
 		WI_drawNum(p, x, y, -1);
 	else
@@ -755,22 +764,26 @@ void WI_drawTime (int t, int x, int y)
     {
 	div = 1;
 
+	patch_t* col = W_ResolvePatchHandle(colon);
+
 	do
 	{
 	    n = (t / div) % 60;
-	    x = WI_drawNum(n, x, y, 2) - colon->width();
+		x = WI_drawNum(n, x, y, 2) - col->width();
 	    div *= 60;
 
-	    // draw
-	    if (div==60 || t / div)
-		screen->DrawPatchClean(colon, x, y);
+		// draw
+		if (div==60 || t / div)
+			screen->DrawPatchClean(col, x, y);
 
 	} while (t / div);
     }
     else
     {
-	// "sucks"
-	screen->DrawPatchClean(sucks, x - sucks->width(), y);
+		patch_t* suk = W_ResolvePatchHandle(sucks);
+
+		// "sucks"
+		screen->DrawPatchClean(suk, x - suk->width(), y);
     }
 }
 
@@ -1073,7 +1086,16 @@ void WI_updateNetgameStats()
 void WI_drawNetgameStats(void)
 {
 	unsigned int x, y;
-	short pwidth = percent->width();
+
+	patch_t* pPercent = W_ResolvePatchHandle(::percent);
+	patch_t* pKills = W_ResolvePatchHandle(::kills);
+	patch_t* pItems = W_ResolvePatchHandle(::items);
+	patch_t* pScrt = W_ResolvePatchHandle(::scrt);
+	patch_t* pFrags = W_ResolvePatchHandle(::frags);
+	patch_t* pStar = W_ResolvePatchHandle(::star);
+	patch_t* pP = W_ResolvePatchHandle(::p);
+
+	short pwidth = pPercent->width();
 
 	// draw animated background
 	WI_drawAnimatedBack();
@@ -1081,17 +1103,20 @@ void WI_drawNetgameStats(void)
 	WI_drawLF();
 
 	// draw stat titles (top line)
-	screen->DrawPatchClean (kills, NG_STATSX+NG_SPACINGX-kills->width(), NG_STATSY);
+	screen->DrawPatchClean(pKills, NG_STATSX + NG_SPACINGX - pKills->width(), NG_STATSY);
+	screen->DrawPatchClean(pItems, NG_STATSX + 2 * NG_SPACINGX - pItems->width(),
+	                       NG_STATSY);
+	screen->DrawPatchClean(pScrt, NG_STATSX + 3 * NG_SPACINGX - pScrt->width(),
+	                       NG_STATSY);
 
-	screen->DrawPatchClean (items, NG_STATSX+2*NG_SPACINGX-items->width(), NG_STATSY);
-
-	screen->DrawPatchClean (scrt, NG_STATSX+3*NG_SPACINGX-scrt->width(), NG_STATSY);
-
-	if (dofrags)
-		screen->DrawPatchClean (frags, NG_STATSX+4*NG_SPACINGX-frags->width(), NG_STATSY);
+	if (::dofrags)
+	{
+		screen->DrawPatchClean(pFrags, NG_STATSX + 4 * NG_SPACINGX - pFrags->width(),
+		                       NG_STATSY);
+	}
 
 	// draw stats
-	y = NG_STATSY + kills->height();
+	y = NG_STATSY + pKills->height();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1107,12 +1132,12 @@ void WI_drawNetgameStats(void)
 		x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
 		V_ColorMap = translationref_t(translationtables + i * 256, i);
-        screen->DrawTranslatedPatchClean (p, x - p->width(), y);
+		screen->DrawTranslatedPatchClean(pP, x - pP->width(), y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
-			screen->DrawPatchClean (star, x-p->width(), y);
+			screen->DrawPatchClean(pStar, x - pP->width(), y);
 
 		x += NG_SPACINGX;
 		WI_drawPercent (cnt_kills_c[i], x-pwidth, y+10, wbs->maxkills);	x += NG_SPACINGX;
@@ -1248,31 +1273,36 @@ void WI_updateStats(void)
 
 void WI_drawStats (void)
 {
-    // line height
-    int lh = (3*num[0]->height())/2;
+	patch_t* pKills = W_ResolvePatchHandle(::kills);
+	patch_t* pItems = W_ResolvePatchHandle(::items);
+	patch_t* pSecret = W_ResolvePatchHandle(::secret);
+	patch_t* pTimepatch = W_ResolvePatchHandle(::timepatch);
+	patch_t* pPar = W_ResolvePatchHandle(::par);
 
-    // draw animated background
-    WI_drawAnimatedBack();
-    WI_drawLF();
+	// line height
+	int lh = (3 * W_ResolvePatchHandle(::num[0])->height()) / 2;
 
-    screen->DrawPatchClean(kills, SP_STATSX, SP_STATSY);
-    WI_drawPercent(cnt_kills, 320 - SP_STATSX, SP_STATSY);
+	// draw animated background
+	WI_drawAnimatedBack();
+	WI_drawLF();
 
-    screen->DrawPatchClean(items, SP_STATSX, SP_STATSY+lh);
-    WI_drawPercent(cnt_items, 320 - SP_STATSX, SP_STATSY+lh);
+	screen->DrawPatchClean(pKills, SP_STATSX, SP_STATSY);
+	WI_drawPercent(cnt_kills, 320 - SP_STATSX, SP_STATSY);
 
-    screen->DrawPatchClean(secret, SP_STATSX, SP_STATSY+2*lh);
-    WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY+2*lh);
+	screen->DrawPatchClean(pItems, SP_STATSX, SP_STATSY + lh);
+	WI_drawPercent(cnt_items, 320 - SP_STATSX, SP_STATSY + lh);
 
-    screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
-    WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
+	screen->DrawPatchClean(pSecret, SP_STATSX, SP_STATSY + 2 * lh);
+	WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY + 2 * lh);
+
+	screen->DrawPatchClean(pTimepatch, SP_TIMEX, SP_TIMEY);
+	WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
 
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
-    {
-    	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
-    	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
-    }
-
+	{
+		screen->DrawPatchClean(pPar, SP_TIMEX + 160, SP_TIMEY);
+		WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
+	}
 }
 
 void WI_checkForAccelerate(void)
@@ -1415,11 +1445,11 @@ void WI_loadData (void)
 
 		if (j >= 0)
 		{
-			lnames[i] = W_CachePatch (j, PU_STATIC);
+			lnames[i] = W_CachePatchHandle(j, PU_STATIC);
 		}
 		else
 		{
-			lnames[i] = NULL;
+			lnames[i].clear();
 			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name;
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
@@ -1428,13 +1458,13 @@ void WI_loadData (void)
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		// you are here
-		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
+		yah[0] = W_CachePatchHandle("WIURH0", PU_STATIC);
 
 		// you are here (alt.)
-		yah[1] = W_CachePatch ("WIURH1", PU_STATIC);
+		yah[1] = W_CachePatchHandle("WIURH1", PU_STATIC);
 
 		// splat
-		splat = W_CachePatch ("WISPLAT", PU_STATIC);
+		splat = W_CachePatchHandle("WISPLAT", PU_STATIC);
 
 		if (wbs->epsd < 3)
 		{
@@ -1461,65 +1491,66 @@ void WI_loadData (void)
 	}
 
 	for (i=0;i<10;i++)
-    {
-		 // numbers 0-9
+	{
+		// numbers 0-9
 		sprintf(name, "WINUM%d", i);
-		num[i] = W_CachePatch (name, PU_STATIC);
-    }
+			num[i] = W_CachePatchHandle(name, PU_STATIC);
+	}
 
-    wiminus = W_CachePatch ("WIMINUS", PU_STATIC);
+	wiminus = W_CachePatchHandle("WIMINUS", PU_STATIC);
 
 	// percent sign
-    percent = W_CachePatch ("WIPCNT", PU_STATIC);
+	percent = W_CachePatchHandle("WIPCNT", PU_STATIC);
 
 	// ":"
-    colon = W_CachePatch ("WICOLON", PU_STATIC);
+	colon = W_CachePatchHandle("WICOLON", PU_STATIC);
 
 	// "finished"
-	finished = W_CachePatch ("WIF", PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
+	// (Removed) Dan - Causes GUI Issues |FIX-ME|
+	finished = W_CachePatchHandle("WIF", PU_STATIC); 
 
 	// "entering"
-	entering = W_CachePatch ("WIENTER", PU_STATIC);
+	entering = W_CachePatchHandle("WIENTER", PU_STATIC);
 
 	// "kills"
-    kills = W_CachePatch ("WIOSTK", PU_STATIC);
+	kills = W_CachePatchHandle("WIOSTK", PU_STATIC);
 
 	// "items"
-    items = W_CachePatch ("WIOSTI", PU_STATIC);
+	items = W_CachePatchHandle("WIOSTI", PU_STATIC);
 
-    // "scrt"
-    scrt = W_CachePatch ("WIOSTS", PU_STATIC);
+	// "scrt"
+	scrt = W_CachePatchHandle("WIOSTS", PU_STATIC);
 
 	// "secret"
-    secret = W_CachePatch ("WISCRT2", PU_STATIC);
+	secret = W_CachePatchHandle("WISCRT2", PU_STATIC);
 
 	// "frgs"
-	frags = (patch_t *)W_CachePatch ("WIFRGS", PU_STATIC);
+	frags = W_CachePatchHandle("WIFRGS", PU_STATIC);
 
 	// "time"
-    timepatch = W_CachePatch ("WITIME", PU_STATIC);
+	timepatch = W_CachePatchHandle("WITIME", PU_STATIC);
 
-    // "sucks"
-    sucks =W_CachePatch ("WISUCKS", PU_STATIC);
+	// "sucks"
+	sucks = W_CachePatchHandle("WISUCKS", PU_STATIC);
 
-    // "par"
-    par = W_CachePatch ("WIPAR", PU_STATIC);
+	// "par"
+	par = W_CachePatchHandle("WIPAR", PU_STATIC);
 
 	// "total"
-	total = (patch_t *)W_CachePatch ("WIMSTT", PU_STATIC);
+	total = W_CachePatchHandle("WIMSTT", PU_STATIC);
 
 	// your face
-	star = (patch_t *)W_CachePatch ("STFST01", PU_STATIC);
+	star = W_CachePatchHandle("STFST01", PU_STATIC);
 
 	// dead face
-	bstar = (patch_t *)W_CachePatch("STFDEAD0", PU_STATIC);
+	bstar = W_CachePatchHandle("STFDEAD0", PU_STATIC);
 
-	p = W_CachePatch ("STPBANY", PU_STATIC);
+	p = W_CachePatchHandle("STPBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(name, "STPB%d", i);
-		faceclassic[i] = W_CachePatch(name, PU_STATIC);
+		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
 }
 
@@ -1564,28 +1595,28 @@ void WI_unloadData (void)
 
 	int i;
 
-	for (i=0 ; i<10 ; i++)
-		Z_ChangeTag(num[i], PU_CACHE);
+	for (i = 0; i < 10; i++)
+		num[i].clear();
 
-	Z_ChangeTag(wiminus, PU_CACHE);
-    Z_ChangeTag(percent, PU_CACHE);
-    Z_ChangeTag(colon, PU_CACHE);
-	Z_ChangeTag(kills, PU_CACHE);
-	Z_ChangeTag(secret, PU_CACHE);
-	Z_ChangeTag(frags, PU_CACHE);
-	Z_ChangeTag(items, PU_CACHE);
-    Z_ChangeTag(finished, PU_CACHE);
-    Z_ChangeTag(entering, PU_CACHE);
-    Z_ChangeTag(timepatch, PU_CACHE);
-    Z_ChangeTag(sucks, PU_CACHE);
-    Z_ChangeTag(par, PU_CACHE);
-	Z_ChangeTag (total, PU_CACHE);
+	wiminus.clear();
+	percent.clear();
+	colon.clear();
+	kills.clear();
+	secret.clear();
+	frags.clear();
+	items.clear();
+	finished.clear();
+	entering.clear();
+	timepatch.clear();
+	sucks.clear();
+	par.clear();
+	total.clear();
 	//	Z_ChangeTag(star, PU_CACHE);
 	//	Z_ChangeTag(bstar, PU_CACHE);
-    Z_ChangeTag(p, PU_CACHE);
+	p.clear();
 
 	for (i=0 ; i<4 ; i++)
-		Z_ChangeTag(faceclassic[i], PU_CACHE);
+		faceclassic[i].clear();
 }
 
 void WI_Drawer (void)

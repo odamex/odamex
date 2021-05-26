@@ -44,7 +44,6 @@ extern bool HasBehavior;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
-EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 
@@ -194,7 +193,7 @@ BOOL P_CheckMeleeRange (AActor *actor)
 		return true;
 
 	// [RH] Don't melee things too far above or below actor.
-	if (co_realactorheight)
+	if (P_AllowPassover())
 	{
 		if (pl->z > actor->z + actor->height)
 			return false;
