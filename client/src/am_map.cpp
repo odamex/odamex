@@ -317,7 +317,7 @@ static fixed_t scale_mtof = (fixed_t)INITSCALEMTOF;
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 static fixed_t scale_ftom;
 
-static patch_t *marknums[10]; // numbers used for marking by the automap
+static lumpHandle_t marknums[10]; // numbers used for marking by the automap
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0; // next point to be assigned
 
@@ -670,7 +670,7 @@ void AM_loadPics(void)
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatch (namebuf, PU_STATIC);
+		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 }
 
@@ -680,11 +680,7 @@ void AM_unloadPics(void)
 
 	for (i = 0; i < 10; i++)
 	{
-		if (marknums[i])
-		{
-			Z_ChangeTag (marknums[i], PU_CACHE);
-			marknums[i] = NULL;
-		}
+		marknums[i].clear();
 	}
 }
 
@@ -1621,7 +1617,9 @@ void AM_drawMarks (void)
 			fy = CYMTOF(pt.y) - 3;
 
 			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-				FB->DrawPatchCleanNoMove (marknums[i], fx, fy);
+			{
+				FB->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
+			}
 		}
 	}
 }
@@ -1682,12 +1680,12 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && hu_font[0] != NULL)
+	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;
 
-		int text_height = (hu_font[0]->height() + 1) * CleanYfac;
+		int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (sv_gametype == GM_COOP)

@@ -63,6 +63,15 @@
 lumpinfo_t*		lumpinfo;
 size_t			numlumps;
 
+// Generation of handle.
+// Takes up the first three bits of the handle id.  Starts at 1, increments
+// every time we unload the current set of WAD files, and eventually wraps
+// around from 7 to 1.  We skip 0 so a handle id of 0 can be considered NULL
+// and part of no generation.
+size_t handleGen = 1;
+const size_t HANDLE_GEN_MASK = BIT_MASK(0, 2);
+const size_t HANDLE_GEN_BITS = 3;
+
 void**			lumpcache;
 
 static unsigned	stdisk_lumpnum;
@@ -510,6 +519,35 @@ void W_InitMultipleFiles(const OResFiles& files)
 	stdisk_lumpnum = W_GetNumForName("STDISK");
 }
 
+/**
+ * @brief Return a handle for a given lump.
+ */
+lumpHandle_t W_LumpToHandle(const unsigned lump)
+{
+	lumpHandle_t rvo;
+	size_t id = static_cast<size_t>(lump) << HANDLE_GEN_BITS;
+	rvo.id = id | ::handleGen;
+	return rvo;
+}
+
+/**
+ * @brief Return a lump for a given handle, or -1 if the handle is invalid.
+ */
+int W_HandleToLump(const lumpHandle_t handle)
+{
+	size_t gen = handle.id & HANDLE_GEN_MASK;
+	if (gen != ::handleGen)
+	{
+		return -1;
+	}
+	const unsigned lump = handle.id >> HANDLE_GEN_BITS;
+	if (lump >= ::numlumps)
+	{
+		return -1;
+	}
+	return lump;
+}
+
 //
 // W_CheckNumForName
 // Returns -1 if name not found.
@@ -758,6 +796,39 @@ patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 	// denis - todo - would be good to replace non-existant patches with a default '404' patch
 }
 
+/**
+ * @brief Cache a patch by lump number and return a handle to it.
+ */
+lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag)
+{
+	W_CachePatch(lumpNum, tag);
+	return W_LumpToHandle(lumpNum);
+}
+
+/**
+ * @brief Cache a patch by name and namespace and return a handle to it.
+ */
+lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag, const int ns)
+{
+	return W_CachePatchHandle(W_GetNumForName(name, ns), tag);
+}
+
+/**
+ * @brief Resolve a handle into a patch_t, or an empty patch if the
+ *        lump was missing or from a previous generation.
+ */
+patch_t* W_ResolvePatchHandle(const lumpHandle_t lump)
+{
+	int lumpnum = W_HandleToLump(lump);
+	if (lumpnum == -1)
+	{
+		static patch_t empty;
+		memset(&empty, 0, sizeof(patch_t));
+		return &empty;
+	}
+	return static_cast<patch_t*>(lumpcache[lumpnum]);
+}
+
 //
 // W_FindLump
 //
@@ -805,6 +876,13 @@ void W_Close ()
 			handles.push_back(lump_p->handle);
 		}
 		lump_p++;
+	}
+
+	::handleGen = (::handleGen + 1) & HANDLE_GEN_MASK;
+	if (::handleGen == 0)
+	{
+		// 0 is reserved for the NULL handle.
+		::handleGen += 1;
 	}
 }
 
