@@ -196,13 +196,13 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
 //
 bool OScanner::scan()
 {
-	_isQuotedString = false;
-	
 	if (_unScan)
 	{
 		_unScan = false;
 		return true;
 	}
+
+	_isQuotedString = false;
 
 	while (_position < _scriptEnd)
 	{

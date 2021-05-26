@@ -686,6 +686,10 @@ void G_WorldDone()
 	if (!strnicmp(level.nextmap.c_str(), "EndGame", 7))
 	{
 		AM_Stop();
+		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
+		{
+			options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+		}
 		F_StartFinale(options);
 	}
 	else
@@ -721,12 +725,8 @@ void G_WorldDone()
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
 					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
-					F_StartFinale(options);
 				}
-				else
-				{
-					F_StartFinale(options);
-				}
+				F_StartFinale(options);
 			}
 		}
 	}
