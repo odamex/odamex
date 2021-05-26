@@ -574,32 +574,6 @@ static AActor* SpawnMonster(spawn::SpawnPoint& spawn, const recipe::recipe_t& re
 			// Add (possibly adjusted) health to pool.
 			P_AddHealthPool(mo);
 
-			// This monster wakes up hating a random player.
-			PlayerResults targets = PlayerQuery().hasHealth().execute();
-			if (targets.count > 0)
-			{
-				const size_t idx = P_RandomInt(targets.count);
-				mo->target = targets.players.at(idx)->mo->ptr();
-				P_SetMobjState(mo, mo->info->seestate, true);
-			}
-
-			// Play the see sound if we have one.
-			if (mo->info->seesound)
-			{
-				char sound[MAX_SNDNAME];
-
-				strcpy(sound, mo->info->seesound);
-
-				if (sound[strlen(sound) - 1] == '1')
-				{
-					sound[strlen(sound) - 1] = P_Random(mo) % 3 + '1';
-					if (S_FindSound(sound) == -1)
-						sound[strlen(sound) - 1] = '1';
-				}
-
-				S_Sound(mo, CHAN_VOICE, sound, 1, ATTN_NORM);
-			}
-
 			// Spawn a teleport fog if it's not an ambush.
 			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
 			S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
@@ -741,6 +715,47 @@ static AActors SpawnMonsterCount(spawn::SpawnPoint& spawn, const recipe::recipe_
 	return ok;
 }
 
+/**
+ * @brief Wake up all the passed monsters.
+ * 
+ * @details This is in a separate function because if we activated monsters
+ *          immediately upon spawning, their activation state causes them to
+ *          move a tiny bit, which can spawn block other monsters.
+ */
+void ActivateMonsters(AActors& mobjs)
+{
+	for (AActors::iterator it = mobjs.begin(); it != mobjs.end(); ++it)
+	{
+		AActor* mo = *it;
+
+		// Hate a random player.
+		PlayerResults targets = PlayerQuery().hasHealth().execute();
+		if (targets.count > 0)
+		{
+			const size_t idx = P_RandomInt(targets.count);
+			mo->target = targets.players.at(idx)->mo->ptr();
+			P_SetMobjState(mo, mo->info->seestate, true);
+		}
+
+		// Play the see sound if we have one.
+		if (mo->info->seesound)
+		{
+			char sound[MAX_SNDNAME];
+
+			strcpy(sound, mo->info->seesound);
+
+			if (sound[strlen(sound) - 1] == '1')
+			{
+				sound[strlen(sound) - 1] = P_Random(mo) % 3 + '1';
+				if (S_FindSound(sound) == -1)
+					sound[strlen(sound) - 1] = '1';
+			}
+
+			S_Sound(mo, CHAN_VOICE, sound, 1, ATTN_NORM);
+		}
+	}
+}
+
 } // namespace spawn
 
 static bool DEBUG_enabled;
@@ -843,7 +858,8 @@ void P_RunHordeTics()
 			break;
 		}
 
-		spawn::SpawnMonsterCount(*spawn, recipe);
+		AActors mobjs = spawn::SpawnMonsterCount(*spawn, recipe);
+		spawn::ActivateMonsters(mobjs);
 		break;
 	}
 	case HS_RELAX: {
@@ -869,8 +885,9 @@ void P_RunHordeTics()
 		if (spawn == NULL)
 			break;
 
-		AActors actors = spawn::SpawnMonsterCount(*spawn, recipe);
-		::gDirector.setBosses(actors);
+		AActors mobjs = spawn::SpawnMonsterCount(*spawn, recipe);
+		::gDirector.setBosses(mobjs);
+		spawn::ActivateMonsters(mobjs);
 		break;
 	}
 	}
