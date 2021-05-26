@@ -196,6 +196,8 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
 //
 bool OScanner::scan()
 {
+	_isQuotedString = false;
+	
 	if (_unScan)
 	{
 		_unScan = false;
@@ -239,6 +241,8 @@ bool OScanner::scan()
 		else if (_position[0] == '"')
 		{
 			// Found a quoted string.
+			_isQuotedString = true;
+			
 			_position += 1;
 			const char* begin = _position;
 			if (munchQuotedString() == false)
@@ -309,6 +313,14 @@ bool OScanner::compareToken(const char* string) const
 void OScanner::error(const char* message)
 {
 	I_Error("%s", message);
+}
+
+//
+// Check if last token read in was a quoted string.
+//
+bool OScanner::isQuotedString() const
+{
+	return _isQuotedString;
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")

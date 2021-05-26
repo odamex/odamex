@@ -43,6 +43,7 @@ class OScanner
 	std::string _token;
 	bool _unScan;
 	bool _removeEscapeCharacter;
+	bool _isQuotedString;
 
 	bool checkPair(char a, char b);
 	void skipWhitespace();
@@ -66,6 +67,7 @@ class OScanner
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	void error(const char* message);
+	bool isQuotedString() const;
 };
 
 #endif // __OSCANNER_H__
