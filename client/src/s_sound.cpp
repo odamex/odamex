@@ -377,7 +377,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 			return i;
 
 	// Find a channel with lower priority
-	for (size_t i = numChannels - 1; i >= 0; i--)
+	for (size_t i = numChannels - 1; i-- > 0;)
 		if (S_CompareChannels(tempchan, Channel[i]))
 			return i;
 
