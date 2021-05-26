@@ -509,7 +509,7 @@ namespace
 	
 		os.scan();
 		// TODO: properly identify identifiers so clear can be separated from regular strings
-		// if (IsIdentifier(os))
+		if (!os.isQuotedString())
 		{
 			if (UpperCompareToken(os, "clear"))
 			{
@@ -1002,7 +1002,7 @@ namespace
     void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
                         unsigned int flags2)
     {
-	    ParseMapInfoHelper<OLumpName>(os, doEquals);
+		ParseMapInfoHelper<OLumpName>(os, doEquals);
 		
 	    if (os.isQuotedString())
 	    {
@@ -1019,7 +1019,84 @@ namespace
 	    }
 	    else
 	    {
-		    
+	    	// endgame block
+		    if (UpperCompareToken(os, "endgame"))
+	    	{
+			    MustGetStringName(os, "{");
+		    	
+				while (os.scan())
+			    {
+				    if (UpperCompareToken(os, "}"))
+				    {
+					    break;
+				    }
+					
+					if (UpperCompareToken(os, "pic"))
+					{
+					    ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+					    // todo
+					}
+					else if (UpperCompareToken(os, "hscroll"))
+					{
+					    ParseMapInfoHelper<std::string>(os, doEquals);
+
+					    // todo
+					}
+					else if (UpperCompareToken(os, "vscroll"))
+					{
+					    ParseMapInfoHelper<std::string>(os, doEquals);
+
+					    // todo
+					}
+					else if (UpperCompareToken(os, "cast"))
+					{
+					    *static_cast<OLumpName*>(data) = "EndGameC";
+					}
+				    if (UpperCompareToken(os, "music"))
+				    {
+					    ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+				    	// todo
+					    os.scan();
+					    if (UpperCompareToken(os, ","))
+					    {
+						    MustGet<float>(os);
+					    	// todo
+					    }
+					    else
+					    {
+						    os.unScan();
+					    }
+				    }
+				}
+	    	}
+		    else if (UpperCompareToken(os, "EndPic"))
+		    {
+			    MustGetStringName(os, ",");
+			    MustGetString(os);
+
+		    	// todo
+		    }
+		    else if (UpperCompareToken(os, "EndPic,"))
+		    {
+			    MustGetString(os);
+
+		    	// todo
+		    }
+		    else if (UpperCompareToken(os, "EndSequence"))
+		    {
+			    MustGetStringName(os, ",");
+			    MustGetString(os);
+
+		    	// todo
+		    }
+		    else if (UpperCompareToken(os, "EndSequence,"))
+		    {
+			    MustGetString(os);
+
+		    	// todo
+		    }
 	    }
     }
 
