@@ -401,9 +401,6 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
-	if (S_UseMap8Volume())
-		approx_dist = MIN(approx_dist, MAX_SND_DIST);
-
 	if (approx_dist > MAX_SND_DIST)
 	{
 		*vol = 0;
