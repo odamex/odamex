@@ -1166,6 +1166,8 @@ namespace
     {
 	    ParseMapInfoHelper<OLumpName>(os, doEquals);
 		
+		*static_cast<OLumpName*>(data) = os.getToken();
+		
 	    // Scroll speed
 	    if (doEquals)
 	    {
