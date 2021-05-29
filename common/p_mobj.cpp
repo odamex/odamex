@@ -41,6 +41,7 @@
 #include "g_gametype.h"
 #include "c_dispatch.h"
 #include "p_horde.h"
+#include "p_hordespawn.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -2610,7 +2611,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i == MT_MONSTERSPAWN)
 	{
 		// Make sure we catalog monster spawns.
-		P_AddHordeSpawnPoint(mobj, mthing->type);
+		P_HordeAddSpawn(mobj, mthing->type);
 	}
 
 	if (z == ONFLOORZ)

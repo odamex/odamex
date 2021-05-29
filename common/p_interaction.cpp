@@ -603,15 +603,12 @@ static void P_GiveCarePack(player_t* player)
 	// Give the player a missing weapon - just one.
 	if (blocks >= 1)
 	{
-		const weapontype_t* weapons = P_RoundWeapons();
-		for (size_t i = 0;; i++)
+		const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
+		for (size_t i = 0; weapons.size(); i++)
 		{
-			if (weapons[i] == wp_nochange)
-				break;
-
-			if (!player->weaponowned[weapons[i]])
+			if (!player->weaponowned[weapons.at(i)])
 			{
-				P_GiveWeapon(player, weapons[i], false);
+				P_GiveWeapon(player, weapons.at(i), false);
 				blocks -= 1;
 				Printf("CARE: Weapon\n");
 				break;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2021 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,38 +17,30 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  "Horde" game mode.
+//  "Horde" game mode spawn selection.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
 #include "actor.h"
-#include "doomdata.h"
 #include "p_hordedefine.h"
 
-enum hordeState_e
+#define TTYPE_HORDE_ITEM (5301)
+#define TTYPE_HORDE_MONSTER (5302)
+#define TTYPE_HORDE_BOSS (5303)
+#define TTYPE_HORDE_FLYING (5304)
+#define TTYPE_HORDE_SNIPER (5305)
+
+struct hordeSpawn_t
 {
-	HS_STARTING,
-	HS_PRESSURE,
-	HS_RELAX,
-	HS_BOSS,
+	AActor::AActorPtr mo;
+	int type;
 };
+typedef std::vector<hordeSpawn_t> hordeSpawns_t;
 
-struct hordeInfo_t
-{
-	hordeState_e state;
-	int round;
-	int alive;
-	int killed;
-	int goal;
-};
-
-hordeInfo_t P_HordeInfo();
-void P_AddHealthPool(AActor* mo);
-void P_RemoveHealthPool(AActor* mo);
-
-void P_RunHordeTics();
-bool P_IsHordeMode();
-bool P_IsHordeThing(const int type);
-const hordeDefine_t::weapons_t& P_HordeWeapons();
+void P_HordeAddSpawn(AActor* mo, const int type);
+void P_HordeClearSpawns();
+hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe);
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe);
+void P_HordeSpawnItem();

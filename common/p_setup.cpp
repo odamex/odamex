@@ -50,6 +50,7 @@
 
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "p_hordespawn.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -587,7 +588,7 @@ void P_LoadThings (int lump)
 	mapthing_t *mt = (mapthing_t *)data;
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
-	P_ClearHordeSpawnPoints();
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
