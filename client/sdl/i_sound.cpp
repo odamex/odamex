@@ -42,7 +42,7 @@
 #include "i_xbox.h"
 #endif
 
-#define NUM_CHANNELS 16
+#define NUM_CHANNELS 32
 
 static int mixer_freq;
 static Uint16 mixer_format;
