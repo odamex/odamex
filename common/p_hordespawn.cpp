@@ -167,7 +167,7 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 
 /**
  * @brief Add a spawn point to the list of known spawns.
- * 
+ *
  * @param mo Actor to add.
  * @param type Type of spawn.
  */
@@ -229,6 +229,13 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		     info.radius > (32 * FRACUNIT)))
 			continue;
 
+		// Big snipers are similar, but they get to fit
+		// into a 128x128 square.
+		if (sit->type == TTYPE_HORDE_BIGSNIPER &&
+		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
+		     info.radius > (64 * FRACUNIT)))
+			continue;
+
 		SpawnPointWeight weight;
 		weight.spawn = &*sit;
 
@@ -237,7 +244,8 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		//      easy to exploit.
 
 		float score = 1.0f;
-		if (sit->type == TTYPE_HORDE_SNIPER || sit->type == TTYPE_HORDE_FLYING)
+		if (sit->type == TTYPE_HORDE_FLYING || sit->type == TTYPE_HORDE_SNIPER ||
+		    sit->type == TTYPE_HORDE_BIGSNIPER)
 			score = 0.75f;
 
 		weight.score = score;
@@ -305,11 +313,11 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 	std::sort(weights.begin(), weights.end(), CmpDist);
 
 	// Ensure we only spawn as many monsters as can fit in the spawn.
-	// Snipers must fit in a 64x64 square, bosses must fit in a 256x256 square,
-	// everything else must fit in a 128x128 square.
+	// Snipers must fit in a 64x64 square, big snipers must fit into a 128x128 square,
+	// bosses must fit in a 256x256 square, everything else must fit in a 128x128 square.
 	const int rad = ::mobjinfo[recipe.type].radius >> FRACBITS;
 	int maxGroupSize = 4;
-	if (spawn.type == TTYPE_HORDE_SNIPER ||
+	if (spawn.type == TTYPE_HORDE_SNIPER || spawn.type == TTYPE_HORDE_BIGSNIPER ||
 	    (spawn.type == TTYPE_HORDE_BOSS && rad * 2 > 128) || rad * 2 > 64)
 	{
 		// We can only fit one monster per spawn point.

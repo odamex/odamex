@@ -604,7 +604,7 @@ static void P_GiveCarePack(player_t* player)
 	if (blocks >= 1)
 	{
 		const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
-		for (size_t i = 0; weapons.size(); i++)
+		for (size_t i = 0; i < weapons.size(); i++)
 		{
 			if (!player->weaponowned[weapons.at(i)])
 			{

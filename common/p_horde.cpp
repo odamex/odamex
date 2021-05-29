@@ -124,7 +124,7 @@ class HordeState
 	{
 		setState(HS_STARTING);
 		m_round = 1;
-		m_roundDefine = &P_HordeDefine(1);
+		m_roundDefine = &P_HordeDefine(m_round - 1);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
 		m_roundStartHealth = 0;
@@ -132,7 +132,7 @@ class HordeState
 
 	/**
 	 * @brief Start the given round.
-	 * 
+	 *
 	 * @param round Round number to start.
 	 */
 	void startRound(const int round)
@@ -145,7 +145,7 @@ class HordeState
 
 		setState(HS_STARTING);
 		m_round = round;
-		m_roundDefine = &P_HordeDefine(m_round);
+		m_roundDefine = &P_HordeDefine(m_round - 1);
 		m_roundStartHealth = m_killedHealth;
 	}
 
@@ -281,6 +281,10 @@ void HordeState::tick()
 			return;
 		}
 
+		const int hp = ::mobjinfo[recipe.type].spawnhealth * recipe.count;
+		Printf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
+		       ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
+
 		AActors mobjs = P_HordeSpawn(*spawn, recipe);
 		ActivateMonsters(mobjs);
 		break;
@@ -374,7 +378,7 @@ bool P_IsHordeMode()
 
 bool P_IsHordeThing(const int type)
 {
-	return type >= TTYPE_HORDE_ITEM && type <= TTYPE_HORDE_SNIPER;
+	return type >= TTYPE_HORDE_ITEM && type <= TTYPE_HORDE_BIGSNIPER;
 }
 
 const hordeDefine_t::weapons_t& P_HordeWeapons()

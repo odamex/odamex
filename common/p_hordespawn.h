@@ -31,6 +31,28 @@
 #define TTYPE_HORDE_BOSS (5303)
 #define TTYPE_HORDE_FLYING (5304)
 #define TTYPE_HORDE_SNIPER (5305)
+#define TTYPE_HORDE_BIGSNIPER (5306)
+
+static inline const char* HordeThingStr(const int ttype)
+{
+	switch (ttype)
+	{
+	case TTYPE_HORDE_ITEM:
+		return "Item";
+	case TTYPE_HORDE_MONSTER:
+		return "Monster";
+	case TTYPE_HORDE_BOSS:
+		return "Boss";
+	case TTYPE_HORDE_FLYING:
+		return "Flying";
+	case TTYPE_HORDE_SNIPER:
+		return "Sniper";
+	case TTYPE_HORDE_BIGSNIPER:
+		return "Big Sniper";
+	default:
+		return "Unknown";
+	}
+}
 
 struct hordeSpawn_t
 {
