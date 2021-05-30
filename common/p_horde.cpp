@@ -348,6 +348,9 @@ void P_RemoveHealthPool(AActor* mo)
 	if (!(mo->oflags & MFO_HEALTHPOOL))
 		return;
 
+	// Unset the flag - we only get one try.
+	mo->oflags &= ~MFO_HEALTHPOOL;
+
 	::gDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
 }
 
