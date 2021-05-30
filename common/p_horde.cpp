@@ -23,18 +23,10 @@
 
 #include "p_horde.h"
 
-#include <algorithm>
-#include <math.h>
-
 #include "c_dispatch.h"
-#include "c_effect.h"
 #include "d_player.h"
 #include "doomstat.h"
-#include "doomtype.h"
-#include "i_system.h"
 #include "m_random.h"
-#include "m_vectors.h"
-#include "p_hordedefine.h"
 #include "p_hordespawn.h"
 #include "p_local.h"
 #include "p_tick.h"
