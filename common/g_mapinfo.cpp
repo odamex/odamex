@@ -1014,6 +1014,11 @@ namespace
 			    int map = std::atoi(map_name);
 			    sprintf(map_name, "MAP%02d", map);
 		    }
+		    else if(UpperCompareToken(os, "EndBunny"))
+		    {
+			    *static_cast<OLumpName*>(data) = "EndGame3";
+			    return;
+		    }
 
 		    *static_cast<OLumpName*>(data) = map_name;
 	    }
