@@ -393,7 +393,7 @@ int V_StringWidth(const byte* str)
 int V_StringHeight(const char* str)
 {
 	// Default width without a font loaded is 8.
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return 8;
 
 	int lineheight = 9; // [AM] Hardcoded in the text drawer.
