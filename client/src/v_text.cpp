@@ -44,7 +44,7 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-lumpHandle_t hu_font[HU_FONTSIZE];
+OGlobalFont hu_font;
 
 static lumpHandle_t hu_bigfont[HU_FONTSIZE];
 static lumpHandle_t hu_smallfont[HU_FONTSIZE];
@@ -128,7 +128,9 @@ void V_TextShutdown()
 {
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		::hu_font[i].clear();
+		::hu_bigfont[i].clear();
+		::hu_smallfont[i].clear();
+		::hu_digfont[i].clear();
 	}
 }
 
@@ -139,12 +141,12 @@ void V_TextShutdown()
  */
 void V_SetFont(const char* fontname)
 {
-	if (stricmp(fontname, "BIGFONT") == 0)
-		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
-	else if (stricmp(fontname, "SMALLFONT") == 0)
-		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
-	else if (stricmp(fontname, "DIGFONT") == 0)
-		memcpy(::hu_font, ::hu_digfont, sizeof(::hu_digfont));
+	if (!stricmp(fontname, "BIGFONT"))
+		::hu_font.setFont(::hu_bigfont);
+	else if (!stricmp(fontname, "SMALLFONT"))
+		::hu_font.setFont(::hu_smallfont);
+	else if (!stricmp(fontname, "DIGFONT"))
+		::hu_font.setFont(::hu_digfont);
 }
 
 int V_TextScaleXAmount()
