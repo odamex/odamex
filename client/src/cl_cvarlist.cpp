@@ -551,6 +551,8 @@ CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 22050.0f, 192000.0f)
 
+// [AM] If you bump the maximum, change the NUM_CHANNELS define to match,
+//      otherwise many things will break.
 CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
                      CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f,
                      32.0f)

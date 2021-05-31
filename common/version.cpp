@@ -250,7 +250,7 @@ const char* NiceVersionDetails()
 	tried = true;
 
 	// Debug builds get a special callout.
-#ifdef _DEBUG
+#if !defined(_DEBUG)
 	const char* debug = "";
 #else
 	const char* debug = ", Debug Build";

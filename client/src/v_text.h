@@ -29,8 +29,9 @@
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
+#include "w_wad.h"
 
-extern patch_t* hu_font[HU_FONTSIZE];
+extern lumpHandle_t hu_font[HU_FONTSIZE];
 
 void V_TextInit();
 void V_TextShutdown();

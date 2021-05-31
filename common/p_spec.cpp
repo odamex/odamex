@@ -1003,16 +1003,15 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (sec, i))
+		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec, i, 0);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
-			side = getSide (sec, i, 1);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
+			side = &sides[(sec->lines[i])->sidenum[0]];
+			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+				minsize = textureheight[side->bottomtexture];
+
+			side = &sides[(sec->lines[i])->sidenum[1]];
+			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+				minsize = textureheight[side->bottomtexture];
 		}
 	}
 	return minsize;
@@ -1038,16 +1037,15 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (sec, i))
+		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec,i,0);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
-			side = getSide (sec,i,1);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
+			side = &sides[(sec->lines[i])->sidenum[0]];
+			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+				minsize = textureheight[side->toptexture];
+
+			side = &sides[(sec->lines[i])->sidenum[1]];
+			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+				minsize = textureheight[side->toptexture];
 		}
 	}
 	return minsize;
