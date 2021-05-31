@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include <map>
 #include <stdlib.h>
 
 #include "z_zone.h"
@@ -104,10 +104,10 @@ class OZone
 		OFileLine fileLine; // __FILE__, __LINE__
 	};
 
-	typedef OHashTable<void*, MemoryBlockInfo> MemoryBlockTable;
+	typedef std::map<void*, MemoryBlockInfo> MemoryBlockTable;
 	MemoryBlockTable m_heap;
 
-	void dealloc(MemoryBlockTable::iterator& block)
+	MemoryBlockTable::iterator dealloc(MemoryBlockTable::iterator& block)
 	{
 		if (block->second.user)
 		{
@@ -117,11 +117,15 @@ class OZone
 		void* imFree = block->first;
 
 		free(imFree);
+
+		MemoryBlockTable::iterator next = block;
+		++next;
 		m_heap.erase(block);
+		return next;
 	}
 
   public:
-	OZone() : m_heap(4096)
+	OZone()
 	{
 	}
 
@@ -132,14 +136,11 @@ class OZone
 
 	void clear()
 	{
-		// Free the memory first.
-		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
+		// Free all memory.
+		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end();)
 		{
-			dealloc(it);
+			it = dealloc(it);
 		}
-
-		// Now clear the heap.
-		m_heap.clear();
 	}
 
 	void* alloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
@@ -233,14 +234,15 @@ class OZone
 	 */
 	void deallocTags(const int lowtag, const int hightag)
 	{
-		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
+		for (MemoryBlockTable::iterator it = m_heap.begin();it != m_heap.end();)
 		{
 			if (it->second.tag < lowtag || it->second.tag > hightag)
 			{
+				++it;
 				continue;
 			}
 
-			dealloc(it);
+			it = dealloc(it);
 		}
 	}
 

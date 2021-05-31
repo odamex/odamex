@@ -211,17 +211,6 @@ bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 void    P_PlayerInSpecialSector (player_t *player);
 
 //
-// getSide()
-// Will return a side_t*
-//	given the number of the current sector,
-//	the line number, and the side (0/1) that you want.
-//
-inline side_t *getSide (sector_t *sec, int line, int side)
-{
-	return &sides[ (sec->lines[line])->sidenum[side] ];
-}
-
-//
 // getSector()
 // Will return a sector_t*
 //	given the number of the current sector,
@@ -234,16 +223,6 @@ inline sector_t *getSector (int currentSector, int line, int side)
 
 
 //
-// twoSided()
-// Given the sector number and the line number,
-//	it will tell you whether the line is two-sided or not.
-//
-inline int twoSided (sector_t *sec, int line)
-{
-	return (sec->lines[line])->flags & ML_TWOSIDED;
-}
-
-//
 // getNextSector()
 // Return sector_t * of sector next to current.
 // NULL if not two-sided line
@@ -253,9 +232,8 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
 
-	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-
-	return line->frontsector;
+	return line->frontsector == sec ? (line->backsector != sec ? line->backsector : NULL)
+	                                : line->frontsector;
 }
 
 
