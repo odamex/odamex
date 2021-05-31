@@ -41,7 +41,7 @@ set (GCONSOLE 1)
 # NACP info
 set (APP_TITLE "Odamex for Nintendo Switch")
 set (APP_AUTHOR "The Odamex Team")
-set (APP_VERSION "0.9.2")
+set (APP_VERSION "10.0.0")
 
 # Compiler stuff
 set(NACP_TOOL "${DEVKITPRO}/tools/bin/nacptool"  CACHE PATH "nacp-tool")
