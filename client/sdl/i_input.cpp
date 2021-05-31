@@ -32,7 +32,6 @@
 #include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
-#include "i_sdlinput.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
