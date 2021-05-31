@@ -48,6 +48,7 @@ lumpHandle_t hu_font[HU_FONTSIZE];
 
 static lumpHandle_t hu_bigfont[HU_FONTSIZE];
 static lumpHandle_t hu_smallfont[HU_FONTSIZE];
+static lumpHandle_t hu_digfont[HU_FONTSIZE];
 
 byte *ConChars;
 extern byte *Ranges;
@@ -87,6 +88,35 @@ void V_TextInit()
 		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 
+	const char* digfont = "DIG%02d";
+	const char* digfont_literal = "DIG%c";
+
+	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
+	// and numbers are themselves, other characters are their ASCII values.
+	j = HU_FONTSTART;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+		{
+			StrFormat(buffer, digfont_literal, j++);
+		}
+		else
+		{
+			StrFormat(buffer, digfont, j++);
+		}
+
+		// Some letters of this font might be missing.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+		{
+			::hu_digfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		}
+		else
+		{
+			::hu_digfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+		}
+	}
+
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
 }
@@ -113,6 +143,8 @@ void V_SetFont(const char* fontname)
 		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
 	else if (stricmp(fontname, "SMALLFONT") == 0)
 		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
+	else if (stricmp(fontname, "DIGFONT") == 0)
+		memcpy(::hu_font, ::hu_digfont, sizeof(::hu_digfont));
 }
 
 int V_TextScaleXAmount()
