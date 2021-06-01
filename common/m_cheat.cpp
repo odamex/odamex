@@ -194,6 +194,10 @@ bool CHEAT_AreCheatsEnabled()
 	if (simulated_connection)
 		return false;
 
+	// Disallow cheats within any state other than ingame.
+	if (gamestate != GS_LEVEL)
+		return false;
+
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
 	if (!multiplayer && sv_skill == sk_nightmare)
@@ -372,10 +376,17 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 			}
 			break;
 	}
-	if (player == &consoleplayer())
-		Printf (PRINT_HIGH, "%s\n", msg);
-	else
-		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
+
+	if (!silentmsg)
+	{
+			if (player == &consoleplayer())
+				Printf("%s\n", msg);
+			
+#ifdef SERVER_APP
+			SV_BroadcastPrintfButPlayer(PRINT_HIGH, player->id, "%s is a cheater: %s\n",
+			                            player->userinfo.netname.c_str(), msg);
+			#endif
+	}
 }
 
 void CHEAT_GiveTo(player_t* player, const char* name)

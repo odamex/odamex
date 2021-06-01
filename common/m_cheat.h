@@ -80,7 +80,7 @@ enum ECheatFlags
 
 // [RH] Functions that actually perform the cheating
 class player_s;
-void CHEAT_DoCheat (player_s *player, int cheat);
+void CHEAT_DoCheat (player_s *player, int cheat, bool silentmsg=false);
 void CHEAT_GiveTo (player_s *player, const char *item);
 
 // Heretic code (unused)

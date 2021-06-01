@@ -2405,6 +2405,36 @@ void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
 	SV_BroadcastPrintf(PRINT_NORCON, "%s", string);
 }
 
+void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...)
+{
+	va_list argptr;
+	std::string string;
+	client_t* cl;
+
+	va_start(argptr, format);
+	VStrFormat(string, format, argptr);
+	va_end(argptr);
+
+	Printf(printlevel, "%s", string.c_str()); // print to the console
+
+	// Hacky code to display messages as normal ones to clients
+	if (printlevel == PRINT_NORCON)
+		printlevel = PRINT_HIGH;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		cl = &(it->client);
+
+		client_t* excluded_client = &idplayer(player_id).client;
+
+		if (cl == excluded_client)
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf,
+		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
+	}
+}
+
 // GhostlyDeath -- same as above but ONLY for spectators
 void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 {
