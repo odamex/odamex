@@ -198,6 +198,12 @@ typedef uint64_t			dtime_t;
 /**
  * @brief Returns a bitfield with a specific bit set.
  */
+
+// Ch0wW: Special case here! Switch does already have a BIT define, we'll just undef it.
+#if __SWITCH__
+#undef BIT
+#endif
+
 static inline uint32_t BIT(uint32_t a)
 {
     return 1U << a;

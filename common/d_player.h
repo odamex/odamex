@@ -96,14 +96,14 @@ typedef enum
 //
 typedef enum
 {
-	CF_NOCLIP			= 1,		// No clipping, walk through barriers.
-	CF_GODMODE			= 2,		// No damage, no health loss.
-	CF_NOMOMENTUM		= 4,		// Not really a cheat, just a debug aid.
-	CF_NOTARGET			= 8,		// [RH] Monsters don't target
-	CF_FLY				= 16,		// [RH] Flying player
-	CF_CHASECAM			= 32,		// [RH] Put camera behind player
-	CF_FROZEN			= 64,		// [RH] Don't let the player move
-	CF_REVERTPLEASE		= 128		// [RH] Stick camera in player's head if he moves
+	CF_NOCLIP =			(1 << 0),       // No clipping, walk through barriers.
+	CF_GODMODE =		(1 << 1),      // No damage, no health loss.
+	CF_NOMOMENTUM =		(1 << 2),   // Not really a cheat, just a debug aid.
+	CF_NOTARGET =		(1 << 3),     // [RH] Monsters don't target
+	CF_FLY =			(1 << 4),          // [RH] Flying player
+	CF_CHASECAM =		(1 << 5),     // [RH] Put camera behind player
+	CF_FROZEN =			(1 << 6),       // [RH] Don't let the player move
+	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if he moves
 } cheat_t;
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
