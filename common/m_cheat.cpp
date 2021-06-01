@@ -377,6 +377,13 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 				msg = msgbuild;
 			}
 			break;
+
+		case CHT_BUDDHA: 
+		{
+		        player->cheats ^= CF_BUDDHA;
+		        msg = (player->cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
+		                                           : GStrings(TXT_BUDDHAOFF);
+	    }
 	}
 
 	if (!silentmsg)

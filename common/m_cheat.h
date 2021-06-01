@@ -76,6 +76,7 @@ enum ECheatFlags
 	CHT_MASSACRE,
 	CHT_CHASECAM,
 	CHT_FLY,
+	CHT_BUDDHA,
 };
 
 // [RH] Functions that actually perform the cheating

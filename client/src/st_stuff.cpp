@@ -695,6 +695,15 @@ BEGIN_COMMAND (fov)
 }
 END_COMMAND (fov)
 
+BEGIN_COMMAND(buddha)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	CHEAT_DoCheat(&consoleplayer(), CHT_BUDDHA);
+	CL_SendCheat(CHT_BUDDHA);
+}
+END_COMMAND(buddha)
 
 int ST_calcPainOffset(void)
 {

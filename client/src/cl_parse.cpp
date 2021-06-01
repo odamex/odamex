@@ -992,7 +992,15 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer& msg)
 	p->armorpoints -= armorDamage;
 
 	if (p->health < 0)
-		p->health = 0;
+	{
+		if (p->cheats & CF_BUDDHA)
+		{
+			p->health = 1;
+			p->mo->health = 1;
+		}
+		else 
+			p->health = 0;
+	}
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
 
