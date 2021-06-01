@@ -218,7 +218,7 @@ CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 
 
 CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
 					"2 = use weapon preferences)",
-					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_RANGE(			cl_weaponpref_fst, "0", "Weapon preference level for fists",
 					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)

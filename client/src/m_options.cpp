@@ -675,14 +675,15 @@ menu_t NetworkMenu = {
 static value_t WeapSwitch[] = {
 	{ 0.0,			"Never" },
 	{ 1.0,			"Always" },
-	{ 2.0,			"By Preference" }
+	{ 2.0,			"By Preference" },
+    { 3.0,			"Dynamic PWO"}
 };
 
 extern const char *weaponnames[];
 
 static menuitem_t WeaponItems[] = {
 	{bricktext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {3.0}, {0.0}, {0.0}, {WeapSwitch}},
+	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {4.0}, {0.0}, {0.0}, {WeapSwitch}},
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
