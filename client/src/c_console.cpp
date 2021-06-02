@@ -901,6 +901,11 @@ static int C_StringWidth(const char* str)
 	return width;
 }
 
+void C_ClearCommand()
+{
+	::CmdLine.clear();
+	::CmdCompletions.clear();
+}
 
 //
 // C_InitConsoleBackground
@@ -1207,12 +1212,6 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 				outlinelog[i] = '=';
 		}
 
-		if (LOG.is_open())
-		{
-			LOG << outlinelog;
-			LOG.flush();
-		}
-
 		// Up the row buffer for the console.
 		// This is incremented here so that any time we
 		// print something we know about it.  This feels pretty hacky!
@@ -1235,6 +1234,17 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		StripColorCodes(sanitized_str);
 
 	C_PrintString(printlevel, color_code, sanitized_str.c_str());
+
+	// Once done, log 
+	if (LOG.is_open())
+	{
+		// Strip if not already done
+		if (con_coloredmessages)
+			StripColorCodes(sanitized_str);
+
+		LOG << sanitized_str;
+		LOG.flush();
+	}
 
 #if defined (_WIN32) && defined(_DEBUG)
 	// [AM] Since we don't have stdout/stderr in a non-console Win32 app,

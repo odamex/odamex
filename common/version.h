@@ -32,25 +32,66 @@
 #error "Odamex is not client or server"
 #endif
 
-// Lots of different representations for the version number
-#define CONFIGVERSIONSTR "90"
-#define GAMEVER (0*256+90)
+/**
+ * @brief Construct a packed integer from major, minor and patch version
+ *        numbers.
+ *
+ * @param major Major version number.
+ * @param minor Minor version number - must be between 0 and 25.
+ * @param patch Patch version number - must be between 0 and 9.
+ */
+#define MAKEVER(major, minor, patch) ((major)*256 + ((minor)*10) + (patch))
 
-#define DOTVERSIONSTR "0.9.0"
+/**
+ * @brief Given a packed version integer, return the major version.
+ */
+#define VERMAJ(v) ((v) / 256)
+
+/**
+ * @brief Given a packed version integer, return the minor version.
+ */
+#define VERMIN(v) (((v) % 256) / 10)
+
+/**
+ * @brief Given a packed version integer, return the patch version.
+ */
+#define VERPATCH(v) (((v) % 256) % 10)
+
+/**
+ * @brief Break version into three output variables.
+ */
+#define BREAKVER(v, outmaj, outmin, outpat) \
+	{                                       \
+		outmaj = VERMAJ(v);                 \
+		outmin = VERMIN(v);                 \
+		outpat = VERPATCH(v);               \
+	}
+
+// Lots of different representations for the version number
+
+// Used by configuration files.  upversion.py will update thie field
+// deterministically and unambiguously so newer versions always compare
+// greater.
+#define CONFIGVERSIONSTR "92"
+
+#define DOTVERSIONSTR "0.9.2"
+#define GAMEVER (MAKEVER(0, 9, 2))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
 
-#define SERVERMAJ (gameversion / 256)
-#define SERVERMIN ((gameversion % 256) / 10)
-#define SERVERREL ((gameversion % 256) % 10)
-#define CLIENTMAJ (GAMEVER / 256)
-#define CLIENTMIN ((GAMEVER % 256) / 10)
-#define CLIENTREL ((GAMEVER % 256) % 10)
+#define SERVERMAJ (VERMAJ(gameversion))
+#define SERVERMIN (VERMIN(gameversion))
+#define SERVERREL (VERPAT(gameversion))
+#define CLIENTMAJ (VERMAJ(GAMEVER))
+#define CLIENTMIN (VERMIN(GAMEVER))
+#define CLIENTREL (VERPAT(GAMEVER))
 
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
-// earlier than this version.
-#define SAVESIG "ODAMEXSAVE090   "	// Needs to be exactly 16 chars long
+// earlier than this version.  Needs to be exactly 16 chars long.
+// 
+// upversion.py will update thie field deterministically and unambiguously.
+#define SAVESIG "ODAMEXSAVE092   "
 
 #define NETDEMOVER 3
 

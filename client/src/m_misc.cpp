@@ -135,6 +135,8 @@ END_COMMAND (savecfg)
 
 extern int cvar_defflags;
 
+EXTERN_CVAR(cl_downloadsites);
+
 /**
  * Load a configuration file from the default configuration file.
  *
@@ -151,6 +153,28 @@ void M_LoadDefaults(void)
 	cvar_defflags = CVAR_ARCHIVE;
 	AddCommandString(cmd);
 	cvar_defflags = 0;
+
+	if (::configver <= 90)
+	{
+		bool updated = false;
+
+		// Convert old default that had ts.chaosunleashed.net.  It's either
+		// dead or so intermittent that it slows down WAD downloading.
+
+		const char* cl_download_old =
+		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+		    "http://grandpachuck.org/files/wads/ http://ts.chaosunleashed.net/ "
+		    "https://wads.doomleague.org/ http://files.funcrusher.net/wads/";
+
+		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		{
+			updated = true;
+			cl_downloadsites.RestoreDefault();
+		}
+
+		if (updated)
+			Printf("%s: Updating old defaults.\n", __FUNCTION__);
+	}
 
 	AddCommandString("alias ? help");	
 

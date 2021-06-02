@@ -29,8 +29,9 @@
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
+#include "w_wad.h"
 
-extern patch_t* hu_font[HU_FONTSIZE];
+extern lumpHandle_t hu_font[HU_FONTSIZE];
 
 void V_TextInit();
 void V_TextShutdown();
@@ -46,6 +47,7 @@ typedef struct brokenlines_s brokenlines_t;
 
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+int V_LineHeight();
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);

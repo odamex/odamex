@@ -264,7 +264,6 @@ void G_InitNew (const char *mapname)
 
 	usergame = true;				// will be set false if a demo
 	paused = false;
-	demoplayback = false;
 	viewactive = true;
 
 	D_SetupUserInfo();
@@ -452,7 +451,7 @@ void G_DoCompleted (void)
 		{
 			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
 			{
-				if (!multiplayer || demoplayback || demorecording)
+				if (!multiplayer || demoplayback)
 				{
 					// Normal progression
 					G_WorldDone();
@@ -606,7 +605,6 @@ void G_DoLoadLevel (int position)
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
-	Z_CheckHeap ();
 
 	// clear cmd building stuff // denis - todo - could we get rid of this?
 	Impulse = 0;
