@@ -2325,12 +2325,7 @@ void A_Spawn(AActor* mo)
 	{
 		AActor* newmobj;
 
-		newmobj = new AActor (
-			mo->x, 
-			mo->y, 
-			(mo->state->misc2 << FRACBITS) + mo->z, 
-			(mobjtype_t)(mo->state->misc1 - 1)
-		);
+		newmobj = new AActor ( mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z, (mobjtype_t)(mo->state->misc1 - 1) );
 
 		//newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND); // TODO !!!
 	}
@@ -2349,10 +2344,18 @@ void A_Face(AActor* mo)
 
 void A_Scratch(AActor* mo)
 {
-	mo->target && (A_FaceTarget(mo), P_CheckMeleeRange(mo)) ? mo->state->misc2 ? S_Sound(mo, CHAN_BODY, SoundMap[mo->state->misc2], 1, ATTN_NORM)
-	              : (void)0,
-		P_DamageMobj(mo->target, mo, mo, mo->state->misc1) : (void)0;
-	
+	if (mo->target)
+	{
+		A_FaceTarget(mo);
+
+		if (P_CheckMeleeRange(mo))
+		{
+			if (mo->state->misc2)
+				S_Sound(mo, CHAN_BODY, SoundMap[mo->state->misc2], 1, ATTN_NORM);
+
+			P_DamageMobj(mo->target, mo, mo, mo->state->misc1);
+		}
+	}
 }
 
 void A_PlaySound(AActor* mo)
@@ -2361,7 +2364,7 @@ void A_PlaySound(AActor* mo)
 
 	int sndmap = mo->state->misc1;
 
-	if (sndmap >= sizeof(SoundMap))
+	if (sndmap >= ARRAY_LENGTH(SoundMap))
 	{
 		DPrintf("Warning: Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;
