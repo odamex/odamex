@@ -676,7 +676,7 @@ static value_t WeapSwitch[] = {
 	{ 0.0,			"Never" },
 	{ 1.0,			"Always" },
 	{ 2.0,			"By Preference" },
-    { 3.0,			"Dynamic PWO"}
+    { 3.0,			"Attack Cancels PWO"}
 };
 
 extern const char *weaponnames[];
