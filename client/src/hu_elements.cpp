@@ -1505,6 +1505,7 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
+	const bool netdemoplaying = ::netdemo.isPlaying() || ::netdemo.isPaused();
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
@@ -1521,7 +1522,7 @@ void EATargets(int x, int y, const float scale,
 			continue;
 
 		// The server doesn't want us to see enemy target names.
-		if (!sv_allowtargetnames && !consoleplayer().spectator &&
+		if (!netdemoplaying && !::sv_allowtargetnames && !consoleplayer().spectator &&
 		    !P_AreTeammates(displayplayer(), *it))
 		{
 			continue;
@@ -1582,7 +1583,7 @@ void EATargets(int x, int y, const float scale,
 		{
 			// Figure out if we should be showing this player's health.
 			std::string nameplate;
-			if (P_AreTeammates(*Targets[i].PlayPtr, consoleplayer()))
+			if (netdemoplaying || P_AreTeammates(*Targets[i].PlayPtr, consoleplayer()))
 			{
 				int health = Targets[i].PlayPtr->health;
 
