@@ -20,6 +20,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomtype.h"
+
 #include "oscanner.h"
 
 #include "cmdlib.h"
@@ -348,7 +350,7 @@ int OScanner::getTokenAsInt() const
 
 	if (str == "MAXINT")
 	{
-		return INT32_MAX;
+		return MAXINT;//INT32_MAX;
 	}
 
 	const int num = strtol(str.c_str(), &stopper, 0);
