@@ -1,6 +1,8 @@
 # Find the protobuf we just compiled
 find_package(protobuf
-  PATHS "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/cmake"
+  PATHS
+    "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/lib/cmake/protobuf"
   NO_DEFAULT_PATH)
 
 # protoc was compiled separately using the host system (and not the target)
