@@ -38,6 +38,7 @@
 #include "p_mobj.h"
 
 #include "d_player.h"
+#include "d_dehacked.h"
 
 
 extern bool HasBehavior;
@@ -1645,7 +1646,14 @@ void A_Mushroom (AActor *actor)
 
 	A_Explode (actor);	// First make normal explosion
 
-	if(serverside)
+	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+	//
+	// THIS CODE BELOW CRASHES BECAUSE OF THINKERS!
+	// IT'S A SERIOUS BUG TO FIX!!
+	//
+	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+
+	/*if(serverside)
 	{
         // Now launch mushroom cloud
         for (i = -n; i <= n; i += 8)
@@ -1666,7 +1674,7 @@ void A_Mushroom (AActor *actor)
                 }
             }
         }
-	}
+	}*/
 }
 
 
@@ -2309,19 +2317,19 @@ void A_Gibify(AActor *mo) // denis - squash thing
 //
 // A small set of highly-sought-after code pointers
 //
-
 void A_Spawn(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
+	// Partial integration of A_Spawn.
+	// ToDo: Currently missing MBF's MF_FRIEND flag support!
 	if (mo->state->misc1)
 	{
-		AActor* newmobj = P_SpawnMobj(
-			mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
-			mo->state->misc1 - 1
-		);
-		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+		AActor* newmobj;
+
+		newmobj = new AActor ( mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z, (mobjtype_t)(mo->state->misc1 - 1) );
+
+		//newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND); // TODO !!!
 	}
-	*/
+	
 }
 
 void A_Turn(AActor* mo)
@@ -2336,26 +2344,44 @@ void A_Face(AActor* mo)
 
 void A_Scratch(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	mo->target && (A_FaceTarget(mo), P_CheckMeleeRange(mo)) ?
-		mo->state->misc2 ? S_StartSound(mo, mo->state->misc2) : (void)0,
-		P_DamageMobj(mo->target, mo, mo, mo->state->misc1) : (void)0;
-	*/
+	if (mo->target)
+	{
+		A_FaceTarget(mo);
+
+		if (P_CheckMeleeRange(mo))
+		{
+			if (mo->state->misc2)
+				S_Sound(mo, CHAN_BODY, SoundMap[mo->state->misc2], 1, ATTN_NORM);
+
+			P_DamageMobj(mo->target, mo, mo, mo->state->misc1);
+		}
+	}
 }
 
 void A_PlaySound(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	S_StartSound(mo->state->misc2 ? NULL : mo, mo->state->misc1);
-	*/
+	// Play the sound from the SoundMap
+
+	int sndmap = mo->state->misc1;
+
+	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	{
+		DPrintf("Warning: Sound ID is beyond the array of the Sound Map!\n");
+		sndmap = 0;
+	}
+
+	S_Sound(
+		(mo->state->misc2 ? NULL : mo),
+		CHAN_BODY, 
+		SoundMap[mo->state->misc1],
+		1,
+		ATTN_NORM);
 }
 
 void A_RandomJump(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, mo->state->misc1);
-	*/
+		P_SetMobjState(mo, (statenum_t)mo->state->misc1);
 }
 
 //
