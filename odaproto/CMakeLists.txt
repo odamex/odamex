@@ -6,9 +6,15 @@ find_package(protobuf
 # protoc was compiled separately using the host system (and not the target)
 # so we need to point to it by hand.
 if(CMAKE_HOST_WIN32)
-  set(PROTOC_EXE "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protoc-build/RelWithDebInfo/protoc.exe")
+  set(HOST_EXECUTABLE_SUFFIX ".exe")
 else()
-  set(PROTOC_EXE "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protoc-build/protoc")
+  set(HOST_EXECUTABLE_SUFFIX "")
+endif()
+get_cmake_property(_IS_MULTI_CONFIG GENERATOR_IS_MULTI_CONFIG)
+if(_IS_MULTI_CONFIG)
+  set(PROTOC_EXE "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protoc-build/RelWithDebInfo/protoc${HOST_EXECUTABLE_SUFFIX}")
+else()
+  set(PROTOC_EXE "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protoc-build/protoc${HOST_EXECUTABLE_SUFFIX}")
 endif()
 
 set_target_properties(protobuf::protoc PROPERTIES
