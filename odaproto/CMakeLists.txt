@@ -3,6 +3,7 @@ find_package(protobuf
   PATHS
     "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/lib/cmake/protobuf"
+    "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/lib64/cmake/protobuf"
   NO_DEFAULT_PATH)
 
 # protoc was compiled separately using the host system (and not the target)
