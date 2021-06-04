@@ -503,7 +503,7 @@ namespace
 	}
 	
 	// used for munching the strings in UMAPINFO
-	char* ParseMultiString(OScanner& os, int error)
+	char* ParseMultiString(OScanner& os)
 	{
 		char* build = NULL;
 	
@@ -681,14 +681,14 @@ namespace
 		}
 		else if (!stricmp(pname, "intertext"))
 		{
-			char* lname = ParseMultiString(os, 1);
+			char* lname = ParseMultiString(os);
 			if (!lname)
 				return 0;
 			mape->intertext = lname;
 		}
 		else if (!stricmp(pname, "intertextsecret"))
 		{
-			char* lname = ParseMultiString(os, 1);
+			char* lname = ParseMultiString(os);
 			if (!lname)
 				return 0;
 			mape->intertextsecret = lname;
@@ -709,7 +709,7 @@ namespace
 				episodes_modified = true;
 			}
 	
-			char* lname = ParseMultiString(os, 1);
+			char* lname = ParseMultiString(os);
 			if (!lname)
 				return 0;
 	
