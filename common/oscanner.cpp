@@ -427,7 +427,7 @@ void OScanner::mustGetInt()
 		str[str.length() - 1] = '\0';
 	}
 
-	if (IsNum(str.c_str()) == false)
+	if (IsNum(str.c_str()) == false || str != "MAXINT")
 	{
 		error("Missing integer (unexpected end of file).");
 	}
