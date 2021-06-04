@@ -53,8 +53,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target install)
   endif()
 
   find_package(ZLIB)
@@ -107,8 +106,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target install)
   endif()
 
   find_package(CURL)
@@ -151,17 +149,15 @@ if(BUILD_SERVER)
     # Debug and Release are not compatible, so build both.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config Debug --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config Debug --target install)
     execute_process(COMMAND "${CMAKE_COMMAND}"
     --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-    --config RelWithDebInfo --target install
-    --parallel ${PARALLEL_PROC_COUNT})
+    --config RelWithDebInfo --target install)
   else()
     # Single config uses the passed build type.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --target install --parallel ${PARALLEL_PROC_COUNT})
+      --target install)
   endif()
 
   # Synthesize an imported target that can be linked against.
@@ -212,8 +208,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target install)
   endif()
 
   set(ZLIB_INCLUDE_DIR
@@ -259,7 +254,7 @@ elseif(BUILD_SERVER AND USE_MINIUPNP)
   # Compile the library.
   execute_process(COMMAND "${CMAKE_COMMAND}"
     --build "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    --config RelWithDebInfo --target install --parallel ${PARALLEL_PROC_COUNT})
+    --config RelWithDebInfo --target install)
 
   # Synthesize an imported target that can be linked against.
   add_library(upnpc-static STATIC IMPORTED GLOBAL)
@@ -274,9 +269,24 @@ endif()
 ### Protocol Buffers ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling protoc...")
+
+  # Generate the build using the hosts's toolchain.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/protoc-build"
+    -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
+    "-Dprotobuf_BUILD_TESTS=OFF"
+    "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/protoc-build"
+    --config RelWithDebInfo --target protoc)
+
   get_cmake_property(_IS_MULTI_CONFIG GENERATOR_IS_MULTI_CONFIG)
   if(_IS_MULTI_CONFIG)
-    message(STATUS "Compiling protobuf for multiconfig...")
+    message(STATUS "Compiling libprotobuf for multiconfig...")
 
     # Generate the build.
     execute_process(COMMAND "${CMAKE_COMMAND}"
@@ -297,14 +307,12 @@ if(BUILD_CLIENT OR BUILD_SERVER)
     # Compile the library for debug and release.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --config Debug --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config Debug --target libprotobuf)
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target libprotobuf)
   else()
-    message(STATUS "Compiling protobuf for ${CMAKE_BUILD_TYPE}...")
+    message(STATUS "Compiling libprotobuf for ${CMAKE_BUILD_TYPE}...")
 
     # Generate the build.
     execute_process(COMMAND "${CMAKE_COMMAND}"
@@ -326,7 +334,7 @@ if(BUILD_CLIENT OR BUILD_SERVER)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --target install --parallel ${PARALLEL_PROC_COUNT})
+      --target libprotobuf)
   endif()
 endif()
 

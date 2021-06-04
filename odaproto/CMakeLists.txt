@@ -1,7 +1,21 @@
 # Find the protobuf we just compiled
 find_package(protobuf
-  PATHS "${CMAKE_CURRENT_BINARY_DIR}/../libraries/local"
+  PATHS "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/cmake"
   NO_DEFAULT_PATH)
+
+# protoc was compiled separately using the host system (and not the target)
+# so we need to point to it by hand.
+if(CMAKE_HOST_WIN32)
+  set(PROTOC_EXE "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protoc-build/RelWithDebInfo/protoc.exe")
+else()
+  set(PROTOC_EXE "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protoc-build/protoc")
+endif()
+
+set_target_properties(protobuf::protoc PROPERTIES
+  IMPORTED_LOCATION_DEBUG "${PROTOC_EXE}"
+  IMPORTED_LOCATION_RELEASE "${PROTOC_EXE}"
+  IMPORTED_LOCATION_RELWITHDEBINFO "${PROTOC_EXE}"
+  IMPORTED_LOCATION_MINSIZEREL "${PROTOC_EXE}")
 
 set(ODAPROTO_PROTOS common.proto server.proto)
 
