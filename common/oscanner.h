@@ -69,6 +69,17 @@ class OScanner
 	bool compareToken(const char* string) const;
 	void error(const char* message);
 	bool isQuotedString() const;
+
+	// get token as specific type
+	int getTokenAsInt() const;
+	float getTokenAsFloat() const;
+	bool getTokenAsBool() const;
+
+	// check token is specific type (calls OScanner::scan() and then checks the type)
+	void mustGetString();
+	void mustGetInt();
+	void mustGetFloat();
+	void mustGetBool();
 };
 
 #endif // __OSCANNER_H__
