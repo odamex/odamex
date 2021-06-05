@@ -1501,39 +1501,33 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		}
 	} else
 	{
-		target->health -= damage;	// Damage monsters.
+		// [RH] Only if not immune
+		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
+			target->health -= damage;		// do the damage to monsters.
 	}
 
-
-		// do the damage
-		// [RH] Only if not immune
-	if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
+	if (target->health <= 0)
 	{
-		if (target->health <= 0)
-		{
-			P_KillMobj(source, target, inflictor, false);
+		P_KillMobj(source, target, inflictor, false);
 
-			// WDL damage events.
-			if (source == NULL && targethasflag)
-			{
-				int emod =
-				    (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0,
-				                   emod);
+		// WDL damage events.
+		if (source == NULL && targethasflag)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
 			}
-			else if (source == NULL)
-			{
-				int emod =
-				    (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-				M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
-			}
-			else if (targethasflag)
-				M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
-			else
-				M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
-			return;
-			}
+		else if (source == NULL)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
 		}
+		else if (targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+		else
+			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+
+		return;
+	}
 
     if (!(target->flags2 & MF2_DORMANT))
 	{
