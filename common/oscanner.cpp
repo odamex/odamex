@@ -394,7 +394,7 @@ float OScanner::getTokenAsFloat() const
 //
 bool OScanner::getTokenAsBool() const
 {
-	return stricmp(_token.c_str(), "true") == 0;
+	return iequals(_token, "true");
 }
 
 //
@@ -474,7 +474,7 @@ void OScanner::mustGetBool()
 		error("Missing boolean (unexpected end of file).");
 	}
 	
-	if (stricmp(_token.c_str(), "true") != 0 && stricmp(_token.c_str(), "false") != 0)
+	if (!iequals(_token, "true") && !iequals(_token, "false"))
 	{
 		std::string errorMessage = "Expected boolean, got \"";
 		errorMessage += _token + '\"';
