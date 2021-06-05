@@ -429,7 +429,10 @@ void OScanner::mustGetInt()
 
 	if (IsNum(str.c_str()) == false || str != "MAXINT")
 	{
-		error("Missing integer (unexpected end of file).");
+		std::string errorMessage = "Expected integer, got \"";
+		errorMessage += str + '\"';
+
+		error(errorMessage.c_str());
 	}
 }
 
@@ -454,7 +457,10 @@ void OScanner::mustGetFloat()
 
 	if (IsRealNum(str.c_str()) == false)
 	{
-		error("Missing floating-point number (unexpected end of file).");
+		std::string errorMessage = "Expected floating-point number, got \"";
+		errorMessage += str + '\"';
+
+		error(errorMessage.c_str());
 	}
 }
 
@@ -470,7 +476,10 @@ void OScanner::mustGetBool()
 	
 	if (stricmp(_token.c_str(), "true") != 0 && stricmp(_token.c_str(), "false") != 0)
 	{
-		error("Missing boolean (unexpected end of file).");
+		std::string errorMessage = "Expected boolean, got \"";
+		errorMessage += _token + '\"';
+
+		error(errorMessage.c_str());
 	}
 }
 
