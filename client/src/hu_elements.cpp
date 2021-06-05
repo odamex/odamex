@@ -59,9 +59,10 @@ EXTERN_CVAR (g_lives)
 EXTERN_CVAR (g_rounds)
 EXTERN_CVAR(g_winlimit)
 
-EXTERN_CVAR (hud_targetnames)
-EXTERN_CVAR (sv_allowtargetnames)
-EXTERN_CVAR (hud_timer)
+EXTERN_CVAR(hud_targetnames)
+EXTERN_CVAR(hud_targethealth_debug)
+EXTERN_CVAR(sv_allowtargetnames)
+EXTERN_CVAR(hud_timer)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -1583,7 +1584,8 @@ void EATargets(int x, int y, const float scale,
 		{
 			// Figure out if we should be showing this player's health.
 			std::string nameplate;
-			if (netdemoplaying || P_AreTeammates(*Targets[i].PlayPtr, consoleplayer()))
+			if (netdemoplaying || (::hud_targethealth_debug &&
+			                       P_AreTeammates(*Targets[i].PlayPtr, consoleplayer())))
 			{
 				int health = Targets[i].PlayPtr->health;
 
