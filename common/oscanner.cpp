@@ -341,9 +341,9 @@ int OScanner::getTokenAsInt() const
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (str.back() == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	char* stopper;
@@ -372,9 +372,9 @@ float OScanner::getTokenAsFloat() const
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (str.back() == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	char* stopper;
@@ -422,9 +422,9 @@ void OScanner::mustGetInt()
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (str.back() == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	if (IsNum(str.c_str()) == false || str != "MAXINT")
@@ -447,9 +447,9 @@ void OScanner::mustGetFloat()
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (str.back() == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	if (IsRealNum(str.c_str()) == false)
