@@ -2798,6 +2798,13 @@ void CL_DamagePlayer(void)
 	uint32_t netid = MSG_ReadUnVarint();
 	int healthDamage = MSG_ReadShort();
 	int armorDamage = MSG_ReadByte();
+	int health = MININT;
+	int armorpoints = MININT;
+	if (::gameversion > MAKEVER(0, 9, 2))
+	{
+		health = MSG_ReadVarint();
+		armorpoints = MSG_ReadVarint();
+	}
 
 	AActor* actor = P_FindThingById(netid);
 
@@ -2805,9 +2812,22 @@ void CL_DamagePlayer(void)
 		return;
 
 	player_t *p = actor->player;
-	p->health -= healthDamage;
+
+	if (::gameversion > MAKEVER(0, 9, 2))
+	{
+		// [AM] Workaround behavior - health and armor can only lower, not
+		//      raise, which works around out-of-order packets.
+		p->health = MIN(p->health, health);
+		p->armorpoints = MIN(p->armorpoints, armorpoints);
+	}
+	else
+	{
+		// [AM] Original behavior, if health is desynced this can lead to zombies.
+		p->health -= healthDamage;
+		p->armorpoints -= armorDamage;
+	}
+
 	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
 
 	if (p->health < 0)
 		p->health = 0;

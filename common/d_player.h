@@ -282,8 +282,7 @@ public:
 
 		// protocol version supported by the client
 		short		version;
-		short		majorversion;	// GhostlyDeath -- Major
-		short		minorversion;	// GhostlyDeath -- Minor
+		int			packedversion;
 
 		// for reliable protocol
 		buf_t       relpackets; // save reliable packets here
@@ -324,8 +323,7 @@ public:
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
-			majorversion = 0;
-			minorversion = 0;
+			packedversion = 0;
 			for (size_t i = 0; i < 256; i++)
 			{
 				packetbegin[i] = 0;
@@ -358,8 +356,7 @@ public:
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
 			version(other.version),
-			majorversion(other.majorversion),
-			minorversion(other.minorversion),
+			packedversion(other.packedversion),
 			relpackets(other.relpackets),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
