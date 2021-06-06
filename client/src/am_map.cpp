@@ -253,10 +253,7 @@ mline_t thintriangle_guy[] = {
 #undef R
 #define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
 
-
-
-
-static int 	cheating = 0;
+int am_cheating = 0;
 static int 	grid = 0;
 static int	bigstate = 0;	// Bigmode
 
@@ -698,7 +695,7 @@ void AM_clearMarks(void)
 void AM_LevelInit(void)
 {
 	leveljuststarted = 0;
-	cheating = 0;			// force-reset IDDT after loading a map
+	am_cheating = 0; // force-reset IDDT after loading a map
 
 	AM_clearMarks();
 
@@ -1304,9 +1301,9 @@ void AM_drawWalls(void)
 			AM_rotatePoint (&l.b.x, &l.b.y);
 		}
 
-		if (cheating || (lines[i].flags & ML_MAPPED))
+		if (am_cheating || (lines[i].flags & ML_MAPPED))
 		{
-			if ((lines[i].flags & ML_DONTDRAW) && !cheating)
+			if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
 				continue;
             if (!lines[i].backsector &&
                 (((am_usecustomcolors || viewactive) &&
@@ -1336,7 +1333,7 @@ void AM_drawWalls(void)
 				}
 				else if (lines[i].flags & ML_SECRET)
 				{ // secret door
-					if (cheating)
+					if (am_cheating)
 						AM_drawMline(&l, SecretWallColor);
 				    else
 						AM_drawMline(&l, WallColor);
@@ -1388,7 +1385,7 @@ void AM_drawWalls(void)
 				{
 					AM_drawMline(&l, CDWallColor); // ceiling level change
 				}
-				else if (cheating)
+				else if (am_cheating)
 				{
 					AM_drawMline(&l, TSWallColor);
 				}
@@ -1496,7 +1493,7 @@ void AM_drawPlayers(void)
 		else
 			angle = conplayer.camera->angle;
 
-		if (cheating)
+		if (am_cheating)
 			AM_drawLineCharacter
 			(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
 			 angle, YourColor, conplayer.camera->x, conplayer.camera->y);
@@ -1665,7 +1662,7 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-	if (cheating==2)
+	if (am_cheating == 2)
 		AM_drawThings(ThingColor);
 
 	if (!(viewactive && am_overlay < 2))

@@ -26,7 +26,6 @@
 #include <math.h>
 
 #include "g_gametype.h"
-
 #include "m_cheat.h"
 #include "d_player.h"
 #include "doomstat.h"
@@ -39,6 +38,7 @@ extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
 
 #ifdef CLIENT_APP
+#include "am_map.h"
 #include "cl_main.h"
 #include "c_dispatch.h"
 extern bool automapactive;
@@ -54,6 +54,7 @@ static int				firsttime = 1;
 static unsigned char	cheat_xlate_table[256];
 
 #ifdef CLIENT_APP
+
 //-------------
 // THESE ARE MAINLY FOR THE CLIENT
 // Smashing Pumpkins Into Small Piles Of Putrid Debris.
@@ -62,8 +63,8 @@ bool CHEAT_AutoMap(cheatseq_t* cheat)
 	if (automapactive)
 	{
 		if (!multiplayer || sv_gametype == GM_COOP)
-			// cht.AutoMapCheat = (cht.AutoMapCheat + 1) % 3;
-			Printf("AAAAA\n");
+			am_cheating = (am_cheating + 1) % 3;
+
 		return true;
 	}
 	return false;

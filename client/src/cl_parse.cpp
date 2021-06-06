@@ -608,7 +608,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
 
-	//cheating = 0;
+	//am_cheating = 0;
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
