@@ -478,11 +478,12 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 	return msg;
 }
 
-odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, int health, int armor)
+odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor, int health, int armor)
 {
 	odaproto::svc::DamagePlayer msg;
 
 	msg.set_netid(player.mo->netid);
+	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
 	msg.set_health_damage(health);
 	msg.set_armor_damage(armor);
 

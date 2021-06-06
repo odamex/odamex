@@ -169,6 +169,7 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(debug_disconnect)
 
 static argb_t enemycolor, teamcolor;
 
@@ -363,7 +364,13 @@ void CL_ResyncWorldIndex()
 	world_index_accum = 0.0f;
 }
 
-void CL_QuitNetGame(void)
+void Host_EndGame(const char *msg)
+{
+    Printf("%s", msg);
+	CL_QuitNetGame(NQ_SILENT);
+}
+
+void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
 	if(connected)
 	{
@@ -420,15 +427,30 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	if (demorecording)
-		G_CleanupDemo();	// Cleanup in case of a vanilla demo
-
 	demoplayback = false;
 
 	// Reset the palette to default
 	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
+
+	switch (reason)
+	{
+	default: // Also NQ_SILENT
+		break;
+	case NQ_DISCONNECT:
+		Printf("Disconnected from server\n");
+		break;
+	case NQ_ABORT:
+		Printf("Connection attempt aborted\n");
+		break;
+	case NQ_PROTO:
+		Printf("Disconnected from server: Unrecoverable protocol error\n");
+		break;
+	}
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 
@@ -714,7 +736,7 @@ BEGIN_COMMAND (connect)
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (argc > 1)
 	{
@@ -751,7 +773,7 @@ END_COMMAND (connect)
 
 BEGIN_COMMAND (disconnect)
 {
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 END_COMMAND (disconnect)
 
@@ -1213,7 +1235,7 @@ BEGIN_COMMAND(netplay)
  		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 	connected = false;
 
 	std::string filename = argv[1];
@@ -1432,7 +1454,7 @@ void CL_RequestConnectInfo(void)
 	{
 		connecttimeout = 140;
 
-		Printf(PRINT_HIGH, "connecting to %s\n", NET_AdrToString(serveraddr));
+		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
@@ -1459,7 +1481,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		       "Tried to download an empty file.  This is probably a bug "
 		       "in the client where an empty file is considered missing.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1470,7 +1492,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
 		       "Options > Network Options to enable downloading.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1480,7 +1502,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1490,7 +1512,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		Printf("Unable to find \"%s\".  Both your client and the server have no "
 		       "download sites configured.\n",
 		       missing_file.getBasename().c_str());
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
 
@@ -1511,7 +1533,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
 	       missing_file.getBasename().c_str());
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	// Start the download.
 	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
@@ -1521,7 +1543,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 // [denis] CL_PrepareConnect
 // Process server info and switch to the right wads...
 //
-bool CL_PrepareConnect(void)
+bool CL_PrepareConnect()
 {
 	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
 
@@ -1539,9 +1561,8 @@ bool CL_PrepareConnect(void)
 	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
-	Printf(PRINT_HIGH, "\n");
-	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
-	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
+	Printf("Found server at %s.\n\n", NET_AdrToString(::serveraddr));
+	Printf("> Hostname: %s\n", server_host.c_str());
 
 	std::vector<std::string> newwadnames;
 	newwadnames.reserve(server_wads);
@@ -1574,7 +1595,7 @@ bool CL_PrepareConnect(void)
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
 			       newwadnames.at(i).c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
@@ -1598,10 +1619,9 @@ bool CL_PrepareConnect(void)
 		}
 	}
 
+	Printf("> Map: %s\n", server_map.c_str());
+
 	version = MSG_ReadShort();
-
-	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
-
 	if(version > VERSION)
 		version = VERSION;
 	if(version < 62)
@@ -1642,10 +1662,26 @@ bool CL_PrepareConnect(void)
 			gameversiontosend = 40;
 		}
 
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
-	}
+		int major, minor, patch;
+		BREAKVER(gameversion, major, minor, patch);
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
 
-    Printf(PRINT_HIGH, "\n");
+		std::string msg = VersionMessage(::gameversion, GAMEVER, NULL);
+		if (!msg.empty())
+		{
+			Printf(PRINT_WARNING, "%s", msg.c_str());
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+	}
+	else
+	{
+		// [AM] Not worth sorting out what version it actually is.
+		std::string msg = VersionMessage(MAKEVER(0, 3, 0), GAMEVER, NULL);
+		Printf(PRINT_WARNING, "%s", msg.c_str());
+		CL_QuitNetGame(NQ_ABORT);
+		return false;
+	}
 
 	// DEH/BEX Patch files
 	size_t patch_count = MSG_ReadByte();
@@ -1661,19 +1697,20 @@ bool CL_PrepareConnect(void)
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
 			       filename.c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
 		Printf("> %s\n", file.getBasename().c_str());
 	}
 
-    // TODO: Allow deh/bex file downloads
+	// TODO: Allow deh/bex file downloads
+	Printf("\n");
 	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
 	if (!ok && missingfiles.empty())
 	{
 		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
 	else if (!ok && !missingfiles.empty() || cl_forcedownload)
@@ -1709,8 +1746,12 @@ bool CL_Connect()
 
 	memset(packetseq, -1, sizeof(packetseq));
 
+	// [AM] This needs to go out ASAP so the server can start sending us
+	//      messages.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
+	NET_SendPacket(::net_buffer, ::serveraddr);
+	Printf("Requesting server state...\n");
 
 	compressor.reset();
 
@@ -1721,7 +1762,12 @@ bool CL_Connect()
 	simulated_connection = netdemo.isPlaying();
 
 	byte flags = MSG_ReadByte();
-	if (flags & SVF_COMPRESSED)
+	if (flags & SVF_UNUSED_MASK)
+	{
+		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		CL_QuitNetGame(NQ_PROTO);
+	}
+	else if (flags & SVF_COMPRESSED)
 	{
 		CL_Decompress();
 	}
@@ -1801,10 +1847,10 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf("challenging %s\n", NET_AdrToString(serveraddr));
+		Printf("Joining server...\n");
 
 		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
+		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
 		MSG_WriteLong(&net_buffer, server_token); // confirm server token
 		MSG_WriteShort(&net_buffer, version); // send client version
 		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
@@ -1830,8 +1876,6 @@ void CL_TryToConnect(DWORD server_token)
 
 	connecttimeout--;
 }
-
-EXTERN_CVAR (show_messages)
 
 //
 // CL_PlayerJustTeleported
@@ -1907,7 +1951,12 @@ bool CL_ReadPacketHeader()
 
 	// Flag bits.
 	byte flags = MSG_ReadByte();
-	if (flags & SVF_COMPRESSED)
+	if (flags & SVF_UNUSED_MASK)
+	{
+		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		CL_QuitNetGame(NQ_PROTO);
+	}
+	else if (flags & SVF_COMPRESSED)
 	{
 		CL_Decompress();
 	}
@@ -1945,18 +1994,21 @@ void CL_ParseCommands()
 		}
 
 		size_t byteStart = ::net_message.BytesRead();
-		parseResult_e res = CL_ParseCommand();
-		if (res != PRES_OK || ::net_message.overflowed)
+		parseError_e res = CL_ParseCommand();
+		if (res != PERR_OK || ::net_message.overflowed)
 		{
-			CL_QuitNetGame();
 			const Protos& protos = CL_GetTicProtos();
 
 			std::string err;
-			if (res == PRES_UNKNOWN_HEADER)
+			if (res == PERR_UNKNOWN_HEADER)
 			{
 				err = "Unknown message header";
 			}
-			else if (res == PRES_BAD_DECODE)
+			else if (res == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (res == PERR_BAD_DECODE)
 			{
 				err = "Could not decode message";
 			}
@@ -1987,6 +2039,8 @@ void CL_ParseCommands()
 			{
 				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
 			}
+
+			CL_QuitNetGame(NQ_PROTO);
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.

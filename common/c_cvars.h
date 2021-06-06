@@ -41,25 +41,71 @@ CVARS (console variables)
 ==========================================================
 */
 
-#define CVAR_NULL               0 // [deathz0r] no special properties
-#define CVAR_USERINFO           2 // added to userinfo  when changed
-#define CVAR_SERVERINFO         4 // [Toke - todo] Changed the meaning of this flag
-                                  // it now describes cvars that clients will be
-                                  // informed if changed
-#define CVAR_NOSET              8 // don't allow change from console at all,
-                                  // but can be set from the command line
-#define CVAR_LATCH             16 // save changes until server restart
-#define CVAR_UNSETTABLE        32 // can unset this var from console
+/**
+ * [deathz0r] no special properties.
+ */
+#define CVAR_NULL 0
 
-#define CVAR_MODIFIED         128 // set each time the cvar_t is changed
-#define CVAR_ISDEFAULT        256 // is cvar unchanged since creation?
-#define CVAR_AUTO             512 // allocated, needs to be freed when destroyed
-#define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
-#define CVAR_SERVERARCHIVE   4096 // [Nes] Server version of CVAR_ARCHIVE
-#define CVAR_CLIENTARCHIVE   8192 // [Nes] Client version of CVAR_ARCHIVE
+/**
+ * Added to userinfo when changed.
+ */
+#define CVAR_USERINFO BIT(1)
 
-// [SL] CVAR_ARCHIVE enables both CVAR_CLIENTARCHIVE & CVAR_SERVERARCHIVE
-#define CVAR_ARCHIVE	(CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
+/**
+ * [Toke - todo] Changed the meaning of this flag, it now describes cvars that
+ *               clients will be informed if changed.
+ */
+#define CVAR_SERVERINFO BIT(2)
+
+/**
+ * Don't allow change from console at all, but can be set from the command line.
+ */
+#define CVAR_NOSET BIT(3)
+
+/**
+ * Save changes until server restart.
+ */
+#define CVAR_LATCH BIT(4)
+
+/**
+ * Can unset this var from console. 
+ */
+#define CVAR_UNSETTABLE BIT(5)
+
+/**
+ * Set each time the cvar_t is changed
+ */
+#define CVAR_MODIFIED BIT(7)
+
+/**
+ * Is cvar unchanged since creation?
+ */
+#define CVAR_ISDEFAULT BIT(8)
+
+/**
+ * Allocated, needs to be freed when destroyed.
+ */
+#define CVAR_AUTO BIT(9)
+
+/**
+ * [Nes] No substitution (0=disable, 1=enable)
+ */
+#define CVAR_NOENABLEDISABLE BIT(10)
+
+/**
+ * [Nes] Server version of CVAR_ARCHIVE
+ */
+#define CVAR_SERVERARCHIVE BIT(12)
+
+/**
+ * [Nes] Client version of CVAR_ARCHIVE
+ */
+#define CVAR_CLIENTARCHIVE BIT(13)
+
+/**
+ * [SL] CVAR_ARCHIVE enables both CVAR_CLIENTARCHIVE & CVAR_SERVERARCHIVE
+ */
+#define CVAR_ARCHIVE (CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
 
 // Hints for network code optimization
 typedef enum

@@ -26,6 +26,9 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+// Standard libc/STL includes we use in countless places
+#include <string>
+
 #include "version.h"
 #include "errors.h"
 
@@ -128,7 +131,10 @@
 
 // Max pos 32-bit int.
 #ifndef MAXINT
-	#define MAXINT			((int)0x7fffffff)
+	#define MAXINT			(0x7fffffff)
+#endif
+#ifndef MAXUINT
+	#define MAXUINT			(0xffffffff)
 #endif
 
 #ifndef MAXLONG
@@ -198,16 +204,7 @@ typedef uint64_t			dtime_t;
 /**
  * @brief Returns a bitfield with a specific bit set.
  */
-
-// Ch0wW: Special case here! Switch does already have a BIT define, we'll just undef it.
-#if __SWITCH__
-#undef BIT
-#endif
-
-static inline uint32_t BIT(uint32_t a)
-{
-    return 1U << a;
-}
+#define BIT(a) (1U << (a))
 
 /**
  * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
@@ -258,7 +255,7 @@ void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const
 #include <fstream>
 
 extern std::ofstream LOG;
-extern const char *LOG_FILE; //  Default is "odamex.log"
+extern std::string LOG_FILE; //  Default is "odamex.log"
 
 extern std::ifstream CON;
 

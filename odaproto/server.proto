@@ -8,7 +8,12 @@ import "common.proto";
 
 package odaproto.svc;
 
-// svc_abort, svc_disconnect, svc_full
+// svc_noop
+message Noop
+{
+}
+
+// svc_disconnect
 message Disconnect
 {
 	string message = 1;
@@ -143,6 +148,7 @@ message DamagePlayer
 	uint32 netid = 1;
 	int32 health_damage = 2;
 	int32 armor_damage = 3;
+	int32 inflictorid = 4;
 }
 
 // svc_killmobj
@@ -292,6 +298,16 @@ message PlaySound
 	int32 attenuation = 6;
 }
 
+// svc_reconnect
+message Reconnect
+{
+}
+
+// svc_exitlevel
+message ExitLevel
+{
+}
+
 // svc_touchspecial
 message TouchSpecial
 {
@@ -395,6 +411,11 @@ message IntTimeLeft
 	int32 timeleft = 1;
 }
 
+// svc_fullupdatedone
+message FullUpdateDone
+{
+}
+
 // svc_railtrail
 message RailTrail
 {
@@ -419,11 +440,21 @@ message LevelState
 	int32 last_wininfo_id = 6;
 }
 
+// svc_resetmap
+message ResetMap
+{
+}
+
 // svc_playerqueuepos
 message PlayerQueuePos
 {
 	int32 pid = 1;
 	int32 queuepos = 2;	
+}
+
+// svc_fullupdatestart
+message FullUpdateStart
+{
 }
 
 // svc_lineupdate
@@ -613,4 +644,14 @@ message NetdemoCap
 	bytes player_cmd = 1;
 	Player player = 2;
 	Actor actor = 3;
+}
+
+// svc_netdemostop
+message NetDemoStop
+{
+}
+
+// svc_netdemoloadsnap
+message NetDemoLoadSnap
+{
 }

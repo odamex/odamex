@@ -120,6 +120,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
+EXTERN_CVAR(debug_disconnect)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -524,6 +525,7 @@ Players::iterator SV_GetFreeClient(void)
 	}
 
 	players.push_back(player_t());
+	players.back().playerstate = PST_CONTACT;
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
@@ -1038,11 +1040,9 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	int teamcount = NUMTEAMS;
-	if (sv_gametype != GM_CTF && sv_teamsinplay >= 0 &&
-	    sv_teamsinplay <= NUMTEAMS)
-		teamcount = sv_teamsinplay;
+	int teamcount = sv_teamsinplay;
 
+	// Unsure how this can be triggered?
 	if (teamcount == 0)
 	{
 		I_Error ("Teamplay is set and no teams are enabled!\n");
@@ -1448,7 +1448,7 @@ void SV_ClientFullUpdate(player_t &pl)
 {
 	client_t *cl = &pl.client;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatestart);
+	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateStart());
 
 	// Send the player all level locals.
 	MSG_WriteSVC(&cl->reliablebuf, SVC_LevelLocals(::level, SVC_MSG_ALL));
@@ -1460,8 +1460,6 @@ void SV_ClientFullUpdate(player_t &pl)
 			SV_AwarenessUpdate(pl, it->mo);
 
 		SV_SendUserInfo(*it, cl);
-		if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-			return;
 	}
 
 	// update levelstate
@@ -1479,30 +1477,20 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	SV_UpdateHiddenMobj();
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	// update flags
 	if (sv_gametype == GM_CTF)
 		CTF_Connect(pl);
 
 	SV_UpdateSectors(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	P_UpdateButtons(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	SV_LineStateUpdate(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
 	SV_ThinkerUpdate(cl);
-	if (cl->reliablebuf.cursize >= MaxPacketSize && !SV_SendPacket(pl))
-		return;
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
+	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateDone());
 
 	SV_SendPacket(pl);
 }
@@ -1588,154 +1576,143 @@ void SV_ServerSettingChange()
 bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 {
 	int GameVer = 0;
-	char VersionStr[20];
-	char OurVersionStr[20];
-	memset(VersionStr, 0, sizeof(VersionStr));
-	memset(OurVersionStr, 0, sizeof(VersionStr));
+	std::string VersionStr;
+	std::string OurVersionStr(DOTVERSIONSTR);
 	bool AllowConnect = true;
-	int majorver = 0;
-	int minorver = 0;
-	int releasever = 0;
-	int MAJORVER = GAMEVER / 256;
-	int MINORVER = (GAMEVER % 256) / 10;
-	int RELEASEVER = (GAMEVER % 256) % 10;
-
-	if ((GAMEVER % 256) % 10)
-		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
-	else
-		sprintf(OurVersionStr, "%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10);
+	int cl_major = 0;
+	int cl_minor = 0;
+	int cl_patch = 0;
+	int sv_major, sv_minor, sv_patch;
+	BREAKVER(GAMEVER, sv_major, sv_minor, sv_patch);
 
 	switch (cl->version)
 	{
-		case 65:
-			GameVer = MSG_ReadLong();
-			cl->majorversion = GameVer / 256;
-			cl->minorversion = GameVer % 256;
-			if ((GameVer % 256) % 10)
-				sprintf(VersionStr, "%i.%i.%i", cl->majorversion, cl->minorversion / 10, cl->minorversion % 10);
-			else
-				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
+	case VERSION:
+		GameVer = MSG_ReadLong();
+		BREAKVER(GameVer, cl_major, cl_minor, cl_patch);
 
-			majorver = GameVer / 256;
-			minorver = (GameVer % 256) / 10;
-			releasever = (GameVer % 256) % 10;
+		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
-			if ((majorver == MAJORVER) &&
-				(minorver == MINORVER) &&
-				(releasever >= RELEASEVER))
-				AllowConnect = true;
-			else
-				AllowConnect = false;
-			break;
-		case 64:
-			sprintf(VersionStr, "0.2a or 0.3");
-			break;
-		case 63:
-			sprintf(VersionStr, "Pre-0.2");
-			break;
-		case 62:
-			sprintf(VersionStr, "0.1a");
-			break;
-		default:
-			sprintf(VersionStr, "Unknown");
-			break;
+		cl->majorversion = cl_major;
+		cl->minorversion = cl_minor;
 
+		// Major and minor versions must be identical, client is allowed
+		// to have a newer patch.
+		if (VersionCompat(GAMEVER, GameVer) == 0)
+			AllowConnect = true;
+		else
+			AllowConnect = false;
+		break;
+	case 64:
+		VersionStr = "0.2a or 0.3";
+		break;
+	case 63:
+		VersionStr = "Pre-0.2";
+		break;
+	case 62:
+		VersionStr = "0.1a";
+		break;
+	default:
+		VersionStr = "Unknown";
+		break;
 	}
 
 	// GhostlyDeath -- removes the constant AllowConnects above
-	if (cl->version != 65)
+	if (cl->version != VERSION)
 		AllowConnect = false;
 
 	// GhostlyDeath -- boot em
 	if (!AllowConnect)
 	{
-		std::ostringstream FormattedString;
-		bool older = false;
-
-		// GhostlyDeath -- Version Mismatch message
-
-        FormattedString <<
-            std::endl <<
-            "Your version of Odamex " <<
-            VersionStr <<
-            " does not match the server " <<
-            OurVersionStr <<
-            std::endl;
-
-		// GhostlyDeath -- Check to see if it's older or not
-		if (cl->majorversion < (GAMEVER / 256))
-			older = true;
-		else
+		std::string msg = VersionMessage(GAMEVER, GameVer, ::sv_email.cstring());
+		if (msg.empty())
 		{
-			if (cl->majorversion > (GAMEVER / 256))
-				older = false;
-			else
-			{
-				if (cl->minorversion < (GAMEVER % 256))
-					older = true;
-				else if (cl->minorversion > (GAMEVER % 256))
-					older = false;
-			}
-		}
-
-		// GhostlyDeath -- Print message depending on older or newer
-		if (older)
-		{
-			FormattedString <<
-                "For updates, visit http://odamex.net/" <<
-                std::endl;
-		}
-		else
-        {
-			FormattedString <<
-                "If a new version just came out, " <<
-                "give server administrators time to update their servers." <<
-                std::endl;
-        }
-
-		// GhostlyDeath -- email address set?
-		if (*(sv_email.cstring()))
-		{
-			char emailbuf[100];
-			memset(emailbuf, 0, sizeof(emailbuf));
-			const char* in = sv_email.cstring();
-			char* out = emailbuf;
-
-			for (int i = 0; i < 100 && *in; i++, in++, out++)
-				*out = *in;
-
-			FormattedString <<
-                "If problems persist, contact the server administrator at " <<
-                emailbuf <<
-                std::endl;
+			// Failsafe.
+			StrFormat(
+			    msg,
+			    "Your version of Odamex does not match the server %s.\nFor updates, "
+			    "visit https://odamex.net/\n",
+			    DOTVERSIONSTR);
 		}
 
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_HIGH, FormattedString.str()));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, msg));
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Disconnect());
 
 		SV_SendPacket(*it);
 
 		// GhostlyDeath -- And we tell the server
-		Printf("%s -- Version mismatch (%s != %s)\n",
-                NET_AdrToString(net_from),
-                VersionStr,
-                OurVersionStr);
+		Printf("%s disconnected (version mismatch %s).\n", NET_AdrToString(::net_from),
+		       VersionStr.c_str());
 	}
 
 	return AllowConnect;
 }
+
+/**
+ * @brief Disconnect an older client using the older protocol.
+ */
+static void SV_DisconnectOldClient()
+{
+	int cl_version = MSG_ReadShort();
+	byte connection_type = MSG_ReadByte();
+	std::string VersionStr;
+
+	int GameVer = 0;
+	if (cl_version == VERSION)
+	{
+		GameVer = MSG_ReadLong();
+	}
+	else
+	{
+		// Assume anything older is 0.3.0.
+		GameVer = MAKEVER(0, 3, 0);
+	}
+
+	int cl_maj, cl_min, cl_pat;
+	BREAKVER(GameVer, cl_maj, cl_min, cl_pat);
+
+	std::string msg = VersionMessage(GAMEVER, GameVer, ::sv_email.cstring());
+	if (msg.empty())
+	{
+		// Failsafe.
+		StrFormat(msg,
+		          "Your version of Odamex does not match the server %s.\nFor updates, "
+		          "visit https://odamex.net/\n",
+		          DOTVERSIONSTR);
+	}
+
+	// Send using the old protocol mechanism without relying on any defines
+	const byte old_svc_disconnect = 2;
+	const byte old_svc_print = 28;
+	const int old_PRINT_HIGH = 2;
+
+	static buf_t smallbuf(1024);
+
+	MSG_WriteLong(&smallbuf, 0);
+
+	MSG_WriteByte(&smallbuf, old_svc_print);
+	MSG_WriteByte(&smallbuf, old_PRINT_HIGH);
+	MSG_WriteString(&smallbuf, msg.c_str());
+
+	MSG_WriteByte(&smallbuf, old_svc_disconnect);
+
+	NET_SendPacket(smallbuf, ::net_from);
+
+	Printf("%s disconnected (version mismatch %d.%d.%d).\n", NET_AdrToString(::net_from),
+	       cl_maj, cl_min, cl_pat);
+}
+
+void G_DoReborn(player_t& playernum);
 
 //
 //	SV_ConnectClient
 //
 //	Called when a client connects
 //
-void G_DoReborn (player_t &playernum);
-
 void SV_ConnectClient()
 {
 	int challenge = MSG_ReadLong();
@@ -1750,13 +1727,20 @@ void SV_ConnectClient()
 		return;
 	}
 
-	if (challenge != CHALLENGE)
+	if (challenge != PROTO_CHALLENGE && challenge != MSG_CHALLENGE)
 		return;
 
 	if (!SV_IsValidToken(MSG_ReadLong()))
 		return;
 
 	Printf("%s is trying to connect...\n", NET_AdrToString (net_from));
+
+	// Show old challenges the door only after we've validated their token.
+	if (challenge == MSG_CHALLENGE)
+	{
+		SV_DisconnectOldClient();
+		return;
+	}
 
 	// find an open slot
 	Players::iterator it = SV_GetFreeClient();
@@ -1862,72 +1846,66 @@ void SV_ConnectClient()
 	// send consoleplayer number
 	MSG_WriteSVC(&cl->reliablebuf, SVC_ConsolePlayer(*player, cl->digest));
 	SV_SendPacket(*player);
+}
+
+void SV_ConnectClient2(player_t& player)
+{
+	client_t* cl = &player.client;
+
+	// [AM] FIXME: I don't know if it's safe to set players as PST_ENTER
+	//             this early.
+	player.playerstate = PST_LIVE;
 
 	// [Toke] send server settings
-	SendServerSettings(*player);
+	SendServerSettings(player);
 
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
 	cl->download.md5 = "";
-	if (connection_type == 1)
-	{
-		player->playerstate = PST_DOWNLOAD;
-		player->spectator = true;
-		SV_BroadcastUserInfo(*player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
-		// send the client the scores and list of other clients
-		SV_ClientFullUpdate(*player);
-
-		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			// [SL] 2011-07-30 - clients should consider downloaders as spectators
-			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(*player, SVC_PM_SPECTATOR));
-		}
-
-		return;
-	}
-
-	SV_BroadcastUserInfo(*player);
+	SV_BroadcastUserInfo(player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
-	player->playerstate = PST_ENTER;
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
+	player.playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
-		player->spectator = true;
+		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
 			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(*player, SVC_PM_SPECTATOR));
+			             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 		}
 	}
 
 	// Send a map name
-	MSG_WriteSVC(&player->client.reliablebuf,
+	MSG_WriteSVC(&player.client.reliablebuf,
 	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname, level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
-		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
+	{
+		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ExitLevel());
+	}
 
-	G_DoReborn(*player);
-	SV_ClientFullUpdate(*player);
+	G_DoReborn(player);
+	SV_ClientFullUpdate(player);
 
-	SV_BroadcastPrintf("%s has connected.\n", player->userinfo.netname.c_str());
+	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(*player));
+		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(player));
 	}
 
-	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
+	// Notify this player of other player's queue positions
+	SV_SendPlayerQueuePositions(&player, true); 
+
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
 //
@@ -2005,7 +1983,7 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient(player_t &who)
+void SV_DropClient2(player_t &who, const char* file, const int line)
 {
 	client_t *cl = &who.client;
 
@@ -2014,6 +1992,9 @@ void SV_DropClient(player_t &who)
 	SV_SendPacket(who);
 
 	SV_DisconnectClient(who);
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 //
@@ -2044,7 +2025,7 @@ void SV_SendReconnectSignal()
 	// tell others clients about it
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_reconnect);
+		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::Reconnect());
 		SV_SendPacket(*it);
 
 		if (it->mo)
@@ -2061,7 +2042,9 @@ void SV_SendReconnectSignal()
 void SV_ExitLevel()
 {
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_exitlevel);
+	{
+		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::ExitLevel());
+	}
 }
 
 //
@@ -3028,7 +3011,9 @@ void SV_SendPackets()
 	Players::iterator it = begin;
 	do
 	{
-		SV_SendPacket(*it);
+		// [AM] Don't send packets to players who haven't acked packet 0
+		if (it->playerstate != PST_CONTACT)
+			SV_SendPacket(*it);
 
 		++it;
 		if (it == players.end())
@@ -4746,14 +4731,14 @@ void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 }
 
-void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage)
+void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_DamagePlayer(*player, healthDamage, armorDamage));
+		             SVC_DamagePlayer(*player, inflictor, healthDamage, armorDamage));
 	}
 }
 

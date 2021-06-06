@@ -455,14 +455,15 @@ bool NetDemo::startRecording(const std::string &filename)
 		capture(&tempbuf);
 		writeMessages();
 
-		// Record any additional messages (usually a full update if auto-recording))
-		capture(&net_message);
-		writeMessages();
-		
 		SZ_Clear(&tempbuf);
-		MSG_WriteMarker(&tempbuf, svc_netdemoloadsnap);
+		MSG_WriteSVC(&tempbuf, odaproto::svc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
+
+		// Record any additional messages (usually a full update if auto-recording))
+		// Do not write this message immediately because it needs to be written after
+		// the map snapshot.
+		capture(&net_message);
 	}
 
 	return true;
@@ -603,9 +604,9 @@ bool NetDemo::stopRecording()
 	// write any remaining messages that have been captured
 	writeMessages();
 
-	// write the end-of-demo marker
-	byte marker = svc_netdemostop;
-	writeChunk(&marker, sizeof(marker), NetDemo::msg_packet);
+	// write the end-of-demo marker - header + size
+	byte stopdata[2] = {svc_netdemostop, 0};
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
 
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
@@ -659,7 +660,7 @@ bool NetDemo::stopPlaying()
 {
 	state = NetDemo::st_stopped;
 	SZ_Clear(&net_message);
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (demofp)
 	{
@@ -865,7 +866,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	if (!connected)
 	{
 		int type = MSG_ReadLong();
-		if (type == CHALLENGE)
+		if (type == MSG_CHALLENGE)
 		{
 			CL_PrepareConnect();
 		}
@@ -958,7 +959,7 @@ void NetDemo::capture(const buf_t* inputbuffer)
 void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 {
 	// Server sends launcher info
-	MSG_WriteLong	(netbuffer, CHALLENGE);
+	MSG_WriteLong	(netbuffer, PROTO_CHALLENGE);
 	MSG_WriteLong	(netbuffer, 0);		// server_token
 	
 	// get sv_hostname and write it
@@ -1089,8 +1090,11 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
 	// The packet sequence id
-	MSG_WriteLong	(netbuffer, 0);
-	
+	MSG_WriteLong(netbuffer, 0);
+
+	// Flags for our fake packet (none)
+	MSG_WriteByte(netbuffer, 0);
+
 	// Server sends our player id and digest
 	MSG_WriteSVC(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
 

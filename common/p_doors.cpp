@@ -42,7 +42,7 @@ void P_SetDoorDestroy(DDoor *door)
 		return;
 
 	door->m_Status = DDoor::destroy;
-	
+
 	if (clientside && door->m_Sector)
 	{
 		door->m_Sector->ceilingdata = NULL;
@@ -163,6 +163,7 @@ void DDoor::RunThink ()
 			case doorRaise:
 			case doorClose:
 				m_Status = finished;
+				P_SetDoorDestroy(this);	// Destroy the door immediately, not 1 tick after!
 				return;
 				
 			case doorCloseWaitOpen:
@@ -318,8 +319,8 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	switch (type)
 	{
 	case doorClose:
-		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
 		m_Status = closing;
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
 		PlayDoorSound();
 		break;
 
@@ -410,6 +411,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					{
 						// go back up
 						door->m_Status = DDoor::reopening;
+						door->PlayDoorSound();
 						return true;
 					}
 					else if (GET_SPAC(line->flags) == SPAC_PUSH)
@@ -424,6 +426,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					{
 						// go back down
 						door->m_Status = DDoor::closing;
+						door->PlayDoorSound();
 						return true;
 					}
 				}

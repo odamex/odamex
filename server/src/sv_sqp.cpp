@@ -350,8 +350,8 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Override other packet types for older enquirer version response
-	if(VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
-	        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+	if (VERMAJ(EqVersion) < VERMAJ(GAMEVER) ||
+	    (VERMAJ(EqVersion) <= VERMAJ(GAMEVER) && VERMIN(EqVersion) < VERMIN(GAMEVER)))
 	{
 		RePacketType = 2;
 	}

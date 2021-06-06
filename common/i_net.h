@@ -37,21 +37,27 @@
 
 // Maximum safe size for a packet transmitted over UDP.
 // This number comes from Steamworks and seems to be a reasonable default.
-#define MAX_UDP_SIZE   1200
+#define MAX_UDP_SIZE 1200
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
 
 #define PLAYER_FULLBRIGHTFRAME 70
 
-#define CHALLENGE 5560020  // challenge
-#define LAUNCHER_CHALLENGE 777123  // csdl challenge
-#define VERSION 65	// GhostlyDeath -- this should remain static from now on
+#define PROTO_CHALLENGE -5560020  // Signals challenger wants protobufs.
+#define MSG_CHALLENGE 5560020     // Signals challenger wants MSG protocol.
+#define LAUNCHER_CHALLENGE 777123 // csdl challenge
+#define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
 /**
  * @brief Compression is enabled for this packet
  */
 #define SVF_COMPRESSED BIT(0)
+
+/**
+ * @brief Unused flags - if any of these are set, we have a problem.
+ */
+#define SVF_UNUSED_MASK BIT_MASK(1, 7)
 
 /**
  * @brief svc_*: Transmit all possible data.
@@ -427,7 +433,7 @@ public:
 			overflowed = true;
 			return -1;
 		}
-		return (unsigned char)data[readpos++];
+		return data[readpos++];
 	}
 
 	int NextByte()
@@ -437,7 +443,7 @@ public:
 			overflowed = true;
 			return -1;
 		}
-		return (unsigned char)data[readpos];
+		return data[readpos];
 	}
 
 	byte *ReadChunk(size_t size)
@@ -527,7 +533,7 @@ public:
 			return -1;
 
 		// Zig-zag encoding for negative numbers.
-		return (uv >> 1) ^ -(uv & 1);
+		return (uv >> 1) ^ (0U - (uv & 1));
 	}
 
 	const char *ReadString()

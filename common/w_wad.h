@@ -88,12 +88,34 @@ typedef enum {
 	ns_colormaps,
 } namespace_t;
 
+struct lumpHandle_t
+{
+	size_t id;
+	lumpHandle_t() : id(0)
+	{
+	}
+	void clear()
+	{
+		id = 0;
+	}
+	bool empty() const
+	{
+		return id == 0;
+	}
+	bool operator==(const lumpHandle_t& other)
+	{
+		return id == other.id;
+	}
+};
+
 extern	void**		lumpcache;
 extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
 std::string W_MD5(std::string filename);
 void W_InitMultipleFiles(const OResFiles& filenames);
+lumpHandle_t W_LumpToHandle(const unsigned lump);
+int W_HandleToLump(const lumpHandle_t handle);
 
 int		W_CheckNumForName (const char *name, int ns = ns_global);
 int		W_GetNumForName (const char *name, int ns = ns_global);
@@ -102,10 +124,14 @@ unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
 
-void *W_CacheLumpNum (unsigned lump, int tag);
-void *W_CacheLumpName (const char *name, int tag);
-patch_t* W_CachePatch (unsigned lump, int tag = PU_CACHE);
-patch_t* W_CachePatch (const char *name, int tag = PU_CACHE);
+void* W_CacheLumpNum(unsigned lump, const zoneTag_e tag);
+void* W_CacheLumpName(const char* name, const zoneTag_e tag);
+patch_t* W_CachePatch(unsigned lump, const zoneTag_e tag = PU_CACHE);
+patch_t* W_CachePatch(const char* name, const zoneTag_e tag = PU_CACHE);
+lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag = PU_CACHE);
+lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag = PU_CACHE,
+                                int ns = ns_global);
+patch_t* W_ResolvePatchHandle(const lumpHandle_t lump);
 
 void	W_Profile (const char *fname);
 

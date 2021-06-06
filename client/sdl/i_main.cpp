@@ -47,10 +47,6 @@
 #include <stack>
 #include <iostream>
 
-#ifdef OSX
-#include <CoreFoundation/CoreFoundation.h>
-#endif
-
 #include "i_sdl.h" 
 #include "i_crash.h"
 // [Russell] - Don't need SDLmain library
@@ -293,18 +289,8 @@ int main(int argc, char *argv[])
             LOG << std::endl;
         }
 
-#ifdef OSX
-		std::string errorMessage = error.GetMsg();
-		CFStringRef macErrorMessage = CFStringCreateWithCString(NULL, errorMessage.c_str(), kCFStringEncodingMacRoman);
-		CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR("Odamex Error"), macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
-		CFRelease(macErrorMessage);
-#elif !defined(WIN32)
-            fprintf(stderr, "%s\n", error.GetMsg().c_str());
-#elif _XBOX
-		// Use future Xbox error message handling.    -- Hyper_Eye
-#else
-		MessageBox(NULL, error.GetMsg().c_str(), "Odamex Error", MB_OK);
-#endif
+		I_ErrorMessageBox(error.GetMsg().c_str());
+
 		call_terms();
 		exit(EXIT_FAILURE);
 	}

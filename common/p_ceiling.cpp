@@ -384,7 +384,7 @@ manual_ceiling:
 
 		case DCeiling::ceilLowerToNearest:
 			targheight = ceiling->m_BottomHeight = P_FindNextLowestCeiling(sec);
-			ceiling->m_Direction = 1;
+			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseToNearest:
