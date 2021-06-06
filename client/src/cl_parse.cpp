@@ -254,7 +254,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	}
 
 	if (!p.spectator)
-		p.cheats = msg.player().cheats();
+		p.cheats = msg->player().cheats();
 }
 
 /**
@@ -1235,7 +1235,7 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 	if (flags & SVC_PM_CHEATS)
 	{
 		if (!p.spectator)
-			p.cheats = msg.cheats();
+			p.cheats = msg->cheats();
 	}
 }
 
@@ -1950,7 +1950,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
-	uint32_t cheats = msg.player().cheats();
+	uint32_t cheats = msg->player().cheats();
 
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
