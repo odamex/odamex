@@ -2135,14 +2135,16 @@ void CL_Say()
 	}
 
 	const char* name = player.userinfo.netname.c_str();
+	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
+	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
+
 
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(publicmsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message);
+			Printf(publicmsg, "%s: %s\n", name, message);
 
 		if (show_messages && !filtermessage)
 		{	
@@ -2153,11 +2155,11 @@ void CL_Say()
 	else if (message_visibility == 1)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(publicteammsg, "%s: %s\n", name, message);
 
-		if (show_messages && cl_chatsounds)
+		if ((show_messages && cl_chatsounds) && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
