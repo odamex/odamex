@@ -236,17 +236,17 @@ void G_InitNew (const char *mapname)
 		{
 			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
 				states[i].tics >>= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 20*FRACUNIT;
+			mobjinfo[MT_BRUISERSHOT].speed = 20;
+			mobjinfo[MT_HEADSHOT].speed = 20;
+			mobjinfo[MT_TROOPSHOT].speed = 20;
 		}
 		else
 		{
 			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
 				states[i].tics <<= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 15*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 10*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 10*FRACUNIT;
+			mobjinfo[MT_BRUISERSHOT].speed = 15;
+			mobjinfo[MT_HEADSHOT].speed = 10;
+			mobjinfo[MT_TROOPSHOT].speed = 10;
 		}
 		isFast = wantFast;
 	}

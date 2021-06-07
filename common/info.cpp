@@ -1532,7 +1532,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_TRACEEXP1,		// deathstate
 	S_NULL,		// xdeathstate
 	"skeleton/tracex",		// deathsound
-	10*FRACUNIT,		// speed
+	10,		// speed
 	11*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -1622,7 +1622,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_FATSHOTX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"fatso/shotx",		// deathsound
-	20*FRACUNIT,		// speed
+	20,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -1832,7 +1832,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_BRBALLX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"baron/shotx",		// deathsound
-	15*FRACUNIT,		// speed
+	15,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2192,7 +2192,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// deathstate
 	S_NULL,		// xdeathstate
 	"brain/spawn",		// deathsound
-	10*FRACUNIT,		// speed
+	10,		// speed
 	6*FRACUNIT,		// radius
 	32*FRACUNIT,		// height
 	32*FRACUNIT,	// cdheight
@@ -2282,7 +2282,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_TBALLX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"imp/shotx",		// deathsound
-	10*FRACUNIT,		// speed
+	10,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2312,7 +2312,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_RBALLX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"caco/shotx",		// deathsound
-	10*FRACUNIT,		// speed
+	10,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2342,7 +2342,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_EXPLODE1,		// deathstate
 	S_NULL,		// xdeathstate
 	"weapons/rocklx",		// deathsound
-	20*FRACUNIT,		// speed
+	20,		// speed
 	11*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2372,7 +2372,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_PLASEXP,		// deathstate
 	S_NULL,		// xdeathstate
 	"weapons/plasmax",		// deathsound
-	25*FRACUNIT,		// speed
+	25,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2402,7 +2402,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_BFGLAND,		// deathstate
 	S_NULL,		// xdeathstate
 	"weapons/bfgx",		// deathsound
-	25*FRACUNIT,		// speed
+	25,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2432,7 +2432,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_ARACH_PLEX,		// deathstate
 	S_NULL,		// xdeathstate
 	"baby/shotx",		// deathsound
-	25*FRACUNIT,		// speed
+	25,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight

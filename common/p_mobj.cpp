@@ -2066,11 +2066,12 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
-    th->momx = FixedMul (th->info->speed, finecosine[an]);
-    th->momy = FixedMul (th->info->speed, finesine[an]);
+	fixed_t speed = th->info->speed * FRACUNIT;
+	th->momx = FixedMul(speed, finecosine[an]);
+	th->momy = FixedMul(speed, finesine[an]);
 
     dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-    dist = dist / th->info->speed;
+    dist = dist / speed;
 
     if (dist < 1)
 		dist = 1;
@@ -2128,7 +2129,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT (th->info->speed);
+		float speed = FIXED2FLOAT (th->info->speed * FRACUNIT);
 
 		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
@@ -2142,7 +2143,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 	else
 	{
-		fixed_t speed = th->info->speed;
+		fixed_t speed = th->info->speed * FRACUNIT;
 
 		th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
 		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
