@@ -2159,7 +2159,7 @@ void CL_Say()
 		else
 			Printf(publicteammsg, "%s: %s\n", name, message);
 
-		if ((show_messages && cl_chatsounds) && !filtermessage)
+		if (!filtermessage && show_messages && cl_chatsounds)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
