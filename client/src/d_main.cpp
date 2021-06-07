@@ -83,6 +83,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "g_mapinfo.h"
 #include "sc_man.h"
 
 #include "w_ident.h"
@@ -459,9 +460,9 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage;
+            pagename = gameinfo.titlePage.c_str();
             
-            currentmusic = gameinfo.titleMusic;
+            currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
 
@@ -489,8 +490,8 @@ void D_DoAdvanceDemo (void)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;
-                pagename = gameinfo.titlePage;
-                currentmusic = gameinfo.titleMusic;
+                pagename = gameinfo.titlePage.c_str();
+                currentmusic = gameinfo.titleMusic.c_str();
                 
                 S_StartMusic(currentmusic.c_str());
             }
@@ -624,19 +625,6 @@ void D_Init()
 
 	HU_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();

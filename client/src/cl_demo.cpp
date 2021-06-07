@@ -993,7 +993,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 	MSG_WriteByte	(netbuffer, playersingame);
 	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
-	MSG_WriteString	(netbuffer, level.mapname);
+	MSG_WriteString	(netbuffer, level.mapname.c_str());
 
 	// names of all the wadfiles on the server	
 	size_t numwads = wadfiles.size();
@@ -1150,7 +1150,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	SVC_PlayerMembers(*netbuffer, consoleplayer(), SVC_PM_SPECTATOR);
 
 	// Server sends wads & map name
-	SVC_LoadMap(*netbuffer, wadfiles, patchfiles, level.mapname, level.time);
+	SVC_LoadMap(*netbuffer, wadfiles, patchfiles, level.mapname.c_str(), level.time);
 
 	// Server spawns the player
 	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
@@ -1465,7 +1465,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	}
 
 	// write map info
-	arc << level.mapname;
+	arc << level.mapname.c_str();
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);

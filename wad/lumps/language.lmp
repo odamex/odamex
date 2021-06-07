@@ -157,6 +157,9 @@ HUSTR_29 = "level 29: the living end";
 HUSTR_30 = "level 30: icon of sin";
 HUSTR_31 = "level 31: wolfenstein";
 HUSTR_32 = "level 32: grosse";
+HUSTR_31B = "level 31: idkfa";
+HUSTR_32B = "level 32: keen";
+HUSTR_33 = "level 33: betray";
 
 PHUSTR_1 = "level 1: congo";
 PHUSTR_2 = "level 2: well of souls";
@@ -223,6 +226,12 @@ THUSTR_29 = "level 29: river styx";
 THUSTR_30 = "level 30: last call";
 THUSTR_31 = "level 31: pharaoh";
 THUSTR_32 = "level 32: caribbean";
+
+CHUSTR_E1M1 = "E1M1: Landing Zone";
+CHUSTR_E1M2 = "E1M2: Storage Facility";
+CHUSTR_E1M3 = "E1M3: Experimental Lab";
+CHUSTR_E1M4 = "E1M4: Arboretum";
+CHUSTR_E1M5 = "E1M5: Caverns of Bazoik";
 
 HUSTR_TALKTOSELF1 = "You mumble to yourself";
 HUSTR_TALKTOSELF2 = "Who's there?";
@@ -500,6 +509,23 @@ T6TEXT =
 	"\n"
 	"As you step off the transport, you hear\n"
 	"the stomp of a cyberdemon's iron shoe.";
+CE1TEXT =
+	"Mission accomplished.\n"
+	"\n"
+	"Are you prepared for the next mission?\n"
+	"\n"
+	"\n"
+	"\n"
+	"\n"
+	"\n"
+	"\n"
+	"Press the escape key to continue...";
+CE2TEXT =
+	"You've done it!";
+CE3TEXT =
+	"Wonderful Job!";
+CE4TEXT =
+	"Fantastic";
 
 // Cast list (must appear in this order)
 CC_ZOMBIE = "ZOMBIEMAN";

@@ -31,29 +31,18 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "doomstat.h"
-#include "g_level.h"
 #include "g_game.h"
-#include "gstrings.h"
 #include "gi.h"
 #include "i_system.h"
-#include "m_alloc.h"
-#include "m_fileio.h"
-#include "minilzo.h"
 #include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
 #include "p_unlag.h"
 #include "r_data.h"
 #include "r_sky.h"
-#include "s_sound.h"
-#include "sc_man.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "w_ident.h"
-#include "z_zone.h"
-
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
-#define cioffset(x)		offsetof(cluster_info_t,x)
 
 level_locals_t level;			// info about current level
 
@@ -68,7 +57,7 @@ EXTERN_CVAR(co_realactorheight)
 LevelInfos::LevelInfos(const level_info_t* levels) :
 	_defaultInfos(levels)
 {
-	addDefaults();
+	//addDefaults();
 }
 
 // Destructor frees everything in the class
@@ -102,12 +91,6 @@ level_pwad_info_t& LevelInfos::at(size_t i)
 // Clear all cluster definitions
 void LevelInfos::clear()
 {
-	// Free all strings.
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
-	{
-		free(it->level_name);
-		it->level_name = NULL;
-	}
 	clearSnapshots();
 	zapDeferreds();
 	_infos.clear();
@@ -116,7 +99,7 @@ void LevelInfos::clear()
 // Clear all stored snapshots
 void LevelInfos::clearSnapshots()
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		if (it->snapshot)
 		{
@@ -135,11 +118,35 @@ level_pwad_info_t& LevelInfos::create()
 }
 
 // Find a levelinfo by mapname
-level_pwad_info_t& LevelInfos::findByName(char* mapname)
+level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
-		if (stricmp(mapname, it->mapname) == 0)
+		if (it->mapname == mapname)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
+level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	{
+		if (it->mapname == mapname)
+		{
+			return *it;
+		}
+	}
+	return _empty;
+}
+
+level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
+{
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	{
+		if (it->mapname == mapname)
 		{
 			return *it;
 		}
@@ -150,9 +157,9 @@ level_pwad_info_t& LevelInfos::findByName(char* mapname)
 // Find a levelinfo by mapnum
 level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
-		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname) != -1)
+		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname.c_str()) != -1)
 		{
 			return *it;
 		}
@@ -169,7 +176,7 @@ size_t LevelInfos::size()
 // Zap all deferred ACS scripts
 void LevelInfos::zapDeferreds()
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		acsdefered_t* def = it->defered;
 		while (def) {
@@ -185,7 +192,7 @@ void LevelInfos::zapDeferreds()
 level_pwad_info_t LevelInfos::_empty = {
 	"",   // mapname
 	0,    // levelnum
-	NULL, // level_name
+	"",   // level_name
 	"",   // pname
 	"",   // nextmap
 	"",   // secretmap
@@ -202,7 +209,14 @@ level_pwad_info_t LevelInfos::_empty = {
 	"",   // skypic2
 	0.0,  // gravity
 	0.0,  // aircontrol
-};
+    "",	  // exitpic
+	"",	  // enterpic
+	"",	  // endpic
+    "",   // intertext
+    "",   // intertextsecret
+    "",   // interbackdrop
+    "",   // intermusic
+	};
 
 //
 // ClusterInfos methods
@@ -212,7 +226,7 @@ level_pwad_info_t LevelInfos::_empty = {
 ClusterInfos::ClusterInfos(const cluster_info_t* clusters) :
 	_defaultInfos(clusters)
 {
-	addDefaults();
+	//addDefaults();
 }
 
 // Destructor frees everything in the class
@@ -247,7 +261,7 @@ cluster_info_t& ClusterInfos::at(size_t i)
 void ClusterInfos::clear()
 {
 	// Free all strings.
-	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); it++)
+	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
 	{
 		free(it->exittext);
 		it->exittext = NULL;
@@ -268,7 +282,7 @@ cluster_info_t& ClusterInfos::create()
 // Find a clusterinfo by mapname
 cluster_info_t& ClusterInfos::findByCluster(int i)
 {
-	for (_ClusterInfoArray::iterator it = _infos.begin();it != _infos.end();it++)
+	for (_ClusterInfoArray::iterator it = _infos.begin();it != _infos.end();++it)
 	{
 		if (it->cluster == i)
 		{
@@ -279,7 +293,7 @@ cluster_info_t& ClusterInfos::findByCluster(int i)
 }
 
 // Number of info entries.
-size_t ClusterInfos::size()
+size_t ClusterInfos::size() const
 {
 	return _infos.size();
 }
@@ -294,1044 +308,14 @@ cluster_info_t ClusterInfos::_empty = {
 	0,    // flags
 };
 
-// A tagged union that represents all possible infos that we can pass to
-// the "lower" MAPINFO parser.
-struct tagged_info_t {
-	enum tags {
-		LEVEL,
-		CLUSTER,
-		EPISODE,
-	};
-	tags tag;
-	union {
-		level_pwad_info_t* level;
-		cluster_info_t* cluster;
-		void* episode;
-	};
-};
-
-BOOL HexenHack;
-
-enum EMIType
-{
-	MITYPE_IGNORE,
-	MITYPE_EATNEXT,
-	MITYPE_INT,
-	MITYPE_FLOAT,
-	MITYPE_COLOR,
-	MITYPE_MAPNAME,
-	MITYPE_LUMPNAME,
-	MITYPE_$LUMPNAME,
-	MITYPE_MUSICLUMPNAME,
-	MITYPE_SKY,
-	MITYPE_SETFLAG,
-	MITYPE_SCFLAGS,
-	MITYPE_CLUSTER,
-	MITYPE_STRING,
-	MITYPE_CSTRING,
-	MITYPE_CLUSTERSTRING,
-	MITYPE_SETCOMPATFLAG,
-};
-
-struct MapInfoHandler
-{
-    EMIType type;
-    DWORD data1, data2;
-};
-
-static const char *MapInfoTopLevel[] =
-{
-	"map",
-	"defaultmap",
-	"cluster",
-	"clusterdef",
-	"episode",
-	"clearepisodes",
-	"skill",
-	"clearskills",
-	"gameinfo",
-	"intermission",
-	"automap",
-	NULL
-};
-
-enum
-{
-	// map <maplump> <nice name>
-	// map <maplump> lookup <keyword>
-	MITL_MAP,
-
-	// defaultmap
-	MITL_DEFAULTMAP,
-
-	// cluster <value>
-	MITL_CLUSTER,
-
-	// clusterdef <value>
-	MITL_CLUSTERDEF,
-
-	// episode <maplump>
-	// episode <maplump> teaser <maplump> // New MAPINFO only
-	MITL_EPISODE,
-
-	// clearepisodes
-	MITL_CLEAREPISODES,
-
-	// skill <name>
-	MITL_SKILL,
-
-	// clearskills
-	MITL_CLEARSKILLS,
-
-	// gameinfo // New MAPINFO only
-	MITL_GAMEINFO,
-
-	// intermission // New MAPINFO only
-	MITL_INTERMISSION,
-
-	// automap // New MAPINFO only
-	MITL_AUTOMAP
-};
-
-static const char *MapInfoMapLevel[] =
-{
-	"levelnum",
-	"next",
-	"secretnext",
-	"cluster",
-	"sky1",
-	"sky2",
-	"fade",
-	"outsidefog",
-	"titlepatch",
-	"par",
-	"music",
-	"nointermission",
-	"doublesky",
-	"nosoundclipping",
-	"allowmonstertelefrags",
-	"map07special",
-	"baronspecial",
-	"cyberdemonspecial",
-	"spidermastermindspecial",
-	"specialaction_exitlevel",
-	"specialaction_opendoor",
-	"specialaction_lowerfloor",
-	"lightning",
-	"fadetable",
-	"evenlighting",
-	"noautosequences",
-	"forcenoskystretch",
-	"allowfreelook",
-	"nofreelook",
-	"allowjump",
-	"nojump",
-	"cdtrack",
-	"cd_start_track",
-	"cd_end1_track",
-	"cd_end2_track",
-	"cd_end3_track",
-	"cd_intermission_track",
-	"cd_title_track",
-	"warptrans",
-	"gravity",
-	"aircontrol",
-	"islobby",
-	"lobby",
-	"nocrouch",
-	"intermusic",
-	"par",
-	"sucktime",
-    "enterpic",
-    "exitpic",
-    "interpic"
-	"translator",
-	"compat_shorttex",
-	"compat_limitpain",
-    "compat_dropoff",
-	"compat_trace",
-	"compat_boomscroll",
-	"compat_sectorsounds",
-	"compat_nopassover",
-	NULL
-};
-
-MapInfoHandler MapHandlers[] =
-{
-	// levelnum <levelnum>
-	{ MITYPE_INT, lioffset(levelnum), 0 },
-	// next <maplump>
-	{ MITYPE_MAPNAME, lioffset(nextmap), 0 },
-	// secretnext <maplump>
-	{ MITYPE_MAPNAME, lioffset(secretmap), 0 },
-	// cluster <number>
-	{ MITYPE_CLUSTER, lioffset(cluster), 0 },
-	// sky1 <texture> <scrollspeed>
-	{ MITYPE_SKY, lioffset(skypic), 0 },
-	// sky2 <texture> <scrollspeed>
-	{ MITYPE_SKY, lioffset(skypic2), 0 },
-	// fade <color>
-	{ MITYPE_COLOR, lioffset(fadeto_color), 0 },
-	// outsidefog <color>
-	{ MITYPE_COLOR, lioffset(outsidefog_color), 0 },
-	// titlepatch <patch>
-	{ MITYPE_LUMPNAME, lioffset(pname), 0 },
-	// par <partime>
-	{ MITYPE_INT, lioffset(partime), 0 },
-	// music <musiclump>
-	{ MITYPE_MUSICLUMPNAME, lioffset(music), 0 },
-	// nointermission
-	{ MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0 },
-	// doublesky
-	{ MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0 },
-	// nosoundclipping
-	{ MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0 },
-	// allowmonstertelefrags
-	{ MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0 },
-	// map07special
-	{ MITYPE_SETFLAG, LEVEL_MAP07SPECIAL, 0 },
-	// baronspecial
-	{ MITYPE_SETFLAG, LEVEL_BRUISERSPECIAL, 0 },
-	// cyberdemonspecial
-	{ MITYPE_SETFLAG, LEVEL_CYBORGSPECIAL, 0 },
-	// spidermastermindspecial
-	{ MITYPE_SETFLAG, LEVEL_SPIDERSPECIAL, 0 },
-	// specialaction_exitlevel
-	{ MITYPE_SCFLAGS, 0, ~LEVEL_SPECACTIONSMASK },
-	// specialaction_opendoor
-	{ MITYPE_SCFLAGS, LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
-	// specialaction_lowerfloor
-	{ MITYPE_SCFLAGS, LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
-	// lightning
-	{ MITYPE_IGNORE, 0, 0 },
-	// fadetable <colormap>
-	{ MITYPE_LUMPNAME, lioffset(fadetable), 0 },
-	// evenlighting
-	{ MITYPE_SETFLAG, LEVEL_EVENLIGHTING, 0 },
-	// noautosequences
-	{ MITYPE_SETFLAG, LEVEL_SNDSEQTOTALCTRL, 0 },
-	// forcenoskystretch
-	{ MITYPE_SETFLAG, LEVEL_FORCENOSKYSTRETCH, 0 },
-	// allowfreelook
-	{ MITYPE_SCFLAGS, LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
-	// nofreelook
-	{ MITYPE_SCFLAGS, LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
-	// allowjump
-	{ MITYPE_SCFLAGS, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-	// nojump
-	{ MITYPE_SCFLAGS, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-	// cdtrack <track number>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// cd_start_track ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// cd_end1_track ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// cd_end2_track ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// cd_end3_track ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// cd_intermission_track ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// cd_title_track ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// warptrans ???
-	{ MITYPE_EATNEXT, 0, 0 },
-	// gravity <amount>
-	{ MITYPE_FLOAT, lioffset(gravity), 0 },
-	// aircontrol <amount>
-	{ MITYPE_FLOAT, lioffset(aircontrol), 0 },
-	// islobby
-	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
-	// lobby
-	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
-	// nocrouch
-	{ MITYPE_IGNORE, 0, 0 },
-	// intermusic <musicname>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// par <partime>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// sucktime <value>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// enterpic <$pic>
-    { MITYPE_EATNEXT, 0, 0 },
-	// exitpic <$pic>
-    { MITYPE_EATNEXT, 0, 0 },
-	// interpic <$pic>
-    { MITYPE_EATNEXT, 0, 0 },
-	// translator <value>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// compat_shorttex <value>
-    {MITYPE_EATNEXT, 0, 0},
-    // compat_limitpain <value>
-    {MITYPE_EATNEXT, 0, 0},
-    // compat_dropoff <value>
-    {MITYPE_SETCOMPATFLAG, LEVEL_COMPAT_DROPOFF, 0},
-    // compat_trace <value>
-    {MITYPE_EATNEXT, 0, 0},
-    // compat_boomscroll <value>
-    {MITYPE_EATNEXT, 0, 0},
-    // compat_sectorsounds <value>
-    {MITYPE_EATNEXT, 0, 0},
-    // compat_nopassover <value>
-    {MITYPE_SETFLAG, LEVEL_COMPAT_NOPASSOVER, 0},
-};
-
-static const char *MapInfoClusterLevel[] =
-{
-	"entertext",
-	"exittext",
-	"exittextislump",
-	"music",
-	"flat",
-	"hub",
-	"pic",
-	NULL
-};
-
-MapInfoHandler ClusterHandlers[] =
-{
-	// entertext <message>
-	{ MITYPE_CLUSTERSTRING, cioffset(entertext), 0 },
-	// exittext <message>
-	{ MITYPE_CLUSTERSTRING, cioffset(exittext), 0 },
-	// exittextislump
-	{ MITYPE_SETFLAG, CLUSTER_EXITTEXTISLUMP, 0 },
-	// messagemusic <musiclump>
-	{ MITYPE_MUSICLUMPNAME, cioffset(messagemusic), 8 },
-	// flat <flatlump>
-	{ MITYPE_$LUMPNAME, cioffset(finaleflat), 0 },
-	// hub
-	{ MITYPE_SETFLAG, CLUSTER_HUB, 0 },
-	// pic <graphiclump>
-	{ MITYPE_$LUMPNAME, cioffset(finalepic), 0 },
-};
-
-static const char* MapInfoEpisodeLevel[] =
-{
-	"name",
-	"lookup",
-	"picname",
-	"key",
-	"remove",
-	"noskillmenu",
-	"optional",
-	NULL
-};
-
-MapInfoHandler EpisodeHandlers[] =
-{
-	// name <nice name>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// lookup <keyword>
-	{ MITYPE_EATNEXT, 0, 0 },
-	// picname <piclump>
-	{ MITYPE_EATNEXT, 0, 0 },
-    // key
-    { MITYPE_EATNEXT, 0, 0 },
-	// remove
-	{ MITYPE_IGNORE, 0, 0 },
-	// noskillmenu
-	{ MITYPE_IGNORE, 0, 0 },
-	// optional
-	{ MITYPE_IGNORE, 0, 0 }
-};
-
-static void SetLevelDefaults (level_pwad_info_t *levelinfo)
-{
-	memset (levelinfo, 0, sizeof(*levelinfo));
-	levelinfo->snapshot = NULL;
-	levelinfo->outsidefog_color[0] = 255; 
-	levelinfo->outsidefog_color[1] = 0; 
-	levelinfo->outsidefog_color[2] = 0; 
-	levelinfo->outsidefog_color[3] = 0; 
-	strncpy(levelinfo->fadetable, "COLORMAP", 8);
-}
-
-//
-// Assumes that you have munched the last parameter you know how to handle,
-// but have not yet munched a comma.
-//
-static void SkipUnknownParams()
-{
-	// Every loop, try to burn a comma.
-	while (SC_GetString())
-	{
-		if (!SC_Compare(","))
-		{
-			SC_UnGet();
-			return;
-		}
-
-		// Burn the parameter.
-		SC_GetString();
-	}
-}
-
-//
-// Assumes that you have already munched the unknown type name, and just need
-// to much parameters, if any.
-//
-static void SkipUnknownType()
-{
-	SC_GetString();
-	if (!SC_Compare("="))
-	{
-		SC_UnGet();
-		return;
-	}
-
-	SC_GetString(); // Get the first parameter
-	SkipUnknownParams();
-}
-
-//
-// Assumes you have already munched the first opening brace.
-//
-// This function does not work with old-school ZDoom MAPINFO.
-//
-static void SkipUnknownBlock()
-{
-	int stack = 0;
-
-	while (SC_GetString())
-	{
-		if (SC_Compare("{"))
-		{
-			// Found another block
-			stack++;
-			continue;
-		}
-		else if (SC_Compare("}"))
-		{
-			stack--;
-			if (stack <= 0)
-			{
-				// Done with all blocks
-				break;
-			}
-		}
-	}
-}
-
-//
-// Parse a MAPINFO block
-//
-// NULL pointers can be passed if the block is unimplemented.  However, if
-// the block you want to stub out is compatible with old MAPINFO, you need
-// to parse the block anyway, even if you throw away the values.  This is
-// done by passing in a strings pointer, and leaving the others NULL.
-//
-static void ParseMapInfoLower(
-	MapInfoHandler* handlers, const char** strings, tagged_info_t* tinfo, DWORD flags
-)
-{
-	// 0 if old mapinfo, positive number if new MAPINFO, the exact
-	// number represents current brace depth.
-	int newMapinfoStack = 0;
-
-	byte* info = NULL;
-	if (tinfo)
-	{
-		// The union pointer is always the same, regardless of the tag.
-		info = reinterpret_cast<byte*>(tinfo->level);
-	}
-
-	while (SC_GetString())
-	{
-		if (SC_Compare("{"))
-		{
-			// Detected new-style MAPINFO
-			newMapinfoStack++;
-			continue;
-		}
-		else if (SC_Compare("}"))
-		{
-			newMapinfoStack--;
-			if (newMapinfoStack <= 0)
-			{
-				// MAPINFO block is done
-				break;
-			}
-		}
-
-		if (
-			newMapinfoStack <= 0 &&
-			SC_MatchString(MapInfoTopLevel) != SC_NOMATCH &&
-			// "cluster" is a valid map block type and is also
-			// a valid top-level type.
-			!SC_Compare("cluster")
-		)
-		{
-			// Old-style MAPINFO is done
-			SC_UnGet();
-			break;
-		}
-
-		int entry = SC_MatchString(strings);
-		if (entry == SC_NOMATCH)
-		{
-			if (newMapinfoStack <= 0)
-			{
-				// Old MAPINFO is up a creek, we need to be
-				// able to parse all types even if we can't
-				// do anything with them.
-				SC_ScriptError("Unknown MAPINFO token \"%s\"", sc_String);
-			}
-
-			// New MAPINFO is capable of skipping past unknown
-			// types.
-			SkipUnknownType();
-			continue;
-		}
-
-		MapInfoHandler* handler = handlers + entry;
-
-		switch (handler->type)
-		{
-		case MITYPE_IGNORE:
-			break;
-
-		case MITYPE_EATNEXT:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			break;
-
-		case MITYPE_INT:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetNumber();
-			*((int*)(info + handler->data1)) = sc_Number;
-			break;
-
-		case MITYPE_FLOAT:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetFloat();
-			*((float*)(info + handler->data1)) = sc_Float;
-			break;
-
-		case MITYPE_COLOR:
-		{
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			argb_t color(V_GetColorFromString(sc_String));
-			uint8_t* ptr = (uint8_t*)(info + handler->data1);
-			ptr[0] = color.geta(); ptr[1] = color.getr(); ptr[2] = color.getg(); ptr[3] = color.getb();
-			break;
-		}
-		case MITYPE_MAPNAME:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			if (IsNum(sc_String))
-			{
-				int map = atoi(sc_String);
-				sprintf(sc_String, "MAP%02d", map);
-			}
-			strncpy((char*)(info + handler->data1), sc_String, 8);
-			break;
-
-		case MITYPE_LUMPNAME:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			uppercopy((char*)(info + handler->data1), sc_String);
-			break;
-
-
-		case MITYPE_$LUMPNAME:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			if (sc_String[0] == '$')
-			{
-				// It is possible to pass a DeHackEd string
-				// prefixed by a $.
-				const OString& s = GStrings(sc_String + 1);
-				if (s.empty())
-				{
-					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
-				}
-				uppercopy((char*)(info + handler->data1), s.c_str());
-			}
-			else
-			{
-				uppercopy((char*)(info + handler->data1), sc_String);
-			}
-			break;
-
-		case MITYPE_MUSICLUMPNAME:
-		{
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			if (sc_String[0] == '$')
-			{
-				// It is possible to pass a DeHackEd string
-				// prefixed by a $.
-				const OString& s = GStrings(sc_String + 1);
-				if (s.empty())
-				{
-					SC_ScriptError("Unknown lookup string \"%s\"", s.c_str());
-				}
-
-				// Music lumps in the stringtable do not begin
-				// with a D_, so we must add it.
-				char lumpname[9];
-				snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-				uppercopy((char*)(info + handler->data1), lumpname);
-			}
-			else
-			{
-				uppercopy((char*)(info + handler->data1), sc_String);
-			}
-			break;
-		}
-		case MITYPE_SKY:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-				SC_MustGetString(); // Texture name
-				uppercopy((char*)(info + handler->data1), sc_String);
-				SkipUnknownParams();
-			}
-			else
-			{
-				SC_MustGetString();	// get texture name;
-				uppercopy((char*)(info + handler->data1), sc_String);
-
-				SC_CheckFloat();
-
-				//if (HexenHack)
-				//{
-				//	*((fixed_t *)(info + handler->data2)) = sc_Number << 8;
-				//}
-				//else
-				//{
-				//	*((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-				//}
-			}
-			break;
-
-		case MITYPE_SETFLAG:
-			flags |= handler->data1;
-			break;
-
-		case MITYPE_SCFLAGS:
-			flags = (flags & handler->data2) | handler->data1;
-			break;
-
-		case MITYPE_CLUSTER:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetNumber();
-			*((int*)(info + handler->data1)) = sc_Number;
-			if (HexenHack)
-			{
-				ClusterInfos& clusters = getClusterInfos();
-				cluster_info_t& clusterH = clusters.findByCluster(sc_Number);
-				if (clusterH.cluster != 0)
-				{
-					clusterH.flags |= CLUSTER_HUB;
-				}
-			}
-			break;
-
-		case MITYPE_STRING:
-		{
-			char** text = (char**)(info + handler->data1);
-
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			free(*text);
-			*text = strdup(sc_String);
-			break;
-		}
-
-		case MITYPE_SETCOMPATFLAG: 
-		{
-			int set;
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-				SC_MustGetNumber();
-				set = sc_Number;
-			}
-			else
-			{
-				SC_MustGetNumber();
-				set = sc_Number;
-			}
-
-			if (set)
-			{
-				flags |= handler->data1;
-			}
-			else
-			{
-				flags &= ~handler->data1;
-			}
-		}
-		break;
-		case MITYPE_CSTRING:
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-			}
-
-			SC_MustGetString();
-			strncpy((char*)(info + handler->data1), sc_String, handler->data2);
-			*((char*)(info + handler->data1 + handler->data2)) = '\0';
-			break;
-		case MITYPE_CLUSTERSTRING:
-		{
-			char** text = (char**)(info + handler->data1);
-
-			if (newMapinfoStack > 0)
-			{
-				SC_MustGetStringName("=");
-				SC_MustGetString();
-				if (SC_Compare("lookup"))
-				{
-					SC_MustGetStringName(",");
-					SC_MustGetString();
-					OString s = GStrings(sc_String);
-					
-					if (s.empty())
-					{
-						s = sc_String;
-						//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
-					}
-					free(*text);
-					*text = strdup(s.c_str());
-				}
-				else
-				{
-					// One line per string.
-					std::string ctext;
-					SC_UnGet();
-					do
-					{
-						SC_MustGetString();
-						ctext += sc_String;
-						ctext += "\n";
-						SC_GetString();
-					} while (SC_Compare(","));
-					SC_UnGet();
-
-					// Trim trailing newline.
-					if (ctext.length() > 0)
-					{
-						ctext.resize(ctext.length() - 1);
-					}
-
-					free(*text);
-					*text = strdup(ctext.c_str());
-				}
-			}
-			else
-			{
-				SC_MustGetString();
-				if (SC_Compare("lookup"))
-				{
-					SC_MustGetString();
-					OString s = GStrings(sc_String);
-					if (s.empty())
-					{
-						s = sc_String;
-						//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
-					}
-
-					free(*text);
-					*text = strdup(s.c_str());
-				}
-				else
-				{
-					free(*text);
-					*text = strdup(sc_String);
-				}
-			}
-			break;
-		}}
-	}
-
-	if (tinfo == NULL)
-	{
-		return;
-	}
-
-	switch (tinfo->tag)
-	{
-	case tagged_info_t::LEVEL:
-		tinfo->level->flags = flags;
-		break;
-	case tagged_info_t::CLUSTER:
-		tinfo->cluster->flags = flags;
-		break;
-	}
-}
-
-static void ParseMapInfoLump(int lump, const char* lumpname)
-{
-	LevelInfos& levels = getLevelInfos();
-	ClusterInfos& clusters = getClusterInfos();
-
-	level_pwad_info_t defaultinfo;
-	DWORD levelflags;
-
-	SetLevelDefaults (&defaultinfo);
-	SC_OpenLumpNum (lump, lumpname);
-
-	while (SC_GetString ())
-	{
-		switch (SC_MustMatchString (MapInfoTopLevel))
-		{
-		case MITL_DEFAULTMAP:
-		{
-			SetLevelDefaults(&defaultinfo);
-			tagged_info_t tinfo;
-			tinfo.tag = tagged_info_t::LEVEL;
-			tinfo.level = &defaultinfo;
-			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, 0);
-			break;
-		}
-		case MITL_MAP:
-		{
-			levelflags = defaultinfo.flags;
-			SC_MustGetString ();
-			if (IsNum (sc_String))
-			{	// MAPNAME is a number, assume a Hexen wad
-				int map = atoi (sc_String);
-				sprintf (sc_String, "MAP%02d", map);
-				SKYFLATNAME[5] = 0;
-				HexenHack = true;
-				// Hexen levels are automatically nointermission
-				// and even lighting and no auto sound sequences
-				levelflags |= LEVEL_NOINTERMISSION
-							| LEVEL_EVENLIGHTING
-							| LEVEL_SNDSEQTOTALCTRL;
-			}
-
-			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(sc_String).exists()) ?
-				levels.findByName(sc_String) :
-				levels.create();
-
-			// Free the level name string before we pave over it.
-			free(info.level_name);
-
-			info = defaultinfo;
-			uppercopy(info.mapname, sc_String);
-
-			// Map name.
-			SC_MustGetString();
-			if (SC_Compare("lookup"))
-			{
-				SC_MustGetString();
-				OString s = GStrings(sc_String);
-				if (s.empty())
-				{
-					s = sc_String;
-					//SC_ScriptError("Unknown lookup string \"%s\"", sc_String);
-				}
-				free(info.level_name);
-				info.level_name = strdup(s.c_str());
-			}
-			else
-			{
-				free(info.level_name);
-				info.level_name = strdup(sc_String);
-			}
-
-			tagged_info_t tinfo;
-			tinfo.tag = tagged_info_t::LEVEL;
-			tinfo.level = &info;
-			ParseMapInfoLower(MapHandlers, MapInfoMapLevel, &tinfo, levelflags);
-
-			// If the level info was parsed and no levelnum was applied,
-			// try and synthesize one from the level name.
-			if (info.levelnum == 0)
-			{
-				if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
-				{
-					// Convert a char into its equivalent integer.
-					int e = info.mapname[1] - '0';
-					int m = info.mapname[3] - '0';
-					if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
-					{
-						// Copypasted from the ZDoom wiki.
-						info.levelnum = (e - 1) * 10 + m;
-					}
-				}
-				else if (strnicmp(info.mapname, "MAP", 3) == 0)
-				{
-					// Try and turn the trailing digits after the "MAP" into a
-					// level number.
-					int mapnum = atoi(info.mapname + 3);
-					if (mapnum >= 0 && mapnum <= 99)
-					{
-						info.levelnum = mapnum;
-					}
-				}
-			}
-			break;
-		}
-		case MITL_CLUSTER:
-		case MITL_CLUSTERDEF:
-		{
-			SC_MustGetNumber();
-
-			// Find the cluster.
-			cluster_info_t& info = (clusters.findByCluster(sc_Number).cluster != 0) ?
-				clusters.findByCluster(sc_Number) :
-				clusters.create();
-
-			info.cluster = sc_Number;
-			tagged_info_t tinfo;
-			tinfo.tag = tagged_info_t::CLUSTER;
-			tinfo.cluster = &info;
-			ParseMapInfoLower (ClusterHandlers, MapInfoClusterLevel, &tinfo, 0);
-			break;
-		}
-		case MITL_EPISODE:
-		{
-			// Not implemented
-			SC_MustGetString(); // Map lump
-
-			if (SC_Compare("teaser"))
-			{
-				SC_MustGetString(); // Teaser lump
-			}
-			else
-			{
-				SC_UnGet();
-			}
-
-			SC_MustGetString();
-			if (SC_Compare("{"))
-			{
-				// If we encounter an episode block in new MAPINFO, we can just
-				// eat the entire block.
-				SkipUnknownBlock();
-			}
-			else
-			{
-				// If we encounter an episode block in old MAPINFO, we have to
-				// parse it and just not do anything with it.
-				tagged_info_t tinfo;
-				tinfo.tag = tagged_info_t::EPISODE;
-				tinfo.episode = NULL;
-				ParseMapInfoLower(EpisodeHandlers, MapInfoEpisodeLevel, &tinfo, 0);
-			}
-			break;
-		}
-		case MITL_CLEAREPISODES:
-			// Not implemented
-			break;
-
-		case MITL_SKILL:
-			// Not implemented
-			SC_MustGetString(); // Name
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		case MITL_CLEARSKILLS:
-			// Not implemented
-			break;
-
-		case MITL_GAMEINFO:
-			// Not implemented
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		case MITL_INTERMISSION:
-			// Not implemented
-			SC_MustGetString(); // Name
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		case MITL_AUTOMAP:
-			// Not implemented
-			ParseMapInfoLower(NULL, NULL, NULL, 0);
-			break;
-
-		default:
-			SC_ScriptError("Unimplemented top-level type \"%s\"", sc_String);
-		}
-	}
-	SC_Close ();
-}
-
-//
-// G_ParseMapInfo
-// Parses the MAPINFO lumps of all loaded WADs and generates
-// data for wadlevelinfos and wadclusterinfos.
-//
-void G_ParseMapInfo (void)
-{
-	BOOL found_zmapinfo = false;
-
-	int lump = -1;
-	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
-	{
-		found_zmapinfo = true;
-		ParseMapInfoLump(lump, "ZMAPINFO");
-	}
-
-	// If ZMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_zmapinfo == true)
-	{
-		return;
-	}
-
-	lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
-	{
-		ParseMapInfoLump(lump, "MAPINFO");
-	}
-}
-
-void P_RemoveDefereds (void)
+void P_RemoveDefereds()
 {
 	::getLevelInfos().zapDeferreds();
 }
 
 // [ML] Not sure where to put this for now...
 // 	G_ParseMusInfo
-void G_ParseMusInfo(void)
+void G_ParseMusInfo()
 {
 	// Nothing yet...
 }
@@ -1433,7 +417,9 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	if (mapname.length())
 	{
 		if (W_CheckNumForName(mapname.c_str()) != -1)
-            G_DeferedInitNew((char *)mapname.c_str());
+		{
+			G_DeferedInitNew(mapname.c_str());
+		}
         else
         {
             Printf_Bold("map %s not found, loading start map instead", mapname.c_str());
@@ -1546,7 +532,7 @@ BEGIN_COMMAND (map)
 			else
 			{ // Success
 				unnatural_level_progression = true;
-				G_DeferedInitNew (mapname);
+				G_DeferedInitNew(mapname);
 			}
 
 		}
@@ -1561,18 +547,18 @@ BEGIN_COMMAND (map)
 			{
 				unnatural_level_progression = true;
 				uppercopy(mapname, argv[1]); // uppercase the mapname
-				G_DeferedInitNew (mapname);
+				G_DeferedInitNew(mapname);
 			}
 		}
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
+		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname.c_str(), level.level_name);
 	}
 }
 END_COMMAND (map)
 
-char *CalcMapName (int episode, int level)
+char *CalcMapName(int episode, int level)
 {
 	static char lumpname[9];
 
@@ -1591,124 +577,7 @@ char *CalcMapName (int episode, int level)
 	return lumpname;
 }
 
-void G_SetLevelStrings (void)
-{
-	char temp[9] = "";
-	LevelInfos& levels = getLevelInfos();
-	ClusterInfos& clusters = getClusterInfos();
-
-	// Plutonia and TNT take the place of Doom 2.
-	int hustart, txtstart;
-	if (gamemission == pack_plut)
-	{
-		hustart = GStrings.toIndex(PHUSTR_1);
-		txtstart = GStrings.toIndex(P1TEXT);
-	}
-	else if (gamemission == pack_tnt)
-	{
-		hustart = GStrings.toIndex(THUSTR_1);
-		txtstart = GStrings.toIndex(T1TEXT);
-	}
-	else
-	{
-		hustart = GStrings.toIndex(HUSTR_1);
-		txtstart = GStrings.toIndex(C1TEXT);
-	}
-
-	// Loop through levels and assign any DeHackEd or otherwise dynamic text.
-	for (size_t i = 0; i < levels.size(); i++)
-	{
-		level_pwad_info_t& info = levels.at(i);
-
-		// Level name
-		int level_name;
-		int muslump;
-		if (info.cluster <= 4)
-		{
-			// Doom 1
-			int offset = info.levelnum - 1 - (info.cluster - 1);
-			if (offset >= 0 && offset < 36)
-			{
-				level_name = GStrings.toIndex(HUSTR_E1M1) + offset;
-				muslump = GStrings.toIndex(MUSIC_E1M1) + offset;
-			}
-			else
-			{
-				level_name = GStrings.toIndex(HUSTR_E1M1);
-				muslump = GStrings.toIndex(MUSIC_E1M1);
-			}
-		}
-		else
-		{
-			// Doom 2 + Expansions
-			int offset = (info.levelnum - 1);
-			if (offset >= 0 && offset < 32)
-			{
-				level_name = hustart + offset;
-				muslump = GStrings.toIndex(MUSIC_RUNNIN) + offset;
-			}
-			else
-			{
-				level_name = GStrings.toIndex(HUSTR_1);
-				muslump = GStrings.toIndex(MUSIC_RUNNIN);
-			}
-		}
-
-		free(info.level_name);
-		info.level_name = strdup(GStrings.getIndex(level_name));
-	}
-
-	// Loop through clusters and assign any DeHackEd or otherwise dynamic text.
-	for (size_t i = 0; i < clusters.size(); i++)
-	{
-		cluster_info_t& info = clusters.at(i);
-		if (info.cluster <= 4)
-		{
-			// Doom 1
-
-			// Cluster music is all the same.
-			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_VICTOR));
-			uppercopy(info.messagemusic, temp);
-
-			// Exit text at end of episode.
-			free(info.exittext);
-			info.exittext =
-			    strdup(GStrings.getIndex(GStrings.toIndex(E1TEXT) + info.cluster - 1));
-		}
-		else if (info.cluster <= 8)
-		{
-			// Doom 2 + Expansions, Normal progression
-			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(info.messagemusic, temp);
-
-			// Exit text between clusters.
-			free(info.exittext);
-			info.exittext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
-		}
-		else if (info.cluster <= 10)
-		{
-			// Doom 2 + Expansions, Secret progression
-			snprintf(temp, ARRAY_LENGTH(temp), "D_%s", GStrings(MUSIC_READ_M));
-			uppercopy(info.messagemusic, temp);
-
-			// Enter text before secret maps.
-			free(info.entertext);
-			info.entertext = strdup(GStrings.getIndex(txtstart + info.cluster - 5));
-		}
-
-		// Cluster background flat.
-		uppercopy(info.finaleflat, GStrings.getIndex(GStrings.toIndex(BGFLATE1) + i));
-	}
-
-	if (::level.info && ::level.info->level_name)
-	{
-		strncpy(::level.level_name, ::level.info->level_name,
-		        ARRAY_LENGTH(::level.level_name) - 1);
-	}
-}
-
-
-void G_AirControlChanged ()
+void G_AirControlChanged()
 {
 	if (level.aircontrol <= 256)
 	{
@@ -1781,21 +650,21 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 }
 
 // Archives the current level
-void G_SnapshotLevel ()
+void G_SnapshotLevel()
 {
 	delete level.info->snapshot;
 
 	level.info->snapshot = new FLZOMemFile;
-	level.info->snapshot->Open ();
+	level.info->snapshot->Open();
 
-	FArchive arc (*level.info->snapshot);
+	FArchive arc(*level.info->snapshot);
 
 	G_SerializeLevel(arc, false);
 }
 
 // Unarchives the current level based on its snapshot
 // The level should have already been loaded and setup.
-void G_UnSnapshotLevel (bool hubLoad)
+void G_UnSnapshotLevel(bool hubLoad)
 {
 	if (level.info->snapshot == NULL)
 		return;
@@ -1811,18 +680,18 @@ void G_UnSnapshotLevel (bool hubLoad)
 	level.info->snapshot = NULL;
 }
 
-void G_ClearSnapshots (void)
+void G_ClearSnapshots()
 {
 	getLevelInfos().clearSnapshots();
 }
 
-static void writeSnapShot (FArchive &arc, level_info_t *i)
+static void writeSnapShot(FArchive &arc, level_info_t *i)
 {
-	arc.Write (i->mapname, 8);
+	arc.Write (i->mapname.c_str(), 8);
 	i->snapshot->Serialize (arc);
 }
 
-void G_SerializeSnapshots (FArchive &arc)
+void G_SerializeSnapshots(FArchive &arc)
 {
 	LevelInfos& levels = getLevelInfos();
 
@@ -1838,7 +707,7 @@ void G_SerializeSnapshots (FArchive &arc)
 		}
 
 		// Signal end of snapshots
-		arc << (char)0;
+		arc << static_cast<char>(0);
 	}
 	else
 	{
@@ -1863,9 +732,9 @@ void G_SerializeSnapshots (FArchive &arc)
 	}
 }
 
-static void writeDefereds (FArchive &arc, level_info_t *i)
+static void writeDefereds(FArchive &arc, level_info_t *i)
 {
-	arc.Write (i->mapname, 8);
+	arc.Write (i->mapname.c_str(), 8);
 	arc << i->defered;
 }
 
@@ -1912,17 +781,20 @@ void P_SerializeACSDefereds(FArchive &arc)
 	}
 }
 
-static int		startpos;	// [RH] Support for multiple starts per level
+static int startpos;	// [RH] Support for multiple starts per level
 
-void G_DoWorldDone (void)
+void G_DoWorldDone()
 {
 	gamestate = GS_LEVEL;
-	if (wminfo.next[0] == 0) {
+	if (wminfo.next[0] == 0)
+	{
 		// Don't die if no next map is given,
 		// just repeat the current one.
 		Printf (PRINT_WARNING, "No next map specified.\n");
-	} else {
-		strncpy (level.mapname, wminfo.next, 8);
+	}
+	else
+	{
+		level.mapname = wminfo.next;
 	}
 	G_DoLoadLevel (startpos);
 	startpos = 0;
@@ -1949,7 +821,7 @@ void G_InitLevelLocals()
 	//NormalLight.maps = shaderef_t(&DefaultPalette->maps, 0);
 
 	level.gravity = sv_gravity;
-	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+	level.aircontrol = static_cast<fixed_t>(sv_aircontrol * 65536.f);
 	G_AirControlChanged();
 
 	// clear all ACS variables
@@ -1961,7 +833,7 @@ void G_InitLevelLocals()
 	// [ML] 5/11/06 - Remove sky scrolling and sky2
 	// [SL] 2012-03-19 - Add sky2 back
 	::level.info = (level_info_t*)&info;
-	strncpy(::level.skypic2, info.skypic2, 8);
+	::level.skypic2 = info.skypic2;
 	memcpy(::level.fadeto_color, info.fadeto_color, 4);
 	
 	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
@@ -1970,7 +842,7 @@ void G_InitLevelLocals()
 	}
 	else
 	{
-		R_ForceDefaultColormap(info.fadetable);
+		R_ForceDefaultColormap(info.fadetable.c_str());
 	}
 
 	memcpy(::level.outsidefog_color, info.outsidefog_color, 4);
@@ -1982,7 +854,7 @@ void G_InitLevelLocals()
 	}
 	if (info.aircontrol != 0.f)
 	{
-		::level.aircontrol = (fixed_t)(info.aircontrol * 65536.f);
+		::level.aircontrol = static_cast<fixed_t>(info.aircontrol * 65536.f);
 	}
 
 	::level.partime = info.partime;
@@ -1991,32 +863,36 @@ void G_InitLevelLocals()
 	::level.levelnum = info.levelnum;
 
 	// Only copy the level name if there's a valid level name to be copied.
-	if (info.level_name != NULL)
+	
+	if (!info.level_name.empty())
 	{
 		// Get rid of initial lump name or level number.
-		char* begin = NULL;
+		std::string begin;
 		if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
 		{
 			std::string search;
 			StrFormat(search, "E%cM%c: ", info.mapname[1], info.mapname[3]);
-			begin = strstr(info.level_name, search.c_str());
-			if (begin != NULL)
-				begin += search.length();
+
+			const std::size_t pos = info.level_name.find(search);
+
+			if (pos != std::string::npos)
+				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
 		}
-		else if (strstr(info.mapname, "MAP") == &info.mapname[0])
+		else if (strstr(info.mapname.c_str(), "MAP") == &info.mapname[0])
 		{
 			std::string search;
 			StrFormat(search, "%u: ", info.levelnum);
-			begin = strstr(info.level_name, search.c_str());
-			if (begin != NULL)
-				begin += search.length();
+			
+			const std::size_t pos = info.level_name.find(search);
+
+			if (pos != std::string::npos)
+				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
-		}
-
-		if (begin != NULL)
+		}		
+		if (!begin.empty())
 		{
 			std::string level_name(begin);
 			TrimString(level_name);
@@ -2035,13 +911,13 @@ void G_InitLevelLocals()
 		        ARRAY_LENGTH(::level.level_name) - 1);
 	}
 
-	strncpy(::level.nextmap, info.nextmap, 8);
-	strncpy(::level.secretmap, info.secretmap, 8);
-	strncpy(::level.music, info.music, 8);
-	strncpy(::level.skypic, info.skypic, 8);
+	::level.nextmap = info.nextmap;
+	::level.secretmap = info.secretmap;
+	::level.music = info.music;
+	::level.skypic = info.skypic;
 	if (!::level.skypic2[0])
 	{
-			strncpy(::level.skypic2, ::level.skypic, 8);
+			::level.skypic2 =::level.skypic.c_str();
 	}
 
 	if (::level.flags & LEVEL_JUMP_YES)
@@ -2068,6 +944,18 @@ void G_InitLevelLocals()
 		V_RefreshColormaps();
 	}
 
+	::level.exitpic = info.exitpic;
+	::level.enterpic = info.enterpic;
+	::level.endpic = info.endpic;
+
+	::level.intertext = info.intertext;
+	::level.intertextsecret = info.intertextsecret;
+	::level.interbackdrop = info.interbackdrop;
+	::level.intermusic = info.intermusic;
+	
+	::level.bossactions = &info.bossactions;
+	::level.bossactions_donothing = info.bossactions_donothing;
+	
 	movingsectors.clear();
 }
 
@@ -2147,15 +1035,15 @@ BEGIN_COMMAND(mapinfo)
 
 	level_pwad_info_t& info = *infoptr;
 
-	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname);
+	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname.c_str());
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
-	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name);
-	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname);
-	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap);
-	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap);
+	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name.c_str());
+	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname.c_str());
+	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap.c_str());
+	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap.c_str());
 	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
-	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic);
-	Printf(PRINT_HIGH, "Music: %s\n", info.music);
+	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic.c_str());
+	Printf(PRINT_HIGH, "Music: %s\n", info.music.c_str());
 
 	// Stringify the set level flags.
 	std::string flags;
@@ -2217,8 +1105,8 @@ BEGIN_COMMAND(clusterinfo)
 	}
 
 	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
-	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic);
-	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat);
+	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic.c_str());
+	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat.c_str());
 	if (info.exittext)
 	{
 		Printf(PRINT_HIGH, "- = Exit Text = -\n%s\n- = = = -\n", info.exittext);
@@ -2252,1128 +1140,19 @@ BEGIN_COMMAND(clusterinfo)
 }
 END_COMMAND(clusterinfo)
 
-// Static level info from original game
-// The level names and cluster messages get filled in
-// by G_SetLevelStrings().
-
-const level_info_t IWADLevelInfos[] = {
-	// Registered/Retail Episode 1
-	{
-		"E1M1",
-		1,
-		NULL,
-		"WILV00",
-		"E1M2",
-		"E1M9",
-		30,
-		"SKY1",
-		"D_E1M1",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M2",
-		2,
-		NULL,
-		"WILV01",
-		"E1M3",
-		"E1M9",
-		75,
-		"SKY1",
-		"D_E1M2",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M3",
-		3,
-		NULL,
-		"WILV02",
-		"E1M4",
-		"E1M9",
-		120,
-		"SKY1",
-		"D_E1M3",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M4",
-		4,
-		NULL,
-		"WILV03",
-		"E1M5",
-		"E1M9",
-		90,
-		"SKY1",
-		"D_E1M4",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M5",
-		5,
-		NULL,
-		"WILV04",
-		"E1M6",
-		"E1M9",
-		165,
-		"SKY1",
-		"D_E1M5",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M6",
-		6,
-		NULL,
-		"WILV05",
-		"E1M7",
-		"E1M9",
-		180,
-		"SKY1",
-		"D_E1M6",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M7",
-		7,
-		NULL,
-		"WILV06",
-		"E1M8",
-		"E1M9",
-		180,
-		"SKY1",
-		"D_E1M7",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M8",
-		8,
-		NULL,
-		"WILV07",
-		"EndGame1",
-//		{ 'E','n','d','G','a','m','e','1' },
-		"E1M9",
-		30,
-		"SKY1",
-		"D_E1M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
-		1,
-		0
-	},
-	{
-		"E1M9",
-		9,
-		NULL,
-		"WILV08",
-		"E1M4",
-		"E1M4",
-		165,
-		"SKY1",
-		"D_E1M9",
-		0,
-		1,
-		0
-	},
-
-	// Registered/Retail Episode 2
-	{
-		"E2M1",
-		11,
-		NULL,
-		"WILV10",
-		"E2M2",
-		"E2M9",
-		90,
-		"SKY2",
-		"D_E2M1",
-		0,
-		2,
-		0
-	},
-
-	{
-		"E2M2",
-		12,
-		NULL,
-		"WILV11",
-		"E2M3",
-		"E2M9",
-		90,
-		"SKY2",
-		"D_E2M2",
-		0,
-		2,
-		0
-	},
-	{
-		"E2M3",
-		13,
-		NULL,
-		"WILV12",
-		"E2M4",
-		"E2M9",
-		90,
-		"SKY2",
-		"D_E2M3",
-		0,
-		2,
-		0
-	},
-	{
-		"E2M4",
-		14,
-		NULL,
-		"WILV13",
-		"E2M5",
-		"E2M9",
-		120,
-		"SKY2",
-		"D_E2M4",
-		0,
-		2,
-		0
-	},
-	{
-		"E2M5",
-		15,
-		NULL,
-		"WILV14",
-		"E2M6",
-		"E2M9",
-		90,
-		"SKY2",
-		"D_E2M5",
-		0,
-		2,
-		0
-	},
-	{
-		"E2M6",
-		16,
-		NULL,
-		"WILV15",
-		"E2M7",
-		"E2M9",
-		360,
-		"SKY2",
-		"D_E2M6",
-		0,
-		2,
-		0
-	},
-	{
-		"E2M7",
-		17,
-		NULL,
-		"WILV16",
-		"E2M8",
-		"E2M9",
-		240,
-		"SKY2",
-		"D_E2M7",
-		0,
-		2,
-		0
-	},
-	{
-		"E2M8",
-		18,
-		NULL,
-		"WILV17",
-		"EndGame2",
-//		{ 'E','n','d','G','a','m','e','2' },
-		"E2M9",
-		30,
-		"SKY2",
-		"D_E2M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,
-		2,
-		0
-	},
-	{
-		"E2M9",
-		19,
-		NULL,
-		"WILV18",
-		"E2M6",
-		"E2M6",
-		170,
-		"SKY2",
-		"D_E2M9",
-		0,
-		2,
-		0
-	},
-
-	// Registered/Retail Episode 3
-
-	{
-		"E3M1",
-		21,
-		NULL,
-		"WILV20",
-		"E3M2",
-		"E3M9",
-		90,
-		"SKY3",
-		"D_E3M1",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M2",
-		22,
-		NULL,
-		"WILV21",
-		"E3M3",
-		"E3M9",
-		45,
-		"SKY3",
-		"D_E3M2",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M3",
-		23,
-		NULL,
-		"WILV22",
-		"E3M4",
-		"E3M9",
-		90,
-		"SKY3",
-		"D_E3M3",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M4",
-		24,
-		NULL,
-		"WILV23",
-		"E3M5",
-		"E3M9",
-		150,
-		"SKY3",
-		"D_E3M4",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M5",
-		25,
-		NULL,
-		"WILV24",
-		"E3M6",
-		"E3M9",
-		90,
-		"SKY3",
-		"D_E3M5",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M6",
-		26,
-		NULL,
-		"WILV25",
-		"E3M7",
-		"E3M9",
-		90,
-		"SKY3",
-		"D_E3M6",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M7",
-		27,
-		NULL,
-		"WILV26",
-		"E3M8",
-		"E3M9",
-		165,
-		"SKY3",
-		"D_E3M7",
-		0,
-		3,
-		0
-	},
-	{
-		"E3M8",
-		28,
-		NULL,
-		"WILV27",
-		"EndGame3",
-//		{ 'E','n','d','G','a','m','e','3' },
-		"E3M9",
-		30,
-		"SKY3",
-		"D_E3M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,
-		3,
-		0
-	},
-	{
-		"E3M9",
-		29,
-		NULL,
-		"WILV28",
-		"E3M7",
-		"E3M7",
-		135,
-		"SKY3",
-		"D_E3M9",
-		0,
-		3,
-		0
-	},
-
-	// Retail Episode 4
-	{
-		"E4M1",
-		31,
-		NULL,
-		"WILV30",
-		"E4M2",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E3M4",
-		0,
-		4,
-		0
-	},
-	{
-		"E4M2",
-		32,
-		NULL,
-		"WILV31",
-		"E4M3",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E3M2",
-		0,
-		4,
-		0
-	},
-	{
-		"E4M3",
-		33,
-		NULL,
-		"WILV32",
-		"E4M4",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E3M3",
-		0,
-		4,
-		0
-	},
-	{
-		"E4M4",
-		34,
-		NULL,
-		"WILV33",
-		"E4M5",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E1M5",
-		0,
-		4,
-		0
-	},
-	{
-		"E4M5",
-		35,
-		NULL,
-		"WILV34",
-		"E4M6",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E2M7",
-		0,
-		4,
-		0
-	},
-	{
-		"E4M6",
-		36,
-		NULL,
-		"WILV35",
-		"E4M7",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E2M4",
-		LEVEL_CYBORGSPECIAL|LEVEL_SPECOPENDOOR,
-		4,
-		0
-	},
-	{
-		"E4M7",
-		37,
-		NULL,
-		"WILV36",
-		"E4M8",
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E2M6",
-		0,
-		4,
-		0
-	},
-	{
-		"E4M8",
-		38,
-		NULL,
-		"WILV37",
-		"EndGame4",
-//		{ 'E','n','d','G','a','m','e','4' },
-		"E4M9",
-		0,
-		"SKY4",
-		"D_E2M5",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,
-		4,
-		0
-	},
-	{
-		"E4M9",
-		39,
-		NULL,
-		"WILV38",
-		"E4M3",
-		"E4M3",
-		0,
-		"SKY4",
-		"D_E1M9",
-		0,
-		4,
-		0
-	},
-
-	// DOOM 2 Levels
-
-	{
-		"MAP01",
-		1,
-		NULL,
-		"CWILV00",
-		"MAP02",
-		"MAP02",
-		30,
-		"SKY1",
-        "D_RUNNIN",
-//		{ 'D','_','R','U','N','N','I','N' },
-		0,
-		5,
-		0
-	},
-	{
-		"MAP02",
-		2,
-		NULL,
-		"CWILV01",
-		"MAP03",
-		"MAP03",
-		90,
-		"SKY1",
-		"D_STALKS",
-//		{ 'D','_','S','T','A','L','K','S' },
-		0,
-		5,
-		0
-	},
-	{
-		"MAP03",
-		3,
-		NULL,
-		"CWILV02",
-		"MAP04",
-		"MAP04",
-		120,
-		"SKY1",
-        "D_COUNTD",
-//		{ 'D','_','C','O','U','N','T','D' },
-		0,
-		5,
-		0
-	},
-	{
-		"MAP04",
-		4,
-		NULL,
-		"CWILV03",
-		"MAP05",
-		"MAP05",
-		120,
-		"SKY1",
-		"D_BETWEE",
-//		{ 'D','_','B','E','T','W','E','E' },
-		0,
-		5,
-		0
-	},
-	{
-		"MAP05",
-		5,
-		NULL,
-		"CWILV04",
-		"MAP06",
-		"MAP06",
-		90,
-		"SKY1",
-		"D_DOOM",
-		0,
-		5,
-		0
-	},
-	{
-		"MAP06",
-		6,
-		NULL,
-		"CWILV05",
-		"MAP07",
-		"MAP07",
-		150,
-		"SKY1",
-		"D_THE_DA",
-//		{ 'D','_','T','H','E','_','D','A' },
-		0,
-		5,
-		0
-	},
-	{
-		"MAP07",
-		7,
-		NULL,
-		"CWILV06",
-		"MAP08",
-		"MAP08",
-		120,
-		"SKY1",
-		"D_SHAWN",
-		LEVEL_MAP07SPECIAL,
-		6,
-		0
-	},
-	{
-		"MAP08",
-		8,
-		NULL,
-		"CWILV07",
-		"MAP09",
-		"MAP09",
-		120,
-		"SKY1",
-		"D_DDTBLU",
-//		{ 'D','_','D','D','T','B','L','U' },
-		0,
-		6,
-		0
-	},
-	{
-		"MAP09",
-		9,
-		NULL,
-		"CWILV08",
-		"MAP10",
-		"MAP10",
-		270,
-		"SKY1",
-        "D_IN_CIT",
-//		{ 'D','_','I','N','_','C','I','T' },
-		0,
-		6,
-		0
-	},
-	{
-		"MAP10",
-		10,
-		NULL,
-		"CWILV09",
-		"MAP11",
-		"MAP11",
-		90,
-		"SKY1",
-		"D_DEAD",
-		0,
-		6,
-		0
-	},
-	{
-		"MAP11",
-		11,
-		NULL,
-		"CWILV10",
-		"MAP12",
-		"MAP12",
-		210,
-		"SKY1",
-        "D_STLKS2",
-//		{ 'D','_','S','T','L','K','S','2' },
-		0,
-		6,
-		0
-	},
-	{
-		"MAP12",
-		12,
-		NULL,
-		"CWILV11",
-		"MAP13",
-		"MAP13",
-		150,
-		"SKY2",
-		"D_THEDA2",
-//		{ 'D','_','T','H','E','D','A','2' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP13",
-		13,
-		NULL,
-		"CWILV12",
-		"MAP14",
-		"MAP14",
-		150,
-		"SKY2",
-		"D_DOOM2",
-		0,
-		7,
-		0
-	},
-	{
-		"MAP14",
-		14,
-		NULL,
-		"CWILV13",
-		"MAP15",
-		"MAP15",
-		150,
-		"SKY2",
-		"D_DDTBL2",
-//		{ 'D','_','D','D','T','B','L','2' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP15",
-		15,
-		NULL,
-		"CWILV14",
-		"MAP16",
-		"MAP31",
-		210,
-		"SKY2",
-		"D_RUNNI2",
-//		{ 'D','_','R','U','N','N','I','2' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP16",
-		16,
-		NULL,
-		"CWILV15",
-		"MAP17",
-		"MAP17",
-		150,
-		"SKY2",
-		"D_DEAD2",
-		0,
-		7,
-		0
-	},
-	{
-		"MAP17",
-		17,
-		NULL,
-		"CWILV16",
-		"MAP18",
-		"MAP18",
-		420,
-		"SKY2",
-		"D_STLKS3",
-//		{ 'D','_','S','T','L','K','S','3' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP18",
-		18,
-		NULL,
-		"CWILV17",
-		"MAP19",
-		"MAP19",
-		150,
-		"SKY2",
-		"D_ROMERO",
-//		{ 'D','_','R','O','M','E','R','O' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP19",
-		19,
-		NULL,
-		"CWILV18",
-		"MAP20",
-		"MAP20",
-		210,
-		"SKY2",
-		"D_SHAWN2",
-//		{ 'D','_','S','H','A','W','N','2' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP20",
-		20,
-		NULL,
-		"CWILV19",
-		"MAP21",
-		"MAP21",
-		150,
-		"SKY2",
-		"D_MESSAG",
-//		{ 'D','_','M','E','S','S','A','G' },
-		0,
-		7,
-		0
-	},
-	{
-		"MAP21",
-		21,
-		NULL,
-		"CWILV20",
-		"MAP22",
-		"MAP22",
-		240,
-		"SKY3",
-		"D_COUNT2",
-//		{ 'D','_','C','O','U','N','T','2' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP22",
-		22,
-		NULL,
-		"CWILV21",
-		"MAP23",
-		"MAP23",
-		150,
-		"SKY3",
-		"D_DDTBL3",
-//		{ 'D','_','D','D','T','B','L','3' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP23",
-		23,
-		NULL,
-		"CWILV22",
-		"MAP24",
-		"MAP24",
-		180,
-		"SKY3",
-		"D_AMPIE",
-		0,
-		8,
-		0
-	},
-	{
-		"MAP24",
-		24,
-		NULL,
-		"CWILV23",
-		"MAP25",
-		"MAP25",
-		150,
-		"SKY3",
-		"D_THEDA3",
-//		{ 'D','_','T','H','E','D','A','3' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP25",
-		25,
-		NULL,
-		"CWILV24",
-		"MAP26",
-		"MAP26",
-		150,
-		"SKY3",
-		"D_ADRIAN",
-//		{ 'D','_','A','D','R','I','A','N' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP26",
-		26,
-		NULL,
-		"CWILV25",
-		"MAP27",
-		"MAP27",
-		300,
-		"SKY3",
-		"D_MESSG2",
-//		{ 'D','_','M','E','S','S','G','2' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP27",
-		27,
-		NULL,
-		"CWILV26",
-		"MAP28",
-		"MAP28",
-		330,
-		"SKY3",
-        "D_ROMER2",
-//		{ 'D','_','R','O','M','E','R','2' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP28",
-		28,
-		NULL,
-		"CWILV27",
-		"MAP29",
-		"MAP29",
-		420,
-		"SKY3",
-		"D_TENSE",
-		0,
-		8,
-		0
-	},
-	{
-		"MAP29",
-		29,
-		NULL,
-		"CWILV28",
-		"MAP30",
-		"MAP30",
-		300,
-		"SKY3",
-		"D_SHAWN3",
-//		{ 'D','_','S','H','A','W','N','3' },
-		0,
-		8,
-		0
-	},
-	{
-		"MAP30",
-		30,
-		NULL,
-		"CWILV29",
-        "EndGameC",
-        "EndGameC",
-//		{ 'E','n','d','G','a','m','e','C' },
-//		{ 'E','n','d','G','a','m','e','C' },
-		180,
-		"SKY3",
-		"D_OPENIN",
-//		{ 'D','_','O','P','E','N','I','N' },
-		LEVEL_MONSTERSTELEFRAG,
-		8,
-		0
-	},
-	{
-		"MAP31",
-		31,
-		NULL,
-		"CWILV30",
-		"MAP16",
-		"MAP32",
-		120,
-		"SKY3",
-		"D_EVIL",
-		0,
-		9,
-		0
-	},
-	{
-		"MAP32",
-		32,
-		NULL,
-		"CWILV31",
-		"MAP16",
-		"MAP16",
-		30,
-		"SKY3",
-		"D_ULTIMA",
-//		{ 'D','_','U','L','T','I','M','A' },
-		0,
-		10,
-		0
-	},
-	{
-		"",
-		0,
-		NULL,
-		"",
-		"",
-		"",
-		0,
-		"",
-		"",
-		0,
-		0,
-		0
-	}
-};
-
-// Episode/Cluster information
-const cluster_info_t IWADClusterInfos[] = {
-	{
-		1,		// DOOM Episode 1
-		"D_VICTOR",
-		"FLOOR4_8",
-//		{ 'F','L','O','O','R','4','_','8' }, // questionable
-		NULL,
-		NULL,
-		0
-	},
-	{
-		2,		// DOOM Episode 2
-		"D_VICTOR",
-		"SFLR6_1",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		3,		// DOOM Episode 3
-		"D_VICTOR",
-		"MFLR8_4",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		4,		// DOOM Episode 4
-		"D_VICTOR",
-		"MFLR8_3",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		5,		// DOOM II first cluster (up thru level 6)
-		"D_READ_M",
-		"SLIME16",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		6,		// DOOM II second cluster (up thru level 11)
-		"D_READ_M",
-		"RROCK14",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		7,		// DOOM II third cluster (up thru level 20)
-		"D_READ_M",
-		"RROCK07",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		8,		// DOOM II fourth cluster (up thru level 30)
-		"D_READ_M",
-		"RROCK17",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		9,		// DOOM II fifth cluster (level 31)
-		"D_READ_M",
-		"RROCK13",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		10,		// DOOM II sixth cluster (level 32)
-		"D_READ_M",
-		"RROCK19",
-		NULL,
-		NULL,
-		0
-	},
-	{
-		0,
-		"",
-		"",
-		NULL,
-		NULL,
-		0		// End-of-clusters marker
-	}
-};
-
 // Get global canonical levelinfo
 LevelInfos& getLevelInfos()
 {
-	static LevelInfos li(IWADLevelInfos);
+	static LevelInfos li(NULL);
 	return li;
 }
 
 // Get global canonical clusterinfo
 ClusterInfos& getClusterInfos()
 {
-	static ClusterInfos ci(IWADClusterInfos);
+	static ClusterInfos ci(NULL);
 	return ci;
 }
-
 
 // P_AllowDropOff()
 bool P_AllowDropOff()

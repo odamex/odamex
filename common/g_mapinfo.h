@@ -1,10 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2021 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,27 +14,15 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Setup a game, startup stuff.
+//   Functions regarding reading and interpreting MAPINFO lumps.
 //
 //-----------------------------------------------------------------------------
 
+#ifndef __G_MAPINFO_H__
+#define __G_MAPINFO_H__
 
-#ifndef __P_SETUP__
-#define __P_SETUP__
+extern BOOL HexenHack; // Semi-Hexen-compatibility mode
 
+void G_ParseMapInfo();
 
-
-// NOT called by W_Ticker. Fixme.
-//
-// [RH] The only parameter used is mapname, so I removed playermask and skill.
-//		On September 1, 1998, I added the position to indicate which set
-//		of single-player start spots should be spawned in the level.
-void P_SetupLevel (const char *mapname, int position);
-
-// Called by startup code.
-void P_Init (void);
-
-void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
-
-#endif
-
+#endif // __G_MAPINFO_H__
