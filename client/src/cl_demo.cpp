@@ -1116,7 +1116,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
-	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname, level.time));
+	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// Server spawns the player
 	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));

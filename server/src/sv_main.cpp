@@ -1881,7 +1881,7 @@ void SV_ConnectClient2(player_t& player)
 
 	// Send a map name
 	MSG_WriteSVC(&player.client.reliablebuf,
-	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname, level.time));
+	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname.c_str(), level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -4472,7 +4472,8 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	}
 }
 
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType)
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction)
 {
 	if (P_LineSpecialMovesSector(line->special))
 		return;
