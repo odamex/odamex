@@ -894,43 +894,15 @@ static int PatchThing (int thingy)
 		info = &mobjinfo[thingNum];
 		*ednum = *&info->doomednum;
 
-		DPrintf("Thing %" PRIuSIZE " found\n", thingNum);
+		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
 	}
 
 	while ((result = GetLine ()) == 1) {
 
 		size_t val = atoi(Line2);
-
 		int linelen = strlen(Line1);
 
-		if (linelen == 14 && stricmp(Line1, "Missile damage") == 0)
-		    {
-		    info->damage = val;
-		    }
-		else if (linelen == 13 && stricmp(Line1, "Reaction time") == 0)
-		{
-		    info->reactiontime = val;
-		}
-		else if (linelen == 12 && stricmp(Line1, "Translucency") == 0)
-		{
-			//  info->translucency = 0x10000;
-		}
-		else if (linelen == 11 && stricmp(Line1, "Pain chance") == 0)
-		{
-		    info->painchance = (SWORD)val;
-		}
-		else if (linelen == 10)
-		{
-			if (stricmp(Line1, "Hit points") == 0)
-			{
-				info->spawnhealth = val;
-			}
-			else if (stricmp(Line1, "Gib health") == 0)
-			{
-				// UNSUPPORTED FOR NOW
-			}
-		}
-		else if (linelen > 6)
+		if (linelen > 6)
 		{
 			if (stricmp(Line1 + linelen - 6, " frame") == 0)
 			{
@@ -939,28 +911,30 @@ static int PatchThing (int thingy)
 				if (!strnicmp(Line1, "Initial", 7))
 					info->spawnstate = state;
 				else if (!strnicmp(Line1, "First moving", 12))
-				    info->seestate = state;
+					info->seestate = state;
 				else if (!strnicmp(Line1, "Injury", 6))
-				    info->painstate = state;
+				{
+					info->painstate = state;
+				}
 				else if (!strnicmp(Line1, "Close attack", 12))
-				    info->meleestate = state;
+					info->meleestate = state;
 				else if (!strnicmp(Line1, "Far attack", 10))
-				    info->missilestate = state;
+					info->missilestate = state;
 				else if (!strnicmp(Line1, "Death", 5))
-				    info->deathstate = state;
+					info->deathstate = state;
 				else if (!strnicmp(Line1, "Exploding", 9))
-				    info->xdeathstate = state;
+					info->xdeathstate = state;
 				else if (!strnicmp(Line1, "Respawn", 7))
-				    info->raisestate = state;
+					info->raisestate = state;
 			}
 			else if (stricmp(Line1 + linelen - 6, " sound") == 0)
 			{
 				char* snd;
-				
+
 				if (val == 0 || val >= ARRAY_LENGTH(SoundMap))
 				{
 					val = 0;
-				}		
+				}
 
 				snd = SoundMap[val];
 
@@ -975,6 +949,40 @@ static int PatchThing (int thingy)
 				else if (!strnicmp(Line1, "Action", 6))
 					info->activesound = snd;
 			}
+			else if (linelen == 14 && stricmp(Line1, "Missile damage") == 0)
+			{
+				info->damage = val;
+			}
+			else if (linelen == 13 && stricmp(Line1, "Reaction time") == 0)
+			{
+				info->reactiontime = val;
+			}
+			else if (linelen == 12)
+			{
+				if (stricmp(Line1, "Translucency") == 0)
+				{
+					info->translucency = 0x10000; // UNSUPPORTED
+				}
+				else if (stricmp(Line1, "Dropped item") == 0)
+				{
+					// UNSUPPORTED FOR NOW...
+				}
+			}
+			else if (linelen == 11 && stricmp(Line1, "Pain chance") == 0)
+			{
+				info->painchance = (SWORD)val;
+			}
+			else if (linelen == 10)
+			{
+				if (stricmp(Line1, "Hit points") == 0)
+				{
+					info->spawnhealth = val;
+				}
+				else if (stricmp(Line1, "Gib health") == 0)
+				{
+					// UNSUPPORTED FOR NOW
+				}
+			}
 		}
 		else if (linelen == 6 && stricmp(Line1, "Height") == 0)
 		{
@@ -986,7 +994,7 @@ static int PatchThing (int thingy)
 			if (!stricmp(Line1, "Speed"))
 			{
 				// UNSUPPORTED NOW - Need to also fix projectiles' speed!
-				//info->speed = val;
+				info->speed = val;
 			}
 			else if (stricmp(Line1, "Width") == 0)
 			{
@@ -1075,6 +1083,11 @@ static int PatchThing (int thingy)
 
 		if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
 			info->height = OrgHeights[thingNum] * FRACUNIT;
+
+		Printf_Bold("HEALTH FOR %d ==> %d\n", thingNum, info->spawnhealth);
+		Printf_Bold("%d %d %d %d %d %d %d %d\n", info->spawnstate, info->seestate,
+		            info->painstate, info->meleestate, info->missilestate,
+		            info->deathstate, info->xdeathstate, info->raisestate);
 	}
 
 	return result;
