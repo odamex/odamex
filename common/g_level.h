@@ -29,6 +29,8 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "m_resfile.h"
+#include "olumpname.h"
+#include "r_defs.h" // line_t
 
 #include <string>
 #include <vector>
@@ -73,27 +75,23 @@ enum OLevelFlags : unsigned int
 	LEVEL_CHANGEMAPCHEAT = 0x40000000,	// Don't display cluster messages
 	LEVEL_VISITED = 0x80000000,			// Used for intermission map
 
-
 };
-
-
-
-
-
 
 struct acsdefered_s;
 class FBehavior;
+struct OBossAction;
 
-struct level_info_t {
-	char			mapname[9];
+struct level_info_t
+{
+	OLumpName		mapname;
 	int				levelnum;
-	char*			level_name;
-	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
+	std::string		level_name;
+	OLumpName		pname;
+	OLumpName		nextmap;
+	OLumpName		secretmap;
 	int				partime;
-	char			skypic[9];
-	char			music[9];
+	OLumpName		skypic;
+	OLumpName		music;
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -101,22 +99,22 @@ struct level_info_t {
 
 	BOOL exists() const
 	{
-		return this->mapname[0] != '\0';
+		return !this->mapname.empty();
 	}
 };
 
 struct level_pwad_info_t
 {
 	// level_info_t
-	char			mapname[9];
+	OLumpName		mapname;
 	int				levelnum;
-	char*			level_name;
-	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
+	std::string		level_name;
+	OLumpName		pname;
+	OLumpName		nextmap;
+	OLumpName		secretmap;
 	int				partime;
-	char			skypic[9];
-	char			music[9];
+	OLumpName		skypic;
+	OLumpName		music;
 	DWORD			flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
@@ -132,14 +130,27 @@ struct level_pwad_info_t
 	byte			fadeto_color[4];
 	byte			outsidefog_color[4];
 
-	char			fadetable[9];
-	char			skypic2[9];
+	OLumpName		fadetable;
+	OLumpName		skypic2;
 	float			gravity;
 	float			aircontrol;
 
+	// The following are necessary for UMAPINFO compatibility
+	OLumpName		exitpic;
+	OLumpName		enterpic;
+	OLumpName		endpic;
+
+	std::string		intertext;
+	std::string		intertextsecret;
+	OLumpName		interbackdrop;
+	OLumpName		intermusic;
+	
+	std::vector<OBossAction> bossactions;
+	bool			bossactions_donothing;
+	
 	BOOL exists() const
 	{
-		return this->mapname[0] != '\0';
+		return !this->mapname.empty();
 	}
 };
 
@@ -154,9 +165,9 @@ struct level_locals_t {
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	char			mapname[8];				// the server name (base1, etc)
-	char			nextmap[8];				// go here when sv_fraglimit is hit
-	char			secretmap[8];			// map to go to when used secret exit
+	OLumpName		mapname;                // the server name (base1, etc)
+	OLumpName		nextmap;				// go here when sv_fraglimit is hit
+	OLumpName		secretmap;				// map to go to when used secret exit
 
 	DWORD			flags;
 
@@ -168,9 +179,9 @@ struct level_locals_t {
 	byte			fadeto_color[4];		// The color the palette fades to (usually black)
 	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
 
-	char			music[8];
-	char			skypic[8];
-	char			skypic2[8];
+	OLumpName		music;
+	OLumpName		skypic;
+	OLumpName		skypic2;
 
 	int				total_secrets;
 	int				found_secrets;
@@ -189,19 +200,39 @@ struct level_locals_t {
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
+
+	// The following are used for UMAPINFO
+	OLumpName		exitpic;
+	OLumpName		enterpic;
+	OLumpName		endpic;
+
+	std::string		intertext;
+	std::string		intertextsecret;
+	OLumpName		interbackdrop;
+	OLumpName		intermusic;
+	
+	std::vector<OBossAction> *bossactions;
+	bool			bossactions_donothing;
+	
 };
 
 #define CLUSTER_HUB            0x00000001u
 #define CLUSTER_EXITTEXTISLUMP 0x00000002u
 
+struct OBossAction
+{
+	int type;
+	line_t ld;
+};
+
 struct cluster_info_t {
 	int				cluster;
-	char			messagemusic[9];
-	char			finaleflat[9];
+	OLumpName		messagemusic;
+	OLumpName		finaleflat;
 	char*			exittext;
 	char*			entertext;
 	int				flags;
-	char			finalepic[9];
+	OLumpName		finalepic;
 
 	BOOL exists() const
 	{
@@ -225,7 +256,9 @@ public:
 	level_pwad_info_t& create();
 	void clear();
 	void clearSnapshots();
-	level_pwad_info_t& findByName(char* mapname);
+	level_pwad_info_t& findByName(const char* mapname);
+	level_pwad_info_t& findByName(const std::string& mapname);
+	level_pwad_info_t& findByName(const OLumpName& mapname);
 	level_pwad_info_t& findByNum(int levelnum);
 	size_t size();
 	void zapDeferreds();
@@ -245,56 +278,52 @@ public:
 	void clear();
 	cluster_info_t& create();
 	cluster_info_t& findByCluster(int i);
-	size_t size();
+	size_t size() const;
 };
 
 extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
 
 extern BOOL savegamerestore;
-extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
-void G_InitNew (const char *mapname);
-void G_ChangeMap (void);
-void G_ChangeMap (size_t index);
-void G_RestartMap (void);
+void G_InitNew(const char *mapname);
+void G_ChangeMap();
+void G_ChangeMap(size_t index);
+void G_RestartMap();
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
 // but a warp test can start elsewhere
-void G_DeferedInitNew (char *mapname);
+void G_DeferedInitNew(const char *mapname);
 
 // Map reset functions
 void G_DeferedFullReset();
 void G_DeferedReset();
 
-void G_ExitLevel (int position, int drawscores);
-void G_SecretExitLevel (int position, int drawscores);
+void G_ExitLevel(int position, int drawscores);
+void G_SecretExitLevel(int position, int drawscores);
 
-void G_DoLoadLevel (int position);
-void G_DoResetLevel (bool full_reset);
+void G_DoLoadLevel(int position);
+void G_DoResetLevel(bool full_reset);
 
-void G_InitLevelLocals (void);
+void G_InitLevelLocals();
 
-void G_AirControlChanged ();
+void G_AirControlChanged();
 
-void G_SetLevelStrings (void);
+char *CalcMapName(int episode, int level);
 
-char *CalcMapName (int episode, int level);
+void G_ParseMusInfo();
 
-void G_ParseMapInfo (void);
-void G_ParseMusInfo (void);
-
-void G_ClearSnapshots (void);
-void G_SnapshotLevel (void);
-void G_UnSnapshotLevel (bool keepPlayers);
-void G_SerializeSnapshots (FArchive &arc);
+void G_ClearSnapshots();
+void G_SnapshotLevel();
+void G_UnSnapshotLevel(bool keepPlayers);
+void G_SerializeSnapshots(FArchive &arc);
 
 void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
 extern bool unnatural_level_progression;
 
-void P_RemoveDefereds (void);
+void P_RemoveDefereds();
 
 bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
                const std::string& mapname = "");

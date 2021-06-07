@@ -1588,7 +1588,8 @@ static int PatchText (int oldSize)
 		goto donewithtext;
 
 	// Search through music names.
-	if (oldSize < 7)
+	// [AM] Disabled because it relies on an extern wadlevelinfos
+	/*if (oldSize < 7)
 	{		// Music names are never >6 chars
 		char musname[9];
 		snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
@@ -1602,7 +1603,7 @@ static int PatchText (int oldSize)
 				uppercopy(level.music, musname);
 			}
 		}
-	}
+	}*/
 
 	if (good)
 		goto donewithtext;

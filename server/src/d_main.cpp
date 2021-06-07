@@ -65,6 +65,7 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
+#include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
 
@@ -169,18 +170,6 @@ void D_Init()
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
@@ -384,8 +373,8 @@ void D_DoomMain()
 		strncpy(startmap, Args.GetArg(p + 1), 8);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-
-	strncpy(level.mapname, startmap, sizeof(level.mapname));
+	
+	level.mapname = startmap;
 
 	G_ChangeMap();
 

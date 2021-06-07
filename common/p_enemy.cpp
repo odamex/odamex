@@ -38,6 +38,7 @@
 #include "p_mobj.h"
 
 #include "d_player.h"
+#include "p_setup.h"
 #include "d_dehacked.h"
 
 
@@ -371,7 +372,7 @@ BOOL P_Move (AActor *actor)
 			// if the special is not a door
 			// that can be opened,
 			// return false
-			if (P_UseSpecialLine (actor, ld, 0) ||
+			if (P_UseSpecialLine (actor, ld, 0, false) ||
 				P_PushSpecialLine (actor, ld, 0))
 				good = true;
 		}
@@ -1962,6 +1963,61 @@ void A_Explode (AActor *thing)
 //
 void A_BossDeath (AActor *actor)
 {
+	// custom boss actions for UMAPINFO
+	if (level.bossactions_donothing)
+		return;
+	
+	if (!level.bossactions->empty())
+	{
+		// make sure there is a player alive for victory
+		Players::const_iterator it = players.begin();
+		for (; it != players.end(); ++it)
+		{
+			if (it->ingame() && it->health > 0)
+				break;
+		}
+
+		if (it == players.end())
+			return; // no one left alive, so do not end game
+
+		std::vector<OBossAction>::iterator ba = level.bossactions->begin();
+		
+		// see if the BossAction applies to this type
+		for (; ba != level.bossactions->end(); ++ba)
+		{
+			if (ba->type == actor->type)
+				break;
+		}
+		if (ba == level.bossactions->end())
+			return;
+
+		// scan the remaining thinkers to see if all bosses are dead
+		TThinkerIterator<AActor> iterator;
+		AActor* other;
+
+		while ((other = iterator.Next()))
+		{
+			if (other != actor && other->type == actor->type && other->health > 0)
+			{
+				// other boss not dead
+				return;
+			}
+		}
+
+		ba = level.bossactions->begin();
+
+		for (; ba != level.bossactions->end(); ++ba)
+		{
+			if (ba->type == actor->type)
+			{
+				if (!P_UseSpecialLine(actor, &ba->ld, 0, true))
+					P_CrossSpecialLine(0, 0, actor, true);
+			}
+		}
+
+		return;
+	}
+	
 	// [RH] These all depend on the presence of level flags now
 	//		rather than being hard-coded to specific levels.
 
@@ -1995,7 +2051,7 @@ void A_BossDeath (AActor *actor)
 	TThinkerIterator<AActor> iterator;
 	AActor *other;
 
-	while ( (other = iterator.Next ()) )
+	while ((other = iterator.Next()))
 	{
 		if (other != actor && other->type == actor->type && other->health > 0)
 		{
@@ -2009,13 +2065,13 @@ void A_BossDeath (AActor *actor)
 	{
 		if (actor->type == MT_FATSO)
 		{
-			EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 			return;
 		}
 
 		if (actor->type == MT_BABY)
 		{
-			EV_DoFloor (DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
 			return;
 		}
 	}
@@ -2024,11 +2080,11 @@ void A_BossDeath (AActor *actor)
 		switch (level.flags & LEVEL_SPECACTIONSMASK)
 		{
 			case LEVEL_SPECLOWERFLOOR:
-				EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+				EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 				return;
 
 			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+				EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
 				return;
 		}
 	}

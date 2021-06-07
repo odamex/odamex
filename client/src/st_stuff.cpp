@@ -865,7 +865,7 @@ BEGIN_COMMAND (idmus)
 		{
 			if (info.music[0])
 			{
-				S_ChangeMusic(std::string(info.music, 8), 1);
+				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
 				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
 		}

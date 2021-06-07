@@ -100,7 +100,7 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+void G_DeferedInitNew (const char *mapname)
 {
 	strncpy (d_mapname, mapname, 8);
 	gameaction = ga_newgame;
@@ -154,21 +154,21 @@ EXTERN_CVAR(sv_shufflemaplist)
 
 // Returns the next map, assuming there is no maplist.
 std::string G_NextMap(void) {
-	std::string next = level.nextmap;
+	std::string next = level.nextmap.c_str();
 
 	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
-		next = level.mapname;
-	} else if (secretexit && W_CheckNumForName(level.secretmap) != -1) {
+		next = level.mapname.c_str();
+	} else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1) {
 		// if we hit a secret exit switch, go there instead.
-		next = level.secretmap;
+		next = level.secretmap.c_str();
 	}
 
 	// NES - exiting a Doom 1 episode moves to the next episode,
 	// rather than always going back to E1M1
 	if (!strncmp(next.c_str(), "EndGame", 7) ||
-		(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
+		(gamemode == retail_chex && !strncmp (level.nextmap.c_str(), "E1M6", 4))) {
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
 			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))) {
 			next = CalcMapName(1, 1);
@@ -188,7 +188,7 @@ void G_ChangeMap() {
 	// Skip the maplist to go to the desired level in case of a lobby map.
 	if (level.flags & LEVEL_LOBBYSPECIAL && level.nextmap[0])
 	{
-		G_DeferedInitNew(level.nextmap);
+		G_DeferedInitNew(level.nextmap.c_str());
 	}
 	else
 	{
@@ -196,7 +196,7 @@ void G_ChangeMap() {
 		if (!Maplist::instance().get_next_index(next_index)) {
 			// We don't have a maplist, so grab the next 'natural' map lump.
 			std::string next = G_NextMap();
-			G_DeferedInitNew((char *)next.c_str());
+			G_DeferedInitNew(next.c_str());
 		}
 		else {
 			maplist_entry_t maplist_entry;
@@ -251,7 +251,7 @@ void G_ChangeMap(size_t index) {
 // Restart the current map.
 void G_RestartMap() {
 	// Restart the current map.
-	G_DeferedInitNew(level.mapname);
+	G_DeferedInitNew(level.mapname.c_str());
 
 	// run script at the end of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
@@ -431,7 +431,7 @@ void G_InitNew (const char *mapname)
 	// after loading the level.
 	WinInfo info = ::levelstate.getWinInfo();
 
-	strncpy (level.mapname, mapname, 8);
+	level.mapname = mapname;
 	G_DoLoadLevel (0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
@@ -675,7 +675,7 @@ void G_DoLoadLevel (int position)
 	G_InitLevelLocals ();
 
 	if (firstmapinit) {
-		Printf_Bold ("--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+		Printf_Bold ("--- %s: \"%s\" ---\n", level.mapname.c_str(), level.level_name);
 		firstmapinit = false;
 	}
 
@@ -700,9 +700,9 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic);
-	if (strlen(level.skypic2))
-		sky2texture = R_TextureNumForName (level.skypic2);
+	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	if (!level.skypic2.empty())
+		sky2texture = R_TextureNumForName (level.skypic2.c_str());
 	else
 		sky2texture = 0;
 
@@ -767,7 +767,7 @@ void G_DoLoadLevel (int position)
 			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
 
-	P_SetupLevel (level.mapname, position);
+	P_SetupLevel (level.mapname.c_str(), position);
 
 	// Nes - CTF Post flag setup
 	if (sv_gametype == GM_CTF)
@@ -833,7 +833,7 @@ void G_WorldDone (void)
 
 	const char *finaletext = NULL;
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
-	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
+	if (!strnicmp (level.nextmap.c_str(), "EndGame", 7)) {
 //		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme - what should happen on the server?
 		finaletext = thiscluster.exittext;
 	} else {
