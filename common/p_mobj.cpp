@@ -60,6 +60,7 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
+fixed_t P_GetActorSpeed(AActor* actor);
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
@@ -2130,7 +2131,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT (th->info->speed * FRACUNIT);
+		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
 
 		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
@@ -2144,7 +2145,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 	else
 	{
-		fixed_t speed = th->info->speed * FRACUNIT;
+		fixed_t speed = P_GetActorSpeed(th);
 
 		th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
 		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);

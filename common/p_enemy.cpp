@@ -1205,6 +1205,14 @@ void A_SkelMissile (AActor *actor)
 
 #define TRACEANGLE (0xc000000)
 
+fixed_t P_GetActorSpeed(AActor* actor)
+{
+	if (actor->info->speed > FRACUNIT)
+		return actor->info->speed;
+	
+	return actor->info->speed * FRACUNIT;
+}
+
 void A_Tracer (AActor *actor)
 {
 	// killough 1/18/98: this is why some missiles do not have smoke
@@ -1268,7 +1276,7 @@ void A_Tracer (AActor *actor)
 
 	exact = actor->angle>>ANGLETOFINESHIFT;
 
-	fixed_t speed = actor->info->speed * FRACUNIT;
+	fixed_t speed = P_GetActorSpeed(actor);
 
 	actor->momx = FixedMul(speed, finecosine[exact]);
 	actor->momy = FixedMul(speed, finesine[exact]);
@@ -1381,7 +1389,8 @@ void A_VileChase (AActor *actor)
 
 	if (actor->movedir != DI_NODIR)
 	{
-		fixed_t speed = actor->info->speed * FRACUNIT;
+		fixed_t speed = P_GetActorSpeed(actor);
+
 		// check for corpses to raise
 		viletryx = actor->x + speed * xspeed[actor->movedir];
 		viletryy = actor->y + speed * yspeed[actor->movedir];
@@ -1586,7 +1595,7 @@ void A_FatAttack1 (AActor *actor)
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		fixed_t speed = mo->info->speed * FRACUNIT;
+		fixed_t speed = P_GetActorSpeed(actor);
 
 		mo->angle += FATSPREAD;
 		int an = mo->angle >> ANGLETOFINESHIFT;
@@ -1609,7 +1618,7 @@ void A_FatAttack2 (AActor *actor)
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		fixed_t speed = mo->info->speed * FRACUNIT;
+		fixed_t speed = P_GetActorSpeed(actor);
 
 		mo->angle -= FATSPREAD*2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
@@ -1628,7 +1637,7 @@ void A_FatAttack3 (AActor *actor)
 	if(serverside)
 	{
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		fixed_t speed = mo->info->speed * FRACUNIT;
+		fixed_t speed = P_GetActorSpeed(actor);
 
 		mo->angle -= FATSPREAD/2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
