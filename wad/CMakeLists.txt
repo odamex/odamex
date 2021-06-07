@@ -6,6 +6,74 @@ set(ODAWAD_SOURCES
   graphics/conback.gif
   graphics/conchars.gif
   graphics/cslide.gif
+  graphics/dig0.gif
+  graphics/dig1.gif
+  graphics/dig2.gif
+  graphics/dig3.gif
+  graphics/dig4.gif
+  graphics/dig5.gif
+  graphics/dig6.gif
+  graphics/dig7.gif
+  graphics/dig8.gif
+  graphics/dig9.gif
+  graphics/diga.gif
+  graphics/digb.gif
+  graphics/digc.gif
+  graphics/digd.gif
+  graphics/dige.gif
+  graphics/digf.gif
+  graphics/digg.gif
+  graphics/digh.gif
+  graphics/digi.gif
+  graphics/digj.gif
+  graphics/digk.gif
+  graphics/digl.gif
+  graphics/digm.gif
+  graphics/dign.gif
+  graphics/digo.gif
+  graphics/digp.gif
+  graphics/digq.gif
+  graphics/digr.gif
+  graphics/digs.gif
+  graphics/digt.gif
+  graphics/digu.gif
+  graphics/digv.gif
+  graphics/digw.gif
+  graphics/digx.gif
+  graphics/digy.gif
+  graphics/digz.gif
+  graphics/dig33.gif
+  graphics/dig34.gif
+  graphics/dig35.gif
+  graphics/dig36.gif
+  graphics/dig37.gif
+  graphics/dig38.gif
+  graphics/dig39.gif
+  graphics/dig40.gif
+  graphics/dig41.gif
+  graphics/dig42.gif
+  graphics/dig43.gif
+  graphics/dig44.gif
+  graphics/dig45.gif
+  graphics/dig46.gif
+  graphics/dig47.gif
+  graphics/dig58.gif
+  graphics/dig59.gif
+  graphics/dig60.gif
+  graphics/dig61.gif
+  graphics/dig62.gif
+  graphics/dig63.gif
+  graphics/dig64.gif
+  graphics/dig91.gif
+  graphics/dig92.gif
+  graphics/dig93.gif
+  graphics/dig94.gif
+  graphics/dig95.gif
+  graphics/dig96.gif
+  graphics/dig123.gif
+  graphics/dig124.gif
+  graphics/dig125.gif
+  graphics/dig126.gif
   graphics/flagic2b.gif
   graphics/flagic2g.gif
   graphics/flagic2r.gif

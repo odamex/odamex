@@ -20,6 +20,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomtype.h"
+
 #include "oscanner.h"
 
 #include "cmdlib.h"
@@ -339,16 +341,16 @@ int OScanner::getTokenAsInt() const
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (*(str.end() - 1) == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	char* stopper;
 
 	if (str == "MAXINT")
 	{
-		return INT32_MAX;
+		return MAXINT;//INT32_MAX;
 	}
 
 	const int num = strtol(str.c_str(), &stopper, 0);
@@ -370,9 +372,9 @@ float OScanner::getTokenAsFloat() const
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (*(str.end() - 1) == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	char* stopper;
@@ -392,7 +394,7 @@ float OScanner::getTokenAsFloat() const
 //
 bool OScanner::getTokenAsBool() const
 {
-	return stricmp(_token.c_str(), "true") == 0;
+	return iequals(_token, "true");
 }
 
 //
@@ -420,14 +422,17 @@ void OScanner::mustGetInt()
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (*(str.end() - 1) == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
-	if (IsNum(str.c_str()) == false)
+	if (IsNum(str.c_str()) == false || str != "MAXINT")
 	{
-		error("Missing integer (unexpected end of file).");
+		std::string errorMessage = "Expected integer, got \"";
+		errorMessage += str + '\"';
+
+		error(errorMessage.c_str());
 	}
 }
 
@@ -445,14 +450,17 @@ void OScanner::mustGetFloat()
 	std::string str = _token;
 
 	// remove comma if necessary
-	if (str[str.length() - 1] == ',')
+	if (*(str.end() - 1) == ',')
 	{
-		str[str.length() - 1] = '\0';
+		str.resize(str.size() - 1);
 	}
 
 	if (IsRealNum(str.c_str()) == false)
 	{
-		error("Missing floating-point number (unexpected end of file).");
+		std::string errorMessage = "Expected floating-point number, got \"";
+		errorMessage += str + '\"';
+
+		error(errorMessage.c_str());
 	}
 }
 
@@ -466,9 +474,12 @@ void OScanner::mustGetBool()
 		error("Missing boolean (unexpected end of file).");
 	}
 	
-	if (stricmp(_token.c_str(), "true") != 0 && stricmp(_token.c_str(), "false") != 0)
+	if (!iequals(_token, "true") && !iequals(_token, "false"))
 	{
-		error("Missing boolean (unexpected end of file).");
+		std::string errorMessage = "Expected boolean, got \"";
+		errorMessage += _token + '\"';
+
+		error(errorMessage.c_str());
 	}
 }
 

@@ -44,10 +44,11 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-lumpHandle_t hu_font[HU_FONTSIZE];
+OGlobalFont hu_font;
 
 static lumpHandle_t hu_bigfont[HU_FONTSIZE];
 static lumpHandle_t hu_smallfont[HU_FONTSIZE];
+static lumpHandle_t hu_digfont[HU_FONTSIZE];
 
 byte *ConChars;
 extern byte *Ranges;
@@ -87,6 +88,35 @@ void V_TextInit()
 		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 
+	const char* digfont = "DIG%02d";
+	const char* digfont_literal = "DIG%c";
+
+	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
+	// and numbers are themselves, other characters are their ASCII values.
+	j = HU_FONTSTART;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+		{
+			StrFormat(buffer, digfont_literal, j++);
+		}
+		else
+		{
+			StrFormat(buffer, digfont, j++);
+		}
+
+		// Some letters of this font might be missing.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+		{
+			::hu_digfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		}
+		else
+		{
+			::hu_digfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+		}
+	}
+
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
 }
@@ -98,7 +128,9 @@ void V_TextShutdown()
 {
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		::hu_font[i].clear();
+		::hu_bigfont[i].clear();
+		::hu_smallfont[i].clear();
+		::hu_digfont[i].clear();
 	}
 }
 
@@ -109,10 +141,12 @@ void V_TextShutdown()
  */
 void V_SetFont(const char* fontname)
 {
-	if (stricmp(fontname, "BIGFONT") == 0)
-		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
-	else if (stricmp(fontname, "SMALLFONT") == 0)
-		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
+	if (!stricmp(fontname, "BIGFONT"))
+		::hu_font.setFont(::hu_bigfont);
+	else if (!stricmp(fontname, "SMALLFONT"))
+		::hu_font.setFont(::hu_smallfont);
+	else if (!stricmp(fontname, "DIGFONT"))
+		::hu_font.setFont(::hu_digfont);
 }
 
 int V_TextScaleXAmount()

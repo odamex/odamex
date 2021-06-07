@@ -31,7 +31,21 @@
 #include "r_defs.h"
 #include "w_wad.h"
 
-extern lumpHandle_t hu_font[HU_FONTSIZE];
+struct OGlobalFont
+{
+	lumpHandle_t operator[](const size_t idx) const
+	{
+		return m_fontData[idx];
+	}
+	void setFont(const lumpHandle_t* font)
+	{
+		m_fontData = font;
+	}
+  private:
+	const lumpHandle_t* m_fontData;
+};
+
+extern OGlobalFont hu_font;
 
 void V_TextInit();
 void V_TextShutdown();

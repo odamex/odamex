@@ -392,7 +392,13 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	// Use player's weapon preferences
 	byte *prefs = player->userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
+	{
+		if (player->userinfo.switchweapon == WPSW_PWO_ALT &&
+			player->cmd.buttons & BT_ATTACK)
+			return false;
+
 		return true;
+	}
 
 	return false;
 }
