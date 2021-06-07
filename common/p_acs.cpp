@@ -3851,14 +3851,14 @@ static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int scri
 			def->playernum = -1;
 		}
 		i.defered = def;
-		DPrintf ("Script %d on map %s defered\n", script, i.mapname);
+		DPrintf ("Script %d on map %s defered\n", script, i.mapname.c_str());
 	}
 }
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always)
 {
-	if (!strnicmp (level.mapname, map, 8))
+	if (level.mapname == map)
 	{
 		int *scriptdata;
 
@@ -3884,9 +3884,9 @@ bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineS
 	return false;
 }
 
-void P_SuspendScript (int script, char *map)
+void P_SuspendScript (int script, const char *map)
 {
-	if (strnicmp(level.mapname, map, 8))
+	if (level.mapname != map)
 	{
 		LevelInfos& levels = getLevelInfos();
 		addDefered(levels.findByName(map),
@@ -3898,9 +3898,9 @@ void P_SuspendScript (int script, char *map)
 	}
 }
 
-void P_TerminateScript (int script, char *map)
+void P_TerminateScript (int script, const char *map)
 {
-	if (strnicmp(level.mapname, map, 8))
+	if (level.mapname != map)
 	{
 		LevelInfos& levels = getLevelInfos();
 		addDefered(levels.findByName(map),

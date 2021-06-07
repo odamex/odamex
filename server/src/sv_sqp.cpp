@@ -172,7 +172,7 @@ next:
 
 	MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 

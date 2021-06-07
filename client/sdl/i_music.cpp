@@ -236,10 +236,10 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 	}
 	I_InitMusic();
 	
-	if (!level.music || level.music[0] == 0)
+	if (level.music.empty())
 		S_ChangeMusic(currentmusic.c_str(), true);	
 	else
-		S_ChangeMusic(std::string(level.music, 8), true);
+		S_ChangeMusic(std::string(level.music.c_str(), 8), true);
 }
 
 //

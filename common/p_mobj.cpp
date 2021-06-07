@@ -40,6 +40,7 @@
 #include "gi.h"
 #include "g_gametype.h"
 #include "c_dispatch.h"
+#include "g_mapinfo.h"
 
 
 #define WATER_SINK_FACTOR		3

@@ -76,7 +76,7 @@
 
 #include "server.pb.h"
 
-extern void G_DeferedInitNew (char *mapname);
+extern void G_DeferedInitNew (const char *mapname);
 extern level_locals_t level;
 
 // Unnatural Level Progression.  True if we've used 'map' or another command
@@ -4261,7 +4261,7 @@ void SV_RunTics()
 		// to copy the mapname parameter to level.mapname, which is undefined
 		// behavior.
 		char mapname[9];
-		strncpy(mapname, level.mapname, 8);
+		strncpy(mapname, level.mapname.c_str(), 8);
 		mapname[8] = 0;
 
 		G_InitNew(mapname);

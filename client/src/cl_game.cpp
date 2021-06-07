@@ -904,7 +904,7 @@ void G_Ticker (void)
 
 			if (gamestate != GS_STARTUP)
 			{
-				level.music[0] = '\0';
+				level.music.clear();
 				S_Start();
 				SN_StopAllSequences();
 				R_ExitLevel();
@@ -1598,7 +1598,7 @@ void G_DoSaveGame()
 
 	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);
-	fwrite (level.mapname, 8, 1, stdfile);
+	fwrite (level.mapname.c_str(), 8, 1, stdfile);
 
 	FLZOFile savefile (stdfile, FFile::EWriting, true);
 	FArchive arc (savefile);

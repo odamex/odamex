@@ -973,7 +973,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 	MSG_WriteByte	(netbuffer, playersingame);
 	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
-	MSG_WriteString	(netbuffer, level.mapname);
+	MSG_WriteString	(netbuffer, level.mapname.c_str());
 
 	// names of all the wadfiles on the server	
 	size_t numwads = wadfiles.size();
@@ -1425,7 +1425,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	}
 
 	// write map info
-	arc << level.mapname;
+	arc << level.mapname.c_str();
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
