@@ -1221,8 +1221,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->health = 0;
 	}
 
-    if (target->health < -target->info->spawnhealth
-        && target->info->xdeathstate)
+    if (target->info->xdeathstate && target->health < target->info->gibhealth)
     {
         P_SetMobjState(target, target->info->xdeathstate);
     }

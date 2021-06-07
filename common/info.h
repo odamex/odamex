@@ -1652,6 +1652,7 @@ typedef struct
 	int doomednum;
 	statenum_t spawnstate;
 	int spawnhealth;
+	int gibhealth;				// Doom Retro's GibHealth feature
 	statenum_t seestate;
 	const char *seesound;		// [RH] not int
 	int reactiontime;

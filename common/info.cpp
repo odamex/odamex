@@ -1340,6 +1340,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_PLAY,		// spawnstate
 	100,		// spawnhealth
+	-100,		// gibhealth
 	S_PLAY_RUN1,		// seestate
 	NULL,		// seesound
 	0,		// reactiontime
@@ -1370,6 +1371,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	3004,		// doomednum
 	S_POSS_STND,		// spawnstate
 	20,		// spawnhealth
+    -20,	// gibhealth
 	S_POSS_RUN1,		// seestate
 	"grunt/sight1",		// seesound
 	8,		// reactiontime
@@ -1400,6 +1402,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9,		// doomednum
 	S_SPOS_STND,		// spawnstate
 	30,		// spawnhealth
+	-30,	// gibhealth
 	S_SPOS_RUN1,		// seestate
 	"shotguy/sight1",		// seesound
 	8,		// reactiontime
@@ -1430,6 +1433,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	64,		// doomednum
 	S_VILE_STND,		// spawnstate
 	700,		// spawnhealth
+	0,                                      // gibhealth
 	S_VILE_RUN1,		// seestate
 	"vile/sight",		// seesound
 	8,		// reactiontime
@@ -1460,6 +1464,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_FIRE1,		// spawnstate
 	1000,		// spawnhealth
+	0,			// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -1490,6 +1495,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	66,		// doomednum
 	S_SKEL_STND,		// spawnstate
 	300,		// spawnhealth
+	0,			// gibhealth
 	S_SKEL_RUN1,		// seestate
 	"skeleton/sight",		// seesound
 	8,		// reactiontime
@@ -1520,6 +1526,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_TRACER,		// spawnstate
 	1000,		// spawnhealth
+	0,			// gibhealth
 	S_NULL,		// seestate
 	"skeleton/attack",		// seesound
 	8,		// reactiontime
@@ -1550,6 +1557,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_SMOKE1,		// spawnstate
 	1000,		// spawnhealth
+	0,			// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -1580,6 +1588,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	67,		// doomednum
 	S_FATT_STND,		// spawnstate
 	600,		// spawnhealth
+	0,			// gibhealth
 	S_FATT_RUN1,		// seestate
 	"fatso/sight",		// seesound
 	8,		// reactiontime
@@ -1610,6 +1619,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_FATSHOT1,		// spawnstate
 	1000,		// spawnhealth
+	0,			// gibhealth
 	S_NULL,		// seestate
 	"fatso/attack",		// seesound
 	8,		// reactiontime
@@ -1640,6 +1650,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	65,		// doomednum
 	S_CPOS_STND,		// spawnstate
 	70,		// spawnhealth
+	-70,	// gibhealth
 	S_CPOS_RUN1,		// seestate
 	"chainguy/sight1",		// seesound
 	8,		// reactiontime
@@ -1670,6 +1681,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	3001,		// doomednum
 	S_TROO_STND,		// spawnstate
 	60,		// spawnhealth
+	-60,	// gibhealth
 	S_TROO_RUN1,		// seestate
 	"imp/sight1",		// seesound
 	8,		// reactiontime
@@ -1700,6 +1712,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	3002,		// doomednum
 	S_SARG_STND,		// spawnstate
 	150,		// spawnhealth
+    0,	// gibhealth
 	S_SARG_RUN1,		// seestate
 	"demon/sight",		// seesound
 	8,		// reactiontime
@@ -1730,6 +1743,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	58,		// doomednum
 	S_SARG_STND,		// spawnstate
 	150,		// spawnhealth
+	0,			// gibhealth
 	S_SARG_RUN1,		// seestate
 	"spectre/sight",		// seesound
 	8,		// reactiontime
@@ -1760,6 +1774,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	3005,		// doomednum
 	S_HEAD_STND,		// spawnstate
 	400,		// spawnhealth
+	0,			// gibhealth
 	S_HEAD_RUN1,		// seestate
 	"caco/sight",		// seesound
 	8,		// reactiontime
@@ -1790,6 +1805,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	3003,		// doomednum
 	S_BOSS_STND,		// spawnstate
 	1000,		// spawnhealth
+	0,			// gibhealth
 	S_BOSS_RUN1,		// seestate
 	"baron/sight",		// seesound
 	8,		// reactiontime
@@ -1820,6 +1836,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BRBALL1,		// spawnstate
 	1000,		// spawnhealth
+	0,	// gibhealth
 	S_NULL,		// seestate
 	"baron/attack",		// seesound
 	8,		// reactiontime
@@ -1850,6 +1867,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	69,		// doomednum
 	S_BOS2_STND,		// spawnstate
 	500,		// spawnhealth
+	0, // gibhealth
 	S_BOS2_RUN1,		// seestate
 	"knight/sight",		// seesound
 	8,		// reactiontime
@@ -1880,6 +1898,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	3006,		// doomednum
 	S_SKULL_STND,		// spawnstate
 	100,		// spawnhealth
+    0, // gibhealth
 	S_SKULL_RUN1,		// seestate
 	0,		// seesound
 	8,		// reactiontime
@@ -1910,6 +1929,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	7,		// doomednum
 	S_SPID_STND,		// spawnstate
 	3000,		// spawnhealth
+	0,	// gibhealth
 	S_SPID_RUN1,		// seestate
 	"spider/sight",		// seesound
 	8,		// reactiontime
@@ -1940,6 +1960,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	68,		// doomednum
 	S_BSPI_STND,		// spawnstate
 	500,		// spawnhealth
+	0,		// gibhealth
 	S_BSPI_SIGHT,		// seestate
 	"baby/sight",		// seesound
 	8,		// reactiontime
@@ -1970,6 +1991,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	16,		// doomednum
 	S_CYBER_STND,		// spawnstate
 	4000,		// spawnhealth
+	0, // gibhealth
 	S_CYBER_RUN1,		// seestate
 	"cyber/sight",		// seesound
 	8,		// reactiontime
@@ -2000,6 +2022,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	71,		// doomednum
 	S_PAIN_STND,		// spawnstate
 	400,		// spawnhealth
+    0, // gibhealth
 	S_PAIN_RUN1,		// seestate
 	"pain/sight",		// seesound
 	8,		// reactiontime
@@ -2030,6 +2053,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	84,		// doomednum
 	S_SSWV_STND,		// spawnstate
 	50,		// spawnhealth
+	-50,	// gibhealth
 	S_SSWV_RUN1,		// seestate
 	"wolfss/sight",		// seesound
 	8,		// reactiontime
@@ -2060,6 +2084,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	72,		// doomednum
 	S_KEENSTND,		// spawnstate
 	100,		// spawnhealth
+	0,			// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2090,6 +2115,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	88,		// doomednum
 	S_BRAIN,		// spawnstate
 	250,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2120,6 +2146,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	89,		// doomednum
 	S_BRAINEYE,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_BRAINEYESEE,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2150,6 +2177,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	87,		// doomednum
 	S_NULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2180,6 +2208,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_SPAWN1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"brain/spit",		// seesound
 	8,		// reactiontime
@@ -2210,6 +2239,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_SPAWNFIRE1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2240,6 +2270,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2035,		// doomednum
 	S_BAR1,		// spawnstate
 	20,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2270,6 +2301,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_TBALL1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"imp/attack",		// seesound
 	8,		// reactiontime
@@ -2300,6 +2332,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_RBALL1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"caco/attack",		// seesound
 	8,		// reactiontime
@@ -2330,6 +2363,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_ROCKET,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"weapons/rocklf",		// seesound
 	8,		// reactiontime
@@ -2360,6 +2394,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_PLASBALL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"weapons/plasmaf",		// seesound
 	8,		// reactiontime
@@ -2390,6 +2425,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BFGSHOT,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	0,		// seesound
 	8,		// reactiontime
@@ -2420,6 +2456,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_ARACH_PLAZ,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"baby/attack",		// seesound
 	8,		// reactiontime
@@ -2450,6 +2487,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_PUFF1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2480,6 +2518,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BLOOD1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2510,6 +2549,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_TFOG,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2540,6 +2580,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_IFOG,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2570,6 +2611,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	14,		// doomednum
 	S_NULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2600,6 +2642,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BFGEXP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2630,6 +2673,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2018,		// doomednum
 	S_ARM1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2660,6 +2704,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2019,		// doomednum
 	S_ARM2,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2690,6 +2735,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2014,		// doomednum
 	S_BON1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2720,6 +2766,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2015,		// doomednum
 	S_BON2,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2750,6 +2797,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5,		// doomednum
 	S_BKEY,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2780,6 +2828,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	13,		// doomednum
 	S_RKEY,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2810,6 +2859,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	6,		// doomednum
 	S_YKEY,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2840,6 +2890,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	39,		// doomednum
 	S_YSKULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2870,6 +2921,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	38,		// doomednum
 	S_RSKULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2900,6 +2952,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	40,		// doomednum
 	S_BSKULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2930,6 +2983,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2011,		// doomednum
 	S_STIM,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2960,6 +3014,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2012,		// doomednum
 	S_MEDI,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -2990,6 +3045,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2013,		// doomednum
 	S_SOUL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3020,6 +3076,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2022,		// doomednum
 	S_PINV,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3050,6 +3107,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2023,		// doomednum
 	S_PSTR,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3080,6 +3138,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2024,		// doomednum
 	S_PINS,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3110,6 +3169,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2025,		// doomednum
 	S_SUIT,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3140,6 +3200,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2026,		// doomednum
 	S_PMAP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3170,6 +3231,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2045,		// doomednum
 	S_PVIS,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3200,6 +3262,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	83,		// doomednum
 	S_MEGA,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3230,6 +3293,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2007,		// doomednum
 	S_CLIP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3260,6 +3324,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2048,		// doomednum
 	S_AMMO,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3290,6 +3355,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2010,		// doomednum
 	S_ROCK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3320,6 +3386,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2046,		// doomednum
 	S_BROK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3350,6 +3417,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2047,		// doomednum
 	S_CELL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3380,6 +3448,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	17,		// doomednum
 	S_CELP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3410,6 +3479,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2008,		// doomednum
 	S_SHEL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3440,6 +3510,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2049,		// doomednum
 	S_SBOX,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3470,6 +3541,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// doomednum
 	S_BPAK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3500,6 +3572,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2006,		// doomednum
 	S_BFUG,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3530,6 +3603,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2002,		// doomednum
 	S_MGUN,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3560,6 +3634,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2005,		// doomednum
 	S_CSAW,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3590,6 +3665,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2003,		// doomednum
 	S_LAUN,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3620,6 +3696,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2004,		// doomednum
 	S_PLAS,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3650,6 +3727,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2001,		// doomednum
 	S_SHOT,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3680,6 +3758,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	82,		// doomednum
 	S_SHOT2,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3710,6 +3789,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	85,		// doomednum
 	S_TECHLAMP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3740,6 +3820,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	86,		// doomednum
 	S_TECH2LAMP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3770,6 +3851,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2028,		// doomednum
 	S_COLU,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3800,6 +3882,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	30,		// doomednum
 	S_TALLGRNCOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3830,6 +3913,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	31,		// doomednum
 	S_SHRTGRNCOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3860,6 +3944,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	32,		// doomednum
 	S_TALLREDCOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3890,6 +3975,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	33,		// doomednum
 	S_SHRTREDCOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3920,6 +4006,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	37,		// doomednum
 	S_SKULLCOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3950,6 +4037,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	36,		// doomednum
 	S_HEARTCOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -3980,6 +4068,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	41,		// doomednum
 	S_EVILEYE,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4010,6 +4099,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	42,		// doomednum
 	S_FLOATSKULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4040,6 +4130,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	43,		// doomednum
 	S_TORCHTREE,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4070,6 +4161,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	44,		// doomednum
 	S_BLUETORCH,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4100,6 +4192,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	45,		// doomednum
 	S_GREENTORCH,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4130,6 +4223,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	46,		// doomednum
 	S_REDTORCH,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4160,6 +4254,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	55,		// doomednum
 	S_BTORCHSHRT,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4190,6 +4285,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	56,		// doomednum
 	S_GTORCHSHRT,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4220,6 +4316,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	57,		// doomednum
 	S_RTORCHSHRT,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4250,6 +4347,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	47,		// doomednum
 	S_STALAGTITE,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4280,6 +4378,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	48,		// doomednum
 	S_TECHPILLAR,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4310,6 +4409,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	34,		// doomednum
 	S_CANDLESTIK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4340,6 +4440,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	35,		// doomednum
 	S_CANDELABRA,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4370,6 +4471,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	49,		// doomednum
 	S_BLOODYTWITCH,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4400,6 +4502,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	50,		// doomednum
 	S_MEAT2,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4430,6 +4533,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	51,		// doomednum
 	S_MEAT3,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4460,6 +4564,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	52,		// doomednum
 	S_MEAT4,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4490,6 +4595,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	53,		// doomednum
 	S_MEAT5,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4520,6 +4626,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	59,		// doomednum
 	S_MEAT2,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4550,6 +4657,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	60,		// doomednum
 	S_MEAT4,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4580,6 +4688,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	61,		// doomednum
 	S_MEAT3,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4610,6 +4719,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	62,		// doomednum
 	S_MEAT5,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4640,6 +4750,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	63,		// doomednum
 	S_BLOODYTWITCH,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4670,6 +4781,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	22,		// doomednum
 	S_HEAD_DIE6,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4700,6 +4812,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	15,		// doomednum
 	S_PLAY_DIE7,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4730,6 +4843,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	18,		// doomednum
 	S_POSS_DIE5,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4760,6 +4874,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	21,		// doomednum
 	S_SARG_DIE6,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4790,6 +4905,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	23,		// doomednum
 	S_SKULL_DIE6,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4820,6 +4936,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	20,		// doomednum
 	S_TROO_DIE5,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4850,6 +4967,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	19,		// doomednum
 	S_SPOS_DIE5,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4880,6 +4998,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10,		// doomednum
 	S_PLAY_XDIE9,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4910,6 +5029,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	12,		// doomednum
 	S_PLAY_XDIE9,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4940,6 +5060,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	28,		// doomednum
 	S_HEADSONSTICK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -4970,6 +5091,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	24,		// doomednum
 	S_GIBS,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5000,6 +5122,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	27,		// doomednum
 	S_HEADONASTICK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5030,6 +5153,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	29,		// doomednum
 	S_HEADCANDLES,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5060,6 +5184,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	25,		// doomednum
 	S_DEADSTICK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5090,6 +5215,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	26,		// doomednum
 	S_LIVESTICK,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5120,6 +5246,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	54,		// doomednum
 	S_BIGTREE,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5150,6 +5277,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	70,		// doomednum
 	S_BBAR1,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5180,6 +5308,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	73,		// doomednum
 	S_HANGNOGUTS,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5210,6 +5339,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	74,		// doomednum
 	S_HANGBNOBRAIN,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5240,6 +5370,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	75,		// doomednum
 	S_HANGTLOOKDN,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5270,6 +5401,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	76,		// doomednum
 	S_HANGTSKULL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5300,6 +5432,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	77,		// doomednum
 	S_HANGTLOOKUP,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5330,6 +5463,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	78,		// doomednum
 	S_HANGTNOBRAIN,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5360,6 +5494,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	79,		// doomednum
 	S_COLONGIBS,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5390,6 +5525,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	80,		// doomednum
 	S_SMALLPOOL,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5420,6 +5556,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	81,		// doomednum
 	S_BRAINSTEM,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5451,6 +5588,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5001,		// doomednum	//   |    //jff 5/11/98 deconflict
 	S_TNT1,		// spawnstate	//   V    // with DOSDoom
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5482,6 +5620,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5002,		// doomednum                   //jff 5/11/98 deconflict
 	S_TNT1,		// spawnstate                  // with DOSDoom
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5513,6 +5652,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	888,		// doomednum
 	S_DOGS_STND,	// spawnstate
 	500,		// spawnhealth
+	0, // gibhealth
 	S_DOGS_RUN1,	// seestate
 	"dog/sight",	// seesound
 	8,		// reactiontime
@@ -5544,6 +5684,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_PLS1BALL,	// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"weapons/plasmaf", // seesound
 	8,		// reactiontime
@@ -5575,6 +5716,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_PLS2BALL,	// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	"weapons/plasmaf", // seesound
 	8,		// reactiontime
@@ -5606,6 +5748,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2016,		// doomednum
 	S_BON3,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5637,6 +5780,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	2017,		// doomednum
 	S_BON4,		// spawnstate
 	1000,		// spawnhealth
+	0, // gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5665,145 +5809,151 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     // [crispy] support MUSINFO lump (dynamic music changing)
     {
-        // MT_MUSICCHANGE
-        14164,         // doomednum
-        S_TNT1,        // spawnstate
-        1000,          // spawnhealth
-        S_NULL,        // seestate
-        NULL,          // seesound
-        8,             // reactiontime
-        NULL,          // attacksound
-        S_NULL,        // painstate
-        0,             // painchance
-        NULL,          // painsound
-        S_NULL,        // meleestate
-        S_NULL,        // missilestate
-        S_NULL,        // deathstate
-        S_NULL,        // xdeathstate
-        NULL,          // deathsound
-        0,             // speed
-        16,            // radius
-        16,            // height
-        100,           // mass
-        0,             // damage
-        NULL,          // activesound
-        0, // flags (MF_NOBLOCKMAP)
-        S_NULL,         // raisestate
+    // MT_MUSICCHANGE
+    14164,         // doomednum
+    S_TNT1,        // spawnstate
+    1000,          // spawnhealth
+	0, // gibhealth
+    S_NULL,        // seestate
+    NULL,          // seesound
+    8,             // reactiontime
+    NULL,          // attacksound
+    S_NULL,        // painstate
+    0,             // painchance
+    NULL,          // painsound
+    S_NULL,        // meleestate
+    S_NULL,        // missilestate
+    S_NULL,        // deathstate
+    S_NULL,        // xdeathstate
+    NULL,          // deathsound
+    0,             // speed
+    16*FRACUNIT,            // radius
+    16*FRACUNIT,            // height
+	16*FRACUNIT,			// cdheight
+    100,           // mass
+    0,             // damage
+    NULL,          // activesound
+    0, // flags (MF_NOBLOCKMAP)
+	0,
+    S_NULL,         // raisestate
+    0x10000,   // translucency
+	"MT_MUSICCHANGE" // name
     },
 
     //145-149 - UNUSED THINGS, HERE'S A PLACEHOLDER
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
 
 	// DEHEXTRA THINGS
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA00"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA01"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA02"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA03"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA04"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA05"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA06"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA07"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA08"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA09"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA10"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA11"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA12"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA13"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA14"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA15"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA16"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA17"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA18"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA19"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA20"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA21"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA22"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA23"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA24"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA25"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA26"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA27"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA28"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA29"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA30"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA31"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA32"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA33"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA34"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA35"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA36"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA37"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA38"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA39"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA40"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA41"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA42"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA43"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA44"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA45"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA46"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA47"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA48"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA49"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA50"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA51"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA52"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA53"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA54"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA55"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA56"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA57"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA58"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA59"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA60"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA61"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA62"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA63"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA64"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA65"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA66"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA67"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA68"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA69"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA70"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA71"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA72"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA73"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA74"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA75"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA76"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA77"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA78"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA79"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA80"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA81"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA82"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA83"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA84"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA85"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA86"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA87"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA88"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA89"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA90"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA91"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA92"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA93"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA94"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA95"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA96"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA97"},
-    {-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA98"},
-	{-1, S_TNT1,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA99"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA00"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA01"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA02"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA03"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA04"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA05"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA06"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA07"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA08"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA09"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA10"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA11"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA12"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA13"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA14"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA15"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA16"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA17"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA18"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA19"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA20"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA21"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA22"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA23"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA24"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA25"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA26"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA27"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA28"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA29"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA30"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA31"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA32"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA33"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA34"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA35"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA36"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA37"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA38"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA39"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA40"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA41"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA42"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA43"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA44"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA45"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA46"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA47"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA48"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA49"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA50"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA51"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA52"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA53"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA54"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA55"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA56"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA57"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA58"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA59"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA60"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA61"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA62"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA63"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA64"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA65"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA66"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA67"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA68"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA69"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA70"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA71"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA72"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA73"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA74"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA75"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA76"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA77"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA78"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA79"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA80"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA81"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA82"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA83"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA84"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA85"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA86"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA87"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA88"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA89"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA90"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA91"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA92"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA93"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA94"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA95"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA96"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA97"},
+    {-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA98"},
+	{-1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA99"},
 
 	{		// MT_GIB0
 	-1,		// doomednum
 	S_GIB0,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5834,6 +5984,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5864,6 +6015,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB2,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5894,6 +6046,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB3,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5924,6 +6077,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB4,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5954,6 +6108,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB5,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -5984,6 +6139,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB6,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6014,6 +6170,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GIB7,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6044,6 +6201,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_UNKNOWNTHING,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6074,6 +6232,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9024,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6104,6 +6263,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	14065,		// doomednum
 	S_AMBIENTSOUND,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6134,6 +6294,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9044,		// doomednum
 	S_NULL,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6164,6 +6325,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9025,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6194,6 +6356,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9026,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6224,6 +6387,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6254,6 +6418,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	786,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6284,6 +6449,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9045,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6314,6 +6480,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9046,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6345,6 +6512,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5130,		// doomednum
 	S_BSOK,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6376,6 +6544,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5131,		// doomednum
 	S_RSOK,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6410,6 +6579,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BFLG,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6441,6 +6611,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_RFLG,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6472,6 +6643,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BDWN,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6503,6 +6675,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_RDWN,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6534,6 +6707,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_BCAR,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6565,6 +6739,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_RCAR,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6595,6 +6770,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	118,		// doomednum
 	S_BRIDGE1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6625,6 +6801,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9001,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6655,6 +6832,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9013,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6685,6 +6863,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5061,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6715,6 +6894,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5064,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6745,6 +6925,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5065,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6775,6 +6956,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9990,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6805,6 +6987,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9998,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6835,6 +7018,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9997,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6865,6 +7049,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9999,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6895,6 +7080,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9996,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6925,6 +7111,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9995,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6955,6 +7142,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9994,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -6985,6 +7173,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9993,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7015,6 +7204,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9992,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7045,6 +7235,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9983,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7075,6 +7266,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	9982,		// doomednum
 	S_TNT1,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7105,6 +7297,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	5133,		// doomednum
 	S_GSOK,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7135,6 +7328,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GFLG,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7165,6 +7359,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GDWN,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7195,6 +7390,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	-1,		// doomednum
 	S_GCAR,		// spawnstate
 	1000,		// spawnhealth
+	0,		// gibhealth
 	S_NULL,		// seestate
 	NULL,		// seesound
 	8,		// reactiontime
@@ -7224,6 +7420,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		-1,            // doomednum
 		S_WPBF1,       // spawnstate
 		1000,          // spawnhealth
+		0,		// gibhealth
 		S_NULL,        // seestate
 		NULL,          // seesound
 		8,             // reactiontime
@@ -7253,6 +7450,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		-1,            // doomednum
 		S_WPRF1,       // spawnstate
 		1000,          // spawnhealth
+		0,		// gibhealth
 		S_NULL,        // seestate
 		NULL,          // seesound
 		8,             // reactiontime
@@ -7282,6 +7480,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		-1,            // doomednum
 		S_WPGF1,       // spawnstate
 		1000,          // spawnhealth
+		0,		// gibhealth
 		S_NULL,        // seestate
 		NULL,          // seesound
 		8,             // reactiontime
@@ -7311,6 +7510,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		-1,             // doomednum
 		S_PLAY,         // spawnstate
 		100,            // spawnhealth
+		0,		// gibhealth
 		S_PLAY_RUN1,    // seestate
 		NULL,           // seesound
 		0,              // reactiontime

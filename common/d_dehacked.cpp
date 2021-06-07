@@ -881,6 +881,7 @@ static int PatchThing (int thingy)
 	mobjinfo_t *info, dummy;
 	int *ednum, dummyed;
 	bool hadHeight = false;
+	bool gibhealth = false;
 
 	info = &dummy;
 	ednum = &dummyed;
@@ -980,7 +981,15 @@ static int PatchThing (int thingy)
 				}
 				else if (stricmp(Line1, "Gib health") == 0)
 				{
-					// UNSUPPORTED FOR NOW
+					gibhealth = true;
+					if (val > 0)
+					{
+						info->gibhealth = -val;
+					} else
+					{
+						info->gibhealth = val;
+					}
+
 				}
 			}
 		}
@@ -993,7 +1002,6 @@ static int PatchThing (int thingy)
 		{
 			if (!stricmp(Line1, "Speed"))
 			{
-				// UNSUPPORTED NOW - Need to also fix projectiles' speed!
 				info->speed = val;
 			}
 			else if (stricmp(Line1, "Width") == 0)
@@ -1084,10 +1092,9 @@ static int PatchThing (int thingy)
 		if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
 			info->height = OrgHeights[thingNum] * FRACUNIT;
 
-		Printf_Bold("HEALTH FOR %d ==> %d\n", thingNum, info->spawnhealth);
-		Printf_Bold("%d %d %d %d %d %d %d %d\n", info->spawnstate, info->seestate,
-		            info->painstate, info->meleestate, info->missilestate,
-		            info->deathstate, info->xdeathstate, info->raisestate);
+		// Set a default gibhealth if none was assigned.
+		if (!gibhealth && info->spawnhealth && !info->gibhealth)
+			info->gibhealth = -info->spawnhealth;
 	}
 
 	return result;
