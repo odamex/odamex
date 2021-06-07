@@ -795,29 +795,8 @@ static int GetLine (void)
 
 static int PatchThing (int thingy)
 {
-    size_t thingNum = (size_t)thingy;
 
-	static const struct Key keys[] = {
-		{ "ID #",				offsetof(mobjinfo_t,doomednum) },
-		{ "Initial frame",		offsetof(mobjinfo_t,spawnstate) },
-		{ "Hit points",			offsetof(mobjinfo_t,spawnhealth) },
-		{ "First moving frame",	offsetof(mobjinfo_t,seestate) },
-		{ "Reaction time",		offsetof(mobjinfo_t,reactiontime) },
-		{ "Injury frame",		offsetof(mobjinfo_t,painstate) },
-		{ "Pain chance",		offsetof(mobjinfo_t,painchance) },
-		{ "Close attack frame",	offsetof(mobjinfo_t,meleestate) },
-		{ "Far attack frame",	offsetof(mobjinfo_t,missilestate) },
-		{ "Death frame",		offsetof(mobjinfo_t,deathstate) },
-		{ "Exploding frame",	offsetof(mobjinfo_t,xdeathstate) },
-		{ "Speed",				offsetof(mobjinfo_t,speed) },
-		{ "Width",				offsetof(mobjinfo_t,radius) },
-		{ "Height",				offsetof(mobjinfo_t,height) },
-		{ "Mass",				offsetof(mobjinfo_t,mass) },
-		{ "Missile damage",		offsetof(mobjinfo_t,damage) },
-		{ "Respawn frame",		offsetof(mobjinfo_t,raisestate) },
-		{ "Translucency",		offsetof(mobjinfo_t,translucency) },
-		{ NULL, 0}
-	};
+	size_t thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
 	static const struct {
@@ -900,105 +879,203 @@ static int PatchThing (int thingy)
 	};
 	int result;
 	mobjinfo_t *info, dummy;
-	BOOL hadHeight = false;
+	int *ednum, dummyed;
+	bool hadHeight = false;
+
+	info = &dummy;
+	ednum = &dummyed;
 
 	thingNum--;
-	if (thingNum < NUMMOBJTYPES) {
+	if (thingNum < 0 || thingNum > NUMMOBJTYPES)
+	{
+		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum);
+	}
+	else {
 		info = &mobjinfo[thingNum];
-		DPrintf("Thing %" PRIuSIZE "\n", thingNum);
-	} else {
-		info = &dummy;
-		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum + 1);
+		*ednum = *&info->doomednum;
+
+		DPrintf("Thing %" PRIuSIZE " found\n", thingNum);
 	}
 
 	while ((result = GetLine ()) == 1) {
-		size_t sndmap = atoi (Line2);
 
-		if (sndmap >= sizeof(SoundMap))
-			sndmap = 0;
+		size_t val = atoi(Line2);
 
-		if (HandleKey (keys, info, Line1, atoi (Line2))) {
-			if (!stricmp (Line1, "Alert sound"))
-				info->seesound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Attack sound"))
-				info->attacksound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Pain sound"))
-				info->painsound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Death sound"))
-				info->deathsound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Action sound"))
-				info->activesound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Bits"))
+		int linelen = strlen(Line1);
+
+		if (linelen == 14 && stricmp(Line1, "Missile damage") == 0)
+		    {
+		    info->damage = val;
+		    }
+		else if (linelen == 13 && stricmp(Line1, "Reaction time") == 0)
+		{
+		    info->reactiontime = val;
+		}
+		else if (linelen == 12 && stricmp(Line1, "Translucency") == 0)
+		{
+			//  info->translucency = 0x10000;
+		}
+		else if (linelen == 11 && stricmp(Line1, "Pain chance") == 0)
+		{
+		    info->painchance = (SWORD)val;
+		}
+		else if (linelen == 10)
+		{
+			if (stricmp(Line1, "Hit points") == 0)
 			{
-				int value = 0, value2 = 0;
-				BOOL vchanged = false, v2changed = false;
-				char *strval;
+				info->spawnhealth = val;
+			}
+			else if (stricmp(Line1, "Gib health") == 0)
+			{
+				// UNSUPPORTED FOR NOW
+			}
+		}
+		else if (linelen > 6)
+		{
+			if (stricmp(Line1 + linelen - 6, " frame") == 0)
+			{
+				statenum_t state = (statenum_t)val;
 
-				for (strval = Line2; (strval = strtok (strval, ",+| \t\f\r")); strval = NULL)
+				if (!strnicmp(Line1, "Initial", 7))
+					info->spawnstate = state;
+				else if (!strnicmp(Line1, "First moving", 12))
+				    info->seestate = state;
+				else if (!strnicmp(Line1, "Injury", 6))
+				    info->painstate = state;
+				else if (!strnicmp(Line1, "Close attack", 12))
+				    info->meleestate = state;
+				else if (!strnicmp(Line1, "Far attack", 10))
+				    info->missilestate = state;
+				else if (!strnicmp(Line1, "Death", 5))
+				    info->deathstate = state;
+				else if (!strnicmp(Line1, "Exploding", 9))
+				    info->xdeathstate = state;
+				else if (!strnicmp(Line1, "Respawn", 7))
+				    info->raisestate = state;
+			}
+			else if (stricmp(Line1 + linelen - 6, " sound") == 0)
+			{
+				char* snd;
+				
+				if (val == 0 || val >= ARRAY_LENGTH(SoundMap))
 				{
-					size_t iy;
+					val = 0;
+				}		
 
-					if (IsNum (strval))
+				snd = SoundMap[val];
+
+				if (!strnicmp(Line1, "Alert", 5))
+					info->seesound = snd;
+				else if (!strnicmp(Line1, "Attack", 6))
+					info->attacksound = snd;
+				else if (!strnicmp(Line1, "Pain", 4))
+					info->painsound = snd;
+				else if (!strnicmp(Line1, "Death", 5))
+					info->deathsound = snd;
+				else if (!strnicmp(Line1, "Action", 6))
+					info->activesound = snd;
+			}
+		}
+		else if (linelen == 6 && stricmp(Line1, "Height") == 0)
+		{
+		    info->height = val;
+		    hadHeight = true;
+		}
+		else if (linelen == 5)
+		{
+			if (!stricmp(Line1, "Speed"))
+			{
+				// UNSUPPORTED NOW - Need to also fix projectiles' speed!
+				//info->speed = val;
+			}
+			else if (stricmp(Line1, "Width") == 0)
+			{
+				info->radius = val;
+			}
+		}
+		else if (linelen == 4)
+		{
+			if (!stricmp(Line1, "Bits"))
+				{
+					int value = 0, value2 = 0;
+					BOOL vchanged = false, v2changed = false;
+					char* strval;
+
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
 					{
-						// Force the top 4 bits to 0 so that the user is forced
-						// to use the mnemonics to change them.
-						value |= (atoi(strval) & 0x0fffffff);
-						vchanged = true;
-					}
-					else
-					{
-						for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
+						size_t iy;
+
+						if (IsNum(strval))
 						{
-							if (!stricmp (strval, bitnames[iy].name))
-							{
-								if (bitnames[iy].whichflags)
-								{
-									v2changed = true;
-									if (bitnames[iy].bit & 0xff00)
-										value2 |= 1 << (bitnames[iy].bit >> 8);
-									value2 |= 1 << (bitnames[iy].bit & 0xff);
-								}
-								else
-								{
-									vchanged = true;
-									if (bitnames[iy].bit & 0xff00)
-										value |= 1 << (bitnames[iy].bit >> 8);
-									value |= 1 << (bitnames[iy].bit & 0xff);
-								}
-								break;
-							}
+							// Force the top 4 bits to 0 so that the user is forced
+							// to use the mnemonics to change them.
+							value |= (atoi(strval) & 0x0fffffff);
+							vchanged = true;
 						}
-						if (iy >= ARRAY_LENGTH(bitnames))
-							DPrintf("Unknown bit mnemonic %s\n", strval);
+						else
+						{
+							for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
+							{
+								if (!stricmp(strval, bitnames[iy].name))
+								{
+									if (bitnames[iy].whichflags)
+									{
+										v2changed = true;
+										if (bitnames[iy].bit & 0xff00)
+											value2 |= 1 << (bitnames[iy].bit >> 8);
+										value2 |= 1 << (bitnames[iy].bit & 0xff);
+									}
+									else
+									{
+										vchanged = true;
+										if (bitnames[iy].bit & 0xff00)
+											value |= 1 << (bitnames[iy].bit >> 8);
+										value |= 1 << (bitnames[iy].bit & 0xff);
+									}
+									break;
+								}
+							}
+							if (iy >= ARRAY_LENGTH(bitnames))
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+						}
 					}
+					if (vchanged)
+					{
+						info->flags = value;
+						// Bit flags are no longer used to specify translucency.
+						// This is just a temporary hack.
+						if (info->flags & 0x60000000)
+							info->translucency = FRACUNIT;
+					}
+					if (v2changed)
+						info->flags2 = value2;
 				}
-				if (vchanged)
-				{
-					info->flags = value;
-					// Bit flags are no longer used to specify translucency.
-					// This is just a temporary hack.
-					if (info->flags & 0x60000000)
-						info->translucency = (info->flags & 0x60000000) >> 15;
-				}
-				if (v2changed)
-					info->flags2 = value2;
-			}
-			else
+			else if (stricmp(Line1, "ID #") == 0)
 			{
-				PrintUnknown(Line1, "Thing", thingNum);
+			    *&info->doomednum = (SDWORD)val;
 			}
-		} else if (!stricmp (Line1, "Height")) {
-			hadHeight = true;
+		    else if (stricmp(Line1, "Mass") == 0)
+		    {
+			    info->mass = val;
+		    }
+		}
+		else
+		{
+		    PrintUnknown(Line1, "Thing", thingNum);
 		}
 	}
 	
 	// [ML] Set a thing's "real world height" to what's being offered here,
 	// so it's consistent from the patch
-	if (hadHeight && thingNum < sizeof(OrgHeights))
-		info->cdheight = info->height;
+	if (info != &dummy)
+	{
+		if (hadHeight && thingNum < sizeof(OrgHeights))
+			info->cdheight = info->height;
 
-	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
-		info->height = OrgHeights[thingNum] * FRACUNIT;
+		if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
+			info->height = OrgHeights[thingNum] * FRACUNIT;
+	}
 
 	return result;
 }

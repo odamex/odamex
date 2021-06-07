@@ -1283,8 +1283,11 @@ typedef enum
 
 	S_MUSHROOM,  // killough 10/98: mushroom explosion effect
 
+	EXTRASTATES = 1089,
+
+
 	// [RH] gibs
-	S_GIB0,
+	S_GIB0 = 4000,
 	S_GIB1,
 	S_GIB2,
 	S_GIB3,
@@ -1356,8 +1359,8 @@ typedef enum
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,
 	S_NOWEAPON,
-	EXTRASTATES = 1089,
-	NUMSTATES = 4000
+
+	NUMSTATES
 } statenum_t;
 
 inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
@@ -1549,7 +1552,7 @@ typedef enum {
 	MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
 
 		    // [crispy] support MUSINFO lump (dynamic music changing)
-    MT_MUSICSOURCE,
+    MT_MUSICCHANGE,
 
     // [BH] 100 extra mobjs to use in dehacked patches
     MT_EXTRA00 = 150, MT_EXTRA01, MT_EXTRA02, MT_EXTRA03, MT_EXTRA04,
@@ -1636,9 +1639,6 @@ typedef enum {
 	MT_WPRFLAG,
 	MT_WPGFLAG,
 	MT_AVATAR,
-
-	// FIXME: Has no info.cpp entry.
-	MT_MUSICCHANGE,
 
 	NUMMOBJTYPES
 
