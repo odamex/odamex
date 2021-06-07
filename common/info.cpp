@@ -1319,6 +1319,21 @@ state_t	states[NUMSTATES] = {
 	{ SPR_TNT1,0,1,A_WeaponReady,S_NOWEAPON,0,0 },    //S_NOWEAPON
 };
 
+void D_Init_DEHEXTRA_Frames(void)
+{
+	// [BH] Initialize extra dehacked states
+	for (int i = EXTRASTATES; i < NUMSTATES; i++)
+	{
+		states[i].sprite = SPR_TNT1;
+		states[i].frame = 0;
+		states[i].tics = -1;
+		states[i].action = NULL;
+		states[i].nextstate = (statenum_t)i;
+		states[i].misc1 = 0;
+		states[i].misc2 = 0;
+	}
+}
+
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
 	{		// MT_PLAYER

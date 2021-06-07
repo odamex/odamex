@@ -1682,18 +1682,6 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	BackupData();
 	::PatchFile = NULL;
 
-	// [BH] Initialize extra dehacked states
-	for (int i = EXTRASTATES; i < NUMSTATES; i++)
-	{
-		states[i].sprite = SPR_TNT1;
-		states[i].frame = 0;
-		states[i].tics = -1;
-		states[i].action = NULL;
-		states[i].nextstate = (statenum_t)i;
-		states[i].misc1 = 0;
-		states[i].misc2 = 0;
-	}
-
 	if (lump >= 0)
 	{
 		// Execute the DEHACKED lump as a patch.
