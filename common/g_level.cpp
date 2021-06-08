@@ -722,9 +722,7 @@ void G_SerializeSnapshots(FArchive &arc)
 			arc.Read(&mapname[1], 7);
 
 			// FIXME: We should really serialize the full levelinfo
-			level_info_t narrow = { 0 };
 			level_pwad_info_t& info = levels.findByName(mapname);
-			memcpy(&narrow, &info, sizeof(narrow));
 			info.snapshot = new FLZOMemFile;
 			info.snapshot->Serialize(arc);
 			arc >> mapname[0];
