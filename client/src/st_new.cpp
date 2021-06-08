@@ -578,6 +578,8 @@ void drawProtos()
 	if (protos.size() == 0)
 		return;
 
+	V_SetFont("DIGFONT");
+
 	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
@@ -617,6 +619,8 @@ void drawProtos()
 			y += V_StringHeight(it->data.c_str());
 		}
 	}
+
+	V_SetFont("SMALLFONT");
 }
 
 // [AM] Draw netdemo state

@@ -37,12 +37,25 @@ struct OGlobalFont
 	{
 		return m_fontData[idx];
 	}
-	void setFont(const lumpHandle_t* font)
+	lumpHandle_t at(const size_t idx) const
+	{
+		if (idx < 0 || idx >= HU_FONTSIZE)
+			throw std::out_of_range("Out-of-bounds font char");
+
+		return m_fontData[idx];
+	}
+	void setFont(const lumpHandle_t* font, const int lineHeight)
 	{
 		m_fontData = font;
+		m_lineHeight = lineHeight;
+	}
+	int lineHeight() const
+	{
+		return m_lineHeight;
 	}
   private:
 	const lumpHandle_t* m_fontData;
+	int m_lineHeight;
 };
 
 extern OGlobalFont hu_font;
