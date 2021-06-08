@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __G_LEVEL_H__
-#define __G_LEVEL_H__
+#pragma once
 
 #include "doomtype.h"
 #include "doomdef.h"
@@ -335,5 +333,3 @@ ClusterInfos& getClusterInfos();
 // Compatibility flags
 bool P_AllowDropOff();
 bool P_AllowPassover();
-
-#endif //__G_LEVEL_H__

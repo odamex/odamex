@@ -3,7 +3,8 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
+// Copyright (C) 2006-2021 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,35 +17,37 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Clientside voting-specific stuff.
+//  Handlers for messages sent from the server.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_VOTE__
-#define __CL_VOTE__
+#ifndef __CL_PARSE_H__
+#define __CL_PARSE_H__
 
-#include "c_vote.h"
+#include <string>
+#include <vector>
+
 #include "doomtype.h"
 
-// A class to actually deal with keeping track of voting state and ensuring
-// that the proper variables are set.
-class VoteState {
-private:
-	bool visible;
-	vote_result_t result;
-	std::string votestring;
-	short countdown;
-	QWORD countdown_ms;
-	byte yes;
-	byte yes_needed;
-	byte no;
-	byte no_needed;
-	byte abs;
-public:
-	VoteState() : visible(false) { };
-	static VoteState& instance(void);
-	void set(const vote_state_t &vote_state);
-	bool get(vote_state_t &vote_state);
+enum parseError_e
+{
+	PERR_OK,
+	PERR_UNKNOWN_HEADER,
+	PERR_UNKNOWN_MESSAGE,
+	PERR_BAD_DECODE
 };
 
-#endif
+struct Proto
+{
+	byte header;
+	std::string name;
+	size_t size;
+	std::string data;
+};
+
+typedef std::vector<Proto> Protos;
+
+const Protos& CL_GetTicProtos();
+parseError_e CL_ParseCommand();
+
+#endif // __CL_PARSE_H__

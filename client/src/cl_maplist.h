@@ -30,7 +30,7 @@
 #include "doomtype.h"
 
 // Callbacks for deffered queries
-typedef void (*query_callback_t)(const query_result_t&);
+typedef void (*query_callback_t)(const maplist_qrows_t&);
 typedef void (*query_errback_t)(const std::string&);
 
 typedef struct {
@@ -53,8 +53,8 @@ private:
 	byte valid_indexes;
 	void check_complete(void);
 	void invalidate(void);
-	bool query(query_result_t &result);
-	bool query(const std::vector<std::string> &query, query_result_t &result);
+	bool query(maplist_qrows_t &result);
+	bool query(const std::vector<std::string> &query, maplist_qrows_t &result);
 public:
 	MaplistCache(void) : error(""), index(0), next_index(0), size(0),
 						 status(MAPLIST_EMPTY), timeout(0),
@@ -86,7 +86,6 @@ public:
 
 void CL_Maplist(void);
 void CL_MaplistIndex(void);
-void CL_MaplistUpdate(void);
 
 void Maplist_Runtic(void);
 

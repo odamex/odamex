@@ -1142,7 +1142,7 @@ void M_EndGameResponse(int ch)
 	currentMenu->lastOn = itemOn;
 	M_ClearMenus ();
 	D_StartTitle ();
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 
 void M_EndGame(int choice)

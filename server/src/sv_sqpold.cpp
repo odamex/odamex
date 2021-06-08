@@ -145,7 +145,7 @@ void SV_SendServerInfo()
 
 	SZ_Clear(&ml_message);
 	
-	MSG_WriteLong(&ml_message, CHALLENGE);
+	MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 	MSG_WriteLong(&ml_message, SV_NewToken());
 
 	// if master wants a key to be presented, present it we will

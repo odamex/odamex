@@ -79,7 +79,7 @@ void SV_TouchSpecial(AActor *special, player_t *player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
+void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
@@ -111,7 +111,7 @@ static void PersistPlayerScore(player_t& p, bool lives, bool score)
 	{
 		if (!it->ingame())
 			continue;
-		SVC_PlayerMembers(it->client.netbuf, p, flags);
+		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -126,7 +126,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!it->ingame())
 			continue;
-		SVC_TeamMembers(it->client.netbuf, team);
+		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
 	}
 }
 
@@ -1522,7 +1522,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (tplayer->damagecount > 100)
 			tplayer->damagecount = 100;	// teleport stomp does 10k points...
 
-		SV_SendDamagePlayer(tplayer, damage, armorDamage);
+		SV_SendDamagePlayer(tplayer, inflictor, damage, armorDamage);
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.

@@ -1280,7 +1280,8 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain);
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType);
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction);
 
 //
 // EVENTS
@@ -1417,7 +1418,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, side, LineCross);
+	SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 }
 
 //
@@ -1450,7 +1451,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, 0, LineShoot);
+	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
 	if(serverside)
 	{
@@ -1521,7 +1522,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, LineUse);
+		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
@@ -1582,7 +1583,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, LinePush);
+		SV_OnActivatedLine(line, thing, side, LinePush, false);
 
 		if(serverside)
 		{
@@ -1597,7 +1598,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 
 #ifdef SERVER_APP
-void SV_UpdateSecret(int sectornum, player_t &player);
+void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
 //
@@ -1737,8 +1738,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			sector->special &= ~SECRET_MASK;
 	
 #ifdef SERVER_APP
-			int sectornum = sector - sectors;
-			SV_UpdateSecret(sectornum, *player);	// Update the sector to all clients so that they don't discover an already found secret.
+			SV_UpdateSecret(*sector, *player);	// Update the sector to all clients so that they don't discover an already found secret.
 #else
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();		// Display the secret revealed message

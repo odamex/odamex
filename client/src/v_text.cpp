@@ -424,6 +424,33 @@ int V_StringWidth(const byte* str)
 	return width;
 }
 
+int V_StringHeight(const char* str)
+{
+	// Default width without a font loaded is 8.
+	if (::hu_font[0].empty())
+		return 8;
+
+	int lineheight = 9; // [AM] Hardcoded in the text drawer.
+	int height = lineheight;
+
+	while (str[0] != '\0')
+	{
+		// skip over color markup escape codes
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		if (str[0] == '\n')
+			height += lineheight;
+
+		str += 1;
+	}
+
+	return height;
+}
+
 //
 // Break long lines of text into multiple lines no longer than maxwidth pixels
 //

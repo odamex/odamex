@@ -32,6 +32,7 @@
 #include "p_lnspec.h"
 #include "c_effect.h"
 #include "p_mobj.h"
+#include "svc_message.h"
 
 #include "s_sound.h"
 
@@ -2475,13 +2476,8 @@ void P_RailAttack (AActor *source, int damage, int offset)
 				continue;
 
 			buf_t* buf = &(it->client.netbuf);
-			MSG_WriteMarker(buf, svc_railtrail);
-			MSG_WriteShort(buf, short(start.x));
-			MSG_WriteShort(buf, short(start.y));
-			MSG_WriteShort(buf, short(start.z));
-			MSG_WriteShort(buf, short(end.x));
-			MSG_WriteShort(buf, short(end.y));
-			MSG_WriteShort(buf, short(end.z));
+
+			MSG_WriteSVC(buf, SVC_RailTrail(start, end));
 		}
 	}
 }

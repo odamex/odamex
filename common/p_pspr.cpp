@@ -34,6 +34,7 @@
 #include "s_sound.h"
 
 #include "g_gametype.h"
+#include "svc_message.h"
 
 // State.
 #include "doomstat.h"
@@ -458,9 +459,7 @@ void P_FireWeapon(player_t* player)
 	// that they can fix any weapon desyncs that they get - apr 14 2012
 	if (serverside && !clientside)
 	{
-		MSG_WriteMarker (&player->client.reliablebuf, svc_fireweapon);
-		MSG_WriteByte (&player->client.reliablebuf, player->readyweapon);
-		MSG_WriteLong (&player->client.reliablebuf, player->tic);
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_FireWeapon(*player));
 	}
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);

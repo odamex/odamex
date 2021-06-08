@@ -34,6 +34,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "cl_demo.h"
+#include "cl_main.h"
 #include "d_items.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -46,6 +47,7 @@
 #include "hu_elements.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
+#include "cl_parse.h"
 #include "cl_vote.h"
 #include "g_levelstate.h"
 #include "g_gametype.h"
@@ -104,6 +106,7 @@ PathFreeList freelist;
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
+EXTERN_CVAR(hud_demoprotos)
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
@@ -564,6 +567,58 @@ static void drawGametype()
 	}
 }
 
+size_t proto_selected;
+
+/**
+ * @brief Draw protocol buffer packets
+ */
+void drawProtos()
+{
+	const Protos& protos = CL_GetTicProtos();
+	if (protos.size() == 0)
+		return;
+
+	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
+
+	// Starting y is five rows from the top.
+	int y = 7 * 5;
+
+	const double scale = 0.75;
+	const int indent = V_StringWidth(" >");
+
+	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+	{
+		bool selected = proto_selected == (it - protos.begin());
+
+		if (selected)
+		{
+			// Draw arrow
+			hud::DrawText(0, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			              " >", CR_GOLD, true);
+		}
+
+		// Give each protocol header its own unique color.
+		int rowColor = it->header % (NUM_TEXT_COLORS - 2);
+		if (rowColor >= CR_WHITE)
+			rowColor++;
+		if (rowColor >= CR_UNTRANSLATED)
+			rowColor++;
+
+		// Draw name
+		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+		              it->name.c_str(), rowColor, true);
+		y += V_StringHeight(it->name.c_str());
+
+		if (selected)
+		{
+			// Draw data
+			hud::DrawText(indent, y, 0.75, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
+			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
+			y += V_StringHeight(it->data.c_str());
+		}
+	}
+}
+
 // [AM] Draw netdemo state
 // TODO: This is ripe for commonizing, but I _need_ to get this done soon.
 void drawNetdemo() {
@@ -609,6 +664,11 @@ void drawNetdemo() {
 	//       change times in as notches.
 	ST_DrawBar(color, netdemo.calculateTimeElapsed(), netdemo.calculateTotalTime(),
 	           2 * xscale, I_GetSurfaceHeight() - 46 * yscale, 72 * xscale);
+
+	if (netdemo.isPaused() && ::hud_demoprotos)
+	{
+		drawProtos();
+	}
 }
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
@@ -1179,5 +1239,21 @@ void DoomHUD()
 }
 
 }
+
+#include "c_dispatch.h"
+
+BEGIN_COMMAND(netprotoup)
+{
+	if (hud::proto_selected > 0)
+		hud::proto_selected -= 1;
+}
+END_COMMAND(netprotoup)
+
+BEGIN_COMMAND(netprotodown)
+{
+	// Rely on clamp in drawer
+	hud::proto_selected += 1;
+}
+END_COMMAND(netprotodown)
 
 VERSION_CONTROL (st_new_cpp, "$Id$")

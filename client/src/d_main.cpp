@@ -369,7 +369,7 @@ void D_DoomLoop (void)
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
 
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_SILENT);
 
 			G_ClearSnapshots();
 
@@ -564,7 +564,7 @@ void STACK_ARGS D_Close()
 //
 void D_StartTitle (void)
 {
-	// CL_QuitNetGame();
+	// CL_QuitNetGame(NQ_SILENT);
 
 	gameaction = ga_nothing;
 	demosequence = -1;
