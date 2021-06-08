@@ -1592,10 +1592,11 @@ void A_FatAttack1 (AActor *actor)
 	{
 		// Change direction  to ...
 		actor->angle += FATSPREAD;
-		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
+		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		fixed_t speed = P_GetActorSpeed(actor);
+		
+		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
 
 		mo->angle += FATSPREAD;
 		int an = mo->angle >> ANGLETOFINESHIFT;
@@ -1615,10 +1616,11 @@ void A_FatAttack2 (AActor *actor)
 	{
 		// Now here choose opposite deviation.
 		actor->angle -= FATSPREAD;
+
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		fixed_t speed = P_GetActorSpeed(actor);
+	    fixed_t speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 
 		mo->angle -= FATSPREAD*2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
@@ -1637,15 +1639,16 @@ void A_FatAttack3 (AActor *actor)
 	if(serverside)
 	{
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		fixed_t speed = P_GetActorSpeed(actor);
 
 		mo->angle -= FATSPREAD/2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
 
+		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
 		mo->momx = FixedMul(speed, finecosine[an]);
 		mo->momy = FixedMul(speed, finesine[an]);
 
 		mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
+		speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 		mo->angle += FATSPREAD/2;
 		an = mo->angle >> ANGLETOFINESHIFT;
 		mo->momx = FixedMul(speed, finecosine[an]);
