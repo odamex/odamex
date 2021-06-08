@@ -1207,7 +1207,7 @@ void A_SkelMissile (AActor *actor)
 
 fixed_t P_GetActorSpeed(AActor* actor)
 {
-	if (actor->info->speed > FRACUNIT)
+	if (actor->info->speed > 256)
 		return actor->info->speed;
 	
 	return actor->info->speed * FRACUNIT;
