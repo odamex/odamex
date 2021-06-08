@@ -30,9 +30,12 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "g_level.h"
+#include "hashtable.h"
 #include "i_system.h"
 #include "m_fileio.h"
+#include "m_strindex.h"
 #include "sv_main.h"
+#include "svc_message.h"
 #include "w_wad.h"
 
 //////// MAPLIST METHODS ////////
@@ -465,7 +468,7 @@ void Maplist::clear_timeout(const int index) {
 
 // Clue the client in on if the maplist is outdated or not and if they're
 // allowed to retrieve the entire maplist yet.
-void SVC_Maplist(player_t &player, maplist_status_t status) {
+void SV_Maplist(player_t &player, maplist_status_t status) {
 	client_t *cl = &player.client;
 
 	switch (status) {
@@ -473,9 +476,8 @@ void SVC_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 	case MAPLIST_OK:
 		// Valid statuses
-		DPrintf("SVC_Maplist: Sending status %d to pid %d\n", status, player.id);
-		MSG_WriteMarker(&cl->reliablebuf, svc_maplist);
-		MSG_WriteByte(&cl->reliablebuf, status);
+		DPrintf("SV_Maplist: Sending status %d to pid %d\n", status, player.id);
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Maplist(status));
 	default:
 		// Invalid statuses
 		return;
@@ -483,95 +485,56 @@ void SVC_Maplist(player_t &player, maplist_status_t status) {
 }
 
 // Send the player the next map index and current map index if it exists.
-void SVC_MaplistIndex(player_t &player) {
+void SV_MaplistIndex(player_t &player) {
 	client_t *cl = &player.client;
 
 	// count = 0: No indexes.
 	// count = 1: Next map index.
 	// count = 2: Next map & this map indexes.
 	byte count = 0;
-	size_t this_index, next_index;
-	if (Maplist::instance().get_next_index(next_index)) {
+	size_t this_index = 0, next_index = 0;
+	if (Maplist::instance().get_next_index(next_index))
+	{
 		count += 1;
-		if (Maplist::instance().get_this_index(this_index)) {
+		if (Maplist::instance().get_this_index(this_index))
+		{
 			count += 1;
 		}
 	}
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_maplist_index);
-	MSG_WriteByte(&cl->reliablebuf, count);
-
-	if (count > 0) {
-		MSG_WriteShort(&cl->reliablebuf, next_index);
-		if (count > 1) {
-			MSG_WriteShort(&cl->reliablebuf, this_index);
-		}
-	}
+	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, next_index, this_index));
 }
 
 // Send a full maplist update to a specific player
-void SVC_MaplistUpdate(player_t &player, maplist_status_t status) {
+void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	client_t *cl = &player.client;
 
 	switch (status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
-		DPrintf("SVC_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
-		MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update);
-		MSG_WriteByte(&cl->reliablebuf, status);
+		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
-		DPrintf("SVC_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
 		break;
 	default:
 		// Invalid statuses
 		return;
 	}
 
-	std::vector<std::pair<size_t, maplist_entry_t*> > maplist;
+	maplist_qrows_t maplist;
 	Maplist::instance().query(maplist);
 
-	MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update); // new packet
-	MSG_WriteByte(&cl->reliablebuf, MAPLIST_OUTDATED);
-	MSG_WriteShort(&cl->reliablebuf, maplist.size()); // total size
-	MSG_WriteShort(&cl->reliablebuf, 0); // starting index
-	for (std::vector<std::pair<size_t, maplist_entry_t*> >::iterator it = maplist.begin(); it != maplist.end(); ++it)
-	{
-		MSG_WriteString(&cl->reliablebuf, it->second->map.c_str());
-		MSG_WriteShort(&cl->reliablebuf, it->second->wads.size());
-		for (std::vector<std::string>::iterator itr = it->second->wads.begin(); itr != it->second->wads.end(); ++itr)
-		{
-			std::string filename = D_CleanseFileName(*itr);
-			MSG_WriteString(&cl->reliablebuf, filename.c_str());
-		}
+	odaproto::svc::MaplistUpdate update = SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist);
 
-		// If we're at the end of the maplist, we don't want to continue the
-		// message any longer and we don't need to start a new packet, so we
-		// need this check before the fragmenting logic below.
-		if (it == maplist.end() - 1)
-		{
-			MSG_WriteBool(&cl->reliablebuf, false); // end packet for good
-			break;
-		}
+	// Attempt to make room on the wire if we're running out.
+	if (cl->reliablebuf.size() + update.ByteSizeLong() >= MAX_UDP_SIZE)
+		SV_SendPacket(player);
 
-		// This message could get huge, so send it
-		// when it grows to a specific size.
-		if (cl->reliablebuf.cursize >= 1024)
-		{
-			MSG_WriteBool(&cl->reliablebuf, false); // end packet
-			SV_SendPacket(player);
-			MSG_WriteMarker(&cl->reliablebuf, svc_maplist_update); // new packet
-			MSG_WriteByte(&cl->reliablebuf, MAPLIST_OUTDATED);
-			MSG_WriteShort(&cl->reliablebuf, maplist.size()); // total size
-			MSG_WriteShort(&cl->reliablebuf, it->first + 1); // next index
-		}
-		else
-		{
-			MSG_WriteBool(&cl->reliablebuf, true); // continue packet
-		}
-	}
+	MSG_WriteSVC(&cl->reliablebuf, update);
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);
@@ -585,13 +548,13 @@ void SV_Maplist(player_t &player) {
 
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {
-		SVC_Maplist(player, MAPLIST_EMPTY);
+		SV_Maplist(player, MAPLIST_EMPTY);
 		return;
 	}
 
 	// If they haven't been sent the maplist, they're obviously out of date.
 	if (!Maplist::instance().pid_cached(player.id)) {
-		SVC_Maplist(player, MAPLIST_OUTDATED);
+		SV_Maplist(player, MAPLIST_OUTDATED);
 		return;
 	}
 
@@ -601,8 +564,8 @@ void SV_Maplist(player_t &player) {
 	case MAPLIST_OK:
 		// They think their maplist is okay, and we haven't changed it,
 		// so send back proper maplist indexes and an "OK" message.
-		SVC_MaplistIndex(player);
-		SVC_Maplist(player, MAPLIST_OK);
+		SV_MaplistIndex(player);
+		SV_Maplist(player, MAPLIST_OK);
 		return;
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
@@ -619,33 +582,33 @@ void SV_Maplist(player_t &player) {
 
 	// Check to see if their timeout has passed.
 	if (Maplist::instance().pid_timeout(player.id)) {
-		SVC_Maplist(player, MAPLIST_OUTDATED);
+		SV_Maplist(player, MAPLIST_OUTDATED);
 		return;
 	}
 
 	// They have been sent the maplist, but their timeout has not expired yet.
-	SVC_Maplist(player, MAPLIST_THROTTLED);
+	SV_Maplist(player, MAPLIST_THROTTLED);
 }
 
 // Client wants the full list of maps.
 void SV_MaplistUpdate(player_t &player) {
 	// Send them the current maplist indexes.
-	SVC_MaplistIndex(player);
+	SV_MaplistIndex(player);
 
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {
-		SVC_MaplistUpdate(player, MAPLIST_EMPTY);
+		SV_MaplistUpdate(player, MAPLIST_EMPTY);
 		return;
 	}
 
 	// If the player requested the maplist update too soon, say so
 	if (!Maplist::instance().pid_timeout(player.id)) {
-		SVC_MaplistUpdate(player, MAPLIST_THROTTLED);
+		SV_MaplistUpdate(player, MAPLIST_THROTTLED);
 		return;
 	}
 
 	// Send them an update
-	SVC_MaplistUpdate(player, MAPLIST_OUTDATED);
+	SV_MaplistUpdate(player, MAPLIST_OUTDATED);
 }
 
 //////// EVENTS ////////
@@ -792,7 +755,7 @@ BEGIN_COMMAND (gotomap) {
 	}
 
 	// Query the maplist
-	query_result_t result;
+	maplist_qrows_t result;
 	if (!Maplist::instance().query(arguments, result)) {
 		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
 		return;
@@ -815,7 +778,7 @@ BEGIN_COMMAND (gotomap) {
 } END_COMMAND (gotomap)
 
 bool CMD_Randmap(std::string &error) {
-	query_result_t result;
+	maplist_qrows_t result;
 	if (!Maplist::instance().query(result)) {
 		error = Maplist::instance().get_error();
 		return false;

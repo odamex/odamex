@@ -35,6 +35,7 @@ public:
 	
 	int getSpacing() const { return header.snapshot_spacing; }
 	
+	void nextTic();
 	void nextSnapshot();
 	void prevSnapshot();
 	void nextMap();
@@ -142,6 +143,7 @@ private:
 	
 	std::vector<byte>	snapbuf;
 	int					netdemotic;
+	int					pause_netdemotic;
 };
 
 

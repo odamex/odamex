@@ -74,12 +74,15 @@ typedef int SOCKET;
 #define SETSOCKOPTCAST(x) ((const void *)(x))
 #endif
 
+#include <google/protobuf/message.h>
+
 #include "doomtype.h"
 
 #include "i_system.h"
 
 #include "doomstat.h"
 #include "i_net.h"
+#include "svc_map.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -591,15 +594,6 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void SV_SendPackets(void);
 
-void MSG_WriteMarker (buf_t *b, svc_t c)
-{
-	//[Spleen] final check to prevent huge packets from being sent to players
-	if (b->cursize > 600)
-		SV_SendPackets();
-
-	b->WriteByte((byte)c);
-}
-
 //
 // MSG_WriteMarker
 //
@@ -626,6 +620,47 @@ void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 	if (simulated_connection)
 		return;
 	b->WriteChunk((const char *)p, l);
+}
+
+void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	// Do we actaully have room for this upcoming message?
+	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+		SV_SendPackets();
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_noop)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find svc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+#if 0
+	Printf("%s (%d)\n, %s\n",
+		::svc_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString().c_str());
+#endif
+
+	b->WriteByte(header);
+	b->WriteUnVarint(buffer.size());
+	b->WriteChunk(buffer.data(), buffer.size());
 }
 
 void MSG_WriteShort (buf_t *b, short c)
@@ -977,10 +1012,8 @@ float MSG_ReadFloat(void)
 static void InitNetMessageFormats()
 {
 	// Server Messages.
-	SVC_INFO(svc_abort);
-	SVC_INFO(svc_full);
+	SVC_INFO(svc_noop);
 	SVC_INFO(svc_disconnect);
-	SVC_INFO(svc_reserved3);
 	SVC_INFO(svc_playerinfo);
 	SVC_INFO(svc_moveplayer);
 	SVC_INFO(svc_updatelocalplayer);
@@ -991,50 +1024,36 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_disconnectclient);
 	SVC_INFO(svc_loadmap);
 	SVC_INFO(svc_consoleplayer);
-	SVC_INFO(svc_mobjspeedangle);
 	SVC_INFO(svc_explodemissile);
 	SVC_INFO(svc_removemobj);
 	SVC_INFO(svc_userinfo);
-	SVC_INFO(svc_movemobj);
+	SVC_INFO(svc_updatemobj);
 	SVC_INFO(svc_spawnplayer);
 	SVC_INFO(svc_damageplayer);
 	SVC_INFO(svc_killmobj);
-	SVC_INFO(svc_firepistol);
-	SVC_INFO(svc_fireshotgun);
-	SVC_INFO(svc_firessg);
-	SVC_INFO(svc_firechaingun);
 	SVC_INFO(svc_fireweapon);
-	SVC_INFO(svc_sector);
+	SVC_INFO(svc_updatesector);
 	SVC_INFO(svc_print);
-	SVC_INFO(svc_mobjinfo);
 	SVC_INFO(svc_playermembers);
 	SVC_INFO(svc_teammembers);
 	SVC_INFO(svc_activateline);
 	SVC_INFO(svc_movingsector);
-	SVC_INFO(svc_startsound);
+	SVC_INFO(svc_playsound);
 	SVC_INFO(svc_reconnect);
 	SVC_INFO(svc_exitlevel);
 	SVC_INFO(svc_touchspecial);
-	SVC_INFO(svc_changeweapon);
-	SVC_INFO(svc_reserved42);
-	SVC_INFO(svc_corpse);
-	SVC_INFO(svc_missedpacket);
-	SVC_INFO(svc_soundorigin);
-	SVC_INFO(svc_reserved46);
-	SVC_INFO(svc_reserved47);
 	SVC_INFO(svc_forceteam);
 	SVC_INFO(svc_switch);
 	SVC_INFO(svc_say);
-	SVC_INFO(svc_reserved51);
 	SVC_INFO(svc_spawnhiddenplayer);
 	SVC_INFO(svc_updatedeaths);
+	SVC_INFO(svc_ctfrefresh);
 	SVC_INFO(svc_ctfevent);
 	SVC_INFO(svc_serversettings);
 	SVC_INFO(svc_connectclient);
     SVC_INFO(svc_midprint);
-	SVC_INFO(svc_svgametic);
+	SVC_INFO(svc_servergametic);
 	SVC_INFO(svc_inttimeleft);
-	SVC_INFO(svc_mobjtranslation);
 	SVC_INFO(svc_fullupdatedone);
 	SVC_INFO(svc_railtrail);
 	SVC_INFO(svc_playerstate);
@@ -1046,9 +1065,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_sectorproperties);
 	SVC_INFO(svc_linesideupdate);
 	SVC_INFO(svc_mobjstate);
-	SVC_INFO(svc_actor_movedir);
-	SVC_INFO(svc_actor_target);
-	SVC_INFO(svc_actor_tracer);
 	SVC_INFO(svc_damagemobj);
 	SVC_INFO(svc_executelinespecial);
 	SVC_INFO(svc_executeacsspecial);
@@ -1060,9 +1076,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist);
 	SVC_INFO(svc_maplist_update);
 	SVC_INFO(svc_maplist_index);
-	SVC_INFO(svc_compressed);
-	SVC_INFO(svc_launcher_challenge);
-	SVC_INFO(svc_challenge);
 	SVC_INFO(svc_max);
 
 	// Client Messages.
@@ -1091,8 +1104,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_netcmd);
 	CLC_INFO(clc_spy);
 	CLC_INFO(clc_privmsg);
-	CLC_INFO(clc_launcher_challenge);
-	CLC_INFO(clc_challenge);
 	CLC_INFO(clc_max);
 }
 

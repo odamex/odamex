@@ -53,6 +53,11 @@
         #undef DrawText
     #endif
 
+    // Same with PlaySound
+    #ifdef PlaySound
+        #undef PlaySound
+    #endif
+
     // POSIX functions
 	#include <ctime>
     char * strptime(const char *buf, const char *fmt, struct tm *timeptr);

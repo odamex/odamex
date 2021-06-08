@@ -275,6 +275,23 @@ public:
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
+		struct oldPacket_t
+		{
+			int		sequence;
+			buf_t	data;
+
+			oldPacket_t() : sequence(-1)
+			{
+				data.resize(0);
+			}
+
+			oldPacket_t(const oldPacket_t& other)
+			{
+				sequence = other.sequence;
+				data = other.data;
+			}
+		};
+
 		netadr_t    address;
 
 		buf_t       netbuf;
@@ -286,10 +303,8 @@ public:
 		short		minorversion;	// GhostlyDeath -- Minor
 
 		// for reliable protocol
-		buf_t       relpackets; // save reliable packets here
-		int         packetbegin[256]; // the beginning of a packet
-		int         packetsize[256]; // the size of a packet
-		int         packetseq[256];
+		oldPacket_t oldpackets[256];
+
 		int         sequence;
 		int         last_sequence;
 		byte        packetnum;
@@ -326,11 +341,10 @@ public:
 			version = 0;
 			majorversion = 0;
 			minorversion = 0;
-			for (size_t i = 0; i < 256; i++)
+			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{
-				packetbegin[i] = 0;
-				packetsize[i] = 0;
-				packetseq[i] = 0;
+				oldpackets[i].sequence = -1;
+				oldpackets[i].data.resize(MAX_UDP_PACKET);
 			}
 			sequence = 0;
 			last_sequence = 0;
@@ -346,7 +360,6 @@ public:
 			// GhostlyDeath -- done with the {}
 			netbuf = MAX_UDP_PACKET;
 			reliablebuf = MAX_UDP_PACKET;
-			relpackets = MAX_UDP_PACKET*50;
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
@@ -360,7 +373,6 @@ public:
 			version(other.version),
 			majorversion(other.majorversion),
 			minorversion(other.minorversion),
-			relpackets(other.relpackets),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
 			packetnum(other.packetnum),
@@ -376,9 +388,10 @@ public:
 			compressor(other.compressor),
 			download(other.download)
 		{
-				memcpy(packetbegin, other.packetbegin, sizeof(packetbegin));
-				memcpy(packetsize, other.packetsize, sizeof(packetsize));
-				memcpy(packetseq, other.packetseq, sizeof(packetseq));
+			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
+			{
+				oldpackets[i] = other.oldpackets[i];
+			}
 		}
 	} client;
 

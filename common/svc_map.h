@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,35 +16,24 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Clientside voting-specific stuff.
+//   Server message map.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_VOTE__
-#define __CL_VOTE__
+#ifndef __SVCMAP_H__
+#define __SVCMAP_H__
 
-#include "c_vote.h"
-#include "doomtype.h"
+#include "i_net.h"
 
-// A class to actually deal with keeping track of voting state and ensuring
-// that the proper variables are set.
-class VoteState {
-private:
-	bool visible;
-	vote_result_t result;
-	std::string votestring;
-	short countdown;
-	QWORD countdown_ms;
-	byte yes;
-	byte yes_needed;
-	byte no;
-	byte no_needed;
-	byte abs;
-public:
-	VoteState() : visible(false) { };
-	static VoteState& instance(void);
-	void set(const vote_state_t &vote_state);
-	bool get(vote_state_t &vote_state);
-};
+namespace google
+{
+namespace protobuf
+{
+class Descriptor;
+}
+} // namespace google
 
-#endif
+const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
+svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+
+#endif // __SVCMAP_H__

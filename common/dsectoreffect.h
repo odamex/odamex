@@ -31,14 +31,13 @@
 
 typedef enum
 {
+	SEC_INVALID,
 	SEC_FLOOR,
 	SEC_PLAT,
 	SEC_CEILING,
 	SEC_DOOR,
 	SEC_ELEVATOR,
 	SEC_PILLAR,
-
-	SEC_INVALID
 } movertype_t;
 
 class DSectorEffect : public DThinker

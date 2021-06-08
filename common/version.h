@@ -24,6 +24,8 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
+#include <string>
+
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"
 #elif defined(SERVER_APP)
@@ -94,6 +96,9 @@
 #define SAVESIG "ODAMEXSAVE010000"
 
 #define NETDEMOVER 3
+
+int VersionCompat(const int server, const int client);
+std::string VersionMessage(const int server, const int client, const char* email);
 
 // denis - per-file svn version stamps
 class file_version

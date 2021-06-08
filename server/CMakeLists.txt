@@ -50,7 +50,7 @@ target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
 endif()
-target_link_libraries(odasrv jsoncpp odamex-common)
+target_link_libraries(odasrv jsoncpp odamex-common odaproto)
 
 if(USE_MINIUPNP)
   target_link_libraries(odasrv upnpc-static)

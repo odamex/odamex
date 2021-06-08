@@ -47,14 +47,11 @@ extern std::string server_host;
 extern std::string digest;
 extern OResFiles wadfiles;
 
-argb_t CL_GetPlayerColor(player_t*);
-
-
-NetDemo::NetDemo() :
-	state(st_stopped), oldstate(st_stopped), filename(""),
-	demofp(NULL)
+NetDemo::NetDemo()
+    : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
+      pause_netdemotic(0)
 {
-    memset(&header, 0, sizeof(header));
+	memset(&header, 0, sizeof(header));
 }
 
 NetDemo::~NetDemo()
@@ -128,6 +125,7 @@ void NetDemo::cleanUp()
 	snapshot_index.clear();
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
+	netdemotic = pause_netdemotic = 0;
 }
 
 /**
@@ -458,7 +456,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeMessages();
 
 		SZ_Clear(&tempbuf);
-		MSG_WriteMarker(&tempbuf, svc_netdemoloadsnap);
+		MSG_WriteSVC(&tempbuf, odaproto::svc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
 
@@ -606,9 +604,9 @@ bool NetDemo::stopRecording()
 	// write any remaining messages that have been captured
 	writeMessages();
 
-	// write the end-of-demo marker
-	byte marker = svc_netdemostop;
-	writeChunk(&marker, sizeof(marker), NetDemo::msg_packet);
+	// write the end-of-demo marker - header + size
+	byte stopdata[2] = {svc_netdemostop, 0};
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
 
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
@@ -662,7 +660,7 @@ bool NetDemo::stopPlaying()
 {
 	state = NetDemo::st_stopped;
 	SZ_Clear(&net_message);
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (demofp)
 	{
@@ -692,31 +690,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 
 	AActor *mo = player->mo;
 
-	MSG_WriteByte(netbuffer, svc_netdemocap);
-	MSG_WriteByte(netbuffer, player->cmd.buttons);
-	MSG_WriteByte(netbuffer, player->cmd.impulse);
-	MSG_WriteShort(netbuffer, player->cmd.yaw);
-	MSG_WriteShort(netbuffer, player->cmd.forwardmove);
-	MSG_WriteShort(netbuffer, player->cmd.sidemove);
-	MSG_WriteShort(netbuffer, player->cmd.upmove);
-	MSG_WriteShort(netbuffer, player->cmd.pitch);
-
-	MSG_WriteByte(netbuffer, mo->waterlevel);
-	MSG_WriteLong(netbuffer, mo->x);
-	MSG_WriteLong(netbuffer, mo->y);
-	MSG_WriteLong(netbuffer, mo->z);
-	MSG_WriteLong(netbuffer, mo->momx);
-	MSG_WriteLong(netbuffer, mo->momy);
-	MSG_WriteLong(netbuffer, mo->momz);
-	MSG_WriteLong(netbuffer, mo->angle);
-	MSG_WriteLong(netbuffer, mo->pitch);
-	MSG_WriteLong(netbuffer, player->viewz);
-	MSG_WriteLong(netbuffer, player->viewheight);
-	MSG_WriteLong(netbuffer, player->deltaviewheight);
-	MSG_WriteLong(netbuffer, player->jumpTics);
-	MSG_WriteLong(netbuffer, mo->reactiontime);
-	MSG_WriteByte(netbuffer, player->readyweapon);
-	MSG_WriteByte(netbuffer, player->pendingweapon);
+	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
 }
 
 
@@ -767,6 +741,12 @@ bool NetDemo::atSnapshotInterval()
 void NetDemo::ticker()
 {
 	netdemotic++;
+	if (netdemotic == pause_netdemotic)
+	{
+		pause_netdemotic = netdemotic - 1;
+		pause();
+		::paused = true;
+	}
 }
 
 //
@@ -886,7 +866,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	if (!connected)
 	{
 		int type = MSG_ReadLong();
-		if (type == CHALLENGE)
+		if (type == MSG_CHALLENGE)
 		{
 			CL_PrepareConnect();
 		}
@@ -979,7 +959,7 @@ void NetDemo::capture(const buf_t* inputbuffer)
 void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 {
 	// Server sends launcher info
-	MSG_WriteLong	(netbuffer, CHALLENGE);
+	MSG_WriteLong	(netbuffer, PROTO_CHALLENGE);
 	MSG_WriteLong	(netbuffer, 0);		// server_token
 	
 	// get sv_hostname and write it
@@ -1100,7 +1080,6 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 //		MSG_WriteString(netbuffer, patchfiles[n].c_str());
 }
 
-
 //
 // writeConnectionSequence()
 //
@@ -1111,69 +1090,36 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
 	// The packet sequence id
-	MSG_WriteLong	(netbuffer, 0);
-	
+	MSG_WriteLong(netbuffer, 0);
+
+	// Flags for our fake packet (none)
+	MSG_WriteByte(netbuffer, 0);
+
 	// Server sends our player id and digest
-	MSG_WriteMarker	(netbuffer, svc_consoleplayer);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, digest.c_str());
+	MSG_WriteSVC(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
 
 	// our userinfo
-	MSG_WriteMarker	(netbuffer, svc_userinfo);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
-	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
-	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
-
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(netbuffer, consoleplayer().userinfo.color[i]);
-
-	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
-	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
+	MSG_WriteSVC(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
 	
 	// Server sends its settings
-	MSG_WriteMarker	(netbuffer, svc_serversettings);
 	cvar_t *var = GetFirstCvar();
 	while (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteByte	(netbuffer, 1);
-			MSG_WriteString	(netbuffer,	var->name());
-			MSG_WriteString	(netbuffer,	var->cstring());
+			MSG_WriteSVC(netbuffer, SVC_ServerSettings(*var));
 		}
 		var = var->GetNext();
 	}
-	MSG_WriteByte	(netbuffer, 2);		// end of server settings marker
 
 	// Server tells everyone if we're a spectator
-	SVC_PlayerMembers(*netbuffer, consoleplayer(), SVC_PM_SPECTATOR);
+	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
-	SVC_LoadMap(*netbuffer, wadfiles, patchfiles, level.mapname.c_str(), level.time);
+	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// Server spawns the player
-	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	if (consoleplayer().mo)
-	{
-		MSG_WriteUnVarint(netbuffer, consoleplayer().mo->netid);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->angle);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->x);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->y);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->z);
-	}
-	else
-	{
-		// The client hasn't yet received his own position from the server
-		// This happens with cl_autorecord
-		// Just fake a position for now
-		MSG_WriteUnVarint(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-	}
+	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));
 }
 
 
@@ -1238,6 +1184,20 @@ int NetDemo::getCurrentMapIndex() const
 	return header.map_index_size - 1;
 }
 
+//
+// nextTic()
+//
+//		Advance to the next gametic.
+//
+void NetDemo::nextTic()
+{
+	if (!isPaused())
+		return;
+
+	pause_netdemotic = netdemotic + 1;
+	resume();
+	::paused = false;
+}
 
 //
 // nextSnapshot()
