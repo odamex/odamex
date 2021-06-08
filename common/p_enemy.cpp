@@ -2396,17 +2396,21 @@ void A_Gibify(AActor *mo) // denis - squash thing
 //
 void A_Spawn(AActor* mo)
 {
-	// Partial integration of A_Spawn.
-	// ToDo: Currently missing MBF's MF_FRIEND flag support!
-	if (mo->state->misc1)
+	if (serverside)
 	{
-		AActor* newmobj;
+		// Partial integration of A_Spawn.
+		// ToDo: Currently missing MBF's MF_FRIEND flag support!
+		if (mo->state->misc1)
+		{
+			AActor* newmobj;
 
-		newmobj = new AActor ( mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z, (mobjtype_t)(mo->state->misc1 - 1) );
+			newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
+			                     (mobjtype_t)(mo->state->misc1 - 1));
 
-		//newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND); // TODO !!!
+			// newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+			// // TODO !!!
+		}
 	}
-	
 }
 
 void A_Turn(AActor* mo)
