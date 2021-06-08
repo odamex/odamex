@@ -2068,7 +2068,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
-	fixed_t speed = th->info->speed * FRACUNIT;
+	fixed_t speed = P_GetActorSpeed(th);
 	th->momx = FixedMul(speed, finecosine[an]);
 	th->momy = FixedMul(speed, finesine[an]);
 
