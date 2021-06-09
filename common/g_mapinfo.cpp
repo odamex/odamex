@@ -272,7 +272,7 @@ namespace
 
 	bool UpperCompareToken(OScanner& os, const char* str)
     {
-	    return stricmp(os.getToken().c_str(), str) == 0;
+	    return iequals(os.getToken(), str);
     }
 
 	//////////////////////////////////////////////////////////////////////
