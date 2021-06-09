@@ -288,61 +288,21 @@ namespace
 	template <>
 	int GetToken<int>(OScanner& os)
 	{
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		char* stopper;
-	
-		// if (os.compareToken("MAXINT"))
-		if (str == "MAXINT")
-		{
-			return MAXINT;
-		}
-	
-		const int num = strtol(str.c_str(), &stopper, 0);
-	
-		if (*stopper != 0)
-		{
-			I_Error("Bad numeric constant \"%s\".", str.c_str());
-		}
-	
-		return num;
+	    return os.getTokenAsBool();
 	}
 	
 	// return token as float
 	template <>
 	float GetToken<float>(OScanner& os)
 	{
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		char* stopper;
-	
-		const double num = strtod(str.c_str(), &stopper);
-	
-		if (*stopper != 0)
-		{
-			I_Error("Bad numeric constant \"%s\".", str.c_str());
-		}
-	
-		return static_cast<float>(num);
+		return os.getTokenAsFloat();
 	}
 
 	// return token as bool
 	template <>
 	bool GetToken<bool>(OScanner& os)
     {
-	    return UpperCompareToken(os, "true");
+	    return os.getTokenAsBool();
     }
 
 	// return token as std::string
