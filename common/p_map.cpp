@@ -1113,7 +1113,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 		}
 
 		// killough 11/98: prevent falling objects from going up too many steps
-		if (co_zdoomphys && thing->flags & MF_FALLING && tmfloorz - testz >
+		if (co_zdoomphys && thing->oflags & MFO_FALLING && tmfloorz - testz >
 			FixedMul(thing->momx, thing->momx) + FixedMul(thing->momy, thing->momy))
 		{
 			return false;
@@ -1276,7 +1276,7 @@ void P_ApplyTorque (AActor *mo)
 	int yh = ((tmbbox[BOXTOP] =
 			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
 	int bx,by;
-	int flags = mo->flags;	//Remember the current state, for gear-change
+	int flags = mo->oflags;	//Remember the current state, for gear-change
 
 	tmthing = mo;
 	++validcount; // prevents checking same line twice
@@ -1287,9 +1287,9 @@ void P_ApplyTorque (AActor *mo)
 
 	// If any momentum, mark object as 'falling' using engine-internal flags
 	if (mo->momx | mo->momy)
-		mo->flags |= MF_FALLING;
+		mo->flags |= MFO_FALLING;
 	else  // Clear the engine-internal flag indicating falling object.
-		mo->flags &= ~MF_FALLING;
+		mo->flags &= ~MFO_FALLING;
 
 	// If the object has been moving, step up the gear.
 	// This helps reach equilibrium and avoid oscillations.
@@ -1298,7 +1298,7 @@ void P_ApplyTorque (AActor *mo)
 	// of rotation, so we have to creatively simulate these
 	// systems somehow :)
 
-	if (!((mo->flags | flags) & MF_FALLING))	// If not falling for a while,
+	if (!((mo->oflags | flags) & MFO_FALLING))	// If not falling for a while,
 		mo->gear = 0;							// Reset it to full strength
 	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
 		mo->gear++;								// move up a gear

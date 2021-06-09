@@ -606,7 +606,7 @@ void P_MoveActor(AActor *mo)
 	}
 	else
 	{
-		mo->flags &= ~MF_FALLING;
+		mo->oflags &= ~MFO_FALLING;
 		mo->gear = 0;           // Reset torque
 	}
 }
