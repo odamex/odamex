@@ -799,13 +799,29 @@ static int GetLine (void)
 static int PatchThing (int thingy)
 {
 
+		enum
+	{
+		// Boom flags
+		MF_TRANSLATION = 0x0c000000, // if 0x4 0x8 or 0xc, use a translation
+		//MF_TRANSSHIFT = 26,          // table for player colormaps
+		                    // A couple of Boom flags that don't exist in ZDoom
+		MF_SLIDE = 0x00002000,       // Player: keep info about sliding along walls.
+		MF_TRANSLUCENT = 0x80000000, // Translucent sprite?
+		                             // MBF flags: TOUCHY is remapped to flags6, FRIEND is
+		                             // turned into FRIENDLY, and finally BOUNCES is
+		                             // replaced by bouncetypes with the BOUNCES_MBF bit.
+		MF_TOUCHY = 0x10000000,  // killough 11/98: dies when solids touch it
+		MF_BOUNCES = 0x20000000, // killough 7/11/98: for beta BFG fireballs
+		MF_FRIEND = 0x40000000,  // killough 7/18/98: friendly monsters
+	};
+
 	size_t thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
 	static const struct {
-		short bit;
-		short whichflags;
-		const char *name;
+		short Bit;
+		short WhichFlags;
+		const char *Name;
 	} bitnames[] = {
 		{ 0, 0, "SPECIAL"},
 		{ 1, 0, "SOLID"},
@@ -820,6 +836,7 @@ static int PatchThing (int thingy)
 		{10, 0, "DROPOFF"},
 		{11, 0, "PICKUP"},
 		{12, 0, "NOCLIP"},
+		{13, 0, "SLIDE"},			// UNUSED FOR NOW
 		{14, 0, "FLOAT"},
 		{15, 0, "TELEPORT"},
 		{16, 0, "MISSILE"},
@@ -836,15 +853,20 @@ static int PatchThing (int thingy)
 		{26, 0, "TRANSLATION"},		// BOOM compatibility
 		{27, 0, "TRANSLATION2"},
 		{27, 0, "UNUSED1"},			// BOOM compatibility
-		{28, 0, "STEALTH"},
 		{28, 0, "UNUSED2"},			// BOOM compatibility
-		{29, 0, "TRANSLUC25"},
-		{29, 0, "UNUSED3"},			// BOOM compatibility
-		{30, 0, "TRANSLUC50"},
-		{(29<<8)|30, 0, "TRANSLUC75"},
+	    {29, 0, "UNUSED3"},			// BOOM compatibility
 		{30, 0, "UNUSED4"},			// BOOM compatibility
-		{30, 0, "TRANSLUCENT"},		// BOOM compatibility?
-		{31, 0, "RESERVED"},
+		{28, 0, "TOUCHY"},			// UNUSED FOR NOW
+		{29, 0, "BOUNCES"},			// UNUSED FOR NOW
+		{30, 0, "FRIEND"},
+		{31, 0, "TRANSLUCENT"},		// BOOM compatibility
+	    {30, 0, "STEALTH"},
+
+		// TRANSLUCENT... HACKY BUT HEH.
+		{0, 2, "TRANSLUC25"},
+		{1, 2, "TRANSLUC50"},
+		{2, 2, "TRANSLUC75"},
+
 
 		// Names for flags2
 		{ 0, 1, "LOGRAV"},
@@ -881,6 +903,8 @@ static int PatchThing (int thingy)
 		{31, 1, "REFLECTIVE"}
 	};
 	int result;
+	int oldflags;
+	bool hadTranslucency = false;
 	mobjinfo_t *info, dummy;
 	int *ednum, dummyed;
 	bool hadHeight = false;
@@ -900,6 +924,8 @@ static int PatchThing (int thingy)
 
 		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
 	}
+
+	oldflags = info->flags;
 
 	while ((result = GetLine ()) == 1) {
 
@@ -965,7 +991,9 @@ static int PatchThing (int thingy)
 			{
 				if (stricmp(Line1, "Translucency") == 0)
 				{
-					info->translucency = 0x10000; // UNSUPPORTED
+					info->translucency = val;
+					hadTranslucency = true;
+
 				}
 				else if (stricmp(Line1, "Dropped item") == 0)
 				{
@@ -985,14 +1013,12 @@ static int PatchThing (int thingy)
 				else if (stricmp(Line1, "Gib health") == 0)
 				{
 					gibhealth = true;
-					if (val > 0)
-					{
-						info->gibhealth = -val;
-					} else
-					{
-						info->gibhealth = val;
-					}
+					info->gibhealth = val;
 
+					// Special hack: DEH values are always positive, and since a gib is always negative,
+					// a positive value will thus become negative.
+					if (info->gibhealth > 0)
+						info->gibhealth = -info->gibhealth;		
 				}
 			}
 		}
@@ -1016,59 +1042,81 @@ static int PatchThing (int thingy)
 		{
 			if (!stricmp(Line1, "Bits"))
 				{
-					int value = 0, value2 = 0;
-					BOOL vchanged = false, v2changed = false;
+					int value[4] = {0, 0, 0};
+				    bool vchanged[4] = {false, false, false};
 					char* strval;
 
-					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-					     strval = NULL)
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r")); strval = NULL)
 					{
-						size_t iy;
-
 						if (IsNum(strval))
 						{
 							// Force the top 4 bits to 0 so that the user is forced
 							// to use the mnemonics to change them.
-							value |= (atoi(strval) & 0x0fffffff);
-							vchanged = true;
+
+							// I have no idea why everyone insists on using strtol here
+						    // even though it fails dismally if a value is parsed where
+						    // the highest bit it set. Do people really use negative
+						    // values here? Let's better be safe and check both.
+						    if (strchr(strval, '-'))
+							    value[0] |= (atoi(strval) & 0x0fffffff);
+						    else
+							    value[0] |= (atoi(strval) & 0x0fffffff);
+							vchanged[0] = true;
 						}
 						else
 						{
-							for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
+						    size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
 							{
-								if (!stricmp(strval, bitnames[iy].name))
+								if (!stricmp(strval, bitnames[i].Name))
 								{
-									if (bitnames[iy].whichflags)
-									{
-										v2changed = true;
-										if (bitnames[iy].bit & 0xff00)
-											value2 |= 1 << (bitnames[iy].bit >> 8);
-										value2 |= 1 << (bitnames[iy].bit & 0xff);
-									}
-									else
-									{
-										vchanged = true;
-										if (bitnames[iy].bit & 0xff00)
-											value |= 1 << (bitnames[iy].bit >> 8);
-										value |= 1 << (bitnames[iy].bit & 0xff);
-									}
+									vchanged[bitnames[i].WhichFlags] = true;
+									value[bitnames[i].WhichFlags] |= 1 << (bitnames[i].Bit);	
 									break;
 								}
 							}
-							if (iy >= ARRAY_LENGTH(bitnames))
+
+							if (i == ARRAY_LENGTH(bitnames))
 								DPrintf("Unknown bit mnemonic %s\n", strval);
 						}
 					}
-					if (vchanged)
+					if (vchanged[0])
 					{
-						info->flags = value;
-						// Bit flags are no longer used to specify translucency.
-						// This is just a temporary hack.
-						if (info->flags & 0x60000000)
-							info->translucency = FRACUNIT;
+						// !!!!!! FIXME !!!!!!!
+						// GROSS HACK TO REMOVE THE TRANSLATION WITH TRANSLUCENT PROPERTY!
+						// There's a huge bug that doesn't scale properly the texture after its translation, resulting in 
+						// super weird sprites...
+						if (value[0] & MF_TRANSLATION)
+						    value[0] &= ~MF_TRANSLATION;
+
+					    if (value[0] & MF_TRANSLUCENT)
+						{
+							info->translucency = TRANSLUC50; // Correct value should be 0.66 (BOOM)...
+						    value[0] &= ~MF_TRANSLUCENT;	
+							hadTranslucency = true;
+						}
+
+						info->flags = value[0];
 					}
-					if (v2changed)
-						info->flags2 = value2;
+				    if (vchanged[1])
+				    {
+					    info->flags2 = value[1];
+				    }
+				    if (vchanged[2])
+				    {
+						if (value[2] & 7)
+					    {
+						    hadTranslucency = true;
+
+						    if (value[2] & 1)
+							    info->translucency = TRANSLUC25;
+						    else if (value[2] & 2)
+							    info->translucency = TRANSLUC50;
+						    else if (value[2] & 4)
+							    info->translucency = TRANSLUC75;
+					    }
+					}		
 				}
 			else if (stricmp(Line1, "ID #") == 0)
 			{
