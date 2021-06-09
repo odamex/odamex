@@ -341,77 +341,35 @@ namespace
 	template <>
 	void MustGet<int>(OScanner& os)
 	{
-	    if (!os.scan())
-	    {
-		    I_Error("Missing integer (unexpected end of file).");
-	    }
-	
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		if (IsNum(str.c_str()) == false)
-		{
-			I_Error("Missing integer (unexpected end of file).");
-		}
+	    os.mustGetInt();
 	}
 
 	// ensure token is float
 	template <>
 	void MustGet<float>(OScanner& os)
 	{
-	    if (!os.scan())
-	    {
-		    I_Error("Missing floating-point number (unexpected end of file).");
-	    }
-	
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		if (IsRealNum(str.c_str()) == false)
-		{
-			I_Error("Missing floating-point number (unexpected end of file).");
-		}
+	    os.mustGetFloat();
 	}
 
 	// ensure token is bool
 	template <>
 	void MustGet<bool>(OScanner& os)
     {
-	    MustGetString(os);
-	    if (!UpperCompareToken(os, "true") && !UpperCompareToken(os, "false"))
-	    {
-		    I_Error("Missing boolean (unexpected end of file).");
-	    }
+	    os.mustGetBool();
     }
 
 	// ensure token is std::string
 	template <>
     void MustGet<std::string>(OScanner& os)
     {
-	    if (!os.scan())
-	    {
-		    I_Error("Missing string (unexpected end of file).");
-	    }
+	    os.mustGetString();
     }
 
     // ensure token is OLumpName
     template <>
     void MustGet<OLumpName>(OScanner& os)
     {
-	    if (!os.scan())
-	    {
-		    I_Error("Missing lump name (unexpected end of file).");
-	    }
+	    os.mustGetString();
 
 		if (os.getToken().length() > 8)
 	    {
@@ -424,7 +382,7 @@ namespace
 
 	bool IsIdentifier(OScanner& os)
 	{
-		const char ch = os.getToken()[0];
+		const char &ch = os.getToken()[0];
 	
 		return (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
 	}
