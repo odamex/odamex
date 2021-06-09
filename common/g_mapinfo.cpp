@@ -757,7 +757,7 @@ namespace
 		level_pwad_info_t defaultinfo;
 		SetLevelDefaults(&defaultinfo);
 	
-		const char* buffer = (char*)W_CacheLumpNum(lump, PU_STATIC);
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 	
 		OScannerConfig config = {
 		    lumpname, // lumpName
