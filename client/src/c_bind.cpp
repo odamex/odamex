@@ -195,8 +195,7 @@ void OKeyBindings::UnbindKey(const char* key)
 	int keycode = I_GetKeyFromName(keyname);
 
 	if (keycode)
-		Binds.erase(*keyname.c_str());
-
+		Binds.erase(keycode);
 	else
 		Printf(PRINT_WARNING, "Unknown key %s\n", C_QuoteString(key).c_str());
 }
