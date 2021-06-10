@@ -1391,7 +1391,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
     tplayer = target->player;
 
-	if (!(target->flags & MF_SHOOTABLE))
+	if (!(target->flags & (MF_SHOOTABLE | MF_BOUNCES)))
     {
 		return; // shouldn't happen...
     }

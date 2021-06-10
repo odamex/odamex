@@ -400,7 +400,7 @@ BOOL PIT_CheckLine (line_t *ld)
 		return false;
 	}
 
-    if (!(tmthing->flags & MF_MISSILE) || (ld->flags & ML_BLOCKEVERYTHING))
+    if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
 		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
 			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS)) {	// block monsters only
@@ -549,7 +549,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 	}
 
 	// missiles can hit other things
-	if (tmthing->flags & MF_MISSILE)
+	if (tmthing->flags & MF_MISSILE || (tmthing->flags & MF_BOUNCES 
+		&& !(tmthing->flags & MF_SOLID)))
 	{
 		// see if it went over / under
 		if (tmthing->z > thing->z + thing->height)
@@ -1111,6 +1112,12 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 		{ // Can't move over a dropoff unless it's been blasted
 			return false;
 		}
+
+		bool sentient = thing->health > 0 && thing->info->seestate;
+		if (thing->flags & MF_BOUNCES && // killough 8/13/98
+		    !(thing->flags & (MF_MISSILE | MF_NOGRAVITY)) && !sentient &&
+		    tmfloorz - thing->z > 16 * FRACUNIT)
+			return false; // too big a step up for bouncers under gravity
 
 		// killough 11/98: prevent falling objects from going up too many steps
 		if (co_zdoomphys && thing->oflags & MFO_FALLING && tmfloorz - testz >
@@ -2746,12 +2753,14 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 //
 static BOOL PIT_DoomRadiusAttack(AActor* thing)
 {
-	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (thing->type == MT_CYBORG || thing->type == MT_SPIDER)
+	if (bombspot->flags & MF_BOUNCES
+	        ? thing->type == MT_CYBORG && bombsource->type == MT_CYBORG
+	        : thing->type == MT_CYBORG || thing->type == MT_SPIDER)
 		return true;
 
 	fixed_t dx = abs(thing->x - bombspot->x);

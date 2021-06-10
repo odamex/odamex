@@ -1148,6 +1148,15 @@ static void P_ApplyXYFriction(AActor* mo)
 		return;
 	}
 
+  // killough 8/11/98: add bouncers
+	// killough 9/15/98: add objects falling off ledges
+	// killough 11/98: only include bouncers hanging off ledges
+	if (((mo->flags & MF_BOUNCES && mo->z > mo->dropoffz) || mo->flags & MF_CORPSE) &&
+	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
+	     mo->momy < -FRACUNIT / 4) &&
+	    mo->floorz != mo->subsector->sector->floorheight)
+		return; // do not stop sliding if halfway off a step with some momentum
+
 	// keep corpses sliding if halfway off a step with some momentum
 	if ((mo->flags & MF_CORPSE) && (abs(mo->momx) > FRACUNIT/4 || abs(mo->momy) > FRACUNIT/4))
 	{
@@ -1586,6 +1595,75 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 	}
 }
 
+void P_ApplyBouncyPhysics(AActor *mo)
+{
+	bool sentient = mo->health > 0 && mo->info->seestate;
+
+	if (mo->flags & MF_BOUNCES && mo->momz)
+	{
+		mo->z += mo->momz;
+		if (mo->z <= mo->floorz) // bounce off floors
+		{
+			mo->z = mo->floorz;
+			if (mo->momz < 0)
+			{
+				mo->momz = -mo->momz;
+				if (!(mo->flags & MF_NOGRAVITY)) // bounce back with decay
+				{
+					mo->momz = mo->flags & MF_FLOAT
+					               ? // floaters fall slowly
+					               mo->flags & MF_DROPOFF
+					                   ? // DROPOFF indicates rate
+					                   FixedMul(mo->momz, (fixed_t)(FRACUNIT * .85))
+					                   : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .70))
+					               : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .45));
+
+					// Bring it to rest below a certain speed
+					if (abs(mo->momz) <= mo->info->mass * (GRAVITY * 4 / 256))
+						mo->momz = 0;
+				}
+				return;
+			}
+		}
+		else if (mo->z >= mo->ceilingz - mo->height) // bounce off ceilings
+		{
+			mo->z = mo->ceilingz - mo->height;
+			if (mo->momz > 0)
+			{
+				if (mo->subsector->sector->ceilingpic != skyflatnum)
+					mo->momz = -mo->momz; // always bounce off non-sky ceiling
+				else if (mo->flags & MF_MISSILE)
+					mo->Destroy(); // missiles don't bounce off skies
+				else if (mo->flags & MF_NOGRAVITY)
+					mo->momz = -mo->momz; // bounce unless under gravity
+
+				return;
+			}
+		}
+		else
+		{
+			if (!(mo->flags & MF_NOGRAVITY)) // free-fall under gravity
+				mo->momz -= mo->info->mass * (GRAVITY / 256);
+			return;
+		}
+
+		// came to a stop
+		mo->momz = 0;
+
+		if (mo->flags & MF_MISSILE)
+		{
+			if (ceilingline && ceilingline->backsector &&
+			    ceilingline->backsector->ceilingpic == skyflatnum &&
+			    mo->z > ceilingline->backsector->ceilingheight)
+				mo->Destroy();
+			else
+				P_ExplodeMissile(mo);
+		}
+
+
+		return;
+	}
+}
 
 //
 // P_ZMovement
@@ -1598,6 +1676,12 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 void P_ZMovement(AActor *mo)
 {
 	fixed_t oldz = mo->z;
+
+	if (mo->flags & MF_BOUNCES && mo->momz)
+	{
+		P_ApplyBouncyPhysics(mo);
+		return;
+	}
 
 	if (mo->player)
 		P_PlayerSmoothStepUp(mo);
@@ -1627,6 +1711,8 @@ void P_ZMovement(AActor *mo)
 
 	if (!P_ClipMovementToCeiling(mo))
 		return;
+
+
 
 	// [AM] Handle actor specials that deal with fake floors and ceilings.
 	P_ActorFakeSectorTriggers(mo, oldz);
