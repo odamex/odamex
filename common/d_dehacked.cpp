@@ -1057,10 +1057,7 @@ static int PatchThing (int thingy)
 						    // even though it fails dismally if a value is parsed where
 						    // the highest bit it set. Do people really use negative
 						    // values here? Let's better be safe and check both.
-						    if (strchr(strval, '-'))
-							    value[0] |= (atoi(strval) & 0x0fffffff);
-						    else
-							    value[0] |= (atoi(strval) & 0x0fffffff);
+							value[0] |= atoi(strval);
 							vchanged[0] = true;
 						}
 						else

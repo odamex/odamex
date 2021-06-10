@@ -1287,9 +1287,9 @@ void P_ApplyTorque (AActor *mo)
 
 	// If any momentum, mark object as 'falling' using engine-internal flags
 	if (mo->momx | mo->momy)
-		mo->flags |= MFO_FALLING;
+		mo->oflags |= MFO_FALLING;
 	else  // Clear the engine-internal flag indicating falling object.
-		mo->flags &= ~MFO_FALLING;
+		mo->oflags &= ~MFO_FALLING;
 
 	// If the object has been moving, step up the gear.
 	// This helps reach equilibrium and avoid oscillations.

@@ -205,9 +205,8 @@ typedef enum
     // If 0x4 0x8 or 0xc, use a translation table for player colormaps
     MF_TRANSLATION	= 0xc000000,
 
-	//MF_UNMORPHED	= 0x10000000,	// [RH] Actor is the unmorphed version of something else
-    MF_SPECTATOR	= 0x20000000,	// GhostlyDeath -- thing is/was a spectator and can't be seen!
-	//MF_ICECORPSE	= 0x80000000,	// a frozen corpse (for blasting) [RH] was 0x800000
+	MF_BOUNCES		= BIT(29),
+    MF_SPECTATOR	= 0x80000000,	// GhostlyDeath -- thing is/was a spectator and can't be seen! // NEEDS TO BE MOVED TO OFLAGS!
 
 // --- mobj.flags2 ---
 
