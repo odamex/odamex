@@ -118,9 +118,9 @@ static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
  * @brief Common code for activating a line.
  */
 static void ActivateLine(AActor* mo, line_s* line, byte side,
-                         LineActivationType activationType, byte special = 0,
-                         int arg0 = 0, int arg1 = 0, int arg2 = 0, int arg3 = 0,
-                         int arg4 = 0)
+                         LineActivationType activationType, const bool bossaction,
+                         byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
+                         int arg3 = 0, int arg4 = 0)
 {
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
@@ -147,11 +147,11 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo);
+			P_CrossSpecialLine(line - lines, side, mo, bossaction);
 		break;
 	case LineUse:
 		if (line)
-			P_UseSpecialLine(mo, line, side);
+			P_UseSpecialLine(mo, line, side, bossaction);
 		break;
 	case LineShoot:
 		if (line)
@@ -1264,11 +1264,12 @@ static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 	byte side = msg->side();
 	LineActivationType activationType =
 	    static_cast<LineActivationType>(msg->activation_type());
+	const bool bossaction = msg->bossaction();
 
 	if (!::lines || linenum >= ::numlines || linenum < 0)
 		return;
 
-	ActivateLine(mo, &::lines[linenum], side, activationType);
+	ActivateLine(mo, &::lines[linenum], side, activationType, bossaction);
 }
 
 //
@@ -2244,7 +2245,8 @@ static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 	if (linenum != -1)
 		line = &::lines[linenum];
 
-	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
+	ActivateLine(activator, line, 0, LineACS, false, special, arg0, arg1, arg2, arg3,
+	             arg4);
 }
 
 static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)

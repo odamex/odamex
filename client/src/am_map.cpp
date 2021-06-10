@@ -737,11 +737,12 @@ void AM_Start()
 
 	stopped = false;
 
+	// todo: rather than call this every time automap is opened, do this once on level init
 	static char lastmap[8] = "";
-	if (strncmp(lastmap, level.mapname, 8))
+	if (level.mapname != lastmap)
 	{
 		AM_LevelInit();
-		strncpy(lastmap, level.mapname, 8);
+		strncpy(lastmap, level.mapname.c_str(), 8);
 	}
 
 	AM_initVariables();

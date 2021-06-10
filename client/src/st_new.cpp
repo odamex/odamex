@@ -578,6 +578,8 @@ void drawProtos()
 	if (protos.size() == 0)
 		return;
 
+	V_SetFont("DIGFONT");
+
 	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
@@ -617,6 +619,8 @@ void drawProtos()
 			y += V_StringHeight(it->data.c_str());
 		}
 	}
+
+	V_SetFont("SMALLFONT");
 }
 
 // [AM] Draw netdemo state
@@ -632,11 +636,24 @@ void drawNetdemo() {
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
+	V_SetFont("DIGFONT");
+
+	int color = CR_GOLD;
+	if (netdemo.isPlaying())
+	{
+		color = CR_GREEN;
+	}
+
+	// Dim the background.
+	hud::Dim(1, 41, 74, 13, ::hud_scale,
+		hud::X_LEFT, hud::Y_BOTTOM,
+		hud::X_LEFT, hud::Y_BOTTOM);
+
 	// Draw demo elapsed time
 	hud::DrawText(2, 47, hud_scale,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::X_LEFT, hud::Y_BOTTOM,
-	              hud::NetdemoElapsed().c_str(), CR_GREY);
+	              hud::NetdemoElapsed().c_str(), color);
 
 	// Draw map number/total
 	hud::DrawText(74, 47, hud_scale,
@@ -644,13 +661,11 @@ void drawNetdemo() {
 	              hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::NetdemoMaps().c_str(), CR_BRICK);
 
+	V_SetFont("SMALLFONT");
+
 	// Draw the bar.
 	// TODO: Once status bar notches have been implemented, put map
 	//       change times in as notches.
-	int color = CR_GOLD;
-	if (netdemo.isPlaying()) {
-		color = CR_GREEN;
-	}
 	ST_DrawBar(color, netdemo.calculateTimeElapsed(), netdemo.calculateTotalTime(),
 	           2 * xscale, I_GetSurfaceHeight() - 46 * yscale, 72 * xscale);
 

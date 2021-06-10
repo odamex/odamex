@@ -164,7 +164,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message, playersingame);
 	MSG_WriteByte(&ml_message, sv_maxclients.asInt());
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	size_t numwads = wadfiles.size();
 	if(numwads > 0xff)numwads = 0xff;

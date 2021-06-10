@@ -1147,7 +1147,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			int side = P_PointOnLineSide (thing->x, thing->y, ld);
 			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld-lines, oldside, thing);
+				P_CrossSpecialLine (ld-lines, oldside, thing, false);
 		}
 	}
 
@@ -2632,7 +2632,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
 
-    P_UseSpecialLine (usething, in->d.line, side);
+    P_UseSpecialLine (usething, in->d.line, side, false);
 
 	//WAS can't use more than one special line in a row
 	//jff 3/21/98 NOW multiple use allowed with enabling line flag

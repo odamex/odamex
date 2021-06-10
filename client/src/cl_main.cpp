@@ -2444,6 +2444,9 @@ void CL_SimulateWorld()
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType) {}
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction)
+{
+}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")

@@ -221,6 +221,7 @@ message ActivateLine
 	uint32 activator_netid = 2;
 	int32 side = 3;
 	int32 activation_type = 4;
+	bool bossaction = 5;
 }
 
 // svc_movingsector
