@@ -1114,7 +1114,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(!mo->player)
 		ok = true;
-	else if (mo->flags & MF_SPECTATOR)      // GhostlyDeath -- Spectating things
+	else if (mo->oflags & MFO_SPECTATOR)      // GhostlyDeath -- Spectating things
 		ok = false;
 	else if(player.mo && mo->player && mo->player->spectator)
 		ok = false;
@@ -1181,7 +1181,7 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 	if (!mo)
 		return false;
 
-	if (mo->flags & MF_SPECTATOR)
+	if (mo->oflags & MFO_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
 		return mo->players_aware.get(p.id);

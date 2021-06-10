@@ -205,11 +205,12 @@ typedef enum
     // If 0x4 0x8 or 0xc, use a translation table for player colormaps
     MF_TRANSLATION	= 0xc000000,
 
-	MF_BOUNCES		= BIT(29),
-    MF_SPECTATOR	= 0x80000000,	// GhostlyDeath -- thing is/was a spectator and can't be seen! // NEEDS TO BE MOVED TO OFLAGS!
+	MF_TOUCHY		= BIT(28),		// MBF - UNUSED FOR NOW
+	MF_BOUNCES		= BIT(29),		// MBF - PARTIAL IMPLEMENTATION
+	MF_FRIEND		= BIT(30),		// MBF - UNUSED FOR NOW
 
-// --- mobj.flags2 ---
-
+	// --- mobj.flags2 ---
+	// Heretic flags
 	MF2_LOGRAV			= BIT(0),	// alternate gravity setting
 	MF2_WINDTHRUST		= BIT(1),	// gets pushed around by the wind
 										// specials
@@ -253,7 +254,8 @@ typedef enum
 	// --- mobj.oflags ---
 	// Odamex-specific flags
 	MFO_NOSNAPZ			= BIT(0),		// ignore snapshot z this tic
-	MFO_FALLING			= BIT(1),		// [INTERNAL] for falling
+	MFO_SPECTATOR		= BIT(1),		// GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING			= BIT(2),		// [INTERNAL] for falling
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A

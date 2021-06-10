@@ -666,7 +666,7 @@ void AActor::RunThink ()
     }
 
 	// GhostlyDeath -- Was a spectator but now it's nothing!
-	if ((this->flags & MF_SPECTATOR ) && !player)
+	if ((this->oflags & MFO_SPECTATOR ) && !player)
 	{
 		this->Destroy();
 		return;
