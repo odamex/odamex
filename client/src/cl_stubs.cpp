@@ -61,8 +61,6 @@ void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
 void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
-void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker) {}
-
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor *special, player_t *player) {}
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
