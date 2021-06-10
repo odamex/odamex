@@ -1965,8 +1965,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
-		cl->majorversion = cl_major;
-		cl->minorversion = cl_minor;
+		cl->packedversion = GameVer;
 
 		// Major and minor versions must be identical, client is allowed
 		// to have a newer patch.
@@ -2011,19 +2010,19 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
             std::endl;
 
 		// GhostlyDeath -- Check to see if it's older or not
-		if (cl->majorversion < sv_major)
+		if (cl_major < sv_major)
 		{
 			older = true;
 		}
-		else if (cl->majorversion > sv_major)
+		else if (cl_major > sv_major)
 		{
 			older = false;
 		}
 		else
 		{
-			if (cl->minorversion < sv_minor)
+			if (cl_minor < sv_minor)
 				older = true;
-			else if (cl->minorversion > sv_minor)
+			else if (cl_minor > sv_minor)
 				older = false;
 		}
 
@@ -5267,6 +5266,11 @@ void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage)
 		MSG_WriteUnVarint(&cl->reliablebuf, player->mo->netid);
 		MSG_WriteShort(&cl->reliablebuf, healthDamage);
 		MSG_WriteByte(&cl->reliablebuf, armorDamage);
+		if (player->client.packedversion > MAKEVER(0, 9, 2))
+		{
+			MSG_WriteVarint(&cl->reliablebuf, player->health);
+			MSG_WriteVarint(&cl->reliablebuf, player->armorpoints);
+		}
 	}
 }
 

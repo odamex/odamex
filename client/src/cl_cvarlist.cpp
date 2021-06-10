@@ -484,6 +484,12 @@ CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
 CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(hud_targethealth_debug, "0",
+     "Show health of friendly players you're aiming at - this feature has known "
+     "shortcomings with inaccurate health values and will be fixed in a future version "
+     "of Odamex, enable at your peril",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down Timer\n// 2: Count-up timer",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -549,6 +555,8 @@ CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 22050.0f, 192000.0f)
 
+// [AM] If you bump the maximum, change the NUM_CHANNELS define to match,
+//      otherwise many things will break.
 CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
                      CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f,
                      32.0f)

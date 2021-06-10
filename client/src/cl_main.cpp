@@ -2135,14 +2135,16 @@ void CL_Say()
 	}
 
 	const char* name = player.userinfo.netname.c_str();
+	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
+	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
+
 
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name, &message[4]);
+			Printf(publicmsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message);
+			Printf(publicmsg, "%s: %s\n", name, message);
 
 		if (show_messages && !filtermessage)
 		{	
@@ -2153,11 +2155,11 @@ void CL_Say()
 	else if (message_visibility == 1)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(publicteammsg, "%s: %s\n", name, message);
 
-		if (show_messages && cl_chatsounds)
+		if (!filtermessage && show_messages && cl_chatsounds)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
@@ -2798,6 +2800,13 @@ void CL_DamagePlayer(void)
 	uint32_t netid = MSG_ReadUnVarint();
 	int healthDamage = MSG_ReadShort();
 	int armorDamage = MSG_ReadByte();
+	int health = MININT;
+	int armorpoints = MININT;
+	if (::gameversion > MAKEVER(0, 9, 2))
+	{
+		health = MSG_ReadVarint();
+		armorpoints = MSG_ReadVarint();
+	}
 
 	AActor* actor = P_FindThingById(netid);
 
@@ -2805,9 +2814,22 @@ void CL_DamagePlayer(void)
 		return;
 
 	player_t *p = actor->player;
-	p->health -= healthDamage;
+
+	if (::gameversion > MAKEVER(0, 9, 2))
+	{
+		// [AM] Workaround behavior - health and armor can only lower, not
+		//      raise, which works around out-of-order packets.
+		p->health = MIN(p->health, health);
+		p->armorpoints = MIN(p->armorpoints, armorpoints);
+	}
+	else
+	{
+		// [AM] Original behavior, if health is desynced this can lead to zombies.
+		p->health -= healthDamage;
+		p->armorpoints -= armorDamage;
+	}
+
 	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
 
 	if (p->health < 0)
 		p->health = 0;
