@@ -3794,8 +3794,6 @@ void SV_Cheat(player_t &player)
 
 		if (player.cheats != oldCheats)
 		{
-			Printf_Bold("SENDING CHEATS of value %d!\n", player.cheats);
-
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
 				client_t* cl = &it->client;
