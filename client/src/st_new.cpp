@@ -52,6 +52,7 @@
 #include "g_levelstate.h"
 #include "g_gametype.h"
 #include "c_bind.h"
+#include "c_dispatch.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -809,6 +810,177 @@ void OdamexHUD() {
 	hud::drawGametype();
 }
 
+struct drawToast_t
+{
+	int tic;
+	int pid_highlight;
+	std::string left;
+	std::string icon;
+	std::string right;
+};
+
+typedef std::vector<drawToast_t> drawToasts_t;
+
+drawToasts_t g_Toasts;
+
+static const char* ToastIcon(const int icon)
+{
+	switch (icon)
+	{
+	default:
+	case MOD_UNKNOWN:
+		return "???";
+	case MOD_FIST:
+		return "FIST";
+	case MOD_PISTOL:
+		return "PSTL";
+	case MOD_SHOTGUN:
+		return "SG";
+	case MOD_CHAINGUN:
+		return "CG";
+	case MOD_ROCKET:
+		return "RKT";
+	case MOD_R_SPLASH:
+		return "RKTS";
+	case MOD_PLASMARIFLE:
+		return "PR";
+	case MOD_BFG_BOOM:
+		return "BFG";
+	case MOD_BFG_SPLASH:
+		return "BFGS";
+	case MOD_CHAINSAW:
+		return "SAW";
+	case MOD_SSHOTGUN:
+		return "SSG";
+	case MOD_WATER:
+		return "WATER";
+	case MOD_SLIME:
+		return "SLIME";
+	case MOD_LAVA:
+		return "LAVA";
+	case MOD_CRUSH:
+		return "CRUSH";
+	case MOD_TELEFRAG:
+		return "TELE";
+	case MOD_FALLING:
+		return "FALL";
+	case MOD_SUICIDE:
+		return "BYE";
+	case MOD_BARREL:
+		return "BOOM";
+	case MOD_EXIT:
+		return "EXIT";
+	case MOD_SPLASH:
+		return "SPLSH";
+	case MOD_HIT:
+		return "HIT";
+	case MOD_RAILGUN:
+		return "RG";
+	}
+}
+
+void DrawToasts()
+{
+	V_SetFont("DIGFONT");
+
+	std::string buffer;
+	int y = 0;
+
+	const float oldtrans = ::hud_transparency;
+	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
+	{
+		// Only render the message if it's less than 2 seconds in.
+		int tics = ::gametic - it->tic;
+		if (tics < TICRATE * 2)
+		{
+			::hud_transparency.ForceSet(1.0);
+		}
+		else if (tics < TICRATE * 3)
+		{
+			tics %= TICRATE;
+			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			::hud_transparency.ForceSet(trans);
+		}
+		else
+		{
+			::hud_transparency.ForceSet(0.0);
+		}
+
+		StrFormat(buffer, "%s %s %s", it->left.c_str(), it->icon.c_str(),
+		          it->right.c_str());
+		hud::DrawText(0, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
+		              buffer.c_str(), CR_GREY);
+		y += V_LineHeight();
+	}
+	::hud_transparency.ForceSet(oldtrans);
+
+	V_SetFont("SMALLFONT");
+}
+
+void ToastTicker()
+{
+	// Remove stale toasts in a loop.
+	drawToasts_t::const_iterator it = g_Toasts.begin();
+	while (it != g_Toasts.end())
+	{
+		int tics = ::gametic - it->tic;
+
+		if (tics >= TICRATE * 3)
+		{
+			it = g_Toasts.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+}
+
+void PushToast(const toast_t& toast)
+{
+	std::string buffer;
+
+	drawToast_t drawToast;
+	drawToast.tic = ::gametic;
+	drawToast.pid_highlight = -1;
+
+	if (toast.flags & toast_t::LEFT)
+	{
+		buffer += toast.left + " ";
+	}
+	if (toast.flags & toast_t::LEFT_PLUS)
+	{
+		buffer += "+ " + toast.left_plus + " ";
+	}
+	if (!buffer.empty())
+	{
+		buffer.resize(buffer.size() - 1);
+		drawToast.left = buffer;
+	}
+
+	if (toast.flags & toast_t::ICON)
+	{
+		drawToast.icon = ToastIcon(toast.icon);
+	}
+
+	buffer.clear();
+	if (toast.flags & toast_t::RIGHT)
+	{
+		buffer += toast.right + " ";
+	}
+	if (toast.flags & toast_t::RIGHT_PLUS)
+	{
+		buffer += "+ " + toast.right_plus + " ";
+	}
+	if (!buffer.empty())
+	{
+		buffer.resize(buffer.size() - 1);
+		drawToast.right = buffer;
+	}
+
+	g_Toasts.push_back(drawToast);
+}
+
 static std::string WinToColorString(const WinInfo& win)
 {
 	std::string buf;
@@ -1243,8 +1415,6 @@ void DoomHUD()
 }
 
 }
-
-#include "c_dispatch.h"
 
 BEGIN_COMMAND(netprotoup)
 {

@@ -636,6 +636,18 @@ message MaplistIndex
 	int32 this_index = 3;
 }
 
+// svc_toast
+message Toast
+{
+	uint32 flags = 1;
+	string left = 2;
+	string right = 3;
+	sint32 icon = 4;
+	sint32 pid_highlight = 5;
+	string left_plus = 6;
+	string right_plus = 7;
+}
+
 // svc_netdemocap
 message NetdemoCap
 {

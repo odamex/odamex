@@ -1027,7 +1027,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	uint32_t tgtid = msg->target().netid();
 	uint32_t infid = msg->inflictor_netid();
 	int health = msg->health();
-	::MeansOfDeath = msg->mod();
+	//::MeansOfDeath = msg->mod();
 	bool joinkill = msg->joinkill();
 	int lives = msg->lives();
 
@@ -2502,6 +2502,20 @@ static void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
 	}
 }
 
+static void CL_Toast(const odaproto::svc::Toast* msg)
+{
+	toast_t toast;
+	toast.flags = msg->flags();
+	toast.left = msg->left();
+	toast.right = msg->right();
+	toast.icon = msg->icon();
+	toast.pid_highlight = msg->pid_highlight();
+	toast.left_plus = msg->left_plus();
+	toast.right_plus = msg->right_plus();
+
+	COM_PushToast(toast);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2734,6 +2748,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist, CL_Maplist, odaproto::svc::Maplist);
 		SV_MSG(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
+		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
