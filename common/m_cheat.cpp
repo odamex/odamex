@@ -62,7 +62,7 @@ bool CHEAT_AutoMap(cheatseq_t* cheat)
 {
 	if (automapactive)
 	{
-		if (!multiplayer || sv_gametype == GM_COOP)
+		if (!multiplayer || G_IsCoopGame())
 			am_cheating = (am_cheating + 1) % 3;
 
 		return true;
@@ -120,9 +120,6 @@ bool CHEAT_SetGeneric(cheatseq_t* cheat)
 	if (!CHEAT_AreCheatsEnabled())
 		return true;
 
-	//if (multiplayer)
-	// return true;
-
 	if (cheat->Args[0] == CHT_NOCLIP)
 	{
 		if (cheat->Args[1] == 0 && gamemode != shareware && gamemode != registered &&
@@ -179,7 +176,7 @@ BEGIN_COMMAND(tntem)
 	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	if (multiplayer && sv_gametype != GM_COOP)
+	if (multiplayer && !G_IsCoopGame())
 		return;
 
 	CHEAT_DoCheat(&consoleplayer(), CHT_MASSACRE);
@@ -192,10 +189,7 @@ BEGIN_COMMAND(mdk)
 	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	if (multiplayer && sv_gametype != GM_COOP)
-		return;
-
-	if (player->spectator)
+	if (multiplayer && !G_IsCoopGame())
 		return;
 
 	CHEAT_DoCheat(&consoleplayer(), CHT_MDK);
@@ -238,9 +232,6 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 {
 	const char *msg = "";
 	char msgbuild[32];
-
-	/*if (!serverside)
-		return;*/
 
 	if (player->health <= 0 || !player)
 		return;
@@ -403,11 +394,11 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 			if (multiplayer && !player->client.allow_rcon)
 				return;
 
-			// Never enable that in DM, are you crazy?
-			if (!G_IsCoopGame())
+			if (player->spectator)
 			    return;
 
-			if (player->spectator)
+			// Never enable that in PvP, are you crazy?
+			if (!G_IsCoopGame())
 			    return;
 
 			if (serverside)
@@ -416,10 +407,10 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 			        player->mo, player->mo->angle, 8192 * FRACUNIT,
 			        P_AimLineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT),
 			        10000);
-		    }
 
-			if (multiplayer)
-				msg = "MDK";
+				if (multiplayer)
+					msg = "MDK";
+		    }
 		}
 	    break;
 
