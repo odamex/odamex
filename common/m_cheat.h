@@ -77,6 +77,7 @@ enum ECheatFlags
 	CHT_CHASECAM,
 	CHT_FLY,
 	CHT_BUDDHA,
+	CHT_MDK,	// He has revolver eyes...
 };
 
 // [RH] Functions that actually perform the cheating

@@ -174,7 +174,7 @@ bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 	return false;
 }
 
-BEGIN_COMMAND(mdk)
+BEGIN_COMMAND(tntem)
 {
 	if (!CHEAT_AreCheatsEnabled())
 		return;
@@ -184,6 +184,22 @@ BEGIN_COMMAND(mdk)
 
 	CHEAT_DoCheat(&consoleplayer(), CHT_MASSACRE);
 	CL_SendCheat(CHT_MASSACRE);
+}
+END_COMMAND(tntem)
+
+BEGIN_COMMAND(mdk)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (multiplayer && sv_gametype != GM_COOP)
+		return;
+
+	if (player->spectator)
+		return;
+
+	CHEAT_DoCheat(&consoleplayer(), CHT_MDK);
+	CL_SendCheat(CHT_MDK);
 }
 END_COMMAND(mdk)
 
@@ -222,6 +238,9 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 {
 	const char *msg = "";
 	char msgbuild[32];
+
+	/*if (!serverside)
+		return;*/
 
 	if (player->health <= 0 || !player)
 		return;
@@ -379,6 +398,31 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 			}
 			break;
 
+		case CHT_MDK: 
+		{
+			if (multiplayer && !player->client.allow_rcon)
+				return;
+
+			// Never enable that in DM, are you crazy?
+			if (!G_IsCoopGame())
+			    return;
+
+			if (player->spectator)
+			    return;
+
+			if (serverside)
+		    {
+			    P_LineAttack(
+			        player->mo, player->mo->angle, 8192 * FRACUNIT,
+			        P_AimLineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT),
+			        10000);
+		    }
+
+			if (multiplayer)
+				msg = "MDK";
+		}
+	    break;
+
 		case CHT_BUDDHA: 
 		{
 		        player->cheats ^= CF_BUDDHA;
@@ -389,8 +433,12 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 
 	if (!silentmsg)
 	{
-			if (player == &consoleplayer())
+		if (player == &consoleplayer())
+		{
+			if (msg != "")
 				Printf("%s\n", msg);
+		}
+				
 			
 #ifdef SERVER_APP
 			SV_BroadcastPrintfButPlayer(PRINT_HIGH, player->id, "%s is a cheater: %s\n",
