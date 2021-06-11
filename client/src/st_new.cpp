@@ -920,7 +920,7 @@ void DrawToasts()
 void ToastTicker()
 {
 	// Remove stale toasts in a loop.
-	drawToasts_t::const_iterator it = g_Toasts.begin();
+	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
 		int tics = ::gametic - it->tic;
