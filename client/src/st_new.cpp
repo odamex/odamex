@@ -950,7 +950,7 @@ void PushToast(const toast_t& toast)
 	}
 	if (toast.flags & toast_t::LEFT_PLUS)
 	{
-		buffer += "+ " + toast.left_plus + " ";
+		buffer += TEXTCOLOR_GOLD "+ " + toast.left_plus + " ";
 	}
 	if (!buffer.empty())
 	{
@@ -970,7 +970,7 @@ void PushToast(const toast_t& toast)
 	}
 	if (toast.flags & toast_t::RIGHT_PLUS)
 	{
-		buffer += "+ " + toast.right_plus + " ";
+		buffer += TEXTCOLOR_GOLD "+ " + toast.right_plus + " ";
 	}
 	if (!buffer.empty())
 	{
