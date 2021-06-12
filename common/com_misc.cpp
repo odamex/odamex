@@ -25,6 +25,7 @@
 #include "version.h"
 #include "c_dispatch.h"
 #include "m_random.h"
+#include "p_local.h"
 #include "v_textcolors.h"
 
 #if defined(SERVER_APP)
@@ -62,7 +63,7 @@ BEGIN_COMMAND(toast)
 		toast.right = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
 	}
 
-	toast.icon = M_Random() % 12;
+	toast.icon = M_Random() % NUMMODS;
 
 	COM_PushToast(toast);
 }
