@@ -30,7 +30,7 @@ function BuildX64 {
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --config RelWithDebInfo --parallel
+    cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${PSScriptRoot}"
 }
@@ -44,7 +44,7 @@ function BuildX86 {
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --config RelWithDebInfo --parallel
+    cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${PSScriptRoot}"
 }
