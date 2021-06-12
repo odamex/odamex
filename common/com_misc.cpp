@@ -24,6 +24,7 @@
 
 #include "version.h"
 #include "c_dispatch.h"
+#include "m_random.h"
 #include "v_textcolors.h"
 
 #if defined(SERVER_APP)
@@ -48,10 +49,20 @@ BEGIN_COMMAND(toast)
 {
 	toast_t toast;
 
-	toast.flags = toast_t::LEFT | toast_t::LEFT_PLUS | toast_t::RIGHT;
-	toast.left = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
-	toast.left_plus = std::string(TEXTCOLOR_GREEN) + "[GRN]Xenaero";
-	toast.right = std::string(TEXTCOLOR_BRICK) + "[RED]KBlair";
+	toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
+
+	if (M_Random() % 2)
+	{
+		toast.left = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
+		toast.right = std::string(TEXTCOLOR_BRICK) + "[RED]KBlair";
+	}
+	else
+	{
+		toast.left = std::string(TEXTCOLOR_BRICK) + "[RED]KBlair";
+		toast.right = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
+	}
+
+	toast.icon = M_Random() % 12;
 
 	COM_PushToast(toast);
 }
