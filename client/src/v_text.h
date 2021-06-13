@@ -25,6 +25,8 @@
 #ifndef __V_TEXT_H__
 #define __V_TEXT_H__
 
+#include <stdexcept>
+
 #include "doomtype.h"
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
