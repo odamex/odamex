@@ -984,6 +984,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	uint32_t attackerid = msg->inflictorid();
 	int healthDamage = msg->health_damage();
 	int armorDamage = msg->armor_damage();
+	int health = msg->player().health();
+	int armorpoints = msg->player().armorpoints();
 
 	AActor* actor = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -992,9 +994,9 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		return;
 
 	player_t* p = actor->player;
-	p->health -= healthDamage;
+	p->health = MIN(p->health, health);
+	p->armorpoints = MIN(p->armorpoints, armorpoints);
 	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
 
 	if (attacker != NULL)
 		p->attacker = attacker->ptr();

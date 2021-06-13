@@ -483,6 +483,8 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor
 	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
 	msg.set_health_damage(health);
 	msg.set_armor_damage(armor);
+	msg.mutable_player()->set_health(player.health);
+	msg.mutable_player()->set_armorpoints(player.armorpoints);
 
 	return msg;
 }
