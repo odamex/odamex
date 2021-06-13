@@ -149,6 +149,7 @@ message DamagePlayer
 	int32 health_damage = 2;
 	int32 armor_damage = 3;
 	int32 inflictorid = 4;
+	Player player = 5;
 }
 
 // svc_killmobj
