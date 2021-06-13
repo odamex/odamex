@@ -484,6 +484,12 @@ CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
 CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(hud_targethealth_debug, "0",
+     "Show health of friendly players you're aiming at - this feature has known "
+     "shortcomings with inaccurate health values and will be fixed in a future version "
+     "of Odamex, enable at your peril",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down Timer\n// 2: Count-up timer",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
