@@ -1592,8 +1592,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
-		cl->majorversion = cl_major;
-		cl->minorversion = cl_minor;
+		cl->packedversion = GameVer;
 
 		// Major and minor versions must be identical, client is allowed
 		// to have a newer patch.

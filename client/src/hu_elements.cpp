@@ -59,9 +59,10 @@ EXTERN_CVAR (g_lives)
 EXTERN_CVAR (g_rounds)
 EXTERN_CVAR(g_winlimit)
 
-EXTERN_CVAR (hud_targetnames)
-EXTERN_CVAR (sv_allowtargetnames)
-EXTERN_CVAR (hud_timer)
+EXTERN_CVAR(hud_targetnames)
+EXTERN_CVAR(hud_targethealth_debug)
+EXTERN_CVAR(sv_allowtargetnames)
+EXTERN_CVAR(hud_timer)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -1505,11 +1506,7 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
-	if (!consoleplayer().spectator && !sv_allowtargetnames) {
-		// The server doesn't want us to use target names.
-		return;
-	}
-
+	const bool netdemoplaying = ::netdemo.isPlaying() || ::netdemo.isPaused();
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
@@ -1524,6 +1521,13 @@ void EATargets(int x, int y, const float scale,
 
 		if (!P_ActorInFOV(displayplayer().mo, it->mo, 45.0f, 512 * FRACUNIT))
 			continue;
+
+		// The server doesn't want us to see enemy target names.
+		if (!netdemoplaying && !::sv_allowtargetnames && !consoleplayer().spectator &&
+		    !P_AreTeammates(displayplayer(), *it))
+		{
+			continue;
+		}
 
 		// Pick a decent color for the player name.
 		int color;
@@ -1562,20 +1566,50 @@ void EATargets(int x, int y, const float scale,
 
 	// [AM] New ElementArray drawing function
 	byte drawn = 0;
-	for (size_t i = 0;i < Targets.size();i++) {
+	for (size_t i = 0; i < Targets.size(); i++)
+	{
 		// Make sure we're not overrunning our limit.
-		if (limit != 0 && drawn >= limit) {
+		if (limit != 0 && drawn >= limit)
+		{
 			break;
 		}
 
-		if (Targets[i].PlayPtr == &(consoleplayer())) {
+		if (Targets[i].PlayPtr == &(consoleplayer()))
+		{
 			// You're looking at yourself.
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              "You", Targets[i].Color);
-		} else {
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              Targets[i].PlayPtr->userinfo.netname.c_str(),
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",
 			              Targets[i].Color);
+		}
+		else
+		{
+			// Figure out if we should be showing this player's health.
+			std::string nameplate;
+			if (netdemoplaying || (::hud_targethealth_debug &&
+			                       P_AreTeammates(*Targets[i].PlayPtr, consoleplayer())))
+			{
+				int health = Targets[i].PlayPtr->health;
+
+				const char* color;
+				if (health < 25)
+					color = TEXTCOLOR_RED;
+				else if (health < 50)
+					color = TEXTCOLOR_ORANGE;
+				else if (health < 75)
+					color = TEXTCOLOR_GOLD;
+				else if (health < 110)
+					color = TEXTCOLOR_GREEN;
+				else
+					color = TEXTCOLOR_LIGHTBLUE;
+
+				StrFormat(nameplate, "%s %s%d",
+				          Targets[i].PlayPtr->userinfo.netname.c_str(), color, health);
+			}
+			else
+			{
+				nameplate = Targets[i].PlayPtr->userinfo.netname;
+			}
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              nameplate.c_str(), Targets[i].Color);
 		}
 
 		y += 7 + padding;
