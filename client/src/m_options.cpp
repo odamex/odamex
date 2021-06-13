@@ -105,6 +105,7 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
+EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
@@ -538,7 +539,15 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
+static value_t ChatSndType[] = {
+	{ 0.0,			"Disabled" },
+	{ 1.0,			"Enabled" },
+	{ 2.0,			"Teamchat only" }
+};
+
 static float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
+
+EXTERN_CVAR(cl_chatsounds)
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -554,7 +563,9 @@ static menuitem_t SoundItems[] = {
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
 	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
 	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} },
+    { discrete  ,	"Chat sounds"						, {&cl_chatsounds},		{3.0},			{0.0},		{0.0},		{ChatSndType}},
+
  };
 
 menu_t SoundMenu = {
@@ -664,14 +675,15 @@ menu_t NetworkMenu = {
 static value_t WeapSwitch[] = {
 	{ 0.0,			"Never" },
 	{ 1.0,			"Always" },
-	{ 2.0,			"By Preference" }
+	{ 2.0,			"By Preference" },
+    { 3.0,			"Attack Cancels PWO"}
 };
 
 extern const char *weaponnames[];
 
 static menuitem_t WeaponItems[] = {
 	{bricktext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {3.0}, {0.0}, {0.0}, {WeapSwitch}},
+	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {4.0}, {0.0}, {0.0}, {WeapSwitch}},
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{bricktext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
@@ -801,6 +813,7 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Bigger font in HUD",       {&hud_bigfont},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
 	{ discrete, "Display Timer",			{&hud_timer},           {3.0}, {0.0},   {0.0},  {TimerStyles} },
@@ -1991,7 +2004,7 @@ void M_OptResponder (event_t *ev)
 			int numvals;
 
 			if (item->type == svdiscrete &&
-				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
 			numvals = (int)item->b.leftval;
@@ -2119,7 +2132,7 @@ void M_OptResponder (event_t *ev)
 			int numvals;
 
 			if (item->type == svdiscrete &&
-				(multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
 			numvals = (int)item->b.leftval;
@@ -2229,7 +2242,7 @@ void M_OptResponder (event_t *ev)
 				int numvals;
 
 				if (item->type == svdiscrete &&
-				    (multiplayer || demoplayback || demorecording || netdemo.isPlaying()))
+				    (multiplayer || demoplayback || netdemo.isPlaying()))
 					return;
 
 				numvals = (int)item->b.leftval;

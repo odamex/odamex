@@ -172,7 +172,7 @@ next:
 
 	MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 
@@ -350,8 +350,8 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Override other packet types for older enquirer version response
-	if(VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
-	        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+	if (VERMAJ(EqVersion) < VERMAJ(GAMEVER) ||
+	    (VERMAJ(EqVersion) <= VERMAJ(GAMEVER) && VERMIN(EqVersion) < VERMIN(GAMEVER)))
 	{
 		RePacketType = 2;
 	}

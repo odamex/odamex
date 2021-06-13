@@ -35,6 +35,120 @@
 #include "cmdlib.h"
 #include "c_dispatch.h"
 
+/**
+ * @brief Compare two "packed" versions of Odamex to see if they are expected
+ *        to be protocol-compatible.
+ * 
+ * @param server Packed version of the server.
+ * @param client Packed version of the client.
+ * @return 0 if they are compatible, -1 if the server is on the older verison
+ *         1 if the client is on the older version.
+ */
+int VersionCompat(const int server, const int client)
+{
+	// Early-out if versions are identical.
+	if (server == client)
+		return 0;
+
+	int sv_maj, sv_min, sv_pat;
+	BREAKVER(server, sv_maj, sv_min, sv_pat);
+	int cl_maj, cl_min, cl_pat;
+	BREAKVER(client, cl_maj, cl_min, cl_pat);
+
+	// Major and minor versions must be identical, client is allowed
+	// to have a newer patch.
+	if (sv_maj == cl_maj && sv_min == cl_min && sv_pat <= cl_pat)
+	{
+		return 0;
+	}
+
+	// Compare all members of the patch number, even if it's redundant,
+	// because eventually the condition above might change.
+	else if (sv_maj < cl_maj)
+	{
+		return -1;
+	}
+	else if (sv_maj > cl_maj)
+	{
+		return 1;
+	}
+	else if (sv_min < cl_min)
+	{
+		return -1;
+	}
+	else if (sv_min > cl_min)
+	{
+		return 1;
+	}
+	else if (sv_pat < cl_pat)
+	{
+		return -1;
+	}
+	else if (sv_pat > cl_pat)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Generate a version mismatch message.
+ * 
+ * @param server Packed version of the server.
+ * @param client Packed version of the client.
+ * @param email E-mail address of server host.
+ * @return String message, or blank string if compatible.
+*/
+std::string VersionMessage(const int server, const int client, const char* email)
+{
+	std::string rvo, buf;
+
+	int cmp = VersionCompat(server, client);
+	if (!cmp)
+		return rvo;
+
+	int sv_maj, sv_min, sv_pat;
+	BREAKVER(server, sv_maj, sv_min, sv_pat);
+	int cl_maj, cl_min, cl_pat;
+	BREAKVER(client, cl_maj, cl_min, cl_pat);
+
+	StrFormat(
+	    buf,
+	    "Your version of Odamex %d.%d.%d does not match the server version %d.%d.%d.\n",
+	    cl_maj, cl_min, cl_pat, sv_maj, sv_min, sv_pat);
+	rvo += buf;
+
+	if (cmp > 0)
+	{
+		StrFormat(buf,
+		          "Please visit https://odamex.net/ to obtain Odamex %d.%d.%d or "
+		          "newer.\nIf you do not see this version available for download, "
+		          "you are likely attempting to connect to a server running a "
+		          "development version of Odamex.\n",
+		          sv_maj, sv_min, sv_pat);
+		rvo += buf;
+	}
+	else
+	{
+		StrFormat(buf, "Please allow the server admin some time to upgrade.");
+		rvo += buf;
+
+		if (email != NULL)
+		{
+			StrFormat(buf, "  If the problem persists, you can contact them at %s.\n",
+			          email);
+			rvo += buf;
+		}
+		else
+		{
+			rvo += "\n";
+		}
+	}
+
+	return rvo;
+}
+
 typedef std::map<std::string, std::string> source_files_t;
 
 source_files_t &get_source_files()
@@ -58,11 +172,11 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 }
 
 /**
- * @brief Return true if ODAMEX_NO_GIT_VERSION is set.
+ * @brief Return true we have the bare minimum git information
  */
 static bool NoGitVersion()
 {
-#ifdef ODAMEX_NO_GITVER
+#if defined(ODAMEX_NO_GITVER) || !defined(GIT_SHORT_HASH) || !defined(GIT_REV_COUNT)
 	return true;
 #else
 	return false;
@@ -126,36 +240,46 @@ const char* GitShortHash()
  */
 const char* NiceVersionDetails()
 {
-#ifdef NDEBUG
+	static std::string version;
+	static bool tried = false;
+
+	if (tried)
+	{
+		return version.c_str();
+	}
+	tried = true;
+
+	// Debug builds get a special callout.
+#if !defined(_DEBUG)
 	const char* debug = "";
 #else
 	const char* debug = ", Debug Build";
 #endif
 
-	static std::string version;
-	if (version.empty())
+	// We ignore this branch prefix.
+	const char RELEASE_PREFIX[] = "release";
+
+	if (NoGitVersion())
 	{
-		if (NoGitVersion())
+		// Without a git version, the only useful info we know is if
+		// this is a debug build.
+		if (debug[0] != '\0')
 		{
-			// Without a git version, the only useful info we know is if
-			// this is a debug build.
-			if (debug[0] != '\0')
-			{
-				version = "Debug Build";
-			}
-		}
-		else if (!strcmp(GitBranch(), "stable"))
-		{
-			// Master branch is omitted.
-			StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
-		}
-		else
-		{
-			// Other branches are written in.
-			StrFormat(version, "%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
-			          debug);
+			version = "Debug Build";
 		}
 	}
+	else if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+	{
+		// "Release" branch is omitted.
+		StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
+	}
+	else
+	{
+		// Other branches are written in.
+		StrFormat(version, "%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
+		          debug);
+	}
+
 	return version.c_str();
 }
 
@@ -166,17 +290,27 @@ const char* NiceVersionDetails()
 const char* NiceVersion()
 {
 	static std::string version;
-	if (version.empty())
+	static bool tried = false;
+
+	if (tried)
 	{
-		if (NoGitVersion())
-		{
-			version = DOTVERSIONSTR;
-		}
-		else
-		{
-			StrFormat(version, "%s (%s)", DOTVERSIONSTR, NiceVersionDetails());
-		}
+		return version.c_str();
 	}
+	tried = true;
+
+	// Get the version details.
+	const char* details = NiceVersionDetails();
+	if (details[0] == '\0')
+	{
+		// No version details, no parenthesis.
+		version = DOTVERSIONSTR;
+	}
+	else
+	{
+		// Put details in parens.
+		StrFormat(version, "%s (%s)", DOTVERSIONSTR, details);
+	}
+
 	return version.c_str();
 }
 

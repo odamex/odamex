@@ -127,7 +127,7 @@ int ReadVarint()
 		return -1;
 
 	// Zig-zag encoding for negative numbers.
-	return (uv >> 1) ^ -(uv & 1);
+	return (uv >> 1) ^ (0U - (uv & 1));
 }
 
 // Testing app

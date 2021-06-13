@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //   Game functions that are common between the client and server.
-// 
+//
 //-----------------------------------------------------------------------------
 
 #include "g_game.h"

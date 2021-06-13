@@ -45,6 +45,7 @@ enum weaponswitch_t
 	WPSW_NEVER,
 	WPSW_ALWAYS,
 	WPSW_PWO,
+	WPSW_PWO_ALT,	// PWO but never switch if holding +attack
 
 	WPSW_NUMTYPES
 };

@@ -182,6 +182,12 @@ CVAR(g_gametypename, "",
      "currently set cvars.",
      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
+CVAR_FUNC_DECL(g_spawninv, "default",
+               "The default inventory a player should spawn with.  See the \"spawninv\" "
+               "console command.",
+               CVARTYPE_STRING,
+               CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
 CVAR(g_ctf_notouchreturn, "0",
      "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
@@ -227,6 +233,12 @@ CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
 CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Values are:\n" \
+	"// 0 - All Coop things are retained (default).\n" \
+	"// 1 - Only Coop weapons are removed.\n" \
+        "// 2 - All Coop things are removed.",
+           CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
+           0.0f, 2.0f)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
@@ -269,6 +281,9 @@ CVAR_RANGE(sv_countdown, "5",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 
@@ -326,6 +341,9 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_FUNC_DECL(		language, "auto", "Language to use for ingame strings",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -355,5 +373,7 @@ CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
 // Experimental settings (all categories)
 // =======================================
 
+CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

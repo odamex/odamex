@@ -1003,16 +1003,15 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (sec, i))
+		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec, i, 0);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
-			side = getSide (sec, i, 1);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
+			side = &sides[(sec->lines[i])->sidenum[0]];
+			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+				minsize = textureheight[side->bottomtexture];
+
+			side = &sides[(sec->lines[i])->sidenum[1]];
+			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+				minsize = textureheight[side->bottomtexture];
 		}
 	}
 	return minsize;
@@ -1038,16 +1037,15 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (sec, i))
+		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec,i,0);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
-			side = getSide (sec,i,1);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
+			side = &sides[(sec->lines[i])->sidenum[0]];
+			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+				minsize = textureheight[side->toptexture];
+
+			side = &sides[(sec->lines[i])->sidenum[1]];
+			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+				minsize = textureheight[side->toptexture];
 		}
 	}
 	return minsize;
@@ -1282,7 +1280,8 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain);
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType);
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction);
 
 //
 // EVENTS
@@ -1316,14 +1315,14 @@ void P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
+void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(thing, line))
+	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	if(thing)
+	if(!bossaction && thing)
 	{
 		//	Triggers that other things can activate
 		if (!thing->player && thing->type != MT_AVATAR)
@@ -1341,10 +1340,10 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 				case MT_TROOPSHOT:
 				case MT_HEADSHOT:
 				case MT_BRUISERSHOT:
-					return;
-					break;
+				return;
 
-				default: break;
+				default:
+				break;
 			}
 
             // This breaks the ability for the eyes to activate the silent teleporter lines
@@ -1410,7 +1409,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 			}
 		}
 	}
-
+	
 	TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1419,7 +1418,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, side, LineCross);
+	SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 }
 
 //
@@ -1452,7 +1451,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, 0, LineShoot);
+	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
 	if(serverside)
 	{
@@ -1467,9 +1466,9 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
-bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
+bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
-	if (!P_CanActivateSpecials(thing, line))
+	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1485,11 +1484,10 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 
 		default:
 			return false;
-			break;
 		}
 	}
 
-	if(thing)
+	if(!bossaction && thing)
 	{
 		if ((GET_SPAC(line->flags) != SPAC_USE) &&
 			(GET_SPAC(line->flags) != SPAC_PUSH) &&
@@ -1515,7 +1513,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 				return false;
 		}
 	}
-
+	
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1524,7 +1522,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, LineUse);
+		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
@@ -1585,7 +1583,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, LinePush);
+		SV_OnActivatedLine(line, thing, side, LinePush, false);
 
 		if(serverside)
 		{
@@ -1600,7 +1598,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 
 #ifdef SERVER_APP
-void SV_UpdateSecret(int sectornum, player_t &player);
+void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
 //
@@ -1740,8 +1738,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			sector->special &= ~SECRET_MASK;
 	
 #ifdef SERVER_APP
-			int sectornum = sector - sectors;
-			SV_UpdateSecret(sectornum, *player);	// Update the sector to all clients so that they don't discover an already found secret.
+			SV_UpdateSecret(*sector, *player);	// Update the sector to all clients so that they don't discover an already found secret.
 #else
 			if (player->mo == consoleplayer().camera)
 				C_RevealSecret();		// Display the secret revealed message

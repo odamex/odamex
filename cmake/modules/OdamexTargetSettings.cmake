@@ -68,6 +68,11 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS -Wno-unused-parameter W_NO_UNUSED_PARAMETER)
   endif()
   target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
+  
+  # Ensure we get a useful stack trace on Linux.
+  if(UNIX AND NOT APPLE)
+    target_link_options("${_TARGET}" PRIVATE -rdynamic)
+  endif()
 
   if(MINGW)
     # MinGW builds require a bunch of extra libraries.

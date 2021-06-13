@@ -39,6 +39,11 @@
 #include "i_system.h"
 #include "m_vectors.h"
 #include "p_inter.h"
+#include "gi.h"
+
+#if defined(SERVER_APP)
+#include "sv_main.h"
+#endif
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
 #define LANGREGIONMASK	MAKE_ID(0,0,0xff,0xff)
@@ -57,22 +62,17 @@ static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
 AActor* P_FindThingById(uint32_t id);
 
+template <size_t N>
+static std::vector<int> ArgvToArgs(const int (&a)[N])
+{
+	return std::vector<int>(a, a + N);
+}
+
 struct FBehavior::ArrayInfo
 {
 	int ArraySize;
 	SDWORD *Elements;
 };
-
-// Inventory shim for Doom.
-#include "gi.h"
-
-void SV_SendPlayerInfo(player_t &player);
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
-                          bool playerOnly, int arg0 = -1, int arg1 = -1, int arg2 = -1,
-                          int arg3 = -1, int arg4 = -1, int arg5 = -1, int arg6 = -1,
-                          int arg7 = -1, int arg8 = -1);
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
-                               int arg1, int arg2, int arg3, int arg4);
 
 static void DoClearInv(player_t* player)
 {
@@ -92,8 +92,8 @@ static void DoClearInv(player_t* player)
 
 	player->pendingweapon = NUMWEAPONS;
 
-	if (serverside)
-		SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true);
+	SERVER_ONLY(
+	    SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
 }
 
 static void ClearInventory(AActor* activator)
@@ -105,14 +105,14 @@ static void ClearInventory(AActor* activator)
 			if (it->ingame() && !it->spectator)
 			{
 				DoClearInv(&(*it));
-				SV_SendPlayerInfo(*it);
+				SERVER_ONLY(SV_SendPlayerInfo(*it));
 			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
 		DoClearInv(activator->player);
-		SV_SendPlayerInfo(*(activator->player));
+		SERVER_ONLY(SV_SendPlayerInfo(*(activator->player)));
 	}
 }
 
@@ -280,7 +280,7 @@ static void GiveBackpack(player_t* player)
 	{
 		P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 	}
-	SV_SendPlayerInfo(*player);
+	SERVER_ONLY(SV_SendPlayerInfo(*player));
 }
 
 static void DoGiveInv(player_t* player, const char* type, int amount)
@@ -293,7 +293,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
-			SV_SendPlayerInfo(*player);
+			SERVER_ONLY(SV_SendPlayerInfo(*player));
 			return;
 		}
 	}
@@ -312,7 +312,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			// Don't bring it up automatically
 			if (player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
 				player->pendingweapon = savedpendingweap;
-			SV_SendPlayerInfo(*player);
+			SERVER_ONLY(SV_SendPlayerInfo(*player));
 			return;
 		}
 	}
@@ -327,7 +327,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GiveCard(player, static_cast<card_t>(i));
 			}
 			while (--amount > 0);
-			SV_SendPlayerInfo(*player);
+			SERVER_ONLY(SV_SendPlayerInfo(*player));
 			return;
 		}
 	}
@@ -342,7 +342,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GivePower(player, i);
 			}
 			while (--amount > 0);
-			SV_SendPlayerInfo(*player);
+			SERVER_ONLY(SV_SendPlayerInfo(*player));
 			return;
 		}
 	}
@@ -355,7 +355,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			GiveBackpack(player);
 		}
 		while (--amount > 0);
-		SV_SendPlayerInfo(*player);
+		SERVER_ONLY(SV_SendPlayerInfo(*player));
 		return;
 	}
 
@@ -405,7 +405,7 @@ static void TakeWeapon(player_t* player, int weapon)
 		if (!hasWeapon)
 			player->pendingweapon = NUMWEAPONS;
 	}
-	SV_SendPlayerInfo(*player);
+	SERVER_ONLY(SV_SendPlayerInfo(*player));
 }
 
 extern BOOL P_CheckAmmo (player_t *player);
@@ -443,7 +443,7 @@ static void TakeAmmo(player_t* player, int ammo, int amount)
 		// Make sure we still have enough ammo for the current weapon
 		P_CheckAmmo(player);
 	}
-	SV_SendPlayerInfo(*player);
+	SERVER_ONLY(SV_SendPlayerInfo(*player));
 }
 
 static AActor* SingleActorFromTID(int tid, AActor* defactor)
@@ -473,7 +473,7 @@ static void TakeBackpack(player_t* player)
 			player->ammo[i] = player->maxammo[i];
 		}
 	}
-	SV_SendPlayerInfo(*player);
+	SERVER_ONLY(SV_SendPlayerInfo(*player));
 }
 
 static void DoTakeInv(player_t* player, const char* type, int amount)
@@ -1317,7 +1317,10 @@ void DPlaneWatcher::RunThink ()
 		LineSpecials[Special] (Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 
 		if (serverside)
-			SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
+		{
+			SERVER_ONLY(SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1,
+			                                      Arg2, Arg3, Arg4));
+		}
 		Destroy ();
 	}
 }
@@ -1546,7 +1549,13 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR, NULL, NULL, false, tag, name);
+	{
+		int argv[] = {tag, name};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(
+		    SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR,
+		                         NULL, NULL, false, args));
+	}
 }
 
 extern size_t P_NumPlayersInGame();
@@ -1576,8 +1585,7 @@ void DLevelScript::ACS_Print(byte pcd, AActor* activator, const char* print)
 
 	bool local = activator != NULL && pcd != DLevelScript::PCD_ENDPRINTBOLD;
 
-	if (serverside)
-		SV_ACSExecuteSpecial(pcd, activator, print, local);
+	SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, print, local));
 
 	if (clientside && 
 		(!local || (activator != NULL && activator->player && activator->player->mo == consoleplayer().camera)))
@@ -1694,7 +1702,11 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 		return;
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, false, lineid, side, position, name);
+	{
+		int argv[] = {lineid, side, position, name};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, false, args));
+	}
 
 	side = (side) ? 1 : 0;
 
@@ -1756,7 +1768,11 @@ void DLevelScript::SetLineBlocking(int lineid, int flags)
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, false, lineid, flags);
+	{
+		int argv[] = {lineid, flags};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, false, args));
+	}
 }
 
 void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
@@ -1776,7 +1792,11 @@ void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, false, lineid, toggle);
+	{
+		int argv[] = {lineid, toggle};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, false, args));
+	}
 }
 
 void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
@@ -1796,7 +1816,11 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, lineid, special, arg1, arg2, arg3, arg4, arg5);
+	{
+		int argv[] = {lineid, special, arg1, arg2, arg3, arg4, arg5};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, args));
+	}
 }
 
 void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator,
@@ -1805,7 +1829,10 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 	LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
 
 	if (serverside)
-		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
+	{
+		SERVER_ONLY(SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2,
+		                                      arg3, arg4));
+	}
 }
 
 void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
@@ -1823,7 +1850,11 @@ void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(pcd, activator, NULL, local, index, loop);
+	{
+		int argv[] = {index, loop};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, NULL, local, args));
+	}
 }
 
 
@@ -1842,7 +1873,11 @@ void DLevelScript::StartSound(byte pcd, AActor* activator, int channel, int inde
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(pcd, activator, NULL, local, channel, index, volume, attenuation);
+	{
+		int argv[] = {channel, index, volume, attenuation};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, NULL, local, args));
+	}
 }
 
 void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation)
@@ -1857,7 +1892,9 @@ void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int
 	if (serverside)
 	{
 		int sectorNum = sector ? sector - sectors : 0;
-		SV_ACSExecuteSpecial(pcd, NULL, NULL, false, sectorNum, channel, index, volume, attenuation);
+		int argv[] = {sectorNum, channel, index, volume, attenuation};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, NULL, NULL, false, args));
 	}
 }
 
@@ -1871,7 +1908,11 @@ void DLevelScript::StartThingSound(byte pcd, AActor* actor, int channel, int ind
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(pcd, actor, NULL, false, channel, index, volume, attenuation);
+	{
+		int argv[] = {channel, index, volume, attenuation};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, actor, NULL, false, args));
+	}
 }
 
 void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
@@ -1884,7 +1925,11 @@ void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg
 	actor->args[4] = arg5;
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, actor->netid, special, arg1, arg2, arg3, arg4, arg5);
+	{
+		int argv[] = {actor->netid, special, arg1, arg2, arg3, arg4, arg5};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args));
+	}
 }
 
 void DLevelScript::CancelFade(AActor* actor)
@@ -1901,8 +1946,7 @@ void DLevelScript::CancelFade(AActor* actor)
 		}
 	}
 
-	if (serverside)
-		SV_ACSExecuteSpecial(PCD_CANCELFADE, actor, NULL, true);
+	SERVER_ONLY(SV_ACSExecuteSpecial(PCD_CANCELFADE, actor, NULL, true));
 }
 
 void DLevelScript::StartSoundSequence(sector_t* sec, int index)
@@ -1915,7 +1959,11 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, sec - sectors, index);
+	{
+		int argv[] = {sec - sectors, index};
+		std::vector<int> args = ArgvToArgs(argv);
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args));
+	}
 }
 
 int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
@@ -2051,9 +2099,12 @@ void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
 	}
 
 	if (serverside)
-		SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, true, r1, g1, b1, a1, r2, g2, b2, a2, time);
+	{
+		int argv[] = {r1, g1, b1, a1, r2, g2, b2, a2, time};
+		std::vector<int> args(argv, argv + ARRAY_LENGTH(argv));
+		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, true, args));
+	}
 }
-
 
 inline int getbyte (int *&pc)
 {
@@ -3800,14 +3851,14 @@ static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int scri
 			def->playernum = -1;
 		}
 		i.defered = def;
-		DPrintf ("Script %d on map %s defered\n", script, i.mapname);
+		DPrintf ("Script %d on map %s defered\n", script, i.mapname.c_str());
 	}
 }
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always)
 {
-	if (!strnicmp (level.mapname, map, 8))
+	if (level.mapname == map)
 	{
 		int *scriptdata;
 
@@ -3833,9 +3884,9 @@ bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineS
 	return false;
 }
 
-void P_SuspendScript (int script, char *map)
+void P_SuspendScript (int script, const char *map)
 {
-	if (strnicmp(level.mapname, map, 8))
+	if (level.mapname != map)
 	{
 		LevelInfos& levels = getLevelInfos();
 		addDefered(levels.findByName(map),
@@ -3847,9 +3898,9 @@ void P_SuspendScript (int script, char *map)
 	}
 }
 
-void P_TerminateScript (int script, char *map)
+void P_TerminateScript (int script, const char *map)
 {
-	if (strnicmp(level.mapname, map, 8))
+	if (level.mapname != map)
 	{
 		LevelInfos& levels = getLevelInfos();
 		addDefered(levels.findByName(map),

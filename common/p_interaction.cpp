@@ -60,6 +60,9 @@ EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
 EXTERN_CVAR(g_lives)
 
+// sapientlion - experimental
+EXTERN_CVAR(sv_weapondrop)
+
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -76,7 +79,7 @@ void SV_TouchSpecial(AActor *special, player_t *player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
+void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_ActorTarget(AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
@@ -108,7 +111,7 @@ static void PersistPlayerScore(player_t& p, bool lives, bool score)
 	{
 		if (!it->ingame())
 			continue;
-		SVC_PlayerMembers(it->client.netbuf, p, flags);
+		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -123,7 +126,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!it->ingame())
 			continue;
-		SVC_TeamMembers(it->client.netbuf, team);
+		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
 	}
 }
 
@@ -276,7 +279,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback || demorecording)
+	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback)
 	{
 		switch (ammotype)
 		{
@@ -1290,6 +1293,58 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
             item = MT_CHAINGUN;
             break;
 
+		//
+		// sapientlion - if player killed themselves or were killed by the other
+		// player(s), spawn a weapon (which they were helding moments before death) on
+		// top of their remains.
+		//
+		// TODO add current ammo.
+		//
+	    case MT_PLAYER:
+
+			if(sv_weapondrop)
+			{
+			    switch (target->player->readyweapon)
+			    {
+			    case wp_pistol:
+				    item = MT_CLIP;
+				    break;
+
+			    case wp_shotgun:
+				    item = MT_SHOTGUN;
+				    break;
+
+			    case wp_chaingun:
+				    item = MT_CHAINGUN;
+				    break;
+
+			    case wp_missile:
+				    item = MT_MISC27; // Rocket launcher.
+				    break;
+
+			    case wp_plasma:
+				    item = MT_MISC28; // Plasma gun.
+				    break;
+
+			    case wp_bfg:
+				    item = MT_BFG;
+				    break;
+
+			    case wp_chainsaw:
+				    item = MT_MISC26; // Chainsaw.
+				    break;
+
+			    case wp_supershotgun:
+				    item = MT_SUPERSHOTGUN;
+				    break;
+
+			    default:
+				    return;
+			    }
+		    }
+
+			break;
+
         default:
             return;
 	}
@@ -1467,7 +1522,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (tplayer->damagecount > 100)
 			tplayer->damagecount = 100;	// teleport stomp does 10k points...
 
-		SV_SendDamagePlayer(tplayer, damage, armorDamage);
+		SV_SendDamagePlayer(tplayer, inflictor, damage, armorDamage);
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.

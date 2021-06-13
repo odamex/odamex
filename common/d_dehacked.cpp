@@ -92,7 +92,8 @@ static char *Line1, *Line2;
 static int	 dversion, pversion;
 static BOOL  including, includenotext;
 
-static const char *unknown_str = "Unknown key %s encountered in %s %d.\n";
+// English strings for DeHackEd replacement.
+static StringTable ENGStrings;
 
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
@@ -152,121 +153,6 @@ static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
 static const char *OrgSprNames[NUMSPRITES];
 static actionf_p1 OrgActionPtrs[NUMSTATES];
-
-// Sound equivalences. When a patch tries to change a sound,
-// use these sound names.
-static const char *SoundMap[] = {
-	NULL,
-	"weapons/pistol",
-	"weapons/shotgf",
-	"weapons/shotgr",
-	"weapons/sshotf",
-	"weapons/sshoto",
-	"weapons/sshotc",
-	"weapons/sshotl",
-	"weapons/plasmaf",
-	"weapons/bfgf",
-	"weapons/sawup",
-	"weapons/sawidle",
-	"weapons/sawfull",
-	"weapons/sawhit",
-	"weapons/rocklf",
-	"weapons/bfgx",
-	"imp/attack",
-	"imp/shotx",
-	"plats/pt1_strt",
-	"plats/pt1_stop",
-	"doors/dr1_open",
-	"doors/dr1_clos",
-	"plats/pt1_mid",
-	"switches/normbutn",
-	"switches/exitbutn",
-	"*pain100_1",
-	"demon/pain",
-	"grunt/pain",
-	"vile/pain",
-	"fatso/pain",
-	"pain/pain",
-	"misc/gibbed",
-	"misc/i_pkup",
-	"misc/w_pkup",
-	"*land1",
-	"misc/teleport",
-	"grunt/sight1",
-	"grunt/sight2",
-	"grunt/sight3",
-	"imp/sight1",
-	"imp/sight2",
-	"demon/sight",
-	"caco/sight",
-	"baron/sight",
-	"cyber/sight",
-	"spider/sight",
-	"baby/sight",
-	"knight/sight",
-	"vile/sight",
-	"fatso/sight",
-	"pain/sight",
-	"skull/melee",
-	"demon/melee",
-	"skeleton/melee",
-	"vile/start",
-	"imp/melee",
-	"skeleton/swing",
-	"*death1",
-	"*xdeath1",
-	"grunt/death1",
-	"grunt/death2",
-	"grunt/death3",
-	"imp/death1",
-	"imp/death2",
-	"demon/death",
-	"caco/death",
-	"misc/unused",
-	"baron/death",
-	"cyber/death",
-	"spider/death",
-	"baby/death",
-	"vile/death",
-	"knight/death",
-	"pain/death",
-	"skeleton/death",
-	"grunt/active",
-	"imp/active",
-	"demon/active",
-	"baby/active",
-	"baby/walk",
-	"vile/active",
-	"*grunt1",
-	"world/barrelx",
-	"*fist",
-	"cyber/hoof",
-	"spider/walk",
-	"weapons/chngun",
-	"misc/chat2",
-	"doors/dr2_open",
-	"doors/dr2_clos",
-	"misc/spawn",
-	"vile/firecrkl",
-	"vile/firestrt",
-	"misc/p_pkup",
-	"brain/spit",
-	"brain/cube",
-	"brain/sight",
-	"brain/pain",
-	"brain/death",
-	"fatso/attack",
-	"gatso/death",
-	"wolfss/sight",
-	"wolfss/death",
-	"keen/pain",
-	"keen/death",
-	"skeleton/active",
-	"skeleton/sight",
-	"skeleton/attack",
-	"misc/chat",
-	"misc/teamchat"
-};
 
 // Functions used in a .bex [CODEPTR] chunk
 void A_FireRailgun(AActor *);
@@ -583,6 +469,11 @@ static int GetLine (void);
 static size_t filelen = 0;	// Be quiet, gcc
 
 #define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == (int)filelen)
+
+static void PrintUnknown(const char* key, const char* loc, const size_t idx)
+{
+	DPrintf("Unknown key %s encountered in %s (%" PRIuSIZE ").\n", key, loc, idx);
+}
 
 static int HandleMode (const char *mode, int num)
 {
@@ -1005,10 +896,10 @@ static int PatchThing (int thingy)
 	thingNum--;
 	if (thingNum < NUMMOBJTYPES) {
 		info = &mobjinfo[thingNum];
-		DPrintf ("Thing %d\n", thingNum);
+		DPrintf("Thing %" PRIuSIZE "\n", thingNum);
 	} else {
 		info = &dummy;
-		DPrintf ("Thing %d out of range.\n", thingNum + 1);
+		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum + 1);
 	}
 
 	while ((result = GetLine ()) == 1) {
@@ -1083,7 +974,10 @@ static int PatchThing (int thingy)
 				if (v2changed)
 					info->flags2 = value2;
 			}
-			else DPrintf (unknown_str, Line1, "Thing", thingNum);
+			else
+			{
+				PrintUnknown(Line1, "Thing", thingNum);
+			}
 		} else if (!stricmp (Line1, "Height")) {
 			hadHeight = true;
 		}
@@ -1127,7 +1021,7 @@ static int PatchSound (int soundNum)
 		else CHECKKEY ("Zero 2",			info->data)
 		else CHECKKEY ("Zero 3",			info->usefulness)
 		else CHECKKEY ("Zero 4",			info->lumpnum)
-		else DPrintf (unknown_str, Line1, "Sound", soundNum);
+		else PrintUnknown(Line1, "Sound", soundNum);
 		*/
 	}
 /*
@@ -1176,7 +1070,7 @@ static int PatchFrame (int frameNum)
 
 	while ((result = GetLine ()) == 1)
 		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			DPrintf (unknown_str, Line1, "Frame", frameNum);
+			PrintUnknown(Line1, "Frame", frameNum);
 
 	return result;
 }
@@ -1196,7 +1090,8 @@ static int PatchSprite (int sprNum)
 	while ((result = GetLine ()) == 1) {
 		if (!stricmp ("Offset", Line1))
 			offset = atoi (Line2);
-		else DPrintf (unknown_str, Line1, "Sprite", sprNum);
+		else
+			PrintUnknown(Line1, "Sprite", sprNum);
 	}
 
 	if (offset > 0 && sprNum != -1) {
@@ -1234,7 +1129,7 @@ static int PatchAmmo (int ammoNum)
 	while ((result = GetLine ()) == 1) {
 			 CHECKKEY ("Max ammo", *max)
 		else CHECKKEY ("Per ammo", *per)
-		else DPrintf (unknown_str, Line1, "Ammo", ammoNum);
+		else PrintUnknown(Line1, "Ammo", ammoNum);
 	}
 
 	return result;
@@ -1267,7 +1162,7 @@ static int PatchWeapon (int weapNum)
 
 	while ((result = GetLine ()) == 1)
 		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			DPrintf (unknown_str, Line1, "Weapon", weapNum);
+			PrintUnknown(Line1, "Weapon", weapNum);
 
 	return result;
 }
@@ -1299,7 +1194,10 @@ static int PatchPointer (int ptrNum)
 		    else
                 states[codepconv[ptrNum]].action = OrgActionPtrs[i];
 		}
-		else DPrintf (unknown_str, Line1, "Pointer", ptrNum);
+		else
+		{
+			PrintUnknown(Line1, "Pointer", ptrNum);
+		}
 	}
 	return result;
 }
@@ -1583,7 +1481,8 @@ static int PatchText (int oldSize)
 		goto donewithtext;
 
 	// Search through music names.
-	if (oldSize < 7)
+	// [AM] Disabled because it relies on an extern wadlevelinfos
+	/*if (oldSize < 7)
 	{		// Music names are never >6 chars
 		char musname[9];
 		snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
@@ -1597,13 +1496,13 @@ static int PatchText (int oldSize)
 				uppercopy(level.music, musname);
 			}
 		}
-	}
+	}*/
 
 	if (good)
 		goto donewithtext;
 	
 	// Search through most other texts
-	name = &GStrings.matchString(oldStr);
+	name = &ENGStrings.matchString(oldStr);
 	if (name != NULL && !name->empty())
 	{
 		GStrings.setString(*name, newStr);
@@ -1749,7 +1648,7 @@ static int DoInclude(int dummy)
 		goto endinclude;
 	}
 
-	D_DoDehPatch(&res, false);
+	D_DoDehPatch(&res, -1);
 
 	DPrintf("Done with include\n");
 	PatchFile = savepatchfile;
@@ -1766,18 +1665,15 @@ endinclude:
 /**
  * @brief Attempt to load a DeHackEd file.
  * 
- * @param patchfile File to attempt to load.
- * @param autoloading 
- * @return 
-*/
-bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
+ * @param patchfile File to attempt to load, NULL if not a file.
+ * @param lump Lump index to load, -1 if not a lump.
+ */
+bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 {
 	BackupData();
 	::PatchFile = NULL;
 
-	int lump = W_CheckNumForName("DEHACKED");
-
-	if (lump >= 0 && autoloading)
+	if (lump >= 0)
 	{
 		// Execute the DEHACKED lump as a patch.
 		::filelen = W_LumpLength(lump);
@@ -1810,6 +1706,9 @@ bool D_DoDehPatch(const OResFile* patchfile, bool autoloading)
 		// Nothing to do.
 		return false;
 	}
+
+	// Load english strings to match against.
+	::ENGStrings.loadStrings(true);
 
 	// End file with a NULL for our parser
 	::PatchFile[::filelen] = 0;

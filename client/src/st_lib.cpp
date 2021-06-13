@@ -40,11 +40,11 @@
 // Hack display negative frags.
 //	Loads and store the stminus lump.
 //
-patch_t*				sttminus;
+lumpHandle_t				sttminus;
 
 void STlib_init(void)
 {
-	sttminus = W_CachePatch("STTMINUS", PU_STATIC);
+	sttminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
 }
 
 
@@ -97,7 +97,7 @@ static void STlib_DrawPatch(int x, int y, patch_t* p)
 	}
 }
 
-void STlib_initNum(st_number_t* n, int x, int y, patch_t** pl, int* num, bool* on, int maxdigits)
+void STlib_initNum(st_number_t* n, int x, int y, lumpHandle_t* pl, int* num, bool* on, int maxdigits)
 {
 	n->x			= x;
 	n->y			= y;
@@ -133,8 +133,9 @@ void STlib_drawNum(st_number_t* n, bool force_refresh, bool cleararea)
 
 	int 		num = *n->num;
 
-	int 		w = n->p[0]->width();
-	int 		h = n->p[0]->height();
+	patch_t* p0 = W_ResolvePatchHandle(n->p[0]);
+	int 		w = p0->width();
+	int 		h = p0->height();
 	int 		x = n->x;
 
 	n->oldnum = *n->num;
@@ -163,19 +164,20 @@ void STlib_drawNum(st_number_t* n, bool force_refresh, bool cleararea)
 
 	// in the special case of 0, you draw 0
 	if (num == 0)
-		STlib_DrawPatch(x - w, n->y, n->p[0]);
+		STlib_DrawPatch(x - w, n->y, p0);
 
 	// draw the new number
 	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
 	{
+		patch_t* pnum = W_ResolvePatchHandle(n->p[num % 10]);
 		x -= w;
-		STlib_DrawPatch(x, n->y, n->p[num % 10]);
+		STlib_DrawPatch(x, n->y, pnum);
 		num /= 10;
 	}
 
 	// draw a minus sign if necessary
 	if (negative)
-		STlib_DrawPatch(x - 8, n->y, sttminus);
+		STlib_DrawPatch(x - 8, n->y, W_ResolvePatchHandle(sttminus));
 }
 
 
@@ -186,7 +188,7 @@ void STlib_updateNum(st_number_t* n, bool force_refresh, bool cleararea)
 }
 
 
-void STlib_initPercent(st_percent_t* p, int x, int y, patch_t** pl, int* num, bool* on, patch_t* percent_patch)
+void STlib_initPercent(st_percent_t* p, int x, int y, lumpHandle_t* pl, int* num, bool* on, lumpHandle_t percent_patch)
 {
 	STlib_initNum(&p->n, x, y, pl, num, on, 3);
 	p->p = percent_patch;
@@ -196,14 +198,14 @@ void STlib_initPercent(st_percent_t* p, int x, int y, patch_t** pl, int* num, bo
 void STlib_updatePercent(st_percent_t* percent, bool force_refresh)
 {
 	if (force_refresh && *percent->n.on)
-		STlib_DrawPatch(percent->n.x, percent->n.y, percent->p);
+		STlib_DrawPatch(percent->n.x, percent->n.y, W_ResolvePatchHandle(percent->p));
 
 	STlib_updateNum(&percent->n, force_refresh);
 }
 
 
 
-void STlib_initMultIcon(st_multicon_t* icon, int x, int y, patch_t** il, int* inum, bool* on)
+void STlib_initMultIcon(st_multicon_t* icon, int x, int y, lumpHandle_t* il, int* inum, bool* on)
 {
 	icon->x			= x;
 	icon->y			= y;
@@ -223,22 +225,24 @@ void STlib_updateMultIcon(st_multicon_t* icon, bool force_refresh)
 		// clear the background area
 		if (icon->oldinum != -1)
 		{
-			int x = icon->x - icon->p[icon->oldinum]->leftoffset();
-			int y = icon->y - icon->p[icon->oldinum]->topoffset();
-			int w = icon->p[icon->oldinum]->width();
-			int h = icon->p[icon->oldinum]->height();
+			patch_t* oldnum = W_ResolvePatchHandle(icon->p[icon->oldinum]);
+			int x = icon->x - oldnum->leftoffset();
+			int y = icon->y - oldnum->topoffset();
+			int w = oldnum->width();
+			int h = oldnum->height();
 
 			STlib_ClearRect(x, y, w, h);
 		}
 
-		STlib_DrawPatch(icon->x, icon->y, icon->p[*icon->inum]);
+		patch_t* inum = W_ResolvePatchHandle(icon->p[*icon->inum]);
+		STlib_DrawPatch(icon->x, icon->y, inum);
 		icon->oldinum = *icon->inum;
 	}
 }
 
 
 
-void STlib_initBinIcon(st_binicon_t* icon, int x, int y, patch_t* patch, bool* val, bool* on)
+void STlib_initBinIcon(st_binicon_t* icon, int x, int y, lumpHandle_t patch, bool* val, bool* on)
 {
 	icon->x			= x;
 	icon->y			= y;
@@ -254,13 +258,14 @@ void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
 {
 	if (*icon->on && (force_refresh || icon->oldval != *icon->val))
 	{
-		int x = icon->x - icon->p->leftoffset();
-		int y = icon->y - icon->p->topoffset();
-		int w = icon->p->width();
-		int h = icon->p->height();
+		patch_t* iconp = W_ResolvePatchHandle(icon->p);
+		int x = icon->x - iconp->leftoffset();
+		int y = icon->y - iconp->topoffset();
+		int w = iconp->width();
+		int h = iconp->height();
 
 		if (*icon->val)
-			STlib_DrawPatch(icon->x, icon->y, icon->p);
+			STlib_DrawPatch(icon->x, icon->y, iconp);
 		else
 			STlib_ClearRect(x, y, w, h);
 

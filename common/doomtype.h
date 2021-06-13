@@ -26,6 +26,9 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+// Standard libc/STL includes we use in countless places
+#include <string>
+
 #include "version.h"
 #include "errors.h"
 
@@ -128,7 +131,10 @@
 
 // Max pos 32-bit int.
 #ifndef MAXINT
-	#define MAXINT			((int)0x7fffffff)
+	#define MAXINT			(0x7fffffff)
+#endif
+#ifndef MAXUINT
+	#define MAXUINT			(0xffffffff)
 #endif
 
 #ifndef MAXLONG
@@ -195,6 +201,22 @@ typedef uint64_t			dtime_t;
 	#define PATHLISTSEPCHAR ':'
 #endif
 
+/**
+ * @brief Returns a bitfield with a specific bit set.
+ */
+#define BIT(a) (1U << (a))
+
+/**
+ * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
+ * 
+ * @param a Low bit in the mask.
+ * @param b High bit in the mask. 
+ */
+static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
+{
+    return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
+}
+
 // [RH] This gets used all over; define it here:
 FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...);
 FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
@@ -229,7 +251,7 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 #include <fstream>
 
 extern std::ofstream LOG;
-extern const char *LOG_FILE; //  Default is "odamex.log"
+extern std::string LOG_FILE; //  Default is "odamex.log"
 
 extern std::ifstream CON;
 

@@ -29,8 +29,36 @@
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
+#include "w_wad.h"
 
-extern patch_t* hu_font[HU_FONTSIZE];
+struct OGlobalFont
+{
+	lumpHandle_t operator[](const size_t idx) const
+	{
+		return m_fontData[idx];
+	}
+	lumpHandle_t at(const size_t idx) const
+	{
+		if (idx < 0 || idx >= HU_FONTSIZE)
+			throw std::out_of_range("Out-of-bounds font char");
+
+		return m_fontData[idx];
+	}
+	void setFont(const lumpHandle_t* font, const int lineHeight)
+	{
+		m_fontData = font;
+		m_lineHeight = lineHeight;
+	}
+	int lineHeight() const
+	{
+		return m_lineHeight;
+	}
+  private:
+	const lumpHandle_t* m_fontData;
+	int m_lineHeight;
+};
+
+extern OGlobalFont hu_font;
 
 void V_TextInit();
 void V_TextShutdown();
@@ -46,6 +74,8 @@ typedef struct brokenlines_s brokenlines_t;
 
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+int V_StringHeight(const char* str);
+int V_LineHeight();
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);

@@ -65,6 +65,7 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
+#include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
 
@@ -93,7 +94,6 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
@@ -102,7 +102,7 @@ char startmap[8];
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 
-const char *LOG_FILE;
+std::string LOG_FILE;
 
 //
 // D_DoomLoop
@@ -154,35 +154,22 @@ void D_Init()
 	srand(time(NULL));
 
 	// start the Zone memory manager
-	bool use_zone = !Args.CheckParm("-nozone");
-	Z_Init(use_zone);
+	Z_Init();
 	if (first_time)
-		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Load palette and set up colormaps
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
 	// [RH] Initialize localizable strings.
-	GStrings.loadStrings();
+	::GStrings.loadStrings(false);
 
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
@@ -382,8 +369,8 @@ void D_DoomMain()
 		strncpy(startmap, Args.GetArg(p + 1), 8);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-
-	strncpy(level.mapname, startmap, sizeof(level.mapname));
+	
+	level.mapname = startmap;
 
 	G_ChangeMap();
 

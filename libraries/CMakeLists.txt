@@ -53,8 +53,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target install)
   endif()
 
   find_package(ZLIB)
@@ -107,8 +106,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/curl-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target install)
   endif()
 
   find_package(CURL)
@@ -186,7 +184,7 @@ if(BUILD_SERVER)
     "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
     "-DCMAKE_LINKER=${CMAKE_LINKER}"
     "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
 
@@ -196,18 +194,15 @@ if(BUILD_SERVER)
     # Debug and Release are not compatible, so build both.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config Debug --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config Debug --target install)
     execute_process(COMMAND "${CMAKE_COMMAND}"
     --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-    --config RelWithDebInfo --target install
-    --parallel ${PARALLEL_PROC_COUNT})
+    --config RelWithDebInfo --target install)
   else()
     # Single config uses the passed build type.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config ${CMAKE_BUILD_TYPE} --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --target install)
   endif()
 
   # Synthesize an imported target that can be linked against.
@@ -215,6 +210,7 @@ if(BUILD_SERVER)
   set_target_properties(jsoncpp PROPERTIES
     INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
     INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
+    IMPORTED_LOCATION ${JSONCPP_LIBRARY_RELEASE}
     IMPORTED_LOCATION_DEBUG ${JSONCPP_LIBRARY_DEBUG}
     IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
     MAP_IMPORTED_CONFIG_MINSIZEREL Release
@@ -257,8 +253,7 @@ if(BUILD_CLIENT)
     # Compile the library.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT})
+      --config RelWithDebInfo --target install)
   endif()
 
   set(ZLIB_INCLUDE_DIR
@@ -271,8 +266,9 @@ if(BUILD_CLIENT)
 endif()
 
 ### MiniUPnPc ###
-
-if(BUILD_SERVER)
+if(BUILD_SERVER AND NOT USE_MINIUPNP)
+  message(STATUS "Skipping MiniUPnPc...")
+elseif(BUILD_SERVER AND USE_MINIUPNP)
   message(STATUS "Compiling MiniUPnPc...")
 
   # Figure out the correct library path to attach to our imported target
@@ -303,7 +299,7 @@ if(BUILD_SERVER)
   # Compile the library.
   execute_process(COMMAND "${CMAKE_COMMAND}"
     --build "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    --config RelWithDebInfo --target install --parallel ${PARALLEL_PROC_COUNT})
+    --config RelWithDebInfo --target install)
 
   # Synthesize an imported target that can be linked against.
   add_library(upnpc-static STATIC IMPORTED GLOBAL)
@@ -312,6 +308,78 @@ if(BUILD_SERVER)
     IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
   if(WIN32)
     set_target_properties(upnpc-static PROPERTIES INTERFACE_LINK_LIBRARIES "ws2_32;iphlpapi")
+  endif()
+endif()
+
+### Protocol Buffers ###
+
+if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling protoc...")
+
+  # Generate the build using the hosts's toolchain.
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/protoc-build"
+    -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
+    "-Dprotobuf_BUILD_TESTS=OFF"
+    "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
+  execute_process(COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_CURRENT_BINARY_DIR}/protoc-build"
+    --config RelWithDebInfo --target protoc)
+
+  get_cmake_property(_IS_MULTI_CONFIG GENERATOR_IS_MULTI_CONFIG)
+  if(_IS_MULTI_CONFIG)
+    message(STATUS "Compiling libprotobuf for multiconfig...")
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
+      "-Dprotobuf_BUILD_TESTS=OFF"
+      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
+
+    # Compile the library for debug and release.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      --config Debug --target libprotobuf)
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      --config RelWithDebInfo --target libprotobuf)
+  else()
+    message(STATUS "Compiling libprotobuf for ${CMAKE_BUILD_TYPE}...")
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
+      "-Dprotobuf_BUILD_TESTS=OFF"
+      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
+      --target libprotobuf)
   endif()
 endif()
 

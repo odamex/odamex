@@ -33,6 +33,7 @@
 #include "z_zone.h"
 #include "w_wad.h"
 #include "gi.h"
+#include "svc_message.h"
 
 EXTERN_CVAR(co_zdoomsound)
 extern int numtextures;
@@ -268,13 +269,7 @@ void P_UpdateButtons(client_t *cl)
 		// record that we acted on this line:
 		actedlines[l] = true;
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-		MSG_WriteLong(&cl->reliablebuf, l);
-		MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-		MSG_WriteByte(&cl->reliablebuf, lines[l].special);
-		MSG_WriteByte(&cl->reliablebuf, state);
-		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
-		MSG_WriteLong(&cl->reliablebuf, timer);
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], state, timer));
 	}
 
 	for (int l=0; l<numlines; l++)
@@ -282,13 +277,7 @@ void P_UpdateButtons(client_t *cl)
 		// update all button state except those that have actors assigned:
 		if (!actedlines[l] && lines[l].wastoggled)
 		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-			MSG_WriteLong(&cl->reliablebuf, l);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
-			MSG_WriteByte(&cl->reliablebuf, 0);
-			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
-			MSG_WriteLong(&cl->reliablebuf, 0);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], 0, 0));
 		}
 	}
 }

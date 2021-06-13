@@ -35,6 +35,7 @@
 #include "i_system.h"
 #include "cmdlib.h"
 #include "p_local.h"
+#include "g_mapinfo.h"
 
 // MACROS ------------------------------------------------------------------
 

@@ -203,23 +203,12 @@ void	P_SpawnSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor* thing);
+void    P_CrossSpecialLine (int linenum, int side, AActor* thing, bool bossaction);
 void    P_ShootSpecialLine (AActor* thing, line_t* line);
-bool    P_UseSpecialLine (AActor* thing, line_t* line, int side);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
 void    P_PlayerInSpecialSector (player_t *player);
-
-//
-// getSide()
-// Will return a side_t*
-//	given the number of the current sector,
-//	the line number, and the side (0/1) that you want.
-//
-inline side_t *getSide (sector_t *sec, int line, int side)
-{
-	return &sides[ (sec->lines[line])->sidenum[side] ];
-}
 
 //
 // getSector()
@@ -234,16 +223,6 @@ inline sector_t *getSector (int currentSector, int line, int side)
 
 
 //
-// twoSided()
-// Given the sector number and the line number,
-//	it will tell you whether the line is two-sided or not.
-//
-inline int twoSided (sector_t *sec, int line)
-{
-	return (sec->lines[line])->flags & ML_TWOSIDED;
-}
-
-//
 // getNextSector()
 // Return sector_t * of sector next to current.
 // NULL if not two-sided line
@@ -253,9 +232,8 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
 
-	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-
-	return line->frontsector;
+	return line->frontsector == sec ? (line->backsector != sec ? line->backsector : NULL)
+	                                : line->frontsector;
 }
 
 
@@ -468,6 +446,7 @@ void	P_InitSwitchList ();
 
 void	P_ProcessSwitchDef ();
 
+short P_GetButtonTexture(line_t* line);
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
@@ -1019,7 +998,8 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 //
 BOOL EV_Teleport (int tid, int tag, int arg0, int side, AActor *thing, int nostop);
 BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
-BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
+BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+                       int side, AActor* thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
 
@@ -1027,10 +1007,10 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 // [RH] ACS (see also p_acs.h)
 //
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
-void P_SuspendScript (int script, char *map);
-void P_TerminateScript (int script, char *map);
+void P_SuspendScript (int script, const char *map);
+void P_TerminateScript (int script, const char *map);
 void P_StartOpenScripts (void);
 void P_DoDeferedScripts (void);
 

@@ -27,13 +27,22 @@
 #include <string>
 #include <algorithm>
 
+#include "i_sdl.h"
+
 #include "i_video.h"
 #include "v_video.h"
+
+#if defined(SDL12)
+#include "i_video_sdl12.h"
+#elif defined(SDL20)
+#include "i_video_sdl20.h"
+#else 
+#error "no video subsystem selected"
+#endif
 
 #include "i_system.h"
 #include "c_cvars.h"
 #include "m_misc.h"
-#include "i_sdlvideo.h"
 #include "i_input.h"
 #include "m_fileio.h"
 

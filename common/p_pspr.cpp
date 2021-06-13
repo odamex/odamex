@@ -34,6 +34,7 @@
 #include "s_sound.h"
 
 #include "g_gametype.h"
+#include "svc_message.h"
 
 // State.
 #include "doomstat.h"
@@ -283,7 +284,7 @@ void P_SwitchWeapon(player_t *player)
 {
 	const byte *prefs;
 
-	if ((multiplayer && !sv_allowpwo) || demoplayback || demorecording)
+	if ((multiplayer && !sv_allowpwo) || demoplayback)
 		prefs = UserInfo::weapon_prefs_default;
 	else
 		prefs = player->userinfo.weapon_prefs;
@@ -372,7 +373,7 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	// Always switch - vanilla Doom behavior
 	if ((multiplayer && !sv_allowpwo) ||
 		player->userinfo.switchweapon == WPSW_ALWAYS ||
-		demoplayback || demorecording)
+		demoplayback)
 	{
 		return true;
 	}
@@ -392,7 +393,13 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 	// Use player's weapon preferences
 	byte *prefs = player->userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
+	{
+		if (player->userinfo.switchweapon == WPSW_PWO_ALT &&
+			player->cmd.buttons & BT_ATTACK)
+			return false;
+
 		return true;
+	}
 
 	return false;
 }
@@ -452,9 +459,7 @@ void P_FireWeapon(player_t* player)
 	// that they can fix any weapon desyncs that they get - apr 14 2012
 	if (serverside && !clientside)
 	{
-		MSG_WriteMarker (&player->client.reliablebuf, svc_fireweapon);
-		MSG_WriteByte (&player->client.reliablebuf, player->readyweapon);
-		MSG_WriteLong (&player->client.reliablebuf, player->tic);
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_FireWeapon(*player));
 	}
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);

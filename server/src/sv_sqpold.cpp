@@ -145,7 +145,7 @@ void SV_SendServerInfo()
 
 	SZ_Clear(&ml_message);
 	
-	MSG_WriteLong(&ml_message, CHALLENGE);
+	MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 	MSG_WriteLong(&ml_message, SV_NewToken());
 
 	// if master wants a key to be presented, present it we will
@@ -164,7 +164,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message, playersingame);
 	MSG_WriteByte(&ml_message, sv_maxclients.asInt());
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	size_t numwads = wadfiles.size();
 	if(numwads > 0xff)numwads = 0xff;

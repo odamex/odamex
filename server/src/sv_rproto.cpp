@@ -43,52 +43,39 @@ EXTERN_CVAR (sv_latency)
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
 
+const static size_t PACKET_FLAG_INDEX = sizeof(uint32_t);
+const static size_t PACKET_MESSAGE_INDEX = PACKET_FLAG_INDEX + 1;
+const static size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
+const static size_t PACKET_OLD_MASK = 0xFF;
+
 //
-// SV_CompressPacket
+// CompressPacket
 //
 // [Russell] - reason this was failing is because of huffman routines, so just
 // use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
 // if 0'd sections
-void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
+//
+// [AM] Cleaned the old huffman calls for code clarity sake.
+//
+static void CompressPacket(buf_t& send, const size_t reserved, client_t* cl)
 {
-	if(plain.maxsize() < send.maxsize())
+	if (plain.maxsize() < send.maxsize())
+	{
 		plain.resize(send.maxsize());
-	
+	}
+
 	plain.setcursize(send.size());
-	
 	memcpy(plain.ptr(), send.ptr(), send.size());
 
 	byte method = 0;
-
-	int need_gap = 2; // for svc_compressed and method, below
-#if 0
-	if(MSG_CompressAdaptive(cl->compressor.get_codec(), send, reserved, need_gap))
+	if (MSG_CompressMinilzo(send, reserved, 0))
 	{
-		reserved += need_gap;
-		need_gap = 0;
-
-		method |= adaptive_mask;
-
-		if(cl->compressor.get_codec_id())
-			method |= adaptive_select_mask;
+		// Successful compression, set the compression flag bit.
+		method |= SVF_COMPRESSED;
 	}
-#endif
-	DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
 
-	if(MSG_CompressMinilzo(send, reserved, need_gap))
-		method |= minilzo_mask;
-
-	if((method & adaptive_mask) || (method & minilzo_mask))
-	{
-#if 0
-		if(cl->compressor.packet_sent(cl->sequence - 1, plain.ptr() + sizeof(int), plain.size() - sizeof(int)))
-			method |= adaptive_record_mask;
-#endif
-		send.ptr()[sizeof(int)] = svc_compressed;
-		send.ptr()[sizeof(int) + 1] = method;
-	}
-	DPrintf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
-
+	send.ptr()[PACKET_FLAG_INDEX] |= method;
+	DPrintf("CompressPacket %x " PRIuSIZE "\n", method, send.size());
 }
 
 #ifdef SIMULATE_LATENCY
@@ -168,26 +155,28 @@ bool SV_SendPacket(player_t &pl)
 
 	// save the reliable message 
 	// it will be retransmited, if it's missed
+	client_t::oldPacket_t& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
 
-	// the end of the buffer is reached
-	if (cl->relpackets.cursize + cl->reliablebuf.cursize >= cl->relpackets.maxsize())
-		cl->relpackets.cursize = 0;
-
-	// copy the beginning and the size of a packet to the buffer
-	cl->packetbegin[cl->packetnum] = cl->relpackets.cursize;
-	cl->packetsize[cl->packetnum] = cl->reliablebuf.cursize;
-	cl->packetseq[cl->packetnum] = cl->sequence;
-
+	old.data.clear();
 	if (cl->reliablebuf.cursize)
-		SZ_Write (&cl->relpackets, cl->reliablebuf.data, cl->reliablebuf.cursize);
-
+	{
+		// copy the reliable data into the buffer.
+		old.sequence = cl->sequence;
+		SZ_Write(&old.data, cl->reliablebuf.data, cl->reliablebuf.cursize);
+	}
+	else
+	{
+		old.sequence = -1;
+	}
 
 	cl->packetnum++; // packetnum will never be more than 255
 	                 // because sizeof(packetnum) == 1. Don't need
 	                 // to use &0xff. Cool, eh? ;-)
+
 	// copy sequence
 	MSG_WriteLong(&sendd, cl->sequence++);
-    
+	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
+
 	// copy the reliable message to the packet first
     if (cl->reliablebuf.cursize)
     {
@@ -212,8 +201,10 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->reliablebuf);
 	
 	// compress the packet, but not the sequence id
-	if (sendd.size() > sizeof(int))
-		SV_CompressPacket(sendd, sizeof(int), cl);
+	if (sendd.size() > PACKET_HEADER_SIZE)
+	{
+		CompressPacket(sendd, PACKET_HEADER_SIZE, cl);
+	}
 
 	if (log_packetdebug)
 	{
@@ -228,6 +219,43 @@ bool SV_SendPacket(player_t &pl)
 	NET_SendPacket(sendd, cl->address);
 #endif
 	return true;
+}
+
+/**
+ * @brief Send an old reliable packet with old data on the wire.
+ * 
+ * @param pl Player to send to.
+ * @param sequence Sequence number to send.  This assumss
+*/
+static void SendOldPacket(player_t& pl, const int sequence)
+{
+	// Send buffer.
+	static buf_t send(MAX_UDP_PACKET);
+	send.clear();
+
+	client_t& cl = pl.client;
+	client_t::oldPacket_t& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
+
+	// This is a lot simpler than a fresh send.  Just send the data we have
+	// have saved out.
+
+	MSG_WriteLong(&send, old.sequence);
+	MSG_WriteByte(&send, 0); // Flags, filled out later.
+
+	// copy the reliable message to the packet
+	if (old.data.cursize)
+	{
+		SZ_Write(&send, old.data.data, old.data.cursize);
+		cl.reliable_bps += old.data.cursize;
+	}
+
+	// compress the packet, but not the sequence id
+	if (send.size() > PACKET_HEADER_SIZE)
+	{
+		CompressPacket(send, PACKET_HEADER_SIZE, &cl);
+	}
+
+	NET_SendPacket(send, cl.address);
 }
 
 //
@@ -250,14 +278,7 @@ void SV_AcknowledgePacket(player_t &player)
 			int  n;
 			bool needfullupdate = true;
 
-			for (n=0; n<256; n++)
-				if (cl->packetseq[n] == seq)
-				{
-					needfullupdate = false;
-					break;
-				}
-
-			if  (needfullupdate)
+			if (cl->oldpackets[seq & PACKET_OLD_MASK].sequence != seq)
 			{
 				// do full update
 				DPrintf("need full update\n");
@@ -265,28 +286,17 @@ void SV_AcknowledgePacket(player_t &player)
 				return;
 			}
 
-			MSG_WriteMarker(&cl->reliablebuf, svc_missedpacket);
-			MSG_WriteLong(&cl->reliablebuf, seq);
-			MSG_WriteShort(&cl->reliablebuf, cl->packetsize[n]);
-			if (cl->packetsize[n])
-				SZ_Write (&cl->reliablebuf, cl->relpackets.data, 
-					cl->packetbegin[n], cl->packetsize[n]);
-
-			if (cl->reliablebuf.overflowed)
-			{
-				// do full update
-				DPrintf("reliablebuf overflowed, need full update\n");
-				cl->last_sequence = sequence;
-				return;
-			}
-
-			if (cl->reliablebuf.cursize > MaxPacketSize)
-				SV_SendPacket(player);
-
+			SendOldPacket(player, seq);
 		}
 	}
 
 	cl->last_sequence = sequence;
+
+	if (cl->last_sequence == 0)
+	{
+		// [AM] Finish our connection sequence.
+		SV_ConnectClient2(player);
+	}
 }
 
 VERSION_CONTROL (sv_rproto_cpp, "$Id$")
