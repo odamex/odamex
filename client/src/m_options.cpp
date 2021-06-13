@@ -233,13 +233,6 @@ value_t DemoRestrictions[2] = {
 	{ 1.0, "Allow" }
 };
 
-static value_t FlagHelds[] =
-{
-	{ 0.0, "Off" },
-	{ 1.0, "Complete" },
-	{ 2.0, "Simple" }
-};
-
 static value_t DoomOrOdamex[2] =
 {
 	{ 0.0, "Doom" },
@@ -717,6 +710,7 @@ menu_t WeaponMenu = {
  * Display Options Menu
  *
  *=======================================*/
+static void StartHUDMenu();
 static void StartMessagesMenu (void);
 static void StartAutomapMenu (void);
 void ResetCustomColors (void);
@@ -743,27 +737,7 @@ EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_fullhudtype)
 EXTERN_CVAR (hud_demobar)
-
-static value_t Crosshairs[] =
-{
-	{ 0.0, "None" },
-	{ 1.0, "Cross 1" },
-	{ 2.0, "Cross 2" },
-	{ 3.0, "X" },
-	{ 4.0, "Diamond" },
-	{ 5.0, "Dot" },
-	{ 6.0, "Box" },
-	{ 7.0, "Angle" },
-	{ 8.0, "Big Thing" }
-};
-
-static value_t HUDStyles[] = {
-	{ 0.0, "ZDoom" },
-	{ 1.0, "Odamex" },
-};
-
-static value_t TimerStyles[] = {
-    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+EXTERN_CVAR(hud_targetnames)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
@@ -802,6 +776,7 @@ CVAR_FUNC_IMPL (ui_transblue)
 }
 
 static menuitem_t VideoItems[] = {
+    {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
@@ -812,22 +787,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Bigger font in HUD",       {&hud_bigfont},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
-	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "Display Timer",			{&hud_timer},           {3.0}, {0.0},   {0.0},  {TimerStyles} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
-	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
-	{ discrete, "Held Flag Flashes",        {&hud_heldflag_flash}, {2.0}, {0.0},   {0.0},   {OnOff} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
-	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Crosshair Red",         {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Crosshair Green",       {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Crosshair Blue",        {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -844,9 +804,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
@@ -874,9 +832,76 @@ menu_t VideoMenu = {
 	ARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
-	3,
+	4,
 	0,
 	&M_UpdateDisplayOptions
+};
+
+/*=======================================
+ *
+ * HUD Menu
+ *
+ *=======================================*/
+
+static value_t SecretOptions[] = {
+    {0.0, "Off"},
+    {1.0, "On (with sounds)"},
+    {2.0, "On (w/o sounds)"},
+    {3.0, "Own only"},
+};
+
+static value_t TimerStyles[] = {
+    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+
+static value_t FlagHelds[] = {{0.0, "Off"}, {1.0, "Complete"}, {2.0, "Simple"}};
+
+static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"},
+                               {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
+                               {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
+
+static menuitem_t HUDItems[] = {
+    {discrete, "Scale HUD", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
+    {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    // clang-format off
+    {discrete, "Reveal Secrets", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
+    {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
+    // clang-format on
+    {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
+    {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {bricktext, "Scoreboard Settings", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {slider, "Scale scoreboard", {&hud_scalescoreboard}, {0.0}, {1.0}, {0.125}, {NULL}},
+    // clang-format off
+	{discrete, "Scores on Death", {&hud_show_scoreboard_ondeath}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    // clang-format on
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {bricktext, "CTF Settings", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Event Message Type", {&hud_gamemsgtype}, {3.0}, {0.0}, {0.0}, {VoxType}},
+    {discrete, "Held Flag Border", {&hud_heldflag}, {3.0}, {0.0}, {0.0}, {FlagHelds}},
+    {discrete, "Held Flag Flashes", {&hud_heldflag_flash}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {bricktext, "Crosshair Settings", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Crosshair Type", {&hud_crosshair}, {9.0}, {0.0}, {0.0}, {Crosshairs}},
+    {discrete, "Scale crosshair", {&hud_crosshairscale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Crosshair health", {&hud_crosshairhealth}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redslider, "Crosshair Red", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {greenslider, "Crosshair Green", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {blueslider, "Crosshair Blue", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+};
+
+menu_t HUDMenu = {
+    "M_VIDEO",              // title
+    0,                      // lastOn
+    ARRAY_LENGTH(HUDItems), // numitems
+    0,                      // indent
+    HUDItems,               // items
+    0,                      // scrolltop
+    0,                      // scrollpos
+    NULL,                   // refreshfunc
 };
 
 /*=======================================
@@ -928,13 +953,6 @@ static value_t Languages[] = {
 	{ 3.0, "Italian" }
 };
 
-static value_t SecretOptions[] = {
-    {0.0, "Off"}, 
-	{1.0, "On (with sounds)"}, 
-	{2.0, "On (w/o sounds)"}, 
-	{3.0, "Own only"}, 
-};
-
 static menuitem_t MessagesItems[] = {
 #if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
@@ -947,11 +965,6 @@ static menuitem_t MessagesItems[] = {
 	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Hide spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Hide enemies messages",	{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
-	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
-	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{4.0}, {0.0},   {0.0}, {SecretOptions} },
-
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -2346,6 +2359,11 @@ void Reset2Saved (void)
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
 	UpdateStuff();
+}
+
+static void StartHUDMenu()
+{
+	M_SwitchMenu(&HUDMenu);
 }
 
 static void StartMessagesMenu (void)
