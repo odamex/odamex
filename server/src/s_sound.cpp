@@ -418,8 +418,7 @@ void S_ParseSndInfo (void)
 					sndinfo = COM_Parse (sndinfo);
 					if (info.mapname[0])
 					{
-						strncpy (info.music, com_token, 9); // denis - todo -string limit?
-						std::transform(info.music, info.music + strlen(info.music), info.music, toupper);
+						info.music = com_token; // denis - todo -string limit?
 					}
 				} else {
 					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);

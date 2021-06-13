@@ -38,6 +38,8 @@
 #include "p_mobj.h"
 
 #include "d_player.h"
+#include "p_setup.h"
+#include "d_dehacked.h"
 
 
 extern bool HasBehavior;
@@ -370,7 +372,7 @@ BOOL P_Move (AActor *actor)
 			// if the special is not a door
 			// that can be opened,
 			// return false
-			if (P_UseSpecialLine (actor, ld, 0) ||
+			if (P_UseSpecialLine (actor, ld, 0, false) ||
 				P_PushSpecialLine (actor, ld, 0))
 				good = true;
 		}
@@ -1645,7 +1647,14 @@ void A_Mushroom (AActor *actor)
 
 	A_Explode (actor);	// First make normal explosion
 
-	if(serverside)
+	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+	//
+	// THIS CODE BELOW CRASHES BECAUSE OF THINKERS!
+	// IT'S A SERIOUS BUG TO FIX!!
+	//
+	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+
+	/*if(serverside)
 	{
         // Now launch mushroom cloud
         for (i = -n; i <= n; i += 8)
@@ -1666,7 +1675,7 @@ void A_Mushroom (AActor *actor)
                 }
             }
         }
-	}
+	}*/
 }
 
 
@@ -1945,6 +1954,61 @@ void A_Explode (AActor *thing)
 //
 void A_BossDeath (AActor *actor)
 {
+	// custom boss actions for UMAPINFO
+	if (level.bossactions_donothing)
+		return;
+	
+	if (!level.bossactions->empty())
+	{
+		// make sure there is a player alive for victory
+		Players::const_iterator it = players.begin();
+		for (; it != players.end(); ++it)
+		{
+			if (it->ingame() && it->health > 0)
+				break;
+		}
+
+		if (it == players.end())
+			return; // no one left alive, so do not end game
+
+		std::vector<OBossAction>::iterator ba = level.bossactions->begin();
+		
+		// see if the BossAction applies to this type
+		for (; ba != level.bossactions->end(); ++ba)
+		{
+			if (ba->type == actor->type)
+				break;
+		}
+		if (ba == level.bossactions->end())
+			return;
+
+		// scan the remaining thinkers to see if all bosses are dead
+		TThinkerIterator<AActor> iterator;
+		AActor* other;
+
+		while ((other = iterator.Next()))
+		{
+			if (other != actor && other->type == actor->type && other->health > 0)
+			{
+				// other boss not dead
+				return;
+			}
+		}
+
+		ba = level.bossactions->begin();
+
+		for (; ba != level.bossactions->end(); ++ba)
+		{
+			if (ba->type == actor->type)
+			{
+				if (!P_UseSpecialLine(actor, &ba->ld, 0, true))
+					P_CrossSpecialLine(0, 0, actor, true);
+			}
+		}
+
+		return;
+	}
+	
 	// [RH] These all depend on the presence of level flags now
 	//		rather than being hard-coded to specific levels.
 
@@ -1978,7 +2042,7 @@ void A_BossDeath (AActor *actor)
 	TThinkerIterator<AActor> iterator;
 	AActor *other;
 
-	while ( (other = iterator.Next ()) )
+	while ((other = iterator.Next()))
 	{
 		if (other != actor && other->type == actor->type && other->health > 0)
 		{
@@ -1992,13 +2056,13 @@ void A_BossDeath (AActor *actor)
 	{
 		if (actor->type == MT_FATSO)
 		{
-			EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 			return;
 		}
 
 		if (actor->type == MT_BABY)
 		{
-			EV_DoFloor (DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
 			return;
 		}
 	}
@@ -2007,11 +2071,11 @@ void A_BossDeath (AActor *actor)
 		switch (level.flags & LEVEL_SPECACTIONSMASK)
 		{
 			case LEVEL_SPECLOWERFLOOR:
-				EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+				EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 				return;
 
 			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+				EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
 				return;
 		}
 	}
@@ -2309,19 +2373,19 @@ void A_Gibify(AActor *mo) // denis - squash thing
 //
 // A small set of highly-sought-after code pointers
 //
-
 void A_Spawn(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
+	// Partial integration of A_Spawn.
+	// ToDo: Currently missing MBF's MF_FRIEND flag support!
 	if (mo->state->misc1)
 	{
-		AActor* newmobj = P_SpawnMobj(
-			mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
-			mo->state->misc1 - 1
-		);
-		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+		AActor* newmobj;
+
+		newmobj = new AActor ( mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z, (mobjtype_t)(mo->state->misc1 - 1) );
+
+		//newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND); // TODO !!!
 	}
-	*/
+	
 }
 
 void A_Turn(AActor* mo)
@@ -2336,26 +2400,44 @@ void A_Face(AActor* mo)
 
 void A_Scratch(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	mo->target && (A_FaceTarget(mo), P_CheckMeleeRange(mo)) ?
-		mo->state->misc2 ? S_StartSound(mo, mo->state->misc2) : (void)0,
-		P_DamageMobj(mo->target, mo, mo, mo->state->misc1) : (void)0;
-	*/
+	if (mo->target)
+	{
+		A_FaceTarget(mo);
+
+		if (P_CheckMeleeRange(mo))
+		{
+			if (mo->state->misc2)
+				S_Sound(mo, CHAN_BODY, SoundMap[mo->state->misc2], 1, ATTN_NORM);
+
+			P_DamageMobj(mo->target, mo, mo, mo->state->misc1);
+		}
+	}
 }
 
 void A_PlaySound(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	S_StartSound(mo->state->misc2 ? NULL : mo, mo->state->misc1);
-	*/
+	// Play the sound from the SoundMap
+
+	int sndmap = mo->state->misc1;
+
+	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	{
+		DPrintf("Warning: Sound ID is beyond the array of the Sound Map!\n");
+		sndmap = 0;
+	}
+
+	S_Sound(
+		(mo->state->misc2 ? NULL : mo),
+		CHAN_BODY, 
+		SoundMap[mo->state->misc1],
+		1,
+		ATTN_NORM);
 }
 
 void A_RandomJump(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, mo->state->misc1);
-	*/
+		P_SetMobjState(mo, (statenum_t)mo->state->misc1);
 }
 
 //

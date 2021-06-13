@@ -1,0 +1,107 @@
+/**
+ * Odamex common protocol messages.
+ */
+
+syntax="proto3";
+
+package odaproto;
+
+message Color
+{
+	int32 r = 1;
+	int32 g = 2;
+	int32 b = 3;
+	int32 a = 4;
+}
+
+message Vec2
+{
+	sfixed32 x = 1;
+	sfixed32 y = 2;
+}
+
+message Vec3
+{
+	sfixed32 x = 1;
+	sfixed32 y = 2;
+	sfixed32 z = 3;
+}
+
+message Actor
+{
+	uint32 netid = 1;
+	Vec3 pos = 2;
+	fixed32 angle = 3;
+	int32 frame = 4;
+	fixed32 pitch = 5;
+	Vec3 mom = 6;
+	int32 type = 7;
+	int32 tics = 8;
+	int32 statenum = 9;
+	fixed32 flags = 10;
+	uint32 movedir = 11;
+	int32 movecount = 12;
+	uint32 targetid = 13;
+	int32 reactiontime = 14;
+	uint32 tracerid = 15;
+	int32 waterlevel = 16;
+	uint32 rndindex = 17;
+}
+
+message Player
+{
+	message Psp
+	{
+		int32 statenum = 1;
+		int32 tics = 2;
+		sfixed32 sx = 3;
+		sfixed32 sy = 4;
+	}
+
+	uint32 playerid = 1;
+	sfixed32 viewz = 2;
+	sfixed32 viewheight = 3;
+	sfixed32 deltaviewheight = 4;
+	int32 health = 5;
+	int32 armorpoints = 6;
+	int32 armortype = 7;
+	repeated int32 powers = 8;
+	uint32 cards = 9;
+	bool backpack = 10;
+	int32 lives = 11;
+	int32 pendingweapon = 12;
+	int32 readyweapon = 13;
+	uint32 weaponowned = 14;
+	repeated int32 ammo = 15;
+	repeated int32 maxammo = 16;
+	repeated Psp psprites = 17;
+	int32 jumptics = 18;
+}
+
+message Sector
+{
+	message Colormap
+	{
+		Color color = 1;
+		Color fade = 2;
+	}
+
+	sfixed32 floor_height = 1;
+	sfixed32 ceiling_height = 2;
+	int32 floorpic = 3;
+	int32 ceilingpic = 4;
+	int32 lightlevel = 5;
+	int32 special = 6;
+	Vec2 floor_offs = 7;
+	Vec2 ceiling_offs = 8;
+	Vec2 floor_scale = 9;
+	Vec2 ceiling_scale = 10;
+	fixed32 floor_angle = 11;
+	fixed32 ceiling_angle = 12;
+	float gravity = 13;
+	Colormap colormap = 14;
+	sfixed32 base_ceiling_angle = 15;
+	sfixed32 base_ceiling_yoffs = 16;
+	sfixed32 base_floor_angle = 17;
+	sfixed32 base_floor_yoffs = 18;
+}

@@ -131,7 +131,7 @@ void F_StartFinale(finale_options_t& options)
 
 	if (options.music == NULL)
 	{
-		::currentmusic = ::gameinfo.finaleMusic;
+		::currentmusic = ::gameinfo.finaleMusic.c_str();
 		S_ChangeMusic(
 			::currentmusic.c_str(),
 			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
@@ -159,20 +159,22 @@ void F_StartFinale(finale_options_t& options)
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
-		::finalelump = gameinfo.finaleFlat;
+		::finalelump = gameinfo.finaleFlat.c_str();
 	}
 
-	if (options.text == NULL)
+	if (options.text)
 	{
-		::finaletext = "In the quiet following your last battle, you suddenly "
-			"get the feeling that something is...missing.  Like there was "
-			"supposed to be intermission text here, but somehow it couldn't "
-			"be found.\n\nNo matter.  You ready your weapon and continue on "
-			"into the chaos.";
+		::finaletext = options.text;
 	}
 	else
 	{
-		::finaletext = options.text;
+		::finaletext = "In the quiet following your last battle,\n"
+			"you suddenly get the feeling that something is\n"
+			"...missing.  Like there was supposed to be intermission\n"
+			" text here, but somehow it couldn't be found.\n"
+			"\n"
+			"No matter.  You ready your weapon and continue on \n"
+			"into the chaos.";
 	}
 
 	::finalestage = 0;
@@ -226,9 +228,8 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap, "EndGame", 7) ||
-				(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))  	// [ML] Chex mode: game is over
-				{																	// after E1M5
+				if (!strnicmp (level.nextmap.c_str(), "EndGame", 7))
+				{
 					if (level.nextmap[7] == 'C')
 					{
 						F_StartCast ();
@@ -255,8 +256,7 @@ void F_Ticker (void)
 
 	if (finalestage == 2)
 	{
-		F_CastTicker ();
-		return;
+		F_CastTicker();
 	}
 }
 
@@ -266,7 +266,7 @@ void F_Ticker (void)
 // F_TextWrite
 //
 
-void F_TextWrite (void)
+void F_TextWrite ()
 {
 	// Don't draw text without a working font.
 	if (::hu_font[0].empty())
@@ -885,8 +885,12 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage1), 0, 0);
+				{
+					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage1;
+
+					screen->DrawPatchIndirect(W_CachePatch(page), 0, 0);
 					break;
+				}
 				case '2':
 					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
 					break;

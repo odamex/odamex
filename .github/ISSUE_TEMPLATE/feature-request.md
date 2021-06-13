@@ -1,5 +1,5 @@
 ---
-name: Feature request
+name: Feature Request
 about: Suggest an idea for Odamex
 title: "[FEATURE] Describe Feature Here"
 labels: feature request

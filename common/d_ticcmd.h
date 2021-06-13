@@ -33,6 +33,32 @@
 // plus a checksum for internal state consistency.
 struct ticcmd_t
 {
+  private:
+	static void readByte(std::string::const_iterator it, byte& b)
+	{
+		b = static_cast<uint8_t>(*it);
+	}
+
+	static void readShort(std::string::const_iterator it, short& s)
+	{
+		s = static_cast<uint8_t>(*it);
+		s |= static_cast<uint8_t>(*(it + 1)) << 8;
+	}
+
+	static void writeByte(std::string::iterator it, byte b)
+	{
+		*it = b;
+	}
+
+	static void writeShort(std::string::iterator it, short s)
+	{
+		*it = s & 0xFF;
+		*(it + 1) = s >> 8;
+	}
+  public:
+
+	static const size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
+
 	ticcmd_t()
 	{
 		clear();
@@ -47,6 +73,31 @@ struct ticcmd_t
 		sidemove = 0;
 		upmove = 0;
 		impulse = 0;
+	}
+
+	void serialize(std::string& out)
+	{
+		out.resize(SERIALIZED_SIZE);
+		writeByte(out.begin(), buttons);
+		writeShort(out.begin() + 1, pitch);
+		writeShort(out.begin() + 3, yaw);
+		writeShort(out.begin() + 5, forwardmove);
+		writeShort(out.begin() + 7, sidemove);
+		writeShort(out.begin() + 9, upmove);
+		writeByte(out.begin() + 11, impulse);
+	}
+
+	void unserialize(const std::string& in)
+	{
+		if (in.size() != SERIALIZED_SIZE)
+			return;
+		readByte(in.begin(), buttons);
+		readShort(in.begin() + 1, pitch);
+		readShort(in.begin() + 3, yaw);
+		readShort(in.begin() + 5, forwardmove);
+		readShort(in.begin() + 7, sidemove);
+		readShort(in.begin() + 9, upmove);
+		readByte(in.begin() + 11, impulse);
 	}
 
 	int		tic;	// the client's tic when this cmd was sent

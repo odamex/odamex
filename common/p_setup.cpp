@@ -1688,7 +1688,7 @@ static void P_InitTagLists(void)
 }
 
 // [RH] position indicates the start spot to spawn at
-void P_SetupLevel (char *lumpname, int position)
+void P_SetupLevel (const char *lumpname, int position)
 {
 	size_t lumpnum;
 

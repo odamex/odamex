@@ -217,8 +217,8 @@ CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
-					"2 = use weapon preferences)",
-					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+					"2 = use weapon preferences, 3 = use PWO but holding fire cancels it)",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_RANGE(			cl_weaponpref_fst, "0", "Weapon preference level for fists",
 					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
@@ -486,6 +486,12 @@ CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
 CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(hud_targethealth_debug, "0",
+     "Show health of friendly players you're aiming at - this feature has known "
+     "shortcomings with inaccurate health values and will be fixed in a future version "
+     "of Odamex, enable at your peril",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down Timer\n// 2: Count-up timer",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -501,8 +507,10 @@ CVAR(			hud_heldflag_flash, "1", "Enables the flashes around the flag border.",
 CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
+CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A

@@ -203,9 +203,9 @@ void	P_SpawnSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor* thing);
+void    P_CrossSpecialLine (int linenum, int side, AActor* thing, bool bossaction);
 void    P_ShootSpecialLine (AActor* thing, line_t* line);
-bool    P_UseSpecialLine (AActor* thing, line_t* line, int side);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
 void    P_PlayerInSpecialSector (player_t *player);
@@ -446,6 +446,7 @@ void	P_InitSwitchList ();
 
 void	P_ProcessSwitchDef ();
 
+short P_GetButtonTexture(line_t* line);
 bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
@@ -1006,10 +1007,10 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 // [RH] ACS (see also p_acs.h)
 //
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
-void P_SuspendScript (int script, char *map);
-void P_TerminateScript (int script, char *map);
+void P_SuspendScript (int script, const char *map);
+void P_TerminateScript (int script, const char *map);
 void P_StartOpenScripts (void);
 void P_DoDeferedScripts (void);
 

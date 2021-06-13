@@ -24,6 +24,8 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
+#include <string>
+
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"
 #elif defined(SERVER_APP)
@@ -72,10 +74,10 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "92"
+#define CONFIGVERSIONSTR "200"
 
-#define DOTVERSIONSTR "0.9.2"
-#define GAMEVER (MAKEVER(0, 9, 2))
+#define DOTVERSIONSTR "10.0.0"
+#define GAMEVER (MAKEVER(10, 0, 0))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
 
@@ -91,9 +93,12 @@
 // earlier than this version.  Needs to be exactly 16 chars long.
 // 
 // upversion.py will update thie field deterministically and unambiguously.
-#define SAVESIG "ODAMEXSAVE092   "
+#define SAVESIG "ODAMEXSAVE010000"
 
 #define NETDEMOVER 3
+
+int VersionCompat(const int server, const int client);
+std::string VersionMessage(const int server, const int client, const char* email);
 
 // denis - per-file svn version stamps
 class file_version

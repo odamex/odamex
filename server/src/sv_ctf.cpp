@@ -21,18 +21,20 @@
 //
 // ----------------------------------------------------------------------------
 
+#include "p_ctf.h"
 
 #include <sstream>
-#include "sv_main.h"
-#include "m_random.h"
-#include "p_ctf.h"
-#include "i_system.h"
+
+#include "doomstat.h"
 #include "g_gametype.h"
+#include "i_system.h"
+#include "m_random.h"
+#include "m_wdlstats.h"
 #include "p_inter.h"
 #include "p_unlag.h"
+#include "sv_main.h"
+#include "svc_message.h"
 #include "v_textcolors.h"
-#include "m_wdlstats.h"
-#include "doomstat.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 std::string V_GetTeamColor(UserInfo userinfo);
@@ -71,11 +73,14 @@ static int ctf_points[NUM_CTF_SCORE] =
 //	[Toke - CTF] SV_CTFEvent
 //	Sends CTF events to player
 //
-void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
+void SV_CTFEvent(team_t f, flag_score_t event, player_t& who)
 {
-	if(event == SCORE_NONE)
+	if (event <= SCORE_REFRESH || event >= NUM_CTF_SCORE)
+	{
 		return;
+	}
 
+	const TeamsView& tv = TeamQuery().execute();
 	if (validplayer(who) && G_CanScoreChange())
 	{
 		if (G_IsRoundsGame())
@@ -84,35 +89,15 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 			who.points += ctf_points[event];
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t *cl = &(it->client);
+		client_t* cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
-		MSG_WriteByte (&cl->reliablebuf, event);
-		MSG_WriteByte (&cl->reliablebuf, f);
-		if (who.userinfo.team == TEAM_NONE)
-			MSG_WriteByte(&cl->reliablebuf, f);
-		else
-			MSG_WriteByte(&cl->reliablebuf, who.userinfo.team);
-
-		if(validplayer(who))
+		MSG_WriteSVC(&cl->reliablebuf, SVC_CTFEvent(event, f, who));
+		if (event == SCORE_CAPTURE)
 		{
-			MSG_WriteByte (&cl->reliablebuf, who.id);
-
-			if (G_IsRoundsGame())
-				MSG_WriteVarint(&cl->reliablebuf, who.totalpoints);
-			else
-				MSG_WriteVarint(&cl->reliablebuf, who.points);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_CTFRefresh(tv, false));
 		}
-		else
-		{
-			MSG_WriteByte (&cl->reliablebuf, 0);
-			MSG_WriteVarint(&cl->reliablebuf, 0);
-		}
-
-		for(size_t j = 0; j < NUMTEAMS; j++)
-			MSG_WriteLong (&cl->reliablebuf, GetTeamInfo((team_t)j)->Points);
 	}
 }
 
@@ -124,18 +109,7 @@ void CTF_Connect(player_t &player)
 {
 	client_t *cl = &player.client;
 
-	MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
-	MSG_WriteByte (&cl->reliablebuf, SCORE_NONE);
-
-	for(size_t i = 0; i < NUMTEAMS; i++)
-	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		MSG_WriteByte (&cl->reliablebuf, teamInfo->FlagData.state);
-		MSG_WriteByte (&cl->reliablebuf, teamInfo->FlagData.flagger);
-	}
-
-	// send team scores to the client
-	SV_CTFEvent ((team_t)0, SCORE_REFRESH, player);
+	MSG_WriteSVC(&cl->reliablebuf, SVC_CTFRefresh(TeamQuery().execute(), true));
 }
 
 //

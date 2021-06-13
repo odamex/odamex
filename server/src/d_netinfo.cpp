@@ -29,6 +29,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_netinf.h"
+#include "sv_main.h"
 #include "v_textcolors.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
@@ -44,8 +45,6 @@ const byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
 	3, // wp_chainsaw
 	7  // wp_supershotgun
 };
-
-void SV_ServerSettingChange (void);
 
 int D_GenderToInt (const char *gender)
 {

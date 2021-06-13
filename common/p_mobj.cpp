@@ -42,6 +42,7 @@
 #include "c_dispatch.h"
 #include "p_horde.h"
 #include "p_hordespawn.h"
+#include "g_mapinfo.h"
 
 
 #define WATER_SINK_FACTOR		3
