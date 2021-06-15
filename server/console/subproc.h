@@ -17,38 +17,38 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Entry point
+//  Subprocess class
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
+
 #include "common.h"
 
-#include <FL/Fl.H>
-#include <FL/Fl_Input.H>
-#include <FL/Fl_Pack.H>
-#include <FL/Fl_Text_Display.H>
-#include <FL/Fl_Window.H>
-
-#include "subproc.h"
-
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+class subproc_t
 {
-	subproc_t proc = {0};
-	WinStartServer(proc);
+  public:
+	virtual bool send(const std::string& in) = 0;
+	virtual bool readOut(std::string& out) = 0;
+	virtual bool readErr(std::string& err) = 0;
+	virtual void destroy() = 0;
+};
 
-	const int WIDTH = 640;
-	const int HEIGHT = 480;
-	const int INPUT_HEIGHT = 24;
+class subprocWin_t final : public subproc_t
+{
+	HANDLE m_process;
+	HANDLE m_thread;
+	HANDLE m_stdIn;
+	HANDLE m_stdOut;
+	HANDLE m_stdErr;
 
-	Fl_Window* window = new Fl_Window(WIDTH, HEIGHT);
-	{
-		Fl_Text_Display* text = new Fl_Text_Display(0, 0, WIDTH, HEIGHT - INPUT_HEIGHT);
-		window->add(text);
+  public:
+	void create(HANDLE process, HANDLE thread, HANDLE stdIn, HANDLE stdOut,
+	            HANDLE stdErr);
+	void destroy();
+	bool send(const std::string& in);
+	bool readOut(std::string& out);
+	bool readErr(std::string& err);
+};
 
-		Fl_Input* input = new Fl_Input(0, HEIGHT - INPUT_HEIGHT, WIDTH, INPUT_HEIGHT);
-		window->add(input);
-	}
-	window->end();
-	window->show(0, NULL);
-	return Fl::run();
-}
+result_t<bool> WinStartServer(subproc_t& subproc);

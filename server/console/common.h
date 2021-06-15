@@ -17,38 +17,31 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Entry point
+//  Common functionality
 //
 //-----------------------------------------------------------------------------
 
-#include "common.h"
+#pragma once
 
-#include <FL/Fl.H>
-#include <FL/Fl_Input.H>
-#include <FL/Fl_Pack.H>
-#include <FL/Fl_Text_Display.H>
-#include <FL/Fl_Window.H>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 
-#include "subproc.h"
+#include <string>
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+template <typename T>
+class result_t
 {
-	subproc_t proc = {0};
-	WinStartServer(proc);
+	T result;
+	std::string error;
 
-	const int WIDTH = 640;
-	const int HEIGHT = 480;
-	const int INPUT_HEIGHT = 24;
+  public:
+	result_t(T res) : result(res), error("") {}
+	result_t(T res, const std::string& err) : result(res), error(err) {}
 
-	Fl_Window* window = new Fl_Window(WIDTH, HEIGHT);
+	bool ok() const
 	{
-		Fl_Text_Display* text = new Fl_Text_Display(0, 0, WIDTH, HEIGHT - INPUT_HEIGHT);
-		window->add(text);
-
-		Fl_Input* input = new Fl_Input(0, HEIGHT - INPUT_HEIGHT, WIDTH, INPUT_HEIGHT);
-		window->add(input);
+		return error.empty();
 	}
-	window->end();
-	window->show(0, NULL);
-	return Fl::run();
-}
+};

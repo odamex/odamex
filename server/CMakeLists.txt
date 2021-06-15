@@ -87,6 +87,6 @@ if(BUILD_OR_FAIL AND NOT TARGET odasrv)
   message(FATAL_ERROR "Odasrv target could not be generated")
 endif()
 
-add_executable(odaconsole WIN32 console/main.cpp)
+add_executable(odaconsole WIN32 console/main.cpp console/subproc.cpp)
 target_include_directories(odaconsole PRIVATE "${FLTK_DIR}/../include")
 target_link_libraries(odaconsole fltk)
