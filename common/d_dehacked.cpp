@@ -349,72 +349,6 @@ struct Key {
 	ptrdiff_t offset;
 };
 
-// Massive bunches of cheat shit
-//	to keep it from being easy to figure them out.
-// Yeah, right...
-unsigned char	cheat_mus_seq[] =
-{
-	0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff // idmus
-};
-
-unsigned char	cheat_choppers_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
-};
-
-unsigned char	cheat_god_seq[] =
-{
-	0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff	// iddqd
-};
-
-unsigned char	cheat_ammo_seq[] =
-{
-	0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
-};
-
-unsigned char	cheat_ammonokey_seq[] =
-{
-	0xb2, 0x26, 0x66, 0xa2, 0xff		// idfa
-};
-
-// Smashing Pumpkins Into Small Piles Of Putrid Debris.
-unsigned char	cheat_noclip_seq[] =
-{
-	0xb2, 0x26, 0xea, 0x2a, 0xb2,		// idspispopd
-	0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
-};
-
-//
-unsigned char	cheat_commercial_noclip_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
-};
-
-unsigned char	cheat_powerup_seq[7][10] =
-{
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, 	// beholds
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff }, 	// beholdi
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff }, 	// beholdr
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff }, 	// beholda
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff }, 	// beholdl
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }			// behold
-};
-
-unsigned char cheat_clev_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
-};
-
-
-// my position cheat
-unsigned char cheat_mypos_seq[] =
-{
-	0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff		// idmypos
-};
-
-unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-
 static int PatchThing (int);
 static int PatchSound (int);
 static int PatchFrame (int);
@@ -461,7 +395,6 @@ static const struct {
 static int HandleMode (const char *mode, int num);
 static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize = 0);
 static void BackupData (void);
-static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval);
 static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
@@ -576,22 +509,6 @@ void D_UndoDehPatch()
 	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
 	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
 	deh = backupDeh;
-}
-
-static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)
-{
-	while (*cheatseq != 0xff && *cheatseq != 1 && *newcheat) {
-		*cheatseq++ = SCRAMBLE(*newcheat);
-		newcheat++;
-	}
-
-	if (needsval) {
-		*cheatseq++ = 1;
-		*cheatseq++ = 0;
-		*cheatseq++ = 0;
-	}
-
-	*cheatseq = 0xff;
 }
 
 static BOOL ReadChars (char **stuff, int size)
@@ -1202,46 +1119,16 @@ static int PatchPointer (int ptrNum)
 	return result;
 }
 
-static int PatchCheats (int dummy)
+static int PatchCheats(int dummy)
 {
-	static const struct {
-		const char *name;
-		byte *cheatseq;
-		BOOL needsval;
-	} keys[] = {
-		{ "Change music",		cheat_mus_seq,				 true },
-		{ "Chainsaw",			cheat_choppers_seq,			 false },
-		{ "God mode",			cheat_god_seq,				 false },
-		{ "Ammo & Keys",		cheat_ammo_seq,				 false },
-		{ "Ammo",				cheat_ammonokey_seq,		 false },
-		{ "No Clipping 1",		cheat_noclip_seq,			 false },
-		{ "No Clipping 2",		cheat_commercial_noclip_seq, false },
-		{ "Invincibility",		cheat_powerup_seq[0],		 false },
-		{ "Berserk",			cheat_powerup_seq[1],		 false },
-		{ "Invisibility",		cheat_powerup_seq[2],		 false },
-		{ "Radiation Suit",		cheat_powerup_seq[3],		 false },
-		{ "Auto-map",			cheat_powerup_seq[4],		 false },
-		{ "Lite-Amp Goggles",	cheat_powerup_seq[5],		 false },
-		{ "BEHOLD menu",		cheat_powerup_seq[6],		 false },
-		{ "Level Warp",			cheat_clev_seq,				 true },
-		{ "Player Position",	cheat_mypos_seq,			 false },
-		{ "Map cheat",			cheat_amap_seq,				 false },
-		{ NULL, NULL, false}
-	};
 	int result;
 
-	DPrintf ("Cheats\n");
+	DPrintf("[DEHacked] Cheats support is depreciated. Ignoring these lines...\n");
 
-	while ((result = GetLine ()) == 1) {
-		int i = 0;
-		while (keys[i].name && stricmp (keys[i].name, Line1))
-			i++;
+	// Fake our work (don't do anything !)
+	while ((result = GetLine()) == 1)
+	{ }
 
-		if (!keys[i].name)
-			DPrintf ("Unknown cheat %s.\n", Line2);
-		else
-			ChangeCheat (Line2, keys[i].cheatseq, keys[i].needsval);
-	}
 	return result;
 }
 

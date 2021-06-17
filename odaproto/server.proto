@@ -202,6 +202,9 @@ message PlayerMembers
 	int32 secretcount = 11;
 	int32 totalpoints = 12;
 	int32 totaldeaths = 13;
+
+	// Ch0wW: Include Cheats...
+	uint32 cheats = 14;
 }
 
 // svc_teammembers
