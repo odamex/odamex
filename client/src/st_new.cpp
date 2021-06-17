@@ -120,6 +120,7 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedobits)
 
 void ST_unloadNew()
 {
@@ -833,6 +834,9 @@ drawToasts_t g_Toasts;
 
 void DrawToasts()
 {
+	if (!hud_feedobits)
+		return;
+
 	V_SetFont("DIGFONT");
 
 	std::string buffer;

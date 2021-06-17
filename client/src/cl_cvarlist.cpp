@@ -152,11 +152,11 @@ CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				message_showpickups, "1", "Show item pickup messages.",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(message_showpickups, "1", "Show item pickup messages on the message line.",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				message_showobituaries, "1", "Show player death messages.",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(message_showobituaries, "0", "Show player death messages on the message line.",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(msg0color, "6", "Color used for Pickup messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
@@ -508,6 +508,8 @@ CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
 CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
+CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
