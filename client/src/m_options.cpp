@@ -736,7 +736,6 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
-EXTERN_CVAR (hud_fullhudtype)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
 

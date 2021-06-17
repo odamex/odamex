@@ -460,9 +460,6 @@ CVAR_FUNC_DECL(	hud_crosshaircolor, "ff ff ff", "Crosshair color",
 CVAR(			hud_crosshairhealth, "1", "Color of crosshair represents health level",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(		hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
 CVAR_RANGE(		hud_gamemsgtype, "2", "Game message type",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
 
