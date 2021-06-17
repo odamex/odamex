@@ -68,7 +68,6 @@ DCanvas *odacanvas = NULL;
 extern DCanvas *screen;
 extern byte *Ranges;
 
-EXTERN_CVAR(hud_fullhudtype)
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_timelimit)
@@ -501,10 +500,8 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else if (hud_fullhudtype >= 1)
-					hud::OdamexHUD();
 				else
-					hud::ZDoomHUD();
+					hud::OdamexHUD();
 			}
 		}
 		else
