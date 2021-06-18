@@ -23,8 +23,6 @@
 #include "com_misc.h"
 
 #include "version.h"
-#include "c_dispatch.h"
-#include "v_textcolors.h"
 
 #if defined(SERVER_APP)
 #include "svc_message.h"
@@ -43,16 +41,3 @@ void COM_PushToast(const toast_t& toast)
 	hud::PushToast(toast);
 #endif
 }
-
-BEGIN_COMMAND(toast)
-{
-	toast_t toast;
-
-	toast.flags = toast_t::LEFT | toast_t::LEFT_PLUS | toast_t::RIGHT;
-	toast.left = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
-	toast.left_plus = std::string(TEXTCOLOR_GREEN) + "[GRN]Xenaero";
-	toast.right = std::string(TEXTCOLOR_BRICK) + "[RED]KBlair";
-
-	COM_PushToast(toast);
-}
-END_COMMAND(toast)

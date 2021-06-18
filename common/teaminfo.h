@@ -65,7 +65,6 @@ struct TeamInfo
 	std::string ColorString;
 	argb_t Color;
 	std::string TextColor;
-	std::string ToastColor;
 	int TransColor;
 
 	int FountainColorArg;

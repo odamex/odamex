@@ -20,7 +20,6 @@ void InitTeamInfo()
 	teamInfo->ColorStringUpper = "BLUE";
 	teamInfo->ColorString = "Blue";
 	teamInfo->TextColor = TEXTCOLOR_BLUE;
-	teamInfo->ToastColor = TEXTCOLOR_LIGHTBLUE;
 	teamInfo->TransColor = CR_BLUE;
 	teamInfo->FountainColorArg = 3;
 	teamInfo->TeamSpawnThingNum = 5080;
@@ -38,7 +37,6 @@ void InitTeamInfo()
 	teamInfo->ColorStringUpper = "RED";
 	teamInfo->ColorString = "Red";
 	teamInfo->TextColor = TEXTCOLOR_RED;
-	teamInfo->ToastColor = TEXTCOLOR_BRICK;
 	teamInfo->TransColor = CR_RED;
 	teamInfo->FountainColorArg = 1;
 	teamInfo->TeamSpawnThingNum = 5081;
@@ -57,7 +55,6 @@ void InitTeamInfo()
 	teamInfo->ColorStringUpper = "GREEN";
 	teamInfo->ColorString = "Green";
 	teamInfo->TextColor = TEXTCOLOR_GREEN;
-	teamInfo->ToastColor = TEXTCOLOR_GREEN;
 	teamInfo->TransColor = CR_GREEN;
 	teamInfo->FountainColorArg = 2;
 	teamInfo->TeamSpawnThingNum = 5083;
@@ -75,7 +72,6 @@ void InitTeamInfo()
 	s_NoTeam.ColorStringUpper = "";
 	s_NoTeam.ColorString = "";
 	s_NoTeam.TextColor = TEXTCOLOR_GRAY;
-	s_NoTeam.ToastColor = TEXTCOLOR_GRAY;
 	s_NoTeam.TransColor = CR_GRAY;
 	s_NoTeam.FountainColorArg = 0;
 	s_NoTeam.TeamSpawnThingNum = 0;

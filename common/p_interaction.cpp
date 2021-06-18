@@ -1220,7 +1220,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		toast.flags = toast_t::ICON | toast_t::RIGHT;
 		if (G_IsTeamGame())
 		{
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+			toast.right += GetTeamInfo(self->player->userinfo.team)->TextColor;
 		}
 		toast.icon = mod;
 		toast.right += self->player->userinfo.netname;
@@ -1297,8 +1297,8 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
 		if (G_IsTeamGame())
 		{
-			toast.left += GetTeamInfo(attacker->player->userinfo.team)->ToastColor;
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+			toast.left += GetTeamInfo(attacker->player->userinfo.team)->TextColor;
+			toast.right += GetTeamInfo(self->player->userinfo.team)->TextColor;
 		}
 		toast.left += attacker->player->userinfo.netname;
 		toast.icon = mod;
@@ -1316,7 +1316,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	toast.flags = toast_t::ICON | toast_t::RIGHT;
 	if (G_IsTeamGame())
 	{
-		toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+		toast.right += GetTeamInfo(self->player->userinfo.team)->TextColor;
 	}
 	toast.icon = mod;
 	toast.right += self->player->userinfo.netname;
