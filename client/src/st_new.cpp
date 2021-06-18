@@ -85,7 +85,6 @@ static lumpHandle_t FlagIconReturn[NUMTEAMS];
 static lumpHandle_t FlagIconTaken[NUMTEAMS];
 static lumpHandle_t FlagIconDropped[NUMTEAMS];
 static lumpHandle_t LivesIcon[NUMTEAMS];
-static lumpHandle_t ToastIcon[NUMMODS];
 
 static int		NameUp = -1;
 
@@ -180,13 +179,6 @@ void ST_initNew()
 	::line_centerfull = W_CachePatchHandle("ODABARCF", PU_STATIC);
 	::line_rightempty = W_CachePatchHandle("ODABARRE", PU_STATIC);
 	::line_rightfull = W_CachePatchHandle("ODABARRF", PU_STATIC);
-
-	std::string buffer;
-	for (size_t i = 0; i < NUMMODS; i++)
-	{
-		StrFormat(buffer, "ODAMOD%d", i);
-		::ToastIcon[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
-	}
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -823,7 +815,7 @@ struct drawToast_t
 	int tic;
 	int pid_highlight;
 	std::string left;
-	lumpHandle_t icon;
+	std::string icon;
 	std::string right;
 };
 
@@ -831,12 +823,68 @@ typedef std::vector<drawToast_t> drawToasts_t;
 
 drawToasts_t g_Toasts;
 
+static const char* ToastIcon(const int icon)
+{
+	switch (icon)
+	{
+	default:
+	case MOD_UNKNOWN:
+		return "???";
+	case MOD_FIST:
+		return "FIST";
+	case MOD_PISTOL:
+		return "PSTL";
+	case MOD_SHOTGUN:
+		return "SG";
+	case MOD_CHAINGUN:
+		return "CG";
+	case MOD_ROCKET:
+		return "RKT";
+	case MOD_R_SPLASH:
+		return "RKTS";
+	case MOD_PLASMARIFLE:
+		return "PR";
+	case MOD_BFG_BOOM:
+		return "BFG";
+	case MOD_BFG_SPLASH:
+		return "BFGS";
+	case MOD_CHAINSAW:
+		return "SAW";
+	case MOD_SSHOTGUN:
+		return "SSG";
+	case MOD_WATER:
+		return "WATER";
+	case MOD_SLIME:
+		return "SLIME";
+	case MOD_LAVA:
+		return "LAVA";
+	case MOD_CRUSH:
+		return "CRUSH";
+	case MOD_TELEFRAG:
+		return "TELE";
+	case MOD_FALLING:
+		return "FALL";
+	case MOD_SUICIDE:
+		return "BYE";
+	case MOD_BARREL:
+		return "BOOM";
+	case MOD_EXIT:
+		return "EXIT";
+	case MOD_SPLASH:
+		return "SPLSH";
+	case MOD_HIT:
+		return "HIT";
+	case MOD_RAILGUN:
+		return "RG";
+	}
+}
+
 void DrawToasts()
 {
 	V_SetFont("DIGFONT");
 
 	std::string buffer;
-	int y = 1;
+	int y = 0;
 
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
@@ -858,24 +906,11 @@ void DrawToasts()
 			::hud_transparency.ForceSet(0.0);
 		}
 
-		int x = 1;
-
-		// Right-hand side.
+		StrFormat(buffer, "%s %s %s", it->left.c_str(), it->icon.c_str(),
+		          it->right.c_str());
 		hud::DrawText(0, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-		              it->right.c_str(), CR_GREY);
-		x += V_StringWidth(it->right.c_str()) + 1;
-
-		// Icon
-		patch_t* icon = W_ResolvePatchHandle(it->icon);
-		hud::DrawPatch(x, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		               hud::Y_TOP, icon, false, true);
-		x += icon->width() + 1;
-
-		// Left-hand side.
-		hud::DrawText(x, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-		              it->left.c_str(), CR_GREY);
-
-		y += MAX(V_LineHeight(), static_cast<int>(icon->height()));
+		              buffer.c_str(), CR_GREY);
+		y += V_LineHeight();
 	}
 	::hud_transparency.ForceSet(oldtrans);
 
@@ -925,7 +960,7 @@ void PushToast(const toast_t& toast)
 
 	if (toast.flags & toast_t::ICON)
 	{
-		drawToast.icon = ::ToastIcon[toast.icon];
+		drawToast.icon = ToastIcon(toast.icon);
 	}
 
 	buffer.clear();
