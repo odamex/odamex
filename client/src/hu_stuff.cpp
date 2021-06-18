@@ -230,8 +230,6 @@ void HU_Ticker()
 	// verify the chat mode status is valid
 	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
 		HU_UnsetChatMode();
-
-	hud::ToastTicker();
 }
 
 void HU_ReleaseKeyStates()
@@ -492,8 +490,6 @@ void HU_Drawer()
 	if (gamestate == GS_LEVEL)
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
-
-		hud::DrawToasts();
 
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
 		{
