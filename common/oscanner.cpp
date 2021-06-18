@@ -427,7 +427,7 @@ void OScanner::mustGetInt()
 		str.resize(str.size() - 1);
 	}
 
-	if (IsNum(str.c_str()) == false || str != "MAXINT")
+	if (IsNum(str.c_str()) == false && str != "MAXINT")
 	{
 		std::string errorMessage = "Expected integer, got \"";
 		errorMessage += str + '\"';
