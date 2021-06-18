@@ -42,9 +42,6 @@
 #include "v_palette.h"
 #include "c_dispatch.h"
 #include "gi.h"
-#include "v_textcolors.h"
-
-extern byte* Ranges;
 
 void WI_unloadData(void);
 
@@ -437,7 +434,6 @@ static int WI_DrawName (const char *str, int x, int y)
 	patch_t *p = NULL;
 	char charname[9];
 
-	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
@@ -445,7 +441,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		if (lump != -1)
 		{
 			p = W_CachePatch (lump);
-			screen->DrawTranslatedPatchClean(p, x, y);
+			screen->DrawPatchClean (p, x, y);
 			x += p->width() - 1;
 		}
 		else

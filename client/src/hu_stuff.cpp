@@ -68,6 +68,7 @@ DCanvas *odacanvas = NULL;
 extern DCanvas *screen;
 extern byte *Ranges;
 
+EXTERN_CVAR(hud_fullhudtype)
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_timelimit)
@@ -229,8 +230,6 @@ void HU_Ticker()
 	// verify the chat mode status is valid
 	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
 		HU_UnsetChatMode();
-
-	hud::ToastTicker();
 }
 
 void HU_ReleaseKeyStates()
@@ -492,16 +491,16 @@ void HU_Drawer()
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
-		hud::DrawToasts();
-
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
 		{
 			if (screenblocks < 12)
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else
+				else if (hud_fullhudtype >= 1)
 					hud::OdamexHUD();
+				else
+					hud::ZDoomHUD();
 			}
 		}
 		else
