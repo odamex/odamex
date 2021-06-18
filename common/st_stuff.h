@@ -68,15 +68,12 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// [ML] HUDified status bar
-void ST_drawStatusBar (void);
-
 namespace hud {
 
 void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD
-void OdamexHUD(void);
+void OdamexHUD();
 
 // [AM] Draw obituary and event toasts.
 void DrawToasts();
@@ -91,13 +88,10 @@ void PushToast(const toast_t& toast);
 void LevelStateHUD();
 
 // [AM] Spectator HUD
-void SpectatorHUD(void);
-
-// [AM] Original ZDoom HUD
-void ZDoomHUD(void);
+void SpectatorHUD();
 
 // [AM] HUD drawn with the Doom Status Bar.
-void DoomHUD(void);
+void DoomHUD();
 
 }
 
