@@ -42,9 +42,6 @@
 #include "v_palette.h"
 #include "c_dispatch.h"
 #include "gi.h"
-#include "v_textcolors.h"
-
-extern byte* Ranges;
 
 void WI_unloadData(void);
 
@@ -430,6 +427,10 @@ void WI_slamBackground (void)
 
 	background_surface->unlock();
 }
+
+#include "v_textcolors.h"
+
+extern byte* Ranges;
 
 static int WI_DrawName (const char *str, int x, int y)
 {

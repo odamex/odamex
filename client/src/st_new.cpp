@@ -1001,15 +1001,14 @@ void LevelStateHUD()
 			break;
 		}
 
-		str = TEXTCOLOR_YELLOW "Warmup";
+		str = "Warmup";
 		break;
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN:
-		str = TEXTCOLOR_YELLOW + G_GametypeName();
+		str = G_GametypeName();
 		break;
 	case LevelState::PREROUND_COUNTDOWN:
-		StrFormat(str, TEXTCOLOR_YELLOW "Round " TEXTCOLOR_YELLOW " %d\n",
-		          ::levelstate.getRound());
+		StrFormat(str, "Round %d\n", ::levelstate.getRound());
 		break;
 	case LevelState::INGAME:
 		if (G_CanShowFightMessage())
@@ -1018,16 +1017,16 @@ void LevelStateHUD()
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					str = TEXTCOLOR_YELLOW "DEFEND!\n";
+					str = "DEFEND!\n";
 				}
 				else
 				{
-					str = TEXTCOLOR_YELLOW "CAPTURE!\n";
+					str = "CAPTURE!\n";
 				}
 			}
 			else
 			{
-				str = TEXTCOLOR_YELLOW "FIGHT!\n";
+				str = "FIGHT!\n";
 			}
 		}
 		else
@@ -1036,13 +1035,10 @@ void LevelStateHUD()
 		}
 		break;
 	case LevelState::ENDROUND_COUNTDOWN:
-		StrFormat(str,
-		          TEXTCOLOR_YELLOW "Round " TEXTCOLOR_GOLD "%d" TEXTCOLOR_YELLOW
-		                           " complete\n",
-		          ::levelstate.getRound());
+		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
 		break;
 	case LevelState::ENDGAME_COUNTDOWN:
-		StrFormat(str, TEXTCOLOR_YELLOW "Match complete\n");
+		StrFormat(str, "Match complete\n");
 		break;
 	default:
 		str = "";
