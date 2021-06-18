@@ -122,7 +122,6 @@ EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
-EXTERN_CVAR(hud_feedobits)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -869,7 +868,6 @@ static menuitem_t HUDItems[] = {
     {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
     // clang-format on
     {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
-    {discrete, "Killfeed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 

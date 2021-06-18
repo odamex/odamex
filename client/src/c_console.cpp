@@ -1108,14 +1108,15 @@ static int C_PrintStringStdOut(const char* str)
 // 
 static int C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
-	if (I_VideoInitialized() && !midprinting)
-	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
-		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
-		if (!noPickups && !noObits)
-			C_AddNotifyString(printlevel, color_code, outline);
-	}
+	if (printlevel == PRINT_PICKUP && !message_showpickups)
+		return 0;
+
+	if (printlevel == PRINT_OBITUARY && !message_showobituaries)
+		return 0;
+
+	if (I_VideoInitialized() && !midprinting)
+		C_AddNotifyString(printlevel, color_code, outline);
 
 	// Revert filtered chat to a normal chat to display to the console
 	if (printlevel == PRINT_FILTERCHAT)
