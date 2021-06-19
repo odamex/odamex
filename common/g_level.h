@@ -295,8 +295,10 @@ struct level_locals_t
 	
 };
 
-#define CLUSTER_HUB            0x00000001u
-#define CLUSTER_EXITTEXTISLUMP 0x00000002u
+typedef uint32_t clusterFlags_t;
+
+const static clusterFlags_t CLUSTER_HUB = BIT(0);
+const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct OBossAction
 {
