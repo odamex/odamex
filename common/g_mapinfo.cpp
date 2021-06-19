@@ -162,7 +162,7 @@ T GetToken(OScanner& os)
 template <>
 int GetToken<int>(OScanner& os)
 {
-	return os.getTokenBool();
+	return os.getTokenInt();
 }
 
 // return token as float
