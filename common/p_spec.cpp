@@ -406,16 +406,16 @@ static void P_InitAnimDefs ()
 			}
 			else if (os.compareToken("warp"))
 			{
-				os.mustGetString();
+				os.mustScan();
 				if (os.compareToken("flat"))
 				{
-					os.mustGetString();
+					os.mustScan();
 					flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
 				}
 				else if (os.compareToken("texture"))
 				{
 					// TODO: Make texture warping work with wall textures
-					os.mustGetString();
+					os.mustScan();
 					R_TextureNumForName(os.getToken().c_str());
 				}
 				else
@@ -434,7 +434,7 @@ static void ParseAnim(OScanner &os, byte istex)
 	anim_t *place;
 	byte min, max;
 
-	os.mustGetString();
+	os.mustScan();
 	picnum = istex ? R_CheckTextureNumForName(os.getToken().c_str())
 		: W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
 
@@ -501,21 +501,21 @@ static void ParseAnim(OScanner &os, byte istex)
 
 		min = max = 1;	// Shut up, GCC
 
-		os.mustGetInt();
-		const int frame = os.getTokenAsInt();
-		os.mustGetString();
+		os.mustScanInt();
+		const int frame = os.getTokenInt();
+		os.mustScan();
 		if (os.compareToken("tics"))
 		{
-			os.mustGetInt();
-			min = max = clamp(os.getTokenAsInt(), 0, 255);
+			os.mustScanInt();
+			min = max = clamp(os.getTokenInt(), 0, 255);
 		}
 		else if (os.compareToken("rand"))
 		{
-			os.mustGetInt();
-			int num = os.getTokenAsInt();
+			os.mustScanInt();
+			int num = os.getTokenInt();
 			min = num >= 0 ? num : 0;
-			os.mustGetInt();
-			num = os.getTokenAsInt();
+			os.mustScanInt();
+			num = os.getTokenInt();
 			max = num <= 255 ? num : 255;
 		}
 		else

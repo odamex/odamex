@@ -162,21 +162,21 @@ T GetToken(OScanner& os)
 template <>
 int GetToken<int>(OScanner& os)
 {
-	return os.getTokenAsBool();
+	return os.getTokenBool();
 }
 
 // return token as float
 template <>
 float GetToken<float>(OScanner& os)
 {
-	return os.getTokenAsFloat();
+	return os.getTokenFloat();
 }
 
 // return token as bool
 template <>
 bool GetToken<bool>(OScanner& os)
 {
-	return os.getTokenAsBool();
+	return os.getTokenBool();
 }
 
 // return token as std::string
@@ -216,35 +216,35 @@ void MustGet(OScanner& os)
 template <>
 void MustGet<int>(OScanner& os)
 {
-	os.mustGetInt();
+	os.mustScanInt();
 }
 
 // ensure token is float
 template <>
 void MustGet<float>(OScanner& os)
 {
-	os.mustGetFloat();
+	os.mustScanFloat();
 }
 
 // ensure token is bool
 template <>
 void MustGet<bool>(OScanner& os)
 {
-	os.mustGetBool();
+	os.mustScanBool();
 }
 
 // ensure token is std::string
 template <>
 void MustGet<std::string>(OScanner& os)
 {
-	os.mustGetString();
+	os.mustScan();
 }
 
 // ensure token is OLumpName
 template <>
 void MustGet<OLumpName>(OScanner& os)
 {
-	os.mustGetString();
+	os.mustScan();
 
 	if (os.getToken().length() > 8)
 	{
