@@ -25,11 +25,13 @@
 
 #include "doomtype.h"
 #include "doomdef.h"
+#include "cmdlib.h"
 #include "m_fixed.h"
 #include "m_resfile.h"
 #include "olumpname.h"
 #include "r_defs.h" // line_t
 
+#include <assert.h>
 #include <string>
 #include <vector>
 
@@ -90,12 +92,19 @@ struct level_info_t
 	int				partime;
 	OLumpName		skypic;
 	OLumpName		music;
-	DWORD			flags;
+	uint32_t		flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
 
-	BOOL exists() const
+	level_info_t()
+	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
+	      defered(NULL)
+	{
+	}
+
+	bool exists() const
 	{
 		return !this->mapname.empty();
 	}
@@ -113,7 +122,7 @@ struct level_pwad_info_t
 	int				partime;
 	OLumpName		skypic;
 	OLumpName		music;
-	DWORD			flags;
+	uint32_t		flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
@@ -146,14 +155,80 @@ struct level_pwad_info_t
 	std::vector<OBossAction> bossactions;
 	bool			bossactions_donothing;
 	
-	BOOL exists() const
+	level_pwad_info_t()
+	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
+	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
+	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
+	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions(),
+	      bossactions_donothing(false)
+	{
+		ArrayInit(fadeto_color, 0);
+		ArrayInit(outsidefog_color, 0);
+		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
+	}
+
+	level_pwad_info_t(const level_info_t& other)
+	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
+	      pname(other.pname), nextmap(other.nextmap), secretmap(other.secretmap),
+	      partime(other.partime), skypic(other.skypic), music(other.music),
+	      flags(other.flags), cluster(other.cluster), snapshot(other.snapshot),
+	      defered(other.defered), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
+	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
+	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions(),
+	      bossactions_donothing(false)
+	{
+		ArrayInit(fadeto_color, 0);
+		ArrayInit(outsidefog_color, 0);
+		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
+	}
+
+	level_pwad_info_t& operator=(const level_pwad_info_t& other)
+	{
+		if (this == &other)
+			return *this;
+
+		mapname = other.mapname;
+		levelnum = other.levelnum;
+		level_name = other.level_name;
+		pname = other.pname;
+		nextmap = other.nextmap;
+		secretmap = other.secretmap;
+		partime = other.partime;
+		skypic = other.skypic;
+		music = other.music;
+		flags = other.flags;
+		cluster = other.cluster;
+		snapshot = other.snapshot;
+		defered = other.defered;
+		ArrayCopy(fadeto_color, other.fadeto_color);
+		ArrayCopy(outsidefog_color, other.outsidefog_color);
+		fadetable = other.fadetable;
+		skypic2 = other.skypic2;
+		gravity = other.gravity;
+		aircontrol = other.aircontrol;
+		exitpic = other.exitpic;
+		enterpic = other.enterpic;
+		endpic = other.endpic;
+		intertext = other.intertext;
+		intertextsecret = other.intertextsecret;
+		interbackdrop = other.interbackdrop;
+		intermusic = other.intermusic;
+		bossactions.clear();
+		std::copy(other.bossactions.begin(), other.bossactions.end(),
+		          bossactions.begin());
+		bossactions_donothing = other.bossactions_donothing;
+	}
+
+	bool exists() const
 	{
 		return !this->mapname.empty();
 	}
 };
 
 
-struct level_locals_t {
+struct level_locals_t
+{
 	int				time;
 	int				starttime;
 	int				partime;
@@ -223,7 +298,8 @@ struct OBossAction
 	line_t ld;
 };
 
-struct cluster_info_t {
+struct cluster_info_t
+{
 	int				cluster;
 	OLumpName		messagemusic;
 	OLumpName		finaleflat;
@@ -232,7 +308,13 @@ struct cluster_info_t {
 	int				flags;
 	OLumpName		finalepic;
 
-	BOOL exists() const
+	cluster_info_t()
+	    : cluster(0), messagemusic(""), finaleflat(""), exittext(NULL), entertext(NULL),
+	      flags(0)
+	{
+	}
+
+	bool exists() const
 	{
 		return this->cluster != 0;
 	}
@@ -244,7 +326,6 @@ class LevelInfos
 {
 	typedef std::vector<level_pwad_info_t> _LevelInfoArray;
 	const level_info_t* _defaultInfos;
-	static level_pwad_info_t _empty;
 	std::vector<level_pwad_info_t> _infos;
 public:
 	LevelInfos(const level_info_t* levels);
@@ -266,7 +347,6 @@ class ClusterInfos
 {
 	typedef std::vector<cluster_info_t> _ClusterInfoArray;
 	const cluster_info_t* _defaultInfos;
-	static cluster_info_t _empty;
 	std::vector<cluster_info_t> _infos;
 public:
 	ClusterInfos(const cluster_info_t* clusters);

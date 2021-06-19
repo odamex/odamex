@@ -190,15 +190,9 @@ namespace
 		NULL
 	};
 
-	void SetLevelDefaults(level_pwad_info_t* levelinfo)
+	void SetLevelDefaults(level_pwad_info_t& levelinfo)
 	{
-		memset(levelinfo, 0, sizeof(*levelinfo));
-		levelinfo->snapshot = NULL;
-		levelinfo->outsidefog_color[0] = 255;
-		levelinfo->outsidefog_color[1] = 0;
-		levelinfo->outsidefog_color[2] = 0;
-		levelinfo->outsidefog_color[3] = 0;
-		levelinfo->fadetable = "COLORMAP";
+		levelinfo = level_pwad_info_t();
 	}
 	
 	//
@@ -755,7 +749,7 @@ namespace
 		LevelInfos& levels = getLevelInfos();
 	
 		level_pwad_info_t defaultinfo;
-		SetLevelDefaults(&defaultinfo);
+		SetLevelDefaults(defaultinfo);
 	
 		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 	
@@ -1617,7 +1611,7 @@ namespace
 		ClusterInfos& clusters = getClusterInfos();
 	
 		level_pwad_info_t defaultinfo;
-		SetLevelDefaults(&defaultinfo);
+		SetLevelDefaults(defaultinfo);
 	
 		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 	
@@ -1632,14 +1626,14 @@ namespace
 		{
 			if (UpperCompareToken(os, "defaultmap"))
 			{
-				SetLevelDefaults(&defaultinfo);
+				SetLevelDefaults(defaultinfo);
 				
 				MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 				ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
 			}
 			else if (UpperCompareToken(os, "map"))
 			{
-				DWORD &levelflags = defaultinfo.flags;
+				uint32_t &levelflags = defaultinfo.flags;
 				MustGetString(os);
 	
 				char map_name[9];

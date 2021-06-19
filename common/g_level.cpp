@@ -46,6 +46,9 @@
 
 level_locals_t level;			// info about current level
 
+level_pwad_info_t g_EmptyLevel;
+cluster_info_t g_EmptyCluster;
+
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_realactorheight)
 
@@ -76,8 +79,7 @@ void LevelInfos::addDefaults()
 			break;
 
 		// Copied, so it can be mutated.
-		level_pwad_info_t info = _empty;
-		memcpy(&info, &level, sizeof(level));
+		level_pwad_info_t info(level);
 		_infos.push_back(info);
 	}
 }
@@ -113,7 +115,6 @@ void LevelInfos::clearSnapshots()
 level_pwad_info_t& LevelInfos::create()
 {
 	_infos.push_back(level_pwad_info_t());
-	_infos.back() = _empty;
 	return _infos.back();
 }
 
@@ -127,7 +128,7 @@ level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
@@ -139,7 +140,7 @@ level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
@@ -151,7 +152,7 @@ level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 // Find a levelinfo by mapnum
@@ -164,7 +165,7 @@ level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 // Number of info entries.
@@ -187,36 +188,6 @@ void LevelInfos::zapDeferreds()
 		it->defered = NULL;
 	}
 }
-
-// Empty levelinfo.
-level_pwad_info_t LevelInfos::_empty = {
-	"",   // mapname
-	0,    // levelnum
-	"",   // level_name
-	"",   // pname
-	"",   // nextmap
-	"",   // secretmap
-	0,    // partime
-	"",   // skypic
-	"",   // music
-	0,    // flags
-	0,    // cluster
-	NULL, // snapshot
-	NULL, // defered
-	{ 0, 0, 0, 0 },    // fadeto_color
-	{ 0xFF, 0, 0, 0 }, // outsidefog_color, 0xFF000000 is special token signaling to not handle it specially
-	"COLORMAP",        // fadetable
-	"",   // skypic2
-	0.0,  // gravity
-	0.0,  // aircontrol
-    "",	  // exitpic
-	"",	  // enterpic
-	"",	  // endpic
-    "",   // intertext
-    "",   // intertextsecret
-    "",   // interbackdrop
-    "",   // intermusic
-	};
 
 //
 // ClusterInfos methods
@@ -275,7 +246,6 @@ void ClusterInfos::clear()
 cluster_info_t& ClusterInfos::create()
 {
 	_infos.push_back(cluster_info_t());
-	_infos.back() = _empty;
 	return _infos.back();
 }
 
@@ -289,7 +259,7 @@ cluster_info_t& ClusterInfos::findByCluster(int i)
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyCluster;
 }
 
 // Number of info entries.
@@ -297,16 +267,6 @@ size_t ClusterInfos::size() const
 {
 	return _infos.size();
 }
-
-// Empty clusterinfo.
-cluster_info_t ClusterInfos::_empty = {
-	0,    // cluster
-	"",   // messagemusic
-	"",   // finaleflat
-	NULL, // exittext
-	NULL, // entertext
-	0,    // flags
-};
 
 void P_RemoveDefereds()
 {
