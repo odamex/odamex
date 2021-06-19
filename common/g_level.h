@@ -39,43 +39,49 @@
 #define NUM_WORLDVARS			256
 #define NUM_GLOBALVARS			64
 
-enum OLevelFlags : unsigned int
-{
-	LEVEL_NOINTERMISSION = 0x00000001, 
-	LEVEL_DOUBLESKY = 0x00000004,
-	LEVEL_NOSOUNDCLIPPING = 0x00000008,
+/**
+ * @brief Level flag bitfield.
+ */
+typedef uint32_t levelFlags_t;
 
-	LEVEL_MAP07SPECIAL = 0x00000010,
-	LEVEL_BRUISERSPECIAL = 0x00000020,
-	LEVEL_CYBORGSPECIAL = 0x00000040,
-	LEVEL_SPIDERSPECIAL = 0x00000080,
+const static levelFlags_t LEVEL_NOINTERMISSION = BIT(0);
+const static levelFlags_t LEVEL_DOUBLESKY = BIT(2);
+const static levelFlags_t LEVEL_NOSOUNDCLIPPING = BIT(3);
 
-	LEVEL_SPECLOWERFLOOR = 0x00000100,
-	LEVEL_SPECOPENDOOR = 0x00000200,
-	LEVEL_SPECACTIONSMASK =0x00000300,
+const static levelFlags_t LEVEL_MAP07SPECIAL = BIT(4);
+const static levelFlags_t LEVEL_BRUISERSPECIAL = BIT(5);
+const static levelFlags_t LEVEL_CYBORGSPECIAL = BIT(6);
+const static levelFlags_t LEVEL_SPIDERSPECIAL = BIT(7);
 
-	LEVEL_MONSTERSTELEFRAG = 0x00000400,
-	LEVEL_EVENLIGHTING = 0x00000800,
-	LEVEL_SNDSEQTOTALCTRL = 0x00001000,
-	LEVEL_FORCENOSKYSTRETCH = 0x00002000,
+const static levelFlags_t LEVEL_SPECLOWERFLOOR = BIT(8);
+const static levelFlags_t LEVEL_SPECOPENDOOR = BIT(9);
+const static levelFlags_t LEVEL_SPECACTIONSMASK = BIT_MASK(LEVEL_SPECLOWERFLOOR, LEVEL_SPECOPENDOOR);
+const static levelFlags_t LEVEL_MONSTERSTELEFRAG = BIT(10);
+const static levelFlags_t LEVEL_EVENLIGHTING = BIT(11);
 
-	LEVEL_JUMP_NO = 0x00004000,
-	LEVEL_JUMP_YES = 0x00008000,
-	LEVEL_FREELOOK_NO = 0x00010000,
-	LEVEL_FREELOOK_YES = 0x00020000,
+const static levelFlags_t LEVEL_SNDSEQTOTALCTRL = BIT(12);
+const static levelFlags_t LEVEL_FORCENOSKYSTRETCH = BIT(13);
+const static levelFlags_t LEVEL_JUMP_NO = BIT(14);
+const static levelFlags_t LEVEL_JUMP_YES = BIT(15);
 
-	LEVEL_COMPAT_DROPOFF = 0x00040000,
-	LEVEL_COMPAT_NOPASSOVER = 0x00080000,
+const static levelFlags_t LEVEL_FREELOOK_NO = BIT(16);
+const static levelFlags_t LEVEL_FREELOOK_YES = BIT(17);
+const static levelFlags_t LEVEL_COMPAT_DROPOFF = BIT(18);
+const static levelFlags_t LEVEL_COMPAT_NOPASSOVER = BIT(19);
 
-	LEVEL_STARTLIGHTNING = 0x01000000,	// Automatically start lightning
-	LEVEL_FILTERSTARTS = 0x02000000,	// Apply mapthing filtering to player starts
-	LEVEL_LOBBYSPECIAL = 0x04000000,	// That level is a lobby, and has a few priorities
+ // Automatically start lightning
+const static levelFlags_t LEVEL_STARTLIGHTNING = BIT(24);
+// Apply mapthing filtering to player starts
+const static levelFlags_t LEVEL_FILTERSTARTS = BIT(25);
+// That level is a lobby, and has a few priorities
+const static levelFlags_t LEVEL_LOBBYSPECIAL = BIT(26);
 
-	LEVEL_DEFINEDINMAPINFO = 0x20000000, // Level was defined in a MAPINFO lump
-	LEVEL_CHANGEMAPCHEAT = 0x40000000,	// Don't display cluster messages
-	LEVEL_VISITED = 0x80000000,			// Used for intermission map
-
-};
+ // Level was defined in a MAPINFO lump
+const static levelFlags_t LEVEL_DEFINEDINMAPINFO = BIT(29);
+// Don't display cluster messages
+const static levelFlags_t LEVEL_CHANGEMAPCHEAT = BIT(30);
+// Used for intermission map
+const static levelFlags_t LEVEL_VISITED = BIT(31);
 
 struct acsdefered_s;
 class FBehavior;
