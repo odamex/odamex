@@ -34,7 +34,7 @@
 
 #include "i_system.h"
 
-#define SINGLE_CHAR_TOKENS "$();=[]{}"
+static const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
 
 bool OScanner::checkPair(char a, char b)
 {

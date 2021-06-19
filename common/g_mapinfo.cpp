@@ -901,6 +901,20 @@ void MIType_LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags
 	*static_cast<OLumpName*>(data) = os.getToken();
 }
 
+// Handle lump names that can also be intermission scripts
+void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                          unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+	std::string tok = os.getToken();
+	if (!tok.empty() && tok.at(0) == '$')
+	{
+		// Intermission scripts are not supported.
+		return;
+	}
+	*static_cast<OLumpName*>(data) = tok;
+}
+
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
 void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
                       unsigned int flags2)
@@ -1192,9 +1206,9 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY2("intermusic", &MIType_EatNext)
 		ENTRY3("par", &MIType_Int, &ref.partime)
 		ENTRY2("sucktime", &MIType_EatNext)
-		ENTRY3("enterpic", &MIType_LumpName,
+		ENTRY3("enterpic", &MIType_InterLumpName,
 		       &ref.enterpic) // todo: add intermission script support
-		ENTRY3("exitpic", &MIType_LumpName,
+		ENTRY3("exitpic", &MIType_InterLumpName,
 		       &ref.exitpic) // todo: add intermission script support
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
