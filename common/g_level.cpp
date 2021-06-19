@@ -645,10 +645,10 @@ void G_ClearSnapshots()
 	getLevelInfos().clearSnapshots();
 }
 
-static void writeSnapShot(FArchive &arc, level_info_t *i)
+static void writeSnapShot(FArchive &arc, level_pwad_info_t& info)
 {
-	arc.Write (i->mapname.c_str(), 8);
-	i->snapshot->Serialize (arc);
+	arc.Write(info.mapname.c_str(), 8);
+	info.snapshot->Serialize(arc);
 }
 
 void G_SerializeSnapshots(FArchive &arc)
@@ -662,7 +662,7 @@ void G_SerializeSnapshots(FArchive &arc)
 			level_pwad_info_t& level = levels.at(i);
 			if (level.snapshot)
 			{
-				writeSnapShot(arc, reinterpret_cast<level_info_t*>(&level));
+				writeSnapShot(arc, level);
 			}
 		}
 
@@ -690,10 +690,10 @@ void G_SerializeSnapshots(FArchive &arc)
 	}
 }
 
-static void writeDefereds(FArchive &arc, level_info_t *i)
+static void writeDefereds(FArchive &arc, level_pwad_info_t& info)
 {
-	arc.Write (i->mapname.c_str(), 8);
-	arc << i->defered;
+	arc.Write(info.mapname.c_str(), 8);
+	arc << info.defered;
 }
 
 void P_SerializeACSDefereds(FArchive &arc)
@@ -707,7 +707,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 			level_pwad_info_t& level = levels.at(i);
 			if (level.defered)
 			{
-				writeDefereds(arc, reinterpret_cast<level_info_t*>(&level));
+				writeDefereds(arc, level);
 			}
 		}
 
