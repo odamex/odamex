@@ -43,11 +43,6 @@ endif()
 
 # Odalaunch target
 if(wxWidgets_FOUND)
-  # wxWidgets 3.0.4 requires C++11
-  if(wxWidgets_VERSION_STRING VERSION_GREATER 3.0.3)
-    set(CMAKE_CXX_STANDARD 11)
-  endif()
-
   file(MAKE_DIRECTORY "${XRCRES_BINARY_DIR}")
 
   # Attempt to compile all of the XRC files with custom commands.
@@ -70,6 +65,11 @@ if(wxWidgets_FOUND)
   endif()
 
   odalaunch_copy_libs(odalaunch)
+
+  # wxWidgets 3.0.4 requires C++11
+  if(wxWidgets_VERSION_STRING VERSION_GREATER 3.0.3)
+    set_target_properties(odalaunch PROPERTIES CXX_STANDARD 11)
+  endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
