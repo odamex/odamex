@@ -302,10 +302,9 @@ void OScanner::mustScanInt()
 
 	if (IsNum(str.c_str()) == false && str != "MAXINT")
 	{
-		std::string errorMessage = "Expected integer, got \"";
-		errorMessage += str + '\"';
-
-		error(errorMessage.c_str());
+		std::string err;
+		StrFormat(err, "Expected integer, got \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 }
 
@@ -316,7 +315,7 @@ void OScanner::mustScanFloat()
 {
 	if (!scan())
 	{
-		error("Missing floating-point number (unexpected end of file).");
+		error("Missing float (unexpected end of file).");
 	}
 
 	// fix for parser reading in commas
@@ -330,10 +329,9 @@ void OScanner::mustScanFloat()
 
 	if (IsRealNum(str.c_str()) == false)
 	{
-		std::string errorMessage = "Expected floating-point number, got \"";
-		errorMessage += str + '\"';
-
-		error(errorMessage.c_str());
+		std::string err;
+		StrFormat(err, "Expected float, got \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 }
 
@@ -349,10 +347,9 @@ void OScanner::mustScanBool()
 
 	if (!iequals(m_token, "true") && !iequals(m_token, "false"))
 	{
-		std::string errorMessage = "Expected boolean, got \"";
-		errorMessage += m_token + '\"';
-
-		error(errorMessage.c_str());
+		std::string err;
+		StrFormat(err, "Expected boolean, got \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 }
 
@@ -366,8 +363,7 @@ void OScanner::unScan()
 {
 	if (m_unScan == true)
 	{
-		I_Error("Script Error: %d:%s: Tried to unScan twice in a row", m_lineNumber,
-		        m_config.lumpName);
+		error("Tried to unScan twice in a row.");
 	}
 
 	m_unScan = true;
@@ -406,7 +402,9 @@ int OScanner::getTokenInt() const
 
 	if (*stopper != 0)
 	{
-		I_Error("Bad numeric constant \"%s\".", str.c_str());
+		std::string err;
+		StrFormat(err, "Bad integer constant \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 
 	return num;
@@ -432,7 +430,9 @@ float OScanner::getTokenFloat() const
 
 	if (*stopper != 0)
 	{
-		I_Error("Bad numeric constant \"%s\".", str.c_str());
+		std::string err;
+		StrFormat(err, "Bad float constant \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 
 	return static_cast<float>(num);
@@ -461,8 +461,10 @@ void OScanner::assertTokenIs(const char* string) const
 {
 	if (m_token.compare(string) != 0)
 	{
-		I_Error("Script Error: %d:%s: Unexpected Token (expected '%s' actual '%s')",
-		        m_lineNumber, m_config.lumpName, string, m_token.c_str());
+		std::string err;
+		StrFormat(err, "Unexpected Token (expected \"%s\" actual \"%s\").", string,
+		          m_token.c_str());
+		error(err.c_str());
 	}
 }
 
@@ -477,9 +479,9 @@ bool OScanner::compareToken(const char* string) const
 //
 // Print given error message.
 //
-void OScanner::error(const char* message)
+void OScanner::error(const char* message) const
 {
-	I_Error("%s", message);
+	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, message);
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")

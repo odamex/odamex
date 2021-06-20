@@ -80,7 +80,7 @@ class OScanner
 	bool isQuotedString() const;
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
-	void error(const char* message);
+	void error(const char* message) const;
 };
 
 #endif // __OSCANNER_H__
