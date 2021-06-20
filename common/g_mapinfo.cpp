@@ -188,6 +188,13 @@ void MustGet<bool>(OScanner& os)
 	os.scanBool();
 }
 
+// ensure token is std::string
+template <>
+void MustGet<std::string>(OScanner& os)
+{
+	os.scanString();
+}
+
 // ensure token is OLumpName
 void MustGetOLumpName(OScanner& os)
 {
