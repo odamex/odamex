@@ -151,52 +151,41 @@ bool UpperCompareToken(OScanner& os, const char* str)
 //////////////////////////////////////////////////////////////////////
 /// GetToken
 
-template <typename T>
-T GetToken(OScanner& os)
-{
-	I_FatalError(
-	    "Templated function GetToken templated with non-existant specialized type!");
-}
-
-// return token as int
-template <>
-int GetToken<int>(OScanner& os)
-{
-	return os.getTokenInt();
-}
-
-// return token as float
-template <>
-float GetToken<float>(OScanner& os)
-{
-	return os.getTokenFloat();
-}
-
-// return token as bool
-template <>
-bool GetToken<bool>(OScanner& os)
-{
-	return os.getTokenBool();
-}
-
-// return token as std::string
-template <>
-std::string GetToken<std::string>(OScanner& os)
-{
-	return os.getToken();
-}
-
-// return token as OLumpName
-template <>
-OLumpName GetToken<OLumpName>(OScanner& os)
-{
-	return os.getToken();
-}
-
 // return token as OLumpName
 OLumpName GetTokenOLumpName(OScanner& os)
 {
 	return os.getToken();
+}
+
+//////////////////////////////////////////////////////////////////////
+/// MustGet
+
+template <typename T>
+void MustGet(OScanner& os)
+{
+	I_FatalError(
+	    "Templated function MustGet templated with non-existant specialized type!");
+}
+
+// ensure token is int
+template <>
+void MustGet<int>(OScanner& os)
+{
+	os.scanInt();
+}
+
+// ensure token is float
+template <>
+void MustGet<float>(OScanner& os)
+{
+	os.scanFloat();
+}
+
+// ensure token is bool
+template <>
+void MustGet<bool>(OScanner& os)
+{
+	os.scanBool();
 }
 
 // ensure token is OLumpName
@@ -209,6 +198,13 @@ void MustGetOLumpName(OScanner& os)
 		I_Error("Lump name \"%s\" too long. Maximum size is 8 characters.",
 		        os.getToken().c_str());
 	}
+}
+
+// ensure token is bool
+template <>
+void MustGet<OLumpName>(OScanner& os)
+{
+	MustGetOLumpName(os);
 }
 
 //////////////////////////////////////////////////////////////////////
