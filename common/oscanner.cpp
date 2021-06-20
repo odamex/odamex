@@ -473,6 +473,14 @@ bool OScanner::compareToken(const char* string) const
 }
 
 //
+// Compare the most recent token with the passed string, case-insensitive.
+//
+bool OScanner::compareTokenNoCase(const char* string) const
+{
+	return iequals(m_token, string);
+}
+
+//
 // Print given error message.
 //
 void OScanner::error(const char* message) const

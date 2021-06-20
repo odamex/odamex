@@ -224,6 +224,8 @@ struct level_pwad_info_t
 		std::copy(other.bossactions.begin(), other.bossactions.end(),
 		          bossactions.begin());
 		bossactions_donothing = other.bossactions_donothing;
+
+		return *this;
 	}
 
 	bool exists() const

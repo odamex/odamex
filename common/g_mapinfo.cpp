@@ -139,15 +139,6 @@ void SkipUnknownBlock(OScanner& os)
 	}
 }
 
-// [DE] Below are helper functions for UMAPINFO and Z/MAPINFO parsing, partially to stand
-// in for
-// the way sc_man did things before
-
-bool UpperCompareToken(OScanner& os, const char* str)
-{
-	return iequals(os.getToken(), str);
-}
-
 //////////////////////////////////////////////////////////////////////
 /// GetToken
 
@@ -274,18 +265,18 @@ void MustGetIdentifier(OScanner& os)
 
 bool ContainsMapInfoTopLevel(OScanner& os)
 {
-	return UpperCompareToken(os, "map") || UpperCompareToken(os, "defaultmap") ||
-	       UpperCompareToken(os, "cluster") || UpperCompareToken(os, "clusterdef") ||
-	       UpperCompareToken(os, "episode") || UpperCompareToken(os, "clearepisodes") ||
-	       UpperCompareToken(os, "skill") || UpperCompareToken(os, "clearskills") ||
-	       UpperCompareToken(os, "gameinfo") || UpperCompareToken(os, "intermission") ||
-	       UpperCompareToken(os, "automap");
+	return os.compareTokenNoCase("map") || os.compareTokenNoCase("defaultmap") ||
+	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
+	       os.compareTokenNoCase("episode") || os.compareTokenNoCase("clearepisodes") ||
+	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
+	       os.compareTokenNoCase("gameinfo") || os.compareTokenNoCase("intermission") ||
+	       os.compareTokenNoCase("automap");
 }
 
 void MustGetStringName(OScanner& os, const char* name)
 {
 	MustGetString(os);
-	if (UpperCompareToken(os, name) == false)
+	if (os.compareTokenNoCase(name) == false)
 	{
 		I_Error("Expected '%s', got '%s'.", name, os.getToken().c_str());
 	}
@@ -300,7 +291,7 @@ char* ParseMultiString(OScanner& os)
 	// TODO: properly identify identifiers so clear can be separated from regular strings
 	if (!os.isQuotedString())
 	{
-		if (UpperCompareToken(os, "clear"))
+		if (os.compareTokenNoCase("clear"))
 		{
 			return strdup("-"); // this was explicitly deleted to override the default.
 		}
@@ -639,7 +630,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 
 	while (os.scan())
 	{
-		if (!UpperCompareToken(os, "map"))
+		if (!os.compareTokenNoCase("map"))
 		{
 			I_Error("Expected map definition, got %s", os.getToken().c_str());
 		}
@@ -791,7 +782,75 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 {
 	ParseMapInfoHelper<OLumpName>(os, doEquals);
 
-	if (os.isQuotedString())
+	if (os.compareTokenNoCase("EndPic"))
+	{
+		// todo
+		if (doEquals)
+			MustGetStringName(os, ",");
+
+		MustGetString(os);
+	}
+	else if (os.compareTokenNoCase("EndSequence"))
+	{
+		// todo
+		if (doEquals)
+			MustGetStringName(os, ",");
+
+		MustGetString(os);
+	}
+	else if (os.compareTokenNoCase("endgame"))
+	{
+		// endgame block
+		MustGetStringName(os, "{");
+
+		while (os.scan())
+		{
+			if (os.compareToken("}"))
+			{
+				break;
+			}
+
+			if (os.compareTokenNoCase("pic"))
+			{
+				ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+				// todo
+			}
+			else if (os.compareTokenNoCase("hscroll"))
+			{
+				ParseMapInfoHelper<std::string>(os, doEquals);
+
+				// todo
+			}
+			else if (os.compareTokenNoCase("vscroll"))
+			{
+				ParseMapInfoHelper<std::string>(os, doEquals);
+
+				// todo
+			}
+			else if (os.compareTokenNoCase("cast"))
+			{
+				*static_cast<OLumpName*>(data) = "EndGameC";
+			}
+			if (os.compareTokenNoCase("music"))
+			{
+				ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+				// todo
+				os.scan();
+				if (os.compareTokenNoCase(","))
+				{
+					MustGet<float>(os);
+					// todo
+				}
+				else
+				{
+					os.unScan();
+				}
+			}
+		}
+	}
+	else
 	{
 		char map_name[9];
 		strncpy(map_name, os.getToken().c_str(), 8);
@@ -801,82 +860,13 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			int map = std::atoi(map_name);
 			sprintf(map_name, "MAP%02d", map);
 		}
-		else if (UpperCompareToken(os, "EndBunny"))
+		else if (os.compareTokenNoCase("EndBunny"))
 		{
 			*static_cast<OLumpName*>(data) = "EndGame3";
 			return;
 		}
 
 		*static_cast<OLumpName*>(data) = map_name;
-	}
-	else
-	{
-		// endgame block
-		if (UpperCompareToken(os, "endgame"))
-		{
-			MustGetStringName(os, "{");
-
-			while (os.scan())
-			{
-				if (UpperCompareToken(os, "}"))
-				{
-					break;
-				}
-
-				if (UpperCompareToken(os, "pic"))
-				{
-					ParseMapInfoHelper<OLumpName>(os, doEquals);
-
-					// todo
-				}
-				else if (UpperCompareToken(os, "hscroll"))
-				{
-					ParseMapInfoHelper<std::string>(os, doEquals);
-
-					// todo
-				}
-				else if (UpperCompareToken(os, "vscroll"))
-				{
-					ParseMapInfoHelper<std::string>(os, doEquals);
-
-					// todo
-				}
-				else if (UpperCompareToken(os, "cast"))
-				{
-					*static_cast<OLumpName*>(data) = "EndGameC";
-				}
-				if (UpperCompareToken(os, "music"))
-				{
-					ParseMapInfoHelper<OLumpName>(os, doEquals);
-
-					// todo
-					os.scan();
-					if (UpperCompareToken(os, ","))
-					{
-						MustGet<float>(os);
-						// todo
-					}
-					else
-					{
-						os.unScan();
-					}
-				}
-			}
-		}
-		else if (UpperCompareToken(os, "EndPic"))
-		{
-			MustGetStringName(os, ",");
-			MustGetString(os);
-
-			// todo
-		}
-		else if (UpperCompareToken(os, "EndSequence"))
-		{
-			MustGetStringName(os, ",");
-			MustGetString(os);
-
-			// todo
-		}
 	}
 }
 
@@ -1030,7 +1020,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 
 	if (doEquals)
 	{
-		if (UpperCompareToken(os, "lookup"))
+		if (os.compareTokenNoCase("lookup"))
 		{
 			if (doEquals)
 			{
@@ -1074,7 +1064,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 	else
 	{
-		if (UpperCompareToken(os, "lookup"))
+		if (os.compareTokenNoCase("lookup"))
 		{
 			MustGetString(os);
 			const OString& s = GStrings(os.getToken());
@@ -1300,7 +1290,7 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 		if (newMapInfoStack <= 0 && ContainsMapInfoTopLevel(os) &&
 		    // "cluster" is a valid map block type and is also
 		    // a valid top-level type.
-		    !UpperCompareToken(os, "cluster"))
+		    !os.compareTokenNoCase("cluster"))
 		{
 			// Old-style MAPINFO is done
 			os.unScan();
@@ -1314,7 +1304,7 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 		MapInfoDataContainer::iterator it = mapInfoDataContainer.begin();
 		for (; it != mapInfoDataContainer.end(); ++it)
 		{
-			if (UpperCompareToken(os, it->name))
+			if (os.compareTokenNoCase(it->name))
 			{
 				if (it->fn)
 				{
@@ -1361,7 +1351,7 @@ void ParseEpisodeInfo(OScanner& os)
 	map = os.getToken();
 
 	MustGetString(os);
-	if (UpperCompareToken(os, "teaser"))
+	if (os.compareTokenNoCase("teaser"))
 	{
 		// Teaser lump
 		MustGetString(os);
@@ -1403,7 +1393,7 @@ void ParseEpisodeInfo(OScanner& os)
 				break;
 			}
 		}
-		else if (UpperCompareToken(os, "name"))
+		else if (os.compareTokenNoCase("name"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
@@ -1412,38 +1402,38 @@ void ParseEpisodeInfo(OScanner& os)
 				pic = os.getToken();
 			}
 		}
-		else if (UpperCompareToken(os, "lookup"))
+		else if (os.compareTokenNoCase("lookup"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			// Not implemented
 		}
-		else if (UpperCompareToken(os, "picname"))
+		else if (os.compareTokenNoCase("picname"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			pic = os.getToken();
 			picisgfx = true;
 		}
-		else if (UpperCompareToken(os, "key"))
+		else if (os.compareTokenNoCase("key"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			key = os.getToken()[0];
 		}
-		else if (UpperCompareToken(os, "remove"))
+		else if (os.compareTokenNoCase("remove"))
 		{
 			remove = true;
 		}
-		else if (UpperCompareToken(os, "noskillmenu"))
+		else if (os.compareTokenNoCase("noskillmenu"))
 		{
 			noskillmenu = true;
 		}
-		else if (UpperCompareToken(os, "optional"))
+		else if (os.compareTokenNoCase("optional"))
 		{
 			optional = true;
 		}
-		else if (UpperCompareToken(os, "extended"))
+		else if (os.compareTokenNoCase("extended"))
 		{
 			extended = true;
 		}
@@ -1524,14 +1514,14 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 
 	while (os.scan())
 	{
-		if (UpperCompareToken(os, "defaultmap"))
+		if (os.compareTokenNoCase("defaultmap"))
 		{
 			SetLevelDefaults(defaultinfo);
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
 		}
-		else if (UpperCompareToken(os, "map"))
+		else if (os.compareTokenNoCase("map"))
 		{
 			uint32_t& levelflags = defaultinfo.flags;
 			MustGetString(os);
@@ -1563,7 +1553,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 
 			// Map name.
 			MustGetString(os);
-			if (UpperCompareToken(os, "lookup"))
+			if (os.compareTokenNoCase("lookup"))
 			{
 				MustGetString(os);
 				const OString& s = GStrings(os.getToken());
@@ -1591,7 +1581,8 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				MapNameToLevelNum(info);
 			}
 		}
-		else if (UpperCompareToken(os, "cluster") || UpperCompareToken(os, "clusterdef"))
+		else if (os.compareTokenNoCase("cluster") ||
+		         os.compareTokenNoCase("clusterdef"))
 		{
 			MustGet<int>(os);
 
@@ -1606,18 +1597,18 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			MapInfoDataSetter<cluster_info_t> setter(info);
 			ParseMapInfoLower<cluster_info_t>(os, setter);
 		}
-		else if (UpperCompareToken(os, "episode"))
+		else if (os.compareTokenNoCase("episode"))
 		{
 			ParseEpisodeInfo(os);
 		}
-		else if (UpperCompareToken(os, "clearepisodes"))
+		else if (os.compareTokenNoCase("clearepisodes"))
 		{
 			episodenum = 0;
 			// Set this for UMAPINFOs sake (UMAPINFO doesn't consider Doom 2's episode a
 			// real episode)
 			episodes_modified = false;
 		}
-		else if (UpperCompareToken(os, "skill"))
+		else if (os.compareTokenNoCase("skill"))
 		{
 			// Not implemented
 			MustGetString(os); // Name
@@ -1625,16 +1616,16 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
 		}
-		else if (UpperCompareToken(os, "clearskills"))
+		else if (os.compareTokenNoCase("clearskills"))
 		{
 			// Not implemented
 		}
-		else if (UpperCompareToken(os, "gameinfo"))
+		else if (os.compareTokenNoCase("gameinfo"))
 		{
 			MapInfoDataSetter<gameinfo_t> setter;
 			ParseMapInfoLower<gameinfo_t>(os, setter);
 		}
-		else if (UpperCompareToken(os, "intermission"))
+		else if (os.compareTokenNoCase("intermission"))
 		{
 			// Not implemented
 			MustGetString(os); // Name
@@ -1642,7 +1633,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
 		}
-		else if (UpperCompareToken(os, "automap"))
+		else if (os.compareTokenNoCase("automap"))
 		{
 			// Not implemented
 			MapInfoDataSetter<void> setter;
