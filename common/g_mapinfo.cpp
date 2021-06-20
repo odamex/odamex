@@ -870,21 +870,9 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 			// todo
 		}
-		else if (UpperCompareToken(os, "EndPic,"))
-		{
-			MustGetString(os);
-
-			// todo
-		}
 		else if (UpperCompareToken(os, "EndSequence"))
 		{
 			MustGetStringName(os, ",");
-			MustGetString(os);
-
-			// todo
-		}
-		else if (UpperCompareToken(os, "EndSequence,"))
-		{
 			MustGetString(os);
 
 			// todo
@@ -928,7 +916,9 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 		const OString& s = GStrings(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
-			I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+			std::string err;
+			StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
+			os.error(err.c_str());
 		}
 		*static_cast<OLumpName*>(data) = s;
 	}
@@ -952,7 +942,9 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 		const OString& s = GStrings(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
-			I_Error("Unknown lookup string \"%s\"", s.c_str());
+			std::string err;
+			StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
+			os.error(err.c_str());
 		}
 
 		// Music lumps in the stringtable do not begin
@@ -1038,13 +1030,20 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 
 	if (doEquals)
 	{
-		if (UpperCompareToken(os, "lookup,"))
+		if (UpperCompareToken(os, "lookup"))
 		{
+			if (doEquals)
+			{
+				MustGetStringName(os, ",");
+			}
+
 			MustGetString(os);
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
-				I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+				std::string err;
+				StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
+				os.error(err.c_str());
 			}
 			free(*text);
 			*text = strdup(s.c_str());
@@ -1081,7 +1080,9 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
-				I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+				std::string err;
+				StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
+				os.error(err.c_str());
 			}
 
 			free(*text);
@@ -1318,8 +1319,10 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 				if (it->fn)
 				{
 					it->fn(os, newMapInfoStack > 0, it->data, it->flags, it->flags2);
-					break;
 				}
+
+				// [AM] Some tokens are no-ops, we want to break out either way.
+				break;
 			}
 		}
 
@@ -1566,7 +1569,10 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				const OString& s = GStrings(os.getToken());
 				if (s.empty())
 				{
-					I_Error("Unknown lookup string \"%s\"", os.getToken().c_str());
+					std::string err;
+					StrFormat(err, "Unknown lookup string \"%s\".",
+					          os.getToken().c_str());
+					os.error(err.c_str());
 				}
 				info.level_name = strdup(s.c_str());
 			}

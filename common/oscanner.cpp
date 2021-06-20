@@ -99,10 +99,6 @@ bool OScanner::munchQuotedString()
 		if (m_position[0] == '"')
 			return true;
 
-		// Ran off the end of the line, this is a problem.
-		if (m_position[0] == '\n')
-			return false;
-
 		m_position += 1;
 	}
 
