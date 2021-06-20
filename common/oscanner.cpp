@@ -269,7 +269,7 @@ bool OScanner::scan()
 //
 // Ensure next token is a string.
 //
-void OScanner::mustScan()
+void OScanner::scanString()
 {
 	if (!scan())
 	{
@@ -280,7 +280,7 @@ void OScanner::mustScan()
 //
 // Ensure next token is an int.
 //
-void OScanner::mustScanInt()
+void OScanner::scanInt()
 {
 	if (!scan())
 	{
@@ -298,7 +298,7 @@ void OScanner::mustScanInt()
 //
 // Ensure next token is a float.
 //
-void OScanner::mustScanFloat()
+void OScanner::scanFloat()
 {
 	if (!scan())
 	{
@@ -316,7 +316,7 @@ void OScanner::mustScanFloat()
 //
 // Ensure next token is a bool.
 //
-void OScanner::mustScanBool()
+void OScanner::scanBool()
 {
 	if (!scan())
 	{

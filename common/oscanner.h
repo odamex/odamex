@@ -66,10 +66,10 @@ class OScanner
 	                           const char* end);
 
 	bool scan();
-	void mustScan();
-	void mustScanInt();
-	void mustScanFloat();
-	void mustScanBool();
+	void scanString();
+	void scanInt();
+	void scanFloat();
+	void scanBool();
 	void unScan();
 
 	std::string getToken() const;

@@ -574,7 +574,7 @@ void TextureManager::readAnimDefLump()
 				if (os.compareToken("flat"))
 					texture_type = Texture::TEX_FLAT;
 
-				os.mustScan();
+				os.scanString();
 				anim.basepic = texturemanager.getHandle(os.getToken(), texture_type);
 
 				anim.curframe = 0;
@@ -595,19 +595,19 @@ void TextureManager::readAnimDefLump()
 
 					byte min = 1, max = 1;
 					
-					os.mustScanInt();
+					os.scanInt();
 					const int frame = os.getTokenInt();
-					os.mustScan();
+					os.scanString();
 					if (os.compareToken("tics"))
 					{
-						os.mustScanInt();
+						os.scanInt();
 						min = max = clamp(os.getTokenInt(), 0, 255);
 					}
 					else if (os.compareToken("rand"))
 					{
-						os.mustScanInt();
+						os.scanInt();
 						min = MAX(os.getTokenInt(), 0);
-						os.mustScanInt();
+						os.scanInt();
 						max = MIN(os.getTokenInt(), 255);
 						if (min > max)
 							min = max = 1;
@@ -636,14 +636,14 @@ void TextureManager::readAnimDefLump()
 			}
 			else if (os.compareToken("warp"))
 			{
-				os.mustScan();
+				os.scanString();
 				if (os.compareToken("flat") || os.compareToken("texture"))
 				{
 					Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
 					if (os.compareToken("flat"))
 						texture_type = Texture::TEX_FLAT;
 
-					os.mustScan();
+					os.scanString();
 
 					const texhandle_t texhandle = texturemanager.getHandle(os.getToken(), texture_type);
 					if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
