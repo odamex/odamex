@@ -287,16 +287,7 @@ void OScanner::mustScanInt()
 		error("Missing integer (unexpected end of file).");
 	}
 
-	// fix for parser reading in commas
-	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
-	if (IsNum(str.c_str()) == false && str != "MAXINT")
+	if (IsNum(m_token.c_str()) == false && m_token != "MAXINT")
 	{
 		std::string err;
 		StrFormat(err, "Expected integer, got \"%s\".", m_token.c_str());
@@ -314,16 +305,7 @@ void OScanner::mustScanFloat()
 		error("Missing float (unexpected end of file).");
 	}
 
-	// fix for parser reading in commas
-	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
-	if (IsRealNum(str.c_str()) == false)
+	if (IsRealNum(m_token.c_str()) == false)
 	{
 		std::string err;
 		StrFormat(err, "Expected float, got \"%s\".", m_token.c_str());
@@ -378,23 +360,14 @@ std::string OScanner::getToken() const
 //
 int OScanner::getTokenInt() const
 {
-	// fix for parser reading in commas
-	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
 	char* stopper;
 
-	if (str == "MAXINT")
+	if (m_token == "MAXINT")
 	{
 		return MAXINT; // INT32_MAX;
 	}
 
-	const int num = strtol(str.c_str(), &stopper, 0);
+	const int num = strtol(m_token.c_str(), &stopper, 0);
 
 	if (*stopper != 0)
 	{
@@ -411,18 +384,9 @@ int OScanner::getTokenInt() const
 //
 float OScanner::getTokenFloat() const
 {
-	// fix for parser reading in commas
-	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
 	char* stopper;
 
-	const double num = strtod(str.c_str(), &stopper);
+	const double num = strtod(m_token.c_str(), &stopper);
 
 	if (*stopper != 0)
 	{
