@@ -193,8 +193,11 @@ OLumpName GetToken<OLumpName>(OScanner& os)
 	return os.getToken();
 }
 
-//////////////////////////////////////////////////////////////////////
-/// MustGet
+// return token as OLumpName
+OLumpName GetTokenOLumpName(OScanner& os)
+{
+	return os.getToken();
+}
 
 // ensure token is OLumpName
 void MustGetOLumpName(OScanner& os)
@@ -421,7 +424,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	else if (!stricmp(pname, "partime"))
 	{
 		os.scanInt();
-		mape->partime = TICRATE * GetToken<int>(os);
+		mape->partime = TICRATE * os.getTokenInt();
 	}
 	else if (!stricmp(pname, "intertext"))
 	{
@@ -600,7 +603,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		}
 
 		MustGetOLumpName(os);
-		OLumpName mapname = GetToken<OLumpName>(os);
+		OLumpName mapname = GetTokenOLumpName(os);
 
 		if (!ValidateMapName(mapname))
 		{
@@ -714,7 +717,7 @@ void MIType_Int(OScanner& os, bool doEquals, void* data, unsigned int flags,
 {
 	ParseMapInfoHelper<int>(os, doEquals);
 
-	*static_cast<int*>(data) = GetToken<int>(os);
+	*static_cast<int*>(data) = os.getTokenInt();
 }
 
 // Sets the inputted data as a float
@@ -723,7 +726,7 @@ void MIType_Float(OScanner& os, bool doEquals, void* data, unsigned int flags,
 {
 	ParseMapInfoHelper<float>(os, doEquals);
 
-	*static_cast<float*>(data) = GetToken<float>(os);
+	*static_cast<float*>(data) = os.getTokenFloat();
 }
 
 // Sets the inputted data as a color
@@ -963,11 +966,11 @@ void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
 {
 	ParseMapInfoHelper<int>(os, doEquals);
 
-	*static_cast<int*>(data) = GetToken<int>(os);
+	*static_cast<int*>(data) = os.getTokenInt();
 	if (HexenHack)
 	{
 		ClusterInfos& clusters = getClusterInfos();
-		cluster_info_t& clusterH = clusters.findByCluster(GetToken<int>(os));
+		cluster_info_t& clusterH = clusters.findByCluster(os.getTokenInt());
 		if (clusterH.cluster != 0)
 		{
 			clusterH.flags |= CLUSTER_HUB;
@@ -1551,12 +1554,11 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			os.scanInt();
 
 			// Find the cluster.
-			cluster_info_t& info =
-			    (clusters.findByCluster(GetToken<int>(os)).cluster != 0)
-			        ? clusters.findByCluster(GetToken<int>(os))
+			cluster_info_t& info = (clusters.findByCluster(os.getTokenInt()).cluster != 0)
+			        ? clusters.findByCluster(os.getTokenInt())
 			        : clusters.create();
 
-			info.cluster = GetToken<int>(os);
+			info.cluster = os.getTokenInt();
 
 			MapInfoDataSetter<cluster_info_t> setter(info);
 			ParseMapInfoLower<cluster_info_t>(os, setter);
