@@ -87,6 +87,13 @@ gender_t D_GenderByName (const char *gender);
 int 				genStringEnter;
 int					genStringLen;	// [RH] Max # of chars that can be entered
 void	(*genStringEnd)(int slot);
+
+bool iconEditorEnter;
+byte iconData[7][7];
+byte iconCursorX;
+byte iconCursorY;
+void (*iconEnd)();
+
 int 				saveSlot;		// which slot to save in
 int 				saveCharIndex;	// which char we're editing
 // old save description before edit
@@ -165,7 +172,8 @@ void M_ClearMenus (void);
 // [RH] For player setup menu.
 static void M_PlayerSetupTicker (void);
 static void M_PlayerSetupDrawer (void);
-static void M_EditPlayerName (int choice);
+static void M_EditPlayerName(int choice);
+static void M_EditPlayerIcon(int choice);
 //static void M_EditPlayerTeam (int choice);
 //static void M_PlayerTeamChanged (int choice);
 static void M_PlayerNameChanged (int choice);
@@ -338,6 +346,7 @@ enum psetup_t
 	playerblue,
 	playersex,
 	playeraim,
+	playericon,
 	psetup_end
 } psetup_e;
 
@@ -349,7 +358,8 @@ oldmenuitem_t PlayerSetupMenu[] =
 	{ 2,"", M_SlidePlayerGreen, 'G' },
 	{ 2,"", M_SlidePlayerBlue, 'B' },
 	{ 2,"", M_ChangeGender, 'E' },
-	{ 2,"", M_ChangeAutoAim, 'A' }
+	{ 2,"", M_ChangeAutoAim, 'A' },
+	{ 1,"", M_EditPlayerIcon, 'I' }
 };
 
 oldmenu_t PSetupDef = {
@@ -1487,6 +1497,42 @@ static void M_PlayerSetupDrawer (void)
 			aim <= 2 ? "High" :
 			aim <= 3 ? "Very High" : "Always");
 	}
+
+	// Draw player icon
+	{
+		int x = PSetupDef.x, y = PSetupDef.y + LINEHEIGHT * 7;
+		screen->DrawTextCleanMove(CR_RED, x, y, "Icon");
+
+		x += V_StringWidth("Icon");
+
+		// This is a very inefficent way to draw an icon, but since it's just
+		// in the menu it doesn't really matter that much.
+		const int PIXEL_SIZE = 4;
+		for (int dy = 0; dy < 7; dy++)
+		{
+			const int yoff = y + (dy * PIXEL_SIZE);
+			for (int dx = 0; dx < 7; dx++)
+			{
+				const int xoff = x + (dx * PIXEL_SIZE);
+				if (::iconEditorEnter && ::iconCursorX == dx && ::iconCursorY == dy)
+				{
+					const argb_t color = ::iconData[dy][dx] == 1
+					                         ? argb_t(0xFF, 0x00, 0x00)
+					                         : argb_t(0x3F, 0x00, 0x00);
+					screen->ClearClean(xoff, yoff, xoff + PIXEL_SIZE, yoff + PIXEL_SIZE,
+					                   color);
+				}
+				else
+				{
+					const argb_t color = ::iconData[dy][dx] == 1
+					                         ? argb_t(0xFF, 0xFF, 0xFF)
+					                         : argb_t(0x00, 0x00, 0x00);
+					screen->ClearClean(xoff, yoff, xoff + PIXEL_SIZE, yoff + PIXEL_SIZE,
+					                   color);
+				}
+			}
+		}
+	}
 }
 
 void M_ChangeTeam (int choice) // [Toke - Teams]
@@ -1571,6 +1617,19 @@ static void M_PlayerNameChanged (int choice)
 	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
 }
+
+static void M_PlayerIconChanged()
+{
+}
+
+static void M_EditPlayerIcon(int choice)
+{
+	::iconEditorEnter = true;
+	::iconCursorX = 0;
+	::iconCursorY = 0;
+	::iconEnd = M_PlayerIconChanged;
+}
+
 /*
 static void M_PlayerTeamChanged (int choice)
 {
@@ -1802,6 +1861,37 @@ bool M_Responder (event_t* ev)
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
+		}
+
+		return true;
+	}
+
+	if (::iconEditorEnter)
+	{
+		if (Key_IsCancelKey(ch))
+		{
+			::iconEditorEnter = false;
+			iconEnd();
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
+			::iconData[::iconCursorY][::iconCursorX] ^= BIT(0);
+		}
+		else if (Key_IsUpKey(ch))
+		{
+			::iconCursorY = MAX(0, ::iconCursorY - 1);
+		}
+		else if (Key_IsDownKey(ch))
+		{
+			::iconCursorY = MIN(6, ::iconCursorY + 1);
+		}
+		else if (Key_IsLeftKey(ch))
+		{
+			::iconCursorX = MAX(0, ::iconCursorX - 1);
+		}
+		else if (Key_IsRightKey(ch))
+		{
+			::iconCursorX = MIN(6, ::iconCursorX + 1);
 		}
 
 		return true;

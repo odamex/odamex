@@ -816,6 +816,10 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	}
 }
 
+void DCanvas::ClearClean(int left, int top, int right, int bottom, argb_t color) const
+{
+	Clear(getCleanX(left), getCleanY(top), getCleanX(right), getCleanY(bottom), color);
+}
 
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
