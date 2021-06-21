@@ -69,6 +69,7 @@
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "m_cheat.h"
 
 #include <algorithm>
 #include <sstream>
@@ -2386,6 +2387,36 @@ void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
 	SV_BroadcastPrintf(PRINT_NORCON, "%s", string);
 }
 
+void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...)
+{
+	va_list argptr;
+	std::string string;
+	client_t* cl;
+
+	va_start(argptr, format);
+	VStrFormat(string, format, argptr);
+	va_end(argptr);
+
+	Printf(printlevel, "%s", string.c_str()); // print to the console
+
+	// Hacky code to display messages as normal ones to clients
+	if (printlevel == PRINT_NORCON)
+		printlevel = PRINT_HIGH;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		cl = &(it->client);
+
+		client_t* excluded_client = &idplayer(player_id).client;
+
+		if (cl == excluded_client)
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf,
+		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
+	}
+}
+
 // GhostlyDeath -- same as above but ONLY for spectators
 void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 {
@@ -3748,86 +3779,44 @@ void SV_Suicide(player_t &player)
 //
 void SV_Cheat(player_t &player)
 {
-	byte cheats = MSG_ReadByte();
+	byte cheatType = MSG_ReadByte();
+	
+	if (cheatType == 0)
+	{
+		unsigned int cheat = MSG_ReadShort();
 
-	if(!sv_allowcheats)
-		return;
+		if (!CHEAT_AreCheatsEnabled())
+			return;
 
-	player.cheats = cheats;
-}
+		int oldCheats = player.cheats;
+		CHEAT_DoCheat(&player, cheat);
 
-void SV_CheatPulse(player_t &player)
-{
-    byte cheats = MSG_ReadByte();
-    int i;
+		if (player.cheats != oldCheats)
+		{
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
+			{
+				client_t* cl = &it->client;
+				SV_SendPlayerStateUpdate(cl, &player);
+			}
+		}
 
-    if (!sv_allowcheats)
-    {
-        if (cheats == 3)
-            MSG_ReadByte();
+	}
+	else if (cheatType == 1)
+	{
+		const char* wantcmd = MSG_ReadString();
 
-        return;
-    }
+		if (!CHEAT_AreCheatsEnabled())
+			return;
 
-    if (cheats == 1)
-    {
-        player.armorpoints = deh.FAArmor;
-        player.armortype = deh.FAAC;
+		CHEAT_GiveTo(&player, wantcmd);
 
-        weapontype_t pendweap = player.pendingweapon;
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t* cl = &it->client;
+			SV_SendPlayerStateUpdate(cl, &player);
+		}
 
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        return;
-    }
-
-    if (cheats == 2)
-    {
-        player.armorpoints = deh.KFAArmor;
-        player.armortype = deh.KFAAC;
-
-        weapontype_t pendweap = player.pendingweapon;
-
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        for (i=0; i<NUMCARDS; i++)
-            player.cards[i] = true;
-
-        return;
-    }
-
-    if (cheats == 3)
-    {
-        byte power = MSG_ReadByte();
-
-        if (!player.powers[power])
-            P_GivePower(&player, power);
-        else if (power != pw_strength)
-            player.powers[power] = 1;
-        else
-            player.powers[power] = 0;
-
-        return;
-    }
-
-    if (cheats == 4)
-    {
-        player.weaponowned[wp_chainsaw] = true;
-
-        return;
-    }
+	}
 }
 
 void SV_WantWad(player_t &player)
@@ -4026,10 +4015,6 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
-
-        case clc_cheatpulse:
-            SV_CheatPulse(player);
-            break;
 
 		case clc_abort:
 			Printf("Client abort.\n");

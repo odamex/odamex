@@ -252,6 +252,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 			p.powers[i] = 0;
 		}
 	}
+
+	if (!p.spectator)
+		p.cheats = msg->player().cheats();
 }
 
 /**
@@ -604,6 +607,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
+
+	//am_cheating = 0;
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
@@ -1002,7 +1007,15 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		p->attacker = attacker->ptr();
 
 	if (p->health < 0)
-		p->health = 0;
+	{
+		if (p->cheats & CF_BUDDHA)
+		{
+			p->health = 1;
+			p->mo->health = 1;
+		}
+		else 
+			p->health = 0;
+	}
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
 
@@ -1219,6 +1232,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
+	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!p.spectator)
+			p.cheats = msg->cheats();
 	}
 }
 
@@ -1934,6 +1953,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
+	uint32_t cheats = msg->player().cheats();
+
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -1960,6 +1981,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	if (!player.spectator)
+		player.cheats = cheats;
 }
 
 /**
