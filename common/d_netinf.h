@@ -29,7 +29,89 @@
 #include "c_cvars.h"
 #include "teaminfo.h"
 
+#include "base64.h"
+
 #define MAXPLAYERNAME	15
+
+class picon_t
+{
+	static const size_t PICON_HEADER_BITS = 4;
+	static const size_t PICON_HEADER_MASK = 0x0F;
+	static const size_t PICON_STRIDE = 7;
+	static const size_t PICON_PIXELS = (PICON_STRIDE * PICON_STRIDE);
+
+	bool m_data[PICON_PIXELS];
+
+  public:
+	bool& at(const int x, const int y)
+	{
+		return m_data[y * PICON_STRIDE + x];
+	}
+
+	bool fromString(const std::string& str)
+	{
+		std::vector<byte> data;
+		if (!M_Base64Decode(data, str) || data.size() != 7)
+		{
+			return false;
+		}
+
+		// "I" indicates a 7x7 icon.
+		if ((data.at(0) & PICON_HEADER_MASK) != 0x08)
+		{
+			return false;
+		}
+
+		for (size_t i = 0; i < PICON_PIXELS; i++)
+		{
+			size_t iPlus = i + PICON_HEADER_BITS;
+			size_t dataI = iPlus / 8;
+			size_t dataBit = iPlus % 8;
+
+			if (data.at(dataI) & BIT(dataBit))
+			{
+				m_data[i] = true;
+			}
+			else
+			{
+				m_data[i] = false;
+			}
+		}
+
+		return true;
+	}
+
+	std::string toString()
+	{
+		std::vector<byte> data;
+
+		// First four bits is format.  We use a nibble instead of a byte to
+		// save a byte later (and thus construct a shorter base64 token).
+		byte scratch = 0x08;
+		for (size_t i = 0; i < ARRAY_LENGTH(m_data); i++)
+		{
+			// Start writing bytes after the first nibble.
+			size_t bit = (i + PICON_HEADER_BITS) % 8;
+
+			if (bit == 0 && i != 0)
+			{
+				// Byte is done, go to the next one.
+				data.push_back(scratch);
+				scratch = 0;
+			}
+
+			if (m_data[i])
+			{
+				scratch |= BIT(bit);
+			}
+		}
+
+		// Push the last byte.
+		data.push_back(scratch);
+
+		return M_Base64Encode(data);
+	}
+};
 
 enum gender_t
 {
