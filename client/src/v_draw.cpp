@@ -721,6 +721,41 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 						patch->height() * CleanYfac);
 }
 
+void DCanvas::DrawGraphic(const graphic_t& graphic, const int x, const int y,
+                          const int destwidth, const int destheight) const
+{
+	const float dx = graphic.width / static_cast<float>(destwidth);
+	const float dy = graphic.height / static_cast<float>(destheight);
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		palindex_t* dest = mSurface->getBuffer(x, y);
+
+		float texy = 0.0f;
+		for (int iy = 0; iy < destheight; iy++)
+		{
+			const int tiy = static_cast<float>(texy);
+			float texx = 0.0f;
+
+			for (int ix = 0; ix < destwidth; ix++)
+			{
+				const int tix = static_cast<float>(texx);
+				*dest = graphic.data[tiy * graphic.width + tix];
+				texx += dx;
+				dest += 1;
+			}
+
+			texy += dy;
+			dest += mSurface->getPitchInPixels() - destwidth;
+		}
+	}
+	else
+	{
+		// [AM] Incomplete.
+		//argb_t* dest = (argb_t*)mSurface->getBuffer(x, y);
+		//*dest = ::V_Palette.shade(graphic.data[tiy * graphic.width + tix]);
+	}
+}
 
 /********************************/
 /*								*/

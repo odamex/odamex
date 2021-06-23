@@ -168,6 +168,10 @@ public:
 	inline void DrawColoredLucentPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawColoredLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
+	// Draw a modern graphic on the screen
+	void DrawGraphic(const graphic_t& graphic, const int x, const int y,
+	                 const int destwidth, const int destheight) const;
+
 protected:
 	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;

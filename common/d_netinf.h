@@ -35,17 +35,33 @@
 
 class picon_t
 {
-	static const size_t PICON_HEADER_BITS = 4;
-	static const size_t PICON_HEADER_MASK = 0x0F;
+  public:
 	static const size_t PICON_STRIDE = 7;
 	static const size_t PICON_PIXELS = (PICON_STRIDE * PICON_STRIDE);
 
+  private:
+	static const size_t PICON_HEADER_BITS = 4;
+	static const size_t PICON_HEADER_MASK = 0x0F;
+
 	bool m_data[PICON_PIXELS];
+	graphic_t m_graphic;
 
   public:
 	bool& at(const int x, const int y)
 	{
 		return m_data[y * PICON_STRIDE + x];
+	}
+
+	const graphic_t& getGraphic()
+	{
+		m_graphic.width = PICON_STRIDE;
+		m_graphic.height = PICON_STRIDE;
+		m_graphic.data.resize(PICON_PIXELS);
+		for (size_t i = 0; i < ARRAY_LENGTH(m_data); i++)
+		{
+			m_graphic.data[i] = m_data[i] ? 112 : 176;
+		}
+		return m_graphic;
 	}
 
 	bool fromString(const std::string& str)

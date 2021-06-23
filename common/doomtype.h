@@ -28,6 +28,7 @@
 
 // Standard libc/STL includes we use in countless places
 #include <string>
+#include <vector>
 
 #include "version.h"
 #include "errors.h"
@@ -720,5 +721,12 @@ forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translatio
 {
 	return pal.tlate(translation, c);
 }
+
+struct graphic_t
+{
+	int width;
+	int height;
+	std::vector<palindex_t> data;
+};
 
 #endif

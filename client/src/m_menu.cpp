@@ -89,7 +89,7 @@ int					genStringLen;	// [RH] Max # of chars that can be entered
 void	(*genStringEnd)(int slot);
 
 bool iconEditorEnter;
-byte iconData[7][7];
+picon_t iconData;
 byte iconCursorX;
 byte iconCursorY;
 void (*iconEnd)();
@@ -1516,7 +1516,7 @@ static void M_PlayerSetupDrawer (void)
 				const int xoff = x + (dx * PIXEL_SIZE);
 				if (::iconEditorEnter && ::iconCursorX == dx && ::iconCursorY == dy)
 				{
-					const argb_t color = ::iconData[dy][dx] == 1
+					const argb_t color = ::iconData.at(dx, dy) == 1
 					                         ? argb_t(0xFF, 0x00, 0x00)
 					                         : argb_t(0x3F, 0x00, 0x00);
 					screen->ClearClean(xoff, yoff, xoff + PIXEL_SIZE, yoff + PIXEL_SIZE,
@@ -1524,7 +1524,7 @@ static void M_PlayerSetupDrawer (void)
 				}
 				else
 				{
-					const argb_t color = ::iconData[dy][dx] == 1
+					const argb_t color = ::iconData.at(dx, dy) == 1
 					                         ? argb_t(0xFF, 0xFF, 0xFF)
 					                         : argb_t(0x00, 0x00, 0x00);
 					screen->ClearClean(xoff, yoff, xoff + PIXEL_SIZE, yoff + PIXEL_SIZE,
@@ -1620,6 +1620,9 @@ static void M_PlayerNameChanged (int choice)
 
 static void M_PlayerIconChanged()
 {
+	std::string cmd;
+	StrFormat(cmd, "cl_icon \"%s\"", ::iconData.toString().c_str());
+	AddCommandString(cmd);
 }
 
 static void M_EditPlayerIcon(int choice)
@@ -1871,11 +1874,11 @@ bool M_Responder (event_t* ev)
 		if (Key_IsCancelKey(ch))
 		{
 			::iconEditorEnter = false;
-			iconEnd();
+			::iconEnd();
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
-			::iconData[::iconCursorY][::iconCursorX] ^= BIT(0);
+			::iconData.at(::iconCursorX, ::iconCursorY) ^= BIT(0);
 		}
 		else if (Key_IsUpKey(ch))
 		{

@@ -33,6 +33,7 @@
 #include "r_draw.h"
 #include "r_state.h"
 #include "cl_main.h"
+#include "c_dispatch.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.
@@ -85,7 +86,51 @@ CVAR_FUNC_IMPL(cl_name)
 		var.Set(newname.c_str());
 }
 
+CVAR_FUNC_IMPL(cl_icon)
+{
 
+}
+
+BEGIN_COMMAND(icon)
+{
+	if (argc < 2)
+	{
+		Printf("icon - Decode icon data\n\n"
+		       "Usage:\n"
+		       "  ] icon <DATA>\n"
+		       "  Decode and print base64-encoded icon data.\n");
+	}
+
+	picon_t icon;
+	if (!icon.fromString(argv[1]))
+	{
+		Printf(PRINT_WARNING, "Not a valid icon\n");
+	}
+
+	std::string str;
+	for (size_t i = 0; i < picon_t::PICON_PIXELS; i++)
+	{
+		const int x = i % picon_t::PICON_STRIDE;
+		const int y = i / picon_t::PICON_STRIDE;
+
+		if (icon.at(x, y))
+		{
+			str += "#";
+		}
+		else
+		{
+			str += ".";
+		}
+
+		if (x == picon_t::PICON_STRIDE - 1)
+		{
+			str += "\n";
+		}
+	}
+	
+	Printf("%s", str.c_str());
+}
+END_COMMAND(icon)
 
 gender_t D_GenderByName (const char *gender)
 {
