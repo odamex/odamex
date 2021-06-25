@@ -138,7 +138,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 //
 // Converts a patch that uses post_t posts into a patch that uses tallpost_t.
 //
-void R_ConvertPatch(patch_t *newpatch, patch_t *rawpatch)
+void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lump)
 {
 	if (!rawpatch || !newpatch)
 		return;
@@ -171,6 +171,12 @@ void R_ConvertPatch(patch_t *newpatch, patch_t *rawpatch)
 			int length = rawpost->length;
 			if (abs_offset + length > rawpatch->height())
 				length = rawpatch->height() - abs_offset;
+
+			if (length < 0)
+			{
+				I_Error("%s: Patch %s appears to be corrupted.", __FUNCTION__,
+				        W_LumpName(lump).c_str());
+			}
 
 			// copy the pixels in the post
 			memcpy(newpost->data(), (byte*)(rawpost) + 3, length);

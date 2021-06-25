@@ -120,6 +120,7 @@ int W_HandleToLump(const lumpHandle_t handle);
 int		W_CheckNumForName (const char *name, int ns = ns_global);
 int		W_GetNumForName (const char *name, int ns = ns_global);
 
+std::string W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
