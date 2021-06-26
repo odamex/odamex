@@ -34,48 +34,47 @@
 
 #include "i_system.h"
 
-
-#define SINGLE_CHAR_TOKENS "$();=[]{}"
+static const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
 
 bool OScanner::checkPair(char a, char b)
 {
-	return _position[0] == a && _position + 1 < _scriptEnd && _position[1] == b;
+	return m_position[0] == a && m_position + 1 < m_scriptEnd && m_position[1] == b;
 }
 
 void OScanner::skipWhitespace()
 {
-	while (_position < _scriptEnd && _position[0] <= ' ')
+	while (m_position < m_scriptEnd && m_position[0] <= ' ')
 	{
-		if (_position[0] == '\n')
-			_lineNumber += 1;
+		if (m_position[0] == '\n')
+			m_lineNumber += 1;
 
-		_position += 1;
+		m_position += 1;
 	}
 }
 
 void OScanner::skipToNextLine()
 {
-	while (_position < _scriptEnd && _position[0] != '\n')
-		_position += 1;
+	while (m_position < m_scriptEnd && m_position[0] != '\n')
+		m_position += 1;
 
-	_position += 1;
-	_lineNumber += 1;
+	m_position += 1;
+	m_lineNumber += 1;
 }
 
 void OScanner::skipPastPair(char a, char b)
 {
-	while (_position < _scriptEnd)
+	while (m_position < m_scriptEnd)
 	{
 		if (checkPair(a, b))
 		{
-			_position += 2;
+			m_position += 2;
 			return;
 		}
 
-		if (_position[0] == '\n')
-			_lineNumber += 1;
+		if (m_position[0] == '\n')
+			m_lineNumber += 1;
 
-		_position += 1;
+		m_position += 1;
 	}
 }
 
@@ -87,24 +86,20 @@ void OScanner::skipPastPair(char a, char b)
 //
 bool OScanner::munchQuotedString()
 {
-	while (_position < _scriptEnd)
+	while (m_position < m_scriptEnd)
 	{
 		// Found an escape character quotation mark in string.
-		if (_position[0] == '\\' && _position + 1 < _scriptEnd && _position[1] == '"')
+		if (m_position[0] == '\\' && m_position + 1 < m_scriptEnd && m_position[1] == '"')
 		{
-			_removeEscapeCharacter = true;
-			_position += 2;
+			m_removeEscapeCharacter = true;
+			m_position += 2;
 		}
-		
+
 		// Found ending quote.
-		if (_position[0] == '"')
+		if (m_position[0] == '"')
 			return true;
 
-		// Ran off the end of the line, this is a problem.
-		if (_position[0] == '\n')
-			return false;
-
-		_position += 1;
+		m_position += 1;
 	}
 
 	// Ran off the end of the script, this is also a problem.
@@ -113,29 +108,29 @@ bool OScanner::munchQuotedString()
 
 void OScanner::munchString()
 {
-	while (_position < _scriptEnd)
+	while (m_position < m_scriptEnd)
 	{
 		// Munch until whitespace.
-		if (_position[0] <= ' ')
+		if (m_position[0] <= ' ')
 			return;
 
 		// There are some tokens that can end the string without whitespace.
-		if (_position[0] == '"')
-			return;
-		
-		if (_config.semiComments && _position[0] == ';')
+		if (m_position[0] == '"')
 			return;
 
-		if (_config.cComments && checkPair('/', '/'))
+		if (m_config.semiComments && m_position[0] == ';')
 			return;
 
-		if (_config.cComments && checkPair('/', '*'))
+		if (m_config.cComments && checkPair('/', '/'))
 			return;
 
-		if (strchr(SINGLE_CHAR_TOKENS, _position[0]) != NULL)
+		if (m_config.cComments && checkPair('/', '*'))
 			return;
 
-		_position += 1;
+		if (strchr(SINGLE_CHAR_TOKENS, m_position[0]) != NULL)
+			return;
+
+		m_position += 1;
 	}
 }
 
@@ -146,41 +141,41 @@ void OScanner::munchString()
 //
 void OScanner::pushToken(const char* string, size_t length)
 {
-	_token.assign(string, length);
+	m_token.assign(string, length);
 
-	if (_removeEscapeCharacter)
+	if (m_removeEscapeCharacter)
 	{
-		size_t pos = _token.find("\\\"", 0);
-		
+		size_t pos = m_token.find("\\\"", 0);
+
 		while (pos != std::string::npos)
 		{
-			_token.replace(pos, 2, "\"");
+			m_token.replace(pos, 2, "\"");
 			pos += 2;
-			
-			pos = _token.find("\\\"", pos);
+
+			pos = m_token.find("\\\"", pos);
 		}
 
-		_removeEscapeCharacter = false;
+		m_removeEscapeCharacter = false;
 	}
 }
 
 void OScanner::pushToken(const std::string& string)
 {
-	_token = string;
+	m_token = string;
 
-	if (_removeEscapeCharacter)
+	if (m_removeEscapeCharacter)
 	{
-		size_t pos = _token.find("\\\"", 0);
+		size_t pos = m_token.find("\\\"", 0);
 
 		while (pos != std::string::npos)
 		{
-			_token.replace(pos, 2, "\"");
+			m_token.replace(pos, 2, "\"");
 			pos += 2;
 
-			pos = _token.find("\\\"", pos);
+			pos = m_token.find("\\\"", pos);
 		}
 
-		_removeEscapeCharacter = false;
+		m_removeEscapeCharacter = false;
 	}
 }
 
@@ -191,9 +186,9 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
                               const char* end)
 {
 	OScanner os = OScanner(config);
-	os._scriptStart = start;
-	os._scriptEnd = end;
-	os._position = start;
+	os.m_scriptStart = start;
+	os.m_scriptEnd = end;
+	os.m_position = start;
 	return os;
 }
 
@@ -202,73 +197,156 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
 //
 bool OScanner::scan()
 {
-	if (_unScan)
+	if (m_unScan)
 	{
-		_unScan = false;
+		m_unScan = false;
 		return true;
 	}
 
-	_isQuotedString = false;
+	m_isQuotedString = false;
 
-	while (_position < _scriptEnd)
+	while (m_position < m_scriptEnd)
 	{
 		// What are we looking at?
-		if (_position[0] <= ' ')
+		if (m_position[0] <= ' ')
 		{
 			skipWhitespace();
 			continue;
 		}
-		if (_config.semiComments && _position[0] == ';')
+		if (m_config.semiComments && m_position[0] == ';')
 		{
 			skipToNextLine();
 			continue;
 		}
-		else if (_config.cComments && checkPair('/', '/'))
+		else if (m_config.cComments && checkPair('/', '/'))
 		{
 			skipToNextLine();
 			continue;
 		}
-		else if (_config.cComments && checkPair('/', '*'))
+		else if (m_config.cComments && checkPair('/', '*'))
 		{
 			skipPastPair('*', '/');
 			continue;
 		}
 
 		// We found an interesting token.  What is it?
-		const char* single = strchr(SINGLE_CHAR_TOKENS, _position[0]);
+		const char* single = strchr(SINGLE_CHAR_TOKENS, m_position[0]);
 		if (single != NULL)
 		{
 			// Found a single char token.
 			pushToken(single, 1);
 
-			_position += 1;
+			m_position += 1;
 			return true;
 		}
-		else if (_position[0] == '"')
+		else if (m_position[0] == '"')
 		{
 			// Found a quoted string.
-			_isQuotedString = true;
-			
-			_position += 1;
-			const char* begin = _position;
+			m_isQuotedString = true;
+
+			m_position += 1;
+			const char* begin = m_position;
 			if (munchQuotedString() == false)
 				return false;
-			const char* end = _position;
+			const char* end = m_position;
 			pushToken(begin, end - begin);
 
-			_position += 1;
+			m_position += 1;
 			return true;
 		}
 
 		// Found a bare string.
-		const char* begin = _position;
+		const char* begin = m_position;
 		munchString();
-		const char* end = _position;
+		const char* end = m_position;
 		pushToken(begin, end - begin);
 		return true;
 	}
 
 	return false;
+}
+
+//
+// Ensure next token is a string.
+//
+void OScanner::mustScan()
+{
+	if (!scan())
+	{
+		error("Missing string (unexpected end of file).");
+	}
+}
+
+//
+// Ensure next token is an int.
+//
+void OScanner::mustScanInt()
+{
+	if (!scan())
+	{
+		error("Missing integer (unexpected end of file).");
+	}
+
+	// fix for parser reading in commas
+	std::string str = m_token;
+
+	// remove comma if necessary
+	if (*(str.end() - 1) == ',')
+	{
+		str.resize(str.size() - 1);
+	}
+
+	if (IsNum(str.c_str()) == false && str != "MAXINT")
+	{
+		std::string err;
+		StrFormat(err, "Expected integer, got \"%s\".", m_token.c_str());
+		error(err.c_str());
+	}
+}
+
+//
+// Ensure next token is a float.
+//
+void OScanner::mustScanFloat()
+{
+	if (!scan())
+	{
+		error("Missing float (unexpected end of file).");
+	}
+
+	// fix for parser reading in commas
+	std::string str = m_token;
+
+	// remove comma if necessary
+	if (*(str.end() - 1) == ',')
+	{
+		str.resize(str.size() - 1);
+	}
+
+	if (IsRealNum(str.c_str()) == false)
+	{
+		std::string err;
+		StrFormat(err, "Expected float, got \"%s\".", m_token.c_str());
+		error(err.c_str());
+	}
+}
+
+//
+// Ensure next token is a bool.
+//
+void OScanner::mustScanBool()
+{
+	if (!scan())
+	{
+		error("Missing boolean (unexpected end of file).");
+	}
+
+	if (!iequals(m_token, "true") && !iequals(m_token, "false"))
+	{
+		std::string err;
+		StrFormat(err, "Expected boolean, got \"%s\".", m_token.c_str());
+		error(err.c_str());
+	}
 }
 
 //
@@ -279,13 +357,12 @@ bool OScanner::scan()
 //
 void OScanner::unScan()
 {
-	if (_unScan == true)
+	if (m_unScan == true)
 	{
-		I_Error("Script Error: %d:%s: Tried to unScan twice in a row",
-			_lineNumber, _config.lumpName);
+		error("Tried to unScan twice in a row.");
 	}
 
-	_unScan = true;
+	m_unScan = true;
 }
 
 //
@@ -293,52 +370,16 @@ void OScanner::unScan()
 //
 std::string OScanner::getToken() const
 {
-	return _token;
-}
-
-//
-// Assert token is equal to the passed string, or error.
-//
-void OScanner::assertTokenIs(const char* string) const
-{
-	if (_token.compare(string) != 0)
-	{
-		I_Error("Script Error: %d:%s: Unexpected Token (expected '%s' actual '%s')",
-		        _lineNumber, _config.lumpName, string, _token.c_str());
-	}
-}
-
-//
-// Compare the most recent token with the passed string.
-//
-bool OScanner::compareToken(const char* string) const
-{
-	return _token.compare(string) == 0;
-}
-
-//
-// Print given error message.
-//
-void OScanner::error(const char* message)
-{
-	I_Error("%s", message);
-}
-
-//
-// Check if last token read in was a quoted string.
-//
-bool OScanner::isQuotedString() const
-{
-	return _isQuotedString;
+	return m_token;
 }
 
 //
 // Get token as an int.
 //
-int OScanner::getTokenAsInt() const
+int OScanner::getTokenInt() const
 {
 	// fix for parser reading in commas
-	std::string str = _token;
+	std::string str = m_token;
 
 	// remove comma if necessary
 	if (*(str.end() - 1) == ',')
@@ -350,14 +391,16 @@ int OScanner::getTokenAsInt() const
 
 	if (str == "MAXINT")
 	{
-		return MAXINT;//INT32_MAX;
+		return MAXINT; // INT32_MAX;
 	}
 
 	const int num = strtol(str.c_str(), &stopper, 0);
 
 	if (*stopper != 0)
 	{
-		I_Error("Bad numeric constant \"%s\".", str.c_str());
+		std::string err;
+		StrFormat(err, "Bad integer constant \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 
 	return num;
@@ -366,10 +409,10 @@ int OScanner::getTokenAsInt() const
 //
 // Get token as a float.
 //
-float OScanner::getTokenAsFloat() const
+float OScanner::getTokenFloat() const
 {
 	// fix for parser reading in commas
-	std::string str = _token;
+	std::string str = m_token;
 
 	// remove comma if necessary
 	if (*(str.end() - 1) == ',')
@@ -383,7 +426,9 @@ float OScanner::getTokenAsFloat() const
 
 	if (*stopper != 0)
 	{
-		I_Error("Bad numeric constant \"%s\".", str.c_str());
+		std::string err;
+		StrFormat(err, "Bad float constant \"%s\".", m_token.c_str());
+		error(err.c_str());
 	}
 
 	return static_cast<float>(num);
@@ -392,95 +437,55 @@ float OScanner::getTokenAsFloat() const
 //
 // Get token as a bool.
 //
-bool OScanner::getTokenAsBool() const
+bool OScanner::getTokenBool() const
 {
-	return iequals(_token, "true");
+	return iequals(m_token, "true");
 }
 
 //
-// Ensure next token is a string.
+// Check if last token read in was a quoted string.
 //
-void OScanner::mustGetString()
+bool OScanner::isQuotedString() const
 {
-	if (!scan())
-	{
-		error("Missing string (unexpected end of file).");
-	}
+	return m_isQuotedString;
 }
 
 //
-// Ensure next token is an int.
+// Assert token is equal to the passed string, or error.
 //
-void OScanner::mustGetInt()
+void OScanner::assertTokenIs(const char* string) const
 {
-	if (!scan())
+	if (m_token.compare(string) != 0)
 	{
-		error("Missing integer (unexpected end of file).");
-	}
-
-	// fix for parser reading in commas
-	std::string str = _token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
-	if (IsNum(str.c_str()) == false && str != "MAXINT")
-	{
-		std::string errorMessage = "Expected integer, got \"";
-		errorMessage += str + '\"';
-
-		error(errorMessage.c_str());
+		std::string err;
+		StrFormat(err, "Unexpected Token (expected \"%s\" actual \"%s\").", string,
+		          m_token.c_str());
+		error(err.c_str());
 	}
 }
 
 //
-// Ensure next token is a float.
+// Compare the most recent token with the passed string.
 //
-void OScanner::mustGetFloat()
+bool OScanner::compareToken(const char* string) const
 {
-	if (!scan())
-	{
-		error("Missing floating-point number (unexpected end of file).");
-	}
-
-	// fix for parser reading in commas
-	std::string str = _token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
-	if (IsRealNum(str.c_str()) == false)
-	{
-		std::string errorMessage = "Expected floating-point number, got \"";
-		errorMessage += str + '\"';
-
-		error(errorMessage.c_str());
-	}
+	return m_token.compare(string) == 0;
 }
 
 //
-// Ensure next token is a bool.
+// Compare the most recent token with the passed string, case-insensitive.
 //
-void OScanner::mustGetBool()
+bool OScanner::compareTokenNoCase(const char* string) const
 {
-	if (!scan())
-	{
-		error("Missing boolean (unexpected end of file).");
-	}
-	
-	if (!iequals(_token, "true") && !iequals(_token, "false"))
-	{
-		std::string errorMessage = "Expected boolean, got \"";
-		errorMessage += _token + '\"';
+	return iequals(m_token, string);
+}
 
-		error(errorMessage.c_str());
-	}
+//
+// Print given error message.
+//
+void OScanner::error(const char* message) const
+{
+	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, message);
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")
