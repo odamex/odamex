@@ -338,10 +338,13 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(cl_icon, "1",
-               "Icon of player, represented as Base64.  Can also be set to a number "
-               "between 0 and 16 to use a preset icon.",
-               CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR(cl_icon, "1",
+     "Icon of player, represented as Base64.  Can also be set to a number "
+     "between 0 and 16 to use a preset icon.",
+     CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(cl_iconcolor, "00 00 00", "Color of player icon.", CVARTYPE_STRING,
+     CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)

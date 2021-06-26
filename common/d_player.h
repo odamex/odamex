@@ -249,7 +249,7 @@ public:
 	int			timeout_ready;          // [AM] Tic when a player last toggled his ready state.
 
     byte		prefcolor[4];			// Nes - Preferred color. Server only.
-
+	graphic_t	icon_graphic;			// [AM] Icon as a graphic.  Client only.
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
 
@@ -591,6 +591,7 @@ enum
 	SCORES_CLEAR_ALL = (0xFF),
 };
 
+void P_UpdatePlayerIcon(player_t& pl);
 void P_ClearPlayerCards(player_t& p);
 void P_ClearPlayerPowerups(player_t& p);
 void P_ClearPlayerScores(player_t& p, byte flags);

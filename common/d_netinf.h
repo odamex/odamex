@@ -26,6 +26,7 @@
 #define __D_NETINFO_H__
 
 #include "doomdef.h"
+#include "cmdlib.h"
 #include "c_cvars.h"
 #include "teaminfo.h"
 
@@ -47,19 +48,24 @@ class picon_t
 	graphic_t m_graphic;
 
   public:
+	picon_t()
+	{
+		ArrayInit(m_data, false);
+	}
+
 	bool& at(const int x, const int y)
 	{
 		return m_data[y * PICON_STRIDE + x];
 	}
 
-	const graphic_t& getGraphic()
+	const graphic_t& getGraphic(const palindex_t fg, const palindex_t bg)
 	{
 		m_graphic.width = PICON_STRIDE;
 		m_graphic.height = PICON_STRIDE;
 		m_graphic.data.resize(PICON_PIXELS);
 		for (size_t i = 0; i < ARRAY_LENGTH(m_data); i++)
 		{
-			m_graphic.data[i] = m_data[i] ? 112 : 176;
+			m_graphic.data[i] = m_data[i] ? fg : bg;
 		}
 		return m_graphic;
 	}
@@ -158,16 +164,19 @@ struct UserInfo
 	gender_t		gender;
 	weaponswitch_t	switchweapon;
 	byte			weapon_prefs[NUMWEAPONS];
+	picon_t			icon;
+	byte			icon_color[4];
 
 	static const byte weapon_prefs_default[NUMWEAPONS];
 
-	UserInfo() : team(TEAM_NONE), aimdist(0),
-	             predict_weapons(true),
-	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
+	UserInfo()
+	    : team(TEAM_NONE), aimdist(0), predict_weapons(true), gender(GENDER_MALE),
+	      switchweapon(WPSW_ALWAYS), icon()
 	{
 		// default doom weapon ordering when player runs out of ammo
-		memcpy(weapon_prefs, UserInfo::weapon_prefs_default, sizeof(weapon_prefs));
-		memset(color, 0, 4);
+		ArrayCopy(weapon_prefs, UserInfo::weapon_prefs_default);
+		ArrayInit(color, 0x00);
+		ArrayInit(icon_color, 0x00);
 	}
 };
 

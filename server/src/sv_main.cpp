@@ -873,10 +873,7 @@ bool SV_SetupUserInfo(player_t &player)
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
 
-	MSG_ReadString();	// [SL] place holder for deprecated skins
-
 	fixed_t aimdist = MSG_ReadLong();
-	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
 	bool predict_weapons = MSG_ReadBool();
 
 	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
@@ -892,6 +889,11 @@ bool SV_SetupUserInfo(player_t &player)
 		weapon_prefs[i] = preflevel;
 	}
 
+	std::string icon = MSG_ReadString();
+	byte icon_color[4];
+	for (int i = 3; i >= 0; i--)
+		icon_color[i] = MSG_ReadByte();
+
 	// ensure sane values for userinfo
 	if (gender < 0 || gender >= NUMGENDER)
 		gender = GENDER_NEUTER;
@@ -905,13 +907,13 @@ bool SV_SetupUserInfo(player_t &player)
 	player.userinfo.predict_weapons	= predict_weapons;
 	player.userinfo.aimdist			= aimdist;
 	player.userinfo.switchweapon	= switchweapon;
-	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
+	ArrayCopy(player.userinfo.weapon_prefs, weapon_prefs);
 
 	player.userinfo.gender			= gender;
 	player.userinfo.team			= new_team;
 
-	memcpy(player.userinfo.color, color, 4);
-	memcpy(player.prefcolor, color, 4);
+	ArrayCopy(player.userinfo.color, color);
+	ArrayCopy(player.prefcolor, color);
 
 	// sanitize the client's name
 	new_netname = TrimString(new_netname);
@@ -1003,6 +1005,10 @@ bool SV_SetupUserInfo(player_t &player)
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 		}
 	}
+
+	// [AM] Read in icon.
+	player.userinfo.icon.fromString(icon);
+	ArrayCopy(player.userinfo.icon_color, icon_color);
 
 	return true;
 }

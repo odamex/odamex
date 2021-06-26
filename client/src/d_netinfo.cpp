@@ -65,6 +65,8 @@ EXTERN_CVAR (cl_weaponpref_rl)
 EXTERN_CVAR (cl_weaponpref_pls)
 EXTERN_CVAR (cl_weaponpref_bfg)
 EXTERN_CVAR (cl_predictweapons)
+EXTERN_CVAR(cl_icon)
+EXTERN_CVAR(cl_iconcolor)
 
 enum
 {
@@ -84,11 +86,6 @@ CVAR_FUNC_IMPL(cl_name)
 
 	if (var.str().compare(newname) != 0)
 		var.Set(newname.c_str());
-}
-
-CVAR_FUNC_IMPL(cl_icon)
-{
-
 }
 
 BEGIN_COMMAND(icon)
@@ -231,9 +228,20 @@ void D_SetupUserInfo(void)
 	coninfo->color[2] = color.getg(); 
 	coninfo->color[3] = color.getb(); 
 
+	argb_t iconcolor = V_GetColorFromString(cl_iconcolor);
+	coninfo->icon_color[0] = iconcolor.geta();
+	coninfo->icon_color[1] = iconcolor.getr();
+	coninfo->icon_color[2] = iconcolor.getg();
+	coninfo->icon_color[3] = iconcolor.getb();
+
+	coninfo->icon.fromString(cl_icon);
+
 	// update color translation
 	if (!demoplayback && !connected)
+	{
 		R_BuildPlayerTranslation(consoleplayer_id, color);
+		P_UpdatePlayerIcon(consoleplayer());
+	}
 }
 
 void D_UserInfoChanged (cvar_t *cvar)

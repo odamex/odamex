@@ -400,6 +400,12 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 
 	msg.set_join_time(time);
 
+	msg.set_icon(player.userinfo.icon.toString());
+	for (size_t i = 0; i < ARRAY_LENGTH(player.userinfo.icon_color); i++)
+	{
+		msg.mutable_icon_color()->Add(player.userinfo.icon_color[i]);
+	}
+
 	return msg;
 }
 

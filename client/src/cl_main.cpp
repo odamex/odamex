@@ -1339,17 +1339,17 @@ void CL_SendUserInfo(void)
 	for (int i = 3; i >= 0; i--)
 		MSG_WriteByte(&net_buffer, coninfo->color[i]);
 
-	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&net_buffer, "");
-
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
 	}
+
+	MSG_WriteString(&net_buffer, coninfo->icon.toString().c_str());
+	for (int i = 3; i >= 0; i--)
+		MSG_WriteByte(&net_buffer, coninfo->icon_color[i]);
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
 }

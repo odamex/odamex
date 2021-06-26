@@ -795,6 +795,17 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
 
+	// [AM] Player icons.
+	p->userinfo.icon.fromString(msg->icon());
+
+	for (size_t i = 0; i < p->userinfo.icon_color[i]; i++)
+	{
+		if (i < msg->icon_color_size())
+			p->userinfo.icon_color[i] = msg->icon_color().Get(i);
+		else
+			p->userinfo.icon_color[i] = 0;
+	}
+
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
 	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?

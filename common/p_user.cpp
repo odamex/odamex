@@ -108,6 +108,23 @@ bool validplayer(player_t &ref)
 }
 
 /**
+ * @brief Update the player icon graphic.
+ *
+ * @detail Assumes icon, icon color, and color are populated.
+ */
+void P_UpdatePlayerIcon(player_t& pl)
+{
+	UserInfo& info = pl.userinfo;
+	const argb_t* pal = V_GetDefaultPalette()->basecolors;
+
+	palindex_t fg_color =
+	    V_BestColor(pal, info.icon_color[1], info.icon_color[2], info.icon_color[3]);
+	palindex_t bg_color = V_BestColor(pal, info.color[1], info.color[2], info.color[3]);
+
+	pl.icon_graphic = info.icon.getGraphic(fg_color, bg_color);
+}
+
+/**
  * @brief Clear all cards from a player.
  * 
  * @param p Player to clear.
