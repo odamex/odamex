@@ -1778,7 +1778,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	std::string buf;
 	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
 	          player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf(buf.c_str());
+	Printf("%s", buf.c_str());
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
