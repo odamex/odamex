@@ -1096,6 +1096,10 @@ MUSIC_READ_M = "read_m";
 MUSIC_DM2TTL = "dm2ttl";
 MUSIC_DM2INT = "dm2int";
 
+TXT_BUDDHAON = "Buddha mode ON";
+TXT_BUDDHAOFF = "Buddha mode OFF";
+
+
 /******************************** French ********************************/
 [fr]
 

@@ -1096,7 +1096,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_wantwad);
 	CLC_INFO(clc_kill);
 	CLC_INFO(clc_cheat);
-    CLC_INFO(clc_cheatpulse);
 	CLC_INFO(clc_callvote);
 	CLC_INFO(clc_maplist);
 	CLC_INFO(clc_maplist_update);

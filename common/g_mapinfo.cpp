@@ -272,7 +272,7 @@ namespace
 
 	bool UpperCompareToken(OScanner& os, const char* str)
     {
-	    return stricmp(os.getToken().c_str(), str) == 0;
+	    return iequals(os.getToken(), str);
     }
 
 	//////////////////////////////////////////////////////////////////////
@@ -288,61 +288,21 @@ namespace
 	template <>
 	int GetToken<int>(OScanner& os)
 	{
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		char* stopper;
-	
-		// if (os.compareToken("MAXINT"))
-		if (str == "MAXINT")
-		{
-			return MAXINT;
-		}
-	
-		const int num = strtol(str.c_str(), &stopper, 0);
-	
-		if (*stopper != 0)
-		{
-			I_Error("Bad numeric constant \"%s\".", str.c_str());
-		}
-	
-		return num;
+	    return os.getTokenAsBool();
 	}
 	
 	// return token as float
 	template <>
 	float GetToken<float>(OScanner& os)
 	{
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		char* stopper;
-	
-		const double num = strtod(str.c_str(), &stopper);
-	
-		if (*stopper != 0)
-		{
-			I_Error("Bad numeric constant \"%s\".", str.c_str());
-		}
-	
-		return static_cast<float>(num);
+		return os.getTokenAsFloat();
 	}
 
 	// return token as bool
 	template <>
 	bool GetToken<bool>(OScanner& os)
     {
-	    return UpperCompareToken(os, "true");
+	    return os.getTokenAsBool();
     }
 
 	// return token as std::string
@@ -381,77 +341,35 @@ namespace
 	template <>
 	void MustGet<int>(OScanner& os)
 	{
-	    if (!os.scan())
-	    {
-		    I_Error("Missing integer (unexpected end of file).");
-	    }
-	
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		if (IsNum(str.c_str()) == false)
-		{
-			I_Error("Missing integer (unexpected end of file).");
-		}
+	    os.mustGetInt();
 	}
 
 	// ensure token is float
 	template <>
 	void MustGet<float>(OScanner& os)
 	{
-	    if (!os.scan())
-	    {
-		    I_Error("Missing floating-point number (unexpected end of file).");
-	    }
-	
-		// fix for parser reading in commas
-		std::string str = os.getToken();
-	
-		if (str[str.length() - 1] == ',')
-		{
-			str[str.length() - 1] = '\0';
-		}
-	
-		if (IsRealNum(str.c_str()) == false)
-		{
-			I_Error("Missing floating-point number (unexpected end of file).");
-		}
+	    os.mustGetFloat();
 	}
 
 	// ensure token is bool
 	template <>
 	void MustGet<bool>(OScanner& os)
     {
-	    MustGetString(os);
-	    if (!UpperCompareToken(os, "true") && !UpperCompareToken(os, "false"))
-	    {
-		    I_Error("Missing boolean (unexpected end of file).");
-	    }
+	    os.mustGetBool();
     }
 
 	// ensure token is std::string
 	template <>
     void MustGet<std::string>(OScanner& os)
     {
-	    if (!os.scan())
-	    {
-		    I_Error("Missing string (unexpected end of file).");
-	    }
+	    os.mustGetString();
     }
 
     // ensure token is OLumpName
     template <>
     void MustGet<OLumpName>(OScanner& os)
     {
-	    if (!os.scan())
-	    {
-		    I_Error("Missing lump name (unexpected end of file).");
-	    }
+	    os.mustGetString();
 
 		if (os.getToken().length() > 8)
 	    {
@@ -464,7 +382,7 @@ namespace
 
 	bool IsIdentifier(OScanner& os)
 	{
-		const char ch = os.getToken()[0];
+		const char &ch = os.getToken()[0];
 	
 		return (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
 	}
@@ -839,7 +757,7 @@ namespace
 		level_pwad_info_t defaultinfo;
 		SetLevelDefaults(&defaultinfo);
 	
-		const char* buffer = (char*)W_CacheLumpNum(lump, PU_STATIC);
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 	
 		OScannerConfig config = {
 		    lumpname, // lumpName

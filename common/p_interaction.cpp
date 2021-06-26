@@ -1491,18 +1491,14 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved = 0;
-	player_t*   splayer = NULL; // shorthand for source->player
-	player_t*   tplayer = NULL; // shorthand for target->player
+	player_t*   player = NULL; // shorthand for target->player
 
 	if (!serverside)
     {
 		return;
     }
 
-    if (source)
-        splayer = source->player;
-
-    tplayer = target->player;
+    player = target->player;
 
 	if (!(target->flags & MF_SHOOTABLE))
     {
@@ -1510,7 +1506,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	// GhostlyDeath -- Spectators can't get hurt!
-	if (tplayer && tplayer->spectator)
+	if (player && player->spectator)
     {
 		return;
     }
@@ -1530,10 +1526,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
-	if (tplayer)
+	if (player)
 	{
-		teamInfo = GetTeamInfo(tplayer->userinfo.team);
-		targethasflag = &idplayer(teamInfo->FlagData.flagger) == tplayer;
+		teamInfo = GetTeamInfo(player->userinfo.team);
+		targethasflag = &idplayer(teamInfo->FlagData.flagger) == player;
 	}
 
 	if (target->flags & MF_SKULLFLY)
@@ -1541,22 +1537,22 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		target->momx = target->momy = target->momz = 0;
 	}
 
-	if (tplayer && sv_skill == sk_baby)
+	if (player && sv_skill == sk_baby)
     {
 		damage >>= 1;	// take half damage in trainer mode
     }
 
 	// [AM] Weapon and monster damage scaling.
-	if (source && splayer && target)
+	if (source && source->player && target)
 		damage *= sv_weapondamage;
-	else if (source && target && tplayer)
+	else if (source && target && player)
 		damage *= sv_monsterdamage;
 
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
 	if (inflictor && !(target->flags & MF_NOCLIP) &&
-        (!source || !splayer || splayer->readyweapon != wp_chainsaw))
+	    (!source || !source->player || source->player->readyweapon != wp_chainsaw))
 	{
 		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
@@ -1578,7 +1574,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	}
 
 	// player specific
-	if (tplayer)
+	if (player)
 	{
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
@@ -1593,54 +1589,62 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// Below certain threshold,
 		// ignore damage in GOD mode, or with INVUL power.
 		if (damage < 1000 &&
-			((tplayer->cheats & CF_GODMODE) ||
-				tplayer->powers[pw_invulnerability]))
+		    ((player->cheats & CF_GODMODE) || player->powers[pw_invulnerability]))
 		{
 			return;
 		}
 
 		// [AM] No damage with sv_friendlyfire (was armor-only)
-		if (!sv_friendlyfire && source && splayer && target != source &&
+		if (!sv_friendlyfire && source && source->player && target != source &&
 			mod != MOD_TELEFRAG)
 		{
-			if (G_IsCoopGame() ||
-				(G_IsTeamGame() &&
-					tplayer->userinfo.team == splayer->userinfo.team))
+			if (G_IsCoopGame() || 
+				(G_IsTeamGame() && player->userinfo.team == source->player->userinfo.team))
 			{
 				damage = 0;
 			}
 		}
 
 		int armorDamage = 0;
-		if (tplayer->armortype && !(flags & DMG_NO_ARMOR))
+		if (player->armortype && !(flags & DMG_NO_ARMOR))
 		{
-			if (tplayer->armortype == deh.GreenAC)
+			if (player->armortype == deh.GreenAC)
 				armorDamage = damage / 3;
 			else
 				armorDamage = damage / 2;
 
-			if (tplayer->armorpoints <= armorDamage)
+			if (player->armorpoints <= armorDamage)
 			{
 				// armor is used up
-				armorDamage = tplayer->armorpoints;
-				tplayer->armortype = 0;
+				armorDamage = player->armorpoints;
+				player->armortype = 0;
 			}
-			tplayer->armorpoints -= armorDamage;
+			player->armorpoints -= armorDamage;
 			damage -= armorDamage;
 		}
 
-		tplayer->health -= damage;		// mirror mobj health here for Dave
+		player->health -= damage; // mirror mobj health here for Dave
+		target->health -= damage; // Do the same.
 
-		if (tplayer->health <= 0)
-			tplayer->health = 0;
+		if (player->health <= 0)
+		{
+			if (player->cheats & CF_BUDDHA && damage < 10000)
+			{
+				player->mo->health = player->health = target->health = 1;
+			}
+			else
+			{
+				player->health = 0;
+			} 
+		}
 
-		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
-		tplayer->damagecount += damage;	// add damage after armor / invuln
+		player->attacker = source ? source->ptr() : AActor::AActorPtr();
+		player->damagecount += damage; // add damage after armor / invuln
 
-		if (tplayer->damagecount > 100)
-			tplayer->damagecount = 100;	// teleport stomp does 10k points...
+		if (player->damagecount > 100)
+			player->damagecount = 100; // teleport stomp does 10k points...
 
-		SV_SendDamagePlayer(tplayer, inflictor, damage, armorDamage);
+		SV_SendDamagePlayer(player, inflictor, damage, armorDamage);
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.
@@ -1668,47 +1672,47 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
+	} else
+	{
+		// [RH] Only if not immune
+		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
+			target->health -= damage;		// do the damage to monsters.
 	}
 
-	// do the damage
-	// [RH] Only if not immune
-	if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
+	if (target->health <= 0)
 	{
-		target->health -= damage;
-		if (target->health <= 0)
-		{
-			P_KillMobj(source, target, inflictor, false);
+		P_KillMobj(source, target, inflictor, false);
 
-			// WDL damage events.
-			if (source == NULL && targethasflag)
-			{
-				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+		// WDL damage events.
+		if (source == NULL && targethasflag)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
 				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
 			}
-			else if (source == NULL)
-			{
-				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-				M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
-			}
-			else if (targethasflag)
-				M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
-			else
-				M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
-			return;
+		else if (source == NULL)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
 		}
+		else if (targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+		else
+			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+
+		return;
 	}
 
     if (!(target->flags2 & MF2_DORMANT))
 	{
 		int pain = P_Random();
 
-		if (!tplayer)
+		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);
 		}
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
-			!(tplayer && !damage))
+		    !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 			P_SetMobjState(target, target->info->painstate);

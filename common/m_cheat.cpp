@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "g_gametype.h"
 #include "m_cheat.h"
 #include "d_player.h"
 #include "doomstat.h"
@@ -33,6 +34,18 @@
 #include "d_items.h"
 #include "p_local.h"
 
+extern bool simulated_connection;
+EXTERN_CVAR(sv_allowcheats)
+
+#ifdef CLIENT_APP
+#include "am_map.h"
+#include "cl_main.h"
+#include "c_dispatch.h"
+extern bool automapactive;
+#endif
+
+void C_DoCommand(const char* cmd, uint32_t key = 0);
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
@@ -40,78 +53,195 @@
 static int				firsttime = 1;
 static unsigned char	cheat_xlate_table[256];
 
+#ifdef CLIENT_APP
 
-//
-// Called in st_stuff module, which handles the input.
-// Returns a 1 if the cheat was successful, 0 if failed.
-//
-int cht_CheckCheat (cheatseq_t *cht, char key)
+//-------------
+// THESE ARE MAINLY FOR THE CLIENT
+// Smashing Pumpkins Into Small Piles Of Putrid Debris.
+bool CHEAT_AutoMap(cheatseq_t* cheat)
 {
-	int i;
-	int rc = 0;
-
-	if (firsttime)
+	if (automapactive)
 	{
-		firsttime = 0;
-		for (i = 0; i < 256; i++)
-			cheat_xlate_table[i] = (unsigned char)SCRAMBLE(i);
+		if (!multiplayer || G_IsCoopGame())
+			am_cheating = (am_cheating + 1) % 3;
+
+		return true;
 	}
+	return false;
+}
 
-	if (!cht->p)
-		cht->p = cht->sequence; // initialize if first time
+bool CHEAT_ChangeLevel(cheatseq_t* cheat)
+{
+	char buf[16];
 
-	if (*cht->p == 0)
-		*(cht->p++) = key;
-	else if (cheat_xlate_table[(unsigned char)tolower(key)] == *cht->p)
-		cht->p++;
+	// What were you trying to achieve?
+	if (multiplayer)
+		return false;
+
+	// [ML] Chex mode: always set the episode number to 1.
+	// FIXME: This is probably a horrible hack, it sure looks like one at least
+	if (gamemode == retail_chex)
+		snprintf(buf, sizeof(buf), "map 1%c", cheat->Args[1]);
 	else
-		cht->p = cht->sequence;
-
-	if (*cht->p == 1)
-		cht->p++;
-	else if (*cht->p == 0xff) // end of sequence character
-	{
-		cht->p = cht->sequence;
-		rc = 1;
-	}
-
-	return rc;
-}
-
-void cht_GetParam (cheatseq_t *cht, char *buffer)
-{
-
-	unsigned char *p, c;
-
-	p = cht->sequence;
-	while (*(p++) != 1);
+		snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
 	
-	do
-	{
-		c = *p;
-		*(buffer++) = c;
-		*(p++) = 0;
-	}
-	while (c && *p!=0xff );
-
-	if (*p==0xff)
-		*buffer = 0;
-
+	AddCommandString(buf);
+	return true;
 }
 
-extern void A_PainDie(AActor *);
+bool CHEAT_IdMyPos(cheatseq_t* cheat)
+{
+	C_DoCommand("toggle idmypos", 0);
+	return true;
+}
+
+bool CHEAT_BeholdMenu(cheatseq_t* cheat)
+{
+	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
+	return false;
+}
+
+bool CHEAT_ChangeMusic(cheatseq_t* cheat)
+{
+	char buf[9] = "idmus xx";
+
+	buf[6] = cheat->Args[0];
+	buf[7] = cheat->Args[1];
+	C_DoCommand(buf, 0);
+	return true;
+}
+
+//
+// Sets clientside the new cheat flag
+// and also requests its new status serverside
+//
+bool CHEAT_SetGeneric(cheatseq_t* cheat)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return true;
+
+	if (cheat->Args[0] == CHT_NOCLIP)
+	{
+		if (cheat->Args[1] == 0 && gamemode != shareware && gamemode != registered &&
+		    gamemode != retail && gamemode != retail_bfg)
+			return true;
+		else if (cheat->Args[1] == 1 && gamemode != commercial &&
+		         gamemode != commercial_bfg)
+			return true;
+	}
+
+	CHEAT_DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
+	CL_SendCheat((ECheatFlags)cheat->Args[0]);
+
+	return true;
+}
 
 // [RH] Actually handle the cheat. The cheat code in st_stuff.c now just
 // writes some bytes to the network data stream, and the network code
 // later calls us.
 
-void cht_DoCheat (player_t *player, int cheat)
+bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
+{
+	if (cheat->Pos == NULL)
+	{
+		cheat->Pos = cheat->Sequence;
+		cheat->CurrentArg = 0;
+	}
+	if (*cheat->Pos == 0)
+	{
+		*eat = true;
+		cheat->Args[cheat->CurrentArg++] = key;
+		cheat->Pos++;
+	}
+	else if (key == *cheat->Pos)
+	{
+		cheat->Pos++;
+	}
+	else
+	{
+		cheat->Pos = cheat->Sequence;
+		cheat->CurrentArg = 0;
+	}
+	if (*cheat->Pos == 0xff)
+	{
+		cheat->Pos = cheat->Sequence;
+		cheat->CurrentArg = 0;
+		return true;
+	}
+	return false;
+}
+
+BEGIN_COMMAND(tntem)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (multiplayer && !G_IsCoopGame())
+		return;
+
+	CHEAT_DoCheat(&consoleplayer(), CHT_MASSACRE);
+	CL_SendCheat(CHT_MASSACRE);
+}
+END_COMMAND(tntem)
+
+BEGIN_COMMAND(mdk)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (multiplayer && !G_IsCoopGame())
+		return;
+
+	CHEAT_DoCheat(&consoleplayer(), CHT_MDK);
+	CL_SendCheat(CHT_MDK);
+}
+END_COMMAND(mdk)
+
+#endif
+
+// Checks if all the conditions to enable cheats are met.
+bool CHEAT_AreCheatsEnabled()
+{
+	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
+	// back a netdemo
+	if (simulated_connection)
+		return false;
+
+	// Disallow cheats within any state other than ingame.
+	if (gamestate != GS_LEVEL)
+		return false;
+
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
+	// are disabled
+	if (!multiplayer && sv_skill == sk_nightmare)
+		return false;
+
+	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
+	{
+		Printf(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
+		                      "enable this command.\n");
+		return false;
+	}
+
+	return true;
+}
+
+extern void A_PainDie(AActor*);
+
+void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 {
 	const char *msg = "";
 	char msgbuild[32];
 
+	if (player->health <= 0 || !player)
+		return;
+
 	switch (cheat) {
 		case CHT_IDDQD:
+
+			if (player->spectator)
+			    return;
+
 			if (!(player->cheats & CF_GODMODE)) {
 				if (player->mo)
 					player->mo->health = deh.GodHealth;
@@ -119,68 +249,79 @@ void cht_DoCheat (player_t *player, int cheat)
 				player->health = deh.GodHealth;
 			}
 		case CHT_GOD:
+
+			if (player->spectator)
+			    return;
+
 			player->cheats ^= CF_GODMODE;
-			if (player->cheats & CF_GODMODE)
-				msg = GStrings(STSTR_DQDON);
-			else
-				msg = GStrings(STSTR_DQDOFF);
+		    msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
+		                                        : GStrings(STSTR_DQDOFF);
 			break;
 
 		case CHT_NOCLIP:
+			if (player->spectator)
+			    silentmsg = true;
+
 			player->cheats ^= CF_NOCLIP;
-			if (player->cheats & CF_NOCLIP)
-				msg = GStrings(STSTR_NCON);
-			else
-				msg = GStrings(STSTR_NCOFF);
+		    msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON)
+		                                       : GStrings(STSTR_NCOFF);
 			break;
 
 		case CHT_FLY:
 			player->cheats ^= CF_FLY;
-			if (player->cheats & CF_FLY)
-				msg = "You feel lighter";
-			else
-				msg = "Gravity weighs you down";
+		    msg = (player->cheats & CF_FLY) ? "You feel lighter"
+		                                    : "Gravity weighs you down";
 			break;
 
 		case CHT_NOTARGET:
-			if (!multiplayer)
-			{
-				player->cheats ^= CF_NOTARGET;
-				if (player->cheats & CF_NOTARGET)
-					msg = "notarget ON";
-				else
-					msg = "notarget OFF";
-			}
+
+			if (player->spectator)
+			    return;
+
+			player->cheats ^= CF_NOTARGET;
+		    msg = (player->cheats & CF_NOTARGET) ? "notarget ON" 
+				                                 : "notarget OFF";
 			break;
 
 		case CHT_CHASECAM:
+
+			if (player->spectator)
+			    return;
+
 			player->cheats ^= CF_CHASECAM;
-			if (player->cheats & CF_CHASECAM)
-				msg = "chasecam ON";
-			else
-				msg = "chasecam OFF";
+			msg = (player->cheats & CF_CHASECAM) ? "chasecam ON" 
+				                                 : "chasecam OFF";
 			break;
 
 		case CHT_CHAINSAW:
+
+			if (player->spectator)
+			    return;
+
 			player->weaponowned[wp_chainsaw] = true;
 			player->powers[pw_invulnerability] = true;
 			msg = GStrings(STSTR_CHOPPERS);
 			break;
 
 		case CHT_IDKFA:
-			cht_Give (player, "backpack");
-			cht_Give (player, "weapons");
-			cht_Give (player, "ammo");
-			cht_Give (player, "keys");
+
+			if (player->spectator)
+			    return;
+
+		    CHEAT_GiveTo(player, "all");
 			player->armorpoints = deh.KFAArmor;
 			player->armortype = deh.KFAAC;
 			msg = GStrings(STSTR_KFAADDED);
 			break;
 
 		case CHT_IDFA:
-			cht_Give (player, "backpack");
-			cht_Give (player, "weapons");
-			cht_Give (player, "ammo");
+
+			if (player->spectator)
+			    return;
+
+		    CHEAT_GiveTo(player, "backpack");
+		    CHEAT_GiveTo(player, "weapons");
+		    CHEAT_GiveTo(player, "ammo");
 			player->armorpoints = deh.FAArmor;
 			player->armortype = deh.FAAC;
 			msg = GStrings(STSTR_FAADDED);
@@ -193,6 +334,9 @@ void cht_DoCheat (player_t *player, int cheat)
 		case CHT_BEHOLDA:
 		case CHT_BEHOLDL:
 			{
+				if (player->spectator)
+					return;
+
 				int i = cheat - CHT_BEHOLDV;
 
 				if (!player->powers[i])
@@ -203,6 +347,7 @@ void cht_DoCheat (player_t *player, int cheat)
 					player->powers[i] = 0;
 			}
 			msg = GStrings(STSTR_BEHOLDX);
+
 			break;
 
 		case CHT_MASSACRE:
@@ -216,6 +361,9 @@ void cht_DoCheat (player_t *player, int cheat)
 				int killcount = 0;
 				AActor *actor;
 				TThinkerIterator<AActor> iterator;
+
+				if (multiplayer && !player->client.allow_rcon)
+			        return;
 
 				while ( (actor = iterator.Next ()) )
 				{
@@ -240,14 +388,57 @@ void cht_DoCheat (player_t *player, int cheat)
 				msg = msgbuild;
 			}
 			break;
+
+		case CHT_MDK: 
+		{
+			if (multiplayer && !player->client.allow_rcon)
+				return;
+
+			if (player->spectator)
+			    return;
+
+			// Never enable that in PvP, are you crazy?
+			if (!G_IsCoopGame())
+			    return;
+
+			if (serverside)
+		    {
+			    P_LineAttack(
+			        player->mo, player->mo->angle, 8192 * FRACUNIT,
+			        P_AimLineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT),
+			        10000);
+
+				if (multiplayer)
+					msg = "MDK";
+		    }
+		}
+	    break;
+
+		case CHT_BUDDHA: 
+		{
+		        player->cheats ^= CF_BUDDHA;
+		        msg = (player->cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
+		                                           : GStrings(TXT_BUDDHAOFF);
+	    }
 	}
-	if (player == &consoleplayer())
-		Printf (PRINT_HIGH, "%s\n", msg);
-	else
-		Printf (PRINT_HIGH, "%s is a cheater: %s\n", player->userinfo.netname.c_str(), msg);
+
+	if (!silentmsg)
+	{
+		if (player == &consoleplayer())
+		{
+			if (msg != "")
+				Printf("%s\n", msg);
+		}
+				
+			
+#ifdef SERVER_APP
+			SV_BroadcastPrintfButPlayer(PRINT_HIGH, player->id, "%s is a cheater: %s\n",
+			                            player->userinfo.netname.c_str(), msg);
+			#endif
+	}
 }
 
-void cht_Give (player_t *player, const char *name)
+void CHEAT_GiveTo(player_t* player, const char* name)
 {
 	BOOL giveall;
 	int i;
@@ -362,13 +553,16 @@ void cht_Give (player_t *player, const char *name)
 	}
 }
 
-void cht_Suicide (player_t *plyr)
+// Heretic cheat code (unused!)
+#if 0
+void CHEAT_Suicide(player_t* plyr)
 {
 	plyr->mo->flags |= MF_SHOOTABLE;
 	while (plyr->health > 0)
 		P_DamageMobj (plyr->mo, plyr->mo, plyr->mo, 10000, MOD_SUICIDE);
 	plyr->mo->flags &= ~MF_SHOOTABLE;
 }
+#endif
 
 VERSION_CONTROL (m_cheat_cpp, "$Id$")
 
