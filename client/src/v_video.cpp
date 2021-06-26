@@ -816,6 +816,57 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	}
 }
 
+/**
+ * @brief Draw a line between two points.
+ *
+ * @detail Yet another implementation of Bresenham.
+ * 
+ * @param src Source point.
+ * @param dst Destination point.
+ * @param color Color to paint the line.
+*/
+void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
+{
+	const palindex_t pal_color = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+	const argb_t full_color = V_GammaCorrect(color);
+
+	int dx = abs(dst.x - src.x), sx = src.x < dst.x ? 1 : -1;
+	int dy = -abs(dst.y - src.y), sy = src.y < dst.y ? 1 : -1;
+
+	int err = dx + dy;
+
+	v2int_t cur(src);
+
+	for (;;)
+	{
+		if (mSurface->getBitsPerPixel() == 8)
+		{
+			palindex_t* dest = (palindex_t*)mSurface->getBuffer(cur.x, cur.y);
+			*dest = pal_color;
+		}
+		else
+		{
+			argb_t* dest = (argb_t*)mSurface->getBuffer(cur.x, cur.y);
+			*dest = full_color;
+		}
+
+		if (cur.x == dst.x && cur.y == dst.y)
+			break;
+
+		const int e2 = 2 * err;
+		if (e2 >= dy)
+		{
+			err += dy;
+			cur.x += sx;
+		}
+
+		if (e2 <= dx)
+		{
+			err += dx;
+			cur.y += sy;
+		}
+	}
+}
 
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
