@@ -849,6 +849,10 @@ static std::string WinToColorString(const WinInfo& win)
 
 void HordeHUD()
 {
+	// [AM] FIXME - HUD crashes online
+	if (!::serverside)
+		return;
+
 	if (!P_IsHordeMode())
 		return;
 

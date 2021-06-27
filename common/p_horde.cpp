@@ -358,6 +358,11 @@ void P_RunHordeTics()
 	if (::level.time == 0)
 		::gDirector.reset();
 
+	// Pause game logic if nobody is in the game.
+	PlayerResults targets = PlayerQuery().hasHealth().execute();
+	if (targets.count == 0)
+		return;
+
 	// Only run logic once a second.
 	if (!P_AtInterval(TICRATE))
 		return;

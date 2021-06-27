@@ -545,6 +545,10 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
  */
 static void P_GiveCarePack(player_t* player)
 {
+	// [AM] There is way too much going on in here to accurately predict.
+	if (!::serverside)
+		return;
+
 	const bool hasBulletWeap =
 	    player->weaponowned[wp_pistol] || player->weaponowned[wp_chaingun];
 	const bool hasShellWeap =
@@ -633,6 +637,13 @@ static void P_GiveCarePack(player_t* player)
 		P_GiveArmor(player, 1);
 		blocks -= 1;
 		Printf("CARE: Armor\n");
+	}
+
+	if (!::clientside)
+	{
+		// [AM] FIXME: This gives players their inventory, with no
+		//             background flash.
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
 	}
 }
 
