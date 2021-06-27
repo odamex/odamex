@@ -712,15 +712,18 @@ void V_DrawFPSWidget()
 
 		// Min
 		StrFormat(buffer, "%2.1f", ::g_GraphData.minimum);
-		screen->PrintStr(botright.x, botright.y, buffer.c_str());
+		screen->PrintStr(botright.x, botright.y - 3, buffer.c_str());
 
 		// Max
 		StrFormat(buffer, "%2.1f", ::g_GraphData.maximum);
-		screen->PrintStr(topright.x, topright.y, buffer.c_str());
+		screen->PrintStr(topright.x, topright.y - 3, buffer.c_str());
 
 		// Actual
 		StrFormat(buffer, "%2.1f", delta_time_ms);
-		screen->PrintStr(topright.x, topright.y + (GRAPH_HEIGHT / 2), buffer.c_str());
+		screen->PrintStr(topright.x, topright.y + (GRAPH_HEIGHT / 2) - 3, buffer.c_str());
+
+		// Name
+		screen->PrintStr(topleft.x, topleft.y - 8, "Frametime (ms)");
 
 		time_accum += delta_time;
 
