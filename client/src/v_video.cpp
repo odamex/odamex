@@ -587,6 +587,44 @@ void V_MarkRect(int x, int y, int width, int height)
 	dirtybox.AddToBox(x + width - 1, y + height - 1);
 }
 
+const int GRAPH_WIDTH = 140;
+const int GRAPH_HEIGHT = 80;
+
+struct frametimeGraph_t
+{
+	double data[256];
+	size_t tail; // Next insert location.
+	double minimum;
+	double maximum;
+
+	void clear()
+	{
+		ArrayInit(data, 0.0);
+		tail = 0;
+	}
+
+	void push(const double val)
+	{
+		if (val < minimum)
+			minimum = val;
+		if (val > maximum)
+			maximum = val;
+
+		data[tail] = val;
+		tail = (tail + 1) & 0xFF;
+	}
+
+	double getTail(const size_t i)
+	{
+		size_t idx = (tail - 1 - i) & 0xFF;
+		return data[idx];
+	}
+
+	double normalize(const double n)
+	{
+		return (n - minimum) / (maximum - minimum);
+	}
+} g_GraphData;
 
 //
 // V_DrawFPSWidget
@@ -604,15 +642,58 @@ void V_DrawFPSWidget()
 	last_time = current_time;
 	frame_count++;
 
+	if (delta_time > ONE_SECOND || delta_time <= 0)
+	{
+		::g_GraphData.clear();
+	}
+
 	if (delta_time > 0)
 	{
+		static std::string buffer;
 		static double last_fps = 0.0;
-		static char fpsbuff[40];
+		const double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
 
-		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
-		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
-		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
+		::g_GraphData.push(delta_time_ms);
+
+		//StrFormat(buffer, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
+		//screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
+		//screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
+
+		v2int_t topleft(16, I_GetSurfaceHeight() / 2);
+		v2int_t topright(topleft.x + ::GRAPH_WIDTH, topleft.y);
+		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
+		v2int_t botright(topleft.x + ::GRAPH_WIDTH, topleft.y + ::GRAPH_HEIGHT);
+
+		// Data
+		for (size_t count = 1; count < ::GRAPH_WIDTH - 2; count++)
+		{
+			double start = ::g_GraphData.getTail(count - 1);
+			double end = ::g_GraphData.getTail(count);
+
+			int startoff = ::g_GraphData.normalize(start) * (GRAPH_HEIGHT - 2);
+			int endoff = ::g_GraphData.normalize(end) * (GRAPH_HEIGHT - 2);
+
+			v2int_t startvec(botright.x - count, topright.y + startoff);
+			v2int_t endvec(botright.x - count - 1, topright.y + endoff);
+
+			screen->Line(startvec, endvec, argb_t(255, 255, 255));
+		}
+
+		// Box
+		screen->Line(topleft, topright, argb_t(255, 255, 255));
+		screen->Line(botleft, botright, argb_t(255, 255, 255));
+		screen->Line(topleft, botleft, argb_t(255, 255, 255));
+		screen->Line(topright, botright, argb_t(255, 255, 255));
+
+		// Min
+		StrFormat(buffer, "%f", ::g_GraphData.minimum);
+		screen->PrintStr(botleft.x - 8, botleft.y, buffer.c_str());
+
+		// Max
+		StrFormat(buffer, "%f", ::g_GraphData.maximum);
+		screen->PrintStr(topleft.x - 8, topleft.y, buffer.c_str());
+
+		//screen->PrintStr(topleft.x, topleft.y - 8, buffer.c_str());
 
 		time_accum += delta_time;
 
