@@ -684,7 +684,7 @@ void V_DrawFPSWidget()
 		//screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
 		//screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
 
-		v2int_t topleft(8, I_GetSurfaceHeight() / 2);
+		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
 		v2int_t topright(topleft.x + ::GRAPH_WIDTH, topleft.y);
 		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
 		v2int_t botright(topleft.x + ::GRAPH_WIDTH, topleft.y + ::GRAPH_HEIGHT);
@@ -711,15 +711,15 @@ void V_DrawFPSWidget()
 		screen->Line(topright, botright, argb_t(255, 255, 255));
 
 		// Min
-		StrFormat(buffer, "%2.1f", ::g_GraphData.minimum);
+		StrFormat(buffer, "%4.1f", ::g_GraphData.minimum);
 		screen->PrintStr(botright.x, botright.y - 3, buffer.c_str());
 
 		// Max
-		StrFormat(buffer, "%2.1f", ::g_GraphData.maximum);
+		StrFormat(buffer, "%4.1f", ::g_GraphData.maximum);
 		screen->PrintStr(topright.x, topright.y - 3, buffer.c_str());
 
 		// Actual
-		StrFormat(buffer, "%2.1f", delta_time_ms);
+		StrFormat(buffer, "%4.1f", delta_time_ms);
 		screen->PrintStr(topright.x, topright.y + (GRAPH_HEIGHT / 2) - 3, buffer.c_str());
 
 		// Name
@@ -737,6 +737,10 @@ void V_DrawFPSWidget()
 			// Refit graph on next tic.
 			::g_GraphData.refit();
 		}
+
+		// FPS counter
+		StrFormat(buffer, "FPS %5.1f", last_fps);
+		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
 	}
 }
 
