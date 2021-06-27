@@ -589,6 +589,7 @@ void V_MarkRect(int x, int y, int width, int height)
 
 const int GRAPH_WIDTH = 140;
 const int GRAPH_HEIGHT = 80;
+const double GRAPH_BASELINE = 1000 / 60.0;
 
 struct frametimeGraph_t
 {
@@ -597,10 +598,34 @@ struct frametimeGraph_t
 	double minimum;
 	double maximum;
 
+	frametimeGraph_t() : tail(0), minimum(::GRAPH_BASELINE), maximum(::GRAPH_BASELINE)
+	{
+		ArrayInit(data, ::GRAPH_BASELINE);
+	}
+
 	void clear()
 	{
-		ArrayInit(data, 0.0);
+		ArrayInit(data, ::GRAPH_BASELINE);
 		tail = 0;
+		minimum = ::GRAPH_BASELINE;
+		maximum = ::GRAPH_BASELINE;
+	}
+
+	void refit()
+	{
+		double newmin = data[0];
+		double newmax = data[0];
+
+		for (size_t i = 0; i < ARRAY_LENGTH(data); i++)
+		{
+			if (data[i] < newmin)
+				newmin = data[i];
+			if (data[i] > newmax)
+				newmax = data[i];
+		}
+
+		minimum = newmin;
+		maximum = newmax;
 	}
 
 	void push(const double val)
@@ -659,7 +684,7 @@ void V_DrawFPSWidget()
 		//screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
 		//screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
 
-		v2int_t topleft(16, I_GetSurfaceHeight() / 2);
+		v2int_t topleft(8, I_GetSurfaceHeight() / 2);
 		v2int_t topright(topleft.x + ::GRAPH_WIDTH, topleft.y);
 		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
 		v2int_t botright(topleft.x + ::GRAPH_WIDTH, topleft.y + ::GRAPH_HEIGHT);
@@ -673,8 +698,8 @@ void V_DrawFPSWidget()
 			int startoff = ::g_GraphData.normalize(start) * (GRAPH_HEIGHT - 2);
 			int endoff = ::g_GraphData.normalize(end) * (GRAPH_HEIGHT - 2);
 
-			v2int_t startvec(botright.x - count, topright.y + startoff);
-			v2int_t endvec(botright.x - count - 1, topright.y + endoff);
+			v2int_t startvec(botright.x - count, botright.y - startoff);
+			v2int_t endvec(botright.x - count - 1, botright.y - endoff);
 
 			screen->Line(startvec, endvec, argb_t(255, 255, 255));
 		}
@@ -686,14 +711,16 @@ void V_DrawFPSWidget()
 		screen->Line(topright, botright, argb_t(255, 255, 255));
 
 		// Min
-		StrFormat(buffer, "%f", ::g_GraphData.minimum);
-		screen->PrintStr(botleft.x - 8, botleft.y, buffer.c_str());
+		StrFormat(buffer, "%2.1f", ::g_GraphData.minimum);
+		screen->PrintStr(botright.x, botright.y, buffer.c_str());
 
 		// Max
-		StrFormat(buffer, "%f", ::g_GraphData.maximum);
-		screen->PrintStr(topleft.x - 8, topleft.y, buffer.c_str());
+		StrFormat(buffer, "%2.1f", ::g_GraphData.maximum);
+		screen->PrintStr(topright.x, topright.y, buffer.c_str());
 
-		//screen->PrintStr(topleft.x, topleft.y - 8, buffer.c_str());
+		// Actual
+		StrFormat(buffer, "%2.1f", delta_time_ms);
+		screen->PrintStr(topright.x, topright.y + (GRAPH_HEIGHT / 2), buffer.c_str());
 
 		time_accum += delta_time;
 
@@ -703,6 +730,9 @@ void V_DrawFPSWidget()
 			last_fps = double(ONE_SECOND * frame_count) / time_accum;
 			time_accum = 0;
 			frame_count = 0;
+
+			// Refit graph on next tic.
+			::g_GraphData.refit();
 		}
 	}
 }
