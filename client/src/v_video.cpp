@@ -669,10 +669,10 @@ void V_DrawFPSWidget()
 
 	if (delta_time > ONE_SECOND || delta_time <= 0)
 	{
+		// Just turned on or re-enabled the graph.
 		::g_GraphData.clear();
 	}
-
-	if (delta_time > 0)
+	else
 	{
 		static std::string buffer;
 		static double last_fps = 0.0;
