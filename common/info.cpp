@@ -7169,7 +7169,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		0x10000,
 		"MT_AVATAR"
 	},
-	{                   // MT_MONSTERSPAWN
+	{                   // MT_HORDESPAWN
 		-1,             // doomednum
 		S_TNT1,         // spawnstate
 		100,            // spawnhealth
@@ -7196,7 +7196,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		0,              // flags2
 		S_NULL,         // raisestate
 		0x10000,
-		"MT_MONSTERSPAWN"
+		"MT_HORDESPAWN"
 	},
 	{                   // MT_CAREPACK
 		-1,             // doomednum

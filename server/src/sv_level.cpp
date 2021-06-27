@@ -53,7 +53,7 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "g_gametype.h"
-
+#include "p_hordespawn.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -620,6 +620,9 @@ void G_DoResetLevel(bool full_reset)
 	// [SL] always reset the time (for now at least)
 	level.time = 0;
 	level.inttimeleft = mapchange / TICRATE;
+
+	// [AM] Clear horde spawns - they will be repopulated later.
+	P_HordeClearSpawns();
 
 	// Reset the respawned monster count
 	level.respawned_monsters = 0;	

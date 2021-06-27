@@ -61,7 +61,7 @@ struct hordeSpawn_t
 };
 typedef std::vector<hordeSpawn_t> hordeSpawns_t;
 
-void P_HordeAddSpawn(AActor* mo, const int type);
+void P_HordeAddSpawns();
 void P_HordeClearSpawns();
 hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe);
 AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe);

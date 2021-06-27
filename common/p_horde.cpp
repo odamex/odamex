@@ -356,7 +356,10 @@ void P_RunHordeTics()
 		return;
 
 	if (::level.time == 0)
+	{
+		P_HordeAddSpawns();
 		::gDirector.reset();
+	}
 
 	// Pause game logic if nobody is in the game.
 	PlayerResults targets = PlayerQuery().hasHealth().execute();

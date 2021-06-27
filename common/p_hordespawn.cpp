@@ -167,23 +167,28 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 }
 
 /**
- * @brief Add a spawn point to the list of known spawns.
- *
- * @param mo Actor to add.
- * @param type Type of spawn.
+ * @brief Find all horde spawn points and add them to our bookkeeping.
  */
-void P_HordeAddSpawn(AActor* mo, const int type)
+void P_HordeAddSpawns()
 {
-	hordeSpawn_t sp;
-	sp.mo = mo->self;
-	sp.type = type;
-	if (type == TTYPE_HORDE_ITEM)
+	TThinkerIterator<AActor> iterator;
+	AActor* mo;
+	while ((mo = iterator.Next()))
 	{
-		::itemSpawns.push_back(sp);
-	}
-	else
-	{
-		::monsterSpawns.push_back(sp);
+		if (mo->type != MT_HORDESPAWN)
+			continue;
+
+		hordeSpawn_t sp;
+		sp.mo = mo->self;
+		sp.type = mo->special1;
+		if (sp.type == TTYPE_HORDE_ITEM)
+		{
+			::itemSpawns.push_back(sp);
+		}
+		else
+		{
+			::monsterSpawns.push_back(sp);
+		}
 	}
 }
 

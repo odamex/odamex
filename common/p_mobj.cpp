@@ -2491,7 +2491,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (P_IsHordeThing(mthing->type))
 	{
-		i = MT_MONSTERSPAWN;
+		i = MT_HORDESPAWN;
 	}
 
 	// [RH] Determine if it is an old ambient thing, and if so,
@@ -2609,10 +2609,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
 
-	if (i == MT_MONSTERSPAWN)
+	if (i == MT_HORDESPAWN)
 	{
-		// Make sure we catalog monster spawns.
-		P_HordeAddSpawn(mobj, mthing->type);
+		// Store the spawn type for later.
+		mobj->special1 = mthing->type;
 	}
 
 	if (z == ONFLOORZ)
