@@ -87,8 +87,8 @@ static const char* HordeStateStr(const hordeState_e state)
 		return "HS_PRESSURE";
 	case HS_RELAX:
 		return "HS_RELAX";
-	case HS_BOSS:
-		return "HS_BOSS";
+	case HS_WANTBOSS:
+		return "HS_WANTBOSS";
 	default:
 		return "UNKNOWN";
 	}
@@ -104,6 +104,7 @@ class HordeState
 	int m_killedHealth;
 	int m_roundStartHealth;
 	AActors m_bosses;
+	hordeRecipe_t m_bossRecipe;
 
 	void setState(const hordeState_e state)
 	{
@@ -120,6 +121,8 @@ class HordeState
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
 		m_roundStartHealth = 0;
+		m_bosses.clear();
+		m_bossRecipe.clear();
 	}
 
 	/**
@@ -139,6 +142,8 @@ class HordeState
 		m_round = round;
 		m_roundDefine = &P_HordeDefine(m_round - 1);
 		m_roundStartHealth = m_killedHealth;
+		m_bosses.clear();
+		m_bossRecipe.clear();
 	}
 
 	/**
@@ -199,9 +204,9 @@ void HordeState::preTick()
 		// fallthrough
 	}
 	case HS_PRESSURE: {
-		if (m_killedHealth > goalHealth)
+		if (m_killedHealth > goalHealth && m_bosses.empty())
 		{
-			setState(HS_BOSS);
+			setState(HS_WANTBOSS);
 			return;
 		}
 		else if (aliveHealth > m_roundDefine->maxTotalHealth())
@@ -212,9 +217,9 @@ void HordeState::preTick()
 		return;
 	}
 	case HS_RELAX: {
-		if (m_killedHealth > goalHealth)
+		if (m_killedHealth > goalHealth && m_bosses.empty())
 		{
-			setState(HS_BOSS);
+			setState(HS_WANTBOSS);
 			return;
 		}
 		else if (aliveHealth < m_roundDefine->minTotalHealth())
@@ -223,16 +228,13 @@ void HordeState::preTick()
 			return;
 		}
 		return;
-	case HS_BOSS: {
-		size_t alive = 0;
-		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
+	case HS_WANTBOSS: {
+		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
-			if ((*it)->health > 0)
-				alive += 1;
-		}
-		if (!alive)
-		{
-			nextRound();
+			// Doesn't matter which state we enter, but we're more likely
+			// to be in the relax state after spawning a big hunk of HP.
+			setState(HS_RELAX);
+			return;
 		}
 		return;
 	}
@@ -247,6 +249,22 @@ void HordeState::preTick()
  */
 void HordeState::tick()
 {
+	// Are the bosses taken care of?
+	if (m_bossRecipe.isValid())
+	{
+		size_t alive = 0;
+		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
+		{
+			if ((*it)->health > 0)
+				alive += 1;
+		}
+		if (!alive)
+		{
+			nextRound();
+			return;
+		}
+	}
+
 	// Should we spawn a monster?
 	switch (m_state)
 	{
@@ -286,21 +304,40 @@ void HordeState::tick()
 		// them close to the player.
 		break;
 	}
-	case HS_BOSS: {
+	case HS_WANTBOSS: {
 		// Do we already have bosses spawned?
-		if (!m_bosses.empty())
+		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 			break;
 
-		// Pick a recipe for some monsters.
 		hordeRecipe_t recipe;
-		const bool ok = P_HordeSpawnRecipe(recipe, *m_roundDefine, true);
-		if (!ok)
-			break;
+		if (!m_bossRecipe.isValid())
+		{
+			// Pick a recipe for the boss.
+			const bool ok = P_HordeSpawnRecipe(recipe, *m_roundDefine, true);
+			if (!ok)
+			{
+				Printf("%s: No recipe for boss monster.\n", __FUNCTION__);
+				break;
+			}
+
+			// Save for later - in case we need to spawn twice.
+			m_bossRecipe = recipe;
+		}
+		else
+		{
+			// Adjust the count based on how many bosses we've spawned.
+			recipe = m_bossRecipe;
+			recipe.count = m_bosses.size() - m_bossRecipe.count;
+		}
 
 		// Spawn a boss if we don't have one.
 		hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
 		if (spawn == NULL)
+		{
+			Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
+			       ::mobjinfo[recipe.type].name);
 			break;
+		}
 
 		AActors mobjs = P_HordeSpawn(*spawn, recipe);
 		m_bosses = mobjs;
@@ -455,8 +492,8 @@ BEGIN_COMMAND(hordeinfo)
 	case HS_RELAX:
 		stateStr = "Relax";
 		break;
-	case HS_BOSS:
-		stateStr = "Boss";
+	case HS_WANTBOSS:
+		stateStr = "WantBoss";
 		break;
 	}
 

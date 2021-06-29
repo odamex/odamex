@@ -32,6 +32,30 @@ struct hordeRecipe_t
 	mobjtype_t type;
 	int count;
 	bool isBoss;
+
+	hordeRecipe_t& operator=(const hordeRecipe_t& other)
+	{
+		if (this == &other)
+			return *this;
+
+		type = other.type;
+		count = other.count;
+		isBoss = other.isBoss;
+
+		return *this;
+	}
+
+	void clear()
+	{
+		type = MT_PLAYER;
+		count = 0;
+		isBoss = false;
+	}
+
+	bool isValid() const
+	{
+		return type != MT_PLAYER && count > 0;
+	}
 };
 
 struct hordeDefine_t

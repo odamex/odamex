@@ -29,10 +29,10 @@
 
 enum hordeState_e
 {
-	HS_STARTING,
-	HS_PRESSURE,
-	HS_RELAX,
-	HS_BOSS,
+	HS_STARTING, // Handles initialization at the start of rounds.
+	HS_PRESSURE, // Spawns monsters.
+	HS_RELAX,    // Doesn't spawn monsters.
+	HS_WANTBOSS, // Drop everything and try and spawn a boss.
 };
 
 struct hordeInfo_t
