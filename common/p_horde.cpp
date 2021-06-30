@@ -105,11 +105,12 @@ class HordeState
 	int m_roundStartHealth;
 	AActors m_bosses;
 	hordeRecipe_t m_bossRecipe;
+	int m_nextPowerup;
 
 	void setState(const hordeState_e state)
 	{
 		m_state = state;
-		m_stateTime = ::gametic;
+		m_stateTime = ::level.time;
 	}
 
   public:
@@ -123,6 +124,7 @@ class HordeState
 		m_roundStartHealth = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
+		m_nextPowerup = ::level.time + (30 * TICRATE);
 	}
 
 	/**
@@ -348,6 +350,19 @@ void HordeState::tick()
 
 	// Always try to spawn an item.
 	P_HordeSpawnItem();
+
+	// Always try to spawn a powerup between 30-45 seconds.
+	if (!getDefine().powerups.empty() && ::level.time > m_nextPowerup)
+	{
+		const int offset = P_RandomInt(16) + 30;
+		m_nextPowerup = ::level.time + (offset * TICRATE);
+
+		const size_t idx = P_RandomInt(getDefine().powerups.size());
+		const mobjtype_t pw = getDefine().powerups[idx];
+		P_HordeSpawnPowerup(pw);
+
+		Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
+	}
 }
 
 hordeInfo_t P_HordeInfo()
@@ -418,7 +433,7 @@ bool P_IsHordeMode()
 
 bool P_IsHordeThing(const int type)
 {
-	return type >= TTYPE_HORDE_ITEM && type <= TTYPE_HORDE_BIGSNIPER;
+	return type >= TTYPE_HORDE_ITEM && type <= TTYPE_HORDE_POWERUP;
 }
 
 const hordeDefine_t::weapons_t& P_HordeWeapons()

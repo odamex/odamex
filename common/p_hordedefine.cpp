@@ -61,9 +61,17 @@ static void InitDefines()
 		return;
 	}
 
+	// [AM] Item mobj names are horrible.
+	const mobjtype_t T_GREENARMOR = MT_MISC0;
+	const mobjtype_t T_BLUEARMOR = MT_MISC1;
+	const mobjtype_t T_BERSERK = MT_MISC13;
+	const mobjtype_t T_SOULSPHERE = MT_MISC12;
+	const mobjtype_t T_MEGASPHERE = MT_MEGA;
+	const mobjtype_t T_INVULNERABILITY = MT_INV;
+
 	{
 		hordeDefine_t define;
-		define.name = "Knee Deep in the Dead";
+		define.name = "Knee Deep in Odamex";
 		define.minGroupHealth = 150;
 		define.maxGroupHealth = 300;
 
@@ -71,11 +79,15 @@ static void InitDefines()
 		define.weapons.push_back(wp_chaingun);
 		define.weapons.push_back(wp_missile);
 
+		define.powerups.push_back(T_GREENARMOR);
+		define.powerups.push_back(T_BERSERK);
+
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_POSSESSED, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHOTGUY, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_TROOP, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SERGEANT, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHADOWS, 1.0f);
+		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SKULL, 0.5f);
 		define.addMonster(hordeDefine_t::RM_BOSS, MT_BRUISER, 1.0f);
 
 		::ROUND_DEFINES.push_back(define);
@@ -83,7 +95,7 @@ static void InitDefines()
 
 	{
 		hordeDefine_t define;
-		define.name = "The Crusher";
+		define.name = "The Funcrusher";
 		define.minGroupHealth = 600;
 		define.maxGroupHealth = 1200;
 
@@ -92,6 +104,9 @@ static void InitDefines()
 		define.weapons.push_back(wp_supershotgun);
 		define.weapons.push_back(wp_missile);
 		define.weapons.push_back(wp_plasma);
+
+		define.powerups.push_back(T_BLUEARMOR);
+		define.powerups.push_back(T_SOULSPHERE);
 
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_POSSESSED, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHOTGUY, 1.0f);
@@ -102,6 +117,7 @@ static void InitDefines()
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHADOWS, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_UNDEAD, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_KNIGHT, 1.0f);
+		define.addMonster(hordeDefine_t::RM_NORMAL, MT_HEAD, 1.0f);
 		define.addMonster(hordeDefine_t::RM_BOSS, MT_SPIDER, 1.0f);
 
 		::ROUND_DEFINES.push_back(define);
@@ -109,9 +125,13 @@ static void InitDefines()
 
 	{
 		hordeDefine_t define;
-		define.name = "Go 2 It";
+		define.name = "Monsoon 64";
 		define.minGroupHealth = 1000;
 		define.maxGroupHealth = 2000;
+
+		define.powerups.push_back(T_BLUEARMOR);
+		define.powerups.push_back(T_SOULSPHERE);
+		define.powerups.push_back(T_INVULNERABILITY);
 
 		define.weapons.push_back(wp_shotgun);
 		define.weapons.push_back(wp_chaingun);
@@ -129,6 +149,7 @@ static void InitDefines()
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_FATSO, 1.0f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_VILE, 0.25f);
 		define.addMonster(hordeDefine_t::RM_NORMAL, MT_CYBORG, 0.25f);
+		define.addMonster(hordeDefine_t::RM_NORMAL, MT_HEAD, 1.0f);
 		define.addMonster(hordeDefine_t::RM_BOSS, MT_CYBORG, 1.0f);
 		define.addMonster(hordeDefine_t::RM_BOSS, MT_SPIDER, 1.0f);
 

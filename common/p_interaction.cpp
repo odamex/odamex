@@ -559,6 +559,7 @@ static void P_GiveCarePack(player_t* player)
 
 	// We get "blocks" of inventory to give out.
 	int blocks = 4;
+	std::string message = "Found a care package containing: ";
 
 	// Players who are extremely low on health always get an initial health
 	// boost.
@@ -566,7 +567,7 @@ static void P_GiveCarePack(player_t* player)
 	{
 		P_GiveBody(player, 25);
 		blocks -= 1;
-		Printf("CARE: Critical Health\n");
+		message += "Medikit, ";
 	}
 
 	// Players who are extremely low on ammo for a weapon they are holding
@@ -575,25 +576,25 @@ static void P_GiveCarePack(player_t* player)
 	{
 		P_GiveAmmo(player, am_clip, 5);
 		blocks -= 1;
-		Printf("CARE: Critical Clip\n");
+		message += "Box of Ammo, ";
 	}
 	if (blocks >= 1 && hasShellWeap && player->ammo[am_shell] < ::clipammo[am_shell] * 2)
 	{
 		P_GiveAmmo(player, am_shell, 5);
 		blocks -= 1;
-		Printf("CARE: Critical Shells\n");
+		message += "Box of Shells, ";
 	}
 	if (blocks >= 1 && hasMissileWeap && player->ammo[am_misl] < ::clipammo[am_misl] * 2)
 	{
 		P_GiveAmmo(player, am_misl, 5);
 		blocks -= 1;
-		Printf("CARE: Critical Rockets\n");
+		message += "Box of Rockets, ";
 	}
 	if (blocks >= 1 && hasCellWeap && player->ammo[am_cell] < ::clipammo[am_cell] * 2)
 	{
 		P_GiveAmmo(player, am_cell, 5);
 		blocks -= 1;
-		Printf("CARE: Critical Cells\n");
+		message += "Large Cell Pack, ";
 	}
 
 	// Players who have less than 100 health at this point get another health pack.
@@ -601,7 +602,7 @@ static void P_GiveCarePack(player_t* player)
 	{
 		P_GiveBody(player, 25);
 		blocks -= 1;
-		Printf("CARE: Health\n");
+		message += "Medikit, ";
 	}
 
 	// Give the player a missing weapon - just one.
@@ -614,7 +615,7 @@ static void P_GiveCarePack(player_t* player)
 			{
 				P_GiveWeapon(player, weapons.at(i), false);
 				blocks -= 1;
-				Printf("CARE: Weapon\n");
+				message += "Weapon, ";
 				break;
 			}
 		}
@@ -628,22 +629,38 @@ static void P_GiveCarePack(player_t* player)
 			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 		}
 		blocks -= 1;
-		Printf("CARE: Backpack\n");
+		message += "Backpack, ";
 	}
 
-	// Does the player have armor?  If not, give it to them.
-	if (blocks >= 1 && player->armorpoints <= 25)
+	// We got this far, why not top off players armor?
+	if (blocks >= 1 && player->armorpoints <= 100)
 	{
-		P_GiveArmor(player, 1);
+		player->armorpoints += 25;
+		if (player->armorpoints > ::deh.MaxArmor)
+		{
+			player->armorpoints = ::deh.MaxArmor;
+		}
+		if (!player->armortype)
+		{
+			player->armortype = ::deh.GreenAC;
+		}
+
 		blocks -= 1;
-		Printf("CARE: Armor\n");
+		message += "Armor Bonuses, ";
 	}
+
+	message = message.substr(0, message.size() - 2) + "\n";
 
 	if (!::clientside)
 	{
 		// [AM] FIXME: This gives players their inventory, with no
 		//             background flash.
 		MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_Print(PRINT_PICKUP, message));
+	}
+	else
+	{
+		Printf(PRINT_PICKUP, "%s", message.c_str());
 	}
 }
 

@@ -76,10 +76,12 @@ struct hordeDefine_t
 
 	typedef std::vector<weapontype_t> weapons_t;
 	typedef std::vector<monster_t> monsters_t;
+	typedef std::vector<mobjtype_t> powerups_t;
 
 	const char* name;    // Name of the round.
 	weapons_t weapons;   // Weapons we can spawn this round.
 	monsters_t monsters; // Monsters we can spawn this round.
+	powerups_t powerups; // Powerups we can spawn this round.
 	int minGroupHealth;  // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth;  // Maximum health of a group of monsters to spawn.
 	void addMonster(const roundMonsterType_e monster, const mobjtype_t mobj,

@@ -42,6 +42,7 @@ struct SpawnPointWeight
 typedef std::vector<SpawnPointWeight> SpawnPointWeights;
 
 static hordeSpawns_t itemSpawns;
+static hordeSpawns_t powerupSpawns;
 static hordeSpawns_t monsterSpawns;
 
 static bool CmpWeights(const SpawnPointWeight& a, const SpawnPointWeight& b)
@@ -181,13 +182,17 @@ void P_HordeAddSpawns()
 		hordeSpawn_t sp;
 		sp.mo = mo->self;
 		sp.type = mo->special1;
-		if (sp.type == TTYPE_HORDE_ITEM)
+		switch (sp.type)
 		{
+		case TTYPE_HORDE_ITEM:
 			::itemSpawns.push_back(sp);
-		}
-		else
-		{
+			break;
+		case TTYPE_HORDE_POWERUP:
+			::powerupSpawns.push_back(sp);
+			break;
+		default:
 			::monsterSpawns.push_back(sp);
+			break;
 		}
 	}
 }
@@ -198,6 +203,7 @@ void P_HordeAddSpawns()
 void P_HordeClearSpawns()
 {
 	::itemSpawns.clear();
+	::powerupSpawns.clear();
 	::monsterSpawns.clear();
 }
 
@@ -385,5 +391,41 @@ void P_HordeSpawnItem()
 			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
 			S_Sound(pack, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 		}
+	}
+}
+
+/**
+ * @brief Spawn a powerup at one of the available item spawners.
+ */
+void P_HordeSpawnPowerup(const mobjtype_t pw)
+{
+	// Find all empty points.
+	hordeSpawns_t emptys;
+	for (hordeSpawns_t::iterator it = ::powerupSpawns.begin();
+	     it != ::powerupSpawns.end(); ++it)
+	{
+		if (it->mo->target == NULL)
+		{
+			emptys.push_back(*it);
+		}
+	}
+
+	if (emptys.empty())
+		return; // No empty spots.
+
+	// Select a random empty spot.
+	size_t idx = P_RandomInt(emptys.size());
+	hordeSpawn_t& point = emptys.at(idx);
+	if (point.mo->target == NULL)
+	{
+		AActor* pack = new AActor(point.mo->x, point.mo->y, point.mo->z, pw);
+		point.mo->target = pack->ptr();
+
+		// Don't respawn the usual way.
+		pack->flags |= MF_DROPPED;
+
+		// Play the item respawn sound, so people can listen for it.
+		AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
+		S_Sound(pack, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 	}
 }

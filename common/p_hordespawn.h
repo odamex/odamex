@@ -32,6 +32,7 @@
 #define TTYPE_HORDE_FLYING (5304)
 #define TTYPE_HORDE_SNIPER (5305)
 #define TTYPE_HORDE_BIGSNIPER (5306)
+#define TTYPE_HORDE_POWERUP (5307)
 
 static inline const char* HordeThingStr(const int ttype)
 {
@@ -49,6 +50,8 @@ static inline const char* HordeThingStr(const int ttype)
 		return "Sniper";
 	case TTYPE_HORDE_BIGSNIPER:
 		return "Big Sniper";
+	case TTYPE_HORDE_POWERUP:
+		return "Powerup";
 	default:
 		return "Unknown";
 	}
@@ -66,3 +69,4 @@ void P_HordeClearSpawns();
 hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe);
 AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe);
 void P_HordeSpawnItem();
+void P_HordeSpawnPowerup(const mobjtype_t pw);
