@@ -252,6 +252,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 			p.powers[i] = 0;
 		}
 	}
+
+	if (!p.spectator)
+		p.cheats = msg->player().cheats();
 }
 
 /**
@@ -604,6 +607,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
+
+	//am_cheating = 0;
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
@@ -984,6 +989,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	uint32_t attackerid = msg->inflictorid();
 	int healthDamage = msg->health_damage();
 	int armorDamage = msg->armor_damage();
+	int health = msg->player().health();
+	int armorpoints = msg->player().armorpoints();
 
 	AActor* actor = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -992,15 +999,23 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		return;
 
 	player_t* p = actor->player;
-	p->health -= healthDamage;
+	p->health = MIN(p->health, health);
+	p->armorpoints = MIN(p->armorpoints, armorpoints);
 	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
 
 	if (attacker != NULL)
 		p->attacker = attacker->ptr();
 
 	if (p->health < 0)
-		p->health = 0;
+	{
+		if (p->cheats & CF_BUDDHA)
+		{
+			p->health = 1;
+			p->mo->health = 1;
+		}
+		else 
+			p->health = 0;
+	}
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
 
@@ -1217,6 +1232,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
+	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!p.spectator)
+			p.cheats = msg->cheats();
 	}
 }
 
@@ -1561,15 +1582,15 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	}
 
 	const char* name = player.userinfo.netname.c_str();
+	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
+	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
 
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name,
-			       &message[4]);
+			Printf(publicmsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message);
+			Printf(publicmsg, "%s: %s\n", name, message);
 
 		if (show_messages && !filtermessage)
 		{
@@ -1580,11 +1601,11 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	else if (message_visibility == 1)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(publicteammsg, "%s: %s\n", name, message);
 
-		if (show_messages && cl_chatsounds)
+		if (show_messages && cl_chatsounds && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
@@ -1757,7 +1778,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	std::string buf;
 	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
 	          player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf(buf.c_str());
+	Printf("%s", buf.c_str());
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
@@ -1932,6 +1953,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
+	uint32_t cheats = msg->player().cheats();
+
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -1958,6 +1981,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	if (!player.spectator)
+		player.cheats = cheats;
 }
 
 /**

@@ -2127,6 +2127,27 @@ void CL_PlayerTimes()
 	}
 }
 
+//
+// CL_SendCheat
+//
+void CL_SendCheat(int cheats)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteShort(&net_buffer, cheats);
+}
+
+//
+// CL_SendCheat
+//
+void CL_SendGiveCheat(const char* item)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, item);
+}
+
+
 void PickupMessage (AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.

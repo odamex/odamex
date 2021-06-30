@@ -149,6 +149,7 @@ message DamagePlayer
 	int32 health_damage = 2;
 	int32 armor_damage = 3;
 	int32 inflictorid = 4;
+	Player player = 5;
 }
 
 // svc_killmobj
@@ -201,6 +202,9 @@ message PlayerMembers
 	int32 secretcount = 11;
 	int32 totalpoints = 12;
 	int32 totaldeaths = 13;
+
+	// Ch0wW: Include Cheats...
+	uint32 cheats = 14;
 }
 
 // svc_teammembers

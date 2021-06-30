@@ -1993,9 +1993,9 @@ void HU_ConsoleScores(player_t *player)
 							itplayer->GameTime / 60);
 
 					if (itplayer == player)
-						Printf_Bold(str);
+						Printf_Bold("%s", str);
 					else
-						Printf(PRINT_HIGH, str);
+						Printf("%s", str);
 				}
 			}
 		}
@@ -2050,9 +2050,9 @@ void HU_ConsoleScores(player_t *player)
 							itplayer->GameTime / 60);
 
 					if (itplayer == player)
-						Printf_Bold(str);
+						Printf_Bold("%s", str);
 					else
-						Printf(PRINT_HIGH, str);
+						Printf("%s", str);
 				}
 			}
 		}
@@ -2094,9 +2094,9 @@ void HU_ConsoleScores(player_t *player)
 					itplayer->GameTime / 60);
 
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 
 	}
@@ -2122,9 +2122,9 @@ void HU_ConsoleScores(player_t *player)
 					itplayer->GameTime / 60);
 
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 	}
 
@@ -2140,9 +2140,9 @@ void HU_ConsoleScores(player_t *player)
 			const player_t* itplayer = *it;
 			sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 	}
 

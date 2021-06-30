@@ -98,6 +98,9 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 		msg.mutable_player()->add_powers(player.powers[i]);
 	}
 
+	if (!player.spectator)
+		msg.mutable_player()->set_cheats(player.cheats);
+
 	return msg;
 }
 
@@ -483,6 +486,8 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor
 	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
 	msg.set_health_damage(health);
 	msg.set_armor_damage(armor);
+	msg.mutable_player()->set_health(player.health);
+	msg.mutable_player()->set_armorpoints(player.armorpoints);
 
 	return msg;
 }
@@ -615,6 +620,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 		msg.set_secretcount(player.secretcount);
 		msg.set_totalpoints(player.totalpoints);
 		msg.set_totaldeaths(player.totaldeaths);
+	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!player.spectator)
+			msg.set_cheats(player.cheats);
 	}
 
 	return msg;
@@ -883,6 +894,9 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 	{
 		pl->add_powers(player.powers[i]);
 	}
+
+	if (!player.spectator)
+		pl->set_cheats(player.cheats);
 
 	return msg;
 }

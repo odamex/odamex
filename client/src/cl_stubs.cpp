@@ -53,7 +53,17 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 FORMAT_PRINTF(1, 2)
 void STACK_ARGS SV_BroadcastPrintf(const char* format, ...)
 {
-	SV_BroadcastPrintf(PRINT_HIGH, format);
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+	va_list va;
+	va_start(va, format);
+	VStrFormat(str, format, va);
+	va_end(va);
+
+	Printf(PRINT_HIGH, "%s", str.c_str());
 }
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}

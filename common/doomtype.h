@@ -247,6 +247,10 @@ void STACK_ARGS SV_BroadcastPrintf(const char* format, ...) FORMAT_PRINTF(1, 2);
 void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
     FORMAT_PRINTF(2, 3);
 
+#ifdef SERVER_APP
+void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...);
+#endif
+
 // Simple log file
 #include <fstream>
 
