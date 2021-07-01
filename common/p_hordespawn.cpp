@@ -78,11 +78,11 @@ static AActor* SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 
 			if (recipe.isBoss)
 			{
-				// Purple is the noblest shroud.
-				mo->effects = FX_PURPLEFOUNTAIN;
+				// Heavy is the head that wears the crown.
+				mo->effects = FX_YELLOWFOUNTAIN;
 
 				// Set flags as a boss.
-				mo->oflags = MFO_INFIGHTINVUL;
+				mo->oflags = MFO_INFIGHTINVUL | MFO_RELENTLESS;
 			}
 
 			// Spawn a teleport fog if it's not an ambush.

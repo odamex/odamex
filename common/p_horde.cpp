@@ -107,13 +107,27 @@ class HordeState
 	hordeRecipe_t m_bossRecipe;
 	int m_nextPowerup;
 
+	/**
+	 * @brief Set the given state.
+	 */
 	void setState(const hordeState_e state)
 	{
 		m_state = state;
 		m_stateTime = ::level.time;
 	}
 
+	/**
+	 * @brief Go to the next round.
+	 */
+	void nextRound()
+	{
+		startRound(m_round + 1);
+	}
+
   public:
+	/**
+	 * @brief Reset director state.
+	 */
 	void reset()
 	{
 		setState(HS_STARTING);
@@ -149,11 +163,18 @@ class HordeState
 	}
 
 	/**
-	 * @brief Go to the next round.
+	 * @brief Force the boss to spawn.
+	 * 
+	 * @return True if the state was switched successfully.
 	 */
-	void nextRound()
+	bool forceBoss()
 	{
-		startRound(m_round + 1);
+		if (m_bosses.empty())
+		{
+			setState(HS_WANTBOSS);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -476,6 +497,19 @@ BEGIN_COMMAND(horderound)
 	::gDirector.startRound(round);
 }
 END_COMMAND(horderound)
+
+BEGIN_COMMAND(hordeboss)
+{
+	if (::gDirector.forceBoss())
+	{
+		Printf("Spawned the boss.\n");
+	}
+	else
+	{
+		Printf("Could not spawn a boss.\n");
+	}
+}
+END_COMMAND(hordeboss)
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)

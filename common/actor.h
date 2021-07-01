@@ -257,6 +257,7 @@ typedef enum
 	MFO_NOSNAPZ			= BIT(0),		// ignore snapshot z this tic
 	MFO_HEALTHPOOL		= BIT(1),		// added to global health pool
 	MFO_INFIGHTINVUL	= BIT(2),		// Invulnerable to infighting
+	MFO_RELENTLESS		= BIT(3),		// Reaction time greatly reduced
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A
