@@ -1737,7 +1737,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (target->oflags & MFO_RELENTLESS)
 		{
 			// [AM] There is exactly one 255 in the random table.
-			if (pain != 255 && target->info->painchance != 0)
+			if (pain != 255 || target->info->painchance == 0)
 			{
 				// Force no flinch.
 				pain = target->info->painchance;
