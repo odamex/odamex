@@ -531,6 +531,17 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags = msg->actor().flags();
 	}
 
+	if (msg->flags() & SVC_SM_OFLAGS)
+	{
+		mo->oflags = msg->actor().oflags();
+
+		// [AM] HACK! Assume that any monster with a flag is a boss.
+		if (mo->oflags)
+		{
+			mo->effects = FX_YELLOWFOUNTAIN;
+		}
+	}
+
 	if (msg->flags() & SVC_SM_CORPSE)
 	{
 		int frame = msg->actor().frame();

@@ -299,6 +299,14 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 		actor->set_flags(mo->flags);
 	}
 
+	// odamex flags - only monster flags for now
+	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK;
+	if (mo->oflags & modMask)
+	{
+		flags |= SVC_SM_OFLAGS;
+		actor->set_oflags(mo->oflags & modMask);
+	}
+
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{

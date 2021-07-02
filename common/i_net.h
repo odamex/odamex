@@ -110,6 +110,11 @@
 #define SVC_SM_CORPSE BIT(2)
 
 /**
+ * @brief svc_spawnmobj: Odamex-specific flags.
+ */
+#define SVC_SM_OFLAGS BIT(3)
+
+/**
  * @brief svc_updatemobj: Supply mobj position and random index.
  */
 #define SVC_UM_POS_RND BIT(0)
