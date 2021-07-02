@@ -319,6 +319,12 @@ BOOL P_Move (AActor *actor)
 
 	speed = actor->info->speed;
 
+	// [AM] Quick monsters are faster.
+	if (actor->oflags & MFO_QUICK)
+	{
+		speed = speed + (speed / 2);
+	}
+
 #if 0	// [RH] I'm not so sure this is such a good idea
 	// killough 10/98: make monsters get affected by ice and sludge too:
 	movefactor = P_GetMoveFactor (actor, &friction);

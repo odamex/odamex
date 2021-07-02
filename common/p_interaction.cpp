@@ -1700,11 +1700,20 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
-	} else
+	}
+	else
 	{
 		// [RH] Only if not immune
 		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
-			target->health -= damage;		// do the damage to monsters.
+		{
+			// [AM] Armored monsters take half damage.
+			if (target->oflags & MFO_ARMOR)
+			{
+				damage = MAX(damage / 2, 1);
+			}
+
+			target->health -= damage; // do the damage to monsters.
+		}
 	}
 
 	if (target->health <= 0)
@@ -1734,7 +1743,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	{
 		int pain = P_Random();
 
-		if (target->oflags & MFO_RELENTLESS)
+		if (target->oflags & MFO_UNFLINCHING)
 		{
 			// [AM] There is exactly one 255 in the random table.
 			if (pain != 255 || target->info->painchance == 0)

@@ -82,7 +82,7 @@ static AActor* SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 				mo->effects = FX_YELLOWFOUNTAIN;
 
 				// Set flags as a boss.
-				mo->oflags = MFO_INFIGHTINVUL | MFO_RELENTLESS;
+				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK;
 			}
 
 			// Spawn a teleport fog if it's not an ambush.
