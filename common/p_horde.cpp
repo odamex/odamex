@@ -266,7 +266,7 @@ void HordeState::preTick()
 void HordeState::tick()
 {
 	// Are the bosses taken care of?
-	if (m_bossRecipe.isValid())
+	if (m_state != HS_WANTBOSS && m_bossRecipe.isValid())
 	{
 		size_t alive = 0;
 		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
@@ -343,7 +343,7 @@ void HordeState::tick()
 		{
 			// Adjust the count based on how many bosses we've spawned.
 			recipe = m_bossRecipe;
-			recipe.count = m_bosses.size() - m_bossRecipe.count;
+			recipe.count = m_bossRecipe.count - m_bosses.size();
 		}
 
 		// Spawn a boss if we don't have one.
