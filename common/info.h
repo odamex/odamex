@@ -1386,6 +1386,7 @@ inline FArchive &operator>> (FArchive &arc, state_t *&state)
 }
 
 typedef enum {
+	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)
 	MT_PLAYER,
 	MT_POSSESSED,
 	MT_SHOTGUY,
