@@ -882,7 +882,7 @@ void HordeHUD()
 	              stateString, CR_GREEN, true);
 
 	std::string buf;
-	StrFormat(buf, "Round %d\n", info.round);
+	StrFormat(buf, "Wave %d: %s\n", info.round, info.name.c_str());
 	hud::DrawText(0, 20, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
 	              buf.c_str(), CR_GREEN, true);
 

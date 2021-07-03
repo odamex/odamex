@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "doomdef.h"
 #include "info.h"
 
 mobjtype_t P_NameToMobj(const std::string& name);
+weapontype_t P_NameToWeapon(const std::string& name);

@@ -31,12 +31,12 @@ typedef OHashTable<std::string, mobjtype_t> MobjMap;
  */
 enum mobjclass_e
 {
-    MC_NONE,
-    MC_AMMO,
-    MC_WEAPON,
-    MC_KEY,
-    MC_POWER,
-    MC_BACKPACK,
+	MC_NONE,
+	MC_AMMO,
+	MC_WEAPON,
+	MC_KEY,
+	MC_POWER,
+	MC_BACKPACK,
 };
 
 static MobjMap g_MonsterMap;
@@ -185,14 +185,14 @@ static void InitMap()
 	MapMobj(MT_MISC84, "ColonGibs", MC_NONE);
 	MapMobj(MT_MISC85, "SmallBloodPool", MC_NONE);
 	MapMobj(MT_MISC86, "BrainStem", MC_NONE);
-    MapMobj(MT_PUSH, "PointPusher", MC_NONE);
-    MapMobj(MT_PULL, "PointPuller", MC_NONE);
-    MapMobj(MT_DOGS, "MBFHelperDog", MC_NONE);
-    MapMobj(MT_PLASMA1, "PlasmaBall1", MC_NONE);
-    MapMobj(MT_PLASMA2, "PlasmaBall2", MC_NONE);
-    MapMobj(MT_SCEPTRE, "EvilSceptre", MC_NONE);
-    MapMobj(MT_BIBLE, "UnholyBible", MC_NONE);
-    //MapMobj(MT_MUSICSOURCE, "MusicChanger", MC_NONE);
+	MapMobj(MT_PUSH, "PointPusher", MC_NONE);
+	MapMobj(MT_PULL, "PointPuller", MC_NONE);
+	MapMobj(MT_DOGS, "MBFHelperDog", MC_NONE);
+	MapMobj(MT_PLASMA1, "PlasmaBall1", MC_NONE);
+	MapMobj(MT_PLASMA2, "PlasmaBall2", MC_NONE);
+	MapMobj(MT_SCEPTRE, "EvilSceptre", MC_NONE);
+	MapMobj(MT_BIBLE, "UnholyBible", MC_NONE);
+	// MapMobj(MT_MUSICSOURCE, "MusicChanger", MC_NONE);
 }
 
 /**
@@ -211,4 +211,46 @@ mobjtype_t P_NameToMobj(const std::string& name)
 		return MT_NULL;
 	}
 	return it->second;
+}
+
+weapontype_t P_NameToWeapon(const std::string& name)
+{
+	if (name == "Fist")
+	{
+		return wp_fist;
+	}
+	else if (name == "Pistol")
+	{
+		return wp_pistol;
+	}
+	else if (name == "Shotgun")
+	{
+		return wp_shotgun;
+	}
+	else if (name == "Chaingun")
+	{
+		return wp_chaingun;
+	}
+	else if (name == "RocketLauncher")
+	{
+		return wp_missile;
+	}
+	else if (name == "PlasmaRifle")
+	{
+		return wp_plasma;
+	}
+	else if (name == "BFG9000")
+	{
+		return wp_bfg;
+	}
+	else if (name == "Chainsaw")
+	{
+		return wp_chainsaw;
+	}
+	else if (name == "SuperShotgun")
+	{
+		return wp_supershotgun;
+	}
+
+	return wp_none;
 }

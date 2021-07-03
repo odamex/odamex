@@ -24,7 +24,12 @@
 #include "p_hordedefine.h"
 
 #include "c_cvars.h"
+#include "cmdlib.h"
+#include "i_system.h"
+#include "infomap.h"
 #include "m_random.h"
+#include "oscanner.h"
+#include "w_wad.h"
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -54,6 +59,166 @@ int hordeDefine_t::goalHealth() const
 	return static_cast<float>(maxGroupHealth) * ::g_horde_goalhp;
 }
 
+static void ParseHordeDef(const int lump, const char* name)
+{
+	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+	OScannerConfig config = {
+	    name,  // lumpName
+	    false, // semiComments
+	    true,  // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+	// Right now we only understand one top-level token - "define".
+	while (os.scan())
+	{
+		hordeDefine_t define;
+
+		os.assertTokenIs("define");
+		os.mustScan();
+		define.name = os.getToken();
+		os.mustScan();
+		os.assertTokenIs("{");
+
+		for (;;)
+		{
+			os.mustScan(); // Prime the next token.
+			if (os.compareToken("}"))
+			{
+				// Bail out of the block.
+				break;
+			}
+			else if (os.compareToken("grouphealth"))
+			{
+				os.mustScan();
+				os.assertTokenIs("=");
+				os.mustScanInt();
+				define.minGroupHealth = os.getTokenInt();
+				os.mustScan();
+				os.assertTokenIs(",");
+				os.mustScanInt();
+				define.maxGroupHealth = os.getTokenInt();
+			}
+			else if (os.compareToken("weapons"))
+			{
+				os.mustScan();
+				os.assertTokenIs("=");
+
+				for (;;)
+				{
+					os.mustScan();
+					const weapontype_t weapon = P_NameToWeapon(os.getToken());
+					if (weapon == wp_none)
+					{
+						std::string buffer;
+						StrFormat(buffer, "Unknown weapon \"%s\".",
+						          os.getToken().c_str());
+						os.error(buffer.c_str());
+					}
+					define.weapons.push_back(weapon);
+					os.mustScan();
+					if (!os.compareToken(","))
+					{
+						// End of the list.
+						os.unScan();
+						break;
+					}
+				}
+			}
+			else if (os.compareToken("addpowerup"))
+			{
+				os.mustScan();
+				os.assertTokenIs("=");
+
+				os.mustScan();
+				const mobjtype_t type = P_NameToMobj(os.getToken());
+				define.powerups.push_back(type);
+			}
+			else if (os.compareToken("addmonster"))
+			{
+				os.mustScan();
+				os.assertTokenIs("=");
+
+				// Monster name.
+				os.mustScan();
+				const mobjtype_t type = P_NameToMobj(os.getToken());
+				if (type == MT_NULL)
+				{
+					std::string buffer;
+					StrFormat(buffer, "Unknown object \"%s\".", os.getToken().c_str());
+					os.error(buffer.c_str());
+				}
+
+				// Chance.
+				float chance = 1.0f;
+
+				os.mustScan();
+				if (os.getToken() == ",")
+				{
+					os.mustScanFloat();
+					chance = os.getTokenFloat();
+				}
+				else
+				{
+					// Default to 1.0.
+					os.unScan();
+				}
+
+				define.addMonster(hordeDefine_t::RM_NORMAL, type, chance);
+			}
+			else if (os.compareToken("addboss"))
+			{
+				os.mustScan();
+				os.assertTokenIs("=");
+
+				// Monster name.
+				os.mustScan();
+				const mobjtype_t type = P_NameToMobj(os.getToken());
+				if (type == MT_NULL)
+				{
+					std::string buffer;
+					StrFormat(buffer, "Unknown object \"%s\".", os.getToken().c_str());
+					os.error(buffer.c_str());
+				}
+
+				// Chance.
+				float chance = 1.0f;
+
+				os.mustScan();
+				if (os.getToken() == ",")
+				{
+					os.mustScanFloat();
+					chance = os.getTokenFloat();
+				}
+				else
+				{
+					// Default to 1.0.
+					os.unScan();
+				}
+
+				define.addMonster(hordeDefine_t::RM_BOSS, type, chance);
+			}
+		}
+
+		::ROUND_DEFINES.push_back(define);
+	}
+}
+
+static void ParseHordeDefs()
+{
+	int lump = -1;
+	while ((lump = W_FindLump("HORDEDEF", lump)) != -1)
+	{
+		ParseHordeDef(lump, "HORDEDEF");
+	}
+
+	if (::ROUND_DEFINES.empty())
+	{
+		I_FatalError("No horde round defines were found.");
+	}
+}
+
 static void InitDefines()
 {
 	if (!::ROUND_DEFINES.empty())
@@ -61,100 +226,7 @@ static void InitDefines()
 		return;
 	}
 
-	// [AM] Item mobj names are horrible.
-	const mobjtype_t T_GREENARMOR = MT_MISC0;
-	const mobjtype_t T_BLUEARMOR = MT_MISC1;
-	const mobjtype_t T_BERSERK = MT_MISC13;
-	const mobjtype_t T_SOULSPHERE = MT_MISC12;
-	const mobjtype_t T_MEGASPHERE = MT_MEGA;
-	const mobjtype_t T_INVULNERABILITY = MT_INV;
-
-	{
-		hordeDefine_t define;
-		define.name = "Knee Deep in Odamex";
-		define.minGroupHealth = 150;
-		define.maxGroupHealth = 300;
-
-		define.weapons.push_back(wp_shotgun);
-		define.weapons.push_back(wp_chaingun);
-		define.weapons.push_back(wp_missile);
-
-		define.powerups.push_back(T_GREENARMOR);
-		define.powerups.push_back(T_BERSERK);
-
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_POSSESSED, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHOTGUY, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_TROOP, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SERGEANT, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHADOWS, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SKULL, 0.5f);
-		define.addMonster(hordeDefine_t::RM_BOSS, MT_BRUISER, 1.0f);
-
-		::ROUND_DEFINES.push_back(define);
-	}
-
-	{
-		hordeDefine_t define;
-		define.name = "The Funcrusher";
-		define.minGroupHealth = 600;
-		define.maxGroupHealth = 1200;
-
-		define.weapons.push_back(wp_shotgun);
-		define.weapons.push_back(wp_chaingun);
-		define.weapons.push_back(wp_supershotgun);
-		define.weapons.push_back(wp_missile);
-		define.weapons.push_back(wp_plasma);
-
-		define.powerups.push_back(T_BLUEARMOR);
-		define.powerups.push_back(T_SOULSPHERE);
-
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_POSSESSED, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHOTGUY, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_CHAINGUY, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_TROOP, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SKULL, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SERGEANT, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SHADOWS, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_UNDEAD, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_KNIGHT, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_HEAD, 1.0f);
-		define.addMonster(hordeDefine_t::RM_BOSS, MT_SPIDER, 1.0f);
-
-		::ROUND_DEFINES.push_back(define);
-	}
-
-	{
-		hordeDefine_t define;
-		define.name = "Monsoon 64";
-		define.minGroupHealth = 1000;
-		define.maxGroupHealth = 2000;
-
-		define.powerups.push_back(T_BLUEARMOR);
-		define.powerups.push_back(T_SOULSPHERE);
-		define.powerups.push_back(T_INVULNERABILITY);
-
-		define.weapons.push_back(wp_shotgun);
-		define.weapons.push_back(wp_chaingun);
-		define.weapons.push_back(wp_supershotgun);
-		define.weapons.push_back(wp_missile);
-		define.weapons.push_back(wp_plasma);
-		define.weapons.push_back(wp_bfg);
-
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_CHAINGUY, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_SERGEANT, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_UNDEAD, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_PAIN, 0.25f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_BRUISER, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_BABY, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_FATSO, 1.0f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_VILE, 0.25f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_CYBORG, 0.25f);
-		define.addMonster(hordeDefine_t::RM_NORMAL, MT_HEAD, 1.0f);
-		define.addMonster(hordeDefine_t::RM_BOSS, MT_CYBORG, 1.0f);
-		define.addMonster(hordeDefine_t::RM_BOSS, MT_SPIDER, 1.0f);
-
-		::ROUND_DEFINES.push_back(define);
-	}
+	ParseHordeDefs();
 }
 
 /**

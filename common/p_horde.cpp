@@ -184,6 +184,7 @@ class HordeState
 	{
 		hordeInfo_t info;
 		info.state = m_state;
+		info.name = m_roundDefine->name;
 		info.round = m_round;
 		info.alive = m_spawnedHealth - m_killedHealth;
 		info.killed = m_killedHealth - m_roundStartHealth;

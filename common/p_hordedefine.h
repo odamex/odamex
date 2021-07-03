@@ -78,7 +78,7 @@ struct hordeDefine_t
 	typedef std::vector<monster_t> monsters_t;
 	typedef std::vector<mobjtype_t> powerups_t;
 
-	const char* name;    // Name of the round.
+	std::string name;    // Name of the round.
 	weapons_t weapons;   // Weapons we can spawn this round.
 	monsters_t monsters; // Monsters we can spawn this round.
 	powerups_t powerups; // Powerups we can spawn this round.
