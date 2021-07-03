@@ -37,6 +37,7 @@
 #include "g_gametype.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "com_misc.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -72,7 +73,6 @@ int clipammo[NUMAMMO] = {10, 4, 20, 1};
 
 void AM_Stop(void);
 void SV_SpawnMobj(AActor *mobj);
-void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor *special, player_t *player);
@@ -1035,6 +1035,294 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 }
 
 //
+// [RH]
+// ClientObituary: Show a message when a player dies
+//
+static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
+{
+	char gendermessage[1024];
+
+	if (!self || !self->player)
+		return;
+
+	// Don't print obituaries after the end of a round
+	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
+		return;
+
+	int gender = self->player->userinfo.gender;
+
+	// Treat voodoo dolls as unknown deaths
+	if (inflictor && inflictor->player == self->player)
+		MeansOfDeath = MOD_UNKNOWN;
+
+	if (G_IsCoopGame())
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+
+	if (G_IsTeamGame() && attacker && attacker->player &&
+	    self->player->userinfo.team == attacker->player->userinfo.team)
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+
+	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
+	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
+	const char* message = NULL;
+	OString messagename;
+
+	switch (mod)
+	{
+	case MOD_SUICIDE:
+		messagename = OB_SUICIDE;
+		break;
+	case MOD_FALLING:
+		messagename = OB_FALLING;
+		break;
+	case MOD_CRUSH:
+		messagename = OB_CRUSH;
+		break;
+	case MOD_EXIT:
+		messagename = OB_EXIT;
+		break;
+	case MOD_WATER:
+		messagename = OB_WATER;
+		break;
+	case MOD_SLIME:
+		messagename = OB_SLIME;
+		break;
+	case MOD_LAVA:
+		messagename = OB_LAVA;
+		break;
+	case MOD_BARREL:
+		messagename = OB_BARREL;
+		break;
+	case MOD_SPLASH:
+		messagename = OB_SPLASH;
+		break;
+	}
+
+	if (!messagename.empty())
+		message = GStrings(messagename);
+
+	if (attacker && message == NULL)
+	{
+		if (attacker == self)
+		{
+			switch (mod)
+			{
+			case MOD_R_SPLASH:
+				messagename = OB_R_SPLASH;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_ROCKET;
+				break;
+			default:
+				messagename = OB_KILLEDSELF;
+				break;
+			}
+			message = GStrings(messagename);
+		}
+		else if (!attacker->player)
+		{
+			if (mod == MOD_HIT)
+			{
+				switch (attacker->type)
+				{
+				case MT_UNDEAD:
+					messagename = OB_UNDEADHIT;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMPHIT;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACOHIT;
+					break;
+				case MT_SERGEANT:
+					messagename = OB_DEMONHIT;
+					break;
+				case MT_SHADOWS:
+					messagename = OB_SPECTREHIT;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARONHIT;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHTHIT;
+					break;
+				default:
+					break;
+				}
+			}
+			else
+			{
+				switch (attacker->type)
+				{
+				case MT_POSSESSED:
+					messagename = OB_ZOMBIE;
+					break;
+				case MT_SHOTGUY:
+					messagename = OB_SHOTGUY;
+					break;
+				case MT_VILE:
+					messagename = OB_VILE;
+					break;
+				case MT_UNDEAD:
+					messagename = OB_UNDEAD;
+					break;
+				case MT_FATSO:
+					messagename = OB_FATSO;
+					break;
+				case MT_CHAINGUY:
+					messagename = OB_CHAINGUY;
+					break;
+				case MT_SKULL:
+					messagename = OB_SKULL;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMP;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACO;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARON;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHT;
+					break;
+				case MT_SPIDER:
+					messagename = OB_SPIDER;
+					break;
+				case MT_BABY:
+					messagename = OB_BABY;
+					break;
+				case MT_CYBORG:
+					messagename = OB_CYBORG;
+					break;
+				case MT_WOLFSS:
+					messagename = OB_WOLFSS;
+					break;
+				default:
+					break;
+				}
+			}
+
+			if (!messagename.empty())
+				message = GStrings(messagename);
+		}
+	}
+
+	if (message)
+	{
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		           self->player->userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+
+		toast_t toast;
+		toast.flags = toast_t::ICON | toast_t::RIGHT;
+		if (G_IsTeamGame())
+		{
+			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+		}
+		toast.icon = mod;
+		toast.right += self->player->userinfo.netname;
+		COM_PushToast(toast);
+		return;
+	}
+
+	if (attacker && attacker->player)
+	{
+		if (friendly)
+		{
+			gender = attacker->player->userinfo.gender;
+			messagename =
+			    GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
+			message = messagename.c_str();
+		}
+		else
+		{
+			switch (mod)
+			{
+			case MOD_FIST:
+				messagename = OB_MPFIST;
+				break;
+			case MOD_CHAINSAW:
+				messagename = OB_MPCHAINSAW;
+				break;
+			case MOD_PISTOL:
+				messagename = OB_MPPISTOL;
+				break;
+			case MOD_SHOTGUN:
+				messagename = OB_MPSHOTGUN;
+				break;
+			case MOD_SSHOTGUN:
+				messagename = OB_MPSSHOTGUN;
+				break;
+			case MOD_CHAINGUN:
+				messagename = OB_MPCHAINGUN;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_MPROCKET;
+				break;
+			case MOD_R_SPLASH:
+				messagename = OB_MPR_SPLASH;
+				break;
+			case MOD_PLASMARIFLE:
+				messagename = OB_MPPLASMARIFLE;
+				break;
+			case MOD_BFG_BOOM:
+				messagename = OB_MPBFG_BOOM;
+				break;
+			case MOD_BFG_SPLASH:
+				messagename = OB_MPBFG_SPLASH;
+				break;
+			case MOD_TELEFRAG:
+				messagename = OB_MPTELEFRAG;
+				break;
+			case MOD_RAILGUN:
+				messagename = OB_RAILGUN;
+				break;
+			}
+
+			if (!messagename.empty())
+				message = GStrings(messagename);
+		}
+	}
+
+	if (message && attacker && attacker->player)
+	{
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		           attacker->player->userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+
+		toast_t toast;
+		toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
+		if (G_IsTeamGame())
+		{
+			toast.left += GetTeamInfo(attacker->player->userinfo.team)->ToastColor;
+			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+		}
+		toast.left += attacker->player->userinfo.netname;
+		toast.icon = mod;
+		toast.right += self->player->userinfo.netname;
+		COM_PushToast(toast);
+		return;
+	}
+
+	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
+	           self->player->userinfo.netname.c_str(),
+	           self->player->userinfo.netname.c_str());
+	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+
+	toast_t toast;
+	toast.flags = toast_t::ICON | toast_t::RIGHT;
+	if (G_IsTeamGame())
+	{
+		toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+	}
+	toast.icon = mod;
+	toast.right += self->player->userinfo.netname;
+	COM_PushToast(toast);
+}
+
+//
 // P_KillMobj
 //
 void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill)
@@ -1241,8 +1529,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// [RH] Death messages
 	// Nes - Server now broadcasts obituaries.
 	// [CG] Since this is a stub, no worries anymore.
-	if (target->player && level.time && multiplayer &&
-        !demoplayback && !joinkill)
+	if (target->player && ::level.time && !::clientside && !::demoplayback && !joinkill)
 	{
 		ClientObituary(target, inflictor, source);
 	}

@@ -122,6 +122,7 @@ EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
+EXTERN_CVAR(hud_feedobits)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -233,13 +234,6 @@ value_t DemoRestrictions[2] = {
 	{ 1.0, "Allow" }
 };
 
-static value_t FlagHelds[] =
-{
-	{ 0.0, "Off" },
-	{ 1.0, "Complete" },
-	{ 2.0, "Simple" }
-};
-
 static value_t DoomOrOdamex[2] =
 {
 	{ 0.0, "Doom" },
@@ -323,7 +317,7 @@ static menuitem_t ControlsItems[] = {
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
 	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
 	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
@@ -336,13 +330,13 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
 	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 1"} },
 	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 2"} },
 	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 3"} },
@@ -352,7 +346,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
 	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
 	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
 	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
@@ -366,7 +360,7 @@ static menuitem_t ControlsItems[] = {
 	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
 	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
 	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
 	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"fly"} },
@@ -376,7 +370,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
 	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
 	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
 	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"ready"} },
@@ -387,7 +381,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
 	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
 	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
 	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
@@ -398,14 +392,14 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
 	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netpause"} },
     { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netff"}},
     { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netrew"}},
     { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netnextmap"}},
 	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netprevmap"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
     { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },
 	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },
 	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
@@ -551,7 +545,7 @@ EXTERN_CVAR(cl_chatsounds)
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.015625},      {NULL} },
 	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.015625},      {NULL} },
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
@@ -559,7 +553,7 @@ static menuitem_t SoundItems[] = {
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ bricktext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
 	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
 	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
@@ -586,20 +580,20 @@ menu_t SoundMenu = {
  *
  *=======================================*/
 static menuitem_t CompatItems[] ={
-	{bricktext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Items can be walked over/under", {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Items can drop off ledges",      {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDoom Sound Response",			{&co_zdoomsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
     {svdiscrete, "Global Pickup Sounds",			{&co_globalsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -631,7 +625,7 @@ static value_t PredictSectors[] = {
 
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ yellowtext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
 	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
@@ -641,12 +635,12 @@ static menuitem_t NetworkItems[] = {
 	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ bricktext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ yellowtext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Split every map",				{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
 
 	{ redtext,		" ",							{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ yellowtext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
@@ -682,10 +676,10 @@ static value_t WeapSwitch[] = {
 extern const char *weaponnames[];
 
 static menuitem_t WeaponItems[] = {
-	{bricktext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {4.0}, {0.0}, {0.0}, {WeapSwitch}},
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
 	{slider,    weaponnames[7],        {&cl_weaponpref_csw}, {0.0}, {8.0}, {1.0}, {NULL}},
 	{slider,    weaponnames[1],        {&cl_weaponpref_pis}, {0.0}, {8.0}, {1.0}, {NULL}},
@@ -717,6 +711,7 @@ menu_t WeaponMenu = {
  * Display Options Menu
  *
  *=======================================*/
+static void StartHUDMenu();
 static void StartMessagesMenu (void);
 static void StartAutomapMenu (void);
 void ResetCustomColors (void);
@@ -741,29 +736,8 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
-EXTERN_CVAR (hud_fullhudtype)
 EXTERN_CVAR (hud_demobar)
-
-static value_t Crosshairs[] =
-{
-	{ 0.0, "None" },
-	{ 1.0, "Cross 1" },
-	{ 2.0, "Cross 2" },
-	{ 3.0, "X" },
-	{ 4.0, "Diamond" },
-	{ 5.0, "Dot" },
-	{ 6.0, "Box" },
-	{ 7.0, "Angle" },
-	{ 8.0, "Big Thing" }
-};
-
-static value_t HUDStyles[] = {
-	{ 0.0, "ZDoom" },
-	{ 1.0, "Odamex" },
-};
-
-static value_t TimerStyles[] = {
-    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+EXTERN_CVAR(hud_targetnames)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
@@ -802,6 +776,7 @@ CVAR_FUNC_IMPL (ui_transblue)
 }
 
 static menuitem_t VideoItems[] = {
+    {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
@@ -809,25 +784,8 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },
 	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
-	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Bigger font in HUD",       {&hud_bigfont},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
-	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "Display Timer",			{&hud_timer},           {3.0}, {0.0},   {0.0},  {TimerStyles} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
-	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
-	{ discrete, "Held Flag Flashes",        {&hud_heldflag_flash}, {2.0}, {0.0},   {0.0},   {OnOff} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
-	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Crosshair Red",         {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Crosshair Green",       {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Crosshair Blue",        {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -844,9 +802,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
@@ -874,9 +830,82 @@ menu_t VideoMenu = {
 	ARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
-	3,
+	4,
 	0,
 	&M_UpdateDisplayOptions
+};
+
+/*=======================================
+ *
+ * HUD Menu
+ *
+ *=======================================*/
+
+static value_t SecretOptions[] = {
+    {0.0, "Off"},
+    {1.0, "On (with sounds)"},
+    {2.0, "On (w/o sounds)"},
+    {3.0, "Own only"},
+};
+
+static value_t TimerStyles[] = {
+    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+
+static value_t FlagHelds[] = {{0.0, "Off"}, {1.0, "Complete"}, {2.0, "Simple"}};
+
+static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"},
+                               {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
+                               {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
+
+static menuitem_t HUDItems[] = {
+    {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
+    {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    // clang-format off
+    {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
+    {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
+    // clang-format on
+    {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
+    {discrete, "Killfeed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {slider, "Scale scoreboard", {&hud_scalescoreboard}, {0.0}, {1.0}, {0.125}, {NULL}},
+    // clang-format off
+	{discrete, "Scores on Death", {&hud_show_scoreboard_ondeath}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    // clang-format on
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {yellowtext, "Capture the Flag", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Event Message Type", {&hud_gamemsgtype}, {3.0}, {0.0}, {0.0}, {VoxType}},
+    {discrete, "Held Flag Border", {&hud_heldflag}, {3.0}, {0.0}, {0.0}, {FlagHelds}},
+    {discrete, "Held Flag Flashes", {&hud_heldflag_flash}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {yellowtext, "Crosshair", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Crosshair type", {&hud_crosshair}, {9.0}, {0.0}, {0.0}, {Crosshairs}},
+    {discrete, "Scale crosshair", {&hud_crosshairscale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Crosshair health", {&hud_crosshairhealth}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redslider, "Crosshair Red", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {greenslider, "Crosshair Green", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {blueslider, "Crosshair Blue", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+};
+
+menu_t HUDMenu = {
+    "M_VIDEO",              // title
+    1,                      // lastOn
+    ARRAY_LENGTH(HUDItems), // numitems
+    0,                      // indent
+    HUDItems,               // items
+    0,                      // scrolltop
+    0,                      // scrollpos
+    NULL,                   // refreshfunc
 };
 
 /*=======================================
@@ -928,13 +957,6 @@ static value_t Languages[] = {
 	{ 3.0, "Italian" }
 };
 
-static value_t SecretOptions[] = {
-    {0.0, "Off"}, 
-	{1.0, "On (with sounds)"}, 
-	{2.0, "On (w/o sounds)"}, 
-	{3.0, "Own only"}, 
-};
-
 static menuitem_t MessagesItems[] = {
 #if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
@@ -942,19 +964,14 @@ static menuitem_t MessagesItems[] = {
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Hide spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Hide enemies messages",	{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete,	"Player target names",	{&hud_targetnames},		{2.0}, {0.0},   {0.0}, {HideShow} },
-	{ discrete ,"CTF Alerts Type",		{&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
-	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{4.0}, {0.0},   {0.0}, {SecretOptions} },
-
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Obituaries",			{&msg1color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
@@ -995,7 +1012,7 @@ static menuitem_t AutomapItems[] = {
     { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ more,     "Reset custom map colors",  {NULL},             {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
 };
@@ -1101,7 +1118,7 @@ static menuitem_t ModesItems[] = {
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ whitetext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
@@ -1379,7 +1396,7 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	}
 }
 
-void M_SwitchMenu (menu_t *menu)
+void M_SwitchMenu(menu_t* menu)
 {
 	int i, widest = 0, thiswidth;
 	menuitem_t *item;
@@ -1553,9 +1570,9 @@ void M_OptDrawer (void)
 				color = CR_GREY;
 				break;
 
-			case bricktext:
+			case yellowtext:
 				x = 160 - width / 2;
-				color = CR_BRICK;
+				color = CR_YELLOW;
 				break;
 
 			case listelement:
@@ -1843,7 +1860,7 @@ void M_OptResponder (event_t *ev)
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
-				CurrentMenu->items[CurrentItem].type == bricktext ||
+				CurrentMenu->items[CurrentItem].type == yellowtext ||
 				(CurrentMenu->items[CurrentItem].type == screenres &&
 					!CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1883,7 +1900,7 @@ void M_OptResponder (event_t *ev)
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
-				CurrentMenu->items[CurrentItem].type == bricktext ||
+				CurrentMenu->items[CurrentItem].type == yellowtext ||
 				(CurrentMenu->items[CurrentItem].type == screenres &&
 					!CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1904,7 +1921,7 @@ void M_OptResponder (event_t *ev)
 				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
-					CurrentMenu->items[CurrentItem].type == bricktext ||
+					CurrentMenu->items[CurrentItem].type == yellowtext ||
 					(CurrentMenu->items[CurrentItem].type == screenres &&
 						!CurrentMenu->items[CurrentItem].b.res1))
 				{
@@ -1926,7 +1943,7 @@ void M_OptResponder (event_t *ev)
 				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
-					CurrentMenu->items[CurrentItem].type == bricktext ||
+					CurrentMenu->items[CurrentItem].type == yellowtext ||
 					(CurrentMenu->items[CurrentItem].type == screenres &&
 						!CurrentMenu->items[CurrentItem].b.res1))
 				{
@@ -2346,6 +2363,11 @@ void Reset2Saved (void)
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
 	UpdateStuff();
+}
+
+static void StartHUDMenu()
+{
+	M_SwitchMenu(&HUDMenu);
 }
 
 static void StartMessagesMenu (void)

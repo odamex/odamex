@@ -2051,7 +2051,7 @@ BOOL CheckIfExitIsGood (AActor *self)
         if (!sv_allowexit)
         {
 			if (sv_fragexitswitch && serverside)
-				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
+				P_DamageMobj(self, NULL, NULL, 10000, MOD_EXIT);
 
 			return false;
 		}
