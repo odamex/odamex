@@ -38,7 +38,7 @@ enum hordeState_e
 struct hordeInfo_t
 {
 	hordeState_e state;
-	int round;
+	int wave;
 	std::string name;
 	int alive;
 	int killed;

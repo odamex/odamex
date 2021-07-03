@@ -35,9 +35,9 @@ EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
 EXTERN_CVAR(g_horde_goalhp)
 
-std::vector<hordeDefine_t> ROUND_DEFINES;
+std::vector<hordeDefine_t> WAVE_DEFINES;
 
-void hordeDefine_t::addMonster(const roundMonsterType_e monster, const mobjtype_t mobj,
+void hordeDefine_t::addMonster(const waveMonsterType_e monster, const mobjtype_t mobj,
                                const float chance)
 {
 	monster_t mon = {monster, mobj, chance};
@@ -201,8 +201,16 @@ static void ParseHordeDef(const int lump, const char* name)
 			}
 		}
 
-		::ROUND_DEFINES.push_back(define);
+		::WAVE_DEFINES.push_back(define);
 	}
+}
+
+/**
+ * @brief Cmp function for sorting defines by max group health.
+ */
+static bool CmpHordeDefs(const hordeDefine_t& a, const hordeDefine_t& b)
+{
+	return a.maxGroupHealth < b.maxGroupHealth;
 }
 
 static void ParseHordeDefs()
@@ -213,15 +221,17 @@ static void ParseHordeDefs()
 		ParseHordeDef(lump, "HORDEDEF");
 	}
 
-	if (::ROUND_DEFINES.empty())
+	if (::WAVE_DEFINES.empty())
 	{
 		I_FatalError("No horde round defines were found.");
 	}
+
+	std::sort(::WAVE_DEFINES.begin(), ::WAVE_DEFINES.end(), CmpHordeDefs);
 }
 
 static void InitDefines()
 {
-	if (!::ROUND_DEFINES.empty())
+	if (!::WAVE_DEFINES.empty())
 	{
 		return;
 	}
@@ -231,11 +241,22 @@ static void InitDefines()
 
 /**
  * @brief Get a define to use for this wave.
+ * 
+ * @param current Current wave.
+ * @param total Total waves.
+ * @return Define we selected.
  */
-const hordeDefine_t& P_HordeDefine(const uint32_t idx)
+const hordeDefine_t& P_HordeDefine(const int current, const int total)
 {
 	InitDefines();
-	return ::ROUND_DEFINES.at(idx);
+
+	// Split our defines into equal sections and randomly pick
+	// a wave from all of them.
+	const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
+	const float section_offset = (current - 1) * section_size;
+	const float section_choice = P_RandomFloat() * section_size;
+	const size_t choice = static_cast<size_t>(section_offset + section_choice);
+	return ::WAVE_DEFINES.at(choice);
 }
 
 /**
@@ -253,18 +274,18 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	// Figure out which monster we want to spawn.
 	for (size_t i = 0; i < define.monsters.size(); i++)
 	{
-		const hordeDefine_t::monster_t& roundMon = define.monsters.at(i);
-		const mobjinfo_t& info = ::mobjinfo[roundMon.mobj];
+		const hordeDefine_t::monster_t& waveMon = define.monsters.at(i);
+		const mobjinfo_t& info = ::mobjinfo[waveMon.mobj];
 
 		// Boss spawns have to spawn boss things.
-		if (wantBoss && roundMon.monster == hordeDefine_t::RM_NORMAL)
+		if (wantBoss && waveMon.monster == hordeDefine_t::RM_NORMAL)
 			continue;
 
 		// Non-boss spawns have to spawn non-boss things.
-		if (!wantBoss && roundMon.monster == hordeDefine_t::RM_BOSS)
+		if (!wantBoss && waveMon.monster == hordeDefine_t::RM_BOSS)
 			continue;
 
-		monsters.push_back(&roundMon);
+		monsters.push_back(&waveMon);
 	}
 
 	// No valid monsters can be spawned at this point.

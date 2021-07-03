@@ -32,6 +32,8 @@
 #include "p_tick.h"
 #include "s_sound.h"
 
+EXTERN_CVAR(g_horde_waves)
+
 /**
  * @brief Wake up all the passed monsters.
  *
@@ -98,11 +100,11 @@ class HordeState
 {
 	hordeState_e m_state;
 	int m_stateTime;
-	int m_round;
-	const hordeDefine_t* m_roundDefine;
+	int m_wave;
+	const hordeDefine_t* m_waveDefine;
 	int m_spawnedHealth;
 	int m_killedHealth;
-	int m_roundStartHealth;
+	int m_waveStartHealth;
 	AActors m_bosses;
 	hordeRecipe_t m_bossRecipe;
 	int m_nextPowerup;
@@ -116,14 +118,6 @@ class HordeState
 		m_stateTime = ::level.time;
 	}
 
-	/**
-	 * @brief Go to the next round.
-	 */
-	void nextRound()
-	{
-		startRound(m_round + 1);
-	}
-
   public:
 	/**
 	 * @brief Reset director state.
@@ -131,40 +125,38 @@ class HordeState
 	void reset()
 	{
 		setState(HS_STARTING);
-		m_round = 1;
-		m_roundDefine = &P_HordeDefine(m_round - 1);
+		m_wave = 1;
+		m_waveDefine = &P_HordeDefine(m_wave, ::g_horde_waves);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
-		m_roundStartHealth = 0;
+		m_waveStartHealth = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 	}
 
 	/**
-	 * @brief Start the given round.
-	 *
-	 * @param round Round number to start.
+	 * @brief Start the given wave.
 	 */
-	void startRound(const int round)
+	void nextWave()
 	{
-		if (m_round >= 3)
+		if (::g_horde_waves && m_wave >= ::g_horde_waves)
 		{
 			G_ExitLevel(0, 1);
 			return;
 		}
 
 		setState(HS_STARTING);
-		m_round = round;
-		m_roundDefine = &P_HordeDefine(m_round - 1);
-		m_roundStartHealth = m_killedHealth;
+		m_wave += 1;
+		m_waveDefine = &P_HordeDefine(m_wave, ::g_horde_waves);
+		m_waveStartHealth = m_killedHealth;
 		m_bosses.clear();
 		m_bossRecipe.clear();
 	}
 
 	/**
 	 * @brief Force the boss to spawn.
-	 * 
+	 *
 	 * @return True if the state was switched successfully.
 	 */
 	bool forceBoss()
@@ -184,11 +176,11 @@ class HordeState
 	{
 		hordeInfo_t info;
 		info.state = m_state;
-		info.name = m_roundDefine->name;
-		info.round = m_round;
+		info.name = m_waveDefine->name;
+		info.wave = m_wave;
 		info.alive = m_spawnedHealth - m_killedHealth;
-		info.killed = m_killedHealth - m_roundStartHealth;
-		info.goal = m_roundDefine->goalHealth();
+		info.killed = m_killedHealth - m_waveStartHealth;
+		info.goal = m_waveDefine->goalHealth();
 		return info;
 	}
 
@@ -204,12 +196,12 @@ class HordeState
 
 	const hordeDefine_t& getDefine() const
 	{
-		return *m_roundDefine;
+		return *m_waveDefine;
 	}
 
 	void preTick();
 	void tick();
-} gDirector;
+} g_HordeDirector;
 
 /**
  * @brief Run functionality that decides if we need to switch states.
@@ -217,12 +209,12 @@ class HordeState
 void HordeState::preTick()
 {
 	int aliveHealth = m_spawnedHealth - m_killedHealth;
-	int goalHealth = m_roundDefine->goalHealth() + m_roundStartHealth;
+	int goalHealth = m_waveDefine->goalHealth() + m_waveStartHealth;
 
 	switch (m_state)
 	{
 	case HS_STARTING: {
-		// Do anything that we would need to do upon starting any round.
+		// Do anything that we would need to do upon starting any wave.
 		m_bosses.clear();
 		setState(HS_PRESSURE);
 		// fallthrough
@@ -233,7 +225,7 @@ void HordeState::preTick()
 			setState(HS_WANTBOSS);
 			return;
 		}
-		else if (aliveHealth > m_roundDefine->maxTotalHealth())
+		else if (aliveHealth > m_waveDefine->maxTotalHealth())
 		{
 			setState(HS_RELAX);
 			return;
@@ -246,7 +238,7 @@ void HordeState::preTick()
 			setState(HS_WANTBOSS);
 			return;
 		}
-		else if (aliveHealth < m_roundDefine->minTotalHealth())
+		else if (aliveHealth < m_waveDefine->minTotalHealth())
 		{
 			setState(HS_PRESSURE);
 			return;
@@ -284,7 +276,7 @@ void HordeState::tick()
 		}
 		if (!alive)
 		{
-			nextRound();
+			nextWave();
 			return;
 		}
 	}
@@ -294,12 +286,12 @@ void HordeState::tick()
 	{
 	case HS_PRESSURE: {
 		const int pressureHealth =
-		    P_RandomInt(m_roundDefine->maxGroupHealth - m_roundDefine->minGroupHealth) +
-		    m_roundDefine->minGroupHealth;
+		    P_RandomInt(m_waveDefine->maxGroupHealth - m_waveDefine->minGroupHealth) +
+		    m_waveDefine->minGroupHealth;
 
 		// Pick a recipe for some monsters.
 		hordeRecipe_t recipe;
-		const bool ok = P_HordeSpawnRecipe(recipe, *m_roundDefine, false);
+		const bool ok = P_HordeSpawnRecipe(recipe, *m_waveDefine, false);
 		if (!ok)
 		{
 			Printf("%s: No recipe for non-boss monster.\n", __FUNCTION__);
@@ -337,7 +329,7 @@ void HordeState::tick()
 		if (!m_bossRecipe.isValid())
 		{
 			// Pick a recipe for the boss.
-			const bool ok = P_HordeSpawnRecipe(recipe, *m_roundDefine, true);
+			const bool ok = P_HordeSpawnRecipe(recipe, *m_waveDefine, true);
 			if (!ok)
 			{
 				Printf("%s: No recipe for boss monster.\n", __FUNCTION__);
@@ -389,7 +381,7 @@ void HordeState::tick()
 
 hordeInfo_t P_HordeInfo()
 {
-	return ::gDirector.info();
+	return ::g_HordeDirector.info();
 }
 
 void P_AddHealthPool(AActor* mo)
@@ -405,7 +397,7 @@ void P_AddHealthPool(AActor* mo)
 	// Mark as part of the health pool for cleanup later
 	mo->oflags |= MFO_HEALTHPOOL;
 
-	::gDirector.addSpawnHealth(::mobjinfo[mo->type].spawnhealth);
+	::g_HordeDirector.addSpawnHealth(::mobjinfo[mo->type].spawnhealth);
 }
 
 void P_RemoveHealthPool(AActor* mo)
@@ -417,7 +409,7 @@ void P_RemoveHealthPool(AActor* mo)
 	// Unset the flag - we only get one try.
 	mo->oflags &= ~MFO_HEALTHPOOL;
 
-	::gDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
+	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
 }
 
 void P_RunHordeTics()
@@ -432,7 +424,7 @@ void P_RunHordeTics()
 	if (::level.time == 0)
 	{
 		P_HordeAddSpawns();
-		::gDirector.reset();
+		::g_HordeDirector.reset();
 	}
 
 	// Pause game logic if nobody is in the game.
@@ -444,8 +436,8 @@ void P_RunHordeTics()
 	if (!P_AtInterval(TICRATE))
 		return;
 
-	::gDirector.preTick();
-	::gDirector.tick();
+	::g_HordeDirector.preTick();
+	::g_HordeDirector.tick();
 }
 
 bool P_IsHordeMode()
@@ -462,7 +454,7 @@ const hordeDefine_t::weapons_t& P_HordeWeapons()
 {
 	if (::sv_gametype == GM_HORDE)
 	{
-		return ::gDirector.getDefine().weapons;
+		return ::g_HordeDirector.getDefine().weapons;
 	}
 	else
 	{
@@ -480,28 +472,15 @@ const hordeDefine_t::weapons_t& P_HordeWeapons()
 	}
 }
 
-BEGIN_COMMAND(horderound)
+BEGIN_COMMAND(hordenextwave)
 {
-	if (argc < 2)
-	{
-		Printf("horde_round <ROUND_NUMBER>\n");
-		return;
-	}
-
-	int round = atoi(argv[1]);
-	if (round < 1 || round > 3)
-	{
-		Printf("Round must be between 1-3.\n");
-		return;
-	}
-
-	::gDirector.startRound(round);
+	::g_HordeDirector.nextWave();
 }
-END_COMMAND(horderound)
+END_COMMAND(hordenextwave)
 
 BEGIN_COMMAND(hordeboss)
 {
-	if (::gDirector.forceBoss())
+	if (::g_HordeDirector.forceBoss())
 	{
 		Printf("Spawned the boss.\n");
 	}
@@ -518,7 +497,7 @@ EXTERN_CVAR(g_horde_goalhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
-	const hordeDefine_t& define = ::gDirector.getDefine();
+	const hordeDefine_t& define = ::g_HordeDirector.getDefine();
 
 	Printf("[Define: %s]\n", define.name);
 	Printf("Min Group Health: %d\n", define.minGroupHealth);
@@ -531,7 +510,7 @@ BEGIN_COMMAND(hordeinfo)
 	       ::g_horde_goalhp.cstring());
 
 	const char* stateStr = NULL;
-	switch (::gDirector.info().state)
+	switch (::g_HordeDirector.info().state)
 	{
 	case HS_STARTING:
 		stateStr = "Starting";
@@ -547,9 +526,9 @@ BEGIN_COMMAND(hordeinfo)
 		break;
 	}
 
-	Printf("[Round: %d]\n", ::gDirector.info().round);
+	Printf("[Wave: %d]\n", ::g_HordeDirector.info().wave);
 	Printf("State: %s\n", stateStr);
-	Printf("Alive Health: %d\n", ::gDirector.info().alive);
-	Printf("Killed Health: %d\n", ::gDirector.info().killed);
+	Printf("Alive Health: %d\n", ::g_HordeDirector.info().alive);
+	Printf("Killed Health: %d\n", ::g_HordeDirector.info().killed);
 }
 END_COMMAND(hordeinfo)

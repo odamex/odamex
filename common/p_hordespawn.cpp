@@ -234,7 +234,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		// Snipers have to:
 		// - Have a ranged attack.
 		// - Not be flying.
-		// - Not be a boss monster for this round.
+		// - Not be a boss monster for this wave.
 		// - Be skinny enough to fit in a 64x64 square.
 		if (sit->type == TTYPE_HORDE_SNIPER &&
 		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||

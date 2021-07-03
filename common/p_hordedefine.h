@@ -60,7 +60,7 @@ struct hordeRecipe_t
 
 struct hordeDefine_t
 {
-	enum roundMonsterType_e
+	enum waveMonsterType_e
 	{
 		RM_NULL,
 		RM_NORMAL,
@@ -69,7 +69,7 @@ struct hordeDefine_t
 
 	struct monster_t
 	{
-		hordeDefine_t::roundMonsterType_e monster;
+		hordeDefine_t::waveMonsterType_e monster;
 		mobjtype_t mobj;
 		float chance;
 	};
@@ -78,19 +78,19 @@ struct hordeDefine_t
 	typedef std::vector<monster_t> monsters_t;
 	typedef std::vector<mobjtype_t> powerups_t;
 
-	std::string name;    // Name of the round.
-	weapons_t weapons;   // Weapons we can spawn this round.
-	monsters_t monsters; // Monsters we can spawn this round.
-	powerups_t powerups; // Powerups we can spawn this round.
+	std::string name;    // Name of the wave.
+	weapons_t weapons;   // Weapons we can spawn this wave.
+	monsters_t monsters; // Monsters we can spawn this wave.
+	powerups_t powerups; // Powerups we can spawn this wave.
 	int minGroupHealth;  // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth;  // Maximum health of a group of monsters to spawn.
-	void addMonster(const roundMonsterType_e monster, const mobjtype_t mobj,
+	void addMonster(const waveMonsterType_e monster, const mobjtype_t mobj,
 	                const float chance);
 	int minTotalHealth() const;
 	int maxTotalHealth() const;
 	int goalHealth() const;
 };
 
-const hordeDefine_t& P_HordeDefine(const uint32_t idx);
+const hordeDefine_t& P_HordeDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
                         const bool wantBoss);
