@@ -74,7 +74,7 @@ static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
 static int				ConBottom = 0;
-static unsigned int		RowAdjust = 0;
+static int		RowAdjust = 0;
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -1322,13 +1322,28 @@ void C_Ticker()
 	{
 		if (ScrollState == SCROLLUP)
 		{
-			if (RowAdjust < ConRows - ConBottom/8)
+			if (KeysCtrl)
+			{
+				RowAdjust += 16;
+				ScrollState = SCROLLNO;
+			}
+			else
 				RowAdjust++;
+
+			if (RowAdjust > ConRows - ConBottom / 8)
+				RowAdjust = ConRows - ConBottom / 8;
 		}
 		else if (ScrollState == SCROLLDN)
 		{
-			if (RowAdjust)
+			if (KeysCtrl)
+			{
+				RowAdjust-=16;				
+				ScrollState = SCROLLNO;
+			} else 
 				RowAdjust--;
+
+			if (RowAdjust < 0)
+				RowAdjust = 0;
 		}
 
 		if (ConsoleState == c_falling)
@@ -1863,9 +1878,46 @@ static bool C_HandleKey(const event_t* ev)
 }
 #endif
 
-	// General keys used by all systems
+	switch (ch)
 	{
-	if (Key_IsPageUpKey(ch))
+	case OKEY_HOME:
+		CmdLine.moveCursorHome();
+		return true;
+	case OKEY_END:
+		CmdLine.moveCursorEnd();
+		return true;		
+	case OKEY_BACKSPACE:
+		CmdLine.backspace();
+		TabCycleClear();
+		return true;
+	case OKEY_DEL:
+		CmdLine.deleteCharacter();
+		TabCycleClear();
+		return true;
+	case OKEY_LALT:
+	case OKEY_RALT:
+		// Do nothing
+		return true;
+	case OKEY_LCTRL:
+	case OKEY_RCTRL:
+		KeysCtrl = true;
+		return true;
+	case OKEY_LSHIFT:
+	case OKEY_RSHIFT:
+		// SHIFT was pressed
+		KeysShifted = true;
+		return true;
+	case OKEY_MOUSE3:
+		// Paste from clipboard - add each character to command line
+		CmdLine.insertString(I_GetClipboardText());
+		CmdCompletions.clear();
+		TabCycleClear();
+		return true;
+	}
+
+// General keys used by all systems
+	{
+		if (Key_IsPageUpKey(ch))
 		{
 			if ((int)(ConRows) > (int)(ConBottom / 8))
 			{
@@ -1894,7 +1946,7 @@ static bool C_HandleKey(const event_t* ev)
 				CmdLine.moveCursorLeftWord();
 			else
 				CmdLine.moveCursorLeft();
-				return true;
+			return true;
 		}
 		else if (Key_IsRightKey(ch))
 		{
@@ -1950,43 +2002,6 @@ static bool C_HandleKey(const event_t* ev)
 				TabComplete(TAB_COMPLETE_FORWARD);
 			return true;
 		}
-	}
-
-	switch (ch)
-	{
-	case OKEY_HOME:
-		CmdLine.moveCursorHome();
-		return true;
-	case OKEY_END:
-		CmdLine.moveCursorEnd();
-		return true;		
-	case OKEY_BACKSPACE:
-		CmdLine.backspace();
-		TabCycleClear();
-		return true;
-	case OKEY_DEL:
-		CmdLine.deleteCharacter();
-		TabCycleClear();
-		return true;
-	case OKEY_LALT:
-	case OKEY_RALT:
-		// Do nothing
-		return true;
-	case OKEY_LCTRL:
-	case OKEY_RCTRL:
-		KeysCtrl = true;
-		return true;
-	case OKEY_LSHIFT:
-	case OKEY_RSHIFT:
-		// SHIFT was pressed
-		KeysShifted = true;
-		return true;
-	case OKEY_MOUSE3:
-		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
-		CmdCompletions.clear();
-		TabCycleClear();
-		return true;
 	}
 
 	const char keytext = ev->data3;
