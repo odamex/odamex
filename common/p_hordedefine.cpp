@@ -250,13 +250,30 @@ const hordeDefine_t& P_HordeDefine(const int current, const int total)
 {
 	InitDefines();
 
-	// Split our defines into equal sections and randomly pick
-	// a wave from all of them.
-	const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
-	const float section_offset = (current - 1) * section_size;
-	const float section_choice = P_RandomFloat() * section_size;
-	const size_t choice = static_cast<size_t>(section_offset + section_choice);
-	return ::WAVE_DEFINES.at(choice);
+	if (total > 0)
+	{
+		// Split our defines into equal sections and randomly pick
+		// a wave from all of them.
+		const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
+		const float section_offset = (current - 1) * section_size;
+		const float section_choice = P_RandomFloat() * section_size;
+		const size_t choice = static_cast<size_t>(section_offset + section_choice);
+		return ::WAVE_DEFINES.at(choice);
+	}
+	else if (current <= 1)
+	{
+		// In endless mode, we pick a random define every round except for
+		// the first, where we pick one from the easier half so to not kick
+		// players in the teeth straight away.
+		const float choice = (P_RandomFloat() * ::WAVE_DEFINES.size()) / 2;
+		return ::WAVE_DEFINES.at(choice);
+	}
+	else
+	{
+		// Endless mode, and the gloves are off.
+		const size_t choice = P_RandomInt(::WAVE_DEFINES.size());
+		return ::WAVE_DEFINES.at(choice);
+	}
 }
 
 /**
