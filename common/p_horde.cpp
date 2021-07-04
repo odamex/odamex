@@ -499,7 +499,7 @@ BEGIN_COMMAND(hordeinfo)
 {
 	const hordeDefine_t& define = ::g_HordeDirector.getDefine();
 
-	Printf("[Define: %s]\n", define.name);
+	Printf("[Define: %s]\n", define.name.c_str());
 	Printf("Min Group Health: %d\n", define.minGroupHealth);
 	Printf("Max Group Health: %d\n", define.maxGroupHealth);
 	Printf("Min Total Health: %d = %d * %s\n", define.minTotalHealth(),
