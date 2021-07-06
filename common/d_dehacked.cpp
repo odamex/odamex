@@ -996,17 +996,7 @@ static int PatchThing (int thingy)
 						}
 					}
 					if (vchanged[0])
-					{
-						// !!!!!! FIXME !!!!!!!
-						// There's a huge bug that doesn't scale properly the texture after its translation, resulting in 
-						// super weird sprites...
-						// In the meantime, I had to remove the TRANSLUCENT flag to at least get the color.
-					    if (value[0] & MF_TRANSLATION)
-					    {
-						    if (value[0] & MF_TRANSLUCENT)
-							    value[0] &= ~MF_TRANSLUCENT;
-						}
-						   
+					{					   
 					    if (value[0] & MF_TRANSLUCENT)
 						{
 							info->translucency = TRANSLUC50; // Correct value should be 0.66 (BOOM)...
