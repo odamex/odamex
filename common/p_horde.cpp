@@ -31,6 +31,7 @@
 #include "p_local.h"
 #include "p_tick.h"
 #include "s_sound.h"
+#include "svc_message.h"
 
 EXTERN_CVAR(g_horde_waves)
 
@@ -214,6 +215,9 @@ void HordeState::preTick()
 	switch (m_state)
 	{
 	case HS_STARTING: {
+		SV_BroadcastPrintf("Wave %d has begun: \"%s\".\n", m_wave,
+		                   m_waveDefine->name.c_str());
+
 		// Do anything that we would need to do upon starting any wave.
 		m_bosses.clear();
 		setState(HS_PRESSURE);
@@ -247,6 +251,8 @@ void HordeState::preTick()
 	case HS_WANTBOSS: {
 		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
+			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
+
 			// Doesn't matter which state we enter, but we're more likely
 			// to be in the relax state after spawning a big hunk of HP.
 			setState(HS_RELAX);
@@ -276,6 +282,22 @@ void HordeState::tick()
 		}
 		if (!alive)
 		{
+			// Give all ingame players who are dead an extra life.
+			PlayerResults pr = PlayerQuery().notHasLives().execute();
+			for (PlayersView::iterator it = pr.players.begin(); it != pr.players.end();
+			     ++it)
+			{
+				(*it)->lives += 1;
+				(*it)->playerstate = PST_REBORN;
+				if (!::clientside)
+				{
+					SV_BroadcastPrintf("%s gets a new lease on life.\n",
+					                   (*it)->userinfo.netname.c_str());
+					MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+				}
+			}
+
+			// Start the next wave.
 			nextWave();
 			return;
 		}

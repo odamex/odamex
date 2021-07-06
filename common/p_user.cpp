@@ -202,6 +202,9 @@ PlayerResults PlayerQuery::execute()
 		if (m_lives && it->lives <= 0)
 			continue;
 
+		if (m_notLives && it->lives > 0)
+			continue;
+
 		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
 			continue;
 
