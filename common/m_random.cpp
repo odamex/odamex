@@ -227,13 +227,23 @@ float P_RandomFloat()
 
 void M_ClearRandom()
 {
-	::rndindex = ::prndindex = 0;
+	static bool firsttime = true;
+
+	::prndindex = 0;
 
 	// Doom's release date run through two iterations of SplitMix64.
-	::g_rngState[0] = ::g_prngState[0] = 0xdcd14231;
-	::g_rngState[1] = ::g_prngState[1] = 0x78706a11;
-	::g_rngState[2] = ::g_prngState[2] = 0x9f065d64;
-	::g_rngState[3] = ::g_prngState[3] = 0x3bfe09e1;
+	::g_prngState[0] = 0xdcd14231;
+	::g_prngState[1] = 0x78706a11;
+	::g_prngState[2] = 0x9f065d64;
+	::g_prngState[3] = 0x3bfe09e1;
+
+	// Only init M_Random values once.
+	if (firsttime)
+	{
+		firsttime = false;
+		::rndindex = ::prndindex;
+		ArrayCopy(::g_rngState, ::g_prngState);
+	}
 }
 
 void P_SerializeRNGState(FArchive& arc)
