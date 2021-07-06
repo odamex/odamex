@@ -133,6 +133,13 @@ static void ParseHordeDef(const int lump, const char* name)
 
 				os.mustScan();
 				const mobjtype_t type = P_NameToMobj(os.getToken());
+				if (type == MT_NULL)
+				{
+					std::string buffer;
+					StrFormat(buffer, "Unknown object \"%s\".", os.getToken().c_str());
+					os.error(buffer.c_str());
+				}
+
 				define.powerups.push_back(type);
 			}
 			else if (os.compareToken("addmonster"))
