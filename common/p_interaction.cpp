@@ -1034,6 +1034,54 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 	} while (*from++);
 }
 
+/**
+ * @brief Convert a monster type into a string.
+ * 
+ *       TODO: Loc this eventually.
+ */
+static const char* MonsterToastString(const mobjtype_t type)
+{
+	switch (type)
+	{
+	case MT_BABY:
+		return "Arachnotron";
+	case MT_BRUISER:
+		return "Baron of Hell";
+	case MT_CHAINGUY:
+		return "Heavy weapon dude";
+	case MT_CYBORG:
+		return "Cyberdemon";
+	case MT_FATSO:
+		return "Mancubus";
+	case MT_HEAD:
+		return "Cacodemon";
+	case MT_KNIGHT:
+		return "Hell knight";
+	case MT_POSSESSED:
+		return "Zombieman";
+	case MT_SERGEANT:
+		return "Demon";
+	case MT_SHADOWS:
+		return "Spectre";
+	case MT_SHOTGUY:
+		return "Shotgun guy";
+	case MT_SKULL:
+		return "Lost soul";
+	case MT_SPIDER:
+		return "Spiderdemon";
+	case MT_TROOP:
+		return "Imp";
+	case MT_UNDEAD:
+		return "Revenant";
+	case MT_VILE:
+		return "Arch-vile";
+	case MT_WOLFSS:
+		return "Wolfenstein SS";
+	default:
+		return "Monster";
+	}
+}
+
 //
 // [RH]
 // ClientObituary: Show a message when a player dies
@@ -1215,13 +1263,24 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		           self->player->userinfo.netname.c_str());
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
+		// Push toast to the client.
 		toast_t toast;
-		toast.flags = toast_t::ICON | toast_t::RIGHT;
+		if (attacker && !attacker->player)
+		{
+			toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
+			toast.left = MonsterToastString(attacker->type);
+			toast.icon = mod;
+		}
+		else
+		{
+			toast.flags = toast_t::ICON | toast_t::RIGHT;
+			toast.icon = mod;
+		}
+
 		if (G_IsTeamGame())
 		{
 			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
 		}
-		toast.icon = mod;
 		toast.right += self->player->userinfo.netname;
 		COM_PushToast(toast);
 		return;
