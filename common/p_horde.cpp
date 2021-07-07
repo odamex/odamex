@@ -330,8 +330,8 @@ void HordeState::tick()
 		}
 
 		const int hp = ::mobjinfo[recipe.type].spawnhealth * recipe.count;
-		Printf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
-		       ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
+		DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
+		        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
 
 		AActors mobjs = P_HordeSpawn(*spawn, recipe);
 		ActivateMonsters(mobjs);
