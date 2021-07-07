@@ -228,6 +228,12 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	p.health = msg->player().health();
 	p.armorpoints = msg->player().armorpoints();
 	p.armortype = msg->player().armortype();
+
+	if (p.lives == 0 && msg->player().lives() > 0)
+	{
+		// Stop spying so you know you're back from the dead.
+		::displayplayer_id = ::consoleplayer_id;
+	}
 	p.lives = msg->player().lives();
 
 	weapontype_t pending = static_cast<weapontype_t>(msg->player().pendingweapon());
