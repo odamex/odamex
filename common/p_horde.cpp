@@ -26,6 +26,7 @@
 #include "c_dispatch.h"
 #include "d_player.h"
 #include "doomstat.h"
+#include "g_gametype.h"
 #include "m_random.h"
 #include "p_hordespawn.h"
 #include "p_local.h"
@@ -282,18 +283,21 @@ void HordeState::tick()
 		}
 		if (!alive)
 		{
-			// Give all ingame players who are dead an extra life.
-			PlayerResults pr = PlayerQuery().notHasLives().execute();
-			for (PlayersView::iterator it = pr.players.begin(); it != pr.players.end();
-			     ++it)
+			// Give all ingame players who are out of lives an extra life.
+			if (G_IsLivesGame())
 			{
-				(*it)->lives += 1;
-				(*it)->playerstate = PST_REBORN;
-				if (!::clientside)
+				PlayerResults pr = PlayerQuery().notHasLives().execute();
+				for (PlayersView::iterator it = pr.players.begin();
+				     it != pr.players.end(); ++it)
 				{
-					SV_BroadcastPrintf("%s gets a new lease on life.\n",
-					                   (*it)->userinfo.netname.c_str());
-					MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+					(*it)->lives += 1;
+					(*it)->playerstate = PST_REBORN;
+					if (!::clientside)
+					{
+						SV_BroadcastPrintf("%s gets a new lease on life.\n",
+						                   (*it)->userinfo.netname.c_str());
+						MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+					}
 				}
 			}
 
