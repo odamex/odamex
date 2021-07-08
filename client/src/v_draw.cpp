@@ -127,6 +127,9 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawPatchP(source, dest, count, pitch);
+
 	argb_t *fg2rgb, *bg2rgb;
 
 	{
@@ -156,6 +159,9 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawPatchSP(source, dest, count, pitch, yinc);
 
 	argb_t *fg2rgb, *bg2rgb;
 	int c = 0;
@@ -220,6 +226,9 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchP(source, dest, count, pitch);
+
 	argb_t *fg2rgb, *bg2rgb;
 
 	{
@@ -249,6 +258,9 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchSP(source, dest, count, pitch, yinc);
 
 	int c = 0;
 	argb_t *fg2rgb, *bg2rgb;
@@ -305,6 +317,9 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawColoredPatchP(source, dest, count, pitch);
 
 	argb_t *bg2rgb;
 
@@ -369,6 +384,9 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawPatchD(source, dest, count, pitch);
+
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
@@ -385,6 +403,9 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawPatchSD(source, dest, count, pitch, yinc);
 
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -437,6 +458,9 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchD(source, dest, count, pitch);
+
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
@@ -453,6 +477,9 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchSD(source, dest, count, pitch, yinc);
 
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -496,6 +523,9 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawColoredPatchD(source, dest, count, pitch);
 
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
