@@ -1228,6 +1228,19 @@ static int PatchWeapon (int weapNum)
 		{ "Min ammo",			offsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
 		{ NULL, 0}
 	};
+
+	static const struct {
+		short Bit;
+		const char *Name;
+	} bitnames[] = {
+		{0, "NOTHRUST"},
+		{1, "SILENT"},
+		{2, "NOAUTOFIRE"},
+		{3, "FLEEMELEE"},
+		{4, "AUTOSWITCHFROM"},
+		{5, "NOAUTOSWITCHTO"},
+	};
+
 	int result;
 	weaponinfo_t *info, dummy;
 
@@ -1239,10 +1252,64 @@ static int PatchWeapon (int weapNum)
 		DPrintf ("Weapon %d out of range.\n", weapNum);
 	}
 
-	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			PrintUnknown(Line1, "Weapon", weapNum);
+	while ((result = GetLine()) == 1)
+	{
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
 
+		if (linelen == 10)
+		{
+			if (stricmp(Line1, "MBF21 Bits") == 0)
+			{
+				int value = 0;
+				bool vchanged = false;
+				char* strval;
+
+				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+				     strval = NULL)
+				{
+					if (IsNum(strval))
+					{
+						// Force the top 4 bits to 0 so that the user is forced
+						// to use the mnemonics to change them.
+
+						// I have no idea why everyone insists on using strtol here
+						// even though it fails dismally if a value is parsed where
+						// the highest bit it set. Do people really use negative
+						// values here? Let's better be safe and check both.
+						value |= atoi(strval);
+						vchanged = true;
+					}
+					else
+					{
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						{
+							if (!stricmp(strval, bitnames[i].Name))
+							{
+								vchanged = true;
+								value |= 1 << (bitnames[i].Bit);
+								break;
+							}
+						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+							DPrintf("Unknown bit mnemonic %s\n", strval);
+					}
+				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
+				}
+			}
+		}
+		else if (HandleKey(keys, info, Line1, val, sizeof(*info)))
+		{
+			PrintUnknown(Line1, "Weapon", weapNum);
+		}
+
+	}
 	return result;
 }
 

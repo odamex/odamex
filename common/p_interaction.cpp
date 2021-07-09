@@ -225,6 +225,70 @@ int P_GetDeathCount(const player_t* player)
 // Returns false if the ammo can't be picked up at all
 //
 
+// mbf21: take into account new weapon autoswitch flags
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int oldammo)
+{
+	int i;
+
+	// Keep the original behaviour while playbacking demos only.
+	if (demoplayback)
+	{
+		switch (ammo)
+		{
+		case am_clip:
+			if (player->readyweapon == wp_fist)
+			{
+				if (player->weaponowned[wp_chaingun])
+					player->pendingweapon = wp_chaingun;
+				else
+					player->pendingweapon = wp_pistol;
+			}
+			break;
+
+		case am_shell:
+			if (player->readyweapon == wp_fist || player->readyweapon == wp_pistol)
+			{
+				if (player->weaponowned[wp_shotgun])
+					player->pendingweapon = wp_shotgun;
+			}
+			break;
+
+		case am_cell:
+			if (player->readyweapon == wp_fist || player->readyweapon == wp_pistol)
+				if (player->weaponowned[wp_plasma])
+					player->pendingweapon = wp_plasma;
+			break;
+
+		case am_misl:
+			if (player->readyweapon == wp_fist)
+				if (player->weaponowned[wp_missile])
+					player->pendingweapon = wp_missile;
+		default:
+			break;
+		}
+	}
+	else if (player->userinfo.switchweapon != WPSW_NEVER)
+	{
+		if (weaponinfo[player->readyweapon].flags & WPF_AUTOSWITCHFROM &&
+		    player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo)
+		{
+			for (i = NUMWEAPONS - 1; i > player->readyweapon; --i)
+			{
+				if (player->weaponowned[i] &&
+				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				    weaponinfo[i].ammotype == ammo &&
+				    weaponinfo[i].ammouse > oldammo &&
+				    weaponinfo[i].ammouse <= player->ammo[ammo])
+				{
+					player->pendingweapon = (weapontype_t)i;
+					break;
+				}
+			}
+		}
+	}
+	return IEV_EquipRemove;
+}
+
 ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 {
 	int oldammotype;
@@ -279,60 +343,9 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback)
-	{
-		switch (ammotype)
-		{
-		case am_clip:
-			if (player->readyweapon == wp_fist)
-			{
-				if (player->weaponowned[wp_chaingun])
-				{
-					player->pendingweapon = wp_chaingun;
-				}
-				else
-				{
-					player->pendingweapon = wp_pistol;
-				}
-			}
-			break;
+	return P_GiveAmmoAutoSwitch(player, ammotype, oldammotype);
 
-		case am_shell:
-			if (player->readyweapon == wp_fist ||
-				player->readyweapon == wp_pistol)
-			{
-				if (player->weaponowned[wp_shotgun])
-				{
-					player->pendingweapon = wp_shotgun;
-				}
-			}
-			break;
-
-		case am_cell:
-			if (player->readyweapon == wp_fist
-				|| player->readyweapon == wp_pistol)
-			{
-				if (player->weaponowned[wp_plasma])
-				{
-					player->pendingweapon = wp_plasma;
-				}
-			}
-			break;
-
-		case am_misl:
-			if (player->readyweapon == wp_fist)
-			{
-				if (player->weaponowned[wp_missile])
-				{
-					player->pendingweapon = wp_missile;
-				}
-			}
-		default:
-			break;
-		}
-	}
-
-	return IEV_EquipRemove;
+	//return IEV_EquipRemove;
 }
 
 //
@@ -1719,9 +1732,13 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
-	if (inflictor && !(target->flags & MF_NOCLIP) &&
-	    (!source || !source->player || source->player->readyweapon != wp_chainsaw))
+
+	if (inflictor && 
+		!(target->flags & MF_NOCLIP) && 
+	    (!source || !source->player || !(weaponinfo[source->player->readyweapon].flags & WPF_NOTHRUST)) &&
+	    !(inflictor->flags2 & MF2_NODMGTHRUST))
 	{
+
 		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
 		fixed_t thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;

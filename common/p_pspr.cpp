@@ -465,7 +465,9 @@ void P_FireWeapon(player_t* player)
 	P_SetMobjState(player->mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player->readyweapon].atkstate;
 	P_SetPsprite(player, ps_weapon, newstatenum);
-	P_NoiseAlert(player->mo, player->mo);
+
+	if (!(weaponinfo[player->readyweapon].flags & WPF_SILENT)) // MBF21
+		P_NoiseAlert(player->mo, player->mo);
 }
 
 
@@ -510,7 +512,7 @@ void A_WeaponReady(AActor* mo)
 	// [AM] Allow warmup to disallow weapon firing.
 	if (player->cmd.buttons & BT_ATTACK && G_CanFireWeapon())
 	{
-		if (!player->attackdown || (player->readyweapon != wp_missile && player->readyweapon != wp_bfg))
+		if (!player->attackdown || !(weaponinfo[player->readyweapon].flags & WPF_NOAUTOFIRE))
 		{
 			player->attackdown = true;
 			P_FireWeapon(player);
