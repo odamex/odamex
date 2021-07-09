@@ -1134,10 +1134,26 @@ static int PatchFrame (int frameNum)
 		{ "Next frame",			offsetof(state_t,nextstate) },
 		{ "Unknown 1",			offsetof(state_t,misc1) },
 		{ "Unknown 2",			offsetof(state_t,misc2) },
+		{ "Args1",				offsetof(state_t,args[0]) },
+		{ "Args2",				offsetof(state_t,args[1]) },
+		{ "Args3",				offsetof(state_t,args[2]) },
+		{ "Args4",				offsetof(state_t,args[3]) },
+		{ "Args5",				offsetof(state_t,args[4]) },
+		{ "Args6",				offsetof(state_t,args[5]) },
+		{ "Args7",				offsetof(state_t,args[6]) },
+		{ "Args8",				offsetof(state_t,args[7]) },
 		{ NULL, 0 }
 	};
 	int result;
 	state_t *info, dummy;
+
+	static const struct
+	{
+		short Bit;
+		const char* Name;
+	} bitnames[] = {
+	    {0, "SKILL5FAST"},
+	};
 
 	if (frameNum >= 0 && frameNum < NUMSTATES) {
 		info = &states[frameNum];
@@ -1147,9 +1163,61 @@ static int PatchFrame (int frameNum)
 		DPrintf ("Frame %d out of range\n", frameNum);
 	}
 
-	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
+	while ((result = GetLine()) == 1)
+	{
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
+
+		if (linelen == 10)
+		{
+			if (stricmp(Line1, "MBF21 Bits") == 0)
+			{
+				int value = 0;
+				bool vchanged = false;
+				char* strval;
+
+				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+				     strval = NULL)
+				{
+					if (IsNum(strval))
+					{
+						// Force the top 4 bits to 0 so that the user is forced
+						// to use the mnemonics to change them.
+
+						// I have no idea why everyone insists on using strtol here
+						// even though it fails dismally if a value is parsed where
+						// the highest bit it set. Do people really use negative
+						// values here? Let's better be safe and check both.
+						value |= atoi(strval);
+						vchanged = true;
+					}
+					else
+					{
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						{
+							if (!stricmp(strval, bitnames[i].Name))
+							{
+								vchanged = true;
+								value |= 1 << (bitnames[i].Bit);
+								break;
+							}
+						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+							DPrintf("Unknown bit mnemonic %s\n", strval);
+					}
+				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
+				}
+			}
+		}
+		else if (HandleKey(keys, info, Line1, atoi(Line2), sizeof(*info)))
 			PrintUnknown(Line1, "Frame", frameNum);
+	}
 
 	return result;
 }
@@ -1475,6 +1543,7 @@ static int PatchCodePtrs (int dummy)
 	DPrintf ("[CodePtr]\n");
 
 	while ((result = GetLine()) == 1) {
+
 		if (!strnicmp ("Frame", Line1, 5) && isspace(Line1[5])) {
 			int frame = atoi (Line1 + 5);
 

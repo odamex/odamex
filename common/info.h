@@ -1366,6 +1366,10 @@ typedef enum
 inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
 
+
+#define MAXSTATEARGS 8
+typedef long statearg_t;
+
 typedef struct
 {
 	spritenum_t	sprite;
@@ -1374,7 +1378,11 @@ typedef struct
 	actionf_p1 	action;
 	statenum_t	nextstate;
 	int			misc1, misc2;
-/*
+
+	// MBF21
+	statearg_t args[MAXSTATEARGS]; // [XA] mbf21 args
+	int flags;
+	/*
 	DState (spritenum_t sprite, int frame, int tics, acp2, statenum_t nextstate);
 	DState (spritenum_t sprite, int frame, int tics, acp2, statenum_t nextstate, int misc1, int misc2);
 	DState (spritenum_t sprite, int frame, int tics, acp1, statenum_t nextstate);
@@ -1383,6 +1391,9 @@ typedef struct
 
 extern state_t states[NUMSTATES];
 extern const char *sprnames[NUMSPRITES+1];
+
+#define STATEF_NONE 0
+#define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
 
 inline FArchive &operator<< (FArchive &arc, state_t *state)
 {
@@ -1678,7 +1689,12 @@ typedef struct
 	int translucency;
 	const char *name;
 
+	// MBF21 STUFF HERE
+	int altspeed;
+
 } mobjinfo_t;
+
+#define NO_ALTSPEED -1
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
 

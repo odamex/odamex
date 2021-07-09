@@ -1207,10 +1207,19 @@ void A_SkelMissile (AActor *actor)
 
 fixed_t P_GetActorSpeed(AActor* actor)
 {
-	if (actor->info->speed < 256)
-		return actor->info->speed * FRACUNIT;
+	extern bool isFast;
+	int speed = actor->info->speed;
 
-	return actor->info->speed;
+	if (isFast)
+	{
+		if (actor->info->altspeed != NO_ALTSPEED)
+			speed = actor->info->altspeed;
+	}
+
+	if (speed < 256)
+		return speed * FRACUNIT;
+
+	return speed;
 }
 
 void A_Tracer (AActor *actor)

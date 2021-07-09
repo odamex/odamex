@@ -1319,21 +1319,6 @@ state_t	states[NUMSTATES] = {
 	{ SPR_TNT1,0,1,A_WeaponReady,S_NOWEAPON,0,0 },    //S_NOWEAPON
 };
 
-void D_Init_DEHEXTRA_Frames(void)
-{
-	// [BH] Initialize extra dehacked states
-	for (int i = EXTRASTATES; i < NUMSTATES; i++)
-	{
-		states[i].sprite = SPR_TNT1;
-		states[i].frame = 0;
-		states[i].tics = -1;
-		states[i].action = NULL;
-		states[i].nextstate = (statenum_t)i;
-		states[i].misc1 = 0;
-		states[i].misc2 = 0;
-	}
-}
-
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
 	{		// MT_PLAYER
@@ -7537,5 +7522,39 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		"MT_AVATAR"
 	},
 };
+
+
+
+void D_Init_DEHEXTRA_Frames(void)
+{
+	// [BH] Initialize extra dehacked states
+	for (int i = EXTRASTATES; i < NUMSTATES; i++)
+	{
+		states[i].sprite = SPR_TNT1;
+		states[i].frame = 0;
+		states[i].tics = -1;
+		states[i].action = NULL;
+		states[i].nextstate = (statenum_t)i;
+		states[i].misc1 = 0;
+		states[i].misc2 = 0;
+		states[i].flags = STATEF_NONE;
+	}
+
+	// Start all MBF21 content here.
+
+	for (int i = 0; i < NUMMOBJTYPES ; i++)
+	{
+		mobjinfo[i].altspeed = NO_ALTSPEED;
+	}
+
+	// Set the flag for nightmare frames
+	for (int i = S_SARG_RUN1; i <= S_SARG_PAIN2; ++i)
+		states[i].flags |= STATEF_SKILL5FAST;
+
+	// NIGHTMARE! Alt Speed
+	mobjinfo[MT_BRUISERSHOT].altspeed = 20;
+	mobjinfo[MT_HEADSHOT].altspeed = 20;
+	mobjinfo[MT_TROOPSHOT].altspeed = 20;
+}
 
 VERSION_CONTROL (info_cpp, "$Id$")
