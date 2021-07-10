@@ -84,6 +84,14 @@ struct hordeDefine_t
 	powerups_t powerups; // Powerups we can spawn this wave.
 	int minGroupHealth;  // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth;  // Maximum health of a group of monsters to spawn.
+	int minBossHealth;  // Minimum health of a group of bosses to spawn.
+	int maxBossHealth;  // Maximum health of a group of bosses to spawn.
+
+	hordeDefine_t()
+	    : minGroupHealth(-1), maxGroupHealth(-1), minBossHealth(-1), maxBossHealth(-1)
+	{
+	}
+
 	void addMonster(const waveMonsterType_e monster, const mobjtype_t mobj,
 	                const float chance);
 	int minTotalHealth() const;

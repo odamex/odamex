@@ -451,6 +451,14 @@ bool OScanner::compareTokenNoCase(const char* string) const
 //
 // Print given error message.
 //
+void OScanner::warning(const char* message) const
+{
+	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber, message);
+}
+
+//
+// Print given error message.
+//
 void OScanner::error(const char* message) const
 {
 	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, message);

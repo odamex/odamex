@@ -100,6 +100,17 @@ static void ParseHordeDef(const int lump, const char* name)
 				os.mustScanInt();
 				define.maxGroupHealth = os.getTokenInt();
 			}
+			else if (os.compareToken("bosshealth"))
+			{
+				os.mustScan();
+				os.assertTokenIs("=");
+				os.mustScanInt();
+				define.minBossHealth = os.getTokenInt();
+				os.mustScan();
+				os.assertTokenIs(",");
+				os.mustScanInt();
+				define.maxBossHealth = os.getTokenInt();
+			}
 			else if (os.compareToken("weapons"))
 			{
 				os.mustScan();
@@ -206,6 +217,64 @@ static void ParseHordeDef(const int lump, const char* name)
 
 				define.addMonster(hordeDefine_t::RM_BOSS, type, chance);
 			}
+		}
+
+		std::string buf;
+		if (define.name.empty())
+		{
+			os.error("Define doesn't have a name.");
+		}
+		if (define.weapons.empty())
+		{
+			StrFormat(buf, "No weapon pickups found for define \"%s\".",
+			          define.name.c_str());
+			os.warning(buf.c_str());
+		}
+		if (define.monsters.empty())
+		{
+			StrFormat(buf, "No monsters found for define \"%s\".", define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.powerups.empty())
+		{
+			StrFormat(buf, "No powerups found for define \"%s\".", define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.minGroupHealth < 0)
+		{
+			StrFormat(buf, "Minimum group health for define \"%s\" was not set.",
+			          define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.maxGroupHealth <= 0)
+		{
+			StrFormat(buf, "Maximum group health for define \"%s\" was not set.",
+			          define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.minGroupHealth > define.maxGroupHealth)
+		{
+			StrFormat(buf, "Maximum group health for define \"%s\" is less than minimum.",
+			          define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.minBossHealth < 0)
+		{
+			StrFormat(buf, "Minimum boss health for define \"%s\" was not set.",
+			          define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.maxBossHealth <= 0)
+		{
+			StrFormat(buf, "Maximum boss health for define \"%s\" was not set.",
+			          define.name.c_str());
+			os.error(buf.c_str());
+		}
+		if (define.minBossHealth > define.maxBossHealth)
+		{
+			StrFormat(buf, "Maximum boss health for define \"%s\" is less than minimum.",
+			          define.name.c_str());
+			os.error(buf.c_str());
 		}
 
 		::WAVE_DEFINES.push_back(define);
@@ -337,8 +406,12 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
-	const int upper = MAX(define.maxGroupHealth / health, 1);
-	const int lower = MAX(define.minGroupHealth / health, 1);
+
+	const int maxHealth = wantBoss ? define.maxBossHealth : define.maxGroupHealth;
+	const int minHealth = wantBoss ? define.minBossHealth : define.minGroupHealth;
+	const int upper = MAX(maxHealth / health, 1);
+	const int lower = MAX(minHealth / health, 1);
+
 	if (upper <= lower)
 	{
 		// Only one possibility.
