@@ -336,6 +336,14 @@ bool G_IsSidesGame()
 }
 
 /**
+ * @brief Check if the gamemode uses coop spawns.
+ */
+bool G_UsesCoopSpawns()
+{
+	return ::sv_gametype == GM_COOP;
+}
+
+/**
  * @brief Check if the gametype uses winlimit.
  */
 bool G_UsesWinlimit()

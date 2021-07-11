@@ -520,7 +520,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(G_IsCoopGame())
+	if(G_UsesCoopSpawns())
 		return;
 
 	if(G_IsTeamGame())
@@ -579,7 +579,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// spawn at random spot if in death match
-	if (!G_IsCoopGame())
+	if (!G_UsesCoopSpawns())
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
