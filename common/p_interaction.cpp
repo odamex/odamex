@@ -688,7 +688,7 @@ static void P_GiveCarePack(player_t* player)
 		// [AM] FIXME: This gives players their inventory, with no
 		//             background flash.
 		MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
-		MSG_WriteSVC(&player->client.reliablebuf, SVC_Print(PRINT_PICKUP, message));
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_Print(PRINT_PICKUP, message + "\n"));
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
@@ -697,7 +697,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 	else
 	{
-		Printf(PRINT_PICKUP, "%s", message.c_str());
+		Printf(PRINT_PICKUP, "%s\n", message.c_str());
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
