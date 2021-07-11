@@ -59,7 +59,7 @@ const char *sprnames[NUMSPRITES+1] = {
 
 	//	[Toke - CTF]
 	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR", "GSOK", "GFLG",
-	"GDWN","GCAR","TLGL","WPBF","WPRF","WPGF",0
+	"GDWN","GCAR","TLGL","WPBF","WPRF","WPGF","CARE", 0
 };
 
 class player_s;
@@ -1298,6 +1298,8 @@ state_t	states[NUMSTATES] = {
 	{SPR_WPRF,1,1,NULL,S_WPRF1,0,0}, // S_WPRF2
 	{SPR_WPGF,0,1,NULL,S_WPGF2,0,0}, // S_WPGF1 - Waypoint Green Flag
 	{SPR_WPGF,1,1,NULL,S_WPGF1,0,0}, // S_WPGF2
+
+	{SPR_CARE,0,-1,NULL,S_NULL,0,0}, // S_CARE - Horde Care Package
 
 	{ SPR_TNT1,0,1,A_Raise,S_NOWEAPON,0,0 },    //    S_NOWEAPONUP
 	{ SPR_TNT1,0,1,A_Lower,S_NOWEAPON,0,0 },    //S_NOWEAPONDOWN
@@ -7200,7 +7202,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	},
 	{                   // MT_CAREPACK
 		-1,             // doomednum
-		S_BPAK,         // spawnstate
+		S_CARE,         // spawnstate
 		1000,           // spawnhealth
 		S_NULL,         // seestate
 		NULL,           // seesound

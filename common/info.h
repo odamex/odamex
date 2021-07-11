@@ -214,6 +214,8 @@ typedef enum
 	SPR_WPRF,
 	SPR_WPGF,
 
+	SPR_CARE,
+
 	NUMSPRITES
 
 } spritenum_t;
@@ -1338,6 +1340,8 @@ typedef enum
 	S_WPRF2,
 	S_WPGF1, // Waypoint - Green flag
 	S_WPGF2,
+
+	S_CARE, // Horde - Care Package
 
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,

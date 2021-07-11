@@ -342,6 +342,7 @@ WPRFA0  6   44
 WPRFB0  6   44
 WPGFA0  6   44
 WPGFB0  6   44
+CAREA0  27  20
 
 # Dummies for shareware compatibility
 CELLA0  8       12

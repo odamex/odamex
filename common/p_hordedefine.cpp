@@ -122,10 +122,18 @@ static void ParseHordeDef(const int lump, const char* name)
 					const weapontype_t weapon = P_NameToWeapon(os.getToken());
 					if (weapon == wp_none)
 					{
-						std::string buffer;
-						StrFormat(buffer, "Unknown weapon \"%s\".",
-						          os.getToken().c_str());
-						os.error(buffer.c_str());
+						// Special case for berserk.
+						if (os.compareTokenNoCase("Berserk"))
+						{
+							define.weapons.push_back(wp_none);
+						}
+						else
+						{
+							std::string buffer;
+							StrFormat(buffer, "Unknown weapon \"%s\".",
+							          os.getToken().c_str());
+							os.error(buffer.c_str());
+						}
 					}
 					define.weapons.push_back(weapon);
 					os.mustScan();
