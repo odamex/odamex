@@ -798,11 +798,32 @@ void OdamexHUD() {
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
 
-	hud::DrawText(4, 24 + V_LineHeight() + 1, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(),
-	              CR_UNTRANSLATED);
-	hud::DrawText(4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
+	std::string firstperson, secondperson;
+	if (P_IsHordeMode())
+	{
+		hordeInfo_t& info = P_HordeInfo();
+
+		if (::g_horde_waves.asInt() != 0)
+		{
+			StrFormat(firstperson, "Wave %d/%d", info.wave, ::g_horde_waves.asInt());
+		}
+		else
+		{
+			StrFormat(firstperson, "Wave %d", info.wave);
+		}
+
+		StrFormat(secondperson, "%.0f%%",
+		          (static_cast<float>(info.killed) / info.goal) * 100.0f);
+	}
+	else
+	{
+		firstperson = hud::PersonalSpread();
+		secondperson = hud::PersonalScore();
+	}
+	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, firstperson.c_str(), CR_GREY);
+	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, secondperson.c_str(), CR_GREY);
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
@@ -1137,7 +1158,7 @@ void LevelStateHUD()
 		break;
 	}
 	case LevelState::INGAME: {
-		if (::sv_gametype == GM_HORDE)
+		if (P_IsHordeMode())
 		{
 			LevelStateHorde(lines);
 		}
