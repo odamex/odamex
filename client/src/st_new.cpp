@@ -812,8 +812,15 @@ void OdamexHUD() {
 			StrFormat(firstperson, "Wave %d", info.wave);
 		}
 
-		StrFormat(secondperson, "%.0f%%",
-		          (static_cast<float>(info.killed) / info.goal) * 100.0f);
+		const double pct = (static_cast<double>(info.killed) / info.goal) * 100.0;
+		if (pct < 100.0)
+		{
+			StrFormat(secondperson, "%.0f%%", pct);
+		}
+		else
+		{
+			secondperson = "BOSS";
+		}
 	}
 	else
 	{
