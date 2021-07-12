@@ -1048,121 +1048,27 @@ void LevelStateHUD()
 		return;
 	}
 
-	// First line...BIGFONT.
-	std::string str;
+	float lucent = 1.0f;
+	std::string firstline, secondline;
 	switch (::levelstate.getState())
 	{
-	case LevelState::WARMUP:
+	case LevelState::WARMUP: {
 		if (consoleplayer().spectator)
 		{
-			str = "";
 			break;
 		}
 
-		str = TEXTCOLOR_YELLOW "Warmup";
-		break;
-	case LevelState::WARMUP_COUNTDOWN:
-	case LevelState::WARMUP_FORCED_COUNTDOWN:
-		str = TEXTCOLOR_YELLOW + G_GametypeName();
-		break;
-	case LevelState::PREROUND_COUNTDOWN:
-		StrFormat(str, TEXTCOLOR_YELLOW "Round " TEXTCOLOR_YELLOW " %d\n",
-		          ::levelstate.getRound());
-		break;
-	case LevelState::INGAME:
-		if (G_CanShowFightMessage())
-		{
-			if (G_IsSidesGame())
-			{
-				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
-				{
-					str = TEXTCOLOR_YELLOW "DEFEND!\n";
-				}
-				else
-				{
-					str = TEXTCOLOR_YELLOW "CAPTURE!\n";
-				}
-			}
-			else
-			{
-				str = TEXTCOLOR_YELLOW "FIGHT!\n";
-			}
-		}
-		else
-		{
-			str = "";
-		}
-		break;
-	case LevelState::ENDROUND_COUNTDOWN:
-		StrFormat(str,
-		          TEXTCOLOR_YELLOW "Round " TEXTCOLOR_GOLD "%d" TEXTCOLOR_YELLOW
-		                           " complete\n",
-		          ::levelstate.getRound());
-		break;
-	case LevelState::ENDGAME_COUNTDOWN:
-		StrFormat(str, TEXTCOLOR_YELLOW "Match complete\n");
-		break;
-	default:
-		str = "";
-		break;
-	}
+		firstline = TEXTCOLOR_YELLOW "Warmup";
 
-	V_SetFont("BIGFONT");
-
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(str.c_str()) * CleanYfac;
-	int h = 12 * CleanYfac;
-
-	float oldtrans = ::hud_transparency;
-	if (::levelstate.getState() == LevelState::INGAME)
-	{
-		// Only render the "FIGHT" message if it's less than 2 seconds in.
-		int tics = ::level.time - ::levelstate.getIngameStartTime();
-		if (tics < TICRATE * 2)
-		{
-			::hud_transparency.ForceSet(1.0);
-		}
-		else if (tics < TICRATE * 3)
-		{
-			tics %= TICRATE;
-			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
-			::hud_transparency.ForceSet(trans);
-		}
-		else
-		{
-			::hud_transparency.ForceSet(0.0);
-		}
-	}
-	else
-	{
-		::hud_transparency.ForceSet(1.0);
-	}
-	if (::hud_transparency > 0.0f)
-	{
-		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                             surface_height / 4 - h / 2, str.c_str(), CleanYfac,
-		                             CleanYfac);
-	}
-
-	V_SetFont("SMALLFONT");
-
-	// Second line...SMALLFONT.
-	str = "";
-	switch (::levelstate.getState())
-	{
-	case LevelState::WARMUP:
-		if (consoleplayer().spectator)
-			break;
-
-		if (sv_warmup)
+		if (::sv_warmup)
 		{
 			if (consoleplayer().ready)
 			{
-				StrFormat(str, "Waiting for other players to ready up...");
+				secondline = "Waiting for other players to ready up...";
 			}
 			else
 			{
-				StrFormat(str,
+				StrFormat(secondline,
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
 				          ::Bindings.GetKeynameFromCommand("ready").c_str());
@@ -1170,74 +1076,127 @@ void LevelStateHUD()
 		}
 		else
 		{
-			StrFormat(str, "Waiting for other players to join...");
+			secondline = "Waiting for other players to join...";
 		}
 
 		break;
+	}
 	case LevelState::WARMUP_COUNTDOWN:
-	case LevelState::WARMUP_FORCED_COUNTDOWN:
-		StrFormat(str, "Match begins in " TEXTCOLOR_GREEN "%d",
+	case LevelState::WARMUP_FORCED_COUNTDOWN: {
+		StrFormat(firstline, TEXTCOLOR_YELLOW "%s", G_GametypeName().c_str());
+		StrFormat(secondline, "Match begins in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
-	case LevelState::PREROUND_COUNTDOWN:
-		StrFormat(str, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+	}
+	case LevelState::PREROUND_COUNTDOWN: {
+		StrFormat(firstline, TEXTCOLOR_YELLOW "Round " TEXTCOLOR_YELLOW " %d\n",
+		          ::levelstate.getRound());
+		StrFormat(secondline, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
-	case LevelState::INGAME:
+	}
+	case LevelState::INGAME: {
 		if (G_CanShowFightMessage())
 		{
 			if (G_IsSidesGame())
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					str = TEXTCOLOR_YELLOW "Defend the flag!\n";
+					firstline = TEXTCOLOR_YELLOW "DEFEND!\n";
+					secondline = TEXTCOLOR_YELLOW "Defend the flag!\n";
 				}
 				else
 				{
-					str = TEXTCOLOR_GREEN "Capture the flag!\n";
+					firstline = TEXTCOLOR_YELLOW "CAPTURE!\n";
+					secondline = TEXTCOLOR_GREEN "Capture the flag!\n";
 				}
 			}
-		}
-		else
-		{
-			str = "";
+			else
+			{
+				firstline = TEXTCOLOR_YELLOW "FIGHT!\n";
+			}
+
+			// Only render the "FIGHT" message if it's less than 2 seconds in.
+			int tics = ::level.time - ::levelstate.getIngameStartTime();
+			if (tics < TICRATE * 2)
+			{
+				lucent = 1.0f;
+			}
+			else if (tics < TICRATE * 3)
+			{
+				tics %= TICRATE;
+				lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+			}
+			else
+			{
+				lucent = 0.0f;
+			}
 		}
 		break;
+	}
 	case LevelState::ENDROUND_COUNTDOWN: {
+		StrFormat(firstline,
+		          TEXTCOLOR_YELLOW "Round " TEXTCOLOR_GOLD "%d" TEXTCOLOR_YELLOW
+		                           " complete\n",
+		          ::levelstate.getRound());
+
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(str, "Tied at the end of the round");
+			StrFormat(secondline, "Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(str, "%s wins the round", WinToColorString(win).c_str());
+			StrFormat(secondline, "%s wins the round", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(str, "%s team wins the round", WinToColorString(win).c_str());
+			StrFormat(secondline, "%s team wins the round",
+			          WinToColorString(win).c_str());
 		else
-			StrFormat(str, "Next round in " TEXTCOLOR_GREEN "%d",
+			StrFormat(secondline, "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
+		StrFormat(firstline, TEXTCOLOR_YELLOW "Match complete\n");
+
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(str, "The game ends in a tie");
+			        StrFormat(secondline, "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(str, "%s wins!", WinToColorString(win).c_str());
+			StrFormat(secondline, "%s wins!", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(str, "%s team wins!", WinToColorString(win).c_str());
+			StrFormat(secondline, "%s team wins!", WinToColorString(win).c_str());
 		else
-			StrFormat(str, "Intermission in " TEXTCOLOR_GREEN "%d",
+			StrFormat(secondline, "Intermission in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
+	default:
+		break;
 	}
 
-	w = V_StringWidth(str.c_str()) * CleanYfac;
-	h = 8 * CleanYfac;
+	V_SetFont("BIGFONT");
+
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(firstline.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = lucent;
+
 	if (::hud_transparency > 0.0f)
 	{
-		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                             (surface_height / 4 - h / 2) + (12 * CleanYfac),
-		                             str.c_str(), CleanYfac, CleanYfac);
+		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                               surface_height / 4 - h / 2, firstline.c_str(),
+		                               ::CleanYfac, ::CleanYfac);
+	}
+
+	V_SetFont("SMALLFONT");
+
+	w = V_StringWidth(secondline.c_str()) * ::CleanYfac;
+	h = 8 * ::CleanYfac;
+	if (::hud_transparency > 0.0f)
+	{
+		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                               (surface_height / 4 - h / 2) + (12 * ::CleanYfac),
+		                               secondline.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
