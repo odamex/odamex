@@ -101,8 +101,8 @@ static const char* HordeStateStr(const hordeState_e state)
 class HordeState
 {
 	hordeState_e m_state;
-	int m_stateTime;
 	int m_wave;
+	int m_waveTime;
 	const hordeDefine_t* m_waveDefine;
 	int m_spawnedHealth;
 	int m_killedHealth;
@@ -117,7 +117,6 @@ class HordeState
 	void setState(const hordeState_e state)
 	{
 		m_state = state;
-		m_stateTime = ::level.time;
 	}
 
   public:
@@ -128,6 +127,7 @@ class HordeState
 	{
 		setState(HS_STARTING);
 		m_wave = 1;
+		m_waveTime = ::level.time;
 		m_waveDefine = &P_HordeDefine(m_wave, ::g_horde_waves);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
@@ -150,6 +150,7 @@ class HordeState
 
 		setState(HS_STARTING);
 		m_wave += 1;
+		m_waveTime = ::level.time;
 		m_waveDefine = &P_HordeDefine(m_wave, ::g_horde_waves);
 		m_waveStartHealth = m_killedHealth;
 		m_bosses.clear();
@@ -180,6 +181,7 @@ class HordeState
 		info.state = m_state;
 		info.name = m_waveDefine->name;
 		info.wave = m_wave;
+		info.waveTime = m_waveTime;
 		info.alive = m_spawnedHealth - m_killedHealth;
 		info.killed = m_killedHealth - m_waveStartHealth;
 		info.goal = m_waveDefine->goalHealth();

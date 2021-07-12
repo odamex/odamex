@@ -122,6 +122,7 @@ EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(g_horde_waves)
 
 void ST_unloadNew()
 {
@@ -1040,16 +1041,57 @@ void HordeHUD()
 	              buf.c_str(), CR_GREEN, true);
 }
 
+struct levelStateLines_t
+{
+	std::string first;
+	std::string second;
+	float lucent;
+};
+
+static void LevelStateHorde(levelStateLines_t& lines)
+{
+	const hordeInfo_t& info = P_HordeInfo();
+
+	if (::g_horde_waves.asInt() != 0)
+	{
+		StrFormat(lines.first,
+		          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
+		          "%d",
+		          info.wave, ::g_horde_waves.asInt());
+	}
+	else
+	{
+		StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+	}
+
+	StrFormat(lines.second, "\"%s\"", info.name.c_str());
+
+	// Only render the wave message if it's less than 2 seconds in.
+	int tics = ::level.time - info.waveTime;
+	if (tics < TICRATE * 2)
+	{
+		lines.lucent = 1.0f;
+	}
+	else if (tics < TICRATE * 3)
+	{
+		tics %= TICRATE;
+		lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+	}
+	else
+	{
+		lines.lucent = 0.0f;
+	}
+}
+
 void LevelStateHUD()
 {
 	// Don't bother with levelstate information in lobbies.
-	if (::level.flags & LEVEL_LOBBYSPECIAL)
+	if (::level.flags & ::LEVEL_LOBBYSPECIAL)
 	{
 		return;
 	}
 
-	float lucent = 1.0f;
-	std::string firstline, secondline;
+	levelStateLines_t lines = {"", "", 1.0f};
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
@@ -1058,17 +1100,17 @@ void LevelStateHUD()
 			break;
 		}
 
-		firstline = TEXTCOLOR_YELLOW "Warmup";
+		lines.first = "Warmup";
 
 		if (::sv_warmup)
 		{
 			if (consoleplayer().ready)
 			{
-				secondline = "Waiting for other players to ready up...";
+				lines.second = "Waiting for other players to ready up...";
 			}
 			else
 			{
-				StrFormat(secondline,
+				StrFormat(lines.second,
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
 				          ::Bindings.GetKeynameFromCommand("ready").c_str());
@@ -1076,95 +1118,97 @@ void LevelStateHUD()
 		}
 		else
 		{
-			secondline = "Waiting for other players to join...";
+			lines.second = "Waiting for other players to join...";
 		}
 
 		break;
 	}
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
-		StrFormat(firstline, TEXTCOLOR_YELLOW "%s", G_GametypeName().c_str());
-		StrFormat(secondline, "Match begins in " TEXTCOLOR_GREEN "%d",
+		StrFormat(lines.first, "%s", G_GametypeName().c_str());
+		StrFormat(lines.second, "Match begins in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
-		StrFormat(firstline, TEXTCOLOR_YELLOW "Round " TEXTCOLOR_YELLOW " %d\n",
-		          ::levelstate.getRound());
-		StrFormat(secondline, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+		StrFormat(lines.first, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		StrFormat(lines.second, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::INGAME: {
-		if (G_CanShowFightMessage())
+		if (::sv_gametype == GM_HORDE)
+		{
+			LevelStateHorde(lines);
+		}
+		else if (G_CanShowFightMessage())
 		{
 			if (G_IsSidesGame())
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					firstline = TEXTCOLOR_YELLOW "DEFEND!\n";
-					secondline = TEXTCOLOR_YELLOW "Defend the flag!\n";
+					lines.first = TEXTCOLOR_YELLOW "DEFEND!";
+					lines.second = "Defend the flag!";
 				}
 				else
 				{
-					firstline = TEXTCOLOR_YELLOW "CAPTURE!\n";
-					secondline = TEXTCOLOR_GREEN "Capture the flag!\n";
+					lines.first = TEXTCOLOR_GREEN "CAPTURE!";
+					lines.second = "Capture the flag!";
 				}
 			}
 			else
 			{
-				firstline = TEXTCOLOR_YELLOW "FIGHT!\n";
+				lines.first = "FIGHT!\n";
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
 			int tics = ::level.time - ::levelstate.getIngameStartTime();
 			if (tics < TICRATE * 2)
 			{
-				lucent = 1.0f;
+				lines.lucent = 1.0f;
 			}
 			else if (tics < TICRATE * 3)
 			{
 				tics %= TICRATE;
-				lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+				lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
 			}
 			else
 			{
-				lucent = 0.0f;
+				lines.lucent = 0.0f;
 			}
 		}
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
-		StrFormat(firstline,
-		          TEXTCOLOR_YELLOW "Round " TEXTCOLOR_GOLD "%d" TEXTCOLOR_YELLOW
-		                           " complete\n",
+		StrFormat(lines.first,
+		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 		          ::levelstate.getRound());
 
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(secondline, "Tied at the end of the round");
+			StrFormat(lines.second, "Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(secondline, "%s wins the round", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s wins the round", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(secondline, "%s team wins the round",
+			StrFormat(lines.second, "%s team wins the round",
 			          WinToColorString(win).c_str());
 		else
-			StrFormat(secondline, "Next round in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.second, "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
-		StrFormat(firstline, TEXTCOLOR_YELLOW "Match complete\n");
+		StrFormat(lines.first, "Match complete");
 
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			        StrFormat(secondline, "The game ends in a tie");
+			StrFormat(lines.second, "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(secondline, "%s wins!", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s wins!", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(secondline, "%s team wins!", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s team wins!", WinToColorString(win).c_str());
 		else
-			StrFormat(secondline, "Intermission in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.second, "Intermission in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
@@ -1175,28 +1219,28 @@ void LevelStateHUD()
 	V_SetFont("BIGFONT");
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(firstline.c_str()) * CleanYfac;
+	int w = V_StringWidth(lines.first.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
 	const float oldtrans = ::hud_transparency;
-	::hud_transparency = lucent;
+	::hud_transparency = lines.lucent;
 
 	if (::hud_transparency > 0.0f)
 	{
 		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               surface_height / 4 - h / 2, firstline.c_str(),
+		                               surface_height / 4 - h / 2, lines.first.c_str(),
 		                               ::CleanYfac, ::CleanYfac);
 	}
 
 	V_SetFont("SMALLFONT");
 
-	w = V_StringWidth(secondline.c_str()) * ::CleanYfac;
+	w = V_StringWidth(lines.second.c_str()) * ::CleanYfac;
 	h = 8 * ::CleanYfac;
 	if (::hud_transparency > 0.0f)
 	{
 		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
 		                               (surface_height / 4 - h / 2) + (12 * ::CleanYfac),
-		                               secondline.c_str(), ::CleanYfac, ::CleanYfac);
+		                               lines.second.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);

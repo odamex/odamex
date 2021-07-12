@@ -39,6 +39,7 @@ struct hordeInfo_t
 {
 	hordeState_e state;
 	int wave;
+	int waveTime;
 	std::string name;
 	int alive;
 	int killed;
