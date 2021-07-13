@@ -824,6 +824,8 @@ static int PatchThing (int thingy)
 		{1, 3, "DMGIGNORED"},
 		{2, 3, "NORADIUSDMG"},
 		{3, 3, "FORCERADIUSDMG"},
+		{4, 3, "HIGHERMPROB"},
+		{5, 3, "RANGEHALF"},
 	};
 	int result;
 	int oldflags;

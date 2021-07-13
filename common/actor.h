@@ -251,12 +251,14 @@ typedef enum
 	MF2_SEEKERMISSILE	= BIT(30),	// is a seeker (for reflection)
 	MF2_REFLECTIVE		= BIT(31),	// reflects missiles
 
-	// mobj.flags3
-	// MBF21-specific (mostly) flags
-	MF3_SHORTMRANGE = BIT(0),		// has short missile range (archvile)
-	MF3_DMGIGNORED = BIT(1),		// other things ignore its attacks (archvile)
-	MF3_NORADIUSDMG = BIT(2),		// doesn't take splash damage
-	MF3_FORCERADIUSDMG = BIT(3),	// does radius damage to everything, no exceptions
+	// --- mobj.flags3 ---
+	// MBF21-specific flags
+	MF3_SHORTMRANGE		= BIT(0),	// has short missile range (archvile)
+	MF3_DMGIGNORED		= BIT(1),	// other things ignore its attacks (archvile)
+	MF3_NORADIUSDMG		= BIT(2),	// doesn't take splash damage
+	MF3_FORCERADIUSDMG	= BIT(3),	// does radius damage to everything, no exceptions
+	MF3_HIGHERMPROB		= BIT(4),	// min prob. of miss. att. = 37.5% vs 22%
+	MF3_RANGEHALF		= BIT(5),	// use half actual distance for missile attack probability
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags

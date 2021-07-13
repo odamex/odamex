@@ -254,17 +254,13 @@ BOOL P_CheckMissileRange (AActor *actor)
 	}
 
 
-	if (actor->type == MT_CYBORG
-		|| actor->type == MT_SPIDER
-		|| actor->type == MT_SKULL)
-	{
+	if (actor->flags3 & MF3_RANGEHALF)
 		dist >>= 1;
-	}
 
 	if (dist > 200)
 		dist = 200;
 
-	if (actor->type == MT_CYBORG && dist > 160)
+	if (actor->flags3 & MF3_HIGHERMPROB && dist > 160)
 		dist = 160;
 
 	if (P_Random (actor) < dist)

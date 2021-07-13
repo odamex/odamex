@@ -7561,8 +7561,12 @@ void D_Init_DEHEXTRA_Frames(void)
 	}
 
 	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED;
-	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG;
-	mobjinfo[MT_SPIDER].flags3 = MF3_NORADIUSDMG;
+	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF;
+	mobjinfo[MT_SPIDER].flags3 = MF3_NORADIUSDMG | MF3_RANGEHALF;
+
+	mobjinfo[MT_SKULL].flags3 = MF3_RANGEHALF;
+
+	mobjinfo[MT_UNDEAD].flags3 = /* MF3_LONGMELEE |*/ MF3_RANGEHALF;
 
 	// Projectile links
 	mobjinfo[MT_BRUISER].projectile_group = PG_BARON;
