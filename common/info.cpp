@@ -7558,6 +7558,7 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].infighting_group = IG_DEFAULT;
 		mobjinfo[i].projectile_group = PG_DEFAULT;
 		mobjinfo[i].splash_group = SG_DEFAULT;
+		mobjinfo[i].ripsound = "";
 	}
 
 	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED;

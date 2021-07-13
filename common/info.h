@@ -1716,6 +1716,7 @@ typedef struct
 	int projectile_group;
 	int splash_group;
 	int flags3;
+	const char* ripsound;
 
 } mobjinfo_t;
 

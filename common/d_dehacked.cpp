@@ -736,11 +736,14 @@ static int PatchThing (int thingy)
 	size_t thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
-	static const struct {
+	static const struct flagsystem_t
+	{
 		short Bit;
 		short WhichFlags;
 		const char *Name;
-	} bitnames[] = {
+	} ;
+
+	flagsystem_t bitnames[] = {
 		{ 0, 0, "SPECIAL"},
 		{ 1, 0, "SOLID"},
 		{ 2, 0, "SHOOTABLE"},
@@ -819,21 +822,31 @@ static int PatchThing (int thingy)
 		{29, 1, "ICEDAMAGE"},
 		{30, 1, "SEEKERMISSILE"},
 		{31, 1, "REFLECTIVE"},
-
-		{0, 3, "SHORTMRANGE"},
-		{1, 3, "DMGIGNORED"},
-		{2, 3, "NORADIUSDMG"},
-		{3, 3, "FORCERADIUSDMG"},
-		{4, 3, "HIGHERMPROB"},
-		{5, 3, "RANGEHALF"},
-		{6, 3, "MAP07BOSS1"},
-		{7, 3, "MAP07BOSS2"},
-		{8, 3, "E1M8BOSS"},
-		{9, 3, "E2M8BOSS"},
-		{10, 3, "E3M8BOSS"},
-		{11, 3, "E4M6BOSS"},
-		{12, 3, "E4M8BOSS"},
 	};
+
+	// MBF21 Bitname system
+	flagsystem_t mbf_bitnames[] = {
+	    {0, 1, "LOGRAV"},
+		{1, 3, "SHORTMRANGE"},
+		{2, 3, "DMGIGNORED"},
+		{3, 3, "NORADIUSDMG"},
+		{4, 3, "FORCERADIUSDMG"},
+		{5, 3, "HIGHERMPROB"},
+		{6, 3, "RANGEHALF"},
+	    {17, 1, "NOTHRESHOLD"},
+	    {8, 3, "LONGMELEE"},
+	    {15, 1, "BOSS"},
+		{10, 3, "MAP07BOSS1"},
+		{11, 3, "MAP07BOSS2"},
+		{12, 3, "E1M8BOSS"},
+		{13, 3, "E2M8BOSS"},
+		{14, 3, "E3M8BOSS"},
+		{15, 3, "E4M6BOSS"},
+		{16, 3, "E4M8BOSS"},
+	    {8, 1, "RIP"},
+		{18, 3, "FULLVOLSOUNDS"},
+	};
+
 	int result;
 	int oldflags;
 	bool hadTranslucency = false;
@@ -982,6 +995,73 @@ static int PatchThing (int thingy)
 					// a positive value will thus become negative.
 					if (info->gibhealth > 0)
 						info->gibhealth = -info->gibhealth;		
+				}
+				else if (stricmp(Line1, "MBF21 Bits") == 0)
+				{
+					int value[4] = {0, 0, 0};
+					bool vchanged[4] = {false, false, false};
+					char* strval;
+
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
+					{
+						if (IsNum(strval))
+						{
+							int tempval = atoi(strval);
+
+							if (tempval & MF2_LOGRAV)
+							{
+								value[1] |= MF2_LOGRAV;
+								vchanged[1] = true;
+							}
+								
+							if (tempval & MF2_BOSS)
+							{
+								value[1] |= MF2_BOSS;
+								vchanged[1] = true;
+							}
+								
+							if (tempval & MF2_NODMGTHRUST)
+							{
+								value[1] |= MF2_NODMGTHRUST;
+								vchanged[1] = true;
+							}
+								
+							if (tempval & MF2_RIP)
+							{
+								value[1] |= MF2_RIP;
+								vchanged[1] = true;
+							}
+							
+							value[3] |= atoi(strval);
+							vchanged[3] = true;
+						}
+						else
+						{
+							size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(mbf_bitnames); i++)
+							{
+								if (!stricmp(strval, mbf_bitnames[i].Name))
+								{
+									vchanged[mbf_bitnames[i].WhichFlags] = true;
+									value[mbf_bitnames[i].WhichFlags] |= 1 << (mbf_bitnames[i].Bit);
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(mbf_bitnames))
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+						}
+					}
+					if (vchanged[1])
+					{
+						info->flags2 |= value[1];	// unsure since there might be a flags2 value existing... 
+					}
+					if (vchanged[3])
+					{
+						info->flags3 = value[3];
+					}
 				}
 			}
 		}

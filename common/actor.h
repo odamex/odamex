@@ -253,21 +253,25 @@ typedef enum
 
 	// --- mobj.flags3 ---
 	// MBF21-specific flags
-	MF3_SHORTMRANGE		= BIT(0),	// has short missile range (archvile)
-	MF3_DMGIGNORED		= BIT(1),	// other things ignore its attacks (archvile)
-	MF3_NORADIUSDMG		= BIT(2),	// doesn't take splash damage
-	MF3_FORCERADIUSDMG	= BIT(3),	// does radius damage to everything, no exceptions
-	MF3_HIGHERMPROB		= BIT(4),	// min prob. of miss. att. = 37.5% vs 22%
-	MF3_RANGEHALF		= BIT(5),	// use half actual distance for missile attack probability
-	MF3_MAP07BOSS1		= BIT(6),	// is a MAP07 boss type 1 (666)
-	MF3_MAP07BOSS2		= BIT(7),	// is a MAP07 boss type 2 (667)
-	MF3_E1M8BOSS		= BIT(8),	// is an E1M8 boss
-	MF3_E2M8BOSS		= BIT(9),	// is an E1M8 boss
-	MF3_E3M8BOSS		= BIT(10),	// is an E3M8 boss
-	MF3_E4M6BOSS		= BIT(11),	// is an E4M6 boss
-	MF3_E4M8BOSS		= BIT(12),	// is an E4M8 boss
-	MF3_LONGMELEE		= BIT(13),	// long melee range
-	MF3_FULLVOLSOUNDS	= BIT(14),	// full volume see / death sound
+									// BIT0 will be MF2_LOGRAV
+	MF3_SHORTMRANGE		= BIT(1),	// has short missile range (archvile)
+	MF3_DMGIGNORED		= BIT(2),	// other things ignore its attacks (archvile)
+	MF3_NORADIUSDMG		= BIT(3),	// doesn't take splash damage
+	MF3_FORCERADIUSDMG	= BIT(4),	// does radius damage to everything, no exceptions
+	MF3_HIGHERMPROB		= BIT(5),	// min prob. of miss. att. = 37.5% vs 22%
+	MF3_RANGEHALF		= BIT(6),	// use half actual distance for missile attack probability
+									// BIT 7 is NOTHRESTHOLD -- RESERVED
+	MF3_LONGMELEE		= BIT(8),        // long melee range
+									// BIT 9 is MF2_BOSS -- RESERVED
+	MF3_MAP07BOSS1		= BIT(10),	// is a MAP07 boss type 1 (666)
+	MF3_MAP07BOSS2		= BIT(11),	// is a MAP07 boss type 2 (667)
+	MF3_E1M8BOSS		= BIT(12),	// is an E1M8 boss
+	MF3_E2M8BOSS		= BIT(13),	// is an E1M8 boss
+	MF3_E3M8BOSS		= BIT(14),	// is an E3M8 boss
+	MF3_E4M6BOSS		= BIT(15),	// is an E4M6 boss
+	MF3_E4M8BOSS		= BIT(16),	// is an E4M8 boss
+									// BIT 15 is MF2_RIP -- RESERVED
+	MF3_FULLVOLSOUNDS	= BIT(18),	// full volume see / death sound
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags

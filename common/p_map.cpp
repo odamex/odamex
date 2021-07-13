@@ -587,6 +587,24 @@ static BOOL PIT_CheckThing (AActor *thing)
 		if (!(thing->flags & MF_SHOOTABLE))
 			return !solid;		// didn't do any damage
 
+		if (tmthing->flags2 & MF2_RIP)
+		{
+			int damage = ((P_Random() & 3) + 2) * tmthing->info->damage;
+			if (!(thing->flags & MF_NOBLOOD))
+				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
+			if (tmthing->info->ripsound)
+				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
+
+			P_DamageMobj(thing, tmthing, tmthing->target, damage);
+			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
+			{ // Push thing
+				thing->momx += tmthing->momx >> 2;
+				thing->momy += tmthing->momy >> 2;
+			}
+
+			return true;
+		}
+
 		// damage / explode
 		if (tmthing->info->damage)
 		{
