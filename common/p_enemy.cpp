@@ -185,10 +185,12 @@ BOOL P_CheckMeleeRange (AActor *actor)
 	if (!actor->target)
 		return false;
 
+	fixed_t range = actor->info->meleerange;
+
 	pl = actor->target;
 	dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
-	if (dist >= MELEERANGE-20*FRACUNIT+pl->info->radius)
+	if (dist >= range - 20 * FRACUNIT + pl->info->radius)
 		return false;
 
 	// [RH] If moving toward goal, then we've reached it.

@@ -662,8 +662,8 @@ void A_Punch(AActor* mo)
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
 
-	slope = P_AimLineAttack (player->mo, angle, MELEERANGE);
-	P_LineAttack (player->mo, angle, MELEERANGE, slope, damage);
+	slope = P_AimLineAttack(player->mo, angle, player->mo->info->meleerange);
+	P_LineAttack(player->mo, angle, player->mo->info->meleerange, slope, damage);
 
 	// [SL] 2011-07-12 - Restore players and sectors to their current position
 	// according to the server.
@@ -686,6 +686,7 @@ void A_Saw(AActor* mo)
 	angle_t 	angle;
 	int 		damage;
 
+
     player_t *player = mo->player;
 
 	damage = 2 * (P_Random (player->mo)%10+1);
@@ -697,8 +698,8 @@ void A_Saw(AActor* mo)
 	Unlag::getInstance().reconcile(player->id);
 
 	// use meleerange + 1 so the puff doesn't skip the flash
-	P_LineAttack (player->mo, angle, MELEERANGE+1,
-				  P_AimLineAttack (player->mo, angle, MELEERANGE+1), damage);
+	P_LineAttack(player->mo, angle, player->mo->info->meleerange + 1,
+				  P_AimLineAttack (player->mo, angle, player->mo->info->meleerange+1), damage);
 
 	// [SL] 2011-07-12 - Restore players and sectors to their current position
 	// according to the server.

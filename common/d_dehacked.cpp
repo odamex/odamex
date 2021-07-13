@@ -978,9 +978,16 @@ static int PatchThing (int thingy)
 					info->splash_group = val + SG_END;
 				}
 			}
-			else if (linelen == 11 && stricmp(Line1, "Pain chance") == 0)
+			else if (linelen == 11)
 			{
-				info->painchance = (SWORD)val;
+				if (stricmp(Line1, "Pain chance") == 0)
+				{
+					info->painchance = (SWORD)val;
+				}
+				else if (stricmp(Line1, "Melee range") == 0)
+				{
+					info->meleerange = val;
+				}
 			}
 			else if (linelen == 10)
 			{

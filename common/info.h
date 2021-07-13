@@ -1712,6 +1712,7 @@ typedef struct
 
 	// MBF21 STUFF HERE
 	int altspeed;
+	int meleerange;
 	int infighting_group;
 	int projectile_group;
 	int splash_group;
