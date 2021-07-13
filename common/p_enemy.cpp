@@ -48,6 +48,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
+EXTERN_CVAR(co_zdoomsound)
 
 enum dirtype_t
 {
@@ -246,7 +247,7 @@ BOOL P_CheckMissileRange (AActor *actor)
 	}
 
 
-	if (actor->type == MT_UNDEAD)
+	if (actor->flags3 & MF3_LONGMELEE)
 	{
 		if (dist < 196)
 			return false;		// close for fist attack
@@ -774,7 +775,10 @@ void A_Look (AActor *actor)
 				sound[strlen(sound)-1] = '1';
 		}
 
-		S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+		else 
+			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 	}
 
 	if (actor->target)
@@ -1870,7 +1874,6 @@ void A_PainDie (AActor *actor)
 	A_PainShootSkull (actor, actor->angle+ANG270);
 }
 
-
 void A_Scream (AActor *actor)
 {
     char sound[MAX_SNDNAME];
@@ -1894,8 +1897,10 @@ void A_Scream (AActor *actor)
         sound[strlen(sound)-1] = P_Random(actor) % 2 + '1';
     }
 
-
-    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+	if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+		S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+	else 
+	    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
 

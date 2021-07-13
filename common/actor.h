@@ -266,6 +266,8 @@ typedef enum
 	MF3_E3M8BOSS		= BIT(10),	// is an E3M8 boss
 	MF3_E4M6BOSS		= BIT(11),	// is an E4M6 boss
 	MF3_E4M8BOSS		= BIT(12),	// is an E4M8 boss
+	MF3_LONGMELEE		= BIT(13),	// long melee range
+	MF3_FULLVOLSOUNDS	= BIT(14),	// full volume see / death sound
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
