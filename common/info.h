@@ -1658,6 +1658,14 @@ typedef enum {
 inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
 
+typedef enum
+{
+	PG_GROUPLESS = -1,
+	PG_DEFAULT,
+	PG_BARON,
+	PG_END
+} projectile_group_t;
+
 typedef struct
 {
 	int doomednum;
@@ -1691,6 +1699,7 @@ typedef struct
 
 	// MBF21 STUFF HERE
 	int altspeed;
+	int projectile_group;
 
 } mobjinfo_t;
 

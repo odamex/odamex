@@ -7540,13 +7540,7 @@ void D_Init_DEHEXTRA_Frames(void)
 		states[i].flags = STATEF_NONE;
 	}
 
-	// Start all MBF21 content here.
-
-	for (int i = 0; i < NUMMOBJTYPES ; i++)
-	{
-		mobjinfo[i].altspeed = NO_ALTSPEED;
-	}
-
+	// NIGHTMARE! stuff
 	// Set the flag for nightmare frames
 	for (int i = S_SARG_RUN1; i <= S_SARG_PAIN2; ++i)
 		states[i].flags |= STATEF_SKILL5FAST;
@@ -7555,6 +7549,18 @@ void D_Init_DEHEXTRA_Frames(void)
 	mobjinfo[MT_BRUISERSHOT].altspeed = 20;
 	mobjinfo[MT_HEADSHOT].altspeed = 20;
 	mobjinfo[MT_TROOPSHOT].altspeed = 20;
+
+
+	// Start all MBF21 content here.
+	for (int i = 0; i < NUMMOBJTYPES ; i++)
+	{
+		mobjinfo[i].altspeed = NO_ALTSPEED;
+		mobjinfo[i].projectile_group = PG_DEFAULT;
+	}
+
+	// Projectile
+	mobjinfo[MT_BRUISER].projectile_group = PG_BARON;
+	mobjinfo[MT_KNIGHT].projectile_group = PG_BARON;
 }
 
 VERSION_CONTROL (info_cpp, "$Id$")

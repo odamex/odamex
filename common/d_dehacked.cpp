@@ -896,6 +896,16 @@ static int PatchThing (int thingy)
 				else if (!strnicmp(Line1, "Action", 6))
 					info->activesound = snd;
 			}
+			else if (linelen == 16)
+			{
+				if (stricmp(Line1, "Projectile group") == 0)
+				{
+					if (val < 0)
+						info->projectile_group = PG_GROUPLESS;
+					else
+						info->projectile_group = val + PG_END;
+				}
+			}
 			else if (linelen == 14 && stricmp(Line1, "Missile damage") == 0)
 			{
 				info->damage = val;

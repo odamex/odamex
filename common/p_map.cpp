@@ -499,6 +499,21 @@ BOOL PIT_CheckLine (line_t *ld)
 //
 // PIT_CheckThing
 //
+
+static bool P_ProjectileImmune(AActor* target, AActor* source)
+{
+	return ( // PG_GROUPLESS means no immunity, even to own species
+	           mobjinfo[target->type].projectile_group != PG_GROUPLESS ||
+	           target == source) &&
+	       (( // target type has default behaviour, and things are the same type
+	            mobjinfo[target->type].projectile_group == PG_DEFAULT &&
+	            source->type == target->type) ||
+	        ( // target type has special behaviour, and things have the same group
+	            mobjinfo[target->type].projectile_group != PG_DEFAULT &&
+	            mobjinfo[target->type].projectile_group ==
+	                mobjinfo[source->type].projectile_group));
+}
+
 static BOOL PIT_CheckThing (AActor *thing)
 {
 	bool solid = thing->flags & MF_SOLID;
@@ -558,10 +573,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		if (tmthing->z+tmthing->height < thing->z)
 			return true;				// underneath
 
-		if (tmthing->target && (
-			tmthing->target->type == thing->type ||
-			(tmthing->target->type == MT_KNIGHT && thing->type == MT_BRUISER)||
-			(tmthing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) ) )
+		if (tmthing->target && P_ProjectileImmune(thing, tmthing->target))
 		{
 			// Don't hit same species as originator.
 			if (thing == tmthing->target)
