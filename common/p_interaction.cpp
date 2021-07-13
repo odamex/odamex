@@ -618,7 +618,7 @@ static void P_GiveCarePack(player_t* player)
 				midmessage = "Got berserk";
 				break;
 			}
-			else if (!player->weaponowned[weapons.at(i)])
+			else if (weapons.at(i) != wp_none && !player->weaponowned[weapons.at(i)])
 			{
 				P_GiveWeapon(player, weapons.at(i), false);
 				blocks -= 1;
