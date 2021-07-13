@@ -2045,10 +2045,10 @@ void A_BossDeath (AActor *actor)
 		return;
 
 	if (
-		((level.flags & LEVEL_MAP07SPECIAL) && (actor->flags3 & MF3_MAP07BOSS1 || actor->flags3 & MF3_MAP07BOSS2)) ||
+		((level.flags & LEVEL_MAP07SPECIAL) && (actor->flags3 & (MF3_MAP07BOSS1 | MF3_MAP07BOSS2))) ||
 		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->flags3 & MF3_E1M8BOSS)) ||
-	    ((level.flags & LEVEL_CYBORGSPECIAL) && (actor->flags3 & MF3_E2M8BOSS || actor->flags3 & MF3_E4M6BOSS)) ||
-	    ((level.flags & LEVEL_SPIDERSPECIAL) && (actor->flags3 & MF3_E3M8BOSS || actor->flags & MF3_E4M8BOSS))
+	    ((level.flags & LEVEL_CYBORGSPECIAL) && (actor->flags3 & (MF3_E2M8BOSS | MF3_E4M6BOSS))) ||
+	    ((level.flags & LEVEL_SPIDERSPECIAL) && (actor->flags3 & (MF3_E3M8BOSS | MF3_E4M8BOSS)))
 	   )
 		;
 	else return;
