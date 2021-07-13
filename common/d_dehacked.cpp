@@ -923,6 +923,8 @@ static int PatchThing (int thingy)
 					info->deathsound = snd;
 				else if (!strnicmp(Line1, "Action", 6))
 					info->activesound = snd;
+				else if (!strnicmp(Line1, "Rip", 3))
+					info->ripsound = snd;
 			}
 			else if (linelen == 16)
 			{
