@@ -251,6 +251,12 @@ typedef enum
 	MF2_SEEKERMISSILE	= BIT(30),	// is a seeker (for reflection)
 	MF2_REFLECTIVE		= BIT(31),	// reflects missiles
 
+	// mobj.flags3
+	// MBF21-specific (mostly) flags
+	MF3_SHORTMRANGE = BIT(0),		// has short missile range (archvile)
+
+
+
 	// --- mobj.oflags ---
 	// Odamex-specific flags
 	MFO_NOSNAPZ			= BIT(0),		// ignore snapshot z this tic
@@ -390,6 +396,7 @@ public:
 	int				damage;			// For missiles	
 	int				flags;
 	int				flags2;	// Heretic flags
+	int				flags3;	// MBF21 flags
 	int				oflags;			// Odamex flags
 	int				special1;		// Special info
 	int				special2;		// Special info

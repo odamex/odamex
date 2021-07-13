@@ -1674,6 +1674,15 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 // and other environmental stuff.
 //
 // [Toke] This is no longer needed client-side
+
+static bool P_InfightingImmune(AActor* target, AActor* source)
+{
+	return // not default behaviour, and same group
+	    mobjinfo[target->type].infighting_group != IG_DEFAULT &&
+	    mobjinfo[target->type].infighting_group ==
+	        mobjinfo[source->type].infighting_group;
+}
+
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
     unsigned	ang;
@@ -1905,9 +1914,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		target->reactiontime = 0;			// we're awake now...
 
-		if ((!target->threshold || target->type == MT_VILE)
-			 && source && source != target
-			 && source->type != MT_VILE)
+		if (source &&
+			source != target &&
+		    (!target->threshold || target->flags2 & MF2_NODMGTHRUST) &&
+		    !P_InfightingImmune(target, source))
 		{
 			// if not intent on another player, chase after this one
 

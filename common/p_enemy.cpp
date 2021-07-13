@@ -239,7 +239,7 @@ BOOL P_CheckMissileRange (AActor *actor)
 
 	dist >>= 16;
 
-	if (actor->type == MT_VILE)
+	if (actor->flags3 & MF3_SHORTMRANGE)
 	{
 		if (dist > 14*64)
 			return false;		// too far away

@@ -908,6 +908,16 @@ static int PatchThing (int thingy)
 					else
 						info->projectile_group = val + PG_END;
 				}
+				else if (stricmp(Line1, "Infighting group") == 0)
+				{
+					info->infighting_group = val;
+
+					if (info->infighting_group < 0)
+					{
+						I_Error("Infighting groups must be >= 0 (check your DEHacked entry, and correct it!)\n");
+					} 
+					info->infighting_group = val + IG_END;
+				}
 			}
 			else if (linelen == 14 && stricmp(Line1, "Missile damage") == 0)
 			{

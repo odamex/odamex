@@ -1660,6 +1660,13 @@ inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in
 
 typedef enum
 {
+	IG_DEFAULT,
+	// IG_CENTAUR,	// UNUSED
+	IG_END
+} infighting_group_t;
+
+typedef enum
+{
 	PG_GROUPLESS = -1,
 	PG_DEFAULT,
 	PG_BARON,
@@ -1705,8 +1712,10 @@ typedef struct
 
 	// MBF21 STUFF HERE
 	int altspeed;
+	int infighting_group;
 	int projectile_group;
 	int splash_group;
+	int flags3;
 
 } mobjinfo_t;
 
