@@ -2045,10 +2045,10 @@ void A_BossDeath (AActor *actor)
 		return;
 
 	if (
-		((level.flags & LEVEL_MAP07SPECIAL) && (actor->type == MT_FATSO || actor->type == MT_BABY)) ||
-		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->type == MT_BRUISER)) ||
-		((level.flags & LEVEL_CYBORGSPECIAL) && (actor->type == MT_CYBORG)) ||
-		((level.flags & LEVEL_SPIDERSPECIAL) && (actor->type == MT_SPIDER))
+		((level.flags & LEVEL_MAP07SPECIAL) && (actor->flags3 & MF3_MAP07BOSS1 || actor->flags3 & MF3_MAP07BOSS2)) ||
+		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->flags3 & MF3_E1M8BOSS)) ||
+	    ((level.flags & LEVEL_CYBORGSPECIAL) && (actor->flags3 & MF3_E2M8BOSS || actor->flags3 & MF3_E4M6BOSS)) ||
+	    ((level.flags & LEVEL_SPIDERSPECIAL) && (actor->flags3 & MF3_E3M8BOSS || actor->flags & MF3_E4M8BOSS))
 	   )
 		;
 	else return;
@@ -2080,13 +2080,13 @@ void A_BossDeath (AActor *actor)
 	// victory!
 	if (level.flags & LEVEL_MAP07SPECIAL)
 	{
-		if (actor->type == MT_FATSO)
+		if (actor->flags3 & MF3_MAP07BOSS1)
 		{
 			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 			return;
 		}
 
-		if (actor->type == MT_BABY)
+		if (actor->flags3 & MF3_MAP07BOSS2)
 		{
 			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
 			return;

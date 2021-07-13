@@ -826,6 +826,13 @@ static int PatchThing (int thingy)
 		{3, 3, "FORCERADIUSDMG"},
 		{4, 3, "HIGHERMPROB"},
 		{5, 3, "RANGEHALF"},
+		{6, 3, "MAP07BOSS1"},
+		{7, 3, "MAP07BOSS2"},
+		{8, 3, "E1M8BOSS"},
+		{9, 3, "E2M8BOSS"},
+		{10, 3, "E3M8BOSS"},
+		{11, 3, "E4M6BOSS"},
+		{12, 3, "E4M8BOSS"},
 	};
 	int result;
 	int oldflags;

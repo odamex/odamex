@@ -259,6 +259,13 @@ typedef enum
 	MF3_FORCERADIUSDMG	= BIT(3),	// does radius damage to everything, no exceptions
 	MF3_HIGHERMPROB		= BIT(4),	// min prob. of miss. att. = 37.5% vs 22%
 	MF3_RANGEHALF		= BIT(5),	// use half actual distance for missile attack probability
+	MF3_MAP07BOSS1		= BIT(6),	// is a MAP07 boss type 1 (666)
+	MF3_MAP07BOSS2		= BIT(7),	// is a MAP07 boss type 2 (667)
+	MF3_E1M8BOSS		= BIT(8),	// is an E1M8 boss
+	MF3_E2M8BOSS		= BIT(9),	// is an E1M8 boss
+	MF3_E3M8BOSS		= BIT(10),	// is an E3M8 boss
+	MF3_E4M6BOSS		= BIT(11),	// is an E4M6 boss
+	MF3_E4M8BOSS		= BIT(12),	// is an E4M8 boss
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
