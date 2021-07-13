@@ -1666,6 +1666,12 @@ typedef enum
 	PG_END
 } projectile_group_t;
 
+typedef enum
+{
+	SG_DEFAULT,
+	SG_END
+} splash_group_t;
+
 typedef struct
 {
 	int doomednum;
@@ -1700,6 +1706,7 @@ typedef struct
 	// MBF21 STUFF HERE
 	int altspeed;
 	int projectile_group;
+	int splash_group;
 
 } mobjinfo_t;
 

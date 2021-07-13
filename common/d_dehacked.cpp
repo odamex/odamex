@@ -41,6 +41,7 @@
 #include "w_wad.h"
 #include "m_fileio.h"
 #include "p_local.h"
+#include "i_system.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -900,7 +901,9 @@ static int PatchThing (int thingy)
 			{
 				if (stricmp(Line1, "Projectile group") == 0)
 				{
-					if (val < 0)
+					info->projectile_group = val;
+
+					if (info->projectile_group < 0)
 						info->projectile_group = PG_GROUPLESS;
 					else
 						info->projectile_group = val + PG_END;
@@ -925,6 +928,15 @@ static int PatchThing (int thingy)
 				else if (stricmp(Line1, "Dropped item") == 0)
 				{
 					// UNSUPPORTED FOR NOW...
+				}
+				else if (stricmp(Line1, "Splash group") == 0)
+				{
+					info->splash_group = val;
+					if (info->splash_group < 0)
+					{
+						I_Error("Splash groups must be >= 0 (check your DEHacked entry, and correct it!)\n");
+					}
+					info->splash_group = val + SG_END;
 				}
 			}
 			else if (linelen == 11 && stricmp(Line1, "Pain chance") == 0)

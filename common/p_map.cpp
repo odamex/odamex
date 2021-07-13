@@ -2763,9 +2763,21 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 //
 // "bombsource" is the creature that caused the explosion at "bombspot".
 //
+
+static bool P_SplashImmune(AActor* target, AActor* spot)
+{
+	return // not default behaviour and same group
+	    mobjinfo[target->type].splash_group != SG_DEFAULT &&
+	    mobjinfo[target->type].splash_group == mobjinfo[spot->type].splash_group;
+}
+
 static BOOL PIT_DoomRadiusAttack(AActor* thing)
 {
 	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
+		return true;
+
+	// MBF21
+	if (P_SplashImmune(thing, bombspot))
 		return true;
 
 	// Boss spider and cyborg
@@ -2804,6 +2816,10 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 {
 	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+		return true;
+
+	// MBF21
+	if (P_SplashImmune(thing, bombspot))
 		return true;
 
 	// Boss spider and cyborg

@@ -7556,9 +7556,10 @@ void D_Init_DEHEXTRA_Frames(void)
 	{
 		mobjinfo[i].altspeed = NO_ALTSPEED;
 		mobjinfo[i].projectile_group = PG_DEFAULT;
+		mobjinfo[i].splash_group = SG_DEFAULT;
 	}
 
-	// Projectile
+	// Projectile links
 	mobjinfo[MT_BRUISER].projectile_group = PG_BARON;
 	mobjinfo[MT_KNIGHT].projectile_group = PG_BARON;
 }
