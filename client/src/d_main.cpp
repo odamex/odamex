@@ -85,6 +85,7 @@
 #include "cl_main.h"
 #include "g_mapinfo.h"
 #include "sc_man.h"
+#include "g_horde.h"
 
 #include "w_ident.h"
 
@@ -628,6 +629,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	// init the menu subsystem
 	if (first_time)

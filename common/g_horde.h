@@ -3,8 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2021 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,39 +16,13 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  "Horde" game mode.
+//   Non-ingame horde functionality.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include "actor.h"
-#include "doomdata.h"
 #include "p_hordedefine.h"
 
-enum hordeState_e
-{
-	HS_STARTING, // Handles initialization at the start of rounds.
-	HS_PRESSURE, // Spawns monsters.
-	HS_RELAX,    // Doesn't spawn monsters.
-	HS_WANTBOSS, // Drop everything and try and spawn a boss.
-};
-
-struct hordeInfo_t
-{
-	hordeState_e state;
-	int wave;
-	int waveTime;
-	size_t defineID;
-	int alive;
-	int killed;
-};
-
-hordeInfo_t P_HordeInfo();
-void P_AddHealthPool(AActor* mo);
-void P_RemoveHealthPool(AActor* mo);
-
-void P_RunHordeTics();
-bool P_IsHordeMode();
-bool P_IsHordeThing(const int type);
-const hordeDefine_t::weapons_t& P_HordeWeapons();
+void G_ParseHordeDefs();
+const hordeDefine_t& G_HordeDefine(size_t id);

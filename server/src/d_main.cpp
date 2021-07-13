@@ -68,6 +68,7 @@
 #include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
+#include "g_horde.h"
 
 #include "w_ident.h"
 
@@ -173,6 +174,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	if (first_time)
 		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");

@@ -509,7 +509,6 @@ void HU_Drawer()
 			hud::DoomHUD();
 		}
 
-		hud::HordeHUD();
 		hud::LevelStateHUD();
 	}
 

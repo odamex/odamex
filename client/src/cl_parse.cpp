@@ -961,7 +961,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	P_SetupPsprites(p);
 
 	// give all cards in death match mode
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		for (size_t i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 

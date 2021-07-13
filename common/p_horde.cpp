@@ -27,6 +27,7 @@
 #include "d_player.h"
 #include "doomstat.h"
 #include "g_gametype.h"
+#include "g_horde.h"
 #include "m_random.h"
 #include "p_hordespawn.h"
 #include "p_local.h"
@@ -103,7 +104,7 @@ class HordeState
 	hordeState_e m_state;
 	int m_wave;
 	int m_waveTime;
-	const hordeDefine_t* m_waveDefine;
+	size_t m_defineID;
 	int m_spawnedHealth;
 	int m_killedHealth;
 	int m_waveStartHealth;
@@ -128,7 +129,7 @@ class HordeState
 		setState(HS_STARTING);
 		m_wave = 1;
 		m_waveTime = ::level.time;
-		m_waveDefine = &P_HordeDefine(m_wave, ::g_horde_waves);
+		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
 		m_waveStartHealth = 0;
@@ -151,7 +152,7 @@ class HordeState
 		setState(HS_STARTING);
 		m_wave += 1;
 		m_waveTime = ::level.time;
-		m_waveDefine = &P_HordeDefine(m_wave, ::g_horde_waves);
+		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
 		m_waveStartHealth = m_killedHealth;
 		m_bosses.clear();
 		m_bossRecipe.clear();
@@ -179,12 +180,11 @@ class HordeState
 	{
 		hordeInfo_t info;
 		info.state = m_state;
-		info.name = m_waveDefine->name;
 		info.wave = m_wave;
 		info.waveTime = m_waveTime;
+		info.defineID = m_defineID;
 		info.alive = m_spawnedHealth - m_killedHealth;
 		info.killed = m_killedHealth - m_waveStartHealth;
-		info.goal = m_waveDefine->goalHealth();
 		return info;
 	}
 
@@ -198,9 +198,9 @@ class HordeState
 		m_killedHealth += health;
 	}
 
-	const hordeDefine_t& getDefine() const
+	size_t getDefineID() const
 	{
-		return *m_waveDefine;
+		return m_defineID;
 	}
 
 	void preTick();
@@ -212,14 +212,15 @@ class HordeState
  */
 void HordeState::preTick()
 {
+	const hordeDefine_t& define = G_HordeDefine(m_defineID);
+
 	int aliveHealth = m_spawnedHealth - m_killedHealth;
-	int goalHealth = m_waveDefine->goalHealth() + m_waveStartHealth;
+	int goalHealth = define.goalHealth() + m_waveStartHealth;
 
 	switch (m_state)
 	{
 	case HS_STARTING: {
-		SV_BroadcastPrintf("Wave %d has begun: \"%s\".\n", m_wave,
-		                   m_waveDefine->name.c_str());
+		SV_BroadcastPrintf("Wave %d has begun: \"%s\".\n", m_wave, define.name.c_str());
 
 		// Do anything that we would need to do upon starting any wave.
 		m_bosses.clear();
@@ -232,7 +233,7 @@ void HordeState::preTick()
 			setState(HS_WANTBOSS);
 			return;
 		}
-		else if (aliveHealth > m_waveDefine->maxTotalHealth())
+		else if (aliveHealth > define.maxTotalHealth())
 		{
 			setState(HS_RELAX);
 			return;
@@ -245,7 +246,7 @@ void HordeState::preTick()
 			setState(HS_WANTBOSS);
 			return;
 		}
-		else if (aliveHealth < m_waveDefine->minTotalHealth())
+		else if (aliveHealth < define.minTotalHealth())
 		{
 			setState(HS_PRESSURE);
 			return;
@@ -274,6 +275,8 @@ void HordeState::preTick()
  */
 void HordeState::tick()
 {
+	const hordeDefine_t& define = G_HordeDefine(m_defineID);
+
 	// Are the bosses taken care of?
 	if (m_state != HS_WANTBOSS && m_bossRecipe.isValid())
 	{
@@ -314,12 +317,12 @@ void HordeState::tick()
 	{
 	case HS_PRESSURE: {
 		const int pressureHealth =
-		    P_RandomInt(m_waveDefine->maxGroupHealth - m_waveDefine->minGroupHealth) +
-		    m_waveDefine->minGroupHealth;
+		    P_RandomInt(define.maxGroupHealth - define.minGroupHealth) +
+		    define.minGroupHealth;
 
 		// Pick a recipe for some monsters.
 		hordeRecipe_t recipe;
-		const bool ok = P_HordeSpawnRecipe(recipe, *m_waveDefine, false);
+		const bool ok = P_HordeSpawnRecipe(recipe, define, false);
 		if (!ok)
 		{
 			Printf("%s: No recipe for non-boss monster.\n", __FUNCTION__);
@@ -357,7 +360,7 @@ void HordeState::tick()
 		if (!m_bossRecipe.isValid())
 		{
 			// Pick a recipe for the boss.
-			const bool ok = P_HordeSpawnRecipe(recipe, *m_waveDefine, true);
+			const bool ok = P_HordeSpawnRecipe(recipe, define, true);
 			if (!ok)
 			{
 				Printf("%s: No recipe for boss monster.\n", __FUNCTION__);
@@ -394,13 +397,13 @@ void HordeState::tick()
 	P_HordeSpawnItem();
 
 	// Always try to spawn a powerup between 30-45 seconds.
-	if (!getDefine().powerups.empty() && ::level.time > m_nextPowerup)
+	if (!define.powerups.empty() && ::level.time > m_nextPowerup)
 	{
 		const int offset = P_RandomInt(16) + 30;
 		m_nextPowerup = ::level.time + (offset * TICRATE);
 
-		const size_t idx = P_RandomInt(getDefine().powerups.size());
-		const mobjtype_t pw = getDefine().powerups[idx];
+		const size_t idx = P_RandomInt(define.powerups.size());
+		const mobjtype_t pw = define.powerups[idx];
 		P_HordeSpawnPowerup(pw);
 
 		Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
@@ -482,7 +485,8 @@ const hordeDefine_t::weapons_t& P_HordeWeapons()
 {
 	if (::sv_gametype == GM_HORDE)
 	{
-		return ::g_HordeDirector.getDefine().weapons;
+		const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
+		return define.weapons;
 	}
 	else
 	{
@@ -525,7 +529,7 @@ EXTERN_CVAR(g_horde_goalhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
-	const hordeDefine_t& define = ::g_HordeDirector.getDefine();
+	const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
 
 	Printf("[Define: %s]\n", define.name.c_str());
 	Printf("Min Group Health: %d\n", define.minGroupHealth);

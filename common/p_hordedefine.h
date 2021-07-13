@@ -99,6 +99,9 @@ struct hordeDefine_t
 	int goalHealth() const;
 };
 
-const hordeDefine_t& P_HordeDefine(const int current, const int total);
+void G_ParseHordeDefs();
+const hordeDefine_t& G_HordeDefine(size_t id);
+
+size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
                         const bool wantBoss);

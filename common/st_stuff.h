@@ -84,9 +84,6 @@ void ToastTicker();
 // [AM] Push a toast to the screen.
 void PushToast(const toast_t& toast);
 
-// [AM] HUD for horde.
-void HordeHUD();
-
 // [AM] HUD for showing level state
 void LevelStateHUD();
 

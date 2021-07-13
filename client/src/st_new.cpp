@@ -801,18 +801,20 @@ void OdamexHUD() {
 	std::string firstperson, secondperson;
 	if (P_IsHordeMode())
 	{
-		hordeInfo_t& info = P_HordeInfo();
+		const hordeInfo_t& info = P_HordeInfo();
+		const hordeDefine_t& define = G_HordeDefine(info.defineID);
 
 		if (::g_horde_waves.asInt() != 0)
 		{
-			StrFormat(firstperson, "Wave %d/%d", info.wave, ::g_horde_waves.asInt());
+			StrFormat(firstperson, "W:%d/%d", info.wave, ::g_horde_waves.asInt());
 		}
 		else
 		{
-			StrFormat(firstperson, "Wave %d", info.wave);
+			StrFormat(firstperson, "W:%d", info.wave);
 		}
 
-		const double pct = (static_cast<double>(info.killed) / info.goal) * 100.0;
+		const double pct =
+		    (static_cast<double>(info.killed) / define.goalHealth()) * 100.0;
 		if (pct < 100.0)
 		{
 			StrFormat(secondperson, "%.0f%%", pct);
@@ -1017,58 +1019,6 @@ static std::string WinToColorString(const WinInfo& win)
 	return buf;
 }
 
-void HordeHUD()
-{
-	// [AM] FIXME - HUD crashes online
-	if (!::serverside)
-		return;
-
-	if (!P_IsHordeMode())
-		return;
-
-	hordeInfo_t info = P_HordeInfo();
-
-	const char* stateString;
-	switch (info.state)
-	{
-	case HS_STARTING:
-		stateString = "STARTING";
-		break;
-	case HS_PRESSURE:
-		stateString = "PRESSURE";
-		break;
-	case HS_RELAX:
-		stateString = "RELAX";
-		break;
-	case HS_WANTBOSS:
-		stateString = "WANTBOSS";
-		break;
-	default:
-		stateString = "???";
-		break;
-	}
-
-	hud::DrawText(0, 12, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
-	              stateString, CR_GREEN, true);
-
-	std::string buf;
-	StrFormat(buf, "Wave %d: %s\n", info.wave, info.name.c_str());
-	hud::DrawText(0, 20, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
-	              buf.c_str(), CR_GREEN, true);
-
-	float pct = static_cast<float>(info.killed) / info.goal;
-	char bar[17];
-	for (size_t i = 0; i < 16; i++)
-	{
-		bar[i] = pct > (i / 15.0f) ? '#' : '-';
-	}
-	bar[16] = '\0';
-
-	StrFormat(buf, "[%s]\n", bar);
-	hud::DrawText(0, 28, 1.0, hud::X_CENTER, hud::Y_TOP, hud::X_CENTER, hud::Y_TOP,
-	              buf.c_str(), CR_GREEN, true);
-}
-
 struct levelStateLines_t
 {
 	std::string first;
@@ -1079,6 +1029,7 @@ struct levelStateLines_t
 static void LevelStateHorde(levelStateLines_t& lines)
 {
 	const hordeInfo_t& info = P_HordeInfo();
+	const hordeDefine_t& define = G_HordeDefine(info.defineID);
 
 	if (::g_horde_waves.asInt() != 0)
 	{
@@ -1092,7 +1043,7 @@ static void LevelStateHorde(levelStateLines_t& lines)
 		StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
 	}
 
-	StrFormat(lines.second, "\"%s\"", info.name.c_str());
+	StrFormat(lines.second, "\"%s\"", define.name.c_str());
 
 	// Only render the wave message if it's less than 2 seconds in.
 	int tics = ::level.time - info.waveTime;
