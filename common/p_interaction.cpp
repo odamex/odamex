@@ -1916,6 +1916,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		if (source &&
 			source != target &&
+		    !(source->flags3 & MF3_DMGIGNORED) &&
 		    (!target->threshold || target->flags2 & MF2_NODMGTHRUST) &&
 		    !P_InfightingImmune(target, source))
 		{

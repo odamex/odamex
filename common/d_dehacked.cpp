@@ -818,7 +818,12 @@ static int PatchThing (int thingy)
 		{28, 1, "DORMANT"},
 		{29, 1, "ICEDAMAGE"},
 		{30, 1, "SEEKERMISSILE"},
-		{31, 1, "REFLECTIVE"}
+		{31, 1, "REFLECTIVE"},
+
+		{0, 3, "SHORTMRANGE"},
+		{1, 3, "DMGIGNORED"},
+		{2, 3, "NORADIUSDMG"},
+		{3, 3, "FORCERADIUSDMG"},
 	};
 	int result;
 	int oldflags;
@@ -1070,7 +1075,11 @@ static int PatchThing (int thingy)
 						    else if (value[2] & 4)
 							    info->translucency = TRANSLUC75;
 					    }
-					}		
+					}
+					if (vchanged[3])
+				    {
+					    info->flags3 = value[3];
+				    }
 				}
 			else if (stricmp(Line1, "ID #") == 0)
 			{

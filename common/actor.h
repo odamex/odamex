@@ -254,8 +254,9 @@ typedef enum
 	// mobj.flags3
 	// MBF21-specific (mostly) flags
 	MF3_SHORTMRANGE = BIT(0),		// has short missile range (archvile)
-
-
+	MF3_DMGIGNORED = BIT(1),		// other things ignore its attacks (archvile)
+	MF3_NORADIUSDMG = BIT(2),		// doesn't take splash damage
+	MF3_FORCERADIUSDMG = BIT(3),	// does radius damage to everything, no exceptions
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags

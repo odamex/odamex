@@ -7560,6 +7560,10 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].splash_group = SG_DEFAULT;
 	}
 
+	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED;
+	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG;
+	mobjinfo[MT_SPIDER].flags3 = MF3_NORADIUSDMG;
+
 	// Projectile links
 	mobjinfo[MT_BRUISER].projectile_group = PG_BARON;
 	mobjinfo[MT_KNIGHT].projectile_group = PG_BARON;
