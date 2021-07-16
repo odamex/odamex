@@ -393,10 +393,11 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 	msg.set_team(player.userinfo.team);
 	msg.set_gender(player.userinfo.gender);
 
-	for (size_t i = 0; i < ARRAY_LENGTH(player.userinfo.color); i++)
-	{
-		msg.mutable_color()->Add(player.userinfo.color[i]);
-	}
+	// [AM] Alpha is always 255.
+	odaproto::Color* color = msg.mutable_color();
+	color->set_r(player.userinfo.color[1]);
+	color->set_g(player.userinfo.color[2]);
+	color->set_b(player.userinfo.color[3]);
 
 	msg.set_join_time(time);
 
