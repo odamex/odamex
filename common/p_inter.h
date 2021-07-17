@@ -33,6 +33,7 @@
 bool P_GiveFrags(player_t* player, int num);
 bool P_GiveKills(player_t* player, int num);
 bool P_GiveDeaths(player_t* player, int num);
+bool P_GiveMonsterDamage(player_t* player, int num);
 bool P_GiveTeamPoints(player_t* player, int num);
 bool P_GiveLives(player_t* player, int num);
 int P_GetFragCount(const player_t* player);

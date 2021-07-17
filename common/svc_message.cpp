@@ -605,6 +605,11 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 		msg.set_lives(player.lives);
 	}
 
+	if (flags & SVC_PM_DAMAGE)
+	{
+		msg.set_monsterdmgcount(player.monsterdmgcount);
+	}
+
 	if (flags & SVC_PM_SCORE)
 	{
 		// [AM] Just send everything instead of trying to be clever about

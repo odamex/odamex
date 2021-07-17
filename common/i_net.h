@@ -150,14 +150,19 @@
 #define SVC_PM_LIVES BIT(2)
 
 /**
+ * @brief svc_playermembers: Damage done to monsters.
+ */
+#define SVC_PM_DAMAGE BIT(3)
+
+/**
  * @brief svc_playermembers: "Score" members like frags, etc.
  */
-#define SVC_PM_SCORE BIT(3)
+#define SVC_PM_SCORE BIT(4)
 
 /**
  * @brief svc_playermembers: Cheats & flags.
  */
-#define SVC_PM_CHEATS BIT(4)
+#define SVC_PM_CHEATS BIT(5)
 
 extern int   localport;
 extern int   msg_badread;

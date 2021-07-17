@@ -1222,6 +1222,11 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.lives = msg->lives();
 	}
 
+	if (flags & SVC_PM_DAMAGE)
+	{
+		p.monsterdmgcount = msg->monsterdmgcount();
+	}
+
 	if (flags & SVC_PM_SCORE)
 	{
 		p.roundwins = msg->roundwins();

@@ -148,6 +148,7 @@ void P_ClearPlayerScores(player_t& p, byte flags)
 		p.itemcount = 0;
 		p.secretcount = 0;
 		p.deathcount = 0; // [Toke - Scores - deaths]
+		p.monsterdmgcount = 0;
 		p.killcount = 0;  // [deathz0r] Coop kills
 		p.points = 0;
 	}
@@ -1211,6 +1212,7 @@ player_s::player_s() :
 	points(0),
 	fragcount(0),
 	deathcount(0),
+	monsterdmgcount(0),
 	killcount(0),
 	itemcount(0),
 	secretcount(0),
@@ -1306,6 +1308,7 @@ player_s &player_s::operator =(const player_s &other)
 
 	fragcount = other.fragcount;
 	deathcount = other.deathcount;
+	monsterdmgcount = other.monsterdmgcount;
 	killcount = other.killcount;
 	totalpoints = other.totalpoints;
 	totaldeaths = other.totaldeaths;

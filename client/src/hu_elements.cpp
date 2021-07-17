@@ -74,6 +74,11 @@ static bool STACK_ARGS cmpFrags(const player_t *arg1, const player_t *arg2) {
 	return arg2->fragcount < arg1->fragcount;
 }
 
+static bool STACK_ARGS cmpDamage(const player_t* arg1, const player_t* arg2)
+{
+	return arg2->damagecount < arg1->damagecount;
+}
+
 static bool STACK_ARGS cmpKills(const player_t *arg1, const player_t *arg2) {
 	return arg2->killcount < arg1->killcount;
 }
@@ -142,7 +147,7 @@ std::vector<player_t *> sortedPlayers(void) {
 
 	if (sv_gametype == GM_COOP)
 	{
-		std::sort(inGame.begin(), inGame.end(), cmpKills);
+		std::sort(inGame.begin(), inGame.end(), cmpDamage);
 	}
 	else if (sv_gametype == GM_DM && G_IsRoundsGame())
 	{
@@ -1155,6 +1160,35 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
 			buffer << frags;
+
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              buffer.str().c_str(), CR_GREY, force_opaque);
+			y += 7 + padding;
+			drawn += 1;
+		}
+	}
+}
+
+// Draw a list of kills in the game.  Lines up with player names.
+void EAPlayerDamage(int x, int y, const float scale, const x_align_t x_align,
+                    const y_align_t y_align, const x_align_t x_origin,
+                    const y_align_t y_origin, const short padding, const short limit,
+                    const bool force_opaque)
+{
+	byte drawn = 0;
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
+		// Make sure we're not overrunning our limit.
+		if (limit != 0 && drawn >= limit)
+		{
+			break;
+		}
+
+		player_t* player = sortedPlayers()[i];
+		if (ingamePlayer(player))
+		{
+			std::ostringstream buffer;
+			buffer << player->monsterdmgcount;
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
