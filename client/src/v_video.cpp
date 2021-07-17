@@ -122,6 +122,7 @@ EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
+EXTERN_CVAR(vid_displayfps)
 
 static int vid_pillarbox_old = -1;
 
@@ -672,17 +673,13 @@ void V_DrawFPSWidget()
 		// Just turned on or re-enabled the graph.
 		::g_GraphData.clear();
 	}
-	else
+	else if (vid_displayfps.asInt() == FPS_FULL)
 	{
 		static std::string buffer;
 		static double last_fps = 0.0;
 		const double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
 
 		::g_GraphData.push(delta_time_ms);
-
-		//StrFormat(buffer, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		//screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
-		//screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
 
 		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
 		v2int_t topright(topleft.x + ::GRAPH_WIDTH, topleft.y);
@@ -739,6 +736,27 @@ void V_DrawFPSWidget()
 		}
 
 		// FPS counter
+		StrFormat(buffer, "FPS %5.1f", last_fps);
+		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
+	}
+	else if (vid_displayfps.asInt() == FPS_COUNTER)
+	{
+		static double last_fps = 0.0;
+		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
+		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > ONE_SECOND)
+		{
+			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+		}
+
+		// FPS counter
+		std::string buffer;
 		StrFormat(buffer, "FPS %5.1f", last_fps);
 		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
 	}
