@@ -43,6 +43,7 @@
 #include "g_levelstate.h"
 #include "i_net.h"
 #include "p_ctf.h"
+#include "p_horde.h"
 #include "p_spec.h"
 
 /**
@@ -151,6 +152,7 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
 odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this_index,
                                              const size_t next_index);
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
+odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 #endif // __SVCMESSAGE_H__

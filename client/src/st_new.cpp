@@ -814,7 +814,7 @@ void OdamexHUD() {
 		}
 
 		const double pct =
-		    (static_cast<double>(info.killed) / define.goalHealth()) * 100.0;
+		    (static_cast<double>(info.killed()) / define.goalHealth()) * 100.0;
 		if (pct < 100.0)
 		{
 			StrFormat(secondperson, "%.0f%%", pct);

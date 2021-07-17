@@ -2813,6 +2813,20 @@ void SV_UpdateMonsters(player_t &pl)
 	}
 }
 
+void SV_UpdateGametype(player_t& pl)
+{
+	if (::sv_gametype == GM_HORDE)
+	{
+		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, 0, -1, -1, -1};
+		const hordeInfo_t info = P_HordeInfo();
+		if (!info.equals(lastInfo))
+		{
+			MSG_WriteSVC(&pl.client.netbuf, SVC_HordeInfo(info));
+			memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
+		}
+	}
+}
+
 //
 // SV_ActorTarget
 //
@@ -3095,6 +3109,8 @@ void SV_WriteCommands(void)
 		SV_UpdateMissiles(*it);
 
 		SV_UpdateMonsters(*it);
+
+		SV_UpdateGametype(*it);     // update gametype stuff
 
 		SV_SendPingRequest(cl);     // request ping reply
 

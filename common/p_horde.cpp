@@ -174,18 +174,33 @@ class HordeState
 	}
 
 	/**
-	 * @brief Returns health, like for the HUD.
+	 * @brief Serialize horde data into POD struct.
 	 */
-	hordeInfo_t info() const
+	hordeInfo_t serialize() const
 	{
 		hordeInfo_t info;
 		info.state = m_state;
 		info.wave = m_wave;
 		info.waveTime = m_waveTime;
 		info.defineID = m_defineID;
-		info.alive = m_spawnedHealth - m_killedHealth;
-		info.killed = m_killedHealth - m_waveStartHealth;
+		info.spawnedHealth = m_spawnedHealth;
+		info.killedHealth = m_killedHealth;
+		info.waveStartHealth = m_waveStartHealth;
 		return info;
+	}
+
+	/**
+	 * @brief Unserialize horde data from a POD struct.
+	 */
+	void unserialize(const hordeInfo_t& info)
+	{
+		m_state = info.state;
+		m_wave = info.wave;
+		m_waveTime = info.waveTime;
+		m_defineID = info.defineID;
+		m_spawnedHealth = info.spawnedHealth;
+		m_killedHealth = info.killedHealth;
+		m_waveStartHealth = info.waveStartHealth;
 	}
 
 	void addSpawnHealth(const int health)
@@ -412,7 +427,12 @@ void HordeState::tick()
 
 hordeInfo_t P_HordeInfo()
 {
-	return ::g_HordeDirector.info();
+	return ::g_HordeDirector.serialize();
+}
+
+void P_SetHordeInfo(const hordeInfo_t& info)
+{
+	::g_HordeDirector.unserialize(info);
 }
 
 void P_AddHealthPool(AActor* mo)
@@ -542,7 +562,7 @@ BEGIN_COMMAND(hordeinfo)
 	       ::g_horde_goalhp.cstring());
 
 	const char* stateStr = NULL;
-	switch (::g_HordeDirector.info().state)
+	switch (::g_HordeDirector.serialize().state)
 	{
 	case HS_STARTING:
 		stateStr = "Starting";
@@ -558,9 +578,9 @@ BEGIN_COMMAND(hordeinfo)
 		break;
 	}
 
-	Printf("[Wave: %d]\n", ::g_HordeDirector.info().wave);
+	Printf("[Wave: %d]\n", ::g_HordeDirector.serialize().wave);
 	Printf("State: %s\n", stateStr);
-	Printf("Alive Health: %d\n", ::g_HordeDirector.info().alive);
-	Printf("Killed Health: %d\n", ::g_HordeDirector.info().killed);
+	Printf("Alive Health: %d\n", ::g_HordeDirector.serialize().alive());
+	Printf("Killed Health: %d\n", ::g_HordeDirector.serialize().killed());
 }
 END_COMMAND(hordeinfo)

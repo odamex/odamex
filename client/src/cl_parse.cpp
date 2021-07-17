@@ -48,6 +48,7 @@
 #include "m_strindex.h"
 #include "p_acs.h"
 #include "p_ctf.h"
+#include "p_horde.h"
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_mobj.h"
@@ -2559,6 +2560,21 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	COM_PushToast(toast);
 }
 
+static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
+{
+	hordeInfo_t info;
+
+	info.state = static_cast<hordeState_e>(msg->state());
+	info.wave = msg->wave();
+	info.waveTime = msg->wave_time();
+	info.defineID = msg->define_id();
+	info.spawnedHealth = msg->spawned_health();
+	info.killedHealth = msg->killed_health();
+	info.waveStartHealth = msg->wave_start_health();
+
+	P_SetHordeInfo(info);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2792,6 +2808,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
+		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

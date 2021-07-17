@@ -40,12 +40,41 @@ struct hordeInfo_t
 	hordeState_e state;
 	int wave;
 	int waveTime;
-	size_t defineID;
-	int alive;
-	int killed;
+	uint64_t defineID;
+	int spawnedHealth;
+	int killedHealth;
+	int waveStartHealth;
+
+	int alive() const
+	{
+		return spawnedHealth - killedHealth;
+	}
+	int killed() const
+	{
+		return killedHealth - waveStartHealth;
+	}
+	bool equals(const hordeInfo_t& info) const
+	{
+		if (state != info.state)
+			return false;
+		if (wave != info.wave)
+			return false;
+		if (waveTime != info.waveTime)
+			return false;
+		if (defineID != info.defineID)
+			return false;
+		if (spawnedHealth != info.spawnedHealth)
+			return false;
+		if (killedHealth != info.killedHealth)
+			return false;
+		if (waveStartHealth != info.waveStartHealth)
+			return false;
+		return true;
+	}
 };
 
 hordeInfo_t P_HordeInfo();
+void P_SetHordeInfo(const hordeInfo_t& info);
 void P_AddHealthPool(AActor* mo);
 void P_RemoveHealthPool(AActor* mo);
 
