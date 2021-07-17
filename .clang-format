@@ -1,8 +1,10 @@
 ---
 BasedOnStyle: Microsoft
 AlignEscapedNewlines: Left
+AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 90
 IndentWidth: 4
 PointerAlignment: Left
+SpaceInEmptyBlock: true
 UseTab: ForIndentation

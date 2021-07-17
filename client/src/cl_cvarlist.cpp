@@ -683,8 +683,9 @@ CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			vid_displayfps, "0", "Display frames per second",
-				CVARTYPE_BOOL, CVAR_NULL)
+CVAR_RANGE(vid_displayfps, "0",
+           "Display frames per second.\n1: Full Graph.\n2: Just FPS Counter.",
+           CVARTYPE_BYTE, CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR(			vid_ticker, "0", "Vanilla Doom frames per second indicator",
 				CVARTYPE_BOOL, CVAR_NULL)

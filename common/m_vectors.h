@@ -37,6 +37,17 @@
 
 class AActor;
 
+struct v2int_t
+{
+	v2int_t() { }
+
+	v2int_t(const int x_, const int y_) : x(x_), y(y_) { }
+
+	v2int_t(const v2int_t& other) : x(other.x), y(other.y) { }
+
+	int x, y;
+};
+
 struct v2fixed_t
 {
 	v2fixed_t() {}
