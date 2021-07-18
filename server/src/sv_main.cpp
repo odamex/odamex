@@ -2818,11 +2818,23 @@ void SV_UpdateGametype(player_t& pl)
 	if (::sv_gametype == GM_HORDE)
 	{
 		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, 0, -1, -1, -1};
-		const hordeInfo_t info = P_HordeInfo();
-		if (!info.equals(lastInfo))
+		static int ticsent;
+
+		// If the hordeinfo has changed since last tic, save and send it.
+		if (ticsent != ::gametic)
 		{
-			MSG_WriteSVC(&pl.client.netbuf, SVC_HordeInfo(info));
-			memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
+			const hordeInfo_t info = P_HordeInfo();
+			if (!info.equals(lastInfo))
+			{
+				memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
+				ticsent = ::gametic;
+			}
+		}
+
+		// Send it if we're on the tic it mutated on or to a fresh player.
+		if (ticsent == ::gametic || (pl.GameTime == 0 && pl.ingame()))
+		{
+			MSG_WriteSVC(&pl.client.netbuf, SVC_HordeInfo(lastInfo));
 		}
 	}
 }
