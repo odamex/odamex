@@ -44,10 +44,24 @@ struct weaponinfo_s
 	mobjtype_t	droptype;
 	int			ammouse;
 	int			minammo;
+
+	// MBF21 Specifications
+	int flags;
 };
 typedef struct weaponinfo_s weaponinfo_t;
 
 extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
+
+// Weapon Flags (MBF21 SPECS)
+#define WPF_NOFLAG			0
+#define WPF_NOTHRUST		BIT(0)
+#define WPF_SILENT			BIT(1)
+#define WPF_NOAUTOFIRE		BIT(2)	
+#define WPF_FLEEMELEE		BIT(3)	// Not Implemented yet (Missing MBF code?)...
+#define WPF_AUTOSWITCHFROM	BIT(4)
+#define WPF_NOAUTOSWITCHTO	BIT(5)
+
+
 
 // Item stuff: (this is d_items.h, right?)
 
@@ -58,6 +72,7 @@ extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 #define IT_KEY					8
 #define IT_FLAG		 			16				// [Toke - CTF] Renamed this flag, it was not being used
 #define IT_POWERUP				32				// Auto-activate item
+
 
 struct gitem_s
 {

@@ -53,7 +53,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_NULL,
 		(mobjtype_t)0,
 		0,
-		0
+		0,
+		WPF_FLEEMELEE | WPF_AUTOSWITCHFROM | WPF_NOAUTOSWITCHTO
 		},	
 	{
 		// pistol
@@ -65,7 +66,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_PISTOLFLASH,
 		MT_CLIP,
 		1,
-		1
+		1,
+		WPF_AUTOSWITCHFROM
 	},	
 	{
 		// shotgun
@@ -77,7 +79,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_SGUNFLASH1,
 		MT_SHOTGUN,
 		1,
-		1
+		1,
+		WPF_NOFLAG
 	},
 	{
 		// chaingun
@@ -89,7 +92,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_CHAINFLASH1,
 		MT_CHAINGUN,
 		1,
-		1
+		1,
+		WPF_NOFLAG
 	},
 	{
 		// missile launcher
@@ -101,7 +105,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_MISSILEFLASH1,
 		MT_MISC27,
 		1,
-		1
+		1,
+		WPF_NOAUTOFIRE
 	},
 	{
 		// plasma rifle
@@ -113,7 +118,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_PLASMAFLASH1,
 		MT_MISC28,
 		1,
-		1
+		1,
+		WPF_NOFLAG
 	},
 	{
 		// bfg 9000
@@ -125,7 +131,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_BFGFLASH1,
 		MT_MISC25,
 		40,
-		40
+		40,
+		WPF_NOAUTOFIRE
 	},
 	{
 		// chainsaw
@@ -137,7 +144,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_NULL,
 		MT_MISC26,
 		0,
-		0
+		0,
+		WPF_NOTHRUST | WPF_FLEEMELEE | WPF_NOAUTOSWITCHTO
 	},
 	{
 		// super shotgun
@@ -149,7 +157,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_DSGUNFLASH1,
 		MT_SUPERSHOTGUN,
 		2,
-		2
+		2,
+		WPF_NOFLAG
 	},
 	{
 		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
@@ -161,7 +170,8 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		S_NOWEAPON,
 		MT_MISC26,
 		0,
-		0
+		0,
+		WPF_NOFLAG
 	},
 };
 

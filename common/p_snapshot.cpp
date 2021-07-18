@@ -74,7 +74,7 @@ ActorSnapshot::ActorSnapshot(int time) :
 		mX(0), mY(0), mZ(0),
 		mMomX(0), mMomY(0), mMomZ(0), mAngle(0), mPitch(0), mOnGround(true),
 		mCeilingZ(0), mFloorZ(0), mReactionTime(0), mWaterLevel(0),
-		mFlags(0), mFlags2(0), mFrame(0)
+		mFlags(0), mFlags2(0), mFlags3(0), mFrame(0)
 {
 }
 	
@@ -85,7 +85,7 @@ ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
 		mAngle(mo->angle), mPitch(mo->pitch), mOnGround(mo->onground),
 		mCeilingZ(mo->ceilingz), mFloorZ(mo->floorz),
 		mReactionTime(mo->reactiontime), mWaterLevel(mo->waterlevel),
-		mFlags(mo->flags), mFlags2(mo->flags2), mFrame(mo->frame)
+		mFlags(mo->flags), mFlags2(mo->flags2), mFlags3(mo->flags3), mFrame(mo->frame)
 {
 }
 
@@ -108,6 +108,7 @@ bool ActorSnapshot::operator==(const ActorSnapshot &other) const
 			mWaterLevel == other.mWaterLevel &&
 			mFlags == other.mFlags &&
 			mFlags2 == other.mFlags2 &&
+			mFlags3 == other.mFlags3 &&
 			mFrame == other.mFrame;
 }
 

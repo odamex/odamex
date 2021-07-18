@@ -41,6 +41,7 @@
 #include "w_wad.h"
 #include "m_fileio.h"
 #include "p_local.h"
+#include "i_system.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -103,7 +104,7 @@ static int toff[] = {129044, 129044, 129044, 129284, 129380};
 // A conversion array to convert from the 448 code pointers to the 966
 // Frames that exist.
 // Again taken from the DeHackEd source.
-static short codepconv[448] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  14,
+static short codepconv[522] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  14,
 							  16,   17,  18,  19,   20,  22,  29,   30,  31,  32,
 							  33,	 34,  36,  38,	 39,  41,  43,	 44,  47,  48,
 							  49,	50,  51,  52,	 53,  54,  55,	 56,  57,  58,
@@ -147,7 +148,16 @@ static short codepconv[448] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  
 							 733, 734, 735, 736,	737, 738, 739,	740, 741, 743,
 							 745, 746, 750, 751,	766, 774, 777,	779, 780, 783,
 							 784, 785, 786, 787,	788, 789, 790,	791, 792, 793,
-							 794, 795, 796, 797,	798, 801, 809,	811};
+							 794, 795, 796, 797,	798, 801, 809,	811,
+    
+	// Now for the 74 MBF states with code pointers
+    968, 969, 970, 972, 973, 974, 975, 976, 977, 978, 979, 980, 981, 982, 983, 984, 986,
+    988, 990, 999, 1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011,
+    1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025,
+    1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039,
+    1040, 1041, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1065, 1071, 1073, 1074,
+    1075 // Total: 522
+};
 
 static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
@@ -244,6 +254,9 @@ void A_Scratch(AActor*);
 void A_PlaySound(AActor*);
 void A_RandomJump(AActor*);
 void A_LineEffect(AActor*);
+void A_BetaSkullAttack(AActor* actor);
+void A_SpawnObject(AActor*);
+
 
 struct CodePtr {
 	const char *name;
@@ -341,6 +354,8 @@ static const struct CodePtr CodePtrs[] = {
 	{ "PlaySound",		A_PlaySound },      // killough 11/98
 	{ "RandomJump",		A_RandomJump },     // killough 11/98
 	{ "LineEffect",		A_LineEffect },     // killough 11/98
+    { "BetaSkullAttack", A_BetaSkullAttack},
+	{"A_SpawnObject", A_SpawnObject},
 	{ NULL, NULL }
 };
 
@@ -703,36 +718,34 @@ static int GetLine (void)
 
 static int PatchThing (int thingy)
 {
-    size_t thingNum = (size_t)thingy;
 
-	static const struct Key keys[] = {
-		{ "ID #",				offsetof(mobjinfo_t,doomednum) },
-		{ "Initial frame",		offsetof(mobjinfo_t,spawnstate) },
-		{ "Hit points",			offsetof(mobjinfo_t,spawnhealth) },
-		{ "First moving frame",	offsetof(mobjinfo_t,seestate) },
-		{ "Reaction time",		offsetof(mobjinfo_t,reactiontime) },
-		{ "Injury frame",		offsetof(mobjinfo_t,painstate) },
-		{ "Pain chance",		offsetof(mobjinfo_t,painchance) },
-		{ "Close attack frame",	offsetof(mobjinfo_t,meleestate) },
-		{ "Far attack frame",	offsetof(mobjinfo_t,missilestate) },
-		{ "Death frame",		offsetof(mobjinfo_t,deathstate) },
-		{ "Exploding frame",	offsetof(mobjinfo_t,xdeathstate) },
-		{ "Speed",				offsetof(mobjinfo_t,speed) },
-		{ "Width",				offsetof(mobjinfo_t,radius) },
-		{ "Height",				offsetof(mobjinfo_t,height) },
-		{ "Mass",				offsetof(mobjinfo_t,mass) },
-		{ "Missile damage",		offsetof(mobjinfo_t,damage) },
-		{ "Respawn frame",		offsetof(mobjinfo_t,raisestate) },
-		{ "Translucency",		offsetof(mobjinfo_t,translucency) },
-		{ NULL, 0}
+		enum
+	{
+		// Boom flags
+		MF_TRANSLATION = 0x0c000000, // if 0x4 0x8 or 0xc, use a translation
+		//MF_TRANSSHIFT = 26,          // table for player colormaps
+		                    // A couple of Boom flags that don't exist in ZDoom
+		MF_SLIDE = 0x00002000,       // Player: keep info about sliding along walls.
+		MF_TRANSLUCENT = 0x80000000, // Translucent sprite?
+		                             // MBF flags: TOUCHY is remapped to flags6, FRIEND is
+		                             // turned into FRIENDLY, and finally BOUNCES is
+		                             // replaced by bouncetypes with the BOUNCES_MBF bit.
+		MF_TOUCHY = 0x10000000,  // killough 11/98: dies when solids touch it
+		MF_BOUNCES = 0x20000000, // killough 7/11/98: for beta BFG fireballs
+		MF_FRIEND = 0x40000000,  // killough 7/18/98: friendly monsters
 	};
 
+	size_t thingNum = thingy;
+
 	// flags can be specified by name (a .bex extension):
-	static const struct {
-		short bit;
-		short whichflags;
-		const char *name;
-	} bitnames[] = {
+	static const struct flagsystem_t
+	{
+		short Bit;
+		short WhichFlags;
+		const char *Name;
+	} ;
+
+	flagsystem_t bitnames[] = {
 		{ 0, 0, "SPECIAL"},
 		{ 1, 0, "SOLID"},
 		{ 2, 0, "SHOOTABLE"},
@@ -746,6 +759,7 @@ static int PatchThing (int thingy)
 		{10, 0, "DROPOFF"},
 		{11, 0, "PICKUP"},
 		{12, 0, "NOCLIP"},
+		{13, 0, "SLIDE"},			// UNUSED FOR NOW
 		{14, 0, "FLOAT"},
 		{15, 0, "TELEPORT"},
 		{16, 0, "MISSILE"},
@@ -762,15 +776,20 @@ static int PatchThing (int thingy)
 		{26, 0, "TRANSLATION"},		// BOOM compatibility
 		{27, 0, "TRANSLATION2"},
 		{27, 0, "UNUSED1"},			// BOOM compatibility
-		{28, 0, "STEALTH"},
 		{28, 0, "UNUSED2"},			// BOOM compatibility
-		{29, 0, "TRANSLUC25"},
-		{29, 0, "UNUSED3"},			// BOOM compatibility
-		{30, 0, "TRANSLUC50"},
-		{(29<<8)|30, 0, "TRANSLUC75"},
+	    {29, 0, "UNUSED3"},			// BOOM compatibility
 		{30, 0, "UNUSED4"},			// BOOM compatibility
-		{30, 0, "TRANSLUCENT"},		// BOOM compatibility?
-		{31, 0, "RESERVED"},
+		{28, 0, "TOUCHY"},			// UNUSED FOR NOW
+		{29, 0, "BOUNCES"},			// UNUSED FOR NOW
+		{30, 0, "FRIEND"},
+		{31, 0, "TRANSLUCENT"},		// BOOM compatibility
+	    {30, 0, "STEALTH"},
+
+		// TRANSLUCENT... HACKY BUT HEH.
+		{0, 2, "TRANSLUC25"},
+		{1, 2, "TRANSLUC50"},
+		{2, 2, "TRANSLUC75"},
+
 
 		// Names for flags2
 		{ 0, 1, "LOGRAV"},
@@ -804,109 +823,393 @@ static int PatchThing (int thingy)
 		{28, 1, "DORMANT"},
 		{29, 1, "ICEDAMAGE"},
 		{30, 1, "SEEKERMISSILE"},
-		{31, 1, "REFLECTIVE"}
+		{31, 1, "REFLECTIVE"},
 	};
+
+	// MBF21 Bitname system
+	flagsystem_t mbf_bitnames[] = {
+	    {0, 1, "LOGRAV"},
+		{1, 3, "SHORTMRANGE"},
+		{2, 3, "DMGIGNORED"},
+		{3, 3, "NORADIUSDMG"},
+		{4, 3, "FORCERADIUSDMG"},
+		{5, 3, "HIGHERMPROB"},
+		{6, 3, "RANGEHALF"},
+	    {17, 1, "NOTHRESHOLD"},
+	    {8, 3, "LONGMELEE"},
+	    {15, 1, "BOSS"},
+		{10, 3, "MAP07BOSS1"},
+		{11, 3, "MAP07BOSS2"},
+		{12, 3, "E1M8BOSS"},
+		{13, 3, "E2M8BOSS"},
+		{14, 3, "E3M8BOSS"},
+		{15, 3, "E4M6BOSS"},
+		{16, 3, "E4M8BOSS"},
+	    {8, 1, "RIP"},
+		{18, 3, "FULLVOLSOUNDS"},
+	};
+
 	int result;
+	int oldflags;
+	bool hadTranslucency = false;
 	mobjinfo_t *info, dummy;
-	BOOL hadHeight = false;
+	int *ednum, dummyed;
+	bool hadHeight = false;
+	bool gibhealth = false;
+
+	info = &dummy;
+	ednum = &dummyed;
 
 	thingNum--;
-	if (thingNum < NUMMOBJTYPES) {
+	if (thingNum < 0 || thingNum > NUMMOBJTYPES)
+	{
+		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum);
+	}
+	else {
 		info = &mobjinfo[thingNum];
-		DPrintf("Thing %" PRIuSIZE "\n", thingNum);
-	} else {
-		info = &dummy;
-		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum + 1);
+		*ednum = *&info->doomednum;
+
+		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
 	}
 
+	oldflags = info->flags;
+
 	while ((result = GetLine ()) == 1) {
-		size_t sndmap = atoi (Line2);
 
-		if (sndmap >= sizeof(SoundMap))
-			sndmap = 0;
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
 
-		if (HandleKey (keys, info, Line1, atoi (Line2))) {
-			if (!stricmp (Line1, "Alert sound"))
-				info->seesound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Attack sound"))
-				info->attacksound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Pain sound"))
-				info->painsound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Death sound"))
-				info->deathsound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Action sound"))
-				info->activesound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Bits"))
+		if (linelen > 6)
+		{
+			if (stricmp(Line1 + linelen - 6, " frame") == 0)
 			{
-				int value = 0, value2 = 0;
-				BOOL vchanged = false, v2changed = false;
-				char *strval;
+				statenum_t state = (statenum_t)val;
 
-				for (strval = Line2; (strval = strtok (strval, ",+| \t\f\r")); strval = NULL)
+				if (!strnicmp(Line1, "Initial", 7))
+					info->spawnstate = state;
+				else if (!strnicmp(Line1, "First moving", 12))
+					info->seestate = state;
+				else if (!strnicmp(Line1, "Injury", 6))
 				{
-					size_t iy;
+					info->painstate = state;
+				}
+				else if (!strnicmp(Line1, "Close attack", 12))
+					info->meleestate = state;
+				else if (!strnicmp(Line1, "Far attack", 10))
+					info->missilestate = state;
+				else if (!strnicmp(Line1, "Death", 5))
+					info->deathstate = state;
+				else if (!strnicmp(Line1, "Exploding", 9))
+					info->xdeathstate = state;
+				else if (!strnicmp(Line1, "Respawn", 7))
+					info->raisestate = state;
+			}
+			else if (stricmp(Line1 + linelen - 6, " sound") == 0)
+			{
+				char* snd;
 
-					if (IsNum (strval))
-					{
-						// Force the top 4 bits to 0 so that the user is forced
-						// to use the mnemonics to change them.
-						value |= (atoi(strval) & 0x0fffffff);
-						vchanged = true;
-					}
+				if (val == 0 || val >= ARRAY_LENGTH(SoundMap))
+				{
+					val = 0;
+				}
+
+				snd = SoundMap[val];
+
+				if (!strnicmp(Line1, "Alert", 5))
+					info->seesound = snd;
+				else if (!strnicmp(Line1, "Attack", 6))
+					info->attacksound = snd;
+				else if (!strnicmp(Line1, "Pain", 4))
+					info->painsound = snd;
+				else if (!strnicmp(Line1, "Death", 5))
+					info->deathsound = snd;
+				else if (!strnicmp(Line1, "Action", 6))
+					info->activesound = snd;
+				else if (!strnicmp(Line1, "Rip", 3))
+					info->ripsound = snd;
+			}
+			else if (linelen == 16)
+			{
+				if (stricmp(Line1, "Projectile group") == 0)
+				{
+					info->projectile_group = val;
+
+					if (info->projectile_group < 0)
+						info->projectile_group = PG_GROUPLESS;
 					else
+						info->projectile_group = val + PG_END;
+				}
+				else if (stricmp(Line1, "Infighting group") == 0)
+				{
+					info->infighting_group = val;
+
+					if (info->infighting_group < 0)
 					{
-						for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
+						I_Error("Infighting groups must be >= 0 (check your DEHacked entry, and correct it!)\n");
+					} 
+					info->infighting_group = val + IG_END;
+				}
+			}
+			else if (linelen == 14 && stricmp(Line1, "Missile damage") == 0)
+			{
+				info->damage = val;
+			}
+			else if (linelen == 13 && stricmp(Line1, "Reaction time") == 0)
+			{
+				info->reactiontime = val;
+			}
+			else if (linelen == 12)
+			{
+				if (stricmp(Line1, "Translucency") == 0)
+				{
+					info->translucency = val;
+					hadTranslucency = true;
+
+				}
+				else if (stricmp(Line1, "Dropped item") == 0)
+				{
+					// UNSUPPORTED FOR NOW...
+				}
+				else if (stricmp(Line1, "Splash group") == 0)
+				{
+					info->splash_group = val;
+					if (info->splash_group < 0)
+					{
+						I_Error("Splash groups must be >= 0 (check your DEHacked entry, and correct it!)\n");
+					}
+					info->splash_group = val + SG_END;
+				}
+			}
+			else if (linelen == 11)
+			{
+				if (stricmp(Line1, "Pain chance") == 0)
+				{
+					info->painchance = (SWORD)val;
+				}
+				else if (stricmp(Line1, "Melee range") == 0)
+				{
+					info->meleerange = val;
+				}
+			}
+			else if (linelen == 10)
+			{
+				if (stricmp(Line1, "Hit points") == 0)
+				{
+					info->spawnhealth = val;
+				}
+				else if (stricmp(Line1, "Gib health") == 0)
+				{
+					gibhealth = true;
+					info->gibhealth = val;
+
+					// Special hack: DEH values are always positive, and since a gib is always negative,
+					// a positive value will thus become negative.
+					if (info->gibhealth > 0)
+						info->gibhealth = -info->gibhealth;		
+				}
+				else if (stricmp(Line1, "MBF21 Bits") == 0)
+				{
+					int value[4] = {0, 0, 0};
+					bool vchanged[4] = {false, false, false};
+					char* strval;
+
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
+					{
+						if (IsNum(strval))
 						{
-							if (!stricmp (strval, bitnames[iy].name))
+							int tempval = atoi(strval);
+
+							if (tempval & MF2_LOGRAV)
 							{
-								if (bitnames[iy].whichflags)
-								{
-									v2changed = true;
-									if (bitnames[iy].bit & 0xff00)
-										value2 |= 1 << (bitnames[iy].bit >> 8);
-									value2 |= 1 << (bitnames[iy].bit & 0xff);
-								}
-								else
-								{
-									vchanged = true;
-									if (bitnames[iy].bit & 0xff00)
-										value |= 1 << (bitnames[iy].bit >> 8);
-									value |= 1 << (bitnames[iy].bit & 0xff);
-								}
-								break;
+								value[1] |= MF2_LOGRAV;
+								vchanged[1] = true;
 							}
+								
+							if (tempval & MF2_BOSS)
+							{
+								value[1] |= MF2_BOSS;
+								vchanged[1] = true;
+							}
+								
+							if (tempval & MF2_NODMGTHRUST)
+							{
+								value[1] |= MF2_NODMGTHRUST;
+								vchanged[1] = true;
+							}
+								
+							if (tempval & MF2_RIP)
+							{
+								value[1] |= MF2_RIP;
+								vchanged[1] = true;
+							}
+							
+							value[3] |= atoi(strval);
+							vchanged[3] = true;
 						}
-						if (iy >= ARRAY_LENGTH(bitnames))
-							DPrintf("Unknown bit mnemonic %s\n", strval);
+						else
+						{
+							size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(mbf_bitnames); i++)
+							{
+								if (!stricmp(strval, mbf_bitnames[i].Name))
+								{
+									vchanged[mbf_bitnames[i].WhichFlags] = true;
+									value[mbf_bitnames[i].WhichFlags] |= 1 << (mbf_bitnames[i].Bit);
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(mbf_bitnames))
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+						}
+					}
+					if (vchanged[1])
+					{
+						info->flags2 |= value[1];	// unsure since there might be a flags2 value existing... 
+					}
+					if (vchanged[3])
+					{
+						info->flags3 = value[3];
 					}
 				}
-				if (vchanged)
-				{
-					info->flags = value;
-					// Bit flags are no longer used to specify translucency.
-					// This is just a temporary hack.
-					if (info->flags & 0x60000000)
-						info->translucency = (info->flags & 0x60000000) >> 15;
-				}
-				if (v2changed)
-					info->flags2 = value2;
 			}
-			else
+		}
+		else if (linelen == 6 && stricmp(Line1, "Height") == 0)
+		{
+		    info->height = val;
+		    hadHeight = true;
+		}
+		else if (linelen == 5)
+		{
+			if (!stricmp(Line1, "Speed"))
 			{
-				PrintUnknown(Line1, "Thing", thingNum);
+				info->speed = val;
 			}
-		} else if (!stricmp (Line1, "Height")) {
-			hadHeight = true;
+			else if (stricmp(Line1, "Width") == 0)
+			{
+				info->radius = val;
+			}
+		}
+		else if (linelen == 4)
+		{
+			if (!stricmp(Line1, "Bits"))
+				{
+					int value[4] = {0, 0, 0};
+				    bool vchanged[4] = {false, false, false};
+					char* strval;
+
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r")); strval = NULL)
+					{
+						if (IsNum(strval))
+						{
+							// Force the top 4 bits to 0 so that the user is forced
+							// to use the mnemonics to change them.
+
+							// I have no idea why everyone insists on using strtol here
+						    // even though it fails dismally if a value is parsed where
+						    // the highest bit it set. Do people really use negative
+						    // values here? Let's better be safe and check both.
+							value[0] |= atoi(strval);
+							vchanged[0] = true;
+						}
+						else
+						{
+						    size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+							{
+								if (!stricmp(strval, bitnames[i].Name))
+								{
+									vchanged[bitnames[i].WhichFlags] = true;
+									value[bitnames[i].WhichFlags] |= 1 << (bitnames[i].Bit);	
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(bitnames))
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+						}
+					}
+					if (vchanged[0])
+					{					   
+					    if (value[0] & MF_TRANSLUCENT)
+						{
+							info->translucency = TRANSLUC50; // Correct value should be 0.66 (BOOM)...
+							hadTranslucency = true;
+						}
+
+						// Unsupported flags have to be announced for developers...
+						if (value[0] & MF_TOUCHY)
+					    {
+						    DPrintf("[DEH Bits] Unsupported MBF flag TOUCHY.\n");
+						    value[0] &= ~MF_TOUCHY;
+						}
+
+						if (value[0] & MF_BOUNCES)
+						    DPrintf("[DEH Bits] MBF flag BOUNCES is partially supported. Use it as your own risks!\n");
+
+						if (value[0] & MF_FRIEND)
+					    {
+						    DPrintf("[DEH Bits] Unsupported MBF flag FRIEND.\n");
+						    value[0] &= ~MF_FRIEND;
+					    }
+
+						info->flags = value[0];
+					}
+				    if (vchanged[1])
+				    {
+					    info->flags2 = value[1];
+				    }
+				    if (vchanged[2])
+				    {
+						if (value[2] & 7)
+					    {
+						    hadTranslucency = true;
+
+						    if (value[2] & 1)
+							    info->translucency = TRANSLUC25;
+						    else if (value[2] & 2)
+							    info->translucency = TRANSLUC50;
+						    else if (value[2] & 4)
+							    info->translucency = TRANSLUC75;
+					    }
+					}
+					if (vchanged[3])
+				    {
+					    info->flags3 = value[3];
+				    }
+				}
+			else if (stricmp(Line1, "ID #") == 0)
+			{
+			    *&info->doomednum = (SDWORD)val;
+			}
+		    else if (stricmp(Line1, "Mass") == 0)
+		    {
+			    info->mass = val;
+		    }
+		}
+		else
+		{
+		    PrintUnknown(Line1, "Thing", thingNum);
 		}
 	}
 	
 	// [ML] Set a thing's "real world height" to what's being offered here,
 	// so it's consistent from the patch
-	if (hadHeight && thingNum < sizeof(OrgHeights))
-		info->cdheight = info->height;
+	if (info != &dummy)
+	{
+		if (hadHeight && thingNum < sizeof(OrgHeights))
+			info->cdheight = info->height;
 
-	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
-		info->height = OrgHeights[thingNum] * FRACUNIT;
+		if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
+			info->height = OrgHeights[thingNum] * FRACUNIT;
+
+		// Set a default gibhealth if none was assigned.
+		if (!gibhealth && info->spawnhealth && !info->gibhealth)
+			info->gibhealth = -info->spawnhealth;
+	}
 
 	return result;
 }
@@ -972,10 +1275,26 @@ static int PatchFrame (int frameNum)
 		{ "Next frame",			offsetof(state_t,nextstate) },
 		{ "Unknown 1",			offsetof(state_t,misc1) },
 		{ "Unknown 2",			offsetof(state_t,misc2) },
+		{ "Args1",				offsetof(state_t,args[0]) },
+		{ "Args2",				offsetof(state_t,args[1]) },
+		{ "Args3",				offsetof(state_t,args[2]) },
+		{ "Args4",				offsetof(state_t,args[3]) },
+		{ "Args5",				offsetof(state_t,args[4]) },
+		{ "Args6",				offsetof(state_t,args[5]) },
+		{ "Args7",				offsetof(state_t,args[6]) },
+		{ "Args8",				offsetof(state_t,args[7]) },
 		{ NULL, 0 }
 	};
 	int result;
 	state_t *info, dummy;
+
+	static const struct
+	{
+		short Bit;
+		const char* Name;
+	} bitnames[] = {
+	    {0, "SKILL5FAST"},
+	};
 
 	if (frameNum >= 0 && frameNum < NUMSTATES) {
 		info = &states[frameNum];
@@ -985,9 +1304,61 @@ static int PatchFrame (int frameNum)
 		DPrintf ("Frame %d out of range\n", frameNum);
 	}
 
-	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
+	while ((result = GetLine()) == 1)
+	{
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
+
+		if (linelen == 10)
+		{
+			if (stricmp(Line1, "MBF21 Bits") == 0)
+			{
+				int value = 0;
+				bool vchanged = false;
+				char* strval;
+
+				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+				     strval = NULL)
+				{
+					if (IsNum(strval))
+					{
+						// Force the top 4 bits to 0 so that the user is forced
+						// to use the mnemonics to change them.
+
+						// I have no idea why everyone insists on using strtol here
+						// even though it fails dismally if a value is parsed where
+						// the highest bit it set. Do people really use negative
+						// values here? Let's better be safe and check both.
+						value |= atoi(strval);
+						vchanged = true;
+					}
+					else
+					{
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						{
+							if (!stricmp(strval, bitnames[i].Name))
+							{
+								vchanged = true;
+								value |= 1 << (bitnames[i].Bit);
+								break;
+							}
+						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+							DPrintf("Unknown bit mnemonic %s\n", strval);
+					}
+				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
+				}
+			}
+		}
+		else if (HandleKey(keys, info, Line1, atoi(Line2), sizeof(*info)))
 			PrintUnknown(Line1, "Frame", frameNum);
+	}
 
 	return result;
 }
@@ -1066,6 +1437,19 @@ static int PatchWeapon (int weapNum)
 		{ "Min ammo",			offsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
 		{ NULL, 0}
 	};
+
+	static const struct {
+		short Bit;
+		const char *Name;
+	} bitnames[] = {
+		{0, "NOTHRUST"},
+		{1, "SILENT"},
+		{2, "NOAUTOFIRE"},
+		{3, "FLEEMELEE"},
+		{4, "AUTOSWITCHFROM"},
+		{5, "NOAUTOSWITCHTO"},
+	};
+
 	int result;
 	weaponinfo_t *info, dummy;
 
@@ -1077,16 +1461,71 @@ static int PatchWeapon (int weapNum)
 		DPrintf ("Weapon %d out of range.\n", weapNum);
 	}
 
-	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			PrintUnknown(Line1, "Weapon", weapNum);
+	while ((result = GetLine()) == 1)
+	{
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
 
+		if (linelen == 10)
+		{
+			if (stricmp(Line1, "MBF21 Bits") == 0)
+			{
+				int value = 0;
+				bool vchanged = false;
+				char* strval;
+
+				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+				     strval = NULL)
+				{
+					if (IsNum(strval))
+					{
+						// Force the top 4 bits to 0 so that the user is forced
+						// to use the mnemonics to change them.
+
+						// I have no idea why everyone insists on using strtol here
+						// even though it fails dismally if a value is parsed where
+						// the highest bit it set. Do people really use negative
+						// values here? Let's better be safe and check both.
+						value |= atoi(strval);
+						vchanged = true;
+					}
+					else
+					{
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						{
+							if (!stricmp(strval, bitnames[i].Name))
+							{
+								vchanged = true;
+								value |= 1 << (bitnames[i].Bit);
+								break;
+							}
+						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+							DPrintf("Unknown bit mnemonic %s\n", strval);
+					}
+				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
+				}
+			}
+		}
+		else if (HandleKey(keys, info, Line1, val, sizeof(*info)))
+		{
+			PrintUnknown(Line1, "Weapon", weapNum);
+		}
+
+	}
 	return result;
 }
 
 static int PatchPointer (int ptrNum)
 {
 	int result;
+
 
 	if (ptrNum >= 0 && ptrNum < 448) {
 		DPrintf ("Pointer %d\n", ptrNum);
@@ -1245,6 +1684,7 @@ static int PatchCodePtrs (int dummy)
 	DPrintf ("[CodePtr]\n");
 
 	while ((result = GetLine()) == 1) {
+
 		if (!strnicmp ("Frame", Line1, 5) && isspace(Line1[5])) {
 			int frame = atoi (Line1 + 5);
 

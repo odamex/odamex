@@ -400,7 +400,7 @@ BOOL PIT_CheckLine (line_t *ld)
 		return false;
 	}
 
-    if (!(tmthing->flags & MF_MISSILE) || (ld->flags & ML_BLOCKEVERYTHING))
+    if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
 		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
 			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS)) {	// block monsters only
@@ -499,6 +499,21 @@ BOOL PIT_CheckLine (line_t *ld)
 //
 // PIT_CheckThing
 //
+
+static bool P_ProjectileImmune(AActor* target, AActor* source)
+{
+	return ( // PG_GROUPLESS means no immunity, even to own species
+	           mobjinfo[target->type].projectile_group != PG_GROUPLESS ||
+	           target == source) &&
+	       (( // target type has default behaviour, and things are the same type
+	            mobjinfo[target->type].projectile_group == PG_DEFAULT &&
+	            source->type == target->type) ||
+	        ( // target type has special behaviour, and things have the same group
+	            mobjinfo[target->type].projectile_group != PG_DEFAULT &&
+	            mobjinfo[target->type].projectile_group ==
+	                mobjinfo[source->type].projectile_group));
+}
+
 static BOOL PIT_CheckThing (AActor *thing)
 {
 	bool solid = thing->flags & MF_SOLID;
@@ -549,7 +564,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 	}
 
 	// missiles can hit other things
-	if (tmthing->flags & MF_MISSILE)
+	if (tmthing->flags & MF_MISSILE || (tmthing->flags & MF_BOUNCES 
+		&& !(tmthing->flags & MF_SOLID)))
 	{
 		// see if it went over / under
 		if (tmthing->z > thing->z + thing->height)
@@ -557,10 +573,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		if (tmthing->z+tmthing->height < thing->z)
 			return true;				// underneath
 
-		if (tmthing->target && (
-			tmthing->target->type == thing->type ||
-			(tmthing->target->type == MT_KNIGHT && thing->type == MT_BRUISER)||
-			(tmthing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) ) )
+		if (tmthing->target && P_ProjectileImmune(thing, tmthing->target))
 		{
 			// Don't hit same species as originator.
 			if (thing == tmthing->target)
@@ -573,6 +586,24 @@ static BOOL PIT_CheckThing (AActor *thing)
 
 		if (!(thing->flags & MF_SHOOTABLE))
 			return !solid;		// didn't do any damage
+
+		if (tmthing->flags2 & MF2_RIP)
+		{
+			int damage = ((P_Random() & 3) + 2) * tmthing->info->damage;
+			if (!(thing->flags & MF_NOBLOOD))
+				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
+			if (tmthing->info->ripsound)
+				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
+
+			P_DamageMobj(thing, tmthing, tmthing->target, damage);
+			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
+			{ // Push thing
+				thing->momx += tmthing->momx >> 2;
+				thing->momy += tmthing->momy >> 2;
+			}
+
+			return true;
+		}
 
 		// damage / explode
 		if (tmthing->info->damage)
@@ -1112,8 +1143,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			return false;
 		}
 
+		bool sentient = thing->health > 0 && thing->info->seestate;
+		if (thing->flags & MF_BOUNCES && // killough 8/13/98
+		    !(thing->flags & (MF_MISSILE | MF_NOGRAVITY)) && !sentient &&
+		    tmfloorz - thing->z > 16 * FRACUNIT)
+			return false; // too big a step up for bouncers under gravity
+
 		// killough 11/98: prevent falling objects from going up too many steps
-		if (co_zdoomphys && thing->flags & MF_FALLING && tmfloorz - testz >
+		if (co_zdoomphys && thing->oflags & MFO_FALLING && tmfloorz - testz >
 			FixedMul(thing->momx, thing->momx) + FixedMul(thing->momy, thing->momy))
 		{
 			return false;
@@ -1276,7 +1313,7 @@ void P_ApplyTorque (AActor *mo)
 	int yh = ((tmbbox[BOXTOP] =
 			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
 	int bx,by;
-	int flags = mo->flags;	//Remember the current state, for gear-change
+	int flags = mo->oflags;	//Remember the current state, for gear-change
 
 	tmthing = mo;
 	++validcount; // prevents checking same line twice
@@ -1287,9 +1324,9 @@ void P_ApplyTorque (AActor *mo)
 
 	// If any momentum, mark object as 'falling' using engine-internal flags
 	if (mo->momx | mo->momy)
-		mo->flags |= MF_FALLING;
+		mo->oflags |= MFO_FALLING;
 	else  // Clear the engine-internal flag indicating falling object.
-		mo->flags &= ~MF_FALLING;
+		mo->oflags &= ~MFO_FALLING;
 
 	// If the object has been moving, step up the gear.
 	// This helps reach equilibrium and avoid oscillations.
@@ -1298,7 +1335,7 @@ void P_ApplyTorque (AActor *mo)
 	// of rotation, so we have to creatively simulate these
 	// systems somehow :)
 
-	if (!((mo->flags | flags) & MF_FALLING))	// If not falling for a while,
+	if (!((mo->oflags | flags) & MFO_FALLING))	// If not falling for a while,
 		mo->gear = 0;							// Reset it to full strength
 	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
 		mo->gear++;								// move up a gear
@@ -2744,14 +2781,29 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 //
 // "bombsource" is the creature that caused the explosion at "bombspot".
 //
+
+static bool P_SplashImmune(AActor* target, AActor* spot)
+{
+	return // not default behaviour and same group
+	    mobjinfo[target->type].splash_group != SG_DEFAULT &&
+	    mobjinfo[target->type].splash_group == mobjinfo[spot->type].splash_group;
+}
+
 static BOOL PIT_DoomRadiusAttack(AActor* thing)
 {
-	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
+		return true;
+
+	// MBF21
+	if (P_SplashImmune(thing, bombspot))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (thing->type == MT_CYBORG || thing->type == MT_SPIDER)
+	if (bombspot->flags & MF_BOUNCES ? 
+		thing->type == MT_CYBORG && bombsource->type == MT_CYBORG : 
+			(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) && 
+			!(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
 	fixed_t dx = abs(thing->x - bombspot->x);
@@ -2782,12 +2834,19 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 //
 static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 {
-	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+	if (!serverside || !(thing->flags & MF_SHOOTABLE | MF_BOUNCES))
+		return true;
+
+	// MBF21
+	if (P_SplashImmune(thing, bombspot))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (thing->flags2 & MF2_BOSS)
+	if (bombspot->flags & MF_BOUNCES
+	        ? thing->type == MT_CYBORG && bombsource->type == MT_CYBORG
+	        : (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) &&
+	              !(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
 	// Barrels always use the original code, since this makes

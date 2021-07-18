@@ -125,7 +125,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	if (player.spectator)
 	{
 		mobj->translucency = 0;
-		player.mo->flags |= MF_SPECTATOR;
+		player.mo->oflags |= MFO_SPECTATOR;
 		player.mo->flags2 |= MF2_FLY;
 		player.mo->flags &= ~MF_SOLID;
 	}

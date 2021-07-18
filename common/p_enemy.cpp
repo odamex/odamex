@@ -48,6 +48,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
+EXTERN_CVAR(co_zdoomsound)
 
 enum dirtype_t
 {
@@ -184,10 +185,12 @@ BOOL P_CheckMeleeRange (AActor *actor)
 	if (!actor->target)
 		return false;
 
+	fixed_t range = actor->info->meleerange;
+
 	pl = actor->target;
 	dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
-	if (dist >= MELEERANGE-20*FRACUNIT+pl->info->radius)
+	if (dist >= range - 20 * FRACUNIT + pl->info->radius)
 		return false;
 
 	// [RH] If moving toward goal, then we've reached it.
@@ -239,14 +242,14 @@ BOOL P_CheckMissileRange (AActor *actor)
 
 	dist >>= 16;
 
-	if (actor->type == MT_VILE)
+	if (actor->flags3 & MF3_SHORTMRANGE)
 	{
 		if (dist > 14*64)
 			return false;		// too far away
 	}
 
 
-	if (actor->type == MT_UNDEAD)
+	if (actor->flags3 & MF3_LONGMELEE)
 	{
 		if (dist < 196)
 			return false;		// close for fist attack
@@ -254,17 +257,13 @@ BOOL P_CheckMissileRange (AActor *actor)
 	}
 
 
-	if (actor->type == MT_CYBORG
-		|| actor->type == MT_SPIDER
-		|| actor->type == MT_SKULL)
-	{
+	if (actor->flags3 & MF3_RANGEHALF)
 		dist >>= 1;
-	}
 
 	if (dist > 200)
 		dist = 200;
 
-	if (actor->type == MT_CYBORG && dist > 160)
+	if (actor->flags3 & MF3_HIGHERMPROB && dist > 160)
 		dist = 160;
 
 	if (P_Random (actor) < dist)
@@ -778,7 +777,10 @@ void A_Look (AActor *actor)
 				sound[strlen(sound)-1] = '1';
 		}
 
-		S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+		else 
+			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 	}
 
 	if (actor->target)
@@ -1205,6 +1207,23 @@ void A_SkelMissile (AActor *actor)
 
 #define TRACEANGLE (0xc000000)
 
+fixed_t P_GetActorSpeed(AActor* actor)
+{
+	extern bool isFast;
+	int speed = actor->info->speed;
+
+	if (isFast)
+	{
+		if (actor->info->altspeed != NO_ALTSPEED)
+			speed = actor->info->altspeed;
+	}
+
+	if (speed < 256)
+		return speed * FRACUNIT;
+
+	return speed;
+}
+
 void A_Tracer (AActor *actor)
 {
 	// killough 1/18/98: this is why some missiles do not have smoke
@@ -1267,14 +1286,17 @@ void A_Tracer (AActor *actor)
 	}
 
 	exact = actor->angle>>ANGLETOFINESHIFT;
-	actor->momx = FixedMul (actor->info->speed, finecosine[exact]);
-	actor->momy = FixedMul (actor->info->speed, finesine[exact]);
+
+	fixed_t speed = P_GetActorSpeed(actor);
+
+	actor->momx = FixedMul(speed, finecosine[exact]);
+	actor->momy = FixedMul(speed, finesine[exact]);
 
 	// change slope
 	fixed_t dist = P_AproxDistance (dest->x - actor->x,
 							dest->y - actor->y);
 
-	dist = dist / actor->info->speed;
+	dist = dist / speed;
 
 	if (dist < 1)
 		dist = 1;
@@ -1378,11 +1400,11 @@ void A_VileChase (AActor *actor)
 
 	if (actor->movedir != DI_NODIR)
 	{
+		fixed_t speed = P_GetActorSpeed(actor);
+
 		// check for corpses to raise
-		viletryx =
-			actor->x + actor->info->speed*xspeed[actor->movedir];
-		viletryy =
-			actor->y + actor->info->speed*yspeed[actor->movedir];
+		viletryx = actor->x + speed * xspeed[actor->movedir];
+		viletryy = actor->y + speed * yspeed[actor->movedir];
 
 		xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
 		xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
@@ -1581,13 +1603,16 @@ void A_FatAttack1 (AActor *actor)
 	{
 		// Change direction  to ...
 		actor->angle += FATSPREAD;
-		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
+		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
+		
+		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
+
 		mo->angle += FATSPREAD;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-		mo->momy = FixedMul (mo->info->speed, finesine[an]);
+		mo->momx = FixedMul(speed, finecosine[an]);
+		mo->momy = FixedMul(speed, finesine[an]);
 	}
 }
 
@@ -1602,13 +1627,16 @@ void A_FatAttack2 (AActor *actor)
 	{
 		// Now here choose opposite deviation.
 		actor->angle -= FATSPREAD;
+
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
+	    fixed_t speed = P_GetActorSpeed(mo); // Get speed of actor spawned
+
 		mo->angle -= FATSPREAD*2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-		mo->momy = FixedMul (mo->info->speed, finesine[an]);
+		mo->momx = FixedMul(speed, finecosine[an]);
+		mo->momy = FixedMul(speed, finesine[an]);
 	}
 }
 
@@ -1622,16 +1650,20 @@ void A_FatAttack3 (AActor *actor)
 	if(serverside)
 	{
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
+
 		mo->angle -= FATSPREAD/2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-		mo->momy = FixedMul (mo->info->speed, finesine[an]);
+
+		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
+		mo->momx = FixedMul(speed, finecosine[an]);
+		mo->momy = FixedMul(speed, finesine[an]);
 
 		mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
+		speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 		mo->angle += FATSPREAD/2;
 		an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul (mo->info->speed, finecosine[an]);
-		mo->momy = FixedMul (mo->info->speed, finesine[an]);
+		mo->momx = FixedMul(speed, finecosine[an]);
+		mo->momy = FixedMul(speed, finesine[an]);
 	}
 }
 
@@ -1729,6 +1761,127 @@ void A_BetaSkullAttack(AActor* actor)
 	A_FaceTarget(actor);
 	int damage = (P_Random(actor) % 8 + 1) * actor->info->damage;
 	P_DamageMobj(actor->target, actor, actor, damage);
+}
+
+//
+// A_SpawnObject
+// Basically just A_Spawn with better behavior and more args.
+//   args[0]: Type of actor to spawn
+//   args[1]: Angle (degrees, in fixed point), relative to calling actor's angle
+//   args[2]: X spawn offset (fixed point), relative to calling actor
+//   args[3]: Y spawn offset (fixed point), relative to calling actor
+//   args[4]: Z spawn offset (fixed point), relative to calling actor
+//   args[5]: X velocity (fixed point)
+//   args[6]: Y velocity (fixed point)
+//   args[7]: Z velocity (fixed point)
+//
+void A_SpawnObject(AActor* actor)
+{
+	int type, angle, ofs_x, ofs_y, ofs_z, vel_x, vel_y, vel_z;
+	angle_t an;
+	fixed_t fan, dx, dy;
+	AActor* mo;
+
+	if (!actor->state->args[0])
+		return;
+
+	type = actor->state->args[0] - 1;
+	angle = actor->state->args[1];
+	ofs_x = actor->state->args[2];
+	ofs_y = actor->state->args[3];
+	ofs_z = actor->state->args[4];
+	vel_x = actor->state->args[5];
+	vel_y = actor->state->args[6];
+	vel_z = actor->state->args[7];
+
+	// calculate position offsets
+	an = actor->angle + ((angle << 16) / 360);
+	fan = an >> ANGLETOFINESHIFT;
+	dx = FixedMul(ofs_x, finecosine[fan]) - FixedMul(ofs_y, finesine[fan]);
+	dy = FixedMul(ofs_x, finesine[fan]) + FixedMul(ofs_y, finecosine[fan]);
+
+	// spawn it, yo
+	mo = new AActor(actor->x + dx , actor->y + dy, actor->z + ofs_z, (mobjtype_t)type);
+	if (!mo)
+		return;
+
+	// angle dangle
+	mo->angle = an;
+
+	// set velocity
+	mo->momx = FixedMul(vel_x, finecosine[fan]) - FixedMul(vel_y, finesine[fan]);
+	mo->momy = FixedMul(vel_x, finesine[fan]) + FixedMul(vel_y, finecosine[fan]);
+	mo->momz = vel_z;
+
+	// if spawned object is a missile, set target+tracer
+	if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))
+	{
+		// if spawner is also a missile, copy 'em
+		if (actor->info->flags & (MF_MISSILE | MF_BOUNCES))
+		{
+			mo->target = actor->target;
+			mo->tracer = actor->tracer;
+		}
+		// otherwise, set 'em as if a monster fired 'em
+		else
+		{
+			mo->target = actor->ptr();
+			mo->tracer = actor->target;
+		}
+	}
+
+	// [XA] don't bother with the dont-inherit-friendliness hack
+	// that exists in A_Spawn, 'cause WTF is that about anyway?
+}
+
+//
+// A_MonsterProjectile
+// A parameterized monster projectile attack.
+//   args[0]: Type of actor to spawn
+//   args[1]: Angle (degrees, in fixed point), relative to calling actor's angle
+//   args[2]: Pitch (degrees, in fixed point), relative to calling actor's pitch;
+//   approximated args[3]: X/Y spawn offset, relative to calling actor's angle args[4]: Z
+//   spawn offset, relative to actor's default projectile fire height
+//
+void A_MonsterProjectile(AActor* actor)
+{
+	int type, angle, pitch, spawnofs_xy, spawnofs_z;
+	AActor* mo;
+	int an;
+
+	if (!actor->target || !actor->state->args[0])
+		return;
+
+	type = actor->state->args[0] - 1;
+	angle = actor->state->args[1];
+	pitch = actor->state->args[2];
+	spawnofs_xy = actor->state->args[3];
+	spawnofs_z = actor->state->args[4];
+
+	A_FaceTarget(actor);
+	mo = P_SpawnMissile(actor, actor->target, (mobjtype_t)type);
+	if (!mo)
+		return;
+
+	// adjust angle
+	mo->angle += (angle_t)(((int64_t)angle << 16) / 360);
+	an = mo->angle >> ANGLETOFINESHIFT;
+	mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+	mo->momy = FixedMul(mo->info->speed, finesine[an]);
+
+	// adjust pitch (approximated, using Doom's ye olde
+	// finetangent table; same method as monster aim)
+	mo->momz += FixedMul(mo->info->speed, pitch);
+
+	// adjust position
+	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
+	mo->x += FixedMul(spawnofs_xy, finecosine[an]);
+	mo->y += FixedMul(spawnofs_xy, finesine[an]);
+	mo->z += spawnofs_z;
+
+	// always set the 'tracer' field, so this pointer
+	// can be used to fire seeker missiles at will.
+	mo->tracer = actor->target;
 }
 
 void A_Stop(AActor* actor)
@@ -1844,7 +1997,6 @@ void A_PainDie (AActor *actor)
 	A_PainShootSkull (actor, actor->angle+ANG270);
 }
 
-
 void A_Scream (AActor *actor)
 {
     char sound[MAX_SNDNAME];
@@ -1868,8 +2020,10 @@ void A_Scream (AActor *actor)
         sound[strlen(sound)-1] = P_Random(actor) % 2 + '1';
     }
 
-
-    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+	if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+		S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+	else 
+	    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
 
@@ -2019,10 +2173,10 @@ void A_BossDeath (AActor *actor)
 		return;
 
 	if (
-		((level.flags & LEVEL_MAP07SPECIAL) && (actor->type == MT_FATSO || actor->type == MT_BABY)) ||
-		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->type == MT_BRUISER)) ||
-		((level.flags & LEVEL_CYBORGSPECIAL) && (actor->type == MT_CYBORG)) ||
-		((level.flags & LEVEL_SPIDERSPECIAL) && (actor->type == MT_SPIDER))
+		((level.flags & LEVEL_MAP07SPECIAL) && (actor->flags3 & (MF3_MAP07BOSS1 | MF3_MAP07BOSS2))) ||
+		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->flags3 & MF3_E1M8BOSS)) ||
+	    ((level.flags & LEVEL_CYBORGSPECIAL) && (actor->flags3 & (MF3_E2M8BOSS | MF3_E4M6BOSS))) ||
+	    ((level.flags & LEVEL_SPIDERSPECIAL) && (actor->flags3 & (MF3_E3M8BOSS | MF3_E4M8BOSS)))
 	   )
 		;
 	else return;
@@ -2054,13 +2208,13 @@ void A_BossDeath (AActor *actor)
 	// victory!
 	if (level.flags & LEVEL_MAP07SPECIAL)
 	{
-		if (actor->type == MT_FATSO)
+		if (actor->flags3 & MF3_MAP07BOSS1)
 		{
 			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 			return;
 		}
 
-		if (actor->type == MT_BABY)
+		if (actor->flags3 & MF3_MAP07BOSS2)
 		{
 			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
 			return;
@@ -2375,17 +2529,21 @@ void A_Gibify(AActor *mo) // denis - squash thing
 //
 void A_Spawn(AActor* mo)
 {
-	// Partial integration of A_Spawn.
-	// ToDo: Currently missing MBF's MF_FRIEND flag support!
-	if (mo->state->misc1)
+	if (serverside)
 	{
-		AActor* newmobj;
+		// Partial integration of A_Spawn.
+		// ToDo: Currently missing MBF's MF_FRIEND flag support!
+		if (mo->state->misc1)
+		{
+			AActor* newmobj;
 
-		newmobj = new AActor ( mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z, (mobjtype_t)(mo->state->misc1 - 1) );
+			newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
+			                     (mobjtype_t)(mo->state->misc1 - 1));
 
-		//newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND); // TODO !!!
+			// newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+			// // TODO !!!
+		}
 	}
-	
 }
 
 void A_Turn(AActor* mo)

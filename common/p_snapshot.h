@@ -121,6 +121,7 @@ public:
 	int		getWaterLevel() const	{ return mWaterLevel; }
 	int		getFlags() const		{ return mFlags; }
 	int		getFlags2() const		{ return mFlags2; }
+	int		getFlags3() const		{ return mFlags3; }
 	int		getFrame() const		{ return mFrame; }
 
 	void setX(fixed_t val)
@@ -213,6 +214,12 @@ public:
 		mFields |= ACT_FLAGS2;
 	}	
 
+	void setFlags3(int val)
+	{
+		mFlags3 = val;
+		mFields |= ACT_FLAGS3;
+	}
+
 	void setFrame(int val)
 	{
 		mFrame = val;
@@ -221,22 +228,23 @@ public:
 
 private:
 	enum ActorFields {
-		ACT_POSITIONX			= 0x00000001,
-		ACT_POSITIONY			= 0x00000002,
-		ACT_POSITIONZ			= 0x00000004,	
-		ACT_MOMENTUMX			= 0x00000008,
-		ACT_MOMENTUMY			= 0x00000010,
-		ACT_MOMENTUMZ			= 0x00000020,
-		ACT_ANGLE				= 0x00000040,
-		ACT_PITCH				= 0x00000080,
-		ACT_CEILINGZ			= 0x00000100,
-		ACT_FLOORZ				= 0x00000200,
-		ACT_ONGROUND			= 0x00000400,
-		ACT_FLAGS				= 0x00000800,
-		ACT_FLAGS2				= 0x00001000,
-		ACT_REACTIONTIME		= 0x00002000,
-		ACT_WATERLEVEL			= 0x00004000,
-		ACT_FRAME				= 0x00008000
+		ACT_POSITIONX			= BIT(0),
+		ACT_POSITIONY			= BIT(1),
+		ACT_POSITIONZ			= BIT(2),	
+		ACT_MOMENTUMX			= BIT(3),
+		ACT_MOMENTUMY			= BIT(4),
+		ACT_MOMENTUMZ			= BIT(5),
+		ACT_ANGLE				= BIT(6),
+		ACT_PITCH				= BIT(7),
+		ACT_CEILINGZ			= BIT(8),
+		ACT_FLOORZ				= BIT(9),
+		ACT_ONGROUND			= BIT(10),
+		ACT_FLAGS				= BIT(11),
+		ACT_FLAGS2				= BIT(12),
+		ACT_FLAGS3				= BIT(13),
+		ACT_REACTIONTIME		= BIT(14),
+		ACT_WATERLEVEL			= BIT(15),
+		ACT_FRAME				= BIT(16)
 	};
 	
 	unsigned int	mFields;
@@ -259,6 +267,7 @@ private:
 	
 	int				mFlags;
 	int				mFlags2;
+	int				mFlags3;
 	int				mFrame;
 };
 
@@ -301,6 +310,7 @@ public:
 	int		getWaterLevel() const		{ return mActorSnap.getWaterLevel(); }
 	int		getFlags() const			{ return mActorSnap.getFlags(); }
 	int		getFlags2() const			{ return mActorSnap.getFlags2(); }
+	int		getFlags3() const			{ return mActorSnap.getFlags3(); }
 	int		getFrame() const			{ return mActorSnap.getFrame(); }
 
 	virtual void setAuthoritative(bool val)
@@ -411,6 +421,12 @@ public:
 		mFields |= PLY_FLAGS2;
 	}	
 
+	void setFlags3(int val)
+	{
+		mActorSnap.setFlags3(val);
+		mFields |= PLY_FLAGS3;
+	}	
+
 	void setFrame(int val)
 	{
 		mActorSnap.setFrame(val);
@@ -459,12 +475,13 @@ private:
 		PLY_ONGROUND			= 0x00000400,
 		PLY_FLAGS				= 0x00000800,
 		PLY_FLAGS2				= 0x00001000,
-		PLY_REACTIONTIME		= 0x00002000,
-		PLY_WATERLEVEL			= 0x00004000,
-		PLY_FRAME				= 0x00008000,
-		PLY_VIEWHEIGHT			= 0x00010000,
-		PLY_DELTAVIEWHEIGHT		= 0x00020000,
-		PLY_JUMPTIME			= 0x00040000
+		PLY_FLAGS3				= 0x00002000,
+		PLY_REACTIONTIME		= 0x00004000,
+		PLY_WATERLEVEL			= 0x00008000,
+		PLY_FRAME				= 0x00010000,
+		PLY_VIEWHEIGHT			= 0x00020000,
+		PLY_DELTAVIEWHEIGHT		= 0x00040000,
+		PLY_JUMPTIME			= 0x00080000
 	};
 	
 	unsigned int	mFields;		// bitfield of data present in snapshot

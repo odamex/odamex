@@ -578,6 +578,7 @@ struct vissprite_s
     shaderef_t		colormap;
 
 	int 			mobjflags;
+	int				mobjflags2;		// Ch0wW: Add for additional mobjflags (with oflags)
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling

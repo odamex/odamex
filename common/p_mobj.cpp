@@ -60,6 +60,7 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
+fixed_t P_GetActorSpeed(AActor* actor);
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
@@ -118,7 +119,7 @@ AActor::AActor () :
     pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
     momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
-    damage(0), flags(0), flags2(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
+    damage(0), flags(0), flags2(0), flags3(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
@@ -138,7 +139,7 @@ AActor::AActor (const AActor &other) :
     floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
 	momy(other.momy), momz(other.momz), validcount(other.validcount),
 	type(other.type), info(other.info), tics(other.tics), state(other.state),
-	damage(other.damage), flags(other.flags), flags2(other.flags2), oflags(other.oflags), special1(other.special1),
+	damage(other.damage), flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags), special1(other.special1),
 	special2(other.special2), health(other.health), movedir(other.movedir),
 	movecount(other.movecount), visdir(other.visdir), reactiontime(other.reactiontime),
     threshold(other.threshold), player(other.player), lastlook(other.lastlook),
@@ -187,6 +188,7 @@ AActor &AActor::operator= (const AActor &other)
     damage = other.damage;
     flags = other.flags;
     flags2 = other.flags2;
+	flags3 = other.flags3;
 	oflags = other.oflags;
     special1 = other.special1;
     special2 = other.special2;
@@ -229,7 +231,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), prevpitch(0), effects(0), subsector(NULL),
     floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), oflags(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
@@ -254,6 +256,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	damage = info->damage;
 	flags = info->flags;
 	flags2 = info->flags2;
+	flags3 = info->flags3;
 	health = info->spawnhealth;
 	translucency = info->translucency;
 	rndindex = M_Random();
@@ -605,7 +608,7 @@ void P_MoveActor(AActor *mo)
 	}
 	else
 	{
-		mo->flags &= ~MF_FALLING;
+		mo->oflags &= ~MFO_FALLING;
 		mo->gear = 0;           // Reset torque
 	}
 }
@@ -665,7 +668,7 @@ void AActor::RunThink ()
     }
 
 	// GhostlyDeath -- Was a spectator but now it's nothing!
-	if ((this->flags & MF_SPECTATOR ) && !player)
+	if ((this->oflags & MFO_SPECTATOR ) && !player)
 	{
 		this->Destroy();
 		return;
@@ -776,6 +779,7 @@ void AActor::Serialize (FArchive &arc)
 			<< state
 			<< flags
 			<< flags2
+			<< flags3
 			<< special1
 			<< special2
 			<< health
@@ -842,7 +846,8 @@ void AActor::Serialize (FArchive &arc)
 			>> tics
 			>> state
 			>> flags
-			>> flags2
+			>> flags2 
+			>> flags3
 			>> special1
 			>> special2
 			>> health
@@ -1146,6 +1151,15 @@ static void P_ApplyXYFriction(AActor* mo)
 		}
 		return;
 	}
+
+  // killough 8/11/98: add bouncers
+	// killough 9/15/98: add objects falling off ledges
+	// killough 11/98: only include bouncers hanging off ledges
+	if (((mo->flags & MF_BOUNCES && mo->z > mo->dropoffz) || mo->flags & MF_CORPSE) &&
+	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
+	     mo->momy < -FRACUNIT / 4) &&
+	    mo->floorz != mo->subsector->sector->floorheight)
+		return; // do not stop sliding if halfway off a step with some momentum
 
 	// keep corpses sliding if halfway off a step with some momentum
 	if ((mo->flags & MF_CORPSE) && (abs(mo->momx) > FRACUNIT/4 || abs(mo->momy) > FRACUNIT/4))
@@ -1585,6 +1599,75 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 	}
 }
 
+void P_ApplyBouncyPhysics(AActor *mo)
+{
+	bool sentient = mo->health > 0 && mo->info->seestate;
+
+	if (mo->flags & MF_BOUNCES && mo->momz)
+	{
+		mo->z += mo->momz;
+		if (mo->z <= mo->floorz) // bounce off floors
+		{
+			mo->z = mo->floorz;
+			if (mo->momz < 0)
+			{
+				mo->momz = -mo->momz;
+				if (!(mo->flags & MF_NOGRAVITY)) // bounce back with decay
+				{
+					mo->momz = mo->flags & MF_FLOAT
+					               ? // floaters fall slowly
+					               mo->flags & MF_DROPOFF
+					                   ? // DROPOFF indicates rate
+					                   FixedMul(mo->momz, (fixed_t)(FRACUNIT * .85))
+					                   : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .70))
+					               : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .45));
+
+					// Bring it to rest below a certain speed
+					if (abs(mo->momz) <= mo->info->mass * (GRAVITY * 4 / 256))
+						mo->momz = 0;
+				}
+				return;
+			}
+		}
+		else if (mo->z >= mo->ceilingz - mo->height) // bounce off ceilings
+		{
+			mo->z = mo->ceilingz - mo->height;
+			if (mo->momz > 0)
+			{
+				if (mo->subsector->sector->ceilingpic != skyflatnum)
+					mo->momz = -mo->momz; // always bounce off non-sky ceiling
+				else if (mo->flags & MF_MISSILE)
+					mo->Destroy(); // missiles don't bounce off skies
+				else if (mo->flags & MF_NOGRAVITY)
+					mo->momz = -mo->momz; // bounce unless under gravity
+
+				return;
+			}
+		}
+		else
+		{
+			if (!(mo->flags & MF_NOGRAVITY)) // free-fall under gravity
+				mo->momz -= mo->info->mass * (GRAVITY / 256);
+			return;
+		}
+
+		// came to a stop
+		mo->momz = 0;
+
+		if (mo->flags & MF_MISSILE)
+		{
+			if (ceilingline && ceilingline->backsector &&
+			    ceilingline->backsector->ceilingpic == skyflatnum &&
+			    mo->z > ceilingline->backsector->ceilingheight)
+				mo->Destroy();
+			else
+				P_ExplodeMissile(mo);
+		}
+
+
+		return;
+	}
+}
 
 //
 // P_ZMovement
@@ -1597,6 +1680,12 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 void P_ZMovement(AActor *mo)
 {
 	fixed_t oldz = mo->z;
+
+	if (mo->flags & MF_BOUNCES && mo->momz)
+	{
+		P_ApplyBouncyPhysics(mo);
+		return;
+	}
 
 	if (mo->player)
 		P_PlayerSmoothStepUp(mo);
@@ -1626,6 +1715,8 @@ void P_ZMovement(AActor *mo)
 
 	if (!P_ClipMovementToCeiling(mo))
 		return;
+
+
 
 	// [AM] Handle actor specials that deal with fake floors and ceilings.
 	P_ActorFakeSectorTriggers(mo, oldz);
@@ -2067,11 +2158,12 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
-    th->momx = FixedMul (th->info->speed, finecosine[an]);
-    th->momy = FixedMul (th->info->speed, finesine[an]);
+	fixed_t speed = P_GetActorSpeed(th);
+	th->momx = FixedMul(speed, finecosine[an]);
+	th->momy = FixedMul(speed, finesine[an]);
 
     dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-    dist = dist / th->info->speed;
+    dist = dist / speed;
 
     if (dist < 1)
 		dist = 1;
@@ -2129,7 +2221,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT (th->info->speed);
+		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
 
 		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
@@ -2143,7 +2235,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 	else
 	{
-		fixed_t speed = th->info->speed;
+		fixed_t speed = P_GetActorSpeed(th);
 
 		th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
 		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);

@@ -442,7 +442,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	dcol.textureheight = 256 << FRACBITS;
 
-	if (vis->mobjflags & MF_SPECTATOR)
+	if (vis->mobjflags2 & MFO_SPECTATOR)
 		return;
 
 	if (vis->patch == NO_PARTICLE)
@@ -799,6 +799,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		return;
 
 	vis->mobjflags = thing->flags;
+	vis->mobjflags2 = thing->oflags;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -932,6 +933,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	// store information in a vissprite
 	vis = &avis;
 	vis->mobjflags = flags;
+	vis->mobjflags2 = 0;
 
 // [RH] +0x6000 helps it meet the screen bottom
 //		at higher resolutions while still being in
