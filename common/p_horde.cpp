@@ -157,6 +157,28 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 	}
+	
+	/**
+	 * @brief Force a wave with a partial name match.
+	 * 
+	 * @param name Partial name to match against.
+	 * @return True if the wave was forced, otherwise false.
+	 */
+	bool forceWave(const std::string& name)
+	{
+		int defineID;
+		if (!P_HordeDefineNamed(defineID, name))
+			return false;
+
+		setState(HS_STARTING);
+		m_waveTime = ::level.time;
+		m_defineID = defineID;
+		m_waveStartHealth = m_killedHealth;
+		m_bosses.clear();
+		m_bossRecipe.clear();
+
+		return true;
+	}
 
 	/**
 	 * @brief Force the boss to spawn.
@@ -523,6 +545,24 @@ const hordeDefine_t::weapons_t& P_HordeWeapons()
 		return weapons;
 	}
 }
+
+BEGIN_COMMAND(hordewave)
+{
+	if (argc < 2)
+	{
+		Printf("hordewave - Restarts the current wave with a new definition\n"
+		       "Usage:\n"
+		       "  ] hordewave <DEF NAME>\n"
+		       "  Starts the wave named DEF NAME.  The name can be partial.\n");
+		return;
+	}
+
+	if (!::g_HordeDirector.forceWave(argv[1]))
+	{
+		Printf("Could not find wave define starting with \"%s\"\n", argv[1]);
+	}
+}
+END_COMMAND(hordewave)
 
 BEGIN_COMMAND(hordenextwave)
 {

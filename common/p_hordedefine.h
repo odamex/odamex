@@ -105,3 +105,4 @@ const hordeDefine_t& G_HordeDefine(size_t id);
 size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
                         const bool wantBoss);
+bool P_HordeDefineNamed(int& out, const std::string& name);
