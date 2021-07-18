@@ -424,7 +424,7 @@ void HordeState::tick()
 		}
 
 		AActors mobjs = P_HordeSpawn(*spawn, recipe);
-		m_bosses = mobjs;
+		m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
 		ActivateMonsters(mobjs);
 		break;
 	}
