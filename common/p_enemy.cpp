@@ -1763,6 +1763,127 @@ void A_BetaSkullAttack(AActor* actor)
 	P_DamageMobj(actor->target, actor, actor, damage);
 }
 
+//
+// A_SpawnObject
+// Basically just A_Spawn with better behavior and more args.
+//   args[0]: Type of actor to spawn
+//   args[1]: Angle (degrees, in fixed point), relative to calling actor's angle
+//   args[2]: X spawn offset (fixed point), relative to calling actor
+//   args[3]: Y spawn offset (fixed point), relative to calling actor
+//   args[4]: Z spawn offset (fixed point), relative to calling actor
+//   args[5]: X velocity (fixed point)
+//   args[6]: Y velocity (fixed point)
+//   args[7]: Z velocity (fixed point)
+//
+void A_SpawnObject(AActor* actor)
+{
+	int type, angle, ofs_x, ofs_y, ofs_z, vel_x, vel_y, vel_z;
+	angle_t an;
+	fixed_t fan, dx, dy;
+	AActor* mo;
+
+	if (!actor->state->args[0])
+		return;
+
+	type = actor->state->args[0] - 1;
+	angle = actor->state->args[1];
+	ofs_x = actor->state->args[2];
+	ofs_y = actor->state->args[3];
+	ofs_z = actor->state->args[4];
+	vel_x = actor->state->args[5];
+	vel_y = actor->state->args[6];
+	vel_z = actor->state->args[7];
+
+	// calculate position offsets
+	an = actor->angle + ((angle << 16) / 360);
+	fan = an >> ANGLETOFINESHIFT;
+	dx = FixedMul(ofs_x, finecosine[fan]) - FixedMul(ofs_y, finesine[fan]);
+	dy = FixedMul(ofs_x, finesine[fan]) + FixedMul(ofs_y, finecosine[fan]);
+
+	// spawn it, yo
+	mo = new AActor(actor->x + dx , actor->y + dy, actor->z + ofs_z, (mobjtype_t)type);
+	if (!mo)
+		return;
+
+	// angle dangle
+	mo->angle = an;
+
+	// set velocity
+	mo->momx = FixedMul(vel_x, finecosine[fan]) - FixedMul(vel_y, finesine[fan]);
+	mo->momy = FixedMul(vel_x, finesine[fan]) + FixedMul(vel_y, finecosine[fan]);
+	mo->momz = vel_z;
+
+	// if spawned object is a missile, set target+tracer
+	if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))
+	{
+		// if spawner is also a missile, copy 'em
+		if (actor->info->flags & (MF_MISSILE | MF_BOUNCES))
+		{
+			mo->target = actor->target;
+			mo->tracer = actor->tracer;
+		}
+		// otherwise, set 'em as if a monster fired 'em
+		else
+		{
+			mo->target = actor->ptr();
+			mo->tracer = actor->target;
+		}
+	}
+
+	// [XA] don't bother with the dont-inherit-friendliness hack
+	// that exists in A_Spawn, 'cause WTF is that about anyway?
+}
+
+//
+// A_MonsterProjectile
+// A parameterized monster projectile attack.
+//   args[0]: Type of actor to spawn
+//   args[1]: Angle (degrees, in fixed point), relative to calling actor's angle
+//   args[2]: Pitch (degrees, in fixed point), relative to calling actor's pitch;
+//   approximated args[3]: X/Y spawn offset, relative to calling actor's angle args[4]: Z
+//   spawn offset, relative to actor's default projectile fire height
+//
+void A_MonsterProjectile(AActor* actor)
+{
+	int type, angle, pitch, spawnofs_xy, spawnofs_z;
+	AActor* mo;
+	int an;
+
+	if (!actor->target || !actor->state->args[0])
+		return;
+
+	type = actor->state->args[0] - 1;
+	angle = actor->state->args[1];
+	pitch = actor->state->args[2];
+	spawnofs_xy = actor->state->args[3];
+	spawnofs_z = actor->state->args[4];
+
+	A_FaceTarget(actor);
+	mo = P_SpawnMissile(actor, actor->target, (mobjtype_t)type);
+	if (!mo)
+		return;
+
+	// adjust angle
+	mo->angle += (angle_t)(((int64_t)angle << 16) / 360);
+	an = mo->angle >> ANGLETOFINESHIFT;
+	mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+	mo->momy = FixedMul(mo->info->speed, finesine[an]);
+
+	// adjust pitch (approximated, using Doom's ye olde
+	// finetangent table; same method as monster aim)
+	mo->momz += FixedMul(mo->info->speed, pitch);
+
+	// adjust position
+	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
+	mo->x += FixedMul(spawnofs_xy, finecosine[an]);
+	mo->y += FixedMul(spawnofs_xy, finesine[an]);
+	mo->z += spawnofs_z;
+
+	// always set the 'tracer' field, so this pointer
+	// can be used to fire seeker missiles at will.
+	mo->tracer = actor->target;
+}
+
 void A_Stop(AActor* actor)
 {
 	actor->momx = actor->momy = actor->momz = 0;

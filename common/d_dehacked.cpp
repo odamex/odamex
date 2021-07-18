@@ -255,6 +255,7 @@ void A_PlaySound(AActor*);
 void A_RandomJump(AActor*);
 void A_LineEffect(AActor*);
 void A_BetaSkullAttack(AActor* actor);
+void A_SpawnObject(AActor*);
 
 
 struct CodePtr {
@@ -354,6 +355,7 @@ static const struct CodePtr CodePtrs[] = {
 	{ "RandomJump",		A_RandomJump },     // killough 11/98
 	{ "LineEffect",		A_LineEffect },     // killough 11/98
     { "BetaSkullAttack", A_BetaSkullAttack},
+	{"A_SpawnObject", A_SpawnObject},
 	{ NULL, NULL }
 };
 
