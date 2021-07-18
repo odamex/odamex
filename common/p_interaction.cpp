@@ -583,9 +583,10 @@ static void P_GiveCarePack(player_t* player)
 		P_GiveAmmo(player, am_shell, 5);
 		blocks -= 1;
 	}
-	if (blocks >= 1 && hasMissileWeap && player->ammo[am_misl] < ::clipammo[am_misl] * 2)
+	if (blocks >= 1 && hasMissileWeap && player->ammo[am_misl] < ::clipammo[am_misl] * 4)
 	{
-		P_GiveAmmo(player, am_misl, 5);
+		// [AM] Default missile clip is stingy.
+		P_GiveAmmo(player, am_misl, 10);
 		blocks -= 1;
 	}
 	if (blocks >= 1 && hasCellWeap && player->ammo[am_cell] < ::clipammo[am_cell] * 2)
@@ -637,6 +638,8 @@ static void P_GiveCarePack(player_t* player)
 					break;
 				case wp_missile:
 					midmessage = "Got Rocket Launcher";
+					// [AM] Default missile clip is stingy.
+					P_GiveAmmo(player, am_misl, 2);
 					break;
 				case wp_plasma:
 					midmessage = "Got Plasmagun";
@@ -659,7 +662,15 @@ static void P_GiveCarePack(player_t* player)
 	{
 		for (int i = 0; i < NUMAMMO; i++)
 		{
-			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+			if (i == am_misl)
+			{
+				// [AM] Default missile clip is stingy.
+				P_GiveAmmo(player, static_cast<ammotype_t>(i), 2);
+			}
+			else
+			{
+				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+			}
 		}
 		blocks -= 1;
 	}
