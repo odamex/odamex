@@ -673,7 +673,7 @@ static void P_GiveCarePack(player_t* player)
 	// Hand out some ammo for all held weapons - that's always appreciated.
 	// If there are fewer than four ammos, we hand out more for the ones
 	// we have.
-	if (blocks >= 1)
+	if (blocks >= 1 && !ammos.empty())
 	{
 		for (size_t i = 0; i < 4; i++)
 		{
