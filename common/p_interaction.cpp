@@ -547,17 +547,26 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
  */
 static void P_GiveCarePack(player_t* player)
 {
+	const int ammomulti[NUMAMMO] = {2, 1, 1, 2};
+
 	// [AM] There is way too much going on in here to accurately predict.
 	if (!::serverside)
 		return;
 
-	const bool hasBulletWeap =
-	    player->weaponowned[wp_pistol] || player->weaponowned[wp_chaingun];
-	const bool hasShellWeap =
-	    player->weaponowned[wp_shotgun] || player->weaponowned[wp_supershotgun];
-	const bool hasMissileWeap = player->weaponowned[wp_missile];
-	const bool hasCellWeap =
-	    player->weaponowned[wp_plasma] || player->weaponowned[wp_bfg];
+	// Which weapons will we need ammo for?
+	bool hasWeap[NUMAMMO] = {false, false, false, false};
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		const ammotype_t ammo = ::weaponinfo[i].ammotype;
+		if (ammo == am_noammo)
+		{
+			continue;
+		}
+		if (player->weaponowned[i])
+		{
+			hasWeap[ammo] = true;
+		}
+	}
 
 	// We get "blocks" of inventory to give out.
 	int blocks = 4;
@@ -573,26 +582,30 @@ static void P_GiveCarePack(player_t* player)
 
 	// Players who are extremely low on ammo for a weapon they are holding
 	// always get ammo for that weapon.
-	if (blocks >= 1 && hasBulletWeap && player->ammo[am_clip] < ::clipammo[am_clip] * 2)
+	const hordeDefine_t::ammos_t& ammos = P_HordeAmmos();
+	for (size_t i = 0; i < ammos.size(); i++)
 	{
-		P_GiveAmmo(player, am_clip, 5);
-		blocks -= 1;
-	}
-	if (blocks >= 1 && hasShellWeap && player->ammo[am_shell] < ::clipammo[am_shell] * 2)
-	{
-		P_GiveAmmo(player, am_shell, 5);
-		blocks -= 1;
-	}
-	if (blocks >= 1 && hasMissileWeap && player->ammo[am_misl] < ::clipammo[am_misl] * 4)
-	{
-		// [AM] Default missile clip is stingy.
-		P_GiveAmmo(player, am_misl, 10);
-		blocks -= 1;
-	}
-	if (blocks >= 1 && hasCellWeap && player->ammo[am_cell] < ::clipammo[am_cell] * 2)
-	{
-		P_GiveAmmo(player, am_cell, 5);
-		blocks -= 1;
+		const ammotype_t ammo = ammos.at(i);
+		if (blocks < 1)
+		{
+			break;
+		}
+
+		// Don't stockpile ammo for weapons we don't have.
+		if (!hasWeap[ammo])
+		{
+			continue;
+		}
+
+		// Missle clip is a bit stingy, so we double our handouts.
+		const int lowLimit = ammomulti[ammo] * 2;
+		const int giveAmount = ammomulti[ammo] * 5;
+
+		if (player->ammo[ammo] < ::clipammo[ammo] * lowLimit)
+		{
+			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), giveAmount);
+			blocks -= 1;
+		}
 	}
 
 	// Players who have less than 100 health at this point get another health pack.
@@ -657,28 +670,30 @@ static void P_GiveCarePack(player_t* player)
 		}
 	}
 
-	// Always give out a backpack full of ammo - that's always appreciated.
+	// Hand out some ammo for all held weapons - that's always appreciated.
+	// If there are fewer than four ammos, we hand out more for the ones
+	// we have.
 	if (blocks >= 1)
 	{
-		for (int i = 0; i < NUMAMMO; i++)
+		for (size_t i = 0; i < 4; i++)
 		{
-			if (i == am_misl)
+			const ammotype_t ammo = ammos.at(i % ammos.size());
+
+			// Don't stockpile ammo for weapons we don't have.
+			if (!hasWeap[ammo])
 			{
-				// [AM] Default missile clip is stingy.
-				P_GiveAmmo(player, static_cast<ammotype_t>(i), 2);
+				continue;
 			}
-			else
-			{
-				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
-			}
+
+			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), ammomulti[ammo]);
 		}
 		blocks -= 1;
 	}
 
 	// We got this far, why not top off players armor?
-	if (blocks >= 1 && player->armorpoints <= 100)
+	if (blocks >= 1 && player->armorpoints + 10 < 95)
 	{
-		player->armorpoints += 25;
+		player->armorpoints += 10;
 		if (player->armorpoints > ::deh.MaxArmor)
 		{
 			player->armorpoints = ::deh.MaxArmor;

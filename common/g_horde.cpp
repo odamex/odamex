@@ -22,7 +22,10 @@
 
 #include "g_horde.h"
 
+#include <set>
+
 #include "cmdlib.h"
+#include "d_items.h"
 #include "infomap.h"
 #include "oscanner.h"
 #include "w_wad.h"
@@ -83,7 +86,7 @@ static void ParseDefine(OScanner& os)
 					// Special case for berserk.
 					if (os.compareTokenNoCase("Berserk"))
 					{
-						define.weapons.push_back(wp_none);
+						// wp_none will be added as a special case.
 					}
 					else
 					{
@@ -183,6 +186,34 @@ static void ParseDefine(OScanner& os)
 
 			define.addMonster(hordeDefine_t::RM_BOSS, type, chance);
 		}
+	}
+
+	// Add ammo for the weapons in order of their definition.
+	std::set<ammotype_t> ammoAdded;
+	for (size_t i = 0; i < define.weapons.size(); i++)
+	{
+		// Is the weapon valid?
+		const weapontype_t& weap = define.weapons.at(i);
+		if (weap < wp_fist || weap >= NUMWEAPONS)
+		{
+			continue;
+		}
+
+		// Does the weapon have ammo?
+		const ammotype_t& ammo = ::weaponinfo[weap].ammotype;
+		if (ammo == am_noammo)
+		{
+			continue;
+		}
+
+		// Have we already added ammo for it?
+		if (ammoAdded.find(ammo) != ammoAdded.end())
+		{
+			continue;
+		}
+
+		ammoAdded.insert(ammo);
+		define.ammos.push_back(ammo);
 	}
 
 	std::string buf;

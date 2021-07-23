@@ -75,11 +75,13 @@ struct hordeDefine_t
 	};
 
 	typedef std::vector<weapontype_t> weapons_t;
+	typedef std::vector<ammotype_t> ammos_t;
 	typedef std::vector<monster_t> monsters_t;
 	typedef std::vector<mobjtype_t> powerups_t;
 
 	std::string name;    // Name of the wave.
 	weapons_t weapons;   // Weapons we can spawn this wave.
+	ammos_t ammos;       // Ammos we can replenish this wave.
 	monsters_t monsters; // Monsters we can spawn this wave.
 	powerups_t powerups; // Powerups we can spawn this wave.
 	int minGroupHealth;  // Minimum health of a group of monsters to spawn.

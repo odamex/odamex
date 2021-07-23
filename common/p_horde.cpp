@@ -546,6 +546,29 @@ const hordeDefine_t::weapons_t& P_HordeWeapons()
 	}
 }
 
+const hordeDefine_t::ammos_t& P_HordeAmmos()
+{
+	if (::sv_gametype == GM_HORDE)
+	{
+		const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
+		return define.ammos;
+	}
+	else
+	{
+		static hordeDefine_t::ammos_t ammos;
+		if (ammos.empty())
+		{
+			// [AM] Shells are first because a typical define leads with the
+			//      shotgun and the pistol is not accounted for at all.
+			ammos.push_back(am_shell);
+			ammos.push_back(am_clip);
+			ammos.push_back(am_misl);
+			ammos.push_back(am_cell);
+		}
+		return ammos;
+	}
+}
+
 BEGIN_COMMAND(hordewave)
 {
 	if (argc < 2)
