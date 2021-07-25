@@ -68,6 +68,7 @@ enum OLevelFlags : unsigned int
 	LEVEL_STARTLIGHTNING = 0x01000000,	// Automatically start lightning
 	LEVEL_FILTERSTARTS = 0x02000000,	// Apply mapthing filtering to player starts
 	LEVEL_LOBBYSPECIAL = 0x04000000,	// That level is a lobby, and has a few priorities
+	LEVEL_USEPLAYERSTARTZ = 0x08000000, // Player spawns will have z-height
 
 	LEVEL_DEFINEDINMAPINFO = 0x20000000, // Level was defined in a MAPINFO lump
 	LEVEL_CHANGEMAPCHEAT = 0x40000000,	// Don't display cluster messages

@@ -438,6 +438,7 @@ static const char *MapInfoMapLevel[] =
 	"aircontrol",
 	"islobby",
 	"lobby",
+	"useplayerstartz",
 	"nocrouch",
 	"intermusic",
 	"par",
@@ -544,6 +545,8 @@ MapInfoHandler MapHandlers[] =
 	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
 	// lobby
 	{ MITYPE_SETFLAG, LEVEL_LOBBYSPECIAL, 0},
+	// useplayerstartz
+    { MITYPE_SETFLAG, LEVEL_USEPLAYERSTARTZ, 0},
 	// nocrouch
 	{ MITYPE_IGNORE, 0, 0 },
 	// intermusic <musicname>
@@ -2180,6 +2183,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_STARTLIGHTNING ? " STARTLIGHTNING" : "");
 	flags += (info.flags & LEVEL_FILTERSTARTS ? " FILTERSTARTS" : "");
 	flags += (info.flags & LEVEL_LOBBYSPECIAL ? " LOBBYSPECIAL" : "");
+	flags += (info.flags & LEVEL_USEPLAYERSTARTZ ? " USEPLAYERSTARTZ" : "");
 	flags += (info.flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");

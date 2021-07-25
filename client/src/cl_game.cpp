@@ -1171,6 +1171,9 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	fixed_t y = mthing->y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
+	if (level.flags & LEVEL_USEPLAYERSTARTZ)
+		z = mthing->z << FRACBITS;
+
 	if (!player.mo)
 	{
 		// first spawn of level, before corpses
