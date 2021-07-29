@@ -2834,7 +2834,7 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 //
 static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 {
-	if (!serverside || !(thing->flags & MF_SHOOTABLE | MF_BOUNCES))
+	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
 
 	// MBF21
