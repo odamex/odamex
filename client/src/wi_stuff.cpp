@@ -44,6 +44,7 @@
 #include "gi.h"
 
 void WI_unloadData(void);
+size_t P_NumPlayersInGame();
 
 //
 // Data needed to add patches to full screen intermission pics.
@@ -1086,6 +1087,7 @@ void WI_updateNetgameStats()
 void WI_drawNetgameStats(void)
 {
 	unsigned int x, y;
+	unsigned int nbPlayers = 0;
 
 	patch_t* pPercent = W_ResolvePatchHandle(::percent);
 	patch_t* pKills = W_ResolvePatchHandle(::kills);
@@ -1120,8 +1122,12 @@ void WI_drawNetgameStats(void)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		// [RH] Quick hack: Only show the first four players.
-		if (it->id > 4)
+		// Make sure while demoplaybacking that we're not exceeding the hardlimit of 4 players.
+		if (demoplayback && it->id > 4)
+			break;
+
+		// Break it anyway if we count more than 4 ACTIVE players in our session.
+		if (!demoplayback && nbPlayers > 4)
 			break;
 
 		byte i = (it->id) - 1;
@@ -1131,7 +1137,11 @@ void WI_drawNetgameStats(void)
 
 		x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		V_ColorMap = translationref_t(translationtables + i * 256, i);
+		if (demoplayback)
+			V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
+		else
+			V_ColorMap = translationref_t(translationtables + i * 256, i);
+		
 		screen->DrawTranslatedPatchClean(pP, x - pP->width(), y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
@@ -1148,6 +1158,7 @@ void WI_drawNetgameStats(void)
 			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
 
 		y += WI_SPACINGY;
+		nbPlayers++;
 	}
 }
 
@@ -1359,12 +1370,19 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					WI_updateNetgameStats();
-				else
-					WI_updateNoState();
+			    if (demoplayback)
+			    {
+				    WI_updateNetgameStats();
+				}
+			    else
+			    {
+				    if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
+					    WI_updateNetgameStats();
+				    else
+					    WI_updateNoState();
+				}
 			}
 			else
 				WI_updateStats();
@@ -1630,13 +1648,17 @@ void WI_Drawer (void)
 		switch (state)
 		{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				// TODO: Fix classic coop scoreboard
-				//if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					//WI_drawNetgameStats();
-				//else
-					WI_drawDeathmatchStats();
+				if (demoplayback)
+					WI_drawNetgameStats();
+				else
+				{
+					if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
+						WI_drawNetgameStats();
+					else
+						WI_drawDeathmatchStats();
+				}
 			}
 			else
 				WI_drawStats();
