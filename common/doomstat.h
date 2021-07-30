@@ -82,6 +82,9 @@ EXTERN_CVAR (sv_maxplayers)
 #define GM_CTF		3.0f
 #define GM_HORDE	4.0f
 
+#define FPS_NONE	0
+#define FPS_FULL	1
+#define FPS_COUNTER	2
 
 // -------------------------
 // Internal parameters for sound rendering.

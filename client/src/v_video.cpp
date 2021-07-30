@@ -122,6 +122,7 @@ EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
+EXTERN_CVAR(vid_displayfps)
 
 static int vid_pillarbox_old = -1;
 
@@ -587,6 +588,69 @@ void V_MarkRect(int x, int y, int width, int height)
 	dirtybox.AddToBox(x + width - 1, y + height - 1);
 }
 
+const int GRAPH_WIDTH = 140;
+const int GRAPH_HEIGHT = 80;
+const double GRAPH_BASELINE = 1000 / 60.0;
+
+struct frametimeGraph_t
+{
+	double data[256];
+	size_t tail; // Next insert location.
+	double minimum;
+	double maximum;
+
+	frametimeGraph_t() : tail(0), minimum(::GRAPH_BASELINE), maximum(::GRAPH_BASELINE)
+	{
+		ArrayInit(data, ::GRAPH_BASELINE);
+	}
+
+	void clear()
+	{
+		ArrayInit(data, ::GRAPH_BASELINE);
+		tail = 0;
+		minimum = ::GRAPH_BASELINE;
+		maximum = ::GRAPH_BASELINE;
+	}
+
+	void refit()
+	{
+		double newmin = data[0];
+		double newmax = data[0];
+
+		for (size_t i = 0; i < ARRAY_LENGTH(data); i++)
+		{
+			if (data[i] < newmin)
+				newmin = data[i];
+			if (data[i] > newmax)
+				newmax = data[i];
+		}
+
+		minimum = newmin;
+		maximum = newmax;
+	}
+
+	void push(const double val)
+	{
+		if (val < minimum)
+			minimum = val;
+		if (val > maximum)
+			maximum = val;
+
+		data[tail] = val;
+		tail = (tail + 1) & 0xFF;
+	}
+
+	double getTail(const size_t i)
+	{
+		size_t idx = (tail - 1 - i) & 0xFF;
+		return data[idx];
+	}
+
+	double normalize(const double n)
+	{
+		return (n - minimum) / (maximum - minimum);
+	}
+} g_GraphData;
 
 //
 // V_DrawFPSWidget
@@ -604,15 +668,82 @@ void V_DrawFPSWidget()
 	last_time = current_time;
 	frame_count++;
 
-	if (delta_time > 0)
+	if (delta_time > ONE_SECOND || delta_time <= 0)
+	{
+		// Just turned on or re-enabled the graph.
+		::g_GraphData.clear();
+	}
+	else if (vid_displayfps.asInt() == FPS_FULL)
+	{
+		static std::string buffer;
+		static double last_fps = 0.0;
+		const double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
+
+		::g_GraphData.push(delta_time_ms);
+
+		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
+		v2int_t topright(topleft.x + ::GRAPH_WIDTH, topleft.y);
+		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
+		v2int_t botright(topleft.x + ::GRAPH_WIDTH, topleft.y + ::GRAPH_HEIGHT);
+
+		// Data
+		for (size_t count = 1; count < ::GRAPH_WIDTH - 2; count++)
+		{
+			double start = ::g_GraphData.getTail(count - 1);
+			double end = ::g_GraphData.getTail(count);
+
+			int startoff = ::g_GraphData.normalize(start) * (GRAPH_HEIGHT - 2);
+			int endoff = ::g_GraphData.normalize(end) * (GRAPH_HEIGHT - 2);
+
+			v2int_t startvec(botright.x - count, botright.y - startoff);
+			v2int_t endvec(botright.x - count - 1, botright.y - endoff);
+
+			screen->Line(startvec, endvec, argb_t(255, 255, 255));
+		}
+
+		// Box
+		screen->Line(topleft, topright, argb_t(255, 255, 255));
+		screen->Line(botleft, botright, argb_t(255, 255, 255));
+		screen->Line(topleft, botleft, argb_t(255, 255, 255));
+		screen->Line(topright, botright, argb_t(255, 255, 255));
+
+		// Min
+		StrFormat(buffer, "%4.1f", ::g_GraphData.minimum);
+		screen->PrintStr(botright.x, botright.y - 3, buffer.c_str());
+
+		// Max
+		StrFormat(buffer, "%4.1f", ::g_GraphData.maximum);
+		screen->PrintStr(topright.x, topright.y - 3, buffer.c_str());
+
+		// Actual
+		StrFormat(buffer, "%4.1f", delta_time_ms);
+		screen->PrintStr(topright.x, topright.y + (GRAPH_HEIGHT / 2) - 3, buffer.c_str());
+
+		// Name
+		screen->PrintStr(topleft.x, topleft.y - 8, "Frametime (ms)");
+
+		time_accum += delta_time;
+
+		// calculate last_fps every 1000ms
+		if (time_accum > ONE_SECOND)
+		{
+			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			time_accum = 0;
+			frame_count = 0;
+
+			// Refit graph on next tic.
+			::g_GraphData.refit();
+		}
+
+		// FPS counter
+		StrFormat(buffer, "FPS %5.1f", last_fps);
+		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
+	}
+	else if (vid_displayfps.asInt() == FPS_COUNTER)
 	{
 		static double last_fps = 0.0;
-		static char fpsbuff[40];
-
-		double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
-		int len = sprintf(fpsbuff, "%5.1fms (%.2f fps)", delta_time_ms, last_fps);
-		screen->Clear(0, I_GetSurfaceHeight() - 8, len * 8, I_GetSurfaceHeight(), argb_t(0, 0, 0));
-		screen->PrintStr(0, I_GetSurfaceHeight() - 8, fpsbuff, CR_GRAY);
+		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
+		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
 
 		time_accum += delta_time;
 
@@ -623,6 +754,11 @@ void V_DrawFPSWidget()
 			time_accum = 0;
 			frame_count = 0;
 		}
+
+		// FPS counter
+		std::string buffer;
+		StrFormat(buffer, "FPS %5.1f", last_fps);
+		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
 	}
 }
 
@@ -816,6 +952,57 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	}
 }
 
+/**
+ * @brief Draw a line between two points.
+ *
+ * @detail Yet another implementation of Bresenham.
+ * 
+ * @param src Source point.
+ * @param dst Destination point.
+ * @param color Color to paint the line.
+*/
+void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
+{
+	const palindex_t pal_color = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+	const argb_t full_color = V_GammaCorrect(color);
+
+	int dx = abs(dst.x - src.x), sx = src.x < dst.x ? 1 : -1;
+	int dy = -abs(dst.y - src.y), sy = src.y < dst.y ? 1 : -1;
+
+	int err = dx + dy;
+
+	v2int_t cur(src);
+
+	for (;;)
+	{
+		if (mSurface->getBitsPerPixel() == 8)
+		{
+			palindex_t* dest = (palindex_t*)mSurface->getBuffer(cur.x, cur.y);
+			*dest = pal_color;
+		}
+		else
+		{
+			argb_t* dest = (argb_t*)mSurface->getBuffer(cur.x, cur.y);
+			*dest = full_color;
+		}
+
+		if (cur.x == dst.x && cur.y == dst.y)
+			break;
+
+		const int e2 = 2 * err;
+		if (e2 >= dy)
+		{
+			err += dy;
+			cur.x += sx;
+		}
+
+		if (e2 <= dx)
+		{
+			err += dx;
+			cur.y += sy;
+		}
+	}
+}
 
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)

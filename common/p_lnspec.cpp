@@ -291,6 +291,35 @@ FUNC(LS_Generic_Door)
 	return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
 }
 
+FUNC(LS_Thing_Stop)
+// Thing_Stop (tid)
+{
+	AActor * target;
+
+	if (arg0 != 0)
+	{
+		FActorIterator iterator (arg0);
+
+		while ((target = iterator.Next()))
+		{
+			target->momx = target->momy = target->momz = 0;
+			if (target->player != NULL)
+				target->momx = target->momy = 0;
+			
+			return true;
+		}
+	}
+	else if (it)
+	{
+		it->momx = it->momy = it->momz = 0;
+		if (it->player != NULL)
+			it->momx = it->momy = 0;
+
+		return true;
+	}
+	return false;
+}
+
 FUNC(LS_Floor_LowerByValue)
 // Floor_LowerByValue (tag, speed, height)
 {
@@ -1797,7 +1826,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 16
 	LS_NOP,		// 17
 	LS_NOP,		// 18
-	LS_NOP,		// 19
+	LS_Thing_Stop,		// 19
 	LS_Floor_LowerByValue,
 	LS_Floor_LowerToLowest,
 	LS_Floor_LowerToNearest,

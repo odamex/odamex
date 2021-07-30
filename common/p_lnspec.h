@@ -45,6 +45,7 @@ typedef enum {
 	Door_Raise = 12,
 	Door_LockedRaise = 13,
 
+	Thing_Stop = 19,
 	Floor_LowerByValue = 20,
 	Floor_LowerToLowest = 21,
 	Floor_LowerToNearest = 22,
