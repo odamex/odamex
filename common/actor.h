@@ -294,6 +294,31 @@ struct baseline_t
 	static const uint32_t MOMX = BIT(9);
 	static const uint32_t MOMY = BIT(10);
 	static const uint32_t MOMZ = BIT(11);
+
+	baseline_t()
+	    : angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
+	{
+		pos.x = 0;
+		pos.y = 0;
+		pos.z = 0;
+		mom.x = 0;
+		mom.y = 0;
+		mom.z = 0;
+	}
+
+	void Serialize(FArchive& arc)
+	{
+		if (arc.IsStoring())
+		{
+			arc << pos.x << pos.y << pos.z << mom.x << mom.y << mom.z << angle << targetid
+			    << tracerid << movecount << movedir << rndindex;
+		}
+		else
+		{
+			arc >> pos.x >> pos.y >> pos.z >> mom.x >> mom.y >> mom.z >> angle >>
+			    targetid >> tracerid >> movecount >> movedir >> rndindex;
+		}
+	}
 };
 
 // Map Object definition.

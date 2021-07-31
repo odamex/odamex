@@ -813,6 +813,7 @@ void AActor::Serialize (FArchive &arc)
 		else
 			arc << (DWORD)0xffffffff;
 		spawnpoint.Serialize (arc);
+		baseline.Serialize(arc);
 	}
 	else
 	{
@@ -890,6 +891,7 @@ void AActor::Serialize (FArchive &arc)
 				translation = translationref_t(translationtables + trans);
 		}
 		spawnpoint.Serialize (arc);
+		baseline.Serialize(arc);
 		if(type >= NUMMOBJTYPES)
 			I_Error("Unknown object type in saved game");
 		if(sprite >= NUMSPRITES)
