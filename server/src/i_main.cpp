@@ -168,27 +168,25 @@ int __cdecl main(int argc, char *argv[])
 		atterm (DObject::StaticShutdown);
 
 		D_DoomMain();
-    }
-    catch (CDoomError &error)
-    {
+	}
+	catch (CDoomError& error)
+	{
 		if (LOG.is_open())
-        {
-            LOG << error.GetMsg() << std::endl;
-            LOG << std::endl;
-        }
-        else
-        {
-            MessageBox(NULL, error.GetMsg().c_str(), "Odasrv Error", MB_OK);
-        }
+		{
+			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+		}
 
+		fprintf(stderr, "=== ERROR: %s ===\n\n", error.GetMsg().c_str());
+
+		call_terms();
 		exit(EXIT_FAILURE);
-    }
-    catch (...)
-    {
-		call_terms ();
+	}
+	catch (...)
+	{
+		call_terms();
 		throw;
-    }
-    return 0;
+	}
+	return 0;
 }
 #else
 
@@ -285,26 +283,25 @@ int main (int argc, char **argv)
 		//      I set earlier.
 
 		D_DoomMain();
-    }
-    catch (CDoomError &error)
-    {
-	fprintf (stderr, "%s\n", error.GetMsg().c_str());
+	}
+	catch (CDoomError& error)
+	{
+		if (LOG.is_open())
+		{
+			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+		}
 
-	if (LOG.is_open())
-        {
-            LOG << error.GetMsg() << std::endl;
-            LOG << std::endl;
-        }
+		fprintf(stderr, "=== ERROR: %s ===\n\n", error.GetMsg().c_str());
 
-	call_terms();
-	exit(EXIT_FAILURE);
-    }
-    catch (...)
-    {
-		call_terms ();
+		call_terms();
+		exit(EXIT_FAILURE);
+	}
+	catch (...)
+	{
+		call_terms();
 		throw;
-    }
-    return 0;
+	}
+	return 0;
 }
 
 #endif
